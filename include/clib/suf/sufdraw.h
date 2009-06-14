@@ -46,8 +46,12 @@ const struct suftexcache *FindTexCache(const char *name);
 extern suftex_t *AllocSUFTex(const suf_t *);
 extern suftex_t *AllocSUFTexScales(const suf_t *, const double *scales, int nscales, const char **override_textures, int ntexes);
 
+#define STP_ALPHA 0x1
+#define STP_ALPHATEX 0x2
+#define STP_MASKTEX 0x100
+
 typedef struct suftexparam_s{
-	const BITMAPINFO *bmi;
+	const BITMAPINFO *bmi, *bmiMask;
 	GLuint env;
 	GLuint magfil;
 	int mipmap, alphamap;

@@ -250,8 +250,9 @@ void gldPutTextureStringN(const char *s, int n){
 	}
 	glBindTexture(GL_TEXTURE_2D, fonttex);
 	glPushMatrix();
-	glPushAttrib(GL_TEXTURE_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR/*/GL_NEAREST*/);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR/*/GL_NEAREST*/);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -284,10 +285,17 @@ void gldPutTextureStringN(const char *s, int n){
 }
 
 void gldprintf(const char *f, ...){
-	static char buf[256]; /* it's not safe but unlikely to be reached */
+	static char buf[512]; /* it's not safe but unlikely to be reached */
 	va_list ap;
 	va_start(ap, f);
+
+	/* Unluckily, snprintf is not part of the standard. */
+#ifdef _WIN32
+	_vsnprintf(buf, sizeof buf, f, ap);
+#else
 	vsprintf(buf, f, ap);
+#endif
+
 	gldPutString(buf);
 	va_end(ap);
 }

@@ -495,18 +495,22 @@ static GLuint cachetex(const suftexparam_t *stp){
 	{
 		int x, y, h = ABS(bmi->bmiHeader.biHeight);
 		int cols = bmi->bmiHeader.biClrUsed;
-		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols];
+		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
+		if(stp->alphamap & STP_MASKTEX)
+			mask = (const unsigned char(*)[4])&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
 		if(stp->alphamap & 8){
 			tex4 = src;
 		}
-		else if(stp->alphamap & 3){
+		else if(stp->alphamap & (3 | STP_MASKTEX)){
 			tex4 = malloc(bmi->bmiHeader.biWidth * h * sizeof*tex4);
 			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth, pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth, idx = src[pos];
 				tex4[pos1][0] = src[pos][2];
 				tex4[pos1][1] = src[pos][1];
 				tex4[pos1][2] = src[pos][0];
-				tex4[pos1][3] = stp->alphamap == 2 ? src[pos][3] : 255;
+				tex4[pos1][3] = stp->alphamap & STP_MASKTEX ?
+					((mask[x / 8 + (stp->bmiMask->bmiHeader.biWidth + 31) / 32 * 4 * (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y)] >> (7 - x % 8)) & 1) * 127 + 127 :
+					stp->alphamap == 2 ? src[pos][3] : 255;
 			}
 		}
 		else{
@@ -607,8 +611,10 @@ unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const su
 
 
 	glNewList(gstc[nstc-1].list = glGenLists(1), GL_COMPILE);
-	if(!glActiveTextureARB)
+	if(!glActiveTextureARB){
+		cachemtex(tex1);
 		glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[0]);
+	}
 	else{
 		if(tex2){
 			glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -662,6 +668,8 @@ unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const su
 
 unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap){
 	suftexparam_t stp;
+	if(!bmi)
+		return 0;
 	stp.bmi = bmi;
 	stp.env = GL_MODULATE;
 	stp.mipmap = mipmap;

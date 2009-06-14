@@ -1,5 +1,6 @@
 #include "clib/wavsound.h"
 #include "clib/sound/wavemixer.h"
+#include "clib/c.h"
 #if defined _WIN32
 #include <windows.h>
 #include <stdio.h>
@@ -135,10 +136,32 @@ static void playWave(wavc_t *wc, HWND hwndApp){
     } 
 }
 
+
+typedef struct sMPOS{
+	unsigned char *org;
+	unsigned char *cur;
+	unsigned char *end;
+} MPOS;
+
+static size_t mread(void *buf, size_t s, size_t c, MPOS *fp){
+	size_t ret = MIN((fp->end - fp->cur), s * c) / s;
+	memcpy(buf, fp->cur, s * ret);
+	fp->cur += s * ret;
+	return ret;
+}
+
+static int mseek(MPOS *fp, long v, int whence){
+	switch(whence){
+		case SEEK_SET: fp->cur = &((char*)fp->org)[v]; return 0;
+		case SEEK_CUR: fp->cur += v; return 0;
+		case SEEK_END: fp->cur = fp->end[v]; return 0;
+	}
+	return 1;
+}
  
-wavc_t *cacheWaveData(const char *fname)
+wavc_t *cacheWaveDataV(int fromMemory, FILE *hmmio)
 {
-	FILE *hmmio;
+	MPOS mp;
 	wavc_t *ret;
 	struct RIFFHEADER head;
     LPWAVEHDR   lpWaveHdr; 
@@ -147,33 +170,29 @@ wavc_t *cacheWaveData(const char *fname)
     DWORD data, dwDataSize; 
 	HANDLE hData  = NULL;  // handle of waveform data memory 
 	HPSTR  lpData = NULL;  // pointer to waveform data memory 
+	size_t (*pread)(void *, size_t, size_t, FILE*) = fromMemory ? mread : fread;
+	int (*pseek)(FILE *, long, int) = fromMemory ? mseek : fseek;
 
-	hmmio = fopen(fname, "rb");
-	if(!hmmio)
-		return NULL;
-
-	if(!fread(&head, sizeof head, 1, hmmio)
+	if(!pread(&head, sizeof head, 1, hmmio)
 		|| memcmp(head.ckid, "RIFF", sizeof head.ckid)
 		|| memcmp(head.fccType, "WAVE", sizeof head.fccType)
 		|| memcmp(head.fmtType, "fmt ", sizeof head.fmtType)
 		|| head.channels != 1
 		|| head.bitsPerSample != 8){
-		fclose(hmmio);
 		return NULL;
 	}
-	fseek(hmmio, 20 + head.chunkLength, SEEK_SET);
+	pseek(hmmio, 20 + head.chunkLength, SEEK_SET);
 	do{
-		fread(&data, sizeof data, 1, hmmio);
+		pread(&data, sizeof data, 1, hmmio);
 		if(!memcmp(&data, "data", sizeof data))
 			break;
-		fread(&dwDataSize, sizeof dwDataSize, 1, hmmio);
-		fseek(hmmio, dwDataSize, SEEK_CUR);
+		pread(&dwDataSize, sizeof dwDataSize, 1, hmmio);
+		pseek(hmmio, dwDataSize, SEEK_CUR);
 	} while(1);
 
 	// Allocate and lock memory for the waveform data. 
  
-	if(fread(&dwDataSize, sizeof dwDataSize, 1, hmmio) <= 0){
-		fclose(hmmio);
+	if(pread(&dwDataSize, sizeof dwDataSize, 1, hmmio) <= 0){
 		return NULL;
 	}
 
@@ -212,14 +231,13 @@ wavc_t *cacheWaveData(const char *fname)
  
     // Read the waveform data subchunk. 
  
-    if(fread(lpData, 1, dwDataSize, hmmio) != dwDataSize) 
+    if(pread(lpData, 1, dwDataSize, hmmio) != dwDataSize) 
     { 
 		MessageBox(NULL, ferror(hmmio) ? "Failed to read data chunk. Error" :feof(hmmio) ? "Failed to read data chunk. EOF" : "Failed to read data chunk.", 
                    NULL, MB_OK | MB_ICONEXCLAMATION); 
 /*        GlobalUnlock(hData); 
         GlobalFree(hData); */
 /*        mmioClose(hmmio, 0); */
-		fclose(hmmio);
 		free(ret);
         return NULL; 
     } 
@@ -264,6 +282,53 @@ wavc_t *cacheWaveData(const char *fname)
 	return ret;
 }
 
+wavc_t *cacheWaveData(const char *fname){
+	wavc_t *ret;
+	FILE *hmmio;
+	hmmio = fopen(fname, "rb");
+	if(!hmmio){
+		char *p, *sup = fname;
+		do{
+			char zipname[256];
+			p = strchr(sup, '/');
+			if(!p && !(p = strchr(sup, '\\')))
+				break;
+			strncpy(zipname, fname, p - fname);
+			zipname[p - fname] = '\0';
+			if(INVALID_FILE_ATTRIBUTES != GetFileAttributes(zipname)){
+				void *unzipped;
+				unsigned long size;
+				MPOS mp;
+				unzipped = ZipUnZip(zipname, p+1, &size);
+				if(unzipped){
+					mp.cur = mp.org = unzipped;
+					mp.end = &mp.cur[size];
+					ret = cacheWaveDataV(1, &mp);
+					ZipFree(unzipped);
+					return ret;
+				}
+			}
+			sup = p + 1;
+		}while(1);
+		return NULL;
+	}
+	ret = cacheWaveDataV(0, hmmio);
+	fclose(hmmio);
+	return ret;
+}
+
+wavc_t *cacheWaveDataZ(const char *zipname, const char *fname){
+	wavc_t *ret;
+	unsigned long size;
+	MPOS fp;
+	fp.org = fp.cur = ZipUnZip(zipname, fname, &size);
+	if(!fp.org)
+		return NULL;
+	fp.end = &fp.cur[size];
+	ret = cacheWaveDataV(1, &fp);
+	ZipFree(fp.org);
+	return ret;
+}
 
 int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority){
 	static wavc_t *root = NULL;

@@ -14,6 +14,28 @@ const double mat4identity[16] = {
   because code size is critical for memory caching.
 */
 
+void mat4transpose(amat4_t mr, const amat4_t ma){
+	MAT4TRANSPOSE(mr, ma);
+/*	int i, j;
+	for(i = 0; i < 16; i++) for(j = 0; j < 4; j++)
+		mr[i * 4 + j] = ma[j * 4 + i];*/
+}
+
+#define DOUBLESWAP(a,b) ((((unsigned long*)&(a))[0]^=((unsigned long*)&(b))[0],((unsigned long*)&(b))[0]^=((unsigned long*)&(a))[0],((unsigned long*)&(a))[0]^=((unsigned long*)&(b))[0]), \
+	(((unsigned long*)&(a))[1]^=((unsigned long*)&(b))[1],((unsigned long*)&(b))[1]^=((unsigned long*)&(a))[1],((unsigned long*)&(a))[1]^=((unsigned long*)&(b))[1]))
+#define MAT4TRANSPOSEIN(mr) (DOUBLESWAP(mr[1],mr[4]),DOUBLESWAP(mr[2],mr[8]),DOUBLESWAP(mr[6],mr[9]),DOUBLESWAP(mr[3],mr[12]),DOUBLESWAP(mr[7],mr[13]),DOUBLESWAP(mr[11],mr[14]))
+
+void mat4transposein(amat4_t mr){
+/*	amat4_t t;
+	MAT4CPY(t, mr);
+	MAT4TRANSPOSEIN(t);
+	MAT4CPY(mr, t);*/
+	MAT4TRANSPOSEIN(mr);
+/*	int i, j;
+	for(i = 0; i < 16; i++) for(j = 0; j < 4; j++)
+		mr[i * 4 + j] = mr[j * 4 + i];*/
+}
+
 void mat4mp(amat4_t mr, const amat4_t ma, const amat4_t mb){
 	MAT4MP(mr, ma, mb);
 }

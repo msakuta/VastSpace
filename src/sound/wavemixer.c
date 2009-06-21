@@ -214,7 +214,7 @@ static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsign
 		v = 256 * src[i].vol / (1. + sdist / src[i].attn);
 
 		/* dont calculate too small sounds */
-		if(v <= 8)
+		if(v <= 2)
 			continue;
 
 		if(m < MAXMIX){

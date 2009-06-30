@@ -269,7 +269,7 @@ static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsign
 			((tt1 > 127 ? 255 : tt1 < -128 ? 0 : (BYTE)(tt1 + 128)) << 8);
 #else
 		tt0 = tt0 * wave_current_volume / 256;
-		tt1 = tt1 * wave_current_volume / 256 / 256;
+		tt1 = tt1 * wave_current_volume / 256;
 		tt0 += (short)dst[t * 2];
 		tt1 += (short)dst[t * 2 + 1];
 		dst[t * 2] = (tt0 > SHRT_MAX ? SHRT_MAX : tt0 < SHRT_MIN ? SHRT_MIN : (sbits)(tt0));

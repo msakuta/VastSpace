@@ -102,8 +102,8 @@ extern void mat4tdvp3(avec4_t mr, const amat4_t ma, const avec3_t vb);
 	(mr)[3]*=(sx),(mr)[7]*=(sy),(mr)[11]*=(sz))
 
 extern void mat4translate(amat4_t mr, double sx, double sy, double sz);
-extern void mat4translate3dv(amat4_t mr, avec3_t va);
-extern void mat4translaten3dv(amat4_t mr, avec3_t va);
+extern void mat4translate3dv(amat4_t mr, const avec3_t va);
+extern void mat4translaten3dv(amat4_t mr, const avec3_t va);
 
 /*
 (m00*1, m01*cp+m02*sp, m01*(-sp)+m02*cp, m03*1)

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <dsound.h>
+//#include <dsound.h>
 #include "clib/avec3.h"
 
 #define SAMPLERATE 11025

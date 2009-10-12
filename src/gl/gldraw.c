@@ -66,6 +66,8 @@ void gldMultQuat(const double q[4]){
 	glMultMatrixd(mat);
 }
 
+#if 0 /* Why was it left? */
+
 static const unsigned char font8x10[] = {
 255,255,255,255,255,255,255,255,255,255,255,255,247,255,255,255,
 239,253,255,255,255,255,255,255,255,227,255,255,247,255,255,201,
@@ -299,6 +301,8 @@ void gldprintf(const char *f, ...){
 	gldPutString(buf);
 	va_end(ap);
 }
+
+#endif
 
 void gldMarker(const double pos[3]){
 /*	if(pos)

@@ -138,6 +138,9 @@
 				RelativePath="src\gl\gldraw.c">
 			</File>
 			<File
+				RelativePath="src\gl\glfont.c">
+			</File>
+			<File
 				RelativePath="src\lzw\lzc.c">
 			</File>
 			<File

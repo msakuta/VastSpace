@@ -1,413 +1,285 @@
-<?xml version="1.0" encoding="shift_jis"?>
+<?xml version="1.0" encoding = "shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="7.00"
 	Name="clib"
 	ProjectGUID="{B3567DC6-FF5F-4FE2-94BC-F52B8DD0C2BC}"
-	Keyword="Win32Proj"
-	TargetFrameworkVersion="131072"
-	>
+	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
-			Name="Win32"
-		/>
+			Name="Win32"/>
 	</Platforms>
-	<ToolFiles>
-	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;&quot;..\..\zlib&quot;"
+				AdditionalIncludeDirectories="include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;&quot;D:\projects\zlib&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="true"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
-			/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)/clib.lib"
 				AdditionalLibraryDirectories="..\projects\zlib\projects\visualc6\win32_lib_debug"
-				IgnoreDefaultLibraryNames="LIBCMT.LIB"
-			/>
+				IgnoreDefaultLibraryNames="LIBCMT.LIB"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCBscMakeTool"
-			/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
-				Name="VCFxCopTool"
-			/>
+				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				OmitFramePointers="true"
-				AdditionalIncludeDirectories="include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;&quot;..\..\zlib&quot;"
+				OmitFramePointers="TRUE"
+				AdditionalIncludeDirectories="include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;&quot;D:\projects\zlib&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
+				StringPooling="TRUE"
+				RuntimeLibrary="4"
+				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)/clib.lib"
-				AdditionalLibraryDirectories="..\projects\zlib\projects\visualc6\win32_lib_release"
-			/>
+				AdditionalLibraryDirectories="..\projects\zlib\projects\visualc6\win32_lib_release"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCBscMakeTool"
-			/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
-				Name="VCFxCopTool"
-			/>
+				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
 		</Configuration>
 	</Configurations>
-	<References>
-	</References>
 	<Files>
 		<Filter
 			Name="ソース ファイル"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm"
-			>
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="src\amat3.c"
-				>
+				RelativePath="src\UnZip.c">
 			</File>
 			<File
-				RelativePath="src\amat4.c"
-				>
+				RelativePath="src\amat3.c">
 			</File>
 			<File
-				RelativePath="src\aquat.c"
-				>
+				RelativePath="src\amat4.c">
 			</File>
 			<File
-				RelativePath="src\aquatrot.c"
-				>
+				RelativePath="src\aquat.c">
 			</File>
 			<File
-				RelativePath="src\avec3.c"
-				>
+				RelativePath="src\aquatrot.c">
 			</File>
 			<File
-				RelativePath="src\cfloat.c"
-				>
+				RelativePath="src\avec3.c">
 			</File>
 			<File
-				RelativePath="src\colseq\cs.c"
-				>
+				RelativePath="src\cfloat.c">
 			</File>
 			<File
-				RelativePath="src\colseq\cs2.c"
-				>
+				RelativePath="src\colseq\cs.c">
 			</File>
 			<File
-				RelativePath="src\colseq\cs2x.c"
-				>
+				RelativePath="src\colseq\cs2.c">
 			</File>
 			<File
-				RelativePath="src\colseq\cs2xcut.c"
-				>
+				RelativePath="src\colseq\cs2x.c">
 			</File>
 			<File
-				RelativePath="src\colseq\cs2xedit.c"
-				>
+				RelativePath="src\colseq\cs2xcut.c">
 			</File>
 			<File
-				RelativePath="src\gl\cull.c"
-				>
+				RelativePath="src\colseq\cs2xedit.c">
 			</File>
 			<File
-				RelativePath="src\dstr.c"
-				>
+				RelativePath="src\gl\cull.c">
 			</File>
 			<File
-				RelativePath="src\gl\gldraw.c"
-				>
+				RelativePath="src\dstr.c">
 			</File>
 			<File
-				RelativePath="src\lzw\lzc.c"
-				>
+				RelativePath="src\gl\gldraw.c">
 			</File>
 			<File
-				RelativePath="src\lzw\lzuc.c"
-				>
+				RelativePath="src\lzw\lzc.c">
 			</File>
 			<File
-				RelativePath="src\rseq.c"
-				>
+				RelativePath="src\lzw\lzuc.c">
 			</File>
 			<File
-				RelativePath="src\suf\suf.c"
-				>
+				RelativePath="src\rseq.c">
 			</File>
 			<File
-				RelativePath="src\suf\sufdraw.c"
-				>
+				RelativePath="src\suf\suf.c">
 			</File>
 			<File
-				RelativePath="src\suf\sufloc.c"
-				>
+				RelativePath="src\suf\sufdraw.c">
 			</File>
 			<File
-				RelativePath="src\suf\sufreloc.c"
-				>
+				RelativePath="src\suf\sufloc.c">
 			</File>
 			<File
-				RelativePath="src\suf\sufsrc.c"
-				>
+				RelativePath="src\suf\sufreloc.c">
 			</File>
 			<File
-				RelativePath="src\timemeas.c"
-				>
+				RelativePath="src\suf\sufsrc.c">
 			</File>
 			<File
-				RelativePath="src\UnZip.c"
-				>
+				RelativePath="src\timemeas.c">
 			</File>
 			<File
-				RelativePath="src\sound\wavemixer.c"
-				>
+				RelativePath="src\sound\wavemixer.c">
 			</File>
 			<File
-				RelativePath="src\wavsound.c"
-				>
+				RelativePath="src\wavsound.c">
 			</File>
 			<File
-				RelativePath="src\gl\wgltext.c"
-				>
+				RelativePath="src\gl\wgltext.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
-			Filter="h;hpp;hxx;hm;inl;inc"
-			>
+			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="include\clib\amat2.h"
-				>
+				RelativePath="include\clib\MultiList.h">
 			</File>
 			<File
-				RelativePath="include\clib\amat3.h"
-				>
+				RelativePath="include\clib\zip\UnZip.h">
 			</File>
 			<File
-				RelativePath="include\clib\amat4.h"
-				>
+				RelativePath="include\clib\amat2.h">
 			</File>
 			<File
-				RelativePath="include\clib\aquat.h"
-				>
+				RelativePath="include\clib\amat3.h">
 			</File>
 			<File
-				RelativePath="include\clib\aquatrot.h"
-				>
+				RelativePath="include\clib\amat4.h">
 			</File>
 			<File
-				RelativePath="include\clib\avec3.h"
-				>
+				RelativePath="include\clib\aquat.h">
 			</File>
 			<File
-				RelativePath="include\clib\avec4.h"
-				>
+				RelativePath="include\clib\aquatrot.h">
 			</File>
 			<File
-				RelativePath="include\clib\c.h"
-				>
+				RelativePath="include\clib\avec3.h">
 			</File>
 			<File
-				RelativePath="include\clib\cfloat.h"
-				>
+				RelativePath="include\clib\avec4.h">
 			</File>
 			<File
-				RelativePath="include\clib\colseq\color.h"
-				>
+				RelativePath="include\clib\c.h">
 			</File>
 			<File
-				RelativePath="include\clib\colseq\cs.h"
-				>
+				RelativePath="include\clib\cfloat.h">
 			</File>
 			<File
-				RelativePath="include\clib\colseq\cs2.h"
-				>
+				RelativePath="include\clib\colseq\color.h">
 			</File>
 			<File
-				RelativePath="include\clib\colseq\cs2x.h"
-				>
+				RelativePath="include\clib\colseq\cs.h">
 			</File>
 			<File
-				RelativePath="include\clib\colseq\cs2xcut.h"
-				>
+				RelativePath="include\clib\colseq\cs2.h">
 			</File>
 			<File
-				RelativePath="include\clib\gl\cull.h"
-				>
+				RelativePath="include\clib\colseq\cs2x.h">
 			</File>
 			<File
-				RelativePath="include\clib\dstr.h"
-				>
+				RelativePath="include\clib\colseq\cs2xcut.h">
 			</File>
 			<File
-				RelativePath="include\clib\gl\gldraw.h"
-				>
+				RelativePath="include\clib\gl\cull.h">
 			</File>
 			<File
-				RelativePath="include\clib\gl\gltext.h"
-				>
+				RelativePath="include\clib\dstr.h">
 			</File>
 			<File
-				RelativePath="include\clib\lzw\lzw.h"
-				>
+				RelativePath="include\clib\gl\gldraw.h">
 			</File>
 			<File
-				RelativePath="include\clib\mathdef.h"
-				>
+				RelativePath="include\clib\gl\gltext.h">
 			</File>
 			<File
-				RelativePath="include\clib\MultiList.h"
-				>
+				RelativePath="include\clib\lzw\lzw.h">
 			</File>
 			<File
-				RelativePath="include\clib\gl\multitex.h"
-				>
+				RelativePath="include\clib\mathdef.h">
 			</File>
 			<File
-				RelativePath="include\clib\rseq.h"
-				>
+				RelativePath="include\clib\gl\multitex.h">
 			</File>
 			<File
-				RelativePath="include\clib\stats.h"
-				>
+				RelativePath="include\clib\rseq.h">
 			</File>
 			<File
-				RelativePath="include\clib\suf\suf.h"
-				>
+				RelativePath="include\clib\stats.h">
 			</File>
 			<File
-				RelativePath="include\clib\suf\sufbin.h"
-				>
+				RelativePath="include\clib\suf\suf.h">
 			</File>
 			<File
-				RelativePath="include\clib\suf\sufdraw.h"
-				>
+				RelativePath="include\clib\suf\sufbin.h">
 			</File>
 			<File
-				RelativePath="include\clib\timemeas.h"
-				>
+				RelativePath="include\clib\suf\sufdraw.h">
 			</File>
 			<File
-				RelativePath="include\clib\zip\UnZip.h"
-				>
+				RelativePath="include\clib\timemeas.h">
 			</File>
 			<File
-				RelativePath="include\clib\sound\wavemixer.h"
-				>
+				RelativePath="include\clib\sound\wavemixer.h">
 			</File>
 			<File
-				RelativePath="include\clib\sound\wavesum.h"
-				>
+				RelativePath="include\clib\sound\wavesum.h">
 			</File>
 			<File
-				RelativePath="include\clib\wavsound.h"
-				>
+				RelativePath="include\clib\wavsound.h">
 			</File>
 		</Filter>
 		<Filter
 			Name="リソース ファイル"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-			>
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
 		<File
-			RelativePath="ReadMe.txt"
-			>
+			RelativePath="ReadMe.txt">
 		</File>
 	</Files>
 	<Globals>

@@ -1,0 +1,583 @@
+#--------------------------------------
+#            Stellar File
+#
+# Coordinate System/Astronomic Object
+# Settings file
+#--------------------------------------
+
+define MINUTE_SECONDS 60
+define HOUR_SECONDS 60*60
+define DAY_SECONDS 24*60*60
+define RAD_PER_DEG 2*pi/360
+define AU 149597870.691
+define Rsun 6.960e5
+define Msun 1.9884e30
+
+#astro Star "Sol"{
+#	radius 1.5*Rsun
+#	pos 0 10*Rsun 0
+#	mass 3*Msun
+#	absolute_magnitude 4.1
+#}
+
+coordsys Orbit sunlo{
+	fullname "Sun Low Orbit"
+	radius 500
+	orbits sun
+	semimajor_axis 600.2686*6378.
+	eccentricity 0.
+	inclination 3.85
+	argument_of_periapsis 150.2075
+	ascending_node 80.6198
+#		warp
+	teleport
+	rstation
+}
+
+coordsys Orbit mercury{
+	fullname Mercury
+	radius 1000000
+	orbits sun
+	orbit_radius 57909100
+	inclination 7.0051
+	argument_of_periapsis 77.5806
+	ascending_node 48.4257
+	eccentricity 0.205630
+	showorbit
+	astro TextureSphere Mercury{
+		radius 2439.7
+		mass 3.3022e23
+		color afafaf
+		planet
+		spherehit
+		texture mer0muu2.jpg
+	}
+	coordsys Orbit mercuryo{
+		orbits Mercury
+		orbit_radius 10000
+		fullname "Mercury orbit"
+		warp
+		teleport
+	}
+}
+
+coordsys Orbit venus{
+	fullname Venus
+	radius 1000000
+	orbits sun
+	orbit_radius 108208930
+	inclination 3.39471
+	argument_of_periapsis 131.6758
+	ascending_node 76.7520
+	showorbit
+	astro TextureSphere Venus{
+		diameter 12103.6
+		mass 3.3022e23
+		color afafaf
+		omega 0 0 1 -2/243.0187/DAY_SECONDS*pi   #rotation speed
+		texture ven0mss2.jpg
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30.
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1 
+	}
+	coordsys Orbit venuso{
+		orbits Venus
+		orbit_radius 10000
+		fullname "Venus orbit"
+		warp
+		teleport
+	}
+}
+
+coordsys earth{
+	coordsys earths{
+		teleport "Earth Surface" 0 0 0
+	}
+
+	astro TextureSphere "JupityMoon"{
+		orbits Earth
+		radius 71400.
+		mass 5.977e24
+		texture jup0vss1.jpg
+		omega 0 0 1 2*pi/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1
+		semimajor_axis 150000
+	}
+
+	coordsys Orbit moon{
+		radius .5e4
+		orbits Earth
+		semimajor_axis 60.2686*6378.
+		eccentricity 0.09341233
+		inclination 1.85
+		argument_of_periapsis 336.2075
+		ascending_node 49.6198
+		showorbit
+
+		astro TextureSphere Moon{
+			radius 1738
+			mass 0.0123*5.977e24
+			omega 0 0 1 pi*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
+			texture moon.jpg
+			updirection 0 1 0
+			planet
+			spherehit
+		}
+		coordsys Orbit moonlo{
+			fullname "Moon Low Orbit"
+			orbits Moon
+			orbit_radius 6378.
+			inclination 13.3
+			argument_of_periapsis 0
+			ascending_node 0
+			warp
+			teleport
+		}
+	}
+
+	new coordsys Lagrange1 el1{
+		radius 200
+		object1 Earth
+		object2 Moon
+		fullname "Earth Lagrange 1"
+		teleport
+		warp
+		rstation 0 -25
+		addent scarry 5 -25 0
+		addent scontainer 4 -24 0
+		addent scontainer 4 -24 0.05
+		addent assault 4 -24 2 1
+		new astro Asteroid "Side 7 Asteroid"{
+			pos 70 0 0
+			radius 50
+			omega 0 0 0
+		}
+		new astro Island3 "Side 7"{
+		}
+	}
+	
+	coordsys Lagrange2 el2{
+		radius 500
+		object1 Earth
+		object2 Moon
+		teleport "Earth Lagrange 2" 0 0 100
+		warp "Earth Lagrange 2" 0 0 100
+		astro Iserlohn Iserlohn{
+		}
+	}
+
+	coordsys Orbit geo{
+		radius 200
+		fullname "Earth's Geostationary orbit"
+		orbits Earth
+		orbit_radius 35786+6378.
+		inclination -23.4
+		argument_of_periapsis 0
+		ascending_node 0
+#			warp
+		teleport
+		rstation
+		addent assault 3 -3 0 1
+		addent assault 3 3 0 1
+	}
+}
+
+coordsys Orbit marss{
+	fullname "Mars"
+	radius 1e5
+	orbits sun
+	semimajor_axis 227936640
+	eccentricity 0.09341233
+	inclination 1.85
+	argument_of_periapsis 336.2075
+	ascending_node 49.6198
+	showorbit
+
+	astro TextureSphere Mars
+	{
+		diameter 6794.4
+		mass 6.4191e23
+		omega 0 0 1 2/24.6229/3600*pi   #rotation speed
+		texture mar0kuu2.jpg
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 11.
+		atmosphere_color 1 .3 .1
+		atmosphere_dawn .1 .51 1 
+	}
+
+	new coordsys Orbit marsorbit{
+		fullname "Mars Orbit"
+		radius 100
+		warp
+		teleport
+		orbits Mars
+		semimajor_axis 1e4
+
+		new astro Asteroid BigWatcher{
+			pos 0 12 -20
+			radius 10
+		}
+
+	}
+
+	astro Satellite Phobos{
+		radius 22.2/2.
+		mass 1.26e16
+		planet
+		spherehit
+		orbits Mars
+		orbit_radius 9378
+		orbit_axis 0 0 1
+		color 777f7f
+	}
+
+	new coordsys Orbit phobosorbit{
+		fullname "Phobos Orbit"
+		radius 100
+		orbits Phobos
+		semimajor_axis 1e3
+		rstation
+	}
+
+	astro Satellite Deimos{
+		radius 12.6/2.
+		mass 1.8e16
+		planet
+		spherehit
+		orbits Mars
+		orbit_radius 23459
+		orbit_axis 0 0 1
+		color 777f7f
+	}
+}
+
+astro "Ceres"{
+	radius 487.3
+	mass 9.43e20
+	orbits sun
+	orbit_radius 414703838
+	eccentricity 0.07976017
+	inclination 10.586712
+	ascending_node 80.40
+	argument_of_periapsis 72.90
+	planet
+	color e0d0c0
+}
+
+coordsys Orbit jupiter{
+	fullname "Jupiter"
+	eisystem # extent isolated system
+	radius 1e7
+	orbits sun
+	orbit_radius (7.7834e8)
+	eccentricity 0.048775
+	inclination 1.3028
+	argument_of_periapsis 14.4602
+	ascending_node 100.5461
+	showorbit
+	astro TextureSphere "Jupiter"{
+		radius 71400.
+		mass 317.904*5.977e24
+		texture jup0vss1.jpg
+		omega 0 0 1 2*pi/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1
+	}
+	coordsys jupiterlo{
+		fullname "Jupiter Low Orbit"
+		pos -100000 100000 0
+		warp
+		teleport Jupiter 10 0 0
+		rstation
+	}
+	astro Satellite Io{
+		diameter 3660
+		mass 8.9e22
+		planet
+		spherehit
+		orbits Jupiter
+		orbit_radius 421700
+	}
+	astro Satellite Europa{
+		diameter 3121.6
+		mass 4.8e22
+		planet
+		spherehit
+		orbits Jupiter
+		orbit_radius 671034
+		orbit_axis 0 cos(pi*0.470/360) sin(pi*0.470/360)
+	}
+	new astro Ganymede
+	{
+		radius 2631.2
+		planet
+		orbits Jupiter
+		orbit_radius 1070000
+		orbit_axis 0 cos(pi*0.20/360) sin(pi*0.20/360)
+	}
+	new astro Callisto
+	{
+		radius 2410.3
+		planet
+		orbits Jupiter
+		orbit_radius 1882700
+		orbit_axis 0 cos(pi*0.20/360) sin(pi*0.20/360)
+		color a0a7b0
+	}
+}
+
+coordsys Orbit saturn{
+	eisystem
+	radius 20000000
+	orbits sun
+	orbit_radius 1433449370
+	eccentricity 0.055723219
+	orbit_axis 0 sin(2*pi*0.7733/360) cos(2*pi*0.7733/360)
+	inclination 2.4886
+	ascending_node 113.7357
+	argument_of_periapsis 93.2143
+	showorbit
+	fullname "Saturn"
+
+	astro TextureSphere "Saturn"{
+		ringmin 1.5
+		ringmax 2.4
+		ringthick 1.
+		radius 60268
+		mass 5.6846e26
+		omega 0 sin(26.73*RAD_PER_DEG) cos(26.73*RAD_PER_DEG) 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#			updirection 0 1 0
+#			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
+		updirection 0 cos(26.73*RAD_PER_DEG) -sin(26.73*RAD_PER_DEG)
+		planet
+		gravity
+		spherehit
+		texture sat0fds2.jpg
+	}
+	coordsys saturnlo{
+		fullname "Saturn Low Orbit"
+		pos -50000 50000 0
+		warp
+		teleport "Saturn Low Orbit" 10 0 0
+	}
+	astro Satellite "Mimas"{
+		radius 198.30
+		mass 3.7493e19
+		orbits Saturn
+		orbit_radius 185520
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Enceladus"{
+		radius 252.1
+		mass 1.08022e20
+		orbits Saturn
+		orbit_radius 237948
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Tethys"{
+		radius 533.00
+		mass 6.17449e20
+		orbits Saturn
+		orbit_radius 294619
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Dione"{
+		radius 561.70
+		mass 1.095452e20
+		orbits Saturn
+		orbit_radius 377396
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Rhea"{
+		radius 764.30
+		mass 2.306518e21
+		orbits Saturn
+		orbit_radius 527108
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Titan"{
+		radius 2576
+		mass 1.3452e23
+		orbits Saturn
+		orbit_radius 1221870
+		eccentricity 0.0288
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Iapetus"{
+		radius 735.60
+		mass 1.805635e21
+		orbits Saturn
+		orbit_radius 3560820
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Phoebe"{
+		radius 230
+		mass 8.289e18
+		orbits Saturn
+		orbit_radius 12955759
+		eccentricity 0.1562415
+		inclination 173.04
+		ascending_node 34.
+		argument_of_periapsis 153
+		planet
+	}
+}
+
+coordsys Orbit uranus{
+	radius 1000000
+	coordsys uranuslo{
+		fullname "Uranus Low Orbit"
+		pos -20000 20000 0
+		warp
+		teleport "Uranus Low Orbit" 10 0 0
+	}
+	orbits sun
+	orbit_radius 2870990000
+	eccentricity 0.04638
+	inclination 0.7733
+	ascending_node 74.0476
+	argument_of_periapsis 173.1242
+	showorbit
+	fullname "Uranus"
+
+	astro "Uranus"
+	{
+		radius 25559
+		mass 2.98e19
+		color afffff
+		planet
+		gravity
+		spherehit
+	}
+
+	astro "Miranda"
+	{
+		radius   235.8
+		mass 2.98e19
+		planet
+		spherehit
+		orbits Uranus
+		orbit_radius  129800
+		orbit_inclination    4.22
+	}
+}
+
+coordsys Orbit neptune{
+	radius 1000000
+	orbits sun
+	orbit_radius 4498252900
+	inclination 1.76917
+	ascending_node 131.8722
+	argument_of_periapsis 48.2344
+	showorbit
+	fullname "Neptune"
+
+	coordsys neptunelo{
+		fullname "Neptune Low Orbit"
+		pos -20000 20000 0
+		warp
+		teleport "Neptune Low Orbit" 10 0 0
+	}
+
+	astro TextureSphere "Neptune"
+	{
+		radius 24766 # equatorial
+		mass 2.98e19
+		color 7fafff
+		planet
+		spherehit
+		updirection 0 cos(156.885*RAD_PER_DEG) -sin(156.885*RAD_PER_DEG)
+		texture nep0fds1.jpg
+	}
+
+	astro "Triton"
+	{
+		radius 1353.4
+		mass 2.98e19
+		planet
+		spherehit
+		orbits Neptune
+		orbit_radius 354759
+		orbit_inclination 156.885
+	}
+}
+
+# Pluto orbit is so eccentric that circular approximation is inappropriate
+coordsys Orbit pluto{
+	radius 100000
+	orbits sun
+	orbit_radius 39.445*1.49597870691e8
+	inclination 17.089
+	ascending_node 110.30347
+	argument_of_periapsis 110.38
+	eccentricity 0.24880766
+	showorbit
+	fullname "Pluto"
+
+	coordsys plutolo{
+		fullname "Pluto Low Orbit"
+		pos -2000 2000 0
+		warp
+		teleport "Pluto Low Orbit" 10 0 0
+		rstation
+		addent assault 3 -3 3 1
+		addent assault 3 3 3 1
+		addent beamer 3 -3 -3 1
+		addent beamer 3 3 -3 1
+		addent scarry 0 0 -10 1
+	}
+
+	astro TextureSphere "Pluto"{
+		radius 1195
+		mass 1.305e22
+		color af7f7f
+		spherehit
+		texture plu0rss1.jpg
+	}
+
+	astro "Charon"{
+		diameter 1186
+		mass 1.90e21
+		color 807070
+		planet
+		spherehit
+		orbits Pluto
+		orbit_radius 19405
+		orbit_inclination 99.089
+	}
+}
+
+astro "Eris"{
+	radius 2400
+	mass 1.5e22
+	color af7f7f
+	spherehit
+	planet
+	orbits sun
+	semimajor_axis 67.903*AU
+	eccentricity 0.436
+	inclination 44.02
+	argument_of_periapsis 151.52
+	ascending_node 35.96	
+}

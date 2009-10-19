@@ -1,0 +1,244 @@
+#--------------------------------------
+#            Stellar File
+#
+# Coordinate System/Astronomic Object
+# Settings file
+#--------------------------------------
+
+define MINUTE_SECONDS 60
+define HOUR_SECONDS 60*60
+define DAY_SECONDS 24*60*60
+define RAD_PER_DEG 2*pi/360
+define AU 149597870.691
+define Rsun 6.960e5
+define Msun 1.9884e30
+
+#coordsys starsystem3{
+#	pos (rand()-0.5)*.1e17 (rand()-0.5)*1e17 (rand()-0.5)*1e17
+#	warp star3orbit 100000 100000 0
+#}
+
+#new "/sol/earth/l 3"{
+#	fullname Lagrange3
+#	warpable
+#}
+
+#"/sol/earth/l1"{
+#	fullname "Earth/Lagrange 1"
+#}
+
+#/sol/earth/l2{
+#	warp Iserlohn 70 0 0
+#}
+
+#new astro{
+#	name secondmoon
+#	coordsys earth
+#	pos 5e4
+#	radius 200
+#	mass 45e5
+#	gravity 1
+#	spherehit 1
+#	planet
+#	orbits earth
+#	orbit_radius 5e4
+#	orbit_axis 0 .2 .8
+#}
+
+#astro Blackhole "The Galactic Blackhole"{
+#	radius 700000.
+#	mass 317.904*5.977e24
+#	pos 0 0 2e6
+#}
+
+
+new coordsys ks{
+	fullname "Known Space"
+	pos 2.5e16 1.8e16 .04e16
+	radius 1e13
+}
+
+#coordsys /sol{
+#	parent /ks
+#	pos 0 0 0
+#}
+
+#------------------------
+# Solaris system
+#------------------------
+
+new coordsys ks/solaris{
+	radius 1e9
+#	pos 2.6e16 1.8e16 .02e16
+	pos 2.6e12 1.8e12 .02e12
+	solarsystem
+
+	astro Star Solaris{
+		pos 0 0 0
+		radius 696000.
+		mass 1.991e30
+		absolute_magnitude 4.1
+		gravity
+		spherehit
+	}
+
+#	new /solaris/ho
+	coordsys ho
+	{
+		fullname "Solaris highorbit"
+		pos 1e7 0 0
+		radius 100.
+		warp
+		teleport
+	}
+
+	coordsys Orbit solaris1{
+		radius 1e6
+		new astro "Solaris I"{
+			radius 7000.
+			mass 2.98e23
+			gravity
+			spherehit
+			planet
+		}
+		orbits Solaris
+		orbit_radius 1e8
+		orbit_axis 0 .5 .5
+		eccentricity .99
+		showorbit
+		new astro "Solaris I/Moon"{
+			radius 3000.
+			mass .58e23
+			gravity
+			spherehit
+			planet
+			orbits "Solaris I"
+			orbit_radius 1e5
+			orbit_axis 0 .5 .5
+			color 7f9faf
+		}
+
+	}
+
+	new astro "Solaris II"{
+		pos 2.6e8 1.8e8 .02e8
+		radius 9580.
+		mass 3.88e19
+		gravity
+		spherehit
+		planet
+		orbits Solaris
+		orbit_radius 1.8e8
+		orbit_axis 0 .5 .2
+	}
+
+	new astro "Solaris III"{
+		pos 2.6e8 1.8e8 .02e8
+#		drawmethod ringplanet
+		radius 11580.
+		mass 12.88e19
+		gravity
+		spherehit
+		planet
+		orbits Solaris
+		orbit_radius 3.3e8
+		orbit_axis 0 .2 .4
+	}
+
+}
+
+
+#------------------------
+# Our Solar system
+#------------------------
+
+coordsys sol{
+#	solarsystem
+#	eisystem
+	radius 2e10
+	updirection 0 cos(63.*RAD_PER_DEG) sin(63*RAD_PER_DEG)
+
+	astro sun{
+		absolute_magnitude 4.8
+	}
+
+#	astro Bellerophon{
+#		radius 70000.
+#		mass 317.904*5.977e24
+#		planet
+#		orbits sun
+#		orbit_radius 0.052*AU
+#		inclination 0
+#		argument_of_periapsis 0
+#		ascending_node 0
+#		eccentricity 0.
+#	}
+
+#	astro Blackhole "Sagittarius A Galactic Blackhole"{
+#		pos 0 0 3000*Rsun
+#		mass 3600e4*Msun
+#	}
+
+#	astro Star "VY Canis Majoris"{
+#		radius 2000*Rsun
+#		pos 0 0 3000*Rsun
+#		mass 35*Msun
+#		absolute_magnitude -9.4
+#	}
+
+#	astro Star "Sol"{
+#		radius 1.5*Rsun
+#		pos 0 10*Rsun 0
+#		mass 3*Msun
+#		absolute_magnitude 4.1
+#	}
+
+	include sol.dat
+}
+
+coordsys ringworld{
+#	pos 2.5e11 1.80001e11 .040001e11
+#	rotation 90
+#	parent starsystem0
+	omega 0 0 sqrt(.0098/(1.47099e8-1e4))
+	parent /sol
+	pos 2.5e8 1.80001e7 .040001e7
+	radius 2e8
+	astro Star rwsun{
+		radius Rsun
+		mass Msun
+		spherehit
+		gravity
+		absolute_magnitude 4.8
+	}
+
+	astro Ringworld rw{
+	}
+
+	coordsys rwport
+	{
+		pos 0 -(1.47099e8-1e4) 1600000./2.+50
+		warp
+	}
+
+}
+
+new coordsys blo{
+	pos 0 0 0
+	fullname "Blackhole Orbit"
+	warp
+}
+
+coordsys egx { 
+	fullname "Extragalactic system side"
+	pos 1e17 0 0
+}
+
+coordsys egy{
+	fullname "Extragalactic system front"
+	pos 0 1e17 0
+}
+coordsys egz{
+	fullname "Extragalactic system top"
+	pos 0 0 1e17
+}

@@ -224,10 +224,18 @@ void gldPutTextureString(const char *s){
 int gld_align = 0;
 
 void gldprintf(const char *f, ...){
-	static char buf[256]; /* it's not safe but unlikely to be reached */
+	static char buf[512]; /* it's not safe but unlikely to be reached */
 	va_list ap;
 	va_start(ap, f);
+
+	/* Unluckily, snprintf is not part of the standard. */
+#ifdef _WIN32
+	_vsnprintf(buf, sizeof buf, f, ap);
+#else
 	vsprintf(buf, f, ap);
+#endif
+
 	gldPutString(buf);
 	va_end(ap);
 }
+

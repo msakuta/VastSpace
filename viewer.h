@@ -1,14 +1,18 @@
 #ifndef VIEWER_H
 #define VIEWER_H
+#ifdef __cplusplus
 extern "C"{
+#endif
 #include <clib/c.h>
 #include <clib/amat4.h>
 #include <clib/avec3.h>
 #include <clib/gl/cull.h>
+#ifdef __cplusplus
 }
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
 #include <cstring>
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -18,15 +22,20 @@ extern "C"{
   and its worth making a header dedicated for this (in means of compilation
   speed). */
 
+#ifdef __cplusplus
 class CoordSys;
+#endif
 
 struct viewport{
 	int w, h, m;
-	void set(int vp[4]){
+#ifdef __cplusplus
+	void set(int vp[4]){ // no virtual allowed!
 		w = vp[2] - vp[0], h = vp[3] - vp[1], m = MAX(w, h);
 	}
+#endif
 };
 
+#ifdef __cplusplus
 class Viewer{
 public:
 	Viewer(){
@@ -52,6 +61,6 @@ public:
 		glFrustum(l, r, b, t, n, f);
 	}
 };
-
+#endif
 
 #endif

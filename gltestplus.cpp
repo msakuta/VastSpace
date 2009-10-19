@@ -7,6 +7,8 @@
 #include "coordsys.h"
 #include "stellar_file.h"
 #include "astrodraw.h"
+#include "cmd.h"
+#include "keybind.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -128,6 +130,62 @@ void lightOn(){
 	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
 }
 
+static input_t inputstate = {0};
+
+static int cmd_pforward(int argc, char *argv[]){
+	inputstate.press |= PL_W;
+	return 0;
+}
+
+static int cmd_nforward(int argc, char *argv[]){
+	inputstate.press &= ~PL_W;
+	return 0;
+}
+
+static int cmd_pback(int argc, char *argv[]){
+	inputstate.press |= PL_S;
+	return 0;
+}
+
+static int cmd_nback(int argc, char *argv[]){
+	inputstate.press &= ~PL_S;
+	return 0;
+}
+
+static int cmd_pleft(int argc, char *argv[]){
+	inputstate.press |= PL_A;
+	return 0;
+}
+
+static int cmd_nleft(int argc, char *argv[]){
+	inputstate.press &= ~PL_A;
+	return 0;
+}
+
+static int cmd_pright(int argc, char *argv[]){
+	inputstate.press |= PL_D;
+	return 0;
+}
+
+static int cmd_nright(int argc, char *argv[]){
+	inputstate.press &= ~PL_D;
+	return 0;
+}
+
+static int cmd_pgear(int argc, char *argv[]){
+	inputstate.press |= PL_G;
+/*	if(!pl.chase && !pl.control)
+		indmenu = indmenu == indgear ? indnone : indgear;*/
+	return 0;
+}
+
+static int cmd_ngear(int argc, char *argv[]){
+	inputstate.press &= ~PL_G;
+/*	if(indmenu == indgear)
+		indmenu = indnone;*/
+	return 0;
+}
+
 static void cslist(const CoordSys *root, double &y){
 	char buf[256];
 	buf[0] = '\0';
@@ -154,6 +212,7 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
+	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glDisable(GL_CULL_FACE);
 	glColor4f(1,1,1,1);
@@ -257,6 +316,21 @@ void display_func(void){
 			}
 		}
 
+		if(inputstate.press & PL_W)
+			pl.velo -= pl.rot.itrans(vec3_001) * dt;
+		if(inputstate.press & PL_S)
+			pl.velo += pl.rot.itrans(vec3_001) * dt;
+		if(inputstate.press & PL_A)
+			pl.velo -= pl.rot.itrans(vec3_100) * dt;
+		if(inputstate.press & PL_D)
+			pl.velo += pl.rot.itrans(vec3_100) * dt;
+		if(inputstate.press & PL_Q)
+			pl.velo -= pl.rot.itrans(vec3_010) * dt;
+		if(inputstate.press & PL_Z)
+			pl.velo += pl.rot.itrans(vec3_010) * dt;
+
+		pl.pos += pl.velo * dt;
+
 		galaxysystem.anim(dt);
 
 		gametime = t1;
@@ -286,6 +360,7 @@ void display_func(void){
 /*		glDepthRange(.5,100);*/
 	}
 	viewer.cs = pl.cs = &galaxysystem;
+	viewer.pos = pl.pos;
 	quat2mat(viewer.rot, pl.rot);
 	quat2imat(viewer.irot, pl.rot);
 	viewer.relrot = viewer.rot;
@@ -405,6 +480,8 @@ void reshape_func(int w, int h)
 //	g_max = m;
 }
 
+extern "C" int console_cursorposdisp;
+int console_cursorposdisp = 0;
 
 #if USEWIN && defined _WIN32
 static HGLRC wingl(HWND hWnd, HDC *phdc){
@@ -491,6 +568,13 @@ static void winglend(HGLRC hgl){
 }
 #endif
 
+#define DELETEKEY 0x7f
+#define ESC 0x1b
+
+static void key_func(unsigned char key, int x, int y){
+	BindExec(key);
+}
+
 static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam){
 	static HDC hdc;
 	static HGLRC hgl = NULL;
@@ -534,11 +618,15 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 
+		case WM_CHAR:
+			key_func(wParam, 0, 0);
+			break;
+
 		/* technique to enable momentary key commands */
 		case WM_KEYUP:
-//			BindKeyUp(toupper(wParam));
+			BindKeyUp(toupper(wParam));
 			switch(wParam){
-//			case VK_DELETE: BindKeyUp(DELETEKEY); break;
+			case VK_DELETE: BindKeyUp(DELETEKEY); break;
 //			case VK_ESCAPE: BindKeyUp(ESC); break;
 			case VK_ESCAPE: if(mouse_captured){
 				mouse_captured = false;
@@ -550,9 +638,9 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			break;
 
 		/* TODO: don't call every time the window defocus */
-/*		case WM_KILLFOCUS:
+		case WM_KILLFOCUS:
 			BindKillFocus();
-			break;*/
+			break;
 
 		case WM_DESTROY:
 			KillTimer(hWnd, 2);
@@ -576,13 +664,24 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 HWND hWndApp;
 #endif
 
-/*
- *	main関数
- *		glutを使ってウインドウを作るなどの処理をする
- */
 int main(int argc, char *argv[])
 {
 	int i;
+
+	viewport vp;
+	CmdInit(&vp);
+	CmdAdd("+forward", cmd_pforward);
+	CmdAdd("-forward", cmd_nforward);
+	CmdAdd("+back", cmd_pback);
+	CmdAdd("-back", cmd_nback);
+	CmdAdd("+left", cmd_pleft);
+	CmdAdd("-left", cmd_nleft);
+	CmdAdd("+right", cmd_pright);
+	CmdAdd("-right", cmd_nright);
+	CmdAdd("bind", cmd_bind);
+	CmdAdd("pushbind", cmd_pushbind);
+	CmdAdd("popbind", cmd_popbind);
+	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &galaxysystem);
 

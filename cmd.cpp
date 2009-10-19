@@ -1,4 +1,6 @@
 #include "cmd.h"
+#include <string.h>
+#include <ctype.h>
 #include "calc/calc.h"
 #include "cmd_int.h"
 #include "viewer.h"
@@ -11,8 +13,6 @@
 #include <stdio.h>
 #include <stddef.h>
 
-static struct viewport gvp;
-
 char cmdbuffer[CB_LINES][CB_CHARS] = {0}/*{"gltest running.", "build: " __DATE__ ", " __TIME__}*/;
 int cmdcurline = 2;
 int cmddispline = 0;
@@ -22,7 +22,6 @@ static int cmdcurhist = 0, cmdselhist = 0;
 
 int cmdcur = 0;
 char cmdline[CB_CHARS];
-
 static int cvar_echo = 0;
 static int cvar_cmd_echo = 1;
 static int console_pageskip = 8;
@@ -32,17 +31,10 @@ static int console_undefinedecho = 0;
 struct cmdalias **CmdAliasFindP(const char *name);
 
 /* binary tree */
-static struct command{
-	union commandproc{
-		int (*a)(int argc, const char *argv[]);
-		int (*p)(int argc, const char *argv[], void *);
-	} proc;
-	int type;
-	void *param;
-	const char *name;
-	struct command *left, *right;
-} *cmdlist = NULL;
+static struct command *cmdlist = NULL;
 static int cmdlists = 0;
+
+#if 0
 
 
 #define CVAR_BUCKETS 53
@@ -502,8 +494,7 @@ static int cmd_memory(void){
 }
 
 
-void CmdInit(struct viewport *pvp){
-	gvp = *pvp;
+void CmdInit(void){
 	CmdAdd("echo", cmd_echo);
 	CmdAdd("cmdlist", cmd_cmdlist);
 	CmdAdd("cvarlist", cmd_cvarlist);
@@ -632,7 +623,7 @@ static char *grouping(char *str, char **post){
 		cmd_echoa("Double quotes(\") doesn't match.");
 	return str;
 }
-
+#endif
 int argtok(char *argv[], char *s, char **post, int maxargs){
 	int ret = 0;
 	int inquote = 0, escape = 0;
@@ -693,12 +684,12 @@ int argtok(char *argv[], char *s, char **post, int maxargs){
 			head = 1;
 		}
 	}
-	if(inquote)
-		cmd_echoa("Double quotes(\") doesn't match.");
+/*	if(inquote)
+		cmd_echoa("Double quotes(\") doesn't match.");*/
 	argv[ret] = NULL;
 	return ret;
 }
-
+#if 0
 static int aliasnest = 0;
 
 /* destructive, i.e. cmdstring is modified by strtok or similar
@@ -753,7 +744,7 @@ static int CmdExecD(char *cmdstring){
 		continue;
 	}
 	if(pc = CmdFind(cmd)){
-		ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
+		ret = pc->proc(argc, argv);
 		continue;
 	}
 	{
@@ -801,7 +792,7 @@ int CmdExec(const char *cmdstring){
 	strncpy(buf, cmdstring, sizeof buf);
 	CmdExecD(buf);
 }
-
+#endif
 void CmdAdd(const char *cmdname, int (*proc)(int, char(*)[])){
 	struct command **pp, *p;
 	int i;
@@ -810,29 +801,12 @@ void CmdAdd(const char *cmdname, int (*proc)(int, char(*)[])){
 	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
 		break;
 	*pp = p;
-	p->proc.a = proc;
-	p->type = 0;
+	p->proc = proc;
 	p->name = cmdname;
 	p->left = NULL;
 	p->right = NULL;
 }
-
-void CmdAddParam(const char *cmdname, int (*proc)(int, char(*)[], void *), void *param){
-	struct command **pp, *p;
-	int i;
-	p = (struct command*)malloc(sizeof *cmdlist);
-	++cmdlists;
-	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
-		break;
-	*pp = p;
-	p->proc.p = proc;
-	p->type = 1;
-	p->param = param;
-	p->name = cmdname;
-	p->left = NULL;
-	p->right = NULL;
-}
-
+#if 0
 #define profile 0
 
 struct command *CmdFind(const char *name){
@@ -965,3 +939,4 @@ struct cmdalias **CmdAliasFindP(const char *name){
 }
 
 
+#endif

@@ -136,6 +136,9 @@
 				RelativePath="gltestplus.cpp">
 			</File>
 			<File
+				RelativePath="keybind.c">
+			</File>
+			<File
 				RelativePath="calc\mathvars.c">
 			</File>
 			<File
@@ -192,6 +195,9 @@
 			</File>
 			<File
 				RelativePath="galaxy_field.h">
+			</File>
+			<File
+				RelativePath="keybind.h">
 			</File>
 			<File
 				RelativePath="player.h">

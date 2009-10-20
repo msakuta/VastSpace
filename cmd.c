@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "cmd.h"
 #include "calc/calc.h"
 #include "cmd_int.h"
@@ -29,13 +30,14 @@ static int console_pageskip = 8;
 static int console_mousewheelskip = 4;
 static int console_undefinedecho = 0;
 
+int CmdExecD(char *);
 struct cmdalias **CmdAliasFindP(const char *name);
 
 /* binary tree */
 static struct command{
 	union commandproc{
-		int (*a)(int argc, const char *argv[]);
-		int (*p)(int argc, const char *argv[], void *);
+		int (*a)(int argc, char *argv[]);
+		int (*p)(int argc, char *argv[], void *);
 	} proc;
 	int type;
 	void *param;
@@ -64,7 +66,7 @@ static int cvarlists = 0;
 
 /* binary tree */
 static struct cmdalias{
-	const char *name;
+	char *name;
 	struct cmdalias *left, *right;
 	char str[1];
 } *aliaslist = NULL;
@@ -117,7 +119,7 @@ static int cmd_echoa(char *arg){
 	argv[0] = "echo";
 	argv[1] = arg;
 	argv[2] = NULL;
-	return cmd_echo(2, &argv);
+	return cmd_echo(2, argv);
 }
 
 
@@ -141,18 +143,19 @@ static int cmd_cmdlist_int(const struct command *c, const char *pattern, int lev
 }
 
 static int cmd_cmdlist(int argc, const char *argv[]){
-	int i, c;
+	int c;
 	char buf[CB_CHARS];
 	c = cmd_cmdlist_int(cmdlist, 2 <= argc ? argv[1] : NULL, 0);
 	sprintf(buf, "%d commands listed", c);
 	cmd_echoa(buf);
+	return 0;
 }
 
 static int cmd_cvarlist(int argc, const char *argv[]){
 	static const char typechar[] = {
 		'i', 'f', 'd', 's'
 	};
-	int i, c;
+	int c;
 	struct cvar *cv;
 	char buf[CB_CHARS];
 	c = 0;
@@ -175,6 +178,7 @@ static int cmd_cvarlist(int argc, const char *argv[]){
 #endif
 	sprintf(buf, "%d cvars listed", c);
 	cmd_echoa(buf);
+	return 0;
 }
 
 static int cmd_toggle(int argc, const char *argv[]){
@@ -191,6 +195,7 @@ static int cmd_toggle(int argc, const char *argv[]){
 	}
 	else
 		cmd_echoa("Specified variable is either not a integer nor existing.");
+	return 0;
 }
 
 static int cmd_inc(int argc, const char *argv[]){
@@ -207,6 +212,7 @@ static int cmd_inc(int argc, const char *argv[]){
 	}
 	else
 		cmd_echoa("Specified variable is either not a integer nor existing.");
+	return 0;
 }
 
 static int cmd_dec(int argc, const char *argv[]){
@@ -223,12 +229,13 @@ static int cmd_dec(int argc, const char *argv[]){
 	}
 	else
 		cmd_echoa("Specified variable is either not a integer nor existing.");
+	return 0;
 }
 
 static int cmd_mul(int argc, const char *argv[]){
 	struct cvar *cv, *cv2;
 	const char *arg = argv[1];
-	if(arg <= 2){
+	if(argc <= 2){
 		cmd_echoa("Specify an arithmetic cvar and a constant or 2 cvars to multiply.");
 		return 0;
 	}
@@ -249,10 +256,10 @@ static int cmd_mul(int argc, const char *argv[]){
 			val = atof(argv[2]);
 		switch(cv->type){
 			case cvar_int:
-				*cv->v.i *= val;
+				*cv->v.i *= (int)val;
 				break;
 			case cvar_float:
-				*cv->v.f *= val;
+				*cv->v.f *= (float)val;
 				break;
 			case cvar_double:
 				*cv->v.d *= val;
@@ -263,6 +270,7 @@ static int cmd_mul(int argc, const char *argv[]){
 	}
 	else
 		cmd_echoa("Specified variable is either not a integer nor existing.");
+	return 0;
 }
 
 
@@ -275,8 +283,7 @@ static char *stringdup(const char *s){
 
 /* explicit cvar setter, useful in some occasion */
 static int cmd_set(int argc, const char *argv[]){
-	char args[128], *thekey, *thevalue;
-	char buf[CB_CHARS];
+	const char *thekey, *thevalue;
 	if(argc <= 1){
 		cmd_echoa("Specify a cvar to set it.");
 		return 0;
@@ -293,7 +300,7 @@ static int cmd_set(int argc, const char *argv[]){
 		struct cvar *cv;
 		if(cv = CvarFind(thekey)) switch(cv->type){
 			case cvar_int: *cv->v.i = atoi(thevalue); break;
-			case cvar_float: *cv->v.f = calc3(&thevalue, calc_mathvars(), NULL); break;
+			case cvar_float: *cv->v.f = (float)calc3(&thevalue, calc_mathvars(), NULL); break;
 			case cvar_double: *cv->v.d = calc3(&thevalue, calc_mathvars(), NULL); break;
 			case cvar_string: cv->v.s = realloc(cv->v.s, strlen(thevalue) + 1); strcpy(cv->v.s, thevalue); break;
 		}
@@ -361,6 +368,7 @@ static int cmd_exec(int argc, const char *argv[]){
 	}
 gbreak:
 	fclose(fp);
+	return 0;
 }
 
 static int cmd_time(int argc, const char *argv[]){
@@ -387,6 +395,7 @@ static int cmd_time(int argc, const char *argv[]){
 	sprintf(buf, "%lg seconds", TimeMeasLap(&tm));
 	cmd_echoa(buf);
 	free(thevalue);
+	return 0;
 }
 
 static int listalias(struct cmdalias *a, int level){
@@ -407,8 +416,8 @@ static int listalias(struct cmdalias *a, int level){
 	return ret + 1;
 }
 
-static int cmd_alias(int argc, const char *argv[]){
-	char args[128], *thekey, *thevalue;
+static int cmd_alias(int argc, char *argv[]){
+	char *thekey, *thevalue;
 	char buf[CB_CHARS];
 	int i;
 	size_t valuelen;
@@ -484,9 +493,10 @@ size_t cmd_memory_alias(const struct cmdalias *p){
 	return ret;
 }
 
+extern size_t CircleCutsMemory(void);
 
 /* print consumed memory for console management */
-static int cmd_memory(void){
+static int cmd_memory(int argc, char *argv[]){
 	char buf[CB_CHARS];
 	size_t size;
 	sprintf(buf, "cmdbuf: %lu bytes = %lu kilobytes used", sizeof cmdbuffer + sizeof cmdhist, (sizeof cmdbuffer + sizeof cmdhist) / 1024);
@@ -499,6 +509,7 @@ static int cmd_memory(void){
 	size = CircleCutsMemory();
 	sprintf(buf, "circut: %lu bytes = %lu kilobytes used", size, size / 1024);
 	cmd_echoa(buf);
+	return 0;
 }
 
 
@@ -704,7 +715,7 @@ static int aliasnest = 0;
 /* destructive, i.e. cmdstring is modified by strtok or similar
   method to tokenize. */
 static int CmdExecD(char *cmdstring){
-	int i, echo, ret = 0;
+	int ret = 0;
 	struct command *pc;
 	struct cmdalias *pa;
 	char *cmd/*, *arg, *arg2*/, *post;
@@ -760,7 +771,6 @@ static int CmdExecD(char *cmdstring){
 		struct cvar *cv;
 		for(cv = cvarlist[hashfunc(cmd) % numof(cvarlist)]; cv; cv = cv->next) if(!strcmp(cv->name, cmd)){
 			char buf[CB_CHARS];
-			const char *formatter;
 			char *arg = argv[1];
 			if(!arg) switch(cv->type){
 				case cvar_int: sprintf(buf, "\"%s\" is %d", cmd, *cv->v.i); break;
@@ -770,7 +780,7 @@ static int CmdExecD(char *cmdstring){
 			}
 			else switch(cv->type){
 				case cvar_int: *cv->v.i = atoi(arg); break;
-				case cvar_float: *cv->v.f = calc3(&arg, calc_mathvars(), NULL); break;
+				case cvar_float: *cv->v.f = (float)calc3(&arg, calc_mathvars(), NULL); break;
 				case cvar_double: *cv->v.d = calc3(&arg, calc_mathvars(), NULL); break;
 				case cvar_string: cv->v.s = realloc(cv->v.s, strlen(arg) + 1); strcpy(cv->v.s, arg); break;
 			}
@@ -799,10 +809,10 @@ gcon:;
 int CmdExec(const char *cmdstring){
 	char buf[CB_CHARS+1];
 	strncpy(buf, cmdstring, sizeof buf);
-	CmdExecD(buf);
+	return CmdExecD(buf);
 }
 
-void CmdAdd(const char *cmdname, int (*proc)(int, char(*)[])){
+void CmdAdd(const char *cmdname, int (*proc)(int, char*[])){
 	struct command **pp, *p;
 	int i;
 	p = (struct command*)malloc(sizeof *cmdlist);
@@ -817,7 +827,7 @@ void CmdAdd(const char *cmdname, int (*proc)(int, char(*)[])){
 	p->right = NULL;
 }
 
-void CmdAddParam(const char *cmdname, int (*proc)(int, char(*)[], void *), void *param){
+void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *param){
 	struct command **pp, *p;
 	int i;
 	p = (struct command*)malloc(sizeof *cmdlist);
@@ -889,8 +899,7 @@ void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc
 }
 
 struct cvar *CvarFind(const char *cvarname){
-	int i;
-	struct cvar *cv, **ppcv;
+	struct cvar *cv;
 #if profile
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -914,7 +923,6 @@ struct cvar *CvarFind(const char *cvarname){
 }
 
 const char *CvarGetString(const char *cvarname){
-	int i;
 	struct cvar *cv;
 	static char *buf;
 	cv = CvarFind(cvarname);

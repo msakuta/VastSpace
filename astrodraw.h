@@ -23,7 +23,7 @@ void rgb2hsv(double hsv[3], double r, double g, double b);
 void hsv2rgb(double rgb[3], const double hsv[3]);
 void doppler(double rgb[3], double r, double g, double b, double velo);
 void drawPoint(const struct astrobj *a, const Viewer *p, const avec3_t pspos, const avec3_t sunp, const GLubyte color[4]);
-void drawpsphere(struct astrobj *ps, const Viewer *, COLOR32 col);
+void drawpsphere(Astrobj *ps, const Viewer *, COLOR32 col);
 void drawShadeSphere(const struct astrobj *ps, const Viewer *p, const avec3_t sunpos, const GLubyte color[4], const GLubyte dark[4]);
 void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4], GLuint *texlist, const amat4_t texmat, const char *texname);
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]);

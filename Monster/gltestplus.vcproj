@@ -248,6 +248,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\astro_star.h"
+				>
+			</File>
+			<File
 				RelativePath="..\astrodef.h"
 				>
 			</File>

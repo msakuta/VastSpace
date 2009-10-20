@@ -7,7 +7,7 @@ extern "C"{
 //#include "cmd.h"
 //#include "spacewar.h"
 #include "astrodef.h"
-//#include "astro_star.h"
+#include "astro_star.h"
 #include "entity.h"
 //#include "island3.h"
 //#include "ringworld.h"
@@ -260,6 +260,10 @@ Astrobj *TexturedPlanet_new(const char *name, CoordSys *cs){
 
 
 
+template<class T> CoordSys *Cons(const char *name, CoordSys *cs){
+	return new T(name, cs);
+};
+typedef CoordSys *(*CC)(const char *name, CoordSys *cs);
 
 
 #define MAX_LINE_LENGTH 512
@@ -328,7 +332,12 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			cs2 = findcspath(root, s+1);
 		else if(cs2 = findcs(root, s));
 		else*/ if(!strcmp(s, "astro")){
-			Astrobj *a = NULL;
+			CoordSys *a = NULL;
+			CC constructor = Cons<Astrobj>;
+			if(ps && !strcmp(ps, "Star")){
+				c++, s = argv[c], ps = argv[c+1];
+				constructor = Cons<Star>;
+			}
 /*			if(ps && !strcmp(ps, "Asteroid")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = asteroid_new;
@@ -340,10 +349,6 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			else if(ps && !strcmp(ps, "TextureSphere")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = texsphere_new;
-			}
-			else if(ps && !strcmp(ps, "Star")){
-				c++, s = argv[c], ps = argv[c+1];
-				constructor = star_new;
 			}
 			else if(ps && !strcmp(ps, "Island3")){
 				c++, s = argv[c], ps = argv[c+1];
@@ -370,7 +375,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				else
 					a = NULL;
 			}
-			if(!a && (a = new Astrobj(ps, cs))){
+			if(!a && (a = constructor(ps, cs))){
 				stellar_coordsys(sc, a);
 			}
 		}

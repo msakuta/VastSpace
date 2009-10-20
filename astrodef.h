@@ -19,4 +19,6 @@
 #define MONTH_SECONDS (DAY_SECONDS*30)
 #define YEAR_SECONDS (DAY_SECONDS*365.2422)
 
+extern double gravityfactor;
+
 #endif

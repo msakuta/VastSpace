@@ -6,6 +6,7 @@
 //#include "glextcall.h"
 #include "antiglut.h"
 #include "galaxy_field.h"
+#include "astro_star.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -3145,6 +3146,211 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 
 
 
+void drawsuncolona(Astrobj *a, const Viewer *vw);
 
 
+void Star::draw(const Viewer *vw){
+	COLOR32 col = COLOR32RGBA(255,255,255,255);
+	Vec3d gvelo;
+	gvelo = parent->tocsv(vw->velo, vw->pos, vw->cs);
+	if(LIGHT_SPEED * LIGHT_SPEED < VECSLEN(gvelo)){
+		extern int g_invert_hyperspace;
+		double velolen;
+		velolen = VECLEN(gvelo);
+		if(g_invert_hyperspace)
+			col = COLOR32SCALE(col, LIGHT_SPEED / velolen * 256) & COLOR32RGBA(255,255,255,0) | COLOR32RGBA(0,0,0,COLOR32A(col));
+	}
+	drawpsphere(this, vw, col);
+	if(/*!((struct sun*)a)->aircolona !(flags & AO_DRAWAIRCOLONA)*/1){
+		CoordSys *abest = NULL;
+		Vec3d epos, spos;
+		int i;;
+
+		/* astrobjs are sorted and the nearest solid celestial body can be
+		  easily found without distance examination. */
+		CoordSys *eics = findeisystem();
+		for(i = 0; i < eics->naorder; i++) if(eics->aorder[i] != this){
+			abest = eics->aorder[i];
+			break;
+		}
+
+		epos = vw->cs->tocs(abest->pos, abest->parent);
+		spos = vw->cs->tocs(pos, parent);
+		epos -= vw->pos;
+		spos -= vw->pos;
+#if 1
+		if(1/*1e10 * 1e10 < VECSDIST(epos, spos)/* || jHitSphere(epos, abest->rad, avec3_000, spos, 1.)*/){
+			drawsuncolona(this, vw);
+		}
+#endif
+	}
+}
+
+/* show flat disk that has same apparent radius as if it were a sphere. */
+void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
+	int i;
+	Vec3d plpos, pspos, delta;
+	double sdist, scale;
+	plpos = vw->cs->tocs(vw->pos, vw->cs);
+	pspos = vw->cs->tocs(ps->pos, ps->parent);
+	delta = pspos - plpos;
+#if 0
+	if(glcullFrustum(&pspos/*&delta*/, ps->rad, &g_glcull))
+		return;
+#endif
+	sdist = (pspos - plpos).slen();
+	scale = ps->rad * 1/*glcullScale(pspos, &g_glcull)*/;
+	if(scale * scale < .1 * .1)
+		return;
+	else if(scale * scale < 2. * 2.){
+		double dist;
+		int vp[4];
+/*		dist = sqrt(sdist);
+		glGetIntegerv(GL_VIEWPORT, vp);*/
+		glPushAttrib(GL_POINT_BIT);
+/*		glEnable(GL_POINT_SMOOTH);*/
+		glPointSize(scale * 2.);
+		glColor4ub(COLIST(col));
+		glBegin(GL_POINTS);
+/*		glVertex3d((pspos[0] - plpos[0]) / dist, (pspos[1] - plpos[1]) / dist, (pspos[2] - plpos[2]) / dist);*/
+		glVertex3dv(delta);
+		glEnd();
+		glPopAttrib();
+	}
+	else if(ps->rad * ps->rad < sdist){
+		int n;
+		double dist, as, cas, sas;
+		double (*cuts)[2];
+		double x = pspos[0] - plpos[0], z = pspos[2] - plpos[2], phi, theta;
+		dist = sqrt(sdist);
+		as = asin(sas = ps->rad / dist);
+		cas = cos(as);
+		{
+			double x = sas - .5;
+			n = (int)(32*(-x * x / .5 / .5+ 1.)) + 8;
+		}
+/*		n = (int)(16*(-(1. - sas) * (1. - sas) + 1.)) + 5;*/
+/*		n = (int)(16*(-(as - M_PI / 4.) * (as - M_PI / 4.) / M_PI * 4. / M_PI * 4. + 1.)) + 5;*/
+		phi = atan2(x, z);
+		theta = atan2((pspos[1] - plpos[1]), sqrt(x * x + z * z));
+		cuts = CircleCuts(n);
+		glPushMatrix();
+		glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
+		glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);
+		glColor4ub(COLIST(col));
+		glBegin(GL_POLYGON);
+		for(i = 0; i < n; i++)
+			glVertex3d(cuts[i][0] * sas, cuts[i][1] * sas, cas);
+		glEnd();
+		glPopMatrix();
+	}
+}
+
+void drawsuncolona(Astrobj *a, const Viewer *vw){
+	int i;
+	GLubyte white[4] = {255, 255, 255, 255};
+	double height;
+	double sdist;
+	double dist, as, cas, sas;
+	double (*cuts)[2];
+	Vec3d vpos, epos, spos;
+	double x, z, phi, theta, f;
+	CoordSys *abest = NULL;
+
+	/* astrobjs are sorted and the nearest celestial body with atmosphere can be
+	  easily found without distance examination. */
+	CoordSys *eics = a->findeisystem();
+	for(i = 0; i < eics->naorder; i++) if(eics->aorder[i]->flags & AO_ATMOSPHERE){
+		abest = eics->aorder[i];
+		break;
+	}
+	spos = vw->cs->tocs(a->pos, a->parent);
+	vpos = vw->pos;
+	if(abest){
+		epos = vw->cs->tocs(abest->pos, abest->parent);
+		height = (epos - vpos).len() - abest->rad;
+	}
+	else{
+		epos = Vec3d(1e5,1e5,1e5);
+		height = 1e10;
+	}
+
+	x = spos[0] - vpos[0], z = spos[2] - vpos[2];
+	sdist = VECSDIST(spos, vpos);
+	dist = sqrt(sdist);
+
+	{
+/*		avec3_t de, ds;
+		double h = 1. / (1. + height / 10.), sp;
+		VECSUB(de, epos, vpos);
+		VECSUB(ds, spos, vpos);*/
+		f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
+		white[1] *= 1. - (1. - f) * .5;
+		white[2] *= f;
+	}
+
+	/* if neither sun nor planet with atmosphere like earth is near you, the sun's colona shrinks. */
+	{
+		static const double c = .8, d = .1, e = .08;
+		static int normalized = 0;
+		static double normalizer;
+		double sp, brightness;
+		avec3_t dv, spos1;
+		amat4_t mat, mat2;
+		if(!normalized)
+			normalizer = 1. / (c/* + d / (1. + SUN_DISTANCE)*/), normalized = 1;
+/*		pyrmat(vw->pyr, &mat);*/
+		VECSUB(dv, vw->pos, spos);
+		mat4dvp3(spos1, vw->rot, dv);
+		sp = -spos1[2];
+		brightness = pow(100, -a->absmag / 5.);
+		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / VECSLEN(dv))) / (1. + dist / brightness * 1e-11);
+		MAT4IDENTITY(mat);
+		VECNORMIN(spos1);
+		VECCPY(&mat[8], spos1);
+		VECVP(&mat[4], &mat[8], avec3_001);
+		if(VECSLEN(&mat[4]) == 0.)
+			VECCPY(&mat[4], avec3_010);
+		else
+			VECNORMIN(&mat[4]);
+		VECVP(&mat[0], &mat[4], &mat[8]);
+		sp = 100. * (1. - mat[10]) * (1. - mat[10]) - 7.;
+		if(sp < 1.)
+			sp = 1.;
+		VECSCALEIN(&mat[0], sp);
+		sp /= 100.;
+		if(sp < 1.)
+			sp = 1.;
+		VECSCALEIN(&mat[4], sp);
+		glDisable(GL_CULL_FACE);
+		glPushMatrix();
+		glLoadIdentity();
+/*		glMultMatrixd(mat);*/
+/*		mat4mp(mat2, vw->rot, mat);*/
+		VECSCALEIN(spos1, -1);
+		gldSpriteGlow(spos1, as / M_PI, white, mat);
+		glPopMatrix();
+	}
+
+	/* the sun is well too far that colona doesn't show up in a pixel. */
+/*	if(as < M_PI / 300.)
+		return;*/
+
+	white[3] = 127 + (int)(127 / (1. + height));
+	{
+		double rgb[3];
+		avec3_t pos;
+		VECSUB(pos, spos, vpos);
+		VECSCALEIN(pos, 1. / dist);
+		if(vw->relative){
+/*			doppler(rgb, white[0] / 256., white[1] / 256., white[2] / 256., VECSP(pos, vw->velo));
+			VECSCALE(white, rgb, 255);*/
+		}
+		else if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen)
+			VECSCALEIN(white, LIGHT_SPEED / vw->velolen);
+		gldGlow(atan2(x, z), atan2(spos[1] - vpos[1], sqrt(x * x + z * z)), as, white);
+	}
+
+	a->flags |= AO_DRAWAIRCOLONA;
+}
 

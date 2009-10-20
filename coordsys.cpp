@@ -484,7 +484,7 @@ void CoordSys::draw(const Viewer *vw){
 		return;*/
 	if((CS_EXTENT | CS_ISOLATED) == (flags & (CS_EXTENT | CS_ISOLATED))){
 		CoordSys *a;
-		int i, n = 0;
+		int i, n = naorder;
 /*		if(naorder != n)
 			aorder = (Astrobj**)realloc(aorder, (naorder = n) * sizeof *aorder);
 		for(a = aolist, i = 0; a; a = (Astrobj*)a->next, i++)
@@ -614,6 +614,10 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(ps)
 			rad = atof(ps);
 		return true;
+	}
+	else if(!strcmp(s, "diameter")){
+		if(argv[1])
+			rad = .5 * calc3(const_cast<const char **>(&argv[1]), sc.vl, NULL);
 	}
 	else if(!strcmp(s, "parent")){
 		CoordSys *cs2, *csret;

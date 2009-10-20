@@ -39,13 +39,20 @@ extern "C"{
 #undef exit
 #include <GL/glext.h>
 
+
+#define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
+
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_space_near_clip = 0.01, g_space_far_clip = 1e3;
 bool mouse_captured = false;
 double gravityfactor = 1.;
 
-CoordSys galaxysystem;
+class Universe : public CoordSys{
+public:
+	Universe(){flags = CS_ISOLATED | CS_EXTENT;}
+};
+Universe galaxysystem;
 
 Player pl;
 
@@ -157,14 +164,21 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
-	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glDisable(GL_CULL_FACE);
 	glColor4f(1,1,1,1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	drawstarback(&vw, &galaxysystem, NULL, NULL);
+	projection((
+		glPushMatrix(), glLoadIdentity(),
+		vw.frustum(1. / 1e3, 1e3)
+	));
+	galaxysystem.draw(&vw);
+	projection(glPopMatrix());
 	glPopAttrib();
+
+	gldTranslaten3dv(vw.pos);
 	glTranslated(0, -10, -10);
 	for(i = -8; i <= 8; i++){
 		glBegin(GL_LINES);

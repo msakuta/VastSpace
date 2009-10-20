@@ -51,6 +51,10 @@ define Msun 1.9884e30
 #	pos 0 0 2e6
 #}
 
+astro Star first_light{
+	radius 1e4
+	pos 0 0 -1e5
+}
 
 new coordsys ks{
 	fullname "Known Space"
@@ -158,9 +162,9 @@ coordsys sol{
 	radius 2e10
 	updirection 0 cos(63.*RAD_PER_DEG) sin(63*RAD_PER_DEG)
 
-	astro sun{
-		absolute_magnitude 4.8
-	}
+#	astro sun{
+#		absolute_magnitude 4.8
+#	}
 
 #	astro Bellerophon{
 #		radius 70000.
@@ -193,7 +197,7 @@ coordsys sol{
 #		absolute_magnitude 4.1
 #	}
 
-	include sol.dat
+#	include sol.dat
 }
 
 coordsys ringworld{

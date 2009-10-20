@@ -226,6 +226,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\motion.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\stellar_file.cpp"
 				>
 			</File>
@@ -281,6 +285,10 @@
 			</File>
 			<File
 				RelativePath="..\keybind.h"
+				>
+			</File>
+			<File
+				RelativePath="..\motion.h"
 				>
 			</File>
 			<File

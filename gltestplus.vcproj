@@ -142,6 +142,9 @@
 				RelativePath="calc\mathvars.c">
 			</File>
 			<File
+				RelativePath="motion.cpp">
+			</File>
+			<File
 				RelativePath="scarry.c">
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -198,6 +201,9 @@
 			</File>
 			<File
 				RelativePath="keybind.h">
+			</File>
+			<File
+				RelativePath="motion.h">
 			</File>
 			<File
 				RelativePath="player.h">

@@ -336,7 +336,8 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			CC constructor = Cons<Astrobj>;
 			if(ps && !strcmp(ps, "Star")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = Cons<Star>;
+				CC ctor = Cons<Star>;
+				constructor = ctor;
 			}
 /*			if(ps && !strcmp(ps, "Asteroid")){
 				c++, s = argv[c], ps = argv[c+1];

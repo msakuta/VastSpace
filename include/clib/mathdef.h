@@ -11,6 +11,10 @@
 #define M_PI 3.1415926535897932384626433832795
 #endif
 
+#ifndef M_2PI /* because it happens so frequently that 2 * pi is required. */
+#define M_2PI 6.283185307179586476925286766559
+#endif
+
 #ifndef M_E
 #define M_E 2.7182818284590452353602874713527
 #endif

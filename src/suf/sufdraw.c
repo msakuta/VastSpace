@@ -753,27 +753,27 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			}
 			ReleaseDC(GetDesktopWindow(), hdc);
 			if(lines == liens){
-/*				int x, y;
-				for(y = 0; y < bm.bmHeight; y++) for(x = 0; x < bm.bmWidth; x++){
-				}*/
+				GLint align;
+				GLboolean swapbyte;
 				glGenTextures(1, &ret->a[k].tex);
 				gstc[nstc-1].tex[0] = ret->a[k].tex[0];
 				gstc[nstc-1].tex[1] = ret->a[k].tex[1] = 0;
 				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+				glGetBooleanv(GL_UNPACK_SWAP_BYTES, &swapbyte);
 				glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_TRUE);
 				err = gluBuild2DMipmaps(GL_TEXTURE_2D, 3, dbmi.biWidth, dbmi.biHeight, GL_RGB, GL_UNSIGNED_BYTE, pbuf);
-		/*		glTexImage2D(GL_TEXTURE_2D, 0, 3, dbmi.biWidth, dbmi.biHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, pbuf );*/
+				glPixelStorei(GL_UNPACK_ALIGNMENT, align);
+				glPixelStorei(GL_UNPACK_SWAP_BYTES, swapbyte);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		/*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);*/
 
-/*				glEnable(GL_TEXTURE_2D);*/
 				glNewList(ret->a[k].list = gstc[nstc-1].list = glGenLists(1), GL_COMPILE);
 				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex[0]);
 				glEnable(GL_TEXTURE_2D);

@@ -56,11 +56,11 @@ public:
 	~CoordSys();
 	void init(const char *path, CoordSys *root);
 
-	virtual const char *classname()const;
+	virtual const char *classname()const; // returned string storage must be static
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();
-	virtual void draw(const Viewer *);
+	virtual void draw(const Viewer *); // it's not const member function, altering contents is allowed.
 
 	virtual bool belongs(const Vec3d &pos, const CoordSys *pos_cs)const;
 

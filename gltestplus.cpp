@@ -20,6 +20,7 @@ extern "C"{
 }
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include <cpplib/gl/cullplus.h>
 
 
 #if !USEWIN
@@ -156,6 +157,8 @@ static void cslist(const CoordSys *root, double &y){
 
 void draw_func(Viewer &vw, double dt){
 	int i;
+	GLcull glc = GLcull(1., avec3_000, mat4_u, 1. / 1e3, 1e3);
+	vw.gc = &glc;
 	for(i = 0; i < numof(balls); i++){
 		balls[i].anim(dt);
 	}
@@ -262,12 +265,12 @@ void display_func(void){
 				aquat_t q;
 //				quatirot(q, pl.rot, vec3_010);
 				VECCPY(q, vec3_010);
-				VECSCALEIN(q, -(p.x - mouse_pos.x) * .001 / 2.);
+				VECSCALEIN(q, (p.x - mouse_pos.x) * .001 / 2.);
 				q[3] = 0.;
 				quatrotquat(pl.rot, q, pl.rot);
 //				quatirot(q, pl.rot, vec3_100);
 				VECCPY(q, vec3_100);
-				VECSCALEIN(q, -(p.y - mouse_pos.y) * .001 / 2.);
+				VECSCALEIN(q, (p.y - mouse_pos.y) * .001 / 2.);
 				q[3] = 0.;
 				quatrotquat(pl.rot, q, pl.rot);
 				SetCursorPos(mouse_pos.x, mouse_pos.y);
@@ -309,8 +312,8 @@ void display_func(void){
 	}
 	viewer.cs = pl.cs = &galaxysystem;
 	viewer.pos = pl.pos;
-	quat2mat(viewer.rot, pl.rot);
-	quat2imat(viewer.irot, pl.rot);
+	viewer.rot = pl.rot.tomat4();
+	viewer.irot = pl.rot.cnj().tomat4();
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	draw_func(viewer, dt);

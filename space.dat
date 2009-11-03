@@ -54,6 +54,11 @@ define Msun 1.9884e30
 astro Star first_light{
 	radius 1e4
 	pos 0 0 -1e5
+
+	astro TextureSphere first_planet{
+		radius 1e3
+		pos -5e4 0 0
+	}
 }
 
 new coordsys ks{

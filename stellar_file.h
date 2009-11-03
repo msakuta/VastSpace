@@ -48,6 +48,11 @@ class TexSphere : public Astrobj{
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;
+public:
+	typedef Astrobj st;
+	TexSphere(const char *name, CoordSys *cs);
+	const char *classname()const;
+	void draw(const Viewer *);
 };
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);

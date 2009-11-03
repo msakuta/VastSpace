@@ -11,7 +11,7 @@ extern "C"{
 Astrobj **astrobjs;
 int nastrobjs;
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs){
+Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs), absmag(-10){
 	CoordSys *eis = findeisystem();
 	if(eis){
 		eis->aorder = (CoordSys**)realloc(eis->aorder, (eis->naorder + 1) * sizeof *eis->aorder);
@@ -79,8 +79,97 @@ Astrobj *findastrobj(const char *name){
 	return NULL;
 }
 
-Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs){}
+
+static int tocs_children_invokes = 0;
+
+struct Param{
+	Astrobj *ret;
+	double brightness;
+};
+
+static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
+	double best = 0;
+#if 1
+	CoordSys *cs2;
+	tocs_children_invokes++;
+	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
+	{
+#else
+	int i;
+	for(i = 0; i < cs->nchildren; i++) if(cs->children[i] && cs->children[i] != skipcs)
+	{
+		const coordsys *cs2 = cs->children[i];
+#endif
+		double val;
+		try{
+			Astrobj *a = dynamic_cast<Astrobj*>(cs2);
+			val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+			if(p.brightness < val){
+				p.brightness = val;
+				p.ret = a;
+			}
+		}
+		catch(...){
+			val = 0.;
+		}
+		if(findchildbr(p, retcs, src, cs2, NULL))
+			return 1;
+	}
+	return 0;
+}
+
+static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, CoordSys *cs){
+	Vec3d v1, v;
+	CoordSys *cs2 = cs->parent;
+
+	if(!cs->parent){
+		return 0;
+	}
+
+	v1 = cs->qrot.trans(src);
+/*	MAT4VP3(v1, cs->rot, src);*/
+	v = v1 + cs->pos;
+
+	double val;
+	try{
+		Astrobj *a = dynamic_cast<Astrobj*>(cs2);
+		val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+		if(p.brightness < val){
+			p.brightness = val;
+			p.ret = a;
+		}
+	}
+	catch(...){
+		val = 0.;
+	}
+	if(p.brightness < val)
+		p.brightness = val;
+
+	CoordSys *csret;
+	/* do not scan subtrees already checked! */
+	if(findchildbr(p, retcs, src, cs->parent, cs))
+		return 1;
+
+	return findparentbr(p, retcs, src, cs->parent);
+}
+
+
+Astrobj *Astrobj::findBrightest()const{
+	Param p = {NULL, 0.};
+	findchildbr(p, this, vec3_000, this, NULL);
+	findparentbr(p, this, vec3_000, const_cast<Astrobj*>(this));
+	return p.ret;
+}
+
+
+Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs){ absmag = 0; }
 
 const char *Star::classname()const{
 	return "Star";
+}
+
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){}
+
+const char *TexSphere::classname()const{
+	return "TexSphere";
 }

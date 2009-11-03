@@ -6,11 +6,11 @@ extern "C"{
 #include <clib/c.h>
 #include <clib/amat4.h>
 #include <clib/avec3.h>
-#include <clib/gl/cull.h>
 #ifdef __cplusplus
 }
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
+#include <cpplib/gl/cullplus.h>
 #include <cstring>
 #endif
 #ifdef _WIN32
@@ -48,8 +48,8 @@ public:
 	double fov, ar;
 	double dynamic_range; /* experimental; to simulate high dynamic range */
 	CoordSys *cs;
-	struct glcull *gc; /* current culling information */
-	struct glcull **gclist; /* list of glculls in order of z-slices */
+	GLcull *gc; /* current culling information */
+	GLcull **gclist; /* list of glculls in order of z-slices */
 	int ngclist; /* number of z-slices which can change in occasions */
 	int zslice; /* index of gc into gclist */
 	int relative; /* whether effect of relativity cannot be ignored */

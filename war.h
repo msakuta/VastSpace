@@ -5,7 +5,7 @@
 #include <clib/amat3.h>
 #include <clib/suf/suf.h>
 #include <clib/rseq.h>
-#include <clib/gl/cull.h>
+#include <cpplib/gl/cullplus.h>
 
 /* bitmask for buttons */
 #define PL_W 0x01
@@ -130,7 +130,7 @@ typedef struct war_draw_data{
 	double view[3]; /* view position */
 	double viewdir[3]; /* unit vector pointing view direction */
 	double fov; /* field of view */
-	struct glcull *pgc;
+	GLcull *pgc;
 	struct viewer *vw;
 	double light[3]; /* light direction */
 	double gametime;

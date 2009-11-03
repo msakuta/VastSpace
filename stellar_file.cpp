@@ -346,12 +346,13 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			else if(ps && !strcmp(ps, "Satellite")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = satellite_new;
-			}
+			}*/
 			else if(ps && !strcmp(ps, "TextureSphere")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = texsphere_new;
+				CC ctor = Cons<TexSphere>;
+				constructor = ctor;
 			}
-			else if(ps && !strcmp(ps, "Island3")){
+/*			else if(ps && !strcmp(ps, "Island3")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = island3_new;
 			}

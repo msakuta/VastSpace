@@ -7,6 +7,7 @@
 #include "antiglut.h"
 #include "galaxy_field.h"
 #include "astro_star.h"
+#include "stellar_file.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -20,6 +21,7 @@ extern "C"{
 #include <clib/colseq/cs2x.h>
 #include <clib/cfloat.h>
 }
+#include <cpplib/gl/cullplus.h>
 #include <gl/glext.h>
 #include <stdio.h>
 //#include <wingraph.h>
@@ -220,28 +222,28 @@ void drawpsphere(struct astrobj *ps, const Viewer *vw, COLOR32 col){
 #define SQRT2 1.4142135623730950488016887242097
 
 
+#endif
 
-
-void drawShadeSphere(const struct astrobj *ps, const Viewer *p, const avec3_t sunpos, const GLubyte color[4], const GLubyte dark[4]){
+void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d sunpos, const GLubyte color[4], const GLubyte dark[4]){
 	double (*cuts)[2];
 	int i, n;
-	avec3_t sunp, tp, pspos;
-	avec3_t xh, yh;
+	Vec3d sunp, tp, pspos;
+	Vec3d xh, yh;
 /*	drawpsphere(a, COLOR32RGBA(191,191,191,255));*/
 	double dist, as, cas, sas;
 	double x, z, phi, theta;
 	double zoom, spe;
 	if(ps->vwvalid & 1)
-		VECCPY(pspos, ps->vwpos);
+		pspos = ps->vwpos;
 	else{
-		tocs(pspos, p->cs, ps->pos, ps->cs);
-		VECCPY(((Astrobj*)ps)->vwpos, pspos);
-		((Astrobj*)ps)->vwvalid |= 1;
+		pspos = p->cs->tocs(ps->pos, ps->parent);
+		ps->vwpos = pspos;
+		ps->vwvalid |= 1;
 	}
 /*	tocs(sunp, p->cs, sun.pos, sun.cs);*/
 
-	dist = VECDIST(pspos, p->pos);
-	VECSUB(tp, pspos, p->pos);
+	dist = (pspos - p->pos).len();
+	tp = pspos - p->pos;
 
 	x = pspos[0] - p->pos[0], z = pspos[2] - p->pos[2];
 
@@ -249,18 +251,20 @@ void drawShadeSphere(const struct astrobj *ps, const Viewer *p, const avec3_t su
 		return;
 	
 	/* estimate roughly apparent size change caused by relativity effect */
-	spe = (VECSP(tp, p->velo) / VECLEN(tp) / p->velolen - 1.) / 2.;
+	spe = (tp.sp(p->velo) / tp.len() / p->velolen - 1.) / 2.;
 	zoom = p->velolen == 0. || !p->relative ? 1. : (1. + (LIGHT_SPEED / (LIGHT_SPEED - p->velolen) - 1.) * spe * spe);
-	zoom *= fabs(glcullScale(&pspos, &g_glcull));
+	zoom *= fabs(p->gc->scale(pspos));
 	if(ps->rad * /*gvp.m **/ zoom < 1e-3 /** 1e5 < dist*/)
 		return;
 
+#if 0
 	if(ps->rad * /* gvp.m */ zoom < 2./*dist*/){
 		drawPoint(ps, p, pspos, sunp, color);
 		return;
 	}
+#endif
 	as = asin(sas = ps->rad / dist);
-	n = 8 + 8 * sas;
+	n = 8 + int(8 * sas);
 	if(!n)
 		return;
 	cas = cos(as);
@@ -274,48 +278,47 @@ void drawShadeSphere(const struct astrobj *ps, const Viewer *p, const avec3_t su
 	glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
 	glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);
 	{
-		static const avec3_t xh0 = {1., 0., 0.}, yh0 = {0., 1., 0.}, nh0 = {0., 0., 1.}, v1 = {0., 0., 1.}, xh1 = {0., 1., 1.}, yh1 = {1., 0., 1.};
-		amat4_t mat, mat1;
-		avec3_t delta, v, nh;
+		static const Vec3d xh0(1., 0., 0.), yh0(0., 1., 0.), nh0(0., 0., 1.), v1(0., 0., 1.), xh1(0., 1., 1.), yh1(1., 0., 1.);
+		Mat4d mat, mat1;
+		Vec3d delta, v, nh;
 		double x, y, at;
 
 /*		tocs(sunp, p->cs, sun.pos, sun.cs);*/
-		VECSUB(sunp, sunpos, p->pos);
-		VECSUB(tp, pspos, p->pos);
+		sunp = sunpos - p->pos;
+		tp = pspos - p->pos;
 
-		MAT4IDENTITY(mat);
-		MAT4ROTY(mat1, mat, phi);
-		MAT4ROTX(mat, mat1, -theta);
-		MAT4VP3(xh, mat, xh0);
-		MAT4VP3(yh, mat, yh0);
-		VECSUB(delta, sunp, tp);
-		x = VECSP(xh, sunp);
-		y = VECSP(yh, sunp);
+		mat = mat4_u;
+		mat1 = mat.roty(phi);
+		mat = mat1.rotx(-theta);
+		xh = mat.vp3(xh0);
+		yh = mat.vp3(yh0);
+		delta = sunp - tp;
+		x = xh.sp(sunp);
+		y = yh.sp(sunp);
 		at = atan2(y, x);
 		glRotated(at * 360 / 2. / M_PI, 0., 0., 1.);
 
 		/* cheaty trick to show the object having real sphere shape. */
 		/*if(fmod(p->gametime, .5) < .45)*/{
-			avec3_t plane, side;
-			VECVP(plane, sunp, tp);
-			VECVP(side, plane, delta);
-			VECNORMIN(side);
-			VECSADD(tp, side, -ps->rad);
+			Vec3d plane, side;
+			plane = sunp.vp(tp);
+			side = plane.vp(delta).norm();
+			tp += side * -ps->rad;
 		}
 	}
 
 	{
 	double sp, spa;
-	avec3_t nsunp;
-	VECSUB(nsunp, sunp, p->pos);
-	VECSCALEIN(nsunp, -100);
+	Vec3d nsunp;
+	nsunp = sunp - p->pos;
+	nsunp *= -100;
 
 	/* i really dont like to trace a ray here just for light source obscuring, but couldnt help. */
-	if(jHitSphere(pspos, ps->rad, sunp, nsunp, 1.)){
+/*	if(jHitSphere(pspos, ps->rad, sunp, nsunp, 1.)){
 		sp = spa = VECSP(sunp, tp) < 0. ? -1. : 1.;
 	}
-	else{
-		sp = VECSP(sunp, tp) / VECLEN(sunp) / VECLEN(tp);
+	else*/{
+		sp = sunp.sp(tp) / sunp.len() / tp.len();
 		spa = sp + .3 * (1. - sp * sp);
 	}
 
@@ -345,7 +348,7 @@ void drawShadeSphere(const struct astrobj *ps, const Viewer *p, const avec3_t su
 	}
 }
 
-
+#if 0
 
 
 typedef struct normvertex_params{
@@ -674,12 +677,40 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 	glPopAttrib();
 	glPopMatrix();
 }
-
+#endif
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]){
 	GLuint zero = 0;
-	drawTextureSphere(a, vw, sunpos, mat_diffuse, mat_ambient, &zero, mat4identity, NULL);
+//	drawTextureSphere(a, vw, sunpos, mat_diffuse, mat_ambient, &zero, mat4identity, NULL);
 }
 
+void TexSphere::draw(const Viewer *vw){
+	Vec3d apos = vw->cs->tocs(pos, parent);
+	Vec3d sunpos;
+	Astrobj *sun = findBrightest();
+	sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
+//	scale = a->rad * glcullScale(apos, &g_glcull);
+
+//	VECSUB(tp, apos, vw->pos);
+//	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
+//	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
+//	scale *= zoom;
+	if(true/*0. < scale && scale < 5.*/){
+		GLubyte color[4], dark[4];
+		color[0] = 255;
+		color[1] = 255;
+		color[2] = 255;
+		color[3] = 255;
+		dark[0] = 127;
+		dark[1] = 127;
+		dark[2] = 127;
+		dark[3] = 255;
+		drawShadeSphere(this, vw, sunpos, color, dark);
+		return;
+	}
+
+}
+
+#if 0
 static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], int s){
 	double f, g;
 	avec3_t v;
@@ -1727,7 +1758,7 @@ static int setstarcolor(GLubyte *pr, GLubyte *pg, GLubyte *pb, struct random_seq
 		hue = drseq(prs);
 		hue = (hue + drseq(prs)) * .5 + 1. * rvelo / LIGHT_SPEED;
 		sat = 1. - (1. - (.25 + drseq(prs) * .5) /** (hue < 0. ? 1. / (1. - hue) : 1. < hue ? 1. / hue : 1.)*/) / (1. + avelo / LIGHT_SPEED);
-		bri = (127 + rseq(prs) % 128) * (hue < 0. ? 1. / (1. - hue) : 1. < hue ? 1. / hue : 1.);
+		bri = int((127 + rseq(prs) % 128) * (hue < 0. ? 1. / (1. - hue) : 1. < hue ? 1. / hue : 1.));
 		hue = rangein(hue, 0., 1.);
 		hi = (int)floor(hue * 6.);
 		f = hue * 6. - hi;
@@ -2527,7 +2558,6 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 	static int init = 0;
 	static GLuint listBright, listDark;
 	double height;
-	double tangent, bdist;
 	const Mat4d &irot = vw->irot;
 	static int invokes = 0;
 	int drawnstars = 0;
@@ -2651,7 +2681,7 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 			double pos[3];
 			COLOR32 c;
 		} *ver;
-		FILE *fp;
+//		FILE *fp;
 		double velo;
 		init_rseq(&rs, 1);
 		velo = vw->relative ? vw->velolen : 0.;
@@ -2686,7 +2716,7 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 		int pointstart = 0, glowstart = 0, nearest = 0, cen[3], gx = 0, gy = 0, gz, frameinvokes = 0;
 		const double cellsize = 1e13;
 		double radiusfactor = .03 * 1. / (1. + 10. / height) * 512. / vw->vp.m;
-		struct glcull glc;
+//		GLcull glc;
 		Vec3d gpos;
 		Vec3d plpos, npos;
 		GLubyte nearest_color[4];
@@ -2758,7 +2788,7 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 			double pos[3], rvelo;
 			double radius = radiusfactor;
 			GLubyte r, g, b;
-			int hi, bri, p, q, t, current_nearest = 0;
+			int bri, current_nearest = 0;
 			pos[0] = drseq(&rs);
 			pos[1] = drseq(&rs); /* cover entire sky */
 			pos[2] = drseq(&rs);
@@ -3203,13 +3233,11 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
 	if(scale * scale < .1 * .1)
 		return;
 	else if(scale * scale < 2. * 2.){
-		double dist;
-		int vp[4];
 /*		dist = sqrt(sdist);
 		glGetIntegerv(GL_VIEWPORT, vp);*/
 		glPushAttrib(GL_POINT_BIT);
 /*		glEnable(GL_POINT_SMOOTH);*/
-		glPointSize(scale * 2.);
+		glPointSize(float(scale * 2.));
 		glColor4ub(COLIST(col));
 		glBegin(GL_POINTS);
 /*		glVertex3d((pspos[0] - plpos[0]) / dist, (pspos[1] - plpos[1]) / dist, (pspos[2] - plpos[2]) / dist);*/

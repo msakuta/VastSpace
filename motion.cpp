@@ -110,5 +110,9 @@ void MotionAnim(Player &pl, double dt){
 		pl.velo -= pl.rot.itrans(vec3_010) * dt;
 	if(inputstate & PL_Q)
 		pl.velo += pl.rot.itrans(vec3_010) * dt;
-
+	if(inputstate & PL_F){
+		pl.fov *= exp((toggleinputstate & PL_F ? 1 : -1) * dt);
+		if(1. < pl.fov)
+			pl.fov = 1.;
+	}
 }

@@ -47,13 +47,13 @@ static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_space_near_clip = 0.01, g_space_far_clip = 1e3;
 bool mouse_captured = false;
+int gl_wireframe = 0;
 double gravityfactor = 1.;
 
-class Universe : public CoordSys{
-public:
-	Universe(){flags = CS_ISOLATED | CS_EXTENT;}
-};
 Universe galaxysystem;
+const char *Universe::classname()const{
+	return "Universe";
+}
 
 Player pl;
 
@@ -157,7 +157,7 @@ static void cslist(const CoordSys *root, double &y){
 
 void draw_func(Viewer &vw, double dt){
 	int i;
-	GLcull glc = GLcull(1., avec3_000, mat4_u, 1. / 1e3, 1e3);
+	GLcull glc = GLcull(vw.fov, avec3_000, mat4_u, 1. / 1e3, 1e3);
 	vw.gc = &glc;
 	for(i = 0; i < numof(balls); i++){
 		balls[i].anim(dt);
@@ -167,16 +167,18 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
-	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
 	glDisable(GL_CULL_FACE);
 	glColor4f(1,1,1,1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	drawstarback(&vw, &galaxysystem, NULL, NULL);
+//	drawstarback(&vw, &galaxysystem, NULL, NULL);
 	projection((
 		glPushMatrix(), glLoadIdentity(),
 		vw.frustum(1. / 1e3, 1e3)
 	));
+	galaxysystem.startdraw();
 	galaxysystem.draw(&vw);
 	projection(glPopMatrix());
 	glPopAttrib();
@@ -262,15 +264,16 @@ void display_func(void){
 		if(mouse_captured){
 			POINT p;
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
+				double speed = .001 / 2. * asin(pl.fov) / M_PI;
 				aquat_t q;
 //				quatirot(q, pl.rot, vec3_010);
 				VECCPY(q, vec3_010);
-				VECSCALEIN(q, (p.x - mouse_pos.x) * .001 / 2.);
+				VECSCALEIN(q, (p.x - mouse_pos.x) * speed);
 				q[3] = 0.;
 				quatrotquat(pl.rot, q, pl.rot);
 //				quatirot(q, pl.rot, vec3_100);
 				VECCPY(q, vec3_100);
-				VECSCALEIN(q, (p.y - mouse_pos.y) * .001 / 2.);
+				VECSCALEIN(q, (p.y - mouse_pos.y) * speed);
 				q[3] = 0.;
 				quatrotquat(pl.rot, q, pl.rot);
 				SetCursorPos(mouse_pos.x, mouse_pos.y);
@@ -278,11 +281,15 @@ void display_func(void){
 			}
 		}
 
+		MotionFrame(dt);
+
 		MotionAnim(pl, dt);
 
-		pl.pos += pl.velo * dt;
+		pl.velolen = pl.velo.len();
+		pl.pos += pl.velo * (1. + pl.velolen) * dt;
 
 		galaxysystem.anim(dt);
+		galaxysystem.endframe();
 
 		gametime = t1;
 	}
@@ -297,6 +304,7 @@ void display_func(void){
 		GLint vp[4];
 		glGetIntegerv(GL_VIEWPORT, vp);
 		viewer.vp.set(vp);
+		viewer.fov = pl.fov;
 		double dnear = g_space_near_clip, dfar = g_space_far_clip;
 /*		if(pl.cs->w && pl.cs->w->vft->nearplane)
 			dnear = pl.cs->w->vft->nearplane(pl.cs->w);
@@ -625,6 +633,7 @@ int main(int argc, char *argv[])
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
+	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &galaxysystem);

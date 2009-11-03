@@ -15,7 +15,7 @@
 
 
 
-
+/*
 extern struct glcull g_glcull;
 
 void directrot(const double pos[3], const double base[3], amat4_t irot);
@@ -43,5 +43,5 @@ extern double g_star_glow_thresh;
 extern int g_invert_hyperspace;
 
 void drawstarback(Viewer *vw, const CoordSys *cs, const Astrobj *landing_planet, const Astrobj *lighting_sun);
-
+*/
 #endif

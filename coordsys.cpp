@@ -12,6 +12,7 @@ extern "C"{
 #include <clib/avec4.h>
 #include <clib/timemeas.h>
 }
+#include <cpplib/gl/cullplus.h>
 #include <stddef.h>
 #include <assert.h>
 
@@ -447,18 +448,18 @@ static int pastrcmp_invokes = 0;
 
 static double ao_getvwpos(Vec3d *ret, Astrobj *a){
 	extern Player pl;
-	if(a->vwvalid & 1)
+	if(a->vwvalid & CoordSys::VW_POS)
 		*ret = a->vwpos;
 	else{
 		*ret = pl.cs->tocs(a->pos, a->parent);
 		a->vwpos = *ret;
-		a->vwvalid |= 1;
+		a->vwvalid |= CoordSys::VW_POS;
 	}
-	if(a->vwvalid & 2)
+	if(a->vwvalid & CoordSys::VW_SDIST)
 		return a->vwsdist;
 	else{
 		a->vwsdist = (*ret - pl.pos).slen();
-		a->vwvalid |= 2;
+		a->vwvalid |= CoordSys::VW_SDIST;
 		return a->vwsdist;
 	}
 }
@@ -512,7 +513,12 @@ void CoordSys::anim(double dt){
 }
 
 void CoordSys::postframe(){}
-void CoordSys::endframe(){}
+void CoordSys::endframe(){
+	vwvalid = 0;
+	CoordSys *cs;
+	for(cs = children; cs; cs = cs->next)
+		cs->endframe();
+}
 
 Quatd CoordSys::rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const{
 	Quatd ret;
@@ -703,3 +709,18 @@ void CoordSys::deleteAll(CoordSys **pp){
 		free(cs2->w);
 	free(cs2);
 }
+
+Vec3d CoordSys::calcPos(const Viewer &vw){
+	if(vwvalid & VW_POS)
+		return vwpos;
+	vwvalid |= VW_POS;
+	return vwpos = vw.cs->tocs(pos, parent);
+}
+
+double CoordSys::calcScale(const Viewer &vw){
+	if(vwvalid & VW_SCALE)
+		return vwscale;
+	vwvalid |= VW_SCALE;
+	return vwscale = rad * vw.gc->scale(calcPos(vw));
+}
+

@@ -136,16 +136,16 @@ void doppler(double rgb[3], double r, double g, double b, double velo){
 	hsv2rgb(rgb, hsv);
 }
 
-
-void drawPoint(const struct astrobj *a, const Viewer *p, const avec3_t pspos, const avec3_t sunp, const GLubyte color[4]){
+#endif
+void drawPoint(const Astrobj *a, const Viewer *p, const Vec3d &pspos, const Vec3d &sunp, const GLubyte color[4]){
 	double sp;
-	avec3_t tp;
+	Vec3d tp;
 	GLubyte lumi;
-	avec3_t pos, ray;
-	VECSUB(tp, pspos, p->pos);
+	Vec3d pos, ray;
+	tp = pspos - p->pos;
 /*	tocs(sunp, p->cs, sun.pos, sun.cs);*/
-	VECSUB(ray, pspos, sunp);
-	sp = VECSP(tp, ray) / VECLEN(tp) / VECLEN(ray);
+	ray = pspos - sunp;
+	sp = tp.sp(ray) / tp.len() / ray.len();
 	sp = (sp + 1.) / 2.;
 	sp = 1. - (1. - sp * sp) * .9;
 	lumi = (GLubyte)(255 * sp);
@@ -154,77 +154,13 @@ void drawPoint(const struct astrobj *a, const Viewer *p, const avec3_t pspos, co
 	glPointSize(2);
 	glBegin(GL_POINTS);
 	glColor3ub(lumi * color[0] / 256, lumi * color[1] / 256, lumi * color[2] / 256);
-	VECSUB(pos, pspos, p->pos);
-	VECNORMIN(pos);
+	pos = (pspos - p->pos).norm();
 	glVertex3dv(pos);
 	glEnd();
 	glPopAttrib();
 }
 
-/* show flat disk that has same apparent radius as if it were a sphere. */
-void drawpsphere(struct astrobj *ps, const Viewer *vw, COLOR32 col){
-	int i;
-	avec3_t plpos, pspos, delta;
-	double sdist, scale;
-	tocs(plpos, vw->cs, vw->pos, vw->cs);
-	tocs(pspos, vw->cs, ps->pos, ps->cs);
-	VECSUB(delta, pspos, plpos);
-	if(glcullFrustum(&pspos/*&delta*/, ps->rad, &g_glcull))
-		return;
-	sdist = VECSDIST(pspos, plpos);
-	scale = ps->rad * glcullScale(pspos, &g_glcull);
-	if(scale * scale < .1 * .1)
-		return;
-	else if(scale * scale < 2. * 2.){
-		double dist;
-		int vp[4];
-/*		dist = sqrt(sdist);
-		glGetIntegerv(GL_VIEWPORT, vp);*/
-		glPushAttrib(GL_POINT_BIT);
-/*		glEnable(GL_POINT_SMOOTH);*/
-		glPointSize(scale * 2.);
-		glColor4ub(COLIST(col));
-		glBegin(GL_POINTS);
-/*		glVertex3d((pspos[0] - plpos[0]) / dist, (pspos[1] - plpos[1]) / dist, (pspos[2] - plpos[2]) / dist);*/
-		glVertex3dv(delta);
-		glEnd();
-		glPopAttrib();
-	}
-	else if(ps->rad * ps->rad < sdist){
-		int n;
-		double dist, as, cas, sas;
-		double (*cuts)[2];
-		double x = pspos[0] - plpos[0], z = pspos[2] - plpos[2], phi, theta;
-		dist = sqrt(sdist);
-		as = asin(sas = ps->rad / dist);
-		cas = cos(as);
-		{
-			double x = sas - .5;
-			n = (int)(32*(-x * x / .5 / .5+ 1.)) + 8;
-		}
-/*		n = (int)(16*(-(1. - sas) * (1. - sas) + 1.)) + 5;*/
-/*		n = (int)(16*(-(as - M_PI / 4.) * (as - M_PI / 4.) / M_PI * 4. / M_PI * 4. + 1.)) + 5;*/
-		phi = atan2(x, z);
-		theta = atan2((pspos[1] - plpos[1]), sqrt(x * x + z * z));
-		cuts = CircleCuts(n);
-		glPushMatrix();
-		glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
-		glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);
-		glColor4ub(COLIST(col));
-		glBegin(GL_POLYGON);
-		for(i = 0; i < n; i++)
-			glVertex3d(cuts[i][0] * sas, cuts[i][1] * sas, cas);
-		glEnd();
-		glPopMatrix();
-	}
-}
-
-#define SQRT2 1.4142135623730950488016887242097
-
-
-#endif
-
-void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d sunpos, const GLubyte color[4], const GLubyte dark[4]){
+static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, const GLubyte color[4], const GLubyte dark[4]){
 	double (*cuts)[2];
 	int i, n;
 	Vec3d sunp, tp, pspos;
@@ -233,14 +169,9 @@ void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d sunpos, const GLu
 	double dist, as, cas, sas;
 	double x, z, phi, theta;
 	double zoom, spe;
-	if(ps->vwvalid & 1)
-		pspos = ps->vwpos;
-	else{
-		pspos = p->cs->tocs(ps->pos, ps->parent);
-		ps->vwpos = pspos;
-		ps->vwvalid |= 1;
-	}
+	pspos = ps->calcPos(*p);
 /*	tocs(sunp, p->cs, sun.pos, sun.cs);*/
+	sunp = sunpos - p->pos;
 
 	dist = (pspos - p->pos).len();
 	tp = pspos - p->pos;
@@ -257,7 +188,7 @@ void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d sunpos, const GLu
 	if(ps->rad * /*gvp.m **/ zoom < 1e-3 /** 1e5 < dist*/)
 		return;
 
-#if 0
+#if 1
 	if(ps->rad * /* gvp.m */ zoom < 2./*dist*/){
 		drawPoint(ps, p, pspos, sunp, color);
 		return;
@@ -284,7 +215,6 @@ void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d sunpos, const GLu
 		double x, y, at;
 
 /*		tocs(sunp, p->cs, sun.pos, sun.cs);*/
-		sunp = sunpos - p->pos;
 		tp = pspos - p->pos;
 
 		mat = mat4_u;
@@ -684,30 +614,30 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 void TexSphere::draw(const Viewer *vw){
-	Vec3d apos = vw->cs->tocs(pos, parent);
+//	Vec3d apos = vw->cs->tocs(pos, parent);
 	Vec3d sunpos;
 	Astrobj *sun = findBrightest();
 	sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
-//	scale = a->rad * glcullScale(apos, &g_glcull);
+	double scale = calcScale(*vw);
 
-//	VECSUB(tp, apos, vw->pos);
-//	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
-//	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-//	scale *= zoom;
-	if(true/*0. < scale && scale < 5.*/){
+//	Vec3d tp = apos - vw->pos;
+//	double spe = (tp.sp(vw->velo) / tp.len() / vw->velolen - 1.) / 2.;
+	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
+	scale *= zoom;
+	if(0. < scale/* && scale < 5.*/){
 		GLubyte color[4], dark[4];
-		color[0] = 255;
-		color[1] = 255;
-		color[2] = 255;
+		color[0] = COLOR32R(basecolor);
+		color[1] = COLOR32G(basecolor);
+		color[2] = COLOR32B(basecolor);
 		color[3] = 255;
-		dark[0] = 127;
-		dark[1] = 127;
-		dark[2] = 127;
+		dark[0] = COLOR32R(basecolor) / 2;
+		dark[1] = COLOR32G(basecolor) / 2;
+		dark[2] = COLOR32B(basecolor) / 2;
 		dark[3] = 255;
 		drawShadeSphere(this, vw, sunpos, color, dark);
 		return;
 	}
-
+	st::draw(vw);
 }
 
 #if 0
@@ -2554,7 +2484,7 @@ double galaxy_get_star_density(Viewer *vw){
 }
 #endif
 
-void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
+void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
 	static int init = 0;
 	static GLuint listBright, listDark;
 	double height;
@@ -3177,6 +3107,7 @@ void drawstarback(Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Ast
 
 
 void drawsuncolona(Astrobj *a, const Viewer *vw);
+void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 
 
 void Star::draw(const Viewer *vw){
@@ -3214,6 +3145,7 @@ void Star::draw(const Viewer *vw){
 		}
 #endif
 	}
+	st::draw(vw);
 }
 
 /* show flat disk that has same apparent radius as if it were a sphere. */
@@ -3380,5 +3312,11 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	}
 
 	a->flags |= AO_DRAWAIRCOLONA;
+}
+
+
+void Universe::draw(const Viewer *vw){
+	drawstarback(vw, this, NULL, NULL);
+	st::draw(vw);
 }
 

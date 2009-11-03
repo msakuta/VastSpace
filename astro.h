@@ -28,6 +28,7 @@ struct StellarContext;
 
 class Astrobj : public CoordSys{
 public:
+	typedef CoordSys st;
 
 	double mass;
 	Quatd orbit_axis;
@@ -47,5 +48,12 @@ public:
 	Astrobj *findBrightest()const;
 };
 
+class Universe : public CoordSys{
+public:
+	typedef CoordSys st;
+	Universe(){flags = CS_ISOLATED | CS_EXTENT;}
+	const char *classname()const;
+	void draw(const Viewer *);
+};
 
 #endif

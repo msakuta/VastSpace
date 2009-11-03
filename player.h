@@ -18,6 +18,7 @@ public:
 	Player(){
 		std::memset(this, 0, sizeof *this);
 		rot[3] = 1.;
+		fov = 1.;
 	}
 	Vec3d pos;
 	Vec3d velo;
@@ -33,6 +34,7 @@ public:
 	int mousex, mousey;
 	int floortouch;
 	int gear; /* acceleration gear in ghost mode */
+	double fov;
 	double gametime;
 	double velolen; /* trivial; performance keeper */
 	double height; /* trivial; indicates air pressure surrounding the player */

@@ -40,9 +40,11 @@ public:
 
 	/* These trivial variables are only used on drawing to enhance speed by caching
 	  certain values. */
+	enum vwflag{VW_POS = 1, VW_SDIST = 2, VW_SCALE = 4};
 	int vwvalid; /* validity flags for vwpos and vwsdist */
 	Vec3d vwpos; /* position in viewer's coordinates */
 	double vwsdist; /* distance from the viewer */
+	double vwscale; /* apparent scale */
 
 	WarField *w;
 	CoordSys *next; /* list of siblings */
@@ -130,6 +132,9 @@ public:
 	void startdraw();
 
 	static void deleteAll(CoordSys **);
+
+	Vec3d calcPos(const Viewer &vw);
+	double calcScale(const Viewer &vw);
 
 private:
 	int getpathint(char *buf, size_t size)const;

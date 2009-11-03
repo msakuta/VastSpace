@@ -13,6 +13,7 @@ int nastrobjs;
 
 Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs), absmag(-10){
 	CoordSys *eis = findeisystem();
+	basecolor = COLOR32RGBA(127,127,127,255);
 	if(eis){
 		eis->aorder = (CoordSys**)realloc(eis->aorder, (eis->naorder + 1) * sizeof *eis->aorder);
 		eis->aorder[eis->naorder++] = this;
@@ -59,6 +60,16 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		else
 			flags |= AO_PLANET;
+	}
+	else if(!strcmp(s, "color")){
+		if(s = strtok(ps, " \t\r\n")){
+			COLOR32 c;
+			c = strtoul(s, NULL, 16);
+			basecolor = COLOR32RGBA(COLOR32B(c),COLOR32G(c),COLOR32R(c),255);
+		}
+	}
+	else if(!strcmp(s, "absolute_magnitude")){
+		absmag = calc3(const_cast<const char**>(&ps), sc.vl, NULL);
 	}
 	else
 		return CoordSys::readFile(sc, argc, argv);
@@ -145,7 +156,6 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 	if(p.brightness < val)
 		p.brightness = val;
 
-	CoordSys *csret;
 	/* do not scan subtrees already checked! */
 	if(findchildbr(p, retcs, src, cs->parent, cs))
 		return 1;
@@ -168,7 +178,11 @@ const char *Star::classname()const{
 	return "Star";
 }
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){}
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){
+	ringmin = ringmax = 0;
+	atmodensity = 0.;
+	ring = 0;
+}
 
 const char *TexSphere::classname()const{
 	return "TexSphere";

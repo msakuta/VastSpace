@@ -3,7 +3,7 @@
 //#include "player.h"
 //#include "judge.h"
 #include "coordsys.h"
-//#include "glextcall.h"
+#include "glextcall.h"
 #include "antiglut.h"
 #include "galaxy_field.h"
 #include "astro_star.h"
@@ -278,12 +278,11 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 	}
 }
 
-#if 0
 
 
 typedef struct normvertex_params{
-	amat4_t mat;
-	amat4_t texmat;
+	Mat4d mat;
+	Mat4d texmat;
 	const Viewer *vw;
 	int texenable;
 	int map;
@@ -291,15 +290,16 @@ typedef struct normvertex_params{
 } normvertex_params;
 
 static int normvertex_invokes = 0;
+#if 1
 static void normvertexf(double x, double y, double z, normvertex_params *p, double ilen, int i, int j){
 	extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
-	avec3_t v, v1, vt;
+	Vec3d v, v1, vt;
 	double theta, phi;
 	normvertex_invokes++;
 	v[0] = x;
 	v[1] = y;
 	v[2] = z;
-	MAT4DVP3(v1, p->mat, v);
+	v1 = p->mat.dvp3(v);
 	glNormal3dv(v1);
 	if(p->texenable){
 		MAT4DVP3(vt, p->texmat, v);
@@ -331,7 +331,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 		vt[1] = ((!!(p->map & 1) + !!(p->map & 2)) & 1 ? (3. + vt[1]) / 4. : (1. + vt[1]) / 4.);
 		glTexCoord2dv(vt);
 		if(p->detail)
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, phi * 256., theta * 256.);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(phi * 256.), GLfloat(theta * 256.));
 	}
 /*	VECCPY(v1, v);*/
 /*	phi = atan2(v1[1], v1[0]);
@@ -347,29 +347,31 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 	glVertex3dv(v1);
 }
 
+#endif
+#if 1
+
 #define normvertex(x,y,z,p,ilen) normvertexf(x,y,z,p,ilen,i,j)
 #define PROJTS 1024
 #define PROJS (PROJTS/2)
 #define PROJBITS 32 /* bit depth of projected texture */
 
-void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4], GLuint *ptexlist, const amat4_t texmat, const char *texname){
+void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
-	double sdist, dist, tangent, scale, spe, zoom;
+	double dist, tangent, scale, spe, zoom;
 	int i, j, jstart, fine, texenable = texlist && texmat;
 	normvertex_params params;
-	double *mat = params.mat;
-	amat4_t rot;
-	avec3_t apos, tp;
-	timemeas_t tm;
+	Mat4d &mat = params.mat;
+	Mat4d rot;
+	Vec3d apos, tp;
 
 	params.vw = vw;
 	params.texenable = texenable;
 	params.detail = 0;
 
-	tocs(apos, vw->cs, a->pos, a->cs);
+	apos = vw->cs->tocs(a->pos, a->parent);
 /*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
-	scale = a->rad * glcullScale(apos, &g_glcull);
+	scale = a->rad * vw->gc->scale(apos);
 
 	VECSUB(tp, apos, vw->pos);
 	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
@@ -377,13 +379,13 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 	scale *= zoom;
 	if(0. < scale && scale < 5.){
 		GLubyte color[4], dark[4];
-		color[0] = mat_diffuse[0] * 255;
-		color[1] = mat_diffuse[1] * 255;
-		color[2] = mat_diffuse[2] * 255;
+		color[0] = GLubyte(mat_diffuse[0] * 255);
+		color[1] = GLubyte(mat_diffuse[1] * 255);
+		color[2] = GLubyte(mat_diffuse[2] * 255);
 		color[3] = 255;
-		dark[0] = mat_ambient[0] * 127;
-		dark[1] = mat_ambient[1] * 127;
-		dark[2] = mat_ambient[2] * 127;
+		dark[0] = GLubyte(mat_ambient[0] * 127);
+		dark[1] = GLubyte(mat_ambient[1] * 127);
+		dark[2] = GLubyte(mat_ambient[2] * 127);
 		dark[3] = 255;
 		drawShadeSphere(a, vw, sunpos, color, dark);
 		return;
@@ -392,8 +394,8 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 	do if(!texlist && texname){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereJpg(texname);
-		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
+//		texlist = *ptexlist = ProjectSphereJpg(texname);
+//		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
 	cuts = CircleCuts(32);
@@ -427,12 +429,10 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 	glMatrixMode(GL_MODELVIEW);*/
 
 	{
-		int i;
 		GLfloat mat_specular[] = {0., 0., 0., 1.}/*{ 1., 1., .1, 1.0 }*/;
 /*		GLfloat mat_diffuse[] = { .5, .5, .5, 1.0 };
 		GLfloat mat_ambient[] = { 0.1, 0.1, 0.5, 1.0 };*/
 		GLfloat mat_shininess[] = { 50.0 };
-		GLfloat light_position[4] /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
 		GLfloat color[] = {1., 1., 1., 1.}, amb[] = {.0, 0., 0., 1.};
 
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
@@ -450,30 +450,22 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
-/*	glDisable(GL_CULL_FACE);*/
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
-	glPushMatrix();
-/*	glTranslated(-vw->pos[0], -vw->pos[1], -vw->pos[2]);*/
-/*	glMultMatrixd(vw->rot);*/
-	glLoadIdentity();
 	{
-		amat4_t irot, rotm, rot2;
-		directrot(apos, vw->pos, irot);
-		MAT4TRANSPOSE(rot, irot);
-		tocsm(rotm, vw->cs, a->cs);
+		Mat4d irot;
+		gldLookatMatrix(~irot, ~(apos - vw->pos));
+		rot = irot.transpose();
 		if(texenable){
-			mat4mp(rot2, texmat, rotm);
+			Mat4d rotm, rot2;
+			rotm = vw->cs->tocsm(a->parent);
+			rot2 = *texmat * rotm;
 	/*		MAT4CPY(rot, irot);*/
-			mat4mp(params.texmat, rot2, irot);
+			params.texmat = rot2 * irot;
 		}
+		mat = irot.translatein(0., 0., dist).scalein(a->rad, a->rad, a->rad);
 	}
-/*	glGetDoublev(GL_MODELVIEW_MATRIX, rot);*/
-	glTranslated(0., 0., dist);
-	glScaled(-a->rad, -a->rad, -a->rad);
-	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-	glPopMatrix();
 
 	glPushMatrix();
 	glLoadIdentity();
@@ -486,13 +478,8 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 	ffinecuts = CircleCutsPartial(2048, 9);
 
 	{
-		GLfloat light_position[4];
-		avec3_t v;
-		amat4_t irot;
-/*		MAT4TRANSPOSE(irot, rot);
-		MAT4VP3(v, rot, pos);
-		VECCPY(light_position, v);*/
-		VECSUB(light_position, sunpos, apos);
+		Vec4<GLfloat> light_position;
+		light_position = (sunpos - apos).cast<GLfloat>();
 		light_position[3] = 0.;
 		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	}
@@ -508,7 +495,7 @@ void drawTextureSphere(const struct astrobj *a, const Viewer *vw, const avec3_t 
 /*	TimeMeasStart(&tm);*/
 	normvertex_invokes = 0;
 	glBegin(GL_QUADS);
-	jstart = tangent * 32 / 2 / M_PI;
+	jstart = int(tangent * 32 / 2 / M_PI);
 	for(j = jstart; j < (fine ? 7 : 8); j++){
 		double c, s, len1, len2;
 		avec3_t v1, v;
@@ -624,19 +611,9 @@ void TexSphere::draw(const Viewer *vw){
 //	double spe = (tp.sp(vw->velo) / tp.len() / vw->velolen - 1.) / 2.;
 	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
-	if(0. < scale/* && scale < 5.*/){
-		GLubyte color[4], dark[4];
-		color[0] = COLOR32R(basecolor);
-		color[1] = COLOR32G(basecolor);
-		color[2] = COLOR32B(basecolor);
-		color[3] = 255;
-		dark[0] = COLOR32R(basecolor) / 2;
-		dark[1] = COLOR32G(basecolor) / 2;
-		dark[2] = COLOR32B(basecolor) / 2;
-		dark[3] = 255;
-		drawShadeSphere(this, vw, sunpos, color, dark);
-		return;
-	}
+	drawTextureSphere(this, vw, sunpos,
+		Vec4<GLfloat>(COLOR32R(basecolor) / 255., COLOR32R(basecolor) / 255., COLOR32B(basecolor) / 255., 1),
+		Vec4<GLfloat>(COLOR32R(basecolor) / 511., COLOR32G(basecolor) / 511., COLOR32B(basecolor) / 511., 1), &texlist, NULL, NULL);
 	st::draw(vw);
 }
 
@@ -2681,7 +2658,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		}
 
 		for(i = 0; i < 3; i++){
-			cen[i] = floor(plpos[i] + .5);
+			cen[i] = (int)floor(plpos[i] + .5);
 		}
 
 		glPushMatrix();

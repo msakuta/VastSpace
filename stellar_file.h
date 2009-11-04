@@ -42,7 +42,7 @@ public:
 
 class TexSphere : public Astrobj{
 	const char *texname;
-	unsigned int texlist;
+	unsigned int texlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
 	float atmohor[4];

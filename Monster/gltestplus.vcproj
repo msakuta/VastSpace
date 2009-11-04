@@ -288,6 +288,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\glextcall.h"
+				>
+			</File>
+			<File
 				RelativePath="..\keybind.h"
 				>
 			</File>

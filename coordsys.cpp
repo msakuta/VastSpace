@@ -251,7 +251,7 @@ Vec3d CoordSys::tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)co
 
 
 
-static int findchildq(Quatd ret, const CoordSys *retcs, const Quatd src, const CoordSys *cs, const CoordSys *skipcs){
+static int findchildq(Quatd &ret, const CoordSys *retcs, const Quatd &src, const CoordSys *cs, const CoordSys *skipcs){
 #if 1
 	CoordSys *cs2;
 	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
@@ -273,7 +273,7 @@ static int findchildq(Quatd ret, const CoordSys *retcs, const Quatd src, const C
 	return 0;
 }
 
-static int findparentq(Quatd ret, const CoordSys *retcs, const Quatd src, const CoordSys *cs){
+static int findparentq(Quatd &ret, const CoordSys *retcs, const Quatd &src, const CoordSys *cs){
 	Quatd q, csirot;
 
 	if(!cs->parent)

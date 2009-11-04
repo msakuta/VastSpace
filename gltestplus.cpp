@@ -50,6 +50,11 @@ bool mouse_captured = false;
 int gl_wireframe = 0;
 double gravityfactor = 1.;
 
+PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
+PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
+PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
+PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
+
 Universe galaxysystem;
 const char *Universe::classname()const{
 	return "Universe";
@@ -157,7 +162,7 @@ static void cslist(const CoordSys *root, double &y){
 
 void draw_func(Viewer &vw, double dt){
 	int i;
-	GLcull glc = GLcull(vw.fov, avec3_000, mat4_u, 1. / 1e3, 1e3);
+	GLcull glc = GLcull(vw.fov, avec3_000, mat4_u, 1. / 1e3, 1e10);
 	vw.gc = &glc;
 	for(i = 0; i < numof(balls); i++){
 		balls[i].anim(dt);
@@ -176,7 +181,7 @@ void draw_func(Viewer &vw, double dt){
 //	drawstarback(&vw, &galaxysystem, NULL, NULL);
 	projection((
 		glPushMatrix(), glLoadIdentity(),
-		vw.frustum(1. / 1e3, 1e3)
+		vw.frustum(1. / 1e3, 1e10)
 	));
 	galaxysystem.startdraw();
 	galaxysystem.draw(&vw);
@@ -238,13 +243,14 @@ void display_func(void){
 	if(!init){
 		extern double dwo;
 		init = 1;
-/*
-#ifdef _WIN32
-		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
-		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC)wglGetProcAddress("glMultiTexCoord2fARB");
-		glMultiTexCoord1fARB = (PFNGLMULTITEXCOORD1FARBPROC)wglGetProcAddress("glMultiTexCoord1fARB");
-#endif
-*/
+
+#define proc(t,a) a = (t)wglGetProcAddress(#a)
+		proc(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB);
+		proc(PFNGLMULTITEXCOORD2DARBPROC, glMultiTexCoord2dARB);
+		proc(PFNGLMULTITEXCOORD2FARBPROC, glMultiTexCoord2fARB);
+		proc(PFNGLMULTITEXCOORD1FARBPROC, glMultiTexCoord1fARB);
+#undef proc
+
 //		anim_sun(0.);
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
@@ -264,7 +270,7 @@ void display_func(void){
 		if(mouse_captured){
 			POINT p;
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
-				double speed = .001 / 2. * asin(pl.fov) / M_PI;
+				double speed = .001 / 2. * pl.fov;
 				aquat_t q;
 //				quatirot(q, pl.rot, vec3_010);
 				VECCPY(q, vec3_010);

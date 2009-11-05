@@ -76,6 +76,56 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 	return true;
 }
 
+bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
+	char *s = argv[0], *ps = argv[1];
+	const char **pps = const_cast<const char**>(&ps);
+	const char **cargv = const_cast<const char**>(argv);
+	if(0);
+	else if(!strcmp(s, "texture")){
+		if(1 < argc){
+			char *texname = new char[strlen(argv[1]) + 1];
+			strcpy(texname, argv[1]);
+			this->texname = texname;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "atmosphere_height")){
+		if(1 < argc){
+			atmodensity = calc3(pps, sc.vl, NULL);
+			flags |= AO_ATMOSPHERE;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "atmosphere_color")){
+		if(1 < argc)
+			atmohor[0] = calc3(&cargv[1], sc.vl, NULL);
+		if(2 < argc)
+			atmohor[1] = calc3(&cargv[2], sc.vl, NULL);
+		if(3 < argc)
+			atmohor[2] = calc3(&cargv[3], sc.vl, NULL);
+		if(4 < argc)
+			atmohor[3] = calc3(&cargv[4], sc.vl, NULL);
+		else
+			atmohor[3] = 1.f;
+		return true;
+	}
+	else if(!strcmp(s, "atmosphere_dawn")){
+		if(1 < argc)
+			atmodawn[0] = calc3(&cargv[1], sc.vl, NULL);
+		if(2 < argc)
+			atmodawn[1] = calc3(&cargv[2], sc.vl, NULL);
+		if(3 < argc)
+			atmodawn[2] = calc3(&cargv[3], sc.vl, NULL);
+		if(4 < argc)
+			atmodawn[3] = calc3(&cargv[4], sc.vl, NULL);
+		else
+			atmodawn[3] = 1.f;
+		return true;
+	}
+	else
+		return CoordSys::readFile(sc, argc, argv);
+}
+
 const char *Astrobj::classname()const{
 	return "Astrobj";
 }
@@ -179,6 +229,7 @@ const char *Star::classname()const{
 }
 
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){
+	texlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;
 	ring = 0;

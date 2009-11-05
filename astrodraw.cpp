@@ -12,6 +12,7 @@
 #include <windows.h>
 #undef exit
 extern "C"{
+#include "bitmap.h"
 #include <clib/amat3.h>
 #include <clib/rseq.h>
 #include <clib/timemeas.h>
@@ -20,6 +21,7 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/colseq/cs2x.h>
 #include <clib/cfloat.h>
+#include <jpeglib.h>
 }
 #include <cpplib/gl/cullplus.h>
 #include <gl/glext.h>
@@ -27,12 +29,15 @@ extern "C"{
 //#include <wingraph.h>
 #include <assert.h>
 #include <math.h>
+#include <setjmp.h>
 
 
 #define numof(a) (sizeof(a)/sizeof*(a))
 #define signof(a) ((a)<0?-1:0<(a)?1:0)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
 #define EPSILON 1e-7 // not sure
+#define DRAWTEXTURESPHERE_PROFILE 0
+
 
 #ifndef MAX
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -50,6 +55,7 @@ extern "C"{
 int g_invert_hyperspace = 1;
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
+GLuint ProjectSphereJpg(const char *fname);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -291,12 +297,16 @@ typedef struct normvertex_params{
 	int detail;
 } normvertex_params;
 
+#if DRAWTEXTURESPHERE_PROFILE
 static int normvertex_invokes = 0;
+#endif
 
 static void normvertexf(double x, double y, double z, normvertex_params *p, double ilen, int i, int j){
 	Vec3d v, v1, vt;
 	double theta, phi;
+#if DRAWTEXTURESPHERE_PROFILE
 	normvertex_invokes++;
+#endif
 	v[0] = x;
 	v[1] = y;
 	v[2] = z;
@@ -397,7 +407,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	do if(!texlist && texname){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-//		texlist = *ptexlist = ProjectSphereJpg(texname);
+		texlist = *ptexlist = ProjectSphereJpg(texname);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -487,9 +497,11 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	}
 
+#if DRAWTEXTURESPHERE_PROFILE
 	normvertex_invokes = 0;
 	timemeas_t tm;
 	TimeMeasStart(&tm);
+#endif
 	glBegin(GL_QUADS);
 	jstart = int(tangent * 32 / 2 / M_PI);
 	for(j = jstart; j < (fine ? 7 : 8); j++){
@@ -561,7 +573,9 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 		}
 		glEnd();
 	}
+#if DRAWTEXTURESPHERE_PROFILE
 	printf("drawtexsphere[%d] %lg\n", normvertex_invokes, TimeMeasLap(&tm));
+#endif
 /*	glBegin(GL_POLYGON);
 	j = 7;
 	for(i = 0; i < 32; i++){
@@ -603,17 +617,17 @@ void TexSphere::draw(const Viewer *vw){
 	{
 		GLfloat hor[4] = {1,.8,.5,1};
 		GLfloat dawn[4] = {1.,.51,.1,1};
-		drawAtmosphere(this, vw, sunpos, 30., hor, dawn, NULL, NULL, 32);
+		drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.))
 		drawTextureSphere(this, vw, sunpos,
-			Vec4<GLfloat>(COLOR32R(basecolor) / 255., COLOR32R(basecolor) / 255., COLOR32B(basecolor) / 255., 1),
-			Vec4<GLfloat>(COLOR32R(basecolor) / 511., COLOR32G(basecolor) / 511., COLOR32B(basecolor) / 511., 1), &texlist, NULL, NULL);
+			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
+			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &mat4_u, texname);
 	st::draw(vw);
 }
 
 static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], int s){
-	double f, g;
+	double f;
 	avec3_t v;
 	double horizon, b = (1. - sundir[2]) / 2.;
 	v[0] = x;
@@ -624,16 +638,14 @@ static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, 
 	f = redness * (VECSP(v, sundir) + 1. + isotropy) / (2. + isotropy) * horizon;
 /*	g = f * horizon * horizon * horizon * horizon;*/
 /*	f = redness * ((v[0] * sundir[0] + v[1] * sundir[1]) + v[2] * sundir[2] * isotropy + 1.) / (2. + isotropy);*/
-	glColor4f(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (16 - s) / 16. * air) * (1. - f) + dawn[3] * f);
+	glColor4d(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (16 - s) / 16. * air) * (1. - f) + dawn[3] * f);
 }
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
 	int hdiv = slices == 0 ? 16 : slices;
 	int s, t;
-	double horizon_angle;
 	double (*hcuts)[2];
 	double sdist, dist, as, cas, sas, height;
-	double x, z, phi, theta;
 	double b, d;
 	double redness, isotropy;
 	Vec3d apos, delta, sundir;
@@ -642,11 +654,12 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	delta = apos - vw->pos;
 	sdist = delta.slen();
 
-	/* too far or buried in */
+	/* too far */
 	if(a->rad * a->rad / sdist < .01 * .01)
 		return;
 
 	dist = sqrt(sdist);
+	/* buried in */
 	if(dist < a->rad)
 		dist = a->rad + EPSILON;
 	as = asin(sas = a->rad / dist);
@@ -656,7 +669,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	isotropy = thick / (thick / 5. + height);
 
 	{
-		double sp, cen, height;
+		double sp, cen;
 		VECSUB(spos, sunpos, apos);
 		sp = VECSP(spos, delta) / VECLEN(spos) / dist;
 		b = (1. - sp) / 2.;
@@ -727,7 +740,6 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	glPopMatrix();
 }
 
-#if 0
 #define DETAILSIZE 64
 static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
 	struct random_sequence rs;
@@ -800,10 +812,9 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 		int ii, i, outsize, linebytes, linebytesp;
 		long rawh = ABS(raw->bmiHeader.biHeight);
 		BITMAPINFO *proj;
-		FILE *fp;
 		RGBQUAD zero = {0,0,0,255};
 		texinit = 1;
-		proj = malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJTS * PROJTS * PROJBITS + 31) / 32 * 4);
+		proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJTS * PROJTS * PROJBITS + 31) / 32 * 4);
 		memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
 		proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJTS;
 		proj->bmiHeader.biBitCount = PROJBITS;
@@ -899,7 +910,8 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 		tex = CacheSUFTex(name, proj, 1);
 #endif
 		{
-			char outfilename[256], *p, jpgfilename[256];
+			char outfilename[256], jpgfilename[256];
+			const char *p;
 			FILE *fp;
 			p = strrchr(name, '.');
 			strcpy(outfilename, "cache\\");
@@ -951,11 +963,32 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 	}
 	return tex;
 }
+#if 1
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;	/* "public" fields */
 
+  jmp_buf setjmp_buffer;	/* for return to caller */
+};
+
+typedef struct my_error_mgr * my_error_ptr;
+
+void my_error_exit (j_common_ptr cinfo)
+{
+  /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+  my_error_ptr myerr = (my_error_ptr) cinfo->err;
+
+  /* Always display the message. */
+  /* We could postpone this until after returning, if we chose. */
+  (*cinfo->err->output_message) (cinfo);
+
+  /* Return control to the setjmp point */
+  longjmp(myerr->setjmp_buffer, 1);
+}
 GLuint ProjectSphereJpg(const char *fname){
 		const struct suftexcache *stc;
 		GLuint texlist = 0;
-		char outfilename[256], *p, jpgfilename[256];
+		char outfilename[256], jpgfilename[256];
+		const char *p;
 		FILE *fp;
 		p = strrchr(fname, '.');
 #ifdef _WIN32
@@ -983,7 +1016,13 @@ GLuint ProjectSphereJpg(const char *fname){
 		}
 		else{
 			BITMAPINFO *bmi;
-			BITMAPDATA bmd;
+			JSAMPLE *image;
+			struct jpeg_decompress_struct cinfo;
+			struct my_error_mgr jerr;
+			FILE * infile;		/* source file */
+			JSAMPARRAY buffer;		/* Output row buffer */
+			int row_stride;		/* physical row width in image buffer */
+//			BITMAPDATA bmd;
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
 			BOOL b;
 			b = GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd);
@@ -1020,8 +1059,59 @@ GLuint ProjectSphereJpg(const char *fname){
 #endif
 				LocalFree(bmi);
 			}
-			else if(LoadJPEGData(jpgfilename, &bmd)){
-				bmi = malloc(sizeof(BITMAPINFOHEADER) + bmd.dwDataSize);
+			else if((infile = fopen(jpgfilename, "rb")) == NULL){
+				fprintf(stderr, "can't open %s\n", jpgfilename);
+				return 0;
+			}
+			else{
+				cinfo.err = jpeg_std_error(&jerr.pub);
+				jerr.pub.error_exit = my_error_exit;
+				  jerr.pub.error_exit = my_error_exit;
+				  /* Establish the setjmp return context for my_error_exit to use. */
+				  if (setjmp(jerr.setjmp_buffer)) {
+					/* If we get here, the JPEG code has signaled an error.
+					 * We need to clean up the JPEG object, close the input file, and return.
+					 */
+					jpeg_destroy_decompress(&cinfo);
+					fclose(infile);
+					return 0;
+				  }
+				jpeg_create_decompress(&cinfo);
+				jpeg_stdio_src(&cinfo, infile);
+				(void) jpeg_read_header(&cinfo, TRUE);
+				(void) jpeg_start_decompress(&cinfo);
+				row_stride = cinfo.output_width * cinfo.output_components;
+				bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * cinfo.output_components);
+				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+				bmi->bmiHeader.biWidth = cinfo.output_width; 
+				bmi->bmiHeader.biHeight = -cinfo.output_height;
+				bmi->bmiHeader.biPlanes = 1;
+				bmi->bmiHeader.biBitCount = 24;
+				bmi->bmiHeader.biCompression = BI_RGB;
+				bmi->bmiHeader.biSizeImage = cinfo.output_width * cinfo.output_height * cinfo.output_components;
+				bmi->bmiHeader.biXPelsPerMeter = 0;
+				bmi->bmiHeader.biYPelsPerMeter = 0;
+				bmi->bmiHeader.biClrUsed = 0;
+				bmi->bmiHeader.biClrImportant = 0;
+				buffer = (*cinfo.mem->alloc_sarray)
+					((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+				while (cinfo.output_scanline < cinfo.output_height) {
+					(void) jpeg_read_scanlines(&cinfo, buffer, 1);
+					memcpy(&((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride], buffer[0], row_stride);
+					int j;
+					for(j = 0; j < cinfo.output_width; j++){
+						JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
+						JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+						dst[0] = src[2];
+						dst[1] = src[1];
+						dst[2] = src[0];
+					}
+				}
+				(void) jpeg_finish_decompress(&cinfo);
+				jpeg_destroy_decompress(&cinfo);
+				fclose(infile);
+
+/*				bmi = malloc(sizeof(BITMAPINFOHEADER) + bmd.dwDataSize);
 				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 				bmi->bmiHeader.biWidth = bmd.nWidth; 
 				bmi->bmiHeader.biHeight = -bmd.nHeight;
@@ -1034,7 +1124,7 @@ GLuint ProjectSphereJpg(const char *fname){
 				bmi->bmiHeader.biClrUsed = 0;
 				bmi->bmiHeader.biClrImportant = 0;
 				memcpy(bmi->bmiColors, bmd.pBmp, bmd.dwDataSize);
-				FreeBitmapData(&bmd);
+				FreeBitmapData(&bmd);*/
 
 				texlist = ProjectSphereMap(fname, bmi);
 
@@ -1046,7 +1136,8 @@ GLuint ProjectSphereJpg(const char *fname){
 		}
 		return texlist;
 }
-
+#endif
+#if 0
 #define ASTEROIDLIST 1
 
 static void drawasteroid(const double org[3], const double pyr[3], double rad, unsigned long seed){
@@ -2684,7 +2775,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 /*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
 		VECADDIN(v01, v0);
 		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/
-		numstars = NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy);
+		numstars = int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
 		for(i = 0; i < numstars; i++){
 			double pos[3], rvelo;
 			double radius = radiusfactor;
@@ -2751,7 +2842,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 							int di = i - TEXSIZE / 2, dj = j - TEXSIZE / 2;
 							int sdist = di * di + dj * dj;
 							bits[i][j][0] = /*255;*/
-							bits[i][j][1] = TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.);
+							bits[i][j][1] = GLubyte(TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.));
 						}
 						glTexImage2D(GL_TEXTURE_2D, 0, 2, TEXSIZE, TEXSIZE, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, bits);
 					/*	glNewList(list = glGenLists(1), GL_COMPILE);
@@ -2798,9 +2889,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					col[2] = b / 256.F;
 					col[3] = 1.F;*/
 					if(g_invert_hyperspace && LIGHT_SPEED < velolen){
-						col[0] *= LIGHT_SPEED / velolen;
-						col[1] *= LIGHT_SPEED / velolen;
-						col[2] *= LIGHT_SPEED / velolen;
+						VECSCALEIN(col, GLfloat(LIGHT_SPEED / velolen));
 						r *= LIGHT_SPEED / velolen;
 						g *= LIGHT_SPEED / velolen;
 						b *= LIGHT_SPEED / velolen;

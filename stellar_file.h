@@ -52,6 +52,7 @@ public:
 	typedef Astrobj st;
 	TexSphere(const char *name, CoordSys *cs);
 	const char *classname()const;
+	bool readFile(StellarContext &, int argc, char *argv[]);
 	void draw(const Viewer *);
 };
 

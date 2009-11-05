@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,9 +64,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib wingrp.lib Vfw32.lib clib.lib cpplib.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\..\wingraph"
+				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -121,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -141,9 +141,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib wingrp.lib Vfw32.lib clib.lib cpplib.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\..\wingraph"
+				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -187,6 +187,10 @@
 			</File>
 			<File
 				RelativePath="..\astrodraw.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\bitmap.c"
 				>
 			</File>
 			<File
@@ -257,6 +261,10 @@
 			</File>
 			<File
 				RelativePath="..\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\bitmap.h"
 				>
 			</File>
 			<File

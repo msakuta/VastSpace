@@ -401,7 +401,9 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	cuts = CircleCuts(32);
 	finecuts = CircleCutsPartial(256, 9);
 
-	dist = VECDIST(apos, vw->pos);
+	dist = (apos - vw->pos).len();
+	if(dist < a->rad)
+		return;
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -464,7 +466,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	/*		MAT4CPY(rot, irot);*/
 			params.texmat = rot2 * irot;
 		}
-		mat = irot.translatein(0., 0., dist).scalein(a->rad, a->rad, a->rad);
+		mat = irot.translatein(0., 0., dist).scalein(-a->rad, -a->rad, -a->rad);
 	}
 
 	glPushMatrix();
@@ -601,16 +603,9 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 void TexSphere::draw(const Viewer *vw){
-//	Vec3d apos = vw->cs->tocs(pos, parent);
-	Vec3d sunpos;
 	Astrobj *sun = findBrightest();
-	sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
-	double scale = calcScale(*vw);
+	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 
-//	Vec3d tp = apos - vw->pos;
-//	double spe = (tp.sp(vw->velo) / tp.len() / vw->velolen - 1.) / 2.;
-	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-	scale *= zoom;
 	drawTextureSphere(this, vw, sunpos,
 		Vec4<GLfloat>(COLOR32R(basecolor) / 255., COLOR32R(basecolor) / 255., COLOR32B(basecolor) / 255., 1),
 		Vec4<GLfloat>(COLOR32R(basecolor) / 511., COLOR32G(basecolor) / 511., COLOR32B(basecolor) / 511., 1), &texlist, NULL, NULL);

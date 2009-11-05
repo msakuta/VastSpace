@@ -14,6 +14,7 @@
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/c.h>
+#include <clib/cfloat.h>
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>
 #include <clib/gl/gldraw.h>
@@ -49,6 +50,8 @@ static double g_space_near_clip = 0.01, g_space_far_clip = 1e3;
 bool mouse_captured = false;
 int gl_wireframe = 0;
 double gravityfactor = 1.;
+int g_gear_toggle_mode = 0;
+double flypower = 1.;
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
@@ -160,6 +163,47 @@ static void cslist(const CoordSys *root, double &y){
 	}
 }
 
+static void draw_gear(double dt){
+	double (*cuts)[2];
+	double desired;
+	int i;
+	static double gearphase = 0;
+
+	desired = pl.gear * 360 / 8;
+	if(gearphase == desired && !((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G))
+		return;
+	if(gearphase != desired)
+		gearphase = approach(gearphase, desired, 360 * dt, 360);
+
+	cuts = CircleCuts(8 * 6);
+
+	glPushMatrix();
+	glRotated((-gearphase), 0, 0, -1.);
+	glBegin(GL_LINE_LOOP);
+	for(i = 0; i < 8 * 6; i++){
+		double f = (i + 4) % 6 < 3 ? .5 : .7;
+		glVertex2d(f * cuts[i][0], f * cuts[i][1]);
+	}
+	glEnd();
+	glPopMatrix();
+
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(.15, .75);
+	glVertex2d(-.15, .75);
+	glVertex2d(-.15, .45);
+	glVertex2d(.15, .45);
+	glEnd();
+
+	for(i = 0; i < 8; i++){
+		glPushMatrix();
+		glRotated(i * 360 / 8 - gearphase, 0, 0, -1.);
+		glTranslated(0, 0.6, 0);
+		glScaled(.05, .05, 1.);
+		gldPolyChar(i + '1');
+		glPopMatrix();
+	}
+}
+
 void draw_func(Viewer &vw, double dt){
 	int i;
 	GLcull glc = GLcull(vw.fov, avec3_000, mat4_u, 1. / 1e3, 1e10);
@@ -229,6 +273,12 @@ void draw_func(Viewer &vw, double dt){
 	glScaled(1. / (vw.vp.m / 16.), 1. / (vw.vp.m / 16.), 1.);
 	double y = vw.vp.h / 16.;
 	cslist(&galaxysystem, y);
+	glPopMatrix();
+
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslated(0,0,-1);
+	draw_gear(dt);
 	glPopAttrib();
 	glPopMatrix();
 }
@@ -289,7 +339,7 @@ void display_func(void){
 
 		MotionFrame(dt);
 
-		MotionAnim(pl, dt);
+		MotionAnim(pl, dt * flypower);
 
 		pl.velolen = pl.velo.len();
 		pl.pos += pl.velo * (1. + pl.velolen) * dt;
@@ -537,6 +587,34 @@ static void winglend(HGLRC hgl){
 #define ESC 0x1b
 
 static void key_func(unsigned char key, int x, int y){
+	switch(key){
+		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
+				pl.gear = key - '1';
+				MotionSetToggle(PL_G, 0);
+				flypower = .05 * pow(16, double(key - '2'));
+
+/*				if(warp_move == pl.mover && key != '9'){
+					flypower = .05 * pow(16, key - '2');
+					break;
+				}*/
+
+/*				if(key == '1'){
+//					pl.mover = player_walk;
+					pl.gear = 0;
+					flypower = .05 * pow(16, key - '2');
+				}
+				else if(key == '9'){
+//					pl.mover = warp_move;
+					flypower = .05 * pow(16, key - '2');
+				}
+				else{
+//					pl.mover = add_velo_win;
+					flypower = .05 * pow(16, key - '2');
+				}*/
+			}
+			break;
+	}
 	BindExec(key);
 }
 
@@ -640,6 +718,7 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
+	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &galaxysystem);

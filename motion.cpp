@@ -97,19 +97,19 @@ int MotionSetToggle(int mask, int state){
 	return toggleinputstate &= ~mask | state;
 }
 
-void MotionAnim(Player &pl, double dt){
+void MotionAnim(Player &pl, double dt, double accel){
 	if(inputstate & PL_W)
-		pl.velo -= pl.rot.itrans(vec3_001) * dt;
+		pl.velo -= pl.rot.itrans(vec3_001) * dt * accel;
 	if(inputstate & PL_S)
-		pl.velo += pl.rot.itrans(vec3_001) * dt;
+		pl.velo += pl.rot.itrans(vec3_001) * dt * accel;
 	if(inputstate & PL_A)
-		pl.velo -= pl.rot.itrans(vec3_100) * dt;
+		pl.velo -= pl.rot.itrans(vec3_100) * dt * accel;
 	if(inputstate & PL_D)
-		pl.velo += pl.rot.itrans(vec3_100) * dt;
+		pl.velo += pl.rot.itrans(vec3_100) * dt * accel;
 	if(inputstate & PL_Z)
-		pl.velo -= pl.rot.itrans(vec3_010) * dt;
+		pl.velo -= pl.rot.itrans(vec3_010) * dt * accel;
 	if(inputstate & PL_Q)
-		pl.velo += pl.rot.itrans(vec3_010) * dt;
+		pl.velo += pl.rot.itrans(vec3_010) * dt * accel;
 	if(inputstate & PL_E)
 		pl.velo = Vec3d(0,0,0);
 	if(inputstate & PL_F){

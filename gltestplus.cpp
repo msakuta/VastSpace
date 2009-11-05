@@ -206,8 +206,6 @@ static void draw_gear(double dt){
 
 void draw_func(Viewer &vw, double dt){
 	int i;
-	GLcull glc = GLcull(vw.fov, avec3_000, mat4_u, 1. / 1e3, 1e10);
-	vw.gc = &glc;
 	for(i = 0; i < numof(balls); i++){
 		balls[i].anim(dt);
 	}
@@ -216,6 +214,8 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
+	GLcull glc = GLcull(vw.fov, vw.pos, vw.irot, 1. / 1e3, 1e10);
+	vw.gc = &glc;
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
 	glDisable(GL_CULL_FACE);
@@ -339,7 +339,7 @@ void display_func(void){
 
 		MotionFrame(dt);
 
-		MotionAnim(pl, dt * flypower);
+		MotionAnim(pl, dt, flypower);
 
 		pl.velolen = pl.velo.len();
 		pl.pos += pl.velo * (1. + pl.velolen) * dt;
@@ -743,7 +743,7 @@ int main(int argc, char *argv[])
 		HWND hWnd;
 		ATOM atom;
 		HINSTANCE hInst;
-		RECT rc = {100,100,100+512,100+384};
+		RECT rc = {100,100,100+1024,100+768};
 /*		RECT rc = {0,0,0+512,0+384};*/
 		hInst = GetModuleHandle(NULL);
 

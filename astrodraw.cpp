@@ -32,6 +32,7 @@ extern "C"{
 #define numof(a) (sizeof(a)/sizeof*(a))
 #define signof(a) ((a)<0?-1:0<(a)?1:0)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
+#define EPSILON 1e-7 // not sure
 
 #ifndef MAX
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -48,6 +49,7 @@ extern "C"{
 
 int g_invert_hyperspace = 1;
 
+void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -290,9 +292,8 @@ typedef struct normvertex_params{
 } normvertex_params;
 
 static int normvertex_invokes = 0;
-#if 1
+
 static void normvertexf(double x, double y, double z, normvertex_params *p, double ilen, int i, int j){
-	extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 	Vec3d v, v1, vt;
 	double theta, phi;
 	normvertex_invokes++;
@@ -302,7 +303,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 	v1 = p->mat.dvp3(v);
 	glNormal3dv(v1);
 	if(p->texenable){
-		MAT4DVP3(vt, p->texmat, v);
+		vt = p->texmat.dvp3(v);
 		theta = vt[2];
 		phi = vt[0];
 	#if 0
@@ -337,18 +338,20 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 /*	phi = atan2(v1[1], v1[0]);
 	theta = acos(v1[2] / sqrt(v1[0] * v1[0] + v1[1] * v1[1])) + M_PI / 2.;
 	glTexCoord2d(phi / 2. / M_PI, theta / M_PI);*/
-	MAT4VP3(v1, p->mat, v);
-	theta = VECLEN(v1);
-	VECSCALE(v, v1, 1. / theta);
-	MAT4VP3(v1, p->vw->relrot, v);
-	VECSCALEIN(v1, theta);
+	if(p->vw->relative){
+		v1 = p->mat * v;
+		theta = v1.len();
+		v = v1 * 1. / theta;
+		v1 = p->vw->relrot * v;
+		v1.scalein(theta);
+	}
+	else
+		v1 = p->vw->relrot * (p->mat * v);
 /*	VECNORMIN(v1);*/
 /*	VECSCALEIN(v1, ilen);*/
 	glVertex3dv(v1);
 }
 
-#endif
-#if 1
 
 #define normvertex(x,y,z,p,ilen) normvertexf(x,y,z,p,ilen,i,j)
 #define PROJTS 1024
@@ -431,9 +434,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	glMatrixMode(GL_MODELVIEW);*/
 
 	{
-		GLfloat mat_specular[] = {0., 0., 0., 1.}/*{ 1., 1., .1, 1.0 }*/;
-/*		GLfloat mat_diffuse[] = { .5, .5, .5, 1.0 };
-		GLfloat mat_ambient[] = { 0.1, 0.1, 0.5, 1.0 };*/
+		GLfloat mat_specular[] = {0., 0., 0., 1.};
 		GLfloat mat_shininess[] = { 50.0 };
 		GLfloat color[] = {1., 1., 1., 1.}, amb[] = {.0, 0., 0., 1.};
 
@@ -486,21 +487,14 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	}
 
-/*	glLoadIdentity();*/
-/*	MAT4IDENTITY(mat);*/
-/*	{
-		GLfloat mat[4] = {.5,.5,.5,1.};
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat);
-	}*/
-/*	TimeMeasStart(&tm);*/
 	normvertex_invokes = 0;
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 	glBegin(GL_QUADS);
 	jstart = int(tangent * 32 / 2 / M_PI);
 	for(j = jstart; j < (fine ? 7 : 8); j++){
 		double c, s, len1, len2;
-		avec3_t v1, v;
+		Vec3d v1, v;
 		if(j == jstart){
 			c = cos(tangent);
 			s = sin(tangent);
@@ -510,10 +504,10 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 			s = cuts[j][0];
 		}
 		v[0] = c, v[1] = 0., v[2] = s;
-		MAT4VP3(v1, mat, v);
+		v1 = mat * v;
 		len1 = 1. / VECLEN(v1);
 		v[0] = cuts[j+1][1], v[2] = cuts[j+1][0];
-		MAT4VP3(v1, mat, v);
+		v1 = mat * v;
 		len2 = 1. / VECLEN(v1);
 		for(i = 0; i < 32; i++){
 			int i2 = (i+1) % 32;
@@ -527,12 +521,12 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	if(1 <= fine) for(i = 0; i < 32; i++) for(j = 0; j < (1 < fine ? 7 : 8); j++){
 		int i2 = (i+1) % 32;
 		double len1, len2;
-		avec3_t v1, v;
+		Vec3d v1, v;
 		v[0] = finecuts[j][0], v[1] = 0., v[2] = finecuts[j][1];
-		MAT4VP3(v1, mat, v);
+		v1 = mat * v;
 		len1 = 1. / VECLEN(v1);
 		v[0] = finecuts[j+1][0], v[2] = finecuts[j+1][1];
-		MAT4VP3(v1, mat, v);
+		v1 = mat * v;
 		len2 = 1. / VECLEN(v1);
 		params.map = -1;
 		normvertex(cuts[i][0] * finecuts[j][0], cuts[i][1] * finecuts[j][0], finecuts[j][1], &params, len1);
@@ -551,12 +545,12 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 		for(i = 0; i < 32; i++) for(j = 0; j < 8; j++){
 			int i2 = (i+1) % 32;
 			double len1, len2;
-			avec3_t v1, v;
+			Vec3d v1, v;
 			v[0] = ffinecuts[j][0], v[1] = 0., v[2] = ffinecuts[j][1];
-			MAT4VP3(v1, mat, v);
+			v1 = mat * v;
 			len1 = 1. / VECLEN(v1);
 			v[0] = ffinecuts[j+1][0], v[2] = ffinecuts[j+1][1];
-			MAT4VP3(v1, mat, v);
+			v1 = mat * v;
 			len2 = 1. / VECLEN(v1);
 			params.detail = 1;
 			params.map = -1;
@@ -567,7 +561,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 		}
 		glEnd();
 	}
-/*	printf("drawtexsphere[%d] %lg\n", normvertex_invokes, TimeMeasLap(&tm));*/
+	printf("drawtexsphere[%d] %lg\n", normvertex_invokes, TimeMeasLap(&tm));
 /*	glBegin(GL_POLYGON);
 	j = 7;
 	for(i = 0; i < 32; i++){
@@ -596,7 +590,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	glPopAttrib();
 	glPopMatrix();
 }
-#endif
+
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]){
 	GLuint zero = 0;
 //	drawTextureSphere(a, vw, sunpos, mat_diffuse, mat_ambient, &zero, mat4identity, NULL);
@@ -606,13 +600,18 @@ void TexSphere::draw(const Viewer *vw){
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 
-	drawTextureSphere(this, vw, sunpos,
-		Vec4<GLfloat>(COLOR32R(basecolor) / 255., COLOR32R(basecolor) / 255., COLOR32B(basecolor) / 255., 1),
-		Vec4<GLfloat>(COLOR32R(basecolor) / 511., COLOR32G(basecolor) / 511., COLOR32B(basecolor) / 511., 1), &texlist, NULL, NULL);
+	{
+		GLfloat hor[4] = {1,.8,.5,1};
+		GLfloat dawn[4] = {1.,.51,.1,1};
+		drawAtmosphere(this, vw, sunpos, 30., hor, dawn, NULL, NULL, 32);
+	}
+	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.))
+		drawTextureSphere(this, vw, sunpos,
+			Vec4<GLfloat>(COLOR32R(basecolor) / 255., COLOR32R(basecolor) / 255., COLOR32B(basecolor) / 255., 1),
+			Vec4<GLfloat>(COLOR32R(basecolor) / 511., COLOR32G(basecolor) / 511., COLOR32B(basecolor) / 511., 1), &texlist, NULL, NULL);
 	st::draw(vw);
 }
 
-#if 0
 static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], int s){
 	double f, g;
 	avec3_t v;
@@ -628,7 +627,7 @@ static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, 
 	glColor4f(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (16 - s) / 16. * air) * (1. - f) + dawn[3] * f);
 }
 
-void drawAtmosphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
+void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
 	int hdiv = slices == 0 ? 16 : slices;
 	int s, t;
 	double horizon_angle;
@@ -637,17 +636,19 @@ void drawAtmosphere(const struct astrobj *a, const Viewer *vw, const avec3_t sun
 	double x, z, phi, theta;
 	double b, d;
 	double redness, isotropy;
-	avec3_t apos, delta, sundir;
-	avec3_t spos;
-	tocs(apos, vw->cs, a->pos, a->cs);
-	VECSUB(delta, apos, vw->pos);
-	sdist = VECSLEN(delta);
+	Vec3d apos, delta, sundir;
+	Vec3d spos;
+	apos = vw->cs->tocs(a->pos, a->parent);
+	delta = apos - vw->pos;
+	sdist = delta.slen();
 
 	/* too far or buried in */
-	if(a->rad * a->rad / sdist < .01 * .01 || sdist < a->rad * a->rad)
+	if(a->rad * a->rad / sdist < .01 * .01)
 		return;
 
 	dist = sqrt(sdist);
+	if(dist < a->rad)
+		dist = a->rad + EPSILON;
 	as = asin(sas = a->rad / dist);
 	cas = cos(as);
 	height = dist - a->rad;
@@ -663,16 +664,13 @@ void drawAtmosphere(const struct astrobj *a, const Viewer *vw, const avec3_t sun
 		redness = (1. / (1. + 500 * cen * cen * cen * cen) / (1. + MAX(0., dist - a->rad) / thick));
 	}
 
-/*	x = apos[0] - vw->pos[0], z = apos[2] - vw->pos[2];
-	phi = atan2(x, z);
-	theta = atan2((apos[1] - vw->pos[1]), sqrt(x * x + z * z));*/
-
 	glPushMatrix();
 	{
-		amat4_t rot;
-		directrot(apos, vw->pos, rot);
-		mat4tdvp3(sundir, rot, spos);
-		VECNORMIN(sundir);
+		Mat4d rot;
+		gldLookatMatrix(~rot, ~(apos - vw->pos));
+		glMultMatrixd(rot);
+		sundir = rot.tdvp3(spos);
+		sundir.normin();
 	}
 /*	glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
 	glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);*/
@@ -729,6 +727,7 @@ void drawAtmosphere(const struct astrobj *a, const Viewer *vw, const avec3_t sun
 	glPopMatrix();
 }
 
+#if 0
 #define DETAILSIZE 64
 static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
 	struct random_sequence rs;

@@ -661,6 +661,10 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	return false;
 }
 
+Astrobj *CoordSys::toAstrobj(){
+	return NULL;
+}
+
 bool CoordSys::getpath(char *buf, size_t size)const{
 #if 1
 	return !!getpathint(buf, size);

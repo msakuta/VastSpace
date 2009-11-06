@@ -595,7 +595,7 @@ static double add(calc_t *ca, const char **pp, size_t len){
 }
 
 
-double calc3(const char **s, const struct varlist *v, int undname(const char *, int, double*)){
+double calc3(const char *const *s, const struct varlist *v, int undname(const char *, int, double*)){
 	double ret = 1.;
 	calc_t ca = {0};
 	ca.ss = 0; /* top level */

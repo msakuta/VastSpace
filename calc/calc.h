@@ -33,13 +33,13 @@ struct varlist{
 /* Parses the given null-terminated string into single double.
   The string can have additive (+, -) or multiplicative (*, /) operators.
   The function handles operation order correctly. */
-extern double calc(const char **s);
-extern double calc2(const char **s);
+extern double calc(const char *const *s);
+extern double calc2(const char *const *s);
 
 /* calc level 3 doesn't change the given variables; they are only referred and
   not to be assigned. undname function is called when undefined name is invoked.
   return 0 if it's assumed error, otherwise return 1 and assign its value to *value. */
-extern double calc3(const char **s, const struct varlist *variables, int undname(const char *name, int namelen, double *value));
+extern double calc3(const char *const *s, const struct varlist *variables, int undname(const char *name, int namelen, double *value));
 
 /* If something went wrong on parsing the string, the calc function returns 0.0
   and next invocation of calc_get_last_errno function returns a nonzero value.

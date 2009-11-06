@@ -25,7 +25,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 	if(0);
 	else if(!strcmp(s, "mass")){
 		if(argv[1]){
-			mass = calc3(const_cast<const char**>(&argv[1]), sc.vl, NULL);
+			mass = calc3(&argv[1], sc.vl, NULL);
 			if(flags & AO_BLACKHOLE)
 				rad = 2 * UGC * mass / LIGHT_SPEED / LIGHT_SPEED;
 		}
@@ -69,7 +69,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 	}
 	else if(!strcmp(s, "absolute_magnitude")){
-		absmag = calc3(const_cast<const char**>(&ps), sc.vl, NULL);
+		absmag = calc3(&ps, sc.vl, NULL);
 	}
 	else
 		return CoordSys::readFile(sc, argc, argv);
@@ -78,8 +78,6 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 
 bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
-	const char **pps = const_cast<const char**>(&ps);
-	const char **cargv = const_cast<const char**>(argv);
 	if(0);
 	else if(!strcmp(s, "texture")){
 		if(1 < argc){
@@ -91,33 +89,33 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "atmosphere_height")){
 		if(1 < argc){
-			atmodensity = calc3(pps, sc.vl, NULL);
+			atmodensity = calc3(&ps, sc.vl, NULL);
 			flags |= AO_ATMOSPHERE;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_color")){
 		if(1 < argc)
-			atmohor[0] = calc3(&cargv[1], sc.vl, NULL);
+			atmohor[0] = float(calc3(&argv[1], sc.vl, NULL));
 		if(2 < argc)
-			atmohor[1] = calc3(&cargv[2], sc.vl, NULL);
+			atmohor[1] = float(calc3(&argv[2], sc.vl, NULL));
 		if(3 < argc)
-			atmohor[2] = calc3(&cargv[3], sc.vl, NULL);
+			atmohor[2] = float(calc3(&argv[3], sc.vl, NULL));
 		if(4 < argc)
-			atmohor[3] = calc3(&cargv[4], sc.vl, NULL);
+			atmohor[3] = float(calc3(&argv[4], sc.vl, NULL));
 		else
 			atmohor[3] = 1.f;
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_dawn")){
 		if(1 < argc)
-			atmodawn[0] = calc3(&cargv[1], sc.vl, NULL);
+			atmodawn[0] = float(calc3(&argv[1], sc.vl, NULL));
 		if(2 < argc)
-			atmodawn[1] = calc3(&cargv[2], sc.vl, NULL);
+			atmodawn[1] = float(calc3(&argv[2], sc.vl, NULL));
 		if(3 < argc)
-			atmodawn[2] = calc3(&cargv[3], sc.vl, NULL);
+			atmodawn[2] = float(calc3(&argv[3], sc.vl, NULL));
 		if(4 < argc)
-			atmodawn[3] = calc3(&cargv[4], sc.vl, NULL);
+			atmodawn[3] = float(calc3(&argv[4], sc.vl, NULL));
 		else
 			atmodawn[3] = 1.f;
 		return true;
@@ -162,16 +160,11 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 		const coordsys *cs2 = cs->children[i];
 #endif
 		double val;
-		try{
-			Astrobj *a = dynamic_cast<Astrobj*>(cs2);
-			val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
-			if(p.brightness < val){
-				p.brightness = val;
-				p.ret = a;
-			}
-		}
-		catch(...){
-			val = 0.;
+		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
+		val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+		if(p.brightness < val){
+			p.brightness = val;
+			p.ret = a;
 		}
 		if(findchildbr(p, retcs, src, cs2, NULL))
 			return 1;
@@ -192,16 +185,11 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 	v = v1 + cs->pos;
 
 	double val;
-	try{
-		Astrobj *a = dynamic_cast<Astrobj*>(cs2);
-		val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
-		if(p.brightness < val){
-			p.brightness = val;
-			p.ret = a;
-		}
-	}
-	catch(...){
-		val = 0.;
+	Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
+	val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+	if(p.brightness < val){
+		p.brightness = val;
+		p.ret = a;
 	}
 	if(p.brightness < val)
 		p.brightness = val;

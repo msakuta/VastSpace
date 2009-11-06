@@ -45,6 +45,8 @@ public:
 	virtual const char *classname()const;
 	void planet_anim(double dt);
 	bool readFile(StellarContext &, int argc, char *argv[]);
+	Astrobj *toAstrobj(){ return this; }
+
 	Astrobj *findBrightest()const;
 };
 

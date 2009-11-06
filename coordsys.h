@@ -72,6 +72,13 @@ public:
 	  odd rules to rotate the camera. Default is 'trackball' type rotation. */
 	virtual Quatd rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const;
 
+	// Cast to Astrobj, for distinguishing CoordSys and Astrobj from the children list.
+	// Returns NULL if cast is not possible (i.e. CoordSys object).
+	virtual Astrobj *toAstrobj();
+
+	// Const version simply follows the behavior of non-const version.
+	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
+
 	Vec3d tocs(const Vec3d &src, const CoordSys *cs)const;
 
 	/*

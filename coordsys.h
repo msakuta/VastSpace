@@ -4,6 +4,8 @@
   to find out where the jupiter's satellite is in the earth's 
   coordinates, for example. */
 
+#include "viewer.h"
+
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/amat4.h>
@@ -12,6 +14,7 @@ extern "C"{
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
 #include <cpplib/quat.h>
+#include <vector>
 
 #define CS_DELETE   2 /* marked as to be deleted */
 #define CS_WARPABLE 4 /* can be targetted for warp destinaiton */
@@ -40,17 +43,19 @@ public:
 
 	/* These trivial variables are only used on drawing to enhance speed by caching
 	  certain values. */
-	enum vwflag{VW_POS = 1, VW_SDIST = 2, VW_SCALE = 4};
+	enum vwflag{VW_POS = 1, VW_SDIST = 2, VW_DIST = 4, VW_SCALE = 8};
 	int vwvalid; /* validity flags for vwpos and vwsdist */
 	Vec3d vwpos; /* position in viewer's coordinates */
-	double vwsdist; /* distance from the viewer */
+	double vwsdist; // squared distance
+	double vwdist; /* distance from the viewer */
 	double vwscale; /* apparent scale */
 
 	WarField *w;
 	CoordSys *next; /* list of siblings */
 	int nchildren; /* unnecessary? */
 	CoordSys *children/*[64]*/; /* starting pointer to list of children */
-	CoordSys **aorder; /* ordered list of drawable objects belonging to this coordsys */
+	typedef std::vector<CoordSys*> AOList;
+	AOList aorder; /* ordered list of drawable objects belonging to this coordsys */
 	int naorder; /* count of elements in aorder */
 
 	CoordSys();
@@ -62,6 +67,7 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();
+	virtual void predraw(const Viewer *); // called just before draw method.
 	virtual void draw(const Viewer *); // it's not const member function, altering contents is allowed.
 
 	virtual bool belongs(const Vec3d &pos, const CoordSys *pos_cs)const;
@@ -103,7 +109,7 @@ public:
 	CoordSys **legitimize_child();
 
 	/* Adopt one as child which was originally another parent's */
-	void adopt_child(CoordSys *newparent);
+	void adopt_child(CoordSys *newparent, bool retainPosition = true);
 
 	/* convert position, velocity, rotation matrix into one coordinate system
 	  to another. */
@@ -130,21 +136,64 @@ public:
 	  search non-rewarding subtrees. */
 	CoordSys *findcspath(const char *path);
 
+	// partial path
+	CoordSys *findcsppath(const char *path, const char *pathend);
+
 	/* Get the absolute path string. */
 	bool getpath(char *buf, size_t size)const;
 
 	/* Find nearest Extent and Isolated system in ancestory. */
 	CoordSys *findeisystem();
 
+	// This system must be a Extent and Isolated.
+	bool addToDrawList(CoordSys *descendant);
+
 	void startdraw();
 
 	static void deleteAll(CoordSys **);
 
 	Vec3d calcPos(const Viewer &vw);
+	double calcSDist(const Viewer &vw);
+	double calcDist(const Viewer &vw);
 	double calcScale(const Viewer &vw);
 
 private:
 	int getpathint(char *buf, size_t size)const;
 };
+
+inline bool CoordSys::addToDrawList(CoordSys *descendant){
+	for(AOList::iterator i = aorder.begin(); i != aorder.end(); i++) if(*i == descendant)
+		return false;
+	aorder.push_back(descendant);
+	return true;
+}
+
+inline Vec3d CoordSys::calcPos(const Viewer &vw){
+	if(vwvalid & VW_POS)
+		return vwpos;
+	vwvalid |= VW_POS;
+	return vwpos = vw.cs->tocs(pos, parent);
+}
+
+inline double CoordSys::calcSDist(const Viewer &vw){
+	if(vwvalid & VW_SDIST)
+		return vwsdist;
+	vwvalid |= VW_SDIST;
+	return vwsdist = (vw.pos - calcPos(vw)).slen();
+}
+
+inline double CoordSys::calcDist(const Viewer &vw){
+	if(vwvalid & VW_DIST)
+		return vwdist;
+	vwvalid |= VW_DIST;
+	return vwdist = sqrt(calcSDist(vw));
+}
+
+inline double CoordSys::calcScale(const Viewer &vw){
+	if(vwvalid & VW_SCALE)
+		return vwscale;
+	vwvalid |= VW_SCALE;
+	return vwscale = rad * vw.gc->scale(calcPos(vw));
+}
 
 #endif

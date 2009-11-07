@@ -9,6 +9,7 @@ public:
 	typedef Astrobj st;
 	Star(const char *name, CoordSys *cs);
 	virtual const char *classname()const;
+	virtual void predraw(const Viewer*);
 	virtual void draw(const Viewer*);
 };
 

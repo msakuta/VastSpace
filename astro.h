@@ -46,6 +46,8 @@ public:
 	void planet_anim(double dt);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 	Astrobj *toAstrobj(){ return this; }
+	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
+	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
 
 	Astrobj *findBrightest()const;
 };

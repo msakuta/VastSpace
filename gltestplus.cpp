@@ -228,6 +228,7 @@ void draw_func(Viewer &vw, double dt){
 		vw.frustum(1. / 1e3, 1e10)
 	));
 	galaxysystem.startdraw();
+	galaxysystem.predraw(&vw);
 	galaxysystem.draw(&vw);
 	projection(glPopMatrix());
 	glPopAttrib();

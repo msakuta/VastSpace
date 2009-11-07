@@ -54,6 +54,8 @@ public:
 	const char *classname()const;
 	bool readFile(StellarContext &, int argc, char *argv[]);
 	void draw(const Viewer *);
+	virtual double atmoScatter(const Viewer &vw)const;
+	virtual bool sunAtmosphere(const Viewer &vw)const;
 };
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);

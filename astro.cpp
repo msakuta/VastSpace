@@ -11,13 +11,10 @@ extern "C"{
 Astrobj **astrobjs;
 int nastrobjs;
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs), absmag(-10){
+Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
 	CoordSys *eis = findeisystem();
-	basecolor = COLOR32RGBA(127,127,127,255);
-	if(eis){
-		eis->aorder = (CoordSys**)realloc(eis->aorder, (eis->naorder + 1) * sizeof *eis->aorder);
-		eis->aorder[eis->naorder++] = this;
-	}
+	if(eis)
+		eis->addToDrawList(this);
 }
 
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -225,4 +222,17 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){
 
 const char *TexSphere::classname()const{
 	return "TexSphere";
+}
+
+double TexSphere::atmoScatter(const Viewer &vw)const{
+	if(!(flags & AO_ATMOSPHERE))
+		return st::atmoScatter(vw);
+	double dist = const_cast<TexSphere*>(this)->calcDist(vw);
+	double thick = atmodensity;
+	double d = (dist - rad) < thick * 128. ? 1. : thick * 128. / (dist - rad);
+	return d;
+}
+
+bool TexSphere::sunAtmosphere(const Viewer &vw)const{
+	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
 }

@@ -312,7 +312,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			v->name = (char*)malloc(strlen(ps) + 1);
 			strcpy(v->name, ps);
 			v->type = var::CALC_D;
-			v->value.d = 2 < argc ? calc3(const_cast<const char**>(&argv[2]), sc.vl, NULL) : 0.;
+			v->value.d = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
 			continue;
 /*			definition = 2, ps = NULL;*/
 		}

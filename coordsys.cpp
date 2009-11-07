@@ -15,6 +15,7 @@ extern "C"{
 #include <cpplib/gl/cullplus.h>
 #include <stddef.h>
 #include <assert.h>
+#include <algorithm>
 
 #define numof(a) (sizeof(a)/sizeof*(a))
 
@@ -40,7 +41,7 @@ CoordSys **CoordSys::legitimize_child(){
 	return NULL;
 }
 
-void CoordSys::adopt_child(CoordSys *newparent){
+void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	CoordSys *adoptee = this;
 	CoordSys **ppcs2;
 	CoordSys dummycs, **ppdummycs;
@@ -58,14 +59,16 @@ void CoordSys::adopt_child(CoordSys *newparent){
 
 	/* obtain relative rotation matrix between old node to new node. */
 	dummycs.qrot = quat_u;
-	q = adoptee->tocsq(newparent);
+	if(retain){
+		q = adoptee->tocsq(newparent);
 /*	MAT4IDENTITY(dummycs.rot);
 	MAT4IDENTITY(dummycs.irot);
 	tocsim(mat, newparent, adoptee);*/
 
 	/* calculate relativity */
-	pos = newparent->tocs(adoptee->pos, adoptee->parent);
-	velo = newparent->tocsv(adoptee->velo, adoptee->pos, adoptee->parent);
+		pos = newparent->tocs(adoptee->pos, adoptee->parent);
+		velo = newparent->tocsv(adoptee->velo, adoptee->pos, adoptee->parent);
+	}
 
 	/* remove from old family's list because one cannot be child of 2 or more
 	  ancestory. this is one of the few points that is different from real
@@ -76,13 +79,12 @@ void CoordSys::adopt_child(CoordSys *newparent){
 		break;
 	}
 
-	adoptee->pos = pos;
-	adoptee->velo = velo;
-	adoptee->omg = q.trans(adoptee->omg);
-/*	mat4mp(dummycs.rot, adoptee->rot, mat);*/
-	adoptee->qrot = q;
-/*	MAT4CPY(adoptee->rot, mat);
-	MAT4TRANSPOSE(adoptee->irot, adoptee->rot);*/
+	if(retain){
+		adoptee->pos = pos;
+		adoptee->velo = velo;
+		adoptee->omg = q.trans(adoptee->omg);
+		adoptee->qrot = q;
+	}
 
 	/* unlink dummy coordinate system */
 	*ppdummycs = dummycs.next;
@@ -431,7 +433,8 @@ CoordSys *CoordSys::findcspath(const char *path){
 }
 
 /* partial path */
-CoordSys *findcsppath(CoordSys *root, const char *path, const char *pathend){
+CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
+	CoordSys *root = this;
 	CoordSys *cs;
 	const char *p;
 	if(!*path || 0 <= path - pathend)
@@ -440,43 +443,33 @@ CoordSys *findcsppath(CoordSys *root, const char *path, const char *pathend){
 	if(!p || pathend - p < 0)
 		p = pathend;
 	if(p) for(cs = root->children; cs; cs = cs->next) if(!strncmp(cs->name, path, p - path))
-		return findcsppath(cs, p+1, pathend);
+		return cs->findcsppath(p+1, pathend);
 	return NULL;
 }
 
-static int pastrcmp_invokes = 0;
-
-static double ao_getvwpos(Vec3d *ret, Astrobj *a){
-	extern Player pl;
-	if(a->vwvalid & CoordSys::VW_POS)
-		*ret = a->vwpos;
-	else{
-		*ret = pl.cs->tocs(a->pos, a->parent);
-		a->vwpos = *ret;
-		a->vwvalid |= CoordSys::VW_POS;
-	}
-	if(a->vwvalid & CoordSys::VW_SDIST)
-		return a->vwsdist;
-	else{
-		a->vwsdist = (*ret - pl.pos).slen();
-		a->vwvalid |= CoordSys::VW_SDIST;
-		return a->vwsdist;
-	}
+void CoordSys::predraw(const Viewer *vw){
+	for(CoordSys *cs = children; cs; cs = cs->next)
+		cs->predraw(vw);
 }
 
-int pastrcmp(const Astrobj **a, const Astrobj **b){
-	Vec3d ap, bp;
-	double ad, bd;
-	pastrcmp_invokes++;
-	if(!*a) return 1;
-	else if(!*b) return -1;
-/*	tocs(bp, pl.cs, (*b)->pos, (*b)->cs);*/
-	ad = ao_getvwpos(&bp, const_cast<Astrobj*>(*b)) - (*b)->rad * (*b)->rad;
-	bd = ao_getvwpos(&ap, const_cast<Astrobj*>(*a)) - (*a)->rad * (*a)->rad;
-	return ad /*- (*b)->rad * (*b)->rad*/
-		< bd ? 1 : bd < ad ? -1 : 0 /*- (*a)->rad * (*a)->rad*/;
-}
-
+// In the hope std::sort template function optimizes the comparator function,
+// which is not expected in the case of qsort().
+class AstroCmp{
+	const Viewer &vw;
+public:
+	static int invokes;
+	AstroCmp(const Viewer &avw) : vw(avw){}
+	bool operator()(CoordSys *&a, CoordSys *&b){
+		double ad, bd;
+		invokes++;
+		if(!a) return true;
+		else if(!b) return false;
+		ad = a->calcSDist(vw) - a->rad * a->rad;
+		bd = b->calcSDist(vw) - b->rad * b->rad;
+		return ad < bd ? true : bd < ad ? false : false;
+	}
+};
+int AstroCmp::invokes = 0;
 
 void CoordSys::draw(const Viewer *vw){
 	Vec3d cspos;
@@ -484,21 +477,15 @@ void CoordSys::draw(const Viewer *vw){
 /*	if(cs->flags & CS_EXTENT && vw->gc && glcullFrustum(cspos, cs->rad, vw->gc))
 		return;*/
 	if((CS_EXTENT | CS_ISOLATED) == (flags & (CS_EXTENT | CS_ISOLATED))){
-		CoordSys *a;
-		int i, n = naorder;
-/*		if(naorder != n)
-			aorder = (Astrobj**)realloc(aorder, (naorder = n) * sizeof *aorder);
-		for(a = aolist, i = 0; a; a = (Astrobj*)a->next, i++)
-			aorder[i] = a;*/
 /*		{
 			timemeas_t tm;
 			TimeMeasStart(&tm);*/
-			qsort(aorder, n, sizeof*aorder, reinterpret_cast<int(*)(const void*,const void*)>(pastrcmp));
+		std::sort(aorder.begin(), aorder.end(), AstroCmp(*vw));
 /*			printf("sortcs %d %lg\n", n, TimeMeasLap(&tm));
 		}*/
-		for(i = n - 1; 0 <= i; i--) if(aorder[i]){
-			a = aorder[i];
-			a->draw(vw);
+		AOList::reverse_iterator i = aorder.rbegin();
+		for(; i != aorder.rend();i++) if(*i){
+			(*i)->draw(vw);
 		}
 	}
 }
@@ -545,7 +532,7 @@ void CoordSys::init(const char *path, CoordSys *root){
 	CoordSys *ret = this;
 	const char *p, *name;
 	if(path && (p = strrchr(path, '/'))){
-		root = findcsppath(root, path, p);
+		root = root->findcsppath(path, p);
 		name = p + 1;
 	}
 	else
@@ -570,7 +557,7 @@ void CoordSys::init(const char *path, CoordSys *root){
 	ret->next = NULL;
 	ret->nchildren = 0;
 	ret->children = NULL;
-	ret->aorder = NULL;
+//	ret->aorder = NULL;
 	ret->naorder = 0;
 	legitimize_child();
 }
@@ -609,11 +596,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "pos")){
-		pos[0] = calc3(const_cast<const char **>(&argv[1]), sc.vl, NULL);
+		pos[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)
-			pos[1] = calc3(const_cast<const char **>(&argv[2]), sc.vl, NULL);
+			pos[1] = calc3(&argv[2], sc.vl, NULL);
 		if(3 < argc)
-			pos[2] = calc3(const_cast<const char **>(&argv[3]), sc.vl, NULL);
+			pos[2] = calc3(&argv[3], sc.vl, NULL);
 		return true;
 	}
 	else if(!strcmp(s, "radius")){
@@ -623,7 +610,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
-			rad = .5 * calc3(const_cast<const char **>(&argv[1]), sc.vl, NULL);
+			rad = .5 * calc3(&argv[1], sc.vl, NULL);
 	}
 	else if(!strcmp(s, "parent")){
 		CoordSys *cs2, *csret;
@@ -652,8 +639,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(flags & CS_SOLAR){
 			CoordSys *eis = findeisystem();
 			if(eis){
-				eis->aorder = (CoordSys**)realloc(eis->aorder, (eis->naorder + 1) * sizeof *eis->aorder);
-				eis->aorder[eis->naorder++] = this;
+				eis->addToDrawList(this);
 			}
 		}
 		return true;
@@ -714,17 +700,5 @@ void CoordSys::deleteAll(CoordSys **pp){
 	free(cs2);
 }
 
-Vec3d CoordSys::calcPos(const Viewer &vw){
-	if(vwvalid & VW_POS)
-		return vwpos;
-	vwvalid |= VW_POS;
-	return vwpos = vw.cs->tocs(pos, parent);
-}
 
-double CoordSys::calcScale(const Viewer &vw){
-	if(vwvalid & VW_SCALE)
-		return vwscale;
-	vwvalid |= VW_SCALE;
-	return vwscale = rad * vw.gc->scale(calcPos(vw));
-}
 

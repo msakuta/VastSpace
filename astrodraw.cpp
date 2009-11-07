@@ -54,6 +54,8 @@ extern "C"{
 
 int g_invert_hyperspace = 1;
 
+void drawsuncolona(Astrobj *a, const Viewer *vw);
+void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 GLuint ProjectSphereJpg(const char *fname);
 
@@ -619,6 +621,9 @@ void TexSphere::draw(const Viewer *vw){
 		GLfloat dawn[4] = {1.,.51,.1,1};
 		drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	}
+	if(sunAtmosphere(*vw)){
+		drawsuncolona(findBrightest(), vw);
+	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.))
 		drawTextureSphere(this, vw, sunpos,
 			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
@@ -626,19 +631,22 @@ void TexSphere::draw(const Viewer *vw){
 	st::draw(vw);
 }
 
-static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], int s){
+static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], double s, Vec3d &base){
 	double f;
 	avec3_t v;
-	double horizon, b = (1. - sundir[2]) / 2.;
+	double sp;
+	double horizon, b;
 	v[0] = x;
 	v[1] = y;
 	v[2] = z;
+	sp = VECSP(base, sundir);
+	b = /**(1. - sundir[2]) / 2. * */(sp + 1.) / 2.;
 	horizon = 1. * (1. - (1. - v[2]) * (1. - v[2])) / (1. + -sundir[2] * 4.);
 	horizon = 1. / (1. + ABS(horizon));
 	f = redness * (VECSP(v, sundir) + 1. + isotropy) / (2. + isotropy) * horizon;
 /*	g = f * horizon * horizon * horizon * horizon;*/
 /*	f = redness * ((v[0] * sundir[0] + v[1] * sundir[1]) + v[2] * sundir[2] * isotropy + 1.) / (2. + isotropy);*/
-	glColor4d(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (16 - s) / 16. * air) * (1. - f) + dawn[3] * f);
+	glColor4d(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (1. - s * s * s * s) * air) * (1. - f) + dawn[3] * f);
 }
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
@@ -687,33 +695,38 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	}
 /*	glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
 	glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);*/
-	d = (dist - a->rad) < thick * 128. ? 1. : thick * 128. / (dist - a->rad);
+	d = (dist - a->rad) < thick * 8. ? 1. : thick * 8. / (dist - a->rad);
+	double ss0 = sin(M_PI / 2. - as), sc0 = -cos(M_PI / 2. - as);
 	for(s = 0; s < 16; s++){
 		double h[2][2];
+		double dss[2];
 		double sss, sss1, ss, ss1, f, f1;
 		sss = 16. * (1. - pow(1. - s / 16., 1. / (dist - a->rad)));
 		sss1 = 16. * (1. - pow(1. - (s+1) / 16., 1. / (dist - a->rad)));
-		ss = 1. - (1. - s / 16.) * (1. - s / 16.);
-		ss1 = 1. - (1. - (s+1) / 16.) * (1. - (s+1) / 16.);
+		ss = 1. - pow(1. - s / 16., 2. + (1. - d));
+		ss1 = 1. - pow(1. - (s+1) / 16., 2. + (1. - d));
 		f = (1. + (16 - s) / 16.), f1 = (1. + (16 - (s + 1)) / 16.);
-		if(128. < (15 - s) / 16. * (dist - a->rad) / thick / d)
-			continue;
-		h[0][1] = sin((M_PI - as) * (d * ss + (1. - d)));
-		h[0][0] = -cos((M_PI - as) * (d * ss + (1. - d)));
-		h[1][1] = sin((M_PI - as) * (d * ss1 + (1. - d)));
-		h[1][0] = -cos((M_PI - as) * (d * ss1 + (1. - d)));
+/*		if(128. < (15 - s) / 16. * (dist - a->rad) / thick / d)
+			continue;*/
+		h[0][1] = sin((M_PI - as) * (dss[0] = d * ss + (1. - d)));
+		h[0][0] = -cos((M_PI - as) * (dss[0]));
+		h[1][1] = sin((M_PI - as) * (dss[1] = d * ss1 + (1. - d)));
+		h[1][0] = -cos((M_PI - as) * (dss[1]));
 		for(t = 0; t < hdiv; t++){
 			int t1 = (t + 1) % hdiv;
 			double dawness = redness * (1. - (1. - h[0][0]) * (1. - h[0][0])) / (1. + -sundir[2] * 4.);
+			Vec3d base[2];
+			base[0] = Vec3d(hcuts[t][0] * ss0, hcuts[t][1] * ss0, sc0);
+			base[1] = Vec3d(hcuts[t1][0] * ss0, hcuts[t1][1] * ss0, sc0);
 
 			glBegin(GL_QUADS);
-			atmo_dye_vertex(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, s);
+			atmo_dye_vertex(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[0], base[0]);
 			glVertex3d(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, s);
+			atmo_dye_vertex(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[0], base[1]);
 			glVertex3d(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, s+1);
+			atmo_dye_vertex(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[1], base[1]);
 			glVertex3d(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0]);
-			atmo_dye_vertex(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, s+1);
+			atmo_dye_vertex(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[1], base[0]);
 			glVertex3d(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0]);
 			glEnd();
 
@@ -3166,9 +3179,9 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 
 
-void drawsuncolona(Astrobj *a, const Viewer *vw);
-void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
-
+void Star::predraw(const Viewer *){
+	flags &= ~AO_DRAWAIRCOLONA;
+}
 
 void Star::draw(const Viewer *vw){
 	COLOR32 col = COLOR32RGBA(255,255,255,255);
@@ -3183,27 +3196,25 @@ void Star::draw(const Viewer *vw){
 	}
 	drawpsphere(this, vw, col);
 	if(/*!((struct sun*)a)->aircolona !(flags & AO_DRAWAIRCOLONA)*/1){
-		CoordSys *abest = NULL;
+		Astrobj *abest = NULL;
 		Vec3d epos, spos;
-		int i;;
 
 		/* astrobjs are sorted and the nearest solid celestial body can be
 		  easily found without distance examination. */
 		CoordSys *eics = findeisystem();
-		for(i = 0; i < eics->naorder; i++) if(eics->aorder[i] != this){
-			abest = eics->aorder[i];
-			break;
+		if(eics){
+			bool drawhere = true;
+			for(AOList::iterator i = eics->aorder.begin(); i != eics->aorder.end(); i++){
+				abest = (*i)->toAstrobj();
+				if(abest && abest->sunAtmosphere(*vw)){
+					drawhere = false;
+					break;
+				}
+			}
+			if(drawhere){
+				drawsuncolona(this, vw);
+			}
 		}
-
-		epos = vw->cs->tocs(abest->pos, abest->parent);
-		spos = vw->cs->tocs(pos, parent);
-		epos -= vw->pos;
-		spos -= vw->pos;
-#if 1
-		if(1/*1e10 * 1e10 < VECSDIST(epos, spos)/* || jHitSphere(epos, abest->rad, avec3_000, spos, 1.)*/){
-			drawsuncolona(this, vw);
-		}
-#endif
 	}
 	st::draw(vw);
 }
@@ -3280,14 +3291,14 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	/* astrobjs are sorted and the nearest celestial body with atmosphere can be
 	  easily found without distance examination. */
 	CoordSys *eics = a->findeisystem();
-	for(i = 0; i < eics->naorder; i++) if(eics->aorder[i]->flags & AO_ATMOSPHERE){
-		abest = eics->aorder[i];
+	for(Astrobj::AOList::iterator i = eics->aorder.begin(); i != eics->aorder.end(); i++) if((*i)->flags & AO_ATMOSPHERE){
+		abest = *i;
 		break;
 	}
-	spos = vw->cs->tocs(a->pos, a->parent);
+	spos = a->calcPos(*vw);
 	vpos = vw->pos;
 	if(abest){
-		epos = vw->cs->tocs(abest->pos, abest->parent);
+		epos = abest->calcPos(*vw);
 		height = (epos - vpos).len() - abest->rad;
 	}
 	else{

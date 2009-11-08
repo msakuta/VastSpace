@@ -631,22 +631,35 @@ void TexSphere::draw(const Viewer *vw){
 	st::draw(vw);
 }
 
-static void atmo_dye_vertex(double x, double y, double z, const avec3_t sundir, double redness, double isotropy, double air, const GLfloat col[4], const GLfloat dawn[4], double s, Vec3d &base){
+struct atmo_dye_vertex_param{
+	double redness;
+	double isotropy;
+	double air;
+	double d;
+	double pd;
+	const Vec3d *sundir;
+	const GLfloat *col, *dawn;
+};
+
+static void atmo_dye_vertex(struct atmo_dye_vertex_param &p, double x, double y, double z, double s, const Vec3d &base){
+	const Vec3d &sundir = *p.sundir;
 	double f;
-	avec3_t v;
+	Vec3d v(x, y, z);
 	double sp;
 	double horizon, b;
-	v[0] = x;
-	v[1] = y;
-	v[2] = z;
-	sp = VECSP(base, sundir);
-	b = /**(1. - sundir[2]) / 2. * */(sp + 1.) / 2.;
-	horizon = 1. * (1. - (1. - v[2]) * (1. - v[2])) / (1. + -sundir[2] * 4.);
-	horizon = 1. / (1. + ABS(horizon));
-	f = redness * (VECSP(v, sundir) + 1. + isotropy) / (2. + isotropy) * horizon;
+	sp = base.sp(sundir);
+	double vsp = v.sp(sundir);
+	double nis = (1. - z) / 2.;
+	b = /**(1. - sundir[2]) / 2. * */(sp + 1.) / 2. * (1. - nis) + (1. - sundir[2]) / 2. * nis;
+	horizon = 1. * (1. - (1. - v[2]) * (1. - v[2])) / (1. - sundir[2] * 4.);
+	horizon = 1. / (1. + fabs(horizon));
+	f = p.redness * (vsp + 1. + p.isotropy) / (2. + p.isotropy) * horizon;
 /*	g = f * horizon * horizon * horizon * horizon;*/
 /*	f = redness * ((v[0] * sundir[0] + v[1] * sundir[1]) + v[2] * sundir[2] * isotropy + 1.) / (2. + isotropy);*/
-	glColor4d(col[0] * b * (1. - f) + dawn[0] * f, col[1] * b * (1. - f) + dawn[1] * f, col[2] * b * (1. - f) + dawn[2] * f, col[3] * (1. + b) / 2. / (1. + (1. - s * s * s * s) * air) * (1. - f) + dawn[3] * f);
+	glColor4d(p.col[0] * b * (1. - f) + p.dawn[0] * f,
+		p.col[1] * b * (1. - f) + p.dawn[1] * f,
+		p.col[2] * b * (1. - f) + p.dawn[2] * f,
+		p.col[3] * (1. + b) / 2. / (1. + (1. - s * s) * p.air) * (1. - f) + p.dawn[3] * f);
 }
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
@@ -654,7 +667,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	int s, t;
 	double (*hcuts)[2];
 	double sdist, dist, as, cas, sas, height;
-	double b, d;
+	double b;
 	double redness, isotropy;
 	Vec3d apos, delta, sundir;
 	Vec3d spos;
@@ -695,8 +708,19 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	}
 /*	glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
 	glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);*/
-	d = (dist - a->rad) < thick * 8. ? 1. : thick * 8. / (dist - a->rad);
+	struct atmo_dye_vertex_param param;
+	double &pd = param.pd; pd = (thick * 16.) / (dist - a->rad);
+	double &d = param.d; d = min(pd, 1.);
+	double top;
 	double ss0 = sin(M_PI / 2. - as), sc0 = -cos(M_PI / 2. - as);
+	param.redness = redness;
+	param.isotropy = isotropy;
+	param.air = height / thick / d;
+	param.pd = pd;
+	param.d = d;
+	param.sundir = &sundir;
+	param.col = hor;
+	param.dawn = dawn;
 	for(s = 0; s < 16; s++){
 		double h[2][2];
 		double dss[2];
@@ -712,6 +736,8 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 		h[0][0] = -cos((M_PI - as) * (dss[0]));
 		h[1][1] = sin((M_PI - as) * (dss[1] = d * ss1 + (1. - d)));
 		h[1][0] = -cos((M_PI - as) * (dss[1]));
+		if(s == 0)
+			top = h[0][1];
 		for(t = 0; t < hdiv; t++){
 			int t1 = (t + 1) % hdiv;
 			double dawness = redness * (1. - (1. - h[0][0]) * (1. - h[0][0])) / (1. + -sundir[2] * 4.);
@@ -720,13 +746,13 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 			base[1] = Vec3d(hcuts[t1][0] * ss0, hcuts[t1][1] * ss0, sc0);
 
 			glBegin(GL_QUADS);
-			atmo_dye_vertex(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[0], base[0]);
+			atmo_dye_vertex(param, hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], dss[0], base[0]);
 			glVertex3d(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[0], base[1]);
+			atmo_dye_vertex(param, hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], dss[0], base[1]);
 			glVertex3d(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[1], base[1]);
+			atmo_dye_vertex(param, hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], dss[1], base[1]);
 			glVertex3d(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0]);
-			atmo_dye_vertex(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], sundir, redness, isotropy, height / thick / d, hor, dawn, dss[1], base[0]);
+			atmo_dye_vertex(param, hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], dss[1], base[0]);
 			glVertex3d(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0]);
 			glEnd();
 

@@ -46,6 +46,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				FloatingPointExceptions="true"
 				TreatWChar_tAsBuiltInType="false"
 				ForceConformanceInForLoopScope="false"
 				RuntimeTypeInfo="false"
@@ -100,7 +101,7 @@
 			IntermediateDirectory="..\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
-			WholeProgramOptimization="1"
+			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"

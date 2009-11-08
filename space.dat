@@ -56,6 +56,9 @@ astro Star first_light{
 	pos 0 0 -1e5
 
 	astro TextureSphere first_planet{
+		orbits .
+		orbit_radius 5e4
+		orbit_inclination 0
 		radius 5e3
 		pos -5e4 0 0
 		color 7f9fff

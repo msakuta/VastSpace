@@ -417,7 +417,13 @@ CoordSys *CoordSys::findcspath(const char *path){
 	p = strchr(path, '/');
 	if(!p)
 		p = &path[strlen(path)];
-	if(!strncmp("..", path, p - path)){
+	if(!strncmp(".", path, p - path)){
+		if(!*p)
+			return this;
+		else
+			return findcspath(p+1);
+	}
+	else if(!strncmp("..", path, p - path)){
 		if(!*p)
 			return this->parent;
 		else

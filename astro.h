@@ -26,16 +26,30 @@ typedef void (*astrobj_draw_proc)(struct astrobj *, const struct viewer *);
 
 struct StellarContext;
 
-class Astrobj : public CoordSys{
+// CoordSys of orbital motion
+class OrbitCS : public CoordSys{
+protected:
+	double orbit_rad;
+	Astrobj *orbit_home;
+	Quatd orbit_axis;
+	double orbit_phase;
+	double eccentricity; /* orbital element */
+	int flags2;
 public:
 	typedef CoordSys st;
+	OrbitCS(const char *path, CoordSys *root);
+	virtual const char *classname()const;
+	void anim(double dt);
+	void draw(const Viewer *);
+	bool readFile(StellarContext &, int argc, char *argv[]);
+};
+
+// Astronomical object. Usually orbits some other object.
+class Astrobj : public OrbitCS{
+public:
+	typedef OrbitCS st;
 
 	double mass;
-	Quatd orbit_axis;
-	double orbit_radius;
-	Astrobj *orbit_home;
-	double orbit_phase; /* store phase information for precise position calculation */
-	double eccentricity; /* orbital element */
 	float absmag; /* Absolute Magnitude */
 	COLOR32 basecolor; /* rough approximation of apparent color */
 

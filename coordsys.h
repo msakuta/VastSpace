@@ -145,6 +145,8 @@ public:
 	/* Find nearest Extent and Isolated system in ancestory. */
 	CoordSys *findeisystem();
 
+	Astrobj *findastrobj(const char *name);
+
 	// This system must be a Extent and Isolated.
 	bool addToDrawList(CoordSys *descendant);
 

@@ -4,14 +4,121 @@
 #include "astrodef.h"
 extern "C"{
 #include "calc/calc.h"
+#include <clib/mathdef.h>
 }
 #include <string.h>
 #include <stdlib.h>
 
-Astrobj **astrobjs;
-int nastrobjs;
+const char *OrbitCS::classname()const{
+	return "OrbitCS";
+}
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : CoordSys(name, cs), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
+OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
+	OrbitCS *ret = this;
+//	init(path, root);
+	ret->orbit_rad = 0.;
+	QUATIDENTITY(ret->orbit_axis);
+	ret->orbit_home = NULL;
+	ret->orbit_phase = 0.;
+	ret->eccentricity = 0.;
+	ret->flags2 = 0;
+/*	VECNULL(ret->orbit_omg);*/
+}
+
+
+void OrbitCS::draw(const Viewer *vw){
+	st::draw(vw);
+}
+
+void OrbitCS::anim(double dt){
+	int timescale = 0;
+	double scale = timescale ? 5000. * pow(10., timescale-1) : 1.;
+	double dist;
+	double omega;
+	Vec3d orbpos, oldpos;
+	Vec3d orbit_omg, omgdt;
+	orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
+	dist = orbit_rad;
+	omega = scale / (dist * sqrt(dist / UGC / (orbit_home->mass)));
+	orbit_omg = orbit_axis.norm();
+	oldpos = pos;
+	if(eccentricity == 0.){
+		Quatd rot, q;
+		orbit_phase += omega * dt;
+		rot[0] = rot[1] = 0.;
+		rot[2] = sin(orbit_phase / 2.);
+		rot[3] = cos(orbit_phase / 2.);
+		q = orbit_axis * rot;
+		pos = q.trans(avec3_010);
+		pos *= orbit_rad;
+	}
+	else{
+		Vec3d pos0;
+		Mat4d rmat, smat, mat;
+		double smia; /* semi-minor axis */
+		double r;
+		pos0[0] = cos(orbit_phase);
+		pos0[1] = sin(orbit_phase);
+		pos0[2] = 0.;
+		smat = mat4_u;
+		smia = orbit_rad * sqrt(1. - eccentricity * eccentricity);
+		smat.scalein(orbit_rad, smia, orbit_rad);
+		smat.translatein(eccentricity, 0, 0);
+		rmat = orbit_axis.tomat4();
+		mat = rmat * smat;
+		pos = mat.vp3(pos0);
+		r = pos.len();
+		orbit_phase += omega * dt * dist / r;
+	}
+	pos += orbpos;
+	velo = pos - oldpos;
+	velo *= 1. / dt;
+	st::anim(dt);
+}
+
+bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
+	char *s = argv[0], *ps = argv[1];
+	if(0);
+	else if(!strcmp(s, "orbits")){
+		if(argv[1]){
+			CoordSys *cs = parent->findcspath(ps);
+			if(cs)
+				orbit_home = cs->toAstrobj();
+		}
+		return true;
+	}
+	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
+		if(s = strtok(ps, " \t\r\n"))
+			orbit_rad = calc3(&s, sc.vl, NULL);
+	}
+	else if(!strcmp(s, "orbit_axis")){
+		if(1 < argc)
+			orbit_axis[0] = calc3(&argv[1], sc.vl, NULL);
+		if(2 < argc)
+			orbit_axis[1] = calc3(&argv[2], sc.vl, NULL);
+		if(3 < argc){
+			orbit_axis[2] = calc3(&argv[3], sc.vl, NULL);
+			orbit_axis[3] = sqrt(1. - VECSLEN(orbit_axis));
+		}
+	}
+	else if(!strcmp(s, "orbit_inclination")){
+		if(1 < argc){
+			double d;
+			Quatd q1(0,0,0,1);
+			avec3_t omg;
+			d = calc3(&argv[1], sc.vl, NULL);
+			omg[0] = 0.;
+			omg[1] = d / deg_per_rad;
+			omg[2] = 0.;
+			orbit_axis = q1.quatrotquat(omg);
+		}
+	}
+	else
+		return st::readFile(sc, argc, argv);
+	return true;
+}
+
+Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
@@ -69,7 +176,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		absmag = calc3(&ps, sc.vl, NULL);
 	}
 	else
-		return CoordSys::readFile(sc, argc, argv);
+		return st::readFile(sc, argc, argv);
 	return true;
 }
 
@@ -118,20 +225,26 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else
-		return CoordSys::readFile(sc, argc, argv);
+		return st::readFile(sc, argc, argv);
 }
 
 const char *Astrobj::classname()const{
 	return "Astrobj";
 }
 
-Astrobj *findastrobj(const char *name){
-	int i;
+Astrobj *CoordSys::findastrobj(const char *name){
+//	int i;
 	if(!name)
 		return NULL;
-	for(i = nastrobjs-1; 0 <= i; i--) if(!strcmp(astrobjs[i]->name, name)){
-		return astrobjs[i];
+	CoordSys *cs;
+	for(cs = children; cs; cs = cs->next){
+		Astrobj *ret = cs->toAstrobj();
+		if(ret && !strcmp(ret->name, name))
+			return ret;
 	}
+/*	for(i = nastrobjs-1; 0 <= i; i--) if(!strcmp(astrobjs[i]->name, name)){
+		return astrobjs[i];
+	}*/
 	return NULL;
 }
 

@@ -20,19 +20,7 @@ extern int ntplist;
 
 #define OCS_SHOWORBIT 1
 
-class OrbitCS : public CoordSys{
-	double orbit_rad;
-	Astrobj *orbit_home;
-	Quatd orbit_axis;
-	double orbit_phase;
-	double eccentricity; /* orbital element */
-	int flags2;
-public:
-	OrbitCS(const char *path, CoordSys *root);
-	void anim(double dt);
-	void draw(const Viewer *);
-};
-
+// L1 point of two celestial bodies
 class Lagrange1CS : public CoordSys{
 	Astrobj *objs[2];
 public:
@@ -40,6 +28,7 @@ public:
 	void anim(double dt);
 };
 
+// Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
 	const char *texname;
 	unsigned int texlist; // should not really be here
@@ -63,7 +52,6 @@ Astrobj *satellite_new(const char *name, CoordSys *cs);
 Astrobj *texsphere_new(const char *name, CoordSys *cs);
 Astrobj *blackhole_new(const char *name, CoordSys *cs);
 Astrobj *add_astrobj(Astrobj *a);
-Astrobj *findastrobj(const char *name);
 
 int StellarFileLoad(const char *fname, CoordSys *);
 

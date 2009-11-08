@@ -28,103 +28,6 @@ struct teleport *tplist = NULL;
 int ntplist = 0;
 
 
-/* circular orbit class */
-static void orbitcs_anim(CoordSys *, double dt);
-extern void coordsys_draw(CoordSys *, const struct viewer *);
-
-
-OrbitCS::OrbitCS(const char *path, CoordSys *root){
-	OrbitCS *ret = this;
-	init(path, root);
-	ret->orbit_rad = 0.;
-	QUATIDENTITY(ret->orbit_axis);
-	ret->orbit_home = NULL;
-	ret->orbit_phase = 0.;
-	ret->eccentricity = 0.;
-	ret->flags2 = 0;
-/*	VECNULL(ret->orbit_omg);*/
-}
-
-void OrbitCS::anim(double dt){
-	int timescale = 0;
-	double scale = timescale ? 5000. * pow(10., timescale-1) : 1.;
-	double dist;
-	double omega;
-	Vec3d orbpos, oldpos;
-	Vec3d orbit_omg, omgdt;
-	orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
-	dist = orbit_rad;
-	omega = scale / (dist * sqrt(dist / UGC / (orbit_home->mass)));
-	orbit_omg = orbit_axis.norm();
-	oldpos = pos;
-	if(eccentricity == 0.){
-		Quatd rot, q;
-		orbit_phase += omega * dt;
-		rot[0] = rot[1] = 0.;
-		rot[2] = sin(orbit_phase / 2.);
-		rot[3] = cos(orbit_phase / 2.);
-		q = orbit_axis * rot;
-		pos = q.trans(avec3_010);
-		pos *= orbit_rad;
-	}
-	else{
-		Vec3d pos0;
-		Mat4d rmat, smat, mat;
-		double smia; /* semi-minor axis */
-		double r;
-		pos0[0] = cos(orbit_phase);
-		pos0[1] = sin(orbit_phase);
-		pos0[2] = 0.;
-		smat = mat4_u;
-		smia = orbit_rad * sqrt(1. - eccentricity * eccentricity);
-		smat.scalein(orbit_rad, smia, orbit_rad);
-		smat.translatein(eccentricity, 0, 0);
-		rmat = orbit_axis.tomat4();
-		mat = rmat * smat;
-		pos = mat.vp3(pos0);
-		r = pos.len();
-		orbit_phase += omega * dt * dist / r;
-	}
-	pos += orbpos;
-	velo = pos - oldpos;
-	velo *= 1. / dt;
-}
-
-void OrbitCS::draw(const Viewer *vw){
-	CoordSys::draw(vw);
-/*	Astrobj *a;
-	if((CS_EXTENT | CS_ISOLATED) == (flags & (CS_EXTENT | CS_ISOLATED)))
-		for(a = aolist; a; a = (Astrobj*)a->next)
-			a->draw(vw);*/
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Lagrange 1 point between two bodies */
 Lagrange1CS::Lagrange1CS(const char *path, CoordSys *root){
 	init(path, root);
@@ -372,7 +275,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				char *pp;
 				if(pp = strchr(ps, '{'))
 					*pp = '\0';
-				if((a = findastrobj(ps)) && a->parent == cs)
+				if((a = cs->findastrobj(ps)) && a->parent == cs)
 					stellar_coordsys(sc, a);
 				else
 					a = NULL;

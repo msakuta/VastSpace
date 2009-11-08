@@ -30,6 +30,10 @@ extern "C"{
 #include <assert.h>
 #include <math.h>
 #include <setjmp.h>
+#include <strstream>
+#include <sstream>
+#include <iomanip>
+#include <fstream>
 
 
 #define numof(a) (sizeof(a)/sizeof*(a))
@@ -370,7 +374,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 #define PROJS (PROJTS/2)
 #define PROJBITS 32 /* bit depth of projected texture */
 
-void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
+void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, spe, zoom;
@@ -446,13 +450,13 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, GLfloa
 	glMatrixMode(GL_MODELVIEW);*/
 
 	{
-		GLfloat mat_specular[] = {0., 0., 0., 1.};
-		GLfloat mat_shininess[] = { 50.0 };
-		GLfloat color[] = {1., 1., 1., 1.}, amb[] = {.0, 0., 0., 1.};
+		const GLfloat mat_specular[] = {0., 0., 0., 1.};
+		const GLfloat mat_shininess[] = { 50.0 };
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.1f, .1f, .1f, 1.f};
 
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : mat_ambient);
 		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
@@ -617,8 +621,8 @@ void TexSphere::draw(const Viewer *vw){
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 
 	{
-		GLfloat hor[4] = {1,.8,.5,1};
-		GLfloat dawn[4] = {1.,.51,.1,1};
+		GLfloat hor[4] = {1.f, .8f, .5f, 1.f};
+		GLfloat dawn[4] = {1.f, .51f, .1f, 1.f};
 		drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	}
 	if(sunAtmosphere(*vw)){
@@ -709,15 +713,14 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 /*	glRotated(phi * 360 / 2. / M_PI, 0., 1., 0.);
 	glRotated(theta * 360 / 2. / M_PI, -1., 0., 0.);*/
 	struct atmo_dye_vertex_param param;
-	double &pd = param.pd; pd = (thick * 16.) / (dist - a->rad);
-	double &d = param.d; d = min(pd, 1.);
-	double top;
+	double &pd = param.pd;
+	double &d = param.d;
 	double ss0 = sin(M_PI / 2. - as), sc0 = -cos(M_PI / 2. - as);
+	pd = (thick * 16.) / (dist - a->rad);
+	d = min(pd, 1.);
 	param.redness = redness;
 	param.isotropy = isotropy;
 	param.air = height / thick / d;
-	param.pd = pd;
-	param.d = d;
 	param.sundir = &sundir;
 	param.col = hor;
 	param.dawn = dawn;
@@ -736,8 +739,6 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 		h[0][0] = -cos((M_PI - as) * (dss[0]));
 		h[1][1] = sin((M_PI - as) * (dss[1] = d * ss1 + (1. - d)));
 		h[1][0] = -cos((M_PI - as) * (dss[1]));
-		if(s == 0)
-			top = h[0][1];
 		for(t = 0; t < hdiv; t++){
 			int t1 = (t + 1) % hdiv;
 			double dawness = redness * (1. - (1. - h[0][0]) * (1. - h[0][0])) / (1. + -sundir[2] * 4.);
@@ -838,6 +839,7 @@ static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
 		memcpy(bmi.buf, tex, sizeof bmi.buf);
 		stp.bmi = (BITMAPINFO*)&bmi;
 		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
 		stp.mipmap = 1;
 		stp.alphamap = 0;
 		return CacheSUFMTex(name, pstp, &stp);
@@ -949,38 +951,27 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 		tex = CacheSUFTex(name, proj, 1);
 #endif
 		{
-			char outfilename[256], jpgfilename[256];
+			std::ostringstream bstr;
 			const char *p;
-			FILE *fp;
+//			FILE *fp;
 			p = strrchr(name, '.');
-			strcpy(outfilename, "cache\\");
-			if(p){
-				strncat(outfilename, name, p - name);
-				strcpy(&outfilename[sizeof "cache\\" - 1 + p - name], "_proj");
-				strcpy(jpgfilename, outfilename);
-				strcat(outfilename, ".bmp");
-			}
-			else{
-				strcat(outfilename, name);
-				strcat(outfilename, "_proj");
-				strcpy(jpgfilename, outfilename);
-			}
+			bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj.bmp";
 
 			/* force overwrite */
-/*			fp = fopen(outfilename, "rb");
-			if(fp)
-				fclose(fp);
-			else*/
-			if(fp = fopen(outfilename, "wb")){
+			std::ofstream ofs(bstr.str().c_str(), std::ofstream::out | std::ofstream::binary);
+			if(ofs/*fp = fopen(bstr.str().c_str(), "wb")*/){
 				BITMAPFILEHEADER fh;
 				((char*)&fh.bfType)[0] = 'B';
 				((char*)&fh.bfType)[1] = 'M';
 				fh.bfSize = sizeof(BITMAPFILEHEADER) + outsize;
 				fh.bfReserved1 = fh.bfReserved2 = 0;
 				fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + proj->bmiHeader.biClrUsed * sizeof(RGBQUAD);
-				fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
-				fwrite(proj, 1, outsize, fp);
-				fclose(fp);
+//				fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
+//				fwrite(proj, 1, outsize, fp);
+				ofs.write(reinterpret_cast<char*>(&fh), sizeof fh);
+				ofs.write(reinterpret_cast<char*>(proj), outsize);
+				ofs.close();
+//				fclose(fp);
 			}
 
 #if 0
@@ -1026,9 +1017,10 @@ void my_error_exit (j_common_ptr cinfo)
 GLuint ProjectSphereJpg(const char *fname){
 		const struct suftexcache *stc;
 		GLuint texlist = 0;
-		char outfilename[256], jpgfilename[256];
+//		char outfilename[256], jpgfilename[256];
+		const char *outfilename, *jpgfilename;
 		const char *p;
-		FILE *fp;
+//		FILE *fp;
 		p = strrchr(fname, '.');
 #ifdef _WIN32
 		if(GetFileAttributes("cache") == -1)
@@ -1036,7 +1028,12 @@ GLuint ProjectSphereJpg(const char *fname){
 #else
 		mkdir("cache");
 #endif
-		strcpy(outfilename, "cache\\");
+		std::ostringstream bstr;
+		bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj.bmp";
+		std::string bs = bstr.str();
+		outfilename = bs.c_str();
+		jpgfilename = fname;
+/*		strcpy(outfilename, "cache\\");
 		if(p){
 			strncat(outfilename, fname, p - fname);
 			strcat(&outfilename[sizeof "cache\\" - 1 + p - fname], "_proj");
@@ -1048,14 +1045,13 @@ GLuint ProjectSphereJpg(const char *fname){
 			strcat(outfilename, "_proj");
 			strcpy(jpgfilename, outfilename);
 		}
-		strcpy(jpgfilename, fname);
-		stc = FindTexCache(outfilename);
+		strcpy(jpgfilename, fname);*/
+		stc = FindTexCache(bstr.str().c_str()/*outfilename*/);
 		if(stc){
 			return stc->list;
 		}
 		else{
 			BITMAPINFO *bmi;
-			JSAMPLE *image;
 			struct jpeg_decompress_struct cinfo;
 			struct my_error_mgr jerr;
 			FILE * infile;		/* source file */
@@ -1123,7 +1119,7 @@ GLuint ProjectSphereJpg(const char *fname){
 				bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * cinfo.output_components);
 				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 				bmi->bmiHeader.biWidth = cinfo.output_width; 
-				bmi->bmiHeader.biHeight = -cinfo.output_height;
+				bmi->bmiHeader.biHeight = LONG(-cinfo.output_height);
 				bmi->bmiHeader.biPlanes = 1;
 				bmi->bmiHeader.biBitCount = 24;
 				bmi->bmiHeader.biCompression = BI_RGB;
@@ -1137,7 +1133,7 @@ GLuint ProjectSphereJpg(const char *fname){
 				while (cinfo.output_scanline < cinfo.output_height) {
 					(void) jpeg_read_scanlines(&cinfo, buffer, 1);
 					memcpy(&((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride], buffer[0], row_stride);
-					int j;
+					unsigned j;
 					for(j = 0; j < cinfo.output_width; j++){
 						JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
 						JSAMPLE *src = &buffer[0][j * cinfo.output_components];

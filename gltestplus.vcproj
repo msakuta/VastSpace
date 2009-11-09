@@ -19,11 +19,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\clib\include;..\cpplib\include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;\wingraph"
+				AdditionalIncludeDirectories="..\clib\include;..\cpplib\include;..\jpeg-7"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
+				RuntimeTypeInfo="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -32,10 +33,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib dxguid.lib \wingraph\wingrp.lib Vfw32.lib clib.lib cpplib.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib dxguid.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib"
 				OutputFile="$(OutDir)/gltestplus.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\clib\$(ConfigurationName)&quot;;&quot;..\cpplib\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;..\clib\$(ConfigurationName)&quot;;&quot;..\cpplib\$(ConfigurationName)&quot;;..\jpeg-7\release;..\zlib\projects\visualc6\win32_lib_release"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/gltestplus.pdb"
 				SubSystem="1"
@@ -66,11 +67,12 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="..\clib\include;..\cpplib\include;&quot;D:\Programs\Microsoft Visual Studio .NET\users\opengl\glut-3.7.6_3&quot;;\wingraph"
+				AdditionalIncludeDirectories="..\clib\include;..\cpplib\include;..\jpeg-7"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
+				RuntimeTypeInfo="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -79,10 +81,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib dxguid.lib \wingraph\wingrp.lib Vfw32.lib clib.lib cpplib.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib dxguid.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib"
 				OutputFile="$(OutDir)/gltestplus.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\clib\$(ConfigurationName)&quot;;&quot;..\cpplib\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;..\clib\$(ConfigurationName)&quot;;&quot;..\cpplib\$(ConfigurationName)&quot;;..\jpeg-7\release;..\zlib\projects\visualc6\win32_lib_release"
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -113,6 +115,9 @@
 			</File>
 			<File
 				RelativePath="astrodraw.cpp">
+			</File>
+			<File
+				RelativePath="bitmap.c">
 			</File>
 			<File
 				RelativePath="calc\calc.c">
@@ -179,6 +184,9 @@
 				RelativePath="astrodraw.h">
 			</File>
 			<File
+				RelativePath="bitmap.h">
+			</File>
+			<File
 				RelativePath="calc\calc.h">
 			</File>
 			<File
@@ -225,6 +233,9 @@
 			Name="リソース ファイル"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
+		<File
+			RelativePath="..\jpeg-7\jpeg.vcproj">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

@@ -1162,16 +1162,15 @@ GLuint ProjectSphereJpg(const char *fname){
 			else{
 				cinfo.err = jpeg_std_error(&jerr.pub);
 				jerr.pub.error_exit = my_error_exit;
-				  jerr.pub.error_exit = my_error_exit;
-				  /* Establish the setjmp return context for my_error_exit to use. */
-				  if (setjmp(jerr.setjmp_buffer)) {
+				/* Establish the setjmp return context for my_error_exit to use. */
+				if (setjmp(jerr.setjmp_buffer)) {
 					/* If we get here, the JPEG code has signaled an error.
 					 * We need to clean up the JPEG object, close the input file, and return.
 					 */
 					jpeg_destroy_decompress(&cinfo);
 					fclose(infile);
 					return 0;
-				  }
+				}
 				jpeg_create_decompress(&cinfo);
 				jpeg_stdio_src(&cinfo, infile);
 				(void) jpeg_read_header(&cinfo, TRUE);

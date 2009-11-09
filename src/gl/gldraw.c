@@ -3,6 +3,7 @@
 #include "clib/avec3.h"
 #include "clib/aquatrot.h"
 #include "clib/amat4.h"
+#include "clib/c.h"
 /*#include <GL/glut.h>*/
 #include <stddef.h>
 #include <stdarg.h>
@@ -12,6 +13,10 @@
 #include <assert.h>
 #include <math.h>
 #include <limits.h>
+
+#if !defined _MSC_VER || _MSC_VER < 1500
+#define vsprintf_s(a,s,b,c) vsprintf(a,b,c)
+#endif
 
 #define GLD_DIF 0x01
 #define GLD_AMB 0x02
@@ -62,7 +67,7 @@ static void gldQuatToMatrix(amat4_t *mat, const aquat_t q){
 
 void gldMultQuat(const double q[4]){
 	amat4_t mat;
-	gldQuatToMatrix(mat, q);
+	gldQuatToMatrix(&mat, q);
 	glMultMatrixd(mat);
 }
 
@@ -477,7 +482,7 @@ void gldPolyPrintf(const char *format, ...){
 	static char buf[256]; /* it's not safe but unlikely to be reached */
 	va_list ap;
 	va_start(ap, format);
-	vsprintf(buf, format, ap);
+	vsprintf_s(buf, sizeof buf, format, ap);
 	gldPolyString(buf);
 	va_end(ap);
 }
@@ -540,7 +545,7 @@ void gldLookatMatrix(double (*mat)[16], const double (*pos)[3]){
 	VECVP(v, avec3_001, dr);
 	p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
 	VECSCALE(q, v, p);
-	quat2mat(*mat, q);
+	quat2mat(mat, q);
 }
 
 
@@ -576,7 +581,7 @@ void gldPoint(const double pos[3], double rad){
 	GLfloat size;
 	glGetIntegerv(GL_VIEWPORT, xywh);
 	m = xywh[2] < xywh[3] ? xywh[3] : xywh[2];
-	size = rad * m / 2.;
+	size = (GLfloat)(rad * m / 2.);
 	if(2 < size){
 /*		if(!gl_point_smooth){
 			gl_point_smooth = 1;
@@ -673,7 +678,7 @@ void gldTextureGlow(const double pos[3], double radius, const GLubyte color[4], 
 			int di = i - TEXSIZE / 2, dj = j - TEXSIZE / 2;
 			int sdist = di * di + dj * dj;
 			tex[i][j][0] = 255;
-			tex[i][j][1] = TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.);
+			tex[i][j][1] = (GLubyte)(TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.));
 		}
 		glGenTextures(1, &texname);
 		glBindTexture(GL_TEXTURE_2D, texname);
@@ -725,7 +730,7 @@ void gldPseudoSphere(const double pos[3], double rad, const GLubyte color[4]){
 		dist = sqrt(sdist);
 		glGetIntegerv(GL_VIEWPORT, vp);
 		glPushAttrib(GL_POINT_BIT);
-		glPointSize(vp[2] * rad / dist);
+		glPointSize((GLfloat)(vp[2] * rad / dist));
 		glColor4ubv(color);
 		glBegin(GL_POINTS);
 		glVertex3d(pos[0] / dist, pos[1] / dist, pos[2] / dist);
@@ -755,6 +760,58 @@ void gldPseudoSphere(const double pos[3], double rad, const GLubyte color[4]){
 		glPopMatrix();
 	}
 }
+
+static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
+
+static void drawOctSphereInt(int level, const avec3_t *p0, const avec3_t *p1, const avec3_t *p2){
+	avec3_t p01, p12, p20;
+	VECADD(p01, *p0, *p1); VECNORMIN(p01);
+	VECADD(p12, *p1, *p2); VECNORMIN(p12);
+	VECADD(p20, *p2, *p0); VECNORMIN(p20);
+	{
+	const avec3_t *faces[][3] = {
+		{p0, &p01, &p20},
+		{&p01, p1, &p12},
+		{&p12, p2, &p20},
+		{&p01, &p12, &p20},
+	};
+	int i;
+	for(i = 0; i < numof(faces); i++) if(level){
+		drawOctSphereInt(level - 1, faces[i][0], faces[i][1], faces[i][2]);
+	}
+	else{
+		int m;
+		for(m = 0; m < 3; m++) glproc[m](*faces[i][0]);
+		for(m = 0; m < 3; m++) glproc[m](*faces[i][1]);
+		for(m = 0; m < 3; m++) glproc[m](*faces[i][2]);
+	}
+	}
+}
+
+
+void gldOctSphere(int level){
+	static const avec3_t verts[] = {
+		{-1,0,0}, {0,0,-1}, {0,-1,0},
+		{1,0,0}, {0,0,1}, {0,1,0},
+	};
+	static const avec3_t *const faces[][3] = {
+		{&verts[0], &verts[1], &verts[2]},
+		{&verts[1], &verts[0], &verts[5]},
+		{&verts[1], &verts[3], &verts[2]},
+		{&verts[3], &verts[1], &verts[5]},
+		{&verts[3], &verts[4], &verts[2]},
+		{&verts[4], &verts[3], &verts[5]},
+		{&verts[4], &verts[0], &verts[2]},
+		{&verts[0], &verts[4], &verts[5]},
+	};
+	int i;
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < numof(faces); i++){
+		drawOctSphereInt(level, faces[i][0], faces[i][1], faces[i][2]);
+	}
+	glEnd();
+}
+
 
 void gldBeam(const double view[3], const double start[3], const double end[3], double width){
 	double dx, dy, dz, sx, sy, len;
@@ -1147,7 +1204,6 @@ static size_t circuts_memory(circut *root){
 size_t CircleCutsMemory(void){
 	int i;
 	size_t ret;
-	circut **node;
 	ret = circut_num * sizeof *circut_array;
 	for(i = 0; i < circut_num; i++) if(circut_array[i])
 		ret += offsetof(circut, d) + circut_array[i]->m * sizeof *circut_array[i]->d;

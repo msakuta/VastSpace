@@ -55,6 +55,7 @@ extern void gldGlow(double phi, double theta, double arcsin, const GLubyte color
 extern void gldSpriteGlow(const double pos[3], double radius, const GLubyte color[4], const double inverse_rotation[16]);
 extern void gldTextureGlow(const double pos[3], double radius, const GLubyte color[4], const double inverse_rotation[16]);
 extern void gldPseudoSphere(const double pos[3], double radius, const GLubyte color[4]);
+extern void gldOctSphere(int level);
 extern void gldBeam(const double view[3], const double start[3], const double end[3], double width);
 extern void gldTextureBeam(const double view[3], const double start[3], const double end[3], double width);
 extern void gldGradBeam(const double view[3], const double start[3], const double end[3], double width, COLOR32 endcolor);

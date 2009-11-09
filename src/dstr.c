@@ -42,10 +42,16 @@ char *dstrcpy(dstr_t *dst, const char *src){
 
 /* safe anti-fragmentation automatically-expanding string concatenator */
 char *dstrcat(dstr_t *dst, const char *src){
+	return dstrncat(dst, src, strlen(src));
+}
+
+char *dstrncat(dstr_t *dst, const char *src, size_t len){
 	size_t sl;
 	if(!src) return dst->s;
 	assert(dst && src);
 	sl = strlen(src);
+	if(len < sl)
+		sl = len;
 	if(!sl)
 		return dst->s;
 	if(alsize(dst->size) < dst->size + sl){ /* expand if necessary */
@@ -56,9 +62,9 @@ char *dstrcat(dstr_t *dst, const char *src){
 		}
 	}
 	if(dst->size)
-		strcat(dst->s, src);
+		strncat(dst->s, src, sl);
 	else
-		strcpy(dst->s, src);
+		strncpy(dst->s, src, sl + 1);
 	dst->size += sl;
 	return dst->s;
 }

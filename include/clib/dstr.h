@@ -14,7 +14,9 @@ extern dstr_t dstr0;
 #define dstrlen(ds) ((ds)->size)
 char *dstralloc(dstr_t *dst, size_t sl);
 #define dstrcmp(ds,cs) strncmp((ds)->s, cs, (ds)->size)
+char *dstrncpy(dstr_t *dst, const char *src, size_t len);
 char *dstrcpy(dstr_t *dst, const char *src);
+char *dstrncat(dstr_t *dst, const char *src, size_t len);
 char *dstrcat(dstr_t *dst, const char *src); /* concatenate another string */
 char *dstrlong(dstr_t *dst, long src); /* concatenate a long value */
 #define dstrfree(ds) (realloc((ds)->s, (ds)->size = 0), (ds)->s = NULL)

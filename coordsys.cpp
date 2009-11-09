@@ -584,6 +584,10 @@ void CoordSys::startdraw(){
 		cs->startdraw();
 }
 
+bool CoordSys::readFileStart(StellarContext &){
+	return true;
+}
+
 bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
@@ -620,6 +624,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
 			rad = .5 * calc3(&argv[1], sc.vl, NULL);
+		return true;
 	}
 	else if(!strcmp(s, "parent")){
 		CoordSys *cs2, *csret;
@@ -633,6 +638,56 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 //			else
 //				CmdPrintf("%s(%ld): Unknown CoordSys: %s", sc->fname, sc->line, ps);
 		}
+		return true;
+	}
+	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
+/*		struct teleport *tp;
+		char *name = argc < 2 ? cs->fullname ? cs->fullname : cs->name : argv[1];
+		int i;
+		for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
+			tplist[i].flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
+			break;
+		}
+		if(i != ntplist)
+			continue;
+		tplist = realloc(tplist, ++ntplist * sizeof *tplist);
+		tp = &tplist[ntplist-1];
+		tp->cs = cs;
+		tp->name = malloc(strlen(name) + 1);
+		strcpy(tp->name, name);
+		tp->flags = !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
+		tp->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
+		tp->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
+		tp->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;*/
+		return true;
+	}
+	else if(!strcmp(s, "rstation")){
+/*		extern struct player *ppl;
+		warf_t *w;
+		entity_t *pt;
+		if(cs->w)
+			w = cs->w;
+		else
+			w = spacewar_create(cs, ppl);
+		pt = RstationNew(w);
+		pt->pos[0] = 1 < argc ? calc3(&argv[1], vl, NULL) : 0.;
+		pt->pos[1] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
+		pt->pos[2] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;*/
+		return true;
+	}
+	else if(!strcmp(s, "addent")){
+/*		extern struct player *ppl;
+		warf_t *w;
+		entity_t *pt;
+		if(cs->w)
+			w = cs->w;
+		else
+			w = spacewar_create(cs, ppl);
+		pt = addent_at_warf(w, 2, &argv[0]);
+		pt->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
+		pt->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
+		pt->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;
+		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
 		return true;
 	}
 	else if(!strcmp(s, "solarsystem")){
@@ -653,6 +708,34 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		return true;
 	}
+	else if(!strcmp(s, "eisystem")){
+		/* solar system is by default extent and isolated */
+		if(1 < argc){
+			if(!strcmp(argv[1], "false"))
+				flags &= ~CS_SOLAR;
+			else
+				flags |= CS_EXTENT | CS_ISOLATED;
+		}
+		else
+			flags |= CS_EXTENT | CS_ISOLATED;
+		if(flags & CS_EXTENT){
+			CoordSys *eis = findeisystem();
+			if(eis)
+				eis->addToDrawList(this);
+		}
+		return true;
+	}
+	else if(!strcmp(s, "rotation")){
+		if(1 < argc)
+			qrot[0] = calc3(&argv[1], sc.vl, NULL);
+		if(2 < argc)
+			qrot[1] = calc3(&argv[2], sc.vl, NULL);
+		if(3 < argc){
+			qrot[2] = calc3(&argv[3], sc.vl, NULL);
+			qrot[3] = sqrt(1. - VECSLEN(qrot));
+		}
+		return true;
+	}
 	else if(!strcmp(s, "omega")){
 		if(1 < argc)
 			omg[0] = calc3(&argv[1], sc.vl, NULL);
@@ -666,6 +749,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			d = calc3(&argv[4], sc.vl, NULL);
 			omg.scalein(d);
 		}
+		return true;
 	}
 	else if(!strcmp(s, "updirection")){
 		avec3_t v = {0};
@@ -676,8 +760,13 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(3 < argc)
 			v[2] = calc3(&argv[3], sc.vl, NULL);
 		quatdirection(qrot, v);
+		return true;
 	}
 	return false;
+}
+
+bool CoordSys::readFileEnd(StellarContext &){
+	return true;
 }
 
 Astrobj *CoordSys::toAstrobj(){

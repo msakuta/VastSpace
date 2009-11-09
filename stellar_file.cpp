@@ -183,6 +183,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	struct varlist *vl = sc.vl;
 	int mode = 1;
 	int enable = 0;
+	cs->readFileStart(sc);
 //	double inclination;
 //	double loan; /* Longitude of Ascending Node */
 //	double aop; /* Argument of Periapsis */
@@ -287,11 +288,13 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 		else if(!strcmp(s, "coordsys")){
 //			CoordSys *(*constructor)(const char *, CoordSys *) = new_coordsys;
 			CoordSys *cs2 = NULL;
-/*			if(ps && !strcmp(ps, "Orbit")){
+			CC constructor = Cons<CoordSys>;
+			if(ps && !strcmp(ps, "Orbit")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = new_orbitcs;
+				CC ctor = Cons<OrbitCS>;
+				constructor = ctor;
 			}
-			if(ps && !strcmp(ps, "Lagrange1")){
+/*			if(ps && !strcmp(ps, "Lagrange1")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = new_lagrange1;
 			}
@@ -306,87 +309,12 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				if((cs2 = cs->findcspath(ps)))
 					stellar_coordsys(sc, cs2);
 			}
-			if(!cs2 && (cs2 = new CoordSys(ps, cs))){
+			if(!cs2 && (cs2 = constructor(ps, cs))){
 				stellar_coordsys(sc, cs2);
 			}
 		}
 		else if(cs->readFile(sc, argc, (argv)));
 #if 0
-		else if(!strcmp(s, "name")){
-			if(s = strtok(ps, " \t\r\n")){
-				cs->name = malloc(strlen(s) + 1);
-				strcpy(cs->name, s);
-			}
-		}
-		else if(!strcmp(s, "fullname")){
-			if(s = ps){
-				cs->fullname = malloc(strlen(s) + 1);
-				strcpy(cs->fullname, s);
-			}
-		}
-		else if(!strcmp(s, "pos")){
-			cs->pos[0] = calc3(&argv[1], vl, NULL);
-			if(2 < argc)
-				cs->pos[1] = calc3(&argv[2], vl, NULL);
-			if(3 < argc)
-				cs->pos[2] = calc3(&argv[3], vl, NULL);
-		}
-		else if(!strcmp(s, "radius")){
-			if(ps)
-				cs->rad = atof(ps);
-		}
-		else if(!strcmp(s, "parent")){
-			CoordSys *cs2, *csret;
-			if(ps){
-				if(*ps == '/')
-					cs2 = root, ps++;
-				else
-					cs2 = sc->root;
-				if((csret = findcspath(cs2, ps)) || (csret = findcs(cs2, ps)))
-					adopt_child(cs, csret);
-				else
-					CmdPrintf("%s(%ld): Unknown CoordSys: %s", sc->fname, sc->line, ps);
-			}
-/*				if(cs2 = findcs(root, s))
-					adopt_child(cs, cs2);
-				else
-					CmdPrintf("No such CoordSys: %s", s);
-			}*/
-		}
-		else if(!strcmp(s, "solarsystem")){
-			/* solar system is by default extent and isolated */
-			if(1 < argc){
-				if(!strcmp(argv[1], "false"))
-					cs->flags &= ~CS_SOLAR;
-				else
-					cs->flags |= CS_SOLAR | CS_EXTENT | CS_ISOLATED;
-			}
-			else
-				cs->flags |= CS_SOLAR | CS_EXTENT | CS_ISOLATED;
-			if(cs->flags & CS_SOLAR){
-				extern Astrobj **astrobjorder;
-				extern int nastrobjorder;
-				astrobjorder = realloc(astrobjorder, (nastrobjorder + 1) * sizeof *astrobjorder);
-				astrobjorder[nastrobjorder++] = cs;
-			}
-		}
-		else if(!strcmp(s, "eisystem")){
-			/* solar system is by default extent and isolated */
-			if(1 < argc){
-				if(!strcmp(argv[1], "false"))
-					cs->flags &= ~CS_SOLAR;
-				else
-					cs->flags |= CS_EXTENT | CS_ISOLATED;
-			}
-			else
-				cs->flags |= CS_EXTENT | CS_ISOLATED;
-			if(cs->flags & CS_EXTENT){
-				extern Astrobj **astrobjorder;
-				extern int nastrobjorder;
-				astrobjorder = realloc(astrobjorder, (nastrobjorder + 1) * sizeof *astrobjorder);
-				astrobjorder[nastrobjorder++] = cs;
-			}
-		}
 		else if(!strcmp(s, "warpable")){
 			if(argv[1]){
 				if(atoi(argv[1]))
@@ -416,108 +344,6 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			}
 			else
 				cs->flags |= CS_ISOLATED;
-		}
-		else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
-			struct teleport *tp;
-			char *name = argc < 2 ? cs->fullname ? cs->fullname : cs->name : argv[1];
-			int i;
-			for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
-				tplist[i].flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-				break;
-			}
-			if(i != ntplist)
-				continue;
-			tplist = realloc(tplist, ++ntplist * sizeof *tplist);
-			tp = &tplist[ntplist-1];
-			tp->cs = cs;
-			tp->name = malloc(strlen(name) + 1);
-			strcpy(tp->name, name);
-			tp->flags = !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-			tp->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-			tp->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
-			tp->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;
-		}
-		else if(!strcmp(s, "rstation")){
-			extern struct player *ppl;
-			warf_t *w;
-			entity_t *pt;
-			if(cs->w)
-				w = cs->w;
-			else
-				w = spacewar_create(cs, ppl);
-			pt = RstationNew(w);
-			pt->pos[0] = 1 < argc ? calc3(&argv[1], vl, NULL) : 0.;
-			pt->pos[1] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-			pt->pos[2] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
-		}
-		else if(!strcmp(s, "addent")){
-			extern struct player *ppl;
-			warf_t *w;
-			entity_t *pt;
-			if(cs->w)
-				w = cs->w;
-			else
-				w = spacewar_create(cs, ppl);
-			pt = addent_at_warf(w, 2, &argv[0]);
-			pt->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-			pt->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
-			pt->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;
-			pt->race = 5 < argc ? atoi(argv[5]) : 0;
-		}
-		else if(!strcmp(s, "rotation")){
-			if(1 < argc)
-				cs->qrot[0] = calc3(&argv[1], vl, NULL);
-			if(2 < argc)
-				cs->qrot[1] = calc3(&argv[2], vl, NULL);
-			if(3 < argc){
-				cs->qrot[2] = calc3(&argv[3], vl, NULL);
-				cs->qrot[3] = sqrt(1. - VECSLEN(cs->qrot));
-			}
-		}
-		else if(!strcmp(s, "updirection")){
-			avec3_t v = {0};
-			if(1 < argc)
-				v[0] = calc3(&argv[1], vl, NULL);
-			if(2 < argc)
-				v[1] = calc3(&argv[2], vl, NULL);
-			if(3 < argc)
-				v[2] = calc3(&argv[3], vl, NULL);
-			quatdirection(cs->qrot, v);
-		}
-		else if(!strcmp(s, "omega")){
-			if(1 < argc)
-				cs->omg[0] = calc3(&argv[1], vl, NULL);
-			if(2 < argc)
-				cs->omg[1] = calc3(&argv[2], vl, NULL);
-			if(3 < argc)
-				cs->omg[2] = calc3(&argv[3], vl, NULL);
-			if(4 < argc){
-				double d;
-				VECNORMIN(cs->omg);
-				d = calc3(&argv[4], vl, NULL);
-				VECSCALEIN(cs->omg, d);
-			}
-		}
-		else if(cs->vft == &orbitcs_s && !strcmp(s, "orbits")){
-			orbitcs_t *a = (orbitcs_t *)cs;
-			if(s = argv[1])
-				a->orbit_home = findastrobj(s);
-		}
-		else if(cs->vft == &orbitcs_s && (!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis"))){
-			orbitcs_t *a = (orbitcs_t *)cs;
-			if(s = strtok(ps, " \t\r\n"))
-				a->orbit_rad = calc3(&s, vl, NULL);
-		}
-		else if(cs->vft == &orbitcs_s && !strcmp(s, "orbit_axis")){
-			orbitcs_t *a = (orbitcs_t *)cs;
-			if(1 < argc)
-				a->orbit_axis[0] = calc3(&argv[1], vl, NULL);
-			if(2 < argc)
-				a->orbit_axis[1] = calc3(&argv[2], vl, NULL);
-			if(3 < argc){
-				a->orbit_axis[2] = calc3(&argv[3], vl, NULL);
-				a->orbit_axis[3] = sqrt(1. - VECSLEN(a->orbit_axis));
-			}
 		}
 		else if(cs->vft == &orbitcs_s && !strcmp(s, "orbit_inclination")){
 			orbitcs_t *a = (orbitcs_t *)cs;
@@ -554,41 +380,13 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				a->eccentricity = d;
 			}
 		}
-		else if(!strcmp(s, "inclination")){
-			if(1 < argc){
-				enable |= 1;
-				inclination = calc3(&argv[1], vl, NULL) / deg_per_rad;
-			}
-		}
-		else if(!strcmp(s, "ascending_node")){
-			if(1 < argc){
-				enable |= 2;
-				loan = calc3(&argv[1], vl, NULL) / deg_per_rad;
-			}
-		}
-		else if(!strcmp(s, "argument_of_periapsis")){
-			if(1 < argc){
-				enable |= 4;
-				aop = calc3(&argv[1], vl, NULL) / deg_per_rad;
-			}
-		}
-		else if(!strcmp(s, "showorbit")){
-			orbitcs_t *a = (orbitcs_t *)cs;
-			if(1 < argc){
-				if(!strcmp(argv[1], "false"))
-					a->flags2 &= ~OCS_SHOWORBIT;
-				else
-					a->flags2 |= OCS_SHOWORBIT;
-			}
-			else
-				a->flags2 |= OCS_SHOWORBIT;
-		}
 #endif
 		else if(s = strtok(s, " \t\r\n")){
 //			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
 			printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s);
 		}
 	}
+	cs->readFileEnd(sc);
 	return mode;
 }
 

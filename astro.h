@@ -28,7 +28,7 @@ struct StellarContext;
 
 // CoordSys of orbital motion
 class OrbitCS : public CoordSys{
-protected:
+public:
 	double orbit_rad;
 	Astrobj *orbit_home;
 	Quatd orbit_axis;
@@ -39,9 +39,15 @@ public:
 	typedef CoordSys st;
 	OrbitCS(const char *path, CoordSys *root);
 	virtual const char *classname()const;
-	void anim(double dt);
-	void draw(const Viewer *);
-	bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual void anim(double dt);
+	virtual void draw(const Viewer *);
+	virtual bool readFileStart(StellarContext &);
+	virtual bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual bool readFileEnd(StellarContext &);
+
+private:
+	int enable;
+	double inclination, loan, aop;
 };
 
 // Astronomical object. Usually orbits some other object.
@@ -58,8 +64,8 @@ public:
 
 	virtual const char *classname()const;
 	void planet_anim(double dt);
-	bool readFile(StellarContext &, int argc, char *argv[]);
-	Astrobj *toAstrobj(){ return this; }
+	virtual bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
 

@@ -52,6 +52,7 @@ int gl_wireframe = 0;
 double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 double flypower = 1.;
+static int show_planets_name = 1;
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
@@ -204,6 +205,110 @@ static void draw_gear(double dt){
 	}
 }
 
+static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
+	int id = 0;
+	Astrobj *a = cs->toAstrobj();
+	do if(a){
+		Vec3d pos, wpos;
+		pos = vw->cs->tocs(a->pos, a->parent);
+		mat4vp3(wpos, model, pos);
+		if(a->orbit_home){
+			int j;
+			double (*cuts)[2], rad;
+			const Astrobj *home = a->orbit_home;
+			Vec3d spos;
+			Mat4d mat, qmat, rmat, lmat;
+			Quatd q;
+			double smia; /* semi-minor axis */
+			cuts = CircleCuts(64);
+			spos = vw->cs->tocs(home->pos, home->parent);
+			mat = vw->cs->tocsim(home->parent);
+			qmat = a->orbit_axis.tomat4();
+			rad = a->orbit_rad;
+			smia = rad * (a->flags & AO_ELLIPTICAL ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
+			qmat.scalein(rad, smia, rad);
+			if(a->flags & AO_ELLIPTICAL)
+				qmat.translatein(a->eccentricity, 0, 0);
+			rmat = mat * qmat;
+/*				VECSUB(&rmat[12], spos, vw->pos);*/
+		/*	projection*/(glPushMatrix());
+/*				glLoadIdentity ();
+			glFrustum (g_left * -0.0005, g_right * 0.0005,
+				g_bottom * -0.0005, g_top * 0.0005,
+				g_near * 0.0005, g_far * 1e10); */
+			glLoadMatrixd(vw->rot);
+			glBegin(GL_LINE_LOOP);
+			for(j = 0; j < 64; j++){
+				avec3_t v, vr;
+				v[0] = 0 + cuts[j][0];
+				v[1] = 0 + cuts[j][1];
+				v[2] = 0;
+				mat4vp3(vr, rmat, v);
+				VECADDIN(vr, spos);
+				if(VECSDIST(vr, vw->pos) < .15 * .15 * rad * rad){
+					int k;
+					for(k = 0; k < 8; k++){
+						v[0] = 0 + sin(2 * M_PI * (j * 8 + k) / (64 * 8));
+						v[1] = 0 + cos(2 * M_PI * (j * 8 + k) / (64 * 8));
+						v[2] = 0;
+						mat4vp3(vr, rmat, v);
+						VECADDIN(vr, spos);
+						VECSUBIN(vr, vw->pos);
+						VECNORMIN(vr);
+						glVertex3dv(vr);
+					}
+				}
+				else{
+					VECSUBIN(vr, vw->pos);
+					VECNORMIN(vr);
+					glVertex3dv(vr);
+				}
+/*					glVertex3d(spos[0] + SUN_DISTANCE * cuts[j][0], spos[1] + SUN_DISTANCE * cuts[j][1], spos[2]);*/
+			}
+			glEnd();
+		/*	projection*/(glPopMatrix());
+		}
+#if 1
+		if(0. < wpos[2] || !(a->flags & AO_ALWAYSSHOWNAME) && a->rad / -wpos[2] < .00001
+			/*&& !(a->flags & AO_PLANET && a->orbit_home && astrobj_visible(vw, a->orbit_home)*/)
+			break;
+#endif
+		pos[0] = wpos[0] / wpos[2];
+		pos[1] = wpos[1] / wpos[2];
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslated(-pos[0], -pos[1], -1.);
+		{
+			double r = 5. / vw->vp.m * vw->fov;
+			glBegin(GL_LINE_LOOP);
+			glVertex2d(r, r);
+			glVertex2d(-r, r);
+			glVertex2d(-r, -r);
+			glVertex2d(r, -r);
+			glEnd();
+		}
+		glBegin(GL_LINES);
+		glVertex2d(0., 0.);
+		glVertex2d(.05, .05 - id * .01);
+		glEnd();
+		glRasterPos2d(0.05, 0.05 - id * .01);
+		gldprintf("%s", a->name);
+		glPopMatrix();
+	} while(0);
+	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next)
+		drawastro(vw, cs2, model);
+}
+
+static void drawindics(Viewer *vw){
+	if(show_planets_name){
+		Mat4d model;
+		model = vw->rot;
+		MAT4TRANSLATE(model, -vw->pos[0], -vw->pos[1], -vw->pos[2]);
+		drawastro(vw, &galaxysystem, model);
+//		drawCSOrbit(vw, &galaxysystem);
+	}
+}
+
 void draw_func(Viewer &vw, double dt){
 	int i;
 	for(i = 0; i < numof(balls); i++){
@@ -230,6 +335,9 @@ void draw_func(Viewer &vw, double dt){
 	galaxysystem.startdraw();
 	galaxysystem.predraw(&vw);
 	galaxysystem.draw(&vw);
+	glDisable(GL_LIGHTING);
+	glColor4ub(255, 255, 255, 255);
+	drawindics(&vw);
 	projection(glPopMatrix());
 	glPopAttrib();
 
@@ -720,6 +828,7 @@ int main(int argc, char *argv[])
 	CmdAdd("popbind", cmd_popbind);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
+	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &galaxysystem);

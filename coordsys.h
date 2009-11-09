@@ -72,7 +72,9 @@ public:
 
 	virtual bool belongs(const Vec3d &pos, const CoordSys *pos_cs)const;
 
-	virtual bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual bool readFileStart(StellarContext &); // enter block
+	virtual bool readFile(StellarContext &, int argc, char *argv[]); // read a line from a text file
+	virtual bool readFileEnd(StellarContext &); // exit block
 
 	/* Definition of appropriate rotation. some coordinate systems like space colonies have
 	  odd rules to rotate the camera. Default is 'trackball' type rotation. */

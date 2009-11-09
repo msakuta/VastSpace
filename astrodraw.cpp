@@ -60,7 +60,7 @@ void OrbitCS::draw(const Viewer *vw){
 	CoordSys *cs2;
 	if(!this)
 		return;
-	if(flags2 & OCS_SHOWORBIT){
+	if(flags2 & OCS_SHOWORBIT && orbit_home){
 		OrbitCS *a = this;
 		int n, j;
 		double (*cuts)[2], rad;
@@ -439,7 +439,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 #define PROJS (PROJTS/2)
 #define PROJBITS 32 /* bit depth of projected texture */
 
-void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
+bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, spe, zoom;
@@ -447,13 +447,13 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
-	Vec3d apos, tp;
+	Vec3d tp;
 
 	params.vw = vw;
 	params.texenable = texenable;
 	params.detail = 0;
 
-	apos = vw->cs->tocs(a->pos, a->parent);
+	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 /*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
 	scale = a->rad * vw->gc->scale(apos);
 
@@ -472,7 +472,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 		dark[2] = GLubyte(mat_ambient[2] * 127);
 		dark[3] = 255;
 		drawShadeSphere(a, vw, sunpos, color, dark);
-		return;
+		return true;
 	}
 
 	do if(!texlist && texname){
@@ -487,7 +487,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 
 	dist = (apos - vw->pos).len();
 	if(dist < a->rad)
-		return;
+		return true;
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -674,6 +674,7 @@ void drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 
 	glPopAttrib();
 	glPopMatrix();
+	return texenable;
 }
 
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]){
@@ -689,10 +690,15 @@ void TexSphere::draw(const Viewer *vw){
 	if(sunAtmosphere(*vw)){
 		drawsuncolona(findBrightest(), vw);
 	}
-	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.))
-		drawTextureSphere(this, vw, sunpos,
+	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
+		bool ret = drawTextureSphere(this, vw, sunpos,
 			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
 			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.tomat4(), texname);
+		if(!ret && texname){
+			delete[] texname;
+			texname = NULL;
+		}
+	}
 	st::draw(vw);
 }
 

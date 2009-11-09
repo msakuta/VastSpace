@@ -13,17 +13,18 @@ define AU 149597870.691
 define Rsun 6.960e5
 define Msun 1.9884e30
 
-#astro Star "Sol"{
-#	radius 1.5*Rsun
-#	pos 0 10*Rsun 0
-#	mass 3*Msun
-#	absolute_magnitude 4.1
-#}
+astro Star "Sol"{
+	radius 1.5*Rsun
+	pos 0 10*Rsun 0
+	mass 3*Msun
+	absolute_magnitude 4.1
+}
 
 coordsys Orbit sunlo{
 	fullname "Sun Low Orbit"
 	radius 500
-	orbits sun
+	orbits Sol
+	showorbit
 	semimajor_axis 600.2686*6378.
 	eccentricity 0.
 	inclination 3.85
@@ -37,7 +38,7 @@ coordsys Orbit sunlo{
 coordsys Orbit mercury{
 	fullname Mercury
 	radius 1000000
-	orbits sun
+	orbits Sol
 	orbit_radius 57909100
 	inclination 7.0051
 	argument_of_periapsis 77.5806
@@ -64,7 +65,7 @@ coordsys Orbit mercury{
 coordsys Orbit venus{
 	fullname Venus
 	radius 1000000
-	orbits sun
+	orbits Sol
 	orbit_radius 108208930
 	inclination 3.39471
 	argument_of_periapsis 131.6758
@@ -193,7 +194,7 @@ coordsys earth{
 coordsys Orbit marss{
 	fullname "Mars"
 	radius 1e5
-	orbits sun
+	orbits Sol
 	semimajor_axis 227936640
 	eccentricity 0.09341233
 	inclination 1.85
@@ -264,7 +265,7 @@ coordsys Orbit marss{
 astro "Ceres"{
 	radius 487.3
 	mass 9.43e20
-	orbits sun
+	orbits Sol
 	orbit_radius 414703838
 	eccentricity 0.07976017
 	inclination 10.586712
@@ -278,7 +279,7 @@ coordsys Orbit jupiter{
 	fullname "Jupiter"
 	eisystem # extent isolated system
 	radius 1e7
-	orbits sun
+	orbits Sol
 	orbit_radius (7.7834e8)
 	eccentricity 0.048775
 	inclination 1.3028
@@ -452,7 +453,7 @@ coordsys Orbit uranus{
 		warp
 		teleport "Uranus Low Orbit" 10 0 0
 	}
-	orbits sun
+	orbits Sol
 	orbit_radius 2870990000
 	eccentricity 0.04638
 	inclination 0.7733
@@ -485,7 +486,7 @@ coordsys Orbit uranus{
 
 coordsys Orbit neptune{
 	radius 1000000
-	orbits sun
+	orbits Sol
 	orbit_radius 4498252900
 	inclination 1.76917
 	ascending_node 131.8722
@@ -526,7 +527,7 @@ coordsys Orbit neptune{
 # Pluto orbit is so eccentric that circular approximation is inappropriate
 coordsys Orbit pluto{
 	radius 100000
-	orbits sun
+	orbits Sol
 	orbit_radius 39.445*1.49597870691e8
 	inclination 17.089
 	ascending_node 110.30347
@@ -574,7 +575,7 @@ astro "Eris"{
 	color af7f7f
 	spherehit
 	planet
-	orbits sun
+	orbits Sol
 	semimajor_axis 67.903*AU
 	eccentricity 0.436
 	inclination 44.02

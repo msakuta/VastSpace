@@ -23,6 +23,9 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
 	ret->eccentricity = 0.;
 	ret->flags2 = 0;
 /*	VECNULL(ret->orbit_omg);*/
+	CoordSys *eis = findeisystem();
+	if(eis)
+		eis->addToDrawList(this);
 }
 
 
@@ -74,6 +77,11 @@ void OrbitCS::anim(double dt){
 	st::anim(dt);
 }
 
+bool OrbitCS::readFileStart(StellarContext &){
+	enable = 0;
+	return true;
+}
+
 bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(0);
@@ -88,6 +96,15 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
 		if(s = strtok(ps, " \t\r\n"))
 			orbit_rad = calc3(&s, sc.vl, NULL);
+		return true;
+	}
+	else if(!strcmp(s, "eccentricity")){
+		if(1 < argc){
+			double d;
+			d = calc3(&argv[1], sc.vl, NULL);
+			eccentricity = d;
+		}
+		return true;
 	}
 	else if(!strcmp(s, "orbit_axis")){
 		if(1 < argc)
@@ -98,9 +115,14 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 			orbit_axis[2] = calc3(&argv[3], sc.vl, NULL);
 			orbit_axis[3] = sqrt(1. - VECSLEN(orbit_axis));
 		}
+		return true;
 	}
-	else if(!strcmp(s, "orbit_inclination")){
+	else if(!strcmp(s, "orbit_inclination") || !strcmp(s, "inclination")){
 		if(1 < argc){
+			enable |= 1;
+			inclination = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+		}
+/*		if(1 < argc){
 			double d;
 			Quatd q1(0,0,0,1);
 			avec3_t omg;
@@ -109,7 +131,22 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 			omg[1] = d / deg_per_rad;
 			omg[2] = 0.;
 			orbit_axis = q1.quatrotquat(omg);
+		}*/
+		return true;
+	}
+	else if(!strcmp(s, "ascending_node")){
+		if(1 < argc){
+			enable |= 2;
+			loan = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
 		}
+		return true;
+	}
+	else if(!strcmp(s, "argument_of_periapsis")){
+		if(1 < argc){
+			enable |= 4;
+			aop = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+		}
+		return true;
 	}
 	else if(!strcmp(s, "showorbit")){
 		if(1 < argc){
@@ -120,16 +157,39 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		else
 			flags2 |= OCS_SHOWORBIT;
+		return true;
 	}
 	else
 		return st::readFile(sc, argc, argv);
 	return true;
 }
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
-	CoordSys *eis = findeisystem();
-	if(eis)
-		eis->addToDrawList(this);
+bool OrbitCS::readFileEnd(StellarContext &){
+	if(!enable)
+		return true;
+	if(inclination == 0.)
+		QUATIDENTITY(orbit_axis);
+	else{
+		aquat_t q1, q2, q3, q4;
+		q1[0] = sin(inclination / 2.);
+		q1[1] = 0.;
+		q1[2] = 0.;
+		q1[3] = cos(inclination / 2.);
+		q2[0] = 0.;
+		q2[1] = 0.;
+		q2[2] = sin(loan / 2.);
+		q2[3] = cos(loan / 2.);
+		QUATMUL(q4, q2, q1);
+		q3[0] = 0.;
+		q3[1] = 0.;
+		q3[2] = sin(aop / 2.);
+		q3[3] = cos(aop / 2.);
+		QUATMUL(orbit_axis, q4, q3);
+	}
+	return true;
+}
+
+Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){
 }
 
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -334,7 +394,7 @@ const char *Star::classname()const{
 	return "Star";
 }
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs){
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL){
 	texlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;

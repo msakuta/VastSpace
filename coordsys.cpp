@@ -501,8 +501,11 @@ void CoordSys::anim(double dt){
 	Vec3d omgdt;
 /*	extern double get_timescale();
 	dt *= get_timescale();*/
-	omgdt += omg * dt;
+	omgdt = omg * dt;
 	qrot = qrot.quatrotquat(omgdt);
+	CoordSys *cs;
+	for(cs = children; cs; cs = cs->next)
+		cs->anim(dt);
 }
 
 void CoordSys::postframe(){}
@@ -649,6 +652,30 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			}
 		}
 		return true;
+	}
+	else if(!strcmp(s, "omega")){
+		if(1 < argc)
+			omg[0] = calc3(&argv[1], sc.vl, NULL);
+		if(2 < argc)
+			omg[1] = calc3(&argv[2], sc.vl, NULL);
+		if(3 < argc)
+			omg[2] = calc3(&argv[3], sc.vl, NULL);
+		if(4 < argc){
+			double d;
+			omg.normin();
+			d = calc3(&argv[4], sc.vl, NULL);
+			omg.scalein(d);
+		}
+	}
+	else if(!strcmp(s, "updirection")){
+		avec3_t v = {0};
+		if(1 < argc)
+			v[0] = calc3(&argv[1], sc.vl, NULL);
+		if(2 < argc)
+			v[1] = calc3(&argv[2], sc.vl, NULL);
+		if(3 < argc)
+			v[2] = calc3(&argv[3], sc.vl, NULL);
+		quatdirection(qrot, v);
 	}
 	return false;
 }

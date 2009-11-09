@@ -56,6 +56,71 @@ extern "C"{
 #endif
 
 
+void OrbitCS::draw(const Viewer *vw){
+	CoordSys *cs2;
+	if(!this)
+		return;
+	if(flags2 & OCS_SHOWORBIT){
+		OrbitCS *a = this;
+		int n, j;
+		double (*cuts)[2], rad;
+		const Astrobj *home = a->orbit_home;
+		Vec3d spos;
+		Mat4d mat, qmat, rmat, lmat;
+		Quatd q;
+		double smia;
+		cuts = CircleCuts(64);
+		spos = vw->cs->tocs(home->pos, home->parent);
+		mat = vw->cs->tocsim(home->parent);
+		qmat = a->orbit_axis.tomat4();
+		rad = a->orbit_rad;
+		smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
+		qmat.scalein(rad, smia, rad);
+		if(a->eccentricity != 0.)
+			qmat.translatein(a->eccentricity, 0, 0);
+		rmat = mat * qmat;
+		glPushMatrix();
+		glPushAttrib(GL_POINT_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT);
+		glPointSize(2);
+		glDisable(GL_POINT_SMOOTH);
+		glLoadMatrixd(vw->rot);
+		glDisable(GL_LIGHTING);
+		glColor4ub(0,255,0,255);
+		glBegin(GL_LINE_LOOP);
+		for(j = 0; j < 64; j++){
+			avec3_t v, vr;
+			v[0] = 0 + cuts[j][0];
+			v[1] = 0 + cuts[j][1];
+			v[2] = 0;
+			mat4vp3(vr, rmat, v);
+			VECADDIN(vr, spos);
+			if(VECSDIST(vr, vw->pos) < .15 * .15 * rad * rad){
+				int k;
+				for(k = 0; k < 8; k++){
+					v[0] = 0 + sin(2 * M_PI * (j * 8 + k) / (64 * 8));
+					v[1] = 0 + cos(2 * M_PI * (j * 8 + k) / (64 * 8));
+					v[2] = 0;
+					mat4vp3(vr, rmat, v);
+					VECADDIN(vr, spos);
+					VECSUBIN(vr, vw->pos);
+					VECNORMIN(vr);
+					glVertex3dv(vr);
+				}
+			}
+			else{
+				VECSUBIN(vr, vw->pos);
+				VECNORMIN(vr);
+				glVertex3dv(vr);
+			}
+		}
+		glEnd();
+		glPopMatrix();
+		glPopAttrib();
+	}
+
+	st::draw(vw);
+}
+
 int g_invert_hyperspace = 1;
 
 void drawsuncolona(Astrobj *a, const Viewer *vw);
@@ -620,18 +685,14 @@ void TexSphere::draw(const Viewer *vw){
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 
-	{
-		GLfloat hor[4] = {1.f, .8f, .5f, 1.f};
-		GLfloat dawn[4] = {1.f, .51f, .1f, 1.f};
-		drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
-	}
+	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
 		drawsuncolona(findBrightest(), vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.))
 		drawTextureSphere(this, vw, sunpos,
 			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &mat4_u, texname);
+			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.tomat4(), texname);
 	st::draw(vw);
 }
 

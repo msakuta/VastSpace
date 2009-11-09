@@ -54,11 +54,15 @@ define Msun 1.9884e30
 astro Star first_light{
 	radius .2e3
 	pos 0 0 -1e5
+	mass Msun
 
 	astro TextureSphere first_planet{
 		orbits .
 		orbit_radius 5e4
 		orbit_inclination 0
+		showorbit
+		omega 0 1 0 1
+		updirection 0 1 0
 		radius 5e3
 		pos -5e4 0 0
 		color 7f9fff
@@ -66,6 +70,7 @@ astro Star first_light{
 		atmosphere_height 30
 		atmosphere_color 1 .8 .5
 		atmosphere_dawn 1. .51 .1
+		mass Msun
 	}
 #	astro TextureSphere second_planet{
 #		radius 5e3

@@ -26,53 +26,51 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
 }
 
 
-void OrbitCS::draw(const Viewer *vw){
-	st::draw(vw);
-}
-
 void OrbitCS::anim(double dt){
-	int timescale = 0;
-	double scale = timescale ? 5000. * pow(10., timescale-1) : 1.;
-	double dist;
-	double omega;
-	Vec3d orbpos, oldpos;
-	Vec3d orbit_omg, omgdt;
-	orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
-	dist = orbit_rad;
-	omega = scale / (dist * sqrt(dist / UGC / (orbit_home->mass)));
-	orbit_omg = orbit_axis.norm();
-	oldpos = pos;
-	if(eccentricity == 0.){
-		Quatd rot, q;
-		orbit_phase += omega * dt;
-		rot[0] = rot[1] = 0.;
-		rot[2] = sin(orbit_phase / 2.);
-		rot[3] = cos(orbit_phase / 2.);
-		q = orbit_axis * rot;
-		pos = q.trans(avec3_010);
-		pos *= orbit_rad;
+	if(orbit_home){
+		int timescale = 0;
+		double scale = timescale ? 5000. * pow(10., timescale-1) : 1.;
+		double dist;
+		double omega;
+		Vec3d orbpos, oldpos;
+		Vec3d orbit_omg, omgdt;
+		orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
+		dist = orbit_rad;
+		omega = scale / (dist * sqrt(dist / UGC / (orbit_home->mass)));
+		orbit_omg = orbit_axis.norm();
+		oldpos = pos;
+		if(eccentricity == 0.){
+			Quatd rot, q;
+			orbit_phase += omega * dt;
+			rot[0] = rot[1] = 0.;
+			rot[2] = sin(orbit_phase / 2.);
+			rot[3] = cos(orbit_phase / 2.);
+			q = orbit_axis * rot;
+			pos = q.trans(vec3_010);
+			pos *= orbit_rad;
+		}
+		else{
+			Vec3d pos0;
+			Mat4d rmat, smat, mat;
+			double smia; /* semi-minor axis */
+			double r;
+			pos0[0] = cos(orbit_phase);
+			pos0[1] = sin(orbit_phase);
+			pos0[2] = 0.;
+			smat = mat4_u;
+			smia = orbit_rad * sqrt(1. - eccentricity * eccentricity);
+			smat.scalein(orbit_rad, smia, orbit_rad);
+			smat.translatein(eccentricity, 0, 0);
+			rmat = orbit_axis.tomat4();
+			mat = rmat * smat;
+			pos = mat.vp3(pos0);
+			r = pos.len();
+			orbit_phase += omega * dt * dist / r;
+		}
+		pos += orbpos;
+		velo = pos - oldpos;
+		velo *= 1. / dt;
 	}
-	else{
-		Vec3d pos0;
-		Mat4d rmat, smat, mat;
-		double smia; /* semi-minor axis */
-		double r;
-		pos0[0] = cos(orbit_phase);
-		pos0[1] = sin(orbit_phase);
-		pos0[2] = 0.;
-		smat = mat4_u;
-		smia = orbit_rad * sqrt(1. - eccentricity * eccentricity);
-		smat.scalein(orbit_rad, smia, orbit_rad);
-		smat.translatein(eccentricity, 0, 0);
-		rmat = orbit_axis.tomat4();
-		mat = rmat * smat;
-		pos = mat.vp3(pos0);
-		r = pos.len();
-		orbit_phase += omega * dt * dist / r;
-	}
-	pos += orbpos;
-	velo = pos - oldpos;
-	velo *= 1. / dt;
 	st::anim(dt);
 }
 
@@ -113,12 +111,22 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 			orbit_axis = q1.quatrotquat(omg);
 		}
 	}
+	else if(!strcmp(s, "showorbit")){
+		if(1 < argc){
+			if(!strcmp(argv[1], "false"))
+				flags2 &= ~OCS_SHOWORBIT;
+			else
+				flags2 |= OCS_SHOWORBIT;
+		}
+		else
+			flags2 |= OCS_SHOWORBIT;
+	}
 	else
 		return st::readFile(sc, argc, argv);
 	return true;
 }
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
+Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(10), basecolor(COLOR32RGBA(127,127,127,255)){
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);

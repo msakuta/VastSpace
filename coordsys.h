@@ -71,7 +71,7 @@ public:
 	virtual void predraw(const Viewer *); // called just before draw method.
 	virtual void draw(const Viewer *); // it's not const member function, altering contents is allowed.
 
-	virtual bool belongs(const Vec3d &pos, const CoordSys *pos_cs)const;
+	virtual bool belongs(const Vec3d &pos)const;
 
 	virtual bool readFileStart(StellarContext &); // enter block
 	virtual bool readFile(StellarContext &, int argc, char *argv[]); // read a line from a text file
@@ -131,7 +131,7 @@ public:
 	  coordinate systems (if one has no overrides to belonging definition function).
 	  The center of extent bounding sphere is set to the coordinates'
 	  origin, because it is more precise to do floating-point arithmetics near zero. */
-	const CoordSys *belongcs(Vec3d &ret, const Vec3d &src, const CoordSys *cs)const;
+	const CoordSys *belongcs(Vec3d &ret, const Vec3d &src)const;
 
 	bool is_ancestor_of(const CoordSys *object)const;
 

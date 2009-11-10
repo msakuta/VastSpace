@@ -13,6 +13,8 @@ define AU 149597870.691
 define Rsun 6.960e5
 define Msun 1.9884e30
 
+name "the universe"
+
 #coordsys starsystem3{
 #	pos (rand()-0.5)*.1e17 (rand()-0.5)*1e17 (rand()-0.5)*1e17
 #	warp star3orbit 100000 100000 0
@@ -52,7 +54,8 @@ define Msun 1.9884e30
 #}
 
 astro Star first_light{
-	radius .2e3
+	cs_radius 1e8
+	radius 1e4
 	pos 0 0 -1e5
 	mass Msun
 	absolute_magnitude 4.83
@@ -87,7 +90,7 @@ astro Star first_light{
 	coordsys Orbit marss{
 		eisystem
 		fullname "Mars"
-		radius 1e5
+		cs_radius 1e5
 		orbits .
 		semimajor_axis 227936640
 		eccentricity 0.09341233
@@ -112,7 +115,7 @@ astro Star first_light{
 
 		new coordsys Orbit marsorbit{
 			fullname "Mars Orbit"
-			radius 100
+			cs_radius 100
 			warp
 			teleport
 			orbits Mars
@@ -138,7 +141,7 @@ astro Star first_light{
 
 		new coordsys Orbit phobosorbit{
 			fullname "Phobos Orbit"
-			radius 100
+			cs_radius 100
 			orbits Phobos
 			semimajor_axis 1e3
 			rstation

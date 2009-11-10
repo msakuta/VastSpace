@@ -199,6 +199,12 @@ Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), abs
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(0);
+	else if(!strcmp(s, "radius")){
+		if(argv[1]){
+			rad = calc3(&argv[1], sc.vl, NULL);
+		}
+		return true;
+	}
 	else if(!strcmp(s, "mass")){
 		if(argv[1]){
 			mass = calc3(&argv[1], sc.vl, NULL);

@@ -47,7 +47,7 @@ public:
 	double velolen;
 	double fov, ar;
 	double dynamic_range; /* experimental; to simulate high dynamic range */
-	CoordSys *cs;
+	const CoordSys *cs;
 	GLcull *gc; /* current culling information */
 	GLcull **gclist; /* list of glculls in order of z-slices */
 	int ngclist; /* number of z-slices which can change in occasions */

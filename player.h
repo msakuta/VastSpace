@@ -25,7 +25,7 @@ public:
 	Vec3d accel;
 	Quatd rot;
 	double rad;
-	CoordSys *cs;
+	const CoordSys *cs;
 	void (*mover)(struct player *, input_t *inputs, double dt); /* virtual mover function */
 	Entity *chase, *control, *selected, *lastchase;
 	struct astrobj *sight;

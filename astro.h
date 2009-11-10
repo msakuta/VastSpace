@@ -55,6 +55,7 @@ class Astrobj : public OrbitCS{
 public:
 	typedef OrbitCS st;
 
+	double rad;
 	double mass;
 	float absmag; /* Absolute Magnitude */
 	COLOR32 basecolor; /* rough approximation of apparent color */

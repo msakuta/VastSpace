@@ -284,7 +284,7 @@ static int findparentq(Quatd &ret, const CoordSys *retcs, const Quatd &src, cons
 	q = src.imul(cs->qrot);
 
 	if(cs->parent == retcs){
-		QUATCPY(ret, q);
+		ret = q;
 		return 1;
 	}
 
@@ -327,8 +327,10 @@ Mat4d CoordSys::tocsim(const CoordSys *cs)const{
 
 
 
-bool CoordSys::belongs(const Vec3d &pos, const CoordSys *pos_cs)const{
-	return pos.slen() < parent->rad * parent->rad;
+bool CoordSys::belongs(const Vec3d &pos)const{
+	if(!parent)
+		return true;
+	return pos.slen() < rad * rad;
 }
 
 CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
@@ -342,7 +344,7 @@ CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const Coo
 
 		/* radius is measured in parent coordinate system and if the position is not within it,
 		  we do not belong to this one. */
-		if(cs2->belongs(v, cs2)){
+		if(cs2->belongs(v)){
 			CoordSys *csret;
 			if(csret = findchildb(ret, v, cs2, NULL))
 				return csret;
@@ -369,7 +371,7 @@ static const CoordSys *findparentb(Vec3d &ret, const Vec3d &src, const CoordSys 
 
 	/* if the position vector exceeds sphere's radius, check for parents.
 	  otherwise, check for all the children. */
-	if(cs->parent->belongs(src, cs2)){
+	if(cs->parent->belongs(src)){
 		CoordSys *csret;
 		/* do not scan subtrees already checked! */
 		if(csret = findchildb(ret, v, cs->parent, cs))
@@ -382,14 +384,14 @@ static const CoordSys *findparentb(Vec3d &ret, const Vec3d &src, const CoordSys 
 	return findparentb(ret, v, cs->parent);
 }
 
-const CoordSys *CoordSys::belongcs(Vec3d &ret, const Vec3d &src, const CoordSys *cs)const{
+const CoordSys *CoordSys::belongcs(Vec3d &ret, const Vec3d &src)const{
 	CoordSys *csret;
-	if(csret = findchildb(ret, src, cs, NULL))
+	if(csret = findchildb(ret, src, this, NULL))
 		return csret;
-	else if(cs->belongs(src, cs))
-		return cs;
+	else if(belongs(src))
+		return this;
 	else
-		return findparentb(ret, src, cs);
+		return findparentb(ret, src, this);
 }
 
 /* oneself is by definition excluded from ancestor */
@@ -596,7 +598,7 @@ bool CoordSys::readFileStart(StellarContext &){
 bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
-		if(s = strtok(ps, " \t\r\n")){
+		if(s = ps/*strtok(ps, " \t\r\n")*/){
 			char *name;
 			if(this->name)
 				delete[] this->name;
@@ -621,7 +623,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			pos[2] = calc3(&argv[3], sc.vl, NULL);
 		return true;
 	}
-	else if(!strcmp(s, "radius")){
+	else if(!strcmp(s, "cs_radius")){
 		if(ps)
 			rad = atof(ps);
 		return true;

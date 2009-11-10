@@ -2582,6 +2582,23 @@ double galaxy_get_star_density(Viewer *vw){
 }
 #endif
 
+#define TEXSIZE 64
+static GLuint drawStarTexture(){
+	static GLubyte bits[TEXSIZE][TEXSIZE][2];
+	int i, j;
+	GLuint texname;
+	glGenTextures(1, &texname);
+	glBindTexture(GL_TEXTURE_2D, texname);
+	for(i = 0; i < TEXSIZE; i++) for(j = 0; j < TEXSIZE; j++){
+		int di = i - TEXSIZE / 2, dj = j - TEXSIZE / 2;
+		int sdist = di * di + dj * dj;
+		bits[i][j][0] = /*255;*/
+		bits[i][j][1] = GLubyte(TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.));
+	}
+	glTexImage2D(GL_TEXTURE_2D, 0, 2, TEXSIZE, TEXSIZE, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, bits);
+	return texname;
+}
+
 void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
 	static int init = 0;
 	static GLuint listBright, listDark;
@@ -2771,11 +2788,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 #endif
 
 		if(vw->cs == csys){
-			VECSCALE(plpos, vw->pos, 1. / cellsize);
+			plpos = vw->pos / cellsize;
 		}
 		else{
-			plpos = csys->tocs(vw->pos, vw->cs);
-			VECSCALEIN(plpos, 1. / cellsize);
+			plpos = csys->tocs(vw->pos, vw->cs) / cellsize;
 		}
 
 		for(i = 0; i < 3; i++){
@@ -2869,18 +2885,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					Mat4d csrot;
 					glowstart = 1;
 					if(!texname){
-#define TEXSIZE 64
-						GLubyte bits[TEXSIZE][TEXSIZE][2];
-						int i, j;
-						glGenTextures(1, &texname);
-						glBindTexture(GL_TEXTURE_2D, texname);
-						for(i = 0; i < TEXSIZE; i++) for(j = 0; j < TEXSIZE; j++){
-							int di = i - TEXSIZE / 2, dj = j - TEXSIZE / 2;
-							int sdist = di * di + dj * dj;
-							bits[i][j][0] = /*255;*/
-							bits[i][j][1] = GLubyte(TEXSIZE * TEXSIZE / 2 / 2 <= sdist ? 0 : 255 - 255 * pow((double)(di * di + dj * dj) / (TEXSIZE * TEXSIZE / 2 / 2), 1. / 8.));
-						}
-						glTexImage2D(GL_TEXTURE_2D, 0, 2, TEXSIZE, TEXSIZE, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, bits);
+						texname = drawStarTexture();
 					/*	glNewList(list = glGenLists(1), GL_COMPILE);
 						glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
 						glBindTexture(GL_TEXTURE_2D, texname);
@@ -2908,9 +2913,9 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 				}
 				{
 					GLfloat col[4] = {1., 1., 1., 1.};
-					avec3_t local;
-					mat4vp3(local, relmat, pos);
-					VECNORMIN(local);
+					Vec3d local;
+					local = relmat.vp3(pos);
+					local.normin();
 /*					if(!current_nearest && glcullFrustum(local, radius, &glc)){
 						int j;
 						for(j = 0; j < 4; j++)
@@ -2942,6 +2947,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 /*					glTranslated(pos[0], pos[1], pos[2]);
 					glMultMatrixd(irot);
 					glScaled(radius, radius, radius);*/
+//					printf("%lg %lg %lg\n", local[0], local[1], local[2]);
 					glLoadIdentity();
 					gldTranslate3dv(local);
 					glScaled(radius, radius, radius);

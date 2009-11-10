@@ -307,6 +307,12 @@ static void drawindics(Viewer *vw){
 		drawastro(vw, &galaxysystem, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslatef(0,0,-1);
+	glRasterPos2d(0, 0);
+	gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
+	glPopMatrix();
 }
 
 void draw_func(Viewer &vw, double dt){
@@ -446,6 +452,13 @@ void display_func(void){
 			}
 		}
 
+		Vec3d pos;
+		const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
+		if(cs != pl.cs){
+			pl.cs = cs;
+			pl.pos = pos;
+		}
+
 		MotionFrame(dt);
 
 		MotionAnim(pl, dt, flypower);
@@ -483,7 +496,7 @@ void display_func(void){
 		glMatrixMode (GL_MODELVIEW);  /* back to modelview matrix */
 /*		glDepthRange(.5,100);*/
 	}
-	viewer.cs = pl.cs = &galaxysystem;
+	viewer.cs = pl.cs;
 	viewer.pos = pl.pos;
 	viewer.rot = pl.rot.tomat4();
 	viewer.irot = pl.rot.cnj().tomat4();
@@ -832,6 +845,8 @@ int main(int argc, char *argv[])
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &galaxysystem);
+
+	pl.cs = &galaxysystem;
 
 	{
 		random_sequence rs;

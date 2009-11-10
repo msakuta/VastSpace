@@ -169,7 +169,7 @@ Vec3d CoordSys::tocs(const Vec3d &src, const CoordSys *cs)const{
 	return ret;
 }
 
-static int findchildv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs, const CoordSys *skipcs){
+static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs, const CoordSys *skipcs){
 #if 1
 	CoordSys *cs2;
 	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
@@ -184,7 +184,6 @@ static int findchildv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const V
 		/* position */
 		v1 = srcpos - cs2->pos;
 		pos = cs2->qrot.itrans(v1);
-/*		MAT4VP3(pos, cs2->irot, v1);*/
 
 		/* velocity */
 		v1 = src - cs2->velo;
@@ -192,7 +191,6 @@ static int findchildv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const V
 		v1 -= vrot;
 		v = v1;
 		v = cs2->qrot.itrans(v1);
-/*		MAT4DVP3(v, cs2->irot, v1);*/
 
 		if(retcs == cs2){
 			ret = v;
@@ -204,7 +202,7 @@ static int findchildv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const V
 	return 0;
 }
 
-static int findparentv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs){
+static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs){
 	Vec3d v1, v, vrot, pos;
 
 	if(!cs->parent)
@@ -212,15 +210,10 @@ static int findparentv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const 
 
 	/* velocity */
 	v = cs->qrot.trans(src);
-/*	MAT4DVP3(v, cs->rot, src);*/
-	VECADDIN(v, cs->velo);
-	VECVP(vrot, cs->omg, srcpos);
+	v += cs->velo;
+	vrot = cs->omg.vp(srcpos);
 	v1 = cs->qrot.trans(vrot);
-/*	MAT4DVP3(v1, cs->rot, vrot);*/
-	VECADDIN(v, v1);
-/*	VECADDIN(v1, vrot);*/
-/*	VECADDIN(v, v1);*/
-/*	VECADDIN(v, cs->velo);*/
+	v += v1;
 
 	if(cs->parent == retcs){
 		VECCPY(ret, v);
@@ -229,8 +222,7 @@ static int findparentv(Vec3d ret, const CoordSys *retcs, const Vec3d src, const 
 
 	/* position */
 	v1 = cs->qrot.trans(srcpos);
-/*	MAT4VP3(v1, cs->rot, srcpos);*/
-	VECADD(pos, v1, cs->pos);
+	pos = v1 + cs->pos;
 
 	/* do not scan subtrees already checked! */
 	if(findchildv(ret, retcs, v, pos, cs->parent, cs))

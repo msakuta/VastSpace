@@ -56,7 +56,7 @@ extern "C"{
 #endif
 
 
-int g_invert_hyperspace = 1;
+int g_invert_hyperspace = 0;
 
 void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
@@ -2912,7 +2912,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					relmat = vw->relrot * csrot;
 				}
 				{
-					GLfloat col[4] = {1., 1., 1., 1.};
+					static const GLfloat col[4] = {1., 1., 1., 1.};
 					Vec3d local;
 					local = relmat.vp3(pos);
 					local.normin();
@@ -2929,19 +2929,19 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					col[1] = g / 256.F;
 					col[2] = b / 256.F;
 					col[3] = 1.F;*/
-					if(g_invert_hyperspace && LIGHT_SPEED < velolen){
+/*					if(g_invert_hyperspace && LIGHT_SPEED < velolen){
 						VECSCALEIN(col, GLfloat(LIGHT_SPEED / velolen));
 						r *= LIGHT_SPEED / velolen;
 						g *= LIGHT_SPEED / velolen;
 						b *= LIGHT_SPEED / velolen;
-					}
+					}*/
 					if(current_nearest){
 						nearest_color[0] = r;
 						nearest_color[1] = g;
 						nearest_color[2] = b;
 						nearest_color[3] = 255;
 					}
-					glColor3ub(r, g, b);
+					glColor4ub(r, g, b, 255);
 					glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, col);
 /*					glPushMatrix();*/
 /*					glTranslated(pos[0], pos[1], pos[2]);
@@ -2952,10 +2952,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					gldTranslate3dv(local);
 					glScaled(radius, radius, radius);
 					glBegin(GL_QUADS);
-					glTexCoord2d(0., 0.); glVertex2d(-1., -1.);
-					glTexCoord2d(1., 0.); glVertex2d( 1., -1.);
-					glTexCoord2d(1., 1.); glVertex2d( 1.,  1.);
-					glTexCoord2d(0., 1.); glVertex2d(-1.,  1.);
+					glTexCoord2i(0, 0); glVertex2i(-1, -1);
+					glTexCoord2i(1, 0); glVertex2i( 1, -1);
+					glTexCoord2i(1, 1); glVertex2i( 1,  1);
+					glTexCoord2i(0, 1); glVertex2i(-1,  1);
 					glEnd();
 /*					glPopMatrix();*/
 				}

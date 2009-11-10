@@ -85,6 +85,7 @@ astro Star first_light{
 
 #	include sol.dat
 	coordsys Orbit marss{
+		eisystem
 		fullname "Mars"
 		radius 1e5
 		orbits .

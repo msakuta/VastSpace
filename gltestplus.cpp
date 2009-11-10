@@ -207,12 +207,12 @@ static void draw_gear(double dt){
 
 static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 	int id = 0;
-	Astrobj *a = cs->toAstrobj();
+	OrbitCS *a = cs->toOrbitCS();
 	do if(a){
 		Vec3d pos, wpos;
 		pos = vw->cs->tocs(a->pos, a->parent);
 		mat4vp3(wpos, model, pos);
-		if(a->orbit_home){
+		if(a->orbit_home && a->flags2 & OCS_SHOWORBIT){
 			int j;
 			double (*cuts)[2], rad;
 			const Astrobj *home = a->orbit_home;
@@ -225,9 +225,9 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			mat = vw->cs->tocsim(home->parent);
 			qmat = a->orbit_axis.tomat4();
 			rad = a->orbit_rad;
-			smia = rad * (a->flags & AO_ELLIPTICAL ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
+			smia = rad * (a->eccentricity != 0 ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
 			qmat.scalein(rad, smia, rad);
-			if(a->flags & AO_ELLIPTICAL)
+			if(a->eccentricity != 0)
 				qmat.translatein(a->eccentricity, 0, 0);
 			rmat = mat * qmat;
 /*				VECSUB(&rmat[12], spos, vw->pos);*/
@@ -334,7 +334,7 @@ void draw_func(Viewer &vw, double dt){
 	));
 	galaxysystem.startdraw();
 	galaxysystem.predraw(&vw);
-	galaxysystem.draw(&vw);
+	galaxysystem.drawcs(&vw);
 	glDisable(GL_LIGHTING);
 	glColor4ub(255, 255, 255, 255);
 	drawindics(&vw);

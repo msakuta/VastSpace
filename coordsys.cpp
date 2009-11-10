@@ -478,6 +478,10 @@ public:
 int AstroCmp::invokes = 0;
 
 void CoordSys::draw(const Viewer *vw){
+}
+
+void CoordSys::drawcs(const Viewer *vw){
+	draw(vw);
 	Vec3d cspos;
 	cspos = vw->cs->tocs(avec3_000, this);
 /*	if(cs->flags & CS_EXTENT && vw->gc && glcullFrustum(cspos, cs->rad, vw->gc))
@@ -491,10 +495,11 @@ void CoordSys::draw(const Viewer *vw){
 		}*/
 		AOList::reverse_iterator i = aorder.rbegin();
 		for(; i != aorder.rend();i++) if(*i){
-			(*i)->draw(vw);
+			(*i)->drawcs(vw);
 		}
 	}
 }
+
 
 extern double get_timescale();
 void CoordSys::anim(double dt){
@@ -770,6 +775,10 @@ bool CoordSys::readFileEnd(StellarContext &){
 }
 
 Astrobj *CoordSys::toAstrobj(){
+	return NULL;
+}
+
+OrbitCS *CoordSys::toOrbitCS(){
 	return NULL;
 }
 

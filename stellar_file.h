@@ -18,8 +18,6 @@ extern struct teleport{
 } *tplist;
 extern int ntplist;
 
-#define OCS_SHOWORBIT 1
-
 // L1 point of two celestial bodies
 class Lagrange1CS : public CoordSys{
 	Astrobj *objs[2];

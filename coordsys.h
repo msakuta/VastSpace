@@ -26,6 +26,7 @@ extern "C"{
 class Viewer;
 class WarField;
 class Astrobj;
+class OrbitCS;
 struct StellarContext;
 
 /* node or leaf of coordinate system tree */
@@ -83,11 +84,16 @@ public:
 	// Cast to Astrobj, for distinguishing CoordSys and Astrobj from the children list.
 	// Returns NULL if cast is not possible (i.e. CoordSys object).
 	virtual Astrobj *toAstrobj();
+	virtual OrbitCS *toOrbitCS();
 
 	// Const version simply follows the behavior of non-const version.
 	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
+	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
 
-	Vec3d tocs(const Vec3d &src, const CoordSys *cs)const;
+	// recursively draws a whole tree of coordinate systems.
+	// note that this function is not a virtual function unlike draw(), which means
+	// it cannot be overridden and all relevant systems are assured to be drawn.
+	void drawcs(const Viewer *);
 
 	/*
 	   The data structure is associated with family tree because a child
@@ -115,6 +121,7 @@ public:
 
 	/* convert position, velocity, rotation matrix into one coordinate system
 	  to another. */
+	Vec3d tocs(const Vec3d &src, const CoordSys *cs)const;
 	Vec3d tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)const;
 	Quatd tocsq(const CoordSys *cs)const;
 	Mat4d tocsm(const CoordSys *cs)const;

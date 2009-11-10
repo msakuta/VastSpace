@@ -170,7 +170,7 @@ bool OrbitCS::readFileEnd(StellarContext &){
 	if(inclination == 0.)
 		QUATIDENTITY(orbit_axis);
 	else{
-		aquat_t q1, q2, q3, q4;
+		Quatd q1, q2, q3, q4;
 		q1[0] = sin(inclination / 2.);
 		q1[1] = 0.;
 		q1[2] = 0.;
@@ -179,14 +179,18 @@ bool OrbitCS::readFileEnd(StellarContext &){
 		q2[1] = 0.;
 		q2[2] = sin(loan / 2.);
 		q2[3] = cos(loan / 2.);
-		QUATMUL(q4, q2, q1);
+		q4 = q2 * q1;
 		q3[0] = 0.;
 		q3[1] = 0.;
 		q3[2] = sin(aop / 2.);
 		q3[3] = cos(aop / 2.);
-		QUATMUL(orbit_axis, q4, q3);
+		orbit_axis = q4 * q3;
 	}
 	return true;
+}
+
+OrbitCS *OrbitCS::toOrbitCS(){
+	return this;
 }
 
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){

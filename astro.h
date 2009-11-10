@@ -5,12 +5,12 @@
 #include <clib/avec3.h>
 #include <clib/colseq/color.h>
 
-/* Codes relating astronautics.
-  This header describes data structures on how astronomic objects behave.
-  This header does not care about graphical aspects of objects.
-  Refer astrodraw.h for this purpose. */
+/* Codes relating astronautics. */
 
-/* astrobj::flags shares with coordsys::flags, so use bits only over 16*/
+// OrbitCS::flags2
+#define OCS_SHOWORBIT 1
+
+// astrobj::flags shares with coordsys::flags, so use bits only over 16
 #define AO_DELETE         0x00000002 /* marked as to be deleted, share with coordsys */
 #define AO_PLANET         0x00010000
 #define AO_GRAVITY        0x00020000
@@ -40,10 +40,10 @@ public:
 	OrbitCS(const char *path, CoordSys *root);
 	virtual const char *classname()const;
 	virtual void anim(double dt);
-	virtual void draw(const Viewer *);
 	virtual bool readFileStart(StellarContext &);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
 	virtual bool readFileEnd(StellarContext &);
+	virtual OrbitCS *toOrbitCS();
 
 private:
 	int enable;

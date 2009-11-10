@@ -132,6 +132,9 @@
 				RelativePath="cmd.c">
 			</File>
 			<File
+				RelativePath="cmddraw.cpp">
+			</File>
+			<File
 				RelativePath="coordsys.cpp">
 			</File>
 			<File

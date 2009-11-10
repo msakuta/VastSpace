@@ -621,6 +621,32 @@ void reshape_func(int w, int h)
 //	g_height = h;
 //	g_max = m;
 }
+
+static int cmd_teleport(int argc, char *argv[]){
+	const char *arg = argv[1];
+	struct coordsys *cs;
+	if(!arg){
+		CmdPrint("Specify location you want to teleport to.");
+		return 0;
+	}
+	if(pl.chase){
+		return 0;
+	}
+	{
+		int i;
+		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
+			pl.cs = tplist[i].cs;
+			VECCPY(pl.pos, tplist[i].pos);
+			VECNULL(pl.velo);
+			break;
+		}
+		if(i == ntplist)
+			CmdPrintf("Could not find location \"%s\".", arg);
+	}
+	return 0;
+}
+
+
 /*
 extern "C" int console_cursorposdisp;
 int console_cursorposdisp = 0;*/
@@ -928,6 +954,7 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
+	CmdAdd("teleport", cmd_teleport);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

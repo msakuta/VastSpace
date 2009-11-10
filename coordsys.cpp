@@ -640,24 +640,24 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
-/*		struct teleport *tp;
-		char *name = argc < 2 ? cs->fullname ? cs->fullname : cs->name : argv[1];
+		struct teleport *tp;
+		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
 		int i;
 		for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
 			tplist[i].flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
 			break;
 		}
 		if(i != ntplist)
-			continue;
-		tplist = realloc(tplist, ++ntplist * sizeof *tplist);
+			return true;
+		tplist = (teleport*)realloc(tplist, ++ntplist * sizeof *tplist);
 		tp = &tplist[ntplist-1];
-		tp->cs = cs;
-		tp->name = malloc(strlen(name) + 1);
+		tp->cs = this;
+		tp->name = (char*)malloc(strlen(name) + 1);
 		strcpy(tp->name, name);
 		tp->flags = !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-		tp->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-		tp->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
-		tp->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;*/
+		tp->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
+		tp->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
+		tp->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
 		return true;
 	}
 	else if(!strcmp(s, "rstation")){

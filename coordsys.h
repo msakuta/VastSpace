@@ -36,7 +36,7 @@ public:
 	Vec3d velo;
 	Quatd qrot;
 	Vec3d omg;
-	double rad; /* bounding sphere radius around origin, used for culling or conversion */
+	double csrad; /* bounding sphere radius around origin, used for culling or conversion */
 	CoordSys *parent;
 	const char *name;
 	const char *fullname;
@@ -204,7 +204,7 @@ inline double CoordSys::calcScale(const Viewer &vw){
 	if(vwvalid & VW_SCALE)
 		return vwscale;
 	vwvalid |= VW_SCALE;
-	return vwscale = rad * vw.gc->scale(calcPos(vw));
+	return vwscale = csrad * vw.gc->scale(calcPos(vw));
 }
 
 #endif

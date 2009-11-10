@@ -269,7 +269,8 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		/*	projection*/(glPopMatrix());
 		}
 #if 1
-		if(0. < wpos[2] || !(a->flags & AO_ALWAYSSHOWNAME) && a->rad / -wpos[2] < .00001
+		double rad = a->toAstrobj() ? a->toAstrobj()->rad : a->csrad;
+		if(0. < wpos[2] || !(a->flags & AO_ALWAYSSHOWNAME) && rad / -wpos[2] < .00001
 			/*&& !(a->flags & AO_PLANET && a->orbit_home && astrobj_visible(vw, a->orbit_home)*/)
 			break;
 #endif

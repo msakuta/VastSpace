@@ -205,6 +205,11 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		return true;
 	}
+	else if(!strcmp(s, "diameter")){
+		if(argv[1])
+			rad = .5 * calc3(&argv[1], sc.vl, NULL);
+		return true;
+	}
 	else if(!strcmp(s, "mass")){
 		if(argv[1]){
 			mass = calc3(&argv[1], sc.vl, NULL);

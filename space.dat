@@ -54,7 +54,7 @@ name "the universe"
 #}
 
 astro Star first_light{
-	cs_radius 1e8
+	cs_radius 1e10
 	radius 1e4
 	pos 0 0 -1e5
 	mass Msun

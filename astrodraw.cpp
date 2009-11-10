@@ -3315,14 +3315,17 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	double (*cuts)[2];
 	Vec3d vpos, epos, spos;
 	double x, z, phi, theta, f;
-	CoordSys *abest = NULL;
+	Astrobj *abest = NULL;
 
 	/* astrobjs are sorted and the nearest celestial body with atmosphere can be
 	  easily found without distance examination. */
 	CoordSys *eics = a->findeisystem();
-	for(Astrobj::AOList::iterator i = eics->aorder.begin(); i != eics->aorder.end(); i++) if((*i)->flags & AO_ATMOSPHERE){
-		abest = *i;
-		break;
+	for(Astrobj::AOList::iterator i = eics->aorder.begin(); i != eics->aorder.end(); i++){
+		Astrobj *a = (*i)->toAstrobj();
+		if(a && a->flags & AO_ATMOSPHERE){
+			abest = a;
+			break;
+		}
 	}
 	spos = a->calcPos(*vw);
 	vpos = vw->pos;

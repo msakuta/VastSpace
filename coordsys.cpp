@@ -322,7 +322,7 @@ Mat4d CoordSys::tocsim(const CoordSys *cs)const{
 bool CoordSys::belongs(const Vec3d &pos)const{
 	if(!parent)
 		return true;
-	return pos.slen() < rad * rad;
+	return pos.slen() < csrad * csrad;
 }
 
 CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
@@ -464,8 +464,8 @@ public:
 		invokes++;
 		if(!a) return true;
 		else if(!b) return false;
-		ad = a->calcSDist(vw) - a->rad * a->rad;
-		bd = b->calcSDist(vw) - b->rad * b->rad;
+		ad = a->calcSDist(vw) - a->csrad * a->csrad;
+		bd = b->calcSDist(vw) - b->csrad * b->csrad;
 		return ad < bd ? true : bd < ad ? false : false;
 	}
 };
@@ -551,7 +551,7 @@ void CoordSys::init(const char *path, CoordSys *root){
 /*	MAT4IDENTITY(ret->rot);
 	MAT4IDENTITY(ret->irot);*/
 	VECNULL(ret->omg);
-	ret->rad = 1e2;
+	ret->csrad = 1e2;
 	ret->parent = root;
 	if(!name)
 		name = "?";
@@ -617,12 +617,12 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "cs_radius")){
 		if(ps)
-			rad = atof(ps);
+			csrad = atof(ps);
 		return true;
 	}
-	else if(!strcmp(s, "diameter")){
+	else if(!strcmp(s, "cs_diameter")){
 		if(argv[1])
-			rad = .5 * calc3(&argv[1], sc.vl, NULL);
+			csrad = .5 * calc3(&argv[1], sc.vl, NULL);
 		return true;
 	}
 	else if(!strcmp(s, "parent")){

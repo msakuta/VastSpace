@@ -53,6 +53,7 @@ double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 double flypower = 1.;
 static int show_planets_name = 1;
+static int cmdwnd = 0;
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
@@ -397,6 +398,9 @@ void draw_func(Viewer &vw, double dt){
 	draw_gear(dt);
 	glPopAttrib();
 	glPopMatrix();
+
+	if(cmdwnd)
+		CmdDraw(vw.vp);
 }
 
 static POINT mouse_pos = {0, 0};
@@ -617,9 +621,9 @@ void reshape_func(int w, int h)
 //	g_height = h;
 //	g_max = m;
 }
-
+/*
 extern "C" int console_cursorposdisp;
-int console_cursorposdisp = 0;
+int console_cursorposdisp = 0;*/
 
 #if USEWIN && defined _WIN32
 static HGLRC wingl(HWND hWnd, HDC *phdc){
@@ -709,7 +713,39 @@ static void winglend(HGLRC hgl){
 #define DELETEKEY 0x7f
 #define ESC 0x1b
 
+static void special_func(int key, int x, int y){
+	if(cmdwnd){
+		CmdSpecialInput(key);
+		return;
+	}
+/*	if(glwfocus && glwfocus->key){
+		int ret;
+		glwindow **referrer;
+		ret = glwfocus->key(glwfocus, key);
+		if(glwfocus->flags & GLW_TODELETE) for(referrer = &glwlist; *referrer; referrer = &(*referrer)->next) if(*referrer == glwfocus){
+			*referrer = glwfocus->next;
+			free(glwfocus);
+			glwfocus = NULL;
+			break;
+		}
+		if(ret)
+			return;
+	}*/
+	BindExecSpecial(key);
+}
+
 static void key_func(unsigned char key, int x, int y){
+	if(cmdwnd){
+		if(/*key == DELETEKEY ||*/ key == ESC){
+			cmdwnd = 0;
+			return;
+		}
+		if(key == 1 || key == 2)
+			return;
+		if(!CmdInput(key))
+			return;
+	}
+
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
@@ -739,6 +775,28 @@ static void key_func(unsigned char key, int x, int y){
 			break;
 	}
 	BindExec(key);
+}
+
+static void non_printable_key(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int state){
+	switch(wParam){
+	case VK_DELETE: key_func(DELETEKEY, 0, 0); break;
+	case VK_ESCAPE: key_func(ESC, 0, 0); break;
+	case VK_PRIOR: special_func(GLUT_KEY_PAGE_UP, 0, 0); break;
+	case VK_NEXT: special_func(GLUT_KEY_PAGE_DOWN, 0, 0); break;
+	case VK_HOME: special_func(GLUT_KEY_HOME, 0, 0); break;
+	case VK_END: special_func(GLUT_KEY_END, 0, 0); break;
+	case VK_INSERT: special_func(GLUT_KEY_INSERT, 0, 0); break;
+	case VK_LEFT: special_func(GLUT_KEY_LEFT, 0, 0); break;
+	case VK_RIGHT: special_func(GLUT_KEY_RIGHT, 0, 0); break;
+	case VK_UP: special_func(GLUT_KEY_UP, 0, 0); break;
+	case VK_DOWN: special_func(GLUT_KEY_DOWN, 0, 0); break;
+	case VK_SHIFT: key_func(1, 0, 0); break;
+	case VK_CONTROL: key_func(2, 0, 0); break;
+	case VK_MENU: key_func(3, 0, 0); break;
+/*			case VK_BACK: key_func(0x08, 0, 0);*/
+	}
+	if(VK_F1 <= wParam && wParam <= VK_F12)
+		special_func(GLUT_KEY_F1 + wParam - VK_F1, 0, 0);
 }
 
 static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam){
@@ -788,6 +846,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			key_func(wParam, 0, 0);
 			break;
 
+		/* most inputs from keyboard is processed through WM_CHAR, but some special keys are
+		  not sent as characters. */
+		case WM_KEYDOWN:
+			non_printable_key(hWnd, message, wParam, lParam, 0);
+			break;
+
+		case WM_SYSKEYDOWN:
+			non_printable_key(hWnd, message, wParam, lParam, 0);
+			break;
+
 		/* technique to enable momentary key commands */
 		case WM_KEYUP:
 			BindKeyUp(toupper(wParam));
@@ -800,6 +868,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			}
 //			case VK_SHIFT: BindKeyUp(1); break;
 //			case VK_CONTROL: BindKeyUp(2); break;
+			}
+			break;
+
+		case WM_SYSKEYUP:
+			BindKeyUp(wParam == VK_MENU ? 3 : toupper(wParam));
+			switch(wParam){
+			case VK_DELETE: BindKeyUp(DELETEKEY); break;
+			case VK_ESCAPE: BindKeyUp(ESC); break;
+			case VK_SHIFT: BindKeyUp(1); break;
+			case VK_CONTROL: BindKeyUp(2); break;
 			}
 			break;
 
@@ -825,6 +903,15 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 	return 0;
 }
 
+static int cmd_toggleconsole(int argc, char *argv[]){
+	cmdwnd = !cmdwnd;
+	if(cmdwnd){
+		mouse_captured = 0;
+/*		while(ShowCursor(TRUE) <= 0);*/
+	}
+	return 0;
+}
+
 
 #if defined _WIN32
 HWND hWndApp;
@@ -840,6 +927,7 @@ int main(int argc, char *argv[])
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
+	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
@@ -887,7 +975,7 @@ int main(int argc, char *argv[])
 			wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 			wcex.hbrBackground	= NULL;
 			wcex.lpszMenuName	= NULL;
-			wcex.lpszClassName	= "gltest";
+			wcex.lpszClassName	= "gltestplus";
 			wcex.hIconSm		= LoadIcon(hInst, IDI_APPLICATION);
 
 			atom = RegisterClassEx(&wcex);
@@ -896,7 +984,7 @@ int main(int argc, char *argv[])
 
 		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW | WS_SYSMENU | WS_CAPTION, FALSE);
 
-		hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltestplus", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
 /*		hWnd = CreateWindow(atom, "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			100, 100, 400, 400, NULL, NULL, hInst, NULL);*/

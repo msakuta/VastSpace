@@ -1,5 +1,8 @@
 #ifndef CMD_INT_H
 #define CMD_INT_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 #define CB_LINES 256
 #define CB_CHARS 128
@@ -16,4 +19,7 @@ extern char cmdline[CB_CHARS];
 extern int console_cursorposdisp;
 
 
+#ifdef __cplusplus
+}
+#endif
 #endif

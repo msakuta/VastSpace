@@ -533,7 +533,7 @@ void CmdInit(struct viewport *pvp){
 	CvarAdd("console_mousewheelskip", &console_mousewheelskip, cvar_int);
 	CvarAdd("console_pageskip", &console_pageskip, cvar_int);
 	CvarAdd("console_undefinedecho", &console_undefinedecho, cvar_int);
-	cmd_echoa("gltest running.");
+	cmd_echoa("gltestplus running.");
 	cmd_echoa("build: " __DATE__ ", " __TIME__);
 }
 

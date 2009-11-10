@@ -24,9 +24,10 @@ struct cvar *CvarFind(const char *cvarname);
 const char *CvarGetString(const char *cvarname); /* The returned string's strage duration is assured until next call of this function */
 void CmdAliasAdd(const char *name, const char *str);
 struct cmdalias *CmdAliasFind(const char *name);
-void CmdDraw(void);
 
 #ifdef __cplusplus
+struct viewport;
+void CmdDraw(viewport &);
 }
 #endif
 #endif

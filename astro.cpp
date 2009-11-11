@@ -332,6 +332,7 @@ Astrobj *CoordSys::findastrobj(const char *name){
 }
 
 
+
 static int tocs_children_invokes = 0;
 
 struct Param{
@@ -395,10 +396,10 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 }
 
 
-Astrobj *Astrobj::findBrightest()const{
+Astrobj *CoordSys::findBrightest(const Vec3d &pos){
 	Param p = {NULL, 0.};
-	findchildbr(p, this, vec3_000, this, NULL);
-	findparentbr(p, this, vec3_000, const_cast<Astrobj*>(this));
+	findchildbr(p, this, pos, this, NULL);
+	findparentbr(p, this, pos, this);
 	return p.ret;
 }
 

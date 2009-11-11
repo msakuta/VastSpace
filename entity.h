@@ -7,8 +7,18 @@
 class Entity{
 public:
 	Entity() : pos(vec3_000), velo(vec3_000), rot(quat_u), omg(vec3_000){}
+	static Entity *create(const char *cname);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	virtual void anim(double dt);
+	virtual void control(input_t *inputs, double dt) = 0;
+	virtual unsigned analog_mask() = 0;
+	virtual void draw(wardraw_t *) = 0;
+	virtual void drawtra(wardraw_t *) = 0;
+
+	void transform(Mat4d &mat){
+		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
+	}
 
 	Entity *next;
 	Vec3d pos;
@@ -26,7 +36,7 @@ public:
 	int race;
 	int shoots, shoots2, kills, deaths;
 	input_t inputs;
-	char active;
+	WarField *w;
 	char weapon;
 };
 

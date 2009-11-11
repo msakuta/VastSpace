@@ -69,8 +69,6 @@ public:
 	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
-
-	Astrobj *findBrightest()const;
 };
 
 class Universe : public CoordSys{

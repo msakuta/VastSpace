@@ -116,14 +116,16 @@ astro Star first_light{
 		new coordsys Orbit marsorbit{
 			fullname "Mars Orbit"
 			cs_radius 100
-			warp
-			teleport
+			warp mo
+			teleport mo
 			orbits Mars
 			semimajor_axis 1e4
+			addent beamer
 
 			new astro Asteroid BigWatcher{
 				pos 0 12 -20
 				radius 10
+				cs_radius 11
 			}
 
 		}

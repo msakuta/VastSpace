@@ -28,6 +28,8 @@ class WarField;
 class Astrobj;
 class OrbitCS;
 struct StellarContext;
+struct war_draw_data;
+
 
 /* node or leaf of coordinate system tree */
 class CoordSys{
@@ -156,10 +158,16 @@ public:
 
 	Astrobj *findastrobj(const char *name);
 
+	Astrobj *findBrightest(const Vec3d &pos = vec3_000);
+	const Astrobj *findBrightest(const Vec3d &pos = vec3_000)const{
+		return const_cast<CoordSys*>(this)->findBrightest(pos);
+	}
+
 	// This system must be a Extent and Isolated.
 	bool addToDrawList(CoordSys *descendant);
 
 	void startdraw();
+	void drawWar(war_draw_data *wd);
 
 	static void deleteAll(CoordSys **);
 

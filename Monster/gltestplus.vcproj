@@ -192,6 +192,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\beamer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\bitmap.c"
 				>
 			</File>
@@ -243,6 +247,10 @@
 				RelativePath="..\stellar_file.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\war.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
@@ -267,6 +275,10 @@
 			</File>
 			<File
 				RelativePath="..\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\beamer.h"
 				>
 			</File>
 			<File

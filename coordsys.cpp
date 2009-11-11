@@ -5,6 +5,8 @@
 #include "viewer.h"
 #include "player.h"
 #include "stellar_file.h"
+#include "war.h"
+#include "entity.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/aquat.h>
@@ -494,6 +496,9 @@ void CoordSys::drawcs(const Viewer *vw){
 	}
 }
 
+void CoordSys::drawWar(war_draw_data *wd){
+	;
+}
 
 extern double get_timescale();
 void CoordSys::anim(double dt){
@@ -675,18 +680,20 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "addent")){
-/*		extern struct player *ppl;
-		warf_t *w;
-		entity_t *pt;
-		if(cs->w)
-			w = cs->w;
+		extern struct player *ppl;
+		WarField *w;
+		Entity *pt;
+		if(this->w)
+			w = this->w;
 		else
-			w = spacewar_create(cs, ppl);
-		pt = addent_at_warf(w, 2, &argv[0]);
-		pt->pos[0] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-		pt->pos[1] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;
-		pt->pos[2] = 4 < argc ? calc3(&argv[4], vl, NULL) : 0.;
-		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
+			w = this->w = new WarField()/*spacewar_create(cs, ppl)*/;
+		pt = w->addent(Entity::create(argv[1]));
+		if(pt){
+			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
+			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
+			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
+			pt->race = 5 < argc ? atoi(argv[5]) : 0;
+		}
 		return true;
 	}
 	else if(!strcmp(s, "solarsystem")){

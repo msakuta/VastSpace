@@ -67,63 +67,6 @@ const char *Universe::classname()const{
 
 Player pl;
 
-class Ball : public Entity{
-public:
-	typedef Entity st;
-	double rad;
-	Ball() : rad(1) {}
-	Ball(const Vec3d &pos, const Vec3d &velo) : rad(1){}
-	Ball(const Vec3d &pos, const Vec3d &velo, const Vec3d &omg) : rad(1){}
-	void anim(double dt);
-	void collide(Ball &o){
-		Vec3d delta = (pos - o.pos);
-		Vec3d n = delta.norm();
-		double cs = (velo - o.velo).sp(delta); // Closing Speed
-		velo -= delta * cs * 1;
-		o.velo += delta * cs * 1;
-	}
-};
-
-Ball balls[10];
-
-void Ball::anim(double dt){
-	pos += velo * dt;
-/*	amat4_t mat;
-	amat3_t omgt, nmat3;*/
-	Quatd qomg, q, qbackup;
-
-	qomg = omg.scale(dt / 2.);
-	q = qomg * rot;
-	VEC4ADD(rot, rot, q);
-	rot.normin();
-/*	if(nmat){
-		QUATCPY(qbackup, pt->rot);
-		QUATCPY(pt->rot, *pq);
-		tankrot(*nmat, pt);
-		VECSADD(&(*nmat)[12], pt->velo, dt);
-		QUATCPY(pt->rot, qbackup);
-	}*/
-	if(pos[0] < -10){
-		pos[0] = -10;
-		velo[0] = velo[0] < 0 ? -velo[0] : 0;
-	}
-	if(10 < pos[0]){
-		pos[0] = 10;
-		velo[0] = 0 < velo[0] ? -velo[0] : 0;
-	}
-	if(pos[2] < -10){
-		pos[2] = -10;
-		velo[2] = velo[2] < 0 ? -velo[2] : 0;
-	}
-	if(10 < pos[2]){
-		pos[2] = 10;
-		velo[2] = 0 < velo[2] ? -velo[2] : 0;
-	}
-	int i;
-	for(i = 0; i < numof(balls); i++) if(&balls[i] != this && (pos - balls[i].pos).slen() < 1 * 1 && (pos - balls[i].pos).sp(velo - balls[i].velo) < 0.){
-		collide(balls[i]);
-	}
-}
 
 void drawShadeSphere(){
 	int n = 32, slices, stacks;
@@ -144,9 +87,10 @@ void drawShadeSphere(){
 
 void lightOn(){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
+	const Astrobj *sun = pl.cs->findBrightest(pl.pos);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+	glLightfv(GL_LIGHT0, GL_POSITION, sun ? (pl.cs->tocs(vec3_000, sun)).normin().cast<GLfloat>() : light_pos);
 }
 
 static void cslist(const CoordSys *root, double &y){
@@ -318,10 +262,6 @@ static void drawindics(Viewer *vw){
 }
 
 void draw_func(Viewer &vw, double dt){
-	int i;
-	for(i = 0; i < numof(balls); i++){
-		balls[i].anim(dt);
-	}
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -343,47 +283,30 @@ void draw_func(Viewer &vw, double dt){
 	galaxysystem.startdraw();
 	galaxysystem.predraw(&vw);
 	galaxysystem.drawcs(&vw);
-	glDisable(GL_LIGHTING);
-	glColor4ub(255, 255, 255, 255);
-	drawindics(&vw);
 	projection(glPopMatrix());
 	glPopAttrib();
 
 	gldTranslaten3dv(vw.pos);
-	glTranslated(0, -10, -10);
-	for(i = -8; i <= 8; i++){
-		glBegin(GL_LINES);
-		glVertex3d(i, -1., -8.);
-		glVertex3d(i, -1., 8.);
-		glVertex3d(-8., -1., i);
-		glVertex3d(8., -1., i);
-		glEnd();
-	}
-	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
+	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	lightOn();
+	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	glBegin(GL_QUADS);
-	glVertex3d(-8, -1, -8);
-	glVertex3d(-8, -1,  8);
-	glVertex3d( 8, -1,  8);
-	glVertex3d( 8, -1, -8);
-	glEnd();
-	for(i = 0; i < numof(balls); i++){
-		glPushMatrix();
-		gldTranslate3dv(balls[i].pos);
-		gldMultQuat(balls[i].rot);
-		drawShadeSphere();
-		glPopMatrix();
-	}
+	if(pl.cs->w)
+		pl.cs->w->draw(NULL);
 	glPopAttrib();
 	glPopMatrix();
 
-	glPushMatrix();
-	glLoadIdentity();
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	glPushMatrix();
+	glDisable(GL_LIGHTING);
+	glColor4ub(255, 255, 255, 255);
+	drawindics(&vw);
+	glLoadIdentity();
 	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
 	glColor4f(1,1,1,1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -624,7 +547,6 @@ void reshape_func(int w, int h)
 
 static int cmd_teleport(int argc, char *argv[]){
 	const char *arg = argv[1];
-	struct coordsys *cs;
 	if(!arg){
 		CmdPrint("Specify location you want to teleport to.");
 		return 0;
@@ -945,7 +867,6 @@ HWND hWndApp;
 
 int main(int argc, char *argv[])
 {
-	int i;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -963,20 +884,6 @@ int main(int argc, char *argv[])
 	StellarFileLoad("space.dat", &galaxysystem);
 
 	pl.cs = &galaxysystem;
-
-	{
-		random_sequence rs;
-		init_rseq(&rs, 342925);
-		for(i = 0; i < numof(balls); i++){
-			double x = drseq(&rs) * 20 - 10, z = drseq(&rs) * 20 - 10;
-			Vec3d pos = Vec3d(x, 0, z);
-			x = drseq(&rs) * 20 - 10, z = drseq(&rs) * 20 - 10;
-			Vec3d velo = Vec3d(x, 0, z);
-			x = (drseq(&rs) * 2 - 1) * M_PI, z = (drseq(&rs) * 2 - 1) * M_PI;
-			Vec3d omg = Vec3d(x, z, (drseq(&rs) * 2 - 1) * M_PI);
-			balls[i] = Ball(pos, velo, omg);
-		}
-	}
 
 #if USEWIN
 	{

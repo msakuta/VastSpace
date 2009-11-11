@@ -90,7 +90,7 @@ void lightOn(){
 	const Astrobj *sun = pl.cs->findBrightest(pl.pos);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glLightfv(GL_LIGHT0, GL_POSITION, sun ? (pl.cs->tocs(vec3_000, sun)).normin().cast<GLfloat>() : light_pos);
+	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(pl.cs->tocs(vec3_000, sun).normin().cast<GLfloat>()) : light_pos);
 }
 
 static void cslist(const CoordSys *root, double &y){

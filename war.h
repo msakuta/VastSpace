@@ -38,6 +38,7 @@ extern "C"{
 #define PL_CTRL  0x2000000
 
 class Player;
+class Viewer;
 class CoordSys;
 class Entity;
 
@@ -107,6 +108,7 @@ public:
 	WarField(CoordSys *cs);
 	virtual void anim(double dt);
 	virtual void draw(struct war_draw_data *);
+	virtual void drawtra(struct war_draw_data *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
 	Entity *addent(Entity *);
 
@@ -127,23 +129,23 @@ public:
 };
 
 typedef struct war_draw_data{
-	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
-	void (*light_on)(void); /* processes to turn */
-	void (*light_off)(void); /* the light on and off. */
-	COLOR32 ambient; /* environmental color; non light-emitting objects dyed by this */
-	unsigned char hudcolor[4];
-	int irot_init; /* inverse rotation */
-	double (*rot)[16]; /* rotation matrix */
-	double irot[16];
-	double view[3]; /* view position */
-	double viewdir[3]; /* unit vector pointing view direction */
-	double fov; /* field of view */
-	GLcull *pgc;
-	struct viewer *vw;
-	double light[3]; /* light direction */
-	double gametime;
-	int lightdraws;
+//	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
+//	void (*light_on)(void); /* processes to turn */
+//	void (*light_off)(void); /* the light on and off. */
+//	COLOR32 ambient; /* environmental color; non light-emitting objects dyed by this */
+//	unsigned char hudcolor[4];
+//	int irot_init; /* inverse rotation */
+//	double (*rot)[16]; /* rotation matrix */
+//	double irot[16];
+//	double view[3]; /* view position */
+//	double viewdir[3]; /* unit vector pointing view direction */
+//	double fov; /* field of view */
+//	GLcull *pgc;
+	Viewer *vw;
+//	double light[3]; /* light direction */
+//	double gametime;
 	double maprange;
+	int lightdraws;
 	WarField *w;
 } wardraw_t;
 

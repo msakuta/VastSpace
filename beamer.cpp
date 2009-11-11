@@ -1812,21 +1812,13 @@ void Beamer::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
-#if 0
-	if(!glcullFrustum(pt->pos, .1, wd->pgc)){
-		{
-			avec3_t pa, pb, pa0 = {.001, 0, 0}, pb0 = {-.001, 0, 0};
-
-			quatrot(pa, pt->rot, pa0);
-			VECADDIN(pa, pt->pos);
-			quatrot(pb, pt->rot, pb0);
-			VECADDIN(pb, pt->pos);
-			glColor4ub(255,255,9,255);
-			glBegin(GL_LINES);
-			glVertex3dv(pa);
-			glVertex3dv(pb);
-			glEnd();
-		}
+#if 1
+	if(!wd->vw->gc->cullFrustum(pos, .1)){
+		glColor4ub(255,255,9,255);
+		glBegin(GL_LINES);
+		glVertex3dv(mat.vp3(Vec3d(.001,0,0)));
+		glVertex3dv(mat.vp3(Vec3d(-.001,0,0)));
+		glEnd();
 		{
 			int i, n = 3;
 			static const avec3_t pos0[] = {
@@ -1841,19 +1833,21 @@ void Beamer::drawtra(wardraw_t *wd){
 			avec3_t pos;
 			double rad = .002;
 			GLubyte col[4] = {255, 127, 127, 255};
-			if(fmod(wd->gametime, 2.) < .2){
+			random_sequence rs;
+			init_rseq(&rs, (unsigned long)this);
+			if(fmod(wd->vw->viewtime + drseq(&rs) * 2., 2.) < .2){
 				col[1] = col[2] = 255;
 				n = numof(pos0);
 				rad = .003;
 			}
 			for(i = 0 ; i < n; i++){
 				mat4vp3(pos, mat, pos0[i]);
-				gldSpriteGlow(pos, rad, col, wd->irot);
+				gldSpriteGlow(pos, rad, col, wd->vw->irot);
 			}
 		}
 
 		/* shield effect */
-		if(0. < p->shieldAmount && 0. < p->shield){
+/*		if(0. < p->shieldAmount && 0. < p->shield){
 			GLubyte col[4] = {0,127,255,255};
 			avec3_t dr;
 			amat4_t irot;
@@ -1865,9 +1859,10 @@ void Beamer::drawtra(wardraw_t *wd){
 			drawShieldSphere(pt->pos, wd->vw->pos, BEAMER_SHIELDRAD, col, irot);
 		}
 
-		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);
+		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
 	}
-
+#endif
+#if 0
 	if(p->charge){
 		int i;
 		GLubyte azure[4] = {63,0,255,95}, bright[4] = {127,63,255,255};

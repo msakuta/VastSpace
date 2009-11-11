@@ -28,6 +28,11 @@ void WarField::draw(wardraw_t *wd){
 		e->draw(wd);
 }
 
+void WarField::drawtra(wardraw_t *wd){
+	for(Entity *e = el; e; e = e->next)
+		e->drawtra(wd);
+}
+
 bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
 	return false;
 }

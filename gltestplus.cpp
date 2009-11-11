@@ -67,6 +67,49 @@ const char *Universe::classname()const{
 }
 
 
+class GLattrib{
+public:
+	GLattrib(GLbitfield mask){
+		glPushAttrib(mask);
+	}
+	~GLattrib(){
+		glPopAttrib();
+	}
+};
+
+class GLmatrix{
+public:
+	GLmatrix(){
+		glPushMatrix();
+	}
+	~GLmatrix(){
+		glPopMatrix();
+	}
+};
+
+class GLpmatrix{
+	GLdouble mat[16];
+public:
+	GLpmatrix(){
+		glMatrixMode(GL_PROJECTION);
+		glGetDoublev(GL_PROJECTION_MATRIX, mat);
+//		glPushMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	}
+	~GLpmatrix(){
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixd(mat);
+//		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	}
+};
+
+class GLma : public GLmatrix, public GLattrib{
+public:
+	GLma(GLbitfield mask) : GLmatrix(), GLattrib(mask){}
+	~GLma(){}
+};
+
 
 void drawShadeSphere(){
 	int n = 32, slices, stacks;
@@ -253,10 +296,12 @@ static void drawindics(Viewer *vw){
 		drawastro(vw, &galaxysystem, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
+	GLpmatrix pm;
+	projection(glLoadIdentity());
 	glPushMatrix();
 	glLoadIdentity();
 	glTranslatef(0,0,-1);
-	glRasterPos2d(-(double)vw->vp.w / vw->vp.m, -(double)vw->vp.h / vw->vp.m);
+	glRasterPos2d(-1, -1);
 	gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
 	glPopMatrix();
 }
@@ -269,8 +314,9 @@ void draw_func(Viewer &vw, double dt){
 	glMultMatrixd(vw.rot);
 	GLcull glc = GLcull(vw.fov, vw.pos, vw.irot, 1. / 1e3, 1e10);
 	vw.gc = &glc;
-	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
+	{
+	GLma a(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
 	glDisable(GL_CULL_FACE);
 	glColor4f(1,1,1,1);
 	glEnable(GL_BLEND);
@@ -284,7 +330,7 @@ void draw_func(Viewer &vw, double dt){
 	galaxysystem.predraw(&vw);
 	galaxysystem.drawcs(&vw);
 	projection(glPopMatrix());
-	glPopAttrib();
+	}
 
 	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
@@ -293,8 +339,19 @@ void draw_func(Viewer &vw, double dt){
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	if(pl.cs->w)
-		pl.cs->w->draw(NULL);
+	if(pl.cs->w){
+		wardraw_t wd;
+		wd.lightdraws = 0;
+		wd.maprange = 1.;
+		wd.vw = &vw;
+		wd.w = pl.cs->w;
+		pl.cs->w->draw(&wd);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		pl.cs->w->drawtra(&wd);
+	}
 	glPopAttrib();
 	glPopMatrix();
 
@@ -433,7 +490,6 @@ void display_func(void){
 /*		glDepthRange(.5,100);*/
 	}
 	viewer.cs = pl.cs;
-	viewer.pos = pl.pos;
 	if(pl.chase){
 		Quatd rot = pl.rot * pl.chase->rot.cnj();
 		viewer.rot = rot.tomat4();
@@ -443,9 +499,11 @@ void display_func(void){
 	else{
 		viewer.rot = pl.rot.tomat4();
 		viewer.irot = pl.rot.cnj().tomat4();
+		viewer.pos = pl.pos;
 	}
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
+	viewer.viewtime = gametime;
 	draw_func(viewer, dt);
 }
 

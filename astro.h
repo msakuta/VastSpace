@@ -24,6 +24,7 @@
 
 typedef void (*astrobj_draw_proc)(struct astrobj *, const struct viewer *);
 
+class Player;
 struct StellarContext;
 
 // CoordSys of orbital motion
@@ -74,9 +75,11 @@ public:
 class Universe : public CoordSys{
 public:
 	typedef CoordSys st;
-	Universe(){flags = CS_ISOLATED | CS_EXTENT;}
+	Player *ppl;
+	Universe(Player *pl) : ppl(pl){flags = CS_ISOLATED | CS_EXTENT;}
 	const char *classname()const;
 	void draw(const Viewer *);
+	virtual Universe *toUniverse(){return this;}
 };
 
 #endif

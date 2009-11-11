@@ -510,6 +510,8 @@ void CoordSys::anim(double dt){
 	CoordSys *cs;
 	for(cs = children; cs; cs = cs->next)
 		cs->anim(dt);
+	if(w)
+		w->anim(dt);
 }
 
 void CoordSys::postframe(){}
@@ -686,7 +688,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(this->w)
 			w = this->w;
 		else
-			w = this->w = new WarField()/*spacewar_create(cs, ppl)*/;
+			w = this->w = new WarField(this)/*spacewar_create(cs, ppl)*/;
 		pt = w->addent(Entity::create(argv[1]));
 		if(pt){
 			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
@@ -780,6 +782,10 @@ Astrobj *CoordSys::toAstrobj(){
 }
 
 OrbitCS *CoordSys::toOrbitCS(){
+	return NULL;
+}
+
+Universe *CoordSys::toUniverse(){
 	return NULL;
 }
 

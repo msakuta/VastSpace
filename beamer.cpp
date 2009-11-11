@@ -1466,8 +1466,9 @@ void Beamer::anim(double dt){
 			}
 		}
 
-
-		warpable_maneuver(&p->st, mat, dt, &beamer_mn);
+#endif
+		maneuver(mat, dt, &beamer_mn);
+#if 0
 
 		if(p->cooldown == 0. && pt->inputs.change & pt->inputs.press & (PL_ENTER | PL_LCLICK)){
 			p->charge = 6.;
@@ -1539,11 +1540,12 @@ void Beamer::anim(double dt){
 	}
 
 	warpable_proc(pt, w, dt, mat, &p->pf, numof(p->pf), &beamer_mn);
-
+#endif
 	{
-		VECSADD(pt->pos, pt->velo, dt);
+		pos += velo * dt;
+		rot = rot.quatrotquat(omg * dt);
 		{
-			amat4_t nmat;
+/*			amat4_t nmat;
 			amat3_t ort3, irot3, rot3, iort3, nmat3, inmat3;
 			aquat_t q;
 			w->vft->orientation(w, &ort3, pt->pos);
@@ -1552,13 +1554,13 @@ void Beamer::anim(double dt){
 			MAT4TO3(nmat3, nmat);
 			MATTRANSPOSE(inmat3, nmat3);
 			MATMP(rot3, inmat3, ort3);
-			MAT3TO4(nmat, rot3);
+			MAT3TO4(nmat, rot3);*/
 	/*		MAT4TO3(nmat3, nmat);
 			MATTRANSPOSE(iort3, ort3);
 			MATMP(rot3, iort3, nmat3);
 			MATTRANSPOSE(irot3, rot3);
 			MAT3TO4(nmat, irot3);*/
-			imat2pyr(nmat, pt->pyr);
+//			imat2pyr(nmat, pt->pyr);
 	/*		quat2pyr(pt->rot, pt->pyr);*/
 	/*		{
 				avec3_t zh, zh0 = {0, -1., 0}, src, ret;
@@ -1578,7 +1580,7 @@ void Beamer::anim(double dt){
 	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
 		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}
-
+#if 0
 	if(p->pf){
 		int i;
 		avec3_t pos, pos0[numof(p->pf)] = {

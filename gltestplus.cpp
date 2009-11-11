@@ -60,12 +60,12 @@ PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
 PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
 
-Universe galaxysystem;
+Player pl;
+Universe galaxysystem(&pl);
 const char *Universe::classname()const{
 	return "Universe";
 }
 
-Player pl;
 
 
 void drawShadeSphere(){
@@ -256,7 +256,7 @@ static void drawindics(Viewer *vw){
 	glPushMatrix();
 	glLoadIdentity();
 	glTranslatef(0,0,-1);
-	glRasterPos2d(0, 0);
+	glRasterPos2d(-(double)vw->vp.w / vw->vp.m, -(double)vw->vp.h / vw->vp.m);
 	gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
 	glPopMatrix();
 }
@@ -391,6 +391,14 @@ void display_func(void){
 
 		MotionAnim(pl, dt, flypower);
 
+		if(pl.chase){
+			input_t inputs;
+			inputs.press = MotionGet();
+			inputs.change = MotionGetToggle();
+			pl.chase->control(&inputs, dt);
+			pl.pos = pl.chase->pos;
+			pl.velo = pl.chase->velo;
+		}
 		pl.velolen = pl.velo.len();
 		pl.pos += pl.velo * (1. + pl.velolen) * dt;
 
@@ -426,8 +434,16 @@ void display_func(void){
 	}
 	viewer.cs = pl.cs;
 	viewer.pos = pl.pos;
-	viewer.rot = pl.rot.tomat4();
-	viewer.irot = pl.rot.cnj().tomat4();
+	if(pl.chase){
+		Quatd rot = pl.rot * pl.chase->rot.cnj();
+		viewer.rot = rot.tomat4();
+		viewer.irot = rot.cnj().tomat4();
+		viewer.pos = pl.pos + pl.chase->rot.trans(Vec3d(.0, .05, .15));
+	}
+	else{
+		viewer.rot = pl.rot.tomat4();
+		viewer.irot = pl.rot.cnj().tomat4();
+	}
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	draw_func(viewer, dt);
@@ -564,6 +580,14 @@ static int cmd_teleport(int argc, char *argv[]){
 		}
 		if(i == ntplist)
 			CmdPrintf("Could not find location \"%s\".", arg);
+	}
+	return 0;
+}
+
+static int cmd_eject(int argc, char *argv[]){
+	if(pl.chase){
+		pl.chase = NULL;
+		pl.pos += pl.rot.cnj() * Vec3d(0,0,.3);
 	}
 	return 0;
 }
@@ -797,7 +821,10 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 		/* most inputs from keyboard is processed through WM_CHAR, but some special keys are
 		  not sent as characters. */
 		case WM_KEYDOWN:
-			non_printable_key(hWnd, message, wParam, lParam, 0);
+			if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
+				BindExec(wParam - VK_NUMPAD0 + '\010');
+			else
+				non_printable_key(hWnd, message, wParam, lParam, 0);
 			break;
 
 		case WM_SYSKEYDOWN:
@@ -806,7 +833,10 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 
 		/* technique to enable momentary key commands */
 		case WM_KEYUP:
-			BindKeyUp(toupper(wParam));
+			if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
+				BindKeyUp(wParam - VK_NUMPAD0 + '\010');
+			else
+				BindKeyUp(toupper(wParam));
 			switch(wParam){
 			case VK_DELETE: BindKeyUp(DELETEKEY); break;
 //			case VK_ESCAPE: BindKeyUp(ESC); break;
@@ -876,6 +906,7 @@ int main(int argc, char *argv[])
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("teleport", cmd_teleport);
+	CmdAdd("eject", cmd_eject);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

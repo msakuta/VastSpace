@@ -120,7 +120,8 @@ astro Star first_light{
 			teleport mo
 			orbits Mars
 			semimajor_axis 1e4
-			addent beamer
+			addent beamer .1 0 0
+			addent beamer -.1 0 0
 
 			new astro Asteroid BigWatcher{
 				pos 0 12 -20

@@ -27,6 +27,7 @@ class Viewer;
 class WarField;
 class Astrobj;
 class OrbitCS;
+class Universe;
 struct StellarContext;
 struct war_draw_data;
 
@@ -87,10 +88,12 @@ public:
 	// Returns NULL if cast is not possible (i.e. CoordSys object).
 	virtual Astrobj *toAstrobj();
 	virtual OrbitCS *toOrbitCS();
+	virtual Universe *toUniverse();
 
 	// Const version simply follows the behavior of non-const version.
 	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
 	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
+	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

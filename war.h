@@ -42,13 +42,16 @@ class CoordSys;
 class Entity;
 
 /* all player or AI's input should be expressed in this structure. */
-typedef struct input{
+struct input_t{
 	unsigned press; /* bitfield for buttons being pressed */
 	unsigned change; /* and changing state */
 	int start; /* if the controlling is beggining */
 	int end; /* if the controlling is terminating */
 	double analog[4]; /* analog inputs, first and second elements are probably mouse movements. */
-} input_t;
+	input_t() : press(0), change(0), start(0), end(0){
+		analog[0] = analog[1] = analog[2] = analog[3] = 0;
+	}
+};
 
 typedef struct warmap warmap_t;
 typedef struct warmapdecal_s warmapdecal_t;
@@ -85,7 +88,6 @@ struct otn{
 	union unode *a[2];
 };
 
-struct war_field;
 struct war_draw_data;
 struct tent3d_line_list;
 
@@ -102,13 +104,13 @@ struct war_field_static{
 
 class WarField{
 public:
-	WarField();
+	WarField(CoordSys *cs);
 	virtual void anim(double dt);
 	virtual void draw(struct war_draw_data *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
 	Entity *addent(Entity *);
 
-	struct player *pl;
+	Player *pl;
 	Entity *el; /* entity list */
 //	struct bullet *bl; /* bullet list */
 //	struct tent3d_line_list *tell, *gibs;

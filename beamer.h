@@ -53,6 +53,9 @@ public:
 };
 
 class Beamer : public Warpable{
+public:
+	typedef Warpable st;
+protected:
 	struct shieldWavelet *sw;
 	double shieldAmount;
 	double shield;

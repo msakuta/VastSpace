@@ -24,6 +24,8 @@ static unsigned char name2key(const char *name){
 		return 0;
 	if(!name[1] && ('0' <= name[0] && name[0] <= '9' || 'A' <= name[0] && name[0] <= 'Z' || 'a' <= name[0] && name[0] <= 'z'))
 		return name[0];
+	else if(!strncmp(name, "numpad", sizeof"numpad"-1) && '0' <= name[sizeof"numpad"-1] && name[sizeof"numpad"-1] <= '9' && name[sizeof"numpad"] == '\0')
+		return '\010' + name[sizeof"numpad"-1] - '0';
 	else if(!strcmp(name, "semicolon"))
 		return ';';
 	else if(!strcmp(name, "dquote"))
@@ -68,6 +70,12 @@ static const char *key2name(unsigned char key){
 		ret[1] = '1';
 		ret[2] = key - 0x8a + '0';
 		ret[3] = '\0';
+		return ret;
+	}
+	else if('\010' <= key && key <= '\010' + 9){
+		strncpy(ret, "numpad", sizeof "numpad"-1);
+		ret[sizeof "numpad"-1] = key - '\010' + '0';
+		ret[sizeof "numpad"] = '\0';
 		return ret;
 	}
 	else switch(key){

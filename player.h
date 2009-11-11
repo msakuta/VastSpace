@@ -6,7 +6,7 @@
 
 #define FEETD 0.001
 
-typedef struct input input_t;
+struct input_t;
 struct tank;
 struct astrobj;
 struct coordsys;

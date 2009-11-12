@@ -18,6 +18,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/EHa"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\clib\include;..\cpplib\include;..\jpeg-7"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
@@ -64,6 +65,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/EHa"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="TRUE"
@@ -147,6 +149,9 @@
 				RelativePath="gltestplus.cpp">
 			</File>
 			<File
+				RelativePath="judge.cpp">
+			</File>
+			<File
 				RelativePath="keybind.c">
 			</File>
 			<File
@@ -218,6 +223,9 @@
 			</File>
 			<File
 				RelativePath="galaxy_field.h">
+			</File>
+			<File
+				RelativePath="judge.h">
 			</File>
 			<File
 				RelativePath="keybind.h">

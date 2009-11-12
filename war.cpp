@@ -17,10 +17,31 @@ void WarField::anim(double dt){
 		}
 	}
 	for(Entity *e = el; e; e = e->next){
-		e->anim(dt);
+		try{
+			e->anim(dt);
+		}
+		catch(std::exception e){
+			fprintf(stderr, "Exception %s\n", e.what());
+		}
 		if(pl && !pl->chase && (e->pos - pl->pos).slen() < .002 * .002)
 			pl->chase = e;
 	}
+}
+
+void WarField::postframe(){
+	for(Entity *e = el; e; e = e->next)
+		e->postframe();
+}
+
+void WarField::endframe(){
+	for(Entity **pe = &el; *pe;) if((*pe)->w != this){
+		Entity *e = *pe;
+		*pe = e->next;
+		if(!e->w)
+			delete e;
+	}
+	else
+		pe = &(*pe)->next;
 }
 
 void WarField::draw(wardraw_t *wd){

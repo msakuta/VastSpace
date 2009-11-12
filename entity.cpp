@@ -35,6 +35,7 @@ const char *Entity::classname()const{
 }
 
 void Entity::anim(double){}
+void Entity::postframe(){}
 
 bool Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
@@ -50,6 +51,7 @@ bool Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double d
 int Entity::takedamage(double damage, int hitpart){
 	if(health <= damage){
 		health = 0;
+		w = NULL;
 		return 0;
 	}
 	health -= damage;

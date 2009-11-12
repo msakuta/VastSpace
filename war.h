@@ -107,6 +107,7 @@ class WarField{
 public:
 	WarField(CoordSys *cs);
 	virtual void anim(double dt);
+	virtual void postframe(), endframe(); // postframe gives an opportunity to clear pointers to objects being destroyed, while endframe actually destruct them.
 	virtual void draw(struct war_draw_data *);
 	virtual void drawtra(struct war_draw_data *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;

@@ -70,6 +70,8 @@ protected:
 public:
 	Beamer();
 	Beamer(WarField *w);
+	const char *idname()const;
+	const char *classname()const;
 	void anim(double);
 	void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

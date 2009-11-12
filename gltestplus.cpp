@@ -460,8 +460,17 @@ void display_func(void){
 		pl.velolen = pl.velo.len();
 		pl.pos += pl.velo * (1. + pl.velolen) * dt;
 
-		galaxysystem.anim(dt);
-		galaxysystem.endframe();
+		try{
+			galaxysystem.anim(dt);
+			galaxysystem.postframe();
+			galaxysystem.endframe();
+		}
+		catch(std::exception e){
+			fprintf(stderr, "Exception %s\n", e.what());
+		}
+		catch(...){
+			fprintf(stderr, "Exception ?\n");
+		}
 
 		gametime = t1;
 	}

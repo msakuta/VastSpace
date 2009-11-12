@@ -582,8 +582,17 @@ Beamer::Beamer(){
 	shieldAmount = MAX_SHIELD_AMOUNT;
 	shield = 0.;
 	VECNULL(integral);
-	health = 5000.;
+//	health = 5000.;
 }
+
+const char *Beamer::idname()const{
+	return "beamer";
+}
+
+const char *Beamer::classname()const{
+	return "Lancer class";
+}
+
 
 #if 0
 void beamer_dock(beamer_t *p, scarry_t *pc, warf_t *w){
@@ -1882,12 +1891,10 @@ void Beamer::drawtra(wardraw_t *wd){
 				p0 += end * (5 - i) / 5.;
 				p1 = muzzle * (i + 1) / 5.;
 				p1 += end * (5 - i - 1) / 5.;
-				glColor4ub(63,191,255, MIN(1., charge / 2.) * 255);
+				glColor4ub(63,191,255, GLubyte(MIN(1., charge / 2.) * 255));
 				gldBeam(wd->vw->pos, p0, p1, beamrad);
-				glColor4ub(63,0,255, MIN(1., charge / 2.) * 95);
+				glColor4ub(63,0,255, GLubyte(MIN(1., charge / 2.) * 95));
 				gldBeam(wd->vw->pos, p0, p1, beamrad * 5.);
-				GLenum e = glGetError();
-				printf("%d\n", e);
 			}
 #if 0
 			for(i = 0; i < 3; i++){

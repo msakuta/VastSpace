@@ -14,6 +14,7 @@ public:
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	virtual void anim(double dt);
+	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(input_t *inputs, double dt) = 0;
 	virtual unsigned analog_mask() = 0;
 	virtual void draw(wardraw_t *) = 0;
@@ -42,7 +43,7 @@ public:
 	int race;
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
-	WarField *w;
+	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
 //	char weapon;
 };
 

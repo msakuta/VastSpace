@@ -514,8 +514,16 @@ void CoordSys::anim(double dt){
 		w->anim(dt);
 }
 
-void CoordSys::postframe(){}
+void CoordSys::postframe(){
+	if(w)
+		w->postframe();
+	CoordSys *cs;
+	for(cs = children; cs; cs = cs->next)
+		cs->postframe();
+}
 void CoordSys::endframe(){
+	if(w)
+		w->endframe();
 	vwvalid = 0;
 	CoordSys *cs;
 	for(cs = children; cs; cs = cs->next)

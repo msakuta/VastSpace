@@ -568,14 +568,10 @@ void mouse_func(int button, int state, int x, int y){
 			g_viewdist *= 1.2;
 		if(state == GLUT_UP && button == GLUT_WHEEL_DOWN)
 			g_viewdist /= 1.2;
-	}
+	}*/
 
-	if(!state){
-		s_mouse |= !state << (button / 2);
-	}
-	else
-		s_mouse &= ~(!!state << (button / 2));*/
-/*	s_mousec |= 1 << (button / 2);*/
+	if(state == GLUT_DOWN || state == GLUT_UP)
+		(state == GLUT_DOWN ? BindExec : BindKeyUp)(button / 2 + '\004');
 /*
 	s_mousex = x;
 	s_mousey = y;
@@ -892,7 +888,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(wParam == VK_RETURN)
 				BindExec('\n');
 			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
-				BindExec(wParam - VK_NUMPAD0 + '\010');
+				BindExec(wParam - VK_NUMPAD0 + 0x90);
 			else
 				non_printable_key(hWnd, message, wParam, lParam, 0);
 			break;
@@ -906,7 +902,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(wParam == VK_RETURN)
 				BindKeyUp('\n');
 			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
-				BindKeyUp(wParam - VK_NUMPAD0 + '\010');
+				BindKeyUp(wParam - VK_NUMPAD0 + 0x90);
 			else
 				BindKeyUp(toupper(wParam));
 			switch(wParam){

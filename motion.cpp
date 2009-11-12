@@ -41,6 +41,7 @@ fgather(eject, PL_SPACE);
 fgather(sprint, PL_SHIFT);
 fgather(crouch, PL_CTRL);
 fgather(gear, PL_G);
+fgather(lclick, PL_LCLICK);
 
 
 void MotionInit(){
@@ -84,6 +85,8 @@ void MotionInit(){
 	CmdAddParam("-crouch", cmd_ncrouch, &inputstate);
 	CmdAddParam("+gear", cmd_pgear, &inputstate);
 	CmdAddParam("-gear", cmd_ngear, &inputstate);
+	CmdAddParam("+lclick", cmd_plclick, &inputstate);
+	CmdAddParam("-lclick", cmd_nlclick, &inputstate);
 }
 
 /* All momentary keys are integrated into toggleinputstate regardless of purpose

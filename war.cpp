@@ -39,6 +39,8 @@ void WarField::endframe(){
 		*pe = e->next;
 		if(!e->w)
 			delete e;
+		else
+			e->w->addent(e);
 	}
 	else
 		pe = &(*pe)->next;

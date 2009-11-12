@@ -25,7 +25,7 @@ static unsigned char name2key(const char *name){
 	if(!name[1] && ('0' <= name[0] && name[0] <= '9' || 'A' <= name[0] && name[0] <= 'Z' || 'a' <= name[0] && name[0] <= 'z'))
 		return name[0];
 	else if(!strncmp(name, "numpad", sizeof"numpad"-1) && '0' <= name[sizeof"numpad"-1] && name[sizeof"numpad"-1] <= '9' && name[sizeof"numpad"] == '\0')
-		return '\010' + name[sizeof"numpad"-1] - '0';
+		return 0x90 + name[sizeof"numpad"-1] - '0';
 	else if(!strcmp(name, "enter"))
 		return '\n';
 	else if(!strcmp(name, "semicolon"))
@@ -44,6 +44,10 @@ static unsigned char name2key(const char *name){
 		return '\002';
 	else if(!strcmp(name, "alt"))
 		return '\003';
+	else if(!strcmp(name, "lclick"))
+		return '\004';
+	else if(!strcmp(name, "rclick"))
+		return '\005';
 	else if((name[0] == 'f' || name[0] == 'F')){
 		if(name[1] == '1' && '0' <= name[2] && name[2] <= '2')
 			return 0x80 + 10 + (name[2] - '0');
@@ -74,9 +78,9 @@ static const char *key2name(unsigned char key){
 		ret[3] = '\0';
 		return ret;
 	}
-	else if('\010' <= key && key <= '\010' + 9){
+	else if(0x90 <= key && key <= 0x90 + 9){
 		strncpy(ret, "numpad", sizeof "numpad"-1);
-		ret[sizeof "numpad"-1] = key - '\010' + '0';
+		ret[sizeof "numpad"-1] = key - 0x90 + '0';
 		ret[sizeof "numpad"] = '\0';
 		return ret;
 	}
@@ -90,6 +94,8 @@ static const char *key2name(unsigned char key){
 		case '\001': return "shift";
 		case '\002': return "ctrl";
 		case '\003': return "alt";
+		case '\004': return "lclick";
+		case '\005': return "rclick";
 		default:
 		{
 			ret[0] = key;

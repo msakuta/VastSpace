@@ -1,8 +1,9 @@
+#include "entity.h"
 extern "C"{
 #include <clib/aquat.h>
 }
-#include "entity.h"
 #include "beamer.h"
+#include "judge.h"
 
 template<class T> Entity *Constructor(){
 	return new T();
@@ -34,3 +35,23 @@ const char *Entity::classname()const{
 }
 
 void Entity::anim(double){}
+
+bool Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
+	Vec3d retpos;
+	bool bret = !!jHitSpherePos(pos, this->hitradius() + rad, start, dir, 1., fret, &retpos);
+	if(bret && retp)
+		*retp = retpos;
+	if(bret && retnormal)
+		*retnormal = (retpos - pos).normin();
+	return bret;
+//	(hitpart = 0, 0. < (sdist = -VECSP(delta, &mat[8]) - rad))) && sdist < best
+}
+
+int Entity::takedamage(double damage, int hitpart){
+	if(health <= damage){
+		health = 0;
+		return 0;
+	}
+	health -= damage;
+	return 1;
+}

@@ -15,7 +15,7 @@
 //#include "arms.h"
 //#include "bullet.h"
 //#include "warutil.h"
-//#include "judge.h"
+#include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"
 //#include "glwindow.h"
@@ -35,7 +35,7 @@ extern "C"{
 //#include "suflist.h"
 #include <clib/avec3.h>
 #include <clib/amat4.h>
-#include <clib/aquat.h>
+#include <clib/aquatrot.h>
 #include <clib/GL/gldraw.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
@@ -582,6 +582,7 @@ Beamer::Beamer(){
 	shieldAmount = MAX_SHIELD_AMOUNT;
 	shield = 0.;
 	VECNULL(integral);
+	health = 5000.;
 }
 
 #if 0
@@ -1297,6 +1298,8 @@ int warpable_dest(entity_t *pt, avec3_t ret, coordsys *cs){
 }
 #endif
 
+double Beamer::hitradius(){return .1;}
+
 void Beamer::anim(double dt){
 	Mat4d mat;
 
@@ -1468,77 +1471,70 @@ void Beamer::anim(double dt){
 
 #endif
 		maneuver(mat, dt, &beamer_mn);
-#if 0
 
-		if(p->cooldown == 0. && pt->inputs.change & pt->inputs.press & (PL_ENTER | PL_LCLICK)){
-			p->charge = 6.;
-			p->cooldown = 10.;
+		if(cooldown == 0. && inputs.change & inputs.press & (PL_ENTER | PL_LCLICK)){
+			charge = 6.;
+			cooldown = 10.;
 		}
 
-		if(p->charge < dt)
-			p->charge = 0.;
+		if(charge < dt)
+			charge = 0.;
 		else
-			p->charge -= dt;
+			charge -= dt;
 
-		if(p->cooldown < dt)
-			p->cooldown = 0.;
+		if(cooldown < dt)
+			cooldown = 0.;
 		else
-			p->cooldown -= dt;
+			cooldown -= dt;
 
+#if 0
 		if(!p->dock){
 			space_collide(pt, w, dt, NULL, NULL);
 		}
 	}
 	else
 		pt->active = 0;
-
-	if(0. < p->charge && p->charge < 4.){
-		entity_t *pt2, *hit = NULL;
-		avec3_t start, dir, start0 = {0., 0., -.04}, dir0 = {0., 0., -10.};
+#endif
+	if(0. < charge && charge < 4.){
+		Entity *pt2, *hit = NULL;
+		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);
 		double best = 10., sdist;
 		int besthitpart = 0, hitpart;
-		quatrot(start, pt->rot, start0);
-		VECADDIN(start, pt->pos);
-		quatrot(dir, pt->rot, dir0);
-		for(pt2 = w->tl; pt2; pt2 = pt2->next){
-			struct entity_private_static *vft = (struct entity_private_static*)pt2->vft;
-			double rad = ((struct entity_private_static*)pt2->vft)->hitradius;
-			avec3_t delta;
-			VECSUB(delta, pt2->pos, pt->pos);
-			if(pt2 == pt)
+		start = rot.trans(start0) + pos;
+		dir = rot.trans(dir0);
+		for(pt2 = w->el; pt2; pt2 = pt2->next){
+			double rad = pt2->hitradius();
+			Vec3d delta = pt2->pos - pos;
+			if(pt2 == this)
 				continue;
 			if(!jHitSphere(pt2->pos, rad + .005, start, dir, 1.))
 				continue;
-			if((vft->tracehit ? (hitpart = vft->tracehit(pt2, w, start, dir, .005, 1., &sdist, NULL, NULL)) && (sdist *= -dir0[2], 1)
-				: (hitpart = 0, 0. < (sdist = -VECSP(delta, &mat[8]) - rad))) && sdist < best){
+			if((hitpart = pt2->tracehit(start, dir, .005, 1., &sdist, NULL, NULL)) && (sdist *= -dir0[2], 1)){
 				hit = pt2;
 				best = sdist;
 				besthitpart = hitpart;
 			}
 		}
 		if(hit){
-			avec3_t pos;
-			aquat_t qrot;
-			p->beamlen = best;
-			if(((struct entity_private_static*)hit->vft)->takedamage && !((struct entity_private_static*)hit->vft)->takedamage(hit, 500. * dt, w, besthitpart)){
-				pt->kills++;
-			}
-			VECSCALE(pos, &mat[8], -best);
-			VECADDIN(pos, pt->pos);
+			Vec3d pos;
+			Quatd qrot;
+			beamlen = best;
+			hit->takedamage(500. * dt, besthitpart);
+			pos = mat.vec3(2) * -best + this->pos;
 			quatdirection(qrot, &mat[8]);
 			if(drseq(&w->rs) * .1 < dt){
 				avec3_t velo;
 				int i;
 				for(i = 0; i < 3; i++)
 					velo[i] = (drseq(&w->rs) - .5) * .1;
-				AddTeline3D(w->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
+//				AddTeline3D(w->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-			AddTeline3D(w->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+//			AddTeline3D(w->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 		}
 		else
-			p->beamlen = 10.;
+			beamlen = 10.;
 	}
-
+#if 0
 	warpable_proc(pt, w, dt, mat, &p->pf, numof(p->pf), &beamer_mn);
 #endif
 	{
@@ -1862,34 +1858,36 @@ void Beamer::drawtra(wardraw_t *wd){
 		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
 	}
 #endif
-#if 0
-	if(p->charge){
+#if 1
+	if(charge){
 		int i;
 		GLubyte azure[4] = {63,0,255,95}, bright[4] = {127,63,255,255};
-		avec3_t muzzle, muzzle0 = {0., 0., -.100};
+		Vec3d muzzle, muzzle0(0., 0., -.100);
 		double glowrad;
-		mat4vp3(muzzle, mat, muzzle0);
+		muzzle = mat.vp3(muzzle0);
 /*		quatrot(muzzle, pt->rot, muzzle0);
 		VECADDIN(muzzle, pt->pos);*/
 
-		if(0. < p->charge && p->charge < 4.){
+		if(0. < charge && charge < 4.){
 			double beamrad;
-			avec3_t end, end0 = {0., 0., -10.};
-			end0[2] = -p->beamlen;
-			mat4vp3(end, mat, end0);
+			Vec3d end, end0(0., 0., -10.);
+			end0[2] = -beamlen;
+			end = mat.vp3(end0);
 /*			quatrot(end, pt->rot, end0);
 			VECADDIN(end, pt->pos);*/
-			beamrad = (p->charge < .5 ? p->charge / .5 : 3.5 < p->charge ? (4. - p->charge) / .5 : 1.) * .005;
+			beamrad = (charge < .5 ? charge / .5 : 3.5 < charge ? (4. - charge) / .5 : 1.) * .005;
 			for(i = 0; i < 5; i++){
-				avec3_t p0, p1;
-				VECSCALE(p0, muzzle, i / 5.);
-				VECSADD(p0, end, (5 - i) / 5.);
-				VECSCALE(p1, muzzle, (i + 1) / 5.);
-				VECSADD(p1, end, (5 - i - 1) / 5.);
-				glColor4ub(63,191,255, MIN(1., p->charge / 2.) * 255);
-				gldBeam(wd->view, p0, p1, beamrad);
-				glColor4ub(63,0,255, MIN(1., p->charge / 2.) * 95);
-				gldBeam(wd->view, p0, p1, beamrad * 5.);
+				Vec3d p0, p1;
+				p0 = muzzle * i / 5.;
+				p0 += end * (5 - i) / 5.;
+				p1 = muzzle * (i + 1) / 5.;
+				p1 += end * (5 - i - 1) / 5.;
+				glColor4ub(63,191,255, MIN(1., charge / 2.) * 255);
+				gldBeam(wd->vw->pos, p0, p1, beamrad);
+				glColor4ub(63,0,255, MIN(1., charge / 2.) * 95);
+				gldBeam(wd->vw->pos, p0, p1, beamrad * 5.);
+				GLenum e = glGetError();
+				printf("%d\n", e);
 			}
 #if 0
 			for(i = 0; i < 3; i++){
@@ -1918,6 +1916,7 @@ void Beamer::drawtra(wardraw_t *wd){
 #endif
 		}
 
+#if 0
 		if(0) for(i = 0; i < 64; i++){
 			int j;
 			avec3_t pos1, pos;
@@ -1939,10 +1938,10 @@ void Beamer::drawtra(wardraw_t *wd){
 				gldBeams(&bd, wd->view, pos, .001, COLOR32RGBA(255, j * 256 / 16, j * 64 / 16, MIN(1., p->charge / 2.) * j * 128 / 16));
 			}
 		}
-
-		glowrad = p->charge < 4. ? p->charge / 4. * .02 : (6. - p->charge) / 2. * .02;
-		gldSpriteGlow(muzzle, glowrad * 3., azure, wd->irot);
-		gldSpriteGlow(muzzle, glowrad, bright, wd->irot);
+#endif
+		glowrad = charge < 4. ? charge / 4. * .02 : (6. - charge) / 2. * .02;
+		gldSpriteGlow(muzzle, glowrad * 3., azure, wd->vw->irot);
+		gldSpriteGlow(muzzle, glowrad, bright, wd->vw->irot);
 	}
 #endif
 }

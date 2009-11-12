@@ -18,6 +18,9 @@ public:
 	virtual unsigned analog_mask() = 0;
 	virtual void draw(wardraw_t *) = 0;
 	virtual void drawtra(wardraw_t *) = 0;
+	virtual double hitradius() = 0;
+	virtual bool tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
+	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

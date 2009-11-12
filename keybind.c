@@ -26,6 +26,8 @@ static unsigned char name2key(const char *name){
 		return name[0];
 	else if(!strncmp(name, "numpad", sizeof"numpad"-1) && '0' <= name[sizeof"numpad"-1] && name[sizeof"numpad"-1] <= '9' && name[sizeof"numpad"] == '\0')
 		return '\010' + name[sizeof"numpad"-1] - '0';
+	else if(!strcmp(name, "enter"))
+		return '\n';
 	else if(!strcmp(name, "semicolon"))
 		return ';';
 	else if(!strcmp(name, "dquote"))
@@ -79,6 +81,7 @@ static const char *key2name(unsigned char key){
 		return ret;
 	}
 	else switch(key){
+		case '\n': return "enter";
 		case ':': return "semicolon";
 		case '"': return "dquote";
 		case ' ': return "space";

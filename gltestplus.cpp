@@ -348,6 +348,7 @@ void draw_func(Viewer &vw, double dt){
 		pl.cs->w->draw(&wd);
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
+//		glDisable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		pl.cs->w->drawtra(&wd);
@@ -879,7 +880,9 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 		/* most inputs from keyboard is processed through WM_CHAR, but some special keys are
 		  not sent as characters. */
 		case WM_KEYDOWN:
-			if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
+			if(wParam == VK_RETURN)
+				BindExec('\n');
+			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
 				BindExec(wParam - VK_NUMPAD0 + '\010');
 			else
 				non_printable_key(hWnd, message, wParam, lParam, 0);
@@ -891,7 +894,9 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 
 		/* technique to enable momentary key commands */
 		case WM_KEYUP:
-			if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
+			if(wParam == VK_RETURN)
+				BindKeyUp('\n');
+			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
 				BindKeyUp(wParam - VK_NUMPAD0 + '\010');
 			else
 				BindKeyUp(toupper(wParam));

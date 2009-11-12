@@ -232,6 +232,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\judge.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\keybind.c"
 				>
 			</File>
@@ -315,6 +319,10 @@
 			</File>
 			<File
 				RelativePath="..\glextcall.h"
+				>
+			</File>
+			<File
+				RelativePath="..\judge.h"
 				>
 			</File>
 			<File

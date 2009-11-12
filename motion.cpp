@@ -36,6 +36,7 @@ fgather(rollcw, PL_9);
 fgather(stop, PL_E);
 fgather(tether, PL_B);
 fgather(focus, PL_F);
+fgather(enter, PL_ENTER);
 fgather(eject, PL_SPACE);
 fgather(sprint, PL_SHIFT);
 fgather(crouch, PL_CTRL);
@@ -73,6 +74,8 @@ void MotionInit(){
 	CmdAddParam("-tether", cmd_ntether, &inputstate);
 	CmdAddParam("+focus", cmd_pfocus, &inputstate);
 	CmdAddParam("-focus", cmd_nfocus, &inputstate);
+	CmdAddParam("+enter", cmd_penter, &inputstate);
+	CmdAddParam("-enter", cmd_nenter, &inputstate);
 	CmdAddParam("+eject", cmd_peject, &inputstate);
 	CmdAddParam("-eject", cmd_neject, &inputstate);
 	CmdAddParam("+sprint", cmd_psprint, &inputstate);

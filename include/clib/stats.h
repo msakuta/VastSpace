@@ -32,7 +32,7 @@ public:
 		double dev; // deviation
 		double mu3; // 3rd moment around average
 		double skw; // skewness
-		operator=(parser&);
+		parser &operator=(parser&);
 	public:
 		parser(const CStatistician &target) : t(target){avar = amu3 = adev = askw = false;}
 		unsigned getCount(void){ return t.cnt; }

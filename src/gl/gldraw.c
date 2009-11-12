@@ -857,14 +857,14 @@ void gldBeam(const double view[3], const double start[3], const double end[3], d
 		oc[3] = INT_MIN;
 		glBegin(GL_QUAD_STRIP);
 		glColor4iv(oc);
-		glVertex3d(-1., 0., 0.);
-		glVertex3d(-1., 1., 0.);
+		glVertex2i(-1, 1);
+		glVertex2i(-1, 0);
 		glColor4iv(cc);
-		glVertex3d( 0., 0., 0.);
-		glVertex3d( 0., 1., 0.);
+		glVertex2i( 0, 1);
+		glVertex2i( 0, 0);
 		glColor4iv(oc);
-		glVertex3d( 1., 0., 0.);
-		glVertex3d( 1., 1., 0.);
+		glVertex2i( 1, 1);
+		glVertex2i( 1, 0);
 		glEnd();
 	}
 	glPopMatrix();

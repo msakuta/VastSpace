@@ -234,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\glwindow.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\judge.cpp"
 				>
 			</File>
@@ -321,6 +325,10 @@
 			</File>
 			<File
 				RelativePath="..\glextcall.h"
+				>
+			</File>
+			<File
+				RelativePath="..\glwindow.h"
 				>
 			</File>
 			<File

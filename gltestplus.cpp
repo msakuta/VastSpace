@@ -10,6 +10,7 @@
 #include "cmd.h"
 #include "keybind.h"
 #include "motion.h"
+#include "glwindow.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -54,6 +55,11 @@ int g_gear_toggle_mode = 0;
 double flypower = 1.;
 static int show_planets_name = 1;
 static int cmdwnd = 0;
+glwindow *glwcmdmenu = NULL;
+
+int s_mousex, s_mousey;
+static int s_mousedragx, s_mousedragy;
+static int s_mouseoldx, s_mouseoldy;
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
@@ -380,6 +386,16 @@ void draw_func(Viewer &vw, double dt){
 	glPopAttrib();
 	glPopMatrix();
 
+	if(1){
+		int minix = 0;
+		glPushAttrib(GL_POLYGON_BIT);
+		glEnable(GL_BLEND);
+		glDisable(GL_LINE_SMOOTH);
+		glwlist->glwDrawMinimized(vw.vp, pl.gametime, &minix);
+		glwlist->glwDraw(vw.vp, pl.gametime, &minix);
+		glPopAttrib();
+	}
+
 	if(cmdwnd)
 		CmdDraw(vw.vp);
 }
@@ -524,15 +540,19 @@ void mouse_func(int button, int state, int x, int y){
 		return;
 	}*/
 
-/*	if(!mouse_captured){
-		if(glwdrag){
+	if(!mouse_captured){
+/*		if(glwdrag){
 			if(state == GLUT_UP)
 				glwdrag = NULL;
 			return;
 		}
-		else{
+		else*/{
+			GLint vp[4];
+			viewport gvp;
+			glGetIntegerv(GL_VIEWPORT, vp);
+			gvp.set(vp);
 			int killfocus = 1, ret = 0;
-			ret = glwMouseFunc(button, state, x, y);
+			ret = GLwindow::mouseFunc(button, state, x, y, gvp);
 			if(!ret){
 				if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 					avec3_t centerray, centerray0;
@@ -545,9 +565,9 @@ void mouse_func(int button, int state, int x, int y){
 					quatrot(centerray, qrot, centerray0);
 					quatdirection(qrot, centerray);
 					QUATCNJ(qirot, qrot);
-					select_box(fabs(s_mousedragx - s_mousex), fabs(s_mousedragx - s_mousex), qirot);
-					s_mousedragx = s_mousex;
-					s_mousedragy = s_mousey;
+//					select_box(fabs(s_mousedragx - s_mousex), fabs(s_mousedragx - s_mousex), qirot);
+//					s_mousedragx = s_mousex;
+//					s_mousedragy = s_mousey;
 				}
 				glwfocus = NULL;
 			}
@@ -556,6 +576,7 @@ void mouse_func(int button, int state, int x, int y){
 		}
 	}
 
+#if 0
 	if(0 && pl.control){
 		if(state == GLUT_UP && button == GLUT_WHEEL_UP)
 			s_mouse |= PL_MWU;
@@ -588,6 +609,7 @@ void mouse_func(int button, int state, int x, int y){
 		}
 	}
 */
+#endif
 #if USEWIN && defined _WIN32
 	if(/*!cmdwnd &&*/ (!pl.control || !mouse_captured) && state == GLUT_UP && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
@@ -958,6 +980,11 @@ static int cmd_toggleconsole(int argc, char *argv[]){
 	return 0;
 }
 
+static int cmd_exit(int argc, char *argv[]){
+	exit(0);
+	return 0;
+}
+
 
 #if defined _WIN32
 HWND hWndApp;
@@ -965,6 +992,8 @@ HWND hWndApp;
 
 int main(int argc, char *argv[])
 {
+
+	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 
 	viewport vp;
 	CmdInit(&vp);
@@ -975,6 +1004,8 @@ int main(int argc, char *argv[])
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("teleport", cmd_teleport);
 	CmdAdd("eject", cmd_eject);
+	CmdAdd("exit", cmd_exit);
+	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

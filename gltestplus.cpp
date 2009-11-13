@@ -535,18 +535,18 @@ void display_func(void){
 
 void mouse_func(int button, int state, int x, int y){
 
-/*	if(cmdwnd){
+	if(cmdwnd){
 		CmdMouseInput(button, state, x, y);
 		return;
-	}*/
+	}
 
 	if(!mouse_captured){
-/*		if(glwdrag){
+		if(glwdrag){
 			if(state == GLUT_UP)
 				glwdrag = NULL;
 			return;
 		}
-		else*/{
+		else{
 			GLint vp[4];
 			viewport gvp;
 			glGetIntegerv(GL_VIEWPORT, vp);
@@ -627,11 +627,11 @@ void mouse_func(int button, int state, int x, int y){
 			c = ShowCursor(FALSE);
 			while(0 <= c)
 				c = ShowCursor(FALSE);
-//			glwfocus = NULL;
+			glwfocus = NULL;
 		}
 		else{
-//			s_mousedragx = s_mousex;
-//			s_mousedragy = s_mousey;
+			s_mousedragx = s_mousex;
+			s_mousedragy = s_mousey;
 			while(ShowCursor(TRUE) < 0);
 		}
 	}
@@ -884,6 +884,27 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 		case WM_SIZE:
 			if(hgl){
 				reshape_func(LOWORD(lParam), HIWORD(lParam));
+			}
+			break;
+
+		case WM_MOUSEMOVE:
+			if(!mouse_captured){
+				if(glwdrag || !(wParam & MK_LBUTTON)){
+					s_mousedragx = s_mousex;
+					s_mousedragy = s_mousey;
+				}
+				if(glwfocus && glwdrag != glwfocus){
+					glwfocus->mouse(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
+					glwfocus->mouse(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
+				}
+/*				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
+					mouse_captured = 1;
+					capture_mouse();
+				}*/
+			}
+			if(glwdrag){
+//				glwindow *glw = glwlist;
+				glwdrag->mouseDrag(LOWORD(lParam) - glwdragpos[0], HIWORD(lParam) - glwdragpos[1]);
 			}
 			break;
 

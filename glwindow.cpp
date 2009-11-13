@@ -361,6 +361,41 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, viewport &gvp){
 	return ret;
 }
 
+static int snapborder(int x0, int w0, int x1, int w1){
+	int snapdist = 10;
+	if(x1 - snapdist < x0 && x0 < x1 + snapdist)
+		return x1;
+	if(x1 - snapdist < x0 + w0 && x0 + w0 < x1 + snapdist)
+		return x1 - w0 - 4;
+	if(x1 + w1 - snapdist < x0 + w0 && x0 + w0 < x1 + w1 + snapdist)
+		return x1 + w1 - w0;
+	if(x1 + w1 - snapdist < x0 && x0 < x1 + w1 + snapdist)
+		return x1 + w1 + 4;
+	return x0;
+}
+
+void GLwindow::mouseDrag(int x, int y){
+	this->x = x;
+	this->y = y;
+	const int snapdist = 10;
+	viewport gvp;
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	gvp.set(vp);
+	for(GLwindow *glw = glwlist; glw; glw = glw->next) if(glw != glwdrag && glw->x - snapdist < glwdrag->x + glwdrag->w && glwdrag->x - snapdist < glw->x + glw->w && glw->y - snapdist < glwdrag->y + glwdrag->h && glwdrag->y - snapdist < glw->y + glw->h){
+		glwdrag->x = snapborder(glwdrag->x, glwdrag->w, glw->x, glw->w);
+		glwdrag->y = snapborder(glwdrag->y, glwdrag->h, glw->y, glw->h);
+	}
+	if(-snapdist < glwdrag->x && glwdrag->x < snapdist)
+		glwdrag->x = 0;
+	if(gvp.w - snapdist < glwdrag->x + glwdrag->w && glwdrag->x + glwdrag->w < gvp.w + snapdist)
+		glwdrag->x = gvp.w - glwdrag->w;
+	if(-snapdist < glwdrag->y && glwdrag->y < snapdist)
+		glwdrag->y = 0;
+	if(gvp.h - snapdist < glwdrag->y + glwdrag->h && glwdrag->y + glwdrag->h < gvp.h + snapdist)
+		glwdrag->y = gvp.h - glwdrag->h;
+}
+
 
 
 
@@ -613,18 +648,6 @@ glwindow *glwPopupMenu(viewport &gvp, int count, const char *menutitles[], const
 	return ret;
 }
 #endif
-int snapborder(int x0, int w0, int x1, int w1){
-	int snapdist = 10;
-	if(x1 - snapdist < x0 && x0 < x1 + snapdist)
-		return x1;
-	if(x1 - snapdist < x0 + w0 && x0 + w0 < x1 + snapdist)
-		return x1 - w0 - 4;
-	if(x1 + w1 - snapdist < x0 + w0 && x0 + w0 < x1 + w1 + snapdist)
-		return x1 + w1 - w0;
-	if(x1 + w1 - snapdist < x0 && x0 < x1 + w1 + snapdist)
-		return x1 + w1 + 4;
-	return x0;
-}
 
 
 

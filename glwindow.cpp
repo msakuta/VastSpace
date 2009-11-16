@@ -60,7 +60,7 @@ static int s_minix;
 //static const int r_titlebar_height = 12;
 #define r_titlebar_height fontheight
 
-void GLwindow::drawInt(viewport &gvp, double t, int wx, int wy, int ww, int wh){
+void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int wh){
 	GLwindow *wnd = this;
 	extern int s_mousex, s_mousey;
 	char buf[128];
@@ -113,8 +113,11 @@ void GLwindow::drawInt(viewport &gvp, double t, int wx, int wy, int ww, int wh){
 		glScissor(wnd->x, gvp.h - (wnd->y + wnd->h), wnd->w, wnd->h);
 		glEnable(GL_SCISSOR_TEST);
 	}
-	if(!(wnd->flags & GLW_COLLAPSE))
-		wnd->draw(s_mousex - wnd->x, s_mousey - wnd->y - fontheight, t);
+	if(!(wnd->flags & GLW_COLLAPSE)){
+		gvp.mousex = gvp.mx - wnd->x;
+		gvp.mousey = gvp.my - wnd->y - fontheight;
+		wnd->draw(gvp, t);
+	}
 	if((wnd->flags & (GLW_COLLAPSE | GLW_SIZEABLE)) == GLW_SIZEABLE){
 		glColor4ub(255, 255, 255 * (glwfocus == wnd), 255);
 		glBegin(GL_LINE_LOOP);
@@ -189,7 +192,7 @@ void GLwindow::drawInt(viewport &gvp, double t, int wx, int wy, int ww, int wh){
 
 /* using recursive call to do reverse rendering order, for reversing message process instead
   is more costly. */
-void GLwindow::glwDraw(viewport &vp, double t, int *minix){
+void GLwindow::glwDraw(GLwindowState &vp, double t, int *minix){
 	glwindow *wnd = this;
 	if(!wnd)
 		return;
@@ -202,7 +205,7 @@ void GLwindow::glwDraw(viewport &vp, double t, int *minix){
 
 /* Minimized windows never overlap, so drawing order can be arbitrary,
   making recursive call unnecessary. */
-void GLwindow::glwDrawMinimized(viewport &gvp, double t, int *pp){
+void GLwindow::glwDrawMinimized(GLwindowState &gvp, double t, int *pp){
 	GLwindow *wndy = this;
 	glwindow *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
@@ -217,6 +220,11 @@ void GLwindow::glwDrawMinimized(viewport &gvp, double t, int *pp){
 		minix += ww + 2;
 		wnd->drawInt(gvp, t, wx, wy, ww, wh);
 	}
+}
+
+void GLwindow::glwAnim(double dt){
+	for(GLwindow *wnd = glwlist; wnd; wnd = wnd->next)
+		wnd->anim(dt);
 }
 
 glwindow **glwFindPP(glwindow *wnd){
@@ -239,14 +247,15 @@ void GLwindow::glwFree(){
 	delete wnd;
 }
 
-void GLwindow::draw(int,int,double){}
+void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(int,int,int,int){return 0;}
 int GLwindow::key(int){return 0;}
+void GLwindow::anim(double){}
 GLwindow::~GLwindow(){
 	delete[] title;
 }
 
-int GLwindow::mouseFunc(int button, int state, int x, int y, viewport &gvp){
+int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
 	int ret = 0, killfocus;
 	glwindow **ppwnd, *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
@@ -478,7 +487,8 @@ int glwVScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, in
 const int glwMenuAllAllocated[] = {1};
 const char glwMenuSeparator[] = "-";
 
-void GLwindowMenu::draw(int mx, int my, double t){
+void GLwindowMenu::draw(GLwindowState &ws, double t){
+	int mx = ws.mx, my = ws.my;
 	GLwindowMenu *p = this;
 	GLwindow *wnd = this;
 	int i, len, maxlen = 1;
@@ -656,60 +666,46 @@ glwindow *glwPopupMenu(viewport &gvp, int count, const char *menutitles[], const
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
 #define GLWSIZEABLE_BORDER 6
 
 
 
-void glwsizeable_init(struct glwindowsizeable *p){
-	p->st.flags |= GLW_SIZEABLE;
-	p->ratio = 1.;
-	p->sizing = 0;
-	p->minw = p->minh = 40;
-	p->maxw = p->maxh = 1000;
+GLwindowSizeable::GLwindowSizeable(const char *title) : st(title){
+	flags |= GLW_SIZEABLE;
+	ratio = 1.;
+	sizing = 0;
+	minw = minh = 40;
+	maxw = maxh = 1000;
 }
 
-int glwsizeable_mouse(glwindow *wnd, int button, int state, int x, int y){
-	struct glwindowsizeable *p = (struct glwindowsizeable *)wnd;
+int GLwindowSizeable::mouse(int button, int state, int x, int y){
 	if(y < 12)
 		return 0;
 	if(button == GLUT_LEFT_BUTTON){
 		int edgeflags = 0;
-		edgeflags |= wnd->w - GLWSIZEABLE_BORDER < x && x < wnd->w + GLWSIZEABLE_BORDER && 0 <= y && y < wnd->h;
-		edgeflags |= (wnd->h - 12 - GLWSIZEABLE_BORDER < y && y < wnd->h - 12 + GLWSIZEABLE_BORDER && 0 <= x && x < wnd->w) << 1;
+		edgeflags |= this->w - GLWSIZEABLE_BORDER < x && x < this->w + GLWSIZEABLE_BORDER && 0 <= y && y < this->h;
+		edgeflags |= (this->h - 12 - GLWSIZEABLE_BORDER < y && y < this->h - 12 + GLWSIZEABLE_BORDER && 0 <= x && x < this->w) << 1;
 		if(state == GLUT_DOWN){
 			if(edgeflags){
-				p->sizing = edgeflags;
+				sizing = edgeflags;
 				return 1;
 			}
 		}
 		else if(state == GLUT_UP){
-			p->sizing = 0;
+			sizing = 0;
 			return !!edgeflags;
 		}
 	}
-	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN && p->sizing){
-		if(p->sizing & 1 && p->minw <= x && x < p->maxw){
-			wnd->w = x;
-			if(wnd->flags & GLW_SIZEPROP)
-				wnd->h = p->ratio * x;
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN && sizing){
+		if(sizing & 1 && minw <= x && x < maxw){
+			this->w = x;
+			if(this->flags & GLW_SIZEPROP)
+				this->h = ratio * x;
 		}
-		if(p->sizing & 2 && p->minh <= y + 12 && y + 12 < p->maxh){
-			wnd->h = y + 12;
-			if(wnd->flags & GLW_SIZEPROP)
-				wnd->w = 1. / p->ratio * wnd->h;
+		if(sizing & 2 && minh <= y + 12 && y + 12 < maxh){
+			this->h = y + 12;
+			if(this->flags & GLW_SIZEPROP)
+				this->w = 1. / ratio * this->h;
 		}
 		return 1;
 	}
@@ -718,20 +714,6 @@ int glwsizeable_mouse(glwindow *wnd, int button, int state, int x, int y){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif
 
 
 /* String font is a fair problem. Normally glBitmap is liked to print

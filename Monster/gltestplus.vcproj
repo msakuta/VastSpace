@@ -254,6 +254,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\solarmap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\stellar_file.cpp"
 				>
 			</File>

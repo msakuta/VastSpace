@@ -59,6 +59,7 @@ astro Star first_light{
 	pos 0 0 -1e5
 	mass Msun
 	absolute_magnitude 4.83
+	solarsystem
 
 	astro TextureSphere first_planet{
 		orbits .

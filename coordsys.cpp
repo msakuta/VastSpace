@@ -463,11 +463,12 @@ public:
 	AstroCmp(const Viewer &avw) : vw(avw){}
 	bool operator()(CoordSys *&a, CoordSys *&b){
 		double ad, bd;
+		Astrobj *aa = a->toAstrobj(), *ab = b->toAstrobj();
 		invokes++;
 		if(!a) return true;
 		else if(!b) return false;
-		ad = a->calcSDist(vw) - a->csrad * a->csrad;
-		bd = b->calcSDist(vw) - b->csrad * b->csrad;
+		ad = a->calcSDist(vw) - (aa ? aa->rad * aa->rad : a->csrad * a->csrad);
+		bd = b->calcSDist(vw) - (ab ? ab->rad * ab->rad : b->csrad * b->csrad);
 		return ad < bd ? true : bd < ad ? false : false;
 	}
 };
@@ -491,7 +492,10 @@ void CoordSys::drawcs(const Viewer *vw){
 		}*/
 		AOList::reverse_iterator i = aorder.rbegin();
 		for(; i != aorder.rend();i++) if(*i){
-			(*i)->drawcs(vw);
+			if(*i == this)
+				(*i)->draw(vw);
+			else
+				(*i)->drawcs(vw);
 		}
 	}
 }

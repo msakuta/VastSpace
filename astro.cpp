@@ -164,7 +164,9 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	return true;
 }
 
-bool OrbitCS::readFileEnd(StellarContext &){
+bool OrbitCS::readFileEnd(StellarContext &sc){
+	if(!st::readFileEnd(sc))
+		return false;
 	if(!enable)
 		return true;
 	if(inclination == 0.)
@@ -261,6 +263,19 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 	else
 		return st::readFile(sc, argc, argv);
 	return true;
+}
+
+bool Astrobj::readFileEnd(StellarContext &sc){
+	if(!st::readFileEnd(sc))
+		return false;
+	if((flags & (CS_ISOLATED | CS_EXTENT)) == (CS_ISOLATED | CS_EXTENT)){
+		AOList::iterator i;
+		for(i = aorder.begin(); i != aorder.end(); i++) if(*i == this)
+			break;
+		if(i == aorder.end()){
+			aorder.push_back(this);
+		}
+	}
 }
 
 bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){

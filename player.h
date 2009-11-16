@@ -34,6 +34,7 @@ public:
 	int mousex, mousey;
 	int floortouch;
 	int gear; /* acceleration gear in ghost mode */
+	int race;
 	double fov;
 	double gametime;
 	double velolen; /* trivial; performance keeper */

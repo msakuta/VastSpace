@@ -67,6 +67,7 @@ public:
 	virtual const char *classname()const;
 	void planet_anim(double dt);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual bool readFileEnd(StellarContext &);
 	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }

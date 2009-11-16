@@ -391,8 +391,14 @@ void draw_func(Viewer &vw, double dt){
 		glPushAttrib(GL_POLYGON_BIT);
 		glEnable(GL_BLEND);
 		glDisable(GL_LINE_SMOOTH);
-		glwlist->glwDrawMinimized(vw.vp, pl.gametime, &minix);
-		glwlist->glwDraw(vw.vp, pl.gametime, &minix);
+		GLwindowState ws;
+		ws.w = vw.vp.w;
+		ws.h = vw.vp.h;
+		ws.m = vw.vp.m;
+		ws.mx = s_mousex;
+		ws.my = s_mousey;
+		glwlist->glwDrawMinimized(ws, pl.gametime, &minix);
+		glwlist->glwDraw(ws, pl.gametime, &minix);
 		glPopAttrib();
 	}
 
@@ -488,6 +494,9 @@ void display_func(void){
 			fprintf(stderr, "Exception ?\n");
 		}
 
+		// Really should be in draw method, since windows are property of the client.
+		glwlist->glwAnim(dt);
+
 		gametime = t1;
 	}
 	Viewer viewer;
@@ -549,10 +558,12 @@ void mouse_func(int button, int state, int x, int y){
 		else{
 			GLint vp[4];
 			viewport gvp;
+			GLwindowState ws;
 			glGetIntegerv(GL_VIEWPORT, vp);
 			gvp.set(vp);
+			ws.set(vp);
 			int killfocus = 1, ret = 0;
-			ret = GLwindow::mouseFunc(button, state, x, y, gvp);
+			ret = GLwindow::mouseFunc(button, state, x, y, ws);
 			if(!ret){
 				if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 					avec3_t centerray, centerray0;
@@ -804,6 +815,9 @@ static void key_func(unsigned char key, int x, int y){
 			return;
 	}
 
+	if(glwfocus)
+		glwfocus->key(key);
+
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
@@ -889,6 +903,8 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 
 		case WM_MOUSEMOVE:
 			if(!mouse_captured){
+				s_mousex = LOWORD(lParam);
+				s_mousey = HIWORD(lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){
 					s_mousedragx = s_mousex;
 					s_mousedragy = s_mousey;
@@ -920,6 +936,15 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 		case WM_LBUTTONUP:
 			mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
+
+		case WM_MOUSEWHEEL:
+			{
+				int ret = 0;
+				POINT p = {LOWORD(lParam), HIWORD(lParam)};
+				ScreenToClient(hWnd, &p);
+				mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_UP, p.x, p.y);
+			}
+			break;
 
 		case WM_CHAR:
 			key_func(wParam, 0, 0);
@@ -1027,6 +1052,8 @@ int main(int argc, char *argv[])
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
+	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
+	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

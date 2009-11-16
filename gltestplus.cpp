@@ -1,6 +1,14 @@
 
 #define USEWIN 1 /* whether use windows api (wgl*) */
 
+#if !USEWIN
+#include <GL/glut.h>
+#else
+#include "antiglut.h"
+#define WINVER 0x0500
+#define _WIN32_WINNT 0x0500
+#include <windows.h>
+#endif
 #include "viewer.h"
 #include "player.h"
 #include "entity.h"
@@ -27,12 +35,6 @@ extern "C"{
 #include <cpplib/gl/cullplus.h>
 
 
-#if !USEWIN
-#include <GL/glut.h>
-#else
-#include "antiglut.h"
-#include <windows.h>
-#endif
 #include <GL/gl.h>
 #include <assert.h>
 #include <stddef.h>

@@ -149,6 +149,9 @@
 				RelativePath="gltestplus.cpp">
 			</File>
 			<File
+				RelativePath="glwindow.cpp">
+			</File>
+			<File
 				RelativePath="judge.cpp">
 			</File>
 			<File
@@ -174,6 +177,9 @@
 					<Tool
 						Name="VCCLCompilerTool"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="solarmap.cpp">
 			</File>
 			<File
 				RelativePath="stellar_file.cpp">
@@ -223,6 +229,9 @@
 			</File>
 			<File
 				RelativePath="galaxy_field.h">
+			</File>
+			<File
+				RelativePath="glwindow.h">
 			</File>
 			<File
 				RelativePath="judge.h">

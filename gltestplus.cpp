@@ -815,8 +815,10 @@ static void key_func(unsigned char key, int x, int y){
 			return;
 	}
 
-	if(glwfocus)
+	if(glwfocus){
 		glwfocus->key(key);
+		return;
+	}
 
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':

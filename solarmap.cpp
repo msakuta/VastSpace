@@ -567,12 +567,9 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			p->org *= 1. / sol->csrad;
 		}
 		if(p->sync){
-			params.viewmat = ppl->rot.cnj().tomat4();
-			p->rot = ppl->rot.cnj();
+			p->rot = ppl->rot;
 		}
-		else{
-			params.viewmat = p->rot.tomat4();
-		}
+		params.viewmat = p->rot.tomat4();
 		params.viewmat.translatein(-p->org[0] * sol->csrad, -p->org[1] * sol->csrad, -p->org[2] * sol->csrad);
 
 		if(this){

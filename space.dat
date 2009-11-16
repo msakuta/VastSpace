@@ -75,7 +75,7 @@ astro Star first_light{
 		atmosphere_height 30
 		atmosphere_color 1 .8 .5
 		atmosphere_dawn 1. .51 .1
-		mass Msun
+		mass 317.904*5.977e24
 	}
 #	astro TextureSphere second_planet{
 #		radius 5e3

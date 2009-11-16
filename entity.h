@@ -22,6 +22,7 @@ public:
 	virtual double hitradius() = 0;
 	virtual bool tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
+	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

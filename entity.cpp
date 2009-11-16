@@ -57,3 +57,7 @@ int Entity::takedamage(double damage, int hitpart){
 	health -= damage;
 	return 1;
 }
+
+int Entity::popupMenu(char ***const titles, int **keys, char ***cmds, int *num){
+	return 0;
+}

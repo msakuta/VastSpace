@@ -19,6 +19,8 @@ extern "C"{
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>
 #include <clib/gl/gldraw.h>
+#include <clib/suf/sufdraw.h>
+#include <clib/zip/UnZip.h>
 }
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -48,7 +50,8 @@ extern "C"{
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_space_near_clip = 0.01, g_space_far_clip = 1e3;
-bool mouse_captured = false;
+static bool mouse_captured = false;
+static bool mouse_tracking = false;
 int gl_wireframe = 0;
 double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
@@ -60,6 +63,8 @@ glwindow *glwcmdmenu = NULL;
 int s_mousex, s_mousey;
 static int s_mousedragx, s_mousedragy;
 static int s_mouseoldx, s_mouseoldy;
+
+static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags);
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
@@ -295,6 +300,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 }
 
 static void drawindics(Viewer *vw){
+	viewport &gvp = vw->vp;
 	if(show_planets_name){
 		Mat4d model;
 		model = vw->rot;
@@ -302,14 +308,53 @@ static void drawindics(Viewer *vw){
 		drawastro(vw, &galaxysystem, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
-	GLpmatrix pm;
-	projection(glLoadIdentity());
-	glPushMatrix();
-	glLoadIdentity();
-	glTranslatef(0,0,-1);
-	glRasterPos2d(-1, -1);
-	gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
-	glPopMatrix();
+	{
+		GLpmatrix pm;
+		projection(glLoadIdentity());
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslatef(0,0,-1);
+		glRasterPos2d(-1, -1);
+		gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
+		glPopMatrix();
+	}
+	if(!mouse_captured && !glwfocus && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
+		int x0 = MIN(s_mousedragx, s_mousex);
+		int x1 = MAX(s_mousedragx, s_mousex) + 1;
+		int y0 = MIN(s_mousedragy, s_mousey);
+		int y1 = MAX(s_mousedragy, s_mousey) + 1;
+
+/*		glGetDoublev(GL_PROJECTION_MATRIX, proj);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glFrustum(g_left, g_right, g_bottom, g_top, g_near, g_far);
+		glMatrixMode(GL_MODELVIEW);*/
+		glPushMatrix();
+		glLoadIdentity();
+		Mat4d rot = pl.rot.tomat4();
+		glMultMatrixd(rot);
+		gldTranslaten3dv(vw->pos);
+		select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
+			-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 1);
+		glPopMatrix();
+/*		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixd(proj);
+		glMatrixMode(GL_MODELVIEW);*/
+
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslated(0, gvp.h, 0);
+		glScaled(1, -1, 1);
+		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, gvp.w, 0, gvp.h, -1, 1)));
+		glBegin(GL_LINE_LOOP);
+		glVertex2d(s_mousex, s_mousey);
+		glVertex2d(s_mousedragx, s_mousey);
+		glVertex2d(s_mousedragx, s_mousedragy);
+		glVertex2d(s_mousex, s_mousedragy);
+		glEnd();
+		projection(glPopMatrix());
+		glPopMatrix();
+	}
 }
 
 void draw_func(Viewer &vw, double dt){
@@ -404,6 +449,54 @@ void draw_func(Viewer &vw, double dt){
 
 	if(cmdwnd)
 		CmdDraw(vw.vp);
+
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+	projection((glPushMatrix(), glLoadIdentity()));
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslated(2. * s_mousex / vw.vp.w - 1., -2. * s_mousey / vw.vp.h - - 1., -1);
+	glScaled(2. * 32. / vw.vp.w, 2. * 32. / vw.vp.h, 1.);
+	if(mouse_tracking && !mouse_captured){
+		static GLuint tex = 0;
+//		GLuint oldtex;
+		if(!tex){
+			suftexparam_t stp;
+//			stp.bmi = ZipUnZip(lzw_pointer, sizeof lzw_pointer, NULL);
+			stp.env = GL_MODULATE;
+			stp.mipmap = 0x80;
+			stp.alphamap = 1;
+			stp.magfil = GL_LINEAR;
+			extern GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
+//			tex = CacheSUFMTex("pointer.bmp", &stp, NULL);
+			tex = CallCacheBitmap("pointer.bmp", "pointer.bmp", &stp, NULL);
+		}
+		GLattrib attrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		glEnable(GL_TEXTURE_2D);
+		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslated(0., .5/*!g_focusset * .5*/, 0.);
+		glScaled(.5, .5, 1.);
+		glCallList(tex);
+/*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
+		glColor4ub(255,255,255,255);
+		glBegin(GL_QUADS);
+		glTexCoord2d(0, 0); glVertex2d(-0., -1.);
+		glTexCoord2d(1, 0); glVertex2d( 1., -1.);
+		glTexCoord2d(1, 1); glVertex2d( 1.,  0.);
+		glTexCoord2d(0, 1); glVertex2d(-0.,  0.);
+		glEnd();
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	}
+	glPopMatrix();
+	projection(glPopMatrix());
+	glPopAttrib();
+
+	glFlush();
 }
 
 static POINT mouse_pos = {0, 0};
@@ -442,6 +535,10 @@ void display_func(void){
 
 		if(mouse_captured){
 			POINT p;
+			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){
+				mouse_captured = 0;
+				while(ShowCursor(TRUE) <= 0);
+			}
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
 				double speed = .001 / 2. * pl.fov;
 				aquat_t q;
@@ -542,6 +639,210 @@ void display_func(void){
 	draw_func(viewer, dt);
 }
 
+void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
+	static const char *titles[] = {
+		"Move", "Chase Camera"
+	};
+	int keys[2] = {0};
+	const char *cmds[] = {"moveorder", "chasecamera"};
+	glwindow *glw;
+	if(selectchain){
+		char **titles1;
+		int *keys1;
+		char **cmds1;
+//		int *allocated;
+		int num = numof(titles);
+		titles1 = (char**)malloc(sizeof titles); memcpy(titles1, titles, sizeof titles);
+		keys1 = (int*)malloc(sizeof keys); memcpy(keys1, keys, sizeof keys);
+		cmds1 = (char**)malloc(sizeof cmds); memcpy(cmds1, cmds, sizeof cmds);
+		for(; pt; pt = pt->selectnext)
+			pt->popupMenu(&titles1, &keys1, &cmds1, &num);
+/*		allocated = (int*)malloc(num * sizeof *allocated);
+		memset(allocated, 0, numof(titles) * sizeof *allocated);
+		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
+		glw = glwPopupMenu(ws, num, titles1, keys1, cmds1, 0);
+/*		for(i = numof(titles); i < num; i++){
+			free(titles1[i]);
+			free(cmds1[i]);
+		}*/
+		free(titles1);
+		free(keys1);
+		free(cmds1);
+//		free(allocated);
+	}
+	else if(pt){
+		char **titles1;
+		int *keys1;
+		char **cmds1;
+//		int *allocated;
+		int num = numof(titles);
+		titles1 = (char**)malloc(sizeof titles); memcpy(titles1, titles, sizeof titles);
+		keys1 = (int*)malloc(sizeof keys); memcpy(keys1, keys, sizeof keys);
+		cmds1 = (char**)malloc(sizeof cmds); memcpy(cmds1, cmds, sizeof cmds);
+		pt->popupMenu(&titles1, &keys1, &cmds1, &num);
+/*		allocated = malloc(num * sizeof *allocated);
+		memset(allocated, 0, numof(titles) * sizeof *allocated);
+		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
+		glw = glwPopupMenu(ws, num, titles1, keys1, cmds1, 0);
+/*		for(i = numof(titles); i < num; i++){
+			free(titles1[i]);
+			free(cmds1[i]);
+		}*/
+		free(titles1);
+		free(keys1);
+		free(cmds1);
+//		free(allocated);
+	}
+	else
+		glw = glwPopupMenu(ws, numof(titles), titles, keys, cmds, 0);
+/*	glw->x = s_mousex;
+	glw->y = s_mousey;*/
+}
+
+/* Box selection routine have many adaptions; point selection, additive selection, selection preview */
+static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags){
+	Entity *pt;
+	Mat4d mat, mat2;
+	int viewstate = 0;
+	int draw = flags & 1;
+	int preview = !!(flags & 2);
+	int pointselect = !!(flags & 4);
+	WarField *w;
+	double best = 1e50;
+	double g_far = g_space_far_clip, g_near = g_space_near_clip;
+	Entity *ptbest = NULL;
+/*	extern struct astrobj iserlohn;*/
+
+	if(!pl.cs->w)
+		return;
+
+	w = pl.cs->w;
+
+/*	if(g_ally_view){
+		entity_t *pt;
+		extern struct player *ppl;
+		extern entity_t **rstations;
+		extern int nrstations;
+		int i;
+		for(pt = w->tl; pt; pt = pt->next) if(pt->race == ppl->race){
+			viewstate = 2;
+			break;
+		}
+		if(viewstate < 1) for(i = 0; i < nrstations; i++) if(rstations[i]->w == w){
+			viewstate = 1;
+			break;
+		}
+		if(!viewstate)
+			return;
+	}*/
+/*	if(x1 < x0){
+		double tmp = x1;
+		x1 = x0;
+		x0 = tmp;
+	}
+	if(y1 < y0){
+		double tmp = y1;
+		y1 = y0;
+		y0 = tmp;
+	}*/
+	mat[0] = 2 /** g_near*/ / (x1 - x0), mat[4] = 0., mat[8] = (x1 + x0) / (x1 - x0), mat[12] = 0.;
+	mat[1] = 0., mat[5] = 2 /** g_near*/ / (y1 - y0), mat[9] = (y1 + y0) / (y1 - y0), mat[13] = 0.;
+	mat[2] = 0., mat[6] = 0., mat[10] = -(g_far + g_near) / (g_far - g_near), mat[14] = -2. * g_far * g_near / (g_far - g_near);
+	mat[3] = 0., mat[7] = 0., mat[11] = -1., mat[15] = 0.;
+/*	glPushMatrix();
+	glLoadIdentity();
+	glFrustum(x0, x1, y0, y1, g_near, g_far);
+	{
+		int i;
+		glGetIntegerv(GL_MATRIX_MODE, &i);
+		glGetDoublev(i, mat);
+	}
+	glPopMatrix();*/
+	mat2 = mat * rot;
+	if(!draw)
+		pl.selected = NULL;
+	for(pt = pl.cs->w->el; pt; pt = pt->next) if(pt->w/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
+		Vec4d lpos, dpos;
+		double sp;
+		double scradx, scrady;
+		dpos = pt->pos - pl.pos;
+		dpos[3] = 1.;
+		lpos = mat2.vp(dpos);
+		VECSCALEIN(lpos, 1. / lpos[3]);
+		sp = -(dpos[0] * rot[2] + dpos[1] * rot[6] + dpos[2] * rot[10])/*VECSP(&rot[8], dpos)*/;
+		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
+		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
+		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
+			if(preview){
+				pl.chase = pt;
+				return;
+			}
+			else if(draw){
+				double (*cuts)[2];
+				int i;
+				Mat4d mat, imat;
+				cuts = CircleCuts(16);
+				glPushMatrix();
+				gldTranslate3dv(pt->pos);
+				imat = pl.rot.cnj().tomat4();
+				glMultMatrixd(imat);
+				gldScaled(pt->hitradius());
+				glBegin(GL_LINE_LOOP);
+				for(i = 0; i < 16; i++)
+					glVertex2dv(cuts[i]);
+				glEnd();
+				glPopMatrix();
+			}
+			else if(pointselect){
+				if(0 <= sp && sp < best){
+					best = sp;
+					ptbest = pt;
+				}
+			}
+			else{
+				pt->selectnext = pl.selected;
+				pl.selected = pt;
+			}
+		}
+	}
+	if(!draw && pointselect){
+		pl.selected = ptbest;
+		if(ptbest)
+			ptbest->selectnext = NULL;
+	}
+}
+
+static void capture_mouse(){
+	int c;
+	extern HWND hWndApp;
+	HWND hwd = hWndApp;
+	RECT r;
+	s_mouseoldx = s_mousex;
+	s_mouseoldy = s_mousey;
+	GetClientRect(hwd, &r);
+	mouse_pos.x = (r.left + r.right) / 2;
+	mouse_pos.y = (r.top + r.bottom) / 2;
+	ClientToScreen(hwd, &mouse_pos);
+	SetCursorPos(mouse_pos.x, mouse_pos.y);
+	c = ShowCursor(FALSE);
+	while(0 <= c)
+		c = ShowCursor(FALSE);
+	glwfocus = NULL;
+}
+
+static void uncapture_mouse(){
+	extern HWND hWndApp;
+	HWND hwd = hWndApp;
+	mouse_captured = 0;
+	s_mousedragx = s_mouseoldx;
+	s_mousedragy = s_mouseoldy;
+	mouse_pos.x = s_mouseoldx;
+	mouse_pos.y = s_mouseoldy;
+	ClientToScreen(hwd, &mouse_pos);
+	SetCursorPos(mouse_pos.x, mouse_pos.y);
+/*	while(ShowCursor(TRUE) < 0);*/
+}
+
 void mouse_func(int button, int state, int x, int y){
 
 	if(cmdwnd){
@@ -555,36 +856,46 @@ void mouse_func(int button, int state, int x, int y){
 				glwdrag = NULL;
 			return;
 		}
-		else{
-			GLint vp[4];
-			viewport gvp;
-			GLwindowState ws;
-			glGetIntegerv(GL_VIEWPORT, vp);
-			gvp.set(vp);
-			ws.set(vp);
-			int killfocus = 1, ret = 0;
-			ret = GLwindow::mouseFunc(button, state, x, y, ws);
-			if(!ret){
-				if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
-					avec3_t centerray, centerray0;
-					aquat_t qrot, qirot;
-					centerray0[0] = (s_mousedragx + s_mousex) / 2. / gvp.w - .5;
-					centerray0[1] = (s_mousedragy + s_mousey) / 2. / gvp.h - .5;
-					centerray0[2] = -1.;
-					VECSCALEIN(centerray0, -1.);
-					QUATCNJ(qrot, pl.rot);
-					quatrot(centerray, qrot, centerray0);
-					quatdirection(qrot, centerray);
-					QUATCNJ(qirot, qrot);
+		GLint vp[4];
+		viewport gvp;
+		GLwindowState ws;
+		glGetIntegerv(GL_VIEWPORT, vp);
+		gvp.set(vp);
+		ws.set(vp);
+		int killfocus = 1, ret = 0;
+		ret = GLwindow::mouseFunc(button, state, x, y, ws);
+		if(ret)
+			return;
+		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+/*			avec3_t centerray, centerray0;
+			aquat_t qrot, qirot;
+			centerray0[0] = (s_mousedragx + s_mousex) / 2. / gvp.w - .5;
+			centerray0[1] = (s_mousedragy + s_mousey) / 2. / gvp.h - .5;
+			centerray0[2] = -1.;
+			VECSCALEIN(centerray0, -1.);
+			QUATCNJ(qrot, pl.rot);
+			quatrot(centerray, qrot, centerray0);
+			quatdirection(qrot, centerray);
+			QUATCNJ(qirot, qrot);*/
 //					select_box(fabs(s_mousedragx - s_mousex), fabs(s_mousedragx - s_mousex), qirot);
 //					s_mousedragx = s_mousex;
 //					s_mousedragy = s_mousey;
-				}
-				glwfocus = NULL;
+			if(/*boxable &&*/ !glwfocus){
+				int x0 = MIN(s_mousedragx, s_mousex);
+				int x1 = MAX(s_mousedragx, s_mousex) + 1;
+				int y0 = MIN(s_mousedragy, s_mousey);
+				int y1 = MAX(s_mousedragy, s_mousey) + 1;
+				Mat4d rot = pl.rot.tomat4();
+				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
+					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 0/*(!!g_focusset << 1) */| ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2));
+				s_mousedragx = s_mousex;
+				s_mousedragy = s_mousey;
 			}
-			if(ret)
-				return;
 		}
+		else if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
+			entity_popup(pl.selected, ws, 1);
+		}
+		glwfocus = NULL;
 	}
 
 #if 0
@@ -622,28 +933,14 @@ void mouse_func(int button, int state, int x, int y){
 */
 #endif
 #if USEWIN && defined _WIN32
-	if(/*!cmdwnd &&*/ (!pl.control || !mouse_captured) && state == GLUT_UP && button == GLUT_RIGHT_BUTTON){
+	if(!cmdwnd && !pl.control && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
 /*		printf("right up %d\n", mouse_captured);*/
 		if(mouse_captured){
-			int c;
-			HWND hwd;
-			RECT r;
-			hwd = GetActiveWindow();
-			GetClientRect(hwd, &r);
-			mouse_pos.x = (r.left + r.right) / 2;
-			mouse_pos.y = (r.top + r.bottom) / 2;
-			ClientToScreen(hwd, &mouse_pos);
-			SetCursorPos(mouse_pos.x, mouse_pos.y);
-			c = ShowCursor(FALSE);
-			while(0 <= c)
-				c = ShowCursor(FALSE);
-			glwfocus = NULL;
+			capture_mouse();
 		}
 		else{
-			s_mousedragx = s_mousex;
-			s_mousedragy = s_mousey;
-			while(ShowCursor(TRUE) < 0);
+			uncapture_mouse();
 		}
 	}
 #endif
@@ -685,6 +982,14 @@ static int cmd_eject(int argc, char *argv[]){
 	if(pl.chase){
 		pl.chase = NULL;
 		pl.pos += pl.rot.cnj() * Vec3d(0,0,.3);
+	}
+	return 0;
+}
+
+static int cmd_chasecamera(int argc, char *argv[]){
+	if(pl.selected){
+		pl.chase = pl.selected;
+		pl.cs = pl.selected->w->cs;
 	}
 	return 0;
 }
@@ -903,7 +1208,21 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			}
 			break;
 
+		case WM_MOUSELEAVE:
+			while(ShowCursor(TRUE) <= 0);
+			mouse_tracking = 0;
+			break;
+
 		case WM_MOUSEMOVE:
+			if(!mouse_tracking){
+				TRACKMOUSEEVENT evt;
+				evt.cbSize = sizeof evt;
+				evt.dwFlags = TME_LEAVE;
+				evt.hwndTrack = hWnd;
+				TrackMouseEvent(&evt);
+				while(0 <= ShowCursor(FALSE));
+				mouse_tracking = 1;
+			}
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
@@ -915,10 +1234,10 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					glwfocus->mouse(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
 					glwfocus->mouse(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
 				}
-/*				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
+				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
 					mouse_captured = 1;
 					capture_mouse();
-				}*/
+				}
 			}
 			if(glwdrag){
 //				glwindow *glw = glwlist;
@@ -1056,6 +1375,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
+	CmdAdd("chasecamera", cmd_chasecamera);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

@@ -92,6 +92,7 @@ extern "C"{
 #define ABS(a) ((a)<0?-(a):(a))
 #endif
 
+int g_healthbar = 1;
 
 /* color sequences */
 #if 0
@@ -326,6 +327,96 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
+
+void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
+	double x = v * 2. - 1., h = MIN(.1, .1 / (1. + scale)), hs = h / 2.;
+	if(!g_healthbar)
+		return;
+	if(g_healthbar == 1 && wd->w && wd->w->pl){
+		Entity *pt2;
+		for(pt2 = wd->w->pl->selected; pt2; pt2 = pt2->selectnext) if(pt2 == pt){
+			break;
+		}
+		if(!pt2)
+			return;
+	}
+	glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT | GL_TEXTURE_BIT);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_CULL_FACE);
+	glPushMatrix();
+	gldTranslate3dv(pt->pos);
+	glMultMatrixd(wd->vw->irot);
+	gldScaled(scale);
+#if 0 /* signal spectrum drawing */
+	if(vft->signalSpectrum){
+		double x;
+		glColor4ub(0,255,127,255);
+		glBegin(GL_LINES);
+		for(x = -10; x < 10; x++){
+			glVertex2d(x / 10., -1);
+			glVertex2d(x / 10., -.95);
+		}
+		glEnd();
+		glBegin(GL_LINE_STRIP);
+		for(x = -100; x < 100; x++){
+			glVertex2d(x / 100., -1 + vft->signalSpectrum(pt, x / 10.));
+		}
+		glEnd();
+	}
+#endif
+	glBegin(GL_QUADS);
+	glColor4ub(0,255,0,255);
+	glVertex3d(-1., 1., 0.);
+	glVertex3d( x, 1., 0.);
+	glVertex3d( x, 1. - h, 0.);
+	glVertex3d(-1., 1. - h, 0.);
+	glColor4ub(255,0,0,255);
+	glVertex3d( x, 1., 0.);
+	glVertex3d( 1., 1., 0.);
+	glVertex3d( 1., 1. - h, 0.);
+	glVertex3d( x, 1. - h, 0.);
+	if(0 <= s){
+		x = s * 2. - 1.;
+		glColor4ub(0,255,255,255);
+		glVertex3d(-1., 1. + hs * 2, 0.);
+		glVertex3d( x, 1. + hs * 2, 0.);
+		glVertex3d( x, 1. + hs, 0.);
+		glVertex3d(-1., 1. + hs, 0.);
+		glColor4ub(255,0,127,255);
+		glVertex3d( x, 1. + hs * 2, 0.);
+		glVertex3d( 1., 1. + hs * 2, 0.);
+		glVertex3d( 1., 1. + hs, 0.);
+		glVertex3d( x, 1. + hs, 0.);
+	}
+	glEnd();
+	if(0 <= g){
+		x = g * 2. - 1.;
+		glTranslated(0, -2. * h, 0.);
+		glBegin(GL_QUADS);
+		glColor4ub(255,255,0,255);
+		glVertex3d(-1., 1. - hs, 0.);
+		glVertex3d( x, 1. - hs, 0.);
+		glVertex3d( x, 1., 0.);
+		glVertex3d(-1., 1., 0.);
+		glColor4ub(255,0,127,255);
+		glVertex3d( x, 1. - hs, 0.);
+		glVertex3d( 1., 1. - hs, 0.);
+		glVertex3d( 1., 1., 0.);
+		glVertex3d( x, 1., 0.);
+		glEnd();
+	}
+/*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);*/
+/*	glBegin(GL_LINE_LOOP);
+	glColor4ub(0,255,255,255);
+	glVertex3d(-1., 1., 0.);
+	glVertex3d( 1, 1., 0.);
+	glVertex3d( 1, 1. - h, 0.);
+	glVertex3d(-1., 1. - h, 0.);
+	glEnd();*/
+	glPopMatrix();
+	glPopAttrib();
+}
 
 
 
@@ -582,7 +673,7 @@ Beamer::Beamer(){
 	shieldAmount = MAX_SHIELD_AMOUNT;
 	shield = 0.;
 	VECNULL(integral);
-//	health = 5000.;
+	health = BEAMER_HEALTH;
 }
 
 const char *Beamer::idname()const{
@@ -1711,7 +1802,7 @@ void Beamer::draw(wardraw_t *wd){
 		return;*/
 //	wd->lightdraws++;
 
-//	draw_healthbar(pt, wd, pt->health / BEAMER_HEALTH, .1, p->shieldAmount / MAX_SHIELD_AMOUNT, p->st.capacitor / beamer_mn.capacity);
+	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / beamer_mn.capacity);
 
 	if(init == 0) do{
 //		suftexparam_t stp, stp2;

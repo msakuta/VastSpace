@@ -31,8 +31,12 @@ glwindow *glwdrag = NULL;
 int glwdragpos[2] = {0};
 
 GLwindow::GLwindow(const char *atitle){
-	title = new char[strlen(atitle)+1];
-	strcpy(title, atitle);
+	if(atitle){
+		title = new char[strlen(atitle)+1];
+		strcpy(title, atitle);
+	}
+	else
+		title = NULL;
 }
 
 glwindow **glwAppend(glwindow *wnd){
@@ -252,7 +256,8 @@ int GLwindow::mouse(int,int,int,int){return 0;}
 int GLwindow::key(int){return 0;}
 void GLwindow::anim(double){}
 GLwindow::~GLwindow(){
-	delete[] title;
+	if(title)
+		delete[] title;
 }
 
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
@@ -552,11 +557,11 @@ GLwindowMenu::~GLwindowMenu(){
 	free((void*)menus);
 }
 
-GLwindowMenu *glwMenu(const char *name, int count, const char *menutitles[], const int keys[], const char *cmd[], int sticky){
+GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
 	return new GLwindowMenu(name, count, menutitles, keys, cmd, sticky);
 }
 
-GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *menutitles[], const int keys[], const char *cmd[], int sticky) : st(title), count(acount){
+GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky) : st(title), count(acount){
 	glwindow *ret = this;
 	int i, len, maxlen = 0;
 	menus = (glwindowmenuitem*)malloc(count * sizeof(*menus));
@@ -640,21 +645,29 @@ int GLwindowMenu::cmd_addcmdmenuitem(int argc, char *argv[], void *p){
 	return 0;
 }
 
-#if 0
-glwindow *glwPopupMenu(viewport &gvp, int count, const char *menutitles[], const int keys[], const char *cmd[], int sticky){
-	glwindow *ret;
-	struct glwindowmenu *p;
-	int i, len, maxlen = 0;
-	ret = glwMenu(count, menutitles, keys, cmd, sticky);
-	flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
-	flags |= GLW_POPUP;
-	{
-		POINT point;
-		GetCursorPos(&point);
-		ScreenToClient(WindowFromDC(wglGetCurrentDC()), &point);
-		ret->x = point.x + ret->w < gvp.w ? point.x : gvp.w - ret->w;
-		ret->y = point.y + ret->h < gvp.h ? point.y : gvp.h - ret->h;
+class GLwindowPopup : public GLwindowMenu{
+public:
+	typedef GLwindowMenu st;
+	GLwindowPopup(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky, GLwindowState &gvp)
+		: st(title, count, menutitles, keys, cmd, sticky){
+		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
+		flags |= GLW_POPUP;
+		{
+			POINT point;
+			GetCursorPos(&point);
+			ScreenToClient(WindowFromDC(wglGetCurrentDC()), &point);
+			this->x = point.x + this->w < gvp.w ? point.x : gvp.w - this->w;
+			this->y = point.y + this->h < gvp.h ? point.y : gvp.h - this->h;
+		}
 	}
+};
+
+#if 1
+glwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
+	glwindow *ret;
+	GLwindowMenu *p;
+	int i, len, maxlen = 0;
+	ret = new GLwindowPopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
 	return ret;
 }
 #endif

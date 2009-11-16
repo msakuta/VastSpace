@@ -48,7 +48,7 @@ public:
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual void anim(double dt);
 protected:
-	GLwindow(const char *title = "");
+	GLwindow(const char *title = NULL);
 	int x, y;
 	int w, h;
 	char *title;
@@ -91,7 +91,7 @@ public:
 		const char *cmd;
 		int allocated; /* whether this item need to be freed */
 	} *menus;
-	GLwindowMenu(const char *title, int count, const char *menutitles[], const int keys[], const char *cmd[], int sticky);
+	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 	void draw(GLwindowState &,double);
 	int mouse(int button, int state, int x, int y);
 	int key(int key);
@@ -102,8 +102,8 @@ public:
 
 extern const int glwMenuAllAllocated[];
 extern const char glwMenuSeparator[];
-GLwindowMenu *glwMenu(const char *title, int count, const char *menutitles[], const int keys[], const char *cmd[], int sticky);
-glwindow *glwPopupMenu(GLwindowState &, int count, const char *menutitles[], const int keys[], const char *cmd[], int sticky);
+GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
+glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 
 
 class GLwindowSizeable : public glwindow{

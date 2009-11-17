@@ -239,10 +239,10 @@ struct GLwindowSolarMap::drawSolarMapItemParams{
 };
 
 GLwindowSolarMap::GLwindowSolarMap(const char *title, Player *apl) : st(title), ppl(apl), org(vec3_000), pointer(vec3_000), rot(quat_u){
-	x = 50;
-	y = 50;
-	w = FIELD+1;
-	h = FIELD+1 + 12;
+	xpos = 50;
+	ypos = 50;
+	width = FIELD+1;
+	height = FIELD+1 + 12;
 	flags = GLW_CLOSE | GLW_COLLAPSABLE;
 	modal = NULL;
 	GLwindowSolarMap *p = this;
@@ -273,7 +273,7 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 
 	GLwindow *wnd = p;
 	double md;
-	double h = this->h - 12;
+	double h = this->height - 12;
 	double range = sol->csrad * p->range;
 	int ret = 0;
 
@@ -281,7 +281,7 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 	md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
 	glColor4ubv(params->pointcolor);
 	apos += params->org * -sol->csrad;
-	if(4 * range / this->w < params->rad){
+	if(4 * range / this->width < params->rad){
 		double (*cuts)[2];
 		int i;
 		cuts = CircleCuts(16);
@@ -310,8 +310,8 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
 			glVertex3d(pos[0], screeny, 0.);
-			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->w, screeny, 0.);
-			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->w, screeny + 2. * 10 / h, 0.);
+			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny, 0.);
+			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny + 2. * 10 / height, 0.);
 			glVertex3d(pos[0], screeny + 2. * 10 / h, 0.);
 			glEnd();
 			ret = 1;
@@ -354,7 +354,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 			if(drawSolarMapItem(params))
 				params->p->targetr = rstations[i];
 		}*/
-		rrange = this->range * params->sol->csrad * 10. / this->w;
+		rrange = this->range * params->sol->csrad * 10. / this->width;
 		collapse = cs->csrad < rrange;
 		for(pt = cs->w->el; pt; pt = pt->next) if(strcmp(pt->classname(), "rstation") && (pt->race == ppl->race /*|| race_entity_visible(ppl->race, pt)*/)){
 			avec3_t warpdst, pos1;
@@ -511,9 +511,9 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 	extern CoordSys *g_galaxysystem;
 	GLint vp[4], nvp[4];
 	double dt = p->lastt ? gametime - p->lastt : 0.;
-	int mi = MIN(this->w, this->h - 12) - 1;
-	int ma = MAX(this->w, this->h - 12) - 1;
-	double fx = (double)this->w / ma, fy = (double)(this->h - 12) / ma;
+	int mi = MIN(this->width, this->height - 12) - 1;
+	int ma = MAX(this->width, this->height - 12) - 1;
+	double fx = (double)this->width / ma, fy = (double)(this->height - 12) / ma;
 	double f;
 
 	{
@@ -534,9 +534,9 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 	if(sol){
 /*		extern Astrobj **astrobjs;
 		extern int nastrobjs;*/
-		int i, ip[2], h = this->h - 12, iofs = 0;
+		int i, ip[2], h = this->height - 12, iofs = 0;
 		double range = sol->csrad * p->range;
-		double hitrad = sol->csrad * .05 * p->range * (this->h - 12) / ma;
+		double hitrad = sol->csrad * .05 * p->range * (this->height - 12) / ma;
 		Vec3d pos(vec3_000);
 		Vec3d plpos;
 		struct drawSolarMapItemParams params;
@@ -576,7 +576,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			RECT rc;
 			GetClientRect(WindowFromDC(wglGetCurrentDC()), &rc);
 			glGetIntegerv(GL_VIEWPORT, vp);
-			glViewport(nvp[0] = this->x + 1, nvp[1] = rc.bottom - rc.top - (this->y + this->h) + 1, nvp[2] = this->w - 1, nvp[3] = this->h - 12 - 1);
+			glViewport(nvp[0] = this->xpos + 1, nvp[1] = rc.bottom - rc.top - (this->ypos + this->height) + 1, nvp[2] = this->width - 1, nvp[3] = this->height - 12 - 1);
 		}
 
 		glMatrixMode(GL_PROJECTION);
@@ -600,8 +600,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			ip[1] = mousey;
 			p->hold = 0;
 		}
-		params.spointer[0] = (2 * range * ip[0] / this->w - range) * fx;
-		params.spointer[1] = (-2 * range * ip[1] / (this->h - 12) + range) * fy;
+		params.spointer[0] = (2 * range * ip[0] / this->width - range) * fx;
+		params.spointer[1] = (-2 * range * ip[1] / (this->height - 12) + range) * fy;
 		params.spointer[2] = 0.;
 		params.org = p->rot.trans(p->org);
 		params.spointer += org * sol->csrad;
@@ -711,13 +711,12 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		{
 			Vec3d plpos0 = sol->tocs(ppl->pos, ppl->cs);
 			plpos0 += p->org * -sol->csrad;
-			plpos0 *= 1. / range * this->w;
+			plpos0 *= 1. / range * this->width;
 			plpos = p->rot.trans(plpos0);
 		}
 		glPushMatrix();
 		glLoadIdentity();
-		glScaled(1. / this->w, 1. / this->w, 1. / this->w);
-		glBegin(GL_LINES);
+		glScaled(1. / this->width, 1. / this->width, 1. / this->width);	glBegin(GL_LINES);
 		glVertex3d(plpos[0] + 8, plpos[1] + 8, 0);
 		glVertex3d(plpos[0] - 8, plpos[1] - 8, 0);
 		glVertex3d(plpos[0] + 8, plpos[1] - 8, 0);
@@ -727,7 +726,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			int ind = 1;
 			Vec3d apos0 = sol->tocs(p->focus ? p->focus->pos : p->focusa->pos, p->focus ? p->focus->cs : p->focusa->parent);
 			apos0 += p->org * -sol->csrad;
-			apos0 *= 1. / range * this->w;
+			apos0 *= 1. / range * this->width;
 			Vec3d apos = p->rot.trans(apos0);
 			glColor4ub(255,255,127,255);
 			glBegin(GL_LINE_LOOP);
@@ -752,15 +751,15 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 
 			glColor4ub(127,127,127,255);
 			glBegin(GL_LINES);
-			x = this->x + this->w - scalespace;
-			glVertex2d(x - scalewidth / 2, this->y + scalevspace + 12);
-			glVertex2d(x - scalewidth / 2, this->y + this->h - scalevspace);
+			x = this->xpos + this->width - scalespace;
+			glVertex2d(x - scalewidth / 2, this->ypos + scalevspace + 12);
+			glVertex2d(x - scalewidth / 2, this->ypos + this->height - scalevspace);
 			for(i = 0; i <= scalerange; i++){
-				y = this->y + scalevspace + 12 + (this->h - scalevspace * 2 - 12) * i / scalerange;
+				y = this->ypos + scalevspace + 12 + (this->ypos - scalevspace * 2 - 12) * i / scalerange;
 				glVertex2d(x - scalewidth, y);
 				glVertex2d(x, y);
 			}
-			y = this->y + scalevspace + 12 + (this->h - scalevspace * 2 - 12) * (scalerange + log10(p->range)) / scalerange;
+			y = this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * (scalerange + log10(p->range)) / scalerange;
 			glEnd();
 			glColor4ub(127,255,127,255);
 			glBegin(GL_QUADS);
@@ -769,81 +768,81 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glVertex2d(x - scalewidth, y + 3);
 			glVertex2d(x, y + 3);
 			glEnd();
-			glwpos2d(x - scalewidth / 2 - 8 / 2, this->y + 12 + scalevspace + scalewidth - 10);
+			glwpos2d(x - scalewidth / 2 - 8 / 2, this->ypos + 12 + scalevspace + scalewidth - 10);
 			glwprintf("+");
-			glwpos2d(x - scalewidth / 2 - 8 / 2, this->y + this->h - scalevspace - scalewidth + 20);
+			glwpos2d(x - scalewidth / 2 - 8 / 2, this->ypos + this->height - scalevspace - scalewidth + 20);
 			glwprintf("-");
 		}
 
 		glColor4ub(255,255,255,255);
-		glwpos2d(this->x + 2, this->y + this->h - 12);
+		glwpos2d(this->xpos + 2, this->ypos + this->height - 12);
 		glwprintf("%s", sol->fullname ? sol->fullname : sol->name);
-		glwpos2d(this->x + 2, this->y + this->h - 2);
+		glwpos2d(this->xpos + 2, this->ypos + this->height - 2);
 		glwprintf("Range: %lg km", range);
 
 		if(0 <= mousex && mousex < 48 && 0 <= mousey && mousey <= 12){
 			int ind = mousex / 12;
 			glColor4ub(191,31,31,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->x + ind * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12 + 12);
-			glVertex2d(this->x + (ind) * 12, this->y + 12 + 12);
+			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
+			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
 			glEnd();
 			glColor4ub(191,255,255,255);
-			glwpos2d(this->x + 48 + 2, this->y + (2) * 12 - 2);
+			glwpos2d(this->xpos + 48 + 2, this->ypos + (2) * 12 - 2);
 			glwprintf(ind == 0 ? "Reset View" : ind == 1 ? "Defocus" : ind == 2 ? "Current Position" : "Synchronize Rotation");
 		}
 		if(p->focus || p->focusa){
 			int ind = 1;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->x + ind * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12 + 12);
-			glVertex2d(this->x + (ind) * 12, this->y + 12 + 12);
+			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
+			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
 			glEnd();
 		}
 		if(p->focusc){
 			int ind = 2;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->x + ind * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12 + 12);
-			glVertex2d(this->x + (ind) * 12, this->y + 12 + 12);
+			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
+			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
 			glEnd();
 		}
 		if(p->sync){
 			int ind = 3;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->x + ind * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12);
-			glVertex2d(this->x + (ind + 1) * 12, this->y + 12 + 12);
-			glVertex2d(this->x + (ind) * 12, this->y + 12 + 12);
+			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
+			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
+			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
 			glEnd();
 		}
 		glColor4ub(191,255,255,255);
-		glwpos2d(this->x + 1, this->y + (2) * 12);
+		glwpos2d(this->xpos + 1, this->ypos + (2) * 12);
 		glwprintf("R");
-		glwpos2d(this->x + 1 + 12, this->y + (2) * 12);
+		glwpos2d(this->xpos + 1 + 12, this->ypos + (2) * 12);
 		glwprintf("F");
-		glwpos2d(this->x + 1 + 24, this->y + (2) * 12);
+		glwpos2d(this->xpos + 1 + 24, this->ypos + (2) * 12);
 		glwprintf("C");
-		glwpos2d(this->x + 1 + 36, this->y + (2) * 12);
+		glwpos2d(this->xpos + 1 + 36, this->ypos + (2) * 12);
 		glwprintf("S");
 		glBegin(GL_LINES);
-		glVertex2d(this->x, this->y + 12 + 12);
-		glVertex2d(this->x + 48, this->y + 12 + 12);
-		glVertex2d(this->x + 12, this->y + 12 + 12);
-		glVertex2d(this->x + 12, this->y + 12);
-		glVertex2d(this->x + 24, this->y + 12 + 12);
-		glVertex2d(this->x + 24, this->y + 12);
-		glVertex2d(this->x + 36, this->y + 12 + 12);
-		glVertex2d(this->x + 36, this->y + 12);
-		glVertex2d(this->x + 48, this->y + 12 + 12);
-		glVertex2d(this->x + 48, this->y + 12);
+		glVertex2d(this->xpos, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 48, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 12, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 12, this->ypos + 12);
+		glVertex2d(this->xpos + 24, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 24, this->ypos + 12);
+		glVertex2d(this->xpos + 36, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 36, this->ypos + 12);
+		glVertex2d(this->xpos + 48, this->ypos + 12 + 12);
+		glVertex2d(this->xpos + 48, this->ypos + 12);
 		glEnd();
 /*		printf("sm-all %lg\n", TimeMeasLap(&tm));*/
 	}
@@ -941,26 +940,25 @@ int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
 	extern Player *ppl;
 	if(st::mouse(mbutton, state, mx, my))
 		return 1;
-	if(0);
-#if 0
 /*	if(my < 12)
 		return 1;*/
 	if(0 <= my && my <= 12 && 0 <= mx && mx < 48){
 		int ind = mx / 12;
 		if(state == GLUT_DOWN && mbutton == GLUT_LEFT_BUTTON) switch(ind){
-			case 0: VECNULL(p->org); QUATIDENTITY(p->rot); return 1;
-			case 2: p->focusc = !p->focusc; /* fall through */
-			case 1: p->focus = NULL; p->focusa = NULL; return 1;
-			case 3: p->sync = !p->sync; return 1;
+			case 0: org.clear(); rot = quat_u; return 1;
+			case 2: focusc = !focusc; /* fall through */
+			case 1: focus = NULL; focusa = NULL; return 1;
+			case 3: sync = !sync; return 1;
 		}
 		return 1;
 	}
-	if(wnd->w - scalespace - scalewidth <= mx && mx <= wnd->w - scalespace && scalevspace <= my && my <= wnd->h - scalevspace - 12){
+	if(this->width - scalespace - scalewidth <= mx && mx <= this->width - scalespace && scalevspace <= my && my <= this->height - scalevspace - 12){
 /*		y = wnd->y + scalespace + 12 + (wnd->h - scalespace * 2 - 12) * (scalerange + log10(p->range)) / scalerange;*/
 		if((state == GLUT_KEEP_DOWN || state == GLUT_DOWN) && mbutton == GLUT_LEFT_BUTTON)
-			p->dstrange = pow(10, (my - scalevspace) * scalerange / (wnd->h - scalevspace * 2 - 12) - scalerange);
+			dstrange = pow(10, (my - scalevspace) * scalerange / (this->height - scalevspace * 2 - 12) - scalerange);
 		return 1;
 	}
+#if 0
 	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && p->targete && p->hold != 2){
 		if(p->targetc){
 			entity_t *pt;
@@ -1121,8 +1119,8 @@ int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
 		}
 		else*/{
 			Vec3d dr, dr0;
-			dr0[0] = 2. * range * -(mx - morg[0]) / this->w;
-			dr0[1] = 2. * range * (my - morg[1]) / this->w;
+			dr0[0] = 2. * range * -(mx - morg[0]) / this->width;
+			dr0[1] = 2. * range * (my - morg[1]) / this->width;
 			dr0[2] = 0.;
 			dr = this->rot.itrans(dr0);
 			this->org += dr;
@@ -1148,8 +1146,8 @@ int GLwindowSolarMap::key(int key){
 		case 's': p->sync = !p->sync; break;
 		case '+': p->dstrange /= 2.; break;
 		case '-': p->dstrange *= 2.; break;
-		case '[': w *= 2, h = w + 12; break;
-		case ']': w /= 2, h = w + 12; break;
+		case '[': width *= 2, height = width + 12; break;
+		case ']': width /= 2, height = width + 12; break;
 	}
 	return 1;
 }

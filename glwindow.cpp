@@ -65,8 +65,8 @@ static int s_minix;
 #define r_titlebar_height fontheight
 
 void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int wh){
-	GLwindow *wnd = this;
-	extern int s_mousex, s_mousey;
+//	GLwindow *wnd = this;
+	int s_mousex = gvp.mousex, s_mousey = gvp.mousey;
 	char buf[128];
 	GLint vp[4];
 	int w = gvp.w, h = gvp.h, m = gvp.m, mi, i, x;
@@ -81,114 +81,114 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 
 	projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, h, 0, -1, 1)));
 	glLoadIdentity();
-	glColor4ub(0,0,0, wnd->flags & GLW_PINNED ? 63 : 192);
+	glColor4ub(0,0,0, flags & GLW_PINNED ? 63 : 192);
 	glBegin(GL_QUADS);
 	glVertex2d(wx, wy);
 	glVertex2d(wx + ww, wy);
 	glVertex2d(wx + ww, wy + wh);
 	glVertex2d(wx, wy + wh);
 	glEnd();
-	border = (wnd->flags & (GLW_POPUP | GLW_COLLAPSE) ? 2 : 3)/* + !!(wnd->flags & GLW_SIZEABLE)*/;
-	alpha = wnd->flags & GLW_PINNED ? wx <= s_mousex && s_mousex < wx + ww && wy <= s_mousey && s_mousey < wy + wh ? 63 : 31 : 255;
+	border = (flags & (GLW_POPUP | GLW_COLLAPSE) ? 2 : 3)/* + !!(wnd->flags & GLW_SIZEABLE)*/;
+	alpha = flags & GLW_PINNED ? wx <= s_mousex && s_mousex < wx + ww && wy <= s_mousey && s_mousey < wy + wh ? 63 : 31 : 255;
 	for(i = 0; i < border; i++){
 		static const GLubyte cols[4] = {255, 127, 95, 191};
 		GLubyte col;
 		int ofs = i - 1, k = i ? 0 : 2;
 		col = cols[(k) % 4];
-		glColor4ub(col * !wnd->modal, col, col * (glwfocus == wnd), alpha);
+		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
 		glBegin(GL_LINES);
 		glVertex2d(wx - ofs, wy - ofs);
 		glVertex2d(wx + ww + ofs, wy - ofs);
 		col = cols[(k + 1) % 4];
-		glColor4ub(col * !wnd->modal, col, col * (glwfocus == wnd), alpha);
+		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
 		glVertex2d(wx + ww + ofs, wy - ofs);
 		glVertex2d(wx + ww + ofs, wy + wh + ofs);
 		col = cols[(k + 2) % 4];
-		glColor4ub(col * !wnd->modal, col, col * (glwfocus == wnd), alpha);
+		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
 		glVertex2d(wx + ww + ofs, wy + wh + ofs);
 		glVertex2d(wx - ofs, wy + wh + ofs);
 		col = cols[(k + 3) % 4];
-		glColor4ub(col * !wnd->modal, col, col * (glwfocus == wnd), alpha);
+		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
 		glVertex2d(wx - ofs, wy + wh + ofs), glVertex2d(wx - ofs, wy - ofs);
 		glEnd();
 	}
-	if(!(wnd->flags & GLW_COLLAPSE) && r_window_scissor){
+	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPushAttrib(GL_SCISSOR_BIT);
-		glScissor(wnd->x, gvp.h - (wnd->y + wnd->h), wnd->w, wnd->h);
+		glScissor(xpos, gvp.h - (ypos + height), width, height);
 		glEnable(GL_SCISSOR_TEST);
 	}
-	if(!(wnd->flags & GLW_COLLAPSE)){
-		gvp.mousex = gvp.mx - wnd->x;
-		gvp.mousey = gvp.my - wnd->y - fontheight;
-		wnd->draw(gvp, t);
+	if(!(flags & GLW_COLLAPSE)){
+		gvp.mousex = gvp.mx - xpos;
+		gvp.mousey = gvp.my - ypos - fontheight;
+		draw(gvp, t);
 	}
-	if((wnd->flags & (GLW_COLLAPSE | GLW_SIZEABLE)) == GLW_SIZEABLE){
-		glColor4ub(255, 255, 255 * (glwfocus == wnd), 255);
+	if((flags & (GLW_COLLAPSE | GLW_SIZEABLE)) == GLW_SIZEABLE){
+		glColor4ub(255, 255, 255 * (glwfocus == this), 255);
 		glBegin(GL_LINE_LOOP);
-		glVertex2d(wnd->x + wnd->w - 2, wnd->y + wnd->h - 6);
-		glVertex2d(wnd->x + wnd->w - 2, wnd->y + wnd->h - 2);
-		glVertex2d(wnd->x + wnd->w - 6, wnd->y + wnd->h - 2);
+		glVertex2d(xpos + width - 2, ypos + height - 6);
+		glVertex2d(xpos + width - 2, ypos + height - 2);
+		glVertex2d(xpos + width - 6, ypos + height - 2);
 		glEnd();
 	}
-	if(!(wnd->flags & GLW_COLLAPSE) && (wnd->title || wnd->flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
-		glColor4ub(255,255, 255 * (glwfocus == wnd),255);
+	if(!(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
+		glColor4ub(255,255, 255 * (glwfocus == this),255);
 		glBegin(GL_LINES);
 		glVertex2d(wx, wy + fontheight);
 		glVertex2d(wx + ww, wy + fontheight);
-		x = wnd->w - fontheight;
-		if(wnd->flags & GLW_CLOSE){
-			glVertex2i(wnd->x + wnd->w - fontheight, wnd->y);
-			glVertex2i(wnd->x + wnd->w - fontheight, wnd->y + fontheight);
-			glVertex2i(wnd->x + wnd->w - 2, wnd->y + 2);
-			glVertex2i(wnd->x + wnd->w - (fontheight - 2), wnd->y + fontheight - 2);
-			glVertex2i(wnd->x + wnd->w - (fontheight - 2), wnd->y + 2);
-			glVertex2i(wnd->x + wnd->w - 2, wnd->y + fontheight - 2);
+		x = width - fontheight;
+		if(flags & GLW_CLOSE){
+			glVertex2i(xpos + width - fontheight, ypos);
+			glVertex2i(xpos + width - fontheight, ypos + fontheight);
+			glVertex2i(xpos + width - 2, ypos + 2);
+			glVertex2i(xpos + width - (fontheight - 2), ypos + fontheight - 2);
+			glVertex2i(xpos + width - (fontheight - 2), ypos + 2);
+			glVertex2i(xpos + width - 2, ypos + fontheight - 2);
 			x -= fontheight;
 		}
-		if(wnd->flags & GLW_COLLAPSABLE){
-			glVertex2i(wnd->x + x, wnd->y);
-			glVertex2i(wnd->x + x, wnd->y + fontheight);
-			glVertex2i(wnd->x + x + 2, wnd->y + fontheight - 2);
-			glVertex2i(wnd->x + x + fontheight - 2, wnd->y + fontheight - 2);
-			if(wnd->flags & GLW_COLLAPSE){
-				glVertex2i(wnd->x + x + fontheight - 2, wnd->y + fontheight - 2);
-				glVertex2i(wnd->x + x + fontheight - 2, wnd->y + 2);
-				glVertex2i(wnd->x + x + fontheight - 2, wnd->y + 2);
-				glVertex2i(wnd->x + x + 2, wnd->y + 2);
-				glVertex2i(wnd->x + x + 2, wnd->y + 2);
-				glVertex2i(wnd->x + x + 2, wnd->y + fontheight - 2);
+		if(flags & GLW_COLLAPSABLE){
+			glVertex2i(xpos + x, ypos);
+			glVertex2i(xpos + x, ypos + fontheight);
+			glVertex2i(xpos + x + 2, ypos + fontheight - 2);
+			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight - 2);
+			if(flags & GLW_COLLAPSE){
+				glVertex2i(xpos + x + fontheight - 2, ypos + fontheight - 2);
+				glVertex2i(xpos + x + fontheight - 2, ypos + 2);
+				glVertex2i(xpos + x + fontheight - 2, ypos + 2);
+				glVertex2i(xpos + x + 2, ypos + 2);
+				glVertex2i(xpos + x + 2, ypos + 2);
+				glVertex2i(xpos + x + 2, ypos + fontheight - 2);
 			}
 			x -= fontheight;
 		}
-		if(wnd->flags & GLW_PINNABLE){
-			glVertex2i(wnd->x + x, wnd->y);
-			glVertex2i(wnd->x + x, wnd->y + fontheight);
-			glVertex2i(wnd->x + x + fontheight / 2, wnd->y + 2);
-			glVertex2i(wnd->x + x + 2, wnd->y + fontheight / 2);
-			glVertex2i(wnd->x + x + 2, wnd->y + fontheight / 2);
-			glVertex2i(wnd->x + x + fontheight / 2, wnd->y + fontheight - 2);
-			glVertex2i(wnd->x + x + fontheight / 2, wnd->y + fontheight - 2);
-			glVertex2i(wnd->x + x + fontheight - 2, wnd->y + fontheight / 2);
-			glVertex2i(wnd->x + x + fontheight - 2, wnd->y + fontheight / 2);
-			glVertex2i(wnd->x + x + fontheight / 2, wnd->y + 2);
-			if(wnd->flags & GLW_PINNED){
-				glVertex2i(wnd->x + x + fontheight / 2 - 2, wnd->y + fontheight / 2 - 2);
-				glVertex2i(wnd->x + x + fontheight / 2 + 2, wnd->y + fontheight / 2 + 2);
-				glVertex2i(wnd->x + x + fontheight / 2 + 2, wnd->y + fontheight / 2 - 2);
-				glVertex2i(wnd->x + x + fontheight / 2 - 2, wnd->y + fontheight / 2 + 2);
+		if(flags & GLW_PINNABLE){
+			glVertex2i(xpos + x, ypos);
+			glVertex2i(xpos + x, ypos + fontheight);
+			glVertex2i(xpos + x + fontheight / 2, ypos + 2);
+			glVertex2i(xpos + x + 2, ypos + fontheight / 2);
+			glVertex2i(xpos + x + 2, ypos + fontheight / 2);
+			glVertex2i(xpos + x + fontheight / 2, ypos + fontheight - 2);
+			glVertex2i(xpos + x + fontheight / 2, ypos + fontheight - 2);
+			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight / 2);
+			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight / 2);
+			glVertex2i(xpos + x + fontheight / 2, ypos + 2);
+			if(flags & GLW_PINNED){
+				glVertex2i(xpos + x + fontheight / 2 - 2, ypos + fontheight / 2 - 2);
+				glVertex2i(xpos + x + fontheight / 2 + 2, ypos + fontheight / 2 + 2);
+				glVertex2i(xpos + x + fontheight / 2 + 2, ypos + fontheight / 2 - 2);
+				glVertex2i(xpos + x + fontheight / 2 - 2, ypos + fontheight / 2 + 2);
 			}
 			x -= fontheight;
 		}
 		glEnd();
 	}
 	else
-		x = wnd->w;
-	if(wnd->title){
+		x = width;
+	if(title){
 		glColor4ub(255,255,255,255);
 		glwpos2d(wx, wy + fontheight);
-		glwprintf("%.*s", (int)(x / fontwidth), wnd->title);
+		glwprintf("%.*s", (int)(x / fontwidth), title);
 	}
-	if(!(wnd->flags & GLW_COLLAPSE) && r_window_scissor){
+	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPopAttrib();
 	}
 	projection(glPopMatrix());
@@ -197,14 +197,13 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 /* using recursive call to do reverse rendering order, for reversing message process instead
   is more costly. */
 void GLwindow::glwDraw(GLwindowState &vp, double t, int *minix){
-	glwindow *wnd = this;
-	if(!wnd)
+	if(!this)
 		return;
 
-	wnd->next->glwDraw(vp, t, minix);
+	next->glwDraw(vp, t, minix);
 
-	if(!(wnd->flags & GLW_COLLAPSE))
-		wnd->drawInt(vp, t, wnd->x, wnd->y, wnd->w, wnd->h);
+	if(!(flags & GLW_COLLAPSE))
+		drawInt(vp, t, xpos, ypos, width, height);
 }
 
 /* Minimized windows never overlap, so drawing order can be arbitrary,
@@ -278,9 +277,9 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 			minix += ww + 2;
 		}
 		else
-			wx = wnd->x, wy = wnd->y, ww = wnd->w, wh = wnd->h;
+			wx = wnd->xpos, wy = wnd->ypos, ww = wnd->width, wh = wnd->height;
 		if((nowheel || glwfocus == wnd) && wx <= x && x <= wx + ww && wy <= y && y <= wy + wh){
-			int sysx = wnd->w - fontheight - (wnd->flags & GLW_CLOSE ? fontheight : 0);
+			int sysx = wnd->width - fontheight - (wnd->flags & GLW_CLOSE ? fontheight : 0);
 			int pinx = sysx - fontheight;
 
 			/* Window with modal window will never receive mouse messages. */
@@ -293,7 +292,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				break;
 			}
 
-			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->x + sysx <= x && x <= wnd->x + sysx + fontheight && wnd->y <= y && y <= wnd->y + fontheight){
+			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + fontheight && wnd->ypos <= y && y <= wnd->ypos + fontheight){
 				ret = 1;
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
@@ -314,7 +313,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				}
 				break;
 			}
-			else if(wnd->flags & GLW_CLOSE && wnd->x + wnd->w - fontheight <= x && x <= wnd->x + wnd->w && wnd->y <= y && y <= wnd->y + fontheight){
+			else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - fontheight <= x && x <= wnd->xpos + wnd->width && wnd->ypos <= y && y <= wnd->ypos + fontheight){
 				ret = 1;
 				if(nowheel && state == GLUT_UP){
 					wnd->glwFree();
@@ -323,7 +322,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				killfocus = 0;
 				break;
 			}
-			else if(wnd->flags & GLW_PINNABLE && wnd->x + pinx <= x && x <= wnd->x + pinx + fontheight && wnd->y <= y && y <= wnd->y + fontheight){
+			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + fontheight && wnd->ypos <= y && y <= wnd->ypos + fontheight){
 				ret = 1;
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
@@ -332,7 +331,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				}
 				break;
 			}
-			else if(wnd->x <= x && x <= wnd->x + wnd->w - (fontheight * !!(wnd->flags & GLW_CLOSE)) && wnd->y <= y && y <= wnd->y + fontheight){
+			else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (fontheight * !!(wnd->flags & GLW_CLOSE)) && wnd->ypos <= y && y <= wnd->ypos + fontheight){
 				if(!nowheel)
 					break;
 				glwfocus = wnd;
@@ -342,12 +341,12 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				if(button != GLUT_LEFT_BUTTON)
 					break;
 				glwdrag = wnd;
-				glwdragpos[0] = x - wnd->x;
-				glwdragpos[1] = y - wnd->y;
+				glwdragpos[0] = x - wnd->xpos;
+				glwdragpos[1] = y - wnd->ypos;
 				break;
 			}
 			else if(!(wnd->flags & GLW_COLLAPSE) && glwfocus == wnd)
-				wnd->mouse(button, state, x - wnd->x, y - wnd->y - fontheight);
+				wnd->mouse(button, state, x - wnd->xpos, y - wnd->ypos - fontheight);
 			if(wnd->flags & GLW_TODELETE){
 				wnd->glwFree();
 /*				if(wnd->destruct)
@@ -389,25 +388,26 @@ static int snapborder(int x0, int w0, int x1, int w1){
 }
 
 void GLwindow::mouseDrag(int x, int y){
-	this->x = x;
-	this->y = y;
+	this->xpos = x;
+	this->ypos = y;
 	const int snapdist = 10;
 	viewport gvp;
 	GLint vp[4];
 	glGetIntegerv(GL_VIEWPORT, vp);
 	gvp.set(vp);
-	for(GLwindow *glw = glwlist; glw; glw = glw->next) if(glw != glwdrag && glw->x - snapdist < glwdrag->x + glwdrag->w && glwdrag->x - snapdist < glw->x + glw->w && glw->y - snapdist < glwdrag->y + glwdrag->h && glwdrag->y - snapdist < glw->y + glw->h){
-		glwdrag->x = snapborder(glwdrag->x, glwdrag->w, glw->x, glw->w);
-		glwdrag->y = snapborder(glwdrag->y, glwdrag->h, glw->y, glw->h);
+	for(GLwindow *glw = glwlist; glw; glw = glw->next) if(glw != glwdrag && glw->xpos - snapdist < glwdrag->xpos + glwdrag->width && glwdrag->xpos - snapdist < glw->xpos + glw->width
+		&& glw->ypos - snapdist < glwdrag->ypos + glwdrag->height && glwdrag->ypos - snapdist < glw->ypos + glw->height){
+		glwdrag->xpos = snapborder(glwdrag->xpos, glwdrag->width, glw->xpos, glw->width);
+		glwdrag->ypos = snapborder(glwdrag->ypos, glwdrag->height, glw->ypos, glw->height);
 	}
-	if(-snapdist < glwdrag->x && glwdrag->x < snapdist)
-		glwdrag->x = 0;
-	if(gvp.w - snapdist < glwdrag->x + glwdrag->w && glwdrag->x + glwdrag->w < gvp.w + snapdist)
-		glwdrag->x = gvp.w - glwdrag->w;
-	if(-snapdist < glwdrag->y && glwdrag->y < snapdist)
-		glwdrag->y = 0;
-	if(gvp.h - snapdist < glwdrag->y + glwdrag->h && glwdrag->y + glwdrag->h < gvp.h + snapdist)
-		glwdrag->y = gvp.h - glwdrag->h;
+	if(-snapdist < glwdrag->xpos && glwdrag->xpos < snapdist)
+		glwdrag->xpos = 0;
+	if(gvp.w - snapdist < glwdrag->xpos + glwdrag->width && glwdrag->xpos + glwdrag->width < gvp.w + snapdist)
+		glwdrag->xpos = gvp.w - glwdrag->width;
+	if(-snapdist < glwdrag->ypos && glwdrag->ypos < snapdist)
+		glwdrag->ypos = 0;
+	if(gvp.h - snapdist < glwdrag->ypos + glwdrag->height && glwdrag->ypos + glwdrag->height < gvp.h + snapdist)
+		glwdrag->ypos = gvp.h - glwdrag->height;
 }
 
 
@@ -497,26 +497,26 @@ void GLwindowMenu::draw(GLwindowState &ws, double t){
 	GLwindowMenu *p = this;
 	GLwindow *wnd = this;
 	int i, len, maxlen = 1;
-	int ind = 0 <= my && 0 <= mx && mx <= w ? (my) / fontheight : -1;
-	h = (count + 1) * fontheight;
+	int ind = 0 <= my && 0 <= mx && mx <= width ? (my) / fontheight : -1;
+	height = (count + 1) * fontheight;
 	for(i = 0; i < count; i++) if(menus[i].title == glwMenuSeparator){
 		glBegin(GL_LINES);
-		glVertex2d(x + fontwidth / 2, y + (1 + i) * fontheight + 6);
-		glVertex2d(x + w - fontwidth / 2, y + (1 + i) * fontheight + 6);
+		glVertex2d(xpos + fontwidth / 2, ypos + (1 + i) * fontheight + 6);
+		glVertex2d(xpos + width - fontwidth / 2, ypos + (1 + i) * fontheight + 6);
 		glEnd();
 	}
 	else{
 		if(i == ind && menus[ind].cmd){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
-			glVertex2d(x + 1, y + (1 + i) * fontheight);
-			glVertex2d(x + w, y + (1 + i) * fontheight);
-			glVertex2d(x + w, y + (2 + i) * fontheight);
-			glVertex2d(x + 1, y + (2 + i) * fontheight);
+			glVertex2d(xpos + 1, ypos + (1 + i) * fontheight);
+			glVertex2d(xpos + width, ypos + (1 + i) * fontheight);
+			glVertex2d(xpos + width, ypos + (2 + i) * fontheight);
+			glVertex2d(xpos + 1, ypos + (2 + i) * fontheight);
 			glEnd();
 		}
 		glColor4ub(255,255,255,255);
-		glwpos2d(x, y + (2 + i) * fontheight);
+		glwpos2d(xpos, ypos + (2 + i) * fontheight);
 		glwprintf(menus[i].title);
 		len = strlen(menus[i].title);
 		if(maxlen < len)
@@ -549,8 +549,9 @@ int GLwindowMenu::key(int key){
 
 GLwindowMenu::~GLwindowMenu(){
 	int i;
-	for(i = 0; i < count; i++) if(menus[i].allocated){
-		free((void*)menus[i].title);
+	for(i = 0; i < count; i++){
+		if(menus[i].title)
+			free((void*)menus[i].title);
 		if(menus[i].cmd)
 			free((void*)menus[i].cmd);
 	}
@@ -565,10 +566,10 @@ GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menu
 	glwindow *ret = this;
 	int i, len, maxlen = 0;
 	menus = (glwindowmenuitem*)malloc(count * sizeof(*menus));
-	x = !sticky * 50;
-	y = 75;
-	w = 150;
-	h = (1 + count) * fontheight;
+	xpos = !sticky * 50;
+	ypos = 75;
+	width = 150;
+	height = (1 + count) * fontheight;
 	title = NULL;
 	next = glwlist;
 	glwlist = ret;
@@ -587,7 +588,6 @@ GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menu
 			menus[i].title = glwMenuSeparator;
 			menus[i].key = 0;
 			menus[i].cmd = NULL;
-			menus[i].allocated = 0;
 		}
 		else{
 			menus[i].title = (char*)malloc(strlen(menutitles[i]) + 1);
@@ -599,7 +599,6 @@ GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menu
 			}
 			else
 				menus[i].cmd = NULL;
-			menus[i].allocated = 1;
 			len = strlen(menutitles[i]);
 			if(maxlen < len)
 				maxlen = len;
@@ -619,14 +618,13 @@ GLwindowMenu *GLwindowMenu::addItem(const char *title, int key, const char *cmd)
 	}*/
 	count++;
 	menus = (glwindowmenuitem*)realloc(menus, count * sizeof(*menus));
-	h = (count + 1) * fontheight;
-	w = MAX(w, strlen(title) * fontwidth + 2);
+	height = (count + 1) * fontheight;
+	width = MAX(width, strlen(title) * fontwidth + 2);
 	menus[count - 1].title = (char*)malloc(strlen(title) + 1);
 	strcpy((char*)menus[count - 1].title, title);
 	menus[count - 1].key = key;
 	menus[count - 1].cmd = (char*)malloc(strlen(cmd) + 1);
 	strcpy((char*)menus[count - 1].cmd, cmd);
-	menus[count - 1].allocated = 1;
 	return this;
 }
 
@@ -656,8 +654,8 @@ public:
 			POINT point;
 			GetCursorPos(&point);
 			ScreenToClient(WindowFromDC(wglGetCurrentDC()), &point);
-			this->x = point.x + this->w < gvp.w ? point.x : gvp.w - this->w;
-			this->y = point.y + this->h < gvp.h ? point.y : gvp.h - this->h;
+			this->xpos = point.x + this->width < gvp.w ? point.x : gvp.w - this->width;
+			this->ypos = point.y + this->height < gvp.h ? point.y : gvp.h - this->height;
 		}
 	}
 };
@@ -696,8 +694,8 @@ int GLwindowSizeable::mouse(int button, int state, int x, int y){
 		return 0;
 	if(button == GLUT_LEFT_BUTTON){
 		int edgeflags = 0;
-		edgeflags |= this->w - GLWSIZEABLE_BORDER < x && x < this->w + GLWSIZEABLE_BORDER && 0 <= y && y < this->h;
-		edgeflags |= (this->h - 12 - GLWSIZEABLE_BORDER < y && y < this->h - 12 + GLWSIZEABLE_BORDER && 0 <= x && x < this->w) << 1;
+		edgeflags |= this->width - GLWSIZEABLE_BORDER < x && x < this->width + GLWSIZEABLE_BORDER && 0 <= y && y < this->height;
+		edgeflags |= (this->height - 12 - GLWSIZEABLE_BORDER < y && y < this->height - 12 + GLWSIZEABLE_BORDER && 0 <= x && x < this->width) << 1;
 		if(state == GLUT_DOWN){
 			if(edgeflags){
 				sizing = edgeflags;
@@ -711,14 +709,14 @@ int GLwindowSizeable::mouse(int button, int state, int x, int y){
 	}
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN && sizing){
 		if(sizing & 1 && minw <= x && x < maxw){
-			this->w = x;
+			this->width = x;
 			if(this->flags & GLW_SIZEPROP)
-				this->h = ratio * x;
+				this->height = ratio * x;
 		}
 		if(sizing & 2 && minh <= y + 12 && y + 12 < maxh){
-			this->h = y + 12;
+			this->height = y + 12;
 			if(this->flags & GLW_SIZEPROP)
-				this->w = 1. / ratio * this->h;
+				this->width = 1. / ratio * this->height;
 		}
 		return 1;
 	}

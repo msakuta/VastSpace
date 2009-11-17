@@ -42,15 +42,15 @@ public:
 		return !strcmp(w->title, "Solarsystem browser");
 	}
 	void mouseDrag(int x, int y);
-	int getX()const{return x;}
-	int getY()const{return y;}
+	int getX()const{return xpos;}
+	int getY()const{return ypos;}
 	virtual int mouse(int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual void anim(double dt);
 protected:
 	GLwindow(const char *title = NULL);
-	int x, y;
-	int w, h;
+	int xpos, ypos;
+	int width, height;
 	char *title;
 	GLwindow *next;
 	unsigned int flags;
@@ -89,7 +89,7 @@ public:
 		const char *title;
 		int key;
 		const char *cmd;
-		int allocated; /* whether this item need to be freed */
+//		int allocated; /* whether this item need to be freed */
 	} *menus;
 	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 	void draw(GLwindowState &,double);

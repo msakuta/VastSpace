@@ -266,7 +266,7 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 	double hitrad = params->hitrad;
 	GLwindowSolarMap *p = this;
 	const CoordSys *sol = params->sol;
-	const double *apos0 = params->apos0;
+	const Vec3d &apos0 = params->apos0;
 	const char *name = params->name;
 	int *iofs = params->iofs;
 	Vec3d &pos = *params->pos;
@@ -277,10 +277,9 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 	double range = sol->csrad * p->range;
 	int ret = 0;
 
-	Vec3d apos = p->rot.trans(apos0);
+	Vec3d apos = p->rot.trans(apos0) + params->org * -sol->csrad;
 	md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
 	glColor4ubv(params->pointcolor);
-	apos += params->org * -sol->csrad;
 	if(4 * range / this->width < params->rad){
 		double (*cuts)[2];
 		int i;
@@ -604,7 +603,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		params.spointer[1] = (-2 * range * ip[1] / (this->height - 12) + range) * fy;
 		params.spointer[2] = 0.;
 		params.org = p->rot.trans(p->org);
-		params.spointer += org * sol->csrad;
+//		params.spointer += org * sol->csrad;
 		glPushAttrib(GL_POINT_BIT);
 		glDisable(GL_POINT_SMOOTH);
 #if 0
@@ -717,6 +716,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glPushMatrix();
 		glLoadIdentity();
 		glScaled(1. / this->width, 1. / this->width, 1. / this->width);	glBegin(GL_LINES);
+		glColor4ub(127,255,127,255);
+		glBegin(GL_LINES);
 		glVertex3d(plpos[0] + 8, plpos[1] + 8, 0);
 		glVertex3d(plpos[0] - 8, plpos[1] - 8, 0);
 		glVertex3d(plpos[0] + 8, plpos[1] - 8, 0);
@@ -755,7 +756,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glVertex2d(x - scalewidth / 2, this->ypos + scalevspace + 12);
 			glVertex2d(x - scalewidth / 2, this->ypos + this->height - scalevspace);
 			for(i = 0; i <= scalerange; i++){
-				y = this->ypos + scalevspace + 12 + (this->ypos - scalevspace * 2 - 12) * i / scalerange;
+				y = this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * i / scalerange;
 				glVertex2d(x - scalewidth, y);
 				glVertex2d(x, y);
 			}

@@ -359,6 +359,31 @@ static void drawindics(Viewer *vw){
 	}
 }
 
+static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){
+	if(cs->parent)
+		war_draw(vw, cs->parent, method);
+	if(cs->w){
+		Viewer localvw = vw;
+		wardraw_t wd;
+		localvw.cs = cs;
+		localvw.pos = localvw.cs->tocs(vw.pos, vw.cs);
+		localvw.velo = localvw.cs->tocsv(vw.velo, vw.pos, vw.cs);
+		localvw.qrot = localvw.cs->tocsq(vw.cs) * vw.qrot;
+		localvw.relrot = localvw.rot = localvw.qrot.tomat4();
+		localvw.relirot = localvw.irot = localvw.qrot.cnj().tomat4();
+		GLcull gc(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
+		localvw.gc = &gc;
+		wd.lightdraws = 0;
+		wd.maprange = 1.;
+		wd.vw = &localvw;
+		wd.w = cs->w;
+		GLmatrix ma;
+		gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
+		gldMultQuat(vw.cs->tocsq(cs));
+		(cs->w->*method)(&wd);
+	}
+}
+
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
@@ -392,20 +417,13 @@ void draw_func(Viewer &vw, double dt){
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	if(pl.cs->w){
-		wardraw_t wd;
-		wd.lightdraws = 0;
-		wd.maprange = 1.;
-		wd.vw = &vw;
-		wd.w = pl.cs->w;
-		pl.cs->w->draw(&wd);
-		glDisable(GL_TEXTURE_2D);
-		glDisable(GL_LIGHTING);
-//		glDisable(GL_CULL_FACE);
-		glDepthMask(GL_FALSE);
-		glEnable(GL_BLEND);
-		pl.cs->w->drawtra(&wd);
-	}
+	war_draw(vw, pl.cs, &WarField::draw);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_LIGHTING);
+//	glDisable(GL_CULL_FACE);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
+	war_draw(vw, pl.cs, &WarField::drawtra);
 	glPopAttrib();
 	glPopMatrix();
 
@@ -559,11 +577,15 @@ void display_func(void){
 			}
 		}
 
-		Vec3d pos;
-		const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
-		if(cs != pl.cs){
-			pl.cs = cs;
-			pl.pos = pos;
+		if(pl.chase)
+			pl.cs = pl.chase->w->cs;
+		else{
+			Vec3d pos;
+			const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
+			if(cs != pl.cs){
+				pl.cs = cs;
+				pl.pos = pos;
+			}
 		}
 
 		MotionFrame(dt);
@@ -625,13 +647,14 @@ void display_func(void){
 	}
 	viewer.cs = pl.cs;
 	if(pl.chase){
-		Quatd rot = pl.rot * pl.chase->rot.cnj();
-		viewer.rot = rot.tomat4();
-		viewer.irot = rot.cnj().tomat4();
+		viewer.qrot = pl.rot * pl.chase->rot.cnj();
+		viewer.rot = viewer.qrot.tomat4();
+		viewer.irot = viewer.qrot.cnj().tomat4();
 		viewer.pos = pl.pos + pl.chase->rot.trans(Vec3d(.0, .05, .15));
 	}
 	else{
-		viewer.rot = pl.rot.tomat4();
+		viewer.qrot = pl.rot;
+		viewer.rot = viewer.qrot.tomat4();
 		viewer.irot = pl.rot.cnj().tomat4();
 		viewer.pos = pl.pos;
 	}
@@ -1123,7 +1146,10 @@ static void key_func(unsigned char key, int x, int y){
 	}
 
 	if(glwfocus){
-		glwfocus->key(key);
+		if(key == ESC)
+			glwfocus = NULL;
+		else
+			glwfocus->key(key);
 		return;
 	}
 
@@ -1233,8 +1259,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					s_mousedragy = s_mousey;
 				}
 				if(glwfocus && glwdrag != glwfocus){
-					glwfocus->mouse(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
-					glwfocus->mouse(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
+					GLwindowState ws;
+					GLint vp[4];
+					glGetIntegerv(GL_VIEWPORT, vp);
+					ws.set(vp);
+					ws.mx = s_mousex;
+					ws.my = s_mousey;
+					ws.mousex = ws.mx - glwfocus->getX();
+					ws.mousey = ws.my - glwfocus->getY();
+					glwfocus->mouse(ws, GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
+					glwfocus->mouse(ws, GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
 				}
 				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
 					mouse_captured = 1;
@@ -1377,6 +1411,12 @@ int main(int argc, char *argv[])
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
+	extern int cmd_togglewarpmenu(int argc, char *argv[], void *);
+	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &pl);
+	extern int cmd_transit(int argc, char *argv[], void *pv);
+	CmdAddParam("transit", cmd_transit, &pl);
+	extern int cmd_warp(int argc, char *argv[], void *pv);
+	CmdAddParam("warp", cmd_warp, &pl);
 	CmdAdd("chasecamera", cmd_chasecamera);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

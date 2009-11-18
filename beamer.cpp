@@ -11,7 +11,7 @@
 //#include "spacewar.h"
 //#include "mturret.h"
 #include "cmd.h"
-//#include "glwindow.h"
+#include "glwindow.h"
 //#include "arms.h"
 //#include "bullet.h"
 //#include "warutil.h"
@@ -93,6 +93,7 @@ extern "C"{
 #endif
 
 int g_healthbar = 1;
+double g_capacitor_gen_factor = 1.;
 
 /* color sequences */
 #if 0
@@ -138,8 +139,13 @@ static struct war_field_static warp_static = {
 };
 
 
+#endif
 
-static void warp_anim(struct war_field *w, double dt){
+class Warp : public WarField{
+public:
+};
+#if 0
+static void Warp::anim(struct war_field *w, double dt){
 	struct bullet **ppb = &w->bl;
 	static int wingfile = 0;
 	static int walks = 0, apaches = 2;
@@ -659,7 +665,7 @@ static const struct maneuve beamer_mn = {
 Warpable::Warpable(){
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */5. * AU_PER_KILOMETER;
 	warping = 0;
-	warp_next_warf = NULL;
+//	warp_next_warf = NULL;
 	capacitor = 0.;
 	inputs.change = 0;
 }
@@ -749,8 +755,9 @@ static void beamer_cockpitview(struct entity *pt, warf_t *w, double (*pos)[3], i
 
 extern struct astrobj earth, island3, moon, jupiter;
 extern struct player *ppl;
+#endif
 
-int find_teleport(const char *name, int flags, coordsys **cs, avec3_t pos){
+int find_teleport(const char *name, int flags, CoordSys **cs, Vec3d &pos){
 	int i;
 	for(i = 0; i < ntplist; i++) if(!strcmp(name, tplist[i].name) && flags & tplist[i].flags){
 		*cs = tplist[i].cs;
@@ -760,37 +767,56 @@ int find_teleport(const char *name, int flags, coordsys **cs, avec3_t pos){
 	return 0;
 }
 
-static struct entity_private_static assault_s;
+// transit to a CoordSys from another, keeping absolute position and velocity.
+int cmd_transit(int argc, char *argv[], void *pv){
+	Player *ppl = (Player*)pv;
+	Entity *pt;
+	if(argc < 2){
+		CmdPrintf("Usage: transit dest");
+		return 1;
+	}
+	for(pt = ppl->selected; pt; pt = pt->selectnext){
+		Vec3d pos;
+		CoordSys *pcs;
+		if(pcs = const_cast<CoordSys*>(ppl->cs)->findcspath(argv[1])){
+			pt->transit_cs(pcs);
+		}
+	}
+	return 0;
+}
 
-int cmd_warp(int argc, char *argv[]){
-	entity_t *pt;
+int cmd_warp(int argc, char *argv[], void *pv){
+	double g_warp_cost_factor = 1.;
+	Player *ppl = (Player*)pv;
+	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: warp dest [x] [y] [z]");
 		return 1;
 	}
 	for(pt = ppl->selected; pt; pt = pt->selectnext){
-		warpable_t *p = (warpable_t*)pt;
-		warf_t *w = p->st.w;
-		if(pt->vft != &scarry_s && pt->vft != &beamer_s && pt->vft != &assault_s)
+		Warpable *p = pt->toWarpable();
+		if(!p)
 			continue;
+		WarField *w = p->w;
 		if(!p->warping){
-			avec3_t delta, pos;
-			coordsys *pa = NULL, *pcs;
+			Vec3d delta, pos;
+			const CoordSys *pa = NULL;
+			CoordSys *pcs;
 			double landrad;
 			double dist, cost;
 			extern coordsys *g_galaxysystem;
-			avec3_t dstpos = {.0};
+			Vec3d dstpos = vec3_000;
 			if(find_teleport(argv[1], TELEPORT_WARP, &pcs, pos)){
-				tocs(delta, w->cs, pos, pcs);
+				delta = w->cs->tocs(pos, pcs);
 				VECSUBIN(delta, pt->pos);
 				VECCPY(dstpos, pos);
 				pa = pcs;
 			}
-			else if(pa = findcs(g_galaxysystem, argv[1])){
+			else if(pa = ppl->cs->findcs(argv[1])){
 				dstpos[0] = argc < 3 ? 0. : atof(argv[2]);
 				dstpos[1] = argc < 4 ? 0. : atof(argv[3]);
 				dstpos[2] = argc < 5 ? 0. : atof(argv[4]);
-				tocs(delta, w->cs, dstpos, pa);
+				delta = w->cs->tocs(dstpos, pa);
 				VECSUBIN(delta, pt->pos);
 			} 
 			else
@@ -809,20 +835,20 @@ int cmd_warp(int argc, char *argv[]){
 				VECADDIN(p->warpdst, pt->pos);*/
 				VECCPY(p->warpdst, dstpos);
 				for(i = 0; i < 3; i++)
-					p->warpdst[i] += 2. * (drseq(&p->st.w->rs) - .5);
+					p->warpdst[i] += 2. * (drseq(&p->w->rs) - .5);
 				p->totalWarpDist = dist;
 				p->currentWarpDist = 0.;
 				p->warpcs = NULL;
-				p->warpdstcs = pa;
-				p->warp_next_warf = NULL;
+				p->warpdstcs = const_cast<CoordSys*>(pa);
+//				p->warp_next_warf = NULL;
 			}
 		}
 	}
 	return 0;
 }
 
-static int enum_cs_flags(const coordsys *root, int mask, int flags, coordsys ***ret, int left){
-	struct coordsys *cs;
+static int enum_cs_flags(const CoordSys *root, int mask, int flags, const CoordSys ***ret, int left){
+	const CoordSys *cs;
 	if((root->flags & mask) == (flags & mask)){
 		*(*ret)++ = root;
 		if(!--left)
@@ -835,7 +861,7 @@ static int enum_cs_flags(const coordsys *root, int mask, int flags, coordsys ***
 
 
 
-int cmd_togglewarpmenu(int argc, const char *argv[]){
+int cmd_togglewarpmenu(int argc, char *argv[], void *){
 	extern coordsys *g_galaxysystem;
 	char *cmds[64]; /* not much of menu items as 64 are able to displayed after all */
 	const char *subtitles[64];
@@ -843,20 +869,25 @@ int cmd_togglewarpmenu(int argc, const char *argv[]){
 	static const char *windowtitle = "Warp Destination";
 	glwindow *wnd, **ppwnd;
 	int left, i;
-	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if((*ppwnd)->title == windowtitle){
+	ppwnd = GLwindow::findpp(&glwlist, &GLwindow::TitleCmp(windowtitle));
+	if(ppwnd){
 		glwActivate(ppwnd);
 		return 0;
 	}
+/*	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if((*ppwnd)->title == windowtitle){
+		glwActivate(ppwnd);
+		return 0;
+	}*/
 	for(i = left = 0; i < ntplist && left < numof(cmds); i++) if(tplist[i].flags & TELEPORT_WARP){
 		struct teleport *tp = &tplist[i];
-		cmds[left] = malloc(sizeof "warp \"\"" + strlen(tp->name));
+		cmds[left] = (char*)malloc(sizeof "warp \"\"" + strlen(tp->name));
 		strcpy(cmds[left], "warp \"");
 		strcat(cmds[left], tp->name);
 		strcat(cmds[left], "\"");
 		subtitles[left] = tp->name;
 		left++;
 	}
-	wnd = glwMenu(left, subtitles, NULL, cmds, 0, NULL);
+	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
 	for(i = 0; i < left; i++){
 		free(cmds[i]);
 	}
@@ -872,10 +903,39 @@ int cmd_togglewarpmenu(int argc, const char *argv[]){
 		}
 	}
 	wnd = glwMenu(numof(reta) - left, subtitles, NULL, cmds, 0);*/
-	wnd->title = windowtitle;
+//	wnd->title = windowtitle;
 	return 0;
 }
-#endif
+
+int Warpable::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum){
+	int i;
+	int num;
+	int acty = 1;
+	char *titles1[] = {"Warp To..."};
+	char *cmds1[] = {"Warp To..."};
+	for(i = 0; i < *pnum; i++) if(!strcmp((*titles)[i], titles1[0]) && !strcmp((*cmds)[i], cmds1[0]))
+		acty = 0;
+	if(!acty)
+		return 0;
+	i = *pnum;
+	num = *pnum += 2;
+	*titles = (char**)realloc(*titles, num * sizeof **titles);
+	*keys = (int*)realloc(*keys, num * sizeof **keys);
+	*cmds = (char**)realloc(*cmds, num * sizeof **cmds);
+	(*titles)[i] = (char*)glwMenuSeparator;
+	(*keys)[i] = '\0';
+	(*cmds)[i] = NULL;
+	i++;
+	(*titles)[i] = "Warp To...";
+	(*keys)[i] = '\0';
+	(*cmds)[i] = "togglewarpmenu";
+	st::popupMenu(titles, keys, cmds, pnum);
+	return 0;
+}
+
+Warpable *Warpable::toWarpable(){
+	return this;
+}
 
 void Warpable::control(input_t *inputs, double dt){
 	Warpable *p = this;
@@ -1103,98 +1163,57 @@ static warf_t *warpable_warp_dest(entity_t *pt, const warf_t *w){
 		return NULL;
 	return p->warp_next_warf;
 }
+#endif
 
-static void transit_cs(entity_t *pt, warf_t *w, coordsys *cs){
-	entity_t **ppt;
-	avec3_t pos;
-	amat4_t mat;
-	if(w == cs->w)
-		return;
-/*	for(ppt = &w->tl; *ppt; ppt = &(*ppt)->next) if(*ppt == pt){
-		break;
-	}
-	assert(*ppt);
-	*ppt = pt->next;
-	pt->next = cs->w->tl;*/
-	pt->active = 0;
-	if(!cs->w){
-		cs->w = spacewar_create(cs, w->pl);
-	}
-/*	cs->w->tl = pt;*/
-	if(pt->vft == &scarry_s || pt->vft == &beamer_s || pt->vft == &assault_s){
-		warpable_t *p = (warpable_t*)pt;
-		p->warp_next_warf = cs->w;
-	}
-	pt->w = cs->w;
-	VECCPY(pos, pt->pos);
-	tocs(pt->pos, cs, pos, w->cs);
-	tocsv(pt->velo, cs, pt->velo, pos, w->cs);
-	{
-		aquat_t q, q1;
-		tocsq(q1, w->cs, cs);
-		QUATMUL(q, q1, pt->rot);
-		QUATCPY(pt->rot, q);
-	}
-/*	{
-		aquat_t q;
-		avec3_t pyr;
-		amat4_t rot, rot2, rot3;
-		tocsm(rot, cs, w->cs);
-		QUATSCALE(q, pt->rot, -1);
-		quat2imat(rot2, q);
-		mat4mp(rot3, rot2, rot);
-		imat2pyr(rot3, pyr);
-		VECSCALEIN(pyr, -1);
-		pyr2quat(pt->rot, pyr);
-	}*/
-	/*
-	tocsim(mat, cs, w->cs);
-	{
-		aquat_t q, qr;
-		imat2quat(mat, q);
-		QUATMUL(qr, pt->rot, q);
-		QUATCPY(pt->rot, qr);
-	}*/
-/*	VECNULL(pt->pos);*/
-	if(w->pl->chase == pt){
-		tocs(w->pl->pos, cs, w->pl->pos, w->pl->cs);
-		w->pl->cs = cs;
-	}
-}
 
-static void warp_collapse(entity_t *pt, warf_t *w, struct tent3d_fpol *pf[], int npf){
+void Warpable::warp_collapse(){
 	int i;
-	warpable_t *p = (warpable_t*)pt;
-	entity_t *pt2;
-	avec3_t dstcspos; /* current position measured in destination coordinate system */
+	Warpable *p = this;
+	Entity *pt2;
+	Vec3d dstcspos; /* current position measured in destination coordinate system */
 /*	tocs(dstcspos, p->warpdstcs, pt->pos, w->cs);
 	VECCPY(pt->pos, dstcspos);
 	tocsv(dstcspos, p->warpdstcs, pt->velo, pt->pos, w->cs);
 	VECCPY(pt->velo, dstcspos);*/
 /*	transit_cs(pt, w, p->warpdstcs);*/
-	for(pt2 = w->tl; pt2; pt2 = pt2->next)
-		transit_cs(pt2, w, p->warpdstcs);
+	for(pt2 = w->el; pt2; pt2 = pt2->next)
+		transit_cs(p->warpdstcs);
 	if(p->warpcs){
-		for(i = 0; i < npf; i++){
+/*		for(i = 0; i < npf; i++){
 			if(pf[i])
 				ImmobilizeTefpol3D(pf[i]);
 			pf[i] = AddTefpolMovable3D(p->warpdstcs->w->tepl, p->st.pos, pt->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
-		}
+		}*/
 		p->warpcs->flags |= CS_DELETE;
 		p->warpcs = NULL;
 	}
 }
 
-static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat, struct tent3d_fpol *pf[], int npf, const struct maneuve *mn){
-	warpable_t *const p = (warpable_t*)pt;
+const maneuve Warpable::mymn = {
+	0, // double accel;
+	0, // double maxspeed;
+	0, // double angleaccel;
+	0, // double maxanglespeed;
+	0, // double capacity; /* capacity of capacitor [MJ] */
+	0, // double capacitor_gen; /* generated energy [MW] */
+};
+const maneuve &Warpable::getManeuve()const{
+	return mymn;
+}
+void Warpable::anim(double dt){
+	Mat4d mat;
+	transform(mat);
+	Warpable *const p = this;
+	Entity *pt = this;
+	const maneuve *mn = &getManeuve();
 
 	if(p->warping){
 		double desiredvelo, velo;
-		avec3_t *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
-		avec3_t dstcspos, warpdst; /* current position measured in destination coordinate system */
+		Vec3d *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
+		Vec3d dstcspos, warpdst; /* current position measured in destination coordinate system */
 		double sp, scale;
-		tocs(dstcspos, p->warpdstcs, pt->pos, w->cs);
-		tocs(warpdst, w->cs, p->warpdst, p->warpdstcs);
+		dstcspos = p->warpdstcs->tocs(pt->pos, w->cs);
+		warpdst = w->cs->tocs(p->warpdst, p->warpdstcs);
 		{
 			aquat_t qc;
 			avec3_t omega, dv, forward;
@@ -1219,11 +1238,11 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
 		if(VECSDIST(warpdst, dstcspos) < 1. * 1.){
-			warp_collapse(pt, w, pf, npf);
+//			warp_collapse(pt, w, pf, npf);
 			p->warping = 0;
 			VECNULL(pt->velo);
 			if(w->pl->chase == pt){
-				tocsv(w->pl->velo, w->pl->cs, pt->velo, pt->pos, w->cs);
+				w->pl->velo = w->pl->cs->tocsv(pt->velo, pt->pos, w->cs);
 			}
 		}
 		else if(desiredvelo < velo){
@@ -1245,7 +1264,7 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 #endif
 			if(p->warpcs){
 #if 1
-				adopt_child(p->warpcs, p->warpdstcs);
+				p->warpcs->adopt_child(p->warpdstcs);
 #else
 				avec3_t pos, velo;
 				int i;
@@ -1281,9 +1300,9 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 			VECCPY(p->velo, dstvelo);*/
 	/*		VECSADD(p->velo, delta, dt * 1e-8 * (1e0 + VECLEN(p->velo)));*/
 		}
-		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->rad * w->cs->rad < VECSLEN(pt->pos)){
+		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
 			int i;
-			p->warpcs = malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
+			p->warpcs = new CoordSys("warpbubble", w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
 			VECCPY(p->warpcs->pos, pt->pos);
 			VECCPY(p->warpcs->velo, pt->velo);
 /*			VECNULL(pt->velo);*/
@@ -1291,40 +1310,24 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 /*			MAT4IDENTITY(p->warpcs->rot);
 			MAT4IDENTITY(p->warpcs->irot);*/
 			VECNULL(p->warpcs->omg);
-			p->warpcs->rad = ((struct entity_private_static*)pt->vft)->hitradius * 10.;
+			p->warpcs->csrad = pt->hitradius() * 10.;
 			p->warpcs->parent = w->cs;
 #if 1
-			legitimize_child(p->warpcs);
+			p->warpcs->legitimize_child();
 #else
 			w->cs->children[w->cs->nchildren++] = p->warpcs;
 #endif
-			p->warpcs->name = "warpbubble";
-			p->warpcs->fullname = "Warp Bubble";
+//			p->warpcs->name = "warpbubble";
+//			p->warpcs->fullname = "Warp Bubble";
 			p->warpcs->flags = 0;
-			p->warpcs->w = (warf_t*)&p->warpcs[1];
-			p->warpcs->w->vft = &warp_static;
+			p->warpcs->w = new WarField(p->warpcs);
 			p->warpcs->w->pl = w->pl;
-			p->warpcs->w->tl = NULL;
-			p->warpcs->w->bl = NULL;
-			p->warpcs->w->tell = p->warpcs->w->gibs = NULL;
-			p->warpcs->w->tepl = NULL;
-			p->warpcs->w->map = NULL;
-			p->warpcs->w->wmd = NULL;
-			p->warpcs->w->static_obj = NULL;
-			p->warpcs->w->nstatic_obj = 0;
-			memset(p->warpcs->w->races, 0, sizeof p->warpcs->w->races);
-			VECNULL(p->warpcs->w->gravity);
-			p->warpcs->w->ot = p->warpcs->w->otroot = NULL;
-			p->warpcs->w->cs = p->warpcs;
-			p->warpcs->nchildren = 0;
-			p->warpcs->children = NULL;
-			p->warpcs->vft = NULL;
-/*			memset(p->warpcs->children, 0, sizeof p->warpcs->children);*/
-			for(i = 0; i < npf; i++) if(pf[i]){
+/*			for(i = 0; i < npf; i++) if(pf[i]){
 				ImmobilizeTefpol3D(pf[i]);
 				pf[i] = NULL;
-			}
-			transit_cs(pt, w, p->warpcs);
+			}*/
+//			transit_cs(pt, w, p->warpcs);
+#if 0
 			/* TODO: bring docked objects along */
 			if(pt->vft == &scarry_s){
 				entity_t **ppt2;
@@ -1344,10 +1347,11 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 					}
 				}
 			}
+#endif
 		}
 		else{
-			if(w->cs == p->warpcs && VECSLEN(dstcspos) < p->warpdstcs->rad * p->warpdstcs->rad)
-				warp_collapse(pt, w, pf, npf);
+//			if(w->cs == p->warpcs && VECSLEN(dstcspos) < p->warpdstcs->csrad * p->warpdstcs->csrad)
+//				warp_collapse(pt, w, pf, npf);
 		}
 
 		if(p->warpcs){
@@ -1363,7 +1367,7 @@ static void warpable_proc(entity_t *pt, warf_t *w, double dt, const avec3_t mat,
 			p->capacitor = mn->capacity;
 	}
 }
-
+#if 0
 static int warpable_popup_menu(const entity_t *pt, char ***titles, int **keys, char ***cmds, int *pnum){
 	int i;
 	int num;
@@ -1399,7 +1403,7 @@ int warpable_dest(entity_t *pt, avec3_t ret, coordsys *cs){
 #endif
 
 double Beamer::hitradius(){return .1;}
-
+const maneuve &Beamer::getManeuve()const{return beamer_mn;}
 void Beamer::anim(double dt){
 	Mat4d mat;
 

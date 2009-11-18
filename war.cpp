@@ -5,6 +5,13 @@
 #include "astro.h"
 
 WarField::WarField(CoordSys *acs) : el(NULL), cs(acs), pl(NULL){
+	for(CoordSys *root = cs; root; root = root->parent){
+		Universe *u = root->toUniverse();
+		if(u){
+			pl = u->ppl;
+			break;
+		}
+	}
 }
 
 void WarField::anim(double dt){

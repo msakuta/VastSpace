@@ -38,13 +38,14 @@ public:
 	void glwAnim(double dt);
 	static friend GLwindow **glwFindPP(GLwindow *);
 	template<class C> static GLwindow **findpp(GLwindow **root, C compar);
-	static bool namecmp(const GLwindow *w){
-		return !strcmp(w->title, "Solarsystem browser");
+	template<const char *title> static bool namecmp(const GLwindow *w){
+		return !strcmp(w->title, title);
 	}
+	class TitleCmp;
 	void mouseDrag(int x, int y);
 	int getX()const{return xpos;}
 	int getY()const{return ypos;}
-	virtual int mouse(int key, int state, int x, int y);
+	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual void anim(double dt);
 protected:
@@ -67,6 +68,15 @@ template<class C> inline GLwindow **GLwindow::findpp(GLwindow **root, C compar){
 		return pp;
 	return NULL;
 }
+
+class GLwindow::TitleCmp{
+	const char *title;
+public:
+	TitleCmp(const char *a) : title(a){}
+	bool operator()(const GLwindow *w){
+		return w->title && !strcmp(w->title, title);
+	}
+};
 
 extern glwindow *glwlist;
 extern glwindow *glwfocus;
@@ -93,7 +103,7 @@ public:
 	} *menus;
 	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 	void draw(GLwindowState &,double);
-	int mouse(int button, int state, int x, int y);
+	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	int key(int key);
 	~GLwindowMenu();
 	GLwindowMenu *addItem(const char *title, int key, const char *cmd);
@@ -113,7 +123,7 @@ protected:
 	int minw, minh, maxw, maxh;
 public:
 	GLwindowSizeable(const char *title);
-	int mouse(int button, int state, int x, int y);
+	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 
 #endif

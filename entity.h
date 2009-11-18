@@ -4,6 +4,7 @@
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 
+class Warpable;
 class Entity{
 public:
 	Entity(WarField *aw = NULL) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), health(100), enemy(NULL), w(aw), inputs(){
@@ -23,10 +24,12 @@ public:
 	virtual bool tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
 	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
+	virtual Warpable *toWarpable();
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}
+	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
 
 	Vec3d pos;
 	Vec3d velo;
@@ -48,5 +51,7 @@ public:
 //	char weapon;
 };
 
+struct GLwindowState;
+void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);
 
 #endif

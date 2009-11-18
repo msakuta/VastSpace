@@ -143,6 +143,7 @@ public:
 	/* Search the tree with name. If there are some nodes of the same name, the newest offspring
 	  is returned (Note that it's not nearest). */
 	CoordSys *findcs(const char *name);
+	const CoordSys *findcs(const char *name)const{return const_cast<CoordSys*>(this)->findcs(name);}
 
 	/* Search the tree with path string. If there are some nodes of the same name, they are
 	  distinguished by tree path. Node delimiter is slash (/).

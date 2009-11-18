@@ -251,8 +251,8 @@ void GLwindow::glwFree(){
 }
 
 void GLwindow::draw(GLwindowState &,double){}
-int GLwindow::mouse(int,int,int,int){return 0;}
-int GLwindow::key(int){return 0;}
+int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
+int GLwindow::key(int key){return 0;}
 void GLwindow::anim(double){}
 GLwindow::~GLwindow(){
 	if(title)
@@ -346,7 +346,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				break;
 			}
 			else if(!(wnd->flags & GLW_COLLAPSE) && glwfocus == wnd)
-				wnd->mouse(button, state, x - wnd->xpos, y - wnd->ypos - fontheight);
+				wnd->mouse(gvp, button, state, x - wnd->xpos, y - wnd->ypos - fontheight);
 			if(wnd->flags & GLW_TODELETE){
 				wnd->glwFree();
 /*				if(wnd->destruct)
@@ -493,7 +493,7 @@ const int glwMenuAllAllocated[] = {1};
 const char glwMenuSeparator[] = "-";
 
 void GLwindowMenu::draw(GLwindowState &ws, double t){
-	int mx = ws.mx, my = ws.my;
+	int mx = ws.mousex, my = ws.mousey;
 	GLwindowMenu *p = this;
 	GLwindow *wnd = this;
 	int i, len, maxlen = 1;
@@ -525,7 +525,7 @@ void GLwindowMenu::draw(GLwindowState &ws, double t){
 //	wnd->w = maxlen * fontwidth + 2;
 }
 
-int GLwindowMenu::mouse(int button, int state, int x, int y){
+int GLwindowMenu::mouse(GLwindowState &, int button, int state, int x, int y){
 	int ind = (y) / fontheight;
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && 0 <= ind && ind < count && menus[ind].cmd){
 		CmdExec(menus[ind].cmd);
@@ -549,7 +549,7 @@ int GLwindowMenu::key(int key){
 
 GLwindowMenu::~GLwindowMenu(){
 	int i;
-	for(i = 0; i < count; i++){
+	for(i = 0; i < count; i++) if(menus[i].title != glwMenuSeparator){
 		if(menus[i].title)
 			free((void*)menus[i].title);
 		if(menus[i].cmd)
@@ -689,7 +689,7 @@ GLwindowSizeable::GLwindowSizeable(const char *title) : st(title){
 	maxw = maxh = 1000;
 }
 
-int GLwindowSizeable::mouse(int button, int state, int x, int y){
+int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y){
 	if(y < 12)
 		return 0;
 	if(button == GLUT_LEFT_BUTTON){

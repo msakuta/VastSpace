@@ -141,6 +141,7 @@ astro Star first_light{
 			orbit_radius 9378
 			orbit_axis 0 0 1
 			color 777f7f
+			showorbit
 		}
 
 		new coordsys Orbit phobosorbit{
@@ -160,6 +161,7 @@ astro Star first_light{
 			orbit_radius 23459
 			orbit_axis 0 0 1
 			color 777f7f
+			showorbit
 		}
 	}
 

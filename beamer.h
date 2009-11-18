@@ -35,21 +35,28 @@ enum sship_task{
 
 struct maneuve;
 class Warpable : public Entity{
+	static const maneuve mymn;
 public:
 	typedef Entity st;
-	avec3_t warpdst;
+	Vec3d warpdst;
 	double warpSpeed;
 	double totalWarpDist, currentWarpDist;
 	double capacitor; /* Temporarily stored energy, MegaJoules */
 	int warping;
 	CoordSys *warpcs, *warpdstcs;
-	WarField *warp_next_warf;
+//	WarField *warp_next_warf;
 
 	Warpable();
 
+	virtual void anim(double dt);
 	void control(input_t *, double);
 	unsigned analog_mask();
+	virtual int popupMenu(char ***const titles, int **keys, char ***cmds, int *num);
+	virtual Warpable *toWarpable();
+	virtual const maneuve &getManeuve()const;
+
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
+	void warp_collapse();
 };
 
 class Beamer : public Warpable{
@@ -76,6 +83,7 @@ public:
 	void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double hitradius();
+	virtual const maneuve &getManeuve()const;
 };
 
 

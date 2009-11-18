@@ -191,7 +191,7 @@ public:
 	void draw(GLwindowState &ws, double t);
 //	int mouse(int button, int state, int x, int y);
 	int key(int key);
-	int mouse(int button, int state, int x, int y);
+	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	void anim(double dt);
 protected:
 	Vec3d org;
@@ -291,7 +291,7 @@ int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 		glEnd();
 	}
 	{
-		glPointSize(md < hitrad * hitrad ? 5 : 3);
+		glPointSize(GLfloat(md < hitrad * hitrad ? 5 : 3));
 		glBegin(GL_POINTS);
 		glVertex3dv(apos);
 		glEnd();
@@ -333,7 +333,8 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 	for(cs2 = cs->children; cs2; cs2 = cs2->next)
 		drawMapCSOrbit(vwcs, cs2, params);
 	if(cs->w){
-		int i, viewstate, collapse, plent = 0, plene = 0;
+//		int i, viewstate;
+		int collapse, plent = 0, plene = 0;
 		Entity *pt;
 		Mat4d mat, lmat;
 		double rrange;
@@ -356,7 +357,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 		rrange = this->range * params->sol->csrad * 10. / this->width;
 		collapse = cs->csrad < rrange;
 		for(pt = cs->w->el; pt; pt = pt->next) if(strcmp(pt->classname(), "rstation") && (pt->race == ppl->race /*|| race_entity_visible(ppl->race, pt)*/)){
-			avec3_t warpdst, pos1;
+//			avec3_t warpdst, pos1;
 			int enter = 1;
 			params->apos0 = vwcs->tocs(pt->pos, cs);
 /*			if(warpable_dest(pt, warpdst, vwcs)){
@@ -394,14 +395,13 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 	}
 	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT){
 		const OrbitCS *a = cs->toOrbitCS();
-		int n, j;
+		int j;
 		double (*cuts)[2], rad;
 		const Astrobj *home = a->orbit_home;
 		Vec3d spos, apos, apos0;
 		Mat4d mat, qmat, rmat, lmat;
 		Quatd q;
 		double smia;
-		double md;
 		cuts = CircleCuts(64);
 		spos = vwcs->tocs(home->pos, home->parent);
 		params->apos0 = vwcs->tocs(cs->pos, cs->parent);
@@ -457,9 +457,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 #endif
 	}
 	if((cs->flags & (CS_EXTENT | CS_ISOLATED)) == (CS_EXTENT | CS_ISOLATED) && 0 < cs->aorder.size()){
-		Astrobj *a2;
 		Vec3d spos, apos;
-		double md;
 		params->pointcolor[0] = 191;
 		params->pointcolor[1] = 255;
 		params->pointcolor[2] = 191;
@@ -513,7 +511,6 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 	int mi = MIN(this->width, this->height - 12) - 1;
 	int ma = MAX(this->width, this->height - 12) - 1;
 	double fx = (double)this->width / ma, fy = (double)(this->height - 12) / ma;
-	double f;
 
 	{
 		const CoordSys *cs;
@@ -591,8 +588,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glTranslated(-p->org[0] / p->range, -p->org[1] / p->range, -p->org[2] / p->range);*/
 		gldScaled(1. / range);
 		if(p->hold/* && p->pointer[0] - 10 <= mousex && mousex < p->pointer[0] + 100 && p->pointer[1] - 10 <= mousey && mousey < p->pointer[1] + 100*/){
-			ip[0] = p->pointer[0];
-			ip[1] = p->pointer[1];
+			ip[0] = int(p->pointer[0]);
+			ip[1] = int(p->pointer[1]);
 		}
 		else{
 			ip[0] = mousex;
@@ -752,15 +749,15 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 
 			glColor4ub(127,127,127,255);
 			glBegin(GL_LINES);
-			x = this->xpos + this->width - scalespace;
+			x = int(this->xpos + this->width - scalespace);
 			glVertex2d(x - scalewidth / 2, this->ypos + scalevspace + 12);
 			glVertex2d(x - scalewidth / 2, this->ypos + this->height - scalevspace);
 			for(i = 0; i <= scalerange; i++){
-				y = this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * i / scalerange;
+				y = int(this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * i / scalerange);
 				glVertex2d(x - scalewidth, y);
 				glVertex2d(x, y);
 			}
-			y = this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * (scalerange + log10(p->range)) / scalerange;
+			y = int(this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * (scalerange + log10(p->range)) / scalerange);
 			glEnd();
 			glColor4ub(127,255,127,255);
 			glBegin(GL_QUADS);
@@ -854,14 +851,13 @@ void GLwindowSolarMap::drawInt(const CoordSys *cs, drawSolarMapItemParams &param
 		const OrbitCS *a = (*i)->toOrbitCS();
 		if(!a)
 			continue;
-		int n, j;
+		int j;
 		double (*cuts)[2], rad;
 		const Astrobj *home = a->orbit_home;
 		Vec3d spos, apos, apos0;
 		Mat4d mat, qmat, rmat, lmat;
 		Quatd q;
 		double smia;
-		double md;
 		if(sol != a->parent && !sol->is_ancestor_of(a->parent))
 			continue;
 		params.apos0 = sol->tocs(a->pos, a->parent);
@@ -937,9 +933,8 @@ HMENU hMapPopupMenu = NULL;
 int entity_popup(entity_t *pt, int);
 #endif
 
-int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
-	extern Player *ppl;
-	if(st::mouse(mbutton, state, mx, my))
+int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
+	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
 /*	if(my < 12)
 		return 1;*/
@@ -959,36 +954,35 @@ int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
 			dstrange = pow(10, (my - scalevspace) * scalerange / (this->height - scalevspace * 2 - 12) - scalerange);
 		return 1;
 	}
-#if 0
-	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && p->targete && p->hold != 2){
-		if(p->targetc){
-			entity_t *pt;
-			ppl->selected = p->targetc->tl;
-			for(pt = p->targetc->tl; pt; pt = pt->next){
+
+	// Unit selection over solarmap
+	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && targete && hold != 2){
+		if(targetc){
+			Entity *pt;
+			ppl->selected = targetc->el;
+			for(pt = targetc->el; pt; pt = pt->next){
 				pt->selectnext = pt->next;
 			}
 		}
 		else{
-			ppl->selected = p->targete;
-			p->targete->selectnext = NULL;
+			ppl->selected = targete;
+			targete->selectnext = NULL;
 		}
 		if(mbutton != GLUT_LEFT_BUTTON){
-			entity_popup(p->targete, 1);
+			entity_popup(targete, ws, 1);
 		}
-		p->hold = 2;
-		p->pointer[0] = p->pointer[1] = 0;
+		hold = 2;
+		pointer[0] = pointer[1] = 0;
 	}
+
+	// Context menu over astronomic objects
 	if(state == GLUT_UP && mbutton == GLUT_LEFT_BUTTON){
-		if((p->target || p->targeta || p->targetr) && p->hold != 2){
-#if defined _WIN32
-			extern HWND hWndApp;
-#endif
-			int cmd_teleport(int argc, char *argv[]), cmd_warp(int argc, char *argv[]);
-			char *argv[3];
-			char buf[256];
-			char *name = p->target ? p->target->name : p->targeta ? p->targeta->name : p->targetr->vft->classname(p->targetr);
-			const char *typestring = p->target ? "Teleport" : "Astro";
-#if 1
+		if((target || targeta || targetr) && hold != 2){
+//			int cmd_teleport(int argc, char *argv[]), cmd_warp(int argc, char *argv[]);
+//			char *argv[3];
+//			char buf[256];
+			const char *name = target ? target->name : targeta ? targeta->name : targetr->classname();
+			const char *typestring = target ? "Teleport" : "Astro";
 			char titles0[5][128], *titles[5];
 			int keys[5];
 			char cmds0[5][128], *cmds[5];
@@ -996,22 +990,23 @@ int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
 			glwindow *glw;
 			extern int s_mousex, s_mousey;
 
-			sprintf(titles[j] = titles0[i], "Focus");
+//			sprintf(titles[j] = titles0[i], "Focus");
+			titles[j] = "Focus";
 			keys[j] = 0;
-			sprintf(cmds[j] = cmds0[i], "focus \"%s\"", name);
+			sprintf_s(cmds[j] = cmds0[i], sizeof cmds0[i], "focus \"%s\"", name);
 			i++; j++;
-			if(p->target && p->target->flags & TELEPORT_TP){
+			if(target && target->flags & TELEPORT_TP){
 				sprintf(titles[j] = titles0[i], "Teleport");
 				keys[j] = 0;
 				sprintf(cmds[j] = cmds0[i], "teleport \"%s\"", name);
 				i++; j++;
 			}
 
-			if(p->target && p->target->flags & TELEPORT_WARP || p->targetr){
+			if(target && target->flags & TELEPORT_WARP || targetr){
 				sprintf(titles[j] = titles0[i], "Warp");
 				keys[j] = 0;
-				if(p->targetr)
-					sprintf(cmds[j] = cmds0[i], "warp \"%s\" %lg %lg %lg", p->targetr->w->cs->name, p->targetr->pos[0], p->targetr->pos[1] + 1., p->targetr->pos[2]);
+				if(targetr)
+					sprintf(cmds[j] = cmds0[i], "warp \"%s\" %lg %lg %lg", targetr->w->cs->name, targetr->pos[0], targetr->pos[1] + 1., targetr->pos[2]);
 				else
 					sprintf(cmds[j] = cmds0[i], "warp \"%s\"", name);
 				i++; j++;
@@ -1022,64 +1017,15 @@ int GLwindowSolarMap::mouse(int mbutton, int state, int mx, int my){
 			sprintf(cmds[j] = cmds0[i], "info %s \"%s\"", typestring, name);
 			i++; j++;
 
-			glw = glwPopupMenu(j, titles, keys, cmds, 0);
-			glw->x = s_mousex;
-			glw->y = s_mousey;
+			glw = glwPopupMenu(ws, j, titles, keys, cmds, 0);
+//			glw->x = s_mousex;
+//			glw->y = s_mousey;
 
-			p->hold = 2;
-			p->pointer[0] = p->pointer[1] = 0;
-#else
-			static HMENU hm = NULL;
-			MENUITEMINFO mii;
-			POINT cursorpos;
-			BOOL (WINAPI *MenuItem)(
-  HMENU hMenu,          // handle to menu
-  UINT uItem,           // identifier or position
-  BOOL fByPosition,     // meaning of uItem
-  LPMENUITEMINFO lpmii  // menu item information
-  ) = hm ? SetMenuItemInfo : InsertMenuItem;
-/*			argv[0] = mbutton == GLUT_LEFT_BUTTON ? "teleport" : "warp";
-			argv[1] = p->target->name;
-			argv[2] = NULL;
-			(mbutton == GLUT_LEFT_BUTTON ? cmd_teleport : cmd_warp)(2, argv);*/
-			if(!hm)
-				hMapPopupMenu = hm = CreatePopupMenu();
-			mii.cbSize = sizeof mii;
-			mii.fMask = MIIM_STRING | MIIM_ID | MIIM_STATE;
-			mii.fType = MIIM_STRING;
-			mii.dwTypeData = buf;
-
-			sprintf(buf, "focus \"%s\"", name);
-			mii.wID = 4003;
-			mii.fState = MFS_ENABLED;
-			MenuItem(hm, 0, TRUE, &mii);
-
-			sprintf(buf, "teleport \"%s\"", name);
-			mii.wID = 4000;
-			mii.fState = p->target && p->target->flags & TELEPORT_TP ? MFS_ENABLED : MFS_DISABLED;
-			MenuItem(hm, 1, TRUE, &mii);
-
-			if(p->targetr)
-				sprintf(buf, "warp \"%s\" %lg %lg %lg", p->targetr->w->cs->name, p->targetr->pos[0], p->targetr->pos[1] + 1., p->targetr->pos[2]);
-			else
-				sprintf(buf, "warp \"%s\"", name);
-			mii.wID = 4001;
-			mii.fState = p->target && p->target->flags & TELEPORT_WARP || p->targetr ? MFS_ENABLED : MFS_DISABLED;
-			MenuItem(hm, 2, TRUE, &mii);
-
-			sprintf(buf, "info %s \"%s\"", typestring, name);
-			mii.wID = 4002;
-			mii.fState = MFS_ENABLED;
-			MenuItem(hm, 3, TRUE, &mii);
-
-			GetCursorPos(&cursorpos);
-			TrackPopupMenu(hm, TPM_LEFTBUTTON, cursorpos.x, cursorpos.y, 0, hWndApp, NULL);
-			p->hold = 2;
-			p->pointer[0] = p->pointer[1] = 0;
-#endif
+			hold = 2;
+			pointer[0] = pointer[1] = 0;
 		}
 	}
-#endif
+
 	if(state == GLUT_DOWN){
 		morg[0] = mx;
 		morg[1] = my;
@@ -1159,11 +1105,10 @@ void GLwindowSolarMap::anim(double dt){
 }
 
 GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
-	glwindow *ret;
+//	glwindow *ret;
 	glwindow **ppwnd;
-	int i;
 	static const char *windowtitle = "Solarsystem browser";
-	ppwnd = findpp(&glwlist, &namecmp);
+	ppwnd = findpp(&glwlist, &TitleCmp("Solarsystem browser"));
 	if(!ppwnd){
 		glwActivate(ppwnd = glwAppend(new GLwindowSolarMap(windowtitle, ppl)));
 	}

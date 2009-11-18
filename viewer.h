@@ -10,6 +10,7 @@ extern "C"{
 }
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
+#include <cpplib/quat.h>
 #include <cpplib/gl/cullplus.h>
 #include <cstring>
 #endif
@@ -42,6 +43,7 @@ public:
 		std::memset(this, 0, sizeof *this);
 		fov = 1.; // Field of View
 	}
+	Quatd qrot; // Rotation expressed in quaternion
 	Mat4d rot, irot, relrot, relirot;
 	Vec3d pos, pyr, velo;
 	double velolen;

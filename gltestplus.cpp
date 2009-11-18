@@ -149,22 +149,6 @@ void lightOn(){
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(pl.cs->tocs(vec3_000, sun).normin().cast<GLfloat>()) : light_pos);
 }
 
-static void cslist(const CoordSys *root, double &y){
-	char buf[256];
-	buf[0] = '\0';
-	if(root->getpath(buf, sizeof buf)){
-//		glRasterPos3d(0, y, -1);
-		glPushMatrix();
-		glTranslated(0, y, -1);
-		gldPutTextureString(buf);
-		glPopMatrix();
-	}
-	CoordSys *cs;
-	for(cs = root->children; cs; cs = cs->next){
-		cslist(cs, --y);
-	}
-}
-
 static void draw_gear(double dt){
 	double (*cuts)[2];
 	double desired;
@@ -301,6 +285,8 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		drawastro(vw, cs2, model);
 }
 
+#define OV_COUNT 32 /* Overview */
+
 static void drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
@@ -319,6 +305,65 @@ static void drawindics(Viewer *vw){
 		glRasterPos2d(-1, -1);
 		gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
 		glPopMatrix();
+	}
+	{
+		const WarField *const w = vw->cs->w;
+		const char *names[OV_COUNT];
+		const Entity *tanks[OV_COUNT] = {NULL};
+		int counts[OV_COUNT];
+		int i, n;
+
+		{
+			const Entity *pt;
+			for(n = 0, pt = pl.selected; pt; pt = pt->selectnext){
+
+				/* show only member of current team */
+/*				if(pl.chase && pl.race != pt->race)
+					continue;*/
+
+				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->classname()))
+					break;
+				if(i == n/* || current_vft == vfts[i]*/){
+					names[n] = pt->classname();
+					counts[n] = 1;
+					tanks[n] = pt;
+					if(++n == OV_COUNT)
+						break;
+				}
+				else
+					counts[i]++;
+			}
+/*			memcpy(g_counts, counts, sizeof g_vfts);
+			memcpy(g_vfts, vfts, sizeof g_vfts);
+			memcpy(g_tanks, tanks, sizeof g_vfts);*/
+		}
+
+		{
+			GLint vp[4];
+			int w, h, m, mi;
+			double left, bottom;
+			glGetIntegerv(GL_VIEWPORT, vp);
+			w = vp[2], h = vp[3];
+			m = w < h ? h : w;
+			mi = MIN(h, w);
+			left = -(double)w / m;
+			bottom = -(double)h / m;
+
+			glPushMatrix();
+			glLoadIdentity();
+
+			projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, 0, h, -1, 1)));
+			for(i = 0; i < n; i++){
+//				if(pl.selected ? tanks[i] == pl.selected : vfts[i] == current_vft)
+//					glPushAttrib(GL_CURRENT_BIT), glColor4ub(255,255,255,255);
+				glRasterPos2i(w - 160, h - 50 - 10 * i);
+				gldprintf("%15.15s x %-2d", names[i], counts[i]);
+//				if(pl.selected ? tanks[i] == pl.selected : vfts[i] == current_vft)
+//					glPopAttrib();
+			}
+			projection(glPopMatrix());
+			glPopMatrix();
+		}
 	}
 	if(!mouse_captured && !glwfocus && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
 		int x0 = MIN(s_mousedragx, s_mousex);
@@ -359,28 +404,34 @@ static void drawindics(Viewer *vw){
 	}
 }
 
+static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){
+	Viewer localvw = vw;
+	wardraw_t wd;
+	localvw.cs = cs;
+	localvw.pos = localvw.cs->tocs(vw.pos, vw.cs);
+	localvw.velo = localvw.cs->tocsv(vw.velo, vw.pos, vw.cs);
+	localvw.qrot = localvw.cs->tocsq(vw.cs) * vw.qrot;
+	localvw.relrot = localvw.rot = localvw.qrot.tomat4();
+	localvw.relirot = localvw.irot = localvw.qrot.cnj().tomat4();
+	GLcull gc(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
+	localvw.gc = &gc;
+	wd.lightdraws = 0;
+	wd.maprange = 1.;
+	wd.vw = &localvw;
+	wd.w = cs->w;
+	GLmatrix ma;
+	gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
+	gldMultQuat(vw.cs->tocsq(cs));
+	(cs->w->*method)(&wd);
+}
+
 static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){
 	if(cs->parent)
 		war_draw(vw, cs->parent, method);
 	if(cs->w){
-		Viewer localvw = vw;
-		wardraw_t wd;
-		localvw.cs = cs;
-		localvw.pos = localvw.cs->tocs(vw.pos, vw.cs);
-		localvw.velo = localvw.cs->tocsv(vw.velo, vw.pos, vw.cs);
-		localvw.qrot = localvw.cs->tocsq(vw.cs) * vw.qrot;
-		localvw.relrot = localvw.rot = localvw.qrot.tomat4();
-		localvw.relirot = localvw.irot = localvw.qrot.cnj().tomat4();
-		GLcull gc(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
-		localvw.gc = &gc;
-		wd.lightdraws = 0;
-		wd.maprange = 1.;
-		wd.vw = &localvw;
-		wd.w = cs->w;
-		GLmatrix ma;
-		gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
-		gldMultQuat(vw.cs->tocsq(cs));
-		(cs->w->*method)(&wd);
+		// Call an internal function to avoid excess use of the stack by recursive calls.
+		// It also helps the optimizer to reduce frame pointers.
+		war_draw_int(vw, cs, method);
 	}
 }
 
@@ -432,19 +483,6 @@ void draw_func(Viewer &vw, double dt){
 	glDisable(GL_LIGHTING);
 	glColor4ub(255, 255, 255, 255);
 	drawindics(&vw);
-	glLoadIdentity();
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glColor4f(1,1,1,1);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glScaled(1. / (vw.vp.m / 16.), 1. / (vw.vp.m / 16.), 1.);
-	double y = vw.vp.h / 16.;
-	cslist(&galaxysystem, y);
-	glPopMatrix();
-
-	glPushMatrix();
 	glLoadIdentity();
 	glTranslated(0,0,-1);
 	draw_gear(dt);

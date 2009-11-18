@@ -1215,46 +1215,46 @@ void Warpable::anim(double dt){
 		dstcspos = p->warpdstcs->tocs(pt->pos, w->cs);
 		warpdst = w->cs->tocs(p->warpdst, p->warpdstcs);
 		{
-			aquat_t qc;
-			avec3_t omega, dv, forward;
-			VECSUB(dv, warpdst, pt->pos);
-			VECNORMIN(dv);
-			quatrot(forward, pt->rot, avec3_001);
-			VECSCALEIN(forward, -1.);
-			sp = VECSP(dv, forward);
-			VECVP(omega, dv, forward);
+			Quatd qc;
+			Vec3d omega, dv, forward;
+			dv = warpdst - pt->pos;
+			dv.normin();
+			forward = pt->rot.trans(avec3_001);
+			forward *= -1.;
+			sp = dv.sp(forward);
+			omega = dv.vp(forward);
 			if(sp < 0.){
-				VECSADD(omega, mat, mn->angleaccel);
+				omega += mat.vec3(0) * mn->angleaccel;
 			}
 			scale = -.5 * dt;
 			if(scale < -1.)
 				scale = -1.;
-			VECSCALEIN(omega, scale);
-			quatrotquat(pt->rot, omega, pt->rot);
+			omega *= scale;
+			pt->rot = pt->rot.quatrotquat(omega);
 		}
-		velo = VECLEN(*pvelo);
+		velo = (*pvelo).len();
 		desiredvelo = .5 * VECDIST(warpdst, dstcspos);
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
-		if(VECSDIST(warpdst, dstcspos) < 1. * 1.){
-//			warp_collapse(pt, w, pf, npf);
+		if((warpdst - dstcspos).slen() < 1. * 1.){
+			warp_collapse();
 			p->warping = 0;
-			VECNULL(pt->velo);
+			pt->velo.clear();
 			if(w->pl->chase == pt){
 				w->pl->velo = w->pl->cs->tocsv(pt->velo, pt->pos, w->cs);
 			}
 		}
 		else if(desiredvelo < velo){
-			avec3_t delta, dst, dstvelo;
+			Vec3d delta, dst, dstvelo;
 			double dstspd, u, len;
-			VECSUB(delta, p->warpdst, dstcspos);
+			delta = p->warpdst - dstcspos;
 /*			VECSUB(delta, warpdst, pt->pos);*/
-			len = VECLEN(delta);
+			len = delta.len();
 #if 1
 			u = desiredvelo / len;
-			VECSCALE(dstvelo, delta, u);
-			VECCPY(*pvelo, dstvelo);
+			dstvelo = delta * u;
+			*pvelo = dstvelo;
 #else
 			u = -exp(-desiredvelo * dt);
 			VECSCALE(dst, delta, u);
@@ -1303,20 +1303,10 @@ void Warpable::anim(double dt){
 		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
 			int i;
 			p->warpcs = new CoordSys("warpbubble", w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
-			VECCPY(p->warpcs->pos, pt->pos);
-			VECCPY(p->warpcs->velo, pt->velo);
+			p->warpcs->pos = pt->pos;
+			p->warpcs->velo = pt->velo;
 /*			VECNULL(pt->velo);*/
-			QUATIDENTITY(p->warpcs->qrot);
-/*			MAT4IDENTITY(p->warpcs->rot);
-			MAT4IDENTITY(p->warpcs->irot);*/
-			VECNULL(p->warpcs->omg);
 			p->warpcs->csrad = pt->hitradius() * 10.;
-			p->warpcs->parent = w->cs;
-#if 1
-			p->warpcs->legitimize_child();
-#else
-			w->cs->children[w->cs->nchildren++] = p->warpcs;
-#endif
 //			p->warpcs->name = "warpbubble";
 //			p->warpcs->fullname = "Warp Bubble";
 			p->warpcs->flags = 0;
@@ -1326,7 +1316,7 @@ void Warpable::anim(double dt){
 				ImmobilizeTefpol3D(pf[i]);
 				pf[i] = NULL;
 			}*/
-//			transit_cs(pt, w, p->warpcs);
+			transit_cs(p->warpcs);
 #if 0
 			/* TODO: bring docked objects along */
 			if(pt->vft == &scarry_s){
@@ -1350,14 +1340,15 @@ void Warpable::anim(double dt){
 #endif
 		}
 		else{
-//			if(w->cs == p->warpcs && VECSLEN(dstcspos) < p->warpdstcs->csrad * p->warpdstcs->csrad)
-//				warp_collapse(pt, w, pf, npf);
+			if(w->cs == p->warpcs && dstcspos.slen() < p->warpdstcs->csrad * p->warpdstcs->csrad)
+				warp_collapse();
 		}
 
 		if(p->warpcs){
 			p->currentWarpDist += VECLEN(p->warpcs->velo) * dt;
 			VECSADD(p->warpcs->pos, p->warpcs->velo, dt);
 		}
+		pos += this->velo * dt;
 	}
 	else{ /* Regenerate energy in capacitor only unless warping */
 		double gen = dt * g_capacitor_gen_factor * mn->capacitor_gen;
@@ -1365,7 +1356,48 @@ void Warpable::anim(double dt){
 			p->capacitor += gen;
 		else
 			p->capacitor = mn->capacity;
+
+		maneuver(mat, dt, mn);
+
+		pos += velo * dt;
+		rot = rot.quatrotquat(omg * dt);
+		{
+/*			amat4_t nmat;
+			amat3_t ort3, irot3, rot3, iort3, nmat3, inmat3;
+			aquat_t q;
+			w->vft->orientation(w, &ort3, pt->pos);
+			rbd_anim(pt, dt, &q, &nmat);
+			QUATCPY(pt->rot, q);
+			MAT4TO3(nmat3, nmat);
+			MATTRANSPOSE(inmat3, nmat3);
+			MATMP(rot3, inmat3, ort3);
+			MAT3TO4(nmat, rot3);*/
+	/*		MAT4TO3(nmat3, nmat);
+			MATTRANSPOSE(iort3, ort3);
+			MATMP(rot3, iort3, nmat3);
+			MATTRANSPOSE(irot3, rot3);
+			MAT3TO4(nmat, irot3);*/
+//			imat2pyr(nmat, pt->pyr);
+	/*		quat2pyr(pt->rot, pt->pyr);*/
+	/*		{
+				avec3_t zh, zh0 = {0, -1., 0}, src, ret;
+				double wid;
+				MAT4DVP3(zh, nmat, zh0);
+				wid = w->map->vft->width(w->map);
+				src[0] = pt->pos[0] + wid / 2;
+				src[1] = pt->pos[1];
+				src[2] = pt->pos[2] + wid / 2;
+				w->map->vft->linehit(w->map, &src, &zh, 1., &ret);
+				p->sight[0] = ret[0] - wid / 2;
+				p->sight[1] = ret[1];
+				p->sight[2] = ret[2] - wid / 2;
+			}*/
+
+		}
+	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
+		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}
+	st::anim(dt);
 }
 #if 0
 static int warpable_popup_menu(const entity_t *pt, char ***titles, int **keys, char ***cmds, int *pnum){
@@ -1574,8 +1606,6 @@ void Beamer::anim(double dt){
 		}
 
 #endif
-		maneuver(mat, dt, &beamer_mn);
-
 		if(cooldown == 0. && inputs.change & inputs.press & (PL_ENTER | PL_LCLICK)){
 			charge = 6.;
 			cooldown = 10.;
@@ -1638,48 +1668,9 @@ void Beamer::anim(double dt){
 		else
 			beamlen = 10.;
 	}
-#if 0
-	warpable_proc(pt, w, dt, mat, &p->pf, numof(p->pf), &beamer_mn);
+#if 1
+	Warpable::anim(dt);
 #endif
-	{
-		pos += velo * dt;
-		rot = rot.quatrotquat(omg * dt);
-		{
-/*			amat4_t nmat;
-			amat3_t ort3, irot3, rot3, iort3, nmat3, inmat3;
-			aquat_t q;
-			w->vft->orientation(w, &ort3, pt->pos);
-			rbd_anim(pt, dt, &q, &nmat);
-			QUATCPY(pt->rot, q);
-			MAT4TO3(nmat3, nmat);
-			MATTRANSPOSE(inmat3, nmat3);
-			MATMP(rot3, inmat3, ort3);
-			MAT3TO4(nmat, rot3);*/
-	/*		MAT4TO3(nmat3, nmat);
-			MATTRANSPOSE(iort3, ort3);
-			MATMP(rot3, iort3, nmat3);
-			MATTRANSPOSE(irot3, rot3);
-			MAT3TO4(nmat, irot3);*/
-//			imat2pyr(nmat, pt->pyr);
-	/*		quat2pyr(pt->rot, pt->pyr);*/
-	/*		{
-				avec3_t zh, zh0 = {0, -1., 0}, src, ret;
-				double wid;
-				MAT4DVP3(zh, nmat, zh0);
-				wid = w->map->vft->width(w->map);
-				src[0] = pt->pos[0] + wid / 2;
-				src[1] = pt->pos[1];
-				src[2] = pt->pos[2] + wid / 2;
-				w->map->vft->linehit(w->map, &src, &zh, 1., &ret);
-				p->sight[0] = ret[0] - wid / 2;
-				p->sight[1] = ret[1];
-				p->sight[2] = ret[2] - wid / 2;
-			}*/
-
-		}
-	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
-		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
-	}
 #if 0
 	if(p->pf){
 		int i;

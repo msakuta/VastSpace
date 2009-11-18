@@ -46,7 +46,7 @@ CoordSys **CoordSys::legitimize_child(){
 void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	CoordSys *adoptee = this;
 	CoordSys **ppcs2;
-	CoordSys dummycs, **ppdummycs;
+//	CoordSys dummycs, **ppdummycs;
 	Vec3d pos, velo;
 	Quatd q;
 
@@ -55,17 +55,14 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 		return;
 
 	/* temporarily make a dummy coordinate system to attend the system tree. */
-	dummycs = *adoptee;
+/*	dummycs = *adoptee;
 	dummycs.parent = newparent;
-	ppdummycs = dummycs.legitimize_child();
+	ppdummycs = dummycs.legitimize_child();*/
 
 	/* obtain relative rotation matrix between old node to new node. */
-	dummycs.qrot = quat_u;
+//	dummycs.qrot = quat_u;
 	if(retain){
 		q = adoptee->tocsq(newparent);
-/*	MAT4IDENTITY(dummycs.rot);
-	MAT4IDENTITY(dummycs.irot);
-	tocsim(mat, newparent, adoptee);*/
 
 	/* calculate relativity */
 		pos = newparent->tocs(adoptee->pos, adoptee->parent);
@@ -89,7 +86,7 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	}
 
 	/* unlink dummy coordinate system */
-	*ppdummycs = dummycs.next;
+//	*ppdummycs = dummycs.next;
 
 	/* recognize the new parent */
 	adoptee->parent = newparent;
@@ -101,7 +98,7 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 
 
 
-static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs, int delta){
+static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs, bool delta){
 #if 1
 	CoordSys *cs2;
 	tocs_children_invokes++;
@@ -115,8 +112,7 @@ static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const 
 #endif
 		Vec3d v1, v;
 		if(delta){
-			v1 = src - cs2->velo;
-			v = cs2->qrot.itrans(v1);
+			v = cs2->qrot.itrans(src);
 		}
 		else{
 			v1 = src - cs2->pos;
@@ -132,7 +128,7 @@ static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const 
 	return 0;
 }
 
-static int findparent(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, int delta){
+static int findparent(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, bool delta){
 	Vec3d v1, v;
 	tocs_parent_invokes++;
 
@@ -141,7 +137,6 @@ static int findparent(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const
 
 	if(delta){
 		v = cs->qrot.trans(src);
-		v += cs->velo;
 	}
 	else{
 		v1 = cs->qrot.trans(src);
@@ -159,14 +154,14 @@ static int findparent(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const
 	return findparent(ret, retcs, v, cs->parent, delta);
 }
 
-Vec3d CoordSys::tocs(const Vec3d &src, const CoordSys *cs)const{
+Vec3d CoordSys::tocs(const Vec3d &src, const CoordSys *cs, bool delta)const{
 	Vec3d ret;
 	tocs_invokes++;
 	if(cs == this)
 		ret = src;
-	else if(findchild(ret, this, src, cs, NULL, 0))
+	else if(findchild(ret, this, src, cs, NULL, delta))
 		return ret;
-	else if(!findparent(ret, this, src, cs, 0))
+	else if(!findparent(ret, this, src, cs, delta))
 		ret = src;
 	return ret;
 }
@@ -530,8 +525,40 @@ void CoordSys::endframe(){
 		w->endframe();
 	vwvalid = 0;
 	CoordSys *cs;
-	for(cs = children; cs; cs = cs->next)
+	for(cs = children; cs;){
+		CoordSys *csnext = cs->next; // cs can unlink itself from the children list
 		cs->endframe();
+		cs = csnext;
+	}
+
+	// delete offsprings first to avoid adoption of children as possible.
+	if(flags & CS_DELETE){
+		// unlink from parent's children list
+		if(parent) for(CoordSys **ppcs = &parent->children; *ppcs; ppcs = &(*ppcs)->next) if(*ppcs == this){
+			*ppcs = next;
+			break;
+		}
+
+		// give children to parent.
+		for(cs = children; cs;){
+			CoordSys *csnext = cs->next;
+			cs->velo = parent->tocsv(cs->velo, cs->pos, this);
+			cs->pos = parent->tocs(cs->pos, this);
+			cs->omg = parent->tocs(cs->omg, this, true);
+			cs->qrot = parent->tocsq(this);
+			cs->parent = parent;
+			cs->next = parent->children;
+			parent->children = cs;
+			cs = csnext;
+		}
+
+		// delete WarField if present
+		if(w)
+			delete w;
+
+		// rest in peace..
+		delete this;
+	}
 }
 
 Quatd CoordSys::rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const{

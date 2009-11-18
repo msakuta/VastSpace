@@ -370,7 +370,7 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 #endif
 		double val;
 		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-		val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+		val = a && a->absmag < 30 ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
 		if(p.brightness < val){
 			p.brightness = val;
 			p.ret = a;
@@ -395,7 +395,7 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 
 	double val;
 	Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	val = a ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+	val = a && a->absmag < 30 ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
 	if(p.brightness < val){
 		p.brightness = val;
 		p.ret = a;

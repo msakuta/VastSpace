@@ -993,7 +993,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 //			sprintf(titles[j] = titles0[i], "Focus");
 			titles[j] = "Focus";
 			keys[j] = 0;
-			sprintf_s(cmds[j] = cmds0[i], sizeof cmds0[i], "focus \"%s\"", name);
+			sprintf(cmds[j] = cmds0[i], "focus \"%s\"", name);
 			i++; j++;
 			if(target && target->flags & TELEPORT_TP){
 				sprintf(titles[j] = titles0[i], "Teleport");

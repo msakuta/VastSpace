@@ -150,6 +150,7 @@ astro Star first_light{
 			orbits Phobos
 			semimajor_axis 1e3
 			rstation
+			warp po
 		}
 
 		astro TextureSphere Deimos{

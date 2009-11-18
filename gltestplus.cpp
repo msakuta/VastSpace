@@ -630,17 +630,6 @@ void display_func(void){
 
 		MotionAnim(pl, dt, flypower);
 
-		if(pl.chase){
-			input_t inputs;
-			inputs.press = MotionGet();
-			inputs.change = MotionGetToggle();
-			pl.chase->control(&inputs, dt);
-			pl.pos = pl.chase->pos;
-			pl.velo = pl.chase->velo;
-		}
-		pl.velolen = pl.velo.len();
-		pl.pos += pl.velo * (1. + pl.velolen) * dt;
-
 		try{
 			galaxysystem.anim(dt);
 			galaxysystem.postframe();
@@ -651,6 +640,19 @@ void display_func(void){
 		}
 		catch(...){
 			fprintf(stderr, "Exception ?\n");
+		}
+
+		if(pl.chase){
+			input_t inputs;
+			inputs.press = MotionGet();
+			inputs.change = MotionGetToggle();
+			pl.chase->control(&inputs, dt);
+			pl.pos = pl.chase->pos;
+			pl.velo = pl.chase->velo;
+		}
+		else{
+			pl.velolen = pl.velo.len();
+			pl.pos += pl.velo * (1. + pl.velolen) * dt;
 		}
 
 		// Really should be in draw method, since windows are property of the client.

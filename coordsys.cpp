@@ -7,6 +7,7 @@
 #include "stellar_file.h"
 #include "war.h"
 #include "entity.h"
+#include "cmd.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/aquat.h>
@@ -46,7 +47,6 @@ CoordSys **CoordSys::legitimize_child(){
 void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	CoordSys *adoptee = this;
 	CoordSys **ppcs2;
-//	CoordSys dummycs, **ppdummycs;
 	Vec3d pos, velo;
 	Quatd q;
 
@@ -54,13 +54,7 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	if(adoptee->parent == newparent)
 		return;
 
-	/* temporarily make a dummy coordinate system to attend the system tree. */
-/*	dummycs = *adoptee;
-	dummycs.parent = newparent;
-	ppdummycs = dummycs.legitimize_child();*/
-
 	/* obtain relative rotation matrix between old node to new node. */
-//	dummycs.qrot = quat_u;
 	if(retain){
 		q = adoptee->tocsq(newparent);
 
@@ -85,9 +79,6 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 		adoptee->qrot = q;
 	}
 
-	/* unlink dummy coordinate system */
-//	*ppdummycs = dummycs.next;
-
 	/* recognize the new parent */
 	adoptee->parent = newparent;
 
@@ -99,17 +90,10 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 
 
 static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs, bool delta){
-#if 1
 	CoordSys *cs2;
 	tocs_children_invokes++;
 	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
 	{
-#else
-	int i;
-	for(i = 0; i < cs->nchildren; i++) if(cs->children[i] && cs->children[i] != skipcs)
-	{
-		const coordsys *cs2 = cs->children[i];
-#endif
 		Vec3d v1, v;
 		if(delta){
 			v = cs2->qrot.itrans(src);
@@ -594,8 +578,6 @@ void CoordSys::init(const char *path, CoordSys *root){
 	VECNULL(ret->pos);
 	VECNULL(ret->velo);
 	QUATIDENTITY(ret->qrot);
-/*	MAT4IDENTITY(ret->rot);
-	MAT4IDENTITY(ret->irot);*/
 	VECNULL(ret->omg);
 	ret->csrad = 1e2;
 	ret->parent = root;
@@ -609,9 +591,7 @@ void CoordSys::init(const char *path, CoordSys *root){
 	ret->vwvalid = 0;
 	ret->w = NULL;
 	ret->next = NULL;
-	ret->nchildren = 0;
 	ret->children = NULL;
-//	ret->aorder = NULL;
 	ret->naorder = 0;
 	legitimize_child();
 }
@@ -728,8 +708,9 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			w = this->w;
 		else
 			w = this->w = new WarField(this)/*spacewar_create(cs, ppl)*/;
-		pt = w->addent(Entity::create(argv[1]));
+		pt = Entity::create(argv[1]);
 		if(pt){
+			w->addent(pt);
 			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
 			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
 			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
@@ -855,6 +836,68 @@ int CoordSys::getpathint(char *buf, size_t size)const{
 	return strlen(name) + 1 + ret;
 }
 
+struct StackTrace{
+	StackTrace *prev;
+	const CoordSys *base;
+};
+
+static bool findcsrpathchildren(const CoordSys *subject, StackTrace *pst, const CoordSys *ignore, cpplib::dstring &ret){
+	const CoordSys *cs;
+	if(subject == pst->base){
+		for(StackTrace *ist = pst; pst; pst = pst->prev){
+			if(ist != pst)
+				ret.strcat("/");
+			ret.strcat(pst->base->name);
+		}
+		return true;
+	}
+	for(cs = pst->base->children; cs; cs = cs->next){
+		StackTrace st;
+		st.prev = pst;
+		st.base = cs;
+		if(findcsrpathchildren(subject, &st, NULL, ret))
+			return true;
+	}
+/*		if(subject = cs){
+		ret.strcat("/");
+		ret.strcat(cs->name);
+		return true;
+	}*/
+	return false;
+}
+
+static bool findcsrpath(const CoordSys *subject, const CoordSys *base, cpplib::dstring &ret){
+	CoordSys *cs;
+	const char *p;
+	if(!base)
+		return true;
+	if(subject == base){
+		ret.strcat("/");
+		ret.strcat(base->name);
+		return true;
+	}
+/*	bool cr = findcsrpathchildren(subject, base, ret);
+	if(cr)
+		return true;
+	if(p) for(cs = this->children; cs; cs = cs->next) if(strlen(cs->name) == p - path && !strncmp(cs->name, path, p - path)){
+		if(!*p)
+			return cs;
+		else
+			return cs->findcspath(p+1);
+	}*/
+	return NULL;
+}
+
+
+cpplib::dstring CoordSys::getrpath(const CoordSys *base)const{
+	cpplib::dstring ret;
+	StackTrace st;
+	st.prev = NULL;
+	st.base = base;
+	findcsrpathchildren(this, &st, NULL, ret);
+	return ret;
+}
+
 CoordSys *CoordSys::findeisystem(){
 	CoordSys *ret;
 	for(ret = parent; ret; ret = ret->parent) if((ret->flags & (CS_EXTENT | CS_ISOLATED)) == (CS_EXTENT | CS_ISOLATED)){
@@ -877,5 +920,38 @@ void CoordSys::deleteAll(CoordSys **pp){
 	free(cs2);
 }
 
+static int cmd_ls(int argc, char *argv[], void *pv){
+	Player *ppl = (Player*)pv;
+	if(argc <= 1){
+		for(CoordSys *cs = ppl->cs->children; cs; cs = cs->next){
+			cpplib::dstring ds = cs->getrpath(cs);
+			CmdPrintf(ds);
+		}
+		return 0;
+	}
+	const CoordSys *parent;
+	if(parent = ppl->cs->findcspath(argv[1])){
+		for(const CoordSys *cs = parent->children; cs; cs = cs->next){
+			cpplib::dstring ds = cs->getrpath(cs);
+			CmdPrintf(ds);
+		}
+	}
+	else
+		CmdPrintf("Could not find path %s", argv[1]);
+	return 0;
+}
 
+static int cmd_pwd(int argc, char *argv[], void *pv){
+	Player *ppl = (Player*)pv;
+	char buf[128];
+	ppl->cs->getpath(buf, sizeof buf);
+	CmdPrintf(buf);
+	return 0;
+}
+
+bool CoordSys::registerCommands(Player *ppl){
+	CmdAddParam("ls", cmd_ls, ppl);
+	CmdAddParam("pwd", cmd_pwd, ppl);
+	return true;
+}
 

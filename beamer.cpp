@@ -141,9 +141,6 @@ static struct war_field_static warp_static = {
 
 #endif
 
-class Warp : public WarField{
-public:
-};
 #if 0
 static void Warp::anim(struct war_field *w, double dt){
 	struct bullet **ppb = &w->bl;
@@ -1307,8 +1304,6 @@ void Warpable::anim(double dt){
 			p->warpcs->velo = pt->velo;
 /*			VECNULL(pt->velo);*/
 			p->warpcs->csrad = pt->hitradius() * 10.;
-//			p->warpcs->name = "warpbubble";
-//			p->warpcs->fullname = "Warp Bubble";
 			p->warpcs->flags = 0;
 			p->warpcs->w = new WarField(p->warpcs);
 			p->warpcs->w->pl = w->pl;
@@ -1361,39 +1356,6 @@ void Warpable::anim(double dt){
 
 		pos += velo * dt;
 		rot = rot.quatrotquat(omg * dt);
-		{
-/*			amat4_t nmat;
-			amat3_t ort3, irot3, rot3, iort3, nmat3, inmat3;
-			aquat_t q;
-			w->vft->orientation(w, &ort3, pt->pos);
-			rbd_anim(pt, dt, &q, &nmat);
-			QUATCPY(pt->rot, q);
-			MAT4TO3(nmat3, nmat);
-			MATTRANSPOSE(inmat3, nmat3);
-			MATMP(rot3, inmat3, ort3);
-			MAT3TO4(nmat, rot3);*/
-	/*		MAT4TO3(nmat3, nmat);
-			MATTRANSPOSE(iort3, ort3);
-			MATMP(rot3, iort3, nmat3);
-			MATTRANSPOSE(irot3, rot3);
-			MAT3TO4(nmat, irot3);*/
-//			imat2pyr(nmat, pt->pyr);
-	/*		quat2pyr(pt->rot, pt->pyr);*/
-	/*		{
-				avec3_t zh, zh0 = {0, -1., 0}, src, ret;
-				double wid;
-				MAT4DVP3(zh, nmat, zh0);
-				wid = w->map->vft->width(w->map);
-				src[0] = pt->pos[0] + wid / 2;
-				src[1] = pt->pos[1];
-				src[2] = pt->pos[2] + wid / 2;
-				w->map->vft->linehit(w->map, &src, &zh, 1., &ret);
-				p->sight[0] = ret[0] - wid / 2;
-				p->sight[1] = ret[1];
-				p->sight[2] = ret[2] - wid / 2;
-			}*/
-
-		}
 	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
 		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}

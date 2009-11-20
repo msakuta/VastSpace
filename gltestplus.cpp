@@ -1458,6 +1458,7 @@ int main(int argc, char *argv[])
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &pl);
 	CmdAdd("chasecamera", cmd_chasecamera);
+	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

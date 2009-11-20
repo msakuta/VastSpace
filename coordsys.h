@@ -14,6 +14,7 @@ extern "C"{
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
 #include <cpplib/quat.h>
+#include <cpplib/dstring.h>
 #include <vector>
 
 #define CS_DELETE   2 /* marked as to be deleted */
@@ -28,6 +29,7 @@ class WarField;
 class Astrobj;
 class OrbitCS;
 class Universe;
+class Player;
 struct StellarContext;
 struct war_draw_data;
 
@@ -56,7 +58,6 @@ public:
 
 	WarField *w;
 	CoordSys *next; /* list of siblings */
-	int nchildren; /* unnecessary? */
 	CoordSys *children/*[64]*/; /* starting pointer to list of children */
 	typedef std::vector<CoordSys*> AOList;
 	AOList aorder; /* ordered list of drawable objects belonging to this coordsys */
@@ -150,12 +151,16 @@ public:
 	   Also, this function is expected to run faster compared to findcs() because it doesn't
 	  search non-rewarding subtrees. */
 	CoordSys *findcspath(const char *path);
+	const CoordSys *findcspath(const char *path)const{return const_cast<CoordSys*>(this)->findcspath(path);}
 
 	// partial path
 	CoordSys *findcsppath(const char *path, const char *pathend);
 
 	/* Get the absolute path string. */
 	bool getpath(char *buf, size_t size)const;
+
+	// Get the relative path.
+	cpplib::dstring getrpath(const CoordSys *base)const;
 
 	/* Find nearest Extent and Isolated system in ancestory. */
 	CoordSys *findeisystem();
@@ -179,6 +184,10 @@ public:
 	double calcSDist(const Viewer &vw);
 	double calcDist(const Viewer &vw);
 	double calcScale(const Viewer &vw);
+
+	// Called once at startup
+	static bool registerCommands(Player *);
+	static bool unregisterCommands(Player *);
 
 private:
 	int getpathint(char *buf, size_t size)const;

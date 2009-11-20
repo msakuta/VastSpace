@@ -22,7 +22,7 @@ astro Star "Sol"{
 
 coordsys Orbit sunlo{
 	fullname "Sun Low Orbit"
-	radius 500
+	cs_radius 500
 	orbits Sol
 	showorbit
 	semimajor_axis 600.2686*6378.
@@ -37,7 +37,7 @@ coordsys Orbit sunlo{
 
 coordsys Orbit mercury{
 	fullname Mercury
-	radius 1000000
+	cs_radius 1000000
 	orbits Sol
 	orbit_radius 57909100
 	inclination 7.0051
@@ -64,7 +64,7 @@ coordsys Orbit mercury{
 
 coordsys Orbit venus{
 	fullname Venus
-	radius 1000000
+	cs_radius 1000000
 	orbits Sol
 	orbit_radius 108208930
 	inclination 3.39471
@@ -93,7 +93,18 @@ coordsys Orbit venus{
 	}
 }
 
-coordsys earth{
+coordsys Orbit earth{
+	orbits Sol
+	orbit_radius AU
+	inclination 0
+	cs_radius 100000
+	showorbit
+
+	astro TextureSphere "Earth"{
+		radius 6375
+		mass 145394563
+	}
+
 	coordsys earths{
 		teleport "Earth Surface" 0 0 0
 	}
@@ -192,8 +203,9 @@ coordsys earth{
 }
 
 coordsys Orbit marss{
+	eisystem
 	fullname "Mars"
-	radius 1e5
+	cs_radius 1e5
 	orbits Sol
 	semimajor_axis 227936640
 	eccentricity 0.09341233
@@ -218,20 +230,23 @@ coordsys Orbit marss{
 
 	new coordsys Orbit marsorbit{
 		fullname "Mars Orbit"
-		radius 100
-		warp
-		teleport
+		cs_radius 100
+		warp mo
+		teleport mo
 		orbits Mars
 		semimajor_axis 1e4
+		addent beamer .1 0 0
+		addent beamer -.1 0 0
 
 		new astro Asteroid BigWatcher{
 			pos 0 12 -20
 			radius 10
+			cs_radius 11
 		}
 
 	}
 
-	astro Satellite Phobos{
+	astro TextureSphere Phobos{
 		radius 22.2/2.
 		mass 1.26e16
 		planet
@@ -240,17 +255,19 @@ coordsys Orbit marss{
 		orbit_radius 9378
 		orbit_axis 0 0 1
 		color 777f7f
+		showorbit
 	}
 
 	new coordsys Orbit phobosorbit{
 		fullname "Phobos Orbit"
-		radius 100
+		cs_radius 100
 		orbits Phobos
-		semimajor_axis 1e3
+		semimajor_axis 1e2
 		rstation
+		warp po
 	}
 
-	astro Satellite Deimos{
+	astro TextureSphere Deimos{
 		radius 12.6/2.
 		mass 1.8e16
 		planet
@@ -259,6 +276,7 @@ coordsys Orbit marss{
 		orbit_radius 23459
 		orbit_axis 0 0 1
 		color 777f7f
+		showorbit
 	}
 }
 
@@ -278,7 +296,7 @@ astro "Ceres"{
 coordsys Orbit jupiter{
 	fullname "Jupiter"
 	eisystem # extent isolated system
-	radius 1e7
+	cs_radius 1e7
 	orbits Sol
 	orbit_radius (7.7834e8)
 	eccentricity 0.048775
@@ -343,8 +361,8 @@ coordsys Orbit jupiter{
 
 coordsys Orbit saturn{
 	eisystem
-	radius 20000000
-	orbits sun
+	cs_radius 20000000
+	orbits Sol
 	orbit_radius 1433449370
 	eccentricity 0.055723219
 	orbit_axis 0 sin(2*pi*0.7733/360) cos(2*pi*0.7733/360)
@@ -446,7 +464,7 @@ coordsys Orbit saturn{
 }
 
 coordsys Orbit uranus{
-	radius 1000000
+	cs_radius 1000000
 	coordsys uranuslo{
 		fullname "Uranus Low Orbit"
 		pos -20000 20000 0
@@ -485,7 +503,7 @@ coordsys Orbit uranus{
 }
 
 coordsys Orbit neptune{
-	radius 1000000
+	cs_radius 1000000
 	orbits Sol
 	orbit_radius 4498252900
 	inclination 1.76917
@@ -571,6 +589,7 @@ coordsys Orbit pluto{
 
 astro "Eris"{
 	radius 2400
+	cs_radius 10000
 	mass 1.5e22
 	color af7f7f
 	spherehit
@@ -580,5 +599,6 @@ astro "Eris"{
 	eccentricity 0.436
 	inclination 44.02
 	argument_of_periapsis 151.52
-	ascending_node 35.96	
+	ascending_node 35.96
+	showorbit
 }

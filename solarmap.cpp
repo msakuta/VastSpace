@@ -393,7 +393,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 			}
 		}
 	}
-	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT){
+	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT && cs->toOrbitCS()->orbit_home){
 		const OrbitCS *a = cs->toOrbitCS();
 		int j;
 		double (*cuts)[2], rad;

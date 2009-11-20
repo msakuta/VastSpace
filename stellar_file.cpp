@@ -246,11 +246,12 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 /*			if(ps && !strcmp(ps, "Asteroid")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = asteroid_new;
-			}
+			}*/
 			else if(ps && !strcmp(ps, "Satellite")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = satellite_new;
-			}*/
+				CC ctor = Cons<TexSphere>;
+				constructor = ctor;
+			}
 			else if(ps && !strcmp(ps, "TextureSphere")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<TexSphere>;
@@ -285,7 +286,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				stellar_coordsys(sc, a);
 			}
 		}
-		else if(!strcmp(s, "coordsys")){
+		else if(!strcmp(s, "coordsys") || argc == 1 && s[strlen(s)-1] == '{'){
 //			CoordSys *(*constructor)(const char *, CoordSys *) = new_coordsys;
 			CoordSys *cs2 = NULL;
 			CC constructor = Cons<CoordSys>;
@@ -302,16 +303,15 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = new_lagrange2;
 			}*/
-			if(ps){
-				char *pp;
-				if(pp = strchr(ps, '{'))
-					*pp = '\0';
-				if((cs2 = cs->findcspath(ps)))
-					stellar_coordsys(sc, cs2);
-			}
-			if(!cs2 && (cs2 = constructor(ps, cs))){
+			if(!ps)
+				ps = s;
+			char *pp;
+			if(pp = strchr(ps, '{'))
+				*pp = '\0';
+			if((cs2 = cs->findcspath(ps)))
 				stellar_coordsys(sc, cs2);
-			}
+			else if((cs2 = constructor(ps, cs)))
+				stellar_coordsys(sc, cs2);
 		}
 		else if(cs->readFile(sc, argc, (argv)));
 #if 0

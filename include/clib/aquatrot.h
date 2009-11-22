@@ -7,9 +7,9 @@
   clib/aquat.h. */
 
 #include "clib/aquat.h"
+#include "clib/avec3.h"
+#include "clib/amat4.h"
 
-typedef double amat4_t[16];
-typedef double avec3_t[3];
 
 /* Create rotation from axis and angle */
 #define QUATROTATION(qr,p,sx,sy,sz) {\

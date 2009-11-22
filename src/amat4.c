@@ -64,11 +64,11 @@ void mat4translate(amat4_t mr, double sx, double sy, double sz){
 	MAT4TRANSLATE(mr,sx,sy,sz);
 }
 
-void mat4translate3dv(amat4_t mr, avec3_t va){
+void mat4translate3dv(amat4_t mr, const avec3_t va){
 	MAT4TRANSLATE(mr,va[0],va[1],va[2]);
 }
 
-void mat4translaten3dv(amat4_t mr, avec3_t va){
+void mat4translaten3dv(amat4_t mr, const avec3_t va){
 	MAT4TRANSLATE(mr,-va[0],-va[1],-va[2]);
 }
 

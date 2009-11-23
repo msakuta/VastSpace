@@ -329,6 +329,35 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
+#ifdef NDEBUG
+#define hitbox_draw
+#else
+static void hitbox_draw(const Entity *pt, const double sc[3]){
+	glPushMatrix();
+	glScaled(sc[0], sc[1], sc[2]);
+	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_POLYGON_SMOOTH);
+	glColor4ub(255,0,0,255);
+	glBegin(GL_LINES);
+	{
+		int i, j, k;
+		for(i = 0; i < 3; i++) for(j = -1; j <= 1; j += 2) for(k = -1; k <= 1; k += 2){
+			double v[3];
+			v[i] = j;
+			v[(i+1)%3] = k;
+			v[(i+2)%3] = -1.;
+			glVertex3dv(v);
+			v[(i+2)%3] = 1.;
+			glVertex3dv(v);
+		}
+	}
+	glEnd();
+	glPopAttrib();
+	glPopMatrix();
+}
+#endif
 
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
@@ -1647,12 +1676,11 @@ void Beamer::anim(double dt){
 #endif
 }
 
-#if 0
-static int beamer_cull(entity_t *pt, wardraw_t *wd){
+static int beamer_cull(Entity *pt, wardraw_t *wd){
 	double pixels;
-	if(glcullFrustum(&pt->pos, .6, wd->pgc))
+	if(wd->vw->gc->cullFrustum(pt->pos, .6))
 		return 1;
-	pixels = .8 * fabs(glcullScale(&pt->pos, wd->pgc));
+	pixels = .8 * fabs(wd->vw->gc->scale(pt->pos));
 	if(pixels < 2)
 		return 1;
 	return 0;
@@ -1661,12 +1689,11 @@ static int beamer_cull(entity_t *pt, wardraw_t *wd){
 static const double beamer_sc[3] = {.05, .055, .075};
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
 static struct hitbox beamer_hb[] = {
-	{{0., 0., -.02}, {0,0,0,1}, {.015, .015, .075}},
-	{{.025, -.015, .02}, {0,0, -SIN15, COS15}, {.0075, .002, .02}},
-	{{-.025, -.015, .02}, {0,0, SIN15, COS15}, {.0075, .002, .02}},
-	{{.0, .03, .0325}, {0,0,0,1}, {.002, .008, .010}},
+	{Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)},
+	{Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)},
+	{Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)},
+	{Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)},
 };
-#endif
 
 static const suftexparam_t defstp = {
 	NULL, NULL,  // const BITMAPINFO *bmi;
@@ -1755,8 +1782,8 @@ void Beamer::draw(wardraw_t *wd){
 		return;
 
 	/* cull object */
-/*	if(beamer_cull(pt, wd))
-		return;*/
+	if(beamer_cull(this, wd))
+		return;
 //	wd->lightdraws++;
 
 	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / beamer_mn.capacity);
@@ -1801,21 +1828,14 @@ void Beamer::draw(wardraw_t *wd){
 		transform(mat);
 		glMultMatrixd(mat);
 
-#if 0
-		for(i = 0; i < numof(beamer_hb); i++){
-			amat4_t rot;
+#if 1
+		for(int i = 0; i < numof(beamer_hb); i++){
+			Mat4d rot;
 			glPushMatrix();
 			gldTranslate3dv(beamer_hb[i].org);
-			quat2mat(rot, beamer_hb[i].rot);
+			rot = beamer_hb[i].rot.tomat4();
 			glMultMatrixd(rot);
-			hitbox_draw(pt, beamer_hb[i].sc);
-			glPopMatrix();
-
-			glPushMatrix();
-			gldTranslate3dv(beamer_hb[i].org);
-			quat2imat(rot, beamer_hb[i].rot);
-			glMultMatrixd(rot);
-			hitbox_draw(pt, beamer_hb[i].sc);
+			hitbox_draw(this, beamer_hb[i].sc);
 			glPopMatrix();
 		}
 #endif
@@ -2165,22 +2185,22 @@ static void beamer_bullethit(entity_t *pt, warf_t *w, const bullet_t *pb){
 
 	}
 }
+#endif
 
-static int beamer_tracehit(entity_t *pt, warf_t *w, const double src[3], const double dir[3], double rad, double dt, double *ret, double (*retp)[3], double (*retn)[3]){
-	beamer_t *p = (beamer_t*)pt;
+bool Beamer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	Beamer *p = this;
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
-	if(0 < p->shieldAmount){
-		if(jHitSpherePos(pt->pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, *retp))
+	if(false && 0 < p->shieldAmount){
+		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, retp))
 			return 1000; /* something quite unlikely to reach */
 	}
 	for(n = 0; n < numof(beamer_hb); n++){
-		avec3_t org;
-		aquat_t rot;
-		quatirot(org, pt->rot, beamer_hb[n].org);
-		VECADDIN(org, pt->pos);
-		QUATMUL(rot, pt->rot, beamer_hb[n].rot);
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(beamer_hb[n].org) + this->pos;
+		rot = this->rot * beamer_hb[n].rot;
 		for(i = 0; i < 3; i++)
 			sc[i] = beamer_hb[n].sc[i] + rad;
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
@@ -2191,5 +2211,4 @@ static int beamer_tracehit(entity_t *pt, warf_t *w, const double src[3], const d
 	}
 	return reti;
 }
-#endif
 

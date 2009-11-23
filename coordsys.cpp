@@ -933,7 +933,7 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 	if(parent = ppl->cs->findcspath(argv[1])){
 		for(const CoordSys *cs = parent->children; cs; cs = cs->next){
 			cpplib::dstring ds = cs->getrpath(cs);
-			CmdPrintf(ds);
+			CmdPrint(ds);
 		}
 	}
 	else

@@ -126,17 +126,17 @@ int jHitPolygon(const double vb[][3], unsigned short vi[], int nv, const double 
 }
 
 
-int jHitBox(const double org[3], const double scale[3], const double rot[4], const double src[3], const double dir[3], double mint, double maxt, double *ret, double (*retp)[3], avec3_t *retn){
+int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn){
 	int i, reti = 0;
-	amat4_t imat, mat;
-	avec3_t lsrc, ldir;
+	Mat4d imat, mat;
+	Vec3d lsrc, ldir;
 
-	quat2imat(&imat, rot);
+	imat = rot.cnj().tomat4();
 /*	for(i = 0; i < 3; i++)
 		VECSCALEIN(&imat[i*4], 1. / scale[i]);*/
 /*	MAT4SCALE(imat, 1. / scale[0], 1. / scale[1], 1. / scale[2]);*/
 
-	quat2mat(&mat, rot);
+	mat = rot.tomat4();
 /*	MAT4SCALE(mat, scale[0], scale[1], scale[2]);*/
 /*	{
 		amat3_t mat3, imat3;
@@ -144,39 +144,38 @@ int jHitBox(const double org[3], const double scale[3], const double rot[4], con
 		matinv(imat3, mat3);
 		MAT3TO4(imat, imat3);
 	}*/
-	VECCPY(&mat[12], org);
+	mat.vec3(3) += org;
 
 /*	MAT4TRANSLATE(imat, -org[0], -org[1], -org[2]);*/
 /*	VECSCALE(&imat[12], org, -1);*/
 
 	{
-		avec3_t dr;
-		VECSUB(dr, src, org);
-		mat4dvp3(lsrc, imat, dr);
-		mat4dvp3(ldir, imat, dir);
+		Vec3d dr;
+		dr = src - org;
+		lsrc = imat.dvp3(dr);
+		ldir = imat.dvp3(dir);
 	}
 
 	{
 		double f, best = maxt;
-		avec3_t hit;
+		Vec3d hit;
 		for(i = 0; i < 3; i++){
 			int s = ldir[i] < 0. ? -1 : 1, a = i;
 			f = (-lsrc[a] - s * scale[a]) / ldir[a];
 			if(!(mint <= f && f < best))
 				continue;
-			VECSCALE(hit, ldir, f);
-			VECADDIN(hit, lsrc);
+			hit = ldir * f;
+			hit += lsrc;
 			if(-scale[(a+1)%3] < hit[(a+1)%3] && hit[(a+1)%3] < scale[(a+1)%3] && -scale[(a+2)%3] < hit[(a+2)%3] && hit[(a+2)%3] < scale[(a+2)%3]){
 				if(ret) *ret = f;
 				if(retp){
 /*					mat4vp3(*retp, mat, hit);*/
-					VECSCALE(*retp, dir, f);
-					VECADDIN(*retp, src);
+					*retp = dir * f;
+					*retp += src;
 				}
 				if(retn){
 /*					quatrot(*retn, rot, a == 0 ? avec3_100 : a == 1 ? avec3_010 : avec3_001);*/
-					VECNORM(*retn, &mat[a * 4]);
-					VECSCALEIN(*retn, -s);
+					*retn = -mat.vec3(a).norm();
 				}
 				best = f;
 				reti = 1;

@@ -378,7 +378,7 @@ static void drawindics(Viewer *vw){
 		glMatrixMode(GL_MODELVIEW);*/
 		glPushMatrix();
 		glLoadIdentity();
-		Mat4d rot = pl.rot.tomat4();
+		Mat4d rot = pl.getrot().tomat4();
 		glMultMatrixd(rot);
 		gldTranslaten3dv(vw->pos);
 		select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
@@ -686,18 +686,10 @@ void display_func(void){
 /*		glDepthRange(.5,100);*/
 	}
 	viewer.cs = pl.cs;
-	if(pl.chase){
-		viewer.qrot = pl.rot * pl.chase->rot.cnj();
-		viewer.rot = viewer.qrot.tomat4();
-		viewer.irot = viewer.qrot.cnj().tomat4();
-		viewer.pos = pl.pos + pl.chase->rot.trans(Vec3d(.0, .05, .15));
-	}
-	else{
-		viewer.qrot = pl.rot;
-		viewer.rot = viewer.qrot.tomat4();
-		viewer.irot = pl.rot.cnj().tomat4();
-		viewer.pos = pl.pos;
-	}
+	viewer.qrot = pl.getrot();
+	viewer.rot = viewer.qrot.tomat4();
+	viewer.irot = viewer.qrot.cnj().tomat4();
+	viewer.pos = pl.getpos();
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	viewer.viewtime = gametime;
@@ -824,13 +816,15 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	}
 	glPopMatrix();*/
 	mat2 = mat * rot;
+	Mat4d irot = rot.transpose();
+	Vec3d plpos = pl.getpos();
 	if(!draw)
 		pl.selected = NULL;
 	for(pt = pl.cs->w->el; pt; pt = pt->next) if(pt->w/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;
-		dpos = pt->pos - pl.pos;
+		dpos = pt->pos - plpos;
 		dpos[3] = 1.;
 		lpos = mat2.vp(dpos);
 		VECSCALEIN(lpos, 1. / lpos[3]);
@@ -845,12 +839,10 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 			else if(draw){
 				double (*cuts)[2];
 				int i;
-				Mat4d mat, imat;
 				cuts = CircleCuts(16);
 				glPushMatrix();
 				gldTranslate3dv(pt->pos);
-				imat = pl.rot.cnj().tomat4();
-				glMultMatrixd(imat);
+				glMultMatrixd(irot);
 				gldScaled(pt->hitradius());
 				glBegin(GL_LINE_LOOP);
 				for(i = 0; i < 16; i++)
@@ -950,7 +942,7 @@ void mouse_func(int button, int state, int x, int y){
 				int x1 = MAX(s_mousedragx, s_mousex) + 1;
 				int y0 = MIN(s_mousedragy, s_mousey);
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
-				Mat4d rot = pl.rot.tomat4();
+				Mat4d rot = pl.getrot().tomat4();
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 0/*(!!g_focusset << 1) */| ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2));
 				s_mousedragx = s_mousex;
@@ -1056,6 +1048,11 @@ static int cmd_chasecamera(int argc, char *argv[]){
 		pl.chase = pl.selected;
 		pl.cs = pl.selected->w->cs;
 	}
+	return 0;
+}
+
+static int cmd_originrotation(int, char *[]){
+	pl.rot = quat_u;
 	return 0;
 }
 
@@ -1448,6 +1445,7 @@ int main(int argc, char *argv[])
 	CmdAdd("teleport", cmd_teleport);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
+	CmdAdd("originrotation", cmd_originrotation);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);

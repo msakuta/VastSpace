@@ -39,6 +39,9 @@ public:
 	double gametime;
 	double velolen; /* trivial; performance keeper */
 	double height; /* trivial; indicates air pressure surrounding the player */
+
+	Quatd getrot()const;
+	Vec3d getpos()const;
 };
 
 

@@ -799,7 +799,7 @@ static int CmdExecD(char *cmdstring){
 		}
 	}
 	if(console_undefinedecho){
-		cmd_echoa("Undefined command");
+		CmdPrintf("Undefined command: %s", cmd);
 	}
 gcon:;
 	}while(cmdstring = post);

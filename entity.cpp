@@ -6,6 +6,18 @@ extern "C"{
 #include "judge.h"
 #include "player.h"
 
+Quatd Player::getrot()const{
+	if(!chase)
+		return rot;
+	return rot * chase->rot.cnj();
+}
+
+Vec3d Player::getpos()const{
+	if(!chase)
+		return pos;
+	return pos + chase->rot.trans(Vec3d(.0, .05, .15));
+}
+
 template<class T> Entity *Constructor(){
 	return new T();
 };
@@ -68,23 +80,15 @@ Warpable *Entity::toWarpable(){
 }
 
 void Entity::transit_cs(CoordSys *cs){
-	Entity **ppt;
 	Vec3d pos;
 	Mat4d mat;
 	if(w == cs->w)
 		return;
-/*	for(ppt = &w->tl; *ppt; ppt = &(*ppt)->next) if(*ppt == pt){
-		break;
-	}
-	assert(*ppt);
-	*ppt = pt->next;
-	pt->next = cs->w->tl;*/
 	this->pos = cs->tocs(this->pos, w->cs);
 	velo = cs->tocsv(velo, pos, w->cs);
 	if(!cs->w){
 		cs->w = new WarField(cs);
 	}
-/*	cs->w->tl = pt;*/
 	w = cs->w;
 	{
 		Quatd q, q1;
@@ -92,27 +96,6 @@ void Entity::transit_cs(CoordSys *cs){
 		q = q1 * this->rot;
 		this->rot = q;
 	}
-/*	{
-		aquat_t q;
-		avec3_t pyr;
-		amat4_t rot, rot2, rot3;
-		tocsm(rot, cs, w->cs);
-		QUATSCALE(q, pt->rot, -1);
-		quat2imat(rot2, q);
-		mat4mp(rot3, rot2, rot);
-		imat2pyr(rot3, pyr);
-		VECSCALEIN(pyr, -1);
-		pyr2quat(pt->rot, pyr);
-	}*/
-	/*
-	tocsim(mat, cs, w->cs);
-	{
-		aquat_t q, qr;
-		imat2quat(mat, q);
-		QUATMUL(qr, pt->rot, q);
-		QUATCPY(pt->rot, qr);
-	}*/
-/*	VECNULL(pt->pos);*/
 	if(w->pl->chase == this){
 		w->pl->pos = cs->tocs(w->pl->pos, w->pl->cs);
 		w->pl->cs = cs;

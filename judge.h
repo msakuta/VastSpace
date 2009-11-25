@@ -14,6 +14,7 @@ struct hitbox{
 	Vec3d org;
 	Quatd rot;
 	Vec3d sc;
+	hitbox(Vec3d aorg, Quatd arot, Vec3d asc) : org(aorg), rot(arot), sc(asc){}
 };
 
 /* Object tree */

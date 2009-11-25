@@ -1689,10 +1689,10 @@ static int beamer_cull(Entity *pt, wardraw_t *wd){
 static const double beamer_sc[3] = {.05, .055, .075};
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
 static struct hitbox beamer_hb[] = {
-	{Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)},
-	{Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)},
-	{Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)},
-	{Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)},
+	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
+	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
+	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
+	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
 };
 
 static const suftexparam_t defstp = {

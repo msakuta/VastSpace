@@ -185,6 +185,9 @@
 				RelativePath="stellar_file.cpp">
 			</File>
 			<File
+				RelativePath="teline3d.c">
+			</File>
+			<File
 				RelativePath="war.cpp">
 			</File>
 		</Filter>
@@ -247,6 +250,12 @@
 			</File>
 			<File
 				RelativePath="stellar_file.h">
+			</File>
+			<File
+				RelativePath="tent3d.h">
+			</File>
+			<File
+				RelativePath="tent3d_p.h">
 			</File>
 			<File
 				RelativePath="calc\tokker.h">

@@ -768,10 +768,10 @@ Beamer::Beamer(){
 	undocktime = 0.f;
 	cooldown = 0.;
 	sw = NULL;
-	shieldAmount = MAX_SHIELD_AMOUNT;
+	shieldAmount = MAX_SHIELD_AMOUNT / 10;
 	shield = 0.;
 	VECNULL(integral);
-	health = BEAMER_HEALTH;
+	health = BEAMER_HEALTH / 10;
 }
 
 const char *Beamer::idname()const{
@@ -1496,8 +1496,8 @@ const maneuve &Beamer::getManeuve()const{return beamer_mn;}
 void Beamer::anim(double dt){
 	Mat4d mat;
 
-	if(!w){
-	}
+	if(!w)
+		return;
 
 	if(shield < dt)
 		shield = 0.;
@@ -1952,6 +1952,8 @@ void Beamer::drawtra(wardraw_t *wd){
 	transform(mat);
 
 	double vsp = -mat.vec3(2).sp(velo) / beamer_mn.maxspeed;
+	if(1. < vsp)
+		vsp = 1.;
 
 	if(0. < vsp){
 		const Vec3d pos0(0,-0.003,.06 + .01 * vsp);
@@ -2220,12 +2222,13 @@ int Beamer::takedamage(double damage, int hitpart){
 			VECSADD(pos, velo, .1);
 			AddTelineCallback3D(w->gibs, pos, velo, .010, NULL, omg, NULL, beamer_gib_draw, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 		}
+#endif
 
 		/* smokes */
 		for(i = 0; i < 32; i++){
 			double pos[3], velo[3];
 			COLOR32 col = 0;
-			VECCPY(pos, pt->pos);
+			VECCPY(pos, p->pos);
 			pos[0] += .1 * (drseq(&w->rs) - .5);
 			pos[1] += .1 * (drseq(&w->rs) - .5);
 			pos[2] += .1 * (drseq(&w->rs) - .5);
@@ -2233,32 +2236,31 @@ int Beamer::takedamage(double damage, int hitpart){
 			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 			col |= COLOR32RGBA(0,0,0,191);
-			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, w->gravity, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
 		}
 
 		{/* explode shockwave thingie */
 			static const double pyr[3] = {M_PI / 2., 0., 0.};
 			amat3_t ort;
-			avec3_t dr, v;
-			aquat_t q;
+			Vec3d dr, v;
+			Quatd q;
 			amat4_t mat;
 			double p;
-			w->vft->orientation(w, &ort, &pt->pos);
-			VECCPY(dr, &ort[3]);
+/*			w->vft->orientation(w, &ort, &pt->pos);
+			VECCPY(dr, &ort[3]);*/
+			dr = vec3_001;
 
 			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
 			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
-			VECVP(v, avec3_001, dr);
+			v = vec3_001.vp(dr);
 			p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-			VECSCALE(q, v, p);
+			q = v * p;
 
-			AddTeline3D(tell, pt->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
-			AddTeline3D(tell, pt->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
+			AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
+			AddTeline3D(tell, this->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-		pt->active = 0;
-#endif
 		p->w = NULL;
 	}
 	p->health -= damage;

@@ -18,6 +18,22 @@ Vec3d Player::getpos()const{
 	return pos + chase->rot.trans(Vec3d(.0, .05, .15));
 }
 
+void Player::unlink(const Entity *pe){
+	if(chase == pe)
+		chase = NULL;
+	if(control == pe)
+		control = NULL;
+	if(lastchase == pe)
+		lastchase = NULL;
+	Entity **ppe;
+	for(ppe = &selected; *ppe;) if(*ppe == pe){
+		*ppe = pe->selectnext;
+		break;
+	}
+	else
+		ppe = &(*ppe)->selectnext;
+}
+
 template<class T> Entity *Constructor(){
 	return new T();
 };

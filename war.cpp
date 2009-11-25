@@ -46,8 +46,10 @@ void WarField::endframe(){
 	for(Entity **pe = &el; *pe;) if((*pe)->w != this){
 		Entity *e = *pe;
 		*pe = e->next;
-		if(!e->w)
+		if(!e->w){
+			pl->unlink(e);
 			delete e;
+		}
 		else
 			e->w->addent(e);
 	}
@@ -56,12 +58,20 @@ void WarField::endframe(){
 }
 
 void WarField::draw(wardraw_t *wd){
-	for(Entity *e = el; e; e = e->next)
-		e->draw(wd);
+	try{
+		for(Entity *e = el; e; e = e->next) if(e->w == this)
+			e->draw(wd);
+	}
+	catch(std::exception e){
+			fprintf(stderr, "Exception %s\n", e.what());
+	}
+	catch(...){
+			fprintf(stderr, "Exception ?\n");
+	}
 }
 
 void WarField::drawtra(wardraw_t *wd){
-	for(Entity *e = el; e; e = e->next)
+	for(Entity *e = el; e; e = e->next) if(e->w == this)
 		e->drawtra(wd);
 	tent3d_line_drawdata dd;
 	*(Vec3d*)(dd.viewdir) = -wd->vw->rot.vec3(2);

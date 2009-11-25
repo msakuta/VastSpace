@@ -42,6 +42,7 @@ public:
 
 	Quatd getrot()const;
 	Vec3d getpos()const;
+	void unlink(const Entity *);
 };
 
 

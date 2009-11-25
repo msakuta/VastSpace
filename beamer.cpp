@@ -1951,6 +1951,52 @@ void Beamer::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
+	double vsp = -mat.vec3(2).sp(velo) / beamer_mn.maxspeed;
+
+	if(0. < vsp){
+		const Vec3d pos0(0,-0.003,.06 + .01 * vsp);
+		static GLuint texname = 0;
+		glPushAttrib(GL_TEXTURE_BIT);
+		{
+			Vec3d v = rot.cnj().trans(wd->vw->pos - mat.vp3(pos0));
+			v[2] /= 2. * vsp;
+			v.normin() *= (4. / 5.);
+
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(v));
+			glEnable(GL_TEXTURE_GEN_S);
+		}
+		glDisable(GL_TEXTURE_2D);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		if(!texname){
+			static const GLubyte texture[4][4] = {
+				{255,0,0,0},
+				{255,127,0,127},
+				{255,255,0,191},
+				{255,255,255,255},
+			};
+			GLint er = glGetError();
+			glGenTextures(1, &texname);
+			glBindTexture(GL_TEXTURE_1D, texname);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+			er = glGetError();
+		}
+		glEnable(GL_TEXTURE_1D);
+		glBindTexture(GL_TEXTURE_1D, texname);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glPushMatrix();
+		glMultMatrixd(mat);
+		gldTranslate3dv(pos0);
+		glScaled(.01, .01, .02 * (0. + vsp));
+		glColor4f(1,1,1, vsp);
+//		gldMultQuat(rot.cnj() * wd->vw->qrot.cnj());
+		gldOctSphere(2);
+		glPopMatrix();
+		glPopAttrib();
+	}
+
 #if 1
 	if(!wd->vw->gc->cullFrustum(pos, .1)){
 		glColor4ub(255,255,9,255);

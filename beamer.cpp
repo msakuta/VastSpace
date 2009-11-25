@@ -1652,9 +1652,9 @@ void Beamer::anim(double dt){
 				int i;
 				for(i = 0; i < 3; i++)
 					velo[i] = (drseq(&w->rs) - .5) * .1;
-//				AddTeline3D(w->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
+				AddTeline3D(w->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-//			AddTeline3D(w->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+			AddTeline3D(w->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 		}
 		else
 			beamlen = 10.;

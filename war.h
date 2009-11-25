@@ -6,6 +6,7 @@ extern "C"{
 #include <clib/amat3.h>
 #include <clib/suf/suf.h>
 #include <clib/rseq.h>
+#include "tent3d.h"
 }
 #include <cpplib/gl/cullplus.h>
 
@@ -116,8 +117,8 @@ public:
 	Player *pl;
 	Entity *el; /* entity list */
 //	struct bullet *bl; /* bullet list */
-//	struct tent3d_line_list *tell, *gibs;
-//	struct tent3d_fpol_list *tepl;
+	struct tent3d_line_list *tell, *gibs;
+	struct tent3d_fpol_list *tepl;
 //	double war_time;
 //	int nstatic_obj;
 //	race_t races[16];

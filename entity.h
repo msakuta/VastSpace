@@ -4,6 +4,7 @@
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 
+class Bullet;
 class Warpable;
 class Entity{
 public:
@@ -21,7 +22,8 @@ public:
 	virtual void draw(wardraw_t *) = 0;
 	virtual void drawtra(wardraw_t *) = 0;
 	virtual double hitradius() = 0;
-	virtual bool tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
+	virtual void bullethit(const Bullet *);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
 	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
 	virtual Warpable *toWarpable();

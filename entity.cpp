@@ -49,8 +49,9 @@ const char *Entity::classname()const{
 
 void Entity::anim(double){}
 void Entity::postframe(){}
+void Entity::bullethit(const Bullet *){}
 
-bool Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
+int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
 	bool bret = !!jHitSpherePos(pos, this->hitradius() + rad, start, dir, 1., fret, &retpos);
 	if(bret && retp)

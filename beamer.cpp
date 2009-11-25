@@ -2,7 +2,7 @@
 //#include "entity_p.h"
 #include "player.h"
 //#include "train.h"
-//#include "bullet.h"
+#include "bullet.h"
 //#include "bhole.h"
 //#include "aim9.h"
 //#include "coordcnv.h"
@@ -328,6 +328,72 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
+#define SQRT2P2 (M_SQRT2/2.)
+
+void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius, const GLubyte color[4], const double irot[16]){
+	int i, j;
+	const double (*cuts)[2];
+	double jcuts0[4][2];
+	double (*jcuts)[2] = jcuts0;
+	double tangent;
+	GLubyte colors[4][4];
+
+	tangent = acos(radius / VECDIST(pos, viewpos));
+
+	colors[3][0] = color[0];
+	colors[3][1] = color[1];
+	colors[3][2] = color[2];
+	colors[3][3] = color[3];
+	colors[0][0] = 255;
+	colors[0][1] = 0;
+	colors[0][2] = 128;
+	colors[0][3] = 0;
+
+	for(j = 1; j <= 2; j++) for(i = 0; i < 4; i++)
+		colors[j][i] = ((3 - j) * colors[0][i] + j * colors[3][i]) / 3;
+
+	cuts = CircleCuts(20);
+/*	jcuts = CircleCuts(12);*/
+	jcuts[0][0] = 0.;
+	jcuts[0][1] = 1.;
+	jcuts[1][0] = sin(tangent / 3.);
+	jcuts[1][1] = cos(tangent / 3.);
+	jcuts[2][0] = sin(tangent * 2. / 3.);
+	jcuts[2][1] = cos(tangent * 2. / 3.);
+	jcuts[3][0] = sin(tangent);
+	jcuts[3][1] = cos(tangent);
+
+	glPushAttrib(GL_POLYGON_BIT);
+/*	glEnable(GL_CULL_FACE);*/
+	glPushMatrix();
+	glTranslated(pos[0], pos[1], pos[2]);
+	if(irot)
+		glMultMatrixd(irot);
+	glScaled(radius, radius, radius);
+
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4ubv(colors[0]);
+	glVertex3d(0., 0., 1.);
+	glColor4ubv(colors[1]);
+	for(i = 0; i <= 20; i++){
+		int k = i % 20;
+		glVertex3d(jcuts[1][0] * cuts[k][1], jcuts[1][0] * cuts[k][0], jcuts[1][1]);
+	}
+	glEnd();
+
+	glBegin(GL_QUAD_STRIP);
+	for(j = 1; j <= 2; j++) for(i = 0; i <= 20; i++){
+		int k = i % 20;
+		glColor4ubv(colors[j]);
+		glVertex3d(jcuts[j][0] * cuts[k][1], jcuts[j][0] * cuts[k][0], jcuts[j][1]);
+		glColor4ubv(colors[j+1]);
+		glVertex3d(jcuts[j+1][0] * cuts[k][1], jcuts[j+1][0] * cuts[k][0], jcuts[j+1][1]);
+	}
+	glEnd();
+
+	glPopMatrix();
+	glPopAttrib();
+}
 
 #ifdef NDEBUG
 #define hitbox_draw
@@ -1920,19 +1986,19 @@ void Beamer::drawtra(wardraw_t *wd){
 		}
 
 		/* shield effect */
-/*		if(0. < p->shieldAmount && 0. < p->shield){
+		if(0. < p->shieldAmount && 0. < p->shield){
 			GLubyte col[4] = {0,127,255,255};
 			avec3_t dr;
 			amat4_t irot;
 			col[0] = 128 * (1. - p->shieldAmount / MAX_SHIELD_AMOUNT);
 			col[2] = 255 * (p->shieldAmount / MAX_SHIELD_AMOUNT);
 			col[3] = 128 * (1. - 1. / (1. + p->shield));
-			VECSUB(dr, wd->vw->pos, pt->pos);
-			gldLookatMatrix(irot, dr);
-			drawShieldSphere(pt->pos, wd->vw->pos, BEAMER_SHIELDRAD, col, irot);
+			VECSUB(dr, wd->vw->pos, this->pos);
+			gldLookatMatrix(&irot, &dr);
+			drawShieldSphere(this->pos, wd->vw->pos, BEAMER_SHIELDRAD, col, irot);
 		}
 
-		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
+/*		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
 	}
 #endif
 #if 1
@@ -2045,10 +2111,11 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 	glPopMatrix();
 	glPopAttrib();
 }
+#endif
 
 
-static int beamer_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart){
-	beamer_t *p = (beamer_t*)pt;
+int Beamer::takedamage(double damage, int hitpart){
+	Beamer *p = this;
 	struct tent3d_line_list *tell = w->tell;
 	int ret = 1;
 
@@ -2076,23 +2143,24 @@ static int beamer_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart
 				TEL3_HEADFORWARD | TEL3_REFLECT | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
 		}
 	}*/
-	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-	if(0 < pt->health && pt->health - damage <= 0){
+//	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+	if(0 < p->health && p->health - damage <= 0){
 		int i;
 		ret = 0;
 /*		effectDeath(w, pt);*/
 		for(i = 0; i < 32; i++){
-			double pos[3], velo[3];
+			Vec3d pos, velo;
 			velo[0] = drseq(&w->rs) - .5;
 			velo[1] = drseq(&w->rs) - .5;
 			velo[2] = drseq(&w->rs) - .5;
-			VECNORMIN(velo);
-			VECCPY(pos, pt->pos);
-			VECSCALEIN(velo, .1);
-			VECSADD(pos, velo, .1);
+			velo.normin();
+			pos = p->pos;
+			velo *= .1;
+			pos += velo * .1;
 			AddTeline3D(w->tell, pos, velo, .005, NULL, NULL, NULL, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND, 15. + drseq(&w->rs) * 5.);
 		}
 
+#if 0
 		if(w->gibs) for(i = 0; i < 32; i++){
 			double pos[3], velo[3], omg[3];
 			/* gaussian spread is desired */
@@ -2142,10 +2210,12 @@ static int beamer_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart
 			AddTeline3D(tell, pt->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
 			AddTeline3D(tell, pt->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
 		}
-		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+//		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 		pt->active = 0;
+#endif
+		p->w = NULL;
 	}
-	pt->health -= damage;
+	p->health -= damage;
 	return ret;
 }
 
@@ -2160,39 +2230,40 @@ static int beamer_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart
 	}
 }*/
 
-static void beamer_bullethit(entity_t *pt, warf_t *w, const bullet_t *pb){
-	beamer_t *p = (beamer_t*)pt;
+void Beamer::bullethit(const Bullet *pb){
+	Beamer *p = this;
+#if 0
 	if(pb->damage < p->shieldAmount){
 		double pos[3], velo[3];
 		double pi;
-		avec3_t dr, v;
-		aquat_t q;
+		Vec3d dr, v;
+		Quatd q;
 
-		VECSUB(dr, pb->pos, pt->pos);
-		VECNORMIN(dr);
+		dr = pb->pos - pt->pos;
+		dr.normin();
 
 		/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
 		q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
-		VECVP(v, avec3_001, dr);
+		v = vec3_001.vp(dr);
 		pi = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-		VECSCALE(q, v, pi);
+		q = v * pi;
 
-		VECCPY(pos, pb->pos);
-		VECCPY(velo, pt->velo);
+		pos = pb->pos;
+		velo = pt->velo;
 
 		ShieldWaveletAlloc(&p->sw, q, MIN(pb->damage * .05 + .2, 5.));
 
 	}
-}
 #endif
+}
 
-bool Beamer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+int Beamer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	Beamer *p = this;
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
-	if(false && 0 < p->shieldAmount){
+	if(0 < p->shieldAmount){
 		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, retp))
 			return 1000; /* something quite unlikely to reach */
 	}

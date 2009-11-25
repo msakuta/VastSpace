@@ -304,6 +304,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\bullet.h"
+				>
+			</File>
+			<File
 				RelativePath="..\calc\calc.h"
 				>
 			</File>

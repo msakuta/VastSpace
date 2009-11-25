@@ -241,7 +241,7 @@ void GLwindow::glwFree(){
 	GLwindow *wnd = this;
 	glwindow **ppwnd, *wnd2;
 	if(wnd == glwfocus)
-		glwfocus = wnd->next;
+		glwfocus = glwfocus->flags & GLW_POPUP ? NULL : wnd->next;
 	for(wnd2 = glwlist; wnd2; wnd2 = wnd2->next) if(wnd2->modal == wnd)
 		wnd2->modal = NULL;
 	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if(*ppwnd == wnd)
@@ -657,6 +657,10 @@ public:
 			this->xpos = point.x + this->width < gvp.w ? point.x : gvp.w - this->width;
 			this->ypos = point.y + this->height < gvp.h ? point.y : gvp.h - this->height;
 		}
+	}
+	~GLwindowPopup(){
+		if(glwfocus == this)
+			glwfocus = NULL;
 	}
 };
 

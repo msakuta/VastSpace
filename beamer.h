@@ -79,12 +79,14 @@ public:
 	Beamer(WarField *w);
 	const char *idname()const;
 	const char *classname()const;
-	void anim(double);
-	void draw(wardraw_t *);
+	virtual void anim(double);
+	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double hitradius();
+	virtual int takedamage(double damage, int hitpart);
+	virtual void bullethit(const Bullet *);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual const maneuve &getManeuve()const;
-	virtual bool tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 };
 
 

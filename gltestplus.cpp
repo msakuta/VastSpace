@@ -508,10 +508,11 @@ void draw_func(Viewer &vw, double dt){
 	if(cmdwnd)
 		CmdDraw(vw.vp);
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
 	projection((glPushMatrix(), glLoadIdentity()));
 	glPushMatrix();
 	glLoadIdentity();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glTranslated(2. * s_mousex / vw.vp.w - 1., -2. * s_mousey / vw.vp.h - - 1., -1);
 	glScaled(2. * 32. / vw.vp.w, 2. * 32. / vw.vp.h, 1.);
 	if(mouse_tracking && !mouse_captured){

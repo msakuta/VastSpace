@@ -15,6 +15,8 @@ extern "C"{
 #define SCARRY_SCALE .0010
 #define SCARRY_BAYCOOL 2.
 
+struct hitbox;
+
 /* List of spaceship tasks that all types of ship share. */
 enum sship_task{
 	sship_idle, /* Approach to stationary orbit; relative velocity zero against local coordsys. */
@@ -54,26 +56,46 @@ public:
 	virtual int popupMenu(char ***const titles, int **keys, char ***cmds, int *num);
 	virtual Warpable *toWarpable();
 	virtual const maneuve &getManeuve()const;
+	virtual double maxenergy()const = 0;
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void warp_collapse();
 };
 
-class Beamer : public Warpable{
+class Frigate : public Warpable{
 public:
 	typedef Warpable st;
 protected:
 	struct shieldWavelet *sw;
 	double shieldAmount;
 	double shield;
+	Frigate();
+	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
+	void drawShield(wardraw_t *wd);
+public:
+	virtual double hitradius();
+	virtual int takedamage(double damage, int hitpart);
+	virtual void bullethit(const Bullet *);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
+	virtual const maneuve &getManeuve()const;
+	virtual double maxenergy()const, maxshield()const;
+	static hitbox beamer_hb[];
+	static const int beamer_nhb;
+};
+
+class Beamer : public Frigate{
+public:
+	typedef Frigate st;
+protected:
 	double charge;
 	avec3_t integral;
 	double beamlen;
 	double cooldown;
-	struct tent3d_fpol *pf[1];
+//	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	float undocktime;
 	static suf_t *sufbase;
+	static const double sufscale;
 public:
 	Beamer();
 	Beamer(WarField *w);
@@ -82,11 +104,22 @@ public:
 	virtual void anim(double);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
-	virtual double hitradius();
-	virtual int takedamage(double damage, int hitpart);
-	virtual void bullethit(const Bullet *);
-	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual const maneuve &getManeuve()const;
+	virtual double maxhealth()const;
+	static void cache_bridge(void);
+};
+
+class Assault : public Frigate{
+protected:
+	static suf_t *sufbase;
+public:
+	typedef Frigate st;
+	Assault();
+	const char *idname()const;
+	const char *classname()const;
+	virtual void anim(double);
+	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
+	virtual double maxhealth()const;
 };
 
 
@@ -134,5 +167,13 @@ struct hypersonar{
 	int type; /* 0 - Active Radar, 1 - Hyperspace Sonar. */
 } *g_hsonar;
 #endif
+
+void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);
+#ifdef NDEBUG
+#define hitbox_draw
+#else
+void hitbox_draw(const Entity *pt, const double sc[3]);
+#endif
+suf_t *CallLoadSUF(const char *fname);
 
 #endif

@@ -8,13 +8,11 @@ class Bullet;
 class Warpable;
 class Entity{
 public:
-	Entity(WarField *aw = NULL) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), health(100), enemy(NULL), w(aw), inputs(){
-		if(aw)
-			aw->addent(this);
-	}
+	Entity(WarField *aw = NULL);
 	static Entity *create(const char *cname);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	virtual double maxhealth()const;
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(input_t *inputs, double dt) = 0;
@@ -51,6 +49,9 @@ public:
 	input_t inputs;
 	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
 //	char weapon;
+
+protected:
+	void init();
 };
 
 struct GLwindowState;

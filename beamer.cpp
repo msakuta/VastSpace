@@ -396,9 +396,8 @@ void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius,
 }
 
 #ifdef NDEBUG
-#define hitbox_draw
 #else
-static void hitbox_draw(const Entity *pt, const double sc[3]){
+void hitbox_draw(const Entity *pt, const double sc[3]){
 	glPushMatrix();
 	glScaled(sc[0], sc[1], sc[2]);
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
@@ -762,14 +761,18 @@ Warpable::Warpable(){
 	inputs.change = 0;
 }
 
+Frigate::Frigate(){
+	health = maxhealth();
+	shieldAmount = MAX_SHIELD_AMOUNT / 10;
+	shield = 0.;
+	sw = NULL;
+}
+
 Beamer::Beamer(){
 	charge = 0.;
 //	dock = NULL;
 	undocktime = 0.f;
 	cooldown = 0.;
-	sw = NULL;
-	shieldAmount = MAX_SHIELD_AMOUNT / 10;
-	shield = 0.;
 	VECNULL(integral);
 	health = BEAMER_HEALTH / 10;
 }
@@ -1491,8 +1494,8 @@ int warpable_dest(entity_t *pt, avec3_t ret, coordsys *cs){
 }
 #endif
 
-double Beamer::hitradius(){return .1;}
-const maneuve &Beamer::getManeuve()const{return beamer_mn;}
+double Frigate::hitradius(){return .1;}
+const maneuve &Frigate::getManeuve()const{return beamer_mn;}
 void Beamer::anim(double dt){
 	Mat4d mat;
 
@@ -1754,12 +1757,13 @@ static int beamer_cull(Entity *pt, wardraw_t *wd){
 
 static const double beamer_sc[3] = {.05, .055, .075};
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
-static struct hitbox beamer_hb[] = {
+struct hitbox Frigate::beamer_hb[] = {
 	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
 };
+const int Frigate::beamer_nhb = numof(Beamer::beamer_hb);
 
 static const suftexparam_t defstp = {
 	NULL, NULL,  // const BITMAPINFO *bmi;
@@ -1807,7 +1811,7 @@ GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pst
 	return CallCacheBitmap5(entry, fname1, pstp, fname2, pstp);
 }
 
-static void cache_bridge(void){
+void Beamer::cache_bridge(void){
 	CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
 	CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
 /*	if(!FindTexCache("bridge.bmp")){
@@ -1839,6 +1843,7 @@ suf_t *CallLoadSUF(const char *fname){
 }
 
 suf_t *Beamer::sufbase = NULL;
+const double Beamer::sufscale = BEAMER_SCALE;
 
 void Beamer::draw(wardraw_t *wd){
 	Beamer *const p = this;
@@ -1942,21 +1947,15 @@ void Beamer::draw(wardraw_t *wd){
 	}
 }
 
-void Beamer::drawtra(wardraw_t *wd){
-	Beamer *p = this;
+void Frigate::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos){
 	Mat4d mat;
-
-/*	if(p->dock && p->undocktime == 0)
-		return;*/
-
 	transform(mat);
-
 	double vsp = -mat.vec3(2).sp(velo) / beamer_mn.maxspeed;
 	if(1. < vsp)
 		vsp = 1.;
 
 	if(0. < vsp){
-		const Vec3d pos0(0,-0.003,.06 + .01 * vsp);
+		const Vec3d pos0 = nozzlepos + Vec3d(0,0,.01 * vsp);
 		static GLuint texname = 0;
 		glPushAttrib(GL_TEXTURE_BIT);
 		{
@@ -1998,9 +1997,13 @@ void Beamer::drawtra(wardraw_t *wd){
 		glPopMatrix();
 		glPopAttrib();
 	}
+}
 
-#if 1
+void Frigate::drawShield(wardraw_t *wd){
+	Frigate *p = this;
 	if(!wd->vw->gc->cullFrustum(pos, .1)){
+		Mat4d mat;
+		transform(mat);
 		glColor4ub(255,255,9,255);
 		glBegin(GL_LINES);
 		glVertex3dv(mat.vp3(Vec3d(.001,0,0)));
@@ -2048,7 +2051,21 @@ void Beamer::drawtra(wardraw_t *wd){
 
 /*		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
 	}
-#endif
+}
+
+void Beamer::drawtra(wardraw_t *wd){
+	Beamer *p = this;
+	Mat4d mat;
+
+/*	if(p->dock && p->undocktime == 0)
+		return;*/
+
+	transform(mat);
+
+	drawCapitalBlast(wd, Vec3d(0,-0.003,.06));
+
+	drawShield(wd);
+
 #if 1
 	if(charge){
 		int i;
@@ -2162,8 +2179,8 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 #endif
 
 
-int Beamer::takedamage(double damage, int hitpart){
-	Beamer *p = this;
+int Frigate::takedamage(double damage, int hitpart){
+	Frigate *p = this;
 	struct tent3d_line_list *tell = w->tell;
 	int ret = 1;
 
@@ -2278,8 +2295,8 @@ int Beamer::takedamage(double damage, int hitpart){
 	}
 }*/
 
-void Beamer::bullethit(const Bullet *pb){
-	Beamer *p = this;
+void Frigate::bullethit(const Bullet *pb){
+	Frigate *p = this;
 #if 0
 	if(pb->damage < p->shieldAmount){
 		double pos[3], velo[3];
@@ -2306,8 +2323,8 @@ void Beamer::bullethit(const Bullet *pb){
 #endif
 }
 
-int Beamer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	Beamer *p = this;
+int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	Frigate *p = this;
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
@@ -2331,3 +2348,6 @@ int Beamer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 	return reti;
 }
 
+double Beamer::maxhealth()const{return BEAMER_HEALTH;}
+double Frigate::maxenergy()const{return beamer_mn.capacity;}
+double Frigate::maxshield()const{return MAX_SHIELD_AMOUNT;}

@@ -34,15 +34,24 @@ void Player::unlink(const Entity *pe){
 		ppe = &(*ppe)->selectnext;
 }
 
+Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(){
+	if(aw)
+		aw->addent(this);
+}
+
+void Entity::init(){
+	health = maxhealth();
+}
+
 template<class T> Entity *Constructor(){
 	return new T();
 };
 
 static const char *ent_name[] = {
-	"beamer",
+	"beamer", "assault",
 };
 static Entity *(*const ent_creator[])() = {
-	Constructor<Beamer>,
+	Constructor<Beamer>, Constructor<Assault>,
 };
 
 Entity *Entity::create(const char *cname){
@@ -63,6 +72,7 @@ const char *Entity::classname()const{
 	return "Entity";
 }
 
+double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}
 void Entity::postframe(){}
 void Entity::bullethit(const Bullet *){}

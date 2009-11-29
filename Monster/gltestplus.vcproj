@@ -186,6 +186,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\assault.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\astro.cpp"
 				>
 			</File>
@@ -392,6 +396,10 @@
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\ClassDiagram2.cd"
 			>
 		</File>
 	</Files>

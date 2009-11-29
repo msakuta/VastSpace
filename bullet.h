@@ -22,6 +22,8 @@ public:
 	char grav;
 	float life;
 	Entity *owner;
+
+	virtual double hitradius();
 };
 /*
 struct bullet *BulletNew(warf_t *w, entity_t *owner, double damage);

@@ -9,16 +9,16 @@ class Warpable;
 class Entity{
 public:
 	Entity(WarField *aw = NULL);
-	static Entity *create(const char *cname);
+	static Entity *create(const char *cname, WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	virtual double maxhealth()const;
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
-	virtual void control(input_t *inputs, double dt) = 0;
-	virtual unsigned analog_mask() = 0;
-	virtual void draw(wardraw_t *) = 0;
-	virtual void drawtra(wardraw_t *) = 0;
+	virtual void control(input_t *inputs, double dt);
+	virtual unsigned analog_mask();
+	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
 	virtual double hitradius() = 0;
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
@@ -56,5 +56,7 @@ protected:
 
 struct GLwindowState;
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);
+
+int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
 
 #endif

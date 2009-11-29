@@ -753,7 +753,7 @@ static const struct maneuve beamer_mn = {
 };
 
 
-Warpable::Warpable(){
+Warpable::Warpable(WarField *aw) : st(aw){
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */5. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;
@@ -761,14 +761,14 @@ Warpable::Warpable(){
 	inputs.change = 0;
 }
 
-Frigate::Frigate(){
+Frigate::Frigate(WarField *aw) : st(aw){
 	health = maxhealth();
 	shieldAmount = MAX_SHIELD_AMOUNT / 10;
 	shield = 0.;
 	sw = NULL;
 }
 
-Beamer::Beamer(){
+Beamer::Beamer(WarField *aw) : st(aw){
 	charge = 0.;
 //	dock = NULL;
 	undocktime = 0.f;
@@ -810,14 +810,6 @@ void beamer_undock(beamer_t *p, scarry_t *pm){
 	}
 }
 #endif
-
-Beamer::Beamer(WarField *w){
-//	EntityInit(ret, w, &beamer_s);
-	mass = 1e6;
-	health = BEAMER_HEALTH;
-/*	for(int i = 0; i < numof(pf); i++)
-		pf[i] = AddTefpolMovable3D(w->tepl, pos, velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);*/
-}
 
 #if 0
 static void beamer_cockpitview(struct entity *pt, warf_t *w, double (*pos)[3], int *chasecamera){
@@ -1755,15 +1747,13 @@ static int beamer_cull(Entity *pt, wardraw_t *wd){
 	return 0;
 }
 
-static const double beamer_sc[3] = {.05, .055, .075};
-/*static const double beamer_sc[3] = {.05, .05, .05};*/
-struct hitbox Frigate::beamer_hb[] = {
+struct hitbox Frigate::hitboxes[] = {
 	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
 };
-const int Frigate::beamer_nhb = numof(Beamer::beamer_hb);
+const int Frigate::nhitboxes = numof(Beamer::hitboxes);
 
 static const suftexparam_t defstp = {
 	NULL, NULL,  // const BITMAPINFO *bmi;
@@ -1900,13 +1890,13 @@ void Beamer::draw(wardraw_t *wd){
 		glMultMatrixd(mat);
 
 #if 1
-		for(int i = 0; i < numof(beamer_hb); i++){
+		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();
-			gldTranslate3dv(beamer_hb[i].org);
-			rot = beamer_hb[i].rot.tomat4();
+			gldTranslate3dv(hitboxes[i].org);
+			rot = hitboxes[i].rot.tomat4();
 			glMultMatrixd(rot);
-			hitbox_draw(this, beamer_hb[i].sc);
+			hitbox_draw(this, hitboxes[i].sc);
 			glPopMatrix();
 		}
 #endif
@@ -2332,13 +2322,13 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, retp))
 			return 1000; /* something quite unlikely to reach */
 	}
-	for(n = 0; n < numof(beamer_hb); n++){
+	for(n = 0; n < nhitboxes; n++){
 		Vec3d org;
 		Quatd rot;
-		org = this->rot.itrans(beamer_hb[n].org) + this->pos;
-		rot = this->rot * beamer_hb[n].rot;
+		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		rot = this->rot * hitboxes[n].rot;
 		for(i = 0; i < 3; i++)
-			sc[i] = beamer_hb[n].sc[i] + rad;
+			sc[i] = hitboxes[n].sc[i] + rad;
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;

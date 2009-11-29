@@ -43,22 +43,22 @@ void Entity::init(){
 	health = maxhealth();
 }
 
-template<class T> Entity *Constructor(){
-	return new T();
+template<class T> Entity *Constructor(WarField *w){
+	return new T(w);
 };
 
 static const char *ent_name[] = {
 	"beamer", "assault",
 };
-static Entity *(*const ent_creator[])() = {
+static Entity *(*const ent_creator[])(WarField *w) = {
 	Constructor<Beamer>, Constructor<Assault>,
 };
 
-Entity *Entity::create(const char *cname){
+Entity *Entity::create(const char *cname, WarField *w){
 	int i;
 	for(i = 0; i < numof(ent_name); i++) if(!strcmp(ent_name[i], cname)){
 		Entity *pt;
-		pt = ent_creator[i]();
+		pt = ent_creator[i](w);
 		return pt;
 	}
 	return NULL;
@@ -75,6 +75,10 @@ const char *Entity::classname()const{
 double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}
 void Entity::postframe(){}
+void Entity::control(input_t *, double){}
+unsigned Entity::analog_mask(){return 0;}
+void Entity::draw(wardraw_t *){}
+void Entity::drawtra(wardraw_t *){}
 void Entity::bullethit(const Bullet *){}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
@@ -128,3 +132,27 @@ void Entity::transit_cs(CoordSys *cs){
 		w->pl->cs = cs;
 	}
 }
+
+/* estimate target position based on distance and approaching speed */
+int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w){
+	double dist;
+	Vec3d grv;
+	double posy;
+	double h = 0.;
+	double h0 = 0.;
+	if(w){
+		Vec3d mid = (pos + srcpos) * .5;
+		Vec3d evelo = (pos - srcpos).norm() * -speed;
+		grv = w->accel(mid, evelo);
+	}
+	else
+		VECNULL(grv);
+	dist = (pos - srcpos).len();
+	posy = pos[1] + (velo[1] + grv[1]) * dist / speed;
+/*	(*ret)[0] = pos[0] + (velo[0] - srcvelo[0] + grv[0] * dist / speed / 2.) * dist / speed;
+	(*ret)[1] = posy - srcvelo[1] * dist / speed;
+	(*ret)[2] = pos[2] + (velo[2] - srcvelo[2] + grv[2] * dist / speed / 2.) * dist / speed;*/
+	ret = pos + (velo - srcvelo + grv * dist / speed / 2.) * dist / speed;
+	return 1;
+}
+

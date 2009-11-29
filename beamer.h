@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "coordsys.h"
 #include "war.h"
+#include "arms.h"
 //#include "mturret.h"
 //#include "bhole.h"
 extern "C"{
@@ -48,7 +49,7 @@ public:
 	CoordSys *warpcs, *warpdstcs;
 //	WarField *warp_next_warf;
 
-	Warpable();
+	Warpable(WarField *w);
 
 	virtual void anim(double dt);
 	void control(input_t *, double);
@@ -69,7 +70,7 @@ protected:
 	struct shieldWavelet *sw;
 	double shieldAmount;
 	double shield;
-	Frigate();
+	Frigate(WarField *);
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
 	void drawShield(wardraw_t *wd);
 public:
@@ -79,8 +80,8 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual const maneuve &getManeuve()const;
 	virtual double maxenergy()const, maxshield()const;
-	static hitbox beamer_hb[];
-	static const int beamer_nhb;
+	static hitbox hitboxes[];
+	static const int nhitboxes;
 };
 
 class Beamer : public Frigate{
@@ -97,7 +98,6 @@ protected:
 	static suf_t *sufbase;
 	static const double sufscale;
 public:
-	Beamer();
 	Beamer(WarField *w);
 	const char *idname()const;
 	const char *classname()const;
@@ -111,9 +111,16 @@ public:
 class Assault : public Frigate{
 protected:
 	static suf_t *sufbase;
+	union{
+		struct{
+			ArmBase *turret0, *turret1, *turret2, *turret3;
+		};
+		ArmBase *turrets[4];
+	};
+	static const hardpoint_static hardpoints[];
 public:
 	typedef Frigate st;
-	Assault();
+	Assault(WarField *w);
 	const char *idname()const;
 	const char *classname()const;
 	virtual void anim(double);

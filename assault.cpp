@@ -1,6 +1,7 @@
 #include "beamer.h"
 #include "judge.h"
 extern "C"{
+#include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
 }
 
@@ -9,10 +10,26 @@ extern "C"{
 
 
 
+
+#define SQRT2P2 (M_SQRT2/2.)
+
+const struct hardpoint_static Assault::hardpoints[5] = {
+	{Vec3d(.000, 50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,0,1), "Top Turret", 0},
+	{Vec3d(.000, -50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,1,0), "Bottom Turret", 0},
+	{Vec3d(40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,-SQRT2P2,SQRT2P2), "Right Turret", 0},
+	{Vec3d(-40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,SQRT2P2,SQRT2P2), "Left Turret", 0},
+	{Vec3d(0, 0, 0), Quatd(0,0,0,1), "Shield Generator", 0},
+};
+
+
+
 suf_t *Assault::sufbase = NULL;
 
-Assault::Assault(){
+Assault::Assault(WarField *aw) : st(aw){
 	init();
+	for(int i = 0; i < 4; i++){
+		aw->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
+	}
 }
 
 const char *Assault::idname()const{
@@ -25,6 +42,8 @@ const char *Assault::classname()const{
 
 void Assault::anim(double dt){
 	st::anim(dt);
+	for(int i = 0; i < 4; i++) if(turrets[i])
+		turrets[i]->align();
 }
 
 void Assault::draw(wardraw_t *wd){
@@ -64,13 +83,13 @@ void Assault::draw(wardraw_t *wd){
 		glMultMatrixd(mat);
 
 #if 1
-		for(int i = 0; i < Beamer::beamer_nhb; i++){
+		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();
-			gldTranslate3dv(Beamer::beamer_hb[i].org);
-			rot = Beamer::beamer_hb[i].rot.tomat4();
+			gldTranslate3dv(hitboxes[i].org);
+			rot = hitboxes[i].rot.tomat4();
 			glMultMatrixd(rot);
-			hitbox_draw(this, Beamer::beamer_hb[i].sc);
+			hitbox_draw(this, hitboxes[i].sc);
 			glPopMatrix();
 		}
 #endif

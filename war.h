@@ -112,6 +112,7 @@ public:
 	virtual void draw(struct war_draw_data *);
 	virtual void drawtra(struct war_draw_data *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
+	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	Entity *addent(Entity *);
 
 	Player *pl;

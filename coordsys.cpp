@@ -708,9 +708,8 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			w = this->w;
 		else
 			w = this->w = new WarField(this)/*spacewar_create(cs, ppl)*/;
-		pt = Entity::create(argv[1]);
+		pt = Entity::create(argv[1], w);
 		if(pt){
-			w->addent(pt);
 			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
 			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
 			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;

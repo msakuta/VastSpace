@@ -238,6 +238,7 @@ coordsys Orbit marss{
 		addent beamer .1 0 0
 		addent beamer -.1 0 0
 		addent assault -.2 0 0 
+		addent assault -.2 0 -1 1
 
 		new astro Asteroid BigWatcher{
 			pos 0 12 -20

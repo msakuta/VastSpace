@@ -87,6 +87,11 @@ bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct c
 	return false;
 }
 
+Vec3d WarField::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{
+	return Vec3d(0,0,0);
+}
+
+
 Entity *WarField::addent(Entity *e){
 	e->w = this;
 	e->next = el;

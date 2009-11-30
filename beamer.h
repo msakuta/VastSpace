@@ -58,6 +58,7 @@ public:
 	virtual Warpable *toWarpable();
 	virtual const maneuve &getManeuve()const;
 	virtual double maxenergy()const = 0;
+	virtual bool isTargettable()const;
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void warp_collapse();

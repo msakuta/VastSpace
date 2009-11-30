@@ -1287,6 +1287,9 @@ const maneuve Warpable::mymn = {
 const maneuve &Warpable::getManeuve()const{
 	return mymn;
 }
+bool Warpable::isTargettable()const{
+	return true;
+}
 void Warpable::anim(double dt){
 	Mat4d mat;
 	transform(mat);

@@ -33,6 +33,14 @@ double ArmBase::hitradius(){
 	return 0.;
 }
 
+Entity *ArmBase::getOwner(){
+	return base;
+}
+
+bool ArmBase::isTargettable()const{
+	return false;
+}
+
 void ArmBase::align(){
 	// dead arms do not follow the base
 	if(health <= 0.)
@@ -62,7 +70,8 @@ suf_t *MTurret::suf_turret = NULL;
 suf_t *MTurret::suf_barrel = NULL;
 
 
-MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp){
+MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0){
+	health = 1000;
 	ammo = 1500;
 	py[0] = 0;
 	py[1] = 0;
@@ -117,26 +126,28 @@ void MTurret::draw(wardraw_t *wd){
 }
 
 static const double mturret_ofs[3] = {0., 0., -.001};
-static const double mturret_range[2][2] = {-M_PI / 8., M_PI / 6, -M_PI, M_PI};
+static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 	MTurret *pt = this;
 	WarField *w = pb->w;
 	double best = 5. * 5.; /* sense range */
 	double sdist;
-	Vec3d right(1., 0., 0.), left(-1., 0., 0.), pos;
+	Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Mat4d mat;
 	Entity *pt2, *closest = NULL;
 
+	transform(mat);
+
 	/* obtain matrix that converts enemy position into turret's local coordinate system */
 	{
-		Quatd q;
+/*		Quatd q;
 		Mat4d mat2, mat3;
 		mat2 = hp->rot.cnj().tomat4();
 		mat2.vec3(3) = -hp->pos;
 		mat3 = pb->rot.cnj().tomat4();
 		mat3.vec3(3) = -pb->pos;
-		mat = mat2 * mat3;
+		mat = mat2 * mat3;*/
 /*		QUATMUL(q, pb->rot, pt->rot);
 		QUATCNJIN(q);
 		quat2imat(mat, q);*/
@@ -147,7 +158,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 		Vec3d delta, ldelta;
 		double theta, phi;
 
-		if(!(pt2 != pb && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != pb->race))
+		if(!(pt2->isTargettable() && pt2 != pb && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != pb->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))
@@ -165,169 +176,116 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 			closest = pt2;
 		}
 	}
-	if(target){
-		Entity **ptarget = &(target);
-		if(closest)
-			*ptarget = closest;
-		else if(*ptarget && 10. * 10. < VECSDIST(pb->pos, (*ptarget)->pos))
-			*ptarget = NULL;
-	}
+	if(closest)
+		target = closest;
+	if(target && 10. * 10. < (target->pos - pos).slen())
+		target = NULL;
+}
+
+void MTurret::tryshoot(){
+	static const avec3_t forward = {0., 0., -1.};
+	Bullet *pz;
+	Quatd qrot;
+	pz = new Bullet(base, 3., 80.);
+	Mat4d mat2;
+	base->transform(mat2);
+	mat2.translatein(hp->pos);
+	Mat4d rot = hp->rot.tomat4();
+	Mat4d mat = mat2 * rot;
+	mat.translatein(0., .001, -0.002);
+	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	pz->pos = mat.vp3(mturret_ofs);
+	pz->velo = mat.dvp3(forward) * 2.;
+	this->cooldown += 2.;
+}
+
+void MTurret::control(input_t *inputs, double dt){
+	this->inputs = *inputs;
 }
 
 void MTurret::anim(double dt){
-	MTurret *a = this;
-	WarField *w = base->w;
+	if(!base)
+		w = NULL;
+	if(!w)
+		return;
+	MTurret *const a = this;
 	Entity *pt = base;
-		Entity **ptarget = &target;
-		Vec3d epos; /* estimated enemy position */
-		double phi, theta; /* enemy direction */
+//	Entity **ptarget = &target;
+	Vec3d epos; /* estimated enemy position */
+	double phi, theta; /* enemy direction */
 
-		/* find enemy logic */
-		/*if(!pt->target)*/{
-			findtarget(pt, hp);
+	/* find enemy logic */
+	findtarget(pt, hp);
+
+/*	if(*ptarget && (w != (*ptarget)->w || (*ptarget)->health <= 0.))
+		*ptarget = NULL;*/
+
+	if(a->mf < dt)
+		a->mf = 0.;
+	else
+		a->mf -= dt;
+
+	if(w->pl && w->pl->chase == this){
+		double pydst[2] = {py[0], py[1]};
+		if(inputs.press & PL_A)
+			pydst[1] += MTURRETROTSPEED * dt;
+		if(inputs.press & PL_D)
+			pydst[1] -= MTURRETROTSPEED * dt;
+		if(inputs.press & PL_W)
+			pydst[0] += MTURRETROTSPEED * dt;
+		if(inputs.press & PL_S)
+			pydst[0] -= MTURRETROTSPEED * dt;
+		a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+		a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+		while(a->cooldown < dt){
+			if(inputs.press & (PL_ENTER | PL_LCLICK))
+				tryshoot();
+			else
+				a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
 		}
+	}
+	else if(target){/* estimating enemy position */
+		Vec3d pos, velo, pvelo, gepos;
+		Mat4d rot;
 
-		if(*ptarget && (w != (*ptarget)->w || (*ptarget)->health <= 0.))
-			*ptarget = NULL;
+		/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+		Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+		pos = mat2.vp3(target->pos);
+		velo = mat2.dvp3(target->velo);
+		pvelo = mat2.dvp3(pt->velo);
 
-		if(a->mf < dt)
-			a->mf = 0.;
-		else
-			a->mf -= dt;
-
-		/* estimating enemy position */
-		if((*ptarget)){
-			Vec3d pos, velo, pvelo, gepos;
-			Mat4d rot, mat, mat2;
-
-			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
-			mat = mat4_u;
-/*			pyrimat(pt->base, &rot);*/
-			rot = hp->rot.cnj().tomat4();
-			rot.translatein(-hp->pos[0], -hp->pos[1], -hp->pos[2]);
-/*			pyrimat(pb->pyr, &mat);*/
-			mat = pt->rot.cnj().tomat4();
-			mat2 = rot * mat;
-			mat2.translatein(-pt->pos[0], -pt->pos[1], -pt->pos[2]);
-			pos = mat2.vp3((*ptarget)->pos);
-			velo = mat2.dvp3((*ptarget)->velo);
-			pvelo = mat2.dvp3(pt->velo);
-
-/*			if(a->type == arms_mediummissileturret)
-				VECCPY(epos, pos);
-			else*/
-				estimate_pos(epos, pos, velo, vec3_000, pvelo, /*a->type == arms_mediumbeamturret ? 5. :*/ 2., w);
+		estimate_pos(epos, pos, velo, vec3_000, pvelo, 2., w);
 			
-			/* epos = -pt->base * -pb->pyr * tr(-pos) * gepos */
-/*			pyrimat(pt->base, &rot);
-			pyrimat(pb->pyr, &mat);
-			MAT4MP(mat2, rot, mat);
-			MAT4TRANSLATE(mat2, -pt->pos[0], -pt->pos[1], -pt->pos[2]);
-			MAT4VP3(epos, mat2, gepos);*/
+		/* these angles are in local coordinates */
+		phi = -atan2(epos[0], -(epos[2]));
+		theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+		a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+		a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 
-			/* these angles are in local coordinates */
-			phi = -atan2(epos[0], -(epos[2]));
-			theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-/*			shoot_angle(avec3_000, epos, phi, 1., &desired);*/
-			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-			a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
-
-			/* shooter logic */
-			while(a->cooldown < dt){
-				double yaw = a->py[1];
-				double pitch = a->py[0];
-				if(fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
-					static const avec3_t forward = {0., 0., -1.};
-/*					avec3_t pyr;*/
-					struct bullet *pz;
-					struct hellfire *pm;
-					Quatd qrot;
-/*					if(a->type == arms_mediummissileturret){
-						struct hellfire *ph;
-						ph = add_aim9(w, pt->pos);
-						pz = &ph->st;
-						pz->owner = pt;
-						pz->damage = 100.;
-						ph->explo = 200.;
-					}
-					else*/
-//						pz = new Bullet(w, pt, 80.);
-/*					pz = &(pm = add_aim9(w, pt->pos))->st;
-					pm->st.owner = pb;
-					QUATMUL(qrot, pb->rot, pt->rot);
-					QUATCPY(pm->rot, qrot);
-					VECNULL(pm->st.velo);
-					pm->target = pt->target;*/
-/*					pz->grav = 0;
-					pz->life = 0 || a->type != arms_mediumgunturret ? 10. : VECLEN(epos) / 2. - .1;
-					pz->life = MAX(pz->life, .1);*/
-/*					VECCPY(pyr, pt->pyr);
-					pyr[0] += (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
-					pyr[1] += (drseq(&w->rs) - .5) * MTURRET_VARIANCE;*/
-#if 0
-					/* retrieve pb->pyr * pt->base * pt->pyr */
-					tankrot(&mat2, pt);
-/*					MAT4IDENTITY(mat);
-					MAT4TRANSLATE(mat, pb->pos[0], pb->pos[1], pb->pos[2]);
-					pyrmat(pb->pyr, &rot);
-					mat4mp(mat2, mat, rot);*/
-					mat4translate(mat2, hp->pos[0], hp->pos[1], hp->pos[2]);
-/*					pyrmat(pt->base, &rot);*/
-					quat2mat(&rot, hp->rot);
-					mat4mp(mat, mat2, rot);
-					mat4translate(mat, 0., .001, -0.002);
-					mat4roty(mat2, mat, yaw = a->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-					mat4rotx(mat, mat2, pitch = a->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-/*					pyrmat(pyr, &rot);
-					MAT4MP(mat2, mat, rot);*/
-					mat4vp3(pz->pos, mat, mturret_ofs);
-					mat4dvp3(pz->velo, mat, forward);
-					if(a->type == arms_mediumbeamturret)
-						VECSCALEIN(pz->velo, 5.);
-					else if(a->type == arms_mediumgunturret)
-						VECSCALEIN(pz->velo, 2.);
-					else if(a->type == arms_mediummissileturret){
-						aquat_t q1, q2, q3, qp, qy;
-						QUATMUL(q1, pt->rot, hp->rot);
-						qp[0] = sin(pitch / 2.);
-						qp[1] = qp[2] = 0;
-						qp[3] = cos(pitch / 2.);
-						qy[0] = 0.;
-						qy[1] = sin(yaw / 2.);
-						qy[2] = 0.;
-						qy[3] = cos(yaw / 2.);
-						QUATMUL(q2, q1, qy);
-						QUATMUL(pz->rot, q2, qp);
-/*						imat2quat(((struct hellfire*)pz)->rot, mat);*/
-						((struct hellfire*)pz)->target = *ptarget;
-						VECSCALEIN(pz->velo, .1);
-					}
-
-					/* TODO: rotation contribution? */
-					VECADDIN(pz->velo, pt->velo);
-
-
-					playWave3DPitch(CvarGetString("sound_cannonshot")/*"gunfire8.wav"*/, pz->pos, w->pl->pos, NULL, 1., .02, w->realtime, rseq(&w->rs) % 32 + 256 - 16);
-					{
-						double t = arms_static[a->type].cooldown + (drseq(&w->rs) - .5) * .2;
-						pz->vft->anim(pz, w, w->tell, dt - a->cooldown);
-						a->cooldown += t;
-						a->mf = .2;
-					}
-#endif
-				}
-				else
-					a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
+		/* shooter logic */
+		while(a->cooldown < dt){
+			double yaw = a->py[1];
+			double pitch = a->py[0];
+			if(fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
+				tryshoot();
 			}
+			else
+				a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
 		}
-		if(a->cooldown < dt)
-			a->cooldown = 0.;
-		else
-			a->cooldown -= dt;
-
-
+	}
+	if(a->cooldown < dt)
+		a->cooldown = 0.;
+	else
+		a->cooldown -= dt;
 }
 
+void MTurret::postframe(){
+	if(target && !target->w)
+		target = NULL;
+	if(base && !base->w)
+		base = NULL;
+}
 
 
 void MTurret::drawtra(wardraw_t *wd){

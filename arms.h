@@ -27,6 +27,8 @@ public:
 	virtual void anim(double dt) = 0;
 	virtual void postframe();
 	virtual double hitradius();
+	virtual Entity *getOwner();
+	virtual bool isTargettable()const;
 	void align();
 };
 
@@ -44,8 +46,12 @@ public:
 	virtual const char *classname()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void control(input_t *, double dt);
 	virtual void anim(double dt);
+	virtual void postframe();
 	virtual double hitradius();
+protected:
+	void tryshoot();
 };
 
 #if 0

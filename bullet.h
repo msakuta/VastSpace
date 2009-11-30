@@ -19,12 +19,25 @@ public:
 	typedef Entity st;
 
 	double damage;
-	char grav;
+	bool grav;
 	float life;
 	Entity *owner;
 
+	Bullet(Entity *owner, float life, double damage);
+	virtual const char *idname()const;
+	virtual const char *classname()const;
 	virtual double hitradius();
+	virtual void anim(double dt);
+	virtual void postframe();
+	virtual void drawtra(wardraw_t *);
+	virtual Entity *getOwner();
+	virtual bool isTargettable()const;
 };
+
+inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife){
+	if(owner)
+		race = owner->race;
+}
 /*
 struct bullet *BulletNew(warf_t *w, entity_t *owner, double damage);
 struct bullet *NormalBulletNew(warf_t *w, entity_t *owner, double damage);

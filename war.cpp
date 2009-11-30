@@ -24,18 +24,18 @@ void WarField::anim(double dt){
 			break;
 		}
 	}
-	for(Entity *e = el; e; e = e->next){
+	for(Entity *pe = el; pe; pe = pe->next){
 		try{
-			e->anim(dt);
+			pe->anim(dt);
 		}
 		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
+			fprintf(stderr, __FILE__"(%d) Exception in %s::anim(): %s\n", __LINE__, pe->classname(), e.what());
 		}
 		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
+			fprintf(stderr, __FILE__"(%d) Exception in %s::anim(): ?\n", __LINE__, pe->classname());
 		}
-		if(pl && !pl->chase && (e->pos - pl->pos).slen() < .002 * .002)
-			pl->chase = e;
+		if(pl && !pl->chase && (pe->pos - pl->pos).slen() < .002 * .002)
+			pl->chase = pe;
 	}
 	AnimTeline3D(tell, dt);
 }

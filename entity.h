@@ -25,6 +25,8 @@ public:
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
 	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
 	virtual Warpable *toWarpable();
+	virtual Entity *getOwner();
+	virtual bool isTargettable()const = 0;
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

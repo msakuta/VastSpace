@@ -80,6 +80,7 @@ unsigned Entity::analog_mask(){return 0;}
 void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}
 void Entity::bullethit(const Bullet *){}
+Entity *Entity::getOwner(){return NULL;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;

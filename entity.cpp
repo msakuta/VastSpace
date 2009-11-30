@@ -34,7 +34,7 @@ void Player::unlink(const Entity *pe){
 		ppe = &(*ppe)->selectnext;
 }
 
-Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(){
+Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1){
 	if(aw)
 		aw->addent(this);
 }

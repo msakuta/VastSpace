@@ -25,6 +25,7 @@ public:
 	ArmBase(Entity *abase, const hardpoint_static *ahp) : base(abase), target(NULL), hp(ahp), ammo(0){}
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
+	virtual void postframe();
 	virtual double hitradius();
 	void align();
 };

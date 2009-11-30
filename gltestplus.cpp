@@ -637,10 +637,10 @@ void display_func(void){
 			galaxysystem.endframe();
 		}
 		catch(std::exception e){
-			fprintf(stderr, "Exception %s\n", e.what());
+			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
 		}
 		catch(...){
-			fprintf(stderr, "Exception ?\n");
+			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
 		}
 
 		if(pl.chase){

@@ -46,6 +46,12 @@ void Assault::anim(double dt){
 		turrets[i]->align();
 }
 
+void Assault::postframe(){
+	st::postframe();
+	for(int i = 0; i < 4; i++) if(turrets[i] && turrets[i]->w != w)
+		turrets[i] = NULL;
+}
+
 void Assault::draw(wardraw_t *wd){
 	Assault *const p = this;
 	static int init = 0;
@@ -115,4 +121,4 @@ void Assault::drawtra(wardraw_t *wd){
 	drawShield(wd);
 }
 
-double Assault::maxhealth()const{return 30000.;}
+double Assault::maxhealth()const{return 3000.;}

@@ -23,14 +23,25 @@ extern "C"{
 
 
 
+void ArmBase::postframe(){
+	// inter-CoordSys weapons may remember the target run away to another CoordSys?
+	if(target && target->w != w)
+		target = NULL;
+}
+
 double ArmBase::hitradius(){
 	return 0.;
 }
 
 void ArmBase::align(){
-	Mat4d mat;
+	// dead arms do not follow the base
+	if(health <= 0.)
+		return;
+
+	w = base->w;
 
 	/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+	Mat4d mat;
 	base->transform(mat);
 	pos = mat.vp3(hp->pos);
 	velo = base->velo + base->omg.vp(base->rot.trans(hp->pos));
@@ -316,6 +327,7 @@ void MTurret::anim(double dt){
 
 
 }
+
 
 
 void MTurret::drawtra(wardraw_t *wd){

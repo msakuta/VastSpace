@@ -124,6 +124,7 @@ public:
 	const char *idname()const;
 	const char *classname()const;
 	virtual void anim(double);
+	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;

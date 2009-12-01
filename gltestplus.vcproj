@@ -113,6 +113,12 @@
 			Name="ソース ファイル"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
+				RelativePath="arms.cpp">
+			</File>
+			<File
+				RelativePath="assault.cpp">
+			</File>
+			<File
 				RelativePath="astro.cpp">
 			</File>
 			<File
@@ -123,6 +129,9 @@
 			</File>
 			<File
 				RelativePath="bitmap.c">
+			</File>
+			<File
+				RelativePath="bullet.cpp">
 			</File>
 			<File
 				RelativePath="calc\calc.c">
@@ -198,6 +207,9 @@
 				RelativePath="antiglut.h">
 			</File>
 			<File
+				RelativePath="arms.h">
+			</File>
+			<File
 				RelativePath="astro.h">
 			</File>
 			<File
@@ -211,6 +223,9 @@
 			</File>
 			<File
 				RelativePath="bitmap.h">
+			</File>
+			<File
+				RelativePath="bullet.h">
 			</File>
 			<File
 				RelativePath="calc\calc.h">

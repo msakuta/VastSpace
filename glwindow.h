@@ -30,6 +30,14 @@ struct GLwindowState{
 typedef class GLwindow{
 public:
 	typedef GLwindow st;
+
+	// constants
+	static const int glwfontwidth = 8;
+	static const int glwfontheight = 12;
+	static double getFontWidth();
+	static double getFontHeight();
+
+	// methods
 	static int mouseFunc(int button, int state, int x, int y, GLwindowState &gvp);
 	friend GLwindow **glwAppend(GLwindow *wnd);
 	friend void glwActivate(GLwindow **ppwnd);
@@ -48,6 +56,8 @@ public:
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual void anim(double dt);
+	virtual void postframe();
+	static void glwpostframe();
 protected:
 	GLwindow(const char *title = NULL);
 	int xpos, ypos;
@@ -125,5 +135,12 @@ public:
 	GLwindowSizeable(const char *title);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
+
+
+
+inline void GLwindow::glwpostframe(){
+	for(GLwindow *glw = glwlist; glw; glw = glw->next)
+		glw->postframe();
+}
 
 #endif

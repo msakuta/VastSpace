@@ -634,6 +634,7 @@ void display_func(void){
 		try{
 			galaxysystem.anim(dt);
 			galaxysystem.postframe();
+			GLwindow::glwpostframe();
 			galaxysystem.endframe();
 		}
 		catch(std::exception e){
@@ -1457,6 +1458,8 @@ int main(int argc, char *argv[])
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &pl);
 	CmdAdd("chasecamera", cmd_chasecamera);
+	extern int cmd_armswindow(int argc, char *argv[], void *pv);
+	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

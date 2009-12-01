@@ -5,6 +5,7 @@
 #include "war.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include <cpplib/dstring.h>
 
 
 class ArmBase;
@@ -29,6 +30,7 @@ public:
 	virtual double hitradius();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
+	virtual cpplib::dstring descript()const;
 	void align();
 };
 
@@ -50,6 +52,7 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual double hitradius();
+	virtual cpplib::dstring descript()const;
 protected:
 	void tryshoot();
 };

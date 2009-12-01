@@ -687,6 +687,7 @@ void Bullet::anim(double dt){
 			*hitobj = NULL;
 		return 0;*/
 		w = NULL;
+		return;
 	}
 
 	/* tank hit check */
@@ -721,6 +722,10 @@ void Bullet::anim(double dt){
 /*			if(!w->ot && !bullet_hit_callback(&param, pt))
 				continue;*/
 
+			if(pt == pb || pt->w != w)
+				continue;
+
+			// if the ultimate owner of the objects is common, do not hurt yourself.
 			Entity *bulletAncestor = pb;
 			while(bulletAncestor->getOwner())
 				bulletAncestor = bulletAncestor->getOwner();
@@ -729,6 +734,7 @@ void Bullet::anim(double dt){
 				hitobjAncestor = hitobjAncestor->getOwner();
 			if(bulletAncestor == hitobjAncestor)
 				continue;
+
 //			if(!jHitSphere(pt->pos, pt->hitradius(), pb->pos, pb->velo, dt))
 //				continue;
 			Vec3d nh, pos;

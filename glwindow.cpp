@@ -14,23 +14,18 @@ extern "C"{
 
 // There is only one font size. It could be bad for some future.
 static double glwfontscale = 1.;
-#define glwfontwidth 8
-#define glwfontheight 12
 #define fontwidth (glwfontwidth * glwfontscale)
 #define fontheight (glwfontheight * glwfontscale)
+double GLwindow::getFontWidth(){return fontwidth;}
+double GLwindow::getFontHeight(){return fontheight;}
 
-/*static glwindow glwsample = {
-	100,100,100,100,"sample 1",NULL,0
-}, glw0 = {
-	150,180,200,100,"Window 0",&glwsample
-};*/
 
 glwindow *glwlist = NULL/*, *glwmini = NULL*/;
 glwindow *glwfocus = NULL;
 glwindow *glwdrag = NULL;
 int glwdragpos[2] = {0};
 
-GLwindow::GLwindow(const char *atitle){
+GLwindow::GLwindow(const char *atitle) : xpos(0), ypos(0), width(100), height(100), modal(NULL), flags(0), next(NULL){
 	if(atitle){
 		title = new char[strlen(atitle)+1];
 		strcpy(title, atitle);
@@ -254,6 +249,7 @@ void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 int GLwindow::key(int key){return 0;}
 void GLwindow::anim(double){}
+void GLwindow::postframe(){}
 GLwindow::~GLwindow(){
 	if(title)
 		delete[] title;

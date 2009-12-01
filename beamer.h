@@ -129,8 +129,12 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
+	virtual int armsCount()const;
+	virtual const ArmBase *armsGet(int index)const;
+	friend class GLWarms;
 };
 
+int cmd_armswindow(int argc, char *argv[], void *pv);
 
 #if 0
 struct scarry{

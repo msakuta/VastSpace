@@ -6,6 +6,7 @@
 
 class Bullet;
 class Warpable;
+class ArmBase;
 class Entity{
 public:
 	Entity(WarField *aw = NULL);
@@ -27,6 +28,8 @@ public:
 	virtual Warpable *toWarpable();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const = 0;
+	virtual int armsCount()const;
+	virtual const ArmBase *armsGet(int index)const;
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

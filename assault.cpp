@@ -1,5 +1,6 @@
 #include "beamer.h"
 #include "judge.h"
+#include "player.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -122,3 +123,62 @@ void Assault::drawtra(wardraw_t *wd){
 }
 
 double Assault::maxhealth()const{return 3000.;}
+
+int Assault::armsCount()const{return numof(turrets);}
+
+const ArmBase *Assault::armsGet(int i)const{
+	if(i < 0 || armsCount() <= i)
+		return NULL;
+	return turrets[i];
+}
+
+
+
+
+
+
+
+class GLWarms : public GLwindowSizeable{
+	Entity *a;
+public:
+	typedef GLwindowSizeable st;
+	GLWarms(const char *title, Entity *a);
+	virtual void draw(GLwindowState &ws, double t);
+	virtual void postframe();
+};
+
+GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
+	xpos = 120;
+	ypos = 40;
+	width = 200;
+	height = 200;
+	flags |= GLW_CLOSE;
+}
+
+void GLWarms::draw(GLwindowState &ws, double t){
+	if(!a)
+		return;
+	for(int i = 0; i < a->armsCount(); i++){
+		glColor4f(0,1,1,1);
+		glwpos2d(xpos, ypos + (2 + 2 * i) * getFontHeight());
+		glwprintf(Assault::hardpoints[i].name);
+		glColor4f(1,1,0,1);
+		glwpos2d(xpos, ypos + (3 + 2 * i) * getFontHeight());
+		const ArmBase *arm = a->armsGet(i);
+		glwprintf(arm ? arm->descript() : "N/A");
+	}
+}
+
+void GLWarms::postframe(){
+	if(a && !a->w)
+		a = NULL;
+}
+
+int cmd_armswindow(int argc, char *argv[], void *pv){
+	Player *ppl = (Player*)pv;
+	if(!ppl || !ppl->selected)
+		return 0;
+	glwAppend(new GLWarms("Arms", ppl->selected));
+	return 0;
+}
+

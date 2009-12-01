@@ -29,10 +29,10 @@ void WarField::anim(double dt){
 			pe->anim(dt);
 		}
 		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception in %s::anim(): %s\n", __LINE__, pe->classname(), e.what());
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): %s\n", __LINE__, pe, pe->idname(), e.what());
 		}
 		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception in %s::anim(): ?\n", __LINE__, pe->classname());
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): ?\n", __LINE__, pe, pe->idname());
 		}
 		if(pl && !pl->chase && (pe->pos - pl->pos).slen() < .002 * .002)
 			pl->chase = pe;

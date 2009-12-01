@@ -41,6 +41,10 @@ bool ArmBase::isTargettable()const{
 	return false;
 }
 
+cpplib::dstring ArmBase::descript()const{
+	return cpplib::dstring(idname());
+};
+
 void ArmBase::align(){
 	// dead arms do not follow the base
 	if(health <= 0.)
@@ -198,6 +202,7 @@ void MTurret::tryshoot(){
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * 2.;
 	this->cooldown += 2.;
+	ammo--;
 }
 
 void MTurret::control(input_t *inputs, double dt){
@@ -205,7 +210,7 @@ void MTurret::control(input_t *inputs, double dt){
 }
 
 void MTurret::anim(double dt){
-	if(!base)
+	if(!base || !base->w)
 		w = NULL;
 	if(!w)
 		return;
@@ -238,11 +243,8 @@ void MTurret::anim(double dt){
 			pydst[0] -= MTURRETROTSPEED * dt;
 		a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
 		a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
-		while(a->cooldown < dt){
-			if(inputs.press & (PL_ENTER | PL_LCLICK))
-				tryshoot();
-			else
-				a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
+		if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
+			tryshoot();
 		}
 	}
 	else if(target){/* estimating enemy position */
@@ -317,6 +319,10 @@ void MTurret::drawtra(wardraw_t *wd){
 
 double MTurret::hitradius(){
 	return .005;
+}
+
+cpplib::dstring MTurret::descript()const{
+	return (cpplib::dstring(idname()).strcat(" ").strcat(cpplib::dstring(health)) += " ") += cpplib::dstring(long(ammo));
 }
 
 

@@ -77,7 +77,9 @@ class Universe : public CoordSys{
 public:
 	typedef CoordSys st;
 	Player *ppl;
-	Universe(Player *pl) : ppl(pl){flags = CS_ISOLATED | CS_EXTENT;}
+	bool paused;
+	double timescale;
+	Universe(Player *pl) : ppl(pl), paused(false), timescale(1){flags = CS_ISOLATED | CS_EXTENT;}
 	const char *classname()const;
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}

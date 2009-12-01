@@ -74,7 +74,7 @@ PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
 
 Player pl;
-Universe galaxysystem(&pl);
+Universe universe(&pl);//galaxysystem(&pl);
 const char *Universe::classname()const{
 	return "Universe";
 }
@@ -293,7 +293,7 @@ static void drawindics(Viewer *vw){
 		Mat4d model;
 		model = vw->rot;
 		MAT4TRANSLATE(model, -vw->pos[0], -vw->pos[1], -vw->pos[2]);
-		drawastro(vw, &galaxysystem, model);
+		drawastro(vw, &universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
 	{
@@ -455,9 +455,9 @@ void draw_func(Viewer &vw, double dt){
 		glPushMatrix(), glLoadIdentity(),
 		vw.frustum(1. / 1e3, 1e10)
 	));
-	galaxysystem.startdraw();
-	galaxysystem.predraw(&vw);
-	galaxysystem.drawcs(&vw);
+	universe.startdraw();
+	universe.predraw(&vw);
+	universe.drawcs(&vw);
 	projection(glPopMatrix());
 	}
 
@@ -588,7 +588,7 @@ void display_func(void){
 		if(g_fix_dt)
 			rdt = g_fix_dt;
 		else
-			rdt = (t1 - gametime) * gametimescale;
+			rdt = (t1 - gametime) * universe.timescale;
 
 		dt = !init ? 0. : rdt < 1. ? rdt : 1.;
 
@@ -631,11 +631,11 @@ void display_func(void){
 
 		MotionAnim(pl, dt, flypower);
 
-		try{
-			galaxysystem.anim(dt);
-			galaxysystem.postframe();
+		if(!universe.paused) try{
+			universe.anim(dt);
+			universe.postframe();
 			GLwindow::glwpostframe();
-			galaxysystem.endframe();
+			universe.endframe();
 		}
 		catch(std::exception e){
 			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
@@ -1464,11 +1464,13 @@ int main(int argc, char *argv[])
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
+	CvarAdd("pause", &universe.paused, cvar_int);
+	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CmdExec("@exec autoexec.cfg");
 
-	StellarFileLoad("space.dat", &galaxysystem);
+	StellarFileLoad("space.dat", &universe);
 
-	pl.cs = &galaxysystem;
+	pl.cs = &universe;
 
 #if USEWIN
 	{

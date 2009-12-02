@@ -6,13 +6,14 @@
 Quatd Player::getrot()const{
 	if(!chase || mover == &Player::tactical)
 		return rot;
-	return rot * chase->rot.cnj();
+	Vec3d dummy;
+	Quatd crot;
+	chase->cockpitView(dummy, crot, 0);
+	return rot * crot.cnj();
 }
 
 Vec3d Player::getpos()const{
-	if(!chase || mover == &Player::tactical)
-		return pos;
-	return pos + chase->rot.trans(Vec3d(.0, .05, .15));
+	return pos;
 }
 
 void Player::unlink(const Entity *pe){
@@ -49,7 +50,8 @@ void Player::freelook(const input_t &inputs, double dt){
 	if(inputstate & PL_E)
 		velo = Vec3d(0,0,0);
 	if(chase){
-		pos = chase->pos;
+		Quatd dummy;
+		chase->cockpitView(pos, dummy, 0);
 		velo = chase->velo;
 	}
 	else{
@@ -64,8 +66,9 @@ void Player::tactical(const input_t &inputs, double dt){
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
 	rot = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
 	if(chase && chase->w->cs == cs){
-		pos = chase->pos + view * viewdist;
+		cpos = chase->pos;
 	}
+	pos = cpos + view * viewdist;
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){

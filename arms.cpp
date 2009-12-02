@@ -89,6 +89,11 @@ const char *MTurret::classname()const{
 	return "Mounted Turret";
 };
 
+void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
+	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
+	pos = this->pos + rot.trans(Vec3d(.0, .01, .03));
+}
+
 void MTurret::draw(wardraw_t *wd){
 	MTurret *a = this;
 	static suf_t *suf = NULL;

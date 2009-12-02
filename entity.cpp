@@ -49,8 +49,10 @@ const char *Entity::classname()const{
 double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}
 void Entity::postframe(){}
-void Entity::control(const input_t *, double){}
+void Entity::control(const input_t *i, double){inputs = *i;}
 unsigned Entity::analog_mask(){return 0;}
+void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
+int Entity::numCockpits()const{return 1;}
 void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}
 void Entity::bullethit(const Bullet *){}

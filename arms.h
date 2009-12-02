@@ -48,6 +48,7 @@ public:
 	MTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void control(const input_t *, double dt);

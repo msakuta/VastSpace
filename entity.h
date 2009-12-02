@@ -18,6 +18,8 @@ public:
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(const input_t *inputs, double dt);
 	virtual unsigned analog_mask();
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	virtual int numCockpits()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double hitradius() = 0;

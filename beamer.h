@@ -75,6 +75,7 @@ protected:
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
 	void drawShield(wardraw_t *wd);
 public:
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual double hitradius();
 	virtual int takedamage(double damage, int hitpart);
 	virtual void bullethit(const Bullet *);

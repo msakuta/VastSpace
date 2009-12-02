@@ -1489,6 +1489,10 @@ int warpable_dest(entity_t *pt, avec3_t ret, coordsys *cs){
 }
 #endif
 
+void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{
+	pos = this->pos + this->rot.trans(Vec3d(.0, .05, .15));
+	rot = this->rot;
+}
 double Frigate::hitradius(){return .1;}
 const maneuve &Frigate::getManeuve()const{return beamer_mn;}
 void Beamer::anim(double dt){

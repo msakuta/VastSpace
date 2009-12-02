@@ -233,6 +233,7 @@ coordsys Orbit marss{
 		cs_radius 100
 		warp mo
 		teleport mo
+		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
 		addent beamer .1 0 0

@@ -91,7 +91,7 @@ const char *MTurret::classname()const{
 
 void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
-	pos = this->pos + rot.trans(Vec3d(.0, .01, .03));
+	pos = this->pos + rot.trans(Vec3d(.0, .005, .015));
 }
 
 void MTurret::draw(wardraw_t *wd){
@@ -122,7 +122,7 @@ void MTurret::draw(wardraw_t *wd){
 		DrawSUF(suf_turret, SUF_ATR, NULL);
 		glPopMatrix();
 /*		if(5 < scale)*/{
-			const Vec3d pos(0., .0001 * 3, -0.0002 * 3);
+			const Vec3d pos(0., .00075, -0.0015);
 			gldTranslate3dv(pos);
 			glRotated(deg_per_rad * a->py[0], 1., 0., 0.);
 			gldTranslate3dv(-pos);
@@ -192,6 +192,8 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 }
 
 void MTurret::tryshoot(){
+	if(ammo <= 0)
+		return;
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;

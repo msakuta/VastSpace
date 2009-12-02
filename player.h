@@ -31,6 +31,7 @@ public:
 	double rad;
 	double flypower; // acceleration force
 	double viewdist; // view distance from focused object
+	double aviewdist; // actual viewdist approaching constantly to viewdist
 	const CoordSys *cs;
 	void (Player::*mover)(const input_t &inputs, double dt); /* virtual mover function */
 	Entity *chase, *control, *selected, *lastchase;
@@ -48,6 +49,7 @@ public:
 
 	Quatd getrot()const;
 	Vec3d getpos()const;
+	void anim(double dt);
 	void unlink(const Entity *);
 	void freelook(const input_t &, double dt);
 	void cockpitview(const input_t &, double dt);

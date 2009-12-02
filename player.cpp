@@ -1,6 +1,7 @@
 #include "player.h"
 #include "entity.h"
 #include "cmd.h"
+#include "coordsys.h"
 
 
 Quatd Player::getrot()const{
@@ -14,6 +15,10 @@ Quatd Player::getrot()const{
 
 Vec3d Player::getpos()const{
 	return pos;
+}
+
+void Player::anim(double dt){
+	aviewdist += (viewdist - aviewdist) * (1. - exp(-10. * dt));
 }
 
 void Player::unlink(const Entity *pe){
@@ -49,7 +54,9 @@ void Player::freelook(const input_t &inputs, double dt){
 		velo += rot.itrans(vec3_010) * dt * accel;
 	if(inputstate & PL_E)
 		velo = Vec3d(0,0,0);
+
 	if(chase){
+		this->cs = chase->w->cs;
 		Quatd dummy;
 		chase->cockpitView(pos, dummy, 0);
 		velo = chase->velo;
@@ -57,6 +64,12 @@ void Player::freelook(const input_t &inputs, double dt){
 	else{
 		velolen = velo.len();
 		pos += velo * (1. + velolen) * dt;
+		Vec3d pos;
+		const CoordSys *cs = this->cs->belongcs(pos, this->pos);
+		if(cs != this->cs){
+			this->cs = cs;
+			this->pos = pos;
+		}
 	}
 }
 
@@ -68,7 +81,7 @@ void Player::tactical(const input_t &inputs, double dt){
 	if(chase && chase->w->cs == cs){
 		cpos = chase->pos;
 	}
-	pos = cpos + view * viewdist;
+	pos = cpos + view * aviewdist;
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){

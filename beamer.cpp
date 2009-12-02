@@ -1665,7 +1665,7 @@ void Beamer::anim(double dt){
 		}
 
 #endif
-		if(cooldown == 0. && inputs.change & inputs.press & (PL_ENTER | PL_LCLICK)){
+		if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){
 			charge = 6.;
 			cooldown = 10.;
 		}

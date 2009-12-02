@@ -51,13 +51,13 @@ extern "C"{
 
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
-static double g_space_near_clip = 0.01, g_space_far_clip = 1e3;
+static double g_space_near_clip = 0.005, g_space_far_clip = 1e3;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
 double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
-static int show_planets_name = 1;
+static int show_planets_name = 0;
 static int cmdwnd = 0;
 glwindow *glwcmdmenu = NULL;
 
@@ -616,20 +616,11 @@ void display_func(void){
 			}
 		}
 
-		if(pl.chase)
-			pl.cs = pl.chase->w->cs;
-		else{
-			Vec3d pos;
-			const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
-			if(cs != pl.cs){
-				pl.cs = cs;
-				pl.pos = pos;
-			}
-		}
-
 		MotionFrame(dt);
 
 		MotionAnim(pl, dt, flypower);
+
+		pl.anim(dt);
 
 		if(!universe.paused) try{
 			universe.anim(dt);
@@ -1011,7 +1002,8 @@ static int cmd_teleport(int argc, char *argv[]){
 static int cmd_eject(int argc, char *argv[]){
 	if(pl.chase){
 		pl.chase = NULL;
-		pl.pos += pl.rot.cnj() * Vec3d(0,0,.3);
+		pl.pos += pl.getrot().cnj() * Vec3d(0,0,.3);
+		pl.mover = &Player::freelook;
 	}
 	return 0;
 }

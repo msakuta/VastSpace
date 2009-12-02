@@ -173,6 +173,9 @@
 				RelativePath="motion.cpp">
 			</File>
 			<File
+				RelativePath="player.cpp">
+			</File>
+			<File
 				RelativePath="scarry.c">
 				<FileConfiguration
 					Name="Debug|Win32"

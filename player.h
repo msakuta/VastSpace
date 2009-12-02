@@ -19,14 +19,19 @@ public:
 		std::memset(this, 0, sizeof *this);
 		rot[3] = 1.;
 		fov = 1.;
+		flypower = 1.;
+		viewdist = 1.;
+		mover = &Player::freelook;
 	}
 	Vec3d pos;
 	Vec3d velo;
 	Vec3d accel;
 	Quatd rot;
 	double rad;
+	double flypower; // acceleration force
+	double viewdist; // view distance from focused object
 	const CoordSys *cs;
-	void (*mover)(struct player *, input_t *inputs, double dt); /* virtual mover function */
+	void (Player::*mover)(const input_t &inputs, double dt); /* virtual mover function */
 	Entity *chase, *control, *selected, *lastchase;
 	struct astrobj *sight;
 	int chasecamera; /* multiple cameras can be mounted on a vehicle for having fun! */
@@ -43,6 +48,10 @@ public:
 	Quatd getrot()const;
 	Vec3d getpos()const;
 	void unlink(const Entity *);
+	void freelook(const input_t &, double dt);
+	void cockpitview(const input_t &, double dt);
+	void tactical(const input_t &, double dt);
+	static int cmd_mover(int argc, char *argv[], void *pv);
 };
 
 

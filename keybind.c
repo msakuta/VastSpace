@@ -48,6 +48,10 @@ static unsigned char name2key(const char *name){
 		return '\004';
 	else if(!strcmp(name, "rclick"))
 		return '\005';
+	else if(!strcmp(name, "wheelup"))
+		return '\006';
+	else if(!strcmp(name, "wheeldown"))
+		return '\007';
 	else if((name[0] == 'f' || name[0] == 'F')){
 		if(name[1] == '1' && '0' <= name[2] && name[2] <= '2')
 			return 0x80 + 10 + (name[2] - '0');
@@ -96,6 +100,8 @@ static const char *key2name(unsigned char key){
 		case '\003': return "alt";
 		case '\004': return "lclick";
 		case '\005': return "rclick";
+		case '\006': return "wheelup";
+		case '\007': return "wheeldown";
 		default:
 		{
 			ret[0] = key;

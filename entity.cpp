@@ -5,34 +5,8 @@ extern "C"{
 #include "beamer.h"
 #include "judge.h"
 #include "player.h"
+#include "cmd.h"
 
-Quatd Player::getrot()const{
-	if(!chase)
-		return rot;
-	return rot * chase->rot.cnj();
-}
-
-Vec3d Player::getpos()const{
-	if(!chase)
-		return pos;
-	return pos + chase->rot.trans(Vec3d(.0, .05, .15));
-}
-
-void Player::unlink(const Entity *pe){
-	if(chase == pe)
-		chase = NULL;
-	if(control == pe)
-		control = NULL;
-	if(lastchase == pe)
-		lastchase = NULL;
-	Entity **ppe;
-	for(ppe = &selected; *ppe;) if(*ppe == pe){
-		*ppe = pe->selectnext;
-		break;
-	}
-	else
-		ppe = &(*ppe)->selectnext;
-}
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1){
 	if(aw)
@@ -75,7 +49,7 @@ const char *Entity::classname()const{
 double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}
 void Entity::postframe(){}
-void Entity::control(input_t *, double){}
+void Entity::control(const input_t *, double){}
 unsigned Entity::analog_mask(){return 0;}
 void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}

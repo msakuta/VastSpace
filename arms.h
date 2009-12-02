@@ -50,7 +50,7 @@ public:
 	virtual const char *classname()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
-	virtual void control(input_t *, double dt);
+	virtual void control(const input_t *, double dt);
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual double hitradius();

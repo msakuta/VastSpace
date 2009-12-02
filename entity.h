@@ -16,7 +16,7 @@ public:
 	virtual double maxhealth()const;
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
-	virtual void control(input_t *inputs, double dt);
+	virtual void control(const input_t *inputs, double dt);
 	virtual unsigned analog_mask();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

@@ -57,7 +57,6 @@ static bool mouse_tracking = false;
 int gl_wireframe = 0;
 double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
-double flypower = 1.;
 static int show_planets_name = 1;
 static int cmdwnd = 0;
 glwindow *glwcmdmenu = NULL;
@@ -74,6 +73,7 @@ PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
 
 Player pl;
+double &flypower = pl.flypower;
 Universe universe(&pl);//galaxysystem(&pl);
 const char *Universe::classname()const{
 	return "Universe";
@@ -644,17 +644,13 @@ void display_func(void){
 			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
 		}
 
+		input_t inputs;
+		inputs.press = MotionGet();
+		inputs.change = MotionGetChange();
+		(pl.*pl.mover)(inputs, dt);
+
 		if(pl.chase){
-			input_t inputs;
-			inputs.press = MotionGet();
-			inputs.change = MotionGetToggle();
 			pl.chase->control(&inputs, dt);
-			pl.pos = pl.chase->pos;
-			pl.velo = pl.chase->velo;
-		}
-		else{
-			pl.velolen = pl.velo.len();
-			pl.pos += pl.velo * (1. + pl.velolen) * dt;
 		}
 
 		// Really should be in draw method, since windows are property of the client.
@@ -957,6 +953,8 @@ void mouse_func(int button, int state, int x, int y){
 		glwfocus = NULL;
 	}
 
+	if(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN)
+		BindExec(button + '\003');
 #if 0
 	if(0 && pl.control){
 		if(state == GLUT_UP && button == GLUT_WHEEL_UP)
@@ -1460,12 +1458,14 @@ int main(int argc, char *argv[])
 	CmdAdd("chasecamera", cmd_chasecamera);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
+	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
 	CvarAdd("pause", &universe.paused, cvar_int);
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
+	CvarAdd("viewdist", &pl.viewdist, cvar_double);
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &universe);

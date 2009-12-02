@@ -205,7 +205,7 @@ void MTurret::tryshoot(){
 	ammo--;
 }
 
-void MTurret::control(input_t *inputs, double dt){
+void MTurret::control(const input_t *inputs, double dt){
 	this->inputs = *inputs;
 }
 
@@ -322,7 +322,7 @@ double MTurret::hitradius(){
 }
 
 cpplib::dstring MTurret::descript()const{
-	return (cpplib::dstring(idname()).strcat(" ").strcat(cpplib::dstring(health)) += " ") += cpplib::dstring(long(ammo));
+	return cpplib::dstring() << idname() << " " << health << " " << ammo;
 }
 
 

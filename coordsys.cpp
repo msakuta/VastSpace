@@ -701,7 +701,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "addent")){
-		extern struct player *ppl;
+		extern Player *ppl;
 		WarField *w;
 		Entity *pt;
 		if(this->w)

@@ -2,11 +2,14 @@
 #include "cmd.h"
 #include "antiglut.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #define DELETEKEY 0x7f
 
 struct binding{
-	unsigned char key;
+	int key;
 	char *cmd;
 };
 
@@ -19,7 +22,7 @@ static struct bindset{
 } *bindstack = NULL;
 static int nbindstack = 0;
 
-static unsigned char name2key(const char *name){
+static int name2key(const char *name){
 	if(!name || !*name)
 		return 0;
 	if(!name[1] && ('0' <= name[0] && name[0] <= '9' || 'A' <= name[0] && name[0] <= 'Z' || 'a' <= name[0] && name[0] <= 'z'))
@@ -45,24 +48,26 @@ static unsigned char name2key(const char *name){
 	else if(!strcmp(name, "alt"))
 		return '\003';
 	else if(!strcmp(name, "lclick"))
-		return '\004';
+		return KEYBIND_MOUSE_BASE + GLUT_LEFT_BUTTON;
 	else if(!strcmp(name, "rclick"))
-		return '\005';
+		return KEYBIND_MOUSE_BASE + GLUT_RIGHT_BUTTON;
 	else if(!strcmp(name, "wheelup"))
-		return '\006';
+		return KEYBIND_MOUSE_BASE + GLUT_WHEEL_UP;
 	else if(!strcmp(name, "wheeldown"))
-		return '\007';
+		return KEYBIND_MOUSE_BASE + GLUT_WHEEL_DOWN;
 	else if((name[0] == 'f' || name[0] == 'F')){
 		if(name[1] == '1' && '0' <= name[2] && name[2] <= '2')
 			return 0x80 + 10 + (name[2] - '0');
 		else if('1' <= name[1] && name[1] <= '9')
 			return 0x80 + (name[1] - '1');
+		else
+			return 0;
 	}
 	else
 		return name[0];
 }
 
-static const char *key2name(unsigned char key){
+static const char *key2name(int key){
 	static char ret[16];
 	if('0' <= key && key <= '9' || 'A' <= key && key <= 'Z' || 'a' <= key && key <= 'z'){
 		ret[0] = key;
@@ -98,10 +103,10 @@ static const char *key2name(unsigned char key){
 		case '\001': return "shift";
 		case '\002': return "ctrl";
 		case '\003': return "alt";
-		case '\004': return "lclick";
-		case '\005': return "rclick";
-		case '\006': return "wheelup";
-		case '\007': return "wheeldown";
+		case KEYBIND_MOUSE_BASE + GLUT_LEFT_BUTTON: return "lclick";
+		case KEYBIND_MOUSE_BASE + GLUT_RIGHT_BUTTON: return "rclick";
+		case KEYBIND_MOUSE_BASE + GLUT_WHEEL_UP: return "wheelup";
+		case KEYBIND_MOUSE_BASE + GLUT_WHEEL_DOWN: return "wheeldown";
 		default:
 		{
 			ret[0] = key;
@@ -113,10 +118,11 @@ static const char *key2name(unsigned char key){
 
 
 int cmd_bind(int argc, char *argv[]){
-	char args[128], *thekey, *thevalue;
+/*	char args[128];*/
+	char *thekey, *thevalue;
 	int i;
 	char buf[128];
-	unsigned char key;
+	int key;
 	size_t valuelen;
 	if(argc <= 1){
 		for(i = 0; i < nbinds; i++){

@@ -922,19 +922,6 @@ void mouse_func(int button, int state, int x, int y){
 		if(ret)
 			return;
 		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
-/*			avec3_t centerray, centerray0;
-			aquat_t qrot, qirot;
-			centerray0[0] = (s_mousedragx + s_mousex) / 2. / gvp.w - .5;
-			centerray0[1] = (s_mousedragy + s_mousey) / 2. / gvp.h - .5;
-			centerray0[2] = -1.;
-			VECSCALEIN(centerray0, -1.);
-			QUATCNJ(qrot, pl.rot);
-			quatrot(centerray, qrot, centerray0);
-			quatdirection(qrot, centerray);
-			QUATCNJ(qirot, qrot);*/
-//					select_box(fabs(s_mousedragx - s_mousex), fabs(s_mousedragx - s_mousex), qirot);
-//					s_mousedragx = s_mousex;
-//					s_mousedragy = s_mousey;
 			if(/*boxable &&*/ !glwfocus){
 				int x0 = MIN(s_mousedragx, s_mousex);
 				int x1 = MAX(s_mousedragx, s_mousex) + 1;
@@ -953,30 +940,17 @@ void mouse_func(int button, int state, int x, int y){
 		glwfocus = NULL;
 	}
 
-	if(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN)
-		BindExec(button + '\003');
-#if 0
-	if(0 && pl.control){
-		if(state == GLUT_UP && button == GLUT_WHEEL_UP)
-			s_mouse |= PL_MWU;
-		if(state == GLUT_UP && button == GLUT_WHEEL_DOWN)
-			s_mouse |= PL_MWD;
-	}
-	else{
-		extern double g_viewdist;
-		if(state == GLUT_UP && button == GLUT_WHEEL_UP)
-			g_viewdist *= 1.2;
-		if(state == GLUT_UP && button == GLUT_WHEEL_DOWN)
-			g_viewdist /= 1.2;
-	}*/
-
 	if(state == GLUT_DOWN || state == GLUT_UP)
-		(state == GLUT_DOWN ? BindExec : BindKeyUp)(button / 2 + '\004');
-/*
+		(state == GLUT_DOWN ? BindExec : BindKeyUp)(button + KEYBIND_MOUSE_BASE + GLUT_LEFT_BUTTON);
+
 	s_mousex = x;
 	s_mousey = y;
 
-	{
+/*	{
+		int ivp[4];
+		glGetIntegerv(GL_VIEWPORT, ivp);
+		viewport gvp;
+		gvp.set(ivp);
 		int i = (y - 40) / 10;
 		if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && gvp.w - 160 <= x && 0 <= i && i < OV_COUNT){
 			if(g_counts[i] == 1){
@@ -986,9 +960,8 @@ void mouse_func(int button, int state, int x, int y){
 				pl.selected = NULL;
 			current_vft = g_vfts[i];
 		}
-	}
-*/
-#endif
+	}*/
+
 #if USEWIN && defined _WIN32
 	if(!cmdwnd && !pl.control && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
@@ -1336,7 +1309,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				int ret = 0;
 				POINT p = {LOWORD(lParam), HIWORD(lParam)};
 				ScreenToClient(hWnd, &p);
-				mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_UP, p.x, p.y);
+				mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_DOWN, p.x, p.y);
 			}
 			break;
 

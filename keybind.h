@@ -5,6 +5,8 @@
 extern "C"{
 #endif
 
+#define KEYBIND_MOUSE_BASE 0x200
+
 int cmd_bind(int argc, char *argv[]);
 int cmd_pushbind(int argc, char *argv[]);
 int cmd_popbind(int argc, char *argv[]);

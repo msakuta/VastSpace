@@ -122,7 +122,7 @@ void Assault::drawtra(wardraw_t *wd){
 	drawShield(wd);
 }
 
-double Assault::maxhealth()const{return 3000.;}
+double Assault::maxhealth()const{return 30000.;}
 
 int Assault::armsCount()const{return numof(turrets);}
 

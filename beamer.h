@@ -91,7 +91,7 @@ public:
 	typedef Frigate st;
 protected:
 	double charge;
-	avec3_t integral;
+	Vec3d integral;
 	double beamlen;
 	double cooldown;
 //	struct tent3d_fpol *pf[1];

@@ -713,8 +713,8 @@ Beamer::Beamer(WarField *aw) : st(aw){
 //	dock = NULL;
 	undocktime = 0.f;
 	cooldown = 0.;
-	VECNULL(integral);
-	health = BEAMER_HEALTH / 10;
+	integral.clear();
+	health = maxhealth();
 }
 
 const char *Beamer::idname()const{
@@ -1467,12 +1467,11 @@ void Beamer::anim(double dt){
 //	tankrot(&mat, pt);
 	mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 
-#if 0
-	if(0 < pt->health){
-		double oldyaw = pt->pyr[1];
-		entity_t *collideignore = NULL;
+#if 1
+	if(0 < health){
+		Entity *collideignore = NULL;
 		int i, n;
-		if(p->dock && p->undocktime){
+/*		if(p->dock && p->undocktime){
 			pt->inputs.press = PL_W;
 
 			if(p->undocktime <= dt){
@@ -1484,41 +1483,37 @@ void Beamer::anim(double dt){
 		}
 		else if(w->pl->control == pt){
 		}
-		else{
-			double pos[3], dv[3], dist;
-			avec3_t opos;
-			pt->inputs.press = 0;
-			if(!pt->enemy){ /* find target */
+		else*/{
+			Vec3d pos, dv;
+			double dist;
+			Vec3d opos;
+			inputs.press = 0;
+			if(!enemy){ /* find target */
 				double best = 20. * 20.;
-				entity_t *t;
-				for(t = w->tl; t; t = t->next) if(t != pt && t->race != -1 && t->race != pt->race && 0. < t->health && t->vft != &rstation_s){
-					double sdist = VECSDIST(pt->pos, t->pos);
+				Entity *t;
+				for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != race && 0. < t->health){
+					double sdist = (this->pos - t->pos).slen();
 					if(sdist < best){
-						pt->enemy = t;
+						enemy = t;
 						best = sdist;
 					}
 				}
 			}
 
-			if(p->dock && p->undocktime == 0){
+/*			if(p->dock && p->undocktime == 0){
 				if(pt->enemy)
 					beamer_undock(p, p->dock);
 			}
-			else{
-				if(pt->enemy){
-					avec3_t dv, forward;
-					avec3_t xh, yh;
+			else*/{
+				if(this->enemy){
+					Vec3d dv, forward;
+					Vec3d xh, yh;
 					long double sx, sy, len, len2, maxspeed = BEAMER_MAX_ANGLESPEED * dt;
-					aquat_t qres, qrot;
-					VECSUB(dv, pt->enemy->pos, pt->pos);
-					VECNORMIN(dv);
-					quatrot(forward, pt->rot, avec3_001);
-					VECSCALEIN(forward, -1);
-	/*				sx = VECSP(&mat[0], dv);
-					sy = VECSP(&mat[4], dv);
-					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
-					VECVP(xh, forward, dv);
-					len = len2 = VECLEN(xh);
+					Quatd qres, qrot;
+					dv = (enemy->pos - this->pos).normin();
+					forward = -this->rot.trans(avec3_001);
+					xh = forward.vp(dv);
+					len = len2 = xh.len();
 					len = asinl(len);
 					if(maxspeed < len){
 						len = maxspeed;
@@ -1526,7 +1521,7 @@ void Beamer::anim(double dt){
 					len = sinl(len / 2.);
 					if(len && len2){
 						double sd, df, drl, decay;
-						avec3_t ptomg, omg, dvv, delta, diff;
+						Vec3d ptomg, omg, dvv, delta, diff;
 /*						VECSCALE(qrot, xh, len / len2);
 						qrot[3] = sqrt(1. - len * len);
 						QUATMUL(qres, qrot, pt->rot);
@@ -1546,62 +1541,62 @@ void Beamer::anim(double dt){
 						len2 = VECLEN(xh);*/
 						df = dt * MIN(len2, beamer_mn.angleaccel) / len2;
 						df = MIN(df, 1);
-						VECSUB(delta, diff, pt->omg);
-						VECSADD(delta, p->integral, .2);
-						VECSADD(pt->omg, delta, df);
-						if(beamer_mn.maxanglespeed * beamer_mn.maxanglespeed < VECSLEN(pt->omg)){
-							VECNORMIN(pt->omg);
-							VECSCALEIN(pt->omg, beamer_mn.maxanglespeed);
+						delta = diff - this->omg;
+						delta += integral * .2;
+						this->omg += delta * df;
+						if(beamer_mn.maxanglespeed * beamer_mn.maxanglespeed < this->omg.slen()){
+							this->omg.normin();
+							this->omg *= beamer_mn.maxanglespeed;
 						}
 						if(.25 < len2)
-							VECSCALEIN(diff, .25 / len2);
-						VECSADD(p->integral, diff, dt);
+							diff *= .25 / len2;
+						integral += diff * dt;
 						decay = exp(-.1 * dt);
-						VECSCALEIN(p->integral, decay);
-						pt->inputs.press |= PL_2 | PL_8;
+						integral *= decay;
+						inputs.press |= PL_2 | PL_8;
 					}
-					if(.9 < VECSP(dv, forward)){
-						pt->inputs.change |= PL_ENTER;
-						pt->inputs.press |= PL_ENTER;
-						if(5. * 5. < VECSDIST(pt->enemy->pos, pt->pos))
-							pt->inputs.press |= PL_W;
-						else if(VECSDIST(pt->enemy->pos, pt->pos) < 1. * 1.)
-							pt->inputs.press |= PL_S;
+					if(.9 < dv.sp(forward)){
+						inputs.change |= PL_ENTER;
+						inputs.press |= PL_ENTER;
+						if(5. * 5. < (enemy->pos - this->pos).slen())
+							inputs.press |= PL_W;
+						else if((enemy->pos - this->pos).slen() < 1. * 1.)
+							inputs.press |= PL_S;
 /*						else
-							pt->inputs.press |= PL_A; *//* strafe around */
+							inputs.press |= PL_A; *//* strafe around */
 					}
 				}
 
 				/* follow another */
-				if(0 && !pt->enemy && !pw->warping){
-					entity_t *pt2;
-					beamer_t *leader = NULL;
-					for(pt2 = w->tl; pt2; pt2 = pt2->next) if(pt != pt2 && pt2->vft == pt->vft && w->pl->control == pt2){
-						leader = (warpable_t*)pt2;
+				if(0 && !enemy && !warping){
+					Entity *pt2;
+					Warpable *leader = NULL;
+					for(pt2 = w->el; pt2; pt2 = pt2->next) if(this != pt2 && race == pt2->race && pt2->toWarpable() && w->pl->control == pt2){
+						leader = pt2->toWarpable();
 						break;
 					}
 
-					if(leader && leader->charge){
+/*					if(leader && leader->charge){
 						pt->inputs.change |= PL_ENTER;
 						pt->inputs.press |= PL_ENTER;
-					}
+					}*/
 
 					/*for(pt2 = w->tl; pt2; pt2 = pt2->next) if(pt != pt2 && pt2->vft == pt->vft && w->pl->control == pt2 && ((beamer_t*)pt2)->warping)*/
-					if(leader && leader->st.warping && leader->st.warpdstcs != w->cs){
-						warpable_t *p2 = &leader->st;
+					if(leader && leader->warping && leader->warpdstcs != w->cs){
+						Warpable *p2 = leader;
 						int k;
-						pw->warping = p2->warping;
-						pw->warpcs = NULL;
-						VECCPY(pw->warpdst, p2->warpdst);
+						warping = p2->warping;
+						warpcs = NULL;
+						warpdst = p2->warpdst;
 						for(k = 0; k < 3; k++)
-							pw->warpdst[k] += drseq(&w->rs) - .5;
-						pw->warpdstcs = p2->warpdstcs;
-						pw->warp_next_warf = NULL;
+							warpdst[k] += drseq(&w->rs) - .5;
+						warpdstcs = p2->warpdstcs;
 	/*					break;*/
 					}
 				}
 			}
 		}
+	}
 
 #endif
 		if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){

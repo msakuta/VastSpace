@@ -191,6 +191,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="shield.cpp">
+			</File>
+			<File
 				RelativePath="solarmap.cpp">
 			</File>
 			<File
@@ -265,6 +268,9 @@
 			</File>
 			<File
 				RelativePath="player.h">
+			</File>
+			<File
+				RelativePath="shield.h">
 			</File>
 			<File
 				RelativePath="stellar_file.h">

@@ -37,6 +37,7 @@ public:
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}
 	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
+	Entity *getUltimateOwner();
 
 	Vec3d pos;
 	Vec3d velo;
@@ -60,6 +61,12 @@ public:
 protected:
 	void init();
 };
+
+inline Entity *Entity::getUltimateOwner(){
+	Entity *ret;
+	for(ret = this; ret->getOwner(); ret = ret->getOwner());
+	return ret;
+}
 
 struct GLwindowState;
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);

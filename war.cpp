@@ -61,21 +61,32 @@ void WarField::endframe(){
 }
 
 void WarField::draw(wardraw_t *wd){
-	try{
-		for(Entity *e = el; e; e = e->next) if(e->w == this)
-			e->draw(wd);
-	}
-	catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
-	}
-	catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
+	for(Entity *pe = el; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+		try{
+			pe->draw(wd);
+		}
+		catch(std::exception e){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): %s\n", __LINE__, pe, pe->idname(), e.what());
+		}
+		catch(...){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): ?\n", __LINE__, pe, pe->idname());
+		}
 	}
 }
 
 void WarField::drawtra(wardraw_t *wd){
-	for(Entity *e = el; e; e = e->next) if(e->w == this)
-		e->drawtra(wd);
+	for(Entity *pe = el; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+		try{
+			pe->drawtra(wd);
+		}
+		catch(std::exception e){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): %s\n", __LINE__, pe, pe->idname(), e.what());
+		}
+		catch(...){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
+		}
+	}
+
 	tent3d_line_drawdata dd;
 	*(Vec3d*)(dd.viewdir) = -wd->vw->rot.vec3(2);
 	*(Vec3d*)dd.viewpoint = wd->vw->pos;

@@ -158,13 +158,19 @@ GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
 void GLWarms::draw(GLwindowState &ws, double t){
 	if(!a)
 		return;
+	glColor4f(0,1,1,1);
+	glwpos2d(xpos, ypos + (2) * getFontHeight());
+	glwprintf(a->classname());
+	glColor4f(1,1,0,1);
+	glwpos2d(xpos, ypos + (3) * getFontHeight());
+	glwprintf("%lg / %lg", a->health, a->maxhealth());
 	for(int i = 0; i < a->armsCount(); i++){
-		glColor4f(0,1,1,1);
-		glwpos2d(xpos, ypos + (2 + 2 * i) * getFontHeight());
-		glwprintf(Assault::hardpoints[i].name);
-		glColor4f(1,1,0,1);
-		glwpos2d(xpos, ypos + (3 + 2 * i) * getFontHeight());
 		const ArmBase *arm = a->armsGet(i);
+		glColor4f(0,1,1,1);
+		glwpos2d(xpos, ypos + (4 + 2 * i) * getFontHeight());
+		glwprintf(arm->hp->name);
+		glColor4f(1,1,0,1);
+		glwpos2d(xpos, ypos + (5 + 2 * i) * getFontHeight());
 		glwprintf(arm ? arm->descript() : "N/A");
 	}
 }

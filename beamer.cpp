@@ -1493,13 +1493,8 @@ void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	pos = this->pos + this->rot.trans(Vec3d(.0, .05, .15));
 	rot = this->rot;
 }
-double Frigate::hitradius(){return .1;}
-const maneuve &Frigate::getManeuve()const{return beamer_mn;}
-void Beamer::anim(double dt){
-	Mat4d mat;
-
-	if(!w)
-		return;
+void Frigate::anim(double dt){
+	st::anim(dt);
 
 	if(shield < dt)
 		shield = 0.;
@@ -1513,6 +1508,15 @@ void Beamer::anim(double dt){
 		else
 			shieldAmount += dt * 5.;
 	}
+
+}
+double Frigate::hitradius(){return .1;}
+const maneuve &Frigate::getManeuve()const{return beamer_mn;}
+void Beamer::anim(double dt){
+	Mat4d mat;
+
+	if(!w)
+		return;
 
 //	animShieldWavelet(pt, &p->sw, dt);
 
@@ -1728,7 +1732,7 @@ void Beamer::anim(double dt){
 			beamlen = 10.;
 	}
 #if 1
-	Warpable::anim(dt);
+	st::anim(dt);
 #endif
 #if 0
 	if(p->pf){

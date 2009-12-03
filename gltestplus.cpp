@@ -467,14 +467,32 @@ void draw_func(Viewer &vw, double dt){
 	lightOn();
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	war_draw(vw, pl.cs, &WarField::draw);
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_LIGHTING);
-//	glDisable(GL_CULL_FACE);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_BLEND);
-	war_draw(vw, pl.cs, &WarField::drawtra);
+/*	for(vw.zslice = 1; 0 <= vw.zslice; vw.zslice--)*/{
+/*		GLpmatrix proj;
+		double scale = vw.zslice ? 1. : 1e-2;
+		projection((
+			glLoadIdentity(),
+			vw.frustum(scale * g_space_near_clip, scale * g_space_far_clip)
+		));
+		GLint ie;
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		ie = glGetError();
+		glDepthFunc(GL_ALWAYS);
+		glClearDepth(1.);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glDepthFunc(GL_LESS);
+		ie = glGetError();*/
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LIGHTING);
+		war_draw(vw, pl.cs, &WarField::draw);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+	//	glDisable(GL_CULL_FACE);
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		war_draw(vw, pl.cs, &WarField::drawtra);
+	}
 	glPopAttrib();
 	glPopMatrix();
 

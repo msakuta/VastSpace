@@ -328,72 +328,14 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
-#define SQRT2P2 (M_SQRT2/2.)
 
-void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius, const GLubyte color[4], const double irot[16]){
-	int i, j;
-	const double (*cuts)[2];
-	double jcuts0[4][2];
-	double (*jcuts)[2] = jcuts0;
-	double tangent;
-	GLubyte colors[4][4];
 
-	tangent = acos(radius / VECDIST(pos, viewpos));
 
-	colors[3][0] = color[0];
-	colors[3][1] = color[1];
-	colors[3][2] = color[2];
-	colors[3][3] = color[3];
-	colors[0][0] = 255;
-	colors[0][1] = 0;
-	colors[0][2] = 128;
-	colors[0][3] = 0;
 
-	for(j = 1; j <= 2; j++) for(i = 0; i < 4; i++)
-		colors[j][i] = ((3 - j) * colors[0][i] + j * colors[3][i]) / 3;
 
-	cuts = CircleCuts(20);
-/*	jcuts = CircleCuts(12);*/
-	jcuts[0][0] = 0.;
-	jcuts[0][1] = 1.;
-	jcuts[1][0] = sin(tangent / 3.);
-	jcuts[1][1] = cos(tangent / 3.);
-	jcuts[2][0] = sin(tangent * 2. / 3.);
-	jcuts[2][1] = cos(tangent * 2. / 3.);
-	jcuts[3][0] = sin(tangent);
-	jcuts[3][1] = cos(tangent);
 
-	glPushAttrib(GL_POLYGON_BIT);
-/*	glEnable(GL_CULL_FACE);*/
-	glPushMatrix();
-	glTranslated(pos[0], pos[1], pos[2]);
-	if(irot)
-		glMultMatrixd(irot);
-	glScaled(radius, radius, radius);
 
-	glBegin(GL_TRIANGLE_FAN);
-	glColor4ubv(colors[0]);
-	glVertex3d(0., 0., 1.);
-	glColor4ubv(colors[1]);
-	for(i = 0; i <= 20; i++){
-		int k = i % 20;
-		glVertex3d(jcuts[1][0] * cuts[k][1], jcuts[1][0] * cuts[k][0], jcuts[1][1]);
-	}
-	glEnd();
 
-	glBegin(GL_QUAD_STRIP);
-	for(j = 1; j <= 2; j++) for(i = 0; i <= 20; i++){
-		int k = i % 20;
-		glColor4ubv(colors[j]);
-		glVertex3d(jcuts[j][0] * cuts[k][1], jcuts[j][0] * cuts[k][0], jcuts[j][1]);
-		glColor4ubv(colors[j+1]);
-		glVertex3d(jcuts[j+1][0] * cuts[k][1], jcuts[j+1][0] * cuts[k][0], jcuts[j+1][1]);
-	}
-	glEnd();
-
-	glPopMatrix();
-	glPopAttrib();
-}
 
 #ifdef NDEBUG
 #else
@@ -763,9 +705,7 @@ Warpable::Warpable(WarField *aw) : st(aw){
 
 Frigate::Frigate(WarField *aw) : st(aw){
 	health = maxhealth();
-	shieldAmount = MAX_SHIELD_AMOUNT / 10;
-	shield = 0.;
-	sw = NULL;
+	shieldAmount = maxshield();
 }
 
 Beamer::Beamer(WarField *aw) : st(aw){
@@ -1496,11 +1436,6 @@ void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 void Frigate::anim(double dt){
 	st::anim(dt);
 
-	if(shield < dt)
-		shield = 0.;
-	else
-		shield -= dt;
-
 	/* shield regeneration */
 	if(0 < health){
 		if(MAX_SHIELD_AMOUNT < shieldAmount + dt * 5.)
@@ -1508,6 +1443,8 @@ void Frigate::anim(double dt){
 		else
 			shieldAmount += dt * 5.;
 	}
+
+	se.anim(dt);
 
 }
 double Frigate::hitradius(){return .1;}
@@ -1517,8 +1454,6 @@ void Beamer::anim(double dt){
 
 	if(!w)
 		return;
-
-//	animShieldWavelet(pt, &p->sw, dt);
 
 	/* forget about beaten enemy */
 	if(enemy && enemy->health <= 0.)
@@ -2037,20 +1972,7 @@ void Frigate::drawShield(wardraw_t *wd){
 			}
 		}
 
-		/* shield effect */
-		if(0. < p->shieldAmount && 0. < p->shield){
-			GLubyte col[4] = {0,127,255,255};
-			avec3_t dr;
-			amat4_t irot;
-			col[0] = 128 * (1. - p->shieldAmount / MAX_SHIELD_AMOUNT);
-			col[2] = 255 * (p->shieldAmount / MAX_SHIELD_AMOUNT);
-			col[3] = 128 * (1. - 1. / (1. + p->shield));
-			VECSUB(dr, wd->vw->pos, this->pos);
-			gldLookatMatrix(&irot, &dr);
-			drawShieldSphere(this->pos, wd->vw->pos, BEAMER_SHIELDRAD, col, irot);
-		}
-
-/*		drawShieldWavelets(pt, p->sw, BEAMER_SHIELDRAD);*/
+		se.draw(wd, this, BEAMER_SHIELDRAD, p->shieldAmount / MAX_SHIELD_AMOUNT);
 	}
 }
 
@@ -2186,7 +2108,7 @@ int Frigate::takedamage(double damage, int hitpart){
 	int ret = 1;
 
 	if(hitpart == 1000){
-		p->shield = MIN(p->shield + damage * .05, 5.);
+		se.takedamage(damage / maxshield());
 		if(damage < p->shieldAmount)
 			p->shieldAmount -= damage;
 		else
@@ -2298,30 +2220,9 @@ int Frigate::takedamage(double damage, int hitpart){
 
 void Frigate::bullethit(const Bullet *pb){
 	Frigate *p = this;
-#if 0
 	if(pb->damage < p->shieldAmount){
-		double pos[3], velo[3];
-		double pi;
-		Vec3d dr, v;
-		Quatd q;
-
-		dr = pb->pos - pt->pos;
-		dr.normin();
-
-		/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-		q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
-
-		v = vec3_001.vp(dr);
-		pi = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-		q = v * pi;
-
-		pos = pb->pos;
-		velo = pt->velo;
-
-		ShieldWaveletAlloc(&p->sw, q, MIN(pb->damage * .05 + .2, 5.));
-
+		se.bullethit(this, pb, maxshield());
 	}
-#endif
 }
 
 int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){

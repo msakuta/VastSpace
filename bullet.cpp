@@ -726,12 +726,8 @@ void Bullet::anim(double dt){
 				continue;
 
 			// if the ultimate owner of the objects is common, do not hurt yourself.
-			Entity *bulletAncestor = pb;
-			while(bulletAncestor->getOwner())
-				bulletAncestor = bulletAncestor->getOwner();
-			Entity *hitobjAncestor = pt;
-			while(hitobjAncestor->getOwner())
-				hitobjAncestor = hitobjAncestor->getOwner();
+			Entity *bulletAncestor = pb->getUltimateOwner();
+			Entity *hitobjAncestor = pt->getUltimateOwner();
 			if(bulletAncestor == hitobjAncestor)
 				continue;
 

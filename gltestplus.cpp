@@ -488,7 +488,7 @@ void draw_func(Viewer &vw, double dt){
 		war_draw(vw, pl.cs, &WarField::draw);
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
-	//	glDisable(GL_CULL_FACE);
+		glDisable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		war_draw(vw, pl.cs, &WarField::drawtra);

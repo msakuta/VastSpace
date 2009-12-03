@@ -5,8 +5,7 @@
 #include "coordsys.h"
 #include "war.h"
 #include "arms.h"
-//#include "mturret.h"
-//#include "bhole.h"
+#include "shield.h"
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/suf/sufdraw.h>
@@ -68,12 +67,12 @@ class Frigate : public Warpable{
 public:
 	typedef Warpable st;
 protected:
-	struct shieldWavelet *sw;
+	ShieldEffect se;
 	double shieldAmount;
-	double shield;
 	Frigate(WarField *);
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
 	void drawShield(wardraw_t *wd);
+
 public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);

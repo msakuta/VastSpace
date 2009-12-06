@@ -74,7 +74,7 @@ suf_t *MTurret::suf_turret = NULL;
 suf_t *MTurret::suf_barrel = NULL;
 
 
-MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0){
+MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), forceEnemy(false){
 	health = 1000;
 	ammo = 1500;
 	py[0] = 0;
@@ -228,7 +228,8 @@ void MTurret::anim(double dt){
 	double phi, theta; /* enemy direction */
 
 	/* find enemy logic */
-	findtarget(pt, hp);
+	if(!forceEnemy)
+		findtarget(pt, hp);
 
 /*	if(*ptarget && (w != (*ptarget)->w || (*ptarget)->health <= 0.))
 		*ptarget = NULL;*/
@@ -290,8 +291,11 @@ void MTurret::anim(double dt){
 }
 
 void MTurret::postframe(){
-	if(target && !target->w)
+	if(target && !target->w){
 		target = NULL;
+		if(forceEnemy)
+			forceEnemy = false;
+	}
 	if(base && !base->w)
 		base = NULL;
 }
@@ -326,6 +330,12 @@ void MTurret::drawtra(wardraw_t *wd){
 
 double MTurret::hitradius(){
 	return .005;
+}
+
+void MTurret::attack(Entity *target){
+	st::attack(target);
+	this->target = target;
+	forceEnemy = true;
 }
 
 cpplib::dstring MTurret::descript()const{

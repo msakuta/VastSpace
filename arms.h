@@ -45,6 +45,7 @@ public:
 	float cooldown;
 	float py[2]; // pitch and yaw
 	float mf; // muzzle flash time
+	bool forceEnemy;
 	MTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -55,6 +56,7 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual double hitradius();
+	virtual void attack(Entity *target);
 	virtual cpplib::dstring descript()const;
 protected:
 	void tryshoot();

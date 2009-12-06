@@ -1456,7 +1456,7 @@ void Beamer::anim(double dt){
 		return;
 
 	/* forget about beaten enemy */
-	if(enemy && enemy->health <= 0.)
+	if(enemy && (enemy->health <= 0. || enemy->w != w))
 		enemy = NULL;
 
 /*	if(p->dock && !p->undocktime){

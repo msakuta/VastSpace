@@ -1039,6 +1039,13 @@ static int cmd_originrotation(int, char *[]){
 	return 0;
 }
 
+static int cmd_attack(int, char *[], void *pv){
+	Player *ppl = (Player*)pv;
+	if(ppl->chase && ppl->selected)
+		ppl->chase->attack(ppl->selected);
+	return 0;
+}
+
 
 /*
 extern "C" int console_cursorposdisp;
@@ -1442,6 +1449,7 @@ int main(int argc, char *argv[])
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
+	CmdAddParam("attack", cmd_attack, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

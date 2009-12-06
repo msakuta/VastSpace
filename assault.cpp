@@ -132,6 +132,10 @@ const ArmBase *Assault::armsGet(int i)const{
 	return turrets[i];
 }
 
+void Assault::attack(Entity *target){
+	for(int i = 0; i < numof(turrets); i++) if(turrets[i])
+		turrets[i]->attack(target);
+}
 
 
 

@@ -132,6 +132,7 @@ public:
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
+	virtual void attack(Entity *target);
 	friend class GLWarms;
 };
 

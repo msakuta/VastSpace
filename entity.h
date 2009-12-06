@@ -32,6 +32,7 @@ public:
 	virtual bool isTargettable()const = 0;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
+	virtual void attack(Entity *target);
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

@@ -8,7 +8,7 @@ extern "C"{
 #include "cmd.h"
 
 
-Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1){
+Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
 	if(aw)
 		aw->addent(this);
 }
@@ -59,6 +59,7 @@ void Entity::bullethit(const Bullet *){}
 Entity *Entity::getOwner(){return NULL;}
 int Entity::armsCount()const{return 0;}
 const ArmBase *Entity::armsGet(int)const{return NULL;}
+void Entity::attack(Entity *target){enemy = target;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;

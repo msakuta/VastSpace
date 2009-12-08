@@ -6,6 +6,7 @@ extern "C"{
 #include "judge.h"
 #include "player.h"
 #include "cmd.h"
+#include "sceptor.h"
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
@@ -22,10 +23,10 @@ template<class T> Entity *Constructor(WarField *w){
 };
 
 static const char *ent_name[] = {
-	"beamer", "assault",
+	"beamer", "assault", "sceptor"
 };
 static Entity *(*const ent_creator[])(WarField *w) = {
-	Constructor<Beamer>, Constructor<Assault>,
+	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>
 };
 
 Entity *Entity::create(const char *cname, WarField *w){

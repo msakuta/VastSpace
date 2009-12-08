@@ -167,6 +167,9 @@
 				RelativePath="keybind.c">
 			</File>
 			<File
+				RelativePath="material.c">
+			</File>
+			<File
 				RelativePath="calc\mathvars.c">
 			</File>
 			<File
@@ -189,6 +192,9 @@
 					<Tool
 						Name="VCCLCompilerTool"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="sceptor.cpp">
 			</File>
 			<File
 				RelativePath="shield.cpp">
@@ -264,10 +270,16 @@
 				RelativePath="keybind.h">
 			</File>
 			<File
+				RelativePath="material.h">
+			</File>
+			<File
 				RelativePath="motion.h">
 			</File>
 			<File
 				RelativePath="player.h">
+			</File>
+			<File
+				RelativePath="sceptor.h">
 			</File>
 			<File
 				RelativePath="shield.h">

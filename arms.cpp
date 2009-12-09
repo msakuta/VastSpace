@@ -47,10 +47,11 @@ cpplib::dstring ArmBase::descript()const{
 
 void ArmBase::align(){
 	// dead arms do not follow the base
-	if(health <= 0.)
+	if(health <= 0. || !base)
 		return;
 
 	w = base->w;
+	race = base->race;
 
 	/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
 	Mat4d mat;
@@ -179,7 +180,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
 
 		if(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]
-			&& (sdist = VECSDIST(pt2->pos, pb->pos)) < best)
+			&& (sdist = (pt2->pos - pb->pos).slen()) < best)
 		{
 			best = sdist;
 			closest = pt2;
@@ -239,7 +240,7 @@ void MTurret::anim(double dt){
 	else
 		a->mf -= dt;
 
-	if(w->pl && w->pl->chase == this){
+	if(w->pl && w->pl->control == this){
 		double pydst[2] = {py[0], py[1]};
 		if(inputs.press & PL_A)
 			pydst[1] += MTURRETROTSPEED * dt;
@@ -336,6 +337,12 @@ void MTurret::attack(Entity *target){
 	st::attack(target);
 	this->target = target;
 	forceEnemy = true;
+}
+
+std::vector<cpplib::dstring> MTurret::props()const{
+	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+	return ret;
 }
 
 cpplib::dstring MTurret::descript()const{

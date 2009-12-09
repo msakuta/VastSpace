@@ -2245,6 +2245,20 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	return reti;
 }
 
+std::vector<cpplib::dstring> Frigate::props()const{
+	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
+	return ret;
+}
+
+std::vector<cpplib::dstring> Beamer::props()const{
+	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+	return ret;
+}
+
+
+
 double Beamer::maxhealth()const{return BEAMER_HEALTH;}
 double Frigate::maxenergy()const{return beamer_mn.capacity;}
 double Frigate::maxshield()const{return MAX_SHIELD_AMOUNT;}

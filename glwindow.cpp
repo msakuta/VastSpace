@@ -236,11 +236,13 @@ void GLwindow::glwFree(){
 	GLwindow *wnd = this;
 	glwindow **ppwnd, *wnd2;
 	if(wnd == glwfocus)
-		glwfocus = glwfocus->flags & GLW_POPUP ? NULL : wnd->next;
+		glwfocus = glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next;
 	for(wnd2 = glwlist; wnd2; wnd2 = wnd2->next) if(wnd2->modal == wnd)
 		wnd2->modal = NULL;
-	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if(*ppwnd == wnd)
+	for(ppwnd = &glwlist; *ppwnd;) if(*ppwnd == wnd)
 		*ppwnd = wnd->next;
+	else
+		ppwnd = &(*ppwnd)->next;
 /*	*ppwnd = wnd->next;*/
 	delete wnd;
 }

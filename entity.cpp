@@ -7,6 +7,7 @@ extern "C"{
 #include "player.h"
 #include "cmd.h"
 #include "sceptor.h"
+#include "glwindow.h"
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
@@ -61,6 +62,14 @@ Entity *Entity::getOwner(){return NULL;}
 int Entity::armsCount()const{return 0;}
 const ArmBase *Entity::armsGet(int)const{return NULL;}
 void Entity::attack(Entity *target){enemy = target;}
+std::vector<cpplib::dstring> Entity::props()const{
+	std::vector<cpplib::dstring> ret;
+	ret.push_back(cpplib::dstring("Class: ") << classname());
+	ret.push_back(cpplib::dstring("CoordSys: ") << w->cs->getpath());
+	ret.push_back(cpplib::dstring("Health: ") << health << "/" << maxhealth());
+	ret.push_back(cpplib::dstring("Race: ") << race);
+	return ret;
+}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
@@ -113,6 +122,66 @@ void Entity::transit_cs(CoordSys *cs){
 		w->pl->cs = cs;
 	}
 }
+
+class GLWprop : public GLwindowSizeable{
+public:
+	typedef GLwindowSizeable st;
+	GLWprop(const char *title, Entity *e = NULL) : st(title), a(e){
+		xpos = 120;
+		ypos = 40;
+		width = 200;
+		height = 200;
+		flags |= GLW_CLOSE;
+	}
+	virtual void draw(GLwindowState &ws, double t);
+	virtual void postframe();
+protected:
+	Entity *a;
+};
+
+int Entity::cmd_property(int argc, char *argv[], void *pv){
+	static int counter = 0;
+	Player *ppl = (Player*)pv;
+	if(!ppl || !ppl->selected)
+		return 0;
+	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
+	return 0;
+}
+
+void GLWprop::draw(GLwindowState &ws, double t){
+	if(!a)
+		return;
+	std::vector<cpplib::dstring> pl = a->props();
+	int i = 0;
+	for(std::vector<cpplib::dstring>::iterator e = pl.begin(); e != pl.end(); e++){
+		glColor4f(0,1,1,1);
+		glwpos2d(xpos, ypos + (2 + i++) * getFontHeight());
+		glwprintf(*e);
+	}
+#if 0
+	glColor4f(0,1,1,1);
+	glwpos2d(xpos, ypos + (2) * getFontHeight());
+	glwprintf(a->classname());
+	glColor4f(1,1,0,1);
+	glwpos2d(xpos, ypos + (3) * getFontHeight());
+	glwprintf("%lg / %lg", a->health, a->maxhealth());
+	for(int i = 0; i < a->armsCount(); i++){
+		const ArmBase *arm = a->armsGet(i);
+		glColor4f(0,1,1,1);
+		glwpos2d(xpos, ypos + (4 + 2 * i) * getFontHeight());
+		glwprintf(arm->hp->name);
+		glColor4f(1,1,0,1);
+		glwpos2d(xpos, ypos + (5 + 2 * i) * getFontHeight());
+		glwprintf(arm ? arm->descript() : "N/A");
+	}
+#endif
+}
+
+void GLWprop::postframe(){
+	if(a && !a->w)
+		a = NULL;
+}
+
 
 /* estimate target position based on distance and approaching speed */
 int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w){

@@ -302,6 +302,14 @@ static void drawindics(Viewer *vw){
 		glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(0,0,-1);
+#ifdef _DEBUG
+		static int dstrallocs = 0;
+		char buf[128];
+		sprintf(buf, "dstralloc: %d", cpplib::dstring::allocs - dstrallocs);
+		dstrallocs = cpplib::dstring::allocs;
+		glRasterPos2d(-1, -1 + 12. / vw->vp.h * 2.);
+		gldPutString(buf);
+#endif
 		glRasterPos2d(-1, -1);
 		gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
 		glPopMatrix();
@@ -1415,6 +1423,14 @@ static int cmd_exit(int argc, char *argv[]){
 	return 0;
 }
 
+static int cmd_control(int argc, char *argv[]){
+	if(pl.control)
+		pl.control = NULL;
+	else if(pl.selected)
+		pl.control = pl.selected;
+	return 0;
+}
+
 
 #if defined _WIN32
 HWND hWndApp;
@@ -1424,6 +1440,7 @@ int main(int argc, char *argv[])
 {
 
 	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
+	glwfocus = NULL;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -1435,6 +1452,7 @@ int main(int argc, char *argv[])
 	CmdAdd("teleport", cmd_teleport);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
+	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
@@ -1446,6 +1464,7 @@ int main(int argc, char *argv[])
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &pl);
 	CmdAdd("chasecamera", cmd_chasecamera);
+	CmdAddParam("property", Entity::cmd_property, &pl);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);

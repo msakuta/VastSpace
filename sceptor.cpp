@@ -115,71 +115,8 @@ double Sceptor::maxhealth()const{
 	return 1000.;
 }
 
-#if 0
-static void scepter_anim(entity_t *pt, warf_t *w, double dt);
-static void scepter_draw(entity_t *pt, wardraw_t *wd);
-static void scepter_drawtra(entity_t *pt, wardraw_t *wd);
-static int scepter_takedamage(entity_t *pt, double damage, warf_t *w);
-static void scepter_cockpitview(struct entity*, warf_t *, double (*pos)[3], int *chasecamera);
-static void scepter_control(struct entity*, warf_t*, const input_t *inputs, double dt);
-static int scepter_getrot(struct entity *pt, warf_t *w, double (*rot)[16]);
-static warf_t *scepter_warp_dest(entity_t *pt, const warf_t *w);
-static const char *scepter_idname(entity_t *pt){ return "interceptor"; }
-static const char *scepter_classname(entity_t *pt){ return "Interceptor"; }
-static int scepter_popup_menu(const entity_t *pt, char ***titles, int **keys, char ***cmds, int *pnum);
-static void scepter_postframe(entity_t *);
-static int scepter_visibleFrom(const entity_t *viewee, const entity_t *viewer);
-static double scepter_signalSpectrum(const entity_t *, double wl);
 
-static struct entity_private_static scepter_s = {
-	{
-		tank_drawHUD,
-		sentity_cockpitview,
-		scepter_control,
-		NULL, /* destruct */
-		scepter_getrot,
-		sentity_getrotq, /* getrotq */
-		NULL, /* drawCockpit */
-		NULL, /* is_warping */
-		scepter_warp_dest, /* warp_dest */
-		scepter_idname,
-		scepter_classname,
-		NULL, /* start_control */
-		NULL, /* end_control */
-		NULL, /* analog_mask */
-		scepter_popup_menu,
-	},
-	scepter_anim,
-	scepter_draw,
-	scepter_drawtra,
-	scepter_takedamage,
-	NULL,
-	scepter_postframe,
-	truefunc,
-	M_PI,
-	-M_PI / .6, M_PI / 4.,
-	NULL, NULL, NULL, NULL,
-	0,
-	MTURRET_BULLETSPEED,
-	0.010, /* hitradius */
-	SCEPTER_SCALE, /* sufscale */
-	0, 0, /* hitsuf, altaxis */
-	NULL, /* bullethole */
-	{0}, /* cog */
-	NULL, /* bullethit */
-	NULL, /* tracehit */
-	{0}, /* hitmdl */
-	NULL, /* shadowdraw */
-	NULL, /* visibleTo */
-	scepter_visibleFrom, /* visibleFrom */
-	scepter_signalSpectrum,
-	NULL,
-};
-static struct entity_private_static beamer_s, assault_s;
-void beamer_undock(struct beamer *p, scarry_t *pm), assault_undock(struct beamer *p);
-#endif
-
-enum Sceptor::task{
+enum Sceptor::Task{
 	scepter_idle = sship_idle,
 	scepter_undock = sship_undock,
 	scepter_undockque = sship_undockque,
@@ -197,7 +134,7 @@ enum Sceptor::task{
 
 
 
-Sceptor::Sceptor(WarField *aw) : st(aw){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(maxfuel()){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &scepter_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -341,7 +278,7 @@ void Sceptor::shootDualGun(double dt){
 		pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
 		pb->velo[1] += -BULLETSPEED * sin(theta);
 		pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
-		pb->velo = mat.vp3(velo0);
+		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025;
@@ -349,6 +286,29 @@ void Sceptor::shootDualGun(double dt){
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	this->cooldown += SCEPTER_RELOADTIME;
+}
+
+// find the nearest enemy
+bool Sceptor::findEnemy(){
+	Entity *pt2, *closest = NULL;
+	double best = 1e2 * 1e2;
+	for(pt2 = w->el; pt2; pt2 = pt2->next){
+
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+			continue;
+
+/*		if(!entity_visible(pb, pt2))
+			continue;*/
+
+		double sdist = (pt2->pos - this->pos).slen();
+		if(sdist < best){
+			best = sdist;
+			closest = pt2;
+		}
+	}
+	if(closest)
+		enemy = closest;
+	return !!closest;
 }
 
 /*static int space_collide_callback(const struct otjEnumHitSphereParam *param, entity_t *pt){
@@ -677,7 +637,7 @@ void Sceptor::anim(double dt){
 			int i, n, trigger = 1;
 			Vec3d opos;
 //			pt->enemy = pm->enemy;
-/*			if(pt->enemy && VECSDIST(pt->pos, pm->pos) < 15. * 15.)*/{
+			if(pt->enemy /*&& VECSDIST(pt->pos, pm->pos) < 15. * 15.*/){
 				double sp;
 /*				const avec3_t guns[2] = {{.002, .001, -.005}, {-.002, .001, -.005}};*/
 				Vec3d xh, dh, vh;
@@ -726,11 +686,16 @@ void Sceptor::anim(double dt){
 				}*/
 			}
 			else if(w->pl->control != pt) do{
-/*				if((!pt->enemy || p->task == scepter_idle || p->task == scepter_parade) && p->mother && pm->enemy){
-					pt->enemy = pm->enemy;
-					p->task = scepter_attack;
+				if(!pt->enemy || p->task == scepter_idle || p->task == scepter_parade){
+					if(p->mother && mother->enemy){
+						pt->enemy = mother->enemy;
+						p->task = scepter_attack;
+					}
+					else if(findEnemy()){
+						p->task = scepter_attack;
+					}
 				}
-				else*/ if(p->task == scepter_moveto){
+				else if(p->task == scepter_moveto){
 					avec3_t target, dr;
 					Quatd q2, q1;
 					VECSUB(dr, pt->pos, p->dest);
@@ -1042,8 +1007,8 @@ void Sceptor::anim(double dt){
 		}*/
 /*		if(p->task != scepter_undock && p->task != scepter_undockque){
 			space_collide(pt, w, dt, collideignore, NULL);
-		}
-		VECSADD(pt->pos, pt->velo, dt);*/
+		}*/
+		pt->pos += pt->velo * dt;
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
 	}
@@ -1103,6 +1068,7 @@ void Sceptor::anim(double dt){
 			pt->pos += pt->velo * dt;
 		}
 	}
+	st::anim(dt);
 //	movesound3d(pf->hitsound, pt->pos);
 }
 
@@ -1139,7 +1105,7 @@ void Sceptor::draw(wardraw_t *wd){
 		return;*/
 	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / 150., .01, fuel / 120., -1.);
+	draw_healthbar(this, wd, health / maxhealth(), .01, fuel / maxfuel(), -1.);
 
 	if(init == 0) do{
 		FILE *fp;
@@ -1379,9 +1345,10 @@ int Sceptor::takedamage(double damage, int hitpart){
 }
 
 void Sceptor::postframe(){
-/*	Sceptor *p = this;
-	if(p->mother && !p->mother->st.st.active && (!p->docked || !p->mother->st.st.vft->warp_dest || !p->mother->st.warp_next_warf))
-		p->mother = NULL;*/
+	if(mother && (!mother->w || docked && mother->w != w))
+		mother = NULL;
+	if(enemy && enemy->w != w)
+		enemy = NULL;
 	st::postframe();
 }
 
@@ -1432,5 +1399,7 @@ static warf_t *scepter_warp_dest(entity_t *pt, const warf_t *w){
 }
 #endif
 
-
+double Sceptor::maxfuel()const{
+	return 120.;
+}
 

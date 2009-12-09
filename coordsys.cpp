@@ -835,6 +835,22 @@ int CoordSys::getpathint(char *buf, size_t size)const{
 	return strlen(name) + 1 + ret;
 }
 
+cpplib::dstring CoordSys::getpath()const{
+	cpplib::dstring ret;
+	getpathint(ret);
+	return ret;
+}
+
+int CoordSys::getpathint(cpplib::dstring &ret)const{
+	if(!parent)
+		return 0;
+	int depth = parent->getpathint(ret);
+	ret << '/' << name;
+	return depth;
+}
+
+
+
 struct StackTrace{
 	StackTrace *prev;
 	const CoordSys *base;

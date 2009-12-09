@@ -158,6 +158,7 @@ public:
 
 	/* Get the absolute path string. */
 	bool getpath(char *buf, size_t size)const;
+	cpplib::dstring getpath()const;
 
 	// Get the relative path.
 	cpplib::dstring getrpath(const CoordSys *base)const;
@@ -191,6 +192,7 @@ public:
 
 private:
 	int getpathint(char *buf, size_t size)const;
+	int getpathint(cpplib::dstring &)const;
 };
 
 inline bool CoordSys::addToDrawList(CoordSys *descendant){

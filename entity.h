@@ -3,6 +3,8 @@
 #include "war.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include <cpplib/dstring.h>
+#include <vector>
 
 class Bullet;
 class Warpable;
@@ -33,6 +35,7 @@ public:
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
 	virtual void attack(Entity *target);
+	virtual std::vector<cpplib::dstring> props()const;
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
@@ -58,6 +61,9 @@ public:
 	input_t inputs;
 	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
 //	char weapon;
+
+	// Display a window that tells information about selected entity.
+	static int cmd_property(int argc, char *argv[], void *pv);
 
 protected:
 	void init();

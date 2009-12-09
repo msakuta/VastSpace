@@ -11,11 +11,12 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 }
 
+// Space Interceptor (small fighter)
 class Sceptor : public Entity{
 public:
 	typedef Entity st;
 protected:
-	enum task;
+	enum Task;
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
 	double throttle;
@@ -25,12 +26,13 @@ protected:
 	float fcloak;
 	float heat;
 	struct tent3d_fpol *pf;
-//	scarry_t *mother;
+	Entity *mother; // Mother ship
 	int hitsound;
 	int paradec;
-	enum task task;
+	Task task;
 	bool docked, returning, away, cloak;
 	void shootDualGun(double dt);
+	bool findEnemy(); // Finds the nearest enemy
 public:
 	Sceptor(WarField *aw);
 	virtual const char *idname()const;
@@ -45,6 +47,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual double hitradius();
 	virtual int popupMenu(char ***const, int **, char ***cmds, int *num);
+	virtual double maxfuel()const;
 };
 
 

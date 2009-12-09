@@ -57,6 +57,7 @@ public:
 	virtual void postframe();
 	virtual double hitradius();
 	virtual void attack(Entity *target);
+	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
 protected:
 	void tryshoot();

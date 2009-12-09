@@ -32,6 +32,7 @@ public:
 	virtual double hitradius();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
+	virtual bool isSelectable()const;
 	virtual cpplib::dstring descript()const;
 	void align();
 };

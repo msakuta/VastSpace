@@ -1230,6 +1230,8 @@ const maneuve &Warpable::getManeuve()const{
 bool Warpable::isTargettable()const{
 	return true;
 }
+bool Warpable::isSelectable()const{return true;}
+
 void Warpable::anim(double dt){
 	Mat4d mat;
 	transform(mat);
@@ -2247,6 +2249,7 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 
 std::vector<cpplib::dstring> Frigate::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
 	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
 	return ret;
 }

@@ -32,6 +32,7 @@ public:
 	virtual Warpable *toWarpable();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const = 0;
+	virtual bool isSelectable()const;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
 	virtual void attack(Entity *target);

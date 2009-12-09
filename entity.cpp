@@ -59,6 +59,7 @@ void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}
 void Entity::bullethit(const Bullet *){}
 Entity *Entity::getOwner(){return NULL;}
+bool Entity::isSelectable()const{return false;}
 int Entity::armsCount()const{return 0;}
 const ArmBase *Entity::armsGet(int)const{return NULL;}
 void Entity::attack(Entity *target){enemy = target;}
@@ -131,7 +132,7 @@ public:
 		ypos = 40;
 		width = 200;
 		height = 200;
-		flags |= GLW_CLOSE;
+		flags |= GLW_COLLAPSABLE | GLW_CLOSE;
 	}
 	virtual void draw(GLwindowState &ws, double t);
 	virtual void postframe();
@@ -158,23 +159,6 @@ void GLWprop::draw(GLwindowState &ws, double t){
 		glwpos2d(xpos, ypos + (2 + i++) * getFontHeight());
 		glwprintf(*e);
 	}
-#if 0
-	glColor4f(0,1,1,1);
-	glwpos2d(xpos, ypos + (2) * getFontHeight());
-	glwprintf(a->classname());
-	glColor4f(1,1,0,1);
-	glwpos2d(xpos, ypos + (3) * getFontHeight());
-	glwprintf("%lg / %lg", a->health, a->maxhealth());
-	for(int i = 0; i < a->armsCount(); i++){
-		const ArmBase *arm = a->armsGet(i);
-		glColor4f(0,1,1,1);
-		glwpos2d(xpos, ypos + (4 + 2 * i) * getFontHeight());
-		glwprintf(arm->hp->name);
-		glColor4f(1,1,0,1);
-		glwpos2d(xpos, ypos + (5 + 2 * i) * getFontHeight());
-		glwprintf(arm ? arm->descript() : "N/A");
-	}
-#endif
 }
 
 void GLWprop::postframe(){

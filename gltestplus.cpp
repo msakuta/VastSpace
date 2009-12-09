@@ -304,11 +304,9 @@ static void drawindics(Viewer *vw){
 		glTranslatef(0,0,-1);
 #ifdef _DEBUG
 		static int dstrallocs = 0;
-		char buf[128];
-		sprintf(buf, "dstralloc: %d", cpplib::dstring::allocs - dstrallocs);
-		dstrallocs = cpplib::dstring::allocs;
 		glRasterPos2d(-1, -1 + 12. / vw->vp.h * 2.);
-		gldPutString(buf);
+		gldprintf("dstralloc: %d, %d", cpplib::dstring::allocs - dstrallocs, cpplib::dstring::allocs);
+		dstrallocs = cpplib::dstring::allocs;
 #endif
 		glRasterPos2d(-1, -1);
 		gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
@@ -835,7 +833,7 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	Vec3d plpos = pl.getpos();
 	if(!draw)
 		pl.selected = NULL;
-	for(pt = pl.cs->w->el; pt; pt = pt->next) if(pt->w/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
+	for(pt = pl.cs->w->el; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;

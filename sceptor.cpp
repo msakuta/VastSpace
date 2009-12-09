@@ -1355,6 +1355,7 @@ void Sceptor::postframe(){
 bool Sceptor::isTargettable()const{
 	return true;
 }
+bool Sceptor::isSelectable()const{return true;}
 
 double Sceptor::hitradius(){
 	return .01;

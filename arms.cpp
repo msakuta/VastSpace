@@ -40,6 +40,7 @@ Entity *ArmBase::getOwner(){
 bool ArmBase::isTargettable()const{
 	return false;
 }
+bool ArmBase::isSelectable()const{return true;}
 
 cpplib::dstring ArmBase::descript()const{
 	return cpplib::dstring(idname());

@@ -45,6 +45,7 @@ public:
 	virtual int takedamage(double damage, int hitpart);
 	virtual void postframe();
 	virtual bool isTargettable()const;
+	virtual bool isSelectable()const;
 	virtual double hitradius();
 	virtual int popupMenu(char ***const, int **, char ***cmds, int *num);
 	virtual double maxfuel()const;

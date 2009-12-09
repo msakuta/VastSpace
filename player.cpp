@@ -67,6 +67,9 @@ void Player::freelook(const input_t &inputs, double dt){
 		Vec3d pos;
 		const CoordSys *cs = this->cs->belongcs(pos, this->pos);
 		if(cs != this->cs){
+			Quatd rot = cs->tocsq(this->cs);
+			this->rot *= rot;
+			this->velo = rot.cnj().trans(this->velo);
 			this->cs = cs;
 			this->pos = pos;
 		}

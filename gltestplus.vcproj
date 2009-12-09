@@ -206,6 +206,9 @@
 				RelativePath="stellar_file.cpp">
 			</File>
 			<File
+				RelativePath="tefpol3d.c">
+			</File>
+			<File
 				RelativePath="teline3d.c">
 			</File>
 			<File

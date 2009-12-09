@@ -48,6 +48,7 @@ public:
 	virtual bool isSelectable()const;
 	virtual double hitradius();
 	virtual int popupMenu(char ***const, int **, char ***cmds, int *num);
+	virtual std::vector<cpplib::dstring> props()const;
 	virtual double maxfuel()const;
 };
 

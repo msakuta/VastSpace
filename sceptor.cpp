@@ -145,7 +145,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
 	p->cooldown = 1.;
-	p->pf = NULL/*AddTefpolMovable3D(w->tepl, ret->pos, ret->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t)*/;
+	p->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
 //	p->mother = mother;
 	p->hitsound = -1;
 	p->docked = false;
@@ -249,6 +249,14 @@ int Sceptor::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum
 	(*cmds)[i] = "parade_formation";*/
 	return 0;
 }
+
+std::vector<cpplib::dstring> Sceptor::props()const{
+	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Task: ") << task);
+	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
+	return ret;
+}
+
 /*
 void cmd_cloak(int argc, char *argv[]){
 	extern struct player *ppl;
@@ -522,8 +530,8 @@ void Sceptor::anim(double dt){
 		return;
 	}*/
 
-/*	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_shortburn.t, pf->docked);*/
+	if(pf->pf)
+		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_shortburn.t, pf->docked);
 
 #if 0
 	if(pf->docked){

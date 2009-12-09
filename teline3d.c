@@ -286,6 +286,7 @@ void AnimTeline3D(tell_t *p, double dt){
 /*			VECSADD(pl->pyr, pl->omg, dt);*/
 		}
 
+#if 0
 		/* rough approximation of reflection. rigid body dynamics are required for more reality. */
 		if(pl->flags & TEL3_REFLECT){
 /*			if(pl->flags & TEL3_HITFUNC){
@@ -307,6 +308,7 @@ void AnimTeline3D(tell_t *p, double dt){
 					pl->omg[1] *= - REFLACTION;
 			}
 		}
+#endif
 
 		/* redirect its head to where the line going to go */
 /*		if(pl->flags & TEL_HEADFORWARD)

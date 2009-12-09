@@ -4,7 +4,7 @@
 #include "coordsys.h"
 #include "astro.h"
 
-WarField::WarField(CoordSys *acs) : el(NULL), cs(acs), pl(NULL){
+WarField::WarField(CoordSys *acs) : el(NULL), cs(acs), pl(NULL), tepl(NewTefpol3D(2047, 128, 128)){
 	for(CoordSys *root = cs; root; root = root->parent){
 		Universe *u = root->toUniverse();
 		if(u){
@@ -38,6 +38,7 @@ void WarField::anim(double dt){
 			pl->chase = pe;
 	}
 	AnimTeline3D(tell, dt);
+	AnimTefpol3D(tepl, dt);
 }
 
 void WarField::postframe(){
@@ -95,6 +96,7 @@ void WarField::drawtra(wardraw_t *wd){
 	dd.pgc = NULL;
 	*(Quatd*)dd.rot = wd->vw->qrot;
 	DrawTeline3D(tell, &dd);
+	DrawTefpol3D(tepl, wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 }
 
 bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{

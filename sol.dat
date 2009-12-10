@@ -163,10 +163,10 @@ coordsys Orbit earth{
 		teleport
 		warp
 		rstation 0 -25
-		addent scarry 5 -25 0
-		addent scontainer 4 -24 0
-		addent scontainer 4 -24 0.05
-		addent assault 4 -24 2 1
+#		addent scarry 5 -25 0
+#		addent scontainer 4 -24 0
+#		addent scontainer 4 -24 0.05
+#		addent assault 4 -24 2 1
 		new astro Asteroid "Side 7 Asteroid"{
 			pos 70 0 0
 			radius 50
@@ -197,8 +197,8 @@ coordsys Orbit earth{
 #			warp
 		teleport
 		rstation
-		addent assault 3 -3 0 1
-		addent assault 3 3 0 1
+#		addent assault 3 -3 0 1
+#		addent assault 3 3 0 1
 	}
 }
 
@@ -236,12 +236,17 @@ coordsys Orbit marss{
 		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
+		addent scarry 0 0 -4
 #		addent beamer .1 0 0
 #		addent beamer -.1 0 0
 #		addent assault -.2 0 0 
 		addent assault -.2 0 -1 1
 #		addent assault -.0 0 -1
 		addent assault .2 0 -1 1
+		addent sceptor -.4 .1 0
+		addent sceptor -.3 .1 0
+		addent sceptor -.2 .1 0
+		addent sceptor -.1 .1 0
 		addent sceptor 0 .1 0
 		addent sceptor .1 .1 0
 		addent sceptor .2 .1 0
@@ -574,7 +579,7 @@ coordsys Orbit pluto{
 		addent assault 3 3 3 1
 		addent beamer 3 -3 -3 1
 		addent beamer 3 3 -3 1
-		addent scarry 0 0 -10 1
+#		addent scarry 0 0 -10 1
 	}
 
 	astro TextureSphere "Pluto"{

@@ -7,6 +7,7 @@ extern "C"{
 #include "player.h"
 #include "cmd.h"
 #include "sceptor.h"
+#include "Scarry.h"
 #include "glwindow.h"
 
 
@@ -24,10 +25,10 @@ template<class T> Entity *Constructor(WarField *w){
 };
 
 static const char *ent_name[] = {
-	"beamer", "assault", "sceptor"
+	"beamer", "assault", "sceptor", "scarry"
 };
 static Entity *(*const ent_creator[])(WarField *w) = {
-	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>
+	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>
 };
 
 Entity *Entity::create(const char *cname, WarField *w){

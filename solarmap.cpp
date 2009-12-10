@@ -1026,7 +1026,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 		}
 	}
 
-	if(state == GLUT_DOWN){
+	if(state == GLUT_DOWN && mbutton != GLUT_WHEEL_UP && mbutton != GLUT_WHEEL_DOWN){
 		morg[0] = mx;
 		morg[1] = my;
 	}

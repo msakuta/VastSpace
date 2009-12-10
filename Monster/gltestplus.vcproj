@@ -274,6 +274,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\draw\Scarry-Draw.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Scarry.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\sceptor.cpp"
 				>
 			</File>
@@ -397,6 +405,10 @@
 			</File>
 			<File
 				RelativePath="..\player.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Scarry.h"
 				>
 			</File>
 			<File

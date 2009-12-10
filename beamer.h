@@ -1,5 +1,5 @@
-#ifndef SCARRY_H
-#define SCARRY_H
+#ifndef BEAMER_H
+#define BEAMER_H
 
 #include "entity.h"
 #include "coordsys.h"
@@ -37,7 +37,6 @@ enum sship_task{
 
 struct maneuve;
 class Warpable : public Entity{
-	static const maneuve mymn;
 public:
 	typedef Entity st;
 	Vec3d warpdst;
@@ -55,6 +54,7 @@ public:
 	unsigned analog_mask();
 	virtual int popupMenu(char ***const titles, int **keys, char ***cmds, int *num);
 	virtual Warpable *toWarpable();
+	struct maneuve;
 	virtual const maneuve &getManeuve()const;
 	virtual double maxenergy()const = 0;
 	virtual bool isTargettable()const;
@@ -62,6 +62,17 @@ public:
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void warp_collapse();
+
+	struct maneuve{
+		double accel;
+		double maxspeed;
+		double angleaccel;
+		double maxanglespeed;
+		double capacity; /* capacity of capacitor [MJ] */
+		double capacitor_gen; /* generated energy [MW] */
+	};
+private:
+	static const maneuve mymn;
 };
 
 class Frigate : public Warpable{
@@ -141,51 +152,6 @@ public:
 
 int cmd_armswindow(int argc, char *argv[], void *pv);
 
-#if 0
-struct scarry{
-	warpable_t st;
-	mturret_t turrets[10];
-	double ru;
-	double baycool;
-	double cargo; /* amount of cargohold [m^3] */
-	double build;
-	struct armscustom{
-		const struct build_data *builder;
-		int c;
-		struct arms *a;
-	} *armscustom;
-	int narmscustom;
-	const struct build_data *builder, *buildque[SCARRY_BUILDQUESIZE];
-	struct arms *buildarm, *buildarms[SCARRY_BUILDQUESIZE];
-	int buildquenum[SCARRY_BUILDQUESIZE];
-	int buildque0, buildque1; /* start and end pointer in buildque */
-	int nbuildque; /* count of entries in buildqueue, for start/end pointer method is unable to handle the case of nbuildque == BUILDQUESIZE */
-	int paradec; /* parade position counter */
-	int undockc; /* undock counter */
-	int remainDocked;
-	bhole_t bholes[50];
-	bhole_t *frei;
-	sufdecal_t *sd;
-	entity_t *dock; /* docked entity list */
-	const char *name; /* unique name automatically assigned */
-/*	struct tent3d_fpol *pf[4];*/
-};
-
-/* Active Radar or Hyperspace Sonar.
-   AR costs less energy but has limitation in speed (light), while
-  HS propagates on hyperspace field where limitation of speed do not exist.
-*/
-struct hypersonar{
-	avec3_t pos;
-	double life;
-	double rad;
-	double speed;
-	struct coordsys *cs;
-	struct hypersonar *next;
-	int type; /* 0 - Active Radar, 1 - Hyperspace Sonar. */
-} *g_hsonar;
-#endif
-
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);
 #ifdef NDEBUG
 #define hitbox_draw
@@ -193,5 +159,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 void hitbox_draw(const Entity *pt, const double sc[3]);
 #endif
 suf_t *CallLoadSUF(const char *fname);
+
+GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
 
 #endif

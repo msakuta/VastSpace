@@ -505,14 +505,6 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 
 
 
-struct maneuve{
-	double accel;
-	double maxspeed;
-	double angleaccel;
-	double maxanglespeed;
-	double capacity; /* capacity of capacitor [MJ] */
-	double capacitor_gen; /* generated energy [MW] */
-};
 
 
 /* maneuvering spaceships, integrated common responses.
@@ -685,7 +677,7 @@ static struct entity_private_static beamer_s = {
 };
 #endif
 
-static const struct maneuve beamer_mn = {
+static const struct Warpable::maneuve beamer_mn = {
 	BEAMER_ACCELERATE, /* double accel; */
 	BEAMER_MAX_SPEED, /* double maxspeed; */
 	BEAMER_ANGLEACCEL, /* double angleaccel; */
@@ -1216,7 +1208,7 @@ void Warpable::warp_collapse(){
 	}
 }
 
-const maneuve Warpable::mymn = {
+const Warpable::maneuve Warpable::mymn = {
 	0, // double accel;
 	0, // double maxspeed;
 	0, // double angleaccel;
@@ -1224,7 +1216,7 @@ const maneuve Warpable::mymn = {
 	0, // double capacity; /* capacity of capacitor [MJ] */
 	0, // double capacitor_gen; /* generated energy [MW] */
 };
-const maneuve &Warpable::getManeuve()const{
+const Warpable::maneuve &Warpable::getManeuve()const{
 	return mymn;
 }
 bool Warpable::isTargettable()const{
@@ -1450,7 +1442,7 @@ void Frigate::anim(double dt){
 
 }
 double Frigate::hitradius(){return .1;}
-const maneuve &Frigate::getManeuve()const{return beamer_mn;}
+const Warpable::maneuve &Frigate::getManeuve()const{return beamer_mn;}
 void Beamer::anim(double dt){
 	Mat4d mat;
 

@@ -952,6 +952,21 @@ int Warpable::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnu
 	return 0;
 }
 
+int Warpable::popupMenu(PopupMenuItem **list){
+	int ret = st::popupMenu(list);
+	PopupMenuItem **end, *p;
+	for(end = list; *end; end = &(*end)->next);
+	p = *end = new PopupMenuItem;
+	p->title << "-----";
+	p->key = '\0';
+	p = p->next = new PopupMenuItem;
+	p->title << "Warp To...";
+	p->key = 0;
+	p->cmd << "togglewarpmenu";
+	p->next = NULL;
+	return ret;
+}
+
 Warpable *Warpable::toWarpable(){
 	return this;
 }

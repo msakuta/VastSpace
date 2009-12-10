@@ -38,6 +38,12 @@ void Scarry::anim(double dt){
 	st::anim(dt);
 }
 
+Entity::Props Scarry::props()const{
+	Props ret = st::props();
+	ret.push_back(cpplib::dstring("?: "));
+	return ret;
+}
+
 int Scarry::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	Scarry *p = this;
 	double sc[3];

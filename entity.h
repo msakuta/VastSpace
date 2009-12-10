@@ -1,16 +1,19 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 #include "war.h"
+#include "popup.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
+#include <list>
 
 class Bullet;
 class Warpable;
 class ArmBase;
 class Entity{
 public:
+	typedef std::vector<cpplib::dstring> Props;
 	Entity(WarField *aw = NULL);
 	static Entity *create(const char *cname, WarField *w);
 	virtual const char *idname()const;
@@ -29,6 +32,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
 	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
+	virtual int popupMenu(PopupMenuItem **list);
 	virtual Warpable *toWarpable();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const = 0;

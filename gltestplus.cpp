@@ -710,6 +710,43 @@ void display_func(void){
 }
 
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
+#if 1
+	PopupMenuItem *menus;
+	PopupMenuItem *p;
+	menus = p = new PopupMenuItem;
+	p->title << "Move";
+	p->key = '\0';
+	p->cmd << "moveorder";
+	p = p->next = new PopupMenuItem;
+	p->title << "Chase Camera";
+	p->key = 0;
+	p->cmd << "chasecamera";
+	p->next = NULL;
+	GLwindow *glw;
+	if(selectchain){
+		for(; pt; pt = pt->selectnext)
+			pt->popupMenu(&menus);
+/*		allocated = (int*)malloc(num * sizeof *allocated);
+		memset(allocated, 0, numof(titles) * sizeof *allocated);
+		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
+		glw = glwPopupMenu(ws, menus);
+/*		for(i = numof(titles); i < num; i++){
+			free(titles1[i]);
+			free(cmds1[i]);
+		}*/
+	}
+	else if(pt){
+		pt->popupMenu(&menus);
+		glw = glwPopupMenu(ws, menus);
+	}
+	else
+		glw = glwPopupMenu(ws, menus);
+	for(PopupMenuItem *mi = menus; mi;){
+		PopupMenuItem *minext = mi->next;
+		delete mi;
+		mi = minext;
+	}
+#else
 	static const char *titles[] = {
 		"Move", "Chase Camera"
 	};
@@ -765,6 +802,7 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	}
 	else
 		glw = glwPopupMenu(ws, numof(titles), titles, keys, cmds, 0);
+#endif
 /*	glw->x = s_mousex;
 	glw->y = s_mousey;*/
 }

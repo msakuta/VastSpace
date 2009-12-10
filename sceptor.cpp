@@ -250,6 +250,11 @@ int Sceptor::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum
 	return 0;
 }
 
+int Sceptor::popupMenu(PopupMenuItem **list){
+	int ret = st::popupMenu(list);
+	return ret;
+}
+
 std::vector<cpplib::dstring> Sceptor::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Task: ") << task);

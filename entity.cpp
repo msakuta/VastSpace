@@ -98,6 +98,10 @@ int Entity::popupMenu(char ***const titles, int **keys, char ***cmds, int *num){
 	return 0;
 }
 
+int Entity::popupMenu(PopupMenuItem **list){
+	return 0;
+}
+
 Warpable *Entity::toWarpable(){
 	return NULL;
 }

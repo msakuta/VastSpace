@@ -53,6 +53,7 @@ public:
 	void control(input_t *, double);
 	unsigned analog_mask();
 	virtual int popupMenu(char ***const titles, int **keys, char ***cmds, int *num);
+	virtual int popupMenu(PopupMenuItem **list);
 	virtual Warpable *toWarpable();
 	struct maneuve;
 	virtual const maneuve &getManeuve()const;

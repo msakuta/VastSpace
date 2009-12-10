@@ -13,6 +13,7 @@ public:
 	virtual double hitradius();
 	virtual double maxenergy()const;
 	virtual void anim(double dt);
+	virtual Props props()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);

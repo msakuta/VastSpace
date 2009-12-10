@@ -1,5 +1,6 @@
 #ifndef GLWINDOW_H
 #define GLWINDOW_H
+#include "popup.h"
 extern "C"{
 #include <clib/c.h>
 #include <string.h>
@@ -105,13 +106,19 @@ int glwHScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, in
 class GLwindowMenu : public GLwindow{
 public:
 	int count;
+#if 0
 	struct glwindowmenuitem{
 		const char *title;
 		int key;
 		const char *cmd;
 //		int allocated; /* whether this item need to be freed */
 	} *menus;
+#else
+	typedef PopupMenuItem MenuItem;
+	MenuItem *menus;
+#endif
 	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
+	GLwindowMenu(const char *title, const PopupMenuItem *);
 	void draw(GLwindowState &,double);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	int key(int key);
@@ -124,6 +131,7 @@ extern const int glwMenuAllAllocated[];
 extern const char glwMenuSeparator[];
 GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
+GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenuItem *);
 
 
 class GLwindowSizeable : public glwindow{

@@ -408,6 +408,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\popup.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Scarry.h"
 				>
 			</File>

@@ -113,6 +113,9 @@
 			Name="ソース ファイル"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
+				RelativePath="Scarry.cpp">
+			</File>
+			<File
 				RelativePath="arms.cpp">
 			</File>
 			<File
@@ -214,10 +217,20 @@
 			<File
 				RelativePath="war.cpp">
 			</File>
+			<Filter
+				Name="draw"
+				Filter="draw\*">
+				<File
+					RelativePath="draw\Scarry-Draw.cpp">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
 			Filter="h;hpp;hxx;hm;inl;inc">
+			<File
+				RelativePath="Scarry.h">
+			</File>
 			<File
 				RelativePath="antiglut.h">
 			</File>

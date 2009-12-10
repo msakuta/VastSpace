@@ -18,7 +18,7 @@ void Scarry::draw(wardraw_t *wd){
 		return;*/
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), .1, -1., capacitor / maxenergy());
+	draw_healthbar(this, wd, health / maxhealth(), hitradius(), -1., capacitor / maxenergy());
 
 	if(init == 0) do{
 		sufbase = CallLoadSUF("spacecarrier.bin");

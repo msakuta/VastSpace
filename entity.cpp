@@ -150,7 +150,7 @@ int Entity::cmd_property(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
 	if(!ppl || !ppl->selected)
 		return 0;
-	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
+	/*glwAppend*/(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
 	return 0;
 }
 

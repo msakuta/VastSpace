@@ -971,6 +971,12 @@ Warpable *Warpable::toWarpable(){
 	return this;
 }
 
+Entity::Props Warpable::props()const{
+	std::vector<cpplib::dstring> ret = st::props();
+	ret.push_back(cpplib::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
+	return ret;
+}
+
 void Warpable::control(input_t *inputs, double dt){
 	Warpable *p = this;
 
@@ -2256,7 +2262,6 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 
 std::vector<cpplib::dstring> Frigate::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
 	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
 	return ret;
 }

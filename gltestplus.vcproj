@@ -116,6 +116,9 @@
 				RelativePath="Scarry.cpp">
 			</File>
 			<File
+				RelativePath="Warpable.cpp">
+			</File>
+			<File
 				RelativePath="arms.cpp">
 			</File>
 			<File
@@ -182,21 +185,6 @@
 				RelativePath="player.cpp">
 			</File>
 			<File
-				RelativePath="scarry.c">
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCLCompilerTool"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCLCompilerTool"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="sceptor.cpp">
 			</File>
 			<File
@@ -229,7 +217,16 @@
 			Name="ヘッダー ファイル"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="Assault.h">
+			</File>
+			<File
+				RelativePath="Frigate.h">
+			</File>
+			<File
 				RelativePath="Scarry.h">
+			</File>
+			<File
+				RelativePath="Warpable.h">
 			</File>
 			<File
 				RelativePath="antiglut.h">

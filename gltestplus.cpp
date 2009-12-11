@@ -710,21 +710,13 @@ void display_func(void){
 }
 
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
-#if 1
 	PopupMenu *menus = new PopupMenu;
 	menus->append("Move", '\0', "moveorder").append("Chase Camera", '\0', "chasecamera");
 	GLwindow *glw;
 	if(selectchain){
 		for(; pt; pt = pt->selectnext)
 			pt->popupMenu(*menus);
-/*		allocated = (int*)malloc(num * sizeof *allocated);
-		memset(allocated, 0, numof(titles) * sizeof *allocated);
-		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
 		glw = glwPopupMenu(ws, *menus);
-/*		for(i = numof(titles); i < num; i++){
-			free(titles1[i]);
-			free(cmds1[i]);
-		}*/
 	}
 	else if(pt){
 		pt->popupMenu(*menus);
@@ -733,65 +725,6 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	else
 		glw = glwPopupMenu(ws, *menus);
 	delete menus;
-#else
-	static const char *titles[] = {
-		"Move", "Chase Camera"
-	};
-	int keys[2] = {0};
-	const char *cmds[] = {"moveorder", "chasecamera"};
-	glwindow *glw;
-	if(selectchain){
-		char **titles1;
-		int *keys1;
-		char **cmds1;
-//		int *allocated;
-		int num = numof(titles);
-		titles1 = (char**)malloc(sizeof titles); memcpy(titles1, titles, sizeof titles);
-		keys1 = (int*)malloc(sizeof keys); memcpy(keys1, keys, sizeof keys);
-		cmds1 = (char**)malloc(sizeof cmds); memcpy(cmds1, cmds, sizeof cmds);
-		for(; pt; pt = pt->selectnext)
-			pt->popupMenu(&titles1, &keys1, &cmds1, &num);
-/*		allocated = (int*)malloc(num * sizeof *allocated);
-		memset(allocated, 0, numof(titles) * sizeof *allocated);
-		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
-		glw = glwPopupMenu(ws, num, titles1, keys1, cmds1, 0);
-/*		for(i = numof(titles); i < num; i++){
-			free(titles1[i]);
-			free(cmds1[i]);
-		}*/
-		free(titles1);
-		free(keys1);
-		free(cmds1);
-//		free(allocated);
-	}
-	else if(pt){
-		char **titles1;
-		int *keys1;
-		char **cmds1;
-//		int *allocated;
-		int num = numof(titles);
-		titles1 = (char**)malloc(sizeof titles); memcpy(titles1, titles, sizeof titles);
-		keys1 = (int*)malloc(sizeof keys); memcpy(keys1, keys, sizeof keys);
-		cmds1 = (char**)malloc(sizeof cmds); memcpy(cmds1, cmds, sizeof cmds);
-		pt->popupMenu(&titles1, &keys1, &cmds1, &num);
-/*		allocated = malloc(num * sizeof *allocated);
-		memset(allocated, 0, numof(titles) * sizeof *allocated);
-		memset(&allocated[numof(titles)], 1, (num - numof(titles)) * sizeof *allocated);*/
-		glw = glwPopupMenu(ws, num, titles1, keys1, cmds1, 0);
-/*		for(i = numof(titles); i < num; i++){
-			free(titles1[i]);
-			free(cmds1[i]);
-		}*/
-		free(titles1);
-		free(keys1);
-		free(cmds1);
-//		free(allocated);
-	}
-	else
-		glw = glwPopupMenu(ws, numof(titles), titles, keys, cmds, 0);
-#endif
-/*	glw->x = s_mousex;
-	glw->y = s_mousey;*/
 }
 
 /* Box selection routine have many adaptions; point selection, additive selection, selection preview */

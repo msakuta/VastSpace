@@ -52,7 +52,6 @@ public:
 	virtual void anim(double dt);
 	void control(input_t *, double);
 	unsigned analog_mask();
-	virtual int popupMenu(char ***const titles, int **keys, char ***cmds, int *num);
 	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
 	virtual Props props()const;

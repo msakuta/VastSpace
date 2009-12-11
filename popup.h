@@ -8,6 +8,8 @@ struct PopupMenuItem{
 	int key;
 	cpplib::dstring cmd;
 	PopupMenuItem *next;
+	bool isSeparator()const{return key == separator_key;}
+	static const int separator_key = 13564;
 };
 
 class PopupMenu{
@@ -39,6 +41,14 @@ inline PopupMenu::PopupMenu(const PopupMenu &o) : list(NULL), end(&list){
 	}
 }
 
+inline PopupMenu::~PopupMenu(){
+	for(PopupMenuItem *mi = list; mi;){
+		PopupMenuItem *minext = mi->next;
+		delete mi;
+		mi = minext;
+	}
+}
+
 inline PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstring cmd){
 	PopupMenuItem *i = *end = new PopupMenuItem;
 	i->title = title;
@@ -49,17 +59,9 @@ inline PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstr
 	return *this;
 }
 
-inline PopupMenu::~PopupMenu(){
-	for(PopupMenuItem *mi = list; mi;){
-		PopupMenuItem *minext = mi->next;
-		delete mi;
-		mi = minext;
-	}
-}
-
 inline PopupMenu &PopupMenu::appendSeparator(){
 	PopupMenuItem *i = *end = new PopupMenuItem;
-	i->key = 0;
+	i->key = PopupMenuItem::separator_key;
 	i->next = NULL;
 	end = &i->next;
 	return *this;

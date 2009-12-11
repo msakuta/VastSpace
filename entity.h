@@ -31,7 +31,6 @@ public:
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
-	virtual int popupMenu(char ***const, int **keys, char ***cmds, int *num);
 	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
 	virtual Entity *getOwner();

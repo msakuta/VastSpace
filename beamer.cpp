@@ -926,45 +926,9 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 	return 0;
 }
 
-int Warpable::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum){
-	int i;
-	int num;
-	int acty = 1;
-	char *titles1[] = {"Warp To..."};
-	char *cmds1[] = {"Warp To..."};
-	for(i = 0; i < *pnum; i++) if(!strcmp((*titles)[i], titles1[0]) && !strcmp((*cmds)[i], cmds1[0]))
-		acty = 0;
-	if(!acty)
-		return 0;
-	i = *pnum;
-	num = *pnum += 2;
-	*titles = (char**)realloc(*titles, num * sizeof **titles);
-	*keys = (int*)realloc(*keys, num * sizeof **keys);
-	*cmds = (char**)realloc(*cmds, num * sizeof **cmds);
-	(*titles)[i] = (char*)glwMenuSeparator;
-	(*keys)[i] = '\0';
-	(*cmds)[i] = NULL;
-	i++;
-	(*titles)[i] = "Warp To...";
-	(*keys)[i] = '\0';
-	(*cmds)[i] = "togglewarpmenu";
-	st::popupMenu(titles, keys, cmds, pnum);
-	return 0;
-}
-
 int Warpable::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
 	list.appendSeparator().append("Warp to...", 'w', "togglewarpmenu");
-/*	PopupMenuItem **end, *p;
-	for(end = list; *end; end = &(*end)->next);
-	p = *end = new PopupMenuItem;
-	p->title << "-----";
-	p->key = '\0';
-	p = p->next = new PopupMenuItem;
-	p->title << "Warp To...";
-	p->key = 0;
-	p->cmd << "togglewarpmenu";
-	p->next = NULL;*/
 	return ret;
 }
 

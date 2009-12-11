@@ -193,56 +193,9 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	pt->inputs = *inputs;
 }*/
 
-int Sceptor::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum){
-	Entity *pt = this;
-	static const char *titles1[] = {"Dock", "Military Parade Formation", "cloak"};
-	static const char *cmds1[] = {"dock", "parade_formation", "cloak"};
-	int i, n;
-	int num;
-	int add = numof(titles1);
-	int acty = (1 << numof(titles1)) - 1;
-	for(n = 0; n < numof(titles1); n++) for(i = 0; i < *pnum; i++) if(!strcmp((*titles)[i], titles1[n]) && !strcmp((*cmds)[i], cmds1[n])){
-		acty &= ~(1 << n);
-		add--;
-		break;
-	}
-	if(!acty)
-		return 0;
-	i = *pnum;
-	num = *pnum += add + 1;
-	*titles = (char**)realloc(*titles, num * sizeof **titles);
-	*keys = (int*)realloc(*keys, num * sizeof **keys);
-	*cmds = (char**)realloc(*cmds, num * sizeof **cmds);
-	const_cast<const char**>(*titles)[i] = glwMenuSeparator;
-	(*keys)[i] = '\0';
-	(*cmds)[i] = NULL;
-	for(n = 0; n < numof(titles1); n++) if(acty & (1 << n)){
-		i++;
-		const_cast<const char**>(*titles)[i] = titles1[n];
-		(*keys)[i] = '\0';
-		const_cast<const char**>(*cmds)[i] = cmds1[n];
-	}
-/*	int i = *pnum;
-	int num = *pnum += 3;
-	*titles = realloc(*titles, num * sizeof **titles);
-	*keys = realloc(*keys, num * sizeof **keys);
-	*cmds = realloc(*cmds, num * sizeof **cmds);
-	(*titles)[i] = glwMenuSeparator;
-	(*keys)[i] = '\0';
-	(*cmds)[i] = NULL;
-	i++;
-	(*titles)[i] = "Dock";
-	(*keys)[i] = '\0';
-	(*cmds)[i] = "dock";
-	i++;
-	(*titles)[i] = "Military Parade Formation";
-	(*keys)[i] = '\0';
-	(*cmds)[i] = "parade_formation";*/
-	return 0;
-}
-
 int Sceptor::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
+	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak");
 	return ret;
 }
 

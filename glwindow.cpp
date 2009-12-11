@@ -500,7 +500,7 @@ void GLwindowMenu::draw(GLwindowState &ws, double t){
 	int i, len, maxlen = 1;
 	int ind = 0 <= my && 0 <= mx && mx <= width ? (my) / fontheight : -1;
 	MenuItem *item = menus->get();
-	for(i = 0; i < count; i++, item = item->next) if(item->title == glwMenuSeparator){
+	for(i = 0; i < count; i++, item = item->next) if(item->isSeparator()){
 		glBegin(GL_LINES);
 		glVertex2d(xpos + fontwidth / 2, ypos + (1 + i) * fontheight + 6);
 		glVertex2d(xpos + width - fontwidth / 2, ypos + (1 + i) * fontheight + 6);
@@ -554,17 +554,6 @@ int GLwindowMenu::key(int key){
 }
 
 GLwindowMenu::~GLwindowMenu(){
-#if 0
-	int i;
-	for(i = 0; i < count; i++) if(menus[i].title != glwMenuSeparator){
-		if(menus[i].title)
-			free((void*)menus[i].title);
-		if(menus[i].cmd)
-			free((void*)menus[i].cmd);
-	}
-	free((void*)menus);
-#else
-#endif
 }
 
 GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
@@ -591,45 +580,15 @@ GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menu
 	  going to have sustained life. */
 	menus = new PopupMenu;
 	for(i = 0; i < count; i++){
-#if 0
-		if(menutitles[i] == glwMenuSeparator){
-			menus[i].title = glwMenuSeparator;
-			menus[i].key = 0;
-			menus[i].cmd = NULL;
-		}
-		else{
-			menus[i].title = (char*)malloc(strlen(menutitles[i]) + 1);
-			strcpy((char*)menus[i].title, menutitles[i]);
-			menus[i].key = keys ? keys[i] : 0;
-			if(cmd && cmd[i]){
-				menus[i].cmd = (char*)malloc(strlen(cmd[i]) + 1);
-				strcpy((char*)menus[i].cmd, cmd[i]);
-			}
-			else
-				menus[i].cmd = NULL;
-			len = strlen(menutitles[i]);
-			if(maxlen < len)
-				maxlen = len;
-		}
-#else
-/*		MenuItem *item = new MenuItem;
-		*prev = item;
-		prev = &item->next;
-		item->next = NULL;*/
 		if(menutitles[i] == glwMenuSeparator){
 			menus->appendSeparator();
 		}
 		else{
 			menus->append(menutitles[i], keys ? keys[i] : '\0', cmd && cmd[i] ? cmd[i] : "");
-/*			item->title << menutitles[i];
-			item->key = keys ? keys[i] : '\0';
-			if(cmd && cmd[i])
-				item->cmd << cmd[i];*/
 			len = ::strlen(menutitles[i]);
 			if(maxlen < len)
 				maxlen = len;
 		}
-#endif
 	}
 	height = (1 + count) * fontheight;
 
@@ -642,33 +601,8 @@ GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list) : st(title)
 }
 
 GLwindowMenu *GLwindowMenu::addItem(const char *title, int key, const char *cmd){
-#if 1
 	menus->append(title, key, cmd);
 	height = (++count + 1) * fontheight;
-#else
-	if(!this)
-		return NULL;
-/*	if((*ppwnd)->draw != glwmenudraw){
-		printf("glwMenuAddItem: given window is not a menu window.\n");
-		return NULL;
-	}*/
-	count++;
-	MenuItem **end;
-	for(end = &menus; *end; end = &(*end)->next);
-	MenuItem *item = *end = new MenuItem;
-//	menus = (glwindowmenuitem*)realloc(menus, count * sizeof(*menus));
-	height = (count + 1) * fontheight;
-	width = MAX(width, strlen(title) * fontwidth + 2);
-//	menus[count - 1].title = (char*)malloc(strlen(title) + 1);
-//	strcpy((char*)menus[count - 1].title, title);
-//	menus[count - 1].key = key;
-//	menus[count - 1].cmd = (char*)malloc(strlen(cmd) + 1);
-//	strcpy((char*)menus[count - 1].cmd, cmd);
-	item->title << title;
-	item->key = key;
-	item->cmd << cmd;
-	item->next = NULL;
-#endif
 	return this;
 }
 

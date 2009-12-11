@@ -2,7 +2,8 @@
 extern "C"{
 #include <clib/aquat.h>
 }
-#include "beamer.h"
+#include "Beamer.h"
+#include "Assault.h"
 #include "judge.h"
 #include "player.h"
 #include "cmd.h"

@@ -1,4 +1,4 @@
-#include "scarry.h"
+#include "Scarry.h"
 #include "judge.h"
 extern "C"{
 #include <clib/mathdef.h>

@@ -1,27 +1,13 @@
 #include "beamer.h"
-//#include "entity_p.h"
 #include "player.h"
-//#include "train.h"
 #include "bullet.h"
-//#include "bhole.h"
-//#include "aim9.h"
-//#include "coordcnv.h"
 #include "coordsys.h"
 #include "viewer.h"
-//#include "spacewar.h"
-//#include "mturret.h"
 #include "cmd.h"
 #include "glwindow.h"
-//#include "arms.h"
-//#include "bullet.h"
-//#include "warutil.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"
-//#include "glwindow.h"
-//#include "antiglut.h"
-//#include "worker.h"
-//#include "glsl.h"
 #include "astro_star.h"
 #include "glextcall.h"
 //#include "sensor.h"
@@ -32,10 +18,6 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
-//#include "suflist.h"
-#include <clib/avec3.h>
-#include <clib/amat4.h>
-#include <clib/aquatrot.h>
 #include <clib/GL/gldraw.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
@@ -376,7 +358,7 @@ void Beamer::anim(double dt){
 			beamlen = best;
 			hit->takedamage(500. * dt, besthitpart);
 			pos = mat.vec3(2) * -best + this->pos;
-			quatdirection(qrot, &mat[8]);
+			qrot = Quatd::direction(mat.vec3(2));
 			if(drseq(&w->rs) * .1 < dt){
 				avec3_t velo;
 				int i;

@@ -328,6 +328,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Assault.h"
+				>
+			</File>
+			<File
 				RelativePath="..\astro.h"
 				>
 			</File>
@@ -377,6 +381,10 @@
 			</File>
 			<File
 				RelativePath="..\entity.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Frigate.h"
 				>
 			</File>
 			<File
@@ -449,6 +457,10 @@
 			</File>
 			<File
 				RelativePath="..\war.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Warpable.h"
 				>
 			</File>
 		</Filter>

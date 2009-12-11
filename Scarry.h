@@ -1,6 +1,10 @@
 #ifndef SCARRY_H
 #define SCARRY_H
-#include "beamer.h"
+#include "Warpable.h"
+
+#define SCARRY_BUILDQUESIZE 8
+#define SCARRY_SCALE .0010
+#define SCARRY_BAYCOOL 2.
 
 class Scarry : public Warpable{
 public:

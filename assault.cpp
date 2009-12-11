@@ -1,4 +1,5 @@
-#include "beamer.h"
+#include "Assault.h"
+#include "Beamer.h"
 #include "judge.h"
 #include "player.h"
 extern "C"{

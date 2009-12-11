@@ -115,10 +115,10 @@ public:
 	} *menus;
 #else
 	typedef PopupMenuItem MenuItem;
-	MenuItem *menus;
+	PopupMenu *menus;
 #endif
 	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-	GLwindowMenu(const char *title, const PopupMenuItem *);
+	GLwindowMenu(const char *title, const PopupMenu &);
 	void draw(GLwindowState &,double);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	int key(int key);
@@ -131,7 +131,7 @@ extern const int glwMenuAllAllocated[];
 extern const char glwMenuSeparator[];
 GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenuItem *);
+GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenu &);
 
 
 class GLwindowSizeable : public glwindow{

@@ -98,7 +98,7 @@ int Entity::popupMenu(char ***const titles, int **keys, char ***cmds, int *num){
 	return 0;
 }
 
-int Entity::popupMenu(PopupMenuItem **list){
+int Entity::popupMenu(PopupMenu &list){
 	return 0;
 }
 

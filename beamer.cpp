@@ -952,9 +952,10 @@ int Warpable::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnu
 	return 0;
 }
 
-int Warpable::popupMenu(PopupMenuItem **list){
+int Warpable::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	PopupMenuItem **end, *p;
+	list.appendSeparator().append("Warp to...", 'w', "togglewarpmenu");
+/*	PopupMenuItem **end, *p;
 	for(end = list; *end; end = &(*end)->next);
 	p = *end = new PopupMenuItem;
 	p->title << "-----";
@@ -963,7 +964,7 @@ int Warpable::popupMenu(PopupMenuItem **list){
 	p->title << "Warp To...";
 	p->key = 0;
 	p->cmd << "togglewarpmenu";
-	p->next = NULL;
+	p->next = NULL;*/
 	return ret;
 }
 

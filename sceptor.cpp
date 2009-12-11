@@ -241,7 +241,7 @@ int Sceptor::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum
 	return 0;
 }
 
-int Sceptor::popupMenu(PopupMenuItem **list){
+int Sceptor::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
 	return ret;
 }

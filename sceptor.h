@@ -49,7 +49,7 @@ public:
 	virtual double hitradius();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int popupMenu(char ***const, int **, char ***cmds, int *num);
-	virtual int popupMenu(PopupMenuItem **);
+	virtual int popupMenu(PopupMenu &);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual double maxfuel()const;
 };

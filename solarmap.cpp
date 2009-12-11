@@ -1105,15 +1105,17 @@ void GLwindowSolarMap::anim(double dt){
 }
 
 GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
-//	glwindow *ret;
+	glwindow *ret;
 	glwindow **ppwnd;
 	static const char *windowtitle = "Solarsystem browser";
 	ppwnd = findpp(&glwlist, &TitleCmp("Solarsystem browser"));
 	if(!ppwnd){
-		glwActivate(ppwnd = glwAppend(new GLwindowSolarMap(windowtitle, ppl)));
+		/*glwActivate(ppwnd = glwAppend*/(ret = (new GLwindowSolarMap(windowtitle, ppl)));
 	}
-	else
+	else{
 		glwActivate(ppwnd);
+		ret = *ppwnd;
+	}
 /*	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if((*ppwnd)->title == windowtitle){
 		glwActivate(ppwnd);
 		return 0;
@@ -1122,7 +1124,7 @@ GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
 	ret = &p->st;
 	glwsizeable_init(&p->st);*/
 /*	ret->flags |= GLW_SIZEPROP;*/
-	return *ppwnd;
+	return ret;
 }
 
 

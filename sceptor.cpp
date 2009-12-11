@@ -102,6 +102,9 @@ static const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (
 static double g_nlips_factor = 0.;
 static int g_shader_enable = 0;
 
+static const struct hitbox sceptor_hb[] = {
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
+};
 
 const char *Sceptor::idname()const{
 	return "sceptor";
@@ -189,18 +192,6 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 		return;
 	pt->inputs = *inputs;
 }*/
-
-#if 0
-static int scepter_getrot(struct entity *pt, warf_t *w, double (*rot)[16]){
-/*	quat2imat(*rot, pt->rot);
-	return w->pl->control != pt;*/
-	aquat_t rotq;
-	int ret;
-	ret = sentity_getrotq(pt, w, &rotq);
-	quat2mat(*rot, rotq);
-	return ret;
-}
-#endif
 
 int Sceptor::popupMenu(char ***const titles, int **keys, char ***cmds, int *pnum){
 	Entity *pt = this;
@@ -1182,8 +1173,21 @@ void Sceptor::draw(wardraw_t *wd){
 
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
-		gldScaled(scale);
 		gldMultQuat(this->rot);
+		int nhitboxes = numof(sceptor_hb);
+		const hitbox *hitboxes = sceptor_hb;
+#if 1
+		for(int i = 0; i < nhitboxes; i++){
+			Mat4d rot;
+			glPushMatrix();
+			gldTranslate3dv(hitboxes[i].org);
+			rot = hitboxes[i].rot.tomat4();
+			glMultMatrixd(rot);
+			hitbox_draw(this, hitboxes[i].sc);
+			glPopMatrix();
+		}
+#endif
+		gldScaled(scale);
 		glScalef(-1, 1, -1);
 #if 0
 		if(g_shader_enable && p->fcloak){
@@ -1372,6 +1376,29 @@ bool Sceptor::isSelectable()const{return true;}
 
 double Sceptor::hitradius(){
 	return .01;
+}
+
+int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	double sc[3];
+	double best = dt, retf;
+	int reti = 0, i, n;
+	int nhitboxes = numof(sceptor_hb);
+	const hitbox *hitboxes = sceptor_hb;
+	for(n = 0; n < nhitboxes; n++){
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		rot = this->rot * hitboxes[n].rot;
+		int i;
+		for(i = 0; i < 3; i++)
+			sc[i] = hitboxes[n].sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+	}
+	return reti;
 }
 
 #if 0

@@ -309,6 +309,10 @@
 				RelativePath="..\war.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\Warpable.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"

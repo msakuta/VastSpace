@@ -13,8 +13,14 @@ extern "C"{
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
-	if(aw)
-		aw->addent(this);
+//	The entity must be constructed before being contained by some surroundings.
+//  This generic problem is fairly difficult whether the object should be constructed before being assigned to its container.
+//  Objects like Entities in this program are always tied to a WarField and assumed valid only if containing WarField is defined.
+//  Then, should we assign an Entity to a WarField in its construction? Previous answer is yes, and our answer is no later on.
+//  The reason is that the Entity-derived object's vft is not pointing to derived class's vft here.
+//  The user must call WarField::addent() explicitly to let an object attend to a WarField.
+//	if(aw)
+//		aw->addent(this);
 }
 
 void Entity::init(){
@@ -37,6 +43,7 @@ Entity *Entity::create(const char *cname, WarField *w){
 	for(i = 0; i < numof(ent_name); i++) if(!strcmp(ent_name[i], cname)){
 		Entity *pt;
 		pt = ent_creator[i](w);
+		w->addent(pt);
 		return pt;
 	}
 	return NULL;
@@ -94,6 +101,9 @@ int Entity::takedamage(double damage, int hitpart){
 	health -= damage;
 	return 1;
 }
+
+// This function's purpose is unclear.
+void Entity::bullethole(sufindex, double, const Vec3d &pos, const Quatd &rot){}
 
 int Entity::popupMenu(PopupMenu &list){
 	return 0;

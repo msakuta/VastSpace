@@ -32,6 +32,8 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
+protected:
+	void bulletkill(int hitground, const struct contact_info *ci);
 };
 
 inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife){

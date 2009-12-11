@@ -4,7 +4,7 @@
 #include "coordsys.h"
 #include "astro.h"
 
-WarField::WarField(CoordSys *acs) : el(NULL), cs(acs), pl(NULL), tepl(NewTefpol3D(2047, 128, 128)){
+WarField::WarField(CoordSys *acs) : el(NULL), bl(NULL), cs(acs), pl(NULL), tepl(NewTefpol3D(2047, 128, 128)){
 	for(CoordSys *root = cs; root; root = root->parent){
 		Universe *u = root->toUniverse();
 		if(u){
@@ -15,6 +15,8 @@ WarField::WarField(CoordSys *acs) : el(NULL), cs(acs), pl(NULL), tepl(NewTefpol3
 	tell = NewTeline3D(2048, 128, 128);
 }
 
+static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
+
 void WarField::anim(double dt){
 	CoordSys *root = cs;
 	for(; root; root = root->parent){
@@ -24,7 +26,8 @@ void WarField::anim(double dt){
 			break;
 		}
 	}
-	for(Entity *pe = el; pe; pe = pe->next){
+	for(int i = 0; i < 2; i++)
+	for(Entity *pe = this->*list[i]; pe; pe = pe->next){
 		try{
 			pe->anim(dt);
 		}
@@ -42,12 +45,14 @@ void WarField::anim(double dt){
 }
 
 void WarField::postframe(){
-	for(Entity *e = el; e; e = e->next)
+	for(int i = 0; i < 2; i++)
+	for(Entity *e = this->*list[i]; e; e = e->next)
 		e->postframe();
 }
 
 void WarField::endframe(){
-	for(Entity **pe = &el; *pe;) if((*pe)->w != this){
+	for(int i = 0; i < 2; i++)
+	for(Entity **pe = &(this->*list[i]); *pe;) if((*pe)->w != this){
 		Entity *e = *pe;
 		*pe = e->next;
 		if(!e->w){
@@ -62,7 +67,8 @@ void WarField::endframe(){
 }
 
 void WarField::draw(wardraw_t *wd){
-	for(Entity *pe = el; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+	for(int i = 0; i < 2; i++)
+	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
 		try{
 			pe->draw(wd);
 		}
@@ -76,7 +82,8 @@ void WarField::draw(wardraw_t *wd){
 }
 
 void WarField::drawtra(wardraw_t *wd){
-	for(Entity *pe = el; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+	for(int i = 0; i < 2; i++)
+	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
 		try{
 			pe->drawtra(wd);
 		}
@@ -109,7 +116,8 @@ Vec3d WarField::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{
 
 
 Entity *WarField::addent(Entity *e){
+	Entity **plist = e->isTargettable() ? &el : &bl;
 	e->w = this;
-	e->next = el;
-	return el = e;
+	e->next = *plist;
+	return *plist = e;
 }

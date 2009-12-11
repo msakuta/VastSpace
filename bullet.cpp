@@ -5,6 +5,7 @@
 #include "judge.h"
 //#include "warutil.h"
 extern "C"{
+#include "bitmap.h"
 #include <clib/amat4.h>
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -26,7 +27,6 @@ const char *Bullet::classname()const{
 	return "Bullet";
 }
 
-#if 0
 void sufmodel_normalize(sufmodel_t *mdl);
 
 /* color sequences */
@@ -39,10 +39,7 @@ static const struct color_node cnl_fireburn[] = {
 static const struct color_sequence cs_fireburn = DEFINE_COLSEQ(cnl_fireburn, (COLORREF)-1, 0.1);
 
 
-
-typedef struct bullet bullet_t;
-
-
+#if 0
 
 static void bullet_draw(struct bullet *, wardraw_t*);
 static void bullet_drawmodel(struct bullet *pb, wardraw_t *wd){pb,wd;}
@@ -198,6 +195,7 @@ struct bullet *BulletNew(warf_t *w, entity_t *owner, double damage){
 	pb->life = 0.;
 	return pb;
 }
+#endif
 
 static double noise_pixel(int x, int y, int bit){
 	struct random_sequence rs;
@@ -241,7 +239,7 @@ void explotex(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 		for(t = 0; t < 8; t++){
 			int x, y;
 			int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 16;
-			const unsigned char *head = (const unsigned char*)&bmi->bmiColors[cols];
+			unsigned char *head = (unsigned char*)&bmi->bmiColors[cols];
 			{
 //				tex4 = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
 				for(y = 0; y < bmi->bmiHeader.biHeight; y++){
@@ -291,8 +289,8 @@ void explotex(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 	glPopAttrib();
 }
 
-static int explosmokecmp(const double **pa, const double **pb){
-	return **pa < **pb ? -1 : **pa == **pb ? 0 : 1;
+static int explosmokecmp(const void *pa, const void *pb){
+	return **(const double**)pa < **(const double**)pb ? -1 : **(const double**)pa == **(const double**)pb ? 0 : 1;
 }
 
 void explosmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
@@ -366,6 +364,7 @@ void explosmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_
 	glPopAttrib();
 }
 
+#if 0
 static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	double rad;
 	struct random_sequence rs;
@@ -437,24 +436,24 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 	glPopMatrix();
 	glPopAttrib();
 }
+#endif
 
+#define SQRT2P2 (M_SQRT2/2.)
 
-static void bulletkill(struct bullet *pb, warf_t *w, struct tent3d_line_list *tell, const double pyr[3], int hitground, const struct contact_info *ci){
+void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 	int j;
-	if(!tell)
+	if(!w->tell)
 		return;
-	if(1000. < pb->damage){
+	if(1000. < this->damage){
 		struct tent3d_line_list *tell = w->tell;
-		entity_t *pt;
-		const double *const pos = pb->pos;
-		pt = w->tl;
-		for(; pt; pt = pt->next) if(pt->active && VECSDIST(pos, pt->pos) < pb->damage * pb->damage / 10000. / 10000.){
-			((struct entity_private_static*)pt->vft)->takedamage(pt, pb->damage / (1. + VECSDIST(pos, pt->pos)), w, 0);
+		Entity *pt;
+		pt = w->el;
+		for(; pt; pt = pt->next) if(pt->w == w && (pos - pt->pos).slen() < damage * damage / 10000. / 10000.){
+			pt->takedamage(damage / (1. + VECSDIST(pos, pt->pos)), 0);
 		}
-		if(tell){
+		if(w->tell){
 			int j;
-			avec3_t gravity;
-			w->vft->accel(w, &gravity, &pb->pos, &avec3_000);
+			Vec3d gravity =	w->accel(pos, vec3_000);
 			for(j = 0; j < 20; j++){
 				double velo[3];
 				velo[0] = .15 * (drseq(&w->rs) - .5);
@@ -469,64 +468,64 @@ static void bulletkill(struct bullet *pb, warf_t *w, struct tent3d_line_list *te
 				velo[1] = .15 * (drseq(&w->rs) - .5);
 				velo[2] = .15 * (drseq(&w->rs) - .5);
 				AddTefpol3D(w->tepl, pos, velo, gravity, &cs_fireburn,
-					TEP3_REFLECT, pb->damage * .001 * (3. + 2. * drseq(&w->rs)));
+					TEP3_REFLECT, damage * .001 * (3. + 2. * drseq(&w->rs)));
 			}
 
 			{/* explode shockwave thingie */
-				static const double pyr[3] = {M_PI / 2., 0., 0.};
-				AddTeline3D(tell, pos, NULL, pb->damage * .0001, pyr, NULL, NULL, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, pb->damage * .001);
+				static const Quatd pyr(SQRT2P2, 0., 0., SQRT2P2);
+				AddTeline3D(tell, pos, NULL, damage * .0001, pyr, NULL, NULL, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, damage * .001);
 				if(ci && 0 <= ci->depth) /* no scorch in midair */
-					AddTeline3D(tell, pos, NULL, pb->damage * .0001, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
+					AddTeline3D(tell, pos, NULL, damage * .0001, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
 			}
 		}
 	}
-	if(pb->vft == &ExplosiveBullet_s || 30. < pb->damage){
-		entity_t *pt;
-		avec3_t pos;
-		avec3_t accel;
-		avec3_t gravity;
-		w->vft->accel(w, &gravity, &pb->pos, &avec3_000);
+	if(/*pb->vft == &ExplosiveBullet_s || */30. < damage){
+		Entity *pt;
+		Vec3d pos;
+		Vec3d accel;
+		Vec3d gravity = w->accel(this->pos, avec3_000);
 
-		VECCPY(pos, pb->pos);
+		pos = this->pos;
 		if(ci)
-			VECSADD(pos, ci->normal, ci->depth);
+			pos += ci->normal * ci->depth;
 
-		for(pt = w->tl; pt; pt = pt->next) if(pt->active && VECSDIST(pos, pt->pos) < pb->damage * pb->damage / 20000. / 20000.){
+/*		for(pt = w->el; pt; pt = pt->next) if(pt->w != w && (pos - pt->pos).slen() < damage * damage / 20000. / 20000.){
 			makedamage(pb, pt, w, (pb->damage * pb->damage / 20000. / 20000. - VECSDIST(pos, pt->pos)) * 20000. * 20000. / pb->damage, 0);
-		}
+		}*/
 
-		if(30. < pb->damage) for(j = 0; j < 10; j++){
+		if(30. < damage) for(j = 0; j < 10; j++){
 			double velo[3];
 			velo[0] = .05 * (drseq(&w->rs) - .5);
 			velo[1] = .05 * (drseq(&w->rs) - .5);
 			velo[2] = .05 * (drseq(&w->rs) - .5);
-			AddTeline3D(tell, pos, velo, .001, NULL, NULL, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
+			AddTeline3D(w->tell, pos, velo, .001, NULL, NULL, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
 		}
 
-		if(30. < pb->damage && ci){
-			avec3_t dr, v;
-			aquat_t q;
-			amat4_t mat;
+		if(30. < damage && ci){
+			Vec3d dr, v;
+			Quatd q;
+			Mat4d mat;
 			double p;
-			VECNORM(dr, ci->normal);
+			dr = ci->normal.norm();
 
 			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
 			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
-			VECVP(v, avec3_001, dr);
-			p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-			VECSCALE(q, v, p);
-			AddTeline3D(tell, pos, NULL, .01, q, NULL, NULL, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
+			v = vec3_001.vp(dr);
+			p = sqrt(1. - q[3] * q[3]) / v.len();
+			q = v * p;
+			AddTeline3D(w->tell, pos, NULL, .01, q, NULL, NULL, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
 		}
 
-		if(0 < hitground && w->wmd){
+/*		if(0 < hitground && w->wmd){
 			double pos[2] = {pb->pos[0], pb->pos[2]};
 			AddWarmapDecal(w->wmd, pos, (void*)4);
-		}
-		AddTelineCallback3D(tell, pb->pos, NULL, pb->damage / 10000. + .003, NULL, NULL, NULL, explosmoke, NULL, 0, 1.);
+		}*/
+		AddTelineCallback3D(w->tell, this->pos, NULL, damage / 10000. + .003, NULL, NULL, NULL, explosmoke, NULL, 0, 1.);
 	}
+#if 0
 	else if(pb->vft != &ShotgunBullet_s || rseq(&w->rs) % 8 == 0/*VECSDIST(pb->pos, w->pl->pos) < .05*/){
-#if 1
+#if 0
 		avec3_t accel;
 		int f;
 		w->vft->accel(w, &accel, &pb->pos, &avec3_000);
@@ -544,11 +543,11 @@ static void bulletkill(struct bullet *pb, warf_t *w, struct tent3d_line_list *te
 /*			AddTeline3D(tell, pb->pos, velo, pb->damage * .0002, NULL, NULL, gravity, COLOR32RGBA(191,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, .5);*/
 			AddTeline3D(tell, pb->pos, velo, .0001, NULL, NULL, gravity, COLOR32RGBA(191,127,0,255), TEL3_GLOW | TEL3_NOLINE | TEL3_INVROTATE, .5);
 		}
-#endif
 		if(0 < hitground && w->wmd){
 			double pos[2] = {pb->pos[0], pb->pos[2]};
 			AddWarmapDecal(w->wmd, pos, (void*)1);
 		}
+#endif
 	}
 	if(30. < pb->damage){
 		playWave3D(CvarGetString("sound_explosion"), pb->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime);
@@ -581,8 +580,10 @@ static void bulletkill(struct bullet *pb, warf_t *w, struct tent3d_line_list *te
 		if(numof(wave) < ofs) ofs = 0;
 		playMemoryWave3D(&wave[ofs], sizeof wave - ofs, 0, pb->pos, w->pl->pos, w->pl->pyr, .5, .01 * .01 * pb->damage, w->realtime);
 	}
+#endif
 }
 
+#if 0
 static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, entity_t *pt){
 	const avec3_t *src = param->src;
 	const avec3_t *dir = param->dir;
@@ -794,59 +795,33 @@ void Bullet::anim(double dt){
 			}
 #endif
 
-			VECCPY(pb->pos, pos);
-
 			pb->pos = pos;
 			pt->bullethit(pb);
-#if 0
+#if 1
 			{ /* ricochet */
 				if(w->tell && rseq(&w->rs) % (w->effects + 1) == 0){
 					int j, n;
 					Vec3d pyr, bvelo;
 					bvelo = pb->velo - pt->velo;
-					if(!vft->hitsuf){
-#if 1
-						aquat_t q;
-						quatdirection(q, nh);
-						AddTeline3D(tell, pos, pt->velo, pb->damage * .001 + .001, q, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .5 + .001 * pb->damage);
-#else
-						VECSUB(pos, pb->pos, pt->pos);
-						pyr[0] = atan2(bvelo[1], sqrt(bvelo[0] * bvelo[0] + bvelo[2] * bvelo[2]));
-						pyr[1] = atan2(bvelo[0], -bvelo[2]);
-						pyr[2] = drseq(&w->rs) * M_PI;
-						VECNORMIN(pos);
-						VECSCALEIN(pos, ((struct entity_private_static*)pt->vft)->hitradius);
-						VECADDIN(pos, pt->pos);
-						AddTeline3D(tell, pos, pt->velo, pb->damage * .0001 + .001, quat, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);
-#endif
+					Vec3d delta = pos - pt->pos;
+					pt->bullethole(pi, pb->damage * .00001, delta, Quatd::direction(delta));
+					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);
+				}
+				w->effects++;
+				if(w->tell){
+					Vec3d accel = w->accel(pb->pos, pb->velo);
+					int j, n;
+					frexp(pb->damage, &n);
+					for(j = 0; j < n; j++){
+						double velo[3];
+						velo[0] = .15 * (drseq(&w->rs) - .5);
+						velo[1] = .15 * (drseq(&w->rs) - .5);
+						velo[2] = .15 * (drseq(&w->rs) - .5);
+						AddTeline3D(w->tell, pos, velo, .001, NULL, NULL, accel,
+							j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
+							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
 					}
-					else{
-						avec3_t delta;
-						VECCPY(delta, nh);
-						pyr[0] = atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2]));
-						pyr[1] = fmod(atan2(delta[0], -delta[2]) + 2 * M_PI, 2 * M_PI);
-						pyr[2] = 0.;
-						if(vft->bullethole){
-							avec3_t da;
-							VECSUB(delta, pos, pt->pos);
-							vft->bullethole(pt, pi, pb->damage * .00001, delta, pyr);
-						}
-						AddTeline3D(tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);
-					}
-					w->effects++;
-					if(tell){
-						int j, n;
-						frexp(pb->damage, &n);
-						for(j = 0; j < n; j++){
-							double velo[3];
-							velo[0] = .15 * (drseq(&w->rs) - .5);
-							velo[1] = .15 * (drseq(&w->rs) - .5);
-							velo[2] = .15 * (drseq(&w->rs) - .5);
-							AddTeline3D(tell, pos, velo, .001, NULL, NULL, w->gravity,
-								j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
-								TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
-						}
-					}
+				}
 #if 0
 					{
 						frexp(pb->damage, &n);
@@ -872,10 +847,10 @@ void Bullet::anim(double dt){
 						}
 					}
 #endif
-				}
 			}
 			damage = pb->damage;
 
+#if 0
 			{
 			extern double g_bulletimpact;
 			extern struct entity_private_static container_s;
@@ -900,11 +875,12 @@ void Bullet::anim(double dt){
 			if(hitobj)
 				*hitobj = pt;
 #endif
+#endif
 
 			pt->takedamage(this->damage, hitpart);
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
-//			bulletkill(pb, w, w->tell, avec3_000, -1, NULL);
+			bulletkill(-1, NULL);
 			w = NULL;
 
 /*			{

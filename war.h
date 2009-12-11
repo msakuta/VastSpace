@@ -42,6 +42,7 @@ class Player;
 class Viewer;
 class CoordSys;
 class Entity;
+class Bullet;
 
 /* all player or AI's input should be expressed in this structure. */
 struct input_t{
@@ -77,8 +78,8 @@ typedef struct war_race{
 } race_t;
 
 struct contact_info{
-	double normal[3];
-	double velo[3]; /* base velocity of colliding object */
+	Vec3d normal;
+	Vec3d velo; /* base velocity of colliding object */
 	double depth; /* penetration depth */
 };
 
@@ -117,7 +118,7 @@ public:
 
 	Player *pl;
 	Entity *el; /* entity list */
-//	struct bullet *bl; /* bullet list */
+	Entity *bl; /* bullet list */
 	struct tent3d_line_list *tell, *gibs;
 	struct tent3d_fpol_list *tepl;
 //	double war_time;

@@ -200,6 +200,7 @@ void MTurret::tryshoot(){
 	Bullet *pz;
 	Quatd qrot;
 	pz = new Bullet(base, 3., 80.);
+	w->addent(pz);
 	Mat4d mat2;
 	base->transform(mat2);
 	mat2.translatein(hp->pos);

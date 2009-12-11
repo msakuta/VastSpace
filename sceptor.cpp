@@ -228,6 +228,7 @@ void Sceptor::shootDualGun(double dt){
 		Bullet *pb;
 		double phi, theta;
 		pb = new Bullet(this, 5, 5.);
+		w->addent(pb);
 		pb->pos = mat.vp3(scepter_guns[i]);
 /*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
 		theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;

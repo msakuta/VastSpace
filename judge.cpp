@@ -185,29 +185,30 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 	return reti;
 }
 
-#if 0
-#define OTDEBUG 0
+
+
+#define OTDEBUG 1
 
 static int otjHitSphere_loops = 0, otjHitSphere_framecalls = 0, otjHitSphere_frameloops = 0;
 
-static entity_t *otjHitSphere_in(const otnt *root, const avec3_t *src, const avec3_t *dir, double dt, double rad, avec3_t *pos){
+static Entity *otjHitSphere_in(const otnt *root, const Vec3d &src, const Vec3d &dir, double dt, double rad, Vec3d *pos){
 	int i;
-	if(otjHitSphere_loops++, !jHitSphere(root->pos, root->rad + rad, *src, *dir, dt))
+	if(otjHitSphere_loops++, !jHitSphere(root->pos, root->rad + rad, src, dir, dt))
 		return NULL;
 	else for(i = 0; i < 2; i++){
-		entity_t *ret;
+		Entity *ret;
 		if(root->leaf & (1<<i)){
-			if(otjHitSphere_loops++, jHitSpherePos(root->a[i]->t.pos, ((struct entity_private_static *)root->a[i]->t.vft)->hitradius + rad, *src, *dir, dt, NULL, *pos))
-				return &root->a[i]->t;
+			if(otjHitSphere_loops++, jHitSpherePos(root->a[i].t->pos, root->a[i].t->hitradius() + rad, src, dir, dt, NULL, pos))
+				return root->a[i].t;
 		}
-		else if(ret = otjHitSphere_in(&root->a[i]->n, src, dir, dt, rad, pos))
+		else if(ret = otjHitSphere_in(root->a[i].n, src, dir, dt, rad, pos))
 			return ret;
 	}
 	return NULL;
 }
 
-entity_t *otjHitSphere(const otnt *root, const avec3_t *src, const avec3_t *dir, double dt, double rad, avec3_t *pos){
-	entity_t *ret;
+Entity *otjHitSphere(const otnt *root, const Vec3d &src, const Vec3d &dir, double dt, double rad, Vec3d *pos){
+	Entity *ret;
 	if(!root)
 		return NULL;
 	otjHitSphere_loops = 0;
@@ -222,42 +223,42 @@ entity_t *otjHitSphere(const otnt *root, const avec3_t *src, const avec3_t *dir,
 
 
 
-static entity_t *otjEnumHitSphere_in(const otnt *root, const struct otjEnumHitSphereParam *param){
-	const avec3_t *src = param->src;
-	const avec3_t *dir = param->dir;
+static Entity *otjEnumHitSphere_in(const otnt *root, const struct otjEnumHitSphereParam *param){
+	const Vec3d *src = param->src;
+	const Vec3d *dir = param->dir;
 	double dt = param->dt;
 	double rad = param->rad;
-	avec3_t *pos = param->pos;
+	Vec3d *pos = param->pos;
 	int i;
 	if(otjHitSphere_loops++, !jHitSphere(root->pos, root->rad + rad, *src, *dir, dt))
 		return NULL;
 	else for(i = 0; i < 2; i++){
-		entity_t *ret;
+		Entity *ret;
 		if(root->leaf & (1<<i)){
 			if(param->flags & OTJ_IGLIST){
 				int j;
-				for(j = 0; j < param->niglist; j++) if(&root->a[i]->t == param->iglist[j])
+				for(j = 0; j < param->niglist; j++) if(root->a[i].t == param->iglist[j])
 					goto gcontinue;
 			}
-			if(param->flags & OTJ_IGVFT){
+/*			if(param->flags & OTJ_IGVFT){
 				int j;
 				for(j = 0; j < param->nigvft; j++) if(&root->a[i]->t.vft == param->igvft[j])
 					goto gcontinue;
-			}
+			}*/
 			otjHitSphere_loops++;
-			if(jHitSpherePos(root->a[i]->t.pos, ((struct entity_private_static *)root->a[i]->t.vft)->hitradius + rad, *src, *dir, dt, NULL, *pos)
-				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, &root->a[i]->t)))
-				return &root->a[i]->t;
+			if(jHitSpherePos(root->a[i].t->pos, root->a[i].t->hitradius() + rad, *src, *dir, dt, NULL, pos)
+				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))
+				return root->a[i].t;
 		}
-		else if(ret = otjEnumHitSphere_in(&root->a[i]->n, param))
+		else if(ret = otjEnumHitSphere_in(root->a[i].n, param))
 			return ret;
 gcontinue:;
 	}
 	return NULL;
 }
 
-entity_t *otjEnumHitSphere(const struct otjEnumHitSphereParam *param){
-	entity_t *ret;
+Entity *otjEnumHitSphere(const struct otjEnumHitSphereParam *param){
+	Entity *ret;
 	if(!param->root)
 		return NULL;
 	otjHitSphere_loops = 0;
@@ -270,41 +271,41 @@ entity_t *otjEnumHitSphere(const struct otjEnumHitSphereParam *param){
 	return ret;
 }
 
-static entity_t *otjEnumPointHitSphere_in(const otnt *root, const struct otjEnumHitSphereParam *param){
-	const avec3_t *src = param->src;
+static Entity *otjEnumPointHitSphere_in(const otnt *root, const struct otjEnumHitSphereParam *param){
+	const Vec3d *src = param->src;
 	double radi = root->rad + param->rad;
-	avec3_t *pos = param->pos;
+	Vec3d *pos = param->pos;
 	int i;
 	if(otjHitSphere_loops++, radi * radi < VECSDIST(root->pos, *src))
 		return NULL;
 	else for(i = 0; i < 2; i++){
-		entity_t *ret;
+		Entity *ret;
 		if(root->leaf & (1<<i)){
 			if(param->flags & OTJ_IGLIST){
 				int j;
-				for(j = 0; j < param->niglist; j++) if(&root->a[i]->t == param->iglist[j])
+				for(j = 0; j < param->niglist; j++) if(root->a[i].t == param->iglist[j])
 					goto gcontinue;
 			}
-			if(param->flags & OTJ_IGVFT){
+/*			if(param->flags & OTJ_IGVFT){
 				int j;
 				for(j = 0; j < param->nigvft; j++) if(root->a[i]->t.vft == param->igvft[j])
 					goto gcontinue;
-			}
-			radi = ((struct entity_private_static *)root->a[i]->t.vft)->hitradius + param->rad;
+			}*/
+			radi = root->a[i].t->hitradius() + param->rad;
 			otjHitSphere_loops++;
-			if(VECSDIST(root->a[i]->t.pos, *src) < radi * radi
-				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, &root->a[i]->t)))
-				return &root->a[i]->t;
+			if((root->a[i].t->pos - *src).slen() < radi * radi
+				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))
+				return root->a[i].t;
 		}
-		else if(ret = otjEnumPointHitSphere_in(&root->a[i]->n, param))
+		else if(ret = otjEnumPointHitSphere_in(root->a[i].n, param))
 			return ret;
 gcontinue:;
 	}
 	return NULL;
 }
 
-entity_t *otjEnumPointHitSphere(const struct otjEnumHitSphereParam *param){
-	entity_t *ret;
+Entity *otjEnumPointHitSphere(const struct otjEnumHitSphereParam *param){
+	Entity *ret;
 	if(!param->root)
 		return NULL;
 	otjHitSphere_loops = 0;
@@ -317,35 +318,35 @@ entity_t *otjEnumPointHitSphere(const struct otjEnumHitSphereParam *param){
 	return ret;
 }
 
-static entity_t *otjEnumNearestPoint_in(const otnt *root, const struct otjEnumHitSphereParam *param){
-	const avec3_t *src = param->src;
+static Entity *otjEnumNearestPoint_in(const otnt *root, const struct otjEnumHitSphereParam *param){
+	const Vec3d *src = param->src;
 	double radi[2];
-	const avec3_t *pos[2];
+	const Vec3d *pos[2];
 	int i, s;
 	for(i = 0; i < 2; i++)
-		pos[i] = root->leaf & (1 << i) ? &root->a[i]->t.pos : &root->a[i]->n.pos;
+		pos[i] = root->leaf & (1 << i) ? &root->a[i].t->pos : &root->a[i].n->pos;
 	s = VECSDIST(*pos[0], *src) < VECSDIST(*pos[1], *src);
 	for(i = 0; i < 2; i++){
-		entity_t *ret;
+		Entity *ret;
 		int i1 = (i+s) % 2;
 		if(root->leaf & (1<<i)){
 			if(param->flags & OTJ_IGLIST){
 				int j;
-				for(j = 0; j < param->niglist; j++) if(&root->a[i1]->t == param->iglist[j])
+				for(j = 0; j < param->niglist; j++) if(root->a[i1].t == param->iglist[j])
 					goto gcontinue;
 			}
-			if(!(param->flags & OTJ_CALLBACK) || param->callback(param, &root->a[i1]->t))
-				return &root->a[i1]->t;
+			if(!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i1].t))
+				return root->a[i1].t;
 		}
-		else if(ret = otjEnumNearestPoint_in(&root->a[i1]->n, param))
+		else if(ret = otjEnumNearestPoint_in(root->a[i1].n, param))
 			return ret;
 gcontinue:;
 	}
 	return NULL;
 }
 
-static entity_t *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
-	entity_t *ret;
+static Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
+	Entity *ret;
 	if(!param->root)
 		return NULL;
 	otjHitSphere_loops = 0;
@@ -373,22 +374,22 @@ static entity_t *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
 
 
 
-static entity_t *otEnumNearestPoint_in(const otnt *root, const avec3_t *src, const entity_t *ignore){
-	entity_t *ret;
+static Entity *otEnumNearestPoint_in(const otnt *root, const Vec3d &src, const Entity *ignore){
+	Entity *ret;
 	double radi[2];
-	const avec3_t *pos[2];
+	const Vec3d *pos[2];
 	int i, s;
 	for(i = 0; i < 2; i++)
-		pos[i] = root->leaf & (1 << i) ? &root->a[i]->t.pos : &root->a[i]->n.pos;
-	s = VECSDIST(*pos[1], *src) < VECSDIST(*pos[0], *src);
+		pos[i] = root->leaf & (1 << i) ? &root->a[i].t->pos : &root->a[i].n->pos;
+	s = (*pos[1] - src).slen() < (*pos[0] - src).slen();
 	for(i = 0; i < 2; i++){
 		int i1 = (i+s) % 2;
 		if(root->leaf & (1<<i1)){
-			if(&root->a[i1]->t == ignore || root->a[i1]->t.active & 2)
+			if(root->a[i1].t == ignore || root->a[i1].t->otflag & 2)
 				continue;
-			return &root->a[i1]->t;
+			return root->a[i1].t;
 		}
-		else if((ret = otEnumNearestPoint_in(&root->a[i1]->n, src, ignore))){
+		else if((ret = otEnumNearestPoint_in(root->a[i1].n, src, ignore))){
 			return ret;
 		}
 	}
@@ -411,33 +412,33 @@ static int updatesub_invokes;
 static statistician_t updatesub_stats;
 #endif
 
-static void ot_update_int(otnt *root){
-	avec3_t *pos[2], delta, dn;
+static otnt *ot_update_int(otnt *root, WarField *w){
+	Vec3d *pos[2];
 	double rad[2];
 	double len, newrad;
 	int i;
 	for(i = 0; i < 2; i++) if(root->leaf & (1 << i)){
-		if(!root->a[i]->t.active)
+		if(root->a[i].t->w != w)
 			return NULL;
-		rad[i] = ((struct entity_private_static*)root->a[i]->t.vft)->hitradius;
-		pos[i] = &root->a[i]->t.pos;
+		rad[i] = root->a[i].t->hitradius();
+		pos[i] = &root->a[i].t->pos;
 	}
 	else{
-		rad[i] = root->a[i]->n.rad;
-		pos[i] = &root->a[i]->n.pos;
+		rad[i] = root->a[i].n->rad;
+		pos[i] = &root->a[i].n->pos;
 	}
-	VECSUB(delta, *pos[0], *pos[1]);
-	len = VECLEN(delta);
+	Vec3d delta = *pos[0] - *pos[1];
+	len = delta.len();
 
 	/* If either one of the subnodes contains the other totally, just make
         current node same as larger subnode. */
 	for(i = 0; i < 2; i++) if(len + rad[(i+1) % 2] < rad[i]){
-		VECCPY(root->pos, *pos[i]);
+		root->pos = *pos[i];
 		root->rad = rad[i];
 		return root;
 	}
 
-	VECSCALE(dn, delta, 1. / len);
+	Vec3d dn = delta / len;
 	len += rad[0] + rad[1];
 	newrad = len / 2.;
 	len = newrad - rad[1];
@@ -446,18 +447,18 @@ static void ot_update_int(otnt *root){
 	root->rad = newrad;
 }
 
-static otnt *ot_updatesub(warf_t *w, otnt *root){
+static otnt *ot_updatesub(WarField *w, otnt *root){
 	if(!root)
 		return NULL;
-	if(root->a[0] && !(root->leaf & 1) && !ot_updatesub(w, &root->a[0]->n))
+	if(root->a[0].n && !(root->leaf & 1) && !ot_updatesub(w, root->a[0].n))
 		return NULL;
-	if(root->a[1] && !(root->leaf & 2) && !ot_updatesub(w, &root->a[1]->n))
+	if(root->a[1].n && !(root->leaf & 2) && !ot_updatesub(w, root->a[1].n))
 		return NULL;
 #if 1 <= OTDEBUG
 	updatesub_invokes++;
 #endif
 #if 1
-	ot_update_int(root);
+	ot_update_int(root, w);
 #else
 	{
 		avec3_t *pos[2], delta, dn;
@@ -500,8 +501,8 @@ static otnt *ot_updatesub(warf_t *w, otnt *root){
 	return root;
 }
 
-otnt *ot_build(warf_t *w, double dt){
-	entity_t *pt;
+otnt *ot_build(WarField *w, double dt){
+	Entity *pt;
 	int i, n = 0, m = 0, o, loops = 0;
 	otnt *ot = w->ot;
 #if 1 <= OTDEBUG
@@ -510,7 +511,7 @@ otnt *ot_build(warf_t *w, double dt){
 #if 1 <= OTDEBUG
 	TimeMeasStart(&tm);
 #endif
-	if(w->otroot && fmod(w->war_time, 2.) < fmod(w->war_time + dt, 2.)){
+	if(w->otroot && fmod(w->war_time(), 2.) < fmod(w->war_time() + dt, 2.)){
 #if 1 <= OTDEBUG
 		updatesub_invokes = 0;
 #endif
@@ -525,33 +526,33 @@ otnt *ot_build(warf_t *w, double dt){
 		}
 	}
 	otjHitSphere_framecalls = otjHitSphere_frameloops = 0;
-	for(pt = w->tl; pt; pt = pt->next){
-		pt->active &= ~2;
+	for(pt = w->el; pt; pt = pt->next){
+		pt->otflag &= ~2;
 		n++;
 	}
 
 	/* The case n == 1 will fail building up tree. */
 	if(n <= 1)
-		return;
+		return NULL;
 
 	for(i = n; i; i--)
 		m += i;
 	if(0 && w->otroot){
-		ot = malloc(m * sizeof *ot);
+		ot = (otnt*)malloc(m * sizeof *ot);
 	}
 	else if(w->ots < m)
-		ot = realloc(ot, (w->ots = m) * sizeof *ot);
+		ot = (otnt*)realloc(ot, (w->ots = m) * sizeof *ot);
 #if 1
-#define PAIRED(i,pt) ((i) < 0 ? (pt)->active & 2 : (ot[i]).leaf & 128)
-#define PAIR(i,pt) ((i) < 0 ? ((pt)->active |= 2) : ((ot[i]).leaf |= 128))
+#define PAIRED(i,pt) ((i) < 0 ? (pt)->otflag & 2 : (ot[i]).leaf & 128)
+#define PAIR(i,pt) ((i) < 0 ? ((pt)->otflag |= 2) : ((ot[i]).leaf |= 128))
 	o = 0;
-	for(pt = w->tl, i = -n; i < o; (i < 0 ? pt = pt->next : 0), i++) if(!PAIRED(i, pt)){
+	for(pt = w->el, i = -n; i < o; (i < 0 ? pt = pt->next : 0), i++) if(!PAIRED(i, pt)){
 		double slen, best = 1e15, rad;
-		const avec3_t *pos;
-		entity_t *pt2, *pt3;
+		const Vec3d *pos;
+		Entity *pt2, *pt3;
 		int j, jj = i;
 		if(i < 0){
-			rad = ((struct entity_private_static*)pt->vft)->hitradius;
+			rad = pt->hitradius();
 			pos = &pt->pos;
 		}
 		else{
@@ -566,17 +567,17 @@ otnt *ot_build(warf_t *w, double dt){
 			pt3 = NULL;
 		if(!pt3) for(pt2 = i < 0 ? pt->next : NULL, j = i+1; j < o; (j < 0 ? pt2 = pt2->next : 0), j++) if(!PAIRED(j, pt2)){
 			double rad_2;
-			const avec3_t *pos2;
+			const Vec3d *pos2;
 			otnt *pn2 = &ot[j];
 			if(j < 0){
-				rad_2 = ((struct entity_private_static*)pt2->vft)->hitradius;
+				rad_2 = pt2->hitradius();
 				pos2 = &pt2->pos;
 			}
 			else{
 				rad_2 = ot[j].rad;
 				pos2 = &ot[j].pos;
 			}
-			slen = VECSDIST(*pos, *pos2) + rad * rad + rad_2 * rad_2;
+			slen = (*pos - *pos2).slen() + rad * rad + rad_2 * rad_2;
 			if(slen < best){
 				jj = j;
 				if(j < 0)
@@ -607,10 +608,16 @@ otnt *ot_build(warf_t *w, double dt){
 			VECSCALE(delta, dn, len);
 			VECADD(ot[o].pos, delta, *pos2);
 			ot[o].rad = newrad;*/
-			ot[o].a[0] = i < 0 ? pt : &ot[i];
-			ot[o].a[1] = jj < 0 ? pt3 : &ot[jj];
+			if(i < 0)
+				ot[o].a[0].t = pt;
+			else
+				ot[o].a[0].n = &ot[i];
+			if(jj < 0)
+				ot[o].a[1].t = pt3;
+			else
+				ot[o].a[1].n = &ot[jj];
 			ot[o].leaf = (i < 0 ? 1 : 0) | (jj < 0 ? 2 : 0);
-			ot_update_int(&ot[o]);
+			ot_update_int(&ot[o], w);
 #if 2 <= OTDEBUG
 			printf("ot pair[%d] (%d,%d)\n", o, i, jj);
 #endif
@@ -621,8 +628,8 @@ otnt *ot_build(warf_t *w, double dt){
 	}
 	w->ot = ot;
 	w->oti = o;
-	for(pt = w->tl; pt; pt = pt->next){
-		pt->active &= ~2;
+	for(pt = w->el; pt; pt = pt->next){
+		pt->otflag &= ~2;
 	}
 #if 1 <= OTDEBUG
 	printf("ot nobjs %d, nodes %d, loops %d, %lg s\n", n, o, loops, TimeMeasLap(&tm));
@@ -731,7 +738,7 @@ otnt *ot_build(warf_t *w, double dt){
 	return w->otroot;
 }
 
-static void circle(avec3_t org, double s, amat4_t rot){
+static void circle(Vec3d &org, double s, Mat4d &rot){
 	int i;
 		double (*cuts)[2];
 		double c;
@@ -739,7 +746,7 @@ static void circle(avec3_t org, double s, amat4_t rot){
 		c = sqrt(1. - s * s);
 		glPushMatrix();
 		glLoadMatrixd(rot);
-		directrot(org, avec3_000, NULL);
+		gldMultQuat(Quatd::direction(org));
 		glBegin(GL_LINE_LOOP);
 		for(i = 0; i < 32; i++){
 			glVertex3d(s * cuts[i][0], s * cuts[i][1], c);
@@ -754,16 +761,16 @@ static double ot_volume[10];
 static int ot_statsub(otnt *root, int level){
 	if(!root || 10 <= level)
 		return 0;
-	if(root->a[0] && !(root->leaf & 1))
-		ot_statsub(&root->a[0]->n, level + 1);
-	if(root->a[1] && !(root->leaf & 2))
-		ot_statsub(&root->a[1]->n, level + 1);
+	if(root->a[0].t && !(root->leaf & 1))
+		ot_statsub(root->a[0].n, level + 1);
+	if(root->a[1].t && !(root->leaf & 2))
+		ot_statsub(root->a[1].n, level + 1);
 	ot_nodes[level]++;
 	ot_volume[level] += root->rad * root->rad * root->rad;
 }
 #endif
 
-void ot_draw(warf_t *w, wardraw_t *wd){
+void ot_draw(WarField *w, wardraw_t *wd){
 	int i, n;
 	Viewer *vw = wd->vw;
 #if 0 || 1 && !OTDEBUG
@@ -773,26 +780,25 @@ void ot_draw(warf_t *w, wardraw_t *wd){
 		return;
 	for(n = 0; n < w->oti; n++){
 		otnt *pn = &w->ot[n];
-		amat4_t mat;
+		Mat4d mat;
 		double ratio, tangent, c, s;
-		avec3_t org;
-		VECSUB(org, pn->pos, vw->pos);
-		ratio = pn->rad / VECLEN(org);
+		Vec3d org = pn->pos - vw->pos;
+		ratio = pn->rad / org.len();
 
 		glColor4ub(255,0,255,255);
-		if(pn->a[0] && pn->a[1]){
-			avec3_t pos;
+		if(pn->a[0].t && pn->a[1].t){
+			Vec3d pos;
 			glBegin(GL_LINES);
-			glVertex3dv(pn->leaf & 1 ? pn->a[0]->t.pos : pn->a[0]->n.pos);
-			glVertex3dv(pn->leaf & 2 ? pn->a[1]->t.pos : pn->a[1]->n.pos);
+			glVertex3dv(pn->leaf & 1 ? pn->a[0].t->pos : pn->a[0].n->pos);
+			glVertex3dv(pn->leaf & 2 ? pn->a[1].t->pos : pn->a[1].n->pos);
 			glEnd();
 			if(pn->leaf & 1){
-				VECSUB(pos, pn->a[0]->t.pos, vw->pos);
-				circle(pos, (pn->leaf & 1 ? ((struct entity_private_static*)pn->a[0]->t.vft)->hitradius : pn->a[1]->n.rad) / VECLEN(pos), vw->rot);
+				pos = pn->a[0].t->pos - vw->pos;
+				circle(pos, (pn->leaf & 1 ? pn->a[0].t->hitradius() : pn->a[1].n->rad) / pos.len(), vw->rot);
 			}
 			if(pn->leaf & 2){
-				VECSUB(pos, pn->leaf & 2 ? pn->a[1]->t.pos : pn->a[1]->n.pos, vw->pos);
-				circle(pos, (pn->leaf & 2 ? ((struct entity_private_static*)pn->a[1]->t.vft)->hitradius : pn->a[1]->n.rad) / VECLEN(pos), vw->rot);
+				pos = (pn->leaf & 2 ? pn->a[1].t->pos : pn->a[1].n->pos) - vw->pos;
+				circle(pos, (pn->leaf & 2 ? pn->a[1].t->hitradius() : pn->a[1].n->rad) / pos.len(), vw->rot);
 			}
 		}
 
@@ -844,4 +850,3 @@ void ot_draw(warf_t *w, wardraw_t *wd){
 	glPopMatrix();
 #endif
 }
-#endif

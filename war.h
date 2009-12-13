@@ -82,14 +82,7 @@ struct contact_info{
 	Vec3d velo; /* base velocity of colliding object */
 	double depth; /* penetration depth */
 };
-
-union unode;
-struct otn{
-	avec3_t pos;
-	double rad;
-	int leaf;
-	union unode *a[2];
-};
+struct otnt;
 
 struct war_draw_data;
 struct tent3d_line_list;
@@ -114,6 +107,7 @@ public:
 	virtual void drawtra(struct war_draw_data *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
+	virtual double war_time()const;
 	Entity *addent(Entity *);
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
@@ -131,7 +125,11 @@ public:
 //	double irot[16];
 	double realtime;
 	double soundtime;
+	otnt *ot, *otroot, *ottemp;
+	int ots, oti;
 	CoordSys *cs; /* redundant pointer to indicate belonging coordinate system */
+
+	static int g_otdrawflags;
 };
 
 typedef struct war_draw_data{

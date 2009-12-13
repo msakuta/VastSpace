@@ -583,100 +583,58 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 #endif
 }
 
-#if 0
-static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, entity_t *pt){
-	const avec3_t *src = param->src;
-	const avec3_t *dir = param->dir;
+static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+	const Vec3d *src = param->src;
+	const Vec3d *dir = param->dir;
 	double dt = param->dt;
 	double rad = param->rad;
-	avec3_t *retpos = param->pos;
-	avec3_t *retnorm = param->norm;
+	Vec3d *retpos = param->pos;
+	Vec3d *retnorm = param->norm;
 	void *hint = param->hint;
-	struct entity_private_static *vft;
-	struct bullet *pb = ((struct bullet**)hint)[1];
-	warf_t *w = ((warf_t**)hint)[0];
+//	struct entity_private_static *vft;
+	Bullet *pb = ((Bullet**)hint)[1];
+	WarField *w = pb->w;
 	int *rethitpart = ((int**)hint)[2];
-	avec3_t pos, nh;
+	Vec3d pos, nh;
 	sufindex pi;
 	double damage; /* calculated damage */
 	int ret = 1;
 
-	if(pb->owner == pt)
+	// if the ultimate owner of the objects is common, do not hurt yourself.
+	Entity *bulletAncestor = pb->getUltimateOwner();
+	Entity *hitobjAncestor = pt->getUltimateOwner();
+	if(bulletAncestor == hitobjAncestor)
 		return 0;
-	vft = (struct entity_private_static*)pt->vft;
-	if(!jHitSphere(pt->pos, vft->hitradius, pb->pos, pb->velo, dt))
+
+//	vft = (struct entity_private_static*)pt->vft;
+	if(!jHitSphere(pt->pos, pt->hitradius(), pb->pos, pb->velo, dt))
 		return 0;
-	if(vft->tracehit){
-		ret = vft->tracehit(pt, w, pb->pos, pb->velo, 0., dt, NULL, &pos, &nh);
+	{
+		ret = pt->tracehit(pb->pos, pb->velo, 0., dt, NULL, &pos, &nh);
 		if(!ret)
 			return 0;
 		else if(rethitpart)
 			*rethitpart = ret;
 	}
-	else{
-		avec3_t sc;
+/*	else{
+		Vec3d sc;
 		double t;
-		sc[0] = sc[1] = sc[2] = vft->hitradius / 2.;
+		sc[0] = sc[1] = sc[2] = pt->hitradius() / 2.;
 		if(!jHitBox(pt->pos, sc, pt->rot, pb->pos, pb->velo, 0., dt, &t, &pos, &nh)){
 			return 0;
 		}
-	}
+	}*/
 
-	if(vft->hitsuf){
-		static const GLdouble rotaxis[16] = {
-			0,0,-1,0,
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,0,1,
-		};
-		sufmodel_t mdl;
-		amat4_t mat, mat2, rot;
-		if(!(vft->altaxis & 2)){
-			if(!vft->hitmdl.valid){
-					amat4_t *pmat = vft->altaxis ? &mat : &vft->hitmdl.trans;
-					MAT4IDENTITY(*pmat);
-					MAT4SCALE(*pmat, vft->sufscale, vft->sufscale, vft->sufscale);
-					if(vft->altaxis)
-						mat4mp(vft->hitmdl.trans, *pmat, rotaxis);
-				sufmodel_normalize(&vft->hitmdl);
-			}
-			mdl = vft->hitmdl;
-/*				mdl.suf = vft->sufbase;
-			MAT4IDENTITY(*pmat);*/
-			MAT4IDENTITY(mat2);
-			MAT4TRANSLATE(mat2, pt->pos[0], pt->pos[1], pt->pos[2]);
-			if(vft->st.getrot)
-				vft->st.getrot(pt, w, &rot);
-			else
-				pyrmat(pt->pyr, &rot);
-			mat4mp(mat, mat2, rot);
-			MAT4VP3(mdl.bs, mat, vft->hitmdl.bs);
-			mat4mp(mdl.trans, mat, vft->hitmdl.trans);
-/*				MAT4SCALE(*pmat, vft->sufscale, vft->sufscale, vft->sufscale);
-			mdl.valid = 0;*/
-			if(!jHitSufModel(&mdl, pb->pos, pb->velo, dt, NULL, &pos, &nh, &pi))
-				return 0;
-		}
-		else{
-			if(!jHitSufModel(&vft->hitmdl, pb->pos, pb->velo, dt, NULL, &pos, &nh, &pi))
-				return 0;
-		}
-		VECCPY(pb->pos, pos);
+	{
+		pb->pos += pb->velo * dt;
 		if(retpos)
-			VECCPY(*retpos, pos);
+			*retpos = pos;
 		if(retnorm)
-			VECCPY(*retnorm, nh);
-	}
-	else{
-		VECSADD(pb->pos, pb->velo, dt);
-		if(retpos)
-			VECCPY(*retpos, pos);
-		if(retnorm)
-			VECCPY(*retnorm, nh);
+			*retnorm = nh;
 	}
 	return ret;
 }
-#endif
+
 void Bullet::anim(double dt){
 	if(!w)
 		return;
@@ -693,107 +651,35 @@ void Bullet::anim(double dt){
 
 	/* tank hit check */
 	if(1){
-//		struct otjEnumHitSphereParam param;
-//		void *hint[3];
+		struct otjEnumHitSphereParam param;
+		void *hint[3];
 		Entity *pt;
-/*		avec3_t pos, nh;
+		Vec3d pos, nh;
 		int hitpart = 0;
 		hint[0] = w;
 		hint[1] = pb;
 		hint[2] = &hitpart;
 		param.root = w->otroot;
-		param.src = pb->pos;
-		param.dir = pb->velo;
+		param.src = &pb->pos;
+		param.dir = &pb->velo;
 		param.dt = dt;
 		param.rad = 0.;
 		param.pos = &pos;
 		param.norm = &nh;
 		param.flags = OTJ_CALLBACK;
 		param.callback = bullet_hit_callback;
-		param.hint = hint;*/
-#if 1
+		param.hint = hint;
+#if 0
 //		pt = w->ot ? otjHitSphere(&w->ot[w->oti-1], pb->pos, pb->velo, dt, 0., NULL) : NULL;
 		for(pt = w->el; pt; pt = pt->next){
 #else
-		for(pt = w->ot ? (otjEnumHitSphere(&param)) : w->tl; pt; pt = w->ot ? NULL : pt->next){
+		for(pt = w->ot ? (otjEnumHitSphere(&param)) : w->el; pt; pt = w->ot ? NULL : pt->next){
 #endif
 			sufindex pi;
 			double damage; /* calculated damaga*/
 
-/*			if(!w->ot && !bullet_hit_callback(&param, pt))
-				continue;*/
-
-			if(pt == pb || pt->w != w)
+			if(!w->ot && !bullet_hit_callback(&param, pt))
 				continue;
-
-			// if the ultimate owner of the objects is common, do not hurt yourself.
-			Entity *bulletAncestor = pb->getUltimateOwner();
-			Entity *hitobjAncestor = pt->getUltimateOwner();
-			if(bulletAncestor == hitobjAncestor)
-				continue;
-
-//			if(!jHitSphere(pt->pos, pt->hitradius(), pb->pos, pb->velo, dt))
-//				continue;
-			Vec3d nh, pos;
-			int hitpart = pt->tracehit(pb->pos, pb->velo, 0., dt, NULL, &pos, &nh);
-			if(hitpart == 0)
-				continue;
-#if 0
-			}
-			else{
-				avec3_t sc;
-				double t;
-				sc[0] = sc[1] = sc[2] = vft->hitradius / 2.;
-				if(!jHitBox(pt->pos, sc, pt->rot, pb->pos, pb->velo, 0., dt, &t, &pos, &nh)){
-					continue;
-				}
-			}
-
-			if(vft->hitsuf){
-				static const GLdouble rotaxis[16] = {
-					0,0,-1,0,
-					-1,0,0,0,
-					0,1,0,0,
-					0,0,0,1,
-				};
-				sufmodel_t mdl;
-				amat4_t mat, mat2, rot;
-				if(!(vft->altaxis & 2)){
-					if(!vft->hitmdl.valid){
-							amat4_t *pmat = vft->altaxis ? &mat : &vft->hitmdl.trans;
-							MAT4IDENTITY(*pmat);
-							MAT4SCALE(*pmat, vft->sufscale, vft->sufscale, vft->sufscale);
-							if(vft->altaxis)
-								mat4mp(vft->hitmdl.trans, *pmat, rotaxis);
-						sufmodel_normalize(&vft->hitmdl);
-					}
-					mdl = vft->hitmdl;
-	/*				mdl.suf = vft->sufbase;
-					MAT4IDENTITY(*pmat);*/
-					MAT4IDENTITY(mat2);
-					MAT4TRANSLATE(mat2, pt->pos[0], pt->pos[1], pt->pos[2]);
-					if(vft->st.getrot)
-						vft->st.getrot(pt, w, &rot);
-					else
-						pyrmat(pt->pyr, &rot);
-					mat4mp(mat, mat2, rot);
-					MAT4VP3(mdl.bs, mat, vft->hitmdl.bs);
-					mat4mp(mdl.trans, mat, vft->hitmdl.trans);
-	/*				MAT4SCALE(*pmat, vft->sufscale, vft->sufscale, vft->sufscale);
-					mdl.valid = 0;*/
-					if(!jHitSufModel(&mdl, pb->pos, pb->velo, dt, NULL, &pos, &nh, &pi))
-						continue;
-				}
-				else{
-					if(!jHitSufModel(&vft->hitmdl, pb->pos, pb->velo, dt, NULL, &pos, &nh, &pi))
-						continue;
-				}
-				VECCPY(pb->pos, pos);
-			}
-			else{
-				VECSADD(pb->pos, pb->velo, dt);
-			}
-#endif
 
 			pb->pos = pos;
 			pt->bullethit(pb);

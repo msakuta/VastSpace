@@ -20,15 +20,18 @@ struct hitbox{
 /* Object tree */
 union unode;
 struct otnt{
-	avec3_t pos;
+	Vec3d pos;
 	double rad;
 	int leaf;
-	union unode *a[2];
+	union unode{
+		Entity *t;
+		otnt *n;
+	} a[2];
 };
 
-union unode{Entity *t; otnt n;};
-#if 0
-entity_t *otjHitSphere(const otnt *root, const avec3_t *src, const avec3_t *dir, double dt, double rad, avec3_t *pos);
+//union unode{Entity *t; otnt n;};
+#if 1
+Entity *otjHitSphere(const otnt *root, const Vec3d &src, const Vec3d &dir, double dt, double rad, Vec3d *pos);
 
 /* otjHitSphere doesn't check all overwrapping spheres but one of them, so this function is here.
   Because it takes so many arguments, they are passed as in form of pointer to structure.
@@ -38,26 +41,26 @@ entity_t *otjHitSphere(const otnt *root, const avec3_t *src, const avec3_t *dir,
 #define OTJ_IGVFT 0x4
 struct otjEnumHitSphereParam{
 	const otnt *root;
-	const avec3_t *src;
-	const avec3_t *dir;
+	const Vec3d *src;
+	const Vec3d *dir;
 	double dt;
 	double rad;
-	avec3_t *pos;
-	avec3_t *norm;
+	Vec3d *pos;
+	Vec3d *norm;
 	unsigned flags; /* Following optional functionailties are designated as being used by ORing corresponding flags. */
-	int (*callback)(const struct otjEnumHitSphereParam *, entity_t *pt);
+	int (*callback)(const struct otjEnumHitSphereParam *, Entity *pt);
 	void *hint;
-	entity_t **iglist; /* ignore list; matching entries are not checked, faster than to check in callback */
+	Entity **iglist; /* ignore list; matching entries are not checked, faster than to check in callback */
 	int niglist; /* count of iglist */
-	struct entity_static **igvft; /* ignore vft list; vft version of iglist */
-	int nigvft; /* count of igvft */
+//	struct entity_static **igvft; /* ignore vft list; vft version of iglist */
+//	int nigvft; /* count of igvft */
 };
-entity_t *otjEnumHitSphere(const struct otjEnumHitSphereParam *);
-entity_t *otjEnumPointHitSphere(const struct otjEnumHitSphereParam *);
-entity_t *otjEnumNearestPoint(const struct otjEnumHitSphereParam *);
-entity_t *otjEnumNearestSphere(const struct otjEnumHitSphereParam *);
+Entity *otjEnumHitSphere(const struct otjEnumHitSphereParam *);
+Entity *otjEnumPointHitSphere(const struct otjEnumHitSphereParam *);
+Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *);
+Entity *otjEnumNearestSphere(const struct otjEnumHitSphereParam *);
 
-otnt *ot_build(warf_t *w, double dt);
-void ot_draw(warf_t *w, wardraw_t *wd);
+otnt *ot_build(WarField *w, double dt);
+void ot_draw(WarField *w, wardraw_t *wd);
 #endif
 #endif

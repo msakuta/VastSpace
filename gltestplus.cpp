@@ -80,6 +80,10 @@ Universe universe(&pl);//galaxysystem(&pl);
 const char *Universe::classname()const{
 	return "Universe";
 }
+void Universe::anim(double dt){
+	this->global_time += dt;
+	st::anim(dt);
+}
 
 
 class GLattrib{
@@ -1472,6 +1476,7 @@ int main(int argc, char *argv[])
 	CvarAdd("pause", &universe.paused, cvar_int);
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
+	CvarAdd("g_otdrawflags", &WarField::g_otdrawflags, cvar_int);
 	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &universe);

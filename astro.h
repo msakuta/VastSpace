@@ -76,11 +76,14 @@ public:
 class Universe : public CoordSys{
 public:
 	typedef CoordSys st;
+	double timescale;
+	double global_time;
 	Player *ppl;
 	bool paused;
-	double timescale;
-	Universe(Player *pl) : ppl(pl), paused(false), timescale(1){flags = CS_ISOLATED | CS_EXTENT;}
+
+	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){flags = CS_ISOLATED | CS_EXTENT;}
 	const char *classname()const;
+	void anim(double dt);
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}
 };

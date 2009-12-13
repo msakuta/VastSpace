@@ -65,6 +65,7 @@ public:
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
 	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
+	int otflag;
 //	char weapon;
 
 	// Display a window that tells information about selected entity.

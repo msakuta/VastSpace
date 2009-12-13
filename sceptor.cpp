@@ -115,7 +115,7 @@ const char *Sceptor::classname()const{
 }
 
 double Sceptor::maxhealth()const{
-	return 1000.;
+	return 100.;
 }
 
 

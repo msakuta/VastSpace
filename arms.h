@@ -21,6 +21,7 @@ struct hardpoint_static{
 
 class ArmBase : public Entity{
 public:
+	typedef Entity st;
 	Entity *base;
 	Entity *target;
 	const hardpoint_static *hp;
@@ -33,6 +34,7 @@ public:
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
+	virtual Props props()const;
 	virtual cpplib::dstring descript()const;
 	void align();
 };
@@ -60,8 +62,21 @@ public:
 	virtual void attack(Entity *target);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
+
+	virtual float reloadtime()const;
 protected:
-	void tryshoot();
+	virtual void tryshoot();
+};
+
+class GatlingTurret : public MTurret{
+public:
+	typedef MTurret st;
+	GatlingTurret(Entity *abase, const hardpoint_static *hp);
+	virtual void draw(wardraw_t *);
+	virtual float reloadtime()const;
+protected:
+	virtual void tryshoot();
+	static const Vec3d barrelpos;
 };
 
 #if 0

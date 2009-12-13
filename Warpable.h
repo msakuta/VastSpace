@@ -4,7 +4,6 @@
 #include "entity.h"
 #include "coordsys.h"
 #include "war.h"
-#include "arms.h"
 #include "shield.h"
 extern "C"{
 #include <clib/avec3.h>
@@ -70,8 +69,6 @@ public:
 private:
 	static const maneuve mymn;
 };
-
-int cmd_armswindow(int argc, char *argv[], void *pv);
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);
 #ifdef NDEBUG

@@ -42,6 +42,12 @@ bool ArmBase::isTargettable()const{
 }
 bool ArmBase::isSelectable()const{return true;}
 
+Entity::Props ArmBase::props()const{
+	Props ret = st::props();
+	ret.push_back(cpplib::dstring("Ammo: ") << ammo);
+	return ret;
+}
+
 cpplib::dstring ArmBase::descript()const{
 	return cpplib::dstring(idname());
 };
@@ -98,7 +104,6 @@ void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 
 void MTurret::draw(wardraw_t *wd){
 	MTurret *a = this;
-	static suf_t *suf = NULL;
 	double scale;
 	if(!suf_turret)
 		suf_turret = CallLoadSUF("turretz1.bin");
@@ -211,7 +216,7 @@ void MTurret::tryshoot(){
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * 2.;
-	this->cooldown += 2.;
+	this->cooldown += reloadtime();
 	ammo--;
 }
 
@@ -351,6 +356,88 @@ cpplib::dstring MTurret::descript()const{
 	return cpplib::dstring() << idname() << " " << health << " " << ammo;
 }
 
+float MTurret::reloadtime()const{
+	return 2.;
+}
+
+GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	ammo = 50;
+}
+
+const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
+
+void GatlingTurret::draw(wardraw_t *wd){
+	static suf_t *suf_turret = NULL;
+	static suf_t *suf_barrel = NULL;
+	static suf_t *suf_barrels = NULL;
+	double scale;
+	if(!suf_turret)
+		suf_turret = CallLoadSUF("turretg1.bin");
+	if(!suf_barrel)
+		suf_barrel = CallLoadSUF("barrelg1.bin");
+	if(!suf_barrels)
+		suf_barrels = CallLoadSUF("barrelsg1.bin");
+
+	{
+		const double bscale = MTURRET_SCALE;
+		static const GLfloat rotaxis2[16] = {
+			-1,0,0,0,
+			0,1,0,0,
+			0,0,-1,0,
+			0,0,0,1,
+		};
+
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		gldMultQuat(rot);
+		glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
+		glPushMatrix();
+		gldScaled(bscale);
+		glMultMatrixf(rotaxis2);
+		DrawSUF(suf_turret, SUF_ATR, NULL);
+		glPopMatrix();
+/*		if(5 < scale)*/{
+			gldScaled(bscale);
+			gldTranslate3dv(barrelpos);
+			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+			gldTranslate3dv(-barrelpos);
+			glMultMatrixf(rotaxis2);
+			DrawSUF(suf_barrel, SUF_ATR, NULL);
+			gldTranslate3dv(barrelpos);
+			glRotated(w->war_time() * 360. / reloadtime() / 3, 0, 0, 1);
+			gldTranslate3dv(-barrelpos);
+			DrawSUF(suf_barrels, SUF_ATR, NULL);
+		}
+		glPopMatrix();
+	}
+}
+
+float GatlingTurret::reloadtime()const{
+	return .1;
+}
+
+void GatlingTurret::tryshoot(){
+	if(ammo <= 0)
+		return;
+	static const avec3_t forward = {0., 0., -1.};
+	Bullet *pz;
+	Quatd qrot;
+	pz = new Bullet(base, 3., 10.);
+	w->addent(pz);
+	Mat4d mat;
+	this->transform(mat);
+	mat.translatein(barrelpos * MTURRET_SCALE);
+	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	pz->pos = mat.vp3(mturret_ofs);
+	pz->velo = mat.dvp3(forward) * 3.;
+	this->cooldown += reloadtime();
+	ammo--;
+	if(!ammo){
+		ammo = 50;
+		this->cooldown += 5.;
+	}
+}
 
 #if 0
 const struct arms_static_info arms_static[num_armstype] = {

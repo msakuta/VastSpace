@@ -30,7 +30,7 @@ suf_t *Assault::sufbase = NULL;
 Assault::Assault(WarField *aw) : st(aw){
 	init();
 	for(int i = 0; i < 4; i++){
-		aw->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
+		aw->addent(turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i])));
 	}
 }
 

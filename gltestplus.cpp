@@ -835,7 +835,9 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	Vec3d plpos = pl.getpos();
 	if(!draw)
 		pl.selected = NULL;
-	for(pt = pl.cs->w->el; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
+	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
+	for(int li = 0; li < 2; li++)
+	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;

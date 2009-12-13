@@ -1,6 +1,7 @@
 #ifndef ASSAULT_H
 #define ASSAULT_H
 #include "Frigate.h"
+#include "arms.h"
 
 class Assault : public Frigate{
 protected:
@@ -27,5 +28,7 @@ public:
 	virtual void attack(Entity *target);
 	friend class GLWarms;
 };
+
+int cmd_armswindow(int argc, char *argv[], void *pv);
 
 #endif

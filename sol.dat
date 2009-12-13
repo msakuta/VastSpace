@@ -243,15 +243,6 @@ coordsys Orbit marss{
 		addent assault -.2 0 -1 1
 #		addent assault -.0 0 -1
 		addent assault .2 0 -1 1
-		addent sceptor -.4 .2 0
-		addent sceptor -.3 .2 0
-		addent sceptor -.2 .2 0
-		addent sceptor -.1 .2 0
-		addent sceptor 0 .2 0
-		addent sceptor .1 .2 0
-		addent sceptor .2 .2 0
-		addent sceptor .3 .2 0
-		addent sceptor .4 .2 0
 		addent sceptor -.4 .1 0
 		addent sceptor -.3 .1 0
 		addent sceptor -.2 .1 0
@@ -270,15 +261,6 @@ coordsys Orbit marss{
 		addent sceptor .2 -.1 0
 		addent sceptor .3 -.1 0
 		addent sceptor .4 -.1 0
-		addent sceptor -.4 -.2 0
-		addent sceptor -.3 -.2 0
-		addent sceptor -.2 -.2 0
-		addent sceptor -.1 -.2 0
-		addent sceptor 0 -.2 0
-		addent sceptor .1 -.2 0
-		addent sceptor .2 -.2 0
-		addent sceptor .3 -.2 0
-		addent sceptor .4 -.2 0
 
 		new astro Asteroid BigWatcher{
 			pos 0 12 -20

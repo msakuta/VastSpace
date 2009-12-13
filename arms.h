@@ -73,6 +73,7 @@ public:
 	typedef MTurret st;
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
 	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *w);
 	virtual float reloadtime()const;
 protected:
 	virtual void tryshoot();

@@ -68,6 +68,96 @@ void ArmBase::align(){
 	this->rot = base->rot * hp->rot;
 }
 
+void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4d &irot, struct random_sequence *prs, const Vec3d &viewer){
+	int i;
+	glPushMatrix();
+	gldTranslate3dv(pos);
+/*	glRotated(deg_per_rad * (*pyr)[1], 0., -1., 0.);
+	glRotated(deg_per_rad * (*pyr)[0], 1., 0., 0.);
+	glRotated(deg_per_rad * (*pyr)[2], 0., 0., -1.);*/
+	glMultMatrixd(rot);
+	glScaled(rad, rad, rad);
+	for(i = 0; i < 4; i++){
+		Vec3d pz;
+		glRotated(90, 0., 0., 1.);
+		glBegin(GL_TRIANGLE_FAN);
+		glColor4ub(255,255,31,255);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = drseq(prs) * .3 - .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		glVertex3d(0., 0., 0.);
+		glColor4ub(255,0,0,0);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = drseq(prs) * .15 + .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		pz[0] = drseq(prs) * .25 + .75;
+		pz[1] = drseq(prs) * .3 - .15;
+		pz[2] = -drseq(prs) * .15 - .25;
+		glVertex3dv(pz);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = -drseq(prs) * .15 - .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		glColor4ub(255,255,31,255);
+		glVertex3d(0., 0., 0.);
+		glEnd();
+	}
+	glPopMatrix();
+/*	{
+		struct gldBeamsData bd;
+		amat4_t mat;
+		avec3_t nh, nh0 = {0., 0., -.002}, v;
+		pyrmat(*pyr, &mat);
+		MAT4VP3(nh, mat, nh0);
+		bd.cc = 0;
+		bd.solid = 0;
+		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
+		VECADD(v, *pos, nh);
+		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
+		VECADDIN(v, nh);
+		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
+	}*/
+/*	{
+		static int init = 0;
+		static GLuint list;
+		struct gldBeamsData bd;
+		amat4_t mat;
+		avec3_t nh, nh0 = {0., 0., -.002}, v;
+		if(!init){
+			GLbyte buf[4][4] = {
+				{255,255,255,0},
+				{255,255,255,64},
+				{255,255,255,191},
+				{255,255,255,255}
+			};
+			glNewList(list = glGenLists(1), GL_COMPILE);
+			glEnable(GL_TEXTURE_1D);
+			glDisable(GL_BLEND);
+			glTexImage1D(GL_TEXTURE_1D, 0, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+			glEndList();
+			init = 1;
+		}
+		glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
+		glCallList(list);
+		pyrmat(*pyr, &mat);
+		MAT4VP3(nh, mat, nh0);
+		bd.cc = 0;
+		bd.solid = 0;
+			glEnable(GL_TEXTURE_1D);
+		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
+		VECADD(v, *pos, nh);
+		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
+		VECADDIN(v, nh);
+		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
+		glPopAttrib();
+	}*/
+}
+
+
+
 #define STURRET_SCALE (.000005 * 3)
 #define MTURRET_SCALE (.00005)
 #define MTURRET_MAX_GIBS 30
@@ -82,7 +172,7 @@ suf_t *MTurret::suf_turret = NULL;
 suf_t *MTurret::suf_barrel = NULL;
 
 
-MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), forceEnemy(false){
+MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
 	health = 1000;
 	ammo = 1500;
 	py[0] = 0;
@@ -217,6 +307,7 @@ void MTurret::tryshoot(){
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * 2.;
 	this->cooldown += reloadtime();
+	this->mf += .1;
 	ammo--;
 }
 
@@ -310,30 +401,22 @@ void MTurret::postframe(){
 
 
 void MTurret::drawtra(wardraw_t *wd){
-#if 0
+	Entity *pb = base;
 	double bscale = MTURRET_SCALE, tscale = .00002;
-	if(pt->mf){
+	if(this->mf){
 		struct random_sequence rs;
-		amat4_t mat2, mat, rot;
-		avec3_t pos, pos0 = {0, 0, -.008};
-		init_rseq(&rs, (long)pt ^ *(long*)&wd->gametime);
-		MAT4IDENTITY(mat);
-		mat4translate(mat, pb->pos[0], pb->pos[1], pb->pos[2]);
-		quat2mat(rot, pb->rot);
-		mat4mp(mat2, mat, rot);
-		mat4translate(mat2, hp->pos[0], hp->pos[1], hp->pos[2]);
-		quat2mat(rot, hp->rot);
-		mat4mp(mat, mat2, rot);
-		mat4roty(mat2, mat, pt->py[1]);
-/*		glMultMatrixd(rotaxis);*/
-		mat4translate(mat2, 0., .001, -0.002);
-		mat4rotx(mat, mat2, pt->py[0]);
-		mat4vp3(pos, mat, pos0);
-		MAT4CPY(rot, mat);
-		VECNULL(&rot[12]);
-		drawmuzzleflash4(&pos, rot, .01, wd->irot, &rs, &wd->view);
+		Mat4d mat2, mat, rot;
+		Vec3d pos, const pos0(0, 0, -.008);
+		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
+		this->transform(mat);
+		mat2 = mat.roty(this->py[1]);
+		mat2.translatein(0., .001, -0.002);
+		mat = mat2.rotx(this->py[0]);
+		pos = mat.vp3(pos0);
+		rot = mat;
+		rot.vec3(3).clear();
+		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);
 	}
-#endif
 }
 
 double MTurret::hitradius(){
@@ -412,6 +495,26 @@ void GatlingTurret::draw(wardraw_t *wd){
 	}
 }
 
+void GatlingTurret::drawtra(wardraw_t *wd){
+	Entity *pb = base;
+	double bscale = MTURRET_SCALE;
+	if(this->mf){
+		struct random_sequence rs;
+		Mat4d mat2, mat, rot;
+		Vec3d pos, const muzzlepos(0, .003 * .5, -.0134 * .5);
+		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
+		this->transform(mat);
+		mat2 = mat.roty(this->py[1]);
+		mat2.translatein(barrelpos * bscale);
+		mat = mat2.rotx(this->py[0]);
+		mat.translatein(-barrelpos * bscale);
+		pos = mat.vp3(muzzlepos);
+		rot = mat;
+		rot.vec3(3).clear();
+		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
+	}
+}
+
 float GatlingTurret::reloadtime()const{
 	return .1;
 }
@@ -432,6 +535,7 @@ void GatlingTurret::tryshoot(){
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * 3.;
 	this->cooldown += reloadtime();
+	this->mf += .075;
 	ammo--;
 	if(!ammo){
 		ammo = 50;

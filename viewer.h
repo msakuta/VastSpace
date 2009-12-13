@@ -50,6 +50,7 @@ public:
 	double fov, ar;
 	double dynamic_range; /* experimental; to simulate high dynamic range */
 	double viewtime; // not a physical time, just for blinking lights
+	double dt; // Delta time of this drawing frame
 	const CoordSys *cs;
 	GLcull *gc; /* current culling information */
 	GLcull **gclist; /* list of glculls in order of z-slices */

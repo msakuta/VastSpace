@@ -65,6 +65,8 @@ int s_mousex, s_mousey;
 static int s_mousedragx, s_mousedragy;
 static int s_mouseoldx, s_mouseoldy;
 
+static double wdtime = 0., watime = 0.;
+
 static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags);
 
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
@@ -287,6 +289,15 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 
 #define OV_COUNT 32 /* Overview */
 
+static double diprint(const char *s, double x, double y){
+	glPushMatrix();
+	glTranslated(x, y, 0.);
+	glScaled(8. * 1, -8. * 1, 1.);
+	gldPutTextureString(s);
+	glPopMatrix();
+	return x + strlen(s) * 8;
+}
+
 static void drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
@@ -297,19 +308,41 @@ static void drawindics(Viewer *vw){
 //		drawCSOrbit(vw, &galaxysystem);
 	}
 	{
+		char buf[128];
 		GLpmatrix pm;
-		projection(glLoadIdentity());
+		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, gvp.w, gvp.h, 0, -1, 1)));
 		glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(0,0,-1);
 #ifdef _DEBUG
 		static int dstrallocs = 0;
-		glRasterPos2d(-1, -1 + 12. / vw->vp.h * 2.);
-		gldprintf("dstralloc: %d, %d", cpplib::dstring::allocs - dstrallocs, cpplib::dstring::allocs);
+		sprintf(buf, "dstralloc: %d, %d", cpplib::dstring::allocs - dstrallocs, cpplib::dstring::allocs);
+		diprint(buf, 0, gvp.h - 12.);
 		dstrallocs = cpplib::dstring::allocs;
 #endif
-		glRasterPos2d(-1, -1);
-		gldprintf("%s %s", pl.cs->classname(), pl.cs->name);
+		sprintf(buf, "%s %s", pl.cs->classname(), pl.cs->name);
+		diprint(buf, 0, gvp.h);
+		if(pl.cs && pl.cs->w){
+			int ce;
+			int cb;
+			sprintf(buf, "E %d", ce = pl.cs->w->countEnts<&WarField::el>());
+			diprint(buf, 0, 12);
+			sprintf(buf, "B %d", cb = pl.cs->w->countEnts<&WarField::bl>());
+			diprint(buf, 0, 24);
+			sprintf(buf, "EB %d", ce * cb);
+			diprint(buf, 0, 36);
+			sprintf(buf, "EE %d", ce * ce);
+			diprint(buf, 0, 48);
+		}
+		sprintf(buf, "Frame rate: %6.2lf fps", 1. / vw->dt);
+		diprint(buf, gvp.w - 8 * strlen(buf), 12);
+		sprintf(buf, "wdtime: %10.8lf/%10.8lf sec", wdtime, vw->dt);
+		diprint(buf, gvp.w - 8 * strlen(buf), 24);
+		sprintf(buf, "watime: %10.8lf/%10.8lf sec", watime, vw->dt);
+		diprint(buf, gvp.w - 8 * strlen(buf), 36);
+		if(universe.paused){
+			diprint("PAUSED", gvp.w / 2 - 8 * sizeof"PAUSED" / 2, gvp.h / 2 + 20);
+		}
 		glPopMatrix();
 	}
 	{
@@ -474,6 +507,8 @@ void draw_func(Viewer &vw, double dt){
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 /*	for(vw.zslice = 1; 0 <= vw.zslice; vw.zslice--)*/{
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 /*		GLpmatrix proj;
 		double scale = vw.zslice ? 1. : 1e-2;
 		projection((
@@ -498,6 +533,7 @@ void draw_func(Viewer &vw, double dt){
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		war_draw(vw, pl.cs, &WarField::drawtra);
+		wdtime = TimeMeasLap(&tm);
 	}
 	glPopAttrib();
 	glPopMatrix();
@@ -647,10 +683,13 @@ void display_func(void){
 		pl.anim(dt);
 
 		if(!universe.paused) try{
+			timemeas_t tm;
+			TimeMeasStart(&tm);
 			universe.anim(dt);
 			universe.postframe();
 			GLwindow::glwpostframe();
 			universe.endframe();
+			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){
 			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
@@ -706,6 +745,7 @@ void display_func(void){
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	viewer.viewtime = gametime;
+	viewer.dt = dt;
 	draw_func(viewer, dt);
 }
 

@@ -115,6 +115,8 @@ public:
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	Entity *addent(Entity *);
+	template<Entity *WarField::*list> int countEnts()const;
+	int countBullets()const;
 
 	Player *pl;
 	Entity *el; /* entity list */
@@ -152,5 +154,14 @@ typedef struct war_draw_data{
 	int lightdraws;
 	WarField *w;
 } wardraw_t;
+
+
+template<Entity *WarField::*list> inline int WarField::countEnts()const{
+	int ret = 0;
+	for(Entity *p = this->*list; p; p = p->next)
+		ret++;
+	return ret;
+}
+
 
 #endif

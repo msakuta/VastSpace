@@ -72,33 +72,16 @@ class GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
+	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);
 	virtual float reloadtime()const;
 protected:
 	virtual void tryshoot();
 	static const Vec3d barrelpos;
+	float barrelrot;
+	float barrelomg;
 };
-
-#if 0
-const struct arms_static_info{
-	const char *name;
-	enum armsclass cls;
-	unsigned flags;
-	int maxammo;
-	void (*draw)(arms_t *, ...);
-	void (*drawtra)(arms_t *, ...);
-	void (*anim)(arms_t *, entity_t *pt, struct hardpoint_static *hp, warf_t *w, double dt, int trigger);
-	double cooldown;
-	double emptyweight;
-	double ammoweight;
-	double emptyprice;
-	double ammoprice;
-	double ammodamage; /* To calculate damage rate */
-} arms_static[];
-
-glwindow *ArmsShowWindow(entity_t *creator(warf_t *), double baseprice, size_t armsoffset, arms_t *ret, struct hardpoint_static *hardpoints, int count);
-#endif
 
 
 #endif

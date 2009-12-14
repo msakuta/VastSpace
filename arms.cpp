@@ -443,11 +443,17 @@ float MTurret::reloadtime()const{
 	return 2.;
 }
 
-GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){
 	ammo = 50;
 }
 
 const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
+
+void GatlingTurret::anim(double dt){
+	barrelrot += barrelomg * dt;
+	barrelomg = MAX(0, barrelomg - dt * 2. * M_PI);
+	st::anim(dt);
+}
 
 void GatlingTurret::draw(wardraw_t *wd){
 	static suf_t *suf_turret = NULL;
@@ -487,7 +493,7 @@ void GatlingTurret::draw(wardraw_t *wd){
 			glMultMatrixf(rotaxis2);
 			DrawSUF(suf_barrel, SUF_ATR, NULL);
 			gldTranslate3dv(barrelpos);
-			glRotated(w->war_time() * 360. / reloadtime() / 3, 0, 0, 1);
+			glRotated(barrelrot * deg_per_rad/*w->war_time() * 360. / reloadtime() / 3*/, 0, 0, 1);
 			gldTranslate3dv(-barrelpos);
 			DrawSUF(suf_barrels, SUF_ATR, NULL);
 		}
@@ -536,6 +542,7 @@ void GatlingTurret::tryshoot(){
 	pz->velo = mat.dvp3(forward) * 3.;
 	this->cooldown += reloadtime();
 	this->mf += .075;
+	this->barrelomg = 2. * M_PI / reloadtime() / 3.;
 	ammo--;
 	if(!ammo){
 		ammo = 50;

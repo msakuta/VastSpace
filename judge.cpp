@@ -187,7 +187,7 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 
 
 
-#define OTDEBUG 1
+#define OTDEBUG 0
 
 static int otjHitSphere_loops = 0, otjHitSphere_framecalls = 0, otjHitSphere_frameloops = 0;
 

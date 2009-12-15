@@ -19,9 +19,10 @@ public:
 	typedef Entity st;
 
 	double damage;
-	bool grav;
 	float life;
+	float runlength; // note that it's not age after creation
 	Entity *owner;
+	bool grav;
 
 	Bullet(Entity *owner, float life, double damage);
 	virtual const char *idname()const;
@@ -36,7 +37,7 @@ protected:
 	void bulletkill(int hitground, const struct contact_info *ci);
 };
 
-inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife){
+inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife), runlength(0){
 	if(owner)
 		race = owner->race;
 }

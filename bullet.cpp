@@ -805,8 +805,9 @@ void Bullet::anim(double dt){
 		Vec3d accel = w->accel(pb->pos, pb->velo);
 		pb->velo += accel * dt;
 	}
-	pb->pos += pb->velo * dt;
-	return;
+	Vec3d move = pb->velo * dt;
+	runlength += move.len();
+	pb->pos += move;
 }
 
 double Bullet::hitradius(){
@@ -826,11 +827,12 @@ void Bullet::postframe(){
 
 void Bullet::drawtra(wardraw_t *wd){
 	double length = (this->damage * .25 + VECSLEN(this->velo) * 5 * 5 + 20) * .0005;
-	double span, scale, f;
+	double span, scale, f, velolen;
 	double pixels;
 	double width = this->damage * .00005, wpix;
 
-	f = 2. * (this->velo).len() * length;
+	velolen = velo.len();
+	f = 2. * velolen * length;
 	span = MIN(f, .1);
 	length *= span / f;
 
@@ -848,9 +850,9 @@ void Bullet::drawtra(wardraw_t *wd){
 		Vec3d start, end;
 		glColor4ub(255,127,0,255);
 		start = this->pos;
-		start += this->velo * length;
+//		start += this->velo * length;
 		end = this->pos;
-		end += this->velo * -length;
+		end += this->velo * -(runlength / velolen < length ? runlength / velolen : length);
 		if(damage < 100.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
@@ -890,10 +892,10 @@ void Bullet::drawtra(wardraw_t *wd){
 	else if(.05 < wpix){
 		glBegin(GL_LINES);
 		glColor4d(1., .5, 0., wpix);
-		glVertex3dv(pos + velo * length);
+		glVertex3dv(pos/* + velo * length*/);
 /*		if(pb->damage < 50.)
 			glColor4ub(127, 0, 0, 0);*/
-		glVertex3dv(pos - velo * length);
+		glVertex3dv(pos - velo * (runlength / velolen < length ? runlength / velolen : length));
 		glEnd();
 	}
 }

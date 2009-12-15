@@ -827,12 +827,12 @@ void Bullet::postframe(){
 
 void Bullet::drawtra(wardraw_t *wd){
 	double length = (this->damage * .25 + VECSLEN(this->velo) * 5 * 5 + 20) * .0005;
-	double span, scale, f, velolen;
+	double span, scale;
 	double pixels;
 	double width = this->damage * .00005, wpix;
 
-	velolen = velo.len();
-	f = 2. * velolen * length;
+	double velolen = velo.len();
+	double f = 1. * velolen * length;
 	span = MIN(f, .1);
 	length *= span / f;
 
@@ -850,7 +850,6 @@ void Bullet::drawtra(wardraw_t *wd){
 		Vec3d start, end;
 		glColor4ub(255,127,0,255);
 		start = this->pos;
-//		start += this->velo * length;
 		end = this->pos;
 		end += this->velo * -(runlength / velolen < length ? runlength / velolen : length);
 		if(damage < 100.){
@@ -884,7 +883,6 @@ void Bullet::drawtra(wardraw_t *wd){
 			glBindTexture(GL_TEXTURE_2D, texname);
 			gldTextureBeam(wd->vw->pos, start, end, width);
 			glPopAttrib();
-/*			gldGradBeam(wd->view, start, end, width, COLOR32RGBA(127,0,0,0));*/
 		}
 		else
 			gldBeam(wd->vw->pos, start, end, length / 100.);
@@ -892,9 +890,7 @@ void Bullet::drawtra(wardraw_t *wd){
 	else if(.05 < wpix){
 		glBegin(GL_LINES);
 		glColor4d(1., .5, 0., wpix);
-		glVertex3dv(pos/* + velo * length*/);
-/*		if(pb->damage < 50.)
-			glColor4ub(127, 0, 0, 0);*/
+		glVertex3dv(pos);
 		glVertex3dv(pos - velo * (runlength / velolen < length ? runlength / velolen : length));
 		glEnd();
 	}

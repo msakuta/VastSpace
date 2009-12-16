@@ -27,6 +27,7 @@ extern "C"{
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>
 #include <clib/gl/gldraw.h>
+#include <clib/gl/multitex.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/zip/UnZip.h>
 }
@@ -68,11 +69,6 @@ static int s_mouseoldx, s_mouseoldy;
 static double wdtime = 0., watime = 0.;
 
 static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags);
-
-PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
-PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
-PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
-PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
 
 Player pl;
 double &flypower = pl.flypower;
@@ -633,12 +629,7 @@ void display_func(void){
 		extern double dwo;
 		init = 1;
 
-#define proc(t,a) a = (t)wglGetProcAddress(#a)
-		proc(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB);
-		proc(PFNGLMULTITEXCOORD2DARBPROC, glMultiTexCoord2dARB);
-		proc(PFNGLMULTITEXCOORD2FARBPROC, glMultiTexCoord2fARB);
-		proc(PFNGLMULTITEXCOORD1FARBPROC, glMultiTexCoord1fARB);
-#undef proc
+		MultiTextureInit();
 
 //		anim_sun(0.);
 		TimeMeasStart(&tm);
@@ -1077,7 +1068,7 @@ static HGLRC wingl(HWND hWnd, HDC *phdc){
 		0,                     // no accumulation buffer 
 		0, 0, 0, 0,            // accum bits ignored 
 		32,                    // 32-bit z-buffer 
-		0,                     // no stencil buffer 
+		1,                     // no stencil buffer 
 		0,                     // no auxiliary buffer 
 		PFD_MAIN_PLANE,        // main layer 
 		0,                     // reserved 

@@ -3,7 +3,6 @@
 //#include "player.h"
 //#include "judge.h"
 #include "coordsys.h"
-#include "glextcall.h"
 #include "antiglut.h"
 #include "galaxy_field.h"
 #include "astro_star.h"
@@ -18,6 +17,7 @@ extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/cull.h>
 #include <clib/gl/gldraw.h>
+#include <clib/gl/multitex.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/colseq/cs2x.h>
 #include <clib/cfloat.h>

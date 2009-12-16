@@ -9,7 +9,6 @@
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
-#include "glextcall.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"

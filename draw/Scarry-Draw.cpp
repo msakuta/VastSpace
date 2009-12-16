@@ -1,5 +1,6 @@
 #include "../scarry.h"
 #include "../judge.h"
+#include "../material.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -27,6 +28,11 @@ void Scarry::draw(wardraw_t *wd){
 		CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
 		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
 		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
+		suftexparam_t stp;
+		stp.magfil = GL_LINEAR;
+		stp.env = GL_ADD;
+		stp.mipmap = 0;
+		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
 		pst = AllocSUFTex(sufbase);
 		init = 1;
 	} while(0);

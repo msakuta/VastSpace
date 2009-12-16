@@ -51,6 +51,8 @@ public:
 	virtual int popupMenu(PopupMenu &);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual double maxfuel()const;
+	static hitbox hitboxes[];
+	static const int nhitboxes;
 };
 
 

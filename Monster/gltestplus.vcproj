@@ -274,10 +274,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\draw\Scarry-Draw.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\Scarry.cpp"
 				>
 			</File>
@@ -313,6 +309,18 @@
 				RelativePath="..\Warpable.cpp"
 				>
 			</File>
+			<Filter
+				Name="draw"
+				>
+				<File
+					RelativePath="..\draw\Scarry-Draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\draw\Sceptor-Draw.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"

@@ -15,7 +15,6 @@
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
-//#include "glextcall.h"
 //#include "sensor.h"
 extern "C"{
 #include <clib/c.h>

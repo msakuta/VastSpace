@@ -1,6 +1,7 @@
 #ifndef SCARRY_H
 #define SCARRY_H
 #include "Warpable.h"
+#include "arms.h"
 
 #define SCARRY_BUILDQUESIZE 8
 #define SCARRY_SCALE .0010
@@ -10,7 +11,7 @@ class Scarry : public Warpable{
 public:
 	typedef Warpable st;
 
-	Scarry(WarField *w) : st(w){init();}
+	Scarry(WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	virtual double maxhealth()const;
@@ -21,9 +22,14 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+	virtual int armsCount()const;
+	virtual ArmBase *armsGet(int i);
 	virtual const maneuve &getManeuve()const;
 
 protected:
+	ArmBase *turrets[10];
+	static const hardpoint_static hardpoints[];
+
 	static const maneuve mymn;
 	static hitbox hitboxes[];
 	static const int nhitboxes;

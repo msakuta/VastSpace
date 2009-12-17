@@ -11,6 +11,7 @@ extern "C"{
 #define COS30 0.86602540378443864676372317075294
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
+#define SQRT2P2 (M_SQRT2/2.)
 
 
 #define SCARRY_MAX_HEALTH 200000
@@ -18,6 +19,25 @@ extern "C"{
 #define SCARRY_ACCELERATE .01
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
+
+const hardpoint_static Scarry::hardpoints[10] = {
+	hardpoint_static(Vec3d(.100, .060, -.760), Quatd(0., 0., 0., 1.), "Turret 1", 0),
+	hardpoint_static(Vec3d(.100, -.060, -.760), Quatd(0., 0., 1., 0.), "Turret 2", 0),
+	hardpoint_static(Vec3d(-.180,  .180, .420), Quatd(0., 0., 0., 1.), "Turret 3", 0),
+	hardpoint_static(Vec3d(-.180, -.180, .420), Quatd(0., 0., 1., 0.), "Turret 4", 0),
+	hardpoint_static(Vec3d( .180,  .180, .420), Quatd(0., 0., 0., 1.), "Turret 5", 0),
+	hardpoint_static(Vec3d( .180, -.180, .420), Quatd(0., 0., 1., 0.), "Turret 6", 0),
+	hardpoint_static(Vec3d(-.180,  .180, -.290), Quatd(0., 0., 0., 1.), "Turret 7", 0),
+	hardpoint_static(Vec3d(-.180, -.180, -.290), Quatd(0., 0., 1., 0.), "Turret 8", 0),
+	hardpoint_static(Vec3d( .180,  .180, -.380), Quatd(0., 0., 0., 1.), "Turret 9", 0),
+	hardpoint_static(Vec3d( .180, -.180, -.380), Quatd(0., 0., 1., 0.), "Turret 10", 0),
+};
+
+Scarry::Scarry(WarField *w) : st(w){
+	init();
+	for(int i = 0; i < numof(turrets); i++)
+		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
+}
 
 const char *Scarry::idname()const{return "scarry";}
 const char *Scarry::classname()const{return "Space Carrier";}
@@ -36,6 +56,8 @@ double Scarry::maxenergy()const{
 
 void Scarry::anim(double dt){
 	st::anim(dt);
+	for(int i = 0; i < numof(turrets); i++) if(turrets[i])
+		turrets[i]->align();
 }
 
 Entity::Props Scarry::props()const{
@@ -69,6 +91,14 @@ int Scarry::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 		}
 	}
 	return reti;
+}
+
+int Scarry::armsCount()const{
+	return numof(turrets);
+}
+
+ArmBase *Scarry::armsGet(int i){
+	return turrets[i];
 }
 
 

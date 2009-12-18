@@ -125,7 +125,7 @@ coordsys Orbit earth{
 	}
 
 	coordsys Orbit moon{
-		radius .5e4
+		cs_radius .5e4
 		orbits Earth
 		semimajor_axis 60.2686*6378.
 		eccentricity 0.09341233
@@ -156,7 +156,7 @@ coordsys Orbit earth{
 	}
 
 	new coordsys Lagrange1 el1{
-		radius 200
+		cs_radius 200
 		object1 Earth
 		object2 Moon
 		fullname "Earth Lagrange 1"
@@ -177,7 +177,7 @@ coordsys Orbit earth{
 	}
 	
 	coordsys Lagrange2 el2{
-		radius 500
+		cs_radius 500
 		object1 Earth
 		object2 Moon
 		teleport "Earth Lagrange 2" 0 0 100
@@ -187,7 +187,7 @@ coordsys Orbit earth{
 	}
 
 	coordsys Orbit geo{
-		radius 200
+		cs_radius 200
 		fullname "Earth's Geostationary orbit"
 		orbits Earth
 		orbit_radius 35786+6378.
@@ -568,7 +568,7 @@ coordsys Orbit neptune{
 
 # Pluto orbit is so eccentric that circular approximation is inappropriate
 coordsys Orbit pluto{
-	radius 100000
+	cs_radius 100000
 	orbits Sol
 	orbit_radius 39.445*1.49597870691e8
 	inclination 17.089

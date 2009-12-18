@@ -322,6 +322,11 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			atmodawn[3] = 1.f;
 		return true;
 	}
+	else if((!strcmp(s, "ringmin") || !strcmp(s, "ringmax") || !strcmp(s, "ringthick"))){
+		TexSphere *const p = this;
+		p->ring = 1;
+		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = calc3(&ps, sc.vl, NULL);
+	}
 	else
 		return st::readFile(sc, argc, argv);
 }

@@ -390,6 +390,11 @@ CoordSys *CoordSys::findcspath(const char *path){
 	if(!*path || !this)
 		return this;
 	p = strchr(path, '/');
+	if(path == p){
+		CoordSys *root;
+		for(root = this; root->parent; root = root->parent);
+		return root->findcspath(path+1);
+	}
 	if(!p)
 		p = &path[strlen(path)];
 	if(!strncmp(".", path, p - path)){

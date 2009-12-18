@@ -2,6 +2,7 @@
 #include "entity.h"
 #include "cmd.h"
 #include "coordsys.h"
+#include "astro.h"
 
 
 Quatd Player::getrot()const{
@@ -102,5 +103,78 @@ int Player::cmd_mover(int argc, char *argv[], void *pv){
 		p->mover = p->mover == &Player::freelook ? &Player::tactical : &Player::freelook;
 	else
 		CmdPrint("unknown func");
+	return 0;
+}
+
+int Player::cmd_coordsys(int argc, char *argv[], void *pv){
+	Player *p = (Player*)pv;
+	const Universe *univ = p->cs->findcspath("/")->toUniverse();
+	char buf[128];
+	if(argc <= 1){
+		buf[0] = '\0';
+		CmdPrintf("identity: %s", p->cs->name);
+		CmdPrintf("path: %s", p->cs->getpath());
+		CmdPrintf("formal name: %s", p->cs->fullname ? p->cs->fullname : p->cs->name);
+	}
+	else{
+		const CoordSys *cs;
+		if(argv[1][0] == '/')
+			cs = univ->findcspath(&argv[1][1]);
+		else if(!(cs = p->cs->findcspath(argv[1])))
+			cs = univ->findcs(argv[1]);
+		if(cs && cs != p->cs){
+			Quatd rot = cs->tocsq(p->cs);
+			Vec3d pos = cs->tocs(p->pos, p->cs);
+			p->rot *= rot;
+			p->velo = rot.cnj().trans(p->velo);
+			p->pos = pos;
+			p->cs = cs;
+		}
+		else{
+			CmdPrint("Specified coordinate system is not existing or currently selected");
+		}
+	}
+	return 0;
+}
+
+int Player::cmd_position(int argc, char *argv[], void *pv){
+	Player &pl = *(Player*)pv;
+	const char *arg = argv[1];
+	if(!arg){
+		char buf[128];
+		sprintf(buf, "@echo (%lg,%lg,%lg)", pl.pos[0], pl.pos[1], pl.pos[2]);
+		CmdExec(buf);
+	}
+	else{
+		char args[128], *p;
+		strncpy(args, arg, sizeof args);
+		if(p = strtok(args, " \t,"))
+			pl.pos[0] = atof(p);
+		if(p = strtok(NULL, " \t,"))
+			pl.pos[1] = atof(p);
+		if(p = strtok(NULL, " \t,"))
+			pl.pos[2] = atof(p);
+	}
+	return 0;
+}
+
+int Player::cmd_velocity(int argc, char *argv[], void *pv){
+	Player &pl = *(Player*)pv;
+	const char *arg = argv[1];
+	if(!arg){
+		char buf[128];
+		sprintf(buf, "@echo (%lg,%lg,%lg)", pl.velo[0], pl.velo[1], pl.velo[2]);
+		CmdExec(buf);
+	}
+	else{
+		char args[128], *p;
+		strncpy(args, arg, sizeof args);
+		if(p = strtok(args, " \t,"))
+			pl.velo[0] = atof(p);
+		if(p = strtok(NULL, " \t,"))
+			pl.velo[1] = atof(p);
+		if(p = strtok(NULL, " \t,"))
+			pl.velo[2] = atof(p);
+	}
 	return 0;
 }

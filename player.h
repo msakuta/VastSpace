@@ -55,6 +55,9 @@ public:
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);
 	static int cmd_mover(int argc, char *argv[], void *pv);
+	static int cmd_coordsys(int argc, char *argv[], void *pv);
+	static int cmd_position(int argc, char *argv[], void *pv);
+	static int cmd_velocity(int argc, char *argv[], void *pv);
 };
 
 

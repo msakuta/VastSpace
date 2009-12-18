@@ -30,10 +30,12 @@ int ntplist = 0;
 
 
 /* Lagrange 1 point between two bodies */
-Lagrange1CS::Lagrange1CS(const char *path, CoordSys *root){
+LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
 	init(path, root);
 	objs[0] = objs[1] = NULL;
 }
+
+const char *Lagrange1CS::classname()const{return "Lagrange1CS";}
 
 void Lagrange1CS::anim(double dt){
 	static int init = 0;
@@ -56,18 +58,25 @@ void Lagrange1CS::anim(double dt){
 	velo = (pos - oldpos) * (1. / dt);
 }
 
-/* Lagrange 2 point between two bodies */
-class Lagrange2CS : public CoordSys{
-	Astrobj *objs[2];
-public:
-	Lagrange2CS(const char *path, CoordSys *root);
-	void anim(double);
-};
-
-Lagrange2CS::Lagrange2CS(const char *path, CoordSys *root){
-	init(path, root);
-	objs[0] = objs[1] = NULL;
+bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
+	char *s = argv[0], *ps = argv[1];
+	if(0);
+	else if(!strcmp(s, "object1")){
+		if(1 < argc){
+			objs[0] = findastrobj(argv[1]);
+		}
+	}
+	else if(!strcmp(s, "object2")){
+		if(1 < argc){
+			objs[1] = findastrobj(argv[1]);
+		}
+	}
+	else
+		return st::readFile(sc, argc, argv);
+	return true;
 }
+
+const char *Lagrange2CS::classname()const{return "Lagrange2CS";}
 
 void Lagrange2CS::anim(double dt){
 	static int init = 0;
@@ -294,14 +303,16 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				CC ctor = Cons<OrbitCS>;
 				constructor = ctor;
 			}
-/*			if(ps && !strcmp(ps, "Lagrange1")){
+			if(ps && !strcmp(ps, "Lagrange1")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = new_lagrange1;
+				CC ctor = Cons<Lagrange1CS>;
+				constructor = ctor;
 			}
 			if(ps && !strcmp(ps, "Lagrange2")){
 				c++, s = argv[c], ps = argv[c+1];
-				constructor = new_lagrange2;
-			}*/
+				CC ctor = Cons<Lagrange2CS>;
+				constructor = ctor;
+			}
 			if(!ps)
 				ps = s;
 			char *pp;

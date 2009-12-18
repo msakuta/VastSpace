@@ -211,6 +211,9 @@
 				<File
 					RelativePath="draw\Scarry-Draw.cpp">
 				</File>
+				<File
+					RelativePath="draw\Sceptor-Draw.cpp">
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -230,6 +233,9 @@
 			</File>
 			<File
 				RelativePath="antiglut.h">
+			</File>
+			<File
+				RelativePath="argtok.h">
 			</File>
 			<File
 				RelativePath="arms.h">

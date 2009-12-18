@@ -716,8 +716,11 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 
 /*		CmdPrint("space.dat loaded.");*/
 		fclose(fp);
-		if(sc.vl->l)
+		if(sc.vl->l){
+			for(unsigned i = 0; i < sc.vl->c; i++)
+				free(sc.vl->l[i].name);
 			free(sc.vl->l);
+		}
 		free(sc.vl);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
 		printf("%s loaded time %lg\n", fname, TimeMeasLap(&tm));

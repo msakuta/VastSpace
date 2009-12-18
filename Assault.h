@@ -6,13 +6,15 @@
 class Assault : public Frigate{
 protected:
 	static suf_t *sufbase;
-	union{
+/*	union{
 		struct{
 			ArmBase *turret0, *turret1, *turret2, *turret3;
 		};
 		ArmBase *turrets[4];
-	};
-	static const hardpoint_static hardpoints[];
+	};*/
+	ArmBase **turrets;
+	static hardpoint_static *hardpoints;
+	static int nhardpoints;
 public:
 	typedef Frigate st;
 	Assault(WarField *w);

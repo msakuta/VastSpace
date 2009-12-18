@@ -452,6 +452,9 @@ GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(aba
 
 const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
 
+const char *GatlingTurret::idname()const{return "GatlingTurret";}
+const char *GatlingTurret::classname()const{return "Gatling Turret";}
+
 void GatlingTurret::anim(double dt){
 	barrelrot += barrelomg * dt;
 	barrelomg = MAX(0, barrelomg - dt * 2. * M_PI);
@@ -999,6 +1002,7 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 		return NULL;
 	}
 	hardpoint_static *ret = NULL;
+	struct varlist vl = {0, NULL, calc_mathvars()};
 	num = 0;
 	while(ULfgets(buf, sizeof buf, ss)){
 		int argc, c = 0;
@@ -1006,6 +1010,19 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 		argc = argtok(argv, buf, &post, numof(argv));
 		if(argc < 1)
 			continue;
+
+		// definition of identifier in expressions.
+		if(argc == 3 && !strcmp(argv[0], "define")){
+			struct var *v;
+			vl.l = (var*)realloc(vl.l, ++vl.c * sizeof *vl.l);
+			v = &vl.l[vl.c-1];
+			v->name = (char*)malloc(strlen(argv[1]) + 1);
+			strcpy(v->name, argv[1]);
+			v->type = var::CALC_D;
+			v->value.d = 2 < argc ? calc3(&argv[2], &vl, NULL) : 0.;
+			continue;
+		}
+
 		hardpoint_static *a = new hardpoint_static[num+1];
 		for(int i = 0; i < num; i++)
 			a[i] = ret[i];
@@ -1019,13 +1036,16 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 
 		hardpoint_static &h = ret[num++];
 		for(int i = 0; i < 3; i++)
-			h.pos[i] = c < argc ? calc3(&argv[c++], calc_mathvars(), NULL) : 0;
+			h.pos[i] = c < argc ? calc3(&argv[c++], &vl, NULL) : 0;
 		for(int i = 0; i < 4; i++)
-			h.rot[i] = c < argc ? calc3(&argv[c++], calc_mathvars(), NULL) : i == 3;
+			h.rot[i] = c < argc ? calc3(&argv[c++], &vl, NULL) : i == 3;
 		h.name = new char[c < argc ? strlen(argv[c]) + 1 : 2];
 		strcpy(const_cast<char*>(h.name), c < argc ? argv[c++] : "?");
 		h.flagmask = c < argc ? atoi(argv[c++]) : 0;
 	}
+	for(int i = 0; i < vl.c; i++)
+		free(vl.l[i].name);
+	free(vl.l);
 	ULclose(ss);
 	return ret;
 }

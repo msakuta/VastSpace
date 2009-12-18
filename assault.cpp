@@ -15,13 +15,14 @@ extern "C"{
 
 #define SQRT2P2 (M_SQRT2/2.)
 
-const struct hardpoint_static Assault::hardpoints[5] = {
+struct hardpoint_static *Assault::hardpoints = NULL/*[5] = {
 	hardpoint_static(Vec3d(.000, 50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,0,1), "Top Turret", 0),
 	hardpoint_static(Vec3d(.000, -50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,1,0), "Bottom Turret", 0),
 	hardpoint_static(Vec3d(40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,-SQRT2P2,SQRT2P2), "Right Turret", 0),
 	hardpoint_static(Vec3d(-40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,SQRT2P2,SQRT2P2), "Left Turret", 0),
 	hardpoint_static(Vec3d(0, 0, 0), Quatd(0,0,0,1), "Shield Generator", 0),
-};
+}*/;
+int Assault::nhardpoints = 0;
 
 
 
@@ -29,7 +30,11 @@ suf_t *Assault::sufbase = NULL;
 
 Assault::Assault(WarField *aw) : st(aw){
 	init();
-	for(int i = 0; i < 4; i++){
+	if(!hardpoints){
+		hardpoints = hardpoint_static::load("assault.hb", nhardpoints);
+	}
+	turrets = new ArmBase*[nhardpoints];
+	for(int i = 0; i < nhardpoints; i++){
 		aw->addent(turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i])));
 	}
 }

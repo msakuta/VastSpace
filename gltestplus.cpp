@@ -693,6 +693,9 @@ void display_func(void){
 			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
 		}
 
+		if(glwfocus && cmdwnd)
+			glwfocus = NULL;
+
 		input_t inputs;
 		inputs.press = MotionGet();
 		inputs.change = MotionGetChange();

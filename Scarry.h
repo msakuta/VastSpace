@@ -23,7 +23,7 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int armsCount()const;
-	virtual ArmBase *armsGet(int i);
+	virtual const ArmBase *armsGet(int i)const;
 	virtual const maneuve &getManeuve()const;
 
 protected:

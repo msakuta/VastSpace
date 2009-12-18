@@ -12,8 +12,8 @@
 //#include "yssurf.h"
 //#include "walk.h"
 #include "bullet.h"
-//#include "warutil.h"
 extern "C"{
+#include "calc/calc.h"
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/gl/gldraw.h>
@@ -1001,7 +1001,6 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 	hardpoint_static *ret = NULL;
 	num = 0;
 	while(ULfgets(buf, sizeof buf, ss)){
-		char *s = NULL, *ps;
 		int argc, c = 0;
 		char *argv[16], *post;
 		argc = argtok(argv, buf, &post, numof(argv));
@@ -1013,11 +1012,16 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 		if(ret)
 			delete[] ret;
 		ret = a;
+
+		// tokenize with ,
+		for(int i = 0; i < argc; i++) if(char *p = strchr(argv[i], ','))
+			*p = '\0';
+
 		hardpoint_static &h = ret[num++];
 		for(int i = 0; i < 3; i++)
-			h.pos[i] = c < argc ? atof(argv[c++]) : 0;
+			h.pos[i] = c < argc ? calc3(&argv[c++], calc_mathvars(), NULL) : 0;
 		for(int i = 0; i < 4; i++)
-			h.rot[i] = c < argc ? atof(argv[c++]) : i == 3;
+			h.rot[i] = c < argc ? calc3(&argv[c++], calc_mathvars(), NULL) : i == 3;
 		h.name = new char[c < argc ? strlen(argv[c]) + 1 : 2];
 		strcpy(const_cast<char*>(h.name), c < argc ? argv[c++] : "?");
 		h.flagmask = c < argc ? atoi(argv[c++]) : 0;

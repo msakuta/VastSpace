@@ -12,8 +12,8 @@
 //#include "yssurf.h"
 //#include "walk.h"
 #include "bullet.h"
-//#include "warutil.h"
 extern "C"{
+#include "calc/calc.h"
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/gl/gldraw.h>
@@ -451,6 +451,9 @@ GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(aba
 }
 
 const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
+
+const char *GatlingTurret::idname()const{return "GatlingTurret";}
+const char *GatlingTurret::classname()const{return "Gatling Turret";}
 
 void GatlingTurret::anim(double dt){
 	barrelrot += barrelomg * dt;
@@ -999,29 +1002,50 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 		return NULL;
 	}
 	hardpoint_static *ret = NULL;
+	struct varlist vl = {0, NULL, calc_mathvars()};
 	num = 0;
 	while(ULfgets(buf, sizeof buf, ss)){
-		char *s = NULL, *ps;
 		int argc, c = 0;
 		char *argv[16], *post;
 		argc = argtok(argv, buf, &post, numof(argv));
 		if(argc < 1)
 			continue;
+
+		// definition of identifier in expressions.
+		if(argc == 3 && !strcmp(argv[0], "define")){
+			struct var *v;
+			vl.l = (var*)realloc(vl.l, ++vl.c * sizeof *vl.l);
+			v = &vl.l[vl.c-1];
+			v->name = (char*)malloc(strlen(argv[1]) + 1);
+			strcpy(v->name, argv[1]);
+			v->type = var::CALC_D;
+			v->value.d = 2 < argc ? calc3(&argv[2], &vl, NULL) : 0.;
+			continue;
+		}
+
 		hardpoint_static *a = new hardpoint_static[num+1];
 		for(int i = 0; i < num; i++)
 			a[i] = ret[i];
 		if(ret)
 			delete[] ret;
 		ret = a;
+
+		// tokenize with ,
+		for(int i = 0; i < argc; i++) if(char *p = strchr(argv[i], ','))
+			*p = '\0';
+
 		hardpoint_static &h = ret[num++];
 		for(int i = 0; i < 3; i++)
-			h.pos[i] = c < argc ? atof(argv[c++]) : 0;
+			h.pos[i] = c < argc ? calc3(&argv[c++], &vl, NULL) : 0;
 		for(int i = 0; i < 4; i++)
-			h.rot[i] = c < argc ? atof(argv[c++]) : i == 3;
+			h.rot[i] = c < argc ? calc3(&argv[c++], &vl, NULL) : i == 3;
 		h.name = new char[c < argc ? strlen(argv[c]) + 1 : 2];
 		strcpy(const_cast<char*>(h.name), c < argc ? argv[c++] : "?");
 		h.flagmask = c < argc ? atoi(argv[c++]) : 0;
 	}
+	for(int i = 0; i < vl.c; i++)
+		free(vl.l[i].name);
+	free(vl.l);
 	ULclose(ss);
 	return ret;
 }

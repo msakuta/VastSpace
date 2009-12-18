@@ -83,9 +83,11 @@ public:
 
 	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){flags = CS_ISOLATED | CS_EXTENT;}
 	const char *classname()const;
+	void serialize(SerializeContext &sc);
 	void anim(double dt);
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}
+	static int cmd_save(int argc, char *argv[]);
 };
 
 #endif

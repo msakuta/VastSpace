@@ -74,6 +74,8 @@ class GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
+	virtual const char *idname()const;
+	virtual const char *classname()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);

@@ -16,6 +16,8 @@ extern "C"{
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
+#include <map>
+#include <iostream>
 
 #define CS_DELETE   2 /* marked as to be deleted */
 #define CS_WARPABLE 4 /* can be targetted for warp destinaiton */
@@ -33,6 +35,12 @@ class Player;
 struct StellarContext;
 struct war_draw_data;
 
+class SerializeContext{
+public:
+	SerializeContext(std::ostream &ao) : o(ao){}
+	std::ostream &o;
+	std::map<CoordSys*, unsigned> map;
+};
 
 /* node or leaf of coordinate system tree */
 class CoordSys{
@@ -69,6 +77,7 @@ public:
 	void init(const char *path, CoordSys *root);
 
 	virtual const char *classname()const; // returned string storage must be static
+	virtual void serialize(SerializeContext &sc);
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();
@@ -95,6 +104,10 @@ public:
 	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
 	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
+
+	// Serialize the tree recursively.
+	void csMap(std::map<CoordSys*,unsigned> &);
+	void csSerialize(SerializeContext &);
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

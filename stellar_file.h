@@ -18,11 +18,31 @@ extern struct teleport{
 } *tplist;
 extern int ntplist;
 
-// L1 point of two celestial bodies
-class Lagrange1CS : public CoordSys{
-	Astrobj *objs[2];
+// Base class for Lagrange points
+class LagrangeCS : public CoordSys{
 public:
-	Lagrange1CS(const char *path, CoordSys *root);
+	typedef CoordSys st;
+	LagrangeCS(const char *path, CoordSys *root);
+	bool readFile(StellarContext &, int argc, char *argv[]);
+protected:
+	Astrobj *objs[2];
+};
+
+// L1 point of two celestial bodies
+class Lagrange1CS : public LagrangeCS{
+public:
+	typedef LagrangeCS st;
+	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
+	const char *classname()const;
+	void anim(double dt);
+};
+
+// L2 point of two celestial bodies
+class Lagrange2CS : public LagrangeCS{
+public:
+	typedef LagrangeCS st;
+	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
+	const char *classname()const;
 	void anim(double dt);
 };
 

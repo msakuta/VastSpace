@@ -27,7 +27,7 @@ struct var{
 struct varlist{
 	unsigned c;
 	struct var *l;
-	struct varlist *next;
+	const struct varlist *next;
 };
 
 /* Parses the given null-terminated string into single double.

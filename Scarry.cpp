@@ -99,10 +99,10 @@ int Scarry::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 }
 
 int Scarry::armsCount()const{
-	return numof(turrets);
+	return nhardpoints;
 }
 
-ArmBase *Scarry::armsGet(int i){
+const ArmBase *Scarry::armsGet(int i)const{
 	return turrets[i];
 }
 

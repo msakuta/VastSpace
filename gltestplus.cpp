@@ -46,6 +46,8 @@ extern "C"{
 /*#include <windows.h>*/
 #undef exit
 #include <GL/glext.h>
+#include <strstream>
+#include <fstream>
 
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
@@ -76,9 +78,27 @@ Universe universe(&pl);//galaxysystem(&pl);
 const char *Universe::classname()const{
 	return "Universe";
 }
+
+void Universe::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " timescale:" << timescale << " global_time:" << global_time;
+}
+
 void Universe::anim(double dt){
 	this->global_time += dt;
 	st::anim(dt);
+}
+
+int Universe::cmd_save(int argc, char *argv[]){
+	std::strstream os;
+	SerializeContext sc(os);
+	sc.map[NULL] = 0;
+	universe.csMap(sc.map);
+	universe.csSerialize(sc);
+	printf("%s\n", os.str());
+	std::fstream fs("save.sav", std::ios::out);
+	fs << os.str();
+	return 0;
 }
 
 
@@ -692,6 +712,9 @@ void display_func(void){
 		catch(...){
 			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
 		}
+
+		if(glwfocus && cmdwnd)
+			glwfocus = NULL;
 
 		input_t inputs;
 		inputs.press = MotionGet();
@@ -1434,6 +1457,7 @@ int main(int argc, char *argv[])
 
 	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 	glwfocus = NULL;
+	pl.cs = &universe;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -1447,6 +1471,9 @@ int main(int argc, char *argv[])
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
+	CmdAddParam("coordsys", Player::cmd_coordsys, (void*)&pl);
+	CmdAddParam("position", Player::cmd_position, (void*)&pl);
+	CmdAddParam("velocity", Player::cmd_velocity, (void*)&pl);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
@@ -1462,6 +1489,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CmdAddParam("attack", cmd_attack, &pl);
+	CmdAdd("save", Universe::cmd_save);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -1470,11 +1498,9 @@ int main(int argc, char *argv[])
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
 	CvarAdd("g_otdrawflags", &WarField::g_otdrawflags, cvar_int);
-	CmdExec("@exec autoexec.cfg");
 
 	StellarFileLoad("space.dat", &universe);
-
-	pl.cs = &universe;
+	CmdExec("@exec autoexec.cfg");
 
 #if USEWIN
 	{

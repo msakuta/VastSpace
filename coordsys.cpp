@@ -30,6 +30,20 @@ const char *CoordSys::classname()const{
 	return "CoordSys";
 }
 
+std::ostream &operator<<(std::ostream &o, Vec3d &v){
+	o << "(" << v[0] << " " << v[1] << " " << v[2] << ")";
+	return o;
+}
+
+std::ostream &operator<<(std::ostream &o, Quatd &v){
+	o << "(" << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << ")";
+	return o;
+}
+
+void CoordSys::serialize(SerializeContext &sc){
+	sc.o << classname() << " (" << name << ") " << sc.map[parent] << " " << sc.map[children] << " " << sc.map[next] << " " << pos << " " << velo << " " << qrot;
+}
+
 CoordSys **CoordSys::legitimize_child(){
 	if(parent){
 		CoordSys **ppcs;
@@ -390,6 +404,11 @@ CoordSys *CoordSys::findcspath(const char *path){
 	if(!*path || !this)
 		return this;
 	p = strchr(path, '/');
+	if(path == p){
+		CoordSys *root;
+		for(root = this; root->parent; root = root->parent);
+		return root->findcspath(path+1);
+	}
 	if(!p)
 		p = &path[strlen(path)];
 	if(!strncmp(".", path, p - path)){
@@ -431,6 +450,22 @@ CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
 void CoordSys::predraw(const Viewer *vw){
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->predraw(vw);
+}
+
+void CoordSys::csMap(std::map<CoordSys *, unsigned> &cm){
+	if(cm.find(this) == cm.end()){
+		unsigned id = cm.size();
+		cm[this] = id;
+	}
+	for(CoordSys *cs = children; cs; cs = cs->next)
+		cs->csMap(cm);
+}
+
+void CoordSys::csSerialize(SerializeContext &sc){
+	serialize(sc);
+	sc.o << std::endl;
+	for(CoordSys *cs = children; cs; cs = cs->next)
+		cs->csSerialize(sc);
 }
 
 // In the hope std::sort template function optimizes the comparator function,
@@ -882,8 +917,8 @@ static bool findcsrpathchildren(const CoordSys *subject, StackTrace *pst, const 
 }
 
 static bool findcsrpath(const CoordSys *subject, const CoordSys *base, cpplib::dstring &ret){
-	CoordSys *cs;
-	const char *p;
+//	CoordSys *cs;
+//	const char *p;
 	if(!base)
 		return true;
 	if(subject == base){

@@ -382,6 +382,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\UniformLoader.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\UnZip.c"
 				>
 			</File>
@@ -525,6 +529,10 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\timemeas.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\clib\zip\UniformLoader.h"
 				>
 			</File>
 			<File

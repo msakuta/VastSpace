@@ -27,8 +27,9 @@ public:
 	virtual const maneuve &getManeuve()const;
 
 protected:
-	ArmBase *turrets[10];
-	static const hardpoint_static hardpoints[];
+	ArmBase **turrets;
+	static hardpoint_static *hardpoints;
+	static int nhardpoints;
 
 	static const maneuve mymn;
 	static hitbox hitboxes[];

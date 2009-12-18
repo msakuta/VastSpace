@@ -2,6 +2,7 @@
 #include "player.h"
 #include "astro.h"
 #include "viewer.h"
+#include "argtok.h"
 //#include "entity_p.h"
 #include "antiglut.h"
 #include "cmd.h"
@@ -18,6 +19,7 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
+#include <clib/zip/UnZip.h>
 }
 #include <limits.h>
 
@@ -984,3 +986,87 @@ glwindow *ArmsShowWindow(entity_t *creator(warf_t *), double baseprice, size_t a
 
 
 #endif
+
+struct SS{
+	char *p;
+	unsigned long sz;
+};
+
+char *ssgets(char *buf, int sz, SS *in){
+	char *ret = buf;
+	if(!in->sz)
+		return NULL;
+	for(; sz && in->sz; sz--, in->sz--){
+		if(*in->p == '\r'){
+			if(*(in->p+1) == '\n'){
+				*buf = '\n';
+				buf[!!sz] = '\0';
+				in->p += 2;
+				in->sz -= 2;
+				return ret;
+			}
+			else
+				goto normal_ret;
+		}
+		if(*in->p == '\n'){
+normal_ret:
+			*buf++ = *in->p++;
+			*buf = '\0';
+			return ret;
+		}
+		*buf++ = *in->p++;
+	}
+	return ret;
+}
+
+
+hardpoint_static *hardpoint_static::load(const char *fname, int &num){
+	char buf[512];
+	FILE *fp;
+	fp = fopen(fname, "r");
+	char *(*pgets)(char *, int, FILE *);
+	unsigned long fsize;
+	SS ss;
+	void *pbuf;
+	if(fp){
+		pgets = fgets;
+	}
+	else if(pbuf = (char*)ZipUnZip("rc.zip", fname, &ss.sz)){
+		ss.p = (char*)pbuf;
+		pgets = (char *(*)(char *, int, FILE *))ssgets;
+		fp = (FILE*)&ss;
+	}
+	else{
+		num = 0;
+		return NULL;
+	}
+	hardpoint_static *ret = NULL;
+	num = 0;
+	while(pgets(buf, sizeof buf, fp)){
+		char *s = NULL, *ps;
+		int argc, c = 0;
+		char *argv[16], *post;
+		argc = argtok(argv, buf, &post, numof(argv));
+		if(argc < 1)
+			continue;
+		hardpoint_static *a = new hardpoint_static[num+1];
+		for(int i = 0; i < num; i++)
+			a[i] = ret[i];
+		if(ret)
+			delete[] ret;
+		ret = a;
+		hardpoint_static &h = ret[num++];
+		for(int i = 0; i < 3; i++)
+			h.pos[i] = atof(argv[i]);
+		for(int i = 0; i < 4; i++)
+			h.rot[i] = atof(argv[3 + i]);
+		h.name = new char[strlen(argv[3 + 4]) + 1];
+		strcpy(const_cast<char*>(h.name), argv[3 + 4]);
+		h.flagmask = atoi(argv[3 + 4 + 1]);
+	}
+	if(pgets == fgets)
+		fclose(fp);
+	else
+		ZipFree(pbuf);
+	return ret;
+}

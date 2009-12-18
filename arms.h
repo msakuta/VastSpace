@@ -15,8 +15,10 @@ struct hardpoint_static{
 	Quatd rot; /* base rotation */
 	const char *name;
 	unsigned flagmask;
+	hardpoint_static(){}
 	hardpoint_static(Vec3d &apos, Quatd &arot, const char *aname, unsigned aflagmask) :
 	pos(apos), rot(arot), name(aname), flagmask(aflagmask){}
+	static hardpoint_static *load(const char *fname, int &num);
 };
 
 class ArmBase : public Entity{

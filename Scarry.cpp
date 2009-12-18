@@ -20,7 +20,7 @@ extern "C"{
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
-const hardpoint_static Scarry::hardpoints[10] = {
+hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
 	hardpoint_static(Vec3d(.100, .060, -.760), Quatd(0., 0., 0., 1.), "Turret 1", 0),
 	hardpoint_static(Vec3d(.100, -.060, -.760), Quatd(0., 0., 1., 0.), "Turret 2", 0),
 	hardpoint_static(Vec3d(-.180,  .180, .420), Quatd(0., 0., 0., 1.), "Turret 3", 0),
@@ -31,11 +31,16 @@ const hardpoint_static Scarry::hardpoints[10] = {
 	hardpoint_static(Vec3d(-.180, -.180, -.290), Quatd(0., 0., 1., 0.), "Turret 8", 0),
 	hardpoint_static(Vec3d( .180,  .180, -.380), Quatd(0., 0., 0., 1.), "Turret 9", 0),
 	hardpoint_static(Vec3d( .180, -.180, -.380), Quatd(0., 0., 1., 0.), "Turret 10", 0),
-};
+}*/;
+int Scarry::nhardpoints = 0;
 
 Scarry::Scarry(WarField *w) : st(w){
 	init();
-	for(int i = 0; i < numof(turrets); i++)
+	if(!hardpoints){
+		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
+	}
+	turrets = new ArmBase*[nhardpoints];
+	for(int i = 0; i < nhardpoints; i++)
 		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
 }
 
@@ -56,7 +61,7 @@ double Scarry::maxenergy()const{
 
 void Scarry::anim(double dt){
 	st::anim(dt);
-	for(int i = 0; i < numof(turrets); i++) if(turrets[i])
+	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
 }
 

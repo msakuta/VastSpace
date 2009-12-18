@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "stellar_file.h"
+#include "argtok.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -170,8 +171,6 @@ typedef CoordSys *(*CC)(const char *name, CoordSys *cs);
 
 
 #define MAX_LINE_LENGTH 512
-
-extern "C" int argtok(char *argv[], char *s, char **post, int maxargs);
 
 /* stack state machine */
 static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);

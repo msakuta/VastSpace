@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "cmd.h"
+#include "argtok.h"
 #include "calc/calc.h"
 #include "cmd_int.h"
 #include "viewer.h"

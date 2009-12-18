@@ -332,6 +332,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\argtok.h"
+				>
+			</File>
+			<File
 				RelativePath="..\arms.h"
 				>
 			</File>

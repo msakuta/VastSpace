@@ -5,6 +5,7 @@
   coordinates, for example. */
 
 #include "viewer.h"
+#include "serial.h"
 
 extern "C"{
 #include <clib/avec3.h>
@@ -16,8 +17,6 @@ extern "C"{
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
-#include <map>
-#include <iostream>
 
 #define CS_DELETE   2 /* marked as to be deleted */
 #define CS_WARPABLE 4 /* can be targetted for warp destinaiton */
@@ -35,16 +34,11 @@ class Player;
 struct StellarContext;
 struct war_draw_data;
 
-class SerializeContext{
-public:
-	SerializeContext(std::ostream &ao) : o(ao){}
-	std::ostream &o;
-	std::map<CoordSys*, unsigned> map;
-};
-
 /* node or leaf of coordinate system tree */
-class CoordSys{
+class CoordSys : public Serializable{
 public:
+	typedef Serializable st;
+
 	Vec3d pos;
 	Vec3d velo;
 	Quatd qrot;
@@ -75,9 +69,11 @@ public:
 	CoordSys(const char *path, CoordSys *root);
 	~CoordSys();
 	void init(const char *path, CoordSys *root);
+	static const unsigned classid;
 
 	virtual const char *classname()const; // returned string storage must be static
 	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();
@@ -106,8 +102,9 @@ public:
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
 
 	// Serialize the tree recursively.
-	void csMap(std::map<CoordSys*,unsigned> &);
+	void csMap(std::map<Serializable*,unsigned> &);
 	void csSerialize(SerializeContext &);
+	void csUnmap(UnserializeContext &);
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

@@ -282,6 +282,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\serial.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\shield.cpp"
 				>
 			</File>
@@ -441,6 +445,10 @@
 			</File>
 			<File
 				RelativePath="..\sceptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\serial.h"
 				>
 			</File>
 			<File

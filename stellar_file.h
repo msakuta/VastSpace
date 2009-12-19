@@ -22,6 +22,7 @@ extern int ntplist;
 class LagrangeCS : public CoordSys{
 public:
 	typedef CoordSys st;
+	LagrangeCS(){}
 	LagrangeCS(const char *path, CoordSys *root);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 protected:
@@ -32,8 +33,10 @@ protected:
 class Lagrange1CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
+	Lagrange1CS(){}
 	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
+	static const unsigned classid;
 	void anim(double dt);
 };
 
@@ -41,8 +44,10 @@ public:
 class Lagrange2CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
+	Lagrange2CS(){}
 	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
+	static const unsigned classid;
 	void anim(double dt);
 };
 
@@ -57,8 +62,10 @@ class TexSphere : public Astrobj{
 	int ring;
 public:
 	typedef Astrobj st;
+	TexSphere(){}
 	TexSphere(const char *name, CoordSys *cs);
 	const char *classname()const;
+	static const unsigned classid;
 	bool readFile(StellarContext &, int argc, char *argv[]);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;

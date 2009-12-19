@@ -9,6 +9,8 @@ extern "C"{
 #include <string.h>
 #include <stdlib.h>
 
+
+
 const char *OrbitCS::classname()const{
 	return "OrbitCS";
 }
@@ -28,6 +30,15 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
 		eis->addToDrawList(this);
 }
 
+const unsigned OrbitCS::classid = registerClass("OrbitCS", Conster<OrbitCS>);
+
+void OrbitCS::serialize(SerializeContext &sc){
+	st::serialize(sc);
+}
+
+void OrbitCS::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+}
 
 void OrbitCS::anim(double dt){
 	if(orbit_home){
@@ -196,6 +207,16 @@ OrbitCS *OrbitCS::toOrbitCS(){
 }
 
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){
+}
+
+const unsigned Astrobj::classid = registerClass("Astrobj", Conster<Astrobj>);
+
+void Astrobj::serialize(SerializeContext &sc){
+	st::serialize(sc);
+}
+
+void Astrobj::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
 }
 
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -430,6 +451,8 @@ const char *Star::classname()const{
 	return "Star";
 }
 
+const unsigned Star::classid = registerClass("Star", Conster<Star>);
+
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL){
 	texlist = 0;
 	ringmin = ringmax = 0;
@@ -440,6 +463,8 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NUL
 const char *TexSphere::classname()const{
 	return "TexSphere";
 }
+
+const unsigned TexSphere::classid = registerClass("TexSphere", Conster<TexSphere>);
 
 double TexSphere::atmoScatter(const Viewer &vw)const{
 	if(!(flags & AO_ATMOSPHERE))

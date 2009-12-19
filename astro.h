@@ -38,8 +38,12 @@ public:
 	int flags2;
 public:
 	typedef CoordSys st;
+	OrbitCS(){}
 	OrbitCS(const char *path, CoordSys *root);
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
 	virtual bool readFileStart(StellarContext &);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
@@ -61,9 +65,13 @@ public:
 	float absmag; /* Absolute Magnitude */
 	COLOR32 basecolor; /* rough approximation of apparent color */
 
+	Astrobj(){}
 	Astrobj(const char *name, CoordSys *cs);
 //	void init(const char *name, CoordSys *cs);
 
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *classname()const;
 	void planet_anim(double dt);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
@@ -84,10 +92,13 @@ public:
 	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){flags = CS_ISOLATED | CS_EXTENT;}
 	const char *classname()const;
 	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}
+	void csUnserialize(UnserializeContext &usc);
 	static int cmd_save(int argc, char *argv[]);
+	static int cmd_load(int argc, char *argv[]);
 };
 
 #endif

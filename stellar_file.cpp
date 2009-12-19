@@ -37,6 +37,8 @@ LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
 
 const char *Lagrange1CS::classname()const{return "Lagrange1CS";}
 
+const unsigned Lagrange1CS::classid = registerClass("Lagrange1CS", Conster<Lagrange1CS>);
+
 void Lagrange1CS::anim(double dt){
 	static int init = 0;
 	double f, alpha;
@@ -77,6 +79,8 @@ bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
 }
 
 const char *Lagrange2CS::classname()const{return "Lagrange2CS";}
+
+const unsigned Lagrange2CS::classid = registerClass("Lagrange2CS", Conster<Lagrange2CS>);
 
 void Lagrange2CS::anim(double dt){
 	static int init = 0;

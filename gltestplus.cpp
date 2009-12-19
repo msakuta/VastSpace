@@ -48,6 +48,7 @@ extern "C"{
 #include <GL/glext.h>
 #include <strstream>
 #include <fstream>
+#include <string>
 
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
@@ -84,9 +85,38 @@ void Universe::serialize(SerializeContext &sc){
 	sc.o << " timescale:" << timescale << " global_time:" << global_time;
 }
 
+extern std::istream &operator>>(std::istream &o, const char *cstr);
+
+void Universe::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> " timescale:" >> timescale >> " global_time:" >> global_time;
+}
+
 void Universe::anim(double dt){
 	this->global_time += dt;
 	st::anim(dt);
+}
+
+void Universe::csUnserialize(UnserializeContext &usc){
+	unsigned l = 1;
+	while(!usc.i.eof()){
+		std::string cname;
+		do{
+			char c = usc.i.get();
+			if(usc.i.eof())
+				return;
+			if(c == ' ')
+				break;
+			cname.append(&c, 1);
+		}while(true);
+		usc.i.unget();
+		if(cname != usc.map[l]->classname())
+			throw std::exception("Unserialize class name mismatch");
+		char line[256];
+		usc.i.getline(line, sizeof line);
+		usc.map[l]->unserialize(UnserializeContext(std::strstream(line, strlen(line)), usc.cons, usc.map));
+		l++;
+	}
 }
 
 int Universe::cmd_save(int argc, char *argv[]){
@@ -101,6 +131,21 @@ int Universe::cmd_save(int argc, char *argv[]){
 	return 0;
 }
 
+int Universe::cmd_load(int argc, char *argv[]){
+	std::vector<Serializable*> map;
+	map.push_back(NULL);
+	map.push_back(&universe);
+	{
+		std::ifstream ifs("save.sav", std::ios::in);
+		UnserializeContext usc(ifs, ctormap(), map);
+		universe.csUnmap(usc);
+	}
+	{
+		std::ifstream ifs("save.sav", std::ios::in);
+		universe.csUnserialize(UnserializeContext(ifs, ctormap(), map));
+	}
+	return 0;
+}
 
 class GLattrib{
 public:
@@ -1490,6 +1535,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CmdAddParam("attack", cmd_attack, &pl);
 	CmdAdd("save", Universe::cmd_save);
+	CmdAdd("load", Universe::cmd_load);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

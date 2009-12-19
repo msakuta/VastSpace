@@ -67,7 +67,7 @@ public:
 
 	CoordSys();
 	CoordSys(const char *path, CoordSys *root);
-	~CoordSys();
+	virtual ~CoordSys();
 	void init(const char *path, CoordSys *root);
 	static const unsigned classid;
 

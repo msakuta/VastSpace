@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "stellar_file.h"
+#include "serial_util.h"
 #include "argtok.h"
 extern "C"{
 #include "calc/calc.h"
@@ -35,9 +36,24 @@ LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
 	objs[0] = objs[1] = NULL;
 }
 
+void LagrangeCS::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " " << sc.map[objs[0]] << " " << sc.map[objs[1]];
+}
+
+void LagrangeCS::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	unsigned objs[2];
+	sc.i >> " " >> objs[0] >> " " >> objs[1];
+	this->objs[0] = static_cast<Astrobj*>(sc.map[objs[0]]);
+	this->objs[1] = static_cast<Astrobj*>(sc.map[objs[1]]);
+}
+
 const char *Lagrange1CS::classname()const{return "Lagrange1CS";}
 
 const unsigned Lagrange1CS::classid = registerClass("Lagrange1CS", Conster<Lagrange1CS>);
+
+
 
 void Lagrange1CS::anim(double dt){
 	static int init = 0;

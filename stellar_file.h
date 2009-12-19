@@ -24,6 +24,8 @@ public:
 	typedef CoordSys st;
 	LagrangeCS(){}
 	LagrangeCS(const char *path, CoordSys *root);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 protected:
 	Astrobj *objs[2];
@@ -64,8 +66,11 @@ public:
 	typedef Astrobj st;
 	TexSphere(){}
 	TexSphere(const char *name, CoordSys *cs);
+	virtual ~TexSphere();
 	const char *classname()const;
 	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;

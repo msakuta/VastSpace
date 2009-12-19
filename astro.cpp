@@ -1,4 +1,5 @@
 #include "astro.h"
+#include "serial_util.h"
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "astrodef.h"
@@ -8,7 +9,6 @@ extern "C"{
 }
 #include <string.h>
 #include <stdlib.h>
-
 
 
 const char *OrbitCS::classname()const{
@@ -34,10 +34,20 @@ const unsigned OrbitCS::classid = registerClass("OrbitCS", Conster<OrbitCS>);
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << " " << orbit_rad << " " << sc.map[orbit_home] << " " << orbit_axis;
+	sc.o << " " << orbit_phase;
+	sc.o << " " << eccentricity; /* orbital element */
+	sc.o << " " << flags2;
 }
 
 void OrbitCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	unsigned orbit_home;
+	sc.i >> " " >> orbit_rad >> " " >> orbit_home >> " " >> orbit_axis;
+	sc.i >> " " >> orbit_phase;
+	sc.i >> " " >> eccentricity; /* orbital element */
+	sc.i >> " " >> flags2;
+	this->orbit_home = static_cast<Astrobj*>(sc.map[orbit_home]);
 }
 
 void OrbitCS::anim(double dt){
@@ -211,12 +221,27 @@ Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), abs
 
 const unsigned Astrobj::classid = registerClass("Astrobj", Conster<Astrobj>);
 
+#if 0
+	double rad;
+	double mass;
+	float absmag; /* Absolute Magnitude */
+	COLOR32 basecolor; /* rough approximation of apparent color */
+#endif
+
 void Astrobj::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << " " << rad;
+	sc.o << " " << mass;
+	sc.o << " " << absmag;
+	sc.o << " " << basecolor;
 }
 
 void Astrobj::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> " " >> rad;
+	sc.i >> " " >> mass;
+	sc.i >> " " >> absmag;
+	sc.i >> " " >> basecolor;
 }
 
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -297,6 +322,53 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 			aorder.push_back(this);
 		}
 	}
+}
+
+TexSphere::~TexSphere(){
+	delete texname;
+
+	// Should I delete here?
+/*	if(texlist)
+		glDeleteLists(texlist, 1);*/
+}
+
+#if 0
+	const char *texname;
+	unsigned int texlist; // should not really be here
+	double ringmin, ringmax, ringthick;
+	double atmodensity;
+	float atmohor[4];
+	float atmodawn[4];
+	int ring;
+#endif
+
+void TexSphere::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " (" << (texname ? texname : "") << ")";
+	sc.o << " " << ringmin;
+	sc.o << " " << ringmax;
+	sc.o << " " << ringthick;
+	sc.o << " " << atmodensity;
+	sc.o << " " << *(Vec4<float>*)(atmohor);
+	sc.o << " " << *(Vec4<float>*)(atmodawn);
+	sc.o << " " << ring;
+}
+
+void TexSphere::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> " (";
+	cpplib::dstring texname = readUntil(sc.i, ')');
+	sc.i >> ")";
+	sc.i >> " " >> ringmin;
+	sc.i >> " " >> ringmax;
+	sc.i >> " " >> ringthick;
+	sc.i >> " " >> atmodensity;
+	sc.i >> " " >> *(Vec4<float>*)(atmohor);
+	sc.i >> " " >> *(Vec4<float>*)(atmodawn);
+	sc.i >> " " >> ring;
+
+	this->texname = strnewdup(texname, texname.len());
+	this->texlist = 0;
 }
 
 bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){

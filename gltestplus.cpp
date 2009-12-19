@@ -49,6 +49,7 @@ extern "C"{
 #include <strstream>
 #include <fstream>
 #include <string>
+#include <sstream>
 
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
@@ -112,26 +113,34 @@ void Universe::csUnserialize(UnserializeContext &usc){
 		usc.i.unget();
 		if(cname != usc.map[l]->classname())
 			throw std::exception("Unserialize class name mismatch");
-		char line[256];
-		usc.i.getline(line, sizeof line);
-		usc.map[l]->unserialize(UnserializeContext(std::strstream(line, strlen(line)), usc.cons, usc.map));
+		std::string line;
+		getline(usc.i, line);
+		usc.map[l]->unserialize(UnserializeContext(std::istringstream(line), usc.cons, usc.map));
 		l++;
 	}
 }
 
 int Universe::cmd_save(int argc, char *argv[]){
-	std::strstream os;
-	SerializeContext sc(os);
+	std::fstream fs("save.sav", std::ios::out);
+	SerializeContext sc(fs);
 	sc.map[NULL] = 0;
 	universe.csMap(sc.map);
 	universe.csSerialize(sc);
-	printf("%s\n", os.str());
-	std::fstream fs("save.sav", std::ios::out);
-	fs << os.str();
 	return 0;
 }
 
+extern int cs_destructs;
 int Universe::cmd_load(int argc, char *argv[]){
+	cpplib::dstring plpath = pl.cs->getpath();
+	cs_destructs = 0;
+	delete universe.children;
+	delete universe.next;
+	if(tplist)
+		::free(tplist);
+	ntplist = 0;
+	tplist = NULL;
+	printf("destructs %d\n", cs_destructs);
+	universe.aorder.clear();
 	std::vector<Serializable*> map;
 	map.push_back(NULL);
 	map.push_back(&universe);
@@ -144,6 +153,7 @@ int Universe::cmd_load(int argc, char *argv[]){
 		std::ifstream ifs("save.sav", std::ios::in);
 		universe.csUnserialize(UnserializeContext(ifs, ctormap(), map));
 	}
+	pl.cs = universe.findcspath(plpath);
 	return 0;
 }
 

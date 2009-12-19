@@ -62,30 +62,26 @@ sol{
 #	absolute_magnitude 4.83
 	solarsystem
 
-	astro TextureSphere first_planet{
-		orbits .
-		orbit_radius 5e4
-		orbit_inclination 0
-		showorbit
-		omega 0 1 0 1
-		updirection 0 1 0
-		radius 5e3
-		pos -5e4 0 0
-		color 7f9fff
-		texture jup0vss1.jpg
-		atmosphere_height 30
-		atmosphere_color 1 .8 .5
-		atmosphere_dawn 1. .51 .1
-		mass 317.904*5.977e24
-	}
-#	astro TextureSphere second_planet{
-#		radius 5e3
-#		pos 5e4 0 0
-#		color 7f9fff
-#		texture jup0vss1.jpg
-#		atmosphere_height 30
-#		atmosphere_color 1 .8 .5
-#		atmosphere_dawn 1. .51 .1
+#	astro Star "Sol"{
+#		radius 1.5*Rsun
+#		pos 0 10*Rsun 0
+#		mass 3*Msun
+#		absolute_magnitude 4.1
+#	}
+
+#	coordsys Orbit sunlo{
+#		fullname "Sun Low Orbit"
+#		cs_radius 500
+#		orbits Sol
+#		showorbit
+#		semimajor_axis 600.2686*6378.
+#		eccentricity 0.
+#		inclination 3.85
+#		argument_of_periapsis 150.2075
+#		ascending_node 80.6198
+	#		warp
+#		teleport
+#		rstation
 #	}
 
 	include sol.dat

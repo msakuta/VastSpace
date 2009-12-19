@@ -8,6 +8,7 @@
 #include "war.h"
 #include "entity.h"
 #include "cmd.h"
+#include "serial_util.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/aquat.h>
@@ -32,60 +33,37 @@ const char *CoordSys::classname()const{
 	return "CoordSys";
 }
 
-std::ostream &operator<<(std::ostream &o, Vec3d &v){
-	o << "(" << v[0] << " " << v[1] << " " << v[2] << ")";
-	return o;
-}
-
-std::ostream &operator<<(std::ostream &o, Quatd &v){
-	o << "(" << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << ")";
-	return o;
-}
-
-std::istream &operator>>(std::istream &o, const char *cstr){
-	size_t len = ::strlen(cstr);
-	for(size_t i = 0; i < len; i++){
-		char c = o.get();
-		if(c != cstr[i])
-			throw std::exception("Format error");
-	}
-	return o;
-}
-
-std::istream &operator>>(std::istream &o, Vec3d &v){
-	(((o.seekg(1, std::ios::cur) >> v[0] ).seekg(1, std::ios::cur) >> v[1]).seekg(1, std::ios::cur) >> v[2]).seekg(1, std::ios::cur);
-	return o;
-}
-
-std::istream &operator>>(std::istream &o, Quatd &v){
-	((((o.seekg(1, std::ios::cur) >> v[0] ).seekg(1, std::ios::cur) >> v[1]).seekg(1, std::ios::cur) >> v[2]).seekg(1, std::ios::cur) >> v[3]).seekg(1, std::ios::cur);
-	return o;
-}
 
 void CoordSys::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " (" << name << ") " << sc.map[parent] << " " << sc.map[children] << " " << sc.map[next] << " " << pos << " " << velo << " " << qrot;
+	sc.o << " (" << name << ") (" << (fullname ? fullname : "") << ") " << sc.map[parent] << " " << sc.map[children] << " " << sc.map[next] << " " << pos << " " << velo << " " << qrot;
+	sc.o << " " << omg;
+	sc.o << " " << csrad;
+	sc.o << " " << flags;
 }
 
 void CoordSys::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	std::string name;
+	cpplib::dstring name, fullname;
 	unsigned parent, children, next;
 	sc.i >> " (";
-	do{
-		char c = sc.i.get();
-		if(c == ')')
-			break;
-		name.append(&c, 1);
-	}while(true);
-	sc.i.unget();
-	sc.i >> ") " >> parent >> " " >> children >> " " >> next >> " " >> pos >> " " >> velo >> " " >> qrot;
-	char *newname = new char[name.length() + 1];
-	::strncpy(newname, name.c_str(), name.length() + 1);
-	this->name = newname;
+	name = readUntil(sc.i, ')');
+	sc.i >> ") (";
+	fullname = readUntil(sc.i, ')');
+	sc.i >> ") ";
+	sc.i >> parent >> " " >> children >> " " >> next >> " " >> pos >> " " >> velo >> " " >> qrot;
+	sc.i >> " " >> omg;
+	sc.i >> " " >> csrad;
+	sc.i >> " " >> flags;
+
+	this->name = strnewdup(name, name.len());
+	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
 	this->parent = static_cast<CoordSys*>(sc.map[parent]);
 	this->children = static_cast<CoordSys*>(sc.map[children]);
 	this->next = static_cast<CoordSys*>(sc.map[next]);
+	CoordSys *eis = findeisystem();
+	if(eis)
+		eis->addToDrawList(this);
 }
 
 const unsigned CoordSys::classid = registerClass("CoordSys", Conster<CoordSys>);
@@ -515,16 +493,15 @@ void CoordSys::csSerialize(SerializeContext &sc){
 }
 
 void CoordSys::csUnmap(UnserializeContext &sc){
-	char line[256];
 	while(!sc.i.eof()){
-		sc.i.getline(line, sizeof line);
-		if(line[0] == '\0')
+		std::string line;
+		getline(sc.i, line);
+		if(line.length() == 0)
 			break;
-		char *space = strchr(line, ' ');
-		if(space)
-			*space = '\0';
-		if(sc.cons[line]){
-			sc.map.push_back(sc.cons[line]());
+		size_t space = line.find(' ');
+		std::string cname = space != line.npos ? line.substr(0, space) : line;
+		if(sc.cons[cname]){
+			sc.map.push_back(sc.cons[cname]());
 		}
 	}
 /*	for(CoordSys *cs = children; cs; cs = cs->next)
@@ -694,9 +671,22 @@ void CoordSys::init(const char *path, CoordSys *root){
 	legitimize_child();
 }
 
+extern int 	cs_destructs;
+int cs_destructs = 0;
+
 CoordSys::~CoordSys(){
 	if(name)
 		delete[] name;
+	if(fullname)
+		delete[] fullname;
+	delete children;
+	delete next;
+	cs_destructs++;
+/*	for(CoordSys *cs = children; cs;){
+		CoordSys *csnext = cs->next;
+		delete cs;
+		cs = csnext;
+	}*/
 }
 
 

@@ -89,7 +89,11 @@ public:
 	Player *ppl;
 	bool paused;
 
-	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){flags = CS_ISOLATED | CS_EXTENT;}
+	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){
+		name = NULL;
+		fullname = NULL;
+		flags = CS_ISOLATED | CS_EXTENT;
+	}
 	const char *classname()const;
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);

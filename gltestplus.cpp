@@ -77,85 +77,6 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 Player pl;
 double &flypower = pl.flypower;
 Universe universe(&pl);//galaxysystem(&pl);
-const char *Universe::classname()const{
-	return "Universe";
-}
-
-void Universe::serialize(SerializeContext &sc){
-	st::serialize(sc);
-	sc.o << " timescale:" << timescale << " global_time:" << global_time;
-}
-
-extern std::istream &operator>>(std::istream &o, const char *cstr);
-
-void Universe::unserialize(UnserializeContext &sc){
-	st::unserialize(sc);
-	sc.i >> " timescale:" >> timescale >> " global_time:" >> global_time;
-}
-
-void Universe::anim(double dt){
-	this->global_time += dt;
-	st::anim(dt);
-}
-
-void Universe::csUnserialize(UnserializeContext &usc){
-	unsigned l = 1;
-	while(!usc.i.eof()){
-		std::string cname;
-		do{
-			char c = usc.i.get();
-			if(usc.i.eof())
-				return;
-			if(c == ' ')
-				break;
-			cname.append(&c, 1);
-		}while(true);
-		usc.i.unget();
-		if(cname != usc.map[l]->classname())
-			throw std::exception("Unserialize class name mismatch");
-		std::string line;
-		getline(usc.i, line);
-		usc.map[l]->unserialize(UnserializeContext(std::istringstream(line), usc.cons, usc.map));
-		l++;
-	}
-}
-
-int Universe::cmd_save(int argc, char *argv[]){
-	std::fstream fs("save.sav", std::ios::out);
-	SerializeContext sc(fs);
-	sc.map[NULL] = 0;
-	universe.csMap(sc.map);
-	universe.csSerialize(sc);
-	return 0;
-}
-
-extern int cs_destructs;
-int Universe::cmd_load(int argc, char *argv[]){
-	cpplib::dstring plpath = pl.cs->getpath();
-	cs_destructs = 0;
-	delete universe.children;
-	delete universe.next;
-	if(tplist)
-		::free(tplist);
-	ntplist = 0;
-	tplist = NULL;
-	printf("destructs %d\n", cs_destructs);
-	universe.aorder.clear();
-	std::vector<Serializable*> map;
-	map.push_back(NULL);
-	map.push_back(&universe);
-	{
-		std::ifstream ifs("save.sav", std::ios::in);
-		UnserializeContext usc(ifs, ctormap(), map);
-		universe.csUnmap(usc);
-	}
-	{
-		std::ifstream ifs("save.sav", std::ios::in);
-		universe.csUnserialize(UnserializeContext(ifs, ctormap(), map));
-	}
-	pl.cs = universe.findcspath(plpath);
-	return 0;
-}
 
 class GLattrib{
 public:
@@ -1544,8 +1465,8 @@ int main(int argc, char *argv[])
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CmdAddParam("attack", cmd_attack, &pl);
-	CmdAdd("save", Universe::cmd_save);
-	CmdAdd("load", Universe::cmd_load);
+	CmdAddParam("save", Universe::cmd_save, &universe);
+	CmdAddParam("load", Universe::cmd_load, &universe);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

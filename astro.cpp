@@ -3,12 +3,15 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "astrodef.h"
+#include "player.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
 }
 #include <string.h>
 #include <stdlib.h>
+#include <sstream>
+#include <fstream>
 
 
 const char *OrbitCS::classname()const{
@@ -549,4 +552,91 @@ double TexSphere::atmoScatter(const Viewer &vw)const{
 
 bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
+}
+
+
+
+
+
+const char *Universe::classname()const{
+	return "Universe";
+}
+
+void Universe::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " timescale:" << timescale << " global_time:" << global_time;
+}
+
+extern std::istream &operator>>(std::istream &o, const char *cstr);
+
+void Universe::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> " timescale:" >> timescale >> " global_time:" >> global_time;
+}
+
+void Universe::anim(double dt){
+	this->global_time += dt;
+	st::anim(dt);
+}
+
+void Universe::csUnserialize(UnserializeContext &usc){
+	unsigned l = 1;
+	while(!usc.i.eof()){
+		std::string cname;
+		do{
+			char c = usc.i.get();
+			if(usc.i.eof())
+				return;
+			if(c == ' ')
+				break;
+			cname.append(&c, 1);
+		}while(true);
+		usc.i.unget();
+		if(cname != usc.map[l]->classname())
+			throw std::exception("Unserialize class name mismatch");
+		std::string line;
+		getline(usc.i, line);
+		usc.map[l]->unserialize(UnserializeContext(std::istringstream(line), usc.cons, usc.map));
+		l++;
+	}
+}
+
+int Universe::cmd_save(int argc, char *argv[], void *pv){
+	Universe &universe = *(Universe*)pv;
+	std::fstream fs("save.sav", std::ios::out);
+	SerializeContext sc(fs);
+	sc.map[NULL] = 0;
+	universe.csMap(sc.map);
+	universe.csSerialize(sc);
+	return 0;
+}
+
+extern int cs_destructs;
+int Universe::cmd_load(int argc, char *argv[], void *pv){
+	Universe &universe = *(Universe*)pv;
+	Player &pl = *universe.ppl;
+	cpplib::dstring plpath = pl.cs->getpath();
+	cs_destructs = 0;
+	delete universe.children;
+	delete universe.next;
+	if(tplist)
+		::free(tplist);
+	ntplist = 0;
+	tplist = NULL;
+	printf("destructs %d\n", cs_destructs);
+	universe.aorder.clear();
+	std::vector<Serializable*> map;
+	map.push_back(NULL);
+	map.push_back(&universe);
+	{
+		std::ifstream ifs("save.sav", std::ios::in);
+		UnserializeContext usc(ifs, ctormap(), map);
+		universe.csUnmap(usc);
+	}
+	{
+		std::ifstream ifs("save.sav", std::ios::in);
+		universe.csUnserialize(UnserializeContext(ifs, ctormap(), map));
+	}
+	pl.cs = universe.findcspath(plpath);
+	return 0;
 }

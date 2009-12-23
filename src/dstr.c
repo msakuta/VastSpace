@@ -2,11 +2,12 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define alunit 0x80 /* allocation unit */
 #define alsize(s) ((((s) + alunit - 1) / alunit) * alunit) /* allocated size */
 
-dstr_t dstr0 = {NULL, 0};
+dstr_t dstr0 = {0, NULL};
 
 char *dstralloc(dstr_t *dst, size_t sl){
 	assert(dst);

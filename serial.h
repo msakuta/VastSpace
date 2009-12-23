@@ -6,21 +6,18 @@
 
 class Serializable;
 typedef std::map<std::string, Serializable *(*)()> CtorMap;
+typedef std::map<const Serializable*, unsigned> SerializeMap;
+typedef std::vector<Serializable*> UnserializeMap;
 
 class SerializeContext{
 public:
 	SerializeContext(std::ostream &ao) : o(ao){}
 	std::ostream &o;
-	std::map<const Serializable*, unsigned> map;
+	SerializeMap map;
 };
 
-class UnserializeContext{
-public:
-	UnserializeContext(std::istream &ai, CtorMap &acons, std::vector<Serializable*> &amap) : i(ai), cons(acons), map(amap){}
-	std::istream &i;
-	CtorMap &cons;
-	std::vector<Serializable*> &map;
-};
+class UnserializeContext;
+
 
 // Base class of all serializable objects.
 class Serializable{

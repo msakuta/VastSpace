@@ -10,6 +10,7 @@ extern "C"{
 #include "sceptor.h"
 #include "Scarry.h"
 #include "glwindow.h"
+#include "serial_util.h"
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
@@ -55,6 +56,34 @@ const char *Entity::idname()const{
 
 const char *Entity::classname()const{
 	return "Entity";
+}
+
+#if 0 // reference
+	Vec3d pos;
+	Vec3d velo;
+	Vec3d omg;
+	Quatd rot; /* rotation expressed in quaternion */
+	double mass; /* [kg] */
+	double moi;  /* moment of inertia, [kg m^2] should be a tensor */
+//	double turrety, barrelp;
+//	double desired[2];
+	double health;
+//	double cooldown, cooldown2;
+	Entity *next;
+	Entity *selectnext; /* selection list */
+	Entity *enemy;
+	int race;
+//	int shoots, shoots2, kills, deaths;
+	input_t inputs;
+	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
+	int otflag;
+#endif
+
+void Entity::serialize(SerializeContext &sc){
+	sc.o << " " << pos << " " << velo << " " << omg << " " << rot << " " << mass << " " << moi << " " << health << " " << sc.map[next] << " " << sc.map[enemy] << " " << race << " " << otflag;
+}
+
+void Entity::unserialize(UnserializeContext &sc){
 }
 
 double Entity::maxhealth()const{return 100.;}

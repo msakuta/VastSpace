@@ -45,7 +45,6 @@ void CoordSys::serialize(SerializeContext &sc){
 void CoordSys::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	cpplib::dstring name, fullname;
-	unsigned parent, children, next;
 	sc.i >> " (";
 	name = readUntil(sc.i, ')');
 	sc.i >> ") (";
@@ -58,9 +57,6 @@ void CoordSys::unserialize(UnserializeContext &sc){
 
 	this->name = strnewdup(name, name.len());
 	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
-	this->parent = static_cast<CoordSys*>(sc.map[parent]);
-	this->children = static_cast<CoordSys*>(sc.map[children]);
-	this->next = static_cast<CoordSys*>(sc.map[next]);
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
@@ -476,11 +472,13 @@ void CoordSys::predraw(const Viewer *vw){
 		cs->predraw(vw);
 }
 
-void CoordSys::csMap(std::map<const Serializable *, unsigned> &cm){
+void CoordSys::csMap(SerializeMap &cm){
 	if(cm.find(this) == cm.end()){
 		unsigned id = cm.size();
 		cm[this] = id;
 	}
+	if(w)
+		w->map(cm);
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->csMap(cm);
 }
@@ -488,6 +486,8 @@ void CoordSys::csMap(std::map<const Serializable *, unsigned> &cm){
 void CoordSys::csSerialize(SerializeContext &sc){
 	serialize(sc);
 	sc.o << std::endl;
+	if(w)
+		w->ser(sc);
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->csSerialize(sc);
 }
@@ -495,11 +495,15 @@ void CoordSys::csSerialize(SerializeContext &sc){
 void CoordSys::csUnmap(UnserializeContext &sc){
 	while(!sc.i.eof()){
 		std::string line;
-		getline(sc.i, line);
+		sc.i.getline(line);
 		if(line.length() == 0)
 			break;
-		size_t space = line.find(' ');
+		size_t space = line.find_first_of(' ');
+		if(space == line.npos)
+			continue;
 		std::string cname = space != line.npos ? line.substr(0, space) : line;
+		if(cname != "Player" && cname != "Universe" && sc.cons.find(cname) == sc.cons.end())
+			throw std::exception("Class constructor not found.");
 		if(sc.cons[cname]){
 			sc.map.push_back(sc.cons[cname]());
 		}

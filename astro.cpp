@@ -45,12 +45,10 @@ void OrbitCS::serialize(SerializeContext &sc){
 
 void OrbitCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	unsigned orbit_home;
 	sc.i >> " " >> orbit_rad >> " " >> orbit_home >> " " >> orbit_axis;
 	sc.i >> " " >> orbit_phase;
 	sc.i >> " " >> eccentricity; /* orbital element */
 	sc.i >> " " >> flags2;
-	this->orbit_home = static_cast<Astrobj*>(sc.map[orbit_home]);
 }
 
 void OrbitCS::anim(double dt){
@@ -581,21 +579,11 @@ void Universe::anim(double dt){
 
 void Universe::csUnserialize(UnserializeContext &usc){
 	unsigned l = 1;
-	while(!usc.i.eof()){
-		std::string cname;
-		do{
-			char c = usc.i.get();
-			if(usc.i.eof())
-				return;
-			if(c == ' ')
-				break;
-			cname.append(&c, 1);
-		}while(true);
-		usc.i.unget();
-		if(cname != usc.map[l]->classname())
-			throw std::exception("Unserialize class name mismatch");
+	while(!usc.i.eof() && l < usc.map.size()){
+		const char *cname = usc.map[l]->classname();
+		usc.i >> cname;
 		std::string line;
-		getline(usc.i, line);
+		usc.i.getline(line);
 		usc.map[l]->unserialize(UnserializeContext(std::istringstream(line), usc.cons, usc.map));
 		l++;
 	}

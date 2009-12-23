@@ -102,7 +102,7 @@ public:
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
 
 	// Serialize the tree recursively.
-	void csMap(std::map<const Serializable*,unsigned> &);
+	void csMap(SerializeMap &);
 	void csSerialize(SerializeContext &);
 	void csUnmap(UnserializeContext &);
 

@@ -19,6 +19,8 @@ public:
 	virtual const char *classname()const = 0; // returned string storage must be static
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &usc);
+	void packSerialize(SerializeContext &sc);
+	void packUnserialize(UnserializeContext &sc);
 	static unsigned registerClass(std::string name, Serializable *(*)());
 	static CtorMap &ctormap();
 	template<class T> static Serializable *Conster();

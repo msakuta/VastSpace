@@ -580,11 +580,7 @@ void Universe::anim(double dt){
 void Universe::csUnserialize(UnserializeContext &usc){
 	unsigned l = 1;
 	while(!usc.i.eof() && l < usc.map.size()){
-		const char *cname = usc.map[l]->classname();
-		usc.i >> cname;
-		std::string line;
-		usc.i.getline(line);
-		usc.map[l]->unserialize(UnserializeContext(std::istringstream(line), usc.cons, usc.map));
+		usc.map[l]->packUnserialize(usc);
 		l++;
 	}
 }
@@ -592,13 +588,13 @@ void Universe::csUnserialize(UnserializeContext &usc){
 int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
-	std::fstream fs("save.sav", std::ios::out);
-	SerializeContext sc(fs);
+	SerializeMap map;
+	std::fstream fs("save.sav", std::ios::out | std::ios::binary);
+	SerializeContext sc(fs, map);
 	sc.map[NULL] = 0;
 	sc.map[&pl] = sc.map.size();
 	universe.csMap(sc.map);
-	sc.o << pl.classname();
-	pl.serialize(sc); sc.o << "\n";
+	pl.packSerialize(sc);
 	universe.csSerialize(sc);
 	return 0;
 }
@@ -623,16 +619,20 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	map.push_back(&universe);
 	char *buf;
 	{
-		std::ifstream ifs("save.sav", std::ios::in);
+		std::ifstream ifs("save.sav", std::ios::in | std::ios::binary);
 		ifs.seekg(0, std::ios::end);
 		long size = ifs.tellg();
 		ifs.seekg(0, std::ios::beg);
 		buf = new char[size];
 		ifs.read(buf, size);
-		std::stringstream ss(buf);
+		std::istringstream ss(std::string(buf, size));
 		UnserializeContext usc(ss, ctormap(), map);
 		universe.csUnmap(usc);
-		ss.seekg(0, std::ios::beg);
+	}
+	{
+		std::stringstream ss(buf);
+		UnserializeContext usc(ss, ctormap(), map);
+//		ss.seekg(0, std::ios::beg);
 		universe.csUnserialize(usc);
 	}
 	delete[] buf;

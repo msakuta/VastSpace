@@ -181,6 +181,5 @@ void WarField::map(SerializeMap &cm){
 }
 
 void WarField::ser(SerializeContext &sc){
-	serialize(sc);
-	sc.o << "\n";
+	packSerialize(sc);
 }

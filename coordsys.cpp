@@ -484,10 +484,9 @@ void CoordSys::csMap(SerializeMap &cm){
 }
 
 void CoordSys::csSerialize(SerializeContext &sc){
-	serialize(sc);
-	sc.o << "\n";
+	packSerialize(sc);
 	if(w)
-		w->ser(sc);
+		w->packSerialize(sc);
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->csSerialize(sc);
 }
@@ -495,7 +494,14 @@ void CoordSys::csSerialize(SerializeContext &sc){
 void CoordSys::csUnmap(UnserializeContext &sc){
 	while(!sc.i.eof()){
 		std::string line;
-		sc.i.getline(line);
+		std::streamsize size;
+		sc.i >> size;
+		if(sc.i.fail())
+			break;
+		sc.i >> " ";
+		char *buf = new char[size];
+		sc.i.read(buf, size);
+		line.assign(buf, size);
 		if(line.length() == 0)
 			break;
 		size_t space = line.find_first_of(' ');
@@ -507,6 +513,7 @@ void CoordSys::csUnmap(UnserializeContext &sc){
 		if(sc.cons[cname]){
 			sc.map.push_back(sc.cons[cname]());
 		}
+		delete[] buf;
 	}
 /*	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->csUnmap(sc);*/

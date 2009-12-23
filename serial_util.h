@@ -25,6 +25,7 @@ public:
 	tt &operator<<(float a){ base.operator<<(a); return *this; }
 	tt &operator<<(double a){ base.operator<<(a); return *this; }
 	tt &operator<<(const char *a){ base << a; return *this; }
+	tt &operator<<(const std::string &a){ base << a; return *this; }
 	tt &operator<<(const Vec3d &v);
 	tt &operator<<(const Quatd &v);
 	template<typename T> tt &operator<<(const Vec4<T> &v);
@@ -34,14 +35,25 @@ public:
 
 class SerializeContext{
 public:
-	SerializeContext(std::ostream &ao) : o(ao, *this){}
+	SerializeContext(std::ostream &ao, SerializeMap &amap) : o(ao, *this), map(amap){}
+	SerializeContext(std::ostream &ao, const SerializeContext &copy_src) : o(ao, *this), map(copy_src.map){}
 	SerializeStream o;
-	SerializeMap map;
+	SerializeMap &map;
 };
 
 inline SerializeStream &SerializeStream::operator<<(const Serializable *p){
 	return *this << sc.map[p];
 }
+
+
+
+
+
+
+
+
+
+
 
 class UnserializeStream{
 	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
@@ -52,9 +64,12 @@ public:
 	// abase must live as long as UnserializeContext does.
 	UnserializeStream(std::istream &abase, UnserializeContext &ausc) : base(abase), usc(ausc){}
 	char get(){ return base.get(); }
+	tt &get(char *s, std::streamsize size){ base.get(s, size); return *this; }
 	void unget(){ base.unget(); }
-	bool eof(){ return base.eof(); }
+	bool fail()const{ return base.fail(); }
+	bool eof()const{ return base.eof(); }
 	void getline(std::string &s){ std::getline(base, s); }
+	tt &read(char *s, std::streamsize size){ base.read(s, size); return *this; }
 	tt &operator>>(int &a){ base.operator>>(a); return *this; }
 	tt &operator>>(unsigned &a){ base.operator>>(a); return *this; }
 	tt &operator>>(unsigned long &a){ base.operator>>(a); return *this; }
@@ -78,24 +93,11 @@ template<typename T> SerializeStream &SerializeStream::operator<<(const Vec4<T> 
 	return *this << "(" << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << ")";
 }
 
-std::ostream &operator<<(std::ostream &o, const Quatd &v);
-
-std::ostream &operator<<(std::ostream &o, const struct random_sequence &rs);
-
-std::istream &operator>>(std::istream &o, const char *cstr);
-
-std::istream &operator>>(std::istream &o, Vec3d &v);
-
 template<typename T> UnserializeStream &operator>>(UnserializeStream &o, Vec4<T> &v){
 	o >> "(" >> v[0] >> " " >> v[1] >> " " >> v[2] >> " " >> v[3] >> ")";
 	return o;
 }
 
-std::istream &operator>>(std::istream &o, Quatd &v);
-
-std::istream &operator>>(std::istream &o, struct random_sequence &rs);
-
-cpplib::dstring readUntil(std::istream &in, char c);
 cpplib::dstring readUntil(UnserializeStream &in, char c);
 
 char *strnewdup(const char *src, size_t len);

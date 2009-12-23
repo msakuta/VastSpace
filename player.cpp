@@ -27,6 +27,7 @@ const char *Player::classname()const{
 }
 
 void Player::serialize(SerializeContext &sc){
+	Serializable::serialize(sc);
 	sc.o << " " << pos << " " << velo << " " << rot << " " << sc.map[cs];
 }
 

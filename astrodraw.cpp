@@ -623,7 +623,9 @@ void TexSphere::draw(const Viewer *vw){
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
-		drawsuncolona(findBrightest(), vw);
+		Astrobj *brightest = findBrightest();
+		if(brightest)
+			drawsuncolona(brightest, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		bool ret = drawTextureSphere(this, vw, sunpos,

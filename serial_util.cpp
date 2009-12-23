@@ -5,6 +5,22 @@ extern "C"{
 using namespace std;
 
 
+SerializeStream &SerializeStream::operator<<(const Vec3d &v){
+	return *this << "(" << v[0] << " " << v[1] << " " << v[2] << ")";
+}
+
+SerializeStream &SerializeStream::operator<<(const Quatd &v){
+	return *this << "(" << v.i() << " " << v.j() << " " << v.k() << " " << v.re() << ")";
+}
+
+SerializeStream &SerializeStream::operator<<(const struct ::random_sequence &rs){
+	return *this << "(" << rs.w << " " << rs.z << ")";
+}
+
+
+
+
+
 UnserializeStream &UnserializeStream::operator>>(const char *cstr){
 	size_t len = ::strlen(cstr);
 	for(size_t i = 0; i < len; i++){

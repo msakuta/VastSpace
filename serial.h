@@ -9,13 +9,7 @@ typedef std::map<std::string, Serializable *(*)()> CtorMap;
 typedef std::map<const Serializable*, unsigned> SerializeMap;
 typedef std::vector<Serializable*> UnserializeMap;
 
-class SerializeContext{
-public:
-	SerializeContext(std::ostream &ao) : o(ao){}
-	std::ostream &o;
-	SerializeMap map;
-};
-
+class SerializeContext;
 class UnserializeContext;
 
 

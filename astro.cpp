@@ -598,7 +598,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	sc.map[&pl] = sc.map.size();
 	universe.csMap(sc.map);
 	sc.o << pl.classname();
-	pl.serialize(sc); sc.o << '\n';
+	pl.serialize(sc); sc.o << "\n";
 	universe.csSerialize(sc);
 	return 0;
 }

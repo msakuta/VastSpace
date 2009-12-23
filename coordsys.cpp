@@ -485,7 +485,7 @@ void CoordSys::csMap(SerializeMap &cm){
 
 void CoordSys::csSerialize(SerializeContext &sc){
 	serialize(sc);
-	sc.o << std::endl;
+	sc.o << "\n";
 	if(w)
 		w->ser(sc);
 	for(CoordSys *cs = children; cs; cs = cs->next)

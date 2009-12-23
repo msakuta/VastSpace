@@ -43,10 +43,7 @@ void LagrangeCS::serialize(SerializeContext &sc){
 
 void LagrangeCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	unsigned objs[2];
 	sc.i >> " " >> objs[0] >> " " >> objs[1];
-	this->objs[0] = static_cast<Astrobj*>(sc.map[objs[0]]);
-	this->objs[1] = static_cast<Astrobj*>(sc.map[objs[1]]);
 }
 
 const char *Lagrange1CS::classname()const{return "Lagrange1CS";}

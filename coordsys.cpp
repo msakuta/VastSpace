@@ -476,7 +476,7 @@ void CoordSys::predraw(const Viewer *vw){
 		cs->predraw(vw);
 }
 
-void CoordSys::csMap(std::map<Serializable *, unsigned> &cm){
+void CoordSys::csMap(std::map<const Serializable *, unsigned> &cm){
 	if(cm.find(this) == cm.end()){
 		unsigned id = cm.size();
 		cm[this] = id;

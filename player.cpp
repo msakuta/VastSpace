@@ -3,6 +3,10 @@
 #include "cmd.h"
 #include "coordsys.h"
 #include "astro.h"
+#include "serial_util.h"
+
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), flypower(1.), viewdist(1.), mover(&Player::freelook){
+}
 
 
 Quatd Player::getrot()const{
@@ -16,6 +20,20 @@ Quatd Player::getrot()const{
 
 Vec3d Player::getpos()const{
 	return pos;
+}
+
+const char *Player::classname()const{
+	return "Player";
+}
+
+void Player::serialize(SerializeContext &sc){
+	sc.o << " " << pos << " " << velo << " " << rot << " " << sc.map[cs];
+}
+
+void Player::unserialize(UnserializeContext &sc){
+	unsigned cs;
+	sc.i >> " " >> pos >> " " >> velo >> " " >> rot >> " " >> cs;
+	this->cs = static_cast<CoordSys*>(sc.map[cs]);
 }
 
 void Player::anim(double dt){

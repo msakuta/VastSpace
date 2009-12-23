@@ -1,5 +1,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
+#include "serial.h"
 #include <cstring>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -13,16 +14,9 @@ struct coordsys;
 class Entity;
 class CoordSys;
 
-class Player{
+class Player : public Serializable{
 public:
-	Player(){
-		std::memset(this, 0, sizeof *this);
-		rot[3] = 1.;
-		fov = 1.;
-		flypower = 1.;
-		viewdist = 1.;
-		mover = &Player::freelook;
-	}
+	Player();
 	Vec3d pos;
 	Vec3d velo;
 	Vec3d accel;
@@ -49,6 +43,9 @@ public:
 
 	Quatd getrot()const;
 	Vec3d getpos()const;
+	const char *classname()const; // returned string storage must be static
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void unlink(const Entity *);
 	void freelook(const input_t &, double dt);

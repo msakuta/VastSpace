@@ -11,7 +11,7 @@ class SerializeContext{
 public:
 	SerializeContext(std::ostream &ao) : o(ao){}
 	std::ostream &o;
-	std::map<Serializable*, unsigned> map;
+	std::map<const Serializable*, unsigned> map;
 };
 
 class UnserializeContext{

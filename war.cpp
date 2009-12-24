@@ -41,12 +41,12 @@ const unsigned WarField::classid = registerClass("WarField", Conster<WarField>);
 
 void WarField::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << " " << sc.map[pl] << " " << sc.map[el] << " " << sc.map[bl] << " " << rs << " " << effects << " " << realtime << " " << soundtime << " " << sc.map[cs];
+	sc.o << pl << el << bl << rs << effects << realtime << soundtime << cs;
 }
 
 void WarField::unserialize(UnserializeContext &sc){
 	Serializable::unserialize(sc);
-	sc.i >> " " >> pl >> " " >> el >> " " >> bl >> " " >> rs >> " " >> effects >> " " >> realtime >> " " >> soundtime >> " " >> cs;
+	sc.i >> pl >> el >> bl >> rs >> effects >> realtime >> soundtime >> cs;
 }
 
 static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
@@ -180,6 +180,3 @@ void WarField::map(SerializeMap &cm){
 	}
 }
 
-void WarField::ser(SerializeContext &sc){
-	packSerialize(sc);
-}

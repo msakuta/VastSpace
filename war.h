@@ -118,7 +118,6 @@ public:
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 	void map(SerializeMap &cm);
-	void ser(SerializeContext &);
 
 	Player *pl;
 	Entity *el; /* entity list */

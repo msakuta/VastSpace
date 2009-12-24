@@ -36,24 +36,21 @@ const char *CoordSys::classname()const{
 
 void CoordSys::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " (" << name << ") (" << (fullname ? fullname : "") << ") " << sc.map[parent] << " " << sc.map[children] << " " << sc.map[next] << " " << pos << " " << velo << " " << qrot;
-	sc.o << " " << omg;
-	sc.o << " " << csrad;
-	sc.o << " " << flags;
+	sc.o << name << (fullname ? fullname : "") << parent << children << next << pos << velo << qrot;
+	sc.o << omg;
+	sc.o << csrad;
+	sc.o << flags;
 }
 
 void CoordSys::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	cpplib::dstring name, fullname;
-	sc.i >> " (";
-	name = readUntil(sc.i, ')');
-	sc.i >> ") (";
-	fullname = readUntil(sc.i, ')');
-	sc.i >> ") ";
-	sc.i >> parent >> " " >> children >> " " >> next >> " " >> pos >> " " >> velo >> " " >> qrot;
-	sc.i >> " " >> omg;
-	sc.i >> " " >> csrad;
-	sc.i >> " " >> flags;
+	sc.i >> name;
+	sc.i >> fullname;
+	sc.i >> parent >> children >> next >> pos >> velo >> qrot;
+	sc.i >> omg;
+	sc.i >> csrad;
+	sc.i >> flags;
 
 	this->name = strnewdup(name, name.len());
 	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
@@ -493,25 +490,32 @@ void CoordSys::csSerialize(SerializeContext &sc){
 
 void CoordSys::csUnmap(UnserializeContext &sc){
 	while(!sc.i.eof()){
-		std::string line;
-		std::streamsize size;
+//		std::string line;
+//		std::streamsize size;
+		unsigned long size;
 		sc.i >> size;
-		if(sc.i.fail())
-			break;
-		sc.i >> " ";
+//		if(sc.i.fail())
+//			break;
+//		sc.i >> " ";
 		char *buf = new char[size];
 		sc.i.read(buf, size);
-		line.assign(buf, size);
+/*		line.assign(buf, size);
 		if(line.length() == 0)
 			break;
 		size_t space = line.find_first_of(' ');
 		if(space == line.npos)
 			continue;
-		std::string cname = space != line.npos ? line.substr(0, space) : line;
-		if(cname != "Player" && cname != "Universe" && sc.cons.find(cname) == sc.cons.end())
+		std::string cname = space != line.npos ? line.substr(0, space) : line;*/
+/*		cpplib::dstring cname;
+		sc.i >> cname;
+		std::string scname = cname;
+		if(cname != "Player" && cname != "Universe" && sc.cons.find(scname) == sc.cons.end())
+			throw std::exception("Class constructor not found.");*/
+		std::string scname = buf;
+		if(strcmp(buf, "Player") && strcmp(buf, "Universe") && sc.cons.find(scname) == sc.cons.end())
 			throw std::exception("Class constructor not found.");
-		if(sc.cons[cname]){
-			sc.map.push_back(sc.cons[cname]());
+		if(sc.cons[scname]){
+			sc.map.push_back(sc.cons[scname]());
 		}
 		delete[] buf;
 	}

@@ -37,18 +37,18 @@ const unsigned OrbitCS::classid = registerClass("OrbitCS", Conster<OrbitCS>);
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " " << orbit_rad << " " << sc.map[orbit_home] << " " << orbit_axis;
-	sc.o << " " << orbit_phase;
-	sc.o << " " << eccentricity; /* orbital element */
-	sc.o << " " << flags2;
+	sc.o << orbit_rad << orbit_home << orbit_axis;
+	sc.o << orbit_phase;
+	sc.o << eccentricity; /* orbital element */
+	sc.o << flags2;
 }
 
 void OrbitCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> " " >> orbit_rad >> " " >> orbit_home >> " " >> orbit_axis;
-	sc.i >> " " >> orbit_phase;
-	sc.i >> " " >> eccentricity; /* orbital element */
-	sc.i >> " " >> flags2;
+	sc.i >> orbit_rad >> orbit_home >> orbit_axis;
+	sc.i >> orbit_phase;
+	sc.i >> eccentricity; /* orbital element */
+	sc.i >> flags2;
 }
 
 void OrbitCS::anim(double dt){
@@ -345,28 +345,27 @@ TexSphere::~TexSphere(){
 
 void TexSphere::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " (" << (texname ? texname : "") << ")";
-	sc.o << " " << ringmin;
-	sc.o << " " << ringmax;
-	sc.o << " " << ringthick;
-	sc.o << " " << atmodensity;
-	sc.o << " " << *(Vec4<float>*)(atmohor);
-	sc.o << " " << *(Vec4<float>*)(atmodawn);
-	sc.o << " " << ring;
+	sc.o << (texname ? texname : "");
+	sc.o << ringmin;
+	sc.o << ringmax;
+	sc.o << ringthick;
+	sc.o << atmodensity;
+	sc.o << *(Vec4<float>*)(atmohor);
+	sc.o << *(Vec4<float>*)(atmodawn);
+	sc.o << ring;
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> " (";
-	cpplib::dstring texname = readUntil(sc.i, ')');
-	sc.i >> ")";
-	sc.i >> " " >> ringmin;
-	sc.i >> " " >> ringmax;
-	sc.i >> " " >> ringthick;
-	sc.i >> " " >> atmodensity;
-	sc.i >> " " >> *(Vec4<float>*)(atmohor);
-	sc.i >> " " >> *(Vec4<float>*)(atmodawn);
-	sc.i >> " " >> ring;
+	cpplib::dstring texname;
+	sc.i >> texname;
+	sc.i >> ringmin;
+	sc.i >> ringmax;
+	sc.i >> ringthick;
+	sc.i >> atmodensity;
+	sc.i >> *(Vec4<float>*)(atmohor);
+	sc.i >> *(Vec4<float>*)(atmodawn);
+	sc.i >> ring;
 
 	this->texname = strnewdup(texname, texname.len());
 	this->texlist = 0;
@@ -579,7 +578,7 @@ void Universe::anim(double dt){
 
 void Universe::csUnserialize(UnserializeContext &usc){
 	unsigned l = 1;
-	while(!usc.i.eof() && l < usc.map.size()){
+	while(/*!usc.i.eof() &&*/ l < usc.map.size()){
 		usc.map[l]->packUnserialize(usc);
 		l++;
 	}
@@ -589,13 +588,23 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
 	SerializeMap map;
-	std::fstream fs("save.sav", std::ios::out | std::ios::binary);
-	SerializeContext sc(fs, map);
+//	std::fstream fs("save.sav", std::ios::out | std::ios::binary);
+//	StdSerializeStream sss(fs);
+	BinSerializeStream bss;
+	SerializeContext sc(bss, map);
+	bss.BinSerializeStream::BinSerializeStream(sc);
+//	sss.StdSerializeStream::StdSerializeStream(fs, sc);
 	sc.map[NULL] = 0;
 	sc.map[&pl] = sc.map.size();
 	universe.csMap(sc.map);
+//	No luck std::map sorts keys returrned via iterator.
+//	for(SerializeMap::iterator it = sc.map.begin(); it != sc.map.end(); it++) if(it->first)
+//		const_cast<Serializable*>(it->first)->packSerialize(sc);
 	pl.packSerialize(sc);
 	universe.csSerialize(sc);
+	FILE *fp = fopen("saveb.sav", "wb");
+	fwrite(bss.getbuf(), 1, bss.getsize(), fp);
+	fclose(fp);
 	return 0;
 }
 
@@ -617,24 +626,55 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	map.push_back(NULL);
 	map.push_back(&pl);
 	map.push_back(&universe);
-	char *buf;
-	{
-		std::ifstream ifs("save.sav", std::ios::in | std::ios::binary);
-		ifs.seekg(0, std::ios::end);
-		long size = ifs.tellg();
-		ifs.seekg(0, std::ios::beg);
-		buf = new char[size];
-		ifs.read(buf, size);
-		std::istringstream ss(std::string(buf, size));
-		UnserializeContext usc(ss, ctormap(), map);
-		universe.csUnmap(usc);
+	if(true){
+		unsigned char *buf;
+		FILE *fp = fopen("saveb.sav", "rb");
+		if(!fp)
+			return 0;
+		fseek(fp, 0, SEEK_END);
+		long size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		buf = new unsigned char[size];
+		fread(buf, 1, size, fp);
+		fclose(fp);
+		{
+			BinUnserializeStream bus;
+			UnserializeContext usc(bus, ctormap(), map);
+			bus.BinUnserializeStream::BinUnserializeStream(buf, size, usc);
+			universe.csUnmap(usc);
+		}
+		{
+			BinUnserializeStream bus;
+			UnserializeContext usc(bus, ctormap(), map);
+			bus.BinUnserializeStream::BinUnserializeStream(buf, size, usc);
+			universe.csUnserialize(usc);
+		}
+		delete[] buf;
 	}
-	{
-		std::stringstream ss(buf);
-		UnserializeContext usc(ss, ctormap(), map);
-//		ss.seekg(0, std::ios::beg);
-		universe.csUnserialize(usc);
+	else{
+		char *buf;
+		{
+			std::ifstream ifs("save.sav", std::ios::in | std::ios::binary);
+			ifs.seekg(0, std::ios::end);
+			long size = ifs.tellg();
+			ifs.seekg(0, std::ios::beg);
+			buf = new char[size];
+			ifs.read(buf, size);
+			std::istringstream ss(std::string(buf, size));
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.StdUnserializeStream::StdUnserializeStream(ss, usc);
+			universe.csUnmap(usc);
+		}
+		{
+			std::stringstream ss(buf);
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.StdUnserializeStream::StdUnserializeStream(ss, usc);
+	//		ss.seekg(0, std::ios::beg);
+			universe.csUnserialize(usc);
+		}
+		delete[] buf;
 	}
-	delete[] buf;
 	return 0;
 }

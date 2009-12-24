@@ -38,12 +38,12 @@ LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
 
 void LagrangeCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " " << sc.map[objs[0]] << " " << sc.map[objs[1]];
+	sc.o << objs[0] << objs[1];
 }
 
 void LagrangeCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> " " >> objs[0] >> " " >> objs[1];
+	sc.i >> objs[0] >> objs[1];
 }
 
 const char *Lagrange1CS::classname()const{return "Lagrange1CS";}

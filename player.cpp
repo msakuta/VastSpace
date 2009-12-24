@@ -28,13 +28,11 @@ const char *Player::classname()const{
 
 void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << " " << pos << " " << velo << " " << rot << " " << sc.map[cs];
+	sc.o << pos << velo << rot << cs;
 }
 
 void Player::unserialize(UnserializeContext &sc){
-	unsigned cs;
-	sc.i >> " " >> pos >> " " >> velo >> " " >> rot >> " " >> cs;
-	this->cs = static_cast<CoordSys*>(sc.map[cs]);
+	sc.i >> pos >> velo >> rot >> cs;
 }
 
 void Player::anim(double dt){

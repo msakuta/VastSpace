@@ -13,12 +13,33 @@ extern "C"{
 
 
 class SerializeStream{
-	std::ostream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
+protected:
 	SerializeContext &sc; // redundant pointer to point each other, but useful to automate serialization syntax.
 public:
 	typedef SerializeStream tt;
+	SerializeStream() : sc(*(SerializeContext*)NULL){}
+	SerializeStream(SerializeContext &asc) : sc(asc){}
+	virtual ~SerializeStream(){}
+	virtual tt &operator<<(int a) = 0;
+	virtual tt &operator<<(unsigned a) = 0;
+	virtual tt &operator<<(unsigned long a) = 0;
+	virtual tt &operator<<(float a) = 0;
+	virtual tt &operator<<(double a) = 0;
+	virtual tt &operator<<(const char *a) = 0;
+	virtual tt &operator<<(const std::string &a) = 0;
+	virtual tt &operator<<(const Serializable *p) = 0;
+	virtual tt &operator<<(const Vec3d &v) = 0;
+	virtual tt &operator<<(const Quatd &v) = 0;
+	virtual tt &operator<<(const random_sequence &v) = 0;
+	template<typename T> tt &operator<<(const Vec4<T> &v);
+};
 
-	SerializeStream(std::ostream &abase, SerializeContext &asc) : base(abase), sc(asc){}
+class StdSerializeStream : public SerializeStream{
+	std::ostream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
+public:
+	typedef SerializeStream tt;
+
+	StdSerializeStream(std::ostream &abase, SerializeContext &asc = *(SerializeContext*)NULL) : base(abase), tt(asc){}
 	tt &operator<<(int a){ base.operator<<(a); return *this; }
 	tt &operator<<(unsigned a){ base.operator<<(a); return *this; }
 	tt &operator<<(unsigned long a){ base.operator<<(a); return *this; }
@@ -26,18 +47,45 @@ public:
 	tt &operator<<(double a){ base.operator<<(a); return *this; }
 	tt &operator<<(const char *a){ base << a; return *this; }
 	tt &operator<<(const std::string &a){ base << a; return *this; }
-	tt &operator<<(const Vec3d &v);
-	tt &operator<<(const Quatd &v);
-	template<typename T> tt &operator<<(const Vec4<T> &v);
-	tt &operator<<(const random_sequence &v);
-	tt &operator<<(const Serializable *p);
+	virtual tt &operator<<(const Serializable *p){ base << p; return *this; };
+	virtual tt &operator<<(const Vec3d &v);
+	virtual tt &operator<<(const Quatd &v);
+	virtual tt &operator<<(const random_sequence &v);
+};
+
+class BinSerializeStream : public SerializeStream{
+public:
+	typedef SerializeStream tt;
+
+	BinSerializeStream(SerializeContext &asc = *(SerializeContext*)NULL) : buf(NULL), size(0), tt(asc){}
+	~BinSerializeStream();
+	tt &operator<<(int a);
+	tt &operator<<(unsigned a);
+	tt &operator<<(unsigned long a);
+	tt &operator<<(float a);
+	tt &operator<<(double a);
+	tt &operator<<(const char *a);
+	tt &operator<<(const std::string &a);
+	virtual tt &operator<<(const Serializable *p);
+	virtual tt &operator<<(const Vec3d &v);
+	virtual tt &operator<<(const Quatd &v);
+	virtual tt &operator<<(const random_sequence &v);
+
+	tt &write(const BinSerializeStream &o);
+	const void *getbuf()const{return buf;}
+	size_t getsize()const{return size;}
+
+private:
+	unsigned char *buf;
+	size_t size;
+	template<typename T> SerializeStream &write(T a);
 };
 
 class SerializeContext{
 public:
-	SerializeContext(std::ostream &ao, SerializeMap &amap) : o(ao, *this), map(amap){}
-	SerializeContext(std::ostream &ao, const SerializeContext &copy_src) : o(ao, *this), map(copy_src.map){}
-	SerializeStream o;
+	SerializeContext(SerializeStream &ao, SerializeMap &amap) : o(ao), map(amap){}
+	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map){}
+	SerializeStream &o;
 	SerializeMap &map;
 };
 
@@ -53,22 +101,45 @@ inline SerializeStream &SerializeStream::operator<<(const Serializable *p){
 
 
 
-
-
 class UnserializeStream{
-	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
+protected:
 	UnserializeContext &usc; // redundant pointer to point each other, but useful to automate serialization syntax.
 public:
 	typedef UnserializeStream tt;
+	UnserializeStream(UnserializeContext &ausc) : usc(ausc){}
+	virtual bool eof()const = 0;
+	virtual tt &read(char *s, std::streamsize size) = 0;
+	virtual tt &operator>>(int &a) = 0;
+	virtual tt &operator>>(unsigned &a) = 0;
+	virtual tt &operator>>(unsigned long &a) = 0;
+	virtual tt &operator>>(float &a) = 0;
+	virtual tt &operator>>(double &a) = 0;
+	virtual tt &operator>>(Vec3d &v) = 0;
+	virtual tt &operator>>(Quatd &v) = 0;
+	virtual tt &operator>>(struct random_sequence &rs) = 0;
+	virtual tt &operator>>(const char *a) = 0;
+	virtual tt &operator>>(cpplib::dstring &a) = 0;
+	virtual tt *substream(size_t size) = 0;
+	template<class T> tt &operator>>(T *&p){
+		unsigned id;
+		*this >> id;
+		p = static_cast<T*>(usc.map[id]);
+		return *this;
+	}
+};
 
+class StdUnserializeStream : public UnserializeStream{
+	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
+public:
 	// abase must live as long as UnserializeContext does.
-	UnserializeStream(std::istream &abase, UnserializeContext &ausc) : base(abase), usc(ausc){}
-	char get(){ return base.get(); }
+	StdUnserializeStream(std::istream &abase, UnserializeContext &ausc = *((UnserializeContext*)NULL)) : base(abase), tt(ausc){}
+/*	char get(){ return base.get(); }
 	tt &get(char *s, std::streamsize size){ base.get(s, size); return *this; }
 	void unget(){ base.unget(); }
 	bool fail()const{ return base.fail(); }
 	bool eof()const{ return base.eof(); }
-	void getline(std::string &s){ std::getline(base, s); }
+	void getline(std::string &s){ std::getline(base, s); }*/
+	virtual bool eof()const{ return base.eof(); }
 	tt &read(char *s, std::streamsize size){ base.read(s, size); return *this; }
 	tt &operator>>(int &a){ base.operator>>(a); return *this; }
 	tt &operator>>(unsigned &a){ base.operator>>(a); return *this; }
@@ -79,13 +150,34 @@ public:
 	tt &operator>>(Quatd &v);
 	tt &operator>>(struct random_sequence &rs);
 	tt &operator>>(const char *a);
-	template<class T> tt &operator>>(T *&p){
-		unsigned id;
-		base >> id;
-		p = static_cast<T*>(usc.map[id]);
-		return *this;
-	}
+	tt &operator>>(cpplib::dstring &a);
+	virtual tt *substream(size_t size);
 };
+
+class BinUnserializeStream : public UnserializeStream{
+public:
+	BinUnserializeStream(const unsigned char *src = NULL, size_t size = 0, UnserializeContext &ausc = *((UnserializeContext*)NULL));
+	virtual bool eof()const;
+	tt &read(char *s, std::streamsize size);
+	tt &operator>>(int &a);
+	tt &operator>>(unsigned &a);
+	tt &operator>>(unsigned long &a);
+	tt &operator>>(float &a);
+	tt &operator>>(double &a);
+	tt &operator>>(Vec3d &v);
+	tt &operator>>(Quatd &v);
+	tt &operator>>(struct random_sequence &rs);
+	tt &operator>>(const char *a);
+	tt &operator>>(cpplib::dstring &a);
+	virtual tt *substream(size_t size);
+
+private:
+	const unsigned char *src;
+	size_t size;
+	template<typename T> tt &read(T&);
+	char get();
+};
+
 
 std::ostream &operator<<(std::ostream &o, Vec3d &v);
 
@@ -107,8 +199,8 @@ char *strmdup(const char *src, size_t len);
 
 class UnserializeContext{
 public:
-	UnserializeContext(std::istream &ai, CtorMap &acons, UnserializeMap &amap);
-	UnserializeStream i;
+	UnserializeContext(UnserializeStream &ai, CtorMap &acons, UnserializeMap &amap);
+	UnserializeStream &i;
 	CtorMap &cons;
 	UnserializeMap &map;
 };

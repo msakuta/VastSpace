@@ -52,7 +52,7 @@ SerializeStream &BinSerializeStream::operator<<(const std::string &a){
 	return *this;
 }
 
-SerializeStream &BinSerializeStream::operator <<(const Serializable *p){return write(sc.map[p]);}
+SerializeStream &BinSerializeStream::operator <<(const Serializable *p){return write(sc->map[p]);}
 
 SerializeStream &BinSerializeStream::operator<<(const Vec3d &v){
 	return *this << v[0] << v[1] << v[2];
@@ -139,7 +139,7 @@ template<typename T> UnserializeStream &BinUnserializeStream::read(T &a){
 	return *this;
 }
 
-BinUnserializeStream::BinUnserializeStream(const unsigned char *asrc, size_t asize, UnserializeContext &ausc) : src(asrc), size(asize), tt(ausc){
+BinUnserializeStream::BinUnserializeStream(const unsigned char *asrc, size_t asize, UnserializeContext *ausc) : src(asrc), size(asize), tt(ausc){
 }
 
 UnserializeStream &BinUnserializeStream::read(char *s, std::streamsize ssize){

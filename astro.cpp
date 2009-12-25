@@ -4,6 +4,7 @@
 #include "astro_star.h"
 #include "astrodef.h"
 #include "player.h"
+#include "cmd.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -588,11 +589,12 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
 	SerializeMap map;
+	const char *fname = argc < 2 ? "saveb.sav" : argv[1];
 //	std::fstream fs("save.sav", std::ios::out | std::ios::binary);
 //	StdSerializeStream sss(fs);
 	BinSerializeStream bss;
 	SerializeContext sc(bss, map);
-	bss.BinSerializeStream::BinSerializeStream(sc);
+	bss.sc = &sc;
 //	sss.StdSerializeStream::StdSerializeStream(fs, sc);
 	sc.map[NULL] = 0;
 	sc.map[&pl] = sc.map.size();
@@ -602,7 +604,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 //		const_cast<Serializable*>(it->first)->packSerialize(sc);
 	pl.packSerialize(sc);
 	universe.csSerialize(sc);
-	FILE *fp = fopen("saveb.sav", "wb");
+	FILE *fp = fopen(fname, "wb");
 	fwrite(bss.getbuf(), 1, bss.getsize(), fp);
 	fclose(fp);
 	return 0;
@@ -610,6 +612,23 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 
 extern int cs_destructs;
 int Universe::cmd_load(int argc, char *argv[], void *pv){
+	const char *fname = argc < 2 ? "saveb.sav" : argv[1];
+#ifdef _WIN32
+	if(-1 == GetFileAttributes(fname)){
+		CmdPrintf("Specified file does not exist.");
+		return 0;
+	}
+#else
+	{
+		FILE *fp = fopen(fname, "r");
+		if(fp)
+			fclose(fp);
+		else{
+			CmdPrintf("Specified file does not exist.");
+			return 0;
+		}
+	}
+#endif
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
 	cpplib::dstring plpath = pl.cs->getpath();
@@ -628,7 +647,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	map.push_back(&universe);
 	if(true){
 		unsigned char *buf;
-		FILE *fp = fopen("saveb.sav", "rb");
+		FILE *fp = fopen(fname, "rb");
 		if(!fp)
 			return 0;
 		fseek(fp, 0, SEEK_END);
@@ -638,15 +657,15 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 		fread(buf, 1, size, fp);
 		fclose(fp);
 		{
-			BinUnserializeStream bus;
+			BinUnserializeStream bus(buf, size);
 			UnserializeContext usc(bus, ctormap(), map);
-			bus.BinUnserializeStream::BinUnserializeStream(buf, size, usc);
+			bus.usc = &usc;
 			universe.csUnmap(usc);
 		}
 		{
-			BinUnserializeStream bus;
+			BinUnserializeStream bus(buf, size);
 			UnserializeContext usc(bus, ctormap(), map);
-			bus.BinUnserializeStream::BinUnserializeStream(buf, size, usc);
+			bus.usc = &usc;
 			universe.csUnserialize(usc);
 		}
 		delete[] buf;
@@ -663,14 +682,14 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			std::istringstream ss(std::string(buf, size));
 			StdUnserializeStream sus(ss);
 			UnserializeContext usc(sus, ctormap(), map);
-			sus.StdUnserializeStream::StdUnserializeStream(ss, usc);
+			sus.usc = &usc;
 			universe.csUnmap(usc);
 		}
 		{
 			std::stringstream ss(buf);
 			StdUnserializeStream sus(ss);
 			UnserializeContext usc(sus, ctormap(), map);
-			sus.StdUnserializeStream::StdUnserializeStream(ss, usc);
+			sus.usc = &usc;
 	//		ss.seekg(0, std::ios::beg);
 			universe.csUnserialize(usc);
 		}

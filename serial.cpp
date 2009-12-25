@@ -20,7 +20,7 @@ void Serializable::packSerialize(SerializeContext &sc){
 //	StdSerializeStream sss(ss);
 	BinSerializeStream bss;
 	SerializeContext sc2(bss, sc);
-	bss.BinSerializeStream::BinSerializeStream(sc2);
+	bss.sc = &sc2;
 //	sss.StdSerializeStream::StdSerializeStream(ss, sc2);
 	serialize(sc2);
 //	sc.o << ss.str().size() << " " << ss.str() << "\n";
@@ -44,9 +44,9 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 	std::istringstream ss(std::string(p, size - (p - buf) + 1));*/
 /*	std::istringstream ss(std::string(buf, size));
 	StdUnserializeStream sus(ss);*/
-	BinUnserializeStream bus;
+	BinUnserializeStream bus((unsigned char*)buf, size);
 	UnserializeContext sc2(bus, sc.cons, sc.map);
-	bus.BinUnserializeStream::BinUnserializeStream((unsigned char*)buf, size, sc2);
+	bus.usc = &sc2;
 //	sus.StdUnserializeStream::StdUnserializeStream(ss, sc2);
 	sc2.i >> classname();
 	unserialize(sc2);

@@ -86,7 +86,6 @@ void Beamer::serialize(SerializeContext &sc){
 	sc.o << integral;
 	sc.o << beamlen;
 	sc.o << cooldown;
-//	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	sc.o << undocktime;
 }
@@ -97,7 +96,6 @@ void Beamer::unserialize(UnserializeContext &sc){
 	sc.i >> integral;
 	sc.i >> beamlen;
 	sc.i >> cooldown;
-//	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	sc.i >> undocktime;
 }

@@ -10,6 +10,7 @@ extern "C"{
 #include <cpplib/quat.h>
 #include <iostream>
 #include <string>
+#include <set>
 #include <exception>
 
 
@@ -115,10 +116,11 @@ protected:
 
 class SerializeContext{
 public:
-	SerializeContext(SerializeStream &ao, SerializeMap &amap) : o(ao), map(amap){}
-	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map){}
+	SerializeContext(SerializeStream &ao, SerializeMap &amap, std::set<Serializable*> &avisits) : o(ao), map(amap), visits(avisits){}
+	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visits(copy_src.visits){}
 	SerializeStream &o;
 	SerializeMap &map;
+	std::set<Serializable*> &visits;
 };
 
 inline SerializeStream &SerializeStream::operator<<(const Serializable *p){

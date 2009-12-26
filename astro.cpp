@@ -625,8 +625,9 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
 	map[NULL] = 0;
 	map[&pl] = map.size();
+	std::set<Serializable*> visits;
 	{
-		SerializeContext sc(*(SerializeStream*)NULL, map);
+		SerializeContext sc(*(SerializeStream*)NULL, map, visits);
 		universe.dive(sc, &Serializable::map);
 	}
 #if ENABLE_TEXTFORMAT
@@ -634,7 +635,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		std::fstream fs(fname, std::ios::out | std::ios::binary);
 		fs << "savetext";
 		StdSerializeStream sss(fs);
-		SerializeContext sc(sss, map);
+		SerializeContext sc(sss, map, visits);
 		sss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
@@ -643,7 +644,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 #endif
 	{
 		BinSerializeStream bss;
-		SerializeContext sc(bss, map);
+		SerializeContext sc(bss, map, visits);
 		bss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);

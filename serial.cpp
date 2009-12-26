@@ -29,6 +29,10 @@ void Serializable::map(SerializeContext &sc){
 }
 
 void Serializable::packSerialize(SerializeContext &sc){
+	if(sc.visits.find(this) != sc.visits.end()){
+		return; // avoid duplicate objects
+	}
+	sc.visits.insert(this);
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);
 	serialize(sc2);

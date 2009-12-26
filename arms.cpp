@@ -25,13 +25,38 @@ extern "C"{
 }
 #include <limits.h>
 
+const char *hardpoint_static::classname()const{
+	return "hardpoint_static";
+}
+
+const unsigned hardpoint_static::classid = registerClass("hardpoint_static", Conster<hardpoint_static>);
+
+void hardpoint_static::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << pos; /* base position relative to object origin */
+	sc.o << rot; /* base rotation */
+	sc.o << name;
+	sc.o << flagmask;
+}
+
+void hardpoint_static::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	cpplib::dstring name;
+	sc.i >> pos; /* base position relative to object origin */
+	sc.i >> rot; /* base rotation */
+	sc.i >> name;
+	sc.i >> flagmask;
+
+	this->name = strnewdup(name, name.len());
+}
+
 
 
 void ArmBase::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << base;
 	sc.o << target;
-	sc.o << (unsigned)hp;
+	sc.o << hp;
 	sc.o << ammo;
 }
 
@@ -39,8 +64,13 @@ void ArmBase::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> base;
 	sc.i >> target;
-	sc.i >> (unsigned&)hp;
+	sc.i >> hp;
 	sc.i >> ammo;
+}
+
+void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
+	st::dive(sc, method);
+	const_cast<hardpoint_static*>(hp)->dive(sc, method);
 }
 
 void ArmBase::postframe(){

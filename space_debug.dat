@@ -1,0 +1,26 @@
+astro Star "Sol"{
+	radius 1.5*Rsun
+	pos 0 10*Rsun 0
+	mass 3*Msun
+	absolute_magnitude 4.1
+}
+
+coordsys Orbit sunlo{
+	fullname "Sun Low Orbit"
+	cs_radius 500
+	orbits Sol
+	showorbit
+	semimajor_axis 600.2686*6378.
+	eccentricity 0.
+	inclination 3.85
+	argument_of_periapsis 150.2075
+	ascending_node 80.6198
+	warp
+	teleport
+	rstation
+	addent beamer
+	addent assault .2 .5 .7
+	addent assault .2 .5 .3
+#	addent scarry -1 -1 -1
+#	addent sceptor 0 1 1
+}

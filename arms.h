@@ -10,7 +10,13 @@
 
 class ArmBase;
 
-struct hardpoint_static{
+struct hardpoint_static : public Serializable{
+	typedef Serializable st;
+	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+
 	Vec3d pos; /* base position relative to object origin */
 	Quatd rot; /* base rotation */
 	const char *name;
@@ -32,6 +38,7 @@ public:
 	ArmBase(Entity *abase, const hardpoint_static *ahp) : base(abase), target(NULL), hp(ahp), ammo(0){}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&));
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
 	virtual void postframe();

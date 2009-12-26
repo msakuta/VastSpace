@@ -2,6 +2,7 @@
 extern "C"{
 #include <clib/rseq.h>
 }
+#include <sstream>
 using namespace std;
 
 
@@ -117,7 +118,12 @@ UnserializeStream &StdUnserializeStream::operator >>(cpplib::dstring &a){
 }
 
 UnserializeStream *StdUnserializeStream::substream(size_t size){
-	StdUnserializeStream *ret = new StdUnserializeStream(base);
+	char *buf = new char[size+1];
+	base.read(buf, size);
+	std::string str(buf, size);
+	delete[] buf;
+	std::istringstream iss(str);
+	StdUnserializeStream *ret = new StdUnserializeStream(iss);
 	return ret;
 }
 
@@ -195,7 +201,13 @@ UnserializeStream &BinUnserializeStream::operator>>(cpplib::dstring &a){
 }
 
 UnserializeStream *BinUnserializeStream::substream(size_t size){
-	return new BinUnserializeStream(src, size, usc);
+	const unsigned char *retsrc = src;
+
+	// advance pointers
+	src += size;
+	this->size -= size;
+
+	return new BinUnserializeStream(retsrc, size, usc);
 }
 
 char BinUnserializeStream::get(){

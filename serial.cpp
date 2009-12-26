@@ -1,4 +1,5 @@
 #include "serial.h"
+#include "cmd.h"
 #include "serial_util.h"
 #include <string>
 #include <sstream>
@@ -29,31 +30,24 @@ void Serializable::packSerialize(SerializeContext &sc){
 }
 
 void Serializable::packUnserialize(UnserializeContext &sc){
-	char *buf;
 	unsigned size;
 	sc.i >> size;
 /*	if(sc.i.eof() || sc.i.fail())
 		return;
 	sc.i >> " ";*/
-	buf = new char[size + 1];
-	sc.i.read(buf, size);
-/*	buf[size] = '\0';
-	char *p = ::strchr(buf, ' ');
-	if(!p || ::strncmp(buf, classname(), p - buf))
-		throw std::exception("Class name doen't match.");
-	std::istringstream ss(std::string(p, size - (p - buf) + 1));*/
 /*	std::istringstream ss(std::string(buf, size));
 	StdUnserializeStream sus(ss);*/
-	BinUnserializeStream bus((unsigned char*)buf, size);
-	UnserializeContext sc2(bus, sc.cons, sc.map);
-	bus.usc = &sc2;
-//	sus.StdUnserializeStream::StdUnserializeStream(ss, sc2);
+	UnserializeStream *us = sc.i.substream(size);
+	UnserializeContext sc2(*us, sc.cons, sc.map);
+	us->usc = &sc2;
 	sc2.i >> classname();
 	unserialize(sc2);
-	delete[] buf;
+	delete us;
 }
 
 unsigned Serializable::registerClass(std::string name, Serializable *(*constructor)()){
+	if(ctormap().find(name) != ctormap().end())
+		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
 	ctormap()[name] = constructor;
 	return ctormap().size();
 }

@@ -10,6 +10,26 @@ extern "C"{
 #include <cpplib/quat.h>
 #include <iostream>
 #include <string>
+#include <exception>
+
+
+class FormatException : public std::exception{
+public:
+	FormatException(){}
+	const char *what()const{return "FormatException";}
+};
+
+class InputShortageException : public std::exception{
+public:
+	InputShortageException(){}
+	const char *what()const{return "InputShortageException";}
+};
+
+class ClassNotFoundException : public std::exception{
+public:
+	ClassNotFoundException(){}
+	const char *what()const{return "ClassNotFoundException";}
+};
 
 
 class SerializeStream{
@@ -24,7 +44,6 @@ public:
 	virtual tt &operator<<(float a) = 0;
 	virtual tt &operator<<(double a) = 0;
 	virtual tt &operator<<(const char *a) = 0;
-	virtual tt &operator<<(const std::string &a) = 0;
 	virtual tt &operator<<(const Serializable *p) = 0;
 	virtual tt &operator<<(const Vec3d &v) = 0;
 	virtual tt &operator<<(const Quatd &v) = 0;
@@ -42,14 +61,13 @@ public:
 
 	StdSerializeStream(std::ostream &abase, SerializeContext *asc = NULL) : base(abase), tt(asc){}
 	~StdSerializeStream();
-	tt &operator<<(int a){ base.operator<<(a); return *this; }
-	tt &operator<<(unsigned a){ base.operator<<(a); return *this; }
-	tt &operator<<(unsigned long a){ base.operator<<(a); return *this; }
-	tt &operator<<(float a){ base.operator<<(a); return *this; }
-	tt &operator<<(double a){ base.operator<<(a); return *this; }
-	tt &operator<<(const char *a){ base << a; return *this; }
-	tt &operator<<(const std::string &a){ base << a; return *this; }
-	virtual tt &operator<<(const Serializable *p){ base << p; return *this; };
+	tt &operator<<(int a);
+	tt &operator<<(unsigned a);
+	tt &operator<<(unsigned long a);
+	tt &operator<<(float a);
+	tt &operator<<(double a);
+	tt &operator<<(const char *a);
+	virtual tt &operator<<(const Serializable *p);
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
 	virtual tt &operator<<(const random_sequence &v);
@@ -114,7 +132,9 @@ public:
 	UnserializeContext *usc; // redundant pointer to point each other, but useful to automate serialization syntax.
 	typedef UnserializeStream tt;
 	UnserializeStream(UnserializeContext *ausc = NULL) : usc(ausc){}
+	virtual ~UnserializeStream(){}
 	virtual bool eof()const = 0;
+	virtual bool fail()const = 0;
 	virtual tt &read(char *s, std::streamsize size) = 0;
 	virtual tt &operator>>(int &a) = 0;
 	virtual tt &operator>>(unsigned &a) = 0;
@@ -136,23 +156,20 @@ public:
 };
 
 class StdUnserializeStream : public UnserializeStream{
+protected:
 	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
+	tt &consume(const char *);
 public:
 	// abase must live as long as UnserializeContext does.
 	StdUnserializeStream(std::istream &abase, UnserializeContext *ausc = NULL) : base(abase), tt(ausc){}
-/*	char get(){ return base.get(); }
-	tt &get(char *s, std::streamsize size){ base.get(s, size); return *this; }
-	void unget(){ base.unget(); }
-	bool fail()const{ return base.fail(); }
-	bool eof()const{ return base.eof(); }
-	void getline(std::string &s){ std::getline(base, s); }*/
-	virtual bool eof()const{ return base.eof(); }
-	tt &read(char *s, std::streamsize size){ base.read(s, size); return *this; }
-	tt &operator>>(int &a){ base.operator>>(a); return *this; }
-	tt &operator>>(unsigned &a){ base.operator>>(a); return *this; }
-	tt &operator>>(unsigned long &a){ base.operator>>(a); return *this; }
-	tt &operator>>(float &a){ base.operator>>(a); return *this; }
-	tt &operator>>(double &a){ base.operator>>(a); return *this; }
+	virtual bool eof()const;
+	virtual bool fail()const;
+	tt &read(char *s, std::streamsize size);
+	tt &operator>>(int &a);
+	tt &operator>>(unsigned &a);
+	tt &operator>>(unsigned long &a);
+	tt &operator>>(float &a);
+	tt &operator>>(double &a);
 	tt &operator>>(Vec3d &v);
 	tt &operator>>(Quatd &v);
 	tt &operator>>(struct random_sequence &rs);
@@ -165,6 +182,7 @@ class BinUnserializeStream : public UnserializeStream{
 public:
 	BinUnserializeStream(const unsigned char *src = NULL, size_t size = 0, UnserializeContext *ausc = NULL);
 	virtual bool eof()const;
+	virtual bool fail()const;
 	tt &read(char *s, std::streamsize size);
 	tt &operator>>(int &a);
 	tt &operator>>(unsigned &a);

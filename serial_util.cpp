@@ -7,17 +7,42 @@ using namespace std;
 
 
 SerializeStream &StdSerializeStream::operator<<(const Vec3d &v){
-	return *this << "(" << v[0] << " " << v[1] << " " << v[2] << ")";
+	base << "(";
+	*this << v[0] << v[1] << v[2];
+	base << ")";
+	return *this;
 }
 
 SerializeStream &StdSerializeStream::operator<<(const Quatd &v){
-	return *this << "(" << v.i() << " " << v.j() << " " << v.k() << " " << v.re() << ")";
+	base << "(";
+	*this << v.i() << v.j() << v.k() << v.re();
+	base << ")";
+	return *this;
 }
 
 SerializeStream &StdSerializeStream::operator<<(const struct ::random_sequence &rs){
-	return *this << "(" << rs.w << " " << rs.z << ")";
+	base << "(";
+	*this << rs.w << rs.z;
+	base << ")";
+	return *this;
 }
 
+SerializeStream &StdSerializeStream::operator<<(int a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(unsigned a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(unsigned long a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(float a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(double a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(const char *a){
+	base.put('"');
+	for(; *a; a++){
+		if(*a == '"' || *a == '\\')
+			base.put('\\');
+		base.put(*a);
+	}
+	base.put('"');
+	return *this;
+}
+SerializeStream &StdSerializeStream::operator<<(const Serializable *p){ base << sc->map[p] << " "; return *this; }
 
 
 
@@ -34,7 +59,8 @@ public:
 };
 
 StdSerializeSubStream::~StdSerializeSubStream(){
-	parent << src.str().length();
+	unsigned len = src.str().length();
+	parent << len;
 	parent.base << src.str();
 }
 
@@ -47,6 +73,7 @@ SerializeStream *StdSerializeStream::substream(){
 }
 
 void StdSerializeStream::join(tt *o){
+	base << std::endl;
 }
 
 
@@ -116,37 +143,81 @@ void BinSerializeStream::join(tt *o){
 
 
 
-UnserializeStream &StdUnserializeStream::operator>>(const char *cstr){
+class StdUnserializeSubStream : public StdUnserializeStream{
+	std::istringstream src;
+public:
+	StdUnserializeSubStream(std::string &s, StdUnserializeStream &aparent) :
+		src(s),
+		StdUnserializeStream(src, aparent.usc){}
+};
+
+UnserializeStream &StdUnserializeStream::consume(const char *cstr){
 	size_t len = ::strlen(cstr);
 	for(size_t i = 0; i < len; i++){
 		char c = base.get();
 		if(c != cstr[i])
-			throw std::exception("Format error");
+			throw FormatException();
 	}
 	return *this;
 }
 
+bool StdUnserializeStream::eof()const{ return base.eof(); }
+bool StdUnserializeStream::fail()const{ return base.fail(); }
+UnserializeStream &StdUnserializeStream::read(char *s, std::streamsize size){ base.read(s, size); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(int &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(unsigned &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(unsigned long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(float &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(double &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+
+UnserializeStream &StdUnserializeStream::operator>>(const char *cstr){
+	// eat until the first double-quote
+	while(char c = base.get()) if(c == '"')
+		break;
+	else if(c == -1)
+		return *this;
+
+	consume(cstr);
+
+	// eat the terminating double-quote
+	if(base.get() != '"')
+		throw FormatException();
+	return *this;
+}
+
 UnserializeStream &StdUnserializeStream::operator>>(random_sequence &rs){
-	*this >> "(" >> rs.w >> " " >> rs.z >> ")";
+	consume("(");
+	*this >> rs.w >> rs.z;
+	consume(")");
 	return *this;
 }
 
 UnserializeStream &StdUnserializeStream::operator>>(Vec3d &v){
-	*this >> "(" >> v[0] >> " " >> v[1] >> " " >> v[2] >> ")";
+	consume("(");
+	*this >> v[0] >> v[1] >> v[2];
+	consume(")");
 	return *this;
 }
 
 UnserializeStream &StdUnserializeStream::operator>>(Quatd &v){
-	*this >> "(" >> v.i() >> " " >> v.j() >> " " >> v.k() >> " " >> v.re() >> ")";
+	consume("(");
+	*this >> v.i() >> v.j() >> v.k() >> v.re();
+	consume(")");
 	return *this;
 }
 
 UnserializeStream &StdUnserializeStream::operator >>(cpplib::dstring &a){
+	// eat until the first double-quote
+	while(char c = base.get()) if(c == '"')
+		break;
+	else if(c == -1)
+		return *this;
+
 	do{
 		char c = base.get();
 		if(c == '\\')
 			c = base.get();
-		else if(c == ')')
+		else if(c == '"')
 			break;
 		a << c;
 	}while(true);
@@ -158,8 +229,7 @@ UnserializeStream *StdUnserializeStream::substream(size_t size){
 	base.read(buf, size);
 	std::string str(buf, size);
 	delete[] buf;
-	std::istringstream iss(str);
-	StdUnserializeStream *ret = new StdUnserializeStream(iss);
+	StdUnserializeStream *ret = new StdUnserializeSubStream(str, *this);
 	return ret;
 }
 
@@ -174,7 +244,7 @@ UnserializeStream *StdUnserializeStream::substream(size_t size){
 
 template<typename T> UnserializeStream &BinUnserializeStream::read(T &a){
 	if(size < sizeof a)
-		throw std::exception("Input stream shortage");
+		throw InputShortageException();
 	::memcpy(&a, src, sizeof a);
 	src += sizeof a;
 	size -= sizeof a;
@@ -186,7 +256,7 @@ BinUnserializeStream::BinUnserializeStream(const unsigned char *asrc, size_t asi
 
 UnserializeStream &BinUnserializeStream::read(char *s, std::streamsize ssize){
 	if(size < (size_t)ssize)
-		throw std::exception("Input stream shortage");
+		throw InputShortageException();
 	::memcpy(s, src, ssize);
 	src += ssize;
 	size -= ssize;
@@ -194,6 +264,7 @@ UnserializeStream &BinUnserializeStream::read(char *s, std::streamsize ssize){
 }
 
 bool BinUnserializeStream::eof()const{return !size;}
+bool BinUnserializeStream::fail()const{return !size;}
 UnserializeStream &BinUnserializeStream::operator>>(int &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(unsigned &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(unsigned long &a){return read(a);}
@@ -218,9 +289,9 @@ UnserializeStream &BinUnserializeStream::operator>>(Quatd &v){
 UnserializeStream &BinUnserializeStream::operator>>(const char *a){
 	size_t len = ::strlen(a) + 1;
 	if(size < len)
-		throw std::exception("Input stream shortage");
+		throw InputShortageException();
 	if(::strncmp(reinterpret_cast<const char*>(src), a, len))
-		throw std::exception("Format unmatch");
+		throw FormatException();
 	src += len;
 	size -= len;
 	return *this;
@@ -230,7 +301,7 @@ UnserializeStream &BinUnserializeStream::operator>>(cpplib::dstring &a){
 	char c;
 	while(c = get()){
 		if(c == -1)
-			throw std::exception("Input stream shortage");
+			throw InputShortageException();
 		a << c;
 	}
 	return *this;

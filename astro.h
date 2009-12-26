@@ -101,6 +101,7 @@ public:
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}
 	void csUnserialize(UnserializeContext &usc);
+	void csUnmap(UnserializeContext &);
 	static int cmd_save(int argc, char *argv[], void *pv);
 	static int cmd_load(int argc, char *argv[], void *pv);
 };

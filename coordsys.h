@@ -104,7 +104,6 @@ public:
 	// Serialize the tree recursively.
 	void csMap(SerializeMap &);
 	void csSerialize(SerializeContext &);
-	void csUnmap(UnserializeContext &);
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

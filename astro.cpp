@@ -577,6 +577,25 @@ void Universe::anim(double dt){
 	st::anim(dt);
 }
 
+void Universe::csUnmap(UnserializeContext &sc){
+	while(!sc.i.eof()){
+		unsigned long size;
+		sc.i >> size;
+		if(sc.i.fail())
+			break;
+		UnserializeStream *us = sc.i.substream(size);
+		cpplib::dstring src;
+		*us >> src;
+		std::string scname((const char*)src);
+		if(src != "Player" && src != "Universe" && sc.cons.find(scname) == sc.cons.end())
+			throw ClassNotFoundException();
+		if(sc.cons[scname]){
+			sc.map.push_back(sc.cons[scname]());
+		}
+		delete us;
+	}
+}
+
 void Universe::csUnserialize(UnserializeContext &usc){
 	unsigned l = 1;
 	while(/*!usc.i.eof() &&*/ l < usc.map.size()){
@@ -589,24 +608,31 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
 	SerializeMap map;
-	const char *fname = argc < 2 ? "saveb.sav" : argv[1];
-//	std::fstream fs("save.sav", std::ios::out | std::ios::binary);
-//	StdSerializeStream sss(fs);
-	BinSerializeStream bss;
-	SerializeContext sc(bss, map);
-	bss.sc = &sc;
-//	sss.StdSerializeStream::StdSerializeStream(fs, sc);
-	sc.map[NULL] = 0;
-	sc.map[&pl] = sc.map.size();
-	universe.csMap(sc.map);
-//	No luck std::map sorts keys returrned via iterator.
-//	for(SerializeMap::iterator it = sc.map.begin(); it != sc.map.end(); it++) if(it->first)
-//		const_cast<Serializable*>(it->first)->packSerialize(sc);
-	pl.packSerialize(sc);
-	universe.csSerialize(sc);
-	FILE *fp = fopen(fname, "wb");
-	fwrite(bss.getbuf(), 1, bss.getsize(), fp);
-	fclose(fp);
+	bool text = argc < 3 ? false : !strcmp(argv[2], "t");
+	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
+	map[NULL] = 0;
+	map[&pl] = map.size();
+	universe.csMap(map);
+	if(text){
+		std::fstream fs(fname, std::ios::out | std::ios::binary);
+		fs << "savetext";
+		StdSerializeStream sss(fs);
+		SerializeContext sc(sss, map);
+		sss.sc = &sc;
+		pl.packSerialize(sc);
+		universe.csSerialize(sc);
+	}
+	else{
+		BinSerializeStream bss;
+		SerializeContext sc(bss, map);
+		bss.sc = &sc;
+		pl.packSerialize(sc);
+		universe.csSerialize(sc);
+		FILE *fp = fopen(fname, "wb");
+		fputs("savebina", fp);
+		fwrite(bss.getbuf(), 1, bss.getsize(), fp);
+		fclose(fp);
+	}
 	return 0;
 }
 
@@ -645,17 +671,23 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	map.push_back(NULL);
 	map.push_back(&pl);
 	map.push_back(&universe);
-	if(true){
-		unsigned char *buf;
+	unsigned char *buf;
+	char signature[8];
+	long size;
+	{
 		FILE *fp = fopen(fname, "rb");
 		if(!fp)
 			return 0;
 		fseek(fp, 0, SEEK_END);
-		long size = ftell(fp);
+		size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
+		fread(signature, 1, sizeof signature, fp);
+		size -= sizeof signature;
 		buf = new unsigned char[size];
 		fread(buf, 1, size, fp);
 		fclose(fp);
+	}
+	if(!memcmp(signature, "savebina", sizeof signature)){
 		{
 			BinUnserializeStream bus(buf, size);
 			UnserializeContext usc(bus, ctormap(), map);
@@ -668,32 +700,26 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			bus.usc = &usc;
 			universe.csUnserialize(usc);
 		}
-		delete[] buf;
+	}
+	else if(!memcmp(signature, "savetext", sizeof signature)){
+		{
+			std::istringstream ss(std::string((char*)buf, size));
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.usc = &usc;
+			universe.csUnmap(usc);
+		}
+		{
+			std::stringstream ss(std::string((char*)buf, size));
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.usc = &usc;
+			universe.csUnserialize(usc);
+		}
 	}
 	else{
-		char *buf;
-		{
-			std::ifstream ifs("save.sav", std::ios::in | std::ios::binary);
-			ifs.seekg(0, std::ios::end);
-			long size = ifs.tellg();
-			ifs.seekg(0, std::ios::beg);
-			buf = new char[size];
-			ifs.read(buf, size);
-			std::istringstream ss(std::string(buf, size));
-			StdUnserializeStream sus(ss);
-			UnserializeContext usc(sus, ctormap(), map);
-			sus.usc = &usc;
-			universe.csUnmap(usc);
-		}
-		{
-			std::stringstream ss(buf);
-			StdUnserializeStream sus(ss);
-			UnserializeContext usc(sus, ctormap(), map);
-			sus.usc = &usc;
-	//		ss.seekg(0, std::ios::beg);
-			universe.csUnserialize(usc);
-		}
-		delete[] buf;
+		CmdPrint("Unrecognized save file format");
 	}
+	delete[] buf;
 	return 0;
 }

@@ -488,41 +488,6 @@ void CoordSys::csSerialize(SerializeContext &sc){
 		cs->csSerialize(sc);
 }
 
-void CoordSys::csUnmap(UnserializeContext &sc){
-	while(!sc.i.eof()){
-//		std::string line;
-//		std::streamsize size;
-		unsigned long size;
-		sc.i >> size;
-//		if(sc.i.fail())
-//			break;
-//		sc.i >> " ";
-		char *buf = new char[size];
-		sc.i.read(buf, size);
-/*		line.assign(buf, size);
-		if(line.length() == 0)
-			break;
-		size_t space = line.find_first_of(' ');
-		if(space == line.npos)
-			continue;
-		std::string cname = space != line.npos ? line.substr(0, space) : line;*/
-/*		cpplib::dstring cname;
-		sc.i >> cname;
-		std::string scname = cname;
-		if(cname != "Player" && cname != "Universe" && sc.cons.find(scname) == sc.cons.end())
-			throw std::exception("Class constructor not found.");*/
-		std::string scname = buf;
-		if(strcmp(buf, "Player") && strcmp(buf, "Universe") && sc.cons.find(scname) == sc.cons.end())
-			throw std::exception("Class constructor not found.");
-		if(sc.cons[scname]){
-			sc.map.push_back(sc.cons[scname]());
-		}
-		delete[] buf;
-	}
-/*	for(CoordSys *cs = children; cs; cs = cs->next)
-		cs->csUnmap(sc);*/
-}
-
 // In the hope std::sort template function optimizes the comparator function,
 // which is not expected in the case of qsort().
 class AstroCmp{

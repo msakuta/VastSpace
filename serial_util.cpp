@@ -22,6 +22,35 @@ SerializeStream &StdSerializeStream::operator<<(const struct ::random_sequence &
 
 
 
+class StdSerializeSubStream : public StdSerializeStream{
+	StdSerializeStream &parent;
+	std::ostringstream src;
+public:
+	StdSerializeSubStream(StdSerializeStream &aparent) :
+		parent(aparent),
+		src(),
+		StdSerializeStream(src, aparent.sc){}
+	~StdSerializeSubStream();
+};
+
+StdSerializeSubStream::~StdSerializeSubStream(){
+	parent << src.str().length();
+	parent.base << src.str();
+}
+
+StdSerializeStream::~StdSerializeStream(){
+}
+
+SerializeStream *StdSerializeStream::substream(){
+	StdSerializeSubStream *ret = new StdSerializeSubStream(*this);
+	return ret;
+}
+
+void StdSerializeStream::join(tt *o){
+}
+
+
+
 
 BinSerializeStream::~BinSerializeStream(){
 	::free(buf);
@@ -73,7 +102,14 @@ SerializeStream &BinSerializeStream::write(const BinSerializeStream &o){
 	return *this;
 }
 
+SerializeStream *BinSerializeStream::substream(){
+	return new BinSerializeStream(sc);
+}
 
+void BinSerializeStream::join(tt *o){
+	*this << ((BinSerializeStream*)o)->size;
+	write(*(BinSerializeStream*)o);
+}
 
 
 

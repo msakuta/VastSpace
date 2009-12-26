@@ -17,26 +17,16 @@ void Serializable::unserialize(UnserializeContext &usc){
 }
 
 void Serializable::packSerialize(SerializeContext &sc){
-//	std::stringstream ss;
-//	StdSerializeStream sss(ss);
-	BinSerializeStream bss;
-	SerializeContext sc2(bss, sc);
-	bss.sc = &sc2;
-//	sss.StdSerializeStream::StdSerializeStream(ss, sc2);
+	SerializeStream *ss = sc.o.substream();
+	SerializeContext sc2(*ss, sc);
 	serialize(sc2);
-//	sc.o << ss.str().size() << " " << ss.str() << "\n";
-	sc.o << bss.getsize();
-	((BinSerializeStream&)sc.o).write(bss);
+	sc.o.join(ss);
+	delete ss;
 }
 
 void Serializable::packUnserialize(UnserializeContext &sc){
 	unsigned size;
 	sc.i >> size;
-/*	if(sc.i.eof() || sc.i.fail())
-		return;
-	sc.i >> " ";*/
-/*	std::istringstream ss(std::string(buf, size));
-	StdUnserializeStream sus(ss);*/
 	UnserializeStream *us = sc.i.substream(size);
 	UnserializeContext sc2(*us, sc.cons, sc.map);
 	us->usc = &sc2;

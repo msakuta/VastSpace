@@ -30,14 +30,18 @@ public:
 	virtual tt &operator<<(const Quatd &v) = 0;
 	virtual tt &operator<<(const random_sequence &v) = 0;
 	template<typename T> tt &operator<<(const Vec4<T> &v);
+	virtual tt *substream() = 0;
+	virtual void join(tt *) = 0;
 };
 
 class StdSerializeStream : public SerializeStream{
+protected:
 	std::ostream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
 public:
 	typedef SerializeStream tt;
 
 	StdSerializeStream(std::ostream &abase, SerializeContext *asc = NULL) : base(abase), tt(asc){}
+	~StdSerializeStream();
 	tt &operator<<(int a){ base.operator<<(a); return *this; }
 	tt &operator<<(unsigned a){ base.operator<<(a); return *this; }
 	tt &operator<<(unsigned long a){ base.operator<<(a); return *this; }
@@ -49,6 +53,10 @@ public:
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
 	virtual tt &operator<<(const random_sequence &v);
+	virtual tt *substream();
+	virtual void join(tt *);
+
+	friend class StdSerializeSubStream;
 };
 
 class BinSerializeStream : public SerializeStream{
@@ -68,12 +76,14 @@ public:
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
 	virtual tt &operator<<(const random_sequence &v);
+	virtual tt *substream();
+	virtual void join(tt *);
 
 	tt &write(const BinSerializeStream &o);
 	const void *getbuf()const{return buf;}
 	size_t getsize()const{return size;}
 
-private:
+protected:
 	unsigned char *buf;
 	size_t size;
 	template<typename T> SerializeStream &write(T a);

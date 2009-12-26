@@ -16,6 +16,18 @@ void Serializable::serialize(SerializeContext &sc){
 void Serializable::unserialize(UnserializeContext &usc){
 }
 
+void Serializable::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	(this->*method)(sc);
+}
+
+void Serializable::map(SerializeContext &sc){
+	SerializeMap &cm = sc.map;
+	if(cm.find(this) == cm.end()){
+		unsigned id = cm.size();
+		cm[this] = id;
+	}
+}
+
 void Serializable::packSerialize(SerializeContext &sc){
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);

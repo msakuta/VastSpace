@@ -101,9 +101,7 @@ public:
 	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
 
-	// Serialize the tree recursively.
-	void csMap(SerializeMap &);
-	void csSerialize(SerializeContext &);
+	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

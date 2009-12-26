@@ -612,7 +612,10 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
 	map[NULL] = 0;
 	map[&pl] = map.size();
-	universe.csMap(map);
+	{
+		SerializeContext sc(*(SerializeStream*)NULL, map);
+		universe.dive(sc, &Serializable::map);
+	}
 	if(text){
 		std::fstream fs(fname, std::ios::out | std::ios::binary);
 		fs << "savetext";
@@ -620,14 +623,14 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		SerializeContext sc(sss, map);
 		sss.sc = &sc;
 		pl.packSerialize(sc);
-		universe.csSerialize(sc);
+		universe.dive(sc, &Serializable::packSerialize);
 	}
 	else{
 		BinSerializeStream bss;
 		SerializeContext sc(bss, map);
 		bss.sc = &sc;
 		pl.packSerialize(sc);
-		universe.csSerialize(sc);
+		universe.dive(sc, &Serializable::packSerialize);
 		FILE *fp = fopen(fname, "wb");
 		fputs("savebina", fp);
 		fwrite(bss.getbuf(), 1, bss.getsize(), fp);

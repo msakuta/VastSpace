@@ -469,23 +469,14 @@ void CoordSys::predraw(const Viewer *vw){
 		cs->predraw(vw);
 }
 
-void CoordSys::csMap(SerializeMap &cm){
-	if(cm.find(this) == cm.end()){
-		unsigned id = cm.size();
-		cm[this] = id;
-	}
+void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	(this->*method)(sc);
 	if(w)
-		w->map(cm);
-	for(CoordSys *cs = children; cs; cs = cs->next)
-		cs->csMap(cm);
-}
-
-void CoordSys::csSerialize(SerializeContext &sc){
-	packSerialize(sc);
-	if(w)
-		w->packSerialize(sc);
-	for(CoordSys *cs = children; cs; cs = cs->next)
-		cs->csSerialize(sc);
+		w->dive(sc, method);
+	if(next)
+		next->dive(sc, method);
+	if(children)
+		children->dive(sc, method);
 }
 
 // In the hope std::sort template function optimizes the comparator function,

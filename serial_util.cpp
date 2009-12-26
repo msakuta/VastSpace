@@ -324,17 +324,12 @@ char BinUnserializeStream::get(){
 	return *src++;
 }
 
-/*cpplib::dstring readUntil(UnserializeStream &in, char c){
-	cpplib::dstring ret;
-	do{
-		char c = in.get();
-		if(c == ')')
-			break;
-		ret << c;
-	}while(true);
-	in.unget();
-	return ret;
-}*/
+
+
+
+
+
+
 
 char *strnewdup(const char *src, size_t len){
 	char *ret = new char[len + 1];

@@ -74,6 +74,7 @@ public:
 	virtual const char *classname()const; // returned string storage must be static
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();
@@ -100,8 +101,6 @@ public:
 	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
 	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
-
-	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 
 	// recursively draws a whole tree of coordinate systems.
 	// note that this function is not a virtual function unlike draw(), which means

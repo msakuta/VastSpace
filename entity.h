@@ -14,13 +14,16 @@ class Warpable;
 class ArmBase;
 class Entity : public Serializable{
 public:
+	typedef Serializable st;
 	typedef std::vector<cpplib::dstring> Props;
 	Entity(WarField *aw = NULL);
 	static Entity *create(const char *cname, WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	virtual const char *dispname()const; // display name
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual double maxhealth()const;
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.

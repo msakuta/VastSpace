@@ -79,9 +79,13 @@ sol{
 #		inclination 3.85
 #		argument_of_periapsis 150.2075
 #		ascending_node 80.6198
-	#		warp
+#		warp
 #		teleport
 #		rstation
+#		addent beamer
+#		addent assault .2 .5 .7
+#		addent scarry -1 -1 -1
+#		addent sceptor 0 1 1
 #	}
 
 	include sol.dat

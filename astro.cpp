@@ -556,6 +556,19 @@ bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+#define ENABLE_TEXTFORMAT 1
+
 const char *Universe::classname()const{
 	return "Universe";
 }
@@ -616,6 +629,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		SerializeContext sc(*(SerializeStream*)NULL, map);
 		universe.dive(sc, &Serializable::map);
 	}
+#if ENABLE_TEXTFORMAT
 	if(text){
 		std::fstream fs(fname, std::ios::out | std::ios::binary);
 		fs << "savetext";
@@ -625,7 +639,9 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
 	}
-	else{
+	else
+#endif
+	{
 		BinSerializeStream bss;
 		SerializeContext sc(bss, map);
 		bss.sc = &sc;
@@ -704,6 +720,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			universe.csUnserialize(usc);
 		}
 	}
+#if ENABLE_TEXTFORMAT
 	else if(!memcmp(signature, "savetext", sizeof signature)){
 		{
 			std::istringstream ss(std::string((char*)buf, size));
@@ -720,6 +737,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			universe.csUnserialize(usc);
 		}
 	}
+#endif
 	else{
 		CmdPrint("Unrecognized save file format");
 	}

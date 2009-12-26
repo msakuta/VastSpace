@@ -101,12 +101,13 @@ struct war_field_static{
 
 class WarField : public Serializable{
 public:
-	WarField(){}
+	WarField();
 	WarField(CoordSys *cs);
 	virtual const char *classname()const;
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void postframe(), endframe(); // postframe gives an opportunity to clear pointers to objects being destroyed, while endframe actually destruct them.
 	virtual void draw(struct war_draw_data *);
@@ -117,7 +118,6 @@ public:
 	Entity *addent(Entity *);
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
-	void map(SerializeMap &cm);
 
 	Player *pl;
 	Entity *el; /* entity list */

@@ -8,11 +8,14 @@ public:
 protected:
 	ShieldEffect se;
 	double shieldAmount;
+	Frigate(){}
 	Frigate(WarField *);
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
 	void drawShield(wardraw_t *wd);
 
 public:
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual double hitradius();

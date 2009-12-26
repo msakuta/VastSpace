@@ -28,7 +28,10 @@ public:
 	Entity *target;
 	const hardpoint_static *hp;
 	int ammo;
+	ArmBase(){}
 	ArmBase(Entity *abase, const hardpoint_static *ahp) : base(abase), target(NULL), hp(ahp), ammo(0){}
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
 	virtual void postframe();
@@ -51,9 +54,15 @@ public:
 	float py[2]; // pitch and yaw
 	float mf; // muzzle flash time
 	bool forceEnemy;
+
+	MTurret(){}
 	MTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
@@ -73,9 +82,14 @@ protected:
 class GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
+	GatlingTurret();
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);

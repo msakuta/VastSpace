@@ -8,6 +8,8 @@
 
 int WarField::g_otdrawflags = 0;
 
+WarField::WarField() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL){}
+
 WarField::WarField(CoordSys *acs) : el(NULL), bl(NULL), cs(acs), pl(NULL), tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL){
 	for(CoordSys *root = cs; root; root = root->parent){
 		Universe *u = root->toUniverse();
@@ -47,6 +49,14 @@ void WarField::serialize(SerializeContext &sc){
 void WarField::unserialize(UnserializeContext &sc){
 	Serializable::unserialize(sc);
 	sc.i >> pl >> el >> bl >> rs >> effects >> realtime >> soundtime >> cs;
+}
+
+void WarField::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
+	(this->*method)(sc);
+	if(el)
+		el->dive(sc, method);
+	if(bl)
+		bl->dive(sc, method);
 }
 
 static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
@@ -173,10 +183,4 @@ Entity *WarField::addent(Entity *e){
 	return *plist = e;
 }
 
-void WarField::map(SerializeMap &cm){
-	if(cm.find(this) == cm.end()){
-		unsigned id = cm.size();
-		cm[this] = id;
-	}
-}
 

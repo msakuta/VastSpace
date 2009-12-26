@@ -11,9 +11,15 @@ class Scarry : public Warpable{
 public:
 	typedef Warpable st;
 
+	Scarry(){init();}
 	Scarry(WarField *w);
+	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual double maxhealth()const;
 	virtual double hitradius();
 	virtual double maxenergy()const;

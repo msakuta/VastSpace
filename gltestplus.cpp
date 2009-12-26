@@ -359,7 +359,7 @@ static void drawindics(Viewer *vw){
 				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->classname()))
 					break;
 				if(i == n/* || current_vft == vfts[i]*/){
-					names[n] = pt->classname();
+					names[n] = pt->dispname();
 					counts[n] = 1;
 					tanks[n] = pt;
 					if(++n == OV_COUNT)

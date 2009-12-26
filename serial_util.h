@@ -40,7 +40,9 @@ public:
 	virtual ~SerializeStream(){}
 	virtual tt &operator<<(int a) = 0;
 	virtual tt &operator<<(unsigned a) = 0;
+	virtual tt &operator<<(long a) = 0;
 	virtual tt &operator<<(unsigned long a) = 0;
+	virtual tt &operator<<(bool a) = 0;
 	virtual tt &operator<<(float a) = 0;
 	virtual tt &operator<<(double a) = 0;
 	virtual tt &operator<<(const char *a) = 0;
@@ -61,12 +63,14 @@ public:
 
 	StdSerializeStream(std::ostream &abase, SerializeContext *asc = NULL) : base(abase), tt(asc){}
 	~StdSerializeStream();
-	tt &operator<<(int a);
-	tt &operator<<(unsigned a);
-	tt &operator<<(unsigned long a);
-	tt &operator<<(float a);
-	tt &operator<<(double a);
-	tt &operator<<(const char *a);
+	virtual tt &operator<<(int a);
+	virtual tt &operator<<(unsigned a);
+	virtual tt &operator<<(long a);
+	virtual tt &operator<<(unsigned long a);
+	virtual tt &operator<<(bool a);
+	virtual tt &operator<<(float a);
+	virtual tt &operator<<(double a);
+	virtual tt &operator<<(const char *a);
 	virtual tt &operator<<(const Serializable *p);
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
@@ -83,13 +87,15 @@ public:
 
 	BinSerializeStream(SerializeContext *asc = NULL) : buf(NULL), size(0), tt(asc){}
 	~BinSerializeStream();
-	tt &operator<<(int a);
-	tt &operator<<(unsigned a);
-	tt &operator<<(unsigned long a);
-	tt &operator<<(float a);
-	tt &operator<<(double a);
-	tt &operator<<(const char *a);
-	tt &operator<<(const std::string &a);
+	virtual tt &operator<<(int a);
+	virtual tt &operator<<(unsigned a);
+	virtual tt &operator<<(long a);
+	virtual tt &operator<<(unsigned long a);
+	virtual tt &operator<<(bool a);
+	virtual tt &operator<<(float a);
+	virtual tt &operator<<(double a);
+	virtual tt &operator<<(const char *a);
+	virtual tt &operator<<(const std::string &a);
 	virtual tt &operator<<(const Serializable *p);
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
@@ -138,7 +144,9 @@ public:
 	virtual tt &read(char *s, std::streamsize size) = 0;
 	virtual tt &operator>>(int &a) = 0;
 	virtual tt &operator>>(unsigned &a) = 0;
+	virtual tt &operator>>(long &a) = 0;
 	virtual tt &operator>>(unsigned long &a) = 0;
+	virtual tt &operator>>(bool &a) = 0;
 	virtual tt &operator>>(float &a) = 0;
 	virtual tt &operator>>(double &a) = 0;
 	virtual tt &operator>>(Vec3d &v) = 0;
@@ -164,17 +172,19 @@ public:
 	StdUnserializeStream(std::istream &abase, UnserializeContext *ausc = NULL) : base(abase), tt(ausc){}
 	virtual bool eof()const;
 	virtual bool fail()const;
-	tt &read(char *s, std::streamsize size);
-	tt &operator>>(int &a);
-	tt &operator>>(unsigned &a);
-	tt &operator>>(unsigned long &a);
-	tt &operator>>(float &a);
-	tt &operator>>(double &a);
-	tt &operator>>(Vec3d &v);
-	tt &operator>>(Quatd &v);
-	tt &operator>>(struct random_sequence &rs);
-	tt &operator>>(const char *a);
-	tt &operator>>(cpplib::dstring &a);
+	virtual tt &read(char *s, std::streamsize size);
+	virtual tt &operator>>(int &a);
+	virtual tt &operator>>(unsigned &a);
+	virtual tt &operator>>(long &a);
+	virtual tt &operator>>(unsigned long &a);
+	virtual tt &operator>>(bool &a);
+	virtual tt &operator>>(float &a);
+	virtual tt &operator>>(double &a);
+	virtual tt &operator>>(Vec3d &v);
+	virtual tt &operator>>(Quatd &v);
+	virtual tt &operator>>(struct random_sequence &rs);
+	virtual tt &operator>>(const char *a);
+	virtual tt &operator>>(cpplib::dstring &a);
 	virtual tt *substream(size_t size);
 };
 
@@ -183,17 +193,19 @@ public:
 	BinUnserializeStream(const unsigned char *src = NULL, size_t size = 0, UnserializeContext *ausc = NULL);
 	virtual bool eof()const;
 	virtual bool fail()const;
-	tt &read(char *s, std::streamsize size);
-	tt &operator>>(int &a);
-	tt &operator>>(unsigned &a);
-	tt &operator>>(unsigned long &a);
-	tt &operator>>(float &a);
-	tt &operator>>(double &a);
-	tt &operator>>(Vec3d &v);
-	tt &operator>>(Quatd &v);
-	tt &operator>>(struct random_sequence &rs);
-	tt &operator>>(const char *a);
-	tt &operator>>(cpplib::dstring &a);
+	virtual tt &read(char *s, std::streamsize size);
+	virtual tt &operator>>(int &a);
+	virtual tt &operator>>(unsigned &a);
+	virtual tt &operator>>(long &a);
+	virtual tt &operator>>(unsigned long &a);
+	virtual tt &operator>>(bool &a);
+	virtual tt &operator>>(float &a);
+	virtual tt &operator>>(double &a);
+	virtual tt &operator>>(Vec3d &v);
+	virtual tt &operator>>(Quatd &v);
+	virtual tt &operator>>(struct random_sequence &rs);
+	virtual tt &operator>>(const char *a);
+	virtual tt &operator>>(cpplib::dstring &a);
 	virtual tt *substream(size_t size);
 
 private:

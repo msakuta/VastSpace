@@ -9,6 +9,7 @@
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
+#include "serial_util.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -74,9 +75,36 @@ const char *Beamer::idname()const{
 }
 
 const char *Beamer::classname()const{
-	return "Lancer class";
+	return "Beamer";
 }
 
+const unsigned Beamer::classid = registerClass("Beamer", Conster<Beamer>);
+
+void Beamer::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << charge;
+	sc.o << integral;
+	sc.o << beamlen;
+	sc.o << cooldown;
+//	struct tent3d_fpol *pf[1];
+//	scarry_t *dock;
+	sc.o << undocktime;
+}
+
+void Beamer::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> charge;
+	sc.i >> integral;
+	sc.i >> beamlen;
+	sc.i >> cooldown;
+//	struct tent3d_fpol *pf[1];
+//	scarry_t *dock;
+	sc.i >> undocktime;
+}
+
+const char *Beamer::dispname()const{
+	return "Lancer Class";
+}
 
 #if 0
 void beamer_dock(beamer_t *p, scarry_t *pc, warf_t *w){
@@ -136,6 +164,16 @@ extern struct astrobj earth, island3, moon, jupiter;
 extern struct player *ppl;
 #endif
 
+
+void Frigate::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << shieldAmount;
+}
+
+void Frigate::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> shieldAmount;
+}
 
 
 void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{

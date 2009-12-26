@@ -41,8 +41,11 @@ public:
 	CoordSys *warpcs, *warpdstcs;
 //	WarField *warp_next_warf;
 
+	Warpable(){}
 	Warpable(WarField *w);
 
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
 	void control(input_t *, double);
 	unsigned analog_mask();

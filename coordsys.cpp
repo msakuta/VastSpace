@@ -36,7 +36,13 @@ const char *CoordSys::classname()const{
 
 void CoordSys::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << name << (fullname ? fullname : "") << parent << children << next << pos << velo << qrot;
+	sc.o << name;
+	sc.o << (fullname ? fullname : "");
+	sc.o << parent;
+	sc.o << children;
+	sc.o << w;
+	sc.o << next;
+	sc.o << pos << velo << qrot;
 	sc.o << omg;
 	sc.o << csrad;
 	sc.o << flags;
@@ -47,7 +53,11 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	cpplib::dstring name, fullname;
 	sc.i >> name;
 	sc.i >> fullname;
-	sc.i >> parent >> children >> next >> pos >> velo >> qrot;
+	sc.i >> parent;
+	sc.i >> children;
+	sc.i >> w;
+	sc.i >> next;
+	sc.i >> pos >> velo >> qrot;
 	sc.i >> omg;
 	sc.i >> csrad;
 	sc.i >> flags;
@@ -57,6 +67,16 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
+}
+
+void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	(this->*method)(sc);
+	if(w)
+		w->dive(sc, method);
+	if(next)
+		next->dive(sc, method);
+	if(children)
+		children->dive(sc, method);
 }
 
 const unsigned CoordSys::classid = registerClass("CoordSys", Conster<CoordSys>);
@@ -467,16 +487,6 @@ CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
 void CoordSys::predraw(const Viewer *vw){
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->predraw(vw);
-}
-
-void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
-	(this->*method)(sc);
-	if(w)
-		w->dive(sc, method);
-	if(next)
-		next->dive(sc, method);
-	if(children)
-		children->dive(sc, method);
 }
 
 // In the hope std::sort template function optimizes the comparator function,

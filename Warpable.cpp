@@ -9,6 +9,7 @@
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
+#include "serial_util.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -942,6 +943,26 @@ bool Warpable::isTargettable()const{
 	return true;
 }
 bool Warpable::isSelectable()const{return true;}
+
+void Warpable::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << warpdst;
+	sc.o << warpSpeed;
+	sc.o << totalWarpDist << currentWarpDist;
+	sc.o << capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.o << warping;
+	sc.o << warpcs << warpdstcs;
+}
+
+void Warpable::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> warpdst;
+	sc.i >> warpSpeed;
+	sc.i >> totalWarpDist >> currentWarpDist;
+	sc.i >> capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.i >> warping;
+	sc.i >> warpcs >> warpdstcs;
+}
 
 void Warpable::anim(double dt){
 	Mat4d mat;

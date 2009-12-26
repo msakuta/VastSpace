@@ -58,6 +58,10 @@ const char *Entity::classname()const{
 	return "Entity";
 }
 
+const char *Entity::dispname()const{
+	return classname();
+}
+
 #if 0 // reference
 	Vec3d pos;
 	Vec3d velo;
@@ -80,11 +84,43 @@ const char *Entity::classname()const{
 #endif
 
 void Entity::serialize(SerializeContext &sc){
-	sc.o << " " << pos << " " << velo << " " << omg << " " << rot << " " << mass << " " << moi << " " << health << " " << sc.map[next] << " " << sc.map[enemy] << " " << race << " " << otflag;
+	st::serialize(sc);
+	sc.o << w;
+	sc.o << pos;
+	sc.o << velo;
+	sc.o << omg;
+	sc.o << rot;
+	sc.o << mass;
+	sc.o << moi;
+	sc.o << health;
+	sc.o << next << selectnext;
+	sc.o << enemy;
+	sc.o << race;
+	sc.o << otflag;
 }
 
 void Entity::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> w;
+	sc.i >> pos;
+	sc.i >> velo;
+	sc.i >> omg;
+	sc.i >> rot;
+	sc.i >> mass;
+	sc.i >> moi;
+	sc.i >> health;
+	sc.i >> next >> selectnext;
+	sc.i >> enemy;
+	sc.i >> race;
+	sc.i >> otflag;
 }
+
+void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	if(next)
+		next->dive(sc, method);
+}
+
 
 double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}

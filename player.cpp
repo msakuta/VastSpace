@@ -28,11 +28,11 @@ const char *Player::classname()const{
 
 void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << pos << velo << rot << cs;
+	sc.o << chase << selected << pos << velo << rot << cs;
 }
 
 void Player::unserialize(UnserializeContext &sc){
-	sc.i >> pos >> velo >> rot >> cs;
+	sc.i >> chase >> selected >> pos >> velo >> rot >> cs;
 }
 
 void Player::anim(double dt){

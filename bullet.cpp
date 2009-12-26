@@ -3,6 +3,7 @@
 #include "astro.h"
 #include "player.h"
 #include "judge.h"
+#include "serial_util.h"
 //#include "warutil.h"
 extern "C"{
 #include "bitmap.h"
@@ -25,6 +26,26 @@ const char *Bullet::idname()const{
 
 const char *Bullet::classname()const{
 	return "Bullet";
+}
+
+const unsigned Bullet::classid = registerClass("Bullet", Conster<Bullet>);
+
+void Bullet::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << damage;
+	sc.o << life;
+	sc.o << runlength;
+	sc.o << owner;
+	sc.o << grav;
+}
+
+void Bullet::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> damage;
+	sc.i >> life;
+	sc.i >> runlength;
+	sc.i >> owner;
+	sc.i >> grav;
 }
 
 void sufmodel_normalize(sufmodel_t *mdl);

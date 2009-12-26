@@ -34,9 +34,14 @@ protected:
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 public:
+	Sceptor();
 	Sceptor(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual double maxhealth()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);

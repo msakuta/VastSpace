@@ -29,7 +29,9 @@ SerializeStream &StdSerializeStream::operator<<(const struct ::random_sequence &
 
 SerializeStream &StdSerializeStream::operator<<(int a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(unsigned a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(long a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(unsigned long a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(bool a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(float a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(double a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(const char *a){
@@ -91,7 +93,9 @@ inline SerializeStream &BinSerializeStream::write(T a){
 
 SerializeStream &BinSerializeStream::operator <<(int a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(unsigned a){return write(a);}
+SerializeStream &BinSerializeStream::operator <<(long a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(unsigned long a){return write(a);}
+SerializeStream &BinSerializeStream::operator <<(bool a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(float a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(double a){return write(a);}
 
@@ -166,7 +170,9 @@ bool StdUnserializeStream::fail()const{ return base.fail(); }
 UnserializeStream &StdUnserializeStream::read(char *s, std::streamsize size){ base.read(s, size); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(int &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(unsigned &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(unsigned long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(bool &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(float &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(double &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 
@@ -267,7 +273,9 @@ bool BinUnserializeStream::eof()const{return !size;}
 bool BinUnserializeStream::fail()const{return !size;}
 UnserializeStream &BinUnserializeStream::operator>>(int &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(unsigned &a){return read(a);}
+UnserializeStream &BinUnserializeStream::operator>>(long &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(unsigned long &a){return read(a);}
+UnserializeStream &BinUnserializeStream::operator>>(bool &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(float &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(double &a){return read(a);}
 

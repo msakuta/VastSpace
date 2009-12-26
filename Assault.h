@@ -11,9 +11,15 @@ protected:
 	static int nhardpoints;
 public:
 	typedef Frigate st;
+	Assault(){init();}
 	Assault(WarField *w);
+	void init();
 	const char *idname()const;
-	const char *classname()const;
+	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void postframe();
 	virtual void draw(wardraw_t *);

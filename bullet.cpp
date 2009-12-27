@@ -707,12 +707,12 @@ void Bullet::anim(double dt){
 #if 1
 			{ /* ricochet */
 				if(w->tell && rseq(&w->rs) % (w->effects + 1) == 0){
-					int j, n;
+/*					int j, n;
 					Vec3d pyr, bvelo;
 					bvelo = pb->velo - pt->velo;
 					Vec3d delta = pos - pt->pos;
 					pt->bullethole(pi, pb->damage * .00001, delta, Quatd::direction(delta));
-					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);
+					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);*/
 				}
 				w->effects++;
 				if(w->tell){

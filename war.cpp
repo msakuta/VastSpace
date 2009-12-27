@@ -8,7 +8,7 @@
 
 int WarField::g_otdrawflags = 0;
 
-WarField::WarField() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL){}
+WarField::WarField() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL), oti(0), ots(0){}
 
 WarField::WarField(CoordSys *acs) : el(NULL), bl(NULL), cs(acs), pl(NULL), tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL){
 	for(CoordSys *root = cs; root; root = root->parent){
@@ -78,6 +78,12 @@ void aaanim(double dt, WarField *w, Entity *WarField::*li){
 	}
 }
 
+#if 0
+#define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
+#else
+#define TRYBLOCK(a) (a);
+#endif
+
 void WarField::anim(double dt){
 	CoordSys *root = cs;
 	for(; root; root = root->parent){
@@ -88,10 +94,11 @@ void WarField::anim(double dt){
 		}
 	}
 	aaanim(dt, this, list[0]);
-	ot_build(this, dt);
+//	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
+	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, list[1]);
-	AnimTeline3D(tell, dt);
-	AnimTefpol3D(tepl, dt);
+	TRYBLOCK(AnimTeline3D(tell, dt));
+	TRYBLOCK(AnimTefpol3D(tepl, dt));
 }
 
 void WarField::postframe(){

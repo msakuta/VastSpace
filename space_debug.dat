@@ -1,3 +1,11 @@
+define MINUTE_SECONDS 60
+define HOUR_SECONDS 60*60
+define DAY_SECONDS 24*60*60
+define RAD_PER_DEG 2*pi/360
+define AU 149597870.691
+define Rsun 6.960e5
+define Msun 1.9884e30
+
 astro Star "Sol"{
 	radius 1.5*Rsun
 	pos 0 10*Rsun 0
@@ -23,4 +31,35 @@ coordsys Orbit sunlo{
 	addent assault .2 .5 .3
 #	addent scarry -1 -1 -1
 #	addent sceptor 0 1 1
+}
+
+coordsys Orbit venus{
+	fullname Venus
+	cs_radius 1000000
+	orbits Sol
+	orbit_radius 108208930
+	inclination 3.39471
+	argument_of_periapsis 131.6758
+	ascending_node 76.7520
+	showorbit
+	astro TextureSphere Venus{
+		diameter 12103.6
+		mass 3.3022e23
+		color afafaf
+		omega 0 0 1 -2/243.0187/DAY_SECONDS*pi   #rotation speed
+		texture ven0mss2.jpg
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30.
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1 
+	}
+	coordsys Orbit venuso{
+		orbits Venus
+		orbit_radius 10000
+		fullname "Venus orbit"
+		warp
+		teleport
+	}
 }

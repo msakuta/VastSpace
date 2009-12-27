@@ -673,13 +673,18 @@ void display_func(void){
 
 		pl.anim(dt);
 
+#if 0
+#define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
+#else
+#define TRYBLOCK(a) (a);
+#endif
 		if(!universe.paused) try{
 			timemeas_t tm;
 			TimeMeasStart(&tm);
-			universe.anim(dt);
-			universe.postframe();
-			GLwindow::glwpostframe();
-			universe.endframe();
+			TRYBLOCK(universe.anim(dt));
+			TRYBLOCK(universe.postframe());
+			TRYBLOCK(GLwindow::glwpostframe());
+			TRYBLOCK(universe.endframe());
 			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){

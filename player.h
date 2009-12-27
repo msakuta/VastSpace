@@ -13,10 +13,12 @@ struct astrobj;
 struct coordsys;
 class Entity;
 class CoordSys;
+struct teleport;
 
 class Player : public Serializable{
 public:
 	Player();
+	~Player();
 	Vec3d pos;
 	Vec3d velo;
 	Vec3d accel;
@@ -55,6 +57,13 @@ public:
 	static int cmd_coordsys(int argc, char *argv[], void *pv);
 	static int cmd_position(int argc, char *argv[], void *pv);
 	static int cmd_velocity(int argc, char *argv[], void *pv);
+	static int cmd_teleport(int argc, char *argv[], void *pv);
+	static teleport *findTeleport(const char *, int flags = ~0); // returns teleport node found
+	static teleport *addTeleport(); // returns allocated uninitialized struct
+	typedef unsigned teleport_iterator;
+	static teleport_iterator beginTeleport();
+	static teleport *getTeleport(teleport_iterator);
+	static teleport_iterator endTeleport();
 };
 
 

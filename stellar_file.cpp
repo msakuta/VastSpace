@@ -26,9 +26,41 @@ extern "C"{
 extern double gravityfactor;
 
 
-struct teleport *tplist = NULL;
-int ntplist = 0;
+/*
+const char *teleport::classname()const{
+	return "teleport";
+}
 
+const unsigned teleport::classid = registerClass(((teleport*)NULL)->teleport::classname(), Conster<teleport>);
+*/
+
+teleport::teleport(CoordSys *acs, const char *aname, int aflags, const Vec3d &apos) : cs(acs), flags(aflags), pos(apos){
+	name = new char[strlen(aname) + 1];
+	strcpy(name, aname);
+}
+
+teleport::~teleport(){
+	delete name;
+}
+
+void teleport::serialize(SerializeContext &sc){
+//	st::serialize(sc);
+	sc.o << cs;
+	sc.o << name;
+	sc.o << flags;
+	sc.o << pos;
+}
+
+void teleport::unserialize(UnserializeContext &sc){
+//	st::unserialize(sc);
+	cpplib::dstring name;
+	sc.i >> cs;
+	sc.i >> name;
+	sc.i >> flags;
+	sc.i >> pos;
+
+	this->name = strnewdup(name, name.len());
+}
 
 /* Lagrange 1 point between two bodies */
 LagrangeCS::LagrangeCS(const char *path, CoordSys *root){

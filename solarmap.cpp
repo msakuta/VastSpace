@@ -636,15 +636,16 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		params.textcolor[1] = 255;
 		params.textcolor[2] = 255;
 		params.textcolor[3] = 255;
-		for(i = 0; i < ntplist; i++){
+		for(Player::teleport_iterator it = 0; it != Player::endTeleport(); it++){
 /*			double md;
 			avec3_t spos, apos, apos0;*/
-			params.apos0 = sol->tocs(tplist[i].pos, tplist[i].cs);
+			teleport *tp = Player::getTeleport(it);
+			params.apos0 = sol->tocs(tp->pos, tp->cs);
 #if 1
-			params.name = tplist[i].name;
+			params.name = tp->name;
 			params.rad = 0.;
 			if(drawSolarMapItem(&params))
-				p->target = &tplist[i];
+				p->target = tp;
 #else
 			quatrot(apos, p->rot, apos0);
 			md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);

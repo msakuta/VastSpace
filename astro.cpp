@@ -681,10 +681,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	cs_destructs = 0;
 	delete universe.children;
 	delete universe.next;
-	if(tplist)
-		::free(tplist);
-	ntplist = 0;
-	tplist = NULL;
+	pl.Player::~Player();
 	printf("destructs %d\n", cs_destructs);
 	universe.aorder.clear();
 	std::vector<Serializable*> map;

@@ -999,29 +999,6 @@ void reshape_func(int w, int h)
 //	g_max = m;
 }
 
-static int cmd_teleport(int argc, char *argv[]){
-	const char *arg = argv[1];
-	if(!arg){
-		CmdPrint("Specify location you want to teleport to.");
-		return 0;
-	}
-	if(pl.chase){
-		return 0;
-	}
-	{
-		int i;
-		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
-			pl.cs = tplist[i].cs;
-			VECCPY(pl.pos, tplist[i].pos);
-			VECNULL(pl.velo);
-			break;
-		}
-		if(i == ntplist)
-			CmdPrintf("Could not find location \"%s\".", arg);
-	}
-	return 0;
-}
-
 static int cmd_eject(int argc, char *argv[]){
 	if(pl.chase){
 		pl.chase = NULL;
@@ -1447,7 +1424,7 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
-	CmdAdd("teleport", cmd_teleport);
+	CmdAddParam("teleport", Player::cmd_teleport, &pl);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);

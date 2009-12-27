@@ -10,13 +10,20 @@
 #define TELEPORT_WARP   2
 #define TELEPORT_PORTAL 4 /* should really have different data structure. */
 
-extern struct teleport{
+struct teleport/* : public Serializable*/{
+/*	typedef Serializable st;
+	virtual const char *classname()const;
+	static const unsigned classid;*/
+	teleport(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
+	~teleport();
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &sc);
+
 	CoordSys *cs;
 	char *name;
 	int flags;
-	avec3_t pos;
-} *tplist;
-extern int ntplist;
+	Vec3d pos;
+};
 
 // Base class for Lagrange points
 class LagrangeCS : public CoordSys{

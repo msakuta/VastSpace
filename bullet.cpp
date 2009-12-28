@@ -840,6 +840,7 @@ Entity *Bullet::getOwner(){
 }
 
 void Bullet::postframe(){
+	st::postframe();
 	if(!w)
 		return;
 	if(owner && owner->w != w)

@@ -377,7 +377,7 @@ void MTurret::tryshoot(){
 	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * 2.;
+	pz->velo = mat.dvp3(forward) * 2. + this->velo;
 	this->cooldown += reloadtime();
 	this->mf += .1;
 	ammo--;
@@ -630,7 +630,7 @@ void GatlingTurret::tryshoot(){
 	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * 3.;
+	pz->velo = mat.dvp3(forward) * 3. + this->velo;
 	this->cooldown += reloadtime();
 	this->mf += .075;
 	this->barrelomg = 2. * M_PI / reloadtime() / 3.;

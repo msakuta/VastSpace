@@ -8,10 +8,10 @@
 
 int WarField::g_otdrawflags = 0;
 
-WarField::WarField() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), ottemp(NULL), oti(0), ots(0){}
+WarField::WarField() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), oti(0), ots(0){}
 
 WarField::WarField(CoordSys *acs) : el(NULL), bl(NULL), cs(acs), pl(NULL), tell(NewTeline3D(2048, 128, 128)), gibs(NULL), tepl(NewTefpol3D(2047, 128, 128)),
-	ot(NULL), otroot(NULL), ottemp(NULL), oti(0), ots(0),
+	ot(NULL), otroot(NULL), oti(0), ots(0),
 	effects(0), realtime(0), soundtime(0)
 {
 	init_rseq(&rs, 2426);

@@ -591,8 +591,11 @@ otnt *ot_build(WarField *w, double dt){
 	}
 
 	/* The case n == 1 will fail building up tree. */
-	if(n <= 1)
+	if(n <= 1){
+		w->oti = 0;
+		w->otroot = NULL;
 		return NULL;
+	}
 
 /*	for(i = n; i; i--)
 		m += i;*/

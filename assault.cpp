@@ -71,6 +71,58 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
+	if(0 < health){
+		inputs.press = 0;
+		if(!enemy){ /* find target */
+			double best = 20. * 20.;
+			Entity *t;
+			for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
+				double sdist = (this->pos - t->pos).slen();
+				if(sdist < best){
+					this->enemy = t;
+					best = sdist;
+				}
+			}
+		}
+
+/*		if(p->dock && p->undocktime == 0){
+			if(pt->enemy)
+				assault_undock(p, p->dock);
+		}
+		else */
+		if(this->enemy){
+			Vec3d xh, yh;
+			long double sx, sy, len, len2, maxspeed = getManeuve().maxanglespeed * dt;
+			Quatd qres, qrot;
+			Vec3d dv = this->enemy->pos - this->pos;
+			dv.normin();
+			Vec3d forward = this->rot.trans(avec3_001);
+			forward *= -1;
+			xh = forward.vp(dv);
+			len = len2 = xh.len();
+			len = asinl(len);
+			if(maxspeed < len){
+				len = maxspeed;
+			}
+			len = sinl(len / 2.);
+			if(len && len2){
+				(Vec3d&)qrot = xh * (len / len2);
+				qrot[3] = sqrt(1. - len * len);
+				qres = qrot * this->rot;
+				this->rot = qres.norm();
+			}
+			if(.9 < dv.sp(forward)){
+				this->inputs.change |= PL_ENTER;
+				this->inputs.press |= PL_ENTER;
+				if(5. * 5. < (this->enemy->pos - this->pos).slen())
+					this->inputs.press |= PL_W;
+				else if((this->enemy->pos, this->pos).slen() < 1. * 1.)
+					this->inputs.press |= PL_S;
+				else
+					this->inputs.press |= PL_A; /* strafe around */
+			}
+		}
+	}
 	st::anim(dt);
 	for(int i = 0; i < 4; i++) if(turrets[i])
 		turrets[i]->align();

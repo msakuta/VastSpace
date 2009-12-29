@@ -625,9 +625,9 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
 	map[NULL] = 0;
 	map[&pl] = map.size();
-	std::set<Serializable*> visits;
+	Serializable* visit_list = NULL;
 	{
-		SerializeContext sc(*(SerializeStream*)NULL, map, visits);
+		SerializeContext sc(*(SerializeStream*)NULL, map, visit_list);
 		universe.dive(sc, &Serializable::map);
 	}
 #if ENABLE_TEXTFORMAT
@@ -635,19 +635,21 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		std::fstream fs(fname, std::ios::out | std::ios::binary);
 		fs << "savetext";
 		StdSerializeStream sss(fs);
-		SerializeContext sc(sss, map, visits);
+		SerializeContext sc(sss, map, visit_list);
 		sss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
+		(sc.visit_list)->clearVisitList();
 	}
 	else
 #endif
 	{
 		BinSerializeStream bss;
-		SerializeContext sc(bss, map, visits);
+		SerializeContext sc(bss, map, visit_list);
 		bss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
+		(sc.visit_list)->clearVisitList();
 		FILE *fp = fopen(fname, "wb");
 		fputs("savebina", fp);
 		fwrite(bss.getbuf(), 1, bss.getsize(), fp);

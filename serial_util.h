@@ -116,11 +116,11 @@ protected:
 
 class SerializeContext{
 public:
-	SerializeContext(SerializeStream &ao, SerializeMap &amap, std::set<Serializable*> &avisits) : o(ao), map(amap), visits(avisits){}
-	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visits(copy_src.visits){}
+	SerializeContext(SerializeStream &ao, SerializeMap &amap, Serializable *&avisit_list) : o(ao), map(amap), visit_list(avisit_list){}
+	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visit_list(copy_src.visit_list){}
 	SerializeStream &o;
 	SerializeMap &map;
-	std::set<Serializable*> &visits;
+	Serializable *&visit_list;
 };
 
 inline SerializeStream &SerializeStream::operator<<(const Serializable *p){

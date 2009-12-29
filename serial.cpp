@@ -29,10 +29,14 @@ void Serializable::map(SerializeContext &sc){
 }
 
 void Serializable::packSerialize(SerializeContext &sc){
-	if(sc.visits.find(this) != sc.visits.end()){
+	if(visit_list) // avoid duplicate objects
+		return;
+	visit_list = sc.visit_list; // register itself as visited
+	sc.visit_list = this;
+/*	if(sc.visits.find(this) != sc.visits.end()){
 		return; // avoid duplicate objects
 	}
-	sc.visits.insert(this);
+	sc.visits.insert(this);*/
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);
 	serialize(sc2);

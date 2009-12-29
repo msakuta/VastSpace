@@ -26,10 +26,23 @@ public:
 	static unsigned registerClass(std::string name, Serializable *(*)());
 	static CtorMap &ctormap();
 	template<class T> static Serializable *Conster();
+	void clearVisitList()const;
+protected:
+	Serializable() : visit_list(NULL){}
+	mutable Serializable *visit_list; // Visit list for object network diving. Must be initially NULL and NULLified after use.
 };
 
 template<class T> inline Serializable *Serializable::Conster(){
 	return new T();
 };
+
+inline void Serializable::clearVisitList()const{
+	const Serializable *p = this;
+	while(p){
+		const Serializable *next = p->visit_list;
+		p->visit_list = NULL;
+		p = next;
+	};
+}
 
 #endif

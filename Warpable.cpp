@@ -647,7 +647,7 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		pm.append(tp->name, 0, cpplib::dstring("warp \"") << tp->name << '"');
 	}
 //	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
-	wnd = glwMenu(windowtitle, pm, GLW_CLOSE);
+	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
 /*	for(i = 0; i < left; i++){
 		free(cmds[i]);
 	}*/

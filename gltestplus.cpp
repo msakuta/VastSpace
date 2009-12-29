@@ -356,7 +356,7 @@ static void drawindics(Viewer *vw){
 /*				if(pl.chase && pl.race != pt->race)
 					continue;*/
 
-				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->classname()))
+				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->dispname()))
 					break;
 				if(i == n/* || current_vft == vfts[i]*/){
 					names[n] = pt->dispname();

@@ -9,6 +9,7 @@ extern "C"{
 #include "cmd.h"
 #include "sceptor.h"
 #include "Scarry.h"
+#include "RStation.h"
 #include "glwindow.h"
 #include "serial_util.h"
 
@@ -33,10 +34,10 @@ template<class T> Entity *Constructor(WarField *w){
 };
 
 static const char *ent_name[] = {
-	"beamer", "assault", "sceptor", "scarry"
+	"beamer", "assault", "sceptor", "scarry", "rstation",
 };
 static Entity *(*const ent_creator[])(WarField *w) = {
-	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>
+	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>, Constructor<RStation>
 };
 
 Entity *Entity::create(const char *cname, WarField *w){
@@ -138,11 +139,12 @@ int Entity::armsCount()const{return 0;}
 const ArmBase *Entity::armsGet(int)const{return NULL;}
 void Entity::attack(Entity *target){enemy = target;}
 std::vector<cpplib::dstring> Entity::props()const{
+	using namespace cpplib;
 	std::vector<cpplib::dstring> ret;
 	ret.push_back(cpplib::dstring("Class: ") << classname());
 	ret.push_back(cpplib::dstring("CoordSys: ") << w->cs->getpath());
-	ret.push_back(cpplib::dstring("Health: ") << health << "/" << maxhealth());
-	ret.push_back(cpplib::dstring("Race: ") << race);
+	ret.push_back(cpplib::dstring("Health: ") << dstring(health) << "/" << dstring(maxhealth()));
+	ret.push_back(cpplib::dstring("Race: ") << dstring(race));
 	return ret;
 }
 

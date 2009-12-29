@@ -274,6 +274,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\RStation.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Scarry.cpp"
 				>
 			</File>
@@ -441,6 +445,10 @@
 			</File>
 			<File
 				RelativePath="..\popup.h"
+				>
+			</File>
+			<File
+				RelativePath="..\RStation.h"
 				>
 			</File>
 			<File

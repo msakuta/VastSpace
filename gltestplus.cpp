@@ -750,7 +750,7 @@ void display_func(void){
 
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	PopupMenu *menus = new PopupMenu;
-	menus->append("Move", '\0', "moveorder").append("Chase Camera", '\0', "chasecamera");
+	menus->append("Move", '\0', "moveorder").append("Chase Camera", '\0', "chasecamera").append("Properties", '\0', "property");
 	GLwindow *glw;
 	if(selectchain){
 		for(; pt; pt = pt->selectnext)

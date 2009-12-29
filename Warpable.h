@@ -60,6 +60,7 @@ public:
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void warp_collapse();
+	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale);
 
 	struct maneuve{
 		double accel;

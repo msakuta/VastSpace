@@ -10,7 +10,6 @@ protected:
 	double shieldAmount;
 	Frigate(){}
 	Frigate(WarField *);
-	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos);
 	void drawShield(wardraw_t *wd);
 
 public:

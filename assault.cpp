@@ -147,7 +147,7 @@ void Assault::draw(wardraw_t *wd){
 }
 
 void Assault::drawtra(wardraw_t *wd){
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06));
+	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 	drawShield(wd);
 }
 

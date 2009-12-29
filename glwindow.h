@@ -118,7 +118,7 @@ public:
 	PopupMenu *menus;
 #endif
 	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-	GLwindowMenu(const char *title, const PopupMenu &);
+	GLwindowMenu(const char *title, const PopupMenu &, unsigned flags = 0);
 	void draw(GLwindowState &,double);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	int key(int key);
@@ -130,6 +130,7 @@ public:
 extern const int glwMenuAllAllocated[];
 extern const char glwMenuSeparator[];
 GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
+GLwindowMenu *glwMenu(const char *title, const PopupMenu &, unsigned flags);
 glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenu &);
 

@@ -7,8 +7,10 @@ class Star : public Astrobj{
 	int aircolona; /* a flag indicating the colona is already drawn by the time some nearer planet's air is drawn. */
 public:
 	typedef Astrobj st;
+	Star(){}
 	Star(const char *name, CoordSys *cs);
 	virtual const char *classname()const;
+	static const unsigned classid;
 	virtual void predraw(const Viewer*);
 	virtual void draw(const Viewer*);
 };

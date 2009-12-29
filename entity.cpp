@@ -10,9 +10,10 @@ extern "C"{
 #include "sceptor.h"
 #include "Scarry.h"
 #include "glwindow.h"
+#include "serial_util.h"
 
 
-Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0){
+Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0){
 //	The entity must be constructed before being contained by some surroundings.
 //  This generic problem is fairly difficult whether the object should be constructed before being assigned to its container.
 //  Objects like Entities in this program are always tied to a WarField and assumed valid only if containing WarField is defined.
@@ -57,9 +58,73 @@ const char *Entity::classname()const{
 	return "Entity";
 }
 
+const char *Entity::dispname()const{
+	return classname();
+}
+
+#if 0 // reference
+	Vec3d pos;
+	Vec3d velo;
+	Vec3d omg;
+	Quatd rot; /* rotation expressed in quaternion */
+	double mass; /* [kg] */
+	double moi;  /* moment of inertia, [kg m^2] should be a tensor */
+//	double turrety, barrelp;
+//	double desired[2];
+	double health;
+//	double cooldown, cooldown2;
+	Entity *next;
+	Entity *selectnext; /* selection list */
+	Entity *enemy;
+	int race;
+//	int shoots, shoots2, kills, deaths;
+	input_t inputs;
+	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
+	int otflag;
+#endif
+
+void Entity::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << w;
+	sc.o << pos;
+	sc.o << velo;
+	sc.o << omg;
+	sc.o << rot;
+	sc.o << mass;
+	sc.o << moi;
+	sc.o << health;
+	sc.o << next << selectnext;
+	sc.o << enemy;
+	sc.o << race;
+	sc.o << otflag;
+}
+
+void Entity::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> w;
+	sc.i >> pos;
+	sc.i >> velo;
+	sc.i >> omg;
+	sc.i >> rot;
+	sc.i >> mass;
+	sc.i >> moi;
+	sc.i >> health;
+	sc.i >> next >> selectnext;
+	sc.i >> enemy;
+	sc.i >> race;
+	sc.i >> otflag;
+}
+
+void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	if(next)
+		next->dive(sc, method);
+}
+
+
 double Entity::maxhealth()const{return 100.;}
 void Entity::anim(double){}
-void Entity::postframe(){}
+void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
 void Entity::control(const input_t *i, double){inputs = *i;}
 unsigned Entity::analog_mask(){return 0;}
 void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}

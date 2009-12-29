@@ -3,6 +3,24 @@
 #include "cmd.h"
 #include "coordsys.h"
 #include "astro.h"
+#include "serial_util.h"
+#include "stellar_file.h"
+
+static teleport *tplist;
+static int ntplist;
+
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), flypower(1.), viewdist(1.), mover(&Player::freelook){
+}
+
+Player::~Player(){
+	if(tplist){
+		for(int i = 0; i < ntplist; i++)
+			tplist[i].teleport::~teleport();
+		::free(tplist);
+	}
+	tplist = NULL;
+	ntplist = 0;
+}
 
 
 Quatd Player::getrot()const{
@@ -16,6 +34,26 @@ Quatd Player::getrot()const{
 
 Vec3d Player::getpos()const{
 	return pos;
+}
+
+const char *Player::classname()const{
+	return "Player";
+}
+
+void Player::serialize(SerializeContext &sc){
+	Serializable::serialize(sc);
+	sc.o << chase << selected << pos << velo << rot << cs;
+	sc.o << ntplist;
+	for(int i = 0; i < ntplist; i++)
+		tplist[i].serialize(sc);
+}
+
+void Player::unserialize(UnserializeContext &sc){
+	sc.i >> chase >> selected >> pos >> velo >> rot >> cs;
+	sc.i >> ntplist;
+	tplist = (teleport*)::malloc(ntplist * sizeof *tplist);
+	for(int i = 0; i < ntplist; i++)
+		tplist[i].unserialize(sc);
 }
 
 void Player::anim(double dt){
@@ -177,4 +215,51 @@ int Player::cmd_velocity(int argc, char *argv[], void *pv){
 			pl.velo[2] = atof(p);
 	}
 	return 0;
+}
+
+int Player::cmd_teleport(int argc, char *argv[], void *pv){
+	Player &pl = *(Player*)pv;
+	const char *arg = argv[1];
+	if(!arg){
+		CmdPrint("Specify location you want to teleport to.");
+		return 0;
+	}
+	if(pl.chase){
+		return 0;
+	}
+	{
+		int i;
+		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
+			pl.cs = tplist[i].cs;
+			VECCPY(pl.pos, tplist[i].pos);
+			VECNULL(pl.velo);
+			break;
+		}
+		if(i == ntplist)
+			CmdPrintf("Could not find location \"%s\".", arg);
+	}
+	return 0;
+}
+
+teleport *Player::findTeleport(const char *name, int flags){
+	for(int i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)
+		return &tplist[i];
+	return NULL;
+}
+
+teleport *Player::addTeleport(){
+	tplist = (teleport*)realloc(tplist, ++ntplist * sizeof *tplist);
+	return &tplist[ntplist-1];
+}
+
+Player::teleport_iterator Player::beginTeleport(){
+	return 0;
+}
+
+teleport *Player::getTeleport(teleport_iterator i){
+	return &tplist[i];
+}
+
+Player::teleport_iterator Player::endTeleport(){
+	return ntplist;
 }

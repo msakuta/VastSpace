@@ -1,5 +1,6 @@
 #include "Scarry.h"
 #include "judge.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -35,17 +36,39 @@ hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
 int Scarry::nhardpoints = 0;
 
 Scarry::Scarry(WarField *w) : st(w){
+	st::init();
 	init();
-	if(!hardpoints){
-		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
-	}
-	turrets = new ArmBase*[nhardpoints];
 	for(int i = 0; i < nhardpoints; i++)
 		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
 }
 
+void Scarry::init(){
+	if(!hardpoints){
+		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
+	}
+	turrets = new ArmBase*[nhardpoints];
+}
+
 const char *Scarry::idname()const{return "scarry";}
-const char *Scarry::classname()const{return "Space Carrier";}
+const char *Scarry::classname()const{return "Scarry";}
+
+const unsigned Scarry::classid = registerClass("Scarry", Conster<Scarry>);
+
+void Scarry::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.o << turrets[i];
+}
+
+void Scarry::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.i >> turrets[i];
+}
+
+const char *Scarry::dispname()const{
+	return "Space Carrier";
+};
 
 double Scarry::maxhealth()const{
 	return 200000;

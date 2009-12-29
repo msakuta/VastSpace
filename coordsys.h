@@ -5,6 +5,7 @@
   coordinates, for example. */
 
 #include "viewer.h"
+#include "serial.h"
 
 extern "C"{
 #include <clib/avec3.h>
@@ -33,10 +34,11 @@ class Player;
 struct StellarContext;
 struct war_draw_data;
 
-
 /* node or leaf of coordinate system tree */
-class CoordSys{
+class CoordSys : public Serializable{
 public:
+	typedef Serializable st;
+
 	Vec3d pos;
 	Vec3d velo;
 	Quatd qrot;
@@ -65,10 +67,14 @@ public:
 
 	CoordSys();
 	CoordSys(const char *path, CoordSys *root);
-	~CoordSys();
+	virtual ~CoordSys();
 	void init(const char *path, CoordSys *root);
+	static const unsigned classid;
 
 	virtual const char *classname()const; // returned string storage must be static
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void endframe();

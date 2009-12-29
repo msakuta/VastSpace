@@ -46,6 +46,10 @@ extern "C"{
 /*#include <windows.h>*/
 #undef exit
 #include <GL/glext.h>
+#include <strstream>
+#include <fstream>
+#include <string>
+#include <sstream>
 
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
@@ -73,14 +77,6 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 Player pl;
 double &flypower = pl.flypower;
 Universe universe(&pl);//galaxysystem(&pl);
-const char *Universe::classname()const{
-	return "Universe";
-}
-void Universe::anim(double dt){
-	this->global_time += dt;
-	st::anim(dt);
-}
-
 
 class GLattrib{
 public:
@@ -360,10 +356,10 @@ static void drawindics(Viewer *vw){
 /*				if(pl.chase && pl.race != pt->race)
 					continue;*/
 
-				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->classname()))
+				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->dispname()))
 					break;
 				if(i == n/* || current_vft == vfts[i]*/){
-					names[n] = pt->classname();
+					names[n] = pt->dispname();
 					counts[n] = 1;
 					tanks[n] = pt;
 					if(++n == OV_COUNT)
@@ -677,13 +673,18 @@ void display_func(void){
 
 		pl.anim(dt);
 
+#if 0
+#define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
+#else
+#define TRYBLOCK(a) (a);
+#endif
 		if(!universe.paused) try{
 			timemeas_t tm;
 			TimeMeasStart(&tm);
-			universe.anim(dt);
-			universe.postframe();
-			GLwindow::glwpostframe();
-			universe.endframe();
+			TRYBLOCK(universe.anim(dt));
+			TRYBLOCK(universe.postframe());
+			TRYBLOCK(GLwindow::glwpostframe());
+			TRYBLOCK(universe.endframe());
 			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){
@@ -996,29 +997,6 @@ void reshape_func(int w, int h)
 //	g_width = w;
 //	g_height = h;
 //	g_max = m;
-}
-
-static int cmd_teleport(int argc, char *argv[]){
-	const char *arg = argv[1];
-	if(!arg){
-		CmdPrint("Specify location you want to teleport to.");
-		return 0;
-	}
-	if(pl.chase){
-		return 0;
-	}
-	{
-		int i;
-		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
-			pl.cs = tplist[i].cs;
-			VECCPY(pl.pos, tplist[i].pos);
-			VECNULL(pl.velo);
-			break;
-		}
-		if(i == ntplist)
-			CmdPrintf("Could not find location \"%s\".", arg);
-	}
-	return 0;
 }
 
 static int cmd_eject(int argc, char *argv[]){
@@ -1446,7 +1424,7 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
-	CmdAdd("teleport", cmd_teleport);
+	CmdAddParam("teleport", Player::cmd_teleport, &pl);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
@@ -1469,6 +1447,8 @@ int main(int argc, char *argv[])
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CmdAddParam("attack", cmd_attack, &pl);
+	CmdAddParam("save", Universe::cmd_save, &universe);
+	CmdAddParam("load", Universe::cmd_load, &universe);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

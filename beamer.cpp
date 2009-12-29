@@ -9,6 +9,7 @@
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
+#include "serial_util.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -74,9 +75,34 @@ const char *Beamer::idname()const{
 }
 
 const char *Beamer::classname()const{
-	return "Lancer class";
+	return "Beamer";
 }
 
+const unsigned Beamer::classid = registerClass("Beamer", Conster<Beamer>);
+
+void Beamer::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << charge;
+	sc.o << integral;
+	sc.o << beamlen;
+	sc.o << cooldown;
+//	scarry_t *dock;
+	sc.o << undocktime;
+}
+
+void Beamer::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> charge;
+	sc.i >> integral;
+	sc.i >> beamlen;
+	sc.i >> cooldown;
+//	scarry_t *dock;
+	sc.i >> undocktime;
+}
+
+const char *Beamer::dispname()const{
+	return "Lancer Class";
+}
 
 #if 0
 void beamer_dock(beamer_t *p, scarry_t *pc, warf_t *w){
@@ -136,6 +162,16 @@ extern struct astrobj earth, island3, moon, jupiter;
 extern struct player *ppl;
 #endif
 
+
+void Frigate::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << shieldAmount;
+}
+
+void Frigate::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> shieldAmount;
+}
 
 
 void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{
@@ -398,7 +434,7 @@ static int beamer_cull(Entity *pt, wardraw_t *wd){
 }
 
 struct hitbox Frigate::hitboxes[] = {
-	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
+	hitbox(Vec3d(0., 0., -.005), Quatd(0,0,0,1), Vec3d(.015, .015, .060)),
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
@@ -587,15 +623,15 @@ void Beamer::draw(wardraw_t *wd){
 	}
 }
 
-void Frigate::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos){
+void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale){
 	Mat4d mat;
 	transform(mat);
-	double vsp = -mat.vec3(2).sp(velo) / beamer_mn.maxspeed;
+	double vsp = -mat.vec3(2).sp(velo) / getManeuve().maxspeed;
 	if(1. < vsp)
 		vsp = 1.;
 
 	if(0. < vsp){
-		const Vec3d pos0 = nozzlepos + Vec3d(0,0,.01 * vsp);
+		const Vec3d pos0 = nozzlepos + Vec3d(0,0, scale * vsp);
 		static GLuint texname = 0;
 		glPushAttrib(GL_TEXTURE_BIT);
 		{
@@ -630,7 +666,7 @@ void Frigate::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos){
 		glPushMatrix();
 		glMultMatrixd(mat);
 		gldTranslate3dv(pos0);
-		glScaled(.01, .01, .02 * (0. + vsp));
+		glScaled(scale, scale, scale * 2. * (0. + vsp));
 		glColor4f(1,1,1, vsp);
 //		gldMultQuat(rot.cnj() * wd->vw->qrot.cnj());
 		gldOctSphere(2);
@@ -689,7 +725,7 @@ void Beamer::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06));
+	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 
 	drawShield(wd);
 

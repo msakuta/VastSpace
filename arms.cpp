@@ -12,6 +12,7 @@
 //#include "yssurf.h"
 //#include "walk.h"
 #include "bullet.h"
+#include "serial_util.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -24,7 +25,53 @@ extern "C"{
 }
 #include <limits.h>
 
+const char *hardpoint_static::classname()const{
+	return "hardpoint_static";
+}
 
+const unsigned hardpoint_static::classid = registerClass("hardpoint_static", Conster<hardpoint_static>);
+
+void hardpoint_static::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << pos; /* base position relative to object origin */
+	sc.o << rot; /* base rotation */
+	sc.o << name;
+	sc.o << flagmask;
+}
+
+void hardpoint_static::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	cpplib::dstring name;
+	sc.i >> pos; /* base position relative to object origin */
+	sc.i >> rot; /* base rotation */
+	sc.i >> name;
+	sc.i >> flagmask;
+
+	this->name = strnewdup(name, name.len());
+}
+
+
+
+void ArmBase::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << base;
+	sc.o << target;
+	sc.o << hp;
+	sc.o << ammo;
+}
+
+void ArmBase::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> base;
+	sc.i >> target;
+	sc.i >> hp;
+	sc.i >> ammo;
+}
+
+void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
+	st::dive(sc, method);
+	const_cast<hardpoint_static*>(hp)->dive(sc, method);
+}
 
 void ArmBase::postframe(){
 	// inter-CoordSys weapons may remember the target run away to another CoordSys?
@@ -187,6 +234,28 @@ const char *MTurret::idname()const{
 };
 
 const char *MTurret::classname()const{
+	return "MTurret";
+};
+
+const unsigned MTurret::classid = registerClass("MTurret", Conster<MTurret>);
+
+void MTurret::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << cooldown;
+	sc.o << py[0] << py[1]; // pitch and yaw
+	sc.o << mf; // muzzle flash time
+	sc.o << forceEnemy;
+}
+
+void MTurret::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> cooldown;
+	sc.i >> py[0] >> py[1]; // pitch and yaw
+	sc.i >> mf; // muzzle flash time
+	sc.i >> forceEnemy;
+}
+
+const char *MTurret::dispname()const{
 	return "Mounted Turret";
 };
 
@@ -446,6 +515,8 @@ float MTurret::reloadtime()const{
 	return 2.;
 }
 
+GatlingTurret::GatlingTurret() : barrelrot(0), barrelomg(0){}
+
 GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){
 	ammo = 50;
 }
@@ -453,7 +524,21 @@ GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(aba
 const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
 
 const char *GatlingTurret::idname()const{return "GatlingTurret";}
-const char *GatlingTurret::classname()const{return "Gatling Turret";}
+const char *GatlingTurret::classname()const{return "GatlingTurret";}
+
+const unsigned GatlingTurret::classid = registerClass("GatlingTurret", Conster<GatlingTurret>);
+
+void GatlingTurret::serialize(SerializeContext &sc){
+	st::serialize(sc);
+}
+
+void GatlingTurret::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+}
+
+const char *GatlingTurret::dispname()const{
+	return "Gatling Turret";
+};
 
 void GatlingTurret::anim(double dt){
 	barrelrot += barrelomg * dt;

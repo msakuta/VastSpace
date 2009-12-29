@@ -9,6 +9,7 @@
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
+#include "serial_util.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -513,17 +514,6 @@ Warpable::Warpable(WarField *aw) : st(aw){
 	inputs.change = 0;
 }
 
-
-int find_teleport(const char *name, int flags, CoordSys **cs, Vec3d &pos){
-	int i;
-	for(i = 0; i < ntplist; i++) if(!strcmp(name, tplist[i].name) && flags & tplist[i].flags){
-		*cs = tplist[i].cs;
-		VECCPY(pos, tplist[i].pos);
-		return 1;
-	}
-	return 0;
-}
-
 // transit to a CoordSys from another, keeping absolute position and velocity.
 int cmd_transit(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
@@ -563,7 +553,10 @@ int cmd_warp(int argc, char *argv[], void *pv){
 			double dist, cost;
 			extern coordsys *g_galaxysystem;
 			Vec3d dstpos = vec3_000;
-			if(find_teleport(argv[1], TELEPORT_WARP, &pcs, pos)){
+			teleport *tp = Player::findTeleport(argv[1], TELEPORT_WARP);
+			if(tp){
+				pcs = tp->cs;
+				pos = tp->pos;
 				delta = w->cs->tocs(pos, pcs);
 				VECSUBIN(delta, pt->pos);
 				VECCPY(dstpos, pos);
@@ -635,19 +628,29 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		glwActivate(ppwnd);
 		return 0;
 	}*/
-	for(i = left = 0; i < ntplist && left < numof(cmds); i++) if(tplist[i].flags & TELEPORT_WARP){
-		struct teleport *tp = &tplist[i];
+/*	for(Player::teleport_iterator it = Player::beginTeleport(), left = 0; it != Player::endTeleport() && left < numof(cmds); it++){
+		teleport *tp = Player::getTeleport(it);
+		if(!(tp->flags & TELEPORT_WARP))
+			continue;
 		cmds[left] = (char*)malloc(sizeof "warp \"\"" + strlen(tp->name));
 		strcpy(cmds[left], "warp \"");
 		strcat(cmds[left], tp->name);
 		strcat(cmds[left], "\"");
 		subtitles[left] = tp->name;
 		left++;
+	}*/
+	PopupMenu pm;
+	for(Player::teleport_iterator it = Player::beginTeleport(); it != Player::endTeleport(); it++){
+		teleport *tp = Player::getTeleport(it);
+		if(!(tp->flags & TELEPORT_WARP))
+			continue;
+		pm.append(tp->name, 0, cpplib::dstring("warp \"") << tp->name << '"');
 	}
-	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
-	for(i = 0; i < left; i++){
+//	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
+	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
+/*	for(i = 0; i < left; i++){
 		free(cmds[i]);
-	}
+	}*/
 /*	left = enum_cs_flags(g_galaxysystem, CS_WARPABLE, CS_WARPABLE, &retp, numof(reta));
 	{
 		int i;
@@ -942,6 +945,26 @@ bool Warpable::isTargettable()const{
 	return true;
 }
 bool Warpable::isSelectable()const{return true;}
+
+void Warpable::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << warpdst;
+	sc.o << warpSpeed;
+	sc.o << totalWarpDist << currentWarpDist;
+	sc.o << capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.o << warping;
+	sc.o << warpcs << warpdstcs;
+}
+
+void Warpable::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> warpdst;
+	sc.i >> warpSpeed;
+	sc.i >> totalWarpDist >> currentWarpDist;
+	sc.i >> capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.i >> warping;
+	sc.i >> warpcs >> warpdstcs;
+}
 
 void Warpable::anim(double dt){
 	Mat4d mat;

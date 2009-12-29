@@ -560,6 +560,10 @@ GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[
 	return new GLwindowMenu(name, count, menutitles, keys, cmd, sticky);
 }
 
+GLwindowMenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
+	return new GLwindowMenu(name, list, flags);
+}
+
 GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky) : st(title), count(acount), menus(NULL){
 	glwindow *ret = this;
 	int i, len, maxlen = 0;
@@ -596,7 +600,11 @@ GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menu
 		ret->w = maxlen * fontwidth + 2;*/
 }
 
-GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list) : st(title), count(list.count()), menus(new PopupMenu(list)){
+GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list, unsigned aflags) : st(title), count(list.count()), menus(new PopupMenu(list)){
+	flags = aflags & (GLW_CLOSE | GLW_SIZEABLE | GLW_COLLAPSABLE | GLW_PINNABLE); // filter the bits
+	width = 150;
+	for(MenuItem *mi = menus->get(); mi; mi = mi->next) if(width < mi->title.len() * fontwidth)
+		width = mi->title.len() * fontwidth;
 	height = (1 + count) * fontheight;
 }
 
@@ -629,7 +637,7 @@ public:
 		init(gvp);
 	}
 	GLwindowPopup(const char *title, GLwindowState &gvp, const PopupMenu &list)
-		: st(title, list){
+		: st(title, list, 0){
 		init(gvp);
 	}
 	void init(GLwindowState &gvp){

@@ -623,7 +623,9 @@ void TexSphere::draw(const Viewer *vw){
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
-		drawsuncolona(findBrightest(), vw);
+		Astrobj *brightest = findBrightest();
+		if(brightest)
+			drawsuncolona(brightest, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		bool ret = drawTextureSphere(this, vw, sunpos,
@@ -1057,8 +1059,6 @@ GLuint ProjectSphereJpg(const char *fname){
 			struct jpeg_decompress_struct cinfo;
 			struct my_error_mgr jerr;
 			FILE * infile;		/* source file */
-			JSAMPARRAY buffer;		/* Output row buffer */
-			int row_stride;		/* physical row width in image buffer */
 //			BITMAPDATA bmd;
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
 			BOOL b;
@@ -1101,6 +1101,9 @@ GLuint ProjectSphereJpg(const char *fname){
 				return 0;
 			}
 			else{
+				JSAMPARRAY buffer;		/* Output row buffer */
+				int row_stride;		/* physical row width in image buffer */
+				int src_row_stride;
 				cinfo.err = jpeg_std_error(&jerr.pub);
 				jerr.pub.error_exit = my_error_exit;
 				/* Establish the setjmp return context for my_error_exit to use. */
@@ -1116,30 +1119,38 @@ GLuint ProjectSphereJpg(const char *fname){
 				jpeg_stdio_src(&cinfo, infile);
 				(void) jpeg_read_header(&cinfo, TRUE);
 				(void) jpeg_start_decompress(&cinfo);
-				row_stride = cinfo.output_width * cinfo.output_components;
-				bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * cinfo.output_components);
+				row_stride = cinfo.output_width * 3/*cinfo.output_components*/;
+				src_row_stride = cinfo.output_width * cinfo.output_components;
+				bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * 3/*cinfo.output_components*/);
 				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 				bmi->bmiHeader.biWidth = cinfo.output_width; 
 				bmi->bmiHeader.biHeight = LONG(-cinfo.output_height);
 				bmi->bmiHeader.biPlanes = 1;
 				bmi->bmiHeader.biBitCount = 24;
 				bmi->bmiHeader.biCompression = BI_RGB;
-				bmi->bmiHeader.biSizeImage = cinfo.output_width * cinfo.output_height * cinfo.output_components;
+				bmi->bmiHeader.biSizeImage = cinfo.output_width * cinfo.output_height * 3/*cinfo.output_components*/;
 				bmi->bmiHeader.biXPelsPerMeter = 0;
 				bmi->bmiHeader.biYPelsPerMeter = 0;
 				bmi->bmiHeader.biClrUsed = 0;
 				bmi->bmiHeader.biClrImportant = 0;
 				buffer = (*cinfo.mem->alloc_sarray)
-					((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+					((j_common_ptr) &cinfo, JPOOL_IMAGE, src_row_stride, 1);
 				while (cinfo.output_scanline < cinfo.output_height) {
 					(void) jpeg_read_scanlines(&cinfo, buffer, 1);
-					memcpy(&((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride], buffer[0], row_stride);
+//					memcpy(&((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride], buffer[0], row_stride);
 					unsigned j;
-					for(j = 0; j < cinfo.output_width; j++){
+					if(cinfo.output_components == 3) for(j = 0; j < cinfo.output_width; j++){
 						JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
 						JSAMPLE *src = &buffer[0][j * cinfo.output_components];
 						dst[0] = src[2];
 						dst[1] = src[1];
+						dst[2] = src[0];
+					}
+					else if(cinfo.output_components == 1) for(j = 0; j < cinfo.output_width; j++){
+						JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * 3];
+						JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+						dst[0] = src[0];
+						dst[1] = src[0];
 						dst[2] = src[0];
 					}
 				}

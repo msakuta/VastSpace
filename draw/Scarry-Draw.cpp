@@ -87,6 +87,13 @@ void Scarry::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
+	const double blastscale = .04;
+	drawCapitalBlast(wd, Vec3d(0, 0, .55), blastscale);
+	drawCapitalBlast(wd, Vec3d(.08, .08, .55), blastscale);
+	drawCapitalBlast(wd, Vec3d(-.08, .08, .55), blastscale);
+	drawCapitalBlast(wd, Vec3d(-.08, -.08, .55), blastscale);
+	drawCapitalBlast(wd, Vec3d(.08, -.08, .55), blastscale);
+
 	pa = pt->rot.trans(pa0);
 	pa += pt->pos;
 	pb = pt->rot.trans(pb0);

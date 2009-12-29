@@ -3,6 +3,7 @@
 #include "astro.h"
 #include "player.h"
 #include "judge.h"
+#include "serial_util.h"
 //#include "warutil.h"
 extern "C"{
 #include "bitmap.h"
@@ -25,6 +26,26 @@ const char *Bullet::idname()const{
 
 const char *Bullet::classname()const{
 	return "Bullet";
+}
+
+const unsigned Bullet::classid = registerClass("Bullet", Conster<Bullet>);
+
+void Bullet::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << damage;
+	sc.o << life;
+	sc.o << runlength;
+	sc.o << owner;
+	sc.o << grav;
+}
+
+void Bullet::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> damage;
+	sc.i >> life;
+	sc.i >> runlength;
+	sc.i >> owner;
+	sc.i >> grav;
 }
 
 void sufmodel_normalize(sufmodel_t *mdl);
@@ -686,12 +707,12 @@ void Bullet::anim(double dt){
 #if 1
 			{ /* ricochet */
 				if(w->tell && rseq(&w->rs) % (w->effects + 1) == 0){
-					int j, n;
+/*					int j, n;
 					Vec3d pyr, bvelo;
 					bvelo = pb->velo - pt->velo;
 					Vec3d delta = pos - pt->pos;
 					pt->bullethole(pi, pb->damage * .00001, delta, Quatd::direction(delta));
-					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);
+					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);*/
 				}
 				w->effects++;
 				if(w->tell){
@@ -819,6 +840,7 @@ Entity *Bullet::getOwner(){
 }
 
 void Bullet::postframe(){
+	st::postframe();
 	if(!w)
 		return;
 	if(owner && owner->w != w)

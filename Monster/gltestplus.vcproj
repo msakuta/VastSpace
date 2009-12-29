@@ -44,7 +44,7 @@
 				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
-				ExceptionHandling="2"
+				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				FloatingPointExceptions="true"
@@ -282,6 +282,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\serial.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\serial_util.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\shield.cpp"
 				>
 			</File>
@@ -441,6 +449,14 @@
 			</File>
 			<File
 				RelativePath="..\sceptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\serial.h"
+				>
+			</File>
+			<File
+				RelativePath="..\serial_util.h"
 				>
 			</File>
 			<File

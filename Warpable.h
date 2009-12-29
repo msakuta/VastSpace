@@ -41,8 +41,11 @@ public:
 	CoordSys *warpcs, *warpdstcs;
 //	WarField *warp_next_warf;
 
+	Warpable(){}
 	Warpable(WarField *w);
 
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
 	void control(input_t *, double);
 	unsigned analog_mask();
@@ -57,6 +60,7 @@ public:
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void warp_collapse();
+	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale);
 
 	struct maneuve{
 		double accel;

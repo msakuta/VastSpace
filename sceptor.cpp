@@ -2,6 +2,7 @@
 #include "player.h"
 #include "bullet.h"
 #include "judge.h"
+#include "serial_util.h"
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
@@ -54,8 +55,49 @@ const char *Sceptor::idname()const{
 }
 
 const char *Sceptor::classname()const{
-	return "Interceptor";
+	return "Sceptor";
 }
+
+const unsigned Sceptor::classid = registerClass("Sceptor", Conster<Sceptor>);
+
+void Sceptor::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << aac; /* angular acceleration */
+	sc.o << throttle;
+	sc.o << fuel;
+	sc.o << cooldown;
+	sc.o << dest;
+	sc.o << fcloak;
+	sc.o << heat;
+//	sc.o << mother; // Mother ship
+//	sc.o << hitsound;
+	sc.o << paradec;
+	sc.o << (int)task;
+	sc.o << docked << returning << away << cloak;
+}
+
+void Sceptor::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> aac; /* angular acceleration */
+	sc.i >> throttle;
+	sc.i >> fuel;
+	sc.i >> cooldown;
+	sc.i >> dest;
+	sc.i >> fcloak;
+	sc.i >> heat;
+//	sc.i >> mother; // Mother ship
+//	sc.i >> hitsound;
+	sc.i >> paradec;
+	sc.i >> (int&)task;
+	sc.i >> docked >> returning >> away >> cloak;
+
+	// Re-create temporary entity
+	pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+}
+
+const char *Sceptor::dispname()const{
+	return "Interceptor";
+};
 
 double Sceptor::maxhealth()const{
 	return 100.;
@@ -78,7 +120,8 @@ enum Sceptor::Task{
 
 
 
-
+Sceptor::Sceptor() : mother(NULL){
+}
 
 Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(maxfuel()){
 	Sceptor *const p = this;

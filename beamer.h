@@ -16,9 +16,14 @@ protected:
 	static suf_t *sufbase;
 	static const double sufscale;
 public:
+	Beamer(){}
 	Beamer(WarField *w);
 	const char *idname()const;
-	const char *classname()const;
+	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

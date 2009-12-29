@@ -2,6 +2,7 @@
 #include "Beamer.h"
 #include "judge.h"
 #include "player.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -29,14 +30,18 @@ int Assault::nhardpoints = 0;
 suf_t *Assault::sufbase = NULL;
 
 Assault::Assault(WarField *aw) : st(aw){
+	st::init();
 	init();
+	for(int i = 0; i < nhardpoints; i++){
+		aw->addent(turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i])));
+	}
+}
+
+void Assault::init(){
 	if(!hardpoints){
 		hardpoints = hardpoint_static::load("assault.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];
-	for(int i = 0; i < nhardpoints; i++){
-		aw->addent(turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i])));
-	}
 }
 
 const char *Assault::idname()const{
@@ -44,6 +49,24 @@ const char *Assault::idname()const{
 }
 
 const char *Assault::classname()const{
+	return "Assault";
+}
+
+const unsigned Assault::classid = registerClass("Assault", Conster<Assault>);
+
+void Assault::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.o << turrets[i];
+}
+
+void Assault::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.i >> turrets[i];
+}
+
+const char *Assault::dispname()const{
 	return "Sabre class";
 }
 
@@ -124,7 +147,7 @@ void Assault::draw(wardraw_t *wd){
 }
 
 void Assault::drawtra(wardraw_t *wd){
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06));
+	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 	drawShield(wd);
 }
 

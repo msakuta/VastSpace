@@ -24,9 +24,13 @@ public:
 	Entity *owner;
 	bool grav;
 
+	Bullet(){}
 	Bullet(Entity *owner, float life, double damage);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual double hitradius();
 	virtual void anim(double dt);
 	virtual void postframe();

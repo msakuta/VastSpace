@@ -186,8 +186,11 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 }
 
 
-
+#ifdef NDEBUG
 #define OTDEBUG 0
+#else
+#define OTDEBUG 2
+#endif
 
 static int otjHitSphere_loops = 0, otjHitSphere_framecalls = 0, otjHitSphere_frameloops = 0;
 
@@ -246,9 +249,12 @@ static Entity *otjEnumHitSphere_in(const otnt *root, const struct otjEnumHitSphe
 					goto gcontinue;
 			}*/
 			otjHitSphere_loops++;
-			if(jHitSpherePos(root->a[i].t->pos, root->a[i].t->hitradius() + rad, *src, *dir, dt, NULL, pos)
+			ret = root->a[i].t;
+			assert(ret);
+			double radii = ret->hitradius();
+			if(jHitSpherePos(ret->pos, radii + rad, *src, *dir, dt, NULL, pos)
 				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))
-				return root->a[i].t;
+				return ret;
 		}
 		else if(ret = otjEnumHitSphere_in(root->a[i].n, param))
 			return ret;
@@ -372,7 +378,7 @@ static Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
 
 
 
-
+#define OT_PAIRED 0x80 // a flag indicating that the node already has a parent node.
 
 static Entity *otEnumNearestPoint_in(const otnt *root, const Vec3d &src, const Entity *ignore){
 	Entity *ret;
@@ -445,6 +451,7 @@ static otnt *ot_update_int(otnt *root, WarField *w){
 	VECSCALE(delta, dn, len);
 	VECADD(root->pos, delta, *pos[1]);
 	root->rad = newrad;
+	return root;
 }
 
 static otnt *ot_updatesub(WarField *w, otnt *root){
@@ -458,7 +465,8 @@ static otnt *ot_updatesub(WarField *w, otnt *root){
 	updatesub_invokes++;
 #endif
 #if 1
-	ot_update_int(root, w);
+	if(!ot_update_int(root, w))
+		return NULL;
 #else
 	{
 		avec3_t *pos[2], delta, dn;
@@ -501,6 +509,57 @@ static otnt *ot_updatesub(WarField *w, otnt *root){
 	return root;
 }
 
+struct otiterator{
+	int i, n;
+	const int *o;
+	WarField *w;
+	Entity * pt;
+	otnt *ot;
+
+	otiterator() : o(NULL){}
+	otiterator(int an, WarField *aw, otnt *aot, const int *ao) : n(an), i(0), o(ao), w(aw), pt(aw->el), ot(aot){
+		while(pt && pt->w != w)
+			pt = pt->next;
+	}
+	Vec3d *getpos(){
+		return pt ? &pt->pos : &ot[i].pos;
+	}
+	double getrad(){
+		return pt ? pt->hitradius() : ot[i].rad;
+	}
+	otiterator next(){
+		otiterator ret = *this;
+		return ++ret;
+	}
+	otiterator &operator++(){
+		if(pt) do{
+			pt = pt->next;
+		}while(pt && pt->w != w);
+		else
+			i++;
+		return *this;
+	}
+	operator bool(){
+		return pt || i != *o;
+	}
+	bool paired()const{
+		return pt ? pt->otflag & 2 : ot[i].leaf & OT_PAIRED;
+	}
+	bool get(otnt::unode &u){
+		if(pt)
+			u.t = pt;
+		else
+			u.n = &ot[i];
+		return pt;
+	}
+	void pair(){
+		if(pt)
+			pt->otflag |= 2;
+		else
+			ot[i].leaf |= OT_PAIRED;
+	}
+};
+
 otnt *ot_build(WarField *w, double dt){
 	Entity *pt;
 	int i, n = 0, m = 0, o, loops = 0;
@@ -526,7 +585,7 @@ otnt *ot_build(WarField *w, double dt){
 		}
 	}
 	otjHitSphere_framecalls = otjHitSphere_frameloops = 0;
-	for(pt = w->el; pt; pt = pt->next){
+	for(pt = w->el; pt; pt = pt->next) if(pt->w == w){
 		pt->otflag &= ~2;
 		n++;
 	}
@@ -535,58 +594,40 @@ otnt *ot_build(WarField *w, double dt){
 	if(n <= 1)
 		return NULL;
 
-	for(i = n; i; i--)
-		m += i;
-	if(0 && w->otroot){
-		ot = (otnt*)malloc(m * sizeof *ot);
-	}
-	else if(w->ots < m)
-		ot = (otnt*)realloc(ot, (w->ots = m) * sizeof *ot);
+/*	for(i = n; i; i--)
+		m += i;*/
+	m = n * n;
+	if(w->ots < m)
+		w->ot = ot = (otnt*)realloc(ot, (w->ots = m) * sizeof *ot);
 #if 1
-#define PAIRED(i,pt) ((i) < 0 ? (pt)->otflag & 2 : (ot[i]).leaf & 128)
-#define PAIR(i,pt) ((i) < 0 ? ((pt)->otflag |= 2) : ((ot[i]).leaf |= 128))
+#define PAIRED(i,pt) ((i) < 0 ? (pt)->otflag & 2 : (ot[i]).leaf & OT_PAIRED)
+#define PAIR(i,pt) ((i) < 0 ? ((pt)->otflag |= 2) : ((ot[i]).leaf |= OT_PAIRED))
 	o = 0;
-	for(pt = w->el, i = -n; i < o; (i < 0 ? pt = pt->next : 0), i++) if(!PAIRED(i, pt)){
+	otiterator it(n, w, ot, &o);
+//	for(pt = w->el, i = -n; i < o; (i < 0 ? pt = pt->next : 0), (i < 0 && pt->w != w ? 0 : i++)) if(i < 0 && pt->w != w){
+	for(; it; it++) if(!it.paired()){
 		double slen, best = 1e15, rad;
-		const Vec3d *pos;
+		const Vec3d *pos = it.getpos();
 		Entity *pt2, *pt3;
-		int j, jj = i;
-		if(i < 0){
-			rad = pt->hitradius();
-			pos = &pt->pos;
-		}
-		else{
-			rad = ot[i].rad;
-			pos = &ot[i].pos;
-		}
-		if(0 && w->otroot && i < -1){
-			pt3 = otEnumNearestPoint_in(w->otroot, pt->pos, pt);
-			jj = -1;
-		}
-		else
-			pt3 = NULL;
-		if(!pt3) for(pt2 = i < 0 ? pt->next : NULL, j = i+1; j < o; (j < 0 ? pt2 = pt2->next : 0), j++) if(!PAIRED(j, pt2)){
-			double rad_2;
-			const Vec3d *pos2;
-			otnt *pn2 = &ot[j];
-			if(j < 0){
-				rad_2 = pt2->hitradius();
-				pos2 = &pt2->pos;
-			}
-			else{
-				rad_2 = ot[j].rad;
-				pos2 = &ot[j].pos;
-			}
+		rad = it.getrad();
+		pt3 = NULL;
+		bool found = false;
+		otiterator it3;
+		for(otiterator it2 = it.next(); it2; it2++) if(!it2.paired()){
+			double rad_2 = it2.getrad();
+			const Vec3d *pos2 = it2.getpos();
 			slen = (*pos - *pos2).slen() + rad * rad + rad_2 * rad_2;
 			if(slen < best){
-				jj = j;
+				it3 = it2;
+/*				jj = it2.i;
 				if(j < 0)
-					pt3 = pt2;
+					pt3 = pt2;*/
 				best = slen;
+				found = true;
 			}
 			loops++;
 		}
-		if(jj != i){
+		if(found){
 			avec3_t delta, dn;
 			double len, newrad;
 			double rad_2;
@@ -608,22 +649,15 @@ otnt *ot_build(WarField *w, double dt){
 			VECSCALE(delta, dn, len);
 			VECADD(ot[o].pos, delta, *pos2);
 			ot[o].rad = newrad;*/
-			if(i < 0)
-				ot[o].a[0].t = pt;
-			else
-				ot[o].a[0].n = &ot[i];
-			if(jj < 0)
-				ot[o].a[1].t = pt3;
-			else
-				ot[o].a[1].n = &ot[jj];
-			ot[o].leaf = (i < 0 ? 1 : 0) | (jj < 0 ? 2 : 0);
+			assert(o < n);
+			ot[o].leaf = !!it.get(ot[o].a[0]) | (!!it3.get(ot[o].a[1]) << 1);
 			ot_update_int(&ot[o], w);
 #if 2 <= OTDEBUG
-			printf("ot pair[%d] (%d,%d)\n", o, i, jj);
+			printf("ot pair[%d] (%d,%d)\n", o, it.i, it3.i);
 #endif
 			o++;
-			PAIR(i, pt);
-			PAIR(jj, pt3);
+			it.pair();
+			it3.pair();
 		}
 	}
 	w->ot = ot;
@@ -736,6 +770,12 @@ otnt *ot_build(WarField *w, double dt){
 	/* The last node is not necessarily the root node, but it is. */
 	w->otroot = &w->ot[o-1];
 	return w->otroot;
+}
+
+otnt *ot_check(WarField *w, double dt){
+	for(Entity *pe = w->el; pe; pe = pe->next) if(pe->w != w)
+		return ot_build(w, dt);
+	return w->ot;
 }
 
 static void circle(Vec3d &org, double s, Mat4d &rot){

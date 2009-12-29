@@ -8,6 +8,7 @@
 #include "war.h"
 #include "entity.h"
 #include "cmd.h"
+#include "serial_util.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/aquat.h>
@@ -19,6 +20,8 @@ extern "C"{
 #include <stddef.h>
 #include <assert.h>
 #include <algorithm>
+#include <string>
+#include <iomanip>
 
 #define numof(a) (sizeof(a)/sizeof*(a))
 
@@ -29,6 +32,54 @@ long tocs_children_invokes = 0;
 const char *CoordSys::classname()const{
 	return "CoordSys";
 }
+
+
+void CoordSys::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << name;
+	sc.o << (fullname ? fullname : "");
+	sc.o << parent;
+	sc.o << children;
+	sc.o << w;
+	sc.o << next;
+	sc.o << pos << velo << qrot;
+	sc.o << omg;
+	sc.o << csrad;
+	sc.o << flags;
+}
+
+void CoordSys::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	cpplib::dstring name, fullname;
+	sc.i >> name;
+	sc.i >> fullname;
+	sc.i >> parent;
+	sc.i >> children;
+	sc.i >> w;
+	sc.i >> next;
+	sc.i >> pos >> velo >> qrot;
+	sc.i >> omg;
+	sc.i >> csrad;
+	sc.i >> flags;
+
+	this->name = strnewdup(name, name.len());
+	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
+	CoordSys *eis = findeisystem();
+	if(eis)
+		eis->addToDrawList(this);
+}
+
+void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	(this->*method)(sc);
+	if(w)
+		w->dive(sc, method);
+	if(next)
+		next->dive(sc, method);
+	if(children)
+		children->dive(sc, method);
+}
+
+const unsigned CoordSys::classid = registerClass("CoordSys", Conster<CoordSys>);
 
 CoordSys **CoordSys::legitimize_child(){
 	if(parent){
@@ -601,9 +652,22 @@ void CoordSys::init(const char *path, CoordSys *root){
 	legitimize_child();
 }
 
+extern int 	cs_destructs;
+int cs_destructs = 0;
+
 CoordSys::~CoordSys(){
 	if(name)
 		delete[] name;
+	if(fullname)
+		delete[] fullname;
+	delete children;
+	delete next;
+	cs_destructs++;
+/*	for(CoordSys *cs = children; cs;){
+		CoordSys *csnext = cs->next;
+		delete cs;
+		cs = csnext;
+	}*/
 }
 
 
@@ -673,22 +737,13 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
 		struct teleport *tp;
 		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
-		int i;
-		for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
-			tplist[i].flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-			break;
-		}
-		if(i != ntplist)
+		if(tp = Player::findTeleport(name)){
+			tp->flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
 			return true;
-		tplist = (teleport*)realloc(tplist, ++ntplist * sizeof *tplist);
-		tp = &tplist[ntplist-1];
-		tp->cs = this;
-		tp->name = (char*)malloc(strlen(name) + 1);
-		strcpy(tp->name, name);
-		tp->flags = !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-		tp->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
-		tp->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
-		tp->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
+		}
+		tp = Player::addTeleport();
+		tp->teleport::teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
+			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
 		return true;
 	}
 	else if(!strcmp(s, "rstation")){
@@ -887,8 +942,8 @@ static bool findcsrpathchildren(const CoordSys *subject, StackTrace *pst, const 
 }
 
 static bool findcsrpath(const CoordSys *subject, const CoordSys *base, cpplib::dstring &ret){
-	CoordSys *cs;
-	const char *p;
+//	CoordSys *cs;
+//	const char *p;
 	if(!base)
 		return true;
 	if(subject == base){

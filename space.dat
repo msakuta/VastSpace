@@ -62,32 +62,7 @@ sol{
 #	absolute_magnitude 4.83
 	solarsystem
 
-	astro TextureSphere first_planet{
-		orbits .
-		orbit_radius 5e4
-		orbit_inclination 0
-		showorbit
-		omega 0 1 0 1
-		updirection 0 1 0
-		radius 5e3
-		pos -5e4 0 0
-		color 7f9fff
-		texture jup0vss1.jpg
-		atmosphere_height 30
-		atmosphere_color 1 .8 .5
-		atmosphere_dawn 1. .51 .1
-		mass 317.904*5.977e24
-	}
-#	astro TextureSphere second_planet{
-#		radius 5e3
-#		pos 5e4 0 0
-#		color 7f9fff
-#		texture jup0vss1.jpg
-#		atmosphere_height 30
-#		atmosphere_color 1 .8 .5
-#		atmosphere_dawn 1. .51 .1
-#	}
-
-	include sol.dat
+	include space_debug.dat
+#	include sol.dat
 
 }

@@ -1,13 +1,19 @@
 #include "astro.h"
+#include "serial_util.h"
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "astrodef.h"
+#include "player.h"
+#include "cmd.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
 }
 #include <string.h>
 #include <stdlib.h>
+#include <sstream>
+#include <fstream>
+
 
 const char *OrbitCS::classname()const{
 	return "OrbitCS";
@@ -28,6 +34,23 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
 		eis->addToDrawList(this);
 }
 
+const unsigned OrbitCS::classid = registerClass("OrbitCS", Conster<OrbitCS>);
+
+void OrbitCS::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << orbit_rad << orbit_home << orbit_axis;
+	sc.o << orbit_phase;
+	sc.o << eccentricity; /* orbital element */
+	sc.o << flags2;
+}
+
+void OrbitCS::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> orbit_rad >> orbit_home >> orbit_axis;
+	sc.i >> orbit_phase;
+	sc.i >> eccentricity; /* orbital element */
+	sc.i >> flags2;
+}
 
 void OrbitCS::anim(double dt){
 	if(orbit_home){
@@ -198,6 +221,31 @@ OrbitCS *OrbitCS::toOrbitCS(){
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){
 }
 
+const unsigned Astrobj::classid = registerClass("Astrobj", Conster<Astrobj>);
+
+#if 0
+	double rad;
+	double mass;
+	float absmag; /* Absolute Magnitude */
+	COLOR32 basecolor; /* rough approximation of apparent color */
+#endif
+
+void Astrobj::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " " << rad;
+	sc.o << " " << mass;
+	sc.o << " " << absmag;
+	sc.o << " " << basecolor;
+}
+
+void Astrobj::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> " " >> rad;
+	sc.i >> " " >> mass;
+	sc.i >> " " >> absmag;
+	sc.i >> " " >> basecolor;
+}
+
 bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(0);
@@ -276,6 +324,52 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 			aorder.push_back(this);
 		}
 	}
+}
+
+TexSphere::~TexSphere(){
+	delete texname;
+
+	// Should I delete here?
+/*	if(texlist)
+		glDeleteLists(texlist, 1);*/
+}
+
+#if 0
+	const char *texname;
+	unsigned int texlist; // should not really be here
+	double ringmin, ringmax, ringthick;
+	double atmodensity;
+	float atmohor[4];
+	float atmodawn[4];
+	int ring;
+#endif
+
+void TexSphere::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << (texname ? texname : "");
+	sc.o << ringmin;
+	sc.o << ringmax;
+	sc.o << ringthick;
+	sc.o << atmodensity;
+	sc.o << *(Vec4<float>*)(atmohor);
+	sc.o << *(Vec4<float>*)(atmodawn);
+	sc.o << ring;
+}
+
+void TexSphere::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	cpplib::dstring texname;
+	sc.i >> texname;
+	sc.i >> ringmin;
+	sc.i >> ringmax;
+	sc.i >> ringthick;
+	sc.i >> atmodensity;
+	sc.i >> *(Vec4<float>*)(atmohor);
+	sc.i >> *(Vec4<float>*)(atmodawn);
+	sc.i >> ring;
+
+	this->texname = strnewdup(texname, texname.len());
+	this->texlist = 0;
 }
 
 bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -430,6 +524,8 @@ const char *Star::classname()const{
 	return "Star";
 }
 
+const unsigned Star::classid = registerClass("Star", Conster<Star>);
+
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL){
 	texlist = 0;
 	ringmin = ringmax = 0;
@@ -440,6 +536,8 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NUL
 const char *TexSphere::classname()const{
 	return "TexSphere";
 }
+
+const unsigned TexSphere::classid = registerClass("TexSphere", Conster<TexSphere>);
 
 double TexSphere::atmoScatter(const Viewer &vw)const{
 	if(!(flags & AO_ATMOSPHERE))
@@ -452,4 +550,197 @@ double TexSphere::atmoScatter(const Viewer &vw)const{
 
 bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define ENABLE_TEXTFORMAT 1
+
+const char *Universe::classname()const{
+	return "Universe";
+}
+
+void Universe::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << " timescale:" << timescale << " global_time:" << global_time;
+}
+
+extern std::istream &operator>>(std::istream &o, const char *cstr);
+
+void Universe::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> " timescale:" >> timescale >> " global_time:" >> global_time;
+}
+
+void Universe::anim(double dt){
+	this->global_time += dt;
+	st::anim(dt);
+}
+
+void Universe::csUnmap(UnserializeContext &sc){
+	while(!sc.i.eof()){
+		unsigned long size;
+		sc.i >> size;
+		if(sc.i.fail())
+			break;
+		UnserializeStream *us = sc.i.substream(size);
+		cpplib::dstring src;
+		*us >> src;
+		std::string scname((const char*)src);
+		if(src != "Player" && src != "Universe" && sc.cons.find(scname) == sc.cons.end())
+			throw ClassNotFoundException();
+		if(sc.cons[scname]){
+			sc.map.push_back(sc.cons[scname]());
+		}
+		delete us;
+	}
+}
+
+void Universe::csUnserialize(UnserializeContext &usc){
+	unsigned l = 1;
+	while(/*!usc.i.eof() &&*/ l < usc.map.size()){
+		usc.map[l]->packUnserialize(usc);
+		l++;
+	}
+}
+
+int Universe::cmd_save(int argc, char *argv[], void *pv){
+	Universe &universe = *(Universe*)pv;
+	Player &pl = *universe.ppl;
+	SerializeMap map;
+	bool text = argc < 3 ? false : !strcmp(argv[2], "t");
+	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
+	map[NULL] = 0;
+	map[&pl] = map.size();
+	Serializable* visit_list = NULL;
+	{
+		SerializeContext sc(*(SerializeStream*)NULL, map, visit_list);
+		universe.dive(sc, &Serializable::map);
+	}
+#if ENABLE_TEXTFORMAT
+	if(text){
+		std::fstream fs(fname, std::ios::out | std::ios::binary);
+		fs << "savetext";
+		StdSerializeStream sss(fs);
+		SerializeContext sc(sss, map, visit_list);
+		sss.sc = &sc;
+		pl.packSerialize(sc);
+		universe.dive(sc, &Serializable::packSerialize);
+		(sc.visit_list)->clearVisitList();
+	}
+	else
+#endif
+	{
+		BinSerializeStream bss;
+		SerializeContext sc(bss, map, visit_list);
+		bss.sc = &sc;
+		pl.packSerialize(sc);
+		universe.dive(sc, &Serializable::packSerialize);
+		(sc.visit_list)->clearVisitList();
+		FILE *fp = fopen(fname, "wb");
+		fputs("savebina", fp);
+		fwrite(bss.getbuf(), 1, bss.getsize(), fp);
+		fclose(fp);
+	}
+	return 0;
+}
+
+extern int cs_destructs;
+int Universe::cmd_load(int argc, char *argv[], void *pv){
+	const char *fname = argc < 2 ? "saveb.sav" : argv[1];
+#ifdef _WIN32
+	if(-1 == GetFileAttributes(fname)){
+		CmdPrintf("Specified file does not exist.");
+		return 0;
+	}
+#else
+	{
+		FILE *fp = fopen(fname, "r");
+		if(fp)
+			fclose(fp);
+		else{
+			CmdPrintf("Specified file does not exist.");
+			return 0;
+		}
+	}
+#endif
+	Universe &universe = *(Universe*)pv;
+	Player &pl = *universe.ppl;
+	cpplib::dstring plpath = pl.cs->getpath();
+	cs_destructs = 0;
+	delete universe.children;
+	delete universe.next;
+	pl.Player::~Player();
+	printf("destructs %d\n", cs_destructs);
+	universe.aorder.clear();
+	std::vector<Serializable*> map;
+	map.push_back(NULL);
+	map.push_back(&pl);
+	map.push_back(&universe);
+	unsigned char *buf;
+	char signature[8];
+	long size;
+	{
+		FILE *fp = fopen(fname, "rb");
+		if(!fp)
+			return 0;
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		fread(signature, 1, sizeof signature, fp);
+		size -= sizeof signature;
+		buf = new unsigned char[size];
+		fread(buf, 1, size, fp);
+		fclose(fp);
+	}
+	if(!memcmp(signature, "savebina", sizeof signature)){
+		{
+			BinUnserializeStream bus(buf, size);
+			UnserializeContext usc(bus, ctormap(), map);
+			bus.usc = &usc;
+			universe.csUnmap(usc);
+		}
+		{
+			BinUnserializeStream bus(buf, size);
+			UnserializeContext usc(bus, ctormap(), map);
+			bus.usc = &usc;
+			universe.csUnserialize(usc);
+		}
+	}
+#if ENABLE_TEXTFORMAT
+	else if(!memcmp(signature, "savetext", sizeof signature)){
+		{
+			std::istringstream ss(std::string((char*)buf, size));
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.usc = &usc;
+			universe.csUnmap(usc);
+		}
+		{
+			std::stringstream ss(std::string((char*)buf, size));
+			StdUnserializeStream sus(ss);
+			UnserializeContext usc(sus, ctormap(), map);
+			sus.usc = &usc;
+			universe.csUnserialize(usc);
+		}
+	}
+#endif
+	else{
+		CmdPrint("Unrecognized save file format");
+	}
+	delete[] buf;
+	return 0;
 }

@@ -10,19 +10,29 @@
 #define TELEPORT_WARP   2
 #define TELEPORT_PORTAL 4 /* should really have different data structure. */
 
-extern struct teleport{
+struct teleport/* : public Serializable*/{
+/*	typedef Serializable st;
+	virtual const char *classname()const;
+	static const unsigned classid;*/
+	teleport(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
+	~teleport();
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &sc);
+
 	CoordSys *cs;
 	char *name;
 	int flags;
-	avec3_t pos;
-} *tplist;
-extern int ntplist;
+	Vec3d pos;
+};
 
 // Base class for Lagrange points
 class LagrangeCS : public CoordSys{
 public:
 	typedef CoordSys st;
+	LagrangeCS(){}
 	LagrangeCS(const char *path, CoordSys *root);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 protected:
 	Astrobj *objs[2];
@@ -32,8 +42,10 @@ protected:
 class Lagrange1CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
+	Lagrange1CS(){}
 	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
+	static const unsigned classid;
 	void anim(double dt);
 };
 
@@ -41,8 +53,10 @@ public:
 class Lagrange2CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
+	Lagrange2CS(){}
 	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
+	static const unsigned classid;
 	void anim(double dt);
 };
 
@@ -57,8 +71,13 @@ class TexSphere : public Astrobj{
 	int ring;
 public:
 	typedef Astrobj st;
+	TexSphere(){}
 	TexSphere(const char *name, CoordSys *cs);
+	virtual ~TexSphere();
 	const char *classname()const;
+	static const unsigned classid;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	bool readFile(StellarContext &, int argc, char *argv[]);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;

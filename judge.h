@@ -61,6 +61,7 @@ Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *);
 Entity *otjEnumNearestSphere(const struct otjEnumHitSphereParam *);
 
 otnt *ot_build(WarField *w, double dt);
+otnt *ot_check(WarField *w, double dt);
 void ot_draw(WarField *w, wardraw_t *wd);
 #endif
 #endif

@@ -628,7 +628,7 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		glwActivate(ppwnd);
 		return 0;
 	}*/
-	for(Player::teleport_iterator it = Player::beginTeleport(), left = 0; it != Player::endTeleport() && left < numof(cmds); it++){
+/*	for(Player::teleport_iterator it = Player::beginTeleport(), left = 0; it != Player::endTeleport() && left < numof(cmds); it++){
 		teleport *tp = Player::getTeleport(it);
 		if(!(tp->flags & TELEPORT_WARP))
 			continue;
@@ -638,11 +638,19 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		strcat(cmds[left], "\"");
 		subtitles[left] = tp->name;
 		left++;
+	}*/
+	PopupMenu pm;
+	for(Player::teleport_iterator it = Player::beginTeleport(); it != Player::endTeleport(); it++){
+		teleport *tp = Player::getTeleport(it);
+		if(!(tp->flags & TELEPORT_WARP))
+			continue;
+		pm.append(tp->name, 0, cpplib::dstring("warp \"") << tp->name << '"');
 	}
-	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
-	for(i = 0; i < left; i++){
+//	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
+	wnd = glwMenu(windowtitle, pm, GLW_CLOSE);
+/*	for(i = 0; i < left; i++){
 		free(cmds[i]);
-	}
+	}*/
 /*	left = enum_cs_flags(g_galaxysystem, CS_WARPABLE, CS_WARPABLE, &retp, numof(reta));
 	{
 		int i;

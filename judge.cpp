@@ -772,6 +772,12 @@ otnt *ot_build(WarField *w, double dt){
 	return w->otroot;
 }
 
+otnt *ot_check(WarField *w, double dt){
+	for(Entity *pe = w->el; pe; pe = pe->next) if(pe->w != w)
+		return ot_build(w, dt);
+	return w->ot;
+}
+
 static void circle(Vec3d &org, double s, Mat4d &rot){
 	int i;
 		double (*cuts)[2];

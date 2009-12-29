@@ -101,6 +101,7 @@ void WarField::anim(double dt){
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, list[1]);
+	TRYBLOCK(ot_check(this, dt));
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
 }

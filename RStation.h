@@ -14,6 +14,8 @@ public:
 	virtual const char *classname()const;
 	static const unsigned classid;
 	virtual const char *dispname()const;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual double maxhealth()const;

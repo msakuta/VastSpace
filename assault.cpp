@@ -71,7 +71,7 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
-	if(0 < health){
+	if(0 < health && w->pl->control != this){
 		inputs.press = 0;
 		if(!enemy){ /* find target */
 			double best = 20. * 20.;
@@ -123,6 +123,9 @@ void Assault::anim(double dt){
 			}
 		}
 	}
+
+	space_collide(this, w, dt, NULL, NULL);
+
 	st::anim(dt);
 	for(int i = 0; i < 4; i++) if(turrets[i])
 		turrets[i]->align();

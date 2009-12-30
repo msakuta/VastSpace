@@ -11,6 +11,7 @@
 #include "glwindow.h"
 #include "judge.h"
 //#include "sensor.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
@@ -64,12 +65,22 @@ bool RStation::isTargettable()const{return true;}
 bool RStation::isSelectable()const{return true;}
 double RStation::maxhealth()const{return 1500000.;}
 
+void RStation::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << ru << occupytime << occupyrace;
+}
+
+void RStation::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> ru >> occupytime >> occupyrace;
+}
+
 /*double *__fastcall rstation_ru(rstation_t *p){
 	return &p->ru;
 }*/
 
 double RStation::hitradius(){
-	return 3.;
+	return 4.;
 }
 
 void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -269,10 +280,12 @@ int RStation::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 		rot = this->rot * rstation_hb[n].rot;
 		for(i = 0; i < 3; i++)
 			sc[i] = rstation_hb[n].sc[i] + rad;
-		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+		Vec3d n;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, &n)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
 			reti = i + 1;
+			if(retn) *retn = n;
 		}
 	}
 	return reti;

@@ -212,7 +212,6 @@ void Beamer::anim(double dt){
 //	tankrot(&mat, pt);
 	mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 
-#if 1
 	if(0 < health){
 		Entity *collideignore = NULL;
 		int i, n;
@@ -342,31 +341,28 @@ void Beamer::anim(double dt){
 			}
 		}
 	}
-
-#endif
-		if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){
-			charge = 6.;
-			cooldown = 10.;
-		}
-
-		if(charge < dt)
-			charge = 0.;
-		else
-			charge -= dt;
-
-		if(cooldown < dt)
-			cooldown = 0.;
-		else
-			cooldown -= dt;
-
-#if 0
-		if(!p->dock){
-			space_collide(pt, w, dt, NULL, NULL);
-		}
-	}
 	else
-		pt->active = 0;
-#endif
+		this->w = NULL;
+
+	if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){
+		charge = 6.;
+		cooldown = 10.;
+	}
+
+	if(charge < dt)
+		charge = 0.;
+	else
+		charge -= dt;
+
+	if(cooldown < dt)
+		cooldown = 0.;
+	else
+		cooldown -= dt;
+
+	if(true/*!this->dock*/){
+		space_collide(this, w, dt, NULL, NULL);
+	}
+
 	if(0. < charge && charge < 4.){
 		Entity *pt2, *hit = NULL;
 		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);

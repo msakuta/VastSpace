@@ -3,6 +3,7 @@
 #include "bullet.h"
 #include "judge.h"
 #include "serial_util.h"
+#include "Warpable.h"
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
@@ -255,25 +256,51 @@ bool Sceptor::findEnemy(){
 	return !!closest;
 }
 
-/*static int space_collide_callback(const struct otjEnumHitSphereParam *param, entity_t *pt){
-	if(((entity_t**)param->hint)[0] == pt || ((entity_t**)param->hint)[1] == pt)
+#if 1
+static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+	if(((Entity**)param->hint)[0] == pt || ((Entity**)param->hint)[1] == pt)
 		return 0;
 	else return 1;
-}*/
+}
 
-#if 0
-void space_collide(entity_t *pt, warf_t *w, double dt, entity_t *collideignore, entity_t *collideignore2){
+static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	const double ff = .2;
-	entity_t *pt2;
+		Vec3d dr = pt->pos - pt2->pos;
+		double sd = dr.slen();
+		double r = pt->hitradius(), r2 = pt2->hitradius();
+		double sr = (r + r2) * (r + r2);
+		double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
+		Vec3d n;
+		if(r < r2){
+			if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
+				return;
+		}
+		else{
+			if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
+				return;
+			n *= -1;
+		}
+		if(1. < f) /* prevent oscillation */
+			f = 1.;
+
+		// terminate closing velocity component
+		if(pt->velo.sp(n) < 0)
+			pt->velo -= n * pt->velo.sp(n);
+		else
+			pt->velo += n * f;
+}
+
+void space_collide(Entity *pt, WarField *w, double dt, Entity *collideignore, Entity *collideignore2){
+	Entity *pt2;
 	if(1 && w->otroot){
-		entity_t *iglist[3] = {pt, collideignore, collideignore2};
-		struct entity_static *igvft[1] = {&rstation_s};
+		Entity *iglist[3] = {pt, collideignore, collideignore2};
+//		struct entity_static *igvft[1] = {&rstation_s};
 		struct otjEnumHitSphereParam param;
 		param.root = w->otroot;
 		param.src = &pt->pos;
 		param.dir = &pt->velo;
 		param.dt = dt;
-		param.rad = ((struct entity_private_static*)pt->vft)->hitradius;
+		param.rad = pt->hitradius();
 		param.pos = NULL;
 		param.norm = NULL;
 		param.flags = OTJ_IGLIST | OTJ_IGVFT;
@@ -281,32 +308,14 @@ void space_collide(entity_t *pt, warf_t *w, double dt, entity_t *collideignore, 
 		param.hint = iglist;*/
 		param.iglist = iglist;
 		param.niglist = 3;
-		param.igvft = igvft;
-		param.nigvft = 1;
+//		param.igvft = igvft;
+//		param.nigvft = 1;
 		if(pt2 = otjEnumPointHitSphere(&param)){
-			double sd = VECSDIST(pt->pos, pt2->pos);
-			double r = ((struct entity_private_static*)pt->vft)->hitradius, r2 = ((struct entity_private_static*)pt2->vft)->hitradius;
-			double sr = (r + r2) * (r + r2);
-			avec3_t dr;
-			double f = ff * dt / (sd / sr) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-			VECSUB(dr, pt->pos, pt2->pos);
-			if(1. < f) /* prevent oscillation */
-				f = 1.;
-			VECSADD(pt->velo, dr, f);
+			space_collide_resolve(pt, pt2, dt);
 		}
 	}
-	else for(pt2 = w->tl; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->active){
-		double sd = VECSDIST(pt->pos, pt2->pos);
-		double r = ((struct entity_private_static*)pt->vft)->hitradius, r2 = ((struct entity_private_static*)pt2->vft)->hitradius;
-		double sr = (r + r2) * (r + r2);
-		if(sd != 0. && sd < sr){
-			avec3_t dr;
-			double f = ff * dt / (sd / sr) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-			VECSUB(dr, pt->pos, pt2->pos);
-			if(1. < f) /* prevent oscillation */
-				f = 1.;
-			VECSADD(pt->velo, dr, f);
-		}
+	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
+		space_collide_resolve(pt, pt2, dt);
 	}
 }
 #endif
@@ -949,9 +958,9 @@ void Sceptor::anim(double dt){
 			quatrot(acc, pt->rot, acc0);
 			VECSADD(pt->velo, acc, spd * dt);
 		}*/
-/*		if(p->task != scepter_undock && p->task != scepter_undockque){
+		if(p->task != scepter_undock && p->task != scepter_undockque){
 			space_collide(pt, w, dt, collideignore, NULL);
-		}*/
+		}
 		pt->pos += pt->velo * dt;
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);

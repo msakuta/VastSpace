@@ -156,7 +156,26 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 		ldir = imat.dvp3(dir);
 	}
 
-	{
+	if(ldir[0] == 0 && ldir[1] == 0 && ldir[2] == 0 || fabs(lsrc[0]) < scale[0] && fabs(lsrc[1]) < scale[1] && fabs(lsrc[2]) < scale[2]){ // point hit; avoid zero division
+		double dists[3], bestdist = HUGE_VAL;
+		int besti = -1;
+		for(i = 0; i < 3; i++){
+			dists[i] = scale[i] - fabs(lsrc[i]);
+			if(dists[i] < 0)
+				return 0;
+			else if(dists[i] < bestdist){
+				bestdist = dists[i];
+				besti = i;
+			}
+		}
+		if(0 <= besti){
+			if(ret) *ret = mint;
+			if(retp) *retp = src;
+			if(retn) *retn = lsrc[besti] / fabs(lsrc[besti]) * mat.vec3(besti).norm();
+			reti = 1;
+		}
+	}
+	else{
 		double f, best = maxt;
 		Vec3d hit;
 		for(i = 0; i < 3; i++){
@@ -175,7 +194,7 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 				}
 				if(retn){
 /*					quatrot(*retn, rot, a == 0 ? avec3_100 : a == 1 ? avec3_010 : avec3_001);*/
-					*retn = -mat.vec3(a).norm();
+					*retn = -s * mat.vec3(a).norm();
 				}
 				best = f;
 				reti = 1;

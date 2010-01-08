@@ -82,6 +82,7 @@ public:
 	virtual cpplib::dstring descript()const;
 
 	virtual float reloadtime()const;
+	virtual double bulletspeed()const;
 protected:
 	virtual void tryshoot();
 };
@@ -101,6 +102,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);
 	virtual float reloadtime()const;
+	virtual double bulletspeed()const;
 protected:
 	virtual void tryshoot();
 	static const Vec3d barrelpos;

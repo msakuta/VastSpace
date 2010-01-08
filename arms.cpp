@@ -377,7 +377,7 @@ void MTurret::tryshoot(){
 	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * 2. + this->velo;
+	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();
 	this->mf += .1;
 	ammo--;
@@ -436,7 +436,7 @@ void MTurret::anim(double dt){
 		velo = mat2.dvp3(target->velo);
 		pvelo = mat2.dvp3(pt->velo);
 
-		estimate_pos(epos, pos, velo, vec3_000, pvelo, 2., w);
+		estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed(), w);
 			
 		/* these angles are in local coordinates */
 		phi = -atan2(epos[0], -(epos[2]));
@@ -512,6 +512,10 @@ cpplib::dstring MTurret::descript()const{
 }
 
 float MTurret::reloadtime()const{
+	return 2.;
+}
+
+double MTurret::bulletspeed()const{
 	return 2.;
 }
 
@@ -616,6 +620,10 @@ float GatlingTurret::reloadtime()const{
 	return .1;
 }
 
+double GatlingTurret::bulletspeed()const{
+	return 4.;
+}
+
 void GatlingTurret::tryshoot(){
 	if(ammo <= 0)
 		return;
@@ -630,7 +638,7 @@ void GatlingTurret::tryshoot(){
 	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * 3. + this->velo;
+	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();
 	this->mf += .075;
 	this->barrelomg = 2. * M_PI / reloadtime() / 3.;

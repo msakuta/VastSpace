@@ -21,7 +21,7 @@ typedef unsigned long tent3d_flags_t;
 #define TEL3_NOLINE		(1<<8) /* disable draw of lines */
 #define TEL_TRAIL		(1<<9) /* append trailing tracer */
 #define TEL_FOLLOW      (1<<10) /* follow some other tent, assume vx as the pointer to target */
-#define TEL_CIRCLE		(1<<11) /* line form; uses 3 bits up to 12th bit */
+#define TEL_CIRCLE		(1<<11) /* line form; uses 4 bits up to 15th bit */
 #define TEL_FILLCIRCLE	(2<<11)
 #define TEL_POINT		(3<<11)
 #define TEL_RECTANGLE	(4<<11)
@@ -34,8 +34,8 @@ typedef unsigned long tent3d_flags_t;
 #define TEL3_EXPANDGLOW (11<<11) /* growing glow */
 #define TEL3_SPRITE     (12<<11) /* glowing effect sprite */
 #define TEL3_EXPANDTORUS (13<<11) /* glowing effect sprite */
-#define TEL_GRADCIRCLE  (12<<11) /* gradiated circle with transparency, assume col as pointer to CS */
-#define TEL_GRADCIRCLE2 (13<<11) /* time-dependent version, assume col as pointer to CS2 */
+#define TEL3_GRADCIRCLE  (14<<11) /* gradiated circle with transparency, assume col as pointer to CS */
+#define TEL3_GRADCIRCLE2 (15<<11) /* time-dependent version, assume col as pointer to CS2 */
 #define TEL3_RANDOMCOLOR (1<<16)
 #define TEL3_NEAR       (1<<17) /* draw the line a little nearer than it actually is, to prevent race condition of decals. */
 #define TEL3_FADEEND    (1<<18) /* fade the tail to make it look smoother. */

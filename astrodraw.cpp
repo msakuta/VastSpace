@@ -842,6 +842,7 @@ static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
 		bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
 		memcpy(bmi.buf, tex, sizeof bmi.buf);
 		stp.bmi = (BITMAPINFO*)&bmi;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MIPMAP;
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.mipmap = 1;
@@ -929,6 +930,7 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 #if 1
 		{
 			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL;
 			stp.bmi = proj;
 			stp.alphamap = 8;
 			stp.env = GL_MODULATE;
@@ -1067,6 +1069,7 @@ GLuint ProjectSphereJpg(const char *fname){
 			if(b && 0 < CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime) && (bmi = ReadBitmap(outfilename))){
 #if 1
 				suftexparam_t stp;
+				stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA;
 				stp.bmi = bmi;
 				stp.alphamap = 8;
 				stp.env = GL_MODULATE;

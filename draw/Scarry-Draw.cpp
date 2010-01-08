@@ -153,7 +153,6 @@ void GLWdock::draw(GLwindowState &ws, double t){
 		glColor4ub(255,255,255,255);
 	}
 
-//	for(std::vector<Dockable*>::iterator i = docker->el.begin(); i != docker->el.end(); i++){
 	for(Dockable *e = docker->el; e; e = static_cast<Dockable*>(e->next)){
 		if(height < (2 + iy) * fonth)
 			return;
@@ -186,7 +185,9 @@ void Scarry::draw(wardraw_t *wd){
 		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
 		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
 		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
 		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
 		stp.env = GL_ADD;
 		stp.mipmap = 0;
 		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);

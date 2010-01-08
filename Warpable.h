@@ -82,8 +82,6 @@ void hitbox_draw(const Entity *pt, const double sc[3]);
 #endif
 suf_t *CallLoadSUF(const char *fname);
 
-GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
-
 void space_collide(Entity *pt, WarField *w, double dt, Entity *collideignore, Entity *collideignore2);
 
 #endif

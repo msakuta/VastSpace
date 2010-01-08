@@ -1,6 +1,9 @@
 #include "material.h"
+#include "bitmap.h"
 //extern "C"{
+#include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
+#include <clib/dstr.h>
 //}
 
 
@@ -15,10 +18,10 @@ static struct material *g_mats = NULL;
 static int g_nmats = 0;
 
 static const suftexparam_t defstp = {
-	NULL, NULL,  // const BITMAPINFO *bmi, *bmiMask;
-	GL_MODULATE, // GLuint env;
-	GL_LINEAR,   // GLuint magfil;
-	0, 1,        // int mipmap, alphamap;
+	STP_MAGFIL, // unsigned long flags;
+	NULL, NULL, // const BITMAPINFO *bmi, *bmiMask;
+	0, // GLuint env;
+	GL_LINEAR, // GLuint magfil, minfil, wraps, wrapt;
 };
 
 void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, const char *texname2, suftexparam_t *stp2){
@@ -77,7 +80,7 @@ void CacheSUFMaterials(const suf_t *suf){
 }
 
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
-	struct suftexcache *stc;
+	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
 	BITMAPFILEHEADER *bfh, *bfh2;
 	GLuint ret;
@@ -87,17 +90,27 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		return stc->list;
 	stp = pstp1 ? *pstp1 : defstp;
 	bfh = ZipUnZip("rc.zip", fname1, NULL);
-	stp.bmi = !bfh ? ReadBitmap(fname1) : &bfh[1];
+	stp.bmi = !bfh ? ReadBitmap(fname1) : (BITMAPINFO*)&bfh[1];
 	if(!stp.bmi)
 		return 0;
+	if(stp.flags & STP_ALPHATEX){
+		dstr_t ds = dstr0;
+		dstrcat(&ds, fname1);
+		dstrcat(&ds, ".a.bmp");
+		bfh = ZipUnZip("rc.zip", dstr(&ds), NULL);
+		stp.bmiMask = !bfh ? ReadBitmap(dstr(&ds)) : (BITMAPINFO*)&bfh[1];
+		dstrfree(&ds);
+	}
+
 	stp2 = pstp2 ? *pstp2 : defstp;
 	if(fname2){
 		bfh2 = ZipUnZip("rc.zip", fname2, NULL);
-		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : &bfh2[1];
+		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
 		if(!stp2.bmi)
 			return 0;
 	}
-	ret = CacheSUFMTex(entry, &stp, fname2 ? &stp2 : NULL);
+
+	ret = CacheSUFMTex(entry, &stp, fname2 ? (BITMAPINFO*)&stp2 : NULL);
 	if(bfh)
 		ZipFree(bfh);
 	else

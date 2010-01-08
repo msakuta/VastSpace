@@ -10,6 +10,7 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
+#include "material.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -188,6 +189,8 @@ void Frigate::anim(double dt){
 		else
 			shieldAmount += dt * 5.;
 	}
+	else
+		w = NULL;
 
 	se.anim(dt);
 
@@ -341,8 +344,10 @@ void Beamer::anim(double dt){
 			}
 		}
 	}
-	else
+	else{
 		this->w = NULL;
+		return;
+	}
 
 	if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){
 		charge = 6.;
@@ -437,51 +442,6 @@ struct hitbox Frigate::hitboxes[] = {
 };
 const int Frigate::nhitboxes = numof(Beamer::hitboxes);
 
-static const suftexparam_t defstp = {
-	NULL, NULL,  // const BITMAPINFO *bmi;
-	GL_MODULATE, // GLuint env;
-	GL_LINEAR,   // GLuint magfil;
-	0, 1,        // int mipmap, alphamap;
-};
-
-GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
-	const struct suftexcache *stc;
-	suftexparam_t stp, stp2;
-	BITMAPFILEHEADER *bfh, *bfh2;
-	GLuint ret;
-
-	stc = FindTexCache(entry);
-	if(stc)
-		return stc->list;
-	stp = pstp1 ? *pstp1 : defstp;
-	bfh = (BITMAPFILEHEADER*)ZipUnZip("rc.zip", fname1, NULL);
-	stp.bmi = !bfh ? ReadBitmap(fname1) : (BITMAPINFO*)&bfh[1];
-	if(!stp.bmi)
-		return 0;
-	stp2 = pstp2 ? *pstp2 : defstp;
-	if(fname2){
-		bfh2 = (BITMAPFILEHEADER*)ZipUnZip("rc.zip", fname2, NULL);
-		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
-		if(!stp2.bmi)
-			return 0;
-	}
-	ret = CacheSUFMTex(entry, &stp, fname2 ? &stp2 : NULL);
-	if(bfh)
-		ZipFree(bfh);
-	else
-		LocalFree((HLOCAL)stp.bmi);
-	if(fname2){
-		if(bfh)
-			ZipFree(bfh2);
-		else
-			LocalFree((HLOCAL)stp2.bmi);
-	}
-	return ret;
-}
-
-GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2){
-	return CallCacheBitmap5(entry, fname1, pstp, fname2, pstp);
-}
 
 void Beamer::cache_bridge(void){
 	CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
@@ -837,6 +797,38 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 }
 #endif
 
+static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+	glPushMatrix();
+	gldTranslate3dv(p->pos);
+	glMultMatrixd(dd->invrot);
+	gldScaled(p->len);
+	struct random_sequence rs;
+	init_rseq(&rs, (long)p);
+	glRotated(rseq(&rs) % 360, 0, 0, 1);
+//	gldMultQuat(Quatd::direction(Vec3d(p->pos) - Vec3d(dd->viewpoint)));
+	static GLuint list = 0;
+	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+	if(!list){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_ALPHA | STP_ALPHATEX | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		list = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
+	}
+	glCallList(list);
+	COLOR32 col = (COLOR32)private_data;
+	glColor4f(COLOR32R(col) / 255., COLOR32G(col) / 255., COLOR32B(col) / 255., MIN(p->life * .25, 1.));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0,0); glVertex2f(-1, -1);
+	glTexCoord2f(1,0); glVertex2f(+1, -1);
+	glTexCoord2f(1,1); glVertex2f(+1, +1);
+	glTexCoord2f(0,1); glVertex2f(-1, +1);
+	glEnd();
+	glPopAttrib();
+	glPopMatrix();
+}
+
 
 int Frigate::takedamage(double damage, int hitpart){
 	Frigate *p = this;
@@ -912,7 +904,8 @@ int Frigate::takedamage(double damage, int hitpart){
 			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 			col |= COLOR32RGBA(0,0,0,191);
-			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+			AddTelineCallback3D(w->tell, pos, NULL, .03, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
 		}
 
 		{/* explode shockwave thingie */
@@ -937,7 +930,7 @@ int Frigate::takedamage(double damage, int hitpart){
 			AddTeline3D(tell, this->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-		p->w = NULL;
+//		p->w = NULL;
 	}
 	p->health -= damage;
 	return ret;

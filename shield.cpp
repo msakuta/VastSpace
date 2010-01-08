@@ -26,6 +26,16 @@ public:
 } *swlist;
 
 
+ShieldEffect::~ShieldEffect(){
+	// Free all allocated wavelets before dying
+	Wavelet **pswlactv = &p;
+	Wavelet **psw;
+	for(psw = pswlactv; *psw;){
+		Wavelet *sw = *psw;
+		WaveletList::free(psw);
+	}
+}
+
 void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius, const GLubyte color[4], const double irot[16]);
 
 

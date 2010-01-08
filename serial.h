@@ -16,6 +16,7 @@ class UnserializeContext;
 // Base class of all serializable objects.
 class Serializable{
 public:
+	virtual ~Serializable(); // Virtual destructor defined to make all derived classes have default destructor.
 	virtual const char *classname()const = 0; // returned string storage must be static
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &usc);

@@ -7,6 +7,7 @@
 //#include "warutil.h"
 extern "C"{
 #include "bitmap.h"
+#include "material.h"
 #include <clib/amat4.h>
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -784,7 +785,8 @@ void Bullet::anim(double dt){
 #endif
 #endif
 
-			pt->takedamage(this->damage, hitpart);
+			if(pt->w == w)
+				pt->takedamage(this->damage, hitpart);
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
 			bulletkill(-1, NULL);
@@ -877,7 +879,29 @@ void Bullet::drawtra(wardraw_t *wd){
 		if(damage < 100.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
-			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+#if 1
+			if(!texname){
+				suftexparam_t stp;
+				stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+				stp.env = GL_REPLACE;
+				stp.magfil = GL_LINEAR;
+				stp.minfil = GL_LINEAR;
+				texname = CallCacheBitmap5("bullet.bmp", "bullet.bmp", &stp, NULL, NULL);
+			}
+			glCallList(texname);
+			glMatrixMode(GL_TEXTURE);
+			glPushMatrix();
+			glRotatef(90, 0, 0, 1);
+			glScalef(9./32., 1, 1);
+			glMatrixMode(GL_MODELVIEW);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE); // Add blend
+			gldTextureBeam(wd->vw->pos, start, end, width);
+			glMatrixMode(GL_TEXTURE);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+#else
 			if(!texname){
 				GLubyte texbits[64][64][2];
 				int i, j;
@@ -904,6 +928,7 @@ void Bullet::drawtra(wardraw_t *wd){
 			glColor4f(1,.5,0,1);
 			glBindTexture(GL_TEXTURE_2D, texname);
 			gldTextureBeam(wd->vw->pos, start, end, width);
+#endif
 			glPopAttrib();
 		}
 		else

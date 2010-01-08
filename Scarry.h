@@ -109,6 +109,7 @@ public:
 	virtual double maxhealth()const;
 	virtual double hitradius();
 	virtual double maxenergy()const;
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual Props props()const;
 	virtual void draw(wardraw_t *);

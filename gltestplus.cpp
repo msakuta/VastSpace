@@ -20,6 +20,7 @@
 #include "motion.h"
 #include "glwindow.h"
 #include "Scarry.h"
+#include "material.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -578,11 +579,11 @@ void draw_func(Viewer &vw, double dt){
 		if(!tex){
 			suftexparam_t stp;
 //			stp.bmi = ZipUnZip(lzw_pointer, sizeof lzw_pointer, NULL);
+			stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
 			stp.env = GL_MODULATE;
 			stp.mipmap = 0x80;
 			stp.alphamap = 1;
 			stp.magfil = GL_LINEAR;
-			extern GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
 //			tex = CacheSUFMTex("pointer.bmp", &stp, NULL);
 			tex = CallCacheBitmap("pointer.bmp", "pointer.bmp", &stp, NULL);
 		}

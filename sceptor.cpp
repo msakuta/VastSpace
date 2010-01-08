@@ -5,6 +5,7 @@
 #include "serial_util.h"
 #include "Warpable.h"
 #include "Scarry.h"
+#include "material.h"
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
@@ -15,6 +16,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
+#include <clib/gl/gldraw.h>
 }
 #include <assert.h>
 #include <string.h>
@@ -29,7 +31,7 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 
 #define SCEPTER_SCALE 1./10000
-#define SCEPTER_SMOKE_FREQ 10.
+#define SCEPTER_SMOKE_FREQ 20.
 #define SCEPTER_RELOADTIME .3
 #define SCEPTER_ROLLSPEED (.2 * M_PI)
 #define SCEPTER_ROTSPEED (.3 * M_PI)
@@ -468,6 +470,40 @@ void quat2pyr(const aquat_t quat, avec3_t euler){
 
 }
 #endif
+
+static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+	glPushMatrix();
+	gldTranslate3dv(p->pos);
+	glMultMatrixd(dd->invrot);
+	gldScaled(p->len);
+	struct random_sequence rs;
+	init_rseq(&rs, (long)p);
+	glRotated(rseq(&rs) % 360, 0, 0, 1);
+//	gldMultQuat(Quatd::direction(Vec3d(p->pos) - Vec3d(dd->viewpoint)));
+	static GLuint lists[2] = {0};
+	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+	if(!lists[0]){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_ALPHA | STP_ALPHATEX | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		lists[0] = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
+		lists[1] = CallCacheBitmap5("smokefire.bmp", "smokefire.bmp", &stp, NULL, NULL);
+	}
+	for(int i = 0; i < 2; i++){
+		glCallList(lists[i]);
+		glColor4f(1, 1, 1, i == 0 ? MIN(p->life * 1., 1.) : MAX(MIN(p->life * 1. - 1., 1.), 0));
+		glBegin(GL_QUADS);
+		glTexCoord2f(0,0); glVertex2f(-1, -1);
+		glTexCoord2f(1,0); glVertex2f(+1, -1);
+		glTexCoord2f(1,1); glVertex2f(+1, +1);
+		glTexCoord2f(0,1); glVertex2f(-1, +1);
+		glEnd();
+	}
+	glPopAttrib();
+	glPopMatrix();
+}
 
 void Sceptor::anim(double dt){
 	Entity *pt = this;
@@ -1025,7 +1061,8 @@ void Sceptor::anim(double dt){
 					dv[0] = .5 * pt->velo[0] + (drseq(&w->rs) - .5) * .01;
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
-					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
+//					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(w->tell, pos, dv, .02, NULL, NULL, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
 			pt->pos += pt->velo * dt;

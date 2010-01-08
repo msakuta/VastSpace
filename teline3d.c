@@ -238,6 +238,7 @@ void AddTelineCallback3D(tell_t *p, const double pos[3], const double velo[3],
 	void (*f)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, double life)
 {
 	teline3_t *pl;
+	flags &= ~TEL_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
 	pl = alloc_teline(p, pos, velo, len, pyr, omg, grv, flags |= TEL3_CALLBACK | TEL3_NOLINE, life);
 	if(!pl) return;
 	pl->mdl.callback.f = f;

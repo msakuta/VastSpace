@@ -28,7 +28,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
-	virtual std::vector<cpplib::dstring> props()const;
+	virtual Props props()const;
 	static void cache_bridge(void);
 };
 

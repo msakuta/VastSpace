@@ -9,6 +9,8 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 }
 
 
+Serializable::~Serializable(){}
+
 void Serializable::serialize(SerializeContext &sc){
 	sc.o << classname();
 }

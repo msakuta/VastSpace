@@ -8,6 +8,7 @@ class Bullet;
 class ShieldEffect{
 public:
 	ShieldEffect();
+	~ShieldEffect();
 	void bullethit(const Entity *pe, const Bullet *, double maxshield);
 	void takedamage(double rdamage);
 	void anim(double dt);

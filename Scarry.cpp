@@ -201,7 +201,6 @@ void Docker::anim(double dt){
 
 void Docker::dock(Dockable *e){
 	e->dock(this);
-//	el.push_back(e);
 	e->docker = this;
 	e->next = el;
 	el = e;
@@ -328,6 +327,11 @@ double Scarry::hitradius(){
 
 double Scarry::maxenergy()const{
 	return 5e8;
+}
+
+void Scarry::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	pos = this->pos + this->rot.trans(Vec3d(.100, .22, -.610));
+	rot = this->rot;
 }
 
 void Scarry::anim(double dt){

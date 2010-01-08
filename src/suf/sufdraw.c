@@ -381,12 +381,12 @@ const stc_t *FindTexCache(const char *name){
 
 
 static void cachemtex(const suftexparam_t *stp){
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, stp->magfil); 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, stp->mipmap & 0x1 ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, stp->env);
-	if(stp->mipmap & 0x80){
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, stp->flags & STP_WRAP_S ? stp->wraps : GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, stp->flags & STP_WRAP_T ? stp->wrapt : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, stp->flags & STP_MAGFIL ? stp->magfil : GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, stp->flags & STP_MINFIL ? stp->minfil : stp->flags & STP_MIPMAP ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, stp->flags & STP_ENV ? stp->env : GL_MODULATE);
+	if(stp->flags & STP_ALPHA_TEST /*stp->mipmap & 0x80*/){
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_GREATER, .5f);
 	}
@@ -400,7 +400,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 	const BITMAPINFO *bmi = stp->bmi;
 	GLint env = stp->env;
 	unsigned char *head;
-	int mipmap = stp->mipmap;
+	int alpha = stp->flags & STP_ALPHA;
+	int mipmap = stp->flags & STP_MIPMAP;
 #if 1
 	GLubyte (*tex)[3], (*tex4)[4];
 
@@ -412,7 +413,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int x, y;
 		int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 16;
 		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
-		if(stp->alphamap){
+		if(alpha){
 			tex4 = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
 			for(y = 0; y < bmi->bmiHeader.biHeight; y++){
 				unsigned char *buf = head + (bmi->bmiHeader.biWidth * bmi->bmiHeader.biBitCount + 31) / 32 * 4 * y;
@@ -444,7 +445,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int x, y;
 		int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 256;
 		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
-		if(stp->alphamap){
+		if(alpha){
 			tex4 = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
 			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
@@ -470,20 +471,24 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int x, y;
 		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char (*src)[3] = (const unsigned char(*)[3])&bmi->bmiColors[cols];
-		if(stp->alphamap & 1){
+		if(alpha){
+			int alphatex = stp->flags & STP_ALPHATEX && stp->bmiMask->bmiHeader.biBitCount == 8 && stp->bmi->bmiHeader.biWidth == stp->bmiMask->bmiHeader.biWidth && stp->bmi->bmiHeader.biHeight == stp->bmiMask->bmiHeader.biHeight;
+			BYTE *alphasrc;
+			if(alphatex)
+				alphasrc = (BYTE*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
 			tex4 = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
 			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
-				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
+				int pos = x + y * bmi->bmiHeader.biWidth;
 				tex4[pos][0] = src[pos][2];
 				tex4[pos][1] = src[pos][1];
 				tex4[pos][2] = src[pos][0];
-				tex4[pos][3] = 255;
+				tex4[pos][3] = alphatex ? alphasrc[pos] : 255;
 			}
 		}
 		else{
 			tex = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
 			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
-				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
+				int pos = x + y * bmi->bmiHeader.biWidth;
 				tex[pos][0] = src[pos][2];
 				tex[pos][1] = src[pos][1];
 				tex[pos][2] = src[pos][0];
@@ -498,10 +503,10 @@ static GLuint cachetex(const suftexparam_t *stp){
 		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
 		if(stp->alphamap & STP_MASKTEX)
 			mask = (const unsigned char(*)[4])&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
-		if(stp->alphamap & 8){
+		if(stp->flags & (STP_ALPHA | STP_RGBA32) == (STP_ALPHA | STP_RGBA32)){
 			tex4 = src;
 		}
-		else if(stp->alphamap & (3 | STP_MASKTEX)){
+		else if(alpha /*stp->alphamap & (3 | STP_MASKTEX)*/){
 			tex4 = malloc(bmi->bmiHeader.biWidth * h * sizeof*tex4);
 			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth, pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth, idx = src[pos];
@@ -532,13 +537,13 @@ static GLuint cachetex(const suftexparam_t *stp){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	if(mipmap)
-		gluBuild2DMipmaps(GL_TEXTURE_2D, stp->alphamap ? GL_RGBA : GL_R3_G3_B2, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight),
-			stp->alphamap ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, stp->alphamap ? tex4 : tex);
+		gluBuild2DMipmaps(GL_TEXTURE_2D, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight),
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? tex4 : tex);
 	else
-		glTexImage2D(GL_TEXTURE_2D, 0, stp->alphamap ? GL_RGBA : GL_R3_G3_B2, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight), 0,
-			stp->alphamap ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, stp->alphamap ? tex4 : tex);
-	if(!(stp->alphamap & 8))
-		free(stp->alphamap ? tex4 : tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight), 0,
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? tex4 : tex);
+	if(!(bmi->bmiHeader.biBitCount == 32 && stp->flags & (STP_ALPHA | STP_RGBA32) == (STP_ALPHA | STP_RGBA32)))
+		free(stp->flags & STP_ALPHA ? tex4 : tex);
 #else
 	{
 		int i;
@@ -671,6 +676,7 @@ unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap){
 	if(!bmi)
 		return 0;
 	stp.bmi = bmi;
+	stp.flags = STP_ENV | STP_ALPHA | (mipmap ? STP_MIPMAP : 0);
 	stp.env = GL_MODULATE;
 	stp.mipmap = mipmap;
 	stp.magfil = GL_NEAREST;

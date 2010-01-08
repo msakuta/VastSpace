@@ -46,14 +46,23 @@ const struct suftexcache *FindTexCache(const char *name);
 extern suftex_t *AllocSUFTex(const suf_t *);
 extern suftex_t *AllocSUFTexScales(const suf_t *, const double *scales, int nscales, const char **override_textures, int ntexes);
 
-#define STP_ALPHA 0x1
-#define STP_ALPHATEX 0x2
-#define STP_MASKTEX 0x100
+#define STP_ALPHA      0x1   // Enable alpha channel in texture
+#define STP_ALPHATEX   0x2   // Use texture as alpha map
+#define STP_ALPHA_TEST 0x4   // Alpha test at 0.5A
+#define STP_RGBA32     0x8   // Designates the input bitmap is 32bit RGBA. Use it with STP_ALPHA.
+#define STP_MIPMAP     0x10  // Create mipmaps automatically
+#define STP_MASKTEX    0x100 // Enable mask texture specified by bmiMask
+#define STP_ENV        0x200 // Texture env mode
+#define STP_MAGFIL     0x400
+#define STP_MINFIL     0x800
+#define STP_WRAP_S     0x1000
+#define STP_WRAP_T     0x2000
 
 typedef struct suftexparam_s{
+	unsigned long flags; // Only specified features are examined; unspecified fields can be uninitialized.
 	const BITMAPINFO *bmi, *bmiMask;
 	GLuint env;
-	GLuint magfil;
+	GLuint magfil, minfil, wraps, wrapt;
 	int mipmap, alphamap;
 } suftexparam_t;
 

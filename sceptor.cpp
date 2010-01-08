@@ -165,20 +165,11 @@ const avec3_t scepter_guns[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15.
 
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
-	Vec3d ofs, src[3] = {Vec3d(0., .001, -.002), Vec3d(0., 0., .1), Vec3d(0., .008, 0.020)};
+	Vec3d ofs;
+	static const Vec3d src[2] = {Vec3d(0., .001, -.002), Vec3d(0., .008, 0.020)};
 	Mat4d mat;
-//	*chasecamera = (*chasecamera + 3) % 3;
-	if(seatid == 1){
-		double f;
-		q = this->rot * w->pl->rot;
-		src[2][2] = .1 /** g_viewdist*/;
-		f = src[2][2] * .001 < .001 ? src[2][2] * .001 : .001;
-		src[2][2] += f * sin(ppl->gametime * M_PI / 2. + M_PI / 2.);
-		src[2][0] = f * sin(ppl->gametime * M_PI / 2.);
-		src[2][1] = f * cos(ppl->gametime * M_PI / 2.);
-	}
-	else
-		q = this->rot;
+	seatid = (seatid + 2) % 2;
+	q = this->rot;
 	ofs = q.trans(src[seatid]);
 	pos = this->pos + ofs;
 }

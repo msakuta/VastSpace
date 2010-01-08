@@ -77,10 +77,6 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 			if(top.st == builder0[j])
 				builderi = j;
 		}
-		for(int i = 0; i < builder->nbuildque; i++){
-			for(j = 0; j < numof(builder0); j++) if(top.st == builder0[j])
-				builderc[j] += top.num;
-		}
 		glColor4ub(255,255,255,255);
 		glwpos2d(xpos, ypos + (2 + iy++) * 12);
 		glwprintf("Buildable Items:");

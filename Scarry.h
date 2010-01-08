@@ -60,11 +60,14 @@ class Dockable;
 class Docker : public virtual Entity{
 public:
 	double baycool;
-	Dockable *el;
+	Dockable *el, *undockque;
 
-	Docker() : baycool(0), el(NULL){}
+	Docker() : baycool(0), el(NULL), undockque(NULL){}
+	~Docker();
 	void anim(double dt);
 	void dock(Dockable *);
+	bool postUndock(Dockable *); // Posts an entity to undock queue.
+protected:
 	virtual bool undock(Dockable *);
 };
 

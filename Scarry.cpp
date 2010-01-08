@@ -171,9 +171,30 @@ int cmd_build(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+Docker::~Docker(){
+	// Docked entities die with their base.
+	for(Entity *e = el; e;){
+		Entity *next = e->next;
+		delete e;
+		e = next;
+	}
+	for(Entity *e = undockque; e;){
+		Entity *next = e->next;
+		delete e;
+		e = next;
+	}
+}
+
 void Docker::anim(double dt){
-	if(baycool < dt)
+	while(undockque && baycool < dt){
+		Entity *next = undockque->next;
+		undock(undockque);
+		undockque = static_cast<Dockable*>(next);
+	}
+
+	if(baycool < dt){
 		baycool = 0.;
+	}
 	else
 		baycool -= dt;
 }
@@ -186,18 +207,24 @@ void Docker::dock(Dockable *e){
 	el = e;
 }
 
-bool Docker::undock(Dockable *e){
-	if(0 != baycool)
-		return false;
+bool Docker::postUndock(Dockable *e){
 	Entity **pp;
 	for(pp = reinterpret_cast<Entity**>(&el); *pp; pp = (&(*pp)->next)) if(*pp == e){
-		e->w = this->w;
 		*pp = (e->next);
-		w->addent(e);
-		e->undock(this);
+		Entity **qend = reinterpret_cast<Entity**>(&undockque);
+		if(*qend) for(; *qend; qend = &(*qend)->next); // Search until end
+		*qend = e;
+		e->next = NULL; // Appending to end means next is equal to NULL
 		return true;
 	}
 	return false;
+}
+
+bool Docker::undock(Dockable *e){
+	e->w = this->w;
+	w->addent(e);
+	e->undock(this);
+	return true;
 }
 
 int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
@@ -210,7 +237,7 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
 		for(Entity *e = docker->el; e; e = e->next) if(!ind--){
-			docker->undock(static_cast<Dockable*>(e));
+			docker->postUndock(static_cast<Dockable*>(e));
 			break;
 		}
 		return 1;
@@ -398,7 +425,7 @@ void Scarry::doneBuild(Entity *e){
 
 bool Scarry::undock(Dockable *e){
 	if(Docker::undock(e)){
-		e->pos = pos + rot.trans(Vec3d(-.15, 0.05, 0));
+		e->pos = pos + rot.trans(Vec3d(-.10, 0.05, 0));
 		e->velo = velo;
 		e->rot = rot;
 		return true;

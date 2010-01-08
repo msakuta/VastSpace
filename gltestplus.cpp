@@ -1460,7 +1460,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
 	CvarAdd("g_otdrawflags", &WarField::g_otdrawflags, cvar_int);
-	CvarAdd("chasecamera", &pl.chasecamera, cvar_int);
+	CvarAdd("seat", &pl.chasecamera, cvar_int);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

@@ -97,7 +97,7 @@ void Player::freelook(const input_t &inputs, double dt){
 	if(chase){
 		this->cs = chase->w->cs;
 		Quatd dummy;
-		chase->cockpitView(pos, dummy, 0);
+		chase->cockpitView(pos, dummy, chasecamera);
 		velo = chase->velo;
 	}
 	else{

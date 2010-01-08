@@ -30,7 +30,7 @@ enum sship_task{
 };
 
 
-class Warpable : public Entity{
+class Warpable : public virtual Entity{
 public:
 	typedef Entity st;
 	Vec3d warpdst;

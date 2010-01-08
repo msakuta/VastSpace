@@ -147,6 +147,9 @@ std::vector<cpplib::dstring> Entity::props()const{
 	ret.push_back(cpplib::dstring("Race: ") << dstring(race));
 	return ret;
 }
+double Entity::getRU()const{return 0.;}
+Builder *Entity::getBuilder(){return NULL;}
+Docker *Entity::getDocker(){return NULL;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;

@@ -1,8 +1,169 @@
 #include "../scarry.h"
 #include "../judge.h"
 #include "../material.h"
+#include "../sceptor.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
+}
+
+void GLWbuild::progress_bar(double f, int width, int *piy){
+	int iy = *piy;
+	glColor4ub(0,255,0,255);
+	glBegin(GL_QUADS);
+	glVertex2d(xpos, ypos + (2 + iy - 1) * 12);
+	glVertex2d(xpos + width * f, ypos + (2 + iy - 1) * 12);
+	glVertex2d(xpos + width * f, ypos + (2 + iy - 0) * 12);
+	glVertex2d(xpos + 0, ypos + (2 + iy - 0) * 12);
+	glEnd();
+	glColor4ub(127,127,127,255);
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(xpos, ypos + (2 + iy - 1) * 12);
+	glVertex2d(xpos + width, ypos + (2 + iy - 1) * 12);
+	glVertex2d(xpos + width, ypos + (2 + iy - 0) * 12);
+	glVertex2d(xpos + 0, ypos + (2 + iy - 0) * 12);
+	glEnd();
+	glColor4ub(255,0,0,255);
+	glwpos2d(xpos, ypos + (2 + (*piy)++) * 12);
+	glwprintf("%3.0lf%%", 100. * f);
+}
+
+const Builder::BuildStatic sceptor_build = {
+	"Interceptor",
+	Sceptor::create,
+	10.,
+	60.,
+};
+
+int GLWbuild::draw_tab(int ix, int iy, const char *s, int selected){
+	int ix0 = ix;
+	glBegin(GL_LINE_STRIP);
+	glVertex2d(this->xpos + ix, this->ypos + iy + 12);
+	glVertex2d(this->xpos + (ix += 3), this->ypos + iy + 1);
+	ix += 8 * strlen(s);
+	glVertex2d(this->xpos + ix, this->ypos + iy + 1);
+	glVertex2d(this->xpos + (ix += 3), this->ypos + iy + 12);
+	if(!selected){
+		glVertex2d(xpos + ix0, ypos + iy + 12);
+	}
+	glEnd();
+	glwpos2d(xpos + ix0 + 3, ypos + iy + 12);
+	glwprintf("%s", s);
+	return ix;
+}
+
+void GLWbuild::draw(GLwindowState &ws, double t){
+	int ix;
+	if(!builder)
+		return;
+	glColor4ub(255,255,255,255);
+	glwpos2d(this->xpos, this->ypos + 2 * getFontHeight());
+	glwprintf("Resource Units: %.0lf", builder->getRU());
+	glColor4ub(255,255,0,255);
+	ix = draw_tab(ix = 2, 2 * 12, "Build", tabindex == 0);
+	ix = draw_tab(ix, 2 * 12, "Queue", tabindex == 1);
+	glBegin(GL_LINES);
+	glVertex2d(xpos + ix, ypos + 3 * 12);
+	glVertex2d(xpos + width, ypos + 3 * 12);
+	glEnd();
+	const Builder::BuildData &top = builder->buildque[0];
+	int fonth = getFontHeight();
+	int iy = 2;
+	if(tabindex == 0){
+		static const Builder::BuildStatic *builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&beamer_build, &assault_build*/};
+		int builderc[numof(builder0)] = {0}, builderi, j;
+		for(j = 0; j < numof(builder0); j++){
+			if(top.st == builder0[j])
+				builderc[j] = top.num;
+			if(top.st == builder0[j])
+				builderi = j;
+		}
+		for(int i = 0; i < builder->nbuildque; i++){
+			for(j = 0; j < numof(builder0); j++) if(top.st == builder0[j])
+				builderc[j] += top.num;
+		}
+		glColor4ub(255,255,255,255);
+		glwpos2d(xpos, ypos + (2 + iy++) * 12);
+		glwprintf("Buildable Items:");
+
+		/* Mouse cursor highlights */
+		int mx = ws.mx - xpos, my = ws.my - ypos;
+		if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my && my < (1 + iy + numof(builder0)) * fonth){
+			glColor4ub(0,0,255,127);
+			glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
+		}
+
+		/* Progress bar of currently building item */
+		if(builder->build){
+			glColor4ub(0,127,0,255);
+			glRecti(xpos, ypos + (builderi + iy + 1) * fonth + 8, xpos + (1. - builder->build / top.st->buildtime) * width, ypos + (builderi + iy + 1) * fonth + fonth);
+		}
+
+		glColor4ub(191,191,255,255);
+/*		glwpos2d(xpos, ypos + (2 + iy++) * 12);
+		glwprintf("Container    %d  %lg RU %lg dm^3", builderc[0], scontainer_build.cost, 1e-3 * scontainer_s.hitradius * scontainer_s.hitradius * scontainer_s.hitradius * 8 * 1e9);
+		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwprintf("Worker       %d  %lg RU %lg dm^3", builderc[1], worker_build.cost, 1e-3 * worker_s.hitradius * worker_s.hitradius * worker_s.hitradius * 8 * 1e9);*/
+		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc[0], sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * 8 * 1e9);
+/*		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwprintf("Lancer Class %d  %lg RU %lg dm^3", builderc[3], beamer_build.cost, 1e-3 * beamer_s.hitradius * beamer_s.hitradius * beamer_s.hitradius * 8 * 1e9);
+		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwprintf("Sabre Class  %d  %lg RU %lg dm^3", builderc[4], assault_build.cost, 1e-3 * assault_s.hitradius * assault_s.hitradius * assault_s.hitradius * 8 * 1e9);*/
+	}
+	else{
+		glColor4ub(255,255,255,255);
+		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwprintf("Build Queue:");
+		if(builder->nbuildque == 0)
+			return;
+		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwprintf(top.st->name);
+		progress_bar((1. - builder->build / top.st->buildtime), 200, &iy);
+		glColor4ub(255,255,255,255);
+		for(int i = 0; i < builder->nbuildque; i++){
+			if(height < (2 + iy) * fonth)
+				return;
+			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwprintf("%d X %s %lg RUs", builder->buildque[i].num, builder->buildque[i].st->name, builder->buildque[i].num * builder->buildque[i].st->cost);
+		}
+	}
+}
+
+void GLWdock::draw(GLwindowState &ws, double t){
+	int ix;
+	if(!docker)
+		return;
+	glColor4ub(255,255,255,255);
+	glwpos2d(this->xpos, this->ypos + 2 * getFontHeight());
+	glwprintf("Resource Units: %.0lf", docker->getRU());
+	glColor4ub(255,255,0,255);
+	int fonth = getFontHeight();
+	int iy = 1;
+
+	if(!docker)
+		return;
+	glColor4ub(255,255,255,255);
+	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwprintf("Cool: %lg", docker->baycool);
+	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwprintf("Docked:");
+	glColor4ub(255,255,255,255);
+
+	int mx = ws.mx - xpos, my = ws.my - ypos;
+	/* Mouse cursor highlights */
+	if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my){
+		glColor4ub(0,0,255,127);
+		glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
+		glColor4ub(255,255,255,255);
+	}
+
+//	for(std::vector<Dockable*>::iterator i = docker->el.begin(); i != docker->el.end(); i++){
+	for(Dockable *e = docker->el; e; e = static_cast<Dockable*>(e->next)){
+		if(height < (2 + iy) * fonth)
+			return;
+		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->hitradius() * e->hitradius() * e->hitradius());
+	}
 }
 
 

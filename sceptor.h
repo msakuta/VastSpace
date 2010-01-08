@@ -11,10 +11,25 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 }
 
-// Space Interceptor (small fighter)
-class Sceptor : public Entity{
+class Builder;
+class Docker;
+
+class Dockable : public Entity{
 public:
 	typedef Entity st;
+	Dockable(){}
+	Dockable(WarField *aw) : st(aw){}
+	virtual void dock(Docker *);
+	virtual void undock(Docker *);
+protected:
+	Docker *docker;
+	friend class Docker;
+};
+
+// Space Interceptor (small fighter)
+class Sceptor : public Dockable{
+public:
+	typedef Dockable st;
 protected:
 	enum Task;
 	Vec3d aac; /* angular acceleration */
@@ -26,7 +41,7 @@ protected:
 	float fcloak;
 	float heat;
 	struct tent3d_fpol *pf;
-	Entity *mother; // Mother ship
+	Docker *mother; // Mother ship
 	int hitsound;
 	int paradec;
 	Task task;
@@ -54,10 +69,12 @@ public:
 	virtual double hitradius();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int popupMenu(PopupMenu &);
-	virtual std::vector<cpplib::dstring> props()const;
+	virtual Props props()const;
+	virtual void undock(Docker *);
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
+	static Entity *create(WarField *w, Builder *mother);
 };
 
 

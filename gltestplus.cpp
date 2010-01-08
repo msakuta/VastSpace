@@ -19,6 +19,7 @@
 #include "keybind.h"
 #include "motion.h"
 #include "glwindow.h"
+#include "Scarry.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -1449,6 +1450,8 @@ int main(int argc, char *argv[])
 	CmdAddParam("attack", cmd_attack, &pl);
 	CmdAddParam("save", Universe::cmd_save, &universe);
 	CmdAddParam("load", Universe::cmd_load, &universe);
+	CmdAddParam("buildmenu", cmd_build, &pl);
+	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -1457,6 +1460,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
 	CvarAdd("g_otdrawflags", &WarField::g_otdrawflags, cvar_int);
+	CvarAdd("chasecamera", &pl.chasecamera, cvar_int);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

@@ -4,6 +4,7 @@
 #include "judge.h"
 #include "serial_util.h"
 #include "Warpable.h"
+#include "Scarry.h"
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
@@ -37,6 +38,12 @@ extern "C"{
 #define SCEPTER_MAX_GIBS 20
 #define BULLETSPEED 2.
 
+void Dockable::dock(Docker *d){
+	docker = d;
+}
+
+void Dockable::undock(Docker *d){
+}
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
@@ -135,7 +142,10 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
 	p->cooldown = 1.;
-	p->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	if(w)
+		p->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	else
+		p->pf = NULL;
 //	p->mother = mother;
 	p->hitsound = -1;
 	p->docked = false;
@@ -186,11 +196,21 @@ int Sceptor::popupMenu(PopupMenu &list){
 	return ret;
 }
 
-std::vector<cpplib::dstring> Sceptor::props()const{
+Entity::Props Sceptor::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Task: ") << task);
 	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
 	return ret;
+}
+
+void Sceptor::undock(Docker *d){
+	st::undock(d);
+	task = scepter_undock;
+	mother = d;
+	if(this->pf)
+		ImmobilizeTefpol3D(this->pf);
+	this->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	d->baycool += 2.;
 }
 
 /*
@@ -625,18 +645,17 @@ void Sceptor::anim(double dt){
 			}*/
 
 			if(p->task == scepter_undock){
-/*				if(!p->mother)
+				if(!p->mother)
 					p->task = scepter_idle;
 				else{
-					avec3_t mzh, dm;
 					double sp;
-					VECSUB(dm, pt->pos, pm->pos);
-					quatrot(mzh, pm->rot, avec3_001);
-					sp = -VECSP(mzh, dm);
+					Vec3d dm = this->pos - mother->pos;
+					Vec3d mzh = this->rot.trans(vec3_001);
+					sp = -mzh.sp(dm);
 					p->throttle = 1.;
 					if(1. < sp)
 						p->task = scepter_parade;
-				}*/
+				}
 			}
 			else if(w->pl->control != pt) do{
 				if(!pt->enemy || p->task == scepter_idle || p->task == scepter_parade){
@@ -1164,3 +1183,15 @@ double Sceptor::maxfuel()const{
 	return 120.;
 }
 
+
+Entity *Sceptor::create(WarField *w, Builder *mother){
+	Sceptor *ret = new Sceptor(NULL);
+	ret->pos = mother->pos;
+	ret->velo = mother->velo;
+	ret->rot = mother->rot;
+	ret->omg = mother->omg;
+	ret->race = mother->race;
+	ret->task = scepter_undock;
+//	w->addent(ret);
+	return ret;
+}

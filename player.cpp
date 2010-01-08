@@ -9,7 +9,7 @@
 static teleport *tplist;
 static int ntplist;
 
-Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), flypower(1.), viewdist(1.), mover(&Player::freelook){
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), flypower(1.), viewdist(1.), mover(&Player::freelook){
 }
 
 Player::~Player(){
@@ -28,7 +28,7 @@ Quatd Player::getrot()const{
 		return rot;
 	Vec3d dummy;
 	Quatd crot;
-	chase->cockpitView(dummy, crot, 0);
+	chase->cockpitView(dummy, crot, chasecamera);
 	return rot * crot.cnj();
 }
 

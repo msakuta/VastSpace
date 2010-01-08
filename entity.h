@@ -12,6 +12,9 @@
 class Bullet;
 class Warpable;
 class ArmBase;
+class Builder;
+class Docker;
+
 class Entity : public Serializable{
 public:
 	typedef Serializable st;
@@ -46,7 +49,10 @@ public:
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
 	virtual void attack(Entity *target);
-	virtual std::vector<cpplib::dstring> props()const;
+	virtual Props props()const;
+	virtual double getRU()const;
+	virtual Builder *getBuilder();
+	virtual Docker *getDocker();
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

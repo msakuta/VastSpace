@@ -678,7 +678,7 @@ Warpable *Warpable::toWarpable(){
 }
 
 Entity::Props Warpable::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
+	Props ret = st::props();
 	ret.push_back(cpplib::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
 	return ret;
 }
@@ -948,22 +948,26 @@ bool Warpable::isSelectable()const{return true;}
 
 void Warpable::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << warpdst;
-	sc.o << warpSpeed;
-	sc.o << totalWarpDist << currentWarpDist;
 	sc.o << capacitor; /* Temporarily stored energy, MegaJoules */
 	sc.o << warping;
-	sc.o << warpcs << warpdstcs;
+	if(warping){
+		sc.o << warpdst;
+		sc.o << warpSpeed;
+		sc.o << totalWarpDist << currentWarpDist;
+		sc.o << warpcs << warpdstcs;
+	}
 }
 
 void Warpable::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> warpdst;
-	sc.i >> warpSpeed;
-	sc.i >> totalWarpDist >> currentWarpDist;
 	sc.i >> capacitor; /* Temporarily stored energy, MegaJoules */
 	sc.i >> warping;
-	sc.i >> warpcs >> warpdstcs;
+	if(warping){
+		sc.i >> warpdst;
+		sc.i >> warpSpeed;
+		sc.i >> totalWarpDist >> currentWarpDist;
+		sc.i >> warpcs >> warpdstcs;
+	}
 }
 
 void Warpable::anim(double dt){

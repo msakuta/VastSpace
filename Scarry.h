@@ -28,6 +28,8 @@ public:
 //	Entity *const base;
 	BuildData buildque[SCARRY_BUILDQUESIZE];
 
+	static const Builder::BuildStatic *builder0[];
+	static const unsigned nbuilder0;
 	Builder() : build(0), nbuildque(0){}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

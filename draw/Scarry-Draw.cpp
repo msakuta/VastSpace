@@ -69,13 +69,17 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 	int fonth = getFontHeight();
 	int iy = 2;
 	if(tabindex == 0){
-		static const Builder::BuildStatic *builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&beamer_build, &assault_build*/};
-		int builderc[numof(builder0)] = {0}, builderi, j;
-		if(builder->nbuildque) for(j = 0; j < numof(builder0); j++){
-			if(top.st == builder0[j])
-				builderc[j] = top.num;
-			if(top.st == builder0[j])
-				builderi = j;
+		int *builderc = NULL, builderi, j;
+		if(builder->nbuildque){
+			builderc = new int[Builder::nbuilder0];
+			for(j = 0; j < Builder::nbuilder0; j++){
+				if(top.st == Builder::builder0[j])
+					builderc[j] = top.num;
+				else
+					builderc[j] = 0;
+				if(top.st == Builder::builder0[j])
+					builderi = j;
+			}
 		}
 		glColor4ub(255,255,255,255);
 		glwpos2d(xpos, ypos + (2 + iy++) * 12);
@@ -83,7 +87,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 
 		/* Mouse cursor highlights */
 		int mx = ws.mx - xpos, my = ws.my - ypos;
-		if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my && my < (1 + iy + numof(builder0)) * fonth){
+		if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my && my < (1 + iy + Builder::nbuilder0) * fonth){
 			glColor4ub(0,0,255,127);
 			glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
 		}
@@ -95,16 +99,23 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		}
 
 		glColor4ub(191,191,255,255);
+		for(j = 0; j < Builder::nbuilder0; j++){
+			const Builder::BuildStatic *sta = Builder::builder0[j];
+			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwprintf("%10s  %d  %lg RU", sta->name, builderc ? builderc[j] : 0, sta->cost);
+		}
 /*		glwpos2d(xpos, ypos + (2 + iy++) * 12);
 		glwprintf("Container    %d  %lg RU %lg dm^3", builderc[0], scontainer_build.cost, 1e-3 * scontainer_s.hitradius * scontainer_s.hitradius * scontainer_s.hitradius * 8 * 1e9);
 		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
 		glwprintf("Worker       %d  %lg RU %lg dm^3", builderc[1], worker_build.cost, 1e-3 * worker_s.hitradius * worker_s.hitradius * worker_s.hitradius * 8 * 1e9);*/
-		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
-		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc[0], sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * 8 * 1e9);
+/*		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc ? builderc[0] : 0, sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * 8 * 1e9);*/
 /*		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
 		glwprintf("Lancer Class %d  %lg RU %lg dm^3", builderc[3], beamer_build.cost, 1e-3 * beamer_s.hitradius * beamer_s.hitradius * beamer_s.hitradius * 8 * 1e9);
 		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
 		glwprintf("Sabre Class  %d  %lg RU %lg dm^3", builderc[4], assault_build.cost, 1e-3 * assault_s.hitradius * assault_s.hitradius * assault_s.hitradius * 8 * 1e9);*/
+		if(builder->nbuildque)
+			delete[] builderc;
 	}
 	else{
 		glColor4ub(255,255,255,255);
@@ -126,6 +137,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 }
 
 void GLWdock::draw(GLwindowState &ws, double t){
+	typedef Entity::Dockable Dockable;
 	int ix;
 	if(!docker)
 		return;
@@ -153,7 +165,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 		glColor4ub(255,255,255,255);
 	}
 
-	for(Dockable *e = docker->el; e; e = static_cast<Dockable*>(e->next)){
+	for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
 		if(height < (2 + iy) * fonth)
 			return;
 		glwpos2d(xpos, ypos + (2 + iy++) * fonth);

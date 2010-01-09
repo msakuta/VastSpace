@@ -150,6 +150,8 @@ std::vector<cpplib::dstring> Entity::props()const{
 double Entity::getRU()const{return 0.;}
 Builder *Entity::getBuilder(){return NULL;}
 Docker *Entity::getDocker(){return NULL;}
+bool Entity::dock(Docker*){return false;}
+bool Entity::undock(Docker*){return false;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
@@ -179,9 +181,8 @@ int Entity::popupMenu(PopupMenu &list){
 	return 0;
 }
 
-Warpable *Entity::toWarpable(){
-	return NULL;
-}
+Warpable *Entity::toWarpable(){return NULL;}
+Entity::Dockable *Entity::toDockable(){return NULL;}
 
 void Entity::transit_cs(CoordSys *cs){
 	Vec3d pos;

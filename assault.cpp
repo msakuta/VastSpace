@@ -33,7 +33,9 @@ Assault::Assault(WarField *aw) : st(aw){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
-		aw->addent(turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i])));
+		turrets[i] = (i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
+		if(aw)
+			aw->addent(turrets[i]);
 	}
 }
 
@@ -221,6 +223,40 @@ void Assault::attack(Entity *target){
 	for(int i = 0; i < numof(turrets); i++) if(turrets[i])
 		turrets[i]->attack(target);
 }
+
+bool Assault::undock(Docker *d){
+	if(!st::undock(d))
+		return false;
+//	task = scepter_undock;
+//	mother = d;
+	for(int i = 0; i < 4; i++) if(turrets[i])
+		d->w->addent(turrets[i]);
+	d->baycool += 2.;
+	return true;
+}
+
+Entity *Assault::create(WarField *w, Builder *mother){
+	Assault *ret = new Assault(NULL);
+	ret->pos = mother->pos;
+	ret->velo = mother->velo;
+	ret->rot = mother->rot;
+	ret->omg = mother->omg;
+	ret->race = mother->race;
+//	w->addent(ret);
+	return ret;
+}
+
+const Builder::BuildStatic Assault::builds = {
+	"Sabre class",
+	Assault::create,
+	100.,
+	600.,
+};
+
+
+
+
+
 
 
 

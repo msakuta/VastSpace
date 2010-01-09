@@ -12,7 +12,6 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 Serializable::~Serializable(){}
 
 void Serializable::serialize(SerializeContext &sc){
-	sc.o << classname();
 }
 
 void Serializable::unserialize(UnserializeContext &usc){
@@ -41,6 +40,7 @@ void Serializable::packSerialize(SerializeContext &sc){
 	sc.visits.insert(this);*/
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);
+	sc2.o << classname();
 	serialize(sc2);
 	sc.o.join(ss);
 	delete ss;

@@ -4,6 +4,8 @@
 #include "Player.h"
 #include "antiglut.h"
 #include "sceptor.h"
+#include "Assault.h"
+#include "Beamer.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -18,6 +20,8 @@ extern "C"{
 #define SQRT2P2 (M_SQRT2/2.)
 
 
+const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &Beamer::builds, &Assault::builds};
+const unsigned Builder::nbuilder0 = numof(builder0);
 
 void Builder::serialize(SerializeContext &sc){
 	// Do NOT call Entity::serialize here because this class is a branch class.
@@ -112,6 +116,11 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		if(sel0) p->tabindex = 0;
 		if(sel1) p->tabindex = 1;
 		if(p->tabindex == 0){
+#if 1
+			if(0 <= ind && ind < Builder::nbuilder0){
+				builder->addBuild(builder->builder0[ind]);
+			}
+#else
 			if(0 <= ind && ind < 1) for(i = 0; i < num; i++) switch(ind){
 				case 0:
 /*					add_buildque(p->p, &scontainer_build);
@@ -145,6 +154,7 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 						add_buildque(p->p, &assault_build);
 					break;*/
 			}
+#endif
 		}
 		else{
 			if(builder->build != 0. && ind == 0 || ind == 1){
@@ -230,7 +240,7 @@ void Docker::anim(double dt){
 	while(undockque && baycool < dt){
 		Entity *next = undockque->next;
 		undock(undockque);
-		undockque = static_cast<Dockable*>(next);
+		undockque = next ? next->toDockable() : NULL;
 	}
 
 	if(baycool < dt){
@@ -242,17 +252,16 @@ void Docker::anim(double dt){
 
 void Docker::dock(Dockable *e){
 	e->dock(this);
-	e->docker = this;
 	e->next = el;
 	el = e;
 }
 
 bool Docker::postUndock(Dockable *e){
-	Entity **pp;
-	for(pp = reinterpret_cast<Entity**>(&el); *pp; pp = (&(*pp)->next)) if(*pp == e){
-		*pp = (e->next);
-		Entity **qend = reinterpret_cast<Entity**>(&undockque);
-		if(*qend) for(; *qend; qend = &(*qend)->next); // Search until end
+	Dockable **pp;
+	for(pp = &el; *pp; pp = reinterpret_cast<Dockable**>(&(*pp)->next)) if(*pp == e){
+		*pp = reinterpret_cast<Dockable*>(e->next);
+		Dockable **qend = &undockque;
+		if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
 		*qend = e;
 		e->next = NULL; // Appending to end means next is equal to NULL
 		return true;
@@ -277,7 +286,7 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
 		for(Entity *e = docker->el; e; e = e->next) if(!ind--){
-			docker->postUndock(static_cast<Dockable*>(e));
+			docker->postUndock(e->toDockable());
 			break;
 		}
 		return 1;
@@ -335,6 +344,7 @@ void Scarry::init(){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];
+	mass = 1e6;
 }
 
 const char *Scarry::idname()const{return "scarry";}
@@ -470,7 +480,16 @@ const int Scarry::nhitboxes = numof(Scarry::hitboxes);
 
 
 void Scarry::doneBuild(Entity *e){
-	dock(static_cast<Dockable*>(e));
+	Dockable *d = e->toDockable();
+	if(d)
+		dock(d);
+	else{
+		e->w = this->w;
+		w->addent(e);
+		e->pos = pos + rot.trans(Vec3d(-.10, 0.05, 0));
+		e->velo = velo;
+		e->rot = rot;
+	}
 /*	e->pos = pos + rot.trans(Vec3d(-.15, 0.05, 0));
 	e->velo = velo;
 	e->rot = rot;

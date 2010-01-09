@@ -18,6 +18,7 @@ class Docker;
 class Entity : public Serializable{
 public:
 	typedef Serializable st;
+	typedef Entity Dockable;
 	typedef std::vector<cpplib::dstring> Props;
 	Entity(WarField *aw = NULL);
 	static Entity *create(const char *cname, WarField *w);
@@ -43,6 +44,7 @@ public:
 	virtual void bullethole(sufindex, double rad, const Vec3d &pos, const Quatd &rot);
 	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
+	virtual Dockable *toDockable();
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const = 0;
 	virtual bool isSelectable()const;
@@ -53,6 +55,8 @@ public:
 	virtual double getRU()const;
 	virtual Builder *getBuilder();
 	virtual Docker *getDocker();
+	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
+	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

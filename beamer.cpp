@@ -63,12 +63,17 @@ Frigate::Frigate(WarField *aw) : st(aw){
 }
 
 Beamer::Beamer(WarField *aw) : st(aw){
+	init();
+}
+
+void Beamer::init(){
 	charge = 0.;
 //	dock = NULL;
 	undocktime = 0.f;
 	cooldown = 0.;
 	integral.clear();
 	health = maxhealth();
+	mass = 1e5;
 }
 
 const char *Beamer::idname()const{
@@ -196,7 +201,9 @@ void Frigate::anim(double dt){
 
 }
 double Frigate::hitradius(){return .1;}
+Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::maneuve &Frigate::getManeuve()const{return beamer_mn;}
+
 void Beamer::anim(double dt){
 	Mat4d mat;
 
@@ -994,6 +1001,24 @@ Entity::Props Beamer::props()const{
 	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
+
+Entity *Beamer::create(WarField *w, Builder *mother){
+	Beamer *ret = new Beamer(NULL);
+	ret->pos = mother->pos;
+	ret->velo = mother->velo;
+	ret->rot = mother->rot;
+	ret->omg = mother->omg;
+	ret->race = mother->race;
+//	w->addent(ret);
+	return ret;
+}
+
+const Builder::BuildStatic Beamer::builds = {
+	"Lancer class",
+	Beamer::create,
+	100.,
+	600.,
+};
 
 
 

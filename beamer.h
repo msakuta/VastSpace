@@ -1,6 +1,7 @@
 #ifndef BEAMER_H
 #define BEAMER_H
 #include "Frigate.h"
+#include "Scarry.h"
 
 class Beamer : public Frigate{
 public:
@@ -16,8 +17,9 @@ protected:
 	static suf_t *sufbase;
 	static const double sufscale;
 public:
-	Beamer(){}
+	Beamer(){init();}
 	Beamer(WarField *w);
+	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
 	static const unsigned classid;
@@ -30,6 +32,8 @@ public:
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	static void cache_bridge(void);
+	static Entity *create(WarField *w, Builder *);
+	static const Builder::BuildStatic builds;
 };
 
 #endif

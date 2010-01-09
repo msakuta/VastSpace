@@ -116,11 +116,12 @@ protected:
 
 class SerializeContext{
 public:
-	SerializeContext(SerializeStream &ao, SerializeMap &amap, Serializable *&avisit_list) : o(ao), map(amap), visit_list(avisit_list){}
-	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visit_list(copy_src.visit_list){}
+	SerializeContext(SerializeStream &ao, SerializeMap &amap, Serializable *&avisit_list) : o(ao), map(amap), visit_list(avisit_list), trunk(true){}
+	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visit_list(copy_src.visit_list), trunk(true){}
 	SerializeStream &o;
 	SerializeMap &map;
 	Serializable *&visit_list;
+	bool trunk; // Whether processing node in class inheritance graph is trunk (base virtual class) or branch (no base serialization).
 };
 
 inline SerializeStream &SerializeStream::operator<<(const Serializable *p){

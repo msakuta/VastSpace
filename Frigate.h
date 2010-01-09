@@ -21,9 +21,10 @@ public:
 	virtual int takedamage(double damage, int hitpart);
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual std::vector<cpplib::dstring> props()const;
+	virtual Props props()const;
 	virtual const maneuve &getManeuve()const;
 	virtual double maxenergy()const, maxshield()const;
+	virtual Dockable *toDockable();
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 };

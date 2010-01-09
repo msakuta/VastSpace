@@ -40,12 +40,7 @@ extern "C"{
 #define SCEPTER_MAX_GIBS 20
 #define BULLETSPEED 2.
 
-void Dockable::dock(Docker *d){
-	docker = d;
-}
-
-void Dockable::undock(Docker *d){
-}
+Entity::Dockable *Sceptor::toDockable(){return this;}
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
@@ -199,7 +194,7 @@ Entity::Props Sceptor::props()const{
 	return ret;
 }
 
-void Sceptor::undock(Docker *d){
+bool Sceptor::undock(Docker *d){
 	st::undock(d);
 	task = scepter_undock;
 	mother = d;
@@ -207,6 +202,7 @@ void Sceptor::undock(Docker *d){
 		ImmobilizeTefpol3D(this->pf);
 	this->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
 	d->baycool += 2.;
+	return true;
 }
 
 /*

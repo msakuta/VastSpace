@@ -960,8 +960,12 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	double best = dt, retf;
 	int reti = 0, i, n;
 	if(0 < p->shieldAmount){
-		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, retp))
+		Vec3d hitpos;
+		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, &hitpos)){
+			if(retp) *retp = hitpos;
+			if(retn) *retn = (hitpos - pos).norm();
 			return 1000; /* something quite unlikely to reach */
+		}
 	}
 	for(n = 0; n < nhitboxes; n++){
 		Vec3d org;
@@ -979,13 +983,13 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	return reti;
 }
 
-std::vector<cpplib::dstring> Frigate::props()const{
+Entity::Props Frigate::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
 	return ret;
 }
 
-std::vector<cpplib::dstring> Beamer::props()const{
+Entity::Props Beamer::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
 	return ret;

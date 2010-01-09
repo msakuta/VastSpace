@@ -29,6 +29,7 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
+#include <gl/glext.h>
 #include <assert.h>
 #include <string.h>
 
@@ -303,5 +304,34 @@ void Sceptor::drawtra(wardraw_t *wd){
 		}
 	}
 #endif
+
+	if(mf) for(int i = 0; i < 2; i++){
+		Vec3d pos = rot.trans(Vec3d(scepter_guns[i])) + this->pos;
+		static GLuint texname = 0;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			stp.wraps = GL_CLAMP_TO_BORDER;
+			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+/*		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glRotatef(-90, 0, 0, 1);
+		glMatrixMode(GL_MODELVIEW);*/
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = mf / .1 * 2., fi = 1. - mf / .1;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
+/*		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);*/
+		glPopAttrib();
+	}
 }
 

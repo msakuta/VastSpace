@@ -239,30 +239,30 @@ coordsys Orbit marss{
 #		addent scarry 0 0 -4
 #		addent beamer .1 0 0
 #		addent beamer -.1 0 0
-		addent assault -.2 0 0 
-		addent assault -.2 0 -1 1
+#		addent assault -.2 0 0 
+		addent assault -.3 0 -1 1
 		addent assault -.0 0 -1 1
-		addent assault .2 0 -1 1
-		addent assault .4 0 -1 1
-#		addent sceptor -.4 .1 0
-#		addent sceptor -.3 .1 0
-#		addent sceptor -.2 .1 0
-#		addent sceptor -.1 .1 0
-#		addent sceptor 0 .1 0
-#		addent sceptor .1 .1 0
-#		addent sceptor .2 .1 0
-#		addent sceptor .3 .1 0
-#		addent sceptor .4 .1 0
-#		addent sceptor -.4 -.1 0
-#		addent sceptor -.3 -.1 0
+		addent assault .3 0 -1 1
+#		addent assault .6 0 -1 1
+		addent sceptor -.4 .1 0
+		addent sceptor -.3 .1 0
+		addent sceptor -.2 .1 0
+		addent sceptor -.1 .1 0
+		addent sceptor 0 .1 0
+		addent sceptor .1 .1 0
+		addent sceptor .2 .1 0
+		addent sceptor .3 .1 0
+		addent sceptor .4 .1 0
+		addent sceptor -.4 -.1 0
+		addent sceptor -.3 -.1 0
 		addent sceptor -.2 -.1 0
 		addent sceptor -.1 -.1 0
 		addent sceptor 0 -.1 0
 		addent sceptor .1 -.1 0
 		addent sceptor .2 -.1 0
-#		addent sceptor .3 -.1 0
-#		addent sceptor .4 -.1 0
-#		addent rstation 0 -2 0
+		addent sceptor .3 -.1 0
+		addent sceptor .4 -.1 0
+		addent rstation 0 -3 1 -1
 
 		new astro Asteroid BigWatcher{
 			pos 0 12 -20
@@ -586,10 +586,10 @@ coordsys Orbit pluto{
 		warp
 		teleport "Pluto Low Orbit" 10 0 0
 		rstation
-		addent assault 3 -3 3 1
-		addent assault 3 3 3 1
-		addent beamer 3 -3 -3 1
-		addent beamer 3 3 -3 1
+#		addent assault 3 -3 3 1
+#		addent assault 3 3 3 1
+#		addent beamer 3 -3 -3 1
+#		addent beamer 3 3 -3 1
 #		addent scarry 0 0 -10 1
 	}
 

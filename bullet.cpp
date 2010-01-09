@@ -867,7 +867,7 @@ void Bullet::drawtra(wardraw_t *wd){
 	if(pixels < 2)
 		return;
 
-	wpix = width * scale / 2.;
+	wpix = width * scale;
 
 	/*	glLineWidth((GLfloat)m / DISTANCE(view, pb->pos));*/
 	if(/*VECSDIST(pb->pos, wd->view) < .2 * .2*/ 1 < wpix){
@@ -876,7 +876,7 @@ void Bullet::drawtra(wardraw_t *wd){
 		start = this->pos;
 		end = this->pos;
 		end += this->velo * -(runlength / velolen < length ? runlength / velolen : length);
-		if(damage < 100.){
+		if(damage < 500.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
 			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
@@ -936,7 +936,7 @@ void Bullet::drawtra(wardraw_t *wd){
 	}
 	else if(.05 < wpix){
 		glBegin(GL_LINES);
-		glColor4d(1., .5, 0., wpix);
+		glColor4d(1., .75, .25, wpix);
 		glVertex3dv(pos);
 		glVertex3dv(pos - velo * (runlength / velolen < length ? runlength / velolen : length));
 		glEnd();

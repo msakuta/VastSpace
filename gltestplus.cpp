@@ -630,6 +630,7 @@ void display_func(void){
 		MultiTextureInit();
 
 //		anim_sun(0.);
+		universe.anim(0.);
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
 	}

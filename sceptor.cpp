@@ -32,7 +32,7 @@ extern "C"{
 
 #define SCEPTER_SCALE 1./10000
 #define SCEPTER_SMOKE_FREQ 20.
-#define SCEPTER_RELOADTIME .3
+#define SCEPTER_RELOADTIME .2
 #define SCEPTER_ROLLSPEED (.2 * M_PI)
 #define SCEPTER_ROTSPEED (.3 * M_PI)
 #define SCEPTER_MAX_ANGLESPEED (M_PI * .5)
@@ -110,7 +110,7 @@ const char *Sceptor::dispname()const{
 };
 
 double Sceptor::maxhealth()const{
-	return 100.;
+	return 700.;
 }
 
 
@@ -130,10 +130,10 @@ enum Sceptor::Task{
 
 
 
-Sceptor::Sceptor() : mother(NULL){
+Sceptor::Sceptor() : mother(NULL), mf(0){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(maxfuel()){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(maxfuel()), mf(0){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &scepter_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -163,7 +163,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(
 	}*/
 }
 
-const avec3_t scepter_guns[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}, {-35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}};
+const avec3_t Sceptor::scepter_guns[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}, {-35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}};
 
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
@@ -227,7 +227,7 @@ void Sceptor::shootDualGun(double dt){
 	do{
 		Bullet *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, 5.);
+		pb = new Bullet(this, 5, 10.);
 		w->addent(pb);
 		pb->pos = mat.vp3(scepter_guns[i]);
 /*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
@@ -244,6 +244,7 @@ void Sceptor::shootDualGun(double dt){
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	this->cooldown += SCEPTER_RELOADTIME;
+	this->mf = .1;
 }
 
 // find the nearest enemy
@@ -271,36 +272,72 @@ bool Sceptor::findEnemy(){
 
 #if 1
 static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
-	if(((Entity**)param->hint)[0] == pt || ((Entity**)param->hint)[1] == pt)
+	Entity *pt2 = (Entity*)param->hint;
+	if(pt == pt2)
 		return 0;
-	else return 1;
+	const double &dt = param->dt;
+	Vec3d dr = pt->pos - pt2->pos;
+	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double sr = (r + r2) * (r + r2);
+	if(r * 2. < r2){
+		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
+			return 0;
+	}
+	else if(r2 * 2. < r){
+		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, NULL))
+			return 0;
+	}
+
+	return 1;
+}
+
+static void space_collide_reflect(Entity *pt, const Vec3d &netvelo, const Vec3d &n, double f){
+	Vec3d dv = pt->velo - netvelo;
+	if(dv.sp(n) < 0)
+		pt->velo = -n * dv.sp(n) + netvelo;
+	else
+		pt->velo += n * f;
 }
 
 static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	const double ff = .2;
-		Vec3d dr = pt->pos - pt2->pos;
-		double sd = dr.slen();
-		double r = pt->hitradius(), r2 = pt2->hitradius();
-		double sr = (r + r2) * (r + r2);
-		double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-		Vec3d n;
-		if(r < r2){
-			if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
-				return;
-		}
-		else{
-			if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
-				return;
-			n *= -1;
-		}
-		if(1. < f) /* prevent oscillation */
-			f = 1.;
+	Vec3d dr = pt->pos - pt2->pos;
+	double sd = dr.slen();
+	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double sr = (r + r2) * (r + r2);
+	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
+	Vec3d n;
 
-		// terminate closing velocity component
-		if(pt->velo.sp(n) < 0)
-			pt->velo -= n * pt->velo.sp(n);
-		else
-			pt->velo += n * f;
+	// If bounding spheres are not intersecting each other, no resolving is performed.
+	// Object tree should discard such cases, but that must be ensured here when the tree
+	// is yet to be built.
+	if(sr < sd)
+		return;
+
+	if(r * 2. < r2){
+		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
+			return;
+	}
+	else if(r2 * 2. < r){
+		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
+			return;
+		n *= -1;
+	}
+	else{
+		n = dr.norm();
+	}
+	if(1. < f) /* prevent oscillation */
+		f = 1.;
+
+	// Aquire momentum of center of mass
+	Vec3d netmomentum = pt->velo * pt->mass + pt2->velo * pt2->mass;
+
+	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
+	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
+
+	// terminate closing velocity component
+	space_collide_reflect(pt, netvelo, n, f);
+	space_collide_reflect(pt2, netvelo, -n, f);
 }
 
 void space_collide(Entity *pt, WarField *w, double dt, Entity *collideignore, Entity *collideignore2){
@@ -316,9 +353,10 @@ void space_collide(Entity *pt, WarField *w, double dt, Entity *collideignore, En
 		param.rad = pt->hitradius();
 		param.pos = NULL;
 		param.norm = NULL;
-		param.flags = OTJ_IGLIST | OTJ_IGVFT;
-/*		param.callback = space_collide_callback;
-		param.hint = iglist;*/
+		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
+		param.callback = space_collide_callback;
+/*		param.hint = iglist;*/
+		param.hint = pt;
 		param.iglist = iglist;
 		param.niglist = 3;
 //		param.igvft = igvft;
@@ -1068,6 +1106,12 @@ void Sceptor::anim(double dt){
 			pt->pos += pt->velo * dt;
 		}
 	}
+
+	if(mf < dt)
+		mf = 0.;
+	else
+		mf -= dt;
+
 	st::anim(dt);
 //	movesound3d(pf->hitsound, pt->pos);
 }

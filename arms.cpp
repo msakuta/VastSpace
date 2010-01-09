@@ -13,6 +13,7 @@
 //#include "walk.h"
 #include "bullet.h"
 #include "serial_util.h"
+#include "material.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -24,6 +25,7 @@ extern "C"{
 #include <clib/zip/UniformLoader.h>
 }
 #include <limits.h>
+#include <gl/glext.h>
 
 const char *hardpoint_static::classname()const{
 	return "hardpoint_static";
@@ -347,8 +349,9 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 		phi = -atan2(ldelta[2], ldelta[0]);
 		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
 
+		// Weigh already targetted enemy to keep shooting single enemy.
 		if(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]
-			&& (sdist = (pt2->pos - pb->pos).slen()) < best)
+			&& (sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.)) < best)
 		{
 			best = sdist;
 			closest = pt2;
@@ -366,7 +369,7 @@ void MTurret::tryshoot(){
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;
-	pz = new Bullet(base, 3., 80.);
+	pz = new Bullet(base, 3., 120.);
 	w->addent(pz);
 	Mat4d mat2;
 	base->transform(mat2);
@@ -379,7 +382,7 @@ void MTurret::tryshoot(){
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();
-	this->mf += .1;
+	this->mf += .2;
 	ammo--;
 }
 
@@ -488,6 +491,25 @@ void MTurret::drawtra(wardraw_t *wd){
 		rot = mat;
 		rot.vec3(3).clear();
 		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);
+
+		static GLuint texname = 0;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			stp.wraps = GL_CLAMP_TO_BORDER;
+			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = mf / .1, fi = 1. - mf / .2;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .075 * fi, .02 * fi);
+		glPopAttrib();
 	}
 }
 
@@ -613,6 +635,25 @@ void GatlingTurret::drawtra(wardraw_t *wd){
 		rot = mat;
 		rot.vec3(3).clear();
 		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
+
+		static GLuint texname = 0;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			stp.wraps = GL_CLAMP_TO_BORDER;
+			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = mf / .075 * 2, fi = 1. - mf / .075;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .03 * fi, .01 * fi);
+		glPopAttrib();
 	}
 }
 

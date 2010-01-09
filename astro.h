@@ -89,7 +89,7 @@ public:
 	Player *ppl;
 	bool paused;
 
-	Universe(Player *pl) : ppl(pl), paused(false), timescale(1), global_time(0){
+	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0){
 		name = NULL;
 		fullname = NULL;
 		flags = CS_ISOLATED | CS_EXTENT;

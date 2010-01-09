@@ -71,7 +71,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 	if(tabindex == 0){
 		static const Builder::BuildStatic *builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&beamer_build, &assault_build*/};
 		int builderc[numof(builder0)] = {0}, builderi, j;
-		for(j = 0; j < numof(builder0); j++){
+		if(builder->nbuildque) for(j = 0; j < numof(builder0); j++){
 			if(top.st == builder0[j])
 				builderc[j] = top.num;
 			if(top.st == builder0[j])
@@ -89,7 +89,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		}
 
 		/* Progress bar of currently building item */
-		if(builder->build){
+		if(builder->nbuildque && builder->build){
 			glColor4ub(0,127,0,255);
 			glRecti(xpos, ypos + (builderi + iy + 1) * fonth + 8, xpos + (1. - builder->build / top.st->buildtime) * width, ypos + (builderi + iy + 1) * fonth + fonth);
 		}

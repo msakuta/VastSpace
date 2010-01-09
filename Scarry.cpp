@@ -19,6 +19,24 @@ extern "C"{
 
 
 
+void Builder::serialize(SerializeContext &sc){
+	// Do NOT call Entity::serialize here because this class is a branch class.
+	sc.o << build;
+	sc.o << nbuildque;
+	for(int i = 0; i < nbuildque; i++){
+		sc.o << buildque[i].num/* << buildque[i].st*/;
+	}
+}
+
+void Builder::unserialize(UnserializeContext &sc){
+	// Do NOT call Entity::unserialize here because this class is a branch class.
+	sc.i >> build;
+	sc.i >> nbuildque;
+	for(int i = 0; i < nbuildque; i++){
+		sc.i >> buildque[i].num/* >> buildque[i].st*/;
+		buildque[i].st = &sceptor_build;
+	}
+}
 
 bool Builder::addBuild(const BuildStatic *st){
 	if(numof(buildque) <= nbuildque && buildque[nbuildque-1].st != st)
@@ -185,6 +203,29 @@ Docker::~Docker(){
 	}
 }
 
+void Docker::serialize(SerializeContext &sc){
+	// Do NOT call Entity::serialize here because this class is a branch class.
+	sc.o << baycool;
+	sc.o << el;
+	sc.o << undockque;
+}
+
+void Docker::unserialize(UnserializeContext &sc){
+	// Do NOT call Entity::unserialize here because this class is a branch class.
+	sc.i >> baycool;
+	sc.i >> el;
+	sc.i >> undockque;
+}
+
+void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	// Do NOT call st::dive here because this class is a virtual branch class.
+	(this->*method)(sc);
+	if(el)
+		el->dive(sc, method);
+	if(undockque)
+		undockque->dive(sc, method);
+}
+
 void Docker::anim(double dt){
 	while(undockque && baycool < dt){
 		Entity *next = undockque->next;
@@ -305,12 +346,21 @@ void Scarry::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
+	Builder::serialize(sc);
+	Docker::serialize(sc);
 }
 
 void Scarry::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
+	Builder::unserialize(sc);
+	Docker::unserialize(sc);
+}
+
+void Scarry::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	Docker::dive(sc, method);
 }
 
 const char *Scarry::dispname()const{

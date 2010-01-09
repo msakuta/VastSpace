@@ -48,7 +48,7 @@ protected:
 	bool docked, returning, away, cloak;
 	float mf; // trivial muzzle flashes
 
-	static const avec3_t scepter_guns[2];
+	static const avec3_t gunPos[2];
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 public:

@@ -13,6 +13,10 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), 
 }
 
 Player::~Player(){
+	free();
+}
+
+void Player::free(){
 	if(tplist){
 		for(int i = 0; i < ntplist; i++)
 			tplist[i].teleport::~teleport();

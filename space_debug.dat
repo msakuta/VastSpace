@@ -26,9 +26,9 @@ coordsys Orbit sunlo{
 	warp
 	teleport
 	rstation
-	addent beamer
-	addent assault .2 .5 .7
-	addent assault .2 .5 .3
+#	addent beamer
+#	addent assault .2 .5 .7
+#	addent assault .2 .5 .3
 	addent scarry -1 -1 -1
 #	addent sceptor 0 1 1
 }

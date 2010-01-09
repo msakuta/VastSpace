@@ -26,13 +26,15 @@ public:
 	double build;
 	int nbuildque;
 //	Entity *const base;
-	virtual void doneBuild(Entity *child);
 	BuildData buildque[SCARRY_BUILDQUESIZE];
 
 	Builder() : build(0), nbuildque(0){}
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	bool addBuild(const BuildStatic *);
 	bool cancelBuild(int index);
 	void anim(double dt);
+	virtual void doneBuild(Entity *child);
 };
 
 class GLWbuild : public GLwindowSizeable{
@@ -64,6 +66,9 @@ public:
 
 	Docker() : baycool(0), el(NULL), undockque(NULL){}
 	~Docker();
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	void anim(double dt);
 	void dock(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
@@ -105,6 +110,7 @@ public:
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual const char *dispname()const;
 	virtual double maxhealth()const;
 	virtual double hitradius();

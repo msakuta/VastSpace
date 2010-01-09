@@ -101,8 +101,11 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak;
 
-	// Re-create temporary entity
-	pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
+	if(w)
+		pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	else
+		pf = NULL;
 }
 
 const char *Sceptor::dispname()const{
@@ -163,7 +166,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(
 	}*/
 }
 
-const avec3_t Sceptor::scepter_guns[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}, {-35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}};
+const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}, {-35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}};
 
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
@@ -229,7 +232,7 @@ void Sceptor::shootDualGun(double dt){
 		double phi, theta;
 		pb = new Bullet(this, 5, 10.);
 		w->addent(pb);
-		pb->pos = mat.vp3(scepter_guns[i]);
+		pb->pos = mat.vp3(gunPos[i]);
 /*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
 		theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
 		VECCPY(pb->velo, pt->velo);

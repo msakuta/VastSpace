@@ -43,6 +43,7 @@ public:
 	double velolen; /* trivial; performance keeper */
 	double height; /* trivial; indicates air pressure surrounding the player */
 
+	void free(); // Frees internal memories but keep the object memory
 	Quatd getrot()const;
 	Vec3d getpos()const;
 	const char *classname()const; // returned string storage must be static

@@ -306,7 +306,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 #endif
 
 	if(mf) for(int i = 0; i < 2; i++){
-		Vec3d pos = rot.trans(Vec3d(scepter_guns[i])) + this->pos;
+		Vec3d pos = rot.trans(Vec3d(gunPos[i])) + this->pos;
 		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		if(!texname){

@@ -57,14 +57,14 @@ bool Builder::addBuild(const BuildStatic *st){
 	return true;
 }
 
-bool Builder::cancelBuild(int index){
+bool Builder::cancelBuild(int index, bool recalc){
 	if(index < 0 || nbuildque <= index)
 		return false;
 	if(!--buildque[index].num){
 		::memmove(&buildque[index], &buildque[index+1], (--nbuildque - index) * sizeof *buildque);
-		if(index == 0)
-			build = buildque[0].st->buildtime;
 	}
+	if(recalc && index == 0 && nbuildque)
+		build = buildque[0].st->buildtime;
 	return true;
 }
 
@@ -77,7 +77,7 @@ void Builder::anim(double dt){
 		dt -= build;
 		Entity *created = buildque[0].st->create(this->w, this);
 		doneBuild(created);
-		cancelBuild(0);
+		cancelBuild(0, false);
 		build += buildque[0].st->buildtime;
 	}
 	if(nbuildque)
@@ -218,6 +218,7 @@ void Docker::serialize(SerializeContext &sc){
 	sc.o << baycool;
 	sc.o << el;
 	sc.o << undockque;
+	sc.o << paradec;
 }
 
 void Docker::unserialize(UnserializeContext &sc){
@@ -225,6 +226,7 @@ void Docker::unserialize(UnserializeContext &sc){
 	sc.i >> baycool;
 	sc.i >> el;
 	sc.i >> undockque;
+	sc.i >> paradec;
 }
 
 void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){

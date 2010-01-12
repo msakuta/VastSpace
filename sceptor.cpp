@@ -74,7 +74,8 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << dest;
 	sc.o << fcloak;
 	sc.o << heat;
-//	sc.o << mother; // Mother ship
+	sc.o << static_cast<Serializable*>(mother); // Mother ship
+	sc.o << (long)(static_cast<Docker*>(mother) - mother);
 //	sc.o << hitsound;
 	sc.o << paradec;
 	sc.o << (int)task;
@@ -83,6 +84,8 @@ void Sceptor::serialize(SerializeContext &sc){
 
 void Sceptor::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	Entity *mother;
+	long d;
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
 	sc.i >> fuel;
@@ -90,11 +93,14 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> dest;
 	sc.i >> fcloak;
 	sc.i >> heat;
-//	sc.i >> mother; // Mother ship
+	sc.i >> mother; // Mother ship
+	sc.i >> d;
 //	sc.i >> hitsound;
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak;
+
+	this->mother = (Docker*)&((char*)mother)[d];
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	if(w)
@@ -113,25 +119,25 @@ double Sceptor::maxhealth()const{
 
 
 enum Sceptor::Task{
-	scepter_idle = sship_idle,
-	scepter_undock = sship_undock,
-	scepter_undockque = sship_undockque,
-	scepter_dock = sship_dock,
-	scepter_dockque = sship_dockque,
-	scepter_moveto = sship_moveto,
-	scepter_parade = sship_parade,
-	scepter_attack = sship_attack,
-	scepter_away = sship_away,
-	num_scepter_task
+	Idle = sship_idle,
+	Undock = sship_undock,
+	Undockque = sship_undockque,
+	Dock = sship_dock,
+	Dockque = sship_dockque,
+	Moveto = sship_moveto,
+	Parade = sship_parade,
+	Attack = sship_attack,
+	Away = sship_away,
+	num_sceptor_task
 };
 
 
 
 
-Sceptor::Sceptor() : mother(NULL), mf(0){
+Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(maxfuel()), mf(0){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel()), mf(0), paradec(-1){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &scepter_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -150,7 +156,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(scepter_idle), fuel(
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->task = scepter_idle;
+	p->task = Idle;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -196,12 +202,12 @@ Entity::Props Sceptor::props()const{
 
 bool Sceptor::undock(Docker *d){
 	st::undock(d);
-	task = scepter_undock;
+	task = Undock;
 	mother = d;
 	if(this->pf)
 		ImmobilizeTefpol3D(this->pf);
 	this->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
-	d->baycool += 2.;
+	d->baycool += 1.;
 	return true;
 }
 
@@ -625,12 +631,13 @@ void Sceptor::anim(double dt){
 
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
+		bool controlled = w->pl->control == this;
 		int parking = 0;
 		Entity *collideignore = NULL;
-		if(w->pl->control != pt)
+		if(!controlled)
 			pt->inputs.press = 0;
 		if(pf->docked);
-		else if(p->task == scepter_undockque){
+		else if(p->task == Undockque){
 /*			if(pm->w != w){
 				if(p->pf){
 					ImmobilizeTefpol3D(p->pf);
@@ -708,9 +715,9 @@ void Sceptor::anim(double dt){
 				trigger = 0;
 			}*/
 
-			if(p->task == scepter_undock){
+			if(p->task == Undock){
 				if(!p->mother)
-					p->task = scepter_idle;
+					p->task = Idle;
 				else{
 					double sp;
 					Vec3d dm = this->pos - mother->pos;
@@ -718,33 +725,33 @@ void Sceptor::anim(double dt){
 					sp = -mzh.sp(dm);
 					p->throttle = 1.;
 					if(1. < sp)
-						p->task = scepter_parade;
+						p->task = Parade;
 				}
 			}
 			else if(w->pl->control != pt) do{
-				if(!pt->enemy || p->task == scepter_idle || p->task == scepter_parade){
+				if(!pt->enemy || p->task == Idle || p->task == Parade){
 					if(p->mother && mother->enemy){
 						pt->enemy = mother->enemy;
-						p->task = scepter_attack;
+						p->task = Attack;
 					}
 					else if(findEnemy()){
-						p->task = scepter_attack;
+						p->task = Attack;
 					}
 				}
-				else if(p->task == scepter_moveto){
-					avec3_t target, dr;
+				else if(p->task == Moveto){
+					Vec3d target;
 					Quatd q2, q1;
-					VECSUB(dr, pt->pos, p->dest);
-					if(VECSLEN(dr) < .03 * .03){
+					Vec3d dr = pt->pos - p->dest;
+					if(dr.slen() < .03 * .03){
 						q1 = Quatd(0,0,0,1);
 //						QUATCPY(q1, pm->rot);
 						p->throttle = 0.;
 						parking = 1;
-						VECSADD(pt->velo, dr, -dt * .5);
-						p->task = scepter_idle;
+						pt->velo += dr * -dt * .5;
+						p->task = Idle;
 					}
 					else{
-						p->throttle = VECSLEN(dr) / 5. + .03;
+						p->throttle = dr.slen() / 5. + .03;
 						q1 = Quatd::direction(dr);
 					}
 					q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
@@ -752,40 +759,40 @@ void Sceptor::anim(double dt){
 					if(1. < p->throttle)
 						p->throttle = 1.;
 				}
-				else if(pt->enemy && (p->task == scepter_attack || p->task == scepter_away)){
+				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
 					double sx, sy, len, len2, maxspeed = SCEPTER_MAX_ANGLESPEED * dt;
-					aquat_t qres, qrot;
+					Quatd qres, qrot;
 					if(p->fuel < 30.){
-						p->task = scepter_dockque;
+						p->task = Dockque;
 						break;
 					}
 /*					VECSUB(dv, pt->enemy->pos, pt->pos);*/
-					VECCPY(dv, delta);
-					if(p->task == scepter_attack && VECSLEN(dv) < (pt->enemy->hitradius() * 1.2 + .5) * (pt->enemy->hitradius() * 1.2 + .5)){
-						p->task = scepter_away;
+					dv = delta;
+					if(p->task == Attack && dv.slen() < (pt->enemy->hitradius() * 1.2 + .5) * (pt->enemy->hitradius() * 1.2 + .5)){
+						p->task = Away;
 					}
-					else if(p->task == scepter_away && 5. * 5. < VECSLEN(dv)){
-						p->task = scepter_attack;
+					else if(p->task == Away && 5. * 5. < dv.slen()){
+						p->task = Attack;
 					}
-					VECNORMIN(dv);
+					dv.normin();
 					forward = pt->rot.trans(avec3_001);
-					if(p->task == scepter_attack)
-						VECSCALEIN(forward, -1);
+					if(p->task == Attack)
+						forward *= -1;
 		/*				sx = VECSP(&mat[0], dv);
 					sy = VECSP(&mat[4], dv);
 					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 					p->throttle = 1.;
 					{
-						avec3_t randomvec;
+						Vec3d randomvec;
 						for(i = 0; i < 3; i++)
 							randomvec[i] = drseq(&w->rs) - .5;
-						VECSADD(pt->velo, randomvec, dt * .5);
+						pt->velo += randomvec * dt * .5;
 					}
-					if(p->task == scepter_attack || VECSP(forward, dv) < -.5){
-						VECVP(xh, forward, dv);
-						len = len2 = VECLEN(xh);
+					if(p->task == Attack || forward.sp(dv) < -.5){
+						xh = forward.vp(dv);
+						len = len2 = xh.len();
 						len = asin(len);
 						if(maxspeed < len){
 							len = maxspeed;
@@ -793,58 +800,64 @@ void Sceptor::anim(double dt){
 						len = sin(len / 2.);
 						if(len && len2){
 							Vec3d omg, laac;
-							VECSCALE(qrot, xh, len / len2);
+							qrot = xh * len / len2;
 							qrot[3] = sqrt(1. - len * len);
-							QUATMUL(qres, qrot, pt->rot);
-							QUATNORM(pt->rot, qres);
+							qres = qrot * pt->rot;
+							pt->rot = qres.norm();
 
 							/* calculate angular acceleration for displaying thruster bursts */
-							VECSCALE(omg, qrot, 1. / dt);
-							VECSUB(p->aac, omg, pt->omg);
-							VECSCALEIN(p->aac, 1. / dt);
-							VECCPY(pt->omg, omg);
+							omg = qrot.operator Vec3d&() * 1. / dt;
+							p->aac = omg - pt->omg;
+							p->aac *= 1. / dt;
+							pt->omg = omg;
 							laac = pt->rot.cnj().trans(p->aac);
 							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
 							if(0 < laac[0]) p->thrusts[0][1] += laac[0];
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == scepter_attack && .99 < VECSP(dv, forward)){
+						if(trigger && p->task == Attack && .99 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
 					}
 					else{
-						VECNULL(p->aac);
+						p->aac.clear();
 					}
 				}
-				else if(!pt->enemy && (p->task == scepter_attack || p->task == scepter_away)){
-					p->task = scepter_parade;
+				else if(!pt->enemy && (p->task == Attack || p->task == Away)){
+					p->task = Parade;
+				}
+				if(p->task == Parade){
+					if(mother){
+						if(paradec == -1)
+							paradec = mother->enumParadeC();
+						Vec3d target, target0(-1., 0., -1.);
+						Quatd q2, q1;
+						target0[0] += p->paradec % 10 * -.05;
+						target0[2] += p->paradec / 10 * -.05;
+						target = mother->rot.trans(target0);
+						target += mother->pos;
+						Vec3d dr = pt->pos - target;
+						if(dr.slen() < .03 * .03){
+							q1 = mother->rot;
+							p->throttle = 0.;
+							parking = 1;
+							pt->velo += dr * (-dt * .5);
+						}
+						else{
+							p->throttle = dr.slen() / 5. + .03;
+							q1 = Quatd::direction(dr);
+						}
+						q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
+						pt->rot = q2;
+						if(1. < p->throttle)
+							p->throttle = 1.;
+					}
+					else
+						task = Idle;
 				}
 #if 0
-				if(p->task == scepter_parade){
-					avec3_t target, target0 = {-1., 0., -1.}, dr;
-					aquat_t q2, q1;
-					target0[0] += p->paradec % 10 * -.05;
-					target0[2] += p->paradec / 10 * -.05;
-					quatrot(target, pm->rot, target0);
-					VECADDIN(target, pm->pos);
-					VECSUB(dr, pt->pos, target);
-					if(VECSLEN(dr) < .03 * .03){
-						QUATCPY(q1, pm->rot);
-						p->throttle = 0.;
-						parking = 1;
-						VECSADD(pt->velo, dr, -dt * .5);
-					}
-					else{
-						p->throttle = VECSLEN(dr) / 5. + .03;
-						quatdirection(q1, dr);
-					}
-					quatslerp(q2, pt->rot, q1, 1. - exp(-dt));
-					QUATCPY(pt->rot, q2);
-					if(1. < p->throttle)
-						p->throttle = 1.;
-				}
 				else if(p->task == scepter_dockque || p->task == scepter_dock){
 					avec3_t target, target0 = {-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.}, dr;
 					aquat_t q2, q1;
@@ -882,7 +895,7 @@ void Sceptor::anim(double dt){
 				else if(p->task == scepter_idle)
 					p->throttle = 0.;
 #else
-				if(p->task == scepter_idle)
+				if(p->task == Idle)
 					p->throttle = 0.;
 #endif
 			}while(0);
@@ -979,8 +992,7 @@ void Sceptor::anim(double dt){
 		}
 
 		if(pt->inputs.press & PL_A){
-			Vec3d qrot;
-			qrot = mat.vec3(0) * dt;
+			Vec3d qrot = mat.vec3(1) * dt;
 			pt->rot = pt->rot.quatrotquat(qrot);
 		}
 		if(pt->inputs.press & PL_D){
@@ -996,11 +1008,23 @@ void Sceptor::anim(double dt){
 			pt->rot = pt->rot.quatrotquat(qrot);
 		}
 
+		if(controlled){
+			if(inputs.press & PL_Q)
+				p->throttle = MIN(throttle + dt, 1.);
+			if(inputs.press & PL_Z)
+				p->throttle = MAX(throttle - dt, 0.);
+		}
+
 		/* you're not allowed to accel further than certain velocity. */
-		if(.3  < -p->velo.sp(mat.vec3(2)))
+		const double maxvelo = .3, speed = -p->velo.sp(mat.vec3(2));
+		if(maxvelo < speed)
 			p->throttle = 0.;
-		else if(p->task == scepter_attack || p->task == scepter_away)
-			p->throttle = 1.;
+		else{
+			if(!controlled && (p->task == Attack || p->task == Away))
+				p->throttle = 1.;
+			if(1. - speed / maxvelo < throttle)
+				throttle = 1. - speed / maxvelo;
+		}
 
 		/* Friction (in space!) */
 		{
@@ -1009,7 +1033,7 @@ void Sceptor::anim(double dt){
 		}
 
 		{
-			double spd = pf->throttle * (p->task != scepter_attack ? .01 : .005);
+			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			double consump = dt * (pf->throttle + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
@@ -1041,7 +1065,7 @@ void Sceptor::anim(double dt){
 			quatrot(acc, pt->rot, acc0);
 			VECSADD(pt->velo, acc, spd * dt);
 		}*/
-		if(p->task != scepter_undock && p->task != scepter_undockque){
+		if(p->task != Undock && p->task != Undockque){
 			space_collide(pt, w, dt, collideignore, NULL);
 		}
 		pt->pos += pt->velo * dt;
@@ -1262,7 +1286,7 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 	ret->rot = mother->rot;
 	ret->omg = mother->omg;
 	ret->race = mother->race;
-	ret->task = scepter_undock;
+	ret->task = Undock;
 //	w->addent(ret);
 	return ret;
 }

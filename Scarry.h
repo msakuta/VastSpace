@@ -34,9 +34,11 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	bool addBuild(const BuildStatic *);
-	bool cancelBuild(int index);
+	bool cancelBuild(int index){return cancelBuild(index, true);}
 	void anim(double dt);
 	virtual void doneBuild(Entity *child);
+protected:
+	bool cancelBuild(int index, bool recalc_time);
 };
 
 class GLWbuild : public GLwindowSizeable{
@@ -60,13 +62,14 @@ protected:
 	int draw_tab(int ix, int iy, const char *s, int selected);
 };
 
-class Dockable;
 class Docker : public virtual Entity{
 public:
+	typedef Entity::Dockable Dockable;
 	double baycool;
 	Dockable *el, *undockque;
+	int paradec;
 
-	Docker() : baycool(0), el(NULL), undockque(NULL){}
+	Docker() : baycool(0), el(NULL), undockque(NULL), paradec(0){}
 	~Docker();
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -74,6 +77,7 @@ public:
 	void anim(double dt);
 	void dock(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
+	int enumParadeC(){return paradec++;}
 protected:
 	virtual bool undock(Dockable *);
 };

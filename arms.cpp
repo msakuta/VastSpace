@@ -217,6 +217,7 @@ void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4
 #define MTURRET_VARIANCE (.001 * M_PI)
 #define MTURRET_INTOLERANCE (M_PI / 20.)
 #define MTURRETROTSPEED (.4*M_PI)
+#define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
 
 suf_t *CallLoadSUF(const char *fname);
 
@@ -416,13 +417,13 @@ void MTurret::anim(double dt){
 	if(w->pl && w->pl->control == this){
 		double pydst[2] = {py[0], py[1]};
 		if(inputs.press & PL_A)
-			pydst[1] += MTURRETROTSPEED * dt;
+			pydst[1] += MTURRETMANUALROTSPEED * dt;
 		if(inputs.press & PL_D)
-			pydst[1] -= MTURRETROTSPEED * dt;
+			pydst[1] -= MTURRETMANUALROTSPEED * dt;
 		if(inputs.press & PL_W)
-			pydst[0] += MTURRETROTSPEED * dt;
+			pydst[0] += MTURRETMANUALROTSPEED * dt;
 		if(inputs.press & PL_S)
-			pydst[0] -= MTURRETROTSPEED * dt;
+			pydst[0] -= MTURRETMANUALROTSPEED * dt;
 		a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
 		a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 		if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){

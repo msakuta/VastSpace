@@ -62,7 +62,7 @@ sol{
 #	absolute_magnitude 4.83
 	solarsystem
 
-	include space_debug.dat
-#	include sol.dat
+#	include space_debug.dat
+	include sol.dat
 
 }

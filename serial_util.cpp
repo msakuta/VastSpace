@@ -138,7 +138,7 @@ SerializeStream *BinSerializeStream::substream(){
 }
 
 void BinSerializeStream::join(tt *o){
-	*this << ((BinSerializeStream*)o)->size;
+	*this << (unsigned long)((BinSerializeStream*)o)->size;
 	write(*(BinSerializeStream*)o);
 }
 

@@ -1225,8 +1225,8 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 	switch(message){
 		case WM_CREATE:
 			hgl = wingl(hWnd, &hdc);
-			if(!SetTimer(hWnd, 2, 10, NULL))
-				assert(0);
+/*			if(!SetTimer(hWnd, 2, 10, NULL))
+				assert(0);*/
 			break;
 
 		case WM_TIMER:
@@ -1505,11 +1505,16 @@ int main(int argc, char *argv[])
 /*		hWnd = CreateWindow(atom, "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			100, 100, 400, 400, NULL, NULL, hInst, NULL);*/
 
-		while (GetMessage(&msg, NULL, 0, 0)) 
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
+		do{
+			if(PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)){
+				if(GetMessage(&msg, NULL, 0, 0) <= 0)
+					break;
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+			else
+				SendMessage(hWnd, WM_TIMER, 0, 0);
+		}while (true);
 	}
 #else
 /*	printf("%lg %lg %lg\n", fmod(-8., 5.), -8. / 5. - (int)(-8. / 5.), -8. / 5. - (floor)(-8. / 5.));*/

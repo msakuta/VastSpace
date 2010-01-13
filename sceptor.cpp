@@ -75,7 +75,6 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << fcloak;
 	sc.o << heat;
 	sc.o << static_cast<Serializable*>(mother); // Mother ship
-	sc.o << (long)(static_cast<Docker*>(mother) - mother);
 //	sc.o << hitsound;
 	sc.o << paradec;
 	sc.o << (int)task;
@@ -85,7 +84,6 @@ void Sceptor::serialize(SerializeContext &sc){
 void Sceptor::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	Entity *mother;
-	long d;
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
 	sc.i >> fuel;
@@ -94,13 +92,12 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> fcloak;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
-	sc.i >> d;
 //	sc.i >> hitsound;
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak;
 
-	this->mother = (Docker*)&((char*)mother)[d];
+	this->mother = mother->getDocker();
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	if(w)
@@ -737,6 +734,10 @@ void Sceptor::anim(double dt){
 					else if(findEnemy()){
 						p->task = Attack;
 					}
+					else if(mother)
+						p->task = Parade;
+					else
+						p->task = Idle;
 				}
 				else if(p->task == Moveto){
 					Vec3d target;

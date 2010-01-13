@@ -31,7 +31,7 @@ SerializeStream &StdSerializeStream::operator<<(int a){ base << a << " "; return
 SerializeStream &StdSerializeStream::operator<<(unsigned a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(long a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(unsigned long a){ base << a << " "; return *this; }
-SerializeStream &StdSerializeStream::operator<<(bool a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(bool a){ base << (int)a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(float a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(double a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(const char *a){
@@ -172,7 +172,7 @@ UnserializeStream &StdUnserializeStream::operator>>(int &a){ base.operator>>(a);
 UnserializeStream &StdUnserializeStream::operator>>(unsigned &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(unsigned long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
-UnserializeStream &StdUnserializeStream::operator>>(bool &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(bool &a){ int i; base.operator>>(i); if(!fail()) consume(" "); a = !!i; return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(float &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(double &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 

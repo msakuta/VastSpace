@@ -148,8 +148,8 @@ std::vector<cpplib::dstring> Entity::props()const{
 	return ret;
 }
 double Entity::getRU()const{return 0.;}
-Builder *Entity::getBuilder(){return NULL;}
-Docker *Entity::getDocker(){return NULL;}
+Builder *Entity::getBuilderInt(){return NULL;}
+Docker *Entity::getDockerInt(){return NULL;}
 bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
 

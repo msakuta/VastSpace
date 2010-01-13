@@ -53,8 +53,6 @@ public:
 	virtual void attack(Entity *target);
 	virtual Props props()const;
 	virtual double getRU()const;
-	virtual Builder *getBuilder();
-	virtual Docker *getDocker();
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 
@@ -84,11 +82,17 @@ public:
 	int otflag;
 //	char weapon;
 
+	// Handles calls to virtual functions of a NULL ofject
+	Builder *getBuilder(){return this ? this->getBuilderInt() : NULL;}
+	Docker *getDocker(){return this ? this->getDockerInt() : NULL;}
+
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
 protected:
 	void init();
+	virtual Docker *getDockerInt();
+	virtual Builder *getBuilderInt();
 };
 
 inline Entity *Entity::getUltimateOwner(){

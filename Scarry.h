@@ -131,8 +131,8 @@ public:
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int i)const;
 	virtual double getRU()const;
-	virtual Builder *getBuilder();
-	virtual Docker *getDocker();
+	virtual Builder *getBuilderInt();
+	virtual Docker *getDockerInt();
 	virtual const maneuve &getManeuve()const;
 
 protected:

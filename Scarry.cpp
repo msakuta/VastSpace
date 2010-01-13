@@ -452,8 +452,8 @@ const ArmBase *Scarry::armsGet(int i)const{
 }
 
 double Scarry::getRU()const{return ru;}
-Builder *Scarry::getBuilder(){return this;}
-Docker *Scarry::getDocker(){return this;}
+Builder *Scarry::getBuilderInt(){return this;}
+Docker *Scarry::getDockerInt(){return this;}
 
 
 const Scarry::maneuve Scarry::mymn = {

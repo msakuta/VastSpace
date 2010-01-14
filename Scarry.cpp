@@ -295,10 +295,28 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	int fonth = (int)getFontHeight();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
-	ind = (my - 3 * 12) / 12;
+	ind = (my - 4 * 12) / 12;
 	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
-		for(Entity *e = docker->el; e; e = e->next) if(!ind--){
+		if(ind == -1)
+			grouping = !grouping;
+		else if(grouping){
+			std::map<cpplib::dstring, int> map;
+
+			for(Entity *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
+				map[e->dispname()]++;
+			}
+			for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++) if(!ind--){
+				for(Entity *e = docker->el; e;){
+					Entity *next = e->next;
+					if(!strcmp(e->dispname(), it->first))
+						docker->postUndock(e->toDockable());
+					e = next;
+				}
+				break;
+			}
+		}
+		else for(Entity *e = docker->el; e; e = e->next) if(!ind--){
 			docker->postUndock(e->toDockable());
 			break;
 		}

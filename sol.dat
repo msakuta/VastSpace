@@ -237,7 +237,7 @@ coordsys Orbit marss{
 		orbits Mars
 		semimajor_axis 1e4
 		addent scarry 0 0 -4
-#		addent beamer .1 0 0
+		addent beamer .1 0 0 1
 #		addent beamer -.1 0 0
 #		addent assault -.2 0 0 
 #		addent assault -.6 0 -1 1

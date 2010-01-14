@@ -97,7 +97,7 @@ public:
 class GLWdock : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWdock(const char *title, Docker *a) : st(title), docker(a){
+	GLWdock(const char *title, Docker *a) : st(title), docker(a), grouping(false){
 		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
 		xpos = 100;
 		ypos = 200;
@@ -109,6 +109,7 @@ public:
 	virtual void postframe();
 
 	Docker *docker;
+	bool grouping;
 };
 
 extern const struct Builder::BuildStatic sceptor_build;

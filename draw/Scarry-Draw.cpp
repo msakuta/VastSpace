@@ -153,23 +153,40 @@ void GLWdock::draw(GLwindowState &ws, double t){
 	glColor4ub(255,255,255,255);
 	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
 	glwprintf("Cool: %lg", docker->baycool);
+/*	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwprintf("Remain docked: %s", docker->remainDocked ? "Yes" : "No");*/
+	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwprintf("Grouping: %s", grouping ? "Yes" : "No");
 	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
 	glwprintf("Docked:");
 	glColor4ub(255,255,255,255);
 
 	int mx = ws.mx - xpos, my = ws.my - ypos;
 	/* Mouse cursor highlights */
-	if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my){
+	if(!modal && 0 < mx && mx < width && (iy - 1 == my / fonth || (1 + iy) * fonth < my)){
 		glColor4ub(0,0,255,127);
 		glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
 		glColor4ub(255,255,255,255);
 	}
 
-	for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
-		if(height < (2 + iy) * fonth)
-			return;
-		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
-		glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->hitradius() * e->hitradius() * e->hitradius());
+	if(grouping){
+		std::map<cpplib::dstring, int> map;
+
+		for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
+			map[e->dispname()]++;
+		}
+		for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++){
+			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwprintf("%d X %s", it->second, (const char*)it->first);
+		}
+	}
+	else{
+		for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
+			if(height < (2 + iy) * fonth)
+				return;
+			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->hitradius() * e->hitradius() * e->hitradius());
+		}
 	}
 }
 

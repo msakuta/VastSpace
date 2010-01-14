@@ -254,8 +254,14 @@ void Docker::anim(double dt){
 
 void Docker::dock(Dockable *e){
 	e->dock(this);
-	e->next = el;
-	el = e;
+	if(e->w)
+		e->w = this;
+	else{
+		e->w = this;
+		addent(e);
+	}
+/*	e->next = el;
+	el = e;*/
 }
 
 bool Docker::postUndock(Dockable *e){
@@ -271,9 +277,14 @@ bool Docker::postUndock(Dockable *e){
 	return false;
 }
 
+Entity *Docker::addent(Entity *e){
+	e->next = el;
+	return el = e;
+}
+
 bool Docker::undock(Dockable *e){
-	e->w = this->w;
-	w->addent(e);
+	e->w = this->e.w;
+	this->e.w->addent(e);
 	e->undock(this);
 	return true;
 }
@@ -297,7 +308,7 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 }
 
 void GLWdock::postframe(){
-	if(docker && !docker->w)
+	if(docker && !docker->e.w)
 		docker = NULL;
 }
 
@@ -333,7 +344,7 @@ hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
 }*/;
 int Scarry::nhardpoints = 0;
 
-Scarry::Scarry(WarField *w) : st(w){
+Scarry::Scarry(WarField *w) : st::st(w), st(w), docker(new ScarryDocker(*this)){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++)
@@ -349,6 +360,10 @@ void Scarry::init(){
 	mass = 1e6;
 }
 
+Scarry::~Scarry(){
+	delete docker;
+}
+
 const char *Scarry::idname()const{return "scarry";}
 const char *Scarry::classname()const{return "Scarry";}
 
@@ -359,7 +374,7 @@ void Scarry::serialize(SerializeContext &sc){
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
 	Builder::serialize(sc);
-	Docker::serialize(sc);
+	docker->serialize(sc);
 }
 
 void Scarry::unserialize(UnserializeContext &sc){
@@ -367,12 +382,12 @@ void Scarry::unserialize(UnserializeContext &sc){
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
 	Builder::unserialize(sc);
-	Docker::unserialize(sc);
+	docker->unserialize(sc);
 }
 
 void Scarry::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	st::dive(sc, method);
-	Docker::dive(sc, method);
+	docker->dive(sc, method);
 }
 
 const char *Scarry::dispname()const{
@@ -398,7 +413,7 @@ void Scarry::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 
 void Scarry::anim(double dt){
 	st::anim(dt);
-	Docker::anim(dt);
+	docker->anim(dt);
 	Builder::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
@@ -453,7 +468,7 @@ const ArmBase *Scarry::armsGet(int i)const{
 
 double Scarry::getRU()const{return ru;}
 Builder *Scarry::getBuilderInt(){return this;}
-Docker *Scarry::getDockerInt(){return this;}
+Docker *Scarry::getDockerInt(){return docker;}
 
 
 const Scarry::maneuve Scarry::mymn = {
@@ -482,9 +497,9 @@ const int Scarry::nhitboxes = numof(Scarry::hitboxes);
 
 
 void Scarry::doneBuild(Entity *e){
-	Dockable *d = e->toDockable();
+	Entity::Dockable *d = e->toDockable();
 	if(d)
-		dock(d);
+		docker->dock(d);
 	else{
 		e->w = this->w;
 		w->addent(e);
@@ -498,11 +513,11 @@ void Scarry::doneBuild(Entity *e){
 	static_cast<Dockable*>(e)->undock(this);*/
 }
 
-bool Scarry::undock(Dockable *e){
-	if(Docker::undock(e)){
-		e->pos = pos + rot.trans(Vec3d(-.10, 0.05, 0));
-		e->velo = velo;
-		e->rot = rot;
+bool ScarryDocker::undock(Entity::Dockable *pe){
+	if(st::undock(pe)){
+		pe->pos = e.pos + e.rot.trans(Vec3d(-.10, 0.05, 0));
+		pe->velo = e.velo;
+		pe->rot = e.rot;
 		return true;
 	}
 	return false;

@@ -579,7 +579,7 @@ struct otiterator{
 	}
 };
 
-otnt *ot_build(WarField *w, double dt){
+otnt *ot_build(WarSpace *w, double dt){
 	Entity *pt;
 	int i, n = 0, m = 0, o, loops = 0;
 	otnt *ot = w->ot;
@@ -794,7 +794,7 @@ otnt *ot_build(WarField *w, double dt){
 	return w->otroot;
 }
 
-otnt *ot_check(WarField *w, double dt){
+otnt *ot_check(WarSpace *w, double dt){
 	for(Entity *pe = w->el; pe; pe = pe->next) if(pe->w != w)
 		return ot_build(w, dt);
 	return w->ot;
@@ -832,7 +832,7 @@ static int ot_statsub(otnt *root, int level){
 }
 #endif
 
-void ot_draw(WarField *w, wardraw_t *wd){
+void ot_draw(WarSpace *w, wardraw_t *wd){
 	int i, n;
 	Viewer *vw = wd->vw;
 #if 0 || 1 && !OTDEBUG

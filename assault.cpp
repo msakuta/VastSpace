@@ -74,12 +74,12 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
-	if(0 < health && w->pl->control != this){
+	if(0 < health && w->getPlayer()->control != this){
 		inputs.press = 0;
 		if(!enemy){ /* find target */
 			double best = 20. * 20.;
 			Entity *t;
-			for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
+			for(t = w->entlist(); t; t = t->next) if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
 				double sdist = (this->pos - t->pos).slen();
 				if(sdist < best){
 					this->enemy = t;
@@ -127,7 +127,9 @@ void Assault::anim(double dt){
 		}
 	}
 
-	space_collide(this, w, dt, NULL, NULL);
+	WarSpace *ws = *w;
+	if(ws)
+		space_collide(this, ws, dt, NULL, NULL);
 
 	st::anim(dt);
 	for(int i = 0; i < 4; i++) if(turrets[i])
@@ -230,7 +232,7 @@ bool Assault::undock(Docker *d){
 //	task = scepter_undock;
 //	mother = d;
 	for(int i = 0; i < 4; i++) if(turrets[i])
-		d->w->addent(turrets[i]);
+		d->e.w->addent(turrets[i]);
 	d->baycool += 2.;
 	return true;
 }

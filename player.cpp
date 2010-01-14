@@ -99,7 +99,9 @@ void Player::freelook(const input_t &inputs, double dt){
 		velo = Vec3d(0,0,0);
 
 	if(chase){
-		this->cs = chase->w->cs;
+		WarSpace *ws = (WarSpace*)chase->w;
+		if(ws)
+			this->cs = ws->cs;
 		Quatd dummy;
 		chase->cockpitView(pos, dummy, chasecamera);
 		velo = chase->velo;

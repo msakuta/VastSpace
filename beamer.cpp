@@ -371,8 +371,9 @@ void Beamer::anim(double dt){
 	else
 		cooldown -= dt;
 
-	if(true/*!this->dock*/){
-		space_collide(this, w, dt, NULL, NULL);
+	WarSpace *ws = *w;
+	if(ws){
+		space_collide(this, ws, dt, NULL, NULL);
 	}
 
 	if(0. < charge && charge < 4.){
@@ -395,7 +396,7 @@ void Beamer::anim(double dt){
 				besthitpart = hitpart;
 			}
 		}
-		if(hit){
+		if(ws && hit){
 			Vec3d pos;
 			Quatd qrot;
 			beamlen = best;
@@ -407,9 +408,9 @@ void Beamer::anim(double dt){
 				int i;
 				for(i = 0; i < 3; i++)
 					velo[i] = (drseq(&w->rs) - .5) * .1;
-				AddTeline3D(w->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
+				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-			AddTeline3D(w->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+			AddTeline3D(ws->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 		}
 		else
 			beamlen = 10.;
@@ -839,7 +840,7 @@ static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_
 
 int Frigate::takedamage(double damage, int hitpart){
 	Frigate *p = this;
-	struct tent3d_line_list *tell = w->tell;
+	struct tent3d_line_list *tell = w->getTeline3d();
 	int ret = 1;
 
 	if(hitpart == 1000){
@@ -871,70 +872,73 @@ int Frigate::takedamage(double damage, int hitpart){
 		int i;
 		ret = 0;
 /*		effectDeath(w, pt);*/
-		for(i = 0; i < 32; i++){
-			Vec3d pos, velo;
-			velo[0] = drseq(&w->rs) - .5;
-			velo[1] = drseq(&w->rs) - .5;
-			velo[2] = drseq(&w->rs) - .5;
-			velo.normin();
-			pos = p->pos;
-			velo *= .1;
-			pos += velo * .1;
-			AddTeline3D(w->tell, pos, velo, .005, NULL, NULL, NULL, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND, 15. + drseq(&w->rs) * 5.);
-		}
+		WarSpace *ws = *w;
+		if(ws){
+			for(i = 0; i < 32; i++){
+				Vec3d pos, velo;
+				velo[0] = drseq(&w->rs) - .5;
+				velo[1] = drseq(&w->rs) - .5;
+				velo[2] = drseq(&w->rs) - .5;
+				velo.normin();
+				pos = p->pos;
+				velo *= .1;
+				pos += velo * .1;
+				AddTeline3D(ws->tell, pos, velo, .005, NULL, NULL, NULL, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND, 15. + drseq(&w->rs) * 5.);
+			}
 
-#if 0
-		if(w->gibs) for(i = 0; i < 32; i++){
-			double pos[3], velo[3], omg[3];
-			/* gaussian spread is desired */
-			velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			velo[1] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			velo[2] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-			VECCPY(pos, pt->pos);
-			VECSADD(pos, velo, .1);
-			AddTelineCallback3D(w->gibs, pos, velo, .010, NULL, omg, NULL, beamer_gib_draw, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
-		}
-#endif
+	#if 0
+			if(w->gibs) for(i = 0; i < 32; i++){
+				double pos[3], velo[3], omg[3];
+				/* gaussian spread is desired */
+				velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				velo[1] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				velo[2] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				VECCPY(pos, pt->pos);
+				VECSADD(pos, velo, .1);
+				AddTelineCallback3D(w->gibs, pos, velo, .010, NULL, omg, NULL, beamer_gib_draw, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+			}
+	#endif
 
-		/* smokes */
-		for(i = 0; i < 32; i++){
-			double pos[3], velo[3];
-			COLOR32 col = 0;
-			VECCPY(pos, p->pos);
-			pos[0] += .1 * (drseq(&w->rs) - .5);
-			pos[1] += .1 * (drseq(&w->rs) - .5);
-			pos[2] += .1 * (drseq(&w->rs) - .5);
-			col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
-			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
-			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
-			col |= COLOR32RGBA(0,0,0,191);
-//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-			AddTelineCallback3D(w->tell, pos, NULL, .03, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
-		}
+			/* smokes */
+			for(i = 0; i < 32; i++){
+				double pos[3], velo[3];
+				COLOR32 col = 0;
+				VECCPY(pos, p->pos);
+				pos[0] += .1 * (drseq(&w->rs) - .5);
+				pos[1] += .1 * (drseq(&w->rs) - .5);
+				pos[2] += .1 * (drseq(&w->rs) - .5);
+				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+				col |= COLOR32RGBA(0,0,0,191);
+	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+				AddTelineCallback3D(ws->tell, pos, NULL, .03, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
+			}
 
-		{/* explode shockwave thingie */
-			static const double pyr[3] = {M_PI / 2., 0., 0.};
-			amat3_t ort;
-			Vec3d dr, v;
-			Quatd q;
-			amat4_t mat;
-			double p;
-/*			w->vft->orientation(w, &ort, &pt->pos);
-			VECCPY(dr, &ort[3]);*/
-			dr = vec3_001;
+			{/* explode shockwave thingie */
+				static const double pyr[3] = {M_PI / 2., 0., 0.};
+				amat3_t ort;
+				Vec3d dr, v;
+				Quatd q;
+				amat4_t mat;
+				double p;
+	/*			w->vft->orientation(w, &ort, &pt->pos);
+				VECCPY(dr, &ort[3]);*/
+				dr = vec3_001;
 
-			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
-			v = vec3_001.vp(dr);
-			p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-			q = v * p;
+				v = vec3_001.vp(dr);
+				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+				q = v * p;
 
-			AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
-			AddTeline3D(tell, this->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
+				AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
+				AddTeline3D(tell, this->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
+			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 //		p->w = NULL;

@@ -242,7 +242,7 @@ void RStation::drawtra(wardraw_t *wd){
 }
 
 int RStation::takedamage(double damage, int hitpart){
-	struct tent3d_line_list *tell = w->tell;
+	struct tent3d_line_list *tell = w->getTeline3d();
 	int ret = 1;
 	if(this->health < 0.)
 		return 1;
@@ -252,14 +252,14 @@ int RStation::takedamage(double damage, int hitpart){
 		ret = 0;
 		Vec3d accel = w->accel(pos, velo);
 /*		effectDeath(w, pt);*/
-		for(i = 0; i < 32; i++){
+		if(tell) for(i = 0; i < 32; i++){
 			Vec3d pos, velo;
 			velo[0] = drseq(&w->rs) - .5;
 			velo[1] = drseq(&w->rs) - .5;
 			velo[2] = drseq(&w->rs) - .5;
 			velo.normin();
 			pos = this->pos + velo * .1 * .1;
-			AddTeline3D(w->tell, pos, velo, .005, NULL, NULL, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, .005, NULL, NULL, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 		health = -2.;
 	}

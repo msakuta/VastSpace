@@ -62,14 +62,19 @@ protected:
 	int draw_tab(int ix, int iy, const char *s, int selected);
 };
 
-class Docker : public virtual Entity{
+class Docker : public WarField{
 public:
+	typedef WarField st;
 	typedef Entity::Dockable Dockable;
+	Entity &e;
 	double baycool;
-	Dockable *el, *undockque;
+	Dockable *undockque;
 	int paradec;
 
-	Docker() : baycool(0), el(NULL), undockque(NULL), paradec(0){}
+	Docker(Entity &ae) : st(NULL), e(ae), baycool(0), undockque(NULL), paradec(0){
+		if(ae.w && ae.w->cs)
+			cs = ae.w->cs;
+	}
 	~Docker();
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -78,7 +83,14 @@ public:
 	void dock(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
 	int enumParadeC(){return paradec++;}
-protected:
+	virtual Entity *addent(Entity*);
+	virtual bool undock(Dockable *);
+};
+
+class ScarryDocker : public Docker{
+public:
+	ScarryDocker(Entity &ae) : st(ae){}
+	typedef Docker st;
 	virtual bool undock(Dockable *);
 };
 
@@ -104,12 +116,13 @@ extern const struct Builder::BuildStatic sceptor_build;
 int cmd_build(int argc, char *argv[], void *pv);
 int cmd_dockmenu(int argc, char *argv[], void *pv);
 
-class Scarry : public Warpable, public Docker, public Builder{
+class Scarry : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Scarry(){init();}
+	Scarry() : docker(new ScarryDocker(*this)){init();}
 	Scarry(WarField *w);
+	~Scarry();
 	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -139,6 +152,7 @@ protected:
 	double ru;
 
 	ArmBase **turrets;
+	ScarryDocker *docker;
 
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
@@ -148,7 +162,6 @@ protected:
 	static const int nhitboxes;
 
 	virtual void doneBuild(Entity *);
-	virtual bool undock(Dockable *);
 };
 
 #if 0

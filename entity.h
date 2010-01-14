@@ -55,6 +55,7 @@ public:
 	virtual double getRU()const;
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
+	virtual void dockCommand(Docker* = NULL); // Instructs that try to a docker.
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

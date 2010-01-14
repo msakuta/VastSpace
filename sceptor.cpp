@@ -100,8 +100,9 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	this->mother = mother->getDocker();
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
-	if(w)
-		pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	WarSpace *ws;
+	if(w && (ws = (WarSpace*)w))
+		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
 	else
 		pf = NULL;
 }
@@ -145,8 +146,9 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel(
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
 	p->cooldown = 1.;
-	if(w)
-		p->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	WarSpace *ws;
+	if(w && (ws = (WarSpace*)w))
+		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
 	else
 		p->pf = NULL;
 //	p->mother = mother;
@@ -203,7 +205,9 @@ bool Sceptor::undock(Docker *d){
 	mother = d;
 	if(this->pf)
 		ImmobilizeTefpol3D(this->pf);
-	this->pf = AddTefpolMovable3D(w->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+	WarSpace *ws;
+	if(w && w->getTefpol3d())
+		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
 	d->baycool += 1.;
 	return true;
 }
@@ -342,7 +346,7 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	space_collide_reflect(pt2, netvelo, -n, f);
 }
 
-void space_collide(Entity *pt, WarField *w, double dt, Entity *collideignore, Entity *collideignore2){
+void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
 	Entity *pt2;
 	if(1 && w->otroot){
 		Entity *iglist[3] = {pt, collideignore, collideignore2};
@@ -563,7 +567,7 @@ void Sceptor::anim(double dt){
 	}*/
 
 	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_shortburn.t, pf->docked);
+		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_shortburn.t, 0/*pf->docked*/);
 
 #if 0
 	if(pf->docked){
@@ -633,7 +637,7 @@ void Sceptor::anim(double dt){
 		Entity *collideignore = NULL;
 		if(!controlled)
 			pt->inputs.press = 0;
-		if(pf->docked);
+		if(false/*pf->docked*/);
 		else if(p->task == Undockque){
 /*			if(pm->w != w){
 				if(p->pf){
@@ -717,7 +721,7 @@ void Sceptor::anim(double dt){
 					p->task = Idle;
 				else{
 					double sp;
-					Vec3d dm = this->pos - mother->pos;
+					Vec3d dm = this->pos - mother->e.pos;
 					Vec3d mzh = this->rot.trans(vec3_001);
 					sp = -mzh.sp(dm);
 					p->throttle = 1.;
@@ -727,17 +731,19 @@ void Sceptor::anim(double dt){
 			}
 			else if(w->pl->control != pt) do{
 				if(!pt->enemy || p->task == Idle || p->task == Parade){
-					if(p->mother && mother->enemy){
-						pt->enemy = mother->enemy;
+					if(p->mother && mother->e.enemy){
+						pt->enemy = mother->e.enemy;
 						p->task = Attack;
 					}
 					else if(findEnemy()){
 						p->task = Attack;
 					}
-					else if(mother)
-						p->task = Parade;
-					else
-						p->task = Idle;
+					else if(p->task == Idle || p->task == Parade){
+						if(mother)
+							p->task = Parade;
+						else
+							p->task = Idle;
+					}
 				}
 				else if(p->task == Moveto){
 					Vec3d target;
@@ -837,11 +843,11 @@ void Sceptor::anim(double dt){
 						Quatd q2, q1;
 						target0[0] += p->paradec % 10 * -.05;
 						target0[2] += p->paradec / 10 * -.05;
-						target = mother->rot.trans(target0);
-						target += mother->pos;
+						target = mother->e.rot.trans(target0);
+						target += mother->e.pos;
 						Vec3d dr = pt->pos - target;
 						if(dr.slen() < .03 * .03){
-							q1 = mother->rot;
+							q1 = mother->e.rot;
 							p->throttle = 0.;
 							parking = 1;
 							pt->velo += dr * (-dt * .5);
@@ -858,47 +864,41 @@ void Sceptor::anim(double dt){
 					else
 						task = Idle;
 				}
-#if 0
-				else if(p->task == scepter_dockque || p->task == scepter_dock){
-					avec3_t target, target0 = {-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.}, dr;
-					aquat_t q2, q1;
-					collideignore = pm;
-					if(p->task == scepter_dockque)
+				else if(p->task == Dockque || p->task == Dock){
+					Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
+					Quatd q2, q1;
+					collideignore = &mother->e;
+					if(p->task == Dockque)
 						target0[2] += -1.;
-					quatrot(target, pm->rot, target0);
-					VECADDIN(target, pm->pos);
-					VECSUB(dr, pt->pos, target);
-					if(VECSLEN(dr) < .03 * .03){
-						if(p->task == scepter_dockque)
-							p->task = scepter_dock;
+					Vec3d target = mother->e.rot.trans(target0);
+					target += mother->e.pos;
+					Vec3d dr = pt->pos - target;
+					if(dr.slen() < .03 * .03){
+						if(p->task == Dockque)
+							p->task = Dock;
 						else{
-							scarry_dock(mother, pt, w);
+							mother->dock(pt);
 							if(p->pf){
 								ImmobilizeTefpol3D(p->pf);
 								p->pf = NULL;
 							}
-							p->pf = NULL;
-							p->docked = 1;
-							if(mother->cargo < scarry_cargousage(mother)){
+							p->docked = true;
+/*							if(mother->cargo < scarry_cargousage(mother)){
 								scarry_undock(mother, pt, w);
-							}
+							}*/
 							return;
 						}
 					}
-					p->throttle = VECSLEN(dr) * (p->task == scepter_dockque ? .2 : .05) + .03;
-					quatdirection(q1, dr);
-					quatslerp(q2, pt->rot, q1, 1. - exp(-dt));
-					VECVP(pt->omg, q1, q2);
-					QUATCPY(pt->rot, q2);
+					p->throttle = dr.slen() * (p->task == Dockque ? .2 : .05) + .03;
+					q1 = Quatd::direction(dr);
+					q2 = pt->rot.slerp(pt->rot, q1, 1. - exp(-dt));
+					pt->omg = ((Vec3d)q1).vp(q2);
+					pt->rot = q2;
 					if(1. < p->throttle)
 						p->throttle = 1.;
 				}
-				else if(p->task == scepter_idle)
-					p->throttle = 0.;
-#else
 				if(p->task == Idle)
 					p->throttle = 0.;
-#endif
 			}while(0);
 			else{
 				double common = 0., normal = 0.;
@@ -1066,8 +1066,10 @@ void Sceptor::anim(double dt){
 			quatrot(acc, pt->rot, acc0);
 			VECSADD(pt->velo, acc, spd * dt);
 		}*/
-		if(p->task != Undock && p->task != Undockque){
-			space_collide(pt, w, dt, collideignore, NULL);
+		if(p->task != Undock && p->task != Undockque && task != Dock){
+			WarSpace *ws = (WarSpace*)w;
+			if(ws)
+				space_collide(pt, ws, dt, collideignore, NULL);
 		}
 		pt->pos += pt->velo * dt;
 
@@ -1076,7 +1078,7 @@ void Sceptor::anim(double dt){
 	else{
 		pt->health += dt;
 		if(0. < pt->health){
-			struct tent3d_line_list *tell = w->tell;
+			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
 /*			if(w->gibs && ((struct entity_private_static*)pt->vft)->sufbase){
@@ -1111,7 +1113,8 @@ void Sceptor::anim(double dt){
 			this->w = NULL;
 		}
 		else{
-			if(w->tell){
+			struct tent3d_line_list *tell = w->getTeline3d();
+			if(tell){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
 				int i, n;
@@ -1124,7 +1127,7 @@ void Sceptor::anim(double dt){
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(w->tell, pos, dv, .02, NULL, NULL, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, .02, NULL, NULL, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
 			pt->pos += pt->velo * dt;
@@ -1157,27 +1160,15 @@ static int scepter_cull(entity_t *pt, wardraw_t *wd, double scale){
 
 int Sceptor::takedamage(double damage, int hitpart){
 	int ret = 1;
+	struct tent3d_line_list *tell = w->getTeline3d();
 	if(this->health < 0.)
 		return 1;
-	if(w->tell){
-/*		int j, n;
-		frexp(damage, &n);
-		for(j = 0; j < n; j++){
-			double velo[3];
-			velo[0] = .15 * (drseq(&w->rs) - .5);
-			velo[1] = .15 * (drseq(&w->rs) - .5);
-			velo[2] = .15 * (drseq(&w->rs) - .5);
-			AddTeline3D(tell, pt->pos, velo, .001, NULL, NULL, w->gravity,
-				j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
-				TEL3_HEADFORWARD | TEL3_REFLECT | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
-		}*/
-	}
 //	this->hitsound = playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
 /*		effectDeath(w, pt);*/
-		for(i = 0; i < 32; i++){
+		if(tell) for(i = 0; i < 32; i++){
 			double pos[3], velo[3];
 			velo[0] = drseq(&w->rs) - .5;
 			velo[1] = drseq(&w->rs) - .5;
@@ -1186,7 +1177,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 			VECCPY(pos, this->pos);
 			VECSCALEIN(velo, .1);
 			VECSADD(pos, velo, .1);
-			AddTeline3D(w->tell, pos, velo, .005, NULL, NULL, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, .005, NULL, NULL, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 /*		((scepter_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((scepter_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
@@ -1199,7 +1190,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 }
 
 void Sceptor::postframe(){
-	if(mother && (!mother->w || docked && mother->w != w))
+	if(mother && (!mother->e.w || docked && mother->e.w != w))
 		mother = NULL;
 	if(enemy && enemy->w != w)
 		enemy = NULL;
@@ -1275,6 +1266,10 @@ static warf_t *scepter_warp_dest(entity_t *pt, const warf_t *w){
 }
 #endif
 
+void Sceptor::dockCommand(Docker *){
+	task = Dockque;
+}
+
 double Sceptor::maxfuel()const{
 	return 120.;
 }
@@ -1291,3 +1286,12 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 //	w->addent(ret);
 	return ret;
 }
+
+int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
+	Player *pl = (Player*)pv;
+	for(Entity *e = pl->selected; e; e = e->next){
+		e->dockCommand();
+	}
+	return 0;
+}
+

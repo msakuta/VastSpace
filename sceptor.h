@@ -60,10 +60,12 @@ public:
 	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
+	virtual void dockCommand(Docker*);
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 	static Entity *create(WarField *w, Builder *mother);
+	static int cmd_dock(int argc, char *argv[], void *);
 };
 
 

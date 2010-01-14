@@ -21,6 +21,7 @@
 #include "glwindow.h"
 #include "Scarry.h"
 #include "material.h"
+#include "Sceptor.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -1454,6 +1455,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("load", Universe::cmd_load, &universe);
 	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
+	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -1461,7 +1463,7 @@ int main(int argc, char *argv[])
 	CvarAdd("pause", &universe.paused, cvar_int);
 	CvarAdd("g_timescale", &universe.timescale, cvar_double);
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
-	CvarAdd("g_otdrawflags", &WarField::g_otdrawflags, cvar_int);
+	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("seat", &pl.chasecamera, cvar_int);
 
 	StellarFileLoad("space.dat", &universe);

@@ -152,6 +152,7 @@ Builder *Entity::getBuilderInt(){return NULL;}
 Docker *Entity::getDockerInt(){return NULL;}
 bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
+void Entity::dockCommand(Docker*){}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;

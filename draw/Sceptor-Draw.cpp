@@ -88,7 +88,7 @@ void Sceptor::draw(wardraw_t *wd){
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double scale = SCEPTER_SCALE;
 	Sceptor *const p = this;
-	if(!this->w || this->docked)
+	if(!this->w /*|| this->docked*/)
 		return;
 
 	/* NLIPS: Non-Linear Inverse Perspective Scrolling */

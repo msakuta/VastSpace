@@ -546,6 +546,24 @@ static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_
 	glPopMatrix();
 }
 
+void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
+	Vec3d target(atarget);
+	Vec3d rdr = target - this->pos; // real dr
+	Vec3d rdrn = rdr.norm();
+	Vec3d dv = targetvelo - this->velo;
+	Vec3d dvLinear = rdrn.sp(dv) * rdrn;
+	Vec3d dvPlanar = dv - dvLinear;
+	double dist = rdr.len();
+	if(rdrn.sp(dv) < 0) // estimate only when closing
+		target += dvPlanar * dist / dvLinear.len();
+	Vec3d dr = this->pos - target;
+	this->throttle = dr.len() * speedfactor + minspeed;
+	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
+	if(SCEPTER_ROTSPEED * SCEPTER_ROTSPEED < this->omg.slen())
+		this->omg.normin().scalein(SCEPTER_ROTSPEED);
+	this->rot = this->rot.quatrotquat(this->omg * dt);
+}
+
 void Sceptor::anim(double dt){
 	Entity *pt = this;
 	Sceptor *const pf = this;
@@ -553,6 +571,13 @@ void Sceptor::anim(double dt){
 //	scarry_t *const mother = pf->mother;
 	Entity *pm = mother && mother->e ? mother->e : NULL;
 	Mat4d mat, imat;
+
+	if(Docker *docker = *w){
+		fuel = min(fuel + dt * 10., maxfuel());
+		if(fuel == maxfuel() && !docker->remainDocked)
+			docker->postUndock(this);
+		return;
+	}
 
 /*	if(!mother){
 		if(p->pf){
@@ -848,13 +873,13 @@ void Sceptor::anim(double dt){
 							p->throttle = 0.;
 							parking = 1;
 							pt->velo += dr * (-dt * .5);
+							q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
+							pt->rot = q2;
 						}
 						else{
-							p->throttle = dr.slen() / 5. + .03;
-							q1 = Quatd::direction(dr);
+//							p->throttle = dr.slen() / 5. + .01;
+							steerArrival(dt, target, pm->velo, 1. / 5., .01);
 						}
-						q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
-						pt->rot = q2;
 						if(1. < p->throttle)
 							p->throttle = 1.;
 					}
@@ -879,8 +904,9 @@ void Sceptor::anim(double dt){
 						target0[2] += -1.;
 					Vec3d target = pm->rot.trans(target0);
 					target += pm->pos;
-					Vec3d dr = pt->pos - target;
-					if(dr.slen() < .03 * .03){
+					steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .05, .01);
+					double dist = (target - this->pos).len();
+					if(dist < .03){
 						if(p->task == Dockque)
 							p->task = Dock;
 						else{
@@ -896,11 +922,6 @@ void Sceptor::anim(double dt){
 							return;
 						}
 					}
-					p->throttle = dr.slen() * (p->task == Dockque ? .2 : .05) + .03;
-					q1 = Quatd::direction(dr);
-					q2 = pt->rot.slerp(pt->rot, q1, 1. - exp(-dt));
-					pt->omg = ((Vec3d)q1).vp(q2);
-					pt->rot = q2;
 					if(1. < p->throttle)
 						p->throttle = 1.;
 				}
@@ -1296,7 +1317,7 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 
 int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->next){
+	for(Entity *e = pl->selected; e; e = e->selectnext){
 		e->dockCommand();
 	}
 	return 0;

@@ -219,6 +219,7 @@ void Docker::serialize(SerializeContext &sc){
 	sc.o << baycool;
 	sc.o << undockque;
 	sc.o << paradec;
+	sc.o << remainDocked;
 }
 
 void Docker::unserialize(UnserializeContext &sc){
@@ -227,6 +228,7 @@ void Docker::unserialize(UnserializeContext &sc){
 	sc.i >> baycool;
 	sc.i >> undockque;
 	sc.i >> paradec;
+	sc.i >> remainDocked;
 }
 
 void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
@@ -239,6 +241,14 @@ void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 }
 
 void Docker::anim(double dt){
+/*	if(!remainDocked && el){
+		Dockable **end = &undockque;
+		for(; *end; end = &(*end)->next);
+		*end = el;
+		el = NULL;
+	}*/
+	for(Dockable *pe = el; pe; pe = pe->next)
+		pe->anim(dt);
 	while(undockque && baycool < dt){
 		Entity *next = undockque->next;
 		undock(undockque);
@@ -282,6 +292,8 @@ Entity *Docker::addent(Entity *e){
 	return el = e;
 }
 
+Docker::operator Docker *(){return this;}
+
 bool Docker::undock(Dockable *e){
 	e->w = this->e->w;
 	this->e->w->addent(e);
@@ -299,9 +311,11 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	int fonth = (int)getFontHeight();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
-	ind = (my - 4 * 12) / 12;
+	ind = (my - 5 * 12) / 12;
 	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
+		if(ind == -2)
+			docker->remainDocked = !docker->remainDocked;
 		if(ind == -1)
 			grouping = !grouping;
 		else if(grouping){

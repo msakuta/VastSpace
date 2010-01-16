@@ -70,8 +70,9 @@ public:
 	double baycool;
 	Dockable *undockque;
 	int paradec;
+	bool remainDocked;
 
-	Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), paradec(0){
+	Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), paradec(0), remainDocked(false){
 		if(ae && ae->w && ae->w->cs)
 			cs = ae->w->cs;
 	}
@@ -84,6 +85,7 @@ public:
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
 	int enumParadeC(){return paradec++;}
 	virtual Entity *addent(Entity*);
+	virtual operator Docker*();
 	virtual bool undock(Dockable *);
 };
 

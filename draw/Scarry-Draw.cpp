@@ -153,8 +153,8 @@ void GLWdock::draw(GLwindowState &ws, double t){
 	glColor4ub(255,255,255,255);
 	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
 	glwprintf("Cool: %lg", docker->baycool);
-/*	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
-	glwprintf("Remain docked: %s", docker->remainDocked ? "Yes" : "No");*/
+	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwprintf("Remain docked: %s", docker->remainDocked ? "Yes" : "No");
 	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
 	glwprintf("Grouping: %s", grouping ? "Yes" : "No");
 	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
@@ -163,7 +163,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 
 	int mx = ws.mx - xpos, my = ws.my - ypos;
 	/* Mouse cursor highlights */
-	if(!modal && 0 < mx && mx < width && (iy - 1 == my / fonth || (1 + iy) * fonth < my)){
+	if(!modal && 0 < mx && mx < width && (iy - 2 <= my / fonth && my / fonth <= iy - 1 || (1 + iy) * fonth < my)){
 		glColor4ub(0,0,255,127);
 		glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
 		glColor4ub(255,255,255,255);

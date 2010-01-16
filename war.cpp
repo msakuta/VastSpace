@@ -139,6 +139,7 @@ double WarField::war_time()const{
 struct tent3d_line_list *WarField::getTeline3d(){return NULL;}
 struct tent3d_fpol_list *WarField::getTefpol3d(){return NULL;}
 WarField::operator WarSpace*(){return NULL;}
+WarField::operator Docker*(){return NULL;}
 
 Entity *WarField::addent(Entity *e){
 	Entity **plist = e->isTargettable() ? &el : &bl;

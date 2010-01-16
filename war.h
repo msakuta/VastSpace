@@ -109,6 +109,8 @@ public:
 };
 
 class WarSpace;
+class Docker;
+
 class WarField : public Serializable, public Entlist{
 public:
 	WarField();
@@ -132,6 +134,7 @@ public:
 	Player *getPlayer(){return pl;}
 	operator WarField&(){return *this;}
 	virtual operator WarSpace*();
+	virtual operator Docker*();
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 

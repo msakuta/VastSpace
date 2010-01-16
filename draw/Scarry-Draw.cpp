@@ -143,7 +143,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 		return;
 	glColor4ub(255,255,255,255);
 	glwpos2d(this->xpos, this->ypos + 2 * getFontHeight());
-	glwprintf("Resource Units: %.0lf", docker->e.getRU());
+	glwprintf("Resource Units: %.0lf", docker->e->getRU());
 	glColor4ub(255,255,0,255);
 	int fonth = getFontHeight();
 	int iy = 1;

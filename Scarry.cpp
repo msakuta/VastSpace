@@ -214,17 +214,17 @@ Docker::~Docker(){
 }
 
 void Docker::serialize(SerializeContext &sc){
-	// Do NOT call Entity::serialize here because this class is a branch class.
+	st::serialize(sc);
+	sc.o << e;
 	sc.o << baycool;
-	sc.o << el;
 	sc.o << undockque;
 	sc.o << paradec;
 }
 
 void Docker::unserialize(UnserializeContext &sc){
-	// Do NOT call Entity::unserialize here because this class is a branch class.
+	st::unserialize(sc);
+	sc.i >> e;
 	sc.i >> baycool;
-	sc.i >> el;
 	sc.i >> undockque;
 	sc.i >> paradec;
 }
@@ -283,11 +283,15 @@ Entity *Docker::addent(Entity *e){
 }
 
 bool Docker::undock(Dockable *e){
-	e->w = this->e.w;
-	this->e.w->addent(e);
+	e->w = this->e->w;
+	this->e->w->addent(e);
 	e->undock(this);
 	return true;
 }
+
+const unsigned ScarryDocker::classid = registerClass("ScarryDocker", Conster<ScarryDocker>);
+
+const char *ScarryDocker::classname()const{return "ScarryDocker";}
 
 int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	GLWdock *p = this;
@@ -326,7 +330,7 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 }
 
 void GLWdock::postframe(){
-	if(docker && !docker->e.w)
+	if(docker && !docker->e->w)
 		docker = NULL;
 }
 
@@ -362,7 +366,7 @@ hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
 }*/;
 int Scarry::nhardpoints = 0;
 
-Scarry::Scarry(WarField *w) : st::st(w), st(w), docker(new ScarryDocker(*this)){
+Scarry::Scarry(WarField *w) : st::st(w), st(w), docker(new ScarryDocker(this)){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++)
@@ -389,18 +393,18 @@ const unsigned Scarry::classid = registerClass("Scarry", Conster<Scarry>);
 
 void Scarry::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << docker;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
 	Builder::serialize(sc);
-	docker->serialize(sc);
 }
 
 void Scarry::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> docker;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
 	Builder::unserialize(sc);
-	docker->unserialize(sc);
 }
 
 void Scarry::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
@@ -533,9 +537,9 @@ void Scarry::doneBuild(Entity *e){
 
 bool ScarryDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
-		pe->pos = e.pos + e.rot.trans(Vec3d(-.10, 0.05, 0));
-		pe->velo = e.velo;
-		pe->rot = e.rot;
+		pe->pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
+		pe->velo = e->velo;
+		pe->rot = e->rot;
 		return true;
 	}
 	return false;

@@ -232,7 +232,7 @@ bool Assault::undock(Docker *d){
 //	task = scepter_undock;
 //	mother = d;
 	for(int i = 0; i < 4; i++) if(turrets[i])
-		d->e.w->addent(turrets[i]);
+		d->e->w->addent(turrets[i]);
 	d->baycool += 2.;
 	return true;
 }

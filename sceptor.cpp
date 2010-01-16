@@ -74,7 +74,7 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << dest;
 	sc.o << fcloak;
 	sc.o << heat;
-	sc.o << static_cast<Serializable*>(mother); // Mother ship
+	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
 	sc.o << paradec;
 	sc.o << (int)task;
@@ -83,7 +83,6 @@ void Sceptor::serialize(SerializeContext &sc){
 
 void Sceptor::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	Entity *mother;
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
 	sc.i >> fuel;
@@ -96,8 +95,6 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak;
-
-	this->mother = mother->getDocker();
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	WarSpace *ws;
@@ -554,7 +551,7 @@ void Sceptor::anim(double dt){
 	Sceptor *const pf = this;
 	Sceptor *const p = this;
 //	scarry_t *const mother = pf->mother;
-//	Entity *pm = &mother->st.st;
+	Entity *pm = mother && mother->e ? mother->e : NULL;
 	Mat4d mat, imat;
 
 /*	if(!mother){
@@ -717,11 +714,11 @@ void Sceptor::anim(double dt){
 			}*/
 
 			if(p->task == Undock){
-				if(!p->mother)
+				if(!pm)
 					p->task = Idle;
 				else{
 					double sp;
-					Vec3d dm = this->pos - mother->e.pos;
+					Vec3d dm = this->pos - pm->pos;
 					Vec3d mzh = this->rot.trans(vec3_001);
 					sp = -mzh.sp(dm);
 					p->throttle = 1.;
@@ -730,16 +727,16 @@ void Sceptor::anim(double dt){
 				}
 			}
 			else if(w->pl->control != pt) do{
-				if(!pt->enemy || p->task == Idle || p->task == Parade){
-					if(p->mother && mother->e.enemy){
-						pt->enemy = mother->e.enemy;
+				if((task == Attack || task == Away) && !pt->enemy || p->task == Idle || p->task == Parade){
+					if(pm){
+						pt->enemy = pm->enemy;
 						p->task = Attack;
 					}
 					else if(findEnemy()){
 						p->task = Attack;
 					}
-					else if(p->task == Idle || p->task == Parade){
-						if(mother)
+					if(!enemy || (p->task == Idle || p->task == Parade)){
+						if(pm)
 							p->task = Parade;
 						else
 							p->task = Idle;
@@ -843,11 +840,11 @@ void Sceptor::anim(double dt){
 						Quatd q2, q1;
 						target0[0] += p->paradec % 10 * -.05;
 						target0[2] += p->paradec / 10 * -.05;
-						target = mother->e.rot.trans(target0);
-						target += mother->e.pos;
+						target = pm->rot.trans(target0);
+						target += pm->pos;
 						Vec3d dr = pt->pos - target;
 						if(dr.slen() < .03 * .03){
-							q1 = mother->e.rot;
+							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
 							pt->velo += dr * (-dt * .5);
@@ -865,13 +862,23 @@ void Sceptor::anim(double dt){
 						task = Idle;
 				}
 				else if(p->task == Dockque || p->task == Dock){
+					// Find mother if has none
+					if(!pm){
+						double best = 1e10 * 1e10, sl;
+						for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+							mother = e->getDocker();
+							pm = mother->e;
+							best = sl;
+						}
+					}
+
 					Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
 					Quatd q2, q1;
-					collideignore = &mother->e;
+					collideignore = pm;
 					if(p->task == Dockque)
 						target0[2] += -1.;
-					Vec3d target = mother->e.rot.trans(target0);
-					target += mother->e.pos;
+					Vec3d target = pm->rot.trans(target0);
+					target += pm->pos;
 					Vec3d dr = pt->pos - target;
 					if(dr.slen() < .03 * .03){
 						if(p->task == Dockque)
@@ -1190,7 +1197,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 }
 
 void Sceptor::postframe(){
-	if(mother && (!mother->e.w || docked && mother->e.w != w))
+	if(mother && mother->e && (!mother->e->w || docked && mother->e->w != w))
 		mother = NULL;
 	if(enemy && enemy->w != w)
 		enemy = NULL;

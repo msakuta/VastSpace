@@ -66,14 +66,14 @@ class Docker : public WarField{
 public:
 	typedef WarField st;
 	typedef Entity::Dockable Dockable;
-	Entity &e;
+	Entity *e; // The pointed Entity is always resident when a Docker object exists. Propagating functions and destructor is always invoked from the Entity's.
 	double baycool;
 	Dockable *undockque;
 	int paradec;
 
-	Docker(Entity &ae) : st(NULL), e(ae), baycool(0), undockque(NULL), paradec(0){
-		if(ae.w && ae.w->cs)
-			cs = ae.w->cs;
+	Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), paradec(0){
+		if(ae && ae->w && ae->w->cs)
+			cs = ae->w->cs;
 	}
 	~Docker();
 	virtual void serialize(SerializeContext &sc);
@@ -89,8 +89,10 @@ public:
 
 class ScarryDocker : public Docker{
 public:
-	ScarryDocker(Entity &ae) : st(ae){}
+	ScarryDocker(Entity *ae = NULL) : st(ae){}
 	typedef Docker st;
+	static const unsigned classid;
+	const char *classname()const;
 	virtual bool undock(Dockable *);
 };
 
@@ -121,7 +123,7 @@ class Scarry : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Scarry() : docker(new ScarryDocker(*this)){init();}
+	Scarry() : docker(new ScarryDocker(this)){init();}
 	Scarry(WarField *w);
 	~Scarry();
 	void init();

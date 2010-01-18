@@ -113,19 +113,6 @@ double Sceptor::maxhealth()const{
 }
 
 
-enum Sceptor::Task{
-	Idle = sship_idle,
-	Undock = sship_undock,
-	Undockque = sship_undockque,
-	Dock = sship_dock,
-	Dockque = sship_dockque,
-	Moveto = sship_moveto,
-	Parade = sship_parade,
-	Attack = sship_attack,
-	Away = sship_away,
-	num_sceptor_task
-};
-
 
 
 

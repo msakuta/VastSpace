@@ -34,7 +34,7 @@ extern "C"{
 #include <string.h>
 
 
-#define SCEPTER_SCALE 1./10000
+#define SCEPTOR_SCALE 1./10000
 #define SCEPTER_SMOKE_FREQ 10.
 #define SCEPTER_RELOADTIME .3
 #define SCEPTER_ROLLSPEED (.2 * M_PI)
@@ -63,47 +63,50 @@ static const struct color_node cnl_shortburn[] = {
 const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
 
 
-static double g_nlips_factor = 0.;
+static double g_nlips_factor = 1.;
 static int g_shader_enable = 0;
 
 
-#if 0
-static int scepter_cull(entity_t *pt, wardraw_t *wd, double scale){
-	scepter_t *p = (scepter_t*)pt;
-	double pixels;
-	if(p->task == scepter_undockque || glcullFrustum(pt->pos, .012 * scale, wd->pgc))
-		return 1;
-	pixels = .008 * fabs(glcullScale(&pt->pos, wd->pgc));
+bool Sceptor::cull(Viewer &vw)const{
+	double nf = nlipsFactor(vw);
+	if(task == Sceptor::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
+		return true;
+	double pixels = .008 * fabs(vw.gc->scale(pos)) * nf;
 	if(pixels < 2)
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
-#endif
+
+/* NLIPS: Non-Linear Inverse Perspective Scrolling */
+double Sceptor::nlipsFactor(Viewer &vw)const{
+	return 1. + vw.fov * g_nlips_factor * 500. / vw.vp.m * 2. * (this->pos - vw.pos).len();
+}
 
 void Sceptor::draw(wardraw_t *wd){
 	static int init = 0;
-	static suf_t *sufbase = NULL;
-	static suftex_t *suft;
+	static suf_t *sufbase = NULL, *sufbase1 = NULL;
+	static suftex_t *suft, *suft1;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
-	double scale = SCEPTER_SCALE;
+	double nf = nlipsFactor(*wd->vw);
+	double scale = SCEPTOR_SCALE * nf;
 	Sceptor *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
 
-	/* NLIPS: Non-Linear Inverse Perspective Scrolling */
-	scale *= 1. + wd->vw->fov * g_nlips_factor * 500. / wd->vw->vp.m * 2. * (this->pos - wd->vw->pos).len();
-
 	/* cull object */
-/*	if(scepter_cull(pt, wd, scale))
-		return;*/
+	if(cull(*wd->vw))
+		return;
 	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), .01, fuel / maxfuel(), -1.);
+	double pixels = .005 * fabs(wd->vw->gc->scale(pos)) * nf;
+
+	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(init == 0) do{
 		FILE *fp;
 		sufbase = CallLoadSUF("interceptor0.bin");
+		sufbase1 = CallLoadSUF("interceptor1.bin");
 //		scepter_s.sufbase = LZUC(lzw_interceptor0);
 		if(!sufbase) break;
 		{
@@ -132,6 +135,7 @@ void Sceptor::draw(wardraw_t *wd){
 			free(bfh/*stp.bmi*);*/
 		}
 		suft = AllocSUFTex(sufbase);
+		suft1 = AllocSUFTex(sufbase1);
 
 /*		do{
 			GLuint vtx, frg;
@@ -216,9 +220,10 @@ void Sceptor::draw(wardraw_t *wd){
 		}
 		else
 #endif
-		{
+		if(pixels < 15)
+			DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft1, NULL, NULL);
+		else
 			DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
-		}
 		glPopMatrix();
 
 /*		if(0 < wd->light[1]){
@@ -234,21 +239,23 @@ void Sceptor::draw(wardraw_t *wd){
 void Sceptor::drawtra(wardraw_t *wd){
 	Sceptor *p = this;
 	Mat4d mat;
+	double nlips = nlipsFactor(*wd->vw);
+	double scale = SCEPTOR_SCALE * nlips;
 
 	/* cull object */
-/*	if(scepter_cull(pt, wd, 1.))
-		return;*/
+	if(cull(*wd->vw))
+		return;
 	if(p->throttle){
-		Vec3d pos, pos0(0, 0, 40. * SCEPTER_SCALE);
+		Vec3d pos, pos0(0, 0, 40. * scale);
 		GLubyte col[4] = {COLIST4(cnl_shortburn[0].col)};
 		pos = this->rot.trans(pos0);
 		pos += this->pos;
 		gldSpriteGlow(pos, p->throttle * .005, col, wd->vw->irot);
-		pos0[0] = 34.5 * SCEPTER_SCALE;
+		pos0[0] = 34.5 * scale;
 		pos = this->rot.trans(pos0);
 		pos += this->pos;
 		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);
-		pos0[0] = -34.5 * SCEPTER_SCALE;
+		pos0[0] = -34.5 * scale;
 		pos = this->rot.trans(pos0);
 		pos += this->pos;
 		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);
@@ -306,7 +313,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 #endif
 
 	if(mf) for(int i = 0; i < 2; i++){
-		Vec3d pos = rot.trans(Vec3d(gunPos[i])) + this->pos;
+		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
 		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		if(!texname){

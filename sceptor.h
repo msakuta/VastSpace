@@ -16,7 +16,18 @@ class Sceptor : public Entity{
 public:
 	typedef Entity st;
 protected:
-	enum Task;
+	enum Task{
+		Idle = sship_idle,
+		Undock = sship_undock,
+		Undockque = sship_undockque,
+		Dock = sship_dock,
+		Dockque = sship_dockque,
+		Moveto = sship_moveto,
+		Parade = sship_parade,
+		Attack = sship_attack,
+		Away = sship_away,
+		num_sceptor_task
+	};
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
 	double throttle;
@@ -37,6 +48,8 @@ protected:
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);
+	bool cull(Viewer &)const;
+	double nlipsFactor(Viewer &)const;
 public:
 	Sceptor();
 	Sceptor(WarField *aw);

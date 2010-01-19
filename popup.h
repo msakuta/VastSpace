@@ -18,8 +18,8 @@ public:
 	PopupMenu();
 	PopupMenu(const PopupMenu &o);
 	~PopupMenu();
-	PopupMenu &append(cpplib::dstring title, int key, cpplib::dstring cmd); // appends an menu item to the last
-	PopupMenu &appendSeparator(); // append an separator at the end
+	PopupMenu &append(cpplib::dstring title, int key, cpplib::dstring cmd, bool unique = true); // appends an menu item to the last
+	PopupMenu &appendSeparator(bool mergenext = true); // append an separator at the end
 	const PopupMenuItem *get()const;
 	PopupMenuItem *get();
 	int count()const;
@@ -49,7 +49,12 @@ inline PopupMenu::~PopupMenu(){
 	}
 }
 
-inline PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstring cmd){
+inline PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstring cmd, bool unique){
+	if(unique){
+		// Returns unchanged if duplicate menu item is present. This determination is done by title, not command.
+		for(PopupMenuItem *p = list; p; p = p->next) if(p->title == title)
+			return *this;
+	}
 	PopupMenuItem *i = *end = new PopupMenuItem;
 	i->title = title;
 	i->key = key;
@@ -59,7 +64,14 @@ inline PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstr
 	return *this;
 }
 
-inline PopupMenu &PopupMenu::appendSeparator(){
+inline PopupMenu &PopupMenu::appendSeparator(bool mergenext){
+	// Returns unchanged if preceding menu item is a separator too.
+	if(mergenext && list){
+		PopupMenuItem *p;
+		for(p = list; p->next; p = p->next);
+		if(p->key == PopupMenuItem::separator_key)
+			return *this;
+	}
 	PopupMenuItem *i = *end = new PopupMenuItem;
 	i->key = PopupMenuItem::separator_key;
 	i->next = NULL;

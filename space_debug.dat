@@ -27,10 +27,15 @@ coordsys Orbit sunlo{
 	teleport
 	rstation
 #	addent beamer
-	addent assault .2 .5 .7
-	addent assault .2 .5 .3
+	addent assault .2 .5 .7 1
+	addent assault .2 .5 .3 1
+	addent assault .2 -.5 .7 1
+	addent assault .2 -.5 .3 1
+	addent assault -.2 .5 .7 1
+	addent assault -.2 .5 .3 1
 	addent scarry -1 -1 -1
 #	addent sceptor 0 1 1
+#	addent sceptor 0 1.1 1
 }
 
 coordsys Orbit venus{

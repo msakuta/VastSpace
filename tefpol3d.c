@@ -331,8 +331,21 @@ void AnimTefpol3D(tepl_t *p, double dt){
 	{
 #endif
 	tefpol_t *pl = p->lactv, **ppl = &p->lactv;
+
 	while(pl){
 		tefpol_t *pl2;
+		int genvert = 0; /* whether a vertex is generated */
+#	if ENABLE_THICK
+		tent3d_flags_t thickness = pl->flags & TEP3_THICKNESS;
+		double width =
+			thickness == TEP3_THICK ? .001 :
+			thickness == TEP3_THICKER ? .002 : 
+			thickness == TEP3_FAINT ? .0005 : .005;
+#	else
+		tent3d_flags_t thickness = 0;
+		double width = 0.;
+#	endif
+
 
 		/* delete condition */
 		/* if no border behavior is specified, it should be deleted */
@@ -412,7 +425,7 @@ void AnimTefpol3D(tepl_t *p, double dt){
 			}
 #endif
 		}
-		else if(pl->life > 0 && (!pl->head || !VECEQ(pl->pos, pl->head->pos))){
+		else if(genvert = pl->life > 0 && (!pl->head || !pl->tail || (thickness ? width * width < VECSDIST(pl->pos, pl->tail->pos) : !VECEQ(pl->pos, pl->head->pos)))){
 		pl->cnt++;
 		if(!(pl->flags & TEP3_ROUGH) || pl->cnt % 2){
 		tevert_t *pv = svl.lfree;
@@ -487,6 +500,16 @@ void AnimTefpol3D(tepl_t *p, double dt){
 		}
 		}
 novertice:
+
+		/* if a vertex is not added, let the next one carry the load. */
+#if DRAWORDER
+		if(!genvert && pl->head)
+			pl->head->dt += dt;
+#else
+		if(!genvert && pl->tail)
+			pl->tail->dt += dt;
+#endif
+
 		pl->life -= dt;
 		/* if out, don't think of it anymore, with exceptions on return and reflect,
 		  which is expceted to be always inside the region. */

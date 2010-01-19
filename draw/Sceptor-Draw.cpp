@@ -52,9 +52,9 @@ static const struct color_node cnl_orangeburn[] = {
 	{0.1, COLOR32RGBA(255,255,191,255)},
 	{0.15, COLOR32RGBA(255,255,31,191)},
 	{0.45, COLOR32RGBA(255,127,31,95)},
-	{2.3, COLOR32RGBA(255,31,0,63)},
+	{0.3, COLOR32RGBA(255,31,0,63)},
 };
-const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 3.);
+const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 1.);
 static const struct color_node cnl_shortburn[] = {
 	{0.1, COLOR32RGBA(255,255,191,255)},
 	{0.15, COLOR32RGBA(255,255,31,191)},

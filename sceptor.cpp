@@ -99,7 +99,7 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
-		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 		pf = NULL;
 }
@@ -132,7 +132,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel(
 	p->cooldown = 1.;
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
-		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 		p->pf = NULL;
 //	p->mother = mother;
@@ -191,7 +191,7 @@ bool Sceptor::undock(Docker *d){
 		ImmobilizeTefpol3D(this->pf);
 	WarSpace *ws;
 	if(w && w->getTefpol3d())
-		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_shortburn, TEP3_THICK | TEP3_ROUGH, cs_shortburn.t);
+		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	d->baycool += 1.;
 	return true;
 }
@@ -560,8 +560,9 @@ void Sceptor::anim(double dt){
 	Mat4d mat, imat;
 
 	if(Docker *docker = *w){
-		fuel = min(fuel + dt * 10., maxfuel());
-		if(fuel == maxfuel() && !docker->remainDocked)
+		fuel = min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
+		health = min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
+		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
 	}
@@ -576,7 +577,7 @@ void Sceptor::anim(double dt){
 	}*/
 
 	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_shortburn.t, 0/*pf->docked*/);
+		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 
 #if 0
 	if(pf->docked){
@@ -740,8 +741,7 @@ void Sceptor::anim(double dt){
 			}
 			else if(w->pl->control != pt) do{
 				if((task == Attack || task == Away) && !pt->enemy || p->task == Idle || p->task == Parade){
-					if(pm){
-						pt->enemy = pm->enemy;
+					if(pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
 					}
 					else if(findEnemy()){
@@ -865,7 +865,7 @@ void Sceptor::anim(double dt){
 						}
 						else{
 //							p->throttle = dr.slen() / 5. + .01;
-							steerArrival(dt, target, pm->velo, 1. / 5., .01);
+							steerArrival(dt, target, pm->velo, 1. / 10., .001);
 						}
 						if(1. < p->throttle)
 							p->throttle = 1.;
@@ -891,7 +891,7 @@ void Sceptor::anim(double dt){
 						target0[2] += -1.;
 					Vec3d target = pm->rot.trans(target0);
 					target += pm->pos;
-					steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .05, .01);
+					steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .025, .01);
 					double dist = (target - this->pos).len();
 					if(dist < .03){
 						if(p->task == Dockque)

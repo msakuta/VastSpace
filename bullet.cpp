@@ -879,7 +879,7 @@ void Bullet::drawtra(wardraw_t *wd){
 		start = this->pos;
 		end = this->pos;
 		end += this->velo * -(runlength / velolen < length ? runlength / velolen : length);
-		if(damage < 500.){
+		if(true || damage < 500.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
 			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
@@ -900,7 +900,7 @@ void Bullet::drawtra(wardraw_t *wd){
 			glMatrixMode(GL_MODELVIEW);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE); // Add blend
-			gldTextureBeam(wd->vw->pos, start, end, width);
+			gldTextureBeam(wd->vw->pos, start, end, length / width < 10. ? length / 10. : width);
 			glMatrixMode(GL_TEXTURE);
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);

@@ -12,6 +12,7 @@ extern "C"{
 #include "RStation.h"
 #include "glwindow.h"
 #include "serial_util.h"
+#include "Destroyer.h"
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0){
@@ -34,10 +35,10 @@ template<class T> Entity *Constructor(WarField *w){
 };
 
 static const char *ent_name[] = {
-	"beamer", "assault", "sceptor", "scarry", "rstation",
+	"beamer", "assault", "sceptor", "scarry", "rstation", "destroyer"
 };
 static Entity *(*const ent_creator[])(WarField *w) = {
-	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>, Constructor<RStation>
+	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>, Constructor<RStation>, Constructor<Destroyer>
 };
 
 Entity *Entity::create(const char *cname, WarField *w){

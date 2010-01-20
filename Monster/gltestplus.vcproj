@@ -404,6 +404,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Destroyer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\entity.cpp"
 				>
 			</File>
@@ -567,6 +571,10 @@
 			</File>
 			<File
 				RelativePath="..\coordsys.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Destroyer.h"
 				>
 			</File>
 			<File

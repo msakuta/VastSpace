@@ -219,8 +219,6 @@ void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4
 #define MTURRETROTSPEED (.4*M_PI)
 #define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
 
-suf_t *CallLoadSUF(const char *fname);
-
 suf_t *MTurret::suf_turret = NULL;
 suf_t *MTurret::suf_barrel = NULL;
 
@@ -690,6 +688,97 @@ void GatlingTurret::tryshoot(){
 		this->cooldown += 5.;
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const char *LTurret::classname()const{return "LTurret";}
+const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
+
+double LTurret::hitradius(){return .03;}
+
+void LTurret::draw(wardraw_t *wd){
+	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
+	double scale;
+	if(!suf_turret)
+		suf_turret = CallLoadSUF("lturret.bin");
+	if(!suf_barrel)
+		suf_barrel = CallLoadSUF("lbarrel.bin");
+
+	{
+		const double bscale = .001;
+		static const GLfloat rotaxis2[16] = {
+			-1,0,0,0,
+			0,1,0,0,
+			0,0,-1,0,
+			0,0,0,1,
+		};
+
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		gldMultQuat(rot);
+		glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
+		glPushMatrix();
+		gldScaled(bscale);
+		glMultMatrixf(rotaxis2);
+		DrawSUF(suf_turret, SUF_ATR, NULL);
+		glPopMatrix();
+		for(int i = 0; i < 2; i++){
+			Vec3d pos(.005 * (i * 2 - 1), .005, -0.0025);
+			glPushMatrix();
+			gldTranslate3dv(pos);
+			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+			gldScaled(bscale);
+			glMultMatrixf(rotaxis2);
+			DrawSUF(suf_barrel, SUF_ATR, NULL);
+			glPopMatrix();
+		}
+		glPopMatrix();
+	}
+}
+
+float LTurret::reloadtime()const{return 4.;}
+
+void LTurret::tryshoot(){
+	if(ammo <= 0)
+		return;
+	static const avec3_t forward = {0., 0., -1.};
+	Bullet *pz;
+	Quatd qrot;
+	Mat4d mat2;
+	base->transform(mat2);
+	mat2.translatein(hp->pos);
+	Mat4d rot = hp->rot.tomat4();
+	Mat4d mat = mat2 * rot;
+	mat.translatein(0., .005, -0.0025);
+	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	for(int i = 0; i < 2; i++){
+		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
+		pz = new Bullet(base, 3., 800.);
+		w->addent(pz);
+		pz->pos = mat.vp3(lturret_ofs);
+		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
+	}
+	this->cooldown += reloadtime();
+	this->mf += .2;
+	ammo--;
+}
+
+
 
 #if 0
 const struct arms_static_info arms_static[num_armstype] = {

@@ -3,6 +3,7 @@
 #include "judge.h"
 #include "player.h"
 #include "serial_util.h"
+#include "material.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -132,13 +133,13 @@ void Assault::anim(double dt){
 		space_collide(this, ws, dt, NULL, NULL);
 
 	st::anim(dt);
-	for(int i = 0; i < 4; i++) if(turrets[i])
+	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
 }
 
 void Assault::postframe(){
 	st::postframe();
-	for(int i = 0; i < 4; i++) if(turrets[i] && turrets[i]->w != w)
+	for(int i = 0; i < nhardpoints; i++) if(turrets[i] && turrets[i]->w != w)
 		turrets[i] = NULL;
 }
 

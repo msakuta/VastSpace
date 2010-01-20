@@ -472,16 +472,6 @@ void Beamer::cache_bridge(void){
 	}*/
 }
 
-suf_t *CallLoadSUF(const char *fname){
-	suf_t *ret;
-	ret = (suf_t*)ZipUnZip("rc.zip", fname, NULL);
-	if(!ret)
-		ret = LoadSUF(fname);
-	if(!ret)
-		return NULL;
-	return RelocateSUF(ret);
-}
-
 suf_t *Beamer::sufbase = NULL;
 const double Beamer::sufscale = BEAMER_SCALE;
 

@@ -110,5 +110,18 @@ protected:
 	float barrelomg;
 };
 
+class LTurret : public MTurret{
+public:
+	typedef MTurret st;
+	LTurret(){}
+	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){}
+	virtual const char *classname()const;
+	static const unsigned classid;
+	virtual double hitradius();
+	virtual void draw(wardraw_t *);
+	virtual float reloadtime()const;
+	virtual void tryshoot();
+};
+
 
 #endif

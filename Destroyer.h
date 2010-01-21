@@ -8,6 +8,8 @@ protected:
 	ArmBase **turrets;
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
+	static struct hitbox hitboxes[];
+	static const int nhitboxes;
 public:
 	typedef Warpable st;
 	Destroyer(){}
@@ -19,6 +21,7 @@ public:
 	virtual double hitradius();
 	virtual void anim(double dt);
 	virtual void postframe();
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void draw(wardraw_t *wd);
 	virtual double maxhealth()const;
 	virtual double maxenergy()const;

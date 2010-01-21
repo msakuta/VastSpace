@@ -312,27 +312,12 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 	WarField *w = pb->w;
 	double best = 5. * 5.; /* sense range */
 	double sdist;
-	Vec3d right(1., 0., 0.), left(-1., 0., 0.);
-	Mat4d mat;
+	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
 
-	transform(mat);
+	// Obtain reverse transformation matrix to the turret's local coordinate system.
+	Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
 
-	/* obtain matrix that converts enemy position into turret's local coordinate system */
-	{
-/*		Quatd q;
-		Mat4d mat2, mat3;
-		mat2 = hp->rot.cnj().tomat4();
-		mat2.vec3(3) = -hp->pos;
-		mat3 = pb->rot.cnj().tomat4();
-		mat3.vec3(3) = -pb->pos;
-		mat = mat2 * mat3;*/
-/*		QUATMUL(q, pb->rot, pt->rot);
-		QUATCNJIN(q);
-		quat2imat(mat, q);*/
-	}
-
-/*			pt->enemy = &head[(i+1)%n];*/
 	for(pt2 = w->el; pt2; pt2 = pt2->next){
 		Vec3d delta, ldelta;
 		double theta, phi;
@@ -343,8 +328,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
 /*		if(!entity_visible(pb, pt2))
 			continue;*/
 
-/*		VECSUB(delta, pt2->pos, pb->pos);*/
-		ldelta = mat.vp3(pt2->pos);
+		ldelta = mat2.vp3(pt2->pos);
 		phi = -atan2(ldelta[2], ldelta[0]);
 		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
 
@@ -710,6 +694,15 @@ const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
 
 double LTurret::hitradius(){return .03;}
 
+void LTurret::anim(double dt){
+	st::anim(dt);
+	blowback += blowbackspeed * dt;
+	if(.010 < blowback)
+		blowbackspeed = 0;
+	blowbackspeed *= exp(-dt);
+	blowback *= exp(-dt);
+}
+
 void LTurret::draw(wardraw_t *wd){
 	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
 	double scale;
@@ -741,12 +734,52 @@ void LTurret::draw(wardraw_t *wd){
 			glPushMatrix();
 			gldTranslate3dv(pos);
 			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+			glTranslated(0, 0, blowback);
 			gldScaled(bscale);
 			glMultMatrixf(rotaxis2);
 			DrawSUF(suf_barrel, SUF_ATR, NULL);
 			glPopMatrix();
 		}
 		glPopMatrix();
+	}
+}
+
+void LTurret::drawtra(wardraw_t *wd){
+	Entity *pb = base;
+	double bscale = 1;
+	if(this->mf) for(int i = 0; i < 2; i++){
+		struct random_sequence rs;
+		Mat4d mat2, mat, rot;
+		Vec3d pos, const barrelpos(.005 * (i * 2 - 1), .005, -.0025), const muzzlepos(0, .0, -.030);
+		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
+		this->transform(mat);
+		mat2 = mat.roty(this->py[1]);
+		mat2.translatein(barrelpos * bscale);
+		mat = mat2.rotx(this->py[0]);
+//		mat.translatein(-barrelpos * bscale);
+		pos = mat.vp3(muzzlepos);
+		rot = mat;
+		rot.vec3(3).clear();
+//		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
+
+		static GLuint texname = 0;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			stp.wraps = GL_CLAMP_TO_BORDER;
+			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = mf / .1, fi = 1. - mf / .2;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .200 * fi, .060 * fi);
+		glPopAttrib();
 	}
 }
 
@@ -768,14 +801,15 @@ void LTurret::tryshoot(){
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
 	for(int i = 0; i < 2; i++){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
-		pz = new Bullet(base, 3., 800.);
+		pz = new Bullet(base, 5., 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	}
 	this->cooldown += reloadtime();
 	this->mf += .2;
-	ammo--;
+	blowbackspeed += .05;
+	ammo -= 2;
 }
 
 

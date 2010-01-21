@@ -111,14 +111,17 @@ protected:
 };
 
 class LTurret : public MTurret{
+	float blowback, blowbackspeed;
 public:
 	typedef MTurret st;
-	LTurret(){}
-	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){}
+	LTurret() : blowback(0), blowbackspeed(0){}
+	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
 	virtual const char *classname()const;
 	static const unsigned classid;
 	virtual double hitradius();
+	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
 	virtual float reloadtime()const;
 	virtual void tryshoot();
 };

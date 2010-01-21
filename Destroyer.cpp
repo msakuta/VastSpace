@@ -1,5 +1,9 @@
 #include "Destroyer.h"
 #include "material.h"
+#include "judge.h"
+extern "C"{
+#include <clib/gl/gldraw.h>
+}
 
 const unsigned Destroyer::classid = registerClass("destroyer", Conster<Destroyer>);
 const char *Destroyer::classname()const{return "destroyer";}
@@ -8,6 +12,14 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 
 struct hardpoint_static *Destroyer::hardpoints = NULL;
 int Destroyer::nhardpoints = 0;
+struct hitbox Destroyer::hitboxes[] = {
+	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
+	hitbox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
+	hitbox(Vec3d(.0, -.06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	hitbox(Vec3d(.0, .06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+};
+const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
+
 
 Destroyer::Destroyer(WarField *aw) : st(w){
 	init();
@@ -41,6 +53,36 @@ void Destroyer::postframe(){
 		turrets[i] = NULL;
 }
 
+int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	double sc[3];
+	double best = dt, retf;
+	int reti = 0, i, n;
+#if 0
+	if(0 < p->shieldAmount){
+		Vec3d hitpos;
+		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, &hitpos)){
+			if(retp) *retp = hitpos;
+			if(retn) *retn = (hitpos - pos).norm();
+			return 1000; /* something quite unlikely to reach */
+		}
+	}
+#endif
+	for(n = 0; n < nhitboxes; n++){
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		rot = this->rot * hitboxes[n].rot;
+		for(i = 0; i < 3; i++)
+			sc[i] = hitboxes[n].sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+	}
+	return reti;
+}
+
 void Destroyer::draw(wardraw_t *wd){
 	static suf_t *sufbase;
 	static suftex_t *pst;
@@ -71,7 +113,7 @@ void Destroyer::draw(wardraw_t *wd){
 		transform(mat);
 		glMultMatrixd(mat);
 
-#if 0
+#if 1
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();

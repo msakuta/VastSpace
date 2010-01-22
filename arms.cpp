@@ -691,7 +691,23 @@ void GatlingTurret::tryshoot(){
 
 const char *LTurret::classname()const{return "LTurret";}
 const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
+/*
+void LTurret::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << cooldown;
+	sc.o << py[0] << py[1]; // pitch and yaw
+	sc.o << mf; // muzzle flash time
+	sc.o << forceEnemy;
+}
 
+void LTurret::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> cooldown;
+	sc.i >> py[0] >> py[1]; // pitch and yaw
+	sc.i >> mf; // muzzle flash time
+	sc.i >> forceEnemy;
+}
+*/
 double LTurret::hitradius(){return .03;}
 
 void LTurret::anim(double dt){
@@ -711,37 +727,35 @@ void LTurret::draw(wardraw_t *wd){
 	if(!suf_barrel)
 		suf_barrel = CallLoadSUF("lbarrel.bin");
 
-	{
-		const double bscale = .001;
-		static const GLfloat rotaxis2[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
+	const double bscale = .001;
+	static const GLfloat rotaxis2[16] = {
+		-1,0,0,0,
+		0,1,0,0,
+		0,0,-1,0,
+		0,0,0,1,
+	};
 
+	glPushMatrix();
+	gldTranslate3dv(pos);
+	gldMultQuat(rot);
+	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
+	glPushMatrix();
+	gldScaled(bscale);
+	glMultMatrixf(rotaxis2);
+	DrawSUF(suf_turret, SUF_ATR, NULL);
+	glPopMatrix();
+	for(int i = 0; i < 2; i++){
+		Vec3d pos(.005 * (i * 2 - 1), .005, -0.0025);
 		glPushMatrix();
 		gldTranslate3dv(pos);
-		gldMultQuat(rot);
-		glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-		glPushMatrix();
+		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+		glTranslated(0, 0, blowback);
 		gldScaled(bscale);
 		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_turret, SUF_ATR, NULL);
-		glPopMatrix();
-		for(int i = 0; i < 2; i++){
-			Vec3d pos(.005 * (i * 2 - 1), .005, -0.0025);
-			glPushMatrix();
-			gldTranslate3dv(pos);
-			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-			glTranslated(0, 0, blowback);
-			gldScaled(bscale);
-			glMultMatrixf(rotaxis2);
-			DrawSUF(suf_barrel, SUF_ATR, NULL);
-			glPopMatrix();
-		}
+		DrawSUF(suf_barrel, SUF_ATR, NULL);
 		glPopMatrix();
 	}
+	glPopMatrix();
 }
 
 void LTurret::drawtra(wardraw_t *wd){
@@ -776,7 +790,7 @@ void LTurret::drawtra(wardraw_t *wd){
 		glCallList(texname);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .1, fi = 1. - mf / .2;
+		float f = mf / .3 * 2, fi = 1. - mf / .3;
 		glColor4f(f,f,f,1);
 		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .200 * fi, .060 * fi);
 		glPopAttrib();
@@ -807,7 +821,7 @@ void LTurret::tryshoot(){
 		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	}
 	this->cooldown += reloadtime();
-	this->mf += .2;
+	this->mf += .3;
 	blowbackspeed += .05;
 	ammo -= 2;
 }

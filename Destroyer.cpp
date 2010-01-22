@@ -1,6 +1,7 @@
 #include "Destroyer.h"
 #include "material.h"
 #include "judge.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -37,6 +38,18 @@ void Destroyer::init(){
 	}
 	turrets = new ArmBase*[nhardpoints];
 	mass = 1e6;
+}
+
+void Destroyer::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.o << turrets[i];
+}
+
+void Destroyer::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	for(int i = 0; i < nhardpoints; i++)
+		sc.i >> turrets[i];
 }
 
 double Destroyer::hitradius(){return .25;}
@@ -136,6 +149,17 @@ void Destroyer::draw(wardraw_t *wd){
 }
 
 double Destroyer::maxhealth()const{return 100000.;}
+
+int Destroyer::armsCount()const{
+	return nhardpoints;
+}
+
+const ArmBase *Destroyer::armsGet(int i)const{
+	if(i < 0 || armsCount() <= i)
+		return NULL;
+	return turrets[i];
+}
+
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::maneuve &Destroyer::getManeuve()const{

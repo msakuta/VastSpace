@@ -36,8 +36,8 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define MAX_SHIELD_AMOUNT 15000.
-#define BEAMER_HEALTH 25000.
+#define MAX_SHIELD_AMOUNT 10000.
+#define BEAMER_HEALTH 15000.
 #define BEAMER_SCALE .0002
 #define BEAMER_MAX_SPEED .1
 #define BEAMER_ACCELERATE .05
@@ -432,14 +432,14 @@ void Beamer::anim(double dt){
 #endif
 }
 
-static int beamer_cull(Entity *pt, wardraw_t *wd){
+bool Frigate::cull(wardraw_t *wd){
 	double pixels;
-	if(wd->vw->gc->cullFrustum(pt->pos, .6))
-		return 1;
-	pixels = .8 * fabs(wd->vw->gc->scale(pt->pos));
+	if(wd->vw->gc->cullFrustum(this->pos, .6))
+		return true;
+	pixels = .8 * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
-		return 1;
-	return 0;
+		return true;
+	return false;
 }
 
 struct hitbox Frigate::hitboxes[] = {
@@ -483,7 +483,7 @@ void Beamer::draw(wardraw_t *wd){
 		return;
 
 	/* cull object */
-	if(beamer_cull(this, wd))
+	if(cull(wd))
 		return;
 //	wd->lightdraws++;
 

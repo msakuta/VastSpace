@@ -27,7 +27,7 @@ coordsys Orbit sunlo{
 	teleport
 	rstation
 #	addent beamer
-	addent destroyer 0 0 2
+#	addent destroyer 0 0 2
 	addent destroyer 0 0 1
 	addent destroyer 0 0 0
 	addent destroyer 0 0 -1
@@ -50,7 +50,7 @@ coordsys Orbit sunlo{
 	addent assault .2 .8 .7 1
 	addent assault .2 .8 .3 1
 	addent assault .2 .8 -.1 1
-	addent scarry -1 -1 -1
+#	addent scarry -1 -1 -1
 #	addent sceptor 0 1 1
 #	addent sceptor 0 1.1 1
 }

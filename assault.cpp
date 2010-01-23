@@ -151,8 +151,8 @@ void Assault::draw(wardraw_t *wd){
 		return;
 
 	/* cull object */
-/*	if(beamer_cull(this, wd))
-		return;*/
+	if(cull(wd))
+		return;
 //	wd->lightdraws++;
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
@@ -208,11 +208,13 @@ void Assault::draw(wardraw_t *wd){
 }
 
 void Assault::drawtra(wardraw_t *wd){
+	if(cull(wd))
+		return;
 	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 	drawShield(wd);
 }
 
-double Assault::maxhealth()const{return 30000.;}
+double Assault::maxhealth()const{return 20000.;}
 
 int Assault::armsCount()const{return numof(turrets);}
 

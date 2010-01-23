@@ -11,6 +11,7 @@ protected:
 	Frigate(){}
 	Frigate(WarField *);
 	void drawShield(wardraw_t *wd);
+	bool cull(wardraw_t *);
 
 public:
 	virtual void serialize(SerializeContext &sc);

@@ -266,6 +266,12 @@ void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 }
 
 void MTurret::draw(wardraw_t *wd){
+	// Viewing volume culling
+	if(wd->vw->gc->cullFrustum(pos, .03))
+		return;
+	// Scale too small culling
+	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
+		return;
 	MTurret *a = this;
 	double scale;
 	if(!suf_turret)
@@ -556,6 +562,12 @@ void GatlingTurret::anim(double dt){
 }
 
 void GatlingTurret::draw(wardraw_t *wd){
+	// Viewing volume culling
+	if(wd->vw->gc->cullFrustum(pos, .03))
+		return;
+	// Scale too small culling
+	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
+		return;
 	static suf_t *suf_turret = NULL;
 	static suf_t *suf_barrel = NULL;
 	static suf_t *suf_barrels = NULL;
@@ -720,6 +732,12 @@ void LTurret::anim(double dt){
 }
 
 void LTurret::draw(wardraw_t *wd){
+	// Viewing volume culling
+	if(wd->vw->gc->cullFrustum(pos, .03))
+		return;
+	// Scale too small culling
+	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
+		return;
 	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
 	double scale;
 	if(!suf_turret)

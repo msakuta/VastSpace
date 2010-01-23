@@ -96,6 +96,11 @@ int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double d
 	return reti;
 }
 
+void Destroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	rot = this->rot;
+	pos = rot.trans(Vec3d(0, .08, .0)) + this->pos;
+}
+
 void Destroyer::draw(wardraw_t *wd){
 	static suf_t *sufbase;
 	static suftex_t *pst;
@@ -106,7 +111,14 @@ void Destroyer::draw(wardraw_t *wd){
 	if(!init) do{
 		sufbase = CallLoadSUF("destroyer0.bin");
 		if(!sufbase) break;
-//		cache_bridge();
+		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.env = GL_ADD;
+		stp.mipmap = 0;
+		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
+		CacheSUFMaterials(sufbase);
 		pst = AllocSUFTex(sufbase);
 		init = true;
 	} while(0);

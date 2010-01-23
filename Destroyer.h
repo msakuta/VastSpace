@@ -26,6 +26,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *wd);
+	virtual int takedamage(double damage, int hitpart);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;

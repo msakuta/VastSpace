@@ -31,6 +31,7 @@ coordsys Orbit sunlo{
 	addent destroyer 0 0 1
 	addent destroyer 0 0 0
 	addent destroyer 0 0 -1
+	addent destroyer 0 0 -2
 	addent assault -1 0 0 1 1
 	addent assault .2 .5 .7 1
 	addent assault .2 .5 .3 1

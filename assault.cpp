@@ -195,7 +195,7 @@ void Assault::postframe(){
 	st::postframe();
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i] && turrets[i]->w != w)
 		turrets[i] = NULL;
-	if(!mother->e || !mother->e->w)
+	if(mother && (!mother->e || !mother->e->w))
 		mother = NULL;
 }
 
@@ -207,6 +207,7 @@ void Assault::draw(wardraw_t *wd){
 	Assault *const p = this;
 	static int init = 0;
 	static suftex_t *pst;
+	static GLuint list = 0;
 	if(!w)
 		return;
 
@@ -238,7 +239,8 @@ void Assault::draw(wardraw_t *wd){
 		glPushMatrix();
 		transform(mat);
 		glMultMatrixd(mat);
-
+		if(!list){
+		glNewList(list = glGenLists(1), GL_COMPILE);
 #if 1
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
@@ -260,6 +262,10 @@ void Assault::draw(wardraw_t *wd){
 /*		DecalDrawSUF(&suf_beamer, SUF_ATR, &g_gldcache, beamer_s.tex, pf->sd, &beamer_s);*/
 /*		glPopAttrib();*/
 		glPopMatrix();
+		glEndList();
+		}
+
+		glCallList(list);
 
 /*		for(i = 0; i < numof(pf->turrets); i++)
 			mturret_draw(&pf->turrets[i], pt, wd);*/

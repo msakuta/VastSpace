@@ -209,9 +209,9 @@ void WarSpace::unserialize(UnserializeContext &sc){
 	sc.i >> pl >> effects >> soundtime >> cs;
 }
 
-WarSpace::WarSpace() : tell(NewTeline3D(2048, 128, 128)), tepl(NewTefpol3D(2047, 128, 128)), ot(NULL), otroot(NULL), oti(0), ots(0){}
+WarSpace::WarSpace() : tell(NewTeline3D(2048, 128, 128)), gibs(NewTeline3D(1024, 128, 128)), tepl(NewTefpol3D(2048, 128, 128)), ot(NULL), otroot(NULL), oti(0), ots(0){}
 
-WarSpace::WarSpace(CoordSys *acs) : st(acs), tell(NewTeline3D(2048, 128, 128)), gibs(NULL), tepl(NewTefpol3D(2047, 128, 128)),
+WarSpace::WarSpace(CoordSys *acs) : st(acs), tell(NewTeline3D(2048, 128, 128)), gibs(NewTeline3D(1024, 128, 128)), tepl(NewTefpol3D(2048, 128, 128)),
 	ot(NULL), otroot(NULL), oti(0), ots(0),
 	effects(0), soundtime(0)
 {
@@ -239,6 +239,7 @@ void WarSpace::anim(double dt){
 	aaanim(dt, this, list[1]);
 	TRYBLOCK(ot_check(this, dt));
 	TRYBLOCK(AnimTeline3D(tell, dt));
+	TRYBLOCK(AnimTeline3D(gibs, dt));
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
 }
 
@@ -255,6 +256,15 @@ void WarSpace::draw(wardraw_t *wd){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): ?\n", __LINE__, pe, pe->idname());
 		}
 	}
+
+	tent3d_line_drawdata dd;
+	*(Vec3d*)(dd.viewdir) = -wd->vw->rot.vec3(2);
+	*(Vec3d*)dd.viewpoint = wd->vw->pos;
+	*(Mat4d*)(dd.invrot) = wd->vw->irot;
+	dd.fov = wd->vw->fov;
+	dd.pgc = NULL;
+	*(Quatd*)dd.rot = wd->vw->qrot;
+	DrawTeline3D(gibs, &dd);
 }
 
 void WarSpace::drawtra(wardraw_t *wd){

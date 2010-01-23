@@ -160,6 +160,80 @@ void Destroyer::draw(wardraw_t *wd){
 	}
 }
 
+extern void smokedraw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
+extern void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
+
+int Destroyer::takedamage(double damage, int hitpart){
+	Destroyer *p = this;
+	struct tent3d_line_list *tell = w->getTeline3d();
+	int ret = 1;
+
+//	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+	if(0 < p->health && p->health - damage <= 0){
+		int i;
+		ret = 0;
+		WarSpace *ws = *w;
+		if(ws){
+
+			if(ws->gibs) for(i = 0; i < 128; i++){
+				double pos[3], velo[3], omg[3];
+				/* gaussian spread is desired */
+				velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				velo[1] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				velo[2] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				VECCPY(pos, this->pos);
+				VECSADD(pos, velo, .1);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, NULL, omg, NULL, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+			}
+
+			/* smokes */
+			for(i = 0; i < 64; i++){
+				double pos[3], velo[3];
+				COLOR32 col = 0;
+				VECCPY(pos, p->pos);
+				pos[0] += .3 * (drseq(&w->rs) - .5);
+				pos[1] += .3 * (drseq(&w->rs) - .5);
+				pos[2] += .3 * (drseq(&w->rs) - .5);
+				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+				col |= COLOR32RGBA(0,0,0,191);
+	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+				AddTelineCallback3D(ws->tell, pos, NULL, .07, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
+			}
+
+			{/* explode shockwave thingie */
+				static const double pyr[3] = {M_PI / 2., 0., 0.};
+				amat3_t ort;
+				Vec3d dr, v;
+				Quatd q;
+				amat4_t mat;
+				double p;
+	/*			w->vft->orientation(w, &ort, &pt->pos);
+				VECCPY(dr, &ort[3]);*/
+				dr = vec3_001;
+
+				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+
+				v = vec3_001.vp(dr);
+				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+				q = v * p;
+
+				AddTeline3D(tell, this->pos, NULL, 15., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+				AddTeline3D(tell, this->pos, NULL, 6., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+			}
+		}
+//		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+		p->w = NULL;
+	}
+	p->health -= damage;
+	return ret;
+}
+
 double Destroyer::maxhealth()const{return 100000.;}
 
 int Destroyer::armsCount()const{

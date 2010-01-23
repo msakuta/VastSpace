@@ -20,6 +20,7 @@ extern "C"{
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/GL/gldraw.h>
+#include <clib/GL/cull.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
@@ -795,7 +796,7 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 }
 #endif
 
-static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
 	glMultMatrixd(dd->invrot);
@@ -825,6 +826,42 @@ static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_
 	glEnd();
 	glPopAttrib();
 	glPopMatrix();
+}
+
+void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+	if(dd->pgc && glcullFrustum(&pl->pos, .01, dd->pgc))
+		return;
+
+	static suf_t *sufs[5] = {NULL};
+	static GLuint lists[numof(sufs)] = {0};
+	if(!sufs[0]){
+		char buf[64];
+		for(int i = 0; i < numof(sufs); i++){
+			sprintf(buf, "debris%d.bin", i);
+			sufs[i] = CallLoadSUF(buf);
+		}
+	}
+	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+//	glBindTexture(GL_TEXTURE_2D, texname);
+	glPushMatrix();
+	gldTranslate3dv(pl->pos);
+	gldMultQuat(pl->rot);
+	gldScaled(.0001);
+	struct random_sequence rs;
+	initfull_rseq(&rs, 13230354, (unsigned long)pl);
+	unsigned id = rseq(&rs) % numof(sufs);
+	if(!lists[id]){
+		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
+		DrawSUF(sufs[id], SUF_ATR, NULL);
+		glEndList();
+	}
+	else
+		glCallList(lists[id]);
+	glPopMatrix();
+	glPopAttrib();
 }
 
 
@@ -864,6 +901,7 @@ int Frigate::takedamage(double damage, int hitpart){
 /*		effectDeath(w, pt);*/
 		WarSpace *ws = *w;
 		if(ws){
+#if 0
 			for(i = 0; i < 32; i++){
 				Vec3d pos, velo;
 				velo[0] = drseq(&w->rs) - .5;
@@ -875,9 +913,9 @@ int Frigate::takedamage(double damage, int hitpart){
 				pos += velo * .1;
 				AddTeline3D(ws->tell, pos, velo, .005, NULL, NULL, NULL, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND, 15. + drseq(&w->rs) * 5.);
 			}
+#endif
 
-	#if 0
-			if(w->gibs) for(i = 0; i < 32; i++){
+			if(ws->gibs) for(i = 0; i < 32; i++){
 				double pos[3], velo[3], omg[3];
 				/* gaussian spread is desired */
 				velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
@@ -886,11 +924,10 @@ int Frigate::takedamage(double damage, int hitpart){
 				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				VECCPY(pos, pt->pos);
+				VECCPY(pos, this->pos);
 				VECSADD(pos, velo, .1);
-				AddTelineCallback3D(w->gibs, pos, velo, .010, NULL, omg, NULL, beamer_gib_draw, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, NULL, omg, NULL, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
-	#endif
 
 			/* smokes */
 			for(i = 0; i < 32; i++){

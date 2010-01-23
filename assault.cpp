@@ -46,6 +46,8 @@ void Assault::init(){
 	}
 	turrets = new ArmBase*[nhardpoints];
 	mass = 1e5;
+	mother = NULL;
+	paradec = -1;
 }
 
 const char *Assault::idname()const{
@@ -62,12 +64,14 @@ void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
+	sc.o << mother;
 }
 
 void Assault::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
+	sc.i >> mother;
 }
 
 const char *Assault::dispname()const{
@@ -75,7 +79,30 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
-	if(0 < health && w->getPlayer()->control != this){
+	if(!w->operator WarSpace *())
+		return;
+
+	if(health <= 0){
+		w = NULL;
+		return;
+	}
+
+	Entity *pm = mother ? mother->e : NULL;
+
+	if(task == sship_undock){
+		if(!mother || !mother->e)
+			task = sship_idle;
+		else{
+			double sp;
+			Vec3d dm = this->pos - mother->e->pos;
+			Vec3d mzh = this->rot.trans(vec3_001);
+			sp = -mzh.sp(dm);
+			inputs.press |= PL_W;
+			if(1. < sp)
+				task = sship_parade;
+		}
+	}
+	else if(w->getPlayer()->control != this){
 		inputs.press = 0;
 		if(!enemy){ /* find target */
 			double best = 20. * 20.;
@@ -89,6 +116,33 @@ void Assault::anim(double dt){
 			}
 		}
 
+		if(!enemy && task == sship_parade){
+			if(mother){
+				if(paradec == -1)
+					paradec = mother->enumParadeC(mother->Frigate);
+				Vec3d target, target0(1.5, -1., -1.);
+				Quatd q2, q1;
+				target0[0] += paradec % 10 * .30;
+				target0[2] += paradec / 10 * -.30;
+				target = pm->rot.trans(target0);
+				target += pm->pos;
+				Vec3d dr = this->pos - target;
+				if(dr.slen() < .10 * .10){
+					q1 = pm->rot;
+//					inputs.press |= PL_W;
+//					parking = 1;
+					this->velo += dr * (-dt * .5);
+					q2 = Quatd::slerp(this->rot, q1, 1. - exp(-dt));
+					this->rot = q2;
+				}
+				else{
+	//							p->throttle = dr.slen() / 5. + .01;
+					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+				}
+			}
+			else
+				task = sship_idle;
+		}
 /*		if(p->dock && p->undocktime == 0){
 			if(pt->enemy)
 				assault_undock(p, p->dock);
@@ -141,6 +195,12 @@ void Assault::postframe(){
 	st::postframe();
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i] && turrets[i]->w != w)
 		turrets[i] = NULL;
+	if(!mother->e || !mother->e->w)
+		mother = NULL;
+}
+
+bool Assault::solid(const Entity *o)const{
+	return !(task == sship_undock);
 }
 
 void Assault::draw(wardraw_t *wd){
@@ -230,13 +290,13 @@ void Assault::attack(Entity *target){
 }
 
 bool Assault::undock(Docker *d){
-	if(!st::undock(d))
-		return false;
-//	task = scepter_undock;
-//	mother = d;
+//	if(!st::undock(d))
+//		return false;
+	task = sship_undock;
+	mother = d;
 	for(int i = 0; i < 4; i++) if(turrets[i])
 		d->e->w->addent(turrets[i]);
-	d->baycool += 2.;
+	d->baycool += 5.;
 	return true;
 }
 

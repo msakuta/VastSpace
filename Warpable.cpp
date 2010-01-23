@@ -503,10 +503,31 @@ void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
 	}
 }
 
+void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
+	Vec3d target(atarget);
+	Vec3d rdr = target - this->pos; // real dr
+	Vec3d rdrn = rdr.norm();
+	Vec3d dv = targetvelo - this->velo;
+	Vec3d dvLinear = rdrn.sp(dv) * rdrn;
+	Vec3d dvPlanar = dv - dvLinear;
+	double dist = rdr.len();
+	if(rdrn.sp(dv) < 0) // estimate only when closing
+		target += dvPlanar * dist / dvLinear.len();
+	Vec3d dr = this->pos - target;
+	if(rot.trans(-vec3_001).sp(dr) < 0) // burst only when heading closer
+		this->inputs.press |= PL_W;
+//	this->throttle = dr.len() * speedfactor + minspeed;
+	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
+	const maneuve &mn = getManeuve();
+	if(mn.maxanglespeed * mn.maxanglespeed < this->omg.slen())
+		this->omg.normin().scalein(mn.maxanglespeed);
+	this->rot = this->rot.quatrotquat(this->omg * dt);
+}
 
 
 
-Warpable::Warpable(WarField *aw) : st(aw){
+
+Warpable::Warpable(WarField *aw) : st(aw), task(sship_idle){
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */5. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;
@@ -956,6 +977,7 @@ void Warpable::serialize(SerializeContext &sc){
 		sc.o << totalWarpDist << currentWarpDist;
 		sc.o << warpcs << warpdstcs;
 	}
+	sc.o << task;
 }
 
 void Warpable::unserialize(UnserializeContext &sc){
@@ -968,6 +990,7 @@ void Warpable::unserialize(UnserializeContext &sc){
 		sc.i >> totalWarpDist >> currentWarpDist;
 		sc.i >> warpcs >> warpdstcs;
 	}
+	sc.i >> (int&)task;
 }
 
 void Warpable::anim(double dt){

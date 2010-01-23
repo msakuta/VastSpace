@@ -8,6 +8,8 @@ class Assault : public Frigate{
 protected:
 	static suf_t *sufbase;
 	ArmBase **turrets;
+	Docker *mother;
+	int paradec;
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 public:
@@ -23,6 +25,7 @@ public:
 	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void postframe();
+	virtual bool solid(const Entity *)const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;

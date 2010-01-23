@@ -37,6 +37,7 @@ public:
 	virtual int numCockpits()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
 	virtual double hitradius() = 0;
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit

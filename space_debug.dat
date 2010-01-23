@@ -18,7 +18,7 @@ coordsys Orbit sunlo{
 	cs_radius 500
 	orbits Sol
 	showorbit
-	semimajor_axis 600.2686*6378.
+	semimajor_axis 5*600.2686*6378.
 	eccentricity 0.
 	inclination 3.85
 	argument_of_periapsis 150.2075

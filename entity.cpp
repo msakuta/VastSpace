@@ -133,6 +133,7 @@ void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot 
 int Entity::numCockpits()const{return 1;}
 void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}
+bool Entity::solid(const Entity *)const{return true;} // Default is to check hits
 void Entity::bullethit(const Bullet *){}
 Entity *Entity::getOwner(){return NULL;}
 bool Entity::isSelectable()const{return false;}

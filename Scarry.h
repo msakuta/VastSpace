@@ -66,16 +66,17 @@ class Docker : public WarField{
 public:
 	typedef WarField st;
 	typedef Entity::Dockable Dockable;
+	enum ShipClass{
+		Fighter, Frigate, Destroyer, num_ShipClass
+	};
+
 	Entity *e; // The pointed Entity is always resident when a Docker object exists. Propagating functions and destructor is always invoked from the Entity's.
 	double baycool;
 	Dockable *undockque;
-	int paradec;
+	int paradec[num_ShipClass];
 	bool remainDocked;
 
-	Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), paradec(0), remainDocked(false){
-		if(ae && ae->w && ae->w->cs)
-			cs = ae->w->cs;
-	}
+	Docker(Entity *ae);
 	~Docker();
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -83,7 +84,7 @@ public:
 	void anim(double dt);
 	void dock(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
-	int enumParadeC(){return paradec++;}
+	int enumParadeC(enum ShipClass sc){return paradec[sc]++;}
 	virtual Entity *addent(Entity*);
 	virtual operator Docker*();
 	virtual bool undock(Dockable *);

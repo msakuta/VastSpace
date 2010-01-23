@@ -298,6 +298,10 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
 	Vec3d n;
 
+	// If either one of concerned Entities are not solid, no hit check is needed.
+	if(!pt->solid(pt2) || !pt2->solid(pt))
+		return;
+
 	// If bounding spheres are not intersecting each other, no resolving is performed.
 	// Object tree should discard such cases, but that must be ensured here when the tree
 	// is yet to be built.
@@ -326,8 +330,8 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
 
 	// terminate closing velocity component
-	space_collide_reflect(pt, netvelo, n, f);
-	space_collide_reflect(pt2, netvelo, -n, f);
+	space_collide_reflect(pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass));
+	space_collide_reflect(pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass));
 }
 
 void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
@@ -847,7 +851,7 @@ void Sceptor::anim(double dt){
 				if(p->task == Parade){
 					if(mother){
 						if(paradec == -1)
-							paradec = mother->enumParadeC();
+							paradec = mother->enumParadeC(mother->Fighter);
 						Vec3d target, target0(-1., 0., -1.);
 						Quatd q2, q1;
 						target0[0] += p->paradec % 10 * -.05;
@@ -1158,20 +1162,10 @@ void Sceptor::anim(double dt){
 //	movesound3d(pf->hitsound, pt->pos);
 }
 
-
-#if 0
-static int scepter_cull(entity_t *pt, wardraw_t *wd, double scale){
-	scepter_t *p = (scepter_t*)pt;
-	double pixels;
-	if(p->task == scepter_undockque || glcullFrustum(pt->pos, .012 * scale, wd->pgc))
-		return 1;
-	pixels = .008 * fabs(glcullScale(&pt->pos, wd->pgc));
-	if(pixels < 2)
-		return 1;
-	return 0;
+// Docking and undocking will never stack.
+bool Sceptor::solid(const Entity *o)const{
+	return !(task == Undock || task == Dock);
 }
-#endif
-
 
 int Sceptor::takedamage(double damage, int hitpart){
 	int ret = 1;

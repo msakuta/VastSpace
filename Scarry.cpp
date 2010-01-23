@@ -199,6 +199,13 @@ int cmd_build(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+Docker::Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), remainDocked(false){
+	for(int i = 0; i < numof(paradec); i++)
+		paradec[i] = 0;
+	if(ae && ae->w && ae->w->cs)
+		cs = ae->w->cs;
+}
+
 Docker::~Docker(){
 	// Docked entities die with their base.
 	for(Entity *e = el; e;){
@@ -218,7 +225,8 @@ void Docker::serialize(SerializeContext &sc){
 	sc.o << e;
 	sc.o << baycool;
 	sc.o << undockque;
-	sc.o << paradec;
+	for(int i = 0; i < numof(paradec); i++)
+		sc.o << paradec[i];
 	sc.o << remainDocked;
 }
 
@@ -227,7 +235,8 @@ void Docker::unserialize(UnserializeContext &sc){
 	sc.i >> e;
 	sc.i >> baycool;
 	sc.i >> undockque;
-	sc.i >> paradec;
+	for(int i = 0; i < numof(paradec); i++)
+		sc.i >> paradec[i];
 	sc.i >> remainDocked;
 }
 
@@ -393,7 +402,7 @@ void Scarry::init(){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];
-	mass = 1e6;
+	mass = 5e6;
 }
 
 Scarry::~Scarry(){

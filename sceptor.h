@@ -64,6 +64,7 @@ public:
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);
+	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void postframe();
 	virtual bool isTargettable()const;

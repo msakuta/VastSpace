@@ -799,14 +799,19 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
-	glMultMatrixd(dd->invrot);
+//	glMultMatrixd(dd->invrot);
+	{
+		Vec3d delta = Vec3d(dd->viewpoint) - Vec3d(p->pos);
+		Quatd qirot = Quatd::direction(delta);
+		gldMultQuat(qirot);
+	}
 	gldScaled(p->len);
 	struct random_sequence rs;
 	init_rseq(&rs, (long)p);
 	glRotated(rseq(&rs) % 360, 0, 0, 1);
 //	gldMultQuat(Quatd::direction(Vec3d(p->pos) - Vec3d(dd->viewpoint)));
 	static GLuint list = 0;
-	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
 	if(!list){
 		suftexparam_t stp;
 		stp.flags = STP_ENV | STP_ALPHA | STP_ALPHATEX | STP_MAGFIL | STP_MINFIL;
@@ -818,11 +823,21 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	glCallList(list);
 	COLOR32 col = (COLOR32)private_data;
 	glColor4f(COLOR32R(col) / 255., COLOR32G(col) / 255., COLOR32B(col) / 255., MIN(p->life * .25, 1.));
-	glBegin(GL_QUADS);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_NORMALIZE);
+/*	glBegin(GL_QUADS);
 	glTexCoord2f(0,0); glVertex2f(-1, -1);
 	glTexCoord2f(1,0); glVertex2f(+1, -1);
 	glTexCoord2f(1,1); glVertex2f(+1, +1);
 	glTexCoord2f(0,1); glVertex2f(-1, +1);
+	glEnd();*/
+	glBegin(GL_TRIANGLE_FAN);
+	glTexCoord2f( .5,  .5); glNormal3f( 0,  0, 1); glVertex2f( 0,  0);
+	glTexCoord2f( .0,  .0); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
+	glTexCoord2f( 1.,  .0); glNormal3f( 1, -1, 0); glVertex2f( 1, -1);
+	glTexCoord2f( 1.,  1.); glNormal3f( 1,  1, 0); glVertex2f( 1,  1);
+	glTexCoord2f( 0.,  1.); glNormal3f(-1,  1, 0); glVertex2f(-1,  1);
+	glTexCoord2f( 0.,  0.); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
 	glEnd();
 	glPopAttrib();
 	glPopMatrix();

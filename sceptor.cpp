@@ -526,11 +526,19 @@ static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_
 	for(int i = 0; i < 2; i++){
 		glCallList(lists[i]);
 		glColor4f(1, 1, 1, i == 0 ? MIN(p->life * 1., 1.) : MAX(MIN(p->life * 1. - 1., 1.), 0));
-		glBegin(GL_QUADS);
+/*		glBegin(GL_QUADS);
 		glTexCoord2f(0,0); glVertex2f(-1, -1);
 		glTexCoord2f(1,0); glVertex2f(+1, -1);
 		glTexCoord2f(1,1); glVertex2f(+1, +1);
 		glTexCoord2f(0,1); glVertex2f(-1, +1);
+		glEnd();*/
+		glBegin(GL_TRIANGLE_FAN);
+		glTexCoord2f( .5,  .5); glNormal3f( 0,  0, 1); glVertex2f( 0,  0);
+		glTexCoord2f( .0,  .0); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
+		glTexCoord2f( 1.,  .0); glNormal3f( 1, -1, 0); glVertex2f( 1, -1);
+		glTexCoord2f( 1.,  1.); glNormal3f( 1,  1, 0); glVertex2f( 1,  1);
+		glTexCoord2f( 0.,  1.); glNormal3f(-1,  1, 0); glVertex2f(-1,  1);
+		glTexCoord2f( 0.,  0.); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
 		glEnd();
 	}
 	glPopAttrib();

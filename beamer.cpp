@@ -801,9 +801,13 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	gldTranslate3dv(p->pos);
 //	glMultMatrixd(dd->invrot);
 	{
+		Quatd rot;
+		memcpy(&rot, dd->rot, sizeof rot);
 		Vec3d delta = Vec3d(dd->viewpoint) - Vec3d(p->pos);
-		Quatd qirot = Quatd::direction(delta);
-		gldMultQuat(qirot);
+		Vec3d ldelta = rot.trans(delta);
+		Quatd qirot = Quatd::direction(ldelta);
+		Quatd qret = rot.cnj() * qirot;
+		gldMultQuat(qret);
 	}
 	gldScaled(p->len);
 	struct random_sequence rs;
@@ -825,6 +829,9 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	glColor4f(COLOR32R(col) / 255., COLOR32G(col) / 255., COLOR32B(col) / 255., MIN(p->life * .25, 1.));
 	glEnable(GL_LIGHTING);
 	glEnable(GL_NORMALIZE);
+	float alpha = MIN(p->life * .25, 1.);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, Vec4<float>(.5f, .5f, .5f, alpha));
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, Vec4<float>(.5f, .5f, .5f, alpha));
 /*	glBegin(GL_QUADS);
 	glTexCoord2f(0,0); glVertex2f(-1, -1);
 	glTexCoord2f(1,0); glVertex2f(+1, -1);

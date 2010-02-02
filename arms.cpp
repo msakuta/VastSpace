@@ -14,6 +14,7 @@
 #include "bullet.h"
 #include "serial_util.h"
 #include "material.h"
+#include "Missile.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -821,22 +822,26 @@ void LTurret::tryshoot(){
 	if(ammo <= 0)
 		return;
 	static const avec3_t forward = {0., 0., -1.};
-	Bullet *pz;
-	Quatd qrot;
 	Mat4d mat2;
 	base->transform(mat2);
 	mat2.translatein(hp->pos);
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., .005, -0.0025);
-	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
+	mat2 = mat.roty(yaw);
+	mat = mat2.rotx(pitch);
+	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
 	for(int i = 0; i < 2; i++){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
-		pz = new Bullet(base, 5., 800.);
+		Bullet *pz;
+//		pz = new Bullet(base, 5., 800.);
+		pz = new Missile(base, 5., 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
+		pz->rot = qrot;
 	}
 	this->cooldown += reloadtime();
 	this->mf += .3;

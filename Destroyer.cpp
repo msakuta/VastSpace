@@ -25,7 +25,7 @@ const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
 Destroyer::Destroyer(WarField *aw) : st(w){
 	init();
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = new LTurret(this, &hardpoints[i]);
+		turrets[i] = i % 2 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]);
 		if(aw)
 			aw->addent(turrets[i]);
 	}

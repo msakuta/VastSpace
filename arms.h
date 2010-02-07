@@ -110,10 +110,16 @@ protected:
 	float barrelomg;
 };
 
-class LTurret : public MTurret{
+class LTurretBase : public MTurret{
+public:
+	LTurretBase(){}
+	LTurretBase(Entity *abase, const hardpoint_static *hp) : MTurret(abase, hp){}
+};
+
+class LTurret : public LTurretBase{
 	float blowback, blowbackspeed;
 public:
-	typedef MTurret st;
+	typedef LTurretBase st;
 	LTurret() : blowback(0), blowbackspeed(0){}
 	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
 	virtual const char *classname()const;
@@ -124,6 +130,24 @@ public:
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual float reloadtime()const;
+	virtual void tryshoot();
+};
+
+class LMissileTurret : public LTurretBase{
+public:
+	typedef LTurretBase st;
+	LMissileTurret(){}
+	LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){ammo = 6;}
+	virtual const char *classname()const;
+	static const unsigned classid;
+//	virtual void serialize(SerializeContext &sc);
+//	virtual void unserialize(UnserializeContext &sc);
+	virtual double hitradius();
+	virtual void anim(double dt);
+	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
+	virtual double bulletspeed()const;
 	virtual float reloadtime()const;
 	virtual void tryshoot();
 };

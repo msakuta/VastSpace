@@ -836,8 +836,7 @@ void LTurret::tryshoot(){
 	for(int i = 0; i < 2; i++){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
 		Bullet *pz;
-//		pz = new Bullet(base, 5., 800.);
-		pz = new Missile(base, 5., 800.);
+		pz = new Bullet(base, 5., 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
@@ -850,6 +849,152 @@ void LTurret::tryshoot(){
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+const char *LMissileTurret::classname()const{return "LMissileTurret";}
+const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LTurret>);
+double LMissileTurret::hitradius(){return .03;}
+
+void LMissileTurret::anim(double dt){
+	st::anim(dt);
+}
+
+void LMissileTurret::draw(wardraw_t *wd){
+	// Viewing volume culling
+	if(wd->vw->gc->cullFrustum(pos, .03))
+		return;
+	// Scale too small culling
+	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
+		return;
+	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
+	static suftex_t *pst_barrel;
+	double scale;
+	if(!suf_turret)
+		suf_turret = CallLoadSUF("missile_launcher.bin");
+	if(!suf_barrel){
+		suf_barrel = CallLoadSUF("missile_launcher_barrel.bin");
+		if(suf_barrel){
+			CacheSUFMaterials(suf_barrel);
+			pst_barrel = AllocSUFTex(suf_barrel);
+		}
+	}
+
+	const double bscale = .0001 / 2.;
+	static const GLfloat rotaxis2[16] = {
+		-1,0,0,0,
+		0,1,0,0,
+		0,0,-1,0,
+		0,0,0,1,
+	};
+
+	glPushMatrix();
+	gldTranslate3dv(pos);
+	gldMultQuat(rot);
+	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
+	glPushMatrix();
+	gldScaled(bscale);
+	glMultMatrixf(rotaxis2);
+	if(suf_turret)
+		DrawSUF(suf_turret, SUF_ATR, NULL);
+	glPopMatrix();
+	if(suf_barrel){
+		const Vec3d pos(0, 200, 0);
+		gldScaled(bscale);
+		gldTranslate3dv(pos);
+		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+		gldTranslate3dv(-pos);
+		glMultMatrixf(rotaxis2);
+		DecalDrawSUF(suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
+	}
+	glPopMatrix();
+}
+
+void LMissileTurret::drawtra(wardraw_t *wd){
+	Entity *pb = base;
+	double bscale = 1;
+	if(this->mf){
+		struct random_sequence rs;
+		Mat4d mat2, mat, rot;
+		Vec3d const barrelpos(0, .01, 0);
+		Vec3d pos, const muzzlepos(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo % 6 / 3)) / 2., 0);
+		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
+		this->transform(mat);
+		mat2 = mat.roty(this->py[1]);
+		mat2.translatein(barrelpos * bscale);
+		mat = mat2.rotx(this->py[0]);
+		mat.translatein(-barrelpos * bscale);
+		pos = mat.vp3(muzzlepos);
+		rot = mat;
+		rot.vec3(3).clear();
+//		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
+
+		static GLuint texname = 0;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			stp.wraps = GL_CLAMP_TO_BORDER;
+			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = mf / .3 * 2, fi = 1. - mf / .3;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .050 * fi, .020 * fi);
+		glPopAttrib();
+	}
+}
+
+double LMissileTurret::bulletspeed()const{return 1.;}
+float LMissileTurret::reloadtime()const{return .5;}
+
+void LMissileTurret::tryshoot(){
+	if(ammo <= 0)
+		return;
+	static const avec3_t forward = {0., 0., -1.};
+	Mat4d mat2;
+	base->transform(mat2);
+	mat2.translatein(hp->pos);
+	Mat4d rot = hp->rot.tomat4();
+	Mat4d mat = mat2 * rot;
+	mat.translatein(0., .01, 0.);
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
+	mat2 = mat.roty(yaw);
+	mat = mat2.rotx(pitch);
+	mat.translatein(0., -.01, 0.);
+	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
+	ammo--;
+	{
+		Vec3d lturret_ofs(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo / 3)) / 2., 0);
+		Bullet *pz;
+		pz = new Missile(base, 5., 800.);
+		w->addent(pz);
+		pz->pos = mat.vp3(lturret_ofs);
+		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
+		pz->rot = qrot;
+	}
+	if(!ammo){
+		this->cooldown += 6.;
+		ammo = 6;
+	}
+	else
+		this->cooldown += reloadtime();
+	this->mf += .3;
+}
 
 #if 0
 const struct arms_static_info arms_static[num_armstype] = {

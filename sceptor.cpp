@@ -896,33 +896,38 @@ void Sceptor::anim(double dt){
 						}
 					}
 
-					Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
-					Quatd q2, q1;
-					collideignore = pm;
-					if(p->task == Dockque)
-						target0[2] += -1.;
-					Vec3d target = pm->rot.trans(target0);
-					target += pm->pos;
-					steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .025, .01);
-					double dist = (target - this->pos).len();
-					if(dist < .03){
+					// It is possible that no one is glad to become a mother.
+					if(!pm)
+						p->task = Idle;
+					else{
+						Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
+						Quatd q2, q1;
+						collideignore = pm;
 						if(p->task == Dockque)
-							p->task = Dock;
-						else{
-							mother->dock(pt);
-							if(p->pf){
-								ImmobilizeTefpol3D(p->pf);
-								p->pf = NULL;
+							target0[2] += -1.;
+						Vec3d target = pm->rot.trans(target0);
+						target += pm->pos;
+						steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .025, .01);
+						double dist = (target - this->pos).len();
+						if(dist < .03){
+							if(p->task == Dockque)
+								p->task = Dock;
+							else{
+								mother->dock(pt);
+								if(p->pf){
+									ImmobilizeTefpol3D(p->pf);
+									p->pf = NULL;
+								}
+								p->docked = true;
+	/*							if(mother->cargo < scarry_cargousage(mother)){
+									scarry_undock(mother, pt, w);
+								}*/
+								return;
 							}
-							p->docked = true;
-/*							if(mother->cargo < scarry_cargousage(mother)){
-								scarry_undock(mother, pt, w);
-							}*/
-							return;
 						}
+						if(1. < p->throttle)
+							p->throttle = 1.;
 					}
-					if(1. < p->throttle)
-						p->throttle = 1.;
 				}
 				if(p->task == Idle)
 					p->throttle = 0.;

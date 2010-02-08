@@ -981,10 +981,10 @@ void LMissileTurret::tryshoot(){
 	{
 		Vec3d lturret_ofs(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo / 3)) / 2., 0);
 		Bullet *pz;
-		pz = new Missile(base, 5., 800.);
+		pz = new Missile(base, 15., 800., target);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
+		pz->velo = mat.dvp3(forward) * .1*bulletspeed() + this->velo;
 		pz->rot = qrot;
 	}
 	if(!ammo){

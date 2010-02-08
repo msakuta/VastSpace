@@ -54,7 +54,9 @@ public:
 class MTurret : public ArmBase{
 	static suf_t *suf_turret;
 	static suf_t *suf_barrel;
-	void findtarget(Entity *pb, const hardpoint_static *hp);
+protected:
+	void findtarget0(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
+	virtual void findtarget(Entity *pb, const hardpoint_static *hp);
 public:
 	typedef ArmBase st;
 	float cooldown;
@@ -135,10 +137,12 @@ public:
 };
 
 class LMissileTurret : public LTurretBase{
+	const Entity *targets[6]; // Targets already locked up
 public:
 	typedef LTurretBase st;
-	LMissileTurret(){}
-	LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){ammo = 6;}
+	LMissileTurret();
+	LMissileTurret(Entity *abase, const hardpoint_static *hp);
+	~LMissileTurret();
 	virtual const char *classname()const;
 	static const unsigned classid;
 //	virtual void serialize(SerializeContext &sc);
@@ -150,6 +154,7 @@ public:
 	virtual double bulletspeed()const;
 	virtual float reloadtime()const;
 	virtual void tryshoot();
+	virtual void findtarget(Entity *pb, const hardpoint_static *hp);
 };
 
 

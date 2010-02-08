@@ -23,6 +23,7 @@ public:
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual double hitradius();
 	static const double maxspeed;
 };
 

@@ -59,7 +59,7 @@ void Missile::anim(double dt){
 
 	{
 		Entity *target = enemy;
-#if 0
+#if 1
 		Vec3d epos, dv;
 		if(0. < this->fuel){
 			Vec3d delta;
@@ -85,9 +85,7 @@ void Missile::anim(double dt){
 					speed = MAX(maxspeed * 2., speed);
 	/*				speed = flying ? samspeed : BULLETSPEED * 2.;*/
 					dist = (target->pos - this->pos).len();
-					epos[0] = target->pos[0] + (target->velo[0] - velo[0]) * dist / speed;
-					epos[1] = target->pos[1] + (target->velo[1] - velo[1]) * dist / speed;
-					epos[2] = target->pos[2] + (target->velo[2] - velo[2]) * dist / speed;
+					epos = target->pos + (target->velo - velo) * (dist / speed * 1.2);
 			/*		epos[1] += .002;*/
 					dv = epos - this->pos;
 				}
@@ -120,6 +118,11 @@ void Missile::anim(double dt){
 		}
 #endif
 #if 1
+		if(target){
+			double f = exp(-2.*dt);
+			velo = velo * f + dv.norm() * (1. - f);
+		}
+#elif 1
 	Vec3d epos, dv, dv2;
 	if(0. < fuel){
 		double dist, burnt, thrust;
@@ -440,4 +443,9 @@ void Missile::draw(wardraw_t *wd){
 
 void Missile::drawtra(wardraw_t *wd){
 	// redefine void
+}
+
+// proximity fuse
+double Missile::hitradius(){
+	return .010;
 }

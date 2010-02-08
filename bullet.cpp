@@ -630,10 +630,10 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 		return 0;
 
 //	vft = (struct entity_private_static*)pt->vft;
-	if(!jHitSphere(pt->pos, pt->hitradius(), pb->pos, pb->velo, dt))
+	if(!jHitSphere(pt->pos, pt->hitradius() + pb->hitradius(), pb->pos, pb->velo, dt))
 		return 0;
 	{
-		ret = pt->tracehit(pb->pos, pb->velo, 0., dt, NULL, &pos, &nh);
+		ret = pt->tracehit(pb->pos, pb->velo, pb->hitradius(), dt, NULL, &pos, &nh);
 		if(!ret)
 			return 0;
 		else if(rethitpart)

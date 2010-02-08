@@ -55,8 +55,8 @@ class MTurret : public ArmBase{
 	static suf_t *suf_turret;
 	static suf_t *suf_barrel;
 protected:
-	void findtarget0(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
-	virtual void findtarget(Entity *pb, const hardpoint_static *hp);
+	void findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
+	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2); // returns precedence factor
 public:
 	typedef ArmBase st;
 	float cooldown;
@@ -154,7 +154,7 @@ public:
 	virtual double bulletspeed()const;
 	virtual float reloadtime()const;
 	virtual void tryshoot();
-	virtual void findtarget(Entity *pb, const hardpoint_static *hp);
+	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 };
 
 

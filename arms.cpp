@@ -314,7 +314,7 @@ void MTurret::draw(wardraw_t *wd){
 static const double mturret_ofs[3] = {0., 0., -.001};
 static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
-void MTurret::findtarget0(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
+void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
 	MTurret *pt = this;
 	WarField *w = pb->w;
 	double best = 5. * 5.; /* sense range */
@@ -327,10 +327,11 @@ void MTurret::findtarget0(Entity *pb, const hardpoint_static *hp, const Entity *
 
 	for(pt2 = w->el; pt2; pt2 = pt2->next){
 		Vec3d delta, ldelta;
-		double theta, phi;
+		double theta, phi, f;
 
-		for(int i = 0; i < nignore_list; i++) if(pt2 == ignore_list[i])
-			goto gcontinue;
+		f = findtargetproc(pb, hp, pt2);
+		if(f == 0.)
+			continue;
 
 		if(!(pt2->isTargettable() && pt2 != pb && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != pb->race))
 			continue;
@@ -344,12 +345,11 @@ void MTurret::findtarget0(Entity *pb, const hardpoint_static *hp, const Entity *
 
 		// Weigh already targetted enemy to keep shooting single enemy.
 		if(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]
-			&& (sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.)) < best)
+			&& (sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.) / f) < best)
 		{
 			best = sdist;
 			closest = pt2;
 		}
-gcontinue:;
 	}
 	if(closest)
 		target = closest;
@@ -357,8 +357,8 @@ gcontinue:;
 		target = NULL;
 }
 
-void MTurret::findtarget(Entity *pb, const hardpoint_static *hp){
-	findtarget0(pb, hp);
+double MTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
+	return 1.;
 }
 
 void MTurret::tryshoot(){
@@ -866,22 +866,14 @@ void LTurret::tryshoot(){
 
 
 
-static std::vector<const LMissileTurret *> g_missileturrets;
-
 LMissileTurret::LMissileTurret(){
-	g_missileturrets.push_back(this);
 }
 
 LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
-	g_missileturrets.push_back(this);
 	ammo = 6;
 }
 
 LMissileTurret::~LMissileTurret(){
-	for(std::vector<const LMissileTurret *>::iterator it = g_missileturrets.begin(); it != g_missileturrets.end(); it++) if(*it == this){
-		g_missileturrets.erase(it);
-		break;
-	}
 }
 
 const char *LMissileTurret::classname()const{return "LMissileTurret";}
@@ -1021,17 +1013,15 @@ void LMissileTurret::tryshoot(){
 	this->mf += .3;
 }
 
-void LMissileTurret::findtarget(Entity *pb, const hardpoint_static *hp){
-	const Entity **temp = NULL;
-	int n = 0;
-	for(std::vector<const LMissileTurret*>::iterator it = g_missileturrets.begin(); it != g_missileturrets.end(); it++){
-		int delta = numof(targets) - (*it)->ammo;
-		temp = (const Entity**)::realloc(temp, (n + delta) * sizeof *temp);
-		memcpy(&temp[n], (*it)->targets, delta * sizeof *temp);
-		n += delta;
+double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
+	double accumdamage = 0.;
+	std::map<const Entity *, Missile *>::iterator it = Missile::targetmap.find(pt2);
+	if(it != Missile::targetmap.end()) for(Missile *pm = it->second; pm; pm = pm->targetlist){
+		accumdamage += pm->damage;
+		if(pt2->health < accumdamage)
+			return 0.;
 	}
-	findtarget0(pb, hp, temp, n);
-	::realloc(temp, 0);
+	return 1. / const_cast<Entity*>(pt2)->hitradius(); // precede small objects that conventional guns can hardly hit.
 }
 
 #if 0

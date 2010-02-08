@@ -237,7 +237,18 @@ coordsys Orbit marss{
 		orbits Mars
 		semimajor_axis 1e4
 		addent scarry 0 0 -4
-		addent destroyer .1 0 0 1
+		addent scarry 2 0 -4
+##		addent destroyer -.5 -1 -3 0
+#		addent destroyer -.5 1 -3 0
+#		addent destroyer .1 0 0 1
+		addent destroyer -.5 0 0 1
+		addent destroyer .7 0 0 1
+#		addent destroyer .1 -1 0 1
+#		addent destroyer -.5 -1 0 1
+#		addent destroyer .7 -1 0 1
+#		addent destroyer .1 1 0 1
+#		addent destroyer -.5 1 0 1
+#		addent destroyer .7 1 0 1
 #		addent beamer .1 0 0
 #		addent beamer -.1 0 0
 #		addent assault -.2 0 0 
@@ -259,11 +270,11 @@ coordsys Orbit marss{
 		addent sceptor -.3 -.1 0
 		addent sceptor -.2 -.1 0
 		addent sceptor -.1 -.1 0
-#		addent sceptor 0 -.1 0
-#		addent sceptor .1 -.1 0
-#		addent sceptor .2 -.1 0
-#		addent sceptor .3 -.1 0
-#		addent sceptor .4 -.1 0
+		addent sceptor 0 -.1 0
+		addent sceptor .1 -.1 0
+		addent sceptor .2 -.1 0
+		addent sceptor .3 -.1 0
+		addent sceptor .4 -.1 0
 #		addent rstation 0 -3 1 -1
 
 		new astro Asteroid BigWatcher{

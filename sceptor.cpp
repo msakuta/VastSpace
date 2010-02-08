@@ -1049,7 +1049,7 @@ void Sceptor::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .3, speed = -p->velo.sp(mat.vec3(2));
+		const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
 		if(maxvelo < speed)
 			p->throttle = 0.;
 		else{

@@ -1,5 +1,6 @@
 #include "Missile.h"
 #include "material.h"
+#include "viewer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -18,12 +19,25 @@ const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32
 
 const float Missile::maxfuel = 120.;
 const double Missile::maxspeed = 1.;
+std::map<const Entity *, Missile *> Missile::targetmap;
+
 
 Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0){
 	WarSpace *ws = *parent->w;
 	if(ws)
 		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH, cs_firetrail.t);
+	else
+		pf = NULL;
 	enemy = target;
+
+	// Make list of missiles targetting to the same Entity.
+	targetlist = targetmap[target];
+	targetmap[target] = this;
+}
+
+Missile::~Missile(){
+	if(enemy)
+		unlinkTarget();
 }
 
 const unsigned Missile::classid = registerClass("Missile", Conster<Missile>);
@@ -121,6 +135,8 @@ void Missile::anim(double dt){
 		if(target){
 			double f = exp(-2.*dt);
 			velo = velo * f + dv.norm() * (1. - f);
+			Vec3d omega = velo.vp(rot.trans(vec3_001));
+			rot = rot.quatrotquat(omega);
 		}
 #elif 1
 	Vec3d epos, dv, dv2;
@@ -399,10 +415,26 @@ void Missile::anim(double dt){
 	st::anim(dt);
 }
 
+void Missile::postframe(){
+	if(w == NULL && enemy)
+		unlinkTarget();
+	if(enemy && enemy->w != w){
+		targetmap.erase(enemy);
+		enemy = NULL;
+	}
+}
+
 void Missile::draw(wardraw_t *wd){
 	static suf_t *suf;
 	static suftex_t *suft;
 	static bool init = false;
+
+	if(wd->vw->gc->cullFrustum(pos, .01))
+		return;
+	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	if(pixels < 5)
+		return;
+
 	if(!init) do{
 		init = true;
 		FILE *fp;
@@ -449,3 +481,24 @@ void Missile::drawtra(wardraw_t *wd){
 double Missile::hitradius(){
 	return .010;
 }
+
+void Missile::unlinkTarget(){
+	// This case should not happen
+	if(!targetmap[enemy]){
+		targetmap.erase(enemy);
+		return;
+	}
+	if(targetmap[enemy] == this){
+		targetmap[enemy] = targetlist;
+	}
+	else{
+		Missile *prev;
+		for(prev = targetmap[enemy]; prev; prev = prev->targetlist) if(prev->targetlist != this){
+			prev->targetlist = targetlist;
+			break;
+		}
+	}
+	if(!targetmap[enemy])
+		targetmap.erase(enemy);
+}
+

@@ -477,7 +477,40 @@ void Missile::draw(wardraw_t *wd){
 }
 
 void Missile::drawtra(wardraw_t *wd){
-	// redefine void
+	Mat4d mat = rot.tomat4();
+	mat.vec3(3) += pos;
+
+	/* burning trail */
+	if(/*p->target &&*/ 0. < fuel){
+		struct gldBeamsData bd;
+		Vec3d v0(.0, .0, .00300);
+		const Vec3d &viewpos = wd->vw->pos;
+		int lumi;
+		struct random_sequence rs;
+		double viewdist;
+		const double scale = 10.;
+		bd.cc = bd.solid = 0;
+		init_rseq(&rs, (long)(wd->vw->viewtime * 1e6) + (unsigned long)this);
+		lumi = rseq(&rs) % 256;
+		Vec3d end = mat.vp3(v0);
+
+		viewdist = (end - viewpos).len();
+//		drawglow(end, wd->irot, .0015, COLOR32RGBA(255,255,255, 127 / (1. + viewdist)));
+		glColor4ub(255,255,255,255);
+		Vec4<GLubyte> col(255,255,255, 127 / (1. + viewdist));
+		gldTextureGlow(end, .0020, col, wd->vw->irot);
+
+		gldBeams(&bd, viewpos, end, .00001 * scale, COLOR32RGBA(3,127,191,0));
+		v0[2] += .0003 * scale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00007 * scale, COLOR32RGBA(255,255,255,lumi));
+		v0[2] += .0003 * scale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00009 * scale, COLOR32RGBA(255,127,63,lumi));
+		v0[2] += .0003 * scale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00005 * scale, COLOR32RGBA(255,0,0,0));
+	}
 }
 
 // proximity fuse

@@ -243,7 +243,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	double scale = SCEPTOR_SCALE * nlips;
 
 	/* cull object */
-	if(cull(*wd->vw))
+	if(1||cull(*wd->vw))
 		return;
 	if(p->throttle){
 		Vec3d pos, pos0(0, 0, 40. * scale);

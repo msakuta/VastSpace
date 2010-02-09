@@ -206,6 +206,9 @@ void Scarry::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), hitradius(), -1., capacitor / maxenergy());
 
+	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+		return;
+
 	if(init == 0) do{
 		sufbase = CallLoadSUF("spacecarrier.bin");
 		if(!sufbase) break;
@@ -234,6 +237,7 @@ void Scarry::draw(wardraw_t *wd){
 		};
 		Mat4d mat;
 
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 		glPushMatrix();
 		transform(mat);
 		glMultMatrixd(mat);
@@ -257,6 +261,7 @@ void Scarry::draw(wardraw_t *wd){
 		glPopMatrix();
 
 		glPopMatrix();
+		glPopAttrib();
 	}
 }
 
@@ -269,6 +274,9 @@ void Scarry::drawtra(wardraw_t *wd){
 
 /*	if(scarry_cull(pt, wd))
 		return;*/
+
+	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+		return;
 
 	scale = fabs(wd->vw->gc->scale(this->pos));
 

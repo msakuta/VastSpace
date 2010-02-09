@@ -916,6 +916,7 @@ void LMissileTurret::draw(wardraw_t *wd){
 		0,0,0,1,
 	};
 
+	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT);
 	glPushMatrix();
 	gldTranslate3dv(pos);
 	gldMultQuat(rot);
@@ -936,6 +937,7 @@ void LMissileTurret::draw(wardraw_t *wd){
 		DecalDrawSUF(suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
 	}
 	glPopMatrix();
+	glPopAttrib();
 }
 
 void LMissileTurret::drawtra(wardraw_t *wd){

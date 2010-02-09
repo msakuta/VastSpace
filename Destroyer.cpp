@@ -108,6 +108,9 @@ void Destroyer::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, -1);
 
+	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+		return;
+
 	if(!init) do{
 		sufbase = CallLoadSUF("destroyer0.bin");
 		if(!sufbase) break;
@@ -134,6 +137,7 @@ void Destroyer::draw(wardraw_t *wd){
 		};
 		Mat4d mat;
 
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 		glPushMatrix();
 		transform(mat);
 		glMultMatrixd(mat);
@@ -157,6 +161,7 @@ void Destroyer::draw(wardraw_t *wd){
 		glPopMatrix();
 
 		glPopMatrix();
+		glPopAttrib();
 	}
 }
 

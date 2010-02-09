@@ -121,21 +121,15 @@ void Missile::anim(double dt){
 					this->fuel -= burnt;
 				}
 			}
-	/*		n = (int)(dt * SSM_BLAST_FREQ + drseq(&gsrs));
-			for(i = 0; i < n; i++){
-				dv[0] = -pb->velo[0] + (drseq(&gsrs) - .5) * .01;
-				dv[1] = -pb->velo[1] + (drseq(&gsrs) - .5) * .01;
-				dv[2] = -pb->velo[2] + (drseq(&gsrs) - .5) * .01;
-				AddTeline3D(tell, pb->pos, dv, .001, NULL, NULL, gravity, COLOR32RGB(0,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, .5);
-			}*/
-
 		}
 #endif
 #if 1
 		if(target){
-			double f = exp(-2.*dt);
-			velo = velo * f + dv.norm() * (1. - f);
-			Vec3d omega = velo.vp(rot.trans(vec3_001));
+			double f = exp(-1.*dt);
+			Vec3d lvelo = velo - target->velo; // Convert to target based velocity space
+			lvelo = lvelo * f + dv.norm() * (1. - f);
+			velo = lvelo + target->velo;
+			Vec3d omega = velo.norm().vp(rot.trans(vec3_001));
 			rot = rot.quatrotquat(omega);
 		}
 #elif 1

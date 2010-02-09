@@ -52,7 +52,7 @@ void Destroyer::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-double Destroyer::hitradius(){return .25;}
+double Destroyer::hitradius()const{return .25;}
 
 void Destroyer::anim(double dt){
 	st::anim(dt);

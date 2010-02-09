@@ -422,6 +422,9 @@ void Missile::postframe(){
 		targetmap.erase(enemy);
 		enemy = NULL;
 	}
+
+	// The super class deals with enemy member, so we process enemy member before calling st::postframe.
+	st::postframe();
 }
 
 void Missile::draw(wardraw_t *wd){
@@ -478,7 +481,7 @@ void Missile::drawtra(wardraw_t *wd){
 }
 
 // proximity fuse
-double Missile::hitradius(){
+double Missile::hitradius()const{
 	return .010;
 }
 

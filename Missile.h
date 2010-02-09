@@ -26,7 +26,7 @@ public:
 	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
-	virtual double hitradius();
+	virtual double hitradius()const;
 	static const double maxspeed;
 	Missile *targetlist;
 	static std::map<const Entity *, Missile *> targetmap;

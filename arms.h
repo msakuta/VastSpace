@@ -42,7 +42,7 @@ public:
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
 	virtual void postframe();
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
@@ -78,7 +78,7 @@ public:
 	virtual void control(const input_t *, double dt);
 	virtual void anim(double dt);
 	virtual void postframe();
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual void attack(Entity *target);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
@@ -128,12 +128,13 @@ public:
 	static const unsigned classid;
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual float reloadtime()const;
 	virtual void tryshoot();
+	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 };
 
 class LMissileTurret : public LTurretBase{
@@ -147,7 +148,7 @@ public:
 	static const unsigned classid;
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

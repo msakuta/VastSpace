@@ -31,7 +31,7 @@ public:
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual void drawtra(wardraw_t *);

@@ -201,7 +201,7 @@ void Frigate::anim(double dt){
 	se.anim(dt);
 
 }
-double Frigate::hitradius(){return .1;}
+double Frigate::hitradius()const{return .1;}
 Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::maneuve &Frigate::getManeuve()const{return beamer_mn;}
 

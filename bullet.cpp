@@ -836,7 +836,7 @@ void Bullet::anim(double dt){
 	pb->pos += move;
 }
 
-double Bullet::hitradius(){
+double Bullet::hitradius()const{
 	return 0.;
 }
 

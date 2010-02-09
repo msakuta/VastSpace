@@ -443,7 +443,7 @@ double Scarry::maxhealth()const{
 	return 200000;
 }
 
-double Scarry::hitradius(){
+double Scarry::hitradius()const{
 	return 1.;
 }
 

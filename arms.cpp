@@ -82,7 +82,7 @@ void ArmBase::postframe(){
 		target = NULL;
 }
 
-double ArmBase::hitradius(){
+double ArmBase::hitradius()const{
 	return 0.;
 }
 
@@ -511,7 +511,7 @@ void MTurret::drawtra(wardraw_t *wd){
 	}
 }
 
-double MTurret::hitradius(){
+double MTurret::hitradius()const{
 	return .005;
 }
 
@@ -729,7 +729,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 	sc.i >> forceEnemy;
 }
 */
-double LTurret::hitradius(){return .03;}
+double LTurret::hitradius()const{return .03;}
 
 void LTurret::anim(double dt){
 	st::anim(dt);
@@ -856,6 +856,10 @@ void LTurret::tryshoot(){
 	ammo -= 2;
 }
 
+// prefer bigger targets
+double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
+	return pt2->hitradius();
+}
 
 
 
@@ -878,7 +882,7 @@ LMissileTurret::~LMissileTurret(){
 
 const char *LMissileTurret::classname()const{return "LMissileTurret";}
 const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LTurret>);
-double LMissileTurret::hitradius(){return .03;}
+double LMissileTurret::hitradius()const{return .03;}
 
 void LMissileTurret::anim(double dt){
 	st::anim(dt);
@@ -997,7 +1001,7 @@ void LMissileTurret::tryshoot(){
 	{
 		Vec3d lturret_ofs(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo / 3)) / 2., 0);
 		Bullet *pz;
-		pz = new Missile(base, 15., 800., target);
+		pz = new Missile(base, 15., 500., target);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = mat.dvp3(forward) * .1*bulletspeed() + this->velo;
@@ -1021,7 +1025,7 @@ double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *
 		if(pt2->health < accumdamage)
 			return 0.;
 	}
-	return 1. / const_cast<Entity*>(pt2)->hitradius(); // precede small objects that conventional guns can hardly hit.
+	return 1. / pt2->hitradius(); // precede small objects that conventional guns can hardly hit.
 }
 
 #if 0

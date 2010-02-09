@@ -813,9 +813,11 @@ void Sceptor::anim(double dt){
 					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 					p->throttle = 1.;
 					{
+						struct random_sequence rs;
+						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
 						for(i = 0; i < 3; i++)
-							randomvec[i] = drseq(&w->rs) - .5;
+							randomvec[i] = drseq(&rs) - .5;
 						pt->velo += randomvec * dt * .5;
 					}
 					if(p->task == Attack || forward.sp(dv) < -.5){
@@ -1224,7 +1226,7 @@ bool Sceptor::isTargettable()const{
 }
 bool Sceptor::isSelectable()const{return true;}
 
-double Sceptor::hitradius(){
+double Sceptor::hitradius()const{
 	return .01;
 }
 

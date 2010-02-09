@@ -20,7 +20,7 @@ public:
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius();
+	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);

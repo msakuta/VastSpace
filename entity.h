@@ -38,7 +38,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
-	virtual double hitradius() = 0;
+	virtual double hitradius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
@@ -99,7 +99,7 @@ protected:
 
 inline Entity *Entity::getUltimateOwner(){
 	Entity *ret;
-	for(ret = this; ret->getOwner(); ret = ret->getOwner());
+	for(ret = this; ret && ret->getOwner(); ret = ret->getOwner());
 	return ret;
 }
 

@@ -79,7 +79,7 @@ void RStation::unserialize(UnserializeContext &sc){
 	return &p->ru;
 }*/
 
-double RStation::hitradius(){
+double RStation::hitradius()const{
 	return 4.;
 }
 

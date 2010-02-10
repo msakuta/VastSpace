@@ -247,7 +247,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	while(mode && fgets(sc.buf, MAX_LINE_LENGTH, sc.fp)){
 		char *s = NULL, *ps;
 		int argc, c = 0;
-		char *argv[8], *post;
+		char *argv[16], *post;
 		sc.line++;
 		argc = argtok(argv, sc.buf, &post, numof(argv));
 		if(argc == 0)

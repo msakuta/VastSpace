@@ -72,6 +72,8 @@ public:
 		double capacity; /* capacity of capacitor [MJ] */
 		double capacitor_gen; /* generated energy [MW] */
 	};
+protected:
+	virtual void init();
 private:
 	static const maneuve mymn;
 };

@@ -448,6 +448,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Respawn.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\RStation.cpp"
 				>
 			</File>
@@ -627,6 +631,10 @@
 			</File>
 			<File
 				RelativePath="..\popup.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Respawn.h"
 				>
 			</File>
 			<File

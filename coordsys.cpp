@@ -9,6 +9,7 @@
 #include "entity.h"
 #include "cmd.h"
 #include "serial_util.h"
+#include "Respawn.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/aquat.h>
@@ -774,6 +775,33 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
 			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
 			pt->race = 5 < argc ? atoi(argv[5]) : 0;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "respawn")){
+		if(argc < 2)
+			return false;
+		extern Player *ppl;
+		WarField *w;
+		Entity *pt;
+		if(this->w)
+			w = this->w;
+		else
+			w = this->w = new WarSpace(this)/*spacewar_create(cs, ppl)*/;
+		const char *classname = 1 < argc ? argv[1] : NULL;
+		Vec3d pos(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.,
+			3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.,
+			4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.);
+		int ind = 4;
+		int race = ++ind < argc ? int(calc3(&argv[ind], sc.vl, NULL)) : 0;
+		double interval = ++ind < argc ? calc3(&argv[ind], sc.vl, NULL) : 1.;
+		int max_count = ++ind < argc ? int(calc3(&argv[ind], sc.vl, NULL)) : 1;
+		double initial_phase = ++ind < argc ? calc3(&argv[ind], sc.vl, NULL) : 1.;
+		pt = new Respawn(w, interval, initial_phase, max_count, classname);
+		if(pt){
+			pt->pos = pos;
+			pt->race = race;
+			w->addent(pt);
 		}
 		return true;
 	}

@@ -14,8 +14,7 @@ public:
 	typedef Warpable st;
 	Destroyer(){init();}
 	Destroyer(WarField *w);
-	void init();
-	static const unsigned classid;
+	static const unsigned classid, entityid;
 	virtual const char *classname()const;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
@@ -32,6 +31,9 @@ public:
 	virtual const ArmBase *armsGet(int index)const;
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;
+protected:
+	void static_init();
+	virtual void init();
 };
 
 #endif

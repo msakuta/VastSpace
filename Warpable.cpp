@@ -528,6 +528,11 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 
 
 Warpable::Warpable(WarField *aw) : st(aw), task(sship_idle){
+	Warpable::init();
+}
+
+void Warpable::init(){
+	st::init();
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */5. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;

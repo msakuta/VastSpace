@@ -92,9 +92,15 @@ public:
 	static int cmd_property(int argc, char *argv[], void *pv);
 
 protected:
-	void init();
+	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;
+	virtual void init();
 	virtual Docker *getDockerInt();
 	virtual Builder *getBuilderInt();
+	static unsigned registerEntity(std::string name, Entity *(*)(WarField *));
+	static EntityCtorMap &entityCtorMap();
+	template<class T> static Entity *Constructor(WarField *w){
+		return new T(w);
+	};
 };
 
 inline Entity *Entity::getUltimateOwner(){

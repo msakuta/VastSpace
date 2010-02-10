@@ -7,6 +7,7 @@ extern "C"{
 }
 
 const unsigned Destroyer::classid = registerClass("destroyer", Conster<Destroyer>);
+const unsigned Destroyer::entityid = registerEntity("destroyer", Constructor<Destroyer>);
 const char *Destroyer::classname()const{return "destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
@@ -22,7 +23,7 @@ struct hitbox Destroyer::hitboxes[] = {
 const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
 
 
-Destroyer::Destroyer(WarField *aw) : st(w){
+Destroyer::Destroyer(WarField *aw) : st(aw){
 	init();
 	for(int i = 0; i < nhardpoints; i++){
 		turrets[i] = 1&&i % 3 != 0 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]);
@@ -31,11 +32,15 @@ Destroyer::Destroyer(WarField *aw) : st(w){
 	}
 }
 
-void Destroyer::init(){
-	st::init();
+void Destroyer::static_init(){
 	if(!hardpoints){
 		hardpoints = hardpoint_static::load("Destroyer.hps", nhardpoints);
 	}
+}
+
+void Destroyer::init(){
+	static_init();
+	st::init();
 	turrets = new ArmBase*[nhardpoints];
 	mass = 1e6;
 }

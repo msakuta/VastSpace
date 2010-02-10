@@ -30,27 +30,32 @@ void Entity::init(){
 	health = maxhealth();
 }
 
-template<class T> Entity *Constructor(WarField *w){
-	return new T(w);
-};
-
-static const char *ent_name[] = {
-	"beamer", "assault", "sceptor", "scarry", "rstation", "destroyer"
-};
-static Entity *(*const ent_creator[])(WarField *w) = {
-	Constructor<Beamer>, Constructor<Assault>, Constructor<Sceptor>, Constructor<Scarry>, Constructor<RStation>, Constructor<Destroyer>
-};
 
 Entity *Entity::create(const char *cname, WarField *w){
 	int i;
-	for(i = 0; i < numof(ent_name); i++) if(!strcmp(ent_name[i], cname)){
-		Entity *pt;
-		pt = ent_creator[i](w);
-		w->addent(pt);
-		return pt;
+	Entity *(*ctor)(WarField*) = entityCtorMap()[cname];
+	if(!ctor)
+		return NULL;
+	Entity *e = ctor(w);
+	if(e){
+		w->addent(e);
 	}
-	return NULL;
+	return e;
 }
+
+unsigned Entity::registerEntity(std::string name, Entity *(*ctor)(WarField *)){
+	EntityCtorMap &ctormap = entityCtorMap();
+	if(ctormap.find(name) != ctormap.end())
+		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
+	ctormap[name] = ctor;
+	return ctormap.size();
+}
+
+Entity::EntityCtorMap &Entity::entityCtorMap(){
+	static EntityCtorMap ictormap;
+	return ictormap;
+}
+
 
 const char *Entity::idname()const{
 	return "entity";

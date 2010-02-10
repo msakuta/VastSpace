@@ -132,7 +132,7 @@ public:
 	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid;
+	static const unsigned classid, entityid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));

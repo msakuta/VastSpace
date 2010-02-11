@@ -186,16 +186,16 @@ int Destroyer::takedamage(double damage, int hitpart){
 		if(ws){
 
 			if(ws->gibs) for(i = 0; i < 128; i++){
-				double pos[3], velo[3], omg[3];
+				double pos[3], velo[3] = {0}, omg[3];
 				/* gaussian spread is desired */
-				velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				velo[1] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				velo[2] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				for(int j = 0; j < 6; j++)
+					velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
-				VECSADD(pos, velo, .1);
+				for(int j = 0; j < 3; j++)
+					pos[j] += hitradius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, NULL, omg, NULL, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
@@ -233,8 +233,8 @@ int Destroyer::takedamage(double damage, int hitpart){
 				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
 				q = v * p;
 
-				AddTeline3D(tell, this->pos, NULL, 15., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
-				AddTeline3D(tell, this->pos, NULL, 6., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+				AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+				AddTeline3D(tell, this->pos, NULL, 3., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
@@ -244,7 +244,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-double Destroyer::maxhealth()const{return 100000.;}
+double Destroyer::maxhealth()const{return 100000./1;}
 
 int Destroyer::armsCount()const{
 	return nhardpoints;

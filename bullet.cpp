@@ -788,8 +788,13 @@ void Bullet::anim(double dt){
 #endif
 #endif
 
-			if(pt->w == w)
-				pt->takedamage(this->damage, hitpart);
+			if(pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
+				extern int bullet_kills, missile_kills;
+				if(!strcmp("Bullet", classname()))
+					bullet_kills++;
+				else if(!strcmp("Missile", classname()))
+					missile_kills++;
+			}
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
 			bulletkill(-1, NULL);

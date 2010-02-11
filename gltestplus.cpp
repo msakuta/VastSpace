@@ -297,6 +297,9 @@ static double diprint(const char *s, double x, double y){
 	return x + strlen(s) * 8;
 }
 
+extern int bullet_kills, missile_kills;
+int bullet_kills = 0, missile_kills = 0;
+
 static void drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
@@ -334,9 +337,17 @@ static void drawindics(Viewer *vw){
 			sprintf(buf, "EE %d", ce * ce);
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "EE %d", ce * ce);
+			diprint(buf, 0, y += 12);
+			sprintf(buf, "Bk %d", bullet_kills);
+			diprint(buf, 0, y += 12);
+			sprintf(buf, "Mk %d", missile_kills);
+			diprint(buf, 0, y += 12);
 #ifdef _DEBUG
 			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
 				diprint(cpplib::dstring() << "tepl " << Tefpol3DDebug(tepl)->tefpol_c << " " << Tefpol3DDebug(tepl)->tefpol_m << " " << Tefpol3DDebug(tepl)->tevert_c, 0, y += 12);
+			if(WarSpace *ws = *pl.cs->w)
+				if(tent3d_line_list * tell = ws->gibs)
+					diprint(cpplib::dstring() << "tell " << Teline3DDebug(tell)->teline_c << " " << Teline3DDebug(tell)->teline_m << " " << Teline3DDebug(tell)->teline_s << " " << Teline3DDebug(tell)->drawteline, 0, y += 12);
 #endif
 		}
 		sprintf(buf, "Frame rate: %6.2lf fps", 1. / vw->dt);

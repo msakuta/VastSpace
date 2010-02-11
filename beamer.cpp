@@ -21,11 +21,13 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/GL/gldraw.h>
 #include <clib/GL/cull.h>
+#include <clib/GL/multitex.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
 #include <assert.h>
 #include <string.h>
+#include <gl/glext.h>
 
 
 
@@ -850,17 +852,191 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	glPopMatrix();
 }
 
-void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	if(dd->pgc && glcullFrustum(&pl->pos, .01, dd->pgc))
+struct VBO{
+	suf_t *suf;
+	GLuint buffers[4];
+	int np;
+	GLushort *indices;
+};
+
+#if defined(WIN32)
+PFNGLGENBUFFERSPROC glGenBuffers;
+PFNGLISBUFFERPROC glIsBuffer;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLBUFFERDATAPROC glBufferData;
+PFNGLBUFFERSUBDATAPROC glBufferSubData;
+PFNGLMAPBUFFERPROC glMapBuffer;
+PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+static int initBuffers(){
+	return (!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
+		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
+		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
+		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
+		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
+		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
+		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
+		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")))
+		? -1 : 1;
+}
+#else
+static int initBuffers(){return -1;}
+#endif
+
+static VBO *cacheVBO(suf_t *suf){
+	static int init = 0;
+	if(init < 0){
+		fprintf(stderr, "VBO not supported!\n");
+		return NULL;
+	}
+	if(!init){
+		init = initBuffers();
+	}
+	VBO *ret = new VBO;
+	GLdouble (*vert)[3] = NULL;
+	GLdouble (*norm)[3] = NULL;
+	int n = 0;
+
+	ret->suf = suf;
+	ret->np = 0;
+	ret->indices = NULL;
+
+	for(int i = 0; i < suf->np; i++) if(suf->p[i]->t == suf_t::suf_prim_t::suf_uvpoly || suf->p[i]->t == suf_t::suf_prim_t::suf_uvshade){
+		int j;
+		struct suf_t::suf_prim_t::suf_uvpoly_t *uv = &suf->p[i]->uv;
+		for(j = 0; j < uv->n; j++){
+			vert = (GLdouble (*)[3])::realloc(vert, (n+1) * sizeof *vert);
+			::memcpy(vert[n], suf->v[uv->v[j].p], sizeof *suf->v);
+			norm = (GLdouble (*)[3])::realloc(norm, (n+1) * sizeof *norm);
+			::memcpy(norm[n], suf->v[uv->v[j].n], sizeof *suf->v);
+			n++;
+		}
+		ret->indices = (GLushort *)::realloc(ret->indices, ++ret->np * sizeof *ret->indices);
+		ret->indices[ret->np-1] = uv->n;
+	}
+	else{
+		int j;
+		struct suf_t::suf_prim_t::suf_poly_t *p = &suf->p[i]->p;
+		for(j = 0; j < p->n; j++){
+			vert = (GLdouble (*)[3])::realloc(vert, (n+1) * sizeof *vert);
+			::memcpy(vert[n], suf->v[p->v[j][0]], sizeof *suf->v);
+			norm = (GLdouble (*)[3])::realloc(norm, (n+1) * sizeof *norm);
+			::memcpy(norm[n], suf->v[p->v[j][1]], sizeof *suf->v);
+			n++;
+		}
+		ret->indices = (GLushort *)::realloc(ret->indices, ++ret->np * sizeof *ret->indices);
+		ret->indices[ret->np-1] = p->n;
+	}
+
+	glGenBuffers(4, ret->buffers);
+
+	/* １つ目のバッファオブジェクトに頂点データ配列を転送する */
+	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[0]);
+	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*vert), vert, GL_STATIC_DRAW);
+
+	/* ２つ目のバッファオブジェクトに法線データ配列を転送する */
+	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[1]);
+	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*norm), norm, GL_STATIC_DRAW);
+
+	/* ３つ目のバッファオブジェクトにテクスチャ座標配列を転送する */
+//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
+//	glBufferData(GL_ARRAY_BUFFER, suf->nv * sizeof(*suf->v), suf->v, GL_STATIC_DRAW);
+
+	/* ４つ目のバッファオブジェクトに頂点のインデックスを転送する */
+//		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+//		glBufferData(GL_ELEMENT_ARRAY_BUFFER, suf->np, face, GL_STATIC_DRAW);
+
+	::free(vert);
+	::free(norm);
+
+	return ret;
+}
+
+static void drawVBO(VBO *vbo){
+	if(!vbo)
 		return;
 
+	/* 頂点データ，法線データ，テクスチャ座標の配列を有効にする */
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	/* 頂点データの場所を指定する */
+	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[0]);
+	glVertexPointer(3, GL_DOUBLE, 0, (0));
+
+	/* 法線データの場所を指定する */
+	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[1]);
+	glNormalPointer(GL_DOUBLE, 0, (0));
+
+	/* テクスチャ座標の場所を指定する */
+//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
+//	glTexCoordPointer(2, GL_FLOAT, 0, (0));
+
+	/* 頂点のインデックスの場所を指定して図形を描く */
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+	int n = 0;
+	int i;
+	sufindex last = SUFINDEX_MAX, ai = SUFINDEX_MAX;
+	for(int i = 0; i < vbo->np; i++){
+		int j;
+		struct suf_t::suf_prim_t::suf_poly_t *p = &vbo->suf->p[i]->p;
+		struct suf_t::suf_atr_t *atr = &vbo->suf->a[p->atr];
+
+		/* the effective use of bitfields determines which material commands are
+		  only needed. */
+		if((SUF_EMI | atr->valid) && ai != p->atr){
+			static const GLfloat defemi[4] = {0., 0., 0., 1.};
+/*			if(ai == USHRT_MAX)
+				glPushAttrib(GL_LIGHTING_BIT);*/
+			ai = p->atr;
+			if(atr->valid & (SUF_DIF | SUF_COL))
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, atr->dif, NULL);
+			if(atr->valid & (SUF_AMB | SUF_COL))
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, atr->amb, NULL);
+			if(SUF_EMI)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, NULL);
+			if(atr->valid & SUF_SPC)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, NULL);
+			if(glIsEnabled(GL_TEXTURE_2D)){
+				glBindTexture(GL_TEXTURE_2D, 0);
+				glDisable(GL_TEXTURE_2D);
+			}
+			if(glActiveTextureARB){
+				glActiveTextureARB(GL_TEXTURE1_ARB);
+				glDisable(GL_TEXTURE_2D);
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+			}
+/*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
+		}
+		glDrawArrays(GL_POLYGON, n, vbo->indices[i]);
+		n += vbo->indices[i];
+	}
+//		glEnable(GL_TEXTURE_2D);
+//		glDrawElements(GL_TRIANGLES, nf * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+//		glDisable(GL_TEXTURE_2D);
+
+	/* 頂点データ，法線データ，テクスチャ座標の配列を無効にする */
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+}
+
+void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+	if(dd->pgc && (glcullFrustum(&pl->pos, .01, dd->pgc) || (glcullScale(&pl->pos, dd->pgc) * .01) < 5))
+		return;
+	
+
 	static suf_t *sufs[5] = {NULL};
+	static VBO *vbo[5];
 	static GLuint lists[numof(sufs)] = {0};
 	if(!sufs[0]){
 		char buf[64];
 		for(int i = 0; i < numof(sufs); i++){
 			sprintf(buf, "debris%d.bin", i);
 			sufs[i] = CallLoadSUF(buf);
+			vbo[i] = cacheVBO(sufs[i]);
 		}
 	}
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
@@ -875,13 +1051,14 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 	struct random_sequence rs;
 	initfull_rseq(&rs, 13230354, (unsigned long)pl);
 	unsigned id = rseq(&rs) % numof(sufs);
-	if(!lists[id]){
-		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
-		DrawSUF(sufs[id], SUF_ATR, NULL);
-		glEndList();
-	}
-	else
-		glCallList(lists[id]);
+//	if(!lists[id]){
+//		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
+//		DrawSUF(sufs[id], SUF_ATR, NULL);
+		drawVBO(vbo[id]);
+//		glEndList();
+//	}
+//	else
+//		glCallList(lists[id]);
 	glPopMatrix();
 	glPopAttrib();
 }

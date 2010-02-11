@@ -858,7 +858,7 @@ void LTurret::tryshoot(){
 
 // prefer bigger targets
 double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
-	return pt2->hitradius();
+	return pt2->hitradius() / .01;
 }
 
 

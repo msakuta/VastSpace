@@ -19,6 +19,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
+#include <clib/suf/sufvbo.h>
 #include <clib/GL/gldraw.h>
 #include <clib/GL/cull.h>
 #include <clib/GL/multitex.h>
@@ -852,6 +853,7 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	glPopMatrix();
 }
 
+#if 0
 struct VBO{
 	suf_t *suf;
 	GLuint buffers[4];
@@ -885,23 +887,14 @@ static int initBuffers(){return -1;}
 static int init_VBO = 0;
 
 static VBO *cacheVBO(suf_t *suf){
-	if(init_VBO < 0){
-		fprintf(stderr, "VBO not supported!\n");
+	if(init_VBO < 0)
 		return NULL;
-	}
 	if(!init_VBO){
 		init_VBO = initBuffers();
-		fprintf(stderr, "init = %d\n", init_VBO);
-		fprintf(stderr, "glGenBuffers = %p\n", glGenBuffers);
-		fprintf(stderr, "glIsBuffer = %p\n", glIsBuffer);
-		fprintf(stderr, "glBindBuffer = %p\n", glBindBuffer);
-		fprintf(stderr, "glBufferData = %p\n", glBufferData);
-		fprintf(stderr, "glBufferSubData = %p\n", glBufferSubData);
-		fprintf(stderr, "glMapBuffer = %p\n", glMapBuffer);
-		fprintf(stderr, "glUnmapBuffer = %p\n", glUnmapBuffer);
-		fprintf(stderr, "glDeleteBuffers = %p\n", glDeleteBuffers);
-		if(init_VBO <= 0)
+		if(init_VBO <= 0){
+		fprintf(stderr, "VBO not supported!\n");
 			return NULL;
+		}
 	}
 	VBO *ret = new VBO;
 	GLdouble (*vert)[3] = NULL;
@@ -941,22 +934,23 @@ static VBO *cacheVBO(suf_t *suf){
 
 	glGenBuffers(4, ret->buffers);
 
-	/* １つ目のバッファオブジェクトに頂点データ配列を転送する */
+	/* Vertex array */
 	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*vert), vert, GL_STATIC_DRAW);
 
-	/* ２つ目のバッファオブジェクトに法線データ配列を転送する */
+	/* Normal array */
 	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[1]);
 	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*norm), norm, GL_STATIC_DRAW);
 
-	/* ３つ目のバッファオブジェクトにテクスチャ座標配列を転送する */
+	/* Texture coordinates array */
 //	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
 //	glBufferData(GL_ARRAY_BUFFER, suf->nv * sizeof(*suf->v), suf->v, GL_STATIC_DRAW);
 
-	/* ４つ目のバッファオブジェクトに頂点のインデックスを転送する */
-//		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
-//		glBufferData(GL_ELEMENT_ARRAY_BUFFER, suf->np, face, GL_STATIC_DRAW);
+	/* Vertex index array */
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, suf->np, face, GL_STATIC_DRAW);
 
+	/* Now that buffers reside in video memory (hopefully!), we can free local memory for vertices. */
 	::free(vert);
 	::free(norm);
 
@@ -967,25 +961,26 @@ static void drawVBO(VBO *vbo){
 	if(!vbo || init_VBO <= 0)
 		return;
 
-	/* 頂点データ，法線データ，テクスチャ座標の配列を有効にする */
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
 //	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-	/* 頂点データの場所を指定する */
+	/* Vertex array */
 	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[0]);
 	glVertexPointer(3, GL_DOUBLE, 0, (0));
 
-	/* 法線データの場所を指定する */
+	/* Normal array */
 	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[1]);
 	glNormalPointer(GL_DOUBLE, 0, (0));
 
-	/* テクスチャ座標の場所を指定する */
+	/* Texture coordinates array */
 //	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
 //	glTexCoordPointer(2, GL_FLOAT, 0, (0));
 
-	/* 頂点のインデックスの場所を指定して図形を描く */
+	/* Vertex index array */
 //	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+
+	/* Materials must be accumulated yet. */
 	int n = 0;
 	int i;
 	sufindex last = SUFINDEX_MAX, ai = SUFINDEX_MAX;
@@ -1023,16 +1018,13 @@ static void drawVBO(VBO *vbo){
 		glDrawArrays(GL_POLYGON, n, vbo->indices[i]);
 		n += vbo->indices[i];
 	}
-//		glEnable(GL_TEXTURE_2D);
-//		glDrawElements(GL_TRIANGLES, nf * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-//		glDisable(GL_TEXTURE_2D);
 
-	/* 頂点データ，法線データ，テクスチャ座標の配列を無効にする */
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
 //	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 }
+#endif
 
 void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	if(dd->pgc && (glcullFrustum(&pl->pos, .01, dd->pgc) || (glcullScale(&pl->pos, dd->pgc) * .01) < 5))
@@ -1047,7 +1039,7 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 		for(int i = 0; i < numof(sufs); i++){
 			sprintf(buf, "debris%d.bin", i);
 			sufs[i] = CallLoadSUF(buf);
-			vbo[i] = cacheVBO(sufs[i]);
+			vbo[i] = CacheVBO(sufs[i]);
 		}
 	}
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
@@ -1065,7 +1057,7 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 //	if(!lists[id]){
 //		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
 //		DrawSUF(sufs[id], SUF_ATR, NULL);
-		drawVBO(vbo[id]);
+		DrawVBO(vbo[id]);
 //		glEndList();
 //	}
 //	else

@@ -234,7 +234,7 @@ void Sceptor::shootDualGun(double dt){
 	} while(!i++);
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
-	this->cooldown += SCEPTER_RELOADTIME;
+	this->cooldown += SCEPTER_RELOADTIME * (fuel <= 0 ? 3 : 1);
 	this->mf = .1;
 }
 
@@ -564,6 +564,19 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
+// Find mother if has none
+Entity *Sceptor::findMother(){
+	Entity *pm = NULL;
+	double best = 1e10 * 1e10, sl;
+	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+		mother = e->getDocker();
+		pm = mother->e;
+		best = sl;
+	}
+	return pm;
+}
+
+
 void Sceptor::anim(double dt){
 	WarField *oldw = w;
 	Entity *pt = this;
@@ -794,10 +807,13 @@ void Sceptor::anim(double dt){
 					Vec3d xh, yh;
 					double sx, sy, len, len2, maxspeed = SCEPTER_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
-					if(p->fuel < 30.){
+
+					// If a mother could not be aquired, fight to the death alone.
+					if(p->fuel < 30. && (pm || (pm = findMother()))){
 						p->task = Dockque;
 						break;
 					}
+
 /*					VECSUB(dv, pt->enemy->pos, pt->pos);*/
 					dv = delta;
 					if(p->task == Attack && dv.slen() < (pt->enemy->hitradius() * 1.2 + .5) * (pt->enemy->hitradius() * 1.2 + .5)){
@@ -814,7 +830,7 @@ void Sceptor::anim(double dt){
 					sy = VECSP(&mat[4], dv);
 					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 					p->throttle = 1.;
-					{
+					if(0 < fuel){
 						struct random_sequence rs;
 						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
@@ -890,15 +906,8 @@ void Sceptor::anim(double dt){
 						task = Idle;
 				}
 				else if(p->task == Dockque || p->task == Dock){
-					// Find mother if has none
-					if(!pm){
-						double best = 1e10 * 1e10, sl;
-						for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-							mother = e->getDocker();
-							pm = mother->e;
-							best = sl;
-						}
-					}
+					if(!pm)
+						pm = findMother();
 
 					// It is possible that no one is glad to become a mother.
 					if(!pm)
@@ -1070,18 +1079,18 @@ void Sceptor::anim(double dt){
 		}
 
 		{
-			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			double consump = dt * (pf->throttle + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
-				if(.1 < pf->throttle)
-					pf->throttle = .1;
+				if(.05 < pf->throttle)
+					pf->throttle = .05;
 				if(p->cloak)
 					p->cloak = 0;
 				p->fuel = 0.;
 			}
 			else
 				p->fuel -= consump;
+			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			acc = pt->rot.trans(acc0);
 			pt->velo += acc * spd;
 		}
@@ -1220,8 +1229,13 @@ int Sceptor::takedamage(double damage, int hitpart){
 }
 
 void Sceptor::postframe(){
-	if(mother && mother->e && (!mother->e->w || docked && mother->e->w != w))
+	if(mother && mother->e && (!mother->e->w || docked && mother->e->w != w)){
 		mother = NULL;
+
+		// If the mother is lost, give up docking sequence.
+		if(task == Dock || task == Dockque)
+			task = Idle;
+	}
 	if(enemy && enemy->w != w)
 		enemy = NULL;
 	st::postframe();
@@ -1301,7 +1315,7 @@ void Sceptor::dockCommand(Docker *){
 }
 
 double Sceptor::maxfuel()const{
-	return 120.;
+	return 120./20;
 }
 
 

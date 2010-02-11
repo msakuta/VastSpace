@@ -50,6 +50,7 @@ protected:
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);
 	bool cull(Viewer &)const;
 	double nlipsFactor(Viewer &)const;
+	Entity *findMother();
 public:
 	Sceptor();
 	Sceptor(WarField *aw);

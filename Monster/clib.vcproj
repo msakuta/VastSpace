@@ -374,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\suf\sufvbo.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\asm\testmove.h"
 				>
 			</File>
@@ -525,6 +529,10 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\suf\sufdraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\clib\suf\sufvbo.h"
 				>
 			</File>
 			<File

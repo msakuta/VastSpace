@@ -1178,7 +1178,7 @@ void Sceptor::anim(double dt){
 	st::anim(dt);
 
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-	if(pf && w != oldw)
+	if(this->pf && w != oldw)
 		ImmobilizeTefpol3D(this->pf);
 //	movesound3d(pf->hitsound, pt->pos);
 }

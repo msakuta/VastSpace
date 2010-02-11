@@ -245,9 +245,10 @@ static allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
 #endif
 		}
 		else{
-			pl = p->lactv; /* reuse the oldest active node */
-			while(pl && pl->flags & TEP3_MOVABLE) pl = pl->next; /* skip movable nodes */
-			if(!pl) return NULL;
+			tefpol_t **ppl = &p->lactv; /* reuse the oldest active node */
+			while(*ppl && (*ppl)->flags & TEP3_MOVABLE) ppl = &(*ppl)->next; /* skip movable nodes */
+			if(!*ppl || *ppl == p->last) return NULL;
+			pl = *ppl;
 			assert(!pl->tail || !pl->tail->next);
 
 			/* free vertices */
@@ -264,9 +265,9 @@ static allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
 			}*/
 
 			/* roll pointers */
-			p->last->next = p->lactv;
-			p->last = p->lactv;
-			p->lactv = p->lactv->next;
+			p->last->next = pl;
+			p->last = pl;
+			*ppl = pl->next;
 			pl->next = NULL;
 		}
 	}

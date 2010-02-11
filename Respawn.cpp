@@ -35,9 +35,15 @@ void Respawn::anim(double dt){
 
 		{
 			int c = 0;
-			for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2->w && 0. < pt2->health && pt2->race == race && !strcmp(pt2->classname(), creator) && count <= ++c){
-				timer += interval;
-				break;
+			for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2->w && 0. < pt2->health && pt2->race == race && !strcmp(pt2->classname(), creator)){
+				if(count <= ++c){
+					timer += interval;
+					break;
+				}
+				if((pt2->pos - pos).slen() < pt2->hitradius() * pt2->hitradius()){
+					timer += interval;
+					break;
+				}
 			}
 			if(pt2)
 				continue;

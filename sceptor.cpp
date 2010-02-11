@@ -565,6 +565,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 }
 
 void Sceptor::anim(double dt){
+	WarField *oldw = w;
 	Entity *pt = this;
 	Sceptor *const pf = this;
 	Sceptor *const p = this;
@@ -1175,6 +1176,10 @@ void Sceptor::anim(double dt){
 		mf -= dt;
 
 	st::anim(dt);
+
+	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
+	if(pf && w != oldw)
+		ImmobilizeTefpol3D(this->pf);
 //	movesound3d(pf->hitsound, pt->pos);
 }
 

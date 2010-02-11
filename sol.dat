@@ -236,9 +236,11 @@ coordsys Orbit marss{
 		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
-		respawn Scarry 0 0 -4
-		respawn Sceptor -1 0 -3 0 1 5
-		respawn destroyer -.5 0 0 1
+		respawn Scarry -1 0 -4 0 2 2
+		respawn Scarry 1 0 -4 0 2 2
+		respawn Sceptor 0 0 -3 0 1 50
+		respawn destroyer -1 0 0 1 2 2
+		respawn destroyer 1 0 0 1 2 2
 #		addent scarry 0 0 -4
 #		addent scarry 2 0 -4
 ##		addent destroyer -.5 -1 -3 0

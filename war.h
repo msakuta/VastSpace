@@ -147,6 +147,7 @@ public:
 };
 
 class WarSpace : public WarField{
+	void init();
 public:
 	typedef WarField st;
 	WarSpace();

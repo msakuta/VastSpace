@@ -322,16 +322,22 @@ static void drawindics(Viewer *vw){
 		sprintf(buf, "%s %s", pl.cs->classname(), pl.cs->name);
 		diprint(buf, 0, gvp.h);
 		if(pl.cs && pl.cs->w){
+			int y = 0;
 			int ce;
 			int cb;
 			sprintf(buf, "E %d", ce = pl.cs->w->countEnts<&WarField::el>());
-			diprint(buf, 0, 12);
+			diprint(buf, 0, y += 12);
 			sprintf(buf, "B %d", cb = pl.cs->w->countEnts<&WarField::bl>());
-			diprint(buf, 0, 24);
+			diprint(buf, 0, y += 12);
 			sprintf(buf, "EB %d", ce * cb);
-			diprint(buf, 0, 36);
+			diprint(buf, 0, y += 12);
 			sprintf(buf, "EE %d", ce * ce);
-			diprint(buf, 0, 48);
+			diprint(buf, 0, y += 12);
+			sprintf(buf, "EE %d", ce * ce);
+#ifdef _DEBUG
+			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
+				diprint(cpplib::dstring() << "tepl " << Tefpol3DDebug(tepl)->tefpol_c << " " << Tefpol3DDebug(tepl)->tefpol_m << " " << Tefpol3DDebug(tepl)->tevert_c, 0, y += 12);
+#endif
 		}
 		sprintf(buf, "Frame rate: %6.2lf fps", 1. / vw->dt);
 		diprint(buf, gvp.w - 8 * strlen(buf), 12);

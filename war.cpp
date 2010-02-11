@@ -209,12 +209,20 @@ void WarSpace::unserialize(UnserializeContext &sc){
 	sc.i >> pl >> effects >> soundtime >> cs;
 }
 
-WarSpace::WarSpace() : tell(NewTeline3D(2048, 128, 128)), gibs(NewTeline3D(1024, 128, 128)), tepl(NewTefpol3D(2048, 128, 128)), ot(NULL), otroot(NULL), oti(0), ots(0){}
+void WarSpace::init(){
+	tell = NewTeline3D(2048, 128, 128);
+	gibs = NewTeline3D(1024, 128, 128);
+	tepl = NewTefpol3D(128, 32, 32);
+}
 
-WarSpace::WarSpace(CoordSys *acs) : st(acs), tell(NewTeline3D(2048, 128, 128)), gibs(NewTeline3D(1024, 128, 128)), tepl(NewTefpol3D(2048, 128, 128)),
-	ot(NULL), otroot(NULL), oti(0), ots(0),
+WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0){
+	init();
+}
+
+WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots(0),
 	effects(0), soundtime(0)
 {
+	init();
 	for(CoordSys *root = cs; root; root = root->parent){
 		Universe *u = root->toUniverse();
 		if(u){

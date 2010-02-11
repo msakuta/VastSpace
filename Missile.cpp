@@ -68,6 +68,7 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 
 
 void Missile::anim(double dt){
+	WarField *oldw = w;
 	if(pf)
 		MoveTefpol3D(pf, pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
 
@@ -97,10 +98,8 @@ void Missile::anim(double dt){
 			/*		estimate_pos(&epos, pb->target->pos, pb->target->velo, pb->pos, pb->velo, &sgravity, BULLETSPEED);*/
 					speed = -velo.sp(zh);
 					speed = MAX(maxspeed * 2., speed);
-	/*				speed = flying ? samspeed : BULLETSPEED * 2.;*/
 					dist = (target->pos - this->pos).len();
 					epos = target->pos + (target->velo - velo) * (dist / speed * 1.2);
-			/*		epos[1] += .002;*/
 					dv = epos - this->pos;
 				}
 			}
@@ -407,6 +406,10 @@ void Missile::anim(double dt){
 #endif
 	}
 	st::anim(dt);
+
+	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
+	if(pf && w != oldw)
+		ImmobilizeTefpol3D(pf);
 }
 
 void Missile::postframe(){

@@ -6,6 +6,7 @@
 #endif
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 

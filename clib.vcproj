@@ -96,6 +96,9 @@
 				RelativePath="src\UnZip.c">
 			</File>
 			<File
+				RelativePath="src\UniformLoader.c">
+			</File>
+			<File
 				RelativePath="src\amat3.c">
 			</File>
 			<File
@@ -165,6 +168,9 @@
 				RelativePath="src\suf\sufsrc.c">
 			</File>
 			<File
+				RelativePath="src\suf\sufvbo.c">
+			</File>
+			<File
 				RelativePath="src\timemeas.c">
 			</File>
 			<File
@@ -185,6 +191,9 @@
 			</File>
 			<File
 				RelativePath="include\clib\zip\UnZip.h">
+			</File>
+			<File
+				RelativePath="include\clib\zip\UniformLoader.h">
 			</File>
 			<File
 				RelativePath="include\clib\amat2.h">
@@ -263,6 +272,9 @@
 			</File>
 			<File
 				RelativePath="include\clib\suf\sufdraw.h">
+			</File>
+			<File
+				RelativePath="include\clib\suf\sufvbo.h">
 			</File>
 			<File
 				RelativePath="include\clib\timemeas.h">

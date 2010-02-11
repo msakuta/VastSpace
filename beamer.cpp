@@ -882,15 +882,26 @@ static int initBuffers(){
 #else
 static int initBuffers(){return -1;}
 #endif
+static int init_VBO = 0;
 
 static VBO *cacheVBO(suf_t *suf){
-	static int init = 0;
-	if(init < 0){
+	if(init_VBO < 0){
 		fprintf(stderr, "VBO not supported!\n");
 		return NULL;
 	}
-	if(!init){
-		init = initBuffers();
+	if(!init_VBO){
+		init_VBO = initBuffers();
+		fprintf(stderr, "init = %d\n", init_VBO);
+		fprintf(stderr, "glGenBuffers = %p\n", glGenBuffers);
+		fprintf(stderr, "glIsBuffer = %p\n", glIsBuffer);
+		fprintf(stderr, "glBindBuffer = %p\n", glBindBuffer);
+		fprintf(stderr, "glBufferData = %p\n", glBufferData);
+		fprintf(stderr, "glBufferSubData = %p\n", glBufferSubData);
+		fprintf(stderr, "glMapBuffer = %p\n", glMapBuffer);
+		fprintf(stderr, "glUnmapBuffer = %p\n", glUnmapBuffer);
+		fprintf(stderr, "glDeleteBuffers = %p\n", glDeleteBuffers);
+		if(init_VBO <= 0)
+			return NULL;
 	}
 	VBO *ret = new VBO;
 	GLdouble (*vert)[3] = NULL;
@@ -953,7 +964,7 @@ static VBO *cacheVBO(suf_t *suf){
 }
 
 static void drawVBO(VBO *vbo){
-	if(!vbo)
+	if(!vbo || init_VBO <= 0)
 		return;
 
 	/* 頂点データ，法線データ，テクスチャ座標の配列を有効にする */

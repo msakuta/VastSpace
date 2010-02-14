@@ -36,4 +36,29 @@ protected:
 	virtual void init();
 };
 
+class WireDestroyer : public Warpable{
+protected:
+	double wirephase;
+	double wireomega;
+	double wirelength;
+	static struct hitbox hitboxes[];
+	static const int nhitboxes;
+public:
+	typedef Warpable st;
+	WireDestroyer(){}
+	WireDestroyer(WarField *w);
+	static const unsigned classid, entityid;
+	virtual const char *classname()const;
+	virtual const char *dispname()const;
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual double hitradius()const;
+	virtual double maxhealth()const;
+	virtual double maxenergy()const;
+	virtual void anim(double dt);
+	virtual void draw(wardraw_t *wd);
+	virtual void drawtra(wardraw_t *wd);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+};
+
 #endif

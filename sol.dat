@@ -238,9 +238,11 @@ coordsys Orbit marss{
 		semimajor_axis 1e4
 #		respawn Scarry -1 0 -4 0 2 2
 #		respawn Scarry 1 0 -4 0 2 2
-		respawn Sceptor 0 0 -3 0 1.5 30
-		respawn destroyer -1 0 0 1 2 2
-		respawn destroyer 1 0 0 1 2 2
+		respawn Sceptor 0 0 -3 0 1 50
+#		respawn Assault -1 0.5 -1 1 2 6
+#		respawn Assault 1 -0.5 -1 1 2 6
+		respawn WireDestroyer -1.5 0 0 1 2 2
+		respawn WireDestroyer 1.5 0 0 1 2 2
 #		addent scarry 0 0 -4
 #		addent scarry 2 0 -4
 ##		addent destroyer -.5 -1 -3 0

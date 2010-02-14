@@ -1315,7 +1315,7 @@ void Sceptor::dockCommand(Docker *){
 }
 
 double Sceptor::maxfuel()const{
-	return 120./20;
+	return 120.;
 }
 
 

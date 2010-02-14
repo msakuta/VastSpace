@@ -6,9 +6,9 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
-const unsigned Destroyer::classid = registerClass("destroyer", Conster<Destroyer>);
-const unsigned Destroyer::entityid = registerEntity("destroyer", Constructor<Destroyer>);
-const char *Destroyer::classname()const{return "destroyer";}
+const unsigned Destroyer::classid = registerClass("Destroyer", Conster<Destroyer>);
+const unsigned Destroyer::entityid = registerEntity("Destroyer", Constructor<Destroyer>);
+const char *Destroyer::classname()const{return "Destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
 
@@ -201,7 +201,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 
 			/* smokes */
 			for(i = 0; i < 64; i++){
-				double pos[3], velo[3];
+				double pos[3];
 				COLOR32 col = 0;
 				VECCPY(pos, p->pos);
 				pos[0] += .3 * (drseq(&w->rs) - .5);
@@ -269,3 +269,256 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 	};
 	return beamer_mn;
 }
+
+
+
+
+
+
+
+
+
+
+struct hitbox WireDestroyer::hitboxes[] = {
+	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
+	hitbox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
+	hitbox(Vec3d(.0, -.06, .065), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	hitbox(Vec3d(.0, .06, .065), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	hitbox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(.07, .070, .02)),
+};
+const int WireDestroyer::nhitboxes = numof(hitboxes);
+
+WireDestroyer::WireDestroyer(WarField *aw) : st(aw), wirephase(0), wireomega(0), wirelength(2.){
+	init();
+	mass = 1e6;
+}
+
+
+const unsigned WireDestroyer::classid = registerClass("WireDestroyer", Conster<WireDestroyer>);
+const unsigned WireDestroyer::entityid = registerEntity("WireDestroyer", Constructor<WireDestroyer>);
+const char *WireDestroyer::classname()const{return "WireDestroyer";}
+const char *WireDestroyer::dispname()const{return "Wire Destroyer";}
+
+void WireDestroyer::serialize(SerializeContext &sc){
+	st::serialize(sc);
+}
+
+void WireDestroyer::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+}
+
+double WireDestroyer::hitradius()const{return .3;}
+double WireDestroyer::maxhealth()const{return 100000.;}
+double WireDestroyer::maxenergy()const{return 10000.;}
+
+static int wire_hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+	const Vec3d *src = param->src;
+	const Vec3d *dir = param->dir;
+	double dt = param->dt;
+	double rad = param->rad;
+	Vec3d *retpos = param->pos;
+	Vec3d *retnorm = param->norm;
+	void *hint = param->hint;
+	WireDestroyer *pb = ((WireDestroyer**)hint)[1];
+	double hitrad = .02;
+	int *rethitpart = ((int**)hint)[2];
+	Vec3d pos, nh;
+	sufindex pi;
+	double damage; /* calculated damage */
+	int ret = 1;
+
+	// if the ultimate owner of the objects is common, do not hurt yourself.
+	Entity *bulletAncestor = pb->getUltimateOwner();
+	Entity *hitobjAncestor = pt->getUltimateOwner();
+	if(bulletAncestor == hitobjAncestor)
+		return 0;
+
+//	vft = (struct entity_private_static*)pt->vft;
+	if(!jHitSphere(pt->pos, pt->hitradius() + hitrad, *param->src, *param->dir, dt))
+		return 0;
+/*	{
+		ret = pt->tracehit(pb->pos, pb->velo, hitrad, dt, NULL, &pos, &nh);
+		if(!ret)
+			return 0;
+		else if(rethitpart)
+			*rethitpart = ret;
+	}*/
+
+/*	{
+		pb->pos += pb->velo * dt;
+		if(retpos)
+			*retpos = pos;
+		if(retnorm)
+			*retnorm = nh;
+	}*/
+	return ret;
+}
+
+void WireDestroyer::anim(double dt){
+	st::anim(dt);
+	wireomega = M_PI;
+	wirephase += wireomega * dt;
+
+	if(WarSpace *ws = *w){
+		Mat4d mat;
+		transform(mat);
+		for(int i = 0; i < 2; i++){
+			Mat4d rot = mat.rotz(wirephase);
+			Vec3d src = rot.vp3(Vec3d(.07 * (i * 2 - 1), 0, 0));
+			Vec3d dst = rot.vp3(Vec3d(wirelength * (i * 2 - 1), 0, 0));
+			Vec3d dir = (dst - src).norm();
+			struct otjEnumHitSphereParam param;
+			void *hint[3];
+			Entity *pt;
+			Vec3d pos, nh;
+			int hitpart = 0;
+			hint[0] = w;
+			hint[1] = this;
+			hint[2] = &hitpart;
+			param.root = ws->otroot;
+			param.src = &src;
+			param.dir = &dir;
+			param.dt = wirelength;
+			param.rad = 0.01;
+			param.pos = &pos;
+			param.norm = &nh;
+			param.flags = OTJ_CALLBACK;
+			param.callback = wire_hit_callback;
+			param.hint = hint;
+			for(pt = ws->ot ? (otjEnumHitSphere(&param)) : ws->el; pt; pt = ws->ot ? NULL : pt->next){
+				sufindex pi;
+				double damage = 1000.;
+
+				if(!ws->ot && !wire_hit_callback(&param, pt))
+					continue;
+
+				if(pt->w == w) if(!pt->takedamage(damage, hitpart)){
+				}
+
+				return;
+			}while(0);
+		}
+	}
+}
+
+void WireDestroyer::draw(wardraw_t *wd){
+	static suf_t *sufbase;
+	static suf_t *sufwheel;
+	static suf_t *sufbit;
+	static suftex_t *pst;
+	static bool init = false;
+
+	draw_healthbar(this, wd, health / maxhealth(), .3, -1, -1);
+
+	if(!init) do{
+		sufbase = CallLoadSUF("wiredestroyer0.bin");
+		if(!sufbase) break;
+		sufwheel = CallLoadSUF("wiredestroyer_wheel0.bin");
+		if(!sufwheel) break;
+		sufbit = CallLoadSUF("wirebit0.bin");
+		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.env = GL_ADD;
+		stp.mipmap = 0;
+		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
+		CacheSUFMaterials(sufbase);
+		pst = AllocSUFTex(sufbase);
+		init = true;
+	} while(0);
+
+	if(sufbase){
+		static const double normal[3] = {0., 1., 0.};
+		double scale = .001;
+		static const GLdouble rotaxis[16] = {
+			-1,0,0,0,
+			0,1,0,0,
+			0,0,-1,0,
+			0,0,0,1,
+		};
+		Mat4d mat;
+
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+		glPushMatrix();
+		transform(mat);
+		glMultMatrixd(mat);
+
+		if(!wd->vw->gc->cullFrustum(pos, hitradius())){
+
+	#if 1
+			for(int i = 0; i < nhitboxes; i++){
+				Mat4d rot;
+				glPushMatrix();
+				gldTranslate3dv(hitboxes[i].org);
+				rot = hitboxes[i].rot.tomat4();
+				glMultMatrixd(rot);
+				hitbox_draw(this, hitboxes[i].sc);
+				glPopMatrix();
+			}
+	#endif
+
+			glPushMatrix();
+			gldScaled(scale);
+			glMultMatrixd(rotaxis);
+			DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
+			glRotated(wirephase * deg_per_rad, 0, 0, -1);
+			DecalDrawSUF(sufwheel, SUF_ATR, NULL, pst, NULL, NULL);
+			glPopMatrix();
+		}
+
+		for(int i = 0; i < 2; i++){
+			glPushMatrix();
+			glRotated(wirephase * deg_per_rad, 0, 0, 1);
+			glTranslated(wirelength * (i * 2 - 1), 0, 0);
+			gldScaled(scale);
+			glMultMatrixd(rotaxis);
+			DrawSUF(sufbit, SUF_ATR, NULL);
+			glPopMatrix();
+		}
+
+		glPopMatrix();
+		glPopAttrib();
+	}
+}
+
+void WireDestroyer::drawtra(wardraw_t *wd){
+	Mat4d mat;
+	transform(mat);
+	for(int i = 0; i < 2; i++){
+		Mat4d rot = mat.rotz(wirephase);
+		glColor4f(1,.5,.5,1);
+		gldBeam(wd->vw->pos, rot.vp3(Vec3d(.07 * (i * 2 - 1), 0, 0)), rot.vp3(Vec3d(wirelength * (i * 2 - 1), 0, 0)), .01);
+	}
+}
+
+int WireDestroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	double sc[3];
+	double best = dt, retf;
+	int reti = 0, i, n;
+#if 0
+	if(0 < p->shieldAmount){
+		Vec3d hitpos;
+		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, &hitpos)){
+			if(retp) *retp = hitpos;
+			if(retn) *retn = (hitpos - pos).norm();
+			return 1000; /* something quite unlikely to reach */
+		}
+	}
+#endif
+	for(n = 0; n < nhitboxes; n++){
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		rot = this->rot * hitboxes[n].rot;
+		for(i = 0; i < 3; i++)
+			sc[i] = hitboxes[n].sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+	}
+	return reti;
+}
+

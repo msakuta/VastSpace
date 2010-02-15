@@ -3,6 +3,12 @@
 
 #include <clib/colseq/color.h>
 #include <clib/colseq/cs.h>
+#ifdef __cplusplus
+#include <cpplib/vec3.h>
+#include <cpplib/mat4.h>
+#include <cpplib/quat.h>
+#include <cpplib/gl/cullplus.h>
+#endif
 #ifndef NPROFILE
 #include <stddef.h>
 #endif
@@ -64,33 +70,39 @@ typedef unsigned long tent3d_flags_t;
 /* teline's forms can be used as well. */
 
 
+#ifdef __cplusplus
 struct tent3d_line_list;
 struct tent3d_line_callback{
-	double pos[3]; /* center point, double because the velo may be so slow */
-	double velo[3]; /* velocity. */
+	Vec3d pos; /* center point, double because the velo may be so slow */
+	Vec3d velo; /* velocity. */
 	double len; /* length of the beam */
-/*	double pyr[3]; *//* pitch, yaw and roll angles of the beam */
-	double rot[4]; /* rotation in quaternion form */
-	double omg[3]; /* angle velocity */
+	Quatd rot; /* rotation in quaternion form */
+	Vec3d omg; /* angle velocity */
 	double life; /* remaining rendering time */
 };
 struct tent3d_line_drawdata{
-	double viewpoint[3], viewdir[3], rot[4], invrot[16];
+	Vec3d viewpoint, viewdir;
+	Quatd rot;
+	Mat4d invrot;
 	double fov; /* field of view */
 
 	/* following are trivial members; caller need not to set them */
-	struct glcull *pgc;
+	GLcull *pgc;
 };
 struct tent3d_fpol_list;
 
 struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
 struct tent3d_line_list *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
 void DelTeline3D(struct tent3d_line_list *); /* destructor */
-void AddTeline3D(struct tent3d_line_list *tell, const double pos[3], const double velo[3], double len, const double pyr[3], const double omg[3], const double grv[3], COLOR32 col, tent3d_flags_t flags, double life);
-void AddTelineCallback3D(struct tent3d_line_list *tell, const double pos[3], const double velo[3], double len, const double pyr[3], const double omg[3], const double grv[3], void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, double life);
+void AddTeline3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
+void AddTelineCallback3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
 void AnimTeline3D(struct tent3d_line_list *tell, double dt);
 void DrawTeline3D(struct tent3d_line_list *tell, struct tent3d_line_drawdata *);
+#endif
 
+#ifdef __cplusplus
+extern "C"{
+#endif
 struct tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
 void AddTefpol3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
 struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
@@ -98,6 +110,9 @@ void MoveTefpol3D(struct tent3d_fpol *fpol, const double pos[3], const double ve
 void ImmobilizeTefpol3D(struct tent3d_fpol*);
 void AnimTefpol3D(struct tent3d_fpol_list *tell, double dt);
 void DrawTefpol3D(struct tent3d_fpol_list *tepl, const double viewpoint[3], const struct glcull *);
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef NPROFILE
 const struct tent3d_line_debug{
@@ -107,6 +122,9 @@ const struct tent3d_line_debug{
 	unsigned teline_m;
 	unsigned teline_s;
 } *Teline3DDebug(const struct tent3d_line_list *);
+#ifdef __cplusplus
+extern "C"{
+#endif
 const struct tent3d_fpol_debug{
 	double animtefpol, drawtefpol;
 	size_t so_tefpol3_t, so_tevert3_t;
@@ -116,6 +134,9 @@ const struct tent3d_fpol_debug{
 	unsigned tevert_c;
 	unsigned tevert_s;
 } *Tefpol3DDebug(const struct tent3d_fpol_list *);
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 

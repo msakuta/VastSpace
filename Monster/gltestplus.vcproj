@@ -488,7 +488,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\teline3d.c"
+				RelativePath="..\teline3d.cpp"
 				>
 			</File>
 			<File

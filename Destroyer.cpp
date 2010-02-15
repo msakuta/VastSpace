@@ -196,7 +196,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
 					pos[j] += hitradius() * (drseq(&w->rs) - .5);
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, NULL, omg, NULL, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
 			/* smokes */
@@ -212,7 +212,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(ws->tell, pos, NULL, .07, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
+				AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
 			}
 
 			{/* explode shockwave thingie */
@@ -233,8 +233,8 @@ int Destroyer::takedamage(double damage, int hitpart){
 				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
 				q = v * p;
 
-				AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
-				AddTeline3D(tell, this->pos, NULL, 3., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

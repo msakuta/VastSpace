@@ -259,7 +259,7 @@ int RStation::takedamage(double damage, int hitpart){
 			velo[2] = drseq(&w->rs) - .5;
 			velo.normin();
 			pos = this->pos + velo * .1 * .1;
-			AddTeline3D(tell, pos, velo, .005, NULL, NULL, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 		health = -2.;
 	}

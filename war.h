@@ -1,13 +1,13 @@
 #ifndef WAR_H
 #define WAR_H
 #include "serial.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/colseq/color.h>
 #include <clib/avec3.h>
 #include <clib/amat3.h>
 #include <clib/suf/suf.h>
 #include <clib/rseq.h>
-#include "tent3d.h"
 }
 #include <cpplib/gl/cullplus.h>
 

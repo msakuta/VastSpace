@@ -412,9 +412,9 @@ void Beamer::anim(double dt){
 				int i;
 				for(i = 0; i < 3; i++)
 					velo[i] = (drseq(&w->rs) - .5) * .1;
-				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, NULL, NULL, NULL, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
+				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-			AddTeline3D(ws->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, NULL, NULL, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+			AddTeline3D(ws->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 		}
 		else
 			beamlen = 10.;
@@ -805,8 +805,8 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 //	glMultMatrixd(dd->invrot);
 	{
 		Quatd rot;
-		memcpy(&rot, dd->rot, sizeof rot);
-		Vec3d delta = Vec3d(dd->viewpoint) - Vec3d(p->pos);
+		rot = dd->rot;
+		Vec3d delta = dd->viewpoint - p->pos;
 		Vec3d ldelta = rot.trans(delta);
 		Quatd qirot = Quatd::direction(ldelta);
 		Quatd qret = rot.cnj() * qirot;
@@ -853,183 +853,10 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 	glPopMatrix();
 }
 
-#if 0
-struct VBO{
-	suf_t *suf;
-	GLuint buffers[4];
-	int np;
-	GLushort *indices;
-};
-
-#if defined(WIN32)
-PFNGLGENBUFFERSPROC glGenBuffers;
-PFNGLISBUFFERPROC glIsBuffer;
-PFNGLBINDBUFFERPROC glBindBuffer;
-PFNGLBUFFERDATAPROC glBufferData;
-PFNGLBUFFERSUBDATAPROC glBufferSubData;
-PFNGLMAPBUFFERPROC glMapBuffer;
-PFNGLUNMAPBUFFERPROC glUnmapBuffer;
-PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-static int initBuffers(){
-	return (!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
-		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
-		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
-		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
-		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
-		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
-		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
-		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")))
-		? -1 : 1;
-}
-#else
-static int initBuffers(){return -1;}
-#endif
-static int init_VBO = 0;
-
-static VBO *cacheVBO(suf_t *suf){
-	if(init_VBO < 0)
-		return NULL;
-	if(!init_VBO){
-		init_VBO = initBuffers();
-		if(init_VBO <= 0){
-		fprintf(stderr, "VBO not supported!\n");
-			return NULL;
-		}
-	}
-	VBO *ret = new VBO;
-	GLdouble (*vert)[3] = NULL;
-	GLdouble (*norm)[3] = NULL;
-	int n = 0;
-
-	ret->suf = suf;
-	ret->np = 0;
-	ret->indices = NULL;
-
-	for(int i = 0; i < suf->np; i++) if(suf->p[i]->t == suf_t::suf_prim_t::suf_uvpoly || suf->p[i]->t == suf_t::suf_prim_t::suf_uvshade){
-		int j;
-		struct suf_t::suf_prim_t::suf_uvpoly_t *uv = &suf->p[i]->uv;
-		for(j = 0; j < uv->n; j++){
-			vert = (GLdouble (*)[3])::realloc(vert, (n+1) * sizeof *vert);
-			::memcpy(vert[n], suf->v[uv->v[j].p], sizeof *suf->v);
-			norm = (GLdouble (*)[3])::realloc(norm, (n+1) * sizeof *norm);
-			::memcpy(norm[n], suf->v[uv->v[j].n], sizeof *suf->v);
-			n++;
-		}
-		ret->indices = (GLushort *)::realloc(ret->indices, ++ret->np * sizeof *ret->indices);
-		ret->indices[ret->np-1] = uv->n;
-	}
-	else{
-		int j;
-		struct suf_t::suf_prim_t::suf_poly_t *p = &suf->p[i]->p;
-		for(j = 0; j < p->n; j++){
-			vert = (GLdouble (*)[3])::realloc(vert, (n+1) * sizeof *vert);
-			::memcpy(vert[n], suf->v[p->v[j][0]], sizeof *suf->v);
-			norm = (GLdouble (*)[3])::realloc(norm, (n+1) * sizeof *norm);
-			::memcpy(norm[n], suf->v[p->v[j][1]], sizeof *suf->v);
-			n++;
-		}
-		ret->indices = (GLushort *)::realloc(ret->indices, ++ret->np * sizeof *ret->indices);
-		ret->indices[ret->np-1] = p->n;
-	}
-
-	glGenBuffers(4, ret->buffers);
-
-	/* Vertex array */
-	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[0]);
-	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*vert), vert, GL_STATIC_DRAW);
-
-	/* Normal array */
-	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[1]);
-	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*norm), norm, GL_STATIC_DRAW);
-
-	/* Texture coordinates array */
-//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
-//	glBufferData(GL_ARRAY_BUFFER, suf->nv * sizeof(*suf->v), suf->v, GL_STATIC_DRAW);
-
-	/* Vertex index array */
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
-//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, suf->np, face, GL_STATIC_DRAW);
-
-	/* Now that buffers reside in video memory (hopefully!), we can free local memory for vertices. */
-	::free(vert);
-	::free(norm);
-
-	return ret;
-}
-
-static void drawVBO(VBO *vbo){
-	if(!vbo || init_VBO <= 0)
-		return;
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	/* Vertex array */
-	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[0]);
-	glVertexPointer(3, GL_DOUBLE, 0, (0));
-
-	/* Normal array */
-	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[1]);
-	glNormalPointer(GL_DOUBLE, 0, (0));
-
-	/* Texture coordinates array */
-//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
-//	glTexCoordPointer(2, GL_FLOAT, 0, (0));
-
-	/* Vertex index array */
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
-
-	/* Materials must be accumulated yet. */
-	int n = 0;
-	int i;
-	sufindex last = SUFINDEX_MAX, ai = SUFINDEX_MAX;
-	for(int i = 0; i < vbo->np; i++){
-		int j;
-		struct suf_t::suf_prim_t::suf_poly_t *p = &vbo->suf->p[i]->p;
-		struct suf_t::suf_atr_t *atr = &vbo->suf->a[p->atr];
-
-		/* the effective use of bitfields determines which material commands are
-		  only needed. */
-		if((SUF_EMI | atr->valid) && ai != p->atr){
-			static const GLfloat defemi[4] = {0., 0., 0., 1.};
-/*			if(ai == USHRT_MAX)
-				glPushAttrib(GL_LIGHTING_BIT);*/
-			ai = p->atr;
-			if(atr->valid & (SUF_DIF | SUF_COL))
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, atr->dif, NULL);
-			if(atr->valid & (SUF_AMB | SUF_COL))
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, atr->amb, NULL);
-			if(SUF_EMI)
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, NULL);
-			if(atr->valid & SUF_SPC)
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, NULL);
-			if(glIsEnabled(GL_TEXTURE_2D)){
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
-			}
-			if(glActiveTextureARB){
-				glActiveTextureARB(GL_TEXTURE1_ARB);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTextureARB(GL_TEXTURE0_ARB);
-			}
-/*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
-		}
-		glDrawArrays(GL_POLYGON, n, vbo->indices[i]);
-		n += vbo->indices[i];
-	}
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
-//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-}
-#endif
 
 void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	if(dd->pgc && (glcullFrustum(&pl->pos, .01, dd->pgc) || (glcullScale(&pl->pos, dd->pgc) * .01) < 5))
+	if(dd->pgc && (dd->pgc->cullFrustum(pl->pos, .01) || (dd->pgc->scale(pl->pos) * .01) < 5))
 		return;
-	
 
 	static suf_t *sufs[5] = {NULL};
 	static VBO *vbo[5];
@@ -1128,7 +955,7 @@ int Frigate::takedamage(double damage, int hitpart){
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				VECSADD(pos, velo, .1);
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, NULL, omg, NULL, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
 			/* smokes */
@@ -1144,7 +971,7 @@ int Frigate::takedamage(double damage, int hitpart){
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(ws->tell, pos, NULL, .03, NULL, NULL, NULL, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
+				AddTelineCallback3D(ws->tell, pos, vec3_000, .03, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
 			}
 
 			{/* explode shockwave thingie */
@@ -1165,8 +992,8 @@ int Frigate::takedamage(double damage, int hitpart){
 				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
 				q = v * p;
 
-				AddTeline3D(tell, this->pos, NULL, 5., q, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
-				AddTeline3D(tell, this->pos, NULL, 2., NULL, NULL, NULL, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
+				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
+				AddTeline3D(tell, this->pos, vec3_000, 2., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

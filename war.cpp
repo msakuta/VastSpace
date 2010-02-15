@@ -266,27 +266,25 @@ void WarSpace::draw(wardraw_t *wd){
 	}
 
 	tent3d_line_drawdata dd;
-	*(Vec3d*)(dd.viewdir) = -wd->vw->rot.vec3(2);
-	*(Vec3d*)dd.viewpoint = wd->vw->pos;
-	*(Mat4d*)(dd.invrot) = wd->vw->irot;
+	dd.viewdir = -wd->vw->rot.vec3(2);
+	dd.viewpoint = wd->vw->pos;
+	dd.invrot = wd->vw->irot;
 	dd.fov = wd->vw->fov;
-	glcull gc = wd->vw->gc->operator glcull();
-	dd.pgc = &gc;
-	*(Quatd*)dd.rot = wd->vw->qrot;
+	dd.pgc = wd->vw->gc;
+	dd.rot = wd->vw->qrot;
 	DrawTeline3D(gibs, &dd);
 }
 
 void WarSpace::drawtra(wardraw_t *wd){
 	tent3d_line_drawdata dd;
-	*(Vec3d*)(dd.viewdir) = -wd->vw->rot.vec3(2);
-	*(Vec3d*)dd.viewpoint = wd->vw->pos;
-	*(Mat4d*)(dd.invrot) = wd->vw->irot;
+	dd.viewdir = -wd->vw->rot.vec3(2);
+	dd.viewpoint = wd->vw->pos;
+	dd.invrot = wd->vw->irot;
 	dd.fov = wd->vw->fov;
-	glcull gc = *wd->vw->gc;
-	dd.pgc = &gc;
-	*(Quatd*)dd.rot = wd->vw->qrot;
+	dd.pgc = wd->vw->gc;
+	dd.rot = wd->vw->qrot;
 	DrawTeline3D(tell, &dd);
-	DrawTefpol3D(tepl, wd->vw->pos, &gc);
+	DrawTefpol3D(tepl, wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 
 	for(int i = 0; i < 2; i++)
 	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){

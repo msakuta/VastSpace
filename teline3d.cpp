@@ -1,11 +1,12 @@
 #include "tent3d.h"
 #include "tent3d_p.h"
-#include <clib/avec3.h>
-#include <clib/amat4.h>
-#include <clib/aquat.h>
+#include <cpplib/mat4.h>
+#include <cpplib/quat.h>
+extern "C"{
 #include <clib/suf/suf.h>
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
+}
 #include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -34,28 +35,17 @@
 
 #define rad2deg (360. / 2. / M_PI)
 
-#define VECNULL(r) ((r)[0]=(r)[1]=(r)[2]=0.)
-struct vectorhack{
-	double d[3];
-};
-#define VECCPY(r,a) ((r)[0]=(a)[0],(r)[1]=(a)[1],(r)[2]=(a)[2])/*(*(struct vectorhack*)&(r)=*(struct vectorhack*)&(a))*/
-#define VECSADD(r,b,s) ((r)[0]+=(b)[0]*(s),(r)[1]+=(b)[1]*(s),(r)[2]+=(b)[2]*(s))
-#define VECSCALE(r,a,s) ((r)[0]=(a)[0]*(s),(r)[1]=(a)[1]*(s),(r)[2]=(a)[2]*(s))
-#define VECSLEN(a) ((a)[0]*(a)[0]+(a)[1]*(a)[1]+(a)[2]*(a)[2])
-#define VECLEN(a) sqrt((a)[0]*(a)[0]+(a)[1]*(a)[1]+(a)[2]*(a)[2])
-
 #define COLISTRGB(c) COLOR32R(c), COLOR32G(c), COLOR32B(c)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
 
 typedef struct tent3d_line{
-	double pos[3]; /* center point, double because the velo may be so slow */
-	double velo[3]; /* velocity. */
+	Vec3d pos; /* center point, double because the velo may be so slow */
+	Vec3d velo; /* velocity. */
 	double len; /* length of the beam */
-/*	double pyr[3];*/ /* pitch, yaw and roll angles of the beam */
-	double rot[4]; /* quit using euler angles */
-	double omg[3]; /* angle velocity */
+	Quatd rot; /* quit using euler angles */
+	Vec3d omg; /* angle velocity */
 	double life; /* remaining rendering time */
-	double grv[3]; /* gravity effect factor */
+	Vec3d grv; /* gravity effect factor */
 	tent3d_flags_t flags; /* entity options */
 	struct tent3d_line *next; /* list next pointer */
 	union{ /* rendering model, which depends on flags & TEL_FORMS */
@@ -68,6 +58,8 @@ typedef struct tent3d_line{
 	} mdl;
 } teline3_t;
 
+struct tent3d_line_extra_list; // forward declaration
+
 /* this is a pointer list pool, which does not use heap allocation or shifting
   during the simulation which can be serious overhead. */
 typedef struct tent3d_line_list{
@@ -76,16 +68,17 @@ typedef struct tent3d_line_list{
 	unsigned mex; /* allocated elements in an extra list */
 	teline3_t *l;
 	teline3_t *lfree, *lactv, *last;
-	struct tent3d_line_extra_list{
-		struct tent3d_line_extra_list *next;
-		teline3_t l[1]; /* variable */
-	} *ex; /* extra space is allocated when entities hits their max count */
+	struct tent3d_line_extra_list *ex; /* extra space is allocated when entities hits their max count */
 	unsigned bs; /* verbose buffer size */
 #ifndef NPROFILE
 	struct tent3d_line_debug debug;
 #endif
 } tell_t;
 
+struct tent3d_line_extra_list{
+	struct tent3d_line_extra_list *next;
+	teline3_t l[1]; /* variable */
+};
 
 
 /* allocator and constructor */
@@ -93,9 +86,9 @@ tell_t *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
 	/* it's silly that max is defined as a macro */
 	int i;
 	tell_t *ret;
-	ret = malloc(sizeof *ret);
+	ret = new tell_t;
 	if(!ret) return NULL;
-	ret->lfree = ret->l = malloc(init * sizeof *ret->l);
+	ret->lfree = ret->l = new teline3_t[init];
 	if(!ret->l) return NULL;
 	ret->m = maxt;
 	ret->ml = ret->bs = init;
@@ -136,9 +129,9 @@ void DelTeline3D(tell_t *p){
 	free(p);
 }
 
-static teline3_t *alloc_teline(tell_t *p, const double pos[3], const double velo[3],
-					double len, const double pyr[3], const double omg[3], const double grv[3],
-					tent3d_flags_t flags, double life)
+static teline3_t *alloc_teline(tell_t *p, const Vec3d &pos, const Vec3d &velo,
+					double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
+					tent3d_flags_t flags, float life)
 {
 	teline3_t *pl;
 	if(!p || !p->m) return NULL;
@@ -147,7 +140,7 @@ static teline3_t *alloc_teline(tell_t *p, const double pos[3], const double velo
 		if(p->mex && p->bs + p->mex <= p->m){
 			struct tent3d_line_extra_list *ex;
 			unsigned i;
-			ex = malloc(offsetof(struct tent3d_line_extra_list, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
+			ex = (tent3d_line_extra_list*)malloc(offsetof(struct tent3d_line_extra_list, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
 			ex->next = p->ex;
 			p->ex = ex;
 			p->lfree = ex->l;
@@ -179,36 +172,23 @@ static teline3_t *alloc_teline(tell_t *p, const double pos[3], const double velo
 	}
 
 	/* filter these bits a little */
-	if(pyr || omg){
+	if(omg != vec3_000){
 		tent3d_flags_t x, y, z;
-		x = (pyr ? pyr[0] : 0) || (omg ? omg[0] : 0) ? TEL3_ROTATEX : 0;
-		y = (pyr ? pyr[1] : 0) || (omg ? omg[1] : 0) ? TEL3_ROTATEY : 0;
-		z = (pyr ? pyr[2] : 0) || (omg ? omg[2] : 0) ? TEL3_ROTATEZ : 0;
+		x = (omg ? omg[0] : 0) ? TEL3_ROTATEX : 0;
+		y = (omg ? omg[1] : 0) ? TEL3_ROTATEY : 0;
+		z = (omg ? omg[2] : 0) ? TEL3_ROTATEZ : 0;
 		flags &= ~TEL3_ROTATE; /* truncate any given flags */
 		flags |= x | y | z;
 	}
 
-#define tel (*pl)
-	if(pos) VECCPY(pl->pos, pos); else VECNULL(pl->pos);
-	if(velo) VECCPY(pl->velo, velo); else VECNULL(pl->velo);
-	tel.len = len;
-	if(pyr){
-/*		if(flags & TEL3_QUAT){*/
-			QUATCPY(pl->rot, pyr);
-/*		}
-		else{
-			pyr2quat(pl->rot, pyr);
-		}*/
-	}
-	else{
-		VECNULL(pl->rot);
-		pl->rot[3] = 1.;
-	}
-	if(omg) VECCPY(tel.omg, omg); else VECNULL(pl->omg);
-	if(grv) VECCPY(pl->grv, grv); else VECNULL(pl->grv);
-	tel.flags = flags;
-	tel.life = life;
-#undef tel
+	pl->pos = pos;
+	pl->velo = velo;
+	pl->len = len;
+	pl->rot = rot;
+	pl->omg = omg;
+	pl->grv = grv;
+	pl->flags = flags;
+	pl->life = life;
 
 #ifndef NDEBUG
 	p->debug.teline_s++;
@@ -216,12 +196,12 @@ static teline3_t *alloc_teline(tell_t *p, const double pos[3], const double velo
 	return pl;
 }
 
-void AddTeline3D(tell_t *p, const double pos[3], const double velo[3],
-	double len, const double pyr[3], const double omg[3], const double grv[3],
-	COLOR32 col, tent3d_flags_t flags, double life)
+void AddTeline3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
+	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
+	COLOR32 col, tent3d_flags_t flags, float life)
 {
 	teline3_t *pl;
-	pl = alloc_teline(p, pos, velo, len, pyr, omg, grv, (flags & TEL_FORMS) == TEL3_CALLBACK ? flags & ~TEL_FORMS : flags, life);
+	pl = alloc_teline(p, pos, velo, len, rot, omg, grv, (flags & TEL_FORMS) == TEL3_CALLBACK ? flags & ~TEL_FORMS : flags, life);
 	if(!pl) return;
 	pl->mdl.r = col;
 	switch(flags & TEL_FORMS){
@@ -233,13 +213,13 @@ void AddTeline3D(tell_t *p, const double pos[3], const double velo[3],
 	}
 }
 
-void AddTelineCallback3D(tell_t *p, const double pos[3], const double velo[3],
-	double len, const double pyr[3], const double omg[3], const double grv[3],
-	void (*f)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, double life)
+void AddTelineCallback3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
+	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
+	void (*f)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, float life)
 {
 	teline3_t *pl;
 	flags &= ~TEL_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
-	pl = alloc_teline(p, pos, velo, len, pyr, omg, grv, flags |= TEL3_CALLBACK | TEL3_NOLINE, life);
+	pl = alloc_teline(p, pos, velo, len, rot, omg, grv, flags |= TEL3_CALLBACK | TEL3_NOLINE, life);
 	if(!pl) return;
 	pl->mdl.callback.f = f;
 	pl->mdl.callback.p = pd;
@@ -274,48 +254,13 @@ void AnimTeline3D(tell_t *p, double dt){
 			p->w->vft->accel(p->w, &accel, &pl->pos, &pl->velo);
 			VECSADD(pl->velo, accel, dt);
 		}*/
-		VECSADD(pl->velo, pl->grv, dt); /* apply gravity */
-		VECSADD(pl->pos, pl->velo, dt);
+		pl->velo += pl->grv * dt; /* apply gravity */
+		pl->pos += pl->velo * dt;
 
-		if(!(pl->flags & TEL3_HEADFORWARD)){
-			aquat_t q, qomg;
-			qomg[3] = 0.;
-			VECSCALE(qomg, pl->omg, dt / 2.);
-			QUATMUL(q, qomg, pl->rot);
-			VEC4ADDIN(pl->rot, q);
-			QUATNORMIN(pl->rot);
-/*			VECSADD(pl->pyr, pl->omg, dt);*/
+		// Really should think of anisotropic moment of inertia
+		if(!(pl->flags & TEL3_HEADFORWARD) && pl->omg != vec3_000){
+			pl->rot = pl->rot.quatrotquat(pl->omg * dt);
 		}
-
-#if 0
-		/* rough approximation of reflection. rigid body dynamics are required for more reality. */
-		if(pl->flags & TEL3_REFLECT){
-/*			if(pl->flags & TEL3_HITFUNC){
-				struct contact_info ci;
-				if(p->w && p->w->vft->pointhit && p->w->vft->pointhit(p->w, &pl->pos, &pl->velo, dt, &ci)){
-					double sp;
-					sp = (1. + REFLACTION) * -VECSP(ci.normal, pl->velo);
-					VECSADD(pl->velo, ci.normal, sp);
-				}
-			}
-			else*/{
-				int j = 0; /* reflected at least once */
-
-				/* floor reflection only! */
-				if(pl->pos[1] + pl->velo[1] * dt < 0)
-					pl->velo[1] *= -REFLACTION, j = 1;
-
-				if(j && !(pl->flags & (TEL3_HEADFORWARD)))
-					pl->omg[1] *= - REFLACTION;
-			}
-		}
-#endif
-
-		/* redirect its head to where the line going to go */
-/*		if(pl->flags & TEL_HEADFORWARD)
-			pl->ang = atan2(pl->vy, pl->vx) + pl->omg;
-		else if(!(pl->flags & TEL_FORMS))
-			pl->ang = fmod(pl->ang + pl->omg * dt, 2 * M_PI);*/
 
 		pl = pl2;
 	}
@@ -338,35 +283,21 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 		return;
 	{
 	double br, lenb;
-	unsigned char buf[4];
 	teline3_t *pl = p->lactv;
 
 	while(pl){
 		tent3d_flags_t form = pl->flags & TEL_FORMS;
-		double fore[4];
+		Quatd fore;
 		double *rot = pl->flags & TEL3_HEADFORWARD ? fore : pl->rot;
 		COLOR32 col;
 		br = MIN(pl->life / FADE_START, 1.0);
 		col = pl->life < FADE_START ? (pl->mdl.r & 0x00ffffff) | COLOR32RGBA(0,0,0,(GLubyte)(255 * pl->life / FADE_START)) : pl->mdl.r;
 
 		if(pl->flags & TEL3_HEADFORWARD){
-			avec3_t dr, v;
-			aquat_t q;
-			amat4_t mat;
-			double p;
-			VECNORM(dr, pl->velo);
+			Vec3d dr = pl->velo.norm();
 
-			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
-
-			VECVP(v, avec3_001, dr);
-			p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-			VECSCALE(q, v, p);
-			QUATMUL(fore, q, pl->rot);
-
-/*			fore[0] = pl->pyr[0] - rad2deg * atan2(pl->velo[1], sqrt(pl->velo[0] * pl->velo[0] + pl->velo[2] * pl->velo[2]));
-			fore[1] = pl->pyr[1] + rad2deg * atan2(pl->velo[0], pl->velo[2]);
-			fore[2] = pl->pyr[2];*/
+			Quatd q = Quatd::direction(dr);
+			fore = q * pl->rot;
 		}
 
 		/* shrink over its lifetime */
@@ -377,11 +308,10 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 
 		/* recalc length by its velocity. */
 		if(pl->flags & TEL_VELOLEN)
-			lenb *= VECLEN(pl->velo);
+			lenb *= pl->velo.len();
 
 		if(form == TEL3_EXPANDTORUS){
 			int i;
-			COLOR32 cc, ce; /* center color, edge color */
 			double (*cuts)[2], radius;
 			struct gldBeamsData bd;
 			radius = (pl->mdl.rm.maxlife - pl->life) * lenb;
@@ -411,24 +341,15 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 				glLoadMatrixd(mat2);
 				glMultMatrixd(mat);
 			}
-			glTranslated(pl->pos[0], pl->pos[1], pl->pos[2]);
-/*			if(pl->flags & TEL3_ROTATE){
-				if(pl->flags & TEL3_ROTATEY) glRotated(pl->pyr[1] * deg_per_rad, 0.0, -1.0, 0.0);
-				if(pl->flags & TEL3_ROTATEX) glRotated(pl->pyr[0] * deg_per_rad, 1.0, 0.0, 0.0);
-				if(pl->flags & TEL3_ROTATEZ) glRotated(pl->pyr[2] * deg_per_rad, 0.0, 0.0, 1.0);
-			}*/
-			{
-				amat4_t mat;
-				quat2mat(&mat, rot);
-				glMultMatrixd(mat);
-			}
+			gldTranslate3dv(pl->pos);
+			gldMultQuat(rot);
 			if(pl->flags & TEL3_INVROTATE)
 				glMultMatrixd(dd->invrot);
 
 			if(form == TEL3_PSEUDOSPHERE){
 				GLubyte col[4];
 				COLOR32UNPACK(col, pl->mdl.r);
-				col[3] = pl->life < FADE_START ? COLOR32A(pl->mdl.r) * pl->life / FADE_START : COLOR32A(pl->mdl.r);
+				col[3] = pl->life < FADE_START ? GLubyte(COLOR32A(pl->mdl.r) * pl->life / FADE_START) : COLOR32A(pl->mdl.r);
 				gldPseudoSphere(pl->pos, lenb, col);
 			}
 			else if(form == TEL3_CYLINDER){
@@ -571,10 +492,10 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 #endif
 
 			{
-			double start[3], end[3];
+			Vec3d start, end;
 			double width = pl->flags & TEL3_HEADFORWARD ? .002 : lenb * .2;
 			if(pl->flags & TEL3_HEADFORWARD){
-				lenb /= VECLEN(pl->velo);
+				lenb /= pl->velo.len();
 				start[0] = pl->pos[0] - pl->velo[0] * lenb;
 				start[1] = pl->pos[1] - pl->velo[1] * lenb;
 				start[2] = pl->pos[2] - pl->velo[2] * lenb;
@@ -583,22 +504,15 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 				end[2] = pl->pos[2] + pl->velo[2] * lenb;
 			}
 			else{
-				amat4_t mat;
-				quat2mat(&mat, rot);
-				mat4dvp3(start, mat, avec3_001);
-				VECSCALEIN(start, lenb);
-				VECSCALE(end, start, -1);
-				VECADDIN(start, pl->pos);
-				VECADDIN(end, pl->pos);
-/*				start[0] = pl->pos[0] - pl->pyr[0] * lenb;
-				start[1] = pl->pos[1] - pl->pyr[1] * lenb;
-				start[2] = pl->pos[2] - pl->pyr[2] * lenb;
-				end[0] = pl->pos[0] + pl->pyr[0] * lenb;
-				end[1] = pl->pos[1] + pl->pyr[1] * lenb;
-				end[2] = pl->pos[2] + pl->pyr[2] * lenb;*/
+				Mat4d mat = Quatd(rot).tomat4();
+				start = mat.dvp3(vec3_001);
+				start *= lenb;
+				end = -start;
+				start += pl->pos;
+				end += pl->pos;
 			}
 
-			if(pl->flags & TEL3_THICK && VECSDIST(dd->viewpoint, pl->pos) < /*width * width * 1e-3 * 1e-3 /*/.5 * .5){
+			if(pl->flags & TEL3_THICK && (dd->viewpoint - pl->pos).slen() < /*width * width * 1e-3 * 1e-3 /*/.5 * .5){
 				if(pl->flags & TEL3_FADEEND){
 					if(pl->flags & TEL3_FADEEND)
 						glColor4ub(COLISTRGB(col), 0);

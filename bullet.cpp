@@ -482,7 +482,7 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 				velo[0] = .15 * (drseq(&w->rs) - .5);
 				velo[1] = .15 * (drseq(&w->rs) - .5);
 				velo[2] = .15 * (drseq(&w->rs) - .5);
-				AddTeline3D(tell, pos, velo, .005, NULL, NULL, gravity,
+				AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, gravity,
 					j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND |  TEL3_REFLECT, 3. + 2. * drseq(&w->rs));
 			}
 			for(j = 0; j < 10; j++){
@@ -496,9 +496,9 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 
 			{/* explode shockwave thingie */
 				static const Quatd pyr(SQRT2P2, 0., 0., SQRT2P2);
-				AddTeline3D(tell, pos, NULL, damage * .0001, pyr, NULL, NULL, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, damage * .001);
+				AddTeline3D(tell, pos, vec3_000, damage * .0001, pyr, vec3_000, vec3_000, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, damage * .001);
 				if(ci && 0 <= ci->depth) /* no scorch in midair */
-					AddTeline3D(tell, pos, NULL, damage * .0001, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
+					AddTeline3D(tell, pos, vec3_000, damage * .0001, pyr, vec3_000, vec3_000, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
 			}
 		}
 	}
@@ -521,7 +521,7 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 			velo[0] = .05 * (drseq(&w->rs) - .5);
 			velo[1] = .05 * (drseq(&w->rs) - .5);
 			velo[2] = .05 * (drseq(&w->rs) - .5);
-			AddTeline3D(tell, pos, velo, .001, NULL, NULL, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
+			AddTeline3D(tell, pos, velo, .001, quat_u, vec3_000, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
 		}
 
 		if(30. < damage && ci){
@@ -537,14 +537,14 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 			v = vec3_001.vp(dr);
 			p = sqrt(1. - q[3] * q[3]) / v.len();
 			q = v * p;
-			AddTeline3D(tell, pos, NULL, .01, q, NULL, NULL, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
+			AddTeline3D(tell, pos, vec3_000, .01, q, vec3_000, vec3_000, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
 		}
 
 /*		if(0 < hitground && w->wmd){
 			double pos[2] = {pb->pos[0], pb->pos[2]};
 			AddWarmapDecal(w->wmd, pos, (void*)4);
 		}*/
-		AddTelineCallback3D(tell, this->pos, NULL, damage / 10000. + .003, NULL, NULL, NULL, explosmoke, NULL, 0, 1.);
+		AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000. + .003, quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
 	}
 #if 0
 	else if(pb->vft != &ShotgunBullet_s || rseq(&w->rs) % 8 == 0/*VECSDIST(pb->pos, w->pl->pos) < .05*/){
@@ -728,7 +728,7 @@ void Bullet::anim(double dt){
 						velo[0] = .15 * (drseq(&w->rs) - .5);
 						velo[1] = .15 * (drseq(&w->rs) - .5);
 						velo[2] = .15 * (drseq(&w->rs) - .5);
-						AddTeline3D(ws->tell, pos, velo, .001, NULL, NULL, accel,
+						AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
 							j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
 							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
 					}

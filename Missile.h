@@ -1,9 +1,7 @@
 #ifndef MISSILE_H
 #define MISSILE_H
 #include "bullet.h"
-extern "C"{
 #include "tent3d.h"
-}
 
 class Missile : public Bullet{
 	struct tent3d_fpol *pf;

@@ -298,7 +298,7 @@ static double diprint(const char *s, double x, double y){
 }
 
 extern int bullet_kills, missile_kills;
-int bullet_kills = 0, missile_kills = 0;
+int bullet_kills = 0, missile_kills = 0, wire_kills = 0;
 
 static void drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
@@ -341,6 +341,8 @@ static void drawindics(Viewer *vw){
 			sprintf(buf, "Bk %d", bullet_kills);
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "Mk %d", missile_kills);
+			diprint(buf, 0, y += 12);
+			sprintf(buf, "Wk %d", wire_kills);
 			diprint(buf, 0, y += 12);
 #ifdef _DEBUG
 			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())

@@ -59,6 +59,8 @@ public:
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	const maneuve &getManeuve()const;
 };
 
 #endif

@@ -356,14 +356,14 @@ static int wire_hit_callback(const struct otjEnumHitSphereParam *param, Entity *
 
 void WireDestroyer::anim(double dt){
 	st::anim(dt);
-	wireomega = M_PI;
-	wirephase += wireomega * dt;
+	wireomega = 6. * M_PI;
 
-	if(WarSpace *ws = *w){
+	int subwires = 8;
+	if(WarSpace *ws = *w) for(int n = 0; n < subwires; n++){
 		Mat4d mat;
 		transform(mat);
 		for(int i = 0; i < 2; i++){
-			Mat4d rot = mat.rotz(wirephase);
+			Mat4d rot = mat.rotz(wirephase + (wireomega * dt) * n / subwires);
 			Vec3d src = rot.vp3(Vec3d(.07 * (i * 2 - 1), 0, 0));
 			Vec3d dst = rot.vp3(Vec3d(wirelength * (i * 2 - 1), 0, 0));
 			Vec3d dir = (dst - src).norm();
@@ -393,12 +393,13 @@ void WireDestroyer::anim(double dt){
 					continue;
 
 				if(pt->w == w) if(!pt->takedamage(damage, hitpart)){
+					extern int wire_kills;
+					wire_kills++;
 				}
-
-				return;
 			}while(0);
 		}
 	}
+	wirephase += wireomega * dt;
 }
 
 void WireDestroyer::draw(wardraw_t *wd){
@@ -522,3 +523,19 @@ int WireDestroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, doub
 	return reti;
 }
 
+void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	rot = this->rot;
+	pos = rot.trans(Vec3d(0, .08, .05)) + this->pos;
+}
+
+const Warpable::maneuve &WireDestroyer::getManeuve()const{
+	static const struct Warpable::maneuve beamer_mn = {
+		.05, /* double accel; */
+		.1, /* double maxspeed; */
+		.1, /* double angleaccel; */
+		.2, /* double maxanglespeed; */
+		150000., /* double capacity; [MJ] */
+		300., /* double capacitor_gen; [MW] */
+	};
+	return beamer_mn;
+}

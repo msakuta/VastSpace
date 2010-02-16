@@ -210,7 +210,7 @@ void Scarry::draw(wardraw_t *wd){
 		return;
 
 	if(init == 0) do{
-		sufbase = CallLoadSUF("spacecarrier.bin");
+		sufbase = CallLoadSUF("models/spacecarrier.bin");
 		if(!sufbase) break;
 		CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
 		CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);

@@ -117,7 +117,7 @@ void Destroyer::draw(wardraw_t *wd){
 		return;
 
 	if(!init) do{
-		sufbase = CallLoadSUF("destroyer0.bin");
+		sufbase = CallLoadSUF("models/destroyer0.bin");
 		if(!sufbase) break;
 		suftexparam_t stp;
 		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
@@ -244,7 +244,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-double Destroyer::maxhealth()const{return 100000./1;}
+double Destroyer::maxhealth()const{return 100000./100;}
 
 int Destroyer::armsCount()const{
 	return nhardpoints;
@@ -282,8 +282,8 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 struct hitbox WireDestroyer::hitboxes[] = {
 	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
 	hitbox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
-	hitbox(Vec3d(.0, -.06, .065), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	hitbox(Vec3d(.0, .06, .065), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	hitbox(Vec3d(.0, -.06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	hitbox(Vec3d(.0, .06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
 	hitbox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(.07, .070, .02)),
 };
 const int WireDestroyer::nhitboxes = numof(hitboxes);
@@ -412,11 +412,11 @@ void WireDestroyer::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, -1);
 
 	if(!init) do{
-		sufbase = CallLoadSUF("wiredestroyer0.bin");
+		sufbase = CallLoadSUF("models/wiredestroyer0.bin");
 		if(!sufbase) break;
-		sufwheel = CallLoadSUF("wiredestroyer_wheel0.bin");
+		sufwheel = CallLoadSUF("models/wiredestroyer_wheel0.bin");
 		if(!sufwheel) break;
-		sufbit = CallLoadSUF("wirebit0.bin");
+		sufbit = CallLoadSUF("models/wirebit0.bin");
 		suftexparam_t stp;
 		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
 		stp.magfil = GL_LINEAR;

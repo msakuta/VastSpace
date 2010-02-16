@@ -105,8 +105,8 @@ void Sceptor::draw(wardraw_t *wd){
 
 	if(init == 0) do{
 		FILE *fp;
-		sufbase = CallLoadSUF("interceptor0.bin");
-		sufbase1 = CallLoadSUF("interceptor1.bin");
+		sufbase = CallLoadSUF("models/interceptor0.bin");
+		sufbase1 = CallLoadSUF("models/interceptor1.bin");
 //		scepter_s.sufbase = LZUC(lzw_interceptor0);
 		if(!sufbase) break;
 		{

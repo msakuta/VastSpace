@@ -276,9 +276,9 @@ void MTurret::draw(wardraw_t *wd){
 	MTurret *a = this;
 	double scale;
 	if(!suf_turret)
-		suf_turret = CallLoadSUF("turretz1.bin");
+		suf_turret = CallLoadSUF("models/turretz1.bin");
 	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("barrelz1.bin");
+		suf_barrel = CallLoadSUF("models/barrelz1.bin");
 
 	{
 		const double bscale = MTURRET_SCALE;
@@ -582,11 +582,11 @@ void GatlingTurret::draw(wardraw_t *wd){
 	static suf_t *suf_barrels = NULL;
 	double scale;
 	if(!suf_turret)
-		suf_turret = CallLoadSUF("turretg1.bin");
+		suf_turret = CallLoadSUF("models/turretg1.bin");
 	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("barrelg1.bin");
+		suf_barrel = CallLoadSUF("models/barrelg1.bin");
 	if(!suf_barrels)
-		suf_barrels = CallLoadSUF("barrelsg1.bin");
+		suf_barrels = CallLoadSUF("models/barrelsg1.bin");
 
 	{
 		const double bscale = MTURRET_SCALE;
@@ -750,9 +750,9 @@ void LTurret::draw(wardraw_t *wd){
 	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
 	double scale;
 	if(!suf_turret)
-		suf_turret = CallLoadSUF("lturret.bin");
+		suf_turret = CallLoadSUF("models/lturret.bin");
 	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("lbarrel.bin");
+		suf_barrel = CallLoadSUF("models/lbarrel.bin");
 
 	const double bscale = .001;
 	static const GLfloat rotaxis2[16] = {
@@ -899,9 +899,9 @@ void LMissileTurret::draw(wardraw_t *wd){
 	static suftex_t *pst_barrel;
 	double scale;
 	if(!suf_turret)
-		suf_turret = CallLoadSUF("missile_launcher.bin");
+		suf_turret = CallLoadSUF("models/missile_launcher.bin");
 	if(!suf_barrel){
-		suf_barrel = CallLoadSUF("missile_launcher_barrel.bin");
+		suf_barrel = CallLoadSUF("models/missile_launcher_barrel.bin");
 		if(suf_barrel){
 			CacheSUFMaterials(suf_barrel);
 			pst_barrel = AllocSUFTex(suf_barrel);

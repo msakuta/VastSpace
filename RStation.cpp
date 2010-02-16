@@ -169,7 +169,7 @@ void RStation::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, this->health / maxhealth(), 3., this->occupytime / 10., this->ru / RSTATION_MAX_RU);
 
 	if(init == 0) do{
-		sufbase = CallLoadSUF("rstation.bin");
+		sufbase = CallLoadSUF("models/rstation.bin");
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
 		suft = AllocSUFTex(sufbase);

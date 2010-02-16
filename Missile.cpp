@@ -438,7 +438,7 @@ void Missile::draw(wardraw_t *wd){
 	if(!init) do{
 		init = true;
 		FILE *fp;
-		suf = CallLoadSUF("missile.bin");
+		suf = CallLoadSUF("models/missile.bin");
 		if(!suf)
 			break;
 		CallCacheBitmap("missile_body.bmp", "models/missile_body.bmp", NULL, NULL);

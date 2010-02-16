@@ -4,7 +4,9 @@
 #include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/dstr.h>
+#include <jpeglib.h>
 //}
+#include <setjmp.h>
 
 
 
@@ -79,11 +81,100 @@ void CacheSUFMaterials(const suf_t *suf){
 	}
 }
 
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;	/* "public" fields */
+
+  jmp_buf setjmp_buffer;	/* for return to caller */
+};
+
+typedef struct my_error_mgr * my_error_ptr;
+
+static void my_error_exit (j_common_ptr cinfo)
+{
+  /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+  my_error_ptr myerr = (my_error_ptr) cinfo->err;
+
+  /* Always display the message. */
+  /* We could postpone this until after returning, if we chose. */
+  (*cinfo->err->output_message) (cinfo);
+
+  /* Return control to the setjmp point */
+  longjmp(myerr->setjmp_buffer, 1);
+}
+
+static BITMAPINFO *ReadJpeg(const char *fname){
+	BITMAPINFO *bmi;
+	FILE * infile;		/* source file */
+	struct jpeg_decompress_struct cinfo;
+	struct my_error_mgr jerr;
+	JSAMPARRAY buffer;		/* Output row buffer */
+	int row_stride;		/* physical row width in image buffer */
+	int src_row_stride;
+
+	infile = fopen(fname, "rb");
+
+	cinfo.err = jpeg_std_error(&jerr.pub);
+	jerr.pub.error_exit = my_error_exit;
+	/* Establish the setjmp return context for my_error_exit to use. */
+	if (setjmp(jerr.setjmp_buffer)) {
+		/* If we get here, the JPEG code has signaled an error.
+		 * We need to clean up the JPEG object, close the input file, and return.
+		 */
+		jpeg_destroy_decompress(&cinfo);
+		fclose(infile);
+		return 0;
+	}
+	jpeg_create_decompress(&cinfo);
+	jpeg_stdio_src(&cinfo, infile);
+	(void) jpeg_read_header(&cinfo, TRUE);
+	(void) jpeg_start_decompress(&cinfo);
+	row_stride = cinfo.output_width * cinfo.output_components;
+	src_row_stride = cinfo.output_width * cinfo.output_components;
+	bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * cinfo.output_components);
+	bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi->bmiHeader.biWidth = cinfo.output_width; 
+	bmi->bmiHeader.biHeight = cinfo.output_height;
+	bmi->bmiHeader.biPlanes = 1;
+	bmi->bmiHeader.biBitCount = cinfo.output_components * 8;
+	bmi->bmiHeader.biCompression = BI_RGB;
+	bmi->bmiHeader.biSizeImage = cinfo.output_width * cinfo.output_height * cinfo.output_components;
+	bmi->bmiHeader.biXPelsPerMeter = 0;
+	bmi->bmiHeader.biYPelsPerMeter = 0;
+	bmi->bmiHeader.biClrUsed = 0;
+	bmi->bmiHeader.biClrImportant = 0;
+	buffer = (*cinfo.mem->alloc_sarray)
+		((j_common_ptr) &cinfo, JPOOL_IMAGE, src_row_stride, 1);
+	while (cinfo.output_scanline < cinfo.output_height) {
+		unsigned j;
+		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
+
+		// We cannot just memcpy it because of byte ordering.
+		if(cinfo.output_components == 3) for(j = 0; j < cinfo.output_width; j++){
+			JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
+			JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+			dst[0] = src[2];
+			dst[1] = src[1];
+			dst[2] = src[0];
+		}
+		else if(cinfo.output_components == 1) for(j = 0; j < cinfo.output_width; j++){
+			JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
+			JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+			dst[0] = src[0];
+		}
+	}
+	(void) jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+	fclose(infile);
+	return bmi;
+}
+
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
 	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
-	BITMAPFILEHEADER *bfh, *bfh2;
+	BITMAPFILEHEADER *bfh, *bfhMask = NULL, *bfh2;
 	GLuint ret;
+	int jpeg = 0, maskjpeg = 0, jpeg2 = 0;
+	stp.bmiMask = NULL;
 
 	stc = FindTexCache(entry);
 	if(stc)
@@ -91,15 +182,27 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	stp = pstp1 ? *pstp1 : defstp;
 	bfh = ZipUnZip("rc.zip", fname1, NULL);
 	stp.bmi = !bfh ? ReadBitmap(fname1) : (BITMAPINFO*)&bfh[1];
+	if(!stp.bmi){
+		stp.bmi = ReadJpeg(fname1);
+		jpeg = 1;
+	}
 	if(!stp.bmi)
 		return 0;
 	if(stp.flags & STP_ALPHATEX){
 		dstr_t ds = dstr0;
 		dstrcat(&ds, fname1);
 		dstrcat(&ds, ".a.bmp");
-		bfh = ZipUnZip("rc.zip", dstr(&ds), NULL);
-		stp.bmiMask = !bfh ? ReadBitmap(dstr(&ds)) : (BITMAPINFO*)&bfh[1];
+		bfhMask = ZipUnZip("rc.zip", dstr(&ds), NULL);
+		stp.bmiMask = !bfhMask ? ReadBitmap(dstr(&ds)) : (BITMAPINFO*)&bfhMask[1];
 		dstrfree(&ds);
+		if(!stp.bmiMask){
+			ds = dstr0;
+			dstrcat(&ds, fname1);
+			dstrcat(&ds, ".a.jpg");
+			stp.bmiMask = ReadJpeg(dstr(&ds));
+			dstrfree(&ds);
+			maskjpeg = 1;
+		}
 	}
 
 	stp2 = pstp2 ? *pstp2 : defstp;
@@ -108,16 +211,29 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
 		if(!stp2.bmi)
 			return 0;
+		jpeg2 = 1;
 	}
 
 	ret = CacheSUFMTex(entry, &stp, fname2 ? (BITMAPINFO*)&stp2 : NULL);
 	if(bfh)
 		ZipFree(bfh);
+	else if(jpeg)
+		free(stp.bmi);
 	else
 		LocalFree(stp.bmi);
+	if(stp.bmiMask){
+		if(bfhMask)
+			ZipFree(bfhMask);
+		else if(maskjpeg)
+			free(stp.bmiMask);
+		else
+			LocalFree(stp.bmiMask);
+	}
 	if(fname2){
 		if(bfh)
 			ZipFree(bfh2);
+		else if(jpeg2)
+			free(stp2.bmi);
 		else
 			LocalFree(stp2.bmi);
 	}

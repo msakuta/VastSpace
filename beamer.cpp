@@ -497,7 +497,7 @@ void Beamer::draw(wardraw_t *wd){
 //		suftexparam_t stp, stp2;
 /*		beamer_s.sufbase = LZUC(lzw_assault);*/
 /*		beamer_s.sufbase = LZUC(lzw_beamer);*/
-		sufbase = CallLoadSUF("beamer.bin");
+		sufbase = CallLoadSUF("models/beamer.bin");
 		if(!sufbase) break;
 		cache_bridge();
 		pst = AllocSUFTex(sufbase);
@@ -825,7 +825,7 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
-		list = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
+		list = CallCacheBitmap5("smoke2.jpg", "smoke2.jpg", &stp, NULL, NULL);
 	}
 	glCallList(list);
 	COLOR32 col = (COLOR32)private_data;
@@ -864,7 +864,7 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 	if(!sufs[0]){
 		char buf[64];
 		for(int i = 0; i < numof(sufs); i++){
-			sprintf(buf, "debris%d.bin", i);
+			sprintf(buf, "models/debris%d.bin", i);
 			sufs[i] = CallLoadSUF(buf);
 			vbo[i] = CacheVBO(sufs[i]);
 		}

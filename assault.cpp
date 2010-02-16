@@ -34,7 +34,7 @@ Assault::Assault(WarField *aw) : st(aw){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = (true || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
+		turrets[i] = (0 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}
@@ -220,7 +220,7 @@ void Assault::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
 
 	if(init == 0) do{
-		sufbase = CallLoadSUF("assault.bin");
+		sufbase = CallLoadSUF("models/assault.bin");
 		if(!sufbase) break;
 		Beamer::cache_bridge();
 		pst = AllocSUFTex(sufbase);

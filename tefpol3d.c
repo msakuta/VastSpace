@@ -22,7 +22,7 @@
 #define ENABLE_THICK 1 /* thickness control in conjunction with WinAPI drawing */
 #define ENABLE_HEAD 0 /* head sprite */
 #define INTERP_CS 1 /* Liner interpolation rather than calling ColorSequence() everytime */
-#define VERTEX_SIZE 4096
+#define VERTEX_SIZE 0x2000
 
 /*#if !WINTEFPOL && !DIRECTDRAW
 #undef ENABLE_THICK

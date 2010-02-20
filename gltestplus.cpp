@@ -1473,6 +1473,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
+	CmdAddParam("parade_formation", Sceptor::cmd_parade_formation, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

@@ -8,6 +8,7 @@
 #include <cpplib/dstring.h>
 #include <vector>
 #include <list>
+#include <set>
 
 class Bullet;
 class Warpable;
@@ -56,7 +57,7 @@ public:
 	virtual double getRU()const;
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
-	virtual void dockCommand(Docker* = NULL); // Instructs that try to a docker.
+	virtual bool command(unsigned commid, std::set<Entity*> *targets = NULL); // A general-purpose command dispatcher. Can have a set of Entities as argument.
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
@@ -90,6 +91,9 @@ public:
 
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
+
+	// Reserves a command id for particular purpose.
+	static unsigned registerCommand();
 
 protected:
 	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;

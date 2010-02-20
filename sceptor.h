@@ -77,11 +77,14 @@ public:
 	virtual Props props()const;
 	virtual bool undock(Docker *);
 	virtual void dockCommand(Docker*);
+	virtual bool command(unsigned commid, std::set<Entity*> *);
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
+	static int cmd_parade_formation(int argc, char *argv[], void*);
+	static const unsigned cid_parade_formation, cid_dock;
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 };
 

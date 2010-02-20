@@ -159,7 +159,7 @@ Builder *Entity::getBuilderInt(){return NULL;}
 Docker *Entity::getDockerInt(){return NULL;}
 bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
-void Entity::dockCommand(Docker*){}
+bool Entity::command(unsigned, std::set<Entity*>*){return false;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
@@ -213,6 +213,11 @@ void Entity::transit_cs(CoordSys *cs){
 		w->pl->pos = cs->tocs(w->pl->pos, w->pl->cs);
 		w->pl->cs = cs;
 	}
+}
+
+unsigned Entity::registerCommand(){
+	static unsigned counter = 0;
+	return counter++;
 }
 
 class GLWprop : public GLwindowSizeable{

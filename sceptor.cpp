@@ -1276,6 +1276,18 @@ double Sceptor::maxfuel()const{
 	return 120.;
 }
 
+bool Sceptor::command(unsigned commid, std::set<Entity*>*){
+	if(commid == cid_parade_formation){
+		task = Parade;
+		if(!mother)
+			findMother();
+		return true;
+	}
+	else if(commid == cid_dock){
+		task = Dock;
+	}
+}
+
 
 Entity *Sceptor::create(WarField *w, Builder *mother){
 	Sceptor *ret = new Sceptor(NULL);
@@ -1292,8 +1304,18 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->dockCommand();
+		e->command(cid_dock);
 	}
 	return 0;
 }
 
+int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
+	Player *pl = (Player*)pv;
+	for(Entity *e = pl->selected; e; e = e->selectnext){
+		e->command(cid_parade_formation);
+	}
+	return 0;
+}
+
+const unsigned Sceptor::cid_parade_formation = registerCommand();
+const unsigned Sceptor::cid_dock = registerCommand();

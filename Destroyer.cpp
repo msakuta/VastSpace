@@ -244,7 +244,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-double Destroyer::maxhealth()const{return 100000./100;}
+double Destroyer::maxhealth()const{return 100000./1;}
 
 int Destroyer::armsCount()const{
 	return nhardpoints;

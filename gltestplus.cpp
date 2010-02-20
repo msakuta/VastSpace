@@ -336,8 +336,6 @@ static void drawindics(Viewer *vw){
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "EE %d", ce * ce);
 			diprint(buf, 0, y += 12);
-			sprintf(buf, "EE %d", ce * ce);
-			diprint(buf, 0, y += 12);
 			sprintf(buf, "Bk %d", bullet_kills);
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "Mk %d", missile_kills);

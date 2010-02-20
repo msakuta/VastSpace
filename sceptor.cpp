@@ -16,7 +16,6 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
-#include <clib/gl/gldraw.h>
 }
 #include <assert.h>
 #include <string.h>
@@ -504,47 +503,6 @@ void quat2pyr(const aquat_t quat, avec3_t euler){
 }
 #endif
 
-static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
-	glPushMatrix();
-	gldTranslate3dv(p->pos);
-	glMultMatrixd(dd->invrot);
-	gldScaled(p->len);
-	struct random_sequence rs;
-	init_rseq(&rs, (long)p);
-	glRotated(rseq(&rs) % 360, 0, 0, 1);
-//	gldMultQuat(Quatd::direction(Vec3d(p->pos) - Vec3d(dd->viewpoint)));
-	static GLuint lists[2] = {0};
-	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-	if(!lists[0]){
-		suftexparam_t stp;
-		stp.flags = STP_ENV | STP_ALPHA | STP_ALPHATEX | STP_MAGFIL | STP_MINFIL;
-		stp.env = GL_MODULATE;
-		stp.magfil = GL_LINEAR;
-		stp.minfil = GL_LINEAR;
-		lists[0] = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
-		lists[1] = CallCacheBitmap5("smokefire.bmp", "smokefire.bmp", &stp, NULL, NULL);
-	}
-	for(int i = 0; i < 2; i++){
-		glCallList(lists[i]);
-		glColor4f(1, 1, 1, i == 0 ? MIN(p->life * 1., 1.) : MAX(MIN(p->life * 1. - 1., 1.), 0));
-/*		glBegin(GL_QUADS);
-		glTexCoord2f(0,0); glVertex2f(-1, -1);
-		glTexCoord2f(1,0); glVertex2f(+1, -1);
-		glTexCoord2f(1,1); glVertex2f(+1, +1);
-		glTexCoord2f(0,1); glVertex2f(-1, +1);
-		glEnd();*/
-		glBegin(GL_TRIANGLE_FAN);
-		glTexCoord2f( .5,  .5); glNormal3f( 0,  0, 1); glVertex2f( 0,  0);
-		glTexCoord2f( .0,  .0); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
-		glTexCoord2f( 1.,  .0); glNormal3f( 1, -1, 0); glVertex2f( 1, -1);
-		glTexCoord2f( 1.,  1.); glNormal3f( 1,  1, 0); glVertex2f( 1,  1);
-		glTexCoord2f( 0.,  1.); glNormal3f(-1,  1, 0); glVertex2f(-1,  1);
-		glTexCoord2f( 0.,  0.); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
-		glEnd();
-	}
-	glPopAttrib();
-	glPopMatrix();
-}
 
 void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);

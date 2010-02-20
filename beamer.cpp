@@ -884,7 +884,7 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 //	if(!lists[id]){
 //		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
 //		DrawSUF(sufs[id], SUF_ATR, NULL);
-		DrawVBO(vbo[id]);
+		DrawVBO(vbo[id], SUF_ATR, NULL);
 //		glEndList();
 //	}
 //	else

@@ -22,6 +22,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
+#include <clib/suf/sufvbo.h>
 #include <clib/avec3.h>
 #include <clib/amat4.h>
 #include <clib/aquat.h>
@@ -85,6 +86,7 @@ double Sceptor::nlipsFactor(Viewer &vw)const{
 void Sceptor::draw(wardraw_t *wd){
 	static int init = 0;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
+	static VBO *vbo[2] = {NULL};
 	static suftex_t *suft, *suft1;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
@@ -107,7 +109,8 @@ void Sceptor::draw(wardraw_t *wd){
 		FILE *fp;
 		sufbase = CallLoadSUF("models/interceptor0.bin");
 		sufbase1 = CallLoadSUF("models/interceptor1.bin");
-//		scepter_s.sufbase = LZUC(lzw_interceptor0);
+		vbo[0] = CacheVBO(sufbase);
+		vbo[1] = CacheVBO(sufbase1);
 		if(!sufbase) break;
 		{
 //			BITMAPFILEHEADER *bfh;
@@ -220,10 +223,20 @@ void Sceptor::draw(wardraw_t *wd){
 		}
 		else
 #endif
-		if(pixels < 15)
-			DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft1, NULL, NULL);
-		else
-			DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+		if(pixels < 15){
+			if(vbo[1])
+				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft1);
+			else
+//				DrawSUF(sufbase1, SUF_ATR, NULL);
+				DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft1, NULL, NULL);
+		}
+		else{
+			if(vbo[0])
+				DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
+			else
+//				DrawSUF(sufbase, SUF_ATR, NULL);
+				DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+		}
 		glPopMatrix();
 
 /*		if(0 < wd->light[1]){
@@ -342,3 +355,44 @@ void Sceptor::drawtra(wardraw_t *wd){
 	}
 }
 
+void Sceptor::smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+	glPushMatrix();
+	gldTranslate3dv(p->pos);
+	glMultMatrixd(dd->invrot);
+	gldScaled(p->len);
+	struct random_sequence rs;
+	init_rseq(&rs, (long)p);
+	glRotated(rseq(&rs) % 360, 0, 0, 1);
+//	gldMultQuat(Quatd::direction(Vec3d(p->pos) - Vec3d(dd->viewpoint)));
+	static GLuint lists[2] = {0};
+	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+	if(!lists[0]){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_ALPHA | STP_ALPHATEX | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		lists[0] = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
+		lists[1] = CallCacheBitmap5("smokefire.bmp", "smokefire.bmp", &stp, NULL, NULL);
+	}
+	for(int i = 0; i < 2; i++){
+		glCallList(lists[i]);
+		glColor4f(1, 1, 1, i == 0 ? MIN(p->life * 1., 1.) : MAX(MIN(p->life * 1. - 1., 1.), 0));
+/*		glBegin(GL_QUADS);
+		glTexCoord2f(0,0); glVertex2f(-1, -1);
+		glTexCoord2f(1,0); glVertex2f(+1, -1);
+		glTexCoord2f(1,1); glVertex2f(+1, +1);
+		glTexCoord2f(0,1); glVertex2f(-1, +1);
+		glEnd();*/
+		glBegin(GL_TRIANGLE_FAN);
+		glTexCoord2f( .5,  .5); glNormal3f( 0,  0, 1); glVertex2f( 0,  0);
+		glTexCoord2f( .0,  .0); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
+		glTexCoord2f( 1.,  .0); glNormal3f( 1, -1, 0); glVertex2f( 1, -1);
+		glTexCoord2f( 1.,  1.); glNormal3f( 1,  1, 0); glVertex2f( 1,  1);
+		glTexCoord2f( 0.,  1.); glNormal3f(-1,  1, 0); glVertex2f(-1,  1);
+		glTexCoord2f( 0.,  0.); glNormal3f(-1, -1, 0); glVertex2f(-1, -1);
+		glEnd();
+	}
+	glPopAttrib();
+	glPopMatrix();
+}

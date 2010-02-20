@@ -1,6 +1,6 @@
 #ifndef CLIB_SUFVBO_H
 #define CLIB_SUFVBO_H
-#include "suf.h"
+#include "sufdraw.h"
 
 typedef struct VBO{
 	suf_t *suf;
@@ -10,6 +10,6 @@ typedef struct VBO{
 } VBO;
 
 struct VBO *CacheVBO(suf_t *suf);
-void DrawVBO(const VBO *vbo);
+void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *suft);
 
 #endif

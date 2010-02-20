@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define GLD_TEX 0x20
 
 #if defined(WIN32)
 static PFNGLGENBUFFERSPROC glGenBuffers;
@@ -40,6 +41,7 @@ VBO *CacheVBO(suf_t *suf){
 	VBO *ret;
 	GLdouble (*vert)[3] = NULL;
 	GLdouble (*norm)[3] = NULL;
+	GLdouble (*texc)[3] = NULL;
 	int i, n = 0;
 
 	if(init_VBO < 0)
@@ -65,6 +67,10 @@ VBO *CacheVBO(suf_t *suf){
 			memcpy(vert[n], suf->v[uv->v[j].p], sizeof *suf->v);
 			norm = (GLdouble (*)[3])realloc(norm, (n+1) * sizeof *norm);
 			memcpy(norm[n], suf->v[uv->v[j].n], sizeof *suf->v);
+			texc = (GLdouble (*)[3])realloc(texc, (n+1) * sizeof *norm);
+			texc[n][0] = suf->v[uv->v[j].t][0];
+			texc[n][1] = 1. - suf->v[uv->v[j].t][1]; // upside down because of coordinate system difference.
+			texc[n][2] = suf->v[uv->v[j].t][2];
 			n++;
 		}
 		ret->indices = (GLushort *)realloc(ret->indices, ++ret->np * sizeof *ret->indices);
@@ -78,6 +84,8 @@ VBO *CacheVBO(suf_t *suf){
 			memcpy(vert[n], suf->v[p->v[j][0]], sizeof *suf->v);
 			norm = (GLdouble (*)[3])realloc(norm, (n+1) * sizeof *norm);
 			memcpy(norm[n], suf->v[p->v[j][1]], sizeof *suf->v);
+			texc = (GLdouble (*)[3])realloc(texc, (n+1) * sizeof *norm);
+			memset(texc[n], 0, sizeof *texc);
 			n++;
 		}
 		ret->indices = (GLushort *)realloc(ret->indices, ++ret->np * sizeof *ret->indices);
@@ -95,8 +103,8 @@ VBO *CacheVBO(suf_t *suf){
 	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*norm), norm, GL_STATIC_DRAW);
 
 	/* Texture coordinates array */
-//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
-//	glBufferData(GL_ARRAY_BUFFER, suf->nv * sizeof(*suf->v), suf->v, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
+	glBufferData(GL_ARRAY_BUFFER, n * sizeof(*texc), texc, GL_STATIC_DRAW);
 
 	/* Vertex index array */
 //	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
@@ -105,17 +113,19 @@ VBO *CacheVBO(suf_t *suf){
 	/* Now that buffers reside in video memory (hopefully!), we can free local memory for vertices. */
 	free(vert);
 	free(norm);
+	free(texc);
 
 	return ret;
 }
 
-void DrawVBO(const VBO *vbo){
+void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
+	struct gldCache *c = NULL;
 	if(!vbo || init_VBO <= 0)
 		return;
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
-//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	/* Vertex array */
 	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[0]);
@@ -126,8 +136,8 @@ void DrawVBO(const VBO *vbo){
 	glNormalPointer(GL_DOUBLE, 0, (0));
 
 	/* Texture coordinates array */
-//	glBindBuffer(GL_ARRAY_BUFFER, ret->buffers[2]);
-//	glTexCoordPointer(2, GL_FLOAT, 0, (0));
+	glBindBuffer(GL_ARRAY_BUFFER, vbo->buffers[2]);
+	glTexCoordPointer(3, GL_DOUBLE, 0, (0));
 
 	/* Vertex index array */
 //	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
@@ -160,7 +170,67 @@ void DrawVBO(const VBO *vbo){
 					glBindTexture(GL_TEXTURE_2D, 0);
 					glDisable(GL_TEXTURE_2D);
 				}
-				if(glActiveTextureARB){
+				if(tex && flags & SUF_TEX){
+					int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
+					if(atr->valid & SUF_TEX){
+						if(mismatch){
+							if(tex->a[ai].list == 0){
+								glDisable(GL_TEXTURE_2D);
+								if(c)
+									c->texenabled = 0;
+							}
+							else{
+	/*							timemeas_t tm;
+								double t;
+								TimeMeasStart(&tm);*/
+								glCallList(tex->a[ai].list);
+	/*							if(glActiveTextureARB){
+									glActiveTextureARB(GL_TEXTURE0_ARB);
+									glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
+									glEnable(GL_TEXTURE_2D);
+									glActiveTextureARB(GL_TEXTURE1_ARB);
+									if(tex->a[ai].tex[1]){
+										glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[1]);
+										glEnable(GL_TEXTURE_2D);
+									}
+									else
+										glDisable(GL_TEXTURE_2D);
+									glActiveTextureARB(GL_TEXTURE0_ARB);
+								}
+								else{
+									glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
+									glEnable(GL_TEXTURE_2D);
+								}*/
+	//							t = TimeMeasLap(&tm);
+	/*							printf("[%d]%s %lg\n", tex->a[ai].list, atr->colormap, t);*/
+	/*							textime += t;*/
+								if(c)
+									c->texenabled = 1;
+							}
+						}
+						else if(!c->texenabled){
+							glEnable(GL_TEXTURE_2D);
+							c->texenabled = 1;
+						}
+					}
+					else{
+						if(mismatch){
+							glDisable(GL_TEXTURE_2D);
+							if(glActiveTextureARB){
+								glActiveTextureARB(GL_TEXTURE1);
+								glDisable(GL_TEXTURE_2D);
+								glActiveTextureARB(GL_TEXTURE0);
+							}
+							if(c)
+								c->texenabled = 0;
+						}
+					}
+					if(c && mismatch){
+						c->valid |= GLD_TEX;
+						c->texture = atr->valid & SUF_TEX ? tex->a[ai].list : 0;
+					}
+				}
+				else if(glActiveTextureARB){
 					glActiveTextureARB(GL_TEXTURE1_ARB);
 					glDisable(GL_TEXTURE_2D);
 					glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -174,6 +244,6 @@ void DrawVBO(const VBO *vbo){
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
-//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 }

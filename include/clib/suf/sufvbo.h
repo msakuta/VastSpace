@@ -4,9 +4,8 @@
 
 typedef struct VBO{
 	suf_t *suf;
-	unsigned buffers[4];
-	int np;
-	unsigned short *indices;
+	unsigned (*atris)[4]; /* Attrubute Triangles */
+	int *natris; /* Count of ... */
 } VBO;
 
 struct VBO *CacheVBO(suf_t *suf);

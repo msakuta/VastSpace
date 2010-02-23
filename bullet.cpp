@@ -863,13 +863,14 @@ void Bullet::drawtra(wardraw_t *wd){
 	double pixels;
 	double width = this->damage * .00005, wpix;
 
+	Vec3d velo = this->velo - wd->vw->velo;
 	double velolen = velo.len();
 	double f = 1. * velolen * length;
 	span = MIN(f, .1);
 	length *= span / f;
 
-//	if(glcullFrustum(pb->pos, span, wd->pgc))
-//		return;
+	if(wd->vw->gc->cullFrustum(pos, span))
+		return;
 	scale = fabs(wd->vw->gc->scale(pos));
 	pixels = span * scale;
 	if(pixels < 2)
@@ -883,7 +884,7 @@ void Bullet::drawtra(wardraw_t *wd){
 		glColor4ub(255,127,0,255);
 		start = this->pos;
 		end = this->pos;
-		end += this->velo * -(runlength / velolen < length ? runlength / velolen : length);
+		end += velo * -(runlength / velolen < length ? runlength / velolen : length);
 		if(true || damage < 500.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
@@ -898,17 +899,17 @@ void Bullet::drawtra(wardraw_t *wd){
 				texname = CallCacheBitmap5("bullet.bmp", "bullet.bmp", &stp, NULL, NULL);
 			}
 			glCallList(texname);
-			glMatrixMode(GL_TEXTURE);
+/*			glMatrixMode(GL_TEXTURE);
 			glPushMatrix();
 			glRotatef(90, 0, 0, 1);
 			glScalef(9./32., 1, 1);
-			glMatrixMode(GL_MODELVIEW);
+			glMatrixMode(GL_MODELVIEW);*/
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE); // Add blend
 			gldTextureBeam(wd->vw->pos, start, end, length / width < 10. ? length / 10. : width);
-			glMatrixMode(GL_TEXTURE);
+/*			glMatrixMode(GL_TEXTURE);
 			glPopMatrix();
-			glMatrixMode(GL_MODELVIEW);
+			glMatrixMode(GL_MODELVIEW);*/
 #else
 			if(!texname){
 				GLubyte texbits[64][64][2];

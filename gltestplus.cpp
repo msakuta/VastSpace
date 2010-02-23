@@ -765,6 +765,7 @@ void display_func(void){
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	viewer.viewtime = gametime;
+	viewer.velo = pl.velo;
 	viewer.dt = dt;
 	draw_func(viewer, dt);
 }

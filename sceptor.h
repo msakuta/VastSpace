@@ -40,6 +40,7 @@ protected:
 	Docker *mother; // Mother ship
 	int hitsound;
 	int paradec;
+	int magazine; // remaining bullet count in the magazine to shoot before reloading
 	Task task;
 	bool docked, returning, away, cloak;
 	float mf; // trivial muzzle flashes

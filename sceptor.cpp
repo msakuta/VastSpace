@@ -29,15 +29,17 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define SCEPTER_SCALE 1./10000
-#define SCEPTER_SMOKE_FREQ 20.
-#define SCEPTER_RELOADTIME .2
-#define SCEPTER_ROLLSPEED (.2 * M_PI)
-#define SCEPTER_ROTSPEED (.3 * M_PI)
-#define SCEPTER_MAX_ANGLESPEED (M_PI * .5)
-#define SCEPTER_ANGLEACCEL (M_PI * .2)
-#define SCEPTER_MAX_GIBS 20
+#define SCEPTOR_SCALE 1./10000
+#define SCEPTOR_SMOKE_FREQ 20.
+#define SCEPTOR_COOLTIME .1
+#define SCEPTOR_ROLLSPEED (.2 * M_PI)
+#define SCEPTOR_ROTSPEED (.3 * M_PI)
+#define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
+#define SCEPTOR_ANGLEACCEL (M_PI * .2)
+#define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
+#define SCEPTOR_MAGAZINE 20
+#define SCEPTOR_RELOADTIME 4.
 
 Entity::Dockable *Sceptor::toDockable(){return this;}
 
@@ -121,7 +123,7 @@ Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 
 Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel()), mf(0), paradec(-1){
 	Sceptor *const p = this;
-//	EntityInit(ret, w, &scepter_s);
+//	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 4e3;
 //	race = mother->st.st.race;
@@ -139,6 +141,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel(
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
+	p->magazine = SCEPTOR_MAGAZINE;
 	p->task = Idle;
 	p->fcloak = 0.;
 	p->cloak = 0;
@@ -150,7 +153,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel(
 	}*/
 }
 
-const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}, {-35. * SCEPTER_SCALE, -4. * SCEPTER_SCALE, -15. * SCEPTER_SCALE}};
+const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
 
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
@@ -163,8 +166,8 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	pos = this->pos + ofs;
 }
 
-/*static void scepter_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
-	scepter_t *p = (scepter_t*)pt;
+/*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
+	SCEPTOR_t *p = (SCEPTOR_t*)pt;
 	if(!pt->active || pt->health <= 0.)
 		return;
 	pt->inputs = *inputs;
@@ -201,8 +204,8 @@ void cmd_cloak(int argc, char *argv[]){
 	extern struct player *ppl;
 	if(ppl->cs->w){
 		entity_t *pt;
-		for(pt = ppl->selected; pt; pt = pt->selectnext) if(pt->vft == &scepter_s){
-			((scepter_t*)pt)->cloak = !((scepter_t*)pt)->cloak;
+		for(pt = ppl->selected; pt; pt = pt->selectnext) if(pt->vft == &SCEPTOR_s){
+			((SCEPTOR_t*)pt)->cloak = !((SCEPTOR_t*)pt)->cloak;
 		}
 	}
 }
@@ -233,7 +236,12 @@ void Sceptor::shootDualGun(double dt){
 	} while(!i++);
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
-	this->cooldown += SCEPTER_RELOADTIME * (fuel <= 0 ? 3 : 1);
+	if(0 < --magazine)
+		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
+	else{
+		magazine = SCEPTOR_MAGAZINE;
+		this->cooldown += SCEPTOR_RELOADTIME;
+	}
 	this->mf = .1;
 }
 
@@ -517,8 +525,8 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	Vec3d dr = this->pos - target;
 	this->throttle = dr.len() * speedfactor + minspeed;
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
-	if(SCEPTER_ROTSPEED * SCEPTER_ROTSPEED < this->omg.slen())
-		this->omg.normin().scalein(SCEPTER_ROTSPEED);
+	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
+		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
 	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
@@ -574,7 +582,7 @@ void Sceptor::anim(double dt){
 			VECADDIN(pt->pos, pm->pos);
 			VECCPY(pt->velo, pm->velo);
 			pf->docked = pf->returning = 0;
-			p->task = scepter_undock;
+			p->task = SCEPTOR_undock;
 			mother->baycool = SCARRY_BAYCOOL;
 		}
 		else{
@@ -648,7 +656,7 @@ void Sceptor::anim(double dt){
 				quatrot(pt->pos, pm->rot, pos0[mother->undockc++ % 2]);
 				VECADDIN(pt->pos, pm->pos);
 				VECCPY(pt->velo, pm->velo);
-				p->task = scepter_undock;
+				p->task = SCEPTOR_undock;
 				p->mother->baycool = SCARRY_BAYCOOL;
 				if(p->pf)
 					ImmobilizeTefpol3D(p->pf);
@@ -662,9 +670,9 @@ void Sceptor::anim(double dt){
 /*		else if(pf->returning){
 			avec3_t delta;
 			VECSUB(delta, pt->pos, mother->st.pos);
-			pt->pyr[1] = approach(pt->pyr[1], fmod(atan2(-delta[0], delta[2]) + 2 * M_PI, 2 * M_PI), SCEPTER_ROTSPEED * dt, 2 * M_PI);
-			pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTER_ROTSPEED * dt, 2 * M_PI);
-			pt->pyr[2] = approach(pt->pyr[2] + M_PI, (pt->pyr[1] - oldyaw) / dt + M_PI, SCEPTER_ROLLSPEED * dt, 2 * M_PI) - M_PI;
+			pt->pyr[1] = approach(pt->pyr[1], fmod(atan2(-delta[0], delta[2]) + 2 * M_PI, 2 * M_PI), SCEPTOR_ROTSPEED * dt, 2 * M_PI);
+			pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTOR_ROTSPEED * dt, 2 * M_PI);
+			pt->pyr[2] = approach(pt->pyr[2] + M_PI, (pt->pyr[1] - oldyaw) / dt + M_PI, SCEPTOR_ROLLSPEED * dt, 2 * M_PI) - M_PI;
 			if(VECSDIST(pt->pos, mother->st.pos) < 1. * 1.)
 				pf->returning = 0;
 		}
@@ -763,7 +771,7 @@ void Sceptor::anim(double dt){
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
-					double sx, sy, len, len2, maxspeed = SCEPTER_MAX_ANGLESPEED * dt;
+					double sx, sy, len, len2, maxspeed = SCEPTOR_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
 
 					// If a mother could not be aquired, fight to the death alone.
@@ -774,10 +782,12 @@ void Sceptor::anim(double dt){
 
 /*					VECSUB(dv, pt->enemy->pos, pt->pos);*/
 					dv = delta;
-					if(p->task == Attack && dv.slen() < (pt->enemy->hitradius() * 1.2 + .5) * (pt->enemy->hitradius() * 1.2 + .5)){
+					double awaybase = pt->enemy->hitradius() * 1.2 + .1;
+					double attackrad = awaybase < .6 ? awaybase * 5. : .6 * 5.;
+					if(p->task == Attack && dv.slen() < awaybase * awaybase){
 						p->task = Away;
 					}
-					else if(p->task == Away && 5. * 5. < dv.slen()){
+					else if(p->task == Away && attackrad * attackrad < dv.slen()){
 						p->task = Attack;
 					}
 					dv.normin();
@@ -957,8 +967,8 @@ void Sceptor::anim(double dt){
 				xh[0] = pt->velo[2];
 				xh[1] = pt->velo[1];
 				xh[2] = -pt->velo[0];
-				pt->pyr[1] = approach(pt->pyr[1], fmod(atan2(-delta[0], delta[2]) + 2 * M_PI, 2 * M_PI), SCEPTER_ROTSPEED * dt, 2 * M_PI);
-				pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTER_ROTSPEED * dt, 2 * M_PI);
+				pt->pyr[1] = approach(pt->pyr[1], fmod(atan2(-delta[0], delta[2]) + 2 * M_PI, 2 * M_PI), SCEPTOR_ROTSPEED * dt, 2 * M_PI);
+				pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTOR_ROTSPEED * dt, 2 * M_PI);
 				pf->away = 0;
 			}
 			else if(.2 * .2 < VECSLEN(delta)){
@@ -973,12 +983,12 @@ void Sceptor::anim(double dt){
 					/* roll */
 /*					pt->pyr[2] = approach(pt->pyr[2], (pt->pyr[1] < desired ? 1 : desired < pt->pyr[1] ? -1 : 0) * M_PI / 6., .1 * M_PI * dt, 2 * M_PI);*/
 
-					pt->pyr[1] = approach(pt->pyr[1], desired, SCEPTER_ROTSPEED * dt, 2 * M_PI);
+					pt->pyr[1] = approach(pt->pyr[1], desired, SCEPTOR_ROTSPEED * dt, 2 * M_PI);
 
 					if(pt->enemy && pt->pyr[1] == desired){
 					}
 
-					pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTER_ROTSPEED * dt, 2 * M_PI);
+					pt->pyr[0] = approach(pt->pyr[0], atan2(delta[1], sqrt(delta[0] * delta[0] + delta[2] * delta[2])), SCEPTOR_ROTSPEED * dt, 2 * M_PI);
 				}
 				else{
 					const double desiredy = pt->pos[1] < .1 ? -M_PI / 6. : 0.;
@@ -989,8 +999,8 @@ void Sceptor::anim(double dt){
 			else{
 				double desiredp;
 				desiredp = fmod(atan2(-delta[0], delta[2]) + M_PI + 2 * M_PI, 2 * M_PI);
-				pt->pyr[1] = approach(pt->pyr[1], desiredp, SCEPTER_ROTSPEED * dt, 2 * M_PI);
-				pt->pyr[0] = approach(pt->pyr[0], pt->pos[1] < .1 ? -M_PI / 6. : 0., SCEPTER_ROTSPEED * dt, 2 * M_PI);
+				pt->pyr[1] = approach(pt->pyr[1], desiredp, SCEPTOR_ROTSPEED * dt, 2 * M_PI);
+				pt->pyr[0] = approach(pt->pyr[0], pt->pos[1] < .1 ? -M_PI / 6. : 0., SCEPTOR_ROTSPEED * dt, 2 * M_PI);
 			}
 #endif
 		}
@@ -1056,7 +1066,7 @@ void Sceptor::anim(double dt){
 		/* heat dissipation */
 		p->heat *= exp(-dt * .2);
 
-/*		pt->pyr[2] = approach(pt->pyr[2] + M_PI, (pt->pyr[1] - oldyaw) / dt + M_PI, SCEPTER_ROLLSPEED * dt, 2 * M_PI) - M_PI;
+/*		pt->pyr[2] = approach(pt->pyr[2] + M_PI, (pt->pyr[1] - oldyaw) / dt + M_PI, SCEPTOR_ROLLSPEED * dt, 2 * M_PI) - M_PI;
 		{
 			double spd = pf->away ? .2 : .11;
 			pt->velo[0] = spd * cos(pt->pyr[0]) * sin(pt->pyr[1]);
@@ -1088,8 +1098,8 @@ void Sceptor::anim(double dt){
 				int i, n, base;
 				struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
 				int m = vft->sufbase->np;
-				n = m <= SCEPTER_MAX_GIBS ? m : SCEPTER_MAX_GIBS;
-				base = m <= SCEPTER_MAX_GIBS ? 0 : rseq(&w->rs) % m;
+				n = m <= SCEPTOR_MAX_GIBS ? m : SCEPTOR_MAX_GIBS;
+				base = m <= SCEPTOR_MAX_GIBS ? 0 : rseq(&w->rs) % m;
 				for(i = 0; i < n; i++){
 					double velo[3], omg[3];
 					int j;
@@ -1121,7 +1131,7 @@ void Sceptor::anim(double dt){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
 				int i, n;
-				n = (int)(dt * SCEPTER_SMOKE_FREQ + drseq(&w->rs));
+				n = (int)(dt * SCEPTOR_SMOKE_FREQ + drseq(&w->rs));
 				for(i = 0; i < n; i++){
 					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * .01;
 					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * .01;
@@ -1176,8 +1186,8 @@ int Sceptor::takedamage(double damage, int hitpart){
 			VECSADD(pos, velo, .1);
 			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
-/*		((scepter_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
-//		((scepter_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+/*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
+//		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 		health = -2.;
 //		pt->deaths++;
 	}
@@ -1230,13 +1240,13 @@ int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 }
 
 #if 0
-static int scepter_visibleFrom(const entity_t *viewee, const entity_t *viewer){
-	scepter_t *p = (scepter_t*)viewee;
+static int SCEPTOR_visibleFrom(const entity_t *viewee, const entity_t *viewer){
+	SCEPTOR_t *p = (SCEPTOR_t*)viewee;
 	return p->fcloak < .5;
 }
 
-static double scepter_signalSpectrum(const entity_t *pt, double lwl){
-	scepter_t *p = (scepter_t*)pt;
+static double SCEPTOR_signalSpectrum(const entity_t *pt, double lwl){
+	SCEPTOR_t *p = (SCEPTOR_t*)pt;
 	double x;
 	double ret = 0.5;
 
@@ -1260,8 +1270,8 @@ static double scepter_signalSpectrum(const entity_t *pt, double lwl){
 }
 
 
-static warf_t *scepter_warp_dest(entity_t *pt, const warf_t *w){
-	scepter_t *p = (scepter_t*)pt;
+static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
+	SCEPTOR_t *p = (SCEPTOR_t*)pt;
 	if(!p->mother || !p->mother->st.st.vft->warp_dest)
 		return NULL;
 	return p->mother->st.st.vft->warp_dest(p->mother, w);
@@ -1284,7 +1294,7 @@ bool Sceptor::command(unsigned commid, std::set<Entity*>*){
 		return true;
 	}
 	else if(commid == cid_dock){
-		task = Dock;
+		task = Dockque;
 	}
 }
 

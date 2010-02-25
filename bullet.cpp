@@ -800,6 +800,9 @@ void Bullet::anim(double dt){
 			bulletkill(-1, NULL);
 			w = NULL;
 
+			extern int bullet_hits;
+			bullet_hits++;
+
 /*			{
 				avec3_t delta;
 				VECSUB(delta, pb->pos, pt->pos);

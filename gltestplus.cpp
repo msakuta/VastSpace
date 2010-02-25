@@ -299,6 +299,7 @@ static double diprint(const char *s, double x, double y){
 
 extern int bullet_kills, missile_kills;
 int bullet_kills = 0, missile_kills = 0, wire_kills = 0;
+int bullet_shoots = 0, bullet_hits = 0;
 
 static void drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
@@ -341,6 +342,8 @@ static void drawindics(Viewer *vw){
 			sprintf(buf, "Mk %d", missile_kills);
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "Wk %d", wire_kills);
+			diprint(buf, 0, y += 12);
+			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, (double)bullet_hits / bullet_shoots);
 			diprint(buf, 0, y += 12);
 #ifdef _DEBUG
 			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
@@ -1484,6 +1487,9 @@ int main(int argc, char *argv[])
 	CvarAdd("viewdist", &pl.viewdist, cvar_double);
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("seat", &pl.chasecamera, cvar_int);
+	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
+	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
+	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

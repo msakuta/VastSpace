@@ -44,6 +44,8 @@ protected:
 inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife), runlength(0){
 	if(owner)
 		race = owner->race;
+	extern int bullet_shoots;
+	bullet_shoots++;
 }
 /*
 struct bullet *BulletNew(warf_t *w, entity_t *owner, double damage);

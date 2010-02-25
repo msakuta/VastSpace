@@ -11,6 +11,8 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 }
 
+#define PIDAIM_PROFILE 0
+
 // Space Interceptor (small fighter)
 class Sceptor : public Entity{
 public:
@@ -44,6 +46,7 @@ protected:
 	Task task;
 	bool docked, returning, away, cloak;
 	float mf; // trivial muzzle flashes
+	float integral[2]; // integration of pitch-yaw space of relative target position
 
 	static const avec3_t gunPos[2];
 	void shootDualGun(double dt);
@@ -87,6 +90,15 @@ public:
 	static int cmd_parade_formation(int argc, char *argv[], void*);
 	static const unsigned cid_parade_formation, cid_dock;
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
+	static double pid_ifactor;
+	static double pid_pfactor;
+	static double pid_dfactor;
+private:
+	Vec3d evelo;
+#if PIDAIM_PROFILE
+	Vec3d epos;
+	Vec3d iepos;
+#endif
 };
 
 

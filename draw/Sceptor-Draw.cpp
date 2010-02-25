@@ -255,6 +255,17 @@ void Sceptor::drawtra(wardraw_t *wd){
 	double nlips = nlipsFactor(*wd->vw);
 	double scale = SCEPTOR_SCALE * nlips;
 
+#if PIDAIM_PROFILE
+	glBegin(GL_LINES);
+	glColor4ub(255,0,0,255);
+	glVertex3dv(pos);
+	glVertex3dv(epos);
+	glColor4ub(255,255,0,255);
+	glVertex3dv(pos);
+	glVertex3dv(iepos);
+	glEnd();
+#endif
+
 	/* cull object */
 	if(cull(*wd->vw))
 		return;

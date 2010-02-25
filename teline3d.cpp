@@ -380,7 +380,7 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 				if(form == TEL3_EXPANDISK){
 					cc = col & 0x00ffffff;
 					ce = col;
-					radius = (pl->mdl.rm.maxlife - pl->life) * lenb;
+					radius = (pl->mdl.rm.maxlife - pl->life) / pl->mdl.rm.maxlife * lenb;
 				}
 				else{
 					cc = col;

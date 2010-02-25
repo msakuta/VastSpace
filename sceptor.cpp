@@ -31,15 +31,15 @@ extern "C"{
 
 #define SCEPTOR_SCALE 1./10000
 #define SCEPTOR_SMOKE_FREQ 20.
-#define SCEPTOR_COOLTIME .1
+#define SCEPTOR_COOLTIME .2
 #define SCEPTOR_ROLLSPEED (.2 * M_PI)
 #define SCEPTOR_ROTSPEED (.3 * M_PI)
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
-#define SCEPTOR_MAGAZINE 20
-#define SCEPTOR_RELOADTIME 4.
+#define SCEPTOR_MAGAZINE 10
+#define SCEPTOR_RELOADTIME 2.
 
 Entity::Dockable *Sceptor::toDockable(){return this;}
 
@@ -111,7 +111,7 @@ const char *Sceptor::dispname()const{
 };
 
 double Sceptor::maxhealth()const{
-	return 700.;
+	return 200.;
 }
 
 
@@ -263,8 +263,11 @@ bool Sceptor::findEnemy(){
 			closest = pt2;
 		}
 	}
-	if(closest)
+	if(closest){
 		enemy = closest;
+		integral[0] = integral[1] = 0.f;
+		evelo = vec3_000;
+	}
 	return !!closest;
 }
 
@@ -373,143 +376,6 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 }
 #endif
 
-#if 0
-void quat2mat(amat4_t *mat, const aquat_t q){
-#if 1
-	double *m = *mat;
-	double x = q[0], y = q[1], z = q[2], w = q[3];
-	m[0] = 1. - (2 * q[1] * q[1] + 2 * q[2] * q[2]); m[1] = 2 * q[0] * q[1] + 2 * q[2] * q[3]; m[2] = 2 * q[0] * q[2] - 2 * q[1] * q[3];
-	m[4] = 2 * x * y - 2 * z * w; m[5] = 1. - (2 * x * x +  2 * z * z); m[6] = 2 * y * z + 2 * x * w;
-	m[8] = 2 * x * z + 2 * y * w; m[9] = 2 * y * z - 2 * x * w; m[10] = 1. - (2 * x * x + 2 * y * y);
-	m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.;
-	m[15] = 1.;
-#else
-	aquat_t r = {1., 0., 0.}, qr;
-	aquat_t qc;
-	QUATCNJ(qc, q);
-	VECTOQUAT(r, avec3_100);
-	QUATMUL(qr, q, r);
-	QUATMUL(&(*mat)[0], qr, qc);
-	(*mat)[3] = 0.;
-/*	assert(mat[3] == 0.);*/
-	VECTOQUAT(r, avec3_010);
-	QUATMUL(qr, q, r);
-	QUATMUL(&(*mat)[4], qr, qc);
-/*	assert(mat[7] == 0.);*/
-	(*mat)[7] = 0.;
-	VECTOQUAT(r, avec3_001);
-	QUATMUL(qr, q, r);
-	QUATMUL(&(*mat)[8], qr, qc);
-/*	assert(mat[11] == 0.);*/
-	(*mat)[11] = 0.;
-	VECNULL(&(*mat)[12]);
-	(*mat)[15]=1.;
-/*	{
-		amat4_t mat2;
-		double tw, scale;
-		double axis[3], angle;
-		tw = acos(q[3]) * 2.;
-		scale = sin(tw / 2.);
-		axis[0] = q[0] / scale;
-		axis[1] = q[1] / scale;
-		axis[2] = q[2] / scale;
-		angle = tw * 360 / 2. / M_PI;
-		glPushMatrix();
-		glLoadIdentity();
-		glRotated(angle, axis[0], axis[1], axis[2]);
-		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-		glPopMatrix();
-	}*/
-#endif
-}
-
-void quat2imat(amat4_t *mat, const aquat_t pq){
-	aquat_t q, qr;
-	QUATCNJ(q, pq);
-	quat2mat(mat, q);
-	QUATMUL(qr, q, pq);
-}
-
-void mat2quat(aquat_t q, const amat4_t m){
-	double s;
-	double tr = m[0] + m[5] + m[10] + 1.0;
-	if(tr >= 1.0){
-		s = 0.5 / sqrt(tr);
-		q[0] = (m[9] - m[6]) * s;
-		q[1] = (m[2] - m[8]) * s;
-		q[2] = (m[4] - m[1]) * s;
-		q[3] = 0.25 / s;
-		return;
-    }
-	else{
-        double max;
-        if(m[5] > m[10])
-			max = m[5];
-        else
-			max = m[10];
-        
-        if(max < m[0]){
-			double x;
-			s = sqrt(m[0] - (m[5] + m[10]) + 1.0);
-			x = s * 0.5;
-			s = 0.5 / s;
- 			q[0] = x;
-			q[1] = (m[4] - m[1]) * s;
-			q[2] = (m[2] - m[8]) * s;
-			q[3] = (m[9] - m[6]) * s;
-			return;
-		}
-		else if(max == m[5]){
-			double y;
-			s = sqrt(m[5] - (m[10] + m[0]) + 1.0);
-			y = s * 0.5;
-            s = 0.5 / s;
-			q[0] = (m[4] - m[1]) * s;
-			q[1] = y;
-			q[2] = (m[9] + m[6]) * s;
-			q[3] = (m[2] + m[8]) * s;
-			return;
-        }
-		else{
-			double z;
-			s = sqrt(m[10] - (m[0] + m[5]) + 1.0);
-			z = s * 0.5;
-			s = 0.5 / s;
-			q[0] = (m[2] + m[8]) * s;
-			q[1] = (m[9] + m[6]) * s;
-			q[2] = z;
-			q[3] = (m[4] + m[1]) * s;
-			return;
-        }
-    }
-
-}
-
-void imat2quat(aquat_t q, const amat4_t m){
-	aquat_t q1;
-	mat2quat(q1, m);
-	QUATCNJ(q, q1);
-}
-
-void quat2pyr(const aquat_t quat, avec3_t euler){
-/*	double cx,sx,x;
-	double cy,sy,y,yr;
-	double cz,sz;*/
-	amat4_t nmat;
-	aquat_t q;
-/*	avec3_t v;*/
-/*	rbd_anim(pt, dt, &q, &nmat);*/
-	QUATNORM(q,quat);
-/*	quat2mat(nmat, q);*/
-
-	/* we make inverse rotation matrix out of the quaternion, to make it
-	  possible to do inverse transformations to gain roll. */
-	quat2imat(&nmat, q);
-
-	imat2pyr(nmat, euler);
-
-}
-#endif
 
 
 void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
@@ -691,11 +557,29 @@ void Sceptor::anim(double dt){
 				Vec3d xh, dh, vh;
 				Vec3d epos;
 				double phi;
-				estimate_pos(epos, pt->enemy->pos, pt->enemy->velo, pt->pos, pt->velo, BULLETSPEED, w);
+				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, BULLETSPEED, w);
 /*				xh[0] = pt->velo[2];
 				xh[1] = pt->velo[1];
 				xh[2] = -pt->velo[0];*/
 				delta = epos - pt->pos;
+
+				double dist = (enemy->pos - this->pos).len();
+				Vec3d ldelta = rot.cnj().trans(delta);
+				Vec3d lvelo = rot.cnj().trans(this->evelo - (enemy->velo - this->velo) * dist);
+				if(ldelta.norm()[2] < -.5){
+					double f = exp(-pid_ifactor * dt);
+					integral[0] = integral[0] * f + pid_dfactor * lvelo.sp(Vec3d(1,0,0)) * dt;
+					integral[1] = integral[1] * f + pid_dfactor * lvelo.sp(Vec3d(0,1,0)) * dt;
+					ldelta[0] += pid_pfactor * integral[0];
+					ldelta[1] += pid_pfactor * integral[1];
+					delta = rot.trans(ldelta);
+				}
+				this->evelo = (enemy->velo - this->velo) * dist;
+#if PIDAIM_PROFILE
+				this->epos = epos;
+				this->iepos = delta + pt->pos;
+#endif
+
 /*				{
 					avec3_t rv;
 					double eposlen;
@@ -804,7 +688,7 @@ void Sceptor::anim(double dt){
 						Vec3d randomvec;
 						for(i = 0; i < 3; i++)
 							randomvec[i] = drseq(&rs) - .5;
-						pt->velo += randomvec * dt * .5;
+						pt->velo += randomvec * dt * .25;
 					}
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);
@@ -1123,6 +1007,38 @@ void Sceptor::anim(double dt){
 			}
 			pt->active = 0;*/
 /*			pf->docked = 1;*/
+
+			/* smokes */
+			for(int i = 0; i < 16; i++){
+				void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
+				Vec3d pos;
+				COLOR32 col = 0;
+				pos[0] = .02 * (drseq(&w->rs) - .5);
+				pos[1] = .02 * (drseq(&w->rs) - .5);
+				pos[2] = .02 * (drseq(&w->rs) - .5);
+				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+				col |= COLOR32RGBA(0,0,0,191);
+	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+			}
+
+			{/* explode shockwave thingie */
+				Quatd q;
+				double p;
+				Vec3d dr = vec3_001;
+
+				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+
+				Vec3d v = vec3_001.vp(dr);
+				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+				q = v * p;
+
+				AddTeline3D(tell, this->pos, vec3_000, 1., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
+				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
+			}
 			this->w = NULL;
 		}
 		else{
@@ -1329,3 +1245,7 @@ int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 
 const unsigned Sceptor::cid_parade_formation = registerCommand();
 const unsigned Sceptor::cid_dock = registerCommand();
+
+double Sceptor::pid_pfactor = 1.;
+double Sceptor::pid_ifactor = 1.;
+double Sceptor::pid_dfactor = 1.;

@@ -362,8 +362,10 @@ double MTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, con
 }
 
 void MTurret::tryshoot(){
-	if(ammo <= 0)
+	if(ammo <= 0){
+		this->cooldown += reloadtime();
 		return;
+	}
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;

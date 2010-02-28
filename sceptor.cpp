@@ -666,7 +666,7 @@ void Sceptor::anim(double dt){
 
 /*					VECSUB(dv, pt->enemy->pos, pt->pos);*/
 					dv = delta;
-					double awaybase = pt->enemy->hitradius() * 1.2 + .1;
+					double awaybase = pt->enemy->hitradius() * 3. + .1;
 					double attackrad = awaybase < .6 ? awaybase * 5. : .6 * 5.;
 					if(p->task == Attack && dv.slen() < awaybase * awaybase){
 						p->task = Away;
@@ -688,7 +688,7 @@ void Sceptor::anim(double dt){
 						Vec3d randomvec;
 						for(i = 0; i < 3; i++)
 							randomvec[i] = drseq(&rs) - .5;
-						pt->velo += randomvec * dt * .25;
+						pt->velo += randomvec * dt * .5;
 					}
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);

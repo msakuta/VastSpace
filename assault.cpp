@@ -34,7 +34,7 @@ Assault::Assault(WarField *aw) : st(aw){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = (0 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
+		turrets[i] = (1 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}
@@ -281,7 +281,7 @@ void Assault::drawtra(wardraw_t *wd){
 	drawShield(wd);
 }
 
-double Assault::maxhealth()const{return 20000.;}
+double Assault::maxhealth()const{return 10000.;}
 
 int Assault::armsCount()const{return numof(turrets);}
 

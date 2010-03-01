@@ -64,7 +64,7 @@ static const struct color_node cnl_shortburn[] = {
 const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
 
 
-static double g_nlips_factor = 1.;
+double g_nlips_factor = 1.;
 static int g_shader_enable = 0;
 
 
@@ -80,7 +80,8 @@ bool Sceptor::cull(Viewer &vw)const{
 
 /* NLIPS: Non-Linear Inverse Perspective Scrolling */
 double Sceptor::nlipsFactor(Viewer &vw)const{
-	return 1. + vw.fov * g_nlips_factor * 500. / vw.vp.m * 2. * (this->pos - vw.pos).len();
+	double f = vw.fov * g_nlips_factor * 500. / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
+	return MAX(1., f);
 }
 
 void Sceptor::draw(wardraw_t *wd){

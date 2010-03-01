@@ -220,7 +220,7 @@ void Sceptor::shootDualGun(double dt){
 	do{
 		Bullet *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, 10.);
+		pb = new Bullet(this, 5, 15.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos[i]);
 /*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
@@ -579,6 +579,10 @@ void Sceptor::anim(double dt){
 				this->epos = epos;
 				this->iepos = delta + pt->pos;
 #endif
+
+				// Do not try shooting at very small target, that's just waste of ammo.
+				if(enemy->hitradius() < dist / 100.)
+					trigger = 0;
 
 /*				{
 					avec3_t rv;

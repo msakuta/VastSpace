@@ -1435,6 +1435,8 @@ static int cmd_control(int argc, char *argv[]){
 HWND hWndApp;
 #endif
 
+extern double g_nlips_factor;
+
 int main(int argc, char *argv[])
 {
 
@@ -1490,6 +1492,7 @@ int main(int argc, char *argv[])
 	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
 	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
 	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
+	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

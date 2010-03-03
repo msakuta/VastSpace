@@ -67,6 +67,7 @@ double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
 static int cmdwnd = 0;
+static bool g_focusset = false;
 glwindow *glwcmdmenu = NULL;
 
 int s_mousex, s_mousey;
@@ -613,7 +614,7 @@ void draw_func(Viewer &vw, double dt){
 		glMatrixMode(GL_TEXTURE);
 		glPushMatrix();
 		glLoadIdentity();
-		glTranslated(0., .5/*!g_focusset * .5*/, 0.);
+		glTranslated(0., !g_focusset * .5, 0.);
 		glScaled(.5, .5, 1.);
 		glCallList(tex);
 /*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -796,9 +797,9 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	Entity *pt;
 	Mat4d mat, mat2;
 	int viewstate = 0;
-	int draw = flags & 1;
-	int preview = !!(flags & 2);
-	int pointselect = !!(flags & 4);
+	bool draw = flags & 1;
+	bool preview = !!(flags & 2);
+	bool pointselect = !!(flags & 4);
 	WarField *w;
 	double best = 1e50;
 	double g_far = g_space_far_clip, g_near = g_space_near_clip;
@@ -968,7 +969,7 @@ void mouse_func(int button, int state, int x, int y){
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
 				Mat4d rot = pl.getrot().tomat4();
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
-					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 0/*(!!g_focusset << 1) */| ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2));
+					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, (g_focusset << 1) | ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2));
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}
@@ -1050,6 +1051,16 @@ static int cmd_attack(int, char *[], void *pv){
 	Player *ppl = (Player*)pv;
 	if(ppl->chase && ppl->selected)
 		ppl->chase->attack(ppl->selected);
+	return 0;
+}
+
+static int cmd_pfocusset(int argc, char *argv[]){
+	g_focusset = 1;
+	return 0;
+}
+
+static int cmd_nfocusset(int argc, char *argv[]){
+	g_focusset = 0;
 	return 0;
 }
 
@@ -1447,6 +1458,8 @@ int main(int argc, char *argv[])
 	viewport vp;
 	CmdInit(&vp);
 	MotionInit();
+	CmdAdd("+focusset", cmd_pfocusset);
+	CmdAdd("-focusset", cmd_nfocusset);
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);

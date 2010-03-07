@@ -6,6 +6,9 @@
 #include <cpplib/quat.h>
 #include <cpplib/mat4.h>
 #include <set>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #define FEETD 0.001
 
@@ -50,7 +53,9 @@ public:
 	bool move_lockz; /* 3-D movement order */
 	double move_z;
 	Vec3d move_org;
+	Vec3d move_src;
 	Vec3d move_hitpos;
+	Vec3d move_viewpos;
 	Mat4d move_rot;
 	Mat4d move_model;
 	Mat4d move_proj;
@@ -68,6 +73,9 @@ public:
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);
 	void drawindics(Viewer *vw);
+#ifdef _WIN32
+	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
+#endif
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_coordsys(int argc, char *argv[], void *pv);
 	static int cmd_position(int argc, char *argv[], void *pv);

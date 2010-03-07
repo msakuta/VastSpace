@@ -897,8 +897,9 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 				glPopMatrix();
 			}
 			else if(pointselect){
-				if(0 <= sp && sp < best){
-					best = sp;
+				double size = pt->hitradius() + sp;
+				if(0 <= size && size < best){
+					best = size;
 					ptbest = pt;
 				}
 			}
@@ -1282,8 +1283,8 @@ static void non_printable_key(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	case VK_RIGHT: special_func(GLUT_KEY_RIGHT, 0, 0); break;
 	case VK_UP: special_func(GLUT_KEY_UP, 0, 0); break;
 	case VK_DOWN: special_func(GLUT_KEY_DOWN, 0, 0); break;
-	case VK_SHIFT: key_func(1, 0, 0); break;
-	case VK_CONTROL: key_func(2, 0, 0); break;
+	case VK_SHIFT: BindExec(1);/*key_func(1, 0, 0);*/ break;
+	case VK_CONTROL: BindExec(2);/*key_func(2, 0, 0);*/ break;
 	case VK_MENU: key_func(3, 0, 0); break;
 /*			case VK_BACK: key_func(0x08, 0, 0);*/
 	}
@@ -1339,6 +1340,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
+				pl.mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){
 					s_mousedragx = s_mousex;
 					s_mousedragy = s_mousey;
@@ -1422,8 +1424,8 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				mouse_captured = false;
 				while(ShowCursor(TRUE) < 0);
 			}
-//			case VK_SHIFT: BindKeyUp(1); break;
-//			case VK_CONTROL: BindKeyUp(2); break;
+			case VK_SHIFT: BindKeyUp(1); break;
+			case VK_CONTROL: BindKeyUp(2); break;
 			}
 			break;
 
@@ -1432,8 +1434,6 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			switch(wParam){
 			case VK_DELETE: BindKeyUp(DELETEKEY); break;
 			case VK_ESCAPE: BindKeyUp(ESC); break;
-			case VK_SHIFT: BindKeyUp(1); break;
-			case VK_CONTROL: BindKeyUp(2); break;
 			}
 			break;
 

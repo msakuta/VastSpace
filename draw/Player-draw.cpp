@@ -2,6 +2,7 @@
 #include "../viewer.h"
 #include "../CoordSys.h"
 #include "../Entity.h"
+#include "../motion.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -32,6 +33,7 @@ static double diprint(const char *s, double x, double y){
 
 void Player::drawindics(Viewer *vw){
 	if(moveorder) do{
+		bool move_lockz = this->move_lockz || MotionGet() & PL_SHIFT;
 		glPushMatrix();
 		glLoadMatrixd(vw->rot);
 		gldTranslate3dv(-vw->pos);
@@ -75,8 +77,12 @@ void Player::drawindics(Viewer *vw){
 			move_trans = move_proj * move_model;
 		}
 		Vec3d tpos = vw->pos;
-		if(selected)
+		if(selected){
 			tpos -= selected->pos;
+			move_src = selected->pos;
+		}
+		else
+			move_src = vec3_000;
 		vwpos = rot.tvp3(tpos);
 		vwpos[2] += move_z;
 		imat = mat.transpose();
@@ -150,19 +156,100 @@ void Player::drawindics(Viewer *vw){
 		glPopMatrix();*/
 
 		glLoadIdentity();
-/*		Mat4d irot = mat4_u.rotx(-M_PI / 2.);
-		Vec4d mpos4 = irot.dvp3(mpos);
+		Mat4d irot = mat4_u.rotx(M_PI / 2.);
+		Vec4d mpos4 = irot.dvp3(mpos) + move_z * vec3_010 + move_src;
 		mpos4[3] = 1.;
-		Vec4d spos = move_trans.vp(mpos4);*/
+		Vec4d spos = move_trans.vp(mpos4);
 		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));
+		cuts = CircleCuts(32);
+		glPushMatrix();
+		glTranslated((spos[0] / spos[2] + 1.) * vw->vp.w / 2., (1. - spos[1] / spos[2]) * vw->vp.h / 2., 0.);
+		gldScaled(20.);
+		glBegin(GL_LINE_LOOP);
+		for(int i = 0; i < 32; i++){
+			glVertex2d(cuts[i][0], cuts[i][1]);
+		}
+		glEnd();
+		glPopMatrix();
 //		projection((glPushMatrix(), glLoadIdentity(), glOrtho(-vw->vp.w / 2., vw->vp.w / 2., vw->vp.h / 2., -vw->vp.h / 2., -1, 1)));
 //		int x = vw->vp.w * spos[0] / spos[3] / 2, y = vw->vp.h * spos[1] / spos[3] / 2;
 		int x = vw->mousex, y = vw->mousey;
-		diprint(cpplib::dstring() << mpos.len() << "km "/* << spos[0] / spos[3] << " " << spos[1] / spos[3]*/, x, y);
+		double destdist = (mpos + move_z * vec3_001).len();
+		if(destdist < 1)
+			diprint(cpplib::dstring() << destdist * 1000. << "m ", x, y);
+		else
+			diprint(cpplib::dstring() << destdist << "km ", x, y);
 //		diprint(cpplib::dstring() << spos[0] << "," << spos[1] << "," << spos[3], x, y + 12);
 //		diprint(cpplib::dstring() << mpos.len() << "km", 0, 0);
 		projection((glPopMatrix()));
 		glPopMatrix();
+
+		move_viewpos = vw->pos;
 	} while(0);
 }
 
+
+void Player::mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam){
+	Player &pl = *this;
+	if(pl.moveorder && wParam & MK_SHIFT && !pl.move_lockz){
+		Mat4d rotmat = mat4_u.rotx(M_PI / 2.);
+		Vec3d lpos = rotmat.dvp3(pl.move_hitpos);
+		int maxpix, minpix;
+		RECT crect;
+		GetClientRect(hWnd, &crect);
+		maxpix = MAX(crect.right, crect.bottom);
+		minpix = MIN(crect.right, crect.bottom);
+#if 1 /* TODO: screen to space z axis coordinates transformation */
+		Vec3d delta(deltax, deltay, 0);
+		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos) + vec4_0001()) - pl.move_trans.vp(Vec4d((lpos + vec3_010)) + vec4_0001())).norm();
+//					normal[1] *= -1;
+		double sp = normal.sp(delta);
+		pl.move_z += sp * (pl.move_hitpos - pl.move_viewpos).len() / maxpix;
+		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos) + pl.move_z * vec3_010 + move_src) + vec4_0001();
+		Vec4d redelta = pl.move_trans.vp(worlddest);
+		POINT p, p0;
+		p.x = (redelta[0] / redelta[3] + 1.) * crect.right / 2;
+		p.y = (1. - redelta[1] / redelta[3]) * crect.bottom / 2;
+		p0 = p;
+		ClientToScreen(hWnd, &p);
+		pl.move_lockz = true;
+		crect.left += p.x - p0.x;
+		crect.right += p.x - p0.x;
+		crect.top += p.y - p0.y;
+		crect.bottom += p.y - p0.y;
+		ClipCursor(&crect);
+		SetCursorPos(p.x, p.y);
+#elif 0
+		avec3_t lray, ray, znorm;
+		avec4_t z1, z0, sz1, sz0;
+		double sp;
+		GLint vp[4] = {0,0,2,2};
+		s_move_lockz = 1;
+		lray[0] = 2. * (s_mousex - gvp.w / 2) * fov / gvp.m;
+		lray[1] = -2. * (s_mousey - gvp.h / 2) * fov / gvp.m;
+		lray[2] = -1.;
+		VECCPY(z0, s_move_hitpos);
+		z0[3] = 1.;
+		VECCPY(z1, s_move_hitpos);
+		z1[2] += 1.;
+		z1[3] = 1.;
+		mat4vp(sz1, s_move_trans, z1);
+		VECSCALEIN(sz1, 1. / sz1[3]);
+		mat4vp(sz0, s_move_trans, z0);
+		VECSCALEIN(sz0, 1. / sz0[3]);
+		VECSUB(znorm, sz1, sz0);
+		VECSUBIN(lray, s_move_org);
+		sp = VECSP(lray, znorm);
+		VECSADD(sz0, znorm, sp);
+		gluUnProject(sz0[0], sz0[1], sz0[2], s_move_model, s_move_proj, vp, &z1[0], &z1[1], &z1[2]);
+		s_move_z = z1[2] - z0[2];
+/*					mat4vp3(ray, s_move_rot, lray);*/
+#else
+		pl.move_z += 1e-3 * (s_mousedragy - s_mousey);
+#endif
+	}
+	else{
+		pl.move_lockz = false;
+		ClipCursor(NULL);
+	}
+}

@@ -267,6 +267,15 @@ void Sceptor::drawtra(wardraw_t *wd){
 	glEnd();
 #endif
 
+	if(task == Moveto){
+		glBegin(GL_LINES);
+		glColor4ub(0,0,255,255);
+		glVertex3dv(pos);
+		glColor4ub(0,255,255,255);
+		glVertex3dv(dest);
+		glEnd();
+	}
+
 	/* cull object */
 	if(cull(*wd->vw))
 		return;

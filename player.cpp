@@ -260,6 +260,7 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
 	pl.moveorder = !pl.moveorder;
+	pl.move_z = 0.;
 	return 0;
 }
 

@@ -445,10 +445,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\draw\Player-draw.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\player.cpp"
 				>
 			</File>
@@ -507,6 +503,10 @@
 			<Filter
 				Name="draw"
 				>
+				<File
+					RelativePath="..\draw\Player-draw.cpp"
+					>
+				</File>
 				<File
 					RelativePath="..\draw\Scarry-Draw.cpp"
 					>

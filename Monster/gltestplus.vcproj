@@ -445,6 +445,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\draw\Player-draw.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\player.cpp"
 				>
 			</File>

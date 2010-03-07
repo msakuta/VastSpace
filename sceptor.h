@@ -88,7 +88,7 @@ public:
 	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);
-	static const unsigned cid_parade_formation, cid_dock;
+	static const unsigned cid_parade_formation, cid_dock, cid_move;
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 	static double pid_ifactor;
 	static double pid_pfactor;

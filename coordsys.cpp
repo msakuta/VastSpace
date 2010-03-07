@@ -776,6 +776,8 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
 			pt->race = 5 < argc ? atoi(argv[5]) : 0;
 		}
+		else
+			printf("%s(%ld): addent: Unknown entity class name: %s\n", sc.fname, sc.line, argv[1]);
 		return true;
 	}
 	else if(!strcmp(s, "respawn")){

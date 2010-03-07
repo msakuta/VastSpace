@@ -639,25 +639,16 @@ void Sceptor::anim(double dt){
 					}
 				}
 				else if(p->task == Moveto){
-					Vec3d target;
-					Quatd q2, q1;
 					Vec3d dr = pt->pos - p->dest;
 					if(dr.slen() < .03 * .03){
-						q1 = Quatd(0,0,0,1);
-//						QUATCPY(q1, pm->rot);
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
 						p->task = Idle;
 					}
 					else{
-						p->throttle = dr.slen() / 5. + .03;
-						q1 = Quatd::direction(dr);
+						steerArrival(dt, dest, vec3_000, 1. / 10., .001);
 					}
-					q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
-					pt->rot = q2;
-					if(1. < p->throttle)
-						p->throttle = 1.;
 				}
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
@@ -1209,7 +1200,7 @@ double Sceptor::maxfuel()const{
 	return 120.;
 }
 
-bool Sceptor::command(unsigned commid, std::set<Entity*>*){
+bool Sceptor::command(unsigned commid, std::set<Entity*> *a){
 	if(commid == cid_parade_formation){
 		task = Parade;
 		if(!mother)
@@ -1218,6 +1209,17 @@ bool Sceptor::command(unsigned commid, std::set<Entity*>*){
 	}
 	else if(commid == cid_dock){
 		task = Dockque;
+	}
+	else if(commid == cid_move){
+		switch(task){
+			case Undockque:
+			case Undock:
+			case Dock:
+				return 0;
+		}
+		task = Moveto;
+		Vec3d &dest = *(Vec3d*)a;
+		this->dest = dest;
 	}
 }
 
@@ -1252,6 +1254,7 @@ int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 
 const unsigned Sceptor::cid_parade_formation = registerCommand();
 const unsigned Sceptor::cid_dock = registerCommand();
+const unsigned Sceptor::cid_move = registerCommand();
 
 double Sceptor::pid_pfactor = 1.;
 double Sceptor::pid_ifactor = 1.;

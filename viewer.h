@@ -58,6 +58,7 @@ public:
 	int zslice; /* index of gc into gclist */
 	int relative; /* whether effect of relativity cannot be ignored */
 	int detail; /* wireframe */
+	int mousex, mousey; // Indicates mouse cursor position in viewport coordinates.
 	struct viewport vp;
 	void frustum(double n, double f){
 		int w = vp.w, h = vp.h, m = vp.m;

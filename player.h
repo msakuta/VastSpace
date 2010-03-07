@@ -4,6 +4,8 @@
 #include <cstring>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include <cpplib/mat4.h>
+#include <set>
 
 #define FEETD 0.001
 
@@ -13,6 +15,7 @@ struct astrobj;
 struct coordsys;
 class Entity;
 class CoordSys;
+class Viewer;
 struct teleport;
 
 class Player : public Serializable{
@@ -42,6 +45,16 @@ public:
 	double gametime;
 	double velolen; /* trivial; performance keeper */
 	double height; /* trivial; indicates air pressure surrounding the player */
+	std::set<const Entity*> chases; // Chased group of Entities. viewing volume shows all of them.
+	bool moveorder; // Issueing moving order
+	bool move_lockz; /* 3-D movement order */
+	double move_z;
+	Vec3d move_org;
+	Vec3d move_hitpos;
+	Mat4d move_rot;
+	Mat4d move_model;
+	Mat4d move_proj;
+	Mat4d move_trans;
 
 	void free(); // Frees internal memories but keep the object memory
 	Quatd getrot()const;
@@ -54,11 +67,13 @@ public:
 	void freelook(const input_t &, double dt);
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);
+	void drawindics(Viewer *vw);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_coordsys(int argc, char *argv[], void *pv);
 	static int cmd_position(int argc, char *argv[], void *pv);
 	static int cmd_velocity(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
+	static int cmd_moveorder(int argc, char *argv[], void *pv);
 	static teleport *findTeleport(const char *, int flags = ~0); // returns teleport node found
 	static teleport *addTeleport(); // returns allocated uninitialized struct
 	typedef unsigned teleport_iterator;

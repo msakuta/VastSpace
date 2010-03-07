@@ -9,7 +9,9 @@
 static teleport *tplist;
 static int ntplist;
 
-Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), flypower(1.), viewdist(1.), mover(&Player::freelook){
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), flypower(1.), viewdist(1.),
+	mover(&Player::freelook), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0))
+{
 }
 
 Player::~Player(){
@@ -65,8 +67,9 @@ void Player::anim(double dt){
 }
 
 void Player::unlink(const Entity *pe){
+	chases.erase(pe);
 	if(chase == pe)
-		chase = NULL;
+		chase = chases.empty() ? NULL : const_cast<Entity*>(*chases.begin());
 	if(control == pe)
 		control = NULL;
 	if(lastchase == pe)
@@ -126,7 +129,14 @@ void Player::tactical(const input_t &inputs, double dt){
 	double phi = -atan2(view[0], view[2]);
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
 	rot = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
-	if(chase && chase->w->cs == cs){
+	if(!chases.empty()){
+		int n = 0;
+		for(std::set<const Entity*>::iterator it = chases.begin(); it != chases.end(); it++){
+			cpos = (cpos * n + (*it)->pos) / (n + 1);
+			n++;
+		}
+	}
+	else if(chase && chase->w->cs == cs){
 		cpos = chase->pos;
 	}
 	pos = cpos + view * aviewdist;
@@ -244,6 +254,12 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 		if(i == ntplist)
 			CmdPrintf("Could not find location \"%s\".", arg);
 	}
+	return 0;
+}
+
+int Player::cmd_moveorder(int argc, char *argv[], void *pv){
+	Player &pl = *(Player*)pv;
+	pl.moveorder = !pl.moveorder;
 	return 0;
 }
 

@@ -311,6 +311,7 @@ static void drawindics(Viewer *vw){
 		drawastro(vw, &universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
+	pl.drawindics(vw);
 	{
 		char buf[128];
 		GLpmatrix pm;
@@ -347,11 +348,12 @@ static void drawindics(Viewer *vw){
 			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, (double)bullet_hits / bullet_shoots);
 			diprint(buf, 0, y += 12);
 #ifdef _DEBUG
-			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
+/*			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
 				diprint(cpplib::dstring() << "tepl " << Tefpol3DDebug(tepl)->tefpol_c << " " << Tefpol3DDebug(tepl)->tefpol_m << " " << Tefpol3DDebug(tepl)->tevert_c, 0, y += 12);
 			if(WarSpace *ws = *pl.cs->w)
 				if(tent3d_line_list * tell = ws->gibs)
 					diprint(cpplib::dstring() << "tell " << Teline3DDebug(tell)->teline_c << " " << Teline3DDebug(tell)->teline_m << " " << Teline3DDebug(tell)->teline_s << " " << Teline3DDebug(tell)->drawteline, 0, y += 12);
+*/
 #endif
 		}
 		sprintf(buf, "Frame rate: %6.2lf fps", 1. / vw->dt);
@@ -771,6 +773,8 @@ void display_func(void){
 	viewer.viewtime = gametime;
 	viewer.velo = pl.velo;
 	viewer.dt = dt;
+	viewer.mousex = s_mousex;
+	viewer.mousey = s_mousey;
 	draw_func(viewer, dt);
 }
 
@@ -854,8 +858,12 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	mat2 = mat * rot;
 	Mat4d irot = rot.transpose();
 	Vec3d plpos = pl.getpos();
-	if(!draw)
-		pl.selected = NULL;
+	if(!draw){
+		if(preview)
+			pl.chases.clear();
+		else
+			pl.selected = NULL;
+	}
 	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int li = 0; li < 2; li++)
 	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
@@ -872,7 +880,7 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
 			if(preview){
 				pl.chase = pt;
-				return;
+				pl.chases.insert(pt);
 			}
 			else if(draw){
 				double (*cuts)[2];
@@ -938,6 +946,22 @@ static void uncapture_mouse(){
 /*	while(ShowCursor(TRUE) < 0);*/
 }
 
+int cmd_move(int argc, char *argv[], void *pv){
+	Player *pl = (Player*)pv;
+	Entity *pt;
+	if(argc < 4 || !pl->cs)
+		return 0;
+	Vec3d dest;
+	dest[0] = atof(argv[1]);
+	dest[1] = atof(argv[2]);
+	dest[2] = atof(argv[3]);
+	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w)
+		pt->command(Sceptor::cid_move, (std::set<Entity*>*)&dest);
+	return 0;
+}
+
+
+
 void mouse_func(int button, int state, int x, int y){
 
 	if(cmdwnd){
@@ -961,6 +985,22 @@ void mouse_func(int button, int state, int x, int y){
 		ret = GLwindow::mouseFunc(button, state, x, y, ws);
 		if(ret)
 			return;
+		if(pl.moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+			char buf[3][64];
+			char *args[4] = {"move", buf[0], buf[1], buf[2]};
+			Vec3d lpos(pl.move_hitpos);
+			lpos[2] -= pl.move_z;
+			Vec3d pos = pl.move_rot.vp3(lpos);
+/*			VECSUBIN(pos, pl.pos);*/
+			if(pl.selected)
+				pos += pl.selected->pos;
+			sprintf(buf[0], "%15lg", pos[0]);
+			sprintf(buf[1], "%15lg", pos[1]);
+			sprintf(buf[2], "%15lg", pos[2]);
+			cmd_move(4, args, &pl);
+			pl.moveorder = 0;
+			return;
+		}
 		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			if(/*boxable &&*/ !glwfocus){
 				int x0 = MIN(s_mousedragx, s_mousex);
@@ -1493,6 +1533,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
 	CmdAddParam("parade_formation", Sceptor::cmd_parade_formation, &pl);
+	CmdAddParam("moveorder", Player::cmd_moveorder, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

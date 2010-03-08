@@ -731,6 +731,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 	sc.i >> forceEnemy;
 }
 */
+
 double LTurret::hitradius()const{return .03;}
 
 void LTurret::anim(double dt){
@@ -883,7 +884,7 @@ LMissileTurret::~LMissileTurret(){
 }
 
 const char *LMissileTurret::classname()const{return "LMissileTurret";}
-const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LTurret>);
+const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LMissileTurret>);
 double LMissileTurret::hitradius()const{return .03;}
 
 void LMissileTurret::anim(double dt){

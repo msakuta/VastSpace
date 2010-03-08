@@ -33,6 +33,7 @@ enum sship_task{
 class Warpable : public virtual Entity{
 public:
 	typedef Entity st;
+	Vec3d dest; // Move order destination
 	Vec3d warpdst;
 	double warpSpeed;
 	double totalWarpDist, currentWarpDist;
@@ -45,6 +46,7 @@ public:
 	Warpable(){}
 	Warpable(WarField *w);
 
+	static const unsigned cid_move;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
@@ -58,6 +60,7 @@ public:
 	virtual double maxenergy()const = 0;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
+	virtual bool command(unsigned comid, std::set<Entity*> *targets);
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);

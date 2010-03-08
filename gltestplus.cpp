@@ -1079,6 +1079,9 @@ static int cmd_chasecamera(int argc, char *argv[]){
 	if(pl.selected){
 		pl.chase = pl.selected;
 		pl.cs = pl.selected->w->cs;
+		pl.chases.clear();
+		for(Entity *e = pl.selected; e; e = e->selectnext)
+			pl.chases.insert(e);
 	}
 	return 0;
 }

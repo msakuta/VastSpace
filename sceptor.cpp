@@ -121,7 +121,7 @@ double Sceptor::maxhealth()const{
 Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel()), mf(0), paradec(-1){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -142,7 +142,6 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Idle), fuel(maxfuel(
 	p->docked = false;
 //	p->paradec = mother->paradec++;
 	p->magazine = SCEPTOR_MAGAZINE;
-	p->task = Idle;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -612,7 +611,7 @@ void Sceptor::anim(double dt){
 
 			if(p->task == Undock){
 				if(!pm)
-					p->task = Idle;
+					p->task = Auto;
 				else{
 					double sp;
 					Vec3d dm = this->pos - pm->pos;
@@ -624,18 +623,18 @@ void Sceptor::anim(double dt){
 				}
 			}
 			else if(w->pl->control != pt) do{
-				if((task == Attack || task == Away) && !pt->enemy || p->task == Idle || p->task == Parade){
+				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
 					}
 					else if(findEnemy()){
 						p->task = Attack;
 					}
-					if(!enemy || (p->task == Idle || p->task == Parade)){
+					if(!enemy || (task == Auto || task == Parade)){
 						if(pm)
-							p->task = Parade;
+							task = Parade;
 						else
-							p->task = Idle;
+							task = Auto;
 					}
 				}
 				else if(p->task == Moveto){
@@ -753,7 +752,7 @@ void Sceptor::anim(double dt){
 							p->throttle = 1.;
 					}
 					else
-						task = Idle;
+						task = Auto;
 				}
 				else if(p->task == Dockque || p->task == Dock){
 					if(!pm)
@@ -761,7 +760,7 @@ void Sceptor::anim(double dt){
 
 					// It is possible that no one is glad to become a mother.
 					if(!pm)
-						p->task = Idle;
+						p->task = Auto;
 					else{
 						Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
 						Quatd q2, q1;
@@ -792,8 +791,8 @@ void Sceptor::anim(double dt){
 							p->throttle = 1.;
 					}
 				}
-				if(p->task == Idle)
-					p->throttle = 0.;
+				if(task == Idle || task == Auto)
+					throttle = 0.;
 			}while(0);
 			else{
 				double common = 0., normal = 0.;
@@ -1116,7 +1115,7 @@ void Sceptor::postframe(){
 
 		// If the mother is lost, give up docking sequence.
 		if(task == Dock || task == Dockque)
-			task = Idle;
+			task = Auto;
 	}
 	if(enemy && enemy->w != w)
 		enemy = NULL;
@@ -1209,6 +1208,7 @@ bool Sceptor::command(unsigned commid, std::set<Entity*> *a){
 	}
 	else if(commid == cid_dock){
 		task = Dockque;
+		return true;
 	}
 	else if(commid == cid_move){
 		switch(task){
@@ -1220,7 +1220,9 @@ bool Sceptor::command(unsigned commid, std::set<Entity*> *a){
 		task = Moveto;
 		Vec3d &dest = *(Vec3d*)a;
 		this->dest = dest;
+		return true;
 	}
+	return false;
 }
 
 
@@ -1254,7 +1256,7 @@ int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 
 const unsigned Sceptor::cid_parade_formation = registerCommand();
 const unsigned Sceptor::cid_dock = registerCommand();
-const unsigned Sceptor::cid_move = registerCommand();
+const unsigned &Sceptor::cid_move = Warpable::cid_move;
 
 double Sceptor::pid_pfactor = 1.;
 double Sceptor::pid_ifactor = 1.;

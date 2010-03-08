@@ -520,7 +520,7 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	const maneuve &mn = getManeuve();
 	if(mn.maxanglespeed * mn.maxanglespeed < this->omg.slen())
-		this->omg.normin().scalein(mn.maxanglespeed);
+		this->omg.normin().scalein(mn.angleaccel);
 	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
@@ -975,6 +975,7 @@ bool Warpable::isSelectable()const{return true;}
 void Warpable::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.o << dest;
 	sc.o << warping;
 	if(warping){
 		sc.o << warpdst;
@@ -988,6 +989,7 @@ void Warpable::serialize(SerializeContext &sc){
 void Warpable::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> capacitor; /* Temporarily stored energy, MegaJoules */
+	sc.i >> dest;
 	sc.i >> warping;
 	if(warping){
 		sc.i >> warpdst;
@@ -1153,6 +1155,14 @@ void Warpable::anim(double dt){
 		else
 			p->capacitor = mn->capacity;
 
+		if(task == sship_moveto){
+			steerArrival(dt, dest, vec3_000, .1, .01);
+			if((pos - dest).slen() < hitradius() * hitradius()){
+				task = sship_idle;
+				inputs.press = 0;
+			}
+		}
+
 		maneuver(mat, dt, mn);
 
 		pos += velo * dt;
@@ -1161,4 +1171,15 @@ void Warpable::anim(double dt){
 		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}
 	st::anim(dt);
+}
+
+const unsigned Warpable::cid_move = registerCommand();
+
+bool Warpable::command(unsigned comid, std::set<Entity*> *arg){
+	if(comid == cid_move){
+		task = sship_moveto;
+		dest = *(Vec3d*)arg;
+		return true;
+	}
+	return false;
 }

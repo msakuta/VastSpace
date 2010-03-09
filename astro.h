@@ -88,6 +88,7 @@ public:
 	double global_time;
 	Player *ppl;
 	bool paused;
+	static const unsigned version; // Saved file version, checked on loading
 
 	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0){
 		name = NULL;

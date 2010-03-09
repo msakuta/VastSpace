@@ -569,6 +569,9 @@ bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 
 #define ENABLE_TEXTFORMAT 1
 
+// Increment whenever serialization specification changes in any Serializable object.
+const unsigned Universe::version = 1;
+
 const char *Universe::classname()const{
 	return "Universe";
 }
@@ -634,6 +637,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	if(text){
 		std::fstream fs(fname, std::ios::out | std::ios::binary);
 		fs << "savetext";
+		fs << version;
 		StdSerializeStream sss(fs);
 		SerializeContext sc(sss, map, visit_list);
 		sss.sc = &sc;
@@ -652,6 +656,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		(sc.visit_list)->clearVisitList();
 		FILE *fp = fopen(fname, "wb");
 		fputs("savebina", fp);
+		fwrite(&version, sizeof version, 1, fp);
 		fwrite(bss.getbuf(), 1, bss.getsize(), fp);
 		fclose(fp);
 	}
@@ -693,54 +698,70 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	unsigned char *buf;
 	char signature[8];
 	long size;
-	{
-		FILE *fp = fopen(fname, "rb");
-		if(!fp)
-			return 0;
-		fseek(fp, 0, SEEK_END);
-		size = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		fread(signature, 1, sizeof signature, fp);
-		size -= sizeof signature;
-		buf = new unsigned char[size];
-		fread(buf, 1, size, fp);
-		fclose(fp);
-	}
-	if(!memcmp(signature, "savebina", sizeof signature)){
+	do{
 		{
-			BinUnserializeStream bus(buf, size);
-			UnserializeContext usc(bus, ctormap(), map);
-			bus.usc = &usc;
-			universe.csUnmap(usc);
+			FILE *fp = fopen(fname, "rb");
+			if(!fp)
+				return 0;
+			fseek(fp, 0, SEEK_END);
+			size = ftell(fp);
+			fseek(fp, 0, SEEK_SET);
+			fread(signature, 1, sizeof signature, fp);
+			size -= sizeof signature;
+			buf = new unsigned char[size];
+			fread(buf, 1, size, fp);
+			fclose(fp);
 		}
-		{
-			BinUnserializeStream bus(buf, size);
-			UnserializeContext usc(bus, ctormap(), map);
-			bus.usc = &usc;
-			universe.csUnserialize(usc);
+		if(!memcmp(signature, "savebina", sizeof signature)){
+			// Very special treatment of version number.
+			unsigned fileversion = *(unsigned*)buf;
+			if(fileversion != version){
+				CmdPrintf("Saved file version number %d is different as %d.", fileversion, version);
+				break;
+			}
+			{
+				BinUnserializeStream bus(&buf[sizeof fileversion], size - sizeof fileversion);
+				UnserializeContext usc(bus, ctormap(), map);
+				bus.usc = &usc;
+				universe.csUnmap(usc);
+			}
+			{
+				BinUnserializeStream bus(&buf[sizeof fileversion], size - sizeof fileversion);
+				UnserializeContext usc(bus, ctormap(), map);
+				bus.usc = &usc;
+				universe.csUnserialize(usc);
+			}
 		}
-	}
-#if ENABLE_TEXTFORMAT
-	else if(!memcmp(signature, "savetext", sizeof signature)){
-		{
-			std::istringstream ss(std::string((char*)buf, size));
-			StdUnserializeStream sus(ss);
-			UnserializeContext usc(sus, ctormap(), map);
-			sus.usc = &usc;
-			universe.csUnmap(usc);
+	#if ENABLE_TEXTFORMAT
+		else if(!memcmp(signature, "savetext", sizeof signature)){
+			// Very special treatment of version number.
+			char *end;
+			long fileversion = ::strtol((char*)buf, &end, 10);
+			if(fileversion != version){
+				CmdPrintf("Saved file version number %d is different as %d.", fileversion, version);
+				break;
+			}
+			size -= end - (char*)buf;
+			{
+				std::istringstream ss(std::string(end, size));
+				StdUnserializeStream sus(ss);
+				UnserializeContext usc(sus, ctormap(), map);
+				sus.usc = &usc;
+				universe.csUnmap(usc);
+			}
+			{
+				std::stringstream ss(std::string(end, size));
+				StdUnserializeStream sus(ss);
+				UnserializeContext usc(sus, ctormap(), map);
+				sus.usc = &usc;
+				universe.csUnserialize(usc);
+			}
 		}
-		{
-			std::stringstream ss(std::string((char*)buf, size));
-			StdUnserializeStream sus(ss);
-			UnserializeContext usc(sus, ctormap(), map);
-			sus.usc = &usc;
-			universe.csUnserialize(usc);
+	#endif
+		else{
+			CmdPrint("Unrecognized save file format");
 		}
-	}
-#endif
-	else{
-		CmdPrint("Unrecognized save file format");
-	}
+	}while(0);
 	delete[] buf;
 	return 0;
 }

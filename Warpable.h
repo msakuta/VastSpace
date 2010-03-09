@@ -49,6 +49,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
+	virtual void drawtra(wardraw_t *);
 	void control(input_t *, double);
 	unsigned analog_mask();
 	virtual int popupMenu(PopupMenu &list);

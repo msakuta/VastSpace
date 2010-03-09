@@ -403,6 +403,18 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 }
 
 
+void Warpable::drawtra(wardraw_t *wd){
+	if(task == sship_moveto){
+		glBegin(GL_LINES);
+		glColor4ub(0,0,255,255);
+		glVertex3dv(pos);
+		glColor4ub(0,255,255,255);
+		glVertex3dv(dest);
+		glEnd();
+	}
+}
+
+
 
 /* maneuvering spaceships, integrated common responses.
  assumption is that accelerations towards all directions except forward movement

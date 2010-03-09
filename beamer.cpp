@@ -675,6 +675,7 @@ void Frigate::drawShield(wardraw_t *wd){
 }
 
 void Beamer::drawtra(wardraw_t *wd){
+	st::drawtra(wd);
 	Beamer *p = this;
 	Mat4d mat;
 

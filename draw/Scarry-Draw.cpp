@@ -266,6 +266,7 @@ void Scarry::draw(wardraw_t *wd){
 }
 
 void Scarry::drawtra(wardraw_t *wd){
+	st::drawtra(wd);
 	Scarry *p = this;
 	Scarry *pt = this;
 	Mat4d mat;

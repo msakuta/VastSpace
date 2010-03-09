@@ -256,6 +256,20 @@ const ArmBase *Destroyer::armsGet(int i)const{
 	return turrets[i];
 }
 
+bool Destroyer::command(unsigned commid, std::set<Entity*> *ents){
+	if(commid == cid_halt){
+		task = sship_idle;
+		return true;
+	}
+	else if(commid == cid_attack || commid == cid_forceattack){
+		for(int i = 0; i < nhardpoints; i++)
+			turrets[i]->command(commid, ents);
+		return true;
+	}
+	else
+		return st::command(commid, ents);
+}
+
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::maneuve &Destroyer::getManeuve()const{

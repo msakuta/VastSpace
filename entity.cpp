@@ -161,6 +161,11 @@ bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
 bool Entity::command(unsigned, std::set<Entity*>*){return false;}
 
+const unsigned Entity::cid_halt = registerCommand();
+const unsigned Entity::cid_move = registerCommand();
+const unsigned Entity::cid_attack = registerCommand();
+const unsigned Entity::cid_forceattack = registerCommand();
+
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
 	bool bret = !!jHitSpherePos(pos, this->hitradius() + rad, start, dir, 1., fret, &retpos);

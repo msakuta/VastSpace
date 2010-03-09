@@ -171,29 +171,43 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
 	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
-	BITMAPFILEHEADER *bfh, *bfhMask = NULL, *bfh2;
+	BITMAPFILEHEADER *bfh = NULL, *bfhMask = NULL, *bfh2;
 	GLuint ret;
-	int jpeg = 0, maskjpeg = 0, jpeg2 = 0;
+	int mask = 0, jpeg = 0, maskjpeg = 0, jpeg2 = 0;
 	stp.bmiMask = NULL;
 
 	stc = FindTexCache(entry);
 	if(stc)
 		return stc->list;
 	stp = pstp1 ? *pstp1 : defstp;
-	bfh = ZipUnZip("rc.zip", fname1, NULL);
-	stp.bmi = !bfh ? ReadBitmap(fname1) : (BITMAPINFO*)&bfh[1];
+
+	/* Try loading from plain bitmap first */
+	stp.bmi = ReadBitmap(fname1);
+
 	if(!stp.bmi){
-		stp.bmi = ReadJpeg(fname1);
-		jpeg = 1;
+		/* If couldn't, search through resource zip file. */
+		bfh = ZipUnZip("rc.zip", fname1, NULL);
+		stp.bmi = (BITMAPINFO*)&bfh[1];
+
+		if(!bfh){
+			/* If no luck yet, try jpeg decoding. */
+			stp.bmi = ReadJpeg(fname1);
+			jpeg = 1;
+		}
 	}
+
+	/* If all above fail, give up loading image. */
 	if(!stp.bmi)
 		return 0;
+
+	/* Alpha channel texture */
 	if(stp.flags & STP_ALPHATEX){
 		dstr_t ds = dstr0;
 		dstrcat(&ds, fname1);
 		dstrcat(&ds, ".a.bmp");
 		bfhMask = ZipUnZip("rc.zip", dstr(&ds), NULL);
 		stp.bmiMask = !bfhMask ? ReadBitmap(dstr(&ds)) : (BITMAPINFO*)&bfhMask[1];
+		mask = !!stp.bmiMask;
 		dstrfree(&ds);
 		if(!stp.bmiMask){
 			ds = dstr0;
@@ -201,7 +215,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			dstrcat(&ds, ".a.jpg");
 			stp.bmiMask = ReadJpeg(dstr(&ds));
 			dstrfree(&ds);
-			maskjpeg = 1;
+			mask = maskjpeg = !!stp.bmiMask;
 		}
 	}
 
@@ -221,7 +235,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		free(stp.bmi);
 	else
 		LocalFree(stp.bmi);
-	if(stp.bmiMask){
+	if(mask){
 		if(bfhMask)
 			ZipFree(bfhMask);
 		else if(maskjpeg)
@@ -230,7 +244,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			LocalFree(stp.bmiMask);
 	}
 	if(fname2){
-		if(bfh)
+		if(bfh2)
 			ZipFree(bfh2);
 		else if(jpeg2)
 			free(stp2.bmi);

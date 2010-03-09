@@ -512,7 +512,7 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	Vec3d dvPlanar = dv - dvLinear;
 	double dist = rdr.len();
 	if(rdrn.sp(dv) < 0) // estimate only when closing
-		target += dvPlanar * dist / dvLinear.len();
+		target += dvPlanar * dist / dvLinear.len() * .1;
 	Vec3d dr = this->pos - target;
 	if(rot.trans(-vec3_001).sp(dr) < 0) // burst only when heading closer
 		this->inputs.press |= PL_W;
@@ -1172,8 +1172,6 @@ void Warpable::anim(double dt){
 	}
 	st::anim(dt);
 }
-
-const unsigned Warpable::cid_move = registerCommand();
 
 bool Warpable::command(unsigned comid, std::set<Entity*> *arg){
 	if(comid == cid_move){

@@ -59,6 +59,13 @@ public:
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 	virtual bool command(unsigned commid, std::set<Entity*> *targets = NULL); // A general-purpose command dispatcher. Can have a set of Entities as argument.
 
+	// Reserved command IDs so common that all Entity derived classes should share.
+	// Note that subclasses can gracefully ignore these commands.
+	static const unsigned cid_halt; // Stop current activity and become idle.
+	static const unsigned cid_move; // Move to specified location.
+	static const unsigned cid_attack; // Attack specified target.
+	static const unsigned cid_forceattack; // Attack specified target though if it is ally.
+
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}

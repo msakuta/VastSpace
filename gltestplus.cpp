@@ -616,7 +616,7 @@ void draw_func(Viewer &vw, double dt){
 		glMatrixMode(GL_TEXTURE);
 		glPushMatrix();
 		glLoadIdentity();
-		glTranslated(0., !g_focusset * .5, 0.);
+		glTranslated(!!(MotionGet() & PL_CTRL) * .5, !g_focusset * .5, 0.);
 		glScaled(.5, .5, 1.);
 		glCallList(tex);
 /*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -780,7 +780,8 @@ void display_func(void){
 
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	PopupMenu *menus = new PopupMenu;
-	menus->append("Move", '\0', "moveorder").append("Chase Camera", '\0', "chasecamera").append("Properties", '\0', "property");
+	menus->append("Halt", '\0', "halt").append("Move", '\0', "moveorder")
+		.append("Chase Camera", '\0', "chasecamera").append("Properties", '\0', "property");
 	GLwindow *glw;
 	if(selectchain){
 		for(; pt; pt = pt->selectnext)
@@ -804,6 +805,8 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	bool draw = flags & 1;
 	bool preview = !!(flags & 2);
 	bool pointselect = !!(flags & 4);
+	bool attacking = !!(flags & (1<<3));
+	bool forceattack = !!(flags & (1<<4));
 	WarField *w;
 	double best = 1e50;
 	double g_far = g_space_far_clip, g_near = g_space_near_clip;
@@ -811,6 +814,10 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 /*	extern struct astrobj iserlohn;*/
 
 	if(!pl.cs->w)
+		return;
+
+	// If subject attack order issued is lacking, nothing to do here.
+	if((attacking || forceattack) && pl.selected == NULL)
 		return;
 
 	w = pl.cs->w;
@@ -858,7 +865,7 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	mat2 = mat * rot;
 	Mat4d irot = rot.transpose();
 	Vec3d plpos = pl.getpos();
-	if(!draw){
+	if(!draw && !attacking && !forceattack){
 		if(preview)
 			pl.chases.clear();
 		else
@@ -878,7 +885,14 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
 		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
 		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
-			if(preview){
+			if(attacking){
+				double size = pt->hitradius() + sp;
+				if((forceattack || pt->race != pl.selected->race) && 0 <= size && size < best){
+					best = size;
+					ptbest = pt;
+				}
+			}
+			else if(preview){
 				pl.chase = pt;
 				pl.chases.insert(pt);
 			}
@@ -909,10 +923,18 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 			}
 		}
 	}
-	if(!draw && pointselect){
-		pl.selected = ptbest;
-		if(ptbest)
-			ptbest->selectnext = NULL;
+	if(!draw){
+		if(attacking){
+			std::set<Entity*> ents;
+			ents.insert(ptbest);
+			for(Entity *e = pl.selected; e; e = e->selectnext)
+				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);
+		}
+		else if(pointselect){
+			pl.selected = ptbest;
+			if(ptbest)
+				ptbest->selectnext = NULL;
+		}
 	}
 }
 
@@ -947,6 +969,13 @@ static void uncapture_mouse(){
 /*	while(ShowCursor(TRUE) < 0);*/
 }
 
+int cmd_halt(int, char *[], void *pv){
+	Player *pl = (Player*)pv;
+	for(Entity *pt = pl->selected; pt; pt = pt->selectnext)
+		pt->command(Entity::cid_halt, NULL);
+	return 0;
+}
+
 int cmd_move(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	Entity *pt;
@@ -957,7 +986,7 @@ int cmd_move(int argc, char *argv[], void *pv){
 	dest[1] = atof(argv[2]);
 	dest[2] = atof(argv[3]);
 	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w)
-		pt->command(Sceptor::cid_move, (std::set<Entity*>*)&dest);
+		pt->command(Entity::cid_move, (std::set<Entity*>*)&dest);
 	return 0;
 }
 
@@ -1010,7 +1039,9 @@ void mouse_func(int button, int state, int x, int y){
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
 				Mat4d rot = pl.getrot().tomat4();
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
-					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, (g_focusset << 1) | ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2));
+					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
+					(g_focusset << 1) | ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2)
+					| (!!(MotionGet() & PL_CTRL) << 3) | (!!(g_focusset && (MotionGet() & PL_CTRL)) << 4));
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}
@@ -1537,6 +1568,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
 	CmdAddParam("parade_formation", Sceptor::cmd_parade_formation, &pl);
 	CmdAddParam("moveorder", Player::cmd_moveorder, &pl);
+	CmdAddParam("halt", cmd_halt, &pl);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

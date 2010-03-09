@@ -45,7 +45,7 @@ protected:
 	int paradec;
 	int magazine; // remaining bullet count in the magazine to shoot before reloading
 	Task task;
-	bool docked, returning, away, cloak;
+	bool docked, returning, away, cloak, forcedEnemy;
 	float mf; // trivial muzzle flashes
 	float integral[2]; // integration of pitch-yaw space of relative target position
 
@@ -89,7 +89,7 @@ public:
 	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);
-	static const unsigned cid_parade_formation, cid_dock, &cid_move;
+	static const unsigned cid_parade_formation, cid_dock;
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 	static double pid_ifactor;
 	static double pid_pfactor;

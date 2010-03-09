@@ -80,7 +80,7 @@ void Sceptor::serialize(SerializeContext &sc){
 //	sc.o << hitsound;
 	sc.o << paradec;
 	sc.o << (int)task;
-	sc.o << docked << returning << away << cloak;
+	sc.o << docked << returning << away << cloak << forcedEnemy;
 }
 
 void Sceptor::unserialize(UnserializeContext &sc){
@@ -96,7 +96,7 @@ void Sceptor::unserialize(UnserializeContext &sc){
 //	sc.i >> hitsound;
 	sc.i >> paradec;
 	sc.i >> (int&)task;
-	sc.i >> docked >> returning >> away >> cloak;
+	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	WarSpace *ws;
@@ -121,7 +121,7 @@ double Sceptor::maxhealth()const{
 Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1), forcedEnemy(false){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -249,6 +249,8 @@ void Sceptor::shootDualGun(double dt){
 
 // find the nearest enemy
 bool Sceptor::findEnemy(){
+	if(forcedEnemy)
+		return !!enemy;
 	Entity *pt2, *closest = NULL;
 	double best = 1e2 * 1e2;
 	for(pt2 = w->el; pt2; pt2 = pt2->next){
@@ -1199,8 +1201,12 @@ double Sceptor::maxfuel()const{
 	return 120.;
 }
 
-bool Sceptor::command(unsigned commid, std::set<Entity*> *a){
-	if(commid == cid_parade_formation){
+bool Sceptor::command(unsigned commid, std::set<Entity*> *ents){
+	if(commid == cid_halt){
+		task = Idle;
+		forcedEnemy = false;
+	}
+	else if(commid == cid_parade_formation){
 		task = Parade;
 		if(!mother)
 			findMother();
@@ -1218,11 +1224,22 @@ bool Sceptor::command(unsigned commid, std::set<Entity*> *a){
 				return 0;
 		}
 		task = Moveto;
-		Vec3d &dest = *(Vec3d*)a;
+		Vec3d &dest = *(Vec3d*)ents;
 		this->dest = dest;
 		return true;
 	}
-	return false;
+	else if(commid == cid_attack || commid == cid_forceattack){
+		if(ents && !ents->empty()){
+			Entity *e = *ents->begin();
+			if(e && e->getUltimateOwner() != getUltimateOwner()){
+				enemy = e;
+				forcedEnemy = true;
+				task = Auto;
+				return true;
+			}
+		}
+	}
+	return st::command(commid, ents);
 }
 
 
@@ -1256,7 +1273,6 @@ int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 
 const unsigned Sceptor::cid_parade_formation = registerCommand();
 const unsigned Sceptor::cid_dock = registerCommand();
-const unsigned &Sceptor::cid_move = Warpable::cid_move;
 
 double Sceptor::pid_pfactor = 1.;
 double Sceptor::pid_ifactor = 1.;

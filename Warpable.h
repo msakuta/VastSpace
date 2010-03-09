@@ -46,7 +46,6 @@ public:
 	Warpable(){}
 	Warpable(WarField *w);
 
-	static const unsigned cid_move;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);

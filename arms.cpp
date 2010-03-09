@@ -541,6 +541,43 @@ double MTurret::bulletspeed()const{
 	return 2.;
 }
 
+bool MTurret::command(unsigned commid, std::set<Entity*> *ents){
+	if(commid == cid_halt){
+		target = NULL;
+		forceEnemy = false;
+		return true;
+	}
+	else if(commid == cid_attack){
+		if(ents && !ents->empty()){
+			Entity *e = *ents->begin();
+			if(e && e->race != race && e->getUltimateOwner() != getUltimateOwner()){
+				target = e;
+				forceEnemy = true;
+				return true;
+			}
+		}
+	}
+	else if(commid == cid_forceattack){
+		if(ents && !ents->empty()){
+			Entity *e = *ents->begin();
+
+			// Though if force attacked, you cannot hurt yourself.
+			if(e && e->getUltimateOwner() != getUltimateOwner()){
+				target = e;
+				forceEnemy = true;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+
+
+
+
+
 GatlingTurret::GatlingTurret() : barrelrot(0), barrelomg(0){}
 
 GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){

@@ -82,6 +82,7 @@ public:
 	virtual void attack(Entity *target);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
+	virtual bool command(unsigned commid, std::set<Entity*> *ents);
 
 	virtual float reloadtime()const;
 	virtual double bulletspeed()const;

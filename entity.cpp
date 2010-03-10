@@ -144,7 +144,6 @@ Entity *Entity::getOwner(){return NULL;}
 bool Entity::isSelectable()const{return false;}
 int Entity::armsCount()const{return 0;}
 const ArmBase *Entity::armsGet(int)const{return NULL;}
-void Entity::attack(Entity *target){enemy = target;}
 std::vector<cpplib::dstring> Entity::props()const{
 	using namespace cpplib;
 	std::vector<cpplib::dstring> ret;

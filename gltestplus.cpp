@@ -1085,13 +1085,6 @@ static int cmd_originrotation(int, char *[]){
 	return 0;
 }
 
-static int cmd_attack(int, char *[], void *pv){
-	Player *ppl = (Player*)pv;
-	if(ppl->chase && ppl->selected)
-		ppl->chase->attack(ppl->selected);
-	return 0;
-}
-
 static int cmd_pfocusset(int argc, char *argv[]){
 	g_focusset = 1;
 	return 0;
@@ -1523,7 +1516,6 @@ int main(int argc, char *argv[])
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("mover", &Player::cmd_mover, &pl);
-	CmdAddParam("attack", cmd_attack, &pl);
 	CmdAddParam("save", Universe::cmd_save, &universe);
 	CmdAddParam("load", Universe::cmd_load, &universe);
 	CmdAddParam("buildmenu", cmd_build, &pl);

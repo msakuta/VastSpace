@@ -12,6 +12,8 @@ protected:
 	int paradec;
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
+
+	Entity *findMother();
 public:
 	typedef Frigate st;
 	Assault(){init();}
@@ -31,8 +33,8 @@ public:
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
-	virtual void attack(Entity *target);
 	virtual bool undock(Docker *);
+	virtual bool command(unsigned commid, std::set<Entity*> *);
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
 	static const Builder::BuildStatic builds;

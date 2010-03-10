@@ -663,14 +663,16 @@ void Sceptor::anim(double dt){
 						break;
 					}
 
-/*					VECSUB(dv, pt->enemy->pos, pt->pos);*/
+					double dist = delta.len();
 					dv = delta;
 					double awaybase = pt->enemy->hitradius() * 3. + .1;
-					double attackrad = awaybase < .6 ? awaybase * 5. : .6 * 5.;
-					if(p->task == Attack && dv.slen() < awaybase * awaybase){
+					if(.6 < awaybase)
+						awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
+					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
+					if(p->task == Attack && dist < awaybase){
 						p->task = Away;
 					}
-					else if(p->task == Away && attackrad * attackrad < dv.slen()){
+					else if(p->task == Away && attackrad < dist){
 						p->task = Attack;
 					}
 					dv.normin();
@@ -715,7 +717,7 @@ void Sceptor::anim(double dt){
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == Attack && .99 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 5. * 2. && .99 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}

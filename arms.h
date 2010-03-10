@@ -79,13 +79,13 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual double hitradius()const;
-	virtual void attack(Entity *target);
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
 	virtual bool command(unsigned commid, std::set<Entity*> *ents);
 
 	virtual float reloadtime()const;
 	virtual double bulletspeed()const;
+	virtual float bulletlife()const;
 protected:
 	virtual void tryshoot();
 };
@@ -134,6 +134,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual float reloadtime()const;
+	virtual float bulletlife()const;
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 };

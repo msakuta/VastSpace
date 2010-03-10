@@ -317,8 +317,7 @@ static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
 	MTurret *pt = this;
 	WarField *w = pb->w;
-	double best = 5. * 5.; /* sense range */
-	double sdist;
+	double best = bulletspeed() * bulletlife() * bulletspeed() * bulletlife(); /* sense range */
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
 
@@ -339,14 +338,21 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 /*		if(!entity_visible(pb, pt2))
 			continue;*/
 
+		// Do not passively attack Resource Station that can be captured instead of being destroyed.
+		if(!strcmp(pt2->classname(), "RStation"))
+			continue;
+
 		ldelta = mat2.vp3(pt2->pos);
 		phi = -atan2(ldelta[2], ldelta[0]);
 		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
 
+		// Ignore targets that are out of turret rotation or barrel pitch range.
+		if(!(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]))
+			continue;
+
 		// Weigh already targetted enemy to keep shooting single enemy.
-		if(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]
-			&& (sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.) / f) < best)
-		{
+		double sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.) / f;
+		if(sdist < best){
 			best = sdist;
 			closest = pt2;
 		}
@@ -369,7 +375,7 @@ void MTurret::tryshoot(){
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;
-	pz = new Bullet(base, 3., 120.);
+	pz = new Bullet(base, bulletlife(), 120.);
 	w->addent(pz);
 	Mat4d mat2;
 	base->transform(mat2);
@@ -429,7 +435,16 @@ void MTurret::anim(double dt){
 			tryshoot();
 		}
 	}
-	else if(target){/* estimating enemy position */
+	else if(target) do{/* estimating enemy position */
+
+		bool notReachable = bulletspeed() * bulletlife() * bulletspeed() * bulletlife() < (target->pos - this->pos).slen();
+
+		// If not forced to attack certain target, forget about target that bullets have no way to reach.
+		if(notReachable && !forceEnemy){
+			target = NULL;
+			break;
+		}
+
 		Vec3d pos, velo, pvelo, gepos;
 		Mat4d rot;
 
@@ -451,13 +466,16 @@ void MTurret::anim(double dt){
 		while(a->cooldown < dt){
 			double yaw = a->py[1];
 			double pitch = a->py[0];
-			if(fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
+
+			// Do not waste bullets at not reachable target.
+			if(!notReachable && fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
 				tryshoot();
 			}
 			else
 				a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
 		}
-	}
+	}while(0);
+
 	if(a->cooldown < dt)
 		a->cooldown = 0.;
 	else
@@ -517,12 +535,6 @@ double MTurret::hitradius()const{
 	return .005;
 }
 
-void MTurret::attack(Entity *target){
-	st::attack(target);
-	this->target = target;
-	forceEnemy = true;
-}
-
 std::vector<cpplib::dstring> MTurret::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
@@ -539,6 +551,10 @@ float MTurret::reloadtime()const{
 
 double MTurret::bulletspeed()const{
 	return 2.;
+}
+
+float MTurret::bulletlife()const{
+	return 3.;
 }
 
 bool MTurret::command(unsigned commid, std::set<Entity*> *ents){
@@ -865,6 +881,7 @@ void LTurret::drawtra(wardraw_t *wd){
 }
 
 float LTurret::reloadtime()const{return 4.;}
+float LTurret::bulletlife()const{return 5.;}
 
 void LTurret::tryshoot(){
 	if(ammo <= 0)
@@ -884,7 +901,7 @@ void LTurret::tryshoot(){
 	for(int i = 0; i < 2; i++){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
 		Bullet *pz;
-		pz = new Bullet(base, 5., 800.);
+		pz = new Bullet(base, bulletlife(), 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;

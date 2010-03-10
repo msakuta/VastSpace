@@ -4,6 +4,7 @@
 #include "player.h"
 #include "serial_util.h"
 #include "material.h"
+#include "sceptor.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -115,6 +116,11 @@ void Assault::anim(double dt){
 					best = sdist;
 				}
 			}
+		}
+
+		// In parade formation mode, be passive to battle.
+		if(task == sship_parade && enemy && 5. * 5. < (enemy->pos - pos).slen()){
+			enemy = NULL;
 		}
 
 		if(!enemy && task == sship_parade){
@@ -292,11 +298,6 @@ const ArmBase *Assault::armsGet(int i)const{
 	return turrets[i];
 }
 
-void Assault::attack(Entity *target){
-	for(int i = 0; i < numof(turrets); i++) if(turrets[i])
-		turrets[i]->attack(target);
-}
-
 bool Assault::undock(Docker *d){
 //	if(!st::undock(d))
 //		return false;
@@ -307,6 +308,32 @@ bool Assault::undock(Docker *d){
 	d->baycool += 5.;
 	return true;
 }
+
+bool Assault::command(unsigned commid, std::set<Entity*> *ents){
+	if(commid == Sceptor::cid_parade_formation){
+		findMother();
+		task = sship_parade;
+		enemy = NULL; // Temporarily forget about enemy
+		return true;
+	}
+	else if(commid == cid_attack){
+		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+			turrets[i]->command(commid, ents);
+	}
+	return st::command(commid, ents);
+}
+
+Entity *Assault::findMother(){
+	Entity *pm = NULL;
+	double best = 1e10 * 1e10, sl;
+	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+		mother = e->getDocker();
+		pm = mother->e;
+		best = sl;
+	}
+	return pm;
+}
+
 
 Entity *Assault::create(WarField *w, Builder *mother){
 	Assault *ret = new Assault(NULL);

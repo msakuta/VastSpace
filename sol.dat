@@ -236,7 +236,7 @@ coordsys Orbit marss{
 		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
-		respawn Scarry -1 0 -4 0 2 2
+#		respawn Scarry -1 0 -4 0 2 2
 #		respawn Scarry 1 0 -4 0 2 2
 		respawn Sceptor -0 0 -.1 0 .5 16
 #		respawn Sceptor 1 0 0 1 1.5 2
@@ -248,11 +248,12 @@ coordsys Orbit marss{
 #		respawn Assault -1 -0.5 -1 1 2 4
 #		respawn Assault 1 0.5 -1 1 2 4
 #		respawn Assault 1 -0.5 -1 1 2 4
-#		respawn Destroyer -1.5 0 0.1 1 2 2
+#		respawn Destroyer -1.5 0 20.1 1 2 2
 #		respawn WireDestroyer 1.5 0.1 0 1 2 2
 #		addent scarry 0 0 -4
-#		addent scarry 2 0 -4
-		addent Destroyer -.5 -1 -3 0
+		addent Scarry 2 0 -4
+		addent Destroyer -1.5 0 10. 1
+#		addent Destroyer -.5 -1 -3 0
 #		addent destroyer -.5 1 -3 0
 #		addent destroyer .1 0 0 1
 #		addent destroyer -.5 0 0 1
@@ -265,7 +266,7 @@ coordsys Orbit marss{
 #		addent destroyer .7 1 0 1
 #		addent beamer .1 0 0
 #		addent beamer -.1 0 0
-#		addent assault -.2 0 0 
+		addent Assault -.2 0 0 
 #		addent assault -.6 0 -1 1
 #		addent assault -.3 0 -1 1
 #		addent assault -.0 0 -1 1

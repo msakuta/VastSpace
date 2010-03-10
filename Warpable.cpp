@@ -1196,5 +1196,9 @@ bool Warpable::command(unsigned comid, std::set<Entity*> *arg){
 		dest = *(Vec3d*)arg;
 		return true;
 	}
+	else if(comid == cid_attack){
+		if(arg && !arg->empty())
+			enemy = *arg->begin();
+	}
 	return false;
 }

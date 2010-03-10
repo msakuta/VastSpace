@@ -1186,7 +1186,12 @@ void Warpable::anim(double dt){
 }
 
 bool Warpable::command(unsigned comid, std::set<Entity*> *arg){
-	if(comid == cid_move){
+	if(comid == cid_halt){
+		task = sship_idle;
+		inputs.press = 0;
+		return true;
+	}
+	else if(comid == cid_move){
 		task = sship_moveto;
 		dest = *(Vec3d*)arg;
 		return true;

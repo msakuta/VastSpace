@@ -607,6 +607,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\glstack.h"
+				>
+			</File>
+			<File
 				RelativePath="..\glwindow.h"
 				>
 			</File>

@@ -38,7 +38,6 @@ BITMAPINFO *ReadBitmap(const char *szFileName)
 	dwFileSize = bf.bfSize;
 
 	if (/*memcmp(&bf.bfType, "BM", 2) != 0*/ bf.bfType != *(WORD*)"BM") {
- /*       MessageBox(hWnd, "ビットマップではありません", "Error", MB_OK);*/
 		CloseHandle(hF);
 		goto tryzip;
 	}
@@ -49,7 +48,6 @@ BITMAPINFO *ReadBitmap(const char *szFileName)
 
     szBuffer = LocalAlloc(LMEM_FIXED, dwFileSize - sizeof(BITMAPFILEHEADER));
 
-    //読みこむのはBITMAPINFOHEADER, RGBQUAD, ビットデータ
     SetFilePointer(hF, sizeof(BITMAPFILEHEADER), 0, FILE_BEGIN);
     ReadFile(hF, szBuffer,
         dwSizeImage + bi.biClrUsed * sizeof(RGBQUAD) + sizeof(BITMAPINFOHEADER),

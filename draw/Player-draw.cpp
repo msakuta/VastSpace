@@ -3,6 +3,8 @@
 #include "../CoordSys.h"
 #include "../Entity.h"
 #include "../motion.h"
+#include "../war.h"
+#include "../glstack.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -31,10 +33,14 @@ static double diprint(const char *s, double x, double y){
 	return x + strlen(s) * 8;
 }
 
-void Player::drawindics(Viewer *vw){
+void Player::draw(Viewer *vw){
 	if(moveorder) do{
 		bool move_lockz = this->move_lockz || MotionGet() & PL_SHIFT;
-		glPushMatrix();
+		GLma glma(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_TEXTURE_1D);
+		glDisable(GL_TEXTURE_2D);
+		glColor4f(1,1,1,1);
 		glLoadMatrixd(vw->rot);
 		gldTranslate3dv(-vw->pos);
 //		char *strtargetcs;
@@ -64,7 +70,7 @@ void Player::drawindics(Viewer *vw){
 
 		Mat4d imat;
 		Vec3d ray, lray, mpos, vwpos, mlpos;
-		double t;
+		double &t = move_t;
 		double (*cuts)[2];
 		mat = vw->rot * rot;
 		{
@@ -105,44 +111,78 @@ void Player::drawindics(Viewer *vw){
 		glEnd();*/
 
 		glPushMatrix();
-		if(selected)
+		double magnitude;
+		if(selected){
 			gldTranslate3dv(selected->pos);
+			magnitude = floor(log10((pos - selected->pos).len()) - .5);
+		}
+		else
+			magnitude = floor(log10((pos).len()) - .5);
 		glMultMatrixd(rot);
-		glBegin(GL_LINES);
-		for(int i = 0; i <= 10; i++){
-			glVertex2d(i * 1. - 5., -5.);
-			glVertex2d(i * 1. - 5.,  5.);
-			glVertex2d(-5., i * 1. - 5.);
-			glVertex2d( 5., i * 1. - 5.);
-		}
-		glEnd();
 
-		if(move_lockz){
-			mpos = move_hitpos;
-		}
-		else{
-			mpos = ray * t;
-			mpos += vwpos;
-			move_hitpos = mpos;
-		}
+		glPushMatrix();
+		gldScaled(pow(10., magnitude));
 		glBegin(GL_LINES);
-		glVertex3d(0, 0, 0.);
-		glVertex3d(mpos[0], mpos[1], mpos[2] - move_z);
-		glEnd();
-		gldTranslate3dv(mpos);
-		glBegin(GL_LINES);
-		glVertex3d(0, 0, 0.);
-		glVertex3d(0, 0, -move_z);
-		glEnd();
-		gldScaled(.1);
-		cuts = CircleCuts(32);
-		glBegin(GL_LINE_LOOP);
-		for(int i = 0; i < 32; i++){
-			glVertex2d(cuts[i][0], cuts[i][1]);
+		for(int n = 1; n <= 10; n += 9){
+			for(int i = 0; i <= 20; i++){
+				glVertex2d(n * (i * 1. - 10.), n * -10.);
+				glVertex2d(n * (i * 1. - 10.), n *  10.);
+				glVertex2d(n * -10., n * (i * 1. - 10.));
+				glVertex2d(n *  10., n * (i * 1. - 10.));
+			}
 		}
 		glEnd();
 		glPopMatrix();
 
+		if(0 < t){
+			if(move_lockz){
+				mpos = move_hitpos;
+			}
+			else{
+				mpos = ray * t;
+				mpos += vwpos;
+				move_hitpos = mpos;
+			}
+
+			double horzdist = ::sqrt((move_hitpos[0]) * (move_hitpos[0]) + (move_hitpos[1]) * (move_hitpos[1]));
+
+			cuts = CircleCuts(32);
+			glBegin(GL_LINE_LOOP);
+			for(int i = 0; i < 32; i++)
+				glVertex2d(horzdist * cuts[i][0], horzdist * cuts[i][1]);
+			glEnd();
+
+			glBegin(GL_LINES);
+			glVertex3d(0, 0, 0.);
+			glVertex3d(mpos[0], mpos[1], mpos[2] - move_z);
+			glEnd();
+			gldTranslate3dv(mpos);
+			glBegin(GL_LINES);
+			glVertex3d(0, 0, 0.);
+			glVertex3d(0, 0, -move_z);
+			glEnd();
+			if(selected){
+				gldScaled(selected->hitradius());
+				glBegin(GL_LINE_LOOP);
+				for(int i = 0; i < 32; i++){
+					glVertex2d(cuts[i][0], cuts[i][1]);
+				}
+				glEnd();
+			}
+		}
+		glPopMatrix();
+
+		move_viewpos = vw->pos;
+	} while(0);
+}
+
+void Player::drawtra(Viewer *){}
+
+void Player::drawindics(Viewer *vw){
+	if(moveorder && 0 < move_t){
+		Vec3d &mpos = move_hitpos;
+		GLpmatrix glpm;
+		projection((glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));
 /*		mlpos = rot.dvp3(mpos);
 		glPushMatrix();
 		gldTranslate3dv(mlpos);
@@ -160,8 +200,7 @@ void Player::drawindics(Viewer *vw){
 		Vec4d mpos4 = irot.dvp3(mpos) + move_z * vec3_010 + move_src;
 		mpos4[3] = 1.;
 		Vec4d spos = move_trans.vp(mpos4);
-		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));
-		cuts = CircleCuts(32);
+		double (*cuts)[2] = CircleCuts(32);
 		glPushMatrix();
 		glTranslated((spos[0] / spos[2] + 1.) * vw->vp.w / 2., (1. - spos[1] / spos[2]) * vw->vp.h / 2., 0.);
 		gldScaled(20.);
@@ -181,19 +220,15 @@ void Player::drawindics(Viewer *vw){
 			diprint(cpplib::dstring() << destdist << "km ", x, y);
 //		diprint(cpplib::dstring() << spos[0] << "," << spos[1] << "," << spos[3], x, y + 12);
 //		diprint(cpplib::dstring() << mpos.len() << "km", 0, 0);
-		projection((glPopMatrix()));
 		glPopMatrix();
-
-		move_viewpos = vw->pos;
-	} while(0);
+	}
 }
-
 
 void Player::mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam){
 	Player &pl = *this;
 	if(pl.moveorder && wParam & MK_SHIFT && !pl.move_lockz){
 		Mat4d rotmat = mat4_u.rotx(M_PI / 2.);
-		Vec3d lpos = rotmat.dvp3(pl.move_hitpos);
+		Vec3d lpos = rotmat.dvp3(pl.move_hitpos + move_src);
 		int maxpix, minpix;
 		RECT crect;
 		GetClientRect(hWnd, &crect);
@@ -202,14 +237,13 @@ void Player::mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM 
 #if 1 /* TODO: screen to space z axis coordinates transformation */
 		Vec3d delta(deltax, deltay, 0);
 		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos) + vec4_0001()) - pl.move_trans.vp(Vec4d((lpos + vec3_010)) + vec4_0001())).norm();
-//					normal[1] *= -1;
 		double sp = normal.sp(delta);
-		pl.move_z += sp * (pl.move_hitpos - pl.move_viewpos).len() / maxpix;
+		pl.move_z += sp * (rotmat.dvp3(pl.move_hitpos) + move_src - pl.move_viewpos).len() / maxpix;
 		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos) + pl.move_z * vec3_010 + move_src) + vec4_0001();
 		Vec4d redelta = pl.move_trans.vp(worlddest);
 		POINT p, p0;
-		p.x = (redelta[0] / redelta[3] + 1.) * crect.right / 2;
-		p.y = (1. - redelta[1] / redelta[3]) * crect.bottom / 2;
+		p.x = LONG((redelta[0] / redelta[3] + 1.) * crect.right / 2);
+		p.y = LONG((1. - redelta[1] / redelta[3]) * crect.bottom / 2);
 		p0 = p;
 		ClientToScreen(hWnd, &p);
 		pl.move_lockz = true;

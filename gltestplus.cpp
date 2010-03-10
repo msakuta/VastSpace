@@ -22,6 +22,7 @@
 #include "Scarry.h"
 #include "material.h"
 #include "Sceptor.h"
+#include "glstack.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -82,48 +83,6 @@ Player pl;
 double &flypower = pl.flypower;
 Universe universe(&pl);//galaxysystem(&pl);
 
-class GLattrib{
-public:
-	GLattrib(GLbitfield mask){
-		glPushAttrib(mask);
-	}
-	~GLattrib(){
-		glPopAttrib();
-	}
-};
-
-class GLmatrix{
-public:
-	GLmatrix(){
-		glPushMatrix();
-	}
-	~GLmatrix(){
-		glPopMatrix();
-	}
-};
-
-class GLpmatrix{
-	GLdouble mat[16];
-public:
-	GLpmatrix(){
-		glMatrixMode(GL_PROJECTION);
-		glGetDoublev(GL_PROJECTION_MATRIX, mat);
-//		glPushMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
-	~GLpmatrix(){
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixd(mat);
-//		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
-};
-
-class GLma : public GLmatrix, public GLattrib{
-public:
-	GLma(GLbitfield mask) : GLmatrix(), GLattrib(mask){}
-	~GLma(){}
-};
 
 
 void drawShadeSphere(){
@@ -494,6 +453,9 @@ static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wa
 		// It also helps the optimizer to reduce frame pointers.
 		war_draw_int(vw, cs, method);
 	}
+	if(pl.cs == cs){
+		(pl.*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&vw);
+	}
 }
 
 void draw_func(Viewer &vw, double dt){
@@ -519,6 +481,7 @@ void draw_func(Viewer &vw, double dt){
 	universe.startdraw();
 	universe.predraw(&vw);
 	universe.drawcs(&vw);
+	pl.draw(&vw);
 	projection(glPopMatrix());
 	}
 

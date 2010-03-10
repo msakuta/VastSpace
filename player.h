@@ -20,6 +20,7 @@ class Entity;
 class CoordSys;
 class Viewer;
 struct teleport;
+struct war_draw_data;
 
 class Player : public Serializable{
 public:
@@ -52,6 +53,7 @@ public:
 	bool moveorder; // Issueing moving order
 	bool move_lockz; /* 3-D movement order */
 	double move_z;
+	double move_t; // ray trace factor
 	Vec3d move_org;
 	Vec3d move_src;
 	Vec3d move_hitpos;
@@ -72,6 +74,8 @@ public:
 	void freelook(const input_t &, double dt);
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);
+	void draw(Viewer *wd);
+	void drawtra(Viewer *wd);
 	void drawindics(Viewer *vw);
 #ifdef _WIN32
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);

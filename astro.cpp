@@ -570,7 +570,7 @@ bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 2;
+const unsigned Universe::version = 3;
 
 const char *Universe::classname()const{
 	return "Universe";

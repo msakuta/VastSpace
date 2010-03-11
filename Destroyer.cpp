@@ -273,7 +273,7 @@ bool Destroyer::command(unsigned commid, std::set<Entity*> *ents){
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::maneuve &Destroyer::getManeuve()const{
-	static const struct Warpable::maneuve beamer_mn = {
+	static const struct Warpable::maneuve frigate_mn = {
 		.05, /* double accel; */
 		.1, /* double maxspeed; */
 		.1, /* double angleaccel; */
@@ -281,7 +281,7 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */
 	};
-	return beamer_mn;
+	return frigate_mn;
 }
 
 
@@ -543,7 +543,7 @@ void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 const Warpable::maneuve &WireDestroyer::getManeuve()const{
-	static const struct Warpable::maneuve beamer_mn = {
+	static const struct Warpable::maneuve frigate_mn = {
 		.05, /* double accel; */
 		.1, /* double maxspeed; */
 		.1, /* double angleaccel; */
@@ -551,5 +551,5 @@ const Warpable::maneuve &WireDestroyer::getManeuve()const{
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */
 	};
-	return beamer_mn;
+	return frigate_mn;
 }

@@ -413,6 +413,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Frigate.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gltestplus.cpp"
 				>
 			</File>

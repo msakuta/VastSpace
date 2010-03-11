@@ -8,11 +8,13 @@ public:
 protected:
 	ShieldEffect se;
 	double shieldAmount;
+	double shieldGenSpeed; // To make shield generation inertial.
 	Frigate(){}
 	Frigate(WarField *);
 	void drawShield(wardraw_t *wd);
 	bool cull(wardraw_t *);
 
+	static const maneuve frigate_mn;
 public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

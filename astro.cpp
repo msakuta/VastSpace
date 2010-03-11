@@ -682,6 +682,46 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 		}
 	}
 #endif
+	char signature[8];
+
+	// Check file consistency before deleting existing universe.
+	{
+		FILE *fp = fopen(fname, "rb");
+		if(!fp){
+			CmdPrintf("File %s could not be opened.", fname);
+			return 0;
+		}
+		if(0 == fread(signature, sizeof signature, 1, fp)){
+			CmdPrintf("File %s is broken or unknown format.", fname);
+			fclose(fp);
+			return 0;
+		}
+		if(!memcmp(signature, "savebina", sizeof signature)){
+			unsigned fileversion;
+			if(!fread(&fileversion, sizeof fileversion, 1, fp) || fileversion != version){
+				CmdPrintf("Saved file version number %d is different as %d.", fileversion, version);
+				fclose(fp);
+				return 0;
+			}
+		}
+#if ENABLE_TEXTFORMAT
+		else if(!memcmp(signature, "savetext", sizeof signature)){
+			unsigned fileversion;
+			if(!fscanf(fp, "%u", &fileversion) || fileversion != version){
+				CmdPrintf("Saved file version number %d is different as %d.", fileversion, version);
+				fclose(fp);
+				return 0;
+			}
+		}
+#endif
+		else{
+			CmdPrintf("");
+			fclose(fp);
+			return 0;
+		}
+		fclose(fp);
+	}
+
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;
 	cpplib::dstring plpath = pl.cs->getpath();
@@ -696,7 +736,6 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	map.push_back(&pl);
 	map.push_back(&universe);
 	unsigned char *buf;
-	char signature[8];
 	long size;
 	do{
 		{

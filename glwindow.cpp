@@ -253,6 +253,7 @@ void GLwindow::glwFree(){
 void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 int GLwindow::key(int key){return 0;}
+int GLwindow::specialKey(int){return 0;}
 void GLwindow::anim(double){}
 void GLwindow::postframe(){}
 GLwindow::~GLwindow(){

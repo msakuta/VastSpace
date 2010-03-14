@@ -191,6 +191,7 @@ public:
 	void draw(GLwindowState &ws, double t);
 //	int mouse(int button, int state, int x, int y);
 	int key(int key);
+	int specialKey(int key);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	void anim(double dt);
 protected:
@@ -1096,6 +1097,14 @@ int GLwindowSolarMap::key(int key){
 		case '-': p->dstrange *= 2.; break;
 		case '[': width *= 2, height = width + 12; break;
 		case ']': width /= 2, height = width + 12; break;
+	}
+	return 1;
+}
+
+int GLwindowSolarMap::specialKey(int key){
+	switch(key){
+		case GLUT_KEY_PAGE_UP: dstrange /= 2.; break;
+		case GLUT_KEY_PAGE_DOWN: dstrange *= 2.; break;
 	}
 	return 1;
 }

@@ -56,6 +56,7 @@ public:
 	int getY()const{return ypos;}
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
+	virtual int specialKey(int key); // Special keys like page up/down
 	virtual void anim(double dt);
 	virtual void postframe();
 	static void glwpostframe();

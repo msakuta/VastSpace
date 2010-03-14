@@ -1193,19 +1193,13 @@ static void special_func(int key, int x, int y){
 		CmdSpecialInput(key);
 		return;
 	}
-/*	if(glwfocus && glwfocus->key){
+	if(glwfocus){
 		int ret;
 		glwindow **referrer;
-		ret = glwfocus->key(glwfocus, key);
-		if(glwfocus->flags & GLW_TODELETE) for(referrer = &glwlist; *referrer; referrer = &(*referrer)->next) if(*referrer == glwfocus){
-			*referrer = glwfocus->next;
-			free(glwfocus);
-			glwfocus = NULL;
-			break;
-		}
+		ret = glwfocus->specialKey(key);
 		if(ret)
 			return;
-	}*/
+	}
 	BindExecSpecial(key);
 }
 
@@ -1417,6 +1411,8 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			}
 			case VK_SHIFT: BindKeyUp(1); break;
 			case VK_CONTROL: BindKeyUp(2); break;
+			case VK_PRIOR: BindKeyUp(GLUT_KEY_PAGE_UP); break;
+			case VK_NEXT: BindKeyUp(GLUT_KEY_PAGE_DOWN); break;
 			}
 			break;
 

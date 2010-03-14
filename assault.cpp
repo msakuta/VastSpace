@@ -4,7 +4,6 @@
 #include "player.h"
 #include "serial_util.h"
 #include "material.h"
-#include "sceptor.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -66,14 +65,12 @@ void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
-	sc.o << mother;
 }
 
 void Assault::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
-	sc.i >> mother;
 }
 
 const char *Assault::dispname()const{
@@ -206,10 +203,6 @@ void Assault::postframe(){
 		mother = NULL;
 }
 
-bool Assault::solid(const Entity *o)const{
-	return !(task == sship_undock);
-}
-
 void Assault::draw(wardraw_t *wd){
 	Assault *const p = this;
 	static int init = 0;
@@ -310,29 +303,14 @@ bool Assault::undock(Docker *d){
 }
 
 bool Assault::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == Sceptor::cid_parade_formation){
-		findMother();
-		task = sship_parade;
-		enemy = NULL; // Temporarily forget about enemy
-		return true;
-	}
-	else if(commid == cid_attack){
+	if(commid == cid_attack){
 		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 			turrets[i]->command(commid, ents);
+		return st::command(commid, ents); 
 	}
 	return st::command(commid, ents);
 }
 
-Entity *Assault::findMother(){
-	Entity *pm = NULL;
-	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-		mother = e->getDocker();
-		pm = mother->e;
-		best = sl;
-	}
-	return pm;
-}
 
 
 Entity *Assault::create(WarField *w, Builder *mother){

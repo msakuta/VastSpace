@@ -252,7 +252,7 @@ coordsys Orbit marss{
 #		respawn WireDestroyer 1.5 0.1 0 1 2 2
 #		addent scarry 0 0 -4
 		addent Scarry 2 0 -4
-		addent Destroyer -1.5 0 7. 1
+#		addent Destroyer -1.5 0 7. 1
 #		addent Destroyer -.5 -1 -3 0
 #		addent destroyer -.5 1 -3 0
 #		addent destroyer .1 0 0 1
@@ -264,9 +264,9 @@ coordsys Orbit marss{
 #		addent destroyer .1 1 0 1
 #		addent destroyer -.5 1 0 1
 #		addent destroyer .7 1 0 1
-#		addent beamer .1 0 0
-#		addent beamer -.1 0 0
-		addent Assault -.2 0 0 
+		addent Beamer .1 0 0
+		addent Beamer -.1 0 0
+#		addent Assault -.2 0 0 
 #		addent assault -.6 0 -1 1
 #		addent assault -.3 0 -1 1
 #		addent assault -.0 0 -1 1

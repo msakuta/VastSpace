@@ -75,6 +75,7 @@ const char *Beamer::classname()const{
 }
 
 const unsigned Beamer::classid = registerClass("Beamer", Conster<Beamer>);
+const unsigned Beamer::entityid = registerEntity("Beamer", Constructor<Beamer>);
 
 void Beamer::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -161,7 +162,8 @@ extern struct player *ppl;
 
 
 void Beamer::anim(double dt){
-	Mat4d mat;
+	if(!w->operator WarSpace *())
+		return;
 
 	if(!w)
 		return;
@@ -175,8 +177,8 @@ void Beamer::anim(double dt){
 		return;
 	}*/
 
-//	tankrot(&mat, pt);
-	mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
+	Mat4d mat;
+	transform(mat);
 
 	if(0 < health){
 		Entity *collideignore = NULL;
@@ -191,9 +193,51 @@ void Beamer::anim(double dt){
 			else
 				p->undocktime -= dt;
 		}
-		else if(w->pl->control == pt){
+		else */
+		if(task == sship_undock){
+			if(!mother || !mother->e)
+				task = sship_idle;
+			else{
+				double sp;
+				Vec3d dm = this->pos - mother->e->pos;
+				Vec3d mzh = this->rot.trans(vec3_001);
+				sp = -mzh.sp(dm);
+				inputs.press |= PL_W;
+				if(1. < sp)
+					task = sship_parade;
+			}
 		}
-		else*/{
+		else if(w->getPlayer()->control == this){
+		}
+		else if(!enemy && task == sship_parade){
+			Entity *pm = mother ? mother->e : NULL;
+			if(mother){
+				if(paradec == -1)
+					paradec = mother->enumParadeC(mother->Frigate);
+				Vec3d target, target0(1.5, -1., -1.);
+				Quatd q2, q1;
+				target0[0] += paradec % 10 * .30;
+				target0[2] += paradec / 10 * -.30;
+				target = pm->rot.trans(target0);
+				target += pm->pos;
+				Vec3d dr = this->pos - target;
+				if(dr.slen() < .10 * .10){
+					q1 = pm->rot;
+					inputs.press &= ~PL_W;
+//					parking = 1;
+					this->velo += dr * (-dt * .5);
+					q2 = Quatd::slerp(this->rot, q1, 1. - exp(-dt));
+					this->rot = q2;
+				}
+				else{
+	//							p->throttle = dr.slen() / 5. + .01;
+					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+				}
+			}
+			else
+				task = sship_idle;
+		}
+		else{
 			Vec3d pos, dv;
 			double dist;
 			Vec3d opos;
@@ -366,7 +410,7 @@ void Beamer::anim(double dt){
 					velo[i] = (drseq(&w->rs) - .5) * .1;
 				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-			AddTeline3D(ws->tell, pos, NULL, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+			AddTeline3D(ws->tell, pos, vec3_000, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 		}
 		else
 			beamlen = 10.;
@@ -646,6 +690,12 @@ Entity::Props Beamer::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
 	return ret;
+}
+
+bool Beamer::undock(Docker *d){
+	task = sship_undock;
+	mother = d;
+	return true;
 }
 
 Entity *Beamer::create(WarField *w, Builder *mother){

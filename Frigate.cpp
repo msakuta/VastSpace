@@ -1,4 +1,4 @@
-#include "beamer.h"
+#include "Frigate.h"
 #include "player.h"
 #include "bullet.h"
 #include "coordsys.h"
@@ -7,10 +7,9 @@
 #include "glwindow.h"
 #include "judge.h"
 #include "astrodef.h"
-#include "stellar_file.h"
-#include "astro_star.h"
 #include "serial_util.h"
 #include "material.h"
+#include "Sceptor.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -60,7 +59,7 @@ const struct Warpable::maneuve Frigate::frigate_mn = {
 };
 
 
-Frigate::Frigate(WarField *aw) : st(aw), shieldGenSpeed(0){
+Frigate::Frigate(WarField *aw) : st(aw), shieldGenSpeed(0), paradec(-1){
 	health = maxhealth();
 	shieldAmount = maxshield();
 }
@@ -70,12 +69,16 @@ void Frigate::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << shieldAmount;
 	sc.o << shieldGenSpeed;
+	sc.o << mother;
+	sc.o << paradec;
 }
 
 void Frigate::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> shieldAmount;
 	sc.i >> shieldGenSpeed;
+	sc.i >> mother;
+	sc.i >> paradec;
 }
 
 
@@ -471,6 +474,37 @@ Entity::Props Frigate::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
 	return ret;
+}
+
+int Frigate::popupMenu(PopupMenu &list){
+	int ret = st::popupMenu(list);
+	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak");
+	return ret;
+}
+
+bool Frigate::solid(const Entity *o)const{
+	return !(task == sship_undock);
+}
+
+bool Frigate::command(unsigned commid, std::set<Entity*> *arg){
+	if(commid == Sceptor::cid_parade_formation){
+		findMother();
+		task = sship_parade;
+		enemy = NULL; // Temporarily forget about enemy
+		return true;
+	}
+	else return st::command(commid, arg);
+}
+
+Entity *Frigate::findMother(){
+	Entity *pm = NULL;
+	double best = 1e10 * 1e10, sl;
+	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+		mother = e->getDocker();
+		pm = mother->e;
+		best = sl;
+	}
+	return pm;
 }
 
 

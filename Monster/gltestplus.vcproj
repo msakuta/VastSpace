@@ -497,6 +497,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Universe.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\war.cpp"
 				>
 			</File>

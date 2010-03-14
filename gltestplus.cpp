@@ -1300,7 +1300,8 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				hdc = GetDC(hWnd);
 //				hgl = winglstart(hdc);
 				display_func();
-				wglSwapLayerBuffers(hdc, WGL_SWAP_MAIN_PLANE);
+//				wglSwapLayerBuffers(hdc, WGL_SWAP_MAIN_PLANE);
+				SwapBuffers(hdc);
 //				winglend(hgl);
 				ReleaseDC(hWnd, hdc);
 			}

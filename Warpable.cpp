@@ -1185,20 +1185,22 @@ void Warpable::anim(double dt){
 	st::anim(dt);
 }
 
-bool Warpable::command(unsigned comid, std::set<Entity*> *arg){
-	if(comid == cid_halt){
+bool Warpable::command(unsigned commid, std::set<Entity*> *arg){
+	if(commid == cid_halt){
 		task = sship_idle;
 		inputs.press = 0;
 		return true;
 	}
-	else if(comid == cid_move){
+	else if(commid == cid_move){
 		task = sship_moveto;
 		dest = *(Vec3d*)arg;
 		return true;
 	}
-	else if(comid == cid_attack){
+	else if(commid == cid_attack){
 		if(arg && !arg->empty())
 			enemy = *arg->begin();
+		return true;
 	}
 	return false;
 }
+

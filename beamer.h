@@ -22,7 +22,7 @@ public:
 	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid;
+	static const unsigned classid, entityid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
@@ -31,6 +31,7 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
 	virtual Props props()const;
+	virtual bool undock(Docker*);
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
 	static const Builder::BuildStatic builds;

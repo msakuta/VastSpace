@@ -23,6 +23,7 @@
 #include "material.h"
 #include "Sceptor.h"
 #include "glstack.h"
+#include "Universe.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -640,20 +641,8 @@ void display_func(void){
 				while(ShowCursor(TRUE) <= 0);
 			}
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
-				double speed = .001 / 2. * pl.fov;
-				aquat_t q;
-//				quatirot(q, pl.rot, vec3_010);
-				VECCPY(q, vec3_010);
-				VECSCALEIN(q, (p.x - mouse_pos.x) * speed);
-				q[3] = 0.;
-				quatrotquat(pl.rot, q, pl.rot);
-//				quatirot(q, pl.rot, vec3_100);
-				VECCPY(q, vec3_100);
-				VECSCALEIN(q, (p.y - mouse_pos.y) * speed);
-				q[3] = 0.;
-				quatrotquat(pl.rot, q, pl.rot);
+				pl.rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
 				SetCursorPos(mouse_pos.x, mouse_pos.y);
-//				mouse_pos = p;
 			}
 		}
 
@@ -848,9 +837,17 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
 		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
 		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
-			if(attacking){
+/*			if(pointselect){
+				Vec3d ray(x, y, -1);
+				double hit;
+				if(!pt->tracehit(plpos, ray, 0., g_far, &hit, NULL, NULL)){
+					continue;
+				}
+			}*/
+			bool attackingCheck = !attacking || (forceattack || pt->race != pl.selected->race);
+			if(pointselect || attacking){
 				double size = pt->hitradius() + sp;
-				if((forceattack || pt->race != pl.selected->race) && 0 <= size && size < best){
+				if(attackingCheck || 0 <= size && size < best){
 					best = size;
 					ptbest = pt;
 				}
@@ -873,13 +870,6 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 				glEnd();
 				glPopMatrix();
 			}
-			else if(pointselect){
-				double size = pt->hitradius() + sp;
-				if(0 <= size && size < best){
-					best = size;
-					ptbest = pt;
-				}
-			}
 			else{
 				pt->selectnext = pl.selected;
 				pl.selected = pt;
@@ -892,6 +882,12 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 			ents.insert(ptbest);
 			for(Entity *e = pl.selected; e; e = e->selectnext)
 				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);
+		}
+		else if(preview){
+			if(ptbest){
+				pl.chase = ptbest;
+				pl.chases.insert(ptbest);
+			}
 		}
 		else if(pointselect){
 			pl.selected = ptbest;

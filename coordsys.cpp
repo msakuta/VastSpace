@@ -106,9 +106,9 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	if(adoptee->parent == newparent)
 		return;
 
-	/* obtain relative rotation matrix between old node to new node. */
+	// Obtain relative rotation matrix from old node to new node.
 	if(retain){
-		q = adoptee->tocsq(newparent);
+		q = adoptee->tocsq(newparent); // This seems inverse to me, but it works.
 
 	/* calculate relativity */
 		pos = newparent->tocs(adoptee->pos, adoptee->parent);

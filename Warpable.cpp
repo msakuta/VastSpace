@@ -1125,7 +1125,7 @@ void Warpable::anim(double dt){
 /*			VECNULL(pt->velo);*/
 			p->warpcs->csrad = pt->hitradius() * 10.;
 			p->warpcs->flags = 0;
-			p->warpcs->w = new WarField(p->warpcs);
+			p->warpcs->w = new WarSpace(p->warpcs);
 			p->warpcs->w->pl = w->pl;
 /*			for(i = 0; i < npf; i++) if(pf[i]){
 				ImmobilizeTefpol3D(pf[i]);

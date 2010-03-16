@@ -131,7 +131,7 @@ public:
 	virtual struct tent3d_fpol_list *getTefpol3d();
 	Entity *addent(Entity *);
 	Entity *entlist(){return el;}
-	Player *getPlayer(){return pl;}
+	Player *getPlayer();
 	operator WarField&(){return *this;}
 	virtual operator WarSpace*();
 	virtual operator Docker*();

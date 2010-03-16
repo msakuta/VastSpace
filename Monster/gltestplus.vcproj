@@ -695,6 +695,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Universe.h"
+				>
+			</File>
+			<File
 				RelativePath="..\viewer.h"
 				>
 			</File>

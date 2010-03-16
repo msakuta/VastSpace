@@ -1,5 +1,6 @@
 //#include "atmosphere.h"
 #include "astrodraw.h"
+#include "Universe.h"
 //#include "player.h"
 //#include "judge.h"
 #include "coordsys.h"

@@ -204,19 +204,23 @@ void Entity::transit_cs(CoordSys *cs){
 	this->pos = cs->tocs(this->pos, w->cs);
 	velo = cs->tocsv(velo, pos, w->cs);
 	if(!cs->w){
-		cs->w = new WarField(cs);
+		cs->w = new WarSpace(cs);
 	}
+
+	// Transform position to target CoordSys
+	Quatd q1 = w->cs->tocsq(cs);
+	this->rot = q1 * this->rot;
+
+	Player *pl = w->getPlayer();
+	if(pl && pl->chase == this){
+		Quatd rot = cs->tocsq(pl->cs);
+		pl->rot *= rot;
+		pl->velo = rot.cnj().trans(pl->velo);
+		pl->cs = cs;
+		pl->pos = pos;
+	}
+
 	w = cs->w;
-	{
-		Quatd q, q1;
-		q1 = w->cs->tocsq(cs);
-		q = q1 * this->rot;
-		this->rot = q;
-	}
-	if(w->pl->chase == this){
-		w->pl->pos = cs->tocs(w->pl->pos, w->pl->cs);
-		w->pl->cs = cs;
-	}
 }
 
 unsigned Entity::registerCommand(){

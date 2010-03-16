@@ -1,4 +1,5 @@
 #include "war.h"
+#include "Universe.h"
 #include "entity.h"
 #include "player.h"
 #include "coordsys.h"
@@ -56,7 +57,7 @@ void WarField::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
 void aaanim(double dt, WarField *w, Entity *WarField::*li){
-	Player *pl = w->pl;
+	Player *pl = w->getPlayer();
 	for(Entity *pe = w->*li; pe; pe = pe->next){
 		try{
 			pe->anim(dt);
@@ -67,7 +68,7 @@ void aaanim(double dt, WarField *w, Entity *WarField::*li){
 		catch(...){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): ?\n", __LINE__, pe, pe->idname());
 		}
-		if(pl && !pl->chase && (pe->pos - pl->pos).slen() < .002 * .002)
+		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->pos).slen() < .002 * .002)
 			pl->chase = pe;
 	}
 }
@@ -146,6 +147,14 @@ Entity *WarField::addent(Entity *e){
 	e->w = this;
 	e->next = *plist;
 	return *plist = e;
+}
+
+Player *WarField::getPlayer(){
+	if(pl)
+		return pl;
+	CoordSys *root = this->cs->findcspath("/");
+	if(root && root->toUniverse())
+		return root->toUniverse()->ppl;
 }
 
 

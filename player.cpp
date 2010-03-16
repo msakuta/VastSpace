@@ -1,10 +1,15 @@
 #include "player.h"
+#include "Universe.h"
 #include "entity.h"
 #include "cmd.h"
 #include "coordsys.h"
 #include "astro.h"
 #include "serial_util.h"
 #include "stellar_file.h"
+extern "C"{
+#include <clib/mathdef.h>
+#include <clib/cfloat.h>
+}
 
 static teleport *tplist;
 static int ntplist;
@@ -83,6 +88,33 @@ void Player::unlink(const Entity *pe){
 		ppe = &(*ppe)->selectnext;
 }
 
+void Player::rotateLook(double dx, double dy){
+	const double speed = .001 / 2. * fov;
+	const double one_minus_epsilon = .999;
+
+	// Response to rotational movement depends on mover.
+	if(mover == &Player::freelook){
+		rot = rot.quatrotquat(Vec3d(0, dx * speed, 0));
+		rot = rot.quatrotquat(Vec3d(dy * speed, 0, 0));
+	}
+	else{
+		// Fully calculate pitch, yaw and roll from quaternion.
+		// This calculation is costly, but worth doing everytime mouse moves, for majority of screen is affected.
+		Vec3d view = rot.itrans(vec3_001);
+		double phi = -atan2(view[0], view[2]);
+		double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
+		Quatd rot1 = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+		Quatd rot2 = rot * rot1.cnj();
+		Vec3d right = rot2.itrans(vec3_100);
+
+		// Add in instructed movement here.
+		phi += dx * speed;
+		theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
+		double roll = -atan2(right[1], right[0]);
+		rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+	}
+}
+
 void Player::freelook(const input_t &inputs, double dt){
 	double accel = flypower;
 	int inputstate = inputs.press;
@@ -128,7 +160,15 @@ void Player::tactical(const input_t &inputs, double dt){
 	Vec3d view = rot.itrans(vec3_001);
 	double phi = -atan2(view[0], view[2]);
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
-	rot = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+	double roll;
+	{
+		Quatd rot1 = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+		Quatd rot2 = rot * rot1.cnj();
+		Vec3d right = rot2.itrans(vec3_100);
+		roll = -atan2(right[1], right[0]);
+		roll *= exp(-dt);
+		rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * rot1;
+	}
 	if(!chases.empty()){
 		int n = 0;
 		for(std::set<const Entity*>::iterator it = chases.begin(); it != chases.end(); it++){
@@ -247,8 +287,8 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 		int i;
 		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
 			pl.cs = tplist[i].cs;
-			VECCPY(pl.pos, tplist[i].pos);
-			VECNULL(pl.velo);
+			pl.pos = tplist[i].pos;
+			pl.velo.clear();
 			break;
 		}
 		if(i == ntplist)

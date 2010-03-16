@@ -71,6 +71,7 @@ public:
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void unlink(const Entity *);
+	void rotateLook(double dx, double dy);
 	void freelook(const input_t &, double dt);
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);

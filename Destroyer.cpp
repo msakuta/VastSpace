@@ -111,7 +111,7 @@ void Destroyer::draw(wardraw_t *wd){
 	static suftex_t *pst;
 	static bool init = false;
 
-	draw_healthbar(this, wd, health / maxhealth(), .3, -1, -1);
+	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, hitradius()))
 		return;

@@ -205,11 +205,15 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 		q2[2] = sin(loan / 2.);
 		q2[3] = cos(loan / 2.);
 		q4 = q2 * q1;
-		q3[0] = 0.;
-		q3[1] = 0.;
-		q3[2] = sin(aop / 2.);
-		q3[3] = cos(aop / 2.);
-		orbit_axis = q4 * q3;
+		if(enable & 4){
+			q3[0] = 0.;
+			q3[1] = 0.;
+			q3[2] = sin(aop / 2.);
+			q3[3] = cos(aop / 2.);
+			orbit_axis = q4 * q3;
+		}
+		else
+			orbit_axis = q4;
 	}
 	return true;
 }

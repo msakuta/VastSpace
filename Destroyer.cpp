@@ -15,8 +15,8 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 struct hardpoint_static *Destroyer::hardpoints = NULL;
 int Destroyer::nhardpoints = 0;
 struct hitbox Destroyer::hitboxes[] = {
-	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
-	hitbox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
+	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.050, .032, .190)),
+	hitbox(Vec3d(0., 0., .165), Quatd(0,0,0,1), Vec3d(.050, .045, .035)),
 	hitbox(Vec3d(.0, -.06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
 	hitbox(Vec3d(.0, .06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
 };
@@ -57,7 +57,7 @@ void Destroyer::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-double Destroyer::hitradius()const{return .25;}
+double Destroyer::hitradius()const{return .27;}
 
 void Destroyer::anim(double dt){
 	st::anim(dt);

@@ -89,6 +89,14 @@ void Frigate::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 void Frigate::anim(double dt){
 	st::anim(dt);
 
+	// If docked
+	if(Docker *docker = *w){
+		health = min(health + dt * 300., maxhealth()); // it takes several seconds to be fully repaired
+		if(health == maxhealth() && !docker->remainDocked)
+			docker->postUndock(this);
+		return;
+	}
+
 	/* shield regeneration */
 	if(0 < health){
 		const double shieldPerEnergy = .5;
@@ -325,6 +333,8 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 
 
 int Frigate::takedamage(double damage, int hitpart){
+	if(!w)
+		return 1;
 	Frigate *p = this;
 	struct tent3d_line_list *tell = w->getTeline3d();
 	int ret = 1;
@@ -376,16 +386,16 @@ int Frigate::takedamage(double damage, int hitpart){
 #endif
 
 			if(ws->gibs) for(i = 0; i < 32; i++){
-				double pos[3], velo[3], omg[3];
+				double pos[3], velo[3] = {0}, omg[3];
 				/* gaussian spread is desired */
-				velo[0] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				velo[1] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				velo[2] = .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				for(int j = 0; j < 6; j++)
+					velo[j / 2] += .0125 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
-				VECSADD(pos, velo, .1);
+				for(int j = 0; j < 3; j++)
+					pos[j] += hitradius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
@@ -491,6 +501,13 @@ bool Frigate::command(unsigned commid, std::set<Entity*> *arg){
 		findMother();
 		task = sship_parade;
 		enemy = NULL; // Temporarily forget about enemy
+		return true;
+	}
+	else if((commid == cid_attack || commid == cid_forceattack)){
+		if(arg && !arg->empty()){
+			enemy = *arg->begin();
+			task = sship_attack;
+		}
 		return true;
 	}
 	else return st::command(commid, arg);

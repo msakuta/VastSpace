@@ -162,20 +162,14 @@ extern struct player *ppl;
 
 
 void Beamer::anim(double dt){
-	if(!w->operator WarSpace *())
+	if(!w->operator WarSpace *()){
+		st::anim(dt);
 		return;
-
-	if(!w)
-		return;
+	}
 
 	/* forget about beaten enemy */
 	if(enemy && (enemy->health <= 0. || enemy->w != w))
 		enemy = NULL;
-
-/*	if(p->dock && !p->undocktime){
-		beamer_undock(p, p->dock);
-		return;
-	}*/
 
 	Mat4d mat;
 	transform(mat);
@@ -183,17 +177,6 @@ void Beamer::anim(double dt){
 	if(0 < health){
 		Entity *collideignore = NULL;
 		int i, n;
-/*		if(p->dock && p->undocktime){
-			pt->inputs.press = PL_W;
-
-			if(p->undocktime <= dt){
-				p->undocktime = 0.;
-				p->dock = NULL;
-			}
-			else
-				p->undocktime -= dt;
-		}
-		else */
 		if(task == sship_undock){
 			if(!mother || !mother->e)
 				task = sship_idle;
@@ -242,7 +225,7 @@ void Beamer::anim(double dt){
 			double dist;
 			Vec3d opos;
 			inputs.press = 0;
-			if(!enemy){ /* find target */
+			if((task == sship_idle || task == sship_attack) && !enemy){ /* find target */
 				double best = 20. * 20.;
 				Entity *t;
 				for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != race && 0. < t->health){
@@ -250,15 +233,14 @@ void Beamer::anim(double dt){
 					if(sdist < best){
 						enemy = t;
 						best = sdist;
+						task = sship_attack;
 					}
 				}
 			}
+			if(task == sship_attack && !enemy)
+				task = sship_idle;
 
-/*			if(p->dock && p->undocktime == 0){
-				if(pt->enemy)
-					beamer_undock(p, p->dock);
-			}
-			else*/{
+			if(task == sship_attack){
 				if(this->enemy){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
@@ -400,7 +382,7 @@ void Beamer::anim(double dt){
 			Vec3d pos;
 			Quatd qrot;
 			beamlen = best;
-			hit->takedamage(500. * dt, besthitpart);
+			hit->takedamage(1000. * dt, besthitpart);
 			pos = mat.vec3(2) * -best + this->pos;
 			qrot = Quatd::direction(mat.vec3(2));
 			if(drseq(&w->rs) * .1 < dt){
@@ -415,9 +397,7 @@ void Beamer::anim(double dt){
 		else
 			beamlen = 10.;
 	}
-#if 1
 	st::anim(dt);
-#endif
 #if 0
 	if(p->pf){
 		int i;

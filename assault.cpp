@@ -78,8 +78,10 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
-	if(!w->operator WarSpace *())
+	if(!w->operator WarSpace *()){
+		st::anim(dt);
 		return;
+	}
 
 	if(health <= 0){
 		w = NULL;
@@ -303,7 +305,7 @@ bool Assault::undock(Docker *d){
 }
 
 bool Assault::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == cid_attack){
+	if(commid == cid_attack || commid == cid_forceattack){
 		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 			turrets[i]->command(commid, ents);
 		return st::command(commid, ents); 

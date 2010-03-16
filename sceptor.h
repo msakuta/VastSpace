@@ -81,7 +81,6 @@ public:
 	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
-	virtual void dockCommand(Docker*);
 	virtual bool command(unsigned commid, std::set<Entity*> *);
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];

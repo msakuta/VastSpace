@@ -1195,10 +1195,6 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 }
 #endif
 
-void Sceptor::dockCommand(Docker *){
-	task = Dockque;
-}
-
 double Sceptor::maxfuel()const{
 	return 120.;
 }

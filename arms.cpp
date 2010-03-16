@@ -317,12 +317,17 @@ static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
 	MTurret *pt = this;
 	WarField *w = pb->w;
-	double best = bulletspeed() * bulletlife() * bulletspeed() * bulletlife(); /* sense range */
+	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
+	double best = bulletrange * bulletrange;
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
 
 	// Obtain reverse transformation matrix to the turret's local coordinate system.
 	Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+
+	// Quit chasing target that is out of shooting range.
+	if(target && best < (target->pos - pos).slen())
+		target = NULL;
 
 	for(pt2 = w->el; pt2; pt2 = pt2->next){
 		Vec3d delta, ldelta;
@@ -350,8 +355,12 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 		if(!(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]))
 			continue;
 
+		double sdist = (pt2->pos - pb->pos).slen();
+		if(bulletrange * bulletrange < sdist)
+			continue;
+
 		// Weigh already targetted enemy to keep shooting single enemy.
-		double sdist = (pt2->pos - pb->pos).slen() * (pt2 == enemy ? .25 * .25 : 1.) / f;
+		sdist *= (pt2 == enemy ? .25 * .25 : 1.) / f;
 		if(sdist < best){
 			best = sdist;
 			closest = pt2;
@@ -359,8 +368,6 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 	}
 	if(closest)
 		target = closest;
-	if(target && 10. * 10. < (target->pos - pos).slen())
-		target = NULL;
 }
 
 double MTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
@@ -436,8 +443,8 @@ void MTurret::anim(double dt){
 		}
 	}
 	else if(target) do{/* estimating enemy position */
-
-		bool notReachable = bulletspeed() * bulletlife() * bulletspeed() * bulletlife() < (target->pos - this->pos).slen();
+		double bulletRange = bulletspeed() * bulletlife();
+		bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
 
 		// If not forced to attack certain target, forget about target that bullets have no way to reach.
 		if(notReachable && !forceEnemy){

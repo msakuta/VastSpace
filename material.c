@@ -259,9 +259,8 @@ GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pst
 }
 
 suf_t *CallLoadSUF(const char *fname){
-	suf_t *ret;
-	ret = ZipUnZip("rc.zip", fname, NULL);
-	if(!ret){
+	suf_t *ret = NULL;
+	do{
 		char *p;
 		p = strrchr(fname, '.');
 		if(p && !strcmp(p, ".bin")){
@@ -269,7 +268,7 @@ suf_t *CallLoadSUF(const char *fname){
 			long size;
 			fp = fopen(fname, "rb");
 			if(!fp)
-				return NULL;
+				break;
 			fseek(fp, 0, SEEK_END);
 			size = ftell(fp);
 			fseek(fp, 0, SEEK_SET);
@@ -279,6 +278,9 @@ suf_t *CallLoadSUF(const char *fname){
 		}
 		else
 			ret = LoadSUF(fname);
+	} while(0);
+	if(!ret){
+		ret = ZipUnZip("rc.zip", fname, NULL);
 	}
 	if(!ret)
 		return NULL;

@@ -1013,6 +1013,11 @@ void Warpable::unserialize(UnserializeContext &sc){
 }
 
 void Warpable::anim(double dt){
+	WarSpace *ws = *w;
+	if(!ws){
+		st::anim(dt);
+		return;
+	}
 	Mat4d mat;
 	transform(mat);
 	Warpable *const p = this;

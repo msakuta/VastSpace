@@ -26,6 +26,7 @@ enum sship_task{
 	sship_gather, /* Gather resources. */
 	sship_harvest, /* Harvest resources. */
 	sship_harvestreturn, /* Harvest resources. */
+	sship_warp, // Warping
 	num_sship_task
 };
 

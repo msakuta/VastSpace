@@ -442,15 +442,17 @@ Astrobj *CoordSys::findastrobj(const char *name){
 	if(!name)
 		return NULL;
 	CoordSys *cs;
-	for(cs = children; cs; cs = cs->next){
+/*	for(cs = children; cs; cs = cs->next){
 		Astrobj *ret = cs->toAstrobj();
 		if(ret && !strcmp(ret->name, name))
 			return ret;
-	}
-/*	for(i = nastrobjs-1; 0 <= i; i--) if(!strcmp(astrobjs[i]->name, name)){
-		return astrobjs[i];
 	}*/
-	return NULL;
+	if(!strchr(name, '/')){
+		cs = findcs(name);
+	}
+	else
+		cs = findcspath(name);
+	return cs ? cs->toAstrobj() : NULL;
 }
 
 

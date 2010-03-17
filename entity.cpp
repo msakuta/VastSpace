@@ -213,11 +213,7 @@ void Entity::transit_cs(CoordSys *cs){
 
 	Player *pl = w->getPlayer();
 	if(pl && pl->chase == this){
-		Quatd rot = cs->tocsq(pl->cs);
-		pl->rot *= rot;
-		pl->velo = rot.cnj().trans(pl->velo);
-		pl->cs = cs;
-		pl->pos = pos;
+		pl->transit_cs(cs);
 	}
 
 	w = cs->w;

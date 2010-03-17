@@ -615,6 +615,7 @@ int cmd_warp(int argc, char *argv[], void *pv){
 				double f;
 				int i;
 				p->warping = 1;
+				p->task = sship_warp;
 				p->capacitor -= cost;
 	/*			f = VECLEN(delta);
 				f = (f - pa->rad * 1.1) / f;
@@ -950,6 +951,7 @@ void Warpable::warp_collapse(){
 	Warpable *p = this;
 	Entity *pt2;
 	Vec3d dstcspos; /* current position measured in destination coordinate system */
+	task = sship_idle;
 /*	tocs(dstcspos, p->warpdstcs, pt->pos, w->cs);
 	VECCPY(pt->pos, dstcspos);
 	tocsv(dstcspos, p->warpdstcs, pt->velo, pt->pos, w->cs);

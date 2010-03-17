@@ -85,6 +85,7 @@ const unsigned Lagrange1CS::classid = registerClass("Lagrange1CS", Conster<Lagra
 
 
 void Lagrange1CS::anim(double dt){
+	st::anim(dt);
 	static int init = 0;
 	double f, alpha;
 	Vec3d delta, oldpos, pos1, pos2;
@@ -110,12 +111,12 @@ bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	if(0);
 	else if(!strcmp(s, "object1")){
 		if(1 < argc){
-			objs[0] = findastrobj(argv[1]);
+			objs[0] = parent->findastrobj(argv[1]);
 		}
 	}
 	else if(!strcmp(s, "object2")){
 		if(1 < argc){
-			objs[1] = findastrobj(argv[1]);
+			objs[1] = parent->findastrobj(argv[1]);
 		}
 	}
 	else
@@ -128,6 +129,7 @@ const char *Lagrange2CS::classname()const{return "Lagrange2CS";}
 const unsigned Lagrange2CS::classid = registerClass("Lagrange2CS", Conster<Lagrange2CS>);
 
 void Lagrange2CS::anim(double dt){
+	st::anim(dt);
 	static int init = 0;
 	double f, alpha;
 	Vec3d delta, oldpos, pos1, pos2;

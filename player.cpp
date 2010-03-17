@@ -71,6 +71,19 @@ void Player::anim(double dt){
 	aviewdist += (viewdist - aviewdist) * (1. - exp(-10. * dt));
 }
 
+void Player::transit_cs(CoordSys *cs){
+	// If chasing in free-look mode, rotation is converted by the Entity being chased,
+	// so we do not need to convert here.
+	if(!chase || mover == &Player::tactical){
+		Quatd rot = cs->tocsq(this->cs);
+		this->rot *= rot;
+		this->velo = rot.cnj().trans(this->velo);
+	}
+	if(!chase)
+		this->pos = cs->tocs(this->pos, this->cs);
+	this->cs = cs;
+}
+
 void Player::unlink(const Entity *pe){
 	chases.erase(pe);
 	if(chase == pe)

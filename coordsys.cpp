@@ -575,9 +575,14 @@ void CoordSys::endframe(){
 	// delete offsprings first to avoid adoption of children as possible.
 	if(flags & CS_DELETE){
 		// unlink from parent's children list
-		if(parent) for(CoordSys **ppcs = &parent->children; *ppcs; ppcs = &(*ppcs)->next) if(*ppcs == this){
-			*ppcs = next;
-			break;
+		if(parent){
+			bool ok = false;
+			for(CoordSys **ppcs = &parent->children; *ppcs; ppcs = &(*ppcs)->next) if(*ppcs == this){
+				*ppcs = next;
+				ok = true;
+				break;
+			}
+			assert(ok);
 		}
 
 		// give children to parent.
@@ -661,14 +666,15 @@ CoordSys::~CoordSys(){
 		delete[] name;
 	if(fullname)
 		delete[] fullname;
-	delete children;
-	delete next;
+//	delete children;
+	// Do not delete siblings, they may be alive after this death.
+//	delete next;
 	cs_destructs++;
-/*	for(CoordSys *cs = children; cs;){
+	for(CoordSys *cs = children; cs;){
 		CoordSys *csnext = cs->next;
 		delete cs;
 		cs = csnext;
-	}*/
+	}
 }
 
 

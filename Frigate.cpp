@@ -493,7 +493,7 @@ int Frigate::popupMenu(PopupMenu &list){
 }
 
 bool Frigate::solid(const Entity *o)const{
-	return !(task == sship_undock);
+	return !(task == sship_undock || task == sship_warp);
 }
 
 bool Frigate::command(unsigned commid, std::set<Entity*> *arg){

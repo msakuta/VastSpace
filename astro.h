@@ -36,6 +36,7 @@ public:
 	double orbit_phase;
 	double eccentricity; /* orbital element */
 	int flags2;
+	static double astro_timescale;
 public:
 	typedef CoordSys st;
 	OrbitCS(){}
@@ -60,6 +61,8 @@ class Astrobj : public OrbitCS{
 public:
 	typedef OrbitCS st;
 
+//	Quatd bodyrot; // Object's rotation (distinguished from rotation of underlying coordinate system)
+//	Vec3d bodyomg; // Object's spin
 	double rad;
 	double mass;
 	float absmag; /* Absolute Magnitude */

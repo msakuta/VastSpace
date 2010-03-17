@@ -631,7 +631,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		bool ret = drawTextureSphere(this, vw, sunpos,
 			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.tomat4(), texname);
+			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname);
 		if(!ret && texname){
 			delete[] texname;
 			texname = NULL;

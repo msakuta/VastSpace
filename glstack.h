@@ -57,4 +57,11 @@ public:
 	~GLma(){}
 };
 
+// Modelview and projection
+class GLpmmatrix : public GLmatrix, public GLpmatrix{
+public:
+	GLpmmatrix(){}
+	~GLpmmatrix(){}
+};
+
 #endif

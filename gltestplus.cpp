@@ -1530,6 +1530,7 @@ int main(int argc, char *argv[])
 	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
 	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
+	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

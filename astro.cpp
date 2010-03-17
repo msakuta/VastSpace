@@ -15,6 +15,9 @@ extern "C"{
 #include <fstream>
 
 
+double OrbitCS::astro_timescale = 1.;
+
+
 const char *OrbitCS::classname()const{
 	return "OrbitCS";
 }
@@ -53,9 +56,9 @@ void OrbitCS::unserialize(UnserializeContext &sc){
 }
 
 void OrbitCS::anim(double dt){
+	double scale = astro_timescale/*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
 	if(orbit_home){
 		int timescale = 0;
-		double scale = timescale ? 5000. * pow(10., timescale-1) : 1.;
 		double dist;
 		double omega;
 		Vec3d orbpos, oldpos;
@@ -97,6 +100,7 @@ void OrbitCS::anim(double dt){
 		velo = pos - oldpos;
 		velo *= 1. / dt;
 	}
+	qrot = qrot.quatrotquat(omg * dt * astro_timescale);
 	st::anim(dt);
 }
 

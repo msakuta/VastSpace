@@ -43,7 +43,6 @@ public:
 	int trigger, detail, minimap;
 	int mousex, mousey;
 	int floortouch;
-	int gear; /* acceleration gear in ghost mode */
 	int race;
 	double fov;
 	double gametime;
@@ -73,6 +72,7 @@ public:
 	void transit_cs(CoordSys *cs); // Explicitly change current CoordSys, keeping position, velocity and rotation.
 	void unlink(const Entity *);
 	void rotateLook(double dx, double dy);
+	void setGear(int g); int getGear()const{return gear;}
 	void freelook(const input_t &, double dt);
 	void cockpitview(const input_t &, double dt);
 	void tactical(const input_t &, double dt);
@@ -94,6 +94,9 @@ public:
 	static teleport_iterator beginTeleport();
 	static teleport *getTeleport(teleport_iterator);
 	static teleport_iterator endTeleport();
+
+private:
+	int gear; /* acceleration gear in ghost mode */
 };
 
 

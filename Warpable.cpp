@@ -951,7 +951,6 @@ void Warpable::warp_collapse(){
 	Warpable *p = this;
 	Entity *pt2;
 	Vec3d dstcspos; /* current position measured in destination coordinate system */
-	task = sship_idle;
 /*	tocs(dstcspos, p->warpdstcs, pt->pos, w->cs);
 	VECCPY(pt->pos, dstcspos);
 	tocsv(dstcspos, p->warpdstcs, pt->velo, pt->pos, w->cs);
@@ -1059,6 +1058,7 @@ void Warpable::anim(double dt){
 		if((warpdst - dstcspos).slen() < 1. * 1.){
 			warp_collapse();
 			p->warping = 0;
+			task = sship_idle;
 			pt->velo.clear();
 			if(w->pl->chase == pt){
 				w->pl->velo = w->pl->cs->tocsv(pt->velo, pt->pos, w->cs);
@@ -1082,39 +1082,21 @@ void Warpable::anim(double dt){
 			VECSCALEIN(*pvelo, 1. / dt);
 #endif
 			if(p->warpcs){
-#if 1
 				p->warpcs->adopt_child(p->warpdstcs);
-#else
-				avec3_t pos, velo;
-				int i;
-				for(i = 0; i < numof(p->warpcs->children); i++) if(p->warpcs->parent->children[i] == p->warpcs)
-					break;
-				assert(i != numof(p->warpcs->children));
-				tocs(pos, p->warpdstcs, p->warpcs->pos, p->warpcs->parent);
-				tocsv(velo, p->warpdstcs, p->warpcs->velo, p->warpcs->pos, p->warpcs->parent);
-/*				p->warpcs->parent->children[i] = NULL;*/
-				memmove(&p->warpcs->parent->children[i], &p->warpcs->parent->children[i+1], (numof(p->warpcs->parent->children) - i - 1) * sizeof p->warpcs);
-				p->warpcs->parent->nchildren--;
-				VECCPY(p->warpcs->pos, pos);
-				VECCPY(p->warpcs->velo, velo);
-				p->warpcs->parent = p->warpdstcs;
-				legitimize_child(p->warpcs);
-#endif
 			}
 		}
 		else if(.9 < sp){
-			avec3_t delta, dstvelo;
 			double dstspd, u, len;
 			const double L = LIGHT_SPEED;
-			VECSUB(delta, warpdst, pt->pos);
-			len = VECLEN(delta);
+			Vec3d delta = warpdst - pt->pos;
+			len = delta.len();
 			u = (velo + .5) * 1e1 /** 5e-1 * (len - p->sight->rad)*/;
 	/*		u = L - L * L / (u + L);*/
 	/*		dstspd = (u + v) / (1 + u * v / LIGHT_SPEED / LIGHT_SPEED);*/
-			VECNORMIN(delta);
-			VECSCALE(dstvelo, delta, u);
-			VECSUBIN(dstvelo, *pvelo);
-			VECSADD(*pvelo, dstvelo, .2 * dt);
+			delta.normin();
+			Vec3d dstvelo = delta * u;
+			dstvelo -= *pvelo;
+			*pvelo += dstvelo * (.2 * dt);
 	/*		VECSUB(delta, dstvelo, p->velo);
 			VECCPY(p->velo, dstvelo);*/
 	/*		VECSADD(p->velo, delta, dt * 1e-8 * (1e0 + VECLEN(p->velo)));*/

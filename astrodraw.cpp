@@ -3075,22 +3075,21 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 	glPopMatrix();
 
 /*	printf("stars[%d]: %lg\n", drawnstars, TimeMeasLap(&tm));*/
-#if 0
-	if(!vw->relative/*(pl.mover == warp_move || pl.mover == player_tour || pl.chase && pl.chase->vft->is_warping && pl.chase->vft->is_warping(pl.chase, pl.cs->w))*/ && LIGHT_SPEED * LIGHT_SPEED < VECSLEN(velo)){
+#if 1
+	if(!vw->relative/*(pl.mover == warp_move || pl.mover == player_tour || pl.chase && pl.chase->vft->is_warping && pl.chase->vft->is_warping(pl.chase, pl.cs->w))*/ && LIGHT_SPEED * LIGHT_SPEED < velo.slen()){
 		int i, count = 1250;
 		struct random_sequence rs;
 		static double raintime = 0.;
 /*		timemeas_t tm;*/
 		double cellsize = 1e7;
 		double speedfactor;
-		const double width = .00002 * 1000. / gvp.m; /* line width changes by the viewport size */
+		const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
 		double epos[3];
 		double basebright;
 		const double levelfactor = 1.5e3;
 		int level = 0;
-		Vec3d nh0 = {0., 0., -1.}, nh, plpos, localvelo;
-		amat3_t ort3, iort3;
-		amat4_t irot, rot;
+		const Vec3d nh0(0., 0., -1.);
+		Mat4d irot, rot;
 		GLubyte col[4] = {255, 255, 255, 255};
 		static GLuint texname = 0;
 		static const GLfloat envcolor[4] = {0,0,0,0};
@@ -3098,22 +3097,17 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		init_rseq(&rs, 2413531);
 /*		count = raintime / dt < .1 ? 500 * (1. - raintime / dt / .1) * (1. - raintime / dt / .1) : 100;*/
 /*		TimeMeasStart(&tm);*/
-		tocsm(rot, csys, vw->cs);
-		{
-			Vec3d gpos;
-			gpos = csys->tocs(vw->pos, vw->cs);
-//			mat4dvp3(plpos, rot, gpos);
-			plpos = gpos;
-		}
+		rot = csys->tocsm(vw->cs);
+		Vec3d plpos = csys->tocs(vw->pos, vw->cs);
 #if 0
 		tocsv(velo, csys, /*pl.chase ? pl.chase->velo :*/ vw->velo, vw->pos, vw->cs);
 #elif 1
-		VECCPY(localvelo, velo);
+		Vec3d localvelo = velo;
 #else
 		mat4dvp3(localvelo, rot, velo);
 #endif
-		velolen = VECLEN(localvelo);
-		mat4dvp3(nh, vw->irot, nh0);
+		velolen = localvelo.len();
+		Vec3d nh = vw->irot.dvp3(nh0);
 		glPushMatrix();
 		glLoadMatrixd(vw->rot);
 		glMultMatrixd(rot);
@@ -3157,10 +3151,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		speedfactor = velolen / LIGHT_SPEED / (level == 0 ? 1. : level == 1 ? levelfactor : levelfactor * levelfactor);
 		basebright = .5 / (.998 + .002 * speedfactor) * (1. - 2. / (speedfactor + 1.));
 
-		VECSCALEIN(localvelo, .025 * (velolen + cellsize / 100. / .025) / velolen);
+		localvelo *= .025 * (velolen + cellsize / 100. / .025) / velolen;
 
 		for(i = count; i; i--){
-			double pos[3], dst[3];
+			Vec3d pos, dst;
 			int red, bright;
 			pos[0] = plpos[0] + (drseq(&rs) - .5) * 2 * cellsize;
 			pos[0] = floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0];
@@ -3175,10 +3169,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 			pos[2] = pl.pos[2] + (drseq(&rs) - .5) * 2 * cellsize;
 			pos[2] = pl.pos[2] + floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2];*/
 			red = rseq(&rs) % 256;
-			VECCPY(dst, pos);
-			VECSADD(dst, localvelo, 1);
-			VECSADD(pos, localvelo, -1);
-			bright = (255 - VECLEN(pos) * 255 / (cellsize / 2.)) * basebright;
+			dst = pos;
+			dst += localvelo;
+			pos -= localvelo;
+			bright = (255 - pos.len() * 255 / (cellsize / 2.)) * basebright;
 			if(0 < bright){
 				glColor4ub(level == 0 ? red : 255, level == 1 ? red : 255, level == 2 ? red : 255, bright);
 				gldTextureBeam(avec3_000, pos, dst, cellsize / 100. / (1. + speedfactor / levelfactor));

@@ -430,6 +430,12 @@ void Sceptor::anim(double dt){
 		return;
 	}
 
+	// Do not follow remote mothership. Probably you'd better finding another mothership.
+	if(mother != w && pm && pm->w != w){
+		mother = NULL;
+		pm = NULL;
+	}
+
 /*	if(!mother){
 		if(p->pf){
 			ImmobilizeTefpol3D(p->pf);

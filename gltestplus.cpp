@@ -117,7 +117,7 @@ static void draw_gear(double dt){
 	int i;
 	static double gearphase = 0;
 
-	desired = pl.gear * 360 / 8;
+	desired = pl.getGear() * 360 / 8;
 	if(gearphase == desired && !((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G))
 		return;
 	if(gearphase != desired)
@@ -1222,9 +1222,8 @@ static void key_func(unsigned char key, int x, int y){
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
-				pl.gear = key - '1';
+				pl.setGear(key - '1');
 				MotionSetToggle(PL_G, 0);
-				flypower = .05 * pow(16, double(key - '2'));
 
 /*				if(warp_move == pl.mover && key != '9'){
 					flypower = .05 * pow(16, key - '2');

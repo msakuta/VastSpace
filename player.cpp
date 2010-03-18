@@ -128,8 +128,13 @@ void Player::rotateLook(double dx, double dy){
 	}
 }
 
+void Player::setGear(int g){
+	gear = g;
+	flypower = .05 * pow(16, double(g));
+}
+
 void Player::freelook(const input_t &inputs, double dt){
-	double accel = flypower;
+	double accel = flypower * (1. + (8 <= gear ? velolen / flypower : 0));
 	int inputstate = inputs.press;
 	if(inputstate & PL_W)
 		velo -= rot.itrans(vec3_001) * dt * accel;
@@ -156,7 +161,7 @@ void Player::freelook(const input_t &inputs, double dt){
 	}
 	else{
 		velolen = velo.len();
-		pos += velo * (1. + velolen) * dt;
+		pos += velo /** (1. + velolen)*/ * dt;
 		Vec3d pos;
 		const CoordSys *cs = this->cs->belongcs(pos, this->pos);
 		if(cs != this->cs){

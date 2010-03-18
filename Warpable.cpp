@@ -10,6 +10,7 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
+#include "glstack.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -803,19 +804,17 @@ unsigned Warpable::analog_mask(){
 	return 0;
 }
 
-#if 0
-static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const double irot[16], void (*gdraw)(void)){
-	warpable_t *p = (warpable_t*)pt;
+void Warpable::drawHUD(wardraw_t *wd){
+	Warpable *p = this;
 /*	base_drawHUD_target(pt, wf, wd, gdraw);*/
-	base_drawHUD(pt, wf, wd, irot, gdraw);
+	st::drawHUD(wd);
 	glPushMatrix();
 	glPushAttrib(GL_CURRENT_BIT);
-	if(p->warping){
-		avec3_t warpdstpos, eyedelta;
-		tocs(warpdstpos, wf->cs, p->warpdst, p->warpdstcs);
-		VECSUB(eyedelta, warpdstpos, wd->view);
-		VECNORMIN(eyedelta);
-		glLoadMatrixd(wd->rot);
+	if(warping){
+		Vec3d warpdstpos = w->cs->tocs(warpdst, warpdstcs);
+		Vec3d eyedelta = warpdstpos - wd->vw->pos;
+		eyedelta.normin();
+		glLoadMatrixd(wd->vw->rot);
 		glRasterPos3dv(eyedelta);
 		gldprintf("warpdst");
 	}
@@ -823,64 +822,49 @@ static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const doub
 
 	{
 		GLint vp[4];
-		int w, h, m, mi, i;
 		double left, bottom, velo;
-		amat3_t ort;
+		GLmatrix glm;
 
-		glGetIntegerv(GL_VIEWPORT, vp);
-		w = vp[2], h = vp[3];
-		m = w < h ? h : w;
-		mi = w < h ? w : h;
-		left = -(double)w / m;
-		bottom = -(double)h / m;
+		{
+			int w, h, m, mi;
+			glGetIntegerv(GL_VIEWPORT, vp);
+			w = vp[2], h = vp[3];
+			m = w < h ? h : w;
+			mi = w < h ? w : h;
+			left = -(double)w / m;
+			bottom = -(double)h / m;
 
-		velo = p->warping && p->warpcs ? VECLEN(p->warpcs->velo) : VECLEN(pt->velo);
-		wf->vft->orientation(wf, &ort, pt->pos);
-		glRasterPos3d(left + 20. / m, -bottom - 100. / m, -1);
-		gldprintf("%lg km/s", velo);
-		glRasterPos3d(left + 20. / m, -bottom - 120. / m, -1);
-		gldprintf("%lg kt", 1944. * velo);
-
-/*		if(p->menu){
-			glRasterPos3d(left + 00. / m, bottom + 140. / m, -1);
-			gldprintf("Q Sun");
-			glRasterPos3d(left + 00. / m, bottom + 120. / m, -1);
-			gldprintf("Z Saturn");
-			glRasterPos3d(left + 00. / m, bottom + 100. / m, -1);
-			gldprintf("A Earth");
-			glRasterPos3d(left + 00. / m, bottom + 80. / m, -1);
-			gldprintf("S Island 3");
-			glRasterPos3d(left + 00. / m, bottom + 60. / m, -1);
-			gldprintf("D Moon");
-			glRasterPos3d(left + 00. / m, bottom + 40. / m, -1);
-			gldprintf("W Jupiter");
-		}*/
+			velo = warping && warpcs ? warpcs->velo.len() : this->velo.len();
+	//		w->orientation(wf, &ort, pt->pos);
+			glRasterPos3d(left + 200. / m, -bottom - 100. / m, -1);
+			gldprintf("%lg km/s", velo);
+			glRasterPos3d(left + 200. / m, -bottom - 120. / m, -1);
+			gldprintf("%lg kt", 1944. * velo);
+			glScaled((double)mi / m, (double)mi / m, 1);
+		}
 
 		if(p->warping){
-			double desiredvelo, velo, f, dist;
 			double (*cuts)[2];
 			char buf[128];
-			avec3_t *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
-			avec3_t dstcspos, warpdst, delta; /* current position measured in destination coordinate system */
-			int iphase;
-			tocs(dstcspos, p->warpdstcs, pt->pos, wf->cs);
-			tocs(warpdst, wf->cs, p->warpdst, p->warpdstcs);
+			Vec3d *pvelo = warpcs ? &warpcs->velo : &this->velo;
+			Vec3d dstcspos = warpdstcs->tocs(this->pos, w->cs);/* current position measured in destination coordinate system */
+			Vec3d warpdst = w->cs->tocs(p->warpdst, p->warpdstcs);
 
-			velo = VECLEN(*pvelo);
-			VECSUB(delta, p->warpdst, dstcspos);
-			dist = VECLEN(delta);
+			double velo = (*pvelo).len();
+			Vec3d delta = p->warpdst - dstcspos;
+			double dist = delta.len();
 			p->totalWarpDist = p->currentWarpDist + dist;
 			cuts = CircleCuts(32);
-			glTranslated(0, -.5, -1);
+			glTranslated(0, -.65, -1);
 			glScaled(.25, .25, 1.);
 
-			f = log10(velo / p->warpSpeed);
-			iphase = -8 < f ? 8 + f : 0;
+			double f = log10(velo / p->warpSpeed);
+			int iphase = -8 < f ? 8 + f : 0;
 
 			/* speed meter */
 			glColor4ub(127,127,127,255);
 			glBegin(GL_QUAD_STRIP);
-			for(i = 4; i <= 4 + iphase; i++){
+			for(int i = 4; i <= 4 + iphase; i++){
 				glVertex2d(-cuts[i][1], cuts[i][0]);
 				glVertex2d(-.5 * cuts[i][1], .5 * cuts[i][0]);
 			}
@@ -888,10 +872,17 @@ static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const doub
 
 			glColor4ub(255,255,255,255);
 			glBegin(GL_LINE_LOOP);
-			for(i = 4; i <= 12; i++){
+			for(int i = 4; i <= 12; i++){
 				glVertex2d(cuts[i][1], cuts[i][0]);
 			}
-			for(i = 12; 4 <= i; i--){
+			for(int i = 12; 4 <= i; i--){
+				glVertex2d(.5 * cuts[i][1], .5 * cuts[i][0]);
+			}
+			glEnd();
+
+			glBegin(GL_LINES);
+			for(int i = 4; i <= 12; i++){
+				glVertex2d(cuts[i][1], cuts[i][0]);
 				glVertex2d(.5 * cuts[i][1], .5 * cuts[i][0]);
 			}
 			glEnd();
@@ -913,9 +904,8 @@ static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const doub
 			glVertex2d(-1., -.7);
 			glEnd();
 
-			sprintf(buf, "%lg%%", p->currentWarpDist / p->totalWarpDist * 100.);
-			glRasterPos2d(- 0. / w, -.4 + 16. * 4 / h);
-			gldPutString(buf);
+			glRasterPos2d(- 0. / wd->vw->vp.w, -.4 + 16. * 4 / wd->vw->vp.h);
+			gldPutString(cpplib::dstring(p->currentWarpDist / p->totalWarpDist * 100.) << '%');
 			if(velo != 0){
 				double eta = (p->totalWarpDist - p->currentWarpDist) / p->warpSpeed;
 				eta = fabs(eta);
@@ -925,7 +915,7 @@ static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const doub
 					sprintf(buf, "ETA: %02d:%02d:%02lg", (int)(eta / 3600), (int)(fmod(eta, 3600) / 60), fmod(eta, 60));
 				else
 					sprintf(buf, "ETA: %lg sec", eta);
-				glRasterPos2d(- 8. / w, -.4);
+				glRasterPos2d(- 8. / wd->vw->vp.w, -.4);
 				gldPutString(buf);
 			}
 		}
@@ -935,8 +925,7 @@ static void warpable_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const doub
 	glPopMatrix();
 }
 
-
-
+#if 0
 static warf_t *warpable_warp_dest(entity_t *pt, const warf_t *w){
 	warpable_t *p = ((warpable_t*)pt);
 	if(!p->warping)

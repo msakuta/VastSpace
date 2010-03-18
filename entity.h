@@ -38,6 +38,7 @@ public:
 	virtual int numCockpits()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void drawHUD(wardraw_t *); // Drawn over everything but GLwindows.
 	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
 	virtual double hitradius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
 	virtual void bullethit(const Bullet *);

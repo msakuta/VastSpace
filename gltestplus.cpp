@@ -271,6 +271,12 @@ static void drawindics(Viewer *vw){
 		drawastro(vw, &universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
+	if(pl.chase){
+		wardraw_t wd;
+		wd.vw = vw;
+		wd.w = pl.chase->w;
+		pl.chase->drawHUD(&wd);
+	}
 	pl.drawindics(vw);
 	{
 		char buf[128];

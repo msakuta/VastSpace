@@ -62,19 +62,23 @@ struct drawIcosaSphereArg{
 	int culltests;
 	double radius;
 	Vec3d org, view, viewdir, viewdelta;
+	Vec3d torg, tview;
+	Vec3d scales;
 	Mat4d modelview;
 	Mat4d trans;
+	Mat4d model, imodel;
 };
 
 static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &p0, const Vec3d &p1, const Vec3d &p2){
+
 	/* Cull face */
 	arg->invokes++;
 	if(true && arg->culllevel <= level){
+		const Vec3d pos[3] = {p0, p1, p2};
 		arg->culltests++;
 		Vec3d cen = p0 + p1 + p2;
 /*		if(0. < arg->viewdelta.sp(cen))
 			return;*/
-		const Vec3d *pos[3] = {&p0, &p1, &p2};
 /*		Vec4d norm[3];
 		for(int i = 0; i < 3; i++){
 			Vec4d posi(pos[i]);
@@ -97,19 +101,23 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 //			return;
 		double f = arg->radius / (cen.len() / 3.);
 		int i;
+		Vec3d &tview(arg->tview);
+		Vec3d &torg(arg->torg);
 		for(i = 0; i < 3; i++)
-			if(!jHitSphere(arg->org, arg->radius, arg->view, f * *pos[i] + arg->org - arg->view, 1.))
+			if(!jHitSphere(torg, arg->radius, tview, f * pos[i] + torg - tview, 1.))
 				break;
 		if(i == 3)
 			return;
 	}
 
 	if(level <= 0){
+		const Vec3d pos[3] = {arg->model.dvp3(p0), arg->model.dvp3(p1), arg->model.dvp3(p2)};
 		static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
-		int m;
-		for(m = 0; m < 3; m++) glproc[m](p0 + arg->org);
-		for(m = 0; m < 3; m++) glproc[m](p1 + arg->org);
-		for(m = 0; m < 3; m++) glproc[m](p2 + arg->org);
+		for(int n = 0; n < 3; n++)/* for(int m = 0; m < 3; m++)*/{
+			glNormal3dv(arg->imodel.dvp3(n == 0 ? p0 : n == 1 ? p1 : p2));
+			glTexCoord3dv(pos[n]);
+			glVertex3dv(pos[n] + arg->org);
+		}
 		arg->polys++;
 		return;
 	}
@@ -173,11 +181,18 @@ static void gldIcosaSphere(drawIcosaSphereArg &arg){
 	glEnd();
 }
 
-void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw){
+void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw, const Vec3d &scales){
 	drawIcosaSphereArg arg;
+	arg.model = Mat4d(Vec3d(scales[0], 0, 0), Vec3d(0, scales[1], 0), Vec3d(0, 0, scales[2]));
+	arg.imodel = Mat4d(Vec3d(1. / scales[0], 0, 0), Vec3d(0, 1. / scales[1], 0), Vec3d(0, 0, 1. / scales[2]));
+	arg.scales = scales;
 	arg.polys = arg.culltests = arg.invokes = 0;
 	arg.radius = radius;
-	Vec3d delta = org - vw.pos;
+	Vec3d &tview = arg.tview; tview = arg.imodel.dvp3(vw.pos);
+	Vec3d &torg = arg.torg; torg = arg.imodel.dvp3(org);
+	Vec3d delta = torg - tview;
+	if(delta.slen() < radius * radius)
+		return;
 	double pixels = arg.radius * vw.gc->scale(org);
 	double maxlevel = 8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale);
 //	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));

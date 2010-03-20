@@ -11,6 +11,7 @@
 extern "C"{
 #include <clib/mathdef.h>
 }
+#include <gl/glext.h>
 
 int WarSpace::g_otdrawflags = 0;
 
@@ -273,6 +274,19 @@ static void init_gsc(){
 
 static Initializator initializator(init_gsc);
 
+#define TEXSIZE 128
+static const GLenum cubetarget[] = {
+GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+};
+/* type for cube texture. not sure any OpenGL implementation that do not accept float textures exist. */
+typedef GLubyte cubetype;
+#define GL_cubetype GL_UNSIGNED_BYTE
+
 void WarSpace::draw(wardraw_t *wd){
 	for(int i = 0; i < 2; i++)
 	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
@@ -287,11 +301,54 @@ void WarSpace::draw(wardraw_t *wd){
 		}
 	}
 
-	glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);
+	glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+	static GLuint tex = 0;
+	if(!tex){
+		glGenTextures(1, &tex);
+		extern double perlin_noise_pixel(int x, int y, int bit);
+		GLubyte texbits[TEXSIZE][TEXSIZE][3];
+		for(int i = 0; i < TEXSIZE; i++) for(int j = 0; j < TEXSIZE; j++) for(int k = 0; k < 3; k++){
+			texbits[i][j][k] = 128 * perlin_noise_pixel(i, j + TEXSIZE * k, 4);
+//			texbits[i][j][k] = rand() % 256;
+		}
+//		glBindTexture(GL_TEXTURE_2D, tex);
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TEXSIZE, TEXSIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, texbits);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
+		for(int n = 0; n < numof(cubetarget); n++)
+			glTexImage2D(cubetarget[n], 0, GL_RGB, TEXSIZE, TEXSIZE, 0, GL_RGB, GL_cubetype, texbits);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+//	glBindTexture(GL_TEXTURE_2D, tex);
+	glBindTexture(GL_TEXTURE_CUBE_MAP,tex);
+	glEnable(GL_NORMALIZE);
+	{
+		const GLfloat mat_specular[] = {0., 0., 0., 1.};
+		const GLfloat mat_shininess[] = { 50.0 };
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.25f, .25f, .5f, 1.f};
+
+		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
+	}
+//	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_CUBE_MAP);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDisable(GL_CULL_FACE);
-	glColor4f(1,1,1,1);
-	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw);
+	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw, Vec3d(1,.125,1));
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopAttrib();
 
 	tent3d_line_drawdata dd;

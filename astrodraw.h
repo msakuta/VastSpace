@@ -20,7 +20,7 @@ public:
 };
 typedef TempInitializator<void (*)()> Initializator;
 
-void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw);
+void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw, const Vec3d &scales = Vec3d(1,1,1));
 
 /*
 extern struct glcull g_glcull;

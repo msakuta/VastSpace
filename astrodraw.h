@@ -12,8 +12,15 @@
 #define LIGHT_SPEED 299792.458 /* km/s */
 #define RING_CUTS 64
 
+template<typename T = void (*)()> class TempInitializator{
+public:
+	TempInitializator<T>(T callback){
+		callback();
+	}
+};
+typedef TempInitializator<void (*)()> Initializator;
 
-
+void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw);
 
 /*
 extern struct glcull g_glcull;

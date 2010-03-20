@@ -2,12 +2,13 @@
 #include "astrodraw.h"
 #include "Universe.h"
 //#include "player.h"
-//#include "judge.h"
+#include "judge.h"
 #include "coordsys.h"
 #include "antiglut.h"
 #include "galaxy_field.h"
 #include "astro_star.h"
 #include "stellar_file.h"
+#include "cmd.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -22,12 +23,12 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/colseq/cs2x.h>
 #include <clib/cfloat.h>
+#include <clib/c.h>
 #include <jpeglib.h>
 }
 #include <cpplib/gl/cullplus.h>
 #include <gl/glext.h>
 #include <stdio.h>
-//#include <wingraph.h>
 #include <assert.h>
 #include <math.h>
 #include <setjmp.h>
@@ -37,25 +38,168 @@ extern "C"{
 #include <fstream>
 
 
-#define numof(a) (sizeof(a)/sizeof*(a))
-#define signof(a) ((a)<0?-1:0<(a)?1:0)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
 #define EPSILON 1e-7 // not sure
 #define DRAWTEXTURESPHERE_PROFILE 0
+#define ICOSASPHERE_PROFILE 1
 
+static int g_sc = -1, g_cl = 1;
+static double gpow = .5, gscale = 2.;
 
-#ifndef MAX
-#define MAX(a,b) ((a)<(b)?(b):(a))
+static void initar(){
+	CvarAdd("g_sc", &g_sc, cvar_int);
+	CvarAdd("g_cl", &g_cl, cvar_int);
+	CvarAdd("gpow", &gpow, cvar_double);
+	CvarAdd("gscale", &gscale, cvar_double);
+}
+static Initializator s_initar(initar);
+
+struct drawIcosaSphereArg{
+	int maxlevel;
+	int culllevel;
+	int polys;
+	int invokes;
+	int culltests;
+	double radius;
+	Vec3d org, view, viewdir, viewdelta;
+	Mat4d modelview;
+	Mat4d trans;
+};
+
+static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &p0, const Vec3d &p1, const Vec3d &p2){
+	/* Cull face */
+	arg->invokes++;
+	if(true && arg->culllevel <= level){
+		arg->culltests++;
+		Vec3d cen = p0 + p1 + p2;
+/*		if(0. < arg->viewdelta.sp(cen))
+			return;*/
+		const Vec3d *pos[3] = {&p0, &p1, &p2};
+/*		Vec4d norm[3];
+		for(int i = 0; i < 3; i++){
+			Vec4d posi(pos[i]);
+			posi[3] = 1.;
+			norm[i] = arg->trans.vp(posi);
+		}*/
+//		if(0. < arg->viewdelta.sp(p0) && 0. < arg->viewdelta.sp(p1) && 0. < arg->viewdelta.sp(p2))
+//			return;
+//		if(norm[0][2] < 0. && norm[1][2] < 0. && norm[2][2] < 0.)
+//			return;
+//		for(int i = 0; i < 3; i++)
+//			(Vec3d&)norm[i] = Vec3d(norm[i]) / norm[i][3];
+//		for(int i = 0; i < 3; i++)
+//			norm[i] = Vec3d(norm[i]) / norm[i][3];
+//		Vec3d p01 = norm[1] - norm[0];
+//		Vec3d p12 = norm[2] - norm[1];
+//		Vec3d p02 = norm[2] - norm[0];
+//		p01[2] = p20[2] = 0.;
+//		if(p01.vp(p02).norm()[2] < -0.)
+//			return;
+		double f = arg->radius / (cen.len() / 3.);
+		int i;
+		for(i = 0; i < 3; i++)
+			if(!jHitSphere(arg->org, arg->radius, arg->view, f * *pos[i] + arg->org - arg->view, 1.))
+				break;
+		if(i == 3)
+			return;
+	}
+
+	if(level <= 0){
+		static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
+		int m;
+		for(m = 0; m < 3; m++) glproc[m](p0 + arg->org);
+		for(m = 0; m < 3; m++) glproc[m](p1 + arg->org);
+		for(m = 0; m < 3; m++) glproc[m](p2 + arg->org);
+		arg->polys++;
+		return;
+	}
+
+	Vec3d p01 = (p0 + p1).norm() * arg->radius;
+	Vec3d p12 = (p1 + p2).norm() * arg->radius;
+	Vec3d p20 = (p2 + p0).norm() * arg->radius;
+
+	const Vec3d *faces[][3] = {
+		{&p0, &p01, &p20},
+		{&p01, &p1, &p12},
+		{&p12, &p2, &p20},
+		{&p01, &p12, &p20},
+	};
+	for(int i = 0; i < numof(faces); i++)
+		drawIcosaSphereInt(level - 1, arg, *faces[i][0], *faces[i][1], *faces[i][2]);
+}
+
+static void gldIcosaSphere(drawIcosaSphereArg &arg){
+	static const double vertices[][3] = {
+		{ 0., 0., 1.}, // North pole
+		{ 0.894427190999916,  0.000000000000000,  0.447213595499958},
+		{ 0.276393202250021,  0.850650808352040,  0.447213595499958},
+		{-0.723606797749979,  0.525731112119134,  0.447213595499958},
+		{-0.723606797749979, -0.525731112119133,  0.447213595499958},
+		{ 0.276393202250021, -0.850650808352040,  0.447213595499958},
+		{ 0., 0., -1.}, // South pole
+		{ 0.723606797749979,  0.525731112119134, -0.447213595499958},
+		{-0.276393202250021,  0.850650808352040, -0.447213595499958},
+		{-0.894427190999916,  0.000000000000000, -0.447213595499958},
+		{-0.276393202250021, -0.850650808352040, -0.447213595499958},
+		{ 0.723606797749979, -0.525731112119134, -0.447213595499958},
+	};
+	static const unsigned char tris[][3] = {
+		{0,1,2}, // Following are 5 triangles around north pole, making pentagon.
+		{0,2,3},
+		{0,3,4},
+		{0,4,5},
+		{0,5,1},
+		{6,8,7}, // Following are 5 triangles around south pole. Note that direction is opposite to north.
+		{6,9,8},
+		{6,10,9},
+		{6,11,10},
+		{6,7,11},
+		{1,7,2}, // Following are 10 triangles around equator. Note that face direction is alternating per face.
+		{7,8,2},
+		{2,8,3},
+		{8,9,3},
+		{3,9,4},
+		{9,10,4},
+		{4,10,5},
+		{10,11,5},
+		{5,11,1},
+		{11,7,1},
+	};
+	int i;
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < numof(tris); i++){
+		drawIcosaSphereInt(arg.maxlevel, &arg, arg.radius * (Vec3d&)vertices[tris[i][0]], arg.radius * (Vec3d&)vertices[tris[i][1]], arg.radius * (Vec3d&)vertices[tris[i][2]]);
+	}
+	glEnd();
+}
+
+void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw){
+	drawIcosaSphereArg arg;
+	arg.polys = arg.culltests = arg.invokes = 0;
+	arg.radius = radius;
+	Vec3d delta = org - vw.pos;
+	double pixels = arg.radius * vw.gc->scale(org);
+	double maxlevel = 8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale);
+//	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));
+//	double maxlevel = 8 * (1. - (1. - pow(wd->vw->pos.slen(), gpow)) * gscale);
+	arg.maxlevel = g_sc < 0 ? maxlevel : g_sc;
+	int pixelminlevel = MIN(sqrt(pixels * .1), 3);
+	if(arg.maxlevel < pixelminlevel) arg.maxlevel = pixelminlevel;
+	if(8 < arg.maxlevel) arg.maxlevel = 8;
+	arg.culllevel = g_cl < 0 ? arg.maxlevel - 1 : g_cl;
+	arg.org = org;
+	arg.view = vw.pos;
+	arg.viewdelta = org - vw.pos;
+	Mat4d modelview, projection;
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+	arg.modelview = modelview;
+	arg.trans = projection * modelview;
+	gldIcosaSphere(arg);
+#if ICOSASPHERE_PROFILE
+	printf("%d,%g,%d/%15f,%d,%d,%g\n", arg.maxlevel, maxlevel, arg.polys, 20 * pow(4., arg.maxlevel), arg.culltests, arg.invokes, delta.len() / arg.radius);
 #endif
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)<0?-(a):(a))
-#endif
-
+}
 
 int g_invert_hyperspace = 0;
 

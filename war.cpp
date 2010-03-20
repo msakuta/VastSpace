@@ -6,6 +6,8 @@
 #include "astro.h"
 #include "judge.h"
 #include "serial_util.h"
+#include "cmd.h"
+#include "astrodraw.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -263,6 +265,14 @@ void WarSpace::anim(double dt){
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
 }
 
+static double gradius = 1.;
+
+static void init_gsc(){
+	CvarAdd("gradius", &gradius, cvar_double);
+}
+
+static Initializator initializator(init_gsc);
+
 void WarSpace::draw(wardraw_t *wd){
 	for(int i = 0; i < 2; i++)
 	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
@@ -277,56 +287,11 @@ void WarSpace::draw(wardraw_t *wd){
 		}
 	}
 
-	static const double vertices[][3] = {
-		{ 0., 0., 1.},
-		{ 0.894427190999916,  0.000000000000000,  0.447213595499958},
-		{ 0.276393202250021,  0.850650808352040,  0.447213595499958},
-		{-0.723606797749979,  0.525731112119134,  0.447213595499958},
-		{-0.723606797749979, -0.525731112119133,  0.447213595499958},
-		{ 0.276393202250021, -0.850650808352040,  0.447213595499958},
-		{ 0., 0., -1.},
-		{ 0.723606797749979,  0.525731112119134, -0.447213595499958},
-		{-0.276393202250021,  0.850650808352040, -0.447213595499958},
-		{-0.894427190999916,  0.000000000000000, -0.447213595499958},
-		{-0.276393202250021, -0.850650808352040, -0.447213595499958},
-		{ 0.723606797749979, -0.525731112119134, -0.447213595499958},
-	};
-	static const unsigned char tris[][3] = {
-		{0,1,2},
-		{0,2,3},
-		{0,3,4},
-		{0,4,5},
-		{0,5,1},
-		{6,7,8},
-		{6,8,9},
-		{6,9,10},
-		{6,10,11},
-		{6,11,7},
-		{1,7,2},
-		{7,2,8},
-		{2,8,3},
-		{8,3,9},
-		{3,9,4},
-		{9,4,10},
-		{4,10,5},
-		{10,5,11},
-		{5,11,1},
-		{11,1,7},
-	};
 	glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDisable(GL_CULL_FACE);
 	glColor4f(1,1,1,1);
-	glBegin(GL_TRIANGLES);
-	for(int i = 0; i < numof(tris); i++){
-		Vec3d cen(0., 0., 0.);
-		for(int j = 0; j < 3; j++)
-			cen += Vec3d(vertices[tris[i][j]]);
-		glNormal3dv(cen.norm());
-		for(int j = 0; j < 3; j++)
-			glVertex3dv(vertices[tris[i][j]]);
-	}
-	glEnd();
+	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw);
 	glPopAttrib();
 
 	tent3d_line_drawdata dd;

@@ -202,7 +202,7 @@ void Player::drawindics(Viewer *vw){
 		Vec4d spos = move_trans.vp(mpos4);
 		double (*cuts)[2] = CircleCuts(32);
 		glPushMatrix();
-		glTranslated((spos[0] / spos[2] + 1.) * vw->vp.w / 2., (1. - spos[1] / spos[2]) * vw->vp.h / 2., 0.);
+		glTranslated((spos[0] / spos[3] + 1.) * vw->vp.w / 2., (1. - spos[1] / spos[3]) * vw->vp.h / 2., 0.);
 		gldScaled(20.);
 		glBegin(GL_LINE_LOOP);
 		for(int i = 0; i < 32; i++){

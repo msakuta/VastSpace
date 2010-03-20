@@ -66,6 +66,7 @@ class TexSphere : public Astrobj{
 	unsigned int texlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
+	double oblateness;
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;

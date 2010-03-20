@@ -3,6 +3,7 @@
 #include "astro.h"
 #include "viewer.h"
 #include <clib/colseq/color.h>
+#include <cpplib/quat.h>
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -20,7 +21,7 @@ public:
 };
 typedef TempInitializator<void (*)()> Initializator;
 
-void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw, const Vec3d &scales = Vec3d(1,1,1));
+void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Vec3d &scales = Vec3d(1,1,1), const Quatd &qrot = quat_u);
 
 /*
 extern struct glcull g_glcull;

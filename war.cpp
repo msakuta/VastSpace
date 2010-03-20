@@ -308,7 +308,7 @@ void WarSpace::draw(wardraw_t *wd){
 		extern double perlin_noise_pixel(int x, int y, int bit);
 		GLubyte texbits[TEXSIZE][TEXSIZE][3];
 		for(int i = 0; i < TEXSIZE; i++) for(int j = 0; j < TEXSIZE; j++) for(int k = 0; k < 3; k++){
-			texbits[i][j][k] = 128 * perlin_noise_pixel(i, j + TEXSIZE * k, 4);
+			texbits[i][j][k] = 128 * perlin_noise_pixel(i, j + TEXSIZE * k, 4) + 128;
 //			texbits[i][j][k] = rand() % 256;
 		}
 //		glBindTexture(GL_TEXTURE_2D, tex);
@@ -329,7 +329,7 @@ void WarSpace::draw(wardraw_t *wd){
 	{
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.25f, .25f, .5f, 1.f};
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.25f, .25f, .25f, 1.f};
 
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
@@ -347,7 +347,7 @@ void WarSpace::draw(wardraw_t *wd){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDisable(GL_CULL_FACE);
-	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw, Vec3d(1,.125,1));
+	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw, Vec3d(1,.125,1), Quatd(0, 0, sin(war_time() / 10.), cos(war_time() / 10.)) * Quatd(0, sin(war_time()), 0, cos(war_time())));
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopAttrib();
 

@@ -355,6 +355,7 @@ TexSphere::~TexSphere(){
 void TexSphere::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << (texname ? texname : "");
+	sc.o << oblateness;
 	sc.o << ringmin;
 	sc.o << ringmax;
 	sc.o << ringthick;
@@ -368,6 +369,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	cpplib::dstring texname;
 	sc.i >> texname;
+	sc.i >> oblateness;
 	sc.i >> ringmin;
 	sc.i >> ringmax;
 	sc.i >> ringthick;
@@ -383,6 +385,12 @@ void TexSphere::unserialize(UnserializeContext &sc){
 bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(0);
+	else if(!strcmp(s, "oblateness")){
+		if(1 < argc){
+			oblateness = atof(argv[1]);
+		}
+		return true;
+	}
 	else if(!strcmp(s, "texture")){
 		if(1 < argc){
 			char *texname = new char[strlen(argv[1]) + 1];
@@ -536,7 +544,7 @@ const char *Star::classname()const{
 
 const unsigned Star::classid = registerClass("Star", Conster<Star>);
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL){
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), oblateness(0.){
 	texlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;

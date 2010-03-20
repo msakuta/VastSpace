@@ -14,7 +14,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 4;
+const unsigned Universe::version = 5;
 
 const char *Universe::classname()const{
 	return "Universe";

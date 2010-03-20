@@ -41,7 +41,7 @@ extern "C"{
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
 #define EPSILON 1e-7 // not sure
 #define DRAWTEXTURESPHERE_PROFILE 0
-#define ICOSASPHERE_PROFILE 1
+#define ICOSASPHERE_PROFILE 0
 
 static int g_sc = -1, g_cl = 1;
 static double gpow = .5, gscale = 2.;
@@ -64,8 +64,9 @@ struct drawIcosaSphereArg{
 	Vec3d org, view, viewdir, viewdelta;
 	Vec3d torg, tview;
 	Vec3d scales;
-	Mat4d modelview;
-	Mat4d trans;
+	Quatd qrot;
+//	Mat4d modelview;
+//	Mat4d trans;
 	Mat4d model, imodel;
 };
 
@@ -111,12 +112,16 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 	}
 
 	if(level <= 0){
-		const Vec3d pos[3] = {arg->model.dvp3(p0), arg->model.dvp3(p1), arg->model.dvp3(p2)};
+		const Vec3d pos[3] = {p0, p1, p2};
+		const Vec3d ipos[3] = {(arg->model.dvp3(p0)), (arg->model.dvp3(p1)), (arg->model.dvp3(p2))};
 		static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
 		for(int n = 0; n < 3; n++)/* for(int m = 0; m < 3; m++)*/{
-			glNormal3dv(arg->imodel.dvp3(n == 0 ? p0 : n == 1 ? p1 : p2));
-			glTexCoord3dv(pos[n]);
-			glVertex3dv(pos[n] + arg->org);
+			Vec3d tpos = arg->model.dvp3(pos[n]);
+			Vec3d rpos = arg->qrot.trans(tpos);
+			Vec3d ipos = arg->imodel.dvp3(pos[n]);
+			glNormal3dv(arg->qrot.trans(ipos));
+			glTexCoord3dv(tpos);
+			glVertex3dv(rpos + arg->org);
 		}
 		arg->polys++;
 		return;
@@ -181,15 +186,17 @@ static void gldIcosaSphere(drawIcosaSphereArg &arg){
 	glEnd();
 }
 
-void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw, const Vec3d &scales){
+void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Vec3d &scales, const Quatd &qrot){
 	drawIcosaSphereArg arg;
 	arg.model = Mat4d(Vec3d(scales[0], 0, 0), Vec3d(0, scales[1], 0), Vec3d(0, 0, scales[2]));
 	arg.imodel = Mat4d(Vec3d(1. / scales[0], 0, 0), Vec3d(0, 1. / scales[1], 0), Vec3d(0, 0, 1. / scales[2]));
 	arg.scales = scales;
 	arg.polys = arg.culltests = arg.invokes = 0;
 	arg.radius = radius;
-	Vec3d &tview = arg.tview; tview = arg.imodel.dvp3(vw.pos);
-	Vec3d &torg = arg.torg; torg = arg.imodel.dvp3(org);
+	Vec3d &tview = arg.tview;
+	tview = arg.imodel.dvp3(qrot.cnj().trans(vw.pos));
+	Vec3d &torg = arg.torg;
+	torg = arg.imodel.dvp3(qrot.cnj().trans(org));
 	Vec3d delta = torg - tview;
 	if(delta.slen() < radius * radius)
 		return;
@@ -205,11 +212,12 @@ void drawIcosaSphere(const Vec3d &org, double radius, Viewer &vw, const Vec3d &s
 	arg.org = org;
 	arg.view = vw.pos;
 	arg.viewdelta = org - vw.pos;
-	Mat4d modelview, projection;
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-	glGetDoublev(GL_PROJECTION_MATRIX, projection);
-	arg.modelview = modelview;
-	arg.trans = projection * modelview;
+	arg.qrot = qrot;
+//	Mat4d modelview, projection;
+//	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+//	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+//	arg.modelview = modelview;
+//	arg.trans = projection * modelview;
 	gldIcosaSphere(arg);
 #if ICOSASPHERE_PROFILE
 	printf("%d,%g,%d/%15f,%d,%d,%g\n", arg.maxlevel, maxlevel, arg.polys, 20 * pow(4., arg.maxlevel), arg.culltests, arg.invokes, delta.len() / arg.radius);
@@ -772,6 +780,101 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	return texenable;
 }
 
+bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname, double oblateness){
+	GLuint texlist = *ptexlist;
+	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
+	double dist, tangent, scale, spe, zoom;
+	int i, j, jstart, fine, texenable = texlist && texmat;
+	normvertex_params params;
+	Mat4d &mat = params.mat;
+	Mat4d rot;
+	Vec3d tp;
+
+	params.vw = vw;
+	params.texenable = texenable;
+	params.detail = 0;
+
+	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
+/*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
+	scale = a->rad * vw->gc->scale(apos);
+
+	VECSUB(tp, apos, vw->pos);
+	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
+	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
+	scale *= zoom;
+	if(0. < scale && scale < 5.){
+		GLubyte color[4], dark[4];
+		color[0] = GLubyte(mat_diffuse[0] * 255);
+		color[1] = GLubyte(mat_diffuse[1] * 255);
+		color[2] = GLubyte(mat_diffuse[2] * 255);
+		color[3] = 255;
+		dark[0] = GLubyte(mat_ambient[0] * 127);
+		dark[1] = GLubyte(mat_ambient[1] * 127);
+		dark[2] = GLubyte(mat_ambient[2] * 127);
+		dark[3] = 255;
+		drawShadeSphere(a, vw, sunpos, color, dark);
+		return true;
+	}
+
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
+/*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glLineWidth(1);
+	glDisable(GL_BLEND);
+	glColor3ub(255,255,255);*/
+
+	if(texenable){
+		glCallList(texlist);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glDisable(GL_TEXTURE_2D);
+		glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+	}
+	else
+		glDisable(GL_TEXTURE_2D);
+
+	if(vw->detail){
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+
+/*	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	glMultMatrixd(texmat);
+	glMatrixMode(GL_MODELVIEW);*/
+
+	{
+		const GLfloat mat_specular[] = {0., 0., 0., 1.};
+		const GLfloat mat_shininess[] = { 50.0 };
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.1f, .1f, .1f, 1.f};
+
+		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : mat_ambient);
+		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
+	}
+/*		glPolygonMode(GL_BACK, GL_LINE);*/
+/*	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);*/
+/*	glEnable(GL_TEXTURE_2D);*/
+	if(texenable)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+
+	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->qrot;
+	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
+	glPushMatrix();
+	gldTranslate3dv(-vw->pos);
+	glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
+//	gldMultQuat(vw->cs->tocsq(a->parent) * a->qrot);
+	drawIcosaSphere(pos, a->rad, *vw, Vec3d(1., 1. - oblateness, 1.), qrot);
+	glPopMatrix();
+	glPopAttrib();
+}
+
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]){
 	GLuint zero = 0;
 //	drawTextureSphere(a, vw, sunpos, mat_diffuse, mat_ambient, &zero, mat4identity, NULL);
@@ -788,12 +891,23 @@ void TexSphere::draw(const Viewer *vw){
 			drawsuncolona(brightest, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
-		bool ret = drawTextureSphere(this, vw, sunpos,
-			Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-			Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname);
-		if(!ret && texname){
-			delete[] texname;
-			texname = NULL;
+		if(oblateness != 0.){
+			bool ret = drawTextureSpheroid(this, vw, sunpos,
+				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname, oblateness);
+			if(!ret && texname){
+				delete[] texname;
+				texname = NULL;
+			}
+		}
+		else{
+			bool ret = drawTextureSphere(this, vw, sunpos,
+				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname);
+			if(!ret && texname){
+				delete[] texname;
+				texname = NULL;
+			}
 		}
 	}
 	st::draw(vw);

@@ -65,8 +65,6 @@ struct drawIcosaSphereArg{
 	Vec3d torg, tview;
 	Vec3d scales;
 	Quatd qrot;
-//	Mat4d modelview;
-//	Mat4d trans;
 	Mat4d model, imodel;
 };
 
@@ -74,32 +72,10 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 
 	/* Cull face */
 	arg->invokes++;
-	if(true && arg->culllevel <= level){
+	if(arg->culllevel <= level){
 		const Vec3d pos[3] = {p0, p1, p2};
 		arg->culltests++;
 		Vec3d cen = p0 + p1 + p2;
-/*		if(0. < arg->viewdelta.sp(cen))
-			return;*/
-/*		Vec4d norm[3];
-		for(int i = 0; i < 3; i++){
-			Vec4d posi(pos[i]);
-			posi[3] = 1.;
-			norm[i] = arg->trans.vp(posi);
-		}*/
-//		if(0. < arg->viewdelta.sp(p0) && 0. < arg->viewdelta.sp(p1) && 0. < arg->viewdelta.sp(p2))
-//			return;
-//		if(norm[0][2] < 0. && norm[1][2] < 0. && norm[2][2] < 0.)
-//			return;
-//		for(int i = 0; i < 3; i++)
-//			(Vec3d&)norm[i] = Vec3d(norm[i]) / norm[i][3];
-//		for(int i = 0; i < 3; i++)
-//			norm[i] = Vec3d(norm[i]) / norm[i][3];
-//		Vec3d p01 = norm[1] - norm[0];
-//		Vec3d p12 = norm[2] - norm[1];
-//		Vec3d p02 = norm[2] - norm[0];
-//		p01[2] = p20[2] = 0.;
-//		if(p01.vp(p02).norm()[2] < -0.)
-//			return;
 		double f = arg->radius / (cen.len() / 3.);
 		int i;
 		Vec3d &tview(arg->tview);
@@ -229,7 +205,7 @@ int g_invert_hyperspace = 0;
 void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
-GLuint ProjectSphereJpg(const char *fname);
+static GLuint ProjectSphereJpg(const char *fname);
 GLuint ProjectSphereCubeJpg(const char *fname);
 
 #if 0
@@ -858,11 +834,6 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-/*	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-	glMultMatrixd(texmat);
-	glMatrixMode(GL_MODELVIEW);*/
-
 	{
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
@@ -875,12 +846,6 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
 	}
-/*		glPolygonMode(GL_BACK, GL_LINE);*/
-/*	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);*/
-/*	glEnable(GL_TEXTURE_2D);*/
-	if(texenable)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_LIGHTING);
@@ -888,12 +853,15 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 
 	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->qrot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
-	glPushMatrix();
-	gldTranslate3dv(-vw->pos);
 	glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
-//	gldMultQuat(vw->cs->tocsq(a->parent) * a->qrot);
-	drawIcosaSphere(pos, a->rad, *vw, Vec3d(1., 1. - oblateness, 1.), qrot);
-	glPopMatrix();
+
+	// Temporarily create dummy Viewer (in other words, latch) with position of zero vector, to avoid cancellation errors.
+	// It does not remove subtraction, but many OpenGL implementation treats matrices with float, so using double inside CPU would help.
+	Viewer avw = *vw;
+	GLcull gc = GLcull(vw->gc->getFov(), Vec3d(0,0,0), vw->gc->getInvrot(), vw->gc->getNear(), vw->gc->getFar());
+	avw.pos = Vec3d(0,0,0);
+	avw.gc = &gc;
+	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1. - oblateness, 1.), qrot);
 	glPopAttrib();
 }
 
@@ -1147,7 +1115,7 @@ static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
 	}
 }
 
-GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
+static GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 	static int texinit = 0;
 	GLuint tex;
 	/*if(!texinit)*/{
@@ -1379,14 +1347,18 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 				int i1 = (int(floor(di1)) + rawh) % rawh;
 				int j1 = (int(floor(dj1)) + raww) % raww;
 
-				if(raw->bmiHeader.biBitCount == 4){
-					const RGBQUAD *src;
-					src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
-					*dst = *src;
+				if(raw->bmiHeader.biBitCount == 4){ // untested
+//					const RGBQUAD *src;
+					double accum[3] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+//					src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
 					dst->rgbReserved = 255;
 				}
 				else if(raw->bmiHeader.biBitCount == 24){
-					const unsigned char *src[2][2];
 					double accum[3] = {0}; // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 3 + c];
@@ -1395,17 +1367,16 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 					dst->rgbBlue = (GLubyte)accum[2];
 					dst->rgbReserved = 255;
 				}
-				else if(raw->bmiHeader.biBitCount == 32){
-					const unsigned char *src;
-					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
-	/*				dst->rgbRed = src[0];
-					dst->rgbGreen = src[1];
-					dst->rgbBlue = src[2];
-					dst->rgbReserved = 255;*/
-					dst->rgbRed = src[2];
-					dst->rgbGreen = src[1];
-					dst->rgbBlue = src[0];
-					dst->rgbReserved = 255;
+				else if(raw->bmiHeader.biBitCount == 32){ // untested
+//					const unsigned char *src;
+					double accum[4] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 4; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 4 + c];
+//					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
+					dst->rgbReserved = (GLubyte)accum[3];
 				}
 			}
 
@@ -1459,13 +1430,69 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+		static bool init = false;
+		static GLuint detailname = 0;
+
+		if(!init){
+			struct random_sequence rs;
+			int tsize = DETAILSIZE;
+			static GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
+			init_rseq(&rs, 124867);
+			init = true;
+			for(i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+				int buf[3] = {0};
+				int k;
+				for(k = 0; k < 1; k++){
+					buf[0] += 192 + rseq(&rs) % 64;
+					buf[1] += 192 + rseq(&rs) % 64;
+					buf[2] += 192 + rseq(&rs) % 64;
+				}
+				tbuf[i][j][0] = buf[0] / (1);
+				tbuf[i][j][1] = buf[1] / (1);
+				tbuf[i][j][2] = buf[2] / (1);
+			}
+
+			/* average surrounding 8 texels to smooth */
+			for(i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+				int k, l;
+				int buf[3] = {0};
+				for(k = -1; k <= 1; k++) for(l = -1; l <= 1; l++)/* if(k != 0 || l != 0)*/{
+					int x = (i + k + DETAILSIZE) % DETAILSIZE, y = (j + l + DETAILSIZE) % DETAILSIZE;
+					buf[0] += tbuf[x][y][0];
+					buf[1] += tbuf[x][y][1];
+					buf[2] += tbuf[x][y][2];
+				}
+				tex[i][j][0] = buf[0] / 9 / 2 + 127;
+				tex[i][j][1] = buf[1] / 9 / 2 + 127;
+				tex[i][j][2] = buf[2] / 9 / 2 + 127;
+			}
+			tex[0][0][0] = 
+			tex[0][0][1] = 
+			tex[0][0][2] = 255;
+			glGenTextures(1, &detailname);
+			glBindTexture(GL_TEXTURE_2D, detailname);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tsize, tsize, 0, GL_RGB, GL_UNSIGNED_BYTE, tex);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
+
 		glNewList(tex = glGenLists(1), GL_COMPILE);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_TEXTURE_CUBE_MAP);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
+
+		if(glActiveTextureARB){
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, detailname);
+			glEnable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+
 		glEndList();
 #if 0
 		fp = fopen("projected.bmp", "wb");
@@ -1689,7 +1716,6 @@ GLuint ProjectSphereCubeJpg(const char *fname){
 		}
 		else{
 			BITMAPINFO *bmis[6];
-#if 1
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
 			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
 			int i;
@@ -1726,9 +1752,10 @@ heterogeneous:
 					LocalFree(bmis[i]);
 			}
 			else
-#endif
 			{
 				BITMAPINFO *bmi = LoadJpeg(jpgfilename);
+				if(!bmi)
+					return 0;
 				texlist = ProjectSphereCube(fname, bmi, NULL);
 				free(bmi);
 			}

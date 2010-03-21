@@ -501,6 +501,8 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 		vt = p->texmat.dvp3(v);
 		theta = vt[2];
 		phi = vt[0];
+#if 1
+#else
 	#if 0
 		if(p->map < 0)
 			p->map = vt[2] < 0. ? 0 : 2;
@@ -525,7 +527,8 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 		vt[0] = p->map & 1 ? (3. - vt[0]) / 4. : (1. + vt[0]) / 4.;
 /*		phi = 0. < theta ? vt[1] : -vt[1];*/
 		vt[1] = ((!!(p->map & 1) + !!(p->map & 2)) & 1 ? (3. + vt[1]) / 4. : (1. + vt[1]) / 4.);
-		glTexCoord2dv(vt);
+#endif
+		glTexCoord3dv(vt);
 		if(p->detail)
 			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(phi * 256.), GLfloat(theta * 256.));
 	}
@@ -592,7 +595,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	do if(!texlist && texname){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereJpg(texname);
+//		texlist = *ptexlist = ProjectSphereJpg(texname);
+		texlist = *ptexlist = ProjectSphereCubeJpg(texname);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -644,8 +648,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 /*	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);*/
 /*	glEnable(GL_TEXTURE_2D);*/
-	if(texenable)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	if(texenable)
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_LIGHTING);
@@ -1299,7 +1303,11 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 	return tex;
 }
 
-#define PROJC 512
+static int PROJC = 512;
+static void Init_PROJC(){
+	CvarAdd("g_proj_size", &PROJC, cvar_int);
+}
+static Initializator init_PROJC(Init_PROJC);
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
 static const GLenum cubetarget[] = {
@@ -1320,30 +1328,35 @@ static const Quatd cubedirs[] = {
 };
 
 
-GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
+GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6]){
 	static int texinit = 0;
 	GLuint tex, texname;
-	int srcheight = raw->bmiHeader.biHeight < 0 ? -raw->bmiHeader.biHeight : raw->bmiHeader.biHeight;
-	int srcwidth = raw->bmiHeader.biWidth;
+//	int srcheight = !raw ? 0 : raw->bmiHeader.biHeight < 0 ? -raw->bmiHeader.biHeight : raw->bmiHeader.biHeight;
+//	int srcwidth = !raw ? 0 : raw->bmiHeader.biWidth;
 	glGenTextures(1, &texname);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 	/*if(!texinit)*/
 	{
 		int i, outsize, linebytes, linebytesp;
-		long rawh = ABS(raw->bmiHeader.biHeight);
-		BITMAPINFO *proj;
+		long rawh = !raw ? 0 : ABS(raw->bmiHeader.biHeight);
+		long raww = !raw ? 0 : raw->bmiHeader.biWidth;
+		BITMAPINFO *proj = NULL;
 		RGBQUAD zero = {0,0,0,255};
 		texinit = 1;
-		proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJC * PROJC * PROJBITS + 31) / 32 * 4);
-		memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
-		proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
-		proj->bmiHeader.biBitCount = PROJBITS;
-		proj->bmiHeader.biClrUsed = 0;
-		proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
-		linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
-		linebytesp = (PROJC * PROJBITS + 31) / 32 * 4;
+
+		if(!cacheload){
+			proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJC * PROJC * PROJBITS + 31) / 32 * 4);
+			memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
+			proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
+			proj->bmiHeader.biBitCount = PROJBITS;
+			proj->bmiHeader.biClrUsed = 0;
+			proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
+			linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
+			linebytesp = (PROJC * PROJBITS + 31) / 32 * 4;
+		}
+
 		for(int nn = 0; nn < 6; nn++){
-			for(i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
+			if(!cacheload) for(i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
 				RGBQUAD *dst;
 				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * PROJBITS / 8];
 	/*			if(r){
@@ -1359,12 +1372,12 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 				double lat = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
 //					double lon = -atan2(epos[0], -(epos[1]));
 //					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
-				double dj1 = (srcwidth-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
-				double di1 = (srcheight-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+				double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
+				double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
 				double fj1 = dj1 - floor(dj1); // fractional part
 				double fi1 = di1 - floor(di1);
-				int i1 = int(di1);
-				int j1 = int(dj1);
+				int i1 = (int(floor(di1)) + rawh) % rawh;
+				int j1 = (int(floor(dj1)) + raww) % raww;
 
 				if(raw->bmiHeader.biBitCount == 4){
 					const RGBQUAD *src;
@@ -1376,7 +1389,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 					const unsigned char *src[2][2];
 					double accum[3] = {0}; // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
-						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % srcheight * linebytes + (j1 + jj) % srcwidth * 3 + c];
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 3 + c];
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
 					dst->rgbBlue = (GLubyte)accum[2];
@@ -1396,7 +1409,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 				}
 			}
 
-			{
+			if(!cacheload){
 				std::ostringstream bstr;
 				const char *p;
 	//			FILE *fp;
@@ -1432,15 +1445,22 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 					SaveJPEGData(jpgfilename, &bmd, 80);
 				}
 	#endif
+				glTexImage2D(cubetarget[nn], 0, GL_RGBA, PROJC, PROJC, 0, GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
 
 			}
-			glTexImage2D(cubetarget[nn], 0, GL_RGBA, PROJC, PROJC, 0, GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
+			else{
+				glTexImage2D(cubetarget[nn], 0, cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
+					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? GL_LUMINANCE : (assert(0), 0),
+					GL_UNSIGNED_BYTE, &cacheload[nn]->bmiColors[cacheload[nn]->bmiHeader.biClrUsed]);
+			}
 		}
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 		glNewList(tex = glGenLists(1), GL_COMPILE);
+		glDisable(GL_TEXTURE_2D);
 		glEnable(GL_TEXTURE_CUBE_MAP);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1663,73 +1683,53 @@ GLuint ProjectSphereCubeJpg(const char *fname){
 		std::string bs = bstr.str();
 		outfilename = bs.c_str();
 		jpgfilename = fname;
-/*		strcpy(outfilename, "cache\\");
-		if(p){
-			strncat(outfilename, fname, p - fname);
-			strcat(&outfilename[sizeof "cache\\" - 1 + p - fname], "_proj");
-			strcpy(jpgfilename, outfilename);
-			strcat(outfilename, ".bmp");
-		}
-		else{
-			strcat(outfilename, fname);
-			strcat(outfilename, "_proj");
-			strcpy(jpgfilename, outfilename);
-		}
-		strcpy(jpgfilename, fname);*/
 		stc = FindTexCache(bstr.str().c_str()/*outfilename*/);
 		if(stc){
 			return stc->list;
 		}
 		else{
-			BITMAPINFO *bmi;
-#if 0
+			BITMAPINFO *bmis[6];
+#if 1
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
-			BOOL b;
-			b = GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd);
 			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
-			if(b && 0 < CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime) && (bmi = ReadBitmap(outfilename))){
-				suftexparam_t stp;
-				stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA;
-				stp.bmi = bmi;
-				stp.alphamap = 8;
-				stp.env = GL_MODULATE;
-				stp.magfil = GL_LINEAR;
-				stp.mipmap = 0;
-/*				{
-				timemeas_t tm;
-				TimeMeasStart(&tm);*/
-				{
-					struct BMIhack{
-						BITMAPINFOHEADER bmiHeader;
-						GLubyte buf[DETAILSIZE][DETAILSIZE][3];
-					} bmi;
-					suftexparam_t stp;
-					bmi.bmiHeader.biSize = 0;
-					bmi.bmiHeader.biSizeImage = sizeof bmi.buf;
-					bmi.bmiHeader.biBitCount = 24;
-					bmi.bmiHeader.biClrUsed = 0;
-					bmi.bmiHeader.biClrImportant = 0;
-					bmi.bmiHeader.biCompression = BI_RGB;
-					bmi.bmiHeader.biPlanes = 1;
-					bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
-					memcpy(bmi.buf, tex, sizeof bmi.buf);
-					stp.bmi = (BITMAPINFO*)&bmi;
-					stp.flags = STP_ENV | STP_MAGFIL | STP_MIPMAP;
-					stp.env = GL_MODULATE;
-					stp.magfil = GL_LINEAR;
-					stp.mipmap = 1;
-					stp.alphamap = 0;
-					return CacheSUFMTex(name, pstp, &stp);
+			int i;
+			bool ok = true;
+			for(i = 0; i < 6; i++){
+				// sprintf would do the job simpler, if only ...
+				std::ostringstream bstr;
+				bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj" << i << ".bmp";
+				std::string bs = bstr.str();
+				outfilename = bs.c_str();
+
+				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))
+					goto heterogeneous;
+				if(!(0 < CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime)))
+					goto heterogeneous;
+				if(!(bmis[i] = ReadBitmap(outfilename))){
+					i++;
+					goto heterogeneous;
 				}
-				texlist = projcreatedetail(outfilename, &stp);
-/*				CmdPrintf("ProjectSphereJpg projcreatedetail: %lg", TimeMeasLap(&tm));
-				}*/
+				// If header is different, they cannot be concatenated to produce a cube map.
+				if(0 < i && memcmp(&bmis[0]->bmiHeader, &bmis[i]->bmiHeader, sizeof bmis[0]->bmiHeader)){
+					i++;
+heterogeneous:
+					// Free all loaded images so far.
+					for(int j = 0; j < i; j++)
+						LocalFree(bmis[j]);
+					ok = false;
+					break;
+				}
+			}
+			if(ok){
+				texlist = ProjectSphereCube(fname, NULL, bmis);
+				for(int i = 0; i < 6; i++)
+					LocalFree(bmis[i]);
 			}
 			else
 #endif
 			{
 				BITMAPINFO *bmi = LoadJpeg(jpgfilename);
-				texlist = ProjectSphereCube(fname, bmi);
+				texlist = ProjectSphereCube(fname, bmi, NULL);
 				free(bmi);
 			}
 		}

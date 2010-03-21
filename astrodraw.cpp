@@ -320,6 +320,16 @@ void doppler(double rgb[3], double r, double g, double b, double velo){
 }
 
 #endif
+
+// Global ambient value for astronomical objects
+static float g_astro_ambient = .5f;
+static void init_astro_ambient(){
+	CvarAdd("g_astro_ambient", &g_astro_ambient, cvar_float);
+}
+static Initializator ini(init_astro_ambient);
+
+
+
 void drawPoint(const Astrobj *a, const Viewer *p, const Vec3d &pspos, const Vec3d &sunp, const GLubyte color[4]){
 	double sp;
 	Vec3d tp;
@@ -621,7 +631,7 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	{
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.1f, .1f, .1f, 1.f};
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
 
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
@@ -852,7 +862,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	{
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {.5f, .5f, .5f, 1.f};
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
 
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
@@ -1176,26 +1186,26 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 			else if(raw->bmiHeader.biBitCount == 24){
 				const unsigned char *src;
 				src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 * 3];
-/*				dst->rgbRed = src[2];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[0];
-				dst->rgbReserved = 255;*/
-				dst->rgbRed = src[0];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[2];
-				dst->rgbReserved = 255;
-			}
-			else if(raw->bmiHeader.biBitCount == 32){
-				const unsigned char *src;
-				src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 * 4];
-/*				dst->rgbRed = src[0];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[2];
-				dst->rgbReserved = 255;*/
 				dst->rgbRed = src[2];
 				dst->rgbGreen = src[1];
 				dst->rgbBlue = src[0];
 				dst->rgbReserved = 255;
+/*				dst->rgbRed = src[0];
+				dst->rgbGreen = src[1];
+				dst->rgbBlue = src[2];
+				dst->rgbReserved = 255;*/
+			}
+			else if(raw->bmiHeader.biBitCount == 32){
+				const unsigned char *src;
+				src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 * 4];
+				dst->rgbRed = src[0];
+				dst->rgbGreen = src[1];
+				dst->rgbBlue = src[2];
+				dst->rgbReserved = 255;
+/*				dst->rgbRed = src[2];
+				dst->rgbGreen = src[1];
+				dst->rgbBlue = src[0];
+				dst->rgbReserved = 255;*/
 			}
 		}}
 #if 0
@@ -1238,6 +1248,13 @@ GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
 #else
 		tex = CacheSUFTex(name, proj, 1);
 #endif
+		// Swap red and blue channel. I'm not sure whether bitwise xor'ing is faster than temporary variable.
+		for(i = 0; i < PROJTS; i++) for(int j = 0; j < PROJTS; j++){
+			RGBQUAD &dst = (RGBQUAD&)((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[i * linebytesp + j * PROJBITS / 8];
+			dst.rgbRed ^= dst.rgbBlue;
+			dst.rgbBlue ^= dst.rgbRed;
+			dst.rgbRed ^= dst.rgbBlue;
+		}
 		{
 			std::ostringstream bstr;
 			const char *p;
@@ -1326,59 +1343,56 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 		linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
 		linebytesp = (PROJC * PROJBITS + 31) / 32 * 4;
 		for(int nn = 0; nn < 6; nn++){
-			for(i = 0; i < PROJC; i++){
-				int i1 = raw->bmiHeader.biHeight < 0 ? PROJC - i - 1 : i;
-				int j;
-				for(j = 0; j < PROJC; j++){
-					int j1;
-					RGBQUAD *dst;
-					dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * PROJBITS / 8];
-		/*			if(r){
-						double dj = j * 2. / PROJS - 1.;
-						j1 = r < fabs(dj) ? -1 : (int)(raw->bmiHeader.biWidth * fmod(asin(dj / r) / M_PI / 2. + .25 + (ii * 2 + jj) * .25, 1.));
-					}
-					else{
-						*dst = zero;
-						continue;
-					}*/
-					Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
-					double lon = -atan2(epos[0], -(epos[2]));
-					double lat = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
+			for(i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
+				RGBQUAD *dst;
+				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * PROJBITS / 8];
+	/*			if(r){
+					double dj = j * 2. / PROJS - 1.;
+					j1 = r < fabs(dj) ? -1 : (int)(raw->bmiHeader.biWidth * fmod(asin(dj / r) / M_PI / 2. + .25 + (ii * 2 + jj) * .25, 1.));
+				}
+				else{
+					*dst = zero;
+					continue;
+				}*/
+				Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
+				double lon = -atan2(epos[0], -(epos[2]));
+				double lat = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
 //					double lon = -atan2(epos[0], -(epos[1]));
 //					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
-					j1 = (srcwidth-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
-					i1 = (srcheight-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+				double dj1 = (srcwidth-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
+				double di1 = (srcheight-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+				double fj1 = dj1 - floor(dj1); // fractional part
+				double fi1 = di1 - floor(di1);
+				int i1 = int(di1);
+				int j1 = int(dj1);
 
-					if(raw->bmiHeader.biBitCount == 4){
-						const RGBQUAD *src;
-						src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
-						*dst = *src;
-						dst->rgbReserved = 255;
-					}
-					else if(raw->bmiHeader.biBitCount == 24){
-						const unsigned char *src;
-						src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 3];
-		/*				dst->rgbRed = src[2];
-						dst->rgbGreen = src[1];
-						dst->rgbBlue = src[0];
-						dst->rgbReserved = 255;*/
-						dst->rgbRed = src[0];
-						dst->rgbGreen = src[1];
-						dst->rgbBlue = src[2];
-						dst->rgbReserved = 255;
-					}
-					else if(raw->bmiHeader.biBitCount == 32){
-						const unsigned char *src;
-						src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
-		/*				dst->rgbRed = src[0];
-						dst->rgbGreen = src[1];
-						dst->rgbBlue = src[2];
-						dst->rgbReserved = 255;*/
-						dst->rgbRed = src[2];
-						dst->rgbGreen = src[1];
-						dst->rgbBlue = src[0];
-						dst->rgbReserved = 255;
-					}
+				if(raw->bmiHeader.biBitCount == 4){
+					const RGBQUAD *src;
+					src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
+					*dst = *src;
+					dst->rgbReserved = 255;
+				}
+				else if(raw->bmiHeader.biBitCount == 24){
+					const unsigned char *src[2][2];
+					double accum[3] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % srcheight * linebytes + (j1 + jj) % srcwidth * 3 + c];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
+					dst->rgbReserved = 255;
+				}
+				else if(raw->bmiHeader.biBitCount == 32){
+					const unsigned char *src;
+					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
+	/*				dst->rgbRed = src[0];
+					dst->rgbGreen = src[1];
+					dst->rgbBlue = src[2];
+					dst->rgbReserved = 255;*/
+					dst->rgbRed = src[2];
+					dst->rgbGreen = src[1];
+					dst->rgbBlue = src[0];
+					dst->rgbReserved = 255;
 				}
 			}
 
@@ -1443,36 +1457,6 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw){
 		fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
 		fwrite(proj, 1, outsize, fp);
 		fclose(fp);
-#endif
-#if 1
-#elif 1
-		{
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL;
-			stp.bmi = proj;
-			stp.alphamap = 8;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.mipmap = 0;
-			tex = projcreatedetail(name, &stp);
-		}
-#elif 1
-		{
-			suftexparam_t stp, stp2;
-			stp.bmi = proj;
-			stp.alphamap = 0;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.mipmap = 0;
-			stp2.bmi = proj;
-			stp2.alphamap = 0;
-			stp2.env = GL_MODULATE;
-			stp2.magfil = GL_LINEAR;
-			stp2.mipmap = 0;
-			tex = CacheSUFMTex(name, &stp, &stp2);
-		}
-#else
-		tex = CacheSUFTex(name, proj, 1);
 #endif
 
 		free(proj);

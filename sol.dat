@@ -209,7 +209,7 @@ coordsys Orbit marss{
 	{
 		diameter 6794.4
 		mass 6.4191e23
-		oblateness .001
+		oblateness .00
 		omega 0 0 1 2/24.6229/3600*pi   #rotation speed
 		texture mar0kuu2.jpg
 		updirection 0 1 0

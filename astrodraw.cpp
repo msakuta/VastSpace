@@ -42,6 +42,7 @@ extern "C"{
 #define EPSILON 1e-7 // not sure
 #define DRAWTEXTURESPHERE_PROFILE 0
 #define ICOSASPHERE_PROFILE 0
+#define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
 static int g_sc = -1, g_cl = 1;
 static double gpow = .5, gscale = 2.;
@@ -207,6 +208,7 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 static GLuint ProjectSphereJpg(const char *fname);
 GLuint ProjectSphereCubeJpg(const char *fname);
+void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Mat4d &rotation, double thick, double minrad, double maxrad, double t);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -463,66 +465,27 @@ static int normvertex_invokes = 0;
 #endif
 
 static void normvertexf(double x, double y, double z, normvertex_params *p, double ilen, int i, int j){
-	Vec3d v, v1, vt;
-	double theta, phi;
 #if DRAWTEXTURESPHERE_PROFILE
 	normvertex_invokes++;
 #endif
-	v[0] = x;
-	v[1] = y;
-	v[2] = z;
-	v1 = p->mat.dvp3(v);
-	glNormal3dv(v1);
+	Vec3d v(x, y, z);
+	glNormal3dv(p->mat.dvp3(v));
 	if(p->texenable){
-		vt = p->texmat.dvp3(v);
-		theta = vt[2];
-		phi = vt[0];
-#if 1
-#else
-	#if 0
-		if(p->map < 0)
-			p->map = vt[2] < 0. ? 0 : 2;
-		if(p->map == 2){
-			vt[0] *= -1;
-		}
-	#else
-		if(p->map < 0)
-			p->map = vt[2] < 0. ? (vt[0] / vt[2]) < -1. ? 3 : 1. < vt[0] / vt[2] ? 1 : 0 : -vt[0] / vt[2] < -1. ? 3 : 1. < -vt[0] / vt[2] ? 1 : 2;
-		if(p->map == 1){
-			vt[0] = vt[2];
-			vt[2] = -phi;
-		}
-		else if(p->map == 2){
-			vt[0] *= -1;
-		}
-		else if(p->map == 3){
-			vt[0] = -vt[2];
-			vt[2] = phi;
-		}
-	#endif
-		vt[0] = p->map & 1 ? (3. - vt[0]) / 4. : (1. + vt[0]) / 4.;
-/*		phi = 0. < theta ? vt[1] : -vt[1];*/
-		vt[1] = ((!!(p->map & 1) + !!(p->map & 2)) & 1 ? (3. + vt[1]) / 4. : (1. + vt[1]) / 4.);
-#endif
+		Vec3d vt = p->texmat.dvp3(v);
 		glTexCoord3dv(vt);
 		if(p->detail)
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(phi * 256.), GLfloat(theta * 256.));
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(vt[0] * 256.), GLfloat(vt[2] * 256.));
 	}
-/*	VECCPY(v1, v);*/
-/*	phi = atan2(v1[1], v1[0]);
-	theta = acos(v1[2] / sqrt(v1[0] * v1[0] + v1[1] * v1[1])) + M_PI / 2.;
-	glTexCoord2d(phi / 2. / M_PI, theta / M_PI);*/
+	Vec3d v1;
 	if(p->vw->relative){
 		v1 = p->mat * v;
-		theta = v1.len();
+		double theta = v1.len();
 		v = v1 * 1. / theta;
 		v1 = p->vw->relrot * v;
 		v1.scalein(theta);
 	}
 	else
 		v1 = p->vw->relrot * (p->mat * v);
-/*	VECNORMIN(v1);*/
-/*	VECSCALEIN(v1, ilen);*/
 	glVertex3dv(v1);
 }
 
@@ -873,6 +836,16 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 void TexSphere::draw(const Viewer *vw){
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
+	Mat4d ringrot;
+	char ringdrawn = 8;
+	bool drawring = !vw->gc->cullFrustum(pos, rad * ringmax * 1.1);
+
+	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
+	if(drawring){
+		double theta = this->rad / (vw->pos - pos).len();
+		theta = acos(theta);
+		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot * Quatd(SQRT2P2, 0, 0, SQRT2P2)).tomat4(), ringthick, ringmin, ringmax, 0.);
+	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
@@ -901,6 +874,8 @@ void TexSphere::draw(const Viewer *vw){
 		}
 	}
 	st::draw(vw);
+	if(drawring && ringdrawn)
+		ring_draw(vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0.);
 }
 
 struct atmo_dye_vertex_param{
@@ -1049,234 +1024,12 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 }
 
 #define DETAILSIZE 64
-static GLuint projcreatedetail(const char *name, const suftexparam_t *pstp){
-	struct random_sequence rs;
-	int i, j;
-	int tsize = DETAILSIZE;
-	static GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
-	static int init = 0;
-	init_rseq(&rs, 124867);
-
-	if(!init){
-		init = 1;
-		for(i = 0; i < tsize; i++) for(j = 0; j < tsize; j++){
-			int buf[3] = {0};
-			int k;
-			for(k = 0; k < 1; k++){
-				buf[0] += 192 + rseq(&rs) % 64;
-				buf[1] += 192 + rseq(&rs) % 64;
-				buf[2] += 192 + rseq(&rs) % 64;
-			}
-			tbuf[i][j][0] = buf[0] / (1);
-			tbuf[i][j][1] = buf[1] / (1);
-			tbuf[i][j][2] = buf[2] / (1);
-		}
-
-		/* average surrounding 8 texels to smooth */
-		for(i = 0; i < tsize; i++) for(j = 0; j < tsize; j++){
-			int k, l;
-			int buf[3] = {0};
-			for(k = -1; k <= 1; k++) for(l = -1; l <= 1; l++)/* if(k != 0 || l != 0)*/{
-				int x = (i + k + DETAILSIZE) % DETAILSIZE, y = (j + l + DETAILSIZE) % DETAILSIZE;
-				buf[0] += tbuf[x][y][0];
-				buf[1] += tbuf[x][y][1];
-				buf[2] += tbuf[x][y][2];
-			}
-			tex[i][j][0] = buf[0] / 9 / 2 + 127;
-			tex[i][j][1] = buf[1] / 9 / 2 + 127;
-			tex[i][j][2] = buf[2] / 9 / 2 + 127;
-		}
-		tex[0][0][0] = 
-		tex[0][0][1] = 
-		tex[0][0][2] = 255;
-	}
-	{
-		struct BMIhack{
-			BITMAPINFOHEADER bmiHeader;
-			GLubyte buf[DETAILSIZE][DETAILSIZE][3];
-		} bmi;
-		suftexparam_t stp;
-		bmi.bmiHeader.biSize = 0;
-		bmi.bmiHeader.biSizeImage = sizeof bmi.buf;
-		bmi.bmiHeader.biBitCount = 24;
-		bmi.bmiHeader.biClrUsed = 0;
-		bmi.bmiHeader.biClrImportant = 0;
-		bmi.bmiHeader.biCompression = BI_RGB;
-		bmi.bmiHeader.biPlanes = 1;
-		bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
-		memcpy(bmi.buf, tex, sizeof bmi.buf);
-		stp.bmi = (BITMAPINFO*)&bmi;
-		stp.flags = STP_ENV | STP_MAGFIL | STP_MIPMAP;
-		stp.env = GL_MODULATE;
-		stp.magfil = GL_LINEAR;
-		stp.mipmap = 1;
-		stp.alphamap = 0;
-		return CacheSUFMTex(name, pstp, &stp);
-	}
-}
-
-static GLuint ProjectSphereMap(const char *name, const BITMAPINFO *raw){
-	static int texinit = 0;
-	GLuint tex;
-	/*if(!texinit)*/{
-		int ii, i, outsize, linebytes, linebytesp;
-		long rawh = ABS(raw->bmiHeader.biHeight);
-		BITMAPINFO *proj;
-		RGBQUAD zero = {0,0,0,255};
-		texinit = 1;
-		proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJTS * PROJTS * PROJBITS + 31) / 32 * 4);
-		memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
-		proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJTS;
-		proj->bmiHeader.biBitCount = PROJBITS;
-		proj->bmiHeader.biClrUsed = 0;
-		proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
-		linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
-		linebytesp = (PROJTS * PROJBITS + 31) / 32 * 4;
-		for(ii = 0; ii < 2; ii++) for(i = 0; i < PROJS; i++){
-		int i1 = raw->bmiHeader.biHeight < 0 ? PROJS - i - 1 : i;
-		int jj, j;
-		double r;
-		r = sqrt(1. - (double)(i - PROJS / 2) / (PROJS / 2) * (i - PROJS / 2) / (PROJS / 2));
-		for(jj = 0; jj < 2; jj++) for(j = 0; j < PROJS; j++){
-			int j1;
-			RGBQUAD *dst;
-			dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i + ii * PROJS) * linebytesp + (jj * PROJS + j) * PROJBITS / 8];
-			if(r){
-				double dj = j * 2. / PROJS - 1.;
-				j1 = r < fabs(dj) ? -1 : (int)(raw->bmiHeader.biWidth * fmod(asin(dj / r) / M_PI / 2. + .25 + (ii * 2 + jj) * .25, 1.));
-			}
-			else{
-				*dst = zero;
-				continue;
-			}
-			if(raw->bmiHeader.biBitCount == 4){
-				const RGBQUAD *src;
-				src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
-				*dst = *src;
-				dst->rgbReserved = 255;
-			}
-			else if(raw->bmiHeader.biBitCount == 24){
-				const unsigned char *src;
-				src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 * 3];
-				dst->rgbRed = src[2];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[0];
-				dst->rgbReserved = 255;
-/*				dst->rgbRed = src[0];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[2];
-				dst->rgbReserved = 255;*/
-			}
-			else if(raw->bmiHeader.biBitCount == 32){
-				const unsigned char *src;
-				src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * rawh / PROJS * linebytes + j1 * 4];
-				dst->rgbRed = src[0];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[2];
-				dst->rgbReserved = 255;
-/*				dst->rgbRed = src[2];
-				dst->rgbGreen = src[1];
-				dst->rgbBlue = src[0];
-				dst->rgbReserved = 255;*/
-			}
-		}}
-#if 0
-		fp = fopen("projected.bmp", "wb");
-		((char*)&fh.bfType)[0] = 'B';
-		((char*)&fh.bfType)[1] = 'M';
-		fh.bfSize = sizeof(BITMAPFILEHEADER) + outsize;
-		fh.bfReserved1 = fh.bfReserved2 = 0;
-		fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + proj->bmiHeader.biClrUsed * sizeof(RGBQUAD);
-		fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
-		fwrite(proj, 1, outsize, fp);
-		fclose(fp);
-#endif
-#if 1
-		{
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL;
-			stp.bmi = proj;
-			stp.alphamap = 8;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.mipmap = 0;
-			tex = projcreatedetail(name, &stp);
-		}
-#elif 1
-		{
-			suftexparam_t stp, stp2;
-			stp.bmi = proj;
-			stp.alphamap = 0;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.mipmap = 0;
-			stp2.bmi = proj;
-			stp2.alphamap = 0;
-			stp2.env = GL_MODULATE;
-			stp2.magfil = GL_LINEAR;
-			stp2.mipmap = 0;
-			tex = CacheSUFMTex(name, &stp, &stp2);
-		}
-#else
-		tex = CacheSUFTex(name, proj, 1);
-#endif
-		// Swap red and blue channel. I'm not sure whether bitwise xor'ing is faster than temporary variable.
-		for(i = 0; i < PROJTS; i++) for(int j = 0; j < PROJTS; j++){
-			RGBQUAD &dst = (RGBQUAD&)((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[i * linebytesp + j * PROJBITS / 8];
-			dst.rgbRed ^= dst.rgbBlue;
-			dst.rgbBlue ^= dst.rgbRed;
-			dst.rgbRed ^= dst.rgbBlue;
-		}
-		{
-			std::ostringstream bstr;
-			const char *p;
-//			FILE *fp;
-			p = strrchr(name, '.');
-			bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj.bmp";
-
-			/* force overwrite */
-			std::ofstream ofs(bstr.str().c_str(), std::ofstream::out | std::ofstream::binary);
-			if(ofs/*fp = fopen(bstr.str().c_str(), "wb")*/){
-				BITMAPFILEHEADER fh;
-				((char*)&fh.bfType)[0] = 'B';
-				((char*)&fh.bfType)[1] = 'M';
-				fh.bfSize = sizeof(BITMAPFILEHEADER) + outsize;
-				fh.bfReserved1 = fh.bfReserved2 = 0;
-				fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + proj->bmiHeader.biClrUsed * sizeof(RGBQUAD);
-//				fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
-//				fwrite(proj, 1, outsize, fp);
-				ofs.write(reinterpret_cast<char*>(&fh), sizeof fh);
-				ofs.write(reinterpret_cast<char*>(proj), outsize);
-				ofs.close();
-//				fclose(fp);
-			}
-
-#if 0
-			strcat(jpgfilename, ".jpg");
-			{
-				BITMAPDATA bmd;
-				bmd.pBmp = (DWORD*)((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed]);
-				bmd.dwDataSize = proj->bmiHeader.biSizeImage;
-				swap3byte(bmd.pBmp, bmd.dwDataSize);
-				bmd.nWidth = proj->bmiHeader.biWidth;
-				bmd.nHeight = proj->bmiHeader.biHeight;
-				SaveJPEGData(jpgfilename, &bmd, 80);
-			}
-#endif
-
-		}
-		free(proj);
-/*		free(raw);*/
-	}
-	return tex;
-}
 
 static int PROJC = 512;
 static void Init_PROJC(){
 	CvarAdd("g_proj_size", &PROJC, cvar_int);
 }
 static Initializator init_PROJC(Init_PROJC);
-#define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
 static const GLenum cubetarget[] = {
 GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -1603,94 +1356,6 @@ BITMAPINFO *LoadJpeg(const char *jpgfilename){
 	return bmi;
 }
 
-GLuint ProjectSphereJpg(const char *fname){
-		const struct suftexcache *stc;
-		GLuint texlist = 0;
-//		char outfilename[256], jpgfilename[256];
-		const char *outfilename, *jpgfilename;
-		const char *p;
-//		FILE *fp;
-		p = strrchr(fname, '.');
-#ifdef _WIN32
-		if(GetFileAttributes("cache") == -1)
-			CreateDirectory("cache", NULL);
-#else
-		mkdir("cache");
-#endif
-		std::ostringstream bstr;
-		bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj.bmp";
-		std::string bs = bstr.str();
-		outfilename = bs.c_str();
-		jpgfilename = fname;
-/*		strcpy(outfilename, "cache\\");
-		if(p){
-			strncat(outfilename, fname, p - fname);
-			strcat(&outfilename[sizeof "cache\\" - 1 + p - fname], "_proj");
-			strcpy(jpgfilename, outfilename);
-			strcat(outfilename, ".bmp");
-		}
-		else{
-			strcat(outfilename, fname);
-			strcat(outfilename, "_proj");
-			strcpy(jpgfilename, outfilename);
-		}
-		strcpy(jpgfilename, fname);*/
-		stc = FindTexCache(bstr.str().c_str()/*outfilename*/);
-		if(stc){
-			return stc->list;
-		}
-		else{
-			BITMAPINFO *bmi;
-			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
-			BOOL b;
-			b = GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd);
-			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
-			if(b && 0 < CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime) && (bmi = ReadBitmap(outfilename))){
-#if 1
-				suftexparam_t stp;
-				stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA;
-				stp.bmi = bmi;
-				stp.alphamap = 8;
-				stp.env = GL_MODULATE;
-				stp.magfil = GL_LINEAR;
-				stp.mipmap = 0;
-/*				{
-				timemeas_t tm;
-				TimeMeasStart(&tm);*/
-				texlist = projcreatedetail(outfilename, &stp);
-/*				CmdPrintf("ProjectSphereJpg projcreatedetail: %lg", TimeMeasLap(&tm));
-				}*/
-#elif 1
-				suftexparam_t stp, stp2;
-				stp.bmi = bmi;
-				stp.alphamap = 0;
-				stp.env = GL_MODULATE;
-				stp.magfil = GL_LINEAR;
-				stp.mipmap = 0;
-				stp2.bmi = bmi;
-				stp2.alphamap = 0;
-				stp2.env = GL_MODULATE;
-				stp2.magfil = GL_LINEAR;
-				stp2.mipmap = 0;
-				texlist = CacheSUFMTex(outfilename, &stp, &stp2);
-#else
-				texlist = CacheSUFTex(outfilename, bmi, 1);
-#endif
-				LocalFree(bmi);
-			}
-			else{
-				BITMAPINFO *bmi = LoadJpeg(jpgfilename);
-				texlist = ProjectSphereMap(fname, bmi);
-
-/*					bmi = ReadBitmap("earth.bmp");*/
-/*					bmi = lzuc(lzw_earth, sizeof lzw_earth, NULL);*/
-/*					texlist = ProjectSphereMap("earth.bmp", bmi);*/
-				free(bmi);
-			}
-		}
-		return texlist;
-}
-
 GLuint ProjectSphereCubeJpg(const char *fname){
 		const struct suftexcache *stc;
 		GLuint texlist = 0;
@@ -1764,10 +1429,11 @@ heterogeneous:
 }
 
 #endif
-#if 0
+
+#if 1
 #define ASTEROIDLIST 1
 
-static void drawasteroid(const double org[3], const double pyr[3], double rad, unsigned long seed){
+static void drawasteroid(const double org[3], const Quatd &qrot, double rad, unsigned long seed){
 	int i, j;
 #if ASTEROIDLIST
 	static GLuint varies[8] = {0};
@@ -1939,25 +1605,25 @@ static void drawasteroid(const double org[3], const double pyr[3], double rad, u
 	}
 	glPushMatrix();
 	glTranslated(org[0], org[1], org[2]);
-	{
-		amat4_t rot;
-		pyrmat(pyr, &rot);
-		glMultMatrixd(rot);
-	}
+	gldMultQuat(qrot);
 	glScaled(rad / 2, rad / 2, rad / 2);
 	glCallList(varies[seed]);
 	glPopMatrix();
 }
+#endif
+
+
+#if 1
 
 #define RING_TRACKS 10
 
 typedef struct ringVertexData{
-	amat4_t matz;
+	Mat4d matz;
 	int relative;
 	double arad;
-	avec3_t spos;
-	avec3_t apos;
-	amat4_t matty;
+	Vec3d spos;
+	Vec3d apos;
+	Mat4d matty;
 	char shadow[RING_TRACKS+2][RING_CUTS];
 } ringVertexData;
 
@@ -1986,48 +1652,44 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, char start, char end, const amat4_t rotation, double thick, double minrad, double maxrad, double t, int relative){
+void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Mat4d &rotation, double thick, double minrad, double maxrad, double t){
 	int i, inside = 0;
 	double sp, dir;
 	double width = (maxrad - minrad) / RING_TRACKS;
 	struct random_sequence rs;
-	avec3_t apos, spos, delta, light;
-	amat4_t mat;
+	Vec3d delta;
+	Mat4d mat;
 	if(0||start == end)
 		return;
 
-	tocs(apos, vw->cs, a->pos, a->cs);
+	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 
 	{
-		avec3_t v;
-		amat4_t mat2, rot;
+		Vec3d v;
+		Mat4d mat2;
 /*		MAT4ROTX(mat2, mat4identity, pitch);*/
-		tocsim(rot, vw->cs, a->cs);
-		if(rotation)
-			mat4mp(mat, rot, rotation);
-		else
-			MAT4CPY(mat, rot);
+		Mat4d rot = vw->cs->tocsim(a->parent);
+		mat = rot * rotation;
 /*		mat4mp(mat, rot, mat2);*/
 /*		glPushMatrix();
 		glLoadIdentity();
 		glRotated(10., 1., 0., 0.);
 		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 		glPopMatrix();*/
-		MAT4VP3(v, mat, avec3_001);
-		VECSUB(delta, vw->pos, apos);
-		sp = VECSP(delta, v);
-		dir = sqrt(VECSLEN(delta) - sp * sp) / a->rad; /* diameter can be calculated by sp */
+		v = mat.vp3(vec3_001);
+		delta = vw->pos - apos;
+		sp = delta.sp(v);
+		dir = sqrt(delta.slen() - sp * sp) / a->rad; /* diameter can be calculated by sp */
 	}
 
 /*	tocs(spos, vw->cs, sun.pos, sun.cs);*/
-	VECCPY(spos, sunpos);
-	VECNORM(light, sunpos);
+	Vec3d spos = sunpos;
+	Vec3d light = sunpos.norm();
 
 	init_rseq(&rs, (unsigned long)a + 123);
 
 	if(!(minrad < dir && dir < maxrad && -thick < sp && sp < thick)){
 		double rad;
-		avec3_t xh, yh;
 		ringVertexData rvd;
 		double x, y, roll;
 		COLOR32 ocol = COLOR32RGBA(255,255,255,0);
@@ -2035,21 +1697,20 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 		double (*cuts)[2];
 		int n, shade;
 		cuts = CircleCuts(cutnum);
-		MAT4VP3(xh, mat, avec3_100);
-		x = VECSP(delta, xh);
-		MAT4VP3(yh, mat, avec3_010);
-		y = VECSP(delta, yh);
+		Vec3d xh = mat.vp3(vec3_100);
+		x = delta.sp(xh);
+		Vec3d yh = mat.vp3(vec3_010);
+		y = delta.sp(yh);
 		roll = atan2(x, y);
 
 		/* determine whether we are looking the ring from night side */
 		{
-			avec3_t das;
-			VECSUB(das, spos, apos);
-			shade = VECSP(delta, &rotation[8]) * VECSP(das, &rotation[8]) < 0.;
+			Vec3d das = spos - apos;
+			shade = delta.sp(rotation.vec3(2)) * das.sp(rotation.vec3(2)) < 0.;
 		}
 
 		glPushMatrix();
-		if(relative)
+		if(vw->relative)
 			glLoadIdentity();
 		glScaled(1. / a->rad, 1. / a->rad, 1. / a->rad);
 		glTranslated(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
@@ -2065,12 +1726,12 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 		glPopMatrix();
 		glMultMatrixd(rvd.matty);
 
-		rvd.relative = relative;
+		rvd.relative = vw->relative;
 		rvd.arad = a->rad;
-		VECCPY(rvd.apos, apos);
-		VECCPY(rvd.spos, spos);
+		rvd.apos = apos;
+		rvd.spos = spos;
 
-		if(relative){
+		if(vw->relative){
 			glGetDoublev(GL_MODELVIEW_MATRIX, rvd.matz);
 			glPopMatrix();
 			glPushMatrix();
@@ -2081,12 +1742,12 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 			rad = minrad + (maxrad - minrad) * n / (RING_TRACKS+1);
 			for(i = start; i <= end; i++) for(i2 = 0; i2 < 2; i2++){
 				int i1 = (i2 ? cutnum - i : i) % cutnum;
-				avec3_t rpos, pos, ray;
+				Vec3d rpos, pos, ray;
 				pos[0] = cuts[i1][0] * rad;
 				pos[1] = cuts[i1][1] * rad;
 				pos[2] = 0.;
-				MAT4VP3(rpos, rvd.matty, pos);
-				VECSUB(ray, rpos, spos);
+				rpos = rvd.matty.vp3(pos);
+				ray = rpos - spos;
 				rvd.shadow[n][i1] = jHitSphere(apos, a->rad, spos, ray, 1.);
 			}
 		}
@@ -2130,15 +1791,10 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 	/* so close to the ring that its particles can be viewed */
 	if(minrad < dir && dir < maxrad && -thick - .01 * (1<<6) < sp && sp < thick + .01 * (1<<6)){
 		int inten, ointen;
-		avec3_t localight;
-		if(rotation){
-			mat4tdvp3(localight, mat, light);
-		}
-		else
-			VECCPY(localight, light);
+		Vec3d localight;
+		localight = mat.tdvp3(light);
 		glPushMatrix();
-		if(rotation)
-			glMultMatrixd(rotation);
+		glMultMatrixd(rotation);
 		{
 			double rad;
 			double f;
@@ -2166,7 +1822,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 			z = sqrt(1 - y * y);
 	/*		glRotated(deg_per_rad * pitch, 1., 0., 0.);*/
 			{
-				avec3_t v;
+				Vec3d v;
 				GLubyte bri;
 				glBegin(GL_QUAD_STRIP);
 				for(i = 0; i <= 16; i++){
@@ -2174,13 +1830,13 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 					v[0] = cuts[i1][0];
 					v[1] = cuts[i1][1];
 					v[2] = 0.;
-					bri = 32 + (-VECSP(v, localight) + 1.) * .5 * 127;
+					bri = 32 + (-v.sp(localight) + 1.) * .5 * 127;
 					glColor4ub(bri,bri,bri,inten);
 					glVertex3d(cuts[i1][0], cuts[i1][1], 0.);
 					v[0] = cuts[i1][0] * z;
 					v[1] = cuts[i1][1] * z;
 					v[2] = sign * y;
-					bri = 32 + (-VECSP(v, localight) + 1.) * .5 * 127;
+					bri = 32 + (-v.sp(localight) + 1.) * .5 * 127;
 					glColor4ub(bri,bri,bri,0);
 		/*			glVertex3d(cuts[i1][0], cuts[i1][1], thick / sp - sign);*/
 					glVertex3d(cuts[i1][0] * z, cuts[i1][1] * z, sign * y);
@@ -2190,7 +1846,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 				v[0] = 0.;
 				v[1] = 0.;
 				v[2] = -sign;
-				bri = 32 + (-VECSP(v, localight) + 1.) * .5 * 127;
+				bri = 32 + (-v.sp(localight) + 1.) * .5 * 127;
 				glColor4ub(bri,bri,bri, sp * sign / thick * inten / 2);
 				glVertex3d(0., 0., -sign);
 				for(i = 0; i <= 16; i++){
@@ -2198,7 +1854,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 					v[0] = cuts[i1][0];
 					v[1] = cuts[i1][1];
 					v[2] = 0.;
-					bri = 32 + (-VECSP(v, localight) + 1.) * .5 * 127;
+					bri = 32 + (-v.sp(localight) + 1.) * .5 * 127;
 					glColor4ub(bri,bri,bri,inten);
 					glVertex3d(cuts[i1][0], cuts[i1][1], 0.);
 				}
@@ -2211,23 +1867,23 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 			struct random_sequence rs;
 /*			timemeas_t tm;*/
 			const double destvelo = .01; /* destination velocity */
-			const double width = .00002 * 1000. / gvp.m; /* line width changes by the viewport size */
+			const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
 			double plpos[3];
-			GLfloat light_position[4] /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
-			avec3_t nh0 = {0., 0., -1.}, nh;
-			avec3_t vwpos;
-			amat4_t mat;
-			amat4_t proj;
+			Vec4<float> light_position /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
+			Vec3d nh0(0., 0., -1.), nh;
+			Vec3d vwpos;
+			Mat4d mat;
+			Mat4d proj;
 			int level;
-			mat4tdvp3(vwpos, rotation, delta);
+			vwpos = rotation.tdvp3(delta);
 /*			TimeMeasStart(&tm);*/
 			{
-				amat4_t modelmat, persmat;
+				Mat4d modelmat, persmat;
 				glGetDoublev(GL_MODELVIEW_MATRIX, modelmat);
 				glGetDoublev(GL_PROJECTION_MATRIX, persmat);
-				mat4mp(mat, persmat, modelmat);
+				mat = persmat * modelmat;
 			}
-			MAT4VP3(nh, vw->irot, nh0);
+			nh = vw->irot.vp3(nh0);
 			glPushMatrix();
 /*			glLoadMatrixd(vw->rot);*/
 		/*	glTranslated(-(*view)[0], -(*view)[1], -(*view)[2]);*/
@@ -2240,20 +1896,24 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 
-			glPushAttrib(GL_DEPTH_BUFFER_BIT);
+			glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT);
 			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+			glEnable(GL_NORMALIZE);
+			glEnable(GL_LIGHTING);
+			glEnable(GL_LIGHT0);
 			glDepthMask(1);
-			LightOn(NULL);
-			VECCPY(light_position, localight);
+//			LightOn(NULL);
+			light_position = localight.cast<float>();
 			light_position[3] = 0.;
 			glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 			for(level = 6; level; level--){
 				double cellsize, rocksize = (1<<level) * .0001;
 				double rotspeed = .1 / level;
-				double disp[3];
-				double plpos[3];
-				VECCPY(plpos, vw->pos);
-				VECSADD(plpos, nh, -rocksize);
+				Vec3d disp;
+				Vec3d plpos;
+				plpos = vw->pos;
+				plpos += nh * -rocksize;
 				init_rseq(&rs, level + 23342);
 				cellsize = .01 * (1<<level);
 				if(level == 6){
@@ -2272,9 +1932,13 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 					pos[1] = floor(pos[1] / cellsize) * cellsize + cellsize / 2 - pos[1];
 					pos[2] = vwpos[2] + (drseq(&rs) - .5) * 2 * cellsize;
 					pos[2] = /*pl.pos[2] +*/ +(floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2]);
-					pyr[0] = drseq(&rs) * rotspeed * t;
-					pyr[1] = drseq(&rs) * rotspeed * t;
-					pyr[2] = drseq(&rs) * rotspeed * t;
+					Quatd qrot;
+					for(int j = 0; j < 4; j++)
+						qrot[j] = drseq(&rs);
+					Vec3d omg;
+					for(int j = 0; j < 3; j++)
+						omg[j] = rotspeed * t;
+					qrot = qrot.quatrotquat(omg);
 					red = rseq(&rs);
 		/*			if((-1. < pos[0] && pos[0] < 1. && -1. < pos[2] && pos[2] < 1.
 						? -.01 < pos[0] && pos[0] < .01
@@ -2287,7 +1951,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 						avec4_t dst;
 						avec4_t vec;
 						VECCPY(vec, pos);
-						VECSADD(vec, nh, rocksize / g_glcull.fov);
+						VECSADD(vec, nh, rocksize / vw->fov);
 						MAT4VP3(dst, mat, vec);
 						if(dst[2] < 0. || dst[0] < -dst[2] || dst[2] < dst[0] || dst[1] < -dst[2] || dst[2] < dst[1])
 							continue;
@@ -2301,7 +1965,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 						glVertex3dv(pos);
 					}
 					else
-						drawasteroid(pos, pyr, rocksize, i + level * count);
+						drawasteroid(pos, qrot, rocksize, i + level * count);
 					total++;
 				}
 				if(level == 6){
@@ -2310,7 +1974,7 @@ void ring_draw(const Viewer *vw, const struct astrobj *a, const avec3_t sunpos, 
 				}
 			}
 			glPopMatrix();
-			LightOff();
+//			LightOff();
 			glPopAttrib();
 
 			glMatrixMode(GL_PROJECTION);

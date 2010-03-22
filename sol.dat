@@ -436,7 +436,10 @@ coordsys Orbit saturn{
 		spherehit
 		texture sat0fds2.jpg
 	}
-	coordsys saturnlo{
+	coordsys Orbit saturnlo{
+		orbits Saturn
+		orbit_radius 100000
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG) # 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		fullname "Saturn Low Orbit"
 		pos -50000 50000 0
 		warp

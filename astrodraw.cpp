@@ -208,7 +208,7 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 static GLuint ProjectSphereJpg(const char *fname);
 GLuint ProjectSphereCubeJpg(const char *fname);
-void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Mat4d &rotation, double thick, double minrad, double maxrad, double t);
+void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &rotation, double thick, double minrad, double maxrad, double t);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -517,7 +517,7 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
-	if(0. < scale && scale < 5.){
+	if(0. < scale && scale < 10.){
 		GLubyte color[4], dark[4];
 		color[0] = GLubyte(mat_diffuse[0] * 255);
 		color[1] = GLubyte(mat_diffuse[1] * 255);
@@ -526,6 +526,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 		dark[0] = GLubyte(mat_ambient[0] * 127);
 		dark[1] = GLubyte(mat_ambient[1] * 127);
 		dark[2] = GLubyte(mat_ambient[2] * 127);
+		for(i = 0; i < 3; i++)
+			dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
 		dark[3] = 255;
 		drawShadeSphere(a, vw, sunpos, color, dark);
 		return true;
@@ -836,7 +838,7 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 void TexSphere::draw(const Viewer *vw){
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
-	Mat4d ringrot;
+	Quatd ringrot;
 	char ringdrawn = 8;
 	bool drawring = !vw->gc->cullFrustum(pos, rad * ringmax * 1.1);
 
@@ -844,7 +846,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot * Quatd(SQRT2P2, 0, 0, SQRT2P2)).tomat4(), ringthick, ringmin, ringmax, 0.);
+		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot * Quatd(SQRT2P2, 0, 0, SQRT2P2)), ringthick, ringmin, ringmax, 0.);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -1237,7 +1239,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 		glEnable(GL_TEXTURE_CUBE_MAP);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
+//		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 
 		if(glActiveTextureARB){
 			glActiveTextureARB(GL_TEXTURE1_ARB);
@@ -1623,15 +1625,14 @@ typedef struct ringVertexData{
 	double arad;
 	Vec3d spos;
 	Vec3d apos;
+	Vec3d vwpos;
 	Mat4d matty;
+	Mat4d imatty;
 	char shadow[RING_TRACKS+2][RING_CUTS];
 } ringVertexData;
 
 static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexData *rvd, int n, int i){
-	avec3_t rpos, pos, pp, ray;
-	amat4_t imatz, id;
-
-	pos[0] = (x); pos[1] = (y); pos[2] = (z);
+	Vec3d pos(x, y, z);
 
 	/* i really dont like to trace a ray here just for light source obscuring, but couldnt help. */
 	if(rvd->shadow[n][i % RING_CUTS]){
@@ -1643,22 +1644,23 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 
 	if(rvd->relative){
-		MAT4VP3(pp, rvd->matz, pos);
-		VECNORMIN(pp);
+		Vec3d pp = rvd->matz.vp3(pos).norm();
 		glVertex3dv(pp);
 	}
 	else{
-		glVertex3d(x, y, z);
+		glNormal3dv(rvd->imatty.vp3(rvd->vwpos) - pos);
+		glVertex3dv(pos);
 	}
 }
 
-void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Mat4d &rotation, double thick, double minrad, double maxrad, double t){
+void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t){
 	int i, inside = 0;
 	double sp, dir;
 	double width = (maxrad - minrad) / RING_TRACKS;
 	struct random_sequence rs;
 	Vec3d delta;
 	Mat4d mat;
+	Mat4d rotation = qrot.tomat4();
 	if(0||start == end)
 		return;
 
@@ -1686,6 +1688,21 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 	Vec3d spos = sunpos;
 	Vec3d light = sunpos.norm();
 
+	Vec4<float> light_position;
+	Vec3d localight = mat.tdvp3(light);
+	glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glDepthMask(1);
+//			LightOn(NULL);
+	light_position = localight.cast<float>();
+	light_position[3] = 0.;
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4<float>(.1f, .1f, .1f, 1.f));
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	glEnable(GL_COLOR_MATERIAL);
+
 	init_rseq(&rs, (unsigned long)a + 123);
 
 	if(!(minrad < dir && dir < maxrad && -thick < sp && sp < thick)){
@@ -1695,7 +1712,8 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 		COLOR32 ocol = COLOR32RGBA(255,255,255,0);
 		int cutnum = RING_CUTS;
 		double (*cuts)[2];
-		int n, shade;
+		int n;
+		rvd.vwpos = vw->pos;
 		cuts = CircleCuts(cutnum);
 		Vec3d xh = mat.vp3(vec3_100);
 		x = delta.sp(xh);
@@ -1704,10 +1722,10 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 		roll = atan2(x, y);
 
 		/* determine whether we are looking the ring from night side */
-		{
+/*		{
 			Vec3d das = spos - apos;
 			shade = delta.sp(rotation.vec3(2)) * das.sp(rotation.vec3(2)) < 0.;
-		}
+		}*/
 
 		glPushMatrix();
 		if(vw->relative)
@@ -1715,6 +1733,10 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 		glScaled(1. / a->rad, 1. / a->rad, 1. / a->rad);
 		glTranslated(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
 
+#if 1
+		rvd.matty = (Mat4d(mat4_u).translatein(apos) * mat).rotz(-roll) * Mat4d(Vec3d(a->rad, 0, 0), Vec3d(0, a->rad, 0), Vec3d(0, 0, a->rad));
+		rvd.imatty = Mat4d(Vec3d(1. / a->rad, 0, 0), Vec3d(0, 1. / a->rad, 0), Vec3d(0, 0, 1. / a->rad)).rotz(roll) * (qrot.cnj() * vw->cs->tocsq(a->parent)).tomat4() * Mat4d(mat4_u).translatein(-apos);
+#else
 		glPushMatrix();
 		glLoadIdentity();
 		glTranslated(apos[0], apos[1], apos[2]);
@@ -1724,6 +1746,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 		glScaled(a->rad, a->rad, a->rad);
 		glGetDoublev(GL_MODELVIEW_MATRIX, rvd.matty);
 		glPopMatrix();
+#endif
 		glMultMatrixd(rvd.matty);
 
 		rvd.relative = vw->relative;
@@ -1748,7 +1771,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 				pos[2] = 0.;
 				rpos = rvd.matty.vp3(pos);
 				ray = rpos - spos;
-				rvd.shadow[n][i1] = jHitSphere(apos, a->rad, spos, ray, 1.);
+				rvd.shadow[n][i1] = 0/*jHitSphere(apos, a->rad, spos, ray, 1.)*/;
 			}
 		}
 
@@ -1758,9 +1781,9 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 			rad = minrad + (maxrad - minrad) * n / (RING_TRACKS+1);
 			radn = minrad + (maxrad - minrad) * (n+1) / (RING_TRACKS+1);
 			if(n < RING_TRACKS)
-				col = (shade ? COLOR32RGBA(31,31,31,0) : COLOR32RGBA(127,127,127,0)) | COLOR32RGBA(0,0,0,rseq(&rs));
+				col = (/*shade ? COLOR32RGBA(31,31,31,0) :*/ COLOR32RGBA(127,127,127,0)) | COLOR32RGBA(0,0,0,rseq(&rs));
 			else{
-				col = shade ? COLOR32RGBA(31,31,31,0) : COLOR32RGBA(127,127,127,0);
+				col = /*shade ? COLOR32RGBA(31,31,31,0) :*/ COLOR32RGBA(127,127,127,0);
 				radn = maxrad;
 			}
 			glBegin(GL_QUAD_STRIP);
@@ -1791,8 +1814,6 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 	/* so close to the ring that its particles can be viewed */
 	if(minrad < dir && dir < maxrad && -thick - .01 * (1<<6) < sp && sp < thick + .01 * (1<<6)){
 		int inten, ointen;
-		Vec3d localight;
-		localight = mat.tdvp3(light);
 		glPushMatrix();
 		glMultMatrixd(rotation);
 		{
@@ -1861,6 +1882,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 				glEnd();
 			}
 		}
+		glDisable(GL_COLOR_MATERIAL);
 		if(start == 0)
 		{
 			int i, count = inten / 4, total = 0;
@@ -1869,7 +1891,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 			const double destvelo = .01; /* destination velocity */
 			const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
 			double plpos[3];
-			Vec4<float> light_position /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
+//			Vec4<float> light_position /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
 			Vec3d nh0(0., 0., -1.), nh;
 			Vec3d vwpos;
 			Mat4d mat;
@@ -1896,17 +1918,8 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 
-			glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT);
 			glEnable(GL_DEPTH_TEST);
 			glDisable(GL_BLEND);
-			glEnable(GL_NORMALIZE);
-			glEnable(GL_LIGHTING);
-			glEnable(GL_LIGHT0);
-			glDepthMask(1);
-//			LightOn(NULL);
-			light_position = localight.cast<float>();
-			light_position[3] = 0.;
-			glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 			for(level = 6; level; level--){
 				double cellsize, rocksize = (1<<level) * .0001;
 				double rotspeed = .1 / level;
@@ -1975,7 +1988,6 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 			}
 			glPopMatrix();
 //			LightOff();
-			glPopAttrib();
 
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
@@ -1986,6 +1998,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 		}
 		glPopMatrix();
 	}
+	glPopAttrib();
 }
 
 #if 0

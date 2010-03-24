@@ -301,6 +301,7 @@ void WarSpace::draw(wardraw_t *wd){
 		}
 	}
 
+#if 0
 	glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
 	static GLuint tex = 0;
 	if(!tex){
@@ -350,6 +351,7 @@ void WarSpace::draw(wardraw_t *wd){
 	drawIcosaSphere(Vec3d(.1,0,-1), gradius, *wd->vw, Vec3d(1,.125,1), Quatd(0, 0, sin(war_time() / 10.), cos(war_time() / 10.)) * Quatd(0, sin(war_time()), 0, cos(war_time())));
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopAttrib();
+#endif
 
 	tent3d_line_drawdata dd;
 	dd.viewdir = -wd->vw->rot.vec3(2);

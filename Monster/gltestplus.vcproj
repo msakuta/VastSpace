@@ -516,6 +516,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\draw\ring-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\Scarry-Draw.cpp"
 					>
 				</File>

@@ -5,6 +5,7 @@
 #include "../motion.h"
 #include "../war.h"
 #include "../glstack.h"
+#include "../Universe.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -179,6 +180,25 @@ void Player::draw(Viewer *vw){
 void Player::drawtra(Viewer *){}
 
 void Player::drawindics(Viewer *vw){
+	const Universe *u;
+	if(u = cs->findcspath("/")->toUniverse()){
+		GLpmatrix glpm;
+		double (*cuts)[2] = CircleCuts(32);
+		projection((glLoadIdentity(), glOrtho(-1., 1., -1., 1., -1, 1)));
+		glBegin(GL_LINES);
+		for(int n = 0; n < 64; n++){
+			double omega = ::sqrt(1. / n) / n;
+			double angle = u->astro_time * omega;
+			Quatd qrot(0, 0, sin(angle / 2.), cos(angle / 2.));
+			for(int i = 0; i < 32; i++){
+				Vec3d v0(cuts[i][0], cuts[i][1], 0.);
+				Vec3d v(qrot.trans(v0));
+				glVertex2dv(v * n / 64.);
+				glVertex2dv(v * (n + 1) / 64.);
+			}
+		}
+		glEnd();
+	}
 	if(moveorder && 0 < move_t){
 		Vec3d &mpos = move_hitpos;
 		GLpmatrix glpm;
@@ -200,11 +220,11 @@ void Player::drawindics(Viewer *vw){
 		Vec4d mpos4 = irot.dvp3(mpos) + move_z * vec3_010 + move_src;
 		mpos4[3] = 1.;
 		Vec4d spos = move_trans.vp(mpos4);
-		double (*cuts)[2] = CircleCuts(32);
 		glPushMatrix();
 		glTranslated((spos[0] / spos[3] + 1.) * vw->vp.w / 2., (1. - spos[1] / spos[3]) * vw->vp.h / 2., 0.);
 		gldScaled(20.);
 		glBegin(GL_LINE_LOOP);
+		double (*cuts)[2] = CircleCuts(32);
 		for(int i = 0; i < 32; i++){
 			glVertex2d(cuts[i][0], cuts[i][1]);
 		}

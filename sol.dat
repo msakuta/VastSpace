@@ -427,10 +427,11 @@ coordsys Orbit saturn{
 		radius 60268
 		mass 5.6846e26
 		oblateness .09796
-		omega 0 sin(26.73*RAD_PER_DEG) cos(26.73*RAD_PER_DEG) 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#		omega 0 sin(26.73*RAD_PER_DEG) cos(26.73*RAD_PER_DEG) 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 #			updirection 0 1 0
 #			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
-		updirection 0 cos(26.73*RAD_PER_DEG) -sin(26.73*RAD_PER_DEG)
+#		updirection 0 cos(26.73*RAD_PER_DEG) -sin(26.73*RAD_PER_DEG)
+		omega 0 0 1 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		planet
 		gravity
 		spherehit
@@ -439,11 +440,13 @@ coordsys Orbit saturn{
 	coordsys Orbit saturnlo{
 		orbits Saturn
 		orbit_radius 100000
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG) # 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG) # 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		orbit_axis 0 0 1
 		fullname "Saturn Low Orbit"
 		pos -50000 50000 0
 		warp
 		teleport "Saturn Low Orbit" 10 0 0
+		showorbit
 	}
 	astro Satellite "Mimas"{
 		radius 198.30
@@ -452,6 +455,7 @@ coordsys Orbit saturn{
 		orbit_radius 185520
 		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
 		planet
+		showorbit
 	}
 	astro Satellite "Enceladus"{
 		radius 252.1

@@ -8,11 +8,12 @@ public:
 	typedef CoordSys st;
 	double timescale;
 	double global_time;
+	double astro_time;
 	Player *ppl;
 	bool paused;
 	static const unsigned version; // Saved file version, checked on loading
 
-	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0){
+	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0){
 		name = NULL;
 		fullname = NULL;
 		flags = CS_ISOLATED | CS_EXTENT;

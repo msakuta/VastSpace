@@ -2,6 +2,7 @@
 #include "serial_util.h"
 #include "player.h"
 #include "cmd.h"
+#include "astro.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -14,7 +15,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 5;
+const unsigned Universe::version = 6;
 
 const char *Universe::classname()const{
 	return "Universe";
@@ -22,18 +23,21 @@ const char *Universe::classname()const{
 
 void Universe::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << " timescale:" << timescale << " global_time:" << global_time;
+	sc.o << timescale << global_time;
+	sc.o << astro_time;
 }
 
 extern std::istream &operator>>(std::istream &o, const char *cstr);
 
 void Universe::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> " timescale:" >> timescale >> " global_time:" >> global_time;
+	sc.i >> timescale >> global_time;
+	sc.i >> astro_time;
 }
 
 void Universe::anim(double dt){
 	this->global_time += dt;
+	this->astro_time += Astrobj::astro_timescale * dt;
 	st::anim(dt);
 }
 

@@ -735,15 +735,14 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	return texenable;
 }
 
-bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname, double oblateness){
+bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, spe, zoom;
-	int i, j, jstart, fine, texenable = texlist && texmat;
+	int i, j, jstart, fine, texenable = texlist;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
-	Vec3d tp;
 
 	params.vw = vw;
 	params.texenable = texenable;
@@ -753,8 +752,8 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 /*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
 	scale = a->rad * vw->gc->scale(apos);
 
-	VECSUB(tp, apos, vw->pos);
-	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
+	Vec3d tp = apos - vw->pos;
+	spe = (tp.sp(vw->velo) / tp.len() / vw->velolen - 1.) / 2.;
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 5.){
@@ -825,7 +824,16 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	GLcull gc = GLcull(vw->gc->getFov(), Vec3d(0,0,0), vw->gc->getInvrot(), vw->gc->getNear(), vw->gc->getFar());
 	avw.pos = Vec3d(0,0,0);
 	avw.gc = &gc;
-	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1. - oblateness, 1.), qrot);
+	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	if(texrot)
+		gldMultQuat(*texrot);
+	glRotatef(90, 1, 0, 0);
+	glMatrixMode(GL_MODELVIEW);
+	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
+	glMatrixMode(GL_TEXTURE);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
 	glPopAttrib();
 }
 
@@ -839,13 +847,13 @@ void TexSphere::draw(const Viewer *vw){
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	char ringdrawn = 8;
-	bool drawring = !vw->gc->cullFrustum(pos, rad * ringmax * 1.1);
+	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(pos, rad * ringmax * 1.1);
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot * Quatd(SQRT2P2, 0, 0, SQRT2P2)), ringthick, ringmin, ringmax, 0.);
+		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0.);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -858,7 +866,7 @@ void TexSphere::draw(const Viewer *vw){
 		if(oblateness != 0.){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname, oblateness);
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, NULL, texname, oblateness);
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;

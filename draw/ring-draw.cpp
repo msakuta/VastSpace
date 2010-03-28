@@ -1,5 +1,7 @@
 #include "../astrodraw.h"
-#include "../judge.h"
+//#include "../judge.h"
+#include "../astrodef.h"
+#include "../Universe.h"
 extern "C"{
 #include <clib/amat3.h>
 #include <clib/rseq.h>
@@ -234,14 +236,19 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t){
+void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t){
 	int i, inside = 0;
 	double sp, dir;
 	double width = (maxrad - minrad) / RING_TRACKS;
 	struct random_sequence rs;
 	Vec3d delta;
 	Mat4d mat;
-	Mat4d rotation = qrot.tomat4();
+	Quatd axisrot = Quatd::direction(qrot.trans(vec3_001));
+	Vec3d vwapos = axisrot.cnj().trans(a->parent->tocs(vw->pos, vw->cs) - a->pos);
+	double phase = atan2(-vwapos[0], vwapos[1]) + M_PI;
+	double r = vwapos[0] * vwapos[0] + vwapos[1] * vwapos[1];
+	Quatd qphase(0, 0, sin(phase / 2.), cos(phase / 2.));
+	Mat4d rotation = (axisrot * qphase).tomat4();
 	if(0||start == end)
 		return;
 
@@ -407,7 +414,7 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 	if(minrad < dir && dir < maxrad && -thick - .01 * (1<<6) < sp && sp < thick + .01 * (1<<6)){
 		int inten, ointen;
 		glPushMatrix();
-		glMultMatrixd(rotation);
+//		glMultMatrixd(rotation);
 		{
 			double rad;
 			double f;
@@ -485,11 +492,27 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 			double plpos[3];
 //			Vec4<float> light_position /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
 			Vec3d nh0(0., 0., -1.), nh;
-			Vec3d vwpos;
 			Mat4d mat;
 			Mat4d proj;
 			int level;
-			vwpos = rotation.tdvp3(delta);
+//			vwpos = rotation.tdvp3(delta);
+			double gtime = 0.;
+			{
+				CoordSys *top = a->parent;
+				for(; top->parent; top = top->parent);
+				if(!top || !top->toUniverse());
+				else
+					gtime = top->toUniverse()->astro_time;
+			}
+			double dist = delta.len();
+			double omega = ::sqrt(UGC * a->mass / dist) / dist; // orbital speed at view position
+			double angle = omega * gtime;
+			Quatd qangle0(0,0,sin(angle/2.),cos(angle/2.));
+			Quatd qangle = axisrot * qangle0;
+//			Vec3d vwpos = qangle.cnj().trans(delta);
+			Vec3d vwpos(phase, r, vwapos[2]);
+			double omegadot = 3. / 2. * ::sqrt(UGC * a->mass / dist) / dist / dist;
+			double vdot = 1. / 2. * ::sqrt(UGC * a->mass / dist) / dist;
 /*			TimeMeasStart(&tm);*/
 			{
 				Mat4d modelmat, persmat;
@@ -529,14 +552,22 @@ void ring_draw(const Viewer *vw, const struct Astrobj *a, const Vec3d &sunpos, c
 					glBegin(GL_POINTS);
 				}
 				for(i = level == 6 ? count * 64 : count; i; i--){
-					double pos[3], pyr[3], x0, x1, z0, z1, base;
+					double x0, x1, z0, z1, base;
 					unsigned long red;
-					pos[0] = vwpos[0] + (drseq(&rs) - .5) * 2 * cellsize;
-					pos[0] = /*pl.pos[0] +*/ +(floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0]);
-					pos[1] = vwpos[1] + (drseq(&rs) - .5) * 2 * cellsize;
-					pos[1] = floor(pos[1] / cellsize) * cellsize + cellsize / 2 - pos[1];
-					pos[2] = vwpos[2] + (drseq(&rs) - .5) * 2 * cellsize;
-					pos[2] = /*pl.pos[2] +*/ +(floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2]);
+					Vec3d pos0;
+					for(int j = 0; j < 3; j++)
+						pos0[j] = (drseq(&rs) - .5) * 2 * cellsize;
+					Vec3d pos = pos0;
+					pos += vwpos;
+					for(int j = 0; j < 3; j++)
+						pos[j] = ::floor(pos[j] / cellsize) * cellsize + cellsize / 2. - pos[j];
+					pos[0] += /*.25 * gtime / 1000. */ gtime * (pos[1] * 200 * omega /*+ vwpos[1] * omega*/);
+/*					dist = (qangle.trans(pos) + delta).len();
+					omega = ::sqrt(UGC * a->mass / dist) / dist;
+					angle = omega * gtime;
+					qangle0 = Quatd(0,0,sin(angle/2.),cos(angle/2.));
+					Quatd qangle = axisrot * qangle0;*/
+					pos = qangle.trans(pos);
 					Quatd qrot;
 					for(int j = 0; j < 4; j++)
 						qrot[j] = drseq(&rs);

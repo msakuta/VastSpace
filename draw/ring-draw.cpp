@@ -3,7 +3,7 @@
 #include "../astrodef.h"
 #include "../Universe.h"
 extern "C"{
-#include <clib/amat3.h>
+//#include <clib/amat3.h>
 #include <clib/rseq.h>
 #include <clib/timemeas.h>
 //#include <clib/gl/cull.h>
@@ -18,7 +18,7 @@ extern "C"{
 
 #define ASTEROIDLIST 1
 
-static void drawasteroid(const double org[3], const Quatd &qrot, double rad, unsigned long seed){
+static void drawasteroid(const Vec3d &org, const Quatd &qrot, double rad, unsigned long seed){
 	int i, j;
 #if ASTEROIDLIST
 	static GLuint varies[8] = {0};
@@ -31,11 +31,11 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 	static char varies[numof(caches)];
 #endif
 	if(!varies[seed %= numof(varies)]){
-	double *pos[8][9]; /* indirect vector referencing to simplify normal generation */
+	Vec3d *pos[8][9]; /* indirect vector referencing to simplify normal generation */
 #if ASTEROIDLIST
-	double posv[8][7][3], norm[8][8][3];
-	double tpos[3], tnorm[3];
-	double bpos[3], bnorm[3];
+	Vec3d posv[8][7], norm[8][8];
+	Vec3d tpos, tnorm;
+	Vec3d bpos, bnorm;
 	glNewList(varies[seed] = glGenLists(1), GL_COMPILE);
 	{
 		GLfloat dif[] = {.5, .475, .45, 1.}, amb[] = {.1, .1, .05, 1.};
@@ -48,10 +48,10 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 	double *bpos = caches[seed].bpos, *bnorm = caches[seed].bnorm;
 #endif
 	for(i = 0; i < 8; i++){
-		pos[i][0] = tpos;
+		pos[i][0] = &tpos;
 		for(j = 1; j < 8; j++)
-			pos[i][j] = posv[i][j-1];
-		pos[i][8] = bpos;
+			pos[i][j] = &posv[i][j-1];
+		pos[i][8] = &bpos;
 	}
 	for(i = 0; i < 8; i++) for(j = 1; j < 8; j++){
 		double ci, cj, si, sj, ci1, cj1, si1, sj1;
@@ -65,9 +65,9 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 		cj1 = cos((j+1) * M_PI / 8);
 		sj1 = sin((j+1) * M_PI / 8);
 		init_rseq(&rs, seed + i + j * 8);
-		pos[i][j][0] = (drseq(&rs) + 1.) * ci * sj;
-		pos[i][j][1] = (drseq(&rs) + 1.) * cj;
-		pos[i][j][2] = (drseq(&rs) + 1.) * si * sj;
+		(*pos[i][j])[0] = (drseq(&rs) + 1.) * ci * sj;
+		(*pos[i][j])[1] = (drseq(&rs) + 1.) * cj;
+		(*pos[i][j])[2] = (drseq(&rs) + 1.) * si * sj;
 	}
 	{
 		struct random_sequence rs;
@@ -81,25 +81,51 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 	}
 	for(i = 0; i < 8; i++) for(j = 1; j < 8; j++){
 		int i1 = (i+1)%8, j0 = j-1, j1 = (j+1)%9, in = (i-1+8)%8, jn = (j-1+9)%9;
-		avec3_t dx, dy, vec;
-		VECSUB(dx, pos[i1][j], pos[i][j]);
-		VECSUB(dy, pos[i][j1], pos[i][j]);
+#if 1
+		Vec3d dx, dy, vec;
+		dx = *pos[i1][j] - *pos[i][j];
+		dy = *pos[i][j1] - *pos[i][j];
+		norm[i][j0] = dx.vp(dy).normin();
+		dy = *pos[i][jn] - *pos[i][j];
+		norm[i][j0] += dy.vp(dx).normin();
+		dx = *pos[in][j] - *pos[i][j];
+		norm[i][j0] += dx.vp(dy).normin();
+		dy = *pos[i][j1] - *pos[i][j];
+		norm[i][j0] += dy.vp(dx).normin();
+		norm[i][j0].normin();
+#elif 0
+		Vec3d dx, dy, vec;
+		dx = *pos[i1][j] - *pos[i][j];
+		dy = *pos[i][j1] - *pos[i][j];
+		norm[i][j0] = dx.vp(dy).norm();
+		dy = *pos[i][jn] - *pos[i][j];
+		norm[i][j0] += dy.vp(dx).norm();
+		dx = *pos[in][j] - *pos[i][j];
+		norm[i][j0] += dx.vp(dy).norm();
+		dy = *pos[i][j1] - *pos[i][j];
+		norm[i][j0] += dy.vp(dx).norm();
+		norm[i][j0].normin();
+#else
+		Vec3d dx, dy, vec;
+		VECSUB(dx, *pos[i1][j], *pos[i][j]);
+		VECSUB(dy, *pos[i][j1], *pos[i][j]);
 		VECVP(vec, dx, dy);
 		VECNORMIN(vec);
 		VECCPY(norm[i][j0], vec);
-		VECSUB(dy, pos[i][jn], pos[i][j]);
+		VECSUB(dy, *pos[i][jn], *pos[i][j]);
 		VECVP(vec, dy, dx);
 		VECNORMIN(vec);
 		VECADDIN(norm[i][j0], vec);
-		VECSUB(dx, pos[in][j], pos[i][j]);
+		VECSUB(dx, *pos[in][j], *pos[i][j]);
 		VECVP(vec, dx, dy);
 		VECNORMIN(vec);
 		VECADDIN(norm[i][j0], vec);
-		VECSUB(dy, pos[i][j1], pos[i][j]);
+		VECSUB(dy, *pos[i][j1], *pos[i][j]);
 		VECVP(vec, dy, dx);
 		VECNORMIN(vec);
 		VECADDIN(norm[i][j0], vec);
 		VECNORMIN(norm[i][j0]);
+#endif
 /*		glBegin(GL_LINES);
 		glVertex3dv(pos[i][j]);
 		{
@@ -114,29 +140,24 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 		int i1 = (i+1)%8, j1 = (j+1)%9, j0 = j-1, j01 = j;
 		glBegin(GL_TRIANGLE_STRIP);
 		glNormal3dv(norm[i][j0]);
-		glVertex3dv(pos[i][j]);
+		glVertex3dv(*pos[i][j]);
 		glNormal3dv(norm[i1][j0]);
-		glVertex3dv(pos[i1][j]);
+		glVertex3dv(*pos[i1][j]);
 		glNormal3dv(norm[i][j01]);
-		glVertex3dv(pos[i][j1]);
+		glVertex3dv(*pos[i][j1]);
 		glNormal3dv(norm[i1][j01]);
-		glVertex3dv(pos[i1][j1]);
+		glVertex3dv(*pos[i1][j1]);
 		glEnd();
 	}
 	{
-		VECNULL(bnorm);
+		bnorm.clear();
 
 		/* bottom cap */
 		for(i = 0; i < 8; i++){
-			avec3_t dx, dy, vec;
 			int i1 = (i+1)%8;
-			VECSUB(dx, pos[i][7], bpos);
-			VECSUB(dy, pos[i1][7], bpos);
-			VECVP(vec, dx, dy);
-			VECNORMIN(vec);
-			VECADDIN(bnorm, vec);
+			bnorm += (*pos[i][7] - bpos).vp(*pos[i1][7] - bpos).normin();
 		}
-		VECNORMIN(bnorm);
+		bnorm.normin();
 #if ASTEROIDLIST
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3dv(bnorm);
@@ -144,7 +165,7 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 		for(i = 0; i < 9; i++){
 			int i1 = i%8, j = 7, j1 = 8;
 			glNormal3dv(norm[i1][6]);
-			glVertex3dv(pos[i1][j]);
+			glVertex3dv(*pos[i1][j]);
 		}
 		glEnd();
 #endif
@@ -157,19 +178,14 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 		}
 		glEnd();*/
 
-		VECNULL(tnorm);
+		tnorm.clear();
 
 		/* top cap */
 		for(i = 0; i < 8; i++){
-			avec3_t dx, dy, vec;
 			int i1 = (i+1)%8;
-			VECSUB(dx, pos[i][1], tpos);
-			VECSUB(dy, pos[i1][1], tpos);
-			VECVP(vec, dy, dx);
-			VECNORMIN(vec);
-			VECADDIN(tnorm, vec);
+			tnorm += (*pos[i1][1] - tpos).vp(*pos[i][1] - tpos).normin();
 		}
-		VECNORMIN(tnorm);
+		tnorm.normin();
 #if ASTEROIDLIST
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3dv(tnorm);
@@ -177,7 +193,7 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 		for(i = 9; i; i--){
 			int i1 = i%8, j = 0, j1 = 1;
 			glNormal3dv(norm[i1][0]);
-			glVertex3dv(pos[i1][j1]);
+			glVertex3dv(*pos[i1][j1]);
 		}
 		glEnd();
 #endif

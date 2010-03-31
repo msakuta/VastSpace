@@ -181,7 +181,7 @@ void Player::drawtra(Viewer *){}
 
 void Player::drawindics(Viewer *vw){
 	const Universe *u;
-	if(u = cs->findcspath("/")->toUniverse()){
+/*	if(u = cs->findcspath("/")->toUniverse()){
 		GLpmatrix glpm;
 		double (*cuts)[2] = CircleCuts(32);
 		projection((glLoadIdentity(), glOrtho(-1., 1., -1., 1., -1, 1)));
@@ -198,7 +198,7 @@ void Player::drawindics(Viewer *vw){
 			}
 		}
 		glEnd();
-	}
+	}*/
 	if(moveorder && 0 < move_t){
 		Vec3d &mpos = move_hitpos;
 		GLpmatrix glpm;

@@ -61,7 +61,7 @@ extern "C"{
 
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
-static double g_space_near_clip = 0.005, g_space_far_clip = 1e3;
+static double g_space_near_clip = 0.00005, g_space_far_clip = 1e10;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -471,7 +471,7 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
-	GLcull glc = GLcull(vw.fov, vw.pos, vw.irot, 1. / 1e3, 1e10);
+	GLcull glc = GLcull(vw.fov, vw.pos, vw.irot, g_space_near_clip, g_space_far_clip);
 	vw.gc = &glc;
 	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
 	{
@@ -483,7 +483,7 @@ void draw_func(Viewer &vw, double dt){
 //	drawstarback(&vw, &galaxysystem, NULL, NULL);
 	projection((
 		glPushMatrix(), glLoadIdentity(),
-		vw.frustum(1. / 1e3, 1e10)
+		vw.frustum(g_space_near_clip, g_space_far_clip)
 	));
 	universe.startdraw();
 	universe.predraw(&vw);
@@ -1536,6 +1536,8 @@ int main(int argc, char *argv[])
 	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
+	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
+	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

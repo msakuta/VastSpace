@@ -237,6 +237,8 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 }
 
 void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t){
+	if(0||start == end)
+		return;
 	int i, inside = 0;
 	double sp, dir;
 	double width = (maxrad - minrad) / RING_TRACKS;
@@ -246,11 +248,9 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	Quatd axisrot = Quatd::direction(qrot.trans(vec3_001));
 	Vec3d vwapos = axisrot.cnj().trans(a->parent->tocs(vw->pos, vw->cs) - a->pos);
 	double phase = atan2(-vwapos[0], vwapos[1]) + M_PI;
-	double r = vwapos[0] * vwapos[0] + vwapos[1] * vwapos[1];
+	double r = ::sqrt(vwapos[0] * vwapos[0] + vwapos[1] * vwapos[1]);
 	Quatd qphase(0, 0, sin(phase / 2.), cos(phase / 2.));
 	Mat4d rotation = (axisrot * qphase).tomat4();
-	if(0||start == end)
-		return;
 
 	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 
@@ -510,9 +510,9 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			Quatd qangle0(0,0,sin(angle/2.),cos(angle/2.));
 			Quatd qangle = axisrot * qangle0;
 //			Vec3d vwpos = qangle.cnj().trans(delta);
-			Vec3d vwpos(phase, r, vwapos[2]);
 			double omegadot = 3. / 2. * ::sqrt(UGC * a->mass / dist) / dist / dist;
 			double vdot = 1. / 2. * ::sqrt(UGC * a->mass / dist) / dist;
+			Vec3d vwpos(r * phase - r * omega * gtime, -r, vwapos[2]);
 /*			TimeMeasStart(&tm);*/
 			{
 				Mat4d modelmat, persmat;
@@ -558,23 +558,35 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 					for(int j = 0; j < 3; j++)
 						pos0[j] = (drseq(&rs) - .5) * 2 * cellsize;
 					Vec3d pos = pos0;
-					pos += vwpos;
-					for(int j = 0; j < 3; j++)
-						pos[j] = ::floor(pos[j] / cellsize) * cellsize + cellsize / 2. - pos[j];
-					pos[0] += /*.25 * gtime / 1000. */ gtime * (pos[1] * 200 * omega /*+ vwpos[1] * omega*/);
+					pos -= vwpos;
+					for(int j = 1; j < 3; j++)
+						pos[j] = pos[j] - ::floor(pos[j] / cellsize) * cellsize - cellsize / 2.;
+//					pos[0] += .25 * gtime / 1000.;
+//					pos[0] += gtime * (pos[1] * 200 * omega + vwpos[1] * omega);
+					pos[0] += gtime * (pos[1] * omega);
+					for(int j = 0; j < 1; j++)
+						pos[j] = pos[j] - ::floor(pos[j] / cellsize) * cellsize - cellsize / 2.;
 /*					dist = (qangle.trans(pos) + delta).len();
 					omega = ::sqrt(UGC * a->mass / dist) / dist;
 					angle = omega * gtime;
 					qangle0 = Quatd(0,0,sin(angle/2.),cos(angle/2.));
 					Quatd qangle = axisrot * qangle0;*/
 					pos = qangle.trans(pos);
+
+					// Initial rotation
 					Quatd qrot;
 					for(int j = 0; j < 4; j++)
 						qrot[j] = drseq(&rs);
+					qrot.normin();
+
+					// Angular velocity vector
 					Vec3d omg;
 					for(int j = 0; j < 3; j++)
-						omg[j] = rotspeed * t;
-					qrot = qrot.quatrotquat(omg);
+						omg[j] = drseq(&rs);
+					double angle = drseq(&rs) * rotspeed * gtime / 2.;
+					Quatd omgdt = Quatd(omg.norm() * sin(angle)) + Quatd(0,0,0,cos(angle));
+
+					qrot *= omgdt;
 					red = rseq(&rs);
 		/*			if((-1. < pos[0] && pos[0] < 1. && -1. < pos[2] && pos[2] < 1.
 						? -.01 < pos[0] && pos[0] < .01

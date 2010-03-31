@@ -458,6 +458,7 @@ coordsys Orbit saturn{
 		warp
 		teleport "Saturn Low Orbit" 10 0 0
 		showorbit
+		addent Scarry 0 -1 0
 	}
 	astro Satellite "Mimas"{
 		radius 198.30

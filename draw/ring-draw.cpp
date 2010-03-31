@@ -196,6 +196,83 @@ static void drawasteroid(const double org[3], const Quatd &qrot, double rad, uns
 	glPopMatrix();
 }
 
+static void ring_draw_cell(int l, int m, int radial_divides, int count, const double cellsizes[3], const Vec3d &vwpos, const Vec3d &vwapos, const Mat4d &mrot, const GLcull &glc, double thick, const Vec3d &light, const Vec3d &localight, double gtime, int &total){
+	for(int level = 6; level; level--){
+		const double cellsize = .01 * (1<<level);
+		const double rocksize = (1<<level) * .0001;
+		double rotspeed = .5 / level;
+		random_sequence rs;
+		initfull_rseq(&rs, level + 23342, (l << 16) + (m + radial_divides) % radial_divides);
+		if(level == 6){
+			glPushAttrib(GL_POINT_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+			glDisable(GL_LIGHTING);
+			glDisable(GL_POINT_SMOOTH);
+			glPointSize(2);
+			glBegin(GL_POINTS);
+		}
+		else{
+			glPushAttrib(GL_POLYGON_BIT);
+			glEnable(GL_CULL_FACE);
+		}
+		int i = (level == 6 ? count * 32 : count) + 2;
+		for(; i; i--){
+			double x0, x1, z0, z1, base;
+			Vec3d pos;
+			for(int j = 0; j < 3; j++)
+				pos[j] = (drseq(&rs)) * cellsizes[j];
+			pos[2] += vwpos[2];
+			pos[2] = pos[2] - ::floor(pos[2] / cellsize) * cellsize - cellsize / 2.;
+			pos[2] -= vwpos[2];
+			pos = mrot.vp3(pos);
+
+			// Initial rotation
+			Quatd qrot;
+			for(int j = 0; j < 4; j++)
+				qrot[j] = drseq(&rs);
+			qrot.normin();
+
+			// Angular velocity vector
+			Vec3d omg;
+			for(int j = 0; j < 3; j++)
+				omg[j] = drseq(&rs);
+
+			double angle = drseq(&rs) * rotspeed * gtime / 2.;
+
+			if(glc.cullFrustum(pos, rocksize))
+				continue;
+			if(pos[2] + vwapos[2] < -thick || thick < pos[2] + vwapos[2])
+				continue;
+			if(level == 6 || rocksize * glc.scale(pos) < 5.){
+				if(level != 6){
+					glPushAttrib(GL_POINT_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+					glDisable(GL_LIGHTING);
+					glDisable(GL_POINT_SMOOTH);
+					glPointSize(2);
+					glBegin(GL_POINTS);
+				}
+				GLfloat br;
+				br = .5f * (1. - pos.norm().sp(light)) / 2.f;
+				br = br < 0 ? 0 : br;
+				glColor3f(br, br, br);
+				glVertex3dv(pos);
+				if(level != 6){
+					glEnd();
+					glPopAttrib();
+				}
+			}
+			else{
+				Quatd omgdt = Quatd(omg.norm() * sin(angle)) + Quatd(0,0,0,cos(angle));
+				qrot *= omgdt;
+
+				drawasteroid(pos, qrot, rocksize, i + level * count);
+			}
+			total++;
+		}
+		if(level == 6)
+			glEnd();
+		glPopAttrib();
+	}
+}
 
 
 #define RING_TRACKS 16
@@ -250,7 +327,8 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	double phase = atan2(-vwapos[0], vwapos[1]) + M_PI;
 	double r = ::sqrt(vwapos[0] * vwapos[0] + vwapos[1] * vwapos[1]);
 	Quatd qphase(0, 0, sin(phase / 2.), cos(phase / 2.));
-	Mat4d rotation = (axisrot * qphase).tomat4();
+	Quatd qintrot = axisrot * qphase;
+	Mat4d rotation = qintrot.tomat4();
 
 	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 
@@ -277,7 +355,8 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	Vec3d light = sunpos.norm();
 
 	Vec4<float> light_position;
-	Vec3d localight = mat.tdvp3(light);
+	Vec3d localight = /*mat.tdvp3*/(light);
+//	Vec3d localight = qintrot.trans(light);
 	glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_TEXTURE_BIT);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_LIGHTING);
@@ -482,20 +561,11 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			}
 		}
 		glDisable(GL_COLOR_MATERIAL);
-		if(start == 0)
-		{
-			int i, count = inten / 4, total = 0;
-			struct random_sequence rs;
-/*			timemeas_t tm;*/
-			const double destvelo = .01; /* destination velocity */
-			const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
-			double plpos[3];
-//			Vec4<float> light_position /*= { sunpos[0], sunpos[1], sunpos[2], 0.0 }*/;
-			Vec3d nh0(0., 0., -1.), nh;
-			Mat4d mat;
-			Mat4d proj;
-			int level;
-//			vwpos = rotation.tdvp3(delta);
+		if(start == 0){
+			const int radial_divides = 1000000;
+			const double radial = 2 * M_PI / radial_divides;
+			const double concentrical = .5;
+			const int mcells = 5, lcells = 5;
 			double gtime = 0.;
 			{
 				CoordSys *top = a->parent;
@@ -504,132 +574,83 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 				else
 					gtime = top->toUniverse()->astro_time;
 			}
-			double dist = delta.len();
-			double omega = ::sqrt(UGC * a->mass / dist) / dist; // orbital speed at view position
-			double angle = omega * gtime;
-			Quatd qangle0(0,0,sin(angle/2.),cos(angle/2.));
-			Quatd qangle = axisrot * qangle0;
-//			Vec3d vwpos = qangle.cnj().trans(delta);
-			double omegadot = 3. / 2. * ::sqrt(UGC * a->mass / dist) / dist / dist;
-			double vdot = 1. / 2. * ::sqrt(UGC * a->mass / dist) / dist;
-			Vec3d vwpos(r * phase - r * omega * gtime, -r, vwapos[2]);
-/*			TimeMeasStart(&tm);*/
-			{
-				Mat4d modelmat, persmat;
-				glGetDoublev(GL_MODELVIEW_MATRIX, modelmat);
-				glGetDoublev(GL_PROJECTION_MATRIX, persmat);
-				mat = persmat * modelmat;
-			}
-			nh = vw->irot.vp3(nh0);
-			glPushMatrix();
-/*			glLoadMatrixd(vw->rot);*/
-		/*	glTranslated(-(*view)[0], -(*view)[1], -(*view)[2]);*/
 
 			/* restore original projection matrix temporarily to make depth
 			  buffer make sense. 'relative' projection frustum has near clipping
 			  plane with so small z value that the precision drops so hard. */
+			Mat4d proj;
 			glGetDoublev(GL_PROJECTION_MATRIX, proj);
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_BLEND);
-			for(level = 6; level; level--){
-				double cellsize, rocksize = (1<<level) * .0001;
-				double rotspeed = .1 / level;
-				Vec3d disp;
-				Vec3d plpos;
-				plpos = vw->pos;
-				plpos += nh * -rocksize;
-				init_rseq(&rs, level + 23342);
-				cellsize = .01 * (1<<level);
-				if(level == 6){
-					glPushAttrib(GL_POINT_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+			GLcull glc(vw->gc->getFov(), vec3_000, vw->irot, vw->gc->getNear(), vw->gc->getFar());
+
+			double lbase = floor(r / concentrical);
+			for(int l = lbase - lcells / 2 + 1; l < lbase + (lcells + 1) / 2 + 1; l++){
+				double dist = l * concentrical;
+				double omega = ::sqrt(UGC * a->mass / dist) / dist; // orbital speed at cell
+				double angle = omega * gtime;
+				double mbase = floor((phase - angle) / radial);
+				for(int m = mbase - mcells / 2; m < mbase + (mcells + 1) / 2; m++){
+					int i, count = inten / 4 / 16, total = 0;
+					struct random_sequence rs;
+		/*			timemeas_t tm;*/
+					double cellangle = omega * gtime;
+					Quatd qangle0(0,0,sin(angle/2.),cos(angle/2.));
+					Quatd qangle = axisrot * qangle0;
+		//			Vec3d vwpos = qangle.cnj().trans(delta);
+		//			double omegadot = 3. / 2. * ::sqrt(UGC * a->mass / dist) / dist / dist;
+		//			double vdot = 1. / 2. * ::sqrt(UGC * a->mass / dist) / dist;
+					double cellphase = m * radial + cellangle;
+					Vec3d vwpos = Vec3d(l * concentrical * sin(cellphase), -l * concentrical * cos(cellphase), 0) - vwapos;
+
+					glPushMatrix();
+					Mat4d mpos = mat4_u.translate(vwpos);
+		//			gldTranslate3dv(vwpos);
+					Mat4d mrot = mpos.rotz(cellphase);
+		//			glRotated(cellphase * deg_per_rad, 0, 0, 1.);
+#ifndef NDEBUG
+					glPushMatrix();
+					glMultMatrixd(mrot);
+					glScaled(r * radial, concentrical, 2.);
+					glTranslated(0., 0., -.5);
+					glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+					glDisable(GL_TEXTURE_2D);
 					glDisable(GL_LIGHTING);
-					glDisable(GL_POINT_SMOOTH);
-					glPointSize(2);
-					glBegin(GL_POINTS);
-				}
-				for(i = level == 6 ? count * 64 : count; i; i--){
-					double x0, x1, z0, z1, base;
-					unsigned long red;
-					Vec3d pos0;
-					for(int j = 0; j < 3; j++)
-						pos0[j] = (drseq(&rs) - .5) * 2 * cellsize;
-					Vec3d pos = pos0;
-					pos -= vwpos;
-					for(int j = 1; j < 3; j++)
-						pos[j] = pos[j] - ::floor(pos[j] / cellsize) * cellsize - cellsize / 2.;
-//					pos[0] += .25 * gtime / 1000.;
-//					pos[0] += gtime * (pos[1] * 200 * omega + vwpos[1] * omega);
-					pos[0] += gtime * (pos[1] * omega);
-					for(int j = 0; j < 1; j++)
-						pos[j] = pos[j] - ::floor(pos[j] / cellsize) * cellsize - cellsize / 2.;
-/*					dist = (qangle.trans(pos) + delta).len();
-					omega = ::sqrt(UGC * a->mass / dist) / dist;
-					angle = omega * gtime;
-					qangle0 = Quatd(0,0,sin(angle/2.),cos(angle/2.));
-					Quatd qangle = axisrot * qangle0;*/
-					pos = qangle.trans(pos);
-
-					// Initial rotation
-					Quatd qrot;
-					for(int j = 0; j < 4; j++)
-						qrot[j] = drseq(&rs);
-					qrot.normin();
-
-					// Angular velocity vector
-					Vec3d omg;
-					for(int j = 0; j < 3; j++)
-						omg[j] = drseq(&rs);
-					double angle = drseq(&rs) * rotspeed * gtime / 2.;
-					Quatd omgdt = Quatd(omg.norm() * sin(angle)) + Quatd(0,0,0,cos(angle));
-
-					qrot *= omgdt;
-					red = rseq(&rs);
-		/*			if((-1. < pos[0] && pos[0] < 1. && -1. < pos[2] && pos[2] < 1.
-						? -.01 < pos[0] && pos[0] < .01
-						: (pos[2] < -.01 || .01 < pos[2])))
-						continue;*/
-					if(pos[2] + vwpos[2] < -thick || thick < pos[2] + vwpos[2])
-						continue;
-			#if 1
+					glDisable(GL_POLYGON_SMOOTH);
+					glColor4ub(255,0,0,255);
+					glBegin(GL_LINES);
 					{
-						avec4_t dst;
-						avec4_t vec;
-						VECCPY(vec, pos);
-						VECSADD(vec, nh, rocksize / vw->fov);
-						MAT4VP3(dst, mat, vec);
-						if(dst[2] < 0. || dst[0] < -dst[2] || dst[2] < dst[0] || dst[1] < -dst[2] || dst[2] < dst[1])
-							continue;
+						int i, j, k;
+						for(i = 0; i < 3; i++) for(j = 0; j <= 1; j++) for(k = 0; k <= 1; k++){
+							double v[3];
+							v[i] = j;
+							v[(i+1)%3] = k;
+							v[(i+2)%3] = 0.;
+							glVertex3dv(v);
+							v[(i+2)%3] = 1.;
+							glVertex3dv(v);
+						}
 					}
-			#endif
-					if(level == 6){
-						int br;
-						br = 128 * (1. - VECSP(pos, localight) / VECLEN(pos)) / 2.;
-						br = br < 0 ? 0 : br;
-						glColor3ub(br, br, br);
-						glVertex3dv(pos);
-					}
-					else
-						drawasteroid(pos, qrot, rocksize, i + level * count);
-					total++;
-				}
-				if(level == 6){
 					glEnd();
 					glPopAttrib();
+					glPopMatrix();
+#endif
+
+					glEnable(GL_DEPTH_TEST);
+					glDisable(GL_BLEND);
+					double cellsizes[3] = {r * radial, concentrical, 1.};
+					ring_draw_cell(l, m, radial_divides, count, cellsizes, vwpos, vwapos, mrot, glc, thick, light, localight, gtime, total);
+					glPopMatrix();
+
+		/*			fprintf(stderr, "ring[%3d]: %lg sec\n", total, TimeMeasLap(&tm));*/
 				}
 			}
-			glPopMatrix();
-//			LightOff();
-
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
 			glLoadMatrixd(proj);
 			glMatrixMode(GL_MODELVIEW);
-
-/*			fprintf(stderr, "ring[%3d]: %lg sec\n", total, TimeMeasLap(&tm));*/
 		}
 		glPopMatrix();
 	}

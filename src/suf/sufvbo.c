@@ -97,7 +97,7 @@ VBO *CacheVBO(suf_t *suf){
 					memcpy(verts[a][n], suf->v[p->v[jj][0]], sizeof *suf->v);
 					norms[a] = (GLdouble (*)[3])realloc(norms[a], (n+1) * sizeof **norms);
 					memcpy(norms[a][n], suf->v[p->v[jj][1]], sizeof *suf->v);
-					texcs[a] = (GLdouble (*)[3])realloc(texcs[a], (n+1) * sizeof **norms);
+					texcs[a] = (GLdouble (*)[3])realloc(texcs[a], (n+1) * sizeof **texcs);
 					memset(texcs[a][n], 0, sizeof *texcs[a]);
 					ret->natris[a]++;
 				}
@@ -106,7 +106,7 @@ VBO *CacheVBO(suf_t *suf){
 	}
 
 	for(i = 0; i < suf->na; i++){
-		glGenBuffers(4, ret->atris[i]);
+		glGenBuffers(3, ret->atris[i]);
 
 		/* Vertex array */
 		glBindBuffer(GL_ARRAY_BUFFER, ret->atris[i][0]);
@@ -181,10 +181,6 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, NULL);
 			if(atr->valid & SUF_SPC)
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, NULL);
-			if(glIsEnabled(GL_TEXTURE_2D)){
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
-			}
 			if(tex && flags & SUF_TEX){
 				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
 				if(atr->valid & SUF_TEX){
@@ -245,10 +241,14 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 					c->texture = atr->valid & SUF_TEX ? tex->a[ai].list : 0;
 				}
 			}
-			else if(glActiveTextureARB){
-				glActiveTextureARB(GL_TEXTURE1_ARB);
+			else{
+				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
-				glActiveTextureARB(GL_TEXTURE0_ARB);
+				if(glActiveTextureARB){
+					glActiveTextureARB(GL_TEXTURE1_ARB);
+					glDisable(GL_TEXTURE_2D);
+					glActiveTextureARB(GL_TEXTURE0_ARB);
+				}
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, vbo->natris[i]);

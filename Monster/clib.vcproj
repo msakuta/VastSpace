@@ -449,51 +449,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\clib\colseq\color.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\colseq\cs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\colseq\cs2.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\colseq\cs2x.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\colseq\cs2xcut.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\gl\cull.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\clib\dstr.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\gl\gldraw.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\GL\glext.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\gl\gltext.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\GL\glut.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\GL\glut_old.h"
 				>
 			</File>
 			<File
@@ -521,22 +477,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\clib\suf\suf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\suf\sufbin.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\suf\sufdraw.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\suf\sufvbo.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\clib\timemeas.h"
 				>
 			</File>
@@ -560,6 +500,82 @@
 				RelativePath="..\include\clib\wavsound.h"
 				>
 			</File>
+			<Filter
+				Name="GL"
+				>
+				<File
+					RelativePath="..\include\GL\glext.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\GL\glut.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\GL\glut_old.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="suf"
+				>
+				<File
+					RelativePath="..\include\clib\suf\suf.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\suf\sufbin.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\suf\sufdraw.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\suf\sufvbo.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="clib/gl"
+				>
+				<File
+					RelativePath="..\include\clib\gl\cull.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\gl\gldraw.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\gl\gltext.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="colseq"
+				>
+				<File
+					RelativePath="..\include\clib\colseq\color.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\colseq\cs.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\colseq\cs2.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\colseq\cs2x.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\colseq\cs2xcut.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="リソース ファイル"

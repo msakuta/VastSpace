@@ -42,7 +42,7 @@ GLuint ProjectSphereJpg(const char *fname);
 void LightOn(void);
 void LightOff(void);
 */
-void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &rotation, double thick, double minrad, double maxrad, double t);
+void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &rotation, double thick, double minrad, double maxrad, double t, double oblateness);
 /*
 extern double g_star_num;
 extern int g_star_cells;

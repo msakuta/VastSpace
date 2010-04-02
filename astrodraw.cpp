@@ -853,7 +853,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0.);
+		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -884,7 +884,7 @@ void TexSphere::draw(const Viewer *vw){
 	}
 	st::draw(vw);
 	if(drawring && ringdrawn)
-		ring_draw(vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0.);
+		ring_draw(vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness);
 }
 
 struct atmo_dye_vertex_param{

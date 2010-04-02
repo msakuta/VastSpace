@@ -10,11 +10,12 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 #include <clib/gl/multitex.h>
 #include <clib/c.h>
+#include <clib/mathdef.h>
 }
 #include <cpplib/gl/cullplus.h>
 #include <gl/glext.h>
 
-
+#define SQRT2P2 (M_SQRT2/2)
 
 #define ASTEROIDLIST 1
 
@@ -308,16 +309,11 @@ typedef struct ringVertexData{
 static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexData *rvd, int n, int i){
 	Vec3d pos(x, y, z);
 
-	/* i really dont like to trace a ray here just for light source obscuring, but couldnt help. */
-	if(rvd->shadow[n][i % RING_CUTS]){
-		glColor4ub(COLOR32R(col) / 8, COLOR32G(col) / 8, COLOR32B(col) / 8, COLOR32A(col));
-/*		glColor4ub(0, 0, 0, COLOR32A(col));*/
-	}
-	else{
-		gldColor32(col);
-	}
+	gldColor32(col);
 
 	glTexCoord1i(n);
+	if(glMultiTexCoord2dARB)
+		glMultiTexCoord2dARB(GL_TEXTURE1_ARB, x, y);
 
 	if(rvd->relative){
 		Vec3d pp = rvd->matz.vp3(pos).norm();
@@ -329,7 +325,43 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t){
+static void ring_setshadow(const Quatd &q, double angle, double ipitch){
+	static GLuint texname = 0;
+	glActiveTextureARB(GL_TEXTURE1_ARB);
+	if(!texname){
+		const int shadowtexsize = 128;
+		static GLubyte teximg[shadowtexsize][shadowtexsize] = {0};
+		int x, y;
+		for(y = 0; y < shadowtexsize; y++) for(x = 0; x < shadowtexsize; x++){
+			double dx = double(x - shadowtexsize / 2) / (shadowtexsize / 2), dy = double(y - shadowtexsize / 2) / (shadowtexsize / 2);
+			teximg[y][x] = (dx * dx + dy * dy) < 1. ? 0 : 255;
+		}
+		glGenTextures(1, &texname);
+		glBindTexture(GL_TEXTURE_2D, texname);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, shadowtexsize, shadowtexsize, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, teximg);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		GLfloat one = 1.f;
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &one);
+	}
+	glBindTexture(GL_TEXTURE_2D, texname);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glEnable(GL_TEXTURE_2D);
+	glMatrixMode(GL_TEXTURE);
+	glLoadIdentity();
+	glTranslated(+.5, +.5, 0.);
+	glScaled(.5, .5 * ipitch, 1.); // Scale x by inverse of 2 for texture coordinates unit is center object's radius, not diameter.
+	glRotated(angle * deg_per_rad, 0, 0, 1);
+	double mat[16];
+	glGetDoublev(GL_TEXTURE_MATRIX, mat);
+	/*gldMultQuat*/(/*Quatd(0, SQRT2P2, 0, SQRT2P2) **/ q.cnj());
+	glMatrixMode(GL_MODELVIEW);
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+}
+
+void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t, double oblateness){
 	if(0||start == end)
 		return;
 	int i, inside = 0;
@@ -346,20 +378,17 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	Quatd qintrot = axisrot * qphase;
 	Mat4d rotation = qintrot.tomat4();
 
+	Vec3d sunapos = axisrot.cnj().trans(sunpos);
+	double sunphase = atan2(-sunapos[0], sunapos[1]);
+
 	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 
 	{
 		Vec3d v;
 		Mat4d mat2;
-/*		MAT4ROTX(mat2, mat4identity, pitch);*/
 		Mat4d rot = vw->cs->tocsim(a->parent);
 		mat = rot * rotation;
 /*		mat4mp(mat, rot, mat2);*/
-/*		glPushMatrix();
-		glLoadIdentity();
-		glRotated(10., 1., 0., 0.);
-		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-		glPopMatrix();*/
 		v = mat.vp3(vec3_001);
 		delta = vw->pos - apos;
 		sp = delta.sp(v);
@@ -375,7 +404,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 //	Vec3d localight = qintrot.trans(light);
 	glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_TEXTURE_BIT);
 	glEnable(GL_NORMALIZE);
-	glEnable(GL_LIGHTING);
+	glDisable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glDepthMask(1);
 //			LightOn(NULL);
@@ -399,18 +428,21 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	if(!(minrad < dir && dir < maxrad && -thick < sp && sp < thick)){
 		double rad;
 		ringVertexData rvd;
-		double x, y, roll;
+		double roll;
 		COLOR32 ocol = COLOR32RGBA(255,255,255,0);
 		int cutnum = RING_CUTS;
 		double (*cuts)[2];
 		int n;
 		rvd.vwpos = vw->pos;
 		cuts = CircleCuts(cutnum);
-		Vec3d xh = mat.vp3(vec3_100);
-		x = delta.sp(xh);
-		Vec3d yh = mat.vp3(vec3_010);
-		y = delta.sp(yh);
-		roll = atan2(x, y);
+		{
+			double x, y;
+			Vec3d xh = mat.vp3(vec3_100);
+			x = delta.sp(xh);
+			Vec3d yh = mat.vp3(vec3_010);
+			y = delta.sp(yh);
+			roll = atan2(x, y);
+		}
 
 		/* determine whether we are looking the ring from night side */
 /*		{
@@ -443,7 +475,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		rvd.relative = vw->relative;
 		rvd.arad = a->rad;
 		rvd.apos = apos;
-		rvd.spos = spos;
+		rvd.spos = qintrot.cnj().trans(spos);
 
 		if(vw->relative){
 			glGetDoublev(GL_MODELVIEW_MATRIX, rvd.matz);
@@ -470,7 +502,10 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA, RING_TRACKS, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bandtex);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		if(glActiveTextureARB){
+			ring_setshadow(qintrot, phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)));
+		}
 /*		for(n = 0; n < RING_TRACKS+1; n++)*/{
 			double radn = maxrad;
 			double rad = minrad;
@@ -479,21 +514,44 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 //			radn = minrad + (maxrad - minrad) * (n+1) / (RING_TRACKS+1);
 			ocol = COLOR32RGBA(127,127,127,127);
 			col = COLOR32RGBA(127,127,127,127);
-			glBegin(GL_QUAD_STRIP);
-			for(i = start; i <= end; i++){
-				int i1 = i % cutnum;
-/*				gldColor32(ocol);*/
+			bool shadowing = true;
+			glBegin(GL_QUADS);
+			for(i = start; i < end; i++){
+				int i1 = (i+1) % cutnum;
+				Vec3d fanpos = Vec3d(cuts[i][0] * radn, cuts[i][1] * radn, 0.);
+				bool thisshadowing = 0 < fanpos.sp(rvd.spos);
+				if(thisshadowing != shadowing && glActiveTextureARB){
+					glEnd();
+					glActiveTextureARB(GL_TEXTURE1_ARB);
+					(thisshadowing ? glEnable : glDisable)(GL_TEXTURE_2D);
+					glActiveTextureARB(GL_TEXTURE0_ARB);
+					shadowing = thisshadowing;
+					glBegin(GL_QUADS);
+				}
+				ocol = col = thisshadowing ? COLOR32RGBA(255,255,0,255) : COLOR32RGBA(127,127,127,127);
+				ringVertex3d(cuts[i][0] * radn, cuts[i][1] * radn, 0., col, &rvd, 1, i);
+				ringVertex3d(cuts[i][0] * rad, cuts[i][1] * rad, 0., ocol, &rvd, 0, i);
 				ringVertex3d(cuts[i1][0] * rad, cuts[i1][1] * rad, 0., ocol, &rvd, 0, i1);
-/*				gldColor32(col);*/
 				ringVertex3d(cuts[i1][0] * radn, cuts[i1][1] * radn, 0., col, &rvd, 1, i1);
 			}
 			glEnd();
-			glBegin(GL_QUAD_STRIP);
-			for(i = cutnum - end; i <= cutnum - start; i++){
-				int i1 = i % cutnum;
-/*				gldColor32(ocol);*/
+			glBegin(GL_QUADS);
+			if(1)for(i = cutnum - end; i < cutnum - start; i++){
+				int i1 = (i+1) % cutnum;
+				Vec3d fanpos = Vec3d(cuts[i][0] * radn, cuts[i][1] * radn, 0.);
+				bool thisshadowing = 0 < fanpos.sp(rvd.spos);
+				if(thisshadowing != shadowing && glActiveTextureARB){
+					glEnd();
+					glActiveTextureARB(GL_TEXTURE1_ARB);
+					(thisshadowing ? glEnable : glDisable)(GL_TEXTURE_2D);
+					glActiveTextureARB(GL_TEXTURE0_ARB);
+					shadowing = thisshadowing;
+					glBegin(GL_QUADS);
+				}
+				ocol = col = thisshadowing ? COLOR32RGBA(0,255,255,255) : COLOR32RGBA(127,127,127,127);
+				ringVertex3d(cuts[i][0] * radn, cuts[i][1] * radn, 0., col, &rvd, 1, i);
+				ringVertex3d(cuts[i][0] * rad, cuts[i][1] * rad, 0., ocol, &rvd, 0, i);
 				ringVertex3d(cuts[i1][0] * rad, cuts[i1][1] * rad, 0., ocol, &rvd, 0, i1);
-/*				gldColor32(col);*/
 				ringVertex3d(cuts[i1][0] * radn, cuts[i1][1] * radn, 0., col, &rvd, 1, i1);
 			}
 			glEnd();
@@ -501,6 +559,11 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			rad = radn;
 		}
 		glDisable(GL_TEXTURE_1D);
+		if(glActiveTextureARB){
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
 		glPopMatrix();
 	}
 	else
@@ -577,6 +640,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			}
 		}
 		glDisable(GL_COLOR_MATERIAL);
+		glEnable(GL_LIGHTING);
 		if(start == 0){
 			const int radial_divides = 1000000;
 			const double radial = 2 * M_PI / radial_divides;

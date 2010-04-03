@@ -11,15 +11,15 @@ extern "C"{
 }
 #include <stddef.h>
 
-int jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt){
+bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt){
 	return jHitSpherePos(obj, radius, src, dir, dt, NULL, NULL);
 }
 
 /* determine intersection of a sphere shell and a ray. it's equivalent to inter-sphere hit detection,
   when the radius argument is sum of the two spheres. */
-int jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos){
+bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos){
 	double b, c, D, d, t0, t1, dirslen;
-	int ret;
+	bool ret;
 
 	Vec3d del = src - obj;
 
@@ -33,7 +33,7 @@ int jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d
 	/* discriminant?? */
 	D = b * b - c;
 	if(D <= 0)
-		return 0;
+		return false;
 
 	d = sqrt(D);
 
@@ -126,8 +126,9 @@ int jHitPolygon(const double vb[][3], unsigned short vi[], int nv, const double 
 }
 
 
-int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn){
-	int i, reti = 0;
+bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn){
+	int i;
+	bool reti = false;
 	Mat4d imat, mat;
 	Vec3d lsrc, ldir;
 
@@ -172,7 +173,7 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 			if(ret) *ret = mint;
 			if(retp) *retp = src;
 			if(retn) *retn = lsrc[besti] / fabs(lsrc[besti]) * mat.vec3(besti).norm();
-			reti = 1;
+			reti = true;
 		}
 	}
 	else{
@@ -197,7 +198,7 @@ int jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d 
 					*retn = -s * mat.vec3(a).norm();
 				}
 				best = f;
-				reti = 1;
+				reti = true;
 			}
 		}
 	}

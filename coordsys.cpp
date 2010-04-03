@@ -875,14 +875,14 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "updirection")){
-		avec3_t v = {0};
+		Vec3d v = vec3_000;
 		if(1 < argc)
 			v[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)
 			v[1] = calc3(&argv[2], sc.vl, NULL);
 		if(3 < argc)
 			v[2] = calc3(&argv[3], sc.vl, NULL);
-		quatdirection(qrot, v);
+		qrot = Quatd::direction(v);
 		return true;
 	}
 	return false;

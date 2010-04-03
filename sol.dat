@@ -431,9 +431,11 @@ coordsys Orbit saturn{
 	showorbit
 	fullname "Saturn"
 
+	define axis_angle 26.73*RAD_PER_DEG
+#	define axis_angle 40.73*RAD_PER_DEG
+#	define axis_angle 0
+
 	astro TextureSphere "Saturn"{
-#		define axis_angle 26.73*RAD_PER_DEG
-		define axis_angle 40.73*RAD_PER_DEG
 		ringmin 1.5
 		ringmax 2.4
 		ringthick 1.
@@ -453,8 +455,9 @@ coordsys Orbit saturn{
 	coordsys Orbit saturno1{
 		orbits Saturn
 		orbit_radius 110000
-#		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG) # 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-		orbit_axis 0 0 1
+#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		inclination axis_angle/RAD_PER_DEG
+		ascending_node 180
 		fullname "Saturn Low Orbit"
 		pos -50000 50000 0
 		warp
@@ -465,9 +468,8 @@ coordsys Orbit saturn{
 	}
 	coordsys Orbit saturno2{
 		orbits Saturn
-		orbit_radius 1150000
-#		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG) # 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-		orbit_axis 0 0 1
+		orbit_radius 150000
+		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		fullname "Saturn Low Orbit 2"
 		pos -50000 50000 0
 		warp

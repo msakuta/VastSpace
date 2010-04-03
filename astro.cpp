@@ -197,7 +197,7 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 	if(!enable)
 		return true;
 	if(inclination == 0.)
-		QUATIDENTITY(orbit_axis);
+		orbit_axis = quat_u;
 	else{
 		Quatd q1, q2, q3, q4;
 		q1[0] = sin(inclination / 2.);

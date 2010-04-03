@@ -299,7 +299,7 @@ void doppler(double rgb[3], double r, double g, double b, double velo){
 #endif
 
 // Global ambient value for astronomical objects
-static float g_astro_ambient = .5f;
+float g_astro_ambient = .5f;
 static void init_astro_ambient(){
 	CvarAdd("g_astro_ambient", &g_astro_ambient, cvar_float);
 }

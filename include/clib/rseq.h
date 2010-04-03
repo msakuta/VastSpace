@@ -51,6 +51,7 @@ struct random_sequence{
 
 /* function versions are always declared, but may not be linked */
 extern void init_rseqf(struct random_sequence *, unsigned long seed);
+extern void init_rseqf_double(struct random_sequence *, double seed);
 extern unsigned long rseqf(struct random_sequence *);
 
 #if RSEQMETHOD!=5

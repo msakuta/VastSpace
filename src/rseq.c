@@ -46,6 +46,12 @@ void init_rseqf(rst *rs, unsigned long seed){
 #endif
 }
 
+// Implementation for machine with sizeof(unsigned long) == 4 and sizeof(double) == 8.
+void init_rseqf_double(rst *rs, double seed){
+	initfull_rseq(rs, *(unsigned long*)&seed, ((unsigned long*)&seed)[1]);
+}
+
+
 #define SHR3(jsr)  (jsr^=(jsr<<17), jsr^=(jsr>>13), jsr^=(jsr<<5))
 #define FIB(a,b)   ((b=a+b),(a=b-a))
 #define znew(z)   (z=36969*(z&65535)+(z>>16))

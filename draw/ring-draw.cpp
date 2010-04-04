@@ -2,6 +2,7 @@
 #include "../judge.h"
 #include "../astrodef.h"
 #include "../Universe.h"
+#include "../glsl.h"
 extern "C"{
 //#include <clib/amat3.h>
 #include <clib/rseq.h>
@@ -298,7 +299,7 @@ static void ring_draw_cell(double l, double m, double radial_divides, int count,
 }
 
 
-#define RING_TRACKS 16
+#define RING_TRACKS 32
 
 typedef struct ringVertexData{
 	Mat4d matz;
@@ -306,6 +307,7 @@ typedef struct ringVertexData{
 	Vec3d vwpos;
 	Mat4d matty;
 	Mat4d imatty;
+//	float minrad, maxrad;
 } ringVertexData;
 
 static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexData *rvd, int n, int i){
@@ -314,6 +316,7 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	gldColor32(col);
 
 	glTexCoord1i(n);
+//	glTexCoord1f((float(pos.len()) - rvd->minrad) / (rvd->maxrad - rvd->minrad));
 	if(glMultiTexCoord2dARB)
 		glMultiTexCoord2dARB(GL_TEXTURE1_ARB, x, y);
 
@@ -327,12 +330,38 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-static void ring_setshadow(const Quatd &q, double angle, double ipitch){
+static GLuint ring_setshadow(const Quatd &q, double angle, double ipitch, double minrad, double maxrad){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
+	static bool shader_compile = false;
+	static GLuint shader = 0;
+	static GLint tex1dLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc;
 	GLubyte ambient = GLubyte(g_astro_ambient * 255.f);
 	glActiveTextureARB(GL_TEXTURE1_ARB);
 
+	if(g_shader_enable) do{
+		if(!shader_compile){
+			shader_compile = true;
+			GLuint vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
+			if(!glsl_load_shader(vtx, "shaders/ringshadow.vs") || !glsl_load_shader(frg, "shaders/ringshadow.fs"))
+				break;
+			shader = glsl_register_program(vtx, frg);
+			if(!shader)
+				break;
+			tex1dLoc = glGetUniformLocation(shader, "tex1d");
+			texshadowLoc = glGetUniformLocation(shader, "texshadow");
+			ambientLoc = glGetUniformLocation(shader, "ambient");
+			ringminLoc = glGetUniformLocation(shader, "ringmin");
+			ringmaxLoc = glGetUniformLocation(shader, "ringmax");
+		}
+		glUseProgram(shader);
+		glUniform1i(tex1dLoc, 0);
+		glUniform1i(texshadowLoc, 1);
+		glUniform1f(ambientLoc, g_astro_ambient);
+		glUniform1f(ringminLoc, float(minrad));
+		glUniform1f(ringmaxLoc, float(maxrad));
+	} while(0);
+	else
 	// Regenerate texture if astronomical ambient value is changed.
 	if(!texname || ambient != texambient){
 		const int shadowtexsize = 256;
@@ -364,6 +393,7 @@ static void ring_setshadow(const Quatd &q, double angle, double ipitch){
 	glRotated(angle * deg_per_rad, 0, 0, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glActiveTextureARB(GL_TEXTURE0_ARB);
+	return shader;
 }
 
 void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick, double minrad, double maxrad, double t, double oblateness){
@@ -460,6 +490,8 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 
 		rvd.matty = (Mat4d(mat4_u).translatein(apos) * mat).rotz(-roll) * Mat4d(Vec3d(a->rad, 0, 0), Vec3d(0, a->rad, 0), Vec3d(0, 0, a->rad));
 		rvd.imatty = Mat4d(Vec3d(1. / a->rad, 0, 0), Vec3d(0, 1. / a->rad, 0), Vec3d(0, 0, 1. / a->rad)).rotz(roll) * (qrot.cnj() * vw->cs->tocsq(a->parent)).tomat4() * Mat4d(mat4_u).translatein(-apos);
+//		rvd.minrad = minrad;
+//		rvd.maxrad = maxrad;
 
 		glMultMatrixd(rvd.matty);
 
@@ -477,20 +509,21 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		GLuint shader;
 		if(glActiveTextureARB){
-			ring_setshadow(qintrot, phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)));
+			shader = ring_setshadow(qintrot, phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad);
 		}
 		{
 			double radn = maxrad;
 			double rad = minrad;
-			COLOR32 col = COLOR32RGBA(127,127,127,127);
+			COLOR32 col = COLOR32RGBA(255,255,255,127);
 			bool shadowing = true;
 			glBegin(GL_QUADS);
 			for(i = start; i < end; i++){
 				int i1 = (i+1) % cutnum;
 				Vec3d fanpos = Vec3d(cuts[i][0] * radn, cuts[i][1] * radn, 0.);
 				bool thisshadowing = 0 < fanpos.sp(intspos);
-				if(thisshadowing != shadowing && glActiveTextureARB){
+				if(!g_shader_enable && thisshadowing != shadowing && glActiveTextureARB){
 					glEnd();
 					glActiveTextureARB(GL_TEXTURE1_ARB);
 					(thisshadowing ? glEnable : glDisable)(GL_TEXTURE_2D);
@@ -509,7 +542,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 				int i1 = (i+1) % cutnum;
 				Vec3d fanpos = Vec3d(cuts[i][0] * radn, cuts[i][1] * radn, 0.);
 				bool thisshadowing = 0 < fanpos.sp(intspos);
-				if(thisshadowing != shadowing && glActiveTextureARB){
+				if(!g_shader_enable && thisshadowing != shadowing && glActiveTextureARB){
 					glEnd();
 					glActiveTextureARB(GL_TEXTURE1_ARB);
 					(thisshadowing ? glEnable : glDisable)(GL_TEXTURE_2D);
@@ -531,6 +564,8 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 			glDisable(GL_TEXTURE_2D);
+			if(g_shader_enable)
+				glUseProgram(0);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
 		glPopMatrix();

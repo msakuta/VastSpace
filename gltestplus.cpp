@@ -24,6 +24,7 @@
 #include "Sceptor.h"
 #include "glstack.h"
 #include "Universe.h"
+#include "glsl.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -1284,6 +1285,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 	switch(message){
 		case WM_CREATE:
 			hgl = wingl(hWnd, &hdc);
+			glsl_register();
 /*			if(!SetTimer(hWnd, 2, 10, NULL))
 				assert(0);*/
 			break;
@@ -1538,6 +1540,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
 	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);
+	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

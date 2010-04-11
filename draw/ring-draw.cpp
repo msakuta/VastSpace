@@ -3,6 +3,7 @@
 #include "../astrodef.h"
 #include "../Universe.h"
 #include "../glsl.h"
+#include "../bitmap.h"
 extern "C"{
 //#include <clib/amat3.h>
 #include <clib/rseq.h>
@@ -14,6 +15,7 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 #include <cpplib/gl/cullplus.h>
+#include <gl/glu.h>
 #include <gl/glext.h>
 
 #define SQRT2P2 (M_SQRT2/2)
@@ -299,7 +301,7 @@ static void ring_draw_cell(double l, double m, double radial_divides, int count,
 }
 
 
-#define RING_TRACKS 32
+#define RING_TRACKS 1024
 
 typedef struct ringVertexData{
 	Mat4d matz;
@@ -452,12 +454,30 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 
 	init_rseq(&rs, (unsigned long)a + 123);
 
-	GLubyte bandtex[RING_TRACKS];
-	for(i = 0; i < RING_TRACKS; i++){
-		if(i == 0 || i == RING_TRACKS-1)
-			bandtex[i] = 0;
-		else
-			bandtex[i] = rseq(&rs) % 256;
+	static GLubyte bandtex[RING_TRACKS][4];
+	static bool bandtex_init = false;
+	if(!bandtex_init){
+#if 1
+		bandtex_init = true;
+		BITMAPINFO *bmi = ReadBitmap("saturn_ring.bmp");
+		if(bmi){
+			if(bmi->bmiHeader.biBitCount == 24) for(int x = 0; x < RING_TRACKS; x++){
+				int bx = bmi->bmiHeader.biWidth * x / RING_TRACKS;
+				int bri = 0;
+				for(int c = 0; c < 3; c++)
+					bri += (bandtex[x][c] = ((GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed])[x * bmi->bmiHeader.biBitCount / CHAR_BIT + c]);
+				bandtex[x][3] = bri / 3;
+			}
+			LocalFree(bmi);
+		}
+#else
+		for(i = 0; i < RING_TRACKS; i++){
+			if(i == 0 || i == RING_TRACKS-1)
+				bandtex[i] = 0;
+			else
+				bandtex[i] = rseq(&rs) % 256;
+		}
+#endif
 	}
 
 	if(!(minrad < dir && dir < maxrad && -thick < sp && sp < thick)){
@@ -505,10 +525,11 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		}
 
 		glEnable(GL_TEXTURE_1D);
-		glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA, RING_TRACKS, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bandtex);
+//		glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA, RING_TRACKS, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bandtex);
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_RGBA, RING_TRACKS, GL_BGRA, GL_UNSIGNED_BYTE, bandtex);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		GLuint shader;
 		if(glActiveTextureARB){
 			shader = ring_setshadow(qintrot, phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad);

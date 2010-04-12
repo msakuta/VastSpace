@@ -60,31 +60,6 @@ public:
 	void anim(double dt);
 };
 
-// Astrobj drawn as a textured sphere
-class TexSphere : public Astrobj{
-	const char *texname;
-	unsigned int texlist; // should not really be here
-	double ringmin, ringmax, ringthick;
-	double atmodensity;
-	double oblateness;
-	float atmohor[4];
-	float atmodawn[4];
-	int ring;
-public:
-	typedef Astrobj st;
-	TexSphere(){}
-	TexSphere(const char *name, CoordSys *cs);
-	virtual ~TexSphere();
-	const char *classname()const;
-	static const unsigned classid;
-	virtual void serialize(SerializeContext &sc);
-	virtual void unserialize(UnserializeContext &sc);
-	bool readFile(StellarContext &, int argc, char *argv[]);
-	void draw(const Viewer *);
-	virtual double atmoScatter(const Viewer &vw)const;
-	virtual bool sunAtmosphere(const Viewer &vw)const;
-};
-
 Astrobj *new_astrobj(const char *name, CoordSys *cs);
 Astrobj *satellite_new(const char *name, CoordSys *cs);
 Astrobj *texsphere_new(const char *name, CoordSys *cs);

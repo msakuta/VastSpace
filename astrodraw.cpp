@@ -1,5 +1,6 @@
 //#include "atmosphere.h"
 #include "astrodraw.h"
+#include "draw/ring-draw.h"
 #include "Universe.h"
 //#include "player.h"
 #include "judge.h"
@@ -8,7 +9,9 @@
 #include "galaxy_field.h"
 #include "astro_star.h"
 #include "stellar_file.h"
+#include "TexSphere.h"
 #include "cmd.h"
+#include "glsl.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -89,6 +92,7 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 	}
 
 	if(level <= 0){
+		extern GLint ring_aposLoc;
 		const Vec3d pos[3] = {p0, p1, p2};
 		const Vec3d ipos[3] = {(arg->model.dvp3(p0)), (arg->model.dvp3(p1)), (arg->model.dvp3(p2))};
 		static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
@@ -98,6 +102,9 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 			Vec3d ipos = arg->imodel.dvp3(pos[n]);
 			glNormal3dv(arg->qrot.trans(ipos));
 			glTexCoord3dv(tpos);
+			if(glMultiTexCoord3dvARB)
+				glMultiTexCoord3dvARB(GL_TEXTURE1_ARB, rpos / arg->radius);
+			glVertexAttrib3dv(ring_aposLoc, pos[n]);
 			glVertex3dv(rpos + arg->org);
 		}
 		arg->polys++;
@@ -735,7 +742,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	return texenable;
 }
 
-bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness){
+bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness,
+						 GLuint ringShadowTex, double ringminrad = 0., double ringmaxrad = 0.){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, spe, zoom;
@@ -782,13 +790,26 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glLineWidth(1);
 	glDisable(GL_BLEND);
 	glColor3ub(255,255,255);*/
+	glDisable(GL_BLEND);
 
 	if(texenable){
 		glCallList(texlist);
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		glDisable(GL_TEXTURE_2D);
-		glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
-		glActiveTextureARB(GL_TEXTURE0_ARB);
+		if(glActiveTextureARB){
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			if(ringShadowTex){
+				glDisable(GL_TEXTURE_2D);
+				glEnable(GL_TEXTURE_1D);
+				glBindTexture(GL_TEXTURE_1D, ringShadowTex);
+//				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+//				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else{
+				glDisable(GL_TEXTURE_2D);
+				glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
+			}
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
 	}
 	else
 		glDisable(GL_TEXTURE_2D);
@@ -830,10 +851,17 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 		gldMultQuat(*texrot);
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
+
+	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad);
+
 	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
+
+	ring_setsphereshadow_end();
+
 	glMatrixMode(GL_TEXTURE);
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
+
 	glPopAttrib();
 }
 
@@ -853,7 +881,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness);
+		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, &ringTex, &ringShadowTex);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -866,7 +894,7 @@ void TexSphere::draw(const Viewer *vw){
 		if(oblateness != 0.){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, NULL, texname, oblateness);
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, NULL, texname, oblateness, ringShadowTex);
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;

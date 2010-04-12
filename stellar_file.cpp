@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "stellar_file.h"
+#include "TexSphere.h"
 #include "serial_util.h"
 #include "argtok.h"
 extern "C"{

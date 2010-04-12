@@ -501,6 +501,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\TexSphere.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Universe.cpp"
 				>
 			</File>
@@ -667,6 +671,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\draw\ring-draw.h"
+				>
+			</File>
+			<File
 				RelativePath="..\RStation.h"
 				>
 			</File>
@@ -700,6 +708,10 @@
 			</File>
 			<File
 				RelativePath="..\tent3d_p.h"
+				>
+			</File>
+			<File
+				RelativePath="..\TexSphere.h"
 				>
 			</File>
 			<File

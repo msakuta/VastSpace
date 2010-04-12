@@ -27,6 +27,8 @@ extern PFNGLUNIFORM1IPROC pglUniform1i;
 extern PFNGLUNIFORM1FPROC pglUniform1f;
 extern PFNGLUNIFORM4FVPROC pglUniform4fv;
 extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
+extern PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
+extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
 /* Hopefully link error will occur if forgot to include this header. */
 #define glCreateShader(shader) (pglCreateShader ? pglCreateShader(shader) : 0)
@@ -36,6 +38,8 @@ extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
 #define glUniform4fv(a,c,b) (pglUniform4fv ? pglUniform4fv(a,c,b) : 0)
 #define glGetUniformLocation(a,b) (pglGetUniformLocation ? pglGetUniformLocation(a,b) : 0)
 #define glUniformMatrix3fv(a,b,c,d) (pglUniformMatrix3fv ? pglUniformMatrix3fv(a,b,c,d) : 0)
+#define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : 0)
+#define glVertexAttrib3dv(a,b) (pglVertexAttrib3dv ? pglVertexAttrib3dv(a,b) : 0)
 
 int glsl_register_shader(GLuint shader, const char *src);
 int glsl_load_shader(GLuint shader, const char *fname);

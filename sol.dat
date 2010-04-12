@@ -436,7 +436,7 @@ coordsys Orbit saturn{
 #	define axis_angle 0
 
 	astro TextureSphere "Saturn"{
-		ringmin 1.5
+		ringmin 74000/60268
 		ringmax 2.4
 		ringthick 1.
 		radius 60268
@@ -451,6 +451,7 @@ coordsys Orbit saturn{
 		gravity
 		spherehit
 		texture sat0fds2.jpg
+		ringtexture saturn_ring.bmp
 	}
 	coordsys Orbit saturno1{
 		orbits Saturn

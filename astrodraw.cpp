@@ -92,7 +92,6 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 	}
 
 	if(level <= 0){
-		extern GLint ring_aposLoc;
 		const Vec3d pos[3] = {p0, p1, p2};
 		const Vec3d ipos[3] = {(arg->model.dvp3(p0)), (arg->model.dvp3(p1)), (arg->model.dvp3(p2))};
 		static void (WINAPI *const glproc[3])(const GLdouble *) = {glNormal3dv, glTexCoord3dv, glVertex3dv};
@@ -104,7 +103,6 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 			glTexCoord3dv(tpos);
 			if(glMultiTexCoord3dvARB)
 				glMultiTexCoord3dvARB(GL_TEXTURE1_ARB, rpos / arg->radius);
-			glVertexAttrib3dv(ring_aposLoc, pos[n]);
 			glVertex3dv(rpos + arg->org);
 		}
 		arg->polys++;
@@ -798,11 +796,8 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 			glActiveTextureARB(GL_TEXTURE1_ARB);
 			if(ringShadowTex){
 				glDisable(GL_TEXTURE_2D);
-				glEnable(GL_TEXTURE_1D);
+				glDisable(GL_TEXTURE_1D);
 				glBindTexture(GL_TEXTURE_1D, ringShadowTex);
-//				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-//				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			}
 			else{
 				glDisable(GL_TEXTURE_2D);
@@ -852,7 +847,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
-	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad);
+	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad, a->qrot.trans(vec3_001));
 
 	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
 
@@ -894,7 +889,8 @@ void TexSphere::draw(const Viewer *vw){
 		if(oblateness != 0.){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, NULL, texname, oblateness, ringShadowTex);
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f),
+				&texlist, NULL, texname, oblateness, ringShadowTex, ringmin, ringmax);
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;

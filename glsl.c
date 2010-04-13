@@ -17,6 +17,7 @@ PFNGLUSEPROGRAMPROC pglUseProgram;
 PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
 PFNGLUNIFORM1IPROC pglUniform1i;
 PFNGLUNIFORM1FPROC pglUniform1f;
+PFNGLUNIFORM3FVPROC pglUniform3fv;
 PFNGLUNIFORM4FVPROC pglUniform4fv;
 PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
 PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
@@ -141,7 +142,8 @@ void glsl_register(){
 	pglUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
 	pglUniform1i = (void*)wglGetProcAddress("glUniform1i");
 	pglUniform1f = (void*)wglGetProcAddress("glUniform1f");
-	pglUniform4fv = (void*)wglGetProcAddress("pglUniform4fv");
+	pglUniform3fv = (void*)wglGetProcAddress("glUniform3fv");
+	pglUniform4fv = (void*)wglGetProcAddress("glUniform4fv");
 	pglGetUniformLocation = (void*)wglGetProcAddress("glGetUniformLocation");
 	pglUniformMatrix3fv = (void*)wglGetProcAddress("glUniformMatrix3fv");
 	pglGetAttribLocation = (void*)wglGetProcAddress("glGetAttribLocation");

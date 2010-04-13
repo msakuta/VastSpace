@@ -25,6 +25,7 @@ extern PFNGLUSEPROGRAMPROC pglUseProgram;
 extern PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
 extern PFNGLUNIFORM1IPROC pglUniform1i;
 extern PFNGLUNIFORM1FPROC pglUniform1f;
+extern PFNGLUNIFORM3FVPROC pglUniform3fv;
 extern PFNGLUNIFORM4FVPROC pglUniform4fv;
 extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
 extern PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
@@ -35,6 +36,7 @@ extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 #define glUseProgram(prog) (pglUseProgram ? pglUseProgram(prog) : 0)
 #define glUniform1i(a,b) (pglUniform1i ? pglUniform1i(a,b) : 0)
 #define glUniform1f(a,b) (pglUniform1f ? pglUniform1f(a,b) : 0)
+#define glUniform3fv(a,c,b) (pglUniform3fv ? pglUniform3fv(a,c,b) : 0)
 #define glUniform4fv(a,c,b) (pglUniform4fv ? pglUniform4fv(a,c,b) : 0)
 #define glGetUniformLocation(a,b) (pglGetUniformLocation ? pglGetUniformLocation(a,b) : 0)
 #define glUniformMatrix3fv(a,b,c,d) (pglUniformMatrix3fv ? pglUniformMatrix3fv(a,b,c,d) : 0)

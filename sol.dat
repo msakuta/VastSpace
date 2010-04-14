@@ -465,7 +465,7 @@ coordsys Orbit saturn{
 		teleport "Saturn Low Orbit" 0 0 0
 		showorbit
 		addent Scarry 0 -1 0
-		updirection 0 0 1
+		updirection 0 cos(axis_angle) -sin(axis_angle)
 	}
 	coordsys Orbit saturno2{
 		orbits Saturn

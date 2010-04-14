@@ -332,7 +332,7 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-static GLuint ring_setshadow(const Quatd &q, double angle, double ipitch, double minrad, double maxrad){
+static GLuint ring_setshadow(double angle, double ipitch, double minrad, double maxrad){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
 	static bool shader_compile = false;
@@ -454,8 +454,8 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		*ringTex = bandtex_name;
 
 	Vec3d delta;
-	Mat4d mat;
 	Quatd axisrot = Quatd::direction(qrot.trans(vec3_001));
+	Quatd axis2vw = vw->cs->tocsq(a->parent).cnj() * axisrot;
 	Vec3d vwapos = axisrot.cnj().trans(a->parent->tocs(vw->pos, vw->cs) - a->pos);
 	double phase = atan2(-vwapos[0], vwapos[1]) + M_PI;
 	double r = ::sqrt(vwapos[0] * vwapos[0] + vwapos[1] * vwapos[1]);
@@ -463,11 +463,12 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	Quatd qintrot = axisrot * qphase;
 	Mat4d rotation = qintrot.tomat4();
 
-	Vec3d sunapos = axisrot.cnj().trans(sunpos);
+	Vec3d sunapos = axis2vw.cnj().trans(sunpos);
 	double sunphase = atan2(-sunapos[0], sunapos[1]);
 
 	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 
+	Mat4d mat;
 	{
 		Vec3d v;
 		Mat4d mat2;
@@ -554,7 +555,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		GLuint shader;
 		if(glActiveTextureARB){
-			shader = ring_setshadow(qintrot, phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad);
+			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad);
 		}
 		{
 			double radn = maxrad;
@@ -625,7 +626,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		Vec3d viewsun = oblate_spos - oblate_vwpos;
 		bool inshadow = jHitSphere(vec3_000, a->rad, oblate_vwpos, viewsun, 1.);
 		glPushMatrix();
-		gldMultQuat(axisrot);
+		gldMultQuat(axis2vw);
 		{
 			double rad;
 			GLfloat ointen;

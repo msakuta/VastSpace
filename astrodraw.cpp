@@ -847,7 +847,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
-	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad, a->qrot.trans(vec3_001));
+	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad, qrot.trans(vec3_001));
 
 	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
 

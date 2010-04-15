@@ -38,9 +38,9 @@ extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 #define glUniform1f(a,b) (pglUniform1f ? pglUniform1f(a,b) : 0)
 #define glUniform3fv(a,c,b) (pglUniform3fv ? pglUniform3fv(a,c,b) : 0)
 #define glUniform4fv(a,c,b) (pglUniform4fv ? pglUniform4fv(a,c,b) : 0)
-#define glGetUniformLocation(a,b) (pglGetUniformLocation ? pglGetUniformLocation(a,b) : 0)
+#define glGetUniformLocation(a,b) (pglGetUniformLocation ? pglGetUniformLocation(a,b) : -1)
 #define glUniformMatrix3fv(a,b,c,d) (pglUniformMatrix3fv ? pglUniformMatrix3fv(a,b,c,d) : 0)
-#define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : 0)
+#define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : -1)
 #define glVertexAttrib3dv(a,b) (pglVertexAttrib3dv ? pglVertexAttrib3dv(a,b) : 0)
 
 int glsl_register_shader(GLuint shader, const char *src);

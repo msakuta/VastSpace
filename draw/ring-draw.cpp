@@ -332,12 +332,12 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-static GLuint ring_setshadow(double angle, double ipitch, double minrad, double maxrad){
+static GLuint ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
 	static bool shader_compile = false;
 	static GLuint shader = 0;
-	static GLint tex1dLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc;
+	static GLint tex1dLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc;
 	GLubyte ambient = GLubyte(g_astro_ambient * 255.f);
 	glActiveTextureARB(GL_TEXTURE1_ARB);
 
@@ -355,6 +355,7 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 			ambientLoc = glGetUniformLocation(shader, "ambient");
 			ringminLoc = glGetUniformLocation(shader, "ringmin");
 			ringmaxLoc = glGetUniformLocation(shader, "ringmax");
+			sunarLoc = glGetUniformLocation(shader, "sunar");
 		}
 		glUseProgram(shader);
 		glUniform1i(tex1dLoc, 0);
@@ -362,6 +363,7 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 		glUniform1f(ambientLoc, g_astro_ambient);
 		glUniform1f(ringminLoc, float(minrad));
 		glUniform1f(ringmaxLoc, float(maxrad));
+		glUniform1f(sunarLoc, float(sunar / ipitch / 2.));
 	} while(0);
 	else
 	// Regenerate texture if astronomical ambient value is changed.
@@ -399,7 +401,8 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 }
 
 void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
-			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, GLuint *ringTex, GLuint *ringShadowTex){
+			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, GLuint *ringTex, GLuint *ringShadowTex,
+			   double sunar){
 	if(0||start == end)
 		return;
 	int i, inside = 0;
@@ -555,7 +558,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		GLuint shader;
 		if(glActiveTextureARB){
-			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad);
+			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar);
 		}
 		{
 			double radn = maxrad;

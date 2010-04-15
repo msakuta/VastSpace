@@ -422,7 +422,8 @@ coordsys Orbit saturn{
 	eisystem
 	cs_radius 20000000
 	orbits Sol
-	orbit_radius 1433449370
+#	orbit_radius 1433449370
+	orbit_radius 14334493
 	eccentricity 0.055723219
 	orbit_axis 0 sin(2*pi*0.7733/360) cos(2*pi*0.7733/360)
 	inclination 2.4886

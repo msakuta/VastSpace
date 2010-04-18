@@ -3,11 +3,12 @@
 /* TexSphere class definition. */
 
 #include "stellar_file.h"
+#include "draw/ring-draw.h"
 
 
 // Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
-	const char *texname, *ringtexname;
+	const char *texname, *ringtexname, *ringbacktexname;
 	unsigned int texlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
@@ -17,7 +18,7 @@ class TexSphere : public Astrobj{
 	int ring;
 
 	// OpenGL texture units
-	unsigned ringTex, ringShadowTex;
+	AstroRing astroRing;
 public:
 	typedef Astrobj st;
 	TexSphere(){}

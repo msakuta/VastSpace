@@ -741,7 +741,7 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 }
 
 bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness,
-						 GLuint ringShadowTex, double ringminrad = 0., double ringmaxrad = 0.){
+						 AstroRing *ring, double ringminrad = 0., double ringmaxrad = 0.){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, spe, zoom;
@@ -792,19 +792,6 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 
 	if(texenable){
 		glCallList(texlist);
-		if(glActiveTextureARB){
-			glActiveTextureARB(GL_TEXTURE1_ARB);
-			if(ringShadowTex){
-				glDisable(GL_TEXTURE_2D);
-				glDisable(GL_TEXTURE_1D);
-				glBindTexture(GL_TEXTURE_1D, ringShadowTex);
-			}
-			else{
-				glDisable(GL_TEXTURE_2D);
-				glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
-			}
-			glActiveTextureARB(GL_TEXTURE0_ARB);
-		}
 	}
 	else
 		glDisable(GL_TEXTURE_2D);
@@ -847,11 +834,13 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
-	ring_setsphereshadow(ringShadowTex, ringminrad, ringmaxrad, qrot.trans(vec3_001));
+	if(ring)
+		ring->ring_setsphereshadow(ringminrad, ringmaxrad, qrot.trans(vec3_001));
 
 	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
 
-	ring_setsphereshadow_end();
+	if(ring)
+		ring->ring_setsphereshadow_end();
 
 	glMatrixMode(GL_TEXTURE);
 	glPopMatrix();
@@ -870,14 +859,14 @@ void TexSphere::draw(const Viewer *vw){
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	char ringdrawn = 8;
-	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(pos, rad * ringmax * 1.1);
+	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
 	double sunar = sun ? sun->rad / (parent->tocs(sun->pos, sun->parent) - pos).len() : .01;
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, &ringTex, &ringShadowTex, sunar);
+		astroRing.ring_draw(vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -891,7 +880,7 @@ void TexSphere::draw(const Viewer *vw){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
 				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f),
-				&texlist, NULL, texname, oblateness, ringShadowTex, ringmin, ringmax);
+				&texlist, NULL, texname, oblateness, &astroRing, ringmin, ringmax);
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;
@@ -909,7 +898,7 @@ void TexSphere::draw(const Viewer *vw){
 	}
 	st::draw(vw);
 	if(drawring && ringdrawn)
-		ring_draw(vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, NULL, sunar);
+		astroRing.ring_draw(vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, sunar);
 }
 
 struct atmo_dye_vertex_param{

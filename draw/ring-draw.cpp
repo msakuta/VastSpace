@@ -309,7 +309,8 @@ typedef struct ringVertexData{
 	Vec3d vwpos;
 	Mat4d matty;
 	Mat4d imatty;
-//	float minrad, maxrad;
+	Quatd axisrot;
+	float minrad, maxrad;
 } ringVertexData;
 
 static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexData *rvd, int n, int i){
@@ -319,8 +320,10 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 
 	glTexCoord1i(n);
 //	glTexCoord1f((float(pos.len()) - rvd->minrad) / (rvd->maxrad - rvd->minrad));
-	if(glMultiTexCoord2dARB)
+	if(glMultiTexCoord2dARB){
 		glMultiTexCoord2dARB(GL_TEXTURE1_ARB, x, y);
+		glMultiTexCoord3dvARB(GL_TEXTURE2_ARB, rvd->axisrot.trans(pos) / rvd->maxrad);
+	}
 
 	if(rvd->relative){
 		Vec3d pp = rvd->matz.vp3(pos).norm();
@@ -332,14 +335,13 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-static GLuint ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar){
+GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
 	static bool shader_compile = false;
 	static GLuint shader = 0;
-	static GLint tex1dLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc;
+	static GLint texRingLoc, texRingBackLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc, backfaceLoc;
 	GLubyte ambient = GLubyte(g_astro_ambient * 255.f);
-	glActiveTextureARB(GL_TEXTURE1_ARB);
 
 	if(g_shader_enable) do{
 		if(!shader_compile){
@@ -350,20 +352,24 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 			shader = glsl_register_program(vtx, frg);
 			if(!shader)
 				break;
-			tex1dLoc = glGetUniformLocation(shader, "tex1d");
+			texRingLoc = glGetUniformLocation(shader, "texRing");
+			texRingBackLoc = glGetUniformLocation(shader, "texRingBack");
 			texshadowLoc = glGetUniformLocation(shader, "texshadow");
 			ambientLoc = glGetUniformLocation(shader, "ambient");
 			ringminLoc = glGetUniformLocation(shader, "ringmin");
 			ringmaxLoc = glGetUniformLocation(shader, "ringmax");
 			sunarLoc = glGetUniformLocation(shader, "sunar");
+			backfaceLoc = glGetUniformLocation(shader, "backface");
 		}
 		glUseProgram(shader);
-		glUniform1i(tex1dLoc, 0);
+		glUniform1i(texRingLoc, 0);
+		glUniform1i(texRingBackLoc, 2);
 		glUniform1i(texshadowLoc, 1);
 		glUniform1f(ambientLoc, g_astro_ambient);
 		glUniform1f(ringminLoc, float(minrad));
 		glUniform1f(ringmaxLoc, float(maxrad));
 		glUniform1f(sunarLoc, float(sunar / ipitch / 2.));
+		glUniform1f(backfaceLoc, backface);
 	} while(0);
 	else
 	// Regenerate texture if astronomical ambient value is changed.
@@ -386,6 +392,7 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &one);
 		texambient = ambient;
 	}
+	glActiveTextureARB(GL_TEXTURE1_ARB);
 	glBindTexture(GL_TEXTURE_2D, texname);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glEnable(GL_TEXTURE_2D);
@@ -400,8 +407,8 @@ static GLuint ring_setshadow(double angle, double ipitch, double minrad, double 
 	return shader;
 }
 
-void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
-			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, GLuint *ringTex, GLuint *ringShadowTex,
+void AstroRing::ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
+			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, const char *ringBackTexName,
 			   double sunar){
 	if(0||start == end)
 		return;
@@ -413,48 +420,64 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 
 	// Watch out threads!
 	static GLubyte bandtex[RING_TRACKS][4];
-	static GLuint bandtex_name = 0;
-	if(ringTex && !*ringTex && ringTexName){
-#if 1
+	static GLubyte backtex[RING_TRACKS][4];
+	if(!ringTex && ringTexName){
 		static GLubyte bandtexinv[RING_TRACKS]; // Luminance only
 		BITMAPINFO *bmi = ReadBitmap(ringTexName);
 		if(bmi){
 			if(bmi->bmiHeader.biBitCount == 24) for(int x = 0; x < RING_TRACKS; x++){
 				int bx = bmi->bmiHeader.biWidth * x / RING_TRACKS;
 				int bri = 0;
-				for(int c = 0; c < 3; c++)
+				bandtex[x][3] = 0;
+				for(int c = 0; c < 3; c++){
 					bri += (bandtex[x][c] = ((GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed])[x * bmi->bmiHeader.biBitCount / CHAR_BIT + c]);
-				bandtex[x][3] = bri / 3;
-				if(ringShadowTex){
-					bandtexinv[x] = 255 - bandtex[x][3];
+					backtex[x][3] = bandtex[x][3] = MAX(bandtex[x][3], bandtex[x][c]);
 				}
+				bandtexinv[x] = 255 - bandtex[x][3];
 			}
 			LocalFree(bmi);
 		}
-#else
-		for(i = 0; i < RING_TRACKS; i++){
-			if(i == 0 || i == RING_TRACKS-1)
-				bandtex[i] = 0;
-			else
-				bandtex[i] = rseq(&rs) % 256;
-		}
-#endif
-		glGenTextures(1, &bandtex_name);
-		if(ringShadowTex){
-			glGenTextures(1, ringShadowTex);
-			glBindTexture(GL_TEXTURE_1D, *ringShadowTex);
 
-			// Use mipmaps and linear interpolation because the rings are likely to produce moire patterns.
-			gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, RING_TRACKS, GL_LUMINANCE, GL_UNSIGNED_BYTE, bandtexinv);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameterfv(GL_TEXTURE_1D, GL_TEXTURE_BORDER_COLOR, Vec4<float>(1,1,1,1));
+		glGenTextures(1, &ringTex);
+		glBindTexture(GL_TEXTURE_1D, ringTex);
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_RGBA, RING_TRACKS, GL_BGRA, GL_UNSIGNED_BYTE, bandtex);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+		glGenTextures(1, &ringShadowTex);
+		glBindTexture(GL_TEXTURE_1D, ringShadowTex);
+		// Use mipmaps and linear interpolation because the rings are likely to produce moire patterns.
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, RING_TRACKS, GL_LUMINANCE, GL_UNSIGNED_BYTE, bandtexinv);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterfv(GL_TEXTURE_1D, GL_TEXTURE_BORDER_COLOR, Vec4<float>(1,1,1,1));
+
+		static GLubyte backtexinv[RING_TRACKS]; // Luminance only
+		bmi = ReadBitmap(ringBackTexName);
+		if(bmi){
+			if(bmi->bmiHeader.biBitCount == 24) for(int x = 0; x < RING_TRACKS; x++){
+				int bx = bmi->bmiHeader.biWidth * x / RING_TRACKS;
+				int bri = 0;
+				for(int c = 0; c < 3; c++){
+					int a = ((GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed])[x * bmi->bmiHeader.biBitCount / CHAR_BIT + c] * 128 / (bandtex[x][3] + 1);
+					backtex[x][c] = MIN(a, 255);
+				}
+				backtex[x][3] = bandtex[x][3];
+			}
+			LocalFree(bmi);
 		}
+
+		glGenTextures(1, &ringBackTex);
+		glBindTexture(GL_TEXTURE_1D, ringBackTex);
+
+		// Use mipmaps and linear interpolation because the rings are likely to produce moire patterns.
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_RGBA, RING_TRACKS, GL_BGRA, GL_UNSIGNED_BYTE, backtex);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	}
-
-	if(ringTex)
-		*ringTex = bandtex_name;
 
 	Vec3d delta;
 	Quatd axisrot = Quatd::direction(qrot.trans(vec3_001));
@@ -466,7 +489,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	Quatd qintrot = axisrot * qphase;
 	Mat4d rotation = qintrot.tomat4();
 
-	Vec3d sunapos = axis2vw.cnj().trans(sunpos);
+	Vec3d sunapos = axisrot.cnj().trans(a->parent->tocs(sunpos, vw->cs));
 	double sunphase = atan2(-sunapos[0], sunapos[1]);
 
 	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
@@ -534,8 +557,9 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 
 		rvd.matty = (Mat4d(mat4_u).translatein(apos) * mat).rotz(-roll) * Mat4d(Vec3d(a->rad, 0, 0), Vec3d(0, a->rad, 0), Vec3d(0, 0, a->rad));
 		rvd.imatty = Mat4d(Vec3d(1. / a->rad, 0, 0), Vec3d(0, 1. / a->rad, 0), Vec3d(0, 0, 1. / a->rad)).rotz(roll) * (qrot.cnj() * vw->cs->tocsq(a->parent)).tomat4() * Mat4d(mat4_u).translatein(-apos);
+		rvd.axisrot = Quatd(0., 0., sin((phase - sunphase) / 2.), cos((phase - sunphase) / 2.));
 //		rvd.minrad = minrad;
-//		rvd.maxrad = maxrad;
+		rvd.maxrad = float(maxrad);
 
 		glMultMatrixd(rvd.matty);
 
@@ -548,17 +572,21 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 			glPushMatrix();
 		}
 
-		glBindTexture(GL_TEXTURE_1D, bandtex_name);
+		glBindTexture(GL_TEXTURE_1D, ringTex);
 		glEnable(GL_TEXTURE_1D);
 //		glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA, RING_TRACKS, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bandtex);
 		// Use mipmaps and linear interpolation because the rings are likely to produce moire patterns.
-		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_RGBA, RING_TRACKS, GL_BGRA, GL_UNSIGNED_BYTE, bandtex);
+/*		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_RGBA, RING_TRACKS, GL_BGRA, GL_UNSIGNED_BYTE, bandtex);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);*/
 		GLuint shader;
 		if(glActiveTextureARB){
-			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar);
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glBindTexture(GL_TEXTURE_1D, ringBackTex);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			double f = 0 < sunapos[2] * vwapos[2] ? 0 : fabs(sunapos[2]) / sunapos.len() * 10;
+			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))));
 		}
 		{
 			double radn = maxrad;
@@ -790,7 +818,7 @@ void ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char sta
 	glPopAttrib();
 }
 
-void ring_setsphereshadow(GLuint ringShadowTex, double minrad, double maxrad, const Vec3d &ringnorm){
+void AstroRing::ring_setsphereshadow(double minrad, double maxrad, const Vec3d &ringnorm){
 	static GLuint shader = 0;
 	static GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc;
 	static bool shader_compile = false;
@@ -820,8 +848,24 @@ void ring_setsphereshadow(GLuint ringShadowTex, double minrad, double maxrad, co
 		glUniform1f(ringmaxLoc, float(maxrad));
 		glUniform3fv(ringnormLoc, 1, ringnorm.cast<float>());
 	}
+
+	if(glActiveTextureARB){
+		int at;
+		glGetIntegerv(GL_ACTIVE_TEXTURE, &at);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		if(ringShadowTex){
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_1D);
+			glBindTexture(GL_TEXTURE_1D, ringShadowTex);
+		}
+		else{
+			glDisable(GL_TEXTURE_2D);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
+		}
+		glActiveTextureARB(at);
+	}
 }
 
-void ring_setsphereshadow_end(){
+void AstroRing::ring_setsphereshadow_end(){
 	glUseProgram(0);
 }

@@ -6,7 +6,7 @@ extern "C"{
 }
 
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), ringtexname(NULL), oblateness(0.), ringTex(0), ringShadowTex(0){
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), ringtexname(NULL), ringbacktexname(NULL), oblateness(0.){
 	texlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;
@@ -79,6 +79,14 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			char *texname = new char[strlen(argv[1]) + 1];
 			strcpy(texname, argv[1]);
 			this->ringtexname = texname;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "ringbacktexture")){
+		if(1 < argc){
+			char *texname = new char[strlen(argv[1]) + 1];
+			strcpy(texname, argv[1]);
+			this->ringbacktexname = texname;
 		}
 		return true;
 	}

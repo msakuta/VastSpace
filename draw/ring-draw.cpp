@@ -335,12 +335,12 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 	}
 }
 
-GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface){
+GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface, float exposure){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
 	static bool shader_compile = false;
 	static GLuint shader = 0;
-	static GLint texRingLoc, texRingBackLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc, backfaceLoc;
+	static GLint texRingLoc, texRingBackLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc, backfaceLoc, exposureLoc;
 	GLubyte ambient = GLubyte(g_astro_ambient * 255.f);
 
 	if(g_shader_enable) do{
@@ -360,6 +360,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 			ringmaxLoc = glGetUniformLocation(shader, "ringmax");
 			sunarLoc = glGetUniformLocation(shader, "sunar");
 			backfaceLoc = glGetUniformLocation(shader, "backface");
+			exposureLoc = glGetUniformLocation(shader, "exposure");
 		}
 		glUseProgram(shader);
 		glUniform1i(texRingLoc, 0);
@@ -370,6 +371,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 		glUniform1f(ringmaxLoc, float(maxrad));
 		glUniform1f(sunarLoc, float(sunar / ipitch / 2.));
 		glUniform1f(backfaceLoc, backface);
+		glUniform1f(exposureLoc, exposure);
 	} while(0);
 	else
 	// Regenerate texture if astronomical ambient value is changed.
@@ -407,7 +409,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 	return shader;
 }
 
-void AstroRing::ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
+void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
 			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, const char *ringBackTexName,
 			   double sunar){
 	if(0||start == end)
@@ -416,6 +418,7 @@ void AstroRing::ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpo
 	double sp, dir;
 	double width = (maxrad - minrad) / RING_TRACKS;
 	struct random_sequence rs;
+	const Viewer *vw = &rvw;
 	init_rseq(&rs, (unsigned long)a + 123);
 
 	// Watch out threads!
@@ -586,7 +589,7 @@ void AstroRing::ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpo
 			glBindTexture(GL_TEXTURE_1D, ringBackTex);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 			double f = 0 < sunapos[2] * vwapos[2] ? 0 : fabs(sunapos[2]) / sunapos.len() * 10;
-			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))));
+			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))), rvw.dynamic_range);
 		}
 		{
 			double radn = maxrad;
@@ -818,9 +821,9 @@ void AstroRing::ring_draw(const Viewer *vw, const Astrobj *a, const Vec3d &sunpo
 	glPopAttrib();
 }
 
-void AstroRing::ring_setsphereshadow(double minrad, double maxrad, const Vec3d &ringnorm){
+void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double maxrad, const Vec3d &ringnorm){
 	static GLuint shader = 0;
-	static GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc;
+	static GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc, exposureLoc;
 	static bool shader_compile = false;
 	if(!g_shader_enable)
 		return;
@@ -838,6 +841,7 @@ void AstroRing::ring_setsphereshadow(double minrad, double maxrad, const Vec3d &
 		ringminLoc = glGetUniformLocation(shader, "ringmin");
 		ringmaxLoc = glGetUniformLocation(shader, "ringmax");
 		ringnormLoc = glGetUniformLocation(shader, "ringnorm");
+		exposureLoc = glGetUniformLocation(shader, "exposure");
 	}
 	if(shader){
 		glUseProgram(shader);
@@ -847,6 +851,7 @@ void AstroRing::ring_setsphereshadow(double minrad, double maxrad, const Vec3d &
 		glUniform1f(ringminLoc, float(minrad));
 		glUniform1f(ringmaxLoc, float(maxrad));
 		glUniform3fv(ringnormLoc, 1, ringnorm.cast<float>());
+		glUniform1f(exposureLoc, float(vw.dynamic_range));
 	}
 
 	if(glActiveTextureARB){

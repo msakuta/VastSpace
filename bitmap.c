@@ -1,6 +1,9 @@
 #include "bitmap.h"
-#include <stddef.h>
 #include <clib/zip/UnZip.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <setjmp.h>
+#include <jpeglib.h>
 
 #ifndef MAX
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -65,7 +68,7 @@ tryzip:
 		szBuffer = LocalAlloc(LMEM_FIXED, dwFileSize - sizeof(BITMAPFILEHEADER));
 		memcpy(szBuffer, &pv[sizeof(BITMAPFILEHEADER)], dwFileSize - sizeof(BITMAPFILEHEADER));
 		ZipFree(pv);
-		return szBuffer;
+		return (BITMAPINFO*)szBuffer;
 	}
 }
 
@@ -211,3 +214,102 @@ void DrawBitmapMask(drawdata_t *dd, const BITMAPINFO *bi, int x0, int y0, const 
 	DrawBitmapPaletteMask(dd, bi, bi->bmiColors, x0, y0, pr, mask, maskindex);
 }
 
+
+
+
+
+
+
+
+
+
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;	/* "public" fields */
+
+  jmp_buf setjmp_buffer;	/* for return to caller */
+};
+
+typedef struct my_error_mgr * my_error_ptr;
+
+static void my_error_exit (j_common_ptr cinfo)
+{
+  /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+  my_error_ptr myerr = (my_error_ptr) cinfo->err;
+
+  /* Always display the message. */
+  /* We could postpone this until after returning, if we chose. */
+  (*cinfo->err->output_message) (cinfo);
+
+  /* Return control to the setjmp point */
+  longjmp(myerr->setjmp_buffer, 1);
+}
+
+BITMAPINFO *LoadJpeg(const char *jpgfilename){
+	BITMAPINFO *bmi;
+	struct jpeg_decompress_struct cinfo;
+	struct my_error_mgr jerr;
+	FILE * infile;		/* source file */
+	JSAMPARRAY buffer;		/* Output row buffer */
+	int row_stride;		/* physical row width in image buffer */
+	int src_row_stride;
+
+	if((infile = fopen(jpgfilename, "rb")) == NULL){
+		fprintf(stderr, "can't open %s\n", jpgfilename);
+		return NULL;
+	}
+	cinfo.err = jpeg_std_error(&jerr.pub);
+	jerr.pub.error_exit = my_error_exit;
+	/* Establish the setjmp return context for my_error_exit to use. */
+	if (setjmp(jerr.setjmp_buffer)) {
+		/* If we get here, the JPEG code has signaled an error.
+		 * We need to clean up the JPEG object, close the input file, and return.
+		 */
+		jpeg_destroy_decompress(&cinfo);
+		fclose(infile);
+		return NULL;
+	}
+	jpeg_create_decompress(&cinfo);
+	jpeg_stdio_src(&cinfo, infile);
+	(void) jpeg_read_header(&cinfo, TRUE);
+	(void) jpeg_start_decompress(&cinfo);
+	row_stride = cinfo.output_width * 3/*cinfo.output_components*/;
+	src_row_stride = cinfo.output_width * cinfo.output_components;
+	bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * 3/*cinfo.output_components*/);
+	bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi->bmiHeader.biWidth = cinfo.output_width; 
+	bmi->bmiHeader.biHeight = -(LONG)(cinfo.output_height);
+	bmi->bmiHeader.biPlanes = 1;
+	bmi->bmiHeader.biBitCount = 24;
+	bmi->bmiHeader.biCompression = BI_RGB;
+	bmi->bmiHeader.biSizeImage = cinfo.output_width * cinfo.output_height * 3/*cinfo.output_components*/;
+	bmi->bmiHeader.biXPelsPerMeter = 0;
+	bmi->bmiHeader.biYPelsPerMeter = 0;
+	bmi->bmiHeader.biClrUsed = 0;
+	bmi->bmiHeader.biClrImportant = 0;
+	buffer = (*cinfo.mem->alloc_sarray)
+		((j_common_ptr) &cinfo, JPOOL_IMAGE, src_row_stride, 1);
+	while (cinfo.output_scanline < cinfo.output_height) {
+		unsigned j;
+		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
+//					memcpy(&((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride], buffer[0], row_stride);
+		if(cinfo.output_components == 3) for(j = 0; j < cinfo.output_width; j++){
+			JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * cinfo.output_components];
+			JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+			dst[0] = src[2];
+			dst[1] = src[1];
+			dst[2] = src[0];
+		}
+		else if(cinfo.output_components == 1) for(j = 0; j < cinfo.output_width; j++){
+			JSAMPLE *dst = &((JSAMPLE*)bmi->bmiColors)[(cinfo.output_scanline-1) * row_stride + j * 3];
+			JSAMPLE *src = &buffer[0][j * cinfo.output_components];
+			dst[0] = src[0];
+			dst[1] = src[0];
+			dst[2] = src[0];
+		}
+	}
+	(void) jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+	fclose(infile);
+
+	return bmi;
+}

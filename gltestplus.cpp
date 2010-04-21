@@ -63,6 +63,7 @@ extern "C"{
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_space_near_clip = 0.00005, g_space_far_clip = 1e10;
+static double r_dynamic_range = 1.;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -734,6 +735,7 @@ void display_func(void){
 	viewer.dt = dt;
 	viewer.mousex = s_mousex;
 	viewer.mousey = s_mousey;
+	viewer.dynamic_range = r_dynamic_range;
 	draw_func(viewer, dt);
 }
 
@@ -1541,6 +1543,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
 	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
+	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");

@@ -23,6 +23,8 @@ void DrawBitmapTransparent(drawdata_t *dd, const BITMAPINFO *bi, int x0, int y0,
 void DrawBitmapPaletteMask(drawdata_t *dd, const BITMAPINFO *image, const RGBQUAD *pal, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
 void DrawBitmapMask(drawdata_t *dd, const BITMAPINFO *image, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
 
+BITMAPINFO *LoadJpeg(const char *jpgfilename);
+
 #ifdef __cplusplus
 }
 #endif

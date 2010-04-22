@@ -278,7 +278,7 @@
 	</References>
 	<Files>
 		<Filter
-			Name="ソース ファイル"
+			Name="Sources"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
@@ -408,7 +408,7 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="ヘッダー ファイル"
+			Name="Headers"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
@@ -465,10 +465,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\clib\gl\multitex.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\clib\rseq.h"
 				>
 			</File>
@@ -486,14 +482,6 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\zip\UnZip.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\sound\wavemixer.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\clib\sound\wavesum.h"
 				>
 			</File>
 			<File
@@ -551,6 +539,10 @@
 					RelativePath="..\include\clib\gl\gltext.h"
 					>
 				</File>
+				<File
+					RelativePath="..\include\clib\gl\multitex.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="colseq"
@@ -576,12 +568,18 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="リソース ファイル"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
+			<Filter
+				Name="sound"
+				>
+				<File
+					RelativePath="..\include\clib\sound\wavemixer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\clib\sound\wavesum.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

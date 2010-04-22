@@ -6,6 +6,8 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
+#define texture(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
+
 void GLWbuild::progress_bar(double f, int width, int *piy){
 	int iy = *piy;
 	glColor4ub(0,255,0,255);
@@ -208,8 +210,9 @@ void Scarry::draw(wardraw_t *wd){
 
 	if(wd->vw->gc->cullFrustum(pos, hitradius()))
 		return;
-
+#if 0
 	if(init == 0) do{
+		init = 1;
 		sufbase = CallLoadSUF("models/spacecarrier.bin");
 		if(!sufbase) break;
 		CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
@@ -224,7 +227,12 @@ void Scarry::draw(wardraw_t *wd){
 		stp.mipmap = 0;
 		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
 		pst = AllocSUFTex(sufbase);
-		init = 1;
+		extern GLuint screentex;
+		glNewList(pst->a[0].list, GL_COMPILE);
+		glBindTexture(GL_TEXTURE_2D, screentex);
+		glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		glDisable(GL_LIGHTING);
+		glEndList();
 	} while(0);
 	if(sufbase){
 		static const double normal[3] = {0., 1., 0.};
@@ -254,15 +262,39 @@ void Scarry::draw(wardraw_t *wd){
 		}
 #endif
 
+		Mat4d modelview, proj;
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		glGetDoublev(GL_PROJECTION_MATRIX, proj);
+		Mat4d trans = proj * modelview;
+		texture((glPushMatrix(),
+			glScaled(1./2., 1./2., 1.),
+			glTranslated(1, 1, 0),
+			glMultMatrixd(trans)
+		));
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_S, GL_EYE_PLANE, Vec4d(1,0,0,0));
+		glEnable(GL_TEXTURE_GEN_S);
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_T, GL_EYE_PLANE, Vec4d(0,1,0,0));
+		glEnable(GL_TEXTURE_GEN_T);
+		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeniv(GL_R, GL_EYE_PLANE, Vec4<int>(0,0,1,0));
+		glEnable(GL_TEXTURE_GEN_R);
+		glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeniv(GL_Q, GL_EYE_PLANE, Vec4<int>(0,0,0,1));
+		glEnable(GL_TEXTURE_GEN_Q);
+
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
 		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
 		glPopMatrix();
 
+		texture((glPopMatrix()));
 		glPopMatrix();
 		glPopAttrib();
 	}
+#endif
 }
 
 void Scarry::drawtra(wardraw_t *wd){
@@ -370,5 +402,68 @@ void Scarry::drawtra(wardraw_t *wd){
 
 /*		for(i = 0; i < numof(p->turrets); i++)
 			mturret_drawtra(&p->turrets[i], pt, wd);*/
+	}
+
+	static int init = 0;
+	static suftex_t *pst;
+	static suf_t *sufbase = NULL;
+	if(init == 0) do{
+		init = 1;
+		sufbase = CallLoadSUF("models/spacecarrier.bin");
+	} while(0);
+	if(sufbase){
+		static const double normal[3] = {0., 1., 0.};
+		double scale = SCARRY_SCALE;
+		static const GLdouble rotaxis[16] = {
+			-1,0,0,0,
+			0,1,0,0,
+			0,0,-1,0,
+			0,0,0,1,
+		};
+		Mat4d mat;
+
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+		glEnable(GL_CULL_FACE);
+		glPushMatrix();
+		transform(mat);
+		glMultMatrixd(mat);
+
+		extern GLuint screentex;
+		glBindTexture(GL_TEXTURE_2D, screentex);
+		glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		glColor4f(1.,1.,1.,1.);
+		glDisable(GL_LIGHTING);
+		glEnable(GL_TEXTURE_2D);
+
+		Mat4d modelview, proj;
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		glGetDoublev(GL_PROJECTION_MATRIX, proj);
+		Mat4d trans = proj * modelview;
+		texture((glPushMatrix(),
+			glScaled(1./2., 1./2., 1.),
+			glTranslated(1, 1, 0),
+			glMultMatrixd(trans)
+		));
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_S, GL_EYE_PLANE, Vec4d(.9,0,0,0));
+		glEnable(GL_TEXTURE_GEN_S);
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_T, GL_EYE_PLANE, Vec4d(0,.9,0,0));
+		glEnable(GL_TEXTURE_GEN_T);
+		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_R, GL_EYE_PLANE, Vec4d(0,0,.9,0));
+		glEnable(GL_TEXTURE_GEN_R);
+		glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeniv(GL_Q, GL_EYE_PLANE, Vec4<int>(0,0,0,1));
+		glEnable(GL_TEXTURE_GEN_Q);
+
+		glPushMatrix();
+		glScaled(-scale, scale, -scale);
+		DrawSUF(sufbase, 0, NULL);
+		glPopMatrix();
+
+		texture((glPopMatrix()));
+		glPopMatrix();
+		glPopAttrib();
 	}
 }

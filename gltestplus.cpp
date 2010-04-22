@@ -86,6 +86,8 @@ Player pl;
 double &flypower = pl.flypower;
 Universe universe(&pl);//galaxysystem(&pl);
 
+extern GLuint screentex;
+GLuint screentex = 0;
 
 
 void drawShadeSphere(){
@@ -521,6 +523,44 @@ void draw_func(Viewer &vw, double dt){
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
 		war_draw(vw, pl.cs, &WarField::draw);
+
+		if(!screentex){
+			glGenTextures(1, &screentex);
+			glBindTexture(GL_TEXTURE_2D, screentex);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vw.vp.w, vw.vp.h, 0, GL_RGB, GL_FLOAT, NULL);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+		{
+			GLpmatrix pma;
+			projection((glLoadIdentity(), vw.frustum(.01, 100.)));
+			GLma ma(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+			glLoadIdentity();
+			glLoadMatrixd(vw.rot);
+			gldTranslate3dv(-vw.pos);
+			glBindTexture(GL_TEXTURE_2D, screentex);
+			glReadBuffer(GL_BACK);
+			glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, vw.vp.w, vw.vp.h, 0);
+	//		glReadPixels(0, 0, 512, 512, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	//		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	//		glRasterPos2d(0, 0);
+	//		glDrawPixels(512, 512, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+/*			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glEnable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+			glDisable(GL_CULL_FACE);
+			glColor4f(.5,.5,.5,1.);
+			glBegin(GL_QUADS);
+			glTexCoord2i(0, 0); glVertex3d(-1, -1, -2);
+			glTexCoord2i(1, 0); glVertex3d( 1, -1, -2);
+			glTexCoord2i(1, 1); glVertex3d( 1,  1, -1);
+			glTexCoord2i(0, 1); glVertex3d(-1,  1, -1);
+			glEnd();*/
+		}
+		glBindTexture(GL_TEXTURE_2D, 0);
+
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_CULL_FACE);

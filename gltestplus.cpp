@@ -25,6 +25,9 @@
 #include "glstack.h"
 #include "Universe.h"
 #include "glsl.h"
+#include <squirrel.h>
+#include <sqstdio.h> 
+#include <sqstdaux.h> 
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -1520,8 +1523,123 @@ HWND hWndApp;
 
 extern double g_nlips_factor;
 
+static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
+{ 
+	va_list arglist; 
+	va_start(arglist, s);
+//	vwprintf(s, arglist);
+	wchar_t wcstr[1024]; // The buffer size does not make sense
+	vswprintf(wcstr, numof(wcstr), s, arglist);
+	char cstr[1024];
+	wcstombs(cstr, wcstr, sizeof cstr);
+	CmdPrint(cstr);
+	va_end(arglist); 
+} 
+
+
+void call_foo(HSQUIRRELVM v, int n,float f,const SQChar *s)
+{
+	int top = sq_gettop(v); //saves the stack size before the call
+	sq_pushroottable(v); //pushes the global table
+	sq_pushstring(v,_SC("foo"),-1);
+	if(SQ_SUCCEEDED(sq_get(v,-2))) { //gets the field 'foo' from the global table
+		sq_pushroottable(v); //push the 'this' (in this case is the global table)
+		sq_pushinteger(v,n); 
+		sq_pushfloat(v,f);
+		sq_pushstring(v,s,-1);
+		sq_call(v,4,0,0); //calls the function 
+	}
+	sq_settop(v,top); //restores the original stack size
+}
+
+extern "C" int cmd_set(int argc, const char *argv[]);
+
+static SQInteger sqf_set_cvar(HSQUIRRELVM v){
+	SQInteger nargs = sq_gettop(v); //number of arguments
+	if(3 <= nargs && sq_gettype(v, 2) == OT_STRING && sq_gettype(v, 3) == OT_STRING){
+		const SQChar *wargs[2];
+		int i;
+		sq_getstring(v, 2, &wargs[0]);
+		sq_getstring(v, 3, &wargs[1]);
+		size_t arglen[2];
+		char *args[2];
+		for(i = 0; i < 2; i++){
+			args[i] = new char[arglen[i] = wcslen(wargs[i]) * 2 + 1];
+			wcstombs(args[i], wargs[i], arglen[i]);
+		}
+		cmd_set(2, const_cast<const char **>(args));
+		delete[] args[0];
+		delete[] args[1];
+	}
+	return 0;
+}
+
+static SQInteger sqf_get_cvar(HSQUIRRELVM v){
+	SQInteger nargs = sq_gettop(v); //number of arguments
+	if(2 == nargs && sq_gettype(v, 2) == OT_STRING){
+		const SQChar *warg;
+		sq_getstring(v, 2, &warg);
+		size_t arglen;
+		char *arg;
+		arg = new char[arglen = wcslen(warg) * 2];
+		wcstombs(arg, warg, arglen);
+		const char *ret = CvarGetString(arg);
+		delete[] arg;
+		if(!ret){
+			sq_pushnull(v);
+			return 1;
+		}
+		size_t retlen = strlen(ret) + 1;
+		SQChar *wret = new SQChar[retlen];
+		mbstowcs(wret, ret, retlen);
+		delete[] ret;
+		sq_pushstring(v, wret, -1);
+		delete[] wret;
+		return 1;
+	}
+	else
+		return SQ_ERROR;
+}
+
+static SQInteger sqf_cmd(HSQUIRRELVM v){
+	SQInteger nargs = sq_gettop(v); //number of arguments
+	if(2 != nargs)
+		return SQ_ERROR;
+	if(sq_gettype(v, 2) == OT_STRING){
+		const SQChar *warg;
+		sq_getstring(v, 2, &warg);
+		size_t arglen;
+		char *arg;
+		arg = new char[arglen = wcslen(warg) * 2];
+		wcstombs(arg, warg, arglen);
+		CmdExec(arg);
+		delete[] arg;
+	}
+	return 0;
+}
+
+static SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
+{
+    sq_pushroottable(v);
+    sq_pushstring(v,fname,-1);
+    sq_newclosure(v,f,0); //create a new function
+    sq_createslot(v,-3); 
+    sq_pop(v,1); //pops the root table    
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
+	HSQUIRRELVM v; 
+	v = sq_open(1024); // creates a VM with initial stack size 1024 
+
+	sqstd_seterrorhandlers(v);
+
+	sq_setprintfunc(v, sqf_print); //sets the print function
+
+	register_global_func(v, sqf_set_cvar, _SC("set_cvar"));
+	register_global_func(v, sqf_get_cvar, _SC("get_cvar"));
+	register_global_func(v, sqf_cmd, _SC("cmd"));
 
 	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 	glwfocus = NULL;
@@ -1585,6 +1703,14 @@ int main(int argc, char *argv[])
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 
+	sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
+	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
+	{
+//		call_foo(v,1,2.5,_SC("teststring"));
+	}
+	else
+		CmdPrintf("scripts/init.nut failed.");
+
 	StellarFileLoad("space.dat", &universe);
 	CmdExec("@exec autoexec.cfg");
 
@@ -1645,6 +1771,9 @@ int main(int argc, char *argv[])
 
 	while(ShowCursor(TRUE) < 0);
 	while(0 <= ShowCursor(FALSE));
+
+	sq_pop(v,1); //pops the root table
+	sq_close(v);
 
 	return 0;
 }

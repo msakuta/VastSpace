@@ -283,7 +283,7 @@ static char *stringdup(const char *s){
 }
 
 /* explicit cvar setter, useful in some occasion */
-static int cmd_set(int argc, const char *argv[]){
+int cmd_set(int argc, const char *argv[]){
 	const char *thekey, *thevalue;
 	if(argc <= 1){
 		cmd_echoa("Specify a cvar to set it.");

@@ -489,6 +489,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\sqadapt.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\stellar_file.cpp"
 				>
 			</File>
@@ -696,6 +700,10 @@
 			</File>
 			<File
 				RelativePath="..\shield.h"
+				>
+			</File>
+			<File
+				RelativePath="..\sqadapt.h"
 				>
 			</File>
 			<File

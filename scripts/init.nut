@@ -15,9 +15,8 @@ class Cvar{
 
 print("Squirrel script initialized!"); 
 
-local cvar = Cvar();
-cvar.pause = "0";
-//set("pause","0");
+cvar <- Cvar();
+cvar.pause = "1";
 
 cmd("echo echo from Squirrel");
 
@@ -25,3 +24,17 @@ local timescale = cvar.g_timescale;
 
 cmd("echo timescale = " + timescale);
 
+function fact(n){
+	if(1 < n)
+		return n * fact(n-1);
+	else
+		return 1;
+}
+
+function printfact(n){
+	print(fact(n));
+}
+
+function return100(){
+	return 100;
+}

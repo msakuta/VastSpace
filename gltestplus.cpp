@@ -1527,13 +1527,10 @@ static int cmd_sq(int argc, char *argv[]){
 		CmdPrint("usage: sq \"Squirrel One Linear Source\"");
 		return 0;
 	}
-	wchar_t *wsq = new wchar_t[strlen(argv[1]) + 1];
-	mbstowcs(wsq, argv[1], strlen(argv[1]) + 1);
-	if(!SQ_FAILED(sq_compilebuffer(g_sqvm, wsq, strlen(argv[1]), _SC("sq"), 0))){
+	if(!SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), 0))){
 		sq_pushroottable(g_sqvm);
 		sq_call(g_sqvm, 1, 0, 0);
 	}
-	delete[] wsq;
 	return 0;
 }
 

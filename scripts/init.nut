@@ -1,8 +1,3 @@
-function foo(i, f, s) 
-{ 
-	print("Called foo(), i="+i+", f="+f+", s='"+s+"'\n"); 
-	print(f + " + " + f + " = " + (f + f) + "\n"); 
-}
 
 class Cvar{
 	function _set(idx,val){
@@ -31,10 +26,8 @@ function fact(n){
 		return 1;
 }
 
-function printfact(n){
-	print(fact(n));
-}
+print(typeof Universe);
+print(typeof universe);
+print("timescale = " + universe.timescale);
+print("global_time = " + universe.global_time);
 
-function return100(){
-	return 100;
-}

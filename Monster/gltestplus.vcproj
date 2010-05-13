@@ -44,8 +44,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\sqplus\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;SQUNICODE"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -69,9 +69,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelDU.lib sqstdlibDU.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\sqplus\lib\"
+				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -207,8 +207,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\sqplus\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;SQUNICODE"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -229,9 +229,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrelU.lib sqstdlibU.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\sqplus\lib\"
+				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

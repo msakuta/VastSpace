@@ -4,11 +4,17 @@
 #include <stddef.h>
 #include <squirrel.h>
 
+namespace sqa{
+
 void sqa_init();
 void sqa_exit();
 
 SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
 
 extern HSQUIRRELVM g_sqvm;
+
+}
+
+using namespace sqa;
 
 #endif

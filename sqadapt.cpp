@@ -1,5 +1,6 @@
 #include "sqadapt.h"
 #include "cmd.h"
+#include "Universe.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -12,6 +13,11 @@ extern "C"{
 #include <clib/c.h>
 }
 
+extern Universe universe;
+
+
+namespace sqa{
+
 HSQUIRRELVM g_sqvm;
 static HSQUIRRELVM &v = g_sqvm;
 
@@ -20,10 +26,8 @@ static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...)
 	va_list arglist; 
 	va_start(arglist, s);
 //	vwprintf(s, arglist);
-	wchar_t wcstr[1024]; // The buffer size does not make sense
-	vswprintf(wcstr, numof(wcstr), s, arglist);
 	char cstr[1024];
-	wcstombs(cstr, wcstr, sizeof cstr);
+	vsprintf(cstr, s, arglist);
 	CmdPrint(cstr);
 	va_end(arglist); 
 } 
@@ -50,20 +54,11 @@ static SQInteger sqf_set_cvar(HSQUIRRELVM v){
 	SQInteger nargs = sq_gettop(v); //number of arguments
 	SQObjectType ty = sq_gettype(v, 1);
 	if(3 <= nargs && sq_gettype(v, 2) == OT_STRING && sq_gettype(v, 3) == OT_STRING){
-		const SQChar *wargs[2];
-		int i;
-		sq_getstring(v, 2, &wargs[0]);
-		sq_getstring(v, 3, &wargs[1]);
-		size_t arglen[2];
-		char *args[3];
-		args[0] = "set";
-		for(i = 0; i < 2; i++){
-			args[i+1] = new char[arglen[i] = wcslen(wargs[i]) * 2 + 1];
-			wcstombs(args[i+1], wargs[i], arglen[i]);
-		}
+		const SQChar *args[3];
+		args[0] = _SC("set");
+		sq_getstring(v, 2, &args[1]);
+		sq_getstring(v, 3, &args[2]);
 		cmd_set(3, const_cast<const char **>(args));
-		delete[] args[1];
-		delete[] args[2];
 	}
 	return 0;
 }
@@ -71,24 +66,16 @@ static SQInteger sqf_set_cvar(HSQUIRRELVM v){
 static SQInteger sqf_get_cvar(HSQUIRRELVM v){
 	SQInteger nargs = sq_gettop(v); //number of arguments
 	if(2 == nargs && sq_gettype(v, 2) == OT_STRING){
-		const SQChar *warg;
-		sq_getstring(v, 2, &warg);
-		size_t arglen;
-		char *arg;
-		arg = new char[arglen = wcslen(warg) * 2];
-		wcstombs(arg, warg, arglen);
-		const char *ret = CvarGetString(arg);
-		delete[] arg;
+		const SQChar *arg;
+		sq_getstring(v, 2, &arg);
+		const SQChar *ret = CvarGetString(arg);
 		if(!ret){
 			sq_pushnull(v);
 			return 1;
 		}
 		size_t retlen = strlen(ret) + 1;
-		SQChar *wret = new SQChar[retlen];
-		mbstowcs(wret, ret, retlen);
+		sq_pushstring(v, ret, -1);
 		delete[] ret;
-		sq_pushstring(v, wret, -1);
-		delete[] wret;
 		return 1;
 	}
 	else
@@ -100,14 +87,9 @@ static SQInteger sqf_cmd(HSQUIRRELVM v){
 	if(2 != nargs)
 		return SQ_ERROR;
 	if(sq_gettype(v, 2) == OT_STRING){
-		const SQChar *warg;
-		sq_getstring(v, 2, &warg);
-		size_t arglen;
-		char *arg;
-		arg = new char[arglen = wcslen(warg) * 2];
-		wcstombs(arg, warg, arglen);
+		const SQChar *arg;
+		sq_getstring(v, 2, &arg);
 		CmdExec(arg);
-		delete[] arg;
 	}
 	return 0;
 }
@@ -134,6 +116,32 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 }
 #endif
 
+static SQInteger sqf_name(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("Universe"), -1);
+	return 1;
+}
+
+static SQInteger sqf_Universe_get(HSQUIRRELVM v){
+	Universe *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	sq_pushstring(v, _SC("ptr"), -1); // this "ptr"
+	sq_get(v, 1);
+	if(SQ_FAILED(sq_getuserpointer(v, -1, (SQUserPointer*)&p))) // this (ptr)
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("timescale"))){
+		sq_pushfloat(v, p->timescale);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("global_time"))){
+		sq_pushfloat(v, p->global_time);
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
+
 void sqa_init(){
 
 	sqstd_seterrorhandlers(v);
@@ -143,6 +151,33 @@ void sqa_init(){
 	register_global_func(v, sqf_set_cvar, _SC("set_cvar"));
 	register_global_func(v, sqf_get_cvar, _SC("get_cvar"));
 	register_global_func(v, sqf_cmd, _SC("cmd"));
+
+    sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
+
+	// Define class Universe
+	sq_pushstring(v, _SC("Universe"), -1);
+	sq_newclass(v, SQFalse);
+	sq_pushstring(v, _SC("name"), -1);
+	sq_newclosure(v, sqf_name, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_Universe_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("ptr"), -1);
+	sq_pushuserpointer(v, &universe);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define instance of class Universe
+	sq_pushstring(v, _SC("universe"), -1); // this "universe"
+	sq_pushstring(v, _SC("Universe"), -1); // this "universe" "Universe"
+	sq_get(v, -3); // this "universe" Universe
+	sq_createinstance(v, -1); // this "universe" Universe Universe-instance
+	sq_remove(v, -2); // this "universe" Universe-instance
+	sq_createslot(v, -3); // this
+
+//	SqPlus::SQClassDef<Universe>(_SC("Universe")).
+//		func(&Universe::classname, _SC("classname"));
 
 	sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
@@ -170,3 +205,4 @@ SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
 	return 0;
 }
 
+}

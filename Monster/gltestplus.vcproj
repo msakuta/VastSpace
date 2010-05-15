@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib sqplusD.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateManifest="false"
@@ -229,7 +229,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateDebugInformation="true"

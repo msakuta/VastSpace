@@ -1527,9 +1527,14 @@ static int cmd_sq(int argc, char *argv[]){
 		CmdPrint("usage: sq \"Squirrel One Linear Source\"");
 		return 0;
 	}
-	if(!SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), 0))){
+	HSQUIRRELVM &v = g_sqvm;
+	if(SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), 0))){
+		CmdPrint("Compile error");
+	}
+	else{
 		sq_pushroottable(g_sqvm);
 		sq_call(g_sqvm, 1, 0, 0);
+		sq_pop(v, 1);
 	}
 	return 0;
 }
@@ -1537,7 +1542,7 @@ static int cmd_sq(int argc, char *argv[]){
 int main(int argc, char *argv[])
 {
 	HSQUIRRELVM &v = g_sqvm;
-	v = sq_open(1024); // creates a VM with initial stack size 1024 
+
 	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 	glwfocus = NULL;
 	pl.cs = &universe;

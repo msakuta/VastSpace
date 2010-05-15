@@ -65,6 +65,7 @@ public:
 	void free(); // Frees internal memories but keep the object memory
 	Quatd getrot()const;
 	Vec3d getpos()const;
+	const CoordSys *getcs()const{return cs;};
 	const char *classname()const; // returned string storage must be static
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);

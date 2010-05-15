@@ -106,6 +106,9 @@ static SQInteger sqf_cmd(HSQUIRRELVM v){
 	return 0;
 }
 
+static const SQUserPointer tt_Vec3 = 0;
+static const SQUserPointer tt_Vec3d = (SQUserPointer)1;
+
 static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
@@ -114,16 +117,27 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	
 	Vec3d pos = vec3_000;
 	if(OT_INSTANCE == sq_gettype(v, -1)){
-		SQFloat f;
-		sq_pushstring(v, _SC("a"), -1); // this classname vec3 "a"
-		sq_get(v, -2); // this classname vec3 vec3.a
+		SQUserPointer typetag;
+		sq_gettypetag(v, -1, &typetag);
+		if(typetag == tt_Vec3){
+			sq_pushstring(v, _SC("a"), -1); // this classname vec3 "a"
+			sq_get(v, -2); // this classname vec3 vec3.a
 
-		for(int i = 0; i < 3; i++){
-			sq_pushinteger(v, i); // this classname vec3 vec3.a i
-			sq_get(v, -2); // this classname vec3 vec3.a vec3.a[i]
-			sq_getfloat(v, -1, &f);
-			sq_poptop(v); // this classname vec3 vec3.a
-			pos[i] = f;
+			for(int i = 0; i < 3; i++){
+				SQFloat f;
+				sq_pushinteger(v, i); // this classname vec3 vec3.a i
+				sq_get(v, -2); // this classname vec3 vec3.a vec3.a[i]
+				sq_getfloat(v, -1, &f);
+				sq_poptop(v); // this classname vec3 vec3.a
+				pos[i] = f;
+			}
+		}
+		else if(typetag == tt_Vec3d){
+			Vec3d *pvec;
+			sq_pushstring(v, _SC("a"), -1);
+			sq_get(v, -2); // this classname vec3 vec3.a
+			if(!SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pvec, NULL)))
+				pos = *pvec;
 		}
 	}
 	sq_pop(v, 2); // this classname
@@ -295,6 +309,30 @@ static SQInteger sqf_Vec3_constructor(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_Vec3d_con(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	sq_pushstring(v, _SC("a"), -1);
+	Vec3d &vec = *(Vec3d*)sq_newuserdata(v, sizeof(Vec3d));
+	for(int i = 0; i < 3; i++){
+		SQFloat f;
+		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
+			vec[i] = f;
+		else
+			vec[i] = 0.;
+	}
+	sq_set(v, 1);
+	return 0;
+}
+
+static SQInteger sqf_Vec3d_tostring(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("a"), -1);
+	sq_get(v, 1);
+	Vec3d *vec;
+	sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
+	sq_pushstring(v, cpplib::dstring() << "[" << (*vec)[0] << "," << (*vec)[1] << "," << (*vec)[2] << "]", -1);
+	return 1;
+}
+
 void sqa_init(){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
@@ -310,9 +348,25 @@ void sqa_init(){
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
+	// Define class Vec3d, native vector representation
+	sq_pushstring(v, _SC("Vec3d"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_Vec3d);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_Vec3d_con, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("a"), -1);
+	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_tostring"), -1);
+	sq_newclosure(v, sqf_Vec3d_tostring, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
 	// Define class Vec3
 	sq_pushstring(v, _SC("Vec3"), -1);
 	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_Vec3);
 	sq_pushstring(v, _SC("constructor"), -1);
 	sq_newclosure(v, sqf_Vec3_constructor, 0);
 	sq_createslot(v, -3);

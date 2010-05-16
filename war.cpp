@@ -8,6 +8,7 @@
 #include "serial_util.h"
 #include "cmd.h"
 #include "astrodraw.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -115,8 +116,10 @@ void WarField::endframe(){
 			pl->unlink(e);
 
 		// Delete if actually NULL is assigned.
-		if(!e->w)
+		if(!e->w){
+			sqa_delete_Entity(e);
 			delete e;
+		}
 		else
 			e->w->addent(e);
 	}

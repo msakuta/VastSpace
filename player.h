@@ -9,6 +9,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <squirrel.h>
 
 #define FEETD 0.001
 
@@ -95,6 +96,9 @@ public:
 	static teleport_iterator beginTeleport();
 	static teleport *getTeleport(teleport_iterator);
 	static teleport_iterator endTeleport();
+
+	static SQInteger sqf_get(HSQUIRRELVM v);
+	static SQInteger sqf_set(HSQUIRRELVM v);
 
 private:
 	int gear; /* acceleration gear in ghost mode */

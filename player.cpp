@@ -6,6 +6,7 @@
 #include "astro.h"
 #include "serial_util.h"
 #include "stellar_file.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -343,4 +344,60 @@ teleport *Player::getTeleport(teleport_iterator i){
 
 Player::teleport_iterator Player::endTeleport(){
 	return ntplist;
+}
+
+SQInteger Player::sqf_get(HSQUIRRELVM v){
+	Player *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("cs"))){
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("CoordSys"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		if(!sqa_newobj(v, const_cast<CoordSys*>(p->cs)))
+			return sq_throwerror(v, _SC("no cs"));
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("chase"))){
+		if(!p->chase){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		if(!sqa_newobj(v, p->chase)){
+			return sq_throwerror(v, _SC("no ent"));
+		}
+//		sq_setinstanceup(v, -1, p->chase);
+		return 1;
+	}
+	else
+		return sqa::sqf_get<Player>(v);
+}
+
+SQInteger Player::sqf_set(HSQUIRRELVM v){
+	Player *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("chase"))){
+		if(OT_INSTANCE != sq_gettype(v, 3))
+			return SQ_ERROR;
+		if(!sqa_refobj(v, (SQUserPointer*)&p->chase, &sr, 3))
+			return sr;
+//		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
+		return 1;
+	}
+	else
+		return sqa::sqf_set<Player>(v);
 }

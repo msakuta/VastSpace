@@ -686,6 +686,8 @@ void display_func(void){
 
 		dt = !init ? 0. : rdt < 1. ? rdt : 1.;
 
+		sqa_anim(dt);
+
 		if(mouse_captured){
 			POINT p;
 			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){

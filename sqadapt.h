@@ -7,6 +7,7 @@
 namespace sqa{
 
 void sqa_init();
+void sqa_anim0();
 void sqa_exit();
 
 SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);

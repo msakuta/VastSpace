@@ -21,11 +21,22 @@ function fact(n){
 }
 
 function ae(){
-	for(local i = 0; i < 11; i++){
-		local vec;
-		player.getcs().addent("Assault", vec = Vec3d(i * 0.1, 0., -(i <= 5 ? i * 0.1 : 1.0 - i * 0.1)));
-		print(vec);
+	function delta(team, rot){
+		for(local i = 0; i < 11; i++){
+/*			local e = player.getcs().addent("Assault", Vec3d((i - 5) * 0.2, 0.,
+				(team * 2 - 1) * (2 -(i <= 5 ? i * 0.1 : 1.0 - i * 0.1))));
+			e.race = team;
+			e.rot = rot;*/
+			local e = player.getcs().addent("Sceptor", Vec3d((i - 5) * 0.2, 1.,
+				(team * 2 - 1) * (2 -(i <= 5 ? i * 0.1 : 1.0 - i * 0.1))));
+			e.race = team;
+			e.rot = rot;
+			print(e.classname() + ": " + e.race + ", " + e.pos);
+		}
 	}
+
+	delta(0, Quatd(0,1,0,0));
+	delta(1, Quatd(0,0,0,1));
 }
 
 ae();

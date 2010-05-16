@@ -668,6 +668,9 @@ void display_func(void){
 
 //		anim_sun(0.);
 		universe.anim(0.);
+
+		sqa_anim0();
+
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
 	}

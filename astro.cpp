@@ -100,7 +100,7 @@ void OrbitCS::anim(double dt){
 		velo = pos - oldpos;
 		velo *= 1. / dt;
 	}
-	qrot = qrot.quatrotquat(omg * dt * astro_timescale);
+	rot = rot.quatrotquat(omg * dt * astro_timescale);
 	st::anim(dt);
 }
 
@@ -409,7 +409,7 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 		return 0;
 	}
 
-	v1 = cs->qrot.trans(src);
+	v1 = cs->rot.trans(src);
 /*	MAT4VP3(v1, cs->rot, src);*/
 	v = v1 + cs->pos;
 

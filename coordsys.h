@@ -41,7 +41,7 @@ public:
 
 	Vec3d pos;
 	Vec3d velo;
-	Quatd qrot;
+	Quatd rot;
 	Vec3d omg;
 	double csrad; /* bounding sphere radius around origin, used for culling or conversion */
 	CoordSys *parent;

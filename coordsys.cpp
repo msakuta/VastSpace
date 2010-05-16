@@ -43,7 +43,7 @@ void CoordSys::serialize(SerializeContext &sc){
 	sc.o << children;
 	sc.o << w;
 	sc.o << next;
-	sc.o << pos << velo << qrot;
+	sc.o << pos << velo << rot;
 	sc.o << omg;
 	sc.o << csrad;
 	sc.o << flags;
@@ -58,7 +58,7 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	sc.i >> children;
 	sc.i >> w;
 	sc.i >> next;
-	sc.i >> pos >> velo >> qrot;
+	sc.i >> pos >> velo >> rot;
 	sc.i >> omg;
 	sc.i >> csrad;
 	sc.i >> flags;
@@ -128,7 +128,7 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 		adoptee->pos = pos;
 		adoptee->velo = velo;
 		adoptee->omg = q.trans(adoptee->omg);
-		adoptee->qrot = q;
+		adoptee->rot = q;
 	}
 
 	/* recognize the new parent */
@@ -148,11 +148,11 @@ static int findchild(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const 
 	{
 		Vec3d v1, v;
 		if(delta){
-			v = cs2->qrot.itrans(src);
+			v = cs2->rot.itrans(src);
 		}
 		else{
 			v1 = src - cs2->pos;
-			v = cs2->qrot.itrans(v1);
+			v = cs2->rot.itrans(v1);
 		}
 		if(retcs == cs2){
 			ret = v;
@@ -172,10 +172,10 @@ static int findparent(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const
 		return 0;
 
 	if(delta){
-		v = cs->qrot.trans(src);
+		v = cs->rot.trans(src);
 	}
 	else{
-		v1 = cs->qrot.trans(src);
+		v1 = cs->rot.trans(src);
 		v = v1 + cs->pos;
 	}
 
@@ -216,14 +216,14 @@ static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const 
 
 		/* position */
 		v1 = srcpos - cs2->pos;
-		pos = cs2->qrot.itrans(v1);
+		pos = cs2->rot.itrans(v1);
 
 		/* velocity */
 		v1 = src - cs2->velo;
 		vrot = cs2->omg.vp(pos);
 		v1 -= vrot;
 		v = v1;
-		v = cs2->qrot.itrans(v1);
+		v = cs2->rot.itrans(v1);
 
 		if(retcs == cs2){
 			ret = v;
@@ -242,10 +242,10 @@ static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const
 		return 0;
 
 	/* velocity */
-	v = cs->qrot.trans(src);
+	v = cs->rot.trans(src);
 	v += cs->velo;
 	vrot = cs->omg.vp(srcpos);
-	v1 = cs->qrot.trans(vrot);
+	v1 = cs->rot.trans(vrot);
 	v += v1;
 
 	if(cs->parent == retcs){
@@ -254,7 +254,7 @@ static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const
 	}
 
 	/* position */
-	v1 = cs->qrot.trans(srcpos);
+	v1 = cs->rot.trans(srcpos);
 	pos = v1 + cs->pos;
 
 	/* do not scan subtrees already checked! */
@@ -289,7 +289,7 @@ static int findchildq(Quatd &ret, const CoordSys *retcs, const Quatd &src, const
 		coordsys *cs2 = cs->children[i];
 #endif
 		Quatd q;
-		q = src * cs2->qrot;
+		q = src * cs2->rot;
 		if(retcs == cs2){
 			ret = q;
 			return 1;
@@ -306,7 +306,7 @@ static int findparentq(Quatd &ret, const CoordSys *retcs, const Quatd &src, cons
 	if(!cs->parent)
 		return 0;
 
-	q = src.imul(cs->qrot);
+	q = src.imul(cs->rot);
 
 	if(cs->parent == retcs){
 		ret = q;
@@ -364,7 +364,7 @@ CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const Coo
 	{
 		Vec3d v1, v;
 		v1 = src - cs2->pos;
-		v = cs2->qrot.itrans(v1);
+		v = cs2->rot.itrans(v1);
 /*		mat4vp3(v, cs2->irot, v1);*/
 
 		/* radius is measured in parent coordinate system and if the position is not within it,
@@ -390,7 +390,7 @@ static const CoordSys *findparentb(Vec3d &ret, const Vec3d &src, const CoordSys 
 		return cs;
 	}
 
-	v1 = cs->qrot.trans(src);
+	v1 = cs->rot.trans(src);
 /*	MAT4VP3(v1, cs->rot, src);*/
 	v = v1 + cs->pos;
 
@@ -546,7 +546,7 @@ void CoordSys::anim(double dt){
 /*	extern double get_timescale();
 	dt *= get_timescale();*/
 	omgdt = omg * dt;
-	qrot = qrot.quatrotquat(omgdt);
+	rot = rot.quatrotquat(omgdt);
 	CoordSys *cs;
 	for(cs = children; cs; cs = cs->next)
 		cs->anim(dt);
@@ -591,7 +591,7 @@ void CoordSys::endframe(){
 			cs->velo = parent->tocsv(cs->velo, cs->pos, this);
 			cs->pos = parent->tocs(cs->pos, this);
 			cs->omg = parent->tocs(cs->omg, this, true);
-			cs->qrot = parent->tocsq(this);
+			cs->rot = parent->tocsq(this);
 			cs->parent = parent;
 			cs->next = parent->children;
 			parent->children = cs;
@@ -637,10 +637,10 @@ void CoordSys::init(const char *path, CoordSys *root){
 	}
 	else
 		name = path;
-	VECNULL(ret->pos);
-	VECNULL(ret->velo);
-	QUATIDENTITY(ret->qrot);
-	VECNULL(ret->omg);
+	ret->pos.clear();
+	ret->velo.clear();
+	ret->rot = quat_u;
+	ret->omg.clear();
 	ret->csrad = 1e2;
 	ret->parent = root;
 	if(!name)
@@ -850,12 +850,12 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "rotation")){
 		if(1 < argc)
-			qrot[0] = calc3(&argv[1], sc.vl, NULL);
+			rot[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)
-			qrot[1] = calc3(&argv[2], sc.vl, NULL);
+			rot[1] = calc3(&argv[2], sc.vl, NULL);
 		if(3 < argc){
-			qrot[2] = calc3(&argv[3], sc.vl, NULL);
-			qrot[3] = sqrt(1. - VECSLEN(qrot));
+			rot[2] = calc3(&argv[3], sc.vl, NULL);
+			rot[3] = sqrt(1. - VECSLEN(rot));
 		}
 		return true;
 	}
@@ -882,7 +882,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			v[1] = calc3(&argv[2], sc.vl, NULL);
 		if(3 < argc)
 			v[2] = calc3(&argv[3], sc.vl, NULL);
-		qrot = Quatd::direction(v);
+		rot = Quatd::direction(v);
 		return true;
 	}
 	return false;

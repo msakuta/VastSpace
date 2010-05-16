@@ -816,7 +816,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
-	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->qrot;
+	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
 	glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
 
@@ -865,7 +865,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (qrot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
+		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (rot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -888,7 +888,7 @@ void TexSphere::draw(const Viewer *vw){
 		else{
 			bool ret = drawTextureSphere(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &qrot.cnj().tomat4(), texname);
+				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &rot.cnj().tomat4(), texname);
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;

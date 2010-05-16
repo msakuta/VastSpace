@@ -33,6 +33,16 @@ namespace sqa{
 HSQUIRRELVM g_sqvm;
 static HSQUIRRELVM &v = g_sqvm;
 
+static SQUserPointer registerTypeTag(){
+	static SQUserPointer counter = (SQUserPointer)1;
+	return (SQUserPointer)(*(unsigned long*)&counter)++;
+}
+
+static const SQUserPointer tt_Vec3 = registerTypeTag();
+static const SQUserPointer tt_Vec3d = registerTypeTag();
+static const SQUserPointer tt_Quatd = registerTypeTag();
+
+
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
 	va_list arglist; 
@@ -106,9 +116,6 @@ static SQInteger sqf_cmd(HSQUIRRELVM v){
 	return 0;
 }
 
-static const SQUserPointer tt_Vec3 = 0;
-static const SQUserPointer tt_Vec3d = (SQUserPointer)1;
-
 static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
@@ -157,7 +164,13 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	}
 	else
 		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: %s") << arg);
-	return 0;
+
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Entity"), -1);
+	sq_get(v, -2);
+	sq_createinstance(v, -1);
+	sq_setinstanceup(v, -1, pt);
+	return 1;
 }
 
 static SQInteger sqf_name(HSQUIRRELVM v){
@@ -165,6 +178,113 @@ static SQInteger sqf_name(HSQUIRRELVM v){
 	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	sq_pushstring(v, p->name, -1);
 	return 1;
+}
+
+template<typename Class>
+static SQInteger sqf_get(HSQUIRRELVM v){
+	Class *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("pos"))){
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Vec3d"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sq_pushstring(v, _SC("a"), -1);
+		sq_get(v, -2);
+		Vec3d *vec;
+		sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
+		*vec = p->pos;
+		sq_pop(v, 1);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("rot"))){
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Quatd"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sq_pushstring(v, _SC("a"), -1);
+		sq_get(v, -2);
+		Quatd *q;
+		sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
+		*q = p->rot;
+		sq_pop(v, 1);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("classname"))){
+		sq_pushstring(v, p->classname(), -1);
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
+template<typename Class>
+static SQInteger sqf_set(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	Class *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("pos"))){
+		SQUserPointer tt;
+		if(OT_INSTANCE == sq_gettype(v, 3) && !SQ_FAILED(sq_gettypetag(v, 3, &tt)) && tt == tt_Vec3d){
+			sq_pushstring(v, _SC("a"), -1);
+			sq_get(v, 3);
+			Vec3d *vec;
+			sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
+			p->pos = *vec;
+			return 1;
+		}
+		else
+			return SQ_ERROR;
+	}
+	else if(!strcmp(wcs, _SC("rot"))){
+		SQUserPointer tt;
+		if(OT_INSTANCE == sq_gettype(v, 3) && !SQ_FAILED(sq_gettypetag(v, 3, &tt)) && tt == tt_Quatd){
+			sq_pushstring(v, _SC("a"), -1);
+			sq_get(v, 3);
+			Quatd *q;
+			sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
+			p->rot = *q;
+			return 1;
+		}
+		else
+			return SQ_ERROR;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
+static SQInteger sqf_Entity_get(HSQUIRRELVM v){
+	Entity *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("race"))){
+		sq_pushinteger(v, p->race);
+		return 1;
+	}
+	else
+		return sqf_get<Entity>(v);
+}
+
+static SQInteger sqf_Entity_set(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	Entity *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("race"))){
+		if(SQ_FAILED(sq_getinteger(v, 3, &p->race)))
+			return SQ_ERROR;
+		return 0;
+	}
+	else
+		return sqf_set<Entity>(v);
 }
 
 static SQInteger sqf_Universe_get(HSQUIRRELVM v){
@@ -180,9 +300,10 @@ static SQInteger sqf_Universe_get(HSQUIRRELVM v){
 		sq_pushfloat(v, p->global_time);
 		return 1;
 	}
-	sq_pushnull(v);
-	return 1;
+	else
+		return sqf_get<Universe::st>(v);
 }
+
 
 static SQInteger sqf_child(HSQUIRRELVM v){
 	CoordSys *p;
@@ -279,16 +400,15 @@ SQInteger sqf_getpos(HSQUIRRELVM v){
 	Class *p;
 	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	sq_pushroottable(v);
-	sq_pushstring(v, _SC("Vec3"), -1);
+	sq_pushstring(v, _SC("Vec3d"), -1);
 	sq_get(v, -2);
 	sq_createinstance(v, -1);
 	sq_pushstring(v, _SC("a"), -1);
 	sq_get(v, -2);
-	sq_arrayresize(v, -1, 0);
-	for(int i = 0; i < 3; i++){
-		sq_pushfloat(v, p->pos[i]);
-		sq_arrayappend(v, -2);
-	}
+	Vec3d *vec;
+	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL)))
+		return SQ_ERROR;
+	*vec = p->pos;
 	sq_poptop(v);
 	return 1;
 }
@@ -309,11 +429,26 @@ static SQInteger sqf_Vec3_constructor(HSQUIRRELVM v){
 	return 0;
 }
 
-static SQInteger sqf_Vec3d_con(HSQUIRRELVM v){
+static SQInteger sqf_Vec3d_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	sq_pushstring(v, _SC("a"), -1);
 	Vec3d &vec = *(Vec3d*)sq_newuserdata(v, sizeof(Vec3d));
 	for(int i = 0; i < 3; i++){
+		SQFloat f;
+		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
+			vec[i] = f;
+		else
+			vec[i] = 0.;
+	}
+	sq_set(v, 1);
+	return 0;
+}
+
+static SQInteger sqf_Quatd_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	sq_pushstring(v, _SC("a"), -1);
+	Quatd &vec = *(Quatd*)sq_newuserdata(v, sizeof(Quatd));
+	for(int i = 0; i < 4; i++){
 		SQFloat f;
 		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
 			vec[i] = f;
@@ -332,6 +467,26 @@ static SQInteger sqf_Vec3d_tostring(HSQUIRRELVM v){
 	sq_pushstring(v, cpplib::dstring() << "[" << (*vec)[0] << "," << (*vec)[1] << "," << (*vec)[2] << "]", -1);
 	return 1;
 }
+
+static SQInteger sqf_Quatd_tostring(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("a"), -1);
+	sq_get(v, 1);
+	Quatd *q;
+	sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
+	sq_pushstring(v, cpplib::dstring() << "[" << (*q)[0] << "," << (*q)[1] << "," << (*q)[2] << "," << (*q)[3] << "]", -1);
+	return 1;
+}
+
+static SQInteger sqf_Quatd_normin(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("a"), -1);
+	sq_get(v, 1);
+	Quatd *q;
+	sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
+	q->normin();
+	sq_pop(v, sq_gettop(v) - 1);
+	return 1;
+}
+
 
 void sqa_init(){
 //    SquirrelVM::Init();
@@ -353,7 +508,7 @@ void sqa_init(){
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_Vec3d);
 	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_Vec3d_con, 0);
+	sq_newclosure(v, sqf_Vec3d_constructor, 0);
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("a"), -1);
 	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
@@ -379,6 +534,24 @@ void sqa_init(){
 	sq_newslot(v, -3, SQFalse);
 	sq_createslot(v, -3);
 
+	// Define class Quatd
+	sq_pushstring(v, _SC("Quatd"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_Quatd);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_Quatd_constructor, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("a"), -1);
+	*(Quatd*)sq_newuserdata(v, sizeof(Quatd)) = quat_0;
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_tostring"), -1);
+	sq_newclosure(v, sqf_Quatd_tostring, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("normin"), -1);
+	sq_newclosure(v, sqf_Quatd_normin, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
 	// Define class CoordSys
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
@@ -402,6 +575,12 @@ void sqa_init(){
 	sq_newclosure(v, sqf_addent, 0);
 	sq_setparamscheck(v, 3, "xsx");
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_get<CoordSys>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_set<CoordSys>, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	// Define class Universe
@@ -411,6 +590,20 @@ void sqa_init(){
 	sq_newclass(v, SQTrue);
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, sqf_Universe_get, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class Entity
+	sq_pushstring(v, _SC("Entity"), -1);
+	sq_newclass(v, SQFalse);
+	sq_pushstring(v, _SC("classname"), -1);
+	sq_newclosure(v, sqf_func<Entity, const SQChar *(Entity::*)() const, &Entity::classname>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_Entity_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_Entity_set, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
@@ -438,6 +631,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("getpos"), -1);
 	sq_newclosure(v, sqf_getpos<Player>, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_get<Player>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_set<Player>, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("player"), -1); // this "player"
@@ -448,6 +647,10 @@ void sqa_init(){
 	sq_remove(v, -2); // this "player" Player-instance
 	sq_createslot(v, 1); // this
 
+	sq_poptop(v); // Pop the root table.
+}
+
+void sqa_anim0(){
 	sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{

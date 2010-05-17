@@ -21,13 +21,21 @@ SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
 
 extern HSQUIRRELVM g_sqvm;
 
-extern const SQUserPointer tt_Vec3;
-extern const SQUserPointer tt_Vec3d;
-extern const SQUserPointer tt_Quatd, tt_Entity;
+extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
+
+// Any recoverable errors in Squirrel VM is thrown and inherits this class.
+class SQIntrinsicError{
+	int unused;
+};
+
+class TypeMatch : SQIntrinsicError{};
+class NoIndex : SQIntrinsicError{};
+class NoUserData : SQIntrinsicError{};
+class NoCreateInstance : SQIntrinsicError{};
 
 // Adapter for Squirrel class instances that behave like an intrinsic type.
 template<typename Class>
@@ -44,16 +52,16 @@ public:
 	bool newValue(HSQUIRRELVM v){
 		sq_pushroottable(v); // ... root
 		sq_pushstring(v, classname, -1); // ... root "Quatd"
-		sq_get(v, -2); // ... root Quatd
-		sq_createinstance(v, -1); // ... root Quatd Quatd-instance
+		if(SQ_FAILED(sq_get(v, -2))) throw NoIndex(); // ... root Quatd
+		if(SQ_FAILED(sq_createinstance(v, -1))) // ... root Quatd Quatd-instance
+			throw NoCreateInstance();
 		sq_remove(v, -2); // ... root Quatd-instance
 		sq_remove(v, -2); // ... Quatd-instance
 		sq_pushstring(v, _SC("a"), -1); // ... Quatd-instance "a"
-		sq_newuserdata(v, sizeof value); // ... Quatd-instance "a" {ud}
-		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
-			return false;
+		pointer = (Class*)sq_newuserdata(v, sizeof value); // ... Quatd-instance "a" {ud}
 		*pointer = value;
-		sq_set(v, -3);
+		if(SQ_FAILED(sq_set(v, -3)))
+			throw NoIndex();
 		return true;
 	}
 
@@ -67,9 +75,9 @@ public:
 #endif
 		sq_pushstring(v, _SC("a"), -1); // ... "a"
 		if(SQ_FAILED(sq_get(v, idx))) // ... a
-			return false;
+			throw NoIndex();
 		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
-			return false;
+			throw NoUserData();
 		value = *pointer;
 		sq_poptop(v);
 	}
@@ -84,9 +92,9 @@ public:
 #endif
 		sq_pushstring(v, _SC("a"), -1); // ... "a"
 		if(SQ_FAILED(sq_get(v, idx))) // ... a
-			return false;
+			throw NoIndex();
 		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
-			return false;
+			throw NoUserData();
 		*pointer = value;
 		sq_poptop(v);
 	}
@@ -112,13 +120,13 @@ SQInteger sqf_get(HSQUIRRELVM v){
 		return sr;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("pos"))){
-		SQVec3d(p->pos).setValue(v, -1);
+		SQVec3d(p->pos).newValue(v);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("rot"))){
 		SQQuatd q;
 		q.value = p->rot;
-		q.setValue(v);
+		q.newValue(v);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("classname"))){
@@ -141,9 +149,9 @@ SQInteger sqf_set(HSQUIRRELVM v){
 		return sr;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("pos"))){
-		SQQuatd q;
+		SQVec3d q;
 		q.getValue(v, 3);
-		p->pos= q.value;
+		p->pos = q.value;
 	}
 	else if(!strcmp(wcs, _SC("rot"))){
 		SQQuatd q;

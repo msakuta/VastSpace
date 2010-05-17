@@ -45,7 +45,6 @@ static SQUserPointer registerTypeTag(){
 	return (SQUserPointer)(*(unsigned long*)&counter)++;
 }
 
-const SQUserPointer tt_Vec3 = "Vec3";
 const SQUserPointer tt_Vec3d = "Vec3d";
 const SQUserPointer tt_Quatd = "Quatd";
 const SQUserPointer tt_Entity = "Entity";
@@ -122,20 +121,7 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(OT_INSTANCE == sq_gettype(v, -1)){
 		SQUserPointer typetag;
 		sq_gettypetag(v, -1, &typetag);
-		if(typetag == tt_Vec3){
-			sq_pushstring(v, _SC("a"), -1); // this classname vec3 "a"
-			sq_get(v, -2); // this classname vec3 vec3.a
-
-			for(int i = 0; i < 3; i++){
-				SQFloat f;
-				sq_pushinteger(v, i); // this classname vec3 vec3.a i
-				sq_get(v, -2); // this classname vec3 vec3.a vec3.a[i]
-				sq_getfloat(v, -1, &f);
-				sq_poptop(v); // this classname vec3 vec3.a
-				pos[i] = f;
-			}
-		}
-		else if(typetag == tt_Vec3d){
+		if(typetag == tt_Vec3d){
 			Vec3d *pvec;
 			sq_pushstring(v, _SC("a"), -1);
 			sq_get(v, -2); // this classname vec3 vec3.a
@@ -440,56 +426,200 @@ static SQInteger sqf_Quatd_constructor(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_Vec3d_tostring(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("a"), -1);
-	sq_get(v, 1);
-	Vec3d *vec;
-	sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
-	sq_pushstring(v, cpplib::dstring() << "[" << (*vec)[0] << "," << (*vec)[1] << "," << (*vec)[2] << "]", -1);
-	return 1;
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		sq_pushstring(v, cpplib::dstring() << "[" << q.value[0] << "," << q.value[1] << "," << q.value[2] << "]", -1);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Vec3d_add(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.getValue(v, 2);
+		SQVec3d r(q.value + o.value);
+		r.newValue(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+// What a nonsense method...
+static SQInteger sqf_Vec3d_get(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+		if(!s[0] || s[1])
+			return SQ_ERROR;
+		if('x' <= s[0] && s[0] <= 'z'){
+			sq_pushfloat(v, q.value[s[0] - 'x']);
+			return 1;
+		}
+		return SQ_ERROR;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+// What a nonsense method...
+static SQInteger sqf_Vec3d_set(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+		if(!s[0] || s[1])
+			return SQ_ERROR;
+		if('x' <= s[0] && s[0] <= 'z'){
+			SQFloat f;
+			sq_getfloat(v, 3, &f);
+			(*q.pointer)[s[0] - 'x'] = f;
+			return 0;
+		}
+		return SQ_ERROR;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Vec3d_sp(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.getValue(v, 2);
+		sq_pushfloat(v, q.value.sp(o.value));
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Vec3d_vp(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.getValue(v, 2);
+		SQVec3d r(q.value.vp(o.value));
+		r.newValue(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
 }
 
 static SQInteger sqf_Quatd_tostring(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("a"), -1);
-	sq_get(v, 1);
-	Quatd *q;
-	sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
-	sq_pushstring(v, cpplib::dstring() << "[" << (*q)[0] << "," << (*q)[1] << "," << (*q)[2] << "," << (*q)[3] << "]", -1);
-	return 1;
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		sq_pushstring(v, cpplib::dstring() << "[" << q.value[0] << "," << q.value[1] << "," << q.value[2] << "," << q.value[3] << "]", -1);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+// What a nonsense method...
+static SQInteger sqf_Quatd_get(HSQUIRRELVM v){
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+		if(!s[0] || s[1])
+			return SQ_ERROR;
+		if('x' <= s[0] && s[0] <= 'z' || s[0] == 'w'){
+			sq_pushfloat(v, q.value[s[0] == 'w' ? 3 : s[0] - 'x']);
+			return 1;
+		}
+		return SQ_ERROR;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+// What a nonsense method...
+static SQInteger sqf_Quatd_set(HSQUIRRELVM v){
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+		if(!s[0] || s[1])
+			return SQ_ERROR;
+		if('x' <= s[0] && s[0] <= 'z' || s[0] == 'w'){
+			SQFloat f;
+			sq_getfloat(v, 3, &f);
+			(*q.pointer)[s[0] == 'w' ? 3 : s[0] - 'x'] = f;
+			return 0;
+		}
+		return SQ_ERROR;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
 }
 
 static SQInteger sqf_Quatd_normin(HSQUIRRELVM v){
-	SQQuatd q;
-	q.getValue(v, 1);
-	q.pointer->normin();
-/*	sq_pushstring(v, _SC("a"), -1);
-	sq_get(v, 1);
-	Quatd *q;
-	sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
-	q->normin();
-	sq_pop(v, sq_gettop(v) - 1);*/
-	return 1;
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		q.pointer->normin();
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
 }
 
-static SQInteger sqf_Quatd_mul(HSQUIRRELVM v){
-	SQQuatd q;
-	q.getValue(v, 1);
-	SQQuatd o;
-	o.getValue(v, 2);
-	SQQuatd r;
-	r.value = q.value * o.value;
-	r.newValue(v);
-	return 1;
+template<typename Type>
+static SQInteger sqf_Intri_mul(HSQUIRRELVM v){
+	try{
+		SQIntrinsic<Type> q;
+		q.getValue(v, 1);
+		SQIntrinsic<Type> o;
+		o.getValue(v, 2);
+		SQIntrinsic<Type> r;
+		r.value = q.value * o.value;
+		r.newValue(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
 }
 
 static SQInteger sqf_Quatd_trans(HSQUIRRELVM v){
-	SQQuatd q;
-	q.getValue(v, 1);
-	SQVec3d o;
-	o.getValue(v, 2);
-	SQVec3d r;
-	r.value = q.value.trans(o.value);
-	r.newValue(v);
-	return 1;
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.getValue(v, 2);
+		SQVec3d r;
+		r.value = q.value.trans(o.value);
+		r.newValue(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
 }
 
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o){
@@ -586,22 +716,21 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_tostring"), -1);
 	sq_newclosure(v, sqf_Vec3d_tostring, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_add"), -1);
+	sq_newclosure(v, sqf_Vec3d_add, 0);
 	sq_createslot(v, -3);
-
-	// Define class Vec3
-	sq_pushstring(v, _SC("Vec3"), -1);
-	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, tt_Vec3);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_Vec3_constructor, 0);
+	sq_pushstring(v, _SC("sp"), -1);
+	sq_newclosure(v, sqf_Vec3d_sp, 0);
 	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("a"), -1);
-	sq_newarray(v, 0);
-	for(int i = 0; i < 3; i++){
-		sq_pushfloat(v, 0.f);
-		sq_arrayappend(v, -2);
-	}
-	sq_newslot(v, -3, SQFalse);
+	sq_pushstring(v, _SC("vp"), -1);
+	sq_newclosure(v, sqf_Vec3d_vp, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_Vec3d_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_Vec3d_set, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	// Define class Quatd
@@ -617,11 +746,17 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_tostring"), -1);
 	sq_newclosure(v, sqf_Quatd_tostring, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_Quatd_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_Quatd_set, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("normin"), -1);
 	sq_newclosure(v, sqf_Quatd_normin, 0);
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("_mul"), -1);
-	sq_newclosure(v, sqf_Quatd_mul, 0);
+	sq_newclosure(v, sqf_Intri_mul<Quatd>, 0);
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("trans"), -1);
 	sq_newclosure(v, sqf_Quatd_trans, 0);

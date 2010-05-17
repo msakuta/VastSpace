@@ -3,6 +3,8 @@
 // Squirrel library adapter for gltestplus project.
 #include <stddef.h>
 #include <squirrel.h>
+#include <cpplib/vec3.h>
+#include <cpplib/quat.h>
 
 class Serializable;
 class Entity;
@@ -27,6 +29,79 @@ bool sqa_newobj(HSQUIRRELVM v, Serializable *o);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
+// Adapter for Squirrel class instances that behave like an intrinsic type.
+template<typename Class>
+class SQIntrinsic{
+	static const SQChar *const classname;
+	static const SQUserPointer *const typetag;
+public:
+	Class value;
+	Class *pointer; // Holds pointer to Squirrel-managed memory obtained by last sq_getuserdata call.
+
+	SQIntrinsic() : pointer(NULL){}
+	SQIntrinsic(Class &initValue) : value(initValue), pointer(NULL){}
+
+	bool newValue(HSQUIRRELVM v){
+		sq_pushroottable(v); // ... root
+		sq_pushstring(v, classname, -1); // ... root "Quatd"
+		sq_get(v, -2); // ... root Quatd
+		sq_createinstance(v, -1); // ... root Quatd Quatd-instance
+		sq_remove(v, -2); // ... root Quatd-instance
+		sq_remove(v, -2); // ... Quatd-instance
+		sq_pushstring(v, _SC("a"), -1); // ... Quatd-instance "a"
+		sq_newuserdata(v, sizeof value); // ... Quatd-instance "a" {ud}
+		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
+			return false;
+		*pointer = value;
+		sq_set(v, -3);
+		return true;
+	}
+
+	// Gets a variable at index idx from Squirrel stack
+	bool getValue(HSQUIRRELVM v, int idx = -1){
+#ifndef NDEBUG
+		assert(OT_INSTANCE == sq_gettype(v, idx));
+		SQUserPointer tt;
+		sq_gettypetag(v, idx, &tt);
+		assert(tt == *typetag);
+#endif
+		sq_pushstring(v, _SC("a"), -1); // ... "a"
+		if(SQ_FAILED(sq_get(v, idx))) // ... a
+			return false;
+		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
+			return false;
+		value = *pointer;
+		sq_poptop(v);
+	}
+
+	// Sets a variable at index idx in Squirrel stack
+	bool setValue(HSQUIRRELVM v, int idx = -1){
+#ifndef NDEBUG
+		assert(OT_INSTANCE == sq_gettype(v, idx));
+		SQUserPointer tt;
+		sq_gettypetag(v, idx, &tt);
+		assert(tt == *typetag);
+#endif
+		sq_pushstring(v, _SC("a"), -1); // ... "a"
+		if(SQ_FAILED(sq_get(v, idx))) // ... a
+			return false;
+		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
+			return false;
+		*pointer = value;
+		sq_poptop(v);
+	}
+};
+
+template<> const SQChar *const SQIntrinsic<Quatd>::classname = _SC("Quatd");
+template<> const SQUserPointer *const SQIntrinsic<Quatd>::typetag = &tt_Quatd;
+
+template<> const SQChar *const SQIntrinsic<Vec3d>::classname = _SC("Vec3d");
+template<> const SQUserPointer *const SQIntrinsic<Vec3d>::typetag = &tt_Vec3d;
+
+typedef SQIntrinsic<Quatd> SQQuatd;
+typedef SQIntrinsic<Vec3d> SQVec3d;
+
+
 template<typename Class>
 SQInteger sqf_get(HSQUIRRELVM v){
 	Class *p;
@@ -37,29 +112,13 @@ SQInteger sqf_get(HSQUIRRELVM v){
 		return sr;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("pos"))){
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Vec3d"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sq_pushstring(v, _SC("a"), -1);
-		sq_get(v, -2);
-		Vec3d *vec;
-		sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
-		*vec = p->pos;
-		sq_pop(v, 1);
+		SQVec3d(p->pos).setValue(v, -1);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("rot"))){
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Quatd"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sq_pushstring(v, _SC("a"), -1);
-		sq_get(v, -2);
-		Quatd *q;
-		sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
-		*q = p->rot;
-		sq_pop(v, 1);
+		SQQuatd q;
+		q.value = p->rot;
+		q.setValue(v);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("classname"))){
@@ -82,33 +141,16 @@ SQInteger sqf_set(HSQUIRRELVM v){
 		return sr;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("pos"))){
-		SQUserPointer tt;
-		if(OT_INSTANCE == sq_gettype(v, 3) && !SQ_FAILED(sq_gettypetag(v, 3, &tt)) && tt == tt_Vec3d){
-			sq_pushstring(v, _SC("a"), -1);
-			sq_get(v, 3);
-			Vec3d *vec;
-			sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL);
-			p->pos = *vec;
-			return 1;
-		}
-		else
-			return SQ_ERROR;
+		SQQuatd q;
+		q.getValue(v, 3);
+		p->pos= q.value;
 	}
 	else if(!strcmp(wcs, _SC("rot"))){
-		SQUserPointer tt;
-		if(OT_INSTANCE == sq_gettype(v, 3) && !SQ_FAILED(sq_gettypetag(v, 3, &tt)) && tt == tt_Quatd){
-			sq_pushstring(v, _SC("a"), -1);
-			sq_get(v, 3);
-			Quatd *q;
-			sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
-			p->rot = *q;
-			return 1;
-		}
-		else
-			return SQ_ERROR;
+		SQQuatd q;
+		q.getValue(v, 3);
+		p->rot = q.value;
 	}
-	sq_pushnull(v);
-	return 1;
+	return 0;
 }
 
 }

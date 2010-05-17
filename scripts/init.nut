@@ -118,31 +118,22 @@ checktime <- 0;
 autochase <- true;
 deaths <- {};
 
-crasher <- null;
+rotation <- Quatd(0,0,0,1);
 
 function frameproc(dt){
 	framecount++;
-
-	if(crasher == null)
-		crasher = player.cs.entlist;
-
-//	foreach(key,value in reg().objects)
-//		print("[" + key + "]" + value);
-//	print("reg().objects: " + reg().objects.len());
-
-	try{
-		print(crasher + " " + crasher.classname);
-	}
-	catch(id){
-		print("Exception: " + id);
-		crasher = null;
-	}
+	local global_time = universe.global_time;
 
 	if(showdt)
 		print("DT = " + dt + ", FPS = " + (1. / dt) + ", FC = " + framecount);
 
 	if(autochase && player.chase == null){
-		foreachents(player.cs, function(e):(player){ player.chase = e; });
+		rotation = (rotation * Quatd(sin(dt/2.), 0., 0., cos(dt/2.))).normin();
+		player.pos = rotation.trans(Vec3d(0,0,2));
+		player.rot = rotation;
+//		local phase = (global_time - PI/2.);
+//		player.rot = Quatd(0., sin(phase/2.), 0., cos(phase/2.));
+//		foreachents(player.cs, function(e):(player){ player.chase = e; });
 	}
 
 	local currenttime = universe.global_time;
@@ -165,8 +156,8 @@ function frameproc(dt){
 }
 
 function hook_delete_Entity(e){
-	if(e.ptr == null)
-		return;
+//	if(e.ptr == null)
+//		return;
 	if(!(e.race in deaths))
 		deaths[e.race] <- {};
 	if(!(e.classname in deaths[e.race]))

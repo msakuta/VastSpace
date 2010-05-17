@@ -6,6 +6,7 @@
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
+#include <sqstdmath.h>
 //#include <../sqplus/sqplus.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -44,10 +45,10 @@ static SQUserPointer registerTypeTag(){
 	return (SQUserPointer)(*(unsigned long*)&counter)++;
 }
 
-const SQUserPointer tt_Vec3 = registerTypeTag();
-const SQUserPointer tt_Vec3d = registerTypeTag();
-const SQUserPointer tt_Quatd = registerTypeTag();
-const SQUserPointer tt_Entity = registerTypeTag();
+const SQUserPointer tt_Vec3 = "Vec3";
+const SQUserPointer tt_Vec3d = "Vec3d";
+const SQUserPointer tt_Quatd = "Quatd";
+const SQUserPointer tt_Entity = "Entity";
 
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
@@ -457,12 +458,37 @@ static SQInteger sqf_Quatd_tostring(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_Quatd_normin(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("a"), -1);
+	SQQuatd q;
+	q.getValue(v, 1);
+	q.pointer->normin();
+/*	sq_pushstring(v, _SC("a"), -1);
 	sq_get(v, 1);
 	Quatd *q;
 	sq_getuserdata(v, -1, (SQUserPointer*)&q, NULL);
 	q->normin();
-	sq_pop(v, sq_gettop(v) - 1);
+	sq_pop(v, sq_gettop(v) - 1);*/
+	return 1;
+}
+
+static SQInteger sqf_Quatd_mul(HSQUIRRELVM v){
+	SQQuatd q;
+	q.getValue(v, 1);
+	SQQuatd o;
+	o.getValue(v, 2);
+	SQQuatd r;
+	r.value = q.value * o.value;
+	r.newValue(v);
+	return 1;
+}
+
+static SQInteger sqf_Quatd_trans(HSQUIRRELVM v){
+	SQQuatd q;
+	q.getValue(v, 1);
+	SQVec3d o;
+	o.getValue(v, 2);
+	SQVec3d r;
+	r.value = q.value.trans(o.value);
+	r.newValue(v);
 	return 1;
 }
 
@@ -545,6 +571,8 @@ void sqa_init(){
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
+	sqstd_register_mathlib(v);
+
 	// Define class Vec3d, native vector representation
 	sq_pushstring(v, _SC("Vec3d"), -1);
 	sq_newclass(v, SQFalse);
@@ -591,6 +619,12 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("normin"), -1);
 	sq_newclosure(v, sqf_Quatd_normin, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_mul"), -1);
+	sq_newclosure(v, sqf_Quatd_mul, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("trans"), -1);
+	sq_newclosure(v, sqf_Quatd_trans, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

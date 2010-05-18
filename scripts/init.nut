@@ -22,7 +22,19 @@ IMPORTANT NOTE:
   subtle problems too. It requires referenced object's lifetime management,
   that will be as tough as implementing memory management system of Squirrel.
 
+  -- These properties are no longer provided and explicit get*() and set*()
+  functions are added. It's more convincing that writing
 
+    player.getpos().x = 1.;
+
+  does not take effect.
+
+
+
+// Arithmetic vector with internal element type of double.
+// Since Squirrel only supports float, you cannot directly access to
+// the raw elements, but can operate them with native methods that cause
+// least arithmetic errors.
 class Vec3d{
 	constructor(float x, float y, float z);
 	float x, y, z;
@@ -33,6 +45,7 @@ class Vec3d{
 	float vp(Vec3d); // Vector product or Cross product
 }
 
+// Quaternion with element type of double.
 class Quatd{
 	constructor(float x, float y, float z, float w);
 	float x, y, z, w;
@@ -44,8 +57,10 @@ class Quatd{
 
 class CoordSys{
 	string classname;
-	Vec3d pos; // ***
-	Quatd rot; // ***
+	Vec3d getpos();
+	void setpos(Vec3d);
+	Quatd getrot();
+	void setpos(Quatd);
 	string name();
 	CoordSys child();
 	CoordSys next();
@@ -64,16 +79,20 @@ class Universe extends CoordSys{
 
 class Entity{
 	string classname;
-	Vec3d pos; // ***
-	Quatd rot; // ***
+	Vec3d getpos();
+	void setpos(Vec3d);
+	Quatd getrot();
+	void setrot(Quatd);
 	int race;
 	Entity next;
 }
 
 class Player{
 	string classname;
-	Vec3d pos; // ***
-	Quatd rot; // ***
+	Vec3d getpos();
+	void setpos(Vec3d);
+	Quatd getrot();
+	void setrot(Quatd);
 	CoordSys getcs();
 	Entity chase;
 }
@@ -114,7 +133,7 @@ function deltaFormation(team, rot){
 		local e = cs.addent("Sceptor", Vec3d((i - 5) * 0.2, 1.,
 			(team * 2 - 1) * (2 -(i <= 5 ? i * 0.1 : 1.0 - i * 0.1))));
 		e.race = team;
-		e.rot = rot;
+		e.setrot(rot);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
 	}
 }
@@ -147,16 +166,16 @@ function countents(team){
 	return a.ents;
 }
 
-local p = player.pos;
+local p = player.getpos();
 p.x = p.y = p.z = 1;
-player.pos = p;
-print("x = " + player.pos.x);
-print("y = " + player.pos.y);
-print("z = " + player.pos.z);
-print("qx = " + player.rot.x);
-print("qy = " + player.rot.y);
-print("qz = " + player.rot.z);
-print("qw = " + player.rot.w);
+player.setpos(p);
+print("x = " + player.getpos().x);
+print("y = " + player.getpos().y);
+print("z = " + player.getpos().z);
+print("qx = " + player.getrot().x);
+print("qy = " + player.getrot().y);
+print("qz = " + player.getrot().z);
+print("qw = " + player.getrot().w);
 
 showdt <- false;
 framecount <- 0;

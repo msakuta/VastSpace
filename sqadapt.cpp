@@ -324,22 +324,6 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	return 1;
 }
 
-template<typename Class, typename MemberType, MemberType member>
-SQInteger sqf_get_member(HSQUIRRELVM v){
-	Class *p;
-	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	sq_pushstring(v, p->*member, -1);
-	return 1;
-}
-
-template<typename Class, typename MemberType, MemberType member>
-SQInteger sqf_func(HSQUIRRELVM v){
-	Class *p;
-	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	sq_pushstring(v, (p->*member)(), -1);
-	return 1;
-}
-
 static SQInteger sqf_getcs(HSQUIRRELVM v){
 	Player *p;
 	SQRESULT sr;
@@ -359,41 +343,72 @@ static SQInteger sqf_getcs(HSQUIRRELVM v){
 	return 1;
 }
 
-template<typename Class>
-SQInteger sqf_getpos(HSQUIRRELVM v){
-	Class *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
+// "Class" can be CoordSys, Player or Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
+// I think I cannot write this logic shorter.
+template<typename Class, typename MType, MType Class::*member>
+SQInteger sqf_getintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.value = p->*member;
+		r.newValue(v);
+		return 1;
+	}
+	catch(SQFError){
 		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("Vec3d"), -1);
-	sq_get(v, -2);
-	sq_createinstance(v, -1);
-	sq_pushstring(v, _SC("a"), -1);
-	sq_get(v, -2);
-	Vec3d *vec;
-	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&vec, NULL)))
-		return SQ_ERROR;
-	*vec = p->pos;
-	sq_poptop(v);
-	return 1;
+	}
 }
 
-static SQInteger sqf_Vec3_constructor(HSQUIRRELVM v){
-	SQInteger argc = sq_gettop(v);
-	sq_pushstring(v, _SC("a"), -1);
-	sq_newarray(v, 0);
-	for(int i = 0; i < 3; i++){
-		SQFloat f;
-		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
-			sq_pushfloat(v, f);
-		else
-			sq_pushfloat(v, 0.f);
-		sq_arrayappend(v, -2);
+#if 1
+
+// This template function is rather straightforward, but produces similar instances rapidly.
+// Probably classes with the same member variables should share base class, but it's not always feasible.
+template<typename Class, typename MType, MType Class::*member>
+static SQInteger sqf_setintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		p->*member = r.value;
+		return 0;
 	}
-	sq_set(v, 1);
-	return 0;
+	catch(SQFError){
+		return SQ_ERROR;
+	}
 }
+
+#else
+
+// This implementation is a bit dirty and requires unsigned long to have equal or greater size compared to pointer's,
+// but actually reduces code size and probably execution time, by CPU caching effect.
+template<typename MType>
+static SQInteger sqf_setintrinsic_in(HSQUIRRELVM v, unsigned long offset){
+	try{
+		void *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		*(MType*)&((unsigned char*)p)[offset] = r.value;
+		return 0;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+template<typename Class, typename MType, MType Class::*member>
+SQInteger sqf_setintrinsic(HSQUIRRELVM v){
+	return sqf_setintrinsic_in<MType>(v, (unsigned long)&(((Class*)NULL)->*member));
+}
+#endif
 
 static SQInteger sqf_Vec3d_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
@@ -772,6 +787,18 @@ void sqa_init(){
 	sq_pushstring(v, _SC("name"), -1);
 	sq_newclosure(v, sqf_name, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getpos"), -1);
+	sq_newclosure(v, sqf_getintrinsic<CoordSys, Vec3d, &CoordSys::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setpos"), -1);
+	sq_newclosure(v, sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getrot"), -1);
+	sq_newclosure(v, sqf_getintrinsic<CoordSys, Quatd, &CoordSys::rot>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setrot"), -1);
+	sq_newclosure(v, sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("child"), -1);
 	sq_newclosure(v, sqf_child, 0);
 	sq_createslot(v, -3);
@@ -817,6 +844,18 @@ void sqa_init(){
 /*	sq_pushstring(v, _SC("classname"), -1);
 	sq_newclosure(v, sqf_func<Entity, const SQChar *(Entity::*)() const, &Entity::classname>, 0);
 	sq_createslot(v, -3);*/
+	sq_pushstring(v, _SC("getpos"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Entity, Vec3d, &Entity::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setpos"), -1);
+	sq_newclosure(v, sqf_setintrinsic<Entity, Vec3d, &Entity::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getrot"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Entity, Quatd, &Entity::rot>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setrot"), -1);
+	sq_newclosure(v, sqf_setintrinsic<Entity, Quatd, &Entity::rot>, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, sqf_Entity_get, 0);
 	sq_createslot(v, -3);
@@ -851,7 +890,16 @@ void sqa_init(){
 	sq_newclosure(v, sqf_getcs, 0);
 	sq_createslot(v, -3);*/
 	sq_pushstring(v, _SC("getpos"), -1);
-	sq_newclosure(v, sqf_getpos<Player>, 0);
+	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, &Player::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setpos"), -1);
+	sq_newclosure(v, sqf_setintrinsic<Player, Vec3d, &Player::pos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getrot"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Player, Quatd, &Player::rot>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setrot"), -1);
+	sq_newclosure(v, sqf_setintrinsic<Player, Quatd, &Player::rot>, 0);
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, &Player::sqf_get, 0);

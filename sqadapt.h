@@ -28,10 +28,10 @@ bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 // Any recoverable errors in Squirrel VM is thrown and inherits this class.
-class SQIntrinsicError{
+class SQFError{
 	int unused;
 };
-
+class SQIntrinsicError : SQFError{};
 class TypeMatch : SQIntrinsicError{};
 class NoIndex : SQIntrinsicError{};
 class NoUserData : SQIntrinsicError{};
@@ -49,7 +49,7 @@ public:
 	SQIntrinsic() : pointer(NULL){}
 	SQIntrinsic(Class &initValue) : value(initValue), pointer(NULL){}
 
-	bool newValue(HSQUIRRELVM v){
+	void newValue(HSQUIRRELVM v){
 		sq_pushroottable(v); // ... root
 		sq_pushstring(v, classname, -1); // ... root "Quatd"
 		if(SQ_FAILED(sq_get(v, -2))) throw NoIndex(); // ... root Quatd
@@ -62,11 +62,10 @@ public:
 		*pointer = value;
 		if(SQ_FAILED(sq_set(v, -3)))
 			throw NoIndex();
-		return true;
 	}
 
 	// Gets a variable at index idx from Squirrel stack
-	bool getValue(HSQUIRRELVM v, int idx = -1){
+	void getValue(HSQUIRRELVM v, int idx = -1){
 #ifndef NDEBUG
 		assert(OT_INSTANCE == sq_gettype(v, idx));
 		SQUserPointer tt;
@@ -83,7 +82,7 @@ public:
 	}
 
 	// Sets a variable at index idx in Squirrel stack
-	bool setValue(HSQUIRRELVM v, int idx = -1){
+	void setValue(HSQUIRRELVM v, int idx = -1){
 #ifndef NDEBUG
 		assert(OT_INSTANCE == sq_gettype(v, idx));
 		SQUserPointer tt;
@@ -118,18 +117,7 @@ SQInteger sqf_get(HSQUIRRELVM v){
 	SQRESULT sr;
 	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	if(!strcmp(wcs, _SC("pos"))){
-		SQVec3d(p->pos).newValue(v);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("rot"))){
-		SQQuatd q;
-		q.value = p->rot;
-		q.newValue(v);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("classname"))){
+	if(!strcmp(wcs, _SC("classname"))){
 		sq_pushstring(v, p->classname(), -1);
 		return 1;
 	}
@@ -147,19 +135,10 @@ SQInteger sqf_set(HSQUIRRELVM v){
 	SQRESULT sr;
 	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	if(!strcmp(wcs, _SC("pos"))){
-		SQVec3d q;
-		q.getValue(v, 3);
-		p->pos = q.value;
-	}
-	else if(!strcmp(wcs, _SC("rot"))){
-		SQQuatd q;
-		q.getValue(v, 3);
-		p->rot = q.value;
-	}
 	return 0;
 }
+
+
 
 }
 

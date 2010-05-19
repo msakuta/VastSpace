@@ -29,7 +29,7 @@ public:
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
-	virtual bool command(unsigned commid, std::set<Entity*> *ents);
+	virtual bool command(EntityCommand *com);
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;
 protected:

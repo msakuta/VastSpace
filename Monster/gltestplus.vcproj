@@ -619,6 +619,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\EntityCommand.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Frigate.h"
 				>
 			</File>
@@ -749,6 +753,10 @@
 		</File>
 		<File
 			RelativePath=".\ClassDiagram2.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\EntityCommand.cd"
 			>
 		</File>
 	</Files>

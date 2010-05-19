@@ -40,11 +40,7 @@ namespace sqa{
 HSQUIRRELVM g_sqvm;
 static HSQUIRRELVM &v = g_sqvm;
 
-static SQUserPointer registerTypeTag(){
-	static SQUserPointer counter = (SQUserPointer)1;
-	return (SQUserPointer)(*(unsigned long*)&counter)++;
-}
-
+// The Squirrel type tags can be any pointer that never overlap.
 const SQUserPointer tt_Vec3d = "Vec3d";
 const SQUserPointer tt_Quatd = "Quatd";
 const SQUserPointer tt_Entity = "Entity";

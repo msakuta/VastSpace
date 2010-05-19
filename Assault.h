@@ -30,7 +30,7 @@ public:
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
 	virtual bool undock(Docker *);
-	virtual bool command(unsigned commid, std::set<Entity*> *);
+	virtual bool command(EntityCommand *);
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
 	static const Builder::BuildStatic builds;

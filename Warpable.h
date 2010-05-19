@@ -62,7 +62,7 @@ public:
 	virtual double maxenergy()const = 0;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
-	virtual bool command(unsigned comid, std::set<Entity*> *targets);
+	virtual bool command(EntityCommand *com);
 
 	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);

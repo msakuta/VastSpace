@@ -81,7 +81,7 @@ public:
 	virtual double hitradius()const;
 	virtual std::vector<cpplib::dstring> props()const;
 	virtual cpplib::dstring descript()const;
-	virtual bool command(unsigned commid, std::set<Entity*> *ents);
+	virtual bool command(EntityCommand *);
 
 	virtual float reloadtime()const;
 	virtual double bulletspeed()const;

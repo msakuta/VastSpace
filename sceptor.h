@@ -28,6 +28,7 @@ protected:
 		Parade = sship_parade,
 		Attack = sship_attack,
 		Away = sship_away,
+		DeltaFormation,
 		Auto, // Automatically targets near enemy or parade with mother.
 		num_sceptor_task
 	};
@@ -48,6 +49,7 @@ protected:
 	bool docked, returning, away, cloak, forcedEnemy;
 	float mf; // trivial muzzle flashes
 	float integral[2]; // integration of pitch-yaw space of relative target position
+	Sceptor *formPrev; // previous member in the formation
 
 	static const avec3_t gunPos[2];
 	void shootDualGun(double dt);
@@ -81,14 +83,13 @@ public:
 	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
-	virtual bool command(unsigned commid, std::set<Entity*> *);
+	virtual bool command(EntityCommand *);
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);
-	static const unsigned cid_parade_formation, cid_dock;
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 	static double pid_ifactor;
 	static double pid_pfactor;

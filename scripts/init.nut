@@ -140,7 +140,8 @@ function deltaFormation(team, rot){
 
 function ae(){
 	deltaFormation(0, Quatd(0,1,0,0));
-	deltaFormation(1, Quatd(0,0,0,1));
+//	deltaFormation(1, Quatd(0,0,0,1));
+	player.cs.addent("Assault", Vec3d(-1, 0,0));
 }
 
 ae();
@@ -194,16 +195,16 @@ function frameproc(dt){
 
 	if(autochase && player.chase == null){
 //		rotation = (rotation * Quatd(sin(dt/2.), 0., 0., cos(dt/2.))).normin();
-//		player.pos = rotation.trans(Vec3d(0,0,2));
-//		player.rot = rotation;
+//		player.setpos(rotation.trans(Vec3d(0,0,2)));
+//		player.setrot(rotation);
 //		local phase = (global_time - PI/2.);
 //		player.rot = Quatd(0., sin(phase/2.), 0., cos(phase/2.));
-		foreachents(player.cs, function(e):(player){ player.chase = e; });
+//		foreachents(player.cs, function(e):(player){ player.chase = e; });
 	}
 
 	local currenttime = universe.global_time;
 
-	if(checktime + 1. < currenttime){
+	if(false && checktime + 1. < currenttime){
 		checktime = currenttime;
 		local racec = [countents(0), countents(1)];
 
@@ -221,8 +222,6 @@ function frameproc(dt){
 }
 
 function hook_delete_Entity(e){
-//	if(e.ptr == null)
-//		return;
 	if(!(e.race in deaths))
 		deaths[e.race] <- {};
 	if(!(e.classname in deaths[e.race]))

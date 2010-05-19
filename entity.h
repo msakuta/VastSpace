@@ -7,14 +7,13 @@
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
-#include <list>
-#include <set>
 
 class Bullet;
 class Warpable;
 class ArmBase;
 class Builder;
 class Docker;
+struct EntityCommand;
 
 class Entity : public Serializable{
 public:
@@ -57,14 +56,7 @@ public:
 	virtual double getRU()const;
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
-	virtual bool command(unsigned commid, std::set<Entity*> *targets = NULL); // A general-purpose command dispatcher. Can have a set of Entities as argument.
-
-	// Reserved command IDs so common that all Entity derived classes should share.
-	// Note that subclasses can gracefully ignore these commands.
-	static const unsigned cid_halt; // Stop current activity and become idle.
-	static const unsigned cid_move; // Move to specified location.
-	static const unsigned cid_attack; // Attack specified target.
-	static const unsigned cid_forceattack; // Attack specified target though if it is ally.
+	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
@@ -98,9 +90,6 @@ public:
 
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
-
-	// Reserves a command id for particular purpose.
-	static unsigned registerCommand();
 
 protected:
 	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;

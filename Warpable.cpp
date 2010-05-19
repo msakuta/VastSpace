@@ -11,6 +11,7 @@
 #include "astro_star.h"
 #include "serial_util.h"
 #include "glstack.h"
+#include "EntityCommand.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -1163,20 +1164,20 @@ void Warpable::anim(double dt){
 	st::anim(dt);
 }
 
-bool Warpable::command(unsigned commid, std::set<Entity*> *arg){
-	if(commid == cid_halt){
+bool Warpable::command(EntityCommand *com){
+	if(InterpretCommand<HaltCommand>(com)){
 		task = sship_idle;
 		inputs.press = 0;
 		return true;
 	}
-	else if(commid == cid_move){
+	else if(MoveCommand *mc = InterpretCommand<MoveCommand>(com)){
 		task = sship_moveto;
-		dest = *(Vec3d*)arg;
+		dest = mc->dest;
 		return true;
 	}
-	else if(commid == cid_attack){
-		if(arg && !arg->empty())
-			enemy = *arg->begin();
+	else if(AttackCommand *ac = InterpretCommand<AttackCommand>(com)){
+		if(!ac->ents.empty())
+			enemy = *ac->ents.begin();
 		return true;
 	}
 	return false;

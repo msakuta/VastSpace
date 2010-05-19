@@ -34,7 +34,7 @@ public:
 	virtual double maxenergy()const, maxshield()const;
 	virtual Dockable *toDockable();
 	virtual bool solid(const Entity *)const;
-	virtual bool command(unsigned commid, std::set<Entity*> *);
+	virtual bool command(EntityCommand *);
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 };

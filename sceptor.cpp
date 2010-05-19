@@ -10,6 +10,9 @@
 //#include "glsl.h"
 //#include "astro_star.h"
 //#include "sensor.h"
+#include "cmd.h"
+#include "astrodraw.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -40,6 +43,13 @@ extern "C"{
 #define BULLETSPEED 2.
 #define SCEPTOR_MAGAZINE 10
 #define SCEPTOR_RELOADTIME 2.
+
+DERIVE_COMMAND(DockCommand, EntityCommand);
+DERIVE_COMMAND(DeltaCommand, EntityCommand);
+
+IMPLEMENT_COMMAND(DockCommand, "Dock");
+IMPLEMENT_COMMAND(DeltaCommand, "Delta");
+
 
 Entity::Dockable *Sceptor::toDockable(){return this;}
 
@@ -81,6 +91,7 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << paradec;
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
+	sc.o << formPrev;
 }
 
 void Sceptor::unserialize(UnserializeContext &sc){
@@ -97,6 +108,7 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
+	sc.i >> formPrev;
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	WarSpace *ws;
@@ -121,7 +133,7 @@ double Sceptor::maxhealth()const{
 Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1), forcedEnemy(false){
+Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1), forcedEnemy(false), formPrev(NULL){
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -177,7 +189,8 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 
 int Sceptor::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak");
+	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak")
+		.append("Delta Formation", 0, "delta_formation");
 	return ret;
 }
 
@@ -764,6 +777,20 @@ void Sceptor::anim(double dt){
 					else
 						task = Auto;
 				}
+				else if(p->task == DeltaFormation){
+					int nwingmen = 1; // Count yourself
+					Sceptor *leader = NULL;
+					for(Sceptor *wingman = formPrev; wingman; wingman = wingman->formPrev){
+						nwingmen++;
+						if(!wingman->formPrev)
+							leader = wingman;
+					}
+					if(leader){
+						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .1), 0., nwingmen / 2 * .1);
+						Vec3d target = leader->pos + dp;
+						steerArrival(dt, target, vec3_000, 1. / 10., .001);
+					}
+				}
 				else if(p->task == Dockque || p->task == Dock){
 					if(!pm)
 						pm = findMother();
@@ -1129,6 +1156,8 @@ void Sceptor::postframe(){
 	}
 	if(enemy && enemy->w != w)
 		enemy = NULL;
+	if(formPrev && formPrev->w != w)
+		formPrev = NULL;
 	st::postframe();
 }
 
@@ -1205,36 +1234,45 @@ double Sceptor::maxfuel()const{
 	return 120.;
 }
 
-bool Sceptor::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == cid_halt){
+bool Sceptor::command(EntityCommand *com){
+	if(InterpretCommand<HaltCommand>(com)){
 		task = Idle;
 		forcedEnemy = false;
 	}
-	else if(commid == cid_parade_formation){
+	else if(InterpretCommand<DeltaCommand>(com)){
+		Entity *e;
+		for(e = next; e; e = e->next) if(e->classname() == classname() && e->race == race){
+			formPrev = static_cast<Sceptor*>(e);
+			task = DeltaFormation;
+			break;
+		}
+		return true;
+	}
+	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
 			findMother();
 		return true;
 	}
-	else if(commid == cid_dock){
+	else if(InterpretCommand<DockCommand>(com)){
 		task = Dockque;
 		return true;
 	}
-	else if(commid == cid_move){
+	else if(MoveCommand *mc = InterpretCommand<MoveCommand>(com)){
 		switch(task){
 			case Undockque:
 			case Undock:
 			case Dock:
-				return 0;
+				return false;
 		}
 		task = Moveto;
-		Vec3d &dest = *(Vec3d*)ents;
-		this->dest = dest;
+		this->dest = mc->dest;
 		return true;
 	}
-	else if(commid == cid_attack || commid == cid_forceattack){
-		if(ents && !ents->empty()){
-			Entity *e = *ents->begin();
+	AttackCommand *ac;
+	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
+		if(!ac->ents.empty()){
+			Entity *e = *ac->ents.begin();
 			if(e && e->getUltimateOwner() != getUltimateOwner()){
 				enemy = e;
 				forcedEnemy = true;
@@ -1242,8 +1280,9 @@ bool Sceptor::command(unsigned commid, std::set<Entity*> *ents){
 				return true;
 			}
 		}
+		return true;
 	}
-	return st::command(commid, ents);
+	return st::command(com);
 }
 
 
@@ -1259,10 +1298,14 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 	return ret;
 }
 
+
+
+
+
 int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(cid_dock);
+		e->command(&DockCommand());
 	}
 	return 0;
 }
@@ -1270,13 +1313,26 @@ int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(cid_parade_formation);
+		e->command(&ParadeCommand());
 	}
 	return 0;
 }
 
-const unsigned Sceptor::cid_parade_formation = registerCommand();
-const unsigned Sceptor::cid_dock = registerCommand();
+static int cmd_delta_formation(int argc, char *argv[], void *pv){
+	Player *pl = (Player*)pv;
+	for(Entity *e = pl->selected; e; e = e->selectnext){
+		e->command(&DeltaCommand());
+	}
+	return 0;
+}
+
+static void register_sceptor_cmd(void){
+	extern Player pl;
+	CmdAddParam("delta_formation", cmd_delta_formation, &pl);
+}
+
+static Initializator sss(register_sceptor_cmd);
+
 
 double Sceptor::pid_pfactor = 1.;
 double Sceptor::pid_ifactor = 1.;

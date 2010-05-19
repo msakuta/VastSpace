@@ -271,7 +271,7 @@ coordsys Orbit marss{
 #		addent Beamer .1 0 0
 #		addent Beamer -.1 0 0
 #		addent Assault -.2 0 2 
-		addent Assault -.6 0 2 0
+#		addent Assault -.6 0 2 0
 #		addent Assault -.3 0 2 0
 #		addent assault -.0 0 -1 0
 #		addent assault .3 0 -1 1

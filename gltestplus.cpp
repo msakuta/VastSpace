@@ -26,6 +26,7 @@
 #include "Universe.h"
 #include "glsl.h"
 #include "sqadapt.h"
+#include "EntityCommand.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -933,10 +934,15 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	}
 	if(!draw){
 		if(attacking){
-			std::set<Entity*> ents;
-			ents.insert(ptbest);
+			// I dunno why but this doesn't work
+//			AttackCommand &com = forceattack ? ForceAttackCommand() : AttackCommand();
+			AttackCommand ac;
+			ForceAttackCommand fac;
+			AttackCommand &com = forceattack ? fac : ac;
+			com.ents.insert(ptbest);
 			for(Entity *e = pl.selected; e; e = e->selectnext)
-				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);
+				e->command(&com);
+//				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);
 		}
 		else if(preview){
 			if(ptbest){
@@ -986,7 +992,7 @@ static void uncapture_mouse(){
 int cmd_halt(int, char *[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *pt = pl->selected; pt; pt = pt->selectnext)
-		pt->command(Entity::cid_halt, NULL);
+		pt->command(&HaltCommand());
 	return 0;
 }
 
@@ -995,12 +1001,12 @@ int cmd_move(int argc, char *argv[], void *pv){
 	Entity *pt;
 	if(argc < 4 || !pl->cs)
 		return 0;
-	Vec3d dest;
-	dest[0] = atof(argv[1]);
-	dest[1] = atof(argv[2]);
-	dest[2] = atof(argv[3]);
+	MoveCommand com;
+	com.dest[0] = atof(argv[1]);
+	com.dest[1] = atof(argv[2]);
+	com.dest[2] = atof(argv[3]);
 	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w)
-		pt->command(Entity::cid_move, (std::set<Entity*>*)&dest);
+		pt->command(&com);
 	return 0;
 }
 

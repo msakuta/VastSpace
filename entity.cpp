@@ -1,4 +1,5 @@
 #include "entity.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/aquat.h>
 }
@@ -159,12 +160,7 @@ Builder *Entity::getBuilderInt(){return NULL;}
 Docker *Entity::getDockerInt(){return NULL;}
 bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
-bool Entity::command(unsigned, std::set<Entity*>*){return false;}
-
-const unsigned Entity::cid_halt = registerCommand();
-const unsigned Entity::cid_move = registerCommand();
-const unsigned Entity::cid_attack = registerCommand();
-const unsigned Entity::cid_forceattack = registerCommand();
+bool Entity::command(EntityCommand *){return false;}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
@@ -218,11 +214,6 @@ void Entity::transit_cs(CoordSys *cs){
 	}
 
 	w = cs->w;
-}
-
-unsigned Entity::registerCommand(){
-	static unsigned counter = 0;
-	return counter++;
 }
 
 class GLWprop : public GLwindowSizeable{
@@ -290,4 +281,11 @@ int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &s
 	ret = pos + (velo - srcvelo + grv * dist / speed / 2.) * dist / speed;
 	return 1;
 }
+
+
+IMPLEMENT_COMMAND(HaltCommand, "Halt")
+IMPLEMENT_COMMAND(AttackCommand, "Attack")
+IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")
+IMPLEMENT_COMMAND(MoveCommand, "Move")
+IMPLEMENT_COMMAND(ParadeCommand, "Parade")
 

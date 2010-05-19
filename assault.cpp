@@ -4,6 +4,7 @@
 #include "player.h"
 #include "serial_util.h"
 #include "material.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -304,13 +305,13 @@ bool Assault::undock(Docker *d){
 	return true;
 }
 
-bool Assault::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == cid_attack || commid == cid_forceattack){
+bool Assault::command(EntityCommand *com){
+	if(com->id() == AttackCommand::sid || com->id() == ForceAttackCommand::sid){
 		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
-			turrets[i]->command(commid, ents);
-		return st::command(commid, ents); 
+			turrets[i]->command(com);
+		return st::command(com);
 	}
-	return st::command(commid, ents);
+	return st::command(com);
 }
 
 

@@ -15,6 +15,7 @@
 #include "serial_util.h"
 #include "material.h"
 #include "Missile.h"
+#include "EntityCommand.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -564,15 +565,15 @@ float MTurret::bulletlife()const{
 	return 3.;
 }
 
-bool MTurret::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == cid_halt){
+bool MTurret::command(EntityCommand *com){
+	if(InterpretCommand<HaltCommand>(com)){
 		target = NULL;
 		forceEnemy = false;
 		return true;
 	}
-	else if(commid == cid_attack){
-		if(ents && !ents->empty()){
-			Entity *e = *ents->begin();
+	else if(AttackCommand *ac = InterpretCommand<AttackCommand>(com)){
+		if(!ac->ents.empty()){
+			Entity *e = *ac->ents.begin();
 			if(e && e->race != race && e->getUltimateOwner() != getUltimateOwner()){
 				target = e;
 				forceEnemy = true;
@@ -580,9 +581,9 @@ bool MTurret::command(unsigned commid, std::set<Entity*> *ents){
 			}
 		}
 	}
-	else if(commid == cid_forceattack){
-		if(ents && !ents->empty()){
-			Entity *e = *ents->begin();
+	else if(ForceAttackCommand *fac = InterpretCommand<ForceAttackCommand>(com)){
+		if(!fac->ents.empty()){
+			Entity *e = *fac->ents.begin();
 
 			// Though if force attacked, you cannot hurt yourself.
 			if(e && e->getUltimateOwner() != getUltimateOwner()){

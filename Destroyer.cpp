@@ -2,6 +2,7 @@
 #include "material.h"
 #include "judge.h"
 #include "serial_util.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -256,18 +257,19 @@ const ArmBase *Destroyer::armsGet(int i)const{
 	return turrets[i];
 }
 
-bool Destroyer::command(unsigned commid, std::set<Entity*> *ents){
-	if(commid == cid_halt){
+bool Destroyer::command(EntityCommand *com){
+	if(InterpretCommand<HaltCommand>(com)){
 		task = sship_idle;
 		return true;
 	}
-	else if(commid == cid_attack || commid == cid_forceattack){
+	AttackCommand *ac;
+	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
 		for(int i = 0; i < nhardpoints; i++)
-			turrets[i]->command(commid, ents);
+			turrets[i]->command(ac);
 		return true;
 	}
 	else
-		return st::command(commid, ents);
+		return st::command(com);
 }
 
 double Destroyer::maxenergy()const{return getManeuve().capacity;}

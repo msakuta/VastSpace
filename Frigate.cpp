@@ -10,6 +10,7 @@
 #include "serial_util.h"
 #include "material.h"
 #include "Sceptor.h"
+#include "EntityCommand.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -496,21 +497,22 @@ bool Frigate::solid(const Entity *o)const{
 	return !(task == sship_undock || task == sship_warp);
 }
 
-bool Frigate::command(unsigned commid, std::set<Entity*> *arg){
-	if(commid == Sceptor::cid_parade_formation){
+bool Frigate::command(EntityCommand *com){
+	if(InterpretCommand<ParadeCommand>(com)){
 		findMother();
 		task = sship_parade;
 		enemy = NULL; // Temporarily forget about enemy
 		return true;
 	}
-	else if((commid == cid_attack || commid == cid_forceattack)){
-		if(arg && !arg->empty()){
-			enemy = *arg->begin();
+	AttackCommand *ac;
+	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
+		if(!ac->ents.empty()){
+			enemy = *ac->ents.begin();
 			task = sship_attack;
 		}
 		return true;
 	}
-	else return st::command(commid, arg);
+	else return st::command(com);
 }
 
 Entity *Frigate::findMother(){

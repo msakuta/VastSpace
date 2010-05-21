@@ -125,7 +125,7 @@ int jHitPolygon(const double vb[][3], unsigned short vi[], int nv, const double 
 	return 1;
 }
 
-
+// Trace a ray whether it intersects a hitbox.
 bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn){
 	int i;
 	bool reti = false;
@@ -203,6 +203,78 @@ bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d
 		}
 	}
 	return reti;
+}
+
+// Tests whether a hitbox is intersecting with a plane.
+int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm){
+	int ret = 0;
+	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
+
+		// Obtain a corner's position in hitbox'es local coordinates.
+		Vec3d org = Vec3d((ix * 2 - 1) * hb.sc[0], (iy * 2 - 1) * hb.sc[1], (iz * 2 - 1) * hb.sc[2]);
+		org = hb.rot.trans(org);
+		Vec3d worldpos = org + hb.org;
+		ret |= ((worldpos - planeorg).sp(planenorm) < 0.) << (ix * 4 + iy * 2 + iz);
+	}
+	return ret;
+}
+
+// Intersection of triangle(O,a,b) and line segment(org,end)
+double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end){
+	// Acquire the third axis (= normal of the triangle plane)
+	Vec3d bvpc = b.vp(c)/*.norm()*/;
+
+//	Vec3d end = org + Vec3d(0,0,1);
+
+	// Obtain local z position of start and end point
+	double orgz = org.sp(bvpc);
+	double endz = end.sp(bvpc);
+
+	// If starting and ending point of the line lies the same side of the triangle plane, there's no way intersecting.
+	if(0. < orgz * endz)
+		return 0;
+
+	Vec3d caxis = bvpc.vp(b);
+	Vec3d baxis = c.vp(bvpc);
+	caxis /= caxis.sp(c);
+	baxis /= baxis.sp(b);
+
+	// Transform to local
+	Vec3d lpos(org.sp(baxis), org.sp(caxis), orgz);
+	Vec3d ldir = Vec3d(end.sp(baxis), end.sp(caxis), endz) - lpos;
+
+	// Find intersecting point
+	double f = -lpos[2] / (endz - lpos[2]);
+	Vec3d lhit = lpos + f * ldir;
+	return 0. < lhit[0] && 0. < lhit[1] && lhit[0] + lhit[1] < 1. ? f : 0.;
+}
+
+// Tests whether two moving line segments intersect. Line segment A is moving arbitrary while line segment B is fixed at origin and points z+.
+int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt){
+	/* Line segment position
+
+	              apose  apos1e
+	                |----->|
+	Line segment    |      |     Line segment at
+	at start of --> |----->| <-- time + dt
+	the frame       |      |
+	                |----->|
+	              apos   apos1
+	
+	The quadrilateral made by the four corners is generally not
+	rectangular nor even planar. 
+	*/
+
+	Vec3d apose = apos + arot.trans(alen * vec3_001);
+	Vec3d apos1 = apos + avelo * dt;
+	Vec3d apos1e = apos1 + arot.quatrotquat(aomg * dt).trans(alen * vec3_001);
+
+	if(0 != jHitTriangle(apose - apos, apos1 - apos, Vec3d(0,0,0) - apos, Vec3d(0,0,blen) - apos))
+		return 1;
+	
+	if(0 != jHitTriangle(apos1 - apos1e, apose - apos1e, Vec3d(0,0,0) - apos1e, Vec3d(0,0,blen) - apos1e))
+		return 1;
+	return 0;
 }
 
 

@@ -28,7 +28,7 @@ protected:
 		Parade = sship_parade,
 		Attack = sship_attack,
 		Away = sship_away,
-		DeltaFormation,
+		DeltaFormation = sship_delta,
 		Auto, // Automatically targets near enemy or parade with mother.
 		num_sceptor_task
 	};

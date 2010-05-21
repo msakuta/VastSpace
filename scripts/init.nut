@@ -128,10 +128,12 @@ function fact(n){
 }
 
 function deltaFormation(team, rot){
+	local spacing = 0.2;
 	local cs = player.cs;
-	for(local i = 0; i < 11; i++){
-		local e = cs.addent("Sceptor", Vec3d((i - 5) * 0.2, 1.,
-			(team * 2 - 1) * (2 -(i <= 5 ? i * 0.1 : 1.0 - i * 0.1))));
+	for(local i = 1; i < 2; i++){
+		local e = cs.addent("Assault", Vec3d(
+			(i % 2 * 2 - 1) * (i / 2) * spacing, 1.,
+			(team * 2 - 1) * (i / 2 * spacing)));
 		e.race = team;
 		e.setrot(rot);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
@@ -139,9 +141,9 @@ function deltaFormation(team, rot){
 }
 
 function ae(){
-	deltaFormation(0, Quatd(0,1,0,0));
-//	deltaFormation(1, Quatd(0,0,0,1));
-	player.cs.addent("Assault", Vec3d(-1, 0,0));
+//	deltaFormation(0, Quatd(0,1,0,0));
+	deltaFormation(1, Quatd(0,0,0,1));
+//	player.cs.addent("Assault", Vec3d(-1, 0,0));
 }
 
 ae();
@@ -167,16 +169,7 @@ function countents(team){
 	return a.ents;
 }
 
-local p = player.getpos();
-p.x = p.y = p.z = 1;
-player.setpos(p);
-print("x = " + player.getpos().x);
-print("y = " + player.getpos().y);
-print("z = " + player.getpos().z);
-print("qx = " + player.getrot().x);
-print("qy = " + player.getrot().y);
-print("qz = " + player.getrot().z);
-print("qw = " + player.getrot().w);
+player.setpos(Vec3d(0.0, 1.2, 0.5));
 
 showdt <- false;
 framecount <- 0;

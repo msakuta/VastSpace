@@ -24,6 +24,7 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
+#include <cpplib/vec4.h>
 #include <assert.h>
 #include <string.h>
 
@@ -286,7 +287,7 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 #ifdef NDEBUG
 #else
-void hitbox_draw(const Entity *pt, const double sc[3]){
+void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 	glPushMatrix();
 	glScaled(sc[0], sc[1], sc[2]);
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
@@ -306,6 +307,11 @@ void hitbox_draw(const Entity *pt, const double sc[3]){
 			v[(i+2)%3] = 1.;
 			glVertex3dv(v);
 		}
+	}
+	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
+		glColor4fv(hitflags & (1 << (ix * 4 + iy * 2 + iz)) ? Vec4<float>(1,0,0,1) : Vec4<float>(0,1,1,1));
+		glVertex3dv(vec3_000);
+		glVertex3dv(1.2 * Vec3d(ix * 2 - 1, iy * 2 - 1, iz * 2 - 1));
 	}
 	glEnd();
 	glPopAttrib();

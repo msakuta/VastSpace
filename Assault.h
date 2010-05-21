@@ -6,6 +6,7 @@
 
 class Assault : public Frigate{
 protected:
+	Assault *formPrev;
 	static suf_t *sufbase;
 	ArmBase **turrets;
 	static hardpoint_static *hardpoints;

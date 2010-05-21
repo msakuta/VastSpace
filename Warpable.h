@@ -21,6 +21,7 @@ enum sship_task{
 	sship_dockque, /* Queue in a line of dock waiting. */
 	sship_moveto, /* Move to indicated location. */
 	sship_parade, /* Parade formation. */
+	sship_delta, // Delta formation
 	sship_attack, /* Attack to some object. */
 	sship_away, /* Fighters going away in attacking cycle. */
 	sship_gather, /* Gather resources. */
@@ -87,7 +88,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 #ifdef NDEBUG
 #define hitbox_draw
 #else
-void hitbox_draw(const Entity *pt, const double sc[3]);
+void hitbox_draw(const Entity *pt, const double sc[3], int hitflags = 0);
 #endif
 //suf_t *CallLoadSUF(const char *fname);
 

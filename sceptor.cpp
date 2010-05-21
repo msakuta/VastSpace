@@ -44,11 +44,6 @@ extern "C"{
 #define SCEPTOR_MAGAZINE 10
 #define SCEPTOR_RELOADTIME 2.
 
-DERIVE_COMMAND(DockCommand, EntityCommand);
-DERIVE_COMMAND(DeltaCommand, EntityCommand);
-
-IMPLEMENT_COMMAND(DockCommand, "Dock");
-IMPLEMENT_COMMAND(DeltaCommand, "Delta");
 
 
 Entity::Dockable *Sceptor::toDockable(){return this;}
@@ -786,9 +781,18 @@ void Sceptor::anim(double dt){
 							leader = wingman;
 					}
 					if(leader){
-						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .1), 0., nwingmen / 2 * .1);
-						Vec3d target = leader->pos + dp;
-						steerArrival(dt, target, vec3_000, 1. / 10., .001);
+						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .05), 0., nwingmen / 2 * .05);
+						dest = (leader->task == Moveto ? leader->dest : leader->pos) + dp;
+						Vec3d dr = pt->pos - dest;
+						if(dr.slen() < .03 * .03){
+							Quatd q1 = quat_u;
+							p->throttle = 0.;
+							parking = 1;
+							pt->velo += dr * (-dt * .5);
+							pt->rot = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
+						}
+						else
+							steerArrival(dt, dest, leader->velo, 1., .001);
 					}
 				}
 				else if(p->task == Dockque || p->task == Dock){

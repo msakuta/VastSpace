@@ -5,6 +5,7 @@
 #include "serial_util.h"
 #include "material.h"
 #include "EntityCommand.h"
+#include "judge.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -31,7 +32,7 @@ int Assault::nhardpoints = 0;
 
 suf_t *Assault::sufbase = NULL;
 
-Assault::Assault(WarField *aw) : st(aw){
+Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
@@ -64,12 +65,14 @@ const unsigned Assault::entityid = registerEntity("Assault", Constructor<Assault
 
 void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << formPrev;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
 }
 
 void Assault::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> (Entity*&)formPrev;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
 }
@@ -123,6 +126,28 @@ void Assault::anim(double dt){
 			enemy = NULL;
 		}
 
+		if(task == sship_delta){
+			int nwingmen = 1; // Count yourself
+			Assault *leader = NULL;
+			for(Assault *wingman = formPrev; wingman; wingman = wingman->formPrev){
+				nwingmen++;
+				if(!wingman->formPrev)
+					leader = wingman;
+			}
+			if(leader){
+				double spacing = .2;
+				Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * spacing), 0., nwingmen / 2 * spacing);
+				dest = (leader->task == sship_moveto ? leader->dest : leader->pos) + dp;
+				Vec3d dr = this->pos - dest;
+				if(dr.slen() < .03 * .03){
+					Quatd q1 = quat_u;
+					this->velo += dr * (-dt * .5);
+					this->rot = Quatd::slerp(this->rot, q1, 1. - exp(-dt));
+				}
+				else
+					steerArrival(dt, dest, leader->velo, 1., .001);
+			}
+		}
 		if(!enemy && task == sship_parade){
 			if(mother){
 				if(paradec == -1)
@@ -239,11 +264,22 @@ void Assault::draw(wardraw_t *wd){
 		};
 		Mat4d mat;
 
+		// testing global mesh
+/*		glColor4ub(255,0,255,255);
+		glBegin(GL_LINES);
+		for(int i = -10; i <= 10; i++){
+			glVertex3d(i / 10., -1., 0.);
+			glVertex3d(i / 10.,  1., 0.);
+			glVertex3d(-1., i / 10., 0.);
+			glVertex3d( 1., i / 10., 0.);
+		}
+		glEnd();*/
+
 		glPushMatrix();
 		transform(mat);
 		glMultMatrixd(mat);
-		if(!list){
-		glNewList(list = glGenLists(1), GL_COMPILE);
+/*		if(!list){
+		glNewList(list = glGenLists(1), GL_COMPILE);*/
 #if 1
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
@@ -251,7 +287,8 @@ void Assault::draw(wardraw_t *wd){
 			gldTranslate3dv(hitboxes[i].org);
 			rot = hitboxes[i].rot.tomat4();
 			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
+			hitbox hb(mat.vp3(hitboxes[i].org), this->rot * hitboxes[i].rot, hitboxes[i].sc);
+			hitbox_draw(this, hitboxes[i].sc, jHitBoxPlane(hb, Vec3d(0,0,0), Vec3d(0,0,1)));
 			glPopMatrix();
 		}
 #endif
@@ -265,10 +302,10 @@ void Assault::draw(wardraw_t *wd){
 /*		DecalDrawSUF(&suf_beamer, SUF_ATR, &g_gldcache, beamer_s.tex, pf->sd, &beamer_s);*/
 /*		glPopAttrib();*/
 		glPopMatrix();
-		glEndList();
+/*		glEndList();
 		}
 
-		glCallList(list);
+		glCallList(list);*/
 
 /*		for(i = 0; i < numof(pf->turrets); i++)
 			mturret_draw(&pf->turrets[i], pt, wd);*/
@@ -306,6 +343,15 @@ bool Assault::undock(Docker *d){
 }
 
 bool Assault::command(EntityCommand *com){
+	if(InterpretCommand<DeltaCommand>(com)){
+		Entity *e;
+		for(e = next; e; e = e->next) if(e->classname() == classname() && e->race == race){
+			formPrev = static_cast<Assault*>(e->toWarpable());
+			task = sship_delta;
+			break;
+		}
+		return true;
+	}
 	if(com->id() == AttackCommand::sid || com->id() == ForceAttackCommand::sid){
 		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 			turrets[i]->command(com);

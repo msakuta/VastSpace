@@ -40,5 +40,7 @@ public:
 };
 
 DERIVE_COMMAND(ParadeCommand, EntityCommand);
+DERIVE_COMMAND(DeltaCommand, EntityCommand);
+DERIVE_COMMAND(DockCommand, EntityCommand);
 
 #endif

@@ -11,6 +11,7 @@
 #include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
+#include <clib/timemeas.h>
 }
 #include <gl/glext.h>
 
@@ -304,6 +305,7 @@ void WarSpace::draw(wardraw_t *wd){
 		}
 	}
 
+
 #if 0
 	glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
 	static GLuint tex = 0;
@@ -389,6 +391,62 @@ void WarSpace::drawtra(wardraw_t *wd){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
 		}
 	}
+
+	double tim = cs->findcspath("/")->toUniverse()->global_time * 20.;
+	double dt = wd->vw->dt;
+
+#if 1
+	static int passes = 0;
+	Quatd linerot = Quatd(0, 0, sin(tim), cos(tim)) * Quatd(sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
+	Vec3d lineomg(0, 0, 20.);
+//	Vec3d a(0,0,0), b(cos(tim), sin(tim), 0.), c(cos(tim * .5 + .1), sin(tim * .5 + .1), 0.);
+	Vec3d l0(0,.5,-1);
+//	Vec3d l1(.5 * cos(tim * .3), .5 * sin(tim * .3),-1);
+	Vec3d l1(0,.5,1);
+	int subdivide = (int)lineomg.len() * dt / .1 + 1;
+	bool hitflag;
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+	double calctime;
+/*	for(volatile int it = 0; it < 10000; it++)
+		hitflag = jHitTriangle(b, c, l0, l1) != 0.;*/
+	Quatd trot = linerot;
+	Vec3d tomg = lineomg * dt / subdivide;
+	for(int i = 0; i < subdivide; i++){
+		Vec3d a(0,0,0);
+		Vec3d b = trot.trans(vec3_001);
+		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
+		hitflag = jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1.);
+	//	hitflag = jHitTriangle(b, c, l0, l1);
+		if(hitflag)
+			passes++;
+		calctime = TimeMeasLap(&tm);
+		glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
+		
+		glBegin(GL_LINE_LOOP);
+		glVertex3dv(a);
+		glVertex3dv(b);
+		glVertex3dv(c);
+		glEnd();
+		trot = trot.quatrotquat(tomg);
+	}
+
+	glBegin(GL_LINES);
+	glVertex3dv(l0);
+	glVertex3dv(l1);
+
+	Vec3d hit = (l0 + l1) / 2.;
+	glVertex3d(hit[0] - .1, hit[1], hit[2]);
+	glVertex3d(hit[0] + .1, hit[1], hit[2]);
+	glVertex3d(hit[0], hit[1] - .1, hit[2]);
+	glVertex3d(hit[0], hit[1] + .1, hit[2]);
+
+	for(int i = 0; i < 16; i++){
+		glVertex3d(i * .07, passes & (1 << i) ? 1. : 1.5, 0);
+		glVertex3d(i * .07, 2., 0);
+	}
+	glEnd();
+#endif
 
 #if 1
 #elif 1

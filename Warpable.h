@@ -65,7 +65,7 @@ public:
 	virtual bool isSelectable()const;
 	virtual bool command(EntityCommand *com);
 
-	void maneuver(const amat4_t mat, double dt, const struct maneuve *mn);
+	void maneuver(const Mat4d &mat, double dt, const struct maneuve *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);
 	void warp_collapse();
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale);

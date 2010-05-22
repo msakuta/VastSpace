@@ -130,7 +130,7 @@ function fact(n){
 function deltaFormation(team, rot){
 	local spacing = 0.2;
 	local cs = player.cs;
-	for(local i = 1; i < 2; i++){
+	for(local i = 1; i < 4; i++){
 		local e = cs.addent("Assault", Vec3d(
 			(i % 2 * 2 - 1) * (i / 2) * spacing, 1.,
 			(team * 2 - 1) * (i / 2 * spacing)));

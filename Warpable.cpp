@@ -427,97 +427,99 @@ void Warpable::drawtra(wardraw_t *wd){
 /* maneuvering spaceships, integrated common responses.
  assumption is that accelerations towards all directions except forward movement
  is a half the maximum accel. */
-void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
+void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
 	if(!warping){
+		Vec3d torque = vec3_000;
 		if(pt->inputs.press & PL_2){
-			VECSADD(pt->omg, &mat[0], dt * mn->angleaccel);
+			torque += mat.vec3(0) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_8){
-			VECSADD(pt->omg, &mat[0], -dt * mn->angleaccel);
+			torque += mat.vec3(0) * (-dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_4){
-			VECSADD(pt->omg, &mat[4], dt * mn->angleaccel);
+			torque += mat.vec3(1) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_6){
-			VECSADD(pt->omg, &mat[4], -dt * mn->angleaccel);
+			torque += mat.vec3(1) * (-dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_7){
-			VECSADD(pt->omg, &mat[8], dt * mn->angleaccel);
+			torque += mat.vec3(2) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_9){
-			VECSADD(pt->omg, &mat[8], -dt * mn->angleaccel);
+			torque += mat.vec3(2) * (-dt * mn->angleaccel);
 		}
+		omg += torque;
 		if(mn->maxanglespeed * mn->maxanglespeed < VECSLEN(pt->omg)){
-			VECNORMIN(pt->omg);
-			VECSCALEIN(pt->omg, mn->maxanglespeed);
+			pt->omg.normin();
+			pt->omg *= mn->maxanglespeed;
 		}
+
+		// If not rotating, break angular velocity to become stationary.
 		if(!(pt->inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
 			double f;
-			f = VECLEN(pt->omg);
+			f = pt->omg.len();
 			if(f){
-				VECSCALEIN(pt->omg, 1. / f);
-				f = MAX(0, f - dt * mn->angleaccel);
-				VECSCALEIN(pt->omg, f);
+				f = MAX(0, f - dt * mn->angleaccel) / f;
+				pt->omg *= f;
 			}
 		}
 
 		if(pt->inputs.press & PL_W){
-			VECSADD(pt->velo, &mat[8], -dt * mn->accel);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(2) * (-dt * mn->accel);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(pt->inputs.press & PL_S){
-			VECSADD(pt->velo, &mat[8], dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(2) * (dt * mn->accel * .5);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(pt->inputs.press & PL_A){
-			VECSADD(pt->velo, &mat[0], -dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(0) * (-dt * mn->accel * .5);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(pt->inputs.press & PL_D){
-			VECSADD(pt->velo, &mat[0],  dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(0) * (dt * mn->accel * .5);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(pt->inputs.press & PL_Q){
-			VECSADD(pt->velo, &mat[4],  dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(1) * (dt * mn->accel * .5);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(pt->inputs.press & PL_Z){
-			VECSADD(pt->velo, &mat[4], -dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			pt->velo += mat.vec3(1) * (-dt * mn->accel * .5);
+			if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
 		if(1){
 			double f, dropoff = !(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)) ? mn->accel : mn->accel * .2;
-			f = VECLEN(pt->velo);
+			f = pt->velo.len();
 			if(f){
-				VECSCALEIN(pt->velo, 1. / f);
-				f = MAX(0, f - dt * dropoff);
-				VECSCALEIN(pt->velo, f);
+				f = MAX(0, f - dt * dropoff) / f;
+				pt->velo *= f;
 			}
 		}
 	}
@@ -1164,8 +1166,6 @@ void Warpable::anim(double dt){
 
 		pos += velo * dt;
 		rot = rot.quatrotquat(omg * dt);
-	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
-		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}
 	st::anim(dt);
 }

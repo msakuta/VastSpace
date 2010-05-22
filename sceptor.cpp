@@ -331,7 +331,13 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	if(sr < sd)
 		return;
 
-	if(r * 2. < r2){
+	if(pt->getShape() && pt2->getShape()){
+		Vec3d retpos;
+		if(!pt->getShape()->intersects(*pt2->getShape(), *pt, *pt2, &retpos))
+			return;
+		n = dr.norm();
+	}
+	else if(r * 2. < r2){
 		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
 			return;
 	}

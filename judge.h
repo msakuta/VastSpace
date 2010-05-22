@@ -4,11 +4,12 @@
 #include "entity.h"
 #include <cpplib/quat.h>
 #include <cpplib/vec3.h>
+#include <vector>
 
 extern bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt);
 extern bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *f, Vec3d *ret);
 extern int jHitPolygon(const double vertex_buffer[][3], unsigned short vertex_indices[], int vertex_count, const double src[3], const double dir[3], double mint, double maxt, double *ret_param, double (*ret_pos)[3], double (*ret_normal)[3]);
-extern bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn);
+extern bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret = NULL, Vec3d *retp = NULL, Vec3d *retn = NULL);
 double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end);
 int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt);
 
@@ -16,7 +17,29 @@ struct hitbox{
 	Vec3d org;
 	Quatd rot;
 	Vec3d sc;
-	hitbox(Vec3d aorg, Quatd arot, Vec3d asc) : org(aorg), rot(arot), sc(asc){}
+	hitbox(Vec3d aorg = Vec3d(0,0,0), Quatd arot = Quatd(0,0,0,1), Vec3d asc = Vec3d(1,1,1)) : org(aorg), rot(arot), sc(asc){}
+};
+
+class Shape{
+public:
+	virtual const char *id()const = 0;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos = NULL)const = 0;
+};
+
+class BoxShape : public Shape{
+public:
+	static const char *sid;
+	virtual const char *id()const;
+	hitbox hb;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const;
+};
+
+class CompoundShape : public Shape{
+public:
+	static const char *sid;
+	virtual const char *id()const;
+	std::vector<Shape*> comp;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const;
 };
 
 extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);

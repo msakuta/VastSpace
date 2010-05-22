@@ -32,6 +32,7 @@ public:
 	virtual const ArmBase *armsGet(int index)const;
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
+	virtual Shape *getShape();
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
 	static const Builder::BuildStatic builds;

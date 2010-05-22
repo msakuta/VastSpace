@@ -11,6 +11,46 @@ extern "C"{
 }
 #include <stddef.h>
 
+const char *BoxShape::sid = "BoxShape";
+
+const char *BoxShape::id()const{ return sid; }
+
+bool BoxShape::intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const{
+	if(o.id() == sid){
+		const BoxShape &bo = static_cast<const BoxShape&>(o);
+		Vec3d srcpos = se.pos + se.rot.trans(hb.org);
+		Quatd srcrot = se.rot * hb.rot;
+		Vec3d dstorg = oe.pos + oe.rot.trans(bo.hb.org);
+		Quatd dstrot = oe.rot * bo.hb.rot;
+		for(int axis = 0; axis < 3; axis++) for(int j = 0; j < 2; j++) for(int k = 0; k < 2; k++){
+			Vec3d offset(bo.hb.sc);
+			offset[axis] = -bo.hb.sc[axis];
+			offset[(axis + 1) % 3] = (j * 2 - 1) * bo.hb.sc[(axis + 1) % 3];
+			offset[(axis + 2) % 3] = (k * 2 - 1) * bo.hb.sc[(axis + 2) % 3];
+			Vec3d dir = vec3_000;
+			dir[axis] = bo.hb.sc[axis] * 2;
+			if(jHitBox(srcpos, hb.sc, srcrot, dstrot.trans(offset) + dstorg, dstrot.trans(dir), 0, 1, NULL, hitpos))
+				return true;
+		}
+	}
+	return false;
+}
+
+const char *CompoundShape::sid = "CompoundShape";
+
+const char *CompoundShape::id()const{ return sid; }
+
+bool CompoundShape::intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const{
+	std::vector<Shape*>::const_iterator it = comp.begin();
+	for(; it != comp.end(); ++it){
+		if((*it)->intersects(o, se, oe, hitpos))
+			return true;
+	}
+	return false;
+}
+
+
+
 bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt){
 	return jHitSpherePos(obj, radius, src, dir, dt, NULL, NULL);
 }

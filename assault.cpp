@@ -360,6 +360,11 @@ bool Assault::command(EntityCommand *com){
 	return st::command(com);
 }
 
+Shape *Assault::getShape(){
+	static BoxShape bs;
+	bs.hb = hitboxes[0];
+	return &bs;
+}
 
 
 Entity *Assault::create(WarField *w, Builder *mother){

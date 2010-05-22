@@ -216,6 +216,8 @@ void Entity::transit_cs(CoordSys *cs){
 	w = cs->w;
 }
 
+Shape *Entity::getShape(){return NULL;}
+
 class GLWprop : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;

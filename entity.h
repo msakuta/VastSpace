@@ -14,6 +14,7 @@ class ArmBase;
 class Builder;
 class Docker;
 struct EntityCommand;
+class Shape;
 
 class Entity : public Serializable{
 public:
@@ -57,6 +58,7 @@ public:
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
+	virtual Shape *getShape();
 
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();

@@ -146,6 +146,8 @@ public:
 	double realtime;
 };
 
+class btDiscreteDynamicsWorld;
+
 class WarSpace : public WarField{
 	void init();
 public:
@@ -170,6 +172,8 @@ public:
 	double soundtime;
 	otnt *ot, *otroot;
 	int ots, oti;
+
+	btDiscreteDynamicsWorld *bdw;
 
 	static int g_otdrawflags;
 };

@@ -10,6 +10,9 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
 }
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
+#include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
 
 #define BEAMER_SCALE .0002
@@ -40,6 +43,44 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 		if(aw)
 			aw->addent(turrets[i]);
 	}
+
+	if(!aw)
+		return;
+	WarSpace *ws = *aw;
+	if(ws && ws->bdw){
+		static btCompoundShape *shape = new btCompoundShape();
+		for(int i = 0; i < nhitboxes; i++){
+			const Vec3d &sc = hitboxes[i].sc;
+			const Quatd &rot = hitboxes[i].rot;
+			const Vec3d &pos = hitboxes[i].org;
+			btBoxShape *box = new btBoxShape(btVector3(sc[0], sc[1], sc[2]));
+			btTransform trans(btQuaternion(rot[0], rot[1], rot[2], rot[3]), btVector3(pos[0], pos[1], pos[2]));
+			shape->addChildShape(trans, box);
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btVector3(pos[0],pos[1] = 1.,pos[2]));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+		rbInfo.m_linearDamping = .5;
+		rbInfo.m_angularDamping = .5;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody);
+	}
 }
 
 void Assault::init(){
@@ -47,9 +88,10 @@ void Assault::init(){
 		hardpoints = hardpoint_static::load("assault.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];
-	mass = 1e5;
+	mass = 1e3;
 	mother = NULL;
 	paradec = -1;
+
 }
 
 const char *Assault::idname()const{
@@ -82,9 +124,23 @@ const char *Assault::dispname()const{
 }
 
 void Assault::anim(double dt){
-	if(!w->operator WarSpace *()){
+	WarSpace *ws;
+	if(!(ws = *w)){
 		st::anim(dt);
 		return;
+	}
+
+	if(bbody){
+		const btTransform &tra = bbody->getCenterOfMassTransform();
+		btVector3 org = tra.getOrigin();
+		pos = Vec3f(org.operator btScalar *()).cast<double>();
+		btQuaternion bq = tra.getRotation();
+		rot[0] = bq[0];
+		rot[1] = bq[1];
+		rot[2] = bq[2];
+		rot[3] = bq[3];
+		btVector3 btvelo = bbody->getLinearVelocity();
+		velo = Vec3d(btvelo[0], btvelo[1], btvelo[2]);
 	}
 
 	if(health <= 0){
@@ -214,7 +270,6 @@ void Assault::anim(double dt){
 		}
 	}
 
-	WarSpace *ws = *w;
 	if(ws)
 		space_collide(this, ws, dt, NULL, NULL);
 
@@ -288,7 +343,7 @@ void Assault::draw(wardraw_t *wd){
 			rot = hitboxes[i].rot.tomat4();
 			glMultMatrixd(rot);
 			hitbox hb(mat.vp3(hitboxes[i].org), this->rot * hitboxes[i].rot, hitboxes[i].sc);
-			hitbox_draw(this, hitboxes[i].sc, jHitBoxPlane(hb, Vec3d(0,0,0), Vec3d(0,0,1)));
+			hitbox_draw(this, hitboxes[i].sc/*, jHitBoxPlane(hb, Vec3d(0,0,0), Vec3d(0,0,1))*/);
 			glPopMatrix();
 		}
 #endif

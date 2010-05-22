@@ -16,7 +16,7 @@ extern "C"{
 #include "Destroyer.h"
 
 
-Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0){
+Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0), bbody(NULL){
 //	The entity must be constructed before being contained by some surroundings.
 //  This generic problem is fairly difficult whether the object should be constructed before being assigned to its container.
 //  Objects like Entities in this program are always tied to a WarField and assumed valid only if containing WarField is defined.

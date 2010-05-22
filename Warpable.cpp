@@ -27,6 +27,7 @@ extern "C"{
 #include <cpplib/vec4.h>
 #include <assert.h>
 #include <string.h>
+#include <btBulletDynamicsCommon.h>
 
 
 
@@ -427,52 +428,71 @@ void Warpable::drawtra(wardraw_t *wd){
 /* maneuvering spaceships, integrated common responses.
  assumption is that accelerations towards all directions except forward movement
  is a half the maximum accel. */
-void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
+void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
 	if(!warping){
+		Vec3d torque = vec3_000;
 		if(pt->inputs.press & PL_2){
-			VECSADD(pt->omg, &mat[0], dt * mn->angleaccel);
+			torque += mat.vec3(0) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_8){
-			VECSADD(pt->omg, &mat[0], -dt * mn->angleaccel);
+			torque += mat.vec3(0) * (-dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_4){
-			VECSADD(pt->omg, &mat[4], dt * mn->angleaccel);
+			torque += mat.vec3(1) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_6){
-			VECSADD(pt->omg, &mat[4], -dt * mn->angleaccel);
+			torque += mat.vec3(1) * (-dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_7){
-			VECSADD(pt->omg, &mat[8], dt * mn->angleaccel);
+			torque += mat.vec3(1) * (dt * mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_9){
-			VECSADD(pt->omg, &mat[8], -dt * mn->angleaccel);
+			torque += mat.vec3(2) * (-dt * mn->angleaccel);
 		}
 		if(mn->maxanglespeed * mn->maxanglespeed < VECSLEN(pt->omg)){
-			VECNORMIN(pt->omg);
-			VECSCALEIN(pt->omg, mn->maxanglespeed);
+			pt->omg.normin();
+			pt->omg *= mn->maxanglespeed;
 		}
-		if(!(pt->inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
+		if((pt->inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
 			double f;
+			pt->omg += torque;
 			f = VECLEN(pt->omg);
 			if(f){
 				VECSCALEIN(pt->omg, 1. / f);
 				f = MAX(0, f - dt * mn->angleaccel);
 				VECSCALEIN(pt->omg, f);
 			}
+			if(bbody){
+				torque *= 10000.;
+				btVector3 ii = bbody->getInvInertiaDiagLocal();
+				torque[0] /= ii[0];
+				torque[1] /= ii[1];
+				torque[2] /= ii[2];
+				btVector3 bttorque = btVector3(torque[0], torque[1], torque[2]);
+				bbody->applyTorque(bttorque);
+				bbody->setAngularVelocity(btVector3(omg[0], omg[1], omg[2]));
+			}
 		}
+		if(bbody)
+			bbody->activate(true);
 
 		if(pt->inputs.press & PL_W){
-			VECSADD(pt->velo, &mat[8], -dt * mn->accel);
+			pt->velo += mat.vec3(2) * (-dt * mn->accel);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
 				VECSCALEIN(pt->velo, mn->maxspeed);
 			}
+			if(bbody){
+				Vec3d vv = mat.vec3(2) * -mn->accel * mass;
+				bbody->applyForce(btVector3(vv[0], vv[1], vv[2]), btVector3(0,0,0));
+				bbody->activate(true);
+			}
 		}
 		if(pt->inputs.press & PL_S){
-			VECSADD(pt->velo, &mat[8], dt * mn->accel * .5);
+			VECSADD(pt->velo, mat.vec3(2), dt * mn->accel * .5);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
@@ -480,7 +500,7 @@ void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
 			}
 		}
 		if(pt->inputs.press & PL_A){
-			VECSADD(pt->velo, &mat[0], -dt * mn->accel * .5);
+			VECSADD(pt->velo, mat.vec3(0), -dt * mn->accel * .5);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
@@ -488,7 +508,7 @@ void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
 			}
 		}
 		if(pt->inputs.press & PL_D){
-			VECSADD(pt->velo, &mat[0],  dt * mn->accel * .5);
+			VECSADD(pt->velo, mat.vec3(0),  dt * mn->accel * .5);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
@@ -496,7 +516,7 @@ void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
 			}
 		}
 		if(pt->inputs.press & PL_Q){
-			VECSADD(pt->velo, &mat[4],  dt * mn->accel * .5);
+			VECSADD(pt->velo, mat.vec3(1),  dt * mn->accel * .5);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
@@ -504,7 +524,7 @@ void Warpable::maneuver(const amat4_t mat, double dt, const struct maneuve *mn){
 			}
 		}
 		if(pt->inputs.press & PL_Z){
-			VECSADD(pt->velo, &mat[4], -dt * mn->accel * .5);
+			VECSADD(pt->velo, mat.vec3(1), -dt * mn->accel * .5);
 			if(VECSLEN(pt->velo) < maxspeed2);
 			else{
 				VECNORMIN(pt->velo);
@@ -1162,8 +1182,10 @@ void Warpable::anim(double dt){
 
 		maneuver(mat, dt, mn);
 
-		pos += velo * dt;
-		rot = rot.quatrotquat(omg * dt);
+		if(!bbody){
+			pos += velo * dt;
+			rot = rot.quatrotquat(omg * dt);
+		}
 	/*	VECSCALEIN(pt->omg, 1. / (dt * .4 + 1.));
 		VECSCALEIN(pt->velo, 1. / (dt * .01 + 1.));*/
 	}

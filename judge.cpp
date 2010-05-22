@@ -220,7 +220,7 @@ int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm
 }
 
 // Intersection of triangle(O,a,b) and line segment(org,end)
-double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end){
+double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end, double *bcoord, double *ccoord){
 	// Acquire the third axis (= normal of the triangle plane)
 	Vec3d bvpc = b.vp(c)/*.norm()*/;
 
@@ -246,11 +246,16 @@ double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3
 	// Find intersecting point
 	double f = -lpos[2] / (endz - lpos[2]);
 	Vec3d lhit = lpos + f * ldir;
-	return 0. < lhit[0] && 0. < lhit[1] && lhit[0] + lhit[1] < 1. ? f : 0.;
+	bool ret = 0. < lhit[0] && 0. < lhit[1] && lhit[0] + lhit[1] < 1.;
+	if(ret){
+		if(bcoord) *bcoord = lhit[0];
+		if(ccoord) *ccoord = lhit[1];
+	}
+	return ret ? f : 0.;
 }
 
 // Tests whether two moving line segments intersect. Line segment A is moving arbitrary while line segment B is fixed at origin and points z+.
-int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt){
+int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt, double *hitt){
 	/* Line segment position
 
 	              apose  apos1e
@@ -269,11 +274,42 @@ int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Ve
 	Vec3d apos1 = apos + avelo * dt;
 	Vec3d apos1e = apos1 + arot.quatrotquat(aomg * dt).trans(alen * vec3_001);
 
-	if(0 != jHitTriangle(apose - apos, apos1 - apos, Vec3d(0,0,0) - apos, Vec3d(0,0,blen) - apos))
+	double bc, cc;
+	double t = jHitTriangle(apose - apos, apos1 - apos, Vec3d(0,0,0) - apos, Vec3d(0,0,blen) - apos, &bc, &cc);
+	if(0 != t){
+		if(hitt)
+			*hitt = (1 - bc) * cc;
 		return 1;
+	}
 	
-	if(0 != jHitTriangle(apos1 - apos1e, apose - apos1e, Vec3d(0,0,0) - apos1e, Vec3d(0,0,blen) - apos1e))
+	t = jHitTriangle(apos1 - apos1e, apose - apos1e, Vec3d(0,0,0) - apos1e, Vec3d(0,0,blen) - apos1e, &bc, &cc);
+	if(0 != t){
+		if(hitt)
+			*hitt = (1 - bc) * (1. - cc);
 		return 1;
+	}
+	return 0;
+}
+
+int jHitBoxes(const hitbox &hb1, const hitbox &hb2, const Vec3d &rvelo, const Vec3d &romg, double dt, double *hitt){
+	static Vec3d lines[12][2];
+	static bool init = false;
+	if(!init){
+		int i, j, k;
+		for(i = 0; i < 3; i++) for(j = 0; j < 1; j++) for(k = 0; k < 1; k++){
+			Vec3d (&v)[2] = lines[(i * 2 + j) * 2 + k];
+			v[0][i] = j * 2 - 1;
+			v[0][(i+1)%3] = k * 2 - 1;
+			v[0][(i+2)%3] = -1.;
+			v[1][i] = j * 2 - 1;
+			v[1][(i+1)%3] = k * 2 - 1;
+			v[1][(i+2)%3] = 1.;
+		}
+	}
+	for(int i = 0; i < 12; i++) for(int j = 0; j < 12; j++){
+//		Vec3d a = hb1.org + hb1.rot.trans(lines[i]);
+//		jHitLines(a, hb1.rot, rvelo, romg, hb1.sc[i / 4] * 2., hb2.sc[j / 4] * 2., dt, hitt);
+	}
 	return 0;
 }
 

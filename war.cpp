@@ -14,6 +14,9 @@ extern "C"{
 #include <clib/timemeas.h>
 }
 #include <gl/glext.h>
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
+#include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
 int WarSpace::g_otdrawflags = 0;
 
@@ -238,6 +241,37 @@ WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0){
 	init();
 }
 
+
+static btDiscreteDynamicsWorld *bulletInit(){
+	btDiscreteDynamicsWorld *btc = NULL;
+
+	///collision configuration contains default setup for memory, collision setup
+	btDefaultCollisionConfiguration *m_collisionConfiguration = new btDefaultCollisionConfiguration();
+	//m_collisionConfiguration->setConvexConvexMultipointIterations();
+
+	///use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
+	btCollisionDispatcher *m_dispatcher = new	btCollisionDispatcher(m_collisionConfiguration);
+
+	btDbvtBroadphase *m_broadphase = new btDbvtBroadphase();
+
+	///the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+	btSequentialImpulseConstraintSolver* sol = new btSequentialImpulseConstraintSolver;
+	btSequentialImpulseConstraintSolver* m_solver = sol;
+
+	btc = new btDiscreteDynamicsWorld(m_dispatcher,m_broadphase,m_solver,m_collisionConfiguration);
+
+	btc->setGravity(btVector3(0,0,0));
+
+	///create a few basic rigid bodies
+	btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.),btScalar(50.),btScalar(50.)));
+
+	btTransform groundTransform;
+	groundTransform.setIdentity();
+	groundTransform.setOrigin(btVector3(0,-50,0));
+
+	return btc;
+}
+
 WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots(0),
 	effects(0), soundtime(0)
 {
@@ -249,10 +283,12 @@ WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots
 			break;
 		}
 	}
+	bdw = bulletInit();
 }
 
 void WarSpace::anim(double dt){
 	CoordSys *root = cs;
+
 	for(; root; root = root->parent){
 		Universe *u = root->toUniverse();
 		if(u){
@@ -262,6 +298,9 @@ void WarSpace::anim(double dt){
 	}
 	aaanim(dt, this, list[0]);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
+
+	bdw->stepSimulation(dt / 1.);
+
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, list[1]);
 	TRYBLOCK(ot_check(this, dt));
@@ -392,19 +431,20 @@ void WarSpace::drawtra(wardraw_t *wd){
 		}
 	}
 
-	double tim = cs->findcspath("/")->toUniverse()->global_time * 20.;
+	if(pl->cs == cs){
+	double tim = cs->findcspath("/")->toUniverse()->global_time * 1.;
 	double dt = wd->vw->dt;
+	static Quatd linerot(sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
 
 #if 1
 	static int passes = 0;
-	Quatd linerot = Quatd(0, 0, sin(tim), cos(tim)) * Quatd(sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
-	Vec3d lineomg(0, 0, 20.);
+	Vec3d lineomg(0, 0, 1.);
 //	Vec3d a(0,0,0), b(cos(tim), sin(tim), 0.), c(cos(tim * .5 + .1), sin(tim * .5 + .1), 0.);
-	Vec3d l0(0,.5,-1);
+	Vec3d l0(0,.9,-1);
 //	Vec3d l1(.5 * cos(tim * .3), .5 * sin(tim * .3),-1);
-	Vec3d l1(0,.5,1);
+	Vec3d l1(0,.9,1);
 	int subdivide = (int)lineomg.len() * dt / .1 + 1;
-	bool hitflag;
+	static bool hitflag = false;
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	double calctime;
@@ -412,17 +452,29 @@ void WarSpace::drawtra(wardraw_t *wd){
 		hitflag = jHitTriangle(b, c, l0, l1) != 0.;*/
 	Quatd trot = linerot;
 	Vec3d tomg = lineomg * dt / subdivide;
+	if(!hitflag) for(int i = 0; i < subdivide; i++){
+		Vec3d a(0,0,0);
+		Vec3d b = trot.trans(vec3_001);
+		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
+		double t;
+		hitflag = jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1., &t);
+	//	hitflag = jHitTriangle(b, c, l0, l1);
+		if(hitflag){
+			passes++;
+			linerot = linerot.quatrotquat(lineomg * (dt * ((double)i / subdivide + t)));
+			break;
+		}
+		calctime = TimeMeasLap(&tm);
+		glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
+		trot = trot.quatrotquat(tomg);
+	}
+
+	glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
+	trot = linerot;
 	for(int i = 0; i < subdivide; i++){
 		Vec3d a(0,0,0);
 		Vec3d b = trot.trans(vec3_001);
 		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
-		hitflag = jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1.);
-	//	hitflag = jHitTriangle(b, c, l0, l1);
-		if(hitflag)
-			passes++;
-		calctime = TimeMeasLap(&tm);
-		glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
-		
 		glBegin(GL_LINE_LOOP);
 		glVertex3dv(a);
 		glVertex3dv(b);
@@ -430,6 +482,9 @@ void WarSpace::drawtra(wardraw_t *wd){
 		glEnd();
 		trot = trot.quatrotquat(tomg);
 	}
+
+	if(!hitflag)
+		linerot = linerot.quatrotquat(lineomg * dt);
 
 	glBegin(GL_LINES);
 	glVertex3dv(l0);
@@ -447,6 +502,8 @@ void WarSpace::drawtra(wardraw_t *wd){
 	}
 	glEnd();
 #endif
+
+	}
 
 #if 1
 #elif 1

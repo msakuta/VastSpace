@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;&quot;..\..\jpeg-7&quot;;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib sqplusD.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib sqplusD.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateManifest="false"
@@ -207,7 +207,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include"
+				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
@@ -229,7 +229,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
 				GenerateDebugInformation="true"
@@ -515,6 +515,14 @@
 			<File
 				RelativePath="..\war.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\Warpable.cpp"

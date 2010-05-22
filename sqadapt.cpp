@@ -23,6 +23,10 @@ extern "C"{
 #include <clib/c.h>
 }
 
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
+#include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
+
 extern Universe universe;
 extern Player pl;
 
@@ -138,6 +142,12 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	Entity *pt = Entity::create(arg, w);
 	if(pt){
 		pt->pos = pos;
+		if(pt->bbody){
+			btTransform trans;
+			trans.setIdentity();
+			trans.setOrigin(btVector3(pos[0],pos[1] = 1.,pos[2]));
+			pt->bbody->setCenterOfMassTransform(trans);
+		}
 /*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
 	}
 	else

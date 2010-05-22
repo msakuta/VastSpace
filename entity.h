@@ -8,6 +8,8 @@
 #include <cpplib/dstring.h>
 #include <vector>
 
+class btRigidBody;
+
 class Bullet;
 class Warpable;
 class ArmBase;
@@ -90,6 +92,8 @@ public:
 
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
+
+	btRigidBody *bbody;
 
 protected:
 	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;

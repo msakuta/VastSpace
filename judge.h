@@ -9,8 +9,8 @@ extern bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const 
 extern bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *f, Vec3d *ret);
 extern int jHitPolygon(const double vertex_buffer[][3], unsigned short vertex_indices[], int vertex_count, const double src[3], const double dir[3], double mint, double maxt, double *ret_param, double (*ret_pos)[3], double (*ret_normal)[3]);
 extern bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d &src, const Vec3d &dir, double mint, double maxt, double *ret, Vec3d *retp, Vec3d *retn);
-double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end);
-int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt);
+double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end, double *bcoord = NULL, double *ccoord = NULL);
+int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt, double *hitt = NULL);
 
 struct hitbox{
 	Vec3d org;
@@ -20,6 +20,7 @@ struct hitbox{
 };
 
 extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);
+extern int jHitBoxes(const hitbox &hb1, const hitbox &hb2, const Vec3d &rvelo, const Vec3d &romg, double dt, double *hitt = NULL);
 
 /* Object tree */
 union unode;

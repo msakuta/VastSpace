@@ -84,6 +84,7 @@ public:
 	virtual Props props()const;
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
+	virtual Shape *getShape();
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;

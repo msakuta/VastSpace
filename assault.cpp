@@ -48,6 +48,7 @@ void Assault::init(){
 	}
 	turrets = new ArmBase*[nhardpoints];
 	mass = 1e5;
+	moi = 1e3;
 	mother = NULL;
 	paradec = -1;
 }
@@ -361,9 +362,16 @@ bool Assault::command(EntityCommand *com){
 }
 
 Shape *Assault::getShape(){
-	static BoxShape bs;
-	bs.hb = hitboxes[0];
-	return &bs;
+	static BoxShape *bs = NULL;
+	static CompoundShape cs;
+	if(!bs){
+		bs = new BoxShape[nhitboxes];
+		for(int i = 0; i < nhitboxes; i++){
+			bs[i].hb = hitboxes[i];
+			cs.comp.push_back(&bs[i]);
+		}
+	}
+	return &cs;
 }
 
 

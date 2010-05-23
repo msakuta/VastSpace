@@ -496,3 +496,385 @@ void WarSpace::drawtra(wardraw_t *wd){
 struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}
 struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void RigidAddMomentum(Entity &pt, const Vec3d &dr, const Vec3d &momentum){
+	Vec3d amomentum;
+	pt.velo += momentum / pt.mass;
+
+	/* vector product of dr and momentum becomes angular momentum */
+	amomentum = dr.vp(momentum);
+	pt.omg += amomentum / pt.moi;
+}
+
+
+/* rigid body dynamics animation */
+Quatd rbd_anim(Entity *pt, double dt, Mat4d *nmat){
+	const Vec3d &omg = pt->omg;
+
+	Quatd ret = pt->rot.quatrotquat(omg).normin();
+	if(nmat){
+		Quatd qbackup = pt->rot;
+		pt->rot = ret;
+		pt->transform(*nmat);
+		nmat->vec3(3) += pt->velo * dt;
+		pt->rot = qbackup;
+	}
+	return ret;
+}
+
+/* 
+void RigidMotion(entity_t *pt, double dt, aquat_t *pq, avec3_t *pv, amat4_t *nmat){
+	amat4_t mat;
+	amat3_t omgt, nmat3;
+	avec3_t oldcog, newcog;
+	aquat_t qomg = {0}, q, qbackup;
+	const double *omg = pt->omg;
+
+	quatrot(oldcog, pt->rot, pt->vft->cog);
+	VECSCALE(qomg, omg, dt / 2.);
+	QUATMUL(q, qomg, pt->rot);
+	VEC4ADD(*pq, pt->rot, q);
+	QUATNORMIN(*pq);
+	if(nmat){
+		QUATCPY(qbackup, pt->rot);
+		QUATCPY(pt->rot, *pq);
+		tankrot(*nmat, pt);
+		VECSADD(&(*nmat)[12], pt->velo, dt);
+		QUATCPY(pt->rot, qbackup);
+	}
+}
+*/
+
+void CollisionResponse(Entity &pt, struct contact_info &ci, const Vec3d &v, double dt, double friction){
+	Mat4d mat, nmat;
+	pt.transform(mat);
+	rbd_anim(&pt, dt, &nmat);
+	Vec3d relvelo = pt.velo - ci.velo;
+
+	if(.001 < ci.depth){
+#if 1
+		pt.pos += ci.normal * ci.depth;
+		mat.vec3(3) = pt.pos;
+		nmat.vec3(3) = pt.pos;
+		nmat.vec3(3) += relvelo * dt;
+		double sp = -ci.normal.sp(relvelo);
+		if(0. < sp){
+			pt.velo += ci.normal * sp;
+		}
+#else
+				pt->pos[1] += h - v[1] + .0;/* - pt->velo[1] * dt;*/
+				mat[13] = pt->pos[1];
+				nmat[13] = pt->pos[1] + pt->velo[1] * dt;
+/*				VECNULL(pt->velo);*/
+				VECSADD(pt->velo, n0, -VECSP(pt->velo, n0));
+#endif
+	}
+	else{
+#if 0 /* resolve penetration */
+			if(0 < ci.depth/*v[1] < h*/){
+				avec3_t relativeContactPosition, torquePerUnitImpulse, angularInertiaV;
+				avec3_t rotationPerUnitImpulse;
+				avec3_t planePoint, who;
+				avec3_t impulsiveTorque, impulsePerMove;
+				avec3_t rotationPerMove;
+				aquat_t rotation, qr;
+				double angularInertia;
+				double totalInertia;
+				double penetration;
+
+				VECNORMIN(n);
+				VECSUB(relativeContactPosition, v, pt->pos);
+				VECSUBIN(relativeContactPosition, ((struct entity_private_static*)pt->vft)->cog);
+				VECVP(torquePerUnitImpulse, relativeContactPosition, n);
+				VECSCALE(rotationPerUnitImpulse, torquePerUnitImpulse, 1. / pt->moi);
+				VECVP(angularInertiaV, rotationPerUnitImpulse, relativeContactPosition);
+				angularInertia = VECSP(angularInertiaV, n);
+				totalInertia = 1. / pt->mass + angularInertia;
+				planePoint[0] = v[0];
+				planePoint[1] = h;
+				planePoint[2] = v[2];
+				VECSUB(who, v, planePoint);
+				penetration = -VECSP(who, n);
+				VECSADD(pt->pos, n, penetration / pt->mass / totalInertia);
+				VECVP(impulsiveTorque, relativeContactPosition, n);
+				VECSCALE(impulsePerMove, impulsiveTorque, 1. / pt->moi);
+				VECSCALE(rotationPerMove, impulsePerMove, 1. / angularInertia);
+				VECSCALE(rotation, rotationPerMove, penetration * angularInertia / totalInertia / 2.);
+				rotation[3] = 0.;
+				QUATMUL(qr, pt->rot, rotation);
+				QUATADD(pt->rot, pt->rot, qr);
+			}
+#endif
+		if(0 < ci.depth/*nv[1] < nh*/){
+			Vec3d relativeContactPosition;
+			Mat3d torquePerUnitImpulse;
+/*				avec3_t rotationPerUnitImpulse;*/
+			Mat3d velocityPerUnitImpulse, impulsePerUnitVelocity;
+			Vec3d contactVelocity;
+			Vec3d normalVelocityPerUnitImpulse;
+			Vec3d impulse;
+			Vec3d velocityAlongPlane;
+			Mat3d rotationPerUnitImpulse;
+			Vec3d desiredDeltaVelocity;
+			double ref = 1.;
+			Vec3d speedPerUnitImpulse;
+			double velocityFromAcc;
+			double frictionImpulse;
+			double len;
+			int j;
+
+			Vec3d n = ci.normal.norm();
+			relativeContactPosition = v - pt.pos - vec3_000  /*pt.cog*/;
+			for(j = 0; j < 3; j++)
+				torquePerUnitImpulse.vec3(j) = relativeContactPosition.vp(mat3d_u().vec3(j));
+			rotationPerUnitImpulse = torquePerUnitImpulse;
+			rotationPerUnitImpulse.scalein(1. / pt.moi, 1. / pt.moi, 1. / pt.moi);
+/*				VECVP(velocityPerUnitImpulse, rotationPerUnitImpulse, relativeContactPosition);*/
+			for(j = 0; j < 3; j++)
+				velocityPerUnitImpulse.vec3(j) = rotationPerUnitImpulse.vec3(j).vp(relativeContactPosition);
+			contactVelocity = pt.omg.vp(relativeContactPosition) + relvelo;
+/*				velocityFromAcc = VECSP(w->gravity, n) * dt;*/
+
+			frictionImpulse = friction * -contactVelocity.sp(n);
+			contactVelocity += pt.w->accel(v, ci.velo) * -dt;
+
+/*				speedPerUnitImpulse = VECSP(velocityPerUnitImpulse, n);*/
+			for(j = 0; j < 9; j += 4)
+				velocityPerUnitImpulse[j] += 1. / pt.mass;
+			impulsePerUnitVelocity = velocityPerUnitImpulse.inverse();
+
+/*			if(1 && thrust && thrust[i]){
+				avec3_t thrustAlongPlane;
+				MAT4DVP3(thrustAlongPlane, mat, *(thrust[i]));
+				len = -VECSP(thrustAlongPlane, n);
+				VECSADD(thrustAlongPlane, n, len);
+				VECSADD(contactVelocity, thrustAlongPlane, 1.);
+			}*/
+
+			velocityAlongPlane = contactVelocity;
+			len = -contactVelocity.sp(n);
+			velocityAlongPlane += n * len;
+/*				frictionImpulse = (frictions ? frictions[i] : .5) * len;*/
+			len *= ref;
+			desiredDeltaVelocity = n * len;
+
+			/* zero division occurs when velocityAlongPlane is zero. */
+			if(velocityAlongPlane.slen() == 0.);
+			else if(velocityAlongPlane.slen() < frictionImpulse * frictionImpulse){
+				desiredDeltaVelocity -= velocityAlongPlane;
+			}
+			else{
+				len = velocityAlongPlane.len();
+				len = (frictionImpulse) / len;
+				desiredDeltaVelocity += velocityAlongPlane * -len;
+			}
+
+/*				VECSADD(desiredDeltaVelocity, w->gravity, -dt);*/
+			{
+				Vec3d accel = pt.w->accel(pt.pos, pt.velo);
+				desiredDeltaVelocity += accel * -dt;
+			}
+
+			impulse = impulsePerUnitVelocity.vp3(desiredDeltaVelocity);
+/*				for(i = 0; i < 3; i++)
+				speedPerUnitImpulse[i] = VECSP(&velocityPerUnitImpulse[i*3], n) + 1. / pt->mass;*/
+/*				speedPerUnitImpulse += 1. / pt->mass;*/
+/*				speedPerUnitImpulse /= -velocityFromAcc - (VECSP(contactVelocity, n) - velocityFromAcc) * 1.;*/
+/*				VECSCALE(impulse, n, 1. / speedPerUnitImpulse);*/
+/*				VECSCALE(impulse, n, 1. / VECSP(n, speedPerUnitImpulse));*/
+
+/*			if(retforces){
+				VECSADD(retforces[i], impulse, 1. / dt);
+			}*/
+
+			RigidAddMomentum(pt, relativeContactPosition, impulse);
+
+			/* resolving penetration */
+			{
+				Vec3d rotationPerUnitImpulseAtPosition, velocityPerUnitImpulseAtPosition;
+				double angularInertia;
+				double inverseInertia;
+				double linearMove;
+				double angularMove;
+				Vec3d rotationPerMove;
+				Vec3d rotation;
+				rotationPerUnitImpulseAtPosition = relativeContactPosition.vp(n) / pt.moi;
+				velocityPerUnitImpulseAtPosition = rotationPerUnitImpulseAtPosition.vp(relativeContactPosition);
+				angularInertia = velocityPerUnitImpulseAtPosition.sp(n);
+				inverseInertia = 1. / (1. / pt.mass + angularInertia);
+/*				if(wheel)
+					ci.depth = MAX(0., ci.depth - .0005);*/
+				linearMove = ci.depth / pt.mass * inverseInertia;
+				angularMove = ci.depth * angularInertia * inverseInertia;
+				pt.pos += n * linearMove;
+				rotationPerMove = rotationPerUnitImpulseAtPosition / angularInertia;
+				rotation = rotationPerMove * angularMove;
+				pt.rot = pt.rot.quatrotquat(rotation);
+			}
+		}
+	}
+}
+
+
+#if 1
+static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+	Entity *pt2 = (Entity*)param->hint;
+	if(pt == pt2)
+		return 0;
+	const double &dt = param->dt;
+	Vec3d dr = pt->pos - pt2->pos;
+	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double sr = (r + r2) * (r + r2);
+	if(r * 2. < r2){
+		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
+			return 0;
+	}
+	else if(r2 * 2. < r){
+		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, NULL))
+			return 0;
+	}
+
+	return 1;
+}
+
+static void space_collide_reflect(Entity &pt, const Vec3d &netvelo, const Vec3d &n, double f, const Vec3d &relpos){
+	Vec3d dv = pt.velo - netvelo;
+	Vec3d impulse;
+	if(dv.sp(n) < 0){
+		Vec3d desiredVelo = -n * dv.sp(n) + netvelo;
+		impulse = (desiredVelo - pt.velo) * pt.mass;
+//		pt->velo = desiredVelo;
+	}
+	else{
+//		pt->velo += n * f;
+		impulse = n * f * pt.mass;
+	}
+	RigidAddMomentum(pt, relpos, impulse);
+}
+
+#define EPSILON 1e-3
+
+static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
+	const double ff = .1;
+	Vec3d dr = pt->pos - pt2->pos;
+	double sd = dr.slen();
+	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double sr = (r + r2) * (r + r2);
+	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
+
+	// If either one of concerned Entities are not solid, no hit check is needed.
+	if(!pt->solid(pt2) || !pt2->solid(pt))
+		return;
+
+	// If bounding spheres are not intersecting each other, no resolving is performed.
+	// Object tree should discard such cases, but that must be ensured here when the tree
+	// is yet to be built.
+	if(sr < sd)
+		return;
+
+	Vec3d n;
+	Vec3d pos(0,0,0);
+
+	if(pt->getShape() && pt2->getShape()){
+		contact_info ci;
+		if(!pt->getShape()->intersects(*pt2->getShape(), *pt, *pt2, &ci))
+			return;
+		n = ci.normal;
+		pos = ci.pos;
+	}
+	else if(r * 2. < r2){
+		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
+			return;
+	}
+	else if(r2 * 2. < r){
+		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
+			return;
+		n *= -1;
+	}
+	else{
+		n = dr.norm();
+	}
+	if(1. < f) /* prevent oscillation */
+		f = 1.;
+
+	// Aquire momentum of center of mass
+	Vec3d netmomentum = pt->velo * pt->mass + pt2->velo * pt2->mass;
+
+	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
+	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
+
+	// terminate closing velocity component
+	space_collide_reflect(*pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass), pos - pt->pos);
+	space_collide_reflect(*pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass), pos - pt2->pos);
+
+	// If the objects stack each other, separate them
+	if(netvelo.slen() < EPSILON){
+		RigidAddMomentum(*pt, pos - pt->pos, n * f * (pt->mass + pt2->mass) * .1);
+		RigidAddMomentum(*pt2, pos - pt2->pos, -n * f * (pt->mass + pt2->mass) * .1);
+	}
+}
+
+void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
+	Entity *pt2;
+	if(1 && w->otroot){
+		Entity *iglist[3] = {pt, collideignore, collideignore2};
+//		struct entity_static *igvft[1] = {&rstation_s};
+		struct otjEnumHitSphereParam param;
+		param.root = w->otroot;
+		param.src = &pt->pos;
+		param.dir = &pt->velo;
+		param.dt = dt;
+		param.rad = pt->hitradius();
+		param.pos = NULL;
+		param.norm = NULL;
+		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
+		param.callback = space_collide_callback;
+/*		param.hint = iglist;*/
+		param.hint = pt;
+		param.iglist = iglist;
+		param.niglist = 3;
+//		param.igvft = igvft;
+//		param.nigvft = 1;
+		if(pt2 = otjEnumPointHitSphere(&param)){
+			space_collide_resolve(pt, pt2, dt);
+		}
+	}
+	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
+		space_collide_resolve(pt, pt2, dt);
+	}
+}
+#endif

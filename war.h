@@ -78,11 +78,6 @@ typedef struct war_race{
 	struct tank *homebase;
 } race_t;
 
-struct contact_info{
-	Vec3d normal;
-	Vec3d velo; /* base velocity of colliding object */
-	double depth; /* penetration depth */
-};
 struct otnt;
 
 struct war_draw_data;

@@ -133,6 +133,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 4e3;
+	moi = 100.;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -283,116 +284,6 @@ bool Sceptor::findEnemy(){
 	return !!closest;
 }
 
-#if 1
-static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
-	Entity *pt2 = (Entity*)param->hint;
-	if(pt == pt2)
-		return 0;
-	const double &dt = param->dt;
-	Vec3d dr = pt->pos - pt2->pos;
-	double r = pt->hitradius(), r2 = pt2->hitradius();
-	double sr = (r + r2) * (r + r2);
-	if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
-			return 0;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, NULL))
-			return 0;
-	}
-
-	return 1;
-}
-
-static void space_collide_reflect(Entity *pt, const Vec3d &netvelo, const Vec3d &n, double f){
-	Vec3d dv = pt->velo - netvelo;
-	if(dv.sp(n) < 0)
-		pt->velo = -n * dv.sp(n) + netvelo;
-	else
-		pt->velo += n * f;
-}
-
-static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
-	const double ff = .2;
-	Vec3d dr = pt->pos - pt2->pos;
-	double sd = dr.slen();
-	double r = pt->hitradius(), r2 = pt2->hitradius();
-	double sr = (r + r2) * (r + r2);
-	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-	Vec3d n;
-
-	// If either one of concerned Entities are not solid, no hit check is needed.
-	if(!pt->solid(pt2) || !pt2->solid(pt))
-		return;
-
-	// If bounding spheres are not intersecting each other, no resolving is performed.
-	// Object tree should discard such cases, but that must be ensured here when the tree
-	// is yet to be built.
-	if(sr < sd)
-		return;
-
-	if(pt->getShape() && pt2->getShape()){
-		Vec3d retpos;
-		if(!pt->getShape()->intersects(*pt2->getShape(), *pt, *pt2, &retpos))
-			return;
-		n = dr.norm();
-	}
-	else if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
-			return;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
-			return;
-		n *= -1;
-	}
-	else{
-		n = dr.norm();
-	}
-	if(1. < f) /* prevent oscillation */
-		f = 1.;
-
-	// Aquire momentum of center of mass
-	Vec3d netmomentum = pt->velo * pt->mass + pt2->velo * pt2->mass;
-
-	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
-	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
-
-	// terminate closing velocity component
-	space_collide_reflect(pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass));
-	space_collide_reflect(pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass));
-}
-
-void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
-	Entity *pt2;
-	if(1 && w->otroot){
-		Entity *iglist[3] = {pt, collideignore, collideignore2};
-//		struct entity_static *igvft[1] = {&rstation_s};
-		struct otjEnumHitSphereParam param;
-		param.root = w->otroot;
-		param.src = &pt->pos;
-		param.dir = &pt->velo;
-		param.dt = dt;
-		param.rad = pt->hitradius();
-		param.pos = NULL;
-		param.norm = NULL;
-		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
-		param.callback = space_collide_callback;
-/*		param.hint = iglist;*/
-		param.hint = pt;
-		param.iglist = iglist;
-		param.niglist = 3;
-//		param.igvft = igvft;
-//		param.nigvft = 1;
-		if(pt2 = otjEnumPointHitSphere(&param)){
-			space_collide_resolve(pt, pt2, dt);
-		}
-	}
-	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
-		space_collide_resolve(pt, pt2, dt);
-	}
-}
-#endif
 
 
 
@@ -1012,7 +903,13 @@ void Sceptor::anim(double dt){
 			if(ws)
 				space_collide(pt, ws, dt, collideignore, NULL);
 		}
+
+		// Position and orientation update
 		pt->pos += pt->velo * dt;
+		rot = rot.quatrotquat(omg);
+
+		// Angular velocity damping
+		omg *= exp(-dt);
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
 	}
@@ -1201,6 +1098,17 @@ int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	return reti;
 }
 
+Shape *Sceptor::getShape(){
+	static BoxShape bs;
+	static bool init = false;
+	if(!init){
+		init = true;
+		bs.hb = hitboxes[0];
+	}
+	return &bs;
+}
+
+
 #if 0
 static int SCEPTOR_visibleFrom(const entity_t *viewee, const entity_t *viewer){
 	SCEPTOR_t *p = (SCEPTOR_t*)viewee;
@@ -1294,6 +1202,7 @@ bool Sceptor::command(EntityCommand *com){
 	}
 	return st::command(com);
 }
+
 
 
 Entity *Sceptor::create(WarField *w, Builder *mother){

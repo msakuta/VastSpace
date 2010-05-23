@@ -20,10 +20,17 @@ struct hitbox{
 	hitbox(Vec3d aorg = Vec3d(0,0,0), Quatd arot = Quatd(0,0,0,1), Vec3d asc = Vec3d(1,1,1)) : org(aorg), rot(arot), sc(asc){}
 };
 
+struct contact_info{
+	Vec3d pos; // Position
+	Vec3d normal; // Normal
+	Vec3d velo; /* base velocity of colliding object */
+	double depth; /* penetration depth */
+};
+
 class Shape{
 public:
 	virtual const char *id()const = 0;
-	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos = NULL)const = 0;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci = NULL)const = 0;
 };
 
 class BoxShape : public Shape{
@@ -31,7 +38,7 @@ public:
 	static const char *sid;
 	virtual const char *id()const;
 	hitbox hb;
-	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci = NULL)const;
 };
 
 class CompoundShape : public Shape{
@@ -39,7 +46,7 @@ public:
 	static const char *sid;
 	virtual const char *id()const;
 	std::vector<Shape*> comp;
-	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, Vec3d *hitpos)const;
+	virtual bool intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci = NULL)const;
 };
 
 extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);

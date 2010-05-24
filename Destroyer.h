@@ -30,6 +30,7 @@ public:
 	virtual int armsCount()const;
 	virtual const ArmBase *armsGet(int index)const;
 	virtual bool command(EntityCommand *com);
+	virtual Shape *getShape();
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;
 protected:

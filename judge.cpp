@@ -29,12 +29,18 @@ bool BoxShape::intersects(const Shape &o, const Entity &se, const Entity &oe, co
 			offset[(axis + 2) % 3] = (k * 2 - 1) * bo.hb.sc[(axis + 2) % 3];
 			Vec3d dir = vec3_000;
 			dir[axis] = bo.hb.sc[axis] * 2;
-			if(jHitBox(srcpos, hb.sc, srcrot, dstrot.trans(offset) + dstorg, dstrot.trans(dir), 0, 1, NULL, ci ? &ci->pos : NULL, ci ? &ci->normal : NULL))
+			if(jHitBox(srcpos, hb.sc, srcrot, dstrot.trans(offset) + dstorg, dstrot.trans(dir), 0, 1, NULL, ci ? &ci->pos : NULL, ci ? &ci->normal : NULL)){
+				if(ci) ci->normal *= -1; // Return normal of this object, not the others.
 				return true;
+			}
 		}
 	}
-	else if(o.id() == CompoundShape::sid)
-		return o.intersects(*this, oe, se, ci);
+	else if(o.id() == CompoundShape::sid){
+		if(o.intersects(*this, oe, se, ci)){
+			if(ci) ci->normal *= -1; // Invert relativity
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -45,8 +51,10 @@ const char *CompoundShape::id()const{ return sid; }
 bool CompoundShape::intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci)const{
 	std::vector<Shape*>::const_iterator it = comp.begin();
 	for(; it != comp.end(); ++it){
-		if((*it)->intersects(o, se, oe, ci))
+		if((*it)->intersects(o, se, oe, ci)){
+//			if(ci) ci->normal *= -1; // Invert relativity
 			return true;
+		}
 	}
 	return false;
 }

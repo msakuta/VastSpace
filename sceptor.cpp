@@ -133,7 +133,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 4e3;
-	moi = 100.;
+	moi = 100. * mass * 4. / 18. * (hitboxes[0].sc[0] * hitboxes[0].sc[0] + hitboxes[0].sc[1] * hitboxes[0].sc[1] + hitboxes[0].sc[2] * hitboxes[0].sc[2]);
+	task = Idle;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -906,7 +907,7 @@ void Sceptor::anim(double dt){
 
 		// Position and orientation update
 		pt->pos += pt->velo * dt;
-		rot = rot.quatrotquat(omg);
+		rot = rot.quatrotquat(omg * dt);
 
 		// Angular velocity damping
 		omg *= exp(-dt);

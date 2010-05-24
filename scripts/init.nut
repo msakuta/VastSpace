@@ -127,13 +127,12 @@ function fact(n){
 		return 1;
 }
 
-function deltaFormation(classname, team, rot){
-	local spacing = 0.2;
+function deltaFormation(classname, team, rot, offset, spacing){
 	local cs = player.cs;
 	for(local i = 1; i < 4; i++){
 		local e = cs.addent(classname, Vec3d(
-			(i % 2 * 2 - 1) * (i / 2) * spacing, 1.,
-			(team * 2 - 1) * (i / 2 * spacing)));
+			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
+			(team * 2 - 1) * (i / 2 * spacing)) + offset);
 		e.race = team;
 		e.setrot(rot);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
@@ -142,10 +141,10 @@ function deltaFormation(classname, team, rot){
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));
-	deltaFormation("Assault", 1, Quatd(0,0,0,1));
+	deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 0.9, 0), 0.2);
 //	player.cs.addent("Assault", Vec3d(-1, 0,0));
-	local e = player.cs.addent("Sceptor", Vec3d(0, 1.1, -0.2));
-	e.race = 1;
+	deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 1.1, -0.2), 0.1);
+	deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 0.1, -0.2), 0.3);
 }
 
 ae();

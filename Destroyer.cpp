@@ -43,7 +43,8 @@ void Destroyer::init(){
 	static_init();
 	st::init();
 	turrets = new ArmBase*[nhardpoints];
-	mass = 1e6;
+	mass = 1e7;
+	moi = 5e5;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
@@ -100,6 +101,19 @@ int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double d
 		}
 	}
 	return reti;
+}
+
+Shape *Destroyer::getShape(){
+	static BoxShape *bs = NULL;
+	static CompoundShape cs;
+	if(!bs){
+		bs = new BoxShape[nhitboxes];
+		for(int i = 0; i < nhitboxes; i++){
+			bs[i].hb = hitboxes[i];
+			cs.comp.push_back(&bs[i]);
+		}
+	}
+	return &cs;
 }
 
 void Destroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

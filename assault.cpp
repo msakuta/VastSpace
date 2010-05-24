@@ -215,9 +215,9 @@ void Assault::anim(double dt){
 		}
 	}
 
-	WarSpace *ws = *w;
+/*	WarSpace *ws = *w;
 	if(ws)
-		space_collide(this, ws, dt, NULL, NULL);
+		space_collide(this, ws, dt, NULL, NULL);*/
 
 	st::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])

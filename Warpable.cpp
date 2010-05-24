@@ -1164,6 +1164,8 @@ void Warpable::anim(double dt){
 
 		maneuver(mat, dt, mn);
 
+		space_collide(this, ws, dt, NULL, NULL);
+
 		pos += velo * dt;
 		rot = rot.quatrotquat(omg * dt);
 	}

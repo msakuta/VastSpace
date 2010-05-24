@@ -354,11 +354,11 @@ void Beamer::anim(double dt){
 		cooldown -= dt;
 
 	WarSpace *ws = *w;
-	if(ws){
+/*	if(ws){
 		space_collide(this, ws, dt, NULL, NULL);
-	}
+	}*/
 
-	if(0. < charge && charge < 4.){
+	if(ws && 0. < charge && charge < 4.){
 		Entity *pt2, *hit = NULL;
 		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);
 		double best = 10., sdist;

@@ -532,11 +532,10 @@ WarSpace::operator WarSpace *(){return this;}
 
 
 void RigidAddMomentum(Entity &pt, const Vec3d &dr, const Vec3d &momentum){
-	Vec3d amomentum;
 	pt.velo += momentum / pt.mass;
 
 	/* vector product of dr and momentum becomes angular momentum */
-	amomentum = dr.vp(momentum);
+	Vec3d amomentum = dr.vp(momentum);
 	pt.omg += amomentum / pt.moi;
 }
 
@@ -771,11 +770,11 @@ static int space_collide_callback(const struct otjEnumHitSphereParam *param, Ent
 	return 1;
 }
 
-static void space_collide_reflect(Entity &pt, const Vec3d &netvelo, const Vec3d &n, double f, const Vec3d &relpos){
+static Vec3d space_collide_reflect(Entity &pt, const Vec3d &netvelo, const Vec3d &n, double f, const Vec3d &relpos){
 	Vec3d dv = pt.velo - netvelo;
 	Vec3d impulse;
 	if(dv.sp(n) < 0){
-		Vec3d desiredVelo = -n * dv.sp(n) + netvelo;
+		Vec3d desiredVelo = /*-n * dv.sp(n) +*/ netvelo;
 		impulse = (desiredVelo - pt.velo) * pt.mass;
 //		pt->velo = desiredVelo;
 	}
@@ -783,10 +782,10 @@ static void space_collide_reflect(Entity &pt, const Vec3d &netvelo, const Vec3d 
 //		pt->velo += n * f;
 		impulse = n * f * pt.mass;
 	}
-	RigidAddMomentum(pt, relpos, impulse);
+	return impulse;
 }
 
-#define EPSILON 1e-3
+#define EPSILON 1e-8
 
 static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	const double ff = .1;
@@ -809,9 +808,10 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	Vec3d n;
 	Vec3d pos(0,0,0);
 
-	if(pt->getShape() && pt2->getShape()){
-		contact_info ci;
-		if(!pt->getShape()->intersects(*pt2->getShape(), *pt, *pt2, &ci))
+	contact_info ci;
+	Shape *ps1 = pt->getShape(), *ps2;
+	if(ps1 && (ps2 = pt2->getShape())){
+		if(!ps1->intersects(*ps2, *pt, *pt2, &ci))
 			return;
 		n = ci.normal;
 		pos = ci.pos;
@@ -838,8 +838,20 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
 
 	// terminate closing velocity component
-	space_collide_reflect(*pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass), pos - pt->pos);
-	space_collide_reflect(*pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass), pos - pt2->pos);
+	Vec3d relvelo = pt->velo/* + pt2->omg.vp(pos - pt2->pos)*/ - (pt2->velo/* + pt->omg.vp(pos - pt->pos)*/);
+	Vec3d impulse;
+	if(relvelo.sp(n) < 0.){
+		double velocityPerUnitImpulse = 1. / pt->mass + 1. / pt2->mass;
+		double impulsePerUnitVelocity = 1. / velocityPerUnitImpulse;
+		Vec3d desiredVelo = netvelo;
+		impulse = (desiredVelo - relvelo) * impulsePerUnitVelocity;
+	}
+	else
+		impulse = -n * f / (1. / pt->mass + 1. / pt2->mass);
+//	Vec3d impulse = space_collide_reflect(*pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass), pos - pt->pos);
+//	space_collide_reflect(*pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass), pos - pt2->pos);
+	RigidAddMomentum(*pt, pos - pt->pos, impulse);
+	RigidAddMomentum(*pt2, pos - pt2->pos, -impulse);
 
 	// If the objects stack each other, separate them
 	if(netvelo.slen() < EPSILON){

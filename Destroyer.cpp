@@ -112,6 +112,7 @@ Shape *Destroyer::getShape(){
 			bs[i].hb = hitboxes[i];
 			cs.comp.push_back(&bs[i]);
 		}
+		cs.recalcBB();
 	}
 	return &cs;
 }

@@ -11,9 +11,20 @@ extern "C"{
 }
 #include <stddef.h>
 
+
+hitbox::operator const AABB()const{
+	AABB ret;
+	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++)
+		ret.unite(rot.trans(Vec3d((ix * 2 - 1) * sc[0], (iy * 2 - 1) * sc[1], (iz * 2 - 1) * sc[2])) + org);
+	return ret;
+}
+
+bool Shape::derived(const char *classid)const{ return false; }
+
 const char *BoxShape::sid = "BoxShape";
 
 const char *BoxShape::id()const{ return sid; }
+bool BoxShape::derived(const char *classid)const{ if(classid == sid) return true; else return Shape::derived(classid); }
 
 bool BoxShape::intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci)const{
 	if(o.id() == sid){
@@ -22,18 +33,28 @@ bool BoxShape::intersects(const Shape &o, const Entity &se, const Entity &oe, co
 		Quatd srcrot = se.rot * hb.rot;
 		Vec3d dstorg = oe.pos + oe.rot.trans(bo.hb.org);
 		Quatd dstrot = oe.rot * bo.hb.rot;
+		contact_info bestci, lci;
+		int hits = 0;
+		Vec3d lpos = dstrot.cnj().trans(srcpos - dstorg);
 		for(int axis = 0; axis < 3; axis++) for(int j = 0; j < 2; j++) for(int k = 0; k < 2; k++){
 			Vec3d offset(bo.hb.sc);
 			offset[axis] = -bo.hb.sc[axis];
-			offset[(axis + 1) % 3] = (j * 2 - 1) * bo.hb.sc[(axis + 1) % 3];
-			offset[(axis + 2) % 3] = (k * 2 - 1) * bo.hb.sc[(axis + 2) % 3];
+			offset[(axis + 1) % 3] = /*(lpos[(axis + 1) % 3] < 0. ? -1 : 1.)*/(j * 2 - 1) * bo.hb.sc[(axis + 1) % 3];
+			offset[(axis + 2) % 3] = /*(lpos[(axis + 2) % 3] < 0. ? -1 : 1.)*/(k * 2 - 1) * bo.hb.sc[(axis + 2) % 3];
 			Vec3d dir = vec3_000;
 			dir[axis] = bo.hb.sc[axis] * 2;
-			if(jHitBox(srcpos, hb.sc, srcrot, dstrot.trans(offset) + dstorg, dstrot.trans(dir), 0, 1, NULL, ci ? &ci->pos : NULL, ci ? &ci->normal : NULL)){
-				if(ci) ci->normal *= -1; // Return normal of this object, not the others.
-				return true;
+			if(jHitBox(srcpos, hb.sc, srcrot, dstrot.trans(offset) + dstorg, dstrot.trans(dir), 0, 1, &lci.depth, &lci.pos, &lci.normal)){
+				hits++;
+				if(bestci.depth < lci.depth)
+					bestci = lci;
 			}
 		}
+		if(hits){
+			bestci.normal *= -1;
+			if(ci) *ci = bestci;
+			return true;
+		}
+		return false;
 	}
 	else if(o.id() == CompoundShape::sid){
 		if(o.intersects(*this, oe, se, ci)){
@@ -44,9 +65,15 @@ bool BoxShape::intersects(const Shape &o, const Entity &se, const Entity &oe, co
 	return false;
 }
 
+bool BoxShape::boundingBox(AABB &ret)const{
+	ret = hb;
+	return true;
+}
+
 const char *CompoundShape::sid = "CompoundShape";
 
 const char *CompoundShape::id()const{ return sid; }
+bool CompoundShape::derived(const char *classid)const{ if(classid == sid) return true; else return Shape::derived(classid); }
 
 bool CompoundShape::intersects(const Shape &o, const Entity &se, const Entity &oe, contact_info *ci)const{
 	std::vector<Shape*>::const_iterator it = comp.begin();
@@ -58,6 +85,26 @@ bool CompoundShape::intersects(const Shape &o, const Entity &se, const Entity &o
 	}
 	return false;
 }
+
+bool CompoundShape::boundingBox(AABB &ret)const{
+	ret = aabb;
+	return true;
+}
+
+void CompoundShape::recalcBB(){
+	AABB allbb;
+	std::vector<Shape*>::iterator it = comp.begin();
+	for(; it != comp.end(); ++it){
+		AABB aabb;
+		if((*it)->boundingBox(aabb)){
+			allbb.unite(aabb);
+		}
+	}
+	aabb = allbb;
+}
+
+
+
 
 
 

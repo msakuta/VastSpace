@@ -27,6 +27,7 @@
 #include "glsl.h"
 #include "sqadapt.h"
 #include "EntityCommand.h"
+#include "judge.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -713,6 +714,9 @@ void display_func(void){
 #define TRYBLOCK(a) (a);
 #endif
 		if(!universe.paused) try{
+			extern std::vector<contact_info> s_contacts;
+			s_contacts.clear();
+
 			timemeas_t tm;
 			TimeMeasStart(&tm);
 			TRYBLOCK(universe.anim(dt));

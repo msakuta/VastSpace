@@ -285,8 +285,7 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
-#ifdef NDEBUG
-#else
+#ifndef NDEBUG
 void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 	glPushMatrix();
 	glScaled(sc[0], sc[1], sc[2]);
@@ -294,7 +293,10 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_POLYGON_SMOOTH);
-	glColor4ub(255,0,0,255);
+	if(hitflags)
+		glColor4ub(COLOR32R(hitflags), COLOR32G(hitflags), COLOR32B(hitflags), COLOR32A(hitflags));
+	else
+		glColor4ub(255,0,0,255);
 	glBegin(GL_LINES);
 	{
 		int i, j, k;
@@ -308,15 +310,63 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 			glVertex3dv(v);
 		}
 	}
-	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
+/*	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
 		glColor4fv(hitflags & (1 << (ix * 4 + iy * 2 + iz)) ? Vec4<float>(1,0,0,1) : Vec4<float>(0,1,1,1));
 		glVertex3dv(vec3_000);
 		glVertex3dv(1.2 * Vec3d(ix * 2 - 1, iy * 2 - 1, iz * 2 - 1));
-	}
+	}*/
 	glEnd();
 	glPopAttrib();
 	glPopMatrix();
 }
+#endif
+
+#if 1 || defined RTTI
+void Shape_draw(const Entity &e, const Shape &shape){
+	if(shape.derived(BoxShape::sid)){
+		const BoxShape *pbs = static_cast<const BoxShape *>(&shape);
+		glPushMatrix();
+		gldTranslate3dv(pbs->hb.org);
+		gldMultQuat(pbs->hb.rot);
+		hitbox_draw(&e, pbs->hb.sc);
+		glPopMatrix();
+	}
+	else if(shape.derived(CompoundShape::sid)){
+		const CompoundShape &cs = static_cast<const CompoundShape&>(shape);
+		glPushMatrix();
+		gldTranslate3dv((cs.aabb.p1 + cs.aabb.p0) / 2.);
+		hitbox_draw(&e, (cs.aabb.p1 - cs.aabb.p0) / 2., COLOR32RGBA(255,63,0,127));
+		glPopMatrix();
+		std::vector<Shape*>::const_iterator it = cs.comp.begin();
+		for(; it != cs.comp.end(); ++it){
+			const Shape *as = *it;
+			Shape_draw(e, *as);
+		}
+	}
+}
+#elif !defined NDEBUG
+void Shape_draw(const Entity &e, const Shape &shape){
+	if(shape.id() == BoxShape::sid){
+		const BoxShape &bs = static_cast<const BoxShape&>(shape);
+		glPushMatrix();
+		gldTranslate3dv(bs.hb.org);
+		gldMultQuat(bs.hb.rot);
+		hitbox_draw(&e, bs.hb.sc);
+		glPopMatrix();
+	}
+	else if(shape.id() == CompoundShape::sid){
+		const CompoundShape &cs = static_cast<const CompoundShape&>(shape);
+		glPushMatrix();
+		gldTranslate3dv((cs.aabb.p1 + cs.aabb.p0) / 2.);
+		hitbox_draw(&e, (cs.aabb.p1 - cs.aabb.p0) / 2.);
+		std::vector<Shape*>::const_iterator it = cs.comp.begin();
+		for(; it != cs.comp.end(); ++it){
+			Shape_draw(e, **it);
+		}
+		glPopMatrix();
+	}
+}
+#else
 #endif
 
 

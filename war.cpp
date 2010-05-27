@@ -12,6 +12,7 @@
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
+#include <clib/gl/gldraw.h>
 }
 #include <gl/glext.h>
 
@@ -251,6 +252,8 @@ WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots
 	}
 }
 
+std::vector<contact_info> s_contacts;
+
 void WarSpace::anim(double dt){
 	CoordSys *root = cs;
 	for(; root; root = root->parent){
@@ -396,6 +399,33 @@ void WarSpace::drawtra(wardraw_t *wd){
 	double dt = wd->vw->dt;
 
 #if 1
+	glColor4fv(Vec4<float>(0,0,1,1));
+	for(int i = 0; i < s_contacts.size(); i++){
+		glPushMatrix();
+		gldTranslate3dv(s_contacts[i].pos);
+		gldMultQuat(Quatd::direction(s_contacts[i].normal));
+		const double (*cuts)[2] = CircleCuts(16);
+		glBegin(GL_LINE_LOOP);
+		for(int j = 0; j < 16; j++)
+			glVertex3d(.02 * cuts[j][0], .02 * cuts[j][1], 0.);
+		glEnd();
+		glBegin(GL_LINES);
+		glVertex3dv(Vec3d(-.02,0,0));
+		glVertex3dv(Vec3d(+.02,0,0));
+		glVertex3dv(Vec3d(0,-.02,0));
+		glVertex3dv(Vec3d(0,+.02,0));
+		glVertex3d(0,0,0);
+		glVertex3d(0,0,.05);
+		glVertex3d(0,.01,.04);
+		glVertex3d(0,0,.05);
+		glVertex3d(0,0,.05);
+		glVertex3d(0,-.01,.04);
+		glEnd();
+		glPopMatrix();
+	}
+#endif
+
+#if 0
 	static int passes = 0;
 	Quatd linerot = Quatd(0, 0, sin(tim), cos(tim)) * Quatd(sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
 	Vec3d lineomg(0, 0, 20.);
@@ -403,7 +433,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 	Vec3d l0(0,.5,-1);
 //	Vec3d l1(.5 * cos(tim * .3), .5 * sin(tim * .3),-1);
 	Vec3d l1(0,.5,1);
-	int subdivide = (int)lineomg.len() * dt / .1 + 1;
+	int subdivide = (int)(lineomg.len() * dt / .1) + 1;
 	bool hitflag;
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -416,7 +446,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 		Vec3d a(0,0,0);
 		Vec3d b = trot.trans(vec3_001);
 		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
-		hitflag = jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1.);
+		hitflag = !!jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1.);
 	//	hitflag = jHitTriangle(b, c, l0, l1);
 		if(hitflag)
 			passes++;
@@ -815,6 +845,7 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 			return;
 		n = ci.normal;
 		pos = ci.pos;
+		s_contacts.push_back(ci);
 	}
 	else if(r * 2. < r2){
 		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
@@ -837,12 +868,59 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
 	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
 
+//	Vec3d relvelo = pt->velo - ci.velo;
+	Vec3d relvelo = pt->velo + pt->omg.vp(pos - pt->pos) - (pt2->velo + pt2->omg.vp(pos - pt2->pos));
+
+	// Measured from center of gravity
+	Vec3d relativeContactPosition = pos - pt->pos;
+	Vec3d relpos2 = pos - pt2->pos;
+
+	// Compute the self-explanatory matrix.
+	Mat3d torquePerUnitImpulse;
+	for(int j = 0; j < 3; j++)
+		torquePerUnitImpulse.vec3(j) = relativeContactPosition.vp(mat3d_u().vec3(j)) - relpos2.vp(mat3d_u().vec3(j));
+
+	Mat3d rotationPerUnitImpulse = torquePerUnitImpulse;
+	double imoi = 1. / pt->moi + 1. / pt2->moi;
+	rotationPerUnitImpulse.scalein(imoi, imoi, imoi);
+
+	Mat3d velocityPerUnitImpulse;
+	for(int j = 0; j < 3; j++)
+		velocityPerUnitImpulse.vec3(j) = rotationPerUnitImpulse.vec3(j).vp(relativeContactPosition) - rotationPerUnitImpulse.vec3(j).vp(relpos2);
+	Vec3d contactVelocity = relvelo;
+
+	for(int j = 0; j < 9; j += 4)
+		velocityPerUnitImpulse[j] += 1. / pt->mass + 1. / pt2->mass;
+	Mat3d impulsePerUnitVelocity = velocityPerUnitImpulse.inverse();
+
+	Vec3d velocityAlongPlane = contactVelocity;
+	double len = -contactVelocity.sp(n);
+	velocityAlongPlane += n * len;
+	Vec3d desiredDeltaVelocity = n * len;
+
+	/* zero division occurs when velocityAlongPlane is zero. */
+/*	if(velocityAlongPlane.slen() == 0.);
+	else if(velocityAlongPlane.slen() < frictionImpulse * frictionImpulse){
+		desiredDeltaVelocity -= velocityAlongPlane;
+	}
+	else{
+		len = velocityAlongPlane.len();
+		len = (frictionImpulse) / len;
+		desiredDeltaVelocity += velocityAlongPlane * -len;
+	}*/
+
+/*	{
+		Vec3d accel = pt.w->accel(pt.pos, pt.velo);
+		desiredDeltaVelocity += accel * -dt;
+	}*/
+
+	Vec3d impulse = impulsePerUnitVelocity.vp3(desiredDeltaVelocity);
+
+/*
 	// terminate closing velocity component
-	Vec3d relvelo = pt->velo/* + pt2->omg.vp(pos - pt2->pos)*/ - (pt2->velo/* + pt->omg.vp(pos - pt->pos)*/);
-	Vec3d impulse;
 	if(relvelo.sp(n) < 0.){
-		double velocityPerUnitImpulse = 1. / pt->mass + 1. / pt2->mass;
-		double impulsePerUnitVelocity = 1. / velocityPerUnitImpulse;
+//		double velocityPerUnitImpulse = 1. / pt->mass + 1. / pt2->mass;
+//		double impulsePerUnitVelocity = 1. / velocityPerUnitImpulse;
 		Vec3d desiredVelo = netvelo;
 		impulse = (desiredVelo - relvelo) * impulsePerUnitVelocity;
 	}
@@ -850,6 +928,8 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 		impulse = -n * f / (1. / pt->mass + 1. / pt2->mass);
 //	Vec3d impulse = space_collide_reflect(*pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass), pos - pt->pos);
 //	space_collide_reflect(*pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass), pos - pt2->pos);
+*/
+
 	RigidAddMomentum(*pt, pos - pt->pos, impulse);
 	RigidAddMomentum(*pt2, pos - pt2->pos, -impulse);
 

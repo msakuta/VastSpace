@@ -282,7 +282,8 @@ void Assault::draw(wardraw_t *wd){
 /*		if(!list){
 		glNewList(list = glGenLists(1), GL_COMPILE);*/
 #if 1
-		for(int i = 0; i < nhitboxes; i++){
+		Shape_draw(*this, *this->getShape());
+/*		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();
 			gldTranslate3dv(hitboxes[i].org);
@@ -291,7 +292,7 @@ void Assault::draw(wardraw_t *wd){
 			hitbox hb(mat.vp3(hitboxes[i].org), this->rot * hitboxes[i].rot, hitboxes[i].sc);
 			hitbox_draw(this, hitboxes[i].sc, jHitBoxPlane(hb, Vec3d(0,0,0), Vec3d(0,0,1)));
 			glPopMatrix();
-		}
+		}*/
 #endif
 
 		glPushMatrix();
@@ -370,6 +371,7 @@ Shape *Assault::getShape(){
 			bs[i].hb = hitboxes[i];
 			cs.comp.push_back(&bs[i]);
 		}
+		cs.recalcBB();
 	}
 	return &cs;
 }

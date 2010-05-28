@@ -330,9 +330,9 @@ double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::maneuve &Destroyer::getManeuve()const{
 	static const struct Warpable::maneuve frigate_mn = {
-		.05, /* double accel; */
+		.025, /* double accel; */
 		.1, /* double maxspeed; */
-		10000 * .1, /* double angleaccel; */
+		20000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */

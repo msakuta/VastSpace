@@ -160,6 +160,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 //	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
+	virtual void endframe();
 	virtual void draw(struct war_draw_data *);
 	virtual void drawtra(struct war_draw_data *);
 	virtual struct tent3d_line_list *getTeline3d();

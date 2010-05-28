@@ -302,6 +302,12 @@ void WarSpace::anim(double dt){
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
 }
 
+void WarSpace::endframe(){
+	if(bdw) for(int i = 0; i < 2; i++) for(Entity *e = this->*list[i]; e; e = e->next) if(e->w != this && e->bbody)
+		bdw->removeRigidBody(e->bbody);
+	st::endframe();
+}
+
 static double gradius = 1.;
 
 static void init_gsc(){

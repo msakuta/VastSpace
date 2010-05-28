@@ -431,6 +431,11 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
 	if(!warping){
+		// I don't really get condition of deactivation, but it seems sure that moving objects can get deactivated,
+		// which is not appreciated in the simulation in space.
+		if(bbody && (!bbody->getLinearVelocity().isZero() || !bbody->getAngularVelocity().isZero()))
+			bbody->activate();
+
 		Vec3d torque = vec3_000;
 		if(pt->inputs.press & PL_2){
 			torque += mat.vec3(0) * (mn->angleaccel);
@@ -457,12 +462,9 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 
 		if((pt->inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
 			if(bbody){
-/*				torque *= 100.;
-				btVector3 ii = bbody->getInvInertiaDiagLocal();
-				torque[0] /= ii[0];
-				torque[1] /= ii[1];
-				torque[2] /= ii[2];*/
-				bbody->applyTorque(btvc(torque));
+				bbody->activate();
+				if(bbody->getAngularVelocity().length2() < mn->maxanglespeed * mn->maxanglespeed)
+					bbody->applyTorque(btvc(torque));
 			}
 			else{
 				double f;
@@ -486,9 +488,6 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 					bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * dt * mn->angleaccel);
 			}
 		}
-
-		if(bbody)
-			bbody->activate(true);
 
 		Vec3d forceAccum(0,0,0);
 		if(pt->inputs.press & PL_W){
@@ -517,15 +516,29 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 		}
 		if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 			if(bbody){
-				forceAccum *= 10 * dt / bbody->getInvMass();
-				bbody->applyForce(btvc(forceAccum), btVector3(0,0,0));
-				bbody->activate(true);
-				velo = btvc(bbody->getLinearVelocity());
+				if(bbody->getLinearVelocity().length2() < mn->maxspeed * mn->maxspeed){
+					forceAccum /= bbody->getInvMass();
+					bbody->activate();
+					bbody->applyCentralForce(btvc(forceAccum));
+				}
 			}
 			else if(pt->velo.slen() < maxspeed2);
 			else{
 				pt->velo.normin();
 				pt->velo *= mn->maxspeed;
+			}
+		}
+		else if(bbody){
+			btVector3 btvelo = bbody->getLinearVelocity();
+
+			// Try to stop motion if not instructed to move.
+			if(!btvelo.isZero()){
+				btVector3 impulseToStop = -btvelo / bbody->getInvMass();
+				double thrust = dt * mn->accel * .5 / bbody->getInvMass();
+				if(impulseToStop.length2() < thrust * thrust)
+					bbody->applyCentralImpulse(impulseToStop);
+				else
+					bbody->applyCentralImpulse(impulseToStop.normalize() * thrust);
 			}
 		}
 		if(!bbody){

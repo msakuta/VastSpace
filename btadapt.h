@@ -18,6 +18,7 @@ public:
 
 // Intermediate class that can convert a Quatd to btQuaternion, or vice versa.
 class btqc : public Quatd{
+public:
 	btqc(const btQuaternion &bv):Quatd(bv.x(), bv.y(), bv.z(), bv.w()){}
 	btqc(const Quatd &v):Quatd(v){}
 	operator btQuaternion()const{return btQuaternion((*this)[0], (*this)[1], (*this)[2], (*this)[3]);}

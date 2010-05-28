@@ -127,13 +127,12 @@ function fact(n){
 		return 1;
 }
 
-function deltaFormation(team, rot){
-	local spacing = 0.2;
+function deltaFormation(classname, team, rot, offset, spacing){
 	local cs = player.cs;
-	for(local i = 1; i <= 4; i++){
-		local e = cs.addent("Assault", Vec3d(
-			(i % 2 * 2 - 1) * (i / 2) * spacing, 1.,
-			(team * 2 - 1) * (i / 2 * spacing)));
+	for(local i = 1; i < 4; i++){
+		local e = cs.addent(classname, Vec3d(
+			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
+			(team * 2 - 1) * (i / 2 * spacing)) + offset);
 		e.race = team;
 		e.setrot(rot);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
@@ -141,9 +140,11 @@ function deltaFormation(team, rot){
 }
 
 function ae(){
-//	deltaFormation(0, Quatd(0,1,0,0));
-	deltaFormation(1, Quatd(0,0,0,1));
+//	deltaFormation("Assault", 0, Quatd(0,1,0,0));
+	deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 1.9, 0), 0.2);
 //	player.cs.addent("Assault", Vec3d(-1, 0,0));
+	deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 2.1, -0.2), 0.1);
+	deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 1.1, -0.2), 0.3);
 }
 
 ae();
@@ -169,7 +170,7 @@ function countents(team){
 	return a.ents;
 }
 
-player.setpos(Vec3d(0.0, 1.2, 0.5));
+player.setpos(Vec3d(0.0, 2.2, 0.5));
 
 showdt <- false;
 framecount <- 0;
@@ -206,7 +207,7 @@ function frameproc(dt){
 		local i;
 		for(i = 0; i < 2; i++){
 			if(racec[i] < 5)
-				deltaFormation(i, i == 0 ? Quatd(0, 0, 0, 1) : Quatd(0, 1, 0, 0));
+				deltaFormation("Sceptor", i, i == 0 ? Quatd(0, 0, 0, 1) : Quatd(0, 1, 0, 0));
 		}
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)

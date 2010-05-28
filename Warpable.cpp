@@ -433,78 +433,92 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	if(!warping){
 		Vec3d torque = vec3_000;
 		if(pt->inputs.press & PL_2){
-			torque += mat.vec3(0) * (dt * mn->angleaccel);
+			torque += mat.vec3(0) * (mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_8){
-			torque += mat.vec3(0) * (-dt * mn->angleaccel);
+			torque += mat.vec3(0) * (-mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_4){
-			torque += mat.vec3(1) * (dt * mn->angleaccel);
+			torque += mat.vec3(1) * (mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_6){
-			torque += mat.vec3(1) * (-dt * mn->angleaccel);
+			torque += mat.vec3(1) * (-mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_7){
-			torque += mat.vec3(1) * (dt * mn->angleaccel);
+			torque += mat.vec3(2) * (mn->angleaccel);
 		}
 		if(pt->inputs.press & PL_9){
-			torque += mat.vec3(2) * (-dt * mn->angleaccel);
+			torque += mat.vec3(2) * (-mn->angleaccel);
 		}
-		if(mn->maxanglespeed * mn->maxanglespeed < VECSLEN(pt->omg)){
+		if(bbody && mn->maxanglespeed * mn->maxanglespeed < pt->omg.slen()){
 			pt->omg.normin();
 			pt->omg *= mn->maxanglespeed;
 		}
+
 		if((pt->inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
-			double f;
-			pt->omg += torque;
-			f = VECLEN(pt->omg);
-			if(f){
-				VECSCALEIN(pt->omg, 1. / f);
-				f = MAX(0, f - dt * mn->angleaccel);
-				VECSCALEIN(pt->omg, f);
-			}
 			if(bbody){
-				torque *= 1000.;
+/*				torque *= 100.;
 				btVector3 ii = bbody->getInvInertiaDiagLocal();
 				torque[0] /= ii[0];
 				torque[1] /= ii[1];
-				torque[2] /= ii[2];
-//				btVector3 bttorque = btVector3(torque[0], torque[1], torque[2]);
+				torque[2] /= ii[2];*/
 				bbody->applyTorque(btvc(torque));
-//				bbody->setAngularVelocity(btVector3(omg[0], omg[1], omg[2]));
+			}
+			else{
+				double f;
+				pt->omg += torque;
+				f = pt->omg.len();
+				if(f){
+					f = MAX(0, f - dt * mn->angleaccel) / f;
+					pt->omg *= f;
+				}
 			}
 		}
+		else if(bbody){
+			btVector3 btomg = bbody->getAngularVelocity();
+
+			// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
+			if(!btomg.isZero()){
+				btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
+				if(torqueImpulseToStop.length2() < dt * mn->angleaccel * dt * mn->angleaccel)
+					bbody->applyTorqueImpulse(torqueImpulseToStop);
+				else
+					bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * dt * mn->angleaccel);
+			}
+		}
+
 		if(bbody)
 			bbody->activate(true);
 
 		Vec3d forceAccum(0,0,0);
 		if(pt->inputs.press & PL_W){
-			forceAccum += mat.vec3(2) * -mn->accel * mass;
+			forceAccum += mat.vec3(2) * -mn->accel;
 			pt->velo += mat.vec3(2) * (-dt * mn->accel);
 		}
 		if(pt->inputs.press & PL_S){
-			forceAccum += mat.vec3(2) * dt * mn->accel * mass * .5;
+			forceAccum += mat.vec3(2) * mn->accel * .5;
 			pt->velo += mat.vec3(2) * dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_A){
-			forceAccum += mat.vec3(0) * -dt * mn->accel * mass * .5;
+			forceAccum += mat.vec3(0) * -mn->accel * .5;
 			pt->velo += mat.vec3(0), -dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_D){
-			forceAccum += mat.vec3(0) * dt * mn->accel * mass * .5;
+			forceAccum += mat.vec3(0) * mn->accel * .5;
 			pt->velo += mat.vec3(0),  dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_Q){
-			forceAccum += mat.vec3(1) * dt * mn->accel * mass * .5;
+			forceAccum += mat.vec3(1) * mn->accel * .5;
 			pt->velo += mat.vec3(1),  dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_Z){
-			forceAccum += mat.vec3(1) * -dt * mn->accel * mass * .5;
+			forceAccum += mat.vec3(1) * -mn->accel * .5;
 			pt->velo += mat.vec3(1), -dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 			if(bbody){
-				bbody->applyForce(btvc(forceAccum)/*btVector3(forceAccum[0], forceAccum[1], forceAccum[2])*/, btVector3(0,0,0));
+				forceAccum *= 10 * dt / bbody->getInvMass();
+				bbody->applyForce(btvc(forceAccum), btVector3(0,0,0));
 				bbody->activate(true);
 				velo = btvc(bbody->getLinearVelocity());
 			}

@@ -3,6 +3,7 @@
 #include "Universe.h"
 #include "Entity.h"
 #include "Player.h"
+#include "btadapt.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -145,7 +146,7 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 		if(pt->bbody){
 			btTransform trans;
 			trans.setIdentity();
-			trans.setOrigin(btVector3(pos[0],pos[1] = 1.,pos[2]));
+			trans.setOrigin(btvc(pos));
 			pt->bbody->setCenterOfMassTransform(trans);
 		}
 /*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/

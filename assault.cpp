@@ -6,6 +6,7 @@
 #include "material.h"
 #include "EntityCommand.h"
 #include "judge.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -48,19 +49,22 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 		return;
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
-		static btCompoundShape *shape = new btCompoundShape();
-		for(int i = 0; i < nhitboxes; i++){
-			const Vec3d &sc = hitboxes[i].sc;
-			const Quatd &rot = hitboxes[i].rot;
-			const Vec3d &pos = hitboxes[i].org;
-			btBoxShape *box = new btBoxShape(btVector3(sc[0], sc[1], sc[2]));
-			btTransform trans(btQuaternion(rot[0], rot[1], rot[2], rot[3]), btVector3(pos[0], pos[1], pos[2]));
-			shape->addChildShape(trans, box);
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
 		}
 
 		btTransform startTransform;
 		startTransform.setIdentity();
-		startTransform.setOrigin(btVector3(pos[0],pos[1] = 1.,pos[2]));
+		startTransform.setOrigin(btvc(pos));
 
 		//rigidbody is dynamic if and only if mass is non zero, otherwise static
 		bool isDynamic = (mass != 0.f);
@@ -73,7 +77,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 //		rbInfo.m_linearDamping = .5;
-		rbInfo.m_angularDamping = .5;
+//		rbInfo.m_angularDamping = .25;
 		bbody = new btRigidBody(rbInfo);
 
 //		bbody->setSleepingThresholds(.0001, .0001);
@@ -132,19 +136,9 @@ void Assault::anim(double dt){
 
 	if(bbody){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
-		btVector3 org = tra.getOrigin();
-#ifdef BT_USE_DOUBLE_PRECISION
-		pos = Vec3d(org.operator btScalar *());
-#else
-		pos = Vec3<btScalar>(org.operator btScalar *()).cast<double>();
-#endif
-		btQuaternion bq = tra.getRotation();
-		rot[0] = bq[0];
-		rot[1] = bq[1];
-		rot[2] = bq[2];
-		rot[3] = bq[3];
-		btVector3 btvelo = bbody->getLinearVelocity();
-		velo = Vec3d(btvelo[0], btvelo[1], btvelo[2]);
+		pos = btvc(tra.getOrigin());
+		rot = btqc(tra.getRotation());
+		velo = btvc(bbody->getLinearVelocity());
 	}
 
 	if(health <= 0){

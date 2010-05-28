@@ -3,6 +3,7 @@
 #include "judge.h"
 #include "serial_util.h"
 #include "EntityCommand.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -30,6 +31,49 @@ Destroyer::Destroyer(WarField *aw) : st(aw){
 		turrets[i] = 1&&i % 3 != 0 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]);
 		if(aw)
 			aw->addent(turrets[i]);
+	}
+
+	if(!aw)
+		return;
+	WarSpace *ws = *aw;
+	if(ws && ws->bdw){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+
+		// The space does not have friction whatsoever.
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody);
 	}
 }
 
@@ -61,6 +105,16 @@ void Destroyer::unserialize(UnserializeContext &sc){
 double Destroyer::hitradius()const{return .27;}
 
 void Destroyer::anim(double dt){
+	if(!w)
+		return;
+	if(bbody){
+		const btTransform &tra = bbody->getCenterOfMassTransform();
+		pos = btvc(tra.getOrigin());
+		rot = btqc(tra.getRotation());
+		velo = btvc(bbody->getLinearVelocity());
+		omg = btvc(bbody->getAngularVelocity());
+	}
+
 	st::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
@@ -278,7 +332,7 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 	static const struct Warpable::maneuve frigate_mn = {
 		.05, /* double accel; */
 		.1, /* double maxspeed; */
-		.1, /* double angleaccel; */
+		10000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */
@@ -548,7 +602,7 @@ const Warpable::maneuve &WireDestroyer::getManeuve()const{
 	static const struct Warpable::maneuve frigate_mn = {
 		.05, /* double accel; */
 		.1, /* double maxspeed; */
-		.1, /* double angleaccel; */
+		10000. * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */

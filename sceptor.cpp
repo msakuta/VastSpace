@@ -13,6 +13,7 @@
 #include "cmd.h"
 #include "astrodraw.h"
 #include "EntityCommand.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -133,6 +134,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 4e3;
+	task = Idle;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -157,6 +159,42 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 		if(!mother->remainDocked)
 			scarry_undock(mother, ret, w);
 	}*/
+	if(ws && ws->bdw){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+		rbInfo.m_angularDamping = .5;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody);
+	}
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
@@ -442,6 +480,13 @@ void Sceptor::anim(double dt){
 	if(mother != w && pm && pm->w != w){
 		mother = NULL;
 		pm = NULL;
+	}
+
+	if(bbody){
+		const btTransform &tra = bbody->getCenterOfMassTransform();
+		pos = btvc(tra.getOrigin());
+		rot = btqc(tra.getRotation());
+		velo = btvc(bbody->getLinearVelocity());
 	}
 
 /*	if(!mother){
@@ -840,37 +885,15 @@ void Sceptor::anim(double dt){
 				Vec3d qrot;
 				Vec3d pos, velo;
 				int i;
-/*				{
-					Vec3d pyr;
-					quat2pyr(w->pl->rot, pyr);
-					common = -pyr[0];
-					normal = -pyr[1];
-					VECNULL(w->pl->rot);
-					w->pl->rot[3] = 1.;
-				}*/
 				if(common){
 					avec3_t th0[2] = {{0., 0., .003}, {0., 0., -.003}};
 					qrot = mat.vec3(0) * common;
 					pt->rot = pt->rot.quatrotquat(qrot);
-/*					for(i = 0; i < 2; i++){
-						MAT4VP3(pos, mat, th0[i]);
-						MAT4DVP3(velo, mat, avec3_010);
-						VECSCALEIN(velo, .02 * signof(common) * (i * 2 - 1));
-						VECADDIN(velo, pt->velo);
-						AddTeline3D(w->tell, pos, velo, .0005, NULL, NULL, NULL, COLOR32RGBA(255,255,255,255), TEL3_SPRITE | TEL3_INVROTATE, .4);
-					}*/
 				}
 				if(normal){
 					avec3_t th0[2] = {{.005, 0., .0}, {-.005, 0., 0.}};
 					qrot = mat.vec3(1) * normal;
 					pt->rot = pt->rot.quatrotquat(qrot);
-/*					for(i = 0; i < 2; i++){
-						MAT4VP3(pos, mat, th0[i]);
-						MAT4DVP3(velo, mat, avec3_001);
-						VECSCALEIN(velo, .02 * signof(normal) * (i * 2 - 1));
-						VECADDIN(velo, pt->velo);
-						AddTeline3D(w->tell, pos, velo, .0005, NULL, NULL, NULL, COLOR32RGBA(255,255,255,255), TEL3_SPRITE | TEL3_INVROTATE, .4);
-					}*/
 				}
 			}
 
@@ -927,21 +950,19 @@ void Sceptor::anim(double dt){
 #endif
 		}
 
+		static const double torqueAmount = .1;
+		bbody->activate(true);
 		if(pt->inputs.press & PL_A){
-			Vec3d qrot = mat.vec3(1) * dt;
-			pt->rot = pt->rot.quatrotquat(qrot);
+			bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
 		}
 		if(pt->inputs.press & PL_D){
-			Vec3d qrot = mat.vec3(1) * -dt;
-			pt->rot = pt->rot.quatrotquat(qrot);
+			bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
 		}
 		if(pt->inputs.press & PL_W){
-			Vec3d qrot = mat.vec3(0) * dt;
-			pt->rot = pt->rot.quatrotquat(qrot);
+			bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
 		}
 		if(pt->inputs.press & PL_S){
-			Vec3d qrot = mat.vec3(0) * -dt;
-			pt->rot = pt->rot.quatrotquat(qrot);
+			bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
 		}
 
 		if(controlled){
@@ -982,6 +1003,7 @@ void Sceptor::anim(double dt){
 				p->fuel -= consump;
 			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			acc = pt->rot.trans(acc0);
+			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
 			pt->velo += acc * spd;
 		}
 
@@ -1002,11 +1024,11 @@ void Sceptor::anim(double dt){
 			VECSADD(pt->velo, acc, spd * dt);
 		}*/
 		if(p->task != Undock && p->task != Undockque && task != Dock){
-			WarSpace *ws = (WarSpace*)w;
+/*			WarSpace *ws = (WarSpace*)w;
 			if(ws)
-				space_collide(pt, ws, dt, collideignore, NULL);
+				space_collide(pt, ws, dt, collideignore, NULL);*/
 		}
-		pt->pos += pt->velo * dt;
+//		pt->pos += pt->velo * dt;
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
 	}

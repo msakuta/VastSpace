@@ -262,13 +262,6 @@ static btDiscreteDynamicsWorld *bulletInit(){
 
 	btc->setGravity(btVector3(0,0,0));
 
-	///create a few basic rigid bodies
-	btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.),btScalar(50.),btScalar(50.)));
-
-	btTransform groundTransform;
-	groundTransform.setIdentity();
-	groundTransform.setOrigin(btVector3(0,-50,0));
-
 	return btc;
 }
 
@@ -430,121 +423,6 @@ void WarSpace::drawtra(wardraw_t *wd){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
 		}
 	}
-
-	if(pl->cs == cs){
-	double tim = cs->findcspath("/")->toUniverse()->global_time * 1.;
-	double dt = wd->vw->dt;
-	static Quatd linerot(sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
-
-#if 1
-	static int passes = 0;
-	Vec3d lineomg(0, 0, 1.);
-//	Vec3d a(0,0,0), b(cos(tim), sin(tim), 0.), c(cos(tim * .5 + .1), sin(tim * .5 + .1), 0.);
-	Vec3d l0(0,.9,-1);
-//	Vec3d l1(.5 * cos(tim * .3), .5 * sin(tim * .3),-1);
-	Vec3d l1(0,.9,1);
-	int subdivide = (int)lineomg.len() * dt / .1 + 1;
-	static bool hitflag = false;
-	timemeas_t tm;
-	TimeMeasStart(&tm);
-	double calctime;
-/*	for(volatile int it = 0; it < 10000; it++)
-		hitflag = jHitTriangle(b, c, l0, l1) != 0.;*/
-	Quatd trot = linerot;
-	Vec3d tomg = lineomg * dt / subdivide;
-	if(!hitflag) for(int i = 0; i < subdivide; i++){
-		Vec3d a(0,0,0);
-		Vec3d b = trot.trans(vec3_001);
-		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
-		double t;
-		hitflag = jHitLines(a - l0, trot, vec3_000, tomg, 1., 2., 1., &t);
-	//	hitflag = jHitTriangle(b, c, l0, l1);
-		if(hitflag){
-			passes++;
-			linerot = linerot.quatrotquat(lineomg * (dt * ((double)i / subdivide + t)));
-			break;
-		}
-		calctime = TimeMeasLap(&tm);
-		glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
-		trot = trot.quatrotquat(tomg);
-	}
-
-	glColor4fv(hitflag ? Vec4<float>(1,0,0,1) : Vec4<float>(0,0,1,1));
-	trot = linerot;
-	for(int i = 0; i < subdivide; i++){
-		Vec3d a(0,0,0);
-		Vec3d b = trot.trans(vec3_001);
-		Vec3d c = trot.quatrotquat(tomg).trans(vec3_001);
-		glBegin(GL_LINE_LOOP);
-		glVertex3dv(a);
-		glVertex3dv(b);
-		glVertex3dv(c);
-		glEnd();
-		trot = trot.quatrotquat(tomg);
-	}
-
-	if(!hitflag)
-		linerot = linerot.quatrotquat(lineomg * dt);
-
-	glBegin(GL_LINES);
-	glVertex3dv(l0);
-	glVertex3dv(l1);
-
-	Vec3d hit = (l0 + l1) / 2.;
-	glVertex3d(hit[0] - .1, hit[1], hit[2]);
-	glVertex3d(hit[0] + .1, hit[1], hit[2]);
-	glVertex3d(hit[0], hit[1] - .1, hit[2]);
-	glVertex3d(hit[0], hit[1] + .1, hit[2]);
-
-	for(int i = 0; i < 16; i++){
-		glVertex3d(i * .07, passes & (1 << i) ? 1. : 1.5, 0);
-		glVertex3d(i * .07, 2., 0);
-	}
-	glEnd();
-#endif
-
-	}
-
-#if 1
-#elif 1
-#else
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glColor4f(1,1,1,1);
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex3d(0,0,1);
-	for(int i = 0; i <= 5; i++){
-		glVertex3d(cos(2. * M_PI * i / 5) * 2 / sqrt(5.), sin(2. * M_PI * i / 5) * 2 / sqrt(5.), 1. / sqrt(5.));
-	}
-	glEnd();
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex3d(0,0,-1);
-	for(int i = 0; i <= 5; i++){
-		glVertex3d(-cos(2. * M_PI * i / 5) * 2 / sqrt(5.), sin(2. * M_PI * i / 5) * 2 / sqrt(5.), -1. / sqrt(5.));
-	}
-	glEnd();
-	glBegin(GL_LINE_LOOP);
-	for(int i = 0; i < 5; i++){
-		int ii = 2 - i;
-		glVertex3d(cos(2. * M_PI * i / 5) * 2 / sqrt(5.), sin(2. * M_PI * i / 5) * 2 / sqrt(5.), 1. / sqrt(5.));
-		glVertex3d(-cos(2. * M_PI * ii / 5) * 2 / sqrt(5.), sin(2. * M_PI * ii / 5) * 2 / sqrt(5.), -1. / sqrt(5.));
-	}
-	glEnd();
-	glPopAttrib();
-#endif
-
-#if 0
-	static bool init = false;
-	if(!init){
-		init = true;
-		for(int i = 0; i < 5; i++)
-			printf("{%18.15f, %18.15f, %18.15f},\n", cos(2. * M_PI * i / 5) * 2 / sqrt(5.), sin(2. * M_PI * i / 5) * 2 / sqrt(5.), 1. / sqrt(5.));
-		for(int i = 0; i < 5; i++){
-			int ii = 2 - i;
-			printf("{%18.15f, %18.15f, %18.15f},\n", -cos(2. * M_PI * ii / 5) * 2 / sqrt(5.), sin(2. * M_PI * ii / 5) * 2 / sqrt(5.), -1. / sqrt(5.));
-		}
-	}
-#endif
 
 	if(g_otdrawflags)
 		ot_draw(this, wd);

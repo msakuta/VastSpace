@@ -12,6 +12,7 @@
 #include "serial_util.h"
 #include "glstack.h"
 #include "EntityCommand.h"
+#include "btadapt.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -423,8 +424,6 @@ void Warpable::drawtra(wardraw_t *wd){
 	}
 }
 
-
-
 /* maneuvering spaceships, integrated common responses.
  assumption is that accelerations towards all directions except forward movement
  is a half the maximum accel. */
@@ -465,79 +464,62 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 				VECSCALEIN(pt->omg, f);
 			}
 			if(bbody){
-				torque *= 10000.;
+				torque *= 1000.;
 				btVector3 ii = bbody->getInvInertiaDiagLocal();
 				torque[0] /= ii[0];
 				torque[1] /= ii[1];
 				torque[2] /= ii[2];
-				btVector3 bttorque = btVector3(torque[0], torque[1], torque[2]);
-				bbody->applyTorque(bttorque);
-				bbody->setAngularVelocity(btVector3(omg[0], omg[1], omg[2]));
+//				btVector3 bttorque = btVector3(torque[0], torque[1], torque[2]);
+				bbody->applyTorque(btvc(torque));
+//				bbody->setAngularVelocity(btVector3(omg[0], omg[1], omg[2]));
 			}
 		}
 		if(bbody)
 			bbody->activate(true);
 
+		Vec3d forceAccum(0,0,0);
 		if(pt->inputs.press & PL_W){
+			forceAccum += mat.vec3(2) * -mn->accel * mass;
 			pt->velo += mat.vec3(2) * (-dt * mn->accel);
-			if(VECSLEN(pt->velo) < maxspeed2);
-			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
-			}
-			if(bbody){
-				Vec3d vv = mat.vec3(2) * -mn->accel * mass;
-				bbody->applyForce(btVector3(vv[0], vv[1], vv[2]), btVector3(0,0,0));
-				bbody->activate(true);
-			}
 		}
 		if(pt->inputs.press & PL_S){
-			VECSADD(pt->velo, mat.vec3(2), dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
-			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
-			}
+			forceAccum += mat.vec3(2) * dt * mn->accel * mass * .5;
+			pt->velo += mat.vec3(2) * dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_A){
-			VECSADD(pt->velo, mat.vec3(0), -dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
-			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
-			}
+			forceAccum += mat.vec3(0) * -dt * mn->accel * mass * .5;
+			pt->velo += mat.vec3(0), -dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_D){
-			VECSADD(pt->velo, mat.vec3(0),  dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
-			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
-			}
+			forceAccum += mat.vec3(0) * dt * mn->accel * mass * .5;
+			pt->velo += mat.vec3(0),  dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_Q){
-			VECSADD(pt->velo, mat.vec3(1),  dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
-			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
-			}
+			forceAccum += mat.vec3(1) * dt * mn->accel * mass * .5;
+			pt->velo += mat.vec3(1),  dt * mn->accel * .5;
 		}
 		if(pt->inputs.press & PL_Z){
-			VECSADD(pt->velo, mat.vec3(1), -dt * mn->accel * .5);
-			if(VECSLEN(pt->velo) < maxspeed2);
+			forceAccum += mat.vec3(1) * -dt * mn->accel * mass * .5;
+			pt->velo += mat.vec3(1), -dt * mn->accel * .5;
+		}
+		if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
+			if(bbody){
+				bbody->applyForce(btvc(forceAccum)/*btVector3(forceAccum[0], forceAccum[1], forceAccum[2])*/, btVector3(0,0,0));
+				bbody->activate(true);
+				velo = btvc(bbody->getLinearVelocity());
+			}
+			else if(pt->velo.slen() < maxspeed2);
 			else{
-				VECNORMIN(pt->velo);
-				VECSCALEIN(pt->velo, mn->maxspeed);
+				pt->velo.normin();
+				pt->velo *= mn->maxspeed;
 			}
 		}
-		if(1){
+		if(!bbody){
 			double f, dropoff = !(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)) ? mn->accel : mn->accel * .2;
-			f = VECLEN(pt->velo);
+			f = pt->velo.len();
 			if(f){
-				VECSCALEIN(pt->velo, 1. / f);
-				f = MAX(0, f - dt * dropoff);
-				VECSCALEIN(pt->velo, f);
+				f = MAX(0, f - dt * dropoff) / f;
+				pt->velo *= f;
 			}
 		}
 	}

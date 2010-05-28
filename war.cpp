@@ -299,7 +299,7 @@ void WarSpace::anim(double dt){
 	aaanim(dt, this, list[0]);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 
-	bdw->stepSimulation(dt / 1.);
+	bdw->stepSimulation(dt / 1., 0);
 
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, list[1]);

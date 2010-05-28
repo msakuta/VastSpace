@@ -72,7 +72,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_linearDamping = .5;
 		rbInfo.m_angularDamping = .5;
 		bbody = new btRigidBody(rbInfo);
 
@@ -133,7 +133,11 @@ void Assault::anim(double dt){
 	if(bbody){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
 		btVector3 org = tra.getOrigin();
-		pos = Vec3f(org.operator btScalar *()).cast<double>();
+#ifdef BT_USE_DOUBLE_PRECISION
+		pos = Vec3d(org.operator btScalar *());
+#else
+		pos = Vec3<btScalar>(org.operator btScalar *()).cast<double>();
+#endif
 		btQuaternion bq = tra.getRotation();
 		rot[0] = bq[0];
 		rot[1] = bq[1];

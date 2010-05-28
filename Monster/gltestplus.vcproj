@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;&quot;..\..\jpeg-7&quot;;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -208,7 +208,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -592,6 +592,10 @@
 			</File>
 			<File
 				RelativePath="..\bitmap.h"
+				>
+			</File>
+			<File
+				RelativePath="..\btadapt.h"
 				>
 			</File>
 			<File

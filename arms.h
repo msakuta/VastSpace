@@ -57,6 +57,7 @@ class MTurret : public ArmBase{
 protected:
 	void findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2); // returns precedence factor
+	virtual int wantsFollowTarget()const; // Returns whether the turret should aim at target, 0 - no aim, 1 - yaw only, 2 - yaw and pitch, default 2.
 public:
 	typedef ArmBase st;
 	float cooldown;
@@ -141,8 +142,12 @@ public:
 
 class LMissileTurret : public LTurretBase{
 	const Entity *targets[6]; // Targets already locked up
+	float deploy; // Deployment factor.
+protected:
+	virtual int wantsFollowTarget()const;
 public:
 	typedef LTurretBase st;
+	static const double bscale;
 	LMissileTurret();
 	LMissileTurret(Entity *abase, const hardpoint_static *hp);
 	~LMissileTurret();

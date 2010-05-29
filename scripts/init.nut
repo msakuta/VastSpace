@@ -151,8 +151,6 @@ function ae(){
 //	deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 1.1, -0.2), 0.3);
 }
 
-ae();
-
 function ass(){
 	deltaFormation("Assault", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3);
 }
@@ -160,6 +158,7 @@ function ass(){
 function des(){
 	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3);
 }
+des();
 
 function printtree(cs){
 	local child;
@@ -220,7 +219,7 @@ function frameproc(dt){
 		for(i = 0; i < 2; i++){
 			if(racec[i] < 5)
 				deltaFormation("Sceptor", i, i == 0 ? Quatd(0, 0, 0, 1) : Quatd(0, 1, 0, 0)
-					, Vec3d(0, 0.1, i - 0.5), 0.1, 15);
+					, Vec3d(0, 0.1, i - 0.5), 0.1, 7);
 		}
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)

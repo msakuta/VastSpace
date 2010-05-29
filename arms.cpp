@@ -375,6 +375,8 @@ double MTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, con
 	return 1.;
 }
 
+int MTurret::wantsFollowTarget()const{return 2;}
+
 void MTurret::tryshoot(){
 	if(ammo <= 0){
 		this->cooldown += reloadtime();
@@ -443,7 +445,7 @@ void MTurret::anim(double dt){
 			tryshoot();
 		}
 	}
-	else if(target) do{/* estimating enemy position */
+	else if(target && wantsFollowTarget()) do{/* estimating enemy position */
 		double bulletRange = bulletspeed() * bulletlife();
 		bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
 
@@ -468,7 +470,8 @@ void MTurret::anim(double dt){
 		phi = -atan2(epos[0], -(epos[2]));
 		theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
 		a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-		a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+		if(1 < wantsFollowTarget())
+			a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 
 		/* shooter logic */
 		while(a->cooldown < dt){
@@ -938,7 +941,7 @@ double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, con
 LMissileTurret::LMissileTurret(){
 }
 
-LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), deploy(0){
 	ammo = 6;
 }
 
@@ -949,8 +952,23 @@ const char *LMissileTurret::classname()const{return "LMissileTurret";}
 const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LMissileTurret>);
 double LMissileTurret::hitradius()const{return .03;}
 
+const double LMissileTurret::bscale = .0001 / 2.;
+
+int LMissileTurret::wantsFollowTarget()const{
+	return cooldown < 2. * reloadtime();
+}
+
 void LMissileTurret::anim(double dt){
 	st::anim(dt);
+	if(target && cooldown < 2. * reloadtime()){
+		deploy = approach(deploy, 1., dt, 0.);
+	}
+	else{
+		deploy = approach(deploy, 0., dt, 0.);
+		py[0] = approach(py[0], 0., dt, 0.);
+		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+//		py[1] = approach(py[1], 0., dt, 0.);
+	}
 }
 
 void LMissileTurret::draw(wardraw_t *wd){
@@ -973,13 +991,12 @@ void LMissileTurret::draw(wardraw_t *wd){
 		}
 	}
 
-	const double bscale = .0001 / 2.;
-	static const GLfloat rotaxis2[16] = {
+/*	static const GLfloat rotaxis2[16] = {
 		-1,0,0,0,
 		0,1,0,0,
 		0,0,-1,0,
 		0,0,0,1,
-	};
+	};*/
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT);
 	glPushMatrix();
@@ -988,17 +1005,20 @@ void LMissileTurret::draw(wardraw_t *wd){
 	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
 	glPushMatrix();
 	gldScaled(bscale);
-	glMultMatrixf(rotaxis2);
+//	glMultMatrixf(rotaxis2);
+	glScalef(-1,1,-1);
 	if(suf_turret)
 		DrawSUF(suf_turret, SUF_ATR, NULL);
 	glPopMatrix();
 	if(suf_barrel){
-		const Vec3d pos(0, 200, 0);
+		const Vec3d pos = Vec3d(0, 200, 0) * deploy;
+		Vec3d joint = Vec3d(0, 120, 60);
 		gldScaled(bscale);
-		gldTranslate3dv(pos);
+		gldTranslate3dv(pos + joint);
 		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-		gldTranslate3dv(-pos);
-		glMultMatrixf(rotaxis2);
+		gldTranslate3dv(-joint);
+//		glMultMatrixf(rotaxis2);
+		glScalef(-1,1,-1);
 		DecalDrawSUF(suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
 	}
 	glPopMatrix();
@@ -1007,18 +1027,19 @@ void LMissileTurret::draw(wardraw_t *wd){
 
 void LMissileTurret::drawtra(wardraw_t *wd){
 	Entity *pb = base;
-	double bscale = 1;
+//	double bscale = 1;
 	if(this->mf){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;
-		Vec3d const barrelpos(0, .01, 0);
-		Vec3d pos, const muzzlepos(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo % 6 / 3)) / 2., 0);
+		Vec3d const barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
+		Vec3d const joint = bscale * Vec3d(0, 120, 60);
+		Vec3d pos, const muzzlepos = bscale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
 		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
 		this->transform(mat);
 		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(barrelpos * bscale);
+		mat2.translatein(barrelpos + joint);
 		mat = mat2.rotx(this->py[0]);
-		mat.translatein(-barrelpos * bscale);
+		mat.translatein(-joint);
 		pos = mat.vp3(muzzlepos);
 		rot = mat;
 		rot.vec3(3).clear();
@@ -1051,7 +1072,7 @@ float LMissileTurret::reloadtime()const{return .5;}
 void LMissileTurret::tryshoot(){
 	if(ammo <= 0)
 		return;
-	static const avec3_t forward = {0., 0., -1.};
+	static const Vec3d forward(0., 0., -1.);
 	Mat4d mat2;
 	base->transform(mat2);
 	mat2.translatein(hp->pos);
@@ -1060,13 +1081,17 @@ void LMissileTurret::tryshoot(){
 	mat.translatein(0., .01, 0.);
 	double yaw = this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
 	double pitch = this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE;
+	const Vec3d barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
+	const Vec3d joint = bscale * Vec3d(0, 120, 60);
 	mat2 = mat.roty(yaw);
+	mat2.translatein(joint + barrelpos);
 	mat = mat2.rotx(pitch);
+	mat.translatein(-joint);
 	mat.translatein(0., -.01, 0.);
 	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
 	ammo--;
 	{
-		Vec3d lturret_ofs(.008 * (ammo % 3 - 1) / 2., (.012 + .004 + .008 * (ammo / 3)) / 2., 0);
+		Vec3d lturret_ofs = bscale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
 		Bullet *pz;
 		pz = new Missile(base, 15., 500., target);
 		w->addent(pz);

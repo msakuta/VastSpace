@@ -215,11 +215,14 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
 	Mat4d mat;
 	seatid = (seatid + 3) % 3;
-	if(seatid == 2 && enemy && enemy->w == w)
+	if(seatid == 2 && enemy && enemy->w == w){
 		q = this->rot * Quatd::direction(this->rot.cnj().trans(this->pos - enemy->pos));
-	else
+		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / ppl->fov)); // Trackback if zoomed
+	}
+	else{
 		q = this->rot;
-	ofs = q.trans(src[seatid]);
+		ofs = q.trans(src[seatid]);
+	}
 	pos = this->pos + ofs;
 }
 

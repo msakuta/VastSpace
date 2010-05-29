@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Player.h"
 #include "btadapt.h"
+#include "EntityCommand.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -215,6 +216,20 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 	}
 	else
 		return sqf_set<Entity>(v);
+}
+
+static SQInteger sqf_Entity_command(HSQUIRRELVM v){
+	Entity *p;
+	sqa_refobj(v, (SQUserPointer*)&p);
+	const SQChar *s;
+	sq_getstring(v, 2, &s);
+	if(!strcmp(s, _SC("SetAggressive"))){
+		p->command(&SetAggressiveCommand());
+	}
+	else if(!strcmp(s, _SC("SetPassive"))){
+		p->command(&SetPassiveCommand());
+	}
+	return 0;
 }
 
 static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
@@ -868,6 +883,9 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("_set"), -1);
 	sq_newclosure(v, sqf_Entity_set, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("command"), -1);
+	sq_newclosure(v, sqf_Entity_command, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

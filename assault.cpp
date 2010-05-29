@@ -92,7 +92,7 @@ void Assault::init(){
 		hardpoints = hardpoint_static::load("assault.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];
-	mass = 1e3;
+	mass = 1e5;
 	mother = NULL;
 	paradec = -1;
 

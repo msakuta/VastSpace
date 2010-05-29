@@ -11,7 +11,12 @@
 #define IMPLEMENT_COMMAND(name,idname) const char *name::sid = idname;\
 	const char *name::id()const{return sid;}
 
+// Base class for all Entity commands.
 struct EntityCommand{
+	// The returned pointer never be dereferenced without debugging purposes,
+	// it is just required to point the same address for all the instances but
+	// never coincides between different classes.
+	// A static const string of class name is ideal for this returned vale.
 	virtual const char *id()const = 0;
 };
 
@@ -42,5 +47,8 @@ public:
 DERIVE_COMMAND(ParadeCommand, EntityCommand);
 DERIVE_COMMAND(DeltaCommand, EntityCommand);
 DERIVE_COMMAND(DockCommand, EntityCommand);
+
+DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
+DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
 
 #endif

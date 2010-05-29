@@ -289,6 +289,9 @@ IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")
 IMPLEMENT_COMMAND(MoveCommand, "Move")
 IMPLEMENT_COMMAND(ParadeCommand, "Parade")
 IMPLEMENT_COMMAND(DeltaCommand, "Delta")
-IMPLEMENT_COMMAND(DockCommand, "Dock");
+IMPLEMENT_COMMAND(DockCommand, "Dock")
+
+IMPLEMENT_COMMAND(SetAggressiveCommand, "SetAggressive")
+IMPLEMENT_COMMAND(SetPassiveCommand, "SetPassive")
 
 

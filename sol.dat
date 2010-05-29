@@ -466,19 +466,21 @@ coordsys Orbit saturn{
 		warp
 		teleport "Saturn Low Orbit" 0 0 0
 		showorbit
-		addent Scarry 0 -1 0
+#		addent Scarry 0 -1 0
 		updirection 0 cos(axis_angle) -sin(axis_angle)
 	}
 	coordsys Orbit saturno2{
+		define incline axis_angle-0.1*pi
 		orbits Saturn
-		orbit_radius 150000
-		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		orbit_radius 250000
+		orbit_axis 0 sin(incline/2) cos(incline/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		fullname "Saturn Low Orbit 2"
 		pos -50000 50000 0
 		warp
 		teleport "Saturn Low Orbit 2" 10 0 0
 		showorbit
-		addent Scarry 0 -1 0
+#		addent Scarry 0 -1 0
+		updirection 0 cos(incline) -sin(incline)
 	}
 	astro Satellite "Mimas"{
 		radius 198.30

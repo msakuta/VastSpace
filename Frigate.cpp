@@ -46,14 +46,13 @@ extern "C"{
 #define BEAMER_MAX_SPEED .1
 #define BEAMER_ACCELERATE .025
 #define BEAMER_MAX_ANGLESPEED .4
-#define BEAMER_ANGLEACCEL .2
 #define BEAMER_SHIELDRAD .09
 
 
 const struct Warpable::maneuve Frigate::frigate_mn = {
 	BEAMER_ACCELERATE, /* double accel; */
 	BEAMER_MAX_SPEED, /* double maxspeed; */
-	BEAMER_ANGLEACCEL, /* double angleaccel; */
+	100., /* double angleaccel; */
 	BEAMER_MAX_ANGLESPEED, /* double maxanglespeed; */
 	50000., /* double capacity; [MJ] */
 	100., /* double capacitor_gen; [MW] */

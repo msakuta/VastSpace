@@ -40,5 +40,6 @@ void main (void)
 		+ gl_FrontLightProduct[0].diffuse
 		* max(lightangle * (0. < dot(q, light) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
 
-	gl_FragColor *= exposure * (exposure / 100. + 1.) / (exposure + 1.);
+	// Tone mapping
+//	gl_FragColor *= exposure * (exposure / 100. + 1.) / (exposure + 1.);
 }

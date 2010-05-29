@@ -26,11 +26,15 @@ protected:
 		Dockque = sship_dockque,
 		Moveto = sship_moveto,
 		Parade = sship_parade,
+		DeltaFormation = sship_delta,
 		Attack = sship_attack,
 		Away = sship_away,
-		DeltaFormation = sship_delta,
 		Auto, // Automatically targets near enemy or parade with mother.
 		num_sceptor_task
+	};
+	enum Attitude{
+		Passive,
+		Aggressive
 	};
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
@@ -50,6 +54,7 @@ protected:
 	float mf; // trivial muzzle flashes
 	float integral[2]; // integration of pitch-yaw space of relative target position
 	Sceptor *formPrev; // previous member in the formation
+	Attitude attitude;
 
 	static const avec3_t gunPos[2];
 	void shootDualGun(double dt);

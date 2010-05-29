@@ -2268,6 +2268,34 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 /*		tocsim(mat, vw->cs, csys);*/
 		glMultMatrixd(mat);
 	}
+
+	static GLuint backimg = 0;
+	if(!backimg)
+		backimg = ProjectSphereCubeJpg("mwpan2_Merc_2000x1200.jpg");
+	{
+		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
+		glCallList(backimg);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glColor4f(.25, .25, .25, 1.);
+		for(int i = 0; i < numof(cubedirs); i++){
+			glPushMatrix();
+			gldMultQuat(cubedirs[i]);
+			glMatrixMode(GL_TEXTURE);
+			glPushMatrix();
+			gldMultQuat(cubedirs[i]);
+			glBegin(GL_QUADS);
+			glTexCoord3i(-1,-1,-1); glVertex3i(-1, -1, -1);
+			glTexCoord3i( 1,-1,-1); glVertex3i( 1, -1, -1);
+			glTexCoord3i( 1, 1,-1); glVertex3i( 1,  1, -1);
+			glTexCoord3i(-1, 1,-1); glVertex3i(-1,  1, -1);
+			glEnd();
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+			glPopMatrix();
+		}
+		glPopAttrib();
+	}
+
 /*	{
 		int i;
 		extern struct astrobj **astrobjs;

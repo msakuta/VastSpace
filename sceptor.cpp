@@ -129,12 +129,21 @@ double Sceptor::maxhealth()const{
 Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel()), mf(0), paradec(-1), forcedEnemy(false), formPrev(NULL){
+Sceptor::Sceptor(WarField *aw) : st(aw),
+	mother(NULL),
+	task(Auto),
+	fuel(maxfuel()),
+	mf(0),
+	paradec(-1),
+	forcedEnemy(false),
+	formPrev(NULL),
+	evelo(vec3_000),
+	attitude(Passive)
+{
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 4e3;
-	task = Idle;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -154,6 +163,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
+	integral[0] = integral[1] = 0.;
 /*	if(mother){
 		scarry_dock(mother, ret, w);
 		if(!mother->remainDocked)
@@ -187,7 +197,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw), mother(NULL), task(Auto), fuel(maxfuel(
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 //		rbInfo.m_linearDamping = .5;
-		rbInfo.m_angularDamping = .5;
+//		rbInfo.m_angularDamping = .5;
 		bbody = new btRigidBody(rbInfo);
 
 //		bbody->setSleepingThresholds(.0001, .0001);
@@ -443,7 +453,11 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
 		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
-	this->rot = this->rot.quatrotquat(this->omg * dt);
+	bbody->setAngularVelocity(btvc(this->omg));
+	dr.normin();
+	Vec3d sidevelo = velo - dr * dr.sp(velo);
+	bbody->applyCentralForce(btvc(-sidevelo * mass));
+//	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
 // Find mother if has none
@@ -609,10 +623,11 @@ void Sceptor::anim(double dt){
 			pf->returning = 1;
 		}*/
 		else{
-			double pos[3], dv[3], dist;
+//			double pos[3], dv[3], dist;
 			Vec3d delta;
-			int i, n, trigger = 1;
-			Vec3d opos;
+//			int i, n;
+			bool trigger = true;
+//			Vec3d opos;
 //			pt->enemy = pm->enemy;
 			if(pt->enemy /*&& VECSDIST(pt->pos, pm->pos) < 15. * 15.*/){
 				double sp;
@@ -627,7 +642,7 @@ void Sceptor::anim(double dt){
 				delta = epos - pt->pos;
 
 				double dist = (enemy->pos - this->pos).len();
-				Vec3d ldelta = rot.cnj().trans(delta);
+/*				Vec3d ldelta = rot.cnj().trans(delta);
 				Vec3d lvelo = rot.cnj().trans(this->evelo - (enemy->velo - this->velo) * dist);
 				if(ldelta.norm()[2] < -.5){
 					double f = exp(-pid_ifactor * dt);
@@ -642,27 +657,11 @@ void Sceptor::anim(double dt){
 				this->epos = epos;
 				this->iepos = delta + pt->pos;
 #endif
-
+*/
 				// Do not try shooting at very small target, that's just waste of ammo.
 				if(enemy->hitradius() < dist / 100.)
 					trigger = 0;
 
-/*				{
-					avec3_t rv;
-					double eposlen;
-					VECSUB(rv, pt->enemy->velo, pt->velo);
-					eposlen = VECDIST(epos, pt->pos) / (VECSP(delta, rv) + BULLETSPEED);
-					VECSADD(epos, w->gravity, -eposlen);
-				}
-				VECSUB(delta, pt->pos, epos);
-				delta[1] += .001;
-				if(VECSLEN(delta) < 2. * 2.){
-					VECNORM(dh, delta);
-					VECNORM(vh, pt->velo);
-					sp = VECSP(dh, vh);
-					if(sp < -.99)
-						pt->inputs.press |= PL_ENTER;
-				}*/
 			}
 /*			else
 			{
@@ -742,14 +741,18 @@ void Sceptor::anim(double dt){
 					sy = VECSP(&mat[4], dv);
 					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 					p->throttle = 1.;
+
+					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
 						struct random_sequence rs;
 						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
-						for(i = 0; i < 3; i++)
+						for(int i = 0; i < 3; i++)
 							randomvec[i] = drseq(&rs) - .5;
 						pt->velo += randomvec * dt * .5;
+						bbody->applyCentralForce(btvc(randomvec * mass * .5));
 					}
+
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);
 						len = len2 = xh.len();
@@ -758,19 +761,35 @@ void Sceptor::anim(double dt){
 							len = maxspeed;
 						}
 						len = sin(len / 2.);
+
+						double velolen = bbody->getLinearVelocity().length();
+						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
+
+						// Suppress side slips
+						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
+						bbody->applyCentralForce(btvc(-sidevelo * mass));
+
 						if(len && len2){
-							Vec3d omg, laac;
+							btVector3 btomg = bbody->getAngularVelocity();
+							btVector3 btxh = btvc(xh.norm());
+							btVector3 btsideomg = btomg - btxh * btxh.dot(btomg);
+							btVector3 btaac = btxh * len - btsideomg * 1.;
+//							bbody->applyTorque(btaac);
+							bbody->setAngularVelocity(btxh * len / dt);
+/*							Vec3d omg, laac;
 							qrot = xh * len / len2;
 							qrot[3] = sqrt(1. - len * len);
 							qres = qrot * pt->rot;
-							pt->rot = qres.norm();
+							pt->rot = qres.norm();*/
 
 							/* calculate angular acceleration for displaying thruster bursts */
-							omg = qrot.operator Vec3d&() * 1. / dt;
+/*							omg = qrot.operator Vec3d&() * 1. / dt;
 							p->aac = omg - pt->omg;
 							p->aac *= 1. / dt;
 							pt->omg = omg;
-							laac = pt->rot.cnj().trans(p->aac);
+							laac = pt->rot.cnj().trans(p->aac);*/
+							btTransform bttr = bbody->getWorldTransform();
+							btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
 							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
 							if(0 < laac[0]) p->thrusts[0][1] += laac[0];
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
@@ -877,8 +896,23 @@ void Sceptor::anim(double dt){
 							p->throttle = 1.;
 					}
 				}
-				if(task == Idle || task == Auto)
+				if(task == Idle || task == Auto){
 					throttle = 0.;
+					btVector3 btvelo = bbody->getLinearVelocity();
+					if(!btvelo.isZero())
+						bbody->applyCentralForce(-btvelo * mass);
+					btVector3 btomg = bbody->getAngularVelocity();
+
+					// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
+					if(!btomg.isZero()){
+						btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
+						double thrust = dt * 1.;
+						if(torqueImpulseToStop.length2() < thrust * thrust)
+							bbody->applyTorqueImpulse(torqueImpulseToStop);
+						else
+							bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * thrust);
+					}
+				}
 			}while(0);
 			else{
 				double common = 0., normal = 0.;

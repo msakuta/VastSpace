@@ -28,7 +28,7 @@ public:
 	virtual int takedamage(double damage, int hitpart);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
-	virtual const ArmBase *armsGet(int index)const;
+	virtual ArmBase *armsGet(int index);
 	virtual bool command(EntityCommand *com);
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;

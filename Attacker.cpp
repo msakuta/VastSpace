@@ -29,10 +29,12 @@ public:
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	virtual double hitradius()const;
 	virtual bool command(EntityCommand *com);
+	virtual double hitradius()const;
 	virtual double maxhealth()const;
 	virtual double maxenergy()const;
+	virtual ArmBase *armsGet(int);
+	virtual int armsCount()const;
 	virtual const maneuve &getManeuve()const;
 };
 
@@ -79,7 +81,7 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 		if(aw)
 			aw->addent(turrets[i]);
 	}
-	mass = 1e7;
+	mass = 2e8;
 	health = maxhealth();
 	if(!aw)
 		return;
@@ -197,28 +199,32 @@ void Attacker::draw(wardraw_t *wd){
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	static const Vec3d offsets[2] = {Vec3d(0, .065, .110), Vec3d(0, .165, .350)};
 	rot = this->rot;
-	pos = rot.trans(Vec3d(0, .065, .110)) + this->pos;
+	pos = rot.trans(offsets[seatid % 2]) + this->pos;
 }
 
 bool Attacker::command(EntityCommand *com){
-	if(com->id() == AttackCommand::sid || com->id() == ForceAttackCommand::sid){
-		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
-			turrets[i]->command(com);
-		return true;
-	}
-	return false;
+	return st::command(com);
 }
 
 double Attacker::hitradius()const{return .3;}
 double Attacker::maxhealth()const{return 100000.;}
 double Attacker::maxenergy()const{return 100000.;}
 
+ArmBase *Attacker::armsGet(int index){
+	if(0 <= index && index < nhardpoints)
+		return turrets[index];
+	return NULL;
+}
+
+int Attacker::armsCount()const{return nhardpoints;}
+
 const Warpable::maneuve &Attacker::getManeuve()const{
 	static const struct Warpable::maneuve mn = {
 		.025, /* double accel; */
 		.1, /* double maxspeed; */
-		30000 * .1, /* double angleaccel; */
+		5000000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */

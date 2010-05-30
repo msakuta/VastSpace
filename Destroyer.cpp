@@ -87,7 +87,7 @@ void Destroyer::init(){
 	static_init();
 	st::init();
 	turrets = new ArmBase*[nhardpoints];
-	mass = 1e6;
+	mass = 1e8;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
@@ -305,25 +305,14 @@ int Destroyer::armsCount()const{
 	return nhardpoints;
 }
 
-const ArmBase *Destroyer::armsGet(int i)const{
+ArmBase *Destroyer::armsGet(int i){
 	if(i < 0 || armsCount() <= i)
 		return NULL;
 	return turrets[i];
 }
 
 bool Destroyer::command(EntityCommand *com){
-	if(InterpretCommand<HaltCommand>(com)){
-		task = sship_idle;
-		return true;
-	}
-	AttackCommand *ac;
-	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
-		for(int i = 0; i < nhardpoints; i++)
-			turrets[i]->command(ac);
-		return true;
-	}
-	else
-		return st::command(com);
+	return st::command(com);
 }
 
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
@@ -332,7 +321,7 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 	static const struct Warpable::maneuve frigate_mn = {
 		.025, /* double accel; */
 		.1, /* double maxspeed; */
-		20000 * .1, /* double angleaccel; */
+		2000000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */

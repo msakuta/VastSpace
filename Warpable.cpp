@@ -13,6 +13,7 @@
 #include "glstack.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#include "arms.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -1213,6 +1214,12 @@ bool Warpable::command(EntityCommand *com){
 	if(InterpretCommand<HaltCommand>(com)){
 		task = sship_idle;
 		inputs.press = 0;
+		int narms = armsCount();
+		for(int i = 0; i < narms; i++){
+			ArmBase *arm = armsGet(i);
+			if(arm)
+				arm->command(com);
+		}
 		return true;
 	}
 	else if(MoveCommand *mc = InterpretCommand<MoveCommand>(com)){
@@ -1220,9 +1227,15 @@ bool Warpable::command(EntityCommand *com){
 		dest = mc->dest;
 		return true;
 	}
-	else if(AttackCommand *ac = InterpretCommand<AttackCommand>(com)){
+	else if(AttackCommand *ac = InterpretDerivedCommand<AttackCommand>(com)){
 		if(!ac->ents.empty())
 			enemy = *ac->ents.begin();
+		int narms = armsCount();
+		for(int i = 0; i < narms; i++){
+			ArmBase *arm = armsGet(i);
+			if(arm)
+				arm->command(com);
+		}
 		return true;
 	}
 	return false;

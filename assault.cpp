@@ -378,7 +378,7 @@ double Assault::maxhealth()const{return 10000.;}
 
 int Assault::armsCount()const{return numof(turrets);}
 
-const ArmBase *Assault::armsGet(int i)const{
+ArmBase *Assault::armsGet(int i){
 	if(i < 0 || armsCount() <= i)
 		return NULL;
 	return turrets[i];

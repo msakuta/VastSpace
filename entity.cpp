@@ -145,7 +145,7 @@ void Entity::bullethit(const Bullet *){}
 Entity *Entity::getOwner(){return NULL;}
 bool Entity::isSelectable()const{return false;}
 int Entity::armsCount()const{return 0;}
-const ArmBase *Entity::armsGet(int)const{return NULL;}
+ArmBase *Entity::armsGet(int){return NULL;}
 std::vector<cpplib::dstring> Entity::props()const{
 	using namespace cpplib;
 	std::vector<cpplib::dstring> ret;
@@ -283,6 +283,7 @@ int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &s
 }
 
 
+bool EntityCommand::derived(const char*)const{return false;}
 IMPLEMENT_COMMAND(HaltCommand, "Halt")
 IMPLEMENT_COMMAND(AttackCommand, "Attack")
 IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")

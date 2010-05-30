@@ -508,7 +508,7 @@ int Scarry::armsCount()const{
 	return nhardpoints;
 }
 
-const ArmBase *Scarry::armsGet(int i)const{
+ArmBase *Scarry::armsGet(int i){
 	return turrets[i];
 }
 

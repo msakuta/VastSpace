@@ -148,7 +148,7 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int armsCount()const;
-	virtual const ArmBase *armsGet(int i)const;
+	virtual ArmBase *armsGet(int i);
 	virtual double getRU()const;
 	virtual Builder *getBuilderInt();
 	virtual Docker *getDockerInt();

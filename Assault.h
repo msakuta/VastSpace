@@ -29,7 +29,7 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
-	virtual const ArmBase *armsGet(int index)const;
+	virtual ArmBase *armsGet(int index);
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 	friend class GLWarms;

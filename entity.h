@@ -53,7 +53,8 @@ public:
 	virtual bool isTargettable()const = 0;
 	virtual bool isSelectable()const;
 	virtual int armsCount()const;
-	virtual const ArmBase *armsGet(int index)const;
+	virtual ArmBase *armsGet(int index);
+	const ArmBase *armsGet(int index)const{return const_cast<Entity*>(this)->armsGet(index);}
 	virtual Props props()const;
 	virtual double getRU()const;
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.

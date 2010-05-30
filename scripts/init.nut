@@ -158,7 +158,16 @@ function ass(){
 function des(){
 	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3);
 }
+
+function att(){
+	deltaFormation("Attacker", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.8), 0.5, 3);
+}
+function sce(){
+	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
+}
 des();
+att();
+sce();
 
 function printtree(cs){
 	local child;
@@ -209,18 +218,18 @@ function frameproc(dt){
 
 	local currenttime = universe.global_time;
 
-	if(true && checktime + 1. < currenttime){
+	if(false && checktime + 1. < currenttime){
 		checktime = currenttime;
 		local racec = [countents(0), countents(1)];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
-		local i;
-		for(i = 0; i < 2; i++){
-			if(racec[i] < 5)
-				deltaFormation("Sceptor", i, i == 0 ? Quatd(0, 0, 0, 1) : Quatd(0, 1, 0, 0)
-					, Vec3d(0, 0.1, i - 0.5), 0.1, 7);
-		}
+		if(racec[0] < 5)
+			deltaFormation("Sceptor", 0, Quatd(0, 0, 0, 1)
+				, Vec3d(0, 0.1,  0.5), 0.1, 15);
+		if(racec[1] < 3)
+			deltaFormation("Assault", 1, Quatd(0, 1, 0, 0)
+				, Vec3d(0, 0.1, -0.5), 0.1, 3);
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)
 			print("[team" + key + "][" + key1 + "] " + value1);

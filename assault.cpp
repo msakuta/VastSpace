@@ -40,7 +40,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = (1 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
+		turrets[i] = (0 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}

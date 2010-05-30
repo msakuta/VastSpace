@@ -371,6 +371,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Attacker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\beamer.cpp"
 				>
 			</File>

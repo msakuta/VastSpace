@@ -310,11 +310,11 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 			glVertex3dv(v);
 		}
 	}
-	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
+/*	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
 		glColor4fv(hitflags & (1 << (ix * 4 + iy * 2 + iz)) ? Vec4<float>(1,0,0,1) : Vec4<float>(0,1,1,1));
 		glVertex3dv(vec3_000);
 		glVertex3dv(1.2 * Vec3d(ix * 2 - 1, iy * 2 - 1, iz * 2 - 1));
-	}
+	}*/
 	glEnd();
 	glPopAttrib();
 	glPopMatrix();
@@ -1175,6 +1175,14 @@ void Warpable::anim(double dt){
 		pos += this->velo * dt;
 	}
 	else{ /* Regenerate energy in capacitor only unless warping */
+
+		if(bbody){
+			pos = btvc(bbody->getCenterOfMassPosition());
+			velo = btvc(bbody->getLinearVelocity());
+			rot = btqc(bbody->getOrientation());
+			omg = btvc(bbody->getAngularVelocity());
+		}
+
 		double gen = dt * g_capacitor_gen_factor * mn->capacitor_gen;
 		if(p->capacitor + gen < mn->capacity)
 			p->capacitor += gen;

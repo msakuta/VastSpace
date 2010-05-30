@@ -107,13 +107,13 @@ double Destroyer::hitradius()const{return .27;}
 void Destroyer::anim(double dt){
 	if(!w)
 		return;
-	if(bbody){
+/*	if(bbody){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
 		pos = btvc(tra.getOrigin());
 		rot = btqc(tra.getRotation());
 		velo = btvc(bbody->getLinearVelocity());
 		omg = btvc(bbody->getAngularVelocity());
-	}
+	}*/
 
 	st::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])

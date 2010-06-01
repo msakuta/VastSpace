@@ -31,6 +31,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual double maxhealth()const;
+	virtual void enterField(WarField *target); // Opportunity to response WarField::addent.
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(const input_t *inputs, double dt);
@@ -61,6 +62,7 @@ public:
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
 
+	// Assigns transformation matrix to argument object.
 	void transform(Mat4d &mat){
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}
@@ -87,7 +89,7 @@ public:
 	int otflag;
 //	char weapon;
 
-	// Handles calls to virtual functions of a NULL ofject
+	// Handles calls to virtual functions of a NULL object
 	Builder *getBuilder(){return this ? this->getBuilderInt() : NULL;}
 	Docker *getDocker(){return this ? this->getDockerInt() : NULL;}
 

@@ -74,6 +74,7 @@ public:
 	virtual const char *dispname()const;
 	virtual double maxhealth()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	virtual void enterField(WarField *);
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);

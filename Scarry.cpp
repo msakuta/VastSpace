@@ -568,3 +568,11 @@ bool ScarryDocker::undock(Entity::Dockable *pe){
 	}
 	return false;
 }
+
+Vec3d ScarryDocker::getPortPos()const{
+	return Vec3d(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
+}
+
+Quatd ScarryDocker::getPortRot()const{
+	return quat_u;
+}

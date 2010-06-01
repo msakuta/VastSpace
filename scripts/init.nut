@@ -165,7 +165,7 @@ function att(){
 function sce(){
 	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
 }
-des();
+//des();
 att();
 sce();
 

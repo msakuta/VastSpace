@@ -169,42 +169,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 		if(!mother->remainDocked)
 			scarry_undock(mother, ret, w);
 	}*/
-	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .5;
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody);
-	}
+	enterField(w);
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
@@ -475,6 +440,45 @@ Entity *Sceptor::findMother(){
 	return pm;
 }
 
+void Sceptor::enterField(WarField *target){
+	WarSpace *ws = *target;
+	if(ws && ws->bdw){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .5;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+}
 
 void Sceptor::anim(double dt){
 	WarField *oldw = w;
@@ -584,10 +588,18 @@ void Sceptor::anim(double dt){
 		bool controlled = w->pl->control == this;
 		int parking = 0;
 		Entity *collideignore = NULL;
+
+		// Default is to collide
+		if(bbody)
+			bbody->getBroadphaseProxy()->m_collisionFilterMask |= 2;
+
 		if(!controlled)
 			pt->inputs.press = 0;
 		if(false/*pf->docked*/);
 		else if(p->task == Undockque){
+			// Avoid collision with mother if in a progress of undocking.
+			if(bbody)
+				bbody->getBroadphaseProxy()->m_collisionFilterMask &= ~2;
 /*			if(pm->w != w){
 				if(p->pf){
 					ImmobilizeTefpol3D(p->pf);
@@ -681,13 +693,18 @@ void Sceptor::anim(double dt){
 					Vec3d mzh = this->rot.trans(vec3_001);
 					sp = -mzh.sp(dm);
 					p->throttle = 1.;
+
+					// Avoid collision with mother if in a progress of undocking.
+					if(bbody)
+						bbody->getBroadphaseProxy()->m_collisionFilterMask &= ~2;
+
 					if(1. < sp)
 						p->task = Parade;
 				}
 			}
 			else if(w->pl->control != pt) do{
 				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
-					if(pm && (pt->enemy = pm->enemy)){
+					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
 					}
 					else if(findEnemy()){
@@ -870,14 +887,21 @@ void Sceptor::anim(double dt){
 					if(!pm)
 						p->task = Auto;
 					else{
-						Vec3d target0(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
+						Vec3d target0(pm->getDocker()->getPortPos());
 						Quatd q2, q1;
 						collideignore = pm;
+
+						// Mask to avoid collision with the mother
+						if(bbody)
+							bbody->getBroadphaseProxy()->m_collisionFilterMask &= ~2;
+
+						// Runup length
 						if(p->task == Dockque)
-							target0[2] += -1.;
+							target0 += pm->getDocker()->getPortRot().trans(Vec3d(0, 0, -.3));
+
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : .025, .01);
+						steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
 						double dist = (target - this->pos).len();
 						if(dist < .03){
 							if(p->task == Dockque)
@@ -1332,13 +1356,12 @@ bool Sceptor::command(EntityCommand *com){
 		this->dest = mc->dest;
 		return true;
 	}
-	AttackCommand *ac;
-	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
+	if(AttackCommand *ac = InterpretDerivedCommand<AttackCommand>(com)){
 		if(!ac->ents.empty()){
 			Entity *e = *ac->ents.begin();
 			if(e && e->getUltimateOwner() != getUltimateOwner()){
 				enemy = e;
-				forcedEnemy = true;
+				forcedEnemy = ac->id() == ForceAttackCommand::sid;
 				task = Auto;
 				return true;
 			}

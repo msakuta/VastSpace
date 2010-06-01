@@ -131,6 +131,7 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 
 
 double Entity::maxhealth()const{return 100.;}
+void Entity::enterField(WarField *){}
 void Entity::anim(double){}
 void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
 void Entity::control(const input_t *i, double){inputs = *i;}

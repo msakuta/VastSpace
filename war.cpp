@@ -159,7 +159,9 @@ Entity *WarField::addent(Entity *e){
 	Entity **plist = e->isTargettable() ? &el : &bl;
 	e->w = this;
 	e->next = *plist;
-	return *plist = e;
+	*plist = e;
+	e->enterField(this); // This method is called after the object is brought into entity list.
+	return e;
 }
 
 Player *WarField::getPlayer(){
@@ -197,6 +199,13 @@ Player *WarField::getPlayer(){
 
 
 
+
+class WarSpaceFilterCallback : public btOverlapFilterCallback{
+	virtual bool needBroadphaseCollision(btBroadphaseProxy *proxy0, btBroadphaseProxy *proxy1)const{
+		bool ret = btOverlapFilterCallback::needBroadphaseCollision(proxy0, proxy1);
+		return ret;
+	}
+};
 
 
 const char *WarSpace::classname()const{

@@ -88,6 +88,8 @@ public:
 	virtual Entity *addent(Entity*);
 	virtual operator Docker*();
 	virtual bool undock(Dockable *);
+	virtual Vec3d getPortPos()const = 0; // Retrieves position to dock to
+	virtual Quatd getPortRot()const = 0; // Retrieves rotation of the port
 };
 
 class ScarryDocker : public Docker{
@@ -97,6 +99,8 @@ public:
 	static const unsigned classid;
 	const char *classname()const;
 	virtual bool undock(Dockable *);
+	virtual Vec3d getPortPos()const;
+	virtual Quatd getPortRot()const;
 };
 
 class GLWdock : public GLwindowSizeable{

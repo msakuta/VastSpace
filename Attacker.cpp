@@ -5,6 +5,7 @@
 #include "judge.h"
 #include "Scarry.h"
 #include "EntityCommand.h"
+#include "Sceptor.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -36,15 +37,19 @@ public:
 	virtual ArmBase *armsGet(int);
 	virtual int armsCount()const;
 	virtual const maneuve &getManeuve()const;
+	virtual Docker *getDockerInt();
 };
 
 class AttackerDocker : public Docker{
 public:
-	AttackerDocker(Entity *ae = NULL) : st(ae){}
+	int nextport;
+	AttackerDocker(Entity *ae = NULL) : st(ae), nextport(0){}
 	typedef Docker st;
 	static const unsigned classid;
 	const char *classname()const;
 	virtual bool undock(Dockable *);
+	virtual Vec3d getPortPos()const;
+	virtual Quatd getPortRot()const;
 };
 
 
@@ -83,6 +88,10 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	}
 	mass = 2e8;
 	health = maxhealth();
+
+	for(int i = 0; i < 6; i++)
+		docker->addent(new Sceptor(docker));
+
 	if(!aw)
 		return;
 	WarSpace *ws = *aw;
@@ -120,7 +129,7 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 //		bbody->setSleepingThresholds(.0001, .0001);
 
 		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody);
+		ws->bdw->addRigidBody(bbody, 2, ~0);
 	}
 }
 
@@ -132,6 +141,7 @@ void Attacker::static_init(){
 
 void Attacker::anim(double dt){
 	st::anim(dt);
+	docker->anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
 }
@@ -232,7 +242,9 @@ const Warpable::maneuve &Attacker::getManeuve()const{
 	return mn;
 }
 
-
+Docker *Attacker::getDockerInt(){
+	return docker;
+}
 
 
 
@@ -271,10 +283,23 @@ const char *AttackerDocker::classname()const{return "AttackerDocker";}
 
 bool AttackerDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
-		pe->pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
+		pe->pos = e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0));
 		pe->velo = e->velo;
-		pe->rot = e->rot;
+		pe->rot = e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.));
+		if(pe->bbody){
+			pe->bbody->setCenterOfMassTransform(btTransform(btqc(pe->rot), btvc(pe->pos)));
+			pe->bbody->setLinearVelocity(btvc(pe->velo));
+		}
+		nextport = (nextport + 1) % 2;
 		return true;
 	}
 	return false;
+}
+
+Vec3d AttackerDocker::getPortPos()const{
+	return Vec3d(0., -0.035, 0.070);
+}
+
+Quatd AttackerDocker::getPortRot()const{
+	return Quatd(1, 0, 0, 0);
 }

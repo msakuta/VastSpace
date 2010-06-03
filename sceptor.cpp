@@ -844,9 +844,22 @@ void Sceptor::anim(double dt){
 							parking = 1;
 							pt->velo += dr * (-dt * .5);
 							q2 = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
+							if(bbody){
+								btVector3 btvelo = bbody->getLinearVelocity();
+								btvelo += btvc(dr * (-dt * .5));
+								bbody->setLinearVelocity(btvelo);
+								btTransform wt = bbody->getWorldTransform();
+								wt.setRotation(wt.getRotation().slerp(btqc(q1), 1. - exp(-dt)));
+								bbody->setWorldTransform(wt);
+							}
 							pt->rot = q2;
 						}
 						else{
+
+							// Suppress side slips
+							Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
+							bbody->applyCentralForce(btvc(-sidevelo * mass));
+
 //							p->throttle = dr.slen() / 5. + .01;
 							steerArrival(dt, target, pm->velo, 1. / 10., .001);
 						}
@@ -898,6 +911,10 @@ void Sceptor::anim(double dt){
 						// Runup length
 						if(p->task == Dockque)
 							target0 += pm->getDocker()->getPortRot().trans(Vec3d(0, 0, -.3));
+
+						// Suppress side slips
+						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
+						bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;

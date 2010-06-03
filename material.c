@@ -56,12 +56,21 @@ void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, co
 
 GLuint CacheMaterial(const char *name){
 	struct material *m;
+	GLuint ret;
 	int i;
 	for(i = 0; i < g_nmats; i++) if(!strcmp(name, g_mats[i].name)){
 		m = &g_mats[i];
 		return CallCacheBitmap5(name, m->texname[0], &m->stp[0], m->texname[1], &m->stp[1]);
 	}
-	return CallCacheBitmap(name, name, NULL, NULL);
+	ret = CallCacheBitmap(name, name, NULL, NULL);
+	if(!ret){
+		dstr_t ds = dstr0;
+		dstrcat(&ds, "models/");
+		dstrcat(&ds, name);
+		ret = CallCacheBitmap(name, dstr(&ds), NULL, NULL);
+		dstrfree(&ds);
+	}
+	return ret;
 }
 
 void CacheSUFMaterials(const suf_t *suf){
@@ -113,6 +122,9 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 
 	infile = fopen(fname, "rb");
 
+	if(!infile)
+		return NULL;
+
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = my_error_exit;
 	/* Establish the setjmp return context for my_error_exit to use. */
@@ -122,7 +134,7 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 		 */
 		jpeg_destroy_decompress(&cinfo);
 		fclose(infile);
-		return 0;
+		return NULL;
 	}
 	jpeg_create_decompress(&cinfo);
 	jpeg_stdio_src(&cinfo, infile);

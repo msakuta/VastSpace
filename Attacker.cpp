@@ -64,8 +64,8 @@ public:
 
 hitbox Attacker::hitboxes[] = {
 	hitbox(Vec3d(0., 0., .050), Quatd(0,0,0,1), Vec3d(.125, .055, .150)),
-	hitbox(Vec3d(0.080, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.040, .035, .065)),
-	hitbox(Vec3d(-0.080, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.040, .035, .065)),
+	hitbox(Vec3d(0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
+	hitbox(Vec3d(-0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
 };
 const unsigned Attacker::nhitboxes = numof(hitboxes);
 struct hardpoint_static *Attacker::hardpoints = NULL;
@@ -161,8 +161,9 @@ void Attacker::draw(wardraw_t *wd){
 		sufbase = CallLoadSUF("models/attack_body.bin");
 		if(!sufbase) break;
 		sufbridge = CallLoadSUF("models/attack_bridge.bin");
-		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
-		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
+//		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
+//		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
+		CacheSUFMaterials(sufbase);
 		CacheSUFMaterials(sufbridge);
 		pst = AllocSUFTex(sufbase);
 		pstbridge = AllocSUFTex(sufbridge);

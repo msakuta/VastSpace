@@ -85,9 +85,6 @@ public:
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
 	static int cmd_mover(int argc, char *argv[], void *pv);
-	static int cmd_coordsys(int argc, char *argv[], void *pv);
-	static int cmd_position(int argc, char *argv[], void *pv);
-	static int cmd_velocity(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);
 	static teleport *findTeleport(const char *, int flags = ~0); // returns teleport node found

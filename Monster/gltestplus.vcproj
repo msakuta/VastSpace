@@ -387,18 +387,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\calc\calc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\calc\calc0.c"
-				>
-			</File>
-			<File
-				RelativePath="..\calc\calc3.c"
-				>
-			</File>
-			<File
 				RelativePath="..\cmd.c"
 				>
 			</File>
@@ -551,6 +539,22 @@
 				</File>
 				<File
 					RelativePath="..\draw\Sceptor-Draw.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="calc"
+				>
+				<File
+					RelativePath="..\calc\calc.c"
+					>
+				</File>
+				<File
+					RelativePath="..\calc\calc0.c"
+					>
+				</File>
+				<File
+					RelativePath="..\calc\calc3.c"
 					>
 				</File>
 			</Filter>

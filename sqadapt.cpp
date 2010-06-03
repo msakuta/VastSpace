@@ -41,6 +41,43 @@ void Push<const CoordSys>(SQVM *v, const CoordSys *cs){
 }
 }*/
 
+static const SQChar *CONSOLE_COMMANDS = _SC("console_commands");
+
+int ::sqa_console_command(int argc, char *argv[], int *retval){
+	HSQUIRRELVM &v = sqa::g_sqvm;
+	sq_pushroottable(v); // root
+	sq_pushstring(v, CONSOLE_COMMANDS, -1); // root "console_commands"
+	if(SQ_FAILED(sq_get(v, -2))){ // root table
+		sq_poptop(v);
+		return 0;
+	}
+	sq_pushstring(v, argv[0], -1); // root table argv[0]
+	if(SQ_FAILED(sq_get(v, -2))){ // root table closure
+		sq_pop(v, 2);
+		return 0;
+	}
+
+	// Pass all arguments as strings (no conversion is done beforehand).
+	sq_pushroottable(v);
+	for(int i = 1; i < argc; i++)
+		sq_pushstring(v, argv[i], -1);
+
+	// It's no use examining returned value in that case calling the function iteslf fails.
+	if(SQ_FAILED(sq_call(v, argc, SQTrue, SQFalse)))
+		return 0;
+
+	// Assume returned value integer.
+	int retint;
+	if(SQ_SUCCEEDED(sq_getinteger(v, -1, &retint))){
+		*retval = retint;
+		return 2;
+	}
+	else{
+		*retval = 0;
+		return 1;
+	}
+}
+
 namespace sqa{
 
 HSQUIRRELVM g_sqvm;
@@ -110,6 +147,27 @@ static SQInteger sqf_cmd(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_register_console_command(HSQUIRRELVM v){
+	const SQChar *name;
+	sq_getstring(v, 2, &name);
+	sq_pushroottable(v); // root
+	sq_pushstring(v, CONSOLE_COMMANDS, -1); // root "console_commands"
+
+	// If "console_commands" table does not exist in the root table, create an empty one.
+	if(SQ_FAILED(sq_get(v, -2))){ // root table
+		sq_newtable(v); // root table
+		sq_pushstring(v, CONSOLE_COMMANDS, -1); // root table "console_commands"
+		sq_push(v, -2); // root table "console_commands" table
+		if(SQ_FAILED(sq_createslot(v, -4))) // root table
+			;
+	}
+
+	sq_push(v, 2); // root table name
+	sq_push(v, 3); // root table name closure
+	sq_newslot(v, -3, SQFalse); // root table
+	return 0;
+}
+
 static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
@@ -165,7 +223,9 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 
 static SQInteger sqf_name(HSQUIRRELVM v){
 	CoordSys *p;
-	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
 	sq_pushstring(v, p->name, -1);
 	return 1;
 }
@@ -920,6 +980,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("setpos"), -1);
 	sq_newclosure(v, sqf_setintrinsic<Player, Vec3d, &Player::pos>, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getvelo"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, &Player::velo>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setvelo"), -1);
+	sq_newclosure(v, sqf_setintrinsic<Player, Vec3d, &Player::velo>, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("getrot"), -1);
 	sq_newclosure(v, sqf_getintrinsic<Player, Quatd, &Player::rot>, 0);
 	sq_createslot(v, -3);
@@ -943,17 +1009,29 @@ void sqa_init(){
 	sq_remove(v, -2); // this "player" Player-instance
 	sq_createslot(v, 1); // this
 
-	sq_poptop(v); // Pop the root table.
-}
+	sq_pushstring(v, _SC("register_console_command"), -1);
+	sq_newclosure(v, sqf_register_console_command, 0);
+	sq_createslot(v, 1);
 
-void sqa_anim0(){
-	sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{
 //		call_foo(v,1,2.5,_SC("teststring"));
 	}
 	else
 		CmdPrintf("scripts/init.nut failed.");
+
+	sq_poptop(v); // Pop the root table.
+}
+
+void sqa_anim0(){
+	sq_pushroottable(v); // root
+	sq_pushstring(v, _SC("init_Universe"), -1); // root "init_Universe"
+	if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
+		sq_pushroottable(v);
+		sq_call(v, 1, SQFalse, SQTrue);
+		sq_poptop(v);
+	}
+//	sq_poptop(v);
 }
 
 void sqa_anim(double dt){

@@ -1572,9 +1572,9 @@ int main(int argc, char *argv[])
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
-	CmdAddParam("coordsys", Player::cmd_coordsys, (void*)&pl);
-	CmdAddParam("position", Player::cmd_position, (void*)&pl);
-	CmdAddParam("velocity", Player::cmd_velocity, (void*)&pl);
+//	CmdAddParam("coordsys", Player::cmd_coordsys, (void*)&pl);
+//	CmdAddParam("position", Player::cmd_position, (void*)&pl);
+//	CmdAddParam("velocity", Player::cmd_velocity, (void*)&pl);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);

@@ -2,33 +2,6 @@
 /* Pseudo-prototype declaration of pre-defined classes and global variables
   by the application.
 
-IMPORTANT NOTE:
-  All properties marked by '***' returns value instead of reference when read.
-  This means altering the contents of those properties does not take effect to
-  the real entity.
-  For example, writing like
-
-    player.pos.x = 1.;
-
-  won't take effect as intended.
-  You must write like
-
-    local localpos = player.pos;
-    localpos.x = 1.;
-    player.pos = localpos;
-
-  to get it worked.
-  This issue is not intuitive, but getting around this problem introduces very
-  subtle problems too. It requires referenced object's lifetime management,
-  that will be as tough as implementing memory management system of Squirrel.
-
-  -- These properties are no longer provided and explicit get*() and set*()
-  functions are added. It's more convincing that writing
-
-    player.getpos().x = 1.;
-
-  does not take effect.
-
 
 
 // Arithmetic vector with internal element type of double.
@@ -81,6 +54,8 @@ class Entity{
 	string classname;
 	Vec3d getpos();
 	void setpos(Vec3d);
+	Vec3d getvelo();
+	void setvelo(Vec3d);
 	Quatd getrot();
 	void setrot(Quatd);
 	void command(string, ...);
@@ -100,6 +75,26 @@ class Player{
 
 ::player <- Player();
 
+// Registers a function as a console command. You can manually add entryies to global table 'console_commands' too.
+void register_console_command(string name, function);
+
+
+
+
+// The application will try to call the following functions occasionary.
+// Define them in this file in order to respond such events.
+
+// Called just after the Universe is initialized.
+// Please note that when this file is interpreted, the universe is not initialized,
+// so you must defer operation on the universe using this callback.
+void init_Universe();
+
+// Called each frame.
+void frameproc(double frametime);
+
+// Called when an Entity is about to be deleted.
+void hook_delete_Entity(Entity e);
+
 */
 
 class Cvar{
@@ -116,10 +111,12 @@ print("Squirrel script initialized!");
 cvar <- Cvar();
 cvar.pause = "1";
 
+/*
 local a = Vec3d(0,1,2), b = Vec3d(2,3,4);
 print(a + " + " + b + " = " + (a + b));
 print(a + ".sp(" + b + ") = " + a.sp(b));
 print(a + ".vp(" + b + ") = " + a.vp(b));
+*/
 
 function fact(n){
 	if(1 < n)
@@ -127,6 +124,28 @@ function fact(n){
 	else
 		return 1;
 }
+
+function printtree(cs){
+	local child;
+	for(child = cs.child(); child != null; child = child.next()){
+		print(child.getpath());
+		printtree(child);
+	}
+}
+
+function foreachents(cs, proc){
+	local e;
+	for(e = cs.entlist; e != null; e = e.next)
+		proc(e);
+}
+
+function countents(team){
+	local a = { ents = 0, team = team };
+	foreachents(player.cs,
+		function(e):(a){ if(e.race == a.team) a.ents++; });
+	return a.ents;
+}
+
 
 function deltaFormation(classname, team, rot, offset, spacing, count){
 	local cs = player.cs;
@@ -141,6 +160,42 @@ function deltaFormation(classname, team, rot, offset, spacing, count){
 //		print(e.classname + ": " + e.race + ", " + e.pos);
 	}
 }
+
+register_console_command("coordsys", function(...){
+	if(vargc == 0){
+		print("identity: " + player.cs.name());
+		print("path: " + player.cs.getpath());
+		print("formal name: " + player.cs.name());
+		return 0;
+	}
+	local cs = universe.findcspath(vargv[0]);
+	if(cs != null && player.cs != cs){
+/*		player.setrot(player.getrot() * cs.getrot());
+		player.setpos(player.getpos() + cs.getpos());
+		player.setvelo(player.getvelo() + cs.getvelo());*/
+		player.cs = cs;
+		print("CoordSys changed to " + cs.getpath());
+	}
+	else
+		print("Specified coordinate system is not existing or currently selected");
+});
+
+register_console_command("position", function(...){
+	if(vargc == 0){
+		print(player.getpos());
+		return;
+	}
+	player.setpos(Vec3d(vargv[0], vargv[1], vargc[2]));
+});
+
+register_console_command("velocity", function(...){
+	if(vargc == 0){
+		print(player.getvelo());
+		return;
+	}
+	player.setvelo(Vec3d(x, y, z));
+});
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));
@@ -165,32 +220,15 @@ function att(){
 function sce(){
 	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
 }
+
+function init_Universe(){
 //des();
 att();
 sce();
 
-function printtree(cs){
-	local child;
-	for(child = cs.child(); child != null; child = child.next()){
-		print(child.getpath());
-		printtree(child);
-	}
-}
-
-function foreachents(cs, proc){
-	local e;
-	for(e = cs.entlist; e != null; e = e.next)
-		proc(e);
-}
-
-function countents(team){
-	local a = { ents = 0, team = team };
-	foreachents(player.cs,
-		function(e):(a){ if(e.race == a.team) a.ents++; });
-	return a.ents;
-}
-
 player.setpos(Vec3d(0.0, 0.2, 1.5));
+
+}
 
 showdt <- false;
 framecount <- 0;

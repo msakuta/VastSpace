@@ -4,6 +4,7 @@
 #include "calc/calc.h"
 #include "cmd_int.h"
 #include "viewer.h"
+#include "sqadapt.h"
 #include <clib/c.h>
 /*#include <clib/gl/gldraw.h>*/
 #include <clib/timemeas.h>
@@ -723,6 +724,7 @@ static int CmdExecD(char *cmdstring){
 	do{
 	char *argv[MAX_ARGC];
 	int argc;
+	int retval;
 	argc = argtok(argv, cmdstring, &post, MAX_ARGC);
 	cmd = argv[0];
 /*	cmd = strtok(cmdstring, " \t@\n;");
@@ -768,6 +770,13 @@ static int CmdExecD(char *cmdstring){
 		ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
 		continue;
 	}
+
+	/* Try Squirrel command layer. */
+	if(sqa_console_command(argc, argv, &retval)){
+		ret = retval;
+		continue;
+	}
+
 	{
 		struct cvar *cv;
 		for(cv = cvarlist[hashfunc(cmd) % numof(cvarlist)]; cv; cv = cv->next) if(!strcmp(cv->name, cmd)){

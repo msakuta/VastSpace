@@ -2,9 +2,19 @@
 #define SQADAPT_H
 // Squirrel library adapter for gltestplus project.
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int sqa_console_command(int argc, char *argv[], int *retval);
+
+#ifdef __cplusplus
+
 #include <squirrel.h>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+
+
 
 class Serializable;
 class Entity;
@@ -143,5 +153,7 @@ SQInteger sqf_set(HSQUIRRELVM v){
 }
 
 using namespace sqa;
+
+#endif // __cplusplus
 
 #endif

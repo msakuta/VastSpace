@@ -937,6 +937,16 @@ void LTurret::tryshoot(){
 			AddTelineCallback3D(ws->tell, pos + pz->pos, smokevelo, .015, quat_u, Vec3d(0, 0, M_PI * (drseq(&w->rs) - .5)),
 				vec3_000, smokedraw_swirl, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 1.5);
 		}
+		if(WarSpace *ws = *w) for(int j = 0; j < 15; j++){
+			double triangle = drseq(&w->rs);
+			triangle += drseq(&w->rs); // Triangular distributed random value
+			Vec3d smokevelo = direction * .1 * triangle + this->velo;
+			smokevelo[0] += .05 * (drseq(&w->rs) - .5);
+			smokevelo[1] += .05 * (drseq(&w->rs) - .5);
+			smokevelo[2] += .05 * (drseq(&w->rs) - .5);
+			AddTelineCallback3D(ws->tell, pz->pos, smokevelo, .010, quat_u, vec3_000,
+				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5);
+		}
 	}
 	this->cooldown += reloadtime();
 	this->mf += .3;

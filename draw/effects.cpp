@@ -15,6 +15,34 @@ extern "C"{
 #include <math.h>
 //#include <gl/glext.h>
 
+void sparkdraw(const tent3d_line_callback *p, const tent3d_line_drawdata *dd, void *private_data){
+	double length = p->len;
+	double width = .0005;
+	if(dd->pgc->scale(p->pos) * width < 1.)
+		return;
+	glColor4ub(255,127,0,255);
+	Vec3d start = p->pos;
+	Vec3d end = p->pos;
+	end += p->velo / 10. /** -(runlength / velolen < length ? runlength / velolen : length)*/;
+	static GLuint texname = 0;
+	static const GLfloat envcolor[4] = {.5,0,0,1};
+	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+	if(!texname){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		texname = CallCacheBitmap5("ricochet.bmp", "ricochet.bmp", &stp, NULL, NULL);
+	}
+	glCallList(texname);
+	glColor4f(1,1,1, MIN(1., p->life / .25));
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
+	gldTextureBeam(dd->viewpoint, end, start, width);
+	glPopAttrib();
+}
+
 static void smokedraw_int(const struct tent3d_line_callback *p, COLOR32 col, float alpha){
 	static GLuint list = 0;
 	if(!list){

@@ -1159,7 +1159,7 @@ void Sceptor::anim(double dt){
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
 			}
 
 			{/* explode shockwave thingie */

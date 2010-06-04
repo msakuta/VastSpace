@@ -4,6 +4,7 @@
 #include "serial_util.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#include "draw/effects.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -224,9 +225,6 @@ void Destroyer::draw(wardraw_t *wd){
 		glPopAttrib();
 	}
 }
-
-extern void smokedraw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
-extern void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
 
 int Destroyer::takedamage(double damage, int hitpart){
 	Destroyer *p = this;

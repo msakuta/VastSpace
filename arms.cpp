@@ -16,6 +16,7 @@
 #include "material.h"
 #include "Missile.h"
 #include "EntityCommand.h"
+#include "draw/effects.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -910,13 +911,32 @@ void LTurret::tryshoot(){
 	mat = mat2.rotx(pitch);
 	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
 	for(int i = 0; i < 2; i++){
-		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, 0);
+		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
+		Vec3d direction = mat.dvp3(forward);
 		Bullet *pz;
 		pz = new Bullet(base, bulletlife(), 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
+		pz->velo = direction * bulletspeed() + this->velo;
 		pz->rot = qrot;
+
+		if(WarSpace *ws = *w) for(int j = 0; j < 3; j++){
+			Vec3d pos;
+			COLOR32 col = 0;
+			pos[0] = .02 * (drseq(&w->rs) - .5);
+			pos[1] = .02 * (drseq(&w->rs) - .5);
+			pos[2] = .02 * (drseq(&w->rs) - .5);
+			col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 95,0,0);
+			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 80,0);
+			col |= COLOR32RGBA(0,0,0,191);
+			Vec3d smokevelo = direction * .02 * (drseq(&w->rs) + .5) + this->velo;
+			smokevelo[0] += .02 * (drseq(&w->rs) - .5);
+			smokevelo[1] += .02 * (drseq(&w->rs) - .5);
+			smokevelo[2] += .02 * (drseq(&w->rs) - .5);
+			AddTelineCallback3D(ws->tell, pos + pz->pos, smokevelo, .015, quat_u, Vec3d(0, 0, M_PI * (drseq(&w->rs) - .5)),
+				vec3_000, smokedraw_swirl, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 1.5);
+		}
 	}
 	this->cooldown += reloadtime();
 	this->mf += .3;

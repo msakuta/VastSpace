@@ -297,8 +297,27 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		return 0;
 	const SQChar *s;
 	sq_getstring(v, 2, &s);
-	if(!strcmp(s, _SC("Dock"))){
+	if(!strcmp(s, _SC("Halt"))){
+		p->command(&HaltCommand());
+	}
+	else if(!strcmp(s, _SC("Move"))){
+		MoveCommand com;
+		SQUserPointer typetag;
+		Vec3d *pvec3;
+		if(OT_INSTANCE != sq_gettype(v, 3) || (sq_gettypetag(v, 3, &typetag), typetag != tt_Vec3d))
+			return sq_throwerror(v, _SC("Incompatible argument type"));
+		sq_pushstring(v, _SC("a"), -1);
+		if(SQ_FAILED(sq_get(v, 3)))
+			return sq_throwerror(v, _SC("Corrupt Vec3d data"));
+		sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
+		com.dest = *pvec3;
+		p->command(&com);
+	}
+	else if(!strcmp(s, _SC("Dock"))){
 		p->command(&DockCommand());
+	}
+	else if(!strcmp(s, _SC("Parade"))){
+		p->command(&ParadeCommand());
 	}
 	else if(!strcmp(s, _SC("SetAggressive"))){
 		p->command(&SetAggressiveCommand());
@@ -514,9 +533,14 @@ static SQInteger sqf_Vec3d_constructor(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("a"), -1);
 	Vec3d &vec = *(Vec3d*)sq_newuserdata(v, sizeof(Vec3d));
 	for(int i = 0; i < 3; i++){
-		SQFloat f;
-		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
-			vec[i] = f;
+		if(i + 2 <= argc){
+			SQFloat f;
+			const SQChar *str;
+			if(!SQ_FAILED(sq_getfloat(v, i + 2, &f)))
+				vec[i] = f;
+			else if(!SQ_FAILED(sq_getstring(v, i + 2, &str)))
+				vec[i] = atof(str);
+		}
 		else
 			vec[i] = 0.;
 	}

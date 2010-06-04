@@ -1590,10 +1590,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("load", Universe::cmd_load, &universe);
 	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
-//	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
-	CmdAddParam("parade_formation", Sceptor::cmd_parade_formation, &pl);
 	CmdAddParam("moveorder", Player::cmd_moveorder, &pl);
-	CmdAddParam("halt", cmd_halt, &pl);
 	CmdAdd("sq", cmd_sq);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);

@@ -526,6 +526,10 @@
 				Name="draw"
 				>
 				<File
+					RelativePath="..\draw\effects.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\Player-draw.cpp"
 					>
 				</File>
@@ -634,6 +638,10 @@
 			</File>
 			<File
 				RelativePath="..\Destroyer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\draw\effects.h"
 				>
 			</File>
 			<File

@@ -14,6 +14,7 @@
 #include "astrodraw.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#include "draw/effects.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -1148,7 +1149,6 @@ void Sceptor::anim(double dt){
 
 			/* smokes */
 			for(int i = 0; i < 16; i++){
-				void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 				Vec3d pos;
 				COLOR32 col = 0;
 				pos[0] = .02 * (drseq(&w->rs) - .5);

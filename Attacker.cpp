@@ -163,6 +163,13 @@ void Attacker::draw(wardraw_t *wd){
 		sufbridge = CallLoadSUF("models/attack_bridge.bin");
 //		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
 //		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
+		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.env = GL_ADD;
+		stp.mipmap = 0;
+		CallCacheBitmap5("attacker_engine.bmp", "models/attacker_engine_br.bmp", &stp, "models/attacker_engine.bmp", NULL);
 		CacheSUFMaterials(sufbase);
 		CacheSUFMaterials(sufbridge);
 		pst = AllocSUFTex(sufbase);

@@ -237,7 +237,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
 		if(!stp2.bmi)
 			return 0;
-		jpeg2 = 1;
+//		jpeg2 = 1;
 	}
 
 	ret = CacheSUFMTex(entry, &stp, fname2 ? (BITMAPINFO*)&stp2 : NULL);

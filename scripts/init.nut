@@ -181,7 +181,7 @@ register_console_command("coordsys", function(...){
 });
 
 register_console_command("position", function(...){
-	if(vargc == 0){
+	if(vargc < 3){
 		print(player.getpos());
 		return;
 	}
@@ -189,17 +189,47 @@ register_console_command("position", function(...){
 });
 
 register_console_command("velocity", function(...){
-	if(vargc == 0){
+	if(vargc < 3){
 		print(player.getvelo());
 		return;
 	}
 	player.setvelo(Vec3d(x, y, z));
 });
 
+register_console_command("halt", function(...){
+	local e = player.selected;
+	for(; e != null; e = e.selectnext)
+		e.command("Halt");
+});
+
+register_console_command("moveto", function(...){
+	if(vargc < 3){
+		print("Usage: moveto x y z");
+		return;
+	}
+	local e = player.selected;
+	local pos = Vec3d(vargv[0], vargv[1], vargv[2]);
+	print(vargv[0] + " " + vargv[1] + " " + vargv[2] + " " + pos);
+	for(; e != null; e = e.selectnext)
+		e.command("Move", pos);
+});
+
 register_console_command("dock", function(...){
 	local e = player.selected;
 	for(; e != null; e = e.selectnext)
 		e.command("Dock");
+});
+
+register_console_command("parade", function(...){
+	local e = player.selected;
+	for(; e != null; e = e.selectnext)
+		e.command("Parade");
+});
+
+register_console_command("sqcmdlist", function(...){
+	foreach(name,proc in console_commands)
+		print(name);
+	print(console_commands.len() + " commands listed");
 });
 
 
@@ -231,6 +261,7 @@ function init_Universe(){
 //des();
 att();
 sce();
+deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
 
 player.setpos(Vec3d(0.0, 0.2, 1.5));
 

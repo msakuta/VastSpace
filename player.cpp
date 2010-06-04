@@ -290,6 +290,19 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			return sq_throwerror(v, _SC("no cs"));
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("selected"))){
+		if(!p->selected){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		if(!sqa_newobj(v, p->selected))
+			return sq_throwerror(v, _SC("no selected"));
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("chase"))){
 		if(!p->chase){
 			sq_pushnull(v);

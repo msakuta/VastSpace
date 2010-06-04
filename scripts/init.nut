@@ -196,6 +196,12 @@ register_console_command("velocity", function(...){
 	player.setvelo(Vec3d(x, y, z));
 });
 
+register_console_command("dock", function(...){
+	local e = player.selected;
+	for(; e != null; e = e.selectnext)
+		e.command("Dock");
+});
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));

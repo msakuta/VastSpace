@@ -3,16 +3,18 @@
 #include <set>
 #include <cpplib/vec3.h>
 
+typedef const char *EntityCommandID;
+
 #define DERIVE_COMMAND(name,base) struct name : public base{\
 	typedef base st;\
-	static const char *sid;\
-	virtual const char *id()const;\
-	virtual bool derived(const char *)const;\
+	static EntityCommandID sid;\
+	virtual EntityCommandID id()const;\
+	virtual bool derived(EntityCommandID)const;\
 }
 
 #define IMPLEMENT_COMMAND(name,idname) const char *name::sid = idname;\
-	const char *name::id()const{return sid;}\
-	bool name::derived(const char *aid)const{if(aid==sid)return true;else return st::derived(aid);}
+	EntityCommandID name::id()const{return sid;}\
+	bool name::derived(EntityCommandID aid)const{if(aid==sid)return true;else return st::derived(aid);}
 
 // Base class for all Entity commands.
 struct EntityCommand{
@@ -20,8 +22,8 @@ struct EntityCommand{
 	// it is just required to point the same address for all the instances but
 	// never coincides between different classes.
 	// A static const string of class name is ideal for this returned vale.
-	virtual const char *id()const = 0;
-	virtual bool derived(const char *)const;
+	virtual EntityCommandID id()const = 0;
+	virtual bool derived(EntityCommandID)const;
 };
 
 template<typename CmdType>
@@ -40,9 +42,9 @@ DERIVE_COMMAND(HaltCommand, EntityCommand);
 class AttackCommand : public EntityCommand{
 public:
 	typedef EntityCommand st;
-	static const char *sid;
-	virtual const char *id()const;
-	virtual bool derived(const char*)const;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
 	std::set<Entity*> ents;
 };
 
@@ -51,9 +53,9 @@ DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 class MoveCommand : public EntityCommand{
 public:
 	typedef EntityCommand st;
-	static const char *sid;
-	virtual const char *id()const;
-	virtual bool derived(const char*)const;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
 	Vec3d dest;
 };
 

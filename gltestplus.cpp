@@ -1572,9 +1572,6 @@ int main(int argc, char *argv[])
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
-//	CmdAddParam("coordsys", Player::cmd_coordsys, (void*)&pl);
-//	CmdAddParam("position", Player::cmd_position, (void*)&pl);
-//	CmdAddParam("velocity", Player::cmd_velocity, (void*)&pl);
 	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
@@ -1593,7 +1590,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("load", Universe::cmd_load, &universe);
 	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
-	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
+//	CmdAddParam("dock", Sceptor::cmd_dock, &pl);
 	CmdAddParam("parade_formation", Sceptor::cmd_parade_formation, &pl);
 	CmdAddParam("moveorder", Player::cmd_moveorder, &pl);
 	CmdAddParam("halt", cmd_halt, &pl);

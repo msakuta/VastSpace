@@ -284,7 +284,7 @@ int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &s
 }
 
 
-bool EntityCommand::derived(const char*)const{return false;}
+bool EntityCommand::derived(EntityCommandID)const{return false;}
 IMPLEMENT_COMMAND(HaltCommand, "Halt")
 IMPLEMENT_COMMAND(AttackCommand, "Attack")
 IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")

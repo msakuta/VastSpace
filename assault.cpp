@@ -405,7 +405,7 @@ bool Assault::command(EntityCommand *com){
 		}
 		return true;
 	}
-	if(com->id() == AttackCommand::sid || com->id() == ForceAttackCommand::sid){
+	if(com->derived(AttackCommand::sid)){
 		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 			turrets[i]->command(com);
 		return st::command(com);

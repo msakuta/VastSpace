@@ -256,6 +256,19 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("selectnext"))){
+		if(!p->selectnext){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->selectnext);
+//		sq_setinstanceup(v, -1, p->next);
+		return 1;
+	}
 	else
 		return sqf_get<Entity>(v);
 }
@@ -280,10 +293,14 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 
 static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	Entity *p;
-	sqa_refobj(v, (SQUserPointer*)&p);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return 0;
 	const SQChar *s;
 	sq_getstring(v, 2, &s);
-	if(!strcmp(s, _SC("SetAggressive"))){
+	if(!strcmp(s, _SC("Dock"))){
+		p->command(&DockCommand());
+	}
+	else if(!strcmp(s, _SC("SetAggressive"))){
 		p->command(&SetAggressiveCommand());
 	}
 	else if(!strcmp(s, _SC("SetPassive"))){

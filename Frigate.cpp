@@ -503,8 +503,7 @@ bool Frigate::command(EntityCommand *com){
 		enemy = NULL; // Temporarily forget about enemy
 		return true;
 	}
-	AttackCommand *ac;
-	if((ac = InterpretCommand<AttackCommand>(com)) || (ac = InterpretCommand<ForceAttackCommand>(com))){
+	else if(AttackCommand *ac = InterpretDerivedCommand<AttackCommand>(com)){
 		if(!ac->ents.empty()){
 			enemy = *ac->ents.begin();
 			task = sship_attack;

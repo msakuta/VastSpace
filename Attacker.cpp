@@ -38,6 +38,7 @@ public:
 	virtual int armsCount()const;
 	virtual const maneuve &getManeuve()const;
 	virtual Docker *getDockerInt();
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 };
 
 class AttackerDocker : public Docker{
@@ -80,12 +81,14 @@ Attacker::Attacker() : docker(NULL){}
 Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	static_init();
 	init();
+	static int count = 0;
 	turrets = new ArmBase*[nhardpoints];
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = new LTurret(this, &hardpoints[i]);
+		turrets[i] = (count % 2 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}
+	count++;
 	mass = 2e8;
 	health = maxhealth();
 
@@ -252,6 +255,30 @@ const Warpable::maneuve &Attacker::getManeuve()const{
 
 Docker *Attacker::getDockerInt(){
 	return docker;
+}
+
+int Attacker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+#if 0
+	return st::tracehit(src, dir, rad, dt, ret, retp, retn);
+#else
+	double sc[3];
+	double best = dt, retf;
+	int reti = 0, i, n;
+	for(n = 0; n < nhitboxes; n++){
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		rot = this->rot * hitboxes[n].rot;
+		for(i = 0; i < 3; i++)
+			sc[i] = hitboxes[n].sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+	}
+	return reti;
+#endif
 }
 
 

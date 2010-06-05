@@ -4,6 +4,7 @@
 #include "player.h"
 #include "judge.h"
 #include "serial_util.h"
+#include "draw/effects.h"
 //#include "warutil.h"
 extern "C"{
 #include "bitmap.h"
@@ -718,19 +719,19 @@ void Bullet::anim(double dt){
 					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);*/
 				}
 				ws->effects++;
-				if(ws->tell){
+				if(hitpart != 1000 && ws->tell){
 					Vec3d accel = w->accel(pb->pos, pb->velo);
 					int j, n;
 					frexp(pb->damage, &n);
-					n /= 4;
+					n = n / 2 + drseq(&w->rs);
 					for(j = 0; j < n; j++){
-						double velo[3];
-						velo[0] = .15 * (drseq(&w->rs) - .5);
-						velo[1] = .15 * (drseq(&w->rs) - .5);
-						velo[2] = .15 * (drseq(&w->rs) - .5);
-						AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
+						Vec3d velo = -pb->velo.norm() * .2;
+						for(int k = 0; k < 3; k++)
+							velo[k] += .15 * (drseq(&w->rs) - .5);
+/*						AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
 							j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
-							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);
+							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);*/
+						AddTelineCallback3D(ws->tell, pos, velo, .00025 + n * .0001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
 					}
 				}
 #if 0

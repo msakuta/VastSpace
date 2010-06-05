@@ -64,6 +64,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual bool command(EntityCommand *com);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 
 	void maneuver(const Mat4d &mat, double dt, const struct maneuve *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);

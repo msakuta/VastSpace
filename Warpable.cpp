@@ -30,6 +30,31 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 #include <btBulletDynamicsCommon.h>
+#include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
+
+/*
+Raytracer uses the Convex rayCast to visualize the Collision Shapes/Minkowski Sum.
+Very basic raytracer, rendering into a texture.
+*/
+
+///Low level demo, doesn't include btBulletCollisionCommon.h
+
+#include "LinearMath/btQuaternion.h"
+#include "LinearMath/btTransform.h"
+
+//#include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
+//#include "BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h"
+#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
+//#include "BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h"
+
+//#include "BulletCollision/CollisionShapes/btSphereShape.h"
+//#include "BulletCollision/CollisionShapes/btMultiSphereShape.h"
+
+//#include "BulletCollision/CollisionShapes/btConvexHullShape.h"
+//#include "LinearMath/btAabbUtil2.h"
+//#include "BulletCollision/CollisionShapes/btBoxShape.h"
+//#include "BulletCollision/CollisionShapes/btCompoundShape.h"
+
 
 
 
@@ -1241,3 +1266,76 @@ bool Warpable::command(EntityCommand *com){
 	return false;
 }
 
+bool singleObjectRaytest(btRigidBody *bbody, const btVector3& rayFrom,const btVector3& rayTo,btScalar &fraction,btVector3& worldNormal,btVector3& worldHitPoint)
+{
+	btScalar closestHitResults = 1.f;
+
+	btCollisionWorld::ClosestRayResultCallback resultCallback(rayFrom,rayTo);
+
+	bool hasHit = false;
+	btConvexCast::CastResult rayResult;
+//	btSphereShape pointShape(0.0f);
+	btTransform rayFromTrans;
+	btTransform rayToTrans;
+
+	rayFromTrans.setIdentity();
+	rayFromTrans.setOrigin(rayFrom);
+	rayToTrans.setIdentity();
+	rayToTrans.setOrigin(rayTo);
+
+	//do some culling, ray versus aabb
+	btVector3 aabbMin,aabbMax;
+	bbody->getCollisionShape()->getAabb(bbody->getWorldTransform(),aabbMin,aabbMax);
+	btScalar hitLambda = 1.f;
+	btVector3 hitNormal;
+	btCollisionObject	tmpObj;
+	tmpObj.setWorldTransform(bbody->getWorldTransform());
+
+
+//	if (btRayAabb(rayFrom,rayTo,aabbMin,aabbMax,hitLambda,hitNormal))
+	{
+		//reset previous result
+
+		btCollisionWorld::rayTestSingle(rayFromTrans,rayToTrans, &tmpObj, bbody->getCollisionShape(), bbody->getWorldTransform(), resultCallback);
+		if (resultCallback.hasHit())
+		{
+			//float fog = 1.f - 0.1f * rayResult.m_fraction;
+			resultCallback.m_hitNormalWorld.normalize();//.m_normal.normalize();
+			worldNormal = resultCallback.m_hitNormalWorld;
+			//worldNormal = transforms[s].getBasis() *rayResult.m_normal;
+			worldNormal.normalize();
+			worldHitPoint = resultCallback.m_hitPointWorld;
+			hasHit = true;
+			fraction = resultCallback.m_closestHitFraction;
+		}
+	}
+
+	return hasHit;
+}
+
+
+int Warpable::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	if(bbody){
+		btScalar btfraction;
+		btVector3 btnormal, btpos;
+		btVector3 from = btvc(src);
+		btVector3 to = btvc(src + (dir - velo) * dt);
+		if(WarSpace *ws = *w){
+			btCollisionWorld::ClosestRayResultCallback callback(from, to);
+			ws->bdw->rayTest(from, to, callback);
+			if(callback.hasHit() && callback.m_collisionObject == bbody){
+				if(ret) *ret = callback.m_closestHitFraction * dt;
+				if(retp) *retp = btvc(callback.m_hitPointWorld);
+				if(retn) *retn = btvc(callback.m_hitNormalWorld);
+				return 1;
+			}
+		}
+		else if(singleObjectRaytest(bbody, from, to, btfraction, btnormal, btpos)){
+			if(ret) *ret = btfraction * dt;
+			if(retp) *retp = btvc(btpos);
+			if(retn) *retn = btvc(btnormal);
+			return 1;
+		}
+	}
+	return 0/*st::tracehit(src, dir, rad, dt, ret, retp, retn)*/;
+}

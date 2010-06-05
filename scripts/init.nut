@@ -257,13 +257,16 @@ function sce(){
 	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
 }
 
-function init_Universe(){
-//des();
-att();
-sce();
-deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
+register_console_command("ass", ass);
+register_console_command("att", att);
 
-player.setpos(Vec3d(0.0, 0.2, 1.5));
+function init_Universe(){
+	//des();
+	//att();
+	//sce();
+	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
+
+	player.setpos(Vec3d(0.0, 0.2, 1.5));
 
 }
 
@@ -293,7 +296,7 @@ function frameproc(dt){
 
 	local currenttime = universe.global_time;
 
-	if(false && checktime + 1. < currenttime){
+	if(true && checktime + 1. < currenttime){
 		checktime = currenttime;
 		local racec = [countents(0), countents(1)];
 

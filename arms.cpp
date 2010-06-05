@@ -859,7 +859,7 @@ void LTurret::drawtra(wardraw_t *wd){
 	if(this->mf) for(int i = 0; i < 2; i++){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;
-		Vec3d pos, const barrelpos(.005 * (i * 2 - 1), .005, -.0025), const muzzlepos(0, .0, -.030);
+		Vec3d pos, const barrelpos(.005 * (i * 2 - 1), .005, -.0025), const muzzlepos(0, .0, -.030 + blowback);
 		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
 		this->transform(mat);
 		mat2 = mat.roty(this->py[1]);
@@ -944,8 +944,8 @@ void LTurret::tryshoot(){
 			smokevelo[0] += .05 * (drseq(&w->rs) - .5);
 			smokevelo[1] += .05 * (drseq(&w->rs) - .5);
 			smokevelo[2] += .05 * (drseq(&w->rs) - .5);
-			AddTelineCallback3D(ws->tell, pz->pos, smokevelo, .010, quat_u, vec3_000,
-				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5);
+			AddTelineCallback3D(ws->tell, pz->pos, smokevelo, .0004, quat_u, vec3_000,
+				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5 + .25 * (drseq(&w->rs) - .5));
 		}
 	}
 	this->cooldown += reloadtime();

@@ -7,17 +7,110 @@
 #include "serial_util.h"
 #include "stellar_file.h"
 #include "sqadapt.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
 
+float Player::camera_mode_switch_time = 1.f;
+
 static teleport *tplist;
 static int ntplist;
 
-Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), flypower(1.), viewdist(1.),
-	mover(&Player::freelook), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0))
+static long framecount = 0;
+
+void Player::mover_t::operator ()(const input_t &inputs, double dt){}
+
+Vec3d Player::mover_t::getpos()const{
+	return pl.pos;
+}
+
+Quatd Player::mover_t::getrot()const{
+	return pl.rot;
+}
+
+// Response to rotational movement depends on mover.
+void Player::mover_t::rotateLook(double dx, double dy){
+	Quatd &rot = pl.rot;
+	const double speed = .001 / 2. * pl.fov;
+	const double one_minus_epsilon = .999;
+
+	rot = rot.quatrotquat(Vec3d(0, dx * speed, 0));
+	rot = rot.quatrotquat(Vec3d(dy * speed, 0, 0));
+}
+
+
+class CockpitviewMover : public Player::mover_t{
+public:
+	typedef Player::mover_t st;
+	CockpitviewMover(Player &a) : st(a){}
+/*	virtual Quatd getrot()const{
+		if(!pl.chase)
+			return pl.rot;
+		Vec3d dummy;
+		Quatd crot;
+		pl.chase->cockpitView(dummy, crot, pl.chasecamera);
+		return pl.rot * crot.cnj();
+	}*/
+};
+
+FreelookMover::FreelookMover(Player &a) : st(a), flypower(1.), pos(a.pos){}
+
+Quatd FreelookMover::getrot()const{
+	if(!pl.chase)
+		return pl.rot;
+	Vec3d dummy;
+	Quatd crot;
+	pl.chase->cockpitView(dummy, crot, pl.chasecamera);
+	return pl.rot * crot.cnj();
+}
+
+Vec3d FreelookMover::getpos()const{
+	return pos;
+}
+
+
+class TacticalMover : public Player::mover_t{
+public:
+	typedef Player::mover_t st;
+	Vec3d pos;
+	Quatd rot;
+	TacticalMover(Player &a) : st(a), rot(0,0,0,1){}
+	void operator ()(const input_t &inputs, double dt);
+	Quatd getrot()const{return rot;}
+	Vec3d getpos()const{return pos;}
+	void setrot(const Quatd &arot){rot = arot;}
+	void rotateLook(double dx, double dy);
+};
+
+// Response to rotational movement depends on mover.
+void TacticalMover::rotateLook(double dx, double dy){
+	const double speed = .001 / 2. * pl.fov;
+	const double one_minus_epsilon = .999;
+
+	// Fully calculate pitch, yaw and roll from quaternion.
+	// This calculation is costly, but worth doing everytime mouse moves, for majority of screen is affected.
+	Vec3d view = rot.itrans(vec3_001);
+	double phi = -atan2(view[0], view[2]);
+	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
+	Quatd rot1 = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+	Quatd rot2 = rot * rot1.cnj();
+	Vec3d right = rot2.itrans(vec3_100);
+
+	// Add in instructed movement here.
+	phi += dx * speed;
+	theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
+	double roll = -atan2(right[1], right[0]);
+	rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+}
+
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), viewdist(1.),
+	nextmover(NULL), blendmover(0), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
+	freelook(new FreelookMover(*this)),
+	cockpitview(new CockpitviewMover(*this)), tactical(new TacticalMover(*this))
 {
+	mover = freelook;
 }
 
 Player::~Player(){
@@ -35,17 +128,33 @@ void Player::free(){
 }
 
 
+inline Quatd Player::getrawrot(mover_t *mover)const{
+	return mover->getrot();
+}
+
+inline Vec3d Player::getrawpos(mover_t *mover)const{
+	return mover->getpos();
+}
+
 Quatd Player::getrot()const{
-	if(!chase || mover == &Player::tactical)
-		return rot;
-	Vec3d dummy;
-	Quatd crot;
-	chase->cockpitView(dummy, crot, chasecamera);
-	return rot * crot.cnj();
+	if(nextmover && mover != nextmover){
+/*		btQuaternion q1 = btqc(getrawrot(mover)), q2 = btqc(getrawrot(nextmover));
+		Quatd ret = btqc(q1.slerp(q2, blendmover).normalize());
+		if(framecount % 2)
+			return ret;
+		else*/
+			return Quatd::slerp(getrawrot(mover), getrawrot(nextmover), blendmover /* (sqrt(fabs(blendmover - .5) / .5) * signof(blendmover - .5) + 1.) / 2.*/).normin();
+	}
+	else
+		return getrawrot(mover);
 }
 
 Vec3d Player::getpos()const{
-	return pos;
+	if(nextmover && mover != nextmover){
+		return getrawpos(mover) * (1. - blendmover) + getrawpos(nextmover) * blendmover;
+	}
+	else
+		return getrawpos(mover);
 }
 
 const char *Player::classname()const{
@@ -69,13 +178,21 @@ void Player::unserialize(UnserializeContext &sc){
 }
 
 void Player::anim(double dt){
+	framecount++;
 	aviewdist += (viewdist - aviewdist) * (1. - exp(-10. * dt));
+	const Universe *u = cs->findcspath("/")->toUniverse();
+	if(u && !u->paused && nextmover && mover != nextmover){
+		// We do not want the camera to teleport when setting camera_mode_switch_time while transiting.
+		blendmover += dt / camera_mode_switch_time;
+		if(1. < blendmover)
+			mover = nextmover;
+	}
 }
 
 void Player::transit_cs(CoordSys *cs){
 	// If chasing in free-look mode, rotation is converted by the Entity being chased,
 	// so we do not need to convert here.
-	if(!chase || mover == &Player::tactical){
+	if(!chase || mover == tactical){
 		Quatd rot = cs->tocsq(this->cs);
 		this->rot *= rot;
 		this->velo = rot.cnj().trans(this->velo);
@@ -103,40 +220,20 @@ void Player::unlink(const Entity *pe){
 }
 
 void Player::rotateLook(double dx, double dy){
-	const double speed = .001 / 2. * fov;
-	const double one_minus_epsilon = .999;
-
-	// Response to rotational movement depends on mover.
-	if(mover == &Player::freelook){
-		rot = rot.quatrotquat(Vec3d(0, dx * speed, 0));
-		rot = rot.quatrotquat(Vec3d(dy * speed, 0, 0));
-	}
-	else{
-		// Fully calculate pitch, yaw and roll from quaternion.
-		// This calculation is costly, but worth doing everytime mouse moves, for majority of screen is affected.
-		Vec3d view = rot.itrans(vec3_001);
-		double phi = -atan2(view[0], view[2]);
-		double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
-		Quatd rot1 = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
-		Quatd rot2 = rot * rot1.cnj();
-		Vec3d right = rot2.itrans(vec3_100);
-
-		// Add in instructed movement here.
-		phi += dx * speed;
-		theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
-		double roll = -atan2(right[1], right[0]);
-		rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
-	}
+	mover->rotateLook(dx, dy);
 }
 
-void Player::setGear(int g){
+void FreelookMover::setGear(int g){
 	gear = g;
 	flypower = .05 * pow(16, double(g));
 }
 
-void Player::freelook(const input_t &inputs, double dt){
-	double accel = flypower * (1. + (8 <= gear ? velolen / flypower : 0));
+void FreelookMover::operator ()(const input_t &inputs, double dt){
+	double accel = flypower * (1. + (8 <= gear ? pl.velolen / flypower : 0));
 	int inputstate = inputs.press;
+//	Vec3d &pos = pl.pos;
+	Vec3d &velo = pl.velo;
+	Quatd &rot = pl.rot;
 	if(inputstate & PL_W)
 		velo -= rot.itrans(vec3_001) * dt * accel;
 	if(inputstate & PL_S)
@@ -152,30 +249,37 @@ void Player::freelook(const input_t &inputs, double dt){
 	if(inputstate & PL_E)
 		velo = Vec3d(0,0,0);
 
+	Entity *&chase = pl.chase;
 	if(chase){
 		WarSpace *ws = (WarSpace*)chase->w;
 		if(ws)
-			this->cs = ws->cs;
+			pl.cs = ws->cs;
 		Quatd dummy;
-		chase->cockpitView(pos, dummy, chasecamera);
+		chase->cockpitView(pos, dummy, pl.chasecamera);
 		velo = chase->velo;
 	}
 	else{
-		velolen = velo.len();
+		pl.velolen = velo.len();
 		pos += velo /** (1. + velolen)*/ * dt;
 		Vec3d pos;
-		const CoordSys *cs = this->cs->belongcs(pos, this->pos);
-		if(cs != this->cs){
-			Quatd rot = cs->tocsq(this->cs);
-			this->rot *= rot;
-			this->velo = rot.cnj().trans(this->velo);
-			this->cs = cs;
-			this->pos = pos;
+		const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
+		if(cs != pl.cs){
+			Quatd rot = cs->tocsq(pl.cs);
+			pl.rot *= rot;
+			pl.velo = rot.cnj().trans(pl.velo);
+			pl.cs = cs;
+			pl.pos = pos;
 		}
 	}
 }
 
-void Player::tactical(const input_t &inputs, double dt){
+void TacticalMover::operator()(const input_t &inputs, double dt){
+//	Vec3d &pos = pl.pos;
+	Vec3d &velo = refvelo();
+//	Quatd &rot = pl.rot;
+	Vec3d &cpos = pl.cpos;
+	std::set<const Entity*> &chases = pl.chases;
+	Entity *&chase = pl.chase;
 	Vec3d view = rot.itrans(vec3_001);
 	double phi = -atan2(view[0], view[2]);
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
@@ -195,10 +299,17 @@ void Player::tactical(const input_t &inputs, double dt){
 			n++;
 		}
 	}
-	else if(chase && chase->w->cs == cs){
+	else if(chase && chase->w->cs == pl.cs){
 		cpos = chase->pos;
 	}
-	pos = cpos + view * aviewdist;
+	pos = cpos + view * pl.aviewdist;
+}
+
+void Player::cmdInit(Player &pl){
+	CmdAddParam("mover", cmd_mover, &pl);
+	CmdAddParam("teleport", cmd_teleport, &pl);
+	CmdAddParam("moveorder", cmd_moveorder, &pl);
+	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){
@@ -208,12 +319,13 @@ int Player::cmd_mover(int argc, char *argv[], void *pv){
 		CmdPrint("  func - freelook or tactical");
 		return 0;
 	}
+	p->blendmover = 0.;
 	if(!strcmp(argv[1], "freelook"))
-		p->mover = &Player::freelook;
+		p->nextmover = p->freelook;
 	else if(!strcmp(argv[1], "tactical"))
-		p->mover = &Player::tactical;
+		p->nextmover = p->tactical;
 	else if(!strcmp(argv[1], "cycle"))
-		p->mover = p->mover == &Player::freelook ? &Player::tactical : &Player::freelook;
+		p->nextmover = p->mover == p->freelook ? p->tactical : p->freelook;
 	else
 		CmdPrint("unknown func");
 	return 0;
@@ -347,4 +459,16 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 	}
 	else
 		return sqa::sqf_set<Player>(v);
+}
+
+SQInteger Player::sqf_getpos(HSQUIRRELVM v){
+	const SQChar *wcs;
+	SQRESULT sr;
+	Player *p;
+	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)p, &sr)))
+		return sr;
+	SQVec3d sqpos;
+	sqpos.value = p->getpos();
+	sqpos.push(v);
+	return 1;
 }

@@ -65,6 +65,7 @@ extern "C"{
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_space_near_clip = 0.00005, g_space_far_clip = 1e10;
+static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e6;
 static double r_dynamic_range = 1.;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
@@ -85,7 +86,7 @@ static double wdtime = 0., watime = 0.;
 static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags);
 
 Player pl;
-double &flypower = pl.flypower;
+double &flypower = pl.freelook->flypower;
 Universe universe(&pl);//galaxysystem(&pl);
 
 extern GLuint screentex;
@@ -111,7 +112,7 @@ void drawShadeSphere(){
 
 void lightOn(){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
-	const Astrobj *sun = pl.cs->findBrightest(pl.pos);
+	const Astrobj *sun = pl.cs->findBrightest(pl.getpos());
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(pl.cs->tocs(vec3_000, sun).normin().cast<GLfloat>()) : light_pos);
@@ -123,7 +124,7 @@ static void draw_gear(double dt){
 	int i;
 	static double gearphase = 0;
 
-	desired = pl.getGear() * 360 / 8;
+	desired = pl.freelook->getGear() * 360 / 8;
 	if(gearphase == desired && !((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G))
 		return;
 	if(gearphase != desired)
@@ -505,6 +506,10 @@ void draw_func(Viewer &vw, double dt){
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 /*	for(vw.zslice = 1; 0 <= vw.zslice; vw.zslice--)*/{
+		projection((
+			glPushMatrix(), glLoadIdentity(),
+			vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
+		));
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 /*		GLpmatrix proj;
@@ -526,6 +531,7 @@ void draw_func(Viewer &vw, double dt){
 		glEnable(GL_LIGHTING);
 		war_draw(vw, pl.cs, &WarField::draw);
 
+#if 0 // buffer copy
 		if(!screentex){
 			glGenTextures(1, &screentex);
 			glBindTexture(GL_TEXTURE_2D, screentex);
@@ -562,6 +568,7 @@ void draw_func(Viewer &vw, double dt){
 			glEnd();*/
 		}
 		glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
@@ -570,6 +577,7 @@ void draw_func(Viewer &vw, double dt){
 		glEnable(GL_BLEND);
 		war_draw(vw, pl.cs, &WarField::drawtra);
 		wdtime = TimeMeasLap(&tm);
+		projection(glPopMatrix());
 	}
 	glPopAttrib();
 	glPopMatrix();
@@ -734,7 +742,14 @@ void display_func(void){
 		input_t inputs;
 		inputs.press = MotionGet();
 		inputs.change = MotionGetChange();
-		(pl.*pl.mover)(inputs, dt);
+		(*pl.mover)(inputs, dt);
+		if(pl.nextmover && pl.nextmover != pl.mover){
+/*			Vec3d pos = pl.pos;
+			Quatd rot = pl.rot;*/
+			(*pl.nextmover)(inputs, dt);
+/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
+			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
+		}
 
 		if(pl.chase){
 			pl.chase->control(&inputs, dt);
@@ -778,7 +793,7 @@ void display_func(void){
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	viewer.viewtime = gametime;
-	viewer.velo = pl.velo;
+	viewer.velo = pl.getvelo();
 	viewer.dt = dt;
 	viewer.mousex = s_mousex;
 	viewer.mousey = s_mousey;
@@ -1120,8 +1135,8 @@ void reshape_func(int w, int h)
 static int cmd_eject(int argc, char *argv[]){
 	if(pl.chase){
 		pl.chase = NULL;
-		pl.pos += pl.getrot().cnj() * Vec3d(0,0,.3);
-		pl.mover = &Player::freelook;
+		pl.freelook->pos += pl.getrot().cnj() * Vec3d(0,0,.3);
+		pl.mover = pl.freelook;
 	}
 	return 0;
 }
@@ -1138,7 +1153,7 @@ static int cmd_chasecamera(int argc, char *argv[]){
 }
 
 static int cmd_originrotation(int, char *[]){
-	pl.rot = quat_u;
+	pl.setrot(quat_u);
 	return 0;
 }
 
@@ -1283,7 +1298,7 @@ static void key_func(unsigned char key, int x, int y){
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
-				pl.setGear(key - '1');
+				pl.freelook->setGear(key - '1');
 				MotionSetToggle(PL_G, 0);
 
 /*				if(warp_move == pl.mover && key != '9'){
@@ -1567,7 +1582,6 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
-	CmdAddParam("teleport", Player::cmd_teleport, &pl);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
@@ -1585,12 +1599,10 @@ int main(int argc, char *argv[])
 	CmdAddParam("property", Entity::cmd_property, &pl);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
-	CmdAddParam("mover", &Player::cmd_mover, &pl);
 	CmdAddParam("save", Universe::cmd_save, &universe);
 	CmdAddParam("load", Universe::cmd_load, &universe);
 	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
-	CmdAddParam("moveorder", Player::cmd_moveorder, &pl);
 	CmdAdd("sq", cmd_sq);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
@@ -1608,8 +1620,11 @@ int main(int argc, char *argv[])
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
 	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);
+	CvarAdd("g_warspace_near_clip", &g_warspace_near_clip, cvar_double);
+	CvarAdd("g_warspace_far_clip", &g_warspace_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
+	Player::cmdInit(pl);
 
 	sqa_init();
 

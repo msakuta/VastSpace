@@ -59,7 +59,7 @@ public:
 	SQIntrinsic() : pointer(NULL){}
 	SQIntrinsic(Class &initValue) : value(initValue), pointer(NULL){}
 
-	void newValue(HSQUIRRELVM v){
+	void push(HSQUIRRELVM v){
 		sq_pushroottable(v); // ... root
 		sq_pushstring(v, classname, -1); // ... root "Quatd"
 		if(SQ_FAILED(sq_get(v, -2))) throw NoIndex(); // ... root Quatd

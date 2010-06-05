@@ -93,7 +93,7 @@ void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 	seatid = (seatid + 3) % 3;
 	if(seatid == 1){
 		double f;
-		q = this->rot * w->pl->rot;
+		q = this->rot * w->pl->getrot();
 		src[2][2] = .1 * g_viewdist;
 		f = src[2][2] * .001 < .001 ? src[2][2] * .001 : .001;
 		src[2][2] += f * sin(ppl->gametime * M_PI / 2. + M_PI / 2.);

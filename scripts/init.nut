@@ -61,6 +61,7 @@ class Entity{
 	void command(string, ...);
 	int race;
 	Entity next;
+	Entity dockedEntList; 
 }
 
 class Player{
@@ -139,11 +140,17 @@ function foreachents(cs, proc){
 		proc(e);
 }
 
-function countents(team){
+function countents(team, classname){
 	local a = { ents = 0, team = team };
 	foreachents(player.cs,
-		function(e):(a){ if(e.race == a.team) a.ents++; });
+		function(e):(a,classname){ if(e.race == a.team && e.classname == classname) a.ents++; });
 	return a.ents;
+}
+
+function foreachdockedents(docker, proc){
+	local e;
+	for(e = docker.dockedEntList; e != null; e = e.next)
+		proc(e);
 }
 
 
@@ -152,11 +159,13 @@ function deltaFormation(classname, team, rot, offset, spacing, count){
 	for(local i = 1; i < count + 1; i++){
 		local epos = Vec3d(
 			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
-			(team * 2 - 1) * (i / 2 * spacing));
+			(i / 2 * spacing));
 		local e = cs.addent(classname, rot.trans(epos) + offset);
 		e.race = team;
+		foreachdockedents(e, function(e):(team){e.race = team;});
 		e.setrot(rot);
 		e.command("SetAggressive");
+		e.command("Move", rot.trans(epos + Vec3d(0,0,-2)) + offset);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
 	}
 }
@@ -251,7 +260,7 @@ function des(){
 }
 
 function att(){
-	deltaFormation("Attacker", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.8), 0.5, 3);
+	deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0,0.1,-0.8), 0.5, 3);
 }
 function sce(){
 	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
@@ -298,16 +307,23 @@ function frameproc(dt){
 
 	if(true && checktime + 1. < currenttime){
 		checktime = currenttime;
-		local racec = [countents(0), countents(1)];
+		local racec = [countents(0, "Attacker"), countents(1, "Attacker")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
-
+/*
 		if(racec[0] < 5)
 			deltaFormation("Sceptor", 0, Quatd(0, 0, 0, 1)
 				, Vec3d(0, 0.1,  0.5), 0.1, 15);
 		if(racec[1] < 3)
 			deltaFormation("Assault", 1, Quatd(0, 1, 0, 0)
 				, Vec3d(0, 0.1, -0.5), 0.1, 3);
+*/
+		if(racec[0] < 2)
+			deltaFormation("Attacker", 0, Quatd(0, 0, 0, 1)
+				, Vec3d(0, 0.1,  3.), 0.4, 3);
+		if(racec[1] < 2)
+			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0)
+				, Vec3d(0, 0.1, -3.), 0.4, 3);
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)
 			print("[team" + key + "][" + key1 + "] " + value1);

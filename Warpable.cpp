@@ -595,8 +595,12 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	const maneuve &mn = getManeuve();
 	if(mn.maxanglespeed * mn.maxanglespeed < this->omg.slen())
-		this->omg.normin().scalein(mn.angleaccel);
-	this->rot = this->rot.quatrotquat(this->omg * dt);
+		this->omg.normin().scalein(mn.maxanglespeed);
+//	this->rot = this->rot.quatrotquat(this->omg * dt);
+	bbody->setAngularVelocity(btvc(this->omg));
+//	dr.normin();
+//	Vec3d sidevelo = velo - dr * dr.sp(velo);
+//	bbody->applyCentralForce(btvc(-sidevelo * mass));
 }
 
 
@@ -1112,7 +1116,7 @@ void Warpable::anim(double dt){
 			task = sship_idle;
 			pt->velo.clear();
 			if(w->pl->chase == pt){
-				w->pl->velo = w->pl->cs->tocsv(pt->velo, pt->pos, w->cs);
+				w->pl->setvelo(w->pl->cs->tocsv(pt->velo, pt->pos, w->cs));
 			}
 		}
 		else if(desiredvelo < velo){

@@ -560,11 +560,11 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			p->org = focuspos * 1. / sol->csrad;
 		}
 		else if(p->focusc){
-			p->org = sol->tocs(ppl->pos, ppl->cs);
+			p->org = sol->tocs(ppl->getpos(), ppl->cs);
 			p->org *= 1. / sol->csrad;
 		}
 		if(p->sync){
-			p->rot = ppl->rot;
+			p->rot = ppl->getrot();
 		}
 		params.viewmat = p->rot.tomat4();
 		params.viewmat.translatein(-p->org[0] * sol->csrad, -p->org[1] * sol->csrad, -p->org[2] * sol->csrad);
@@ -707,7 +707,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glPopAttrib();
 		glPopMatrix();
 		{
-			Vec3d plpos0 = sol->tocs(ppl->pos, ppl->cs);
+			Vec3d plpos0 = sol->tocs(ppl->getpos(), ppl->cs);
 			plpos0 += p->org * -sol->csrad;
 			plpos0 *= 1. / range * this->width;
 			plpos = p->rot.trans(plpos0);

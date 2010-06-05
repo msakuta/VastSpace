@@ -79,7 +79,7 @@ void aaanim(double dt, WarField *w, Entity *WarField::*li){
 		catch(...){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): ?\n", __LINE__, pe, pe->idname());
 		}
-		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->pos).slen() < .002 * .002)
+		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->getpos()).slen() < .002 * .002)
 			pl->chase = pe;
 	}
 }

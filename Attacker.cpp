@@ -6,6 +6,7 @@
 #include "Scarry.h"
 #include "EntityCommand.h"
 #include "Sceptor.h"
+#include "draw/effects.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -39,6 +40,7 @@ public:
 	virtual const maneuve &getManeuve()const;
 	virtual Docker *getDockerInt();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+	virtual int takedamage(double damage, int hitpart);
 };
 
 class AttackerDocker : public Docker{
@@ -84,7 +86,7 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	static int count = 0;
 	turrets = new ArmBase*[nhardpoints];
 	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = (count % 2 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]));
+		turrets[i] = (true || count % 2 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}
@@ -92,8 +94,11 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	mass = 2e8;
 	health = maxhealth();
 
-	for(int i = 0; i < 6; i++)
-		docker->addent(new Sceptor(docker));
+	for(int i = 0; i < 6; i++){
+		Sceptor *s = new Sceptor(docker);
+		s->race = race;
+		docker->addent(s);
+	}
 
 	if(!aw)
 		return;
@@ -281,6 +286,81 @@ int Attacker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 #endif
 }
 
+int Attacker::takedamage(double damage, int hitpart){
+	struct tent3d_line_list *tell = w->getTeline3d();
+	int ret = 1;
+
+//	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+	if(0 < health && health - damage <= 0){
+		int i;
+		ret = 0;
+		WarSpace *ws = *w;
+		if(ws){
+
+#if 1
+			if(ws->gibs)
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib_multi, (void*)128, TEL3_QUAT | TEL3_NOLINE, 20.);
+#else
+			if(ws->gibs) for(i = 0; i < 128; i++){
+				double pos[3], velo[3] = {0}, omg[3];
+				/* gaussian spread is desired */
+				for(int j = 0; j < 6; j++)
+					velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				VECCPY(pos, this->pos);
+				for(int j = 0; j < 3; j++)
+					pos[j] += hitradius() * (drseq(&w->rs) - .5);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+			}
+#endif
+
+			/* smokes */
+			for(i = 0; i < 64; i++){
+				Vec3d pos;
+//				COLOR32 col = 0;
+				pos = this->pos
+					+ Vec3d(.3 * (w->rs.nextd() - .5),
+							.3 * (w->rs.nextd() - .5),
+							.3 * (w->rs.nextd() - .5));
+/*				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+				col |= COLOR32RGBA(0,0,0,191);*/
+				static smokedraw_swirl_data sdata = {COLOR32RGBA(127,127,127,191), false};
+				AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, Vec3d(0., 0., .05 * M_PI * w->rs.nextGauss()),
+					vec3_000, smokedraw_swirl, (void*)&sdata, TEL3_INVROTATE | TEL3_NOLINE, 20.);
+			}
+
+			{/* explode shockwave thingie */
+				static const double pyr[3] = {M_PI / 2., 0., 0.};
+				amat3_t ort;
+				Vec3d dr, v;
+				Quatd q;
+				amat4_t mat;
+				double p;
+	/*			w->vft->orientation(w, &ort, &pt->pos);
+				VECCPY(dr, &ort[3]);*/
+				dr = vec3_001;
+
+				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+
+				v = vec3_001.vp(dr);
+				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+				q = v * p;
+
+				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+			}
+		}
+//		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+		this->w = NULL;
+	}
+	health -= damage;
+	return ret;
+}
 
 
 

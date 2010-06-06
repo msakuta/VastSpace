@@ -724,6 +724,15 @@ void Bullet::anim(double dt){
 					int j, n;
 					frexp(pb->damage, &n);
 					n = n / 2 + drseq(&w->rs);
+
+					// Add spark sprite
+					{
+						double angle = w->rs.nextd() * 2. * M_PI / 2.;
+						AddTelineCallback3D(ws->tell, pos, pt->velo, .0010 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+							vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
+					}
+
+					// Add spark traces
 					for(j = 0; j < n; j++){
 						Vec3d velo = -pb->velo.norm() * .2;
 						for(int k = 0; k < 3; k++)

@@ -41,13 +41,51 @@ void sparkdraw(const tent3d_line_callback *p, const tent3d_line_drawdata *dd, vo
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
-		texname = CallCacheBitmap5("ricochet.bmp", "ricochet.bmp", &stp, NULL, NULL);
+		texname = CallCacheBitmap5("textures/ricochet.bmp", "textures/ricochet.bmp", &stp, NULL, NULL);
 	}
 	glCallList(texname);
 	glColor4f(1,1,1, alpha);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
 	gldTextureBeam(dd->viewpoint, end, start, width);
+	glPopAttrib();
+}
+
+void sparkspritedraw(const tent3d_line_callback *p, const tent3d_line_drawdata *dd, void *private_data){
+	double width = p->len;
+	Vec3d start = p->pos;
+	double pixels = fabs(dd->pgc->scale(p->pos)) * width;
+	float alpha = MIN(1., p->life / .25);
+	if(pixels < 2.){
+		return;
+	}
+	static GLuint texname = 0;
+	static const GLfloat envcolor[4] = {.5,0,0,1};
+	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+	if(!texname){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		texname = CallCacheBitmap5("textures/spark.bmp", "textures/spark.bmp", &stp, NULL, NULL);
+	}
+	glCallList(texname);
+	glColor4f(1,1,1, alpha);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
+	glPushMatrix();
+	gldTranslate3dv(p->pos);
+	gldScaled(p->len);
+	glMultMatrixd(dd->invrot);
+	gldMultQuat(p->rot);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(-1,-1);
+	glTexCoord2i(1, 0); glVertex2i( 1,-1);
+	glTexCoord2i(1, 1); glVertex2i( 1, 1);
+	glTexCoord2i(0, 1); glVertex2i(-1, 1);
+	glEnd();
+	glPopMatrix();
 	glPopAttrib();
 }
 

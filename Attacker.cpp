@@ -67,7 +67,7 @@ public:
 
 
 hitbox Attacker::hitboxes[] = {
-	hitbox(Vec3d(0., 0., .050), Quatd(0,0,0,1), Vec3d(.125, .055, .150)),
+	hitbox(Vec3d(0., -0.0025, .050), Quatd(0,0,0,1), Vec3d(.125, .060, .150)),
 	hitbox(Vec3d(0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
 	hitbox(Vec3d(-0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
 };
@@ -151,7 +151,6 @@ void Attacker::draw(wardraw_t *wd){
 	} while(0);
 
 	if(sufbase){
-		static const double normal[3] = {0., 1., 0.};
 		double scale = .001;
 		Mat4d mat;
 

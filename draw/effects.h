@@ -3,6 +3,7 @@
 #include "../tent3d.h"
 
 void sparkdraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
+void sparkspritedraw(const tent3d_line_callback *p, const tent3d_line_drawdata *dd, void *private_data);
 
 void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 

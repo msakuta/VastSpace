@@ -72,4 +72,13 @@ struct WarpCommand : public MoveCommand{
 	const char *destname;
 };
 
+struct RemainDockedCommand : public EntityCommand{
+	typedef EntityCommand st;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	RemainDockedCommand(bool a) : enable(a){}
+	bool enable;
+};
+
 #endif

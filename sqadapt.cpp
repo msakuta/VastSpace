@@ -240,6 +240,8 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 	SQRESULT sr;
 	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
+	if(!p)
+		return -1;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("race"))){
 		sq_pushinteger(v, p->race);
@@ -341,6 +343,31 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	else if(!strcmp(s, _SC("SetPassive"))){
 		p->command(&SetPassiveCommand());
 	}
+	else if(!strcmp(s, _SC("Warp"))){
+		int argc = sq_gettop(v);
+		if(argc < 3)
+			return 0;
+		WarpCommand com;
+		sq_getstring(v, 3, &com.destname);
+		SQUserPointer typetag;
+		Vec3d *pvec3;
+		if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
+			return sq_throwerror(v, _SC("Incompatible argument type"));
+		sq_pushstring(v, _SC("a"), -1);
+		if(SQ_FAILED(sq_get(v, 4)))
+			return sq_throwerror(v, _SC("Corrupt Vec3d data"));
+		sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
+		com.dest = *pvec3;
+		p->command(&com);
+	}
+	else if(!strcmp(s, _SC("RemainDocked"))){
+		int argc = sq_gettop(v);
+		if(argc < 3)
+			return 0;
+		SQBool b;
+		sq_getbool(v, 3, &b);
+		p->command(&RemainDockedCommand(b));
+	}
 	return 0;
 }
 
@@ -352,7 +379,7 @@ static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
 		return SQ_ERROR;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("entlist"))){
-		if(!p->w){
+		if(!p->w || !p->w->el){
 			sq_pushnull(v);
 			return 1;
 		}
@@ -938,6 +965,7 @@ void sqa_init(){
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
+	sqstd_register_iolib(v);
 	sqstd_register_mathlib(v);
 
 	// Define class Vec3d, native vector representation

@@ -94,8 +94,9 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	count++;
 	mass = 2e8;
 	health = maxhealth();
+	capacitor = maxenergy();
 
-	for(int i = 0; i < 0; i++){
+	for(int i = 0; i < 6; i++){
 		Sceptor *s = new Sceptor(docker);
 		s->race = race;
 		docker->addent(s);
@@ -200,7 +201,7 @@ bool Attacker::command(EntityCommand *com){
 
 double Attacker::hitradius()const{return .3;}
 double Attacker::maxhealth()const{return 100000.;}
-double Attacker::maxenergy()const{return 100000.;}
+double Attacker::maxenergy()const{return 200000.;}
 
 ArmBase *Attacker::armsGet(int index){
 	if(0 <= index && index < nhardpoints)
@@ -216,7 +217,7 @@ const Warpable::maneuve &Attacker::getManeuve()const{
 		.1, /* double maxspeed; */
 		5000000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
-		150000., /* double capacity; [MJ] */
+		200000., /* double capacity; [MJ] */
 		300., /* double capacitor_gen; [MW] */
 	};
 	return mn;
@@ -409,11 +410,7 @@ bool AttackerDocker::undock(Entity::Dockable *pe){
 			&Quatd(e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.))),
 			&Vec3d(e->velo),
 			&Vec3d(e->omg));
-/*		if(pe->bbody){
-			pe->bbody->setCenterOfMassTransform(btTransform(btqc(pe->rot), btvc(pe->pos)));
-			pe->bbody->setLinearVelocity(btvc(pe->velo));
-		}
-		nextport = (nextport + 1) % 2;*/
+		nextport = (nextport + 1) % 2;
 		return true;
 	}
 	return false;

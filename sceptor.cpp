@@ -165,12 +165,6 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->cloak = 0;
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
-/*	if(mother){
-		scarry_dock(mother, ret, w);
-		if(!mother->remainDocked)
-			scarry_undock(mother, ret, w);
-	}*/
-	enterField(w);
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};

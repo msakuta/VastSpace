@@ -14,6 +14,7 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "arms.h"
+#include "Scarry.h" // Docker
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"
@@ -1247,7 +1248,11 @@ void Warpable::anim(double dt){
 		else
 			p->capacitor = mn->capacity;
 
-		if(task == sship_moveto){
+		if(w->pl->control == this)
+			;
+		else if(task == sship_idle)
+			inputs.press = 0;
+		else if(task == sship_moveto){
 			steerArrival(dt, dest, vec3_000, .1, .01);
 			if((pos - dest).slen() < hitradius() * hitradius()){
 				task = sship_idle;
@@ -1313,7 +1318,7 @@ bool Warpable::command(EntityCommand *com){
 				dstpos = pos;
 				pa = pcs;
 			}
-			else if(pa = w->cs->findcs(wc->destname)){
+			else if(pa = w->cs->findcspath(wc->destname)){
 				delta = w->cs->tocs(wc->dest, pa) - this->pos;
 			} 
 			else
@@ -1346,6 +1351,11 @@ bool Warpable::command(EntityCommand *com){
 
 		// Cannot respond when warping
 		return false;
+	}
+	else if(RemainDockedCommand *rdc = InterpretCommand<RemainDockedCommand>(com)){
+		Docker *docker = getDocker();
+		if(docker)
+			docker->remainDocked = rdc->enable;
 	}
 	return false;
 }

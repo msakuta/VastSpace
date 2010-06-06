@@ -194,7 +194,9 @@ void debrigib_multi(const struct tent3d_line_callback *pl, const struct tent3d_l
 	for(int i = 0; i < (int)pv; i++){
 		RandomSequence rs(pl + i);
 		double t = 20. - pl->life;
-		Vec3d pos = pl->pos + t * .025 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
+		Vec3d pos = pl->pos
+			+ .100 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss()) // origin
+			+ t * .025 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss()); // linear motion
 		if(dd->pgc && (dd->pgc->cullFrustum(pos, .01) || (dd->pgc->scale(pos) * .01) < 5) || pl->life < rs.nextd() * 2.)
 			continue;
 		glPushMatrix();

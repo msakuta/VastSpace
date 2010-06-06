@@ -140,9 +140,9 @@ function foreachents(cs, proc){
 		proc(e);
 }
 
-function countents(team, classname){
+function countents(cs, team, classname){
 	local a = { ents = 0, team = team };
-	foreachents(player.cs,
+	foreachents(cs,
 		function(e):(a,classname){ if(e.race == a.team && e.classname == classname) a.ents++; });
 	return a.ents;
 }
@@ -154,8 +154,7 @@ function foreachdockedents(docker, proc){
 }
 
 
-function deltaFormation(classname, team, rot, offset, spacing, count){
-	local cs = player.cs;
+function deltaFormation(classname, team, rot, offset, spacing, count, cs){
 	for(local i = 1; i < count + 1; i++){
 		local epos = Vec3d(
 			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
@@ -246,24 +245,24 @@ function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));
 //	deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 1.9, 0), 0.2);
 //	player.cs.addent("Assault", Vec3d(-1, 0,0));
-	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.1, -0.2), 0.1, 3);
-	deltaFormation("Sceptor", 1, Quatd(0,1,0,0), Vec3d(0, 0.1, 1.2), 0.1, 3);
+	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.1, -0.2), 0.1, 3, player.cs);
+	deltaFormation("Sceptor", 1, Quatd(0,1,0,0), Vec3d(0, 0.1, 1.2), 0.1, 3, player.cs);
 //	deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 1.1, -0.2), 0.3);
 }
 
 function ass(){
-	deltaFormation("Assault", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3);
+	deltaFormation("Assault", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs);
 }
 
 function des(){
-	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3);
+	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs);
 }
 
 function att(){
-	deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0,0.1,-0.8), 0.5, 3);
+	deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0,0.1,-0.8), 0.5, 3, player.cs);
 }
 function sce(){
-	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3);
+	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3, player.cs);
 }
 
 register_console_command("ass", ass);
@@ -305,11 +304,16 @@ function frameproc(dt){
 
 	local currenttime = universe.global_time;
 
-	if(true && checktime + 1. < currenttime){
+	if(true && checktime + 10. < currenttime){
+		local cs = universe.findcspath("/sol/saturn/saturno2");
+		local farcs = universe.findcspath("/sol/saturn/saturno1");
 		checktime = currenttime;
-		if(player.cs.classname == "WarpBubble")
+
+		if(cs == null || farcs == null)
 			return;
-		local racec = [countents(0, "Attacker"), countents(1, "Attacker")];
+
+		local racec = [countents(cs, 0, "Attacker"),
+			countents(cs, 1, "Attacker") + countents(farcs, 1, "Attacker")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 /*
@@ -322,13 +326,20 @@ function frameproc(dt){
 */
 		if(racec[0] < 2){
 			local zrot = (2. * PI * rand()) / RAND_MAX;
-			print("zrot = " + zrot);
 			deltaFormation("Attacker", 0, Quatd(0, 0, 0, 1) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1,  3.), 0.4, 3);
+				, Vec3d(0, 0.1,  3.), 0.4, 3, cs);
 		}
-		if(racec[1] < 2)
-			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0)
-				, Vec3d(0, 0.1, -3.), 0.4, 3);
+		if(racec[1] < 2){
+			local zrot = (2. * PI * rand()) / RAND_MAX;
+			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
+				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs);
+			if(farcs != null){
+				foreachents(farcs, function(e){
+					e.command("RemainDocked", true);
+					e.command("Warp", "/sol/saturn/saturno2", Vec3d(0,0,0));
+				});
+			}
+		}
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)
 			print("[team" + key + "][" + key1 + "] " + value1);

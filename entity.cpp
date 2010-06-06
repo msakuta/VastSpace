@@ -341,5 +341,6 @@ IMPLEMENT_COMMAND(DockCommand, "Dock")
 IMPLEMENT_COMMAND(SetAggressiveCommand, "SetAggressive")
 IMPLEMENT_COMMAND(SetPassiveCommand, "SetPassive")
 
-IMPLEMENT_COMMAND(WarpCommand, "WarpCommand")
+IMPLEMENT_COMMAND(WarpCommand, "Warp")
 
+IMPLEMENT_COMMAND(RemainDockedCommand, "RemainDocked")

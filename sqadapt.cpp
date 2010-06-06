@@ -202,13 +202,14 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 		w = new WarSpace(p)/*spacewar_create(cs, ppl)*/;
 	Entity *pt = Entity::create(arg, w);
 	if(pt){
-		pt->pos = pos;
+		pt->setPosition(&pos);
+/*		pt->pos = pos;
 		if(pt->bbody){
 			btTransform trans;
 			trans.setIdentity();
 			trans.setOrigin(btvc(pos));
 			pt->bbody->setCenterOfMassTransform(trans);
-		}
+		}*/
 /*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
 	}
 	else
@@ -589,12 +590,13 @@ static SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
 			return sr;
 		SQIntrinsic<Quatd> r;
 		r.getValue(v, 2);
-		p->rot = r.value;
+		p->setPosition(NULL, &r.value);
+/*		p->rot = r.value;
 		if(p->bbody){
 			btTransform tra = p->bbody->getWorldTransform();
 			tra.setRotation(btqc(p->rot));
 			p->bbody->setWorldTransform(tra);
-		}
+		}*/
 		return 0;
 	}
 	catch(SQFError){
@@ -611,12 +613,13 @@ static SQInteger sqf_setintrinsic<Entity, Vec3d, &Entity::pos>(HSQUIRRELVM v){
 			return sr;
 		SQIntrinsic<Vec3d> r;
 		r.getValue(v, 2);
-		p->pos = r.value;
+		p->setPosition(&r.value);
+/*		p->pos = r.value;
 		if(p->bbody){
 			btTransform tra = p->bbody->getWorldTransform();
 			tra.setOrigin(btvc(p->pos));
 			p->bbody->setCenterOfMassTransform(tra);
-		}
+		}*/
 		return 0;
 	}
 	catch(SQFError){

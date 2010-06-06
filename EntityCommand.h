@@ -39,8 +39,7 @@ CmdType *InterpretDerivedCommand(EntityCommand *com){
 
 DERIVE_COMMAND(HaltCommand, EntityCommand);
 
-class AttackCommand : public EntityCommand{
-public:
+struct AttackCommand : public EntityCommand{
 	typedef EntityCommand st;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
@@ -50,8 +49,7 @@ public:
 
 DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 
-class MoveCommand : public EntityCommand{
-public:
+struct MoveCommand : public EntityCommand{
 	typedef EntityCommand st;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
@@ -65,5 +63,13 @@ DERIVE_COMMAND(DockCommand, EntityCommand);
 
 DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
 DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
+
+struct WarpCommand : public MoveCommand{
+	typedef MoveCommand st;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	const char *destname;
+};
 
 #endif

@@ -12,6 +12,7 @@ extern "C"{
 #include <clib/GL/gldraw.h>
 #include <clib/rseq.h>
 }
+#include <cpplib/RandomSequence.h>
 #include <math.h>
 //#include <gl/glext.h>
 
@@ -109,6 +110,7 @@ void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_dr
 }
 
 void smokedraw_swirl(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+	const smokedraw_swirl_data *data = (const smokedraw_swirl_data*)private_data;
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
 //	glMultMatrixd(dd->invrot);
@@ -121,25 +123,26 @@ void smokedraw_swirl(const struct tent3d_line_callback *p, const struct tent3d_l
 		Quatd qret = rot.cnj() * qirot;
 		struct random_sequence rs;
 		init_rseq(&rs, (unsigned long)p);
-		double randy = 2. * M_PI * p->life * (drseq(&rs) - .5);
+		double randy = p->omg[2] * -p->life + 2. * M_PI * (drseq(&rs) - .5);
 		gldMultQuat(qret * Quatd(0, 0, sin(randy), cos(randy)));
 	}
-	gldScaled((2. - p->life) * p->len);
+	if(data->expand)
+		gldScaled((2. - p->life) * p->len);
+	else
+		gldScaled(p->len);
 	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
 	float alpha = MIN(p->life / 1.5, 1.);
-	smokedraw_int(p, (COLOR32)private_data, alpha);
+	smokedraw_int(p, data->col, alpha);
 	glPopAttrib();
 	glPopMatrix();
 }
 
 
-void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	if(dd->pgc && (dd->pgc->cullFrustum(pl->pos, .01) || (dd->pgc->scale(pl->pos) * .01) < 5))
-		return;
+static suf_t *sufs[5] = {NULL};
+static VBO *vbo[5];
+static GLuint lists[numof(sufs)] = {0};
 
-	static suf_t *sufs[5] = {NULL};
-	static VBO *vbo[5];
-	static GLuint lists[numof(sufs)] = {0};
+static void debrigib_init(){
 	if(!sufs[0]){
 		char buf[64];
 		for(int i = 0; i < numof(sufs); i++){
@@ -148,6 +151,13 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 			vbo[i] = CacheVBO(sufs[i]);
 		}
 	}
+}
+
+void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+	if(dd->pgc && (dd->pgc->cullFrustum(pl->pos, .01) || (dd->pgc->scale(pl->pos) * .01) < 5))
+		return;
+
+	debrigib_init();
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
@@ -169,5 +179,34 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 //	else
 //		glCallList(lists[id]);
 	glPopMatrix();
+	glPopAttrib();
+}
+
+// Multiple gibs drawn at once. Total number of polygons remains same, but switchings of context variables are
+// reduced, therefore performance is gained compared to the one above.
+void debrigib_multi(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+	debrigib_init();
+	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+//	glBindTexture(GL_TEXTURE_2D, texname);
+	for(int i = 0; i < (int)pv; i++){
+		RandomSequence rs(pl + i);
+		double t = 20. - pl->life;
+		Vec3d pos = pl->pos + t * .025 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
+		if(dd->pgc && (dd->pgc->cullFrustum(pos, .01) || (dd->pgc->scale(pos) * .01) < 5) || pl->life < rs.nextd() * 2.)
+			continue;
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		double angle = t * 2. * M_PI * rs.nextd() / 2.;
+		Quatd rot = sin(angle) * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
+		rot[3] = cos(angle);
+		gldMultQuat(pl->rot * rot);
+		gldScaled(.0001);
+		unsigned id = rs.next() % numof(sufs);
+		DrawVBO(vbo[id], SUF_ATR, NULL);
+		glPopMatrix();
+	}
 	glPopAttrib();
 }

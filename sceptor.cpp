@@ -433,7 +433,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 Entity *Sceptor::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+	for(Entity *e = w->entlist(); e; e = e->next) if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
 		mother = e->getDocker();
 		pm = mother->e;
 		best = sl;

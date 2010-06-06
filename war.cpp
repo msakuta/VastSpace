@@ -115,6 +115,8 @@ void WarField::endframe(){
 		Entity *e = *pe;
 		*pe = e->next;
 
+		e->leaveField(this);
+
 		// Player does not follow entities into WarField, which has no positional information.
 		if(!e->w || !(WarSpace*)*e->w)
 			pl->unlink(e);
@@ -312,8 +314,6 @@ void WarSpace::anim(double dt){
 }
 
 void WarSpace::endframe(){
-	if(bdw) for(int i = 0; i < 2; i++) for(Entity *e = this->*list[i]; e; e = e->next) if(e->w != this && e->bbody)
-		bdw->removeRigidBody(e->bbody);
 	st::endframe();
 }
 

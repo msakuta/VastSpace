@@ -14,6 +14,8 @@ extern "C"{
 #include "glwindow.h"
 #include "serial_util.h"
 #include "Destroyer.h"
+#include "btadapt.h"
+#include <btBulletDynamicsCommon.h>
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0), bbody(NULL){
@@ -25,6 +27,15 @@ Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot
 //  The user must call WarField::addent() explicitly to let an object attend to a WarField.
 //	if(aw)
 //		aw->addent(this);
+}
+
+Entity::~Entity(){
+	if(bbody){
+		WarSpace *ws;
+		if(w && (ws = *w) && ws->bdw)
+			ws->bdw->removeRigidBody(bbody);
+		delete bbody;
+	}
 }
 
 void Entity::init(){
@@ -132,6 +143,36 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 
 double Entity::maxhealth()const{return 100.;}
 void Entity::enterField(WarField *){}
+void Entity::leaveField(WarField *aw){
+	WarSpace *ws = *aw;
+	if(ws->bdw && bbody)
+		ws->bdw->removeRigidBody(bbody);
+}
+void Entity::setPosition(const Vec3d *apos, const Quatd *arot, const Vec3d *avelo, const Vec3d *aavelo){
+	if(apos && apos != &pos) pos = *apos;
+	if(arot && arot != &rot) rot = *arot;
+	if(avelo && avelo != &velo) velo = *avelo;
+	if(aavelo && aavelo != &omg) omg = *aavelo;
+
+	if(bbody){
+		if(apos && arot)
+			bbody->setCenterOfMassTransform(btTransform(btqc(*arot), btvc(*apos)));
+		else if(apos)
+			bbody->setCenterOfMassTransform(btTransform(bbody->getOrientation(), btvc(*apos)));
+		else if(arot)
+			bbody->setCenterOfMassTransform(btTransform(btqc(*arot), bbody->getCenterOfMassPosition()));
+		if(avelo)
+			bbody->setLinearVelocity(btvc(*avelo));
+		if(aavelo)
+			bbody->setAngularVelocity(btvc(*aavelo));
+	}
+}
+void Entity::getPosition(Vec3d *apos, Quatd *arot, Vec3d *avelo, Vec3d *aavelo)const{
+	if(apos) *apos = pos;
+	if(arot) *arot = rot;
+	if(avelo) *avelo = velo;
+	if(aavelo) *aavelo = omg;
+}
 void Entity::anim(double){}
 void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
 void Entity::control(const input_t *i, double){inputs = *i;}
@@ -199,13 +240,16 @@ void Entity::transit_cs(CoordSys *cs){
 	Mat4d mat;
 	if(w == cs->w)
 		return;
+
+//	leaveField(w);
+
+	// Transform position to target CoordSys
 	this->pos = cs->tocs(this->pos, w->cs);
 	velo = cs->tocsv(velo, pos, w->cs);
 	if(!cs->w){
 		cs->w = new WarSpace(cs);
 	}
 
-	// Transform position to target CoordSys
 	Quatd q1 = w->cs->tocsq(cs);
 	this->rot = q1 * this->rot;
 
@@ -214,6 +258,7 @@ void Entity::transit_cs(CoordSys *cs){
 		pl->transit_cs(cs);
 	}
 
+//	cs->w->addent(this);
 	w = cs->w;
 }
 
@@ -296,4 +341,5 @@ IMPLEMENT_COMMAND(DockCommand, "Dock")
 IMPLEMENT_COMMAND(SetAggressiveCommand, "SetAggressive")
 IMPLEMENT_COMMAND(SetPassiveCommand, "SetPassive")
 
+IMPLEMENT_COMMAND(WarpCommand, "WarpCommand")
 

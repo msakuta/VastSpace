@@ -41,6 +41,7 @@ public:
 	virtual Docker *getDockerInt();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int takedamage(double damage, int hitpart);
+	virtual void enterField(WarField *);
 };
 
 class AttackerDocker : public Docker{
@@ -94,7 +95,7 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	mass = 2e8;
 	health = maxhealth();
 
-	for(int i = 0; i < 6; i++){
+	for(int i = 0; i < 0; i++){
 		Sceptor *s = new Sceptor(docker);
 		s->race = race;
 		docker->addent(s);
@@ -102,43 +103,6 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 
 	if(!aw)
 		return;
-	WarSpace *ws = *aw;
-	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
-
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 2, ~0);
-	}
 }
 
 void Attacker::static_init(){
@@ -299,7 +263,7 @@ int Attacker::takedamage(double damage, int hitpart){
 
 #if 1
 			if(ws->gibs)
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib_multi, (void*)128, TEL3_QUAT | TEL3_NOLINE, 20.);
+				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib_multi, (void*)64, TEL3_QUAT | TEL3_NOLINE, 20.);
 #else
 			if(ws->gibs) for(i = 0; i < 128; i++){
 				double pos[3], velo[3] = {0}, omg[3];
@@ -362,6 +326,49 @@ int Attacker::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+void Attacker::enterField(WarField *target){
+	WarSpace *ws = *target;
+	if(!ws || !ws->bdw)
+		return;
+
+	// If a rigid body object is brought from the old WarSpace, reuse it rather than to reconstruct.
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+	}
+
+	//add the body to the dynamics world
+	ws->bdw->addRigidBody(bbody, 2, ~0);
+}
 
 
 
@@ -398,14 +405,15 @@ const char *AttackerDocker::classname()const{return "AttackerDocker";}
 
 bool AttackerDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
-		pe->pos = e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0));
-		pe->velo = e->velo;
-		pe->rot = e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.));
-		if(pe->bbody){
+		pe->setPosition(&Vec3d(e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0))),
+			&Quatd(e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.))),
+			&Vec3d(e->velo),
+			&Vec3d(e->omg));
+/*		if(pe->bbody){
 			pe->bbody->setCenterOfMassTransform(btTransform(btqc(pe->rot), btvc(pe->pos)));
 			pe->bbody->setLinearVelocity(btvc(pe->velo));
 		}
-		nextport = (nextport + 1) % 2;
+		nextport = (nextport + 1) % 2;*/
 		return true;
 	}
 	return false;

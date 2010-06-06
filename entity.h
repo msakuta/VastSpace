@@ -23,6 +23,7 @@ public:
 	typedef Entity Dockable;
 	typedef std::vector<cpplib::dstring> Props;
 	Entity(WarField *aw = NULL);
+	~Entity();
 	static Entity *create(const char *cname, WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -31,7 +32,10 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual double maxhealth()const;
-	virtual void enterField(WarField *target); // Opportunity to response WarField::addent.
+	virtual void enterField(WarField *enteringField); // Opportunity to response to WarField::addent.
+	virtual void leaveField(WarField *leavingField); // Finally, we need this.
+	virtual void setPosition(const Vec3d *pos, const Quatd *rot = NULL, const Vec3d *velo = NULL, const Vec3d *avelo = NULL); // Arguments can be NULL
+	virtual void getPosition(Vec3d *pos, Quatd *rot = NULL, Vec3d *velo = NULL, Vec3d *avelo = NULL)const; // Arguments can be NULL
 	virtual void anim(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(const input_t *inputs, double dt);
@@ -69,10 +73,10 @@ public:
 	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
 	Entity *getUltimateOwner();
 
-	Vec3d pos;
-	Vec3d velo;
-	Vec3d omg;
-	Quatd rot; /* rotation expressed in quaternion */
+	Vec3d pos; // Position vector
+	Vec3d velo; // Linear velocity vector
+	Vec3d omg; // Angular velocity vector
+	Quatd rot; // rotation expressed in quaternion
 	double mass; /* [kg] */
 	double moi;  /* moment of inertia, [kg m^2] should be a tensor */
 //	double turrety, barrelp;
@@ -96,9 +100,9 @@ public:
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
+protected:
 	btRigidBody *bbody;
 
-protected:
 	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;
 	virtual void init();
 	virtual Docker *getDockerInt();

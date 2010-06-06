@@ -302,8 +302,16 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
-
-
+// A wrapper class to designate it's a warping envelope.
+class WarpBubble : public CoordSys{
+public:
+	typedef CoordSys st;
+	static const unsigned classid;
+	WarpBubble(){}
+	WarpBubble(const char *path, CoordSys *root) : st(path, root){}
+	const char *classname()const{return "WarpBubble";}
+};
+const unsigned WarpBubble::classid = registerClass("WarpBubble", Conster<WarpBubble>);
 
 
 
@@ -448,6 +456,10 @@ void Warpable::drawtra(wardraw_t *wd){
 		glVertex3dv(dest);
 		glEnd();
 	}
+}
+
+short Warpable::getDefaultCollisionMask()const{
+	return -1;
 }
 
 /* maneuvering spaceships, integrated common responses.
@@ -638,14 +650,18 @@ int cmd_transit(int argc, char *argv[], void *pv){
 }
 
 int cmd_warp(int argc, char *argv[], void *pv){
-	double g_warp_cost_factor = 1.;
 	Player *ppl = (Player*)pv;
 	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: warp dest [x] [y] [z]");
 		return 1;
 	}
+	WarpCommand com;
+	com.dest = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
+	com.destname = argv[1];
 	for(pt = ppl->selected; pt; pt = pt->selectnext){
+		pt->command(&com);
+#if 0
 		Warpable *p = pt->toWarpable();
 		if(!p)
 			continue;
@@ -699,6 +715,7 @@ int cmd_warp(int argc, char *argv[], void *pv){
 //				p->warp_next_warf = NULL;
 			}
 		}
+#endif
 	}
 	return 0;
 }
@@ -1081,6 +1098,11 @@ void Warpable::anim(double dt){
 	const maneuve *mn = &getManeuve();
 
 	if(p->warping){
+
+		// Do not interact with normal space objects, for it can push things really fast away.
+		if(bbody)
+			bbody->getBroadphaseProxy()->m_collisionFilterMask = 0;
+
 		double desiredvelo, velo;
 		Vec3d *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
 		Vec3d dstcspos, warpdst; /* current position measured in destination coordinate system */
@@ -1112,6 +1134,11 @@ void Warpable::anim(double dt){
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
 		if((warpdst - dstcspos).slen() < 1. * 1.){
 			warp_collapse();
+
+			// Restore normal collision filter mask.
+			if(bbody)
+				bbody->getBroadphaseProxy()->m_collisionFilterMask = getDefaultCollisionMask();
+
 			p->warping = 0;
 			task = sship_idle;
 			pt->velo.clear();
@@ -1158,7 +1185,7 @@ void Warpable::anim(double dt){
 		}
 		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
 			int i;
-			p->warpcs = new CoordSys("warpbubble", w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
+			p->warpcs = new WarpBubble("warpbubble", w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;
 /*			VECNULL(pt->velo);*/
@@ -1200,9 +1227,10 @@ void Warpable::anim(double dt){
 
 		if(p->warpcs){
 			p->currentWarpDist += VECLEN(p->warpcs->velo) * dt;
-			VECSADD(p->warpcs->pos, p->warpcs->velo, dt);
+			p->warpcs->pos += p->warpcs->velo * dt;
 		}
 		pos += this->velo * dt;
+		Entity::setPosition(&pos, &rot, &this->velo, &omg);
 	}
 	else{ /* Regenerate energy in capacitor only unless warping */
 
@@ -1266,6 +1294,58 @@ bool Warpable::command(EntityCommand *com){
 				arm->command(com);
 		}
 		return true;
+	}
+	else if(WarpCommand *wc = InterpretCommand<WarpCommand>(com)){
+		const double g_warp_cost_factor = .001;
+		if(!warping){
+			Vec3d delta, pos;
+			const CoordSys *pa = NULL;
+			CoordSys *pcs;
+			double landrad;
+			double dist, cost;
+			extern coordsys *g_galaxysystem;
+			Vec3d dstpos = vec3_000;
+			teleport *tp = Player::findTeleport(wc->destname, TELEPORT_WARP);
+			if(tp){
+				pcs = tp->cs;
+				pos = tp->pos;
+				delta = w->cs->tocs(pos, pcs) - this->pos;
+				dstpos = pos;
+				pa = pcs;
+			}
+			else if(pa = w->cs->findcs(wc->destname)){
+				delta = w->cs->tocs(wc->dest, pa) - this->pos;
+			} 
+			else
+				return false;
+			dist = delta.len();
+			cost = g_warp_cost_factor * this->mass / 1e3 * (log10(dist + 1.) + 1.);
+			Warpable *p = this;
+			if(cost < p->capacitor){
+				double f;
+				int i;
+				p->warping = 1;
+				p->task = sship_warp;
+				p->capacitor -= cost;
+	/*			f = VECLEN(delta);
+				f = (f - pa->rad * 1.1) / f;
+				VECNULL(p->warpdst);
+				VECSCALE(p->warpdst, delta, f);
+				VECADDIN(p->warpdst, pt->pos);*/
+				p->warpdst = dstpos;
+				for(i = 0; i < 3; i++)
+					p->warpdst[i] += 2. * (drseq(&p->w->rs) - .5);
+				p->totalWarpDist = dist;
+				p->currentWarpDist = 0.;
+				p->warpcs = NULL;
+				p->warpdstcs = const_cast<CoordSys*>(pa);
+//				p->warp_next_warf = NULL;
+			}
+			return true;
+		}
+
+		// Cannot respond when warping
+		return false;
 	}
 	return false;
 }
@@ -1343,3 +1423,4 @@ int Warpable::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	}
 	return 0/*st::tracehit(src, dir, rad, dt, ret, retp, retn)*/;
 }
+

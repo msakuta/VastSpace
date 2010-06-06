@@ -9,6 +9,7 @@ extern "C"{
 #include <clib/suf/suf.h>
 #include <clib/rseq.h>
 }
+#include <cpplib/RandomSequence.h>
 #include <cpplib/gl/cullplus.h>
 
 /* bitmask for buttons */
@@ -142,7 +143,7 @@ public:
 	Player *pl;
 	Entity *el; /* entity list */
 	Entity *bl; /* bullet list */
-	struct random_sequence rs;
+	RandomSequence rs;
 	double realtime;
 };
 

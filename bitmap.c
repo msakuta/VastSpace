@@ -62,9 +62,18 @@ BITMAPINFO *ReadBitmap(const char *szFileName)
 tryzip:
 	{
 		char *pv;
+		BITMAPFILEHEADER *pbf;
 		pv = ZipUnZip("rc.zip", szFileName, &dwFileSize);
 		if(!pv)
 			return NULL;
+		pbf = pv;
+
+		/* Check signature though if it's zipped. */
+		if (pbf->bfType != *(WORD*)"BM") {
+			ZipFree(pv);
+			return NULL;
+		}
+
 		szBuffer = LocalAlloc(LMEM_FIXED, dwFileSize - sizeof(BITMAPFILEHEADER));
 		memcpy(szBuffer, &pv[sizeof(BITMAPFILEHEADER)], dwFileSize - sizeof(BITMAPFILEHEADER));
 		ZipFree(pv);

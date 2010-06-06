@@ -90,12 +90,25 @@ void CacheSUFMaterials(const suf_t *suf){
 	}
 }
 
+
+
+#define BUFFER_SIZE 2048
+
 struct my_error_mgr {
   struct jpeg_error_mgr pub;	/* "public" fields */
 
   jmp_buf setjmp_buffer;	/* for return to caller */
 };
 
+typedef struct my_source_mgr{
+ struct jpeg_source_mgr pub; /* public fields */
+ int source_size;
+ JOCTET* source_data;
+ boolean start_of_file;
+ JOCTET buffer[BUFFER_SIZE];
+} my_source_mgr;
+
+typedef my_source_mgr * my_src_ptr;
 typedef struct my_error_mgr * my_error_ptr;
 
 static void my_error_exit (j_common_ptr cinfo)
@@ -111,6 +124,96 @@ static void my_error_exit (j_common_ptr cinfo)
   longjmp(myerr->setjmp_buffer, 1);
 }
 
+METHODDEF(void)
+init_source (j_decompress_ptr cinfo)
+{
+	my_src_ptr src = (my_src_ptr) cinfo ->src;
+	src->start_of_file = TRUE; 
+}
+
+METHODDEF(boolean)
+fill_input_buffer (j_decompress_ptr cinfo)
+{
+	my_src_ptr src = (my_src_ptr) cinfo->src;
+	size_t nbytes = 0;	
+	/* Create a fake EOI marker */
+	if(src->source_size > BUFFER_SIZE){
+		nbytes = BUFFER_SIZE;
+	}
+	else
+	{
+		nbytes = src->source_size;
+	}
+
+	if(nbytes <= 0)
+	{
+		if(src->start_of_file)
+        {
+			exit(1); // treat empty input file as fatal error
+		}
+		src->buffer[0] = (JOCTET) 0xFF;
+		src->buffer[1] = (JOCTET) JPEG_EOI;
+		nbytes = 2;
+	}
+	else
+	{
+		memcpy(src->buffer, src->source_data,nbytes);
+		src->source_data += nbytes;
+		src->source_size -= nbytes;
+	}
+	src->pub.next_input_byte = src->buffer;
+	src->pub.bytes_in_buffer = nbytes;
+	src->start_of_file = FALSE;
+	return TRUE;
+}
+
+METHODDEF(void)
+skip_input_data (j_decompress_ptr cinfo, long num_bytes)
+{
+	my_src_ptr src = (my_src_ptr) cinfo->src;
+	if (num_bytes <= src->pub.bytes_in_buffer ) 
+		{
+			src->pub.bytes_in_buffer -= num_bytes;
+			src->pub.next_input_byte += num_bytes;
+		}
+	else
+	{
+		num_bytes -= src->pub.bytes_in_buffer;
+		src->pub.bytes_in_buffer = 0;
+		src->source_data += num_bytes;
+		src->source_size -= num_bytes;
+	}
+}
+
+METHODDEF(void)
+term_source (j_decompress_ptr cinfo)
+{
+	(void)cinfo;
+}
+
+static void jpeg_memory_src (j_decompress_ptr cinfo, const JOCTET * buffer, size_t bufsize)
+{
+	my_src_ptr src;
+	
+	if (cinfo->src == NULL) 
+	{   /* first time for this JPEG object? */
+		cinfo->src = (struct jpeg_source_mgr *)(*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT, sizeof(my_source_mgr));
+		src = (my_src_ptr) cinfo -> src;
+			}
+	src = (my_src_ptr) cinfo->src;
+	src->pub.init_source = init_source;
+	src->pub.fill_input_buffer = fill_input_buffer;
+	src->pub.skip_input_data = skip_input_data;
+	src->pub.resync_to_restart = jpeg_resync_to_restart; /* use default method */
+	src->pub.term_source = term_source;
+	src->pub.bytes_in_buffer = 0; // forces fill_input_buffer on first read
+	src->pub.next_input_byte = NULL; // until buffer loaded
+	src->source_data = buffer;
+	src->source_size = bufsize;
+	src->start_of_file = 0;
+}
+
+
 static BITMAPINFO *ReadJpeg(const char *fname){
 	BITMAPINFO *bmi;
 	FILE * infile;		/* source file */
@@ -119,11 +222,16 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 	JSAMPARRAY buffer;		/* Output row buffer */
 	int row_stride;		/* physical row width in image buffer */
 	int src_row_stride;
+	BYTE *image_buffer = NULL;
+	unsigned long size;
 
 	infile = fopen(fname, "rb");
 
-	if(!infile)
-		return NULL;
+	if(!infile){
+		image_buffer = ZipUnZip("rc.zip", fname, &size);
+		if(!image_buffer)
+			return NULL;
+	}
 
 	cinfo.err = jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = my_error_exit;
@@ -137,7 +245,10 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 		return NULL;
 	}
 	jpeg_create_decompress(&cinfo);
-	jpeg_stdio_src(&cinfo, infile);
+	if(!image_buffer)
+		jpeg_stdio_src(&cinfo, infile);
+	else
+		jpeg_memory_src(&cinfo, (JOCTET*)image_buffer, size);
 	(void) jpeg_read_header(&cinfo, TRUE);
 	(void) jpeg_start_decompress(&cinfo);
 	row_stride = cinfo.output_width * cinfo.output_components;
@@ -174,9 +285,16 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 			dst[0] = src[0];
 		}
 	}
+
 	(void) jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
-	fclose(infile);
+
+	/* If the on-memory source is available, free it, otherwise the source is a file. */
+	if(image_buffer)
+		free(image_buffer);
+	else
+		fclose(infile);
+
 	return bmi;
 }
 
@@ -197,15 +315,9 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	stp.bmi = ReadBitmap(fname1);
 
 	if(!stp.bmi){
-		/* If couldn't, search through resource zip file. */
-		bfh = ZipUnZip("rc.zip", fname1, NULL);
-		stp.bmi = (BITMAPINFO*)&bfh[1];
-
-		if(!bfh){
-			/* If no luck yet, try jpeg decoding. */
-			stp.bmi = ReadJpeg(fname1);
-			jpeg = 1;
-		}
+		/* If no luck yet, try jpeg decoding. */
+		stp.bmi = ReadJpeg(fname1);
+		jpeg = 1;
 	}
 
 	/* If all above fail, give up loading image. */

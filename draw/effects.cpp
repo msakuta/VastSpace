@@ -97,7 +97,7 @@ static void smokedraw_int(const struct tent3d_line_callback *p, COLOR32 col, flo
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
-		list = CallCacheBitmap5("smoke2.jpg", "smoke2.jpg", &stp, NULL, NULL);
+		list = CallCacheBitmap5("textures/smoke2.jpg", "textures/smoke2.jpg", &stp, NULL, NULL);
 	}
 	glCallList(list);
 	glColor4f(COLOR32R(col) / 255., COLOR32G(col) / 255., COLOR32B(col) / 255., MIN(p->life * .25, 1.));

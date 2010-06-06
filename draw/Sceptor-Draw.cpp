@@ -393,8 +393,8 @@ void Sceptor::smokedraw(const struct tent3d_line_callback *p, const struct tent3
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
-		lists[0] = CallCacheBitmap5("smoke.bmp", "smoke.bmp", &stp, NULL, NULL);
-		lists[1] = CallCacheBitmap5("smokefire.bmp", "smokefire.bmp", &stp, NULL, NULL);
+		lists[0] = CallCacheBitmap5("textures/smoke.bmp", "textures/smoke.bmp", &stp, NULL, NULL);
+		lists[1] = CallCacheBitmap5("textures/smokefire.bmp", "textures/smokefire.bmp", &stp, NULL, NULL);
 	}
 	for(int i = 0; i < 2; i++){
 		glCallList(lists[i]);

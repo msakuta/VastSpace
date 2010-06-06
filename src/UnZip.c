@@ -116,20 +116,6 @@ void *ZipUnZipV(int fromMemory, FILE *fp, const char *fname, const char *ename, 
 		goto error_tag;
 	pseek(fp, ecd.startpos, SEEK_SET);
 
-	/* Directory support. If fname contains a directory delimiter, it is stored inside a directory.
-	  A directory in a zip file is a zip entry without compression whose content is itself a zip file. */
-	if(0){
-		char *p;
-		p = strchr(ename, '/'); /* Directory delimitor? */
-		if(0 && p){
-			isdir = 1;
-			cmplen = p - ename;
-		}
-		else{
-			isdir = 0;
-		}
-	}
-
 	while(pread(&cdh, sizeof cdh, 1, fp)){
 		if(cdh.signature != 0x02014b50 || sizeof namebuf <= cdh.fnamelen)
 			goto error_tag;
@@ -137,14 +123,28 @@ void *ZipUnZipV(int fromMemory, FILE *fp, const char *fname, const char *ename, 
 		namebuf[cdh.fnamelen] = '\0'; /* Null terminate to avoid partial matching */
 		pseek(fp, cdh.extralen, SEEK_CUR); /* skip extra field */
 		if(ename && (!cdh.fnamelen || pathncmp(ename, namebuf, isdir ? cmplen : cdh.fnamelen + 1))){
-//			fseek(fp, cdh.csize, SEEK_CUR); // skip this entry
-//			if(lh.flag & (1<<3))
-//				fseek(fp, 12, SEEK_CUR); // skip data descriptor if any
-//			fseek(fp, cdh.extralen, SEEK_CUR);
 			continue;
 		}
 		pseek(fp, cdh.headerpos, SEEK_SET);
 		pread(&lh, sizeof lh, 1, fp);
+
+		/* Raw format can be read without any conversion */
+		if(lh.method == 0){
+			ret = malloc(lh.csize);
+			pseek(fp, lh.namelen + lh.extralen, SEEK_CUR);
+			pread(ret, lh.csize, 1, fp);
+			if(psize)
+				*psize = lh.csize;
+#ifndef NDEBUG
+			fprintf(stderr, "%s(%s) %lu/%lu=%lg%% %lgs\n", fname, ename, lh.csize, lh.usize, (double)100. * lh.csize / lh.usize, TimeMeasLap(&tm));
+#endif
+			return ret;
+		}
+
+		/* Bail if not the compression algorithm is not deflate */
+		if(lh.method != 8)
+			return NULL;
+
 		pseek(fp, lh.namelen + lh.extralen, SEEK_CUR);
 		cret = malloc(lh.csize);
 		pread(cret, lh.csize, 1, fp);

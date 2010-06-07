@@ -92,7 +92,7 @@ void CacheSUFMaterials(const suf_t *suf){
 
 
 
-#define BUFFER_SIZE 2048
+/*#define BUFFER_SIZE 2048*/
 
 struct my_error_mgr {
   struct jpeg_error_mgr pub;	/* "public" fields */
@@ -101,11 +101,11 @@ struct my_error_mgr {
 };
 
 typedef struct my_source_mgr{
- struct jpeg_source_mgr pub; /* public fields */
- int source_size;
- JOCTET* source_data;
- boolean start_of_file;
- JOCTET buffer[BUFFER_SIZE];
+	struct jpeg_source_mgr pub; /* public fields */
+	int source_size;
+	JOCTET* source_data;
+	boolean start_of_file;
+/*	JOCTET buffer[BUFFER_SIZE];*/
 } my_source_mgr;
 
 typedef my_source_mgr * my_src_ptr;
@@ -113,15 +113,15 @@ typedef struct my_error_mgr * my_error_ptr;
 
 static void my_error_exit (j_common_ptr cinfo)
 {
-  /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
-  my_error_ptr myerr = (my_error_ptr) cinfo->err;
+	/* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+	my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-  /* Always display the message. */
-  /* We could postpone this until after returning, if we chose. */
-  (*cinfo->err->output_message) (cinfo);
+	/* Always display the message. */
+	/* We could postpone this until after returning, if we chose. */
+	(*cinfo->err->output_message) (cinfo);
 
-  /* Return control to the setjmp point */
-  longjmp(myerr->setjmp_buffer, 1);
+	/* Return control to the setjmp point */
+	longjmp(myerr->setjmp_buffer, 1);
 }
 
 METHODDEF(void)
@@ -135,6 +135,10 @@ METHODDEF(boolean)
 fill_input_buffer (j_decompress_ptr cinfo)
 {
 	my_src_ptr src = (my_src_ptr) cinfo->src;
+#if 1
+	src->pub.next_input_byte = src->source_data;
+	src->pub.bytes_in_buffer = src->source_size;
+#else
 	size_t nbytes = 0;	
 	/* Create a fake EOI marker */
 	if(src->source_size > BUFFER_SIZE){
@@ -164,6 +168,7 @@ fill_input_buffer (j_decompress_ptr cinfo)
 	src->pub.next_input_byte = src->buffer;
 	src->pub.bytes_in_buffer = nbytes;
 	src->start_of_file = FALSE;
+#endif
 	return TRUE;
 }
 
@@ -171,13 +176,11 @@ METHODDEF(void)
 skip_input_data (j_decompress_ptr cinfo, long num_bytes)
 {
 	my_src_ptr src = (my_src_ptr) cinfo->src;
-	if (num_bytes <= src->pub.bytes_in_buffer ) 
-		{
-			src->pub.bytes_in_buffer -= num_bytes;
-			src->pub.next_input_byte += num_bytes;
-		}
-	else
-	{
+	if (num_bytes <= src->pub.bytes_in_buffer ){
+		src->pub.bytes_in_buffer -= num_bytes;
+		src->pub.next_input_byte += num_bytes;
+	}
+	else{
 		num_bytes -= src->pub.bytes_in_buffer;
 		src->pub.bytes_in_buffer = 0;
 		src->source_data += num_bytes;
@@ -199,7 +202,7 @@ static void jpeg_memory_src (j_decompress_ptr cinfo, const JOCTET * buffer, size
 	{   /* first time for this JPEG object? */
 		cinfo->src = (struct jpeg_source_mgr *)(*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT, sizeof(my_source_mgr));
 		src = (my_src_ptr) cinfo -> src;
-			}
+	}
 	src = (my_src_ptr) cinfo->src;
 	src->pub.init_source = init_source;
 	src->pub.fill_input_buffer = fill_input_buffer;
@@ -245,10 +248,13 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 		return NULL;
 	}
 	jpeg_create_decompress(&cinfo);
+
+	/* Choose source manager */
 	if(!image_buffer)
 		jpeg_stdio_src(&cinfo, infile);
 	else
 		jpeg_memory_src(&cinfo, (JOCTET*)image_buffer, size);
+
 	(void) jpeg_read_header(&cinfo, TRUE);
 	(void) jpeg_start_decompress(&cinfo);
 	row_stride = cinfo.output_width * cinfo.output_components;

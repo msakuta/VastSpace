@@ -522,18 +522,8 @@ void MTurret::drawtra(wardraw_t *wd){
 		rot.vec3(3).clear();
 		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);
 
-		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		if(!texname){
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			stp.wraps = GL_CLAMP_TO_BORDER;
-			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
-		}
-		glCallList(texname);
+		glCallList(muzzle_texture());
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .1, fi = 1. - mf / .2;
@@ -707,18 +697,8 @@ void GatlingTurret::drawtra(wardraw_t *wd){
 		rot.vec3(3).clear();
 		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
 
-		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		if(!texname){
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			stp.wraps = GL_CLAMP_TO_BORDER;
-			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
-		}
-		glCallList(texname);
+		glCallList(muzzle_texture());
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .075 * 2, fi = 1. - mf / .075;
@@ -871,18 +851,8 @@ void LTurret::drawtra(wardraw_t *wd){
 		rot.vec3(3).clear();
 //		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
 
-		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		if(!texname){
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			stp.wraps = GL_CLAMP_TO_BORDER;
-			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
-		}
-		glCallList(texname);
+		glCallList(muzzle_texture());
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .3 * 2, fi = 1. - mf / .3;
@@ -1076,18 +1046,8 @@ void LMissileTurret::drawtra(wardraw_t *wd){
 		rot.vec3(3).clear();
 //		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
 
-		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		if(!texname){
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			stp.wraps = GL_CLAMP_TO_BORDER;
-			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
-		}
-		glCallList(texname);
+		glCallList(muzzle_texture());
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .3 * 2, fi = 1. - mf / .3;

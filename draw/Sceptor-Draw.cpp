@@ -16,6 +16,7 @@
 //#include "glsl.h"
 //#include "astro_star.h"
 //#include "sensor.h"
+#include "effects.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -348,18 +349,8 @@ void Sceptor::drawtra(wardraw_t *wd){
 
 	if(mf) for(int i = 0; i < 2; i++){
 		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
-		static GLuint texname = 0;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		if(!texname){
-			suftexparam_t stp;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
-			stp.env = GL_MODULATE;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			stp.wraps = GL_CLAMP_TO_BORDER;
-			texname = CallCacheBitmap5("muzzle.bmp", "muzzle.bmp", &stp, NULL, NULL);
-		}
-		glCallList(texname);
+		glCallList(muzzle_texture());
 /*		glMatrixMode(GL_TEXTURE);
 		glPushMatrix();
 		glRotatef(-90, 0, 0, 1);

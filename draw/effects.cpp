@@ -14,7 +14,7 @@ extern "C"{
 }
 #include <cpplib/RandomSequence.h>
 #include <math.h>
-//#include <gl/glext.h>
+#include <gl/glext.h>
 
 void sparkdraw(const tent3d_line_callback *p, const tent3d_line_drawdata *dd, void *private_data){
 	double width = p->len;
@@ -249,4 +249,20 @@ void debrigib_multi(const struct tent3d_line_callback *pl, const struct tent3d_l
 		glPopMatrix();
 	}
 	glPopAttrib();
+}
+
+GLuint muzzle_texture(){
+	static GLuint texname = 0;
+	static bool init = false;
+	if(!init){
+		init = true;
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_WRAP_S;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.wraps = GL_CLAMP_TO_BORDER;
+		texname = CallCacheBitmap5("textures/muzzle.bmp", "textures/muzzle.bmp", &stp, NULL, NULL);
+	}
+	return texname;
 }

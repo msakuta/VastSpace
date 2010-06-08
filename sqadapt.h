@@ -38,14 +38,17 @@ bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 // Any recoverable errors in Squirrel VM is thrown and inherits this class.
-class SQFError{
-	int unused;
+struct SQFError{
+	SQFError(SQChar *a = NULL) : description(a){}
+	const SQChar *what()const;
+	SQChar *description;
 };
-class SQIntrinsicError : SQFError{};
-class TypeMatch : SQIntrinsicError{};
-class NoIndex : SQIntrinsicError{};
-class NoUserData : SQIntrinsicError{};
-class NoCreateInstance : SQIntrinsicError{};
+struct SQFArgumentError : SQFError{ SQFArgumentError() : SQFError("Argument error"){} };
+struct SQIntrinsicError : SQFError{};
+struct TypeMatch : SQIntrinsicError{};
+struct NoIndex : SQIntrinsicError{};
+struct NoUserData : SQIntrinsicError{};
+struct NoCreateInstance : SQIntrinsicError{};
 
 // Adapter for Squirrel class instances that behave like an intrinsic type.
 template<typename Class>

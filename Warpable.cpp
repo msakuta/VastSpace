@@ -658,8 +658,20 @@ int cmd_warp(int argc, char *argv[], void *pv){
 		return 1;
 	}
 	WarpCommand com;
-	com.dest = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
-	com.destname = argv[1];
+	com.destpos = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
+
+	// Search path is based on player's CoordSys, though this function would be soon unnecessary anyway.
+	teleport *tp = Player::findTeleport(argv[1], TELEPORT_WARP);
+	if(tp){
+		com.destcs = tp->cs;
+		com.destpos = tp->pos;
+	}
+	else if(com.destcs = const_cast<CoordSys*>(ppl->cs->findcs(argv[1]))){
+		com.destpos = vec3_000;
+	} 
+	else
+		return 1;
+
 	for(pt = ppl->selected; pt; pt = pt->selectnext){
 		pt->command(&com);
 #if 0
@@ -1286,7 +1298,7 @@ bool Warpable::command(EntityCommand *com){
 	}
 	else if(MoveCommand *mc = InterpretCommand<MoveCommand>(com)){
 		task = sship_moveto;
-		dest = mc->dest;
+		dest = mc->destpos;
 		return true;
 	}
 	else if(AttackCommand *ac = InterpretDerivedCommand<AttackCommand>(com)){
@@ -1303,28 +1315,9 @@ bool Warpable::command(EntityCommand *com){
 	else if(WarpCommand *wc = InterpretCommand<WarpCommand>(com)){
 		const double g_warp_cost_factor = .001;
 		if(!warping){
-			Vec3d delta, pos;
-			const CoordSys *pa = NULL;
-			CoordSys *pcs;
-			double landrad;
-			double dist, cost;
-			extern coordsys *g_galaxysystem;
-			Vec3d dstpos = vec3_000;
-			teleport *tp = Player::findTeleport(wc->destname, TELEPORT_WARP);
-			if(tp){
-				pcs = tp->cs;
-				pos = tp->pos;
-				delta = w->cs->tocs(pos, pcs) - this->pos;
-				dstpos = pos;
-				pa = pcs;
-			}
-			else if(pa = w->cs->findcspath(wc->destname)){
-				delta = w->cs->tocs(wc->dest, pa) - this->pos;
-			} 
-			else
-				return false;
-			dist = delta.len();
-			cost = g_warp_cost_factor * this->mass / 1e3 * (log10(dist + 1.) + 1.);
+			Vec3d delta = w->cs->tocs(wc->destpos, wc->destcs) - this->pos;
+			double dist = delta.len();
+			double cost = g_warp_cost_factor * this->mass / 1e3 * (log10(dist + 1.) + 1.);
 			Warpable *p = this;
 			if(cost < p->capacitor){
 				double f;
@@ -1332,19 +1325,13 @@ bool Warpable::command(EntityCommand *com){
 				p->warping = 1;
 				p->task = sship_warp;
 				p->capacitor -= cost;
-	/*			f = VECLEN(delta);
-				f = (f - pa->rad * 1.1) / f;
-				VECNULL(p->warpdst);
-				VECSCALE(p->warpdst, delta, f);
-				VECADDIN(p->warpdst, pt->pos);*/
-				p->warpdst = dstpos;
+				p->warpdst = wc->destpos;
 				for(i = 0; i < 3; i++)
-					p->warpdst[i] += 2. * (drseq(&p->w->rs) - .5);
+					p->warpdst[i] += 2. * p->w->rs.nextd();
 				p->totalWarpDist = dist;
 				p->currentWarpDist = 0.;
 				p->warpcs = NULL;
-				p->warpdstcs = const_cast<CoordSys*>(pa);
-//				p->warp_next_warf = NULL;
+				p->warpdstcs = wc->destcs;
 			}
 			return true;
 		}

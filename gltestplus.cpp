@@ -1017,9 +1017,9 @@ int cmd_move(int argc, char *argv[], void *pv){
 	if(argc < 4 || !pl->cs)
 		return 0;
 	MoveCommand com;
-	com.dest[0] = atof(argv[1]);
-	com.dest[1] = atof(argv[2]);
-	com.dest[2] = atof(argv[3]);
+	com.destpos[0] = atof(argv[1]);
+	com.destpos[1] = atof(argv[2]);
+	com.destpos[2] = atof(argv[3]);
 	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w)
 		pt->command(&com);
 	return 0;

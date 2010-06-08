@@ -1364,7 +1364,7 @@ bool Sceptor::command(EntityCommand *com){
 				return false;
 		}
 		task = Moveto;
-		this->dest = mc->dest;
+		this->dest = mc->destpos;
 		return true;
 	}
 	if(AttackCommand *ac = InterpretDerivedCommand<AttackCommand>(com)){

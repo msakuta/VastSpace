@@ -15,6 +15,8 @@ extern "C"{
 #include "serial_util.h"
 #include "Destroyer.h"
 #include "btadapt.h"
+#include "sqadapt.h"
+#include "stellar_file.h"
 #include <btBulletDynamicsCommon.h>
 
 
@@ -344,3 +346,53 @@ IMPLEMENT_COMMAND(SetPassiveCommand, "SetPassive")
 IMPLEMENT_COMMAND(WarpCommand, "Warp")
 
 IMPLEMENT_COMMAND(RemainDockedCommand, "RemainDocked")
+
+MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQUserPointer typetag;
+	if(OT_INSTANCE != sq_gettype(v, 3) || (sq_gettypetag(v, 3, &typetag), typetag != tt_Vec3d))
+		throw SQFError(_SC("Incompatible argument type"));
+	sq_pushstring(v, _SC("a"), -1);
+	if(SQ_FAILED(sq_get(v, 3)))
+		throw SQFError(_SC("Corrupt Vec3d data"));
+	Vec3d *pvec3;
+	sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
+	destpos = *pvec3;
+}
+
+WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 3)
+		throw SQFArgumentError();
+	const SQChar *destname;
+	if(SQ_SUCCEEDED(sq_getstring(v, 3, &destname))){
+		WarField *w = e.w;
+		CoordSys *pa = NULL;
+		CoordSys *pcs;
+		double landrad;
+		double dist, cost;
+		extern coordsys *g_galaxysystem;
+		teleport *tp = Player::findTeleport(destname, TELEPORT_WARP);
+		if(tp){
+			destpos = tp->pos;
+			destcs = tp->cs;
+		}
+		else if(pa = w->cs->findcspath(destname)){
+			destpos = vec3_000;
+			destcs = pa;
+		} 
+		else
+			throw SQFError();
+	}
+	SQUserPointer typetag;
+	if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
+		throw SQFError(_SC("Incompatible argument type"));
+	sq_pushstring(v, _SC("a"), -1);
+	if(SQ_FAILED(sq_get(v, 4)))
+		throw SQFError(_SC("Corrupt Vec3d data"));
+	Vec3d *pvec3;
+	sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
+	destpos = *pvec3;
+}

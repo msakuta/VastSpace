@@ -310,6 +310,7 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_Entity_command(HSQUIRRELVM v){
+	try{
 	Entity *p;
 	if(!sqa_refobj(v, (SQUserPointer*)&p))
 		return 0;
@@ -319,17 +320,7 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		p->command(&HaltCommand());
 	}
 	else if(!strcmp(s, _SC("Move"))){
-		MoveCommand com;
-		SQUserPointer typetag;
-		Vec3d *pvec3;
-		if(OT_INSTANCE != sq_gettype(v, 3) || (sq_gettypetag(v, 3, &typetag), typetag != tt_Vec3d))
-			return sq_throwerror(v, _SC("Incompatible argument type"));
-		sq_pushstring(v, _SC("a"), -1);
-		if(SQ_FAILED(sq_get(v, 3)))
-			return sq_throwerror(v, _SC("Corrupt Vec3d data"));
-		sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
-		com.dest = *pvec3;
-		p->command(&com);
+		p->command(&MoveCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("Dock"))){
 		p->command(&DockCommand());
@@ -344,21 +335,7 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		p->command(&SetPassiveCommand());
 	}
 	else if(!strcmp(s, _SC("Warp"))){
-		int argc = sq_gettop(v);
-		if(argc < 3)
-			return 0;
-		WarpCommand com;
-		sq_getstring(v, 3, &com.destname);
-		SQUserPointer typetag;
-		Vec3d *pvec3;
-		if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
-			return sq_throwerror(v, _SC("Incompatible argument type"));
-		sq_pushstring(v, _SC("a"), -1);
-		if(SQ_FAILED(sq_get(v, 4)))
-			return sq_throwerror(v, _SC("Corrupt Vec3d data"));
-		sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
-		com.dest = *pvec3;
-		p->command(&com);
+		p->command(&WarpCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("RemainDocked"))){
 		int argc = sq_gettop(v);
@@ -369,6 +346,10 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		p->command(&RemainDockedCommand(b));
 	}
 	return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
 }
 
 static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){

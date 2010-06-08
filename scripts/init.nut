@@ -331,16 +331,16 @@ function frameproc(dt){
 		}
 		if(racec[1] < 2){
 			local zrot = (2. * PI * rand()) / RAND_MAX;
-			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1, -3.), 0.4, 3, cs);
 /*			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
+				, Vec3d(0, 0.1, -3.), 0.4, 3, cs);*/
+			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
 				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs);
 			if(farcs != null){
 				foreachents(farcs, function(e){
 					e.command("RemainDocked", true);
 					e.command("Warp", "/sol/saturn/saturno2", Vec3d(0,0,0));
 				});
-			}*/
+			}
 		}
 
 		foreachents(cs, function(e){

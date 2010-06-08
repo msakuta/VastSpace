@@ -24,7 +24,6 @@
 
 extern "C"{
 #include <clib/c.h>
-#include <clib/timemeas.h>
 }
 
 #include <btBulletDynamicsCommon.h>
@@ -318,9 +317,6 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
 
-		timemeas_t tm;
-		TimeMeasStart(&tm);
-		printf("Command: %lg\n", TimeMeasLap(&tm));
 		EntityCommandCreatorFunc *func = EntityCommand::ctormap[s];
 
 		if(func){
@@ -330,32 +326,6 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		}
 		else
 			return sq_throwerror(v, _SC("Undefined Entity Command"));
-/*
-	if(!strcmp(s, _SC("Halt"))){
-		p->command(&HaltCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("Move"))){
-		p->command(&MoveCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("Dock"))){
-		p->command(&DockCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("Parade"))){
-		p->command(&ParadeCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("SetAggressive"))){
-		p->command(&SetAggressiveCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("SetPassive"))){
-		p->command(&SetPassiveCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("Warp"))){
-		p->command(&WarpCommand(v, *p));
-	}
-	else if(!strcmp(s, _SC("RemainDocked"))){
-		p->command(&RemainDockedCommand(v, *p));
-	}
-	return 0;*/
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.description);

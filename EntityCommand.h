@@ -1,6 +1,7 @@
 #ifndef ENTITYCOMMAND_H
 #define ENTITYCOMMAND_H
 #include <set>
+#include <map>
 #include <cpplib/vec3.h>
 #include <squirrel.h>
 
@@ -48,15 +49,8 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 // If you really need to remember an EntityCommand for later use, I recommend using Squirrel
 // function call to express a command.
 struct EntityCommand{
-/*	class StrLess{
-	public:
-		bool operator()(const char *a, const char *b)const{ return strcmp(a, b) < 0; }
-	};*/
-	static std::map<const char */*std::string*//*cpplib::dstring*/, EntityCommandCreatorFunc*, /*StrLess*/bool (*)(const char *, const char *)> ctormap;
-	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
-		ctormap[name] = ctor;
-		return 0;
-	}
+	// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
+	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> ctormap;
 
 	// The returned pointer never be dereferenced without debugging purposes,
 	// it is just required to point the same address for all the instances but
@@ -69,6 +63,13 @@ struct EntityCommand{
 
 	// In a Squirrel execution context, an Entity which will this command be sent to is known.
 	EntityCommand(HSQUIRRELVM v, Entity &e){}
+
+protected:
+	// Derived classes use this utility to register class.
+	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
+		ctormap[name] = ctor;
+		return 0;
+	}
 };
 
 template<typename CmdType>

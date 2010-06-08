@@ -336,9 +336,9 @@ function frameproc(dt){
 			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
 				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs);
 			if(farcs != null){
-				foreachents(farcs, function(e){
+				foreachents(farcs, function(e):(cs){
 					e.command("RemainDocked", true);
-					e.command("Warp", "/sol/saturn/saturno2", Vec3d(0,0,0));
+					e.command("Warp", cs, Vec3d(0,0,0));
 				});
 			}
 		}

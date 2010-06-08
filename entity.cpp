@@ -335,8 +335,7 @@ static bool strless(const char *a, const char *b){
 	return strcmp(a, b) < 0;
 }
 
-std::map<const char */*std::string*//*cpplib::dstring*/, EntityCommandCreatorFunc*, /*EntityCommand::StrLess*/bool (*)(const char*,const char*)> EntityCommand::ctormap
- = std::map<const char */*std::string*//*cpplib::dstring*/, EntityCommandCreatorFunc*, /*EntityCommand::StrLess*/bool (*)(const char*,const char*)>(/*EntityCommand::StrLess()*/strless);
+std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char*,const char*)> EntityCommand::ctormap(strless);
 
 
 bool EntityCommand::derived(EntityCommandID)const{return false;}
@@ -404,6 +403,11 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 		else
 			throw SQFError();
 	}
+	else if(sqa_refobj(v, (SQUserPointer*)&destcs, NULL, 3)){
+		destpos = vec3_000;
+	}
+	else
+		throw SQFArgumentError();
 	SQUserPointer typetag;
 	if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
 		throw SQFError(_SC("Incompatible argument type"));

@@ -10,6 +10,7 @@ typedef const char *EntityCommandID;
 
 #define DERIVE_COMMAND(name,base) struct name : public base{\
 	typedef base st;\
+	static int construction_dummy;\
 	static EntityCommandID sid;\
 	virtual EntityCommandID id()const;\
 	virtual bool derived(EntityCommandID)const;\
@@ -18,8 +19,18 @@ typedef const char *EntityCommandID;
 }
 
 #define IMPLEMENT_COMMAND(name,idname) const char *name::sid = idname;\
+	int name::construction_dummy = registerEntityCommand(idname, EntityCommandCreator<name>);\
 	EntityCommandID name::id()const{return sid;}\
 	bool name::derived(EntityCommandID aid)const{if(aid==sid)return true;else return st::derived(aid);}
+
+struct EntityCommand;
+
+typedef EntityCommand *EntityCommandCreatorFunc(HSQUIRRELVM, Entity &);
+
+template<typename Command>
+EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
+	return new Command(v, e);
+}
 
 // Base class for all Entity commands.
 // The Entity commands are short-lived, small object that deliver messages to Entities.
@@ -37,6 +48,16 @@ typedef const char *EntityCommandID;
 // If you really need to remember an EntityCommand for later use, I recommend using Squirrel
 // function call to express a command.
 struct EntityCommand{
+/*	class StrLess{
+	public:
+		bool operator()(const char *a, const char *b)const{ return strcmp(a, b) < 0; }
+	};*/
+	static std::map<const char */*std::string*//*cpplib::dstring*/, EntityCommandCreatorFunc*, /*StrLess*/bool (*)(const char *, const char *)> ctormap;
+	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
+		ctormap[name] = ctor;
+		return 0;
+	}
+
 	// The returned pointer never be dereferenced without debugging purposes,
 	// it is just required to point the same address for all the instances but
 	// never coincides between different classes.
@@ -65,6 +86,7 @@ DERIVE_COMMAND(HaltCommand, EntityCommand);
 
 struct AttackCommand : public EntityCommand{
 	typedef EntityCommand st;
+	static int construction_dummy;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
@@ -77,6 +99,7 @@ DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 
 struct MoveCommand : public EntityCommand{
 	typedef EntityCommand st;
+	static int construction_dummy;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
@@ -94,6 +117,7 @@ DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
 
 struct WarpCommand : public MoveCommand{
 	typedef MoveCommand st;
+	static int construction_dummy;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
@@ -111,10 +135,11 @@ struct WarpCommand : public MoveCommand{
 
 struct RemainDockedCommand : public EntityCommand{
 	typedef EntityCommand st;
+	static int construction_dummy;
 	static EntityCommandID sid;
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
-	RemainDockedCommand(bool a) : enable(a){}
+	RemainDockedCommand(bool a = true) : enable(a){}
 	RemainDockedCommand(HSQUIRRELVM v, Entity &e);
 	bool enable;
 };

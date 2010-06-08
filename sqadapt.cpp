@@ -24,6 +24,7 @@
 
 extern "C"{
 #include <clib/c.h>
+#include <clib/timemeas.h>
 }
 
 #include <btBulletDynamicsCommon.h>
@@ -311,11 +312,25 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 
 static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	try{
-	Entity *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return 0;
-	const SQChar *s;
-	sq_getstring(v, 2, &s);
+		Entity *p;
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return 0;
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+		printf("Command: %lg\n", TimeMeasLap(&tm));
+		EntityCommandCreatorFunc *func = EntityCommand::ctormap[s];
+
+		if(func){
+			EntityCommand *com = func(v, *p);
+			p->command(com);
+			delete com;
+		}
+		else
+			return sq_throwerror(v, _SC("Undefined Entity Command"));
+/*
 	if(!strcmp(s, _SC("Halt"))){
 		p->command(&HaltCommand(v, *p));
 	}
@@ -340,11 +355,12 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	else if(!strcmp(s, _SC("RemainDocked"))){
 		p->command(&RemainDockedCommand(v, *p));
 	}
-	return 0;
+	return 0;*/
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.description);
 	}
+	return 0;
 }
 
 static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){

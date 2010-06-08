@@ -228,7 +228,7 @@ register_console_command("dock", function(...){
 		e.command("Dock");
 });
 
-register_console_command("parade", function(...){
+register_console_command("parade_formation", function(...){
 	local e = player.selected;
 	for(; e != null; e = e.selectnext)
 		e.command("Parade");

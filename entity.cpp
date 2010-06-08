@@ -347,6 +347,16 @@ IMPLEMENT_COMMAND(WarpCommand, "Warp")
 
 IMPLEMENT_COMMAND(RemainDockedCommand, "RemainDocked")
 
+RemainDockedCommand::RemainDockedCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 3)
+		throw SQFArgumentError();
+	SQBool b;
+	if(SQ_FAILED(sq_getbool(v, 3, &b)))
+		throw SQFArgumentError();
+	enable = b;
+}
+
 MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &e){
 	int argc = sq_gettop(v);
 	if(argc < 2)

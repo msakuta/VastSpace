@@ -317,33 +317,28 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	const SQChar *s;
 	sq_getstring(v, 2, &s);
 	if(!strcmp(s, _SC("Halt"))){
-		p->command(&HaltCommand());
+		p->command(&HaltCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("Move"))){
 		p->command(&MoveCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("Dock"))){
-		p->command(&DockCommand());
+		p->command(&DockCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("Parade"))){
-		p->command(&ParadeCommand());
+		p->command(&ParadeCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("SetAggressive"))){
-		p->command(&SetAggressiveCommand());
+		p->command(&SetAggressiveCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("SetPassive"))){
-		p->command(&SetPassiveCommand());
+		p->command(&SetPassiveCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("Warp"))){
 		p->command(&WarpCommand(v, *p));
 	}
 	else if(!strcmp(s, _SC("RemainDocked"))){
-		int argc = sq_gettop(v);
-		if(argc < 3)
-			return 0;
-		SQBool b;
-		sq_getbool(v, 3, &b);
-		p->command(&RemainDockedCommand(b));
+		p->command(&RemainDockedCommand(v, *p));
 	}
 	return 0;
 	}

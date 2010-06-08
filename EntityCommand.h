@@ -115,7 +115,7 @@ struct RemainDockedCommand : public EntityCommand{
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
 	RemainDockedCommand(bool a) : enable(a){}
-	RemainDockedCommand(HSQUIRRELVM v, Entity &e) : st(v, e){}
+	RemainDockedCommand(HSQUIRRELVM v, Entity &e);
 	bool enable;
 };
 

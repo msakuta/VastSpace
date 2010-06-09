@@ -341,6 +341,17 @@ std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char*,const cha
 bool EntityCommand::derived(EntityCommandID)const{return false;}
 IMPLEMENT_COMMAND(HaltCommand, "Halt")
 IMPLEMENT_COMMAND(AttackCommand, "Attack")
+
+AttackCommand::AttackCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 3)
+		throw SQFArgumentError();
+	Entity *ent;
+	if(sqa_refobj(v, (SQUserPointer*)&ent, NULL, 3)){
+		ents.insert(ent);
+	}
+}
+
 IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")
 IMPLEMENT_COMMAND(MoveCommand, "Move")
 IMPLEMENT_COMMAND(ParadeCommand, "Parade")
@@ -354,7 +365,7 @@ IMPLEMENT_COMMAND(WarpCommand, "Warp")
 
 IMPLEMENT_COMMAND(RemainDockedCommand, "RemainDocked")
 
-RemainDockedCommand::RemainDockedCommand(HSQUIRRELVM v, Entity &e){
+RemainDockedCommand::RemainDockedCommand(HSQUIRRELVM v, Entity &){
 	int argc = sq_gettop(v);
 	if(argc < 3)
 		throw SQFArgumentError();
@@ -364,7 +375,7 @@ RemainDockedCommand::RemainDockedCommand(HSQUIRRELVM v, Entity &e){
 	enable = b;
 }
 
-MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &e){
+MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &){
 	int argc = sq_gettop(v);
 	if(argc < 2)
 		throw SQFArgumentError();

@@ -92,7 +92,7 @@ struct AttackCommand : public EntityCommand{
 	virtual EntityCommandID id()const;
 	virtual bool derived(EntityCommandID)const;
 	AttackCommand(){}
-	AttackCommand(HSQUIRRELVM v, Entity &e) : st(v, e){}
+	AttackCommand(HSQUIRRELVM v, Entity &e);
 	std::set<Entity*> ents;
 };
 

@@ -155,6 +155,7 @@ function foreachdockedents(docker, proc){
 
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs){
+	local prev = null;
 	for(local i = 1; i < count + 1; i++){
 		local epos = Vec3d(
 			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
@@ -165,6 +166,9 @@ function deltaFormation(classname, team, rot, offset, spacing, count, cs){
 		e.setrot(rot);
 		e.command("SetAggressive");
 		e.command("Move", rot.trans(epos + Vec3d(0,0,-2)) + offset);
+		if(prev != null)
+			e.command("ForceAttack", prev);
+		prev = e;
 //		print(e.classname + ": " + e.race + ", " + e.pos);
 	}
 }

@@ -359,7 +359,7 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
 	double x = v * 2. - 1., h = MIN(.1, .1 / (1. + scale)), hs = h / 2.;
-	if(!g_healthbar)
+	if(!g_healthbar || !Player::g_overlay)
 		return;
 	if(g_healthbar == 1 && wd->w && wd->w->pl){
 		Entity *pt2;
@@ -449,7 +449,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 
 
 void Warpable::drawtra(wardraw_t *wd){
-	if(task == sship_moveto){
+	if(Player::g_overlay && task == sship_moveto){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);

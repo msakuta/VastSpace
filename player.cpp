@@ -14,6 +14,7 @@ extern "C"{
 }
 
 float Player::camera_mode_switch_time = 1.f;
+int Player::g_overlay = 1;
 
 static teleport *tplist;
 static int ntplist;
@@ -310,6 +311,7 @@ void Player::cmdInit(Player &pl){
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &pl);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
+	CvarAdd("g_overlay", &g_overlay, cvar_int);
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){

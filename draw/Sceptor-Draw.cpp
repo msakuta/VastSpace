@@ -1,5 +1,5 @@
 #include "../sceptor.h"
-//#include "player.h"
+#include "../player.h"
 //#include "bullet.h"
 //#include "coordsys.h"
 //#include "viewer.h"
@@ -268,7 +268,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	glEnd();
 #endif
 
-	if(task == Moveto || task == DeltaFormation){
+	if(Player::g_overlay && (task == Moveto || task == DeltaFormation)){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);

@@ -113,6 +113,7 @@ public:
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
 	static float camera_mode_switch_time;
+	static int g_overlay; // Overlay display level
 	static void cmdInit(Player &pl);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);

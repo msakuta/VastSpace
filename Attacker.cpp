@@ -404,6 +404,9 @@ const unsigned AttackerDocker::classid = registerClass("AttackerDocker", Conster
 const char *AttackerDocker::classname()const{return "AttackerDocker";}
 
 bool AttackerDocker::undock(Entity::Dockable *pe){
+	// Forbid undocking while warping
+	if(e->toWarpable()->warping)
+		return false;
 	if(st::undock(pe)){
 		pe->setPosition(&Vec3d(e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0))),
 			&Quatd(e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.))),

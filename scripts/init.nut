@@ -283,7 +283,7 @@ function init_Universe(){
 	//sce();
 	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
 
-	player.setpos(Vec3d(0.0, 0.2, 1.5));
+	player.setpos(Vec3d(0.0, 0.2, 5.5));
 
 }
 
@@ -311,7 +311,7 @@ function frameproc(dt){
 //		foreachents(player.cs, function(e):(player){ player.chase = e; });
 	}
 
-	local currenttime = universe.global_time;
+	local currenttime = universe.global_time + 9.;
 
 	if(true && checktime + 10. < currenttime){
 		local cs = universe.findcspath("/sol/saturn/saturno2");

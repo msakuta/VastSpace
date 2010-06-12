@@ -260,7 +260,8 @@ void Docker::anim(double dt){
 		pe->anim(dt);
 	while(undockque && baycool < dt){
 		Entity *next = undockque->next;
-		undock(undockque);
+		if(!undock(undockque))
+			break;
 		undockque = next ? next->toDockable() : NULL;
 	}
 

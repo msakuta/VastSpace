@@ -555,11 +555,30 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 		}
 		if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 			if(bbody){
-				if(bbody->getLinearVelocity().length2() < mn->maxspeed * mn->maxspeed){
-					forceAccum /= bbody->getInvMass();
-					bbody->activate();
-					bbody->applyCentralForce(btvc(forceAccum));
+				btVector3 btforceAccum = btvc(forceAccum);
+				assert(!btforceAccum.isZero());
+				btVector3 btdirection = btforceAccum.normalized();
+				btVector3 btvelo = bbody->getLinearVelocity();
+				btVector3 btmainThrust(0,0,0);
+
+				// If desired steering direction is differing from real velocity,
+				// compensate sliding velocity with side thrusts.
+				if(!btvelo.isZero()){
+					if(btvelo.dot(btdirection) < .0)
+						btmainThrust = -btvelo.normalized() * mn->accel * .5;
+					else{
+						btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
+						if(!v.isZero())
+							btmainThrust = -v.normalize() * mn->accel * .5;
+					}
+
 				}
+
+				if(btvelo.length2() < mn->maxspeed * mn->maxspeed){
+					btmainThrust += btforceAccum;
+				}
+
+				bbody->applyCentralForce(btmainThrust / bbody->getInvMass());
 			}
 			else if(pt->velo.slen() < maxspeed2);
 			else{

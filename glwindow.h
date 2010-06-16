@@ -28,17 +28,25 @@ struct GLwindowState{
 	}
 };
 
+namespace glw{
+struct Rect{
+	long l, t, r, b;
+	Rect(long al, long at, long ar, long ab) : l(al), t(at), r(ar), b(ab){}
+};
+}
+using namespace glw;
+
 typedef class GLwindow{
 public:
 	typedef GLwindow st;
 
-	// constants
+	// Constants
 	static const int glwfontwidth = 8;
 	static const int glwfontheight = 12;
 	static double getFontWidth();
 	static double getFontHeight();
 
-	// methods
+	// Global methods
 	static int mouseFunc(int button, int state, int x, int y, GLwindowState &gvp);
 	friend GLwindow **glwAppend(GLwindow *wnd);
 	friend void glwActivate(GLwindow **ppwnd);
@@ -51,9 +59,16 @@ public:
 		return !strcmp(w->title, title);
 	}
 	class TitleCmp;
+
+	// Object methods
+	const char *getTitle()const{return title;}
+	void setTitle(const char *newTitle);
 	void mouseDrag(int x, int y);
 	int getX()const{return xpos;}
 	int getY()const{return ypos;}
+	virtual Rect clientRect()const; // Get client rectangle
+	virtual Rect extentRect()const; // GetWindowRect
+	virtual Rect adjustRect(const Rect &client)const; // AdjustClientRect
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual int specialKey(int key); // Special keys like page up/down
@@ -146,6 +161,34 @@ public:
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 
+class GLWbutton{
+public:
+	int xpos, ypos;
+	int width, height;
+	virtual void draw(GLwindowState &, double) = 0;
+	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y) = 0;
+	virtual ~GLWbutton(){}
+};
+
+class GLWcommandButton : public GLWbutton{
+public:
+	unsigned texname;
+	const char *command;
+	GLWcommandButton(const char *filename, const char *command);
+	virtual void draw(GLwindowState &, double);
+	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual ~GLWcommandButton(){delete command;}
+};
+
+class GLWbuttonMatrix : public GLwindow{
+public:
+	int xbuttons, ybuttons;
+	int xbuttonsize, ybuttonsize;
+	GLWbutton **buttons;
+	GLWbuttonMatrix(int x, int y, int xsize = 32, int ysize = 32);
+	void draw(GLwindowState &,double);
+	int mouse(GLwindowState &, int button, int state, int x, int y);
+};
 
 
 inline void GLwindow::glwpostframe(){

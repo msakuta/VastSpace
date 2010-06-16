@@ -139,14 +139,7 @@ inline Vec3d Player::getrawpos(mover_t *mover)const{
 
 Quatd Player::getrot()const{
 	if(nextmover && mover != nextmover){
-		Quatd slerp = Quatd::slerp(getrawrot(mover), getrawrot(nextmover), blendmover).normin();
-		double blend2 = (blendmover - .5) / .5 * (blendmover - .5) / .5;
-		assert(0. <= blend2 && blend2 <= 1.);
-
-		// Do not call getrot() in getpos(), because getrot() calls getpos() here to make infinite recursion.
-		Vec3d delta = -getrawpos(nextmover) + getpos();
-		Quatd qdir = (Quatd::direction(slerp.cnj().trans(delta)) * slerp).cnj();
-		return Quatd::slerp(qdir, slerp, blend2).normin();
+		return Quatd::slerp(getrawrot(mover), getrawrot(nextmover), blendmover).normin();
 	}
 	else
 		return getrawrot(mover);

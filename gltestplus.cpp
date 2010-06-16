@@ -679,6 +679,9 @@ void display_func(void){
 		universe.anim(0.);
 
 		sqa_anim0();
+		GLWbuttonMatrix *buts = /*glwAppend*/(new GLWbuttonMatrix(3, 3, 64, 64));
+		buts->buttons[0] = new GLWcommandButton("textures/dock.jpg", "dock");
+		buts->buttons[0]->width = buts->buttons[0]->height = 64;
 
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
@@ -1411,8 +1414,9 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					ws.my = s_mousey;
 					ws.mousex = ws.mx - glwfocus->getX();
 					ws.mousey = ws.my - glwfocus->getY();
-					glwfocus->mouse(ws, GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
-					glwfocus->mouse(ws, GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - glwfocus->getX(), s_mousey - glwfocus->getY() - 12);
+					Rect r = glwfocus->clientRect();
+					glwfocus->mouse(ws, GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
+					glwfocus->mouse(ws, GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
 				}
 				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
 					mouse_captured = 1;

@@ -2,6 +2,7 @@
 #include "cmd.h"
 #include "antiglut.h"
 #include "viewer.h"
+#include "material.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -18,6 +19,8 @@ static double glwfontscale = 1.;
 #define fontheight (glwfontheight * glwfontscale)
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
+
+const long margin = 4;
 
 
 glwindow *glwlist = NULL/*, *glwmini = NULL*/;
@@ -38,6 +41,7 @@ GLwindow::GLwindow(const char *atitle) : xpos(0), ypos(0), width(100), height(10
 }
 
 glwindow **glwAppend(glwindow *wnd){
+	assert(wnd != glwlist);
 	wnd->next = glwlist;
 	glwlist = wnd;
 	return &glwlist;
@@ -77,6 +81,9 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	left = -(double)w / m;
 	bottom = -(double)h / m;
 
+	int titleheight = fontheight + margin;
+	const Rect cr = clientRect();
+
 	projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, h, 0, -1, 1)));
 	glLoadIdentity();
 	glColor4ub(0,0,0, flags & GLW_PINNED ? 63 : 192);
@@ -91,33 +98,37 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	for(i = 0; i < border; i++){
 		static const GLubyte cols[4] = {255, 127, 95, 191};
 		GLubyte col;
-		int ofs = i - 1, k = i ? 0 : 2;
+		int ofs = i, k = i ? 0 : 2;
 		col = cols[(k) % 4];
 		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
 		glBegin(GL_LINES);
-		glVertex2d(wx - ofs, wy - ofs);
-		glVertex2d(wx + ww + ofs, wy - ofs);
+		glVertex2i(wx + ofs, wy + ofs);
+		glVertex2i(wx + ww - ofs, wy + ofs);
 		col = cols[(k + 1) % 4];
 		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
-		glVertex2d(wx + ww + ofs, wy - ofs);
-		glVertex2d(wx + ww + ofs, wy + wh + ofs);
+		glVertex2i(wx + ww - ofs, wy + ofs);
+		glVertex2i(wx + ww - ofs, wy + wh - ofs);
 		col = cols[(k + 2) % 4];
 		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
-		glVertex2d(wx + ww + ofs, wy + wh + ofs);
-		glVertex2d(wx - ofs, wy + wh + ofs);
+		glVertex2i(wx + ww - ofs, wy + wh - ofs);
+		glVertex2i(wx + ofs, wy + wh - ofs);
 		col = cols[(k + 3) % 4];
 		glColor4ub(col * !modal, col, col * (glwfocus == this), alpha);
-		glVertex2d(wx - ofs, wy + wh + ofs), glVertex2d(wx - ofs, wy - ofs);
+		glVertex2i(wx + ofs, wy + wh - ofs);
+		glVertex2i(wx + ofs, wy + ofs);
 		glEnd();
 	}
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
+		Rect r = cr;
+		if(title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))
+			r.t -= fontheight + margin;
 		glPushAttrib(GL_SCISSOR_BIT);
-		glScissor(xpos, gvp.h - (ypos + height), width, height);
+		glScissor(r.l - 1, gvp.h - (r.b + 1), r.r - r.l + 2, r.b - r.t + 2);
 		glEnable(GL_SCISSOR_TEST);
 	}
 	if(!(flags & GLW_COLLAPSE)){
-		gvp.mousex = gvp.mx - xpos;
-		gvp.mousey = gvp.my - ypos - fontheight;
+		gvp.mousex = gvp.mx - cr.l;
+		gvp.mousey = gvp.my - cr.t;
 		draw(gvp, t);
 	}
 	if((flags & (GLW_COLLAPSE | GLW_SIZEABLE)) == GLW_SIZEABLE){
@@ -131,51 +142,51 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	if(!(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
 		glColor4ub(255,255, 255 * (glwfocus == this),255);
 		glBegin(GL_LINES);
-		glVertex2d(wx, wy + fontheight);
-		glVertex2d(wx + ww, wy + fontheight);
-		x = width - fontheight;
+		glVertex2d(wx, wy + titleheight);
+		glVertex2d(wx + ww, wy + titleheight);
+		x = width - titleheight;
 		if(flags & GLW_CLOSE){
-			glVertex2i(xpos + width - fontheight, ypos);
-			glVertex2i(xpos + width - fontheight, ypos + fontheight);
-			glVertex2i(xpos + width - 2, ypos + 2);
-			glVertex2i(xpos + width - (fontheight - 2), ypos + fontheight - 2);
-			glVertex2i(xpos + width - (fontheight - 2), ypos + 2);
-			glVertex2i(xpos + width - 2, ypos + fontheight - 2);
-			x -= fontheight;
+			glVertex2i(xpos + width - titleheight, ypos + margin);
+			glVertex2i(xpos + width - titleheight, ypos + titleheight);
+			glVertex2i(xpos + width - margin - 2, ypos + margin + 2);
+			glVertex2i(xpos + width - (titleheight - 2), ypos + titleheight - 2);
+			glVertex2i(xpos + width - (titleheight - 2), ypos + margin + 2);
+			glVertex2i(xpos + width - margin - 2, ypos + titleheight - 2);
+			x -= titleheight;
 		}
 		if(flags & GLW_COLLAPSABLE){
-			glVertex2i(xpos + x, ypos);
-			glVertex2i(xpos + x, ypos + fontheight);
-			glVertex2i(xpos + x + 2, ypos + fontheight - 2);
-			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight - 2);
+			glVertex2i(xpos + x, ypos + margin);
+			glVertex2i(xpos + x, ypos + titleheight);
+			glVertex2i(xpos + x + 2, ypos + titleheight - 2);
+			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight - 2);
 			if(flags & GLW_COLLAPSE){
-				glVertex2i(xpos + x + fontheight - 2, ypos + fontheight - 2);
-				glVertex2i(xpos + x + fontheight - 2, ypos + 2);
-				glVertex2i(xpos + x + fontheight - 2, ypos + 2);
+				glVertex2i(xpos + x + titleheight - 2, ypos + titleheight - 2);
+				glVertex2i(xpos + x + titleheight - 2, ypos + 2);
+				glVertex2i(xpos + x + titleheight - 2, ypos + 2);
 				glVertex2i(xpos + x + 2, ypos + 2);
 				glVertex2i(xpos + x + 2, ypos + 2);
-				glVertex2i(xpos + x + 2, ypos + fontheight - 2);
+				glVertex2i(xpos + x + 2, ypos + titleheight - 2);
 			}
-			x -= fontheight;
+			x -= titleheight;
 		}
 		if(flags & GLW_PINNABLE){
-			glVertex2i(xpos + x, ypos);
-			glVertex2i(xpos + x, ypos + fontheight);
-			glVertex2i(xpos + x + fontheight / 2, ypos + 2);
-			glVertex2i(xpos + x + 2, ypos + fontheight / 2);
-			glVertex2i(xpos + x + 2, ypos + fontheight / 2);
-			glVertex2i(xpos + x + fontheight / 2, ypos + fontheight - 2);
-			glVertex2i(xpos + x + fontheight / 2, ypos + fontheight - 2);
-			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight / 2);
-			glVertex2i(xpos + x + fontheight - 2, ypos + fontheight / 2);
-			glVertex2i(xpos + x + fontheight / 2, ypos + 2);
+			glVertex2i(xpos + x, ypos + margin);
+			glVertex2i(xpos + x, ypos + titleheight);
+			glVertex2i(xpos + x + titleheight / 2, ypos + 2);
+			glVertex2i(xpos + x + 2, ypos + titleheight / 2);
+			glVertex2i(xpos + x + 2, ypos + titleheight / 2);
+			glVertex2i(xpos + x + titleheight / 2, ypos + titleheight - 2);
+			glVertex2i(xpos + x + titleheight / 2, ypos + titleheight - 2);
+			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight / 2);
+			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight / 2);
+			glVertex2i(xpos + x + titleheight / 2, ypos + 2);
 			if(flags & GLW_PINNED){
-				glVertex2i(xpos + x + fontheight / 2 - 2, ypos + fontheight / 2 - 2);
-				glVertex2i(xpos + x + fontheight / 2 + 2, ypos + fontheight / 2 + 2);
-				glVertex2i(xpos + x + fontheight / 2 + 2, ypos + fontheight / 2 - 2);
-				glVertex2i(xpos + x + fontheight / 2 - 2, ypos + fontheight / 2 + 2);
+				glVertex2i(xpos + x + titleheight / 2 - 2, ypos + titleheight / 2 - 2);
+				glVertex2i(xpos + x + titleheight / 2 + 2, ypos + titleheight / 2 + 2);
+				glVertex2i(xpos + x + titleheight / 2 + 2, ypos + titleheight / 2 - 2);
+				glVertex2i(xpos + x + titleheight / 2 - 2, ypos + titleheight / 2 + 2);
 			}
-			x -= fontheight;
+			x -= titleheight;
 		}
 		glEnd();
 	}
@@ -183,7 +194,10 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		x = width;
 	if(title){
 		glColor4ub(255,255,255,255);
-		glwpos2d(wx, wy + fontheight);
+		if(flags & GLW_COLLAPSE)
+			glwpos2d(wx, wy + fontheight);
+		else
+			glwpos2d(wx + margin, wy + titleheight);
 		glwprintf("%.*s", (int)(x / fontwidth), title);
 	}
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
@@ -250,6 +264,20 @@ void GLwindow::glwFree(){
 	delete wnd;
 }
 
+void GLwindow::setTitle(const char *atitle){
+	if(title)
+		delete[] title;
+	if(atitle){
+		title = new char[strlen(atitle)+1];
+		strcpy(title, atitle);
+	}
+	else
+		title = NULL;
+}
+
+Rect GLwindow::clientRect()const{return Rect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
+Rect GLwindow::extentRect()const{return Rect(xpos, ypos, xpos + width, ypos + height);}
+Rect GLwindow::adjustRect(const Rect &r)const{return Rect(r.l - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.t - margin - fontheight : r.t - margin, r.r + margin, r.b + margin);}
 void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 int GLwindow::key(int key){return 0;}
@@ -266,6 +294,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 	glwindow **ppwnd, *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
 	int nowheel = !(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN);
+	int titleheight = fontheight + margin;
 	for(ppwnd = &glwlist; *ppwnd;){
 		int wx, wy, ww, wh;
 		wnd = *ppwnd;
@@ -281,8 +310,8 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 		else
 			wx = wnd->xpos, wy = wnd->ypos, ww = wnd->width, wh = wnd->height;
 		if((nowheel || glwfocus == wnd) && wx <= x && x <= wx + ww && wy <= y && y <= wy + wh){
-			int sysx = wnd->width - fontheight - (wnd->flags & GLW_CLOSE ? fontheight : 0);
-			int pinx = sysx - fontheight;
+			int sysx = wnd->width - titleheight - (wnd->flags & GLW_CLOSE ? titleheight : 0);
+			int pinx = sysx - titleheight;
 
 			/* Window with modal window will never receive mouse messages. */
 			if(wnd->modal){
@@ -294,7 +323,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				break;
 			}
 
-			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + fontheight && wnd->ypos <= y && y <= wnd->ypos + fontheight){
+			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + titleheight && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				ret = 1;
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
@@ -315,7 +344,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				}
 				break;
 			}
-			else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - fontheight <= x && x <= wnd->xpos + wnd->width && wnd->ypos <= y && y <= wnd->ypos + fontheight){
+			else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - titleheight <= x && x <= wnd->xpos + wnd->width && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				ret = 1;
 				if(nowheel && state == GLUT_UP){
 					wnd->glwFree();
@@ -324,7 +353,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				killfocus = 0;
 				break;
 			}
-			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + fontheight && wnd->ypos <= y && y <= wnd->ypos + fontheight){
+			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + titleheight && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				ret = 1;
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
@@ -333,7 +362,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				}
 				break;
 			}
-			else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (fontheight * !!(wnd->flags & GLW_CLOSE)) && wnd->ypos <= y && y <= wnd->ypos + fontheight){
+			else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (titleheight * !!(wnd->flags & GLW_CLOSE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				if(!nowheel)
 					break;
 				glwfocus = wnd;
@@ -347,8 +376,10 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				glwdragpos[1] = y - wnd->ypos;
 				break;
 			}
-			else if(!(wnd->flags & GLW_COLLAPSE) && glwfocus == wnd)
-				wnd->mouse(gvp, button, state, x - wnd->xpos, y - wnd->ypos - fontheight);
+			else if(!(wnd->flags & GLW_COLLAPSE) && glwfocus == wnd){
+				Rect cr = wnd->clientRect();
+				wnd->mouse(gvp, button, state, x - cr.l, y - cr.t);
+			}
 			if(wnd->flags & GLW_TODELETE){
 				wnd->glwFree();
 /*				if(wnd->destruct)
@@ -381,11 +412,11 @@ static int snapborder(int x0, int w0, int x1, int w1){
 	if(x1 - snapdist < x0 && x0 < x1 + snapdist)
 		return x1;
 	if(x1 - snapdist < x0 + w0 && x0 + w0 < x1 + snapdist)
-		return x1 - w0 - 4;
+		return x1 - w0 - 2;
 	if(x1 + w1 - snapdist < x0 + w0 && x0 + w0 < x1 + w1 + snapdist)
 		return x1 + w1 - w0;
 	if(x1 + w1 - snapdist < x0 && x0 < x1 + w1 + snapdist)
-		return x1 + w1 + 4;
+		return x1 + w1 + 2;
 	return x0;
 }
 
@@ -495,6 +526,7 @@ const int glwMenuAllAllocated[] = {1};
 const char glwMenuSeparator[] = "-";
 
 void GLwindowMenu::draw(GLwindowState &ws, double t){
+	Rect r = clientRect();
 	int mx = ws.mousex, my = ws.mousey;
 	GLwindowMenu *p = this;
 	GLwindow *wnd = this;
@@ -503,22 +535,22 @@ void GLwindowMenu::draw(GLwindowState &ws, double t){
 	MenuItem *item = menus->get();
 	for(i = 0; i < count; i++, item = item->next) if(item->isSeparator()){
 		glBegin(GL_LINES);
-		glVertex2d(xpos + fontwidth / 2, ypos + (1 + i) * fontheight + 6);
-		glVertex2d(xpos + width - fontwidth / 2, ypos + (1 + i) * fontheight + 6);
+		glVertex2d(r.l + fontwidth / 2, r.t + (0 + i) * fontheight + 6);
+		glVertex2d(r.r - fontwidth / 2, r.b + (0 + i) * fontheight + 6);
 		glEnd();
 	}
 	else{
 		if(i == ind && item->cmd){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
-			glVertex2d(xpos + 1, ypos + (1 + i) * fontheight);
-			glVertex2d(xpos + width, ypos + (1 + i) * fontheight);
-			glVertex2d(xpos + width, ypos + (2 + i) * fontheight);
-			glVertex2d(xpos + 1, ypos + (2 + i) * fontheight);
+			glVertex2d(r.l + 1, r.t + (0 + i) * fontheight);
+			glVertex2d(r.r    , r.t + (0 + i) * fontheight);
+			glVertex2d(r.r    , r.t + (1 + i) * fontheight);
+			glVertex2d(r.l + 1, r.t + (1 + i) * fontheight);
 			glEnd();
 		}
 		glColor4ub(255,255,255,255);
-		glwpos2d(xpos, ypos + (2 + i) * fontheight);
+		glwpos2d(r.l, r.t + (1 + i) * fontheight);
 		glwprintf(item->title);
 		len = item->title.len();
 		if(maxlen < len)
@@ -720,6 +752,120 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 	}
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GLWcommandButton::GLWcommandButton(const char *filename, const char *command){
+	xpos = ypos = 0;
+	width = height = 32;
+	texname = CallCacheBitmap(filename, filename, NULL, NULL);
+	if(command){
+		this->command = new const char[strlen(command) + 1];
+		strcpy(const_cast<char*>(this->command), command);
+	}
+	else
+		this->command = NULL;
+}
+
+void GLWcommandButton::draw(GLwindowState &ws, double){
+	if(!texname)
+		return;
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	glColor4ub(255,255,255,255);
+	glCallList(texname);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
+	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);
+	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos + height);
+	glTexCoord2i(0,1); glVertex2i(xpos, ypos + height);
+	glEnd();
+	glPopAttrib();
+}
+
+int GLWcommandButton::mouse(GLwindowState &, int, int, int, int){
+	if(command)
+		return CmdExec(command);
+	return 0;
+}
+
+
+
+
+
+
+GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("buts"), xbuttons(x), ybuttons(y), xbuttonsize(xsize), ybuttonsize(ysize), buttons(new (GLWbutton*[x * y])){
+	flags |= GLW_COLLAPSABLE | GLW_CLOSE | GLW_PINNABLE;
+	Rect r = adjustRect(Rect(0, 0, x * xsize, y * ysize));
+	width = r.r - r.l;
+	height = r.b - r.t;
+	memset(buttons, 0, x * y * sizeof(GLWbutton*));
+}
+
+
+void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
+	Rect r = clientRect();
+	glPushMatrix();
+	glTranslatef(r.l, r.t, 0);
+	glColor4f(.5,.5,.5,1);
+	glBegin(GL_LINES);
+	for(int y = 1; y < ybuttons; y++){
+		glVertex2i(0, y * ybuttonsize);
+		glVertex2i(xbuttons * xbuttonsize, y * ybuttonsize);
+	}
+	for(int x = 1; x < xbuttons; x++){
+		glVertex2i(x * xbuttonsize, 0);
+		glVertex2i(x * xbuttonsize, ybuttons * ybuttonsize);
+	}
+	glEnd();
+	for(int y = 0; y < ybuttons; y++) for(int x = 0; x < xbuttons; x++){
+		if(buttons[y * xbuttons + x])
+			buttons[y * xbuttons + x]->draw(ws, dt);
+	}
+	glPopMatrix();
+}
+
+int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
+	int x = (mousex) / xbuttonsize;
+	int y = (mousey) / ybuttonsize;
+	if(0 <= x && x < xbuttons && 0 <= y && y < ybuttons){
+		GLWbutton *p = buttons[y * xbuttons + x];
+		if(p)
+			return p->mouse(ws, button, state, x, y);
+	}
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

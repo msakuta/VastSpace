@@ -8,7 +8,7 @@
 #include "viewer.h"
 #include "coordsys.h"
 #include "cmd.h"
-#include "glwindow.h"
+//#include "glwindow.h"
 #include "judge.h"
 //#include "sensor.h"
 #include "serial_util.h"

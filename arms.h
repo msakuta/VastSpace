@@ -1,6 +1,6 @@
 #ifndef ARMS_H
 #define ARMS_H
-#include "glwindow.h"
+//#include "glwindow.h"
 #include "entity.h"
 #include "war.h"
 #include <cpplib/vec3.h>

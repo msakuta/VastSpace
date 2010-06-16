@@ -4,7 +4,7 @@
 #include "coordsys.h"
 #include "viewer.h"
 #include "cmd.h"
-#include "glwindow.h"
+//#include "glwindow.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "serial_util.h"

@@ -23,9 +23,9 @@ double GLwindow::getFontHeight(){return fontheight;}
 const long margin = 4;
 
 
-glwindow *glwlist = NULL/*, *glwmini = NULL*/;
-glwindow *glwfocus = NULL;
-glwindow *glwdrag = NULL;
+GLwindow *glwlist = NULL/*, *glwmini = NULL*/;
+GLwindow *glwfocus = NULL;
+GLwindow *glwdrag = NULL;
 int glwdragpos[2] = {0};
 
 GLwindow::GLwindow(const char *atitle) : xpos(0), ypos(0), width(100), height(100), modal(NULL), flags(0), next(NULL){
@@ -68,7 +68,7 @@ static int s_minix;
 
 void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int wh){
 //	GLwindow *wnd = this;
-	int s_mousex = gvp.mousex, s_mousey = gvp.mousey;
+	int s_mousex = gvp.mx, s_mousey = gvp.my;
 	char buf[128];
 	GLint vp[4];
 	int w = gvp.w, h = gvp.h, m = gvp.m, mi, i, x;
@@ -82,7 +82,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	bottom = -(double)h / m;
 
 	int titleheight = fontheight + margin;
-	const Rect cr = clientRect();
+	const GLWrect cr = clientRect();
 
 	projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, h, 0, -1, 1)));
 	glLoadIdentity();
@@ -119,7 +119,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		glEnd();
 	}
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
-		Rect r = cr;
+		GLWrect r = cr;
 		if(title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))
 			r.t -= fontheight + margin;
 		glPushAttrib(GL_SCISSOR_BIT);
@@ -139,8 +139,10 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		glVertex2d(xpos + width - 6, ypos + height - 2);
 		glEnd();
 	}
-	if(!(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
-		glColor4ub(255,255, 255 * (glwfocus == this),255);
+
+	// System command buttons. Do not draw if pinned and mouse pointer is afar.
+	if(32 < alpha && !(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
+		glColor4ub(255,255, 255 * (glwfocus == this), alpha);
 		glBegin(GL_LINES);
 		glVertex2d(wx, wy + titleheight);
 		glVertex2d(wx + ww, wy + titleheight);
@@ -192,7 +194,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	}
 	else
 		x = width;
-	if(title){
+	if(32 < alpha && title){
 		glColor4ub(255,255,255,255);
 		if(flags & GLW_COLLAPSE)
 			glwpos2d(wx, wy + fontheight);
@@ -275,9 +277,10 @@ void GLwindow::setTitle(const char *atitle){
 		title = NULL;
 }
 
-Rect GLwindow::clientRect()const{return Rect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
-Rect GLwindow::extentRect()const{return Rect(xpos, ypos, xpos + width, ypos + height);}
-Rect GLwindow::adjustRect(const Rect &r)const{return Rect(r.l - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.t - margin - fontheight : r.t - margin, r.r + margin, r.b + margin);}
+const char *GLwindow::classname()const{return "GLwindow";}
+GLWrect GLwindow::clientRect()const{return GLWrect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
+GLWrect GLwindow::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
+GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.l - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.t - margin - fontheight : r.t - margin, r.r + margin, r.b + margin);}
 void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 int GLwindow::key(int key){return 0;}
@@ -377,7 +380,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				break;
 			}
 			else if(!(wnd->flags & GLW_COLLAPSE) && glwfocus == wnd){
-				Rect cr = wnd->clientRect();
+				GLWrect cr = wnd->clientRect();
 				wnd->mouse(gvp, button, state, x - cr.l, y - cr.t);
 			}
 			if(wnd->flags & GLW_TODELETE){
@@ -391,6 +394,12 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				free(wnd);*/
 			}
 			else if(nowheel){
+				// Send mouse message too if the new window is just focused.
+				if(glwfocus != wnd){
+					GLWrect cr = wnd->clientRect();
+					wnd->mouse(gvp, button, state, x - cr.l, y - cr.t);
+				}
+
 				glwfocus = wnd;
 				glwActivate(ppwnd);
 				killfocus = 0;
@@ -526,7 +535,7 @@ const int glwMenuAllAllocated[] = {1};
 const char glwMenuSeparator[] = "-";
 
 void GLwindowMenu::draw(GLwindowState &ws, double t){
-	Rect r = clientRect();
+	GLWrect r = clientRect();
 	int mx = ws.mousex, my = ws.mousey;
 	GLwindowMenu *p = this;
 	GLwindow *wnd = this;
@@ -643,7 +652,10 @@ GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list, unsigned af
 
 GLwindowMenu *GLwindowMenu::addItem(const char *title, int key, const char *cmd){
 	menus->append(title, key, cmd);
-	height = (++count + 1) * fontheight;
+	GLWrect cr = clientRect();
+	cr.b = cr.t + ++count * fontheight;
+	cr = adjustRect(cr);
+	height = cr.b - cr.t;
 	return this;
 }
 
@@ -767,7 +779,7 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 
 
 
-GLWcommandButton::GLWcommandButton(const char *filename, const char *command){
+GLWcommandButton::GLWcommandButton(const char *filename, const char *command) : depress(false){
 	xpos = ypos = 0;
 	width = height = 32;
 	texname = CallCacheBitmap(filename, filename, NULL, NULL);
@@ -780,10 +792,11 @@ GLWcommandButton::GLWcommandButton(const char *filename, const char *command){
 }
 
 void GLWcommandButton::draw(GLwindowState &ws, double){
+	GLubyte mod = depress ? 127 : 255;
 	if(!texname)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
-	glColor4ub(255,255,255,255);
+	glColor4ub(mod,mod,mod,255);
 	glCallList(texname);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
@@ -794,9 +807,20 @@ void GLWcommandButton::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
-int GLWcommandButton::mouse(GLwindowState &, int, int, int, int){
-	if(command)
-		return CmdExec(command);
+int GLWcommandButton::mouse(GLwindowState &, int button, int state, int mousex, int mousey){
+	if(!extentRect().include(mousex, mousey)){
+		depress = false;
+		return 0;
+	}
+	if(state == GLUT_UP){
+		if(depress && command){
+			depress = false;
+			return CmdExec(command);
+		}
+	}
+	else if(state == GLUT_DOWN){
+		depress = true;
+	}
 	return 0;
 }
 
@@ -807,7 +831,7 @@ int GLWcommandButton::mouse(GLwindowState &, int, int, int, int){
 
 GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("buts"), xbuttons(x), ybuttons(y), xbuttonsize(xsize), ybuttonsize(ysize), buttons(new (GLWbutton*[x * y])){
 	flags |= GLW_COLLAPSABLE | GLW_CLOSE | GLW_PINNABLE;
-	Rect r = adjustRect(Rect(0, 0, x * xsize, y * ysize));
+	GLWrect r = adjustRect(GLWrect(0, 0, x * xsize, y * ysize));
 	width = r.r - r.l;
 	height = r.b - r.t;
 	memset(buttons, 0, x * y * sizeof(GLWbutton*));
@@ -815,7 +839,7 @@ GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("buts"
 
 
 void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
-	Rect r = clientRect();
+	GLWrect r = clientRect();
 	glPushMatrix();
 	glTranslatef(r.l, r.t, 0);
 	glColor4f(.5,.5,.5,1);
@@ -837,12 +861,19 @@ void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
 }
 
 int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
-	int x = (mousex) / xbuttonsize;
-	int y = (mousey) / ybuttonsize;
-	if(0 <= x && x < xbuttons && 0 <= y && y < ybuttons){
-		GLWbutton *p = buttons[y * xbuttons + x];
-		if(p)
-			return p->mouse(ws, button, state, x, y);
+	if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
+		for(int i = 0; i < xbuttons * ybuttons; i++) if(buttons[i])
+			buttons[i]->mouse(ws, button, state, mousex, mousey);
+	}
+	else{
+		int x = (mousex) / xbuttonsize;
+		int y = (mousey) / ybuttonsize;
+		GLWrect cr = clientRect();
+		if(0 <= x && x < xbuttons && 0 <= y && y < ybuttons){
+			GLWbutton *p = buttons[y * xbuttons + x];
+			if(p)
+				return p->mouse(ws, button, state, mousex, mousey);
+		}
 	}
 	return 0;
 }

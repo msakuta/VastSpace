@@ -1,5 +1,6 @@
 #ifndef GLWINDOW_H
 #define GLWINDOW_H
+#include "serial.h"
 #include "popup.h"
 extern "C"{
 #include <clib/c.h>
@@ -18,6 +19,18 @@ extern "C"{
 #define GLW_TIP			0x100 /* hidden as soon as the cursor moves out */
 #define GLW_TODELETE	0x8000
 
+// Namespaces does not solve all the problems.
+struct GLWrect{
+	long l;
+	long t;
+	long r;
+	long b;
+	GLWrect(long al, long at, long ar, long ab) : l(al), t(at), r(ar), b(ab){}
+	bool include(long x, long y)const{return l <= x && x <= r && t <= y && y <= b;}
+	long width()const{return r - l;}
+	long height()const{return b - t;}
+};
+
 //struct viewport;
 struct GLwindowState{
 	int w, h, m; // viewport size
@@ -28,15 +41,13 @@ struct GLwindowState{
 	}
 };
 
-namespace glw{
-struct Rect{
-	long l, t, r, b;
-	Rect(long al, long at, long ar, long ab) : l(al), t(at), r(ar), b(ab){}
-};
-}
-using namespace glw;
 
-typedef class GLwindow{
+
+
+
+
+
+typedef class GLwindow : public Serializable{
 public:
 	typedef GLwindow st;
 
@@ -66,15 +77,18 @@ public:
 	void mouseDrag(int x, int y);
 	int getX()const{return xpos;}
 	int getY()const{return ypos;}
-	virtual Rect clientRect()const; // Get client rectangle
-	virtual Rect extentRect()const; // GetWindowRect
-	virtual Rect adjustRect(const Rect &client)const; // AdjustClientRect
+	virtual const char *classname()const;
+	virtual GLWrect clientRect()const; // Get client rectangle
+	virtual GLWrect extentRect()const; // GetWindowRect
+	virtual GLWrect adjustRect(const GLWrect &client)const; // AdjustClientRect
+	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual int specialKey(int key); // Special keys like page up/down
 	virtual void anim(double dt);
 	virtual void postframe();
 	static void glwpostframe();
+	GLwindow *getNext(){return next;}
 protected:
 	GLwindow(const char *title = NULL);
 	int xpos, ypos;
@@ -165,6 +179,7 @@ class GLWbutton{
 public:
 	int xpos, ypos;
 	int width, height;
+	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y) = 0;
 	virtual ~GLWbutton(){}
@@ -174,6 +189,7 @@ class GLWcommandButton : public GLWbutton{
 public:
 	unsigned texname;
 	const char *command;
+	bool depress;
 	GLWcommandButton(const char *filename, const char *command);
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);

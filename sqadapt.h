@@ -33,7 +33,7 @@ extern HSQUIRRELVM g_sqvm;
 
 extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 
-bool sqa_newobj(HSQUIRRELVM v, Serializable *o);
+bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -3);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 

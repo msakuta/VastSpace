@@ -79,6 +79,19 @@ class Player{
 // Registers a function as a console command. You can manually add entryies to global table 'console_commands' too.
 void register_console_command(string name, function);
 
+class GLwindow{
+	string classname;
+	int x;
+	int y;
+	int width;
+	int height;
+}
+
+class GLWbuttonMatrix extends GLwindow{
+	constructor(int x, int y, int sx, int sy);
+	void addButton(string command, string buttonimagefile);
+}
+
 
 
 
@@ -237,6 +250,12 @@ register_console_command("dock", function(...){
 		e.command("Dock");
 });
 
+register_console_command("undock", function(...){
+	local e = player.selected;
+	for(; e != null; e = e.selectnext)
+		e.command("RemainDockedCommand", false);
+});
+
 register_console_command("parade_formation", function(...){
 	local e = player.selected;
 	for(; e != null; e = e.selectnext)
@@ -285,6 +304,11 @@ function init_Universe(){
 
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
 
+	local but = GLWbuttonMatrix(3, 3);
+	but.x = 100;
+	but.y = 100;
+	but.addButton("dock", "textures/dock.jpg");
+	but.addButton("undock", "textures/undock.jpg");
 }
 
 showdt <- false;

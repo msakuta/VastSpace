@@ -679,9 +679,14 @@ void display_func(void){
 		universe.anim(0.);
 
 		sqa_anim0();
+#if 0
 		GLWbuttonMatrix *buts = /*glwAppend*/(new GLWbuttonMatrix(3, 3, 64, 64));
 		buts->buttons[0] = new GLWcommandButton("textures/dock.jpg", "dock");
 		buts->buttons[0]->width = buts->buttons[0]->height = 64;
+		buts->buttons[1] = new GLWcommandButton("textures/undock.jpg", "undock");
+		buts->buttons[1]->xpos = 64;
+		buts->buttons[1]->width = buts->buttons[1]->height = 64;
+#endif
 
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
@@ -1408,13 +1413,14 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				if(glwfocus && glwdrag != glwfocus){
 					GLwindowState ws;
 					GLint vp[4];
+					GLWrect cr = glwfocus->clientRect();
 					glGetIntegerv(GL_VIEWPORT, vp);
 					ws.set(vp);
 					ws.mx = s_mousex;
 					ws.my = s_mousey;
-					ws.mousex = ws.mx - glwfocus->getX();
-					ws.mousey = ws.my - glwfocus->getY();
-					Rect r = glwfocus->clientRect();
+					ws.mousex = ws.mx - cr.l;
+					ws.mousey = ws.my - cr.t;
+					GLWrect r = glwfocus->clientRect();
 					glwfocus->mouse(ws, GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
 					glwfocus->mouse(ws, GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
 				}

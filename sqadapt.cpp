@@ -6,6 +6,7 @@
 #include "btadapt.h"
 #include "EntityCommand.h"
 #include "Scarry.h"
+#include "glwindow.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -32,6 +33,7 @@ extern "C"{
 
 extern Universe universe;
 extern Player pl;
+extern GLwindow *glwlist;
 
 /*DECLARE_INSTANCE_TYPE(Player)
 
@@ -88,6 +90,7 @@ static HSQUIRRELVM &v = g_sqvm;
 const SQUserPointer tt_Vec3d = "Vec3d";
 const SQUserPointer tt_Quatd = "Quatd";
 const SQUserPointer tt_Entity = "Entity";
+const SQUserPointer tt_GLwindow = "GLwindow";
 
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
@@ -465,6 +468,162 @@ static SQInteger sqf_getcs(HSQUIRRELVM v){
 	sq_pushnull(v);
 	return 1;
 }
+
+
+static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
+	try{
+		GLwindow *p;
+		const SQChar *wcs;
+		sq_getstring(v, 2, &wcs);
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return SQ_ERROR;
+		if(!strcmp(wcs, _SC("x"))){
+			SQInteger x = p->clientRect().l;
+			sq_pushinteger(v, x);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("y"))){
+			SQInteger y = p->clientRect().t;
+			sq_pushinteger(v, y);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("width"))){
+			SQInteger x = p->clientRect().width();
+			sq_pushinteger(v, x);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("height"))){
+			SQInteger x = p->clientRect().height();
+			sq_pushinteger(v, x);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("next"))){
+			if(!p->getNext())
+				sq_pushnull(v);
+			else{
+				sq_pushroottable(v);
+				sq_pushstring(v, _SC("GLwindow"), -1);
+				sq_get(v, -2);
+				sq_createinstance(v, -1);
+				sqa_newobj(v, p->getNext());
+			}
+			return 1;
+		}
+/*		else if(!strcmp(wcs, _SC("GLWbuttonMatrix"))){
+			return 1;
+		}*/
+		else
+			return sqf_get<GLwindow>(v);
+	}
+	catch(...){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	GLwindow *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("x"))){
+		SQInteger x;
+		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+			return SQ_ERROR;
+		GLWrect r = p->extentRect();
+		r.r += x - r.l;
+		r.l = x;
+		p->setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("y"))){
+		SQInteger y;
+		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
+			return SQ_ERROR;
+		GLWrect r = p->extentRect();
+		r.b += y - r.t;
+		r.t = y;
+		p->setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("width"))){
+		SQInteger x;
+		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+			return SQ_ERROR;
+		GLWrect r = p->extentRect();
+		r.r = r.l + x;
+		p->setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("height"))){
+		SQInteger x;
+		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+			return SQ_ERROR;
+		GLWrect r = p->extentRect();
+		r.r = r.l + x;
+		p->setExtent(r);
+		return 0;
+	}
+	else
+		return sqf_set<GLwindow>(v);
+}
+
+static SQInteger sqf_glwlist(HSQUIRRELVM v){
+	if(!glwlist)
+		sq_pushnull(v);
+	else{
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("GLwindow"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, glwlist);
+	}
+	return 1;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	SQInteger x, y, sx, sy;
+	if(argc <= 1 || SQ_FAILED(sq_getinteger(v, 2, &x)))
+		x = 3;
+	if(argc <= 2 || SQ_FAILED(sq_getinteger(v, 3, &y)))
+		y = 3;
+	if(argc <= 3 || SQ_FAILED(sq_getinteger(v, 4, &sx)))
+		sx = 64;
+	if(argc <= 4 || SQ_FAILED(sq_getinteger(v, 5, &sy)))
+		sy = 64;
+	GLWbuttonMatrix *p = new GLWbuttonMatrix(x, y, sx, sy);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *cmd, *path;
+	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path)))
+		return SQ_ERROR;
+	int i;
+	for(i = 0; i < p->xbuttons * p->ybuttons; i++) if(!p->buttons[i])
+		break;
+	if(i < p->xbuttons * p->ybuttons){
+		GLWcommandButton *b = new GLWcommandButton(path, cmd);
+		p->buttons[i] = b;
+		b->xpos = i % p->xbuttons * p->xbuttonsize;
+		b->width = p->xbuttonsize;
+		b->ypos = i / p->xbuttons * p->ybuttonsize;
+		b->height = p->ybuttonsize;
+	}
+	return 0;
+}
+
+
 
 template<typename Class, typename MType, MType Class::*member>
 inline MType membergetter(Class *p){
@@ -848,7 +1007,8 @@ static SQInteger sqf_Quatd_trans(HSQUIRRELVM v){
 	}
 }
 
-bool sqa_newobj(HSQUIRRELVM v, Serializable *o){
+// Add given object to weak-pointed object layer.
+bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushregistrytable(v); // reg
 	sq_pushstring(v, _SC("objects"), -1); // reg "objects"
@@ -871,7 +1031,7 @@ bool sqa_newobj(HSQUIRRELVM v, Serializable *o){
 	sq_remove(v, -2); // reg objects &(o)
 	sq_remove(v, -2); // reg &(o)
 	sq_remove(v, -2); // &(o)
-	sq_set(v, -3);
+	sq_set(v, instanceindex);
 	return true;
 }
 
@@ -1142,6 +1302,38 @@ void sqa_init(){
 	sq_pushstring(v, _SC("register_console_command"), -1);
 	sq_newclosure(v, sqf_register_console_command, 0);
 	sq_createslot(v, 1);
+
+	// Define class GLwindow
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_GLwindow);
+	sq_pushstring(v, _SC("ref"), -1);
+	sq_pushnull(v);
+	sq_newslot(v, -3, SQFalse);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_GLwindow_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, sqf_GLwindow_set, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("glwlist"), -1);
+	sq_newclosure(v, sqf_glwlist, 0);
+	sq_createslot(v, 1);
+
+	// Define class GLWbuttonMatrix
+	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_GLWbuttonMatrix_constructor, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("addButton"), -1);
+	sq_newclosure(v, sqf_GLWbuttonMatrix_addButton, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
 
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{

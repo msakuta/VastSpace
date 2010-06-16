@@ -15,10 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.47 r22583"
-   sodipodi:docname="dock.svg"
-   inkscape:export-filename="E:\projects\gltestplus\textures\dock.png"
-   inkscape:export-xdpi="9"
-   inkscape:export-ydpi="9">
+   sodipodi:docname="undock.svg"
+   inkscape:export-filename="E:\projects\gltestplus\textures\undock.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs4">
     <linearGradient
@@ -49,7 +49,7 @@
        y2="800.08948"
        gradientUnits="userSpaceOnUse" />
     <filter
-       id="filter3821"
+       id="filter3849"
        inkscape:label="Button"
        x="0"
        y="0"
@@ -59,65 +59,66 @@
        inkscape:menu-tooltip="Soft bevel, slightly depressed middle"
        color-interpolation-filters="sRGB">
       <feGaussianBlur
-         id="feGaussianBlur3823"
-         stdDeviation="0.01"
+         id="feGaussianBlur3851"
+         stdDeviation="2.3"
          in="SourceAlpha"
          result="result0" />
       <feMorphology
-         id="feMorphology3825"
+         id="feMorphology3853"
          in="SourceAlpha"
          radius="6.6"
          result="result1" />
       <feGaussianBlur
-         id="feGaussianBlur3827"
+         id="feGaussianBlur3855"
          stdDeviation="8.9"
          in="result1" />
       <feColorMatrix
-         id="feColorMatrix3829"
+         id="feColorMatrix3857"
          values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.3 0"
          result="result91" />
       <feComposite
-         id="feComposite3831"
+         id="feComposite3859"
          in2="result91"
          in="result0"
          operator="out"
          result="result2" />
       <feGaussianBlur
-         id="feGaussianBlur3833"
+         id="feGaussianBlur3861"
          stdDeviation="1.7"
          result="result4" />
       <feDiffuseLighting
-         id="feDiffuseLighting3835"
+         id="feDiffuseLighting3863"
          surfaceScale="10"
-         result="result92">
+         result="result92"
+         diffuseConstant="1.1709601873536302">
         <feDistantLight
-           id="feDistantLight3837"
+           id="feDistantLight3865"
            azimuth="225"
            elevation="45" />
       </feDiffuseLighting>
       <feBlend
-         id="feBlend3839"
+         id="feBlend3867"
          in2="SourceGraphic"
          mode="multiply"
          result="result93" />
       <feComposite
-         id="feComposite3841"
+         id="feComposite3869"
          in2="SourceAlpha"
          operator="in"
          result="result3" />
       <feSpecularLighting
-         id="feSpecularLighting3843"
+         id="feSpecularLighting3871"
          in="result4"
          surfaceScale="5"
-         specularExponent="17.89999962"
+         specularExponent="17.9"
          result="result94">
         <feDistantLight
-           id="feDistantLight3845"
+           id="feDistantLight3873"
            azimuth="225"
            elevation="45" />
       </feSpecularLighting>
       <feComposite
-         id="feComposite3847"
+         id="feComposite3875"
          in2="result3"
          operator="atop" />
     </filter>
@@ -129,9 +130,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.01"
-     inkscape:cx="2.9044997"
-     inkscape:cy="287.72726"
+     inkscape:zoom="4"
+     inkscape:cx="2.6544997"
+     inkscape:cy="49.570485"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -158,21 +159,30 @@
      id="layer1"
      transform="translate(-65.909103,-736.08944)">
     <rect
-       style="fill:url(#linearGradient3769);fill-opacity:1;fill-rule:nonzero;stroke:none;filter:url(#filter3821)"
+       style="fill:url(#linearGradient3769);fill-opacity:1;fill-rule:nonzero;stroke:none;filter:url(#filter3849)"
        id="rect3637"
        width="640"
        height="640"
        x="65.909103"
        y="160.08945"
-       transform="matrix(0.1,0,0,0.1,59.318193,720.0805)" />
+       transform="matrix(0.1,0,0,0.1,59.318193,720.0805)"
+       inkscape:export-filename="E:\projects\gltestplus\textures\dock.jpg.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="m 98.139424,752.20172 0,9.14375 9.715626,0 0,12.56875 -9.715626,0 0,9.71563 22.287496,0 0,-31.42813 -22.287496,0 z"
        id="rect2844"
-       sodipodi:nodetypes="ccccccccc" />
+       sodipodi:nodetypes="ccccccccc"
+       inkscape:export-filename="E:\projects\gltestplus\textures\dock.jpg.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="m 88.982574,762.14324 0,3.2 -13,0 0,4 13,0 0,3.20313 4.50312,-2.6 4.50625,-2.60313 -4.50625,-2.6 -4.50312,-2.6 z"
-       id="rect3632" />
+       d="m 84.991944,762.14324 0,3.2 13,0 0,4 -13,0 0,3.20313 -4.50312,-2.6 -4.50625,-2.60313 4.50625,-2.6 4.50312,-2.6 z"
+       id="rect3632"
+       inkscape:export-filename="E:\projects\gltestplus\textures\dock.jpg.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
   </g>
 </svg>

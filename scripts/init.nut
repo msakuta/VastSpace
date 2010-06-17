@@ -304,12 +304,15 @@ function init_Universe(){
 
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
 
+	local sch = screenheight();
 	local but = GLWbuttonMatrix(3, 3);
-	but.x = 100;
-	but.y = 100;
+	but.title = "Entity Commands";
+	but.x = 0;
+	but.y = sch - but.height;
 	but.addButton("halt", "textures/halt.jpg");
 	but.addButton("dock", "textures/dock.jpg");
 	but.addButton("undock", "textures/undock.jpg");
+	but.pinned = true;
 }
 
 showdt <- false;

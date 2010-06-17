@@ -96,6 +96,10 @@ public:
 	virtual void postframe();
 	static void glwpostframe();
 	GLwindow *getNext(){return next;}
+	void setPinned(bool f){if(f) flags |= GLW_PINNED; else flags &= ~GLW_PINNED;}
+	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
+	bool getPinned()const{return flags & GLW_PINNED;}
+	bool getPinnable()const{return flags & GLW_PINNABLE;}
 protected:
 	GLwindow(const char *title = NULL);
 	int xpos, ypos;
@@ -126,9 +130,9 @@ public:
 	}
 };
 
-extern glwindow *glwlist;
-extern glwindow *glwfocus;
-extern glwindow *glwdrag;
+extern GLwindow *glwlist;
+extern GLwindow *glwfocus;
+extern GLwindow *glwdrag;
 extern int glwdragpos[2];
 
 

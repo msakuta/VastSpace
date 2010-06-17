@@ -488,13 +488,11 @@ static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("width"))){
-			SQInteger x = p->clientRect().width();
-			sq_pushinteger(v, x);
+			sq_pushinteger(v, p->extentRect().width());
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("height"))){
-			SQInteger x = p->clientRect().height();
-			sq_pushinteger(v, x);
+			sq_pushinteger(v, p->extentRect().height());
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("next"))){
@@ -507,6 +505,18 @@ static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 				sq_createinstance(v, -1);
 				sqa_newobj(v, p->getNext());
 			}
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("pinned"))){
+			sq_pushbool(v, p->getPinned());
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("pinnable"))){
+			sq_pushbool(v, p->getPinnable());
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("title"))){
+			sq_pushstring(v, p->getTitle(), -1);
 			return 1;
 		}
 /*		else if(!strcmp(wcs, _SC("GLWbuttonMatrix"))){
@@ -558,12 +568,33 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("height"))){
-		SQInteger x;
-		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+		SQInteger y;
+		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
 			return SQ_ERROR;
 		GLWrect r = p->extentRect();
-		r.r = r.l + x;
+		r.b = r.t + y;
 		p->setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("pinned"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		p->setPinned(b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("pinnable"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		p->setPinnable(b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("title"))){
+		const SQChar *s;
+		if(SQ_FAILED(sq_getstring(v, 3, &s)))
+			return SQ_ERROR;
+		p->setTitle(s);
 		return 0;
 	}
 	else
@@ -621,6 +652,20 @@ static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 		b->height = p->ybuttonsize;
 	}
 	return 0;
+}
+
+static SQInteger sqf_screenwidth(HSQUIRRELVM v){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	sq_pushinteger(v, vp[2] - vp[0]);
+	return 1;
+}
+
+static SQInteger sqf_screenheight(HSQUIRRELVM v){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	sq_pushinteger(v, vp[3] - vp[1]);
+	return 1;
 }
 
 
@@ -1334,6 +1379,13 @@ void sqa_init(){
 	sq_newclosure(v, sqf_GLWbuttonMatrix_addButton, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("screenwidth"), -1);
+	sq_newclosure(v, sqf_screenwidth, 0);
+	sq_createslot(v, 1);
+	sq_pushstring(v, _SC("screenheight"), -1);
+	sq_newclosure(v, sqf_screenheight, 0);
+	sq_createslot(v, 1);
 
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{

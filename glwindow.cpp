@@ -345,6 +345,11 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + titleheight && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				ret = 1;
 				killfocus = 0;
+
+				// Cannot collapse when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					break;
+
 				if(nowheel && state == GLUT_UP){
 					wnd->flags ^= GLW_COLLAPSE;
 					if(wnd->flags & GLW_COLLAPSE){
@@ -365,6 +370,11 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 			}
 			else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - titleheight <= x && x <= wnd->xpos + wnd->width && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				ret = 1;
+
+				// Cannot close when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					break;
+
 				if(nowheel && state == GLUT_UP){
 					wnd->glwFree();
 					break;
@@ -377,6 +387,8 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
 					wnd->flags ^= GLW_PINNED;
+					if(wnd->flags & GLW_PINNED && wnd == glwfocus)
+						glwfocus = NULL;
 					break;
 				}
 				break;
@@ -384,10 +396,16 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 			else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (titleheight * !!(wnd->flags & GLW_CLOSE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 				if(!nowheel)
 					break;
-				glwfocus = wnd;
-				glwActivate(ppwnd);
 				killfocus = 0;
 				ret = 1;
+
+				// Cannot be dragged around when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					break;
+
+				glwfocus = wnd;
+				glwActivate(ppwnd);
+
 				if(button != GLUT_LEFT_BUTTON)
 					break;
 				glwdrag = wnd;
@@ -416,8 +434,10 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 					wnd->mouse(gvp, button, state, x - cr.l, y - cr.t);
 				}
 
-				glwfocus = wnd;
-				glwActivate(ppwnd);
+				if(!(wnd->flags & GLW_PINNED) && glwfocus != wnd){
+					glwfocus = wnd;
+					glwActivate(ppwnd);
+				}
 				killfocus = 0;
 			}
 			ret = 1;
@@ -845,7 +865,7 @@ int GLWcommandButton::mouse(GLwindowState &, int button, int state, int mousex, 
 
 
 
-GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("buts"), xbuttons(x), ybuttons(y), xbuttonsize(xsize), ybuttonsize(ysize), buttons(new (GLWbutton*[x * y])){
+GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("Button Matrix"), xbuttons(x), ybuttons(y), xbuttonsize(xsize), ybuttonsize(ysize), buttons(new (GLWbutton*[x * y])){
 	flags |= GLW_COLLAPSABLE | GLW_CLOSE | GLW_PINNABLE;
 	GLWrect r = adjustRect(GLWrect(0, 0, x * xsize, y * ysize));
 	width = r.r - r.l;

@@ -61,6 +61,22 @@ void glwActivate(glwindow **ppwnd){
 	glwfocus->flags &= ~GLW_COLLAPSE;
 }
 
+void GLwindow::reshapeFunc(int w, int h){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	GLwindow *wnd;
+	for(wnd = glwlist; wnd; wnd = wnd->next){
+		GLWrect r = wnd->extentRect();
+
+		// If a window is aligned to or crossing with border, snap it
+		if(vp[2] - vp[0] <= r.r || w <= r.r)
+			r.rmove(w - (vp[2] - vp[0]), 0);
+		if(vp[3] - vp[1] <= r.b || h <= r.b)
+			r.rmove(0, h - (vp[3] - vp[1]));
+		wnd->setExtent(r);
+	}
+}
+
 int r_window_scissor = 1;
 static int s_minix;
 //static const int r_titlebar_height = 12;

@@ -29,6 +29,12 @@ struct GLWrect{
 	bool include(long x, long y)const{return l <= x && x <= r && t <= y && y <= b;}
 	long width()const{return r - l;}
 	long height()const{return b - t;}
+	GLWrect &move(long x, long y){r += x - l; l = x; b += y - t; t = y; return *this;}
+	GLWrect moved(long x, long y)const{return GLWrect(*this).move(x, y);}
+	GLWrect &movebr(long x, long y){l += x - r; r = x; t += y - b; b = y; return *this;}
+	GLWrect movedbr(long x, long y)const{return GLWrect(*this).movebr(x, y);}
+	GLWrect &rmove(long dx, long dy){l += dx; r += dx; t += dy; b += dy; return *this;}
+	GLWrect rmoved(long dx, long dy){return GLWrect(*this).rmove(dx, dy);}
 };
 
 //struct viewport;
@@ -61,6 +67,7 @@ public:
 	static int mouseFunc(int button, int state, int x, int y, GLwindowState &gvp);
 	friend GLwindow **glwAppend(GLwindow *wnd);
 	friend void glwActivate(GLwindow **ppwnd);
+	static void reshapeFunc(int w, int h);
 	void glwDraw(GLwindowState &, double t, int *);
 	void glwDrawMinimized(GLwindowState &gvp, double t, int *pp);
 	void glwAnim(double dt);

@@ -307,6 +307,7 @@ function init_Universe(){
 	local but = GLWbuttonMatrix(3, 3);
 	but.x = 100;
 	but.y = 100;
+	but.addButton("halt", "textures/halt.jpg");
 	but.addButton("dock", "textures/dock.jpg");
 	but.addButton("undock", "textures/undock.jpg");
 }

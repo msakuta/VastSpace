@@ -679,14 +679,6 @@ void display_func(void){
 		universe.anim(0.);
 
 		sqa_anim0();
-#if 0
-		GLWbuttonMatrix *buts = /*glwAppend*/(new GLWbuttonMatrix(3, 3, 64, 64));
-		buts->buttons[0] = new GLWcommandButton("textures/dock.jpg", "dock");
-		buts->buttons[0]->width = buts->buttons[0]->height = 64;
-		buts->buttons[1] = new GLWcommandButton("textures/undock.jpg", "undock");
-		buts->buttons[1]->xpos = 64;
-		buts->buttons[1]->width = buts->buttons[1]->height = 64;
-#endif
 
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
@@ -1133,11 +1125,10 @@ void mouse_func(int button, int state, int x, int y){
 
 void reshape_func(int w, int h)
 {
-	int m = w < h ? h : w;
+	// Call before viewport changes.
+	GLwindow::reshapeFunc(w, h);
+
 	glViewport(0, 0, w, h);
-//	g_width = w;
-//	g_height = h;
-//	g_max = m;
 }
 
 static int cmd_eject(int argc, char *argv[]){

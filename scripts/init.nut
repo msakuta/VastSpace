@@ -309,10 +309,18 @@ function init_Universe(){
 	but.title = "Entity Commands";
 	but.x = 0;
 	but.y = sch - but.height;
-	but.addButton("halt", "textures/halt.jpg");
-	but.addButton("dock", "textures/dock.jpg");
+	but.addButton("halt", "textures/halt.jpg", "Halt");
+	but.addButton("dock", "textures/dock.jpg", "Dock");
 	but.addButton("undock", "textures/undock.jpg");
 	but.pinned = true;
+
+	local sysbut = GLWbuttonMatrix(3, 2);
+	sysbut.title = "System Commands";
+	sysbut.x = screenwidth() - sysbut.width;
+	sysbut.y = sch - sysbut.height;
+	sysbut.addButton("exit", "textures/exit.jpg", "Exit game");
+	sysbut.addButton("toggle pause", "textures/pause.jpg", "Toggle Pause");
+	sysbut.pinned = true;
 }
 
 showdt <- false;

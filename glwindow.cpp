@@ -15,8 +15,8 @@ extern "C"{
 
 // There is only one font size. It could be bad for some future.
 static double glwfontscale = 1.;
-#define fontwidth (glwfontwidth * glwfontscale)
-#define fontheight (glwfontheight * glwfontscale)
+#define fontwidth (GLwindow::glwfontwidth * glwfontscale)
+#define fontheight (GLwindow::glwfontheight * glwfontscale)
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
 
@@ -57,8 +57,11 @@ void glwActivate(glwindow **ppwnd){
 	}*/
 	*ppwnd = wnd->next;
 	wnd->next = glwlist;
-	glwfocus = glwlist = wnd;
-	glwfocus->flags &= ~GLW_COLLAPSE;
+	glwlist = wnd;
+	if(wnd->focusable()){
+		glwfocus = wnd;
+		glwfocus->flags &= ~GLW_COLLAPSE;
+	}
 }
 
 void GLwindow::reshapeFunc(int w, int h){
@@ -297,6 +300,7 @@ const char *GLwindow::classname()const{return "GLwindow";}
 GLWrect GLwindow::clientRect()const{return GLWrect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
 GLWrect GLwindow::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.l - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.t - margin - fontheight : r.t - margin, r.r + margin, r.b + margin);}
+bool GLwindow::focusable()const{return true;}
 void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 int GLwindow::key(int key){return 0;}
@@ -317,6 +321,15 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 	for(ppwnd = &glwlist; *ppwnd;){
 		int wx, wy, ww, wh;
 		wnd = *ppwnd;
+		if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
+			GLwindowState &ws = gvp;
+			GLWrect cr = wnd->clientRect();
+			ws.mousex = ws.mx - cr.l;
+			ws.mousey = ws.my - cr.t;
+			wnd->mouse(ws, button, state, ws.mousex, ws.mousey);
+			ppwnd = &(*ppwnd)->next;
+			continue;
+		}
 		if(wnd->flags & GLW_COLLAPSE){
 			ww = wnd->title ? strlen(wnd->title) * fontwidth + 2 : 80;
 			if(ww < gvp.w && gvp.w < minix + ww)
@@ -812,10 +825,35 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 
 
 
+class GLWtip : public GLwindow{
+public:
+	const char *tips;
+	GLWbutton *parent;
+	GLWtip() : st(), tips(NULL), parent(NULL){
+		xpos = -100;
+		ypos = -100;
+		width = -100;
+		height = -100;
+	}
+	virtual bool focusable()const{return false;}
+	virtual void draw(GLwindowState &ws, double t){
+		if(!tips)
+			return;
+		GLWrect r = clientRect();
+		glwpos2d(r.l, r.t + fontheight);
+		glwprintf(tips);
+	}
+};
+
+static GLWtip *glwtip = new GLWtip();
 
 
 
-GLWcommandButton::GLWcommandButton(const char *filename, const char *command) : depress(false){
+
+
+
+
+GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips) : depress(false){
 	xpos = ypos = 0;
 	width = height = 32;
 	texname = CallCacheBitmap(filename, filename, NULL, NULL);
@@ -825,6 +863,18 @@ GLWcommandButton::GLWcommandButton(const char *filename, const char *command) : 
 	}
 	else
 		this->command = NULL;
+
+	if(tips){
+		this->tipstring = new const char[strlen(tips) + 1];
+		strcpy(const_cast<char*>(this->tipstring), tips);
+	}
+	else
+		this->tipstring = NULL;
+}
+
+GLWcommandButton::~GLWcommandButton(){
+	delete command;
+	delete tipstring;
 }
 
 void GLWcommandButton::draw(GLwindowState &ws, double){
@@ -843,10 +893,34 @@ void GLWcommandButton::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
+class GLWpointerCompar{
+public:
+	const GLwindow *p;
+	GLWpointerCompar(GLwindow *a) : p(a){}
+	bool operator()(const GLwindow *a){
+		return p == a;
+	}
+};
+
+
 int GLWcommandButton::mouse(GLwindowState &, int button, int state, int mousex, int mousey){
 	if(!extentRect().include(mousex, mousey)){
 		depress = false;
+		if(glwtip->parent == this){
+			glwtip->tips = NULL;
+			glwtip->parent = NULL;
+			glwtip->setExtent(GLWrect(-10,-10,-10,-10));
+		}
 		return 0;
+	}
+	else if(state == GLUT_KEEP_UP && tipstring){
+		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
+		GLWrect parentrect = parent->clientRect();
+		glwtip->setExtent(localrect.rmove(parentrect.l, parentrect.t));
+		glwtip->tips = tipstring;
+		glwtip->parent = this;
+		glwActivate(glwFindPP(glwtip));
+//		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
 	}
 	if(state == GLUT_UP){
 		if(depress && command){
@@ -914,6 +988,26 @@ int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex,
 	return 0;
 }
 
+bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
+	int i;
+	if(x < 0 || y < 0){
+		for(i = 0; i < xbuttons * ybuttons; i++) if(!buttons[i])
+			break;
+		if(xbuttons * ybuttons <= i)
+			return false;
+	}
+	else if(0 <= x && x < xbuttons && 0 <= y && y < ybuttons)
+		i = x + y * xbuttons;
+	else
+		return false;
+	b->parent = this;
+	this->buttons[i] = b;
+	b->xpos = i % xbuttons * xbuttonsize;
+	b->width = xbuttonsize;
+	b->ypos = i / xbuttons * ybuttonsize;
+	b->height = ybuttonsize;
+	return true;
+}
 
 
 

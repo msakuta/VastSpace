@@ -635,21 +635,17 @@ static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 	GLWbuttonMatrix *p;
 	if(!sqa_refobj(v, (SQUserPointer*)&p))
 		return SQ_ERROR;
-	const SQChar *cmd, *path;
+	const SQChar *cmd, *path, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 3, &path)))
 		return SQ_ERROR;
-	int i;
-	for(i = 0; i < p->xbuttons * p->ybuttons; i++) if(!p->buttons[i])
-		break;
-	if(i < p->xbuttons * p->ybuttons){
-		GLWcommandButton *b = new GLWcommandButton(path, cmd);
-		p->buttons[i] = b;
-		b->xpos = i % p->xbuttons * p->xbuttonsize;
-		b->width = p->xbuttonsize;
-		b->ypos = i / p->xbuttons * p->ybuttonsize;
-		b->height = p->ybuttonsize;
+	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
+		tips = NULL;
+	GLWcommandButton *b = new GLWcommandButton(path, cmd, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
 	}
 	return 0;
 }

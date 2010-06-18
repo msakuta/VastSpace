@@ -1401,20 +1401,19 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					s_mousedragx = s_mousex;
 					s_mousedragy = s_mousey;
 				}
-				if(glwfocus && glwdrag != glwfocus){
+
+				// Send mouse move messages to GLwindow system.
+				{
 					GLwindowState ws;
 					GLint vp[4];
-					GLWrect cr = glwfocus->clientRect();
 					glGetIntegerv(GL_VIEWPORT, vp);
 					ws.set(vp);
 					ws.mx = s_mousex;
 					ws.my = s_mousey;
-					ws.mousex = ws.mx - cr.l;
-					ws.mousey = ws.my - cr.t;
-					GLWrect r = glwfocus->clientRect();
-					glwfocus->mouse(ws, GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
-					glwfocus->mouse(ws, GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex - r.l, s_mousey - r.t);
+					GLwindow::mouseFunc(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
+					GLwindow::mouseFunc(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
 				}
+
 				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
 					mouse_captured = 1;
 					capture_mouse();

@@ -88,6 +88,7 @@ public:
 	virtual GLWrect clientRect()const; // Get client rectangle
 	virtual GLWrect extentRect()const; // GetWindowRect
 	virtual GLWrect adjustRect(const GLWrect &client)const; // AdjustClientRect
+	virtual bool focusable()const; // Returns wheter this window can have a focus to input from keyboards
 	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual int key(int key); /* returns nonzero if processed */
@@ -96,7 +97,7 @@ public:
 	virtual void postframe();
 	static void glwpostframe();
 	GLwindow *getNext(){return next;}
-	void setPinned(bool f){if(f) flags |= GLW_PINNED; else flags &= ~GLW_PINNED;}
+	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
 	bool getPinned()const{return flags & GLW_PINNED;}
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
@@ -190,6 +191,7 @@ class GLWbutton{
 public:
 	int xpos, ypos;
 	int width, height;
+	GLwindow *parent;
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y) = 0;
@@ -200,27 +202,45 @@ class GLWcommandButton : public GLWbutton{
 public:
 	unsigned texname;
 	const char *command;
+	const char *tipstring;
 	bool depress;
-	GLWcommandButton(const char *filename, const char *command);
+	GLWcommandButton(const char *filename, const char *command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
-	virtual ~GLWcommandButton(){delete command;}
+	virtual ~GLWcommandButton();
 };
 
 class GLWbuttonMatrix : public GLwindow{
+	GLWbutton **buttons;
 public:
 	int xbuttons, ybuttons;
 	int xbuttonsize, ybuttonsize;
-	GLWbutton **buttons;
 	GLWbuttonMatrix(int x, int y, int xsize = 32, int ysize = 32);
 	void draw(GLwindowState &,double);
 	int mouse(GLwindowState &, int button, int state, int x, int y);
+	bool addButton(GLWbutton *button, int x = -1, int y = -1);
 };
 
 
 inline void GLwindow::glwpostframe(){
 	for(GLwindow *glw = glwlist; glw; glw = glw->next)
 		glw->postframe();
+}
+
+
+
+// Implementation
+
+
+
+inline void GLwindow::setPinned(bool f){
+	if(f){
+		flags |= GLW_PINNED;
+		if(this == glwfocus)
+			glwfocus = NULL;
+	}
+	else
+		flags &= ~GLW_PINNED;
 }
 
 #endif

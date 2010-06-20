@@ -313,22 +313,50 @@ GLwindow::~GLwindow(){
 }
 
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
+	static GLwindow *lastovers[2] = {NULL};
+	static int messagecount = 0;
 	int ret = 0, killfocus;
 	glwindow **ppwnd, *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
 	int nowheel = !(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN);
 	int titleheight = fontheight + margin;
+
+	printf("mc %d\n", messagecount);
 	for(ppwnd = &glwlist; *ppwnd;){
 		int wx, wy, ww, wh;
 		wnd = *ppwnd;
 		if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 			GLwindowState &ws = gvp;
+			GLwindow *&lastover = lastovers[button == GLUT_KEEP_DOWN];
+			bool caught = false;
+			if(wnd->extentRect().include(x, y)){
+				if(lastover && lastover != wnd){
+					GLWrect cr = lastover->clientRect();
+					ws.mousex = ws.mx - cr.l;
+					ws.mousey = ws.my - cr.t;
+					lastover->mouse(ws, button, state, ws.mousex, ws.mousey);
+					messagecount++;
+				}
+				lastover = wnd;
+				caught = true;
+			}
+			else if(lastover == wnd) // Mouse leaves
+				lastover = NULL;
+			else{ // Mouse neither moves over or leaves the window.
+				ppwnd = &(*ppwnd)->next;
+				continue;
+			}
 			GLWrect cr = wnd->clientRect();
 			ws.mousex = ws.mx - cr.l;
 			ws.mousey = ws.my - cr.t;
-			wnd->mouse(ws, button, state, ws.mousex, ws.mousey);
-			ppwnd = &(*ppwnd)->next;
-			continue;
+			caught &= !!wnd->mouse(ws, button, state, ws.mousex, ws.mousey);
+			messagecount++;
+			if(caught)
+				break;
+			else{
+				ppwnd = &(*ppwnd)->next;
+				continue;
+			}
 		}
 		if(wnd->flags & GLW_COLLAPSE){
 			ww = wnd->title ? strlen(wnd->title) * fontwidth + 2 : 80;
@@ -903,7 +931,7 @@ public:
 };
 
 
-int GLWcommandButton::mouse(GLwindowState &, int button, int state, int mousex, int mousey){
+int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
 	if(!extentRect().include(mousex, mousey)){
 		depress = false;
 		if(glwtip->parent == this){
@@ -916,7 +944,15 @@ int GLWcommandButton::mouse(GLwindowState &, int button, int state, int mousex, 
 	else if(state == GLUT_KEEP_UP && tipstring){
 		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
 		GLWrect parentrect = parent->clientRect();
-		glwtip->setExtent(localrect.rmove(parentrect.l, parentrect.t));
+		localrect.rmove(parentrect.l, parentrect.t);
+
+		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
+		if(ws.w < localrect.r)
+			localrect.rmove(ws.w - localrect.r, 0);
+		if(ws.h < localrect.b)
+			localrect.rmove(0, ws.h - localrect.b);
+
+		glwtip->setExtent(localrect);
 		glwtip->tips = tipstring;
 		glwtip->parent = this;
 		glwActivate(glwFindPP(glwtip));

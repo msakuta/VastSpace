@@ -89,8 +89,11 @@ class GLwindow{
 
 class GLWbuttonMatrix extends GLwindow{
 	constructor(int x, int y, int sx, int sy);
-	void addButton(string command, string buttonimagefile);
+	void addButton(string command, string buttonimagefile, string tips);
 }
+
+int screenwidth();
+int screenheight();
 
 
 
@@ -311,10 +314,10 @@ function init_Universe(){
 	but.y = sch - but.height;
 	but.addButton("halt", "textures/halt.jpg", "Halt");
 	but.addButton("dock", "textures/dock.jpg", "Dock");
-	but.addButton("undock", "textures/undock.jpg");
+	but.addButton("undock", "textures/undock.jpg", "Undock");
 	but.pinned = true;
 
-	local sysbut = GLWbuttonMatrix(3, 2);
+	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);
 	sysbut.title = "System Commands";
 	sysbut.x = screenwidth() - sysbut.width;
 	sysbut.y = sch - sysbut.height;

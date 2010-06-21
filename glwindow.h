@@ -91,6 +91,8 @@ public:
 	virtual bool focusable()const; // Returns wheter this window can have a focus to input from keyboards
 	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
+	virtual void mouseEnter(GLwindowState &ws); // Called when the mouse pointer enters the window.
+	virtual void mouseLeave(GLwindowState &ws); // Called when the mouse pointer leaves the window.
 	virtual int key(int key); /* returns nonzero if processed */
 	virtual int specialKey(int key); // Special keys like page up/down
 	virtual void anim(double dt);
@@ -195,6 +197,8 @@ public:
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y) = 0;
+	virtual void mouseEnter(GLwindowState &);
+	virtual void mouseLeave(GLwindowState &);
 	virtual ~GLWbutton(){}
 };
 
@@ -207,6 +211,7 @@ public:
 	GLWcommandButton(const char *filename, const char *command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void mouseLeave(GLwindowState &);
 	virtual ~GLWcommandButton();
 };
 
@@ -216,8 +221,10 @@ public:
 	int xbuttons, ybuttons;
 	int xbuttonsize, ybuttonsize;
 	GLWbuttonMatrix(int x, int y, int xsize = 32, int ysize = 32);
-	void draw(GLwindowState &,double);
-	int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void draw(GLwindowState &,double);
+	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void mouseEnter(GLwindowState &);
+	virtual void mouseLeave(GLwindowState &);
 	bool addButton(GLWbutton *button, int x = -1, int y = -1);
 };
 

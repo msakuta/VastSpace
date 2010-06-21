@@ -303,6 +303,8 @@ GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.l - margin,
 bool GLwindow::focusable()const{return true;}
 void GLwindow::draw(GLwindowState &,double){}
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
+void GLwindow::mouseEnter(GLwindowState&){}
+void GLwindow::mouseLeave(GLwindowState&){}
 int GLwindow::key(int key){return 0;}
 int GLwindow::specialKey(int){return 0;}
 void GLwindow::anim(double){}
@@ -313,7 +315,6 @@ GLwindow::~GLwindow(){
 }
 
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
-	static GLwindow *lastovers[2] = {NULL};
 	static int messagecount = 0;
 	int ret = 0, killfocus;
 	glwindow **ppwnd, *wnd;
@@ -327,21 +328,30 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 		wnd = *ppwnd;
 		if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 			GLwindowState &ws = gvp;
-			GLwindow *&lastover = lastovers[button == GLUT_KEEP_DOWN];
+			static GLwindow *lastover = NULL;
 			bool caught = false;
 			if(wnd->extentRect().include(x, y)){
 				if(lastover && lastover != wnd){
 					GLWrect cr = lastover->clientRect();
 					ws.mousex = ws.mx - cr.l;
 					ws.mousey = ws.my - cr.t;
-					lastover->mouse(ws, button, state, ws.mousex, ws.mousey);
+					lastover->mouseLeave(ws);
+					wnd->mouseEnter(ws);
 					messagecount++;
 				}
 				lastover = wnd;
 				caught = true;
 			}
-			else if(lastover == wnd) // Mouse leaves
+			else if(lastover == wnd){ // Mouse leaves
+				GLWrect cr = wnd->clientRect();
+				ws.mousex = ws.mx - cr.l;
+				ws.mousey = ws.my - cr.t;
+				wnd->mouseLeave(ws);
+				messagecount++;
 				lastover = NULL;
+				ppwnd = &(*ppwnd)->next;
+				continue;
+			}
 			else{ // Mouse neither moves over or leaves the window.
 				ppwnd = &(*ppwnd)->next;
 				continue;
@@ -349,7 +359,7 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 			GLWrect cr = wnd->clientRect();
 			ws.mousex = ws.mx - cr.l;
 			ws.mousey = ws.my - cr.t;
-			caught &= !!wnd->mouse(ws, button, state, ws.mousex, ws.mousey);
+			wnd->mouse(ws, button, state, ws.mousex, ws.mousey);
 			messagecount++;
 			if(caught)
 				break;
@@ -880,6 +890,8 @@ static GLWtip *glwtip = new GLWtip();
 
 
 
+void GLWbutton::mouseEnter(GLwindowState &){}
+void GLWbutton::mouseLeave(GLwindowState &){}
 
 GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips) : depress(false){
 	xpos = ypos = 0;
@@ -970,6 +982,15 @@ int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex
 	return 0;
 }
 
+void GLWcommandButton::mouseLeave(GLwindowState &ws){
+	depress = false;
+	if(glwtip->parent == this){
+		glwtip->tips = NULL;
+		glwtip->parent = NULL;
+		glwtip->setExtent(GLWrect(-10,-10,-10,-10));
+	}
+}
+
 
 
 
@@ -1021,7 +1042,17 @@ int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex,
 				return p->mouse(ws, button, state, mousex, mousey);
 		}
 	}
-	return 0;
+	return 1;
+}
+
+void GLWbuttonMatrix::mouseEnter(GLwindowState &ws){
+	for(int i = 0; i < xbuttons * ybuttons; i++) if(buttons[i])
+		buttons[i]->mouseEnter(ws);
+}
+
+void GLWbuttonMatrix::mouseLeave(GLwindowState &ws){
+	for(int i = 0; i < xbuttons * ybuttons; i++) if(buttons[i])
+		buttons[i]->mouseLeave(ws);
 }
 
 bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){

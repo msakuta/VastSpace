@@ -28,7 +28,7 @@ GLwindow *glwfocus = NULL;
 GLwindow *glwdrag = NULL;
 int glwdragpos[2] = {0};
 
-GLwindow::GLwindow(const char *atitle) : xpos(0), ypos(0), width(100), height(100), modal(NULL), flags(0), next(NULL){
+GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 	if(atitle){
 		title = new char[strlen(atitle)+1];
 		strcpy(title, atitle);
@@ -94,6 +94,9 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	GLubyte alpha;
 	int border;
 	double left, bottom;
+
+	if(flags & GLW_INVISIBLE)
+		return;
 
 	glGetIntegerv(GL_VIEWPORT, vp);
 	mi = MIN(h, w);
@@ -889,7 +892,7 @@ static GLWtip *glwtip = new GLWtip();
 
 
 
-
+const char *GLWbutton::classname()const{return "GLWbutton";}
 void GLWbutton::mouseEnter(GLwindowState &){}
 void GLWbutton::mouseLeave(GLwindowState &){}
 
@@ -949,7 +952,7 @@ int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex
 		if(glwtip->parent == this){
 			glwtip->tips = NULL;
 			glwtip->parent = NULL;
-			glwtip->setExtent(GLWrect(-10,-10,-10,-10));
+			glwtip->setVisible(false);
 		}
 		return 0;
 	}
@@ -967,6 +970,7 @@ int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex
 		glwtip->setExtent(localrect);
 		glwtip->tips = tipstring;
 		glwtip->parent = this;
+		glwtip->setVisible(true);
 		glwActivate(glwFindPP(glwtip));
 //		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
 	}
@@ -1069,10 +1073,7 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 		return false;
 	b->parent = this;
 	this->buttons[i] = b;
-	b->xpos = i % xbuttons * xbuttonsize;
-	b->width = xbuttonsize;
-	b->ypos = i / xbuttons * ybuttonsize;
-	b->height = ybuttonsize;
+	b->setExtent(GLWrect(i % xbuttons * xbuttonsize, i / xbuttons * ybuttonsize, i % xbuttons * xbuttonsize + xbuttonsize, i / xbuttons * ybuttonsize + ybuttonsize));
 	return true;
 }
 

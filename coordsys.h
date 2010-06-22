@@ -34,19 +34,45 @@ class Player;
 struct StellarContext;
 struct war_draw_data;
 
-/* node or leaf of coordinate system tree */
+/** \brief A Coordinate system in space.
+ *
+ * Node or leaf of coordinate system tree.
+ *
+ * The coordinate system tree is much like directory tree in filesystems.
+ * The node of tree can have zero or more child nodes and have one parent node.
+ * Child nodes define translation and rotation relative to its parent node,
+ * to express layered structure of systems.
+ */
 class CoordSys : public Serializable{
 public:
+	/// Super Type
 	typedef Serializable st;
 
+	/// Position
 	Vec3d pos;
+
+	/// Velocity
 	Vec3d velo;
+
+	/// Rotation in quaternion
 	Quatd rot;
+
+	/// Angular velocity
 	Vec3d omg;
-	double csrad; /* bounding sphere radius around origin, used for culling or conversion */
+
+	/// Bounding sphere radius around origin, used for culling or conversion.
+	double csrad;
+
+	/// Parent node
 	CoordSys *parent;
+
+	/// Reference name
 	const char *name;
+
+	/// Detailed name for displaying, etc.
 	const char *fullname;
+
+	/// Utility flags
 	unsigned flags;
 
 	/* These trivial variables are only used on drawing to enhance speed by caching
@@ -58,12 +84,26 @@ public:
 	double vwdist; /* distance from the viewer */
 	double vwscale; /* apparent scale */
 
+	/// Bound WarField.
 	WarField *w;
-	CoordSys *next; /* list of siblings */
-	CoordSys *children/*[64]*/; /* starting pointer to list of children */
+
+	/// List of siblings.
+	CoordSys *next;
+
+	/// \brief Starting pointer to list of children.
+	///
+	/// All children are enumerated by following next of children.
+	CoordSys *children/*[64]*/; 
+
 	typedef std::vector<CoordSys*> AOList;
-	AOList aorder; /* ordered list of drawable objects belonging to this coordsys */
-	int naorder; /* count of elements in aorder */
+
+	/// Astrobj list. sorted every frame to draw stellar objects in order of distance from the viewpoint.
+	///
+	/// Ordered list of drawable objects belonging to this coordsys.
+	AOList aorder;
+
+	/// Count of elements in aorder.
+	int naorder;
 
 	CoordSys();
 	CoordSys(const char *path, CoordSys *root);
@@ -71,7 +111,7 @@ public:
 	void init(const char *path, CoordSys *root);
 	static const unsigned classid;
 
-	virtual const char *classname()const; // returned string storage must be static
+	virtual const char *classname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
@@ -87,27 +127,27 @@ public:
 	virtual bool readFile(StellarContext &, int argc, char *argv[]); // read a line from a text file
 	virtual bool readFileEnd(StellarContext &); // exit block
 
-	/* Definition of appropriate rotation. some coordinate systems like space colonies have
-	  odd rules to rotate the camera. Default is 'trackball' type rotation. */
+	/** Definition of appropriate rotation. some coordinate systems like space colonies have
+	 * odd rules to rotate the camera. Default is 'trackball' type rotation. */
 	virtual Quatd rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const;
 
-	// Cast to Astrobj, for distinguishing CoordSys and Astrobj from the children list.
-	// Returns NULL if cast is not possible (i.e. CoordSys object).
+	/// Cast to Astrobj, for distinguishing CoordSys and Astrobj from the children list.
+	/// Returns NULL if cast is not possible (i.e. CoordSys object).
 	virtual Astrobj *toAstrobj();
 	virtual OrbitCS *toOrbitCS();
 	virtual Universe *toUniverse();
 
-	// Const version simply follows the behavior of non-const version.
+	/// Const version of toAstrobj simply follows the behavior of non-const version.
 	const Astrobj *toAstrobj()const{ return const_cast<CoordSys*>(this)->toAstrobj(); }
 	const OrbitCS *toOrbitCS()const{ return const_cast<CoordSys*>(this)->toOrbitCS(); };
 	const Universe *toUniverse()const{ return const_cast<CoordSys*>(this)->toUniverse(); };
 
-	// recursively draws a whole tree of coordinate systems.
-	// note that this function is not a virtual function unlike draw(), which means
-	// it cannot be overridden and all relevant systems are assured to be drawn.
+	/// recursively draws a whole tree of coordinate systems.
+	/// note that this function is not a virtual function unlike draw(), which means
+	/// it cannot be overridden and all relevant systems are assured to be drawn.
 	void drawcs(const Viewer *);
 
-	/*
+	/**
 	   The data structure is associated with family tree because a child
 	  coordinate system has only one parent, but one can have any number of
 	  children.
@@ -128,18 +168,18 @@ public:
 	*/
 	CoordSys **legitimize_child();
 
-	/* Adopt one as child which was originally another parent's */
+	/// Adopt one as child which was originally another parent's.
 	void adopt_child(CoordSys *newparent, bool retainPosition = true);
 
-	/* convert position, velocity, rotation matrix into one coordinate system
-	  to another. */
+	/// Converts position, velocity, rotation matrix into one coordinate system
+	/// to another.
 	Vec3d tocs(const Vec3d &src, const CoordSys *cs, bool delta = false)const;
 	Vec3d tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)const;
 	Quatd tocsq(const CoordSys *cs)const;
 	Mat4d tocsm(const CoordSys *cs)const;
 	Mat4d tocsim(const CoordSys *cs)const;
 
-	/* Calculate where the position should belong to, based on extent radius of
+	/** Calculate where the position should belong to, based on extent radius of
 	  coordinate systems (if one has no overrides to belonging definition function).
 	  The center of extent bounding sphere is set to the coordinates'
 	  origin, because it is more precise to do floating-point arithmetics near zero. */
@@ -147,29 +187,29 @@ public:
 
 	bool is_ancestor_of(const CoordSys *object)const;
 
-	/* Search the tree with name. If there are some nodes of the same name, the newest offspring
+	/** Search the tree with name. If there are some nodes of the same name, the newest offspring
 	  is returned (Note that it's not nearest). */
 	CoordSys *findcs(const char *name);
 	const CoordSys *findcs(const char *name)const{return const_cast<CoordSys*>(this)->findcs(name);}
 
-	/* Search the tree with path string. If there are some nodes of the same name, they are
+	/** Search the tree with path string. If there are some nodes of the same name, they are
 	  distinguished by tree path. Node delimiter is slash (/).
 	   Also, this function is expected to run faster compared to findcs() because it doesn't
 	  search non-rewarding subtrees. */
 	CoordSys *findcspath(const char *path);
 	const CoordSys *findcspath(const char *path)const{return const_cast<CoordSys*>(this)->findcspath(path);}
 
-	// partial path
+	/// partial path
 	CoordSys *findcsppath(const char *path, const char *pathend);
 
-	/* Get the absolute path string. */
+	/// Get the absolute path string.
 	bool getpath(char *buf, size_t size)const;
 	cpplib::dstring getpath()const;
 
-	// Get the relative path.
+	/// Get the relative path.
 	cpplib::dstring getrpath(const CoordSys *base)const;
 
-	/* Find nearest Extent and Isolated system in ancestory. */
+	/// Find nearest Extent and Isolated system in ancestory.
 	CoordSys *findeisystem();
 
 	Astrobj *findastrobj(const char *name);

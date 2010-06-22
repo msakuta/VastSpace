@@ -17,10 +17,24 @@ void Serializable::serialize(SerializeContext &sc){
 void Serializable::unserialize(UnserializeContext &usc){
 }
 
+/// \brief Serializes or maps an object graph, which means arbitrary network of serializable objects.
+///
+/// This function recursively enumerates all relevant objects of this object.
+/// The second argument is called on all objects in the graph.
+///
+/// Objects with arbitrary pointers to each other forms a graph (see C++ FAQ lite), so we must take 2 passes
+/// to fully serialize them.
+///
+/// Derived classes must override this function to dive into all member pointers to Serializable-derived class object.
+///
 void Serializable::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	(this->*method)(sc);
 }
 
+/// \brief Add this object to the map of pointer and ID for serialization.
+///
+/// Serialized stream identify objects by ID numbers, not pointers in memory. Therefore, all objects must
+/// translate themselves into an ID prior to serialization.
 void Serializable::map(SerializeContext &sc){
 	SerializeMap &cm = sc.map;
 	if(cm.find(this) == cm.end()){

@@ -17,6 +17,7 @@ extern "C"{
 #define GLW_SIZEPROP	0x40 /* proportional size change, i.e. ratio is reserved */
 #define GLW_POPUP		0x80 /* hidden as soon as defocused */
 #define GLW_TIP			0x100 /* hidden as soon as the cursor moves out */
+#define GLW_INVISIBLE   0x200
 #define GLW_TODELETE	0x8000
 
 // Namespaces does not solve all the problems.
@@ -51,9 +52,19 @@ struct GLwindowState{
 
 
 
+class GLcomponent : public Serializable{
+public:
+	GLcomponent() : xpos(0), ypos(0), width(100), height(100), flags(0){}
+	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
+	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
+	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
+protected:
+	int xpos, ypos;
+	int width, height;
+	unsigned int flags;
+};
 
-
-typedef class GLwindow : public Serializable{
+typedef class GLwindow : public GLcomponent{
 public:
 	typedef GLwindow st;
 
@@ -89,7 +100,6 @@ public:
 	virtual GLWrect extentRect()const; // GetWindowRect
 	virtual GLWrect adjustRect(const GLWrect &client)const; // AdjustClientRect
 	virtual bool focusable()const; // Returns wheter this window can have a focus to input from keyboards
-	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 	virtual void mouseEnter(GLwindowState &ws); // Called when the mouse pointer enters the window.
 	virtual void mouseLeave(GLwindowState &ws); // Called when the mouse pointer leaves the window.
@@ -105,11 +115,8 @@ public:
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
 protected:
 	GLwindow(const char *title = NULL);
-	int xpos, ypos;
-	int width, height;
 	char *title;
 	GLwindow *next;
-	unsigned int flags;
 	GLwindow *modal; /* The window that must be closed prior to proceed this window's process. */
 	virtual void draw(GLwindowState &ws, double t);
 	virtual ~GLwindow(); /* destructor method, NULL permitted */
@@ -189,10 +196,9 @@ public:
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 
-class GLWbutton{
+class GLWbutton : public GLcomponent{
 public:
-	int xpos, ypos;
-	int width, height;
+	const char *classname()const;
 	GLwindow *parent;
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
@@ -213,6 +219,17 @@ public:
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
 	virtual ~GLWcommandButton();
+};
+
+class GLWstateButton : public GLWbutton{
+public:
+	unsigned texname, texname1;
+	const char *command;
+	const char *tipstring;
+	bool depress()const;
+	virtual void draw(GLwindowState &, double);
+	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void mouseLeave(GLwindowState &);
 };
 
 class GLWbuttonMatrix : public GLwindow{

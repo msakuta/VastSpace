@@ -33,39 +33,52 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 	return new Command(v, e);
 }
 
-// Base class for all Entity commands.
+/** \brief Base class for all Entity commands.
+//
 // The Entity commands are short-lived, small object that deliver messages to Entities.
 // The virtual mechanism of EntityCommand enables fast, safe, straightforward and extensible
 // tree structure of commands.
+//
 // Entity class do not need to know all types of commands to receive one, only derived relevant
 // class objects do.
+//
 // Note that this class object's storage duration is assumed to be one frame long at most.
 // Containing an EntityCommand object or its derived objects within a long-lived objects,
 // such as Entity itself, is prohibited. Writing into a file is of course NG.
 // This is important convention because it can contain pointers to dynamic objects, which
 // can get deleted at random occasion, that means they need serialization.
+//
 // To eliminate dangling pointers, we keep objects live until end of each frame, but the best
 // practice is to create, pass and delete an EntityCommand object at the same place.
 // If you really need to remember an EntityCommand for later use, I recommend using Squirrel
 // function call to express a command.
+ */
 struct EntityCommand{
-	// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
+	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
 	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> ctormap;
 
-	// The returned pointer never be dereferenced without debugging purposes,
-	// it is just required to point the same address for all the instances but
-	// never coincides between different classes.
-	// A static const string of class name is ideal for this returned vale.
+	/** \brief Returns unique ID for this class.
+	 *
+	 * The returned pointer never be dereferenced without debugging purposes,
+	 * it is just required to point the same address for all the instances but
+	 * never coincides between different classes.
+	 * A static const string of class name is ideal for this returned vale.
+	 */
 	virtual EntityCommandID id()const = 0;
+
+	/** \brief Derived or exact class returns true.
+	 *
+	 * Returns whether the given Entity Command ID is the same as this object's class's or its derived classes.
+	 */
 	virtual bool derived(EntityCommandID)const;
 
 	EntityCommand(){}
 
-	// In a Squirrel execution context, an Entity which will this command be sent to is known.
+	/// In a Squirrel execution context, an Entity which will this command be sent to is known.
 	EntityCommand(HSQUIRRELVM v, Entity &e){}
 
 protected:
-	// Derived classes use this utility to register class.
+	/// Derived classes use this utility to register class.
 	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
 		ctormap[name] = ctor;
 		return 0;
@@ -125,12 +138,12 @@ struct WarpCommand : public MoveCommand{
 	WarpCommand(){}
 	WarpCommand(HSQUIRRELVM v, Entity &e);
 
-	// There can be a discussion on whether warp destination is designated by a path or
+	/** There can be a discussion on whether warp destination is designated by a path or
 	// a pointer. Finally, we choose a pointer because the entity commands are impulsive
 	// by specification, which means they should be generated, passed and consumed in a
 	// single frame, so we do not need to warry about pointed object's lifetime.
 	// Also, it can be less efficient to convert between path string and pointer when
-	// one that sent the command already know the destination system via pointer.
+	// one that sent the command already know the destination system via pointer. */
 	CoordSys *destcs;
 };
 

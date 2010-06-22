@@ -348,6 +348,8 @@ const char *Astrobj::classname()const{
 	return "Astrobj";
 }
 
+/** Finds an Astrobj nearest to this node.
+ */
 Astrobj *CoordSys::findastrobj(const char *name){
 //	int i;
 	if(!name)

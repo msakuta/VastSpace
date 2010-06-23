@@ -27,6 +27,8 @@ void Serializable::unserialize(UnserializeContext &usc){
 ///
 /// Derived classes must override this function to dive into all member pointers to Serializable-derived class object.
 ///
+/// \param method member pointer to execute on all nodes in Serializable tree. Can be serialize() or map().
+///
 void Serializable::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	(this->*method)(sc);
 }
@@ -71,6 +73,11 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 	delete us;
 }
 
+/// \param name name of the class.
+/// \param constructor function that creates the object of class.
+/// class constructor cannot be passed directly, use Conster() template function to generate a function
+/// that can be passed here.
+/// \sa Conster(), ctormap()
 unsigned Serializable::registerClass(std::string name, Serializable *(*constructor)()){
 	if(ctormap().find(name) != ctormap().end())
 		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
@@ -78,6 +85,7 @@ unsigned Serializable::registerClass(std::string name, Serializable *(*construct
 	return ctormap().size();
 }
 
+/// Using construction on first use idiom so it's safe to call from other initialization functions.
 CtorMap &Serializable::ctormap(){
 	static CtorMap ictormap;
 	return ictormap;

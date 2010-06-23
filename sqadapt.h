@@ -19,6 +19,7 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 class Serializable;
 class Entity;
 
+/// Namespace for Squirrel adaption functions and classes.
 namespace sqa{
 
 void sqa_init();
@@ -27,17 +28,20 @@ void sqa_anim(double dt);
 void sqa_delete_Entity(Entity *);
 void sqa_exit();
 
+/// Register a Squirrel native function to the given VM.
 SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
 
+/// Global Squirrel VM.
 extern HSQUIRRELVM g_sqvm;
 
+/// Type tags for intrinsic types.
 extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -3);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
-// Any recoverable errors in Squirrel VM is thrown and inherits this class.
+/// Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct SQFError{
 	SQFError(SQChar *a = NULL) : description(a){}
 	const SQChar *what()const;
@@ -50,7 +54,7 @@ struct NoIndex : SQIntrinsicError{};
 struct NoUserData : SQIntrinsicError{};
 struct NoCreateInstance : SQIntrinsicError{};
 
-// Adapter for Squirrel class instances that behave like an intrinsic type.
+/// Adapter for Squirrel class instances that behave like an intrinsic type.
 template<typename Class>
 class SQIntrinsic{
 	static const SQChar *const classname;

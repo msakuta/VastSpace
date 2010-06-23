@@ -47,13 +47,13 @@ public:
 
 	/// Binds a class ID with its constructor.
 	/// Derived classes must register themselves to unserialize.
-	static unsigned registerClass(std::string name, Serializable *(*)());
+	static unsigned registerClass(std::string name, Serializable *(*constructor)());
 
-	/// Returns global constructor map.
+	/// \brief Returns global constructor map.
 	/// Registered classes via registerClass reside in this map.
 	static CtorMap &ctormap();
 
-	/// Template helper function that generate global constructor of given class.
+	/// \brief Template helper function that generate global constructor of given class.
 	template<class T> static Serializable *Conster();
 
 	/// Clear visit list used to eliminate duplicate visits.
@@ -69,7 +69,7 @@ protected:
 	virtual void unserialize(UnserializeContext &usc);
 
 	Serializable() : visit_list(NULL){}
-	mutable Serializable *visit_list; // Visit list for object network diving. Must be initially NULL and NULLified after use.
+	mutable Serializable *visit_list; ///< Visit list for object network diving. Must be initially NULL and NULLified after use.
 };
 
 template<class T> inline Serializable *Serializable::Conster(){

@@ -45,50 +45,29 @@ struct war_draw_data;
  */
 class CoordSys : public Serializable{
 public:
-	/// Super Type
-	typedef Serializable st;
+	typedef Serializable st; ///< Super Type
 
-	/// Position
-	Vec3d pos;
-
-	/// Velocity
-	Vec3d velo;
-
-	/// Rotation in quaternion
-	Quatd rot;
-
-	/// Angular velocity
-	Vec3d omg;
-
-	/// Bounding sphere radius around origin, used for culling or conversion.
-	double csrad;
-
-	/// Parent node
-	CoordSys *parent;
-
-	/// Reference name
-	const char *name;
-
-	/// Detailed name for displaying, etc.
-	const char *fullname;
-
-	/// Utility flags
-	unsigned flags;
+	Vec3d pos; ///< Position
+	Vec3d velo; ///< Velocity
+	Quatd rot; ///< Rotation in quaternion
+	Vec3d omg; ///< Angular velocity
+	double csrad; ///< Bounding sphere radius around origin, used for culling or conversion.
+	CoordSys *parent; ///< Parent node
+	const char *name; ///< Reference name
+	const char *fullname; ///< Detailed name for displaying, etc.
+	unsigned flags; ///< Utility flags
 
 	/* These trivial variables are only used on drawing to enhance speed by caching
 	  certain values. */
 	enum vwflag{VW_POS = 1, VW_SDIST = 2, VW_DIST = 4, VW_SCALE = 8};
-	int vwvalid; /* validity flags for vwpos and vwsdist */
-	Vec3d vwpos; /* position in viewer's coordinates */
-	double vwsdist; // squared distance
-	double vwdist; /* distance from the viewer */
-	double vwscale; /* apparent scale */
+	int vwvalid; ///< validity flags for cached values.
+	Vec3d vwpos; ///< cached position in viewer's coordinates
+	double vwsdist; ///< cached squared distance
+	double vwdist; ///< cached distance from the viewer
+	double vwscale; ///< cached apparent scale
 
-	/// Bound WarField.
-	WarField *w;
-
-	/// List of siblings.
-	CoordSys *next;
+	WarField *w; ///< Bound WarField.
+	CoordSys *next; ///< Pointer to next node of list of siblings.
 
 	/// \brief Starting pointer to list of children.
 	///
@@ -101,9 +80,7 @@ public:
 	///
 	/// Ordered list of drawable objects belonging to this coordsys.
 	AOList aorder;
-
-	/// Count of elements in aorder.
-	int naorder;
+	int naorder; ///< Count of elements in aorder.
 
 	CoordSys();
 	CoordSys(const char *path, CoordSys *root);

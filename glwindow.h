@@ -21,24 +21,40 @@ extern "C"{
 #define GLW_TODELETE	0x8000
 
 // Namespaces does not solve all the problems.
+/// Rectangle object like Windows RECT structure.
 struct GLWrect{
 	long l;
 	long t;
 	long r;
 	long b;
 	GLWrect(long al, long at, long ar, long ab) : l(al), t(at), r(ar), b(ab){}
+
+	/// Returns true if given point is included in this rectangle.
 	bool include(long x, long y)const{return l <= x && x <= r && t <= y && y <= b;}
 	long width()const{return r - l;}
 	long height()const{return b - t;}
+
+	/// Move this rectangle's top left corner to given point without changing size.
 	GLWrect &move(long x, long y){r += x - l; l = x; b += y - t; t = y; return *this;}
+
+	/// Returns copy of this rectangle that moved to given point.
 	GLWrect moved(long x, long y)const{return GLWrect(*this).move(x, y);}
+
+	/// Move this rectangle's bottom right corner to given point without changing size.
 	GLWrect &movebr(long x, long y){l += x - r; r = x; t += y - b; b = y; return *this;}
+
+	/// Returns copy of this rectangle that moved to given point.
 	GLWrect movedbr(long x, long y)const{return GLWrect(*this).movebr(x, y);}
+
+	/// Move this rectangle relatively by given values.
 	GLWrect &rmove(long dx, long dy){l += dx; r += dx; t += dy; b += dy; return *this;}
+
+	/// Returns copy of this rectangle relatively moved by given values.
 	GLWrect rmoved(long dx, long dy){return GLWrect(*this).rmove(dx, dy);}
 };
 
 //struct viewport;
+/// Represents OpenGL status for drawing windows.
 struct GLwindowState{
 	int w, h, m; // viewport size
 	int mx, my; // mouse position
@@ -51,7 +67,12 @@ struct GLwindowState{
 
 
 
-
+/** \brief Base class of all OpenGL window system elemets.
+ *
+ * OpenGL window system is associated with an OpenGL viewport.
+ *
+ * All drawable OpenGL window system elements should derive this class.
+ */
 class GLcomponent : public Serializable{
 public:
 	GLcomponent() : xpos(0), ypos(0), width(100), height(100), flags(0){}
@@ -64,6 +85,14 @@ protected:
 	unsigned int flags;
 };
 
+/** \brief Overlapped window in OpenGL window system.
+ *
+ * This class object can have titlebar and some utility buttons in non-client area.
+ *
+ * Windows that draw something into client area should derive this class to override draw member function.
+ *
+ * GLwindow is also bound to Squirrel class object.
+ */
 typedef class GLwindow : public GLcomponent{
 public:
 	typedef GLwindow st;
@@ -90,25 +119,43 @@ public:
 	class TitleCmp;
 
 	// Object methods
-	const char *getTitle()const{return title;}
+	const char *getTitle()const{return title;} ///< \return Title string of this window
 	void setTitle(const char *newTitle);
 	void mouseDrag(int x, int y);
 	int getX()const{return xpos;}
 	int getY()const{return ypos;}
 	virtual const char *classname()const;
-	virtual GLWrect clientRect()const; // Get client rectangle
-	virtual GLWrect extentRect()const; // GetWindowRect
-	virtual GLWrect adjustRect(const GLWrect &client)const; // AdjustClientRect
-	virtual bool focusable()const; // Returns wheter this window can have a focus to input from keyboards
+	virtual GLWrect clientRect()const; ///< Get client rectangle
+	virtual GLWrect extentRect()const; ///< Something like GetWindowRect
+	virtual GLWrect adjustRect(const GLWrect &client)const; ///< Something like AdjustClientRect
+
+	/// Returns whether this window can have a focus to input from keyboards
+	virtual bool focusable()const;
+
+	/// \brief Mouse event handler.
+	/// Derived classes can override to define mouse responses.
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
-	virtual void mouseEnter(GLwindowState &ws); // Called when the mouse pointer enters the window.
-	virtual void mouseLeave(GLwindowState &ws); // Called when the mouse pointer leaves the window.
-	virtual int key(int key); /* returns nonzero if processed */
-	virtual int specialKey(int key); // Special keys like page up/down
+
+	/// Called when the mouse pointer enters the window.
+	virtual void mouseEnter(GLwindowState &ws); 
+
+	/// Called when the mouse pointer leaves the window.
+	virtual void mouseLeave(GLwindowState &ws);
+
+	/// Key event function, returns nonzero if processed
+	virtual int key(int key);
+
+	/// Event handler for special keys like page up/down.
+	virtual int specialKey(int key);
+
+	/// Called every frame.
 	virtual void anim(double dt);
+
+	/// Called when a frame is about to end. Derived classes should assign NULL to member pointers
+	/// that point to objects being destroyed.
 	virtual void postframe();
 	static void glwpostframe();
-	GLwindow *getNext(){return next;}
+	GLwindow *getNext(){return next;} ///< \brief Getter for next member.
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
 	bool getPinned()const{return flags & GLW_PINNED;}
@@ -116,10 +163,18 @@ public:
 protected:
 	GLwindow(const char *title = NULL);
 	char *title;
+
+	/// Next window in window list. Early windows are drawn over later windows in the list.
 	GLwindow *next;
-	GLwindow *modal; /* The window that must be closed prior to proceed this window's process. */
+
+	/// The window that must be closed prior to proceed this window's process.
+	GLwindow *modal;
+
+	/// Derived classes can override to describe drawing in client area.
 	virtual void draw(GLwindowState &ws, double t);
-	virtual ~GLwindow(); /* destructor method, NULL permitted */
+
+	/// Destructor method, NULL permitted.
+	virtual ~GLwindow();
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -154,6 +209,7 @@ void glwHScrollBarDraw(glwindow *wnd, int x0, int y0, int w, int h, int range, i
 int glwVScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
 int glwHScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
 
+/// Window that lists menus. Menu items are bound to console commands.
 class GLwindowMenu : public GLwindow{
 public:
 	int count;
@@ -186,6 +242,7 @@ glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[
 GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenu &);
 
 
+/// Base class for sizeable windows.
 class GLwindowSizeable : public glwindow{
 protected:
 	float ratio; /* ratio of window size if it is to be reserved */
@@ -196,6 +253,8 @@ public:
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 
+/// The simplest display element in GLwindow system. This is base class
+/// and all actual buttons inherit this class.
 class GLWbutton : public GLcomponent{
 public:
 	const char *classname()const;
@@ -208,6 +267,7 @@ public:
 	virtual ~GLWbutton(){}
 };
 
+/// Impulsive command buttons that activates when mouse button is pressed down and released.
 class GLWcommandButton : public GLWbutton{
 public:
 	unsigned texname;
@@ -221,17 +281,20 @@ public:
 	virtual ~GLWcommandButton();
 };
 
+/// 2-State button.
 class GLWstateButton : public GLWbutton{
 public:
 	unsigned texname, texname1;
 	const char *command;
 	const char *tipstring;
 	bool depress()const;
+	GLWstateButton(const char *filename, const char *filename1command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
 };
 
+/// A window with GLWbuttons in matrix.
 class GLWbuttonMatrix : public GLwindow{
 	GLWbutton **buttons;
 public:
@@ -256,7 +319,7 @@ inline void GLwindow::glwpostframe(){
 // Implementation
 
 
-
+/// Pinned window cannot be focused.
 inline void GLwindow::setPinned(bool f){
 	if(f){
 		flags |= GLW_PINNED;

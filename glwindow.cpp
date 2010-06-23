@@ -1,3 +1,7 @@
+/** \file glwindow.cpp
+ * Implementation of GLwindow and its subclasses.
+ * Implements GLbutton branch too.
+ */
 #include "glwindow.h"
 #include "cmd.h"
 #include "antiglut.h"
@@ -13,7 +17,7 @@ extern "C"{
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
 
-// There is only one font size. It could be bad for some future.
+/// There is only one font size. It could be bad for some future.
 static double glwfontscale = 1.;
 #define fontwidth (GLwindow::glwfontwidth * glwfontscale)
 #define fontheight (GLwindow::glwfontheight * glwfontscale)
@@ -23,11 +27,14 @@ double GLwindow::getFontHeight(){return fontheight;}
 const long margin = 4;
 
 
-GLwindow *glwlist = NULL/*, *glwmini = NULL*/;
-GLwindow *glwfocus = NULL;
-GLwindow *glwdrag = NULL;
-int glwdragpos[2] = {0};
+GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
+GLwindow *glwfocus = NULL; ///< Focused window.
+GLwindow *glwdrag = NULL; ///< Window being dragged.
+int glwdragpos[2] = {0}; ///< Memory for starting position of dragging.
 
+/** \brief Sets title string
+ * \param title pointer to string to initialize the window's title. Can be freed after construction.
+ */
 GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 	if(atitle){
 		title = new char[strlen(atitle)+1];
@@ -47,6 +54,7 @@ glwindow **glwAppend(glwindow *wnd){
 	return &glwlist;
 }
 
+/// Brings the given window on top and set keyboard focus on it.
 void glwActivate(glwindow **ppwnd){
 	glwindow **last, *wnd = *ppwnd;
 /*	for(last = &glwlist; *last; last = &(*last)->next);
@@ -64,6 +72,7 @@ void glwActivate(glwindow **ppwnd){
 	}
 }
 
+/// Called when a window is changed its size.
 void GLwindow::reshapeFunc(int w, int h){
 	GLint vp[4];
 	glGetIntegerv(GL_VIEWPORT, vp);
@@ -80,11 +89,12 @@ void GLwindow::reshapeFunc(int w, int h){
 	}
 }
 
-int r_window_scissor = 1;
+int r_window_scissor = 1; ///< Whether enable scissor tests to draw client area.
 static int s_minix;
 //static const int r_titlebar_height = 12;
 #define r_titlebar_height fontheight
 
+/// Draw a GLwindow with its non-client frame.
 void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int wh){
 //	GLwindow *wnd = this;
 	int s_mousex = gvp.mx, s_mousey = gvp.my;
@@ -230,8 +240,11 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	projection(glPopMatrix());
 }
 
-/* using recursive call to do reverse rendering order, for reversing message process instead
-  is more costly. */
+/** \brief An intermediate function that eventually calls anim().
+ *
+ * This function is using recursive call to do reverse rendering order,
+ * for reversing message process instead is more costly.
+ */
 void GLwindow::glwDraw(GLwindowState &vp, double t, int *minix){
 	if(!this)
 		return;
@@ -242,8 +255,11 @@ void GLwindow::glwDraw(GLwindowState &vp, double t, int *minix){
 		drawInt(vp, t, xpos, ypos, width, height);
 }
 
-/* Minimized windows never overlap, so drawing order can be arbitrary,
-  making recursive call unnecessary. */
+/** \brief Draw minimized windows.
+ *
+ * Minimized windows never overlap, so drawing order can be arbitrary,
+ * making recursive call unnecessary.
+ */
 void GLwindow::glwDrawMinimized(GLwindowState &gvp, double t, int *pp){
 	GLwindow *wndy = this;
 	glwindow *wnd;
@@ -261,11 +277,13 @@ void GLwindow::glwDrawMinimized(GLwindowState &gvp, double t, int *pp){
 	}
 }
 
+/// Call anim() for all windows.
 void GLwindow::glwAnim(double dt){
 	for(GLwindow *wnd = glwlist; wnd; wnd = wnd->next)
 		wnd->anim(dt);
 }
 
+/// Finds and returns pointer to pointer to the object.
 glwindow **glwFindPP(glwindow *wnd){
 	glwindow **ret;
 	for(ret = &glwlist; *ret; ret = &(*ret)->next) if(*ret == wnd)
@@ -288,6 +306,7 @@ void GLwindow::glwFree(){
 	delete wnd;
 }
 
+/// Sets or replaces window title string.
 void GLwindow::setTitle(const char *atitle){
 	if(title)
 		delete[] title;
@@ -303,13 +322,31 @@ const char *GLwindow::classname()const{return "GLwindow";}
 GLWrect GLwindow::clientRect()const{return GLWrect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
 GLWrect GLwindow::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.l - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.t - margin - fontheight : r.t - margin, r.r + margin, r.b + margin);}
+/// Derived classes can override the default attribute.
 bool GLwindow::focusable()const{return true;}
+/// Draws client area.
+/// \param t Global time
 void GLwindow::draw(GLwindowState &,double){}
+
+/** Mouse clicks and drags can be handled in this function.
+ * \param key can be GLUT_LEFT_BUTTON or GLUT_RIGHT_BUTTON
+ * \param state can be GLUT_DOWN, GLUT_UP, GLUT_KEEP_DOWN or GLUT_KEEP_UP.
+ * The latter 2 is called when the mouse moves.
+ * \param x Mouse position
+ * \param y Mouse position
+ * \return 0 if this window does not process the mouse event, otherwise consume the event.
+ * \sa mouseFunc(), mouseDrag(), mouseEnter() and mouseLeave()
+ */
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
-void GLwindow::mouseEnter(GLwindowState&){}
-void GLwindow::mouseLeave(GLwindowState&){}
+
+void GLwindow::mouseEnter(GLwindowState&){} ///< Derived classes can override to define mouse responses.
+void GLwindow::mouseLeave(GLwindowState&){} ///< Derived classes can override to define mouse responses.
+/// \param key Key code of inputs from the keyboard. Printable keys are passed as its ASCII code.
+/// \return 0 if this window does not process the key event, otherwise consume the event.
 int GLwindow::key(int key){return 0;}
+/// \param key Virtual key code of inputs from the keyboard.
 int GLwindow::specialKey(int){return 0;}
+/// \param dt frametime of this frame.
 void GLwindow::anim(double){}
 void GLwindow::postframe(){}
 GLwindow::~GLwindow(){
@@ -317,6 +354,7 @@ GLwindow::~GLwindow(){
 		delete[] title;
 }
 
+/// Handles titlebar button events or otherwise call mouse() virtual function.
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
 	static int messagecount = 0;
 	int ret = 0, killfocus;
@@ -519,6 +557,7 @@ static int snapborder(int x0, int w0, int x1, int w1){
 	return x0;
 }
 
+/// Drag a window's title to move it around.
 void GLwindow::mouseDrag(int x, int y){
 	this->xpos = x;
 	this->ypos = y;
@@ -688,14 +727,31 @@ int GLwindowMenu::key(int key){
 GLwindowMenu::~GLwindowMenu(){
 }
 
+/// \brief Constructs a GLwindowMenu object of given items.
+/// \param name Title string.
+/// \param count Number of items.
+/// \param menutitles Pointer to array of strings for displaying menu items. \param keys Pointer to array of keyboard shortcuts. \param cmd Pointer to array of strings for console commands that are executed when menu item is selected.
+/// \param stickey ???
+/// \return Constructed GLwindowMenu object.
 GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
 	return new GLwindowMenu(name, count, menutitles, keys, cmd, sticky);
 }
 
+/// \brief Constructs a GLwindowMenu object of given items.
+/// \param name Title string.
+/// \param list PopupMenu object that contains list of menu items.
+/// \params flags ???
 GLwindowMenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
 	return new GLwindowMenu(name, list, flags);
 }
 
+/// \brief Constructs a GLwindowMenu object of given items.
+/// \par It's effectively same as the glwMenu function.
+/// \param name Title string.
+/// \param count Number of items.
+/// \param menutitles Pointer to array of strings for displaying menu items. \param keys Pointer to array of keyboard shortcuts. \param cmd Pointer to array of strings for console commands that are executed when menu item is selected.
+/// \param stickey ???
+/// \return Constructed GLwindowMenu object.
 GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky) : st(title), count(acount), menus(NULL){
 	glwindow *ret = this;
 	int i, len, maxlen = 0;
@@ -740,6 +796,8 @@ GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list, unsigned af
 	height = (1 + count) * fontheight;
 }
 
+/// \brief Adds an item to the menu.
+/// Window size is expanded.
 GLwindowMenu *GLwindowMenu::addItem(const char *title, int key, const char *cmd){
 	menus->append(title, key, cmd);
 	GLWrect cr = clientRect();

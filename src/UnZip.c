@@ -141,7 +141,7 @@ void *ZipUnZipV(int fromMemory, FILE *fp, const char *fname, const char *ename, 
 			return ret;
 		}
 
-		/* Bail if not the compression algorithm is not deflate */
+		/* Bail if the compression algorithm is not deflate */
 		if(lh.method != 8)
 			return NULL;
 

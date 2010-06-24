@@ -88,10 +88,14 @@ int glcullFrustum(const double (*pos)[3], double rad, const struct glcull *gc){
 /* returned value can be negative! */
 double glcullScale(const double (*pos)[3], const struct glcull *gc){
 	avec3_t delta;
+	double sp;
 	if(gc->ortho)
 		return gc->res / gc->zfar;
 	VECSUB(delta, *pos, gc->viewpoint);
-	return 1. / VECSP(delta, gc->viewdir) / gc->fov * gc->res;
+	sp = VECSP(delta, gc->viewdir);
+	if(!sp)
+		return 0.;
+	return 1. / sp / gc->fov * gc->res;
 }
 
 

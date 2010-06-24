@@ -104,7 +104,8 @@ void Lagrange1CS::anim(double dt){
 	delta = pos2 - pos1;
 	pos = delta * f;
 	pos += pos1;
-	velo = (pos - oldpos) * (1. / dt);
+	if(dt)
+		velo = (pos - oldpos) * (1. / dt);
 }
 
 bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
@@ -148,7 +149,8 @@ void Lagrange2CS::anim(double dt){
 	delta = pos2 - pos1;
 	pos = delta * -1.;
 	pos += pos1;
-	velo = (pos - oldpos) * (1. / dt);
+	if(dt)
+		velo = (pos - oldpos) * (1. / dt);
 }
 
 

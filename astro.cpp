@@ -97,8 +97,10 @@ void OrbitCS::anim(double dt){
 			orbit_phase += omega * dt * dist / r;
 		}
 		pos += orbpos;
-		velo = pos - oldpos;
-		velo *= 1. / dt;
+		if(dt){
+			velo = pos - oldpos;
+			velo *= 1. / dt;
+		}
 	}
 	rot = rot.quatrotquat(omg * dt * astro_timescale);
 	st::anim(dt);

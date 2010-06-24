@@ -50,6 +50,7 @@ extern "C"{
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#include <float.h>
 #define exit something_meanless
 /*#include <windows.h>*/
 #undef exit
@@ -318,7 +319,7 @@ static void drawindics(Viewer *vw){
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "Wk %d", wire_kills);
 			diprint(buf, 0, y += 12);
-			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, (double)bullet_hits / bullet_shoots);
+			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, bullet_shoots ? (double)bullet_hits / bullet_shoots : 0.);
 			diprint(buf, 0, y += 12);
 #ifdef _DEBUG
 /*			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
@@ -329,7 +330,7 @@ static void drawindics(Viewer *vw){
 */
 #endif
 		}
-		sprintf(buf, "Frame rate: %6.2lf fps", 1. / vw->dt);
+		sprintf(buf, "Frame rate: %6.2lf fps", vw->dt ? 1. / vw->dt : 0.);
 		diprint(buf, gvp.w - 8 * strlen(buf), 12);
 		sprintf(buf, "wdtime: %10.8lf/%10.8lf sec", wdtime, vw->dt);
 		diprint(buf, gvp.w - 8 * strlen(buf), 24);
@@ -1567,6 +1568,11 @@ static int cmd_sq(int argc, char *argv[]){
 
 int main(int argc, char *argv[])
 {
+#if defined _WIN32 && defined _DEBUG
+	// Unmask invalid floating points to detect bugs
+	unsigned flags = _controlfp(0,_EM_INVALID|_EM_ZERODIVIDE);
+	printf("controlfp %p\n", flags);
+#endif
 	HSQUIRRELVM &v = g_sqvm;
 
 	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);

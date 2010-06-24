@@ -342,7 +342,7 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 /*	drawpsphere(a, COLOR32RGBA(191,191,191,255));*/
 	double dist, as, cas, sas;
 	double x, z, phi, theta;
-	double zoom, spe;
+	double zoom/*, spe*/;
 	pspos = ps->calcPos(*p);
 /*	tocs(sunp, p->cs, sun.pos, sun.cs);*/
 	sunp = sunpos - p->pos;
@@ -356,9 +356,9 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 		return;
 	
 	/* estimate roughly apparent size change caused by relativity effect */
-	spe = (tp.sp(p->velo) / tp.len() / p->velolen - 1.) / 2.;
-	zoom = p->velolen == 0. || !p->relative ? 1. : (1. + (LIGHT_SPEED / (LIGHT_SPEED - p->velolen) - 1.) * spe * spe);
-	zoom *= fabs(p->gc->scale(pspos));
+//	spe = (tp.sp(p->velo) / tp.len() / p->velolen - 1.) / 2.;
+//	zoom = p->velolen == 0. || !p->relative ? 1. : (1. + (LIGHT_SPEED / (LIGHT_SPEED - p->velolen) - 1.) * spe * spe);
+	zoom = fabs(p->gc->scale(pspos));
 	if(ps->rad * /*gvp.m **/ zoom < 1e-3 /** 1e5 < dist*/)
 		return;
 
@@ -501,7 +501,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
-	double dist, tangent, scale, spe, zoom;
+	double dist, tangent, scale, zoom;
 	int i, j, jstart, fine, texenable = texlist && texmat;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
@@ -513,11 +513,9 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	params.detail = 0;
 
 	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
-/*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
 	scale = a->rad * vw->gc->scale(apos);
 
 	VECSUB(tp, apos, vw->pos);
-	spe = (VECSP(tp, vw->velo) / VECLEN(tp) / vw->velolen - 1.) / 2.;
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
@@ -743,7 +741,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 						 AstroRing *ring, double ringminrad = 0., double ringmaxrad = 0.){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
-	double dist, tangent, scale, spe, zoom;
+	double dist, tangent, scale, zoom;
 	int i, j, jstart, fine, texenable = texlist;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
@@ -758,7 +756,6 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	scale = a->rad * vw->gc->scale(apos);
 
 	Vec3d tp = apos - vw->pos;
-	spe = (tp.sp(vw->velo) / tp.len() / vw->velolen - 1.) / 2.;
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 5.){
@@ -932,6 +929,8 @@ static void atmo_dye_vertex(struct atmo_dye_vertex_param &p, double x, double y,
 }
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
+	// Don't call me in the first place!
+	if(thick == 0.) return;
 	int hdiv = slices == 0 ? 16 : slices;
 	int s, t;
 	double (*hcuts)[2];

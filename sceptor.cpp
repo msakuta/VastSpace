@@ -1157,18 +1157,22 @@ void Sceptor::anim(double dt){
 			}
 
 			{/* explode shockwave thingie */
+#if 0
 				Quatd q;
 				double p;
 				Vec3d dr = vec3_001;
 
-				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+				// half-angle formula of trigonometry replaces expensive tri-functions to square root
+				// cos(acos(dr[2]) / 2.)
+				q[3] = sqrt((dr[2] + 1.) / 2.) ;
 
 				Vec3d v = vec3_001.vp(dr);
 				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
 				q = v * p;
+				q = quat_u;
 
 				AddTeline3D(tell, this->pos, vec3_000, 1., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
+#endif
 				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
 			this->w = NULL;

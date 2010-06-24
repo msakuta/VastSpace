@@ -298,6 +298,7 @@ int Attacker::takedamage(double damage, int hitpart){
 			}
 
 			{/* explode shockwave thingie */
+#if 0 // Shockwave effect is difficult in that which direction it should expand and how to sort order among other tranparencies.
 				static const double pyr[3] = {M_PI / 2., 0., 0.};
 				amat3_t ort;
 				Vec3d dr, v;
@@ -312,10 +313,16 @@ int Attacker::takedamage(double damage, int hitpart){
 				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
 				v = vec3_001.vp(dr);
-				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-				q = v * p;
+				double vl = v.len();
+				if(vl){
+					p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+					q = v * p;
+				}
+				else
+					q = quat_u;
 
 				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+#endif
 				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}

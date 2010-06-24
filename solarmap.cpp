@@ -989,7 +989,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			int keys[5];
 			char cmds0[5][128], *cmds[5];
 			int i = 0, j = 0;
-			glwindow *glw;
+			GLwindow *glw;
 			extern int s_mousex, s_mousey;
 
 //			sprintf(titles[j] = titles0[i], "Focus");
@@ -1115,8 +1115,8 @@ void GLwindowSolarMap::anim(double dt){
 }
 
 GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
-	glwindow *ret;
-	glwindow **ppwnd;
+	GLwindow *ret;
+	GLwindow **ppwnd;
 	static const char *windowtitle = "Solarsystem browser";
 	ppwnd = findpp(&glwlist, &TitleCmp("Solarsystem browser"));
 	if(!ppwnd){

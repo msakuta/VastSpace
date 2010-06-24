@@ -75,7 +75,7 @@ int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
 static int cmdwnd = 0;
 static bool g_focusset = false;
-glwindow *glwcmdmenu = NULL;
+GLwindow *glwcmdmenu = NULL;
 
 int s_mousex, s_mousey;
 static int s_mousedragx, s_mousedragy;
@@ -1266,7 +1266,7 @@ static void special_func(int key, int x, int y){
 	}
 	if(glwfocus){
 		int ret;
-		glwindow **referrer;
+		GLwindow **referrer;
 		ret = glwfocus->specialKey(key);
 		if(ret)
 			return;

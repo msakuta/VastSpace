@@ -772,7 +772,7 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 	const char *subtitles[64];
 	coordsys *reta[64], **retp = reta;
 	static const char *windowtitle = "Warp Destination";
-	glwindow *wnd, **ppwnd;
+	GLwindow *wnd, **ppwnd;
 	int left, i;
 	ppwnd = GLwindow::findpp(&glwlist, &GLwindow::TitleCmp(windowtitle));
 	if(ppwnd){

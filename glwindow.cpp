@@ -1,6 +1,6 @@
-/** \file glwindow.cpp
- * Implementation of GLwindow and its subclasses.
- * Implements GLbutton branch too.
+/** \file
+ * \brief Implementation of GLwindow and its subclasses.
+ * Implements GLWbutton branch too.
  */
 #include "glwindow.h"
 #include "cmd.h"
@@ -24,6 +24,7 @@ static double glwfontscale = 1.;
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
 
+/// Window margin
 const long margin = 4;
 
 
@@ -47,7 +48,9 @@ GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 	glwActivate(&glwlist);
 }
 
-glwindow **glwAppend(glwindow *wnd){
+/// Appends a GLwindow to screen window list.
+/// Usually calling this function manually is not necessary because the constructor does it.
+GLwindow **glwAppend(GLwindow *wnd){
 	assert(wnd != glwlist);
 	wnd->next = glwlist;
 	glwlist = wnd;
@@ -55,8 +58,9 @@ glwindow **glwAppend(glwindow *wnd){
 }
 
 /// Brings the given window on top and set keyboard focus on it.
-void glwActivate(glwindow **ppwnd){
-	glwindow **last, *wnd = *ppwnd;
+/// \relates GLwindow
+void glwActivate(GLwindow **ppwnd){
+	GLwindow **last, *wnd = *ppwnd;
 /*	for(last = &glwlist; *last; last = &(*last)->next);
 	if(last != &(*ppwnd)->next){
 		*last = *ppwnd;
@@ -262,7 +266,7 @@ void GLwindow::glwDraw(GLwindowState &vp, double t, int *minix){
  */
 void GLwindow::glwDrawMinimized(GLwindowState &gvp, double t, int *pp){
 	GLwindow *wndy = this;
-	glwindow *wnd;
+	GLwindow *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
 	for(wnd = glwlist; wnd; wnd = wnd->next) if(wnd->flags & GLW_COLLAPSE){
 		int wx, wy, ww, wh;
@@ -284,8 +288,8 @@ void GLwindow::glwAnim(double dt){
 }
 
 /// Finds and returns pointer to pointer to the object.
-glwindow **glwFindPP(glwindow *wnd){
-	glwindow **ret;
+GLwindow **glwFindPP(GLwindow *wnd){
+	GLwindow **ret;
 	for(ret = &glwlist; *ret; ret = &(*ret)->next) if(*ret == wnd)
 		return ret;
 	return NULL;
@@ -293,7 +297,7 @@ glwindow **glwFindPP(glwindow *wnd){
 
 void GLwindow::glwFree(){
 	GLwindow *wnd = this;
-	glwindow **ppwnd, *wnd2;
+	GLwindow **ppwnd, *wnd2;
 	if(wnd == glwfocus)
 		glwfocus = glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next;
 	for(wnd2 = glwlist; wnd2; wnd2 = wnd2->next) if(wnd2->modal == wnd)
@@ -358,7 +362,7 @@ GLwindow::~GLwindow(){
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
 	static int messagecount = 0;
 	int ret = 0, killfocus;
-	glwindow **ppwnd, *wnd;
+	GLwindow **ppwnd, *wnd;
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
 	int nowheel = !(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN);
 	int titleheight = fontheight + margin;
@@ -601,7 +605,7 @@ void GLwindow::mouseDrag(int x, int y){
 
 
 
-void glwVScrollBarDraw(glwindow *wnd, int x0, int y0, int w, int h, int range, int iy){
+void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy){
 	int x1 = x0 + w, y1 = y0 + h, ypos = range <= 1 ? 0 : (h - 30) * iy / (range - 1);
 	glColor4ub(191,191,47,255);
 	glBegin(GL_QUADS);
@@ -640,7 +644,7 @@ void glwVScrollBarDraw(glwindow *wnd, int x0, int y0, int w, int h, int range, i
 	glEnd();
 }
 
-int glwVScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy){
+int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy){
 	int x1 = x0 + w, y1 = y0 + h;
 	if(mousex < x0 || x1 < mousex || mousey < y0 || y1 < mousey)
 		return -1;
@@ -733,6 +737,7 @@ GLwindowMenu::~GLwindowMenu(){
 /// \param menutitles Pointer to array of strings for displaying menu items. \param keys Pointer to array of keyboard shortcuts. \param cmd Pointer to array of strings for console commands that are executed when menu item is selected.
 /// \param stickey ???
 /// \return Constructed GLwindowMenu object.
+/// \relates GLwindowMenu
 GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
 	return new GLwindowMenu(name, count, menutitles, keys, cmd, sticky);
 }
@@ -741,6 +746,7 @@ GLwindowMenu *glwMenu(const char *name, int count, const char *const menutitles[
 /// \param name Title string.
 /// \param list PopupMenu object that contains list of menu items.
 /// \params flags ???
+/// \relates GLwindowMenu
 GLwindowMenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
 	return new GLwindowMenu(name, list, flags);
 }
@@ -753,7 +759,7 @@ GLwindowMenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
 /// \param stickey ???
 /// \return Constructed GLwindowMenu object.
 GLwindowMenu::GLwindowMenu(const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky) : st(title), count(acount), menus(NULL){
-	glwindow *ret = this;
+	GLwindow *ret = this;
 	int i, len, maxlen = 0;
 //	menus = (glwindowmenuitem*)malloc(count * sizeof(*menus));
 	xpos = !sticky * 50;
@@ -848,8 +854,8 @@ public:
 	}
 };
 
-glwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
-	glwindow *ret;
+GLwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
+	GLwindow *ret;
 	GLwindowMenu *p;
 	int i, len, maxlen = 0;
 	ret = new GLwindowPopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
@@ -1044,6 +1050,31 @@ int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex
 	return 0;
 }
 
+GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips){
+	xpos = ypos = 0;
+	width = height = 32;
+	texname = CallCacheBitmap(filename, filename, NULL, NULL);
+	texname1 = CallCacheBitmap(filename1, filename1, NULL, NULL);
+/*	if(command){
+		this->command = new const char[strlen(command) + 1];
+		strcpy(const_cast<char*>(this->command), command);
+	}
+	else
+		this->command = NULL;*/
+
+	if(tips){
+		this->tipstring = new const char[strlen(tips) + 1];
+		strcpy(const_cast<char*>(this->tipstring), tips);
+	}
+	else
+		this->tipstring = NULL;
+}
+
+GLWstateButton::~GLWstateButton(){
+//	delete command;
+	delete tipstring;
+}
+
 void GLWcommandButton::mouseLeave(GLwindowState &ws){
 	depress = false;
 	if(glwtip->parent == this){
@@ -1054,6 +1085,24 @@ void GLWcommandButton::mouseLeave(GLwindowState &ws){
 }
 
 
+/// Draws button image. Button image 0 is drawn when not
+/// active.
+void GLWstateButton::draw(GLwindowState &ws, double){
+	GLubyte mod = /*depress ? 127 :*/ 255;
+	GLuint texname = depress() ? this->texname : this->texname1;
+	if(!texname)
+		return;
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	glColor4ub(mod,mod,mod,255);
+	glCallList(texname);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
+	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);
+	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos + height);
+	glTexCoord2i(0,1); glVertex2i(xpos, ypos + height);
+	glEnd();
+	glPopAttrib();
+}
 
 
 
@@ -1158,22 +1207,25 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 
 
-/* String font is a fair problem. Normally glBitmap is liked to print
+/** String font is a fair problem. Normally glBitmap is liked to print
   strings, but it's so slow, because bitmap is not cached in video memory.
+
    Texture fonts, on the other hand, could be very fast in hardware
   accelerated video rendering device, but they require some transformation
   prior to printing, whose load could defeat benefit of caching.
+
    Finally we leave the decision to the user by providing it as a cvar. */
 int r_texture_font = 1;
 static double s_raspo[4];
 
+/// Sets the raster position for outputting string with glwprintf().
 void glwpos2d(double x, double y){
 	glRasterPos2d(x, y);
 	s_raspo[0] = x;
 	s_raspo[1] = y-2;
 }
 
-/* UI strings are urged to be printed by this function. */
+/// UI strings are urged to be printed by this function.
 int glwprintf(const char *f, ...){
 	static char buf[512]; /* it's not safe but unlikely to be reached */
 	int ret;

@@ -6,19 +6,26 @@ extern "C"{
 #include <clib/c.h>
 #include <string.h>
 }
+/** \file
+ * \brief A header for OpenGL window system.
+ *
+ * OpenGL window system is somewhat like Windows' one, it has messaging mechanism
+ * to notify and response events. The difference is that it does not have a message
+ * queue like Windows. All messages are sent from calling thread immediately.
+ */
 
 /* flags */
-#define GLW_CLOSE		1
-#define GLW_SIZEABLE	2
-#define GLW_COLLAPSABLE 4
-#define GLW_COLLAPSE	8
-#define GLW_PINNABLE	0x10
-#define GLW_PINNED		0x20
-#define GLW_SIZEPROP	0x40 /* proportional size change, i.e. ratio is reserved */
-#define GLW_POPUP		0x80 /* hidden as soon as defocused */
-#define GLW_TIP			0x100 /* hidden as soon as the cursor moves out */
-#define GLW_INVISIBLE   0x200
-#define GLW_TODELETE	0x8000
+#define GLW_CLOSE		1 ///< Presense of close button (x) at titlebar.
+#define GLW_SIZEABLE	2 ///< Whether this window is sizeable.
+#define GLW_COLLAPSABLE 4 ///< Collapsable window has a button on its titlebar to toggle collapsed state.
+#define GLW_COLLAPSE	8 ///< Whether this window is collapsed.
+#define GLW_PINNABLE	0x10 ///< Pinnable window has a button on its titlebar to toggle pinned state.
+#define GLW_PINNED		0x20 ///< Pinned window cannot be moved nor focused.
+#define GLW_SIZEPROP	0x40 ///< proportional size change, i.e. ratio is reserved
+#define GLW_POPUP		0x80 ///< hidden as soon as defocused
+#define GLW_TIP			0x100 ///< hidden as soon as the cursor moves out
+#define GLW_INVISIBLE   0x200 ///< default (false) is visible
+#define GLW_TODELETE	0x8000 ///< Being deleted by the end of the frame
 
 // Namespaces does not solve all the problems.
 /// Rectangle object like Windows RECT structure.
@@ -93,7 +100,7 @@ protected:
  *
  * GLwindow is also bound to Squirrel class object.
  */
-typedef class GLwindow : public GLcomponent{
+class GLwindow : public GLcomponent{
 public:
 	typedef GLwindow st;
 
@@ -178,7 +185,7 @@ protected:
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
-} glwindow;
+};
 
 template<class C> inline GLwindow **GLwindow::findpp(GLwindow **root, C compar){
 	for(GLwindow **pp = root; *pp; pp = &(*pp)->next) if((*compar)(*pp))
@@ -204,10 +211,10 @@ extern int glwdragpos[2];
 /* UI strings are urged to be printed by this function. */
 void glwpos2d(double x, double y);
 int glwprintf(const char *f, ...);
-void glwVScrollBarDraw(glwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
-void glwHScrollBarDraw(glwindow *wnd, int x0, int y0, int w, int h, int range, int ix);
-int glwVScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
-int glwHScrollBarMouse(glwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
+void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
+void glwHScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int ix);
+int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
+int glwHScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
 
 /// Window that lists menus. Menu items are bound to console commands.
 class GLwindowMenu : public GLwindow{
@@ -238,12 +245,12 @@ extern const int glwMenuAllAllocated[];
 extern const char glwMenuSeparator[];
 GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 GLwindowMenu *glwMenu(const char *title, const PopupMenu &, unsigned flags);
-glwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
+GLwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
 GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenu &);
 
 
 /// Base class for sizeable windows.
-class GLwindowSizeable : public glwindow{
+class GLwindowSizeable : public GLwindow{
 protected:
 	float ratio; /* ratio of window size if it is to be reserved */
 	int sizing; /* edge flags of changing borders */
@@ -287,11 +294,20 @@ public:
 	unsigned texname, texname1;
 	const char *command;
 	const char *tipstring;
-	bool depress()const;
-	GLWstateButton(const char *filename, const char *filename1command, const char *tips = NULL);
+	virtual bool depress()const; ///< Override to define depressed state.
+	GLWstateButton(const char *filename, const char *filename1, const char *tips = NULL);
+	virtual ~GLWstateButton();
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
+};
+
+class GLWtoggleCvarButton : public GLWstateButton{
+public:
+	int &var;
+	bool depress()const;
+	GLWtoggleCvarButton(const char *filename, const char *filename1, int &cvar, const char *tip = NULL) :
+		GLWstateButton(filename, filename1, tip), var(cvar){}
 };
 
 /// A window with GLWbuttons in matrix.

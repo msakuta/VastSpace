@@ -52,18 +52,7 @@ static int cmdlists = 0;
 #define CVAR_BUCKETS 53
 
 /* hash table */
-static struct cvar{
-	enum cvartype type;
-	const char *name;
-	struct cvar *next, *linear;
-	union{
-		int *i;
-		float *f;
-		double *d;
-		char *s;
-	} v;
-	int (*vrc)(void *); /* Value Range Check */
-} *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
+static struct cvar *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
 static int cvarlists = 0;
 
 /* binary tree */

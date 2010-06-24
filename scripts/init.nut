@@ -322,7 +322,7 @@ function init_Universe(){
 	sysbut.x = screenwidth() - sysbut.width;
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.jpg", "Exit game");
-	sysbut.addButton("toggle pause", "textures/pause.jpg", "Toggle Pause");
+	sysbut.addToggleButton("pause", "textures/pause.jpg", "textures/unpause.jpg", "Toggle Pause");
 	sysbut.pinned = true;
 }
 

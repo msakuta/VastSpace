@@ -367,7 +367,6 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 	int nowheel = !(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN);
 	int titleheight = fontheight + margin;
 
-	printf("mc %d\n", messagecount);
 	for(ppwnd = &glwlist; *ppwnd;){
 		int wx, wy, ww, wh;
 		wnd = *ppwnd;
@@ -1050,7 +1049,18 @@ int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex
 	return 0;
 }
 
-GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips){
+void GLWcommandButton::mouseLeave(GLwindowState &ws){
+	depress = false;
+	if(glwtip->parent == this){
+		glwtip->tips = NULL;
+		glwtip->parent = NULL;
+		glwtip->setExtent(GLWrect(-10,-10,-10,-10));
+	}
+}
+
+
+
+GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips) : depress(false){
 	xpos = ypos = 0;
 	width = height = 32;
 	texname = CallCacheBitmap(filename, filename, NULL, NULL);
@@ -1075,7 +1085,48 @@ GLWstateButton::~GLWstateButton(){
 	delete tipstring;
 }
 
-void GLWcommandButton::mouseLeave(GLwindowState &ws){
+int GLWstateButton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
+	if(!extentRect().include(mousex, mousey)){
+		depress = false;
+		if(glwtip->parent == this){
+			glwtip->tips = NULL;
+			glwtip->parent = NULL;
+			glwtip->setVisible(false);
+		}
+		return 0;
+	}
+	else if(state == GLUT_KEEP_UP && tipstring){
+		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
+		GLWrect parentrect = parent->clientRect();
+		localrect.rmove(parentrect.l, parentrect.t);
+
+		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
+		if(ws.w < localrect.r)
+			localrect.rmove(ws.w - localrect.r, 0);
+		if(ws.h < localrect.b)
+			localrect.rmove(0, ws.h - localrect.b);
+
+		glwtip->setExtent(localrect);
+		glwtip->tips = tipstring;
+		glwtip->parent = this;
+		glwtip->setVisible(true);
+		glwActivate(glwFindPP(glwtip));
+//		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
+	}
+	if(state == GLUT_UP){
+		if(depress){
+			depress = false;
+			press();
+			return 1;
+		}
+	}
+	else if(state == GLUT_DOWN){
+		depress = true;
+	}
+	return 0;
+}
+
+void GLWstateButton::mouseLeave(GLwindowState &ws){
 	depress = false;
 	if(glwtip->parent == this){
 		glwtip->tips = NULL;
@@ -1084,12 +1135,11 @@ void GLWcommandButton::mouseLeave(GLwindowState &ws){
 	}
 }
 
-
 /// Draws button image. Button image 0 is drawn when not
 /// active.
 void GLWstateButton::draw(GLwindowState &ws, double){
-	GLubyte mod = /*depress ? 127 :*/ 255;
-	GLuint texname = depress() ? this->texname : this->texname1;
+	GLubyte mod = depress ? 127 : 255;
+	GLuint texname = state() ? this->texname : this->texname1;
 	if(!texname)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
@@ -1104,6 +1154,16 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
+
+
+
+bool GLWtoggleCvarButton::state()const{
+	return var;
+}
+
+void GLWtoggleCvarButton::press(){
+	var = !var;
+}
 
 
 

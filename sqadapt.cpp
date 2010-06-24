@@ -1,5 +1,6 @@
 #include "sqadapt.h"
 #include "cmd.h"
+#include "cmd_int.h"
 #include "Universe.h"
 #include "Entity.h"
 #include "Player.h"
@@ -643,6 +644,30 @@ static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
 		tips = NULL;
 	GLWcommandButton *b = new GLWcommandButton(path, cmd, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *cvarname, *path, *path1, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
+		return SQ_ERROR;
+	cvar *cv = CvarFind(cvarname);
+	if(!cv || cv->type != cvar_int)
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &path1)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 5, &tips)))
+		tips = NULL;
+	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, *cv->v.i, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));
@@ -1373,6 +1398,9 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("addButton"), -1);
 	sq_newclosure(v, sqf_GLWbuttonMatrix_addButton, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("addToggleButton"), -1);
+	sq_newclosure(v, sqf_GLWbuttonMatrix_addToggleButton, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

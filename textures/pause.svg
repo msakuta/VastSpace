@@ -276,7 +276,7 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="10"
-     inkscape:cx="37.869565"
+     inkscape:cx="30.732391"
      inkscape:cy="27.847869"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -311,7 +311,7 @@
        x="65.909103"
        y="160.08945"
        transform="matrix(0.1,0,0,0.1,59.318193,720.0805)"
-       inkscape:export-filename="E:\projects\gltestplus\textures\pause.png"
+       inkscape:export-filename="E:\projects\gltestplus\textures\unpause.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
   </g>
@@ -376,7 +376,8 @@
   <g
      inkscape:groupmode="layer"
      id="layer3"
-     inkscape:label="over">
+     inkscape:label="over"
+     style="display:none">
     <path
        sodipodi:type="arc"
        style="fill:#dc3732;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
@@ -394,5 +395,27 @@
        height="4.9788823"
        x="34.364906"
        y="41.560547" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="over2"
+     style="display:inline">
+    <path
+       sodipodi:type="star"
+       style="fill:#3bcd32;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.245;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="path2866"
+       sodipodi:sides="3"
+       sodipodi:cx="42.400002"
+       sodipodi:cy="44.700001"
+       sodipodi:r1="19.400257"
+       sodipodi:r2="9.7001286"
+       sodipodi:arg1="0"
+       sodipodi:arg2="1.0471976"
+       inkscape:flatsided="false"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 61.800259,44.700001 -14.550194,8.400558 -14.550192,8.400557 0,-16.801116 0,-16.801115 14.550193,8.400558 14.550193,8.400558 z"
+       transform="translate(-1.2,-0.3)" />
   </g>
 </svg>

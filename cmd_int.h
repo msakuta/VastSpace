@@ -10,6 +10,18 @@ extern "C"{
 #define MAX_COMMAND_HISTORY 32
 #define MAX_ARGC 32
 
+struct cvar{
+	enum cvartype type;
+	const char *name;
+	struct cvar *next, *linear;
+	union{
+		int *i;
+		float *f;
+		double *d;
+		char *s;
+	} v;
+	int (*vrc)(void *); /* Value Range Check */
+};
 
 extern char cmdbuffer[CB_LINES][CB_CHARS];
 extern int cmdcurline;

@@ -294,20 +294,23 @@ public:
 	unsigned texname, texname1;
 	const char *command;
 	const char *tipstring;
-	virtual bool depress()const; ///< Override to define depressed state.
+	bool depress;
 	GLWstateButton(const char *filename, const char *filename1, const char *tips = NULL);
 	virtual ~GLWstateButton();
 	virtual void draw(GLwindowState &, double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
+	virtual bool state()const = 0; ///< Override to define depressed state.
+	virtual void press() = 0;
 };
 
 class GLWtoggleCvarButton : public GLWstateButton{
 public:
 	int &var;
-	bool depress()const;
 	GLWtoggleCvarButton(const char *filename, const char *filename1, int &cvar, const char *tip = NULL) :
 		GLWstateButton(filename, filename1, tip), var(cvar){}
+	virtual bool state()const;
+	virtual void press();
 };
 
 /// A window with GLWbuttons in matrix.

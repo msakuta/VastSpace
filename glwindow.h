@@ -182,6 +182,9 @@ protected:
 
 	/// Destructor method, NULL permitted.
 	virtual ~GLwindow();
+
+	/// The window which the mouse pointer floating over at the last frame.
+	static GLwindow *lastover;
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -329,15 +332,20 @@ public:
 };
 
 
-inline void GLwindow::glwpostframe(){
-	for(GLwindow *glw = glwlist; glw; glw = glw->next)
-		glw->postframe();
-}
 
 
 
 // Implementation
 
+/// Runs postframe for all windows. Also takes care of lastover pointer.
+inline void GLwindow::glwpostframe(){
+	for(GLwindow *glw = glwlist; glw; glw = glw->next)
+		glw->postframe();
+
+	// Window being destroyed will cause dangling pointer with mouse pointer over it.
+	if(lastover && lastover->flags & GLW_TODELETE)
+		lastover = NULL;
+}
 
 /// Pinned window cannot be focused.
 inline void GLwindow::setPinned(bool f){

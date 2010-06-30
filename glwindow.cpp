@@ -358,6 +358,8 @@ GLwindow::~GLwindow(){
 		delete[] title;
 }
 
+GLwindow *GLwindow::lastover = NULL;
+
 /// Handles titlebar button events or otherwise call mouse() virtual function.
 int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp){
 	static int messagecount = 0;
@@ -372,7 +374,6 @@ int GLwindow::mouseFunc(int button, int state, int x, int y, GLwindowState &gvp)
 		wnd = *ppwnd;
 		if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 			GLwindowState &ws = gvp;
-			static GLwindow *lastover = NULL;
 			bool caught = false;
 			if(wnd->extentRect().include(x, y)){
 				if(lastover && lastover != wnd){
@@ -677,7 +678,7 @@ void GLwindowMenu::draw(GLwindowState &ws, double t){
 	for(i = 0; i < count; i++, item = item->next) if(item->isSeparator()){
 		glBegin(GL_LINES);
 		glVertex2d(r.l + fontwidth / 2, r.t + (0 + i) * fontheight + 6);
-		glVertex2d(r.r - fontwidth / 2, r.b + (0 + i) * fontheight + 6);
+		glVertex2d(r.r - fontwidth / 2, r.t + (0 + i) * fontheight + 6);
 		glEnd();
 	}
 	else{

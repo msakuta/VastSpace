@@ -958,8 +958,47 @@ static GLWtip *glwtip = new GLWtip();
 const char *GLWbutton::classname()const{return "GLWbutton";}
 void GLWbutton::mouseEnter(GLwindowState &){}
 void GLWbutton::mouseLeave(GLwindowState &){}
+int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
+	if(!extentRect().include(mousex, mousey)){
+		depress = false;
+		if(glwtip->parent == this){
+			glwtip->tips = NULL;
+			glwtip->parent = NULL;
+			glwtip->setVisible(false);
+		}
+		return 0;
+	}
+	else if(state == GLUT_KEEP_UP && tipstring){
+		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
+		GLWrect parentrect = parent->clientRect();
+		localrect.rmove(parentrect.l, parentrect.t);
 
-GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips) : depress(false){
+		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
+		if(ws.w < localrect.r)
+			localrect.rmove(ws.w - localrect.r, 0);
+		if(ws.h < localrect.b)
+			localrect.rmove(0, ws.h - localrect.b);
+
+		glwtip->setExtent(localrect);
+		glwtip->tips = tipstring;
+		glwtip->parent = this;
+		glwtip->setVisible(true);
+		glwActivate(glwFindPP(glwtip));
+//		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
+	}
+	if(state == GLUT_UP){
+		if(depress){
+			depress = false;
+			press();
+		}
+	}
+	else if(state == GLUT_DOWN){
+		depress = true;
+	}
+	return 0;
+}
+
+GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips){
 	xpos = ypos = 0;
 	width = height = 32;
 	texname = CallCacheBitmap(filename, filename, NULL, NULL);
@@ -999,54 +1038,8 @@ void GLWcommandButton::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
-class GLWpointerCompar{
-public:
-	const GLwindow *p;
-	GLWpointerCompar(GLwindow *a) : p(a){}
-	bool operator()(const GLwindow *a){
-		return p == a;
-	}
-};
-
-
-int GLWcommandButton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
-	if(!extentRect().include(mousex, mousey)){
-		depress = false;
-		if(glwtip->parent == this){
-			glwtip->tips = NULL;
-			glwtip->parent = NULL;
-			glwtip->setVisible(false);
-		}
-		return 0;
-	}
-	else if(state == GLUT_KEEP_UP && tipstring){
-		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
-		GLWrect parentrect = parent->clientRect();
-		localrect.rmove(parentrect.l, parentrect.t);
-
-		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
-		if(ws.w < localrect.r)
-			localrect.rmove(ws.w - localrect.r, 0);
-		if(ws.h < localrect.b)
-			localrect.rmove(0, ws.h - localrect.b);
-
-		glwtip->setExtent(localrect);
-		glwtip->tips = tipstring;
-		glwtip->parent = this;
-		glwtip->setVisible(true);
-		glwActivate(glwFindPP(glwtip));
-//		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
-	}
-	if(state == GLUT_UP){
-		if(depress && command){
-			depress = false;
-			return CmdExec(command);
-		}
-	}
-	else if(state == GLUT_DOWN){
-		depress = true;
-	}
-	return 0;
+void GLWcommandButton::press(){
+	CmdExec(command);
 }
 
 void GLWcommandButton::mouseLeave(GLwindowState &ws){
@@ -1060,7 +1053,7 @@ void GLWcommandButton::mouseLeave(GLwindowState &ws){
 
 
 
-GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips) : depress(false){
+GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips){
 	xpos = ypos = 0;
 	width = height = 32;
 	texname = CallCacheBitmap(filename, filename, NULL, NULL);
@@ -1083,47 +1076,6 @@ GLWstateButton::GLWstateButton(const char *filename, const char *filename1, cons
 GLWstateButton::~GLWstateButton(){
 //	delete command;
 	delete tipstring;
-}
-
-int GLWstateButton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
-	if(!extentRect().include(mousex, mousey)){
-		depress = false;
-		if(glwtip->parent == this){
-			glwtip->tips = NULL;
-			glwtip->parent = NULL;
-			glwtip->setVisible(false);
-		}
-		return 0;
-	}
-	else if(state == GLUT_KEEP_UP && tipstring){
-		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + fontwidth * strlen(tipstring) + 3 * margin, ypos);
-		GLWrect parentrect = parent->clientRect();
-		localrect.rmove(parentrect.l, parentrect.t);
-
-		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
-		if(ws.w < localrect.r)
-			localrect.rmove(ws.w - localrect.r, 0);
-		if(ws.h < localrect.b)
-			localrect.rmove(0, ws.h - localrect.b);
-
-		glwtip->setExtent(localrect);
-		glwtip->tips = tipstring;
-		glwtip->parent = this;
-		glwtip->setVisible(true);
-		glwActivate(glwFindPP(glwtip));
-//		glwActivate(GLwindow::findpp(&glwlist, &GLWpointerCompar(glwtip)));
-	}
-	if(state == GLUT_UP){
-		if(depress){
-			depress = false;
-			press();
-			return 1;
-		}
-	}
-	else if(state == GLUT_DOWN){
-		depress = true;
-	}
-	return 0;
 }
 
 void GLWstateButton::mouseLeave(GLwindowState &ws){

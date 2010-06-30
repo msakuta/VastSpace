@@ -266,11 +266,15 @@ class GLWbutton : public GLcomponent{
 public:
 	const char *classname()const;
 	GLwindow *parent;
+	const char *tipstring;
+	bool depress;
+	GLWbutton() : parent(NULL), tipstring(NULL), depress(false){}
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
-	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y) = 0;
+	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	virtual void mouseEnter(GLwindowState &);
 	virtual void mouseLeave(GLwindowState &);
+	virtual void press() = 0;
 	virtual ~GLWbutton(){}
 };
 
@@ -279,12 +283,11 @@ class GLWcommandButton : public GLWbutton{
 public:
 	unsigned texname;
 	const char *command;
-	const char *tipstring;
-	bool depress;
 	GLWcommandButton(const char *filename, const char *command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
-	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+//	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
+	virtual void press();
 	virtual ~GLWcommandButton();
 };
 
@@ -293,12 +296,10 @@ class GLWstateButton : public GLWbutton{
 public:
 	unsigned texname, texname1;
 	const char *command;
-	const char *tipstring;
-	bool depress;
 	GLWstateButton(const char *filename, const char *filename1, const char *tips = NULL);
 	virtual ~GLWstateButton();
 	virtual void draw(GLwindowState &, double);
-	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
+//	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
 	virtual bool state()const = 0; ///< Override to define depressed state.
 	virtual void press() = 0;

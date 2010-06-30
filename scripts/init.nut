@@ -306,6 +306,7 @@ function init_Universe(){
 	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
 
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
+	player.setrot(Quatd(0., 1., 0., 0.));
 
 	local sch = screenheight();
 	local but = GLWbuttonMatrix(3, 3);

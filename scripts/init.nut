@@ -318,13 +318,14 @@ function init_Universe(){
 	but.addButton("undock", "textures/undock.jpg", "Undock");
 	but.pinned = true;
 
-	local cambut = GLWbuttonMatrix(3, 1);
+	local cambut = GLWbuttonMatrix(4, 1);
 	cambut.title = "Camera";
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
-	cambut.addButton("chasecamera", "textures/focus.jpg", "Focus");
+	cambut.addButton("chasecamera", "textures/focus.jpg", "Follow Camera");
 	cambut.addButton("mover cycle", "textures/cammode.jpg", "Switch Camera Mode");
 	cambut.addButton("originrotation", "textures/resetrot.jpg", "Reset Camera Rotation");
+	cambut.addButton("eject", "textures/eject.jpg", "Eject Camera");
 	cambut.pinned = true;
 
 	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);

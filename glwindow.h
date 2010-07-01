@@ -163,10 +163,13 @@ public:
 	virtual void postframe();
 	static void glwpostframe();
 	GLwindow *getNext(){return next;} ///< \brief Getter for next member.
+	void setClosable(bool f){if(f) flags |= GLW_CLOSE; else flags &= ~GLW_CLOSE;}
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
+	bool getClosable()const{return flags & GLW_CLOSE;}
 	bool getPinned()const{return flags & GLW_PINNED;}
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
+	static GLwindow *getCaptor(){return captor;}
 protected:
 	GLwindow(const char *title = NULL);
 	char *title;
@@ -183,8 +186,11 @@ protected:
 	/// Destructor method, NULL permitted.
 	virtual ~GLwindow();
 
+	static int mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int key, int state, int x, int y, int minix, int miniy);
+
 	/// The window which the mouse pointer floating over at the last frame.
 	static GLwindow *lastover;
+	static GLwindow *captor; ///< Mouse captor
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -345,6 +351,8 @@ inline void GLwindow::glwpostframe(){
 	// Window being destroyed will cause dangling pointer with mouse pointer over it.
 	if(lastover && lastover->flags & GLW_TODELETE)
 		lastover = NULL;
+	if(captor && captor->flags & GLW_TODELETE)
+		captor = NULL;
 }
 
 /// Pinned window cannot be focused.

@@ -308,7 +308,18 @@ function init_Universe(){
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
 	player.setrot(Quatd(0., 1., 0., 0.));
 
+	local scw = screenwidth();
 	local sch = screenheight();
+
+	local entlist = GLWentlist();
+	entlist.x = scw - 300;
+	entlist.width = 300;
+	entlist.y = 100;
+	entlist.height = 200;
+	entlist.closable = true;
+	entlist.pinnable = true;
+	entlist.pinned = true;
+
 	local but = GLWbuttonMatrix(3, 3);
 	but.title = "Entity Commands";
 	but.x = 0;
@@ -330,7 +341,7 @@ function init_Universe(){
 
 	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);
 	sysbut.title = "System Commands";
-	sysbut.x = screenwidth() - sysbut.width;
+	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.jpg", "Exit game");
 	sysbut.addToggleButton("pause", "textures/pause.jpg", "textures/unpause.jpg", "Toggle Pause");

@@ -255,7 +255,6 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		drawastro(vw, cs2, model);
 }
 
-#define OV_COUNT 32 /* Overview */
 
 static double diprint(const char *s, double x, double y){
 	glPushMatrix();
@@ -341,66 +340,7 @@ static void drawindics(Viewer *vw){
 		}
 		glPopMatrix();
 	}
-	{
-		const WarField *const w = vw->cs->w;
-		const char *names[OV_COUNT];
-		const Entity *tanks[OV_COUNT] = {NULL};
-		int counts[OV_COUNT];
-		int i, n;
-
-		{
-			const Entity *pt;
-			for(n = 0, pt = pl.selected; pt; pt = pt->selectnext){
-
-				/* show only member of current team */
-/*				if(pl.chase && pl.race != pt->race)
-					continue;*/
-
-				for(i = 0; i < n; i++) if(!strcmp(names[i], pt->dispname()))
-					break;
-				if(i == n/* || current_vft == vfts[i]*/){
-					names[n] = pt->dispname();
-					counts[n] = 1;
-					tanks[n] = pt;
-					if(++n == OV_COUNT)
-						break;
-				}
-				else
-					counts[i]++;
-			}
-/*			memcpy(g_counts, counts, sizeof g_vfts);
-			memcpy(g_vfts, vfts, sizeof g_vfts);
-			memcpy(g_tanks, tanks, sizeof g_vfts);*/
-		}
-
-		{
-			GLint vp[4];
-			int w, h, m, mi;
-			double left, bottom;
-			glGetIntegerv(GL_VIEWPORT, vp);
-			w = vp[2], h = vp[3];
-			m = w < h ? h : w;
-			mi = MIN(h, w);
-			left = -(double)w / m;
-			bottom = -(double)h / m;
-
-			glPushMatrix();
-			glLoadIdentity();
-
-			projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, 0, h, -1, 1)));
-			for(i = 0; i < n; i++){
-//				if(pl.selected ? tanks[i] == pl.selected : vfts[i] == current_vft)
-//					glPushAttrib(GL_CURRENT_BIT), glColor4ub(255,255,255,255);
-				glRasterPos2i(w - 160, h - 50 - 10 * i);
-				gldprintf("%15.15s x %-2d", names[i], counts[i]);
-//				if(pl.selected ? tanks[i] == pl.selected : vfts[i] == current_vft)
-//					glPopAttrib();
-			}
-			projection(glPopMatrix());
-			glPopMatrix();
-		}
-	}
-	if(!mouse_captured && !glwfocus && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
+	if(!mouse_captured && !glwfocus && !GLwindow::getCaptor() && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
 		int x0 = MIN(s_mousedragx, s_mousex);
 		int x1 = MAX(s_mousedragx, s_mousex) + 1;
 		int y0 = MIN(s_mousedragy, s_mousey);

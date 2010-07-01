@@ -8,6 +8,7 @@
 #include "EntityCommand.h"
 #include "Scarry.h"
 #include "glwindow.h"
+#include "GLWentlist.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -508,6 +509,10 @@ static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 			}
 			return 1;
 		}
+		else if(!strcmp(wcs, _SC("closable"))){
+			sq_pushbool(v, p->getClosable());
+			return 1;
+		}
 		else if(!strcmp(wcs, _SC("pinned"))){
 			sq_pushbool(v, p->getPinned());
 			return 1;
@@ -575,6 +580,13 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		GLWrect r = p->extentRect();
 		r.b = r.t + y;
 		p->setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("closable"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		p->setClosable(b);
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("pinned"))){
@@ -672,6 +684,15 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));
 	}
+	return 0;
+}
+
+static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	SQInteger x, y, sx, sy;
+	GLWentlist *p = new GLWentlist(pl);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
 	return 0;
 }
 
@@ -1401,6 +1422,16 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("addToggleButton"), -1);
 	sq_newclosure(v, sqf_GLWbuttonMatrix_addToggleButton, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class GLWentlist
+	sq_pushstring(v, _SC("GLWentlist"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_GLWentlist_constructor, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

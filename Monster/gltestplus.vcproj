@@ -673,6 +673,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\GLWentlist.h"
+				>
+			</File>
+			<File
 				RelativePath="..\glwindow.h"
 				>
 			</File>

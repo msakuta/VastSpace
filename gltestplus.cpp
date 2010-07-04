@@ -377,6 +377,24 @@ static void drawindics(Viewer *vw){
 		projection(glPopMatrix());
 		glPopMatrix();
 	}
+
+	// Guide for tactical rotation
+	if(mouse_captured && pl.mover == pl.tactical){
+		int i, j;
+		for(i = 0; i < 12; i++) for(j = -3; j < 3; j++){
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			glRotatef(j * 360 / 12, 0, 1, 0);
+			glRotatef(i * 360 / 12, 1, 0, 0);
+			glBegin(GL_LINES);
+			glVertex3f(  0, -.1, -1);
+			glVertex3f(  0,  .1, -1);
+			glVertex3f(-.1,   0, -1);
+			glVertex3f( .1,   0, -1);
+			glEnd();
+			glPopMatrix();
+		}
+	}
 }
 
 static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){

@@ -90,6 +90,8 @@ class GLwindow{
 class GLWbuttonMatrix extends GLwindow{
 	constructor(int x, int y, int sx, int sy);
 	void addButton(string command, string buttonimagefile, string tips);
+	void addCvarToggleButton(string cvarname, string buttonimagefile, string pushedimagefile, string tips);
+	void addMoveOrderButton(string buttonimagefile, string pushedimagefile, string tips);
 }
 
 int screenwidth();
@@ -327,6 +329,7 @@ function init_Universe(){
 	but.addButton("halt", "textures/halt.jpg", "Halt");
 	but.addButton("dock", "textures/dock.jpg", "Dock");
 	but.addButton("undock", "textures/undock.jpg", "Undock");
+	but.addMoveOrderButton("textures/move.jpg", "textures/move.jpg", "Move order");
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

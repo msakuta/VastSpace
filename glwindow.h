@@ -323,6 +323,16 @@ public:
 	virtual void press();
 };
 
+class Player;
+class GLWmoveOrderButton : public GLWstateButton{
+public:
+	Player *pl;
+	GLWmoveOrderButton(const char *filename, const char *filename1, Player *apl, const char *tip = NULL) :
+		GLWstateButton(filename, filename1, tip), pl(apl){}
+	virtual bool state()const;
+	virtual void press();
+};
+
 /// A window with GLWbuttons in matrix.
 class GLWbuttonMatrix : public GLwindow{
 	GLWbutton **buttons;

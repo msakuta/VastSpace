@@ -7,6 +7,7 @@
 #include "antiglut.h"
 #include "viewer.h"
 #include "material.h"
+#include "player.h" // GLWmoveOrderButton
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -1169,6 +1170,16 @@ bool GLWtoggleCvarButton::state()const{
 
 void GLWtoggleCvarButton::press(){
 	var = !var;
+}
+
+
+
+bool GLWmoveOrderButton::state()const{
+	return pl->moveorder;
+}
+
+void GLWmoveOrderButton::press(){
+	pl->cmd_moveorder(0, NULL, pl);
 }
 
 

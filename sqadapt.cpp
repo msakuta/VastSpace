@@ -687,6 +687,25 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *path, *path1, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
+		tips = NULL;
+	GLWmoveOrderButton *b = new GLWmoveOrderButton(path, path1, &pl, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
 static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	SQInteger x, y, sx, sy;
@@ -1422,6 +1441,9 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("addToggleButton"), -1);
 	sq_newclosure(v, sqf_GLWbuttonMatrix_addToggleButton, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("addMoveOrderButton"), -1);
+	sq_newclosure(v, sqf_GLWbuttonMatrix_addMoveOrderButton, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

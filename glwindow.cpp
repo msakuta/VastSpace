@@ -303,6 +303,8 @@ void GLwindow::glwFree(){
 	GLwindow **ppwnd, *wnd2;
 	if(wnd == glwfocus)
 		glwfocus = glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next;
+	if(wnd == lastover)
+		lastover = NULL;
 	for(wnd2 = glwlist; wnd2; wnd2 = wnd2->next) if(wnd2->modal == wnd)
 		wnd2->modal = NULL;
 	for(ppwnd = &glwlist; *ppwnd;) if(*ppwnd == wnd)
@@ -1287,7 +1289,7 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 struct GlyphCache{
 	int x0, y0, x1, y1;
-	char c;
+	wchar_t c;
 };
 
 static int glwPutTextureStringN(const char *s, int n){
@@ -1310,7 +1312,7 @@ static int glwPutTextureStringN(const char *s, int n){
 		HDC hwdc = GetDC(hw);
 		hdc = CreateCompatibleDC(hwdc);
 		ReleaseDC(hw,hwdc);
-		HFONT hf = CreateFont(GLwindow::glwfontheight, fontwidth, 0, 0, FW_DONTCARE, 0, 0, 0, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE/*FF_MODERN | FIXED_PITCH*/, NULL);
+		HFONT hf = CreateFont(GLwindow::glwfontheight, fontwidth, 0, 0, FW_DONTCARE, 0, 0, 0, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, /*DEFAULT_PITCH | FF_DONTCARE/*/FF_MODERN | FIXED_PITCH, NULL);
 		SelectObject(hdc, hf);
 
 		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
@@ -1341,42 +1343,48 @@ static int glwPutTextureStringN(const char *s, int n){
 
 	glBindTexture(GL_TEXTURE_2D, fonttex);
 
-	for(i = 0; i < n; i++)
-	if(listmap.find(s[i]) == listmap.end()){
-		TEXTMETRIC tm;
-		GetTextMetrics(hdc, &tm);
-		GlyphCache gc;
-		int wid;
-		GetCharWidth(hdc, s[i], s[i], &wid);
-		if(GLDTW < sx + wid){
-			sx = 0;
-			sy += tm.tmHeight;
+	for(i = 0; i < n;){
+		int nc = 1;
+		wchar_t wch;
+		wch = (unsigned char)s[i];
+		while(nc < 3 && 0x80 <= (unsigned char)s[i + nc - 1] && (unsigned char)s[i + nc - 1] <= 0xfe){
+			nc++;
+			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
 		}
-		gc.c = s[i];
-		gc.x0 = sx;
-		gc.x1 = gc.x0 + wid;
-		sx = gc.x1;
-		gc.y0 = 0;
-		gc.y1 = gc.y0 + tm.tmHeight;
-		char strbuf[2];
-		strbuf[0] = s[i];
-		strbuf[1] = '\0';
+		if(listmap.find(wch) == listmap.end()){
+			TEXTMETRIC tm;
+			GetTextMetrics(hdc, &tm);
+			GlyphCache gc;
+			int wid;
+			GetCharWidth32W(hdc, wch, wch, &wid);
+			if(GLDTW < sx + wid){
+				sx = 0;
+				sy += tm.tmHeight;
+			}
+			gc.c = wch;
+			gc.x0 = sx;
+			gc.x1 = gc.x0 + wid;
+			sx = gc.x1;
+			gc.y0 = 0;
+			gc.y1 = gc.y0 + tm.tmHeight;
 
-		bmi->bmiHeader.biWidth = gc.x1 - gc.x0; //LONG       biWidth;
-		bmi->bmiHeader.biHeight = gc.y1 - gc.y0; //LONG       biHeight;
-		bmi->bmiHeader.biSizeImage = 0;
-		HBITMAP hbm = CreateDIBSection(hdc, (BITMAPINFO*)bmi, DIB_RGB_COLORS, &buf, NULL, 0);
-		if(!hbm)
-			printf("%d\n", GetLastError());
-		HGDIOBJ holdbm = SelectObject(hdc, hbm);
-		SetTextColor(hdc, RGB(255,255,255));
-		SetBkColor(hdc, RGB(0,0,0));
-		TextOut(hdc, 0, 0, strbuf, 1);
-		GdiFlush();
-		glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0, gc.y0, gc.x1 - gc.x0, gc.y1 - gc.y0, GL_ALPHA, GL_UNSIGNED_BYTE, buf);
-		listmap[s[i]] = gc;
-		SelectObject(hdc, holdbm);
-		DeleteObject(hbm);
+			bmi->bmiHeader.biWidth = gc.x1 - gc.x0; //LONG       biWidth;
+			bmi->bmiHeader.biHeight = gc.y1 - gc.y0; //LONG       biHeight;
+			bmi->bmiHeader.biSizeImage = 0;
+			HBITMAP hbm = CreateDIBSection(hdc, (BITMAPINFO*)bmi, DIB_RGB_COLORS, &buf, NULL, 0);
+			if(!hbm)
+				printf("%d\n", GetLastError());
+			HGDIOBJ holdbm = SelectObject(hdc, hbm);
+			SetTextColor(hdc, RGB(255,255,255));
+			SetBkColor(hdc, RGB(0,0,0));
+			TextOutW(hdc, 0, 0, &wch, 1);
+			GdiFlush();
+			glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0, gc.y0, gc.x1 - gc.x0, gc.y1 - gc.y0, GL_ALPHA, GL_UNSIGNED_BYTE, buf);
+			listmap[wch] = gc;
+			SelectObject(hdc, holdbm);
+			DeleteObject(hbm);
+		}
+		i += nc;
 	}
 
 	glPushMatrix();
@@ -1394,8 +1402,14 @@ static int glwPutTextureStringN(const char *s, int n){
 	}
 	glBegin(GL_QUADS);
 	int sumx = 0;
-	for(i = 0; *s && i < n; i++){
-		GlyphCache gc = listmap[*s];
+	for(i = 0; i < n && s[i];){
+		int nc = 1;
+		wchar_t wch = (unsigned char)s[i];
+		while(nc < 3 && 0x80 <= (unsigned char)s[i + nc - 1] && (unsigned char)s[i + nc - 1] <= 0xfe){
+			nc++;
+			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
+		}
+		GlyphCache gc = listmap[wch];
 		glTexCoord2d((double)gc.x0 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx, 0);
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, 0);
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y1 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, gc.y1 - gc.y0);
@@ -1405,7 +1419,7 @@ static int glwPutTextureStringN(const char *s, int n){
 		glTexCoord2d(1, 1); glVertex2i(i+1,0);
 		glTexCoord2d(1, 0); glVertex2i(i+1,1);
 		glTexCoord2d(0, 0); glVertex2i(i,1);*/
-		s++;
+		i += nc;
 	}
 	glEnd();
 /*	glLoadIdentity();
@@ -1464,7 +1478,7 @@ int glwprintf(const char *f, ...){
 /*		double raspo[4];
 		glGetDoublev(GL_CURRENT_RASTER_POSITION, raspo);*/
 		glPushMatrix();
-		glTranslated(s_raspo[0], s_raspo[1] + 1, 0.);
+		glTranslated(s_raspo[0], s_raspo[1] + 2, 0.);
 		glScaled(glwfontscale, -glwfontscale, 1.);
 		s_raspo[0] += glwPutTextureString(buf);
 		glPopMatrix();

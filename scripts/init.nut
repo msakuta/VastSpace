@@ -314,6 +314,7 @@ function init_Universe(){
 	local sch = screenheight();
 
 	local entlist = GLWentlist();
+	entlist.title = "実体リスト";
 	entlist.x = scw - 300;
 	entlist.width = 300;
 	entlist.y = 100;
@@ -323,7 +324,7 @@ function init_Universe(){
 	entlist.pinned = true;
 
 	local but = GLWbuttonMatrix(3, 3);
-	but.title = "Entity Commands";
+	but.title = "コマンド";
 	but.x = 0;
 	but.y = sch - but.height;
 	but.addButton("halt", "textures/halt.jpg", "Halt");
@@ -333,7 +334,7 @@ function init_Universe(){
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);
-	cambut.title = "Camera";
+	cambut.title = "カメラ";
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
 	cambut.addButton("chasecamera", "textures/focus.jpg", "Follow Camera");
@@ -343,7 +344,7 @@ function init_Universe(){
 	cambut.pinned = true;
 
 	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);
-	sysbut.title = "System Commands";
+	sysbut.title = "システム";
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.jpg", "Exit game");

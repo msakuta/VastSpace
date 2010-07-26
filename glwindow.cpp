@@ -1285,8 +1285,8 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 
 
-#define GLDTW 1024
-#define GLDTH 1024
+#define GLDTW 512
+#define GLDTH 512
 
 struct GlyphCache{
 	int x0, y0, x1, y1;
@@ -1303,7 +1303,7 @@ static int glwPutTextureStringN(const char *s, int n){
 	static HDC hdc;
 	static void *buf;
 	static BITMAPINFO *bmi;
-//	static GLubyte backbuf[GLDTW][GLDTW] = {0};
+	static GLubyte backbuf[GLDTW][GLDTW] = {0};
 
 	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
 	if(!init){
@@ -1317,7 +1317,7 @@ static int glwPutTextureStringN(const char *s, int n){
 		HFONT hf = CreateFont(GLwindow::glwfontheight, fontwidth, 0, 0, FW_DONTCARE, 0, 0, 0, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, /*DEFAULT_PITCH | FF_DONTCARE/*/FF_MODERN | FIXED_PITCH, NULL);
 		SelectObject(hdc, hf);
 
-/*		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
+		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
 		bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER), //DWORD      biSize;
 		bmi->bmiHeader.biWidth = GLDTW, //LONG       biWidth;
 		bmi->bmiHeader.biHeight = -GLDTW, //LONG       biHeight;
@@ -1330,7 +1330,7 @@ static int glwPutTextureStringN(const char *s, int n){
 		bmi->bmiHeader.biClrUsed = 0, //DWORD      biClrUsed;
 		bmi->bmiHeader.biClrImportant = 0; //DWORD      biClrImportant;
 		for(i = 0; i < 256; i++)
-			bmi->bmiColors[i].rgbRed = bmi->bmiColors[i].rgbGreen = bmi->bmiColors[i].rgbBlue = i;*/
+			bmi->bmiColors[i].rgbRed = bmi->bmiColors[i].rgbGreen = bmi->bmiColors[i].rgbBlue = i;
 
 		glGenTextures(1, &fonttex);
 		glBindTexture(GL_TEXTURE_2D, fonttex);
@@ -1340,7 +1340,7 @@ static int glwPutTextureStringN(const char *s, int n){
 		for(y = 0; y < GLDTH; y++) for(x = 0; x < GLDTW; x++){
 			buf[y + GLDTW - GLDTH][x][0] = 255; buf[y + GLDTW - GLDTH][x][1] = (0x1 & (font8x10[y * 16 + x / 8] >> (7 - (x) % 8)) ? 0 : 255);
 		}*/
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL/* backbuf*/);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
 	}
 
 	glBindTexture(GL_TEXTURE_2D, fonttex);
@@ -1360,7 +1360,18 @@ static int glwPutTextureStringN(const char *s, int n){
 			int wid;
 			GetCharWidth32W(hdc, wch, wch, &wid);
 			tm.tmHeight += 2;
-			if(GLDTW < sx + wid){
+
+			GLYPHMETRICS gm;
+			MAT2 mat2 = {
+				{0, 1}, {0, 0}, {0, 0}, {0, 1}
+			};
+			void *gbuf;
+			size_t gbufsize = GetGlyphOutlineW(hdc, wch, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
+			gbuf = malloc(gbufsize * 2);
+
+			// Though if we know there's no content in padded bytes, glTexSubImage2D will fail unless those
+			// padded bytes are in the array range of the image. Kinda silly workaround for NVIDIA introduced bug.
+			if(GLDTW < sx + gm.gmptGlyphOrigin.x + ((gm.gmBlackBoxX + 3) / 4 * 4)){
 				sx = 0;
 				sy += tm.tmHeight;
 			}
@@ -1368,7 +1379,7 @@ static int glwPutTextureStringN(const char *s, int n){
 			gc.x0 = sx;
 			gc.x1 = gc.x0 + wid;
 			sx = gc.x1;
-			gc.y0 = 0;
+			gc.y0 = sy;
 			gc.y1 = gc.y0 + tm.tmHeight;
 
 //			bmi->bmiHeader.biWidth = gc.x1 - gc.x0; //LONG       biWidth;
@@ -1381,13 +1392,6 @@ static int glwPutTextureStringN(const char *s, int n){
 //			SetTextColor(hdc, RGB(255,255,255));
 //			SetBkColor(hdc, RGB(0,0,0));
 //			TextOutW(hdc, 0, 0, &wch, 1);
-			GLYPHMETRICS gm;
-			MAT2 mat2 = {
-				{0, 1}, {0, 0}, {0, 0}, {0, 1}
-			};
-			void *gbuf;
-			size_t gbufsize = GetGlyphOutlineW(hdc, wch, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
-			gbuf = malloc(gbufsize * 2);
 
 			// Space does not require memory to rasterize. In that case, we do not mess around glyph caching.
 			if(gbufsize){
@@ -1398,7 +1402,7 @@ static int glwPutTextureStringN(const char *s, int n){
 //				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 				for(int y = 0; y < gm.gmBlackBoxY; y++) for(int x = 0; x < gm.gmBlackBoxX; x++)
-					/*backbuf[y + gc.y0 + (GLwindow::glwfontheight - gm.gmptGlyphOrigin.y)][x + gc.x0 + gm.gmptGlyphOrigin.x] =*/
+					backbuf[y + gc.y0 + (GLwindow::glwfontheight - gm.gmptGlyphOrigin.y)][x + gc.x0 + gm.gmptGlyphOrigin.x] =
 					((GLubyte*)gbuf)[x + y * ((gm.gmBlackBoxX + 3) / 4 * 4)] = ((GLubyte*)gbuf)[x + y * ((gm.gmBlackBoxX + 3) / 4 * 4)] * 255 / 64;
 
 				// Due to a bug in GeForce GTS250 OpenGL driver, we just cannot pass gm.gmBlackBoxX to 5th argument (width), but rather round it up to multiple of 4 bytes.
@@ -1416,7 +1420,7 @@ static int glwPutTextureStringN(const char *s, int n){
 			listmap[wch] = gc;
 //			SelectObject(hdc, holdbm);
 //			DeleteObject(hbm);
-/*			if(FILE *fp = fopen("cache/fontcache.bmp", "wb")){
+			if(FILE *fp = fopen("cache/fontcache.bmp", "wb")){
 				BITMAPFILEHEADER fh;
 				((char*)&fh.bfType)[0] = 'B';
 				((char*)&fh.bfType)[1] = 'M';
@@ -1427,7 +1431,7 @@ static int glwPutTextureStringN(const char *s, int n){
 				fwrite(bmi,sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD), 1, fp);
 				fwrite(backbuf, sizeof backbuf, 1, fp);
 				fclose(fp);
-			}*/
+			}
 		}
 		i += nc;
 	}

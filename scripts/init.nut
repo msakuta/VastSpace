@@ -180,6 +180,42 @@ function foreachdockedents(docker, proc){
 		proc(e);
 }
 
+eng <- {
+	command="Command"
+	camera="Camera",
+	["Entity List"]="Entity List"
+	move="Move"
+	System="System"
+}
+
+jpn <- {
+	command="コマンド",
+	camera="カメラほぼぽ",
+	Dock="ドッキング",
+	Undock="アンドッキング",
+	["Entity List"]="実体リスト",
+	move="移動",
+	["Move order"]="移動命令",
+	Halt="中止",
+	System="システム",
+	["Follow Camera"]="追跡カメラ",
+	["Switch Camera Mode"]="モード切替",
+	["Reset Camera Rotation"]="回転初期化",
+	["Eject Camera"]="脱出！",
+	["Exit game"]="ゲーム終了",
+	["Toggle Pause"]="ポーズ",
+}
+
+// Set default language to english
+lang <- eng;
+
+function tlate(id){
+	if(id in lang)
+		return lang[id];
+	else
+		return id;
+}
+
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs){
 	for(local i = 1; i < count + 1; i++){
@@ -306,6 +342,8 @@ function init_Universe(){
 	//att();
 	//sce();
 	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
+//	foreach(value in lang)
+//		print(value);
 
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
 	player.setrot(Quatd(0., 1., 0., 0.));
@@ -314,7 +352,7 @@ function init_Universe(){
 	local sch = screenheight();
 
 	local entlist = GLWentlist();
-	entlist.title = "実体リスト";
+	entlist.title = tlate("Entity List");
 	entlist.x = scw - 300;
 	entlist.width = 300;
 	entlist.y = 100;
@@ -324,31 +362,31 @@ function init_Universe(){
 	entlist.pinned = true;
 
 	local but = GLWbuttonMatrix(3, 3);
-	but.title = "コマンド";
+	but.title = tlate("command");
 	but.x = 0;
 	but.y = sch - but.height;
-	but.addButton("halt", "textures/halt.jpg", "Halt");
-	but.addButton("dock", "textures/dock.jpg", "Dock");
-	but.addButton("undock", "textures/undock.jpg", "Undock");
-	but.addMoveOrderButton("textures/move2.jpg", "textures/move.jpg", "Move order");
+	but.addButton("halt", "textures/halt.jpg", tlate("Halt"));
+	but.addButton("dock", "textures/dock.jpg", tlate("Dock"));
+	but.addButton("undock", "textures/undock.jpg", tlate("Undock"));
+	but.addMoveOrderButton("textures/move2.jpg", "textures/move.jpg", tlate("Move order"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);
-	cambut.title = "カメラ";
+	cambut.title = tlate("camera");
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
-	cambut.addButton("chasecamera", "textures/focus.jpg", "Follow Camera");
-	cambut.addButton("mover cycle", "textures/cammode.jpg", "Switch Camera Mode");
-	cambut.addButton("originrotation", "textures/resetrot.jpg", "Reset Camera Rotation");
-	cambut.addButton("eject", "textures/eject.jpg", "Eject Camera");
+	cambut.addButton("chasecamera", "textures/focus.jpg", tlate("Follow Camera"));
+	cambut.addButton("mover cycle", "textures/cammode.jpg", tlate("Switch Camera Mode"));
+	cambut.addButton("originrotation", "textures/resetrot.jpg", tlate("Reset Camera Rotation"));
+	cambut.addButton("eject", "textures/eject.jpg", tlate("Eject Camera"));
 	cambut.pinned = true;
 
 	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);
-	sysbut.title = "システム";
+	sysbut.title = tlate("System");
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
-	sysbut.addButton("exit", "textures/exit.jpg", "Exit game");
-	sysbut.addToggleButton("pause", "textures/pause.jpg", "textures/unpause.jpg", "Toggle Pause");
+	sysbut.addButton("exit", "textures/exit.jpg", tlate("Exit game"));
+	sysbut.addToggleButton("pause", "textures/pause.jpg", "textures/unpause.jpg", tlate("Toggle Pause"));
 	sysbut.pinned = true;
 }
 

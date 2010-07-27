@@ -220,6 +220,7 @@ extern int glwdragpos[2];
 /* UI strings are urged to be printed by this function. */
 void glwpos2d(double x, double y);
 int glwprintf(const char *f, ...);
+int glwsizef(const char *f, ...);
 void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
 void glwHScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int ix);
 int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);

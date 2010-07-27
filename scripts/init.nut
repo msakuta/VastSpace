@@ -190,13 +190,13 @@ eng <- {
 
 jpn <- {
 	command="コマンド",
-	camera="カメラほぼぽ",
+	camera="Юカメラ",
 	Dock="ドッキング",
 	Undock="アンドッキング",
 	["Entity List"]="実体リスト",
 	move="移動",
 	["Move order"]="移動命令",
-	Halt="中止",
+	Halt="停止命令",
 	System="システム",
 	["Follow Camera"]="追跡カメラ",
 	["Switch Camera Mode"]="モード切替",

@@ -34,7 +34,7 @@ public:
 		virtual Vec3d getpos()const;
 		virtual void setpos(const Vec3d &apos){pl.pos = apos;}
 		virtual Vec3d getvelo()const{return pl.velo;}
-		virtual void setvelo(const Vec3d &apos){pl.pos = apos;}
+		virtual void setvelo(const Vec3d &avelo){pl.velo = avelo;}
 		virtual Quatd getrot()const;
 		virtual void setrot(const Quatd &arot){pl.rot = arot;}
 		virtual void rotateLook(double dx, double dy);
@@ -147,6 +147,7 @@ public:
 	FreelookMover(Player &a);
 	void operator ()(const input_t &inputs, double dt);
 	Quatd getrot()const;
+	void setpos(const Vec3d &apos);
 	Vec3d getpos()const;
 	void setGear(int g);
 	int getGear()const;

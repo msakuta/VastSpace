@@ -163,13 +163,16 @@ public:
 	virtual void postframe();
 	static void glwpostframe();
 	GLwindow *getNext(){return next;} ///< \brief Getter for next member.
+	void setVisible(bool f);
 	void setClosable(bool f){if(f) flags |= GLW_CLOSE; else flags &= ~GLW_CLOSE;}
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
+	bool getVisible()const{return !(flags & GLW_INVISIBLE);} ///< Inverting logic
 	bool getClosable()const{return flags & GLW_CLOSE;}
 	bool getPinned()const{return flags & GLW_PINNED;}
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
 	static GLwindow *getCaptor(){return captor;}
+	void postClose(){ flags |= GLW_CLOSE; }
 protected:
 	GLwindow(const char *title = NULL);
 	char *title;
@@ -215,6 +218,16 @@ extern GLwindow *glwlist;
 extern GLwindow *glwfocus;
 extern GLwindow *glwdrag;
 extern int glwdragpos[2];
+
+/// Inverting logic
+inline void GLwindow::setVisible(bool f){
+	if(!f){
+		flags |= GLW_INVISIBLE;
+		if(glwfocus == this) // defocus from hiding window
+			glwfocus = NULL;
+	}
+	else flags &= ~GLW_INVISIBLE;
+}
 
 
 /* UI strings are urged to be printed by this function. */

@@ -87,6 +87,14 @@ class GLwindow{
 	int height;
 }
 
+class GLwindowMenu extends GLwindow{
+	void addItem(string title, string command);
+	void close();
+}
+
+class GLwindowBigMenu extends GLwindowMenu{
+}
+
 class GLWbuttonMatrix extends GLwindow{
 	constructor(int x, int y, int sx, int sy);
 	void addButton(string command, string buttonimagefile, string tips);
@@ -183,9 +191,10 @@ function foreachdockedents(docker, proc){
 eng <- {
 	command="Command"
 	camera="Camera",
-	["Entity List"]="Entity List"
-	move="Move"
-	System="System"
+	["Entity List"]="Entity List",
+	move="Move",
+	System="System",
+	["Follow Camera"]="Follow Selected Object with Camera"
 }
 
 jpn <- {
@@ -198,7 +207,7 @@ jpn <- {
 	["Move order"]="移動命令",
 	Halt="停止命令",
 	System="システム",
-	["Follow Camera"]="追跡カメラ",
+	["Follow Camera"]="選択オブジェクトをカメラで追跡",
 	["Switch Camera Mode"]="モード切替",
 	["Reset Camera Rotation"]="回転初期化",
 	["Eject Camera"]="脱出！",
@@ -337,6 +346,20 @@ function sce(){
 register_console_command("ass", ass);
 register_console_command("att", att);
 
+mainmenu <- GLwindowBigMenu();
+
+function loadmission(script){
+	mainmenu.close();
+	print("loading " + script);
+	local exe = loadfile(script);
+	exe();
+	return exe;
+}
+
+register_console_command("loadmission", loadmission);
+
+//tutorial1 <- loadmission("scripts/tutorial1.nut");
+
 function init_Universe(){
 	//des();
 	//att();
@@ -351,13 +374,18 @@ function init_Universe(){
 	local scw = screenwidth();
 	local sch = screenheight();
 
-//	local testmenu = GLwindowMenu("testmenu");
-	local testmenu = GLwindowBigMenu();
-	testmenu.x = 200;
-	testmenu.y = 350;
-	testmenu.addItem("チュートリアル", "rem");
-	testmenu.addItem("チュートリアル２", "rem2");
-	testmenu.addItem("とっても長いメニューアイテムですがいかがですか", "rem3");
+	mainmenu.title = "Select Mission";
+	mainmenu.addItem("Tutorial 1", "loadmission \"scripts/tutorial1.nut\"");
+	mainmenu.addItem("test", "loadmission \"scripts/eternalFight.nut\"");
+
+	// Adjust window position to center of screen, after all menu items are added.
+	mainmenu.x = scw / 2 - mainmenu.width / 2;
+	mainmenu.y = sch / 2 - mainmenu.height / 2;
+}
+
+function initUI(){
+	local scw = screenwidth();
+	local sch = screenheight();
 
 	local entlist = GLWentlist();
 	entlist.title = tlate("Entity List");
@@ -399,93 +427,4 @@ function init_Universe(){
 }
 
 showdt <- false;
-framecount <- 0;
-checktime <- 0;
-autochase <- true;
-deaths <- {};
-
-rotation <- Quatd(0,0,0,1);
-
-function frameproc(dt){
-	framecount++;
-	local global_time = universe.global_time;
-
-	if(showdt)
-		print("DT = " + dt + ", FPS = " + (1. / dt) + ", FC = " + framecount);
-
-	if(autochase && player.chase == null){
-//		rotation = (rotation * Quatd(sin(dt/2.), 0., 0., cos(dt/2.))).normin();
-//		player.setpos(rotation.trans(Vec3d(0,0,2)));
-//		player.setrot(rotation);
-//		local phase = (global_time - PI/2.);
-//		player.rot = Quatd(0., sin(phase/2.), 0., cos(phase/2.));
-//		foreachents(player.cs, function(e):(player){ player.chase = e; });
-	}
-
-	local currenttime = universe.global_time + 9.;
-
-	if(true && checktime + 10. < currenttime){
-		local cs = universe.findcspath("/sol/saturn/saturno2");
-		local farcs = universe.findcspath("/sol/saturn/saturno1");
-		checktime = currenttime;
-
-		if(cs == null || farcs == null)
-			return;
-
-		local racec = [countents(cs, 0, "Attacker"),
-			countents(cs, 1, "Attacker") + countents(farcs, 1, "Attacker")];
-
-		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
-/*
-		if(racec[0] < 5)
-			deltaFormation("Sceptor", 0, Quatd(0, 0, 0, 1)
-				, Vec3d(0, 0.1,  0.5), 0.1, 15);
-		if(racec[1] < 3)
-			deltaFormation("Assault", 1, Quatd(0, 1, 0, 0)
-				, Vec3d(0, 0.1, -0.5), 0.1, 3);
-*/
-		if(racec[0] < 2){
-			local zrot = (2. * PI * rand()) / RAND_MAX;
-			deltaFormation("Attacker", 0, Quatd(0, 0, 0, 1) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1,  3.), 0.4, 3, cs);
-		}
-		if(racec[1] < 2){
-			local zrot = (2. * PI * rand()) / RAND_MAX;
-/*			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1, -3.), 0.4, 3, cs);*/
-			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs);
-			if(farcs != null){
-				foreachents(farcs, function(e):(cs){
-					e.command("RemainDocked", true);
-					e.command("Warp", cs, Vec3d(0,0,0));
-				});
-			}
-		}
-
-		foreachents(cs, function(e){
-			if(e.race == 1 && e.classname == "Attacker")
-				e.command("RemainDocked", false);
-		});
-
-		foreach(key,value in deaths) foreach(key1,value1 in value)
-			print("[team" + key + "][" + key1 + "] " + value1);
-	}
-}
-
-function hook_delete_Entity(e){
-	if(!(e.race in deaths))
-		deaths[e.race] <- {};
-	if(!(e.classname in deaths[e.race]))
-		deaths[e.race][e.classname] <- 0;
-	deaths[e.race][e.classname]++;
-/*	if(!(e.classname in deaths))
-		deaths[e.classname] <- 0;
-	deaths[e.classname]++;*/
-}
-
-/*
-foreachents(player.cs,
-	function(e){ print(e.classname() + ", " + e.pos + ", " + e.race); });
-*/
 

@@ -71,6 +71,10 @@ Vec3d FreelookMover::getpos()const{
 	return pos;
 }
 
+void FreelookMover::setpos(const Vec3d &apos){
+	pos = apos;
+}
+
 
 class TacticalMover : public Player::mover_t{
 public:

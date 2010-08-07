@@ -76,7 +76,7 @@ int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
 static int cmdwnd = 0;
 static bool g_focusset = false;
-GLwindow *glwcmdmenu = NULL;
+//GLwindow *glwcmdmenu = NULL;
 
 int s_mousex, s_mousey;
 static int s_mousedragx, s_mousedragy;
@@ -1533,8 +1533,8 @@ int main(int argc, char *argv[])
 #endif
 	HSQUIRRELVM &v = g_sqvm;
 
-	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
-	glwfocus = NULL;
+//	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
+//	glwfocus = NULL;
 	pl.cs = &universe;
 
 	viewport vp;
@@ -1550,7 +1550,7 @@ int main(int argc, char *argv[])
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
-	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
+//	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
 	extern int cmd_togglewarpmenu(int argc, char *argv[], void *);

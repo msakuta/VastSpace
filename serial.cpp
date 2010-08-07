@@ -1,6 +1,7 @@
 #include "serial.h"
 #include "cmd.h"
 #include "serial_util.h"
+#include "sqadapt.h"
 #include <string>
 #include <sstream>
 
@@ -9,7 +10,10 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 }
 
 
-Serializable::~Serializable(){}
+Serializable::~Serializable(){
+	if(g_sqvm)
+		sqa_deleteobj(g_sqvm, this);
+}
 
 void Serializable::serialize(SerializeContext &sc){
 }

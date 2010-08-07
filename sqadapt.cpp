@@ -654,6 +654,24 @@ static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_GLwindowMenu_close(HSQUIRRELVM v){
+	GLwindowMenu *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *title, *cmd;
+	p->postClose();
+	return 0;
+}
+
+static SQInteger sqf_GLwindowMenu_hide(HSQUIRRELVM v){
+	GLwindowMenu *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *title, *cmd;
+	p->setVisible(false);
+	return 0;
+}
+
 static SQInteger sqf_GLwindowBigMenu_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	const SQChar *title;
@@ -1155,6 +1173,21 @@ static SQInteger sqf_Quatd_trans(HSQUIRRELVM v){
 	}
 }
 
+static SQInteger sqf_Quatd_cnj(HSQUIRRELVM v){
+	try{
+		SQQuatd q;
+		q.getValue(v, 1);
+		SQQuatd r;
+		r.value = q.value.cnj();
+		r.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+
 // Add given object to weak-pointed object layer.
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	sq_pushstring(v, _SC("ref"), -1);
@@ -1295,6 +1328,9 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("trans"), -1);
 	sq_newclosure(v, sqf_Quatd_trans, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("cnj"), -1);
+	sq_newclosure(v, sqf_Quatd_cnj, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
@@ -1481,6 +1517,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("addItem"), -1);
 	sq_newclosure(v, sqf_GLwindowMenu_addItem, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("close"), -1);
+	sq_newclosure(v, sqf_GLwindowMenu_close, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("hide"), -1);
+	sq_newclosure(v, sqf_GLwindowMenu_hide, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	// Define class GLwindowBigMenu
@@ -1585,6 +1627,7 @@ void sqa_exit(){
 
 //	SquirrelVM::Shutdown();
 	sq_close(v);
+	v = NULL; // To prevent other destructors from using dangling pointer.
 }
 
 

@@ -24,6 +24,8 @@ static double glwfontscale = 1.;
 #define fontheight (GLwindow::glwfontheight * glwfontscale)
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
+static int glwPutTextureStringN(const char *s, int n, int size);
+int glwGetSizeTextureString(const char *s, int size = -1);
 
 /// Window margin
 const long margin = 4;
@@ -854,7 +856,8 @@ GLwindowMenu::GLwindowMenu(const char *title, const PopupMenu &list, unsigned af
 GLwindowMenu *GLwindowMenu::addItem(const char *title, int key, const char *cmd){
 	menus->append(title, key, cmd);
 	GLWrect cr = clientRect();
-	cr.b = cr.t + ++count * fontheight;
+	count = menus->count(); // Count is not necessarily increase, so we cannot just ++count.
+	cr.b = cr.t + count * fontheight;
 	cr = adjustRect(cr);
 	height = cr.b - cr.t;
 	return this;
@@ -873,6 +876,101 @@ int GLwindowMenu::cmd_addcmdmenuitem(int argc, char *argv[], void *p){
 	}
 	wnd->addItem(argv[1], argc < 4 ? 0 : argv[3][0], argv[2]);
 	return 0;
+}
+
+class GLwindowBigMenu : public GLwindowMenu{
+public:
+	typedef GLwindowMenu st;
+	static const int bigfontheight = 24;
+	int *widths;
+	GLwindowBigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
+		: st(title, count, menutitles, keys, cmd, sticky), widths(NULL){
+		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
+	}
+	virtual GLwindowMenu *addItem(const char *title, int key, const char *cmd){
+		menus->append(title, key, cmd, false);
+		GLWrect cr = clientRect();
+		count = menus->count();
+		cr.b = cr.t + count * (bigfontheight + 40) + 0;
+		int strwidth = glwGetSizeTextureString(title, bigfontheight);
+		cr.r = cr.l + 20 + strwidth + 20;
+		cr = adjustRect(cr);
+		height = cr.b - cr.t;
+		if(width < cr.r - cr.l)
+			width = cr.r - cr.l;
+		widths = (int*)realloc(widths, count * sizeof*widths);
+		widths[count-1] = strwidth;
+		return this;
+	}
+	int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void draw(GLwindowState &ws, double t);
+	virtual ~GLwindowBigMenu(){
+		free(widths);
+	}
+};
+
+int GLwindowBigMenu::mouse(GLwindowState &, int button, int state, int x, int y){
+	int ind = (y) / (bigfontheight + 40);
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && 0 <= ind && ind < count){
+		MenuItem *item = menus->get();
+		for(; 0 < ind; ind--)
+			item = item->next;
+		if(!item->cmd)
+			return 0;
+		CmdExec(item->cmd);
+		if((flags & (GLW_CLOSE | GLW_POPUP)) && !(flags & GLW_PINNED))
+			flags |= GLW_TODELETE;
+		return 1;
+	}
+	return 0;
+}
+
+/// Draws big menu items.
+void GLwindowBigMenu::draw(GLwindowState &ws, double t){
+	GLWrect r = clientRect();
+	int mx = ws.mousex, my = ws.mousey;
+	GLwindowMenu *p = this;
+	GLwindow *wnd = this;
+	int i, len, maxlen = 1;
+	int ind = 0 <= my && 0 <= mx && mx <= width ? (my) / (bigfontheight + 40) : -1;
+	MenuItem *item = menus->get();
+	for(i = 0; i < count; i++, item = item->next){
+		if(i == ind && item->cmd){
+			glColor4ub(0,0,255,128);
+			glBegin(GL_QUADS);
+			glVertex2d(r.l + 10, r.t + (0 + i) * (bigfontheight + 40) + 10);
+			glVertex2d(r.r - 10, r.t + (0 + i) * (bigfontheight + 40) + 10);
+			glVertex2d(r.r - 10, r.t + (1 + i) * (bigfontheight + 40) - 10);
+			glVertex2d(r.l + 10, r.t + (1 + i) * (bigfontheight + 40) - 10);
+			glEnd();
+		}
+
+		// Draw borders
+		glColor4ub(255,255,127,255);
+		glBegin(GL_LINE_LOOP);
+		glVertex2d(r.l + 10, r.t + (0 + i) * (bigfontheight + 40) + 10);
+		glVertex2d(r.r - 10, r.t + (0 + i) * (bigfontheight + 40) + 10);
+		glVertex2d(r.r - 10, r.t + (1 + i) * (bigfontheight + 40) - 10);
+		glVertex2d(r.l + 10, r.t + (1 + i) * (bigfontheight + 40) - 10);
+		glEnd();
+
+		glColor4ub(255,255,255,255);
+		glPushMatrix();
+		glTranslated(r.l + (r.r - r.l) / 2 - widths[i] / 2, r.t + (i) * (bigfontheight + 40) + 10 + bigfontheight + 10, 0);
+		glwPutTextureStringN(item->title, strlen(item->title), bigfontheight);
+		glPopMatrix();
+		len = item->title.len();
+		if(maxlen < len)
+			maxlen = len;
+	}
+//	wnd->w = maxlen * fontwidth + 2;
+}
+
+
+
+
+GLwindowMenu *GLwindowMenu::newBigMenu(){
+	return new GLwindowBigMenu("", 0, NULL, NULL, NULL, 1);
 }
 
 class GLwindowPopup : public GLwindowMenu{
@@ -1290,14 +1388,45 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 #define GLDTW 512
 #define GLDTH 512
 
+/// Key for indexing GlyphCache entries.
+struct GlyphCacheKey{
+	wchar_t c;
+	short size;
+	GlyphCacheKey(wchar_t ac = 0, short asize = 0) : c(ac), size(asize){}
+	bool operator==(const GlyphCacheKey &o)const{
+		return c == o.c && size == o.size;
+	}
+	bool operator<(const GlyphCacheKey &o)const{
+		return (c | (size << 16)) < (o.c | (o.size << 16));
+	}
+};
+
 /// Entry of text glyph cache.
 /// Should have OpenGL texture name if so many glyphs present.
 struct GlyphCache{
 	int x0, y0, x1, y1;
-	wchar_t c;
+	GlyphCacheKey c; ///< For debugging purpose
 };
 
-static HDC InitGlwHDC(){
+static HFONT newFont(int size){
+	return CreateFont(size,
+		size * 8 / 12,
+		0,
+		0,
+		FW_DONTCARE,
+		0,
+		0,
+		0,
+		DEFAULT_CHARSET,
+		OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		ANTIALIASED_QUALITY,
+		/*DEFAULT_PITCH | FF_DONTCARE/*/FF_MODERN | FIXED_PITCH,
+		NULL);
+}
+
+
+static HDC InitGlwHDC(int size){
 	static bool init = false;
 	static HDC g_glwhdc = NULL;
 	HDC &hdc = g_glwhdc;
@@ -1307,22 +1436,25 @@ static HDC InitGlwHDC(){
 		HDC hwdc = GetDC(hw);
 		hdc = CreateCompatibleDC(hwdc);
 		ReleaseDC(hw,hwdc);
-		HFONT hf = CreateFont(GLwindow::glwfontheight, fontwidth, 0, 0, FW_DONTCARE, 0, 0, 0, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, /*DEFAULT_PITCH | FF_DONTCARE/*/FF_MODERN | FIXED_PITCH, NULL);
-		SelectObject(hdc, hf);
+	}
+	static int currentfontheight = 0;
+	if(currentfontheight != size){
+		currentfontheight = size;
+		DeleteObject(SelectObject(hdc, newFont(size)));
 	}
 	return hdc;
 }
 
-static int glwPutTextureStringN(const char *s, int n){
+static int glwPutTextureStringN(const char *s, int n, int size){
 	static int init = 0;
 	static GLuint fonttex = 0;
 	GLint oldtex;
 	int i;
-	static std::map<wchar_t, GlyphCache> listmap;
-	static int sx = 0, sy = 0;
+	static std::map<GlyphCacheKey, GlyphCache> listmap;
+	static int sx = 0, sy = 0, maxheight = 0;
 	static void *buf;
 	static GLubyte backbuf[GLDTW][GLDTW] = {0};
-	HDC hdc = InitGlwHDC();
+	HDC hdc = InitGlwHDC(size);
 
 	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
 	if(!init){
@@ -1349,7 +1481,8 @@ static int glwPutTextureStringN(const char *s, int n){
 			nc++;
 			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
 		}*/
-		if(listmap.find(wch) == listmap.end()){
+		GlyphCacheKey gck(wch, size);
+		if(listmap.find(gck) == listmap.end()){
 			TEXTMETRIC tm;
 			GetTextMetrics(hdc, &tm);
 			GlyphCache gc;
@@ -1369,9 +1502,9 @@ static int glwPutTextureStringN(const char *s, int n){
 			// padded bytes are in the array range of the image. Kinda silly workaround for NVIDIA introduced bug.
 			if(GLDTW < sx + gm.gmptGlyphOrigin.x + ((gm.gmBlackBoxX + 3) / 4 * 4)){
 				sx = 0;
-				sy += tm.tmHeight;
+				sy += maxheight;
 			}
-			gc.c = wch;
+			gc.c = gck;
 			gc.x0 = sx;
 			gc.x1 = gc.x0 + wid;
 			sx = gc.x1;
@@ -1392,14 +1525,45 @@ static int glwPutTextureStringN(const char *s, int n){
 				// Due to a bug in GeForce GTS250 OpenGL driver, we just cannot pass gm.gmBlackBoxX to 5th argument (width), but rather round it up to multiple of 4 bytes.
 				// Excess pixels in the 4 byte boundary will overwritten, but they're always right side of the subimage, meaning no content have chance to be overwritten.
 				// The bug is that lower end of the subimage is not correctly transferred but garbage pixels, which implies that count of required bytes transferred is incorrectly calculated.
-				glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0 + gm.gmptGlyphOrigin.x, gc.y0 + (GLwindow::glwfontheight - gm.gmptGlyphOrigin.y), (gm.gmBlackBoxX + 3) / 4 * 4, gm.gmBlackBoxY, GL_ALPHA, GL_UNSIGNED_BYTE, gbuf);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0 + gm.gmptGlyphOrigin.x, gc.y0 + (size - gm.gmptGlyphOrigin.y), (gm.gmBlackBoxX + 3) / 4 * 4, gm.gmBlackBoxY, GL_ALPHA, GL_UNSIGNED_BYTE, gbuf);
 
 				// Another workaround is to replace the whole texture image with buffered image in client memory every time a character gets texturized, but it's terribly inefficient.
 //				glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
 
 				free(gbuf);
+
+				if(maxheight < tm.tmHeight)
+					maxheight = tm.tmHeight;
 			}
-			listmap[wch] = gc;
+			listmap[gck] = gc;
+#if 0
+			if(FILE *fp = fopen("cache/fontcache.bmp", "wb")){
+				BITMAPFILEHEADER fh;
+				BITMAPINFO *bmi = malloc(sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD) + GLDTW * GLDTW);
+				((char*)&fh.bfType)[0] = 'B';
+				((char*)&fh.bfType)[1] = 'M';
+				fh.bfSize = sizeof(BITMAPFILEHEADER) +  sizeof backbuf;
+				fh.bfReserved1 = fh.bfReserved2 = 0;
+				fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD);
+				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER), //DWORD      biSize;
+				bmi->bmiHeader.biWidth = GLDTW, //LONG       biWidth;
+				bmi->bmiHeader.biHeight = -GLDTW, //LONG       biHeight;
+				bmi->bmiHeader.biPlanes = 1, // WORD       biPlanes;
+				bmi->bmiHeader.biBitCount = 8, //WORD       biBitCount;
+				bmi->bmiHeader.biCompression = BI_RGB, //DWORD      biCompression;
+				bmi->bmiHeader.biSizeImage = 0, //DWORD      biSizeImage;
+				bmi->bmiHeader.biXPelsPerMeter = 0, //LONG       biXPelsPerMeter;
+				bmi->bmiHeader.biYPelsPerMeter = 0, //LONG       biYPelsPerMeter;
+				bmi->bmiHeader.biClrUsed = 0, //DWORD      biClrUsed;
+				bmi->bmiHeader.biClrImportant = 0; //DWORD      biClrImportant;
+				for(i = 0; i < 256; i++)
+					bmi->bmiColors[i].rgbRed = bmi->bmiColors[i].rgbGreen = bmi->bmiColors[i].rgbBlue = i;
+				fwrite(&fh,sizeof(BITMAPFILEHEADER), 1, fp);
+				fwrite(bmi,sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD), 1, fp);
+				fwrite(backbuf, sizeof backbuf, 1, fp);
+				fclose(fp);
+			}
+#endif
 		}
 		i += nc;
 	}
@@ -1427,7 +1591,7 @@ static int glwPutTextureStringN(const char *s, int n){
 			nc++;
 			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
 		}*/
-		GlyphCache gc = listmap[wch];
+		GlyphCache gc = listmap[GlyphCacheKey(wch, size)];
 		glTexCoord2d((double)gc.x0 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y1 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, 0);
@@ -1446,12 +1610,12 @@ static int glwPutTextureStringN(const char *s, int n){
 	return sx;
 }
 
-int glwPutTextureString(const char *s){
-	return glwPutTextureStringN(s, strlen(s));
+int glwPutTextureString(const char *s, int size = fontheight){
+	return glwPutTextureStringN(s, strlen(s), size);
 }
 
-int glwGetSizeTextureStringN(const char *s, long n){
-	HDC hdc = InitGlwHDC();
+int glwGetSizeTextureStringN(const char *s, long n, int isize){
+	HDC hdc = InitGlwHDC(isize);
 	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
 	wchar_t *wstr = new wchar_t[wsz];
 	MultiByteToWideChar(CP_UTF8, 0, s, n, wstr, wsz);
@@ -1461,8 +1625,8 @@ int glwGetSizeTextureStringN(const char *s, long n){
 	return size.cx;
 }
 
-int glwGetSizeTextureString(const char *s){
-	return glwGetSizeTextureStringN(s, strlen(s));
+int glwGetSizeTextureString(const char *s, int size){
+	return glwGetSizeTextureStringN(s, strlen(s), size == -1 ? fontheight : size);
 }
 
 

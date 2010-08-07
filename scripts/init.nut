@@ -190,7 +190,7 @@ eng <- {
 
 jpn <- {
 	command="コマンド",
-	camera="Юカメラ",
+	camera="カメラ",
 	Dock="ドッキング",
 	Undock="アンドッキング",
 	["Entity List"]="実体リスト",
@@ -350,6 +350,14 @@ function init_Universe(){
 
 	local scw = screenwidth();
 	local sch = screenheight();
+
+//	local testmenu = GLwindowMenu("testmenu");
+	local testmenu = GLwindowBigMenu();
+	testmenu.x = 200;
+	testmenu.y = 350;
+	testmenu.addItem("チュートリアル", "rem");
+	testmenu.addItem("チュートリアル２", "rem2");
+	testmenu.addItem("とっても長いメニューアイテムですがいかがですか", "rem3");
 
 	local entlist = GLWentlist();
 	entlist.title = tlate("Entity List");

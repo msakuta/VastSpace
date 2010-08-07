@@ -247,8 +247,9 @@ public:
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	int key(int key);
 	~GLwindowMenu();
-	GLwindowMenu *addItem(const char *title, int key, const char *cmd);
+	virtual GLwindowMenu *addItem(const char *title, int key, const char *cmd);
 	static int cmd_addcmdmenuitem(int argc, char *argv[], void *p);
+	static GLwindowMenu *newBigMenu();
 };
 
 extern const int glwMenuAllAllocated[];

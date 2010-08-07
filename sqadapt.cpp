@@ -627,6 +627,48 @@ static SQInteger sqf_glwlist(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_GLwindowMenu_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	const SQChar *title;
+	SQBool sticky;
+	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
+		title = " ";
+	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
+		sticky = false;
+	GLwindowMenu *p = new GLwindowMenu(title, 0, NULL, NULL, NULL, sticky);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	return 0;
+}
+
+static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
+	GLwindowMenu *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *title, *cmd;
+	if(SQ_FAILED(sq_getstring(v, 2, &title)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &cmd)))
+		return SQ_ERROR;
+	p->addItem(title, 0, cmd);
+	return 0;
+}
+
+static SQInteger sqf_GLwindowBigMenu_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	const SQChar *title;
+	SQBool sticky;
+	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
+		title = " ";
+	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
+		sticky = false;
+	GLwindowMenu *p = GLwindowMenu::newBigMenu();
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	return 0;
+}
+
+
 static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	SQInteger x, y, sx, sy;
@@ -1427,6 +1469,29 @@ void sqa_init(){
 	sq_pushstring(v, _SC("glwlist"), -1);
 	sq_newclosure(v, sqf_glwlist, 0);
 	sq_createslot(v, 1);
+
+	// Define class GLwindowMenu
+	sq_pushstring(v, _SC("GLwindowMenu"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_GLwindowMenu_constructor, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("addItem"), -1);
+	sq_newclosure(v, sqf_GLwindowMenu_addItem, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class GLwindowBigMenu
+	sq_pushstring(v, _SC("GLwindowBigMenu"), -1);
+	sq_pushstring(v, _SC("GLwindowMenu"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_GLwindowBigMenu_constructor, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
 
 	// Define class GLWbuttonMatrix
 	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);

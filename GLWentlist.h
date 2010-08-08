@@ -85,23 +85,23 @@ public:
 		}
 
 		GLWrect r = clientRect();
-		int wid = (r.r - r.l) / getFontWidth() -  6;
+		int wid = (r.x1 - r.x0) / getFontWidth() -  6;
 
 		static const GLfloat colors[2][4] = {{1,1,1,1},{0,1,1,1}};
 		glColor4fv(colors[listmode == Select]);
-		glwpos2d(r.l, r.t + getFontHeight());
+		glwpos2d(r.x0, r.y0 + getFontHeight());
 		glwprintf("Select");
 		glColor4fv(colors[listmode == All]);
-		glwpos2d(r.l + 100, r.t + getFontHeight());
+		glwpos2d(r.x0 + 100, r.y0 + getFontHeight());
 		glwprintf("All");
 		glColor4fv(colors[listmode == Universe]);
-		glwpos2d(r.l + 200, r.t + getFontHeight());
+		glwpos2d(r.x0 + 200, r.y0 + getFontHeight());
 		glwprintf("Universe");
 
 		glColor4f(1,1,1,1);
 
 		for(i = 0; i < n; i++){
-			glwpos2d(r.l, r.t + (2 + i) * getFontHeight());
+			glwpos2d(r.x0, r.y0 + (2 + i) * getFontHeight());
 			glwprintf("%*.*s x %-3d", wid, wid, names[i], counts[i]);
 		}
 	}
@@ -109,9 +109,9 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y){
 		if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			GLWrect r = clientRect();
-			r.t = 0;
-			r.b = getFontHeight();
-			if(r.include(x + r.l, y + r.t)){
+			r.y0 = 0;
+			r.y1 = getFontHeight();
+			if(r.include(x + r.x0, y + r.y0)){
 				listmode = MIN(Universe, MAX(Select, ListMode(x / 100)));
 				return 1;
 			}

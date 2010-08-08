@@ -480,12 +480,12 @@ static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 		if(!sqa_refobj(v, (SQUserPointer*)&p))
 			return SQ_ERROR;
 		if(!strcmp(wcs, _SC("x"))){
-			SQInteger x = p->clientRect().l;
+			SQInteger x = p->clientRect().x0;
 			sq_pushinteger(v, x);
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("y"))){
-			SQInteger y = p->clientRect().t;
+			SQInteger y = p->clientRect().y0;
 			sq_pushinteger(v, y);
 			return 1;
 		}
@@ -549,8 +549,8 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
 			return SQ_ERROR;
 		GLWrect r = p->extentRect();
-		r.r += x - r.l;
-		r.l = x;
+		r.x1 += x - r.x0;
+		r.x0 = x;
 		p->setExtent(r);
 		return 0;
 	}
@@ -559,8 +559,8 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
 			return SQ_ERROR;
 		GLWrect r = p->extentRect();
-		r.b += y - r.t;
-		r.t = y;
+		r.y1 += y - r.y0;
+		r.y0 = y;
 		p->setExtent(r);
 		return 0;
 	}
@@ -569,7 +569,7 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
 			return SQ_ERROR;
 		GLWrect r = p->extentRect();
-		r.r = r.l + x;
+		r.x1 = r.x0 + x;
 		p->setExtent(r);
 		return 0;
 	}
@@ -578,7 +578,7 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
 			return SQ_ERROR;
 		GLWrect r = p->extentRect();
-		r.b = r.t + y;
+		r.y1 = r.y0 + y;
 		p->setExtent(r);
 		return 0;
 	}

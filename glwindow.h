@@ -30,31 +30,31 @@ extern "C"{
 // Namespaces does not solve all the problems.
 /// Rectangle object like Windows RECT structure.
 struct GLWrect{
-	long l;
-	long t;
-	long r;
-	long b;
-	GLWrect(long al, long at, long ar, long ab) : l(al), t(at), r(ar), b(ab){}
+	long x0;
+	long y0;
+	long x1;
+	long y1;
+	GLWrect(long ax0, long ay0, long ax1, long ay1) : x0(ax0), y0(ay0), x1(ax1), y1(ay1){}
 
 	/// Returns true if given point is included in this rectangle.
-	bool include(long x, long y)const{return l <= x && x <= r && t <= y && y <= b;}
-	long width()const{return r - l;}
-	long height()const{return b - t;}
+	bool include(long x, long y)const{return x0 <= x && x <= x1 && y0 <= y && y <= y1;}
+	long width()const{return x1 - x0;}
+	long height()const{return y1 - y0;}
 
 	/// Move this rectangle's top left corner to given point without changing size.
-	GLWrect &move(long x, long y){r += x - l; l = x; b += y - t; t = y; return *this;}
+	GLWrect &move(long x, long y){x1 += x - x0; x0 = x; y1 += y - y0; y0 = y; return *this;}
 
 	/// Returns copy of this rectangle that moved to given point.
 	GLWrect moved(long x, long y)const{return GLWrect(*this).move(x, y);}
 
 	/// Move this rectangle's bottom right corner to given point without changing size.
-	GLWrect &movebr(long x, long y){l += x - r; r = x; t += y - b; b = y; return *this;}
+	GLWrect &movebr(long x, long y){x0 += x - x1; x1 = x; y0 += y - y1; y1 = y; return *this;}
 
 	/// Returns copy of this rectangle that moved to given point.
 	GLWrect movedbr(long x, long y)const{return GLWrect(*this).movebr(x, y);}
 
 	/// Move this rectangle relatively by given values.
-	GLWrect &rmove(long dx, long dy){l += dx; r += dx; t += dy; b += dy; return *this;}
+	GLWrect &rmove(long dx, long dy){x0 += dx; x1 += dx; y0 += dy; y1 += dy; return *this;}
 
 	/// Returns copy of this rectangle relatively moved by given values.
 	GLWrect rmoved(long dx, long dy){return GLWrect(*this).rmove(dx, dy);}
@@ -83,7 +83,7 @@ struct GLwindowState{
 class GLcomponent : public Serializable{
 public:
 	GLcomponent() : xpos(0), ypos(0), width(100), height(100), flags(0){}
-	void setExtent(const GLWrect &r){xpos = r.l; ypos = r.t; width = r.r - r.l; height = r.b - r.t;}
+	void setExtent(const GLWrect &r){xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;}
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
 protected:

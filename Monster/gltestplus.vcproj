@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;&quot;..\..\jpeg-7&quot;;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
+				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
@@ -70,9 +70,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib sqplusD.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib sqplusD.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
+				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\sqplus\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -208,7 +208,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\clib\include;..\..\cpplib\include;..\..\jpeg-7;..\..\sqplus\include;..\..\sqplus\include;&quot;../../bullet-2.76/src&quot;"
+				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
@@ -231,9 +231,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\"
+				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\;&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\sqplus\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

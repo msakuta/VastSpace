@@ -5,6 +5,7 @@
 #include <clib/suf/sufdraw.h>
 #include <clib/dstr.h>
 #include <jpeglib.h>
+#include <png.h>
 //}
 #include <setjmp.h>
 
@@ -304,6 +305,108 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 	return bmi;
 }
 
+static BITMAPINFO *ReadPNG(const char *fname){
+	FILE * infile;		/* source file */
+	int row_stride;		/* physical row width in image buffer */
+	int src_row_stride;
+	BYTE *image_buffer = NULL;
+	unsigned long size;
+	png_structp png_ptr;
+	png_infop info_ptr, end_info;
+	png_bytepp ret;
+
+	infile = fopen(fname, "rb");
+
+	if(!infile){
+		image_buffer = ZipUnZip("rc.zip", fname, &size);
+		if(!image_buffer)
+			return NULL;
+	}
+
+	{
+		unsigned char header[8];
+		fread(header, sizeof header, 1, infile);
+		if(png_sig_cmp(header, 0, sizeof header)){
+			fclose(infile);
+			return NULL;
+		}
+	}
+
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if(!png_ptr){
+		fclose(infile);
+		return NULL;
+	}
+
+	info_ptr = png_create_info_struct(png_ptr);
+	if(!info_ptr){
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
+		fclose(infile);
+		return NULL;
+	}
+
+	end_info = png_create_info_struct(png_ptr);
+	if(!end_info){
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		fclose(infile);
+		return NULL;
+	}
+
+	if(setjmp(png_jmpbuf(png_ptr))){
+shortjmp:
+		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+		fclose(infile);
+		return NULL;
+	}
+
+	png_init_io(png_ptr, infile);
+	png_set_sig_bytes(png_ptr, 8);
+
+	{
+		BITMAPINFO *bmi;
+		int width, height, bit_depth, color_type, interlace_type, comps;
+		int i;
+
+		/* The native order of RGB components differs in order against Windows bitmaps,
+		 * so we must instruct libpng to convert it. */
+		png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR, NULL);
+
+		png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
+			&interlace_type, NULL, NULL);
+
+		/* Grayscale images are not supported.
+		 * TODO: alpha channel? */
+		if(bit_depth != 8 || color_type != PNG_COLOR_TYPE_RGB && color_type != PNG_COLOR_TYPE_RGBA)
+			goto shortjmp;
+
+		/* Calculate number of components. */
+		comps = (color_type == PNG_COLOR_TYPE_RGB ? 3 : 4);
+
+		/* png_get_rows returns array of pointers to rows allocated by the library,
+		 * which must be copied to single bitmap buffer. */
+		ret = png_get_rows(png_ptr, info_ptr);
+
+		bmi = malloc(sizeof(BITMAPINFOHEADER) + width * height * 4);
+		bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi->bmiHeader.biWidth = width;
+		bmi->bmiHeader.biHeight = height;
+		bmi->bmiHeader.biPlanes = 1;
+		bmi->bmiHeader.biBitCount = bit_depth * comps;
+		bmi->bmiHeader.biCompression = BI_RGB;
+		bmi->bmiHeader.biSizeImage = 0;
+		bmi->bmiHeader.biXPelsPerMeter = 0;
+		bmi->bmiHeader.biYPelsPerMeter = 0;
+		bmi->bmiHeader.biClrUsed = 0;
+		bmi->bmiHeader.biClrImportant = 0;
+		for(i = 0; i < height; i++)
+			memcpy(&((unsigned char*)&bmi->bmiColors[0])[4 * i * width], ret[i], width * comps);
+
+		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+		fclose(infile);
+		return bmi;
+	}
+}
+
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
 	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
@@ -324,6 +427,12 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		/* If no luck yet, try jpeg decoding. */
 		stp.bmi = ReadJpeg(fname1);
 		jpeg = 1;
+	}
+
+	if(!stp.bmi){
+		/* If still not, try PNG. */
+		stp.bmi = ReadPNG(fname1);
+		jpeg = 2;
 	}
 
 	/* If all above fail, give up loading image. */

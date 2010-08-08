@@ -352,7 +352,11 @@ function loadmission(script){
 	mainmenu.close();
 	print("loading " + script);
 	local exe = loadfile(script);
-	exe();
+	if(exe == null){
+		print("Failed to load file " + script);
+	}
+	else
+		exe();
 	return exe;
 }
 
@@ -401,7 +405,7 @@ function initUI(){
 	but.title = tlate("command");
 	but.x = 0;
 	but.y = sch - but.height;
-	but.addButton("halt", "textures/halt.jpg", tlate("Halt"));
+	but.addButton("halt", "textures/halt.png", tlate("Halt"));
 	but.addButton("dock", "textures/dock.jpg", tlate("Dock"));
 	but.addButton("undock", "textures/undock.jpg", tlate("Undock"));
 	but.addMoveOrderButton("textures/move2.jpg", "textures/move.jpg", tlate("Move order"));

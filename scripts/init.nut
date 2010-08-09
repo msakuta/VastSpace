@@ -406,9 +406,9 @@ function initUI(){
 	but.x = 0;
 	but.y = sch - but.height;
 	but.addButton("halt", "textures/halt.png", tlate("Halt"));
-	but.addButton("dock", "textures/dock.jpg", tlate("Dock"));
-	but.addButton("undock", "textures/undock.jpg", tlate("Undock"));
-	but.addMoveOrderButton("textures/move2.jpg", "textures/move.jpg", tlate("Move order"));
+	but.addButton("dock", "textures/dock.png", tlate("Dock"));
+	but.addButton("undock", "textures/undock.png", tlate("Undock"));
+	but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);
@@ -418,7 +418,7 @@ function initUI(){
 	cambut.addButton("chasecamera", "textures/focus.jpg", tlate("Follow Camera"));
 	cambut.addButton("mover cycle", "textures/cammode.jpg", tlate("Switch Camera Mode"));
 	cambut.addButton("originrotation", "textures/resetrot.jpg", tlate("Reset Camera Rotation"));
-	cambut.addButton("eject", "textures/eject.jpg", tlate("Eject Camera"));
+	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
 	cambut.pinned = true;
 
 	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);

@@ -245,7 +245,10 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 		 * We need to clean up the JPEG object, close the input file, and return.
 		 */
 		jpeg_destroy_decompress(&cinfo);
-		fclose(infile);
+		if(infile)
+			fclose(infile);
+		else
+			ZipFree(image_buffer);
 		return NULL;
 	}
 	jpeg_create_decompress(&cinfo);
@@ -305,27 +308,51 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 	return bmi;
 }
 
+struct ReadPNGData{
+	BYTE *image_buffer, *current;
+	unsigned long size;
+};
+
+static void ReadPNG_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+	struct ReadPNGData *prpd;
+
+	prpd = (struct ReadPNGData*)png_get_io_ptr(png_ptr);
+	if (prpd != NULL)
+	{
+		memcpy(data, prpd->current, length);
+		prpd->current += length;
+	}
+
+	if (0 < prpd->image_buffer - prpd->current)
+		png_error(png_ptr, "Read Error!");
+}
+
 static BITMAPINFO *ReadPNG(const char *fname){
 	FILE * infile;		/* source file */
 	int row_stride;		/* physical row width in image buffer */
 	int src_row_stride;
-	BYTE *image_buffer = NULL;
-	unsigned long size;
+	struct ReadPNGData rpd;
 	png_structp png_ptr;
-	png_infop info_ptr, end_info;
+	png_infop info_ptr = NULL, end_info = NULL;
 	png_bytepp ret;
 
 	infile = fopen(fname, "rb");
 
 	if(!infile){
-		image_buffer = ZipUnZip("rc.zip", fname, &size);
-		if(!image_buffer)
+		rpd.image_buffer = ZipUnZip("rc.zip", fname, &rpd.size);
+		if(!rpd.image_buffer)
 			return NULL;
 	}
 
 	{
 		unsigned char header[8];
-		fread(header, sizeof header, 1, infile);
+		if(infile)
+			fread(header, sizeof header, 1, infile);
+		else{
+			memcpy(header, rpd.image_buffer, sizeof header);
+			rpd.current = &rpd.image_buffer[sizeof header];
+		}
 		if(png_sig_cmp(header, 0, sizeof header)){
 			fclose(infile);
 			return NULL;
@@ -334,32 +361,33 @@ static BITMAPINFO *ReadPNG(const char *fname){
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if(!png_ptr){
-		fclose(infile);
-		return NULL;
+		goto shortjmp;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if(!info_ptr){
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
-		fclose(infile);
-		return NULL;
+		goto shortjmp;
 	}
 
 	end_info = png_create_info_struct(png_ptr);
 	if(!end_info){
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-		fclose(infile);
-		return NULL;
+		goto shortjmp;
 	}
 
 	if(setjmp(png_jmpbuf(png_ptr))){
 shortjmp:
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-		fclose(infile);
+		if(infile)
+			fclose(infile);
+		else
+			ZipFree(rpd.image_buffer);
 		return NULL;
 	}
 
-	png_init_io(png_ptr, infile);
+	if(infile)
+		png_init_io(png_ptr, infile);
+	else
+		png_set_read_fn(png_ptr, (png_voidp)&rpd, ReadPNG_read_data);
 	png_set_sig_bytes(png_ptr, 8);
 
 	{
@@ -402,7 +430,10 @@ shortjmp:
 			memcpy(&((unsigned char*)&bmi->bmiColors[0])[4 * i * width], ret[i], width * comps);
 
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-		fclose(infile);
+		if(infile)
+			fclose(infile);
+		else
+			ZipFree(rpd.image_buffer);
 		return bmi;
 	}
 }

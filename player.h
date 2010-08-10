@@ -134,6 +134,8 @@ public:
 	static SQInteger sqf_getrot(HSQUIRRELVM v);
 	static SQInteger sqf_setrot(HSQUIRRELVM v);
 
+	static SQInteger sqf_setmover(HSQUIRRELVM v);
+	static SQInteger sqf_getmover(HSQUIRRELVM v);
 private:
 //	int gear; /* acceleration gear in ghost mode */
 };

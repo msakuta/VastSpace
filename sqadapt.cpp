@@ -1466,6 +1466,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("setrot"), -1);
 	sq_newclosure(v, sqf_setintrinsica<Player, Quatd, &Player::setrot>, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getmover"), -1);
+	sq_newclosure(v, Player::sqf_getmover, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setmover"), -1);
+	sq_newclosure(v, Player::sqf_setmover, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, &Player::sqf_get, 0);
 	sq_createslot(v, -3);

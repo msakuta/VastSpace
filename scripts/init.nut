@@ -415,9 +415,9 @@ function initUI(){
 	cambut.title = tlate("camera");
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
-	cambut.addButton("chasecamera", "textures/focus.jpg", tlate("Follow Camera"));
-	cambut.addButton("mover cycle", "textures/cammode.jpg", tlate("Switch Camera Mode"));
-	cambut.addButton("originrotation", "textures/resetrot.jpg", tlate("Reset Camera Rotation"));
+	cambut.addButton("chasecamera", "textures/focus.png", tlate("Follow Camera"));
+	cambut.addButton("mover cycle", "textures/cammode.png", tlate("Switch Camera Mode"));
+	cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
 	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
 	cambut.pinned = true;
 
@@ -425,8 +425,8 @@ function initUI(){
 	sysbut.title = tlate("System");
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
-	sysbut.addButton("exit", "textures/exit.jpg", tlate("Exit game"));
-	sysbut.addToggleButton("pause", "textures/pause.jpg", "textures/unpause.jpg", tlate("Toggle Pause"));
+	sysbut.addButton("exit", "textures/exit.png", tlate("Exit game"));
+	sysbut.addToggleButton("pause", "textures/pause.png", "textures/unpause.png", tlate("Toggle Pause"));
 	sysbut.pinned = true;
 }
 

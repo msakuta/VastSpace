@@ -431,6 +431,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->chase);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("viewdist"))){
+		sq_pushfloat(v, p->viewdist);
+		return 1;
+	}
 	else
 		return sqa::sqf_get<Player>(v);
 }
@@ -458,6 +462,14 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 //		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("viewdist"))){
+		if(OT_FLOAT != sq_gettype(v, 3))
+			return SQ_ERROR;
+		SQFloat f;
+		sq_getfloat(v, 3, &f);
+		p->viewdist = f;
+		return 1;
+	}
 	else
 		return sqa::sqf_set<Player>(v);
 }
@@ -466,10 +478,58 @@ SQInteger Player::sqf_getpos(HSQUIRRELVM v){
 	const SQChar *wcs;
 	SQRESULT sr;
 	Player *p;
-	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)p, &sr)))
+	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
 		return sr;
 	SQVec3d sqpos;
 	sqpos.value = p->getpos();
 	sqpos.push(v);
 	return 1;
 }
+
+/** \brief Sets mover object to a Player.
+ *
+ *  To avoid complication about object lifetime management, we do not allow
+ * a Squirrel VM to store a "mover" object, but passing or retrieving a string
+ * indicating what mover a Player currently has.
+ */
+SQInteger Player::sqf_setmover(HSQUIRRELVM v){
+	const SQChar *wcs;
+	SQRESULT sr;
+	Player *p;
+	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
+		return sr;
+	const SQChar *movername;
+	if(SQ_FAILED(sq_getstring(v, 2, &movername)))
+		return SQ_ERROR;
+	SQBool instant;
+	if(SQ_FAILED(sq_getbool(v, 3, &instant)))
+		instant = true; // defaults true
+	mover_t *&mover = instant ? p->mover : p->nextmover;
+	if(!instant)
+		p->blendmover = 1.;
+
+	if(!strcmp(movername, "freelook"))
+		mover = p->freelook;
+	else if(!strcmp(movername, "tactical"))
+		mover = p->tactical;
+	else
+		return SQ_ERROR;
+
+	return 0;
+}
+
+SQInteger Player::sqf_getmover(HSQUIRRELVM v){
+	SQRESULT sr;
+	Player *p;
+	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
+		return sr;
+	if(p->mover == p->freelook)
+		sq_pushstring(v, _SC("freelook"), -1);
+	else if(p->mover == p->tactical)
+		sq_pushstring(v, _SC("tactical"), -1);
+	else
+		sq_pushstring(v, _SC(""), -1);
+	return 1;
+}
+
+

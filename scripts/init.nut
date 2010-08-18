@@ -216,6 +216,8 @@ jpn <- {
 	["Eject Camera"]="脱出！",
 	["Exit game"]="ゲーム終了",
 	["Toggle Pause"]="ポーズ",
+	["Attack order"]="攻撃命令",
+	["Force Attack order"]="強制攻撃命令",
 }
 
 // Set default language to english
@@ -413,8 +415,8 @@ function initUI(){
 	but.addButton("dock", "textures/dock.png", tlate("Dock"));
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
 	but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
-	but.addToggleButton("attackorder", "textures/pause.png", "textures/unpause.png", tlate("Attack order"));
-	but.addToggleButton("forceattackorder", "textures/pause.png", "textures/unpause.png", tlate("Force Attack order"));
+	but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
+	but.addToggleButton("forceattackorder", "textures/forceattack2.png", "textures/forceattack.png", tlate("Force Attack order"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

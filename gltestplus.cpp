@@ -1,5 +1,12 @@
+/** \file 
+ * \brief The main source file for gltestplus project.
+ *
+ * The entry point for the program, no matter main() or WinMain(), resides in this file.
+ * It deals with the main message loop, OpenGL initialization, and event mapping.
+ * Some drawing methods are also defined here.
+ */
 
-#define USEWIN 1 /* whether use windows api (wgl*) */
+#define USEWIN 1 ///< whether use windows api (wgl*)
 
 #if !USEWIN
 #include <GL/glut.h>
@@ -361,8 +368,30 @@ static void drawindics(Viewer *vw){
 		Mat4d rot = pl.getrot().tomat4();
 		glMultMatrixd(rot);
 		gldTranslaten3dv(vw->pos);
+
+		/// Temporary object to draw objects that are being box selected.
+		class PreviewSelect : public select_box_callback{
+		public:
+			virtual void onEntity(Entity *pt){
+				double (*cuts)[2];
+				int i;
+				cuts = CircleCuts(16);
+				glPushMatrix();
+				gldTranslate3dv(pt->pos);
+				glMultMatrixd(irot);
+				gldScaled(pt->hitradius());
+				glBegin(GL_LINE_LOOP);
+				for(i = 0; i < 16; i++)
+					glVertex2dv(cuts[i]);
+				glEnd();
+				glPopMatrix();
+			}
+			Mat4d irot;
+			PreviewSelect(const Mat4d &rot) : irot(rot.transpose()){}
+		};
+
 		select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
-			-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 1);
+			-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot, 1, &PreviewSelect(rot));
 		glPopMatrix();
 /*		glMatrixMode(GL_PROJECTION);
 		glLoadMatrixd(proj);
@@ -786,7 +815,12 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	delete menus;
 }
 
-/* Box selection routine have many adaptions; point selection, additive selection, selection preview */
+/** \brief Box selection routine that can execute any operation via callback. 
+ * \param x0,x1,y0,y1 Selection box in screen coordinates.
+ * \param rot Camera transformation matrix.
+ * \param flags 4 - point selection, which means up to 1 Entity enumeration.
+ * \param sbc Callback functionoid that receives enumerated Entities in selection box.
+ * \return if any Entity is enumerated */
 static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc){
 	Entity *pt;
 	Mat4d mat, mat2;
@@ -796,20 +830,14 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	bool pointselect = !!(flags & 4);
 	bool attacking = !!(flags & (1<<3));
 	bool forceattack = !!(flags & (1<<4));
-	WarField *w;
 	double best = 1e50;
 	double g_far = g_space_far_clip, g_near = g_space_near_clip;
 	Entity *ptbest = NULL;
-/*	extern struct astrobj iserlohn;*/
 
 	if(!pl.cs->w)
 		return false;
 
-	// If subject attack order issued is lacking, nothing to do here.
-	if((attacking || forceattack) && pl.selected == NULL)
-		return false;
-
-	w = pl.cs->w;
+	WarField *w = pl.cs->w;
 
 /*	if(g_ally_view){
 		entity_t *pt;
@@ -852,14 +880,13 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	}
 	glPopMatrix();*/
 	mat2 = mat * rot;
-	Mat4d irot = rot.transpose();
 	Vec3d plpos = pl.getpos();
-	if(!draw && !attacking && !forceattack){
+/*	if(!draw && !attacking && !forceattack){
 		if(preview)
 			pl.chases.clear();
 		else
 			pl.selected = NULL;
-	}
+	}*/
 	bool ret = false;
 	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int li = 0; li < 2; li++)
@@ -884,19 +911,19 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 					continue;
 				}
 			}*/
-			bool attackingCheck = !attacking || (forceattack || pt->race != pl.selected->race);
+//			bool attackingCheck = !attacking || (forceattack || pt->race != pl.selected->race);
 
-			if(sbc)
+			if(!pointselect && sbc)
 				sbc->onEntity(pt);
 
-			if(pointselect || attacking){
+			if(pointselect/* || attacking*/){
 				double size = pt->hitradius() + sp;
-				if(attackingCheck || 0 <= size && size < best){
+				if(/*attackingCheck ||*/ 0 <= size && size < best){
 					best = size;
 					ptbest = pt;
 				}
 			}
-			else if(preview){
+/*			else if(preview){
 				pl.chase = pt;
 				pl.chases.insert(pt);
 			}
@@ -917,22 +944,11 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 			else{
 				pt->selectnext = pl.selected;
 				pl.selected = pt;
-			}
+			}*/
 		}
 	}
-	if(!draw){
+/*	if(!draw){
 		if(attacking){
-/*			// I dunno why but this doesn't work
-//			AttackCommand &com = forceattack ? ForceAttackCommand() : AttackCommand();
-			AttackCommand ac;
-			ForceAttackCommand fac;
-			AttackCommand &com = forceattack ? fac : ac;
-			com.ents.insert(ptbest);
-			if(!com.ents.empty())
-				ret = true;
-			for(Entity *e = pl.selected; e; e = e->selectnext)
-				e->command(&com);
-//				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);*/
 		}
 		else if(preview){
 			if(ptbest){
@@ -945,7 +961,9 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 			if(ptbest)
 				ptbest->selectnext = NULL;
 		}
-	}
+	}*/
+	if(pointselect && ptbest && sbc)
+		sbc->onEntity(ptbest);
 	return ret;
 }
 
@@ -1045,6 +1063,16 @@ void mouse_func(int button, int state, int x, int y){
 		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			if(/*boxable &&*/ !glwfocus){
 
+				/// Temporary object to select objects.
+				class SelectSelect : public select_box_callback{
+				public:
+					virtual void onEntity(Entity *e){
+						e->selectnext = pl.selected;
+						pl.selected = e;
+					}
+					SelectSelect(){ pl.selected = NULL; }
+				};
+
 				/// Temporary object that accumulates and issues attack command to entities.
 				class AttackSelect : public select_box_callback{
 				public:
@@ -1065,6 +1093,16 @@ void mouse_func(int button, int state, int x, int y){
 					}
 				};
 
+				/// Temporary object to select entities to chase the camera on.
+				class FocusSelect : public select_box_callback{
+				public:
+					virtual void onEntity(Entity *e){
+						pl.chase = e;
+						pl.chases.insert(e);
+					}
+					FocusSelect(){pl.chases.clear();}
+				};
+
 				int x0 = MIN(s_mousedragx, s_mousex);
 				int x1 = MAX(s_mousedragx, s_mousex) + 1;
 				int y0 = MIN(s_mousedragy, s_mousey);
@@ -1074,9 +1112,9 @@ void mouse_func(int button, int state, int x, int y){
 				bool forced = g_focusset && (MotionGet() & PL_CTRL) || pl.forceattackorder;
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
-					(g_focusset << 1) | ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2)
-					| (attacking << 3) | (forced << 4),
-					attacking ? &AttackSelect(forced, pl.selected) : NULL);
+					/*(g_focusset << 1) |*/ ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2)
+					/*| (attacking << 3) | (forced << 4)*/,
+					attacking ? (select_box_callback*)&AttackSelect(forced, pl.selected) : g_focusset ? (select_box_callback*)&FocusSelect() : (select_box_callback*)&SelectSelect());
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}

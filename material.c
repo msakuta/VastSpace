@@ -1,3 +1,13 @@
+/** \file
+ * \brief Texture image handling.
+ *
+ * Materials are defined to suggest multi-texturing, lighting, blending,
+ * and programmable shaders to OpenGL for specific textures.
+ *
+ * Material definitions must precede image loading.
+ *
+ * JPEG and PNG reading methods are defined here too.
+ */
 #include "material.h"
 #include "bitmap.h"
 //extern "C"{
@@ -5,12 +15,13 @@
 #include <clib/suf/sufdraw.h>
 #include <clib/dstr.h>
 #include <jpeglib.h>
+#include <jerror.h>
 #include <png.h>
 //}
 #include <setjmp.h>
 
 
-
+/// Material object.
 struct material{
 	char *name;
 	char *texname[2];
@@ -117,9 +128,11 @@ static void my_error_exit (j_common_ptr cinfo)
 	/* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
 	my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-	/* Always display the message. */
+	/* Disable the message if the image is not a JPEG, to avoid a message
+	 when PNG formatted file is about to be read. */
 	/* We could postpone this until after returning, if we chose. */
-	(*cinfo->err->output_message) (cinfo);
+	if(cinfo->err->msg_code != JERR_NO_SOI)
+		(*cinfo->err->output_message) (cinfo);
 
 	/* Return control to the setjmp point */
 	longjmp(myerr->setjmp_buffer, 1);

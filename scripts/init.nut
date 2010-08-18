@@ -71,12 +71,15 @@ class Player{
 	Quatd getrot();
 	void setrot(Quatd);
 	CoordSys getcs();
+	void setmover(string movertype);
+	string getmover();
 	Entity chase;
+	float viewdist;
 }
 
 ::player <- Player();
 
-// Registers a function as a console command. You can manually add entryies to global table 'console_commands' too.
+// Registers a function as a console command. You can manually add entries to global table 'console_commands' too.
 void register_console_command(string name, function);
 
 class GLwindow{
@@ -379,7 +382,8 @@ function init_Universe(){
 	local sch = screenheight();
 
 	mainmenu.title = "Select Mission";
-	mainmenu.addItem("Tutorial 1", "loadmission \"scripts/tutorial1.nut\"");
+	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.nut\"");
+	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
 	mainmenu.addItem("test", "loadmission \"scripts/eternalFight.nut\"");
 
 	// Adjust window position to center of screen, after all menu items are added.
@@ -409,6 +413,8 @@ function initUI(){
 	but.addButton("dock", "textures/dock.png", tlate("Dock"));
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
 	but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
+	but.addToggleButton("attackorder", "textures/pause.png", "textures/unpause.png", tlate("Attack order"));
+	but.addToggleButton("forceattackorder", "textures/pause.png", "textures/unpause.png", tlate("Force Attack order"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

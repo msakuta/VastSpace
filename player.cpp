@@ -111,7 +111,7 @@ void TacticalMover::rotateLook(double dx, double dy){
 }
 
 Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), viewdist(1.),
-	nextmover(NULL), blendmover(0), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
+	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
 	freelook(new FreelookMover(*this)),
 	cockpitview(new CockpitviewMover(*this)), tactical(new TacticalMover(*this))
 {
@@ -311,6 +311,8 @@ void Player::cmdInit(Player &pl){
 	CmdAddParam("moveorder", cmd_moveorder, &pl);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("g_overlay", &g_overlay, cvar_int);
+	CvarAdd("attackorder", &pl.attackorder, cvar_int);
+	CvarAdd("forceattackorder", &pl.forceattackorder, cvar_int);
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){

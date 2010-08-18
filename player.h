@@ -11,6 +11,13 @@
 #endif
 #include <squirrel.h>
 
+/** \file
+ * \brief Definition of the Player.
+ *
+ * The player is modeled as a class object in C++.
+ * This file defines the Player class and camera related classes.
+ */
+
 #define FEETD 0.001
 
 struct input_t;
@@ -23,9 +30,13 @@ class Viewer;
 struct teleport;
 struct war_draw_data;
 
-
+/** \brief The Player in front of display.
+ *
+ * Conceptually, the camera and the player is separate entity, but they heavily depend on each other.
+ */
 class Player : public Serializable{
 public:
+	/// Base class for camera controller classes.
 	class mover_t{
 	public:
 		Player &pl;
@@ -54,31 +65,33 @@ protected:
 	Vec3d accel;
 	Quatd rot;
 public:
-	Vec3d cpos; // chase pos, used after chased object is destroyed to keep vision
+	Vec3d cpos; ///< chase pos, used after chased object is destroyed to keep vision
 	double rad;
 //	double flypower; // acceleration force
-	double viewdist; // view distance from focused object
-	double aviewdist; // actual viewdist approaching constantly to viewdist
+	double viewdist; ///< view distance from focused object
+	double aviewdist; ///< actual viewdist approaching constantly to viewdist
 	const CoordSys *cs;
-	mover_t *mover; /* virtual mover function */
-	mover_t *nextmover; // next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
-	float blendmover;
-	Entity *chase, *control, *selected, *lastchase;
+	mover_t *mover; ///< virtual mover function
+	mover_t *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
+	float blendmover; ///< Blending factor of mover and nextmover.
+	Entity *chase, *control, *selected, *lastchase; ///< Various entity lists
 	struct astrobj *sight;
-	int chasecamera; /* multiple cameras can be mounted on a vehicle for having fun! */
+	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
 	int trigger, detail, minimap;
 	int mousex, mousey;
 	int floortouch;
 	int race;
-	double fov;
-	double gametime;
-	double velolen; /* trivial; performance keeper */
-	double height; /* trivial; indicates air pressure surrounding the player */
-	std::set<const Entity*> chases; // Chased group of Entities. viewing volume shows all of them.
-	bool moveorder; // Issueing moving order
-	bool move_lockz; /* 3-D movement order */
+	double fov; ///< Field of view value, in cosine angle
+	double gametime; ///< global time
+	double velolen; ///< trivial; performance keeper
+	double height; ///< trivial; indicates air pressure surrounding the player
+	std::set<const Entity*> chases; ///< Chased group of Entities. viewing volume shows all of them.
+	int attackorder; ///< Issueing attacking order
+	int forceattackorder;
+	bool moveorder; ///< Issueing moving order
+	bool move_lockz; ///< 3-D movement order
 	double move_z;
-	double move_t; // ray trace factor
+	double move_t; ///< ray trace factor
 	Vec3d move_org;
 	Vec3d move_src;
 	Vec3d move_hitpos;

@@ -84,7 +84,12 @@ static int s_mouseoldx, s_mouseoldy;
 
 static double wdtime = 0., watime = 0.;
 
-static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags);
+class select_box_callback{
+public:
+	virtual void onEntity(Entity *) = 0; ///< Callback for all Entities in the selection box.
+};
+
+static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc = NULL);
 
 Player pl;
 double &flypower = pl.freelook->flypower;
@@ -597,7 +602,9 @@ void draw_func(Viewer &vw, double dt){
 		glMatrixMode(GL_TEXTURE);
 		glPushMatrix();
 		glLoadIdentity();
-		glTranslated(!!(MotionGet() & PL_CTRL) * .5, !g_focusset * .5, 0.);
+		bool attackorder = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
+		bool forceattackorder = g_focusset || !!(MotionGet() & PL_CTRL) || pl.forceattackorder;
+		glTranslated(attackorder * .5, !forceattackorder * .5, 0.);
 		glScaled(.5, .5, 1.);
 		glCallList(tex);
 /*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -780,7 +787,7 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 }
 
 /* Box selection routine have many adaptions; point selection, additive selection, selection preview */
-static void select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags){
+static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc){
 	Entity *pt;
 	Mat4d mat, mat2;
 	int viewstate = 0;
@@ -796,11 +803,11 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 /*	extern struct astrobj iserlohn;*/
 
 	if(!pl.cs->w)
-		return;
+		return false;
 
 	// If subject attack order issued is lacking, nothing to do here.
 	if((attacking || forceattack) && pl.selected == NULL)
-		return;
+		return false;
 
 	w = pl.cs->w;
 
@@ -853,6 +860,7 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		else
 			pl.selected = NULL;
 	}
+	bool ret = false;
 	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int li = 0; li < 2; li++)
 	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
@@ -862,7 +870,9 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		dpos = pt->pos - plpos;
 		dpos[3] = 1.;
 		lpos = mat2.vp(dpos);
-		VECSCALEIN(lpos, 1. / lpos[3]);
+		lpos[0] /= lpos[3];
+		lpos[1] /= lpos[3];
+		lpos[2] /= lpos[3];
 		sp = -(dpos[0] * rot[2] + dpos[1] * rot[6] + dpos[2] * rot[10])/*VECSP(&rot[8], dpos)*/;
 		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
 		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
@@ -875,6 +885,10 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 				}
 			}*/
 			bool attackingCheck = !attacking || (forceattack || pt->race != pl.selected->race);
+
+			if(sbc)
+				sbc->onEntity(pt);
+
 			if(pointselect || attacking){
 				double size = pt->hitradius() + sp;
 				if(attackingCheck || 0 <= size && size < best){
@@ -908,15 +922,17 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	}
 	if(!draw){
 		if(attacking){
-			// I dunno why but this doesn't work
+/*			// I dunno why but this doesn't work
 //			AttackCommand &com = forceattack ? ForceAttackCommand() : AttackCommand();
 			AttackCommand ac;
 			ForceAttackCommand fac;
 			AttackCommand &com = forceattack ? fac : ac;
 			com.ents.insert(ptbest);
+			if(!com.ents.empty())
+				ret = true;
 			for(Entity *e = pl.selected; e; e = e->selectnext)
 				e->command(&com);
-//				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);
+//				e->command(forceattack ? Entity::cid_forceattack : Entity::cid_attack, &ents);*/
 		}
 		else if(preview){
 			if(ptbest){
@@ -930,6 +946,7 @@ static void select_box(double x0, double x1, double y0, double y1, const Mat4d &
 				ptbest->selectnext = NULL;
 		}
 	}
+	return ret;
 }
 
 static void capture_mouse(){
@@ -1027,15 +1044,39 @@ void mouse_func(int button, int state, int x, int y){
 		}
 		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			if(/*boxable &&*/ !glwfocus){
+
+				/// Temporary object that accumulates and issues attack command to entities.
+				class AttackSelect : public select_box_callback{
+				public:
+					virtual void onEntity(Entity *e){
+						com.ents.insert(e);
+					}
+					AttackCommand ac;
+					ForceAttackCommand fac;
+					AttackCommand &com;
+					Entity *list;
+					AttackSelect(bool force, Entity *alist) : com(force ? fac : ac), list(alist){}
+					/// The destructor issues command.
+					~AttackSelect(){
+						if(!com.ents.empty())
+							pl.attackorder = pl.forceattackorder = 0;
+						for(; list; list = list->selectnext)
+							list->command(&com);
+					}
+				};
+
 				int x0 = MIN(s_mousedragx, s_mousex);
 				int x1 = MAX(s_mousedragx, s_mousex) + 1;
 				int y0 = MIN(s_mousedragy, s_mousey);
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
 				Mat4d rot = pl.getrot().tomat4();
+				bool attacking = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
+				bool forced = g_focusset && (MotionGet() & PL_CTRL) || pl.forceattackorder;
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
 					(g_focusset << 1) | ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2)
-					| (!!(MotionGet() & PL_CTRL) << 3) | (!!(g_focusset && (MotionGet() & PL_CTRL)) << 4));
+					| (attacking << 3) | (forced << 4),
+					attacking ? &AttackSelect(forced, pl.selected) : NULL);
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}

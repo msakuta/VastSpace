@@ -1,6 +1,6 @@
 #ifndef GLWINDOW_H
 #define GLWINDOW_H
-#include "serial.h"
+#include "../serial.h"
 #include "popup.h"
 extern "C"{
 #include <clib/c.h>
@@ -80,9 +80,9 @@ struct GLwindowState{
  *
  * All drawable OpenGL window system elements should derive this class.
  */
-class GLcomponent : public Serializable{
+class GLelement : public Serializable{
 public:
-	GLcomponent() : xpos(0), ypos(0), width(100), height(100), flags(0){}
+	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0){}
 	void setExtent(const GLWrect &r){xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;}
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
@@ -100,7 +100,7 @@ protected:
  *
  * GLwindow is also bound to Squirrel class object.
  */
-class GLwindow : public GLcomponent{
+class GLwindow : public GLelement{
 public:
 	typedef GLwindow st;
 
@@ -118,6 +118,8 @@ public:
 	void glwDraw(GLwindowState &, double t, int *);
 	void glwDrawMinimized(GLwindowState &gvp, double t, int *pp);
 	void glwAnim(double dt);
+	static void glwPostFrame();
+	static void glwEndFrame();
 	static friend GLwindow **glwFindPP(GLwindow *);
 	template<class C> static GLwindow **findpp(GLwindow **root, C compar);
 	template<const char *title> static bool namecmp(const GLwindow *w){
@@ -172,7 +174,7 @@ public:
 	bool getPinned()const{return flags & GLW_PINNED;}
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
 	static GLwindow *getCaptor(){return captor;}
-	void postClose(){ flags |= GLW_CLOSE; }
+	void postClose(){ flags |= GLW_TODELETE; }
 protected:
 	GLwindow(const char *title = NULL);
 	char *title;
@@ -286,7 +288,7 @@ public:
 
 /// The simplest display element in GLwindow system. This is base class
 /// and all actual buttons inherit this class.
-class GLWbutton : public GLcomponent{
+class GLWbutton : public GLelement{
 public:
 	const char *classname()const;
 	GLwindow *parent;

@@ -2,7 +2,7 @@
 #define ENTITY_H
 #include "serial.h"
 #include "war.h"
-#include "popup.h"
+#include "glw/popup.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>

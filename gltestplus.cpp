@@ -25,7 +25,7 @@
 #include "cmd.h"
 #include "keybind.h"
 #include "motion.h"
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "Scarry.h"
 #include "material.h"
 #include "Sceptor.h"
@@ -96,7 +96,7 @@ public:
 	virtual void onEntity(Entity *) = 0; ///< Callback for all Entities in the selection box.
 };
 
-static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc = NULL);
+static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
 
 Player pl;
 double &flypower = pl.freelook->flypower;
@@ -753,6 +753,9 @@ void display_func(void){
 		// Really should be in draw method, since windows are property of the client.
 		glwlist->glwAnim(dt);
 
+		// Quite suspicious about position, but at least postframe opportunity must be kept.
+		GLwindow::glwEndFrame();
+
 		gametime = t1;
 	}
 	Viewer viewer;
@@ -824,12 +827,8 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc){
 	Entity *pt;
 	Mat4d mat, mat2;
-	int viewstate = 0;
-	bool draw = flags & 1;
-	bool preview = !!(flags & 2);
+//	int viewstate = 0;
 	bool pointselect = !!(flags & 4);
-	bool attacking = !!(flags & (1<<3));
-	bool forceattack = !!(flags & (1<<4));
 	double best = 1e50;
 	double g_far = g_space_far_clip, g_near = g_space_near_clip;
 	Entity *ptbest = NULL;
@@ -870,27 +869,14 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	mat[1] = 0., mat[5] = 2 /** g_near*/ / (y1 - y0), mat[9] = (y1 + y0) / (y1 - y0), mat[13] = 0.;
 	mat[2] = 0., mat[6] = 0., mat[10] = -(g_far + g_near) / (g_far - g_near), mat[14] = -2. * g_far * g_near / (g_far - g_near);
 	mat[3] = 0., mat[7] = 0., mat[11] = -1., mat[15] = 0.;
-/*	glPushMatrix();
-	glLoadIdentity();
-	glFrustum(x0, x1, y0, y1, g_near, g_far);
-	{
-		int i;
-		glGetIntegerv(GL_MATRIX_MODE, &i);
-		glGetDoublev(i, mat);
-	}
-	glPopMatrix();*/
 	mat2 = mat * rot;
 	Vec3d plpos = pl.getpos();
-/*	if(!draw && !attacking && !forceattack){
-		if(preview)
-			pl.chases.clear();
-		else
-			pl.selected = NULL;
-	}*/
 	bool ret = false;
+
+	// Cycle through both Entity list and Bullet list, but only ones that tells its selectable.
 	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int li = 0; li < 2; li++)
-	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()/* && (2 <= viewstate || pt->vft == &rstation_s)*/){
+	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;
@@ -904,66 +890,26 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
 		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
 		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
-/*			if(pointselect){
-				Vec3d ray(x, y, -1);
-				double hit;
-				if(!pt->tracehit(plpos, ray, 0., g_far, &hit, NULL, NULL)){
-					continue;
-				}
-			}*/
-//			bool attackingCheck = !attacking || (forceattack || pt->race != pl.selected->race);
 
+			// Leave all detail to callback
 			if(!pointselect && sbc)
 				sbc->onEntity(pt);
 
-			if(pointselect/* || attacking*/){
+			// If only one Entity is to be selected, find the nearest one to the camera.
+			if(pointselect){
 				double size = pt->hitradius() + sp;
-				if(/*attackingCheck ||*/ 0 <= size && size < best){
+				if(0 <= size && size < best){
 					best = size;
 					ptbest = pt;
 				}
 			}
-/*			else if(preview){
-				pl.chase = pt;
-				pl.chases.insert(pt);
-			}
-			else if(draw){
-				double (*cuts)[2];
-				int i;
-				cuts = CircleCuts(16);
-				glPushMatrix();
-				gldTranslate3dv(pt->pos);
-				glMultMatrixd(irot);
-				gldScaled(pt->hitradius());
-				glBegin(GL_LINE_LOOP);
-				for(i = 0; i < 16; i++)
-					glVertex2dv(cuts[i]);
-				glEnd();
-				glPopMatrix();
-			}
-			else{
-				pt->selectnext = pl.selected;
-				pl.selected = pt;
-			}*/
 		}
 	}
-/*	if(!draw){
-		if(attacking){
-		}
-		else if(preview){
-			if(ptbest){
-				pl.chase = ptbest;
-				pl.chases.insert(ptbest);
-			}
-		}
-		else if(pointselect){
-			pl.selected = ptbest;
-			if(ptbest)
-				ptbest->selectnext = NULL;
-		}
-	}*/
+
+	// Leave all detail to callback
 	if(pointselect && ptbest && sbc)
 		sbc->onEntity(ptbest);
+
 	return ret;
 }
 
@@ -1112,8 +1058,7 @@ void mouse_func(int button, int state, int x, int y){
 				bool forced = g_focusset && (MotionGet() & PL_CTRL) || pl.forceattackorder;
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
-					/*(g_focusset << 1) |*/ ((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2)
-					/*| (attacking << 3) | (forced << 4)*/,
+					((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2),
 					attacking ? (select_box_callback*)&AttackSelect(forced, pl.selected) : g_focusset ? (select_box_callback*)&FocusSelect() : (select_box_callback*)&SelectSelect());
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;

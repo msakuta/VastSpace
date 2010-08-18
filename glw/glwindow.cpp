@@ -3,11 +3,13 @@
  * Implements GLWbutton branch too.
  */
 #include "glwindow.h"
-#include "cmd.h"
-#include "antiglut.h"
-#include "viewer.h"
-#include "material.h"
-#include "player.h" // GLWmoveOrderButton
+#include "../cmd.h"
+#include "../antiglut.h"
+#include "../viewer.h"
+#include "../material.h"
+#include "../player.h" // GLWmoveOrderButton
+#include "../sqadapt.h"
+#include "message.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -630,7 +632,16 @@ void GLwindow::mouseDrag(int x, int y){
 		glwdrag->ypos = gvp.h - glwdrag->height;
 }
 
-
+void GLwindow::glwEndFrame(){
+	GLwindow *ret;
+	for(ret = glwlist; ret;) if(ret->flags & GLW_TODELETE){
+		GLwindow *next = ret->next;
+		ret->glwFree();
+		ret = next;
+	}
+	else
+		ret = ret->next;
+}
 
 
 
@@ -1088,7 +1099,8 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 
 
 
-
+/// The tip window. It floats over all GLwindows to describe what the element (e.g. button) means
+/// to the player.
 class GLWtip : public GLwindow{
 public:
 	const char *tips;
@@ -1368,6 +1380,76 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** \brief Constructs a message window.
+ * \param messagestring The message string to display. The window size is adjusted to fit to the string.
+ * \param timer Sets time to display the message. Set zero to introduce infinite message.
+ * \param onDestroy Called on destructon of this object. */
+GLWmessage::GLWmessage(const char *messagestring, double atimer, const char *aonDestroy) : resized(false), string(messagestring), timer(atimer), onDestroy(aonDestroy){
+}
+
+GLWmessage::~GLWmessage(){
+	if(onDestroy.len()){
+		if(SQ_FAILED(sq_compilebuffer(g_sqvm, onDestroy, onDestroy.len(), _SC("GLWmessage"), 0))){
+			CmdPrint("Compile error");
+		}
+		else{
+			sq_pushroottable(g_sqvm);
+			sq_call(g_sqvm, 1, 0, 0);
+			sq_pop(g_sqvm, 1);
+		}
+	}
+}
+
+void GLWmessage::draw(GLwindowState &ws, double){
+	if(!string)
+		return;
+
+	if(!resized){
+		resized = true;
+
+		int hcenter = ws.w / 2;
+		int width = glwsizef(string);
+
+		GLWrect localrect = GLWrect(hcenter - width / 2, ws.h / 3, hcenter + width / 2, ws.h / 3 + fontheight);
+
+		GLWrect wrect = adjustRect(localrect);
+
+		setExtent(wrect);
+	}
+
+	GLWrect r = clientRect();
+	glwpos2d(r.x0, r.y0 + fontheight);
+	glwprintf(string);
+}
+
+void GLWmessage::anim(double dt){
+	if(timer){
+		if(timer - dt < 0.){
+			postClose();
+		}
+		else
+			timer -= dt;
+	}
+}
 
 
 

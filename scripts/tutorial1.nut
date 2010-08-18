@@ -18,6 +18,31 @@ player.viewdist = 0.25;
 
 foreachents(player.cs, function(e){e.command("Halt");});
 
+langmessages <- {
+	eng =
+	[
+	"Welcome to Tutorial 1",
+	"Here you can train how to control camera.",
+	"You can right-drag on empty space to rotate the camera.",
+	],
+	jpn =
+	[
+	"チュートリアル1へようこそ",
+	"ここではカメラの操作方法を練習することができます。",
+	"何もない空間を右ボタンでドラッグすると、カメラを回転することができます。",
+	]
+}
+
+cm <- 0;
+
+function inccm(){
+	local messages = langmessages[lang == eng ? "eng" : "jpn"];
+	if(cm < messages.len())
+		return GLWmessage(messages[cm++], 5., "inccm()");
+}
+
+local mes = inccm();
+
 function frameproc(dt){
 	framecount++;
 

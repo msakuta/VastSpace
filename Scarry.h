@@ -2,7 +2,7 @@
 #define SCARRY_H
 #include "Warpable.h"
 #include "arms.h"
-#include "glwindow.h"
+#include "glw/glwindow.h"
 
 #define SCARRY_BUILDQUESIZE 8
 #define SCARRY_SCALE .0010

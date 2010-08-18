@@ -105,6 +105,10 @@ class GLWbuttonMatrix extends GLwindow{
 	void addMoveOrderButton(string buttonimagefile, string pushedimagefile, string tips);
 }
 
+class GLWmessage extends GLwindow{
+	constructor(string message, float timer, string onDestroy);
+}
+
 int screenwidth();
 int screenheight();
 
@@ -411,12 +415,12 @@ function initUI(){
 	but.title = tlate("command");
 	but.x = 0;
 	but.y = sch - but.height;
-	but.addButton("halt", "textures/halt.png", tlate("Halt"));
-	but.addButton("dock", "textures/dock.png", tlate("Dock"));
-	but.addButton("undock", "textures/undock.png", tlate("Undock"));
 	but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
 	but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
 	but.addToggleButton("forceattackorder", "textures/forceattack2.png", "textures/forceattack.png", tlate("Force Attack order"));
+	but.addButton("halt", "textures/halt.png", tlate("Halt"));
+	but.addButton("dock", "textures/dock.png", tlate("Dock"));
+	but.addButton("undock", "textures/undock.png", tlate("Undock"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

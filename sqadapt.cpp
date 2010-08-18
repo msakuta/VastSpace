@@ -7,8 +7,9 @@
 #include "btadapt.h"
 #include "EntityCommand.h"
 #include "Scarry.h"
-#include "glwindow.h"
-#include "GLWentlist.h"
+#include "glw/glwindow.h"
+#include "glw/message.h"
+#include "glw/GLWentlist.h"
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -703,6 +704,26 @@ static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
 		return SQ_ERROR;
 	return 0;
 }
+
+
+static SQInteger sqf_GLWmessage_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	SQInteger x, y, sx, sy;
+	const SQChar *string;
+	SQFloat timer;
+	const SQChar *onDestroy;
+	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &string)))
+		string = "";
+	if(argc <= 2 || SQ_FAILED(sq_getfloat(v, 3, &timer)))
+		timer = 0.;
+	if(argc <= 3 || SQ_FAILED(sq_getstring(v, 4, &onDestroy)))
+		onDestroy = "";
+	GLWmessage *p = new GLWmessage(string, timer, onDestroy);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	return 0;
+}
+
 
 static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 	GLWbuttonMatrix *p;
@@ -1557,6 +1578,16 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("addMoveOrderButton"), -1);
 	sq_newclosure(v, sqf_GLWbuttonMatrix_addMoveOrderButton, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class GLWmessage
+	sq_pushstring(v, _SC("GLWmessage"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("constructor"), -1);
+	sq_newclosure(v, sqf_GLWmessage_constructor, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

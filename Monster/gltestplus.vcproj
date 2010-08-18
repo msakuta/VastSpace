@@ -419,10 +419,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\glwindow.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\judge.cpp"
 				>
 			</File>
@@ -479,10 +475,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\solarmap.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\sqadapt.cpp"
 				>
 			</File>
@@ -524,6 +516,7 @@
 			</File>
 			<Filter
 				Name="draw"
+				Filter="../draw/*"
 				>
 				<File
 					RelativePath="..\draw\effects.cpp"
@@ -548,6 +541,7 @@
 			</Filter>
 			<Filter
 				Name="calc"
+				Filter="../calc/*"
 				>
 				<File
 					RelativePath="..\calc\calc.c"
@@ -559,6 +553,19 @@
 				</File>
 				<File
 					RelativePath="..\calc\calc3.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="glw"
+				Filter="../glw/*"
+				>
+				<File
+					RelativePath="..\glw\glwindow.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\solarmap.cpp"
 					>
 				</File>
 			</Filter>
@@ -673,14 +680,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\GLWentlist.h"
-				>
-			</File>
-			<File
-				RelativePath="..\glwindow.h"
-				>
-			</File>
-			<File
 				RelativePath="..\judge.h"
 				>
 			</File>
@@ -705,15 +704,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\popup.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Respawn.h"
-				>
-			</File>
-			<File
-				RelativePath="..\draw\ring-draw.h"
 				>
 			</File>
 			<File
@@ -780,6 +771,36 @@
 				RelativePath="..\Warpable.h"
 				>
 			</File>
+			<Filter
+				Name="draw"
+				Filter="../draw/*"
+				>
+				<File
+					RelativePath="..\draw\ring-draw.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="glw"
+				Filter="../glw/*"
+				>
+				<File
+					RelativePath="..\glw\GLWentlist.h"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\glwindow.h"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\message.h"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\popup.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"

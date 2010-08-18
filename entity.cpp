@@ -11,7 +11,7 @@ extern "C"{
 #include "sceptor.h"
 #include "Scarry.h"
 #include "RStation.h"
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "serial_util.h"
 #include "Destroyer.h"
 #include "btadapt.h"

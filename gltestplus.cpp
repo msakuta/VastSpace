@@ -750,6 +750,9 @@ void display_func(void){
 			pl.chase->control(&inputs, dt);
 		}
 
+		if(pl.control)
+			glwfocus = NULL;
+
 		// Really should be in draw method, since windows are property of the client.
 		glwlist->glwAnim(dt);
 
@@ -1461,8 +1464,10 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			case VK_DELETE: BindKeyUp(DELETEKEY); break;
 //			case VK_ESCAPE: BindKeyUp(ESC); break;
 			case VK_ESCAPE: if(mouse_captured){
+//				uncapture_mouse();
 				mouse_captured = false;
 				while(ShowCursor(TRUE) < 0);
+				while(0 <= ShowCursor(FALSE));
 			}
 			case VK_SHIFT: BindKeyUp(1); break;
 			case VK_CONTROL: BindKeyUp(2); break;
@@ -1518,8 +1523,13 @@ static int cmd_exit(int argc, char *argv[]){
 static int cmd_control(int argc, char *argv[]){
 	if(pl.control)
 		pl.control = NULL;
-	else if(pl.selected)
+	else if(pl.selected){
 		pl.control = pl.selected;
+		pl.mover = pl.freelook;
+		pl.chase = pl.selected;
+		capture_mouse();
+		mouse_captured = true;
+	}
 	return 0;
 }
 

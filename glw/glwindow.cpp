@@ -1402,7 +1402,7 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 /** \brief Constructs a message window.
  * \param messagestring The message string to display. The window size is adjusted to fit to the string.
  * \param timer Sets time to display the message. Set zero to introduce infinite message.
- * \param onDestroy Called on destructon of this object. */
+ * \param onDestroy Squirrel script executed on destructon of this object. */
 GLWmessage::GLWmessage(const char *messagestring, double atimer, const char *aonDestroy) : resized(false), string(messagestring), timer(atimer), onDestroy(aonDestroy){
 }
 

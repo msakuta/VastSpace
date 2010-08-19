@@ -201,6 +201,7 @@ eng <- {
 	["Entity List"]="Entity List",
 	move="Move",
 	System="System",
+	Control="Direct Control (Escape to exit)",
 	["Follow Camera"]="Follow Selected Object with Camera"
 }
 
@@ -214,6 +215,7 @@ jpn <- {
 	["Move order"]="移動命令",
 	Halt="停止命令",
 	System="システム",
+	Control="直接制御(Escで終了)",
 	["Follow Camera"]="選択オブジェクトをカメラで追跡",
 	["Switch Camera Mode"]="モード切替",
 	["Reset Camera Rotation"]="回転初期化",
@@ -421,6 +423,7 @@ function initUI(){
 	but.addButton("halt", "textures/halt.png", tlate("Halt"));
 	but.addButton("dock", "textures/dock.png", tlate("Dock"));
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
+	but.addButton("control", "textures/control.png", tlate("Control"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

@@ -3,6 +3,10 @@
 #include "glwindow.h"
 #include <cpplib/dstring.h>
 
+/** \brief Small window that displays text for a period of time.
+ *
+ * You can pass event handler to response on destruction of this window.
+ */
 class GLWmessage : public GLwindow{
 	bool resized;
 	dstring string;

@@ -181,6 +181,8 @@ bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d
 		Vec3d hit;
 		for(i = 0; i < 3; i++){
 			int s = ldir[i] < 0. ? -1 : 1, a = i;
+			if(ldir[a] == 0.) // Avoid zerodiv
+				continue;
 			f = (-lsrc[a] - s * scale[a]) / ldir[a];
 			if(!(mint <= f && f < best))
 				continue;

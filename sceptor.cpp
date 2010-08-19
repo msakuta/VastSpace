@@ -1275,19 +1275,18 @@ double Sceptor::hitradius()const{
 int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	double sc[3];
 	double best = dt, retf;
-	int reti = 0, i, n;
+	int reti = 0, n;
 	for(n = 0; n < nhitboxes; n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;
 		rot = this->rot * hitboxes[n].rot;
-		int i;
-		for(i = 0; i < 3; i++)
-			sc[i] = hitboxes[n].sc[i] + rad;
+		for(int j = 0; j < 3; j++)
+			sc[j] = hitboxes[n].sc[j] + rad;
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
-			reti = i + 1;
+			reti = n + 1;
 		}
 	}
 	return reti;

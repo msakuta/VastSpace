@@ -28,6 +28,8 @@ double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
 static int glwPutTextureStringN(const char *s, int n, int size);
 int glwGetSizeTextureString(const char *s, int size = -1);
+int glwPutStringML(const char *s, int size = fontheight);
+void glwGetSizeStringML(const char *s, int size = fontheight, int *retxsize = NULL, int *retysize = NULL);
 
 /// Window margin
 const long margin = 4;
@@ -1116,8 +1118,12 @@ public:
 		if(!tips)
 			return;
 		GLWrect r = clientRect();
-		glwpos2d(r.x0, r.y0 + fontheight);
-		glwprintf(tips);
+//		glwpos2d(r.x0, r.y0 + fontheight);
+		glPushMatrix();
+		glTranslated(r.x0, r.y0 + fontheight + 2, 0.);
+		glScaled(glwfontscale, glwfontscale, 1.);
+		glwPutStringML(tips);
+		glPopMatrix();
 	}
 };
 
@@ -1141,7 +1147,9 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 		return 0;
 	}
 	else if(state == GLUT_KEEP_UP && tipstring){
-		GLWrect localrect = GLWrect(xpos, ypos - fontheight - 3 * margin, xpos + glwsizef(tipstring) + 3 * margin, ypos);
+		int xs, ys;
+		glwGetSizeStringML(tipstring, fontheight, &xs, &ys);
+		GLWrect localrect = GLWrect(xpos, ypos - ys - 3 * margin, xpos + xs + 3 * margin, ypos);
 		GLWrect parentrect = parent->clientRect();
 		localrect.rmove(parentrect.x0, parentrect.y0);
 
@@ -1689,7 +1697,7 @@ static int glwPutTextureStringN(const char *s, int n, int size){
 //	glPopMatrix();
 	glTranslatef(sumx, 0.f, 0.f);
 	glBindTexture(GL_TEXTURE_2D, oldtex);
-	return sx;
+	return sumx;
 }
 
 int glwPutTextureString(const char *s, int size = fontheight){
@@ -1784,7 +1792,44 @@ int glwsizef(const char *f, ...){
 	return ret;
 }
 
+/// Prints multi-line string, each line separated by \\n.
+int glwPutStringML(const char *s, int size){
+	while(const char *p = strchr(s, '\n')){
+		int xs = glwPutTextureStringN(s, p - s, size);
+		glTranslatef(-xs, size, 0.f);
+		s = p + 1;
+	}
+	return glwPutTextureStringN(s, strlen(s), size);
+}
 
+/// Gets dimensions of multiline string.
+/// \param retxsize Pointer to variable that stores returned size along x axis. This is widest value of
+///                 all lines. Can be NULL to be ignored.
+/// \param retysize Pointer to variable that stores returned size along y axis. This is effectively
+///                 base height times number of '\\n' in the string, except the last empty line.
+///                 Can be NULL to be ignored.
+void glwGetSizeStringML(const char *s, int size, int *retxsize, int *retysize){
+	int xs;
+	int xsize = 0;
+	int ysize = 0;
+	while(const char *p = strchr(s, '\n')){
+		xs = glwGetSizeTextureStringN(s, p - s, size);
+		ysize += size;
+		if(xsize < xs)
+			xsize = xs;
+		s = p + 1;
+	}
+	xs = glwGetSizeTextureStringN(s, strlen(s), size);
+	if(xsize < xs)
+		xsize = xs;
+
+	// Trailing empty line is excluded from draw area.
+	if(xs)
+		ysize += size;
+
+	if(retxsize) *retxsize = xsize;
+	if(retysize) *retysize = ysize;
+}
 
 
 

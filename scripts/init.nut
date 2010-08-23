@@ -200,8 +200,9 @@ eng <- {
 	camera="Camera",
 	["Entity List"]="Entity List",
 	move="Move",
+	["Move order"]="Move order\nHold shift to set z direction",
 	System="System",
-	Control="Direct Control (Escape to exit)",
+	Control="Direct Control\n(Escape to exit)",
 	["Follow Camera"]="Follow Selected Object with Camera"
 }
 
@@ -212,10 +213,10 @@ jpn <- {
 	Undock="アンドッキング",
 	["Entity List"]="実体リスト",
 	move="移動",
-	["Move order"]="移動命令",
+	["Move order"]="移動命令\nShiftでZ方向指定",
 	Halt="停止命令",
 	System="システム",
-	Control="直接制御(Escで終了)",
+	Control="直接制御\n(Escで終了)",
 	["Follow Camera"]="選択オブジェクトをカメラで追跡",
 	["Switch Camera Mode"]="モード切替",
 	["Reset Camera Rotation"]="回転初期化",

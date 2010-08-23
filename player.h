@@ -29,6 +29,7 @@ class CoordSys;
 class Viewer;
 struct teleport;
 struct war_draw_data;
+class GLWstateButton;
 
 /** \brief The Player in front of display.
  *
@@ -125,12 +126,15 @@ public:
 #ifdef _WIN32
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
+	void uncontrol(){ control = NULL; } ///< Quit controlling an Entity.
+
 	static float camera_mode_switch_time;
 	static int g_overlay; // Overlay display level
 	static void cmdInit(Player &pl);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);
+	static int cmd_control(int argc, char *argv[], void *pv); ///< Switch control of selected Entity
 	static teleport *findTeleport(const char *, int flags = ~0); // returns teleport node found
 	static teleport *addTeleport(); // returns allocated uninitialized struct
 	typedef unsigned teleport_iterator;
@@ -149,6 +153,10 @@ public:
 
 	static SQInteger sqf_setmover(HSQUIRRELVM v);
 	static SQInteger sqf_getmover(HSQUIRRELVM v);
+
+	/// Creates a button to toggle control of selected Entity.
+	static GLWstateButton *newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips);
+
 private:
 //	int gear; /* acceleration gear in ghost mode */
 };
@@ -172,5 +180,6 @@ public:
 
 inline int FreelookMover::getGear()const{return gear;}
 
+extern void capture_mouse();
 
 #endif

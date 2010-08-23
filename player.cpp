@@ -8,6 +8,7 @@
 #include "stellar_file.h"
 #include "sqadapt.h"
 #include "btadapt.h"
+#include "glw/glwindow.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -309,6 +310,7 @@ void Player::cmdInit(Player &pl){
 	CmdAddParam("mover", cmd_mover, &pl);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &pl);
+	CmdAddParam("control", cmd_control, &pl);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("g_overlay", &g_overlay, cvar_int);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
@@ -364,6 +366,21 @@ int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 	pl.move_z = 0.;
 	return 0;
 }
+
+int Player::cmd_control(int argc, char *argv[], void *pv){
+	Player &pl = *(Player*)pv;
+	if(pl.control)
+		pl.control = NULL;
+	else if(pl.selected){
+		pl.control = pl.selected;
+		pl.mover = pl.nextmover = pl.freelook;
+		pl.chase = pl.selected;
+		pl.mover->setrot(quat_u);
+		capture_mouse();
+	}
+	return 0;
+}
+
 
 teleport *Player::findTeleport(const char *name, int flags){
 	for(int i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)
@@ -534,4 +551,25 @@ SQInteger Player::sqf_getmover(HSQUIRRELVM v){
 	return 1;
 }
 
+/// A 2-state button that represents whether the player is controlling something.
+/// \sa Player::newControlButton
+class GLWcontrolButton : public GLWstateButton{
+	Player &pl;
+public:
+	typedef GLWstateButton st;
+	GLWcontrolButton(Player &apl, const char *filename, const char *filename2, const char *tips = NULL) : st(filename, filename2, tips), pl(apl){}
+	virtual bool state()const{return pl.control;}
+	/// Issues "control" console command.
+	virtual void press(){
+		char *str[1] = {"control"};
+		Player::cmd_control(1, str, &pl);
+	}
+};
 
+/// \param pl The Player object that is bound to the newly created button.
+/// \param filename File name of button image when being active
+/// \param filename2 File name of button image when being inactive
+/// \param tips Displayed when mouse cursor is floating over.
+GLWstateButton *Player::newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips){
+	return new GLWcontrolButton(pl, filename, filename2, tips);
+};

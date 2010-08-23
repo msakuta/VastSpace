@@ -916,7 +916,7 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	return ret;
 }
 
-static void capture_mouse(){
+void capture_mouse(){
 	int c;
 	extern HWND hWndApp;
 	HWND hwd = hWndApp;
@@ -932,6 +932,7 @@ static void capture_mouse(){
 	while(0 <= c)
 		c = ShowCursor(FALSE);
 	glwfocus = NULL;
+	mouse_captured = true;
 }
 
 static void uncapture_mouse(){
@@ -1280,6 +1281,10 @@ static void key_func(unsigned char key, int x, int y){
 		return;
 	}
 
+	// The Esc key is the last resort to exit controlling
+	if(key == ESC)
+		pl.uncontrol();
+
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
@@ -1401,7 +1406,6 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				}
 
 				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
-					mouse_captured = 1;
 					capture_mouse();
 				}
 			}
@@ -1520,19 +1524,6 @@ static int cmd_exit(int argc, char *argv[]){
 	return 0;
 }
 
-static int cmd_control(int argc, char *argv[]){
-	if(pl.control)
-		pl.control = NULL;
-	else if(pl.selected){
-		pl.control = pl.selected;
-		pl.mover = pl.freelook;
-		pl.chase = pl.selected;
-		capture_mouse();
-		mouse_captured = true;
-	}
-	return 0;
-}
-
 
 #if defined _WIN32
 HWND hWndApp;
@@ -1582,7 +1573,6 @@ int main(int argc, char *argv[])
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
-	CmdAdd("control", cmd_control);
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);

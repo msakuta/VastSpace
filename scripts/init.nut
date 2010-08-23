@@ -423,7 +423,7 @@ function initUI(){
 	but.addButton("halt", "textures/halt.png", tlate("Halt"));
 	but.addButton("dock", "textures/dock.png", tlate("Dock"));
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
-	but.addButton("control", "textures/control.png", tlate("Control"));
+	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(4, 1);

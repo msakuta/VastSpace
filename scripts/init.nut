@@ -83,6 +83,7 @@ class Player{
 void register_console_command(string name, function);
 
 class GLwindow{
+	bool alive;
 	string classname;
 	int x;
 	int y;
@@ -226,6 +227,9 @@ jpn <- {
 	["Attack order"]="攻撃命令",
 	["Force Attack order"]="強制攻撃命令",
 	["Tutorial"]="チュートリアル",
+	["Proceed"]="次へ",
+	["Restart"]="最初から",
+	["End"]="終わる",
 }
 
 // Set default language to english

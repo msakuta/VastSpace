@@ -3,9 +3,9 @@ initUI();
 
 local tutorialbut = GLWbuttonMatrix(3, 1);
 tutorialbut.title = tlate("Tutorial");
-tutorialbut.addButton("tutor_proceed", "textures/pause.png", tlate("Proceed"));
-tutorialbut.addButton("tutor_restart", "textures/unpause.png", tlate("Restart"));
-tutorialbut.addButton("tutor_quit", "textures/unpause.png", tlate("Quit"));
+tutorialbut.addButton("tutor_restart", "textures/tutor_restart.png", tlate("Restart"));
+tutorialbut.addButton("tutor_proceed", "textures/tutor_proceed.png", tlate("Proceed"));
+tutorialbut.addButton("tutor_end", "textures/tutor_end.png", tlate("End"));
 tutorialbut.x = screenwidth() - tutorialbut.width;
 tutorialbut.y = sysbut.y - tutorialbut.height;
 tutorialbut.pinned = true;
@@ -100,7 +100,6 @@ function inccm(){
 			}
 		}
 		else{
-			sequenceIndex++;
 			messageIndex = 0;
 		}
 	}
@@ -128,7 +127,7 @@ register_console_command("tutor_restart", function(){
 	inccm();
 });
 
-register_console_command("tutor_quit", function(){
+register_console_command("tutor_end", function(){
 	sequenceIndex = 1000;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){

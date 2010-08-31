@@ -50,9 +50,9 @@ GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 	}
 	else
 		title = NULL;
-	next = glwlist;
+/*	next = glwlist;
 	glwlist = this;
-	glwActivate(&glwlist);
+	glwActivate(&glwlist);*/
 }
 
 /// Appends a GLwindow to screen window list.
@@ -81,6 +81,8 @@ void glwActivate(GLwindow **ppwnd){
 		glwfocus = wnd;
 		glwfocus->flags &= ~GLW_COLLAPSE;
 	}
+	else if(glwfocus == wnd)
+		glwfocus = NULL;
 }
 
 /// Called when a window is changed its size.
@@ -634,9 +636,15 @@ void GLwindow::mouseDrag(int x, int y){
 		glwdrag->ypos = gvp.h - glwdrag->height;
 }
 
+/// Called at very end of a frame, to free objects marked as to be deleted.
 void GLwindow::glwEndFrame(){
 	GLwindow *ret;
 	for(ret = glwlist; ret;) if(ret->flags & GLW_TODELETE){
+
+		// Quit dragging destroyed window.
+		if(glwdrag == ret)
+			glwdrag = NULL;
+
 		GLwindow *next = ret->next;
 		ret->glwFree();
 		ret = next;
@@ -1021,7 +1029,9 @@ GLwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitl
 }
 
 GLwindowMenu *glwPopupMenu(GLwindowState &gvp, const PopupMenu &list){
-	return new GLwindowPopup(NULL, gvp, list);
+	GLwindowMenu *ret = new GLwindowPopup(NULL, gvp, list);
+	glwAppend(ret);
+	return ret;
 }
 
 
@@ -1112,6 +1122,7 @@ public:
 		ypos = -100;
 		width = -100;
 		height = -100;
+		glwAppend(this); // Append after the object is constructed.
 	}
 	virtual bool focusable()const{return false;}
 	virtual void draw(GLwindowState &ws, double t){

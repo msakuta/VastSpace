@@ -285,18 +285,19 @@ int Entity::cmd_property(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
 	if(!ppl || !ppl->selected)
 		return 0;
-	/*glwAppend*/(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
+	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
 	return 0;
 }
 
 void GLWprop::draw(GLwindowState &ws, double t){
 	if(!a)
 		return;
-	std::vector<cpplib::dstring> pl = a->props();
+	GLWrect cr = clientRect();
+	Entity::Props pl = a->props();
 	int i = 0;
-	for(std::vector<cpplib::dstring>::iterator e = pl.begin(); e != pl.end(); e++){
+	for(Entity::Props::iterator e = pl.begin(); e != pl.end(); e++){
 		glColor4f(0,1,1,1);
-		glwpos2d(xpos, ypos + (2 + i++) * getFontHeight());
+		glwpos2d(cr.x0, cr.y0 + (1 + i++) * getFontHeight());
 		glwprintf(*e);
 	}
 }

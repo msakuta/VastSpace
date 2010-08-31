@@ -646,6 +646,7 @@ static SQInteger sqf_GLwindowMenu_constructor(HSQUIRRELVM v){
 	GLwindowMenu *p = new GLwindowMenu(title, 0, NULL, NULL, NULL, sticky);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
+	glwAppend(p);
 	return 0;
 }
 
@@ -692,6 +693,7 @@ static SQInteger sqf_GLwindowBigMenu_constructor(HSQUIRRELVM v){
 	GLwindowMenu *p = GLwindowMenu::newBigMenu();
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
+	glwAppend(p);
 	return 0;
 }
 
@@ -710,6 +712,7 @@ static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
 	GLWbuttonMatrix *p = new GLWbuttonMatrix(x, y, sx, sy);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
+	glwAppend(p);
 	return 0;
 }
 
@@ -729,6 +732,7 @@ static SQInteger sqf_GLWmessage_constructor(HSQUIRRELVM v){
 	GLWmessage *p = new GLWmessage(string, timer, onDestroy);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
+	glwAppend(p);
 	return 0;
 }
 
@@ -822,6 +826,7 @@ static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
 	GLWentlist *p = new GLWentlist(pl);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
+	glwAppend(p);
 	return 0;
 }
 

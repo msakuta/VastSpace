@@ -169,6 +169,7 @@ public:
 	void setClosable(bool f){if(f) flags |= GLW_CLOSE; else flags &= ~GLW_CLOSE;}
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
+	bool isDestroying()const{return flags & GLW_TODELETE;} ///< Is being destroyed. All referrers must be aware of this.
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);} ///< Inverting logic
 	bool getClosable()const{return flags & GLW_CLOSE;}
 	bool getPinned()const{return flags & GLW_PINNED;}

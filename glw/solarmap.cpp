@@ -1120,7 +1120,7 @@ GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
 	static const char *windowtitle = "Solarsystem browser";
 	ppwnd = findpp(&glwlist, &TitleCmp("Solarsystem browser"));
 	if(!ppwnd){
-		/*glwActivate(ppwnd = glwAppend*/(ret = (new GLwindowSolarMap(windowtitle, ppl)));
+		/*glwActivate(ppwnd =*/ glwAppend(ret = (new GLwindowSolarMap(windowtitle, ppl)));
 	}
 	else{
 		glwActivate(ppwnd);

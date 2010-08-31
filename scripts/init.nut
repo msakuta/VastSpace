@@ -225,6 +225,7 @@ jpn <- {
 	["Toggle Pause"]="ポーズ",
 	["Attack order"]="攻撃命令",
 	["Force Attack order"]="強制攻撃命令",
+	["Tutorial"]="チュートリアル",
 }
 
 // Set default language to english
@@ -400,6 +401,8 @@ function init_Universe(){
 	mainmenu.y = sch / 2 - mainmenu.height / 2;
 }
 
+sysbut <- null;
+
 function initUI(){
 	local scw = screenwidth();
 	local sch = screenheight();
@@ -437,7 +440,7 @@ function initUI(){
 	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
 	cambut.pinned = true;
 
-	local sysbut = GLWbuttonMatrix(3, 2, 32, 32);
+	sysbut = GLWbuttonMatrix(3, 2, 32, 32);
 	sysbut.title = tlate("System");
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;

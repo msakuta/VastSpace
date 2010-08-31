@@ -69,7 +69,7 @@ int ::sqa_console_command(int argc, char *argv[], int *retval){
 		sq_pushstring(v, argv[i], -1);
 
 	// It's no use examining returned value in that case calling the function iteslf fails.
-	if(SQ_FAILED(sq_call(v, argc, SQTrue, SQFalse)))
+	if(SQ_FAILED(sq_call(v, argc, SQTrue, SQTrue)))
 		return 0;
 
 	// Assume returned value integer.
@@ -478,15 +478,22 @@ static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 		GLwindow *p;
 		const SQChar *wcs;
 		sq_getstring(v, 2, &wcs);
+
+		// Check if alive first
+		if(!strcmp(wcs, _SC("alive"))){
+			SQUserPointer o;
+			sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
+			return 1;
+		}
 		if(!sqa_refobj(v, (SQUserPointer*)&p))
 			return SQ_ERROR;
 		if(!strcmp(wcs, _SC("x"))){
-			SQInteger x = p->clientRect().x0;
+			SQInteger x = p->extentRect().x0;
 			sq_pushinteger(v, x);
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("y"))){
-			SQInteger y = p->clientRect().y0;
+			SQInteger y = p->extentRect().y0;
 			sq_pushinteger(v, y);
 			return 1;
 		}
@@ -655,10 +662,11 @@ static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
 	return 0;
 }
 
-static SQInteger sqf_GLwindowMenu_close(HSQUIRRELVM v){
-	GLwindowMenu *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
+	GLwindow *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
 	const SQChar *title, *cmd;
 	p->postClose();
 	return 0;
@@ -1258,13 +1266,16 @@ bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	return true;
 }
 
-bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *sr, int idx){
+bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *psr, int idx, bool throwError){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_get(v, idx);
 	SQUserPointer *p;
 	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&p, NULL))){
-		if(sr)
-			*sr = sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+		if(throwError){
+			SQRESULT sr = sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+			if(psr)
+				*psr = sr;
+		}
 		return false;
 	}
 	*o = *p;
@@ -1548,6 +1559,9 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_set"), -1);
 	sq_newclosure(v, sqf_GLwindow_set, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("close"), -1);
+	sq_newclosure(v, sqf_GLwindow_close, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("glwlist"), -1);
@@ -1564,9 +1578,6 @@ void sqa_init(){
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("addItem"), -1);
 	sq_newclosure(v, sqf_GLwindowMenu_addItem, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("close"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_close, 0);
 	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("hide"), -1);
 	sq_newclosure(v, sqf_GLwindowMenu_hide, 0);

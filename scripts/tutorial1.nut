@@ -1,6 +1,15 @@
 
 initUI();
 
+local tutorialbut = GLWbuttonMatrix(3, 1);
+tutorialbut.title = tlate("Tutorial");
+tutorialbut.addButton("tutor_proceed", "textures/pause.png", tlate("Proceed"));
+tutorialbut.addButton("tutor_restart", "textures/unpause.png", tlate("Restart"));
+tutorialbut.addButton("tutor_quit", "textures/unpause.png", tlate("Quit"));
+tutorialbut.x = screenwidth() - tutorialbut.width;
+tutorialbut.y = sysbut.y - tutorialbut.height;
+tutorialbut.pinned = true;
+
 deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 3, player.cs);
 deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 3, player.cs);
 
@@ -18,30 +27,117 @@ player.viewdist = 0.25;
 
 foreachents(player.cs, function(e){e.command("Halt");});
 
+foreachents(player.cs, function(e){
+	if(e.race == 0)
+		player.chase = e;
+});
+
+class MessageSet{
+	count = 0;
+	messages = null;
+	constructor(){
+		messages = [];
+	}
+	function append(m){
+		messages.append(m);
+		count++;
+		return this;
+	}
+}
+
 langmessages <- {
-	eng =
-	[
-	"Welcome to Tutorial 1",
-	"Here you can train how to control camera.",
-	"You can right-drag on empty space to rotate the camera.",
-	],
-	jpn =
-	[
-	"チュートリアル1へようこそ",
-	"ここではカメラの操作方法を練習することができます。",
-	"何もない空間を右ボタンでドラッグすると、カメラを回転することができます。",
+	eng = [
+	MessageSet()
+	.append("Welcome to Tutorial 1")
+	.append("Here you can learn how to control camera.")
+	.append("You can right-drag on empty space to rotate the camera.")
+	.append("Press proceed button when you are ready.")
+	,
+	MessageSet()
+	.append("You can use mouse wheels or PageUp/PageDown keys to zoom in/out camera.")
+	.append("Press proceed button when you are ready.")
+	,
+	MessageSet()
+	.append("You can select units by left-clicking on it or dragging around units.")
+	]
+	,
+	jpn = [
+	MessageSet()
+	.append("チュートリアル1へようこそ")
+	.append("ここではカメラの操作方法を練習することができます。")
+	.append("何もない空間を右ボタンでドラッグすると、カメラを回転することができます。")
+	.append("用意ができたら「次へ」ボタンを押してください。")
+	,
+	MessageSet()
+	.append("マウスホイールかPageUp/PageDownキーでカメラをズームすることができます。")
+	.append("用意ができたら「次へ」ボタンを押してください。")
+	,
+	MessageSet()
+	.append("ユニットを選択するには、ユニットを左クリックするか、周囲をドラッグします。")
 	]
 }
 
-cm <- 0;
+sequenceIndex <- 0;
+messageIndex <- 0;
+lastmessage <- null;
+suppressNext <- false;
 
 function inccm(){
-	local messages = langmessages[lang == eng ? "eng" : "jpn"];
-	if(cm < messages.len())
-		return GLWmessage(messages[cm++], 5., "inccm()");
+	if(suppressNext){
+		suppressNext = false;
+		return;
+	}
+	local sequences = langmessages[lang == eng ? "eng" : "jpn"];
+	if(sequenceIndex < sequences.len()){
+		local messages = sequences[sequenceIndex];
+		if(messageIndex < messages.count){
+			local message = messages.messages[messageIndex];
+			if(message == "")
+				return messageIndex++;
+			else{
+				messageIndex++;
+				return lastmessage = GLWmessage(message, 5., "inccm()");
+			}
+		}
+		else{
+			sequenceIndex++;
+			messageIndex = 0;
+		}
+	}
 }
 
 local mes = inccm();
+
+register_console_command("tutor_proceed", function(){
+	sequenceIndex++;
+	messageIndex = 0;
+	if(lastmessage != null && lastmessage.alive){
+		suppressNext = true;
+		lastmessage.close();
+	}
+	inccm();
+});
+
+register_console_command("tutor_restart", function(){
+	sequenceIndex = 0;
+	messageIndex = 0;
+	if(lastmessage != null && lastmessage.alive){
+		suppressNext = true;
+		lastmessage.close();
+	}
+	inccm();
+});
+
+register_console_command("tutor_quit", function(){
+	sequenceIndex = 1000;
+	messageIndex = 0;
+	if(lastmessage != null && lastmessage.alive){
+		suppressNext = true;
+		lastmessage.close();
+	}
+	inccm();
+});
+
 
 function frameproc(dt){
 	framecount++;

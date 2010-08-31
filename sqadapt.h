@@ -38,7 +38,7 @@ extern HSQUIRRELVM g_sqvm;
 extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -3);
-bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1);
+bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
@@ -136,6 +136,11 @@ SQInteger sqf_get(HSQUIRRELVM v){
 		return sr;
 	if(!strcmp(wcs, _SC("classname"))){
 		sq_pushstring(v, p->classname(), -1);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("alive"))){
+		SQUserPointer o;
+		sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
 		return 1;
 	}
 	sq_pushnull(v);

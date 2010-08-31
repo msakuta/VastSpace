@@ -204,7 +204,8 @@ eng <- {
 	["Move order"]="Move order\nHold shift to set z direction",
 	System="System",
 	Control="Direct Control\n(Escape to exit)",
-	["Follow Camera"]="Follow Selected Object with Camera"
+	["Follow Camera"]="Follow Selected Object with Camera",
+	["Solarmap"]="Solarsystem browser",
 }
 
 jpn <- {
@@ -224,6 +225,7 @@ jpn <- {
 	["Eject Camera"]="脱出！",
 	["Exit game"]="ゲーム終了",
 	["Toggle Pause"]="ポーズ",
+	["Solarmap"]="太陽系ブラウザ",
 	["Attack order"]="攻撃命令",
 	["Force Attack order"]="強制攻撃命令",
 	["Tutorial"]="チュートリアル",
@@ -450,6 +452,7 @@ function initUI(){
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.png", tlate("Exit game"));
 	sysbut.addToggleButton("pause", "textures/pause.png", "textures/unpause.png", tlate("Toggle Pause"));
+	sysbut.addButton("togglesolarmap", "textures/solarmap.png", tlate("Solarmap"));
 	sysbut.pinned = true;
 }
 

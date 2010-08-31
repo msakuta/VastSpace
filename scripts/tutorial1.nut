@@ -59,6 +59,7 @@ langmessages <- {
 	,
 	MessageSet()
 	.append("You can select units by left-clicking on it or dragging around units.")
+	.append("A bar indicating status of vehicle damages is shown over selected units.")
 	]
 	,
 	jpn = [
@@ -74,6 +75,7 @@ langmessages <- {
 	,
 	MessageSet()
 	.append("ユニットを選択するには、ユニットを左クリックするか、周囲をドラッグします。")
+	.append("選択されたユニットの上部には、機体のダメージ状況を示すバーが表示されます。")
 	]
 }
 

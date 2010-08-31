@@ -167,11 +167,13 @@ public:
 	GLwindow *getNext(){return next;} ///< \brief Getter for next member.
 	void setVisible(bool f);
 	void setClosable(bool f){if(f) flags |= GLW_CLOSE; else flags &= ~GLW_CLOSE;}
+	void setCollapsable(bool f){if(f) flags |= GLW_COLLAPSABLE; else flags &= ~GLW_COLLAPSABLE;}
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
 	bool isDestroying()const{return flags & GLW_TODELETE;} ///< Is being destroyed. All referrers must be aware of this.
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);} ///< Inverting logic
 	bool getClosable()const{return flags & GLW_CLOSE;}
+	bool getCollapsable()const{return flags & GLW_COLLAPSABLE;}
 	bool getPinned()const{return flags & GLW_PINNED;}
 	bool getPinnable()const{return flags & GLW_PINNABLE;}
 	static GLwindow *getCaptor(){return captor;}

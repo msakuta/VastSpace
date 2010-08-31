@@ -1025,6 +1025,7 @@ GLwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitl
 	GLwindowMenu *p;
 	int i, len, maxlen = 0;
 	ret = new GLwindowPopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
+	glwAppend(ret);
 	return ret;
 }
 
@@ -1192,7 +1193,10 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips){
 	xpos = ypos = 0;
 	width = height = 32;
-	texname = CallCacheBitmap(filename, filename, NULL, NULL);
+	suftexparam_t stp;
+	stp.flags = STP_MINFIL;
+	stp.minfil = GL_LINEAR;
+	texname = CallCacheBitmap(filename, filename, &stp, NULL);
 	if(command){
 		this->command = new const char[strlen(command) + 1];
 		strcpy(const_cast<char*>(this->command), command);

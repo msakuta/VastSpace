@@ -1,3 +1,8 @@
+/** \file Solar system browse window definition.
+ *
+ * Additionally defines GLWinfo, a window displays information about specific astronomical object.
+ */
+
 #include "../astrodraw.h"
 #include "../galaxy_field.h"
 #include "../player.h"
@@ -6,6 +11,7 @@
 #include "../stellar_file.h"
 #include "../entity.h"
 #include "../antiglut.h"
+#include "../cmd.h"
 //#include "scarry.h"
 //#include "spacewar.h"
 extern "C"{
@@ -188,13 +194,13 @@ public:
 	typedef GLwindowSizeable st;
 	GLwindowSolarMap(const char *title, Player *pl);
 	static GLwindow *showWindow(Player *pl);
+	const char *classname()const{return "GLwindowSolarMap";}
 	void draw(GLwindowState &ws, double t);
 //	int mouse(int button, int state, int x, int y);
 	int key(int key);
 	int specialKey(int key);
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	void anim(double dt);
-protected:
 	Vec3d org;
 	Vec3d pointer;
 	double lastt;
@@ -213,6 +219,7 @@ protected:
 	struct teleport *focus;
 	Astrobj *focusa;
 	Player *ppl;
+protected:
 
 	struct drawSolarMapItemParams;
 	int drawSolarMapItem(drawSolarMapItemParams *);
@@ -507,6 +514,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 	Vec3d dst, pos;
 	const CoordSys *sol;
 	extern CoordSys *g_galaxysystem;
+	GLWrect cr = clientRect();
 	GLint vp[4], nvp[4];
 	double dt = p->lastt ? gametime - p->lastt : 0.;
 	int mi = MIN(this->width, this->height - 12) - 1;
@@ -747,19 +755,29 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		}
 
 		{
-			int i, x, y;
+			int i, y;
+			int x = int(cr.x0 + cr.width() - scalespace);
+
+			if(cr.x1 - scalespace - scalewidth <= ws.mx && ws.mx <= cr.x1 - scalespace && cr.y0 + scalevspace <= ws.my && ws.my <= cr.y1 - scalevspace){
+				glColor4ub(0,63,127,127);
+				glBegin(GL_QUADS);
+				glVertex2d(x, cr.y0 + scalevspace);
+				glVertex2d(x - scalewidth, cr.y0 + scalevspace);
+				glVertex2d(x - scalewidth, cr.y1 - scalevspace);
+				glVertex2d(x, cr.y1 - scalevspace);
+				glEnd();
+			}
 
 			glColor4ub(127,127,127,255);
 			glBegin(GL_LINES);
-			x = int(this->xpos + this->width - scalespace);
-			glVertex2d(x - scalewidth / 2, this->ypos + scalevspace + 12);
-			glVertex2d(x - scalewidth / 2, this->ypos + this->height - scalevspace);
+			glVertex2d(x - scalewidth / 2, cr.y0 + scalevspace);
+			glVertex2d(x - scalewidth / 2, cr.y0 + cr.height() - scalevspace);
 			for(i = 0; i <= scalerange; i++){
-				y = int(this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * i / scalerange);
+				y = int(cr.y0 + scalevspace + (cr.height() - scalevspace * 2) * i / scalerange);
 				glVertex2d(x - scalewidth, y);
 				glVertex2d(x, y);
 			}
-			y = int(this->ypos + scalevspace + 12 + (this->height - scalevspace * 2 - 12) * (scalerange + log10(p->range)) / scalerange);
+			y = int(cr.y0 + scalevspace + (cr.height() - scalevspace * 2) * (scalerange + log10(p->range)) / scalerange);
 			glEnd();
 			glColor4ub(127,255,127,255);
 			glBegin(GL_QUADS);
@@ -768,81 +786,81 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glVertex2d(x - scalewidth, y + 3);
 			glVertex2d(x, y + 3);
 			glEnd();
-			glwpos2d(x - scalewidth / 2 - 8 / 2, this->ypos + 12 + scalevspace + scalewidth - 10);
+			glwpos2d(x - scalewidth / 2 - 8 / 2, cr.y0 + scalevspace + scalewidth - 10);
 			glwprintf("+");
-			glwpos2d(x - scalewidth / 2 - 8 / 2, this->ypos + this->height - scalevspace - scalewidth + 20);
+			glwpos2d(x - scalewidth / 2 - 8 / 2, cr.y0 + cr.height() - scalevspace - scalewidth + 20);
 			glwprintf("-");
 		}
 
 		glColor4ub(255,255,255,255);
-		glwpos2d(this->xpos + 2, this->ypos + this->height - 12);
+		glwpos2d(cr.x0 + 2, cr.y0 + cr.height() - 12);
 		glwprintf("%s", sol->fullname ? sol->fullname : sol->name);
-		glwpos2d(this->xpos + 2, this->ypos + this->height - 2);
+		glwpos2d(cr.x0 + 2, cr.y0 + cr.height() - 2);
 		glwprintf("Range: %lg km", range);
 
 		if(0 <= mousex && mousex < 48 && 0 <= mousey && mousey <= 12){
 			int ind = mousex / 12;
 			glColor4ub(191,31,31,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
-			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
+			glVertex2d(cr.x0 + ind * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0 + 12);
+			glVertex2d(cr.x0 + (ind) * 12, cr.y0 + 12);
 			glEnd();
 			glColor4ub(191,255,255,255);
-			glwpos2d(this->xpos + 48 + 2, this->ypos + (2) * 12 - 2);
+			glwpos2d(cr.x0 + 48 + 2, cr.y0 + 12);
 			glwprintf(ind == 0 ? "Reset View" : ind == 1 ? "Defocus" : ind == 2 ? "Current Position" : "Synchronize Rotation");
 		}
 		if(p->focus || p->focusa){
 			int ind = 1;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
-			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
+			glVertex2d(cr.x0 + ind * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0 + 12);
+			glVertex2d(cr.x0 + (ind) * 12, cr.y0 + 12);
 			glEnd();
 		}
 		if(p->focusc){
 			int ind = 2;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
-			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
+			glVertex2d(cr.x0 + ind * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0 + 12);
+			glVertex2d(cr.x0 + (ind) * 12, cr.y0 + 12);
 			glEnd();
 		}
 		if(p->sync){
 			int ind = 3;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
-			glVertex2d(this->xpos + ind * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12);
-			glVertex2d(this->xpos + (ind + 1) * 12, this->ypos + 12 + 12);
-			glVertex2d(this->xpos + (ind) * 12, this->ypos + 12 + 12);
+			glVertex2d(cr.x0 + ind * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0);
+			glVertex2d(cr.x0 + (ind + 1) * 12, cr.y0 + 12);
+			glVertex2d(cr.x0 + (ind) * 12, cr.y0 + 12);
 			glEnd();
 		}
 		glColor4ub(191,255,255,255);
-		glwpos2d(this->xpos + 1, this->ypos + (2) * 12);
+		glwpos2d(cr.x0 + 1, cr.y0 + (1) * 12);
 		glwprintf("R");
-		glwpos2d(this->xpos + 1 + 12, this->ypos + (2) * 12);
+		glwpos2d(cr.x0 + 1 + 12, cr.y0 + (1) * 12);
 		glwprintf("F");
-		glwpos2d(this->xpos + 1 + 24, this->ypos + (2) * 12);
+		glwpos2d(cr.x0 + 1 + 24, cr.y0 + (1) * 12);
 		glwprintf("C");
-		glwpos2d(this->xpos + 1 + 36, this->ypos + (2) * 12);
+		glwpos2d(cr.x0 + 1 + 36, cr.y0 + (1) * 12);
 		glwprintf("S");
 		glBegin(GL_LINES);
-		glVertex2d(this->xpos, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 48, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 12, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 12, this->ypos + 12);
-		glVertex2d(this->xpos + 24, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 24, this->ypos + 12);
-		glVertex2d(this->xpos + 36, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 36, this->ypos + 12);
-		glVertex2d(this->xpos + 48, this->ypos + 12 + 12);
-		glVertex2d(this->xpos + 48, this->ypos + 12);
+		glVertex2d(cr.x0, cr.y0 + 12);
+		glVertex2d(cr.x0 + 48, cr.y0 + 12);
+		glVertex2d(cr.x0 + 12, cr.y0 + 12);
+		glVertex2d(cr.x0 + 12, cr.y0);
+		glVertex2d(cr.x0 + 24, cr.y0 + 12);
+		glVertex2d(cr.x0 + 24, cr.y0);
+		glVertex2d(cr.x0 + 36, cr.y0 + 12);
+		glVertex2d(cr.x0 + 36, cr.y0);
+		glVertex2d(cr.x0 + 48, cr.y0 + 12);
+		glVertex2d(cr.x0 + 48, cr.y0);
 		glEnd();
 /*		printf("sm-all %lg\n", TimeMeasLap(&tm));*/
 	}
@@ -936,6 +954,7 @@ int entity_popup(entity_t *pt, int);
 #endif
 
 int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
+	GLWrect cr = clientRect();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
 /*	if(my < 12)
@@ -950,10 +969,9 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 		}
 		return 1;
 	}
-	if(this->width - scalespace - scalewidth <= mx && mx <= this->width - scalespace && scalevspace <= my && my <= this->height - scalevspace - 12){
-/*		y = wnd->y + scalespace + 12 + (wnd->h - scalespace * 2 - 12) * (scalerange + log10(p->range)) / scalerange;*/
+	if(cr.width() - scalespace - scalewidth <= mx && mx <= cr.width() - scalespace && scalevspace <= my && my <= cr.height() - scalevspace){
 		if((state == GLUT_KEEP_DOWN || state == GLUT_DOWN) && mbutton == GLUT_LEFT_BUTTON)
-			dstrange = pow(10, (my - scalevspace) * scalerange / (this->height - scalevspace * 2 - 12) - scalerange);
+			dstrange = pow(10, (my - scalevspace) * scalerange / (cr.height() - scalevspace * 2) - scalerange);
 		return 1;
 	}
 
@@ -1111,7 +1129,10 @@ int GLwindowSolarMap::specialKey(int key){
 
 void GLwindowSolarMap::anim(double dt){
 	double f = 1. - exp(-dt / .10);
-	range += (dstrange - range) * f;
+	double lrange = log(range);
+	double ldstrange = log(dstrange);
+	lrange += (ldstrange - lrange) * f;
+	range = exp(lrange);
 }
 
 GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
@@ -1181,34 +1202,41 @@ int cmd_togglesolarmap(int argc, char *argv[], void *pv){
 
 
 
-#if 0
-struct glwindowinfo{
-	struct glwindowsizeable st;
+#if 1
+class GLWinfo : public GLwindowSizeable{
+public:
+	typedef GLwindowSizeable st;
 	int type;
 	struct teleport *tp;
 	Astrobj *a;
+	GLWinfo(const char *title) : st(title){}
+	virtual void draw(GLwindowState &ws, double t);
+	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 
-static void glwinfo_draw(glwindow *wnd, int mx, int my, double t){
-	struct glwindowinfo *p = (struct glwindowinfo *)wnd;
+void GLWinfo::draw(GLwindowState &ws, double t){
+	int mx = ws.mx, my = ws.my;
+	GLWinfo *p = this;
+	GLWinfo *wnd = this;
+	GLWrect cr = clientRect();
 	int iy = 0;
 	glColor4ub(255,213,213,255);
 	if(p->type == 1){
 		if(!p->a)
 			return;
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Astronomical Object");
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Name: %s", p->a->name);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("CoordSys: %s", p->a->cs->name);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
+		glwprintf("CoordSys: %s", p->a->parent->name);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Position: %lg,%lg,%lg", p->a->pos[0], p->a->pos[1], p->a->pos[2]);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Radius: %lg km", p->a->rad);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Mass: %lg kg", p->a->mass);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Flags: ");
 		if(p->a->flags & AO_PLANET)
 			glwprintf("Planet ");
@@ -1217,26 +1245,26 @@ static void glwinfo_draw(glwindow *wnd, int mx, int my, double t){
 		if(p->a->flags & AO_SPHEREHIT)
 			glwprintf("SphereHit ");
 		if(p->a->flags & AO_PLANET && p->a->orbit_home){
-			glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Orbits %s", p->a->orbit_home->name);
-			glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-			glwprintf("Semi-major axis: %lg km", p->a->orbit_radius);
-			glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
+			glwprintf("Semi-major axis: %lg km", p->a->orbit_rad);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Eccentricity: %lg", p->a->eccentricity);
 		}
 	}
 	else if(p->type == 3){
 		if(!p->tp)
 			return;
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Teleport Site");
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Name: %s", p->tp->name);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("CoordSys: %s", p->tp->cs->name);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Position: %lg,%lg,%lg", p->tp->pos[0], p->tp->pos[1], p->tp->pos[2]);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 		glwprintf("Flags: ");
 		if(p->tp->flags & TELEPORT_TP)
 			glwprintf("Teleportable ");
@@ -1245,89 +1273,76 @@ static void glwinfo_draw(glwindow *wnd, int mx, int my, double t){
 	}
 }
 
-static int glwinfo_mouse(glwindow *wnd, int mbutton, int state, int mx, int my){
-	if(glwsizeable_mouse(wnd, mbutton, state, mx, my))
+int GLWinfo::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
+	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
 	return 0;
 }
 
-static int glwinfo_key(glwindow *wnd, int key){
-	return 0;
-}
-
-glwindow *glwInfo(int type, const char *name){
-	glwindow *ret;
-	struct glwindowinfo *p;
-	int i;
-	p = malloc(sizeof *p + sizeof " Property" + strlen(name) + 1);
-	sprintf((char*)&p[1], "%s Property", name);
-	ret = &p->st.st;
-	ret->x = 75;
-	ret->y = 75;
-	ret->w = 260;
-	ret->h = 2 * 12 + 10 * 12;
-	ret->title = (char*)&p[1];
-	ret->next = glwlist;
-	glwlist = ret;
-	glwActivate(&glwlist);
-	ret->flags = GLW_CLOSE | GLW_COLLAPSABLE;
-	ret->modal = NULL;
-	ret->draw = glwinfo_draw;
-	ret->mouse = glwinfo_mouse;
-	ret->key = glwinfo_key;
-	ret->destruct = NULL;
-	glwsizeable_init(&p->st);
-	p->type = type;
-	p->tp = NULL;
-	p->a = NULL;
-	if(type == 0 || type == 3){
-		for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
-			p->tp = &tplist[i];
+GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
+	GLWinfo *ret = new GLWinfo(cpplib::dstring(name) << " Property");
+	ret->setExtent(GLWrect(75, 75, 75 + 260, 75 + 2 * 12 + 10 * 12));
+	ret->setClosable(true);
+	ret->setCollapsable(true);
+//	ret->modal = NULL;
+//	glwsizeable_init(&p->st);
+	glwAppend(ret);
+	ret->type = type;
+	ret->tp = NULL;
+	ret->a = NULL;
+/*	if(type == 0 || type == 3){
+		for(int i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
+			ret->tp = &tplist[i];
 			if(type == 0)
-				p->type = 3;
+				ret->type = 3;
 			break;
 		}
-	}
+	}*/
 	if(type == 0 || type == 1){
-		extern Astrobj **astrobjs;
-		extern int nastrobjs;
-		for(i = 0; i < nastrobjs; i++) if(!strcmp(astrobjs[i]->name, name)){
-			p->a = astrobjs[i];
+		Astrobj *ao = const_cast<CoordSys*>(cs)->findastrobj(name);
+		if(ao){
+			ret->a = ao;
 			if(type == 0)
-				p->type = 1;
-			break;
+				ret->type = 1;
+			return ret;
 		}
 	}
-	if(p->tp == NULL && p->a == NULL){
-		ret->flags |= GLW_TODELETE;
-		ret = -1;
+	if(ret->tp == NULL && ret->a == NULL){
+		ret->postClose();
 	}
 	return ret;
 }
 
-int cmd_info(int argc, const char *argv[]){
-	glwindow *ret;
-	if(argc < 2){
-		CmdPrint("usage: info target");
+static class cmd_info_initializer{
+	static int cmd_info(int argc, char *argv[]){
+		extern Player pl;
+		GLwindow *ret;
+		if(argc < 2){
+			CmdPrint("usage: info target");
+			return 0;
+		}
+		ret = glwInfo(pl.cs->findcspath("/"), argc < 3 ? 0 : !strcmp(argv[1], "Astro") ? 1 : !strcmp(argv[1], "Coordsys") ? 2 : !strcmp(argv[1], "Teleport") ? 3 : 0, argv[argc < 3 ? 1 : 2]);
+	/*	if(glwcmdmenu == glwfocus)
+			glwfocus = ret;
+		glwcmdmenu = ret;*/
 		return 0;
 	}
-	ret = glwInfo(argc < 3 ? 0 : !strcmp(argv[1], "Astro") ? 1 : !strcmp(argv[1], "Coordsys") ? 2 : !strcmp(argv[1], "Teleport") ? 3 : 0, argv[argc < 3 ? 1 : 2]);
-/*	if(glwcmdmenu == glwfocus)
-		glwfocus = ret;
-	glwcmdmenu = ret;*/
-	return 0;
-}
+public:
+	cmd_info_initializer(){
+		CmdAdd("info", cmd_info);
+	}
+} cii;
 
 int cmd_focus(int argc, const char *argv[]){
-	struct glwindowsolmap *sm = glwfocus ? glwfocus : glwlist;
+	GLwindow *w = glwfocus ? glwfocus : glwlist;
 	int i;
-	extern Astrobj **astrobjs;
-	extern int nastrobjs;
 
-	for(sm = glwlist; sm; sm = sm->st.st.next) if(sm->st.st.draw == solarmap_draw)
+	for(w = glwlist; w; w = w->getNext()) if(!strcmp(w->classname(), "GLwindowSolarMap"))
 		break;
-	if(!sm)
+	if(!w)
 		return 1;
+
+	GLwindowSolarMap *sm = (GLwindowSolarMap*)w;
 
 	/* Always reset */
 	if(sm->focus && !strcmp(sm->focus->name, argv[1]) ||
@@ -1340,7 +1355,7 @@ int cmd_focus(int argc, const char *argv[]){
 		return 0;
 	}
 
-	for(i = 0; i < nastrobjs; i++) if(!strcmp(astrobjs[i]->name, argv[1])){
+/*	for(i = 0; i < nastrobjs; i++) if(!strcmp(astrobjs[i]->name, argv[1])){
 		sm->focusa = astrobjs[i];
 		sm->focus = NULL;
 		sm->focusc = 0;
@@ -1351,7 +1366,7 @@ int cmd_focus(int argc, const char *argv[]){
 		sm->focusa = NULL;
 		sm->focusc = 0;
 		return 0;
-	}
+	}*/
 	return 0;
 }
 #endif

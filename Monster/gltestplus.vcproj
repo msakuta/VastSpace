@@ -565,6 +565,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\glw\message.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\glw\solarmap.cpp"
 					>
 				</File>

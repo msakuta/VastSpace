@@ -107,6 +107,7 @@ public:
 	// Constants
 	static const int glwfontwidth = 8;
 	static const int glwfontheight = 12;
+	static double glwfontscale;
 	static double getFontWidth();
 	static double getFontHeight();
 
@@ -170,12 +171,12 @@ public:
 	void setCollapsable(bool f){if(f) flags |= GLW_COLLAPSABLE; else flags &= ~GLW_COLLAPSABLE;}
 	void setPinned(bool f);
 	void setPinnable(bool f){if(f) flags |= GLW_PINNABLE; else flags &= ~GLW_PINNABLE;}
-	bool isDestroying()const{return flags & GLW_TODELETE;} ///< Is being destroyed. All referrers must be aware of this.
+	bool isDestroying()const{return !!(flags & GLW_TODELETE);} ///< Is being destroyed. All referrers must be aware of this.
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);} ///< Inverting logic
-	bool getClosable()const{return flags & GLW_CLOSE;}
-	bool getCollapsable()const{return flags & GLW_COLLAPSABLE;}
-	bool getPinned()const{return flags & GLW_PINNED;}
-	bool getPinnable()const{return flags & GLW_PINNABLE;}
+	bool getClosable()const{return !!(flags & GLW_CLOSE);}
+	bool getCollapsable()const{return !!(flags & GLW_COLLAPSABLE);}
+	bool getPinned()const{return !!(flags & GLW_PINNED);}
+	bool getPinnable()const{return !!(flags & GLW_PINNABLE);}
 	static GLwindow *getCaptor(){return captor;}
 	void postClose(){ flags |= GLW_TODELETE; }
 protected:

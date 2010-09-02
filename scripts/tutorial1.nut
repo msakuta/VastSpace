@@ -98,7 +98,7 @@ function inccm(){
 				return messageIndex++;
 			else{
 				messageIndex++;
-				return lastmessage = GLWmessage(message, 5., "inccm()");
+				return lastmessage = GLWmessage(message, 5., inccm);
 			}
 		}
 		else{

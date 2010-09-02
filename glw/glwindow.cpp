@@ -21,15 +21,15 @@ extern "C"{
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
 
 /// There is only one font size. It could be bad for some future.
-static double glwfontscale = 1.;
-#define fontwidth (GLwindow::glwfontwidth * glwfontscale)
-#define fontheight (GLwindow::glwfontheight * glwfontscale)
+double GLwindow::glwfontscale = 1.; ///< Font size for all GUI.
+#define fontwidth (GLwindow::glwfontwidth * GLwindow::glwfontscale)
+#define fontheight (GLwindow::glwfontheight * GLwindow::glwfontscale)
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
 static int glwPutTextureStringN(const char *s, int n, int size);
 int glwGetSizeTextureString(const char *s, int size = -1);
-int glwPutStringML(const char *s, int size = fontheight);
-void glwGetSizeStringML(const char *s, int size = fontheight, int *retxsize = NULL, int *retysize = NULL);
+int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
+void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
 
 /// Window margin
 const long margin = 4;
@@ -1160,7 +1160,7 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 	}
 	else if(state == GLUT_KEEP_UP && tipstring){
 		int xs, ys;
-		glwGetSizeStringML(tipstring, fontheight, &xs, &ys);
+		glwGetSizeStringML(tipstring, GLwindow::getFontHeight(), &xs, &ys);
 		GLWrect localrect = GLWrect(xpos, ypos - ys - 3 * margin, xpos + xs + 3 * margin, ypos);
 		GLWrect parentrect = parent->clientRect();
 		localrect.rmove(parentrect.x0, parentrect.y0);
@@ -1422,61 +1422,6 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 
 
-/** \brief Constructs a message window.
- * \param messagestring The message string to display. The window size is adjusted to fit to the string.
- * \param timer Sets time to display the message. Set zero to introduce infinite message.
- * \param onDestroy Squirrel script executed on destructon of this object. */
-GLWmessage::GLWmessage(const char *messagestring, double atimer, const char *aonDestroy) : resized(false), string(messagestring), timer(atimer), onDestroy(aonDestroy){
-}
-
-GLWmessage::~GLWmessage(){
-	if(onDestroy.len()){
-		if(SQ_FAILED(sq_compilebuffer(g_sqvm, onDestroy, onDestroy.len(), _SC("GLWmessage"), 0))){
-			CmdPrint("Compile error");
-		}
-		else{
-			sq_pushroottable(g_sqvm);
-			sq_call(g_sqvm, 1, 0, 0);
-			sq_pop(g_sqvm, 1);
-		}
-	}
-}
-
-void GLWmessage::draw(GLwindowState &ws, double){
-	if(!string)
-		return;
-
-	if(!resized){
-		resized = true;
-
-		int hcenter = ws.w / 2;
-		int width = glwsizef(string);
-
-		GLWrect localrect = GLWrect(hcenter - width / 2, ws.h / 3, hcenter + width / 2, ws.h / 3 + fontheight);
-
-		GLWrect wrect = adjustRect(localrect);
-
-		setExtent(wrect);
-	}
-
-	GLWrect r = clientRect();
-	glwpos2d(r.x0, r.y0 + fontheight);
-	glwprintf(string);
-}
-
-void GLWmessage::anim(double dt){
-	if(timer){
-		if(timer - dt < 0.){
-			postClose();
-		}
-		else
-			timer -= dt;
-	}
-}
-
-
-
-
 
 
 
@@ -1715,7 +1660,7 @@ static int glwPutTextureStringN(const char *s, int n, int size){
 	return sumx;
 }
 
-int glwPutTextureString(const char *s, int size = fontheight){
+int glwPutTextureString(const char *s, int size = GLwindow::getFontHeight()){
 	return glwPutTextureStringN(s, strlen(s), size);
 }
 
@@ -1731,7 +1676,7 @@ int glwGetSizeTextureStringN(const char *s, long n, int isize){
 }
 
 int glwGetSizeTextureString(const char *s, int size){
-	return glwGetSizeTextureStringN(s, strlen(s), size == -1 ? fontheight : size);
+	return glwGetSizeTextureStringN(s, strlen(s), size == -1 ? GLwindow::getFontHeight() : size);
 }
 
 
@@ -1773,7 +1718,7 @@ int glwprintf(const char *f, ...){
 		glGetDoublev(GL_CURRENT_RASTER_POSITION, raspo);*/
 		glPushMatrix();
 		glTranslated(s_raspo[0], s_raspo[1] + 2, 0.);
-		glScaled(glwfontscale, glwfontscale, 1.);
+		glScaled(GLwindow::glwfontscale, GLwindow::glwfontscale, 1.);
 		s_raspo[0] += glwPutTextureString(buf);
 		glPopMatrix();
 	}
@@ -1870,6 +1815,6 @@ static int vrc_fontscale(void *pv){
 }
 
 int glwInit(){
-	CvarAddVRC("g_font_scale", &glwfontscale, cvar_double, vrc_fontscale);
+	CvarAddVRC("g_font_scale", &GLwindow::glwfontscale, cvar_double, vrc_fontscale);
 	return 0;
 }

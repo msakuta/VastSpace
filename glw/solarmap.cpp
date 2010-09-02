@@ -1,4 +1,5 @@
-/** \file Solar system browse window definition.
+/** \file
+ * \brief Solar system browser window definition.
  *
  * Additionally defines GLWinfo, a window displays information about specific astronomical object.
  */
@@ -189,6 +190,11 @@ int cmd_togglegalaxymap(int argc, const char *argv[]){
 entity_t **rstations = NULL;
 int nrstations = 0;
 */
+
+/// \brief Solar system browser window.
+///
+/// Displays the whole system in a window and enables the user to browse through.
+/// Range and position of displayed space is adjustable with mouse and keys.
 class GLwindowSolarMap : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
@@ -209,13 +215,13 @@ public:
 	Quatd rot;
 	int morg[2];
 	int hold;
-	const CoordSys *sol; /* currently showing solar system */
+	const CoordSys *sol; ///< currently showing solar system
 	struct teleport *target;
-	const Astrobj *targeta; /* astro */
-	Entity *targete; /* entity */
-	WarField *targetc; /* collapsed */
-	Entity *targetr; /* resource station */
-	int focusc, sync; /* Focus on current position */
+	const Astrobj *targeta; ///< astro
+	Entity *targete; ///< entity
+	WarField *targetc; ///< collapsed
+	Entity *targetr; ///< resource station
+	int focusc, sync; ///< Focus on current position
 	struct teleport *focus;
 	Astrobj *focusa;
 	Player *ppl;
@@ -1203,6 +1209,7 @@ int cmd_togglesolarmap(int argc, char *argv[], void *pv){
 
 
 #if 1
+/// \brief A window that tells information about certain celestial body.
 class GLWinfo : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
@@ -1313,6 +1320,7 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 	return ret;
 }
 
+/// Temporary class to register command callbacks within initializer.
 static class cmd_info_initializer{
 	static int cmd_info(int argc, char *argv[]){
 		extern Player pl;

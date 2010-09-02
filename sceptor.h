@@ -1,3 +1,6 @@
+/** \file
+ * \brief Declaration of Sceptor, Space interceptor class.
+ */
 #ifndef SCEPTOR_H
 #define SCEPTOR_H
 
@@ -13,7 +16,7 @@ extern "C"{
 
 #define PIDAIM_PROFILE 0
 
-// Space Interceptor (small fighter)
+/// Space Interceptor (small fighter)
 class Sceptor : public Entity{
 public:
 	typedef Entity st;
@@ -44,16 +47,17 @@ protected:
 	Vec3d dest;
 	float fcloak;
 	float heat;
-	struct tent3d_fpol *pf;
-	Docker *mother; // Mother ship
+	struct tent3d_fpol *pf; ///< Trailing smoke
+	Docker *mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;
 	int paradec;
-	int magazine; // remaining bullet count in the magazine to shoot before reloading
+	int magazine; ///< remaining bullet count in the magazine to shoot before reloading
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy;
-	float mf; // trivial muzzle flashes
-	float integral[2]; // integration of pitch-yaw space of relative target position
-	Sceptor *formPrev; // previous member in the formation
+	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
+	float mf; ///< trivial muzzle flashes
+	float integral[2]; ///< integration of pitch-yaw space of relative target position
+	Sceptor *formPrev; ///< previous member in the formation
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];

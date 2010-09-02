@@ -88,8 +88,9 @@ double Sceptor::nlipsFactor(Viewer &vw)const{
 void Sceptor::draw(wardraw_t *wd){
 	static int init = 0;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
-	static VBO *vbo[2] = {NULL};
-	static suftex_t *suft, *suft1;
+	static suf_t *sufrev = NULL;
+	static VBO *vbo[3] = {NULL};
+	static suftex_t *suft, *suft1, *suft2;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
@@ -108,39 +109,18 @@ void Sceptor::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(init == 0) do{
-		FILE *fp;
+//		FILE *fp;
 		sufbase = CallLoadSUF("models/interceptor0.bin");
 		sufbase1 = CallLoadSUF("models/interceptor1.bin");
+		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
 		vbo[0] = CacheVBO(sufbase);
 		vbo[1] = CacheVBO(sufbase1);
+		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
-		{
-//			BITMAPFILEHEADER *bfh;
-//			suftexparam_t stp;
-//			stp.bmi = lzuc(lzw_interceptor, sizeof lzw_interceptor, NULL);
-			CacheSUFMaterials(sufbase);
-//			CallCacheBitmap("interceptor.bmp", "interceptor.bmp", NULL, NULL);
-/*			bfh = ZipUnZip("rc.zip", "interceptor.bmp", NULL);
-			if(!bfh)
-				return;
-			stp.bmi = &bfh[1];
-			stp.env = GL_MODULATE;
-			stp.mipmap = 0;
-			stp.alphamap = 0;
-			stp.magfil = GL_LINEAR;
-			CacheSUFMTex("interceptor.bmp", &stp, NULL);
-			free(bfh);*/
-//			stp.bmi = lzuc(lzw_engine, sizeof lzw_engine, NULL);
-//			CallCacheBitmap("engine.bmp", "engine.bmp", NULL, NULL);
-/*			bfh = ZipUnZip("rc.zip", "engine.bmp", NULL);
-			if(!bfh)
-				return;
-			stp.bmi = &bfh[1];
-			CacheSUFMTex("engine.bmp", &stp, NULL);
-			free(bfh/*stp.bmi*);*/
-		}
+		CacheSUFMaterials(sufbase);
 		suft = AllocSUFTex(sufbase);
 		suft1 = AllocSUFTex(sufbase1);
+		suft2 = AllocSUFTex(sufrev);
 
 /*		do{
 			GLuint vtx, frg;
@@ -238,6 +218,25 @@ void Sceptor::draw(wardraw_t *wd){
 			else
 //				DrawSUF(sufbase, SUF_ATR, NULL);
 				DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+
+			for(int i = 0; i < 2; i++){
+				glPushMatrix();
+				if(i){
+					glScalef(1, -1, 1);
+					glFrontFace(GL_CW);
+				}
+				if(0. < reverser){
+					glTranslated(0, 0, -25);
+					glRotated(reverser * 30, -1, 0, 0);
+					glTranslated(0, 0, 25);
+				}
+				if(vbo[2])
+					DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suft);
+				else
+					DecalDrawSUF(sufrev, SUF_ATR, NULL, suft, NULL, NULL);
+				glPopMatrix();
+			}
+			glFrontFace(GL_CCW);
 		}
 		glPopMatrix();
 

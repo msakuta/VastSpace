@@ -961,11 +961,21 @@ int cmd_move(int argc, char *argv[], void *pv){
 	if(argc < 4 || !pl->cs)
 		return 0;
 	MoveCommand com;
-	com.destpos[0] = atof(argv[1]);
-	com.destpos[1] = atof(argv[2]);
-	com.destpos[2] = atof(argv[3]);
-	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w)
+	Vec3d comdst;
+	comdst[0] = atof(argv[1]);
+	comdst[1] = atof(argv[2]);
+	comdst[2] = atof(argv[3]);
+	com.destpos = comdst;
+	Quatd headrot;
+	int n = 0;
+	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w){
+		if(n == 0)
+			headrot = Quatd::direction(-(comdst - pt->pos));
+		n++;
+		Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);
+		com.destpos = comdst + headrot.trans(dp);
 		pt->command(&com);
+	}
 	return 0;
 }
 

@@ -134,6 +134,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	mother(NULL),
 	task(Auto),
 	fuel(maxfuel()),
+	reverser(0),
 	mf(0),
 	paradec(-1),
 	forcedEnemy(false),
@@ -412,7 +413,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	if(rdrn.sp(dv) < 0) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len();
 	Vec3d dr = this->pos - target;
-	this->throttle = dr.len() * speedfactor + minspeed;
+	this->throttle = rangein((dr.len() - dv.len() * 5.) * speedfactor + minspeed, -1, 1);
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
 		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
@@ -721,7 +722,7 @@ void Sceptor::anim(double dt){
 						p->task = Idle;
 					}
 					else{
-						steerArrival(dt, dest, vec3_000, 1. / 10., .001);
+						steerArrival(dt, dest, vec3_000, 1. / 2., .0);
 					}
 				}
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
@@ -856,7 +857,7 @@ void Sceptor::anim(double dt){
 							bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 //							p->throttle = dr.slen() / 5. + .01;
-							steerArrival(dt, target, pm->velo, 1. / 10., .001);
+							steerArrival(dt, target, pm->velo, 1. / 2., .001);
 						}
 						if(1. < p->throttle)
 							p->throttle = 1.;
@@ -913,7 +914,7 @@ void Sceptor::anim(double dt){
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, p->task == Dockque ? .2 : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
 						double dist = (target - this->pos).len();
 						if(dist < .03){
 							if(p->task == Dockque)
@@ -1042,7 +1043,7 @@ void Sceptor::anim(double dt){
 			if(inputs.press & PL_Q)
 				p->throttle = MIN(throttle + dt, 1.);
 			if(inputs.press & PL_Z)
-				p->throttle = MAX(throttle - dt, 0.);
+				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
@@ -1057,13 +1058,13 @@ void Sceptor::anim(double dt){
 		}
 
 		/* Friction (in space!) */
-		{
+		if(parking){
 			double f = 1. / (1. + dt / (parking ? 1. : 3.));
 			pt->velo *= f;
 		}
 
 		{
-			double consump = dt * (pf->throttle + p->fcloak * 4.); /* cloaking consumes fuel extremely */
+			double consump = dt * (fabs(pf->throttle) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)
@@ -1198,6 +1199,8 @@ void Sceptor::anim(double dt){
 			pt->pos += pt->velo * dt;
 		}
 	}
+
+	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
 	if(mf < dt)
 		mf = 0.;

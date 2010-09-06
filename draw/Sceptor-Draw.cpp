@@ -281,7 +281,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 		return;
 	if(p->throttle){
 		Vec3d pos, pos0(0, 0, 40. * scale);
-		GLubyte col[4] = {COLIST4(cnl_shortburn[0].col)};
+/*		GLubyte col[4] = {COLIST4(cnl_shortburn[0].col)};
 		pos = this->rot.trans(pos0);
 		pos += this->pos;
 		gldSpriteGlow(pos, p->throttle * .005, col, wd->vw->irot);
@@ -292,7 +292,42 @@ void Sceptor::drawtra(wardraw_t *wd){
 		pos0[0] = -34.5 * scale;
 		pos = this->rot.trans(pos0);
 		pos += this->pos;
-		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);
+		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);*/
+
+		static bool init = false;
+		static GLuint texname = 0;
+		if(!init){
+			init = true;
+			suftexparam_t stp;
+			stp.flags = STP_MAGFIL;
+			stp.magfil = GL_LINEAR;
+			texname = CallCacheBitmap("textures/blast.jpg", "textures/blast.jpg", &stp, NULL);
+		}
+
+		glPushMatrix();
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
+		float amp = MIN(float(fabs(this->throttle)) * 30.f, 1.);
+		glColor4f(1., 1., 1., amp);
+		if(0. < throttle){
+			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(0,0,40.*scale)), this->pos + this->rot.trans(Vec3d(0,0,40.*scale+.010*amp)), .0025*amp);
+			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale+.005*amp)), .00125*amp);
+			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale+.005*amp)), .00125*amp);
+		}
+		else{
+			double ofs = 5.*scale;
+			pos = this->pos + this->rot.trans(Vec3d(0,0,35.*scale));
+			Quatd upangle = this->rot * Quatd(sin(M_PI*5./6./2.),0.,0.,cos(M_PI*5./6./2.));
+			Quatd dnangle = this->rot * Quatd(sin(-M_PI*5./6./2.),0.,0.,cos(-M_PI*5./6./2.));
+			gldTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + upangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp);
+			gldTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp);
+			gldTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + upangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp);
+			gldTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp);
+		}
+		glPopAttrib();
+		glPopMatrix();
 	}
 
 #if 0 /* thrusters appear unimpressing */

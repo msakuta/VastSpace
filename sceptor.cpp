@@ -715,7 +715,7 @@ void Sceptor::anim(double dt){
 				}
 				else if(p->task == Moveto){
 					Vec3d dr = pt->pos - p->dest;
-					if(dr.slen() < .03 * .03){
+					if(dr.slen() < .01 * .01){
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
@@ -834,7 +834,7 @@ void Sceptor::anim(double dt){
 						target = pm->rot.trans(target0);
 						target += pm->pos;
 						Vec3d dr = pt->pos - target;
-						if(dr.slen() < .03 * .03){
+						if(dr.slen() < .01 * .01){
 							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
@@ -877,7 +877,7 @@ void Sceptor::anim(double dt){
 						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .05), 0., nwingmen / 2 * .05);
 						dest = (leader->task == Moveto ? leader->dest : leader->pos) + dp;
 						Vec3d dr = pt->pos - dest;
-						if(dr.slen() < .03 * .03){
+						if(dr.slen() < .01 * .01){
 							Quatd q1 = quat_u;
 							p->throttle = 0.;
 							parking = 1;
@@ -916,7 +916,7 @@ void Sceptor::anim(double dt){
 						target += pm->pos;
 						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
 						double dist = (target - this->pos).len();
-						if(dist < .03){
+						if(dist < .01){
 							if(p->task == Dockque)
 								p->task = Dock;
 							else{

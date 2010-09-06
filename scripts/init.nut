@@ -400,6 +400,7 @@ function init_Universe(){
 	mainmenu.title = "Select Mission";
 	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.nut\"");
 	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
+	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
 	mainmenu.addItem("test", "loadmission \"scripts/eternalFight.nut\"");
 
 	// Adjust window position to center of screen, after all menu items are added.

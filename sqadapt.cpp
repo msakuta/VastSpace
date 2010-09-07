@@ -1268,12 +1268,14 @@ bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *psr, int idx, bool th
 }
 
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o){
+	SQInteger top = sq_gettop(v); // Store original stack depth.
 	sq_pushregistrytable(v); // reg
 	sq_pushstring(v, _SC("objects"), -1); // reg "objects"
-	sq_get(v, -2); // reg objects
-	sq_pushuserpointer(v, o); // reg objects (o)
-	sq_deleteslot(v, -2, SQFalse); // reg objects
-	sq_pop(v, 2);
+	if(SQ_SUCCEEDED(sq_get(v, -2))){ // reg objects
+		sq_pushuserpointer(v, o); // reg objects (o)
+		sq_deleteslot(v, -2, SQFalse); // reg objects
+	}
+	sq_pop(v, sq_gettop(v) - top); // Restore original stack depth, regardless of what number of objects pushed.
 }
 
 static SQInteger sqf_reg(HSQUIRRELVM v){
@@ -1668,7 +1670,7 @@ void sqa_delete_Entity(Entity *e){
 		sq_poptop(v); // root
 	}
 	sq_poptop(v);
-	sqa_deleteobj(v, e);
+//	sqa_deleteobj(v, e); // The object's destructor will do that job.
 }
 
 void sqa_exit(){

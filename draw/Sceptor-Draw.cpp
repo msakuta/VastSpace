@@ -28,6 +28,7 @@ extern "C"{
 #include <clib/amat4.h>
 #include <clib/aquat.h>
 #include <clib/GL/gldraw.h>
+#include <clib/GL/multitex.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
@@ -51,12 +52,13 @@ extern "C"{
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
 static const struct color_node cnl_orangeburn[] = {
+	{0.1, COLOR32RGBA(255,255,191,0)},
 	{0.1, COLOR32RGBA(255,255,191,255)},
 	{0.15, COLOR32RGBA(255,255,31,191)},
 	{0.45, COLOR32RGBA(255,127,31,95)},
 	{0.3, COLOR32RGBA(255,31,0,63)},
 };
-const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 1.);
+const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 1.1);
 static const struct color_node cnl_shortburn[] = {
 	{0.1, COLOR32RGBA(255,255,191,255)},
 	{0.15, COLOR32RGBA(255,255,31,191)},
@@ -250,6 +252,38 @@ void Sceptor::draw(wardraw_t *wd){
 
 #define COLIST4(a) COLOR32R(a),COLOR32G(a),COLOR32B(a),COLOR32A(a)
 
+void gldScrollTextureBeam(const double view[3], const double start[3], const double end[3], double width, double offset){
+	double dx, dy, dz, sx, sy, len;
+	double pitch, yaw;
+	avec3_t diff, xh, yh;
+	dy = end[1] - start[1];
+	yaw = atan2(dx = end[0] - start[0], dz = end[2] - start[2]) + M_PI;
+	pitch = -atan2(dy, sqrt(dx * dx + dz * dz)) + M_PI / 2;
+	len = sqrt(dx * dx + dy * dy + dz * dz);
+	xh[0] = -cos(yaw);
+	xh[1] = 0;
+	xh[2] = sin(yaw);
+	yh[0] = cos(pitch) * sin(yaw);
+	yh[1] = sin(pitch);
+	yh[2] = cos(pitch) * (cos(yaw));
+	VECSUB(diff, view, start);
+	glPushMatrix();
+	glTranslated(start[0], start[1], start[2]);
+	sy = VECSP(diff, yh);
+	sx = VECSP(diff, xh);
+	glRotated(yaw * 360 / 2. / M_PI, 0., 1., 0.);
+	glRotated(pitch * 360 / 2. / M_PI, -1., 0., 0.);
+	glRotated(atan2(sx, sy) * 360 / 2 / M_PI, 0., -1., 0.);
+	glScaled(width, len, 1.);
+	glBegin(GL_QUADS);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., offset + 0.); glTexCoord2d(0., 0.); glVertex3d(-1., 0., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., offset + 1.); glTexCoord2d(0., 1.); glVertex3d(-1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., offset + 1.); glTexCoord2d(1., 1.); glVertex3d( 1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., offset + 0.); glTexCoord2d(1., 0.); glVertex3d( 1., 0., 0.);
+	glEnd();
+	glPopMatrix();
+}
+
 void Sceptor::drawtra(wardraw_t *wd){
 	Sceptor *p = this;
 	Mat4d mat;
@@ -298,10 +332,14 @@ void Sceptor::drawtra(wardraw_t *wd){
 		static GLuint texname = 0;
 		if(!init){
 			init = true;
-			suftexparam_t stp;
+			suftexparam_t stp, stp2;
 			stp.flags = STP_MAGFIL;
 			stp.magfil = GL_LINEAR;
-			texname = CallCacheBitmap("textures/blast.jpg", "textures/blast.jpg", &stp, NULL);
+			stp2.flags = STP_ENV | STP_MAGFIL;
+			stp2.env = GL_MODULATE;
+			stp2.magfil = GL_LINEAR;
+//			texname = CallCacheBitmap("textures/blast.jpg", "textures/blast.jpg", &stp, NULL);
+			texname = CallCacheBitmap5("textures/blast.jpg", "textures/blast.jpg", &stp, "textures/noise.jpg", &stp2);
 		}
 
 		glPushMatrix();
@@ -310,22 +348,34 @@ void Sceptor::drawtra(wardraw_t *wd){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
 		float amp = MIN(float(fabs(this->throttle)) * 30.f, 1.);
+		double tim = -30. * wd->w->war_time();
+		RandomSequence rs((unsigned long)this);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glRotated(147.43462, 0, 0, 1);
+		glScaled(.2, .2, .2);
+		glMatrixMode(GL_MODELVIEW);
 		glColor4f(1., 1., 1., amp);
 		if(0. < throttle){
-			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(0,0,40.*scale)), this->pos + this->rot.trans(Vec3d(0,0,40.*scale+.010*amp)), .0025*amp);
-			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale+.005*amp)), .00125*amp);
-			gldTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale+.005*amp)), .00125*amp);
+			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(0,0,30.*scale)), this->pos + this->rot.trans(Vec3d(0,0,30.*scale+.010*amp)), .0025*amp, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
 		}
 		else{
 			double ofs = 5.*scale;
 			pos = this->pos + this->rot.trans(Vec3d(0,0,35.*scale));
 			Quatd upangle = this->rot * Quatd(sin(M_PI*5./6./2.),0.,0.,cos(M_PI*5./6./2.));
 			Quatd dnangle = this->rot * Quatd(sin(-M_PI*5./6./2.),0.,0.,cos(-M_PI*5./6./2.));
-			gldTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + upangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp);
-			gldTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp);
-			gldTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + upangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp);
-			gldTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp);
+			gldScrollTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + upangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + upangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
 		}
+		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
 		glPopAttrib();
 		glPopMatrix();
 	}

@@ -506,9 +506,13 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	if(fname2){
 		bfh2 = ZipUnZip("rc.zip", fname2, NULL);
 		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
+		if(!stp2.bmi){
+			/* If no luck yet, try jpeg decoding. */
+			stp2.bmi = ReadJpeg(fname2);
+			jpeg2 = 1;
+		}
 		if(!stp2.bmi)
 			return 0;
-//		jpeg2 = 1;
 	}
 
 	ret = CacheSUFMTex(entry, &stp, fname2 ? (BITMAPINFO*)&stp2 : NULL);

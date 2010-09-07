@@ -516,7 +516,7 @@ void Sceptor::anim(double dt){
 	}*/
 
 	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos, avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+		MoveTefpol3D(pf->pf, pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 
 #if 0
 	if(pf->docked){

@@ -886,6 +886,8 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 		dpos = pt->pos - plpos;
 		dpos[3] = 1.;
 		lpos = mat2.vp(dpos);
+		if(lpos[3] == 0.)
+			continue;
 		lpos[0] /= lpos[3];
 		lpos[1] /= lpos[3];
 		lpos[2] /= lpos[3];

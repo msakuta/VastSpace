@@ -1,4 +1,7 @@
-#include "sceptor.h"
+/** \file
+ * \brief Definition of Defender and its properties.
+ */
+#include "defender.h"
 #include "player.h"
 #include "bullet.h"
 #include "judge.h"
@@ -6,10 +9,6 @@
 #include "Warpable.h"
 #include "Scarry.h"
 #include "material.h"
-//#include "worker.h"
-//#include "glsl.h"
-//#include "astro_star.h"
-//#include "sensor.h"
 #include "cmd.h"
 #include "astrodraw.h"
 #include "EntityCommand.h"
@@ -34,47 +33,34 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define SCEPTOR_SCALE 1./10000
-#define SCEPTOR_SMOKE_FREQ 20.
-#define SCEPTOR_COOLTIME .2
-#define SCEPTOR_ROLLSPEED (.2 * M_PI)
-#define SCEPTOR_ROTSPEED (.3 * M_PI)
-#define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
-#define SCEPTOR_ANGLEACCEL (M_PI * .2)
-#define SCEPTOR_MAX_GIBS 20
-#define BULLETSPEED 2.
-#define SCEPTOR_MAGAZINE 10
-#define SCEPTOR_RELOADTIME 2.
+#define DEFENDER_SMOKE_FREQ 20.
+#define DEFENDER_ROTSPEED (.3 * M_PI)
+#define DEFENDER_MAX_ANGLESPEED (M_PI * .5)
 
 
-
-Entity::Dockable *Sceptor::toDockable(){return this;}
+//Entity::Dockable *Sceptor::toDockable(){return this;}
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
-struct hitbox Sceptor::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
+struct hitbox Defender::hitboxes[] = {
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(30 * modelScale(), 30 * modelScale(), 125 * modelScale())),
 };
-const int Sceptor::nhitboxes = numof(Sceptor::hitboxes);
+const int Defender::nhitboxes = numof(Defender::hitboxes);
 
-/*static const struct hitbox sceptor_hb[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
-};*/
-
-const char *Sceptor::idname()const{
-	return "sceptor";
+const char *Defender::idname()const{
+	return "defender";
 }
 
-const char *Sceptor::classname()const{
-	return "Sceptor";
+const char *Defender::classname()const{
+	return "defender";
 }
 
-const unsigned Sceptor::classid = registerClass("Sceptor", Conster<Sceptor>);
-const unsigned Sceptor::entityid = registerEntity("Sceptor", Constructor<Sceptor>);
+const unsigned Defender::classid = registerClass("Defender", Conster<Defender>);
+const unsigned Defender::entityid = registerEntity("Defender", Constructor<Defender>);
 
-void Sceptor::serialize(SerializeContext &sc){
+void Defender::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << aac; /* angular acceleration */
 	sc.o << throttle;
@@ -82,16 +68,17 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << cooldown;
 	sc.o << dest;
 	sc.o << fcloak;
+	sc.o << fdeploy;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
 	sc.o << paradec;
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
-	sc.o << formPrev;
+//	sc.o << formPrev;
 }
 
-void Sceptor::unserialize(UnserializeContext &sc){
+void Defender::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
@@ -99,53 +86,57 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> cooldown;
 	sc.i >> dest;
 	sc.i >> fcloak;
+	sc.i >> fdeploy;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
-	sc.i >> formPrev;
+//	sc.i >> formPrev;
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 	WarSpace *ws;
-	if(w && (ws = (WarSpace*)w))
-		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
-	else
-		pf = NULL;
+	for(int i = 0; i < 4; i++){
+		if(w && (ws = (WarSpace*)w))
+			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		else
+			pf[i] = NULL;
+	}
 }
 
-const char *Sceptor::dispname()const{
-	return "Interceptor";
+const char *Defender::dispname()const{
+	return "Defender";
 };
 
-double Sceptor::maxhealth()const{
-	return 200.;
+double Defender::maxhealth()const{
+	return 500.;
 }
 
 
 
 
 
-Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
+Defender::Defender() : mother(NULL), mf(0), paradec(-1){
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw),
+Defender::Defender(WarField *aw) : st(aw),
 	mother(NULL),
 	task(Auto),
 	fuel(maxfuel()),
 	reverser(0),
 	mf(0),
+	fdeploy(0),
 	paradec(-1),
-	forcedEnemy(false),
-	formPrev(NULL),
-	evelo(vec3_000),
-	attitude(Passive)
+	forcedEnemy(false)
+//	formPrev(NULL),
+//	evelo(vec3_000),
+//	attitude(Passive)
 {
-	Sceptor *const p = this;
+	Defender *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
-	mass = 4e3;
+	mass = 16e3;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -153,27 +144,28 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->throttle = .5;
 	p->cooldown = 1.;
 	WarSpace *ws;
-	if(w && (ws = (WarSpace*)w))
-		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
-	else
-		p->pf = NULL;
+	for(int i = 0; i < 4; i++){
+		if(w && (ws = (WarSpace*)w))
+			p->pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		else
+			p->pf[i] = NULL;
+	}
 //	p->mother = mother;
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->magazine = SCEPTOR_MAGAZINE;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
 }
 
-const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
+const avec3_t Defender::gunPos[2] = {{0., -4. * modelScale(), -15. * modelScale()}, {-35. * modelScale(), -4. * modelScale(), -15. * modelScale()}};
 
-void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
+void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
 	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
+	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .010, 0.030), Vec3d(0., .010, .030)};
 	Mat4d mat;
 	seatid = (seatid + 3) % 3;
 	if(seatid == 2 && enemy && enemy->w == w){
@@ -187,88 +179,59 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	pos = this->pos + ofs;
 }
 
-/*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
-	SCEPTOR_t *p = (SCEPTOR_t*)pt;
-	if(!pt->active || pt->health <= 0.)
-		return;
-	pt->inputs = *inputs;
-}*/
-
-int Sceptor::popupMenu(PopupMenu &list){
+int Defender::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
 	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak")
-		.append("Delta Formation", 0, "delta_formation");
+		.append("Delta Formation", 0, "delta_formation").append("Deploy", 0, "deploy");
 	return ret;
 }
 
-Entity::Props Sceptor::props()const{
+Entity::Props Defender::props()const{
 	std::vector<cpplib::dstring> ret = st::props();
 	ret.push_back(cpplib::dstring("Task: ") << task);
 	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
 	return ret;
 }
 
-bool Sceptor::undock(Docker *d){
+bool Defender::undock(Docker *d){
 	st::undock(d);
 	task = Undock;
 	mother = d;
-	if(this->pf)
-		ImmobilizeTefpol3D(this->pf);
-	WarSpace *ws;
-	if(w && w->getTefpol3d())
-		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+	for(int i = 0; i < 4; i++) if(this->pf[i]){
+		ImmobilizeTefpol3D(this->pf[i]);
+		if(w && w->getTefpol3d())
+			this->pf[i] = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+	}
 	d->baycool += 1.;
 	return true;
 }
 
-/*
-void cmd_cloak(int argc, char *argv[]){
-	extern struct player *ppl;
-	if(ppl->cs->w){
-		entity_t *pt;
-		for(pt = ppl->selected; pt; pt = pt->selectnext) if(pt->vft == &SCEPTOR_s){
-			((SCEPTOR_t*)pt)->cloak = !((SCEPTOR_t*)pt)->cloak;
-		}
-	}
-}
-*/
-void Sceptor::shootDualGun(double dt){
-	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
+/// Shoot the main gun
+void Defender::shoot(double dt){
+	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed());
 	Mat4d mat;
-	int i = 0;
 	if(dt <= cooldown)
 		return;
 	transform(mat);
-	do{
+	{
 		Bullet *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, 15.);
+		pb = new Bullet(this, 5, 200.);
 		w->addent(pb);
-		pb->pos = mat.vp3(gunPos[i]);
-/*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
-		theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
-		VECCPY(pb->velo, pt->velo);
-		pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
-		pb->velo[1] += -BULLETSPEED * sin(theta);
-		pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
+		pb->pos = mat.vp3(gunPos[0]);
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025;
-	} while(!i++);
+	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
-	if(0 < --magazine)
-		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
-	else{
-		magazine = SCEPTOR_MAGAZINE;
-		this->cooldown += SCEPTOR_RELOADTIME;
-	}
+	this->cooldown += reloadTime() * (fuel <= 0 ? 3 : 1);
 	this->mf = .1;
 }
 
-// find the nearest enemy
-bool Sceptor::findEnemy(){
+/// find the nearest enemy
+bool Defender::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *pt2, *closest = NULL;
@@ -290,119 +253,13 @@ bool Sceptor::findEnemy(){
 	if(closest){
 		enemy = closest;
 		integral[0] = integral[1] = 0.f;
-		evelo = vec3_000;
+//		evelo = vec3_000;
 	}
 	return !!closest;
 }
 
-#if 1
-static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
-	Entity *pt2 = (Entity*)param->hint;
-	if(pt == pt2)
-		return 0;
-	const double &dt = param->dt;
-	Vec3d dr = pt->pos - pt2->pos;
-	double r = pt->hitradius(), r2 = pt2->hitradius();
-	double sr = (r + r2) * (r + r2);
-	if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
-			return 0;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, NULL))
-			return 0;
-	}
 
-	return 1;
-}
-
-static void space_collide_reflect(Entity *pt, const Vec3d &netvelo, const Vec3d &n, double f){
-	Vec3d dv = pt->velo - netvelo;
-	if(dv.sp(n) < 0)
-		pt->velo = -n * dv.sp(n) + netvelo;
-	else
-		pt->velo += n * f;
-}
-
-static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
-	const double ff = .2;
-	Vec3d dr = pt->pos - pt2->pos;
-	double sd = dr.slen();
-	double r = pt->hitradius(), r2 = pt2->hitradius();
-	double sr = (r + r2) * (r + r2);
-	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-	Vec3d n;
-
-	// If either one of concerned Entities are not solid, no hit check is needed.
-	if(!pt->solid(pt2) || !pt2->solid(pt))
-		return;
-
-	// If bounding spheres are not intersecting each other, no resolving is performed.
-	// Object tree should discard such cases, but that must be ensured here when the tree
-	// is yet to be built.
-	if(sr < sd)
-		return;
-
-	if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
-			return;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
-			return;
-		n *= -1;
-	}
-	else{
-		n = dr.norm();
-	}
-	if(1. < f) /* prevent oscillation */
-		f = 1.;
-
-	// Aquire momentum of center of mass
-	Vec3d netmomentum = pt->velo * pt->mass + pt2->velo * pt2->mass;
-
-	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
-	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
-
-	// terminate closing velocity component
-	space_collide_reflect(pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass));
-	space_collide_reflect(pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass));
-}
-
-void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
-	Entity *pt2;
-	if(1 && w->otroot){
-		Entity *iglist[3] = {pt, collideignore, collideignore2};
-//		struct entity_static *igvft[1] = {&rstation_s};
-		struct otjEnumHitSphereParam param;
-		param.root = w->otroot;
-		param.src = &pt->pos;
-		param.dir = &pt->velo;
-		param.dt = dt;
-		param.rad = pt->hitradius();
-		param.pos = NULL;
-		param.norm = NULL;
-		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
-		param.callback = space_collide_callback;
-/*		param.hint = iglist;*/
-		param.hint = pt;
-		param.iglist = iglist;
-		param.niglist = 3;
-//		param.igvft = igvft;
-//		param.nigvft = 1;
-		if(pt2 = otjEnumPointHitSphere(&param)){
-			space_collide_resolve(pt, pt2, dt);
-		}
-	}
-	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
-		space_collide_resolve(pt, pt2, dt);
-	}
-}
-#endif
-
-
-
-void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
+void Defender::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);
 	Vec3d rdr = target - this->pos; // real dr
 	Vec3d rdrn = rdr.norm();
@@ -413,10 +270,10 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	if(rdrn.sp(dv) < 0) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len();
 	Vec3d dr = this->pos - target;
-	this->throttle = rangein((dr.len() - dv.len() * 5.5) * speedfactor + minspeed, -1, 1);
+	this->throttle = rangein((dr.len() - dv.len() * 7.0) * speedfactor + minspeed, -1, 1);
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
-	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
-		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
+	if(DEFENDER_ROTSPEED * DEFENDER_ROTSPEED < this->omg.slen())
+		this->omg.normin().scalein(DEFENDER_ROTSPEED);
 	bbody->setAngularVelocity(btvc(this->omg));
 	dr.normin();
 	Vec3d sidevelo = velo - dr * dr.sp(velo);
@@ -425,7 +282,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 }
 
 // Find mother if has none
-Entity *Sceptor::findMother(){
+Entity *Defender::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
 	for(Entity *e = w->entlist(); e; e = e->next) if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
@@ -436,7 +293,7 @@ Entity *Sceptor::findMother(){
 	return pm;
 }
 
-void Sceptor::enterField(WarField *target){
+void Defender::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
 		static btCompoundShape *shape = NULL;
@@ -476,11 +333,11 @@ void Sceptor::enterField(WarField *target){
 	}
 }
 
-void Sceptor::anim(double dt){
+void Defender::anim(double dt){
 	WarField *oldw = w;
 	Entity *pt = this;
-	Sceptor *const pf = this;
-	Sceptor *const p = this;
+	Defender *const pf = this;
+	Defender *const p = this;
 //	scarry_t *const mother = pf->mother;
 	Entity *pm = mother && mother->e ? mother->e : NULL;
 	Mat4d mat, imat;
@@ -515,9 +372,6 @@ void Sceptor::anim(double dt){
 		return;
 	}*/
 
-	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
-
 #if 0
 	if(pf->docked){
 		if(pm->enemy && mother->baycool == 0.){
@@ -547,6 +401,20 @@ void Sceptor::anim(double dt){
 
 	transform(mat);
 //	quat2imat(imat, mat);
+
+	for(int i = 0; i < 4; i++) if(pf->pf[i]){
+		Mat4d mat1 = mat;
+		mat1.scalein((i%2*2-1), (i/2*2-1), 1);
+		Mat4d mat2 = mat1.translate(Vec3d(22.5, -22.5, 30) * modelScale());
+		Mat4d mat3 = mat2.rotx(MIN(fdeploy * 135, 90) / deg_per_rad);
+		Mat4d mat4 = mat3.roty(MAX(fdeploy * 135 - 90, 0) / deg_per_rad);
+		Mat4d mat5 = mat4.translate(Vec3d(0, 0, -30) * modelScale());
+		MoveTefpol3D(pf->pf[i], mat5.vp3(Vec3d(0, 0, 130 * modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+//		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+	}
+
+	fdeploy = approach(fdeploy, task == Deploy, dt, 0.);
+
 
 #if 0
 	if(mother->st.enemy && 0 < pt->health && VECSLEN(pt->velo) < .1 * .1){
@@ -646,7 +514,7 @@ void Sceptor::anim(double dt){
 				Vec3d xh, dh, vh;
 				Vec3d epos;
 				double phi;
-				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, BULLETSPEED, w);
+				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, bulletSpeed(), w);
 /*				xh[0] = pt->velo[2];
 				xh[1] = pt->velo[1];
 				xh[2] = -pt->velo[0];*/
@@ -728,7 +596,7 @@ void Sceptor::anim(double dt){
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
-					double sx, sy, len, len2, maxspeed = SCEPTOR_MAX_ANGLESPEED * dt;
+					double sx, sy, len, len2, maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
 
 					// If a mother could not be aquired, fight to the death alone.
@@ -760,13 +628,12 @@ void Sceptor::anim(double dt){
 
 					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
-						struct random_sequence rs;
-						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
+						RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
-							randomvec[i] = drseq(&rs) - .5;
-						pt->velo += randomvec * dt * .5;
-						bbody->applyCentralForce(btvc(randomvec * mass * .5));
+							randomvec[i] = rs.nextd() - .5;
+						pt->velo += randomvec * dt * .05;
+						bbody->applyCentralForce(btvc(randomvec * mass * .05));
 					}
 
 					if(p->task == Attack || forward.sp(dv) < -.5){
@@ -811,7 +678,7 @@ void Sceptor::anim(double dt){
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == Attack && dist < 5. * 2. && .99 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 5. * 2. && .99999 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
@@ -865,9 +732,9 @@ void Sceptor::anim(double dt){
 					else
 						task = Auto;
 				}
-				else if(p->task == DeltaFormation){
+/*				else if(p->task == DeltaFormation){
 					int nwingmen = 1; // Count yourself
-					Sceptor *leader = NULL;
+					Defender *leader = NULL;
 					for(Sceptor *wingman = formPrev; wingman; wingman = wingman->formPrev){
 						nwingmen++;
 						if(!wingman->formPrev)
@@ -887,7 +754,7 @@ void Sceptor::anim(double dt){
 						else
 							steerArrival(dt, dest, leader->velo, 1., .001);
 					}
-				}
+				}*/
 				else if(p->task == Dockque || p->task == Dock){
 					if(!pm)
 						pm = findMother();
@@ -921,9 +788,9 @@ void Sceptor::anim(double dt){
 								p->task = Dock;
 							else{
 								mother->dock(pt);
-								if(p->pf){
-									ImmobilizeTefpol3D(p->pf);
-									p->pf = NULL;
+								for(int i = 0; i < 4; i++) if(p->pf){
+									ImmobilizeTefpol3D(p->pf[i]);
+									p->pf[i] = NULL;
 								}
 								p->docked = true;
 	/*							if(mother->cargo < scarry_cargousage(mother)){
@@ -972,7 +839,7 @@ void Sceptor::anim(double dt){
 			}
 
 			if(pt->inputs.press & (PL_ENTER | PL_LCLICK)){
-				shootDualGun(dt);
+				shoot(dt);
 			}
 
 			if(p->cooldown < dt)
@@ -1077,7 +944,7 @@ void Sceptor::anim(double dt){
 				p->fuel -= consump;
 			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			acc = pt->rot.trans(acc0);
-			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
+			bbody->applyCentralForce(btvc(acc * spd * 5. * mass));
 			pt->velo += acc * spd;
 		}
 
@@ -1184,7 +1051,7 @@ void Sceptor::anim(double dt){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
 				int i, n;
-				n = (int)(dt * SCEPTOR_SMOKE_FREQ + drseq(&w->rs));
+				n = (int)(dt * DEFENDER_SMOKE_FREQ + drseq(&w->rs));
 				for(i = 0; i < n; i++){
 					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * .01;
 					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * .01;
@@ -1210,17 +1077,17 @@ void Sceptor::anim(double dt){
 	st::anim(dt);
 
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-	if(this->pf && w != oldw)
-		ImmobilizeTefpol3D(this->pf);
+	for(int i = 0; i < 4; i++) if(this->pf[i] && w != oldw)
+		ImmobilizeTefpol3D(this->pf[i]);
 //	movesound3d(pf->hitsound, pt->pos);
 }
 
-// Docking and undocking will never stack.
-bool Sceptor::solid(const Entity *o)const{
+/// Docking and undocking will never stack.
+bool Defender::solid(const Entity *o)const{
 	return !(task == Undock || task == Dock);
 }
 
-int Sceptor::takedamage(double damage, int hitpart){
+int Defender::takedamage(double damage, int hitpart){
 	int ret = 1;
 	struct tent3d_line_list *tell = w->getTeline3d();
 	if(this->health < 0.)
@@ -1231,14 +1098,9 @@ int Sceptor::takedamage(double damage, int hitpart){
 		ret = 0;
 /*		effectDeath(w, pt);*/
 		if(tell) for(i = 0; i < 32; i++){
-			double pos[3], velo[3];
-			velo[0] = drseq(&w->rs) - .5;
-			velo[1] = drseq(&w->rs) - .5;
-			velo[2] = drseq(&w->rs) - .5;
-			VECNORMIN(velo);
-			VECCPY(pos, this->pos);
-			VECSCALEIN(velo, .1);
-			VECSADD(pos, velo, .1);
+			Vec3d velo(w->rs.nextd() - .5, w->rs.nextd() - .5, w->rs.nextd() - .5);
+			velo.normin().scalein(.1);
+			Vec3d pos = this->pos + velo * .1;
 			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
@@ -1251,7 +1113,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-void Sceptor::postframe(){
+void Defender::postframe(){
 	if(mother && mother->e && (!mother->e->w || docked && mother->e->w != w)){
 		mother = NULL;
 
@@ -1261,21 +1123,19 @@ void Sceptor::postframe(){
 	}
 	if(enemy && enemy->w != w)
 		enemy = NULL;
-	if(formPrev && formPrev->w != w)
-		formPrev = NULL;
+/*	if(formPrev && formPrev->w != w)
+		formPrev = NULL;*/
 	st::postframe();
 }
 
-bool Sceptor::isTargettable()const{
-	return true;
-}
-bool Sceptor::isSelectable()const{return true;}
+bool Defender::isTargettable()const{return true;}
+bool Defender::isSelectable()const{return true;}
 
-double Sceptor::hitradius()const{
-	return .01;
+double Defender::hitradius()const{
+	return .02;
 }
 
-int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+int Defender::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, n;
@@ -1295,55 +1155,16 @@ int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	return reti;
 }
 
-#if 0
-static int SCEPTOR_visibleFrom(const entity_t *viewee, const entity_t *viewer){
-	SCEPTOR_t *p = (SCEPTOR_t*)viewee;
-	return p->fcloak < .5;
-}
-
-static double SCEPTOR_signalSpectrum(const entity_t *pt, double lwl){
-	SCEPTOR_t *p = (SCEPTOR_t*)pt;
-	double x;
-	double ret = 0.5;
-
-	/* infrared emission */
-	x = (lwl - -4) * .8; /* around 100 um */
-	ret += (p->heat) * exp(-x * x);
-
-	/* radar reflection */
-	x = (lwl - log10(1)) * .5;
-	ret += .5 * exp(-x * x); /* VHF */
-
-	/* cloaking hides visible signatures */
-	x = lwl - log10(475e-9);
-	ret *= 1. - .95 * p->fcloak * exp(-x * x);
-
-	/* engine burst emission cannot be hidden by cloaking */
-	x = (lwl - -4) * .2; /* around 100 um */
-	ret += 3. * (p->throttle) * exp(-x * x);
-
-	return ret;
-}
-
-
-static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
-	SCEPTOR_t *p = (SCEPTOR_t*)pt;
-	if(!p->mother || !p->mother->st.st.vft->warp_dest)
-		return NULL;
-	return p->mother->st.st.vft->warp_dest(p->mother, w);
-}
-#endif
-
-double Sceptor::maxfuel()const{
+double Defender::maxfuel()const{
 	return 120.;
 }
 
-bool Sceptor::command(EntityCommand *com){
+bool Defender::command(EntityCommand *com){
 	if(InterpretCommand<HaltCommand>(com)){
 		task = Idle;
 		forcedEnemy = false;
 	}
-	else if(InterpretCommand<DeltaCommand>(com)){
+/*	else if(InterpretCommand<DeltaCommand>(com)){
 		Entity *e;
 		for(e = next; e; e = e->next) if(e->classname() == classname() && e->race == race){
 			formPrev = static_cast<Sceptor*>(e);
@@ -1351,7 +1172,7 @@ bool Sceptor::command(EntityCommand *com){
 			break;
 		}
 		return true;
-	}
+	}*/
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
@@ -1385,58 +1206,26 @@ bool Sceptor::command(EntityCommand *com){
 		}
 		return true;
 	}
+	if(InterpretCommand<DeployCommand>(com)){
+		task = task == Deploy ? Auto : Deploy;
+		return true;
+	}
 	return st::command(com);
 }
 
-
-Entity *Sceptor::create(WarField *w, Builder *mother){
-	Sceptor *ret = new Sceptor(NULL);
-	ret->pos = mother->pos;
-	ret->velo = mother->velo;
-	ret->rot = mother->rot;
-	ret->omg = mother->omg;
-	ret->race = mother->race;
-	ret->task = Undock;
-//	w->addent(ret);
-	return ret;
-}
-
-
-
-
-
-int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
+static int cmd_deploy(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&DockCommand());
+		e->command(&DeployCommand());
 	}
 	return 0;
 }
 
-int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&ParadeCommand());
-	}
-	return 0;
-}
-
-static int cmd_delta_formation(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&DeltaCommand());
-	}
-	return 0;
-}
-
-static void register_sceptor_cmd(void){
+static void register_defender_cmd(void){
 	extern Player pl;
-	CmdAddParam("delta_formation", cmd_delta_formation, &pl);
+	CmdAddParam("deploy", cmd_deploy, &pl);
 }
 
-static Initializator sss(register_sceptor_cmd);
+static Initializator sss(register_defender_cmd);
 
-
-double Sceptor::pid_pfactor = 1.;
-double Sceptor::pid_ifactor = 1.;
-double Sceptor::pid_dfactor = 1.;
+IMPLEMENT_COMMAND(DeployCommand, "DeployCommand")

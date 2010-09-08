@@ -1,5 +1,6 @@
 #ifndef ENTITYCOMMAND_H
 #define ENTITYCOMMAND_H
+#include "coordsys.h"
 #include <set>
 #include <map>
 #include <cpplib/vec3.h>

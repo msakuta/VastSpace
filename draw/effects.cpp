@@ -10,6 +10,7 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufvbo.h>
 #include <clib/GL/gldraw.h>
+#include <clib/GL/multitex.h>
 #include <clib/rseq.h>
 }
 #include <cpplib/RandomSequence.h>
@@ -266,3 +267,37 @@ GLuint muzzle_texture(){
 	}
 	return texname;
 }
+
+/// Extended version of gldTextureBeam with multitexturing.
+void gldScrollTextureBeam(const Vec3d &view, const Vec3d &start, const Vec3d &end, double width, double offset){
+	double dx, dy, dz, sx, sy, len;
+	double pitch, yaw;
+	Vec3d xh, yh;
+	dy = end[1] - start[1];
+	yaw = atan2(dx = end[0] - start[0], dz = end[2] - start[2]) + M_PI;
+	pitch = -atan2(dy, sqrt(dx * dx + dz * dz)) + M_PI / 2;
+	len = sqrt(dx * dx + dy * dy + dz * dz);
+	xh[0] = -cos(yaw);
+	xh[1] = 0;
+	xh[2] = sin(yaw);
+	yh[0] = cos(pitch) * sin(yaw);
+	yh[1] = sin(pitch);
+	yh[2] = cos(pitch) * (cos(yaw));
+	Vec3d diff = view - start;
+	glPushMatrix();
+	glTranslated(start[0], start[1], start[2]);
+	sy = diff.sp(yh);
+	sx = diff.sp(xh);
+	glRotated(yaw * 360 / 2. / M_PI, 0., 1., 0.);
+	glRotated(pitch * 360 / 2. / M_PI, -1., 0., 0.);
+	glRotated(atan2(sx, sy) * 360 / 2 / M_PI, 0., -1., 0.);
+	glScaled(width, len, 1.);
+	glBegin(GL_QUADS);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., offset + 0.); glTexCoord2d(0., 0.); glVertex3d(-1., 0., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., offset + 1.); glTexCoord2d(0., 1.); glVertex3d(-1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., offset + 1.); glTexCoord2d(1., 1.); glVertex3d( 1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., offset + 0.); glTexCoord2d(1., 0.); glVertex3d( 1., 0., 0.);
+	glEnd();
+	glPopMatrix();
+}
+

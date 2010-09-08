@@ -27,4 +27,6 @@ void debrigib_multi(const struct tent3d_line_callback *pl, const struct tent3d_l
 
 GLuint muzzle_texture();
 
+void gldScrollTextureBeam(const Vec3d &view, const Vec3d &start, const Vec3d &end, double width, double offset);
+
 #endif

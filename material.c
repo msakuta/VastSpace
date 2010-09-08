@@ -454,7 +454,7 @@ shortjmp:
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
 	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
-	BITMAPFILEHEADER *bfh = NULL, *bfhMask = NULL, *bfh2;
+	BITMAPFILEHEADER *bfh = NULL, *bfhMask = NULL;
 	GLuint ret;
 	int mask = 0, jpeg = 0, maskjpeg = 0, jpeg2 = 0;
 	stp.bmiMask = NULL;
@@ -504,8 +504,8 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 
 	stp2 = pstp2 ? *pstp2 : defstp;
 	if(fname2){
-		bfh2 = ZipUnZip("rc.zip", fname2, NULL);
-		stp2.bmi = !bfh2 ? ReadBitmap(fname2) : (BITMAPINFO*)&bfh2[1];
+		/* Try loading from plain bitmap first */
+		stp2.bmi = ReadBitmap(fname2);
 		if(!stp2.bmi){
 			/* If no luck yet, try jpeg decoding. */
 			stp2.bmi = ReadJpeg(fname2);
@@ -531,11 +531,9 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			LocalFree(stp.bmiMask);
 	}
 	if(fname2){
-		if(bfh2)
-			ZipFree(bfh2);
-		else if(jpeg2)
+		if(jpeg2)
 			free(stp2.bmi);
-		else
+		else if(stp2.bmi)
 			LocalFree(stp2.bmi);
 	}
 	return ret;

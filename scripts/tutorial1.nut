@@ -10,7 +10,8 @@ tutorialbut.x = screenwidth() - tutorialbut.width;
 tutorialbut.y = sysbut.y - tutorialbut.height;
 tutorialbut.pinned = true;
 
-deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs);
+deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs);
+//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs);
 deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, player.cs);
 
 framecount <- 0;

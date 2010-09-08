@@ -1,21 +1,10 @@
-#include "../sceptor.h"
+/** \file
+ * \brief Definition of drawing methods for Defender.
+ */
+#include "../defender.h"
 #include "../player.h"
-//#include "bullet.h"
-//#include "coordsys.h"
-//#include "viewer.h"
-//#include "cmd.h"
-//#include "glwindow.h"
-//#include "arms.h"
 #include "../material.h"
-//#include "warutil.h"
 #include "../judge.h"
-//#include "astrodef.h"
-//#include "stellar_file.h"
-//#include "antiglut.h"
-//#include "worker.h"
-//#include "glsl.h"
-//#include "astro_star.h"
-//#include "sensor.h"
 #include "effects.h"
 extern "C"{
 #include <clib/c.h>
@@ -36,44 +25,12 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 
-
-#define SCEPTOR_SCALE 1./10000
-#define SCEPTER_SMOKE_FREQ 10.
-#define SCEPTER_RELOADTIME .3
-#define SCEPTER_ROLLSPEED (.2 * M_PI)
-#define SCEPTER_ROTSPEED (.3 * M_PI)
-#define SCEPTER_MAX_ANGLESPEED (M_PI * .5)
-#define SCEPTER_ANGLEACCEL (M_PI * .2)
-#define SCEPTER_MAX_GIBS 20
-#define BULLETSPEED 2.
+extern double g_nlips_factor;
 
 
-/* color sequences */
-extern const struct color_sequence cs_orangeburn, cs_shortburn;
-#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
-static const struct color_node cnl_orangeburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,0)},
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.45, COLOR32RGBA(255,127,31,95)},
-	{0.3, COLOR32RGBA(255,31,0,63)},
-};
-const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 1.1);
-static const struct color_node cnl_shortburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.25, COLOR32RGBA(255,127,31,0)},
-};
-const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
-
-
-double g_nlips_factor = 1.;
-static int g_shader_enable = 0;
-
-
-bool Sceptor::cull(Viewer &vw)const{
+bool Defender::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
-	if(task == Sceptor::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
+	if(task == Defender::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
 		return true;
 	double pixels = .008 * fabs(vw.gc->scale(pos)) * nf;
 	if(pixels < 2)
@@ -81,23 +38,25 @@ bool Sceptor::cull(Viewer &vw)const{
 	return false;
 }
 
-/* NLIPS: Non-Linear Inverse Perspective Scrolling */
-double Sceptor::nlipsFactor(Viewer &vw)const{
+/// Returns NLIPS factor.
+/// NLIPS: Non-Linear Inverse Perspective Scrolling
+double Defender::nlipsFactor(Viewer &vw)const{
 	double f = vw.fov * g_nlips_factor * 500. / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
 	return MAX(1., f);
 }
 
-void Sceptor::draw(wardraw_t *wd){
+void Defender::draw(wardraw_t *wd){
 	static int init = 0;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
+	static suf_t *sufengine = NULL;
 	static suf_t *sufrev = NULL;
 	static VBO *vbo[3] = {NULL};
-	static suftex_t *suft, *suft1, *suft2;
+	static suftex_t *suft, *suft1, *suft2, *suftengine;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
-	double scale = SCEPTOR_SCALE * nf;
-	Sceptor *const p = this;
+	double scale = modelScale() * nf;
+	Defender *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
 
@@ -106,38 +65,26 @@ void Sceptor::draw(wardraw_t *wd){
 		return;
 	wd->lightdraws++;
 
-	double pixels = .005 * fabs(wd->vw->gc->scale(pos)) * nf;
+	double pixels = .010 * fabs(wd->vw->gc->scale(pos)) * nf;
 
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(init == 0) do{
 //		FILE *fp;
-		sufbase = CallLoadSUF("models/interceptor0.bin");
+		sufbase = CallLoadSUF("models/defender0_body.bin");
 		sufbase1 = CallLoadSUF("models/interceptor1.bin");
-		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
+		sufengine = CallLoadSUF("models/defender0_engine.bin");
+//		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
 		vbo[0] = CacheVBO(sufbase);
 		vbo[1] = CacheVBO(sufbase1);
-		vbo[2] = CacheVBO(sufrev);
+		vbo[2] = CacheVBO(sufengine);
+//		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
 		suft = AllocSUFTex(sufbase);
 		suft1 = AllocSUFTex(sufbase1);
-		suft2 = AllocSUFTex(sufrev);
-
-/*		do{
-			GLuint vtx, frg;
-			vtx = glCreateShader(GL_VERTEX_SHADER);
-			frg = glCreateShader(GL_FRAGMENT_SHADER);
-			if(!glsl_load_shader(vtx, "shaders/refract.vs") || !glsl_load_shader(frg, "shaders/refract.fs"))
-				break;
-			shader = glsl_register_program(vtx, frg);
-
-			cubeEnvLoc = glGetUniformLocation(shader, "envmap");
-			textureLoc = glGetUniformLocation(shader, "texture");
-			invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
-			fracLoc = glGetUniformLocation(shader, "frac");
-			transparency = glGetUniformLocation(shader, "transparency");
-		}while(0);*/
+		suftengine = AllocSUFTex(sufengine);
+//		suft2 = AllocSUFTex(sufrev);
 
 		init = 1;
 	} while(0);
@@ -221,7 +168,23 @@ void Sceptor::draw(wardraw_t *wd){
 //				DrawSUF(sufbase, SUF_ATR, NULL);
 				DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
 
-			for(int i = 0; i < 2; i++){
+			for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++){
+				glFrontFace((ix + iy) % 2 ? GL_CW : GL_CCW);
+				glPushMatrix();
+				glScalef(1 - ix * 2, 1 - iy * 2, 1);
+				glTranslated(22.5, 22.5, -30);
+				glRotated(MIN(fdeploy * 135, 90), 1, 0, 0);
+				glRotated(MAX(fdeploy * 135 - 90, 0), 0, -1, 0);
+				glTranslated(-22.5, -22.5, 30);
+				if(vbo[2])
+					DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suft);
+				else
+					DecalDrawSUF(sufengine, SUF_ATR, NULL, suft, NULL, NULL);
+				glPopMatrix();
+			}
+			glFrontFace(GL_CCW);
+
+/*			for(int i = 0; i < 2; i++){
 				glPushMatrix();
 				if(i){
 					glScalef(1, -1, 1);
@@ -238,25 +201,21 @@ void Sceptor::draw(wardraw_t *wd){
 					DecalDrawSUF(sufrev, SUF_ATR, NULL, suft, NULL, NULL);
 				glPopMatrix();
 			}
-			glFrontFace(GL_CCW);
+			glFrontFace(GL_CCW);*/
 		}
 		glPopMatrix();
 
-/*		if(0 < wd->light[1]){
-			static const double normal[3] = {0., 1., 0.};
-			ShadowSUF(scepter_s.sufbase, wd->light, normal, pt->pos, pt->pyr, scale, NULL);
-		}*/
 		glPopAttrib();
 	}
 }
 
 #define COLIST4(a) COLOR32R(a),COLOR32G(a),COLOR32B(a),COLOR32A(a)
 
-void Sceptor::drawtra(wardraw_t *wd){
-	Sceptor *p = this;
+void Defender::drawtra(wardraw_t *wd){
+	Defender *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
-	double scale = SCEPTOR_SCALE * nlips;
+	double scale = modelScale() * nlips;
 
 #if PIDAIM_PROFILE
 	glBegin(GL_LINES);
@@ -325,20 +284,18 @@ void Sceptor::drawtra(wardraw_t *wd){
 		glScaled(.2, .2, .2);
 		glMatrixMode(GL_MODELVIEW);
 		glColor4f(1., 1., 1., amp);
-		if(0. < throttle){
+/*		if(0. < throttle){
 			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(0,0,30.*scale)), this->pos + this->rot.trans(Vec3d(0,0,30.*scale+.010*amp)), .0025*amp, tim + 100. * rs.nextd());
 			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
 			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
 		}
-		else{
+		else*/{
 			double ofs = 5.*scale;
-			pos = this->pos + this->rot.trans(Vec3d(0,0,35.*scale));
-			Quatd upangle = this->rot * Quatd(sin(M_PI*5./6./2.),0.,0.,cos(M_PI*5./6./2.));
-			Quatd dnangle = this->rot * Quatd(sin(-M_PI*5./6./2.),0.,0.,cos(-M_PI*5./6./2.));
-			gldScrollTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + upangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
-			gldScrollTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d( 34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
-			gldScrollTextureBeam(wd->vw->pos, pos + upangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + upangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
-			gldScrollTextureBeam(wd->vw->pos, pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs)), pos + dnangle.trans(Vec3d(-34.5*scale,0,ofs+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+			pos = this->pos /*+ this->rot.trans(Vec3d(0,0,35.*scale))*/;
+			for(int ix = -1; ix < 2; ix += 2) for(int iy = -1; iy < 2; iy += 2){
+				Vec3d org(ix * 22.5 * scale, iy * 20. * scale, 130. * scale);
+				gldScrollTextureBeam(wd->vw->pos, pos + this->rot.trans(org), pos + this->rot.trans(org + Vec3d(0, 0, .020 * amp)), .005 * amp, tim + 100. * rs.nextd());
+			}
 		}
 		glMatrixMode(GL_TEXTURE);
 		glPopMatrix();
@@ -419,7 +376,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	}
 }
 
-void Sceptor::smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+void Defender::smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
 	glMultMatrixd(dd->invrot);

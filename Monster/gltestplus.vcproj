@@ -379,6 +379,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\BeamProjectile.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\bitmap.c"
 				>
 			</File>
@@ -621,6 +625,10 @@
 			</File>
 			<File
 				RelativePath="..\beamer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\BeamProjectile.h"
 				>
 			</File>
 			<File

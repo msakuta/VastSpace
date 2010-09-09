@@ -21,6 +21,7 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
+#include <cpplib/vec4.h>
 #include <gl/glext.h>
 #include <assert.h>
 #include <string.h>
@@ -47,11 +48,11 @@ double Defender::nlipsFactor(Viewer &vw)const{
 
 void Defender::draw(wardraw_t *wd){
 	static int init = 0;
-	static suf_t *sufbase = NULL, *sufbase1 = NULL;
-	static suf_t *sufengine = NULL;
+	static suf_t *sufbase = NULL/*, *sufbase1 = NULL*/;
+	static suf_t *sufengine = NULL, *sufengine1 = NULL;
 	static suf_t *sufrev = NULL;
-	static VBO *vbo[3] = {NULL};
-	static suftex_t *suft, *suft1, *suft2, *suftengine;
+	static VBO *vbo[4] = {NULL};
+	static suftex_t *suft, *suft1, *suft2, *suftengine, *suftengine1;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
@@ -72,18 +73,21 @@ void Defender::draw(wardraw_t *wd){
 	if(init == 0) do{
 //		FILE *fp;
 		sufbase = CallLoadSUF("models/defender0_body.bin");
-		sufbase1 = CallLoadSUF("models/interceptor1.bin");
+//		sufbase1 = CallLoadSUF("models/interceptor1.bin");
 		sufengine = CallLoadSUF("models/defender0_engine.bin");
+		sufengine1 = CallLoadSUF("models/defender1_engine.bin");
 //		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
 		vbo[0] = CacheVBO(sufbase);
-		vbo[1] = CacheVBO(sufbase1);
+//		vbo[1] = CacheVBO(sufbase1);
 		vbo[2] = CacheVBO(sufengine);
+		vbo[3] = CacheVBO(sufengine1);
 //		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
 		suft = AllocSUFTex(sufbase);
-		suft1 = AllocSUFTex(sufbase1);
+//		suft1 = AllocSUFTex(sufbase1);
 		suftengine = AllocSUFTex(sufengine);
+		suftengine1 = AllocSUFTex(sufengine1);
 //		suft2 = AllocSUFTex(sufrev);
 
 		init = 1;
@@ -154,14 +158,7 @@ void Defender::draw(wardraw_t *wd){
 		}
 		else
 #endif
-		if(pixels < 15){
-			if(vbo[1])
-				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft1);
-			else
-//				DrawSUF(sufbase1, SUF_ATR, NULL);
-				DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft1, NULL, NULL);
-		}
-		else{
+		{
 			if(vbo[0])
 				DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
 			else
@@ -176,10 +173,18 @@ void Defender::draw(wardraw_t *wd){
 				glRotated(MIN(fdeploy * 135, 90), 1, 0, 0);
 				glRotated(MAX(fdeploy * 135 - 90, 0), 0, -1, 0);
 				glTranslated(-22.5, -22.5, 30);
-				if(vbo[2])
-					DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suft);
-				else
-					DecalDrawSUF(sufengine, SUF_ATR, NULL, suft, NULL, NULL);
+				if(pixels < 25){
+					if(vbo[3])
+						DrawVBO(vbo[3], SUF_ATR | SUF_TEX, suftengine1);
+					else
+						DecalDrawSUF(sufengine1, SUF_ATR, NULL, suftengine1, NULL, NULL);
+				}
+				else{
+					if(vbo[2])
+						DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suftengine);
+					else
+						DecalDrawSUF(sufengine, SUF_ATR, NULL, suftengine, NULL, NULL);
+				}
 				glPopMatrix();
 			}
 			glFrontFace(GL_CCW);
@@ -356,22 +361,10 @@ void Defender::drawtra(wardraw_t *wd){
 	}
 #endif
 
-	if(mf) for(int i = 0; i < 2; i++){
-		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
+	if(mf){
+		Vec3d pos = rot.trans(Vec3d(gunPos[0])) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-/*		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		glRotatef(-90, 0, 0, 1);
-		glMatrixMode(GL_MODELVIEW);*/
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .1 * 2., fi = 1. - mf / .1;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
-/*		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);*/
+		gldSpriteGlow(pos, .01, Vec4<GLubyte>(127,255,255,min(mf*255,255)), wd->vw->irot);
 		glPopAttrib();
 	}
 }

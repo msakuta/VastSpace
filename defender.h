@@ -19,7 +19,7 @@ extern "C"{
 
 #define PIDAIM_PROFILE 0
 
-/// Space Interceptor (small fighter)
+/// Space Defender (middle fighter)
 class Defender : public Entity{
 public:
 	typedef Entity st;
@@ -86,6 +86,7 @@ public:
 	virtual double maxhealth()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
+	virtual void leaveField(WarField *);
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);
@@ -94,7 +95,7 @@ public:
 	virtual void postframe();
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
-//	virtual Dockable *toDockable();
+	virtual Dockable *toDockable(){return this;}
 	virtual double hitradius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int popupMenu(PopupMenu &);

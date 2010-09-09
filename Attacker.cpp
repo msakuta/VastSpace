@@ -6,6 +6,7 @@
 #include "Scarry.h"
 #include "EntityCommand.h"
 #include "Sceptor.h"
+#include "Defender.h"
 #include "draw/effects.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
@@ -96,7 +97,12 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	health = maxhealth();
 	capacitor = maxenergy();
 
-	for(int i = 0; i < 6; i++){
+	for(int i = 0; i < 2; i++){
+		Defender *s = new Defender(docker);
+		s->race = race;
+		docker->addent(s);
+	}
+	for(int i = 0; i < 4; i++){
 		Sceptor *s = new Sceptor(docker);
 		s->race = race;
 		docker->addent(s);

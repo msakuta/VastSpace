@@ -2,7 +2,12 @@
 #define BTADAPT_H
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#ifdef _WIN32
+#pragma warning ( push )
+#pragma warning ( disable : 4244 ) // The Bullet library gets conversion warnings if btScalar == double.
 #include <btBulletDynamicsCommon.h>
+#pragma warning ( pop )
+#endif
 
 // The Bullet dynamics library adaptor for cpplib.
 

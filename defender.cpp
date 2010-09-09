@@ -14,6 +14,7 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "draw/effects.h"
+#include "BeamProjectile.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -37,8 +38,6 @@ extern "C"{
 #define DEFENDER_ROTSPEED (.3 * M_PI)
 #define DEFENDER_MAX_ANGLESPEED (M_PI * .5)
 
-
-//Entity::Dockable *Sceptor::toDockable(){return this;}
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
@@ -134,33 +133,24 @@ Defender::Defender(WarField *aw) : st(aw),
 //	attitude(Passive)
 {
 	Defender *const p = this;
-//	EntityInit(ret, w, &SCEPTOR_s);
-//	VECCPY(ret->pos, mother->st.st.pos);
 	mass = 16e3;
-//	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
 	p->cooldown = 1.;
-	WarSpace *ws;
 	for(int i = 0; i < 4; i++){
-		if(w && (ws = (WarSpace*)w))
-			p->pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
-		else
-			p->pf[i] = NULL;
+		p->pf[i] = NULL;
 	}
-//	p->mother = mother;
 	p->hitsound = -1;
 	p->docked = false;
-//	p->paradec = mother->paradec++;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
 }
 
-const avec3_t Defender::gunPos[2] = {{0., -4. * modelScale(), -15. * modelScale()}, {-35. * modelScale(), -4. * modelScale(), -15. * modelScale()}};
+const avec3_t Defender::gunPos[2] = {{0., -16.95 * modelScale(), -200. * modelScale()}};
 
 void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
@@ -197,37 +187,34 @@ bool Defender::undock(Docker *d){
 	st::undock(d);
 	task = Undock;
 	mother = d;
-	for(int i = 0; i < 4; i++) if(this->pf[i]){
-		ImmobilizeTefpol3D(this->pf[i]);
-		if(w && w->getTefpol3d())
-			this->pf[i] = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
-	}
 	d->baycool += 1.;
 	return true;
 }
 
-/// Shoot the main gun
+/// Shoots the main gun
 void Defender::shoot(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed());
 	Mat4d mat;
 	if(dt <= cooldown)
 		return;
 	transform(mat);
+	if(enemy){
+		Vec3d epos;
+		estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletSpeed(), w);
+	}
 	{
-		Bullet *pb;
-		double phi, theta;
-		pb = new Bullet(this, 5, 200.);
+		Bullet *pb = new BeamProjectile(this, 5, 200.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos[0]);
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
-		this->heat += .025;
+		this->heat += .025f;
 	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	this->cooldown += reloadTime() * (fuel <= 0 ? 3 : 1);
-	this->mf = .1;
+	this->mf = 1.f;
 }
 
 /// find the nearest enemy
@@ -258,7 +245,7 @@ bool Defender::findEnemy(){
 	return !!closest;
 }
 
-
+/// Arrival type steering behavior
 void Defender::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);
 	Vec3d rdr = target - this->pos; // real dr
@@ -281,7 +268,7 @@ void Defender::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 //	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
-// Find mother if has none
+/// Find mother if has none
 Entity *Defender::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
@@ -331,6 +318,23 @@ void Defender::enterField(WarField *target){
 		//add the body to the dynamics world
 		ws->bdw->addRigidBody(bbody, 1, ~2);
 	}
+	if(ws){
+		for(int i = 0; i < 4; i++){
+			if(this->pf[i])
+				ImmobilizeTefpol3D(this->pf[i]);
+			if(w && w->getTefpol3d())
+				this->pf[i] = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		}
+	}
+}
+
+/// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
+void Defender::leaveField(WarField *w){
+	for(int i = 0; i < 4; i++) if(this->pf[i]){
+		ImmobilizeTefpol3D(this->pf[i]);
+		this->pf[i] = NULL;
+	}
+	st::leaveField(w);
 }
 
 void Defender::anim(double dt){
@@ -413,7 +417,7 @@ void Defender::anim(double dt){
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
 
-	fdeploy = approach(fdeploy, task == Deploy, dt, 0.);
+	fdeploy = (float)approach(fdeploy, task == Deploy, dt, 0.);
 
 
 #if 0
@@ -509,11 +513,9 @@ void Defender::anim(double dt){
 //			Vec3d opos;
 //			pt->enemy = pm->enemy;
 			if(pt->enemy /*&& VECSDIST(pt->pos, pm->pos) < 15. * 15.*/){
-				double sp;
 /*				const avec3_t guns[2] = {{.002, .001, -.005}, {-.002, .001, -.005}};*/
 				Vec3d xh, dh, vh;
 				Vec3d epos;
-				double phi;
 				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, bulletSpeed(), w);
 /*				xh[0] = pt->velo[2];
 				xh[1] = pt->velo[1];
@@ -596,7 +598,7 @@ void Defender::anim(double dt){
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
-					double sx, sy, len, len2, maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
+					double len, len2, maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
 
 					// If a mother could not be aquired, fight to the death alone.
@@ -678,7 +680,7 @@ void Defender::anim(double dt){
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == Attack && dist < 5. * 2. && .99999 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 5. * 2. && .9999 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
@@ -825,7 +827,6 @@ void Defender::anim(double dt){
 				double common = 0., normal = 0.;
 				Vec3d qrot;
 				Vec3d pos, velo;
-				int i;
 				if(common){
 					avec3_t th0[2] = {{0., 0., .003}, {0., 0., -.003}};
 					qrot = mat.vec3(0) * common;
@@ -949,7 +950,7 @@ void Defender::anim(double dt){
 		}
 
 		/* heat dissipation */
-		p->heat *= exp(-dt * .2);
+		p->heat *= (float)exp(-dt * .2);
 
 /*		pt->pyr[2] = approach(pt->pyr[2] + M_PI, (pt->pyr[1] - oldyaw) / dt + M_PI, SCEPTOR_ROLLSPEED * dt, 2 * M_PI) - M_PI;
 		{
@@ -971,7 +972,7 @@ void Defender::anim(double dt){
 		}
 //		pt->pos += pt->velo * dt;
 
-		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
+		p->fcloak = (float)approach(p->fcloak, p->cloak, dt, 0.);
 	}
 	else{
 		pt->health += dt;
@@ -1048,7 +1049,7 @@ void Defender::anim(double dt){
 		else{
 			struct tent3d_line_list *tell = w->getTeline3d();
 			if(tell){
-				double pos[3], dv[3], dist;
+				double pos[3], dv[3];
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
 				int i, n;
 				n = (int)(dt * DEFENDER_SMOKE_FREQ + drseq(&w->rs));
@@ -1060,25 +1061,24 @@ void Defender::anim(double dt){
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, float(1.5 + drseq(&w->rs) * 1.5));
 				}
 			}
 			pt->pos += pt->velo * dt;
 		}
 	}
 
-	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
+	reverser = (float)approach(reverser, throttle < 0, dt * 5., 0.);
 
 	if(mf < dt)
 		mf = 0.;
 	else
-		mf -= dt;
+		mf -= (float)dt;
 
 	st::anim(dt);
 
-	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-	for(int i = 0; i < 4; i++) if(this->pf[i] && w != oldw)
-		ImmobilizeTefpol3D(this->pf[i]);
+//	for(int i = 0; i < 4; i++) if(this->pf[i] && w != oldw)
+//		ImmobilizeTefpol3D(this->pf[i]);
 //	movesound3d(pf->hitsound, pt->pos);
 }
 
@@ -1096,17 +1096,13 @@ int Defender::takedamage(double damage, int hitpart){
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
-/*		effectDeath(w, pt);*/
 		if(tell) for(i = 0; i < 32; i++){
 			Vec3d velo(w->rs.nextd() - .5, w->rs.nextd() - .5, w->rs.nextd() - .5);
 			velo.normin().scalein(.1);
 			Vec3d pos = this->pos + velo * .1;
-			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, float(1.5 + drseq(&w->rs)));
 		}
-/*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
-//		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 		health = -2.;
-//		pt->deaths++;
 	}
 	else
 		health -= damage;

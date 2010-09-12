@@ -33,6 +33,7 @@ extern "C"{
 #define COS30 0.86602540378443864676372317075294
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
+#define SQRT2P2 (M_SQRT2/2.)
 
 #define DEFENDER_SMOKE_FREQ 20.
 #define DEFENDER_ROTSPEED (.3 * M_PI)
@@ -198,15 +199,19 @@ void Defender::shoot(double dt){
 	if(dt <= cooldown)
 		return;
 	transform(mat);
-	if(enemy){
-		Vec3d epos;
-		estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletSpeed(), w);
-	}
 	{
 		Bullet *pb = new BeamProjectile(this, 5, 200.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos[0]);
 		pb->velo = mat.dvp3(velo0);
+		if(enemy){
+			Vec3d epos;
+			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletSpeed(), w);
+			Vec3d dv = (epos - pos).normin();
+			if(.9 < dv.sp(mat.dvp3(Vec3d(0,0,-1)))){
+				pb->velo = dv * bulletSpeed();
+			}
+		}
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025f;
@@ -279,6 +284,46 @@ Entity *Defender::findMother(){
 	}
 	return pm;
 }
+
+/// Make the body rotate to face the enemy.
+void Defender::headTowardEnemy(double dt, const Vec3d &dv){
+	Vec3d forward = -this->rot.trans(avec3_001);
+	double maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
+	Vec3d xh = forward.vp(dv);
+	double len2 = xh.len();
+	double len = asin(len2);
+	if(maxspeed < len){
+		len = maxspeed;
+	}
+	len = sin(len / 2.);
+	if(len && len2){
+		btVector3 btomg = bbody->getAngularVelocity();
+		btVector3 btxh = btvc(xh.norm());
+		btVector3 btsideomg = btomg - btxh * btxh.dot(btomg);
+		btVector3 btaac = btxh * len - btsideomg * 1.;
+//							bbody->applyTorque(btaac);
+		bbody->setAngularVelocity(btxh * len / dt);
+/*							Vec3d omg, laac;
+		qrot = xh * len / len2;
+		qrot[3] = sqrt(1. - len * len);
+		qres = qrot * pt->rot;
+		pt->rot = qres.norm();*/
+
+		/* calculate angular acceleration for displaying thruster bursts */
+/*							omg = qrot.operator Vec3d&() * 1. / dt;
+		p->aac = omg - pt->omg;
+		p->aac *= 1. / dt;
+		pt->omg = omg;
+		laac = pt->rot.cnj().trans(p->aac);*/
+		btTransform bttr = bbody->getWorldTransform();
+		btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
+		if(laac[0] < 0) thrusts[0][0] += -laac[0];
+		if(0 < laac[0]) thrusts[0][1] += laac[0];
+		thrusts[0][0] = min(thrusts[0][0], 1.);
+		thrusts[0][1] = min(thrusts[0][1], 1.);
+	}
+}
+
 
 void Defender::enterField(WarField *target){
 	WarSpace *ws = *target;
@@ -417,7 +462,7 @@ void Defender::anim(double dt){
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
 
-	fdeploy = (float)approach(fdeploy, task == Deploy, dt, 0.);
+	fdeploy = (float)approach(fdeploy, isDeployed(), dt, 0.);
 
 
 #if 0
@@ -512,6 +557,8 @@ void Defender::anim(double dt){
 			bool trigger = true;
 //			Vec3d opos;
 //			pt->enemy = pm->enemy;
+			if(task == Deploy && !enemy)
+				findEnemy();
 			if(pt->enemy /*&& VECSDIST(pt->pos, pm->pos) < 15. * 15.*/){
 /*				const avec3_t guns[2] = {{.002, .001, -.005}, {-.002, .001, -.005}};*/
 				Vec3d xh, dh, vh;
@@ -597,8 +644,6 @@ void Defender::anim(double dt){
 				}
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
-					Vec3d xh, yh;
-					double len, len2, maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
 
 					// If a mother could not be aquired, fight to the death alone.
@@ -639,13 +684,7 @@ void Defender::anim(double dt){
 					}
 
 					if(p->task == Attack || forward.sp(dv) < -.5){
-						xh = forward.vp(dv);
-						len = len2 = xh.len();
-						len = asin(len);
-						if(maxspeed < len){
-							len = maxspeed;
-						}
-						len = sin(len / 2.);
+						double maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
 
 						double velolen = bbody->getLinearVelocity().length();
 						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
@@ -654,32 +693,7 @@ void Defender::anim(double dt){
 						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
 						bbody->applyCentralForce(btvc(-sidevelo * mass));
 
-						if(len && len2){
-							btVector3 btomg = bbody->getAngularVelocity();
-							btVector3 btxh = btvc(xh.norm());
-							btVector3 btsideomg = btomg - btxh * btxh.dot(btomg);
-							btVector3 btaac = btxh * len - btsideomg * 1.;
-//							bbody->applyTorque(btaac);
-							bbody->setAngularVelocity(btxh * len / dt);
-/*							Vec3d omg, laac;
-							qrot = xh * len / len2;
-							qrot[3] = sqrt(1. - len * len);
-							qres = qrot * pt->rot;
-							pt->rot = qres.norm();*/
-
-							/* calculate angular acceleration for displaying thruster bursts */
-/*							omg = qrot.operator Vec3d&() * 1. / dt;
-							p->aac = omg - pt->omg;
-							p->aac *= 1. / dt;
-							pt->omg = omg;
-							laac = pt->rot.cnj().trans(p->aac);*/
-							btTransform bttr = bbody->getWorldTransform();
-							btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
-							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
-							if(0 < laac[0]) p->thrusts[0][1] += laac[0];
-							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
-							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
-						}
+						headTowardEnemy(dt, dv);
 						if(trigger && p->task == Attack && dist < 5. * 2. && .9999 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
@@ -687,6 +701,31 @@ void Defender::anim(double dt){
 					}
 					else{
 						p->aac.clear();
+					}
+				}
+				else if(Dodge0 <= task && task <= Dodge3){
+					if(fdodge - dt <= 0.){
+						task = Deploy;
+					}
+					else{
+						static const Vec3d dirs[4] = {Vec3d(SQRT2P2,SQRT2P2,0),Vec3d(-SQRT2P2,SQRT2P2,0),Vec3d(SQRT2P2,-SQRT2P2,0),Vec3d(-SQRT2P2,-SQRT2P2,0)};
+						fdodge -= dt;
+						bbody->applyCentralForce(btvc((fdodge < 0.5 ? -1 : 1) * this->rot.trans(dirs[task - Dodge0]) * .3 * mass));
+					}
+				}
+				else if(isDeployed() && enemy){
+					Vec3d dv = delta.norm();
+					headTowardEnemy(dt, dv);
+					if(trigger && .999 < dv.sp(-pt->rot.trans(avec3_001))){
+						pt->inputs.change |= PL_ENTER;
+						pt->inputs.press |= PL_ENTER;
+					}
+					for(Entity *pb = w->bl; pb; pb = pb->next){
+						if(jHitSphere(this->pos, this->hitradius(), pb->pos, pb->velo, 10.)){
+							task = Task(w->rs.next() % 4 + Dodge0);
+							fdodge = 1.;
+							break;
+						}
 					}
 				}
 				else if(!pt->enemy && (p->task == Attack || p->task == Away)){
@@ -805,7 +844,7 @@ void Defender::anim(double dt){
 							p->throttle = 1.;
 					}
 				}
-				if(task == Idle || task == Auto){
+				if(task == Idle || task == Auto || task == Deploy){
 					throttle = 0.;
 					btVector3 btvelo = bbody->getLinearVelocity();
 					if(!btvelo.isZero())

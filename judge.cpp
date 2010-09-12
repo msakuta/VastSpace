@@ -38,6 +38,8 @@ bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3
 	d = sqrt(D);
 
 	/* we need vector equation's parameter value to determine hitness with line segment */
+	if(dirslen == 0.)
+		return false;
 	t0 = (-b - d) / dirslen;
 	t1 = (-b + d) / dirslen;
 

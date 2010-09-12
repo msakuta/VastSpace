@@ -323,7 +323,7 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
 
-		EntityCommandCreatorFunc *func = EntityCommand::ctormap[s];
+		EntityCommandCreatorFunc *func = EntityCommand::ctormap()[s];
 
 		if(func){
 			EntityCommand *com = func(v, *p);

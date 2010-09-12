@@ -37,6 +37,7 @@ protected:
 		Away = sship_away,
 		Auto, // Automatically targets near enemy or parade with mother.
 		Deploy,
+		Dodge0, Dodge1, Dodge2, Dodge3,
 		NumTask
 	};
 /*	enum Attitude{
@@ -61,6 +62,7 @@ protected:
 	float mf; ///< trivial muzzle flashes
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	float fdeploy; ///< Factor of deployment
+	float fdodge; ///< Factor where dodging movement
 //	Sceptor *formPrev; ///< previous member in the formation
 //	Attitude attitude;
 
@@ -71,9 +73,11 @@ protected:
 	bool cull(Viewer &)const;
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
+	void headTowardEnemy(double dt, const Vec3d &enemyPosition);
 	static double reloadTime(){return 5.;} ///< Time between shoots
 	static double bulletSpeed(){return 5.;} ///< Velocity of projectile shot
 	static double modelScale(){return 1./10000.;} ///< Model scale
+	bool isDeployed()const{return task == Deploy || Dodge0 <= task && task <= Dodge3;}
 public:
 	Defender();
 	Defender(WarField *aw);

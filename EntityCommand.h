@@ -56,7 +56,7 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
  */
 struct EntityCommand{
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
-	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> ctormap;
+	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> &ctormap();
 
 	/** \brief Returns unique ID for this class.
 	 *
@@ -81,7 +81,7 @@ struct EntityCommand{
 protected:
 	/// Derived classes use this utility to register class.
 	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
-		ctormap[name] = ctor;
+		ctormap()[name] = ctor;
 		return 0;
 	}
 };

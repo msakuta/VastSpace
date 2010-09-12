@@ -1,3 +1,8 @@
+/** \file
+ * \brief The Bullet dynamics library adaptor for cpplib.
+ *
+ * Contains classes to convert cpplib math classes to Bullet classes, or vice versa.
+ */
 #ifndef BTADAPT_H
 #define BTADAPT_H
 #include <cpplib/vec3.h>
@@ -9,10 +14,8 @@
 #pragma warning ( pop )
 #endif
 
-// The Bullet dynamics library adaptor for cpplib.
 
-
-// Intermediate class that can convert a Vec3d to btVector3, or vice versa.
+/// Intermediate class that can convert a Vec3d to btVector3, or vice versa.
 class btvc : public Vec3d{
 public:
 	btvc(const btVector3 &bv):Vec3d(bv.x(), bv.y(), bv.z()){}
@@ -21,7 +24,7 @@ public:
 };
 
 
-// Intermediate class that can convert a Quatd to btQuaternion, or vice versa.
+/// Intermediate class that can convert a Quatd to btQuaternion, or vice versa.
 class btqc : public Quatd{
 public:
 	btqc(const btQuaternion &bv):Quatd(bv.x(), bv.y(), bv.z(), bv.w()){}

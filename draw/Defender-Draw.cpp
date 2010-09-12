@@ -26,6 +26,8 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 
+#define SQRT2P2 (M_SQRT2/2.)
+
 extern double g_nlips_factor;
 
 
@@ -245,20 +247,8 @@ void Defender::drawtra(wardraw_t *wd){
 	/* cull object */
 	if(cull(*wd->vw))
 		return;
-	if(p->throttle){
-		Vec3d pos, pos0(0, 0, 40. * scale);
-/*		GLubyte col[4] = {COLIST4(cnl_shortburn[0].col)};
-		pos = this->rot.trans(pos0);
-		pos += this->pos;
-		gldSpriteGlow(pos, p->throttle * .005, col, wd->vw->irot);
-		pos0[0] = 34.5 * scale;
-		pos = this->rot.trans(pos0);
-		pos += this->pos;
-		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);
-		pos0[0] = -34.5 * scale;
-		pos = this->rot.trans(pos0);
-		pos += this->pos;
-		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);*/
+	if(p->throttle || Dodge0 <= task && task <= Dodge3){
+		Vec3d pos0(0, 0, 40. * scale);
 
 		static bool init = false;
 		static GLuint texname = 0;
@@ -288,15 +278,15 @@ void Defender::drawtra(wardraw_t *wd){
 		glRotated(147.43462, 0, 0, 1);
 		glScaled(.2, .2, .2);
 		glMatrixMode(GL_MODELVIEW);
-		glColor4f(1., 1., 1., amp);
-/*		if(0. < throttle){
-			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(0,0,30.*scale)), this->pos + this->rot.trans(Vec3d(0,0,30.*scale+.010*amp)), .0025*amp, tim + 100. * rs.nextd());
-			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d( 34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
-			gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale)), this->pos + this->rot.trans(Vec3d(-34.5*scale,0,40.*scale+.005*amp)), .00125*amp, tim + 100. * rs.nextd());
+		glColor4f(1., 1., 1., Dodge0 <= task && task <= Dodge3 ? 1. : amp);
+		if(Dodge0 <= task && task <= Dodge3){
+			static const Vec3d dirs[4] = {Vec3d(SQRT2P2,SQRT2P2,0),Vec3d(-SQRT2P2,SQRT2P2,0),Vec3d(SQRT2P2,-SQRT2P2,0),Vec3d(-SQRT2P2,-SQRT2P2,0)};
+			Vec3d base = (fdodge < .5 ? 1 : -1) * this->rot.trans(dirs[task - Dodge0] * .01);
+			gldScrollTextureBeam(wd->vw->pos, pos + base, pos + base * 3, .005, tim + 100. * rs.nextd());
 		}
-		else*/{
+		else{
 			double ofs = 5.*scale;
-			pos = this->pos /*+ this->rot.trans(Vec3d(0,0,35.*scale))*/;
+			Vec3d pos = this->pos /*+ this->rot.trans(Vec3d(0,0,35.*scale))*/;
 			for(int ix = -1; ix < 2; ix += 2) for(int iy = -1; iy < 2; iy += 2){
 				Vec3d org(ix * 22.5 * scale, iy * 20. * scale, 130. * scale);
 				gldScrollTextureBeam(wd->vw->pos, pos + this->rot.trans(org), pos + this->rot.trans(org + Vec3d(0, 0, .020 * amp)), .005 * amp, tim + 100. * rs.nextd());
@@ -309,57 +299,6 @@ void Defender::drawtra(wardraw_t *wd){
 		glPopAttrib();
 		glPopMatrix();
 	}
-
-#if 0 /* thrusters appear unimpressing */
-	tankrot(mat, pt);
-	{
-		avec3_t v;
-		int j;
-		VECADD(v, pt->omg, pt->pos);
-		glColor4ub(255,127,0,255);
-		glBegin(GL_LINES);
-		glVertex3dv(pt->pos);
-		glVertex3dv(v);
-		glEnd();
-		VECADD(v, p->aac, pt->pos);
-		glColor4ub(255,127,255,255);
-		glBegin(GL_LINES);
-		glVertex3dv(pt->pos);
-		glVertex3dv(v);
-		glEnd();
-
-		v[0] = p->thrusts[0][0];
-		v[1] = p->thrusts[0][1];
-		for(j = 0; j < 2; j++) if(v[j]){
-			avec3_t v00[2] = {{0., 0., .003}, {0., 0., -.003}};
-			int i;
-			for(i = 0; i < 2; i++){
-				struct gldBeamsData bd;
-				avec3_t end;
-				int lumi;
-				struct random_sequence rs;
-				int sign = (i + j) % 2 * 2 - 1;
-				avec3_t v0;
-				VECCPY(v0, v00[i]);
-				bd.cc = bd.solid = 0;
-				init_rseq(&rs, (long)(wd->gametime * 1e6) + i + pt);
-				lumi = rseq(&rs) % 256 * min(fabs(v[j]) / .2, 1.);
-				v0[1] += sign * .001;
-				mat4vp3(end, mat, v0);
-				gldBeams(&bd, wd->view, end, .00001, COLOR32RGBA(255,223,128,0));
-				v0[1] += sign * .0003;
-				mat4vp3(end, mat, v0);
-				gldBeams(&bd, wd->view, end, .00007, COLOR32RGBA(255,255,255,lumi));
-				v0[1] += sign * .0003;
-				mat4vp3(end, mat, v0);
-				gldBeams(&bd, wd->view, end, .00009, COLOR32RGBA(255,255,223,lumi));
-				v0[1] += sign * .0003;
-				mat4vp3(end, mat, v0);
-				gldBeams(&bd, wd->view, end, .00005, COLOR32RGBA(255,255,191,0));
-			}
-		}
-	}
-#endif
 
 	if(mf){
 		Vec3d pos = rot.trans(Vec3d(gunPos[0])) * nlips + this->pos;

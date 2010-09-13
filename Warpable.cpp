@@ -4,7 +4,7 @@
 #include "coordsys.h"
 #include "viewer.h"
 #include "cmd.h"
-//#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"
@@ -14,7 +14,7 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "arms.h"
-#include "Scarry.h" // Docker
+#include "Docker.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"

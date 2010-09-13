@@ -51,7 +51,7 @@ Entity *Entity::create(const char *cname, WarField *w){
 	if(!ctor)
 		return NULL;
 	Entity *e = ctor(w);
-	if(e){
+	if(e && w){
 		w->addent(e);
 	}
 	return e;

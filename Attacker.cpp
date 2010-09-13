@@ -1,9 +1,12 @@
+/** \file
+ * \brief Defines Attacker and AttackerDocker.
+ */
 #include "war.h"
 #include "Warpable.h"
 #include "material.h"
 #include "btadapt.h"
 #include "judge.h"
-#include "Scarry.h"
+#include "Docker.h"
 #include "EntityCommand.h"
 #include "Sceptor.h"
 #include "Defender.h"
@@ -14,6 +17,7 @@ extern "C"{
 
 class AttackerDocker;
 
+/// A heavy assault ship with docking bay.
 class Attacker : public Warpable{
 	AttackerDocker *docker;
 	ArmBase **turrets;
@@ -97,16 +101,16 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	health = maxhealth();
 	capacitor = maxenergy();
 
-	for(int i = 0; i < 2; i++){
+/*	if(race == 0) for(int i = 0; i < 2; i++){
 		Defender *s = new Defender(docker);
 		s->race = race;
 		docker->addent(s);
 	}
-	for(int i = 0; i < 4; i++){
+	else for(int i = 0; i < 6; i++){
 		Sceptor *s = new Sceptor(docker);
 		s->race = race;
 		docker->addent(s);
-	}
+	}*/
 
 	if(!aw)
 		return;

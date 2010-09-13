@@ -6,7 +6,7 @@
 #include "Player.h"
 #include "btadapt.h"
 #include "EntityCommand.h"
-#include "Scarry.h"
+#include "Docker.h"
 #include "glw/glwindow.h"
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
@@ -293,6 +293,19 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("docker"))){
+		Docker *d = p->getDocker();
+		if(!d){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Docker"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, d);
+		return 1;
+	}
 	else
 		return sqf_get<Entity>(v);
 }
@@ -337,6 +350,28 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		return sq_throwerror(v, e.description);
 	}
 	return 0;
+}
+
+static SQInteger sqf_Entity_create(HSQUIRRELVM v){
+	try{
+		Entity *p;
+		const SQChar *classname;
+		sq_getstring(v, 2, &classname);
+
+		Entity *pt = Entity::create(classname, NULL);
+
+		if(!pt)
+			return sq_throwerror(v, _SC("Undefined Entity class name"));
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, pt);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 1;
 }
 
 static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
@@ -1460,7 +1495,13 @@ void sqa_init(){
 	sq_pushstring(v, _SC("command"), -1);
 	sq_newclosure(v, sqf_Entity_command, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("create"), -1);
+	sq_newclosure(v, sqf_Entity_create, 0);
 	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class Docker, leaving details to the class itself.
+	Docker::sq_define(v);
 
 	// Define instance of class Universe
 	sq_pushstring(v, _SC("universe"), -1); // this "universe"

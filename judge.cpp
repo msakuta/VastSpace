@@ -576,13 +576,20 @@ static otnt *ot_update_int(otnt *root, WarField *w){
 		return root;
 	}
 
-	Vec3d dn = delta / len;
-	len += rad[0] + rad[1];
-	newrad = len / 2.;
-	len = newrad - rad[1];
-	VECSCALE(delta, dn, len);
-	VECADD(root->pos, delta, *pos[1]);
-	root->rad = newrad;
+	// Avoid zero division
+	if(len != 0.){
+		Vec3d dn = delta / len;
+		len += rad[0] + rad[1];
+		newrad = len / 2.;
+		len = newrad - rad[1];
+		delta = dn * len;
+		root->pos = delta + *pos[1];
+		root->rad = newrad;
+	}
+	else{
+		root->pos = *pos[0];
+		root->rad = max(rad[0], rad[1]);
+	}
 	return root;
 }
 

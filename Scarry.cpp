@@ -6,6 +6,7 @@
 #include "sceptor.h"
 #include "Assault.h"
 #include "Beamer.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -298,6 +299,7 @@ bool Docker::postUndock(Dockable *e){
 }
 
 Entity *Docker::addent(Entity *e){
+	e->w = this;
 	e->next = el;
 	return el = e;
 }
@@ -309,6 +311,62 @@ bool Docker::undock(Dockable *e){
 	this->e->w->addent(e);
 	e->undock(this);
 	return true;
+}
+
+void Docker::sq_define(HSQUIRRELVM v){
+	static const SQChar *tt_Docker = "Docker";
+	sq_pushstring(v, _SC("Docker"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, const_cast<SQChar*>(tt_Docker));
+	sq_pushstring(v, _SC("ref"), -1);
+	sq_pushnull(v);
+	sq_newslot(v, -3, SQFalse);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("addent"), -1);
+	sq_newclosure(v, sqf_addent, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+}
+
+SQInteger Docker::sqf_get(HSQUIRRELVM v){
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	if(!strcmp(wcs, _SC("alive"))){
+		SQUserPointer o;
+		sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
+		return 1;
+	}
+}
+
+SQInteger Docker::sqf_addent(HSQUIRRELVM v){
+	if(sq_gettop(v) < 2)
+		return SQ_ERROR;
+	Docker *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+
+/*	const SQChar *arg;
+	if(SQ_FAILED(sq_getstring(v, 2, &arg)))
+		return SQ_ERROR;
+
+	extern Player *ppl;
+	Entity *pt = Entity::create(arg, p);
+	if(!pt)
+		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: %s") << arg);
+
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Entity"), -1);
+	sq_get(v, -2);
+	sq_createinstance(v, -1);
+	sqa_newobj(v, pt);*/
+	Entity *pt;
+	if(!sqa_refobj(v, (SQUserPointer*)&pt, &sr, 2))
+		return 0;
+	p->addent(pt);
+	return 0;
 }
 
 const unsigned ScarryDocker::classid = registerClass("ScarryDocker", Conster<ScarryDocker>);

@@ -7,7 +7,7 @@
 #include "judge.h"
 #include "serial_util.h"
 #include "Warpable.h"
-#include "Scarry.h"
+#include "Docker.h"
 #include "material.h"
 #include "cmd.h"
 #include "astrodraw.h"
@@ -208,7 +208,7 @@ void Defender::shoot(double dt){
 			Vec3d epos;
 			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletSpeed(), w);
 			Vec3d dv = (epos - pos).normin();
-			if(.9 < dv.sp(mat.dvp3(Vec3d(0,0,-1)))){
+			if(.95 < dv.sp(mat.dvp3(Vec3d(0,0,-1)))){
 				pb->velo = dv * bulletSpeed();
 			}
 		}
@@ -553,12 +553,12 @@ void Defender::anim(double dt){
 		else{
 //			double pos[3], dv[3], dist;
 			Vec3d delta;
-//			int i, n;
 			bool trigger = true;
-//			Vec3d opos;
-//			pt->enemy = pm->enemy;
-			if(task == Deploy && !enemy)
+
+			// When deployed, search enemies all time, to precede new enemies over fleeing enemy.
+			if(task == Deploy)
 				findEnemy();
+
 			if(pt->enemy /*&& VECSDIST(pt->pos, pm->pos) < 15. * 15.*/){
 /*				const avec3_t guns[2] = {{.002, .001, -.005}, {-.002, .001, -.005}};*/
 				Vec3d xh, dh, vh;
@@ -694,7 +694,7 @@ void Defender::anim(double dt){
 						bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 						headTowardEnemy(dt, dv);
-						if(trigger && p->task == Attack && dist < 5. * 2. && .9999 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 5. * 2. && .999 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
@@ -716,7 +716,7 @@ void Defender::anim(double dt){
 				else if(isDeployed() && enemy){
 					Vec3d dv = delta.norm();
 					headTowardEnemy(dt, dv);
-					if(trigger && .999 < dv.sp(-pt->rot.trans(avec3_001))){
+					if(trigger && .95 < dv.sp(-pt->rot.trans(avec3_001))){
 						pt->inputs.change |= PL_ENTER;
 						pt->inputs.press |= PL_ENTER;
 					}
@@ -1235,7 +1235,8 @@ bool Defender::command(EntityCommand *com){
 			if(e && e->getUltimateOwner() != getUltimateOwner()){
 				enemy = e;
 				forcedEnemy = ac->id() == ForceAttackCommand::sid;
-				task = Auto;
+				if(!isDeployed()) // When deployed, fire with deployed state.
+					task = Auto;
 				return true;
 			}
 		}

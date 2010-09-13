@@ -61,7 +61,13 @@ class Entity{
 	void command(string, ...);
 	int race;
 	Entity next;
-	Entity dockedEntList; 
+	Entity dockedEntList;
+	Docker docker; // readonly, may be null
+}
+
+class Docker{
+	alive; // readonly
+	void addent(Entity);
 }
 
 class Player{
@@ -245,17 +251,17 @@ function tlate(id){
 }
 
 
-function deltaFormation(classname, team, rot, offset, spacing, count, cs){
+function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){
 		local epos = Vec3d(
 			(i % 2 * 2 - 1) * (i / 2) * spacing, 0.,
 			(i / 2 * spacing));
 		local e = cs.addent(classname, rot.trans(epos) + offset);
 		e.race = team;
-		foreachdockedents(e, function(e):(team){e.race = team;});
+//		foreachdockedents(e, function(e):(team){e.race = team;}); // nonsense since no docker initially has a Entity.
 		e.setrot(rot);
-		e.command("SetAggressive");
-		e.command("Move", rot.trans(epos + Vec3d(0,0,-2)) + offset);
+		if(proc != null)
+			proc(e);
 //		print(e.classname + ": " + e.race + ", " + e.pos);
 	}
 }
@@ -342,24 +348,24 @@ function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));
 //	deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 1.9, 0), 0.2);
 //	player.cs.addent("Assault", Vec3d(-1, 0,0));
-	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.1, -0.2), 0.1, 3, player.cs);
-	deltaFormation("Sceptor", 1, Quatd(0,1,0,0), Vec3d(0, 0.1, 1.2), 0.1, 3, player.cs);
+	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.1, -0.2), 0.1, 3, player.cs, null);
+	deltaFormation("Sceptor", 1, Quatd(0,1,0,0), Vec3d(0, 0.1, 1.2), 0.1, 3, player.cs, null);
 //	deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 1.1, -0.2), 0.3);
 }
 
 function ass(){
-	deltaFormation("Assault", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs);
+	deltaFormation("Assault", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs, null);
 }
 
 function des(){
-	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs);
+	deltaFormation("Destroyer", 0, Quatd(0,0,0,1), Vec3d(0,0.1,-0.1), 0.3, 3, player.cs, null);
 }
 
 function att(){
-	deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0,0.1,-0.8), 0.5, 3, player.cs);
+	deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0,0.1,-0.8), 0.5, 3, player.cs, null);
 }
 function sce(){
-	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3, player.cs);
+	deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0,0.03,-0.8), 0.5, 3, player.cs, null);
 }
 
 register_console_command("ass", ass);
@@ -387,7 +393,7 @@ function init_Universe(){
 	//des();
 	//att();
 	//sce();
-	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3);
+	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3, null);
 //	foreach(value in lang)
 //		print(value);
 

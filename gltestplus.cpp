@@ -26,7 +26,7 @@
 #include "keybind.h"
 #include "motion.h"
 #include "glw/glwindow.h"
-#include "Scarry.h"
+#include "Docker.h"
 #include "material.h"
 #include "Sceptor.h"
 #include "glstack.h"

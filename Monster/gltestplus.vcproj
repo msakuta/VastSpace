@@ -672,6 +672,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Docker.h"
+				>
+			</File>
+			<File
 				RelativePath="..\draw\effects.h"
 				>
 			</File>

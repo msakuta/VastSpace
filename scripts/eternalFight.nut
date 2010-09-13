@@ -44,28 +44,44 @@ function frameproc(dt){
 /*
 		if(racec[0] < 5)
 			deltaFormation("Sceptor", 0, Quatd(0, 0, 0, 1)
-				, Vec3d(0, 0.1,  0.5), 0.1, 15);
+				, Vec3d(0, 0.1,  0.5), 0.1, 15, null);
 		if(racec[1] < 3)
 			deltaFormation("Assault", 1, Quatd(0, 1, 0, 0)
-				, Vec3d(0, 0.1, -0.5), 0.1, 3);
+				, Vec3d(0, 0.1, -0.5), 0.1, 3, null);
 */
 		if(racec[0] < 2){
 			local zrot = (2. * PI * rand()) / RAND_MAX;
 			deltaFormation("Attacker", 0, Quatd(0, 0, 0, 1) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1,  3.), 0.4, 3, cs);
+				, Vec3d(0, 0.1,  3.), 0.4, 3, cs, function(e){
+				local d = e.docker;
+				if(d != null && d.alive){
+					for(local i = 0; i < 2; i++){
+						local e2 = Entity.create("Defender");
+						e2.race = e.race;
+						d.addent(e2);
+					}
+					e.command("SetAggressive");
+					e.command("Move", e.getpos() + e.getrot().trans(Vec3d(0,0,-2)));
+				}
+			});
 		}
 		if(racec[1] < 2){
 			local zrot = (2. * PI * rand()) / RAND_MAX;
 /*			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1, -3.), 0.4, 3, cs);*/
+				, Vec3d(0, 0.1, -3.), 0.4, 3, cs, null);*/
 			deltaFormation("Attacker", 1, Quatd(0, 1, 0, 0) * Quatd(0,0,sin(zrot),cos(zrot))
-				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs);
-			if(farcs != null){
-				foreachents(farcs, function(e):(cs){
+				, Vec3d(0, 0.1, -3.), 0.4, 3, farcs != null ? farcs : cs, function(e):(cs){
+					local d = e.docker;
+					if(d != null && d.alive){
+						for(local i = 0; i < 8; i++){
+							local e2 = Entity.create("Sceptor");
+							e2.race = e.race;
+							d.addent(e2);
+						}
+					}
 					e.command("RemainDocked", true);
-					e.command("Warp", cs, Vec3d(0,0,0));
+					e.command("Warp", cs, Vec3d(0,0,2));
 				});
-			}
 		}
 
 		foreachents(cs, function(e){

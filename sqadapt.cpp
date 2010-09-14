@@ -8,6 +8,7 @@
 #include "EntityCommand.h"
 #include "Docker.h"
 #include "glw/glwindow.h"
+#include "glw/GLWmenu.h"
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
 #include <squirrel.h>
@@ -670,34 +671,6 @@ static SQInteger sqf_glwlist(HSQUIRRELVM v){
 	return 1;
 }
 
-static SQInteger sqf_GLwindowMenu_constructor(HSQUIRRELVM v){
-	SQInteger argc = sq_gettop(v);
-	const SQChar *title;
-	SQBool sticky;
-	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
-		title = " ";
-	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
-		sticky = false;
-	GLwindowMenu *p = new GLwindowMenu(title, 0, NULL, NULL, NULL, sticky);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
-	glwAppend(p);
-	return 0;
-}
-
-static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
-	GLwindowMenu *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *title, *cmd;
-	if(SQ_FAILED(sq_getstring(v, 2, &title)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 3, &cmd)))
-		return SQ_ERROR;
-	p->addItem(title, 0, cmd);
-	return 0;
-}
-
 static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
 	GLwindow *p;
 	SQRESULT sr;
@@ -705,30 +678,6 @@ static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
 		return sr;
 	const SQChar *title, *cmd;
 	p->postClose();
-	return 0;
-}
-
-static SQInteger sqf_GLwindowMenu_hide(HSQUIRRELVM v){
-	GLwindowMenu *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *title, *cmd;
-	p->setVisible(false);
-	return 0;
-}
-
-static SQInteger sqf_GLwindowBigMenu_constructor(HSQUIRRELVM v){
-	SQInteger argc = sq_gettop(v);
-	const SQChar *title;
-	SQBool sticky;
-	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
-		title = " ";
-	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
-		sticky = false;
-	GLwindowMenu *p = GLwindowMenu::newBigMenu();
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
-	glwAppend(p);
 	return 0;
 }
 
@@ -1595,31 +1544,9 @@ void sqa_init(){
 	sq_newclosure(v, sqf_glwlist, 0);
 	sq_createslot(v, 1);
 
-	// Define class GLwindowMenu
-	sq_pushstring(v, _SC("GLwindowMenu"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_constructor, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addItem"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_addItem, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("hide"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_hide, 0);
-	sq_createslot(v, -3);
-	sq_createslot(v, -3);
-
+	// Define class GLWmenu
 	// Define class GLwindowBigMenu
-	sq_pushstring(v, _SC("GLwindowBigMenu"), -1);
-	sq_pushstring(v, _SC("GLwindowMenu"), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLwindowBigMenu_constructor, 0);
-	sq_createslot(v, -3);
-	sq_createslot(v, -3);
+	GLWmenu::sq_define(v);
 
 	// Define class GLWbuttonMatrix
 	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);

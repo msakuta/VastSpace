@@ -30,6 +30,7 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 #include <gl/glext.h>
+#include <float.h>
 
 
 
@@ -151,7 +152,7 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 	if(1. < vsp)
 		vsp = 1.;
 
-	if(0. < vsp){
+	if(DBL_EPSILON < vsp){
 		const Vec3d pos0 = nozzlepos + Vec3d(0,0, scale * vsp);
 		static GLuint texname = 0;
 		glPushAttrib(GL_TEXTURE_BIT);

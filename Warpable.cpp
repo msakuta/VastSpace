@@ -5,6 +5,7 @@
 #include "viewer.h"
 #include "cmd.h"
 #include "glw/glwindow.h"
+#include "glw/GLWmenu.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"

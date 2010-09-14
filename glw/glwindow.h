@@ -1,7 +1,6 @@
-#ifndef GLWINDOW_H
-#define GLWINDOW_H
+#ifndef GLW_GLWINDOW_H
+#define GLW_GLWINDOW_H
 #include "../serial.h"
-#include "popup.h"
 extern "C"{
 #include <clib/c.h>
 #include <string.h>
@@ -237,6 +236,10 @@ inline void GLwindow::setVisible(bool f){
 
 
 /* UI strings are urged to be printed by this function. */
+int glwPutTextureStringN(const char *s, int n, int size);
+int glwPutTextureString(const char *s, int size = GLwindow::getFontHeight());
+int glwGetSizeTextureStringN(const char *s, long n, int isize);
+int glwGetSizeTextureString(const char *s, int size = -1);
 void glwpos2d(double x, double y);
 int glwprintf(const char *f, ...);
 int glwsizef(const char *f, ...);
@@ -245,38 +248,6 @@ void glwHScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, i
 int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
 int glwHScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
 
-/// Window that lists menus. Menu items are bound to console commands.
-class GLwindowMenu : public GLwindow{
-public:
-	int count;
-#if 0
-	struct glwindowmenuitem{
-		const char *title;
-		int key;
-		const char *cmd;
-//		int allocated; /* whether this item need to be freed */
-	} *menus;
-#else
-	typedef PopupMenuItem MenuItem;
-	PopupMenu *menus;
-#endif
-	GLwindowMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-	GLwindowMenu(const char *title, const PopupMenu &, unsigned flags = 0);
-	void draw(GLwindowState &,double);
-	int mouse(GLwindowState &ws, int button, int state, int x, int y);
-	int key(int key);
-	~GLwindowMenu();
-	virtual GLwindowMenu *addItem(const char *title, int key, const char *cmd);
-	static int cmd_addcmdmenuitem(int argc, char *argv[], void *p);
-	static GLwindowMenu *newBigMenu();
-};
-
-extern const int glwMenuAllAllocated[];
-extern const char glwMenuSeparator[];
-GLwindowMenu *glwMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-GLwindowMenu *glwMenu(const char *title, const PopupMenu &, unsigned flags);
-GLwindow *glwPopupMenu(GLwindowState &, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky);
-GLwindowMenu *glwPopupMenu(GLwindowState &, const PopupMenu &);
 
 
 /// Base class for sizeable windows.

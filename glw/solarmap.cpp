@@ -8,6 +8,7 @@
 #include "../galaxy_field.h"
 #include "../player.h"
 #include "glwindow.h"
+#include "GLWmenu.h"
 #include "../coordsys.h"
 #include "../stellar_file.h"
 #include "../entity.h"

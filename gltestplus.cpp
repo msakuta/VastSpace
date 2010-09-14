@@ -26,6 +26,7 @@
 #include "keybind.h"
 #include "motion.h"
 #include "glw/glwindow.h"
+#include "glw/GLWmenu.h"
 #include "Docker.h"
 #include "material.h"
 #include "Sceptor.h"
@@ -1586,7 +1587,7 @@ int main(int argc, char *argv[])
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("originrotation", cmd_originrotation);
-//	CmdAddParam("addcmdmenuitem", GLwindowMenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
+//	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
 	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
 	extern int cmd_togglewarpmenu(int argc, char *argv[], void *);

@@ -7,6 +7,7 @@
 #include "EntityCommand.h"
 #include "judge.h"
 #include "btadapt.h"
+#include "glw/glwindow.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
@@ -415,7 +416,7 @@ bool Assault::command(EntityCommand *com){
 
 
 
-Entity *Assault::create(WarField *w, Builder *mother){
+/*Entity *Assault::create(WarField *w, Builder *mother){
 	Assault *ret = new Assault(NULL);
 	ret->pos = mother->pos;
 	ret->velo = mother->velo;
@@ -424,14 +425,14 @@ Entity *Assault::create(WarField *w, Builder *mother){
 	ret->race = mother->race;
 //	w->addent(ret);
 	return ret;
-}
+}*/
 
-const Builder::BuildStatic Assault::builds = {
+/*const Builder::BuildStatic Assault::builds = {
 	"Sabre class",
 	Assault::create,
 	100.,
 	600.,
-};
+};*/
 
 
 

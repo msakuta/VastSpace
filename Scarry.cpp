@@ -21,7 +21,7 @@ extern "C"{
 #define SQRT2P2 (M_SQRT2/2.)
 
 
-const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &Beamer::builds, &Assault::builds};
+const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&Beamer::builds, &Assault::builds*/};
 const unsigned Builder::nbuilder0 = numof(builder0);
 
 void Builder::serialize(SerializeContext &sc){

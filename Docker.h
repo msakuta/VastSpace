@@ -44,6 +44,7 @@ protected:
 	static SQInteger sqf_addent(HSQUIRRELVM v);
 };
 
+int cmd_dockmenu(int argc, char *argv[], void *pv);
 
 
 #endif

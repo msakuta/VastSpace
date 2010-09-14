@@ -10,8 +10,8 @@ tutorialbut.x = screenwidth() - tutorialbut.width;
 tutorialbut.y = sysbut.y - tutorialbut.height;
 tutorialbut.pinned = true;
 
-deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
-//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
+//deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
+deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
 deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, player.cs, null);
 
 framecount <- 0;
@@ -61,6 +61,12 @@ langmessages <- {
 	MessageSet()
 	.append("You can select units by left-clicking on it or dragging around units.")
 	.append("A bar indicating status of vehicle damages is shown over selected units.")
+	.append("You can see selected units at Entity list window.")
+	.append("Press proceed button when you are ready.")
+	,
+	MessageSet()
+	.append("You can issue move order by left clicking on Move Order button and then clicking on destination.")
+	.append("Holding on Shift key while specifying move order destination lets you control height.")
 	]
 	,
 	jpn = [
@@ -77,6 +83,12 @@ langmessages <- {
 	MessageSet()
 	.append("ユニットを選択するには、ユニットを左クリックするか、周囲をドラッグします。")
 	.append("選択されたユニットの上部には、機体のダメージ状況を示すバーが表示されます。")
+	.append("実体リストウィンドウで選択されたユニットを確認することもできます。")
+	.append("用意ができたら「次へ」ボタンを押してください。")
+	,
+	MessageSet()
+	.append("移動命令ボタンを左クリックしてから目的地をクリックすることで、移動命令を実行することができます。")
+	.append("移動命令中はShiftキーを押すことで高さ方向の指定ができます。")
 	]
 }
 

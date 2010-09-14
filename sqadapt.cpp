@@ -344,7 +344,7 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 			delete com;
 		}
 		else
-			return sq_throwerror(v, _SC("Undefined Entity Command"));
+			return sq_throwerror(v, _SC("Entity::command(): Undefined Entity Command"));
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.description);
@@ -1289,7 +1289,7 @@ bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *psr, int idx, bool th
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_get(v, idx);
 	SQUserPointer *p;
-	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&p, NULL))){
+	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&p, NULL)) || !*p){
 		if(throwError){
 			SQRESULT sr = sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
 			if(psr)

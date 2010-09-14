@@ -5,6 +5,7 @@
 #include "serial_util.h"
 #include "Warpable.h"
 #include "Docker.h"
+#include "Scarry.h"
 #include "material.h"
 //#include "worker.h"
 //#include "glsl.h"

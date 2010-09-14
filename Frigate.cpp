@@ -323,27 +323,8 @@ int Frigate::takedamage(double damage, int hitpart){
 				AddTelineCallback3D(ws->tell, pos, vec3_000, .03, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
 			}
 
-			{/* explode shockwave thingie */
-				static const double pyr[3] = {M_PI / 2., 0., 0.};
-				amat3_t ort;
-				Vec3d dr, v;
-				Quatd q;
-				amat4_t mat;
-				double p;
-	/*			w->vft->orientation(w, &ort, &pt->pos);
-				VECCPY(dr, &ort[3]);*/
-				dr = vec3_001;
-
-				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
-
-				v = vec3_001.vp(dr);
-				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-				q = v * p;
-
-				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
-				AddTeline3D(tell, this->pos, vec3_000, 2., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 1.);
-			}
+			/* explode shockwave thingie */
+			AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 //		p->w = NULL;

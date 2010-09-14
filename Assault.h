@@ -2,7 +2,7 @@
 #define ASSAULT_H
 #include "Frigate.h"
 #include "arms.h"
-#include "Scarry.h"
+#include "Docker.h"
 
 class Assault : public Frigate{
 protected:
@@ -34,7 +34,7 @@ public:
 	virtual bool command(EntityCommand *);
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
-	static const Builder::BuildStatic builds;
+//	static const Builder::BuildStatic builds;
 };
 
 int cmd_armswindow(int argc, char *argv[], void *pv);

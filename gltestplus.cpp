@@ -1601,7 +1601,7 @@ int main(int argc, char *argv[])
 	CmdAddParam("armswindow", cmd_armswindow, &pl);
 	CmdAddParam("save", Universe::cmd_save, &universe);
 	CmdAddParam("load", Universe::cmd_load, &universe);
-	CmdAddParam("buildmenu", cmd_build, &pl);
+//	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CmdAdd("sq", cmd_sq);
 	CoordSys::registerCommands(&pl);

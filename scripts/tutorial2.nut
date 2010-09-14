@@ -18,8 +18,6 @@ player.setrot(lookrot);
 //player.setpos(lookrot.trans(Vec3d(0., 0., 0.25)));
 player.viewdist = 0.25;
 
-foreachents(player.cs, function(e){e.command("Halt");});
-
 function frameproc(dt){
 	framecount++;
 

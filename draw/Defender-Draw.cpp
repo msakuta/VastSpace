@@ -280,16 +280,20 @@ void Defender::drawtra(wardraw_t *wd){
 		glMatrixMode(GL_MODELVIEW);
 		glColor4f(1., 1., 1., Dodge0 <= task && task <= Dodge3 ? 1. : amp);
 		if(Dodge0 <= task && task <= Dodge3){
-			static const Vec3d dirs[4] = {Vec3d(SQRT2P2,SQRT2P2,0),Vec3d(-SQRT2P2,SQRT2P2,0),Vec3d(SQRT2P2,-SQRT2P2,0),Vec3d(-SQRT2P2,-SQRT2P2,0)};
-			Vec3d base = (fdodge < .5 ? 1 : -1) * this->rot.trans(dirs[task - Dodge0] * .01);
-			gldScrollTextureBeam(wd->vw->pos, pos + base, pos + base * 3, .005, tim + 100. * rs.nextd());
+			int i = task - Dodge0;
+			if(fdodge < .5)
+				i ^= 3; // Reverting thrust direction. If you're not familiar with bitwise operations, try not to understand...
+			Mat4d legmat = legTransform(i);
+			Vec3d org(0, 0, 130. * scale);
+			gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + Vec3d(0, 0, .020)), .005, tim + 100. * rs.nextd());
 		}
 		else{
 			double ofs = 5.*scale;
 			Vec3d pos = this->pos /*+ this->rot.trans(Vec3d(0,0,35.*scale))*/;
-			for(int ix = -1; ix < 2; ix += 2) for(int iy = -1; iy < 2; iy += 2){
-				Vec3d org(ix * 22.5 * scale, iy * 20. * scale, 130. * scale);
-				gldScrollTextureBeam(wd->vw->pos, pos + this->rot.trans(org), pos + this->rot.trans(org + Vec3d(0, 0, .020 * amp)), .005 * amp, tim + 100. * rs.nextd());
+			for(int i = 0; i < 4; i++){
+				Mat4d legmat = legTransform(i);
+				Vec3d org(0, 0, 130. * scale);
+				gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + Vec3d(0, 0, .020 * amp)), .005 * amp, tim + 100. * rs.nextd());
 			}
 		}
 		glMatrixMode(GL_TEXTURE);

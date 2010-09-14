@@ -54,7 +54,7 @@ const char *Defender::idname()const{
 }
 
 const char *Defender::classname()const{
-	return "defender";
+	return "Defender";
 }
 
 const unsigned Defender::classid = registerClass("Defender", Conster<Defender>);
@@ -452,12 +452,7 @@ void Defender::anim(double dt){
 //	quat2imat(imat, mat);
 
 	for(int i = 0; i < 4; i++) if(pf->pf[i]){
-		Mat4d mat1 = mat;
-		mat1.scalein((i%2*2-1), (i/2*2-1), 1);
-		Mat4d mat2 = mat1.translate(Vec3d(22.5, -22.5, 30) * modelScale());
-		Mat4d mat3 = mat2.rotx(MIN(fdeploy * 135, 90) / deg_per_rad);
-		Mat4d mat4 = mat3.roty(MAX(fdeploy * 135 - 90, 0) / deg_per_rad);
-		Mat4d mat5 = mat4.translate(Vec3d(0, 0, -30) * modelScale());
+		Mat4d mat5 = legTransform(i);
 		MoveTefpol3D(pf->pf[i], mat5.vp3(Vec3d(0, 0, 130 * modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
@@ -704,13 +699,13 @@ void Defender::anim(double dt){
 					}
 				}
 				else if(Dodge0 <= task && task <= Dodge3){
+					int i = task - Dodge0;
 					if(fdodge - dt <= 0.){
 						task = Deploy;
 					}
 					else{
-						static const Vec3d dirs[4] = {Vec3d(SQRT2P2,SQRT2P2,0),Vec3d(-SQRT2P2,SQRT2P2,0),Vec3d(SQRT2P2,-SQRT2P2,0),Vec3d(-SQRT2P2,-SQRT2P2,0)};
-						fdodge -= dt;
-						bbody->applyCentralForce(btvc((fdodge < 0.5 ? -1 : 1) * this->rot.trans(dirs[task - Dodge0]) * .3 * mass));
+						fdodge -= float(dt);
+						bbody->applyCentralForce(btvc((fdodge < 0.5 ? 1 : -1) * this->rot.trans(SQRT2P2 * Vec3d(i%2*2-1,i/2*2-1,0)) * .3 * mass));
 					}
 				}
 				else if(isDeployed() && enemy){
@@ -1249,6 +1244,20 @@ bool Defender::command(EntityCommand *com){
 	return st::command(com);
 }
 
+/// \param i leg index, 0<=i<=3
+/// \return Transformation matrix, including offset
+Mat4d Defender::legTransform(int i)const{
+	assert(0 <= i && i <= 3);
+	Mat4d mat1;
+	transform(mat1);
+	mat1.scalein((i%2*2-1), (i/2*2-1), 1);
+	Mat4d mat2 = mat1.translate(Vec3d(22.5, 22.5, 30) * modelScale());
+	Mat4d mat3 = mat2.rotx(-MIN(fdeploy * 135, 90) / deg_per_rad);
+	Mat4d mat4 = mat3.roty(MAX(fdeploy * 135 - 90, 0) / deg_per_rad);
+	return mat4.translate(Vec3d(0, 0, -30) * modelScale());
+}
+
+
 static int cmd_deploy(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Entity *e = pl->selected; e; e = e->selectnext){
@@ -1264,4 +1273,4 @@ static void register_defender_cmd(void){
 
 static Initializator sss(register_defender_cmd);
 
-IMPLEMENT_COMMAND(DeployCommand, "DeployCommand")
+IMPLEMENT_COMMAND(DeployCommand, "Deploy")

@@ -1,7 +1,7 @@
 #ifndef BEAMER_H
 #define BEAMER_H
 #include "Frigate.h"
-#include "Scarry.h"
+#include "Docker.h"
 
 class Beamer : public Frigate{
 public:
@@ -34,7 +34,7 @@ public:
 	virtual bool undock(Docker*);
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
-	static const Builder::BuildStatic builds;
+//	static const Builder::BuildStatic builds;
 };
 
 #endif

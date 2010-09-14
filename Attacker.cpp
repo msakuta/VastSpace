@@ -100,20 +100,6 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	mass = 2e8;
 	health = maxhealth();
 	capacitor = maxenergy();
-
-/*	if(race == 0) for(int i = 0; i < 2; i++){
-		Defender *s = new Defender(docker);
-		s->race = race;
-		docker->addent(s);
-	}
-	else for(int i = 0; i < 6; i++){
-		Sceptor *s = new Sceptor(docker);
-		s->race = race;
-		docker->addent(s);
-	}*/
-
-	if(!aw)
-		return;
 }
 
 void Attacker::static_init(){

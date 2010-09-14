@@ -95,7 +95,6 @@ public:
 extern const struct Builder::BuildStatic sceptor_build;
 
 int cmd_build(int argc, char *argv[], void *pv);
-int cmd_dockmenu(int argc, char *argv[], void *pv);
 
 class Scarry : public Warpable, public Builder{
 public:

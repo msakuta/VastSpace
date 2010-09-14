@@ -678,7 +678,7 @@ bool Beamer::undock(Docker *d){
 	return true;
 }
 
-Entity *Beamer::create(WarField *w, Builder *mother){
+/*Entity *Beamer::create(WarField *w, Builder *mother){
 	Beamer *ret = new Beamer(NULL);
 	ret->pos = mother->pos;
 	ret->velo = mother->velo;
@@ -694,7 +694,7 @@ const Builder::BuildStatic Beamer::builds = {
 	Beamer::create,
 	100.,
 	600.,
-};
+};*/
 
 
 

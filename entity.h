@@ -67,7 +67,7 @@ public:
 	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
 
 	// Assigns transformation matrix to argument object.
-	void transform(Mat4d &mat){
+	void transform(Mat4d &mat)const{
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}
 	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.

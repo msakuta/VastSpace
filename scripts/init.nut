@@ -136,6 +136,9 @@ void frameproc(double frametime);
 // Called when an Entity is about to be deleted.
 void hook_delete_Entity(Entity e);
 
+// Called everytime the system needs some string to be translated.
+string translate(string source);
+
 */
 
 class Cvar{
@@ -238,17 +241,21 @@ jpn <- {
 	["Proceed"]="次へ",
 	["Restart"]="最初から",
 	["End"]="終わる",
+	Deploy="展開",
 }
 
 // Set default language to english
 lang <- eng;
 
-function tlate(id){
+function translate(id){
 	if(id in lang)
 		return lang[id];
 	else
 		return id;
 }
+
+// Alias for scripts
+tlate <- translate;
 
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){

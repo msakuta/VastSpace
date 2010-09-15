@@ -113,6 +113,7 @@ void Player::draw(Viewer *vw){
 
 		glPushMatrix();
 		double magnitude;
+		Vec3d pos = getpos();
 		if(selected){
 			gldTranslate3dv(selected->pos);
 			magnitude = floor(log10((pos - selected->pos).len()) - .5);
@@ -135,7 +136,7 @@ void Player::draw(Viewer *vw){
 		glEnd();
 		glPopMatrix();
 
-		if(0 < t){
+		if(0 < t || move_lockz){
 			if(move_lockz){
 				mpos = move_hitpos;
 			}
@@ -199,7 +200,7 @@ void Player::drawindics(Viewer *vw){
 		}
 		glEnd();
 	}*/
-	if(moveorder && 0 < move_t){
+	if(moveorder && (0 < move_t || move_lockz)){
 		Vec3d &mpos = move_hitpos;
 		GLpmatrix glpm;
 		projection((glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));

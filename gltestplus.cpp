@@ -314,7 +314,7 @@ static void drawindics(Viewer *vw){
 		sprintf(buf, "%s %s", pl.cs->classname(), pl.cs->name);
 		diprint(buf, 0, gvp.h);
 		if(pl.cs && pl.cs->w){
-			int y = 0;
+/*			int y = 0;
 			int ce;
 			int cb;
 			sprintf(buf, "E %d", ce = pl.cs->w->countEnts<&WarField::el>());
@@ -332,7 +332,7 @@ static void drawindics(Viewer *vw){
 			sprintf(buf, "Wk %d", wire_kills);
 			diprint(buf, 0, y += 12);
 			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, bullet_shoots ? (double)bullet_hits / bullet_shoots : 0.);
-			diprint(buf, 0, y += 12);
+			diprint(buf, 0, y += 12);*/
 #ifdef _DEBUG
 /*			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
 				diprint(cpplib::dstring() << "tepl " << Tefpol3DDebug(tepl)->tefpol_c << " " << Tefpol3DDebug(tepl)->tefpol_m << " " << Tefpol3DDebug(tepl)->tevert_c, 0, y += 12);

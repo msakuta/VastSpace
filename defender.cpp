@@ -15,6 +15,7 @@
 #include "btadapt.h"
 #include "draw/effects.h"
 #include "BeamProjectile.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -172,8 +173,11 @@ void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 
 int Defender::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak")
-		.append("Delta Formation", 0, "delta_formation").append("Deploy", 0, "deploy");
+	list.append(sqa_translate("Dock"), 0, "dock")
+		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
+		.append("Cloak", 0, "cloak")
+		.append("Delta Formation", 0, "delta_formation")
+		.append(sqa_translate("Deploy"), 0, "deploy");
 	return ret;
 }
 

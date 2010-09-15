@@ -13,7 +13,7 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 #include <squirrel.h>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
-
+#include <cpplib/dstring.h>
 
 
 class Serializable;
@@ -40,6 +40,9 @@ extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -3);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
+
+/// Translate given string with Squirrel defined translation function.
+::cpplib::dstring sqa_translate(const SQChar *);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct SQFError{

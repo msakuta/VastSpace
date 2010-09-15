@@ -1262,6 +1262,28 @@ void sqa_deleteobj(HSQUIRRELVM v, Serializable *o){
 	sq_pop(v, sq_gettop(v) - top); // Restore original stack depth, regardless of what number of objects pushed.
 }
 
+/// \return Translated string. It is dynamic string because the Squirrel VM does not promise
+/// returned string pointer is kept alive untl returning this function.
+::cpplib::dstring sqa_translate(const SQChar *src){
+	HSQUIRRELVM v = g_sqvm;
+	const SQChar *str;
+	sq_pushroottable(v); // root
+	sq_pushstring(v, _SC("translate"), -1); // root "tlate"
+	if(SQ_FAILED(sq_get(v, -2))){ // root tlate
+		sq_poptop(v);
+		return src;
+	}
+	sq_pushroottable(v); // root tlate root
+	sq_pushstring(v, src, -1); // root tlate root "Deploy"
+	sq_call(v, 2, SQTrue, SQTrue); // root tlate "..."
+	if(SQ_FAILED(sq_getstring(v, -1, &str)))
+		str = "Deploy";
+	cpplib::dstring ret = str;
+	sq_pop(v, 3);
+	return ret;
+}
+
+
 static SQInteger sqf_reg(HSQUIRRELVM v){
 	sq_pushregistrytable(v);
 	return 1;
@@ -1278,6 +1300,9 @@ void sqa_init(){
 	sq_setprintfunc(v, sqf_print); //sets the print function
 
 	// Set object table for weak referencing.
+	// This table resides in registry table, which normally cannot be reached by script codes,
+	// because ordinary script user never needs to access it.
+	// Introducing chance to ruin object memory management should be avoided.
 	sq_pushregistrytable(v);
 	sq_pushstring(v, _SC("objects"), -1);
 	sq_newtable(v);

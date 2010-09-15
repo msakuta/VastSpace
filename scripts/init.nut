@@ -209,7 +209,7 @@ eng <- {
 	command="Command"
 	camera="Camera",
 	["Entity List"]="Entity List",
-	move="Move",
+	Move="Move",
 	["Move order"]="Move order\nHold shift to set z direction",
 	System="System",
 	Control="Direct Control\n(Escape to exit)",
@@ -223,7 +223,7 @@ jpn <- {
 	Dock="ドッキング",
 	Undock="アンドッキング",
 	["Entity List"]="実体リスト",
-	move="移動",
+	Move="移動",
 	["Move order"]="移動命令\nShiftでZ方向指定",
 	Halt="停止命令",
 	System="システム",
@@ -242,6 +242,12 @@ jpn <- {
 	["Restart"]="最初から",
 	["End"]="終わる",
 	Deploy="展開",
+	Undeploy="展開解除",
+	["Chase Camera"]="追跡カメラ",
+	["Properties"]="属性",
+	["Military Parade Formation"]="行進隊形",
+	["Cloak"]="隠密",
+	["Delta Formation"]="Δ隊形",
 }
 
 // Set default language to english

@@ -7,9 +7,8 @@
 #include "btadapt.h"
 #include "judge.h"
 #include "Docker.h"
+#include "arms.h"
 #include "EntityCommand.h"
-#include "Sceptor.h"
-#include "Defender.h"
 #include "draw/effects.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
@@ -31,7 +30,7 @@ public:
 	static const unsigned classid, entityid;
 	Attacker();
 	Attacker(WarField *);
-	~Attacker(){delete docker;}
+	~Attacker();
 	void static_init();
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
@@ -101,6 +100,8 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 	health = maxhealth();
 	capacitor = maxenergy();
 }
+
+Attacker::~Attacker(){delete docker;}
 
 void Attacker::static_init(){
 	if(!hardpoints){

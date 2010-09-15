@@ -114,10 +114,14 @@ public:
 private:
 };
 
-/// \brief Command that tells a Defender to toggle deployment.
+/// \brief Command that tells a Defender to transform itself to deployed state.
 ///
 /// Deployed Defender has better performance over combat, but cannot move forward nor desired directions.
 DERIVE_COMMAND(DeployCommand, EntityCommand);
+
+/// \brief Command that tells a Defender to quit deploying.
+/// \sa DeployCommand
+DERIVE_COMMAND(UndeployCommand, EntityCommand);
 
 
 #endif

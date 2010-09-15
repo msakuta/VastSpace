@@ -175,9 +175,10 @@ int Defender::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
 	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
-		.append("Cloak", 0, "cloak")
-		.append("Delta Formation", 0, "delta_formation")
-		.append(sqa_translate("Deploy"), 0, "deploy");
+//		.append(sqa_translate("Cloak"), 0, "cloak")
+//		.append(sqa_translate("Delta Formation"), 0, "delta_formation")
+		.append(sqa_translate("Deploy"), 0, "deploy")
+		.append(sqa_translate("Undeploy"), 0, "undeploy");
 	return ret;
 }
 
@@ -1243,8 +1244,11 @@ bool Defender::command(EntityCommand *com){
 		return true;
 	}
 	if(InterpretCommand<DeployCommand>(com)){
-		task = task == Deploy ? Auto : Deploy;
+		task = Deploy;
 		return true;
+	}
+	else if(InterpretCommand<UndeployCommand>(com)){
+		task = Auto;
 	}
 	return st::command(com);
 }
@@ -1271,11 +1275,21 @@ static int cmd_deploy(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+static int cmd_undeploy(int argc, char *argv[], void *pv){
+	Player *pl = (Player*)pv;
+	for(Entity *e = pl->selected; e; e = e->selectnext){
+		e->command(&UndeployCommand());
+	}
+	return 0;
+}
+
 static void register_defender_cmd(void){
 	extern Player pl;
 	CmdAddParam("deploy", cmd_deploy, &pl);
+	CmdAddParam("undeploy", cmd_undeploy, &pl);
 }
 
 static Initializator sss(register_defender_cmd);
 
 IMPLEMENT_COMMAND(DeployCommand, "Deploy")
+IMPLEMENT_COMMAND(UndeployCommand, "Undeploy")

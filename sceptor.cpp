@@ -15,6 +15,7 @@
 #include "astrodraw.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#include "sqadapt.h"
 #include "draw/effects.h"
 extern "C"{
 #include <clib/c.h>
@@ -197,8 +198,10 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 
 int Sceptor::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak")
-		.append("Delta Formation", 0, "delta_formation");
+	list.append(sqa_translate("Dock"), 0, "dock")
+		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
+		.append(sqa_translate("Cloak"), 0, "cloak")
+		.append(sqa_translate("Delta Formation"), 0, "delta_formation");
 	return ret;
 }
 

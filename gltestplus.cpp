@@ -805,8 +805,10 @@ void display_func(void){
 
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 	PopupMenu *menus = new PopupMenu;
-	menus->append("Halt", '\0', "halt").append("Move", '\0', "moveorder")
-		.append("Chase Camera", '\0', "chasecamera").append("Properties", '\0', "property");
+	menus->append(sqa_translate("Halt"), '\0', "halt")
+		.append(sqa_translate("Move"), '\0', "moveorder")
+		.append(sqa_translate("Chase Camera"), '\0', "chasecamera")
+		.append(sqa_translate("Properties"), '\0', "property");
 	GLwindow *glw;
 	if(selectchain){
 		for(; pt; pt = pt->selectnext)

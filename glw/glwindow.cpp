@@ -452,88 +452,91 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 //				break;
 		}
 
-		if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + titleheight && wnd->ypos <= y && y <= wnd->ypos + titleheight){
-//				ret = 1;
-			killfocus = 0;
+		// Titlebar branch
+		if((wnd->title || wnd->flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
+			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + titleheight){
+	//				ret = 1;
+				killfocus = 0;
 
-			// Cannot collapse when pinned, but consume mouse messages.
-			if(wnd->flags & GLW_PINNED)
-				return 1;
-//					break;
+				// Cannot collapse when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					return 1;
+	//					break;
 
-			if(nowheel && state == GLUT_UP){
-				wnd->flags ^= GLW_COLLAPSE;
-				if(wnd->flags & GLW_COLLAPSE){
-					/* Insert at the end of list to make majority of taskbar do not change */
-					*ppwnd = wnd->next;
-					for(; *ppwnd; ppwnd = &(*ppwnd)->next);
-					*ppwnd = wnd;
-					wnd->next = NULL;
-					/* Defocus also to avoid the window catching key strokes */
-					if(wnd == glwfocus)
-						glwfocus = NULL;
+				if(nowheel && state == GLUT_UP){
+					wnd->flags ^= GLW_COLLAPSE;
+					if(wnd->flags & GLW_COLLAPSE){
+						/* Insert at the end of list to make majority of taskbar do not change */
+						*ppwnd = wnd->next;
+						for(; *ppwnd; ppwnd = &(*ppwnd)->next);
+						*ppwnd = wnd;
+						wnd->next = NULL;
+						/* Defocus also to avoid the window catching key strokes */
+						if(wnd == glwfocus)
+							glwfocus = NULL;
+					}
+					else
+						glwActivate(ppwnd);
+					return 1;
+	//					break;
 				}
-				else
-					glwActivate(ppwnd);
 				return 1;
-//					break;
+	//				break;
 			}
-			return 1;
-//				break;
-		}
-		else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - titleheight <= x && x <= wnd->xpos + wnd->width && wnd->ypos <= y && y <= wnd->ypos + titleheight){
-			ret = 1;
+			else if(wnd->flags & GLW_CLOSE && wnd->xpos + wnd->width - titleheight <= x && x <= wnd->xpos + wnd->width){
+				ret = 1;
 
-			// Cannot close when pinned, but consume mouse messages.
-			if(wnd->flags & GLW_PINNED)
-				return 1;
-//					break;
+				// Cannot close when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					return 1;
+	//					break;
 
-			if(nowheel && state == GLUT_UP){
-				wnd->glwFree();
+				if(nowheel && state == GLUT_UP){
+					wnd->glwFree();
+					return 1;
+	//					break;
+				}
+				killfocus = 0;
 				return 1;
-//					break;
+	//				break;
 			}
-			killfocus = 0;
-			return 1;
-//				break;
-		}
-		else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + titleheight && wnd->ypos <= y && y <= wnd->ypos + titleheight){
-			ret = 1;
-			killfocus = 0;
-			if(nowheel && state == GLUT_UP){
-				wnd->flags ^= GLW_PINNED;
-				if(wnd->flags & GLW_PINNED && wnd == glwfocus)
-					glwfocus = NULL;
+			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + titleheight){
+				ret = 1;
+				killfocus = 0;
+				if(nowheel && state == GLUT_UP){
+					wnd->flags ^= GLW_PINNED;
+					if(wnd->flags & GLW_PINNED && wnd == glwfocus)
+						glwfocus = NULL;
+					return 1;
+	//					break;
+				}
 				return 1;
-//					break;
+	//				break;
 			}
-			return 1;
-//				break;
-		}
-		else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (titleheight * !!(wnd->flags & GLW_CLOSE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
-			if(!nowheel)
-				return 1;
-//					break;
-			killfocus = 0;
-			ret = 1;
+			else if(wnd->xpos <= x && x <= wnd->xpos + wnd->width - (titleheight * !!(wnd->flags & GLW_CLOSE))){
+				if(!nowheel)
+					return 1;
+	//					break;
+				killfocus = 0;
+				ret = 1;
 
-			// Cannot be dragged around when pinned, but consume mouse messages.
-			if(wnd->flags & GLW_PINNED)
-				return 1;
-//					break;
+				// Cannot be dragged around when pinned, but consume mouse messages.
+				if(wnd->flags & GLW_PINNED)
+					return 1;
+	//					break;
 
-			glwfocus = wnd;
-			glwActivate(ppwnd);
+				glwfocus = wnd;
+				glwActivate(ppwnd);
 
-			if(button != GLUT_LEFT_BUTTON)
+				if(button != GLUT_LEFT_BUTTON)
+					return 1;
+	//					break;
+				glwdrag = wnd;
+				glwdragpos[0] = x - wnd->xpos;
+				glwdragpos[1] = y - wnd->ypos;
+	//				break;
 				return 1;
-//					break;
-			glwdrag = wnd;
-			glwdragpos[0] = x - wnd->xpos;
-			glwdragpos[1] = y - wnd->ypos;
-//				break;
-			return 1;
+			}
 		}
 		else if(!(wnd->flags & GLW_COLLAPSE) && (captor == wnd || glwfocus == wnd)){
 			GLWrect cr = wnd->clientRect();
@@ -556,7 +559,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 				wnd->mouse(ws, button, state, x - cr.x0, y - cr.y0);
 			}
 
-			if(!(wnd->flags & GLW_PINNED) && glwfocus != wnd){
+			if(!(wnd->flags & GLW_PINNED) && wnd->focusable() && glwfocus != wnd){
 				glwfocus = wnd;
 				glwActivate(ppwnd);
 			}

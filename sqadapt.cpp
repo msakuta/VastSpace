@@ -1545,7 +1545,7 @@ void sqa_init(){
 	sq_createslot(v, 1);
 
 	// Define class GLWmenu
-	// Define class GLwindowBigMenu
+	// Define class GLWbigMenu
 	GLWmenu::sq_define(v);
 
 	// Define class GLWbuttonMatrix

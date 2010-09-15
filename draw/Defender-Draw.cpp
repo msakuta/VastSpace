@@ -292,8 +292,9 @@ void Defender::drawtra(wardraw_t *wd){
 			Vec3d pos = this->pos /*+ this->rot.trans(Vec3d(0,0,35.*scale))*/;
 			for(int i = 0; i < 4; i++){
 				Mat4d legmat = legTransform(i);
-				Vec3d org(0, 0, 130. * scale);
-				gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + Vec3d(0, 0, .020 * amp)), .005 * amp, tim + 100. * rs.nextd());
+				Vec3d org(0, 0, throttle < 0. ? 0. : 130. * scale);
+				Vec3d dst(0, 0, throttle < 0. ? -.020 * amp : .020 * amp);
+				gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + dst), .005 * amp, tim + 100. * rs.nextd());
 			}
 		}
 		glMatrixMode(GL_TEXTURE);

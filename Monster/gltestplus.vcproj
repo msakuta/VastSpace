@@ -535,10 +535,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWmenu.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\draw\Player-draw.cpp"
 					>
 				</File>
@@ -578,6 +574,10 @@
 				>
 				<File
 					RelativePath="..\glw\glwindow.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\GLWmenu.cpp"
 					>
 				</File>
 				<File

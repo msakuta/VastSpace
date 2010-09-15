@@ -248,7 +248,7 @@ static SQInteger sqf_GLwindowMenu_hide(HSQUIRRELVM v){
 	return 0;
 }
 
-static SQInteger sqf_GLwindowBigMenu_constructor(HSQUIRRELVM v){
+static SQInteger sqf_GLWbigMenu_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	const SQChar *title;
 	SQBool sticky;
@@ -281,12 +281,12 @@ void GLWmenu::sq_define(HSQUIRRELVM v){
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
-	sq_pushstring(v, _SC("GLwindowBigMenu"), -1);
+	sq_pushstring(v, _SC("GLWbigMenu"), -1);
 	sq_pushstring(v, _SC("GLWmenu"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLwindowBigMenu_constructor, 0);
+	sq_newclosure(v, sqf_GLWbigMenu_constructor, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 }
@@ -296,12 +296,12 @@ void GLWmenu::sq_define(HSQUIRRELVM v){
 
 
 
-class GLwindowBigMenu : public GLWmenu{
+class GLWbigMenu : public GLWmenu{
 public:
 	typedef GLWmenu st;
 	static const int bigfontheight = 24;
 	int *widths;
-	GLwindowBigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
+	GLWbigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
 		: st(title, count, menutitles, keys, cmd, sticky), widths(NULL){
 		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
 	}
@@ -322,12 +322,12 @@ public:
 	}
 	int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void draw(GLwindowState &ws, double t);
-	virtual ~GLwindowBigMenu(){
+	virtual ~GLWbigMenu(){
 		free(widths);
 	}
 };
 
-int GLwindowBigMenu::mouse(GLwindowState &, int button, int state, int x, int y){
+int GLWbigMenu::mouse(GLwindowState &, int button, int state, int x, int y){
 	int ind = (y) / (bigfontheight + 40);
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && 0 <= ind && ind < count){
 		MenuItem *item = menus->get();
@@ -342,7 +342,7 @@ int GLwindowBigMenu::mouse(GLwindowState &, int button, int state, int x, int y)
 }
 
 /// Draws big menu items.
-void GLwindowBigMenu::draw(GLwindowState &ws, double t){
+void GLWbigMenu::draw(GLwindowState &ws, double t){
 	GLWrect r = clientRect();
 	int mx = ws.mousex, my = ws.mousey;
 	GLWmenu *p = this;
@@ -386,17 +386,17 @@ void GLwindowBigMenu::draw(GLwindowState &ws, double t){
 
 
 GLWmenu *GLWmenu::newBigMenu(){
-	return new GLwindowBigMenu("", 0, NULL, NULL, NULL, 1);
+	return new GLWbigMenu("", 0, NULL, NULL, NULL, 1);
 }
 
-class GLwindowPopup : public GLWmenu{
+class GLWpopup : public GLWmenu{
 public:
 	typedef GLWmenu st;
-	GLwindowPopup(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky, GLwindowState &gvp)
+	GLWpopup(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky, GLwindowState &gvp)
 		: st(title, count, menutitles, keys, cmd, sticky){
 		init(gvp);
 	}
-	GLwindowPopup(const char *title, GLwindowState &gvp, const PopupMenu &list)
+	GLWpopup(const char *title, GLwindowState &gvp, const PopupMenu &list)
 		: st(title, list, 0){
 		init(gvp);
 	}
@@ -409,7 +409,7 @@ public:
 		this->xpos = point.x + this->width < gvp.w ? point.x : gvp.w - this->width;
 		this->ypos = point.y + this->height < gvp.h ? point.y : gvp.h - this->height;
 	}
-	~GLwindowPopup(){
+	~GLWpopup(){
 		if(glwfocus == this)
 			glwfocus = NULL;
 	}
@@ -419,13 +419,13 @@ GLwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitl
 	GLwindow *ret;
 	GLWmenu *p;
 	int i, len, maxlen = 0;
-	ret = new GLwindowPopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
+	ret = new GLWpopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
 	glwAppend(ret);
 	return ret;
 }
 
 GLWmenu *glwPopupMenu(GLwindowState &gvp, const PopupMenu &list){
-	GLWmenu *ret = new GLwindowPopup(NULL, gvp, list);
+	GLWmenu *ret = new GLWpopup(NULL, gvp, list);
 	glwAppend(ret);
 	return ret;
 }

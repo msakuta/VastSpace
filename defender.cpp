@@ -261,9 +261,10 @@ void Defender::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	double dist = rdr.len();
 	if(rdrn.sp(dv) < 0) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len();
+	Vec3d forward = this->rot.trans(vec3_001);
 	Vec3d dr = this->pos - target;
-	this->throttle = rangein((dr.len() - dv.len() * 7.0) * speedfactor + minspeed, -1, 1);
-	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
+	this->throttle = rangein(forward.sp(dr - dv * 7.0) * speedfactor + minspeed, -1, 1);
+	this->omg = 3 * forward.vp(dr.norm());
 	if(DEFENDER_ROTSPEED * DEFENDER_ROTSPEED < this->omg.slen())
 		this->omg.normin().scalein(DEFENDER_ROTSPEED);
 	bbody->setAngularVelocity(btvc(this->omg));
@@ -606,7 +607,7 @@ void Defender::anim(double dt){
 					if(bbody)
 						bbody->getBroadphaseProxy()->m_collisionFilterMask &= ~2;
 
-					if(1. < sp)
+					if(.6 < sp) // Short run is enough
 						p->task = Parade;
 				}
 			}
@@ -627,7 +628,7 @@ void Defender::anim(double dt){
 				}
 				else if(p->task == Moveto){
 					Vec3d dr = pt->pos - p->dest;
-					if(dr.slen() < .01 * .01){
+					if(dr.slen() < .015 * .015){
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
@@ -737,7 +738,7 @@ void Defender::anim(double dt){
 						target = pm->rot.trans(target0);
 						target += pm->pos;
 						Vec3d dr = pt->pos - target;
-						if(dr.slen() < .01 * .01){
+						if(dr.slen() < .015 * .015){
 							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
@@ -817,9 +818,9 @@ void Defender::anim(double dt){
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+						steerArrival(dt, target, pm->velo, 1. / 2., .001);
 						double dist = (target - this->pos).len();
-						if(dist < .01){
+						if(dist < (task == Dockque ? .02 : .05)){
 							if(p->task == Dockque)
 								p->task = Dock;
 							else{

@@ -97,12 +97,12 @@ class GLwindow{
 	int height;
 }
 
-class GLwindowMenu extends GLwindow{
+class GLWmenu extends GLwindow{
 	void addItem(string title, string command);
 	void close();
 }
 
-class GLwindowBigMenu extends GLwindowMenu{
+class GLWbigMenu extends GLwindowMenu{
 }
 
 class GLWbuttonMatrix extends GLwindow{
@@ -371,7 +371,7 @@ function sce(){
 register_console_command("ass", ass);
 register_console_command("att", att);
 
-mainmenu <- GLwindowBigMenu();
+mainmenu <- GLWbigMenu();
 
 function loadmission(script){
 	mainmenu.close();
@@ -398,11 +398,13 @@ function init_Universe(){
 //		print(value);
 	function callTest(){
 		mainmenu.close();
-		mainmenu = GLwindowBigMenu();
+		mainmenu = GLWbigMenu();
 		mainmenu.title = "Test Missions";
 		mainmenu.addItem("Eternal Fight Demo", function(){loadmission("scripts/eternalFight.nut");});
 		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
 		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
+		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
+		mainmenu.addItem("Demo 3", function(){loadmission("scripts/demo4.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;

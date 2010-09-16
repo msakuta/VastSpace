@@ -98,6 +98,7 @@ public:
 };
 
 static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
+static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd));
 
 Player pl;
 double &flypower = pl.freelook->flypower;
@@ -304,6 +305,8 @@ static void drawindics(Viewer *vw){
 		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, gvp.w, gvp.h, 0, -1, 1)));
 		glPushMatrix();
 		glLoadIdentity();
+		war_draw(*vw, pl.cs, &WarField::drawOverlay);
+		glColor4f(1,1,1,1);
 		glTranslatef(0,0,-1);
 #ifdef _DEBUG
 		static int dstrallocs = 0;
@@ -444,7 +447,7 @@ static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method
 	GLcull gc(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
 	localvw.gc = &gc;
 	wd.lightdraws = 0;
-	wd.maprange = 1.;
+//	wd.maprange = 1.;
 	wd.vw = &localvw;
 	wd.w = cs->w;
 	GLmatrix ma;
@@ -461,7 +464,7 @@ static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wa
 		// It also helps the optimizer to reduce frame pointers.
 		war_draw_int(vw, cs, method);
 	}
-	if(pl.cs == cs){
+	if(pl.cs == cs && method != &WarField::drawOverlay){
 		(pl.*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&vw);
 	}
 }
@@ -504,6 +507,11 @@ void draw_func(Viewer &vw, double dt){
 			glPushMatrix(), glLoadIdentity(),
 			vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
 		));
+		Mat4d trans, model, proj;
+		glGetDoublev(GL_MODELVIEW_MATRIX, model);
+		glGetDoublev(GL_PROJECTION_MATRIX, proj);
+		vw.trans = proj * model;
+
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 /*		GLpmatrix proj;

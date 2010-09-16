@@ -47,7 +47,7 @@
 				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				MinimalRebuild="true"
-				ExceptionHandling="1"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				FloatingPointExceptions="true"
@@ -403,7 +403,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\defender.cpp"
+				RelativePath="..\Defender.cpp"
 				>
 			</File>
 			<File
@@ -467,7 +467,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\sceptor.cpp"
+				RelativePath="..\Sceptor.cpp"
 				>
 			</File>
 			<File
@@ -668,7 +668,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\defender.h"
+				RelativePath="..\Defender.h"
 				>
 			</File>
 			<File
@@ -748,7 +748,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\sceptor.h"
+				RelativePath="..\Sceptor.h"
 				>
 			</File>
 			<File

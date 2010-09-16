@@ -417,7 +417,8 @@ function init_Universe(){
 		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
 		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
 		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
-		mainmenu.addItem("Demo 3", function(){loadmission("scripts/demo4.nut");});
+		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
+		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
@@ -439,6 +440,8 @@ function init_Universe(){
 	// Adjust window position to center of screen, after all menu items are added.
 	mainmenu.x = scw / 2 - mainmenu.width / 2;
 	mainmenu.y = sch / 2 - mainmenu.height / 2;
+
+	cmd("r_overlay 1");
 }
 
 sysbut <- null;

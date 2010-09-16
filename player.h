@@ -76,12 +76,13 @@ public:
 	mover_t *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
 	float blendmover; ///< Blending factor of mover and nextmover.
 	Entity *chase, *control, *selected, *lastchase; ///< Various entity lists
-	struct astrobj *sight;
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
-	int trigger, detail, minimap;
+	int detail;
 	int mousex, mousey;
-	int floortouch;
 	int race;
+	bool r_move_path;
+	bool r_attack_path;
+	bool r_overlay;
 	double fov; ///< Field of view value, in cosine angle
 	double gametime; ///< global time
 	double velolen; ///< trivial; performance keeper

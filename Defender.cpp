@@ -70,6 +70,7 @@ void Defender::serialize(SerializeContext &sc){
 	sc.o << dest;
 	sc.o << fcloak;
 	sc.o << fdeploy;
+	sc.o << fdodge;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
@@ -88,6 +89,7 @@ void Defender::unserialize(UnserializeContext &sc){
 	sc.i >> dest;
 	sc.i >> fcloak;
 	sc.i >> fdeploy;
+	sc.i >> fdodge;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;

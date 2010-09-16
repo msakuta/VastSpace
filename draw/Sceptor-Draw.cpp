@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Sceptor drawing codes.
+ */
 #include "../sceptor.h"
 #include "../player.h"
 //#include "bullet.h"
@@ -269,7 +272,9 @@ void Sceptor::drawtra(wardraw_t *wd){
 	glEnd();
 #endif
 
-	if(Player::g_overlay && (task == Moveto || task == DeltaFormation)){
+	Player *ppl = w->getPlayer();
+
+	if(ppl && ppl->r_move_path && (task == Moveto || task == DeltaFormation)){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);
@@ -416,6 +421,30 @@ void Sceptor::drawtra(wardraw_t *wd){
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);*/
 		glPopAttrib();
+	}
+}
+
+void Sceptor::drawOverlay(wardraw_t *wd){
+	Player *ppl = w->getPlayer();
+	double pixels;
+	if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(this->pos) * hitradius()) && pixels * 10. < wd->vw->vp.m){
+		Vec4d spos = wd->vw->trans.vp(Vec4d(this->pos) + Vec4d(0,0,0,1));
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
+		glScaled(200, 200, 1);
+		glColor4f(1, 1, 1, 1. - pixels * 10. / wd->vw->vp.m);
+		glBegin(GL_LINE_LOOP);
+		glVertex2d(-.10, -.10);
+		glVertex2d(-.05,  .00);
+		glVertex2d(-.10,  .10);
+		glVertex2d( .00,  .05);
+		glVertex2d( .10,  .10);
+		glVertex2d( .05,  .00);
+		glVertex2d( .10, -.10);
+		glVertex2d( .00, -.05);
+		glEnd();
+		glPopMatrix();
 	}
 }
 

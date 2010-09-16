@@ -45,6 +45,7 @@ public:
 	}
 	Quatd qrot; // Rotation expressed in quaternion
 	Mat4d rot, irot, relrot, relirot;
+	Mat4d trans; ///< Actual perspective transformation
 	Vec3d pos, pyr, velo;
 	double velolen;
 	double fov, ar;

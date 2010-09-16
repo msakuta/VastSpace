@@ -135,6 +135,7 @@ void WarField::endframe(){
 
 void WarField::draw(wardraw_t *wd){}
 void WarField::drawtra(wardraw_t *wd){}
+void WarField::drawOverlay(wardraw_t *){}
 
 bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
 	return false;
@@ -441,6 +442,21 @@ void WarSpace::drawtra(wardraw_t *wd){
 
 	if(g_otdrawflags)
 		ot_draw(this, wd);
+}
+
+void WarSpace::drawOverlay(wardraw_t *wd){
+	for(int i = 0; i < 2; i++)
+	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this){
+		try{
+			pe->drawOverlay(wd);
+		}
+		catch(std::exception e){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): %s\n", __LINE__, pe, pe->idname(), e.what());
+		}
+		catch(...){
+			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): ?\n", __LINE__, pe, pe->idname());
+		}
+	}
 }
 
 struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}

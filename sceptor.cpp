@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Sceptor class.
+ */
 #include "sceptor.h"
 #include "player.h"
 #include "bullet.h"

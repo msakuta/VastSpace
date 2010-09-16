@@ -2,7 +2,7 @@
 initUI();
 
 deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.01), 0.5, 3, player.cs, null);
-deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0.01, -0.01), 0.5, 3, player.cs, null);
+//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0.01, -0.01), 0.5, 3, player.cs, null);
 //deltaFormation("Attacker", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.5, 3, player.cs, null);
 //deltaFormation("Attacker", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.2, 3, player.cs, null);
 

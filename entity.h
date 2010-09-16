@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of Entity class, root of many actual object classes in the program.
+ */
 #ifndef ENTITY_H
 #define ENTITY_H
 #include "serial.h"
@@ -17,6 +20,8 @@ class Builder;
 class Docker;
 struct EntityCommand;
 
+/// Primary object in the space. Many object classes derive this.
+/// Serializable and accessible from Squirrel codes.
 class Entity : public Serializable{
 public:
 	typedef Serializable st;
@@ -42,9 +47,10 @@ public:
 	virtual unsigned analog_mask();
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual int numCockpits()const;
-	virtual void draw(wardraw_t *);
-	virtual void drawtra(wardraw_t *);
-	virtual void drawHUD(wardraw_t *); // Drawn over everything but GLwindows.
+	virtual void draw(wardraw_t *); ///< Called for drawing opaque parts of this object.
+	virtual void drawtra(wardraw_t *); ///< Called for drawing transparent parts of this object. Not Z-buffered nor lightened.
+	virtual void drawHUD(wardraw_t *); ///< Called if this Entity is cockpit-viewed.  Drawn over everything but GLwindows.
+	virtual void drawOverlay(wardraw_t *); ///< Called everytime, but not model-transformed and drawn over everything but GUI.
 	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
 	virtual double hitradius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
 	virtual void bullethit(const Bullet *);

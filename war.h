@@ -86,7 +86,7 @@ struct contact_info{
 };
 struct otnt;
 
-struct war_draw_data;
+typedef struct war_draw_data wardraw_t;
 struct tent3d_line_list;
 
 struct war_field_static{
@@ -123,8 +123,9 @@ public:
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void postframe(), endframe(); // postframe gives an opportunity to clear pointers to objects being destroyed, while endframe actually destruct them.
-	virtual void draw(struct war_draw_data *);
-	virtual void drawtra(struct war_draw_data *);
+	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	virtual double war_time()const;
@@ -162,8 +163,9 @@ public:
 //	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void endframe();
-	virtual void draw(struct war_draw_data *);
-	virtual void drawtra(struct war_draw_data *);
+	virtual void draw(wardraw_t *);
+	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual struct tent3d_line_list *getTeline3d();
 	virtual struct tent3d_fpol_list *getTefpol3d();
 	virtual operator WarSpace*();
@@ -180,7 +182,7 @@ public:
 	static int g_otdrawflags;
 };
 
-typedef struct war_draw_data{
+struct war_draw_data{
 //	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
 //	void (*light_on)(void); /* processes to turn */
 //	void (*light_off)(void); /* the light on and off. */
@@ -196,10 +198,10 @@ typedef struct war_draw_data{
 	Viewer *vw;
 //	double light[3]; /* light direction */
 //	double gametime;
-	double maprange;
+//	double maprange;
 	int lightdraws;
 	WarField *w;
-} wardraw_t;
+};
 
 
 template<Entity *WarField::*list> inline int WarField::countEnts()const{

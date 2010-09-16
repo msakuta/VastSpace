@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implements Entity class and its collaborative classes.
+ */
 #include "entity.h"
 #include "EntityCommand.h"
 extern "C"{
@@ -184,6 +187,7 @@ int Entity::numCockpits()const{return 1;}
 void Entity::draw(wardraw_t *){}
 void Entity::drawtra(wardraw_t *){}
 void Entity::drawHUD(wardraw_t *){}
+void Entity::drawOverlay(wardraw_t *){}
 bool Entity::solid(const Entity *)const{return true;} // Default is to check hits
 void Entity::bullethit(const Bullet *){}
 Entity *Entity::getOwner(){return NULL;}

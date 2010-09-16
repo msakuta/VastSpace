@@ -93,7 +93,8 @@ public:
 	virtual void leaveField(WarField *);
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
-	virtual void drawtra(wardraw_t *w);
+	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void postframe();

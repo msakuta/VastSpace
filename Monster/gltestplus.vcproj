@@ -359,7 +359,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\assault.cpp"
+				RelativePath="..\Assault.cpp"
 				>
 			</File>
 			<File
@@ -375,7 +375,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\beamer.cpp"
+				RelativePath="..\Beamer.cpp"
 				>
 			</File>
 			<File
@@ -387,7 +387,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\bullet.cpp"
+				RelativePath="..\Bullet.cpp"
 				>
 			</File>
 			<File
@@ -399,7 +399,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\coordsys.cpp"
+				RelativePath="..\CoordSys.cpp"
 				>
 			</File>
 			<File
@@ -411,7 +411,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\entity.cpp"
+				RelativePath="..\Entity.cpp"
 				>
 			</File>
 			<File
@@ -451,7 +451,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\player.cpp"
+				RelativePath="..\Player.cpp"
 				>
 			</File>
 			<File
@@ -628,7 +628,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\beamer.h"
+				RelativePath="..\Beamer.h"
 				>
 			</File>
 			<File
@@ -644,7 +644,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\bullet.h"
+				RelativePath="..\Bullet.h"
 				>
 			</File>
 			<File
@@ -664,7 +664,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\coordsys.h"
+				RelativePath="..\CoordSys.h"
 				>
 			</File>
 			<File
@@ -684,7 +684,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\entity.h"
+				RelativePath="..\Entity.h"
 				>
 			</File>
 			<File
@@ -732,7 +732,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\player.h"
+				RelativePath="..\Player.h"
 				>
 			</File>
 			<File
@@ -792,7 +792,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\viewer.h"
+				RelativePath="..\Viewer.h"
 				>
 			</File>
 			<File

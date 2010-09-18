@@ -315,38 +315,28 @@ void Defender::drawtra(wardraw_t *wd){
 	}
 }
 
-void Defender::drawOverlay(wardraw_t *wd){
-	Player *ppl = w->getPlayer();
-	double pixels;
-	if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(this->pos) * hitradius()) && pixels * 20. < wd->vw->vp.m){
-		Vec4d spos = wd->vw->trans.vp(Vec4d(this->pos) + Vec4d(0,0,0,1));
-		glPushMatrix();
-		glLoadIdentity();
-		glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
-		glScaled(200, 200, 1);
-		glColor4f(1, 1, 1, 1. - pixels * 20. / wd->vw->vp.m);
-		glBegin(GL_LINE_LOOP);
-		glVertex2d(-.10,  .02);
-		glVertex2d(-.10, -.02);
-		glVertex2d(-.03, -.02);
-		glVertex2d(-.06, -.06);
-		glVertex2d(-.03, -.09);
-		glVertex2d( .00, -.04);
-		glVertex2d( .03, -.09);
-		glVertex2d( .06, -.06);
-		glVertex2d( .03, -.02);
-		glVertex2d( .10, -.02);
-		glVertex2d( .10,  .02);
-		glVertex2d( .03,  .02);
-		glVertex2d( .06,  .06);
-		glVertex2d( .03,  .09);
-		glVertex2d( .00,  .04);
-		glVertex2d(-.03,  .09);
-		glVertex2d(-.06,  .06);
-		glVertex2d(-.03,  .02);
-		glEnd();
-		glPopMatrix();
-	}
+void Defender::drawOverlay(wardraw_t *){
+	glScaled(10, 10, 1);
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(-.10,  .02);
+	glVertex2d(-.10, -.02);
+	glVertex2d(-.03, -.02);
+	glVertex2d(-.06, -.06);
+	glVertex2d(-.03, -.09);
+	glVertex2d( .00, -.04);
+	glVertex2d( .03, -.09);
+	glVertex2d( .06, -.06);
+	glVertex2d( .03, -.02);
+	glVertex2d( .10, -.02);
+	glVertex2d( .10,  .02);
+	glVertex2d( .03,  .02);
+	glVertex2d( .06,  .06);
+	glVertex2d( .03,  .09);
+	glVertex2d( .00,  .04);
+	glVertex2d(-.03,  .09);
+	glVertex2d(-.06,  .06);
+	glVertex2d(-.03,  .02);
+	glEnd();
 }
 
 void Defender::smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){

@@ -445,16 +445,27 @@ void WarSpace::drawtra(wardraw_t *wd){
 }
 
 void WarSpace::drawOverlay(wardraw_t *wd){
+	Player *ppl = getPlayer();
 	for(int i = 0; i < 2; i++)
 	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this){
-		try{
-			pe->drawOverlay(wd);
-		}
-		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): %s\n", __LINE__, pe, pe->idname(), e.what());
-		}
-		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): ?\n", __LINE__, pe, pe->idname());
+		double pixels;
+		if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
+			Vec4d spos = wd->vw->trans.vp(Vec4d(pe->pos) + Vec4d(0,0,0,1));
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
+			glScaled(20, 20, 1);
+			glColor4f(1, 1, 1, 1. - pixels * 20. / wd->vw->vp.m);
+			try{
+				pe->drawOverlay(wd);
+			}
+			catch(std::exception e){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): %s\n", __LINE__, pe, pe->idname(), e.what());
+			}
+			catch(...){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawOverlay(): ?\n", __LINE__, pe, pe->idname());
+			}
+			glPopMatrix();
 		}
 	}
 }

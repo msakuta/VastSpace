@@ -1,9 +1,13 @@
+/** \file
+ * \brief Defines Assault class.
+ */
 #ifndef ASSAULT_H
 #define ASSAULT_H
 #include "Frigate.h"
 #include "arms.h"
 #include "Docker.h"
 
+/// Medium class ship with replaceable turrets.
 class Assault : public Frigate{
 protected:
 	Assault *formPrev;
@@ -27,6 +31,7 @@ public:
 	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);

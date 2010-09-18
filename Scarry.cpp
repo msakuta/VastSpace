@@ -4,7 +4,6 @@
 #include "Player.h"
 #include "antiglut.h"
 #include "sceptor.h"
-#include "Assault.h"
 #include "Beamer.h"
 #include "sqadapt.h"
 extern "C"{

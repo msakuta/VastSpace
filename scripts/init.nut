@@ -441,7 +441,8 @@ function init_Universe(){
 	mainmenu.x = scw / 2 - mainmenu.width / 2;
 	mainmenu.y = sch / 2 - mainmenu.height / 2;
 
-	cmd("r_overlay 1");
+	cmd("r_overlay 0");
+	cmd("r_move_path 1");
 }
 
 sysbut <- null;

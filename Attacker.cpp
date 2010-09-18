@@ -34,6 +34,7 @@ public:
 	void static_init();
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual bool command(EntityCommand *com);
 	virtual double hitradius()const;
@@ -183,6 +184,31 @@ void Attacker::draw(wardraw_t *wd){
 		glPopMatrix();
 		glPopAttrib();
 	}
+}
+
+void Attacker::drawOverlay(wardraw_t *){
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(-.15,  1.0);
+	glVertex2d(-.4,  1.0);
+	glVertex2d(-.5,  0.9);
+	glVertex2d(-.5,  0.2);
+	glVertex2d(-.9, -0.5);
+	glVertex2d(-.9, -0.7);
+	glVertex2d(-.5, -0.8);
+	glVertex2d(-.5, -0.9);
+	glVertex2d(-.2, -1.0);
+	glVertex2d( .2, -1.0);
+	glVertex2d( .5, -0.9);
+	glVertex2d( .5, -0.8);
+	glVertex2d( .9, -0.7);
+	glVertex2d( .9, -0.5);
+	glVertex2d( .5,  0.2);
+	glVertex2d( .5,  0.9);
+	glVertex2d( .4,  1.0);
+	glVertex2d( .15,  1.0);
+	glVertex2d( .15,  0.3);
+	glVertex2d(-.15,  0.3);
+	glEnd();
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

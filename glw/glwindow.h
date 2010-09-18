@@ -120,7 +120,7 @@ public:
 	void glwAnim(double dt);
 	static void glwPostFrame();
 	static void glwEndFrame();
-	static friend GLwindow **glwFindPP(GLwindow *);
+	friend GLwindow **glwFindPP(GLwindow *);
 	template<class C> static GLwindow **findpp(GLwindow **root, C compar);
 	template<const char *title> static bool namecmp(const GLwindow *w){
 		return !strcmp(w->title, title);
@@ -240,6 +240,8 @@ int glwPutTextureStringN(const char *s, int n, int size);
 int glwPutTextureString(const char *s, int size = GLwindow::getFontHeight());
 int glwGetSizeTextureStringN(const char *s, long n, int isize);
 int glwGetSizeTextureString(const char *s, int size = -1);
+int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
+void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
 void glwpos2d(double x, double y);
 int glwprintf(const char *f, ...);
 int glwsizef(const char *f, ...);

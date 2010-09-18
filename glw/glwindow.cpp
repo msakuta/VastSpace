@@ -10,6 +10,7 @@
 #include "../player.h" // GLWmoveOrderButton
 #include "../sqadapt.h"
 #include "message.h"
+#include "GLWtip.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -26,8 +27,6 @@ double GLwindow::glwfontscale = 1.; ///< Font size for all GUI.
 #define fontheight (GLwindow::glwfontheight * GLwindow::glwfontscale)
 double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
-int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
-void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
 
 /// Window margin
 const long margin = 4;
@@ -800,35 +799,7 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 
 
 
-
-/// The tip window. It floats over all GLwindows to describe what the element (e.g. button) means
-/// to the player.
-class GLWtip : public GLwindow{
-public:
-	const char *tips;
-	GLWbutton *parent;
-	GLWtip() : st(), tips(NULL), parent(NULL){
-		xpos = -100;
-		ypos = -100;
-		width = -100;
-		height = -100;
-		glwAppend(this); // Append after the object is constructed.
-	}
-	virtual bool focusable()const{return false;}
-	virtual void draw(GLwindowState &ws, double t){
-		if(!tips)
-			return;
-		GLWrect r = clientRect();
-//		glwpos2d(r.x0, r.y0 + fontheight);
-		glPushMatrix();
-		glTranslated(r.x0, r.y0 + fontheight + 2, 0.);
-		glScaled(glwfontscale, glwfontscale, 1.);
-		glwPutStringML(tips);
-		glPopMatrix();
-	}
-};
-
-static GLWtip *glwtip = new GLWtip();
+GLWtip *glwtip = new GLWtip();
 
 
 

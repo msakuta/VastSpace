@@ -455,7 +455,7 @@ void WarSpace::drawOverlay(wardraw_t *wd){
 			glLoadIdentity();
 			glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
 			glScaled(20, 20, 1);
-			glColor4f(1, 1, 1, 1. - pixels * 20. / wd->vw->vp.m);
+			glColor4f(pe->race % 2, 1, (pe->race + 1) % 2, 1. - pixels * 20. / wd->vw->vp.m);
 			try{
 				pe->drawOverlay(wd);
 			}

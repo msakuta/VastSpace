@@ -829,6 +829,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\glw\GLWtip.h"
+					>
+				</File>
+				<File
 					RelativePath="..\glw\message.h"
 					>
 				</File>

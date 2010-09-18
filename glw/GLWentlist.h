@@ -34,7 +34,8 @@ public:
 
 	Player &pl;
 	enum ListMode{ Select, All, Universe } listmode;
-	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select){}
+	bool groupByClass;
+	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true){}
 	virtual void draw(GLwindowState &ws, double){
 		const WarField *const w = pl.cs->w;
 		const char *names[OV_COUNT];
@@ -92,17 +93,32 @@ public:
 		glwpos2d(r.x0, r.y0 + getFontHeight());
 		glwprintf("Select");
 		glColor4fv(colors[listmode == All]);
-		glwpos2d(r.x0 + 100, r.y0 + getFontHeight());
+		glwpos2d(r.x0 + r.width() / 4, r.y0 + getFontHeight());
 		glwprintf("All");
 		glColor4fv(colors[listmode == Universe]);
-		glwpos2d(r.x0 + 200, r.y0 + getFontHeight());
+		glwpos2d(r.x0 + r.width() * 2 / 4, r.y0 + getFontHeight());
 		glwprintf("Universe");
+		glColor4fv(colors[groupByClass]);
+		glwpos2d(r.x0 + r.width() * 3 / 4, r.y0 + getFontHeight());
+		glwprintf("Grouping");
 
 		glColor4f(1,1,1,1);
 
-		for(i = 0; i < n; i++){
-			glwpos2d(r.x0, r.y0 + (2 + i) * getFontHeight());
-			glwprintf("%*.*s x %-3d", wid, wid, names[i], counts[i]);
+		if(groupByClass){
+			for(i = 0; i < n; i++){
+				glwpos2d(r.x0, r.y0 + (2 + i) * getFontHeight());
+				glwprintf("%*.*s x %-3d", wid, wid, names[i], counts[i]);
+			}
+		}
+		else{
+			int y = 0;
+			for(i = 0; i < n; i++){
+				for(int j = 0; j < counts[i]; j++){
+					glwpos2d(r.x0, r.y0 + (2 + y) * getFontHeight());
+					glwprintf("%*.*s", wid, wid, names[i]);
+					y++;
+				}
+			}
 		}
 	}
 
@@ -112,7 +128,11 @@ public:
 			r.y0 = 0;
 			r.y1 = getFontHeight();
 			if(r.include(x + r.x0, y + r.y0)){
-				listmode = MIN(Universe, MAX(Select, ListMode(x / 100)));
+				int index = x * 4 / r.width();
+				if(index < 3)
+					listmode = MIN(Universe, MAX(Select, ListMode(index)));
+				else
+					groupByClass = !groupByClass;
 				return 1;
 			}
 		}

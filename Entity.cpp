@@ -147,7 +147,11 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 
 
 double Entity::maxhealth()const{return 100.;}
-void Entity::enterField(WarField *){}
+void Entity::enterField(WarField *aw){
+	WarSpace *ws = *aw;
+	if(ws->bdw && bbody)
+		ws->bdw->addRigidBody(bbody);
+}
 void Entity::leaveField(WarField *aw){
 	WarSpace *ws = *aw;
 	if(ws->bdw && bbody)

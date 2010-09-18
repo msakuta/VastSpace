@@ -318,13 +318,13 @@ void Defender::drawtra(wardraw_t *wd){
 void Defender::drawOverlay(wardraw_t *wd){
 	Player *ppl = w->getPlayer();
 	double pixels;
-	if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(this->pos) * hitradius()) && pixels * 10. < wd->vw->vp.m){
+	if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(this->pos) * hitradius()) && pixels * 20. < wd->vw->vp.m){
 		Vec4d spos = wd->vw->trans.vp(Vec4d(this->pos) + Vec4d(0,0,0,1));
 		glPushMatrix();
 		glLoadIdentity();
 		glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
 		glScaled(200, 200, 1);
-		glColor4f(1, 1, 1, 1. - pixels * 10. / wd->vw->vp.m);
+		glColor4f(1, 1, 1, 1. - pixels * 20. / wd->vw->vp.m);
 		glBegin(GL_LINE_LOOP);
 		glVertex2d(-.10,  .02);
 		glVertex2d(-.10, -.02);

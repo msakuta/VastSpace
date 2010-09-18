@@ -47,7 +47,7 @@
 				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
 				MinimalRebuild="true"
-				ExceptionHandling="0"
+				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				FloatingPointExceptions="true"

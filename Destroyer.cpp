@@ -74,7 +74,7 @@ Destroyer::Destroyer(WarField *aw) : st(aw){
 //		bbody->setSleepingThresholds(.0001, .0001);
 
 		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody);
+//		ws->bdw->addRigidBody(bbody);
 	}
 }
 
@@ -270,6 +270,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 			}
 
 			{/* explode shockwave thingie */
+#if 0
 				static const double pyr[3] = {M_PI / 2., 0., 0.};
 				amat3_t ort;
 				Vec3d dr, v;
@@ -288,6 +289,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 				q = v * p;
 
 				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+#endif
 				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}

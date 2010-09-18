@@ -84,7 +84,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 //		bbody->setSleepingThresholds(.0001, .0001);
 
 		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody);
+//		ws->bdw->addRigidBody(bbody);
 	}
 }
 

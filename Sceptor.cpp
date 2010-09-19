@@ -417,7 +417,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 	Vec3d dvLinear = rdrn.sp(dv) * rdrn;
 	Vec3d dvPlanar = dv - dvLinear;
 	double dist = rdr.len();
-	if(rdrn.sp(dv) < 0) // estimate only when closing
+	if(rdrn.sp(dv) < 0 && DBL_EPSILON < dvLinear.slen()) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len();
 	Vec3d dr = this->pos - target;
 	this->throttle = rangein((dr.len() - dv.len() * 5.5) * speedfactor + minspeed, -1, 1);

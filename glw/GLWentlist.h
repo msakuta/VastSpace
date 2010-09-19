@@ -39,9 +39,10 @@ public:
 	enum ListMode{ Select, All, Universe } listmode;
 	bool groupByClass;
 	bool icons;
+	bool switches;
 	std::vector<Entity*> ents[OV_COUNT];
 	int n;
-	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true), icons(true){}
+	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true), icons(true), switches(false){}
 	virtual void draw(GLwindowState &ws, double){
 		const WarField *const w = pl.cs->w;
 		const char *names[OV_COUNT];
@@ -101,25 +102,27 @@ public:
 		GLWrect r = clientRect();
 		int wid = (r.x1 - r.x0) / getFontWidth() -  6;
 
-		static const GLfloat colors[2][4] = {{1,1,1,1},{0,1,1,1}};
-		glColor4fv(colors[listmode == Select]);
-		glwpos2d(r.x0, r.y0 + getFontHeight());
-		glwprintf("Select");
-		glColor4fv(colors[listmode == All]);
-		glwpos2d(r.x0 + r.width() / 5, r.y0 + getFontHeight());
-		glwprintf("All");
-		glColor4fv(colors[listmode == Universe]);
-		glwpos2d(r.x0 + r.width() * 2 / 5, r.y0 + getFontHeight());
-		glwprintf("Universe");
-		glColor4fv(colors[groupByClass]);
-		glwpos2d(r.x0 + r.width() * 3 / 5, r.y0 + getFontHeight());
-		glwprintf("Grouping");
-		glColor4fv(colors[icons]);
-		glwpos2d(r.x0 + r.width() * 4 / 5, r.y0 + getFontHeight());
-		glwprintf("Icons");
+		if(switches){
+			static const GLfloat colors[2][4] = {{1,1,1,1},{0,1,1,1}};
+			glColor4fv(colors[listmode == Select]);
+			glwpos2d(r.x0, r.y0 + getFontHeight());
+			glwprintf("Select");
+			glColor4fv(colors[listmode == All]);
+			glwpos2d(r.x0 + r.width() / 5, r.y0 + getFontHeight());
+			glwprintf("All");
+			glColor4fv(colors[listmode == Universe]);
+			glwpos2d(r.x0 + r.width() * 2 / 5, r.y0 + getFontHeight());
+			glwprintf("Universe");
+			glColor4fv(colors[groupByClass]);
+			glwpos2d(r.x0 + r.width() * 3 / 5, r.y0 + getFontHeight());
+			glwprintf("Grouping");
+			glColor4fv(colors[icons]);
+			glwpos2d(r.x0 + r.width() * 4 / 5, r.y0 + getFontHeight());
+			glwprintf("Icons");
+		}
 
 		if(icons){
-			int x = 0, y = 2 * getFontHeight();
+			int x = 0, y = switches * getFontHeight();
 			for(i = 0; i < n; i++){
 				std::vector<Entity*>::iterator it = ents[i].begin();
 				for(int j = 0; j < (groupByClass ? 1 : counts[i]); j++, it++){
@@ -128,7 +131,14 @@ public:
 						glPushMatrix();
 						glTranslatef(r.x0 + x + 16, r.y0 + y + 16, 0);
 						glScalef(12, 12, 1);
-						glColor4f(pe->race % 2, 1, (pe->race + 1) % 2, 1);
+						Vec3f cols(pe->race % 2, 1, (pe->race + 1) % 2);
+						if(listmode != Select){
+							for(Entity *pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe)
+								break;
+							if(!pe2)
+								cols *= .5;
+						}
+						glColor4f(cols[0], cols[1], cols[2], 1);
 						pe->drawOverlay(NULL);
 						glPopMatrix();
 					}
@@ -175,7 +185,7 @@ public:
 			glColor4f(1,1,1,1);
 			if(groupByClass){
 				for(i = 0; i < n; i++){
-					glwpos2d(r.x0, r.y0 + (2 + i) * getFontHeight());
+					glwpos2d(r.x0, r.y0 + (switches + 1 + i) * getFontHeight());
 					glwprintf("%*.*s x %-3d", wid, wid, names[i], counts[i]);
 				}
 			}
@@ -183,7 +193,7 @@ public:
 				int y = 0;
 				for(i = 0; i < n; i++){
 					for(int j = 0; j < counts[i]; j++){
-						glwpos2d(r.x0, r.y0 + (2 + y) * getFontHeight());
+						glwpos2d(r.x0, r.y0 + (switches + 1 + y) * getFontHeight());
 						glwprintf("%*.*s", wid, wid, names[i]);
 						y++;
 					}
@@ -193,7 +203,7 @@ public:
 	}
 
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my){
-		if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && switches){
 			GLWrect r = clientRect();
 			r.y0 = 0;
 			r.y1 = getFontHeight();
@@ -230,10 +240,12 @@ public:
 				.append(new PopupMenuItemFunction(APPENDER(listmode == Universe, "Show Universally"), this, &GLWentlist::menu_universe))
 				.appendSeparator()
 				.append(new PopupMenuItemFunction(APPENDER(groupByClass, "Group by class"), this, &GLWentlist::menu_grouping))
-				.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, &GLWentlist::menu_icons)));
+				.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, &GLWentlist::menu_icons))
+				.appendSeparator()
+				.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
 		}
 		if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
-			int x = 0, y = 2 * getFontHeight();
+			int x = 0, y = switches * getFontHeight();
 			bool set = false;
 			GLWrect r = clientRect();
 			if(icons) for(int i = 0; i < n; i++){
@@ -259,7 +271,7 @@ public:
 							else{
 								int xs, ys;
 								const long margin = 4;
-								cpplib::dstring str = cpplib::dstring(pe->dispname()) + "\nrace = " << pe->race;
+								cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race;
 								glwGetSizeStringML(str, GLwindow::getFontHeight(), &xs, &ys);
 								GLWrect localrect = GLWrect(r.x0 + x, r.y0 + y - ys - 3 * margin, r.x0 + x + xs + 3 * margin, r.y0 + y);
 
@@ -302,6 +314,7 @@ public:
 	void menu_universe(){listmode = Universe;}
 	void menu_grouping(){groupByClass = !groupByClass;}
 	void menu_icons(){icons = !icons;}
+	void menu_switches(){switches = !switches;}
 	virtual void mouseLeave(GLwindowState &ws){
 		if(glwtip->parent == this){
 			glwtip->tips = NULL;

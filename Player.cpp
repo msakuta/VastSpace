@@ -313,6 +313,8 @@ int cmd_cvar(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
 	if(argc < 2)
 		CmdPrint(cpplib::dstring(argv[0]) << " = " << ppl->*M);
+	else if(toupper(argv[1][0]) == 'T')
+		(ppl->*M) = !(ppl->*M);
 	else
 		(ppl->*M) = atoi(argv[1]);
 	return 0;

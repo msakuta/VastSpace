@@ -10,10 +10,17 @@
 extern "C"{
 #include <clib/timemeas.h>
 }
+#include <string.h>
 #include <algorithm>
 
 /// Set nonzero to measure sorting speed
 #define PROFILE_SORT 0
+
+static bool pents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
+	// Comparing returned pointers themselves by dispname() would be enough for sorting, but it's better
+	// that the player can see items sorted alphabetically.
+	return strcmp((*a)[0]->dispname(), (*b)[0]->dispname()) < 0;
+}
 
 void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]){
 	if(!cs)
@@ -24,12 +31,17 @@ void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[
 		return;
 	Entity *pt;
 	for(pt = cs->w->el; pt; pt = pt->next){
+
+		/* show only member of current team */
+		if(teamOnly && pl.race != pt->race)
+			continue;
+
 		int i;
 		for(i = 0; i < n; i++) if(!strcmp(ents[i][0]->dispname(), pt->dispname())){
 			ents[i].push_back(pt);
 			break;
 		}
-		if(i == n/* || current_vft == vfts[i]*/){
+		if(i == n){
 			ents[n].push_back(pt);
 			if(++n == OV_COUNT)
 				break;
@@ -52,8 +64,8 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		for(pt = pl.selected; pt; pt = pt->selectnext){
 
 			/* show only member of current team */
-/*				if(pl.chase && pl.race != pt->race)
-				continue;*/
+			if(teamOnly && pl.race != pt->race)
+				continue;
 
 			for(i = 0; i < n; i++) if(!strcmp(ents[i][0]->dispname(), pt->dispname())){
 				ents[i].push_back(pt);
@@ -69,6 +81,10 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	else if(listmode == All && w){
 		Entity *pt;
 		for(pt = w->el; pt; pt = pt->next){
+
+			/* show only member of current team */
+			if(teamOnly && pl.race != pt->race)
+				continue;
 
 			for(i = 0; i < n; i++) if(!strcmp(ents[i][0]->dispname(), pt->dispname())){
 				ents[i].push_back(pt);
@@ -107,16 +123,13 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		glwprintf("Icons");
 	}
 
-	{
-	std::vector<Entity*>* ents[OV_COUNT];
-
 #if PROFILE_SORT
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
 	for(i = 0; i < n; i++){
-		std::sort(this->ents[i].begin(), this->ents[i].end(), ent_pred);
-		ents[i] = &this->ents[i];
+		std::sort(ents[i].begin(), ents[i].end(), ent_pred);
+		pents[i] = &ents[i];
 	}
 #if PROFILE_SORT
 	printf("sort %g\n", TimeMeasLap(&tm));
@@ -126,7 +139,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	TimeMeasStart(&tm);
 #endif
 	if(1 < n)
-		std::sort(&ents[0], &ents[n-1], ents_pred);
+		std::sort(&pents[0], &pents[n-1], pents_pred);
 #if PROFILE_SORT
 	printf("sort2 %g\n", TimeMeasLap(&tm));
 #endif
@@ -134,10 +147,10 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	if(icons){
 		int x = 0, y = switches * int(getFontHeight());
 		for(i = 0; i < n; i++){
-			std::vector<Entity*>::iterator it = ents[i]->begin();
-			for(unsigned j = 0; j < (groupByClass ? 1 : ents[i]->size()); j++, it++){
+			std::vector<Entity*>::iterator it = pents[i]->begin();
+			for(unsigned j = 0; j < (groupByClass ? 1 : pents[i]->size()); j++, it++){
 				Entity *pe;
-				if(it != ents[i]->end() && (pe = *it)){
+				if(it != pents[i]->end() && (pe = *it)){
 					glPushMatrix();
 					glTranslated(r.x0 + x + 16, r.y0 + y + 16, 0);
 					glScalef(12, 12, 1);
@@ -162,7 +175,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 				if(groupByClass){
 					glColor4f(1,1,1,1);
 					glwpos2d(r.x0 + x + 8, r.y0 + y + 32);
-					glwprintf("%3d", ents[i]->size());
+					glwprintf("%3d", pents[i]->size());
 				}
 				else if(pe){
 					double x2 = 2. * pe->health / pe->maxhealth() - 1.;
@@ -197,20 +210,19 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		if(groupByClass){
 			for(i = 0; i < n; i++){
 				glwpos2d(r.x0, r.y0 + (switches + 1 + i) * getFontHeight());
-				glwprintf("%*.*s x %-3d", wid, wid, (*ents[i])[0]->dispname(), ents[i]->size());
+				glwprintf("%*.*s x %-3d", wid, wid, (*pents[i])[0]->dispname(), pents[i]->size());
 			}
 		}
 		else{
 			int y = 0;
 			for(i = 0; i < n; i++){
-				for(unsigned j = 0; j < ents[i]->size(); j++){
+				for(unsigned j = 0; j < pents[i]->size(); j++){
 					glwpos2d(r.x0, r.y0 + (switches + 1 + y) * getFontHeight());
-					glwprintf("%*.*s", wid, wid, (*ents[i])[j]->dispname());
+					glwprintf("%*.*s", wid, wid, (*pents[i])[j]->dispname());
 					y++;
 				}
 			}
 		}
-	}
 	}
 }
 
@@ -253,6 +265,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 			.appendSeparator()
 			.append(new PopupMenuItemFunction(APPENDER(groupByClass, "Group by class"), this, &GLWentlist::menu_grouping))
 			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, &GLWentlist::menu_icons))
+			.append(new PopupMenuItemFunction(APPENDER(teamOnly, "Show allies only"), this, &GLWentlist::menu_team))
 			.appendSeparator()
 			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
 	}
@@ -261,15 +274,16 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 		bool set = false;
 		GLWrect r = clientRect();
 		if(icons) for(int i = 0; i < n; i++){
-			std::vector<Entity*>::iterator it = ents[i].begin();
-			for(unsigned j = 0; j < (groupByClass ? 1 : ents[i].size()); j++, it++){
+			std::vector<Entity*> &ent = *pents[i];
+			std::vector<Entity*>::iterator it = ent.begin();
+			for(unsigned j = 0; j < (groupByClass ? 1 : ent.size()); j++, it++){
 				if(x < mx && mx < x + 32 && y < my && my < y + 32){
 					Entity *pe;
-					if(it != ents[i].end() && (pe = *it)){
+					if(it != ent.end() && (pe = *it)){
 						if(state == GLUT_UP){
 							if(groupByClass){
 								Entity **prev = &pl.selected;
-								for(it = ents[i].begin(); it != ents[i].end(); it++){
+								for(it = ent.begin(); it != ent.end(); it++){
 									*prev = *it;
 									prev = &(*it)->selectnext;
 									(*it)->selectnext = NULL;
@@ -283,7 +297,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 						else{
 							int xs, ys;
 							const long margin = 4;
-							cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race;
+							cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race << "\nhealth = " << pe->health;
 							glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
 							GLWrect localrect = GLWrect(r.x0 + x, r.y0 + y - ys - 3 * margin, r.x0 + x + xs + 3 * margin, r.y0 + y);
 

@@ -11,13 +11,10 @@
 ///
 /// It can select view modes from two flavors, list and icons.
 class GLWentlist : public GLwindowSizeable{
-	static void draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]);
+	void draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]);
 	static const int OV_COUNT = 32; ///< Overview count
 	static int ent_pred(Entity *a, Entity *b){
 		return a->race < b->race;
-	}
-	static int ents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
-		return (*a)[0]->dispname() < (*b)[0]->dispname();
 	}
 	void menu_select(){listmode = Select;}
 	void menu_all(){listmode = All;}
@@ -25,6 +22,7 @@ class GLWentlist : public GLwindowSizeable{
 	void menu_grouping(){groupByClass = !groupByClass;}
 	void menu_icons(){icons = !icons;}
 	void menu_switches(){switches = !switches;}
+	void menu_team(){teamOnly = !teamOnly;}
 public:
 	typedef GLwindowSizeable st;
 
@@ -33,9 +31,10 @@ public:
 	bool groupByClass;
 	bool icons;
 	bool switches;
-	std::vector<Entity*> ents[OV_COUNT];
+	bool teamOnly;
+	std::vector<Entity*> ents[OV_COUNT], *pents[OV_COUNT];
 	int n;
-	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true), icons(true), switches(false){}
+	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true), icons(true), switches(false), teamOnly(false){}
 	virtual void draw(GLwindowState &ws, double);
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);

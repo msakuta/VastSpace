@@ -5,6 +5,11 @@
 #ifndef GLW_GLWTIP_H
 #define GLW_GLWTIP_H
 #include "glwindow.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <gl/gl.h>
+#include <cpplib/dstring.h>
 
 /// The tip window. It floats over all GLwindows to describe what the element (e.g. button) means
 /// to the player.

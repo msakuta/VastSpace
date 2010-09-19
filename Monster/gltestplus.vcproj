@@ -573,6 +573,10 @@
 				Filter="../glw/*"
 				>
 				<File
+					RelativePath="..\glw\GLWentlist.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\glw\glwindow.cpp"
 					>
 				</File>

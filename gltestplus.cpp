@@ -1015,8 +1015,13 @@ void mouse_func(int button, int state, int x, int y){
 		ws.set(vp);
 		int killfocus = 1, ret = 0;
 		ret = GLwindow::mouseFunc(button, state, x, y, ws);
-		if(ret)
+
+		// If mouse message is processed in the foreground window, clear dragging box on the desktop.
+		if(ret){
+			s_mousedragx = s_mousex;
+			s_mousedragy = s_mousey;
 			return;
+		}
 		if(pl.moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			char buf[3][64];
 			char *args[4] = {"move", buf[0], buf[1], buf[2]};
@@ -1424,7 +1429,12 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					ws.set(vp);
 					ws.mx = s_mousex;
 					ws.my = s_mousey;
-					GLwindow::mouseFunc(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
+
+					// If mouse is dragged over an window and it process that event, clear the dragging box on the desktop.
+					if(GLwindow::mouseFunc(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws)){
+						s_mousedragx = s_mousex;
+						s_mousedragy = s_mousey;
+					}
 					GLwindow::mouseFunc(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
 				}
 

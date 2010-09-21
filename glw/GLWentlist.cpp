@@ -22,6 +22,17 @@ static bool pents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
 	return strcmp((*a)[0]->dispname(), (*b)[0]->dispname()) < 0;
 }
 
+
+GLWentlist::GLWentlist(Player &player) :
+	st("Entity List"),
+	pl(player),
+	listmode(Select),
+	groupByClass(true),
+	icons(true),
+	switches(false),
+	teamOnly(false),
+	scrollpos(0){}
+
 void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]){
 	if(!cs)
 		return;
@@ -48,6 +59,82 @@ void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[
 		}
 	}
 }
+
+/// Class that defines how GLWentlist items are grouped.
+typedef class GLWentlist::ItemSelector{
+public:
+	std::vector<Entity*> *(&pents)[GLWentlist::OV_COUNT];
+	int n;
+	ItemSelector(GLWentlist *p) : pents(p->pents), n(p->n){}
+	virtual int count() = 0; ///< Returns count of displayed items
+	virtual bool begin() = 0; ///< Starts enumeration of displayed items
+	virtual Entity *get() = 0; ///< Gets current item, something like STL's iterator::operator* (unary)
+	virtual bool next() = 0; ///< Returns true if there are more items to go
+	virtual bool stack() = 0; ///< If items are stackable
+	virtual int countInGroup() = 0; ///< Count stacked items
+
+	/// Callback class that is to be derived to define procedure for each item. Used with foreach().
+	class ForEachProc{
+	public:
+		virtual void proc(Entity*) = 0;
+	};
+	virtual void foreach(ForEachProc&) = 0; ///< Call ForEachProc::proc for each of all items, regardless of how grouping works.
+} ItemSelector;
+
+/// Grouped by class (dispname)
+class ClassItemSelector : public ItemSelector{
+public:
+	int i;
+	ClassItemSelector(GLWentlist *p) : ItemSelector(p){}
+	virtual int count(){return n;}
+	virtual bool begin(){i = 0; return true;}
+	virtual Entity *get(){return (*pents[i])[0];}
+	virtual bool next(){return ++i < n;}
+	virtual bool stack(){return true;}
+	virtual int countInGroup(){return pents[i]->size();}
+	virtual void foreach(ForEachProc &proc){
+		std::vector<Entity*>::iterator it = pents[i]->begin();
+		for(; it != pents[i]->end(); it++)
+			proc.proc(*it);
+	}
+};
+
+/// No grouping whatsoever
+class ExpandItemSelector : public ItemSelector{
+public:
+	int i;
+	std::vector<Entity*>::iterator it;
+	ExpandItemSelector(GLWentlist *p) : ItemSelector(p){}
+	virtual int count(){
+		int ret = 0;
+		for(int i = 0; i < n; i++)
+			ret += pents[i]->size();
+		return ret;
+	}
+	virtual bool begin(){
+		i = 0;
+		if(n)
+			it = pents[0]->begin();
+		return true;
+	}
+	virtual Entity *get(){
+		return it == pents[i]->end() ? NULL : *it;
+	}
+	virtual bool next(){
+		it++;
+		if(it == pents[i]->end()){
+			if(n <= i + 1)
+				return false;
+			it = pents[++i]->begin();
+		}
+		return true;
+	}
+	virtual bool stack(){return false;}
+	virtual int countInGroup(){return 1;}
+	virtual void foreach(ForEachProc &proc){
+		proc.proc(*it);
+	}
+};
 
 void GLWentlist::draw(GLwindowState &ws, double){
 	const WarField *const w = pl.cs->w;
@@ -102,7 +189,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	}
 
 	GLWrect r = clientRect();
-	int wid = int((r.x1 - r.x0) / getFontWidth()) -  6;
+	int wid = int((r.width() - 10) / getFontWidth()) -  6;
 
 	if(switches){
 		static const GLfloat colors[2][4] = {{1,1,1,1},{0,1,1,1}};
@@ -144,13 +231,23 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	printf("sort2 %g\n", TimeMeasLap(&tm));
 #endif
 
+	ClassItemSelector cis(this);
+	ExpandItemSelector eis(this);
+	ItemSelector &is = groupByClass ? (ItemSelector&)cis : (ItemSelector&)eis;
+	int itemCount = is.count();
+
+	// Do not scroll too much
+	if(0 < itemCount && itemCount <= scrollpos)
+		scrollpos = itemCount - 1;
+
 	if(icons){
 		int x = 0, y = switches * int(getFontHeight());
-		for(i = 0; i < n; i++){
-			std::vector<Entity*>::iterator it = pents[i]->begin();
-			for(unsigned j = 0; j < (groupByClass ? 1 : pents[i]->size()); j++, it++){
-				Entity *pe;
-				if(it != pents[i]->end() && (pe = *it)){
+		for(is.begin(), i = 0; i < itemCount; i++, is.next()){
+			Entity *pe = is.get();
+//			std::vector<Entity*>::iterator it = pents[i]->begin();
+/*			for(int j = 0; j < is.count(); j++, it++)*/{
+//				Entity *pe;
+/*				if(it != pents[i]->end() && (pe = *it))*/{
 					glPushMatrix();
 					glTranslated(r.x0 + x + 16, r.y0 + y + 16, 0);
 					glScalef(12, 12, 1);
@@ -172,7 +269,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 				glVertex2i(r.x0 + x + 30, r.y0 + y + 30);
 				glVertex2i(r.x0 + x + 30, r.y0 + y + 2);
 				glEnd();
-				if(groupByClass){
+				if(is.stack()){
 					glColor4f(1,1,1,1);
 					glwpos2d(r.x0 + x + 8, r.y0 + y + 32);
 					glwprintf("%3d", pents[i]->size());
@@ -198,7 +295,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 					glPopMatrix();
 				}
 				x += 32;
-				if(r.width() < x + 32){
+				if(r.width() - 10 < x + 32){
 					y += 32;
 					x = 0;
 				}
@@ -207,13 +304,30 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	}
 	else{
 		glColor4f(1,1,1,1);
-		if(groupByClass){
-			for(i = 0; i < n; i++){
-				glwpos2d(r.x0, r.y0 + (switches + 1 + i) * getFontHeight());
-				glwprintf("%*.*s x %-3d", wid, wid, (*pents[i])[0]->dispname(), pents[i]->size());
+		int fontheight = int(getFontHeight());
+/*		if(groupByClass)*/{
+			for(is.begin(), i = 0; i < itemCount; i++, is.next()) if(scrollpos <= i){
+				Entity *pe = is.get();
+				int y = i - scrollpos;
+				int top = (switches + y) * fontheight + r.y0;
+				if(r.x0 <= ws.mx && ws.mx < r.x1 - 10 && top < ws.my && ws.my < top + fontheight){
+					glColor4f(0,0,1.,.5);
+					glBegin(GL_QUADS);
+					glVertex2i(r.x0, top);
+					glVertex2i(r.x0, top + fontheight);
+					glVertex2i(r.x1 - 10, top + fontheight);
+					glVertex2i(r.x1 - 10, top);
+					glEnd();
+					glColor4f(1,1,1,1);
+				}
+				glwpos2d(r.x0, r.y0 + (switches + 1 + y) * getFontHeight());
+				if(is.stack())
+					glwprintf("%*.*s x %-3d", wid, wid, pe->dispname(), is.countInGroup());
+				else
+					glwprintf("%*.*s", wid, wid, pe->dispname());
 			}
 		}
-		else{
+/*		else{
 			int y = 0;
 			for(i = 0; i < n; i++){
 				for(unsigned j = 0; j < pents[i]->size(); j++){
@@ -222,13 +336,24 @@ void GLWentlist::draw(GLwindowState &ws, double){
 					y++;
 				}
 			}
-		}
+		}*/
 	}
+	glwVScrollBarDraw(this, r.x1 - 10, r.y0, 10, r.height(), itemCount, scrollpos);
 }
 
 int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
+	GLWrect r = clientRect();
+	ClassItemSelector cis(this);
+	ExpandItemSelector eis(this);
+	ItemSelector &is = groupByClass ? (ItemSelector&)cis : (ItemSelector&)eis;
+	int itemCount = is.count();
+	if(r.width() - 10 < mx && button == GLUT_LEFT_BUTTON && (state == GLUT_DOWN || state == GLUT_KEEP_DOWN || state == GLUT_UP)){
+		int iy = glwVScrollBarMouse(this, mx, my, r.width() - 10, 0, 10, r.height(), itemCount, scrollpos);
+		if(0 <= iy)
+			scrollpos = iy;
+		return 1;
+	}
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && switches){
-		GLWrect r = clientRect();
 		r.y0 = 0;
 		r.y1 = long(getFontHeight());
 		if(r.include(mx + r.x0, my + r.y0)){
@@ -270,29 +395,36 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
 	}
 	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
-		int x = 0, y = switches * int(getFontHeight());
+		int x = 0, y = (switches - scrollpos) * int(getFontHeight());
 		bool set = false;
-		GLWrect r = clientRect();
-		if(icons) for(int i = 0; i < n; i++){
-			std::vector<Entity*> &ent = *pents[i];
+		if(mx < r.width() - 10) for(int i = (is.begin(), 0); i < itemCount; i++, is.next()){
+/*			std::vector<Entity*> &ent = *pents[i];
 			std::vector<Entity*>::iterator it = ent.begin();
-			for(unsigned j = 0; j < (groupByClass ? 1 : ent.size()); j++, it++){
-				if(x < mx && mx < x + 32 && y < my && my < y + 32){
-					Entity *pe;
-					if(it != ent.end() && (pe = *it)){
+			for(unsigned j = 0; j < (groupByClass ? 1 : ent.size()); j++, it++)*/{
+				if(icons ? x < mx && mx < x + 32 && y < my && my < y + 32 : y < my && my < y + getFontHeight()){
+					Entity *pe = is.get();
+/*					if(it != ent.end() && (pe = *it))*/{
 						if(state == GLUT_UP){
-							if(groupByClass){
+							class SelectorProc : public ItemSelector::ForEachProc{
+							public:
+								Entity **prev;
+								SelectorProc(Entity **prev) : prev(prev){}
+								virtual void proc(Entity *pe){
+									*prev = pe;
+									prev = &pe->selectnext;
+									pe->selectnext = NULL;
+								}
+							};
+							is.foreach(SelectorProc(&pl.selected));
+/*							if(groupByClass){
 								Entity **prev = &pl.selected;
 								for(it = ent.begin(); it != ent.end(); it++){
-									*prev = *it;
-									prev = &(*it)->selectnext;
-									(*it)->selectnext = NULL;
 								}
 							}
 							else{
 								pl.selected = pe;
 								pe->selectnext = NULL;
-							}
+							}*/
 						}
 						else{
 							int xs, ys;
@@ -318,10 +450,15 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 					i = n;
 					break;
 				}
-				x += 32;
-				if(r.width() < x + 32){
-					y += 32;
-					x = 0;
+				if(icons){
+					x += 32;
+					if(r.width() - 10 < x + 32){
+						y += 32;
+						x = 0;
+					}
+				}
+				else{
+					y += int(getFontHeight());
 				}
 			}
 		}

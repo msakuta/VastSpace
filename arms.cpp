@@ -227,7 +227,7 @@ suf_t *MTurret::suf_barrel = NULL;
 
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
-	health = 1000;
+	health = maxhealth();
 	ammo = 1500;
 	py[0] = 0;
 	py[1] = 0;

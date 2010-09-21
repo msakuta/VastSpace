@@ -11,6 +11,7 @@
 ///
 /// It can select view modes from two flavors, list and icons.
 class GLWentlist : public GLwindowSizeable{
+protected:
 	void draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]);
 	static const int OV_COUNT = 32; ///< Overview count
 	static int ent_pred(Entity *a, Entity *b){
@@ -23,6 +24,7 @@ class GLWentlist : public GLwindowSizeable{
 	void menu_icons(){icons = !icons;}
 	void menu_switches(){switches = !switches;}
 	void menu_team(){teamOnly = !teamOnly;}
+	class ItemSelector;
 public:
 	typedef GLwindowSizeable st;
 
@@ -33,8 +35,9 @@ public:
 	bool switches;
 	bool teamOnly;
 	std::vector<Entity*> ents[OV_COUNT], *pents[OV_COUNT];
-	int n;
-	GLWentlist(Player &player) : st("Entity List"), pl(player), listmode(Select), groupByClass(true), icons(true), switches(false), teamOnly(false){}
+	int n; ///< Count of ents.
+	int scrollpos; ///< Current scroll position in the vertical scroll bar.
+	GLWentlist(Player &player);
 	virtual void draw(GLwindowState &ws, double);
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);

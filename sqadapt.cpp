@@ -1290,6 +1290,20 @@ static SQInteger sqf_reg(HSQUIRRELVM v){
 }
 
 
+static SQInteger sqf_loadModule(HSQUIRRELVM v){
+	try{
+		const SQChar *name;
+		if(SQ_FAILED(sq_getstring(v, 2, &name)))
+			return SQ_ERROR;
+		LoadLibrary(name);
+		return 0;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+
 void sqa_init(){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
@@ -1313,6 +1327,7 @@ void sqa_init(){
 	register_global_func(v, sqf_get_cvar, _SC("get_cvar"));
 	register_global_func(v, sqf_cmd, _SC("cmd"));
 	register_global_func(v, sqf_reg, _SC("reg"));
+	register_global_func(v, sqf_loadModule, _SC("loadModule"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 

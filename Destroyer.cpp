@@ -10,7 +10,7 @@ extern "C"{
 }
 
 const unsigned Destroyer::classid = registerClass("Destroyer", Conster<Destroyer>);
-const unsigned Destroyer::entityid = registerEntity("Destroyer", Constructor<Destroyer>);
+const unsigned Destroyer::entityid = registerEntity("Destroyer", new Constructor<Destroyer>);
 const char *Destroyer::classname()const{return "Destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
@@ -355,7 +355,7 @@ WireDestroyer::WireDestroyer(WarField *aw) : st(aw), wirephase(0), wireomega(0),
 
 
 const unsigned WireDestroyer::classid = registerClass("WireDestroyer", Conster<WireDestroyer>);
-const unsigned WireDestroyer::entityid = registerEntity("WireDestroyer", Constructor<WireDestroyer>);
+const unsigned WireDestroyer::entityid = registerEntity("WireDestroyer", new Constructor<WireDestroyer>);
 const char *WireDestroyer::classname()const{return "WireDestroyer";}
 const char *WireDestroyer::dispname()const{return "Wire Destroyer";}
 

@@ -59,7 +59,7 @@ const char *Defender::classname()const{
 }
 
 const unsigned Defender::classid = registerClass("Defender", Conster<Defender>);
-const unsigned Defender::entityid = registerEntity("Defender", Constructor<Defender>);
+const unsigned Defender::entityid = registerEntity("Defender", new Constructor<Defender>);
 
 void Defender::serialize(SerializeContext &sc){
 	st::serialize(sc);

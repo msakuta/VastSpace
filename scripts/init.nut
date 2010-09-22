@@ -263,6 +263,7 @@ function translate(id){
 // Alias for scripts
 tlate <- translate;
 
+loadModule("gltestdll.dll");
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){

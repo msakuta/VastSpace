@@ -77,7 +77,7 @@ const char *Sceptor::classname()const{
 }
 
 const unsigned Sceptor::classid = registerClass("Sceptor", Conster<Sceptor>);
-const unsigned Sceptor::entityid = registerEntity("Sceptor", Constructor<Sceptor>);
+const unsigned Sceptor::entityid = registerEntity("Sceptor", new Constructor<Sceptor>);
 
 void Sceptor::serialize(SerializeContext &sc){
 	st::serialize(sc);

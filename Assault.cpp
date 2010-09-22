@@ -108,7 +108,7 @@ const char *Assault::classname()const{
 }
 
 const unsigned Assault::classid = registerClass("Assault", Conster<Assault>);
-const unsigned Assault::entityid = registerEntity("Assault", Constructor<Assault>);
+const unsigned Assault::entityid = registerEntity("Assault", new Constructor<Assault>);
 
 void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);

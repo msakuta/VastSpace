@@ -60,7 +60,7 @@ RStation::RStation(WarField *aw) : st(aw){
 const char *RStation::idname()const{return "rstation";}
 const char *RStation::classname()const{return "RStation";}
 const unsigned RStation::classid = registerClass("RStation", Conster<RStation>);
-const unsigned RStation::entid = registerEntity("RStation", Constructor<RStation>);
+const unsigned RStation::entid = registerEntity("RStation", new Constructor<RStation>);
 const char *RStation::dispname()const{return "Resource St.";}
 bool RStation::isTargettable()const{return true;}
 bool RStation::isSelectable()const{return true;}

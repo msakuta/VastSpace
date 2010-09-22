@@ -11,6 +11,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpplib", "..\..\cpplib\Mons
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clib", "..\..\clib\Monster\clib.vcproj", "{462CC813-F69E-4A84-A9AE-E12E2C9EC802}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gltestdll", "..\gltestdll\gltestdll.vcproj", "{E85222DE-B358-457D-BA79-59E88FFB3D29}"
+	ProjectSection(ProjectDependencies) = postProject
+		{462CC813-F69E-4A84-A9AE-E12E2C9EC802} = {462CC813-F69E-4A84-A9AE-E12E2C9EC802}
+		{D8663A7B-0FBF-4D9C-B1C3-ED9327FB5741} = {D8663A7B-0FBF-4D9C-B1C3-ED9327FB5741}
+		{BD3D2091-75AD-4D59-AE7D-33CD3613DC54} = {BD3D2091-75AD-4D59-AE7D-33CD3613DC54}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -43,6 +50,12 @@ Global
 		{462CC813-F69E-4A84-A9AE-E12E2C9EC802}.Release|Win32.Build.0 = Release|Win32
 		{462CC813-F69E-4A84-A9AE-E12E2C9EC802}.Release|x64.ActiveCfg = Release|x64
 		{462CC813-F69E-4A84-A9AE-E12E2C9EC802}.Release|x64.Build.0 = Release|x64
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Debug|Win32.Build.0 = Debug|Win32
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Debug|x64.ActiveCfg = Debug|Win32
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Release|Win32.ActiveCfg = Release|Win32
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Release|Win32.Build.0 = Release|Win32
+		{E85222DE-B358-457D-BA79-59E88FFB3D29}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

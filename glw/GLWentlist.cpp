@@ -136,6 +136,7 @@ public:
 	}
 };
 
+/// Definition of how items are located.
 class ItemLocator{
 public:
 	virtual int allHeight() = 0; ///< Returns height of all items, used by the vertical scroll bar.
@@ -144,6 +145,7 @@ public:
 	virtual bool next() = 0; ///< Enumerate the next item
 };
 
+/// Locates items in a list. An item each line.
 class ListItemLocator : public ItemLocator{
 public:
 	GLWentlist *p;
@@ -161,6 +163,7 @@ public:
 	virtual bool next(){return i++ < count;}
 };
 
+/// Icon matrix.
 class IconItemLocator : public ItemLocator{
 public:
 	GLWentlist *p;
@@ -183,8 +186,6 @@ public:
 
 void GLWentlist::draw(GLwindowState &ws, double){
 	const WarField *const w = pl.cs->w;
-//		const char *names[OV_COUNT];
-//		int counts[OV_COUNT];
 	int i;
 
 	n = 0;
@@ -296,136 +297,106 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	glScissor(r.x0, ws.h - r.y1, r.width(), r.height() - switches * fontheight);
 	glEnable(GL_SCISSOR_TEST);
 
-/*	if(icons)*/{
-		int x = 0, y = switches * int(getFontHeight());
-		glPushMatrix();
-		glTranslated(0, -scrollpos + switches * fontheight, 0);
-		for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
-			Entity *pe = is.get();
-			GLWrect iconRect = il.getRect();
-				
-			if(iconRect.include(ws.mx, ws.my + scrollpos + switches * fontheight)){
-				glColor4f(0,0,1.,.5);
-				glBegin(GL_QUADS);
-				glVertex2i(iconRect.x0, iconRect.y0);
-				glVertex2i(iconRect.x1, iconRect.y0);
-				glVertex2i(iconRect.x1, iconRect.y1);
-				glVertex2i(iconRect.x0, iconRect.y1);
-				glEnd();
-			}
+	int x = 0, y = switches * int(getFontHeight());
+	glPushMatrix();
+	glTranslated(0, -scrollpos + switches * fontheight, 0);
+	for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
+		Entity *pe = is.get();
+		GLWrect iconRect = il.getRect();
+			
+		if(iconRect.include(ws.mx, ws.my + scrollpos + switches * fontheight)){
+			glColor4f(0,0,1.,.5);
+			glBegin(GL_QUADS);
+			glVertex2i(iconRect.x0, iconRect.y0);
+			glVertex2i(iconRect.x1, iconRect.y0);
+			glVertex2i(iconRect.x1, iconRect.y1);
+			glVertex2i(iconRect.x0, iconRect.y1);
+			glEnd();
+		}
 
-			/// Local class that aquires whether any of given group of Entities are selected by the Player.
-			class PlayerSelection : public ItemSelector::ForEachProc{
-			public:
-				Player &pl;
-				bool ret;
-				PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
-				virtual void proc(Entity *pe){
-					for(Entity *pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe){
-						ret = true;
-						return;
-					}
-				}
-			};
-
-			if(icons){
-				if(pe){
-					glPushMatrix();
-					glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
-					glScalef(iconRect.width() * 6 / 16.f, iconRect.height() * 6 / 16.f, 1);
-					Vec3f cols(float(pe->race % 2), 1, float((pe->race + 1) % 2));
-					if(listmode != Select){
-						PlayerSelection ps(this);
-						is.foreach(ps);
-						if(!ps.ret)
-							cols *= .5;
-					}
-					glColor4f(cols[0], cols[1], cols[2], 1);
-					pe->drawOverlay(NULL);
-					glPopMatrix();
-				}
-				GLWrect borderRect = iconRect.expand(-2);
-				glBegin(GL_LINE_LOOP);
-				glVertex2i(borderRect.x0, borderRect.y0);
-				glVertex2i(borderRect.x1, borderRect.y0);
-				glVertex2i(borderRect.x1, borderRect.y1);
-				glVertex2i(borderRect.x0, borderRect.y1);
-				glEnd();
-				if(is.stack()){
-					glColor4f(1,1,1,1);
-					glwpos2d(iconRect.x1 - 24, iconRect.y1);
-					glwprintf("%3d", pents[i]->size());
-				}
-				else if(pe){
-					double x2 = 2. * pe->health / pe->maxhealth() - 1.;
-					const double h = .1;
-					glPushMatrix();
-					glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
-					glScalef(borderRect.width() / 2.f, borderRect.height() / 2.f, 1);
-					glBegin(GL_QUADS);
-					glColor4ub(0,255,0,255);
-					glVertex3d(-1., -1., 0.);
-					glVertex3d( x2, -1., 0.);
-					glVertex3d( x2, -1. + h, 0.);
-					glVertex3d(-1., -1. + h, 0.);
-					glColor4ub(255,0,0,255);
-					glVertex3d( x2, -1., 0.);
-					glVertex3d( 1., -1., 0.);
-					glVertex3d( 1., -1. + h, 0.);
-					glVertex3d( x2, -1. + h, 0.);
-					glEnd();
-					glPopMatrix();
+		/// Local class that aquires whether any of given group of Entities are selected by the Player.
+		class PlayerSelection : public ItemSelector::ForEachProc{
+		public:
+			Player &pl;
+			bool ret;
+			PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
+			virtual void proc(Entity *pe){
+				for(Entity *pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe){
+					ret = true;
+					return;
 				}
 			}
-			else{
-//			Entity *pe = is.get();
-				if(listmode == Select)
-					glColor4f(1,1,1,1);
-				else{
+		};
+
+		if(icons){
+			if(pe){
+				glPushMatrix();
+				glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
+				glScalef(iconRect.width() * 6 / 16.f, iconRect.height() * 6 / 16.f, 1);
+				Vec3f cols(float(pe->race % 2), 1, float((pe->race + 1) % 2));
+				if(listmode != Select){
 					PlayerSelection ps(this);
 					is.foreach(ps);
-					if(ps.ret)
-						glColor4f(1,1,1,1);
-					else
-						glColor4f(.75,.75,.75,1);
+					if(!ps.ret)
+						cols *= .5;
 				}
-				glwpos2d(iconRect.x0, iconRect.y1);
-				if(is.stack())
-					glwprintf("%*.*s x %-3d", wid, wid, pe->dispname(), is.countInGroup());
-				else
-					glwprintf("%*.*s", wid, wid, pe->dispname());
+				glColor4f(cols[0], cols[1], cols[2], 1);
+				pe->drawOverlay(NULL);
+				glPopMatrix();
 			}
-/*			x += 32;
-			if(r.width() - 10 < x + 32){
-				y += 32;
-				x = 0;
-			}*/
-		}
-		glPopMatrix();
-	}
-/*	else{
-		glColor4f(1,1,1,1);
-		for(is.begin(), i = 0; i < itemCount; i++, is.next()){
-			Entity *pe = is.get();
-			int y = - scrollpos;
-			int top = (switches + i) * fontheight + y + r.y0;
-			if(r.x0 <= ws.mx && ws.mx < r.x1 - 10 && top < ws.my && ws.my < top + fontheight){
-				glColor4f(0,0,1.,.5);
-				glBegin(GL_QUADS);
-				glVertex2i(r.x0, top);
-				glVertex2i(r.x0, top + fontheight);
-				glVertex2i(r.x1 - 10, top + fontheight);
-				glVertex2i(r.x1 - 10, top);
-				glEnd();
+			GLWrect borderRect = iconRect.expand(-2);
+			glBegin(GL_LINE_LOOP);
+			glVertex2i(borderRect.x0, borderRect.y0);
+			glVertex2i(borderRect.x1, borderRect.y0);
+			glVertex2i(borderRect.x1, borderRect.y1);
+			glVertex2i(borderRect.x0, borderRect.y1);
+			glEnd();
+			if(is.stack()){
 				glColor4f(1,1,1,1);
+				glwpos2d(iconRect.x1 - 24, iconRect.y1);
+				glwprintf("%3d", pents[i]->size());
 			}
-			glwpos2d(r.x0, r.y0 + (switches + 1 + i) * getFontHeight() + y);
+			else if(pe){
+				double x2 = 2. * pe->health / pe->maxhealth() - 1.;
+				const double h = .1;
+				glPushMatrix();
+				glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
+				glScalef(borderRect.width() / 2.f, borderRect.height() / 2.f, 1);
+				glBegin(GL_QUADS);
+				glColor4ub(0,255,0,255);
+				glVertex3d(-1., -1., 0.);
+				glVertex3d( x2, -1., 0.);
+				glVertex3d( x2, -1. + h, 0.);
+				glVertex3d(-1., -1. + h, 0.);
+				glColor4ub(255,0,0,255);
+				glVertex3d( x2, -1., 0.);
+				glVertex3d( 1., -1., 0.);
+				glVertex3d( 1., -1. + h, 0.);
+				glVertex3d( x2, -1. + h, 0.);
+				glEnd();
+				glPopMatrix();
+			}
+		}
+		else{
+			if(listmode == Select)
+				glColor4f(1,1,1,1);
+			else{
+				PlayerSelection ps(this);
+				is.foreach(ps);
+				if(ps.ret)
+					glColor4f(1,1,1,1);
+				else
+					glColor4f(.75,.75,.75,1);
+			}
+			glwpos2d(iconRect.x0, iconRect.y1);
 			if(is.stack())
 				glwprintf("%*.*s x %-3d", wid, wid, pe->dispname(), is.countInGroup());
 			else
 				glwprintf("%*.*s", wid, wid, pe->dispname());
 		}
-	}*/
+	}
+	glPopMatrix();
+
 	if(r.height() < il.allHeight())
 		glwVScrollBarDraw(this, r.x1 - 10, r.y0, 10, r.height(), il.allHeight() - r.height(), scrollpos);
 	glPopAttrib();
@@ -491,12 +462,10 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
 	}
 	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
-//		int x = 0, y = (switches - scrollpos) * int(getFontHeight());
 		int i;
 		bool set = false;
 		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10) for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
 			GLWrect itemRect = il.getRect().rmove(0, -scrollpos + switches * int(getFontHeight()));
-//			if(icons ? x < mx && mx < x + 32 && y < my && my < y + 32 : y < my && my < y + getFontHeight())
 			if(itemRect.include(mx + r.x0, my + r.y0)){
 				Entity *pe = is.get();
 				if(pe){
@@ -537,16 +506,6 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 				i = n;
 				break;
 			}
-/*			if(icons){
-				x += 32;
-				if(r.width() - 10 < x + 32){
-					y += 32;
-					x = 0;
-				}
-			}
-			else{
-				y += int(getFontHeight());
-			}*/
 		}
 		else
 			mouseLeave(ws);

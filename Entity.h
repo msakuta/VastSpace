@@ -11,6 +11,9 @@
 #include <cpplib/dstring.h>
 #include <vector>
 
+extern template class cpplib::Vec3<double>;
+
+
 class btRigidBody;
 
 class Bullet;
@@ -22,7 +25,7 @@ struct EntityCommand;
 
 /// Primary object in the space. Many object classes derive this.
 /// Serializable and accessible from Squirrel codes.
-class Entity : public Serializable{
+class EXPORT Entity : public Serializable{
 public:
 	typedef Serializable st;
 	typedef Entity Dockable;
@@ -109,14 +112,21 @@ public:
 protected:
 	btRigidBody *bbody;
 
-	typedef std::map<std::string, Entity *(*)(WarField*)> EntityCtorMap;
+	class EntityStatic{
+	public:
+		virtual Entity *create(WarField*) = 0;
+		virtual void destroy(Entity*) = 0;
+	};
+
+	typedef std::map<std::string, EntityStatic*> EntityCtorMap;
 	virtual void init();
 	virtual Docker *getDockerInt();
 	virtual Builder *getBuilderInt();
-	static unsigned registerEntity(std::string name, Entity *(*)(WarField *));
+	static unsigned registerEntity(std::string name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
-	template<class T> static Entity *Constructor(WarField *w){
-		return new T(w);
+	template<class T> class Constructor : public EntityStatic{
+		virtual Entity *create(WarField *w){ return new T(w); }
+		virtual void destroy(Entity *p){ delete p; }
 	};
 };
 

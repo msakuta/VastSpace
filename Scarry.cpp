@@ -471,7 +471,7 @@ const char *Scarry::idname()const{return "scarry";}
 const char *Scarry::classname()const{return "Scarry";}
 
 const unsigned Scarry::classid = registerClass("Scarry", Conster<Scarry>);
-const unsigned Scarry::entityid = registerEntity("Scarry", Constructor<Scarry>);
+const unsigned Scarry::entityid = registerEntity("Scarry", new Constructor<Scarry>);
 
 void Scarry::serialize(SerializeContext &sc){
 	st::serialize(sc);

@@ -36,9 +36,11 @@ struct GLWrect{
 	GLWrect(long ax0, long ay0, long ax1, long ay1) : x0(ax0), y0(ay0), x1(ax1), y1(ay1){}
 
 	/// Returns true if given point is included in this rectangle.
-	bool include(long x, long y)const{return x0 <= x && x <= x1 && y0 <= y && y <= y1;}
+	bool include(long x, long y)const{return x0 <= x && x < x1 && y0 <= y && y < y1;}
 	long width()const{return x1 - x0;}
 	long height()const{return y1 - y0;}
+	long hcenter()const{return (x0 + x1) / 2;} ///< Horizontal Center
+	long vcenter()const{return (y0 + y1) / 2;} ///< Vertical Center
 
 	/// Move this rectangle's top left corner to given point without changing size.
 	GLWrect &move(long x, long y){x1 += x - x0; x0 = x; y1 += y - y0; y0 = y; return *this;}
@@ -57,6 +59,13 @@ struct GLWrect{
 
 	/// Returns copy of this rectangle relatively moved by given values.
 	GLWrect rmoved(long dx, long dy){return GLWrect(*this).rmove(dx, dy);}
+
+	/// Expand this rectangle with given pixels to four directions.
+	/// \param v Can be negative.
+	GLWrect &expand(long v){x0 -= v; x1 += v; y0 -= v; y1 += v; return *this;}
+
+	/// Returns expanded version of this rectangle by a given value.
+	GLWrect expanded(long v)const{return GLWrect(*this).expand(v);}
 };
 
 //struct viewport;

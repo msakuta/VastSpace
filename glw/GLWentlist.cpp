@@ -136,6 +136,51 @@ public:
 	}
 };
 
+class ItemLocator{
+public:
+	virtual int allHeight() = 0; ///< Returns height of all items, used by the vertical scroll bar.
+	virtual bool begin() = 0; ///< Begins enumeration
+	virtual GLWrect getRect() = 0; ///< Returns rectangle of current item
+	virtual bool next() = 0; ///< Enumerate the next item
+};
+
+class ListItemLocator : public ItemLocator{
+public:
+	GLWentlist *p;
+	int count;
+	int i;
+	ListItemLocator(GLWentlist *p, int count) : p(p), count(count), i(0){}
+	virtual int allHeight(){return count * int(GLwindow::getFontHeight());}
+	virtual bool begin(){i = 0; return true;}
+	virtual GLWrect getRect(){
+		GLWrect ret = p->clientRect();
+		ret.y0 += i * int(GLwindow::getFontHeight());
+		ret.y1 = ret.y0 + int(GLwindow::getFontHeight());
+		return ret;
+	}
+	virtual bool next(){return i++ < count;}
+};
+
+class IconItemLocator : public ItemLocator{
+public:
+	GLWentlist *p;
+	int count;
+	int i;
+	int iconSize;
+	IconItemLocator(GLWentlist *p, int count, int iconSize = 32) : p(p), count(count), i(0), iconSize(iconSize){}
+	virtual int allHeight(){return (count + (p->clientRect().width() - 10) / iconSize - 1) / ((p->clientRect().width() - 10) / iconSize) * iconSize;}
+	virtual bool begin(){i = 0; return true;}
+	virtual GLWrect getRect(){
+		GLWrect ret = p->clientRect();
+		ret.x0 += i % ((p->clientRect().width() - 10) / iconSize) * iconSize;
+		ret.y0 += i / ((p->clientRect().width() - 10) / iconSize) * iconSize;
+		ret.x1 = ret.x0 + iconSize;
+		ret.y1 = ret.y0 + iconSize;
+		return ret;
+	}
+	virtual bool next(){return i++ < count;}
+};
+
 void GLWentlist::draw(GLwindowState &ws, double){
 	const WarField *const w = pl.cs->w;
 //		const char *names[OV_COUNT];
@@ -236,50 +281,87 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	ItemSelector &is = groupByClass ? (ItemSelector&)cis : (ItemSelector&)eis;
 	int itemCount = is.count();
 
-	// Do not scroll too much
-	if(0 < itemCount && itemCount <= scrollpos)
-		scrollpos = itemCount - 1;
+	ListItemLocator lil(this, itemCount);
+	IconItemLocator eil(this, itemCount);
+	ItemLocator &il = icons ? (ItemLocator&)eil : (ItemLocator&)lil;
 
-	if(icons){
+	// Do not scroll too much
+	if(il.allHeight() < r.height())
+		scrollpos = 0;
+	else if(il.allHeight() - r.height() <= scrollpos)
+		scrollpos = il.allHeight() - r.height() - 1;
+
+	int fontheight = int(getFontHeight());
+	glPushAttrib(GL_SCISSOR_BIT);
+	glScissor(r.x0, ws.h - r.y1, r.width(), r.height() - switches * fontheight);
+	glEnable(GL_SCISSOR_TEST);
+
+/*	if(icons)*/{
 		int x = 0, y = switches * int(getFontHeight());
-		for(is.begin(), i = 0; i < itemCount; i++, is.next()){
+		glPushMatrix();
+		glTranslated(0, -scrollpos + switches * fontheight, 0);
+		for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
 			Entity *pe = is.get();
-//			std::vector<Entity*>::iterator it = pents[i]->begin();
-/*			for(int j = 0; j < is.count(); j++, it++)*/{
-//				Entity *pe;
-/*				if(it != pents[i]->end() && (pe = *it))*/{
+			GLWrect iconRect = il.getRect();
+				
+			if(iconRect.include(ws.mx, ws.my + scrollpos + switches * fontheight)){
+				glColor4f(0,0,1.,.5);
+				glBegin(GL_QUADS);
+				glVertex2i(iconRect.x0, iconRect.y0);
+				glVertex2i(iconRect.x1, iconRect.y0);
+				glVertex2i(iconRect.x1, iconRect.y1);
+				glVertex2i(iconRect.x0, iconRect.y1);
+				glEnd();
+			}
+
+			/// Local class that aquires whether any of given group of Entities are selected by the Player.
+			class PlayerSelection : public ItemSelector::ForEachProc{
+			public:
+				Player &pl;
+				bool ret;
+				PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
+				virtual void proc(Entity *pe){
+					for(Entity *pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe){
+						ret = true;
+						return;
+					}
+				}
+			};
+
+			if(icons){
+				if(pe){
 					glPushMatrix();
-					glTranslated(r.x0 + x + 16, r.y0 + y + 16, 0);
-					glScalef(12, 12, 1);
+					glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
+					glScalef(iconRect.width() * 6 / 16.f, iconRect.height() * 6 / 16.f, 1);
 					Vec3f cols(float(pe->race % 2), 1, float((pe->race + 1) % 2));
 					if(listmode != Select){
-						Entity *pe2;
-						for(pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe)
-							break;
-						if(!pe2)
+						PlayerSelection ps(this);
+						is.foreach(ps);
+						if(!ps.ret)
 							cols *= .5;
 					}
 					glColor4f(cols[0], cols[1], cols[2], 1);
 					pe->drawOverlay(NULL);
 					glPopMatrix();
 				}
+				GLWrect borderRect = iconRect.expand(-2);
 				glBegin(GL_LINE_LOOP);
-				glVertex2i(r.x0 + x + 2, r.y0 + y + 2);
-				glVertex2i(r.x0 + x + 2, r.y0 + y + 30);
-				glVertex2i(r.x0 + x + 30, r.y0 + y + 30);
-				glVertex2i(r.x0 + x + 30, r.y0 + y + 2);
+				glVertex2i(borderRect.x0, borderRect.y0);
+				glVertex2i(borderRect.x1, borderRect.y0);
+				glVertex2i(borderRect.x1, borderRect.y1);
+				glVertex2i(borderRect.x0, borderRect.y1);
 				glEnd();
 				if(is.stack()){
 					glColor4f(1,1,1,1);
-					glwpos2d(r.x0 + x + 8, r.y0 + y + 32);
+					glwpos2d(iconRect.x1 - 24, iconRect.y1);
 					glwprintf("%3d", pents[i]->size());
 				}
 				else if(pe){
 					double x2 = 2. * pe->health / pe->maxhealth() - 1.;
 					const double h = .1;
 					glPushMatrix();
-					glTranslated(r.x0 + x + 16, r.y0 + y + 16, 0);
-					glScalef(14, 14, 1);
+					glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
+					glScalef(borderRect.width() / 2.f, borderRect.height() / 2.f, 1);
 					glBegin(GL_QUADS);
 					glColor4ub(0,255,0,255);
 					glVertex3d(-1., -1., 0.);
@@ -294,51 +376,59 @@ void GLWentlist::draw(GLwindowState &ws, double){
 					glEnd();
 					glPopMatrix();
 				}
-				x += 32;
-				if(r.width() - 10 < x + 32){
-					y += 32;
-					x = 0;
-				}
 			}
-		}
-	}
-	else{
-		glColor4f(1,1,1,1);
-		int fontheight = int(getFontHeight());
-/*		if(groupByClass)*/{
-			for(is.begin(), i = 0; i < itemCount; i++, is.next()) if(scrollpos <= i){
-				Entity *pe = is.get();
-				int y = i - scrollpos;
-				int top = (switches + y) * fontheight + r.y0;
-				if(r.x0 <= ws.mx && ws.mx < r.x1 - 10 && top < ws.my && ws.my < top + fontheight){
-					glColor4f(0,0,1.,.5);
-					glBegin(GL_QUADS);
-					glVertex2i(r.x0, top);
-					glVertex2i(r.x0, top + fontheight);
-					glVertex2i(r.x1 - 10, top + fontheight);
-					glVertex2i(r.x1 - 10, top);
-					glEnd();
+			else{
+//			Entity *pe = is.get();
+				if(listmode == Select)
 					glColor4f(1,1,1,1);
+				else{
+					PlayerSelection ps(this);
+					is.foreach(ps);
+					if(ps.ret)
+						glColor4f(1,1,1,1);
+					else
+						glColor4f(.75,.75,.75,1);
 				}
-				glwpos2d(r.x0, r.y0 + (switches + 1 + y) * getFontHeight());
+				glwpos2d(iconRect.x0, iconRect.y1);
 				if(is.stack())
 					glwprintf("%*.*s x %-3d", wid, wid, pe->dispname(), is.countInGroup());
 				else
 					glwprintf("%*.*s", wid, wid, pe->dispname());
 			}
+/*			x += 32;
+			if(r.width() - 10 < x + 32){
+				y += 32;
+				x = 0;
+			}*/
 		}
-/*		else{
-			int y = 0;
-			for(i = 0; i < n; i++){
-				for(unsigned j = 0; j < pents[i]->size(); j++){
-					glwpos2d(r.x0, r.y0 + (switches + 1 + y) * getFontHeight());
-					glwprintf("%*.*s", wid, wid, (*pents[i])[j]->dispname());
-					y++;
-				}
-			}
-		}*/
+		glPopMatrix();
 	}
-	glwVScrollBarDraw(this, r.x1 - 10, r.y0, 10, r.height(), itemCount, scrollpos);
+/*	else{
+		glColor4f(1,1,1,1);
+		for(is.begin(), i = 0; i < itemCount; i++, is.next()){
+			Entity *pe = is.get();
+			int y = - scrollpos;
+			int top = (switches + i) * fontheight + y + r.y0;
+			if(r.x0 <= ws.mx && ws.mx < r.x1 - 10 && top < ws.my && ws.my < top + fontheight){
+				glColor4f(0,0,1.,.5);
+				glBegin(GL_QUADS);
+				glVertex2i(r.x0, top);
+				glVertex2i(r.x0, top + fontheight);
+				glVertex2i(r.x1 - 10, top + fontheight);
+				glVertex2i(r.x1 - 10, top);
+				glEnd();
+				glColor4f(1,1,1,1);
+			}
+			glwpos2d(r.x0, r.y0 + (switches + 1 + i) * getFontHeight() + y);
+			if(is.stack())
+				glwprintf("%*.*s x %-3d", wid, wid, pe->dispname(), is.countInGroup());
+			else
+				glwprintf("%*.*s", wid, wid, pe->dispname());
+		}
+	}*/
+	if(r.height() < il.allHeight())
+		glwVScrollBarDraw(this, r.x1 - 10, r.y0, 10, r.height(), il.allHeight() - r.height(), scrollpos);
+	glPopAttrib();
 }
 
 int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
@@ -347,17 +437,23 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 	ExpandItemSelector eis(this);
 	ItemSelector &is = groupByClass ? (ItemSelector&)cis : (ItemSelector&)eis;
 	int itemCount = is.count();
-	if(r.width() - 10 < mx && button == GLUT_LEFT_BUTTON && (state == GLUT_DOWN || state == GLUT_KEEP_DOWN || state == GLUT_UP)){
-		int iy = glwVScrollBarMouse(this, mx, my, r.width() - 10, 0, 10, r.height(), itemCount, scrollpos);
+
+	ListItemLocator lil(this, itemCount);
+	IconItemLocator eil(this, itemCount);
+	ItemLocator &il = icons ? (ItemLocator&)eil : (ItemLocator&)lil;
+
+	if(r.width() - 10 < mx && button == GLUT_LEFT_BUTTON && (state == GLUT_DOWN || state == GLUT_KEEP_DOWN || state == GLUT_UP) && r.height() < il.allHeight()){
+		int iy = glwVScrollBarMouse(this, mx, my, r.width() - 10, 0, 10, r.height(), il.allHeight() - r.height(), scrollpos);
 		if(0 <= iy)
 			scrollpos = iy;
 		return 1;
 	}
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && switches){
-		r.y0 = 0;
-		r.y1 = long(getFontHeight());
-		if(r.include(mx + r.x0, my + r.y0)){
-			int index = mx * 5 / r.width();
+		GLWrect r2 = r;
+		r2.y0 = 0;
+		r2.y1 = long(getFontHeight());
+		if(r2.include(mx + r.x0, my + r.y0)){
+			int index = mx * 5 / r2.width();
 			if(index < 3)
 				listmode = MIN(Universe, MAX(Select, ListMode(index)));
 			else if(index == 3)
@@ -395,73 +491,65 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
 	}
 	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
-		int x = 0, y = (switches - scrollpos) * int(getFontHeight());
+//		int x = 0, y = (switches - scrollpos) * int(getFontHeight());
+		int i;
 		bool set = false;
-		if(mx < r.width() - 10) for(int i = (is.begin(), 0); i < itemCount; i++, is.next()){
-/*			std::vector<Entity*> &ent = *pents[i];
-			std::vector<Entity*>::iterator it = ent.begin();
-			for(unsigned j = 0; j < (groupByClass ? 1 : ent.size()); j++, it++)*/{
-				if(icons ? x < mx && mx < x + 32 && y < my && my < y + 32 : y < my && my < y + getFontHeight()){
-					Entity *pe = is.get();
-/*					if(it != ent.end() && (pe = *it))*/{
-						if(state == GLUT_UP){
-							class SelectorProc : public ItemSelector::ForEachProc{
-							public:
-								Entity **prev;
-								SelectorProc(Entity **prev) : prev(prev){}
-								virtual void proc(Entity *pe){
-									*prev = pe;
-									prev = &pe->selectnext;
-									pe->selectnext = NULL;
-								}
-							};
-							is.foreach(SelectorProc(&pl.selected));
-/*							if(groupByClass){
-								Entity **prev = &pl.selected;
-								for(it = ent.begin(); it != ent.end(); it++){
-								}
-							}
-							else{
-								pl.selected = pe;
+		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10) for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
+			GLWrect itemRect = il.getRect().rmove(0, -scrollpos + switches * int(getFontHeight()));
+//			if(icons ? x < mx && mx < x + 32 && y < my && my < y + 32 : y < my && my < y + getFontHeight())
+			if(itemRect.include(mx + r.x0, my + r.y0)){
+				Entity *pe = is.get();
+				if(pe){
+					if(state == GLUT_UP){
+						class SelectorProc : public ItemSelector::ForEachProc{
+						public:
+							Entity **prev;
+							SelectorProc(Entity **prev) : prev(prev){}
+							virtual void proc(Entity *pe){
+								*prev = pe;
+								prev = &pe->selectnext;
 								pe->selectnext = NULL;
-							}*/
-						}
-						else{
-							int xs, ys;
-							const long margin = 4;
-							cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race << "\nhealth = " << pe->health;
-							glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
-							GLWrect localrect = GLWrect(r.x0 + x, r.y0 + y - ys - 3 * margin, r.x0 + x + xs + 3 * margin, r.y0 + y);
-
-							// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
-							if(ws.w < localrect.x1)
-								localrect.rmove(ws.w - localrect.x1, 0);
-							if(ws.h < localrect.y1)
-								localrect.rmove(0, ws.h - localrect.y1);
-
-							glwtip->setExtent(localrect);
-							glwtip->tips = str;
-							glwtip->parent = this;
-							glwtip->setVisible(true);
-							glwActivate(glwFindPP(glwtip));
-							set = true;
-						}
+							}
+						};
+						is.foreach(SelectorProc(&pl.selected));
 					}
-					i = n;
-					break;
-				}
-				if(icons){
-					x += 32;
-					if(r.width() - 10 < x + 32){
-						y += 32;
-						x = 0;
+					else{
+						int xs, ys;
+						const long margin = 4;
+						cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race << "\nhealth = " << pe->health;
+						glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
+						GLWrect localrect = GLWrect(itemRect.x0, itemRect.y0 - ys - 3 * margin, itemRect.x0 + xs + 3 * margin, itemRect.y0);
+
+						// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
+						if(ws.w < localrect.x1)
+							localrect.rmove(ws.w - localrect.x1, 0);
+						if(ws.h < localrect.y1)
+							localrect.rmove(0, ws.h - localrect.y1);
+
+						glwtip->setExtent(localrect);
+						glwtip->tips = str;
+						glwtip->parent = this;
+						glwtip->setVisible(true);
+						glwActivate(glwFindPP(glwtip));
+						set = true;
 					}
 				}
-				else{
-					y += int(getFontHeight());
+				i = n;
+				break;
+			}
+/*			if(icons){
+				x += 32;
+				if(r.width() - 10 < x + 32){
+					y += 32;
+					x = 0;
 				}
 			}
+			else{
+				y += int(getFontHeight());
+			}*/
 		}
+		else
+			mouseLeave(ws);
 		if(!set){
 			if(glwtip->parent == this){
 				glwtip->tips = NULL;

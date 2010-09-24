@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -57,7 +57,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4819"
+				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -74,6 +74,7 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\sqplus\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				GenerateManifest="false"
+				ModuleDefinitionFile="gltestplus.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -155,6 +156,7 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;"
 				GenerateManifest="false"
+				ModuleDefinitionFile="gltestplus.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -209,7 +211,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -218,7 +220,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4819"
+				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -234,6 +236,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib sqplus.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\clib\$(ConfigurationName);..\..\cpplib\$(ConfigurationName);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\;&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\sqplus\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
+				ModuleDefinitionFile="gltestplus.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -317,6 +320,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win64_lib_$(ConfigurationName)&quot;"
+				ModuleDefinitionFile="gltestplus.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -424,6 +428,10 @@
 			</File>
 			<File
 				RelativePath="..\gltestplus.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\gltestplus.def"
 				>
 			</File>
 			<File
@@ -693,6 +701,10 @@
 			</File>
 			<File
 				RelativePath="..\EntityCommand.h"
+				>
+			</File>
+			<File
+				RelativePath="..\export.h"
 				>
 			</File>
 			<File

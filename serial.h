@@ -1,14 +1,10 @@
 #ifndef SERIAL_H
 #define SERIAL_H
+#include "export.h"
 #include <map>
 #include <vector>
 #include <iostream>
 
-#ifdef DLL
-#define EXPORT __declspec(dllimport)
-#else
-#define EXPORT __declspec(dllexport)
-#endif
 
 
 
@@ -55,7 +51,7 @@ public:
 
 	/// Binds a class ID with its constructor.
 	/// Derived classes must register themselves to unserialize.
-	friend unsigned EXPORT registerClass(std::string name, Serializable *(*constructor)());
+	static unsigned registerClass(std::string name, Serializable *(*constructor)());
 
 	/// \brief Returns global constructor map.
 	/// Registered classes via registerClass reside in this map.

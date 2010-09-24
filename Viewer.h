@@ -54,7 +54,7 @@ public:
 	double dt; // Delta time of this drawing frame
 	const CoordSys *cs;
 	GLcull *gc; /* current culling information */
-	GLcull **gclist; /* list of glculls in order of z-slices */
+	GLcull *gclist[3]; /* list of glculls in order of z-slices */
 	int ngclist; /* number of z-slices which can change in occasions */
 	int zslice; /* index of gc into gclist */
 	int relative; /* whether effect of relativity cannot be ignored */

@@ -28,7 +28,7 @@ class Player;
 struct StellarContext;
 
 // CoordSys of orbital motion
-class OrbitCS : public CoordSys{
+class EXPORT OrbitCS : public CoordSys{
 public:
 	double orbit_rad;
 	Astrobj *orbit_home;
@@ -57,7 +57,7 @@ private:
 };
 
 // Astronomical object. Usually orbits some other object.
-class Astrobj : public OrbitCS{
+class EXPORT Astrobj : public OrbitCS{
 public:
 	typedef OrbitCS st;
 

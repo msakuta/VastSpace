@@ -299,7 +299,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 		else if(cs2 = findcs(root, s));
 		else*/ if(!strcmp(s, "astro")){
 			CoordSys *a = NULL;
-			CC constructor = Cons<Astrobj>;
+			CC constructor = NULL/*Cons<Astrobj>*/;
 			if(ps && !strcmp(ps, "Star")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<Star>;
@@ -319,6 +319,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				CC ctor = Cons<TexSphere>;
 				constructor = ctor;
 			}
+			Serializable *(*ctor)() = Serializable::ctormap()[ps];
 /*			else if(ps && !strcmp(ps, "Island3")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = island3_new;
@@ -344,7 +345,15 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				else
 					a = NULL;
 			}
-			if(!a && (a = constructor(ps, cs))){
+			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? (CoordSys*)ctor() : Cons<Astrobj>(ps, cs)))){
+				if(!constructor && ctor){
+					a->init(argv[c+2], cs);
+					CoordSys *eis = a->findeisystem();
+					if(eis)
+						eis->addToDrawList(a);
+//					a->parent = cs;
+//					a->legitimize_child();
+				}
 				stellar_coordsys(sc, a);
 			}
 		}

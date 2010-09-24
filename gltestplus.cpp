@@ -469,14 +469,26 @@ static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wa
 	}
 }
 
+static void cswardraw(const Viewer *vw, CoordSys *cs){
+	cs->draw(vw);
+	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next){
+		cswardraw(vw, cs2);
+	}
+}
+
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
-	GLcull glc = GLcull(vw.fov, vw.pos, vw.irot, g_space_near_clip, g_space_far_clip);
-	vw.gc = &glc;
+	GLcull glc[2] = {
+		GLcull(vw.fov, vw.pos, vw.irot, g_space_near_clip, g_space_far_clip),
+		GLcull(vw.fov, vw.pos, vw.irot, g_warspace_near_clip, g_warspace_far_clip)
+	};
+	vw.gclist[0] = &glc[0];
+	vw.gclist[1] = &glc[1];
+	vw.gc = &glc[0];
 	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
 	{
 	GLma a(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
@@ -489,6 +501,7 @@ void draw_func(Viewer &vw, double dt){
 		glPushMatrix(), glLoadIdentity(),
 		vw.frustum(g_space_near_clip, g_space_far_clip)
 	));
+	vw.zslice = 1;
 	universe.startdraw();
 	universe.predraw(&vw);
 	universe.drawcs(&vw);
@@ -511,6 +524,8 @@ void draw_func(Viewer &vw, double dt){
 		glGetDoublev(GL_MODELVIEW_MATRIX, model);
 		glGetDoublev(GL_PROJECTION_MATRIX, proj);
 		vw.trans = proj * model;
+		vw.zslice = 0;
+		vw.gc = &glc[0];
 
 		timemeas_t tm;
 		TimeMeasStart(&tm);
@@ -531,6 +546,7 @@ void draw_func(Viewer &vw, double dt){
 		ie = glGetError();*/
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
+		cswardraw(&vw, const_cast<CoordSys*>(pl.cs));
 		war_draw(vw, pl.cs, &WarField::draw);
 
 #if 0 // buffer copy

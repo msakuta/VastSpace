@@ -1,7 +1,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 #include "serial.h"
-#include <cstring>
+//#include <cstring>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/mat4.h>

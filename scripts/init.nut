@@ -287,7 +287,7 @@ register_console_command("coordsys", function(...){
 		print("formal name: " + player.cs.name());
 		return 0;
 	}
-	local cs = universe.findcspath(vargv[0]);
+	local cs = player.cs.findcspath(vargv[0]);
 	if(cs != null && player.cs != cs){
 /*		player.setrot(player.getrot() * cs.getrot());
 		player.setpos(player.getpos() + cs.getpos());

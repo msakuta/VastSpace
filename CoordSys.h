@@ -43,7 +43,7 @@ struct war_draw_data;
  * Child nodes define translation and rotation relative to its parent node,
  * to express layered structure of systems.
  */
-class CoordSys : public Serializable{
+class EXPORT CoordSys : public Serializable{
 public:
 	typedef Serializable st; ///< Super Type
 

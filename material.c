@@ -11,14 +11,18 @@
 #include "material.h"
 #include "bitmap.h"
 //extern "C"{
+#include <clib/c.h>
 #include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/dstr.h>
+#include <clib/gl/multitex.h>
 #include <jpeglib.h>
 #include <jerror.h>
 #include <png.h>
 //}
 #include <setjmp.h>
+#include <gl/glu.h>
+
 
 
 /// Material object.

@@ -11,7 +11,6 @@
 #include <cpplib/dstring.h>
 #include <vector>
 
-extern template class cpplib::Vec3<double>;
 
 
 class btRigidBody;

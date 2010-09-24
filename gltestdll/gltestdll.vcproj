@@ -41,10 +41,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;DLL"
+				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -60,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib"
+				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib "
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\$(ConfigurationName)"
 				GenerateDebugInformation="true"
@@ -116,9 +117,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS"
-				RuntimeLibrary="2"
+				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
+				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -134,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib"
+				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib "
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\$(ConfigurationName)"
 				GenerateDebugInformation="true"
@@ -175,6 +178,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\island3.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test.cpp"
 				>
 			</File>
@@ -184,6 +191,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\island3.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="リソース ファイル"

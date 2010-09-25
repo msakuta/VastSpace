@@ -1,5 +1,6 @@
 #ifndef GLSL_H
 #define GLSL_H
+#include "export.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -10,26 +11,26 @@
 extern "C"{
 #endif
 
-extern PFNGLCREATESHADERPROC pglCreateShader;
-extern PFNGLSHADERSOURCEPROC glShaderSource;
-extern PFNGLCOMPILESHADERPROC glCompileShader;
-extern PFNGLGETSHADERIVPROC glGetShaderiv;
-extern PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-extern PFNGLCREATEPROGRAMPROC glCreateProgram;
-extern PFNGLATTACHSHADERPROC glAttachShader;
-extern PFNGLDELETESHADERPROC glDeleteShader;
-extern PFNGLLINKPROGRAMPROC glLinkProgram;
-extern PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
-extern PFNGLGETPROGRAMIVPROC glGetProgramiv;
-extern PFNGLUSEPROGRAMPROC pglUseProgram;
-extern PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
-extern PFNGLUNIFORM1IPROC pglUniform1i;
-extern PFNGLUNIFORM1FPROC pglUniform1f;
-extern PFNGLUNIFORM3FVPROC pglUniform3fv;
-extern PFNGLUNIFORM4FVPROC pglUniform4fv;
-extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
-extern PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
-extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
+EXPORT extern PFNGLCREATESHADERPROC pglCreateShader;
+EXPORT extern PFNGLSHADERSOURCEPROC glShaderSource;
+EXPORT extern PFNGLCOMPILESHADERPROC glCompileShader;
+EXPORT extern PFNGLGETSHADERIVPROC glGetShaderiv;
+EXPORT extern PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+EXPORT extern PFNGLCREATEPROGRAMPROC glCreateProgram;
+EXPORT extern PFNGLATTACHSHADERPROC glAttachShader;
+EXPORT extern PFNGLDELETESHADERPROC glDeleteShader;
+EXPORT extern PFNGLLINKPROGRAMPROC glLinkProgram;
+EXPORT extern PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+EXPORT extern PFNGLGETPROGRAMIVPROC glGetProgramiv;
+EXPORT extern PFNGLUSEPROGRAMPROC pglUseProgram;
+EXPORT extern PFNGLGETUNIFORMLOCATIONPROC pglGetUniformLocation;
+EXPORT extern PFNGLUNIFORM1IPROC pglUniform1i;
+EXPORT extern PFNGLUNIFORM1FPROC pglUniform1f;
+EXPORT extern PFNGLUNIFORM3FVPROC pglUniform3fv;
+EXPORT extern PFNGLUNIFORM4FVPROC pglUniform4fv;
+EXPORT extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
+EXPORT extern PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
+EXPORT extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
 /* Hopefully link error will occur if forgot to include this header. */
 #define glCreateShader(shader) (pglCreateShader ? pglCreateShader(shader) : 0)
@@ -43,13 +44,13 @@ extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 #define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : -1)
 #define glVertexAttrib3dv(a,b) (pglVertexAttrib3dv ? pglVertexAttrib3dv(a,b) : 0)
 
-int glsl_register_shader(GLuint shader, const char *src);
-int glsl_load_shader(GLuint shader, const char *fname);
-GLuint glsl_register_program(GLuint vtx, GLuint frg);
-void glsl_register();
+EXPORT int glsl_register_shader(GLuint shader, const char *src);
+EXPORT int glsl_load_shader(GLuint shader, const char *fname);
+EXPORT GLuint glsl_register_program(GLuint vtx, GLuint frg);
+EXPORT void glsl_register();
 
-int vrc_shader_enable(int *);
-extern int g_shader_enable;
+EXPORT int vrc_shader_enable(int *);
+EXPORT extern int g_shader_enable;
 
 #ifdef __cplusplus
 }

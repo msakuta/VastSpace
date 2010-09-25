@@ -44,8 +44,8 @@ extern double g_star_num;
 extern int g_star_cells;
 extern double g_star_visible_thresh;
 extern double g_star_glow_thresh;
-extern int g_invert_hyperspace;
+extern int g_invert_hyperspace;*/
 
-void drawstarback(Viewer *vw, const CoordSys *cs, const Astrobj *landing_planet, const Astrobj *lighting_sun);
-*/
+EXPORT void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun);
+
 #endif

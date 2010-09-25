@@ -13,9 +13,10 @@
 //#include "walk.h"
 //#include "apache.h"
 //#include "warutil.h"
-//#include "glsl.h"
+#include "../glsl.h"
 #include "../glstack.h"
 #include "../material.h"
+#include "../cmd.h"
 extern "C"{
 #include <clib/gl/multitex.h>
 #include <clib/amat3.h>
@@ -68,21 +69,9 @@ static void spacecolony_anim(struct coordsys *, double dt);
 static int spacecolony_belongs(const struct coordsys *, const avec3_t pos, const struct coordsys *pos_cs);
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
 
-#if 0
-struct coordsys_static g_spacecolony_s = {
-	spacecolony_anim, /* void (*anim)(struct coordsys *, double dt); */
-	NULL, /* postframe */
-	NULL, /* endframe */
-	NULL, /* void (*draw)(struct astrobj *, const struct viewer *); */
-	NULL,
-	NULL,
-	spacecolony_belongs,
-	spacecolony_rotation,
-};
-#endif
 
 /*extern coordsys *g_spacecolony;*/
-extern double sun_phase;
+//extern double sun_phase;
 extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 
 /*
@@ -115,26 +104,6 @@ static struct war_field_static i3war_static = {
 	&i3war_static,
 };*/
 
-/*
-static void lagrange1_anim(struct war_field *, double dt);
-static void lagrange1_draw(struct war_field *, struct war_draw_data *);
-static int lagrange1_pointhit(warf_t *w, const avec3_t *pos, const avec3_t *velo, double dt, const struct contact_info *);
-static void lagrange1_accel(warf_t *w, avec3_t *dst, const avec3_t *srcpos, const avec3_t *srcvelo);
-static double lagrange1_atmospheric_pressure(warf_t *w, const avec3_t *pos);
-static double lagrange1_sonic_speed(warf_t *w, const avec3_t *pos);
-static int lagrange1_spherehit(warf_t *w, const avec3_t *pos, double rad, struct contact_info *ci);
-static int lagrange1_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos);
-*/
-/*static struct war_field_static lagrange1_static = {
-	lagrange1_anim,
-	lagrange1_draw,
-	lagrange1_pointhit,
-	lagrange1_accel,
-	lagrange1_atmospheric_pressure,
-	lagrange1_sonic_speed,
-	lagrange1_spherehit,
-	lagrange1_orientation,
-};*/
 
 class Island3 : public Astrobj{
 public:
@@ -147,9 +116,13 @@ public:
 	virtual bool belongs(const Vec3d &pos)const;
 	virtual void anim(double dt);
 	virtual void draw(const Viewer *);
+	virtual void predraw(const Viewer *);
+
+	static int &g_shader_enable;
 };
 
 const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
+int &Island3::g_shader_enable = ::g_shader_enable;
 
 Island3::Island3(){
 	absmag = 30.;
@@ -189,8 +162,8 @@ struct randomness{
 };
 
 #define DETAILSIZE 64
-static GLuint createdetail(unsigned long seed, GLuint level, GLuint base, const struct randomness (*ran)[3]){
-	GLuint n;
+static GLuint createdetail(unsigned long seed, int level, GLuint base, const struct randomness (*ran)[3]){
+	int n;
 	GLuint list;
 	struct random_sequence rs;
 	init_rseq(&rs, seed);
@@ -287,6 +260,266 @@ GLuint generate_road_texture(){
 	return list;
 }
 
+static GLuint cubetex = 0;
+int g_reflesh_cubetex = 0;
+
+#define CUBESIZE 512
+#define SQRT2P2 (1.4142135623730950488016887242097/2.)
+
+GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrobj *sun){
+	static const GLenum target[] = {
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+	};
+	static const Quatd dirs[] = {
+		Quatd(SQRT2P2,0,SQRT2P2,0), /* {0,-SQRT2P2,0,SQRT2P2} */
+		Quatd(SQRT2P2,0,0,SQRT2P2),
+		Quatd(0,0,1,0), /* {0,0,0,1} */
+		Quatd(-SQRT2P2,0,SQRT2P2,0), /*{0,SQRT2P2,0,SQRT2P2},*/
+		Quatd(-SQRT2P2,0,0,SQRT2P2), /* ??? {0,-SQRT2P2,SQRT2P2,0},*/
+		Quatd(-1,0,0,0), /* {0,1,0,0}, */
+	};
+	aquat_t omg0 = {0, 0, 1, 0};
+	int i, g;
+	Viewer v;
+	struct viewport resvp = vw->vp;
+	if(!g_reflesh_cubetex && cubetex)
+		return cubetex;
+	g_reflesh_cubetex = 0;
+
+/*	QUATMUL(tmp, omg0, dirs[5]);
+	QUATCPY(dirs[5], tmp);*/
+
+/*	v.cs = g_lagrange1;*/
+	v = *vw;
+	v.detail = 0;
+	v.fov = 1.;
+	v.cs = vw->cs->findcspath("/");
+	v.pos = v.cs->tocs(vw->pos, vw->cs);
+	v.velo.clear();
+	v.qrot = quat_u;
+	v.relative = 0;
+	v.relirot = mat4_u;
+	v.relrot = mat4_u;
+	v.velolen = 0.;
+	v.vp.h = v.vp.m = v.vp.w = CUBESIZE;
+	v.dynamic_range = 1e-4;
+	glViewport(0,0,v.vp.w, v.vp.h);
+
+	if(!cubetex){
+		glGenTextures(1, &cubetex);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+
+	glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
+	GLcull g_glcull(v.fov, vec3_000, v.relirot, 1e-15, 1e+15);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	GLpmatrix pmat;
+	glMatrixMode(GL_PROJECTION);
+//	glPushMatrix();
+	glLoadIdentity();
+	glFrustum(-g_glcull.getNear(), g_glcull.getNear(), -g_glcull.getNear(), g_glcull.getNear(), g_glcull.getNear(), g_glcull.getFar());
+	glMatrixMode (GL_MODELVIEW);
+	for (i = 0; i < 6; ++i) {
+		GLubyte buf[CUBESIZE][CUBESIZE][3];
+		int mi = CUBESIZE;
+		glPushMatrix();
+		v.irot = (v.qrot = dirs[i]).cnj().tomat4();
+		v.rot = dirs[i].tomat4();
+		v.relrot = v.rot;
+		v.relirot = v.irot;
+		Mat4d proj;
+		glGetDoublev(GL_PROJECTION_MATRIX, proj);
+		v.trans = v.rot * proj;
+/*		if(i == 1 || i == 4){
+			glScaled(.8, .6, 1.);
+			glMultMatrixd(v.rot);
+		}
+		else*/
+			glLoadMatrixd(v.rot);
+#if 1 && defined _DEBUG
+		glClearColor(0,.5f,0,0);
+#else
+		glClearColor(0,0,0,0);
+#endif
+		glClear(GL_COLOR_BUFFER_BIT);
+		drawstarback(&v, v.cs, NULL, sun);
+/*
+		a[0] = i + '0';
+		a[1] = '\0';
+		glLoadIdentity();
+		glRasterPos3d(0,0,-1);
+		gldPutString(a);
+		glRasterPos3d(0,.5,-1);
+		gldPutString("UP");*/
+
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+		glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		g = glGetError();
+		glCopyTexSubImage2D(target[i], 0, 0, 0, 0, 0, CUBESIZE, CUBESIZE);
+		if(!g)
+			g = glGetError();
+		if(g){
+			CmdPrintf((const char*)gluErrorString(g));
+			glReadPixels(0, 0, CUBESIZE, CUBESIZE, GL_RGB, GL_UNSIGNED_BYTE, buf);
+			glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0,
+				GL_RGB, GL_UNSIGNED_BYTE, buf);
+		}
+		glPopMatrix();
+	}
+//	glMatrixMode(GL_PROJECTION);
+//	glPopMatrix();
+//	glMatrixMode (GL_MODELVIEW);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glPopAttrib();
+	glViewport(0,0,vw->vp.w, vw->vp.h);
+//	gvp = resvp;
+	return cubetex;
+}
+
+void Island3::predraw(const Viewer *vw){
+	static bool cubeMapped = false;
+	if(!cubeMapped){
+		cubeMapped = true;
+		Island3MakeCubeMap(vw, this, findBrightest());
+	}
+	st::predraw(vw);
+}
+
+
+static GLint invEyeMat3Loc, cubeEnvLoc, fracLoc, lightLoc;
+
+GLuint Reflist(){
+	static GLuint reflist = 0;
+	if(reflist)
+		return reflist + !!Island3::g_shader_enable * 2;
+#if 1
+		{
+			static const GLenum target[] = {
+			GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+			GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+			GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+			};
+			static double genfunc[][4] = {
+			{ 1.0, 0.0, 0.0, 0.0 },
+			{ 0.0, 1.0, 0.0, 0.0 },
+			{ 0.0, 0.0, 1.0, 0.0 },
+			{ 0.0, 0.0, 0.0, 1.0 },
+			};
+			static GLuint texnames[6];
+//			BITMAPDATA bmd;
+//			BITMAPINFO *bmi;
+//			BITMAPINFOHEADER bih;
+			if(1/*bmi = ReadBitmap("stars.bmp")*//*LoadJPEGData("earth.jpg", &bmd)*/){
+//				int i;
+/*				bmi = malloc(sizeof(BITMAPINFOHEADER) + bmd.dwDataSize);
+				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+				bmi->bmiHeader.biWidth = bmd.nWidth; 
+				bmi->bmiHeader.biHeight = -bmd.nHeight;
+				bmi->bmiHeader.biPlanes = 1;
+				bmi->bmiHeader.biBitCount = 32;
+				bmi->bmiHeader.biCompression = BI_RGB;
+				bmi->bmiHeader.biSizeImage = bmd.dwDataSize;
+				bmi->bmiHeader.biXPelsPerMeter = 0;
+				bmi->bmiHeader.biYPelsPerMeter = 0;
+				bmi->bmiHeader.biClrUsed = 0;
+				bmi->bmiHeader.biClrImportant = 0;
+				memcpy(bmi->bmiColors, bmd.pBmp, bmd.dwDataSize);
+				FreeBitmapData(&bmd);*/
+
+/*				glGenTextures(1, texnames);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, texnames[0]);
+				for (i = 0; i < 6; ++i) {
+					int mi = MIN(bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight));
+					glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0,
+						GL_RGB, GL_UNSIGNED_BYTE, &bmi->bmiColors[bmi->bmiHeader.biClrUsed]);
+				}
+				LocalFree(bmi);*/
+/*				free(bmi);*/
+
+				reflist = glGenLists(4);
+				glNewList(reflist + 2, GL_COMPILE);
+				do{
+					GLuint vtx, frg;
+					GLuint shader;
+//					GLint cubeTexLoc, nrmmapLoc;
+//					amat3_t mat3;
+					vtx = glCreateShader(GL_VERTEX_SHADER);
+					frg = glCreateShader(GL_FRAGMENT_SHADER);
+					if(!glsl_load_shader(vtx, "shaders/mirror.vs") || !glsl_load_shader(frg, "shaders/mirror.fs"))
+						break;
+					shader = glsl_register_program(vtx, frg);
+
+					cubeEnvLoc = glGetUniformLocation(shader, "envmap");
+					invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+
+					glUseProgram(shader);
+//					glUniform1i(cubeTexLoc, cubetex);
+//					glUniform1i(nrmmapLoc, 0);
+					glUniform1i(cubeEnvLoc, 0);
+				}while(0);
+				glDisable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+				glEnable(GL_TEXTURE_CUBE_MAP);
+				glDisable(GL_BLEND);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);
+				glDisable(GL_TEXTURE_GEN_R);
+				glEndList();
+
+				glNewList(reflist + 3, GL_COMPILE);
+				glUseProgram(0);
+				glEndList();
+
+				glNewList(reflist, GL_COMPILE);
+				glDisable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+				glEnable(GL_TEXTURE_CUBE_MAP);
+#if 0
+				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+				glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+				glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+				/* テクスチャ座標生成関数の設定 */
+				glTexGendv(GL_S, GL_OBJECT_PLANE, genfunc[0]);
+				glTexGendv(GL_T, GL_OBJECT_PLANE, genfunc[1]);
+				glTexGendv(GL_R, GL_OBJECT_PLANE, genfunc[2]);
+				glTexGendv(GL_Q, GL_OBJECT_PLANE, genfunc[3]);
+#else
+				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+				glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+#endif
+				glEnable(GL_TEXTURE_GEN_S);
+				glEnable(GL_TEXTURE_GEN_T);
+				glEnable(GL_TEXTURE_GEN_R);
+				glDisable(GL_BLEND);
+				glEndList();
+
+				glNewList(reflist + 1, GL_COMPILE);
+				glUseProgram(0);
+				glEndList();
+			}
+		}
+#endif
+	return reflist + !!Island3::g_shader_enable * 2;
+}
+
+
 static const avec3_t pos0[] = {
 	{0., 17., 0.},
 	{3.25, 16., 0.},
@@ -303,7 +536,7 @@ static const avec3_t pos0[] = {
 
 
 void Island3::draw(const Viewer *vw){
-	bool farmap = vw->zslice;
+	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 	if(farmap)
 		return;
@@ -313,28 +546,27 @@ void Island3::draw(const Viewer *vw){
 	static GLuint walltex, walllist = 0, roadlist = 0, roadtex = 0, groundtex = 0, groundlist;
 	static bool init = false;
 	if(!init){
-		suftexparam_t stp;
 		init = 1;
 	//	CacheTexture("bricks.bmp");
 //		CacheMaterial("bricks.bmp");
-		{
-			walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
-			if(const suftexcache *stc = FindTexCache("bricks.bmp"))
-				walltex = stc->tex[0];
+		walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
+		if(const suftexcache *stc = FindTexCache("bricks.bmp"))
+			walltex = stc->tex[0];
 //			roadlist = generate_road_texture();
 //			roadtex = FindTexCache("road.bmp")->tex[0];
-			suftexparam_t stp;
-			stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL;
-			stp.wraps = GL_MIRRORED_REPEAT;
-			stp.wrapt = GL_MIRRORED_REPEAT;
-			stp.magfil = GL_LINEAR;
-			stp.minfil = GL_LINEAR;
-			groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
-			if(const suftexcache *stc = FindTexCache("grass.jpg"))
-				groundtex = stc->tex[0];
-		}
+		suftexparam_t stp;
+		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL;
+		stp.wraps = GL_MIRRORED_REPEAT;
+		stp.wrapt = GL_MIRRORED_REPEAT;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
+		if(const suftexcache *stc = FindTexCache("grass.jpg"))
+			groundtex = stc->tex[0];
 	}
 
+	/* Shader is togglable on running */
+	GLuint reflist = Reflist();
 
 	static avec3_t norm0[] = {
 		{0., 1., 0.},
@@ -395,7 +627,7 @@ void Island3::draw(const Viewer *vw){
 			Vec4<float> lightpos;
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
 			glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-			Vec3d sunpos = parent->tocs(sun->pos, sun->parent);
+			Vec3d sunpos = vw->cs->tocs(sun->pos, sun->parent);
 			lightpos = sunpos.norm().cast<float>();
 			lightpos[3] = 0.f;
 			glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
@@ -445,16 +677,15 @@ void Island3::draw(const Viewer *vw){
 	for(n = 0; n < 2; n++){
 		Mat4d rot;
 		const double hullrad = n ? ISLAND3_RAD : ISLAND3_INRAD;
-		int m;
 		if(n){
-			GLfloat dif[4] = {.75, .75, .75, 1.}, amb[4] = {.2, .2, .2, 1.};
+			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.};
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glFrontFace(GL_CCW);
 			glCallList(walllist);
 		}
 		else{
-			GLfloat dif[4] = {.3, .3, .3, 1.}, amb[4] = {.7, .7, .7, 1.};
+			GLfloat dif[4] = {.3f, .3f, .3f, 1.}, amb[4] = {.7f, .7f, .7f, 1.};
 /*				VECSCALEIN(dif, brightness * .5 + .5);*/
 /*			if(weather != wsnow){
 				dif[0] = dif[2] = .1;
@@ -535,7 +766,7 @@ void Island3::draw(const Viewer *vw){
 					st[1] = (i % 16 + leap * !!(9 & (1<<k))) / 8.;
 					glTexCoord2dv(st);
 					if(glMultiTexCoord2fARB)
-						glMultiTexCoord2fARB(GL_TEXTURE1_ARB, st[0] * 16., st[1] * 16.);
+						glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(st[0] * 16.), GLfloat(st[1] * 16.));
 					glVertex3dv(pos[k]);
 				}
 			}
@@ -588,7 +819,7 @@ void Island3::draw(const Viewer *vw){
 					st[1] = (i % 16 + leap * !!(9 & (1<<k))) / 8.;
 					glTexCoord2dv(st);
 					if(glMultiTexCoord2fARB)
-						glMultiTexCoord2fARB(GL_TEXTURE1_ARB, st[0] * 16., st[1] * 16.);
+						glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(st[0] * 16.), GLfloat(st[1] * 16.));
 					glVertex3dv(pos[k]);
 				}
 			}
@@ -598,6 +829,209 @@ void Island3::draw(const Viewer *vw){
 		if(!n){
 			glPopAttrib();
 //			shadow_draw(csint->w);
+		}
+	}
+
+	/* walls between inner/outer cylinder */
+	for(int i = 0; i < cutnum; i += cutnum / 6){
+		int i1 = i;
+		Mat4d rot = mat4_u;
+		rot[0] = cuts[i1][1];
+		rot[2] = -cuts[i1][0];
+		rot[8] = cuts[i1][0];
+		rot[10] = cuts[i1][1];
+		glNormal3dv(i % (cutnum / 3) == 0 ? rot.vec3(2) : -rot.vec3(2));
+		glBegin(GL_QUAD_STRIP);
+		for(int j = 1; j < numof(pos0)-1; j++){
+			Vec3d pos00 = pos0[j];
+			pos00[0] = i % (cutnum / 3) == 0 ? ISLAND3_RAD : ISLAND3_INRAD;
+			Vec3d pos = rot.vp3(pos00);
+			glTexCoord3dv(pos00);
+			glVertex3dv(pos);
+			pos00[0] = i % (cutnum / 3) == 0 ? ISLAND3_INRAD : ISLAND3_RAD;
+			pos = rot.vp3(pos00);
+			glTexCoord3dv(pos00);
+			glVertex3dv(pos);
+		}
+		glEnd();
+	}
+	leap = defleap;
+
+
+	/* solar mirror wings */
+	for(n = 0; n < 2; n++){
+		int m;
+		if(n)
+			glFrontFace(GL_CCW);
+		else
+			glFrontFace(GL_CW);
+		if(n == 0){
+			GLfloat dif[4] = {.010f, .01f, .02f, 1.}, amb[4] = {.005f, .005f, .01f, 1.}, black[4] = {0,0,0,1}, spc[4] = {.5, .5, .5, .55f};
+			amb[1] = GLfloat((1. - brightness) * .005);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+			glMaterialfv(GL_FRONT, GL_EMISSION, black);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
+/*				glDisable(GL_TEXTURE_2D);
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);*/
+/*				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+			glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+			glEnable(GL_TEXTURE_CUBE_MAP);
+			glEnable(GL_TEXTURE_GEN_S);
+			glEnable(GL_TEXTURE_GEN_T);
+			glEnable(GL_TEXTURE_GEN_R);
+			glCallList(reflist);*/
+		}
+		else{
+			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
+/*				glEnable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_CUBE_MAP);
+			glDisable(GL_TEXTURE_GEN_S);
+			glDisable(GL_TEXTURE_GEN_T);
+			glDisable(GL_TEXTURE_GEN_R);*/
+		}
+		for(m = 0; m < 3; m++){
+			avec3_t joint;
+//			double phase;
+//			phase = fmod(sun_phase, 2 * M_PI);
+			glPushMatrix();
+			if(!n){
+				extern coordsys *g_galaxysystem;
+//				extern float g_shader_frac;
+				Mat4d rot2;
+				Mat3<float> irot3;
+				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+				glCallList(reflist);
+				Mat4d rot = vw->cs->tocsm(vw->cs->findcspath("/"));
+
+				if(g_shader_enable){
+					rot2 = rot * vw->irot;
+//					MAT4TRANSPOSE(rot, rot2);
+					irot3 = rot2.tomat3().cast<float>();
+//					glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+					glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
+//					glUniform1i(cubeEnvLoc, 0);
+//					glUniform1f(fracLoc, g_shader_frac);
+					glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+				}
+				else{
+				glMatrixMode(GL_TEXTURE);
+				glPushMatrix();
+/*					glMultMatrixd(rot);*/
+/*					glRotated(brightness * 30., 1., 0., 0.);
+				glRotated(m * 120. + 60., 0., -1., 0.);*/
+				glMultMatrixd(rot);
+				glMultMatrixd(vw->irot);
+/*					glLoadIdentity();*/
+				glMatrixMode(GL_MODELVIEW);
+			}
+			}
+#if 1
+			glRotated(m * 120. + 60., 0., 1., 0.);
+			joint[0] = 3.25 * cos(M_PI * 3. / 6. + M_PI / 6.);
+			joint[1] = 16.;
+			joint[2] = 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.);
+			gldTranslate3dv(joint);
+			glRotated(brightness * 30., -1., 0., 0.);
+			gldTranslaten3dv(joint);
+			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+			glColor4ub(0,0,0,0);
+			for(i = 0; i < (n ? cutnum / 6 : 1); i += leap){
+				int i1, j;
+				i1 = n ? (i+leap) % cutnum : cutnum / 6;
+				glBegin(GL_QUADS);
+				glNormal3d(0., 0., n ? 1 : -1.);
+				for(j = 1; j < numof(pos0)-2; j++){
+					avec3_t pos[4];
+					int k;
+					for(k = 0; k < 4; k++){
+						pos[k][0] = ((6 & (1<<k) ? i : i1) - cutnum / 12) * ISLAND3_RAD * 2 / (cutnum / 6) / sqrt(3.);
+						pos[k][1] = pos0[j+k/2][1];
+						pos[k][2] = ISLAND3_RAD;
+					}
+					for(k = 0; k < 4; k++){
+						avec3_t viewpos;
+						MAT4VP3(viewpos, mat, pos[k]);
+						if(gc2->getFar() < -viewpos[2])
+							break;
+					}
+					if(farmap ? 4 == k : 4 != k)
+						continue;
+					for(k = 0; k < 4; k++){
+						glTexCoord2dv(pos[k]);
+						glVertex3dv(pos[k]);
+					}
+				}
+				glEnd();
+			}
+#else
+			glRotated(m * 120. + 60., 0., 1., 0.);
+			joint[0] = -3.25 * cos(M_PI * 3. / 6. + M_PI / 6.);
+			joint[1] = 16.;
+			joint[2] = -3.25 * sin(M_PI * 3. / 6. + M_PI / 6.);
+			gldTranslate3dv(joint);
+			glRotated(brightness * 30., cos(M_PI / 3.), 0., sin(M_PI / 3.));
+			gldTranslaten3dv(joint);
+			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+			MAT4CPY(rot, mat4identity);
+			for(i = 0; i < cutnum / 6; i += leap){
+				int i1, j;
+				i1 = (i+leap) % cutnum;
+				rot2[0] = cuts[i1][1];
+				rot2[2] = -cuts[i1][0];
+				rot2[8] = cuts[i1][0];
+				rot2[10] = cuts[i1][1];
+/*					MAT4ROTY(rot2, rot, 2 * M_PI / cutnum);*/
+				glBegin(GL_QUADS);
+				for(j = 1; j < numof(pos0)-2; j++){
+					int k;
+					avec3_t pos[4];
+					MAT4VP3(pos[0], rot2, pos0[j]);
+					MAT4VP3(pos[1], rot, pos0[j]);
+					MAT4VP3(pos[2], rot, pos0[j+1]);
+					MAT4VP3(pos[3], rot2, pos0[j+1]);
+					for(k = 0; k < 4; k++){
+						avec3_t viewpos;
+						MAT4VP3(viewpos, mat, pos[k]);
+						if(gc2->zfar < -viewpos[2])
+							break;
+					}
+					if(farmap ? 4 == k : 4 != k)
+						continue;
+					for(k = 0; k < 4; k++){
+						avec3_t norm;
+						if(n){
+							norm[0] = pos[k][0] / sufrad;
+							norm[1] = 0.;
+							norm[2] = pos[k][2] / sufrad;
+						}
+						else{
+							norm[0] = -pos[k][0] / sufrad;
+							norm[1] = 0.;
+							norm[2] = -pos[k][2] / sufrad;
+						}
+						glNormal3dv(norm);
+						glTexCoord2d(pos0[j + k / 2][1], (i % 8 + leap * !!(9 & (1<<k))) / 8.);
+						glVertex3dv(pos[k]);
+					}
+				}
+				glEnd();
+				MAT4CPY(rot, rot2);
+			}
+#endif
+			glPopMatrix();
+			if(!n){
+				glCallList(reflist + 1);
+				glPopAttrib();
+				glMatrixMode(GL_TEXTURE);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+			}
 		}
 	}
 

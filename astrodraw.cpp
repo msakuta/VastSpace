@@ -2276,6 +2276,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		glCallList(backimg);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glColor4f(.25, .25, .25, 1.);
+//		glColor4f(.5, .5, .5, 1.);
 		for(int i = 0; i < numof(cubedirs); i++){
 			glPushMatrix();
 			gldMultQuat(cubedirs[i]);
@@ -2288,6 +2289,12 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 			glTexCoord3i( 1, 1,-1); glVertex3i( 1,  1, -1);
 			glTexCoord3i(-1, 1,-1); glVertex3i(-1,  1, -1);
 			glEnd();
+/*			int in[4];
+			glGetIntegerv(GL_ATTRIB_STACK_DEPTH, &in[0]);
+			glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &in[1]);
+			glGetIntegerv(GL_PROJECTION_STACK_DEPTH, &in[2]);
+			glGetIntegerv(GL_TEXTURE_STACK_DEPTH, &in[3]);
+			printf("amp %d,%d,%d,%d\n", in[0], in[1], in[2], in[3]);*/
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();

@@ -302,7 +302,7 @@ static void drawindics(Viewer *vw){
 	{
 		char buf[128];
 		GLpmatrix pm;
-		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, gvp.w, gvp.h, 0, -1, 1)));
+		projection((glLoadIdentity(), glOrtho(0, gvp.w, gvp.h, 0, -1, 1)));
 		glPushMatrix();
 		glLoadIdentity();
 		war_draw(*vw, pl.cs, &WarField::drawOverlay);

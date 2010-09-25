@@ -1,5 +1,6 @@
 #ifndef CMD_H
 #define CMD_H
+#include "export.h"
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -9,21 +10,21 @@ enum cvartype{cvar_int, cvar_float, cvar_double, cvar_string};
 struct command;
 
 void CmdInit(struct viewport *pvp);
-int CmdInput(char c);
-int CmdSpecialInput(int c);
-int CmdMouseInput(int button, int state, int x, int y);
-int CmdExec(const char *cmdline);
-void CmdPrint(const char *str);
-void CmdPrintf(const char *str, ...);
-void CmdAdd(const char *cmdname, int (*proc)(int argc, char *argv[]));
-void CmdAddParam(const char *cmdname, int (*proc)(int argc, char *argv[], void *), void *);
-struct command *CmdFind(const char *name);
-void CvarAdd(const char *cvarname, void *value, enum cvartype type);
-void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc)(void *value));
-struct cvar *CvarFind(const char *cvarname);
-const char *CvarGetString(const char *cvarname); /* The returned string's strage duration is assured until next call of this function */
-void CmdAliasAdd(const char *name, const char *str);
-struct cmdalias *CmdAliasFind(const char *name);
+EXPORT int CmdInput(char c);
+EXPORT int CmdSpecialInput(int c);
+EXPORT int CmdMouseInput(int button, int state, int x, int y);
+EXPORT int CmdExec(const char *cmdline);
+EXPORT void CmdPrint(const char *str);
+EXPORT void CmdPrintf(const char *str, ...);
+EXPORT void CmdAdd(const char *cmdname, int (*proc)(int argc, char *argv[]));
+EXPORT void CmdAddParam(const char *cmdname, int (*proc)(int argc, char *argv[], void *), void *);
+EXPORT struct command *CmdFind(const char *name);
+EXPORT void CvarAdd(const char *cvarname, void *value, enum cvartype type);
+EXPORT void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc)(void *value));
+EXPORT struct cvar *CvarFind(const char *cvarname);
+EXPORT const char *CvarGetString(const char *cvarname); /* The returned string's strage duration is assured until next call of this function */
+EXPORT void CmdAliasAdd(const char *name, const char *str);
+EXPORT struct cmdalias *CmdAliasFind(const char *name);
 
 #ifdef __cplusplus
 struct viewport;

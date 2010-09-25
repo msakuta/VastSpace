@@ -49,6 +49,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -118,13 +119,14 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

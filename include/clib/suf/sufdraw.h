@@ -1,5 +1,5 @@
-#ifndef SUFDRAW_H
-#define SUFDRAW_H
+#ifndef CLIB_SUF_SUFDRAW_H
+#define CLIB_SUF_SUFDRAW_H
 #include "suf.h"
 #ifdef _WIN32
 #define exit something_meanless
@@ -8,10 +8,14 @@
 #endif
 #include <GL/gl.h>
 
-extern void DrawSUF(const suf_t*, unsigned long flags, struct gldCache *c);
-extern void DrawSUFPoly(const suf_t*, int polygon_index, unsigned long flags, struct gldCache *c);
-extern void ShadowSUF(const suf_t *, const double l[3], const double n[3], const double pos[3], const double pyr[3], double scale, const double (*pre_trans)[16]);
-extern void ShadowDrawSUF(const suf_t *, unsigned long flags, const double light[3], const double normal[3], const double (*trans)[16]);
+#ifndef CLIB_SUFDRAW_EXPORT
+#define CLIB_SUFDRAW_EXPORT
+#endif
+
+CLIB_SUFDRAW_EXPORT extern void DrawSUF(const suf_t*, unsigned long flags, struct gldCache *c);
+CLIB_SUFDRAW_EXPORT extern void DrawSUFPoly(const suf_t*, int polygon_index, unsigned long flags, struct gldCache *c);
+CLIB_SUFDRAW_EXPORT extern void ShadowSUF(const suf_t *, const double l[3], const double n[3], const double pos[3], const double pyr[3], double scale, const double (*pre_trans)[16]);
+CLIB_SUFDRAW_EXPORT extern void ShadowDrawSUF(const suf_t *, unsigned long flags, const double light[3], const double normal[3], const double (*trans)[16]);
 
 typedef struct sufdecal_s{
 	void (*drawproc)(void*, struct gldCache *, void *global_var);
@@ -29,10 +33,10 @@ typedef struct suftex_s{
 	} a[1];
 } suftex_t;
 
-extern sufdecal_t *AllocSUFDecal(const suf_t *);
-extern void FreeSUFDecal(suf_t *);
-extern void AddSUFDecal(sufdecal_t *, sufindex ip, void *);
-extern void DecalDrawSUF(const suf_t*, unsigned long flags, struct gldCache *c, const suftex_t *tex, sufdecal_t *, void *global_var);
+CLIB_SUFDRAW_EXPORT extern sufdecal_t *AllocSUFDecal(const suf_t *);
+CLIB_SUFDRAW_EXPORT extern void FreeSUFDecal(suf_t *);
+CLIB_SUFDRAW_EXPORT extern void AddSUFDecal(sufdecal_t *, sufindex ip, void *);
+CLIB_SUFDRAW_EXPORT extern void DecalDrawSUF(const suf_t*, unsigned long flags, struct gldCache *c, const suftex_t *tex, sufdecal_t *, void *global_var);
 
 /* the mechanism to avoid multiple list compilation of the same texture. */
 struct suftexcache{
@@ -43,8 +47,8 @@ struct suftexcache{
 
 const struct suftexcache *FindTexCache(const char *name);
 
-extern suftex_t *AllocSUFTex(const suf_t *);
-extern suftex_t *AllocSUFTexScales(const suf_t *, const double *scales, int nscales, const char **override_textures, int ntexes);
+CLIB_SUFDRAW_EXPORT extern suftex_t *AllocSUFTex(const suf_t *);
+CLIB_SUFDRAW_EXPORT extern suftex_t *AllocSUFTexScales(const suf_t *, const double *scales, int nscales, const char **override_textures, int ntexes);
 
 #define STP_ALPHA      0x1   // Enable alpha channel in texture
 #define STP_ALPHATEX   0x2   // Use texture as alpha map
@@ -66,7 +70,7 @@ typedef struct suftexparam_s{
 	int mipmap, alphamap;
 } suftexparam_t;
 
-extern unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap);
-extern unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const suftexparam_t *tex2);
+CLIB_SUFDRAW_EXPORT extern unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap);
+CLIB_SUFDRAW_EXPORT extern unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const suftexparam_t *tex2);
 
 #endif

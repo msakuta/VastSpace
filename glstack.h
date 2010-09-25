@@ -1,16 +1,17 @@
 #ifndef GLSTACK_H
 #define GLSTACK_H
-// Defines classes to be used on the stack (automatic variable) for OpenGL state stack.
-// These objects ensure glPush*() and glPop*() to be called in pairs.
-// You must use curly end bracket to pop the stack.
-//
-// This is one interesting example of multiple inheritance that majority of other
-// so-called object-oriented programming languages than C++ cannot run.
-// But in practice, too many nested brackets decreases readability, so cases that
-// these classes worth using is limited.
+/// \file 
+/// Defines classes to be used on the stack (automatic variable) for OpenGL state stack.
+/// These objects ensure glPush*() and glPop*() to be called in pairs.
+/// You must use curly end bracket to pop the stack.
+///
+/// This is one interesting example of multiple inheritance that majority of other
+/// so-called object-oriented programming languages than C++ cannot run.
+/// But in practice, too many nested brackets decreases readability, so cases that
+/// these classes worth using is limited.
 
 
-// glPushAttrib() / glPopAttrib()
+/// glPushAttrib() / glPopAttrib()
 class GLattrib{
 public:
 	GLattrib(GLbitfield mask){
@@ -21,7 +22,7 @@ public:
 	}
 };
 
-// glPushMatrix() / glPopMatrix() with unspecified matrix mode.
+/// glPushMatrix() / glPopMatrix() with unspecified matrix mode.
 class GLmatrix{
 public:
 	GLmatrix(){
@@ -32,7 +33,7 @@ public:
 	}
 };
 
-// glPushMatrix() / glPopMatrix() with projection matrix mode.
+/// glPushMatrix() / glPopMatrix() with projection matrix mode.
 class GLpmatrix{
 	GLdouble mat[16];
 public:
@@ -57,7 +58,7 @@ public:
 	~GLma(){}
 };
 
-// Modelview and projection
+/// Modelview and projection
 class GLpmmatrix : public GLmatrix, public GLpmatrix{
 public:
 	GLpmmatrix(){}

@@ -101,12 +101,13 @@ public:
 	static int &g_shader_enable;
 protected:
 	int getCutnum(const Viewer *vw)const;
-	static GLuint walllist;
+	static GLuint walllist, walltex;
 };
 
 const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
+GLuint Island3::walltex = 0;
 
 Island3::Island3() : sun_phase(0.){
 	absmag = 30.;
@@ -364,7 +365,7 @@ void Island3::predraw(const Viewer *vw){
 }
 
 
-static GLint invEyeMat3Loc, cubeEnvLoc, fracLoc, lightLoc;
+static GLint invEyeMat3Loc, textureLoc, cubeEnvLoc, fracLoc, lightLoc;
 
 GLuint Reflist(){
 	static GLuint reflist = 0;
@@ -398,18 +399,20 @@ GLuint Reflist(){
 			break;
 		shader = glsl_register_program(vtx, frg);
 
+		textureLoc = glGetUniformLocation(shader, "texture");
 		cubeEnvLoc = glGetUniformLocation(shader, "envmap");
 		invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 
 		glUseProgram(shader);
 //					glUniform1i(cubeTexLoc, cubetex);
 //					glUniform1i(nrmmapLoc, 0);
+		glUniform1i(textureLoc, 1);
 		glUniform1i(cubeEnvLoc, 0);
 	}while(0);
 	glDisable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 	glEnable(GL_TEXTURE_CUBE_MAP);
-	glDisable(GL_BLEND);
+//	glDisable(GL_BLEND);
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);
 	glDisable(GL_TEXTURE_GEN_R);
@@ -430,7 +433,7 @@ GLuint Reflist(){
 	glEnable(GL_TEXTURE_GEN_S);
 	glEnable(GL_TEXTURE_GEN_T);
 	glEnable(GL_TEXTURE_GEN_R);
-	glDisable(GL_BLEND);
+//	glDisable(GL_BLEND);
 	glEndList();
 
 	glNewList(reflist + 1, GL_COMPILE);
@@ -487,7 +490,7 @@ void Island3::draw(const Viewer *vw){
 
 	Vec3d pos = vw->cs->tocs(vec3_000, this);
 
-	static GLuint walltex, roadlist = 0, roadtex = 0, groundtex = 0, groundlist;
+	static GLuint roadlist = 0, roadtex = 0, groundtex = 0, groundlist, noisetex;
 	static bool init = false;
 	if(!init){
 		init = 1;
@@ -505,6 +508,9 @@ void Island3::draw(const Viewer *vw){
 		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
 		if(const suftexcache *stc = FindTexCache("grass.jpg"))
 			groundtex = stc->tex[0];
+		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
+		if(const suftexcache *stc = FindTexCache("noise.jpg"))
+			noisetex = stc->tex[0];
 	}
 
 	/* Shader is togglable on running */
@@ -597,6 +603,7 @@ void Island3::draw(const Viewer *vw){
 	glMultMatrixd(rot);
 	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+	glDisable(GL_BLEND);
 
 	int northleap = -ISLAND3_HALFLEN - 3. * ISLAND3_RAD < vpos[1] && vpos[1] < -ISLAND3_HALFLEN + ISLAND3_RAD ? 1 : 2;
 
@@ -810,11 +817,6 @@ void Island3::draw(const Viewer *vw){
 
 	/* solar mirror wings */
 	for(n = 0; n < 2; n++){
-		int m;
-		if(n)
-			glFrontFace(GL_CCW);
-		else
-			glFrontFace(GL_CW);
 		if(n == 0){
 			GLfloat dif[4] = {.010f, .01f, .02f, 1.}, amb[4] = {.005f, .005f, .01f, 1.}, black[4] = {0,0,0,1}, spc[4] = {.5, .5, .5, .55f};
 			amb[1] = GLfloat((1. - brightness) * .005);
@@ -822,45 +824,46 @@ void Island3::draw(const Viewer *vw){
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glMaterialfv(GL_FRONT, GL_EMISSION, black);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
-		}
-		else{
-			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
-			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
-			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
-		}
-		for(m = 0; m < 3; m++){
-			glPushMatrix();
-			if(!n){
-				Mat4d rot2;
-				Mat3<float> irot3;
-				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-				glCallList(reflist);
-				Mat4d rot = vw->cs->tocsm(vw->cs->findcspath("/"));
+			glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+			glCallList(reflist);
+			glActiveTextureARB(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, noisetex);
+			glActiveTextureARB(GL_TEXTURE0);
+			Mat4d rot = vw->cs->tocsm(vw->cs->findcspath("/"));
 
-				if(g_shader_enable){
-					rot2 = rot * vw->irot;
-					irot3 = rot2.tomat3().cast<float>();
-					glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
+			if(g_shader_enable){
+				Mat4d rot2 = rot * vw->irot;
+				Mat3<float> irot3 = rot2.tomat3().cast<float>();
+				glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
 //					glUniform1i(cubeEnvLoc, 0);
 //					glUniform1f(fracLoc, g_shader_frac);
-					glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
-				}
-				else{
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+			}
+			else{
 				glMatrixMode(GL_TEXTURE);
 				glPushMatrix();
 				glMultMatrixd(rot);
 				glMultMatrixd(vw->irot);
 				glMatrixMode(GL_MODELVIEW);
 			}
-			}
+			glFrontFace(GL_CW);
+		}
+		else{
+			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
+			glFrontFace(GL_CCW);
+		}
+		for(int m = 0; m < 3; m++){
+			glPushMatrix();
 			glRotated(m * 120. + 60., 0., 1., 0.);
 			Vec3d joint(3.25 * cos(M_PI * 3. / 6. + M_PI / 6.), 16., 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.));
 			gldTranslate3dv(joint);
 			glRotated(brightness * 30., -1., 0., 0.);
 			gldTranslaten3dv(joint);
 			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-			glColor4ub(0,0,0,0);
+			glColor4ub(0,0,0,63);
 			for(i = 0; i < 1; i += leap){
 				int i1 = cutnum / 6;
 				glBegin(GL_QUADS);
@@ -889,13 +892,13 @@ void Island3::draw(const Viewer *vw){
 			}
 
 			glPopMatrix();
-			if(!n){
-				glCallList(reflist + 1);
-				glPopAttrib();
-				glMatrixMode(GL_TEXTURE);
-				glPopMatrix();
-				glMatrixMode(GL_MODELVIEW);
-			}
+		}
+		if(!n){
+			glCallList(reflist + 1);
+			glPopAttrib();
+			glMatrixMode(GL_TEXTURE);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
 		}
 	}
 
@@ -968,7 +971,7 @@ void Island3::drawtra(const Viewer *vw){
 	int defleap = 2, leap = defleap;
 	double (*cuts)[2] = CircleCuts(cutnum);
 	Mat4d rot2 = mat4_u;
-	GLattrib gla(GL_TEXTURE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+	GLattrib gla(GL_TEXTURE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LESS);
 	glPushMatrix();
@@ -976,7 +979,6 @@ void Island3::drawtra(const Viewer *vw){
 	mat.vec3(3) = (vw->cs->tocs(vec3_000, this));
 	glMultMatrixd(mat);
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-	glColor4f(.5, .5, .5, .3f);
 /*		glDepthFunc(vpos[0] * vpos[0] + vpos[2] * vpos[2] < ISLAND3_RAD * ISLAND3_RAD ? GL_LEQUAL : GL_LESS);*/
 	{
 //		GLfloat dif[4] = {.35, .4, .45, .5}, spc[4] = {.1, .1, .1, 1.};
@@ -989,10 +991,21 @@ void Island3::drawtra(const Viewer *vw){
 		glEnable(GL_CULL_FACE);
 	}
 	for(int n = 0; n < 2; n++){
-		if(n)
+		if(n){
 			glFrontFace(GL_CCW);
-		else
+			if(g_shader_enable){
+				glActiveTextureARB(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, walltex);
+				glActiveTextureARB(GL_TEXTURE0);
+				glCallList(Reflist());
+			}
+//			glUniform1i(cubeEnvLoc, 1);
+			glColor4f(.3f, .3f, .3f, .3f);
+		}
+		else{
 			glFrontFace(GL_CW);
+			glColor4f(.5, .5, .5, .3f);
+		}
 		for(int m = 0; m < 3; m++){
 			int i0 = (cutnum * m / 3 + cutnum / 6) % cutnum;
 /*				glPushMatrix();*/
@@ -1061,6 +1074,9 @@ void Island3::drawtra(const Viewer *vw){
 			}
 /*				glPopMatrix();*/
 		}
+		if(n && g_shader_enable)
+			glCallList(Reflist() + 1);
+
 	}
 	glPopMatrix();
 

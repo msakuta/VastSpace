@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Island3 class.
+ */
 #include "island3.h"
 #include "../astrodraw.h"
 //#include "astro_star.h"
@@ -18,6 +21,7 @@
 #include "../material.h"
 #include "../cmd.h"
 extern "C"{
+#include <clib/c.h>
 #include <clib/gl/multitex.h>
 #include <clib/amat3.h>
 #include <clib/suf/suf.h>
@@ -32,28 +36,6 @@ extern "C"{
 #include <gl/glext.h>
 #include <assert.h>
 
-#define BMPSRC_LINKAGE static
-//#include "bmpsrc/bricks.h"
-//#include "bmpsrc/bbrail.h"
-
-//#include "sufsrc/scolony.h"
-//#include "sufsrc/bridgetower.h"
-
-
-#define numof(a) (sizeof(a)/sizeof*(a))
-
-#ifndef MAX
-#define MAX(a,b) ((a)<(b)?(b):(a))
-#endif
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)<0?-(a):(a))
-#endif
-
 
 #define ISLAND3_RAD 3.25 /* outer radius */
 #define ISLAND3_INRAD 3.2 /* inner radius */
@@ -65,14 +47,8 @@ extern "C"{
 #define BRIDGE_THICK .01
 
 
-static void spacecolony_anim(struct coordsys *, double dt);
-static int spacecolony_belongs(const struct coordsys *, const avec3_t pos, const struct coordsys *pos_cs);
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
 
-
-/*extern coordsys *g_spacecolony;*/
-//extern double sun_phase;
-extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 
 /*
 static void i3war_anim( *, double dt);
@@ -109,22 +85,30 @@ class Island3 : public Astrobj{
 public:
 	static const unsigned classid;
 	typedef Astrobj st;
+
+	double sun_phase;
+
 	Island3();
 	virtual const char *classname()const{return "Island3";}
 //	virtual void init(const char *path, CoordSys *root);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
 	virtual bool belongs(const Vec3d &pos)const;
 	virtual void anim(double dt);
-	virtual void draw(const Viewer *);
 	virtual void predraw(const Viewer *);
+	virtual void draw(const Viewer *);
+	virtual void drawtra(const Viewer *);
 
 	static int &g_shader_enable;
+protected:
+	int getCutnum(const Viewer *vw)const;
+	static GLuint walllist;
 };
 
 const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
 int &Island3::g_shader_enable = ::g_shader_enable;
+GLuint Island3::walllist = 0;
 
-Island3::Island3(){
+Island3::Island3() : sun_phase(0.){
 	absmag = 30.;
 	rad = 100.;
 	orbit_home = NULL;
@@ -145,6 +129,8 @@ bool Island3::belongs(const Vec3d &lpos)const{
 
 void Island3::anim(double dt){
 	Astrobj *sun = findBrightest();
+
+	// Head toward sun
 	if(sun){
 		Vec3d sunpos = parent->tocs(pos, sun);
 		omg[1] = sqrt(.0098 / 3.25);
@@ -154,6 +140,9 @@ void Island3::anim(double dt){
 		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
 		this->rot = qrot1.rotate(phase, avec3_010);
 	}
+
+	// Calculate phase of the simulated sun.
+	sun_phase += 2 * M_PI / 24. / 60. / 60. * dt;
 }
 
 
@@ -291,10 +280,6 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		return cubetex;
 	g_reflesh_cubetex = 0;
 
-/*	QUATMUL(tmp, omg0, dirs[5]);
-	QUATCPY(dirs[5], tmp);*/
-
-/*	v.cs = g_lagrange1;*/
 	v = *vw;
 	v.detail = 0;
 	v.fov = 1.;
@@ -326,7 +311,6 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 	glBindTexture(GL_TEXTURE_2D, 0);
 	GLpmatrix pmat;
 	glMatrixMode(GL_PROJECTION);
-//	glPushMatrix();
 	glLoadIdentity();
 	glFrustum(-g_glcull.getNear(), g_glcull.getNear(), -g_glcull.getNear(), g_glcull.getNear(), g_glcull.getNear(), g_glcull.getFar());
 	glMatrixMode (GL_MODELVIEW);
@@ -341,27 +325,14 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		Mat4d proj;
 		glGetDoublev(GL_PROJECTION_MATRIX, proj);
 		v.trans = v.rot * proj;
-/*		if(i == 1 || i == 4){
-			glScaled(.8, .6, 1.);
-			glMultMatrixd(v.rot);
-		}
-		else*/
-			glLoadMatrixd(v.rot);
-#if 1 && defined _DEBUG
+		glLoadMatrixd(v.rot);
+#if 0 && defined _DEBUG
 		glClearColor(0,.5f,0,0);
 #else
 		glClearColor(0,0,0,0);
 #endif
 		glClear(GL_COLOR_BUFFER_BIT);
 		drawstarback(&v, v.cs, NULL, sun);
-/*
-		a[0] = i + '0';
-		a[1] = '\0';
-		glLoadIdentity();
-		glRasterPos3d(0,0,-1);
-		gldPutString(a);
-		glRasterPos3d(0,.5,-1);
-		gldPutString("UP");*/
 
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 		glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -377,13 +348,9 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		}
 		glPopMatrix();
 	}
-//	glMatrixMode(GL_PROJECTION);
-//	glPopMatrix();
-//	glMatrixMode (GL_MODELVIEW);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopAttrib();
 	glViewport(0,0,vw->vp.w, vw->vp.h);
-//	gvp = resvp;
 	return cubetex;
 }
 
@@ -404,117 +371,71 @@ GLuint Reflist(){
 	if(reflist)
 		return reflist + !!Island3::g_shader_enable * 2;
 #if 1
-		{
-			static const GLenum target[] = {
-			GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-			GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-			GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-			GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-			GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-			};
-			static double genfunc[][4] = {
-			{ 1.0, 0.0, 0.0, 0.0 },
-			{ 0.0, 1.0, 0.0, 0.0 },
-			{ 0.0, 0.0, 1.0, 0.0 },
-			{ 0.0, 0.0, 0.0, 1.0 },
-			};
-			static GLuint texnames[6];
-//			BITMAPDATA bmd;
-//			BITMAPINFO *bmi;
-//			BITMAPINFOHEADER bih;
-			if(1/*bmi = ReadBitmap("stars.bmp")*//*LoadJPEGData("earth.jpg", &bmd)*/){
-//				int i;
-/*				bmi = malloc(sizeof(BITMAPINFOHEADER) + bmd.dwDataSize);
-				bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-				bmi->bmiHeader.biWidth = bmd.nWidth; 
-				bmi->bmiHeader.biHeight = -bmd.nHeight;
-				bmi->bmiHeader.biPlanes = 1;
-				bmi->bmiHeader.biBitCount = 32;
-				bmi->bmiHeader.biCompression = BI_RGB;
-				bmi->bmiHeader.biSizeImage = bmd.dwDataSize;
-				bmi->bmiHeader.biXPelsPerMeter = 0;
-				bmi->bmiHeader.biYPelsPerMeter = 0;
-				bmi->bmiHeader.biClrUsed = 0;
-				bmi->bmiHeader.biClrImportant = 0;
-				memcpy(bmi->bmiColors, bmd.pBmp, bmd.dwDataSize);
-				FreeBitmapData(&bmd);*/
-
-/*				glGenTextures(1, texnames);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, texnames[0]);
-				for (i = 0; i < 6; ++i) {
-					int mi = MIN(bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight));
-					glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0,
-						GL_RGB, GL_UNSIGNED_BYTE, &bmi->bmiColors[bmi->bmiHeader.biClrUsed]);
-				}
-				LocalFree(bmi);*/
-/*				free(bmi);*/
-
-				reflist = glGenLists(4);
-				glNewList(reflist + 2, GL_COMPILE);
-				do{
-					GLuint vtx, frg;
-					GLuint shader;
+	static const GLenum target[] = {
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+	};
+	static double genfunc[][4] = {
+	{ 1.0, 0.0, 0.0, 0.0 },
+	{ 0.0, 1.0, 0.0, 0.0 },
+	{ 0.0, 0.0, 1.0, 0.0 },
+	{ 0.0, 0.0, 0.0, 1.0 },
+	};
+	static GLuint texnames[6];
+	reflist = glGenLists(4);
+	glNewList(reflist + 2, GL_COMPILE);
+	do{
+		GLuint vtx, frg;
+		GLuint shader;
 //					GLint cubeTexLoc, nrmmapLoc;
-//					amat3_t mat3;
-					vtx = glCreateShader(GL_VERTEX_SHADER);
-					frg = glCreateShader(GL_FRAGMENT_SHADER);
-					if(!glsl_load_shader(vtx, "shaders/mirror.vs") || !glsl_load_shader(frg, "shaders/mirror.fs"))
-						break;
-					shader = glsl_register_program(vtx, frg);
+		vtx = glCreateShader(GL_VERTEX_SHADER);
+		frg = glCreateShader(GL_FRAGMENT_SHADER);
+		if(!glsl_load_shader(vtx, "shaders/mirror.vs") || !glsl_load_shader(frg, "shaders/mirror.fs"))
+			break;
+		shader = glsl_register_program(vtx, frg);
 
-					cubeEnvLoc = glGetUniformLocation(shader, "envmap");
-					invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+		cubeEnvLoc = glGetUniformLocation(shader, "envmap");
+		invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 
-					glUseProgram(shader);
+		glUseProgram(shader);
 //					glUniform1i(cubeTexLoc, cubetex);
 //					glUniform1i(nrmmapLoc, 0);
-					glUniform1i(cubeEnvLoc, 0);
-				}while(0);
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
-				glEnable(GL_TEXTURE_CUBE_MAP);
-				glDisable(GL_BLEND);
-				glDisable(GL_TEXTURE_GEN_S);
-				glDisable(GL_TEXTURE_GEN_T);
-				glDisable(GL_TEXTURE_GEN_R);
-				glEndList();
+		glUniform1i(cubeEnvLoc, 0);
+	}while(0);
+	glDisable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+	glEnable(GL_TEXTURE_CUBE_MAP);
+	glDisable(GL_BLEND);
+	glDisable(GL_TEXTURE_GEN_S);
+	glDisable(GL_TEXTURE_GEN_T);
+	glDisable(GL_TEXTURE_GEN_R);
+	glEndList();
 
-				glNewList(reflist + 3, GL_COMPILE);
-				glUseProgram(0);
-				glEndList();
+	glNewList(reflist + 3, GL_COMPILE);
+	glUseProgram(0);
+	glEndList();
 
-				glNewList(reflist, GL_COMPILE);
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
-				glEnable(GL_TEXTURE_CUBE_MAP);
-#if 0
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-				glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-				glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-				/* テクスチャ座標生成関数の設定 */
-				glTexGendv(GL_S, GL_OBJECT_PLANE, genfunc[0]);
-				glTexGendv(GL_T, GL_OBJECT_PLANE, genfunc[1]);
-				glTexGendv(GL_R, GL_OBJECT_PLANE, genfunc[2]);
-				glTexGendv(GL_Q, GL_OBJECT_PLANE, genfunc[3]);
-#else
-				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-				glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-#endif
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				glEnable(GL_TEXTURE_GEN_R);
-				glDisable(GL_BLEND);
-				glEndList();
+	glNewList(reflist, GL_COMPILE);
+	glDisable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+	glEnable(GL_TEXTURE_CUBE_MAP);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	glEnable(GL_TEXTURE_GEN_S);
+	glEnable(GL_TEXTURE_GEN_T);
+	glEnable(GL_TEXTURE_GEN_R);
+	glDisable(GL_BLEND);
+	glEndList();
 
-				glNewList(reflist + 1, GL_COMPILE);
-				glUseProgram(0);
-				glEndList();
-			}
-		}
+	glNewList(reflist + 1, GL_COMPILE);
+	glUseProgram(0);
+	glEndList();
 #endif
 	return reflist + !!Island3::g_shader_enable * 2;
 }
@@ -534,6 +455,23 @@ static const avec3_t pos0[] = {
 	{0., -17., 0.},
 };
 
+int Island3::getCutnum(const Viewer *vw)const{
+	int cutnum = 48 * 4;
+	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+
+	if(pixels < 1)
+		return cutnum;
+	else if(pixels < 50)
+		cutnum /= 16;
+	else if(pixels < 125)
+		cutnum /= 8;
+	else if(pixels < 250)
+		cutnum /= 4;
+	else if(pixels < 500)
+		cutnum /= 2;
+	return cutnum;
+}
+
 
 void Island3::draw(const Viewer *vw){
 	bool farmap = !!vw->zslice;
@@ -541,14 +479,18 @@ void Island3::draw(const Viewer *vw){
 	if(farmap)
 		return;
 
+	static bool multitex = false;
+	if(!multitex){
+		multitex = true;
+		MultiTextureInit();
+	}
+
 	Vec3d pos = vw->cs->tocs(vec3_000, this);
 
-	static GLuint walltex, walllist = 0, roadlist = 0, roadtex = 0, groundtex = 0, groundlist;
+	static GLuint walltex, roadlist = 0, roadtex = 0, groundtex = 0, groundlist;
 	static bool init = false;
 	if(!init){
 		init = 1;
-	//	CacheTexture("bricks.bmp");
-//		CacheMaterial("bricks.bmp");
 		walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
 		if(const suftexcache *stc = FindTexCache("bricks.bmp"))
 			walltex = stc->tex[0];
@@ -582,26 +524,13 @@ void Island3::draw(const Viewer *vw){
 		{0., -1., 0.},
 	};
 	const double sufrad = 3.25;
-	Mat4d rot2, mat;
-	int n, i, cutnum = 48 * 4, defleap = 2, leap = defleap;
-	double brightness;
-	double (*cuts)[2];
+	int n, i;
 	int finecuts[48 * 4]; /* this buffer must be greater than cuts */
 
-	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+//	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+	int cutnum = getCutnum(vw);
 
-	if(pixels < 1)
-		return;
-	else if(pixels < 50)
-		cutnum /= 16;
-	else if(pixels < 125)
-		cutnum /= 8;
-	else if(pixels < 250)
-		cutnum /= 4;
-	else if(pixels < 500)
-		cutnum /= 2;
-
-	cuts = CircleCuts(cutnum);
+	double (*cuts)[2] = CircleCuts(cutnum);
 
 	Vec3d vpos = tocs(vw->pos, vw->cs);
 
@@ -616,10 +545,8 @@ void Island3::draw(const Viewer *vw){
 	else
 		glTranslated(pos[0], pos[1], pos[2]);
 
-	rot2 = mat4_u;
-
 //	brightness = Island3Light();
-	brightness = 1;
+	double brightness = (sin(sun_phase) + 1.) / 2.;
 	{
 		GLfloat dif[4] = {1., 1., 1., 1.}, amb[4] = {1., 1., 1., 1.};
 		Astrobj *sun = findBrightest(vec3_000);
@@ -644,6 +571,8 @@ void Island3::draw(const Viewer *vw){
 		glMaterialfv(GL_FRONT, GL_SPECULAR, spe);
 	}
 
+	int defleap = 2, leap = defleap;
+
 	/* pre-calculate LOD information to reduce checking */
 	{
 		Mat4d rot2 = mat4_u;
@@ -655,7 +584,7 @@ void Island3::draw(const Viewer *vw){
 			rot2[8] = cuts[i][0];
 			rot2[10] = cuts[i][1];
 			Vec3d pos = trans.vp3(rot2.vp3(pos0[1]));
-			if((vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < 1.3 * 1.3){
+			if((vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
 				finecuts[i] = 1;
 			}
 			else
@@ -663,13 +592,11 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
-//	glCallList(CacheMaterial("bricks.bmp"));
+	Mat4d rot2 = mat4_u;
 	Mat4d rot = vw->cs->tocsim(this);
 	glMultMatrixd(rot);
+	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-
-//	glDisable(GL_LIGHTING);
-	glColor4f(1,1,1,1);
 
 	int northleap = -ISLAND3_HALFLEN - 3. * ISLAND3_RAD < vpos[1] && vpos[1] < -ISLAND3_HALFLEN + ISLAND3_RAD ? 1 : 2;
 
@@ -686,12 +613,6 @@ void Island3::draw(const Viewer *vw){
 		}
 		else{
 			GLfloat dif[4] = {.3f, .3f, .3f, 1.}, amb[4] = {.7f, .7f, .7f, 1.};
-/*				VECSCALEIN(dif, brightness * .5 + .5);*/
-/*			if(weather != wsnow){
-				dif[0] = dif[2] = .1;
-				amb[0] = amb[2] = .2;
-			}
-			VECSCALEIN(amb, brightness * .75 + .25);*/
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glFrontFace(GL_CW);
@@ -708,18 +629,8 @@ void Island3::draw(const Viewer *vw){
 				leap = defleap / 2;
 			else
 				leap = defleap;
-/*				if(2 <= defleap){
-				avec3_t pos;
-				MAT4VP3(pos, rot, pos0[1]);
-				if(i % defleap == 0 && (vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
-					leap = defleap / 2;
-				}
-				else if(leap != defleap && (i) % defleap == 0)
-					leap = defleap;
-			}*/
 
 			i1 = (i+leap) % cutnum;
-/*				MAT4ROTY(rot2, rot, 2 * M_PI / cutnum);*/
 
 			/* set rotation matrices cyclically */
 			prot[0] = prot[3] = &rot2;
@@ -832,6 +743,45 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
+	/* seal at glass bondaries */
+	{
+		int n;
+		Mat4d rot2 = mat4_u;
+		for(n = 0; n < 2; n++){
+			int m;
+			Vec3d bpos0[2], norm;
+			glFrontFace(n ? GL_CCW : GL_CW);
+			bpos0[0][0] = ISLAND3_INRAD;
+			bpos0[1][0] = ISLAND3_RAD;
+			bpos0[0][1] = bpos0[1][1] = n ? -ISLAND3_HALFLEN : ISLAND3_HALFLEN;
+			bpos0[0][2] = bpos0[1][2] = 0.;
+			norm = (1 - n * 2) * rot2.vec3(2);
+			glNormal3dv(norm);
+			for(m = 0; m < 3; m++){
+				int i;
+				glBegin(GL_QUAD_STRIP);
+				for(i = 0; i <= cutnum / 6; i += leap){
+					int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
+					rot2[0] = cuts[i1][1];
+					rot2[2] = -cuts[i1][0];
+					rot2[8] = cuts[i1][0];
+					rot2[10] = cuts[i1][1];
+					if(i1 % defleap || finecuts[i1])
+						leap = defleap / 2;
+					else
+						leap = defleap;
+					Vec3d bpos = rot2.dvp3(bpos0[0]);
+					glTexCoord2d(0., i);
+					glVertex3dv(bpos);
+					bpos = rot2.dvp3(bpos0[1]);
+					glTexCoord2d(1., i);
+					glVertex3dv(bpos);
+				}
+				glEnd();
+			}
+		}
+	}
+
 	/* walls between inner/outer cylinder */
 	for(int i = 0; i < cutnum; i += cutnum / 6){
 		int i1 = i;
@@ -872,37 +822,16 @@ void Island3::draw(const Viewer *vw){
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glMaterialfv(GL_FRONT, GL_EMISSION, black);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
-/*				glDisable(GL_TEXTURE_2D);
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);*/
-/*				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-			glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-			glEnable(GL_TEXTURE_CUBE_MAP);
-			glEnable(GL_TEXTURE_GEN_S);
-			glEnable(GL_TEXTURE_GEN_T);
-			glEnable(GL_TEXTURE_GEN_R);
-			glCallList(reflist);*/
 		}
 		else{
 			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
-/*				glEnable(GL_TEXTURE_2D);
-			glDisable(GL_TEXTURE_CUBE_MAP);
-			glDisable(GL_TEXTURE_GEN_S);
-			glDisable(GL_TEXTURE_GEN_T);
-			glDisable(GL_TEXTURE_GEN_R);*/
 		}
 		for(m = 0; m < 3; m++){
-			avec3_t joint;
-//			double phase;
-//			phase = fmod(sun_phase, 2 * M_PI);
 			glPushMatrix();
 			if(!n){
-				extern coordsys *g_galaxysystem;
-//				extern float g_shader_frac;
 				Mat4d rot2;
 				Mat3<float> irot3;
 				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -911,9 +840,7 @@ void Island3::draw(const Viewer *vw){
 
 				if(g_shader_enable){
 					rot2 = rot * vw->irot;
-//					MAT4TRANSPOSE(rot, rot2);
 					irot3 = rot2.tomat3().cast<float>();
-//					glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 					glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
 //					glUniform1i(cubeEnvLoc, 0);
 //					glUniform1f(fracLoc, g_shader_frac);
@@ -922,32 +849,24 @@ void Island3::draw(const Viewer *vw){
 				else{
 				glMatrixMode(GL_TEXTURE);
 				glPushMatrix();
-/*					glMultMatrixd(rot);*/
-/*					glRotated(brightness * 30., 1., 0., 0.);
-				glRotated(m * 120. + 60., 0., -1., 0.);*/
 				glMultMatrixd(rot);
 				glMultMatrixd(vw->irot);
-/*					glLoadIdentity();*/
 				glMatrixMode(GL_MODELVIEW);
 			}
 			}
-#if 1
 			glRotated(m * 120. + 60., 0., 1., 0.);
-			joint[0] = 3.25 * cos(M_PI * 3. / 6. + M_PI / 6.);
-			joint[1] = 16.;
-			joint[2] = 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.);
+			Vec3d joint(3.25 * cos(M_PI * 3. / 6. + M_PI / 6.), 16., 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.));
 			gldTranslate3dv(joint);
 			glRotated(brightness * 30., -1., 0., 0.);
 			gldTranslaten3dv(joint);
 			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 			glColor4ub(0,0,0,0);
-			for(i = 0; i < (n ? cutnum / 6 : 1); i += leap){
-				int i1, j;
-				i1 = n ? (i+leap) % cutnum : cutnum / 6;
+			for(i = 0; i < 1; i += leap){
+				int i1 = cutnum / 6;
 				glBegin(GL_QUADS);
 				glNormal3d(0., 0., n ? 1 : -1.);
-				for(j = 1; j < numof(pos0)-2; j++){
-					avec3_t pos[4];
+				for(int j = 1; j < numof(pos0)-2; j++){
+					Vec3d pos[4];
 					int k;
 					for(k = 0; k < 4; k++){
 						pos[k][0] = ((6 & (1<<k) ? i : i1) - cutnum / 12) * ISLAND3_RAD * 2 / (cutnum / 6) / sqrt(3.);
@@ -955,8 +874,7 @@ void Island3::draw(const Viewer *vw){
 						pos[k][2] = ISLAND3_RAD;
 					}
 					for(k = 0; k < 4; k++){
-						avec3_t viewpos;
-						MAT4VP3(viewpos, mat, pos[k]);
+						Vec3d viewpos = mat.vp3(pos[k]);
 						if(gc2->getFar() < -viewpos[2])
 							break;
 					}
@@ -969,61 +887,7 @@ void Island3::draw(const Viewer *vw){
 				}
 				glEnd();
 			}
-#else
-			glRotated(m * 120. + 60., 0., 1., 0.);
-			joint[0] = -3.25 * cos(M_PI * 3. / 6. + M_PI / 6.);
-			joint[1] = 16.;
-			joint[2] = -3.25 * sin(M_PI * 3. / 6. + M_PI / 6.);
-			gldTranslate3dv(joint);
-			glRotated(brightness * 30., cos(M_PI / 3.), 0., sin(M_PI / 3.));
-			gldTranslaten3dv(joint);
-			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-			MAT4CPY(rot, mat4identity);
-			for(i = 0; i < cutnum / 6; i += leap){
-				int i1, j;
-				i1 = (i+leap) % cutnum;
-				rot2[0] = cuts[i1][1];
-				rot2[2] = -cuts[i1][0];
-				rot2[8] = cuts[i1][0];
-				rot2[10] = cuts[i1][1];
-/*					MAT4ROTY(rot2, rot, 2 * M_PI / cutnum);*/
-				glBegin(GL_QUADS);
-				for(j = 1; j < numof(pos0)-2; j++){
-					int k;
-					avec3_t pos[4];
-					MAT4VP3(pos[0], rot2, pos0[j]);
-					MAT4VP3(pos[1], rot, pos0[j]);
-					MAT4VP3(pos[2], rot, pos0[j+1]);
-					MAT4VP3(pos[3], rot2, pos0[j+1]);
-					for(k = 0; k < 4; k++){
-						avec3_t viewpos;
-						MAT4VP3(viewpos, mat, pos[k]);
-						if(gc2->zfar < -viewpos[2])
-							break;
-					}
-					if(farmap ? 4 == k : 4 != k)
-						continue;
-					for(k = 0; k < 4; k++){
-						avec3_t norm;
-						if(n){
-							norm[0] = pos[k][0] / sufrad;
-							norm[1] = 0.;
-							norm[2] = pos[k][2] / sufrad;
-						}
-						else{
-							norm[0] = -pos[k][0] / sufrad;
-							norm[1] = 0.;
-							norm[2] = -pos[k][2] / sufrad;
-						}
-						glNormal3dv(norm);
-						glTexCoord2d(pos0[j + k / 2][1], (i % 8 + leap * !!(9 & (1<<k))) / 8.);
-						glVertex3dv(pos[k]);
-					}
-				}
-				glEnd();
-				MAT4CPY(rot, rot2);
-			}
-#endif
+
 			glPopMatrix();
 			if(!n){
 				glCallList(reflist + 1);
@@ -1036,3 +900,464 @@ void Island3::draw(const Viewer *vw){
 	}
 
 }
+
+void Island3::drawtra(const Viewer *vw){
+	GLcull *gc = vw->gc, *gc2 = vw->gclist[0];
+	double x0, srad;
+	double pixels;
+
+/*	for(csint = children; csint; csint = csint->next) if(csint->vft == &g_spacecolony_s){
+		break;
+	}
+	if(!csint || !csint->w)
+		return;*/
+	Vec3d pos = vw->cs->tocs(avec3_000, this);
+	if(gc->cullFrustum(pos, 50.))
+		return;
+	pixels = fabs(gc->scale(pos)) * 32.;
+	if(pixels < 1)
+		return;
+
+	srad = vw->pos[0] * vw->pos[0] + vw->pos[2] * vw->pos[2];
+	x0 = (srad < ISLAND3_INRAD * ISLAND3_INRAD ? ISLAND3_INRAD : ISLAND3_RAD) * sin(M_PI / 6.);
+	if(vw->cs == this) for(int n = 0; n < 3; n++){
+		amat4_t rot;
+		avec3_t plpos;
+		MAT4ROTY(rot, mat4identity, n * 2. * M_PI / 3.);
+		MAT4DVP3(plpos, rot, vw->pos);
+		if(-x0 < plpos[0] && plpos[0] < x0 && (plpos[2] < 0. || srad < ISLAND3_RAD * ISLAND3_RAD)){
+			int i;
+			double brightness, mirrorslope, rayslope;
+			double as = .2, sas, cas;
+			double (*cuts)[2];
+			brightness = (sin(sun_phase) + 1.) / 2.;
+			as = brightness * M_PI / 6.;
+			sas = sin(as);
+			cas = cos(as);
+			mirrorslope = sas / cas;
+			plpos[1] -= -cas * MIRROR_LENGTH + ISLAND3_HALFLEN;
+			plpos[2] -= -sas * MIRROR_LENGTH - ISLAND3_RAD;
+			if(plpos[2] < mirrorslope * plpos[1])
+				continue;
+			rayslope = tan(M_PI - 2. * (M_PI / 2. - as));
+			if(plpos[1] * rayslope < plpos[2])
+				continue;
+			cuts = CircleCuts(10);
+
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			glRotated(n * 120., 0., -1., 0.);
+			glRotated(90. + 2. * brightness * 30., 1., 0., 0.);
+			glBegin(GL_TRIANGLE_FAN);
+			glColor4ub(255, 255, 255, (unsigned char)(brightness * 192.));
+			glVertex3d(0., 0., 1.);
+			glColor4ub(255, 255, 255, 0);
+			for(i = 0; i <= 10; i++){
+				int k = i % 10;
+				glVertex3d(cuts[k][0] * sas, cuts[k][1] * sas, cas);
+			}
+			glEnd();
+			glPopMatrix();
+		}
+	}
+
+	// Glasses 
+	bool farmap = !!vw->zslice;
+	double brightness = (sin(sun_phase) + 1.) / 2.;
+	int cutnum = getCutnum(vw);
+	int defleap = 2, leap = defleap;
+	double (*cuts)[2] = CircleCuts(cutnum);
+	Mat4d rot2 = mat4_u;
+	GLattrib gla(GL_TEXTURE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LESS);
+	glPushMatrix();
+	Mat4d mat = vw->cs->tocsim(this);
+	mat.vec3(3) = (vw->cs->tocs(vec3_000, this));
+	glMultMatrixd(mat);
+	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+	glColor4f(.5, .5, .5, .3f);
+/*		glDepthFunc(vpos[0] * vpos[0] + vpos[2] * vpos[2] < ISLAND3_RAD * ISLAND3_RAD ? GL_LEQUAL : GL_LESS);*/
+	{
+//		GLfloat dif[4] = {.35, .4, .45, .5}, spc[4] = {.1, .1, .1, 1.};
+//		VECSCALEIN(dif, brightness * .75 + .25);
+//		glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
+//		glMaterialfv(GL_FRONT, GL_AMBIENT, dif);
+/*			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);*/
+//			glFrontFace(GL_CCW);
+		glCallList(walllist);
+		glEnable(GL_CULL_FACE);
+	}
+	for(int n = 0; n < 2; n++){
+		if(n)
+			glFrontFace(GL_CCW);
+		else
+			glFrontFace(GL_CW);
+		for(int m = 0; m < 3; m++){
+			int i0 = (cutnum * m / 3 + cutnum / 6) % cutnum;
+/*				glPushMatrix();*/
+/*				glRotated(m * 120. + 60., 0., 1., 0.);*/
+			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+			Mat4d rot = mat4_u;
+			rot[0] = cuts[i0][1];
+			rot[2] = -cuts[i0][0];
+			rot[8] = cuts[i0][0];
+			rot[10] = cuts[i0][1];
+			for(int i = 0; i < cutnum / 6; i += leap){
+				int i1, j;
+				if(2 <= defleap){
+					Vec3d pos = rot.vp3(pos0[1]);
+					if(i % defleap == 0 && (vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
+						leap = defleap / 2;
+					}
+					else if(leap != defleap && (i) % defleap == 0)
+						leap = defleap;
+				}
+				i1 = (i0+i+leap) % cutnum;
+				rot2[0] = cuts[i1][1];
+				rot2[2] = -cuts[i1][0];
+				rot2[8] = cuts[i1][0];
+				rot2[10] = cuts[i1][1];
+/*					MAT4ROTY(rot2, rot, 2 * M_PI / cutnum);*/
+				glBegin(GL_QUADS);
+				for(j = 1; j < numof(pos0)-2; j++){
+					int k;
+					Vec3d pos[4];
+					Vec3d pos00 = pos0[j], pos01 = pos0[j+1];
+					if(0 < j && j < numof(pos0)-2){
+						pos00[0] = !n ? ISLAND3_GRAD : ISLAND3_RAD;
+						pos01[0] = !n ? ISLAND3_GRAD : ISLAND3_RAD;
+					}
+					pos[0] = rot2.vp3(pos00);
+					pos[1] = rot.vp3(pos00);
+					pos[2] = rot.vp3(pos01);
+					pos[3] = rot2.vp3(pos01);
+					for(k = 0; k < 4; k++){
+						Vec3d viewpos = mat.vp3(pos[k]);
+						if(gc2->getFar() < -viewpos[2])
+							break;
+					}
+					if(farmap ? 4 == k : 4 != k)
+						continue;
+					for(k = 0; k < 4; k++){
+						Vec3d norm;
+						if(n){
+							norm[0] = pos[k][0];
+							norm[1] = 0.;
+							norm[2] = pos[k][2];
+						}
+						else{
+							norm[0] = -pos[k][0];
+							norm[1] = 0.;
+							norm[2] = -pos[k][2];
+						}
+						glNormal3dv(norm);
+						glTexCoord2d(pos0[j + k / 2][1], (i % 8 + leap * !!(9 & (1<<k))) / 8.);
+						glVertex3dv(pos[k]);
+					}
+				}
+				glEnd();
+				rot = rot2;
+			}
+/*				glPopMatrix();*/
+		}
+	}
+	glPopMatrix();
+
+#if 0
+	/* Bridge tower navlights */
+	if(vw->zslice == 0){
+		GLubyte col[4] = {255,0,0,255};
+		amat4_t rot2;
+		double t;
+		double (*cuts)[2];
+		int cutnum = 48 * 4;
+		cuts = CircleCuts(cutnum);
+		t = fmod(csint->w->war_time, 10.);
+		col[3] = t < 5 ? t / 5. * 255 : (10. - t) / 5. * 255;
+		glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		for(m = 0; m < 3; m++){
+			int j, i, n;
+			MAT4IDENTITY(rot2);
+			for(j = 1; j < numof(pos0)-1; j++) for(i = 1; i < 4; i++){
+				int i1 = (i * cutnum / (4 * 6) + m * cutnum / 3 + cutnum / 6) % cutnum;
+				avec3_t bpos, bpos0;
+				rot2[0] = cuts[i1][1];
+				rot2[2] = -cuts[i1][0];
+				rot2[8] = cuts[i1][0];
+				rot2[10] = cuts[i1][1];
+				for(n = 0; n < 2; n++){
+					bpos0[0] = ISLAND3_GRAD - .201;
+					bpos0[1] = pos0[j][1] + (BRIDGE_HALFWID + .001) * (n * 2 - 1);
+					bpos0[2] = 0.;
+					mat4dvp3(bpos, rot2, bpos0);
+		/*			if(glcullFar(bpos, .5, gc2))
+						continue;*/
+					gldSpriteGlow(bpos, .002, col, vw->irot);
+				}
+			}
+		}
+		glPopAttrib();
+	}
+#endif
+}
+
+#if 0
+static void Island3DrawGrass(const Viewer *vw){
+	const Mat4d &rotmat = vw->rot;
+	const Vec3d &view = vw->pos;
+	const Mat4d &inv_rot = vw->irot;
+	int i, count = 1000, total = 0;
+	struct random_sequence rs;
+	timemeas_t tm;
+	const double destvelo = .01; /* destination velocity */
+	const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
+	double plpos[3];
+	avec3_t ortpos;
+	avec3_t nh0 = {0., 0., -1.}, nh;
+	amat4_t mat;
+	int level;
+	int tris = 0, fan = 0;
+	Universe *univ = findcspath("/")->toUniverse();
+	double t = univ ? univ->astro_time : 0.;
+/*	GLfloat rotaxisf[16] = {
+		1., 0., 0., 0.,
+		0., 0., -1., 0.,
+		0., 1., 0., 0.,
+		0., 0., 0., 1.,
+	};
+	GLfloat irotaxisf[16];*/
+/*	if(!grassing)
+		return;*/
+
+	Mat3d ort3 = this->rotation(pos, Vec3d(0,0,0), rot).tomat4().tomat3();
+//	cs->w->vft->orientation(cs->w, &ort3, &vw->pos);
+	Mat3d iort3 = ort3.transpose();
+	Mat4<float> rotaxisf = ort3.cast<float>();
+	Mat4<float> irotaxisf = iort3.cast<float>();
+
+	{
+		double phase;
+		phase = atan2(vw->pos[0], vw->pos[2]);
+		MATVP(ortpos, iort3, vw->pos);
+		ortpos[0] += phase * 3.2;
+		ortpos[1] += ISLAND3_INRAD;
+	}
+
+/*	TimeMeasStart(&tm);*/
+	glPushMatrix();
+	glLoadMatrixd(rotmat);
+	glMultMatrixf(rotaxisf);
+	{
+		amat4_t modelmat, persmat, imodelmat;
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelmat);
+		glGetDoublev(GL_PROJECTION_MATRIX, persmat);
+		persmat[14] = 0.;
+		mat4mp(mat, persmat, modelmat);
+		MAT4TRANSPOSE(imodelmat, modelmat);
+		MAT4DVP3(nh, imodelmat, nh0);
+	}
+/*	MAT4VP3(nh, *inv_rot, nh0);*/
+/*	glTranslated(-(*view)[0], -(*view)[1], -(*view)[2]);*/
+	glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+/*	glDisable(GL_LIGHTING);*/
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(1);
+	for(level = 5; level; level--){
+		double cellsize;
+		double disp[3];
+		if(0. + .05 * (1<<level) < ortpos[1])
+			break;
+		init_rseq(&rs, level + 23342);
+		cellsize = .005 * (1<<level);
+		count = level == 5 ? 50 : 100;
+		for(i = count; i; i--){
+			double pos[3], lpos[3], dst[3], x0, x1, z0, z1, base;
+			double phase;
+			double phase2;
+			unsigned long red;
+
+			pos[0] = ortpos[0] + (drseq(&rs) - .5) * 2 * cellsize;
+			pos[0] = /*pl.pos[0] +*/ +(floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0]);
+			pos[1] = .0001 + (.00003 + drseq(&rs) * .00003) * (4. + (1<<level));
+			pos[2] = ortpos[2] + (drseq(&rs) - .5) * 2 * cellsize;
+			pos[2] = /*pl.pos[2] +*/ +(floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2]);
+			x0 = (.00001 + (drseq(&rs) - .5) * .00005) * (1+level);
+			x1 = (.00001 + (drseq(&rs) - .5) * .00005) * (1+level);
+			z0 = (.00001 + (drseq(&rs) - .5) * .00005) * (1+level);
+			z1 = (.00001 + (drseq(&rs) - .5) * .00005) * (1+level);
+			red = rseq(&rs);
+/*			if((-1. < pos[0] && pos[0] < 1. && -1. < pos[2] && pos[2] < 1.
+				? -.01 < pos[0] && pos[0] < .01
+				: (pos[2] < -.01 || .01 < pos[2])))
+				continue;*/
+			base = 0. - ortpos[1];
+			pos[1] += base;
+	#if 0
+			if(glcullFrustum(&pos, .005, &g_glcull))
+				continue;
+	#elif 1
+			if(pos[2] + ortpos[2] < -ISLAND3_HALFLEN || ISLAND3_HALFLEN < pos[2] + ortpos[2])
+				continue;
+			{
+				avec4_t vec;
+				double d, period = ISLAND3_INRAD * M_PI * 2. / 3.;
+				d = pos[0] + ortpos[0] + ISLAND3_INRAD * M_PI / 6.;
+				d /= period;
+				if(.5 < d - floor(d))
+					continue;
+				VECCPY(dst, pos);
+				VECSADD(dst, nh, .003 / vw->gc->getFov());
+				MAT4VP3(vec, mat, dst);
+				if(vec[2] < 0. || vec[0] < -vec[2] || vec[2] < vec[0] || vec[1] < -vec[2] || vec[2] < vec[1])
+					continue;
+			}
+	#else
+			VECSUB(dst, pos, pl.pos);
+	/*			VECSADD(dst, velo, -.08);*/
+			if(VECSP(pos, nh) < -0.005)
+				continue;
+	#endif
+			{
+				double apos[3];
+				VECADD(apos, pos, vw->pos);
+				phase = (apos[0] + apos[2]) / .00241 + t / .2;
+				phase2 = 1.232123 * ((apos[0] - apos[2]) / .005 + t / .2);
+				disp[0] = pos[0] + (pos[1] - base) * .15 * (sin(phase) + sin(phase2));
+				disp[1] = pos[1];
+				disp[2] = pos[2] + (pos[1] - base) * .15 * (cos(phase) + cos(phase2));
+			}
+			if(level == 5){
+				struct random_sequence rs;
+				double org[2][3];
+				int j, c;
+				init_rseq(&rs, i);
+				memcpy(org[0], pos, sizeof org[0]);
+				org[0][1] = base;
+				memcpy(org[1], pos, sizeof org[0]);
+				org[1][0] += x1 * 2;
+				org[1][1] = base;
+				org[1][2] += z1 * 2;
+				frexp(1e2 * VECLEN(org[0]), &c);
+				c = 4 - c;
+				if(4 < c) c = 4;
+				if(0 <= c){
+					GLubyte col[4] = {128, 0, 0, 255};
+					avec3_t norm;
+					if(tris || fan){
+						tris = fan = 0;
+						glEnd();
+					}
+					VECSCALE(norm, pos, -1.);
+					glNormal3dv(norm);
+					glBegin(GL_QUADS);
+					for(j = 0; j < 4; j++){
+//						glColor4ubv(BlendLight(col));
+//						drawtree(org, 4, 4 - c, &rs);
+					}
+					glEnd();
+				}
+			}
+#define flowermod 47
+			if(red % flowermod < 3){
+				int j, k;
+				double (*cuts)[2];
+				GLdouble v[3][3] = {
+					{0., 0.0001, 0.},
+					{.0001, .00015, .00005},
+					{.0001, .00015, -.00005},
+				};
+				GLubyte cc[4], oc[4];
+				if(tris){
+					tris = 0;
+					glEnd();
+				}
+				if(!fan){
+					glBegin(GL_TRIANGLE_FAN);
+				}
+				if(red % flowermod == 0)
+					cc[0] = 191, cc[1] = 128, cc[2] = 0, cc[3] = 255, oc[0] = 255, oc[1] = 255, oc[2] = 0, oc[3] = 255;
+				else if(red % flowermod == 1)
+					cc[0] = 128, cc[1] = 0, cc[2] = 191, cc[3] = 255, oc[0] = 255, oc[1] = 0, oc[2] = 255, oc[3] = 255;
+				else if(red % flowermod == 2)
+					cc[0] = 128, cc[1] = 128, cc[2] = 191, cc[3] = 255, oc[0] = 255, oc[1] = 255, oc[2] = 255, oc[3] = 255;
+//				glColor4ubv(BlendLight(cc));
+				glVertex3dv(disp);
+				cuts = CircleCuts(5);
+//				glColor4ubv(BlendLight(oc));
+				for(j = 0; j <= 5; j++){
+					k = j % 5;
+					glVertex3d(disp[0] + .0001 * cuts[k][0], disp[1] + .00003, disp[2] + .0001 * cuts[k][1]);
+				}
+				glEnd();
+			}
+			{
+				double disp2[3];
+				if(fan){
+					fan = 0;
+					glEnd();
+				}
+/*				if(!tris){
+					tris = 1;
+					glBegin(GL_TRIANGLES);
+				}*/
+
+				disp2[0] = pos[0] + (pos[1] - base) * .15 * (sin(phase + .1 * M_PI) + sin(phase2 + .1 * M_PI)) / 2.;
+				disp2[1] = (pos[1] + base) / 2.;
+				disp2[2] = pos[2] + (pos[1] - base) * .15 * (cos(phase + .1 * M_PI) + cos(phase2 + .1 * M_PI)) / 2.;
+
+				glBegin(GL_TRIANGLES);
+				glColor4ub(red % 50 + 31,255,0,255);
+				glVertex3d(disp[0], disp[1], disp[2]);
+				glColor4ub(red % 50 + 31,191,0,255);
+				glVertex3d(disp2[0] + x0 / 2., disp2[1], disp2[2] + z0 / 2.);
+				glVertex3d(disp2[0] + x1 / 2., disp2[1], disp2[2] + z1 / 2.);
+				glEnd();
+
+				glBegin(GL_QUADS);
+				glVertex3d(disp2[0] + x0 / 2., disp2[1], disp2[2] + z0 / 2.);
+				glVertex3d(disp2[0] + x1 / 2., disp2[1], disp2[2] + z1 / 2.);
+				glColor4ub(red % 50 + 31,127,0,255);
+				glVertex3d(pos[0] + x1, base, pos[2] + z1);
+				glVertex3d(pos[0] + x0, base, pos[2] + z0);
+				glEnd();
+			}
+			if(red % 2423 < 513){
+				avec3_t v0, v1, v2, v01, v02, vp;
+				glBegin(GL_TRIANGLES);
+				v0[0] = disp[0] - z0, v0[1] = disp[1], v0[2] = disp[2] + x0;
+				v1[0] = pos[0] + x0, v1[1] = base, v1[2] = pos[2] + z0;
+				v2[0] = pos[0] + x1, v2[1] = base, v2[2] = pos[2] + z1;
+				VECSUB(v01, v1, v0);
+				VECSUB(v02, v2, v0);
+				VECVP(vp, v01, v02);
+				glNormal3dv(vp);
+				glColor4ub(red % 50 + 31,255,0,255);
+				glVertex3dv(v0);
+				glColor4ub(red % 50 + 31,127,0,255);
+				glVertex3dv(v1);
+				glVertex3dv(v2);
+				glColor4ub(red % 50 + 31,255,0,255);
+				glVertex3d(disp[0] + z0, disp[1], disp[2] - x0);
+				glColor4ub(red % 50 + 31,127,0,255);
+				glVertex3d(pos[0] + x0, base, pos[2] + z0);
+				glVertex3d(pos[0] + x1, base, pos[2] + z1);
+				glEnd();
+			}
+			total++;
+		}
+	}
+	if(tris || fan)
+		glEnd();
+	glPopAttrib();
+	glPopMatrix();
+/*	fprintf(stderr, "grass[%3d]: %lg sec\n", total, TimeMeasLap(&tm));*/
+}
+#endif

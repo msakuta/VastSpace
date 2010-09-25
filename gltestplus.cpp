@@ -469,10 +469,10 @@ static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wa
 	}
 }
 
-static void cswardraw(const Viewer *vw, CoordSys *cs){
-	cs->draw(vw);
+static void cswardraw(const Viewer *vw, CoordSys *cs, void (CoordSys::*method)(const Viewer *)){
+	(cs->*method)(vw);
 	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next){
-		cswardraw(vw, cs2);
+		cswardraw(vw, cs2, method);
 	}
 }
 
@@ -546,7 +546,7 @@ void draw_func(Viewer &vw, double dt){
 		ie = glGetError();*/
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
-		cswardraw(&vw, const_cast<CoordSys*>(pl.cs));
+		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 		war_draw(vw, pl.cs, &WarField::draw);
 
 #if 0 // buffer copy
@@ -593,6 +593,7 @@ void draw_func(Viewer &vw, double dt){
 		glDisable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
+		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::drawtra);
 		war_draw(vw, pl.cs, &WarField::drawtra);
 		wdtime = TimeMeasLap(&tm);
 		projection(glPopMatrix());

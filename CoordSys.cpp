@@ -512,6 +512,7 @@ int AstroCmp::invokes = 0;
 
 void CoordSys::draw(const Viewer *vw){
 }
+void CoordSys::drawtra(const Viewer *vw){}
 
 void CoordSys::drawcs(const Viewer *vw){
 	draw(vw);

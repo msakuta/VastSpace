@@ -92,17 +92,21 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
-	virtual void anim(double dt);
-	virtual void postframe();
-	virtual void endframe();
-	virtual void predraw(const Viewer *); // called just before draw method.
-	virtual void draw(const Viewer *); // it's not const member function, altering contents is allowed.
+	virtual void anim(double dt); ///< Animate this system
+	virtual void postframe(); ///< Clear pointers to dead objects.
+	virtual void endframe(); ///< Terminating frame. Objects are deallocated in this function.
+	virtual void predraw(const Viewer *); ///< called just before draw method.
+	virtual void draw(const Viewer *); ///< Drawing method is not const member function, altering contents is allowed.
 
-	virtual bool belongs(const Vec3d &pos)const;
+	/// Draw transparent parts. Only objects that use z-buffering to draw itself is necessary to
+	/// override this function.
+	virtual void drawtra(const Viewer *);
 
-	virtual bool readFileStart(StellarContext &); // enter block
-	virtual bool readFile(StellarContext &, int argc, char *argv[]); // read a line from a text file
-	virtual bool readFileEnd(StellarContext &); // exit block
+	virtual bool belongs(const Vec3d &pos)const; ///< Definition of 'inside' of the system.
+
+	virtual bool readFileStart(StellarContext &); ///< Enter block in a stellar file.
+	virtual bool readFile(StellarContext &, int argc, char *argv[]); /// Interpret a line in stellar file
+	virtual bool readFileEnd(StellarContext &); ///< Exit block in a stellar file.
 
 	/** Definition of appropriate rotation. some coordinate systems like space colonies have
 	 * odd rules to rotate the camera. Default is 'trackball' type rotation. */

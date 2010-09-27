@@ -20,6 +20,7 @@
 #include "../glstack.h"
 #include "../material.h"
 #include "../cmd.h"
+#include "../btadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -37,10 +38,11 @@ extern "C"{
 #include <assert.h>
 
 
-#define ISLAND3_RAD 3.25 /* outer radius */
-#define ISLAND3_INRAD 3.2 /* inner radius */
-#define ISLAND3_GRAD 3.24 /* inner glass radius */
+#define ISLAND3_RAD 3.25 ///< outer radius
+#define ISLAND3_INRAD 3.2 ///< inner radius
+#define ISLAND3_GRAD 3.24 ///< inner glass radius
 #define ISLAND3_HALFLEN 16.
+#define ISLAND3_MIRRORTHICK .1 ///< Thickness of the mirrors
 #define ISLAND3_FARMRAD 20.
 #define MIRROR_LENGTH (ISLAND3_HALFLEN * 2.)
 #define BRIDGE_HALFWID .01
@@ -87,11 +89,14 @@ public:
 	typedef Astrobj st;
 
 	double sun_phase;
+	btRigidBody *bbody;
+	btCompoundShape *btshape;
+	btBoxShape *wings[3];
+	btTransform wingtrans[3];
 
 	Island3();
 	virtual const char *classname()const{return "Island3";}
 //	virtual void init(const char *path, CoordSys *root);
-	virtual bool readFile(StellarContext &, int argc, char *argv[]);
 	virtual bool belongs(const Vec3d &pos)const;
 	virtual void anim(double dt);
 	virtual void predraw(const Viewer *);
@@ -100,7 +105,10 @@ public:
 
 	static int &g_shader_enable;
 protected:
+	bool headToSun;
 	int getCutnum(const Viewer *vw)const;
+	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
+	Mat4d transform(const Viewer *vw)const;
 	static GLuint walllist, walltex;
 };
 
@@ -109,17 +117,14 @@ int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
 
-Island3::Island3() : sun_phase(0.){
+Island3::Island3() : sun_phase(0.), bbody(NULL), btshape(NULL), headToSun(false){
 	absmag = 30.;
 	rad = 100.;
 	orbit_home = NULL;
 	mass = 1e10;
 	basecolor = 0xff8080;
 	omg.clear();
-}
 
-bool Island3::readFile(StellarContext &sc, int argc, char *argv[]){
-	return st::readFile(sc, argc, argv);
 }
 
 bool Island3::belongs(const Vec3d &lpos)const{
@@ -128,22 +133,123 @@ bool Island3::belongs(const Vec3d &lpos)const{
 	return sdxy < ISLAND3_RAD * ISLAND3_RAD && -ISLAND3_HALFLEN - ISLAND3_INRAD < lpos[1] && lpos[1] < ISLAND3_HALFLEN;
 }
 
+static const Vec3d joint(3.25 * cos(M_PI * 3. / 6. + M_PI / 6.), 16., 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.));
+
+void Island3::calcWingTrans(int i, Quatd &rot, Vec3d &pos){
+	double brightness = (sin(sun_phase) + 1.) / 2.;
+	Quatd rot0 = Quatd::rotation((i*2*M_PI/3.+M_PI/3.), 0, 1, 0);
+	Quatd rot1 = Quatd::rotation(brightness * 2. * M_PI * 30. / 360., -1, 0, 0);
+	rot = rot0 * rot1;
+	pos = rot.trans(Vec3d(0, 0, ISLAND3_RAD + ISLAND3_MIRRORTHICK / 2.));
+	Vec3d pos1 = rot0.trans(rot1.trans(-joint) + joint);
+	pos += pos1;
+}
+
+Mat4d Island3::transform(const Viewer *vw)const{
+	Mat4d ret = mat4_u;
+	if(vw->zslice != 0){
+		ret = vw->rot;
+		Vec3d delta = pos - vw->pos;
+		ret.translatein(delta);
+	}
+	else if(!bbody)
+		ret.translatein(pos[0], pos[1], pos[2]);
+
+	if(bbody){
+		Mat4d rot = vw->cs->tocsim(parent);
+		Mat4d btrot;
+		bbody->getWorldTransform().getOpenGLMatrix(btrot);
+		ret = ret * btrot * rot;
+	}
+	else{
+		Mat4d rot = vw->cs->tocsim(this);
+		ret = ret * rot;
+	}
+	return ret;
+}
+
 void Island3::anim(double dt){
 	Astrobj *sun = findBrightest();
 
 	// Head toward sun
 	if(sun){
+		if(!headToSun){
+			headToSun = true;
+			rot = Quatd::direction(parent->tocs(pos, sun)).rotate(-M_PI / 2., avec3_100);
+		}
 		Vec3d sunpos = parent->tocs(pos, sun);
-		omg[1] = sqrt(.0098 / 3.25);
 		CoordSys *top = findcspath("/");
-		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
-		Quatd qrot = Quatd::direction(sunpos);
-		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
-		this->rot = qrot1.rotate(phase, avec3_010);
+//		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
+//		Quatd qrot = Quatd::direction(sunpos);
+//		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
+		this->omg = this->rot.trans(Vec3d(0, sqrt(.0098 / 3.25), 0)) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
+		this->rot = this->rot.quatrotquat(omg * dt);
+//		this->rot = qrot1.rotate(phase, avec3_010);
 	}
 
 	// Calculate phase of the simulated sun.
 	sun_phase += 2 * M_PI / 24. / 60. / 60. * dt;
+
+	if(!parent->w)
+		return;
+	WarSpace *ws = *parent->w;
+	if(ws && ws->bdw){
+		if(bbody){
+			bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+			bbody->setAngularVelocity(btvc(omg));
+			int i;
+			for(int n = 0; n < 3; n++) for(i = 0; i < btshape->getNumChildShapes(); i++) if(wings[n] == btshape->getChildShape(i)){
+				Quatd rot;
+				Vec3d pos;
+				calcWingTrans(i, rot, pos);
+				wingtrans[i] = btTransform(btqc(rot), btvc(pos));
+				btshape->updateChildTransform(i, wingtrans[i]);
+			}
+		}
+		else{
+			if(!btshape){
+				btshape = new btCompoundShape();
+				for(int i = 0; i < 3; i++){
+					Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
+					Quatd rot;
+					Vec3d pos;
+					calcWingTrans(i, rot, pos);
+					btBoxShape *box = new btBoxShape(btvc(sc));
+					wings[i] = box;
+					btTransform trans = btTransform(btqc(rot), btvc(pos));
+					wingtrans[i] = trans;
+					btshape->addChildShape(trans, box);
+				}
+				btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD, ISLAND3_HALFLEN, ISLAND3_RAD));
+				btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
+			}
+			btTransform startTransform;
+			startTransform.setIdentity();
+			startTransform.setOrigin(btvc(pos));
+
+			mass = 1e10;
+
+			//rigidbody is dynamic if and only if mass is non zero, otherwise static
+			bool isDynamic = (mass != 0.f);
+
+			btVector3 localInertia(0,0,0);
+			if (isDynamic)
+				btshape->calculateLocalInertia(mass,localInertia);
+
+			//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+			btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
+	//		rbInfo.m_linearDamping = .5;
+	//		rbInfo.m_angularDamping = .5;
+			bbody = new btRigidBody(rbInfo);
+
+	//		bbody->setSleepingThresholds(.0001, .0001);
+
+			//add the body to the dynamics world
+//			ws->bdw->addRigidBody(bbody, 1, ~2);
+			ws->bdw->addRigidBody(bbody);
+		}
+	}
 }
 
 
@@ -388,6 +494,8 @@ GLuint Reflist(){
 	};
 	static GLuint texnames[6];
 	reflist = glGenLists(4);
+
+	// Allocate list to enable mirror material when shader is enabled.
 	glNewList(reflist + 2, GL_COMPILE);
 	do{
 		GLuint vtx, frg;
@@ -412,16 +520,17 @@ GLuint Reflist(){
 	glDisable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 	glEnable(GL_TEXTURE_CUBE_MAP);
-//	glDisable(GL_BLEND);
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);
 	glDisable(GL_TEXTURE_GEN_R);
 	glEndList();
 
+	// Disable mirror
 	glNewList(reflist + 3, GL_COMPILE);
 	glUseProgram(0);
 	glEndList();
 
+	// Allocate list to enable mirror material when shader is disabled.
 	glNewList(reflist, GL_COMPILE);
 	glDisable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
@@ -433,9 +542,9 @@ GLuint Reflist(){
 	glEnable(GL_TEXTURE_GEN_S);
 	glEnable(GL_TEXTURE_GEN_T);
 	glEnable(GL_TEXTURE_GEN_R);
-//	glDisable(GL_BLEND);
 	glEndList();
 
+	// Disable mirror
 	glNewList(reflist + 1, GL_COMPILE);
 	glUseProgram(0);
 	glEndList();
@@ -473,6 +582,16 @@ int Island3::getCutnum(const Viewer *vw)const{
 	else if(pixels < 500)
 		cutnum /= 2;
 	return cutnum;
+}
+
+static bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat){
+	int k;
+	for(k = 0; k < 4; k++){
+		Vec3d viewpos = mat.vp3(pos[k]);
+		if(gc2->getFar() < -viewpos[2])
+			break;
+	}
+	return 4 == k;
 }
 
 
@@ -533,7 +652,7 @@ void Island3::draw(const Viewer *vw){
 	int n, i;
 	int finecuts[48 * 4]; /* this buffer must be greater than cuts */
 
-//	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+	double pixels = fabs(vw->gc->scale(pos)) * 32.;
 	int cutnum = getCutnum(vw);
 
 	double (*cuts)[2] = CircleCuts(cutnum);
@@ -542,14 +661,6 @@ void Island3::draw(const Viewer *vw){
 
 	GLmatrix glma;
 	GLattrib glatt(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT | GL_TRANSFORM_BIT);
-
-	if(farmap){
-		glLoadMatrixd(vw->rot);
-		Vec3d delta = pos - vw->pos;
-		gldTranslate3dv(delta);
-	}
-	else
-		glTranslated(pos[0], pos[1], pos[2]);
 
 //	brightness = Island3Light();
 	double brightness = (sin(sun_phase) + 1.) / 2.;
@@ -598,14 +709,14 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
-	Mat4d rot2 = mat4_u;
-	Mat4d rot = vw->cs->tocsim(this);
-	glMultMatrixd(rot);
+	glMultMatrixd(transform(vw));
 	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 	glDisable(GL_BLEND);
 
 	int northleap = -ISLAND3_HALFLEN - 3. * ISLAND3_RAD < vpos[1] && vpos[1] < -ISLAND3_HALFLEN + ISLAND3_RAD ? 1 : 2;
+
+	Mat4d rot2 = mat4_u;
 
 	/* hull draw */
 	for(n = 0; n < 2; n++){
@@ -652,20 +763,15 @@ void Island3::draw(const Viewer *vw){
 				rot2[2] = -cuts[i2][0];
 				rot2[8] = cuts[i2][0];
 				rot2[10] = cuts[i2][1];
-				pos1[0][0] = hullrad * cuts[j][1];
-				pos1[0][1] = -ISLAND3_HALFLEN - hullrad * cuts[j][0];
-				pos1[0][2] = pos1[1][2] = 0.;
-				pos1[1][0] = hullrad * cuts[j1][1];
-				pos1[1][1] = -ISLAND3_HALFLEN - hullrad * cuts[j1][0];
-				for(k = 0; k < 4; k++){
+				pos1[0].Vec3d::Vec3(hullrad * cuts[j][1],
+					-ISLAND3_HALFLEN - hullrad * cuts[j][0],
+					0.);
+				pos1[1].Vec3d::Vec3(hullrad * cuts[j1][1],
+					-ISLAND3_HALFLEN - hullrad * cuts[j1][0],
+					0.);
+				for(k = 0; k < 4; k++)
 					pos[k] = prot[k]->dvp3(pos1[k/2]);
-				}
-				for(k = 0; k < 4; k++){
-					Vec3d viewpos = mat.vp3(pos[k]);
-					if(gc2->getFar() < -viewpos[2])
-						break;
-				}
-				if(farmap ? 4 == k : 4 != k)
+				if(!farmap ^ cullQuad(pos, gc2, mat))
 					continue;
 				pos1[0][1] += ISLAND3_HALFLEN;
 				pos1[0] /= hullrad;
@@ -751,9 +857,9 @@ void Island3::draw(const Viewer *vw){
 	}
 
 	/* seal at glass bondaries */
-	{
+	if(100 < pixels){
 		int n;
-		Mat4d rot2 = mat4_u;
+		Mat3d rot2 = mat3d_u();
 		for(n = 0; n < 2; n++){
 			int m;
 			Vec3d bpos0[2], norm;
@@ -771,16 +877,16 @@ void Island3::draw(const Viewer *vw){
 					int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
 					rot2[0] = cuts[i1][1];
 					rot2[2] = -cuts[i1][0];
-					rot2[8] = cuts[i1][0];
-					rot2[10] = cuts[i1][1];
+					rot2[6] = cuts[i1][0];
+					rot2[8] = cuts[i1][1];
 					if(i1 % defleap || finecuts[i1])
 						leap = defleap / 2;
 					else
 						leap = defleap;
-					Vec3d bpos = rot2.dvp3(bpos0[0]);
+					Vec3d bpos = rot2.vp3(bpos0[0]);
 					glTexCoord2d(0., i);
 					glVertex3dv(bpos);
-					bpos = rot2.dvp3(bpos0[1]);
+					bpos = rot2.vp3(bpos0[1]);
 					glTexCoord2d(1., i);
 					glVertex3dv(bpos);
 				}
@@ -790,13 +896,13 @@ void Island3::draw(const Viewer *vw){
 	}
 
 	/* walls between inner/outer cylinder */
-	for(int i = 0; i < cutnum; i += cutnum / 6){
+	if(100 < pixels) for(int i = 0; i < cutnum; i += cutnum / 6){
 		int i1 = i;
-		Mat4d rot = mat4_u;
+		Mat3d rot = mat3d_u();
 		rot[0] = cuts[i1][1];
 		rot[2] = -cuts[i1][0];
-		rot[8] = cuts[i1][0];
-		rot[10] = cuts[i1][1];
+		rot[6] = cuts[i1][0];
+		rot[8] = cuts[i1][1];
 		glNormal3dv(i % (cutnum / 3) == 0 ? rot.vec3(2) : -rot.vec3(2));
 		glBegin(GL_QUAD_STRIP);
 		for(int j = 1; j < numof(pos0)-1; j++){
@@ -857,11 +963,21 @@ void Island3::draw(const Viewer *vw){
 		}
 		for(int m = 0; m < 3; m++){
 			glPushMatrix();
-			glRotated(m * 120. + 60., 0., 1., 0.);
-			Vec3d joint(3.25 * cos(M_PI * 3. / 6. + M_PI / 6.), 16., 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.));
+/*			glRotated(m * 120. + 60., 0., 1., 0.);
 			gldTranslate3dv(joint);
 			glRotated(brightness * 30., -1., 0., 0.);
-			gldTranslaten3dv(joint);
+			gldTranslaten3dv(joint);*/
+			Mat4d localmat;
+			if(bbody)
+				wingtrans[m].getOpenGLMatrix(localmat);
+			else{
+				Vec3d pos;
+				Quatd rot;
+				calcWingTrans(m, rot, pos);
+				localmat = rot.tomat4();
+				localmat.vec3(3) = pos;
+			}
+			glMultMatrixd(localmat);
 			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 			glColor4ub(0,0,0,63);
 			for(i = 0; i < 1; i += leap){
@@ -872,16 +988,12 @@ void Island3::draw(const Viewer *vw){
 					Vec3d pos[4];
 					int k;
 					for(k = 0; k < 4; k++){
-						pos[k][0] = ((6 & (1<<k) ? i : i1) - cutnum / 12) * ISLAND3_RAD * 2 / (cutnum / 6) / sqrt(3.);
-						pos[k][1] = pos0[j+k/2][1];
-						pos[k][2] = ISLAND3_RAD;
+						pos[k].Vec3d::Vec3(
+							((6 & (1<<k) ? i : i1) - cutnum / 12) * ISLAND3_RAD * 2 / (cutnum / 6) / sqrt(3.),
+							pos0[j+k/2][1],
+							/*ISLAND3_RAD +*/ (n * 2 - 1) / 2. * ISLAND3_MIRRORTHICK);
 					}
-					for(k = 0; k < 4; k++){
-						Vec3d viewpos = mat.vp3(pos[k]);
-						if(gc2->getFar() < -viewpos[2])
-							break;
-					}
-					if(farmap ? 4 == k : 4 != k)
+					if(!farmap ^ cullQuad(pos, gc2, mat))
 						continue;
 					for(k = 0; k < 4; k++){
 						glTexCoord2dv(pos[k]);
@@ -902,6 +1014,101 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
+	// Mirror thickness
+	if(100 < pixels) for(int m = 0; m < 3; m++){
+		glPushMatrix();
+/*		glRotated(m * 120. + 60., 0., 1., 0.);
+		gldTranslate3dv(joint);
+		glRotated(brightness * 30., -1., 0., 0.);
+		gldTranslaten3dv(joint);*/
+		Mat4d localmat;
+		if(bbody)
+			wingtrans[m].getOpenGLMatrix(localmat);
+		else{
+			Vec3d pos;
+			Quatd rot;
+			calcWingTrans(m, rot, pos);
+			localmat = rot.tomat4();
+			localmat.vec3(3) = pos;
+		}
+		glMultMatrixd(localmat);
+		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+		glColor4ub(0,0,0,63);
+		for(i = 0; i < 2; i++){
+			int i1 = i * cutnum / 6 - cutnum / 12;
+			glBegin(GL_QUADS);
+			glNormal3d(i ? 1 : -1, 0., 0.);
+			for(int j = 1; j < numof(pos0)-2; j++){
+				Vec3d pos[4];
+				int k;
+				for(k = 0; k < 4; k++){
+					pos[k].Vec3d::Vec3(i1 * ISLAND3_RAD * 2 / (cutnum / 6) / sqrt(3.),
+						pos0[j+k/2][1],
+						((i ^ !(6 & (1<<k))) * 2 - 1) / 2. * ISLAND3_MIRRORTHICK);
+				}
+				if(!farmap ^ cullQuad(pos, gc2, mat))
+					continue;
+				for(k = 0; k < 4; k++){
+					glTexCoord2d(pos[k][2] - ISLAND3_RAD - ISLAND3_MIRRORTHICK, pos[k][1]);
+					glVertex3dv(pos[k]);
+				}
+			}
+			glEnd();
+		}
+		glBegin(GL_QUADS);
+		Vec3d pos[4];
+		pos[0].Vec3d::Vec3(-ISLAND3_RAD / sqrt(3.), pos0[1][1], -ISLAND3_MIRRORTHICK / 2.);
+		pos[1].Vec3d::Vec3(-ISLAND3_RAD / sqrt(3.), pos0[1][1], ISLAND3_MIRRORTHICK / 2.);
+		pos[2].Vec3d::Vec3(ISLAND3_RAD / sqrt(3.), pos0[1][1], ISLAND3_MIRRORTHICK / 2.);
+		pos[3].Vec3d::Vec3(ISLAND3_RAD / sqrt(3.), pos0[1][1], -ISLAND3_MIRRORTHICK / 2.);
+		if(farmap ^ cullQuad(pos, gc2, mat)) for(int k = 0; k < 4; k++){
+			glTexCoord2d(pos[k][0], pos[k][2] - ISLAND3_RAD - ISLAND3_MIRRORTHICK);
+			glVertex3dv(pos[k]);
+		}
+		pos[0].Vec3d::Vec3(ISLAND3_RAD / sqrt(3.), pos0[numof(pos0)-2][1], -ISLAND3_MIRRORTHICK / 2.);
+		pos[1].Vec3d::Vec3(ISLAND3_RAD / sqrt(3.), pos0[numof(pos0)-2][1], ISLAND3_MIRRORTHICK / 2.);
+		pos[2].Vec3d::Vec3(-ISLAND3_RAD / sqrt(3.), pos0[numof(pos0)-2][1], ISLAND3_MIRRORTHICK / 2.);
+		pos[3].Vec3d::Vec3(-ISLAND3_RAD / sqrt(3.), pos0[numof(pos0)-2][1], -ISLAND3_MIRRORTHICK / 2.);
+		if(farmap ^ cullQuad(pos, gc2, mat)) for(int k = 0; k < 4; k++){
+			glTexCoord2d(pos[k][0], pos[k][2] - ISLAND3_RAD - ISLAND3_MIRRORTHICK);
+			glVertex3dv(pos[k]);
+		}
+		glEnd();
+
+		glPopMatrix();
+	}
+
+}
+
+static void hitbox_draw(const double sc[3], int hitflags){
+	glPushMatrix();
+	glScaled(sc[0], sc[1], sc[2]);
+	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_POLYGON_SMOOTH);
+	glColor4ub(255,0,0,255);
+	glBegin(GL_LINES);
+	{
+		int i, j, k;
+		for(i = 0; i < 3; i++) for(j = -1; j <= 1; j += 2) for(k = -1; k <= 1; k += 2){
+			double v[3];
+			v[i] = j;
+			v[(i+1)%3] = k;
+			v[(i+2)%3] = -1.;
+			glVertex3dv(v);
+			v[(i+2)%3] = 1.;
+			glVertex3dv(v);
+		}
+	}
+/*	for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++) for(int iz = 0; iz < 2; iz++){
+		glColor4fv(hitflags & (1 << (ix * 4 + iy * 2 + iz)) ? Vec4<float>(1,0,0,1) : Vec4<float>(0,1,1,1));
+		glVertex3dv(vec3_000);
+		glVertex3dv(1.2 * Vec3d(ix * 2 - 1, iy * 2 - 1, iz * 2 - 1));
+	}*/
+	glEnd();
+	glPopAttrib();
+	glPopMatrix();
 }
 
 void Island3::drawtra(const Viewer *vw){
@@ -971,13 +1178,16 @@ void Island3::drawtra(const Viewer *vw){
 	int defleap = 2, leap = defleap;
 	double (*cuts)[2] = CircleCuts(cutnum);
 	Mat4d rot2 = mat4_u;
+	{
 	GLattrib gla(GL_TEXTURE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LESS);
 	glPushMatrix();
-	Mat4d mat = vw->cs->tocsim(this);
+/*	Mat4d mat = vw->cs->tocsim(this);
 	mat.vec3(3) = (vw->cs->tocs(vec3_000, this));
-	glMultMatrixd(mat);
+	glMultMatrixd(mat);*/
+	glMultMatrixd(transform(vw));
+	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 /*		glDepthFunc(vpos[0] * vpos[0] + vpos[2] * vpos[2] < ISLAND3_RAD * ISLAND3_RAD ? GL_LEQUAL : GL_LESS);*/
 	{
@@ -1079,6 +1289,22 @@ void Island3::drawtra(const Viewer *vw){
 
 	}
 	glPopMatrix();
+	}
+	if(0 && bbody) for(int i = 0; i < 3; i++){
+		btBoxShape *box = wings[i];
+		btvc aabb = box->getHalfExtentsWithMargin();
+		glPushMatrix();
+		Mat4d mat = vw->cs->tocsim(parent);
+		mat.vec3(3) = vw->cs->tocs(vec3_000, parent);
+		glMultMatrixd(mat);
+		bbody->getWorldTransform().getOpenGLMatrix(mat);
+		glMultMatrixd(mat);
+		wingtrans[i].getOpenGLMatrix(mat);
+		glMultMatrixd(mat);
+		glColor4ub(255,0,0,255);
+		hitbox_draw(aabb, 0);
+		glPopMatrix();
+	}
 
 #if 0
 	/* Bridge tower navlights */

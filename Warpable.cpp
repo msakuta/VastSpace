@@ -619,7 +619,7 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	Vec3d dvLinear = rdrn.sp(dv) * rdrn;
 	Vec3d dvPlanar = dv - dvLinear;
 	double dist = rdr.len();
-	if(rdrn.sp(dv) < 0) // estimate only when closing
+	if(rdrn.sp(dv) < 0 && 0 < dvLinear.slen()) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len() * .1;
 	Vec3d dr = this->pos - target;
 	if(rot.trans(-vec3_001).sp(dr) < 0) // burst only when heading closer

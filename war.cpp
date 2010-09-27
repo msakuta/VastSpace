@@ -9,6 +9,7 @@
 #include "cmd.h"
 #include "astrodraw.h"
 #include "sqadapt.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -318,10 +319,12 @@ void WarSpace::endframe(){
 	st::endframe();
 }
 
-static double gradius = 1.;
+//static double gradius = 1.;
+static int g_debugdraw_bullet = 0;
 
 static void init_gsc(){
-	CvarAdd("gradius", &gradius, cvar_double);
+//	CvarAdd("gradius", &gradius, cvar_double);
+	CvarAdd("g_debugdraw_bullet", &g_debugdraw_bullet, cvar_int);
 }
 
 static Initializator initializator(init_gsc);
@@ -438,6 +441,26 @@ void WarSpace::drawtra(wardraw_t *wd){
 		catch(...){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
 		}
+	}
+
+	if(g_debugdraw_bullet && bdw){
+		static class DebugDraw : public btIDebugDraw{
+			// Override only drawLine method for the moment.
+			virtual void drawLine(const btVector3& from,const btVector3& to,const btVector3& color){
+				glColor3fv(btvc(color).cast<float>());
+				glBegin(GL_LINES);
+				glVertex3dv(btvc(from));
+				glVertex3dv(btvc(to));
+				glEnd();
+			}
+			virtual void	drawContactPoint(const btVector3& PointOnB,const btVector3& normalOnB,btScalar distance,int lifeTime,const btVector3& color){}
+			virtual void	reportErrorWarning(const char* warningString){}
+			virtual void	draw3dText(const btVector3& location,const char* textString){}
+			virtual void	setDebugMode(int debugMode){}
+			virtual int		getDebugMode() const{return 1;}
+		}debugDrawer;
+		bdw->getCollisionWorld()->setDebugDrawer(&debugDrawer);
+		bdw->debugDrawWorld();
 	}
 
 	if(g_otdrawflags)

@@ -73,8 +73,9 @@ extern "C"{
 
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
-static double g_space_near_clip = 0.00005, g_space_far_clip = 1e10;
-static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e6;
+static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///< For those that z buffering does not make sense
+static double g_space_near_clip = .5, g_space_far_clip = 1e10;
+static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
 static double r_dynamic_range = 1.;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
@@ -482,13 +483,14 @@ void draw_func(Viewer &vw, double dt){
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
 	glMultMatrixd(vw.rot);
-	GLcull glc[2] = {
+	GLcull glc[3] = {
+		GLcull(vw.fov, vw.pos, vw.irot, g_warspace_near_clip, g_warspace_far_clip),
 		GLcull(vw.fov, vw.pos, vw.irot, g_space_near_clip, g_space_far_clip),
-		GLcull(vw.fov, vw.pos, vw.irot, g_warspace_near_clip, g_warspace_far_clip)
+		GLcull(vw.fov, vw.pos, vw.irot, g_background_near_clip, g_background_far_clip),
 	};
 	vw.gclist[0] = &glc[0];
 	vw.gclist[1] = &glc[1];
-	vw.gc = &glc[0];
+	vw.gclist[2] = &glc[2];
 	glPolygonMode(GL_FRONT_AND_BACK, gl_wireframe ? GL_LINE : GL_FILL);
 	{
 	GLma a(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
@@ -499,10 +501,22 @@ void draw_func(Viewer &vw, double dt){
 //	drawstarback(&vw, &galaxysystem, NULL, NULL);
 	projection((
 		glPushMatrix(), glLoadIdentity(),
+		vw.frustum(g_background_near_clip, g_background_far_clip)
+	));
+	vw.zslice = 2;
+	vw.gc = &glc[2];
+	universe.startdraw();
+	universe.predraw(&vw);
+	universe.drawcs(&vw);
+	pl.draw(&vw);
+	projection(glPopMatrix());
+
+	projection((
+		glPushMatrix(), glLoadIdentity(),
 		vw.frustum(g_space_near_clip, g_space_far_clip)
 	));
 	vw.zslice = 1;
-	universe.startdraw();
+	vw.gc = &glc[1];
 	universe.predraw(&vw);
 	universe.drawcs(&vw);
 	pl.draw(&vw);
@@ -799,7 +813,7 @@ void display_func(void){
 		glGetIntegerv(GL_VIEWPORT, vp);
 		viewer.vp.set(vp);
 		viewer.fov = pl.fov;
-		double dnear = g_space_near_clip, dfar = g_space_far_clip;
+		double dnear = g_warspace_near_clip, dfar = g_warspace_far_clip;
 /*		if(pl.cs->w && pl.cs->w->vft->nearplane)
 			dnear = pl.cs->w->vft->nearplane(pl.cs->w);
 		if(pl.cs->w && pl.cs->w->vft->farplane)
@@ -861,7 +875,7 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 //	int viewstate = 0;
 	bool pointselect = !!(flags & 4);
 	double best = 1e50;
-	double g_far = g_space_far_clip, g_near = g_space_near_clip;
+	double g_far = g_warspace_far_clip, g_near = g_warspace_near_clip;
 	Entity *ptbest = NULL;
 
 	if(!pl.cs->w)

@@ -106,9 +106,11 @@ public:
 	static int &g_shader_enable;
 protected:
 	bool headToSun;
+	bool cullLevel; ///< -1 = indeterminant, 0 = near, 1 = far
 	int getCutnum(const Viewer *vw)const;
 	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
 	Mat4d transform(const Viewer *vw)const;
+	bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat);
 	static GLuint walllist, walltex;
 };
 
@@ -146,24 +148,27 @@ void Island3::calcWingTrans(int i, Quatd &rot, Vec3d &pos){
 }
 
 Mat4d Island3::transform(const Viewer *vw)const{
-	Mat4d ret = mat4_u;
+	Mat4d ret;
 	if(vw->zslice != 0){
-		ret = vw->rot;
-		Vec3d delta = pos - vw->pos;
+		Quatd rot = vw->cs->tocsq(parent);
+		ret = rot.tomat4();
+		Vec3d delta = vw->cs->tocs(pos, parent) - vw->pos;
 		ret.translatein(delta);
-	}
-	else if(!bbody)
-		ret.translatein(pos[0], pos[1], pos[2]);
-
-	if(bbody){
-		Mat4d rot = vw->cs->tocsim(parent);
-		Mat4d btrot;
-		bbody->getWorldTransform().getOpenGLMatrix(btrot);
-		ret = ret * btrot * rot;
+		ret = ret * this->rot.tomat4();
 	}
 	else{
-		Mat4d rot = vw->cs->tocsim(this);
-		ret = ret * rot;
+		ret = mat4_u;
+		if(!bbody){
+			Mat4d rot = vw->cs->tocsim(this);
+			ret.translatein(pos[0], pos[1], pos[2]);
+			ret = ret * rot;
+		}
+		else{
+			Mat4d rot = vw->cs->tocsim(parent);
+			Mat4d btrot;
+			bbody->getWorldTransform().getOpenGLMatrix(btrot);
+			ret = ret * btrot * rot;
+		}
 	}
 	return ret;
 }
@@ -584,22 +589,30 @@ int Island3::getCutnum(const Viewer *vw)const{
 	return cutnum;
 }
 
-static bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat){
-	int k;
+bool Island3::cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat){
+	return cullLevel == 0;
+/*	int k;
 	for(k = 0; k < 4; k++){
 		Vec3d viewpos = mat.vp3(pos[k]);
 		if(gc2->getFar() < -viewpos[2])
 			break;
 	}
-	return 4 == k;
+	return 4 == k;*/
 }
 
 
 void Island3::draw(const Viewer *vw){
+	if(1 < vw->zslice) // No way we can draw it without z buffering.
+		return;
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
-	if(farmap)
-		return;
+
+	// If any part of the colony has chance to go beyond far clipping plane of z slice of 0,
+	// it's enough to decide cullLevel to 1.
+	if(gc2->cullFar(vw->cs->tocs(pos, parent), -40.))
+		cullLevel = 1;
+	else
+		cullLevel = 0;
 
 	static bool multitex = false;
 	if(!multitex){
@@ -857,7 +870,7 @@ void Island3::draw(const Viewer *vw){
 	}
 
 	/* seal at glass bondaries */
-	if(100 < pixels){
+	if(100 < pixels && !farmap ^ cullLevel){
 		int n;
 		Mat3d rot2 = mat3d_u();
 		for(n = 0; n < 2; n++){
@@ -896,7 +909,7 @@ void Island3::draw(const Viewer *vw){
 	}
 
 	/* walls between inner/outer cylinder */
-	if(100 < pixels) for(int i = 0; i < cutnum; i += cutnum / 6){
+	if(100 < pixels && !farmap ^ cullLevel) for(int i = 0; i < cutnum; i += cutnum / 6){
 		int i1 = i;
 		Mat3d rot = mat3d_u();
 		rot[0] = cuts[i1][1];

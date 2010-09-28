@@ -851,6 +851,8 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 void TexSphere::draw(const Viewer *vw){
+	if(vw->zslice != 2)
+		return;
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
@@ -2873,6 +2875,8 @@ void Star::predraw(const Viewer *){
 }
 
 void Star::draw(const Viewer *vw){
+	if(vw->zslice != 2)
+		return;
 	COLOR32 col = COLOR32RGBA(255,255,255,255);
 	Vec3d gvelo;
 	gvelo = parent->tocsv(vw->velo, vw->pos, vw->cs);
@@ -3079,7 +3083,8 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 
 
 void Universe::draw(const Viewer *vw){
-	drawstarback(vw, this, NULL, NULL);
+	if(vw->zslice == 2)
+		drawstarback(vw, this, NULL, NULL);
 	st::draw(vw);
 }
 

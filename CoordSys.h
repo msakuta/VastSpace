@@ -132,22 +132,31 @@ public:
 	   The data structure is associated with family tree because a child
 	  coordinate system has only one parent, but one can have any number of
 	  children.
+
 	   The relationship of a parent and a child is stand on a fact that
 	  both are aware of it.
+
 	   We need to be able to find a given coordinate system's children or parent,
 	  because there can be the case both are not direct ancestor of the other
 	  (siblings, for example).
+
 	   Although the coordiante system tree is relatively static data, maintaining
 	  the bidirectional reference correctly is tough and bugsome by human hands.
 	  So this function is here to make one's parent legitimize one as his child.
 	  All we need is to specify coordinate systems' parent and pass them into this
 	  function.
+
 	   The returning pointer points to one in parent's memory, which points back to
 	  me (precisely the returned storage can belong to one of siblings, but it's
 	  considered parent's property). The returned pointer expires when another
 	  sibling is added or deleted.
 	*/
 	CoordSys **legitimize_child();
+
+	/// Called when the parent system is changed. At the time of calling this function, this->parent
+	/// is already new one.
+	/// \param oldParent can be NULL if it's the first time being attached to a system tree.
+	virtual void onChangeParent(CoordSys *oldParent);
 
 	/// Adopt one as child which was originally another parent's.
 	void adopt_child(CoordSys *newparent, bool retainPosition = true);

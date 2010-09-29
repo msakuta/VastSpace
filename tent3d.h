@@ -12,6 +12,7 @@
 #ifndef NPROFILE
 #include <stddef.h>
 #endif
+#include "export.h"
 
 typedef unsigned long tent3d_flags_t;
 
@@ -91,25 +92,25 @@ struct tent3d_line_drawdata{
 };
 struct tent3d_fpol_list;
 
-struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
-struct tent3d_line_list *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
-void DelTeline3D(struct tent3d_line_list *); /* destructor */
-void AddTeline3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
-void AddTelineCallback3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
-void AnimTeline3D(struct tent3d_line_list *tell, double dt);
-void DrawTeline3D(struct tent3d_line_list *tell, struct tent3d_line_drawdata *);
+EXPORT struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
+EXPORT struct tent3d_line_list *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
+EXPORT void DelTeline3D(struct tent3d_line_list *); /* destructor */
+EXPORT void AddTeline3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
+EXPORT void AddTelineCallback3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
+EXPORT void AnimTeline3D(struct tent3d_line_list *tell, double dt);
+EXPORT void DrawTeline3D(struct tent3d_line_list *tell, struct tent3d_line_drawdata *);
 #endif
 
 #ifdef __cplusplus
 extern "C"{
 #endif
-struct tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
-void AddTefpol3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
-struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
-void MoveTefpol3D(struct tent3d_fpol *fpol, const double pos[3], const double velo[3], double life, int skip);
-void ImmobilizeTefpol3D(struct tent3d_fpol*);
-void AnimTefpol3D(struct tent3d_fpol_list *tell, double dt);
-void DrawTefpol3D(struct tent3d_fpol_list *tepl, const double viewpoint[3], const struct glcull *);
+EXPORT struct tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
+EXPORT void AddTefpol3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
+EXPORT struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
+EXPORT void MoveTefpol3D(struct tent3d_fpol *fpol, const double pos[3], const double velo[3], double life, int skip);
+EXPORT void ImmobilizeTefpol3D(struct tent3d_fpol*);
+EXPORT void AnimTefpol3D(struct tent3d_fpol_list *tell, double dt);
+EXPORT void DrawTefpol3D(struct tent3d_fpol_list *tepl, const double viewpoint[3], const struct glcull *);
 #ifdef __cplusplus
 }
 #endif

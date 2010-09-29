@@ -91,6 +91,7 @@ CoordSys **CoordSys::legitimize_child(){
 		/* append the child into family list */
 		next = parent->children;
 		parent->children = this;
+		onChangeParent(NULL);
 		return &parent->children;
 	}
 	return NULL;
@@ -132,12 +133,17 @@ void CoordSys::adopt_child(CoordSys *newparent, bool retain){
 	}
 
 	/* recognize the new parent */
+	CoordSys *oldParent = adoptee->parent;
 	adoptee->parent = newparent;
 
 	/* append the child into new family list */
 	adoptee->next = newparent->children;
 	newparent->children = adoptee;
+
+	adoptee->onChangeParent(oldParent);
 }
+
+void CoordSys::onChangeParent(CoordSys *oldParent){}
 
 
 
@@ -584,6 +590,14 @@ void CoordSys::endframe(){
 				break;
 			}
 			assert(ok);
+		}
+
+		// Remove myself from astrobj sorted list.
+		if(CoordSys *eis = findeisystem()){
+			for(AOList::iterator it = eis->aorder.begin(); it != eis->aorder.end(); it++) if(*it == this){
+				eis->aorder.erase(it);
+				break;
+			}
 		}
 
 		// give children to parent.

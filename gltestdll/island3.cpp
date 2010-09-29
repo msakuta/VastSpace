@@ -21,6 +21,8 @@
 #include "../material.h"
 #include "../cmd.h"
 #include "../btadapt.h"
+#include "../Entity.h"
+#include "../judge.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -36,6 +38,8 @@ extern "C"{
 #include <gl/glu.h>
 #include <gl/glext.h>
 #include <assert.h>
+#include <btBulletDynamicsCommon.h>
+#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 
 
 #define ISLAND3_RAD 3.25 ///< outer radius
@@ -82,19 +86,23 @@ static struct war_field_static i3war_static = {
 	&i3war_static,
 };*/
 
+class Island3Entity;
 
+/// Space colony Island3, A.K.A. O'Neill Cylinder.
 class Island3 : public Astrobj{
 public:
 	static const unsigned classid;
 	typedef Astrobj st;
 
 	double sun_phase;
-	btRigidBody *bbody;
+	Island3Entity *ent;
+//	btRigidBody *bbody;
 	btCompoundShape *btshape;
 	btBoxShape *wings[3];
 	btTransform wingtrans[3];
 
 	Island3();
+	virtual ~Island3();
 	virtual const char *classname()const{return "Island3";}
 //	virtual void init(const char *path, CoordSys *root);
 	virtual bool belongs(const Vec3d &pos)const;
@@ -102,6 +110,7 @@ public:
 	virtual void predraw(const Viewer *);
 	virtual void draw(const Viewer *);
 	virtual void drawtra(const Viewer *);
+	virtual void onChangeParent(CoordSys *oldParent);
 
 	static int &g_shader_enable;
 protected:
@@ -114,19 +123,42 @@ protected:
 	static GLuint walllist, walltex;
 };
 
+/// Island3 bound Entity. Not registered as a creatable object, create Island3 instead.
+class Island3Entity : public Entity{
+public:
+	friend Island3;
+	Island3 &astro;
+	Island3Entity(Island3 &astro);
+	virtual ~Island3Entity();
+	virtual const char *classname()const{return "Island3Entity";}
+	virtual double hitradius()const{return 20.;}
+	virtual bool isTargettable()const{return true;}
+	virtual bool isSelectable()const{return true;}
+	virtual double maxhealth()const{return 1e6;}
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
+	virtual int takedamage(double damage, int hitpart);
+};
+
+
 const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
 
-Island3::Island3() : sun_phase(0.), bbody(NULL), btshape(NULL), headToSun(false){
+Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 	absmag = 30.;
 	rad = 100.;
 	orbit_home = NULL;
 	mass = 1e10;
 	basecolor = 0xff8080;
 	omg.clear();
+}
 
+Island3::~Island3(){
+	if(ent)
+		delete ent;
+	if(btshape)
+		delete btshape;
 }
 
 bool Island3::belongs(const Vec3d &lpos)const{
@@ -158,7 +190,7 @@ Mat4d Island3::transform(const Viewer *vw)const{
 	}
 	else{
 		ret = mat4_u;
-		if(!bbody){
+		if(!ent){
 			Mat4d rot = vw->cs->tocsim(this);
 			ret.translatein(pos[0], pos[1], pos[2]);
 			ret = ret * rot;
@@ -166,7 +198,7 @@ Mat4d Island3::transform(const Viewer *vw)const{
 		else{
 			Mat4d rot = vw->cs->tocsim(parent);
 			Mat4d btrot;
-			bbody->getWorldTransform().getOpenGLMatrix(btrot);
+			ent->bbody->getWorldTransform().getOpenGLMatrix(btrot);
 			ret = ret * btrot * rot;
 		}
 	}
@@ -198,61 +230,69 @@ void Island3::anim(double dt){
 	if(!parent->w)
 		return;
 	WarSpace *ws = *parent->w;
-	if(ws && ws->bdw){
-		if(bbody){
-			bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
-			bbody->setAngularVelocity(btvc(omg));
-			int i;
-			for(int n = 0; n < 3; n++) for(i = 0; i < btshape->getNumChildShapes(); i++) if(wings[n] == btshape->getChildShape(i)){
+	if(ws && !ent){
+		ent = new Island3Entity(*this);
+		ws->addent(ent);
+		if(!btshape){
+			btshape = new btCompoundShape();
+			for(int i = 0; i < 3; i++){
+				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
 				Quatd rot;
 				Vec3d pos;
 				calcWingTrans(i, rot, pos);
-				wingtrans[i] = btTransform(btqc(rot), btvc(pos));
-				btshape->updateChildTransform(i, wingtrans[i]);
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				wings[i] = box;
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				wingtrans[i] = trans;
+				btshape->addChildShape(trans, box);
 			}
+			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + .01, ISLAND3_HALFLEN, ISLAND3_RAD + .01));
+			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 		}
-		else{
-			if(!btshape){
-				btshape = new btCompoundShape();
-				for(int i = 0; i < 3; i++){
-					Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
-					Quatd rot;
-					Vec3d pos;
-					calcWingTrans(i, rot, pos);
-					btBoxShape *box = new btBoxShape(btvc(sc));
-					wings[i] = box;
-					btTransform trans = btTransform(btqc(rot), btvc(pos));
-					wingtrans[i] = trans;
-					btshape->addChildShape(trans, box);
-				}
-				btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD, ISLAND3_HALFLEN, ISLAND3_RAD));
-				btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
-			}
-			btTransform startTransform;
-			startTransform.setIdentity();
-			startTransform.setOrigin(btvc(pos));
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
 
-			mass = 1e10;
+		mass = 1e10;
 
-			//rigidbody is dynamic if and only if mass is non zero, otherwise static
-			bool isDynamic = (mass != 0.f);
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
 
-			btVector3 localInertia(0,0,0);
-			if (isDynamic)
-				btshape->calculateLocalInertia(mass,localInertia);
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			btshape->calculateLocalInertia(mass,localInertia);
 
-			//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-			btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
-	//		rbInfo.m_linearDamping = .5;
-	//		rbInfo.m_angularDamping = .5;
-			bbody = new btRigidBody(rbInfo);
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .5;
+		ent->bbody = new btRigidBody(rbInfo);
 
-	//		bbody->setSleepingThresholds(.0001, .0001);
+//		bbody->setSleepingThresholds(.0001, .0001);
 
-			//add the body to the dynamics world
+		//add the body to the dynamics world
 //			ws->bdw->addRigidBody(bbody, 1, ~2);
-			ws->bdw->addRigidBody(bbody);
+		ws->bdw->addRigidBody(ent->bbody);
+	}
+	if(ws && ent){
+		ent->pos = this->pos;
+		ent->rot = this->rot;
+		ent->velo = this->velo;
+		ent->omg = this->omg;
+		ent->mass = this->mass;
+	}
+	if(ws && ws->bdw && ent){
+		btRigidBody *bbody = ent->bbody;
+		bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		int i;
+		for(int n = 0; n < 3; n++) for(i = 0; i < btshape->getNumChildShapes(); i++) if(wings[n] == btshape->getChildShape(i)){
+			Quatd rot;
+			Vec3d pos;
+			calcWingTrans(i, rot, pos);
+			wingtrans[i] = btTransform(btqc(rot), btvc(pos));
+			btshape->updateChildTransform(i, wingtrans[i]);
 		}
 	}
 }
@@ -981,7 +1021,7 @@ void Island3::draw(const Viewer *vw){
 			glRotated(brightness * 30., -1., 0., 0.);
 			gldTranslaten3dv(joint);*/
 			Mat4d localmat;
-			if(bbody)
+			if(ent)
 				wingtrans[m].getOpenGLMatrix(localmat);
 			else{
 				Vec3d pos;
@@ -1035,7 +1075,7 @@ void Island3::draw(const Viewer *vw){
 		glRotated(brightness * 30., -1., 0., 0.);
 		gldTranslaten3dv(joint);*/
 		Mat4d localmat;
-		if(bbody)
+		if(ent)
 			wingtrans[m].getOpenGLMatrix(localmat);
 		else{
 			Vec3d pos;
@@ -1302,21 +1342,6 @@ void Island3::drawtra(const Viewer *vw){
 
 	}
 	glPopMatrix();
-	}
-	if(0 && bbody) for(int i = 0; i < 3; i++){
-		btBoxShape *box = wings[i];
-		btvc aabb = box->getHalfExtentsWithMargin();
-		glPushMatrix();
-		Mat4d mat = vw->cs->tocsim(parent);
-		mat.vec3(3) = vw->cs->tocs(vec3_000, parent);
-		glMultMatrixd(mat);
-		bbody->getWorldTransform().getOpenGLMatrix(mat);
-		glMultMatrixd(mat);
-		wingtrans[i].getOpenGLMatrix(mat);
-		glMultMatrixd(mat);
-		glColor4ub(255,0,0,255);
-		hitbox_draw(aabb, 0);
-		glPopMatrix();
 	}
 
 #if 0
@@ -1616,3 +1641,125 @@ static void Island3DrawGrass(const Viewer *vw){
 /*	fprintf(stderr, "grass[%3d]: %lg sec\n", total, TimeMeasLap(&tm));*/
 }
 #endif
+
+
+void Island3::onChangeParent(CoordSys *oldParent){
+	if(ent){
+		if(!parent->w)
+			parent->w = new WarSpace(parent);
+		parent->w->addent(ent);
+	}
+}
+
+
+Island3Entity::Island3Entity(Island3 &astro) : astro(astro){
+	health = maxhealth();
+}
+
+Island3Entity::~Island3Entity(){
+	astro.ent = NULL;
+}
+
+bool singleObjectRaytest(btRigidBody *bbody, const btVector3& rayFrom,const btVector3& rayTo,btScalar &fraction,btVector3& worldNormal,btVector3& worldHitPoint)
+{
+	btScalar closestHitResults = 1.f;
+
+	btCollisionWorld::ClosestRayResultCallback resultCallback(rayFrom,rayTo);
+
+	bool hasHit = false;
+	btConvexCast::CastResult rayResult;
+//	btSphereShape pointShape(0.0f);
+	btTransform rayFromTrans;
+	btTransform rayToTrans;
+
+	rayFromTrans.setIdentity();
+	rayFromTrans.setOrigin(rayFrom);
+	rayToTrans.setIdentity();
+	rayToTrans.setOrigin(rayTo);
+
+	//do some culling, ray versus aabb
+	btVector3 aabbMin,aabbMax;
+	bbody->getCollisionShape()->getAabb(bbody->getWorldTransform(),aabbMin,aabbMax);
+	btScalar hitLambda = 1.f;
+	btVector3 hitNormal;
+	btCollisionObject	tmpObj;
+	tmpObj.setWorldTransform(bbody->getWorldTransform());
+
+
+//	if (btRayAabb(rayFrom,rayTo,aabbMin,aabbMax,hitLambda,hitNormal))
+	{
+		//reset previous result
+
+		btCollisionWorld::rayTestSingle(rayFromTrans,rayToTrans, &tmpObj, bbody->getCollisionShape(), bbody->getWorldTransform(), resultCallback);
+		if (resultCallback.hasHit())
+		{
+			//float fog = 1.f - 0.1f * rayResult.m_fraction;
+			resultCallback.m_hitNormalWorld.normalize();//.m_normal.normalize();
+			worldNormal = resultCallback.m_hitNormalWorld;
+			//worldNormal = transforms[s].getBasis() *rayResult.m_normal;
+			worldNormal.normalize();
+			worldHitPoint = resultCallback.m_hitPointWorld;
+			hasHit = true;
+			fraction = resultCallback.m_closestHitFraction;
+		}
+	}
+
+	return hasHit;
+}
+
+int Island3Entity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+/*	double best = dt, retf;
+	int reti = 0, n;
+	for(n = 0; n < 3; n++){
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.itrans(btvc(astro.wingtrans[n].getOrigin())) + this->pos;
+		rot = this->rot * btqc(astro.wingtrans[n].getRotation());
+		Vec3d sc = btvc(astro.wings[n]->getHalfExtentsWithMargin()) + rad * Vec3d(1,1,1);
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = n + 1;
+		}
+	}
+	return reti;*/
+	if(w && bbody){
+		btScalar btfraction;
+		btVector3 btnormal, btpos;
+		btVector3 from = btvc(src);
+		btVector3 to = btvc(src + (dir - velo) * dt);
+		if(WarSpace *ws = *w){
+			btCollisionWorld::ClosestRayResultCallback callback(from, to);
+			ws->bdw->rayTest(from, to, callback);
+			if(callback.hasHit() && callback.m_collisionObject == bbody){
+				if(ret) *ret = callback.m_closestHitFraction * dt;
+				if(retp) *retp = btvc(callback.m_hitPointWorld);
+				if(retn) *retn = btvc(callback.m_hitNormalWorld);
+				return 1;
+			}
+		}
+		else if(singleObjectRaytest(bbody, from, to, btfraction, btnormal, btpos)){
+			if(ret) *ret = btfraction * dt;
+			if(retp) *retp = btvc(btpos);
+			if(retn) *retn = btvc(btnormal);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int Island3Entity::takedamage(double damage, int hitpart){
+	int ret = 1;
+	if(0 < health && health - damage <= 0){
+		ret = 0;
+		WarSpace *ws = *w;
+		if(ws){
+			AddTeline3D(ws->tell, this->pos, vec3_000, 30., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+		}
+		astro.flags |= CS_DELETE;
+		w = NULL;
+	}
+	health -= damage;
+	return ret;
+}
+

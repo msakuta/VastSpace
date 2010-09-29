@@ -101,7 +101,7 @@ struct war_field_static{
 };
 
 class WarField;
-class Entlist{
+class EXPORT Entlist{
 public:
 	virtual Entity *addent(Entity *) = 0;
 	virtual Entity *entlist() = 0;
@@ -112,7 +112,7 @@ public:
 class WarSpace;
 class Docker;
 
-class WarField : public Serializable, public Entlist{
+class EXPORT WarField : public Serializable, public Entlist{
 public:
 	WarField();
 	WarField(CoordSys *cs);
@@ -122,7 +122,8 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
-	virtual void postframe(), endframe(); // postframe gives an opportunity to clear pointers to objects being destroyed, while endframe actually destruct them.
+	virtual void postframe(); ///< Gives an opportunity to clear pointers to objects being destroyed
+	virtual void endframe(); ///< Actually destructs invalid objects.
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
@@ -150,7 +151,7 @@ public:
 
 class btDiscreteDynamicsWorld;
 
-class WarSpace : public WarField{
+class EXPORT WarSpace : public WarField{
 	void init();
 public:
 	typedef WarField st;

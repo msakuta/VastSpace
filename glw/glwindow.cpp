@@ -311,6 +311,8 @@ void GLwindow::glwFree(){
 		glwfocus = glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next;
 	if(wnd == lastover)
 		lastover = NULL;
+	if(wnd == dragstart)
+		dragstart = NULL;
 	for(wnd2 = glwlist; wnd2; wnd2 = wnd2->next) if(wnd2->modal == wnd)
 		wnd2->modal = NULL;
 	for(ppwnd = &glwlist; *ppwnd;) if(*ppwnd == wnd)
@@ -371,6 +373,7 @@ GLwindow::~GLwindow(){
 
 GLwindow *GLwindow::lastover = NULL;
 GLwindow *GLwindow::captor = NULL;
+GLwindow *GLwindow::dragstart = NULL; ///< Technically, it can be aquired by drag start position, but there's a chance windows move over drag start position.
 
 static int messagecount = 0;
 
@@ -381,6 +384,13 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 	int nowheel = !(button == GLUT_WHEEL_UP || button == GLUT_WHEEL_DOWN);
 	int titleheight = fontheight + margin;
 	int ret = 0, killfocus;
+
+	// Update dragstart
+	if(state == GLUT_DOWN && button == GLUT_LEFT_BUTTON)
+		dragstart = wnd->extentRect().include(x, y) ? wnd : NULL;
+	else if(state == GLUT_UP && button == GLUT_LEFT_BUTTON)
+		dragstart = NULL;
+
 	if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 		bool caught = false;
 		if(captor == wnd || wnd->extentRect().include(x, y)){
@@ -974,13 +984,6 @@ void GLWtoggleCvarButton::press(){
 
 
 
-bool GLWmoveOrderButton::state()const{
-	return pl->moveorder;
-}
-
-void GLWmoveOrderButton::press(){
-	pl->cmd_moveorder(0, NULL, pl);
-}
 
 
 

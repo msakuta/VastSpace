@@ -183,10 +183,6 @@
 				RelativePath=".\island3.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\test.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"

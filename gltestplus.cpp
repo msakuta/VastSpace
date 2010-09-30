@@ -1461,12 +1461,15 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					ws.mx = s_mousex;
 					ws.my = s_mousey;
 
-					// If mouse is dragged over an window and it process that event, clear the dragging box on the desktop.
-					if(GLwindow::mouseFunc(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws)){
-						s_mousedragx = s_mousex;
-						s_mousedragy = s_mousey;
-					}
+					GLwindow::mouseFunc(GLUT_LEFT_BUTTON, wParam & MK_LBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
 					GLwindow::mouseFunc(GLUT_RIGHT_BUTTON, wParam & MK_RBUTTON ? GLUT_KEEP_DOWN : GLUT_KEEP_UP, s_mousex, s_mousey, ws);
+
+				}
+
+				// If mouse has been dragged over an window, do not show selection rectangle behind it, no matter the window processes mouse messages or not.
+				if(GLwindow::getDragStart()){
+					s_mousedragx = s_mousex;
+					s_mousedragy = s_mousey;
 				}
 
 				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){

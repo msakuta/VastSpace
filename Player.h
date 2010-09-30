@@ -158,6 +158,9 @@ public:
 	/// Creates a button to toggle control of selected Entity.
 	static GLWstateButton *newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips);
 
+	/// Creates a button to toggle move ordering mode.
+	static GLWstateButton *newMoveOrderButton(Player &pl, const char *filename, const char *filename2, const char *tips);
+
 private:
 //	int gear; /* acceleration gear in ghost mode */
 };

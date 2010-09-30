@@ -185,7 +185,9 @@ public:
 	bool getCollapsable()const{return !!(flags & GLW_COLLAPSABLE);}
 	bool getPinned()const{return !!(flags & GLW_PINNED);}
 	bool getPinnable()const{return !!(flags & GLW_PINNABLE);}
-	static GLwindow *getCaptor(){return captor;}
+	static GLwindow *getLastover(){return lastover;} ///< You can refer to but cannot alter lastover window.
+	static GLwindow *getCaptor(){return captor;} ///< You can refer to but cannot alter captor window.
+	static GLwindow *getDragStart(){return dragstart;}
 	void postClose(){ flags |= GLW_TODELETE; }
 protected:
 	GLwindow(const char *title = NULL);
@@ -208,6 +210,7 @@ protected:
 	/// The window which the mouse pointer floating over at the last frame.
 	static GLwindow *lastover;
 	static GLwindow *captor; ///< Mouse captor
+	static GLwindow *dragstart; ///< \brief The wnidow dragging is began on.
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -317,21 +320,12 @@ public:
 	virtual void press() = 0;
 };
 
+/// 2-state button that is bound to a boolean cvar.
 class GLWtoggleCvarButton : public GLWstateButton{
 public:
 	int &var;
 	GLWtoggleCvarButton(const char *filename, const char *filename1, int &cvar, const char *tip = NULL) :
 		GLWstateButton(filename, filename1, tip), var(cvar){}
-	virtual bool state()const;
-	virtual void press();
-};
-
-class Player;
-class GLWmoveOrderButton : public GLWstateButton{
-public:
-	Player *pl;
-	GLWmoveOrderButton(const char *filename, const char *filename1, Player *apl, const char *tip = NULL) :
-		GLWstateButton(filename, filename1, tip), pl(apl){}
 	virtual bool state()const;
 	virtual void press();
 };

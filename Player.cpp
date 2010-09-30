@@ -115,9 +115,15 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), 
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	r_move_path(false), r_attack_path(false), r_overlay(false),
 	moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
-	freelook(new FreelookMover(*this)),
-	cockpitview(new CockpitviewMover(*this)), tactical(new TacticalMover(*this))
+	freelook(NULL), cockpitview(NULL), tactical(NULL)
 {
+	// Special case that needs const member variables to be initialized outside initialization list.
+	// We do not want to alter these pointers outside the constructor, but Player class is not yet
+	// initialized at the time initialization list is executed.
+	// Class object members need not to warry about read-only memory storage class.
+	const_cast<FreelookMover*>(freelook) = new FreelookMover(*this);
+	const_cast<mover_t*>(cockpitview) = new CockpitviewMover(*this);
+	const_cast<mover_t*>(tactical) = new TacticalMover(*this);
 	mover = freelook;
 }
 
@@ -186,7 +192,7 @@ void Player::anim(double dt){
 	const Universe *u = cs->findcspath("/")->toUniverse();
 	if(u && !u->paused && nextmover && mover != nextmover){
 		// We do not want the camera to teleport when setting camera_mode_switch_time while transiting.
-		blendmover += dt / camera_mode_switch_time;
+		blendmover += float(dt / camera_mode_switch_time);
 		if(1. < blendmover)
 			mover = nextmover;
 	}
@@ -316,7 +322,7 @@ int cmd_cvar(int argc, char *argv[], void *pv){
 	else if(toupper(argv[1][0]) == 'T')
 		(ppl->*M) = !(ppl->*M);
 	else
-		(ppl->*M) = atoi(argv[1]);
+		(ppl->*M) = !!atoi(argv[1]);
 	return 0;
 }
 
@@ -468,7 +474,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("viewdist"))){
-		sq_pushfloat(v, p->viewdist);
+		sq_pushfloat(v, SQFloat(p->viewdist));
 		return 1;
 	}
 	else
@@ -511,10 +517,9 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_getpos(HSQUIRRELVM v){
-	const SQChar *wcs;
 	SQRESULT sr;
 	Player *p;
-	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
 	SQVec3d sqpos;
 	sqpos.value = p->getpos();
@@ -529,10 +534,9 @@ SQInteger Player::sqf_getpos(HSQUIRRELVM v){
  * indicating what mover a Player currently has.
  */
 SQInteger Player::sqf_setmover(HSQUIRRELVM v){
-	const SQChar *wcs;
 	SQRESULT sr;
 	Player *p;
-	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
 	const SQChar *movername;
 	if(SQ_FAILED(sq_getstring(v, 2, &movername)))
@@ -557,7 +561,7 @@ SQInteger Player::sqf_setmover(HSQUIRRELVM v){
 SQInteger Player::sqf_getmover(HSQUIRRELVM v){
 	SQRESULT sr;
 	Player *p;
-	if(SQ_FAILED(sqa_refobj(v, (SQUserPointer*)&p, &sr)))
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
 	if(p->mover == p->freelook)
 		sq_pushstring(v, _SC("freelook"), -1);
@@ -575,7 +579,7 @@ class GLWcontrolButton : public GLWstateButton{
 public:
 	typedef GLWstateButton st;
 	GLWcontrolButton(Player &apl, const char *filename, const char *filename2, const char *tips = NULL) : st(filename, filename2, tips), pl(apl){}
-	virtual bool state()const{return pl.control;}
+	virtual bool state()const{return !!pl.control;}
 	/// Issues "control" console command.
 	virtual void press(){
 		char *str[1] = {"control"};
@@ -590,3 +594,25 @@ public:
 GLWstateButton *Player::newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips){
 	return new GLWcontrolButton(pl, filename, filename2, tips);
 };
+
+/// \param pl The Player object that is bound to the newly created button.
+/// \param filename File name of button image when being active
+/// \param filename2 File name of button image when being inactive
+/// \param tips Displayed when mouse cursor is floating over.
+GLWstateButton *Player::newMoveOrderButton(Player &pl, const char *filename, const char *filename2, const char *tips){
+	/// Command
+	class GLWmoveOrderButton : public GLWstateButton{
+	public:
+		Player *pl;
+		GLWmoveOrderButton(const char *filename, const char *filename1, Player *apl, const char *tip = NULL) :
+			GLWstateButton(filename, filename1, tip), pl(apl){}
+		virtual bool state()const{
+			return pl->moveorder;
+		}
+		virtual void press(){
+			pl->cmd_moveorder(0, NULL, pl);
+		}
+	};
+	return new GLWmoveOrderButton(filename, filename2, &pl, tips);
+}
+

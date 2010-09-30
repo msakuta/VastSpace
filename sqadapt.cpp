@@ -754,7 +754,7 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
 		tips = NULL;
-	GLWmoveOrderButton *b = new GLWmoveOrderButton(path, path1, &pl, tips);
+	GLWstateButton *b = Player::newMoveOrderButton(pl, path, path1, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));

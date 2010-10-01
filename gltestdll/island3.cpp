@@ -18,6 +18,7 @@
 //#include "warutil.h"
 #include "../glsl.h"
 #include "../glstack.h"
+#include "../bitmap.h"
 #include "../material.h"
 #include "../cmd.h"
 #include "../btadapt.h"
@@ -680,9 +681,38 @@ void Island3::draw(const Viewer *vw){
 		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
 		if(const suftexcache *stc = FindTexCache("grass.jpg"))
 			groundtex = stc->tex[0];
+		stp.flags |= STP_NORMALMAP;
+		stp.normalfactor = 1.;
 		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
 		if(const suftexcache *stc = FindTexCache("noise.jpg"))
 			noisetex = stc->tex[0];
+/*		void (*noisefree)(BITMAPINFO*);
+		BITMAPINFO *noise = ReadJpeg("textures/noise.jpg", &noisefree);
+		BITMAPINFO *noiseGrad = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + 3 * noise->bmiHeader.biWidth * noise->bmiHeader.biHeight);
+		*noiseGrad = *noise;
+		noiseGrad->bmiHeader.biBitCount = 24;
+		noiseGrad->bmiHeader.biClrUsed = 0;
+		noiseGrad->bmiHeader.biClrImportant = 0;
+		int h = abs(noiseGrad->bmiHeader.biHeight);
+		int w = noiseGrad->bmiHeader.biWidth;
+		for(int y = 0; y < h; y++) for(int x = 0; x < w; x++){
+			int y1 = (y + h - 1) % h;
+			int x1 = (x + w - 1) % w;
+			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3] = (256
+				+ ((unsigned char*)noise->bmiColors)[(y * w + x1) * (noise->bmiHeader.biBitCount / 8)]
+				- ((unsigned char*)noise->bmiColors)[(y * w + x) * (noise->bmiHeader.biBitCount / 8)]) / 2;
+			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3 + 1] = (256
+				+ ((unsigned char*)noise->bmiColors)[(y1 * w + x) * (noise->bmiHeader.biBitCount / 8)]
+				- ((unsigned char*)noise->bmiColors)[(y * w + x) * (noise->bmiHeader.biBitCount / 8)]) / 2;
+			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3 + 2] = 255;
+		}
+//		stp.bmi = noiseGrad;
+//		stp.flags = STP_MAGFIL | STP_MINFIL;
+		CacheSUFTex("noise.jpg", noiseGrad, 0);
+		if(const suftexcache *stc = FindTexCache("noise.jpg"))
+			noisetex = stc->tex[0];
+		free(noiseGrad);
+		noisefree(noise);*/
 	}
 
 	/* Shader is togglable on running */
@@ -1049,7 +1079,7 @@ void Island3::draw(const Viewer *vw){
 					if(!farmap ^ cullQuad(pos, gc2, mat))
 						continue;
 					for(k = 0; k < 4; k++){
-						glTexCoord2dv(pos[k]);
+						glTexCoord2dv((n ? 1. : .25) * pos[k]);
 						glVertex3dv(pos[k]);
 					}
 				}
@@ -1728,7 +1758,8 @@ int Island3Entity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, doub
 		btVector3 btnormal, btpos;
 		btVector3 from = btvc(src);
 		btVector3 to = btvc(src + (dir - velo) * dt);
-		if(WarSpace *ws = *w){
+		if((from - to).length() < 1e-10);
+		else if(WarSpace *ws = *w){
 			btCollisionWorld::ClosestRayResultCallback callback(from, to);
 			ws->bdw->rayTest(from, to, callback);
 			if(callback.hasHit() && callback.m_collisionObject == bbody){

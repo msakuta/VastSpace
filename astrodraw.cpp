@@ -1353,11 +1353,12 @@ heterogeneous:
 			}
 			else
 			{
-				BITMAPINFO *bmi = LoadJpeg(jpgfilename);
+				void (*freeproc)(BITMAPINFO*);
+				BITMAPINFO *bmi = ReadJpeg(jpgfilename, &freeproc);
 				if(!bmi)
 					return 0;
 				texlist = ProjectSphereCube(fname, bmi, NULL);
-				free(bmi);
+				freeproc(bmi);
 			}
 		}
 		return texlist;

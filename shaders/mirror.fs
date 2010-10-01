@@ -21,7 +21,7 @@ void main (void)
 	float diffuse = dot(flight, fnormal);
 
 	vec4 texColor = texture2D(texture, vec2(gl_TexCoord[0]));
-	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .025 * vec3(texColor);
+	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .5 * vec3(texColor);
 	texColor *= col;
 	texColor[3] = col[3] / 2.;
 

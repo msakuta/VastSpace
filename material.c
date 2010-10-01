@@ -235,7 +235,7 @@ static void jpeg_memory_src (j_decompress_ptr cinfo, const JOCTET * buffer, size
 }
 
 
-static BITMAPINFO *ReadJpeg(const char *fname){
+BITMAPINFO *ReadJpeg(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	BITMAPINFO *bmi;
 	FILE * infile;		/* source file */
 	struct jpeg_decompress_struct cinfo;
@@ -322,6 +322,8 @@ static BITMAPINFO *ReadJpeg(const char *fname){
 	else
 		fclose(infile);
 
+	if(freeproc)
+		*freeproc = free;
 	return bmi;
 }
 
@@ -345,7 +347,7 @@ static void ReadPNG_read_data(png_structp png_ptr, png_bytep data, png_size_t le
 		png_error(png_ptr, "Read Error!");
 }
 
-static BITMAPINFO *ReadPNG(const char *fname){
+BITMAPINFO *ReadPNG(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	FILE * infile;		/* source file */
 	int row_stride;		/* physical row width in image buffer */
 	int src_row_stride;
@@ -451,6 +453,8 @@ shortjmp:
 			fclose(infile);
 		else
 			ZipFree(rpd.image_buffer);
+		if(freeproc)
+			*freeproc = free;
 		return bmi;
 	}
 }
@@ -473,13 +477,13 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 
 	if(!stp.bmi){
 		/* If no luck yet, try jpeg decoding. */
-		stp.bmi = ReadJpeg(fname1);
+		stp.bmi = ReadJpeg(fname1, NULL);
 		jpeg = 1;
 	}
 
 	if(!stp.bmi){
 		/* If still not, try PNG. */
-		stp.bmi = ReadPNG(fname1);
+		stp.bmi = ReadPNG(fname1, NULL);
 		jpeg = 2;
 	}
 
@@ -500,7 +504,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			ds = dstr0;
 			dstrcat(&ds, fname1);
 			dstrcat(&ds, ".a.jpg");
-			stp.bmiMask = ReadJpeg(dstr(&ds));
+			stp.bmiMask = ReadJpeg(dstr(&ds), NULL);
 			dstrfree(&ds);
 			mask = maskjpeg = !!stp.bmiMask;
 		}
@@ -512,7 +516,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		stp2.bmi = ReadBitmap(fname2);
 		if(!stp2.bmi){
 			/* If no luck yet, try jpeg decoding. */
-			stp2.bmi = ReadJpeg(fname2);
+			stp2.bmi = ReadJpeg(fname2, NULL);
 			jpeg2 = 1;
 		}
 		if(!stp2.bmi)

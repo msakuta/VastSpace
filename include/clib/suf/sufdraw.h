@@ -34,7 +34,7 @@ typedef struct suftex_s{
 } suftex_t;
 
 CLIB_SUFDRAW_EXPORT extern sufdecal_t *AllocSUFDecal(const suf_t *);
-CLIB_SUFDRAW_EXPORT extern void FreeSUFDecal(suf_t *);
+CLIB_SUFDRAW_EXPORT extern void FreeSUFDecal(sufdecal_t *);
 CLIB_SUFDRAW_EXPORT extern void AddSUFDecal(sufdecal_t *, sufindex ip, void *);
 CLIB_SUFDRAW_EXPORT extern void DecalDrawSUF(const suf_t*, unsigned long flags, struct gldCache *c, const suftex_t *tex, sufdecal_t *, void *global_var);
 
@@ -61,13 +61,16 @@ CLIB_SUFDRAW_EXPORT extern suftex_t *AllocSUFTexScales(const suf_t *, const doub
 #define STP_MINFIL     0x800
 #define STP_WRAP_S     0x1000
 #define STP_WRAP_T     0x2000
+#define STP_NORMALMAP  0x4000 // Create a normal map from supplied height map
 
+/// Parameter set given to CacheSUFTex to indicate how images are loaded as textures.
 typedef struct suftexparam_s{
-	unsigned long flags; // Only specified features are examined; unspecified fields can be uninitialized.
+	unsigned long flags; ///< Can contain STP_*. Only specified features are examined; unspecified fields can be uninitialized.
 	const BITMAPINFO *bmi, *bmiMask;
-	GLuint env;
+	GLuint env; ///< Texture env mode, passed to glTexEnv.
 	GLuint magfil, minfil, wraps, wrapt;
 	int mipmap, alphamap;
+	sufcoord normalfactor; ///< Amplitude factor of normal map. Examined only if flags & STP_NORMALMAP is true.
 } suftexparam_t;
 
 CLIB_SUFDRAW_EXPORT extern unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap);

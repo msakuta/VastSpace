@@ -1,3 +1,4 @@
+#include "clib/cfloat.h"
 #include "clib/suf/suf.h"
 #include "clib/suf/sufdraw.h"
 #include "clib/gl/gldraw.h"
@@ -40,7 +41,6 @@ void DrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c){
 	sufindex last = SUFINDEX_MAX, ai = SUFINDEX_MAX;
 	assert(suf);
 	for(i = 0; i < suf->np; i++){
-		int j;
 		struct suf_poly_t *p = &suf->p[i]->p;
 		struct suf_atr_t *atr = &suf->a[p->atr];
 
@@ -217,7 +217,7 @@ void AddSUFDecal(sufdecal_t *sd, sufindex si, void *pv){
 
 static polydraw(const suf_t *suf, unsigned long flags, struct gldCache *c, int i, sufindex *plast, const suftex_t *tex){
 	int j;
-	union suf_prim_t *pr = &suf->p[i]->p;
+	union suf_prim_t *pr = suf->p[i];
 	struct suf_poly_t *p = &pr->p;
 	const struct suf_atr_t *a = &suf->a[p->atr];
 	glBegin(GL_POLYGON);
@@ -227,8 +227,8 @@ static polydraw(const suf_t *suf, unsigned long flags, struct gldCache *c, int i
 				glNormal3dv(suf->v[*plast = suf->p[i]->uv.v[j].n]);
 			if(flags & SUF_TEX && suf->a[p->atr].colormap){
 				glTexCoord2d(suf->v[pr->uv.v[j].t][0] / a->mapsize[2], 1. - suf->v[pr->uv.v[j].t][1] / a->mapsize[3]);
-				if(glMultiTexCoord2fARB && flags & SUF_MTX && tex && 1 <= tex->n)
-					glMultiTexCoord2fARB(GL_TEXTURE1_ARB, suf->v[pr->uv.v[j].t][0] / a->mapsize[2] * tex->a[p->atr].scale, (1. - suf->v[pr->uv.v[j].t][1] / a->mapsize[3]) * tex->a[p->atr].scale);
+				if(glMultiTexCoord2dARB && flags & SUF_MTX && tex && 1 <= tex->n)
+					glMultiTexCoord2dARB(GL_TEXTURE1_ARB, suf->v[pr->uv.v[j].t][0] / a->mapsize[2] * tex->a[p->atr].scale, (1. - suf->v[pr->uv.v[j].t][1] / a->mapsize[3]) * tex->a[p->atr].scale);
 			}
 			glVertex3dv(suf->v[suf->p[i]->uv.v[j].p]);
 		}
@@ -372,7 +372,7 @@ void listtex(void){
 
 /* if we have already compiled the texture into a list, reuse it */
 const stc_t *FindTexCache(const char *name){
-	int j;
+	unsigned j;
 	for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
 		return &gstc[j];
 	}
@@ -443,7 +443,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 	case 8:
 	{
 		int x, y;
-		int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 256;
+		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
 		if(alpha){
 			tex4 = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
@@ -456,9 +456,16 @@ static GLuint cachetex(const suftexparam_t *stp){
 			}
 		}
 		else{
-			tex = malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
-				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
+			int w = bmi->bmiHeader.biWidth, h = bmi->bmiHeader.biHeight, wb = (bmi->bmiHeader.biWidth + 3) / 4 * 4;
+			tex = malloc(w * h * sizeof*tex);
+			if(stp->flags & STP_NORMALMAP) for(y = 0; y < h; y++) for(x = 0; x < w; x++){
+				int pos = x + y * w;
+				tex[pos][0] = (unsigned char)rangein(127 + (double)stp->normalfactor * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
+				tex[pos][1] = (unsigned char)rangein(127 + stp->normalfactor * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
+				tex[pos][2] = 255;
+			}
+			else  for(y = 0; y < h; y++) for(x = 0; x < w; x++){
+				int pos = x + y * w, idx = src[x + y * wb];
 				tex[pos][0] = bmi->bmiColors[idx].rgbRed;
 				tex[pos][1] = bmi->bmiColors[idx].rgbGreen;
 				tex[pos][2] = bmi->bmiColors[idx].rgbBlue;
@@ -502,14 +509,15 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
 		if(stp->alphamap & STP_MASKTEX)
-			mask = (const unsigned char(*)[4])&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
-		if(stp->flags & (STP_ALPHA | STP_RGBA32) == (STP_ALPHA | STP_RGBA32)){
-			tex4 = src;
+			mask = (const unsigned char*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
+		if((stp->flags & (STP_ALPHA | STP_RGBA32)) == (STP_ALPHA | STP_RGBA32)){
+			tex4 = (unsigned char(*)[4])src;
 		}
 		else if(alpha /*stp->alphamap & (3 | STP_MASKTEX)*/){
 			tex4 = malloc(bmi->bmiHeader.biWidth * h * sizeof*tex4);
 			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
-				int pos = x + y * bmi->bmiHeader.biWidth, pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth, idx = src[pos];
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				int pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth;
 				tex4[pos1][0] = src[pos][2];
 				tex4[pos1][1] = src[pos][1];
 				tex4[pos1][2] = src[pos][0];
@@ -521,7 +529,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 		else{
 			tex = malloc(bmi->bmiHeader.biWidth * h * sizeof*tex);
 			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
-				int pos = x + y * bmi->bmiHeader.biWidth, pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth, idx = src[pos];
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				int pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth;
 				tex[pos1][0] = src[pos][2];
 				tex[pos1][1] = src[pos][1];
 				tex[pos1][2] = src[pos][0];
@@ -538,12 +547,12 @@ static GLuint cachetex(const suftexparam_t *stp){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	if(mipmap)
 		gluBuild2DMipmaps(GL_TEXTURE_2D, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight),
-			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? tex4 : tex);
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? (void*)tex4 : (void*)tex);
 	else
 		glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight), 0,
-			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? tex4 : tex);
-	if(!(bmi->bmiHeader.biBitCount == 32 && stp->flags & (STP_ALPHA | STP_RGBA32) == (STP_ALPHA | STP_RGBA32)))
-		free(stp->flags & STP_ALPHA ? tex4 : tex);
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? (void*)tex4 : (void*)tex);
+	if(!(bmi->bmiHeader.biBitCount == 32 && (stp->flags & (STP_ALPHA | STP_RGBA32)) == (STP_ALPHA | STP_RGBA32)))
+		free(stp->flags & STP_ALPHA ? (void*)tex4 : (void*)tex);
 #else
 	{
 		int i;
@@ -570,7 +579,6 @@ static GLuint cachetex(const suftexparam_t *stp){
 }
 
 unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const suftexparam_t *tex2){
-	GLint prevtex;
 
 	/* allocate cache list space */
 	gstc = realloc(gstc, ++nstc * sizeof *gstc);
@@ -690,14 +698,14 @@ suftex_t *AllocSUFTex(const suf_t *suf){
 
 suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes){
 	suftex_t *ret;
-	unsigned i, k, n;
+	int i, n, k;
 /*	for(i = n = 0; i < suf->na; i++) if(suf->a[i].colormap)
 		n++;*/
 	n = suf->na;
 	ret = (suftex_t*)malloc(offsetof(suftex_t, a) + n * sizeof *ret->a);
 	ret->n = n;
 	for(i = k = 0; i < n; i++){
-		int j;
+		unsigned j;
 		const char *name = texes && i < ntexes && texes[i] ? texes[i] : suf->a[i].colormap;
 		k = i;
 		if(!(suf->a[i].valid & SUF_TEX) || !name){
@@ -752,7 +760,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			dbmi.biSizeImage = 0;
 			dbmi.biClrUsed = dbmi.biClrImportant = 0;
 			hdc = GetDC(GetDesktopWindow());
-			if(lines != (liens = GetDIBits(hdc, hbm, 0, bm.bmHeight, pbuf, &dbmi, DIB_RGB_COLORS))){
+			if(lines != (liens = GetDIBits(hdc, hbm, 0, bm.bmHeight, pbuf, (LPBITMAPINFO)&dbmi, DIB_RGB_COLORS))){
 /*				glEndList();
 				glDeleteLists(ret->a[k].list, 1);*/
 				ret->a[k].list = 0;
@@ -761,10 +769,10 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			if(lines == liens){
 				GLint align;
 				GLboolean swapbyte;
-				glGenTextures(1, &ret->a[k].tex);
+				glGenTextures(1, ret->a[k].tex);
 				gstc[nstc-1].tex[0] = ret->a[k].tex[0];
 				gstc[nstc-1].tex[1] = ret->a[k].tex[1] = 0;
-				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex);
+				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex[0]);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 				glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);

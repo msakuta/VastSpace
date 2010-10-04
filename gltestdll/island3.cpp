@@ -18,7 +18,6 @@
 //#include "warutil.h"
 #include "../glsl.h"
 #include "../glstack.h"
-#include "../bitmap.h"
 #include "../material.h"
 #include "../cmd.h"
 #include "../btadapt.h"
@@ -121,7 +120,10 @@ protected:
 	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
 	Mat4d transform(const Viewer *vw)const;
 	bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat);
+	void beginWallTexture(const Viewer *);
+	void endWallTexture();
 	static GLuint walllist, walltex;
+	static suf_t *sufbridgetower;
 };
 
 /// Island3 bound Entity. Not registered as a creatable object, create Island3 instead.
@@ -145,6 +147,7 @@ const unsigned Island3::classid = registerClass("Island3", Serializable::Conster
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
+suf_t *Island3::sufbridgetower = NULL;
 
 Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 	absmag = 30.;
@@ -211,10 +214,10 @@ void Island3::anim(double dt){
 
 	// Head toward sun
 	if(sun){
-		if(!headToSun){
+/*		if(!headToSun){
 			headToSun = true;
 			rot = Quatd::direction(parent->tocs(pos, sun)).rotate(-M_PI / 2., avec3_100);
-		}
+		}*/
 		Vec3d sunpos = parent->tocs(pos, sun);
 		CoordSys *top = findcspath("/");
 //		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
@@ -523,7 +526,6 @@ GLuint Reflist(){
 	static GLuint reflist = 0;
 	if(reflist)
 		return reflist + !!Island3::g_shader_enable * 2;
-#if 1
 	static const GLenum target[] = {
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
@@ -546,7 +548,6 @@ GLuint Reflist(){
 	do{
 		GLuint vtx, frg;
 		GLuint shader;
-//					GLint cubeTexLoc, nrmmapLoc;
 		vtx = glCreateShader(GL_VERTEX_SHADER);
 		frg = glCreateShader(GL_FRAGMENT_SHADER);
 		if(!glsl_load_shader(vtx, "shaders/mirror.vs") || !glsl_load_shader(frg, "shaders/mirror.fs"))
@@ -558,8 +559,6 @@ GLuint Reflist(){
 		invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 
 		glUseProgram(shader);
-//					glUniform1i(cubeTexLoc, cubetex);
-//					glUniform1i(nrmmapLoc, 0);
 		glUniform1i(textureLoc, 1);
 		glUniform1i(cubeEnvLoc, 0);
 	}while(0);
@@ -579,6 +578,7 @@ GLuint Reflist(){
 	// Allocate list to enable mirror material when shader is disabled.
 	glNewList(reflist, GL_COMPILE);
 	glDisable(GL_TEXTURE_2D);
+	glPushAttrib(GL_TEXTURE_BIT);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 	glEnable(GL_TEXTURE_CUBE_MAP);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
@@ -592,12 +592,127 @@ GLuint Reflist(){
 
 	// Disable mirror
 	glNewList(reflist + 1, GL_COMPILE);
-	glUseProgram(0);
+	glPopAttrib();
 	glEndList();
-#endif
 	return reflist + !!Island3::g_shader_enable * 2;
 }
 
+static GLint bumpInvEyeMat3Loc, bumpTextureLoc, /*bumpCubeEnvLoc,*/ bumpFracLoc, bumpLightLoc, bumpAmbientLoc, bumpNormMapLoc;
+
+static GLuint BumpList(){
+	static GLuint bumplist = 0;
+	if(bumplist)
+		return bumplist + !!Island3::g_shader_enable * 2;
+/*	static const GLenum target[] = {
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+	};
+	static double genfunc[][4] = {
+	{ 1.0, 0.0, 0.0, 0.0 },
+	{ 0.0, 1.0, 0.0, 0.0 },
+	{ 0.0, 0.0, 1.0, 0.0 },
+	{ 0.0, 0.0, 0.0, 1.0 },
+	};
+	static GLuint texnames[6];*/
+	bumplist = glGenLists(4);
+
+	// Allocate list to enable mirror material when shader is enabled.
+	glNewList(bumplist + 2, GL_COMPILE);
+	do{
+		GLuint vtx, frg;
+		GLuint shader;
+		vtx = glCreateShader(GL_VERTEX_SHADER);
+		frg = glCreateShader(GL_FRAGMENT_SHADER);
+		if(!glsl_load_shader(vtx, "shaders/bump.vs") || !glsl_load_shader(frg, "shaders/bump.fs"))
+			break;
+		shader = glsl_register_program(vtx, frg);
+
+		bumpTextureLoc = glGetUniformLocation(shader, "texture");
+//		bumpCubeEnvLoc = glGetUniformLocation(shader, "envmap");
+		bumpInvEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+		bumpAmbientLoc = glGetUniformLocation(shader, "ambient");
+		bumpNormMapLoc = glGetUniformLocation(shader, "nrmmap");
+
+		glUseProgram(shader);
+		glUniform1i(bumpTextureLoc, 0);
+//		glUniform1i(bumpCubeEnvLoc, 0);
+		glUniform1f(bumpAmbientLoc, .1f);
+	}while(0);
+//	glDisable(GL_TEXTURE_2D);
+//	glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
+//	glEnable(GL_TEXTURE_CUBE_MAP);
+//	glDisable(GL_TEXTURE_GEN_S);
+//	glDisable(GL_TEXTURE_GEN_T);
+//	glDisable(GL_TEXTURE_GEN_R);
+	glEndList();
+
+	// Disable mirror
+	glNewList(bumplist + 3, GL_COMPILE);
+	glUseProgram(0);
+	glEndList();
+
+	// Allocate list to enable mirror material when shader is disabled.
+	glNewList(bumplist, GL_COMPILE);
+	glEnable(GL_TEXTURE_2D);
+	glEndList();
+
+	// Disable mirror
+	glNewList(bumplist + 1, GL_COMPILE);
+	glDisable(GL_TEXTURE_2D);
+	glEndList();
+	return bumplist + !!Island3::g_shader_enable * 2;
+}
+
+void Island3::beginWallTexture(const Viewer *vw){
+	static GLuint wallbumptex = 0, nrmmap = 0;
+	static bool init = false;
+	if(!init){
+		init = true;
+		suftexparam_t stp;
+		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL | STP_NORMALMAP;
+		stp.wraps = GL_REPEAT;
+		stp.wrapt = GL_REPEAT;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.normalfactor = 2.;
+		walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
+		if(const suftexcache *stc = FindTexCache("bricks.bmp"))
+			walltex = stc->tex[0];
+		CallCacheBitmap5("bricks_bump.bmp", "textures/bricks.bmp", NULL, "textures/bricks_hgt.bmp", &stp);
+		if(const suftexcache *stc = FindTexCache("bricks_bump.bmp")){
+			wallbumptex = stc->tex[0];
+			nrmmap = stc->tex[1];
+		}
+	}
+	GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.};
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+	glFrontFace(GL_CCW);
+	glCallList(BumpList());
+	Astrobj *sun = findBrightest(vec3_000);
+	if(g_shader_enable && sun){
+		Quatd rot = quat_u/*vw->cs->tocsq(sun)*/;
+		Mat4d rot2 = (rot * vw->qrot/*.cnj()*/).tomat4();
+		Mat3<float> irot3 = rot2.tomat3().cast<float>();
+		glUniformMatrix3fv(bumpInvEyeMat3Loc, 1, GL_FALSE, irot3);
+		glUniform1i(bumpNormMapLoc, 1);
+		glBindTexture(GL_TEXTURE_2D, wallbumptex);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glBindTexture(GL_TEXTURE_2D, nrmmap);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glUniform1f(bumpAmbientLoc, .2f);
+	}
+	else
+		glCallList(walllist);
+}
+
+void Island3::endWallTexture(){
+	glCallList(BumpList() + 1);
+}
 
 static const avec3_t pos0[] = {
 	{0., 17., 0.},
@@ -667,12 +782,9 @@ void Island3::draw(const Viewer *vw){
 	static bool init = false;
 	if(!init){
 		init = 1;
-		walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
-		if(const suftexcache *stc = FindTexCache("bricks.bmp"))
-			walltex = stc->tex[0];
-//			roadlist = generate_road_texture();
-//			roadtex = FindTexCache("road.bmp")->tex[0];
 		suftexparam_t stp;
+		roadlist = generate_road_texture();
+		roadtex = FindTexCache("road.bmp")->tex[0];
 		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL;
 		stp.wraps = GL_MIRRORED_REPEAT;
 		stp.wrapt = GL_MIRRORED_REPEAT;
@@ -686,50 +798,22 @@ void Island3::draw(const Viewer *vw){
 		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
 		if(const suftexcache *stc = FindTexCache("noise.jpg"))
 			noisetex = stc->tex[0];
-/*		void (*noisefree)(BITMAPINFO*);
-		BITMAPINFO *noise = ReadJpeg("textures/noise.jpg", &noisefree);
-		BITMAPINFO *noiseGrad = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + 3 * noise->bmiHeader.biWidth * noise->bmiHeader.biHeight);
-		*noiseGrad = *noise;
-		noiseGrad->bmiHeader.biBitCount = 24;
-		noiseGrad->bmiHeader.biClrUsed = 0;
-		noiseGrad->bmiHeader.biClrImportant = 0;
-		int h = abs(noiseGrad->bmiHeader.biHeight);
-		int w = noiseGrad->bmiHeader.biWidth;
-		for(int y = 0; y < h; y++) for(int x = 0; x < w; x++){
-			int y1 = (y + h - 1) % h;
-			int x1 = (x + w - 1) % w;
-			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3] = (256
-				+ ((unsigned char*)noise->bmiColors)[(y * w + x1) * (noise->bmiHeader.biBitCount / 8)]
-				- ((unsigned char*)noise->bmiColors)[(y * w + x) * (noise->bmiHeader.biBitCount / 8)]) / 2;
-			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3 + 1] = (256
-				+ ((unsigned char*)noise->bmiColors)[(y1 * w + x) * (noise->bmiHeader.biBitCount / 8)]
-				- ((unsigned char*)noise->bmiColors)[(y * w + x) * (noise->bmiHeader.biBitCount / 8)]) / 2;
-			((unsigned char*)noiseGrad->bmiColors)[(y * w + x) * 3 + 2] = 255;
-		}
-//		stp.bmi = noiseGrad;
-//		stp.flags = STP_MAGFIL | STP_MINFIL;
-		CacheSUFTex("noise.jpg", noiseGrad, 0);
-		if(const suftexcache *stc = FindTexCache("noise.jpg"))
-			noisetex = stc->tex[0];
-		free(noiseGrad);
-		noisefree(noise);*/
 	}
 
 	/* Shader is togglable on running */
 	GLuint reflist = Reflist();
 
-	static avec3_t norm0[] = {
-		{0., 1., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{1., 0., 0.},
-		{0., -1., 0.},
+	static avec3_t norm0[][2] = {
+		{{0., 1., 0.}, {0., 1., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{1., 0., 0.}, {1., 0., 0.}},
+		{{0., -1., 0.}, {0., -1., 0.}},
 	};
 	const double sufrad = 3.25;
 	int n, i;
@@ -806,11 +890,7 @@ void Island3::draw(const Viewer *vw){
 		Mat4d rot;
 		const double hullrad = n ? ISLAND3_RAD : ISLAND3_INRAD;
 		if(n){
-			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.};
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
-			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
-			glFrontFace(GL_CCW);
-			glCallList(walllist);
+			beginWallTexture(vw);
 		}
 		else{
 			GLfloat dif[4] = {.3f, .3f, .3f, 1.}, amb[4] = {.7f, .7f, .7f, 1.};
@@ -915,7 +995,7 @@ void Island3::draw(const Viewer *vw){
 					continue;
 				for(k = 0; k < 4; k++){
 					double st[2];
-					Vec3d norm = prot[k]->dvp3(norm0[j + k / 2]);
+					Vec3d norm = prot[k]->dvp3(norm0[j][k / 2]);
 					if(n)
 						glNormal3dv(norm);
 					else{
@@ -933,7 +1013,9 @@ void Island3::draw(const Viewer *vw){
 			glEnd();
 			rot = rot2;
 		}
-		if(!n){
+		if(n)
+			endWallTexture();
+		else{
 			glPopAttrib();
 //			shadow_draw(csint->w);
 		}
@@ -976,6 +1058,240 @@ void Island3::draw(const Viewer *vw){
 				glEnd();
 			}
 		}
+	}
+
+	/* bridges */
+	if(100 < pixels){
+		int n, j;
+		int cc = 0;
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+		glCallList(roadlist);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, GLfloat(brightness) * Vec4<GLfloat>(.85f, .85f, .85f, 1.));
+		Mat4d rot2 = mat4_u;
+		for(n = 0; n < 2; n++){
+			if(n){
+				glFrontFace(GL_CCW);
+			}
+			else{
+				glFrontFace(GL_CW);
+			}
+			for(j = 1; j < numof(pos0)-1; j++){
+				int i, m;
+				static const avec3_t bbpos0[4] = {
+					{ISLAND3_INRAD + BRIDGE_THICK, BRIDGE_HALFWID, 0.},
+					{ISLAND3_INRAD + .001, BRIDGE_HALFWID, 0.},
+					{ISLAND3_INRAD + BRIDGE_THICK, -BRIDGE_HALFWID, 0.},
+					{ISLAND3_INRAD + .001, -BRIDGE_HALFWID, 0.},
+				};
+				Vec3d bpos0[2] = {
+					Vec3d(n ? ISLAND3_INRAD + .001/*BRIDGE_THICK*/ : ISLAND3_INRAD,
+						pos0[j][1] + BRIDGE_HALFWID, 0.),
+					Vec3d(n ? ISLAND3_INRAD + .001/*BRIDGE_THICK*/ : ISLAND3_INRAD,
+						pos0[j][1] - BRIDGE_HALFWID, 0.)
+				};
+				Vec3d spos0[2] = {
+					Vec3d(ISLAND3_INRAD,
+						pos0[j][1] + (n * 2 - 1) * BRIDGE_HALFWID,
+						0.),
+					Vec3d(ISLAND3_INRAD + .001/*BRIDGE_THICK*/,
+						pos0[j][1] + (n * 2 - 1) * BRIDGE_HALFWID,
+						0.)
+				};
+				for(m = 0; m < 3; m++){
+
+					/* cull */
+					{
+						int i1 = m * cutnum / 3 + cutnum / 6 + cutnum / 12;
+						rot2[13] = 0.;
+						rot2[0] = cuts[i1][1];
+						rot2[2] = -cuts[i1][0];
+						rot2[8] = cuts[i1][0];
+						rot2[10] = cuts[i1][1];
+						Vec3d bpos = rot2.vp3(bpos0[0]);
+						Vec3d bpos2 = vw->cs->tocs(bpos, this);
+/*							{
+							avec3_t vec, delta;
+							VECSUB(delta, bpos, gc2->viewpoint);
+							if(gc2->zfar - 1.5 < VECSP(gc2->viewdir, delta))
+								ret = 1;
+							else
+								ret = 0;
+						}*/
+						if(/*!farmap ^ !gc2->cullFar(bpos2, -2.) ||*/ farmap || vw->gc->cullFrustum(bpos2, 3.))
+							continue;
+						cc++;
+					}
+
+/*						(!n ? glEnable : glDisable)(GL_TEXTURE_2D);*/
+					glBindTexture(GL_TEXTURE_2D, !n ? roadtex : walltex);
+					glBegin(GL_QUAD_STRIP);
+					for(i = 0; i <= cutnum / 6; i += leap){
+						int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
+						avec3_t bpos, norm;
+						rot2[0] = cuts[i1][1];
+						rot2[2] = -cuts[i1][0];
+						rot2[8] = cuts[i1][0];
+						rot2[10] = cuts[i1][1];
+						if(i1 % defleap || finecuts[i1])
+							leap = defleap / 2;
+						else
+							leap = defleap;
+						if(n)
+							VECCPY(norm, &rot2[8]);
+						else
+							VECSCALE(norm, &rot2[8], -1.);
+						glNormal3dv(norm);
+						mat4dvp3(bpos, rot2, bpos0[0]);
+						glTexCoord2d(0., i);
+						glVertex3dv(bpos);
+						mat4dvp3(bpos, rot2, bpos0[1]);
+						glTexCoord2d(1., i);
+						glVertex3dv(bpos);
+					}
+					glEnd();
+
+/*						glDisable(GL_TEXTURE_2D);*/
+					glBindTexture(GL_TEXTURE_2D, walltex);
+					glBegin(GL_QUAD_STRIP);
+					for(i = 0; i <= cutnum / 6; i += leap){
+						int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
+						avec3_t bpos, norm;
+						rot2[0] = cuts[i1][1];
+						rot2[2] = -cuts[i1][0];
+						rot2[8] = cuts[i1][0];
+						rot2[10] = cuts[i1][1];
+						if(i1 % defleap || finecuts[i1])
+							leap = defleap / 2;
+						else
+							leap = defleap;
+						if(n)
+							VECCPY(norm, &rot2[4]);
+						else
+							VECSCALE(norm, &rot2[4], -1.);
+						glNormal3dv(norm);
+						mat4dvp3(bpos, rot2, spos0[0]);
+						glTexCoord2d(0., i);
+						glVertex3dv(bpos);
+						mat4dvp3(bpos, rot2, spos0[1]);
+						glTexCoord2d(1., i);
+						glVertex3dv(bpos);
+					}
+					glEnd();
+
+					/* Bridge towers */
+					if(n && vw->zslice == 0){
+						struct gldCache gldcache;
+						gldcache.valid = 0;
+						glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+						glEnable(GL_NORMALIZE);
+						for(i = 1; i < 4; i++){
+							int i1 = (i * cutnum / (4 * 6) + m * cutnum / 3 + cutnum / 6) % cutnum;
+							if(!sufbridgetower)
+								sufbridgetower = CallLoadSUF("models/bridgetower.bin");
+							if(!sufbridgetower)
+								goto nobridgemodel;
+							Vec3d bpos0(ISLAND3_GRAD, pos0[j][1] + .0, .0);
+							rot2[0] = cuts[i1][1];
+							rot2[2] = -cuts[i1][0];
+							rot2[8] = cuts[i1][0];
+							rot2[10] = cuts[i1][1];
+							Vec3d bpos = rot2.dvp3(bpos0);
+							Vec3d lpos = vw->cs->tocs(rot2.dvp3(bpos0), this);
+							if(vw->gc->cullFar(lpos, .5) || vw->cs != this && vw->gc->scale(lpos) * .1 < 10.)
+								continue;
+
+							glPushMatrix();
+							{
+								Mat4d trans;
+								trans.vec4(0) = rot2.vec4(1) * 1e-3;
+								trans.vec4(1) = rot2.vec4(0) * -1e-3;
+								trans.vec4(2) = rot2.vec4(2) * 1e-3;
+								trans.vec4(3) = bpos;
+								trans[15] = 1.;
+								glMultMatrixd(trans);
+							}
+							DrawSUF(sufbridgetower, SUF_ATR, NULL);
+
+							if(10. < .01 * fabs(gc2->scale(bpos))){
+								glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+								glDisable(GL_TEXTURE_2D);
+								glDisable(GL_LIGHTING);
+								glDepthMask(GL_FALSE);
+								glColor4ub(0,0,0,255);
+								dstring buf = dstring() << j << "-" << 'A' + m << i;
+								glTranslated(buf.len() * -.5 * 2., 187, 1.2);
+								glScaled(2., 2., 1.);
+								gldPutTextureString(buf);
+								glRotated(180, 0, 1, 0);
+								glTranslated(0, 0, 2.4);
+								gldPutTextureString(buf);
+								glPopAttrib();
+							}
+
+							glPopMatrix();
+						}
+nobridgemodel:
+						glPopAttrib();
+					}
+					{
+						static GLuint texbb = 0;
+						glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+						if(!texbb){
+							suftexparam_t stp;
+							stp.flags = STP_ALPHA | STP_ENV | STP_MAGFIL;
+							stp.alphamap = 1;
+//								stp.bmi = lzuc(lzw_bbrail, sizeof lzw_bbrail, NULL);
+							stp.env = GL_MODULATE;
+							stp.magfil = GL_NEAREST;
+							stp.mipmap = 0x80;
+							texbb = CallCacheBitmap("bbrail.bmp", "bbrail.bmp", &stp, NULL);
+						}
+						glCallList(texbb);
+/*							glDisable(GL_CULL_FACE);*/
+						glEnable(GL_ALPHA_TEST);
+/*							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);*/
+						glBegin(GL_QUADS);
+						rot2[13] = pos0[j][1];
+						for(i = 0; i < cutnum / 6; i += leap){
+							int k;
+							int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
+							int i2 = (i + ((i1 % defleap || finecuts[i1]) ? (leap = defleap / 2) : (leap = defleap)) + m * cutnum / 3 + cutnum / 6) % cutnum;
+							double di1, di2;
+							di1 = i * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - .001);
+							di1 -= floor(di1);
+							di2 = di1 + leap * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - .001);
+							for(k = 0; k < 2; k++){
+								glNormal3d(0, 1 - n * 2, 0);
+								rot2[0] = cuts[i1][1];
+								rot2[2] = -cuts[i1][0];
+								rot2[8] = cuts[i1][0];
+								rot2[10] = cuts[i1][1];
+								Vec3d bpos = rot2.vp3(bbpos0[k*2+0]);
+								glTexCoord2d(di1, 0.);
+								glVertex3dv(bpos);
+								bpos = rot2.vp3(bbpos0[k*2+1]);
+								glTexCoord2d(di1, 1.);
+								glVertex3dv(bpos);
+								rot2[0] = cuts[i2][1];
+								rot2[2] = -cuts[i2][0];
+								rot2[8] = cuts[i2][0];
+								rot2[10] = cuts[i2][1];
+								bpos = rot2.vp3(bbpos0[k*2+1]);
+								glTexCoord2d(di2, 1.);
+								glVertex3dv(bpos);
+								bpos = rot2.vp3(bbpos0[k*2+0]);
+								glTexCoord2d(di2, 0.);
+								glVertex3dv(bpos);
+							}
+						}
+						glEnd();
+						glPopAttrib();
+					}
+				}
+			}
+		}
+/*			printf("cc(%d) = %d\n", farmap, cc);*/
+		glPopAttrib();
 	}
 
 	/* walls between inner/outer cylinder */
@@ -1038,10 +1354,11 @@ void Island3::draw(const Viewer *vw){
 			glFrontFace(GL_CW);
 		}
 		else{
-			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
+/*			GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.}, spc[4] = {0., 0., 0., .15f};
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
-			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spc);*/
+			beginWallTexture(vw);
 			glFrontFace(GL_CCW);
 		}
 		for(int m = 0; m < 3; m++){
@@ -1095,10 +1412,14 @@ void Island3::draw(const Viewer *vw){
 			glPopMatrix();
 			glMatrixMode(GL_MODELVIEW);
 		}
+		else
+			endWallTexture();
 	}
 
 	// Mirror thickness
-	if(100 < pixels) for(int m = 0; m < 3; m++){
+	if(100 < pixels){
+	beginWallTexture(vw);
+	for(int m = 0; m < 3; m++){
 		glPushMatrix();
 /*		glRotated(m * 120. + 60., 0., 1., 0.);
 		gldTranslate3dv(joint);
@@ -1159,6 +1480,8 @@ void Island3::draw(const Viewer *vw){
 		glEnd();
 
 		glPopMatrix();
+	}
+	endWallTexture();
 	}
 
 }

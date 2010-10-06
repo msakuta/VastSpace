@@ -23,6 +23,7 @@
 #include "../btadapt.h"
 #include "../Entity.h"
 #include "../judge.h"
+#include "../bitmap.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -48,6 +49,11 @@ extern "C"{
 #define ISLAND3_HALFLEN 16.
 #define ISLAND3_MIRRORTHICK .1 ///< Thickness of the mirrors
 #define ISLAND3_FARMRAD 20.
+#ifndef NDEBUG
+#define ISLAND3_BUILDINGS 32
+#else
+#define ISLAND3_BUILDINGS 128
+#endif
 #define MIRROR_LENGTH (ISLAND3_HALFLEN * 2.)
 #define BRIDGE_HALFWID .01
 #define BRIDGE_THICK .01
@@ -87,6 +93,7 @@ static struct war_field_static i3war_static = {
 };*/
 
 class Island3Entity;
+class Island3Building;
 
 /// Space colony Island3, A.K.A. O'Neill Cylinder.
 class Island3 : public Astrobj{
@@ -96,6 +103,7 @@ public:
 
 	double sun_phase;
 	Island3Entity *ent;
+	Island3Building *bldgs[ISLAND3_BUILDINGS];
 //	btRigidBody *bbody;
 	btCompoundShape *btshape;
 	btBoxShape *wings[3];
@@ -142,6 +150,18 @@ public:
 	virtual int takedamage(double damage, int hitpart);
 };
 
+class Island3Building : public Entity{
+public:
+	Vec3d halfsize;
+	friend Island3;
+	Island3 &host;
+	Island3Building(Island3 &host);
+	virtual const char *classname()const{return "Island3Entity";}
+	virtual double hitradius()const{return .1;}
+	virtual bool isTargettable()const{return false;}
+	virtual void draw(wardraw_t *);
+};
+
 
 const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
 int &Island3::g_shader_enable = ::g_shader_enable;
@@ -156,6 +176,8 @@ Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 	mass = 1e10;
 	basecolor = 0xff8080;
 	omg.clear();
+	for(int i = 0; i < numof(bldgs); i++)
+		bldgs[i] = new Island3Building(*this);
 }
 
 Island3::~Island3(){
@@ -186,24 +208,25 @@ void Island3::calcWingTrans(int i, Quatd &rot, Vec3d &pos){
 Mat4d Island3::transform(const Viewer *vw)const{
 	Mat4d ret;
 	if(vw->zslice != 0){
-		Quatd rot = vw->cs->tocsq(parent);
+		Quatd rot = vw->cs->tocsq(parent).cnj();
 		ret = rot.tomat4();
 		Vec3d delta = vw->cs->tocs(pos, parent) - vw->pos;
-		ret.translatein(delta);
 		ret = ret * this->rot.tomat4();
+		ret.vec3(3) = delta;
 	}
 	else{
 		ret = mat4_u;
 		if(!ent){
 			Mat4d rot = vw->cs->tocsim(this);
-			ret.translatein(pos[0], pos[1], pos[2]);
+			ret.translatein(vw->cs->tocs(vec3_000, this));
 			ret = ret * rot;
 		}
 		else{
 			Mat4d rot = vw->cs->tocsim(parent);
 			Mat4d btrot;
 			ent->bbody->getWorldTransform().getOpenGLMatrix(btrot);
-			ret = ret * btrot * rot;
+			ret.translatein(vw->cs->tocs(vec3_000, parent));
+			ret = ret * rot * btrot;
 		}
 	}
 	return ret;
@@ -460,7 +483,7 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 
-	glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
+	glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
 	GLcull g_glcull(v.fov, vec3_000, v.relirot, 1e-15, 1e+15);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -622,6 +645,7 @@ static GLuint BumpList(){
 
 	// Allocate list to enable mirror material when shader is enabled.
 	glNewList(bumplist + 2, GL_COMPILE);
+	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT);
 	do{
 		GLuint vtx, frg;
 		GLuint shader;
@@ -648,11 +672,14 @@ static GLuint BumpList(){
 //	glDisable(GL_TEXTURE_GEN_S);
 //	glDisable(GL_TEXTURE_GEN_T);
 //	glDisable(GL_TEXTURE_GEN_R);
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
 	glEndList();
 
 	// Disable mirror
 	glNewList(bumplist + 3, GL_COMPILE);
 	glUseProgram(0);
+	glPopAttrib();
 	glEndList();
 
 	// Allocate list to enable mirror material when shader is disabled.
@@ -803,7 +830,7 @@ void Island3::draw(const Viewer *vw){
 	/* Shader is togglable on running */
 	GLuint reflist = Reflist();
 
-	static avec3_t norm0[][2] = {
+	static const avec3_t norm0[][2] = {
 		{{0., 1., 0.}, {0., 1., 0.}},
 		{{1., 0., 0.}, {1., 0., 0.}},
 		{{1., 0., 0.}, {1., 0., 0.}},
@@ -1021,9 +1048,20 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
+	// Buildings
+	if(vw->zslice == 0){
+		wardraw_t wd;
+		wd.lightdraws = 0;
+		wd.vw = (Viewer*)vw;
+		wd.w = NULL;
+		for(i = 0; i < numof(bldgs); i++)
+			bldgs[i]->draw(&wd);
+	}
+
 	/* seal at glass bondaries */
 	if(100 < pixels && !farmap ^ cullLevel){
 		int n;
+		beginWallTexture(vw);
 		Mat3d rot2 = mat3d_u();
 		for(n = 0; n < 2; n++){
 			int m;
@@ -1058,13 +1096,14 @@ void Island3::draw(const Viewer *vw){
 				glEnd();
 			}
 		}
+		endWallTexture();
 	}
 
 	/* bridges */
 	if(100 < pixels){
 		int n, j;
 		int cc = 0;
-		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT);
 		glCallList(roadlist);
 		glMaterialfv(GL_FRONT, GL_AMBIENT, GLfloat(brightness) * Vec4<GLfloat>(.85f, .85f, .85f, 1.));
 		Mat4d rot2 = mat4_u;
@@ -2117,3 +2156,214 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+
+
+static const double cutheight = .2;
+static const double floorHeight = .00375;
+static const double floorStep = .0005;
+
+static const GLdouble vertex[][3] = {
+  { -1.0, 0.0, -1.0 },
+  { 1.0, 0.0, -1.0 },
+  { 1.0, 1.0, -1.0 },
+  { -1.0, 1.0, -1.0 },
+  { -1.0, 0.0, 1.0 },
+  { 1.0, 0.0, 1.0 },
+  { 1.0, 1.0, 1.0 },
+  { -1.0, 1.0, 1.0 }
+};
+
+static const int edges[][2] = {
+  { 0, 1 },
+  { 1, 2 },
+  { 2, 3 },
+  { 3, 0 },
+  { 4, 5 },
+  { 5, 6 },
+  { 6, 7 },
+  { 7, 4 },
+  { 0, 4 },
+  { 1, 5 },
+  { 2, 6 },
+  { 3, 7 }
+};
+
+static const int face[][4] = {
+	{2,3,7,6},
+/*	{0,1,5,4},*/
+
+	{0,3,2,1},
+	{5,6,7,4},
+	{4,7,3,0},
+	{1,2,6,5},
+
+	{1,2,3,0},
+	{4,7,6,5},
+	{0,3,7,4},
+	{5,6,2,1},
+};
+static const double normal[][3] = {
+	{ 0.,  1.,  0.},
+/*	{ 0., -1.,  0.},*/
+
+	{ 0.,  0., -1.},
+	{ 0.,  0.,  1.},
+	{-1.,  0.,  0.},
+	{ 1.,  0.,  0.},
+
+	{ 0.,  0.,  1.},
+	{ 0.,  0., -1.},
+	{ 1.,  0.,  0.},
+	{-1.,  0.,  0.},
+
+	{ 0., -1.,  0.},
+};
+static const double texcoord[][3] = {
+	{ 0.,  0., 0.},
+	{ 0.,  1., 0.},
+	{ 1.,  1., 0.},
+	{ 1.,  0., 0.},
+};
+
+Island3Building::Island3Building(Island3 &host) : host(host){
+	RandomSequence rs((unsigned long)this);
+	double phase = rs.nextd() * M_PI;
+	phase += floor(phase / (M_PI / 3.)) * M_PI / 3. - M_PI / 6.;
+	pos[0] = sin(phase) * ISLAND3_INRAD;
+	pos[1] = 2. * ISLAND3_HALFLEN * (rs.nextd() - .5);
+	pos[2] = cos(phase) * ISLAND3_INRAD;
+	rot = Quatd::rotation(phase, 0, 1, 0).rotate(M_PI / 2., -1, 0, 0);
+	halfsize[0] = rs.nextd() * .10 + .010;
+	halfsize[1] = rs.nextd() * .30 + .010;
+	halfsize[1] -= fmod(halfsize[1], floorHeight);
+	halfsize[2] = rs.nextd() * .10 + .010;
+}
+
+
+void Island3Building::draw(wardraw_t *wd){
+	static bool init = false;
+	if(!init){
+		init = true;
+		suftexparam_t stp;
+		stp.flags = STP_ALPHA | STP_MIPMAP | STP_MINFIL | STP_MAGFIL;
+		stp.alphamap = STP_MASKTEX;
+		stp.minfil = GL_LINEAR_MIPMAP_LINEAR;
+		stp.magfil = GL_LINEAR;
+		stp.bmiMask = ReadBitmap("textures/building3mask.bmp");
+		CallCacheBitmap("bldg.jpg", "textures/building3.jpg", &stp, NULL);
+		LocalFree((void*)stp.bmiMask);
+	}
+
+	if(wd->vw->gc->cullFrustum(wd->vw->cs->tocs(pos, &host), hitradius() + halfsize[1]))
+		return;
+
+	{
+		const double scale = 1;
+		const double n[3] = {0., 1., 0.};
+		const double texHeight = floorHeight * 2.;
+		int i;
+		int heightcuts = int(halfsize[1] / cutheight) + 1;
+/*			if(0 < sun.pos[1])
+			ShadowSUF(sufpyramid, sun.pos, n, pos, NULL, scale, &rotaxisd);*/
+		glPushMatrix();
+//		glLoadIdentity();
+		gldTranslate3dv(pos);
+		gldMultQuat(rot);
+		gldScaled(scale);
+//		glGetDoublev(GL_MODELVIEW_MATRIX, vft->hitmdl.trans);
+//		glPopMatrix();
+//		glPushMatrix();
+//		glMultMatrixd(vft->hitmdl.trans);
+		glScaled(halfsize[0], halfsize[1], halfsize[2]);
+		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+//		glAlphaFunc(GL_FRONT_AND_BACK, GL_ALWAYS);
+		static const GLfloat mat_specular[4] = {0.f, 0.f, 0.f, 1.f};
+		static const GLfloat mat_diffuse[4] = {.8f, .8f, .8f, 1.f};
+		static const GLfloat mat_ambient[4] = {.6f, .6f, .6f, 1.f};
+		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+		glMaterialf(GL_FRONT, GL_SHININESS, 50.f);
+		glDisable(GL_TEXTURE_2D);
+		if(const struct suftexcache *stc = FindTexCache("bldg.jpg"))
+			glCallList(stc->list);
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_BLEND);
+//		glEnable(GL_ALPHA_TEST);
+//		glAlphaFunc(GL_GREATER, .5f);
+		glBegin(GL_QUADS);
+		for(i = 0; i < 5; i++){
+			int j, k;
+			glNormal3dv(normal[i]);
+			if(!i || heightcuts == 1) for(j = 0; j < 4; j++){
+				if(!normal[i][1])
+					glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, texcoord[j][1] * halfsize[1] / texHeight);
+				else
+					glTexCoord2i(0,0);
+				glVertex3dv(vertex[face[i][j]]);
+			}
+			else for(k = 0; k < heightcuts; k++){
+				double base;
+				j = 0;
+				base = floor((texcoord[j][1] * (heightcuts - k - 1) + texcoord[j+1][1] * k) / heightcuts * halfsize[1] / texHeight);
+				glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, ((texcoord[j][1] * (heightcuts - k - 1) + texcoord[j+1][1] * k) / heightcuts * halfsize[1] / texHeight - base));
+				glVertex3d(vertex[face[i][j]][0], (vertex[face[i][j]][1] * (heightcuts - k - 1) + vertex[face[i][j+1]][1] * k) / heightcuts, vertex[face[i][j]][2]);
+				j = 1;
+				glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, ((texcoord[j-1][1] * (heightcuts - k)  + texcoord[j][1] * (k+1)) / heightcuts * halfsize[1] / texHeight - base));
+				glVertex3d(vertex[face[i][j]][0], (vertex[face[i][j-1]][1] * (heightcuts - k) + vertex[face[i][j]][1] * (k+1)) / heightcuts, vertex[face[i][j]][2]);
+				j = 2;
+				glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, ((texcoord[j+1][1] * (heightcuts - k) + texcoord[j][1] * (k+1)) / heightcuts * halfsize[1] / texHeight - base));
+				glVertex3d(vertex[face[i][j]][0], (vertex[face[i][j+1]][1] * (heightcuts - k) + vertex[face[i][j]][1] * (k+1)) / heightcuts, vertex[face[i][j]][2]);
+				j = 3;
+				glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, ((texcoord[j][1] * (heightcuts - k - 1) + texcoord[j-1][1] * k) / heightcuts * halfsize[1] / texHeight - base));
+				glVertex3d(vertex[face[i][j]][0], (vertex[face[i][j]][1] * (heightcuts - k - 1) + vertex[face[i][j-1]][1] * k) / heightcuts, vertex[face[i][j]][2]);
+			}
+		}
+		glEnd();
+#if 0 // Disable internal structure drawing for the moment.
+		if(0 || pos[0] - halfsize[0] < wd->vw->pos[0] && wd->vw->pos[0] < pos[0] + halfsize[0]
+		&& pos[2] - halfsize[2] < wd->vw->pos[2] && wd->vw->pos[2] < pos[2] + halfsize[2]
+		&& pos[1] < wd->vw->pos[1] && wd->vw->pos[1] < pos[1] + halfsize[1]){
+			int floor, totalFloors = halfsize[1] / floorHeight;
+			int plfloor;
+			plfloor = (wd->vw->pos[1] - pos[1]) / floorHeight; 
+
+			glPushMatrix();
+			glTranslated(0, plfloor * floorHeight / halfsize[1], 0);
+			glScaled(1, floorHeight / halfsize[1], 1);
+			glEnable(GL_ALPHA_TEST);
+			glBegin(GL_QUADS);
+			for(i = 5; i < numof(face); i++){
+				int j;
+				glNormal3dv(normal[i]);
+				for(j = 0; j < 4; j++){
+					if(!normal[i][1])
+						glTexCoord2d(texcoord[j][0] * halfsize[2*!!normal[i][0]] * 2 / .01, texcoord[j][1] * .5/* * p->halfsize[1] / texHeight*/);
+					glVertex3dv(vertex[face[i][j]]);
+				}
+			}
+			glEnd();
+			glPopMatrix();
+
+			glCallList(CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL));
+			glBegin(GL_QUADS);
+			for(floor = plfloor; floor <= MIN(plfloor + 1, totalFloors); floor++){
+				glNormal3dv(normal[0]);
+				glTexCoord2d(0, 0); glVertex3d(-1, (floor * floorHeight + floorStep) / halfsize[1], -1);
+				glTexCoord2d(0, 1); glVertex3d(-1, (floor * floorHeight + floorStep) / halfsize[1],  1);
+				glTexCoord2d(1, 1); glVertex3d( 1, (floor * floorHeight + floorStep) / halfsize[1],  1);
+				glTexCoord2d(1, 0); glVertex3d( 1, (floor * floorHeight + floorStep) / halfsize[1], -1);
+				glNormal3dv(normal[numof(face)]);
+				glTexCoord2d(0, 0); glVertex3d(-1, (floor * floorHeight) / halfsize[1], -1);
+				glTexCoord2d(1, 0); glVertex3d( 1, (floor * floorHeight) / halfsize[1], -1);
+				glTexCoord2d(1, 1); glVertex3d( 1, (floor * floorHeight) / halfsize[1],  1);
+				glTexCoord2d(0, 1); glVertex3d(-1, (floor * floorHeight) / halfsize[1],  1);
+			}
+			glEnd();
+		}
+#endif
+		glPopAttrib();
+		glPopMatrix();
+	}
+
+}

@@ -14,12 +14,12 @@ void main (void)
 
 	vec3 normal = nrm;
 
-	vec3 fnormal = normalize(normal) + invEyeRot3x3 * (vec3)texture2D(nrmmap, vec2(gl_TexCoord[0])) * .2;
+	vec3 fnormal = normalize(normal) + invEyeRot3x3 * vec3(texture2D(nrmmap, vec2(gl_TexCoord[0]))) * .2;
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
 	
 	vec3 fview = normalize(view);
 
-	float diffuse = max(0, dot(flight, fnormal));
+	float diffuse = max(0., dot(flight, fnormal));
 
 	vec4 texColor = texture2D(texture, vec2(gl_TexCoord[0]));
 	texColor *= diffuse + ambient;

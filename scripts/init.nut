@@ -304,7 +304,7 @@ register_console_command("position", function(...){
 		print(player.getpos());
 		return;
 	}
-	player.setpos(Vec3d(vargv[0], vargv[1], vargc[2]));
+	player.setpos(Vec3d(vargv[0], vargv[1], vargv[2]));
 });
 
 register_console_command("velocity", function(...){
@@ -312,7 +312,7 @@ register_console_command("velocity", function(...){
 		print(player.getvelo());
 		return;
 	}
-	player.setvelo(Vec3d(x, y, z));
+	player.setvelo(Vec3d(vargv[0], vargv[1], vargv[2]));
 });
 
 register_console_command("halt", function(...){

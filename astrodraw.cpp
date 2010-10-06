@@ -2254,20 +2254,16 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 	if(pe){
 		Vec3d epos;
 		epos = vw->cs->tocs(pe->pos, pe->parent);
-		height = VECDIST(epos, vw->pos) - pe->rad;
+		height = (epos - vw->pos).len() - pe->rad;
 	}
 	else
 		height = 1e10;
 
 	invokes++;
 	{
-		Mat4d mat, mat2;
-/*		avec3_t bpos1, bpos0 = {0., 0., 1e5}, vpos;*/
+		Mat4d mat;
 		glPushMatrix();
-/*		tocsm(mat2, vw->cs, csys);
-		MAT4TRANSPOSE(mat, mat2);*/
 		mat = csys->tocsm(vw->cs);
-/*		tocsim(mat, vw->cs, csys);*/
 		glMultMatrixd(mat);
 	}
 

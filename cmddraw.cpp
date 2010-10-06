@@ -22,7 +22,7 @@ void CmdDrawInit(void){
 }
 
 void CmdDraw(viewport &gvp){
-	int i, p, linechars = gvp.w * .8 * 2. / 24.;
+	int i, p, linechars = int(gvp.w * .8 * 2. / 24.);
 	void (*putstring)(const char *, int) = console_texfont ? gldPutTextureStringN : gldPutStrokeStringN;
 	double cbot = -(console_windowsize * 2. - 1.);
 
@@ -65,7 +65,7 @@ void CmdDraw(viewport &gvp){
 		int wraps = 0, l;
 /*		glRasterPos2d(-.8, .8 - (i + 1) * 20. / gvp.h);
 		gldPutString(cmdbuffer[j]);*/
-		wraps = (strlen(cmdbuffer[j]) + linechars - 1) / linechars;
+		wraps = (cmdbuffer[j].len() + linechars - 1) / linechars;
 		for(l = 0; l < wraps; l++, p++){
 			glPushMatrix();
 			glTranslated(-.8, cbot + .2 + (p) * 30. / gvp.h, 0.);
@@ -81,7 +81,7 @@ void CmdDraw(viewport &gvp){
 	glTranslated(-.8 - 24. / gvp.w, cbot + .2, 0.);
 	glScaled(24. / gvp.w, 30. / gvp.w, 1.);
 	putstring("]", 1);
-	putstring(cmdline, cmdcur);
+	putstring(cmdline, cmdline.len());
 	putstring("\001", 1); /* cursor */
 	glPopMatrix();
 /*	glBegin(GL_LINES);

@@ -109,8 +109,6 @@ static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...)
 } 
 
 
-extern "C" int cmd_set(int argc, const char *argv[]);
-
 static SQInteger sqf_set_cvar(HSQUIRRELVM v){
 	SQInteger nargs = sq_gettop(v); //number of arguments
 	SQObjectType ty = sq_gettype(v, 1);
@@ -119,7 +117,7 @@ static SQInteger sqf_set_cvar(HSQUIRRELVM v){
 		args[0] = _SC("set");
 		sq_getstring(v, 2, &args[1]);
 		sq_getstring(v, 3, &args[2]);
-		cmd_set(3, const_cast<const char **>(args));
+		cmd_set(3, const_cast<char**>(args));
 	}
 	return 0;
 }

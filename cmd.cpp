@@ -1,13 +1,15 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "cmd.h"
-#include "argtok.h"
-#include "calc/calc.h"
 #include "cmd_int.h"
+#include "argtok.h"
 #include "viewer.h"
 #include "sqadapt.h"
+extern "C"{
+#include "calc/calc.h"
 #include <clib/c.h>
-/*#include <clib/gl/gldraw.h>*/
+#include <clib/gl/gldraw.h>
 #include <clib/timemeas.h>
+}
 /*#include <GL/glut.h>*/
 #include "antiglut.h"
 #include <string.h>
@@ -16,15 +18,15 @@
 
 static struct viewport gvp;
 
-char cmdbuffer[CB_LINES][CB_CHARS] = {0}/*{"gltest running.", "build: " __DATE__ ", " __TIME__}*/;
+cpplib::dstring cmdbuffer[CB_LINES];
 int cmdcurline = 2;
 int cmddispline = 0;
 
-static char cmdhist[MAX_COMMAND_HISTORY][CB_CHARS] = {""};
+static cpplib::dstring cmdhist[MAX_COMMAND_HISTORY];
 static int cmdcurhist = 0, cmdselhist = 0;
 
-int cmdcur = 0;
-char cmdline[CB_CHARS];
+//int cmdcur = 0;
+cpplib::dstring cmdline;
 
 static int cvar_echo = 0;
 static int cvar_cmd_echo = 1;
@@ -73,13 +75,23 @@ static unsigned long hashfunc(const char *s){
 	return ret;
 }
 
-void CmdPrint(const char *str){
-	strncpy(cmdbuffer[cmdcurline], str, CB_CHARS);
+/// Directly assign dstring to command buffer.
+/// This overloaded version reallocates memory less times.
+void CmdPrint(const cpplib::dstring &str){
+//	strncpy(cmdbuffer[cmdcurline], str, CB_CHARS);
+	cmdbuffer[cmdcurline] = str;
 	puts(cmdbuffer[cmdcurline]);
 /*	putchar('\n');*/
 	cmdcurline = (cmdcurline + 1) % CB_LINES;
 }
 
+/// Print a string to console.
+void CmdPrint(const char *str){
+	CmdPrint(static_cast<const cpplib::dstring&>(cpplib::dstring(str)));
+}
+
+/// Formatted version of CmdPrint.
+/// TODO: Buffer overrun unsafe!
 void CmdPrintf(const char *str, ...){
 	char buf[512];
 	va_list args;
@@ -90,14 +102,16 @@ void CmdPrintf(const char *str, ...){
 }
 
 
-static int cmd_echo(int argc, const char *argv[]){
-	char *out = cmdbuffer[cmdcurline];
+static int cmd_echo(int argc, char *argv[]){
+	cpplib::dstring &out = cmdbuffer[cmdcurline];
 	if(argc <= 1)
 		return 0;
+	out = "";
 	for(argv++; *argv; argv++){
-		strncpy(out, *argv, CB_CHARS - (out - cmdbuffer[cmdcurline]));
-		out += strlen(*argv);
-		*out++ = ' ';
+		out << *argv << ' ';
+//		strncpy(out, *argv, CB_CHARS - (out - cmdbuffer[cmdcurline]));
+//		out += strlen(*argv);
+//		*out++ = ' ';
 	}
 	puts(cmdbuffer[cmdcurline]);
 /*	putchar('\n');*/
@@ -105,13 +119,13 @@ static int cmd_echo(int argc, const char *argv[]){
 	return 0;
 }
 
-static int cmd_echoa(char *arg){
-	char *argv[3];
+/*static int cmd_echoa(const char *arg){
+	const char *argv[3];
 	argv[0] = "echo";
 	argv[1] = arg;
 	argv[2] = NULL;
-	return cmd_echo(2, argv);
-}
+	return cmd_echo(2, const_cast<char**>(argv));
+}*/
 
 
 static int cmd_cmdlist_int(const struct command *c, const char *pattern, int level){
@@ -120,11 +134,12 @@ static int cmd_cmdlist_int(const struct command *c, const char *pattern, int lev
 		ret += cmd_cmdlist_int(c->right, pattern, level + 1);
 	if(!pattern || !strncmp(pattern, c->name, strlen(pattern))){
 #ifdef _DEBUG
-		char buf[CB_CHARS];
-		sprintf(buf, "%d: %s", level, c->name);
-		cmd_echoa(buf);
+//		char buf[CB_CHARS];
+//		sprintf(buf, "%d: %s", level, c->name);
+//		cmd_echoa(buf);
+		CmdPrint(cpplib::dstring() << level << ": " << c->name);
 #else
-		cmd_echoa(c->name);
+		CmdPrint(c->name);
 #endif
 		ret++;
 	}
@@ -133,30 +148,31 @@ static int cmd_cmdlist_int(const struct command *c, const char *pattern, int lev
 	return ret;
 }
 
-static int cmd_cmdlist(int argc, const char *argv[]){
+static int cmd_cmdlist(int argc, char *argv[]){
 	int c;
-	char buf[CB_CHARS];
 	c = cmd_cmdlist_int(cmdlist, 2 <= argc ? argv[1] : NULL, 0);
-	sprintf(buf, "%d commands listed", c);
-	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << c << " commands listed");
 	return 0;
 }
 
-static int cmd_cvarlist(int argc, const char *argv[]){
+static int cmd_cvarlist(int argc, char *argv[]){
 	static const char typechar[] = {
 		'i', 'f', 'd', 's'
 	};
 	int c;
 	struct cvar *cv;
-	char buf[CB_CHARS];
+//	char buf[CB_CHARS];
 	c = 0;
 	for(cv = cvarlinear; cv; cv = cv->linear) if(argc < 2 || !strncmp(argv[1], cv->name, strlen(argv[1]))){
 #ifdef _DEBUG
-		sprintf(buf, "%c: %s (%08X)", typechar[cv->type], cv->name, hashfunc(cv->name));
+		char buf[32];
+		sprintf(buf, "%08X", hashfunc(cv->name));
+		CmdPrint(cpplib::dstring() << typechar[cv->type] << ": " << cv->name << " (" << buf << ")");
 #else
-		sprintf(buf, "%c: %s", typechar[cv->type], cv->name);
+//		sprintf(buf, "%c: %s", typechar[cv->type], cv->name);
+		CmdPrint(cpplib::dstring() << typechar[cv->type] << ": " << cv->name);
 #endif
-		cmd_echoa(buf);
+//		cmd_echoa(buf);
 		c++;
 	}
 #ifdef _NDEBUG
@@ -167,16 +183,17 @@ static int cmd_cvarlist(int argc, const char *argv[]){
 		cmd_echoa(buf);
 	}
 #endif
-	sprintf(buf, "%d cvars listed", c);
-	cmd_echoa(buf);
+//	sprintf(buf, "%d cvars listed", c);
+//	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << c << " cvars listed");
 	return 0;
 }
 
-static int cmd_toggle(int argc, const char *argv[]){
+static int cmd_toggle(int argc, char *argv[]){
 	struct cvar *cv;
 	const char *arg = argv[1];
 	if(!arg){
-		cmd_echoa("Specify a integer cvar to toggle it, assuming flag-like usage.");
+		CmdPrint("Specify a integer cvar to toggle it, assuming flag-like usage.");
 		return 0;
 	}
 	if((cv = CvarFind(arg)) && cv->type == cvar_int){
@@ -185,15 +202,15 @@ static int cmd_toggle(int argc, const char *argv[]){
 			cv->vrc(cv->v.i);
 	}
 	else
-		cmd_echoa("Specified variable is either not a integer nor existing.");
+		CmdPrint("Specified variable is either not a integer nor existing.");
 	return 0;
 }
 
-static int cmd_inc(int argc, const char *argv[]){
+static int cmd_inc(int argc, char *argv[]){
 	struct cvar *cv;
 	const char *arg = argv[1];
 	if(!arg){
-		cmd_echoa("Specify a integer cvar to increment by 1.");
+		CmdPrint("Specify a integer cvar to increment by 1.");
 		return 0;
 	}
 	if((cv = CvarFind(arg)) && cv->type == cvar_int){
@@ -202,15 +219,15 @@ static int cmd_inc(int argc, const char *argv[]){
 			cv->vrc(cv->v.i);
 	}
 	else
-		cmd_echoa("Specified variable is either not a integer nor existing.");
+		CmdPrint("Specified variable is either not a integer nor existing.");
 	return 0;
 }
 
-static int cmd_dec(int argc, const char *argv[]){
+static int cmd_dec(int argc, char *argv[]){
 	struct cvar *cv;
 	const char *arg = argv[1];
 	if(!arg){
-		cmd_echoa("Specify a integer cvar to decrement by 1.");
+		CmdPrint("Specify a integer cvar to decrement by 1.");
 		return 0;
 	}
 	if((cv = CvarFind(arg)) && cv->type == cvar_int){
@@ -219,15 +236,15 @@ static int cmd_dec(int argc, const char *argv[]){
 			cv->vrc(cv->v.i);
 	}
 	else
-		cmd_echoa("Specified variable is either not a integer nor existing.");
+		CmdPrint("Specified variable is either not a integer nor existing.");
 	return 0;
 }
 
-static int cmd_mul(int argc, const char *argv[]){
+static int cmd_mul(int argc, char *argv[]){
 	struct cvar *cv, *cv2;
 	const char *arg = argv[1];
 	if(argc <= 2){
-		cmd_echoa("Specify an arithmetic cvar and a constant or 2 cvars to multiply.");
+		CmdPrint("Specify an arithmetic cvar and a constant or 2 cvars to multiply.");
 		return 0;
 	}
 	if((cv = CvarFind(arg))){
@@ -260,28 +277,28 @@ static int cmd_mul(int argc, const char *argv[]){
 			cv->vrc(cv->v.i);
 	}
 	else
-		cmd_echoa("Specified variable is either not a integer nor existing.");
+		CmdPrint("Specified variable is either not a integer nor existing.");
 	return 0;
 }
 
 
 static char *stringdup(const char *s){
 	char *ret;
-	ret = malloc(strlen(s) + 1);
+	ret = (char*)malloc(strlen(s) + 1);
 	strcpy(ret, s);
 	return ret;
 }
 
 /* explicit cvar setter, useful in some occasion */
-int cmd_set(int argc, const char *argv[]){
+int cmd_set(int argc, char *argv[]){
 	const char *thekey, *thevalue;
 	if(argc <= 1){
-		cmd_echoa("Specify a cvar to set it.");
+		CmdPrint("Specify a cvar to set it.");
 		return 0;
 	}
 	thekey = argv[1];
 	if(argc <= 2){
-		cmd_echoa("Specify a value to set.");
+		CmdPrint("Specify a value to set.");
 		return 0;
 	}
 	thevalue = argv[2];
@@ -293,7 +310,7 @@ int cmd_set(int argc, const char *argv[]){
 			case cvar_int: *cv->v.i = atoi(thevalue); break;
 			case cvar_float: *cv->v.f = (float)calc3(&thevalue, calc_mathvars(), NULL); break;
 			case cvar_double: *cv->v.d = calc3(&thevalue, calc_mathvars(), NULL); break;
-			case cvar_string: cv->v.s = realloc(cv->v.s, strlen(thevalue) + 1); strcpy(cv->v.s, thevalue); break;
+			case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(thevalue) + 1); strcpy(cv->v.s, thevalue); break;
 		}
 		else{
 /*			cmd_echoa("Specified variable is not existing.");*/
@@ -330,21 +347,23 @@ static void cmd_preprocess(char *out, const char *in){
 	*out = '\0';
 }
 
-static int cmd_exec(int argc, const char *argv[]){
+static int cmd_exec(int argc, char *argv[]){
 	char buf[CB_CHARS];
 	FILE *fp;
 	if(argc <= 1){
-		cmd_echoa("Specify a file as argument to load the file to batch execute commands.");
+		CmdPrint("Specify a file as argument to load the file to batch execute commands.");
 		return 0;
 	}
 	fp = fopen(argv[1], "r");
 	if(!fp){
-		sprintf(buf, "Couldn't load %s!", argv[1]);
-		cmd_echoa(buf);
+//		sprintf(buf, "Couldn't load %s!", argv[1]);
+//		cmd_echoa(buf);
+		CmdPrint(cpplib::dstring() << "Couldn't load " << argv[1] << "!");
 		return 0;
 	}
-	sprintf(buf, "execing %s", argv[1]);
-	cmd_echoa(buf);
+//	sprintf(buf, "execing %s", argv[1]);
+//	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << "executing " << argv[1]);
 	while(fgets(buf, sizeof buf, fp)){
 		char *p;
 		char linebuf[CB_CHARS];
@@ -362,19 +381,19 @@ gbreak:
 	return 0;
 }
 
-static int cmd_time(int argc, const char *argv[]){
+static int cmd_time(int argc, char *argv[]){
 	char *thevalue;
-	char buf[CB_CHARS];
+//	char buf[CB_CHARS];
 	int i;
 	size_t valuelen;
 	timemeas_t tm;
 	if(argc <= 1){
-		cmd_echoa("Measures time elapsed while executing commands.");
+		CmdPrint("Measures time elapsed while executing commands.");
 		return 0;
 	}
 	for(valuelen = 0, i = 1; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
-	thevalue = malloc(valuelen);
+	thevalue = (char*)malloc(valuelen);
 	for(valuelen = 0, i = 1; i < argc; i++){
 		strcpy(&thevalue[valuelen], argv[i]);
 		valuelen += strlen(argv[i]) + 1;
@@ -383,8 +402,9 @@ static int cmd_time(int argc, const char *argv[]){
 	}
 	TimeMeasStart(&tm);
 	CmdExecD(thevalue);
-	sprintf(buf, "%lg seconds", TimeMeasLap(&tm));
-	cmd_echoa(buf);
+//	sprintf(buf, "%lg seconds", TimeMeasLap(&tm));
+//	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << TimeMeasLap(&tm) << " seconds");
 	free(thevalue);
 	return 0;
 }
@@ -395,13 +415,15 @@ static int listalias(struct cmdalias *a, int level){
 		return 0;
 	ret += listalias(a->right, level + 1);
 	{
-		char buf[CB_CHARS];
+//		char buf[CB_CHARS];
 #ifdef _DEBUG
-		sprintf(buf, "(%d) %s: %s", level, a->name, a->str);
+//		sprintf(buf, "(%d) %s: %s", level, a->name, a->str);
+		CmdPrint(cpplib::dstring() << "(" << level << ") " << a->name << ": " << a->str);
 #else
-		sprintf(buf, "%s: %s", a->name, a->str);
+//		sprintf(buf, "%s: %s", a->name, a->str);
+		CmdPrint(cpplib::dstring() << a->name << ": " << a->str);
 #endif
-		cmd_echoa(buf);
+//		cmd_echoa(buf);
 	}
 	ret += listalias(a->left, level + 1);
 	return ret + 1;
@@ -409,14 +431,15 @@ static int listalias(struct cmdalias *a, int level){
 
 static int cmd_alias(int argc, char *argv[]){
 	char *thekey, *thevalue;
-	char buf[CB_CHARS];
+//	char buf[CB_CHARS];
 	int i;
 	size_t valuelen;
 	if(argc <= 1){
 		int ret;
 		ret = listalias(aliaslist, 0);
-		sprintf(buf, "%d aliases listed", ret);
-		cmd_echoa(buf);
+//		sprintf(buf, "%d aliases listed", ret);
+//		cmd_echoa(buf);
+		CmdPrint(cpplib::dstring() << ret << " aliases listed");
 		return 0;
 	}
 	else if(argc == 2){
@@ -426,18 +449,20 @@ static int cmd_alias(int argc, char *argv[]){
 		struct cmdalias *a;
 		thekey = argv[1];
 		if(a = CmdAliasFind(thekey)){
-			sprintf(buf, "@echo %c: %s", a->name, a->str);
-			CmdExec(buf);
+//			sprintf(buf, "@echo %c: %s", a->name, a->str);
+//			CmdExec(buf);
+			CmdPrint(cpplib::dstring() << a->name << ": " << a->str);
 			return 0;
 		}
-		sprintf(buf, "@echo no aliase named %s is found.", thekey);
-		CmdExec(buf);
+//		sprintf(buf, "@echo no aliase named %s is found.", thekey);
+//		CmdExec(buf);
+		CmdPrint(cpplib::dstring() << "no aliase named " << thekey << " is found.");
 		return -1;
 	}
 	thekey = argv[1];
 	for(valuelen = 0, i = 2; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
-	thevalue = malloc(valuelen);
+	thevalue = (char*)malloc(valuelen);
 	for(valuelen = 0, i = 2; i < argc; i++){
 		strcpy(&thevalue[valuelen], argv[i]);
 		valuelen += strlen(argv[i]) + 1;
@@ -484,22 +509,18 @@ size_t cmd_memory_alias(const struct cmdalias *p){
 	return ret;
 }
 
-extern size_t CircleCutsMemory(void);
-
 /* print consumed memory for console management */
 static int cmd_memory(int argc, char *argv[]){
-	char buf[CB_CHARS];
-	size_t size;
-	sprintf(buf, "cmdbuf: %lu bytes = %lu kilobytes used", sizeof cmdbuffer + sizeof cmdhist, (sizeof cmdbuffer + sizeof cmdhist) / 1024);
-	cmd_echoa(buf);
+	size_t size = 0;
+	for(int i = 0; i < numof(cmdbuffer); i++)
+		size += cmdbuffer[i].len();
+	size += sizeof cmdbuffer + sizeof cmdhist;
+	CmdPrint(cpplib::dstring() << "cmdbuf: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
 	size = cmd_memory_alias(aliaslist);
-	sprintf(buf, "alias: %lu bytes = %lu kilobytes used", size, (size) / 1024);
-	cmd_echoa(buf);
-	sprintf(buf, "cvar: %lu bytes = %lu kilobytes used", cvarlists * sizeof **cvarlist, cvarlists * sizeof **cvarlist / 1024);
-	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << "alias: " << size << " bytes = " << (size + 1024) / 1024 << " kilobytes used");
+	CmdPrint(cpplib::dstring() << "cvar: " << cvarlists * sizeof **cvarlist << " bytes = " << cvarlists * sizeof **cvarlist / 1024 << " kilobytes used");
 	size = CircleCutsMemory();
-	sprintf(buf, "circut: %lu bytes = %lu kilobytes used", size, size / 1024);
-	cmd_echoa(buf);
+	CmdPrint(cpplib::dstring() << "circut: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
 	return 0;
 }
 
@@ -524,8 +545,8 @@ void CmdInit(struct viewport *pvp){
 	CvarAdd("console_mousewheelskip", &console_mousewheelskip, cvar_int);
 	CvarAdd("console_pageskip", &console_pageskip, cvar_int);
 	CvarAdd("console_undefinedecho", &console_undefinedecho, cvar_int);
-	cmd_echoa("gltestplus running.");
-	cmd_echoa("build: " __DATE__ ", " __TIME__);
+	CmdPrint("gltestplus running.");
+	CmdPrint("build: " __DATE__ ", " __TIME__);
 }
 
 #define DELETEKEY 0x7f
@@ -535,9 +556,10 @@ int CmdInput(char key){
 	if(key == DELETEKEY)
 		return 1;
 	if(key == 0x08){
-		if(cmdcur){
+/*		if(cmdcur){
 			cmdcur--;
-		}
+		}*/
+		cmdline = cpplib::dstring().strncat(cmdline, cmdline.len() - 1);
 		return 0;
 	}
 	else if(key == '\n'){
@@ -548,28 +570,34 @@ int CmdInput(char key){
 			cmdcur--;
 		}
 		else*/{
-			cmdline[cmdcur] = '\0';
-			if(cmdcur){
+//			cmdline[cmdcur] = '\0';
+//			if(cmdcur)
+			if(cmdline.len()){
 				int ret, echo;
-				char linebuf[CB_CHARS];
-				cmdcur = 0;
-				strncpy(cmdhist[cmdcurhist], cmdline, CB_CHARS);
+				char *linebuf = new char[cmdline.len() + 2];
+//				cmdcur = 0;
+//				strncpy(cmdhist[cmdcurhist], cmdline, CB_CHARS);
+				cmdhist[cmdcurhist] = cmdline;
 				cmdselhist = cmdcurhist = (cmdcurhist + 1) % MAX_COMMAND_HISTORY;
 				echo = cvar_cmd_echo && cmdline[0] != '@';
 				if(echo){
-					strncpy(cmdbuffer[cmdcurline], cmdline, CB_CHARS);
+//					strncpy(cmdbuffer[cmdcurline], cmdline, CB_CHARS);
+					cmdbuffer[cmdcurline] = cmdline;
 					cmdcurline = (cmdcurline + 1) % CB_LINES;
 				}
 				cmd_preprocess(linebuf, cmdline);
 				ret = CmdExecD(linebuf);
-				cmdline[0] = '\0';
+//				cmdline[0] = '\0';
+				cmdline = "";
 				if(console_cursorposdisp)
 					cmddispline = 0;
+				delete[] linebuf;
 			}
 		}
 	}
-	else if(cmdcur < CB_CHARS)
-		cmdline[cmdcur++] = key;
+	else// if(cmdcur < CB_CHARS)
+		cmdline << char(key);
+//		cmdline[cmdcur++] = key;
 	last = key;
 	return 0;
 }
@@ -594,8 +622,9 @@ int CmdMouseInput(int button, int state, int x, int y){
 
 int CmdSpecialInput(int key){
 	if(key == GLUT_KEY_UP || key == GLUT_KEY_DOWN){
-		strncpy(cmdline, cmdhist[cmdselhist = (cmdselhist + (key == GLUT_KEY_UP ? -1 : 1) + MAX_COMMAND_HISTORY) % MAX_COMMAND_HISTORY], sizeof cmdline);
-		cmdcur = strlen(cmdline);
+//		strncpy(cmdline, cmdhist[cmdselhist = (cmdselhist + (key == GLUT_KEY_UP ? -1 : 1) + MAX_COMMAND_HISTORY) % MAX_COMMAND_HISTORY], sizeof cmdline);
+		cmdline = cmdhist[cmdselhist = (cmdselhist + (key == GLUT_KEY_UP ? -1 : 1) + MAX_COMMAND_HISTORY) % MAX_COMMAND_HISTORY];
+//		cmdcur = strlen(cmdline);
 	}
 	if(key == GLUT_KEY_PAGE_UP/* && cmddispline < CB_LINES - (int)(gvp.h * .8 * 2. / 30.)*/){
 		if(cmddispline + console_pageskip <= CB_LINES - (int)(gvp.h * .8 * 2. / 30.))
@@ -631,7 +660,7 @@ static char *grouping(char *str, char **post){
 		}
 	}
 	if(inquote)
-		cmd_echoa("Double quotes(\") doesn't match.");
+		CmdPrint("Double quotes(\") doesn't match.");
 	return str;
 }
 
@@ -696,7 +725,7 @@ int argtok(char *argv[], char *s, char **post, int maxargs){
 		}
 	}
 	if(inquote)
-		cmd_echoa("Double quotes(\") doesn't match.");
+		CmdPrint("Double quotes(\") doesn't match.");
 	argv[ret] = NULL;
 	return ret;
 }
@@ -738,17 +767,17 @@ static int CmdExecD(char *cmdstring){
 	if(pa = CmdAliasFind(cmd)){
 		int returned;
 		if(aliasnest++ < MAX_ALIAS_NESTS){
-			char buf[CB_CHARS+1];
+//			char buf[CB_CHARS+1];
 			if(argv[1]){
-				sprintf(buf, "%s %s", pa->str, argv[1]);
-				returned = CmdExecD(buf);
+//				sprintf(buf, "%s %s", pa->str, argv[1]);
+				returned = CmdExec(cpplib::dstring(pa->str) << " " << argv[1]);
 			}
 			else
 				returned = CmdExec(pa->str);
 		}
 		else{
-			cmd_echoa("Aliase stack overflow!");
-			cmd_echoa("Infinite loop is likely the case.");
+			CmdPrint("Aliase stack overflow!");
+			CmdPrint("Infinite loop is likely the case.");
 			returned = -1;
 		}
 		aliasnest--;
@@ -781,7 +810,7 @@ static int CmdExecD(char *cmdstring){
 				case cvar_int: *cv->v.i = atoi(arg); break;
 				case cvar_float: *cv->v.f = (float)calc3(&arg, calc_mathvars(), NULL); break;
 				case cvar_double: *cv->v.d = calc3(&arg, calc_mathvars(), NULL); break;
-				case cvar_string: cv->v.s = realloc(cv->v.s, strlen(arg) + 1); strcpy(cv->v.s, arg); break;
+				case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(arg) + 1); strcpy(cv->v.s, arg); break;
 			}
 			if(cv->vrc)
 				cv->vrc(cv->v.i);
@@ -792,13 +821,13 @@ static int CmdExecD(char *cmdstring){
 				case cvar_string: sprintf(buf, "\"%s\" set to %s", cmd, cv->v.s); break;
 			}
 			if(cvar_echo)
-				cmd_echoa(buf);
+				CmdPrint(buf);
 			ret = 1;
 			goto gcon;
 		}
 	}
 	if(console_undefinedecho){
-		CmdPrintf("Undefined command: %s", cmd);
+		CmdPrint(cpplib::dstring() << "Undefined command: " << cmd);
 	}
 gcon:;
 	}while(cmdstring = post);
@@ -806,9 +835,11 @@ gcon:;
 }
 
 int CmdExec(const char *cmdstring){
-	char buf[CB_CHARS+1];
-	strncpy(buf, cmdstring, sizeof buf);
-	return CmdExecD(buf);
+	char *buf = new char[strlen(cmdstring) + 2];
+	strcpy(buf, cmdstring);
+	int ret = CmdExecD(buf);
+	delete[] buf;
+	return ret;
 }
 
 void CmdAdd(const char *cmdname, int (*proc)(int, char*[])){
@@ -875,7 +906,7 @@ void CvarAdd(const char *cvarname, void *value, enum cvartype type){
 	*ppcv = cv;
 	cv->type = type;
 	cv->name = cvarname;
-	cv->v.i = value;
+	cv->v.i = (int*)value;
 	cv->vrc = NULL;
 	cv->linear = cvarlinear;
 	cvarlinear = cv;
@@ -890,7 +921,7 @@ void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc
 	*ppcv = cv;
 	cv->type = type;
 	cv->name = cvarname;
-	cv->v.i = value;
+	cv->v.i = (int*)value;
 	cv->vrc = vrc;
 	cv->linear = cvarlinear;
 	cvarlinear = cv;
@@ -928,9 +959,9 @@ const char *CvarGetString(const char *cvarname){
 	if(!cv)
 		return NULL;
 	switch(cv->type){
-		case cvar_int: buf = realloc(buf, 64); sprintf(buf, "%d", *cv->v.i); break;
-		case cvar_float: buf = realloc(buf, 64); sprintf(buf, "%f", *cv->v.f); break;
-		case cvar_double: buf = realloc(buf, 64); sprintf(buf, "%lf", *cv->v.d); break;
+		case cvar_int: buf = (char*)realloc(buf, 64); sprintf(buf, "%d", *cv->v.i); break;
+		case cvar_float: buf = (char*)realloc(buf, 64); sprintf(buf, "%f", *cv->v.f); break;
+		case cvar_double: buf = (char*)realloc(buf, 64); sprintf(buf, "%lf", *cv->v.d); break;
 		case cvar_string: return cv->v.s;
 	}
 	return buf;

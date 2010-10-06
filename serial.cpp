@@ -84,7 +84,7 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 /// \sa Conster(), ctormap()
 unsigned Serializable::registerClass(std::string name, Serializable *(*constructor)()){
 	if(Serializable::ctormap().find(name) != Serializable::ctormap().end())
-		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
+		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
 	Serializable::ctormap()[name] = constructor;
 	return Serializable::ctormap().size();
 }

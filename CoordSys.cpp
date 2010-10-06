@@ -1051,7 +1051,7 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 	if(argc <= 1){
 		for(CoordSys *cs = ppl->cs->children; cs; cs = cs->next){
 			cpplib::dstring ds = cs->getrpath(cs);
-			CmdPrintf(ds);
+			CmdPrint(ds);
 		}
 		return 0;
 	}
@@ -1063,15 +1063,13 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 		}
 	}
 	else
-		CmdPrintf("Could not find path %s", argv[1]);
+		CmdPrint(cpplib::dstring() << "Could not find path " << argv[1]);
 	return 0;
 }
 
 static int cmd_pwd(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
-	char buf[128];
-	ppl->cs->getpath(buf, sizeof buf);
-	CmdPrintf(buf);
+	CmdPrint(ppl->cs->getpath());
 	return 0;
 }
 

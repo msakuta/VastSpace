@@ -116,7 +116,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	const char *fname = argc < 2 ? "saveb.sav" : argv[1];
 #ifdef _WIN32
 	if(-1 == GetFileAttributes(fname)){
-		CmdPrintf("Specified file does not exist.");
+		CmdPrint("Specified file does not exist.");
 		return 0;
 	}
 #else

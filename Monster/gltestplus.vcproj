@@ -395,7 +395,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\cmd.c"
+				RelativePath="..\cmd.cpp"
 				>
 			</File>
 			<File

@@ -216,7 +216,7 @@ Mat4d Island3::transform(const Viewer *vw)const{
 	}
 	else{
 		ret = mat4_u;
-		if(!ent){
+		if(vw->cs == this || !ent){
 			Mat4d rot = vw->cs->tocsim(this);
 			ret.translatein(vw->cs->tocs(vec3_000, this));
 			ret = ret * rot;
@@ -520,7 +520,7 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		if(!g)
 			g = glGetError();
 		if(g){
-			CmdPrintf((const char*)gluErrorString(g));
+			CmdPrint((const char*)gluErrorString(g));
 			glReadPixels(0, 0, CUBESIZE, CUBESIZE, GL_RGB, GL_UNSIGNED_BYTE, buf);
 			glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0,
 				GL_RGB, GL_UNSIGNED_BYTE, buf);
@@ -2263,20 +2263,12 @@ void Island3Building::draw(wardraw_t *wd){
 		const double texHeight = floorHeight * 2.;
 		int i;
 		int heightcuts = int(halfsize[1] / cutheight) + 1;
-/*			if(0 < sun.pos[1])
-			ShadowSUF(sufpyramid, sun.pos, n, pos, NULL, scale, &rotaxisd);*/
 		glPushMatrix();
-//		glLoadIdentity();
 		gldTranslate3dv(pos);
 		gldMultQuat(rot);
 		gldScaled(scale);
-//		glGetDoublev(GL_MODELVIEW_MATRIX, vft->hitmdl.trans);
-//		glPopMatrix();
-//		glPushMatrix();
-//		glMultMatrixd(vft->hitmdl.trans);
 		glScaled(halfsize[0], halfsize[1], halfsize[2]);
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
-//		glAlphaFunc(GL_FRONT_AND_BACK, GL_ALWAYS);
 		static const GLfloat mat_specular[4] = {0.f, 0.f, 0.f, 1.f};
 		static const GLfloat mat_diffuse[4] = {.8f, .8f, .8f, 1.f};
 		static const GLfloat mat_ambient[4] = {.6f, .6f, .6f, 1.f};

@@ -2,6 +2,8 @@
 #define CMD_H
 #include "export.h"
 #ifdef __cplusplus
+#include <cpplib/dstring.h>
+EXPORT void CmdPrint(const cpplib::dstring &);
 extern "C"{
 #endif
 
@@ -25,6 +27,8 @@ EXPORT struct cvar *CvarFind(const char *cvarname);
 EXPORT const char *CvarGetString(const char *cvarname); /* The returned string's strage duration is assured until next call of this function */
 EXPORT void CmdAliasAdd(const char *name, const char *str);
 EXPORT struct cmdalias *CmdAliasFind(const char *name);
+
+EXPORT int cmd_set(int argc, char *argv[]);
 
 #ifdef __cplusplus
 struct viewport;

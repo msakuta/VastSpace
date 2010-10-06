@@ -378,7 +378,7 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 			break;
 		}
 		if(i == ntplist)
-			CmdPrintf("Could not find location \"%s\".", arg);
+			CmdPrint(cpplib::dstring() << "Could not find location \"" << arg << "\".");
 	}
 	return 0;
 }

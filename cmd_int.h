@@ -6,10 +6,9 @@ extern "C"{
 #endif
 
 #define CB_LINES 256
-#define CB_CHARS 128
 #define MAX_ALIAS_NESTS 32
 #define MAX_COMMAND_HISTORY 32
-#define MAX_ARGC 32
+#define MAX_ARGC 64
 
 struct cvar{
 	enum cvartype type;

@@ -6,8 +6,8 @@ extern "C"{
 }
 
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), ringtexname(NULL), ringbacktexname(NULL), oblateness(0.){
-	texlist = 0;
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), cloudtexname(NULL), ringtexname(NULL), ringbacktexname(NULL), oblateness(0.){
+	texlist = cloudtexlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;
 	ring = 0;
@@ -71,6 +71,14 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			char *texname = new char[strlen(argv[1]) + 1];
 			strcpy(texname, argv[1]);
 			this->texname = texname;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "cloudtexture")){
+		if(1 < argc){
+			char *texname = new char[strlen(argv[1]) + 1];
+			strcpy(texname, argv[1]);
+			this->cloudtexname = texname;
 		}
 		return true;
 	}

@@ -38,7 +38,7 @@ protected:
 	Astrobj *objs[2];
 };
 
-// L1 point of two celestial bodies
+/// L1 point of two celestial bodies
 class Lagrange1CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
@@ -49,7 +49,7 @@ public:
 	void anim(double dt);
 };
 
-// L2 point of two celestial bodies
+/// L2 point of two celestial bodies
 class Lagrange2CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;

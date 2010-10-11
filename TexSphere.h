@@ -9,8 +9,8 @@
 
 /// Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
-	const char *texname, *ringtexname, *ringbacktexname;
-	unsigned int texlist; // should not really be here
+	const char *texname, *cloudtexname, *ringtexname, *ringbacktexname;
+	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
 	double oblateness;

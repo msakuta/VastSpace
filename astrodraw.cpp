@@ -1,10 +1,11 @@
-//#include "atmosphere.h"
+/** \file
+ * \brief Implementation of drawing methods of astronomical objects.
+ */
 #include "astrodraw.h"
 #include "draw/ring-draw.h"
 #include "Universe.h"
-//#include "player.h"
 #include "judge.h"
-#include "coordsys.h"
+#include "CoordSys.h"
 #include "antiglut.h"
 #include "galaxy_field.h"
 #include "astro_star.h"
@@ -182,11 +183,11 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 	if(delta.slen() < radius * radius)
 		return;
 	double pixels = arg.radius * fabs(vw.gc->scale(org));
-	double maxlevel = 8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale);
+	int maxlevel = int(8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale));
 //	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));
 //	double maxlevel = 8 * (1. - (1. - pow(wd->vw->pos.slen(), gpow)) * gscale);
 	arg.maxlevel = g_sc < 0 ? maxlevel : g_sc;
-	int pixelminlevel = MIN(sqrt(pixels * .1), 3);
+	int pixelminlevel = int(min(sqrt(pixels * .1), 3));
 	if(arg.maxlevel < pixelminlevel) arg.maxlevel = pixelminlevel;
 	if(8 < arg.maxlevel) arg.maxlevel = 8;
 	arg.culllevel = g_cl < 0 ? arg.maxlevel - 1 : g_cl;
@@ -211,7 +212,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 static GLuint ProjectSphereJpg(const char *fname);
-GLuint ProjectSphereCubeJpg(const char *fname);
+GLuint ProjectSphereCubeJpg(const char *fname, int flags);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -498,22 +499,35 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 #define PROJS (PROJTS/2)
 #define PROJBITS 32 /* bit depth of projected texture */
 
-bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname){
+/// drawTextureSphere flags
+enum DTS{
+	DTS_ADD = 1<<0,
+	DTS_NODETAIL = 1<<1,
+	DTS_ALPHA = 1<<2,
+	NUM_DTS
+};
+
+/// Draws a sphere textured
+bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname, double rad = 0., int flags = 0){
 	GLuint texlist = *ptexlist;
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
 	double dist, tangent, scale, zoom;
-	int i, j, jstart, fine, texenable = texlist && texmat;
+	int i, j, jstart, fine;
+	bool texenable = texlist && texmat;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
 	Vec3d tp;
+	
+	if(rad == 0.)
+		rad = a->rad;
 
 	params.vw = vw;
 	params.texenable = texenable;
 	params.detail = 0;
 
 	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
-	scale = a->rad * vw->gc->scale(apos);
+	scale = rad * vw->gc->scale(apos);
 
 	VECSUB(tp, apos, vw->pos);
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
@@ -534,11 +548,12 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 		return true;
 	}
 
+	// Allocate surface texture
 	do if(!texlist && texname){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
-		texlist = *ptexlist = ProjectSphereCubeJpg(texname);
+		texlist = *ptexlist = ProjectSphereCubeJpg(texname, flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -546,10 +561,10 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	finecuts = CircleCutsPartial(256, 9);
 
 	dist = (apos - vw->pos).len();
-	if(dist < a->rad)
+	if(dist < rad)
 		return true;
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 	glDisable(GL_BLEND);
@@ -586,6 +601,10 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
 	}
+	if(flags & DTS_ADD){
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+	}
 /*		glPolygonMode(GL_BACK, GL_LINE);*/
 /*	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);*/
@@ -608,7 +627,7 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	/*		MAT4CPY(rot, irot);*/
 			params.texmat = rot2 * irot;
 		}
-		mat = irot.translatein(0., 0., dist).scalein(-a->rad, -a->rad, -a->rad);
+		mat = irot.translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
 
 	glPushMatrix();
@@ -616,9 +635,9 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 
 /*	MAT4CPY(params.texmat, texmat);*/
 
-	tangent = asin(a->rad / dist);
+	tangent = asin(rad / dist);
 /*	fine = M_PI / 3. < tangent;*/
-	fine = M_PI * 7. / 16. < tangent ? 2 : M_PI / 3. < tangent ? 1 : 0;
+	fine = DTS_NODETAIL & flags ? 0 : M_PI * 7. / 16. < tangent ? 2 : M_PI / 3. < tangent ? 1 : 0;
 	ffinecuts = CircleCutsPartial(2048, 9);
 
 	{
@@ -740,9 +759,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness,
 						 AstroRing *ring, double ringminrad = 0., double ringmaxrad = 0.){
 	GLuint texlist = *ptexlist;
-	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
-	double dist, tangent, scale, zoom;
-	int i, j, jstart, fine, texenable = texlist;
+	double scale, zoom;
+	bool texenable = !!texlist;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
@@ -775,7 +793,7 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	do if(!texlist && texname){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereCubeJpg(texname);
+		texlist = *ptexlist = ProjectSphereCubeJpg(texname, 0);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -843,6 +861,8 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	glMatrixMode(GL_MODELVIEW);
 
 	glPopAttrib();
+
+	return texenable;
 }
 
 void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos, GLfloat mat_diffuse[4], GLfloat mat_ambient[4]){
@@ -864,7 +884,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
 		theta = acos(theta);
-		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = theta * RING_CUTS / 2. / M_PI + 1, RING_CUTS / 2, ringrot = (rot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
+		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = char(theta * RING_CUTS / 2. / M_PI + 1), RING_CUTS / 2, ringrot = (rot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -891,6 +911,16 @@ void TexSphere::draw(const Viewer *vw){
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;
+			}
+			if(cloudtexname || cloudtexlist){
+				ret = drawTextureSphere(this, vw, sunpos,
+					Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
+					Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f),
+					&cloudtexlist, &rot.cnj().tomat4(), cloudtexname, this->rad * 1.001, DTS_ALPHA | DTS_NODETAIL);
+				if(!ret && cloudtexname){
+					delete[] cloudtexname;
+					cloudtexname = NULL;
+				}
 			}
 		}
 	}
@@ -1072,7 +1102,7 @@ static const Quatd cubedirs[] = {
 };
 
 
-GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6]){
+GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags){
 	static int texinit = 0;
 	GLuint tex, texname;
 //	int srcheight = !raw ? 0 : raw->bmiHeader.biHeight < 0 ? -raw->bmiHeader.biHeight : raw->bmiHeader.biHeight;
@@ -1081,28 +1111,32 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 	/*if(!texinit)*/
 	{
-		int i, outsize, linebytes, linebytesp;
+		int outsize, linebytes, linebytesp;
 		long rawh = !raw ? 0 : ABS(raw->bmiHeader.biHeight);
 		long raww = !raw ? 0 : raw->bmiHeader.biWidth;
 		BITMAPINFO *proj = NULL;
 		RGBQUAD zero = {0,0,0,255};
 		texinit = 1;
+		int bits = flags & DTS_ALPHA ? 8 : PROJBITS;
 
 		if(!cacheload){
-			proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (PROJC * PROJC * PROJBITS + 31) / 32 * 4);
+			proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
 			memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
 			proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
-			proj->bmiHeader.biBitCount = PROJBITS;
-			proj->bmiHeader.biClrUsed = 0;
+			proj->bmiHeader.biBitCount = bits;
+			proj->bmiHeader.biClrUsed = flags & DTS_ALPHA ? 256 : 0;
 			proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
 			linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
-			linebytesp = (PROJC * PROJBITS + 31) / 32 * 4;
+			linebytesp = (PROJC * bits + 31) / 32 * 4;
+			for(unsigned i = 0; i < proj->bmiHeader.biClrUsed; i++)
+				proj->bmiColors[i].rgbBlue = proj->bmiColors[i].rgbGreen = proj->bmiColors[i].rgbRed = proj->bmiColors[i].rgbReserved = i;
 		}
 
 		for(int nn = 0; nn < 6; nn++){
-			if(!cacheload) for(i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
+			if(!cacheload) for(int i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
 				RGBQUAD *dst;
-				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * PROJBITS / 8];
+				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * bits / 8];
+				GLubyte *dst8 = (GLubyte*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * bits / 8];
 	/*			if(r){
 					double dj = j * 2. / PROJS - 1.;
 					j1 = r < fabs(dj) ? -1 : (int)(raw->bmiHeader.biWidth * fmod(asin(dj / r) / M_PI / 2. + .25 + (ii * 2 + jj) * .25, 1.));
@@ -1124,15 +1158,30 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 				int j1 = (int(floor(dj1)) + raww) % raww;
 
 				if(raw->bmiHeader.biBitCount == 4){ // untested
-//					const RGBQUAD *src;
 					double accum[3] = {0}; // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
-//					src = &raw->bmiColors[(j1 < 0 || raw->bmiHeader.biWidth <= j1 ? 0 : ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 / 2] & (0x0f << j1 % 2 * 4) >> j1 % 2 * 4)];
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
 					dst->rgbBlue = (GLubyte)accum[2];
 					dst->rgbReserved = 255;
+				}
+				else if(raw->bmiHeader.biBitCount == 8){
+					if(flags & DTS_ALPHA){
+						double accum = 0.;
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
+							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+						*dst8 = (GLubyte)(accum);
+					}
+					else{
+						double accum[3] = {0}; // accumulator
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+							accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+						dst->rgbRed = (GLubyte)accum[0];
+						dst->rgbGreen = (GLubyte)accum[1];
+						dst->rgbBlue = (GLubyte)accum[2];
+						dst->rgbReserved = 255;
+					}
 				}
 				else if(raw->bmiHeader.biBitCount == 24){
 					double accum[3] = {0}; // accumulator
@@ -1163,6 +1212,20 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 				p = strrchr(name, '.');
 				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
 
+				// Create directories to make path available
+				std::string sstr = bstr.str();
+				const char *cstr = sstr.c_str();
+				p = &cstr[sizeof "cache"-1];
+				while(p = strchr(p+1, '/')){
+					cpplib::dstring dirpath = cpplib::dstring().strncat(cstr, p - cstr);
+#ifdef _WIN32
+					if(GetFileAttributes(dirpath) == -1)
+						CreateDirectory(dirpath, NULL);
+#else
+					mkdir(dirpath);
+#endif
+				}
+
 				/* force overwrite */
 				std::ofstream ofs(bstr.str().c_str(), std::ofstream::out | std::ofstream::binary);
 				if(ofs/*fp = fopen(bstr.str().c_str(), "wb")*/){
@@ -1192,12 +1255,12 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 					SaveJPEGData(jpgfilename, &bmd, 80);
 				}
 	#endif
-				glTexImage2D(cubetarget[nn], 0, GL_RGBA, PROJC, PROJC, 0, GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
+				glTexImage2D(cubetarget[nn], 0, flags & DTS_ALPHA ? GL_ALPHA : GL_RGBA, PROJC, PROJC, 0, flags & DTS_ALPHA ? GL_ALPHA : GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
 
 			}
 			else{
-				glTexImage2D(cubetarget[nn], 0, cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
-					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? GL_LUMINANCE : (assert(0), 0),
+				glTexImage2D(cubetarget[nn], 0, flags & DTS_ALPHA ? GL_ALPHA : cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
+					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? flags & DTS_ALPHA ? GL_ALPHA : GL_LUMINANCE : (assert(0), 0),
 					GL_UNSIGNED_BYTE, &cacheload[nn]->bmiColors[cacheload[nn]->bmiHeader.biClrUsed]);
 			}
 		}
@@ -1215,7 +1278,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 			static GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
 			init_rseq(&rs, 124867);
 			init = true;
-			for(i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+			for(int i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
 				int buf[3] = {0};
 				int k;
 				for(k = 0; k < 1; k++){
@@ -1229,7 +1292,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 			}
 
 			/* average surrounding 8 texels to smooth */
-			for(i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+			for(int i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
 				int k, l;
 				int buf[3] = {0};
 				for(k = -1; k <= 1; k++) for(l = -1; l <= 1; l++)/* if(k != 0 || l != 0)*/{
@@ -1291,7 +1354,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 #if 1
 
 
-GLuint ProjectSphereCubeJpg(const char *fname){
+GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 		const struct suftexcache *stc;
 		GLuint texlist = 0;
 //		char outfilename[256], jpgfilename[256];
@@ -1347,7 +1410,7 @@ heterogeneous:
 				}
 			}
 			if(ok){
-				texlist = ProjectSphereCube(fname, NULL, bmis);
+				texlist = ProjectSphereCube(fname, NULL, bmis, flags);
 				for(int i = 0; i < 6; i++)
 					LocalFree(bmis[i]);
 			}
@@ -1357,7 +1420,7 @@ heterogeneous:
 				BITMAPINFO *bmi = ReadJpeg(jpgfilename, &freeproc);
 				if(!bmi)
 					return 0;
-				texlist = ProjectSphereCube(fname, bmi, NULL);
+				texlist = ProjectSphereCube(fname, bmi, NULL, flags);
 				freeproc(bmi);
 			}
 		}
@@ -1416,17 +1479,17 @@ static int setstarcolor(GLubyte *pr, GLubyte *pg, GLubyte *pb, struct random_seq
 	GLubyte r, g, b;
 	int bri, hi;
 	{
-		double hue, sat, f, p, q, t;
+		double hue, sat;
 		hue = drseq(prs);
 		hue = (hue + drseq(prs)) * .5 + 1. * rvelo / LIGHT_SPEED;
 		sat = 1. - (1. - (.25 + drseq(prs) * .5) /** (hue < 0. ? 1. / (1. - hue) : 1. < hue ? 1. / hue : 1.)*/) / (1. + avelo / LIGHT_SPEED);
 		bri = int((127 + rseq(prs) % 128) * (hue < 0. ? 1. / (1. - hue) : 1. < hue ? 1. / hue : 1.));
 		hue = rangein(hue, 0., 1.);
 		hi = (int)floor(hue * 6.);
-		f = hue * 6. - hi;
-		p = bri * (1 - sat);
-		q = bri * (1 - f * sat);
-		t = bri * (1 - (1 - f) * sat);
+		GLubyte f = GLubyte(hue * 6. - hi);
+		GLubyte p = GLubyte(bri * (1 - sat));
+		GLubyte q = GLubyte(bri * (1 - f * sat));
+		GLubyte t = GLubyte(bri * (1 - (1 - f) * sat));
 		switch(hi){
 			case 0: r = bri, g = t, b = q; break;
 			case 1: r = q, g = bri, b = p; break;
@@ -2269,7 +2332,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 	static GLuint backimg = 0;
 	if(!backimg)
-		backimg = ProjectSphereCubeJpg("mwpan2_Merc_2000x1200.jpg");
+		backimg = ProjectSphereCubeJpg("mwpan2_Merc_2000x1200.jpg", 0);
 	{
 		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
 		glCallList(backimg);
@@ -2639,11 +2702,11 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 				}
 				bri = setstarcolor(&r, &g, &b, &rs, rvelo, velo);
 				if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen){
-					r *= LIGHT_SPEED / vw->velolen;
-					g *= LIGHT_SPEED / vw->velolen;
-					b *= LIGHT_SPEED / vw->velolen;
+					r = GLubyte(r * LIGHT_SPEED / vw->velolen);
+					g = GLubyte(g * LIGHT_SPEED / vw->velolen);
+					b = GLubyte(b * LIGHT_SPEED / vw->velolen);
 				}
-				glColor4ub(r, g, b, 255 * f * f);
+				glColor4f(r / 255.f, g / 255.f, b / 255.f, GLfloat(255 * f * f));
 				glVertex3dv(pos);
 			}
 		}
@@ -2728,13 +2791,11 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 #if 1
 	if(!vw->relative/*(pl.mover == warp_move || pl.mover == player_tour || pl.chase && pl.chase->vft->is_warping && pl.chase->vft->is_warping(pl.chase, pl.cs->w))*/ && LIGHT_SPEED * LIGHT_SPEED < velo.slen()){
 		int i, count = 1250;
-		struct random_sequence rs;
+		RandomSequence rs(2413531);
 		static double raintime = 0.;
-/*		timemeas_t tm;*/
 		double cellsize = 1e7;
 		double speedfactor;
 		const double width = .00002 * 1000. / vw->vp.m; /* line width changes by the viewport size */
-		double epos[3];
 		double basebright;
 		const double levelfactor = 1.5e3;
 		int level = 0;
@@ -2744,7 +2805,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		static GLuint texname = 0;
 		static const GLfloat envcolor[4] = {0,0,0,0};
 
-		init_rseq(&rs, 2413531);
 /*		count = raintime / dt < .1 ? 500 * (1. - raintime / dt / .1) * (1. - raintime / dt / .1) : 100;*/
 /*		TimeMeasStart(&tm);*/
 		rot = csys->tocsm(vw->cs);
@@ -2766,11 +2826,11 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 			GLubyte texbits[64][64][2];
 			int i, j;
 			for(i = 0; i < 64; i++) for(j = 0; j < 64; j++){
-				int a, r;
+				int r;
 				r = (32 * 32 - (i - 32) * (i - 32) - (j - 32) * (j - 32)) * 255 / 32 / 32;
-				texbits[i][j][0] = 256. * sqrt(MIN(255, MAX(0, r)) / 256.)/*256. * sqrt((255 - MIN(255, MAX(0, r))) / 256.)*/;
+				texbits[i][j][0] = GLubyte(256. * sqrt(MIN(255, MAX(0, r)) / 256.)/*256. * sqrt((255 - MIN(255, MAX(0, r))) / 256.)*/);
 				r = (32 * 32 - (i - 32) * (i - 32) - (j - 32) * (j - 32)) * 255 / 32 / 32;
-				texbits[i][j][1] = 256. * sqrt(MIN(255, MAX(0, r)) / 256.);
+				texbits[i][j][1] = GLubyte(256. * sqrt(MIN(255, MAX(0, r)) / 256.));
 			}
 			glGenTextures(1, &texname);
 			glBindTexture(GL_TEXTURE_2D, texname);
@@ -2805,37 +2865,25 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 		for(i = count; i; i--){
 			Vec3d pos, dst;
-			int red, bright;
+			GLfloat red;
 			pos[0] = plpos[0] + (drseq(&rs) - .5) * 2 * cellsize;
 			pos[0] = floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0];
 			pos[1] = plpos[1] + (drseq(&rs) - .5) * 2 * cellsize;
 			pos[1] = floor(pos[1] / cellsize) * cellsize + cellsize / 2. - pos[1];
 			pos[2] = plpos[2] + (drseq(&rs) - .5) * 2 * cellsize;
 			pos[2] = floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2];
-/*			pos[0] = pl.pos[0] + (drseq(&rs) - .5) * 2 * cellsize;
-			pos[0] = pl.pos[0] + floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0];
-			pos[1] = pl.pos[1] + (drseq(&rs) - .5) * 2 * cellsize + warf.war_time * destvelo;
-			pos[1] = pl.pos[1] + floor(pos[1] / cellsize) * cellsize + cellsize / 2. - pos[1];
-			pos[2] = pl.pos[2] + (drseq(&rs) - .5) * 2 * cellsize;
-			pos[2] = pl.pos[2] + floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2];*/
-			red = rseq(&rs) % 256;
+			red = GLfloat(rs.nextd());
 			dst = pos;
 			dst += localvelo;
 			pos -= localvelo;
-			bright = (255 - pos.len() * 255 / (cellsize / 2.)) * basebright;
-			if(0 < bright){
-				glColor4ub(level == 0 ? red : 255, level == 1 ? red : 255, level == 2 ? red : 255, bright);
+			double bright = (255 - pos.len() * 255 / (cellsize / 2.)) * basebright;
+			if(1. / 255. < bright){
+				glColor4f(level == 0 ? red : 1.f, level == 1 ? red : 1.f, level == 2 ? red : 1.f, GLfloat(bright / 255.));
 				gldTextureBeam(avec3_000, pos, dst, cellsize / 100. / (1. + speedfactor / levelfactor));
-/*				glBegin(GL_LINES);
-				glVertex3dv(pos);
-				glVertex3dv(dst);
-				glEnd();*/
 			}
-/*			gldGradBeam(avec3_000, pos, dst, width, COLOR32RGBA(0,0,255,0));*/
 		}
 		glPopAttrib();
 		glPopMatrix();
-/*		fprintf(stderr, "starrain: %lg\n", raintime = TimeMeasLap(&tm));*/
 	}
 #endif
 }
@@ -2968,14 +3016,12 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
 }
 
 void drawsuncolona(Astrobj *a, const Viewer *vw){
-	int i;
-	GLubyte white[4] = {255, 255, 255, 255};
+	Vec4<GLubyte> white(255, 255, 255, 255);
 	double height;
 	double sdist;
-	double dist, as, cas, sas;
-	double (*cuts)[2];
+	double dist, as;
 	Vec3d vpos, epos, spos;
-	double x, z, phi, theta, f;
+	double x, z, f;
 	Astrobj *abest = NULL;
 
 	/* astrobjs are sorted and the nearest celestial body with atmosphere can be
@@ -3009,8 +3055,8 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		VECSUB(de, epos, vpos);
 		VECSUB(ds, spos, vpos);*/
 		f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
-		white[1] *= 1. - (1. - f) * .5;
-		white[2] *= f;
+		white[1] = GLubyte(white[1] * 1. - (1. - f) * .5);
+		white[2] = GLubyte(white[2] * f);
 	}
 
 	/* if neither sun nor planet with atmosphere like earth is near you, the sun's colona shrinks. */
@@ -3020,7 +3066,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		static double normalizer;
 		double sp, brightness;
 		avec3_t dv, spos1;
-		amat4_t mat, mat2;
+		amat4_t mat;
 		if(!normalized)
 			normalizer = 1. / (c/* + d / (1. + SUN_DISTANCE)*/), normalized = 1;
 /*		pyrmat(vw->pyr, &mat);*/
@@ -3062,16 +3108,13 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 
 	white[3] = 127 + (int)(127 / (1. + height));
 	{
-		double rgb[3];
-		avec3_t pos;
-		VECSUB(pos, spos, vpos);
-		VECSCALEIN(pos, 1. / dist);
+		Vec3d pos = (spos - vpos) / dist;
 		if(vw->relative){
 /*			doppler(rgb, white[0] / 256., white[1] / 256., white[2] / 256., VECSP(pos, vw->velo));
 			VECSCALE(white, rgb, 255);*/
 		}
 		else if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen)
-			VECSCALEIN(white, LIGHT_SPEED / vw->velolen);
+			white *= GLubyte(LIGHT_SPEED / vw->velolen);
 		gldGlow(atan2(x, z), atan2(spos[1] - vpos[1], sqrt(x * x + z * z)), as, white);
 	}
 

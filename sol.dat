@@ -105,6 +105,8 @@ coordsys Orbit earth{
 		mass 5.972e24
 		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
 		texture earth.jpg
+		cloudtexture textures/cloud.jpg
+#		texture textures/cloud.jpg
 		updirection 0 1 0
 		atmosphere_height 10.
 		atmosphere_color .2 .7 1.
@@ -150,6 +152,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		object1 Earth
 		object2 moon/Moon
+		updirection 0 1 
 		fullname "Earth Lagrange 1"
 		teleport
 		warp
@@ -162,9 +165,11 @@ coordsys Orbit earth{
 			pos 70 0 0
 			radius 50
 			omega 0 0 0
+			cs_radius 50
 		}
-#		new astro Island3 "Side 7"{
-#		}
+		new astro Island3 "Side 7"{
+			pos 10 0 10
+		}
 	}
 	
 	coordsys Lagrange2 el2{
@@ -183,13 +188,27 @@ coordsys Orbit earth{
 		orbits Earth
 		orbit_radius 35786+6378.
 		inclination -23.4
-		argument_of_periapsis 0
+		argument_of_periapsis 180
 		ascending_node 0
+		updirection 0 1 
 #			warp
 		teleport
 		rstation
 #		addent assault 3 -3 0 1
 #		addent assault 3 3 0 1
+	}
+
+	coordsys Orbit lo{
+		cs_radius 200
+		fullname "Earth's Low orbit"
+		orbits Earth
+		orbit_radius 500+6378.
+		inclination -23.4
+		argument_of_periapsis 180
+		ascending_node 0
+		updirection 0 1 
+		warp
+		teleport
 	}
 }
 

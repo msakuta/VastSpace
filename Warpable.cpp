@@ -308,12 +308,12 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 class WarpBubble : public CoordSys{
 public:
 	typedef CoordSys st;
-	static const unsigned classid;
+	static const ClassRegister<WarpBubble> classRegister;
 	WarpBubble(){}
 	WarpBubble(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const{return "WarpBubble";}
 };
-const unsigned WarpBubble::classid = registerClass("WarpBubble", Conster<WarpBubble>);
+const ClassRegister<WarpBubble> WarpBubble::classRegister("WarpBubble");
 
 
 

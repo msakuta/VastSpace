@@ -12,6 +12,7 @@
 #include "Respawn.h"
 extern "C"{
 #include "calc/calc.h"
+#include <clib/c.h>
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>
 #include <clib/avec4.h>
@@ -24,7 +25,6 @@ extern "C"{
 #include <string>
 #include <iomanip>
 
-#define numof(a) (sizeof(a)/sizeof*(a))
 
 long tocs_invokes = 0;
 long tocs_parent_invokes = 0;
@@ -80,7 +80,8 @@ void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 		children->dive(sc, method);
 }
 
-const unsigned CoordSys::classid = registerClass("CoordSys", Conster<CoordSys>);
+static ClassRegister<CoordSys> classRegister("CoordSys");
+//const CoordSys::Register<CoordSys> CoordSys::classRegister("CoordSys");
 
 CoordSys **CoordSys::legitimize_child(){
 	if(parent){
@@ -1077,5 +1078,29 @@ bool CoordSys::registerCommands(Player *ppl){
 	CmdAddParam("ls", cmd_ls, ppl);
 	CmdAddParam("pwd", cmd_pwd, ppl);
 	return true;
+}
+
+
+CoordSys::CtorMap &ctormap(){
+	static CoordSys::CtorMap map;
+	return map;
+}
+
+const CoordSys::CtorMap &CoordSys::ctormap(){
+	return ::ctormap();
+}
+
+unsigned CoordSys::registerClass(Static &s){
+	st::registerClass(s.id, s.stconstruct);
+	CtorMap &cm = ::ctormap();
+	if(cm.find(s.id) != cm.end())
+		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << s.id);
+	cm[s.id] = s.construct;
+	return cm.size();
+}
+
+void CoordSys::unregisterClass(ClassId id){
+	st::unregisterClass(id);
+	::ctormap().erase(id);
 }
 

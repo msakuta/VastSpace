@@ -103,7 +103,8 @@ static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wa
 
 Player pl;
 double &flypower = pl.freelook->flypower;
-Universe universe(&pl);//galaxysystem(&pl);
+Universe *g_pUniverse = new Universe(&pl);
+#define universe (*g_pUniverse)
 
 extern GLuint screentex;
 GLuint screentex = 0;
@@ -1743,6 +1744,11 @@ int main(int argc, char *argv[])
 
 	while(ShowCursor(TRUE) < 0);
 	while(0 <= ShowCursor(FALSE));
+
+	// We need to free the universe here, or class static objects can be freed before all instances are deleted.
+	// The chance depends on the compiler condition which is not stable.
+	delete g_pUniverse;
+	g_pUniverse = NULL;
 
 	sqa_exit();
 

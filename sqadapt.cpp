@@ -35,7 +35,8 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
-extern Universe universe;
+extern Universe *g_pUniverse;
+#define universe (*g_pUniverse)
 extern Player pl;
 extern GLwindow *glwlist;
 
@@ -1288,17 +1289,53 @@ static SQInteger sqf_reg(HSQUIRRELVM v){
 }
 
 
+static std::map<cpplib::dstring, int> modules;
+
 static SQInteger sqf_loadModule(HSQUIRRELVM v){
 	try{
 		const SQChar *name;
 		if(SQ_FAILED(sq_getstring(v, 2, &name)))
 			return SQ_ERROR;
-		LoadLibrary(name);
+		if(LoadLibrary(name)){
+			std::map<cpplib::dstring, int>::iterator it = modules.find(name);
+			if(it != modules.end())
+				(it->second)++;
+			else
+				modules[name] = 1;
+		}
 		return 0;
 	}
 	catch(SQIntrinsicError){
 		return SQ_ERROR;
 	}
+}
+
+static SQInteger sqf_unloadModule(HSQUIRRELVM v){
+	try{
+		const SQChar *name;
+		if(SQ_FAILED(sq_getstring(v, 2, &name)))
+			return SQ_ERROR;
+		HMODULE hm = GetModuleHandle(name);
+		if(hm){
+			FreeLibrary(hm);
+			modules[name]--;
+		}
+		else
+			return sq_throwerror(v, _SC("Failed to load library."));
+		return 0;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+void unloadAllModules(){
+	for(std::map<cpplib::dstring, int>::iterator it = modules.begin(); it != modules.end(); it++) for(int i = 0; i < it->second; i++){
+		HMODULE hm = GetModuleHandle(it->first);
+		if(hm)
+			FreeLibrary(hm);
+	}
+	modules.clear();
 }
 
 
@@ -1326,6 +1363,7 @@ void sqa_init(){
 	register_global_func(v, sqf_cmd, _SC("cmd"));
 	register_global_func(v, sqf_reg, _SC("reg"));
 	register_global_func(v, sqf_loadModule, _SC("loadModule"));
+	register_global_func(v, sqf_unloadModule, _SC("unloadModule"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
@@ -1685,6 +1723,8 @@ void sqa_exit(){
 //	SquirrelVM::Shutdown();
 	sq_close(v);
 	v = NULL; // To prevent other destructors from using dangling pointer.
+
+	unloadAllModules();
 }
 
 

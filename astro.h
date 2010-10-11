@@ -42,7 +42,7 @@ public:
 	OrbitCS(){}
 	OrbitCS(const char *path, CoordSys *root);
 	virtual const char *classname()const;
-	static const unsigned classid;
+	static const ClassRegister<OrbitCS> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
@@ -72,7 +72,7 @@ public:
 	Astrobj(const char *name, CoordSys *cs);
 //	void init(const char *name, CoordSys *cs);
 
-	static const unsigned classid;
+	static const ClassRegister<Astrobj> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *classname()const;

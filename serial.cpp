@@ -82,11 +82,16 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 /// class constructor cannot be passed directly, use Conster() template function to generate a function
 /// that can be passed here.
 /// \sa Conster(), ctormap()
-unsigned Serializable::registerClass(std::string name, Serializable *(*constructor)()){
-	if(Serializable::ctormap().find(name) != Serializable::ctormap().end())
-		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
-	Serializable::ctormap()[name] = constructor;
-	return Serializable::ctormap().size();
+unsigned Serializable::registerClass(ClassId name, Serializable *(*constructor)()){
+	CtorMap &cm = Serializable::ctormap();
+	if(cm.find(name) != cm.end())
+		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << name);
+	cm[name] = constructor;
+	return cm.size();
+}
+
+void Serializable::unregisterClass(ClassId name){
+	Serializable::ctormap().erase(name);
 }
 
 /// Using construction on first use idiom so it's safe to call from other initialization functions.

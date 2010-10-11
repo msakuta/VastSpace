@@ -92,13 +92,16 @@ static struct war_field_static i3war_static = {
 	&i3war_static,
 };*/
 
+
+
 class Island3Entity;
 class Island3Building;
 
 /// Space colony Island3, A.K.A. O'Neill Cylinder.
 class Island3 : public Astrobj{
 public:
-	static const unsigned classid;
+//	static const unsigned classid;
+	static ClassRegister<Island3> classRegister;
 	typedef Astrobj st;
 
 	double sun_phase;
@@ -110,6 +113,7 @@ public:
 	btTransform wingtrans[3];
 
 	Island3();
+	Island3(const char *path, CoordSys *root);
 	virtual ~Island3();
 	virtual const char *classname()const{return "Island3";}
 //	virtual void init(const char *path, CoordSys *root);
@@ -163,7 +167,8 @@ public:
 };
 
 
-const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
+//const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
+ClassRegister<Island3> Island3::classRegister("Island3");
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
@@ -178,6 +183,11 @@ Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 	omg.clear();
 	for(int i = 0; i < numof(bldgs); i++)
 		bldgs[i] = new Island3Building(*this);
+}
+
+Island3::Island3(const char *path, CoordSys *root){
+	this->Island3::Island3();
+	init(path, root);
 }
 
 Island3::~Island3(){

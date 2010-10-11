@@ -9,7 +9,8 @@
 
 
 class Serializable;
-typedef std::map<std::string, Serializable *(*)()> CtorMap;
+typedef const char *ClassId;
+typedef std::map<ClassId, Serializable *(*)()> CtorMap;
 typedef std::map<const Serializable*, unsigned> SerializeMap;
 typedef std::vector<Serializable*> UnserializeMap;
 
@@ -51,7 +52,11 @@ public:
 
 	/// Binds a class ID with its constructor.
 	/// Derived classes must register themselves to unserialize.
-	static unsigned registerClass(std::string name, Serializable *(*constructor)());
+	static unsigned registerClass(ClassId id, Serializable *(*constructor)());
+
+	/// Unbind name and class. Note that if the same name is registered from multiple modules, they compare different as
+	/// pointers to these names that reside in separate modules.
+	static void unregisterClass(ClassId id);
 
 	/// \brief Returns global constructor map.
 	/// Registered classes via registerClass reside in this map.

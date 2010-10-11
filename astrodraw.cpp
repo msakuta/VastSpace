@@ -181,7 +181,7 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 	Vec3d delta = torg - tview;
 	if(delta.slen() < radius * radius)
 		return;
-	double pixels = arg.radius * vw.gc->scale(org);
+	double pixels = arg.radius * fabs(vw.gc->scale(org));
 	double maxlevel = 8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale);
 //	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));
 //	double maxlevel = 8 * (1. - (1. - pow(wd->vw->pos.slen(), gpow)) * gscale);

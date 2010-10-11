@@ -17,7 +17,7 @@ const char *TexSphere::classname()const{
 	return "TexSphere";
 }
 
-const unsigned TexSphere::classid = registerClass("TexSphere", Conster<TexSphere>);
+const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere");
 
 TexSphere::~TexSphere(){
 	delete texname;
@@ -145,3 +145,6 @@ double TexSphere::atmoScatter(const Viewer &vw)const{
 bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
 }
+
+
+const ClassRegister<Satellite> Satellite::classRegister("Satellite");

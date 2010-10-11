@@ -45,7 +45,7 @@ public:
 	Lagrange1CS(){}
 	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
-	static const unsigned classid;
+	static const ClassRegister<Lagrange1CS> classRegister;
 	void anim(double dt);
 };
 
@@ -56,7 +56,7 @@ public:
 	Lagrange2CS(){}
 	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
-	static const unsigned classid;
+	static const ClassRegister<Lagrange2CS> classRegister;
 	void anim(double dt);
 };
 

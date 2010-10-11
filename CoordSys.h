@@ -86,7 +86,6 @@ public:
 	CoordSys(const char *path, CoordSys *root);
 	virtual ~CoordSys();
 	void init(const char *path, CoordSys *root);
-	static const unsigned classid;
 
 	virtual const char *classname()const;
 	virtual void serialize(SerializeContext &sc);
@@ -226,10 +225,44 @@ public:
 	static bool registerCommands(Player *);
 	static bool unregisterCommands(Player *);
 
+	typedef std::map<ClassId, CoordSys *(*)(const char *path, CoordSys *root)> CtorMap;
+	static const CtorMap &ctormap();
+	class Static{
+	public:
+		ClassId id;
+		CoordSys *(*construct)(const char *path, CoordSys *root);
+		Serializable *(*stconstruct)();
+		Static(ClassId id, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)())
+			: id(id), construct(construct), stconstruct(stconstruct)
+		{
+			CoordSys::registerClass(*this);
+		}
+		~Static(){
+			unregisterClass(id);
+		}
+	};
+	template<typename T> static CoordSys *Conster(const char *path, CoordSys *root){
+		return new T(path, root);
+	}
+	template<typename T> class Register : public Static{
+	public:
+		Register(ClassId id) : Static(id, Conster<T>, st::Conster<T>){}
+	};
+protected:
+	static unsigned registerClass(Static &st);
+	static void unregisterClass(ClassId);
+	static const Register<CoordSys> classRegister;
+
 private:
 	int getpathint(char *buf, size_t size)const;
 	int getpathint(cpplib::dstring &)const;
 };
+
+template<typename T> class ClassRegister : public T::Register<T>{
+public:
+	ClassRegister(ClassId id) : Register(id){}
+};
+
 
 inline bool CoordSys::addToDrawList(CoordSys *descendant){
 	for(AOList::iterator i = aorder.begin(); i != aorder.end(); i++) if(*i == descendant)

@@ -50,7 +50,7 @@ void Universe::csUnmap(UnserializeContext &sc){
 		UnserializeStream *us = sc.i.substream(size);
 		cpplib::dstring src;
 		*us >> src;
-		std::string scname((const char*)src);
+		cpplib::dstring scname(src);
 		if(src != "Player" && src != "Universe" && sc.cons.find(scname) == sc.cons.end())
 			throw ClassNotFoundException();
 		if(sc.cons[scname]){
@@ -208,13 +208,13 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			}
 			{
 				BinUnserializeStream bus(&buf[sizeof fileversion], size - sizeof fileversion);
-				UnserializeContext usc(bus, ctormap(), map);
+				UnserializeContext usc(bus, Serializable::ctormap(), map);
 				bus.usc = &usc;
 				universe.csUnmap(usc);
 			}
 			{
 				BinUnserializeStream bus(&buf[sizeof fileversion], size - sizeof fileversion);
-				UnserializeContext usc(bus, ctormap(), map);
+				UnserializeContext usc(bus, Serializable::ctormap(), map);
 				bus.usc = &usc;
 				universe.csUnserialize(usc);
 			}
@@ -232,14 +232,14 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 			{
 				std::istringstream ss(std::string(end, size));
 				StdUnserializeStream sus(ss);
-				UnserializeContext usc(sus, ctormap(), map);
+				UnserializeContext usc(sus, Serializable::ctormap(), map);
 				sus.usc = &usc;
 				universe.csUnmap(usc);
 			}
 			{
 				std::stringstream ss(std::string(end, size));
 				StdUnserializeStream sus(ss);
-				UnserializeContext usc(sus, ctormap(), map);
+				UnserializeContext usc(sus, Serializable::ctormap(), map);
 				sus.usc = &usc;
 				universe.csUnserialize(usc);
 			}

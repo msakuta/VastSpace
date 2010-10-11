@@ -19,7 +19,7 @@ double OrbitCS::astro_timescale = 1.;
 
 
 const char *OrbitCS::classname()const{
-	return "OrbitCS";
+	return "Orbit";
 }
 
 OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
@@ -37,7 +37,7 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
 		eis->addToDrawList(this);
 }
 
-const unsigned OrbitCS::classid = registerClass("OrbitCS", Conster<OrbitCS>);
+const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit");
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -231,7 +231,7 @@ OrbitCS *OrbitCS::toOrbitCS(){
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){
 }
 
-const unsigned Astrobj::classid = registerClass("Astrobj", Conster<Astrobj>);
+const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj");
 
 #if 0
 	double rad;
@@ -394,7 +394,12 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 #endif
 		double val;
 		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-		val = a && a->absmag < 30 ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
+		if(a && a->absmag < 30){
+			double sd = (retcs->pos - retcs->tocs(vec3_000, a)).slen();
+			val = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
+		}
+		else
+			val = 0.;
 		if(p.brightness < val){
 			p.brightness = val;
 			p.ret = a;
@@ -449,5 +454,5 @@ const char *Star::classname()const{
 	return "Star";
 }
 
-const unsigned Star::classid = registerClass("Star", Conster<Star>);
+const ClassRegister<Star> Star::classRegister("Star");
 

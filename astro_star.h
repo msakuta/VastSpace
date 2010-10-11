@@ -10,7 +10,7 @@ public:
 	Star(){}
 	Star(const char *name, CoordSys *cs);
 	virtual const char *classname()const;
-	static const unsigned classid;
+	static const ClassRegister<Star> classRegister;
 	virtual void predraw(const Viewer*);
 	virtual void draw(const Viewer*);
 };

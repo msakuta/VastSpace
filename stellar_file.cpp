@@ -81,7 +81,7 @@ void LagrangeCS::unserialize(UnserializeContext &sc){
 
 const char *Lagrange1CS::classname()const{return "Lagrange1CS";}
 
-const unsigned Lagrange1CS::classid = registerClass("Lagrange1CS", Conster<Lagrange1CS>);
+const ClassRegister<Lagrange1CS> Lagrange1CS::classRegister("Lagrange1CS");
 
 
 
@@ -128,7 +128,7 @@ bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
 
 const char *Lagrange2CS::classname()const{return "Lagrange2CS";}
 
-const unsigned Lagrange2CS::classid = registerClass("Lagrange2CS", Conster<Lagrange2CS>);
+const ClassRegister<Lagrange2CS> Lagrange2CS::classRegister("Lagrange2CS");
 
 void Lagrange2CS::anim(double dt){
 	st::anim(dt);
@@ -297,29 +297,48 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 /*		if(s[0] == '/')
 			cs2 = findcspath(root, s+1);
 		else if(cs2 = findcs(root, s));
-		else*/ if(!strcmp(s, "astro")){
+		else*/ if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || argc == 1 && s[strlen(s)-1] == '{'){
 			CoordSys *a = NULL;
-			CC constructor = NULL/*Cons<Astrobj>*/;
-			if(ps && !strcmp(ps, "Star")){
+			CC constructor = NULL;
+/*			if(ps && !strcmp(ps, "Star")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<Star>;
 				constructor = ctor;
-			}
+			}*/
 /*			if(ps && !strcmp(ps, "Asteroid")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = asteroid_new;
 			}*/
-			else if(ps && !strcmp(ps, "Satellite")){
+/*			else if(ps && !strcmp(ps, "Satellite")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<TexSphere>;
 				constructor = ctor;
-			}
-			else if(ps && !strcmp(ps, "TextureSphere")){
+			}*/
+/*			else if(ps && !strcmp(ps, "TextureSphere")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<TexSphere>;
 				constructor = ctor;
+			}*/
+			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
+			char *pp;
+			if(pp = strchr(s, '{')){
+				*pp = '\0';
+				constructor = Cons<CoordSys>;
+				ps = s;
 			}
-			Serializable *(*ctor)() = Serializable::ctormap()[ps];
+			else{
+				const CoordSys::CtorMap &cm = CoordSys::ctormap();
+				for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
+					ClassId id = it->first;
+					if(!strcmp(id, ps)){
+						ctor = it->second;
+						c++;
+						s = argv[c];
+						ps = argv[c+1];
+						break;
+					}
+				}
+			}
 /*			else if(ps && !strcmp(ps, "Island3")){
 				c++, s = argv[c], ps = argv[c+1];
 				constructor = island3_new;
@@ -337,7 +356,6 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				constructor = RingworldNew;
 			}*/
 			if(ps){
-				char *pp;
 				if(pp = strchr(ps, '{'))
 					*pp = '\0';
 				if((a = cs->findastrobj(ps)) && a->parent == cs)
@@ -345,9 +363,9 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				else
 					a = NULL;
 			}
-			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? (CoordSys*)ctor() : Cons<Astrobj>(ps, cs)))){
+			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? ctor(ps, cs) : Cons<Astrobj>(ps, cs)))){
 				if(!constructor && ctor){
-					a->init(argv[c+2], cs);
+//					a->init(argv[c+2], cs);
 					CoordSys *eis = a->findeisystem();
 					if(eis)
 						eis->addToDrawList(a);
@@ -357,11 +375,12 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				stellar_coordsys(sc, a);
 			}
 		}
+#if 0
 		else if(!strcmp(s, "coordsys") || argc == 1 && s[strlen(s)-1] == '{'){
 //			CoordSys *(*constructor)(const char *, CoordSys *) = new_coordsys;
 			CoordSys *cs2 = NULL;
 			CC constructor = Cons<CoordSys>;
-			if(ps && !strcmp(ps, "Orbit")){
+/*			if(ps && !strcmp(ps, "Orbit")){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<OrbitCS>;
 				constructor = ctor;
@@ -375,7 +394,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				c++, s = argv[c], ps = argv[c+1];
 				CC ctor = Cons<Lagrange2CS>;
 				constructor = ctor;
-			}
+			}*/
 			if(!ps)
 				ps = s;
 			char *pp;
@@ -386,6 +405,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			else if((cs2 = constructor(ps, cs)))
 				stellar_coordsys(sc, cs2);
 		}
+#endif
 		else if(cs->readFile(sc, argc, (argv)));
 #if 0
 		else if(!strcmp(s, "warpable")){

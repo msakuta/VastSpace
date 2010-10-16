@@ -428,6 +428,83 @@ Player::teleport_iterator Player::endTeleport(){
 	return ntplist;
 }
 
+static SQInteger sqf_select(HSQUIRRELVM v){
+	Player *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+	if(OT_ARRAY != sq_gettype(v, 2))
+		return sq_throwerror(v, _SC("Player::setSelection: Argument must be an array."));
+	int n = sq_getsize(v, 2);
+	if(n < 0)
+		return SQ_ERROR;
+	Entity **pnext = &p->selected;
+	for(int i = 0; i < n; i++){
+		Entity *pe;
+		sq_pushinteger(v, i);
+		sq_get(v, 2);
+		bool ret = sqa_refobj(v, (SQUserPointer*)&pe, &sr, 3);
+		sq_poptop(v);
+		if(!ret) // Entities can have been deleted
+			continue;
+		*pnext = pe;
+		pnext = &pe->selectnext;
+	}
+	*pnext = NULL;
+	return 0;
+}
+
+void Player::sq_define(HSQUIRRELVM v){
+/*	SqPlus::SQClassDef<Player>(_SC("Player")).
+		func(&Player::classname, _SC("classname")).
+		func(&Player::getcs, _SC("cs"));*/
+	sq_pushstring(v, _SC("Player"), -1);
+	sq_newclass(v, SQFalse);
+	sq_pushstring(v, _SC("ref"), -1);
+	sq_pushnull(v);
+	sq_newslot(v, -3, SQFalse);
+/*	sq_pushstring(v, _SC("classname"), -1);
+	sq_newclosure(v, sqf_func<Player, const SQChar *(Player::*)() const, &Player::classname>, 0);
+	sq_createslot(v, -3);*/
+/*	sq_pushstring(v, _SC("getcs"), -1);
+	sq_newclosure(v, sqf_getcs, 0);
+	sq_createslot(v, -3);*/
+	sq_pushstring(v, _SC("getpos"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getpos> >, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setpos"), -1);
+	sq_newclosure(v, sqf_setintrinsica<Player, Vec3d, &Player::setpos>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getvelo"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getvelo> >, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setvelo"), -1);
+	sq_newclosure(v, sqf_setintrinsica<Player, Vec3d, &Player::setvelo>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getrot"), -1);
+	sq_newclosure(v, sqf_getintrinsic<Player, Quatd, accessorgetter<Player, Quatd, &Player::getrot> >, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setrot"), -1);
+	sq_newclosure(v, sqf_setintrinsica<Player, Quatd, &Player::setrot>, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getmover"), -1);
+	sq_newclosure(v, Player::sqf_getmover, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("setmover"), -1);
+	sq_newclosure(v, Player::sqf_setmover, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("select"), -1);
+	sq_newclosure(v, sqf_select, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, &Player::sqf_get, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_set"), -1);
+	sq_newclosure(v, &Player::sqf_set, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+}
+
 SQInteger Player::sqf_get(HSQUIRRELVM v){
 	Player *p;
 	const SQChar *wcs;

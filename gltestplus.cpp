@@ -1516,8 +1516,12 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				BindExec('\n');
 			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
 				BindExec(wParam - VK_NUMPAD0 + 0x90);
-			else
-				non_printable_key(hWnd, message, wParam, lParam, 0);
+			else{
+				if(wParam != VK_CONTROL && GetKeyState(VK_CONTROL) & 0x7000)
+					BindExec(wParam);
+				else
+					non_printable_key(hWnd, message, wParam, lParam, 0);
+			}
 			break;
 
 		case WM_SYSKEYDOWN:
@@ -1530,8 +1534,12 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				BindKeyUp('\n');
 			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
 				BindKeyUp(wParam - VK_NUMPAD0 + 0x90);
-			else
-				BindKeyUp(toupper(wParam));
+			else{
+				if(wParam != VK_CONTROL && GetKeyState(VK_CONTROL) & 0x7000)
+					BindKeyUp(wParam);
+				else
+					BindKeyUp(toupper(wParam));
+			}
 			switch(wParam){
 			case VK_DELETE: BindKeyUp(DELETEKEY); break;
 //			case VK_ESCAPE: BindKeyUp(ESC); break;

@@ -808,109 +808,7 @@ static SQInteger sqf_screenheight(HSQUIRRELVM v){
 
 
 
-template<typename Class, typename MType, MType Class::*member>
-inline MType membergetter(Class *p){
-	return p->*member;
-}
 
-template<typename Class, typename MType, MType Class::*member>
-inline void membersetter(Class p, MType Class::*member, MType &newvalue){
-	p->*member = newvalue;
-}
-
-template<typename Class, typename MType, MType (Class::*member)()const>
-inline MType accessorgetter(Class *p){
-	return (p->*member)();
-}
-
-template<typename Class, typename MType, void (Class::*member)(MType)>
-inline void accessorsetter(Class p, MType Class::*member, MType &newvalue){
-	(p->*member)(newvalue);
-}
-
-// "Class" can be CoordSys, Player or Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
-// I think I cannot write this logic shorter.
-template<typename Class, typename MType, MType getter(Class *p)>
-SQInteger sqf_getintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.value = getter(p);
-		r.push(v);
-		return 1;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
-#if 1
-
-// This template function is rather straightforward, but produces similar instances rapidly.
-// Probably classes with the same member variables should share base class, but it's not always feasible.
-template<typename Class, typename MType, MType Class::*member>
-static SQInteger sqf_setintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		p->*member = r.value;
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
-template<typename Class, typename MType, void (Class::*member)(const MType &)>
-static SQInteger sqf_setintrinsica(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		(p->*member)(r.value);
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
-#else
-
-// This implementation is a bit dirty and requires unsigned long to have equal or greater size compared to pointer's,
-// but actually reduces code size and probably execution time, by CPU caching effect.
-template<typename MType>
-static SQInteger sqf_setintrinsic_in(HSQUIRRELVM v, unsigned long offset){
-	try{
-		void *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		*(MType*)&((unsigned char*)p)[offset] = r.value;
-		return 0;
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
-template<typename Class, typename MType, MType Class::*member>
-SQInteger sqf_setintrinsic(HSQUIRRELVM v){
-	return sqf_setintrinsic_in<MType>(v, (unsigned long)&(((Class*)NULL)->*member));
-}
-#endif
 
 template<>
 static SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
@@ -1238,6 +1136,7 @@ bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *psr, int idx, bool th
 	sq_get(v, idx);
 	SQUserPointer *p;
 	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&p, NULL)) || !*p){
+		sq_poptop(v);
 		if(throwError){
 			SQRESULT sr = sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
 			if(psr)
@@ -1539,51 +1438,7 @@ void sqa_init(){
 	sq_createslot(v, -3); // this
 
 	// Define class Player
-/*	SqPlus::SQClassDef<Player>(_SC("Player")).
-		func(&Player::classname, _SC("classname")).
-		func(&Player::getcs, _SC("cs"));*/
-	sq_pushstring(v, _SC("Player"), -1);
-	sq_newclass(v, SQFalse);
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
-/*	sq_pushstring(v, _SC("classname"), -1);
-	sq_newclosure(v, sqf_func<Player, const SQChar *(Player::*)() const, &Player::classname>, 0);
-	sq_createslot(v, -3);*/
-/*	sq_pushstring(v, _SC("getcs"), -1);
-	sq_newclosure(v, sqf_getcs, 0);
-	sq_createslot(v, -3);*/
-	sq_pushstring(v, _SC("getpos"), -1);
-	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getpos> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setpos"), -1);
-	sq_newclosure(v, sqf_setintrinsica<Player, Vec3d, &Player::setpos>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getvelo"), -1);
-	sq_newclosure(v, sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getvelo> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setvelo"), -1);
-	sq_newclosure(v, sqf_setintrinsica<Player, Vec3d, &Player::setvelo>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getrot"), -1);
-	sq_newclosure(v, sqf_getintrinsic<Player, Quatd, accessorgetter<Player, Quatd, &Player::getrot> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setrot"), -1);
-	sq_newclosure(v, sqf_setintrinsica<Player, Quatd, &Player::setrot>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getmover"), -1);
-	sq_newclosure(v, Player::sqf_getmover, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setmover"), -1);
-	sq_newclosure(v, Player::sqf_setmover, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, &Player::sqf_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, &Player::sqf_set, 0);
-	sq_createslot(v, -3);
-	sq_createslot(v, -3);
+	Player::sq_define(v);
 
 	sq_pushstring(v, _SC("player"), -1); // this "player"
 	sq_pushstring(v, _SC("Player"), -1); // this "player" "Player"

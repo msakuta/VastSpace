@@ -5,11 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <windows.h>
 
 #define DELETEKEY 0x7f
 
+#define FCONTROL 0x1
+#define FALT 0x2
+#define FSPECIFIC 0x4
+
 struct binding{
 	int key;
+	int flags;
 	char *cmd;
 };
 
@@ -126,13 +132,14 @@ static const char *key2name(int key){
 int cmd_bind(int argc, char *argv[]){
 /*	char args[128];*/
 	char *thekey, *thevalue;
-	int i;
+	int i, argstart = 2;
 	char buf[128];
 	int key;
+	int flags = 0;
 	size_t valuelen;
 	if(argc <= 1){
 		for(i = 0; i < nbinds; i++){
-			sprintf(buf, "%s: %s", key2name(binds[i].key), binds[i].cmd);
+			sprintf(buf, "%s%s: %s", key2name(binds[i].key), binds[i].flags & FCONTROL ? "+CTRL" : "", binds[i].cmd);
 			CmdPrint(buf);
 		}
 		sprintf(buf, "%d binds bound. stack depth is %d", nbinds, nbindstack);
@@ -144,7 +151,7 @@ int cmd_bind(int argc, char *argv[]){
 /*	else if(strncpy(args, arg, sizeof args), (thekey = strtok(args, " \t")) && !(thevalue = strtok(NULL, ""))){*/
 		key = name2key(thekey);
 		for(i = 0; i < nbinds; i++) if(key == binds[i].key){
-			sprintf(buf, "%s: %s", key2name(binds[i].key), binds[i].cmd);
+			sprintf(buf, "%s%s: %s", key2name(binds[i].key), binds[i].flags & FCONTROL ? "+CTRL" : "", binds[i].cmd);
 			CmdPrint(buf);
 			return 0;
 		}
@@ -152,18 +159,33 @@ int cmd_bind(int argc, char *argv[]){
 		CmdPrint(buf);
 		return -1;
 	}
+
+	if(2 < argc && !stricmp("CTRL", argv[argstart])){
+		flags |= FCONTROL | FSPECIFIC;
+		argstart++;
+	}
 	thekey = argv[1];
-	for(valuelen = 0, i = 2; i < argc; i++)
+	for(valuelen = 0, i = argstart; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
 	thevalue = malloc(valuelen);
-	for(valuelen = 0, i = 2; i < argc; i++){
+	for(valuelen = 0, i = argstart; i < argc; i++){
 		strcpy(&thevalue[valuelen], argv[i]);
 		valuelen += strlen(argv[i]) + 1;
 		if(i != argc - 1)
 			thevalue[valuelen-1] = ' ';
 	}
-	key = name2key(thekey);
-	for(i = 0; i < nbinds; i++) if(key == binds[i].key){
+	{
+		char *p;
+		char *buf;
+		p = strchr(thekey, '+');
+		if(p){
+			if(!stricmp(p+1, "CTRL"))
+				flags |= FCONTROL | FSPECIFIC;
+			p[0] = '\0';
+		}
+		key = name2key(thekey);
+	}
+	for(i = 0; i < nbinds; i++) if(key == binds[i].key && flags == binds[i].flags){
 		free(binds[i].cmd);
 /*		binds[i].cmd = malloc(strlen(thevalue)+1);
 		strcpy(binds[i].cmd, thevalue);*/
@@ -172,6 +194,7 @@ int cmd_bind(int argc, char *argv[]){
 	}
 	binds = (struct binding*)realloc(binds, ++nbinds * sizeof *binds);
 	binds[nbinds - 1].key = name2key(thekey);
+	binds[nbinds - 1].flags = flags;
 /*	binds[nbinds - 1].cmd = malloc(strlen(thevalue)+1);
 	strcpy(binds[nbinds - 1].cmd, thevalue);*/
 	binds[nbinds - 1].cmd = thevalue;
@@ -211,7 +234,9 @@ int cmd_popbind(int argc, char *argv[]){
 
 void BindExec(int key){
 	int i;
-	for(i = 0; i < nbinds; i++) if(binds[i].key == key){
+	int control;
+	control = GetKeyState(VK_CONTROL) & 0x7000;
+	for(i = 0; i < nbinds; i++) if(binds[i].key == key && (!(binds[i].flags & FCONTROL) ^ !!control)){
 		CmdExec(binds[i].cmd);
 		return;
 	}

@@ -359,6 +359,35 @@ register_console_command("sqcmdlist", function(...){
 	print(console_commands.len() + " commands listed");
 });
 
+// Unit group bindings
+groups <- {}
+
+register_console_command("setgroup", function(...){
+	if(vargc < 1){
+		print("Usage: setgroup groupid");
+		return;
+	}
+	local groupid = vargv[0];
+	local set = [];
+	local e = player.selected;
+	for(; e != null; e = e.selectnext)
+		set.insert(set.len(), e);
+	groups[groupid] <- set;
+});
+
+register_console_command("recallgroup", function(...){
+	if(vargc < 1){
+		print("Usage: recallgroup groupid");
+		return;
+	}
+	local groupid = vargv[0];
+	if(!(groupid in groups) || groups[groupid].len() == 0){
+		print("group not bound: " + groupid);
+		return;
+	}
+	player.select(groups[groupid]);
+});
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));

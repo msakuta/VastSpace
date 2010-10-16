@@ -119,6 +119,109 @@ public:
 	}
 };
 
+/// "Class" can be CoordSys, Player or Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
+/// I think I cannot write this logic shorter.
+template<typename Class, typename MType, MType getter(Class *p)>
+SQInteger sqf_getintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.value = getter(p);
+		r.push(v);
+		return 1;
+	}
+	catch(SQFError){
+		return SQ_ERROR;
+	}
+}
+
+template<typename Class, typename MType, MType Class::*member>
+inline MType membergetter(Class *p){
+	return p->*member;
+}
+
+template<typename Class, typename MType, MType Class::*member>
+inline void membersetter(Class p, MType Class::*member, MType &newvalue){
+	p->*member = newvalue;
+}
+
+template<typename Class, typename MType, MType (Class::*member)()const>
+inline MType accessorgetter(Class *p){
+	return (p->*member)();
+}
+
+template<typename Class, typename MType, void (Class::*member)(MType)>
+inline void accessorsetter(Class p, MType Class::*member, MType &newvalue){
+	(p->*member)(newvalue);
+}
+
+#if 1
+
+/// This template function is rather straightforward, but produces similar instances rapidly.
+/// Probably classes with the same member variables should share base class, but it's not always feasible.
+template<typename Class, typename MType, MType Class::*member>
+static SQInteger sqf_setintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		p->*member = r.value;
+		return 0;
+	}
+	catch(SQFError){
+		return SQ_ERROR;
+	}
+}
+
+template<typename Class, typename MType, void (Class::*member)(const MType &)>
+static SQInteger sqf_setintrinsica(HSQUIRRELVM v){
+	try{
+		Class *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		(p->*member)(r.value);
+		return 0;
+	}
+	catch(SQFError){
+		return SQ_ERROR;
+	}
+}
+
+#else
+
+// This implementation is a bit dirty and requires unsigned long to have equal or greater size compared to pointer's,
+// but actually reduces code size and probably execution time, by CPU caching effect.
+template<typename MType>
+static SQInteger sqf_setintrinsic_in(HSQUIRRELVM v, unsigned long offset){
+	try{
+		void *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		*(MType*)&((unsigned char*)p)[offset] = r.value;
+		return 0;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+template<typename Class, typename MType, MType Class::*member>
+SQInteger sqf_setintrinsic(HSQUIRRELVM v){
+	return sqf_setintrinsic_in<MType>(v, (unsigned long)&(((Class*)NULL)->*member));
+}
+#endif
 template<> const SQChar *const SQIntrinsic<Quatd>::classname = _SC("Quatd");
 template<> const SQUserPointer *const SQIntrinsic<Quatd>::typetag = &tt_Quatd;
 

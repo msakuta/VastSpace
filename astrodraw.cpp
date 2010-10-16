@@ -1101,6 +1101,17 @@ static const Quatd cubedirs[] = {
 	Quatd(-1,0,0,0), /* {0,1,0,0}, */
 };
 
+static cpplib::dstring pathProjection(const char *name, int nn){
+	const char *p = strrchr(name, '.');
+	cpplib::dstring dstr;
+	dstr << "cache/";
+	if(p)
+		dstr.strncat(name, p - name);
+	else
+		dstr.strcat(name);
+	dstr << "_proj" << nn << ".bmp";
+	return dstr;
+}
 
 GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags){
 	static int texinit = 0;
@@ -1206,15 +1217,16 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 			}
 
 			if(!cacheload){
-				std::ostringstream bstr;
+//				std::ostringstream bstr;
 				const char *p;
 	//			FILE *fp;
-				p = strrchr(name, '.');
-				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
+				cpplib::dstring dstr = pathProjection(name, nn);
+//				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
 
 				// Create directories to make path available
-				std::string sstr = bstr.str();
-				const char *cstr = sstr.c_str();
+//				std::string sstr = bstr.str();
+//				const char *cstr = sstr.c_str();
+				const char *cstr = dstr;
 				p = &cstr[sizeof "cache"-1];
 				while(p = strchr(p+1, '/')){
 					cpplib::dstring dirpath = cpplib::dstring().strncat(cstr, p - cstr);
@@ -1227,7 +1239,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 				}
 
 				/* force overwrite */
-				std::ofstream ofs(bstr.str().c_str(), std::ofstream::out | std::ofstream::binary);
+				std::ofstream ofs(dstr/*bstr.str().c_str()*/, std::ofstream::out | std::ofstream::binary);
 				if(ofs/*fp = fopen(bstr.str().c_str(), "wb")*/){
 					BITMAPFILEHEADER fh;
 					((char*)&fh.bfType)[0] = 'B';
@@ -1355,10 +1367,11 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 
 
 GLuint ProjectSphereCubeJpg(const char *fname, int flags){
-		const struct suftexcache *stc;
+//		const struct suftexcache *stc;
 		GLuint texlist = 0;
 //		char outfilename[256], jpgfilename[256];
-		const char *outfilename, *jpgfilename;
+//		const char *outfilename;
+		const char *jpgfilename;
 		const char *p;
 //		FILE *fp;
 		p = strrchr(fname, '.');
@@ -1368,16 +1381,19 @@ GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 #else
 		mkdir("cache");
 #endif
+		jpgfilename = fname;
+#if 0
 		std::ostringstream bstr;
 		bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj.bmp";
 		std::string bs = bstr.str();
 		outfilename = bs.c_str();
-		jpgfilename = fname;
 		stc = FindTexCache(bstr.str().c_str()/*outfilename*/);
 		if(stc){
 			return stc->list;
 		}
-		else{
+		else
+#endif
+		{
 			BITMAPINFO *bmis[6];
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
 			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
@@ -1385,10 +1401,11 @@ GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 			bool ok = true;
 			for(i = 0; i < 6; i++){
 				// sprintf would do the job simpler, if only ...
-				std::ostringstream bstr;
-				bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj" << i << ".bmp";
-				std::string bs = bstr.str();
-				outfilename = bs.c_str();
+//				std::ostringstream bstr;
+//				bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj" << i << ".bmp";
+//				std::string bs = bstr.str();
+//				outfilename = bs.c_str();
+				cpplib::dstring outfilename = pathProjection(fname, i);
 
 				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))
 					goto heterogeneous;

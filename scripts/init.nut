@@ -388,6 +388,24 @@ register_console_command("recallgroup", function(...){
 	player.select(groups[groupid]);
 });
 
+register_console_command("showgroup", function(...){
+	if(vargc == 0){
+		foreach(key, group in groups){
+			print("group " + key + " count: " + group.len());
+		}
+		return;
+	}
+	local groupid = vargv[0];
+	if(!(groupid in groups) || groups[groupid].len() == 0){
+		print("group not bound: " + groupid);
+		return;
+	}
+	print("group " + groupid + " count: " + groups[groupid].len());
+	foreach(e in groups[groupid])
+		print("[" + e.classname + "]");
+});
+
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));

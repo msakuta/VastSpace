@@ -315,6 +315,15 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 			basecolor = COLOR32RGBA(COLOR32B(c),COLOR32G(c),COLOR32R(c),255);
 		}
 	}
+	else if(!strcmp(s, "basecolor")){
+		if(3 < argc){
+			basecolor = COLOR32RGBA(calc3(&argv[1], sc.vl, NULL),
+				calc3(&argv[2], sc.vl, NULL),
+				calc3(&argv[3], sc.vl, NULL),
+				255);
+		}
+		return true;
+	}
 	else if(!strcmp(s, "absolute_magnitude")){
 		absmag = calc3(&ps, sc.vl, NULL);
 	}

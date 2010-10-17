@@ -17,12 +17,16 @@ class TexSphere : public Astrobj{
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;
+	cpplib::dstring bumptexname;
+	GLuint bumptexlist;
+	cpplib::dstring vertexShaderName, fragmentShaderName;
+	GLuint shader;
 
 	// OpenGL texture units
 	AstroRing astroRing;
 public:
 	typedef Astrobj st;
-	TexSphere(){}
+	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();
 	const char *classname()const;

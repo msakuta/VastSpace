@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation of drawing methods of astronomical objects.
+ * \brief Implementation of drawing methods of astronomical objects like Star and TexSphere.
  */
 #include "astrodraw.h"
 #include "draw/ring-draw.h"
@@ -504,20 +504,64 @@ enum DTS{
 	DTS_ADD = 1<<0,
 	DTS_NODETAIL = 1<<1,
 	DTS_ALPHA = 1<<2,
+	DTS_NORMALMAP = 1<<3,
 	NUM_DTS
 };
 
+/// \brief A class that draw textured sphere.
+///
+/// Arguments on how to draw the sphere are passed via member functions.
+/// The caller must invoke draw() method to get it working.
+class DrawTextureSphere{
+	Astrobj *a;
+	const Viewer *vw;
+	const Vec3d sunpos;
+	GLfloat m_mat_diffuse[4];
+	GLfloat m_mat_ambient[4];
+	GLuint *ptexlist;
+	const Mat4d *m_texmat;
+	const char *m_texname;
+	GLuint *pbumptexlist;
+	const char *m_bumptexname;
+	double m_rad;
+	int m_flags;
+	GLuint m_shader;
+public:
+	typedef DrawTextureSphere tt;
+	tt(Astrobj *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos), ptexlist(NULL), m_rad(0), m_flags(0), m_shader(0), pbumptexlist(NULL), m_bumptexname(NULL){}
+	tt &astro(Astrobj *a){this->a = a; return *this;}
+	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
+	tt &mat_diffuse(const GLfloat a[4]){VEC4CPY(this->m_mat_diffuse, a); return *this;}
+	tt &mat_ambient(const GLfloat a[4]){VEC4CPY(this->m_mat_ambient, a); return *this;}
+	tt &texlist(GLuint *a){ptexlist = a; return *this;}
+	tt &texmat(const Mat4d *a){m_texmat = a; return *this;}
+	tt &texname(const char *a){m_texname = a; return *this;}
+	tt &bumptexname(const char *a){m_bumptexname = a; return *this;}
+	tt &bumptexlist(GLuint *a){pbumptexlist = a; return *this;}
+	tt &rad(double a){m_rad = a; return *this;}
+	tt &flags(int a){m_flags = a; return *this;}
+	tt &shader(GLuint a){m_shader = a; return *this;}
+	bool draw();
+};
+
 /// Draws a sphere textured
-bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Mat4d *texmat, const char *texname, double rad = 0., int flags = 0){
+bool DrawTextureSphere::draw(){
+	const GLfloat *mat_diffuse = m_mat_diffuse;
+	const GLfloat *mat_ambient = m_mat_ambient;
+	const Mat4d *texmat = m_texmat;
 	GLuint texlist = *ptexlist;
+	const char *texname = m_texname;
+	double &rad = m_rad;
+	int flags = m_flags;
+	GLuint shader = m_shader;
+
 	double (*cuts)[2], (*finecuts)[2], (*ffinecuts)[2];
-	double dist, tangent, scale, zoom;
+	double dist, tangent, zoom;
 	int i, j, jstart, fine;
 	bool texenable = texlist && texmat;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
-	Vec3d tp;
 	
 	if(rad == 0.)
 		rad = a->rad;
@@ -527,9 +571,9 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	params.detail = 0;
 
 	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
-	scale = rad * vw->gc->scale(apos);
+	double scale = rad * vw->gc->scale(apos);
 
-	VECSUB(tp, apos, vw->pos);
+	Vec3d tp = apos - vw->pos;
 	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
@@ -550,8 +594,8 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 
 	// Allocate surface texture
 	do if(!texlist && texname){
-		timemeas_t tm;
-		TimeMeasStart(&tm);
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
 		texlist = *ptexlist = ProjectSphereCubeJpg(texname, flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
@@ -579,6 +623,34 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	}
 	else
 		glDisable(GL_TEXTURE_2D);
+
+	if(shader && g_shader_enable){
+		glUseProgram(shader);
+		GLint textureLoc = glGetUniformLocation(shader, "texture");
+		if(0 <= textureLoc && texlist){
+			glUniform1i(textureLoc, 0);
+		}
+		GLint bumpTextureLoc = glGetUniformLocation(shader, "bumptexture");
+		if(0 <= bumpTextureLoc && pbumptexlist){
+			if(!*pbumptexlist && m_bumptexname)
+				*pbumptexlist = ProjectSphereCubeJpg(m_bumptexname, flags | DTS_NODETAIL | DTS_NORMALMAP);
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glCallList(*pbumptexlist);
+			glUniform1i(bumpTextureLoc, 2);
+			glMultiTexCoord2fARB(GL_TEXTURE2_ARB, 0., 0.);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+		GLint invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+		if(0 <= invEyeMat3Loc){
+			Mat4d rot2 = /*a->rot.tomat4() **/ vw->irot;
+			Mat3<float> irot3 = rot2.tomat3().cast<float>();
+			glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
+		}
+		GLint timeLoc = glGetUniformLocation(shader, "time");
+		if(0 <= timeLoc){
+			glUniform1f(timeLoc, vw->viewtime);
+		}
+	}
 
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -751,6 +823,9 @@ bool drawTextureSphere(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const 
 	}
 	glEnd();*/
 
+	if(shader && g_shader_enable)
+		glUseProgram(0);
+
 	glPopAttrib();
 	glPopMatrix();
 	return texenable;
@@ -894,6 +969,14 @@ void TexSphere::draw(const Viewer *vw){
 			drawsuncolona(brightest, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
+		if(!shader && vertexShaderName.len() && fragmentShaderName.len()){
+			GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
+			GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
+			if(!glsl_load_shader(vtx, vertexShaderName) || !glsl_load_shader(frg, fragmentShaderName))
+				;
+			else
+				shader = glsl_register_program(vtx, frg);
+		}
 		if(oblateness != 0.){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
 				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
@@ -905,18 +988,21 @@ void TexSphere::draw(const Viewer *vw){
 			}
 		}
 		else{
-			bool ret = drawTextureSphere(this, vw, sunpos,
-				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f), &texlist, &rot.cnj().tomat4(), texname);
+			bool ret = DrawTextureSphere(this, vw, sunpos)
+				.mat_diffuse(Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f))
+				.mat_ambient(Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f))
+				.texlist(&texlist).texmat(&rot.cnj().tomat4()).texname(texname).shader(shader).bumptexlist(&bumptexlist).bumptexname(bumptexname)
+				.draw();
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;
 			}
 			if(cloudtexname || cloudtexlist){
-				ret = drawTextureSphere(this, vw, sunpos,
-					Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-					Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f),
-					&cloudtexlist, &rot.cnj().tomat4(), cloudtexname, this->rad * 1.001, DTS_ALPHA | DTS_NODETAIL);
+				ret = DrawTextureSphere(this, vw, sunpos)
+					.mat_diffuse(Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f))
+					.mat_ambient(Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f))
+					.texlist(&cloudtexlist).texmat(&rot.cnj().tomat4()).texname(cloudtexname).rad(this->rad * 1.001).flags(DTS_ALPHA | DTS_NODETAIL)
+					.draw();
 				if(!ret && cloudtexname){
 					delete[] cloudtexname;
 					cloudtexname = NULL;
@@ -1184,6 +1270,23 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
 						*dst8 = (GLubyte)(accum);
 					}
+					else if(flags & DTS_NORMALMAP){
+						double accum[3] = {0.};
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++){
+							const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+							int y = (i1 + ii) % rawh;
+							int x = (j1 + jj) % raww;
+							int wb = linebytes, w = raww, h = rawh;
+							double f = (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1);
+							accum[0] += f * (unsigned char)rangein(127 + (double)1. * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
+							accum[1] += f * (unsigned char)rangein(127 + 1. * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
+							accum[2] = 255;
+						}
+						dst->rgbRed = (GLubyte)accum[0];
+						dst->rgbGreen = (GLubyte)accum[1];
+						dst->rgbBlue = (GLubyte)accum[2];
+						dst->rgbReserved = 255;
+					}
 					else{
 						double accum[3] = {0}; // accumulator
 						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
@@ -1337,7 +1440,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 		glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 //		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 
-		if(glActiveTextureARB){
+		if(glActiveTextureARB && !(flags & DTS_NODETAIL)){
 			glActiveTextureARB(GL_TEXTURE1_ARB);
 			glBindTexture(GL_TEXTURE_2D, detailname);
 			glEnable(GL_TEXTURE_2D);
@@ -1367,13 +1470,9 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 
 
 GLuint ProjectSphereCubeJpg(const char *fname, int flags){
-//		const struct suftexcache *stc;
 		GLuint texlist = 0;
-//		char outfilename[256], jpgfilename[256];
-//		const char *outfilename;
 		const char *jpgfilename;
 		const char *p;
-//		FILE *fp;
 		p = strrchr(fname, '.');
 #ifdef _WIN32
 		if(GetFileAttributes("cache") == -1)
@@ -1382,17 +1481,6 @@ GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 		mkdir("cache");
 #endif
 		jpgfilename = fname;
-#if 0
-		std::ostringstream bstr;
-		bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj.bmp";
-		std::string bs = bstr.str();
-		outfilename = bs.c_str();
-		stc = FindTexCache(bstr.str().c_str()/*outfilename*/);
-		if(stc){
-			return stc->list;
-		}
-		else
-#endif
 		{
 			BITMAPINFO *bmis[6];
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
@@ -1400,11 +1488,6 @@ GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 			int i;
 			bool ok = true;
 			for(i = 0; i < 6; i++){
-				// sprintf would do the job simpler, if only ...
-//				std::ostringstream bstr;
-//				bstr << "cache/" << (p ? std::string(fname).substr(0, p - fname) : fname) << "_proj" << i << ".bmp";
-//				std::string bs = bstr.str();
-//				outfilename = bs.c_str();
 				cpplib::dstring outfilename = pathProjection(fname, i);
 
 				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))

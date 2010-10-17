@@ -1,3 +1,8 @@
+/** \file
+ * \brief Implementation of TexSphere class.
+ *
+ * Actually, majority of TexSphere is implemented in astrodraw.cpp.
+ */
 #define _CRT_SECURE_NO_WARNINGS
 #include "TexSphere.h"
 #include "serial_util.h"
@@ -5,12 +10,28 @@ extern "C"{
 #include "calc/calc.h"
 }
 
+TexSphere::TexSphere() :
+	texname(NULL),
+	texlist(0),
+	cloudtexlist(0),
+	bumptexlist(0),
+	shader(0)
+{
+}
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs), texname(NULL), cloudtexname(NULL), ringtexname(NULL), ringbacktexname(NULL), oblateness(0.){
+TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
+	texname(NULL),
+	cloudtexname(NULL),
+	ringtexname(NULL),
+	ringbacktexname(NULL),
+	bumptexlist(0),
+	oblateness(0.),
+	ring(0),
+	shader(0)
+{
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = 0;
 	atmodensity = 0.;
-	ring = 0;
 }
 
 const char *TexSphere::classname()const{
@@ -38,6 +59,9 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << *(Vec4<float>*)(atmohor);
 	sc.o << *(Vec4<float>*)(atmodawn);
 	sc.o << ring;
+	sc.o << bumptexname;
+	sc.o << vertexShaderName;
+	sc.o << fragmentShaderName;
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
@@ -52,6 +76,9 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> *(Vec4<float>*)(atmohor);
 	sc.i >> *(Vec4<float>*)(atmodawn);
 	sc.i >> ring;
+	sc.i >> bumptexname;
+	sc.i >> vertexShaderName;
+	sc.i >> fragmentShaderName;
 
 	this->texname = strnewdup(texname, texname.len());
 	this->texlist = 0;
@@ -79,6 +106,23 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			char *texname = new char[strlen(argv[1]) + 1];
 			strcpy(texname, argv[1]);
 			this->cloudtexname = texname;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "bumptexture")){
+		if(1 < argc)
+			bumptexname = argv[1];
+		return true;
+	}
+	else if(!strcmp(s, "vertexshader")){
+		if(1 < argc){
+			this->vertexShaderName = argv[1];
+		}
+		return true;
+	}
+	else if(!strcmp(s, "fragmentshader")){
+		if(1 < argc){
+			this->fragmentShaderName = argv[1];
 		}
 		return true;
 	}

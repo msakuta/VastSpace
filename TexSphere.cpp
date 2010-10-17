@@ -14,8 +14,10 @@ TexSphere::TexSphere() :
 	texname(NULL),
 	texlist(0),
 	cloudtexlist(0),
-	bumptexlist(0),
-	shader(0)
+	shader(0),
+	shaderGiveup(false),
+	cloudShader(0),
+	cloudShaderGiveup(false)
 {
 }
 
@@ -24,10 +26,12 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	cloudtexname(NULL),
 	ringtexname(NULL),
 	ringbacktexname(NULL),
-	bumptexlist(0),
 	oblateness(0.),
 	ring(0),
-	shader(0)
+	shader(0),
+	shaderGiveup(false),
+	cloudShader(0),
+	cloudShaderGiveup(false)
 {
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = 0;
@@ -48,6 +52,38 @@ TexSphere::~TexSphere(){
 		glDeleteLists(texlist, 1);*/
 }
 
+template<typename T> SerializeStream &operator<<(SerializeStream &o, const std::vector<T> &v){
+	o << v.size();
+	for(std::vector<T>::const_iterator it = v.begin(); it != v.end(); it++)
+		o << *it;
+	return o;
+}
+
+template<typename T> UnserializeStream &operator>>(UnserializeStream &i, std::vector<T> &v){
+	int n;
+	i >> n;
+	v.clear();
+	for(int it = 0; it < n; it++){
+		T a;
+		i >> a;
+		v.push_back(a);
+	}
+	return i;
+}
+
+SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
+	o << a.uniformname;
+	o << a.filename;
+	return o;
+}
+
+UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
+	i >> a.uniformname;
+	i >> a.filename;
+	a.list = 0;
+	return i;
+}
+
 void TexSphere::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << (texname ? texname : "");
@@ -59,7 +95,7 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << *(Vec4<float>*)(atmohor);
 	sc.o << *(Vec4<float>*)(atmodawn);
 	sc.o << ring;
-	sc.o << bumptexname;
+	sc.o << textures;
 	sc.o << vertexShaderName;
 	sc.o << fragmentShaderName;
 }
@@ -76,7 +112,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> *(Vec4<float>*)(atmohor);
 	sc.i >> *(Vec4<float>*)(atmodawn);
 	sc.i >> ring;
-	sc.i >> bumptexname;
+	sc.i >> textures;
 	sc.i >> vertexShaderName;
 	sc.i >> fragmentShaderName;
 
@@ -109,9 +145,14 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		return true;
 	}
-	else if(!strcmp(s, "bumptexture")){
-		if(1 < argc)
-			bumptexname = argv[1];
+	else if(!strcmp(s, "extexture")){
+		if(2 < argc){
+			Texture tex;
+			tex.uniformname = argv[1];
+			tex.filename = argv[2];
+			tex.list = 0;
+			textures.push_back(tex);
+		}
 		return true;
 	}
 	else if(!strcmp(s, "vertexshader")){
@@ -123,6 +164,18 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "fragmentshader")){
 		if(1 < argc){
 			this->fragmentShaderName = argv[1];
+		}
+		return true;
+	}
+	else if(!strcmp(s, "cloudvertexshader")){
+		if(1 < argc){
+			this->cloudVertexShaderName = argv[1];
+		}
+		return true;
+	}
+	else if(!strcmp(s, "cloudfragmentshader")){
+		if(1 < argc){
+			this->cloudFragmentShaderName = argv[1];
 		}
 		return true;
 	}

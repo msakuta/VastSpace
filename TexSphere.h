@@ -17,14 +17,22 @@ class TexSphere : public Astrobj{
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;
-	cpplib::dstring bumptexname;
-	GLuint bumptexlist;
 	cpplib::dstring vertexShaderName, fragmentShaderName;
 	GLuint shader;
+	bool shaderGiveup; ///< Flag whether compilation of shader has been given up, to prevent the compiler to try the same code in vain.
+	/// Cloud sphere is separate geometry than the globe itself, so shaders and extra textures must be allocated separately.
+	cpplib::dstring cloudVertexShaderName, cloudFragmentShaderName;
+	GLuint cloudShader;
+	bool cloudShaderGiveup; ///< Flag whether compilation of shader has been given up.
 
-	// OpenGL texture units
+	/// OpenGL texture units
 	AstroRing astroRing;
 public:
+	struct Texture{
+		cpplib::dstring uniformname;
+		cpplib::dstring filename;
+		mutable GLuint list;
+	};
 	typedef Astrobj st;
 	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);
@@ -37,6 +45,11 @@ public:
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual bool sunAtmosphere(const Viewer &vw)const;
+	typedef std::vector<Texture>::const_iterator TextureIterator;
+	TextureIterator beginTextures()const{return textures.begin();} ///< Iterates custom texture units for shaders.
+	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
+private:
+	std::vector<Texture> textures;
 };
 
 /// Identical to Astrobj but ClassId

@@ -24,6 +24,8 @@ class TexSphere : public Astrobj{
 	cpplib::dstring cloudVertexShaderName, cloudFragmentShaderName;
 	GLuint cloudShader;
 	bool cloudShaderGiveup; ///< Flag whether compilation of shader has been given up.
+	double cloudHeight; ///< In kilometers
+	double cloudPhase;
 
 	/// OpenGL texture units
 	AstroRing astroRing;
@@ -32,6 +34,7 @@ public:
 		cpplib::dstring uniformname;
 		cpplib::dstring filename;
 		mutable GLuint list;
+		bool cloudSync;
 	};
 	typedef Astrobj st;
 	TexSphere();
@@ -42,12 +45,14 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual void anim(double dt);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual bool sunAtmosphere(const Viewer &vw)const;
 	typedef std::vector<Texture>::const_iterator TextureIterator;
 	TextureIterator beginTextures()const{return textures.begin();} ///< Iterates custom texture units for shaders.
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
+	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 private:
 	std::vector<Texture> textures;
 };

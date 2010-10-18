@@ -57,7 +57,9 @@ void main (void)
 
 	float diffuse = max(0., dot(flight, fnormal) + .2);
 
-	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0])) * (2. + cnoise3(400. * vec3(gl_TexCoord[0]))[0]) / 3.;
+//	vec4 texColor = (textureCube(texture, vec3(gl_TexCoord[0])) - cnoise4(400. * vec3(gl_TexCoord[0]))[0] / 1.75) / 1.;
+	vec4 texColor = cloudfunc(texture, vec3(gl_TexCoord[0]));
+//	vec4 texColor = texture3D(noise3D, vec3(gl_TexCoord[0]));
 	texColor *= diffuse /** anoise2(1000. * vec3(gl_TexCoord[0]))[0]*/;
 	texColor[0] = texColor[1] = texColor[2] = 1.;
 	gl_FragColor = texColor;

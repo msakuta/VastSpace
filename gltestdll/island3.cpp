@@ -179,7 +179,7 @@ Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 	rad = 100.;
 	orbit_home = NULL;
 	mass = 1e10;
-	basecolor = 0xff8080;
+	basecolor = Vec4f(1., .5, .5, 1.);
 	omg.clear();
 	for(int i = 0; i < numof(bldgs); i++)
 		bldgs[i] = new Island3Building(*this);

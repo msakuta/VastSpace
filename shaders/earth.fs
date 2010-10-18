@@ -71,16 +71,16 @@ void main (void)
 	float diffuse = max(0., dot(flight, fnormal) + .1);
 
 	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
-//	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
-	texColor *= diffuse/* + ambient*/;
 	float specular;
 	float shininess;
 	if(texColor[2] > texColor[0] + texColor[1])
 		specular = 1., shininess = 20.;
 	else
 		specular = .3, shininess = 5.;
+//	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
+	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vec4(.75,.9,1,0) * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
-	texColor *= 1. - textureCube(cloudtexture, vec3(gl_TexCoord[0]))[0] * (2. + cnoise3(400. * vec3(gl_TexCoord[0]))[0]) / 3.;
+	texColor *= 1. - max(0., cloudfunc(cloudtexture, vec3(gl_TexCoord[2])));
 	texColor[3] = 1.;
 //	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .5 * vec3(texColor);
 //	texColor *= col;

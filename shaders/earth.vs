@@ -12,6 +12,7 @@ void main(void)
 	nrm = gl_NormalMatrix * gl_Normal;
 
 	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+	gl_TexCoord[2] = gl_TextureMatrix[2] * gl_MultiTexCoord2;
 
 	gl_Position = ftransform();
 

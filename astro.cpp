@@ -228,7 +228,7 @@ OrbitCS *OrbitCS::toOrbitCS(){
 	return this;
 }
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(COLOR32RGBA(127,127,127,255)){
+Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(.5f,.5f,.5f,1.){
 }
 
 const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj");
@@ -312,20 +312,21 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(s = strtok(ps, " \t\r\n")){
 			COLOR32 c;
 			c = strtoul(s, NULL, 16);
-			basecolor = COLOR32RGBA(COLOR32B(c),COLOR32G(c),COLOR32R(c),255);
+			basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
 		}
 	}
 	else if(!strcmp(s, "basecolor")){
 		if(3 < argc){
-			basecolor = COLOR32RGBA(calc3(&argv[1], sc.vl, NULL),
-				calc3(&argv[2], sc.vl, NULL),
-				calc3(&argv[3], sc.vl, NULL),
-				255);
+			basecolor = Vec4f(
+				GLfloat(calc3(&argv[1], sc.vl, NULL)),
+				GLfloat(calc3(&argv[2], sc.vl, NULL)),
+				GLfloat(calc3(&argv[3], sc.vl, NULL)),
+				1.f);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "absolute_magnitude")){
-		absmag = calc3(&ps, sc.vl, NULL);
+		absmag = GLfloat(calc3(&ps, sc.vl, NULL));
 	}
 	else
 		return st::readFile(sc, argc, argv);
@@ -343,6 +344,7 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 			aorder.push_back(this);
 		}
 	}
+	return true;
 }
 
 #if 0
@@ -465,3 +467,15 @@ const char *Star::classname()const{
 
 const ClassRegister<Star> Star::classRegister("Star");
 
+
+class Surface : public CoordSys{
+	Astrobj *a;
+	Vec3d offset;
+public:
+	typedef CoordSys st;
+	Surface(){}
+	Surface(const char *path, CoordSys *parent) : st(path, parent), a(NULL), offset(0,0,0){}
+	Surface(Astrobj *aa) : st(aa->getpath(), aa), a(aa){}
+	virtual void anim(double dt){
+	}
+};

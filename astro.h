@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of astronomical orbital CoordSys classes, OrbitCS and Astrobj.
+ */
 #ifndef ASTRO_H
 #define ASTRO_H
 #include "coordsys.h"
@@ -27,7 +30,7 @@ typedef void (*astrobj_draw_proc)(struct astrobj *, const struct viewer *);
 class Player;
 struct StellarContext;
 
-// CoordSys of orbital motion
+/// CoordSys of orbital motion
 class EXPORT OrbitCS : public CoordSys{
 public:
 	double orbit_rad;
@@ -56,7 +59,7 @@ private:
 	double inclination, loan, aop;
 };
 
-// Astronomical object. Usually orbits some other object.
+/// Astronomical object. Usually orbits some other object.
 class EXPORT Astrobj : public OrbitCS{
 public:
 	typedef OrbitCS st;
@@ -66,7 +69,7 @@ public:
 	double rad;
 	double mass;
 	float absmag; /* Absolute Magnitude */
-	COLOR32 basecolor; /* rough approximation of apparent color */
+	Vec4f basecolor; /* rough approximation of apparent color */
 
 	Astrobj(){}
 	Astrobj(const char *name, CoordSys *cs);

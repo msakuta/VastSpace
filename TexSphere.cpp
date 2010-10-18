@@ -17,7 +17,8 @@ TexSphere::TexSphere() :
 	shader(0),
 	shaderGiveup(false),
 	cloudShader(0),
-	cloudShaderGiveup(false)
+	cloudShaderGiveup(false),
+	cloudPhase(0.)
 {
 }
 
@@ -31,7 +32,9 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	shader(0),
 	shaderGiveup(false),
 	cloudShader(0),
-	cloudShaderGiveup(false)
+	cloudShaderGiveup(false),
+	cloudHeight(0.),
+	cloudPhase(0.)
 {
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = 0;
@@ -151,6 +154,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			tex.uniformname = argv[1];
 			tex.filename = argv[2];
 			tex.list = 0;
+			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
 			textures.push_back(tex);
 		}
 		return true;
@@ -176,6 +180,12 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "cloudfragmentshader")){
 		if(1 < argc){
 			this->cloudFragmentShaderName = argv[1];
+		}
+		return true;
+	}
+	else if(!strcmp(s, "cloudheight")){
+		if(1 < argc){
+			this->cloudHeight = calc3(&argv[1], sc.vl, NULL);
 		}
 		return true;
 	}
@@ -249,6 +259,11 @@ double TexSphere::atmoScatter(const Viewer &vw)const{
 
 bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
+}
+
+void TexSphere::anim(double dt){
+	cloudPhase += 1e-4 * dt * astro_timescale;
+	st::anim(dt);
 }
 
 

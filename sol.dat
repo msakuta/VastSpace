@@ -105,7 +105,7 @@ coordsys Orbit earth{
 		mass 5.972e24
 		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
 		texture earth.jpg
-		basecolor 255 255 255
+		basecolor .5 .65 1.
 
 		extexture "bumptexture" textures/earth_bump.jpg
 		extexture "cloudtexture" textures/cloud.jpg
@@ -115,15 +115,20 @@ coordsys Orbit earth{
 		cloudtexture textures/cloud.jpg
 		cloudfragmentshader shaders/earth_cloud.fs
 		cloudvertexshader shaders/earth_cloud.vs
+		cloudheight 5.
 
 		updirection 0 1 0
 		atmosphere_height 10.
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
-	}
 
-	coordsys earths{
-		teleport "Earth Surface" 0 0 0
+		coordsys earths{
+			define theta .13*pi
+			define phi .3*pi
+			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
+			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
+			teleport "Earth Surface" 0 0 0
+		}
 	}
 
 	coordsys Orbit moon{

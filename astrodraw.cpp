@@ -30,6 +30,7 @@ extern "C"{
 #include <clib/c.h>
 }
 #include <cpplib/gl/cullplus.h>
+#include <gl/glu.h>
 #include <gl/glext.h>
 #include <stdio.h>
 #include <assert.h>
@@ -212,7 +213,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 static GLuint ProjectSphereJpg(const char *fname);
-GLuint ProjectSphereCubeJpg(const char *fname, int flags, COLOR32 *pcolor = NULL);
+GLuint ProjectSphereCubeJpg(const char *fname, int flags);
 
 #if 0
 void directrot(const double pos[3], const double base[3], amat4_t irot){
@@ -458,6 +459,7 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 typedef struct normvertex_params{
 	Mat4d mat;
 	Mat4d texmat;
+	Mat4d cloudmat;
 	const Viewer *vw;
 	int texenable;
 	int map;
@@ -479,6 +481,7 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 		glTexCoord3dv(vt);
 		if(p->detail)
 			glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(vt[0] * 256.), GLfloat(vt[2] * 256.));
+		glMultiTexCoord3dvARB(GL_TEXTURE2_ARB, p->cloudmat.dvp3(v));
 	}
 	Vec3d v1;
 	if(p->vw->relative){
@@ -493,6 +496,87 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 	glVertex3dv(v1);
 }
 
+inline double noise3D(int x, int y, int z, int k){
+	return RandomSequence(4597956 * x + 1885793 * y + 3187923 * z, k).nextd();
+}
+
+template<int NNOISE, int COMPS>
+static void perlin_noise_3d(GLubyte (*field)[NNOISE][NNOISE][COMPS], long seed, int octaves = 4){
+	int octave;
+	double (*buf)[NNOISE][NNOISE][NNOISE][COMPS];
+	int xi, yi, zi;
+	int k;
+/*	RandomSequence rs(seed);
+	buf = (double(*)[NNOISE][NNOISE][NNOISE][4])malloc(octaves * sizeof *buf);
+	for(octave = 0; octave < octaves; octave ++){
+		int cell = 1 << octave;
+		int res = NNOISE / cell;
+		int zres = NNOISE / cell;
+		printf("octave %d\n", octave);
+		for(xi = 0; xi < res; xi++) for(yi = 0; yi < res; yi++) for(zi = 0; zi < zres; zi++){
+			int base;
+			base = rs.next() % 128;
+			for(k = 0; k < 4; k++)
+				buf[octave][xi][yi][zi][k] = (rs.next() % 64 + base) / (double)octaves / (double)(octaves - octave);
+		}
+	}*/
+	for(xi = 0; xi < NNOISE; /*printf("xi %d\n", xi),*/ xi++) for(yi = 0; yi < NNOISE; yi++) for(zi = 0; zi < NNOISE; zi++){
+		int xj, yj, zj;
+		for(k = 0; k < COMPS; k++){
+			double sum = 0.;
+			double f = 1.;
+			double amp = 0.;
+			for(octave = 0; octave < octaves; octave ++){
+				int cell = 1 << octave;
+				int divides = NNOISE / cell;
+				int res = NNOISE / cell;
+				int zres = NNOISE / cell;
+				if(octave == 0)
+					sum += f * noise3D(xi, yi, zi, k);
+				else for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
+	//				sum[k] += (double)buf[octave][(xi / cell + xj) % res][(yi / cell + yj) % res][(zi / cell + zj) % zres][k]
+					sum += f * noise3D((xi / cell + xj) % divides, (yi / cell + yj) % divides, (zi / cell + zj) % divides, k)
+					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
+					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
+					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell;
+				}
+				amp += f;
+				f *= 2.;
+			}
+			field[xi][yi][zi][k] = MIN(255, int(field[xi][yi][zi][k] + sum / amp * 255));
+		}
+	}
+//	free(buf);
+}
+
+static GLuint noise3DTexture(){
+	static bool init = false;
+	static GLuint ret = 0;
+	if(!init){
+		init = true;
+		PFNGLTEXIMAGE3DPROC glTexImage3D = (PFNGLTEXIMAGE3DPROC)wglGetProcAddress("glTexImage3D");
+		if(GLenum err = glGetError())
+			CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
+		if(glTexImage3D){
+			static const int NNOISE = 32;
+			static GLubyte field[NNOISE][NNOISE][NNOISE][1];
+			perlin_noise_3d(field, 48275);
+			glGenTextures(1, &ret);
+			glBindTexture(GL_TEXTURE_3D, ret);
+			glTexImage3D(GL_TEXTURE_3D, 0, GL_ALPHA, NNOISE, NNOISE, NNOISE, 0, GL_ALPHA, GL_UNSIGNED_BYTE, field);
+			if(GLenum err = glGetError())
+				CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+		}
+	}
+	return ret;
+}
+
+
 
 #define normvertex(x,y,z,p,ilen) normvertexf(x,y,z,p,ilen,i,j)
 #define PROJTS 1024
@@ -505,6 +589,7 @@ enum DTS{
 	DTS_NODETAIL = 1<<1,
 	DTS_ALPHA = 1<<2,
 	DTS_NORMALMAP = 1<<3,
+	DTS_NOGLOBE = 1<<4,
 	NUM_DTS
 };
 
@@ -516,10 +601,10 @@ class DrawTextureSphere{
 	TexSphere *a;
 	const Viewer *vw;
 	const Vec3d sunpos;
-	GLfloat m_mat_diffuse[4];
-	GLfloat m_mat_ambient[4];
+	Vec4f m_mat_diffuse;
+	Vec4f m_mat_ambient;
 	GLuint *ptexlist;
-	const Mat4d *m_texmat;
+	Mat4d m_texmat;
 	const char *m_texname;
 	double m_rad;
 	int m_flags;
@@ -528,32 +613,34 @@ class DrawTextureSphere{
 	int m_ncuts;
 	int m_nfinecuts;
 	int m_nffinecuts;
-	COLOR32 *m_pcolor;
 public:
 	typedef DrawTextureSphere tt;
-	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos), ptexlist(NULL), m_rad(0), m_flags(0), m_shader(0), m_drawint(false), m_pcolor(NULL)
+	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)
+		, m_mat_diffuse(1,1,1,1), m_mat_ambient(.5, .5, .5, 1.)
+		, ptexlist(NULL)
+		, m_texmat(mat4_u)
+		, m_rad(0), m_flags(0), m_shader(0), m_drawint(false)
 		,m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048){}
 	tt &astro(TexSphere *a){this->a = a; return *this;}
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
-	tt &mat_diffuse(const GLfloat a[4]){VEC4CPY(this->m_mat_diffuse, a); return *this;}
-	tt &mat_ambient(const GLfloat a[4]){VEC4CPY(this->m_mat_ambient, a); return *this;}
+	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
+	tt &mat_ambient(const Vec4f &a){this->m_mat_ambient = a; return *this;}
 	tt &texlist(GLuint *a){ptexlist = a; return *this;}
-	tt &texmat(const Mat4d *a){m_texmat = a; return *this;}
+	tt &texmat(const Mat4d &a){m_texmat = a; return *this;}
 	tt &texname(const char *a){m_texname = a; return *this;}
 	tt &rad(double a){m_rad = a; return *this;}
 	tt &flags(int a){m_flags = a; return *this;}
 	tt &shader(GLuint a){m_shader = a; return *this;}
 	tt &drawint(bool a){m_drawint = a; return *this;}
 	tt &ncuts(int a){m_ncuts = a; m_nfinecuts = a * 8; m_nffinecuts = a * 64; return *this;}
-	tt &pcolor(COLOR32 *a){m_pcolor = a; return *this;}
 	bool draw();
 };
 
 /// Draws a sphere textured
 bool DrawTextureSphere::draw(){
-	const GLfloat *mat_diffuse = m_mat_diffuse;
-	const GLfloat *mat_ambient = m_mat_ambient;
-	const Mat4d *texmat = m_texmat;
+	const Vec4f &mat_diffuse = m_mat_diffuse;
+	const Vec4f &mat_ambient = m_mat_ambient;
+	const Mat4d &texmat = m_texmat;
 	GLuint texlist = *ptexlist;
 	const char *texname = m_texname;
 	double &rad = m_rad;
@@ -580,18 +667,20 @@ bool DrawTextureSphere::draw(){
 	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
-		GLubyte color[4], dark[4];
-		color[0] = GLubyte(mat_diffuse[0] * 255);
-		color[1] = GLubyte(mat_diffuse[1] * 255);
-		color[2] = GLubyte(mat_diffuse[2] * 255);
-		color[3] = 255;
-		dark[0] = GLubyte(mat_ambient[0] * 127);
-		dark[1] = GLubyte(mat_ambient[1] * 127);
-		dark[2] = GLubyte(mat_ambient[2] * 127);
-		for(i = 0; i < 3; i++)
-			dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
-		dark[3] = 255;
-		drawShadeSphere(a, vw, sunpos, color, dark);
+		if(!(flags & DTS_NOGLOBE)){
+			GLubyte color[4], dark[4];
+			color[0] = GLubyte(mat_diffuse[0] * 255);
+			color[1] = GLubyte(mat_diffuse[1] * 255);
+			color[2] = GLubyte(mat_diffuse[2] * 255);
+			color[3] = 255;
+			dark[0] = GLubyte(mat_ambient[0] * 127);
+			dark[1] = GLubyte(mat_ambient[1] * 127);
+			dark[2] = GLubyte(mat_ambient[2] * 127);
+			for(i = 0; i < 3; i++)
+				dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
+			dark[3] = 255;
+			drawShadeSphere(a, vw, sunpos, color, dark);
+		}
 		return true;
 	}
 
@@ -600,7 +689,7 @@ bool DrawTextureSphere::draw(){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
-		texlist = *ptexlist = ProjectSphereCubeJpg(texname, flags, m_pcolor);
+		texlist = *ptexlist = ProjectSphereCubeJpg(texname, flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -608,7 +697,7 @@ bool DrawTextureSphere::draw(){
 	double (*finecuts)[2] = CircleCutsPartial(m_nfinecuts, 9);
 
 	double dist = (apos - vw->pos).len();
-	if(!m_drawint && dist < rad)
+	if(m_drawint ^ (dist < rad))
 		return true;
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
@@ -617,6 +706,7 @@ bool DrawTextureSphere::draw(){
 	glDisable(GL_BLEND);
 	glColor3ub(255,255,255);*/
 
+	static GLuint noise3tex = noise3DTexture();
 	if(texenable){
 		glCallList(texlist);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
@@ -632,6 +722,13 @@ bool DrawTextureSphere::draw(){
 		GLint textureLoc = glGetUniformLocation(shader, "texture");
 		if(0 <= textureLoc && texlist){
 			glUniform1i(textureLoc, 0);
+		}
+		GLint noise3DLoc = glGetUniformLocation(shader, "noise3D");
+		if(0 <= noise3DLoc && texlist){
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glUniform1i(noise3DLoc, 2);
+			glBindTexture(GL_TEXTURE_3D, noise3tex);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
 		GLint invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 		if(0 <= invEyeMat3Loc){
@@ -652,6 +749,9 @@ bool DrawTextureSphere::draw(){
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(it->list);
 				glUniform1i(texLoc, i);
+				glMatrixMode(GL_TEXTURE);
+				glLoadIdentity();
+				glMatrixMode(GL_MODELVIEW);
 				glActiveTextureARB(GL_TEXTURE0_ARB);
 			}
 		}
@@ -689,7 +789,8 @@ bool DrawTextureSphere::draw(){
 //	if(texenable)
 //		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glEnable(GL_NORMALIZE);
-	(m_drawint ? glDisable : glEnable)(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
+	glFrontFace(m_drawint ? GL_CW : GL_CCW);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
@@ -700,9 +801,10 @@ bool DrawTextureSphere::draw(){
 		if(texenable){
 			Mat4d rotm, rot2;
 			rotm = vw->cs->tocsm(a->parent);
-			rot2 = *texmat * rotm;
+			rot2 = texmat * rotm;
 	/*		MAT4CPY(rot, irot);*/
 			params.texmat = rot2 * irot;
+			params.cloudmat = a->cloudRotation().cnj().tomat4() * rotm * irot;
 		}
 		mat = irot.translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
@@ -714,7 +816,7 @@ bool DrawTextureSphere::draw(){
 
 	double tangent = rad < dist ? asin(rad / dist) : M_PI / 2.;
 /*	fine = M_PI / 3. < tangent;*/
-	fine = DTS_NODETAIL & flags ? 0 : M_PI * 7. / 16. < tangent ? 2 : M_PI / 3. < tangent ? 1 : 0;
+	fine = 0/*DTS_NODETAIL & flags*/ ? 0 : M_PI * 7. / 16. < tangent ? 2 : M_PI / 3. < tangent ? 1 : 0;
 	double (*ffinecuts)[2] = CircleCutsPartial(m_nffinecuts, 9);
 
 	{
@@ -757,7 +859,7 @@ bool DrawTextureSphere::draw(){
 			normvertex(cuts[i][0] * cuts[j+1][1], cuts[i][1] * cuts[j+1][1], cuts[j+1][0], &params, len2);
 		}
 	}
-	if(1 <= fine) for(i = 0; i < m_ncuts; i++) for(j = 0; j < m_ncuts / 4 - (1 < fine); j++){
+	if(1 <= fine) for(i = 0; i < m_ncuts; i++) for(j = (1 < fine); j < m_nfinecuts / m_ncuts; j++){
 		int i2 = (i+1) % m_ncuts;
 		double len1, len2;
 		Vec3d v1, v;
@@ -781,7 +883,7 @@ bool DrawTextureSphere::draw(){
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
 		glBegin(GL_QUADS);
-		for(i = 0; i < 32; i++) for(j = 0; j < m_ncuts / 4; j++){
+		for(i = 0; i < m_ncuts; i++) for(j = 0; j < m_nffinecuts / m_nfinecuts; j++){
 			int i2 = (i+1) % m_ncuts;
 			double len1, len2;
 			Vec3d v1, v;
@@ -1005,8 +1107,8 @@ void TexSphere::draw(const Viewer *vw){
 		}
 		if(oblateness != 0.){
 			bool ret = drawTextureSpheroid(this, vw, sunpos,
-				Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f),
-				Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f),
+				basecolor,
+				basecolor / 2.,
 				&texlist, NULL, texname, oblateness, &astroRing, ringmin, ringmax);
 			if(!ret && texname){
 				delete[] texname;
@@ -1014,30 +1116,39 @@ void TexSphere::draw(const Viewer *vw){
 			}
 		}
 		else{
+			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
+			double fcloudHeight = cloudHeight == 0. ? rad * 1.001 : cloudHeight + rad;
+			bool underCloud = (pos - vw->pos).len() < fcloudHeight;
+			if(g_cloud && (cloudtexname || cloudtexlist)){
+				cloudDraw
+				.texlist(&cloudtexlist)
+				.texmat(cloudRotation().cnj().tomat4())
+				.texname(cloudtexname)
+				.shader(cloudShader)
+				.rad(fcloudHeight)
+				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
+				.drawint(true)
+				.ncuts(g_tscuts);
+				if(underCloud){
+					bool ret = cloudDraw.draw();
+					if(!ret && cloudtexname){
+						delete[] cloudtexname;
+						cloudtexname = NULL;
+					}
+				}
+			}
 			bool ret = DrawTextureSphere(this, vw, sunpos)
-				.mat_diffuse(Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f))
-				.mat_ambient(Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f))
-				.texlist(&texlist).texmat(&rot.cnj().tomat4()).texname(texname).shader(shader)
+				.mat_diffuse(basecolor)
+				.mat_ambient(basecolor / 2.f)
+				.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texname).shader(shader)
 				.ncuts(g_tscuts)
-				.pcolor(&basecolor)
 				.draw();
 			if(!ret && texname){
 				delete[] texname;
 				texname = NULL;
 			}
-			if(g_cloud && (cloudtexname || cloudtexlist)){
-				ret = DrawTextureSphere(this, vw, sunpos)
-					.mat_diffuse(Vec4<GLfloat>(COLOR32R(basecolor) / 255.f, COLOR32R(basecolor) / 255.f, COLOR32B(basecolor) / 255.f, 1.f))
-					.mat_ambient(Vec4<GLfloat>(COLOR32R(basecolor) / 511.f, COLOR32G(basecolor) / 511.f, COLOR32B(basecolor) / 511.f, 1.f))
-					.texlist(&cloudtexlist)
-					.texmat(&rot.cnj().tomat4())
-					.texname(cloudtexname)
-					.shader(cloudShader)
-					.rad(this->rad * 1.001)
-					.flags(DTS_ALPHA | DTS_NODETAIL)
-					.drawint(true)
-					.ncuts(g_tscuts)
-					.draw();
+			if(g_cloud && (cloudtexname || cloudtexlist) && !underCloud){
+				bool ret = cloudDraw.drawint(false).draw();
 				if(!ret && cloudtexname){
 					delete[] cloudtexname;
 					cloudtexname = NULL;
@@ -1504,7 +1615,7 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 #if 1
 
 
-GLuint ProjectSphereCubeJpg(const char *fname, int flags, COLOR32 *pcolor){
+GLuint ProjectSphereCubeJpg(const char *fname, int flags){
 		GLuint texlist = 0;
 		const char *jpgfilename;
 		const char *p;
@@ -1546,13 +1657,6 @@ heterogeneous:
 			}
 			if(ok){
 				texlist = ProjectSphereCube(fname, NULL, bmis, flags);
-				if(bmis[0]->bmiHeader.biBitCount == 32 && pcolor){
-					Vec3i buf(0,0,0);
-					for(int i = 0; i < 6; i++) for(int y = 0; y < bmis[i]->bmiHeader.biHeight; y++) for(int x = 0; x < bmis[i]->bmiHeader.biWidth; x++) for(int c = 0; c < 3; c++)
-						buf[c] += ((unsigned char*)&bmis[i]->bmiColors[bmis[i]->bmiHeader.biClrUsed])[(y * bmis[i]->bmiHeader.biWidth + x) * 4 + c];
-					buf /= bmis[0]->bmiHeader.biWidth * bmis[0]->bmiHeader.biWidth * 6;
-					*pcolor = COLOR32RGBA(buf[0], buf[1], buf[2], 255);
-				}
 				for(int i = 0; i < 6; i++)
 					LocalFree(bmis[i]);
 			}

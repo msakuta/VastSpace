@@ -3,6 +3,7 @@ varying vec3 nrm;
 varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
+varying vec3 tlight; // light position in texture coordinates
 
 void main(void)
 {
@@ -12,6 +13,8 @@ void main(void)
 	nrm = gl_NormalMatrix * gl_Normal;
 
 	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+	tlight = /*gl_TextureMatrix[0] **/ gl_LightSource[0].position.xyz;
+	tlight = vec3(1,0,0);
 
 	gl_Position = ftransform();
 

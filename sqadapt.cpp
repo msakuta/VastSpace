@@ -7,6 +7,7 @@
 #include "btadapt.h"
 #include "EntityCommand.h"
 #include "Docker.h"
+#include "Astro.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
@@ -394,6 +395,17 @@ static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->w->el);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("parentcs"))){
+		if(!p->parent){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, p->parent->toAstrobj() ? _SC("Astrobj") : _SC("CoordSys"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->parent);
+	}
 	else
 		return sqf_get<CoordSys>(v);
 }
@@ -411,6 +423,20 @@ static SQInteger sqf_Universe_get(HSQUIRRELVM v){
 	}
 	else if(!strcmp(wcs, _SC("global_time"))){
 		sq_pushfloat(v, p->global_time);
+		return 1;
+	}
+	else
+		return sqf_CoordSys_get(v);
+}
+
+static SQInteger sqf_Astrobj_get(HSQUIRRELVM v){
+	Astrobj *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("rad"))){
+		sq_pushfloat(v, p->rad);
 		return 1;
 	}
 	else
@@ -458,6 +484,24 @@ static SQInteger sqf_next(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_tocs(HSQUIRRELVM v){
+	try{
+		CoordSys *p, *p2;
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return SQ_ERROR;
+		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 3))
+			return SQ_ERROR;
+		SQVec3d qv;
+		qv.getValue(v, 2);
+		qv.value = p->tocs(qv.value, p2);
+		qv.push(v);
+		return 1;
+	}
+	catch(...){
+		return SQ_ERROR;
+	}
+}
+
 static SQInteger sqf_getpath(HSQUIRRELVM v){
 	CoordSys *p;
 	if(!sqa_refobj(v, (SQUserPointer*)&p))
@@ -477,7 +521,7 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	CoordSys *cs = p->findcspath(s);
 	if(cs){
 		sq_pushroottable(v);
-		sq_pushstring(v, _SC("CoordSys"), -1);
+		sq_pushstring(v, cs->toAstrobj() ? _SC("Astrobj") : _SC("CoordSys"), -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, cs);
@@ -918,6 +962,21 @@ static SQInteger sqf_Vec3d_add(HSQUIRRELVM v){
 	}
 }
 
+static SQInteger sqf_Vec3d_sub(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.getValue(v, 2);
+		SQVec3d r(q.value - o.value);
+		r.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
 // What a nonsense method...
 static SQInteger sqf_Vec3d_get(HSQUIRRELVM v){
 	try{
@@ -1094,6 +1153,37 @@ static SQInteger sqf_Quatd_cnj(HSQUIRRELVM v){
 		q.getValue(v, 1);
 		SQQuatd r;
 		r.value = q.value.cnj();
+		r.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Quatd_direction(HSQUIRRELVM v){
+	try{
+		SQVec3d q;
+		q.getValue(v, 2);
+		SQQuatd r;
+		r.value = Quatd::direction(q.value);
+		r.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Quatd_rotation(HSQUIRRELVM v){
+	try{
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 2, &f)))
+			return SQ_ERROR;
+		SQVec3d q;
+		q.getValue(v, 3);
+		SQQuatd r;
+		r.value = Quatd::rotation(f, q.value);
 		r.push(v);
 		return 1;
 	}
@@ -1285,6 +1375,9 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_add"), -1);
 	sq_newclosure(v, sqf_Vec3d_add, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("_sub"), -1);
+	sq_newclosure(v, sqf_Vec3d_sub, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("sp"), -1);
 	sq_newclosure(v, sqf_Vec3d_sp, 0);
 	sq_createslot(v, -3);
@@ -1297,7 +1390,14 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_set"), -1);
 	sq_newclosure(v, sqf_Vec3d_set, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("len"), -1);
+	sq_compilebuffer(v, _SC("return ::sqrt(this.sp(this));"), sizeof _SC("return ::sqrt(this.sp(this));"), _SC("Vec3d.len"), SQFalse);
 	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+/*	sq_compilebuffer(v, _SC("function Vec3d::len(){return ::sqrt(this.sp(this));};"), -1, _SC("Temp"), SQFalse);
+	sq_pushroottable(v);
+	sq_call(v, 1, SQFalse, SQFalse);
+	sq_poptop(v);*/
 
 	// Define class Quatd
 	sq_pushstring(v, _SC("Quatd"), -1);
@@ -1330,6 +1430,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("cnj"), -1);
 	sq_newclosure(v, sqf_Quatd_cnj, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("direction"), -1);
+	sq_newclosure(v, sqf_Quatd_direction, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("rotation"), -1);
+	sq_newclosure(v, sqf_Quatd_rotation, 0);
+	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 
 	// Define class CoordSys
@@ -1359,6 +1465,12 @@ void sqa_init(){
 	sq_pushstring(v, _SC("next"), -1);
 	sq_newclosure(v, sqf_next, 0);
 	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("getcs"), -1);
+	sq_newclosure(v, sqf_getcs, 0);
+	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("tocs"), -1);
+	sq_newclosure(v, sqf_tocs, 0);
+	sq_createslot(v, -3);
 	sq_pushstring(v, _SC("getpath"), -1);
 	sq_newclosure(v, sqf_getpath, 0);
 	sq_createslot(v, -3);
@@ -1385,6 +1497,16 @@ void sqa_init(){
 	sq_newclass(v, SQTrue);
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, sqf_Universe_get, 0);
+	sq_createslot(v, -3);
+	sq_createslot(v, -3);
+
+	// Define class Astrobj
+	sq_pushstring(v, _SC("Astrobj"), -1);
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_pushstring(v, _SC("_get"), -1);
+	sq_newclosure(v, sqf_Astrobj_get, 0);
 	sq_createslot(v, -3);
 	sq_createslot(v, -3);
 

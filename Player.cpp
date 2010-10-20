@@ -334,6 +334,7 @@ void Player::cmdInit(Player &pl){
 	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, &pl);
 	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, &pl);
 	CmdAddParam("r_overlay", cmd_cvar<bool, &Player::r_overlay>, &pl);
+	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("g_overlay", &g_overlay, cvar_int);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);

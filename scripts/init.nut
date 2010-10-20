@@ -13,9 +13,11 @@ class Vec3d{
 	float x, y, z;
 	string _tostring();
 	Vec3d _add(Vec3d);
+	Vec3d _sub(Vec4d);
 	Vec3d _mul(Vec3d);
 	float sp(Vec3d); // Scalar product or Dot product
 	float vp(Vec3d); // Vector product or Cross product
+	float len(); // Length of vector
 }
 
 // Quaternion with element type of double.
@@ -41,6 +43,7 @@ class CoordSys{
 	CoordSys findcspath();
 	Entity addent(string classname, Vec3d pos);
 	Entity entlist;
+	Vec3d tocs(Vec3d pos, CoordSys);
 }
 
 class Universe extends CoordSys{
@@ -49,6 +52,10 @@ class Universe extends CoordSys{
 }
 
 ::universe <- Universe();
+
+class Astrobj extends CoordSys{
+	float rad; // readonly
+}
 
 class Entity{
 	string classname;
@@ -81,6 +88,7 @@ class Player{
 	string getmover();
 	Entity chase;
 	float viewdist;
+	CoordSys cs;
 }
 
 ::player <- Player();
@@ -405,6 +413,15 @@ register_console_command("showgroup", function(...){
 		print("[" + e.classname + "]");
 });
 
+//function Vec3d::len(){return ::sqrt(this.sp(this));}
+
+register_console_command("height", function(...){
+	local earth = universe.findcspath("/sol/earth/Earth");
+	if(earth != null){
+		local lpos = player.cs.tocs(Vec3d(0,0,0), earth);
+		print("height = " + ((lpos - player.getpos()).len() - earth.rad));
+	}
+});
 
 
 function ae(){
@@ -493,6 +510,12 @@ function init_Universe(){
 
 	cmd("r_overlay 0");
 	cmd("r_move_path 1");
+
+	local earths = universe.findcspath("/sol/earth/Earth/earths");
+	print("earths: " + (earths != null ? earths.name() : "(null)"));
+	if(earths){
+		earths.setrot(Quatd.direction(earths.getpos()) * Quatd.rotation(PI / 2, Vec3d(1, 0, 0)));
+	}
 }
 
 sysbut <- null;

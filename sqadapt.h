@@ -263,7 +263,7 @@ SQInteger sqf_set(HSQUIRRELVM v){
 	SQRESULT sr;
 	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
-	return 0;
+	return SQ_ERROR;
 }
 
 

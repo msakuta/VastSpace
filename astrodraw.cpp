@@ -29,6 +29,7 @@ extern "C"{
 #include <clib/cfloat.h>
 #include <clib/c.h>
 }
+#include <clib/stats.h>
 #include <cpplib/gl/cullplus.h>
 #include <gl/glu.h>
 #include <gl/glext.h>
@@ -497,36 +498,19 @@ static void normvertexf(double x, double y, double z, normvertex_params *p, doub
 }
 
 inline double noise3D(int x, int y, int z, int k){
-	return RandomSequence(4597956 * x + 1885793 * y + 3187923 * z, k).nextd();
+	return RandomSequence(459794526 * x + 165885793 * y + 316878923 * z + 456843661, k).nextd();
 }
 
 template<int NNOISE, int COMPS>
 static void perlin_noise_3d(GLubyte (*field)[NNOISE][NNOISE][COMPS], long seed, int octaves = 4){
-	int octave;
-	double (*buf)[NNOISE][NNOISE][NNOISE][COMPS];
-	int xi, yi, zi;
-	int k;
-/*	RandomSequence rs(seed);
-	buf = (double(*)[NNOISE][NNOISE][NNOISE][4])malloc(octaves * sizeof *buf);
-	for(octave = 0; octave < octaves; octave ++){
-		int cell = 1 << octave;
-		int res = NNOISE / cell;
-		int zres = NNOISE / cell;
-		printf("octave %d\n", octave);
-		for(xi = 0; xi < res; xi++) for(yi = 0; yi < res; yi++) for(zi = 0; zi < zres; zi++){
-			int base;
-			base = rs.next() % 128;
-			for(k = 0; k < 4; k++)
-				buf[octave][xi][yi][zi][k] = (rs.next() % 64 + base) / (double)octaves / (double)(octaves - octave);
-		}
-	}*/
-	for(xi = 0; xi < NNOISE; /*printf("xi %d\n", xi),*/ xi++) for(yi = 0; yi < NNOISE; yi++) for(zi = 0; zi < NNOISE; zi++){
-		int xj, yj, zj;
-		for(k = 0; k < COMPS; k++){
+//	CStatistician sta;
+	for(int xi = 0; xi < NNOISE; xi++) for(int yi = 0; yi < NNOISE; yi++) for(int zi = 0; zi < NNOISE; zi++){
+		for(int k = 0; k < COMPS; k++){
 			double sum = 0.;
 			double f = 1.;
 			double amp = 0.;
-			for(octave = 0; octave < octaves; octave ++){
+			for(int octave = 0; octave < octaves; octave ++){
+				int xj, yj, zj;
 				int cell = 1 << octave;
 				int divides = NNOISE / cell;
 				int res = NNOISE / cell;
@@ -534,19 +518,20 @@ static void perlin_noise_3d(GLubyte (*field)[NNOISE][NNOISE][COMPS], long seed, 
 				if(octave == 0)
 					sum += f * noise3D(xi, yi, zi, k);
 				else for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-	//				sum[k] += (double)buf[octave][(xi / cell + xj) % res][(yi / cell + yj) % res][(zi / cell + zj) % zres][k]
 					sum += f * noise3D((xi / cell + xj) % divides, (yi / cell + yj) % divides, (zi / cell + zj) % divides, k)
-					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
-					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
-					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell;
+					* (xj ? xi % cell : cell - xi % cell) / cell
+					* (yj ? yi % cell : cell - yi % cell) / cell
+					* (zj ? zi % cell : cell - zi % cell) / cell;
 				}
 				amp += f;
 				f *= 2.;
 			}
 			field[xi][yi][zi][k] = MIN(255, int(field[xi][yi][zi][k] + sum / amp * 255));
+//			sta.put(double(field[xi][yi][zi][k]));
 		}
 	}
-//	free(buf);
+//	CmdPrint(sta.getAvg());
+//	CmdPrint(sta.getDev());
 }
 
 static GLuint noise3DTexture(){
@@ -558,7 +543,7 @@ static GLuint noise3DTexture(){
 		if(GLenum err = glGetError())
 			CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
 		if(glTexImage3D){
-			static const int NNOISE = 32;
+			static const int NNOISE = 64;
 			static GLubyte field[NNOISE][NNOISE][NNOISE][1];
 			perlin_noise_3d(field, 48275);
 			glGenTextures(1, &ret);
@@ -739,6 +724,10 @@ bool DrawTextureSphere::draw(){
 		GLint timeLoc = glGetUniformLocation(shader, "time");
 		if(0 <= timeLoc){
 			glUniform1f(timeLoc, GLfloat(vw->viewtime));
+		}
+		GLint heightLoc = glGetUniformLocation(shader, "height");
+		if(0 <= heightLoc){
+			glUniform1f(heightLoc, GLfloat(max(0, dist - a->rad)));
 		}
 		TexSphere::TextureIterator it;
 		for(it = a->beginTextures(), i = 3; it != a->endTextures(); it++, i++){

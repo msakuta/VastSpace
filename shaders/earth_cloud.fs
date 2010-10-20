@@ -9,6 +9,7 @@ varying vec3 nrm;
 varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
+varying vec3 tlight;
 
 #include "shaders/earth_cloud_noise.fs"
 /*
@@ -57,10 +58,16 @@ void main (void)
 
 	float diffuse = max(0., dot(flight, fnormal) + .2);
 
+	float dawness = dot(flight, fnormal) * 4.;
+	dawness = min(1., dawness * dawness);
+	float f = cloudfunc(texture, vec3(gl_TexCoord[0]) - normalize(tlight) * .0005, view.z)[3];
+	vec4 texColor = vec4(.6, .5, .4, f);
 //	vec4 texColor = (textureCube(texture, vec3(gl_TexCoord[0])) - cnoise4(400. * vec3(gl_TexCoord[0]))[0] / 1.75) / 1.;
-	vec4 texColor = cloudfunc(texture, vec3(gl_TexCoord[0]));
+	f = cloudfunc(texture, vec3(gl_TexCoord[0]), view.z)[3];
+	texColor = texColor * (1. - f) + f * vec4(1, dawness, dawness, 1);
 //	vec4 texColor = texture3D(noise3D, vec3(gl_TexCoord[0]));
+//	texColor = texColor * texColor[3] + (1. - texColor[3]) * vec4(1, 0, 0, cloudfunc(texture, vec3(gl_TexCoord[0]) - flight * 1e-3, view.z)[3]);
 	texColor *= diffuse /** anoise2(1000. * vec3(gl_TexCoord[0]))[0]*/;
-	texColor[0] = texColor[1] = texColor[2] = 1.;
+//	texColor[0] = texColor[1] = texColor[2] = 1.;
 	gl_FragColor = texColor;
 }

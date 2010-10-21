@@ -3273,7 +3273,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	vpos = vw->pos;
 	if(abest){
 		epos = abest->calcPos(*vw);
-		height = (epos - vpos).len() - abest->rad;
+		height = max(.001, (epos - vpos).len() - abest->rad);
 	}
 	else{
 		epos = Vec3d(1e5,1e5,1e5);
@@ -3285,10 +3285,6 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	dist = sqrt(sdist);
 
 	{
-/*		avec3_t de, ds;
-		double h = 1. / (1. + height / 10.), sp;
-		VECSUB(de, epos, vpos);
-		VECSUB(ds, spos, vpos);*/
 		f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
 		white[1] = GLubyte(white[1] * 1. - (1. - f) * .5);
 		white[2] = GLubyte(white[2] * f);
@@ -3300,39 +3296,34 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		static int normalized = 0;
 		static double normalizer;
 		double sp, brightness;
-		avec3_t dv, spos1;
-		amat4_t mat;
 		if(!normalized)
-			normalizer = 1. / (c/* + d / (1. + SUN_DISTANCE)*/), normalized = 1;
-/*		pyrmat(vw->pyr, &mat);*/
-		VECSUB(dv, vw->pos, spos);
-		mat4dvp3(spos1, vw->rot, dv);
+			normalizer = 1. / c, normalized = 1;
+		Vec3d dv = vw->pos - spos;
+		Vec3d spos1 = vw->rot.dvp3(dv);
 		sp = -spos1[2];
 		brightness = pow(100, -a->absmag / 5.);
-		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / VECSLEN(dv))) / (1. + dist / brightness * 1e-11);
-		MAT4IDENTITY(mat);
-		VECNORMIN(spos1);
-		VECCPY(&mat[8], spos1);
-		VECVP(&mat[4], &mat[8], avec3_001);
-		if(VECSLEN(&mat[4]) == 0.)
-			VECCPY(&mat[4], avec3_010);
+		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) / (1. + dist / brightness * 1e-11);
+		Mat4d mat = mat4_u;
+		spos1.normin();
+		mat.vec3(2) = spos1;
+		mat.vec3(1) = mat.vec3(2).vp(vec3_001);
+		if(mat.vec3(1).slen() == 0.)
+			mat.vec3(1) = vec3_010;
 		else
-			VECNORMIN(&mat[4]);
-		VECVP(&mat[0], &mat[4], &mat[8]);
+			mat.vec3(1).normin();
+		mat.vec3(0) = mat.vec3(1).vp(mat.vec3(2));
 		sp = 100. * (1. - mat[10]) * (1. - mat[10]) - 7.;
 		if(sp < 1.)
 			sp = 1.;
-		VECSCALEIN(&mat[0], sp);
+		mat.vec3(0) *= sp;
 		sp /= 100.;
 		if(sp < 1.)
 			sp = 1.;
-		VECSCALEIN(&mat[4], sp);
+		mat.vec3(1) *= sp;
 		glDisable(GL_CULL_FACE);
 		glPushMatrix();
 		glLoadIdentity();
-/*		glMultMatrixd(mat);*/
-/*		mat4mp(mat2, vw->rot, mat);*/
-		VECSCALEIN(spos1, -1);
+		spos1 *= -1;
 		gldSpriteGlow(spos1, as / M_PI, white, mat);
 		glPopMatrix();
 	}
@@ -3345,8 +3336,6 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	{
 		Vec3d pos = (spos - vpos) / dist;
 		if(vw->relative){
-/*			doppler(rgb, white[0] / 256., white[1] / 256., white[2] / 256., VECSP(pos, vw->velo));
-			VECSCALE(white, rgb, 255);*/
 		}
 		else if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen)
 			white *= GLubyte(LIGHT_SPEED / vw->velolen);

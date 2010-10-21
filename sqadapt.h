@@ -267,6 +267,19 @@ SQInteger sqf_set(HSQUIRRELVM v){
 }
 
 
+/// A class to automatically restores Squirrel stack depth at the destruction of this object.
+class StackReserver{
+	SQInteger initial; ///< Initial depth of the stack.
+	HSQUIRRELVM v;
+public:
+	StackReserver(HSQUIRRELVM v) : v(v), initial(sq_gettop(v)){}
+	~StackReserver(){
+		SQInteger end = sq_gettop(v);
+		if(initial < end)
+			sq_pop(v, end - initial);
+	}
+};
+
 
 }
 

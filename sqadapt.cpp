@@ -54,17 +54,14 @@ static const SQChar *CONSOLE_COMMANDS = _SC("console_commands");
 
 int ::sqa_console_command(int argc, char *argv[], int *retval){
 	HSQUIRRELVM &v = sqa::g_sqvm;
+	sqa::StackReserver sr(v);
 	sq_pushroottable(v); // root
 	sq_pushstring(v, CONSOLE_COMMANDS, -1); // root "console_commands"
-	if(SQ_FAILED(sq_get(v, -2))){ // root table
-		sq_poptop(v);
+	if(SQ_FAILED(sq_get(v, -2))) // root table
 		return 0;
-	}
 	sq_pushstring(v, argv[0], -1); // root table argv[0]
-	if(SQ_FAILED(sq_get(v, -2))){ // root table closure
-		sq_pop(v, 2);
+	if(SQ_FAILED(sq_get(v, -2))) // root table closure
 		return 0;
-	}
 
 	// Pass all arguments as strings (no conversion is done beforehand).
 	sq_pushroottable(v);
@@ -98,6 +95,8 @@ const SQUserPointer tt_Quatd = "Quatd";
 const SQUserPointer tt_Entity = "Entity";
 const SQUserPointer tt_GLwindow = "GLwindow";
 
+bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f);
+bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code);
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
@@ -1387,17 +1386,9 @@ void sqa_init(){
 	sq_pushstring(v, _SC("_get"), -1);
 	sq_newclosure(v, sqf_Vec3d_get, 0);
 	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, sqf_Vec3d_set, 0);
+	register_closure(v, _SC("_set"), sqf_Vec3d_set);
+	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
 	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("len"), -1);
-	sq_compilebuffer(v, _SC("return ::sqrt(this.sp(this));"), sizeof _SC("return ::sqrt(this.sp(this));"), _SC("Vec3d.len"), SQFalse);
-	sq_createslot(v, -3);
-	sq_createslot(v, -3);
-/*	sq_compilebuffer(v, _SC("function Vec3d::len(){return ::sqrt(this.sp(this));};"), -1, _SC("Temp"), SQFalse);
-	sq_pushroottable(v);
-	sq_call(v, 1, SQFalse, SQFalse);
-	sq_poptop(v);*/
 
 	// Define class Quatd
 	sq_pushstring(v, _SC("Quatd"), -1);
@@ -1714,5 +1705,25 @@ SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
     sq_pop(v,1); //pops the root table    
 	return 0;
 }
+
+bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f){
+	StackReserver sr(v);
+	sq_pushstring(v, fname, -1);
+	sq_newclosure(v, f, 0);
+	if(SQ_FAILED(sq_createslot(v, -3)))
+		return false;
+	return true;
+}
+
+bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code){
+	StackReserver sr(v);
+	sq_pushstring(v, fname, -1);
+	if(SQ_FAILED(sq_compilebuffer(v, code, strlen(code), fname, SQFalse)))
+		return false;
+	if(SQ_FAILED(sq_createslot(v, -3)))
+		return false;
+	return true;
+}
+
 
 }

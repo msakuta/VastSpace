@@ -413,14 +413,16 @@ register_console_command("showgroup", function(...){
 		print("[" + e.classname + "]");
 });
 
-//function Vec3d::len(){return ::sqrt(this.sp(this));}
-
 register_console_command("height", function(...){
 	local earth = universe.findcspath("/sol/earth/Earth");
 	if(earth != null){
 		local lpos = player.cs.tocs(Vec3d(0,0,0), earth);
 		print("height = " + ((lpos - player.getpos()).len() - earth.rad));
 	}
+});
+
+register_console_command("cscript", function(){
+	writeclosuretofile("scripts/init.dat", loadfile("scripts/init.nut"));
 });
 
 

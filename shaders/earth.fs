@@ -23,23 +23,37 @@ vec3 innoise(vec3 v, int level){
 	f[1] = mod(v[1], 65536.);
 	f[2] = mod(v[2], 65536.);
 	f[3] = mod(time / pow(2., float(level)), 65536.);
-	for(int y = 0; y < 2; y++) for(int x = 0; x < 2; x++) for(int z = 0; z < 2; z++) for(int t = 0; t < 2; t++){
-		for(int i = 0; i < 3; i++){
-			uint z0 =
-				(532516436u * (uint(f[0]) + uint(x))) ^
-				(974594270u * (uint(f[1]) + uint(y))) ^
-				(442532635u * (uint(f[2]) + uint(z))) ^
-				(waving ? 342943251u * (uint(f[3]) + uint(t)) : 0) ^
-				(545389780u * uint(i));
-			uint w = 0u;
-			uint z1 = 36969u * (z0 & 65535u) + (z0 >> 16u);
-			uint w1 = 18000u * (w & 65535u) + (w >> 16u);
-			ret[i] +=
-				(x == 0 ? 1. - mod(f[0], 1.) : mod(f[0], 1.)) *
-				(y == 0 ? 1. - mod(f[1], 1.) : mod(f[1], 1.)) *
-				(z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.)) *
-				(t == 0 ? 1. - mod(f[3], 1.) : mod(f[3], 1.)) *
-				float((z1 << 16u) + w1) / 4294967296.;
+	for(int x = 0; x < 2; x++){
+		float fx = x == 0 ? 1. - mod(f[0], 1.) : mod(f[0], 1.);
+		for(int y = 0; y < 2; y++){
+			float fy = y == 0 ? 1. - mod(f[1], 1.) : mod(f[1], 1.);
+			for(int z = 0; z < 2; z++){
+				float fz = z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.);
+				for(int t = 0; t < 2; t++){
+					uint z0 =
+						(532516436u * (uint(f[0]) + uint(x))) ^
+						(974594270u * (uint(f[1]) + uint(y))) ^
+						(442532635u * (uint(f[2]) + uint(z))) ^
+						(waving ? 342943251u * (uint(f[3]) + uint(t)) : 0) /*^
+						(545389780u * uint(i))*/;
+					for(int i = 0; i < 3; i++){
+			//			uint w = 0u;
+						z0 = 36969u * (z0 & 65535u) + (z0 >> 16u);
+			//			uint w1 = 18000u * (w & 65535u) + (w >> 16u);
+
+						// I cannot believe the compiler cannot optimize the inside-loop variables.
+						ret[i] +=
+							fx *
+		//					(x == 0 ? 1. - mod(f[0], 1.) : mod(f[0], 1.)) *
+							fy *
+		//					(y == 0 ? 1. - mod(f[1], 1.) : mod(f[1], 1.)) *
+							fz *
+		//					(z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.)) *
+							(t == 0 ? 1. - mod(f[3], 1.) : mod(f[3], 1.)) *
+							float(z0 & 65535) / 65536.;
+					}
+				}
+			}
 		}
 	}
 	return ret;
@@ -59,7 +73,8 @@ vec3 anoise3(vec3 v){
 
 void main (void)
 {
-	vec3 normal = nrm;
+	vec3 normal = normalize(nrm);
+	vec3 flight = normalize(gl_LightSource[0].position.xyz);
 
 	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
 	float specular;
@@ -68,14 +83,17 @@ void main (void)
 		specular = 1., shininess = 20., waving = true;
 	else
 		specular = .3, shininess = 5., waving = false;
+	float dawness = dot(flight, normal) * 8.;
+	specular *= max(.1, min(1., dawness));
+	dawness = 1. - exp(-dawness * dawness);
+	vec4 vshininess = vec4(.75, .2 + .6 * dawness, .3 + .7 * dawness, 0.);
 
 	vec3 texnorm0 = vec3(textureCube(bumptexture, vec3(gl_TexCoord[0]))) - vec3(1., .5, .5);
 	texnorm0[1] *= 5.;
 	texnorm0[2] *= 5.;
-	vec2 noise = .05 * vec2(anoise2(8. * 1000. * vec3(gl_TexCoord[0])));
-	vec3 texnorm = (texa0 * (texnorm0[2] + noise[0]) + texa1 * (texnorm0[1] + noise[1]));
-	vec3 fnormal = normalize(normalize(normal) + (texnorm) * 1.);
-	vec3 flight = normalize(gl_LightSource[0].position.xyz);
+	vec3 noise = .05 * vec3(anoise2(8. * 1000. * vec3(gl_TexCoord[0])));
+	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
+	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
 
 	vec3 fview = normalize(view);
 
@@ -83,7 +101,7 @@ void main (void)
 
 //	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
 	texColor *= diffuse/* + ambient*/;
-	texColor += specular * vec4(.75,.9,1,0) * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
+	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 	texColor *= 1. - max(0., .5 * cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z));
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);

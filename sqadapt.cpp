@@ -944,13 +944,13 @@ static SQInteger sqf_Vec3d_tostring(HSQUIRRELVM v){
 	}
 }
 
-static SQInteger sqf_Vec3d_add(HSQUIRRELVM v){
+/// It's too repetitive to write this for unary minus of Vec3d and conjugate of Quatd separately.
+template<typename T, T (T::*proc)()const>
+static SQInteger sqf_unary(HSQUIRRELVM v){
 	try{
-		SQVec3d q;
+		SQIntrinsic<T> q;
 		q.getValue(v, 1);
-		SQVec3d o;
-		o.getValue(v, 2);
-		SQVec3d r(q.value + o.value);
+		SQIntrinsic<T> r((q.value.*proc)());
 		r.push(v);
 		return 1;
 	}
@@ -959,13 +959,15 @@ static SQInteger sqf_Vec3d_add(HSQUIRRELVM v){
 	}
 }
 
-static SQInteger sqf_Vec3d_sub(HSQUIRRELVM v){
+/// It's too repetitive to write this for binary add, subtract, vector product of Vec3d and multiplication of Quatd separately.
+template<typename T, T (T::*proc)(const T &)const>
+static SQInteger sqf_binary(HSQUIRRELVM v){
 	try{
-		SQVec3d q;
+		SQIntrinsic<T> q;
 		q.getValue(v, 1);
-		SQVec3d o;
+		SQIntrinsic<T> o;
 		o.getValue(v, 2);
-		SQVec3d r(q.value - o.value);
+		SQIntrinsic<T> r((q.value.*proc)(o.value));
 		r.push(v);
 		return 1;
 	}
@@ -1030,21 +1032,6 @@ static SQInteger sqf_Vec3d_sp(HSQUIRRELVM v){
 	}
 }
 
-static SQInteger sqf_Vec3d_vp(HSQUIRRELVM v){
-	try{
-		SQVec3d q;
-		q.getValue(v, 1);
-		SQVec3d o;
-		o.getValue(v, 2);
-		SQVec3d r(q.value.vp(o.value));
-		r.push(v);
-		return 1;
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
 static SQInteger sqf_Quatd_tostring(HSQUIRRELVM v){
 	try{
 		SQQuatd q;
@@ -1099,28 +1086,13 @@ static SQInteger sqf_Quatd_set(HSQUIRRELVM v){
 	}
 }
 
-static SQInteger sqf_Quatd_normin(HSQUIRRELVM v){
+/// It's too repetitive to write this for Vec3d and Quatd separately.
+template<typename T>
+static SQInteger sqf_normin(HSQUIRRELVM v){
 	try{
-		SQQuatd q;
+		SQIntrinsic<T> q;
 		q.getValue(v, 1);
 		q.pointer->normin();
-		return 1;
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
-template<typename Type>
-static SQInteger sqf_Intri_mul(HSQUIRRELVM v){
-	try{
-		SQIntrinsic<Type> q;
-		q.getValue(v, 1);
-		SQIntrinsic<Type> o;
-		o.getValue(v, 2);
-		SQIntrinsic<Type> r;
-		r.value = q.value * o.value;
-		r.push(v);
 		return 1;
 	}
 	catch(SQIntrinsicError){
@@ -1136,20 +1108,6 @@ static SQInteger sqf_Quatd_trans(HSQUIRRELVM v){
 		o.getValue(v, 2);
 		SQVec3d r;
 		r.value = q.value.trans(o.value);
-		r.push(v);
-		return 1;
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
-static SQInteger sqf_Quatd_cnj(HSQUIRRELVM v){
-	try{
-		SQQuatd q;
-		q.getValue(v, 1);
-		SQQuatd r;
-		r.value = q.value.cnj();
 		r.push(v);
 		return 1;
 	}
@@ -1190,7 +1148,7 @@ static SQInteger sqf_Quatd_rotation(HSQUIRRELVM v){
 }
 
 
-// Add given object to weak-pointed object layer.
+/// Add given object to weak-pointed object layer.
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushregistrytable(v); // reg
@@ -1218,6 +1176,7 @@ bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	return true;
 }
 
+/// De-reference a object from the Squirrel stack.
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer *o, SQRESULT *psr, int idx, bool throwError){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_get(v, idx);
@@ -1365,10 +1324,13 @@ void sqa_init(){
 	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
 	sq_createslot(v, -3);
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
-	register_closure(v, _SC("_add"), sqf_Vec3d_add);
-	register_closure(v, _SC("_sub"), sqf_Vec3d_sub);
+	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &(Vec3d::operator +)>/*sqf_Vec3d_add*/);
+	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &(Vec3d::operator -)>/*sqf_Vec3d_sub*/);
+	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &(Vec3d::operator -)>);
+	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
+	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);
 	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
-	register_closure(v, _SC("vp"), sqf_Vec3d_vp);
+	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>/*sqf_Vec3d_vp*/);
 	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
@@ -1385,12 +1347,14 @@ void sqa_init(){
 	register_closure(v, _SC("_tostring"), sqf_Quatd_tostring);
 	register_closure(v, _SC("_get"), sqf_Quatd_get);
 	register_closure(v, _SC("_set"), sqf_Quatd_set);
-	register_closure(v, _SC("normin"), sqf_Quatd_normin);
-	register_closure(v, _SC("_mul"), sqf_Intri_mul<Quatd>);
+	register_closure(v, _SC("normin"), sqf_normin<Quatd>);
+	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &(Quatd::operator *)>/*sqf_Intri_mul<Quatd>*/);
 	register_closure(v, _SC("trans"), sqf_Quatd_trans);
-	register_closure(v, _SC("cnj"), sqf_Quatd_cnj);
+	register_closure(v, _SC("cnj"), sqf_unary<Quatd, &Quatd::cnj>/*sqf_Quatd_cnj*/);
+	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);
 	register_closure(v, _SC("direction"), sqf_Quatd_direction);
 	register_closure(v, _SC("rotation"), sqf_Quatd_rotation);
+	register_code_func(v, _SC("len"), _SC("return ::sqrt(x * x + y * y + z * z + w * w);"));
 	sq_createslot(v, -3);
 
 	// Define class CoordSys

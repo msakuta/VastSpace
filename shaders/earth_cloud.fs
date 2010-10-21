@@ -58,8 +58,8 @@ void main (void)
 
 	float diffuse = max(0., dot(flight, fnormal) + .2);
 
-	float dawness = dot(flight, fnormal) * 4.;
-	dawness = min(1., dawness * dawness);
+	float dawness = dot(flight, fnormal) * 8.;
+	dawness = 1. - exp(-dawness * dawness);
 	float f = cloudfunc(texture, vec3(gl_TexCoord[0]) - normalize(tlight) * .0005, view.z)[3];
 	vec4 texColor = vec4(.6, .5, .4, f);
 //	vec4 texColor = (textureCube(texture, vec3(gl_TexCoord[0])) - cnoise4(400. * vec3(gl_TexCoord[0]))[0] / 1.75) / 1.;

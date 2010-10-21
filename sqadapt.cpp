@@ -95,8 +95,6 @@ const SQUserPointer tt_Quatd = "Quatd";
 const SQUserPointer tt_Entity = "Entity";
 const SQUserPointer tt_GLwindow = "GLwindow";
 
-bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f);
-bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code);
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
@@ -1362,30 +1360,16 @@ void sqa_init(){
 	sq_pushstring(v, _SC("Vec3d"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_Vec3d);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_Vec3d_constructor, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_Vec3d_constructor);
 	sq_pushstring(v, _SC("a"), -1);
 	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
 	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_tostring"), -1);
-	sq_newclosure(v, sqf_Vec3d_tostring, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_add"), -1);
-	sq_newclosure(v, sqf_Vec3d_add, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_sub"), -1);
-	sq_newclosure(v, sqf_Vec3d_sub, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("sp"), -1);
-	sq_newclosure(v, sqf_Vec3d_sp, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("vp"), -1);
-	sq_newclosure(v, sqf_Vec3d_vp, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_Vec3d_get, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
+	register_closure(v, _SC("_add"), sqf_Vec3d_add);
+	register_closure(v, _SC("_sub"), sqf_Vec3d_sub);
+	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
+	register_closure(v, _SC("vp"), sqf_Vec3d_vp);
+	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
 	sq_createslot(v, -3);
@@ -1394,39 +1378,19 @@ void sqa_init(){
 	sq_pushstring(v, _SC("Quatd"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_Quatd);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_Quatd_constructor, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_Quatd_constructor);
 	sq_pushstring(v, _SC("a"), -1);
 	*(Quatd*)sq_newuserdata(v, sizeof(Quatd)) = quat_0;
 	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_tostring"), -1);
-	sq_newclosure(v, sqf_Quatd_tostring, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_Quatd_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, sqf_Quatd_set, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("normin"), -1);
-	sq_newclosure(v, sqf_Quatd_normin, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_mul"), -1);
-	sq_newclosure(v, sqf_Intri_mul<Quatd>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("trans"), -1);
-	sq_newclosure(v, sqf_Quatd_trans, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("cnj"), -1);
-	sq_newclosure(v, sqf_Quatd_cnj, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("direction"), -1);
-	sq_newclosure(v, sqf_Quatd_direction, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("rotation"), -1);
-	sq_newclosure(v, sqf_Quatd_rotation, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_tostring"), sqf_Quatd_tostring);
+	register_closure(v, _SC("_get"), sqf_Quatd_get);
+	register_closure(v, _SC("_set"), sqf_Quatd_set);
+	register_closure(v, _SC("normin"), sqf_Quatd_normin);
+	register_closure(v, _SC("_mul"), sqf_Intri_mul<Quatd>);
+	register_closure(v, _SC("trans"), sqf_Quatd_trans);
+	register_closure(v, _SC("cnj"), sqf_Quatd_cnj);
+	register_closure(v, _SC("direction"), sqf_Quatd_direction);
+	register_closure(v, _SC("rotation"), sqf_Quatd_rotation);
 	sq_createslot(v, -3);
 
 	// Define class CoordSys
@@ -1435,50 +1399,20 @@ void sqa_init(){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
-	sq_pushstring(v, _SC("name"), -1);
-	sq_newclosure(v, sqf_name, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getpos"), -1);
-	sq_newclosure(v, sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setpos"), -1);
-	sq_newclosure(v, sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getrot"), -1);
-	sq_newclosure(v, sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setrot"), -1);
-	sq_newclosure(v, sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("child"), -1);
-	sq_newclosure(v, sqf_child, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("next"), -1);
-	sq_newclosure(v, sqf_next, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getcs"), -1);
-	sq_newclosure(v, sqf_getcs, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("tocs"), -1);
-	sq_newclosure(v, sqf_tocs, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getpath"), -1);
-	sq_newclosure(v, sqf_getpath, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("findcspath"), -1);
-	sq_newclosure(v, sqf_findcspath, 0);
-	sq_setparamscheck(v, 2, _SC("xs"));
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addent"), -1);
-	sq_newclosure(v, sqf_addent, 0);
-	sq_setparamscheck(v, 3, "xsx");
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_CoordSys_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, sqf_set<CoordSys>, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("name"), sqf_name);
+	register_closure(v, _SC("getpos"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos> >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>);
+	register_closure(v, _SC("getrot"), sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>);
+	register_closure(v, _SC("child"), sqf_child);
+	register_closure(v, _SC("next"), sqf_next);
+	register_closure(v, _SC("getcs"), sqf_getcs);
+	register_closure(v, _SC("tocs"), sqf_tocs);
+	register_closure(v, _SC("getpath"), sqf_getpath);
+	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
+	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
+	register_closure(v, _SC("_get"), sqf_CoordSys_get);
+	register_closure(v, _SC("_set"), sqf_set<CoordSys>);
 	sq_createslot(v, -3);
 
 	// Define class Universe
@@ -1486,9 +1420,7 @@ void sqa_init(){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_Universe_get, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_get"), sqf_Universe_get);
 	sq_createslot(v, -3);
 
 	// Define class Astrobj
@@ -1496,9 +1428,7 @@ void sqa_init(){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_Astrobj_get, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_get"), sqf_Astrobj_get);
 	sq_createslot(v, -3);
 
 	// Define class Entity
@@ -1508,33 +1438,14 @@ void sqa_init(){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
-/*	sq_pushstring(v, _SC("classname"), -1);
-	sq_newclosure(v, sqf_func<Entity, const SQChar *(Entity::*)() const, &Entity::classname>, 0);
-	sq_createslot(v, -3);*/
-	sq_pushstring(v, _SC("getpos"), -1);
-	sq_newclosure(v, sqf_getintrinsic<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setpos"), -1);
-	sq_newclosure(v, sqf_setintrinsic<Entity, Vec3d, &Entity::pos>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("getrot"), -1);
-	sq_newclosure(v, sqf_getintrinsic<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot> >, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("setrot"), -1);
-	sq_newclosure(v, sqf_setintrinsic<Entity, Quatd, &Entity::rot>, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_Entity_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, sqf_Entity_set, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("command"), -1);
-	sq_newclosure(v, sqf_Entity_command, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("create"), -1);
-	sq_newclosure(v, sqf_Entity_create, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("getpos"), sqf_getintrinsic<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos> >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic<Entity, Vec3d, &Entity::pos>);
+	register_closure(v, _SC("getrot"), sqf_getintrinsic<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot> >);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic<Entity, Quatd, &Entity::rot>);
+	register_closure(v, _SC("_get"), sqf_Entity_get);
+	register_closure(v, _SC("_set"), sqf_Entity_set);
+	register_closure(v, _SC("command"), sqf_Entity_command);
+	register_closure(v, _SC("create"), sqf_Entity_create);
 	sq_createslot(v, -3);
 
 	// Define class Docker, leaving details to the class itself.
@@ -1573,15 +1484,9 @@ void sqa_init(){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_GLwindow_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("_set"), -1);
-	sq_newclosure(v, sqf_GLwindow_set, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("close"), -1);
-	sq_newclosure(v, sqf_GLwindow_close, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_get"), sqf_GLwindow_get);
+	register_closure(v, _SC("_set"), sqf_GLwindow_set);
+	register_closure(v, _SC("close"), sqf_GLwindow_close);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("glwlist"), -1);
@@ -1597,21 +1502,11 @@ void sqa_init(){
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLWbuttonMatrix_constructor, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addButton"), -1);
-	sq_newclosure(v, sqf_GLWbuttonMatrix_addButton, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addToggleButton"), -1);
-	sq_newclosure(v, sqf_GLWbuttonMatrix_addToggleButton, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addMoveOrderButton"), -1);
-	sq_newclosure(v, sqf_GLWbuttonMatrix_addMoveOrderButton, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addControlButton"), -1);
-	sq_newclosure(v, sqf_GLWbuttonMatrix_addControlButton, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_GLWbuttonMatrix_constructor);
+	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
+	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
+	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
+	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);
 	sq_createslot(v, -3);
 
 	// Define class GLWmessage
@@ -1706,10 +1601,12 @@ SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
 	return 0;
 }
 
-bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f){
+bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams, const SQChar *params){
 	StackReserver sr(v);
 	sq_pushstring(v, fname, -1);
 	sq_newclosure(v, f, 0);
+	if(nparams)
+		sq_setparamscheck(v, nparams, params);
 	if(SQ_FAILED(sq_createslot(v, -3)))
 		return false;
 	return true;

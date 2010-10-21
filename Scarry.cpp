@@ -320,12 +320,8 @@ void Docker::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
-	sq_pushstring(v, _SC("_get"), -1);
-	sq_newclosure(v, sqf_get, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addent"), -1);
-	sq_newclosure(v, sqf_addent, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("addent"), sqf_addent);
 	sq_createslot(v, -3);
 }
 

@@ -464,12 +464,6 @@ void Player::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
-/*	sq_pushstring(v, _SC("classname"), -1);
-	sq_newclosure(v, sqf_func<Player, const SQChar *(Player::*)() const, &Player::classname>, 0);
-	sq_createslot(v, -3);*/
-/*	sq_pushstring(v, _SC("getcs"), -1);
-	sq_newclosure(v, sqf_getcs, 0);
-	sq_createslot(v, -3);*/
 	register_closure(v, _SC("getpos"), sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getpos> >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsica<Player, Vec3d, &Player::setpos>);
 	register_closure(v, _SC("getvelo"), sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getvelo> >);

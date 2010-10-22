@@ -98,9 +98,7 @@ void GLWmessage::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_constructor, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_constructor);
 	sq_createslot(v, -3);
 }
 

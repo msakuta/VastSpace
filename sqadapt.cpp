@@ -12,6 +12,9 @@
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
+extern "C"{
+#include <clib/timemeas.h>
+}
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -164,7 +167,7 @@ static SQInteger sqf_register_console_command(HSQUIRRELVM v){
 		sq_pushstring(v, CONSOLE_COMMANDS, -1); // root table "console_commands"
 		sq_push(v, -2); // root table "console_commands" table
 		if(SQ_FAILED(sq_createslot(v, -4))) // root table
-			;
+			return sq_throwerror(v, _SC("Could not allocate console_commands"));
 	}
 
 	sq_push(v, 2); // root table name
@@ -172,6 +175,61 @@ static SQInteger sqf_register_console_command(HSQUIRRELVM v){
 	sq_newslot(v, -3, SQFalse); // root table
 	return 0;
 }
+
+static SQInteger sqf_timemeas(HSQUIRRELVM v){
+	sq_push(v, 1);
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue)))
+		return SQ_ERROR;
+	sq_newtable(v);
+	sq_pushstring(v, _SC("time"), -1);
+	sq_pushfloat(v, SQFloat(TimeMeasLap(&tm)));
+	sq_newslot(v, -3, SQFalse);
+	sq_pushstring(v, _SC("result"), -1);
+	sq_push(v, -3);
+	sq_newslot(v, -3, SQFalse);
+	return 1;
+}
+
+
+/// Time measurement class constructor.
+static SQInteger sqf_TimeMeas_construct(HSQUIRRELVM v){
+#if 1
+	timemeas_t *p = new timemeas_t;
+	TimeMeasStart(p);
+	sq_setinstanceup(v, 1, p);
+	return 0;
+#else
+	sq_pushstring(v, _SC("a"), -1);
+	timemeas_t &tm = *(timemeas_t*)sq_newuserdata(v, sizeof(timemeas_t));
+	sq_set(v, -3);
+	TimeMeasStart(&tm);
+	return 0;
+#endif
+}
+
+/// Time measurement class lap time accessor.
+static SQInteger sqf_TimeMeas_lap(HSQUIRRELVM v){
+#if 1
+	timemeas_t *p;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return SQ_ERROR;
+	sq_pushfloat(v, SQFloat(TimeMeasLap(p)));
+	return 1;
+#else
+	timemeas_t *p;
+	sq_pushstring(v, _SC("a"), -1);
+	sq_get(v, 1);
+	if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&p, NULL)))
+		return SQ_ERROR;
+	sq_pushfloat(v, TimeMeasLap(p));
+	return 1;
+#endif
+}
+const SQUserPointer tt_TimeMeas = "TimeMeas";
+
+
 
 static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
@@ -352,7 +410,6 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 
 static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 	try{
-		Entity *p;
 		const SQChar *classname;
 		sq_getstring(v, 2, &classname);
 
@@ -402,6 +459,7 @@ static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, p->parent);
+		return 1;
 	}
 	else
 		return sqf_get<CoordSys>(v);
@@ -415,11 +473,11 @@ static SQInteger sqf_Universe_get(HSQUIRRELVM v){
 		return SQ_ERROR;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("timescale"))){
-		sq_pushfloat(v, p->timescale);
+		sq_pushfloat(v, SQFloat(p->timescale));
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("global_time"))){
-		sq_pushfloat(v, p->global_time);
+		sq_pushfloat(v, SQFloat(p->global_time));
 		return 1;
 	}
 	else
@@ -433,7 +491,7 @@ static SQInteger sqf_Astrobj_get(HSQUIRRELVM v){
 	if(!sqa_refobj(v, (SQUserPointer*)&p))
 		return SQ_ERROR;
 	if(!strcmp(wcs, _SC("rad"))){
-		sq_pushfloat(v, p->rad);
+		sq_pushfloat(v, SQFloat(p->rad));
 		return 1;
 	}
 	else
@@ -670,21 +728,21 @@ static SQInteger sqf_GLwindow_set(HSQUIRRELVM v){
 		SQBool b;
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return SQ_ERROR;
-		p->setClosable(b);
+		p->setClosable(!!b);
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("pinned"))){
 		SQBool b;
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return SQ_ERROR;
-		p->setPinned(b);
+		p->setPinned(!!b);
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("pinnable"))){
 		SQBool b;
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return SQ_ERROR;
-		p->setPinnable(b);
+		p->setPinnable(!!b);
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("title"))){
@@ -716,7 +774,6 @@ static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
 	SQRESULT sr;
 	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
 		return sr;
-	const SQChar *title, *cmd;
 	p->postClose();
 	return 0;
 }
@@ -825,7 +882,6 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 
 static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
-	SQInteger x, y, sx, sy;
 	GLWentlist *p = new GLWentlist(pl);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
@@ -986,7 +1042,7 @@ static SQInteger sqf_Vec3d_get(HSQUIRRELVM v){
 		if(!s[0] || s[1])
 			return SQ_ERROR;
 		if('x' <= s[0] && s[0] <= 'z'){
-			sq_pushfloat(v, q.value[s[0] - 'x']);
+			sq_pushfloat(v, SQFloat(q.value[s[0] - 'x']));
 			return 1;
 		}
 		return SQ_ERROR;
@@ -1024,7 +1080,7 @@ static SQInteger sqf_Vec3d_sp(HSQUIRRELVM v){
 		q.getValue(v, 1);
 		SQVec3d o;
 		o.getValue(v, 2);
-		sq_pushfloat(v, q.value.sp(o.value));
+		sq_pushfloat(v, SQFloat(q.value.sp(o.value)));
 		return 1;
 	}
 	catch(SQIntrinsicError){
@@ -1054,7 +1110,7 @@ static SQInteger sqf_Quatd_get(HSQUIRRELVM v){
 		if(!s[0] || s[1])
 			return SQ_ERROR;
 		if('x' <= s[0] && s[0] <= 'z' || s[0] == 'w'){
-			sq_pushfloat(v, q.value[s[0] == 'w' ? 3 : s[0] - 'x']);
+			sq_pushfloat(v, SQFloat(q.value[s[0] == 'w' ? 3 : s[0] - 'x']));
 			return 1;
 		}
 		return SQ_ERROR;
@@ -1283,7 +1339,6 @@ void unloadAllModules(){
 	modules.clear();
 }
 
-
 void sqa_init(){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
@@ -1309,11 +1364,19 @@ void sqa_init(){
 	register_global_func(v, sqf_reg, _SC("reg"));
 	register_global_func(v, sqf_loadModule, _SC("loadModule"));
 	register_global_func(v, sqf_unloadModule, _SC("unloadModule"));
+	register_global_func(v, sqf_timemeas, _SC("timemeas"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
 	sqstd_register_iolib(v);
 	sqstd_register_mathlib(v);
+
+	sq_pushstring(v, _SC("TimeMeas"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_TimeMeas);
+	register_closure(v, _SC("constructor"), sqf_TimeMeas_construct);
+	register_closure(v, _SC("lap"), sqf_TimeMeas_lap);
+	sq_createslot(v, -3);
 
 	// Define class Vec3d, native vector representation
 	sq_pushstring(v, _SC("Vec3d"), -1);
@@ -1324,13 +1387,13 @@ void sqa_init(){
 	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
 	sq_createslot(v, -3);
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
-	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &(Vec3d::operator +)>/*sqf_Vec3d_add*/);
-	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &(Vec3d::operator -)>/*sqf_Vec3d_sub*/);
+	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &(Vec3d::operator +)>);
+	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &(Vec3d::operator -)>);
 	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &(Vec3d::operator -)>);
 	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
 	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);
 	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
-	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>/*sqf_Vec3d_vp*/);
+	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>);
 	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
@@ -1348,7 +1411,7 @@ void sqa_init(){
 	register_closure(v, _SC("_get"), sqf_Quatd_get);
 	register_closure(v, _SC("_set"), sqf_Quatd_set);
 	register_closure(v, _SC("normin"), sqf_normin<Quatd>);
-	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &(Quatd::operator *)>/*sqf_Intri_mul<Quatd>*/);
+	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &(Quatd::operator *)>);
 	register_closure(v, _SC("trans"), sqf_Quatd_trans);
 	register_closure(v, _SC("cnj"), sqf_unary<Quatd, &Quatd::cnj>/*sqf_Quatd_cnj*/);
 	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);
@@ -1481,9 +1544,7 @@ void sqa_init(){
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLWentlist_constructor, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_GLWentlist_constructor);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("screenwidth"), -1);
@@ -1493,12 +1554,16 @@ void sqa_init(){
 	sq_newclosure(v, sqf_screenheight, 0);
 	sq_createslot(v, 1);
 
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{
+		double d = TimeMeasLap(&tm);
+		CmdPrint(cpplib::dstring() << "init compile: " << d);
 //		call_foo(v,1,2.5,_SC("teststring"));
 	}
 	else
-		CmdPrintf("scripts/init.nut failed.");
+		CmdPrint("scripts/init.nut failed.");
 
 	sq_poptop(v); // Pop the root table.
 }
@@ -1519,7 +1584,7 @@ void sqa_anim(double dt){
 	sq_pushstring(v, _SC("frameproc"), -1);
 	if(SQ_SUCCEEDED(sq_get(v, -2))){
 		sq_pushroottable(v);
-		sq_pushfloat(v, dt); 
+		sq_pushfloat(v, SQFloat(dt)); 
 		sq_call(v, 2, SQFalse, SQTrue);
 		sq_poptop(v); // pop the closure
 	}

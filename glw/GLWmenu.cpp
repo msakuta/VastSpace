@@ -270,24 +270,16 @@ void GLWmenu::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_constructor, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("addItem"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_addItem, 0);
-	sq_createslot(v, -3);
-	sq_pushstring(v, _SC("hide"), -1);
-	sq_newclosure(v, sqf_GLwindowMenu_hide, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_GLwindowMenu_constructor);
+	register_closure(v, _SC("addItem"), sqf_GLwindowMenu_addItem);
+	register_closure(v, _SC("hide"), sqf_GLwindowMenu_hide);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("GLWbigMenu"), -1);
 	sq_pushstring(v, _SC("GLWmenu"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_pushstring(v, _SC("constructor"), -1);
-	sq_newclosure(v, sqf_GLWbigMenu_constructor, 0);
-	sq_createslot(v, -3);
+	register_closure(v, _SC("constructor"), sqf_GLWbigMenu_constructor);
 	sq_createslot(v, -3);
 }
 

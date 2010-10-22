@@ -1,6 +1,8 @@
 
 /* Pseudo-prototype declaration of pre-defined classes and global variables
   by the application.
+   Note that type of returned value and arguments are not specifiable in Squirrel language,
+  but shown here to clarify semantics.
 
 
 
@@ -10,24 +12,30 @@
 // least arithmetic errors.
 class Vec3d{
 	constructor(float x, float y, float z);
-	float x, y, z;
+	float x, y, z; // They appear to be float, but internally double.
 	string _tostring();
 	Vec3d _add(Vec3d);
 	Vec3d _sub(Vec4d);
 	Vec3d _mul(Vec3d);
+	Vec3d _unm();
+	Vec3d norm(); // Normalize
 	float sp(Vec3d); // Scalar product or Dot product
-	float vp(Vec3d); // Vector product or Cross product
+	Vec3d vp(Vec3d); // Vector product or Cross product
 	float len(); // Length of vector
 }
 
 // Quaternion with element type of double.
 class Quatd{
 	constructor(float x, float y, float z, float w);
-	float x, y, z, w;
+	float x, y, z, w; // They appear to be float, but internally double.
 	string _tostring();
+	Quatd norm(); // Normalize
 	Quatd normin();
 	Quatd _mul(Quatd);
+	Quatd cnj(); // Conjugate
 	Vec3d trans(Vec3d); // Transforms the given vector, assuming this Quatd represents a rotation.
+	static Quatd direction(Vec3d); // Generates rotation towards given direction.
+	static Quatd rotation(float angle, Vec3d axis); // Generate rotation with angle around axis.
 }
 
 class CoordSys{
@@ -127,6 +135,27 @@ class GLWmessage extends GLwindow{
 int screenwidth();
 int screenheight();
 
+// An utility function that executes func and measures time spent by that.
+// It uses high-resolution timer of the computer if available, so it's expected to be more precise
+// than old-fashioned clock() method.
+// Returns a table containing 2 members; time, represents execution time of func, and result,
+// represents returned value of func.
+table timemeas(function func);
+
+// Class version of timemeas(). Does not require function form to the code being measured.
+class TimeMeas{
+	constructor(); // Start counting time.
+	float lap(); // Returns seconds elapsed since this object is created.
+}
+
+// Registers a console command with name, defined by func.
+// Variable-length arguments may be present as strings, use vargc and vargv to interpret them.
+void register_console_command(string name, function func);
+
+// Loads an external module, implemented as DLL or shared library.
+loadModule(string path);
+
+unloadModule(string path);
 
 
 
@@ -134,7 +163,7 @@ int screenheight();
 // Define them in this file in order to respond such events.
 
 // Called just after the Universe is initialized.
-// Please note that when this file is interpreted, the universe is not initialized,
+// Please note that when this script file itself is interpreted, the universe is not yet initialized,
 // so you must defer operation on the universe using this callback.
 void init_Universe();
 
@@ -149,6 +178,8 @@ string translate(string source);
 
 */
 
+local tm = TimeMeas();
+
 class Cvar{
 	function _set(idx,val){
 		::set_cvar(idx,val);
@@ -162,20 +193,6 @@ print("Squirrel script initialized!");
 
 cvar <- Cvar();
 cvar.pause = "1";
-
-/*
-local a = Vec3d(0,1,2), b = Vec3d(2,3,4);
-print(a + " + " + b + " = " + (a + b));
-print(a + ".sp(" + b + ") = " + a.sp(b));
-print(a + ".vp(" + b + ") = " + a.vp(b));
-*/
-
-function fact(n){
-	if(1 < n)
-		return n * fact(n-1);
-	else
-		return 1;
-}
 
 function printtree(cs){
 	local child;
@@ -422,7 +439,17 @@ register_console_command("height", function(...){
 });
 
 register_console_command("cscript", function(){
-	writeclosuretofile("scripts/init.dat", loadfile("scripts/init.nut"));
+	local ret = timemeas(function(){
+		writeclosuretofile("scripts/init.dat", loadfile("scripts/init.nut"));
+	});
+	print("write time " + ret.time);
+});
+
+register_console_command("comp", function(){
+	local ret = timemeas(function(){loadfile("scripts/init.nut");});
+	print("compile time " + ret.time);
+	ret = timemeas(function(){loadfile("scripts/init.dat");});
+	print("load time " + ret.time);
 });
 
 
@@ -458,12 +485,16 @@ mainmenu <- GLWbigMenu();
 function loadmission(script){
 	mainmenu.close();
 	print("loading " + script);
-	local exe = loadfile(script);
+	local ret = timemeas(function():(script){return loadfile(script);});
+	print("compile time " + ret.time);
+	local exe = ret.result;
 	if(exe == null){
 		print("Failed to load file " + script);
 	}
-	else
-		exe();
+	else{
+		ret = timemeas(exe);
+		print("execution time " + ret.time);
+	}
 	return exe;
 }
 
@@ -501,7 +532,7 @@ function init_Universe(){
 	local sch = screenheight();
 
 	mainmenu.title = "Select Mission";
-	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.nut\"");
+	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.dat\"");
 	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
 	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
 	mainmenu.addItem("test", callTest);
@@ -514,7 +545,6 @@ function init_Universe(){
 	cmd("r_move_path 1");
 
 	local earths = universe.findcspath("/sol/earth/Earth/earths");
-	print("earths: " + (earths != null ? earths.name() : "(null)"));
 	if(earths){
 		earths.setrot(Quatd.direction(earths.getpos()) * Quatd.rotation(PI / 2, Vec3d(1, 0, 0)));
 	}
@@ -574,3 +604,4 @@ function initUI(){
 
 showdt <- false;
 
+print("init.nut execution time: " + tm.lap());

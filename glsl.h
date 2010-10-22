@@ -46,7 +46,7 @@ EXPORT extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
 EXPORT int glsl_register_shader(GLuint shader, const char *src);
 EXPORT int glsl_load_shader(GLuint shader, const char *fname);
-EXPORT GLuint glsl_register_program(GLuint vtx, GLuint frg);
+EXPORT GLuint glsl_register_program(const GLuint *shaders, int nshaders);
 EXPORT void glsl_register();
 
 EXPORT int vrc_shader_enable(int *);

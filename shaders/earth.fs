@@ -10,7 +10,10 @@ varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
 
-#include "shaders/earth_cloud_noise.fs"
+// If GLSL standard states no #include is allowed, how could functions be shared?
+// We cannot share even prototypes.
+//#include "shaders/earth_cloud_noise.fs"
+vec4 cloudfunc(samplerCube texture, vec3 v, float z);
 
 #extension GL_EXT_gpu_shader4 : enable
 
@@ -34,7 +37,7 @@ vec3 innoise(vec3 v, int level){
 						(532516436u * (uint(f[0]) + uint(x))) ^
 						(974594270u * (uint(f[1]) + uint(y))) ^
 						(442532635u * (uint(f[2]) + uint(z))) ^
-						(waving ? 342943251u * (uint(f[3]) + uint(t)) : 0) /*^
+						(waving ? 342943251u * (uint(f[3]) + uint(t)) : 0u) /*^
 						(545389780u * uint(i))*/;
 					for(int i = 0; i < 3; i++){
 			//			uint w = 0u;
@@ -50,7 +53,7 @@ vec3 innoise(vec3 v, int level){
 							fz *
 		//					(z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.)) *
 							(t == 0 ? 1. - mod(f[3], 1.) : mod(f[3], 1.)) *
-							float(z0 & 65535) / 65536.;
+							float(z0 & 65535u) / 65536.;
 					}
 				}
 			}
@@ -102,7 +105,7 @@ void main (void)
 //	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
 	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
-	texColor *= 1. - max(0., .5 * cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z));
+	texColor *= 1. - max(0., .5 * cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)[3]);
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);
 	texColor[2] = sqrt(texColor[2]);*/

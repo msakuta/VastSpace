@@ -17,11 +17,11 @@ class TexSphere : public Astrobj{
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;
-	cpplib::dstring vertexShaderName, fragmentShaderName;
+	std::vector<cpplib::dstring> vertexShaderName, fragmentShaderName;
 	GLuint shader;
 	bool shaderGiveup; ///< Flag whether compilation of shader has been given up, to prevent the compiler to try the same code in vain.
 	/// Cloud sphere is separate geometry than the globe itself, so shaders and extra textures must be allocated separately.
-	cpplib::dstring cloudVertexShaderName, cloudFragmentShaderName;
+	std::vector<cpplib::dstring> cloudVertexShaderName, cloudFragmentShaderName;
 	GLuint cloudShader;
 	bool cloudShaderGiveup; ///< Flag whether compilation of shader has been given up.
 	double cloudHeight; ///< In kilometers

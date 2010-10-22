@@ -161,25 +161,25 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "vertexshader")){
 		if(1 < argc){
-			this->vertexShaderName = argv[1];
+			this->vertexShaderName.push_back(argv[1]);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "fragmentshader")){
 		if(1 < argc){
-			this->fragmentShaderName = argv[1];
+			this->fragmentShaderName.push_back(argv[1]);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "cloudvertexshader")){
 		if(1 < argc){
-			this->cloudVertexShaderName = argv[1];
+			this->cloudVertexShaderName.push_back(argv[1]);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "cloudfragmentshader")){
 		if(1 < argc){
-			this->cloudFragmentShaderName = argv[1];
+			this->cloudFragmentShaderName.push_back(argv[1]);
 		}
 		return true;
 	}

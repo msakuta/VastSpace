@@ -346,10 +346,11 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 	if(g_shader_enable) do{
 		if(!shader_compile){
 			shader_compile = true;
-			GLuint vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
+			GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+			vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
 			if(!glsl_load_shader(vtx, "shaders/ringshadow.vs") || !glsl_load_shader(frg, "shaders/ringshadow.fs"))
 				break;
-			shader = glsl_register_program(vtx, frg);
+			shader = glsl_register_program(shaders, 2);
 			if(!shader)
 				break;
 			texRingLoc = glGetUniformLocation(shader, "texRing");
@@ -589,7 +590,7 @@ void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunp
 			glBindTexture(GL_TEXTURE_1D, ringBackTex);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 			double f = 0 < sunapos[2] * vwapos[2] ? 0 : fabs(sunapos[2]) / sunapos.len() * 10;
-			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))), rvw.dynamic_range);
+			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))), float(rvw.dynamic_range));
 		}
 		{
 			double radn = maxrad;
@@ -829,10 +830,11 @@ void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double max
 		return;
 	if(!shader_compile){
 		shader_compile = true;
-		GLuint vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
+		GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+		vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
 		if(!glsl_load_shader(vtx, "shaders/ringsphereshadow.vs") || !glsl_load_shader(frg, "shaders/ringsphereshadow.fs"))
 			return;
-		shader = glsl_register_program(vtx, frg);
+		shader = glsl_register_program(shaders, 2);
 		if(!shader)
 			return;
 		tex1dLoc = glGetUniformLocation(shader, "tex1d");

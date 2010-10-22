@@ -84,9 +84,7 @@ finish:
 	return ret;
 }
 
-static void printProgramInfoLog(   GLuint shader
-)
-{
+static void printProgramInfoLog(GLuint shader){
     int logSize;
     int length;
 
@@ -103,16 +101,16 @@ static void printProgramInfoLog(   GLuint shader
 }
 
 /* Link a shader program with given vertex shader and fragment shader. */
-GLuint glsl_register_program(GLuint vtx, GLuint frg){
+GLuint glsl_register_program(const GLuint *shaders, int nshaders){
 	GLuint prog;
 	GLint linked;
+	int i;
     prog = glCreateProgram();
 
-    glAttachShader(prog, vtx);
-    glAttachShader(prog, frg);
-
-    glDeleteShader(vtx);
-    glDeleteShader(frg);
+	for(i = 0; i < nshaders; i++){
+	    glAttachShader(prog, shaders[i]);
+	    glDeleteShader(shaders[i]); // Is this really necessary?
+	}
 
     glLinkProgram(prog);
     glGetProgramiv(prog, GL_LINK_STATUS, &linked);

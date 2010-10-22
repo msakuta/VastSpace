@@ -579,13 +579,13 @@ GLuint Reflist(){
 	// Allocate list to enable mirror material when shader is enabled.
 	glNewList(reflist + 2, GL_COMPILE);
 	do{
-		GLuint vtx, frg;
+		GLuint shaders[2], &vtx = shaders[0], frg = shaders[1];
 		GLuint shader;
 		vtx = glCreateShader(GL_VERTEX_SHADER);
 		frg = glCreateShader(GL_FRAGMENT_SHADER);
 		if(!glsl_load_shader(vtx, "shaders/mirror.vs") || !glsl_load_shader(frg, "shaders/mirror.fs"))
 			break;
-		shader = glsl_register_program(vtx, frg);
+		shader = glsl_register_program(shaders, 2);
 
 		textureLoc = glGetUniformLocation(shader, "texture");
 		cubeEnvLoc = glGetUniformLocation(shader, "envmap");
@@ -657,13 +657,13 @@ static GLuint BumpList(){
 	glNewList(bumplist + 2, GL_COMPILE);
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT);
 	do{
-		GLuint vtx, frg;
+		GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
 		GLuint shader;
 		vtx = glCreateShader(GL_VERTEX_SHADER);
 		frg = glCreateShader(GL_FRAGMENT_SHADER);
 		if(!glsl_load_shader(vtx, "shaders/bump.vs") || !glsl_load_shader(frg, "shaders/bump.fs"))
 			break;
-		shader = glsl_register_program(vtx, frg);
+		shader = glsl_register_program(shaders, 2);
 
 		bumpTextureLoc = glGetUniformLocation(shader, "texture");
 //		bumpCubeEnvLoc = glGetUniformLocation(shader, "envmap");

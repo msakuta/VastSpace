@@ -1071,24 +1071,46 @@ void TexSphere::draw(const Viewer *vw){
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		if(g_shader_enable){
-			if(!shaderGiveup && !shader && vertexShaderName.len() && fragmentShaderName.len()){
-				GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-				GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-				if(!glsl_load_shader(vtx, vertexShaderName) ||
-					!glsl_load_shader(frg, fragmentShaderName) ||
-					!(shader = glsl_register_program(vtx, frg)))
-				{
+			if(!shaderGiveup && !shader && vertexShaderName.size() && fragmentShaderName.size()){
+				GLuint *shaders = NULL;
+				try{
+	//				GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
+	//				GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
+					shaders = new GLuint[vertexShaderName.size() + fragmentShaderName.size()];
+					int j = 0;
+					for(unsigned i = 0; i < vertexShaderName.size(); i++)
+						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_VERTEX_SHADER), vertexShaderName[i]))
+							throw 1;
+					for(unsigned i = 0; i < fragmentShaderName.size(); i++)
+						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), fragmentShaderName[i]))
+							throw 2;
+					shader = glsl_register_program(shaders, vertexShaderName.size() + fragmentShaderName.size());
+					if(!shader)
+						throw 3;
+				}
+				catch(int){
 					CmdPrint(cpplib::dstring() << "Shader compile error for " << getpath() << " globe.");
 					shaderGiveup = true;
 				}
+				delete[] shaders;
 			}
-			if(!cloudShaderGiveup && !cloudShader && cloudVertexShaderName.len() && cloudFragmentShaderName.len()){
-				GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-				GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-				if(!glsl_load_shader(vtx, cloudVertexShaderName) ||
-					!glsl_load_shader(frg, cloudFragmentShaderName) || 
-					!(cloudShader = glsl_register_program(vtx, frg)))
-				{
+
+			if(!cloudShaderGiveup && !cloudShader && cloudVertexShaderName.size() && cloudFragmentShaderName.size()){
+				try{
+					std::vector<GLuint> shaders(cloudVertexShaderName.size() + cloudFragmentShaderName.size());
+//				GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+					int j = 0;
+					for(unsigned i = 0; i < cloudVertexShaderName.size(); i++)
+						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_VERTEX_SHADER), cloudVertexShaderName[i]))
+							throw 1;
+					for(unsigned i = 0; i < cloudFragmentShaderName.size(); i++)
+						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), cloudFragmentShaderName[i]))
+							throw 2;
+					cloudShader = glsl_register_program(&shaders.front(), shaders.size());
+					if(!shader)
+						throw 3;
+				}
+				catch(int){
 					CmdPrint(cpplib::dstring() << "Shader compile error for " << getpath() << " cloud.");
 					cloudShaderGiveup = true;
 				}

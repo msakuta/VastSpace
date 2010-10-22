@@ -1371,6 +1371,7 @@ void sqa_init(){
 	sqstd_register_iolib(v);
 	sqstd_register_mathlib(v);
 
+	// Define class TimeMeas
 	sq_pushstring(v, _SC("TimeMeas"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_TimeMeas);
@@ -1559,7 +1560,7 @@ void sqa_init(){
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
 	{
 		double d = TimeMeasLap(&tm);
-		CmdPrint(cpplib::dstring() << "init compile: " << d);
+		CmdPrint(cpplib::dstring() << "init.nut total: " << d << " sec");
 //		call_foo(v,1,2.5,_SC("teststring"));
 	}
 	else

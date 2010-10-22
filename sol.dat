@@ -110,10 +110,12 @@ coordsys Orbit earth{
 		extexture "bumptexture" textures/earth_bump.jpg
 		extexture "cloudtexture" textures/cloud.jpg
 		fragmentshader shaders/earth.fs
+		fragmentshader shaders/earth_cloud_noise.fs
 		vertexshader shaders/earth.vs
 
 		cloudtexture textures/cloud.jpg
 		cloudfragmentshader shaders/earth_cloud.fs
+		cloudfragmentshader shaders/earth_cloud_noise.fs
 		cloudvertexshader shaders/earth_cloud.vs
 		cloudheight 5.
 

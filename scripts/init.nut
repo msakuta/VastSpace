@@ -604,4 +604,4 @@ function initUI(){
 
 showdt <- false;
 
-print("init.nut execution time: " + tm.lap());
+print("init.nut execution time: " + tm.lap() + " sec");

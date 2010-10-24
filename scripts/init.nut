@@ -16,7 +16,7 @@ class Vec3d{
 	string _tostring();
 	Vec3d _add(Vec3d);
 	Vec3d _sub(Vec4d);
-	Vec3d _mul(Vec3d);
+	Vec3d _mul(float);
 	Vec3d _unm();
 	Vec3d norm(); // Normalize
 	float sp(Vec3d); // Scalar product or Dot product

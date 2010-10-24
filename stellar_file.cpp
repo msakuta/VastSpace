@@ -179,8 +179,10 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	int enable = 0;
 	HSQUIRRELVM v = sc.v;
 	cs->readFileStart(sc);
-/*	sqa::StackReserver sr(v);
-	sq_pushstring(v, _SC("CoordSys"), -1);
+	sqa::StackReserver sr(v);
+	sq_newtable(v);
+	sq_setdelegate(v, -2);
+/*	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
@@ -214,6 +216,9 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			strcpy(v->name, ps);
 			v->type = var::CALC_D;
 			v->value.d = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
+			sq_pushstring(sc.v, ps, -1);
+			sq_pushfloat(sc.v, SQFloat(v->value.d));
+			sq_createslot(sc.v, -3);
 			continue;
 /*			definition = 2, ps = NULL;*/
 		}

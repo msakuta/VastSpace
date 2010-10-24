@@ -1074,6 +1074,40 @@ static SQInteger sqf_Vec3d_set(HSQUIRRELVM v){
 	}
 }
 
+static SQInteger sqf_Vec3d_scale(HSQUIRRELVM v){
+	try{
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+			return SQ_ERROR;
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.value = q.value * f;
+		o.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_Vec3d_divscale(HSQUIRRELVM v){
+	try{
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+			return SQ_ERROR;
+		SQVec3d q;
+		q.getValue(v, 1);
+		SQVec3d o;
+		o.value = q.value / f;
+		o.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
 static SQInteger sqf_Vec3d_sp(HSQUIRRELVM v){
 	try{
 		SQVec3d q;
@@ -1392,6 +1426,8 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
 	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &(Vec3d::operator +)>);
 	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &(Vec3d::operator -)>);
+	register_closure(v, _SC("_mul"), sqf_Vec3d_scale);
+	register_closure(v, _SC("_div"), sqf_Vec3d_divscale);
 	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &(Vec3d::operator -)>);
 	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
 	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);

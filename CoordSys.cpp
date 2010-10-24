@@ -870,8 +870,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			StackReserver st2(sc.v);
 			cpplib::dstring dst = cpplib::dstring("return(") << argv[1] << ")";
 			if(SQ_SUCCEEDED(sq_compilebuffer(sc.v, dst, dst.len(), _SC("rotation"), SQTrue))){
-//				sq_push(sc.v, -2);
-				sq_pushroottable(sc.v);
+				sq_push(sc.v, -2);
 				if(SQ_SUCCEEDED(sq_call(sc.v, 1, SQTrue, SQTrue))){
 					sqa::SQQuatd q;
 					q.getValue(sc.v, -1);
@@ -891,6 +890,19 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "omega")){
+		if(argc == 2){
+			StackReserver st2(sc.v);
+			cpplib::dstring dst = cpplib::dstring("return(") << argv[1] << ")";
+			if(SQ_SUCCEEDED(sq_compilebuffer(sc.v, dst, dst.len(), _SC("omega"), SQTrue))){
+				sq_push(sc.v, -2);
+				if(SQ_SUCCEEDED(sq_call(sc.v, 1, SQTrue, SQTrue))){
+					sqa::SQVec3d q;
+					q.getValue(sc.v, -1);
+					omg = q.value;
+				}
+			}
+			return true;
+		}
 		if(1 < argc)
 			omg[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)

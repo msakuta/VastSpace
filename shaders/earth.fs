@@ -99,9 +99,9 @@ void main (void)
 	texnorm0[2] *= 5.;
 	vec3 wavedir = vec3(1,1,0);
 	vec3 wavedir2 = vec3(.25,.5,1);
-	vec3 noise = .05 * vec3(anoise2(8. * 1000. * texCoord))
-		+ sin(16. * 8. * 1000. * dot(wavedir, texCoord) + time) * wavedir * .05
-		+ sin(16. * 8. * 1000. * dot(wavedir2, texCoord) + time) * wavedir2 * .05;
+	vec3 noise = .05 * vec3(anoise2(8. * 1000. * texCoord));
+//		+ sin(16. * 8. * 1000. * dot(wavedir, texCoord) + time) * wavedir * .05
+//		+ sin(16. * 8. * 1000. * dot(wavedir2, texCoord) + time) * wavedir2 * .05;
 	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
 	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
 

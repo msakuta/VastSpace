@@ -105,7 +105,7 @@ void main (void)
 //	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
 	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
-	texColor *= 1. - max(0., .5 * cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)[3]);
+	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);
 	texColor[2] = sqrt(texColor[2]);*/

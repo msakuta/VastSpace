@@ -178,7 +178,7 @@ string translate(string source);
 
 */
 
-local tm = TimeMeas();
+//local tm = TimeMeas();
 
 class Cvar{
 	function _set(idx,val){
@@ -288,8 +288,7 @@ function translate(id){
 // Alias for scripts
 tlate <- translate;
 
-loadModule("gltestdll.dll");
-unloadModule("gltestdll.dll");
+// load the module
 loadModule("gltestdll.dll");
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
@@ -604,4 +603,4 @@ function initUI(){
 
 showdt <- false;
 
-print("init.nut execution time: " + tm.lap() + " sec");
+//print("init.nut execution time: " + tm.lap() + " sec");

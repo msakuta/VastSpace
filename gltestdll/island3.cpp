@@ -579,7 +579,7 @@ GLuint Reflist(){
 	// Allocate list to enable mirror material when shader is enabled.
 	glNewList(reflist + 2, GL_COMPILE);
 	do{
-		GLuint shaders[2], &vtx = shaders[0], frg = shaders[1];
+		GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
 		GLuint shader;
 		vtx = glCreateShader(GL_VERTEX_SHADER);
 		frg = glCreateShader(GL_FRAGMENT_SHADER);

@@ -112,6 +112,13 @@ coordsys Orbit earth{
 		fragmentshader shaders/earth.fs
 		fragmentshader shaders/earth_cloud_noise.fs
 		vertexshader shaders/earth.vs
+#		vertexshader shaders/ringsphereshadow.vs
+#		fragmentshader shaders/ringsphereshadow.fs
+#		ringmin 74000/60268
+#		ringmax 2.4
+#		ringthick 1.
+#		ringtexture saturn_ring_front.bmp
+#		ringbacktexture saturn_ring_back.bmp
 
 		cloudtexture textures/cloud.jpg
 		cloudfragmentshader shaders/earth_cloud.fs
@@ -491,6 +498,10 @@ coordsys Orbit saturn{
 		gravity
 		spherehit
 		texture sat0fds2.jpg
+
+		vertexshader shaders/ringsphereshadow.vs
+		fragmentshader shaders/ringsphereshadow.fs
+
 		ringtexture saturn_ring_front.bmp
 		ringbacktexture saturn_ring_back.bmp
 	}

@@ -9,7 +9,9 @@
 
 /// Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
-	const char *texname, *cloudtexname, *ringtexname, *ringbacktexname;
+protected:
+	cpplib::dstring texname, cloudtexname;
+	cpplib::dstring ringtexname, ringbacktexname;
 	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
@@ -55,6 +57,8 @@ public:
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 private:
 	std::vector<Texture> textures;
+	friend class DrawTextureSphere;
+	friend class DrawTextureSpheroid;
 };
 
 /// Identical to Astrobj but ClassId

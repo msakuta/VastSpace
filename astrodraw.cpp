@@ -185,7 +185,8 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 	if(delta.slen() < radius * radius)
 		return;
 	double pixels = arg.radius * fabs(vw.gc->scale(org));
-	int maxlevel = int(8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale));
+	double fmaxlevel = 8 * exp(-(pow(delta.len() / arg.radius - 1., gpow)) * gscale);
+	int maxlevel = int(fmaxlevel);
 //	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));
 //	double maxlevel = 8 * (1. - (1. - pow(wd->vw->pos.slen(), gpow)) * gscale);
 	arg.maxlevel = g_sc < 0 ? maxlevel : g_sc;
@@ -204,7 +205,7 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 //	arg.trans = projection * modelview;
 	gldIcosaSphere(arg);
 #if ICOSASPHERE_PROFILE
-	printf("%d,%g,%d/%15f,%d,%d,%g\n", arg.maxlevel, maxlevel, arg.polys, 20 * pow(4., arg.maxlevel), arg.culltests, arg.invokes, delta.len() / arg.radius);
+	printf("%d,%g,%d/%15f,%d,%d,%g\n", arg.maxlevel, fmaxlevel, arg.polys, 20 * pow(4., arg.maxlevel), arg.culltests, arg.invokes, delta.len() / arg.radius);
 #endif
 }
 
@@ -583,6 +584,7 @@ enum DTS{
 /// Arguments on how to draw the sphere are passed via member functions.
 /// The caller must invoke draw() method to get it working.
 class DrawTextureSphere{
+protected:
 	TexSphere *a;
 	const Viewer *vw;
 	const Vec3d sunpos;
@@ -598,6 +600,7 @@ class DrawTextureSphere{
 	int m_ncuts;
 	int m_nfinecuts;
 	int m_nffinecuts;
+	void useShader();
 public:
 	typedef DrawTextureSphere tt;
 	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)
@@ -618,8 +621,59 @@ public:
 	tt &shader(GLuint a){m_shader = a; return *this;}
 	tt &drawint(bool a){m_drawint = a; return *this;}
 	tt &ncuts(int a){m_ncuts = a; m_nfinecuts = a * 8; m_nffinecuts = a * 64; return *this;}
-	bool draw();
+	virtual bool draw();
 };
+
+void DrawTextureSphere::useShader(){
+	static GLuint noise3tex = noise3DTexture();
+	GLuint shader = m_shader;
+	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
+	double dist = (apos - vw->pos).len();
+	if(shader && g_shader_enable){
+		glUseProgram(shader);
+		GLint textureLoc = glGetUniformLocation(shader, "texture");
+		if(0 <= textureLoc && ptexlist){
+			glUniform1i(textureLoc, 0);
+		}
+		GLint noise3DLoc = glGetUniformLocation(shader, "noise3D");
+		if(0 <= noise3DLoc && ptexlist){
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glUniform1i(noise3DLoc, 2);
+			glBindTexture(GL_TEXTURE_3D, noise3tex);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+		GLint invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+		if(0 <= invEyeMat3Loc){
+			Mat4d rot2 = /*a->rot.tomat4() **/ vw->irot;
+			Mat3<float> irot3 = rot2.tomat3().cast<float>();
+			glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
+		}
+		GLint timeLoc = glGetUniformLocation(shader, "time");
+		if(0 <= timeLoc){
+			glUniform1f(timeLoc, GLfloat(vw->viewtime));
+		}
+		GLint heightLoc = glGetUniformLocation(shader, "height");
+		if(0 <= heightLoc){
+			glUniform1f(heightLoc, GLfloat(max(0, dist - a->rad)));
+		}
+		TexSphere::TextureIterator it;
+		int i;
+		for(it = a->beginTextures(), i = 3; it != a->endTextures(); it++, i++){
+			GLint texLoc = glGetUniformLocation(shader, it->uniformname);
+			if(0 <= texLoc){
+				if(!it->list)
+					it->list = ProjectSphereCubeJpg(it->filename, m_flags | DTS_NODETAIL);
+				glActiveTextureARB(GL_TEXTURE0_ARB + i);
+				glCallList(it->list);
+				glUniform1i(texLoc, i);
+				glMatrixMode(GL_TEXTURE);
+				glLoadIdentity();
+				glMatrixMode(GL_MODELVIEW);
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+			}
+		}
+	}
+}
 
 /// Draws a sphere textured
 bool DrawTextureSphere::draw(){
@@ -691,7 +745,6 @@ bool DrawTextureSphere::draw(){
 	glDisable(GL_BLEND);
 	glColor3ub(255,255,255);*/
 
-	static GLuint noise3tex = noise3DTexture();
 	if(texenable){
 		glCallList(texlist);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
@@ -702,49 +755,7 @@ bool DrawTextureSphere::draw(){
 	else
 		glDisable(GL_TEXTURE_2D);
 
-	if(shader && g_shader_enable){
-		glUseProgram(shader);
-		GLint textureLoc = glGetUniformLocation(shader, "texture");
-		if(0 <= textureLoc && texlist){
-			glUniform1i(textureLoc, 0);
-		}
-		GLint noise3DLoc = glGetUniformLocation(shader, "noise3D");
-		if(0 <= noise3DLoc && texlist){
-			glActiveTextureARB(GL_TEXTURE2_ARB);
-			glUniform1i(noise3DLoc, 2);
-			glBindTexture(GL_TEXTURE_3D, noise3tex);
-			glActiveTextureARB(GL_TEXTURE0_ARB);
-		}
-		GLint invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
-		if(0 <= invEyeMat3Loc){
-			Mat4d rot2 = /*a->rot.tomat4() **/ vw->irot;
-			Mat3<float> irot3 = rot2.tomat3().cast<float>();
-			glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
-		}
-		GLint timeLoc = glGetUniformLocation(shader, "time");
-		if(0 <= timeLoc){
-			glUniform1f(timeLoc, GLfloat(vw->viewtime));
-		}
-		GLint heightLoc = glGetUniformLocation(shader, "height");
-		if(0 <= heightLoc){
-			glUniform1f(heightLoc, GLfloat(max(0, dist - a->rad)));
-		}
-		TexSphere::TextureIterator it;
-		for(it = a->beginTextures(), i = 3; it != a->endTextures(); it++, i++){
-			GLint texLoc = glGetUniformLocation(shader, it->uniformname);
-			if(0 <= texLoc){
-				if(!it->list)
-					it->list = ProjectSphereCubeJpg(it->filename, flags | DTS_NODETAIL);
-				glActiveTextureARB(GL_TEXTURE0_ARB + i);
-				glCallList(it->list);
-				glUniform1i(texLoc, i);
-				glMatrixMode(GL_TEXTURE);
-				glLoadIdentity();
-				glMatrixMode(GL_MODELVIEW);
-				glActiveTextureARB(GL_TEXTURE0_ARB);
-			}
-		}
-	}
+	useShader();
 
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -927,9 +938,36 @@ bool DrawTextureSphere::draw(){
 	return texenable;
 }
 
-bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, const GLfloat mat_diffuse[4], const GLfloat mat_ambient[4], GLuint *ptexlist, const Quatd *texrot, const char *texname, double oblateness,
-						 AstroRing *ring, double ringminrad = 0., double ringmaxrad = 0.){
+/// \brief A class that draw textured sphere.
+///
+/// Arguments on how to draw the sphere are passed via member functions.
+/// The caller must invoke draw() method to get it working.
+class DrawTextureSpheroid : public DrawTextureSphere{
+public:
+	typedef DrawTextureSphere st;
+	typedef DrawTextureSpheroid tt;
+	double m_oblateness;
+	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos)
+		, m_oblateness(0.){}
+	tt &oblateness(double a){m_oblateness = a; return *this;}
+	virtual bool draw();
+};
+
+bool DrawTextureSpheroid::draw(){
+	const Vec4f &mat_diffuse = m_mat_diffuse;
+	const Vec4f &mat_ambient = m_mat_ambient;
+	const Mat4d &texmat = m_texmat;
 	GLuint texlist = *ptexlist;
+	const char *texname = m_texname;
+	double &rad = m_rad;
+	int flags = m_flags;
+	GLuint shader = m_shader;
+//	const Quatd *texrot;
+	double &oblateness = m_oblateness;
+	AstroRing *ring = &a->astroRing;
+	double ringminrad = a->ringmin;
+	double ringmaxrad = a->ringmax;
+
 	double scale, zoom;
 	bool texenable = !!texlist;
 	normvertex_params params;
@@ -1014,18 +1052,22 @@ bool drawTextureSpheroid(Astrobj *a, const Viewer *vw, const Vec3d &sunpos, cons
 	avw.gc = &gc;
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
-	if(texrot)
-		gldMultQuat(*texrot);
+	if(texmat)
+		glMultMatrixd(texmat);
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
-	if(ring)
-		ring->ring_setsphereshadow(*vw, ringminrad, ringmaxrad, qrot.trans(vec3_001));
+	useShader();
 
-	drawIcosaSphere(pos - vw->pos, a->rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
+	if(ring && m_shader)
+		ring->ring_setsphereshadow(*vw, ringminrad, ringmaxrad, qrot.trans(vec3_001), m_shader);
 
-	if(ring)
+	drawIcosaSphere(pos - vw->pos, rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
+
+	if(ring && m_shader)
 		ring->ring_setsphereshadow_end();
+	if(shader && g_shader_enable)
+		glUseProgram(0);
 
 	glMatrixMode(GL_TEXTURE);
 	glPopMatrix();
@@ -1059,7 +1101,8 @@ void TexSphere::draw(const Viewer *vw){
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring){
 		double theta = this->rad / (vw->pos - pos).len();
-		theta = acos(theta);
+		// Avoid domain error
+		theta = theta < 1. ? acos(theta) : 0.;
 		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = char(theta * RING_CUTS / 2. / M_PI + 1), RING_CUTS / 2, ringrot = (rot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
 	}
 
@@ -1117,13 +1160,19 @@ void TexSphere::draw(const Viewer *vw){
 			}
 		}
 		if(oblateness != 0.){
-			bool ret = drawTextureSpheroid(this, vw, sunpos,
-				basecolor,
-				basecolor / 2.,
-				&texlist, NULL, texname, oblateness, &astroRing, ringmin, ringmax);
-			if(!ret && texname){
-				delete[] texname;
-				texname = NULL;
+			bool ret = DrawTextureSpheroid(this, vw, sunpos)
+				.oblateness(oblateness)
+				.mat_diffuse(basecolor)
+				.mat_ambient(basecolor / 2.)
+				.texlist(&texlist)
+				.texmat(rot.cnj().tomat4())
+				.shader(shader)
+				.texname(texname)
+				.rad(rad)
+//				.ringmin, ringmax
+				.draw();
+			if(!ret && *texname){
+				texname = "";
 			}
 		}
 		else{
@@ -1142,9 +1191,8 @@ void TexSphere::draw(const Viewer *vw){
 				.ncuts(g_tscuts);
 				if(underCloud){
 					bool ret = cloudDraw.draw();
-					if(!ret && cloudtexname){
-						delete[] cloudtexname;
-						cloudtexname = NULL;
+					if(!ret && *cloudtexname){
+						cloudtexname = "";
 					}
 				}
 			}
@@ -1154,15 +1202,13 @@ void TexSphere::draw(const Viewer *vw){
 				.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texname).shader(shader)
 				.ncuts(g_tscuts)
 				.draw();
-			if(!ret && texname){
-				delete[] texname;
-				texname = NULL;
+			if(!ret && *texname){
+				texname = "";
 			}
 			if(g_cloud && (cloudtexname || cloudtexlist) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
-				if(!ret && cloudtexname){
-					delete[] cloudtexname;
-					cloudtexname = NULL;
+				if(!ret && *cloudtexname){
+					cloudtexname = "";
 				}
 			}
 		}

@@ -822,19 +822,16 @@ void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunp
 	glPopAttrib();
 }
 
-void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double maxrad, const Vec3d &ringnorm){
-	static GLuint shader = 0;
-	static GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc, exposureLoc;
-	static bool shader_compile = false;
+void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double maxrad, const Vec3d &ringnorm, GLuint shader){
 	if(!g_shader_enable)
 		return;
-	if(!shader_compile){
+	if(shader && !shader_compile){
 		shader_compile = true;
-		GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+/*		GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
 		vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
 		if(!glsl_load_shader(vtx, "shaders/ringsphereshadow.vs") || !glsl_load_shader(frg, "shaders/ringsphereshadow.fs"))
 			return;
-		shader = glsl_register_program(shaders, 2);
+		shader = glsl_register_program(shaders, 2);*/
 		if(!shader)
 			return;
 		tex1dLoc = glGetUniformLocation(shader, "tex1d");
@@ -846,7 +843,7 @@ void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double max
 		exposureLoc = glGetUniformLocation(shader, "exposure");
 	}
 	if(shader){
-		glUseProgram(shader);
+//		glUseProgram(shader);
 		glUniform1i(tex1dLoc, 1);
 		glUniform1i(texLoc, 0);
 		glUniform1f(ambientLoc, g_astro_ambient);
@@ -874,5 +871,5 @@ void AstroRing::ring_setsphereshadow(const Viewer &vw, double minrad, double max
 }
 
 void AstroRing::ring_setsphereshadow_end(){
-	glUseProgram(0);
+//	glUseProgram(0);
 }

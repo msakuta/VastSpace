@@ -11,7 +11,6 @@ extern "C"{
 }
 
 TexSphere::TexSphere() :
-	texname(NULL),
 	texlist(0),
 	cloudtexlist(0),
 	shader(0),
@@ -23,10 +22,6 @@ TexSphere::TexSphere() :
 }
 
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
-	texname(NULL),
-	cloudtexname(NULL),
-	ringtexname(NULL),
-	ringbacktexname(NULL),
 	oblateness(0.),
 	ring(0),
 	shader(0),
@@ -48,8 +43,6 @@ const char *TexSphere::classname()const{
 const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere");
 
 TexSphere::~TexSphere(){
-	delete texname;
-
 	// Should I delete here?
 /*	if(texlist)
 		glDeleteLists(texlist, 1);*/
@@ -89,7 +82,7 @@ UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 
 void TexSphere::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << (texname ? texname : "");
+	sc.o << texname;
 	sc.o << oblateness;
 	sc.o << ringmin;
 	sc.o << ringmax;
@@ -105,7 +98,6 @@ void TexSphere::serialize(SerializeContext &sc){
 
 void TexSphere::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	cpplib::dstring texname;
 	sc.i >> texname;
 	sc.i >> oblateness;
 	sc.i >> ringmin;
@@ -119,7 +111,6 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> vertexShaderName;
 	sc.i >> fragmentShaderName;
 
-	this->texname = strnewdup(texname, texname.len());
 	this->texlist = 0;
 }
 
@@ -134,17 +125,13 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "texture")){
 		if(1 < argc){
-			char *texname = new char[strlen(argv[1]) + 1];
-			strcpy(texname, argv[1]);
-			this->texname = texname;
+			this->texname = argv[1];
 		}
 		return true;
 	}
 	else if(!strcmp(s, "cloudtexture")){
 		if(1 < argc){
-			char *texname = new char[strlen(argv[1]) + 1];
-			strcpy(texname, argv[1]);
-			this->cloudtexname = texname;
+			this->cloudtexname = argv[1];
 		}
 		return true;
 	}
@@ -191,17 +178,13 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 	}
 	else if(!strcmp(s, "ringtexture")){
 		if(1 < argc){
-			char *texname = new char[strlen(argv[1]) + 1];
-			strcpy(texname, argv[1]);
-			this->ringtexname = texname;
+			this->ringtexname = argv[1];
 		}
 		return true;
 	}
 	else if(!strcmp(s, "ringbacktexture")){
 		if(1 < argc){
-			char *texname = new char[strlen(argv[1]) + 1];
-			strcpy(texname, argv[1]);
-			this->ringbacktexname = texname;
+			this->ringbacktexname = argv[1];
 		}
 		return true;
 	}

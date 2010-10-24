@@ -4,6 +4,7 @@
 //#include "TexSphere.h"
 #include "serial_util.h"
 #include "argtok.h"
+#include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -176,7 +177,13 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	struct varlist *vl = sc.vl;
 	int mode = 1;
 	int enable = 0;
+	HSQUIRRELVM v = sc.v;
 	cs->readFileStart(sc);
+/*	sqa::StackReserver sr(v);
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_get(v, 1);
+	sq_createinstance(v, -1);
+	sqa::sqa_newobj(v, cs);*/
 	while(mode && fgets(sc.buf, MAX_LINE_LENGTH, sc.fp)){
 		char *s = NULL, *ps;
 		int argc, c = 0;
@@ -274,6 +281,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s);
 		}
 	}
+//	sq_poptop(v);
 	cs->readFileEnd(sc);
 	return mode;
 }
@@ -300,6 +308,9 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		sc.vl->c = 0;
 		sc.vl->l = NULL;
 		sc.vl->next = vl;
+		sc.v = g_sqvm;
+//		sqa_init(&sc.v);
+		sq_pushroottable(sc.v);
 
 		stellar_coordsys(sc, root);
 
@@ -311,6 +322,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 			free(sc.vl->l);
 		}
 		free(sc.vl);
+//		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
 		printf("%s loaded time %lg\n", fname, TimeMeasLap(&tm));
 	}

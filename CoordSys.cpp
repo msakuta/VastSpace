@@ -10,6 +10,7 @@
 #include "cmd.h"
 #include "serial_util.h"
 #include "Respawn.h"
+#include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -865,6 +866,20 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "rotation")){
+		if(argc == 2){
+			StackReserver st2(sc.v);
+			cpplib::dstring dst = cpplib::dstring("return(") << argv[1] << ")";
+			if(SQ_SUCCEEDED(sq_compilebuffer(sc.v, dst, dst.len(), _SC("rotation"), SQTrue))){
+//				sq_push(sc.v, -2);
+				sq_pushroottable(sc.v);
+				if(SQ_SUCCEEDED(sq_call(sc.v, 1, SQTrue, SQTrue))){
+					sqa::SQQuatd q;
+					q.getValue(sc.v, -1);
+					rot = q.value;
+				}
+			}
+			return true;
+		}
 		if(1 < argc)
 			rot[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)
@@ -899,6 +914,10 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		if(3 < argc)
 			v[2] = calc3(&argv[3], sc.vl, NULL);
 		rot = Quatd::direction(v);
+		if(rot.slen() == 0.){
+			CmdPrint("Quaternion zero!");
+			rot = Quatd(0,0,0,1);
+		}
 		return true;
 	}
 	return false;

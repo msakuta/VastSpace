@@ -96,19 +96,26 @@ coordsys Orbit venus{
 coordsys Orbit earth{
 	orbits Sol
 	orbit_radius AU
-	inclination 0
+	inclination 0.00005
 	cs_radius 100000
 	showorbit
 
 	astro TextureSphere "Earth"{
+		define tilt 23.2621*RAD_PER_DEG
 		radius 6375
 		mass 5.972e24
-		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
+		omega 0 cos(tilt) sin(tilt) pi*2/DAY_SECONDS  #rotation speed
+#		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
+		rotation Quatd.rotation(23.2621*PI,Vec3d(0,0,1))
+#		rotation "return Quatd.rotation(23.2621,Vec3d(0,0,1))"
+#		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
+#		updirection 0 cos(tilt) sin(tilt)
 		texture earth.jpg
 		basecolor .5 .65 1.
 
 		extexture "bumptexture" textures/earth_bump.jpg
 		extexture "cloudtexture" textures/cloud.jpg
+		extexture "lightstexture" textures/earth_lights.jpg
 		fragmentshader shaders/earth.fs
 		fragmentshader shaders/earth_cloud_noise.fs
 		vertexshader shaders/earth.vs
@@ -126,14 +133,14 @@ coordsys Orbit earth{
 		cloudvertexshader shaders/earth_cloud.vs
 		cloudheight 5.
 
-		updirection 0 1 0
+#		updirection 0 1 0
 		atmosphere_height 10.
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
 
 		coordsys earths{
-			define theta .13*pi
-			define phi .3*pi
+			define theta 0*.13*pi
+			define phi 0*.3*pi
 			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
 			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			teleport "Earth Surface" 0 0 0

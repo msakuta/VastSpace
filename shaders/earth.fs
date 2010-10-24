@@ -2,6 +2,7 @@ uniform samplerCube texture;
 uniform mat3 invEyeRot3x3;
 uniform samplerCube bumptexture;
 uniform samplerCube cloudtexture;
+uniform samplerCube lightstexture;
 uniform float time;
  
 varying vec3 view;
@@ -78,23 +79,29 @@ void main (void)
 {
 	vec3 normal = normalize(nrm);
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
+	vec3 texCoord = vec3(gl_TexCoord[0]);
 
-	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
+	vec4 texColor = textureCube(texture, texCoord);
 	float specular;
 	float shininess;
 	if(texColor[2] > texColor[0] + texColor[1])
 		specular = 1., shininess = 20., waving = true;
 	else
 		specular = .3, shininess = 5., waving = false;
-	float dawness = dot(flight, normal) * 8.;
+	float sundot = dot(flight, normal);
+	float dawness = sundot * 8.;
 	specular *= max(.1, min(1., dawness));
 	dawness = 1. - exp(-dawness * dawness);
 	vec4 vshininess = vec4(.75, .2 + .6 * dawness, .3 + .7 * dawness, 0.);
 
-	vec3 texnorm0 = vec3(textureCube(bumptexture, vec3(gl_TexCoord[0]))) - vec3(1., .5, .5);
+	vec3 texnorm0 = vec3(textureCube(bumptexture, texCoord)) - vec3(1., .5, .5);
 	texnorm0[1] *= 5.;
 	texnorm0[2] *= 5.;
-	vec3 noise = .05 * vec3(anoise2(8. * 1000. * vec3(gl_TexCoord[0])));
+	vec3 wavedir = vec3(1,1,0);
+	vec3 wavedir2 = vec3(.25,.5,1);
+	vec3 noise = .05 * vec3(anoise2(8. * 1000. * texCoord))
+		+ sin(16. * 8. * 1000. * dot(wavedir, texCoord) + time) * wavedir * .05
+		+ sin(16. * 8. * 1000. * dot(wavedir2, texCoord) + time) * wavedir2 * .05;
 	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
 	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
 
@@ -106,6 +113,8 @@ void main (void)
 	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
+	if(sundot < 0.1)
+		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.5, 5. * (-sundot + 0.1));
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);
 	texColor[2] = sqrt(texColor[2]);*/

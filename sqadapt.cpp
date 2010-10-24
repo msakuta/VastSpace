@@ -1339,10 +1339,12 @@ void unloadAllModules(){
 	modules.clear();
 }
 
-void sqa_init(){
+void sqa_init(HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
-	v = sq_open(1024);
+	if(!pv)
+		pv = &g_sqvm;
+	HSQUIRRELVM &v = *pv = sq_open(1024);
 
 	sqstd_seterrorhandlers(v);
 
@@ -1424,6 +1426,7 @@ void sqa_init(){
 	// Define class CoordSys
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, "CoordSys");
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
@@ -1448,6 +1451,7 @@ void sqa_init(){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "Universe");
 	register_closure(v, _SC("_get"), sqf_Universe_get);
 	sq_createslot(v, -3);
 
@@ -1456,6 +1460,7 @@ void sqa_init(){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "Astrobj");
 	register_closure(v, _SC("_get"), sqf_Astrobj_get);
 	sq_createslot(v, -3);
 

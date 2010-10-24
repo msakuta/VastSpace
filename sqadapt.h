@@ -22,7 +22,7 @@ class Entity;
 /// Namespace for Squirrel adaption functions and classes.
 namespace sqa{
 
-void sqa_init();
+void sqa_init(HSQUIRRELVM *v = NULL);
 void sqa_anim0();
 void sqa_anim(double dt);
 void sqa_delete_Entity(Entity *);
@@ -99,7 +99,7 @@ public:
 		assert(tt == *typetag);
 #endif
 		sq_pushstring(v, _SC("a"), -1); // ... "a"
-		if(SQ_FAILED(sq_get(v, idx))) // ... a
+		if(SQ_FAILED(sq_get(v, idx < 0 ? idx - 1 : idx))) // ... a
 			throw NoIndex();
 		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
 			throw NoUserData();

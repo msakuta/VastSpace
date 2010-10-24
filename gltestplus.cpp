@@ -180,9 +180,19 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 	int id = 0;
 	OrbitCS *a = cs->toOrbitCS();
 	do if(a){
-		Vec3d pos, wpos;
-		pos = vw->cs->tocs(a->pos, a->parent);
-		mat4vp3(wpos, model, pos);
+		Vec3d pos = vw->cs->tocs(a->pos, a->parent);
+		Vec3d wpos = model.vp3(pos);
+		if(a->toAstrobj() && 0. < a->omg.slen()){
+			Vec3d omg = vw->cs->tocs(a->omg, a->parent, true).norm();
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			glBegin(GL_LINES);
+			glVertex3dv(pos + omg * a->toAstrobj()->rad - vw->pos);
+			glVertex3dv(pos - omg * a->toAstrobj()->rad - vw->pos);
+			glEnd();
+			glPopMatrix();
+		}
+
 		if(a->orbit_home && a->flags2 & OCS_SHOWORBIT){
 			int j;
 			double (*cuts)[2], rad;
@@ -290,7 +300,9 @@ static void drawindics(Viewer *vw){
 	if(show_planets_name){
 		Mat4d model;
 		model = vw->rot;
-		MAT4TRANSLATE(model, -vw->pos[0], -vw->pos[1], -vw->pos[2]);
+		model.translatein(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
+		GLpmatrix();
+//		projection(vw->frustum(g_space_near_clip, g_space_far_clip));
 		drawastro(vw, &universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
@@ -1614,12 +1626,12 @@ static int cmd_sq(int argc, char *argv[]){
 		return 0;
 	}
 	HSQUIRRELVM &v = g_sqvm;
-	if(SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), 0))){
+	if(SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), SQTrue))){
 		CmdPrint("Compile error");
 	}
 	else{
 		sq_pushroottable(g_sqvm);
-		sq_call(g_sqvm, 1, 0, 0);
+		sq_call(g_sqvm, 1, SQFalse, SQTrue);
 		sq_pop(v, 1);
 	}
 	return 0;

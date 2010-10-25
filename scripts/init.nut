@@ -451,6 +451,36 @@ register_console_command("comp", function(){
 	print("load time " + ret.time);
 });
 
+register_console_command("oblate", function(){
+	local earth = universe.findcspath("/sol/earth/Earth");
+	if(earth && earth.alive){
+		earth.oblateness = 0.001;
+	}
+});
+
+register_console_command("disoblate", function(){
+	local earth = universe.findcspath("/sol/earth/Earth");
+	if(earth && earth.alive){
+		earth.oblateness = 0.0;
+	}
+});
+
+register_console_command("typecs", function(...){
+	local cs;
+	if(vargc == 0)
+		cs = player.cs;
+	else{
+		cs = player.cs.findcspath(vargv[0]);
+	}
+
+	if(cs != null && cs.alive){
+		local root = getroottable();
+		local cls = cs.getclass();
+		foreach(name, value in root) if(value == cls)
+			print(cs.name() + ": " + cs.classname + " " + name);
+	}
+});
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));

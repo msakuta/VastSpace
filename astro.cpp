@@ -5,6 +5,7 @@
 #include "astrodef.h"
 #include "player.h"
 #include "cmd.h"
+#include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -360,6 +361,8 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 const char *Astrobj::classname()const{
 	return "Astrobj";
 }
+const SQChar *Astrobj::sqclassname(){return _SC("Astrobj");}
+
 
 /** Finds an Astrobj nearest to this node.
  */
@@ -456,6 +459,31 @@ Astrobj *CoordSys::findBrightest(const Vec3d &pos){
 	findchildbr(p, this, pos, this, NULL);
 	findparentbr(p, this, pos, this);
 	return p.ret;
+}
+
+SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
+	Astrobj *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("rad"))){
+		sq_pushfloat(v, SQFloat(p->rad));
+		return 1;
+	}
+	else
+		return st::sqf_get(v);
+}
+
+bool Astrobj::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("Astrobj"), -1);
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "Astrobj");
+	register_closure(v, _SC("_get"), sqf_get);
+	sq_createslot(v, -3);
+	return true;
 }
 
 

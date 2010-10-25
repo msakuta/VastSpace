@@ -410,7 +410,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 	return shader;
 }
 
-void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunpos, char start, char end, const Quatd &qrot, double thick,
+void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunpos, int start, int end, const Quatd &qrot, double thick,
 			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, const char *ringBackTexName,
 			   double sunar){
 	if(0||start == end)

@@ -600,6 +600,7 @@ protected:
 	int m_ncuts;
 	int m_nfinecuts;
 	int m_nffinecuts;
+	AstroRing *m_ring;
 	void useShader();
 public:
 	typedef DrawTextureSphere tt;
@@ -608,7 +609,8 @@ public:
 		, ptexlist(NULL)
 		, m_texmat(mat4_u)
 		, m_rad(0), m_flags(0), m_shader(0), m_drawint(false)
-		,m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048){}
+		,m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
+		, m_ring(NULL){}
 	tt &astro(TexSphere *a){this->a = a; return *this;}
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
 	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
@@ -621,6 +623,7 @@ public:
 	tt &shader(GLuint a){m_shader = a; return *this;}
 	tt &drawint(bool a){m_drawint = a; return *this;}
 	tt &ncuts(int a){m_ncuts = a; m_nfinecuts = a * 8; m_nffinecuts = a * 64; return *this;}
+	tt &ring(AstroRing *a){m_ring = a; return *this;}
 	virtual bool draw();
 };
 
@@ -756,6 +759,11 @@ bool DrawTextureSphere::draw(){
 		glDisable(GL_TEXTURE_2D);
 
 	useShader();
+
+	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * Quatd::direction(a->omg);
+	AstroRing *ring = m_ring;
+	if(ring && m_shader)
+		ring->ring_setsphereshadow(*vw, a->ringmin, a->ringmax, qrot.trans(vec3_001), m_shader);
 
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -964,7 +972,7 @@ bool DrawTextureSpheroid::draw(){
 	GLuint shader = m_shader;
 //	const Quatd *texrot;
 	double &oblateness = m_oblateness;
-	AstroRing *ring = &a->astroRing;
+	AstroRing *ring = m_ring;
 	double ringminrad = a->ringmin;
 	double ringmaxrad = a->ringmax;
 
@@ -1094,16 +1102,19 @@ void TexSphere::draw(const Viewer *vw){
 	Astrobj *sun = findBrightest();
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
-	char ringdrawn = 8;
+	int ringdrawn = 8;
 	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
 	double sunar = sun ? sun->rad / (parent->tocs(sun->pos, sun->parent) - pos).len() : .01;
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring){
-		double theta = this->rad / (vw->pos - pos).len();
+		double dist = (vw->pos - pos).len();
+		double ratio = this->rad / dist;
 		// Avoid domain error
-		theta = theta < 1. ? acos(theta) : 0.;
-		astroRing.ring_draw(*vw, this, sunpos, ringdrawn = char(theta * RING_CUTS / 2. / M_PI + 1), RING_CUTS / 2, ringrot = (rot ), ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
+		double theta = ratio < 1. ? acos(ratio) : 0.;
+		ringdrawn = dist / (this->rad * ringmin) < 1. ? 0 : int(theta * RING_CUTS / 2. / M_PI + 1);
+		ringrot = Quatd::direction(omg);
+		astroRing.ring_draw(*vw, this, sunpos, ringdrawn, RING_CUTS / 2, ringrot, ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -1117,9 +1128,7 @@ void TexSphere::draw(const Viewer *vw){
 			if(!shaderGiveup && !shader && vertexShaderName.size() && fragmentShaderName.size()){
 				GLuint *shaders = NULL;
 				try{
-	//				GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-	//				GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-					shaders = new GLuint[vertexShaderName.size() + fragmentShaderName.size()];
+					std::vector<GLuint> shaders(vertexShaderName.size() + fragmentShaderName.size());
 					int j = 0;
 					for(unsigned i = 0; i < vertexShaderName.size(); i++)
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_VERTEX_SHADER), vertexShaderName[i]))
@@ -1127,7 +1136,7 @@ void TexSphere::draw(const Viewer *vw){
 					for(unsigned i = 0; i < fragmentShaderName.size(); i++)
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), fragmentShaderName[i]))
 							throw 2;
-					shader = glsl_register_program(shaders, vertexShaderName.size() + fragmentShaderName.size());
+					shader = glsl_register_program(&shaders.front(), vertexShaderName.size() + fragmentShaderName.size());
 					if(!shader)
 						throw 3;
 				}
@@ -1135,13 +1144,11 @@ void TexSphere::draw(const Viewer *vw){
 					CmdPrint(cpplib::dstring() << "Shader compile error for " << getpath() << " globe.");
 					shaderGiveup = true;
 				}
-				delete[] shaders;
 			}
 
 			if(!cloudShaderGiveup && !cloudShader && cloudVertexShaderName.size() && cloudFragmentShaderName.size()){
 				try{
 					std::vector<GLuint> shaders(cloudVertexShaderName.size() + cloudFragmentShaderName.size());
-//				GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
 					int j = 0;
 					for(unsigned i = 0; i < cloudVertexShaderName.size(); i++)
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_VERTEX_SHADER), cloudVertexShaderName[i]))
@@ -1170,6 +1177,7 @@ void TexSphere::draw(const Viewer *vw){
 				.texname(texname)
 				.rad(rad)
 //				.ringmin, ringmax
+				.ring(&astroRing)
 				.draw();
 			if(!ret && *texname){
 				texname = "";
@@ -1201,6 +1209,7 @@ void TexSphere::draw(const Viewer *vw){
 				.mat_ambient(basecolor / 2.f)
 				.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texname).shader(shader)
 				.ncuts(g_tscuts)
+				.ring(&astroRing)
 				.draw();
 			if(!ret && *texname){
 				texname = "";

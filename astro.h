@@ -75,6 +75,8 @@ public:
 	Astrobj(const char *name, CoordSys *cs);
 //	void init(const char *name, CoordSys *cs);
 
+	static const SQChar *sqclassname();
+	static bool sq_define(HSQUIRRELVM);
 	static const ClassRegister<Astrobj> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -85,6 +87,8 @@ public:
 	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
+protected:
+	static SQInteger sqf_get(HSQUIRRELVM v);
 };
 
 #endif

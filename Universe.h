@@ -18,7 +18,11 @@ public:
 		fullname = NULL;
 		flags = CS_ISOLATED | CS_EXTENT;
 	}
+	Universe(){}
+	Universe(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const;
+	static const char *sqclassname();
+	static ClassRegister<Universe> classRegister;
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
@@ -28,6 +32,9 @@ public:
 	void csUnmap(UnserializeContext &);
 	static int cmd_save(int argc, char *argv[], void *pv);
 	static int cmd_load(int argc, char *argv[], void *pv);
+	static bool sq_define(HSQUIRRELVM);
+protected:
+	static SQInteger sqf_get(HSQUIRRELVM);
 };
 
 #endif

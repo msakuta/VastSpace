@@ -72,7 +72,7 @@ void LagrangeCS::unserialize(UnserializeContext &sc){
 	sc.i >> objs[0] >> objs[1];
 }
 
-const char *Lagrange1CS::classname()const{return "Lagrange1CS";}
+const char *Lagrange1CS::classname()const{return "Lagrange1";}
 
 const ClassRegister<Lagrange1CS> Lagrange1CS::classRegister("Lagrange1");
 
@@ -119,7 +119,7 @@ bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	return true;
 }
 
-const char *Lagrange2CS::classname()const{return "Lagrange2CS";}
+const char *Lagrange2CS::classname()const{return "Lagrange2";}
 
 const ClassRegister<Lagrange2CS> Lagrange2CS::classRegister("Lagrange2");
 
@@ -252,7 +252,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
 					ClassId id = it->first;
 					if(!strcmp(id, ps)){
-						ctor = it->second;
+						ctor = it->second->construct;
 						c++;
 						s = argv[c];
 						ps = argv[c+1];

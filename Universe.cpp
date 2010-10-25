@@ -3,6 +3,7 @@
 #include "player.h"
 #include "cmd.h"
 #include "astro.h"
+#include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -20,6 +21,10 @@ const unsigned Universe::version = 6;
 const char *Universe::classname()const{
 	return "Universe";
 }
+
+const char *Universe::sqclassname(){return "Universe";}
+ClassRegister<Universe> Universe::classRegister("Universe");
+
 
 void Universe::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -251,4 +256,34 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	}while(0);
 	delete[] buf;
 	return 0;
+}
+
+SQInteger Universe::sqf_get(HSQUIRRELVM v){
+	Universe *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("timescale"))){
+		sq_pushfloat(v, SQFloat(p->timescale));
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("global_time"))){
+		sq_pushfloat(v, SQFloat(p->global_time));
+		return 1;
+	}
+	else
+		return st::sqf_get(v);
+}
+
+bool Universe::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("Universe"), -1);
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "Universe");
+	register_closure(v, _SC("_get"), sqf_get);
+	sq_createslot(v, -3);
+	return true;
 }

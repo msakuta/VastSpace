@@ -5,6 +5,7 @@
 
 #include "stellar_file.h"
 #include "draw/ring-draw.h"
+#include <squirrel.h>
 
 
 /// Astrobj drawn as a textured sphere
@@ -38,11 +39,13 @@ public:
 		mutable GLuint list;
 		bool cloudSync;
 	};
+//	class Register;
 	typedef Astrobj st;
 	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();
 	const char *classname()const;
+	static const char *sqclassname();
 	static const ClassRegister<TexSphere> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -55,11 +58,15 @@ public:
 	TextureIterator beginTextures()const{return textures.begin();} ///< Iterates custom texture units for shaders.
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
+	static bool sq_define(HSQUIRRELVM v);
 private:
 	std::vector<Texture> textures;
+	static SQInteger sqf_get(HSQUIRRELVM);
+	static SQInteger sqf_set(HSQUIRRELVM);
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;
 };
+
 
 /// Identical to Astrobj but ClassId
 class Satellite : public Astrobj{

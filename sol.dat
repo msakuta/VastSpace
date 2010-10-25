@@ -121,11 +121,11 @@ coordsys Orbit earth{
 		vertexshader shaders/earth.vs
 #		vertexshader shaders/ringsphereshadow.vs
 #		fragmentshader shaders/ringsphereshadow.fs
-#		ringmin 74000/60268
-#		ringmax 2.4
-#		ringthick 1.
-#		ringtexture saturn_ring_front.bmp
-#		ringbacktexture saturn_ring_back.bmp
+		ringmin 74000/60268
+		ringmax 2.4
+		ringthick 1.
+		ringtexture saturn_ring_front.bmp
+		ringbacktexture saturn_ring_back.bmp
 
 		cloudtexture textures/cloud.jpg
 		cloudfragmentshader shaders/earth_cloud.fs
@@ -139,8 +139,8 @@ coordsys Orbit earth{
 		atmosphere_dawn 1 .2 .1
 
 		coordsys earths{
-			define theta 0*.13*pi
-			define phi 0*.3*pi
+			define theta .13*pi
+			define phi .3*pi
 			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
 			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			teleport "Earth Surface" 0 0 0

@@ -16,6 +16,7 @@ extern "C"{
 #include <cpplib/mat4.h>
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
+#include <squirrel.h>
 #include <vector>
 
 #define CS_DELETE   2 /* marked as to be deleted */
@@ -225,15 +226,16 @@ public:
 	static bool registerCommands(Player *);
 	static bool unregisterCommands(Player *);
 
-	typedef std::map<ClassId, CoordSys *(*)(const char *path, CoordSys *root)> CtorMap;
-	static const CtorMap &ctormap();
 	class Static{
 	public:
 		ClassId id;
+		const Static *st;
 		CoordSys *(*construct)(const char *path, CoordSys *root);
 		Serializable *(*stconstruct)();
-		Static(ClassId id, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)())
-			: id(id), construct(construct), stconstruct(stconstruct)
+		const SQChar *(*s_sqclassname)();
+		bool (*sq_define)(HSQUIRRELVM v);
+		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(), const SQChar*(*sqclassname)(), bool (*sq_define)(HSQUIRRELVM v))
+			: id(id), st(st), construct(construct), stconstruct(stconstruct), s_sqclassname(sqclassname), sq_define(sq_define)
 		{
 			CoordSys::registerClass(*this);
 		}
@@ -241,22 +243,34 @@ public:
 			unregisterClass(id);
 		}
 	};
+	typedef std::map<ClassId, Static*> CtorMap;
+	static const CtorMap &ctormap();
 	template<typename T> static CoordSys *Conster(const char *path, CoordSys *root){
 		return new T(path, root);
 	}
-	template<typename T> class Register : public Static{
+	template<typename T, typename ST = T::st> class Register : public Static{
 	public:
-		Register(ClassId id) : Static(id, Conster<T>, st::Conster<T>){}
+		Register(ClassId id) : Static(id, &ST::classRegister, Conster<T>, st::Conster<T>, T::sqclassname, T::sq_define){}
 	};
 protected:
+	static const SQChar *sqclassname();
+	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
 	static void unregisterClass(ClassId);
-	static const Register<CoordSys> classRegister;
+	static const Static classRegister;
+
+	/// The default getter
+	static SQInteger sqf_get(HSQUIRRELVM v);
 
 private:
 	int getpathint(char *buf, size_t size)const;
 	int getpathint(cpplib::dstring &)const;
 };
+
+/*template<> class CoordSys::Register<CoordSys> : public CoordSys::Static{
+public:
+	Register(ClassId id) : Static(id, NULL, Conster<T>, st::Conster<T>, T::sqclassname, T::sq_define){}
+};*/
 
 template<typename T> class ClassRegister : public T::Register<T>{
 public:

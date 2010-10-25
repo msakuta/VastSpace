@@ -34,6 +34,8 @@ long tocs_children_invokes = 0;
 const char *CoordSys::classname()const{
 	return "CoordSys";
 }
+const SQChar *CoordSys::sqclassname(){return "CoordSys";}
+
 
 
 void CoordSys::serialize(SerializeContext &sc){
@@ -81,7 +83,8 @@ void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 		children->dive(sc, method);
 }
 
-static ClassRegister<CoordSys> classRegister("CoordSys");
+//static ClassRegister<CoordSys> classRegister("CoordSys");
+const CoordSys::Static CoordSys::classRegister("CoordSys", NULL, Conster<CoordSys>, st::Conster<CoordSys>, CoordSys::sqclassname, CoordSys::sq_define);
 //const CoordSys::Register<CoordSys> CoordSys::classRegister("CoordSys");
 
 CoordSys **CoordSys::legitimize_child(){
@@ -1126,12 +1129,258 @@ unsigned CoordSys::registerClass(Static &s){
 	CtorMap &cm = ::ctormap();
 	if(cm.find(s.id) != cm.end())
 		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << s.id);
-	cm[s.id] = s.construct;
+	cm[s.id] = &s;
 	return cm.size();
 }
 
 void CoordSys::unregisterClass(ClassId id){
 	st::unregisterClass(id);
 	::ctormap().erase(id);
+}
+
+
+/// It's shame
+static SQInteger sqf_getclass(HSQUIRRELVM v){
+	if(SQ_SUCCEEDED(sq_getclass(v,1)))
+		return 1;
+	return SQ_ERROR;
+}
+
+static SQInteger sqf_addent(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	CoordSys *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	
+	Vec3d pos = vec3_000;
+	if(OT_INSTANCE == sq_gettype(v, -1)){
+		SQUserPointer typetag;
+		sq_gettypetag(v, -1, &typetag);
+		if(typetag == tt_Vec3d){
+			Vec3d *pvec;
+			sq_pushstring(v, _SC("a"), -1);
+			sq_get(v, -2); // this classname vec3 vec3.a
+			if(!SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pvec, NULL)))
+				pos = *pvec;
+		}
+	}
+	sq_pop(v, 2); // this classname
+
+	const SQChar *arg;
+	if(SQ_FAILED(sq_getstring(v, 2, &arg)))
+		return SQ_ERROR;
+
+	extern Player *ppl;
+	WarField *&w = p->w;
+	if(!w)
+		w = new WarSpace(p)/*spacewar_create(cs, ppl)*/;
+	Entity *pt = Entity::create(arg, w);
+	if(pt){
+		pt->setPosition(&pos);
+/*		pt->pos = pos;
+		if(pt->bbody){
+			btTransform trans;
+			trans.setIdentity();
+			trans.setOrigin(btvc(pos));
+			pt->bbody->setCenterOfMassTransform(trans);
+		}*/
+/*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
+	}
+	else
+		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: %s") << arg);
+
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Entity"), -1);
+	sq_get(v, -2);
+	sq_createinstance(v, -1);
+	sqa_newobj(v, pt);
+	return 1;
+}
+
+static SQInteger sqf_name(HSQUIRRELVM v){
+	CoordSys *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+	sq_pushstring(v, p->name, -1);
+	return 1;
+}
+
+static SQInteger sqf_child(HSQUIRRELVM v){
+	CoordSys *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!p->children){
+		sq_pushnull(v);
+		return 1;
+	}
+/*	int n;
+	CoordSys *cs = p->children;
+	for(n = 0; cs; n++, cs = cs->next){*/
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("CoordSys"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+	sqa_newobj(v, p->children);
+//		sq_setinstanceup(v, -1, p->children);
+//	}
+	return 1;
+}
+
+static SQInteger sqf_next(HSQUIRRELVM v){
+	CoordSys *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!p->next){
+		sq_pushnull(v);
+		return 1;
+	}
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_get(v, -2);
+	sq_createinstance(v, -1);
+	sqa_newobj(v, p->next);
+//	sq_setinstanceup(v, -1, p->next);
+	return 1;
+}
+
+static SQInteger sqf_tocs(HSQUIRRELVM v){
+	try{
+		CoordSys *p, *p2;
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return SQ_ERROR;
+		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 3))
+			return SQ_ERROR;
+		SQVec3d qv;
+		qv.getValue(v, 2);
+		qv.value = p->tocs(qv.value, p2);
+		qv.push(v);
+		return 1;
+	}
+	catch(...){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_getpath(HSQUIRRELVM v){
+	CoordSys *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	sq_pushstring(v, p->getpath(), -1);
+	return 1;
+}
+
+static SQInteger sqf_findcspath(HSQUIRRELVM v){
+	CoordSys *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	const SQChar *s;
+	sq_getstring(v, -1, &s);
+	CoordSys *cs = p->findcspath(s);
+	if(cs){
+		sq_pushroottable(v);
+		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
+		if(it == CoordSys::ctormap().end())
+			return sq_throwerror(v, _SC("Error wrong classname"));
+		sq_pushstring(v, it->second->s_sqclassname(), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, cs);
+//		sq_setinstanceup(v, -1, cs);
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
+static SQInteger sqf_getcs(HSQUIRRELVM v){
+	Player *p;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(p->cs){
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("CoordSys"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, const_cast<CoordSys*>(p->cs));
+//		sq_setinstanceup(v, -1, const_cast<CoordSys*>(p->cs));
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
+SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
+	CoordSys *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(!strcmp(wcs, _SC("entlist"))){
+		if(!p->w || !p->w->el){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->w->el);
+//		sq_setinstanceup(v, -1, p->w->el);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("parentcs"))){
+		if(!p->parent){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(p->classname());
+		if(it == CoordSys::ctormap().end())
+			return sq_throwerror(v, _SC("Error no match class names"));
+		sq_pushstring(v, it->second->s_sqclassname(), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->parent);
+		return 1;
+	}
+	else
+		return sqa::sqf_get<CoordSys>(v);
+}
+
+bool CoordSys::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, "CoordSys");
+	sq_pushstring(v, _SC("ref"), -1);
+	sq_pushnull(v);
+	sq_newslot(v, -3, SQFalse);
+	register_closure(v, _SC("name"), sqf_name);
+	register_closure(v, _SC("getclass"), sqf_getclass);
+	register_closure(v, _SC("getpos"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos> >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>);
+	register_closure(v, _SC("getrot"), sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>);
+	register_closure(v, _SC("child"), sqf_child);
+	register_closure(v, _SC("next"), sqf_next);
+	register_closure(v, _SC("getcs"), sqf_getcs);
+	register_closure(v, _SC("tocs"), sqf_tocs);
+	register_closure(v, _SC("getpath"), sqf_getpath);
+	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
+	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
+	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("_set"), sqf_set<CoordSys>);
+	sq_createslot(v, -3);
+	return true;
 }
 

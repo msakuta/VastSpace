@@ -8,6 +8,7 @@
 #include "EntityCommand.h"
 #include "Docker.h"
 #include "Astro.h"
+#include "TexSphere.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
@@ -455,7 +456,10 @@ static SQInteger sqf_CoordSys_get(HSQUIRRELVM v){
 			return 1;
 		}
 		sq_pushroottable(v);
-		sq_pushstring(v, p->parent->toAstrobj() ? _SC("Astrobj") : _SC("CoordSys"), -1);
+		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(p->classname());
+		if(it == CoordSys::ctormap().end())
+			return sq_throwerror(v, _SC("Error no match class names"));
+		sq_pushstring(v, it->second->s_sqclassname(), -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, p->parent);
@@ -484,7 +488,7 @@ static SQInteger sqf_Universe_get(HSQUIRRELVM v){
 		return sqf_CoordSys_get(v);
 }
 
-static SQInteger sqf_Astrobj_get(HSQUIRRELVM v){
+SQInteger sqf_Astrobj_get(HSQUIRRELVM v){
 	Astrobj *p;
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
@@ -497,6 +501,7 @@ static SQInteger sqf_Astrobj_get(HSQUIRRELVM v){
 	else
 		return sqf_CoordSys_get(v);
 }
+
 
 
 static SQInteger sqf_child(HSQUIRRELVM v){
@@ -576,7 +581,10 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	CoordSys *cs = p->findcspath(s);
 	if(cs){
 		sq_pushroottable(v);
-		sq_pushstring(v, cs->toAstrobj() ? _SC("Astrobj") : _SC("CoordSys"), -1);
+		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
+		if(it == CoordSys::ctormap().end())
+			return sq_throwerror(v, _SC("Error wrong classname"));
+		sq_pushstring(v, it->second->s_sqclassname(), -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, cs);
@@ -1373,6 +1381,17 @@ void unloadAllModules(){
 	modules.clear();
 }
 
+typedef std::set<bool (*)(HSQUIRRELVM)> SQDefineSet;
+
+static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, const CoordSys::Static &s){
+	if(s.st)
+		traceParent(v, clset, *s.st);
+	if(clset.find(s.sq_define) != clset.end())
+		return;
+	s.sq_define(v);
+	clset.insert(s.sq_define);
+}
+
 void sqa_init(HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
@@ -1459,8 +1478,14 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(x * x + y * y + z * z + w * w);"));
 	sq_createslot(v, -3);
 
+	SQDefineSet clset;
+	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().begin();
+	for(; it != CoordSys::ctormap().end(); it++){
+		traceParent(v, clset, *it->second);
+	}
+
 	// Define class CoordSys
-	sq_pushstring(v, _SC("CoordSys"), -1);
+/*	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, "CoordSys");
 	sq_pushstring(v, _SC("ref"), -1);
@@ -1480,25 +1505,28 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
 	register_closure(v, _SC("_get"), sqf_CoordSys_get);
 	register_closure(v, _SC("_set"), sqf_set<CoordSys>);
-	sq_createslot(v, -3);
+	sq_createslot(v, -3);*/
 
 	// Define class Universe
-	sq_pushstring(v, _SC("Universe"), -1);
+/*	sq_pushstring(v, _SC("Universe"), -1);
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "Universe");
 	register_closure(v, _SC("_get"), sqf_Universe_get);
-	sq_createslot(v, -3);
+	sq_createslot(v, -3);*/
 
 	// Define class Astrobj
-	sq_pushstring(v, _SC("Astrobj"), -1);
+/*	sq_pushstring(v, _SC("Astrobj"), -1);
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "Astrobj");
 	register_closure(v, _SC("_get"), sqf_Astrobj_get);
-	sq_createslot(v, -3);
+	sq_createslot(v, -3);*/
+
+	// Define class TexSphere
+//	TexSphere::sq_define(v);
 
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);

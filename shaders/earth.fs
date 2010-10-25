@@ -4,7 +4,10 @@ uniform samplerCube bumptexture;
 uniform samplerCube cloudtexture;
 uniform samplerCube lightstexture;
 uniform float time;
- 
+uniform sampler1D tex1d;
+uniform float ringmin, ringmax;
+uniform vec3 ringnorm;
+
 varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
@@ -112,6 +115,32 @@ void main (void)
 //	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
 	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
+
+	// Lighting calculation
+	vec3 npos = normalize(gl_NormalMatrix * normal);
+	float lightangle = dot(flight, npos);
+
+	// Aquire transformed vectors in eye space.
+	vec3 pos = /*gl_NormalMatrix **/ vec3(texCoord);
+	vec3 lnorm = /*gl_NormalMatrix **/ ringnorm;
+
+	// Calculate projected point onto ring plane.
+	float normp = dot(pos, lnorm);
+	float lightp = dot(flight, lnorm);
+	vec3 q = pos - normp / lightp * flight;
+
+//	float temp = 1. - abs(dot(npos, lnorm));
+//	float ramb = 5. * min(1., 1. + dot(pos, light)) * (normp * lightp < 0. ? .1 : .8) * abs(lightp) * abs(normp) * temp * temp;
+
+	// Blend texturing, lighting and ring shadowing together.
+	texColor += 0.
+//		- (ramb + 
+		+ (
+		gl_FrontLightProduct[0].ambient/* + globalAmbient*/
+		+ gl_FrontLightProduct[0].diffuse
+//		* texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)));
+		* max(lightangle * (0. < dot(q, flight) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
+
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)
 		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.5, 5. * (-sundot + 0.1));

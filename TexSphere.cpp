@@ -6,6 +6,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "TexSphere.h"
 #include "serial_util.h"
+#include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -37,9 +38,16 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 }
 
 const char *TexSphere::classname()const{
-	return "TexSphere";
+	return "TextureSphere";
 }
 
+/*class TexSphere::Register : public TexSphere::Static{
+public:
+	static const char *sqclassname(){return "TexSphere";}
+	Register(ClassId id) : Static(id, Conster<TexSphere>, CoordSys::st::Conster<TexSphere>, sqclassname){}
+};*/
+
+const char *TexSphere::sqclassname(){return "TexSphere";}
 const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere");
 
 TexSphere::~TexSphere(){
@@ -248,6 +256,56 @@ void TexSphere::anim(double dt){
 	cloudPhase += 1e-4 * dt * astro_timescale;
 	st::anim(dt);
 }
+
+namespace sqa{
+extern SQInteger (sqf_Astrobj_get)(HSQUIRRELVM);
+}
+
+SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
+	TexSphere *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("oblateness"))){
+		sq_pushfloat(v, SQFloat(p->oblateness));
+		return 1;
+	}
+	else
+		return sqf_Astrobj_get(v);
+}
+
+SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	TexSphere *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+	if(!strcmp(wcs, _SC("oblateness"))){
+		SQFloat f;
+		sq_getfloat(v, 3, &f);
+		p->oblateness = double(f);
+		return 0;
+	}
+	else
+		return sqa::sqf_get<Astrobj>(v);
+}
+
+bool TexSphere::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("TexSphere"), -1);
+	sq_pushstring(v, _SC("Astrobj"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "TexSphere");
+	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("_set"), sqf_set);
+	sq_createslot(v, -3);
+	return true;
+}
+
 
 
 const ClassRegister<Satellite> Satellite::classRegister("Satellite");

@@ -692,7 +692,6 @@ bool DrawTextureSphere::draw(){
 	int i, j, jstart, fine;
 	bool texenable = texlist && texmat;
 	normvertex_params params;
-	Mat4d &mat = params.mat;
 	Mat4d rot;
 	
 	if(rad == 0.)
@@ -760,11 +759,6 @@ bool DrawTextureSphere::draw(){
 
 	useShader();
 
-	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * Quatd::direction(a->omg);
-	AstroRing *ring = m_ring;
-	if(ring && m_shader)
-		ring->ring_setsphereshadow(*vw, a->ringmin, a->ringmax, qrot.trans(vec3_001), m_shader);
-
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
@@ -803,24 +797,36 @@ bool DrawTextureSphere::draw(){
 	glEnable(GL_LIGHT0);
 
 	{
-		Mat4d irot;
-		gldLookatMatrix(~irot, ~(apos - vw->pos));
-		rot = irot.transpose();
-		if(texenable){
-			Mat4d rotm, rot2;
-			rotm = vw->cs->tocsm(a->parent);
-			rot2 = texmat * rotm;
-	/*		MAT4CPY(rot, irot);*/
-			params.texmat = rot2 * irot;
-			params.cloudmat = a->cloudRotation().cnj().tomat4() * rotm * irot;
+//		Mat4d irot;
+		Quatd qirot = Quatd::direction(apos - vw->pos);
+		AstroRing *ring = m_ring;
+		if(ring && m_shader){
+			Quatd qrot = vw->cs->tocsq(a->parent).cnj()/* * Quatd::direction(a->omg)*/;
+			Vec3d ringnorm = a->rot.trans(vec3_001);
+			ring->ring_setsphereshadow(*vw, a->ringmin, a->ringmax, ringnorm, m_shader);
 		}
-		mat = irot.translatein(0., 0., dist).scalein(-rad, -rad, -rad);
+
+//		gldLookatMatrix(~irot, ~(apos - vw->pos));
+//		irot = qirot.tomat4();
+		rot = qirot.cnj().tomat4();
+		if(texenable){
+//			Mat4d rotm = vw->cs->tocsm(a->parent);
+//			Mat4d rot2 = texmat * rotm;
+			Quatd qrotvw = vw->cs->tocsq(a->parent);
+			Quatd qrotm = qrotvw * qirot;
+			params.texmat = texmat * qrotm.tomat4();
+			params.cloudmat = (a->cloudRotation().cnj() * qrotm).tomat4();
+/*			glActiveTextureARB(GL_TEXTURE3_ARB);
+			glMatrixMode(GL_TEXTURE);
+			glLoadMatrixd(params.texmat);
+			glMatrixMode(GL_MODELVIEW);
+			glActiveTextureARB(GL_TEXTURE0_ARB);*/
+		}
+		params.mat = qirot.tomat4().translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
 
 	glPushMatrix();
 	glLoadIdentity();
-
-/*	MAT4CPY(params.texmat, texmat);*/
 
 	double tangent = rad < dist ? asin(rad / dist) : M_PI / 2.;
 /*	fine = M_PI / 3. < tangent;*/
@@ -839,6 +845,7 @@ bool DrawTextureSphere::draw(){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
+	Mat4d &mat = params.mat;
 	glBegin(GL_QUADS);
 	jstart = int(tangent * m_ncuts / 2 / M_PI);
 	for(j = jstart; j < m_ncuts / 4 - !!fine; j++){
@@ -854,10 +861,10 @@ bool DrawTextureSphere::draw(){
 		}
 		v[0] = c, v[1] = 0., v[2] = s;
 		v1 = mat * v;
-		len1 = 1. / VECLEN(v1);
+		len1 = 1. / v1.len();
 		v[0] = cuts[j+1][1], v[2] = cuts[j+1][0];
 		v1 = mat * v;
-		len2 = 1. / VECLEN(v1);
+		len2 = 1. / v1.len();
 		for(i = 0; i < m_ncuts; i++){
 			int i2 = (i+1) % m_ncuts;
 			params.map = -1;
@@ -1060,15 +1067,14 @@ bool DrawTextureSpheroid::draw(){
 	avw.gc = &gc;
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
-	if(texmat)
-		glMultMatrixd(texmat);
+	glMultMatrixd(texmat);
 	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
 	useShader();
 
 	if(ring && m_shader)
-		ring->ring_setsphereshadow(*vw, ringminrad, ringmaxrad, qrot.trans(vec3_001), m_shader);
+		ring->ring_setsphereshadow(*vw, ringminrad, ringmaxrad, vw->rot.dvp3(qrot.trans(vec3_001)), m_shader);
 
 	drawIcosaSphere(pos - vw->pos, rad, avw, Vec3d(1., 1., 1. - oblateness), qrot);
 
@@ -1166,27 +1172,51 @@ void TexSphere::draw(const Viewer *vw){
 				}
 			}
 		}
+		double fcloudHeight = cloudHeight == 0. ? rad * 1.001 : cloudHeight + rad;
+		bool underCloud = (pos - vw->pos).len() < fcloudHeight;
 		if(oblateness != 0.){
+			DrawTextureSpheroid cloudDraw = DrawTextureSpheroid(this, vw, sunpos);
+			if(g_cloud && (cloudtexname || cloudtexlist)){
+				cloudDraw
+				.oblateness(oblateness)
+				.texlist(&cloudtexlist)
+				.texmat(cloudRotation().cnj().tomat4())
+				.texname(cloudtexname)
+				.shader(cloudShader)
+				.rad(fcloudHeight)
+				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
+				.drawint(true)
+				.ncuts(g_tscuts);
+				if(underCloud){
+					bool ret = cloudDraw.draw();
+					if(!ret && *cloudtexname){
+						cloudtexname = "";
+					}
+				}
+			}
 			bool ret = DrawTextureSpheroid(this, vw, sunpos)
 				.oblateness(oblateness)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.)
 				.texlist(&texlist)
-				.texmat(rot.cnj().tomat4())
+				.texmat(mat4_u)
 				.shader(shader)
 				.texname(texname)
 				.rad(rad)
-//				.ringmin, ringmax
 				.ring(&astroRing)
 				.draw();
 			if(!ret && *texname){
 				texname = "";
 			}
+			if(g_cloud && (cloudtexname || cloudtexlist) && !underCloud){
+				bool ret = cloudDraw.drawint(false).draw();
+				if(!ret && *cloudtexname){
+					cloudtexname = "";
+				}
+			}
 		}
 		else{
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
-			double fcloudHeight = cloudHeight == 0. ? rad * 1.001 : cloudHeight + rad;
-			bool underCloud = (pos - vw->pos).len() < fcloudHeight;
 			if(g_cloud && (cloudtexname || cloudtexlist)){
 				cloudDraw
 				.texlist(&cloudtexlist)

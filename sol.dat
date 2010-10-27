@@ -119,13 +119,13 @@ coordsys Orbit earth{
 		fragmentshader shaders/earth.fs
 		fragmentshader shaders/earth_cloud_noise.fs
 		vertexshader shaders/earth.vs
-#		vertexshader shaders/ringsphereshadow.vs
 #		fragmentshader shaders/ringsphereshadow.fs
-		ringmin 74000/60268
-		ringmax 2.4
-		ringthick 1.
-		ringtexture saturn_ring_front.bmp
-		ringbacktexture saturn_ring_back.bmp
+#		vertexshader shaders/ringsphereshadow.vs
+#		ringmin 74000/60268
+#		ringmax 2.4
+#		ringthick 1.
+#		ringtexture saturn_ring_front.bmp
+#		ringbacktexture saturn_ring_back.bmp
 
 		cloudtexture textures/cloud.jpg
 		cloudfragmentshader shaders/earth_cloud.fs
@@ -292,62 +292,6 @@ coordsys Orbit marss{
 		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
-#		respawn Scarry -1 0 -4 0 2 2
-#		respawn Scarry 1 0 -4 0 2 2
-#		respawn Sceptor -0 0 -.1 0 .5 16
-#		respawn Sceptor 1 0 0 1 1.5 2
-#		respawn Sceptor -5 0 0 0 1.5 20
-#		respawn Sceptor 5 0 0 1 1.5 20
-#		respawn Sceptor 0 -5 0 2 1.5 20
-#		respawn Sceptor 0 5 0 3 1.5 20
-#		respawn Assault -1 0.5 -1 1 2 1
-#		respawn Assault -1 -0.5 -1 1 2 4
-#		respawn Assault 1 0.5 -1 1 2 4
-#		respawn Assault 1 -0.5 -1 1 2 4
-#		respawn Destroyer -1.5 0 20.1 1 2 2
-#		respawn WireDestroyer 1.5 0.1 0 1 2 2
-#		addent scarry 0 0 -4
-#		addent Scarry 2 0 -4
-#		addent Destroyer -1.5 0 7. 1
-#		addent Destroyer -.5 -1 -3 0
-#		addent destroyer -.5 1 -3 0
-#		addent destroyer .1 0 0 1
-#		addent destroyer -.5 0 0 1
-#		addent destroyer .7 0 0 1
-#		addent destroyer .1 -1 0 1
-#		addent destroyer -.5 -1 0 1
-#		addent destroyer .7 -1 0 1
-#		addent destroyer .1 1 0 1
-#		addent destroyer -.5 1 0 1
-#		addent destroyer .7 1 0 1
-#		addent Beamer .4 0 0
-#		addent Beamer .1 0 0
-#		addent Beamer -.1 0 0
-#		addent Assault -.2 0 2 
-#		addent Assault -.6 0 2 0
-#		addent Assault -.3 0 2 0
-#		addent assault -.0 0 -1 0
-#		addent assault .3 0 -1 1
-#		addent assault .6 0 -1 1
-#		addent Sceptor -.4 .1 0
-#		addent Sceptor -.3 .1 0
-#		addent Sceptor -.2 .1 0
-#		addent Sceptor -.1 .1 0
-#		addent Sceptor 0 .1 0
-#		addent Sceptor .1 .1 0
-#		addent Sceptor .2 .1 0
-#		addent Sceptor .3 .1 0
-#		addent Sceptor .4 .1 0
-#		addent Sceptor -.4 -.1 0
-#		addent Sceptor -.3 -.1 0
-#		addent Sceptor -.2 -.1 0
-#		addent Sceptor -.1 -.1 0
-#		addent Sceptor 0 -.1 0
-#		addent Sceptor .1 -.1 0
-#		addent Sceptor .2 -.1 0
-#		addent Sceptor .3 -.1 0
-#		addent Sceptor .4 -.1 0
-#		addent RStation 0 -3 1 -1
 
 #		new astro Asteroid BigWatcher{
 #			pos 0 12 -20

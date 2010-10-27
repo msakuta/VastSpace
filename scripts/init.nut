@@ -65,6 +65,10 @@ class Astrobj extends CoordSys{
 	float rad; // readonly
 }
 
+class TexSphere extends Astrobj{
+	float oblateness;
+}
+
 class Entity{
 	string classname;
 	Vec3d getpos();
@@ -91,7 +95,6 @@ class Player{
 	void setpos(Vec3d);
 	Quatd getrot();
 	void setrot(Quatd);
-	CoordSys getcs();
 	void setmover(string movertype);
 	string getmover();
 	Entity chase;
@@ -306,6 +309,10 @@ function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	}
 }
 
+function bool(a){
+	return typeof(a) == "bool" ? a : typeof(a) == "integer" ? a != 0 : typeof(a) == "string" ? a == "true" : a != null;
+}
+
 register_console_command("coordsys", function(...){
 	if(vargc == 0){
 		print("identity: " + player.cs.name());
@@ -314,10 +321,22 @@ register_console_command("coordsys", function(...){
 		return 0;
 	}
 	local cs = player.cs.findcspath(vargv[0]);
+	local transit = true;
+	print("Arg[" + vargc + "] " + vargv[0]);
+	if(1 < vargc){
+		if(bool(vargv[1]))
+			transit = false;
+		print("Transit " + bool(vargv[1]));
+	}
 	if(cs != null && player.cs != cs){
-/*		player.setrot(player.getrot() * cs.getrot());
-		player.setpos(player.getpos() + cs.getpos());
-		player.setvelo(player.getvelo() + cs.getvelo());*/
+		if(transit){
+			local newrot = player.getrot() * cs.tocsq(player.cs);
+			local newpos = cs.tocs(player.getpos(), player.cs);
+			local newvelo = cs.tocs(player.getvelo(), player.cs, true);
+			player.setrot(newrot);
+			player.setpos(newpos);
+			player.setvelo(newvelo);
+		}
 		player.cs = cs;
 		print("CoordSys changed to " + cs.getpath());
 	}

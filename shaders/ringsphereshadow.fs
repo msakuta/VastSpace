@@ -15,7 +15,7 @@ void main (void)
 
 	// Lighting calculation
 	vec3 light = normalize(vec3(light4));
-	vec3 npos = normalize(gl_NormalMatrix * norm);
+	vec3 npos = normalize(norm);
 	float lightangle = dot(light, npos);
 
 	// Global ambient is not accumulated in gl_FrontLightProduct, so we must calculate it manually.
@@ -23,7 +23,7 @@ void main (void)
 
 	// Aquire transformed vectors in eye space.
 	vec3 pos = gl_NormalMatrix * vec3(gl_TexCoord[1]);
-	vec3 lnorm = gl_NormalMatrix * ringnorm;
+	vec3 lnorm = ringnorm;
 
 	// Calculate projected point onto ring plane.
 	float normp = dot(pos, lnorm);

@@ -10,5 +10,5 @@ void main(void)
 	gl_Position = ftransform();
 
 	// Interpolate normal vector to implement Phong shading.
-	norm = gl_Normal;
+	norm = gl_NormalMatrix * gl_Normal;
 }

@@ -39,7 +39,6 @@ public:
 		mutable GLuint list;
 		bool cloudSync;
 	};
-//	class Register;
 	typedef Astrobj st;
 	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);

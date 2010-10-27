@@ -1,6 +1,9 @@
 #ifndef COORDSYS_H
 #define COORDSYS_H
-/* the concept is coordinate system tree. you can track the tree
+/* \file
+  \brief Defines CoordSys and its related classes and templates.
+
+  The concept is coordinate system tree. you can track the tree
   to find out where the jupiter's satellite is in the earth's 
   coordinates, for example. */
 
@@ -46,7 +49,7 @@ struct war_draw_data;
  */
 class EXPORT CoordSys : public Serializable{
 public:
-	typedef Serializable st; ///< Super Type
+	typedef Serializable st; ///< Super Type. As a convention, all derived classes must define this typedef as the super class.
 
 	Vec3d pos; ///< Position
 	Vec3d velo; ///< Velocity
@@ -209,7 +212,7 @@ public:
 		return const_cast<CoordSys*>(this)->findBrightest(pos);
 	}
 
-	// This system must be a Extent and Isolated.
+	/// This system must be a Extent and Isolated.
 	bool addToDrawList(CoordSys *descendant);
 
 	void startdraw();
@@ -226,19 +229,23 @@ public:
 	static bool registerCommands(Player *);
 	static bool unregisterCommands(Player *);
 
+	/// Class static information specific to CoordSys-derived class branch.
 	class Static{
 	public:
-		ClassId id;
-		const Static *st;
-		CoordSys *(*construct)(const char *path, CoordSys *root);
-		Serializable *(*stconstruct)();
-		const SQChar *(*s_sqclassname)();
-		bool (*sq_define)(HSQUIRRELVM v);
+		ClassId id; ///< Class id.
+		const Static *st; ///< Super type.
+		CoordSys *(*construct)(const char *path, CoordSys *root); ///< Construct an instance of this class.
+		Serializable *(*stconstruct)(); ///< Construct empty object for use in unserialization.
+		const SQChar *(*s_sqclassname)(); ///< Returns Squirrel class name.
+		bool (*sq_define)(HSQUIRRELVM v); ///< Procedure to define this class in a Squirrel VM.
+		/// Derived classes, no matter in the executable or in shared libraries or DLLs,
+		/// will automatically register themselves through this destructor at startup.
 		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(), const SQChar*(*sqclassname)(), bool (*sq_define)(HSQUIRRELVM v))
 			: id(id), st(st), construct(construct), stconstruct(stconstruct), s_sqclassname(sqclassname), sq_define(sq_define)
 		{
 			CoordSys::registerClass(*this);
 		}
+		/// Derived classes in shared libraries or DLLs will automatically unregister themselves through this destructor.
 		~Static(){
 			unregisterClass(id);
 		}
@@ -253,7 +260,7 @@ public:
 		Register(ClassId id) : Static(id, &ST::classRegister, Conster<T>, st::Conster<T>, T::sqclassname, T::sq_define){}
 	};
 protected:
-	static const SQChar *sqclassname();
+	static const SQChar *sqclassname(); ///< Returns "CoordSys"
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
 	static void unregisterClass(ClassId);
@@ -267,11 +274,8 @@ private:
 	int getpathint(cpplib::dstring &)const;
 };
 
-/*template<> class CoordSys::Register<CoordSys> : public CoordSys::Static{
-public:
-	Register(ClassId id) : Static(id, NULL, Conster<T>, st::Conster<T>, T::sqclassname, T::sq_define){}
-};*/
-
+/// Template class to register derived classes to global class list.
+/// This way modifications can safely be made without altering CoordSys class definition.
 template<typename T> class ClassRegister : public T::Register<T>{
 public:
 	ClassRegister(ClassId id) : Register(id){}

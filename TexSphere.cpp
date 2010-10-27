@@ -38,14 +38,8 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 }
 
 const char *TexSphere::classname()const{
-	return "TextureSphere";
+	return classRegister.id;
 }
-
-/*class TexSphere::Register : public TexSphere::Static{
-public:
-	static const char *sqclassname(){return "TexSphere";}
-	Register(ClassId id) : Static(id, Conster<TexSphere>, CoordSys::st::Conster<TexSphere>, sqclassname){}
-};*/
 
 const char *TexSphere::sqclassname(){return "TexSphere";}
 const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere");
@@ -257,9 +251,6 @@ void TexSphere::anim(double dt){
 	st::anim(dt);
 }
 
-namespace sqa{
-extern SQInteger (sqf_Astrobj_get)(HSQUIRRELVM);
-}
 
 SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
 	TexSphere *p;
@@ -272,7 +263,7 @@ SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else
-		return sqf_Astrobj_get(v);
+		return st::sqf_get(v);
 }
 
 SQInteger TexSphere::sqf_set(HSQUIRRELVM v){

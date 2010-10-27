@@ -1256,9 +1256,28 @@ static SQInteger sqf_tocs(HSQUIRRELVM v){
 			return SQ_ERROR;
 		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 3))
 			return SQ_ERROR;
+		SQBool delta;
+		if(SQ_FAILED(sq_getbool(v, 4, &delta)))
+			delta = SQFalse;
 		SQVec3d qv;
 		qv.getValue(v, 2);
-		qv.value = p->tocs(qv.value, p2);
+		qv.value = p->tocs(qv.value, p2, !!delta);
+		qv.push(v);
+		return 1;
+	}
+	catch(...){
+		return SQ_ERROR;
+	}
+}
+
+static SQInteger sqf_tocsq(HSQUIRRELVM v){
+	try{
+		CoordSys *p, *p2;
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return SQ_ERROR;
+		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 2))
+			return SQ_ERROR;
+		SQQuatd qv(p->tocsq(p2));
 		qv.push(v);
 		return 1;
 	}
@@ -1294,25 +1313,6 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 		sq_createinstance(v, -1);
 		sqa_newobj(v, cs);
 //		sq_setinstanceup(v, -1, cs);
-		return 1;
-	}
-	sq_pushnull(v);
-	return 1;
-}
-
-static SQInteger sqf_getcs(HSQUIRRELVM v){
-	Player *p;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
-	if(p->cs){
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("CoordSys"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, const_cast<CoordSys*>(p->cs));
-//		sq_setinstanceup(v, -1, const_cast<CoordSys*>(p->cs));
 		return 1;
 	}
 	sq_pushnull(v);
@@ -1369,12 +1369,14 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("getclass"), sqf_getclass);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos> >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>);
+	register_closure(v, _SC("getvelo"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::velo> >);
+	register_closure(v, _SC("setvelo"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::velo>);
 	register_closure(v, _SC("getrot"), sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >);
 	register_closure(v, _SC("setrot"), sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>);
 	register_closure(v, _SC("child"), sqf_child);
 	register_closure(v, _SC("next"), sqf_next);
-	register_closure(v, _SC("getcs"), sqf_getcs);
 	register_closure(v, _SC("tocs"), sqf_tocs);
+	register_closure(v, _SC("tocsq"), sqf_tocsq);
 	register_closure(v, _SC("getpath"), sqf_getpath);
 	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");

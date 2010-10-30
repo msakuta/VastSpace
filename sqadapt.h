@@ -35,7 +35,7 @@ SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams = 0, const SQChar *params = NULL);
 
 /// Register a Squirrel scripted closure bound to the top of the stack.
-bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code);
+bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, bool nested = false);
 
 /// Global Squirrel VM.
 extern HSQUIRRELVM g_sqvm;

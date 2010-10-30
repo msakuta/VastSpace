@@ -51,7 +51,9 @@ class CoordSys{
 	CoordSys findcspath();
 	Entity addent(string classname, Vec3d pos);
 	Entity entlist;
-	Vec3d tocs(Vec3d pos, CoordSys);
+	Vec3d transPosition(Vec3d pos, CoordSys from, bool delta); // Converts position coordinates from given system to this system.
+	Vec3d transVelocity(Vec3d velo, CoordSys from); // Converts velocity vector. Equivalent to transPosition(velo, from, true).
+	Quatd transRotation(CoordSys from); // Converts rotation expressed in quaternion from given system to this system.
 }
 
 class Universe extends CoordSys{
@@ -330,9 +332,9 @@ register_console_command("coordsys", function(...){
 	}
 	if(cs != null && player.cs != cs){
 		if(transit){
-			local newrot = player.getrot() * cs.tocsq(player.cs);
-			local newpos = cs.tocs(player.getpos(), player.cs);
-			local newvelo = cs.tocs(player.getvelo(), player.cs, true);
+			local newrot = player.getrot() * cs.transRotation(player.cs);
+			local newpos = cs.transPosition(player.getpos(), player.cs);
+			local newvelo = cs.transVelocity(player.getvelo(), player.cs);
 			player.setrot(newrot);
 			player.setpos(newpos);
 			player.setvelo(newvelo);

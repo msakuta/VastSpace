@@ -1420,11 +1420,17 @@ bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQIntege
 	return true;
 }
 
-bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code){
+bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, bool nested){
 	StackReserver sr(v);
 	sq_pushstring(v, fname, -1);
 	if(SQ_FAILED(sq_compilebuffer(v, code, strlen(code), fname, SQFalse)))
 		return false;
+	if(nested){
+		sq_pushroottable(v);
+		if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue)))
+			return false;
+		sq_remove(v, -2); // Remove generator function
+	}
 	if(SQ_FAILED(sq_createslot(v, -3)))
 		return false;
 	return true;

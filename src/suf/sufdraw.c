@@ -508,7 +508,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int x, y, h = ABS(bmi->bmiHeader.biHeight);
 		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
-		if(stp->alphamap & STP_MASKTEX)
+		if(stp->flags & STP_MASKTEX)
 			mask = (const unsigned char*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
 		if((stp->flags & (STP_ALPHA | STP_RGBA32)) == (STP_ALPHA | STP_RGBA32)){
 			tex4 = (unsigned char(*)[4])src;

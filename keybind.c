@@ -236,7 +236,7 @@ void BindExec(int key){
 	int i;
 	int control;
 	control = GetKeyState(VK_CONTROL) & 0x7000;
-	for(i = 0; i < nbinds; i++) if(binds[i].key == key && (!(binds[i].flags & FCONTROL) ^ !!control)){
+	for(i = 0; i < nbinds; i++) if(binds[i].key == key && (key == '\002' || !(binds[i].flags & FCONTROL) ^ !!control)){
 		CmdExec(binds[i].cmd);
 		return;
 	}

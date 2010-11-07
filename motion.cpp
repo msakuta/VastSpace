@@ -1,10 +1,14 @@
 #include "motion.h"
 #include "player.h"
-#include "war.h"
+//#include "war.h"
 #include "cmd.h"
 
-/* Motion command handling, branched from the main module because it seldom changes but consumes
-  a fair amount of lines. */
+/** \file
+ * \brief Implemetation of toggle and momentary keys.
+ *
+ * Motion command handling, branched from the main module because it seldom changes but consumes
+ * a fair amount of lines.
+ */
 
 static int inputstate = 0, previnputstate = 0, toggleinputstate = 0;
 
@@ -40,6 +44,7 @@ fgather(enter, PL_ENTER);
 fgather(eject, PL_SPACE);
 fgather(sprint, PL_SHIFT);
 fgather(crouch, PL_CTRL);
+fgather(focusset, PL_ALT);
 fgather(gear, PL_G);
 fgather(lclick, PL_LCLICK);
 fgather(move_z, PL_SHIFT);
@@ -84,6 +89,8 @@ void MotionInit(){
 	CmdAddParam("-sprint", cmd_nsprint, &inputstate);
 	CmdAddParam("+crouch", cmd_pcrouch, &inputstate);
 	CmdAddParam("-crouch", cmd_ncrouch, &inputstate);
+	CmdAddParam("+focusset", cmd_pfocusset, &inputstate);
+	CmdAddParam("-focusset", cmd_nfocusset, &inputstate);
 	CmdAddParam("+gear", cmd_pgear, &inputstate);
 	CmdAddParam("-gear", cmd_ngear, &inputstate);
 	CmdAddParam("+lclick", cmd_plclick, &inputstate);

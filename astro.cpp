@@ -232,6 +232,11 @@ OrbitCS *OrbitCS::toOrbitCS(){
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(.5f,.5f,.5f,1.){
 }
 
+const char *Astrobj::classname()const{
+	return classRegister.id;
+}
+const SQChar *Astrobj::sqclassname(){return _SC("Astrobj");}
+
 const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj");
 
 #if 0
@@ -358,10 +363,6 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 	int ring;
 #endif
 
-const char *Astrobj::classname()const{
-	return "Astrobj";
-}
-const SQChar *Astrobj::sqclassname(){return _SC("Astrobj");}
 
 
 /** Finds an Astrobj nearest to this node.

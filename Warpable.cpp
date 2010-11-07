@@ -17,6 +17,7 @@
 #include "arms.h"
 #include "Docker.h"
 //#include "sensor.h"
+#include "motion.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

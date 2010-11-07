@@ -51,7 +51,7 @@ TexSphere::~TexSphere(){
 }
 
 template<typename T> SerializeStream &operator<<(SerializeStream &o, const std::vector<T> &v){
-	o << v.size();
+	o << unsigned(v.size());
 	for(std::vector<T>::const_iterator it = v.begin(); it != v.end(); it++)
 		o << *it;
 	return o;

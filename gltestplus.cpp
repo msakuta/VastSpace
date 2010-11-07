@@ -84,7 +84,7 @@ double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
 static int cmdwnd = 0;
-static bool g_focusset = false;
+//static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
 
 int s_mousex, s_mousey;
@@ -660,17 +660,24 @@ void draw_func(Viewer &vw, double dt){
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
 	projection((glPushMatrix(), glLoadIdentity()));
-	glPushMatrix();
-	glLoadIdentity();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glTranslated(2. * s_mousex / vw.vp.w - 1., -2. * s_mousey / vw.vp.h - - 1., -1);
-	glScaled(2. * 32. / vw.vp.w, 2. * 32. / vw.vp.h, 1.);
 	if(mouse_tracking && !mouse_captured){
 		static GLuint tex = 0;
+		struct MouseCursor{
+			int x0, y0;
+			int x1, y1;
+			int px, py;
+		};
+		static const MouseCursor mc_normal = {0, 0, 32, 32};
+		static const MouseCursor mc_chasecamera = {0, 32, 32, 64};
+		static const MouseCursor mc_attack = {32, 0, 64, 32};
+		static const MouseCursor mc_forceattack = {32, 32, 64, 64};
+		static const MouseCursor mc_horizsize = {64, 32, 96, 64};
+		static const MouseCursor mc_vertsize = {96, 32, 128, 64};
 //		GLuint oldtex;
+		static int texw = 128, texh = 128;
 		if(!tex){
 			suftexparam_t stp;
-//			stp.bmi = ZipUnZip(lzw_pointer, sizeof lzw_pointer, NULL);
+			stp.bmi = NULL;
 			stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
 			stp.env = GL_MODULATE;
 			stp.mipmap = 0x80;
@@ -678,21 +685,40 @@ void draw_func(Viewer &vw, double dt){
 			stp.magfil = GL_LINEAR;
 //			tex = CacheSUFMTex("pointer.bmp", &stp, NULL);
 			tex = CallCacheBitmap("pointer.bmp", "pointer.bmp", &stp, NULL);
+			if(stp.bmi){
+				texw = stp.bmi->bmiHeader.biWidth;
+				texh = stp.bmi->bmiHeader.biHeight;
+			}
 		}
 		GLattrib attrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+
+		bool attackorder = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
+		static const MouseCursor *mc0[2][2] = {&mc_normal, &mc_attack, &mc_chasecamera, &mc_forceattack};
+		static const MouseCursor mcg0[] = {
+			mc_normal,
+			{64, 0, 96, 32, 16, 16},
+			{96, 0, 128, 32, 16, 16},
+			{64, 32, 96, 64, 16, 16},
+		};
+		int mstate = GLwindow::glwMouseCursorState(s_mousex, s_mousey);
+		const MouseCursor &mc = mstate ? mcg0[mstate] : *mc0[MotionGet() & PL_ALT || pl.forceattackorder][attackorder];
+
+		glPushMatrix();
+		glLoadIdentity();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glTranslated(2. * (s_mousex - mc.px) / vw.vp.w - 1.,
+					-2. * (s_mousey - mc.py) / vw.vp.h - - 1., -1);
+		glScaled(2. * 32. / vw.vp.w, 2. * 32. / vw.vp.h, 1.);
 		glEnable(GL_TEXTURE_2D);
 		glMatrixMode(GL_TEXTURE);
 		glPushMatrix();
 		glLoadIdentity();
-		bool attackorder = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
-		bool forceattackorder = g_focusset || !!(MotionGet() & PL_CTRL) || pl.forceattackorder;
-		glTranslated(attackorder * .5, !forceattackorder * .5, 0.);
-		glScaled(.5, .5, 1.);
+		glScaled(1. / texw, 1. / texh, 1.);
+		glTranslatef(mc.x0, texh - mc.y1, 0);
+		glScaled(mc.x1 - mc.x0, mc.y1 - mc.y0, 1.);
+//		glScaled(texw / (mc.x1 - mc.x0), texh / (mc.y1 - mc.y0), 1.);
+//		glScaled(.5, .5, 1.);
 		glCallList(tex);
-/*		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
 		glColor4ub(255,255,255,255);
 		glBegin(GL_QUADS);
 		glTexCoord2d(0, 0); glVertex2d(-0., -1.);
@@ -702,8 +728,8 @@ void draw_func(Viewer &vw, double dt){
 		glEnd();
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
 	}
-	glPopMatrix();
 	projection(glPopMatrix());
 	glPopAttrib();
 
@@ -1131,11 +1157,11 @@ void mouse_func(int button, int state, int x, int y){
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
 				Mat4d rot = pl.getrot().tomat4();
 				bool attacking = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
-				bool forced = g_focusset && (MotionGet() & PL_CTRL) || pl.forceattackorder;
+				bool forced = MotionGet() & PL_ALT && (MotionGet() & PL_CTRL) || pl.forceattackorder;
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
 					((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2),
-					attacking ? (select_box_callback*)&AttackSelect(forced, pl.selected) : g_focusset ? (select_box_callback*)&FocusSelect() : (select_box_callback*)&SelectSelect());
+					attacking ? (select_box_callback*)&AttackSelect(forced, pl.selected) : MotionGet() & PL_ALT ? (select_box_callback*)&FocusSelect() : (select_box_callback*)&SelectSelect());
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}
@@ -1214,17 +1240,6 @@ static int cmd_originrotation(int, char *[]){
 	pl.setrot(quat_u);
 	return 0;
 }
-
-static int cmd_pfocusset(int argc, char *argv[]){
-	g_focusset = 1;
-	return 0;
-}
-
-static int cmd_nfocusset(int argc, char *argv[]){
-	g_focusset = 0;
-	return 0;
-}
-
 
 /*
 extern "C" int console_cursorposdisp;
@@ -1529,7 +1544,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			else if(VK_NUMPAD0 <= wParam && wParam <= VK_NUMPAD9)
 				BindExec(wParam - VK_NUMPAD0 + 0x90);
 			else{
-				if(wParam != VK_CONTROL && GetKeyState(VK_CONTROL) & 0x7000)
+				if(wParam != VK_CONTROL && GetKeyState(VK_CONTROL) & 0x7000 && isprint(wParam))
 					BindExec(wParam);
 				else
 					non_printable_key(hWnd, message, wParam, lParam, 0);
@@ -1653,8 +1668,6 @@ int main(int argc, char *argv[])
 	viewport vp;
 	CmdInit(&vp);
 	MotionInit();
-	CmdAdd("+focusset", cmd_pfocusset);
-	CmdAdd("-focusset", cmd_nfocusset);
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);

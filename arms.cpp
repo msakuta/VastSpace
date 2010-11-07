@@ -17,6 +17,7 @@
 #include "Missile.h"
 #include "EntityCommand.h"
 #include "draw/effects.h"
+#include "motion.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>

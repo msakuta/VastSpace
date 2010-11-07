@@ -294,7 +294,7 @@ function translate(id){
 tlate <- translate;
 
 // load the module
-loadModule("gltestdll.dll");
+loadModule(debugBuild() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "gltestdll.dll");
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){

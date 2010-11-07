@@ -12,6 +12,7 @@
 #include "serial_util.h"
 #include "material.h"
 //#include "sensor.h"
+#include "motion.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

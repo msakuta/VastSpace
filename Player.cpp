@@ -9,6 +9,7 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "glw/glwindow.h"
+#include "motion.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>

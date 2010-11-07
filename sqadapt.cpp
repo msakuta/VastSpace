@@ -193,6 +193,19 @@ static SQInteger sqf_timemeas(HSQUIRRELVM v){
 	return 1;
 }
 
+/// Returns whether this program is built with debug profile.
+static SQInteger sqf_debugBuild(HSQUIRRELVM v){
+	sq_pushbool(v,
+#ifndef NDEBUG
+		SQTrue
+#else
+		SQFalse
+#endif
+		);
+	return 1;
+}
+
+
 
 /// Time measurement class constructor.
 static SQInteger sqf_TimeMeas_construct(HSQUIRRELVM v){
@@ -1098,6 +1111,9 @@ static SQInteger sqf_loadModule(HSQUIRRELVM v){
 			else
 				modules[name] = 1;
 		}
+		else{
+			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!");
+		}
 		return 0;
 	}
 	catch(SQIntrinsicError){
@@ -1172,6 +1188,7 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_global_func(v, sqf_loadModule, _SC("loadModule"));
 	register_global_func(v, sqf_unloadModule, _SC("unloadModule"));
 	register_global_func(v, sqf_timemeas, _SC("timemeas"));
+	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 

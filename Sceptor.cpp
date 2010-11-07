@@ -20,6 +20,7 @@
 #include "btadapt.h"
 #include "sqadapt.h"
 #include "draw/effects.h"
+#include "motion.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

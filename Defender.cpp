@@ -16,6 +16,7 @@
 #include "draw/effects.h"
 #include "BeamProjectile.h"
 #include "sqadapt.h"
+#include "motion.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

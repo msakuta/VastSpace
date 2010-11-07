@@ -304,6 +304,17 @@ GLwindow **glwFindPP(GLwindow *wnd){
 	return NULL;
 }
 
+int GLwindow::glwMouseCursorState(int x, int y){
+	for(GLwindow *glw = glwlist; glw; glw = glw->next) if(glw->extentRect().include(x, y)){
+		return glw->mouseCursorState(x, y);
+	}
+	return 0;
+}
+
+int GLwindow::mouseCursorState(int mousex, int mousey)const{
+	return 0;
+}
+
 void GLwindow::glwFree(){
 	GLwindow *wnd = this;
 	GLwindow **ppwnd, *wnd2;
@@ -761,9 +772,7 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 
 	// Pinned window should not be able to change size.
 	if(button == GLUT_LEFT_BUTTON && !getPinned()){
-		int edgeflags = 0;
-		edgeflags |= r.x1 - GLWSIZEABLE_BORDER < x && x < r.x1 + GLWSIZEABLE_BORDER && r.y0 <= y && y < r.y1;
-		edgeflags |= (r.y1 - GLWSIZEABLE_BORDER < y && y < r.y1 + GLWSIZEABLE_BORDER && r.x0 <= x && x < r.x1) << 1;
+		int edgeflags = GLwindowSizeable::mouseCursorState(x, y);
 		if(state == GLUT_DOWN){
 			if(edgeflags){
 				sizing = edgeflags;
@@ -800,6 +809,15 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 	return 0;
 }
 
+int GLwindowSizeable::mouseCursorState(int x, int y)const{
+	if(getPinned())
+		return 0;
+	GLWrect r = clientRect();
+	int edgeflags = 0;
+	edgeflags |= r.x1 - GLWSIZEABLE_BORDER < x && x < r.x1 + GLWSIZEABLE_BORDER && r.y0 <= y && y < r.y1;
+	edgeflags |= (r.y1 - GLWSIZEABLE_BORDER < y && y < r.y1 + GLWSIZEABLE_BORDER && r.x0 <= x && x < r.x1) << 1;
+	return edgeflags;
+}
 
 
 

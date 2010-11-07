@@ -135,6 +135,8 @@ public:
 		return !strcmp(w->title, title);
 	}
 	class TitleCmp;
+	static int glwMouseCursorState(int mousex, int mousey);
+	virtual int mouseCursorState(int mousex, int mousey)const;
 
 	// Object methods
 	const char *getTitle()const{return title;} ///< \return Title string of this window
@@ -272,6 +274,7 @@ protected:
 	int minw, minh, maxw, maxh;
 public:
 	GLwindowSizeable(const char *title);
+	int mouseCursorState(int mousex, int mousey)const;
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
 

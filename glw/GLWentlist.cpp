@@ -171,12 +171,16 @@ public:
 	int i;
 	int iconSize;
 	IconItemLocator(GLWentlist *p, int count, int iconSize = 32) : p(p), count(count), i(0), iconSize(iconSize){}
-	virtual int allHeight(){return (count + (p->clientRect().width() - 10) / iconSize - 1) / ((p->clientRect().width() - 10) / iconSize) * iconSize;}
+	virtual int allHeight(){
+		return (count + (p->clientRect().width() - 10) / iconSize - 1)
+			/ max(1, (p->clientRect().width() - 10) / iconSize) * iconSize;
+	}
 	virtual bool begin(){i = 0; return true;}
 	virtual GLWrect getRect(){
 		GLWrect ret = p->clientRect();
-		ret.x0 += i % ((p->clientRect().width() - 10) / iconSize) * iconSize;
-		ret.y0 += i / ((p->clientRect().width() - 10) / iconSize) * iconSize;
+		int cols = max(1, (ret.width() - 10) / iconSize);
+		ret.x0 += i % cols * iconSize;
+		ret.y0 += i / cols * iconSize;
 		ret.x1 = ret.x0 + iconSize;
 		ret.y1 = ret.y0 + iconSize;
 		return ret;

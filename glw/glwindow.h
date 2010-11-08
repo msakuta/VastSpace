@@ -154,6 +154,8 @@ public:
 
 	/// \brief Mouse event handler.
 	/// Derived classes can override to define mouse responses.
+	/// \arg x,y mouse position in screen coordinates.
+	/// \return Nonzero if this method processes the event and the default reaction is to be suppressed.
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 
 	/// Called when the mouse pointer enters the window.
@@ -161,6 +163,11 @@ public:
 
 	/// Called when the mouse pointer leaves the window.
 	virtual void mouseLeave(GLwindowState &ws);
+
+	/// Opportunity to override default mouse behavior on non-client area.
+	/// \arg x,y mouse position in screen coordinates.
+	/// \return If this method processes the event and the default reaction is to be suppressed.
+	virtual bool mouseNC(GLwindowState &ws, int key, int state, int x, int y){return false;}
 
 	/// Key event function, returns nonzero if processed
 	virtual int key(int key);
@@ -213,6 +220,8 @@ protected:
 	static GLwindow *lastover;
 	static GLwindow *captor; ///< Mouse captor
 	static GLwindow *dragstart; ///< \brief The wnidow dragging is began on.
+
+	static const int GLWSIZEABLE_BORDER;
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -276,6 +285,7 @@ public:
 	GLwindowSizeable(const char *title);
 	int mouseCursorState(int mousex, int mousey)const;
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
+	bool mouseNC(GLwindowState &ws, int button, int state, int x, int y);
 };
 
 /// The simplest display element in GLwindow system. This is base class

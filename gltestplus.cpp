@@ -697,8 +697,16 @@ void draw_func(Viewer &vw, double dt){
 		static const MouseCursor mcg0[] = {
 			mc_normal,
 			{64, 0, 96, 32, 16, 16},
+			{64, 0, 96, 32, 16, 16},
+			{0},
 			{96, 0, 128, 32, 16, 16},
 			{64, 32, 96, 64, 16, 16},
+			{96, 32, 128, 64, 16, 16},
+			{0},
+			{96, 0, 128, 32, 16, 16},
+			{96, 32, 128, 64, 16, 16},
+			{64, 32, 96, 64, 16, 16},
+			{0},
 		};
 		int mstate = GLwindow::glwMouseCursorState(s_mousex, s_mousey);
 		const MouseCursor &mc = mstate ? mcg0[mstate] : *mc0[MotionGet() & PL_ALT || pl.forceattackorder][attackorder];

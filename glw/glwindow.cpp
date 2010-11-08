@@ -29,7 +29,7 @@ double GLwindow::getFontWidth(){return fontwidth;}
 double GLwindow::getFontHeight(){return fontheight;}
 
 /// Window margin
-const long margin = 4;
+const long margin = 6;
 
 
 GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
@@ -112,7 +112,6 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	GLint vp[4];
 	int w = gvp.w, h = gvp.h, m = gvp.m, mi, i, x;
 	GLubyte alpha;
-	int border;
 	double left, bottom;
 
 	if(flags & GLW_INVISIBLE)
@@ -135,7 +134,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	glVertex2d(wx + ww, wy + wh);
 	glVertex2d(wx, wy + wh);
 	glEnd();
-	border = (flags & (GLW_POPUP | GLW_COLLAPSE) ? 2 : 3)/* + !!(wnd->flags & GLW_SIZEABLE)*/;
+	const int border = (flags & (GLW_POPUP | GLW_COLLAPSE) ? 2 : margin)/* + !!(wnd->flags & GLW_SIZEABLE)*/;
 	alpha = flags & GLW_PINNED ? wx <= s_mousex && s_mousex < wx + ww && wy <= s_mousey && s_mousey < wy + wh ? 63 : 31 : 255;
 	for(i = 0; i < border; i++){
 		static const GLubyte cols[4] = {255, 127, 95, 191};
@@ -184,55 +183,56 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		glEnd();
 	}
 
-	// System command buttons. Do not draw if pinned and mouse pointer is afar.
+	// System command icon buttons. Do not draw if pinned and mouse pointer is afar.
 	if(32 < alpha && !(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
 		glColor4ub(255,255, 255 * (glwfocus == this), alpha);
 		glBegin(GL_LINES);
 		glVertex2d(wx, wy + titleheight);
 		glVertex2d(wx + ww, wy + titleheight);
+		const int iconsize = titleheight - margin;
 		x = width - titleheight;
 		if(flags & GLW_CLOSE){
-			glVertex2i(xpos + width - titleheight, ypos + margin);
-			glVertex2i(xpos + width - titleheight, ypos + titleheight);
+			glVertex2i(xpos + x, ypos + margin);
+			glVertex2i(xpos + x, ypos + titleheight);
 			glVertex2i(xpos + width - margin - 2, ypos + margin + 2);
 			glVertex2i(xpos + width - (titleheight - 2), ypos + titleheight - 2);
 			glVertex2i(xpos + width - (titleheight - 2), ypos + margin + 2);
 			glVertex2i(xpos + width - margin - 2, ypos + titleheight - 2);
-			x -= titleheight;
+			x -= iconsize;
 		}
 		if(flags & GLW_COLLAPSABLE){
 			glVertex2i(xpos + x, ypos + margin);
 			glVertex2i(xpos + x, ypos + titleheight);
 			glVertex2i(xpos + x + 2, ypos + titleheight - 2);
-			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight - 2);
+			glVertex2i(xpos + x + iconsize - 2, ypos + titleheight - 2);
 			if(flags & GLW_COLLAPSE){
-				glVertex2i(xpos + x + titleheight - 2, ypos + titleheight - 2);
-				glVertex2i(xpos + x + titleheight - 2, ypos + 2);
-				glVertex2i(xpos + x + titleheight - 2, ypos + 2);
+				glVertex2i(xpos + x + iconsize - 2, ypos + titleheight - 2);
+				glVertex2i(xpos + x + iconsize - 2, ypos + 2);
+				glVertex2i(xpos + x + iconsize - 2, ypos + 2);
 				glVertex2i(xpos + x + 2, ypos + 2);
 				glVertex2i(xpos + x + 2, ypos + 2);
 				glVertex2i(xpos + x + 2, ypos + titleheight - 2);
 			}
-			x -= titleheight;
+			x -= iconsize;
 		}
 		if(flags & GLW_PINNABLE){
 			glVertex2i(xpos + x, ypos + margin);
 			glVertex2i(xpos + x, ypos + titleheight);
-			glVertex2i(xpos + x + titleheight / 2, ypos + 2);
-			glVertex2i(xpos + x + 2, ypos + titleheight / 2);
-			glVertex2i(xpos + x + 2, ypos + titleheight / 2);
-			glVertex2i(xpos + x + titleheight / 2, ypos + titleheight - 2);
-			glVertex2i(xpos + x + titleheight / 2, ypos + titleheight - 2);
-			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight / 2);
-			glVertex2i(xpos + x + titleheight - 2, ypos + titleheight / 2);
-			glVertex2i(xpos + x + titleheight / 2, ypos + 2);
+			glVertex2i(xpos + x + iconsize / 2, ypos + margin + 2);
+			glVertex2i(xpos + x + 2, ypos + margin + iconsize / 2);
+			glVertex2i(xpos + x + 2, ypos + margin + iconsize / 2);
+			glVertex2i(xpos + x + iconsize / 2, ypos + margin + iconsize - 2);
+			glVertex2i(xpos + x + iconsize / 2, ypos + margin + iconsize - 2);
+			glVertex2i(xpos + x + iconsize - 2, ypos + margin + iconsize / 2);
+			glVertex2i(xpos + x + iconsize - 2, ypos + margin + iconsize / 2);
+			glVertex2i(xpos + x + iconsize / 2, ypos + margin + 2);
 			if(flags & GLW_PINNED){
-				glVertex2i(xpos + x + titleheight / 2 - 2, ypos + titleheight / 2 - 2);
-				glVertex2i(xpos + x + titleheight / 2 + 2, ypos + titleheight / 2 + 2);
-				glVertex2i(xpos + x + titleheight / 2 + 2, ypos + titleheight / 2 - 2);
-				glVertex2i(xpos + x + titleheight / 2 - 2, ypos + titleheight / 2 + 2);
+				glVertex2i(xpos + x + iconsize / 2 - 2, ypos + margin + iconsize / 2 - 2);
+				glVertex2i(xpos + x + iconsize / 2 + 2, ypos + margin + iconsize / 2 + 2);
+				glVertex2i(xpos + x + iconsize / 2 + 2, ypos + margin + iconsize / 2 - 2);
+				glVertex2i(xpos + x + iconsize / 2 - 2, ypos + margin + iconsize / 2 + 2);
 			}
-			x -= titleheight;
+			x -= iconsize;
 		}
 		glEnd();
 	}
@@ -402,6 +402,9 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 	else if(state == GLUT_UP && button == GLUT_LEFT_BUTTON)
 		dragstart = NULL;
 
+	if(wnd->mouseNC(ws, button, state, x, y))
+		return 1;
+	else{
 	if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 		bool caught = false;
 		if(captor == wnd || wnd->extentRect().include(x, y)){
@@ -458,8 +461,9 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 	else
 		wx = wnd->xpos, wy = wnd->ypos, ww = wnd->width, wh = wnd->height;
 	if((nowheel || glwfocus == wnd) && wx <= x && x <= wx + ww && wy <= y && y <= wy + wh){
-		int sysx = wnd->width - titleheight - (wnd->flags & GLW_CLOSE ? titleheight : 0);
-		int pinx = sysx - (wnd->flags & GLW_COLLAPSABLE ? titleheight : 0);
+		const int iconsize = titleheight - margin;
+		int sysx = wnd->width - titleheight - (wnd->flags & GLW_CLOSE ? iconsize : 0);
+		int pinx = sysx - (wnd->flags & GLW_COLLAPSABLE ? iconsize : 0);
 
 		/* Window with modal window will never receive mouse messages. */
 		if(wnd->modal){
@@ -474,7 +478,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 
 		// Titlebar branch
 		if((wnd->title || wnd->flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
-			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + titleheight){
+			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + iconsize){
 	//				ret = 1;
 				killfocus = 0;
 
@@ -520,7 +524,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 				return 1;
 	//				break;
 			}
-			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + titleheight){
+			else if(wnd->flags & GLW_PINNABLE && wnd->xpos + pinx <= x && x <= wnd->xpos + pinx + iconsize){
 				ret = 1;
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
@@ -593,6 +597,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 		wnd->glwFree();
 		return 0;
 //			continue;
+	}
 	}
 	return 0;
 }
@@ -751,7 +756,7 @@ int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, in
 
 
 
-#define GLWSIZEABLE_BORDER 10
+const int GLwindowSizeable::GLWSIZEABLE_BORDER = 6;
 
 
 
@@ -763,12 +768,10 @@ GLwindowSizeable::GLwindowSizeable(const char *title) : st(title){
 	maxw = maxh = 1000;
 }
 
-int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y){
-	if(y < 12)
-		return 0;
+int GLwindowSizeable::mouse(GLwindowState &, int, int, int, int){return 0;}
+
+bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, int y){
 	GLWrect r = clientRect();
-	x += r.x0;
-	y += r.y0;
 
 	// Pinned window should not be able to change size.
 	if(button == GLUT_LEFT_BUTTON && !getPinned()){
@@ -788,21 +791,22 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 	}
 
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN && sizing){
-		if(sizing & 1 && minw <= x && x < maxw){
-			GLWrect wr = extentRect();
+		GLWrect wr = extentRect();
+		if((sizing & 3) == 1 && minw <= width - (x - wr.x0) && width - (x - wr.x0) < maxw){
+			wr.x0 = x;
+			setExtent(wr);
+		}
+		else if((sizing & 3) == 2 && minw <= (x - wr.x0) && (x - wr.x0) < maxw){
 			wr.x1 = x + GLWSIZEABLE_BORDER;
 			setExtent(wr);
-/*			this->width = x;
-			if(this->flags & GLW_SIZEPROP)
-				this->height = ratio * x;*/
 		}
-		if(sizing & 2 && minh <= y + 12 && y + 12 < maxh){
-			GLWrect wr = extentRect();
+		if(((sizing >> 2) & 3) == 1 && minh <= height - (y - wr.y0) && height - (y - wr.y0) < maxh){
+			wr.y0 = y;
+			setExtent(wr);
+		}
+		else if(((sizing >> 2) & 3) == 2 && minh <= (y - wr.y0) && (y - wr.y0) < maxh){
 			wr.y1 = y + GLWSIZEABLE_BORDER;
 			setExtent(wr);
-//			this->height = y + 12;
-/*			if(this->flags & GLW_SIZEPROP)
-				this->width = 1. / ratio * this->height;*/
 		}
 		return 1;
 	}
@@ -810,12 +814,16 @@ int GLwindowSizeable::mouse(GLwindowState &, int button, int state, int x, int y
 }
 
 int GLwindowSizeable::mouseCursorState(int x, int y)const{
+	if(sizing)
+		return sizing;
 	if(getPinned())
 		return 0;
-	GLWrect r = clientRect();
+	GLWrect r = extentRect();
 	int edgeflags = 0;
-	edgeflags |= r.x1 - GLWSIZEABLE_BORDER < x && x < r.x1 + GLWSIZEABLE_BORDER && r.y0 <= y && y < r.y1;
-	edgeflags |= (r.y1 - GLWSIZEABLE_BORDER < y && y < r.y1 + GLWSIZEABLE_BORDER && r.x0 <= x && x < r.x1) << 1;
+	if(r.y0 <= y && y < r.y1)
+		edgeflags |= r.x1 - GLWSIZEABLE_BORDER <= x && x < r.x1 ? 2 : r.x0 <= x && x < r.x0 + GLWSIZEABLE_BORDER ? 1 : 0;
+	if(r.x0 <= x && x < r.x1)
+		edgeflags |= (r.y1 - GLWSIZEABLE_BORDER <= y && y < r.y1 ? 2 : r.y0 <= y && y < r.y0 + GLWSIZEABLE_BORDER ? 1 : 0) << 2;
 	return edgeflags;
 }
 

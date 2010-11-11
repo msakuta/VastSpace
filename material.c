@@ -14,6 +14,7 @@
 #include <clib/c.h>
 #include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
+#include <clib/suf/sufbin.h>
 #include <clib/dstr.h>
 #include <clib/gl/multitex.h>
 #include <jpeglib.h>
@@ -349,8 +350,6 @@ static void ReadPNG_read_data(png_structp png_ptr, png_bytep data, png_size_t le
 
 BITMAPINFO *ReadPNG(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	FILE * infile;		/* source file */
-	int row_stride;		/* physical row width in image buffer */
-	int src_row_stride;
 	struct ReadPNGData rpd;
 	png_structp png_ptr;
 	png_infop info_ptr = NULL, end_info = NULL;
@@ -523,26 +522,26 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			return 0;
 	}
 
-	ret = CacheSUFMTex(entry, &stp, fname2 ? (BITMAPINFO*)&stp2 : NULL);
+	ret = CacheSUFMTex(entry, &stp, fname2 ? &stp2 : NULL);
 	if(bfh)
 		ZipFree(bfh);
 	else if(jpeg)
-		free(stp.bmi);
+		free((BITMAPINFO*)stp.bmi);
 	else
-		LocalFree(stp.bmi);
+		LocalFree((BITMAPINFO*)stp.bmi);
 	if(mask){
 		if(bfhMask)
 			ZipFree(bfhMask);
 		else if(maskjpeg)
-			free(stp.bmiMask);
+			free((BITMAPINFO*)stp.bmiMask);
 		else
-			LocalFree(stp.bmiMask);
+			LocalFree((BITMAPINFO*)stp.bmiMask);
 	}
 	if(fname2){
 		if(jpeg2)
-			free(stp2.bmi);
+			free((BITMAPINFO*)stp2.bmi);
 		else if(stp2.bmi)
-			LocalFree(stp2.bmi);
+			LocalFree((BITMAPINFO*)stp2.bmi);
 	}
 	return ret;
 }
@@ -559,23 +558,30 @@ suf_t *CallLoadSUF(const char *fname){
 		if(p && !strcmp(p, ".bin")){
 			FILE *fp;
 			long size;
+			void *src;
 			fp = fopen(fname, "rb");
 			if(!fp)
 				break;
 			fseek(fp, 0, SEEK_END);
 			size = ftell(fp);
 			fseek(fp, 0, SEEK_SET);
-			ret = malloc(size);
-			fread(ret, size, 1, fp);
+			src = malloc(size);
+			fread(src, size, 1, fp);
 			fclose(fp);
+			ret = UnserializeSUF(src, size);
+			free(src);
 		}
 		else
 			ret = LoadSUF(fname);
 	} while(0);
 	if(!ret){
-		ret = ZipUnZip("rc.zip", fname, NULL);
+		void *src;
+		unsigned long size;
+		src = ZipUnZip("rc.zip", fname, &size);
+		ret = UnserializeSUF(src, size);
+		free(src);
 	}
 	if(!ret)
 		return NULL;
-	return RelocateSUF(ret);
+	return (ret);
 }

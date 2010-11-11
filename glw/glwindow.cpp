@@ -360,10 +360,10 @@ void GLwindow::draw(GLwindowState &,double){}
  * \param key can be GLUT_LEFT_BUTTON or GLUT_RIGHT_BUTTON
  * \param state can be GLUT_DOWN, GLUT_UP, GLUT_KEEP_DOWN or GLUT_KEEP_UP.
  * The latter 2 is called when the mouse moves.
- * \param x Mouse position
- * \param y Mouse position
+ * \param x Mouse position in client coordinates.
+ * \param y Mouse position in client coordinates.
  * \return 0 if this window does not process the mouse event, otherwise consume the event.
- * \sa mouseFunc(), mouseDrag(), mouseEnter() and mouseLeave()
+ * \sa mouseFunc(), mouseDrag(), mouseEnter(), mouseNC() and mouseLeave()
  */
 int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 

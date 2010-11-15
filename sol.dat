@@ -113,7 +113,7 @@ coordsys Orbit earth{
 		texture earth.jpg
 		basecolor .5 .65 1.
 
-		extexture "bumptexture" textures/earth_bump.jpg
+		extexture "bumptexture" textures/earth_bump.jpg 0 normal
 		extexture "cloudtexture" textures/cloud.jpg
 		extexture "lightstexture" textures/earth_lights.jpg
 		fragmentshader shaders/earth.fs
@@ -162,7 +162,7 @@ coordsys Orbit earth{
 			mass 0.0123*5.977e24
 			omega 0 0 1 pi*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
 			texture moon.jpg
-			extexture bumptexture textures/moonbump.jpg
+			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
 			vertexshader shaders/moon.vs
 			updirection 0 1 0

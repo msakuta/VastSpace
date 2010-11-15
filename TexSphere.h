@@ -38,6 +38,7 @@ public:
 		cpplib::dstring filename;
 		mutable GLuint list;
 		bool cloudSync;
+		bool normalmap;
 	};
 	typedef Astrobj st;
 	TexSphere();

@@ -9,7 +9,7 @@ void main(void)
 	view = vec3(gl_ModelViewMatrix * gl_Vertex);
 	col = gl_Color;
 
-	nrm = gl_NormalMatrix * gl_Normal;
+	nrm = /*gl_NormalMatrix **/ gl_Normal;
 
 	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
 	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_MultiTexCoord1;

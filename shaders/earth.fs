@@ -81,7 +81,7 @@ vec3 anoise3(vec3 v){
 void main (void)
 {
 	vec3 normal = normalize(nrm);
-	vec3 flight = normalize(gl_LightSource[0].position.xyz);
+	vec3 flight = (gl_LightSource[0].position.xyz);
 	vec3 texCoord = vec3(gl_TexCoord[0]);
 
 	vec4 texColor = textureCube(texture, texCoord);
@@ -116,12 +116,11 @@ void main (void)
 	texColor *= diffuse/* + ambient*/;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
-	// Lighting calculation
-	vec3 npos = normalize(gl_NormalMatrix * normal);
-	float lightangle = dot(flight, npos);
 
 	// Aquire transformed vectors in eye space.
 	if(false){
+		// Lighting calculation
+		vec3 npos = normalize(gl_NormalMatrix * normal);
 		vec3 pos = /*gl_NormalMatrix **/ normalize(vec3(gl_TexCoord[3]));
 		vec3 lnorm = /*gl_NormalMatrix **/ ringnorm;
 
@@ -140,7 +139,7 @@ void main (void)
 			gl_FrontLightProduct[0].ambient/* + globalAmbient*/
 			+ gl_FrontLightProduct[0].diffuse
 	//		* texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)));
-			* max(lightangle * (0. < dot(q, flight) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
+			* max(sundot * (0. < dot(q, flight) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
 	}
 
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));

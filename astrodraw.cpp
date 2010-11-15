@@ -464,7 +464,6 @@ typedef struct normvertex_params{
 	Mat4d cloudmat;
 	const Viewer *vw;
 	int texenable;
-	int map;
 	int detail;
 } normvertex_params;
 
@@ -665,7 +664,7 @@ void DrawTextureSphere::useShader(){
 			GLint texLoc = glGetUniformLocation(shader, it->uniformname);
 			if(0 <= texLoc){
 				if(!it->list)
-					it->list = ProjectSphereCubeJpg(it->filename, m_flags | DTS_NODETAIL);
+					it->list = ProjectSphereCubeJpg(it->filename, m_flags | DTS_NODETAIL | (it->normalmap ? DTS_NORMALMAP : 0));
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(it->list);
 				glUniform1i(texLoc, i);
@@ -834,8 +833,7 @@ bool DrawTextureSphere::draw(){
 	double (*ffinecuts)[2] = CircleCutsPartial(m_nffinecuts, 9);
 
 	{
-		Vec4<GLfloat> light_position;
-		light_position = (sunpos - apos).cast<GLfloat>();
+		Vec4<GLfloat> light_position = (sunpos - apos).normin().cast<GLfloat>();
 		light_position[3] = 0.;
 		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	}
@@ -867,7 +865,6 @@ bool DrawTextureSphere::draw(){
 		len2 = 1. / v1.len();
 		for(i = 0; i < m_ncuts; i++){
 			int i2 = (i+1) % m_ncuts;
-			params.map = -1;
 			normvertex(cuts[i][0] * c, cuts[i][1] * c, s, &params, len1);
 			normvertex(cuts[i2][0] * c, cuts[i2][1] * c, s, &params, len1);
 			normvertex(cuts[i2][0] * cuts[j+1][1], cuts[i2][1] * cuts[j+1][1], cuts[j+1][0], &params, len2);
@@ -884,7 +881,6 @@ bool DrawTextureSphere::draw(){
 		v[0] = finecuts[j+1][0], v[2] = finecuts[j+1][1];
 		v1 = mat * v;
 		len2 = 1. / VECLEN(v1);
-		params.map = -1;
 		normvertex(cuts[i][0] * finecuts[j][0], cuts[i][1] * finecuts[j][0], finecuts[j][1], &params, len1);
 		normvertex(cuts[i][0] * finecuts[j+1][0], cuts[i][1] * finecuts[j+1][0], finecuts[j+1][1], &params, len2);
 		normvertex(cuts[i2][0] * finecuts[j+1][0], cuts[i2][1] * finecuts[j+1][0], finecuts[j+1][1], &params, len2);
@@ -909,7 +905,6 @@ bool DrawTextureSphere::draw(){
 			v1 = mat * v;
 			len2 = 1. / VECLEN(v1);
 			params.detail = 1;
-			params.map = -1;
 			normvertex(cuts[i][0] * ffinecuts[j][0], cuts[i][1] * ffinecuts[j][0], ffinecuts[j][1], &params, len1);
 			normvertex(cuts[i][0] * ffinecuts[j+1][0], cuts[i][1] * ffinecuts[j+1][0], ffinecuts[j+1][1], &params, len2);
 			normvertex(cuts[i2][0] * ffinecuts[j+1][0], cuts[i2][1] * ffinecuts[j+1][0], ffinecuts[j+1][1], &params, len2);

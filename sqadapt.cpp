@@ -205,6 +205,18 @@ static SQInteger sqf_debugBuild(HSQUIRRELVM v){
 	return 1;
 }
 
+/// Returns if the build is for x64 target.
+static SQInteger sqf_x64Build(HSQUIRRELVM v){
+	sq_pushbool(v,
+#ifdef _WIN64
+		SQTrue
+#else
+		SQFalse
+#endif
+		);
+	return 1;
+}
+
 
 
 /// Time measurement class constructor.
@@ -1110,11 +1122,13 @@ static SQInteger sqf_loadModule(HSQUIRRELVM v){
 				(it->second)++;
 			else
 				modules[name] = 1;
+			sq_pushinteger(v, modules[name]);
 		}
 		else{
 			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!");
+			sq_pushinteger(v, 0);
 		}
-		return 0;
+		return 1;
 	}
 	catch(SQIntrinsicError){
 		return SQ_ERROR;
@@ -1129,11 +1143,11 @@ static SQInteger sqf_unloadModule(HSQUIRRELVM v){
 		HMODULE hm = GetModuleHandle(name);
 		if(hm){
 			FreeLibrary(hm);
-			modules[name]--;
+			sq_pushinteger(v, modules[name]--);
 		}
 		else
-			return sq_throwerror(v, _SC("Failed to load library."));
-		return 0;
+			return sq_throwerror(v, _SC("Failed to unload library."));
+		return 1;
 	}
 	catch(SQIntrinsicError){
 		return SQ_ERROR;
@@ -1189,6 +1203,7 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_global_func(v, sqf_unloadModule, _SC("unloadModule"));
 	register_global_func(v, sqf_timemeas, _SC("timemeas"));
 	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
+	register_global_func(v, sqf_x64Build, _SC("x64Build"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 

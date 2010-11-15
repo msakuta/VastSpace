@@ -157,10 +157,13 @@ class TimeMeas{
 // Variable-length arguments may be present as strings, use vargc and vargv to interpret them.
 void register_console_command(string name, function func);
 
-// Loads an external module, implemented as DLL or shared library.
-loadModule(string path);
+/// Loads an external module, implemented as DLL or shared library.
+/// \return Reference count of the module after loaded.
+int loadModule(string path);
 
-unloadModule(string path);
+/// Decrements reference count of a module and possibly unload it if count is zero.
+/// \return Reference count.
+int unloadModule(string path);
 
 
 
@@ -294,7 +297,10 @@ function translate(id){
 tlate <- translate;
 
 // load the module
-loadModule(debugBuild() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "gltestdll.dll");
+{
+	local gltestdll = loadModule(debugBuild() ? x64Build() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" : "gltestdll.dll");
+	print("x64: " + x64Build() + ", gltest.dll refc is " + gltestdll);
+}
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){

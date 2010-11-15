@@ -144,6 +144,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
 			tex.filename = argv[2];
 			tex.list = 0;
 			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
+			tex.normalmap = 4 < argc && !strcmp(argv[4], "normal");
 			textures.push_back(tex);
 		}
 		return true;

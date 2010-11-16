@@ -16,6 +16,9 @@ extern "C"{
 /// Set nonzero to measure sorting speed
 #define PROFILE_SORT 0
 
+
+
+
 static bool pents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
 	// Comparing returned pointers themselves by dispname() would be enough for sorting, but it's better
 	// that the player can see items sorted alphabetically.
@@ -31,7 +34,8 @@ GLWentlist::GLWentlist(Player &player) :
 	icons(true),
 	switches(false),
 	teamOnly(false),
-	scrollpos(0){}
+	scrollpos(0),
+	crtRoot(NULL){}
 
 void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]){
 	if(!cs)
@@ -44,7 +48,9 @@ void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[
 	for(pt = cs->w->el; pt; pt = pt->next){
 
 		/* show only member of current team */
-		if(teamOnly && pl.race != pt->race)
+//		if(teamOnly && pl.race != pt->race)
+//			continue;
+		if(crtRoot && !crtRoot->match(pt))
 			continue;
 
 		int i;
@@ -201,7 +207,9 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		for(pt = pl.selected; pt; pt = pt->selectnext){
 
 			/* show only member of current team */
-			if(teamOnly && pl.race != pt->race)
+//			if(teamOnly && pl.race != pt->race)
+//				continue;
+			if(crtRoot && !crtRoot->match(pt))
 				continue;
 
 			for(i = 0; i < n; i++) if(!strcmp(ents[i][0]->dispname(), pt->dispname())){
@@ -220,7 +228,9 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		for(pt = w->el; pt; pt = pt->next){
 
 			/* show only member of current team */
-			if(teamOnly && pl.race != pt->race)
+//			if(teamOnly && pl.race != pt->race)
+//				continue;
+			if(crtRoot && !crtRoot->match(pt))
 				continue;
 
 			for(i = 0; i < n; i++) if(!strcmp(ents[i][0]->dispname(), pt->dispname())){
@@ -406,6 +416,21 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
+/// Menu item that executes a member function of some class.
+template<typename T>
+struct PopupMenuItemFunctionT : public PopupMenuItem{
+	typedef PopupMenuItem st;
+	T *p;
+	void (T::*func)();
+	PopupMenuItemFunctionT(cpplib::dstring title, T *p, void (T::*func)()) : p(p), func(func){
+		this->title = title;
+	}
+	virtual void execute(){
+		(p->*func)();
+	}
+	virtual PopupMenuItem *clone(void)const{return new PopupMenuItemFunctionT(*this);}
+};
+
 int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 	GLWrect r = clientRect();
 	ClassItemSelector cis(this);
@@ -439,19 +464,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 		}
 	}
 	else if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
-		/// Menu item that executes a member function of GLWentlist.
-		struct PopupMenuItemFunction : public PopupMenuItem{
-			typedef PopupMenuItem st;
-			GLWentlist *p;
-			void (GLWentlist::*func)();
-			PopupMenuItemFunction(cpplib::dstring title, GLWentlist *p, void (GLWentlist::*func)()) : p(p), func(func){
-				this->title = title;
-			}
-			virtual void execute(){
-				(p->*func)();
-			}
-			virtual PopupMenuItem *clone(void)const{return new PopupMenuItemFunction(*this);}
-		};
+		typedef PopupMenuItemFunctionT<GLWentlist> PopupMenuItemFunction;
 #define APPENDER(a,s) ((a) ? "* " s : "  " s)
 
 		glwPopupMenu(ws, PopupMenu()
@@ -463,7 +476,9 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, &GLWentlist::menu_icons))
 			.append(new PopupMenuItemFunction(APPENDER(teamOnly, "Show allies only"), this, &GLWentlist::menu_team))
 			.appendSeparator()
-			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches)));
+			.append(new PopupMenuItemFunction(APPENDER(switches, "Show quick switches"), this, &GLWentlist::menu_switches))
+			.appendSeparator()
+			.append(new PopupMenuItemFunction("Edit search criteria...", this, &GLWentlist::menu_criteria)));
 	}
 	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
 		int i;
@@ -530,4 +545,310 @@ void GLWentlist::mouseLeave(GLwindowState &ws){
 		glwtip->parent = NULL;
 		glwtip->setExtent(GLWrect(-10,-10,-10,-10));
 	}
+}
+
+class GLWentlistCriteria : public GLwindowSizeable{
+public:
+	typedef std::vector<ItemCriterion*> ItemCriterionList;
+	GLWentlist *p;
+//	ItemCriterionList crt;
+	GLWentlistCriteria(GLWentlist *p) : p(p), GLwindowSizeable("Entity List Criteria"){
+		width = 450;
+		height = 300;
+		setClosable(true);
+	}
+	~GLWentlistCriteria(){
+//		for(int i = 0; i < crt.size(); i++)
+//			delete crt[i];
+	}
+	void drawint(GLwindowState &ws, CriterionNode *crt, int *py){
+		if(crt->crt){
+			crt->crt->draw(ws, this, *py);
+			*py += lineHeight();
+		}
+		else{
+			drawint(ws, crt->left, py);
+			drawint(ws, crt->right, py);
+		}
+	}
+	void draw(GLwindowState &ws, double t){
+		int y = 0;
+		if(p->crtRoot)
+			p->crtRoot->draw(ws, this, y);
+		GLWrect cr = clientRect();
+
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0, cr.y0 + y + getFontHeight());
+		glwprintf("Add criterion...");
+	}
+	int mouseint(GLwindowState &ws, CriterionNode *crt, int *py, int key, int state, int mx, int my){
+		if(crt->crt){
+			GLWrect ir = clientRect();
+			ir.y0 = *py;
+			ir.y1 = *py += lineHeight();
+			if(ir.include(mx, my))
+				return crt->crt->mouse(ws, this, key, state, mx, my);
+		}
+		else{
+			int ret = mouseint(ws, crt->left, py, key, state, mx, my);
+			if(ret)
+				return ret;
+			ret = mouseint(ws, crt->right, py, key, state, mx, my);
+			if(ret)
+				return ret;
+		}
+		return 0;
+	}
+
+	template<typename T>
+	void foreachCriterionInt(void (*proc)(T), T param, CriterionNode *crt){
+		if(crt->crt){
+			proc(crt->crt);
+		}
+		else{
+			foreachCriterionInt(proc, param, crt->left);
+			foreachCriterionInt(proc, param, crt->right);
+		}
+	}
+
+	template<typename T>
+	void foreachCriterion(void (*proc)(T), T param){
+		foreachCriterionInt(proc, param, p->crtRoot);
+	}
+
+	int mouse(GLwindowState &ws, int key, int state, int mx, int my);
+	int lineHeight()const{return int(getFontHeight() * 1.2);}
+	template<typename T> void addCriterion(){
+		if(!p->crtRoot){
+			p->crtRoot = new CriterionNode();
+			p->crtRoot->crt = new T(*p);
+			p->crtRoot->left = p->crtRoot->right = NULL;
+		}
+		else{
+			CriterionNode *rightmost = p->crtRoot;
+			while(rightmost->right)
+				rightmost = rightmost->right;
+			CriterionNode *left = new CriterionNode(*rightmost);
+			rightmost->crt = NULL;
+			rightmost->left = left;
+			rightmost->right = new CriterionNode();
+			rightmost->right->crt = new T(*p);
+			rightmost->right->left = rightmost->right->right = NULL;
+		}
+	}
+};
+
+void GLWentlist::menu_criteria(){
+	glwAppend(new GLWentlistCriteria(this));
+}
+
+class SelectedItemCriterion : public ItemCriterion{
+public:
+	Player &pl;
+	SelectedItemCriterion(GLWentlist &entlist) : pl(entlist.pl), ItemCriterion(entlist){}
+	virtual bool match(const Entity *e)const{
+		for(Entity *pt = pl.selected; pt; pt = pt->selectnext) if(pt == e)
+			 return true;
+		return false;
+	}
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
+		GLWrect cr = p->clientRect();
+		glColor4f(.25, .25, .25, .5);
+		glBegin(GL_QUADS);
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glEnd();
+
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
+		glwprintf("Selected");
+		ItemCriterion::draw(ws, p, y);
+	}
+};
+
+class ClassItemCriterion : public ItemCriterion{
+public:
+	const char *cid;
+	ClassItemCriterion(GLWentlist &entlist) : cid(NULL), ItemCriterion(entlist){}
+	virtual bool match(const Entity *e)const{
+		return cid == e->classname();
+	}
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
+		GLWrect cr = p->clientRect();
+		glColor4f(.25, .25, .25, .5);
+		glBegin(GL_QUADS);
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glEnd();
+
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
+		glwprintf(cpplib::dstring() << "ClassName: " << (cid ? cid : "Unspecified"));
+		ItemCriterion::draw(ws, p, y);
+	}
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, int key, int state, int mx, int my){
+		if(int ret = ItemCriterion::mouse(ws, p, key, state, mx, my))
+			return ret;
+		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP){
+			struct PopupMenuItemClass : public PopupMenuItem{
+				typedef PopupMenuItem st;
+				ClassItemCriterion *p;
+				const char *cname;
+				PopupMenuItemClass(cpplib::dstring title, ClassItemCriterion *p, const char *cname) : p(p), cname(cname){
+					this->title = title;
+				}
+				virtual void execute(){
+					p->cid = cname;
+				}
+				virtual PopupMenuItem *clone(void)const{return new PopupMenuItemClass(*this);}
+			};
+
+			PopupMenu pm;
+			for(Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin(); it != Entity::constEntityCtorMap().end(); it++)
+				pm.append(new PopupMenuItemClass(it->first, this, it->first));
+			glwPopupMenu(ws, pm);
+			return 1;
+		}
+		return 0;
+	}
+};
+
+class TeamItemCriterion : public ItemCriterion{
+public:
+	int team;
+	TeamItemCriterion(GLWentlist &entlist) : team(-1), ItemCriterion(entlist){}
+	virtual bool match(const Entity *e)const{
+		return team == e->race;
+	}
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
+		GLWrect cr = p->clientRect();
+		glColor4f(.25, .25, .25, .5);
+		glBegin(GL_QUADS);
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
+		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
+		glEnd();
+
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
+		glwprintf(cpplib::dstring() << "Team: " << team);
+		ItemCriterion::draw(ws, p, y);
+	}
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, int key, int state, int mx, int my){
+		if(int ret = ItemCriterion::mouse(ws, p, key, state, mx, my))
+			return ret;
+		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP){
+			struct PopupMenuItemTeam : public PopupMenuItem{
+				typedef PopupMenuItem st;
+				TeamItemCriterion *p;
+				int team;
+				PopupMenuItemTeam(cpplib::dstring title, TeamItemCriterion *p, int team) : p(p), team(team){
+					this->title = title;
+				}
+				virtual void execute(){
+					p->team = team;
+				}
+				virtual PopupMenuItem *clone(void)const{return new PopupMenuItemTeam(*this);}
+			};
+
+			PopupMenu pm;
+			for(int i = 0; i < 4; i++)
+				pm.append(new PopupMenuItemTeam(cpplib::dstring() << "Team " << i, this, i));
+			glwPopupMenu(ws, pm);
+			return 1;
+		}
+		return 0;
+	}
+};
+
+
+int GLWentlistCriteria::mouse(GLwindowState &ws, int key, int state, int mx, int my){
+	int y = 0;
+	GLWrect cr = clientRect();
+	if(p->crtRoot){
+		int ret = p->crtRoot->mouse(ws, this, y, key, state, mx, my);
+		if(ret)
+			return ret;
+	}
+/*	for(int i = 0; i < crt.size(); i++){
+		GLWrect ir = cr;
+		ir.y0 = y;
+		ir.y1 = y += lineHeight();
+		if(ir.include(mx, my))
+			return crt[i]->mouse(ws, this, key, state, mx, my);
+	}*/
+	cr.y0 = y;
+	cr.y1 = cr.y0 + lineHeight();
+	if(cr.include(mx, my) && key == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		glwPopupMenu(ws, PopupMenu()
+			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Selected", this, &GLWentlistCriteria::addCriterion<SelectedItemCriterion>))
+			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Class Name", this, &GLWentlistCriteria::addCriterion<ClassItemCriterion>))
+			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Team", this, &GLWentlistCriteria::addCriterion<TeamItemCriterion>))
+		);
+		return 1;
+	}
+	return 0;
+}
+
+void CriterionNode::draw(GLwindowState &ws, GLWentlistCriteria *p, int &y){
+	GLWrect cr = p->clientRect();
+	if(!crt){
+		left->draw(ws, p, y);
+
+		glwpos2d(cr.x0, cr.y0 + y + p->getFontHeight());
+		glwprintf(op == And ? "&" : op == Or ? "|" : op == Xor ? "^" : "?");
+		y += p->lineHeight();
+
+		right->draw(ws, p, y);
+		return;
+	}
+	crt->draw(ws, p, y);
+
+	glColor4f(1,1,1,1);
+	glBegin(GL_LINES);
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + y + 2);
+	glVertex2i(cr.x1 - 2, cr.y0 + y + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + y + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - 2, cr.y0 + y + 2);
+	glEnd();
+	y += p->lineHeight();
+}
+
+int CriterionNode::mouse(GLwindowState &ws, GLWentlistCriteria *p, int &y, int key, int state, int mx, int my){
+	GLWrect cr = p->clientRect().move(0, 0);
+	if(!crt){
+		int ret = left->mouse(ws, p, y, key, state, mx, my);
+		if(ret)
+			return ret;
+
+		cr.y0 = y;
+		cr.y1 = y += p->lineHeight();
+		if(cr.include(mx, my)){
+			if(key == GLUT_LEFT_BUTTON && state == GLUT_UP && mx < p->getFontHeight()){
+				op = Op((op + 1) % NumOp);
+				return 1;
+			}
+		}
+
+		ret = right->mouse(ws, p, y, key, state, mx, my);
+		if(ret)
+			return ret;
+		return 0;
+	}
+
+	cr.y0 = y;
+	cr.y1 = y += p->lineHeight();
+	if(cr.include(mx, my)){
+		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP && cr.x1 - p->getFontHeight() < mx + cr.x0){
+			CriterionNode::deleteNode(&p->p->crtRoot, crt);
+			return 1; // Be sure to return 1 here or access violation will occur
+		}
+		return crt->mouse(ws, p, key, state, mx, my);
+	}
+	return 0;
 }

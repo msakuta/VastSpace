@@ -48,8 +48,11 @@ void Entity::init(){
 
 
 Entity *Entity::create(const char *cname, WarField *w){
-	int i;
-	EntityStatic *ctor = entityCtorMap()[cname];
+	EntityStatic *ctor = NULL;;
+	for(EntityCtorMap::iterator it = entityCtorMap().begin(); it != entityCtorMap().end(); it++) if(!strcmp(it->first, cname)){
+		ctor = it->second;
+		break;
+	}
 	if(!ctor)
 		return NULL;
 	Entity *e = ctor->create(w);
@@ -59,10 +62,10 @@ Entity *Entity::create(const char *cname, WarField *w){
 	return e;
 }
 
-unsigned Entity::registerEntity(std::string name, EntityStatic *ctor){
+unsigned Entity::registerEntity(ClassId name, EntityStatic *ctor){
 	EntityCtorMap &ctormap = entityCtorMap();
 	if(ctormap.find(name) != ctormap.end())
-		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name.c_str());
+		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name);
 	ctormap[name] = ctor;
 	return ctormap.size();
 }

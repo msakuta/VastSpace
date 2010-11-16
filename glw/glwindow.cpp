@@ -31,6 +31,7 @@ double GLwindow::getFontHeight(){return fontheight;}
 /// Window margin
 const long margin = 6;
 
+GLWrect GLelement::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 
 GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
 GLwindow *glwfocus = NULL; ///< Focused window.

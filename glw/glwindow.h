@@ -92,6 +92,7 @@ class GLelement : public Serializable{
 public:
 	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0){}
 	void setExtent(const GLWrect &r){xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;}
+	virtual GLWrect extentRect()const; ///< Something like GetWindowRect
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
 protected:

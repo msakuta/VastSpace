@@ -108,20 +108,26 @@ public:
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
-protected:
-	btRigidBody *bbody;
-
 	class EntityStatic{
 	public:
 		virtual Entity *create(WarField*) = 0;
 		virtual void destroy(Entity*) = 0;
 	};
 
-	typedef std::map<std::string, EntityStatic*> EntityCtorMap;
+	/// Entity class static list is typedefed in public privilege.
+	typedef std::map<ClassId, EntityStatic*> EntityCtorMap;
+	typedef const EntityCtorMap ConstEntityCtorMap;
+
+	/// Public interface to query all list of Entity classes.
+	static const EntityCtorMap &constEntityCtorMap(){return entityCtorMap();}
+
+protected:
+	btRigidBody *bbody;
+
 	virtual void init();
 	virtual Docker *getDockerInt();
 	virtual Builder *getBuilderInt();
-	static unsigned registerEntity(std::string name, EntityStatic *st);
+	static unsigned registerEntity(ClassId name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
 	template<class T> class Constructor : public EntityStatic{
 		virtual Entity *create(WarField *w){ return new T(w); }

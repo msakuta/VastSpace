@@ -1203,7 +1203,7 @@ void TexSphere::draw(const Viewer *vw){
 			if(!ret && *texname){
 				texname = "";
 			}
-			if(g_cloud && (cloudtexname || cloudtexlist) && !underCloud){
+			if(g_cloud && (cloudtexname.len() || cloudtexlist) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
 				if(!ret && *cloudtexname){
 					cloudtexname = "";
@@ -1212,7 +1212,7 @@ void TexSphere::draw(const Viewer *vw){
 		}
 		else{
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
-			if(g_cloud && (cloudtexname || cloudtexlist)){
+			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
 				cloudDraw
 				.texlist(&cloudtexlist)
 				.texmat(cloudRotation().cnj().tomat4())
@@ -1239,7 +1239,7 @@ void TexSphere::draw(const Viewer *vw){
 			if(!ret && *texname){
 				texname = "";
 			}
-			if(g_cloud && (cloudtexname || cloudtexlist) && !underCloud){
+			if(g_cloud && (cloudtexname.len() || cloudtexlist) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
 				if(!ret && *cloudtexname){
 					cloudtexname = "";

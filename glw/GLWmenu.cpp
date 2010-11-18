@@ -87,6 +87,7 @@ int GLWmenu::key(int key){
 }
 
 GLWmenu::~GLWmenu(){
+	delete menus;
 }
 
 /// \brief Constructs a GLWmenu object of given items.

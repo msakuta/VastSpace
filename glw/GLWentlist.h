@@ -17,79 +17,28 @@ public:
 	GLWentlist &entlist;
 	ItemCriterion(GLWentlist &entlist) : entlist(entlist){}
 	virtual bool match(const Entity *)const = 0; ///< Override to define criterion
-	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){}
-	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, int key, int state, int mx, int my){return 0;}
-};
 
-class CriterionNode{
-public:
-	ItemCriterion *crt;
-	CriterionNode *left, *right;
-	enum Op{And, Or, Xor, NumOp} op;
+	struct DrawParams;
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp); ///< Drawing method in GLWentlist.
 
-	bool match(Entity *e)const{
-		if(crt)
-			return crt->match(e);
-		if(op == And)
-			return left->match(e) && right->match(e);
-		else
-			return left->match(e) || right->match(e);
+	struct MouseParams;
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp); ///< Mouse response method in GLWentlist.
+
+	/// Delete method has a convention that delete itself and return a pointer that referrer should have instead.
+	/// This convention propergates to complex nested tree nodes properly.
+	virtual ItemCriterion *deleteNode(const ItemCriterion *node){
+		if(node == this){
+			delete this;
+			return NULL;
+		}
+		return this;
 	}
 
-	int mouse(GLwindowState &ws, GLWentlistCriteria *p, int &y, int key, int state, int mx, int my);
-	void draw(GLwindowState &ws, GLWentlistCriteria *p, int &y);
+	/// Alter all pointers in the tree that point to given item.
+	virtual void alterNode(const ItemCriterion *from, ItemCriterion *to){}
 
-	static bool deleteNode(CriterionNode **ppcrt, const ItemCriterion *node){
-		if(!*ppcrt)
-			return false;
-		if((*ppcrt)->crt){
-			if((*ppcrt)->crt == node){
-				delete (*ppcrt)->crt;
-				delete *ppcrt;
-				*ppcrt = NULL;
-				return true;
-			}
-			else
-				return false;
-		}
-		else
-			return deleteNodeInt(ppcrt, node);
-	}
-
-private:
-	/// The assumption is that *ppparent is not NULL and (*ppparent)->crt is NULL.
-	static bool deleteNodeInt(CriterionNode **ppparent, const ItemCriterion *node){
-		CriterionNode *parent = *ppparent;
-		if(parent->left->crt){
-			if(parent->left->crt == node){
-				delete parent->left->crt;
-				*ppparent = parent->right;
-				delete parent;
-				return true;
-			}
-		}
-		else{
-			bool ret = deleteNodeInt(&parent->left, node);
-			if(ret)
-				return ret;
-		}
-
-		if(parent->right->crt){
-			if(parent->right->crt == node){
-				delete parent->right->crt;
-				*ppparent = parent->left;
-				delete parent;
-				return true;
-			}
-		}
-		else{
-			bool ret = deleteNodeInt(&parent->right, node);
-			if(ret)
-				return ret;
-		}
-
-		return false;
-	}
+	/// Only not operator must return true.
+	virtual bool isNotOperator()const{return false;}
 };
 
 /// \brief Window that shows entity listing.
@@ -128,7 +77,7 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);
 
-	CriterionNode *crtRoot;
+	ItemCriterion *crtRoot;
 };
 
 #endif

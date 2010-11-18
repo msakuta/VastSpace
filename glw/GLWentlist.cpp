@@ -547,93 +547,74 @@ void GLWentlist::mouseLeave(GLwindowState &ws){
 	}
 }
 
+struct ItemCriterion::DrawParams{
+	int x;
+	int y;
+};
+
+struct ItemCriterion::MouseParams{
+	int x;
+	int y;
+	int key;
+	int state;
+	int mx;
+	int my;
+};
+
+class BinaryOpItemCriterion : public ItemCriterion{
+public:
+	ItemCriterion *left, *right;
+	enum Op{And, Or, Xor, NumOp} op;
+
+	BinaryOpItemCriterion(GLWentlist &entlist) : ItemCriterion(entlist), left(NULL), right(NULL), op(And){}
+
+	bool match(const Entity *e)const{
+		if(op == And)
+			return left->match(e) && right->match(e);
+		else if(op == Or)
+			return left->match(e) || right->match(e);
+		else
+			return left->match(e) ^ right->match(e);
+	}
+
+	int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp);
+	void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp);
+	virtual ItemCriterion *deleteNode(const ItemCriterion *node);
+	void alterNode(const ItemCriterion *from, ItemCriterion *to);
+};
+
 class GLWentlistCriteria : public GLwindowSizeable{
 public:
-	typedef std::vector<ItemCriterion*> ItemCriterionList;
 	GLWentlist *p;
-//	ItemCriterionList crt;
 	GLWentlistCriteria(GLWentlist *p) : p(p), GLwindowSizeable("Entity List Criteria"){
 		width = 450;
 		height = 300;
 		setClosable(true);
 	}
-	~GLWentlistCriteria(){
-//		for(int i = 0; i < crt.size(); i++)
-//			delete crt[i];
-	}
-	void drawint(GLwindowState &ws, CriterionNode *crt, int *py){
-		if(crt->crt){
-			crt->crt->draw(ws, this, *py);
-			*py += lineHeight();
-		}
-		else{
-			drawint(ws, crt->left, py);
-			drawint(ws, crt->right, py);
-		}
-	}
 	void draw(GLwindowState &ws, double t){
-		int y = 0;
-		if(p->crtRoot)
-			p->crtRoot->draw(ws, this, y);
+		ItemCriterion::DrawParams dp;
+		dp.x = 0;
+		dp.y = 0;
+		if(p->crtRoot){
+			p->crtRoot->draw(ws, this, dp);
+		}
 		GLWrect cr = clientRect();
 
 		glColor4f(1,1,1,1);
-		glwpos2d(cr.x0, cr.y0 + y + getFontHeight());
+		glwpos2d(cr.x0, cr.y0 + dp.y + lineHeight());
 		glwprintf("Add criterion...");
-	}
-	int mouseint(GLwindowState &ws, CriterionNode *crt, int *py, int key, int state, int mx, int my){
-		if(crt->crt){
-			GLWrect ir = clientRect();
-			ir.y0 = *py;
-			ir.y1 = *py += lineHeight();
-			if(ir.include(mx, my))
-				return crt->crt->mouse(ws, this, key, state, mx, my);
-		}
-		else{
-			int ret = mouseint(ws, crt->left, py, key, state, mx, my);
-			if(ret)
-				return ret;
-			ret = mouseint(ws, crt->right, py, key, state, mx, my);
-			if(ret)
-				return ret;
-		}
-		return 0;
-	}
-
-	template<typename T>
-	void foreachCriterionInt(void (*proc)(T), T param, CriterionNode *crt){
-		if(crt->crt){
-			proc(crt->crt);
-		}
-		else{
-			foreachCriterionInt(proc, param, crt->left);
-			foreachCriterionInt(proc, param, crt->right);
-		}
-	}
-
-	template<typename T>
-	void foreachCriterion(void (*proc)(T), T param){
-		foreachCriterionInt(proc, param, p->crtRoot);
 	}
 
 	int mouse(GLwindowState &ws, int key, int state, int mx, int my);
-	int lineHeight()const{return int(getFontHeight() * 1.2);}
+	int lineHeight()const{return int(getFontHeight() * 1.5);}
 	template<typename T> void addCriterion(){
-		if(!p->crtRoot){
-			p->crtRoot = new CriterionNode();
-			p->crtRoot->crt = new T(*p);
-			p->crtRoot->left = p->crtRoot->right = NULL;
-		}
+		if(!p->crtRoot)
+			p->crtRoot = new T(*p);
 		else{
-			CriterionNode *rightmost = p->crtRoot;
-			while(rightmost->right)
-				rightmost = rightmost->right;
-			CriterionNode *left = new CriterionNode(*rightmost);
-			rightmost->crt = NULL;
-			rightmost->left = left;
-			rightmost->right = new CriterionNode();
-			rightmost->right->crt = new T(*p);
-			rightmost->right->left = rightmost->right->right = NULL;
+			BinaryOpItemCriterion *node = new BinaryOpItemCriterion(*p);
+			node->left = p->crtRoot;
+			node->right = new T(*p);
+			p->crtRoot = node;
 		}
 	}
 };
@@ -642,74 +623,134 @@ void GLWentlist::menu_criteria(){
 	glwAppend(new GLWentlistCriteria(this));
 }
 
-class SelectedItemCriterion : public ItemCriterion{
+/// Negation operator.
+class ItemCriterionNot : public ItemCriterion{
+public:
+	ItemCriterion *crt;
+	ItemCriterionNot(GLWentlist &entlist, ItemCriterion *crt) : ItemCriterion(entlist), crt(crt){}
+	bool match(const Entity *e)const{
+		return !crt->match(e);
+	}
+	void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
+		GLWrect cr = p->clientRect();
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0 + dp.x, cr.y0 + dp.y + p->lineHeight());
+		glwprintf("! Not");
+		dp.y += p->lineHeight();
+
+		DrawParams dp2 = dp;
+		dp2.x += p->getFontWidth();
+		crt->draw(ws, p, dp2);
+
+		glColor4f(1,1,1,1);
+		glBegin(GL_LINE_STRIP);
+		glVertex2i(cr.x0 + dp.x + p->getFontWidth() / 2, cr.y0 + dp.y);
+		glVertex2i(cr.x0 + dp.x + p->getFontWidth() / 2, cr.y0 + dp2.y);
+		glVertex2i(cr.x0 + dp.x + p->getFontWidth(), cr.y0 + dp2.y);
+		glEnd();
+
+		dp.y = dp2.y;
+	}
+	int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+		if(int ret = ItemCriterion::mouse(ws, p, mp))
+			return ret;
+//		mp.y += p->lineHeight();
+		MouseParams mp2 = mp;
+		mp2.x += p->getFontWidth();
+		int ret = crt->mouse(ws, p, mp2);
+		mp.y = mp2.y;
+		return ret;
+	}
+	ItemCriterion *deleteNode(const ItemCriterion *node){
+		crt = crt->deleteNode(node);
+		if(!crt){
+			delete this;
+			return NULL;
+		}
+		else if(node == this){ // Return subtree if this node is to be deleted.
+			ItemCriterion *ret = crt;   // Reserve pointer to subnode before deleting this.
+			delete this;
+			return ret;
+		}
+		return this;
+	}
+	void alterNode(const ItemCriterion *from, ItemCriterion *to){
+		if(crt == from)
+			crt = to;
+		else
+			crt->alterNode(from, to);
+	}
+	bool isNotOperator()const{return true;}
+};
+
+/// Criterion with no sub-criterions like binary and unary operators, meaning a leaf in the tree.
+class LeafItemCriterion : public ItemCriterion{
+public:
+	LeafItemCriterion(GLWentlist &entlist) : ItemCriterion(entlist){}
+	virtual cpplib::dstring text()const = 0;
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
+		GLWrect cr = p->clientRect();
+		glColor4f(.25, .25, .25, .5);
+		glBegin(GL_QUADS);
+		glVertex2i(cr.x0 + dp.x + p->getFontWidth() + 4, cr.y0 + dp.y + p->lineHeight() - p->getFontHeight());
+		glVertex2i(cr.x0 + dp.x + p->getFontWidth() + 4, cr.y0 + dp.y + p->lineHeight());
+		glVertex2i(cr.x1 - p->getFontWidth() - 4, cr.y0 + dp.y + p->lineHeight());
+		glVertex2i(cr.x1 - p->getFontWidth() - 4, cr.y0 + dp.y + p->lineHeight() - p->getFontHeight());
+		glEnd();
+
+		glColor4f(1,1,1,1);
+		glwpos2d(cr.x0 + dp.x + p->getFontWidth() + 4, cr.y0 + dp.y + p->lineHeight());
+		glwprintf(text());
+		ItemCriterion::draw(ws, p, dp);
+	}
+	template<typename Criterion, typename T, T Criterion::*member> class PopupMenuItemCriterion : public PopupMenuItem{
+	public:
+		typedef PopupMenuItem st;
+		Criterion *p;
+		T src;
+		PopupMenuItemCriterion(cpplib::dstring title, Criterion *p, T src) : p(p), src(src){
+			this->title = title;
+		}
+		virtual void execute(){
+			p->*member = src;
+		}
+		virtual PopupMenuItem *clone(void)const{return new PopupMenuItemCriterion<Criterion, T, member>(*this);}
+	};
+};
+
+/// Matches if a given Entity is selected by the player.
+class SelectedItemCriterion : public LeafItemCriterion{
 public:
 	Player &pl;
-	SelectedItemCriterion(GLWentlist &entlist) : pl(entlist.pl), ItemCriterion(entlist){}
+	SelectedItemCriterion(GLWentlist &entlist) : pl(entlist.pl), LeafItemCriterion(entlist){}
 	virtual bool match(const Entity *e)const{
 		for(Entity *pt = pl.selected; pt; pt = pt->selectnext) if(pt == e)
 			 return true;
 		return false;
 	}
-	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
-		GLWrect cr = p->clientRect();
-		glColor4f(.25, .25, .25, .5);
-		glBegin(GL_QUADS);
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glEnd();
-
-		glColor4f(1,1,1,1);
-		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
-		glwprintf("Selected");
-		ItemCriterion::draw(ws, p, y);
-	}
+	virtual cpplib::dstring text()const{return "Selected";}
 };
 
-class ClassItemCriterion : public ItemCriterion{
+/// Matches an Entity class.
+class ClassItemCriterion : public LeafItemCriterion{
 public:
+	typedef ClassItemCriterion tt;
 	const char *cid;
-	ClassItemCriterion(GLWentlist &entlist) : cid(NULL), ItemCriterion(entlist){}
+	ClassItemCriterion(GLWentlist &entlist) : cid(NULL), LeafItemCriterion(entlist){}
 	virtual bool match(const Entity *e)const{
-		return cid == e->classname();
+		return !cid || cid == e->classname();
 	}
-	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
-		GLWrect cr = p->clientRect();
-		glColor4f(.25, .25, .25, .5);
-		glBegin(GL_QUADS);
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glEnd();
-
-		glColor4f(1,1,1,1);
-		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
-		glwprintf(cpplib::dstring() << "ClassName: " << (cid ? cid : "Unspecified"));
-		ItemCriterion::draw(ws, p, y);
-	}
-	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, int key, int state, int mx, int my){
-		if(int ret = ItemCriterion::mouse(ws, p, key, state, mx, my))
+	virtual cpplib::dstring text()const{return cpplib::dstring() << "ClassName: " << (cid ? cid : "Unspecified");}
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+		int y0 = mp.y;
+		int y1 = mp.y + p->lineHeight();
+		if(int ret = ItemCriterion::mouse(ws, p, mp))
 			return ret;
-		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP){
-			struct PopupMenuItemClass : public PopupMenuItem{
-				typedef PopupMenuItem st;
-				ClassItemCriterion *p;
-				const char *cname;
-				PopupMenuItemClass(cpplib::dstring title, ClassItemCriterion *p, const char *cname) : p(p), cname(cname){
-					this->title = title;
-				}
-				virtual void execute(){
-					p->cid = cname;
-				}
-				virtual PopupMenuItem *clone(void)const{return new PopupMenuItemClass(*this);}
-			};
-
+		GLWrect cr = p->clientRect();
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && y0 < mp.my && mp.my < y1){
 			PopupMenu pm;
 			for(Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin(); it != Entity::constEntityCtorMap().end(); it++)
-				pm.append(new PopupMenuItemClass(it->first, this, it->first));
+				pm.append(new PopupMenuItemCriterion<tt, const char *, &tt::cid>(it->first, this, it->first));
 			glwPopupMenu(ws, pm);
 			return 1;
 		}
@@ -717,138 +758,234 @@ public:
 	}
 };
 
-class TeamItemCriterion : public ItemCriterion{
+/// Matches if given Entity belongs to a team.
+class TeamItemCriterion : public LeafItemCriterion{
 public:
+	typedef TeamItemCriterion tt;
 	int team;
-	TeamItemCriterion(GLWentlist &entlist) : team(-1), ItemCriterion(entlist){}
+	TeamItemCriterion(GLWentlist &entlist) : team(-1), LeafItemCriterion(entlist){}
 	virtual bool match(const Entity *e)const{
-		return team == e->race;
+		return team == -1 || team == e->race;
 	}
-	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, int y){
-		GLWrect cr = p->clientRect();
-		glColor4f(.25, .25, .25, .5);
-		glBegin(GL_QUADS);
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glVertex2i(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->getFontHeight());
-		glVertex2i(cr.x1 - p->getFontHeight() - 4, cr.y0 + y + p->lineHeight() - p->getFontHeight());
-		glEnd();
-
-		glColor4f(1,1,1,1);
-		glwpos2d(cr.x0 + p->getFontHeight() + 4, cr.y0 + y + p->lineHeight());
-		glwprintf(cpplib::dstring() << "Team: " << team);
-		ItemCriterion::draw(ws, p, y);
+	virtual cpplib::dstring text()const{return
+		team == -1 ? "Team: Unspecified" :
+		cpplib::dstring() << "Team: " << team;
 	}
-	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, int key, int state, int mx, int my){
-		if(int ret = ItemCriterion::mouse(ws, p, key, state, mx, my))
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+		int y0 = mp.y;
+		int y1 = mp.y + p->lineHeight();
+		if(int ret = ItemCriterion::mouse(ws, p, mp))
 			return ret;
-		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP){
-			struct PopupMenuItemTeam : public PopupMenuItem{
-				typedef PopupMenuItem st;
-				TeamItemCriterion *p;
-				int team;
-				PopupMenuItemTeam(cpplib::dstring title, TeamItemCriterion *p, int team) : p(p), team(team){
-					this->title = title;
-				}
-				virtual void execute(){
-					p->team = team;
-				}
-				virtual PopupMenuItem *clone(void)const{return new PopupMenuItemTeam(*this);}
-			};
-
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && y0 < mp.my && mp.my < y1){
 			PopupMenu pm;
+			pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(cpplib::dstring() << "Unspecified", this, -1));
 			for(int i = 0; i < 4; i++)
-				pm.append(new PopupMenuItemTeam(cpplib::dstring() << "Team " << i, this, i));
+				pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(cpplib::dstring() << "Team " << i, this, i));
 			glwPopupMenu(ws, pm);
 			return 1;
 		}
 		return 0;
 	}
 };
+
+/// Matches if given Entity belongs to a CoordSys.
+class CoordSysItemCriterion : public LeafItemCriterion{
+public:
+	typedef CoordSysItemCriterion tt;
+	const CoordSys *cs;
+	CoordSysItemCriterion(GLWentlist &entlist) : cs(NULL), LeafItemCriterion(entlist){}
+	virtual bool match(const Entity *e)const{
+		return !cs || e->w->cs == cs;
+	}
+	virtual cpplib::dstring text()const{return cpplib::dstring() << "CoordSys: " << (cs ? cs->getpath() : "Unspecified");}
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+		int y0 = mp.y;
+		int y1 = mp.y + p->lineHeight();
+		if(int ret = ItemCriterion::mouse(ws, p, mp))
+			return ret;
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && y0 < mp.my && mp.my < y1){
+			PopupMenu pm;
+			const CoordSys *root = p->p->pl.cs->findcspath("/");
+			mouseint(root, pm);
+			glwPopupMenu(ws, pm);
+			return 1;
+		}
+		return 0;
+	}
+protected:
+	/// Searches through all CoordSys that has a WarSpace.
+	void mouseint(const CoordSys *cs, PopupMenu &pm){
+		typedef PopupMenuItemCriterion<tt, const CoordSys *, &tt::cs> PopupMenuItemCS;
+		if(!cs) return;
+		if(cs->w)
+			pm.append(new PopupMenuItemCS(cs->getpath(), this, cs));
+		mouseint(cs->next, pm);
+		mouseint(cs->children, pm);
+	}
+};
+
+
+// ------------------------------
+// Implementation
+// ------------------------------
+
+
+void ItemCriterion::draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
+	GLWrect cr = p->clientRect();
+
+	glColor4f(1,1,1,1);
+	glBegin(GL_LINES);
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + dp.y + 2);
+	glVertex2i(cr.x1 - 2, cr.y0 + dp.y + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + dp.y + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - 2, cr.y0 + dp.y + 2);
+	glEnd();
+
+	dp.y += p->lineHeight();
+}
+
+int ItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+	GLWrect cr = p->clientRect().move(0, 0);
+
+	cr.y0 = mp.y;
+	cr.y1 = mp.y += p->lineHeight();
+	if(cr.include(mp.mx, mp.my)){
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && mp.mx < mp.x + p->getFontHeight()){
+			// Nested NOT operators will automatically collapse to nothing.
+			if(this->isNotOperator())
+				p->p->crtRoot = p->p->crtRoot->deleteNode(this);
+			else{
+				ItemCriterionNot *not = new ItemCriterionNot(entlist, this);
+				if(p->p->crtRoot == this)
+					p->p->crtRoot = not;
+				else
+					p->p->crtRoot->alterNode(this, not);
+			}
+			return 1; // Be sure to return 1 here or access violation will occur
+		}
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && cr.x1 - p->getFontHeight() < mp.mx){
+			p->p->crtRoot = p->p->crtRoot->deleteNode(this);
+			return 1; // Be sure to return 1 here or access violation will occur
+		}
+		return ItemCriterion::mouse(ws, p, mp);
+	}
+	return 0;
+}
 
 
 int GLWentlistCriteria::mouse(GLwindowState &ws, int key, int state, int mx, int my){
-	int y = 0;
-	GLWrect cr = clientRect();
+	ItemCriterion::MouseParams mp;
+	mp.x = 0;
+	mp.y = 0;
+	mp.key = key;
+	mp.state = state;
+	mp.mx = mx;
+	mp.my = my;
+
 	if(p->crtRoot){
-		int ret = p->crtRoot->mouse(ws, this, y, key, state, mx, my);
+		int ret = p->crtRoot->mouse(ws, this, mp);
 		if(ret)
 			return ret;
 	}
-/*	for(int i = 0; i < crt.size(); i++){
-		GLWrect ir = cr;
-		ir.y0 = y;
-		ir.y1 = y += lineHeight();
-		if(ir.include(mx, my))
-			return crt[i]->mouse(ws, this, key, state, mx, my);
-	}*/
-	cr.y0 = y;
+	GLWrect cr = clientRect().move(0, 0);
+	cr.y0 = mp.y;
 	cr.y1 = cr.y0 + lineHeight();
 	if(cr.include(mx, my) && key == GLUT_LEFT_BUTTON && state == GLUT_UP){
 		glwPopupMenu(ws, PopupMenu()
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Selected", this, &GLWentlistCriteria::addCriterion<SelectedItemCriterion>))
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Class Name", this, &GLWentlistCriteria::addCriterion<ClassItemCriterion>))
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Team", this, &GLWentlistCriteria::addCriterion<TeamItemCriterion>))
+			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("CoordSys", this, &GLWentlistCriteria::addCriterion<CoordSysItemCriterion>))
 		);
 		return 1;
 	}
 	return 0;
 }
 
-void CriterionNode::draw(GLwindowState &ws, GLWentlistCriteria *p, int &y){
+void BinaryOpItemCriterion::draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
 	GLWrect cr = p->clientRect();
-	if(!crt){
-		left->draw(ws, p, y);
-
-		glwpos2d(cr.x0, cr.y0 + y + p->getFontHeight());
-		glwprintf(op == And ? "&" : op == Or ? "|" : op == Xor ? "^" : "?");
-		y += p->lineHeight();
-
-		right->draw(ws, p, y);
-		return;
-	}
-	crt->draw(ws, p, y);
+	DrawParams dp2 = dp;
+	dp2.x += p->getFontWidth();
 
 	glColor4f(1,1,1,1);
-	glBegin(GL_LINES);
-	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + y + 2);
-	glVertex2i(cr.x1 - 2, cr.y0 + y + p->getFontHeight() - 2);
-	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + y + p->getFontHeight() - 2);
-	glVertex2i(cr.x1 - 2, cr.y0 + y + 2);
+	glwpos2d(cr.x0 + dp.x, cr.y0 + dp2.y + p->lineHeight());
+	glwprintf(op == And ? "& And" : op == Or ? "| Or" : op == Xor ? "^ Xor" : "?");
+	ItemCriterion::draw(ws, p, dp2);
+
+	left->draw(ws, p, dp2);
+
+	right->draw(ws, p, dp2);
+
+	glColor4f(1,1,1,1);
+	glBegin(GL_LINE_STRIP);
+	glVertex2i(cr.x0 + dp.x + p->getFontWidth() / 2, cr.y0 + dp.y + p->lineHeight());
+	glVertex2i(cr.x0 + dp.x + p->getFontWidth() / 2, cr.y0 + dp2.y);
+	glVertex2i(cr.x0 + dp.x + p->getFontWidth(), cr.y0 + dp2.y);
 	glEnd();
-	y += p->lineHeight();
+
+	dp.y = dp2.y;
 }
 
-int CriterionNode::mouse(GLwindowState &ws, GLWentlistCriteria *p, int &y, int key, int state, int mx, int my){
+int BinaryOpItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp){
+	MouseParams mp2 = mp;
+	mp2.x += p->getFontWidth();
 	GLWrect cr = p->clientRect().move(0, 0);
-	if(!crt){
-		int ret = left->mouse(ws, p, y, key, state, mx, my);
-		if(ret)
-			return ret;
-
-		cr.y0 = y;
-		cr.y1 = y += p->lineHeight();
-		if(cr.include(mx, my)){
-			if(key == GLUT_LEFT_BUTTON && state == GLUT_UP && mx < p->getFontHeight()){
-				op = Op((op + 1) % NumOp);
-				return 1;
-			}
+	cr.y0 = mp2.y;
+	cr.y1 = mp2.y + p->lineHeight();
+	int ret = ItemCriterion::mouse(ws, p, mp2);
+	if(ret)
+		return ret;
+	if(cr.include(mp.mx, mp.my)){
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && mp.mx < mp.x + 2 * p->getFontHeight()){
+			op = Op((op + 1) % NumOp);
+			return 1;
 		}
-
-		ret = right->mouse(ws, p, y, key, state, mx, my);
-		if(ret)
-			return ret;
-		return 0;
 	}
 
-	cr.y0 = y;
-	cr.y1 = y += p->lineHeight();
-	if(cr.include(mx, my)){
-		if(key == GLUT_LEFT_BUTTON && state == GLUT_UP && cr.x1 - p->getFontHeight() < mx + cr.x0){
-			CriterionNode::deleteNode(&p->p->crtRoot, crt);
-			return 1; // Be sure to return 1 here or access violation will occur
-		}
-		return crt->mouse(ws, p, key, state, mx, my);
-	}
+	ret = left->mouse(ws, p, mp2);
+	if(ret)
+		return ret;
+
+	ret = right->mouse(ws, p, mp2);
+	if(ret)
+		return ret;
+
+	mp.y = mp2.y;
 	return 0;
+}
+
+ItemCriterion *BinaryOpItemCriterion::deleteNode(const ItemCriterion *node){
+	if(node == this){
+		left->deleteNode(left);   // Avoid
+		right->deleteNode(right); // memory
+		delete this;              // leaks
+		return NULL;
+	}
+	left = left->deleteNode(node);
+	right = right->deleteNode(node);
+
+	// Wonder if this case exist
+	if(!left && !right){
+		delete this;
+		return NULL;
+	}
+
+	// If either one of operands are deleted, the binary operator is unnecessary too.
+	if(!left || !right){
+		ItemCriterion *ret = left ? left : right;
+		delete this;
+		return ret;
+	}
+	return this;
+}
+
+void BinaryOpItemCriterion::alterNode(const ItemCriterion *from, ItemCriterion *to){
+	if(left == from)
+		left = to;
+	else
+		left->alterNode(from, to);
+	if(right == from)
+		right = to;
+	else
+		right->alterNode(from, to);
 }

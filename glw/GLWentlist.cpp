@@ -17,6 +17,41 @@ extern "C"{
 #define PROFILE_SORT 0
 
 
+/// Class that represents a criterion to determine if given Entity is included in the Entity Listing.
+class ItemCriterion{
+public:
+	GLWentlist &entlist;
+	ItemCriterion(GLWentlist &entlist) : entlist(entlist), expanded(false){}
+	virtual ClassId id()const = 0; ///< Define distinguishable identifier in derived class.
+	virtual bool match(const Entity *)const = 0; ///< Override to define criterion
+
+	struct DrawParams;
+	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp); ///< Drawing method in GLWentlist.
+
+	struct MouseParams;
+	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp); ///< Mouse response method in GLWentlist.
+
+	/// Delete method has a convention that delete itself and return a pointer that referrer should have instead.
+	/// This convention propergates to complex nested tree nodes properly.
+	virtual ItemCriterion *deleteNode(const ItemCriterion *node){
+		if(node == this){
+			delete this;
+			return NULL;
+		}
+		return this;
+	}
+
+	/// Alter all pointers in the tree that point to given item.
+	virtual void alterNode(const ItemCriterion *from, ItemCriterion *to){}
+
+	virtual void foreachNode(void proc(ItemCriterion *, void*), void *param){
+		proc(this, param);
+	}
+
+protected:
+	bool expanded;
+};
+
 
 
 static bool pents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
@@ -431,6 +466,21 @@ struct PopupMenuItemFunctionT : public PopupMenuItem{
 	virtual PopupMenuItem *clone(void)const{return new PopupMenuItemFunctionT(*this);}
 };
 
+template<typename T, typename TA>
+struct PopupMenuItemFunctionArgT : public PopupMenuItem{
+	typedef PopupMenuItem st;
+	T *p;
+	TA arg;
+	void (T::*func)(TA);
+	PopupMenuItemFunctionArgT(cpplib::dstring title, T *p, void (T::*func)(TA), TA arg) : p(p), func(func), arg(arg){
+		this->title = title;
+	}
+	virtual void execute(){
+		(p->*func)(arg);
+	}
+	virtual PopupMenuItem *clone(void)const{return new PopupMenuItemFunctionArgT(*this);}
+};
+
 int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 	GLWrect r = clientRect();
 	ClassItemSelector cis(this);
@@ -567,7 +617,8 @@ public:
 	enum Op{And, Or, Xor, NumOp} op;
 
 	BinaryOpItemCriterion(GLWentlist &entlist) : ItemCriterion(entlist), left(NULL), right(NULL), op(And){}
-
+	static const ClassId sid;
+	virtual ClassId id()const{return "BinaryOpItemCriterion";}
 	bool match(const Entity *e)const{
 		if(op == And)
 			return left->match(e) && right->match(e);
@@ -581,7 +632,13 @@ public:
 	void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp);
 	virtual ItemCriterion *deleteNode(const ItemCriterion *node);
 	void alterNode(const ItemCriterion *from, ItemCriterion *to);
+	void foreachNode(void proc(ItemCriterion *, void *), void *param){
+		ItemCriterion::foreachNode(proc, param);
+		left->foreachNode(proc, param);
+		right->foreachNode(proc, param);
+	}
 };
+const ClassId BinaryOpItemCriterion::sid = "ItemCriterionNot";
 
 class GLWentlistCriteria : public GLwindowSizeable{
 public:
@@ -617,6 +674,26 @@ public:
 			p->crtRoot = node;
 		}
 	}
+	template<typename T> class MenuItemInsertCriterion : public PopupMenuItem{
+	public:
+		typedef PopupMenuItem st;
+		ItemCriterion *node;
+		MenuItemInsertCriterion(cpplib::dstring title, ItemCriterion *p) : node(p){
+			this->title = title;
+		}
+		virtual void execute(){
+			if(!node->entlist.crtRoot)
+				return;
+			BinaryOpItemCriterion *newnode = new BinaryOpItemCriterion(node->entlist);
+			newnode->left = node;
+			newnode->right = new T(node->entlist);
+			if(node->entlist.crtRoot == node)
+				node->entlist.crtRoot = newnode;
+			else
+				node->entlist.crtRoot->alterNode(node, newnode);
+		}
+		virtual PopupMenuItem *clone(void)const{return new MenuItemInsertCriterion(*this);}
+	};
 };
 
 void GLWentlist::menu_criteria(){
@@ -628,6 +705,8 @@ class ItemCriterionNot : public ItemCriterion{
 public:
 	ItemCriterion *crt;
 	ItemCriterionNot(GLWentlist &entlist, ItemCriterion *crt) : ItemCriterion(entlist), crt(crt){}
+	static const ClassId sid;
+	virtual ClassId id()const{return sid;}
 	bool match(const Entity *e)const{
 		return !crt->match(e);
 	}
@@ -680,13 +759,19 @@ public:
 		else
 			crt->alterNode(from, to);
 	}
-	bool isNotOperator()const{return true;}
+	void foreachNode(void proc(ItemCriterion *, void *), void *param){
+		ItemCriterion::foreachNode(proc, param);
+		crt->foreachNode(proc, param);
+	}
 };
+const ClassId ItemCriterionNot::sid = "ItemCriterionNot";
 
 /// Criterion with no sub-criterions like binary and unary operators, meaning a leaf in the tree.
 class LeafItemCriterion : public ItemCriterion{
 public:
 	LeafItemCriterion(GLWentlist &entlist) : ItemCriterion(entlist){}
+	static const ClassId sid;
+	virtual ClassId id()const{return sid;}
 	virtual cpplib::dstring text()const = 0;
 	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
 		GLWrect cr = p->clientRect();
@@ -717,6 +802,7 @@ public:
 		virtual PopupMenuItem *clone(void)const{return new PopupMenuItemCriterion<Criterion, T, member>(*this);}
 	};
 };
+const ClassId LeafItemCriterion::sid = "LeafItemCriterion";
 
 /// Matches if a given Entity is selected by the player.
 class SelectedItemCriterion : public LeafItemCriterion{
@@ -832,13 +918,19 @@ protected:
 
 void ItemCriterion::draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp){
 	GLWrect cr = p->clientRect();
+	int y0 = cr.y0 + dp.y + p->lineHeight() - p->getFontHeight();
 
 	glColor4f(1,1,1,1);
 	glBegin(GL_LINES);
-	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + dp.y + 2);
-	glVertex2i(cr.x1 - 2, cr.y0 + dp.y + p->getFontHeight() - 2);
-	glVertex2i(cr.x1 - p->getFontHeight() + 2, cr.y0 + dp.y + p->getFontHeight() - 2);
-	glVertex2i(cr.x1 - 2, cr.y0 + dp.y + 2);
+	glVertex2i(cr.x1 - p->getFontHeight() * 3 / 2, y0 + 2);
+	glVertex2i(cr.x1 - p->getFontHeight() * 3 / 2, y0 + p->getFontHeight() - 1);
+	glVertex2i(cr.x1 - p->getFontHeight() * 2 + 1, y0 + p->getFontHeight() / 2);
+	glVertex2i(cr.x1 - p->getFontHeight() * 1 - 2, y0 + p->getFontHeight() / 2);
+
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, y0 + 2);
+	glVertex2i(cr.x1 - 2, y0 + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - p->getFontHeight() + 2, y0 + p->getFontHeight() - 2);
+	glVertex2i(cr.x1 - 2, y0 + 2);
 	glEnd();
 
 	dp.y += p->lineHeight();
@@ -850,22 +942,34 @@ int ItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &
 	cr.y0 = mp.y;
 	cr.y1 = mp.y += p->lineHeight();
 	if(cr.include(mp.mx, mp.my)){
-		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && mp.mx < mp.x + p->getFontHeight()){
-			// Nested NOT operators will automatically collapse to nothing.
-			if(this->isNotOperator())
-				p->p->crtRoot = p->p->crtRoot->deleteNode(this);
-			else{
-				ItemCriterionNot *not = new ItemCriterionNot(entlist, this);
-				if(p->p->crtRoot == this)
-					p->p->crtRoot = not;
-				else
-					p->p->crtRoot->alterNode(this, not);
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP){
+			if(mp.mx < mp.x + p->getFontHeight()){
+				// Nested NOT operators will automatically collapse to nothing.
+				if(this->id() == ItemCriterionNot::sid)
+					p->p->crtRoot = p->p->crtRoot->deleteNode(this);
+				else{
+					ItemCriterionNot *not = new ItemCriterionNot(entlist, this);
+					if(p->p->crtRoot == this)
+						p->p->crtRoot = not;
+					else
+						p->p->crtRoot->alterNode(this, not);
+				}
+				return 1; // Be sure to return 1 here or access violation will occur
 			}
-			return 1; // Be sure to return 1 here or access violation will occur
-		}
-		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && cr.x1 - p->getFontHeight() < mp.mx){
-			p->p->crtRoot = p->p->crtRoot->deleteNode(this);
-			return 1; // Be sure to return 1 here or access violation will occur
+			if(cr.x1 - p->getFontHeight() * 2 < mp.mx && mp.mx < cr.x1 - p->getFontHeight()){
+//				expanded = !expanded;
+				glwPopupMenu(ws, PopupMenu()
+					.append(new GLWentlistCriteria::MenuItemInsertCriterion<SelectedItemCriterion>("Selected", this))
+					.append(new GLWentlistCriteria::MenuItemInsertCriterion<ClassItemCriterion>("Class Name", this))
+					.append(new GLWentlistCriteria::MenuItemInsertCriterion<TeamItemCriterion>("Team", this))
+					.append(new GLWentlistCriteria::MenuItemInsertCriterion<CoordSysItemCriterion>("CoordSys", this))
+				);
+				return 1;
+			}
+			else if(cr.x1 - p->getFontHeight() < mp.mx){
+				p->p->crtRoot = p->p->crtRoot->deleteNode(this);
+				return 1; // Be sure to return 1 here or access violation will occur
+			}
 		}
 		return ItemCriterion::mouse(ws, p, mp);
 	}

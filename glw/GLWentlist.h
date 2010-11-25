@@ -11,35 +11,7 @@
 class GLWentlist;
 class GLWentlistCriteria;
 
-/// Class that represents a criterion to determine if given Entity is included in the Entity Listing.
-class ItemCriterion{
-public:
-	GLWentlist &entlist;
-	ItemCriterion(GLWentlist &entlist) : entlist(entlist){}
-	virtual bool match(const Entity *)const = 0; ///< Override to define criterion
-
-	struct DrawParams;
-	virtual void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp); ///< Drawing method in GLWentlist.
-
-	struct MouseParams;
-	virtual int mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &mp); ///< Mouse response method in GLWentlist.
-
-	/// Delete method has a convention that delete itself and return a pointer that referrer should have instead.
-	/// This convention propergates to complex nested tree nodes properly.
-	virtual ItemCriterion *deleteNode(const ItemCriterion *node){
-		if(node == this){
-			delete this;
-			return NULL;
-		}
-		return this;
-	}
-
-	/// Alter all pointers in the tree that point to given item.
-	virtual void alterNode(const ItemCriterion *from, ItemCriterion *to){}
-
-	/// Only not operator must return true.
-	virtual bool isNotOperator()const{return false;}
-};
+class ItemCriterion;
 
 /// \brief Window that shows entity listing.
 ///

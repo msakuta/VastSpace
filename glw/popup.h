@@ -13,6 +13,7 @@ struct PopupMenuItem{
 	cpplib::dstring title; ///< String shown to identify the menu item.
 	int key; ///< Shortcut key.
 	PopupMenuItem *next; ///< Link to next node in the linked list.
+	PopupMenuItem(cpplib::dstring title = "") : title(title){}
 	virtual bool isSeparator()const{return false;}
 	virtual void execute(){};
 	virtual PopupMenuItem *clone()const = 0;

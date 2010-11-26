@@ -21,7 +21,7 @@ extern "C"{
 class ItemCriterion{
 public:
 	GLWentlist &entlist;
-	ItemCriterion(GLWentlist &entlist) : entlist(entlist), expanded(false){}
+	ItemCriterion(GLWentlist &entlist) : entlist(entlist){}
 	virtual ClassId id()const = 0; ///< Define distinguishable identifier in derived class.
 	virtual bool match(const Entity *)const = 0; ///< Override to define criterion
 
@@ -44,12 +44,7 @@ public:
 	/// Alter all pointers in the tree that point to given item.
 	virtual void alterNode(const ItemCriterion *from, ItemCriterion *to){}
 
-	virtual void foreachNode(void proc(ItemCriterion *, void*), void *param){
-		proc(this, param);
-	}
-
-protected:
-	bool expanded;
+	template<typename T> void insertNode();
 };
 
 
@@ -457,9 +452,7 @@ struct PopupMenuItemFunctionT : public PopupMenuItem{
 	typedef PopupMenuItem st;
 	T *p;
 	void (T::*func)();
-	PopupMenuItemFunctionT(cpplib::dstring title, T *p, void (T::*func)()) : p(p), func(func){
-		this->title = title;
-	}
+	PopupMenuItemFunctionT(cpplib::dstring title, T *p, void (T::*func)()) : st(title), p(p), func(func){}
 	virtual void execute(){
 		(p->*func)();
 	}
@@ -472,9 +465,7 @@ struct PopupMenuItemFunctionArgT : public PopupMenuItem{
 	T *p;
 	TA arg;
 	void (T::*func)(TA);
-	PopupMenuItemFunctionArgT(cpplib::dstring title, T *p, void (T::*func)(TA), TA arg) : p(p), func(func), arg(arg){
-		this->title = title;
-	}
+	PopupMenuItemFunctionArgT(cpplib::dstring title, T *p, void (T::*func)(TA), TA arg) : st(title), p(p), func(func), arg(arg){}
 	virtual void execute(){
 		(p->*func)(arg);
 	}
@@ -632,11 +623,6 @@ public:
 	void draw(GLwindowState &ws, GLWentlistCriteria *p, DrawParams &dp);
 	virtual ItemCriterion *deleteNode(const ItemCriterion *node);
 	void alterNode(const ItemCriterion *from, ItemCriterion *to);
-	void foreachNode(void proc(ItemCriterion *, void *), void *param){
-		ItemCriterion::foreachNode(proc, param);
-		left->foreachNode(proc, param);
-		right->foreachNode(proc, param);
-	}
 };
 const ClassId BinaryOpItemCriterion::sid = "ItemCriterionNot";
 
@@ -674,19 +660,20 @@ public:
 			p->crtRoot = node;
 		}
 	}
+	/// Deriving PopupMenuItem directly to create a class like this looks more straightforward than PopupMenuItemFunctionT,
+	/// but it certainly eats more code size through templating.
 	template<typename T> class MenuItemInsertCriterion : public PopupMenuItem{
 	public:
 		typedef PopupMenuItem st;
 		ItemCriterion *node;
-		MenuItemInsertCriterion(cpplib::dstring title, ItemCriterion *p) : node(p){
-			this->title = title;
-		}
+		MenuItemInsertCriterion(cpplib::dstring title, ItemCriterion *p) : st(title), node(p){}
+		T *creator(){return new T(node->entlist);}
 		virtual void execute(){
 			if(!node->entlist.crtRoot)
 				return;
 			BinaryOpItemCriterion *newnode = new BinaryOpItemCriterion(node->entlist);
 			newnode->left = node;
-			newnode->right = new T(node->entlist);
+			newnode->right = creator();
 			if(node->entlist.crtRoot == node)
 				node->entlist.crtRoot = newnode;
 			else
@@ -758,10 +745,6 @@ public:
 			crt = to;
 		else
 			crt->alterNode(from, to);
-	}
-	void foreachNode(void proc(ItemCriterion *, void *), void *param){
-		ItemCriterion::foreachNode(proc, param);
-		crt->foreachNode(proc, param);
 	}
 };
 const ClassId ItemCriterionNot::sid = "ItemCriterionNot";
@@ -957,12 +940,15 @@ int ItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &
 				return 1; // Be sure to return 1 here or access violation will occur
 			}
 			if(cr.x1 - p->getFontHeight() * 2 < mp.mx && mp.mx < cr.x1 - p->getFontHeight()){
-//				expanded = !expanded;
 				glwPopupMenu(ws, PopupMenu()
-					.append(new GLWentlistCriteria::MenuItemInsertCriterion<SelectedItemCriterion>("Selected", this))
+/*					.append(new GLWentlistCriteria::MenuItemInsertCriterion<SelectedItemCriterion>("Selected", this))
 					.append(new GLWentlistCriteria::MenuItemInsertCriterion<ClassItemCriterion>("Class Name", this))
 					.append(new GLWentlistCriteria::MenuItemInsertCriterion<TeamItemCriterion>("Team", this))
-					.append(new GLWentlistCriteria::MenuItemInsertCriterion<CoordSysItemCriterion>("CoordSys", this))
+					.append(new GLWentlistCriteria::MenuItemInsertCriterion<CoordSysItemCriterion>("CoordSys", this))*/
+					.append(new PopupMenuItemFunctionT<ItemCriterion>("Selected", this, &ItemCriterion::insertNode<SelectedItemCriterion>))
+					.append(new PopupMenuItemFunctionT<ItemCriterion>("Class Name", this, &ItemCriterion::insertNode<ClassItemCriterion>))
+					.append(new PopupMenuItemFunctionT<ItemCriterion>("Team", this, &ItemCriterion::insertNode<TeamItemCriterion>))
+					.append(new PopupMenuItemFunctionT<ItemCriterion>("CoordSys", this, &ItemCriterion::insertNode<CoordSysItemCriterion>))
 				);
 				return 1;
 			}
@@ -975,6 +961,19 @@ int ItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &
 	}
 	return 0;
 }
+
+template<typename T> void ItemCriterion::insertNode(){
+	if(!entlist.crtRoot)
+		return;
+	BinaryOpItemCriterion *newnode = new BinaryOpItemCriterion(entlist);
+	newnode->left = this;
+	newnode->right = new T(entlist);
+	if(entlist.crtRoot == this)
+		entlist.crtRoot = newnode;
+	else
+		entlist.crtRoot->alterNode(this, newnode);
+}
+
 
 
 int GLWentlistCriteria::mouse(GLwindowState &ws, int key, int state, int mx, int my){
@@ -1040,7 +1039,7 @@ int BinaryOpItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, Mouse
 	if(ret)
 		return ret;
 	if(cr.include(mp.mx, mp.my)){
-		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && mp.mx < mp.x + 2 * p->getFontHeight()){
+		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP/* && mp.mx < mp.x + 2 * p->getFontHeight()*/){
 			op = Op((op + 1) % NumOp);
 			return 1;
 		}

@@ -12,6 +12,7 @@ extern "C"{
 }
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <sstream>
 #include <fstream>
 
@@ -488,14 +489,74 @@ bool Astrobj::sq_define(HSQUIRRELVM v){
 }
 
 
-Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs){ absmag = 0; }
+Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown){ absmag = 0; }
 
 const char *Star::classname()const{
-	return "Star";
+	return Star::classRegister.id;
 }
 
 const ClassRegister<Star> Star::classRegister("Star");
 
+bool Star::readFile(StellarContext &sc, int argc, char *argv[]){
+	char *s = argv[0], *ps = argv[1];
+	if(0);
+	else if(!strcmp(s, "spectral")){
+		if(argv[1]){
+			spect = nameToSpectral(ps);
+		}
+		return true;
+	}
+	else
+		return st::readFile(sc, argc, argv);
+}
+
+bool Star::readFileEnd(StellarContext &sc){
+	return st::readFileEnd(sc);
+}
+
+Star::SpectralType Star::nameToSpectral(const char *name){
+	if(toupper(name[0]) == 'O')
+		return O;
+	if(toupper(name[0]) == 'B')
+		return B;
+	if(toupper(name[0]) == 'A')
+		return A;
+	if(toupper(name[0]) == 'F')
+		return F;
+	if(toupper(name[0]) == 'G')
+		return G;
+	if(toupper(name[0]) == 'K')
+		return K;
+	if(toupper(name[0]) == 'M')
+		return M;
+	return Unknown;
+}
+
+const char *Star::spectralToName(SpectralType spect){
+	switch(spect){
+		case O: return "O";
+		case B: return "B";
+		case A: return "A";
+		case F: return "F";
+		case G: return "G";
+		case K: return "K";
+		case M: return "M";
+	}
+	return "Unknown";
+}
+
+Vec3f Star::spectralRGB(SpectralType spect){
+	switch(spect){
+		case O: return Vec3f(.5, .5, 1.);
+		case B: return Vec3f(.75, .75, 1.);
+		case A: return Vec3f(1., 1., 1.);
+		case F: return Vec3f(1., 1., .75);
+		case G: return Vec3f(1., 1., .5);
+		case K: return Vec3f(1., .75, .4);
+		case M: return Vec3f(1., .5, .3);
+	}
+	return Vec3f(1., 1., 1.);
+}
 
 class Surface : public CoordSys{
 	Astrobj *a;

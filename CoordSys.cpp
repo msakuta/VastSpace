@@ -18,6 +18,7 @@ extern "C"{
 #include <clib/aquatrot.h>
 #include <clib/avec4.h>
 #include <clib/timemeas.h>
+#include <clib/mathdef.h>
 }
 #include <cpplib/gl/cullplus.h>
 #include <stddef.h>
@@ -735,6 +736,13 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			pos[1] = calc3(&argv[2], sc.vl, NULL);
 		if(3 < argc)
 			pos[2] = calc3(&argv[3], sc.vl, NULL);
+		return true;
+	}
+	else if(!strcmp(s, "galactic_coord")){
+		double lon = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+		double lat = 2 < argc ? calc3(&argv[2], sc.vl, NULL) / deg_per_rad : 0.;
+		double dist = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 1e10;
+		pos = dist * Vec3d(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
 		return true;
 	}
 	else if(!strcmp(s, "cs_radius")){

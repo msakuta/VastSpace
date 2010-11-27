@@ -14,8 +14,7 @@
 #include "../entity.h"
 #include "../antiglut.h"
 #include "../cmd.h"
-//#include "scarry.h"
-//#include "spacewar.h"
+#include "../astro_star.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -1259,6 +1258,11 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			glwprintf("Semi-major axis: %lg km", p->a->orbit_rad);
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Eccentricity: %lg", p->a->eccentricity);
+		}
+		if(p->a->classname() == Star::classRegister.id){
+			Star *star = (Star*)p->a;
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
+			glwprintf("Spectral Type: %s", Star::spectralToName(star->spect));
 		}
 	}
 	else if(p->type == 3){

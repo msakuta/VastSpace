@@ -2892,7 +2892,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 /*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
 		VECADDIN(v01, v0);
 		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/
-		numstars = int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
+		numstars = 0*int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
 		for(i = 0; i < numstars; i++){
 			double pos[3], rvelo;
 			double radius = radiusfactor;
@@ -3353,7 +3353,6 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
 }
 
 void drawsuncolona(Astrobj *a, const Viewer *vw){
-	Vec4<GLubyte> white(255, 255, 255, 255);
 	double height;
 	double sdist;
 	double dist, as;
@@ -3386,10 +3385,18 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	sdist = VECSDIST(spos, vpos);
 	dist = sqrt(sdist);
 
+	Vec4<GLubyte> col;
 	{
+		Vec4<GLubyte> white(255, 255, 255, 255);
 		f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
 		white[1] = GLubyte(white[1] * 1. - (1. - f) * .5);
 		white[2] = GLubyte(white[2] * f);
+		if(a->classname() == Star::classRegister.id){
+			col = Vec4f(255. * Star::spectralRGB(((Star*)a)->spect)).cast<GLubyte>();
+			col[3] = 255;
+		}
+		else
+			col = white;
 	}
 
 	/* if neither sun nor planet with atmosphere like earth is near you, the sun's colona shrinks. */
@@ -3397,14 +3404,14 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		static const double c = .8, d = .1, e = .08;
 		static int normalized = 0;
 		static double normalizer;
-		double sp, brightness;
 		if(!normalized)
 			normalizer = 1. / c, normalized = 1;
 		Vec3d dv = vw->pos - spos;
 		Vec3d spos1 = vw->rot.dvp3(dv);
-		sp = -spos1[2];
-		brightness = pow(100, -a->absmag / 5.);
-		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) / (1. + dist / brightness * 1e-11);
+		double sp = -spos1[2];
+		double brightness = pow(100, -a->absmag / 5.);
+		double pixels = a->rad / dist * vw->vp.m; ///< Approximate pixels on screen based on spherical distance (not a distance to projection plane).
+		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) * max(vw->fov / vw->vp.m * 20., 1. / (1. + dist / a->rad * 1e-3));
 		Mat4d mat = mat4_u;
 		spos1.normin();
 		mat.vec3(2) = spos1;
@@ -3426,7 +3433,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		glPushMatrix();
 		glLoadIdentity();
 		spos1 *= -1;
-		gldSpriteGlow(spos1, as / M_PI, white, mat);
+		gldSpriteGlow(spos1, as / M_PI, col, mat);
 		glPopMatrix();
 	}
 
@@ -3434,14 +3441,14 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 /*	if(as < M_PI / 300.)
 		return;*/
 
-	white[3] = 127 + (int)(127 / (1. + height));
+	col[3] = 127 + (int)(127 / (1. + height));
 	{
 		Vec3d pos = (spos - vpos) / dist;
 		if(vw->relative){
 		}
 		else if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen)
-			white *= GLubyte(LIGHT_SPEED / vw->velolen);
-		gldGlow(atan2(x, z), atan2(spos[1] - vpos[1], sqrt(x * x + z * z)), as, white);
+			col *= GLubyte(LIGHT_SPEED / vw->velolen);
+		gldGlow(atan2(x, z), atan2(spos[1] - vpos[1], sqrt(x * x + z * z)), as, col);
 	}
 
 	a->flags |= AO_DRAWAIRCOLONA;

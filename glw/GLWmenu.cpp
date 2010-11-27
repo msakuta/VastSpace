@@ -468,11 +468,10 @@ PopupMenu &PopupMenu::appendSeparator(bool mergenext){
 	if(mergenext && list){
 		PopupMenuItem *p;
 		for(p = list; p->next; p = p->next);
-		if(p->key == PopupMenuItem::separator_key)
+		if(p->isSeparator())
 			return *this;
 	}
 	PopupMenuItem *i = new PopupMenuItemSeparator;
-	i->key = PopupMenuItem::separator_key;
 	*end = i;
 	i->next = NULL;
 	end = &i->next;

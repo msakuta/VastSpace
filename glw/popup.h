@@ -18,7 +18,6 @@ struct PopupMenuItem{
 	virtual void execute(){};
 	virtual PopupMenuItem *clone()const = 0;
 	virtual ~PopupMenuItem(){}
-	static const int separator_key = 13564;
 };
 
 /// A separator.

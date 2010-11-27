@@ -10,6 +10,7 @@ define HOUR_SECONDS 60*60
 define DAY_SECONDS 24*60*60
 define RAD_PER_DEG 2*pi/360
 define AU 149597870.691
+define LY 9.4605284e12
 define Rsun 6.960e5
 define Msun 1.9884e30
 
@@ -66,3 +67,194 @@ sol{
 	include sol.dat
 
 }
+
+astro Star Sirius{
+	radius 1.68*Rsun
+	mass Msun
+	galactic_coord 227.2 -8.9 8.58*LY
+	spectral A1
+}
+
+astro Star Canopus{
+	radius 1.68*Rsun
+	mass Msun
+	galactic_coord 261.2 -25.3 310*LY
+	spectral F0Ib
+}
+
+coordsys "Alpha Centauri"{
+	galactic_coord 315.8 -0.7 4.22*LY
+	astro Star "Rigil Kentaurus A"{
+		radius 1.227*Rsun
+		mass 1.1*Msun
+		pos 0 0 0
+		spectral G2V
+	}
+	astro Star "Rigil Kentaurus B"{
+		radius .865*Rsun
+		mass .907*Msun
+		pos 11*AU 0 0
+		spectral K1V
+	}
+	astro Star "Proxima Centauri"{
+		radius .145*Rsun
+		mass .123*Msun
+		pos .2*LY 0 0
+		spectral M5.5Ve
+	}
+}
+
+astro Star "Arcturus"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 15.2 69.0 37*LY
+	spectral K2III
+}
+
+astro Star "Vega"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 67.5 19.2 25*LY
+	spectral A0V
+}
+
+astro Star "Capella"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 162.6 4.6 42*LY
+	spectral B8Ia
+}
+
+astro Star "Rigel"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 209.3 -25.1 770*LY
+	spectral B8Ia
+}
+
+astro Star "Procyon"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 213.7 13.0 11*LY
+	spectral F5IV-V
+}
+
+astro Star "Achernar"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 290.7 -58.8 144*LY
+	spectral B3V
+}
+
+astro Star "Betelgeuse"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 199.8 -9.0 430*LY
+	spectral M2Ib
+}
+
+astro Star "Hadar"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 311.8 1.2 530*LY
+	spectral B1III
+}
+
+astro Star "Altair"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 47.8 -9.0 17*LY
+	spectral A7V
+}
+
+astro Star "Acrux"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 300.2 -0.4 320*LY
+	spectral B0.5IV
+}
+
+astro Star "Aldebaran"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 181.0 -20.2 65*LY
+	spectral K5III
+}
+
+astro Star "Antares"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 351.9 15.1 600*LY
+	spectral M1Ib
+}
+
+astro Star "Spica"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 316.1 50.8 260*LY
+	spectral B1V
+}
+
+astro Star "Pollux"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 92.2 23.3 34*LY
+	spectral K0III
+}
+
+astro Star "Fomalhaut"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 20.6 -65.0 25*LY
+	spectral A3V
+}
+
+astro Star "Deneb"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 84.3 2.1 3000*LY
+	spectral A2Ia
+}
+
+astro Star "Mimosa"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 302.5 3.2 350*LY
+	spectral B0.5III
+}
+
+astro Star "Regulus"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 226.3 48.9 78*LY
+	spectral B7V
+}
+
+astro Star "Adhara"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 239.9 -11.3 430*LY
+	spectral B2II
+}
+
+astro Star "Castor"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 187.5 22.6 52*LY
+	spectral A1V+A2V
+}
+
+astro Star "Shaula"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 351.8 2.3 700*LY
+	spectral B2IV
+}
+
+astro Star "Gacrux"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 300.2 5.7 88*LY
+	spectral M3.5III
+}
+

@@ -519,37 +519,79 @@ register_console_command("bookmarks", function(){
 	local menu = GLWmenu();
 	foreach(key, item in bookmarks){
 		menu.addItem(key, function():(item){
-			print("pos" in item);
-			local newcs = player.cs.findcspath(item.path);
+			local newcs;
+			if("cs" in item)
+				newcs = item.cs;
+			else
+				newcs = player.cs.findcspath(item.path);
 			if(newcs != null){
 				player.cs = newcs;
 				player.setpos("pos" in item ? item.pos : Vec3d(0,0,0));
 				player.setvelo(Vec3d(0,0,0));
+				if("rot" in item)
+					player.setrot(item.rot);
 			}
 		});
 	}
 });
 
-register_console_command("add_bookmark", function(...){
-	if(vargc <= 1){
-		print("Usage: add_bookmark name path pos");
+/// Adds a bookmark of given path.
+function addBookmark(symbolic, argv){
+	local argc = argv.len();
+	if(argc <= 1){
+		print("Usage: add_bookmark[_s] name path pos");
+		print("  Append \"_s\" to make symbolic bookmark.");
 		foreach(key, item in ::bookmarks){
-			print("\"" + key + "\" path=\"" + item.path + "\" pos=" + ("pos" in item ? item.pos : Vec3d(0,0,0)));
+			print("\"" + key + "\" "
+				+ ("cs" in item ? "cs=\"" + item.cs.getpath() + "\"" : "path=\"" + item.path + "\"")
+				+ " pos=" + ("pos" in item ? item.pos : Vec3d(0,0,0))
+				+ " rot=" + ("rot" in item ? item.rot : Quatd(0,0,0,1)));
 		}
 		return;
 	}
 	if(::bookmarks == null)
 		::bookmarks <- {};
-	bookmarks[vargv[0]] <- {path=vargv[1], pos=Vec3d(2 < vargc ? vargv[2] : 0, 3 < vargc ? vargv[3] : 0, 4 < vargc ? vargv[4] : 0)};
+
+	local item = {
+		pos = Vec3d(2 < argc ? argv[2].tofloat() : 0, 3 < argc ? argv[3].tofloat() : 0, 4 < argc ? argv[4].tofloat() : 0),
+		rot = Quatd(0,0,0,1)
+	};
+
+	// By default, bookmark entry is referenced by object, which means it follows the marked system
+	// even if the system changes path relative to the universe, but fail to switch to replaced system
+	// with the former one's path.
+	// Adding "symbolic" argument overrides this method to reference by path string, much like the way
+	// symbolic links differ from hard links in Unix like filesystems.
+	if(symbolic)
+		item.path <- argv[1];
+	else
+		item.cs <- player.cs.findcspath(argv[1]);
+	bookmarks[argv[0]] <- item;
+}
+
+register_console_command("add_bookmark", function(...){
+	local argv = [];
+	for(local i = 0; i < vargc; i++)
+		argv.append(vargv[i]);
+	return addBookmark(false, argv);
+});
+
+register_console_command("add_bookmark_s", function(...){
+	local argv = [];
+	for(local i = 0; i < vargc; i++)
+		argv.append(vargv[i]);
+	return addBookmark(true, argv);
 });
 
 ::CoordSys.readFile[0] = function(cs, name, ...){
-	print("readFile: " + cs);
 	if(name == "bookmark"){
-		::print("bookmarking");
 		if(::bookmarks == null)
 			::bookmarks <- {};
-		::bookmarks[vargv[0]] <- {path=cs.getpath(), pos=Vec3d(1 < vargc ? vargv[1] : 0, 2 < vargc ? vargv[2] : 0, 3 < vargc ? vargv[3] : 0)};
+		::bookmarks[vargv[0]] <- {
+			cs = cs,
+			pos = Vec3d(1 < vargc ? vargv[1].tofloat() : 0, 2 < vargc ? vargv[2].tofloat() : 0, 3 < vargc ? vargv[3].tofloat() : 0),
+			rot = 4 < vargc ? compilestring("return (" + vargv[4] + ")")() : Quatd(0,0,0,1)
+		};
 		return 1;
 	}
 	return 0;

@@ -34,6 +34,8 @@ coordsys Orbit sunlo{
 #		warp
 	teleport
 	rstation
+	bookmark "Sun Low Orbit 1" 0 0 10
+	bookmark "Sun Low Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 }
 
 coordsys Orbit mercury{
@@ -190,7 +192,8 @@ coordsys Orbit earth{
 		updirection 0 1 
 		fullname "Earth Lagrange 1"
 		teleport
-		bookmark "Earth Lagrange 1"
+		bookmark "Earth Lagrange 1" 0 0 10
+		bookmark "Earth Lagrange 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 		warp
 		rstation 0 -25
 #		addent scarry 5 -25 0
@@ -323,6 +326,8 @@ coordsys Orbit marss{
 		semimajor_axis 1e2
 		addent RStation 0 0 0
 		warp phoboso
+		bookmark "Phobos Orbit 1" 0 0 10
+		bookmark "Phobos Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 	}
 
 	astro TextureSphere Deimos{

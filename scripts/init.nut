@@ -508,8 +508,34 @@ register_console_command("typecs", function(...){
 	}
 });
 
+class Bookmark{
+	function cs(){return null;} // Pure virtual would be appropriate
+	pos = Vec3d(0,0,0)
+	rot = Quatd(0,0,0,1)
+}
+
+class BookmarkCoordSys extends Bookmark{
+	src = null
+	constructor(acs){
+		src = acs;
+	}
+	function cs(){
+		return src;
+	}
+}
+
+class BookmarkSymbolic extends Bookmark{
+	path = "/"
+	constructor(apath){
+		path = apath;
+	}
+	function cs(){
+		return ::player.cs.findcspath(path);
+	}
+}
+
 bookmarks <- {
-	["Earth surface"] = {path="/sol/earth/Earth/earths", pos=Vec3d(0,0,0)}
+	["Earth surface"] = BookmarkSymbolic("/sol/earth/Earth/earths")
 };
 
 /// Shows bookmarks window to let the player pick one.
@@ -519,17 +545,12 @@ register_console_command("bookmarks", function(){
 	local menu = GLWmenu();
 	foreach(key, item in bookmarks){
 		menu.addItem(key, function():(item){
-			local newcs;
-			if("cs" in item)
-				newcs = item.cs;
-			else
-				newcs = player.cs.findcspath(item.path);
+			local newcs = item.cs();
 			if(newcs != null){
 				player.cs = newcs;
 				player.setpos("pos" in item ? item.pos : Vec3d(0,0,0));
 				player.setvelo(Vec3d(0,0,0));
-				if("rot" in item)
-					player.setrot(item.rot);
+				player.setrot(item.rot);
 			}
 		});
 	}
@@ -542,8 +563,8 @@ function addBookmark(symbolic, argv){
 		print("Usage: add_bookmark[_s] name path pos");
 		print("  Append \"_s\" to make symbolic bookmark.");
 		foreach(key, item in ::bookmarks){
-			print("\"" + key + "\" "
-				+ ("cs" in item ? "cs=\"" + item.cs.getpath() + "\"" : "path=\"" + item.path + "\"")
+			print("\"" + key + "\" " + (item instanceof BookmarkSymbolic ? "s" : "-")
+				+ " path=\"" + item.cs().getpath() + "\""
 				+ " pos=" + ("pos" in item ? item.pos : Vec3d(0,0,0))
 				+ " rot=" + ("rot" in item ? item.rot : Quatd(0,0,0,1)));
 		}
@@ -552,20 +573,14 @@ function addBookmark(symbolic, argv){
 	if(::bookmarks == null)
 		::bookmarks <- {};
 
-	local item = {
-		pos = Vec3d(2 < argc ? argv[2].tofloat() : 0, 3 < argc ? argv[3].tofloat() : 0, 4 < argc ? argv[4].tofloat() : 0),
-		rot = Quatd(0,0,0,1)
-	};
+	local item = symbolic ? BookmarkSymbolic(argv[1]) : BookmarkCoordSys(player.cs.findcspath(argv[1]));
+	item.pos = Vec3d(2 < argc ? argv[2].tofloat() : 0, 3 < argc ? argv[3].tofloat() : 0, 4 < argc ? argv[4].tofloat() : 0);
 
 	// By default, bookmark entry is referenced by object, which means it follows the marked system
 	// even if the system changes path relative to the universe, but fail to switch to replaced system
 	// with the former one's path.
 	// Adding "symbolic" argument overrides this method to reference by path string, much like the way
 	// symbolic links differ from hard links in Unix like filesystems.
-	if(symbolic)
-		item.path <- argv[1];
-	else
-		item.cs <- player.cs.findcspath(argv[1]);
 	bookmarks[argv[0]] <- item;
 }
 
@@ -587,11 +602,10 @@ register_console_command("add_bookmark_s", function(...){
 	if(name == "bookmark"){
 		if(::bookmarks == null)
 			::bookmarks <- {};
-		::bookmarks[vargv[0]] <- {
-			cs = cs,
-			pos = Vec3d(1 < vargc ? vargv[1].tofloat() : 0, 2 < vargc ? vargv[2].tofloat() : 0, 3 < vargc ? vargv[3].tofloat() : 0),
-			rot = 4 < vargc ? compilestring("return (" + vargv[4] + ")")() : Quatd(0,0,0,1)
-		};
+		local item = BookmarkCoordSys(cs);
+		item.pos = Vec3d(1 < vargc ? vargv[1].tofloat() : 0, 2 < vargc ? vargv[2].tofloat() : 0, 3 < vargc ? vargv[3].tofloat() : 0);
+		item.rot = 4 < vargc ? compilestring("return (" + vargv[4] + ")")() : Quatd(0,0,0,1);
+		::bookmarks[vargv[0]] <- item;
 		return 1;
 	}
 	return 0;

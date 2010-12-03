@@ -54,7 +54,7 @@ name "the universe"
 #	pos 0 0 2e6
 #}
 
-#astro Star first_light{
+
 sol{
 	cs_radius 3e10
 #	radius 1e4
@@ -62,11 +62,16 @@ sol{
 #	mass Msun
 #	absolute_magnitude 4.83
 	solarsystem
+#	eisystem
 
 #	include space_debug.dat
 	include sol.dat
 
 }
+
+coordsys ns{
+fullname "Near Space"
+#eisystem
 
 astro Star Sirius{
 	radius 1.68*Rsun
@@ -84,13 +89,41 @@ astro Star Canopus{
 
 coordsys "Alpha Centauri"{
 	galactic_coord 315.8 -0.7 4.22*LY
+	coordsys baricenter{
+		pos 0 0 0
+	}
 	astro Star "Rigil Kentaurus A"{
+		orbits baricenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 79.23
+		argument_of_periapsis 150.2075
+		ascending_node 80.6198
 		radius 1.227*Rsun
 		mass 1.1*Msun
 		pos 0 0 0
 		spectral G2V
+		coordsys OrbitCS "orbit"{
+			orbits "Rigil Kntaurus A"
+			showorbit
+			semimajor_axis AU
+			eccentricity 0
+			inclination 0
+			argument_of_periapsis 0
+			ascending_node 0
+			teleport "Rigil Kentaurus A"
+			bookmark "Rigil Kentaurus A"
+		}
 	}
 	astro Star "Rigil Kentaurus B"{
+		orbits baricenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 79.23
+		argument_of_periapsis 150.2075
+		ascending_node 260.6198
 		radius .865*Rsun
 		mass .907*Msun
 		pos 11*AU 0 0
@@ -147,8 +180,8 @@ astro Star "Achernar"{
 }
 
 astro Star "Betelgeuse"{
-	radius 1.227*Rsun
-	mass Msun
+	radius 1180*Rsun
+	mass 19*Msun
 	galactic_coord 199.8 -9.0 430*LY
 	spectral M2Ib
 }
@@ -258,3 +291,4 @@ astro Star "Gacrux"{
 	spectral M3.5III
 }
 
+}

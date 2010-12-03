@@ -800,6 +800,9 @@ void Island3::draw(const Viewer *vw){
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 
+	if(vw->gc->cullFrustum(vw->cs->tocs(pos, parent), 50.))
+		return;
+
 	// If any part of the colony has chance to go beyond far clipping plane of z slice of 0,
 	// it's enough to decide cullLevel to 1.
 	if(gc2->cullFar(vw->cs->tocs(pos, parent), -40.))

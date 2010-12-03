@@ -508,6 +508,53 @@ register_console_command("typecs", function(...){
 	}
 });
 
+bookmarks <- {
+	["Earth surface"] = {path="/sol/earth/Earth/earths", pos=Vec3d(0,0,0)}
+};
+
+/// Shows bookmarks window to let the player pick one.
+register_console_command("bookmarks", function(){
+	if(bookmarks == null || bookmarks.len() == 0)
+		return;
+	local menu = GLWmenu();
+	foreach(key, item in bookmarks){
+		menu.addItem(key, function():(item){
+			print("pos" in item);
+			local newcs = player.cs.findcspath(item.path);
+			if(newcs != null){
+				player.cs = newcs;
+				player.setpos("pos" in item ? item.pos : Vec3d(0,0,0));
+				player.setvelo(Vec3d(0,0,0));
+			}
+		});
+	}
+});
+
+register_console_command("add_bookmark", function(...){
+	if(vargc <= 1){
+		print("Usage: add_bookmark name path pos");
+		foreach(key, item in ::bookmarks){
+			print("\"" + key + "\" path=\"" + item.path + "\" pos=" + ("pos" in item ? item.pos : Vec3d(0,0,0)));
+		}
+		return;
+	}
+	if(::bookmarks == null)
+		::bookmarks <- {};
+	bookmarks[vargv[0]] <- {path=vargv[1], pos=Vec3d(2 < vargc ? vargv[2] : 0, 3 < vargc ? vargv[3] : 0, 4 < vargc ? vargv[4] : 0)};
+});
+
+::CoordSys.readFile[0] = function(cs, name, ...){
+	print("readFile: " + cs);
+	if(name == "bookmark"){
+		::print("bookmarking");
+		if(::bookmarks == null)
+			::bookmarks <- {};
+		::bookmarks[vargv[0]] <- {path=cs.getpath(), pos=Vec3d(1 < vargc ? vargv[1] : 0, 2 < vargc ? vargv[2] : 0, 3 < vargc ? vargv[3] : 0)};
+		return 1;
+	}
+	return 0;
+};
+
 
 function ae(){
 //	deltaFormation("Assault", 0, Quatd(0,1,0,0));
@@ -635,7 +682,7 @@ function initUI(){
 	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
 	but.pinned = true;
 
-	local cambut = GLWbuttonMatrix(4, 1);
+	local cambut = GLWbuttonMatrix(5, 1);
 	cambut.title = tlate("camera");
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
@@ -643,6 +690,7 @@ function initUI(){
 	cambut.addButton("mover cycle", "textures/cammode.png", tlate("Switch Camera Mode"));
 	cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
 	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
+	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 	cambut.pinned = true;
 
 	sysbut = GLWbuttonMatrix(3, 2, 32, 32);

@@ -497,7 +497,10 @@ CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
 	return NULL;
 }
 
+static std::map<double, CoordSys*> drawnlist;
+
 void CoordSys::predraw(const Viewer *vw){
+	drawnlist.clear();
 	for(CoordSys *cs = children; cs; cs = cs->next)
 		cs->predraw(vw);
 }
@@ -527,25 +530,33 @@ void CoordSys::draw(const Viewer *vw){
 void CoordSys::drawtra(const Viewer *vw){}
 
 void CoordSys::drawcs(const Viewer *vw){
+			timemeas_t tm;
+			TimeMeasStart(&tm);
 	draw(vw);
+	drawnlist[TimeMeasLap(&tm)] = this;
+//		printf("drawcs1 %d %lg %s\n", AstroCmp::invokes, TimeMeasLap(&tm), (const char*)getpath());
 	Vec3d cspos;
 	cspos = vw->cs->tocs(avec3_000, this);
 /*	if(cs->flags & CS_EXTENT && vw->gc && glcullFrustum(cspos, cs->rad, vw->gc))
 		return;*/
 	if((CS_EXTENT | CS_ISOLATED) == (flags & (CS_EXTENT | CS_ISOLATED))){
-/*		{
-			timemeas_t tm;
-			TimeMeasStart(&tm);*/
+		{
+//			timemeas_t tm;
+//			TimeMeasStart(&tm);
 		std::sort(aorder.begin(), aorder.end(), AstroCmp(*vw));
-/*			printf("sortcs %d %lg\n", n, TimeMeasLap(&tm));
-		}*/
+//		printf("sortcs %d %d %lg\n", AstroCmp::invokes, aorder.size(), TimeMeasLap(&tm));
+		}
 		AOList::reverse_iterator i = aorder.rbegin();
+//			timemeas_t tm;
+//			TimeMeasStart(&tm);
 		for(; i != aorder.rend();i++) if(*i){
-			if(*i == this)
+			if(*i == this){
 				(*i)->draw(vw);
+			}
 			else
 				(*i)->drawcs(vw);
 		}
+//		printf("drawcs %d %lg %s\n", AstroCmp::invokes, TimeMeasLap(&tm), (const char*)getpath());
 	}
 }
 
@@ -942,6 +953,43 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			rot = Quatd(0,0,0,1);
 		}
 		return true;
+	}
+	else{ // An undefined parameter name is passed to Squirrel extension code.
+		HSQUIRRELVM v = g_sqvm;
+		StackReserver sr(v);
+
+		// This code is somewhat similar to sqa_console_command.
+		try{
+			sq_pushroottable(g_sqvm);
+			sq_pushstring(g_sqvm, _SC("CoordSys"), -1);
+			sq_get(g_sqvm, -2);
+			sq_pushstring(g_sqvm, _SC("readFile"), -1);
+			sq_get(g_sqvm, -2);
+			sq_pushinteger(v, 0);
+
+			if(SQ_FAILED(sq_get(g_sqvm, -2)))
+				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
+//			sq_pushstring(g_sqvm, s, -1);
+			sq_pushroottable(v);
+			sq_createinstance(v, -4);
+			sqa_newobj(v, this);
+
+			// Pass all arguments as strings (no conversion is done beforehand).
+			for(int i = 0; i < argc; i++)
+				sq_pushstring(v, argv[i], -1);
+
+			// It's no use examining returned value in that case calling the function iteslf fails.
+			if(SQ_FAILED(sq_call(v, argc+2, SQTrue, SQTrue)))
+				throw sqa::SQFError(_SC("readFile function could not be called"));
+
+			// Assume returned value integer.
+			int retint;
+			if(SQ_SUCCEEDED(sq_getinteger(v, -1, &retint)) && retint != 0)
+				return true;
+		}
+		catch(sqa::SQFError &e){
+			CmdPrint(cpplib::dstring() << "CoordSys::readFile: " << e.description);
+		}
 	}
 	return false;
 }
@@ -1391,6 +1439,9 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set<CoordSys>);
+	sq_pushstring(v, _SC("readFile"), -1);
+	sq_newarray(v, 1);
+	sq_newslot(v, -3, SQFalse); // The last argument is important to designate the readFile handler is static.
 	sq_createslot(v, -3);
 	return true;
 }

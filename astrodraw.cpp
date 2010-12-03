@@ -1171,7 +1171,7 @@ void TexSphere::draw(const Viewer *vw){
 		bool underCloud = (pos - vw->pos).len() < fcloudHeight;
 		if(oblateness != 0.){
 			DrawTextureSpheroid cloudDraw = DrawTextureSpheroid(this, vw, sunpos);
-			if(g_cloud && (cloudtexname || cloudtexlist)){
+			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
 				cloudDraw
 				.oblateness(oblateness)
 				.texlist(&cloudtexlist)
@@ -3260,15 +3260,22 @@ void Star::draw(const Viewer *vw){
 	if(vw->zslice != 2)
 		return;
 	COLOR32 col = COLOR32RGBA(255,255,255,255);
-	Vec3d gvelo;
-	gvelo = parent->tocsv(vw->velo, vw->pos, vw->cs);
-	if(LIGHT_SPEED * LIGHT_SPEED < VECSLEN(gvelo)){
+	Vec3d gvelo = parent->tocsv(vw->velo, vw->pos, vw->cs);
+	if(LIGHT_SPEED * LIGHT_SPEED < gvelo.slen()){
 		extern int g_invert_hyperspace;
-		double velolen;
-		velolen = VECLEN(gvelo);
+		double velolen = gvelo.len();
 		if(g_invert_hyperspace)
 			col = COLOR32SCALE(col, LIGHT_SPEED / velolen * 256) & COLOR32RGBA(255,255,255,0) | COLOR32RGBA(0,0,0,COLOR32A(col));
 	}
+
+/*	Vec3d spos = vw->cs->tocs(pos, this) - vw->pos;
+	double dist = spos.len();
+	double apparentSize = rad / dist / vw->fov * vw->vp.m;
+	if(apparentSize < 1){
+		gldSpriteGlow(spos, dist * vw->fov / vw->vp.m * 10, (spectralRGB(this->spect) * 255).cast<GLubyte>(), vw->irot);
+		return;
+	}*/
+
 	drawpsphere(this, vw, col);
 	if(/*!((struct sun*)a)->aircolona !(flags & AO_DRAWAIRCOLONA)*/1){
 		Astrobj *abest = NULL;
@@ -3357,7 +3364,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	double sdist;
 	double dist, as;
 	Vec3d vpos, epos, spos;
-	double x, z, f;
+	double x, z;
 	Astrobj *abest = NULL;
 
 	/* astrobjs are sorted and the nearest celestial body with atmosphere can be
@@ -3388,7 +3395,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	Vec4<GLubyte> col;
 	{
 		Vec4<GLubyte> white(255, 255, 255, 255);
-		f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
+		double f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
 		white[1] = GLubyte(white[1] * 1. - (1. - f) * .5);
 		white[2] = GLubyte(white[2] * f);
 		if(a->classname() == Star::classRegister.id){
@@ -3399,8 +3406,15 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 			col = white;
 	}
 
+	double asfactor = 1. / (1. + dist / a->rad * 1e-3);
+	if(asfactor < vw->fov / vw->vp.m * 20.){
+		as = M_PI * vw->fov / vw->vp.m * 2.;
+		Vec3d pos = (spos - vpos) / dist;
+		gldTextureGlow(pos, as, col, vw->irot);
+		return;
+	}
 	/* if neither sun nor planet with atmosphere like earth is near you, the sun's colona shrinks. */
-	{
+	else{
 		static const double c = .8, d = .1, e = .08;
 		static int normalized = 0;
 		static double normalizer;
@@ -3410,8 +3424,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
 		double brightness = pow(100, -a->absmag / 5.);
-		double pixels = a->rad / dist * vw->vp.m; ///< Approximate pixels on screen based on spherical distance (not a distance to projection plane).
-		as = M_PI * f * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) * max(vw->fov / vw->vp.m * 20., 1. / (1. + dist / a->rad * 1e-3));
+		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) * asfactor;
 		Mat4d mat = mat4_u;
 		spos1.normin();
 		mat.vec3(2) = spos1;

@@ -190,6 +190,7 @@ coordsys Orbit earth{
 		updirection 0 1 
 		fullname "Earth Lagrange 1"
 		teleport
+		bookmark "Earth Lagrange 1"
 		warp
 		rstation 0 -25
 #		addent scarry 5 -25 0
@@ -378,6 +379,7 @@ coordsys Orbit jupiter{
 		pos -100000 100000 0
 		warp
 		teleport Jupiter 10 0 0
+		bookmark Jupiter 10 0 0
 		rstation
 	}
 	astro Satellite Io{

@@ -69,11 +69,12 @@ private:
 
 
 /// Identical to Astrobj but ClassId
-class Satellite : public Astrobj{
+class Satellite : public TexSphere{
 public:
+	typedef TexSphere st;
 	static const ClassRegister<Satellite> classRegister;
 	Satellite(){}
-	Satellite(const char *name, CoordSys *cs) : Astrobj(name, cs){}
+	Satellite(const char *name, CoordSys *cs) : st(name, cs){}
 };
 
 #endif

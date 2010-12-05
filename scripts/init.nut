@@ -45,6 +45,7 @@ class CoordSys{
 	Quatd getrot();
 	void setpos(Quatd);
 	string name();
+	string[] extranames;
 	CoordSys child();
 	CoordSys next();
 	string getpath();
@@ -326,6 +327,9 @@ register_console_command("coordsys", function(...){
 		print("identity: " + player.cs.name());
 		print("path: " + player.cs.getpath());
 		print("formal name: " + player.cs.name());
+		local en = player.cs.extranames;
+		foreach(name in en)
+			print("aka: " + name);
 		return 0;
 	}
 	local cs = player.cs.findcspath(vargv[0]);

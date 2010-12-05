@@ -59,6 +59,7 @@ public:
 	CoordSys *parent; ///< Parent node
 	const char *name; ///< Reference name
 	const char *fullname; ///< Detailed name for displaying, etc.
+	std::vector<cpplib::dstring> extranames; ///< Aliases
 	unsigned flags; ///< Utility flags
 
 	/* These trivial variables are only used on drawing to enhance speed by caching

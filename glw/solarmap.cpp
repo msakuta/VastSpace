@@ -1264,6 +1264,10 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Spectral Type: %s", Star::spectralToName(star->spect));
 		}
+		for(int i = 0; i < p->a->extranames.size(); i++){
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
+			glwprintf("Alias Name: %s", (const char*)p->a->extranames[i]);
+		}
 	}
 	else if(p->type == 3){
 		if(!p->tp)

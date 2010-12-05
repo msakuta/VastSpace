@@ -741,6 +741,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		return true;
 	}
+	else if(!strcmp(s, "extraname")){
+		if(ps)
+			extranames.push_back(ps);
+		return true;
+	}
 	else if(!strcmp(s, "pos")){
 		pos[0] = calc3(&argv[1], sc.vl, NULL);
 		if(2 < argc)
@@ -1408,6 +1413,15 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, p->parent);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("extranames"))){
+		sq_newarray(v, p->extranames.size());
+		for(int i = 0; i < p->extranames.size(); i++){
+			sq_pushinteger(v, i);
+			sq_pushstring(v, p->extranames[i], -1);
+			sq_set(v, -3);
+		}
 		return 1;
 	}
 	else

@@ -281,7 +281,10 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		glVertex2d(.05, .05 - id * .01);
 		glEnd();
 		glRasterPos2d(0.05, 0.05 - id * .01);
-		gldprintf("%s", a->fullname ? a->fullname : a->name);
+		cpplib::dstring s = a->fullname ? a->fullname : a->name;
+		for(int i = 0; i < a->extranames.size(); i++)
+			s << " / " << a->extranames[i];
+		gldprintf("%s", (const char*)s);
 		glPopMatrix();
 	} while(0);
 	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next)

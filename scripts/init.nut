@@ -584,20 +584,27 @@ function addBookmark(symbolic, argv){
 	bookmarks[argv[0]] <- item;
 }
 
+/// Adds a bookmark with object binding.
 register_console_command("add_bookmark", function(...){
+	// Repack variable arguments to an array to give them to another function.
 	local argv = [];
 	for(local i = 0; i < vargc; i++)
 		argv.append(vargv[i]);
 	return addBookmark(false, argv);
 });
 
+/// Adds a bookmark with path binding.
 register_console_command("add_bookmark_s", function(...){
+	// Repack variable arguments to an array to give them to another function.
 	local argv = [];
 	for(local i = 0; i < vargc; i++)
 		argv.append(vargv[i]);
 	return addBookmark(true, argv);
 });
 
+// Assign event handler for CoordSys::readFile. Because Squirrel does not allow class static variables to be altered
+// after definition, we must introduce one extra layer of indirection to make it modifiable, or give it up to make class
+// member.
 ::CoordSys.readFile[0] = function(cs, name, ...){
 	if(name == "bookmark"){
 		if(::bookmarks == null)

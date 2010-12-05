@@ -193,10 +193,11 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glPopMatrix();
 		}
 
-		if(a->orbit_home && a->flags2 & OCS_SHOWORBIT){
+		bool parentBarycenter = a->orbit_center;
+		if((a->orbit_home || parentBarycenter) && a->flags2 & OCS_SHOWORBIT){
 			int j;
 			double (*cuts)[2], rad;
-			const Astrobj *home = a->orbit_home;
+			const CoordSys *home = parentBarycenter ? a->orbit_center : a->orbit_home;
 			Vec3d spos;
 			Mat4d mat, qmat, rmat, lmat;
 			Quatd q;
@@ -218,30 +219,36 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 				g_bottom * -0.0005, g_top * 0.0005,
 				g_near * 0.0005, g_far * 1e10); */
 			glLoadMatrixd(vw->rot);
+
+			// Axis lines
+			glBegin(GL_LINES);
+			glVertex3dv((rmat.vp3(Vec3d(-1, 0, 0)) + spos - vw->pos).normin());
+			glVertex3dv((rmat.vp3(Vec3d( 1.2, 0, 0)) + spos - vw->pos).normin());
+			glVertex3dv((rmat.vp3(Vec3d(0, -1, 0)) + spos - vw->pos).normin());
+			glVertex3dv((rmat.vp3(Vec3d(0,  1.2, 0)) + spos - vw->pos).normin());
+			glEnd();
+
+			// Ellipse
 			glBegin(GL_LINE_LOOP);
 			for(j = 0; j < 64; j++){
-				avec3_t v, vr;
-				v[0] = 0 + cuts[j][0];
-				v[1] = 0 + cuts[j][1];
-				v[2] = 0;
-				mat4vp3(vr, rmat, v);
-				VECADDIN(vr, spos);
-				if(VECSDIST(vr, vw->pos) < .15 * .15 * rad * rad){
+				Vec3d v(cuts[j][0], cuts[j][1], 0);
+				Vec3d vr = rmat.vp3(v);
+				vr += spos;
+				if((vr - vw->pos).slen() < .15 * .15 * rad * rad){
 					int k;
 					for(k = 0; k < 8; k++){
-						v[0] = 0 + sin(2 * M_PI * (j * 8 + k) / (64 * 8));
-						v[1] = 0 + cos(2 * M_PI * (j * 8 + k) / (64 * 8));
-						v[2] = 0;
-						mat4vp3(vr, rmat, v);
-						VECADDIN(vr, spos);
-						VECSUBIN(vr, vw->pos);
-						VECNORMIN(vr);
+						v = Vec3d(sin(2 * M_PI * (j * 8 + k) / (64 * 8)),
+								  cos(2 * M_PI * (j * 8 + k) / (64 * 8)), 0);
+						vr = rmat.vp3(v);
+						vr += spos;
+						vr -= vw->pos;
+						vr.normin();
 						glVertex3dv(vr);
 					}
 				}
 				else{
-					VECSUBIN(vr, vw->pos);
-					VECNORMIN(vr);
+					vr -= vw->pos;
+					vr.normin();
 					glVertex3dv(vr);
 				}
 /*					glVertex3d(spos[0] + SUN_DISTANCE * cuts[j][0], spos[1] + SUN_DISTANCE * cuts[j][1], spos[2]);*/
@@ -274,7 +281,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		glVertex2d(.05, .05 - id * .01);
 		glEnd();
 		glRasterPos2d(0.05, 0.05 - id * .01);
-		gldprintf("%s", a->name);
+		gldprintf("%s", a->fullname ? a->fullname : a->name);
 		glPopMatrix();
 	} while(0);
 	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next)

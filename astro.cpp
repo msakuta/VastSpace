@@ -1,3 +1,10 @@
+/** \file
+ * \brief Implementation of astronomical objects and their movements.
+ *
+ * Drawing methods are separated to another source, astrodraw.cpp.
+ *
+ * \sa astrodraw.cpp
+ */
 #include "astro.h"
 #include "serial_util.h"
 #include "stellar_file.h"
@@ -16,15 +23,33 @@ extern "C"{
 #include <sstream>
 #include <fstream>
 
+/// \brief Barycenter of multi-body problems.
+///
+/// It was a shame to define the barycenter as a class, because it's not real object but imaginary frame of reference.
+/// But it's not good approach to have each of the involving objects calculate physics each other, because there're
+/// problem of calculation order. Therefore it ended up making all necessary computation collected into a new
+/// class here.
+class Barycenter : public OrbitCS{
+public:
+	typedef OrbitCS st;
+	Barycenter(){}
+	Barycenter(const char *path, CoordSys *root) : st(path, root){}
+	static const ClassRegister<Barycenter> classRegister;
+	ClassId classname()const{return classRegister.id;}
+	void anim(double dt);
+	Barycenter *toBarycenter(){return this;}
+};
+
+const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter");
 
 double OrbitCS::astro_timescale = 1.;
 
 
 const char *OrbitCS::classname()const{
-	return "Orbit";
+	return classRegister.id;
 }
 
-OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root){
+OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_center(NULL), orbitType(NoOrbit){
 	OrbitCS *ret = this;
 //	init(path, root);
 	ret->orbit_rad = 0.;
@@ -59,7 +84,7 @@ void OrbitCS::unserialize(UnserializeContext &sc){
 
 void OrbitCS::anim(double dt){
 	double scale = astro_timescale/*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
-	if(orbit_home){
+	if(orbit_home && orbitType != NoOrbit){
 		int timescale = 0;
 		double dist;
 		double omega;
@@ -67,7 +92,7 @@ void OrbitCS::anim(double dt){
 		Vec3d orbit_omg, omgdt;
 		orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
 		dist = orbit_rad;
-		omega = scale / (dist * sqrt(dist / UGC / (orbit_home->mass)));
+		omega = scale / (dist * sqrt(dist / UGC / orbit_home->mass));
 		orbit_omg = orbit_axis.norm();
 		oldpos = pos;
 		if(eccentricity == 0.){
@@ -119,8 +144,17 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 	else if(!strcmp(s, "orbits")){
 		if(argv[1]){
 			CoordSys *cs = parent->findcspath(ps);
-			if(cs)
+			if(cs){
 				orbit_home = cs->toAstrobj();
+				OrbitCS *o = cs->toOrbitCS();
+				if(o){
+					o->orbiters.push_back(this);
+					if(o->toBarycenter())
+						orbit_center = o;
+					else
+						orbitType = Satellite;
+				}
+			}
 		}
 		return true;
 	}
@@ -200,28 +234,13 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 		return false;
 	if(!enable)
 		return true;
-	if(inclination == 0.)
-		orbit_axis = quat_u;
+//	if(inclination == 0.)
+//		orbit_axis = quat_u;
 	else{
-		Quatd q1, q2, q3, q4;
-		q1[0] = sin(inclination / 2.);
-		q1[1] = 0.;
-		q1[2] = 0.;
-		q1[3] = cos(inclination / 2.);
-		q2[0] = 0.;
-		q2[1] = 0.;
-		q2[2] = sin(loan / 2.);
-		q2[3] = cos(loan / 2.);
-		q4 = q2 * q1;
-		if(enable & 4){
-			q3[0] = 0.;
-			q3[1] = 0.;
-			q3[2] = sin(aop / 2.);
-			q3[3] = cos(aop / 2.);
-			orbit_axis = q4 * q3;
-		}
-		else
-			orbit_axis = q4;
+		Quatd qinc(sin(inclination / 2.), 0., 0., cos(inclination / 2.));
+		Quatd qloan = enable & 2 ? Quatd(0., 0., sin(loan / 2.), cos(loan / 2.)) : quat_u;
+		Quatd qaop = enable & 4 ? Quatd(0., 0., sin(aop / 2.), cos(aop / 2.)) : quat_u;
+		orbit_axis = qaop * qinc * qloan;
 	}
 	return true;
 }
@@ -229,6 +248,78 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 OrbitCS *OrbitCS::toOrbitCS(){
 	return this;
 }
+
+Barycenter *OrbitCS::toBarycenter(){
+	return NULL;
+}
+
+
+
+
+
+
+
+
+void Barycenter::anim(double dt){
+	// We cannot solve other than two-body problem.
+	if(orbiters.size() == 2 && orbiters[0]->toAstrobj() && orbiters[1]->toAstrobj()){
+		Astrobj *a0 = orbiters[0]->toAstrobj(), *a1 = orbiters[1]->toAstrobj();
+		double rmass = a0->mass * a1->mass / (a0->mass + a1->mass);
+		double scale = astro_timescale;
+		int timescale = 0;
+		Vec3d omgdt;
+		for(int i = 0; i < 2; i++){
+			Astrobj *a = i ? a1 : a0;
+			Vec3d orbpos = Vec3d(0,0,0);
+			double dist = a->orbit_rad;
+			double omega = scale / (dist * sqrt(dist / UGC / rmass));
+			Vec3d orbit_omg = a->orbit_axis.norm();
+			Vec3d oldpos = a->pos;
+			if(a->eccentricity == 0.){
+				a->orbit_phase += omega * dt;
+				Quatd rot(0., 0., sin(a->orbit_phase / 2.), cos(a->orbit_phase / 2.));
+				Quatd q = orbit_axis * rot;
+				a->pos = q.trans(vec3_010);
+				a->pos *= orbit_rad;
+			}
+			else{
+				Vec3d pos0(cos(a->orbit_phase), sin(a->orbit_phase), 0.);
+				Mat4d smat = mat4_u;
+				double smia = a->orbit_rad * sqrt(1. - a->eccentricity * a->eccentricity); // semi-major axis
+				smat.scalein(a->orbit_rad, smia, a->orbit_rad);
+				smat.translatein(a->eccentricity, 0, 0);
+				Mat4d rmat = a->orbit_axis.tomat4();
+				Mat4d mat = rmat * smat;
+				a->pos = mat.vp3(pos0);
+//				a->pos *= rmass / a->mass;
+				double r = a->pos.len() * a->mass / rmass;
+
+				// Two-body problem must synchronize orbit phase bettween involving bodies
+				if(i)
+					a->orbit_phase = a0->orbit_phase;
+				else if(DBL_MIN < r)
+					a->orbit_phase += omega * dt * dist / r;
+			}
+			a->pos += orbpos;
+			if(dt){
+				a->velo = a->pos - oldpos;
+				a->velo *= 1. / dt;
+			}
+			// Revolving, do such a thing yourself
+//			a->rot = a->rot.quatrotquat(a->omg * dt * astro_timescale);
+		}
+		st::anim(dt);
+	}
+}
+
+
+
+
+
+
+
+
+
 
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(.5f,.5f,.5f,1.){
 }
@@ -569,3 +660,4 @@ public:
 	virtual void anim(double dt){
 	}
 };
+

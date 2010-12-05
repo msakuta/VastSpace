@@ -29,18 +29,40 @@ typedef void (*astrobj_draw_proc)(struct astrobj *, const struct viewer *);
 
 class Player;
 struct StellarContext;
+class Barycenter;
+
+template<typename T, size_t ofs> class EmbeddedList;
+
+template<typename T, size_t ofs> class EmbeddedListNode{
+	T *next;
+public:
+	operator EmbeddedList<T, ofs>(){return EmbeddedList<T, ofs>(this);}
+};
+template<typename T, size_t ofs> class EmbeddedList{
+	EmbeddedListNode<T, ofs> *const p;
+public:
+	EmbeddedList(EmbeddedListNode<T, ofs> *a) : p(a){}
+	operator T&(){return *(T*)(((char*)p) - ofs);}
+};
 
 /// CoordSys of orbital motion
 class EXPORT OrbitCS : public CoordSys{
 public:
 	double orbit_rad;
-	Astrobj *orbit_home;
-	Quatd orbit_axis;
-	double orbit_phase;
-	double eccentricity; /* orbital element */
+	Astrobj *orbit_home; ///< if orbitType == Satellite, it's the mother body. otherwise the other object involving in the two-body problem.
+	CoordSys *orbit_center; ///< if orbitType == TwoBody, it's CoordSys of barycenter. otherwise not used.
+	Quatd orbit_axis; ///< normal vector to orbit plane
+	double orbit_phase; ///< phase at which position of a cycle
+	double eccentricity; ///< orbital element
 	int flags2;
 	static double astro_timescale;
 public:
+	enum OrbitType{
+		NoOrbit, ///< Not orbiting
+		Satellite, ///< This object's mass is negligible compared to its mother body
+		TwoBody, ///< The objects' mass are close enough to assume two-body problem
+		Num_OrbitType
+	};
 	typedef CoordSys st;
 	OrbitCS(){}
 	OrbitCS(const char *path, CoordSys *root);
@@ -53,8 +75,12 @@ public:
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
 	virtual bool readFileEnd(StellarContext &);
 	virtual OrbitCS *toOrbitCS();
+	virtual Barycenter *toBarycenter();
 
-private:
+protected:
+//	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
+	std::vector<OrbitCS*> orbiters;
+	enum OrbitType orbitType;
 	int enable;
 	double inclination, loan, aop;
 };

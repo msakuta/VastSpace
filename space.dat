@@ -65,7 +65,7 @@ sol{
 #	eisystem
 
 #	include space_debug.dat
-	include sol.dat
+#	include sol.dat
 
 }
 
@@ -89,52 +89,84 @@ astro Star Canopus{
 
 coordsys "Alpha Centauri"{
 	galactic_coord 315.8 -0.7 4.22*LY
-	coordsys baricenter{
+	bookmark "Alpha Centauri"
+	coordsys Barycenter barycenter{
 		pos 0 0 0
 	}
-	astro Star "Rigil Kentaurus A"{
-		orbits baricenter
+	astro Star A{
+		fullname "Rigil Kentaurus A"
+		orbits barycenter
 		showorbit
 		semimajor_axis 10.9*AU
 		eccentricity 0.519
-		inclination 79.23
+		inclination 0.1*79.23
 		argument_of_periapsis 150.2075
 		ascending_node 80.6198
 		radius 1.227*Rsun
 		mass 1.1*Msun
 		pos 0 0 0
 		spectral G2V
-		coordsys OrbitCS "orbit"{
-			orbits "Rigil Kntaurus A"
-			showorbit
-			semimajor_axis AU
-			eccentricity 0
-			inclination 0
-			argument_of_periapsis 0
-			ascending_node 0
-			teleport "Rigil Kentaurus A"
-			bookmark "Rigil Kentaurus A"
-		}
 	}
-	astro Star "Rigil Kentaurus B"{
-		orbits baricenter
+	coordsys Orbit "orbit"{
+		orbits "Rigil Kntaurus A"
+		showorbit
+		semimajor_axis AU
+		eccentricity 0
+		inclination 0
+		argument_of_periapsis 0
+		ascending_node 0
+		teleport "Rigil Kentaurus A"
+		bookmark "Rigil Kentaurus A"
+	}
+	astro Star B{
+		fullname "Rigil Kentaurus B"
+		orbits barycenter
 		showorbit
 		semimajor_axis 10.9*AU
 		eccentricity 0.519
-		inclination 79.23
+		inclination 0.1*79.23
 		argument_of_periapsis 150.2075
-		ascending_node 260.6198
+		ascending_node 80.6198+180
 		radius .865*Rsun
 		mass .907*Msun
 		pos 11*AU 0 0
 		spectral K1V
 	}
-	astro Star "Proxima Centauri"{
+	astro Star C{
+		fullname "Proxima Centauri"
 		radius .145*Rsun
 		mass .123*Msun
 		pos .2*LY 0 0
 		spectral M5.5Ve
 	}
+	coordsys Orbit hypo{
+		fullname "Hypothetical Planet System"
+		cs_radius 1000000
+		orbits "B"
+		orbit_radius 57909100
+		inclination 7.0051
+		argument_of_periapsis 77.5806
+		ascending_node 48.4257
+		eccentricity 0.205630
+		showorbit
+		astro TextureSphere "Hypothetical Planet"{
+			radius 2439.7
+			mass 3.3022e23
+			color afafaf
+			planet
+			spherehit
+			texture mer0muu2.jpg
+		}
+		coordsys Orbit hypoo{
+			orbits "Hypothetical Planet"
+			orbit_radius 10000
+			fullname "Hypo orbit"
+			warp
+			teleport
+			bookmark "Hypo orbit"
+		}
+	}
+
 }
 
 astro Star "Arcturus"{

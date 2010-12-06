@@ -443,6 +443,11 @@ CoordSys *CoordSys::findcs(const char *name){
 	CoordSys *cs, *ret;
 	if(!strcmp(this->name, name))
 		return this;
+	if(this->fullname && !strcmp(this->fullname, name))
+		return this;
+	for(int i = 0; i < extranames.size(); i++)
+		if(extranames[i] == name)
+			return this;
 	for(cs = children; cs; cs = cs->next) if(ret = cs->findcs(name))
 		return ret;
 	return NULL;

@@ -606,6 +606,10 @@ register_console_command("add_bookmark_s", function(...){
 	return addBookmark(true, argv);
 });
 
+stellarContext <- {
+	LY= 9.4605284e12
+};
+
 // Assign event handler for CoordSys::readFile. Because Squirrel does not allow class static variables to be altered
 // after definition, we must introduce one extra layer of indirection to make it modifiable, or give it up to make class
 // member.
@@ -617,6 +621,15 @@ register_console_command("add_bookmark_s", function(...){
 		item.pos = Vec3d(1 < vargc ? vargv[1].tofloat() : 0, 2 < vargc ? vargv[2].tofloat() : 0, 3 < vargc ? vargv[3].tofloat() : 0);
 		item.rot = 4 < vargc ? compilestring("return (" + vargv[4] + ")")() : Quatd(0,0,0,1);
 		::bookmarks[vargv[0]] <- item;
+		return 1;
+	}
+	else if(name == "equatorial_coord"){
+		local RA = vargv[0].tofloat() * 2 * PI / 360;
+		local dec = vargv[1].tofloat() * 2 * PI / 360;
+		local dist = compilestring("return (" + vargv[2] + ")").call(stellarContext);
+		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
+		print(cs.name() + ": " + RA + ", " + dec + pos);
+		cs.setpos(pos);
 		return 1;
 	}
 	return 0;

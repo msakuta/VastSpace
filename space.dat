@@ -67,6 +67,8 @@ sol{
 #	include space_debug.dat
 #	include sol.dat
 
+	bookmark sol
+
 }
 
 coordsys ns{
@@ -76,7 +78,8 @@ fullname "Near Space"
 astro Star Sirius{
 	radius 1.68*Rsun
 	mass Msun
-	galactic_coord 227.2 -8.9 8.58*LY
+#	galactic_coord 227.2 -8.9 8.58*LY
+	equatorial_coord 101.287 -16.716 8.6*LY
 	spectral A1
 }
 
@@ -94,7 +97,8 @@ coordsys "Alpha Centauri"{
 	extraname "Bungla"
 	extraname "Gliese 559"
 	solarsystem
-	galactic_coord 315.8 -0.7 4.22*LY
+#	galactic_coord 315.8 -0.7 4.22*LY
+	equatorial_coord 219.899 -60.835401 4.22*LY
 	bookmark "Alpha Centauri"
 	coordsys Barycenter barycenter{
 		pos 0 0 0
@@ -129,7 +133,7 @@ coordsys "Alpha Centauri"{
 	astro Star B{
 		fullname "Rigil Kentaurus B"
 		extraname "Alpha Centauri B"
-		extraname "HIP 71683"
+		extraname "HIP 71681"
 		orbits barycenter
 		showorbit
 		semimajor_axis 10.9*AU
@@ -144,6 +148,7 @@ coordsys "Alpha Centauri"{
 	}
 	astro Star C{
 		fullname "Proxima Centauri"
+		extraname "HIP 71681"
 		radius .145*Rsun
 		mass .123*Msun
 		pos .2*LY 0 0
@@ -203,14 +208,16 @@ astro Star "Capella"{
 astro Star "Rigel"{
 	radius 1.227*Rsun
 	mass Msun
-	galactic_coord 209.3 -25.1 770*LY
+#	galactic_coord 209.3 -25.1 770*LY
+	equatorial_coord 78.635 -8.202 800*LY
 	spectral B8Ia
 }
 
 astro Star "Procyon"{
 	radius 1.227*Rsun
 	mass Msun
-	galactic_coord 213.7 13.0 11*LY
+#	galactic_coord 213.7 13.0 11*LY
+	equatorial_coord 114.825 5.225 11.4*LY
 	spectral F5IV-V
 }
 
@@ -224,7 +231,8 @@ astro Star "Achernar"{
 astro Star "Betelgeuse"{
 	radius 1180*Rsun
 	mass 19*Msun
-	galactic_coord 199.8 -9.0 430*LY
+#	galactic_coord 199.8 -9.0 430*LY
+	equatorial_coord 88.793 7.407 640*LY
 	spectral M2Ib
 }
 
@@ -331,6 +339,42 @@ astro Star "Gacrux"{
 	mass Msun
 	galactic_coord 300.2 5.7 88*LY
 	spectral M3.5III
+}
+
+
+astro Star "Saiph"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 86.939 -9.670 700*LY
+	spectral B0.5
+}
+
+astro Star "Bellatrix"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 81.283 6.350 240*LY
+	spectral B2
+}
+
+astro Star "Alnitak"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 85.190 -1.943 240*LY
+	spectral O9
+}
+
+astro Star "Alnilam"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 84.053 -1.202 1300*LY
+	spectral B0
+}
+
+astro Star "Mintaka"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 83.002 -0.598 900*LY
+	spectral O9V
 }
 
 }

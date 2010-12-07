@@ -520,7 +520,6 @@ register_console_command("matchcs", function(...){
 	local PatCall = class{
 		function patcall(cs, pat){
 			local en = cs.extranames;
-		//	print(cs.name() + ": " + en.len());
 			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
 				print(en[i]);
 			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
@@ -535,9 +534,6 @@ register_console_command("matchcs", function(...){
 
 	PatCall().patcall(universe, pat);
 })
-
-print("patcall" in getroottable() ? "elude!" : "not elude!");
-print("PatCall" in getroottable() ? "PatCall elude!" : "PatCall not elude!");
 
 
 class Bookmark{
@@ -554,15 +550,22 @@ class BookmarkCoordSys extends Bookmark{
 	function cs(){
 		return src;
 	}
+	function path(){
+		return src != null ? src.getpath() : "(null)";
+	}
 }
 
 class BookmarkSymbolic extends Bookmark{
-	path = "/"
+	m_path = "/"
 	constructor(apath){
-		path = apath;
+		m_path = apath;
 	}
 	function cs(){
-		return ::player.cs.findcspath(path);
+		return ::player.cs.findcspath(m_path);
+	}
+	function path(){
+		return m_path;
+		
 	}
 }
 
@@ -596,7 +599,7 @@ function addBookmark(symbolic, argv){
 		print("  Append \"_s\" to make symbolic bookmark.");
 		foreach(key, item in ::bookmarks){
 			print("\"" + key + "\" " + (item instanceof BookmarkSymbolic ? "s" : "-")
-				+ " path=\"" + item.cs().getpath() + "\""
+				+ " path=\"" + item.path() + "\""
 				+ " pos=" + ("pos" in item ? item.pos : Vec3d(0,0,0))
 				+ " rot=" + ("rot" in item ? item.rot : Quatd(0,0,0,1)));
 		}
@@ -617,21 +620,13 @@ function addBookmark(symbolic, argv){
 }
 
 /// Adds a bookmark with object binding.
-register_console_command("add_bookmark", function(...){
-	// Repack variable arguments to an array to give them to another function.
-	local argv = [];
-	for(local i = 0; i < vargc; i++)
-		argv.append(vargv[i]);
-	return addBookmark(false, argv);
+register_console_command_a("add_bookmark", function(args){
+	return addBookmark(false, args);
 });
 
 /// Adds a bookmark with path binding.
-register_console_command("add_bookmark_s", function(...){
-	// Repack variable arguments to an array to give them to another function.
-	local argv = [];
-	for(local i = 0; i < vargc; i++)
-		argv.append(vargv[i]);
-	return addBookmark(true, argv);
+register_console_command_a("add_bookmark_s", function(args){
+	return addBookmark(true, args);
 });
 
 stellarContext <- {

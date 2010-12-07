@@ -67,14 +67,40 @@ int ::sqa_console_command(int argc, char *argv[], int *retval){
 	if(SQ_FAILED(sq_get(v, -2))) // root table closure
 		return 0;
 
-	// Pass all arguments as strings (no conversion is done beforehand).
-	sq_pushroottable(v);
-	for(int i = 1; i < argc; i++)
-		sq_pushstring(v, argv[i], -1);
+	switch(sq_gettype(v, -1)){
+	case OT_CLOSURE:
 
-	// It's no use examining returned value in that case calling the function iteslf fails.
-	if(SQ_FAILED(sq_call(v, argc, SQTrue, SQTrue)))
-		return 0;
+		// Pass all arguments as strings (no conversion is done beforehand).
+		sq_pushroottable(v);
+		for(int i = 1; i < argc; i++)
+			sq_pushstring(v, argv[i], -1);
+
+		// It's no use examining returned value in that case calling the function iteslf fails.
+		if(SQ_FAILED(sq_call(v, argc, SQTrue, SQTrue)))
+			return 0;
+		break;
+
+	case OT_ARRAY:
+		// Retrieve function packed into an array.
+		sq_pushinteger(v, 0);
+		if(SQ_FAILED(sq_get(v, -2))) // [closure] closure
+			return -1;
+		sq_pushroottable(v); // [closure] closure root
+
+		// Pack all arguments into an array
+		sq_newarray(v, argc-1); // [closure] closure root [null, ...]
+		for(int i = 1; i < argc; i++){
+			sq_pushinteger(v, i); // [closure] closure root [...] i
+			sq_pushstring(v, argv[i], -1); // [closure] closure root [...] i arg[i]
+			sq_set(v, -3);
+		}
+		if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue))) // [closure] closure root [...]
+			return 0;
+		break;
+
+	default:
+		return sq_throwerror(v, _SC("The console command is not a function"));
+	}
 
 	// Assume returned value integer.
 	int retint;
@@ -156,6 +182,8 @@ static SQInteger sqf_cmd(HSQUIRRELVM v){
 	return 0;
 }
 
+/// A function that enables Squirrel codes to register console commands.
+/// Command line arguments are passed as function parameters.
 static SQInteger sqf_register_console_command(HSQUIRRELVM v){
 	const SQChar *name;
 	sq_getstring(v, 2, &name);
@@ -173,6 +201,36 @@ static SQInteger sqf_register_console_command(HSQUIRRELVM v){
 
 	sq_push(v, 2); // root table name
 	sq_push(v, 3); // root table name closure
+	sq_newslot(v, -3, SQFalse); // root table
+	return 0;
+}
+
+/// This version packs arguments to an array before calling Squirrel function.
+/// The array-packed arguments are occasionally useful when variable arguments are not appropriate.
+/// To make the designation of calling convention whether to use array-packed arguments,
+/// the function is enclosed inside an array.
+/// This is not very smart, but array-packed arguments are expected to be rare, so
+/// it's acceptable load to introduce extra indirection layer.
+static SQInteger sqf_register_console_command_a(HSQUIRRELVM v){
+	const SQChar *name;
+	sq_getstring(v, 2, &name);
+	sq_pushroottable(v); // root
+	sq_pushstring(v, CONSOLE_COMMANDS, -1); // root "console_commands"
+
+	// If "console_commands" table does not exist in the root table, create an empty one.
+	if(SQ_FAILED(sq_get(v, -2))){ // root table
+		sq_newtable(v); // root table
+		sq_pushstring(v, CONSOLE_COMMANDS, -1); // root table "console_commands"
+		sq_push(v, -2); // root table "console_commands" table
+		if(SQ_FAILED(sq_createslot(v, -4))) // root table
+			return sq_throwerror(v, _SC("Could not allocate console_commands"));
+	}
+
+	sq_push(v, 2); // root table name
+	sq_newarray(v, 1);
+	sq_pushinteger(v, 0); // root table name [nil] 0
+	sq_push(v, 3); // root table name [nil] 0 closure
+	sq_set(v, -3); // root table name [closure]
 	sq_newslot(v, -3, SQFalse); // root table
 	return 0;
 }
@@ -1311,9 +1369,8 @@ void sqa_init(HSQUIRRELVM *pv){
 	sq_remove(v, -2); // this "player" Player-instance
 	sq_createslot(v, 1); // this
 
-	sq_pushstring(v, _SC("register_console_command"), -1);
-	sq_newclosure(v, sqf_register_console_command, 0);
-	sq_createslot(v, 1);
+	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
+	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
 
 	// Define class GLwindow
 	sq_pushstring(v, _SC("GLwindow"), -1);

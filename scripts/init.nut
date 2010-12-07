@@ -512,6 +512,34 @@ register_console_command("typecs", function(...){
 	}
 });
 
+register_console_command("matchcs", function(...){
+	/// Class that pattern matches names and aliases of all systems.
+	/// Note that this class is local to this function scope.
+	/// Also note that bare function couldn't recursively call itself without
+	/// namespace contaminated, so there is encapsulating class.
+	local PatCall = class{
+		function patcall(cs, pat){
+			local en = cs.extranames;
+		//	print(cs.name() + ": " + en.len());
+			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
+				print(en[i]);
+			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+				patcall(cs2, pat);
+		}
+	};
+	local pat = "";
+	if(vargc == 0)
+		pat = "";
+	else
+		pat = vargv[0];
+
+	PatCall().patcall(universe, pat);
+})
+
+print("patcall" in getroottable() ? "elude!" : "not elude!");
+print("PatCall" in getroottable() ? "PatCall elude!" : "PatCall not elude!");
+
+
 class Bookmark{
 	function cs(){return null;} // Pure virtual would be appropriate
 	pos = Vec3d(0,0,0)

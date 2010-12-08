@@ -65,7 +65,7 @@ sol{
 #	eisystem
 
 #	include space_debug.dat
-#	include sol.dat
+	include sol.dat
 
 	bookmark sol
 
@@ -128,7 +128,7 @@ coordsys "Alpha Centauri"{
 		argument_of_periapsis 0
 		ascending_node 0
 		teleport "Rigil Kentaurus A"
-		bookmark "Rigil Kentaurus A"
+		bookmark "Rigil Kentaurus A" 0 0 0 "Quatd.rotation(PI,Vec3d(1,0,0))"
 	}
 	astro Star B{
 		fullname "Rigil Kentaurus B"
@@ -185,17 +185,26 @@ coordsys "Alpha Centauri"{
 }
 
 astro Star "Arcturus"{
+	extraname "α Boo"
+	extraname "HIP 69673"
 	radius 1.227*Rsun
 	mass Msun
-	galactic_coord 15.2 69.0 37*LY
+#	galactic_coord 15.2 69.0 37*LY
+	equatorial_coord 213.915 19.182 36.7*LY
 	spectral K2III
+	absmag -0.38
 }
 
 astro Star "Vega"{
+	extraname "Wega"
+	extraname "α Lyrae"
+	extraname "HIP 91262"
 	radius 1.227*Rsun
 	mass Msun
-	galactic_coord 67.5 19.2 25*LY
+#	galactic_coord 67.5 19.2 25*LY
+	equatorial_coord 279.235 38.784 25.27*LY
 	spectral A0V
+	absmag 0.58
 }
 
 astro Star "Capella"{

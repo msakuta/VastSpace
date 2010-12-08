@@ -299,8 +299,9 @@ tlate <- translate;
 
 // load the module
 {
-	local gltestdll = loadModule(debugBuild() ? x64Build() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" : "gltestdll.dll");
-	print("x64: " + x64Build() + ", gltest.dll refc is " + gltestdll);
+	local dllpath = debugBuild() ? x64Build() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" : "gltestdll.dll";
+	local gltestdll = loadModule(dllpath);
+	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
@@ -521,7 +522,7 @@ register_console_command("matchcs", function(...){
 		function patcall(cs, pat){
 			local en = cs.extranames;
 			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
-				print(en[i]);
+				print("\"" + en[i] + "\": " + cs.getpath());
 			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
 				patcall(cs2, pat);
 		}
@@ -610,6 +611,7 @@ function addBookmark(symbolic, argv){
 
 	local item = symbolic ? BookmarkSymbolic(argv[1]) : BookmarkCoordSys(player.cs.findcspath(argv[1]));
 	item.pos = Vec3d(2 < argc ? argv[2].tofloat() : 0, 3 < argc ? argv[3].tofloat() : 0, 4 < argc ? argv[4].tofloat() : 0);
+	item.rot = 4 < argc ? compilestring("return (" + argv[4] + ")")() : Quatd(0,0,0,1);
 
 	// By default, bookmark entry is referenced by object, which means it follows the marked system
 	// even if the system changes path relative to the universe, but fail to switch to replaced system

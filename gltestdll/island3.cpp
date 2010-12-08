@@ -185,7 +185,7 @@ Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 		bldgs[i] = new Island3Building(*this);
 }
 
-Island3::Island3(const char *path, CoordSys *root){
+Island3::Island3(const char *path, CoordSys *root) : st(path, root){
 	this->Island3::Island3();
 	init(path, root);
 }

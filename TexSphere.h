@@ -37,10 +37,13 @@ public:
 		cpplib::dstring uniformname;
 		cpplib::dstring filename;
 		mutable GLuint list;
+		mutable GLint shaderLoc;
 		bool cloudSync;
 		bool normalmap;
+		Texture() : list(0), shaderLoc(-2), cloudSync(false), normalmap(false){}
 	};
 	typedef Astrobj st;
+	typedef TexSphere tt;
 	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();

@@ -13,6 +13,7 @@
 #include "TexSphere.h"
 #include "cmd.h"
 #include "glsl.h"
+#include "glstack.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -575,7 +576,7 @@ enum DTS{
 	DTS_ALPHA = 1<<2,
 	DTS_NORMALMAP = 1<<3,
 	DTS_NOGLOBE = 1<<4,
-	NUM_DTS
+	DTS_LIGHTING = 1<<5
 };
 
 /// \brief A class that draw textured sphere.
@@ -584,14 +585,16 @@ enum DTS{
 /// The caller must invoke draw() method to get it working.
 class DrawTextureSphere{
 protected:
-	TexSphere *a;
+	Astrobj *a;
 	const Viewer *vw;
 	const Vec3d sunpos;
+	const Vec3d apos;
 	Vec4f m_mat_diffuse;
 	Vec4f m_mat_ambient;
 	GLuint *ptexlist;
 	Mat4d m_texmat;
 	const char *m_texname;
+	const std::vector<TexSphere::Texture> *m_textures;
 	double m_rad;
 	int m_flags;
 	GLuint m_shader;
@@ -600,16 +603,22 @@ protected:
 	int m_nfinecuts;
 	int m_nffinecuts;
 	AstroRing *m_ring;
+	double m_ringmin, m_ringmax;
+	Quatd m_cloudRotation;
 	void useShader();
 public:
 	typedef DrawTextureSphere tt;
-	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)
+	tt(Astrobj *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)
+		, apos(vw->cs->tocs(a->pos, a->parent))
 		, m_mat_diffuse(1,1,1,1), m_mat_ambient(.5, .5, .5, 1.)
 		, ptexlist(NULL)
 		, m_texmat(mat4_u)
+		, m_textures(NULL)
 		, m_rad(0), m_flags(0), m_shader(0), m_drawint(false)
-		,m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
-		, m_ring(NULL){}
+		, m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
+		, m_ring(NULL)
+		, m_ringmin(0.), m_ringmax(0.)
+		, m_cloudRotation(quat_u){}
 	tt &astro(TexSphere *a){this->a = a; return *this;}
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
 	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
@@ -617,19 +626,21 @@ public:
 	tt &texlist(GLuint *a){ptexlist = a; return *this;}
 	tt &texmat(const Mat4d &a){m_texmat = a; return *this;}
 	tt &texname(const char *a){m_texname = a; return *this;}
+	tt &textures(const std::vector<TexSphere::Texture> &atextures){m_textures = &atextures; return *this;}
 	tt &rad(double a){m_rad = a; return *this;}
 	tt &flags(int a){m_flags = a; return *this;}
 	tt &shader(GLuint a){m_shader = a; return *this;}
 	tt &drawint(bool a){m_drawint = a; return *this;}
 	tt &ncuts(int a){m_ncuts = a; m_nfinecuts = a * 8; m_nffinecuts = a * 64; return *this;}
 	tt &ring(AstroRing *a){m_ring = a; return *this;}
+	tt &ringRange(double ringmin, double ringmax){m_ringmin = ringmin; m_ringmax = ringmax; return *this;}
+	tt &cloudRotation(const Quatd &acloudrot){m_cloudRotation = acloudrot; return *this;}
 	virtual bool draw();
 };
 
 void DrawTextureSphere::useShader(){
 	static GLuint noise3tex = noise3DTexture();
 	GLuint shader = m_shader;
-	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 	double dist = (apos - vw->pos).len();
 	if(shader && g_shader_enable){
 		glUseProgram(shader);
@@ -660,14 +671,16 @@ void DrawTextureSphere::useShader(){
 		}
 		TexSphere::TextureIterator it;
 		int i;
-		for(it = a->beginTextures(), i = 3; it != a->endTextures(); it++, i++){
-			GLint texLoc = glGetUniformLocation(shader, it->uniformname);
-			if(0 <= texLoc){
-				if(!it->list)
-					it->list = ProjectSphereCubeJpg(it->filename, m_flags | DTS_NODETAIL | (it->normalmap ? DTS_NORMALMAP : 0));
+		if(m_textures) for(it = m_textures->begin(), i = 3; it != m_textures->end(); it++, i++){
+			const TexSphere::Texture &tex = *it;
+//			if(tex.shaderLoc == -2)
+				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
+			if(0 <= tex.shaderLoc){
+				if(!tex.list)
+					tex.list = ProjectSphereCubeJpg(tex.filename, m_flags | DTS_NODETAIL | (tex.normalmap ? DTS_NORMALMAP : 0));
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
-				glCallList(it->list);
-				glUniform1i(texLoc, i);
+				glCallList(tex.list);
+				glUniform1i(tex.shaderLoc, i);
 				glMatrixMode(GL_TEXTURE);
 				glLoadIdentity();
 				glMatrixMode(GL_MODELVIEW);
@@ -682,14 +695,14 @@ bool DrawTextureSphere::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
 	const Mat4d &texmat = m_texmat;
-	GLuint texlist = *ptexlist;
+//	GLuint texlist = *ptexlist;
 	const char *texname = m_texname;
 	double &rad = m_rad;
 	int flags = m_flags;
 	GLuint shader = m_shader;
 
 	int i, j, jstart, fine;
-	bool texenable = texlist && texmat;
+	bool texenable = ptexlist && *ptexlist && texmat;
 	normvertex_params params;
 	Mat4d rot;
 	
@@ -700,7 +713,6 @@ bool DrawTextureSphere::draw(){
 	params.texenable = texenable;
 	params.detail = 0;
 
-	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 	double scale = rad * vw->gc->scale(apos);
 
 	Vec3d tp = apos - vw->pos;
@@ -725,11 +737,11 @@ bool DrawTextureSphere::draw(){
 	}
 
 	// Allocate surface texture
-	do if(!texlist && texname){
+	do if(ptexlist && !*ptexlist && texname){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
-		texlist = *ptexlist = ProjectSphereCubeJpg(texname, flags);
+		*ptexlist = ProjectSphereCubeJpg(texname, flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -740,6 +752,9 @@ bool DrawTextureSphere::draw(){
 	if(m_drawint ^ (dist < rad))
 		return true;
 
+	if(rad / dist < 1. / vw->vp.m)
+		return texenable;
+
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
@@ -747,7 +762,7 @@ bool DrawTextureSphere::draw(){
 	glColor3ub(255,255,255);*/
 
 	if(texenable){
-		glCallList(texlist);
+		glCallList(*ptexlist);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glDisable(GL_TEXTURE_2D);
 		glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
@@ -767,7 +782,11 @@ bool DrawTextureSphere::draw(){
 	glMultMatrixd(texmat);
 	glMatrixMode(GL_MODELVIEW);*/
 
-	{
+	// The model view matrix must be initialized before lighting is set up.
+	glPushMatrix();
+	glLoadIdentity();
+
+	if(m_flags & DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -778,7 +797,19 @@ bool DrawTextureSphere::draw(){
 		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
+
+		Vec4<GLfloat> light_position = (sunpos - apos).normin().cast<GLfloat>();
+		light_position[3] = 0.;
+		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+		glEnable(GL_LIGHTING);
+		glEnable(GL_LIGHT0);
+		glEnable(GL_NORMALIZE);
 	}
+	else{
+		glColor4fv(mat_diffuse);
+		glDisable(GL_LIGHTING);
+	}
+
 	if(flags & DTS_ADD){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
@@ -789,11 +820,8 @@ bool DrawTextureSphere::draw(){
 /*	glEnable(GL_TEXTURE_2D);*/
 //	if(texenable)
 //		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glFrontFace(m_drawint ? GL_CW : GL_CCW);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
 
 	{
 //		Mat4d irot;
@@ -802,7 +830,7 @@ bool DrawTextureSphere::draw(){
 		if(ring && m_shader){
 			Quatd qrot = vw->cs->tocsq(a->parent).cnj()/* * Quatd::direction(a->omg)*/;
 			Vec3d ringnorm = a->rot.trans(vec3_001);
-			ring->ring_setsphereshadow(*vw, a->ringmin, a->ringmax, ringnorm, m_shader);
+			ring->ring_setsphereshadow(*vw, m_ringmin, m_ringmax, ringnorm, m_shader);
 		}
 
 //		gldLookatMatrix(~irot, ~(apos - vw->pos));
@@ -814,7 +842,7 @@ bool DrawTextureSphere::draw(){
 			Quatd qrotvw = vw->cs->tocsq(a->parent);
 			Quatd qrotm = qrotvw * qirot;
 			params.texmat = texmat * qrotm.tomat4();
-			params.cloudmat = (a->cloudRotation().cnj() * qrotm).tomat4();
+			params.cloudmat = (m_cloudRotation.cnj() * qrotm).tomat4();
 /*			glActiveTextureARB(GL_TEXTURE3_ARB);
 			glMatrixMode(GL_TEXTURE);
 			glLoadMatrixd(params.texmat);
@@ -824,19 +852,10 @@ bool DrawTextureSphere::draw(){
 		params.mat = qirot.tomat4().translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
 
-	glPushMatrix();
-	glLoadIdentity();
-
 	double tangent = rad < dist ? asin(rad / dist) : M_PI / 2.;
 /*	fine = M_PI / 3. < tangent;*/
 	fine = 0/*DTS_NODETAIL & flags*/ ? 0 : M_PI * 7. / 16. < tangent ? 2 : M_PI / 3. < tangent ? 1 : 0;
 	double (*ffinecuts)[2] = CircleCutsPartial(m_nffinecuts, 9);
-
-	{
-		Vec4<GLfloat> light_position = (sunpos - apos).normin().cast<GLfloat>();
-		light_position[3] = 0.;
-		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-	}
 
 #if DRAWTEXTURESPHERE_PROFILE
 	normvertex_invokes = 0;
@@ -975,8 +994,8 @@ bool DrawTextureSpheroid::draw(){
 //	const Quatd *texrot;
 	double &oblateness = m_oblateness;
 	AstroRing *ring = m_ring;
-	double ringminrad = a->ringmin;
-	double ringmaxrad = a->ringmax;
+	double ringminrad = m_ringmin;
+	double ringmaxrad = m_ringmax;
 
 	double scale, zoom;
 	bool texenable = !!texlist;
@@ -988,7 +1007,6 @@ bool DrawTextureSpheroid::draw(){
 	params.texenable = texenable;
 	params.detail = 0;
 
-	const Vec3d apos = vw->cs->tocs(a->pos, a->parent);
 /*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
 	scale = a->rad * vw->gc->scale(apos);
 
@@ -1033,7 +1051,10 @@ bool DrawTextureSpheroid::draw(){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	{
+	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
+	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
+
+	if(m_flags & DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -1044,15 +1065,13 @@ bool DrawTextureSpheroid::draw(){
 		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
-	}
-	glEnable(GL_NORMALIZE);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
+		glEnable(GL_NORMALIZE);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_LIGHTING);
+		glEnable(GL_LIGHT0);
 
-	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
-	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
-	glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
+		glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
+	}
 
 	// Temporarily create dummy Viewer (in other words, latch) with position of zero vector, to avoid cancellation errors.
 	// It does not remove subtraction, but many OpenGL implementation treats matrices with float, so using double inside CPU would help.
@@ -1174,9 +1193,11 @@ void TexSphere::draw(const Viewer *vw){
 			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
 				cloudDraw
 				.oblateness(oblateness)
+				.flags(DTS_LIGHTING)
 				.texlist(&cloudtexlist)
 				.texmat(cloudRotation().cnj().tomat4())
 				.texname(cloudtexname)
+				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
 				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
@@ -1191,14 +1212,18 @@ void TexSphere::draw(const Viewer *vw){
 			}
 			bool ret = DrawTextureSpheroid(this, vw, sunpos)
 				.oblateness(oblateness)
+				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.)
 				.texlist(&texlist)
 				.texmat(mat4_u)
+				.textures(textures)
 				.shader(shader)
 				.texname(texname)
 				.rad(rad)
 				.ring(&astroRing)
+				.ringRange(ringmin, ringmax)
+				.cloudRotation(cloudRotation())
 				.draw();
 			if(!ret && *texname){
 				texname = "";
@@ -1214,9 +1239,11 @@ void TexSphere::draw(const Viewer *vw){
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
 			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
 				cloudDraw
+				.flags(DTS_LIGHTING)
 				.texlist(&cloudtexlist)
 				.texmat(cloudRotation().cnj().tomat4())
 				.texname(cloudtexname)
+				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
 				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
@@ -1230,11 +1257,14 @@ void TexSphere::draw(const Viewer *vw){
 				}
 			}
 			bool ret = DrawTextureSphere(this, vw, sunpos)
+				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.f)
 				.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texname).shader(shader)
+				.textures(textures)
 				.ncuts(g_tscuts)
 				.ring(&astroRing)
+				.cloudRotation(cloudRotation())
 				.draw();
 			if(!ret && *texname){
 				texname = "";
@@ -3276,7 +3306,9 @@ void Star::draw(const Viewer *vw){
 		return;
 	}*/
 
-	drawpsphere(this, vw, col);
+//	drawpsphere(this, vw, col);
+	DrawTextureSphere(this, vw, vec3_000)
+		.draw();
 	if(/*!((struct sun*)a)->aircolona !(flags & AO_DRAWAIRCOLONA)*/1){
 		Astrobj *abest = NULL;
 		Vec3d epos, spos;
@@ -3405,6 +3437,9 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		else
 			col = white;
 	}
+
+	GLattrib gla(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
 	double asfactor = 1. / (1. + dist / a->rad * 1e-3);
 	if(asfactor < vw->fov / vw->vp.m * 20.){

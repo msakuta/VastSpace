@@ -37,12 +37,7 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	atmodensity = 0.;
 }
 
-const char *TexSphere::classname()const{
-	return classRegister.id;
-}
-
-const char *TexSphere::sqclassname(){return "TexSphere";}
-const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere");
+const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere", sq_define);
 
 TexSphere::~TexSphere(){
 	// Should I delete here?
@@ -287,11 +282,11 @@ SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
 }
 
 bool TexSphere::sq_define(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("TexSphere"), -1);
-	sq_pushstring(v, _SC("Astrobj"), -1);
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, "TexSphere");
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	sq_createslot(v, -3);

@@ -47,8 +47,6 @@ public:
 	TexSphere();
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();
-	const char *classname()const;
-	static const char *sqclassname();
 	static const ClassRegister<TexSphere> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

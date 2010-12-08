@@ -66,7 +66,6 @@ public:
 	typedef CoordSys st;
 	OrbitCS(){}
 	OrbitCS(const char *path, CoordSys *root);
-	virtual const char *classname()const;
 	static const ClassRegister<OrbitCS> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -101,12 +100,11 @@ public:
 	Astrobj(const char *name, CoordSys *cs);
 //	void init(const char *name, CoordSys *cs);
 
-	static const SQChar *sqclassname();
+	virtual const Static &getStatic()const{return classRegister;}
 	static bool sq_define(HSQUIRRELVM);
 	static const ClassRegister<Astrobj> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual const char *classname()const;
 	void planet_anim(double dt);
 	virtual bool readFile(StellarContext &, int argc, char *argv[]);
 	virtual bool readFileEnd(StellarContext &);

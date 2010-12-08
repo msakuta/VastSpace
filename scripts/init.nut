@@ -72,6 +72,10 @@ class TexSphere extends Astrobj{
 	float oblateness;
 }
 
+class Star extends Astrobj{
+	string spectral;
+}
+
 class Entity{
 	string classname;
 	Vec3d getpos();
@@ -521,8 +525,11 @@ register_console_command("matchcs", function(...){
 	local PatCall = class{
 		function patcall(cs, pat){
 			local en = cs.extranames;
-			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
+			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null){
 				print("\"" + en[i] + "\": " + cs.getpath());
+				if(cs.classname == "Star")
+					print("spectral: " + cs.spectral);
+			}
 			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
 				patcall(cs2, pat);
 		}
@@ -534,7 +541,18 @@ register_console_command("matchcs", function(...){
 		pat = vargv[0];
 
 	PatCall().patcall(universe, pat);
-})
+});
+
+register_console_command("locate", function(){
+	local ReCall = class{
+		function recall(cs){
+			print(cs.getpath() + ": " + cs.classname);
+			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+				recall(cs2);
+		}
+	}
+	ReCall().recall(universe);
+});
 
 
 class Bookmark{

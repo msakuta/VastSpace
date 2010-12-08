@@ -92,7 +92,7 @@ public:
 	virtual ~CoordSys();
 	void init(const char *path, CoordSys *root);
 
-	virtual const char *classname()const;
+	const char *classname()const{return getStatic().id;}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
@@ -237,11 +237,11 @@ public:
 		const Static *st; ///< Super type.
 		CoordSys *(*construct)(const char *path, CoordSys *root); ///< Construct an instance of this class.
 		Serializable *(*stconstruct)(); ///< Construct empty object for use in unserialization.
-		const SQChar *(*s_sqclassname)(); ///< Returns Squirrel class name.
+		const SQChar *s_sqclassname; ///< Squirrel class name.
 		bool (*sq_define)(HSQUIRRELVM v); ///< Procedure to define this class in a Squirrel VM.
 		/// Derived classes, no matter in the executable or in shared libraries or DLLs,
 		/// will automatically register themselves through this destructor at startup.
-		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(), const SQChar*(*sqclassname)(), bool (*sq_define)(HSQUIRRELVM v))
+		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(), const SQChar *sqclassname, bool (*sq_define)(HSQUIRRELVM v))
 			: id(id), st(st), construct(construct), stconstruct(stconstruct), s_sqclassname(sqclassname), sq_define(sq_define)
 		{
 			CoordSys::registerClass(*this);
@@ -258,10 +258,11 @@ public:
 	}
 	template<typename T, typename ST = T::st> class Register : public Static{
 	public:
-		Register(ClassId id) : Static(id, &ST::classRegister, Conster<T>, st::Conster<T>, T::sqclassname, T::sq_define){}
+		Register(ClassId id, bool (*asq_define)(HSQUIRRELVM)) : Static(id, &ST::classRegister, Conster<T>, st::Conster<T>, id, asq_define){}
 	};
+	virtual const Static &getStatic()const{return classRegister;}
+	template<typename T> friend class ClassRegister;
 protected:
-	static const SQChar *sqclassname(); ///< Returns "CoordSys"
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
 	static void unregisterClass(ClassId);
@@ -279,7 +280,16 @@ private:
 /// This way modifications can safely be made without altering CoordSys class definition.
 template<typename T> class ClassRegister : public T::Register<T>{
 public:
-	ClassRegister(ClassId id) : Register(id){}
+	ClassRegister(ClassId id, bool (*asq_define)(HSQUIRRELVM) = sq_define) : Register(id, asq_define){}
+	static bool sq_define(HSQUIRRELVM v){
+		sq_pushstring(v, T::classRegister.s_sqclassname, -1);
+		sq_pushstring(v, T::st::classRegister.s_sqclassname, -1);
+		sq_get(v, 1);
+		sq_newclass(v, SQTrue);
+		sq_settypetag(v, -1, SQUserPointer(T::classRegister.id));
+		sq_createslot(v, -3);
+		return true;
+	}
 };
 
 

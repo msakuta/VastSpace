@@ -45,10 +45,6 @@ const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter");
 double OrbitCS::astro_timescale = 1.;
 
 
-const char *OrbitCS::classname()const{
-	return classRegister.id;
-}
-
 OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_center(NULL), orbitType(NoOrbit){
 	OrbitCS *ret = this;
 //	init(path, root);
@@ -324,12 +320,7 @@ void Barycenter::anim(double dt){
 Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(.5f,.5f,.5f,1.){
 }
 
-const char *Astrobj::classname()const{
-	return classRegister.id;
-}
-const SQChar *Astrobj::sqclassname(){return _SC("Astrobj");}
-
-const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj");
+const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj", sq_define);
 
 #if 0
 	double rad;
@@ -569,31 +560,52 @@ SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
 }
 
 bool Astrobj::sq_define(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("Astrobj"), -1);
-	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, "Astrobj");
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;
 }
 
 
-Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown){ absmag = 0; }
+Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown), subspect(0){ absmag = 0; }
 
-const char *Star::classname()const{
-	return Star::classRegister.id;
+const ClassRegister<Star> Star::classRegister("Star", sq_define);
+
+int Star::sqf_get(HSQUIRRELVM v){
+	Star *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("spectral"))){
+		sq_pushstring(v, cpplib::dstring() << spectralToName(p->spect) << p->subspect, -1);
+		return 1;
+	}
+	else
+		return st::sqf_get(v);
 }
 
-const ClassRegister<Star> Star::classRegister("Star");
+bool Star::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	register_closure(v, _SC("_get"), sqf_get);
+	sq_createslot(v, -3);
+	return true;
+}
 
 bool Star::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "spectral")){
 		if(argv[1]){
-			spect = nameToSpectral(ps);
+			spect = nameToSpectral(ps, &subspect);
 		}
 		return true;
 	}
@@ -605,22 +617,21 @@ bool Star::readFileEnd(StellarContext &sc){
 	return st::readFileEnd(sc);
 }
 
-Star::SpectralType Star::nameToSpectral(const char *name){
-	if(toupper(name[0]) == 'O')
-		return O;
-	if(toupper(name[0]) == 'B')
-		return B;
-	if(toupper(name[0]) == 'A')
-		return A;
-	if(toupper(name[0]) == 'F')
-		return F;
-	if(toupper(name[0]) == 'G')
-		return G;
-	if(toupper(name[0]) == 'K')
-		return K;
-	if(toupper(name[0]) == 'M')
-		return M;
-	return Unknown;
+Star::SpectralType Star::nameToSpectral(const char *name, float *subspect){
+	SpectralType ret;
+	switch(toupper(name[0])){
+		case 'O': ret = O; break;
+		case 'B': ret = B; break;
+		case 'A': ret = A; break;
+		case 'F': ret = F; break;
+		case 'G': ret = G; break;
+		case 'K': ret = K; break;
+		case 'M': ret = M; break;
+		default: ret = Unknown;
+	}
+	if(subspect)
+		*subspect = atof(&name[1]);
+	return ret;
 }
 
 const char *Star::spectralToName(SpectralType spect){

@@ -489,7 +489,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("cs"))){
 		sq_pushroottable(v);
-		sq_pushstring(v, _SC("CoordSys"), -1);
+		sq_pushstring(v, p->cs->getStatic().s_sqclassname, -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		if(!sqa_newobj(v, const_cast<CoordSys*>(p->cs)))

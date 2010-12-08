@@ -1262,7 +1262,7 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 		if(p->a->classname() == Star::classRegister.id){
 			Star *star = (Star*)p->a;
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-			glwprintf("Spectral Type: %s", Star::spectralToName(star->spect));
+			glwprintf("Spectral Type: %s%g", Star::spectralToName(star->spect), star->subspect);
 		}
 		for(int i = 0; i < p->a->extranames.size(); i++){
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);

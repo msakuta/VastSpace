@@ -32,10 +32,6 @@ long tocs_invokes = 0;
 long tocs_parent_invokes = 0;
 long tocs_children_invokes = 0;
 
-const char *CoordSys::classname()const{
-	return "CoordSys";
-}
-const SQChar *CoordSys::sqclassname(){return "CoordSys";}
 
 
 
@@ -85,7 +81,7 @@ void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 }
 
 //static ClassRegister<CoordSys> classRegister("CoordSys");
-const CoordSys::Static CoordSys::classRegister("CoordSys", NULL, Conster<CoordSys>, st::Conster<CoordSys>, CoordSys::sqclassname, CoordSys::sq_define);
+const CoordSys::Static CoordSys::classRegister("CoordSys", NULL, Conster<CoordSys>, st::Conster<CoordSys>, "CoordSys", sq_define);
 //const CoordSys::Register<CoordSys> CoordSys::classRegister("CoordSys");
 
 CoordSys **CoordSys::legitimize_child(){
@@ -1307,7 +1303,7 @@ static SQInteger sqf_next(HSQUIRRELVM v){
 		return 1;
 	}
 	sq_pushroottable(v);
-	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_pushstring(v, p->next->getStatic().s_sqclassname, -1);
 	sq_get(v, -2);
 	sq_createinstance(v, -1);
 	sqa_newobj(v, p->next);
@@ -1374,7 +1370,7 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
 		if(it == CoordSys::ctormap().end())
 			return sq_throwerror(v, _SC("Error wrong classname"));
-		sq_pushstring(v, it->second->s_sqclassname(), -1);
+		sq_pushstring(v, it->second->s_sqclassname, -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, cs);
@@ -1414,7 +1410,7 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(p->classname());
 		if(it == CoordSys::ctormap().end())
 			return sq_throwerror(v, _SC("Error no match class names"));
-		sq_pushstring(v, it->second->s_sqclassname(), -1);
+		sq_pushstring(v, it->second->s_sqclassname, -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, p->parent);
@@ -1427,6 +1423,12 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 			sq_pushstring(v, p->extranames[i], -1);
 			sq_set(v, -3);
 		}
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("classid"))){
+		SQUserPointer typetag;
+		sq_gettypetag(v, 1, &typetag);
+		sq_pushstring(v, (SQChar*)typetag, -1);
 		return 1;
 	}
 	else

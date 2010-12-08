@@ -65,7 +65,7 @@ sol{
 #	eisystem
 
 #	include space_debug.dat
-	include sol.dat
+#	include sol.dat
 
 	bookmark sol
 
@@ -75,12 +75,42 @@ coordsys ns{
 fullname "Near Space"
 #eisystem
 
-astro Star Sirius{
-	radius 1.68*Rsun
-	mass Msun
+coordsys "Sirius"{
+	extraname "α Canis Majoris"
+	extraname "α CMa"
+	extraname "HIP 32349"
 #	galactic_coord 227.2 -8.9 8.58*LY
 	equatorial_coord 101.287 -16.716 8.6*LY
-	spectral A1
+	bookmark Sirius
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star A{
+		fullname "Sirius A"
+		orbits barycenter
+		radius 1.711*Rsun
+		mass 2.02*Msun
+		showorbit
+		semimajor_axis 0.98/2.02*7.56/3600*RAD_PER_DEG*8.6*LY
+		eccentricity 0.592
+		inclination 136.5
+		argument_of_periapsis 147.3
+		ascending_node 44.6
+		spectral A1V
+	}
+	astro Star B{
+		fullname "Sirius B"
+		orbits barycenter
+		radius 0.0084*Rsun
+		mass 0.98*Msun
+		showorbit
+		semimajor_axis 7.56/3600*RAD_PER_DEG*8.6*LY
+		eccentricity 0.592
+		inclination 136.5
+		argument_of_periapsis 147.3
+		ascending_node 44.6+180
+		spectral A2
+	}
 }
 
 astro Star Canopus{

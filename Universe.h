@@ -1,8 +1,10 @@
+/** \file
+ * \brief Definition of Universe class, root of all coordinate systems. */
 #ifndef UNIVERSE_H
 #define UNIVERSE_H
 #include "coordsys.h"
 
-
+/// Class that is only one in the game.
 class Universe : public CoordSys{
 public:
 	typedef CoordSys st;
@@ -11,7 +13,7 @@ public:
 	double astro_time;
 	Player *ppl;
 	bool paused;
-	static const unsigned version; // Saved file version, checked on loading
+	static const unsigned version; ///< Saved file version, checked on loading
 
 	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0){
 		name = NULL;
@@ -20,8 +22,7 @@ public:
 	}
 	Universe(){}
 	Universe(const char *path, CoordSys *root) : st(path, root){}
-	const char *classname()const;
-	static const char *sqclassname();
+	const Static &getStatic()const{return classRegister;}
 	static ClassRegister<Universe> classRegister;
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);

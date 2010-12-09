@@ -18,12 +18,7 @@ extern "C"{
 // Increment whenever serialization specification changes in any Serializable object.
 const unsigned Universe::version = 6;
 
-const char *Universe::classname()const{
-	return "Universe";
-}
-
-const char *Universe::sqclassname(){return "Universe";}
-ClassRegister<Universe> Universe::classRegister("Universe");
+ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
 
 void Universe::serialize(SerializeContext &sc){
@@ -278,11 +273,11 @@ SQInteger Universe::sqf_get(HSQUIRRELVM v){
 }
 
 bool Universe::sq_define(HSQUIRRELVM v){
-	sq_pushstring(v, _SC("Universe"), -1);
-	sq_pushstring(v, _SC("CoordSys"), -1);
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, "Universe");
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;

@@ -114,10 +114,15 @@ coordsys "Sirius"{
 }
 
 astro Star Canopus{
-	radius 1.68*Rsun
-	mass Msun
-	galactic_coord 261.2 -25.3 310*LY
+	extraname "Alpha Carinae"
+	extraname "α Carinae"
+	extraname "HIP 30438"
+	radius 65*Rsun
+	mass 8.5*Msun
+#	galactic_coord 261.2 -25.3 310*LY
+	equatorial_coord 95.988 52.696 310*LY
 	spectral F0Ib
+	absmag -5.53
 }
 
 coordsys "Alpha Centauri"{
@@ -215,6 +220,7 @@ coordsys "Alpha Centauri"{
 }
 
 astro Star "Arcturus"{
+	extraname "Alpha Bootis"
 	extraname "α Boo"
 	extraname "HIP 69673"
 	radius 1.227*Rsun
@@ -261,9 +267,14 @@ astro Star "Procyon"{
 }
 
 astro Star "Achernar"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 290.7 -58.8 144*LY
+	extraname "Alpha Eridani"
+	extraname "α Eri"
+	extraname "HIP 7588"
+	radius 10*Rsun
+	mass 7*Msun
+	oblateness
+#	galactic_coord 290.7 -58.8 144*LY
+	equatorial_coord 24.429 -57.237 144*LY
 	spectral B3V
 }
 
@@ -310,11 +321,45 @@ astro Star "Antares"{
 	spectral M1Ib
 }
 
-astro Star "Spica"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 316.1 50.8 260*LY
-	spectral B1V
+coordsys "Spica"{
+	extraname "Alpha Virginis"
+	extraname "α Virginis"
+	extraname "HIP 65474"
+	solarsystem
+#	galactic_coord 316.1 50.8 260*LY
+	equatorial_coord 201.298 -11.161 260*LY
+	bookmark "Spica"
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star "A"{
+		orbits barycenter
+		fullname "Alpha Virginis A"
+		radius 7.8*Rsun
+		mass 11*Msun
+		spectral B1III
+		absmag -3.55
+		showorbit
+		semimajor_axis 1*AU
+		eccentricity 0.067
+		inclination 79.23
+		argument_of_periapsis 140
+		ascending_node 45
+	}
+	astro Star "B"{
+		orbits barycenter
+		fullname "Alpha Virginis B"
+		radius 4.0*Rsun
+		mass 7*Msun
+		spectral B1III
+		absmag -1.5
+		showorbit
+		semimajor_axis 1*AU
+		eccentricity 0.067
+		inclination 79.23
+		argument_of_periapsis 140
+		ascending_node 45+180
+	}
 }
 
 astro Star "Pollux"{

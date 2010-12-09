@@ -523,12 +523,14 @@ register_console_command("matchcs", function(...){
 	/// Also note that bare function couldn't recursively call itself without
 	/// namespace contaminated, so there is encapsulating class.
 	local PatCall = class{
+		names = [];
 		function patcall(cs, pat){
 			local en = cs.extranames;
 			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null){
-				print("\"" + en[i] + "\": " + cs.getpath());
-				if(cs.classname == "Star")
-					print("spectral: " + cs.spectral);
+//				print("\"" + en[i] + "\": " + cs.getpath());
+//				if(cs.classname == "Star")
+//					print("spectral: " + cs.spectral);
+				names.append([en[i], cs]);
 			}
 			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
 				patcall(cs2, pat);
@@ -540,7 +542,20 @@ register_console_command("matchcs", function(...){
 	else
 		pat = vargv[0];
 
-	PatCall().patcall(universe, pat);
+	local patCall = PatCall();
+	patCall.patcall(universe, pat);
+
+	// Sort by name
+	patCall.names.sort(function(a,b){return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;});
+
+	// Print matched name and its path in order of name.
+	foreach(entry in patCall.names){
+		local name = entry[0];
+		local cs = entry[1];
+		print("\"" + name + "\": " + cs.getpath());
+		if(cs.classname == "Star")
+			print("spectral: " + cs.spectral);
+	}
 });
 
 register_console_command("locate", function(){

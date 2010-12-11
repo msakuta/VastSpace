@@ -1,0 +1,15 @@
+
+
+EXPORTS
+	FindTexCache
+	CacheSUFMTex
+	CacheSUFTex
+	AllocSUFTex
+	AllocSUFTexScales
+	DrawSUF
+	DecalDrawSUF
+	sq_newslot
+	sq_settypetag
+	sq_newclass
+	sq_get
+	sq_pushstring

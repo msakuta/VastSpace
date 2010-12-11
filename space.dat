@@ -256,6 +256,7 @@ astro Star "Rigel"{
 #	galactic_coord 209.3 -25.1 770*LY
 	equatorial_coord 78.635 -8.202 800*LY
 	spectral B8Ia
+	bookmark "Rigel" 0 0 AU
 }
 
 astro Star "Procyon"{
@@ -280,32 +281,51 @@ astro Star "Achernar"{
 }
 
 astro Star "Betelgeuse"{
+	extraname "Alpha Ori"
+	extraname "α Ori"
+	extraname "HIP 27989"
 	radius 1180*Rsun
 	mass 19*Msun
 #	galactic_coord 199.8 -9.0 430*LY
 	equatorial_coord 88.793 7.407 640*LY
 	spectral M2Ib
+	absmag -6.05
 }
 
 astro Star "Hadar"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 311.8 1.2 530*LY
+	extraname "Beta Centauri"
+	extraname "β Cen"
+	extraname "HIP 68702"
+	radius 8*Rsun
+	mass 10.7*Msun
+#	galactic_coord 311.8 1.2 530*LY
+	equatorial_coord 210.956 -60.373 348.8*LY
 	spectral B1III
+	absmag -4.57
 }
 
 astro Star "Altair"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 47.8 -9.0 17*LY
+	extraname "Alpha Aquilae"
+	extraname "α Aql"
+	extraname "HIP 97649"
+	radius 1.8*Rsun
+	mass 1.79Msun
+#	galactic_coord 47.8 -9.0 17*LY
+	equatorial_coord 297.696 8.868 16.77*LY
 	spectral A7V
+	absmag 2.21
 }
 
 astro Star "Acrux"{
-	radius 1.227*Rsun
+	extraname "Alpha Crucis"
+	extraname "α Cru"
+	extraname "HIP 60718"
+	radius Rsun
 	mass Msun
-	galactic_coord 300.2 -0.4 320*LY
+#	galactic_coord 300.2 -0.4 320*LY
+	equatorial_coord 186.650 -63.099 320*LY
 	spectral B0.5IV
+	absmag -4.14
 }
 
 astro Star "Aldebaran"{

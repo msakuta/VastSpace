@@ -35,6 +35,7 @@
 #include "glsl.h"
 #include "sqadapt.h"
 #include "EntityCommand.h"
+#include "astro_star.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -258,7 +259,8 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		}
 #if 1
 		double rad = a->toAstrobj() ? a->toAstrobj()->rad : a->csrad;
-		if((0. <= wpos[2] || !!strcmp(a->classname(), "Star") && !(a->flags & AO_ALWAYSSHOWNAME) && rad / -wpos[2] < .00001)
+		bool isStar = false;
+		if((0. <= wpos[2] || !(isStar = &a->getStatic() == &Star::classRegister) && !(a->flags & AO_ALWAYSSHOWNAME) && rad / -wpos[2] < .00001)
 			/*&& !(a->flags & AO_PLANET && a->orbit_home && astrobj_visible(vw, a->orbit_home)*/)
 			break;
 #endif
@@ -284,6 +286,8 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		cpplib::dstring s = a->fullname ? a->fullname : a->name;
 		for(int i = 0; i < a->extranames.size(); i++)
 			s << " / " << a->extranames[i];
+		if(isStar)
+			s << " " << ((Star*)a)->appmag(vw->pos, *vw->cs);
 		gldprintf("%s", (const char*)s);
 		glPopMatrix();
 	} while(0);

@@ -414,7 +414,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 		}
 		return true;
 	}
-	else if(!strcmp(s, "absolute_magnitude")){
+	else if(!strcmp(s, "absolute_magnitude") || !strcmp(s, "absmag")){
 		absmag = GLfloat(calc3(&ps, sc.vl, NULL));
 	}
 	else
@@ -615,6 +615,12 @@ bool Star::readFile(StellarContext &sc, int argc, char *argv[]){
 
 bool Star::readFileEnd(StellarContext &sc){
 	return st::readFileEnd(sc);
+}
+
+double Star::appmag(const Vec3d &pos, const CoordSys &cs)const{
+	double dist = tocs(pos, &cs).len();
+	double parsecs = dist / 30.857e12;
+	return absmag + 5 * (log10(parsecs) - 1);
 }
 
 Star::SpectralType Star::nameToSpectral(const char *name, float *subspect){

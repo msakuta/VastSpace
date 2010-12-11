@@ -1259,10 +1259,12 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Eccentricity: %lg", p->a->eccentricity);
 		}
-		if(p->a->classname() == Star::classRegister.id){
+		if(&p->a->getStatic() == &Star::classRegister){
 			Star *star = (Star*)p->a;
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Spectral Type: %s%g", Star::spectralToName(star->spect), star->subspect);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
+			glwprintf("Absolute Magnitude: %g", star->absmag);
 		}
 		for(int i = 0; i < p->a->extranames.size(); i++){
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);

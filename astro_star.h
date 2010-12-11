@@ -23,6 +23,8 @@ public:
 	virtual bool readFile(StellarContext &sc, int argc, char *argv[]);
 	virtual bool readFileEnd(StellarContext &sc);
 
+	double appmag(const Vec3d &pos, const CoordSys &cs)const; ///< Apparent magnitude
+
 	static SpectralType nameToSpectral(const char *, float *subspect = NULL);
 	static const char *spectralToName(SpectralType);
 	static Vec3<float> spectralHSB(SpectralType);

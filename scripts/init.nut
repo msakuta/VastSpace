@@ -526,12 +526,8 @@ register_console_command("matchcs", function(...){
 		names = [];
 		function patcall(cs, pat){
 			local en = cs.extranames;
-			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null){
-//				print("\"" + en[i] + "\": " + cs.getpath());
-//				if(cs.classname == "Star")
-//					print("spectral: " + cs.spectral);
+			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
 				names.append([en[i], cs]);
-			}
 			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
 				patcall(cs2, pat);
 		}
@@ -574,6 +570,9 @@ class Bookmark{
 	function cs(){return null;} // Pure virtual would be appropriate
 	pos = Vec3d(0,0,0)
 	rot = Quatd(0,0,0,1)
+	function _tostring(){
+		return path() + " " + pos + " " + rot;
+	}
 }
 
 class BookmarkCoordSys extends Bookmark{
@@ -599,7 +598,6 @@ class BookmarkSymbolic extends Bookmark{
 	}
 	function path(){
 		return m_path;
-		
 	}
 }
 
@@ -612,8 +610,17 @@ register_console_command("bookmarks", function(){
 	if(bookmarks == null || bookmarks.len() == 0)
 		return;
 	local menu = GLWmenu();
-	foreach(key, item in bookmarks){
-		menu.addItem(key, function():(item){
+	local names = [];
+	foreach(key, item in bookmarks)
+		names.append([key, item]);
+
+	// Sort bookmarks by name
+	names.sort(function(a,b){return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;});
+
+	for(local i = 0; i < names.len(); i++){
+		local entry = names[i];
+		menu.addItem(entry[0], function():(entry){
+			local item = entry[1];
 			local newcs = item.cs();
 			if(newcs != null){
 				player.cs = newcs;
@@ -671,20 +678,36 @@ stellarContext <- {
 // Assign event handler for CoordSys::readFile. Because Squirrel does not allow class static variables to be altered
 // after definition, we must introduce one extra layer of indirection to make it modifiable, or give it up to make class
 // member.
-::CoordSys.readFile[0] = function(cs, name, ...){
+::CoordSys.readFile[0] = function(cs, varlist, name, ...){
+
+	// Define temporary function that take varlist as a free variable.
+	local eval = function(s):(varlist){
+		return compilestring("return (" + s + ")").call(varlist);
+	};
+
 	if(name == "bookmark"){
 		if(::bookmarks == null)
 			::bookmarks <- {};
 		local item = BookmarkCoordSys(cs);
-		item.pos = Vec3d(1 < vargc ? vargv[1].tofloat() : 0, 2 < vargc ? vargv[2].tofloat() : 0, 3 < vargc ? vargv[3].tofloat() : 0);
-		item.rot = 4 < vargc ? compilestring("return (" + vargv[4] + ")")() : Quatd(0,0,0,1);
-		::bookmarks[vargv[0]] <- item;
+		item.pos = Vec3d(1 < vargc ? eval(vargv[1]).tofloat() : 0, 2 < vargc ? eval(vargv[2]).tofloat() : 0, 3 < vargc ? eval(vargv[3]).tofloat() : 0);
+		item.rot = 4 < vargc ? eval(vargv[4]) : Quatd(0,0,0,1);
+		if(0 < vargc){
+			print(vargv[0] + ": " + item);
+			::bookmarks[vargv[0]] <- item;
+		}
+		else{
+			local csname = cs.name();
+			local i = 0;
+			while(csname in ::bookmarks)
+				csname = cs.name() + " (" + i++ + ")";
+			::bookmarks[csname] <- item;
+		}
 		return 1;
 	}
 	else if(name == "equatorial_coord"){
 		local RA = vargv[0].tofloat() * 2 * PI / 360;
 		local dec = vargv[1].tofloat() * 2 * PI / 360;
-		local dist = compilestring("return (" + vargv[2] + ")").call(stellarContext);
+		local dist = eval(vargv[2]);
 		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
 		print(cs.name() + ": " + RA + ", " + dec + pos);
 		cs.setpos(pos);

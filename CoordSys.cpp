@@ -980,12 +980,21 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			sq_createinstance(v, -4);
 			sqa_newobj(v, this);
 
+			sq_newtable(v);
+			for(const varlist *vl = sc.vl; vl; vl = vl->next){
+				for(int i = 0; i < vl->c; i++){
+					sq_pushstring(v, vl->l[i].name, -1);
+					sq_pushfloat(v, vl->l[i].value.d);
+					sq_createslot(v, -3);
+				}
+			}
+
 			// Pass all arguments as strings (no conversion is done beforehand).
 			for(int i = 0; i < argc; i++)
 				sq_pushstring(v, argv[i], -1);
 
 			// It's no use examining returned value in that case calling the function iteslf fails.
-			if(SQ_FAILED(sq_call(v, argc+2, SQTrue, SQTrue)))
+			if(SQ_FAILED(sq_call(v, argc+3, SQTrue, SQTrue)))
 				throw sqa::SQFError(_SC("readFile function could not be called"));
 
 			// Assume returned value integer.

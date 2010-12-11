@@ -272,10 +272,11 @@ astro Star "Achernar"{
 	extraname "HIP 7588"
 	radius 10*Rsun
 	mass 7*Msun
-	oblateness
+	oblateness .5
 #	galactic_coord 290.7 -58.8 144*LY
 	equatorial_coord 24.429 -57.237 144*LY
 	spectral B3V
+	bookmark "Achernar" 0 0 20*Rsun
 }
 
 astro Star "Betelgeuse"{

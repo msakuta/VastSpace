@@ -1105,7 +1105,7 @@ bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex){
 	sq_remove(v, -2); // reg objects &(o)
 	sq_remove(v, -2); // reg &(o)
 	sq_remove(v, -2); // &(o)
-	sq_set(v, instanceindex);
+	sq_set(v, instanceindex < 0 ? instanceindex - 2 : instanceindex);
 	return true;
 }
 
@@ -1164,6 +1164,42 @@ void sqa_deleteobj(HSQUIRRELVM v, Serializable *o){
 static SQInteger sqf_reg(HSQUIRRELVM v){
 	sq_pushregistrytable(v);
 	return 1;
+}
+
+template<void (__stdcall *fp)()> SQInteger sqf_adapter0(HSQUIRRELVM v){
+	fp();
+	return 0;
+}
+
+/*template<void (__stdcall *const fp)(int)> SQInteger sqf_adapter1(HSQUIRRELVM v){
+	int a0;
+	if(SQ_FAILED(sq_getinteger(v, 2, &a0)))
+		return sq_throwerror(v, _SC("The first argument must be integer"));
+	fp(a0);
+	return 0;
+}*/
+
+template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
+	GLenum a0;
+	if(SQ_FAILED(sq_getinteger(v, 2, (int*)&a0)))
+		return sq_throwerror(v, _SC("The first argument must be integer"));
+	fp(a0);
+	return 0;
+}
+
+template<typename FP, FP fp> SQInteger sqf_adapter(HSQUIRRELVM v){
+}
+
+SQInteger sqf_glVertex(HSQUIRRELVM v){
+	try{
+		SQVec3d sqv;
+		sqv.getValue(v, 2);
+		glVertex3dv(sqv.value);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
 }
 
 
@@ -1262,6 +1298,10 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_global_func(v, sqf_timemeas, _SC("timemeas"));
 	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
 	register_global_func(v, sqf_x64Build, _SC("x64Build"));
+	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
+	register_global_func(v, sqf_glVertex, _SC("glVertex"));
+	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
+	register_global_var(v, GL_LINES, _SC("GL_LINES"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
@@ -1488,14 +1528,21 @@ void sqa_exit(){
 }
 
 
-SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
+void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
 {
     sq_pushroottable(v);
     sq_pushstring(v,fname,-1);
     sq_newclosure(v,f,0); //create a new function
     sq_createslot(v,-3); 
     sq_pop(v,1); //pops the root table    
-	return 0;
+}
+
+void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname){
+    sq_pushroottable(v);
+    sq_pushstring(v,vname,-1);
+    sq_pushinteger(v,var);
+    sq_createslot(v,-3); 
+    sq_pop(v,1); //pops the root table    
 }
 
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams, const SQChar *params){

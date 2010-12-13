@@ -183,6 +183,34 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 	do if(a){
 		Vec3d pos = vw->cs->tocs(a->pos, a->parent);
 		Vec3d wpos = model.vp3(pos);
+
+		// Draw custom overlay defined in script file.
+		do{
+			HSQUIRRELVM v = g_sqvm;
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("drawCoordSysOverlay"), -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				break;
+			sq_pushroottable(v);
+			sq_pushstring(v, cs->getStatic().s_sqclassname, -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				break;
+			if(SQ_FAILED(sq_createinstance(v, -1)))
+				break;
+			sqa_newobj(v, cs, -1);
+			if(SQ_FAILED(sq_createinstance(v, -2)))
+				break;
+			sqa_newobj(v, const_cast<CoordSys*>(vw->cs), -1);
+			sq_remove(v, -3);
+			SQVec3d sqv(vw->pos);
+			sqv.push(v);
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			sq_call(v, 4, SQFalse, SQTrue);
+			glPopMatrix();
+		}while(0);
+
 		if(a->toAstrobj() && 0. < a->omg.slen()){
 			Vec3d omg = vw->cs->tocs(a->omg, a->parent, true).norm();
 			glPushMatrix();

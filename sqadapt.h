@@ -29,7 +29,8 @@ void sqa_delete_Entity(Entity *);
 void sqa_exit();
 
 /// Register a Squirrel native function to the given VM.
-SQInteger register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
+void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
+void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname);
 
 /// Register a Squirrel closure bound to the top of the stack. Useful with defining class methods.
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams = 0, const SQChar *params = NULL);
@@ -43,7 +44,8 @@ extern HSQUIRRELVM g_sqvm;
 /// Type tags for intrinsic types.
 extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
 
-bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -3);
+/// \param instanceindex The index of Squirrel class instance that is to be assigned.
+bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -1);
 bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
 void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 

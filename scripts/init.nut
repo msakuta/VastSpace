@@ -709,12 +709,54 @@ stellarContext <- {
 		local dec = vargv[1].tofloat() * 2 * PI / 360;
 		local dist = eval(vargv[2]);
 		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
-		print(cs.name() + ": " + RA + ", " + dec + pos);
+//		print(cs.name() + ": " + RA + ", " + dec + pos);
 		cs.setpos(pos);
 		return 1;
 	}
+	else if(name == "binds"){
+/*		local dstcs = cs.findcspath(vargv[0]);
+		if(dstcs == null)
+			print("The CoordSys " + vargv[0] + " couldn't be found.");
+		::bounds[cs.ref] <- dstcs;*/
+
+		// Referring to CoordSys object must be deferred in order to enable cross-referencing.
+		if(cs.ref in ::bounds)
+			::bounds[cs.ref].append(vargv[0]);
+		else
+			::bounds[cs.ref] <- [vargv[0]];
+	}
 	return 0;
 };
+
+bounds <- {};
+
+function drawCoordSysOverlay(cs, vwcs, vwpos){
+//	print("drawCoordSysOverlay" + cs);
+	if(!cs.alive || !vwcs.alive)
+		return;
+	if(!(cs.ref in ::bounds))
+		return;
+	local array = ::bounds[cs.ref];
+	for(local i = 0; i < array.len(); i++){
+		local dstcs = cs.findcspath(array[i]);
+		if(dstcs == null)
+			continue;
+	//	print("Lining " + cs.getpath() + " to " + dstcs.getpath());
+		local pos = vwcs.transPosition(Vec3d(0,0,0), cs) - vwpos;
+		glBegin(GL_LINES);
+		glVertex(pos.normin());
+		glVertex((vwcs.transPosition(Vec3d(0,0,0), dstcs) - vwpos).normin());
+	/*	glVertex(Vec3d(0,0,-10) - vwpos);
+		glVertex(Vec3d(0,1000000,10) - vwpos);
+		glVertex(Vec3d(0,0,-10) - vwpos);
+		glVertex(Vec3d(1000000,0,10) - vwpos);*/
+	/*	glVertex((pos).normin());
+		glVertex((pos + Vec3d(0,1000000,0)).normin());
+		glVertex(pos.normin());
+		glVertex((pos + Vec3d(1000000,0,0)).normin());*/
+		glEnd();
+	}
+}
 
 
 function ae(){

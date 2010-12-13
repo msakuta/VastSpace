@@ -244,27 +244,42 @@ astro Star "Vega"{
 }
 
 astro Star "Capella"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 162.6 4.6 42*LY
+	extraname "Alpha Aurigae"
+	extraname "α Aur"
+	extraname "HIP 24608"
+	radius 12.2*Rsun
+	mass 2.69*Msun
+#	galactic_coord 162.6 4.6 42*LY
+	equatorial_coord 79.182 45.998 42.2*LY
 	spectral B8Ia
+	absmag 0.35
 }
 
 astro Star "Rigel"{
-	radius 1.227*Rsun
-	mass Msun
+	extraname "Beta Orionis"
+	extraname "β Ori"
+	extraname "HIP 24436"
+	radius 78*Rsun
+	mass 17*Msun
 #	galactic_coord 209.3 -25.1 770*LY
 	equatorial_coord 78.635 -8.202 800*LY
 	spectral B8Ia
+	absmag 0.18
 	bookmark "Rigel" 0 0 AU
+	binds "../Saiph"
 }
 
+# Really a binary
 astro Star "Procyon"{
-	radius 1.227*Rsun
-	mass Msun
+	extraname "Alpha Canis Minoris"
+	extraname "α CMi"
+	extraname "HIP 37279"
+	radius 2.05*Rsun
+	mass 1.42*Msun
 #	galactic_coord 213.7 13.0 11*LY
 	equatorial_coord 114.825 5.225 11.4*LY
 	spectral F5IV-V
+	absmag 2.65
 }
 
 astro Star "Achernar"{
@@ -278,6 +293,7 @@ astro Star "Achernar"{
 	equatorial_coord 24.429 -57.237 144*LY
 	spectral B3V
 	bookmark "Achernar" 0 0 20*Rsun
+	absmag -2.77
 }
 
 astro Star "Betelgeuse"{
@@ -290,6 +306,8 @@ astro Star "Betelgeuse"{
 	equatorial_coord 88.793 7.407 640*LY
 	spectral M2Ib
 	absmag -6.05
+	bookmark "Betelgeuse" 0 0 4000*Rsun
+	binds "../Bellatrix"
 }
 
 astro Star "Hadar"{
@@ -316,12 +334,13 @@ astro Star "Altair"{
 	absmag 2.21
 }
 
+# Really a binary
 astro Star "Acrux"{
 	extraname "Alpha Crucis"
 	extraname "α Cru"
 	extraname "HIP 60718"
-	radius Rsun
-	mass Msun
+	radius 50*Rsun
+	mass 14*Msun
 #	galactic_coord 300.2 -0.4 320*LY
 	equatorial_coord 186.650 -63.099 320*LY
 	spectral B0.5IV
@@ -329,17 +348,27 @@ astro Star "Acrux"{
 }
 
 astro Star "Aldebaran"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 181.0 -20.2 65*LY
+	extraname "Alpha Tauri"
+	extraname "α Tau"
+	extraname "HIP 21421"
+	radius 44.2*Rsun
+	mass 1.7*Msun
+#	galactic_coord 181.0 -20.2 65*LY
+	equatorial_coord 68.980 16.509 65*LY
 	spectral K5III
+	absmag -0.63
 }
 
 astro Star "Antares"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 351.9 15.1 600*LY
+	extraname "Alpha Scorpii"
+	extraname "α Sco"
+	extraname "HIP 80763"
+	radius 800*Rsun
+	mass 15.5*Msun
+#	galactic_coord 351.9 15.1 600*LY
+	equatorial_coord 247.350 -26.432 600*LY
 	spectral M1Ib
+	absmag -5.28
 }
 
 coordsys "Spica"{
@@ -384,24 +413,39 @@ coordsys "Spica"{
 }
 
 astro Star "Pollux"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 92.2 23.3 34*LY
+	extraname "Beta Geminorum"
+	extraname "β Gem"
+	extraname "HIP 37826"
+	radius 8.0*Rsun
+	mass 1.86*Msun
+#	galactic_coord 92.2 23.3 34*LY
+	equatorial_coord 116.331 28.026 33.7*LY
 	spectral K0III
+	absmag 1.09
 }
 
 astro Star "Fomalhaut"{
-	radius 1.227*Rsun
-	mass Msun
-	galactic_coord 20.6 -65.0 25*LY
+	extraname "Alpha Piscis Austrini"
+	extraname "α PsA"
+	extraname "HIP 113368"
+	radius 1.832*Rsun
+	mass 2.1*Msun
+#	galactic_coord 20.6 -65.0 25*LY
+	equatorial_coord 344.413 -29.622 25*LY
 	spectral A3V
+	absmag 1.73
 }
 
 astro Star "Deneb"{
+	extraname "Alpha Cygni"
+	extraname "α Cyg"
+	extraname "HIP 102098"
 	radius 1.227*Rsun
 	mass Msun
-	galactic_coord 84.3 2.1 3000*LY
+#	galactic_coord 84.3 2.1 3000*LY
+	equatorial_coord 310.358 45.280 1400*LY
 	spectral A2Ia
+	absmag -7.0
 }
 
 astro Star "Mimosa"{
@@ -452,6 +496,7 @@ astro Star "Saiph"{
 	mass Msun
 	equatorial_coord 86.939 -9.670 700*LY
 	spectral B0.5
+	binds "../Alnitak"
 }
 
 astro Star "Bellatrix"{
@@ -459,6 +504,7 @@ astro Star "Bellatrix"{
 	mass Msun
 	equatorial_coord 81.283 6.350 240*LY
 	spectral B2
+	binds "../Mintaka"
 }
 
 astro Star "Alnitak"{
@@ -466,6 +512,7 @@ astro Star "Alnitak"{
 	mass Msun
 	equatorial_coord 85.190 -1.943 240*LY
 	spectral O9
+	binds "../Betelgeuse"
 }
 
 astro Star "Alnilam"{
@@ -473,6 +520,7 @@ astro Star "Alnilam"{
 	mass Msun
 	equatorial_coord 84.053 -1.202 1300*LY
 	spectral B0
+	binds "../Alnitak"
 }
 
 astro Star "Mintaka"{
@@ -480,6 +528,8 @@ astro Star "Mintaka"{
 	mass Msun
 	equatorial_coord 83.002 -0.598 900*LY
 	spectral O9V
+	binds "../Alnilam"
+	binds "../Rigel"
 }
 
 }

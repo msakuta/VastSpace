@@ -724,6 +724,7 @@ stellarContext <- {
 			::bounds[cs.ref].append(vargv[0]);
 		else
 			::bounds[cs.ref] <- [vargv[0]];
+		return 1;
 	}
 	return 0;
 };
@@ -731,7 +732,6 @@ stellarContext <- {
 bounds <- {};
 
 function drawCoordSysOverlay(cs, vwcs, vwpos){
-//	print("drawCoordSysOverlay" + cs);
 	if(!cs.alive || !vwcs.alive)
 		return;
 	if(!(cs.ref in ::bounds))
@@ -741,22 +741,14 @@ function drawCoordSysOverlay(cs, vwcs, vwpos){
 		local dstcs = cs.findcspath(array[i]);
 		if(dstcs == null)
 			continue;
-	//	print("Lining " + cs.getpath() + " to " + dstcs.getpath());
 		local pos = vwcs.transPosition(Vec3d(0,0,0), cs) - vwpos;
 		glBegin(GL_LINES);
 		glVertex(pos.normin());
 		glVertex((vwcs.transPosition(Vec3d(0,0,0), dstcs) - vwpos).normin());
-	/*	glVertex(Vec3d(0,0,-10) - vwpos);
-		glVertex(Vec3d(0,1000000,10) - vwpos);
-		glVertex(Vec3d(0,0,-10) - vwpos);
-		glVertex(Vec3d(1000000,0,10) - vwpos);*/
-	/*	glVertex((pos).normin());
-		glVertex((pos + Vec3d(0,1000000,0)).normin());
-		glVertex(pos.normin());
-		glVertex((pos + Vec3d(1000000,0,0)).normin());*/
 		glEnd();
 	}
 }
+
 
 
 function ae(){

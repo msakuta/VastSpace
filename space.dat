@@ -532,4 +532,147 @@ astro Star "Mintaka"{
 	binds "../Rigel"
 }
 
+astro Star "Schedar"{
+	extraname "Alpha Cassiopeiae"
+	extraname "α Cas"
+	extraname "HIP 3179"
+	radius 42*Rsun
+	mass 4*Msun
+	equatorial_coord 10.127 56.537 229*LY
+	spectral K0
+	absmag -1.99
+	binds "../Tsih"
+}
+
+astro Star "Caph"{
+	extraname "Beta Cassiopeiae"
+	extraname "β Cas"
+	extraname "HIP 746"
+	radius 4*Rsun
+	mass 2*Msun
+	equatorial_coord 2.295 59.150 54.5*LY
+	spectral F2
+	absmag 1.16
+	binds "../Schedar"
+}
+
+astro Star "Tsih"{
+	extraname "Gamma Cassiopeiae"
+	extraname "γ Cas"
+	extraname "HIP 4427"
+	radius 14*Rsun
+	mass 15*Msun
+	equatorial_coord 14.177 60.716 610*LY
+	spectral B0.5
+	absmag -4.22
+	binds "../Ruchbah"
+}
+
+astro Star "Ruchbah"{
+	extraname "Delta Cassiopeiae"
+	extraname "δ Cas"
+	extraname "HIP 6686"
+	radius 4*Rsun
+	mass 2.5*Msun
+	equatorial_coord 21.454 60.235 99*LY
+	spectral A5
+	absmag -0.24
+	binds "../Segin"
+}
+
+astro Star "Segin"{
+	extraname "Epsilon Cassiopeiae"
+	extraname "ε Cas"
+	extraname "HIP 8886"
+	radius 7*Rsun
+	mass 6*Msun
+	equatorial_coord 28.599 63.670 440*LY
+	spectral B3
+	absmag -2.31
+}
+
+# Really a binary
+astro Star "Dubhe"{
+	extraname "Alpha Ursae Majoris"
+	extraname "α UMa"
+	extraname "HIP 54061"
+	radius 30*Rsun
+	mass 4*Msun
+	equatorial_coord 165.932 61.751 124*LY
+	spectral K3
+	absmag -1.09
+	binds "../Merak"
+}
+
+astro Star "Merak"{
+	extraname "Beta Ursae Majoris"
+	extraname "β UMa"
+	extraname "HIP 53910"
+	radius 2*Rsun
+	mass 3*Msun
+	equatorial_coord 165.460 56.383 124*LY
+	spectral A1
+	absmag 0.41
+	binds "../Phecda"
+}
+
+astro Star "Phecda"{
+	extraname "Gamma Ursae Majoris"
+	extraname "γ UMa"
+	extraname "HIP 58001"
+	radius 3*Rsun
+	mass 2.7*Msun
+	equatorial_coord 178.458 53.695 84*LY
+	spectral A0
+	absmag 0.36
+	binds "../Megrez"
+}
+
+astro Star "Megrez"{
+	extraname "Delta Ursae Majoris"
+	extraname "δ UMa"
+	extraname "HIP 59774"
+	radius Rsun
+	mass Msun
+	equatorial_coord 183.857 57.033 81.4*LY
+	spectral A3V
+	absmag 0.36
+	binds "../Alioth"
+}
+
+astro Star "Alioth"{
+	extraname "Epsilon Ursae Majoris"
+	extraname "ε UMa"
+	extraname "HIP 62956"
+	radius 3.7*Rsun
+	mass 3*Msun
+	equatorial_coord 193.507 55.960 81*LY
+	spectral A3V
+	absmag -0.22
+	binds "../Mizar"
+}
+
+astro Star "Mizar"{
+	extraname "Zeta Ursae Majoris"
+	extraname "ζ UMa"
+	extraname "HIP 65378"
+	radius Rsun
+	mass Msun
+	equatorial_coord 200.981 54.925 78*LY
+	spectral A2V
+	absmag 0.33
+	binds "../Alkaid"
+}
+
+astro Star "Alkaid"{
+	extraname "Eta Ursae Majoris"
+	extraname "η UMa"
+	extraname "HIP 67301"
+	radius 1.8*Rsun
+	mass 6*Msun
+	equatorial_coord 206.885 49.313 32.39*LY
+	spectral B3V
+	absmag -0.60
+}
+
 }

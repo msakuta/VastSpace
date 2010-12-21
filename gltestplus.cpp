@@ -205,9 +205,10 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			sq_remove(v, -3);
 			SQVec3d sqv(vw->pos);
 			sqv.push(v);
+			SQVec3d(wpos).push(v);
 			glPushMatrix();
 			glLoadMatrixd(vw->rot);
-			sq_call(v, 4, SQFalse, SQTrue);
+			sq_call(v, 5, SQFalse, SQTrue);
 			glPopMatrix();
 		}while(0);
 
@@ -306,7 +307,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glVertex2d(r, -r);
 			glEnd();
 		}
-		glBegin(GL_LINES);
+/*		glBegin(GL_LINES);
 		glVertex2d(0., 0.);
 		glVertex2d(.05, .05 - id * .01);
 		glEnd();
@@ -316,7 +317,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			s << " / " << a->extranames[i];
 		if(isStar)
 			s << " " << ((Star*)a)->appmag(vw->pos, *vw->cs);
-		gldprintf("%s", (const char*)s);
+		gldprintf("%s", (const char*)s);*/
 		glPopMatrix();
 	} while(0);
 	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next)

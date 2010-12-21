@@ -542,7 +542,14 @@ register_console_command("matchcs", function(...){
 	patCall.patcall(universe, pat);
 
 	// Sort by name
-	patCall.names.sort(function(a,b){return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;});
+	patCall.names.sort(function(a,b){
+		if(a[0].slice(0, 4) == "HIP " && b[0].slice(0, 4) == "HIP "){
+			local ai = a[0].slice(4).tointeger();
+			local bi = b[0].slice(4).tointeger();
+			return ai - bi;
+		}
+		return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;
+	});
 
 	// Print matched name and its path in order of name.
 	foreach(entry in patCall.names){
@@ -731,9 +738,21 @@ stellarContext <- {
 
 bounds <- {};
 
-function drawCoordSysOverlay(cs, vwcs, vwpos){
+function drawCoordSysOverlay(cs, vwcs, vwpos, wpos){
 	if(!cs.alive || !vwcs.alive)
 		return;
+
+	glPushMatrix();
+	glLoadIdentity();
+	glTranslate(Vec3d(-wpos.x / wpos.z, -wpos.y / wpos.z, -1));
+	glBegin(GL_LINES);
+	glVertex(Vec3d(0,0,0));
+	glVertex(Vec3d(0.05, 0.05, 0));
+	glEnd();
+	glRasterPos(Vec3d(0.05, 0.05, 0));
+	gldprint(cs.name());
+	glPopMatrix();
+
 	if(!(cs.ref in ::bounds))
 		return;
 	local array = ::bounds[cs.ref];

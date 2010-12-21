@@ -183,7 +183,8 @@ coordsys "Alpha Centauri"{
 	}
 	astro Star C{
 		fullname "Proxima Centauri"
-		extraname "HIP 71681"
+		extraname "Alpha Centauri C"
+		extraname "HIP 70890"
 		radius .145*Rsun
 		mass .123*Msun
 		pos .2*LY 0 0

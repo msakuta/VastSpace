@@ -15,6 +15,7 @@
 #include "glw/GLWentlist.h"
 extern "C"{
 #include <clib/timemeas.h>
+#include <clib/gl/gldraw.h>
 }
 #include <squirrel.h>
 #include <sqstdio.h>
@@ -1202,6 +1203,42 @@ SQInteger sqf_glVertex(HSQUIRRELVM v){
 	return 0;
 }
 
+SQInteger sqf_glTranslate(HSQUIRRELVM v){
+	try{
+		SQVec3d sqv;
+		sqv.getValue(v, 2);
+		gldTranslate3dv(sqv.value);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
+static SQInteger sqf_glRasterPos(HSQUIRRELVM v){
+	try{
+		SQVec3d sqv;
+		sqv.getValue(v, 2);
+		glRasterPos3dv(sqv.value);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
+static SQInteger sqf_gldprint(HSQUIRRELVM v){
+	try{
+		const SQChar *s;
+		sq_getstring(v, 2, &s);
+		gldprintf(s);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
 
 static std::map<cpplib::dstring, int> modules;
 
@@ -1301,6 +1338,12 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));
 	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
+	register_global_func(v, sqf_adapter0<glPushMatrix>, _SC("glPushMatrix"));
+	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
+	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
+	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
+	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
+	register_global_func(v, sqf_gldprint, _SC("gldprint"));
 	register_global_var(v, GL_LINES, _SC("GL_LINES"));
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)

@@ -178,14 +178,15 @@ static void draw_gear(double dt){
 }
 
 static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
-	int id = 0;
 	OrbitCS *a = cs->toOrbitCS();
 	do if(a){
 		Vec3d pos = vw->cs->tocs(a->pos, a->parent);
 		Vec3d wpos = model.vp3(pos);
 
 		// Draw custom overlay defined in script file.
-		do{
+		if(0) do{
+			timemeas_t tm;
+			TimeMeasStart(&tm);
 			HSQUIRRELVM v = g_sqvm;
 			StackReserver sr(v);
 			sq_pushroottable(v);
@@ -210,7 +211,27 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glLoadMatrixd(vw->rot);
 			sq_call(v, 5, SQFalse, SQTrue);
 			glPopMatrix();
+			printf("sqrpt %g\n", TimeMeasLap(&tm));
 		}while(0);
+
+		typedef std::map<const CoordSys *, std::vector<dstring> > LineMap;
+		extern std::map<const CoordSys *, std::vector<dstring> > linemap;
+		LineMap::iterator it = linemap.find(cs);
+		if(it != linemap.end()){
+			std::vector<dstring> &vec = it->second;
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			glBegin(GL_LINES);
+			for(int i = 0; i < vec.size(); i++){
+				CoordSys *cs2 = cs->findcspath(vec[i]);
+				if(cs2){
+					glVertex3dv((pos - vw->pos).normin());
+					glVertex3dv((vw->cs->tocs(Vec3d(0,0,0), cs2) - vw->pos).normin());
+				}
+			}
+			glEnd();
+			glPopMatrix();
+		}
 
 		if(a->toAstrobj() && 0. < a->omg.slen()){
 			Vec3d omg = vw->cs->tocs(a->omg, a->parent, true).norm();
@@ -307,17 +328,48 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glVertex2d(r, -r);
 			glEnd();
 		}
-/*		glBegin(GL_LINES);
-		glVertex2d(0., 0.);
-		glVertex2d(.05, .05 - id * .01);
-		glEnd();
-		glRasterPos2d(0.05, 0.05 - id * .01);
-		cpplib::dstring s = a->fullname ? a->fullname : a->name;
-		for(int i = 0; i < a->extranames.size(); i++)
-			s << " / " << a->extranames[i];
-		if(isStar)
-			s << " " << ((Star*)a)->appmag(vw->pos, *vw->cs);
-		gldprintf("%s", (const char*)s);*/
+		// Draw custom overlay defined in script file.
+		do{
+			timemeas_t tm;
+			TimeMeasStart(&tm);
+			HSQUIRRELVM v = g_sqvm;
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("drawCoordSysLabel"), -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				break;
+			sq_pushroottable(v);
+			sq_pushstring(v, cs->getStatic().s_sqclassname, -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				break;
+			if(SQ_FAILED(sq_createinstance(v, -1)))
+				break;
+			sqa_newobj(v, cs, -1);
+			sq_remove(v, -2);
+			sq_call(v, 2, SQTrue, SQTrue);
+			const SQChar *s;
+			if(SQ_FAILED(sq_getstring(v, -1, &s)))
+				break;
+//			printf("sqrpt %g\n", TimeMeasLap(&tm));
+			glBegin(GL_LINES);
+			glVertex2d(0., 0.);
+			glVertex2d(.05 * vw->fov, .05 * vw->fov);
+			glEnd();
+//			glRasterPos2d(0.05, 0.05 - id * .01);
+			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
+//			GLpmatrix pm;
+//			projection((glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));
+/*			cpplib::dstring s = a->fullname ? a->fullname : a->name;
+			for(int i = 0; i < a->extranames.size(); i++)
+				s << " / " << a->extranames[i];
+			if(isStar)
+				s << " " << ((Star*)a)->appmag(vw->pos, *vw->cs);
+			gldprintf("%s", (const char*)s);*/
+			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
+			glwPutTextureString(s);
+//			printf("print %g\n", TimeMeasLap(&tm));
+		}while(0);
+
 		glPopMatrix();
 	} while(0);
 	for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next)

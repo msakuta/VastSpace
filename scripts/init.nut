@@ -742,7 +742,7 @@ function drawCoordSysOverlay(cs, vwcs, vwpos, wpos){
 	if(!cs.alive || !vwcs.alive)
 		return;
 
-	glPushMatrix();
+/*	glPushMatrix();
 	glLoadIdentity();
 	glTranslate(Vec3d(-wpos.x / wpos.z, -wpos.y / wpos.z, -1));
 	glBegin(GL_LINES);
@@ -751,7 +751,7 @@ function drawCoordSysOverlay(cs, vwcs, vwpos, wpos){
 	glEnd();
 	glRasterPos(Vec3d(0.05, 0.05, 0));
 	gldprint(cs.name());
-	glPopMatrix();
+	glPopMatrix();*/
 
 	if(!(cs.ref in ::bounds))
 		return;
@@ -766,6 +766,10 @@ function drawCoordSysOverlay(cs, vwcs, vwpos, wpos){
 		glVertex((vwcs.transPosition(Vec3d(0,0,0), dstcs) - vwpos).normin());
 		glEnd();
 	}
+}
+
+function drawCoordSysLabel(cs){
+	return cs.name();
 }
 
 

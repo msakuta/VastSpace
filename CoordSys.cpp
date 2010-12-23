@@ -722,6 +722,8 @@ bool CoordSys::readFileStart(StellarContext &){
 	return true;
 }
 
+std::map<const CoordSys *, std::vector<dstring> > linemap;
+
 bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 	char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
@@ -958,6 +960,13 @@ bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
 			CmdPrint("Quaternion zero!");
 			rot = Quatd(0,0,0,1);
 		}
+		return true;
+	}
+	else if(!strcmp(s, "binds")){
+//		CoordSys *cs = this->findcspath(argv[1]);
+//		if(cs)
+//			linemap[this].push_back(cs);
+		linemap[this].push_back(argv[1]);
 		return true;
 	}
 	else{ // An undefined parameter name is passed to Squirrel extension code.

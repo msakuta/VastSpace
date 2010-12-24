@@ -42,8 +42,12 @@ class CoordSys{
 	string classname;
 	Vec3d getpos();
 	void setpos(Vec3d);
-	Quatd getrot();
-	void setpos(Quatd);
+	Vec3d getvelo(); // Linear velocity
+	void setvelo(Vec3d);
+	Quatd getrot(); // Rotation in quaternion
+	void setrot(Quatd);
+	Vec3d getomg(); // Angular velocity
+	void setomg(Vec3d);
 	string name();
 	string[] extranames;
 	CoordSys child();
@@ -717,59 +721,62 @@ stellarContext <- {
 		local dist = eval(vargv[2]);
 		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
 //		print(cs.name() + ": " + RA + ", " + dec + pos);
+		local earths = universe.findcspath("/sol/earth/Earth");
+		local sol = universe.findcspath("/sol");
+		print(universe.transRotation(earths) + "=" + sol.transRotation(earths) + "*" + universe.transRotation(sol));
+		if(earths != null)
+			pos = 
+			Quatd.rotation(-PI / 2, Vec3d(1,0,0)).trans
+//			(pos);
+//			(universe.transRotation(earths).cnj().trans(pos));
+			(universe.transPosition(pos, earths));
+		pos = /*Quatd.rotation(-PI / 2, Vec3d(1,0,0)).trans*/(pos);
 		cs.setpos(pos);
 		return 1;
 	}
-	else if(name == "binds"){
-/*		local dstcs = cs.findcspath(vargv[0]);
-		if(dstcs == null)
-			print("The CoordSys " + vargv[0] + " couldn't be found.");
-		::bounds[cs.ref] <- dstcs;*/
-
-		// Referring to CoordSys object must be deferred in order to enable cross-referencing.
-		if(cs.ref in ::bounds)
-			::bounds[cs.ref].append(vargv[0]);
-		else
-			::bounds[cs.ref] <- [vargv[0]];
-		return 1;
+	else if(name == "sol_coord"){
 	}
 	return 0;
 };
 
-bounds <- {};
+::cslabelpat <- "";
 
-function drawCoordSysOverlay(cs, vwcs, vwpos, wpos){
-	if(!cs.alive || !vwcs.alive)
+register_console_command("cslabel", function(...){
+	if(vargc == 0){
+		print("cslabel: " + ::cslabelpat);
 		return;
-
-/*	glPushMatrix();
-	glLoadIdentity();
-	glTranslate(Vec3d(-wpos.x / wpos.z, -wpos.y / wpos.z, -1));
-	glBegin(GL_LINES);
-	glVertex(Vec3d(0,0,0));
-	glVertex(Vec3d(0.05, 0.05, 0));
-	glEnd();
-	glRasterPos(Vec3d(0.05, 0.05, 0));
-	gldprint(cs.name());
-	glPopMatrix();*/
-
-	if(!(cs.ref in ::bounds))
-		return;
-	local array = ::bounds[cs.ref];
-	for(local i = 0; i < array.len(); i++){
-		local dstcs = cs.findcspath(array[i]);
-		if(dstcs == null)
-			continue;
-		local pos = vwcs.transPosition(Vec3d(0,0,0), cs) - vwpos;
-		glBegin(GL_LINES);
-		glVertex(pos.normin());
-		glVertex((vwcs.transPosition(Vec3d(0,0,0), dstcs) - vwpos).normin());
-		glEnd();
 	}
-}
+	::cslabelpat = vargv[0];
+});
+
 
 function drawCoordSysLabel(cs){
+	local names = cs.extranames;
+	if(names != null && names.len() && ::cslabelpat.len()){
+		local ret = "";
+		for(local i = 0; i < names.len(); i++) if(names[i].find(::cslabelpat) != null){
+			if(ret == "")
+				ret += names[i];
+			else
+				ret += " / " + names[i];
+		}
+		if(ret != "")
+			return ret;
+	}
 	return cs.name();
+}
+
+
+function earth(){
+	return universe.findcspath("/sol/earth/Earth");
+}
+
+function sol(){
+	return universe.findcspath("/sol");
+}
+
+function Polaris(){
+	return universe.findcspath("/ns/Polaris");
 }
 
 

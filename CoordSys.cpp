@@ -1468,6 +1468,8 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("setvelo"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::velo>);
 	register_closure(v, _SC("getrot"), sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >);
 	register_closure(v, _SC("setrot"), sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>);
+	register_closure(v, _SC("getomg"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::omg> >);
+	register_closure(v, _SC("setomg"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::omg>);
 	register_closure(v, _SC("child"), sqf_child);
 	register_closure(v, _SC("next"), sqf_next);
 	register_closure(v, _SC("transPosition"), sqf_transPosition);

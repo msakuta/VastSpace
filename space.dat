@@ -56,19 +56,22 @@ name "the universe"
 
 
 sol{
+	define RA RAD_PER_DEG*(12+49/60)
+	define dec RAD_PER_DEG*(27.4)
+	define tilt 23.2621*RAD_PER_DEG
 	cs_radius 3e10
-#	radius 1e4
 	pos 0 0 -1e7
-#	mass Msun
-#	absolute_magnitude 4.83
+#	updirection cos(RA)*cos(dec) cos(RA)*sin(dec) sin(dec)
 	solarsystem
 #	eisystem
 
 #	include space_debug.dat
-#	include sol.dat
+	include sol.dat
 
 	bookmark sol
 
+#	rotation (Quatd.rotation(PI/2.,Vec3d(1,0,0))*Quatd.rotation(PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).cnj()/*(Quatd.rotation(dec,Vec3d(1,0,0))*Quatd.rotation(RA,Vec3d(0,1,0))).cnj()*/
+#	rotation "universe.findcspath(\"/sol/earth/Earth\").getrot().cnj()"
 }
 
 coordsys ns{
@@ -491,6 +494,17 @@ astro Star "Gacrux"{
 	spectral M3.5III
 }
 
+
+astro Star "Polaris"{
+	extraname "Alpha Ursae Minoris"
+	extraname "α UMi"
+	extraname "HIP 11767"
+	radius 30*Rsun
+	mass 7.54*Msun
+	equatorial_coord 37.953 89.264 430*LY
+	spectral F7
+	absmag -3.63
+}
 
 astro Star "Saiph"{
 	radius 1.227*Rsun

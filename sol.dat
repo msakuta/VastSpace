@@ -490,11 +490,11 @@ coordsys Orbit saturn{
 		showorbit
 #		addent Scarry 0 -1 0
 		updirection 0 cos(incline) -sin(incline)
-		astro Island3 sati3 {
-			pos 10 0 10
-			radius 32
-			updirection 1 0 0
-		}
+#		astro Island3 sati3 {
+#			pos 10 0 10
+#			radius 32
+#			updirection 1 0 0
+#		}
 	}
 	astro Satellite "Mimas"{
 		radius 198.30

@@ -78,6 +78,7 @@ static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///<
 static double g_space_near_clip = .5, g_space_far_clip = 1e10;
 static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
 static double r_dynamic_range = 1.;
+static int r_orbit_axis = 0;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -241,12 +242,14 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glLoadMatrixd(vw->rot);
 
 			// Axis lines
-			glBegin(GL_LINES);
-			glVertex3dv((rmat.vp3(Vec3d(-1, 0, 0)) + spos - vw->pos).normin());
-			glVertex3dv((rmat.vp3(Vec3d( 1.2, 0, 0)) + spos - vw->pos).normin());
-			glVertex3dv((rmat.vp3(Vec3d(0, -1, 0)) + spos - vw->pos).normin());
-			glVertex3dv((rmat.vp3(Vec3d(0,  1.2, 0)) + spos - vw->pos).normin());
-			glEnd();
+			if(r_orbit_axis){
+				glBegin(GL_LINES);
+				glVertex3dv((rmat.vp3(Vec3d(-1, 0, 0)) + spos - vw->pos).normin());
+				glVertex3dv((rmat.vp3(Vec3d( 1.2, 0, 0)) + spos - vw->pos).normin());
+				glVertex3dv((rmat.vp3(Vec3d(0, -1, 0)) + spos - vw->pos).normin());
+				glVertex3dv((rmat.vp3(Vec3d(0,  1.2, 0)) + spos - vw->pos).normin());
+				glEnd();
+			}
 
 			// Ellipse
 			glBegin(GL_LINE_LOOP);
@@ -1772,6 +1775,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_warspace_far_clip", &g_warspace_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
+	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	Player::cmdInit(pl);
 
 	sqa_init();

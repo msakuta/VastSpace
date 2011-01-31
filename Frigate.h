@@ -2,7 +2,7 @@
 #define FRIGATE_H
 #include "Warpable.h"
 
-class Frigate : public Warpable{
+class EXPORT Frigate : public Warpable{
 public:
 	typedef Warpable st;
 protected:
@@ -31,7 +31,8 @@ public:
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
 	virtual const maneuve &getManeuve()const;
-	virtual double maxenergy()const, maxshield()const;
+	virtual double maxenergy()const;
+	virtual double maxshield()const;
 	virtual Dockable *toDockable();
 	virtual bool solid(const Entity *)const;
 	virtual bool command(EntityCommand *);

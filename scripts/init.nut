@@ -847,6 +847,7 @@ function init_Universe(){
 		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
 		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
 		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
+		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;

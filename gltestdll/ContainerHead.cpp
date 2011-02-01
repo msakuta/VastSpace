@@ -102,11 +102,11 @@ void ContainerHead::init(){
 }
 
 const char *ContainerHead::idname()const{
-	return "beamer";
+	return "ContainerHead";
 }
 
 const char *ContainerHead::classname()const{
-	return "Beamer";
+	return "ContainerHead";
 }
 
 const unsigned ContainerHead::classid = registerClass("ContainerHead", Conster<ContainerHead>);
@@ -417,12 +417,13 @@ void ContainerHead::draw(wardraw_t *wd){
 		// Register alpha test texture
 		suftexparam_t stp;
 		stp.flags = STP_ALPHA | STP_ALPHA_TEST;
-		AddMaterial("bbrail.bmp", "models/bbrail.bmp", &stp, NULL, NULL);
+		AddMaterial("containerrail.bmp", "models/containerbrail.bmp", &stp, NULL, NULL);
 
 		static const char *names[3] = {"models/containerhead.bin", "models/gascontainer.bin", "models/containertail.bin"};
 		for(int i = 0; i < 3; i++){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
+			CacheSUFMaterials(sufs[i]);
 			pst[i] = AllocSUFTex(sufs[i]);
 		}
 		init = true;
@@ -496,10 +497,14 @@ void ContainerHead::drawtra(wardraw_t *wd){
 	drawShield(wd);
 }
 
-
 Entity::Props ContainerHead::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+	Props ret = st::props();
+//	std::stringstream ss;
+//	ss << "Cooldown: " << cooldown;
+//	std::stringbuf *pbuf = ss.rdbuf();
+//	ret.push_back(pbuf->str());
+	ret.push_back(gltestp::dstring("I am ContainerHead!"));
+	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
 

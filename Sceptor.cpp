@@ -210,9 +210,9 @@ int Sceptor::popupMenu(PopupMenu &list){
 }
 
 Entity::Props Sceptor::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Task: ") << task);
-	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
+	Props ret = st::props();
+//	ret.push_back(cpplib::dstring("Task: ") << task);
+//	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
 	return ret;
 }
 

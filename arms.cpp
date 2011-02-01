@@ -100,7 +100,7 @@ bool ArmBase::isSelectable()const{return true;}
 
 Entity::Props ArmBase::props()const{
 	Props ret = st::props();
-	ret.push_back(cpplib::dstring("Ammo: ") << ammo);
+//	ret.push_back(cpplib::dstring("Ammo: ") << ammo);
 	return ret;
 }
 
@@ -538,9 +538,9 @@ double MTurret::hitradius()const{
 	return .005;
 }
 
-std::vector<cpplib::dstring> MTurret::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+Entity::Props MTurret::props()const{
+	Props ret = st::props();
+//	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
 

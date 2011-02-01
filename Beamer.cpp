@@ -30,6 +30,7 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 #include <gl/glext.h>
+#include <sstream>
 
 
 
@@ -668,8 +669,11 @@ static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct 
 #endif
 
 Entity::Props Beamer::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+	Props ret = st::props();
+//	std::stringstream ss;
+//	ss << "Cooldown: " << cooldown;
+//	std::stringbuf *pbuf = ss.rdbuf();
+	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
 

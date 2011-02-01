@@ -20,6 +20,8 @@ extern "C"{
 #include "sqadapt.h"
 #include "stellar_file.h"
 #include <btBulletDynamicsCommon.h>
+#include <sstream>
+#include <iostream>
 
 
 Entity::Entity(WarField *aw) : pos(vec3_000), velo(vec3_000), omg(vec3_000), rot(quat_u), mass(1e3), moi(1e1), enemy(NULL), w(aw), inputs(), health(1), race(0), otflag(0), bbody(NULL){
@@ -200,13 +202,17 @@ Entity *Entity::getOwner(){return NULL;}
 bool Entity::isSelectable()const{return false;}
 int Entity::armsCount()const{return 0;}
 ArmBase *Entity::armsGet(int){return NULL;}
-std::vector<cpplib::dstring> Entity::props()const{
+Entity::Props Entity::props()const{
 	using namespace cpplib;
-	std::vector<cpplib::dstring> ret;
-	ret.push_back(cpplib::dstring("Class: ") << classname());
-	ret.push_back(cpplib::dstring("CoordSys: ") << w->cs->getpath());
-	ret.push_back(cpplib::dstring("Health: ") << dstring(health) << "/" << dstring(maxhealth()));
-	ret.push_back(cpplib::dstring("Race: ") << dstring(race));
+	Props ret;
+//	std::stringstream ss;
+//	ss << "Class: " << classname();
+//	std::stringbuf *pbuf = ss.rdbuf();
+//	ret.push_back(pbuf->str());
+	ret.push_back(gltestp::dstring("Class: ") << classname());
+	ret.push_back(gltestp::dstring("CoordSys: ") << w->cs->getpath());
+	ret.push_back(gltestp::dstring("Health: ") << dstring(health) << "/" << dstring(maxhealth()));
+	ret.push_back(gltestp::dstring("Race: ") << dstring(race));
 	return ret;
 }
 double Entity::getRU()const{return 0.;}
@@ -310,6 +316,19 @@ void GLWprop::draw(GLwindowState &ws, double t){
 		glwpos2d(cr.x0, cr.y0 + (1 + i++) * getFontHeight());
 		glwprintf(*e);
 	}
+}
+
+void Entity::Props::push_back(gltestp::dstring &s){
+	if(nstr < numof(str))
+		str[nstr++] = s;
+}
+
+Entity::Props::iterator Entity::Props::begin(){
+	return str;
+}
+
+Entity::Props::iterator Entity::Props::end(){
+	return &str[nstr];
 }
 
 void GLWprop::postframe(){

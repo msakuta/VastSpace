@@ -80,7 +80,7 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual double hitradius()const;
-	virtual std::vector<cpplib::dstring> props()const;
+	virtual Props props()const;
 	virtual cpplib::dstring descript()const;
 	virtual bool command(EntityCommand *);
 

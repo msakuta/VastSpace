@@ -6,6 +6,7 @@
 #include "serial.h"
 #include "war.h"
 #include "glw/popup.h"
+#include "dstring.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
@@ -28,7 +29,17 @@ class EXPORT Entity : public Serializable{
 public:
 	typedef Serializable st;
 	typedef Entity Dockable;
-	typedef std::vector<cpplib::dstring> Props;
+	class EXPORT Props{
+		gltestp::dstring str[32];
+		int nstr;
+	public:
+		typedef gltestp::dstring *iterator;
+		Props() : nstr(0){}
+		void push_back(gltestp::dstring &);
+		iterator begin();
+		iterator end();
+	};
+//	typedef std::vector<gltestp::dstring> Props;
 	Entity(WarField *aw = NULL);
 	~Entity();
 	static Entity *create(const char *cname, WarField *w);

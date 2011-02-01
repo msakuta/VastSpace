@@ -416,6 +416,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dstring.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Entity.cpp"
 				>
 			</File>
@@ -690,6 +694,10 @@
 			</File>
 			<File
 				RelativePath="..\Docker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\dstring.h"
 				>
 			</File>
 			<File

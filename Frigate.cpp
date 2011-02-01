@@ -371,8 +371,8 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 }
 
 Entity::Props Frigate::props()const{
-	std::vector<cpplib::dstring> ret = st::props();
-	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
+	Props ret = st::props();
+//	ret.push_back(cpplib::dstring("Shield: ") << shieldAmount << '/' << maxshield());
 	return ret;
 }
 

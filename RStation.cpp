@@ -294,6 +294,6 @@ int RStation::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 
 Entity::Props RStation::props()const{
 	Props ret = st::props();
-	ret.push_back(cpplib::dstring("RUs: ") << ru << "/" << RSTATION_MAX_RU);
+//	ret.push_back(cpplib::dstring("RUs: ") << ru << "/" << RSTATION_MAX_RU);
 	return ret;
 }

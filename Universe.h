@@ -15,13 +15,10 @@ public:
 	bool paused;
 	static const unsigned version; ///< Saved file version, checked on loading
 
-	Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0){
-		name = NULL;
-		fullname = NULL;
-		flags = CS_ISOLATED | CS_EXTENT;
-	}
+	Universe(Player *pl);
 	Universe(){}
 	Universe(const char *path, CoordSys *root) : st(path, root){}
+	~Universe();
 	const Static &getStatic()const{return classRegister;}
 	static ClassRegister<Universe> classRegister;
 	void serialize(SerializeContext &sc);

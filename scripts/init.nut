@@ -193,6 +193,9 @@ void hook_delete_Entity(Entity e);
 // Called everytime the system needs some string to be translated.
 string translate(string source);
 
+// The file name of the stellar file.
+string stellar_file = "space.dat";
+
 */
 
 //local tm = TimeMeas();
@@ -311,6 +314,9 @@ tlate <- translate;
 	local gltestdll = loadModule(dllpath);
 	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }
+
+// set stellar file
+stellar_file = debugBuild() ? "space_debug.dat" : "space.dat";
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){

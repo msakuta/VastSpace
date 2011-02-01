@@ -158,7 +158,7 @@ coordsys "Alpha Centauri"{
 		spectral G2V
 	}
 	coordsys Orbit "orbit"{
-		orbits "Rigil Kntaurus A"
+		orbits "Rigil Kentaurus A"
 		showorbit
 		semimajor_axis AU
 		eccentricity 0

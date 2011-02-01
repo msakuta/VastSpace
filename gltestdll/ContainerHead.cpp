@@ -14,6 +14,7 @@
 #include "../material.h"
 //#include "sensor.h"
 #include "../motion.h"
+#include "../btadapt.h"
 extern "C"{
 #include "../bitmap.h"
 #include <clib/c.h>
@@ -89,6 +90,40 @@ public:
 
 ContainerHead::ContainerHead(WarField *aw) : st(aw){
 	init();
+
+	WarSpace *ws = *aw;
+	if(ws && ws->bdw){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+	}
 }
 
 void ContainerHead::init(){
@@ -137,9 +172,17 @@ const char *ContainerHead::dispname()const{
 }
 
 void ContainerHead::anim(double dt){
-	if(!w->operator WarSpace *()){
+	WarSpace *ws = *w;
+	if(!ws){
 		st::anim(dt);
 		return;
+	}
+
+	if(bbody){
+		const btTransform &tra = bbody->getCenterOfMassTransform();
+		pos = btvc(tra.getOrigin());
+		rot = btqc(tra.getRotation());
+		velo = btvc(bbody->getLinearVelocity());
 	}
 
 	/* forget about beaten enemy */
@@ -215,97 +258,6 @@ void ContainerHead::anim(double dt){
 			if(task == sship_attack && !enemy)
 				task = sship_idle;
 
-			if(task == sship_attack){
-				if(this->enemy){
-					Vec3d dv, forward;
-					Vec3d xh, yh;
-					long double sx, sy, len, len2, maxspeed = BEAMER_MAX_ANGLESPEED * dt;
-					Quatd qres, qrot;
-					dv = (enemy->pos - this->pos).normin();
-					forward = -this->rot.trans(avec3_001);
-					xh = forward.vp(dv);
-					len = len2 = xh.len();
-					len = asinl(len);
-					if(maxspeed < len){
-						len = maxspeed;
-					}
-					len = sinl(len / 2.);
-					if(len && len2){
-						double sd, df, drl, decay;
-						Vec3d ptomg, omg, dvv, delta, diff;
-/*						VECSCALE(qrot, xh, len / len2);
-						qrot[3] = sqrt(1. - len * len);
-						QUATMUL(qres, qrot, pt->rot);
-						QUATNORM(pt->rot, qres);*/
-/*						drl = VECDIST(pt->enemy->pos, pt->pos);
-						VECSUB(dvv, pt->enemy->velo, pt->velo);
-						VECVP(ptomg, dv, dvv);*/
-						VECCPY(diff, xh);
-/*						VECSCALEIN(xh, 1.);
-						VECSADD(xh, ptomg, .0 / drl);
-						VECSUB(omg, pt->omg, ptomg);
-						sd = VECSDIST(omg, xh);
-						df = 1. / (.1 + sd);
-						df = dt * MIN(df, frigate_mn.angleaccel);
-						VECSCALEIN(omg, 1. - df);
-						VECADD(pt->omg, omg, ptomg);
-						len2 = VECLEN(xh);*/
-						df = dt * MIN(len2, frigate_mn.angleaccel) / len2;
-						df = MIN(df, 1);
-						delta = diff - this->omg;
-						delta += integral * .2;
-						this->omg += delta * df;
-						if(frigate_mn.maxanglespeed * frigate_mn.maxanglespeed < this->omg.slen()){
-							this->omg.normin();
-							this->omg *= frigate_mn.maxanglespeed;
-						}
-						if(.25 < len2)
-							diff *= .25 / len2;
-						integral += diff * dt;
-						decay = exp(-.1 * dt);
-						integral *= decay;
-						inputs.press |= PL_2 | PL_8;
-					}
-					if(.9 < dv.sp(forward)){
-						inputs.change |= PL_ENTER;
-						inputs.press |= PL_ENTER;
-						if(5. * 5. < (enemy->pos - this->pos).slen())
-							inputs.press |= PL_W;
-						else if((enemy->pos - this->pos).slen() < 1. * 1.)
-							inputs.press |= PL_S;
-/*						else
-							inputs.press |= PL_A; *//* strafe around */
-					}
-				}
-
-				/* follow another */
-				if(0 && !enemy && !warping){
-					Entity *pt2;
-					Warpable *leader = NULL;
-					for(pt2 = w->el; pt2; pt2 = pt2->next) if(this != pt2 && race == pt2->race && pt2->toWarpable() && w->pl->control == pt2){
-						leader = pt2->toWarpable();
-						break;
-					}
-
-/*					if(leader && leader->charge){
-						pt->inputs.change |= PL_ENTER;
-						pt->inputs.press |= PL_ENTER;
-					}*/
-
-					/*for(pt2 = w->tl; pt2; pt2 = pt2->next) if(pt != pt2 && pt2->vft == pt->vft && w->pl->control == pt2 && ((beamer_t*)pt2)->warping)*/
-					if(leader && leader->warping && leader->warpdstcs != w->cs){
-						Warpable *p2 = leader;
-						int k;
-						warping = p2->warping;
-						warpcs = NULL;
-						warpdst = p2->warpdst;
-						for(k = 0; k < 3; k++)
-							warpdst[k] += drseq(&w->rs) - .5;
-						warpdstcs = p2->warpdstcs;
-	/*					break;*/
-					}
-				}
-			}
 		}
 	}
 	else{
@@ -327,11 +279,6 @@ void ContainerHead::anim(double dt){
 		cooldown = 0.;
 	else
 		cooldown -= dt;
-
-	WarSpace *ws = *w;
-/*	if(ws){
-		space_collide(this, ws, dt, NULL, NULL);
-	}*/
 
 	if(0. < charge && charge < 4.){
 		Entity *pt2, *hit = NULL;
@@ -492,9 +439,9 @@ void ContainerHead::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
+//	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 
-	drawShield(wd);
+//	drawShield(wd);
 }
 
 Entity::Props ContainerHead::props()const{

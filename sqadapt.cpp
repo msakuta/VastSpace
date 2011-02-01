@@ -1505,6 +1505,10 @@ void sqa_init(HSQUIRRELVM *pv){
 	sq_newclosure(v, sqf_screenheight, 0);
 	sq_createslot(v, 1);
 
+	sq_pushstring(v, _SC("stellar_file"), -1);
+	sq_pushstring(v, _SC("space.dat"), -1);
+	sq_createslot(v, 1);
+
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 

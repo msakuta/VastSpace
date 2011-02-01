@@ -1780,7 +1780,16 @@ int main(int argc, char *argv[])
 
 	sqa_init();
 
-	StellarFileLoad("space.dat", &universe);
+	{
+		const SQChar *s = _SC("space.dat");
+		StackReserver sr(v);
+		sq_pushroottable(v); // root
+		sq_pushstring(v, _SC("stellar_file"), -1); // root "init_Universe"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
+			sq_getstring(v, -1, &s);
+		}
+		StellarFileLoad(s, &universe);
+	}
 	CmdExec("@exec autoexec.cfg");
 
 #if USEWIN

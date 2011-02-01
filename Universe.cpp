@@ -20,6 +20,15 @@ const unsigned Universe::version = 6;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
+Universe::Universe(Player *pl) : ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0){
+	name = new char[sizeof"root"];
+	strcpy(const_cast<char*>(name), "root");
+	fullname = NULL;
+	flags = CS_ISOLATED | CS_EXTENT;
+}
+
+Universe::~Universe(){
+}
 
 void Universe::serialize(SerializeContext &sc){
 	st::serialize(sc);

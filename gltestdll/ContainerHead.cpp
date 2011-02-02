@@ -33,22 +33,9 @@ extern "C"{
 
 
 
-/* some common constants that can be used in static data definition. */
-#define SQRT_2 1.4142135623730950488016887242097
-#define SQRT_3 1.4422495703074083823216383107801
-#define SIN30 0.5
-#define COS30 0.86602540378443864676372317075294
-#define SIN15 0.25881904510252076234889883762405
-#define COS15 0.9659258262890682867497431997289
 
-#define MAX_SHIELD_AMOUNT 5000.
 #define BEAMER_HEALTH 15000.
 #define BEAMER_SCALE .0002
-#define BEAMER_MAX_SPEED .1
-#define BEAMER_ACCELERATE .05
-#define BEAMER_MAX_ANGLESPEED .4
-#define BEAMER_ANGLEACCEL .2
-#define BEAMER_SHIELDRAD .09
 
 
 /// \brief A civilian ship transporting containers.
@@ -80,6 +67,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
 	virtual void anim(double);
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
@@ -95,17 +83,16 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
+		static btCompoundShape *shapes[4] = {NULL};
+		btCompoundShape *&shape = shapes[ncontainers];
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
+			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * sufscale;
+			const Quatd rot = quat_u;
+			const Vec3d pos = Vec3d(0,0,0);
+			btBoxShape *box = new btBoxShape(btvc(sc));
+			btTransform trans = btTransform(btqc(rot), btvc(pos));
+			shape->addChildShape(trans, box);
 		}
 
 		btTransform startTransform;
@@ -132,7 +119,7 @@ void ContainerHead::init(){
 	ncontainers = RandomSequence((unsigned long)this).next() % 4 + 1;
 	undocktime = 0.f;
 	health = maxhealth();
-	mass = 1e7;
+	mass = 2e7 + 1e7 * ncontainers;
 }
 
 const char *ContainerHead::idname()const{
@@ -250,6 +237,11 @@ void ContainerHead::anim(double dt){
 #endif
 }
 
+void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	pos = this->rot.trans(Vec3d(0, 120, 150 * ncontainers + 50) * sufscale) + this->pos;
+	rot = this->rot;
+}
+
 
 
 void ContainerHead::cache_bridge(void){
@@ -280,7 +272,7 @@ void ContainerHead::draw(wardraw_t *wd){
 		// Register alpha test texture
 		suftexparam_t stp;
 		stp.flags = STP_ALPHA | STP_ALPHA_TEST;
-		AddMaterial("containerrail.bmp", "models/containerbrail.bmp", &stp, NULL, NULL);
+		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);
 
 		static const char *names[3] = {"models/containerhead.bin", "models/gascontainer.bin", "models/containertail.bin"};
 		for(int i = 0; i < 3; i++){

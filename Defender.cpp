@@ -1,9 +1,9 @@
 /** \file
  * \brief Definition of Defender and its properties.
  */
-#include "defender.h"
-#include "player.h"
-#include "bullet.h"
+#include "Defender.h"
+#include "Player.h"
+#include "Bullet.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Warpable.h"

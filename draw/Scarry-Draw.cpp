@@ -1,6 +1,6 @@
 #include "../scarry.h"
-#include "../judge.h"
-#include "../material.h"
+#include "judge.h"
+#include "material.h"
 #include "../sceptor.h"
 extern "C"{
 #include <clib/gl/gldraw.h>

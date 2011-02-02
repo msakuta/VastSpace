@@ -1,7 +1,7 @@
 #ifndef ASTRODRAW_H
 #define ASTRODRAW_H
 #include "astro.h"
-#include "viewer.h"
+#include "Viewer.h"
 #include <clib/colseq/color.h>
 #include <cpplib/quat.h>
 #define exit something_meanless

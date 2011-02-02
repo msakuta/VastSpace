@@ -2,7 +2,7 @@
  * \brief Definition of Universe class, root of all coordinate systems. */
 #ifndef UNIVERSE_H
 #define UNIVERSE_H
-#include "coordsys.h"
+#include "CoordSys.h"
 
 /// Class that is only one in the game.
 class Universe : public CoordSys{

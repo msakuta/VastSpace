@@ -1,12 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "coordsys.h"
+#include "CoordSys.h"
 #include "astro.h"
-#include "viewer.h"
-#include "player.h"
+#include "Viewer.h"
+#include "Player.h"
 #include "stellar_file.h"
 #include "war.h"
-#include "entity.h"
+#include "Entity.h"
 #include "cmd.h"
 #include "serial_util.h"
 #include "Respawn.h"

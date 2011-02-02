@@ -4,8 +4,8 @@
 #ifndef GLW_GLWENTLIST_H
 #define GLW_GLWENTLIST_H
 #include "glwindow.h"
-#include "../CoordSys.h"
-#include "../Entity.h"
+#include "CoordSys.h"
+#include "Entity.h"
 
 
 class GLWentlist;

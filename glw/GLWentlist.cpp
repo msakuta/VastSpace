@@ -4,9 +4,9 @@
 #include "GLWentlist.h"
 #include "GLWtip.h"
 #include "GLWmenu.h"
-#include "../antiglut.h"
-#include "../Player.h"
-#include "../war.h"
+#include "antiglut.h"
+#include "Player.h"
+#include "war.h"
 extern "C"{
 #include <clib/timemeas.h>
 }

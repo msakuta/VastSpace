@@ -1,6 +1,6 @@
 #include "Missile.h"
 #include "material.h"
-#include "viewer.h"
+#include "Viewer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

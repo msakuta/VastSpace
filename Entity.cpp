@@ -1,14 +1,14 @@
 /** \file
  * \brief Implements Entity class and its collaborative classes.
  */
-#include "entity.h"
+#include "Entity.h"
 #include "EntityCommand.h"
 extern "C"{
 #include <clib/aquat.h>
 }
 #include "Beamer.h"
 #include "judge.h"
-#include "player.h"
+#include "Player.h"
 #include "cmd.h"
 #include "sceptor.h"
 #include "Scarry.h"

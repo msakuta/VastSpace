@@ -2,7 +2,7 @@
  * \brief Definition of BeamProjectile class.
  */
 #include "BeamProjectile.h"
-#include "viewer.h"
+#include "Viewer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/gldraw.h>

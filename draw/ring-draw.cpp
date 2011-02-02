@@ -1,9 +1,9 @@
 #include "ring-draw.h"
-#include "../judge.h"
-#include "../astrodef.h"
-#include "../Universe.h"
-#include "../glsl.h"
-#include "../bitmap.h"
+#include "judge.h"
+#include "astrodef.h"
+#include "Universe.h"
+#include "glsl.h"
+#include "bitmap.h"
 extern "C"{
 //#include <clib/amat3.h>
 #include <clib/rseq.h>

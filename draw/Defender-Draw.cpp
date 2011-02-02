@@ -2,9 +2,9 @@
  * \brief Definition of drawing methods for Defender.
  */
 #include "../defender.h"
-#include "../player.h"
-#include "../material.h"
-#include "../judge.h"
+#include "Player.h"
+#include "material.h"
+#include "judge.h"
 #include "effects.h"
 extern "C"{
 #include <clib/c.h>

@@ -1,7 +1,7 @@
 #ifndef DRAW_RING_DRAW_H
 #define DRAW_RING_DRAW_H
-#include "../astro.h"
-#include "../viewer.h"
+#include "astro.h"
+#include "Viewer.h"
 
 #define RING_CUTS 64
 

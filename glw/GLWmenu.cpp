@@ -2,12 +2,12 @@
  * \brief Implementation of GLWmenu.
  */
 #include "glwindow.h"
-#include "../cmd.h"
-#include "../antiglut.h"
-#include "../viewer.h"
-#include "../material.h"
-#include "../player.h" // GLWmoveOrderButton
-#include "../sqadapt.h"
+#include "cmd.h"
+#include "antiglut.h"
+#include "Viewer.h"
+#include "material.h"
+#include "Player.h" // GLWmoveOrderButton
+#include "sqadapt.h"
 #include "GLWmenu.h"
 extern "C"{
 #include <clib/c.h>

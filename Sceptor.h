@@ -4,8 +4,8 @@
 #ifndef SCEPTOR_H
 #define SCEPTOR_H
 
-#include "beamer.h"
-#include "coordsys.h"
+#include "Beamer.h"
+#include "CoordSys.h"
 #include "war.h"
 #include "arms.h"
 #include "shield.h"

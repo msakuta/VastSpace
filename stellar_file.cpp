@@ -12,7 +12,7 @@ extern "C"{
 //#include "spacewar.h"
 #include "astrodef.h"
 #include "astro_star.h"
-#include "entity.h"
+#include "Entity.h"
 //#include "island3.h"
 //#include "ringworld.h"
 extern "C"{

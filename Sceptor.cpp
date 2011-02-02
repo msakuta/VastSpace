@@ -2,8 +2,8 @@
  * \brief Implementation of Sceptor class.
  */
 #include "sceptor.h"
-#include "player.h"
-#include "bullet.h"
+#include "Player.h"
+#include "Bullet.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Warpable.h"

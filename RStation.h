@@ -1,6 +1,6 @@
 #ifndef SPACEWAR_H
 #define SPACEWAR_H
-#include "entity.h"
+#include "Entity.h"
 
 
 #define VOLUME_PER_RU 100. /* 1 RU = 100m^3 */

@@ -1,5 +1,5 @@
 #include "motion.h"
-#include "player.h"
+#include "Player.h"
 //#include "war.h"
 #include "cmd.h"
 

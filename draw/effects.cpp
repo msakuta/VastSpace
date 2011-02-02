@@ -1,7 +1,7 @@
 #include "effects.h"
-#include "../bitmap.h"
-#include "../material.h"
-#include "../tent3d.h"
+#include "bitmap.h"
+#include "material.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

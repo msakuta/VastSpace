@@ -1,7 +1,7 @@
 #ifndef RESPAWN_H
 #define RESPAWN_H
 #include "war.h"
-#include "entity.h"
+#include "Entity.h"
 
 class Respawn : public Entity{
 	double timer;

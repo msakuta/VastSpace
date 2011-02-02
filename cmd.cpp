@@ -2,7 +2,7 @@
 #include "cmd.h"
 #include "cmd_int.h"
 #include "argtok.h"
-#include "viewer.h"
+#include "Viewer.h"
 #include "sqadapt.h"
 extern "C"{
 #include "calc/calc.h"

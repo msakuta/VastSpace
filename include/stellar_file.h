@@ -1,8 +1,9 @@
 #ifndef STELLAR_FILE_H
 #define STELLAR_FILE_H
-/* function to load stellar information file. */
+/** \file
+ * \breif Functions to load stellar information file. */
 
-#include "coordsys.h"
+#include "CoordSys.h"
 #include "astro.h"
 #include <stdio.h>
 #include <squirrel.h>
@@ -26,7 +27,7 @@ struct teleport/* : public Serializable*/{
 	Vec3d pos;
 };
 
-// Base class for Lagrange points
+/// Base class for Lagrange points
 class LagrangeCS : public CoordSys{
 public:
 	typedef CoordSys st;
@@ -75,6 +76,7 @@ void saturn_draw(const struct astrobj *a, const struct viewer *vw, int relative)
 void blackhole_draw(const struct astrobj *, const struct viewer*, int relative);
 
 
+/// Context object in the process of interpreting a stellar file.
 struct StellarContext{
 	const char *fname;
 	CoordSys *root;

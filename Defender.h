@@ -6,9 +6,9 @@
 #ifndef DEFENDER_H
 #define DEFENDER_H
 
-#include "beamer.h"
+#include "Beamer.h"
 #include "EntityCommand.h"
-#include "coordsys.h"
+#include "CoordSys.h"
 #include "war.h"
 #include "arms.h"
 #include "shield.h"

@@ -3,7 +3,7 @@
  */
 #ifndef BEAMPROJECTILE_H
 #define BEAMPROJECTILE_H
-#include "bullet.h"
+#include "Bullet.h"
 
 class BeamProjectile : public Bullet{
 public:

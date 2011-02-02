@@ -4,17 +4,17 @@
  * Additionally defines GLWinfo, a window displays information about specific astronomical object.
  */
 
-#include "../astrodraw.h"
+#include "astrodraw.h"
 #include "../galaxy_field.h"
-#include "../player.h"
+#include "Player.h"
 #include "glwindow.h"
 #include "GLWmenu.h"
-#include "../coordsys.h"
-#include "../stellar_file.h"
-#include "../entity.h"
-#include "../antiglut.h"
-#include "../cmd.h"
-#include "../astro_star.h"
+#include "CoordSys.h"
+#include "stellar_file.h"
+#include "Entity.h"
+#include "antiglut.h"
+#include "cmd.h"
+#include "astro_star.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>

@@ -10,7 +10,7 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "astrodef.h"
-#include "player.h"
+#include "Player.h"
 #include "cmd.h"
 #include "sqadapt.h"
 extern "C"{

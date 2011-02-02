@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
@@ -211,7 +211,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"
@@ -613,10 +613,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\antiglut.h"
-				>
-			</File>
-			<File
 				RelativePath="..\argtok.h"
 				>
 			</File>
@@ -629,18 +625,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\astro.h"
-				>
-			</File>
-			<File
-				RelativePath="..\astro_star.h"
-				>
-			</File>
-			<File
-				RelativePath="..\astrodef.h"
-				>
-			</File>
-			<File
 				RelativePath="..\astrodraw.h"
 				>
 			</File>
@@ -650,10 +634,6 @@
 			</File>
 			<File
 				RelativePath="..\BeamProjectile.h"
-				>
-			</File>
-			<File
-				RelativePath="..\bitmap.h"
 				>
 			</File>
 			<File
@@ -673,15 +653,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\cmd.h"
-				>
-			</File>
-			<File
 				RelativePath="..\cmd_int.h"
-				>
-			</File>
-			<File
-				RelativePath="..\CoordSys.h"
 				>
 			</File>
 			<File
@@ -693,19 +665,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Docker.h"
-				>
-			</File>
-			<File
-				RelativePath="..\dstring.h"
-				>
-			</File>
-			<File
 				RelativePath="..\draw\effects.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Entity.h"
 				>
 			</File>
 			<File
@@ -713,31 +673,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\export.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Frigate.h"
-				>
-			</File>
-			<File
 				RelativePath="..\galaxy_field.h"
-				>
-			</File>
-			<File
-				RelativePath="..\glextcall.h"
-				>
-			</File>
-			<File
-				RelativePath="..\glsl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\glstack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\judge.h"
 				>
 			</File>
 			<File
@@ -750,14 +686,6 @@
 			</File>
 			<File
 				RelativePath="..\Missile.h"
-				>
-			</File>
-			<File
-				RelativePath="..\motion.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Player.h"
 				>
 			</File>
 			<File
@@ -777,30 +705,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\serial.h"
-				>
-			</File>
-			<File
-				RelativePath="..\serial_util.h"
-				>
-			</File>
-			<File
-				RelativePath="..\shield.h"
-				>
-			</File>
-			<File
-				RelativePath="..\sqadapt.h"
-				>
-			</File>
-			<File
-				RelativePath="..\stellar_file.h"
-				>
-			</File>
-			<File
-				RelativePath="..\tent3d.h"
-				>
-			</File>
-			<File
 				RelativePath="..\tent3d_p.h"
 				>
 			</File>
@@ -814,18 +718,6 @@
 			</File>
 			<File
 				RelativePath="..\Universe.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Viewer.h"
-				>
-			</File>
-			<File
-				RelativePath="..\war.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Warpable.h"
 				>
 			</File>
 			<Filter
@@ -866,6 +758,135 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="Exported Headers"
+			Filter="include/*.h"
+			>
+			<File
+				RelativePath="..\include\antiglut.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\astro.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\astro_star.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\astrodef.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\bitmap.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\btadapt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\cmd.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\CoordSys.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Docker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\dstring.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Entity.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\export.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Frigate.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\glsl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\glstack.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\judge.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\material.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\motion.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Player.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\popup.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\serial.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\serial_util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\shield.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\sqadapt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\stellar_file.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\tent3d.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Universe.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Viewer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\war.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Warpable.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"

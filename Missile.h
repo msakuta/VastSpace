@@ -1,6 +1,6 @@
 #ifndef MISSILE_H
 #define MISSILE_H
-#include "bullet.h"
+#include "Bullet.h"
 #include "tent3d.h"
 
 class Missile : public Bullet{

@@ -1,6 +1,6 @@
 #include "cmd.h"
 #include "cmd_int.h"
-#include "viewer.h"
+#include "Viewer.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 #include <clib/timemeas.h>

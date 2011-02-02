@@ -1,6 +1,6 @@
 #ifndef GLW_GLWINDOW_H
 #define GLW_GLWINDOW_H
-#include "../serial.h"
+#include "serial.h"
 extern "C"{
 #include <clib/c.h>
 #include <string.h>

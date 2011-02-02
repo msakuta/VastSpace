@@ -1,6 +1,6 @@
 #ifndef DRAW_EFFECTS_H
 #define DRAW_EFFECTS_H
-#include "../tent3d.h"
+#include "tent3d.h"
 
 // Damn silly Windows needs windows.h to be included before gl/gl.h.
 #ifdef _WIN32

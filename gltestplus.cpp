@@ -16,10 +16,10 @@
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 #endif
-#include "viewer.h"
-#include "player.h"
-#include "entity.h"
-#include "coordsys.h"
+#include "Viewer.h"
+#include "Player.h"
+#include "Entity.h"
+#include "CoordSys.h"
 #include "stellar_file.h"
 #include "astrodraw.h"
 #include "cmd.h"

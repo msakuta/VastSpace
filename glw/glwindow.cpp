@@ -3,12 +3,12 @@
  * Implements GLWbutton branch too.
  */
 #include "glwindow.h"
-#include "../cmd.h"
-#include "../antiglut.h"
-#include "../viewer.h"
-#include "../material.h"
-#include "../player.h" // GLWmoveOrderButton
-#include "../sqadapt.h"
+#include "cmd.h"
+#include "antiglut.h"
+#include "Viewer.h"
+#include "material.h"
+#include "Player.h" // GLWmoveOrderButton
+#include "sqadapt.h"
 #include "message.h"
 #include "GLWtip.h"
 extern "C"{

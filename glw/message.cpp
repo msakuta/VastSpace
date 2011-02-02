@@ -1,8 +1,8 @@
 /** \file
  * \brief Implementation of GLWmessage.
  */
-#include "../cmd.h"
-#include "../sqadapt.h"
+#include "cmd.h"
+#include "sqadapt.h"
 #include "message.h"
 extern "C"{
 #include <clib/c.h>

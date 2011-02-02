@@ -1,22 +1,20 @@
-#include "../Frigate.h"
-#include "../Docker.h"
-#include "../player.h"
-//#include "bullet.h"
-#include "../coordsys.h"
-#include "../viewer.h"
-#include "../cmd.h"
+#include "Frigate.h"
+#include "Docker.h"
+#include "Player.h"
+#include "Viewer.h"
+#include "cmd.h"
 //#include "glwindow.h"
-#include "../judge.h"
-#include "../astrodef.h"
-#include "../stellar_file.h"
-#include "../astro_star.h"
-#include "../serial_util.h"
-#include "../material.h"
+#include "judge.h"
+#include "astrodef.h"
+#include "stellar_file.h"
+#include "astro_star.h"
+#include "serial_util.h"
+#include "material.h"
 //#include "sensor.h"
-#include "../motion.h"
-#include "../btadapt.h"
+#include "motion.h"
+#include "btadapt.h"
 extern "C"{
-#include "../bitmap.h"
+#include "bitmap.h"
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -53,17 +51,22 @@ extern "C"{
 #define BEAMER_SHIELDRAD .09
 
 
-
+/// \brief A civilian ship transporting containers.
+///
+/// This ship routinely transports goods such as fuel, air, meal, etc in the background to add
+/// the game a bit of taste of space era.
+///
+/// The ship can have variable number of containers. Random number and types of containers are generated
+/// for variation.
+/// Participating containers are connected linearly, sandwitched by head and tail module.
+/// The head module is merely a terminator, while the tail module has cockpit and thrust engines.
+///
+/// The base class is Frigate, which is usually for military ships.
 class ContainerHead : public Frigate{
 public:
 	typedef Frigate st;
 protected:
-	double charge;
-	Vec3d integral;
-	double beamlen;
-	double cooldown;
-//	struct tent3d_fpol *pf[1];
-//	scarry_t *dock;
+	int ncontainers; ///< Count of containers connected.
 	float undocktime;
 	static const double sufscale;
 public:
@@ -84,7 +87,6 @@ public:
 	virtual bool undock(Docker*);
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
-//	static const Builder::BuildStatic builds;
 };
 
 
@@ -127,13 +129,10 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 }
 
 void ContainerHead::init(){
-	charge = 0.;
-//	dock = NULL;
+	ncontainers = RandomSequence((unsigned long)this).next() % 4 + 1;
 	undocktime = 0.f;
-	cooldown = 0.;
-	integral.clear();
 	health = maxhealth();
-	mass = 1e5;
+	mass = 1e7;
 }
 
 const char *ContainerHead::idname()const{
@@ -149,21 +148,11 @@ const unsigned ContainerHead::entityid = registerEntity("ContainerHead", new Con
 
 void ContainerHead::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << charge;
-	sc.o << integral;
-	sc.o << beamlen;
-	sc.o << cooldown;
-//	scarry_t *dock;
 	sc.o << undocktime;
 }
 
 void ContainerHead::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> charge;
-	sc.i >> integral;
-	sc.i >> beamlen;
-	sc.i >> cooldown;
-//	scarry_t *dock;
 	sc.i >> undocktime;
 }
 
@@ -194,7 +183,6 @@ void ContainerHead::anim(double dt){
 
 	if(0 < health){
 		Entity *collideignore = NULL;
-		int i, n;
 		if(task == sship_undock){
 			if(!mother || !mother->e)
 				task = sship_idle;
@@ -239,25 +227,7 @@ void ContainerHead::anim(double dt){
 				task = sship_idle;
 		}
 		else{
-			Vec3d pos, dv;
-			double dist;
-			Vec3d opos;
 			inputs.press = 0;
-			if((task == sship_idle || task == sship_attack) && !enemy){ /* find target */
-				double best = 20. * 20.;
-				Entity *t;
-				for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != race && 0. < t->health){
-					double sdist = (this->pos - t->pos).slen();
-					if(sdist < best){
-						enemy = t;
-						best = sdist;
-						task = sship_attack;
-					}
-				}
-			}
-			if(task == sship_attack && !enemy)
-				task = sship_idle;
-
 		}
 	}
 	else{
@@ -265,60 +235,6 @@ void ContainerHead::anim(double dt){
 		return;
 	}
 
-	if(cooldown == 0. && inputs.press & (PL_ENTER | PL_LCLICK)){
-		charge = 6.;
-		cooldown = 10.;
-	}
-
-	if(charge < dt)
-		charge = 0.;
-	else
-		charge -= dt;
-
-	if(cooldown < dt)
-		cooldown = 0.;
-	else
-		cooldown -= dt;
-
-	if(0. < charge && charge < 4.){
-		Entity *pt2, *hit = NULL;
-		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);
-		double best = 10., sdist;
-		int besthitpart = 0, hitpart;
-		start = rot.trans(start0) + pos;
-		dir = rot.trans(dir0);
-		for(pt2 = w->el; pt2; pt2 = pt2->next){
-			double rad = pt2->hitradius();
-			Vec3d delta = pt2->pos - pos;
-			if(pt2 == this)
-				continue;
-			if(!jHitSphere(pt2->pos, rad + .005, start, dir, 1.))
-				continue;
-			if((hitpart = pt2->tracehit(start, dir, .005, 1., &sdist, NULL, NULL)) && (sdist *= -dir0[2], 1)){
-				hit = pt2;
-				best = sdist;
-				besthitpart = hitpart;
-			}
-		}
-		if(ws && hit){
-			Vec3d pos;
-			Quatd qrot;
-			beamlen = best;
-			hit->takedamage(1000. * dt, besthitpart);
-			pos = mat.vec3(2) * -best + this->pos;
-			qrot = Quatd::direction(mat.vec3(2));
-			if(drseq(&w->rs) * .1 < dt){
-				avec3_t velo;
-				int i;
-				for(i = 0; i < 3; i++)
-					velo[i] = (drseq(&w->rs) - .5) * .1;
-				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
-			}
-			AddTeline3D(ws->tell, pos, vec3_000, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
-		}
-		else
-			beamlen = 10.;
-	}
 	st::anim(dt);
 #if 0
 	if(p->pf){
@@ -405,13 +321,13 @@ void ContainerHead::draw(wardraw_t *wd){
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
-		glTranslated(0, 0, 350);
+		glTranslated(0, 0, 150 * ncontainers);
 		if(vbo[0])
 			DrawVBO(vbo[0], SUF_ATR | SUF_TEX, pst[0]);
 		else if(sufs[0])
 			DecalDrawSUF(sufs[0], SUF_ATR | SUF_TEX, NULL, pst[0], NULL, NULL);
 		glTranslated(0, 0, -150);
-		for(int i = 0; i < 3; i++){
+		for(int i = 0; i < ncontainers; i++){
 			if(vbo[1])
 				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, pst[1]);
 			else if(sufs[1])
@@ -446,12 +362,7 @@ void ContainerHead::drawtra(wardraw_t *wd){
 
 Entity::Props ContainerHead::props()const{
 	Props ret = st::props();
-//	std::stringstream ss;
-//	ss << "Cooldown: " << cooldown;
-//	std::stringbuf *pbuf = ss.rdbuf();
-//	ret.push_back(pbuf->str());
 	ret.push_back(gltestp::dstring("I am ContainerHead!"));
-	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
 

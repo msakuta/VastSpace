@@ -1,6 +1,6 @@
 #include "Universe.h"
 #include "serial_util.h"
-#include "player.h"
+#include "Player.h"
 #include "cmd.h"
 #include "astro.h"
 #include "sqadapt.h"

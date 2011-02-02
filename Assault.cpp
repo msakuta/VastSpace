@@ -1,7 +1,7 @@
 #include "Assault.h"
 #include "Beamer.h"
 #include "judge.h"
-#include "player.h"
+#include "Player.h"
 #include "serial_util.h"
 #include "material.h"
 #include "EntityCommand.h"

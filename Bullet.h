@@ -1,6 +1,6 @@
 #ifndef BULLET_H
 #define BULLET_H
-#include "entity.h"
+#include "Entity.h"
 
 #if 0
 struct bullet_static{

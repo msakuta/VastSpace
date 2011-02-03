@@ -17,6 +17,7 @@
 //#include "astro_star.h"
 //#include "sensor.h"
 #include "effects.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

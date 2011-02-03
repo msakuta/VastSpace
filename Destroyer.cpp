@@ -5,6 +5,7 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "draw/effects.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }

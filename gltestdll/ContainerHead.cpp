@@ -73,7 +73,6 @@ public:
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	virtual bool undock(Docker*);
-	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
 };
 
@@ -244,11 +243,6 @@ void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 
 
 
-void ContainerHead::cache_bridge(void){
-	CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
-	CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
-}
-
 const double ContainerHead::sufscale = BEAMER_SCALE;
 
 void ContainerHead::draw(wardraw_t *wd){
@@ -294,6 +288,19 @@ void ContainerHead::draw(wardraw_t *wd){
 		};
 		Mat4d mat;
 
+		class IntDraw{
+			WarDraw *wd;
+		public:
+			IntDraw(WarDraw *wd) : wd(wd){
+			}
+			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
+				if(vbo)
+					DrawVBO(vbo, SUF_ATR | SUF_TEX, tex);
+				else if(suf)
+					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
+			}
+		} id(wd);
+
 		glPushMatrix();
 		transform(mat);
 		glMultMatrixd(mat);
@@ -314,23 +321,14 @@ void ContainerHead::draw(wardraw_t *wd){
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
 		glTranslated(0, 0, 150 * ncontainers);
-		if(vbo[0])
-			DrawVBO(vbo[0], SUF_ATR | SUF_TEX, pst[0]);
-		else if(sufs[0])
-			DecalDrawSUF(sufs[0], SUF_ATR | SUF_TEX, NULL, pst[0], NULL, NULL);
+		id.drawModel(sufs[0], vbo[0], pst[0]);
 		glTranslated(0, 0, -150);
 		for(int i = 0; i < ncontainers; i++){
-			if(vbo[1])
-				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, pst[1]);
-			else if(sufs[1])
-				DecalDrawSUF(sufs[1], SUF_ATR | SUF_TEX, NULL, pst[1], NULL, NULL);
+			id.drawModel(sufs[1], vbo[1], pst[1]);
 			glTranslated(0, 0, -300);
 		}
 		glTranslated(0, 0, 150);
-		if(vbo[2])
-			DrawVBO(vbo[2], SUF_ATR | SUF_TEX, pst[2]);
-		else if(sufs[2])
-			DecalDrawSUF(sufs[2], SUF_ATR | SUF_TEX, NULL, pst[2], NULL, NULL);
+		id.drawModel(sufs[2], vbo[2], pst[2]);
 		glPopMatrix();
 
 		glPopMatrix();

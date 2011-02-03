@@ -18,6 +18,7 @@
 #include "EntityCommand.h"
 #include "draw/effects.h"
 #include "motion.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>

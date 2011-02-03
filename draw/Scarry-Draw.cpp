@@ -2,6 +2,7 @@
 #include "judge.h"
 #include "material.h"
 #include "../sceptor.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }

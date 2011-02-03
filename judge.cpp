@@ -1,6 +1,7 @@
 #include "judge.h"
 #include "astro.h"
 #include "Viewer.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/avec3.h>

@@ -36,7 +36,7 @@ class OrbitCS;
 class Universe;
 class Player;
 struct StellarContext;
-struct war_draw_data;
+struct WarDraw;
 
 /** \brief A Coordinate system in space.
  *
@@ -217,7 +217,7 @@ public:
 	bool addToDrawList(CoordSys *descendant);
 
 	void startdraw();
-	void drawWar(war_draw_data *wd);
+	void drawWar(WarDraw *wd);
 
 	static void deleteAll(CoordSys **);
 

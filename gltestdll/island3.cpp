@@ -23,6 +23,7 @@
 #include "Entity.h"
 #include "judge.h"
 #include "bitmap.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>

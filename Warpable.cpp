@@ -18,6 +18,7 @@
 #include "Docker.h"
 //#include "sensor.h"
 #include "motion.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

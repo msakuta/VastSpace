@@ -10,6 +10,7 @@
 #include "astrodraw.h"
 #include "sqadapt.h"
 #include "btadapt.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>

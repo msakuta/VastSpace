@@ -1,6 +1,7 @@
 #include "Missile.h"
 #include "material.h"
 #include "Viewer.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

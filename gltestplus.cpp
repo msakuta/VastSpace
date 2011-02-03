@@ -36,6 +36,7 @@
 #include "sqadapt.h"
 #include "EntityCommand.h"
 #include "astro_star.h"
+#include "draw/WarDraw.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -101,7 +102,7 @@ public:
 };
 
 static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
-static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd));
+static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
 
 Player pl;
 double &flypower = pl.freelook->flypower;
@@ -129,12 +130,15 @@ void drawShadeSphere(){
 	glEnd();
 }
 
+static Vec3d g_light;
+
 void lightOn(){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
 	const Astrobj *sun = pl.cs->findBrightest(pl.getpos());
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(pl.cs->tocs(vec3_000, sun).normin().cast<GLfloat>()) : light_pos);
+	g_light = pl.cs->tocs(vec3_000, sun).normin();
+	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
 }
 
 static void draw_gear(double dt){
@@ -503,7 +507,7 @@ static void drawindics(Viewer *vw){
 	}
 }
 
-static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){
+static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod){
 	Viewer localvw = vw;
 	wardraw_t wd;
 	localvw.cs = cs;
@@ -512,25 +516,27 @@ static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method
 	localvw.qrot = localvw.cs->tocsq(vw.cs) * vw.qrot;
 	localvw.relrot = localvw.rot = localvw.qrot.tomat4();
 	localvw.relirot = localvw.irot = localvw.qrot.cnj().tomat4();
-	GLcull gc(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
+	GLcull gc = vw.gc->isOrtho() ? *vw.gc : GLcull(vw.fov, localvw.pos, localvw.irot, vw.gc->getNear(), vw.gc->getFar());
 	localvw.gc = &gc;
 	wd.lightdraws = 0;
 //	wd.maprange = 1.;
 	wd.vw = &localvw;
 	wd.w = cs->w;
+	wd.shadowmapping = tod;
 	GLmatrix ma;
 	gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
 	gldMultQuat(vw.cs->tocsq(cs));
 	(cs->w->*method)(&wd);
 }
 
-static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd)){
+/// \param tod Texture of Depth
+static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod){
 	if(cs->parent)
-		war_draw(vw, cs->parent, method);
+		war_draw(vw, cs->parent, method, tod);
 	if(cs->w){
 		// Call an internal function to avoid excess use of the stack by recursive calls.
 		// It also helps the optimizer to reduce frame pointers.
-		war_draw_int(vw, cs, method);
+		war_draw_int(vw, cs, method, tod);
 	}
 	if(pl.cs == cs && method != &WarField::drawOverlay){
 		(pl.*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&vw);
@@ -543,6 +549,57 @@ static void cswardraw(const Viewer *vw, CoordSys *cs, void (CoordSys::*method)(c
 		cswardraw(vw, cs2, method);
 	}
 }
+
+static PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
+
+///////////////////////////////////////////////////////////////////////////////
+// check FBO completeness
+///////////////////////////////////////////////////////////////////////////////
+bool checkFramebufferStatus()
+{
+    // check FBO status
+    GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+    switch(status)
+    {
+    case GL_FRAMEBUFFER_COMPLETE_EXT:
+        std::cout << "Framebuffer complete." << std::endl;
+        return true;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: Attachment is NOT complete." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: No image is attached to FBO." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: Attached images have different dimensions." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: Color attached images have different internal formats." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: Draw buffer." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+        std::cout << "[ERROR] Framebuffer incomplete: Read buffer." << std::endl;
+        return false;
+
+    case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+        std::cout << "[ERROR] Unsupported by FBO implementation." << std::endl;
+        return false;
+
+    default:
+        std::cout << "[ERROR] Unknow error." << std::endl;
+        return false;
+    }
+}
+
+#define SHADOWMAPSIZE 512
 
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
@@ -590,6 +647,76 @@ void draw_func(Viewer &vw, double dt){
 	projection(glPopMatrix());
 	}
 
+	static bool init = false;
+//	PFNGLGENFRAMEBUFFERSEXT gl;
+	static void (APIENTRYP glGenFramebuffersEXT)(GLsizei n, GLuint* ids) = NULL;
+	static void (APIENTRYP glBindFramebufferEXT)(GLenum target, GLuint id) = NULL;
+	static PFNGLGENRENDERBUFFERSEXTPROC glGenRenderbuffersEXT = NULL;
+	static PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
+	static PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT = NULL;
+	static PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT = NULL;
+	static PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT = NULL;
+	if(!init){
+		init = true;
+		glGenFramebuffersEXT = (void (APIENTRYP)(GLsizei n, GLuint* ids))wglGetProcAddress("glGenFramebuffersEXT");
+		glBindFramebufferEXT = (void (APIENTRYP)(GLenum target, GLuint id))wglGetProcAddress("glBindFramebufferEXT");
+		glGenRenderbuffersEXT = (PFNGLGENRENDERBUFFERSEXTPROC)wglGetProcAddress("glGenRenderbuffersEXT");
+		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)wglGetProcAddress("glFramebufferTexture2DEXT");
+		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)wglGetProcAddress("glCheckFramebufferStatusEXT");
+		glBindRenderbufferEXT = (PFNGLBINDRENDERBUFFEREXTPROC)wglGetProcAddress("glBindRenderbufferEXT");
+		glRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)wglGetProcAddress("glRenderbufferStorageEXT");
+		glFramebufferRenderbufferEXT = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)wglGetProcAddress("glFramebufferRenderbufferEXT");
+	}
+	static GLuint fbo = 0, rboId = 0, to = 0, tod = 0;
+	if(glGenFramebuffersEXT && glBindFramebufferEXT && !fbo){
+		glGenFramebuffersEXT(1, &fbo);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+
+		// renderbuffer
+        glGenRenderbuffersEXT(1, &rboId);
+        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId);
+        glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE);
+        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+
+		// texture object
+		glGenTextures(1, &to);
+		glBindTexture(GL_TEXTURE_2D, to);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		// texture for depth
+		glGenTextures(1, &tod);
+		glBindTexture(GL_TEXTURE_2D, tod);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
+
+		// attach a renderbuffer to depth attachment point
+//        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, tod, 0);
+
+		checkFramebufferStatus();
+
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	}
+
 	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -610,6 +737,7 @@ void draw_func(Viewer &vw, double dt){
 
 		timemeas_t tm;
 		TimeMeasStart(&tm);
+
 /*		GLpmatrix proj;
 		double scale = vw.zslice ? 1. : 1e-2;
 		projection((
@@ -627,9 +755,93 @@ void draw_func(Viewer &vw, double dt){
 		ie = glGetError();*/
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
+		GLenum glerr20 = glGetError();
 		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
+		GLenum glerr21 = glGetError();
+		if(fbo && glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)){
+			GLpmmatrix pmm;
+			projection((
+				glLoadIdentity(),
+				glOrtho(-1, 1, -1, 1, -1, 1),
+				glScaled(2.5, 2.5, 2.5)
+//				vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
+			));
+			glLoadIdentity();
+			gldMultQuat(Quatd::direction(g_light).cnj());
+			gldTranslate3dv(-vw.pos);
+			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
+			Viewer vw2 = vw;
+			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
+			vw2.gc = &gc;
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+			glClearDepth(1.);
+			glClearColor(0,0,0,1);
+	        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
+			war_draw(vw2, pl.cs, &WarField::draw, tod);
+//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glViewport(0, 0, vw.vp.w, vw.vp.h);
+		}
+		GLenum glerr = glGetError();
 		war_draw(vw, pl.cs, &WarField::draw);
 
+#if 1 // FBO
+		if(to){
+			GLattrib a(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+			{
+			GLpmmatrix pma;
+			projection((glLoadIdentity()));
+			glDisable(GL_LIGHTING);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+			glColor4f(1,1,1,1);
+			glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			glLoadIdentity();
+//			glLoadMatrixd(vw.rot);
+//			gldTranslate3dv(-vw.pos);
+			glBindTexture(GL_TEXTURE_2D, to);
+//			glReadBuffer(GL_BACK);
+//			glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, vw.vp.w, vw.vp.h, 0);
+	//		glReadPixels(0, 0, 512, 512, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+/*			static GLubyte pixels[SHADOWMAPSIZE][SHADOWMAPSIZE][4];
+			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			glRasterPos2d(0, 0);
+			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_RGBA, GL_UNSIGNED_BYTE, pixels);*/
+			}
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			glEnable(GL_TEXTURE_2D);
+			glDisable(GL_BLEND);
+			glDisable(GL_CULL_FACE);
+			{
+			GLmatrix mat;
+			glLoadIdentity();
+			glTranslated(0, 0, -3);
+//			glScaled(.1, .1, .1);
+			glBegin(GL_QUADS);
+			glTexCoord2i(0, 0); glVertex3d( 0, -1, 1);
+			glTexCoord2i(1, 0); glVertex3d( 1, -1, 1);
+			glTexCoord2i(1, 1); glVertex3d( 1, 0, 1);
+			glTexCoord2i(0, 1); glVertex3d( 0, 0, 1);
+			glEnd();
+
+			glBindTexture(GL_TEXTURE_2D, tod);
+			glBegin(GL_QUADS);
+			glTexCoord2i(0, 0); glVertex3d( 0, 0, 1);
+			glTexCoord2i(1, 0); glVertex3d( 1, 0, 1);
+			glTexCoord2i(1, 1); glVertex3d( 1, 1, 1);
+			glTexCoord2i(0, 1); glVertex3d( 0, 1, 1);
+			glEnd();
+			}
+//			static GLubyte pixelsd[SHADOWMAPSIZE][SHADOWMAPSIZE];
+/*			glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
+			glRasterPos2d(0, 0);
+			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);*/
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+#endif
 #if 0 // buffer copy
 		if(!screentex){
 			glGenTextures(1, &screentex);

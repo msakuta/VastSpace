@@ -5,6 +5,7 @@
 #include "judge.h"
 #include "serial_util.h"
 #include "draw/effects.h"
+#include "draw/WarDraw.h"
 //#include "warutil.h"
 extern "C"{
 #include "bitmap.h"

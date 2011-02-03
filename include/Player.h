@@ -28,7 +28,6 @@ class Entity;
 class CoordSys;
 class Viewer;
 struct teleport;
-struct war_draw_data;
 class GLWstateButton;
 
 /** \brief The Player in front of display.

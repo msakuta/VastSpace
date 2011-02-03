@@ -6,6 +6,7 @@
 #include "material.h"
 #include "judge.h"
 #include "effects.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

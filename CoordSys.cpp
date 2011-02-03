@@ -11,6 +11,7 @@
 #include "serial_util.h"
 #include "Respawn.h"
 #include "sqadapt.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>

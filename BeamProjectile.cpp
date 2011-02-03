@@ -3,6 +3,7 @@
  */
 #include "BeamProjectile.h"
 #include "Viewer.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/gldraw.h>

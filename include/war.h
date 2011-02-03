@@ -58,7 +58,7 @@ struct contact_info{
 };
 struct otnt;
 
-typedef struct war_draw_data wardraw_t;
+typedef struct WarDraw wardraw_t;
 struct tent3d_line_list;
 
 struct war_field_static{
@@ -155,26 +155,6 @@ public:
 	static int g_otdrawflags;
 };
 
-struct war_draw_data{
-//	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
-//	void (*light_on)(void); /* processes to turn */
-//	void (*light_off)(void); /* the light on and off. */
-//	COLOR32 ambient; /* environmental color; non light-emitting objects dyed by this */
-//	unsigned char hudcolor[4];
-//	int irot_init; /* inverse rotation */
-//	double (*rot)[16]; /* rotation matrix */
-//	double irot[16];
-//	double view[3]; /* view position */
-//	double viewdir[3]; /* unit vector pointing view direction */
-//	double fov; /* field of view */
-//	GLcull *pgc;
-	Viewer *vw;
-//	double light[3]; /* light direction */
-//	double gametime;
-//	double maprange;
-	int lightdraws;
-	WarField *w;
-};
 
 
 template<Entity *WarField::*list> inline int WarField::countEnts()const{

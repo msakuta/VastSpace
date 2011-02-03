@@ -1,6 +1,7 @@
 #include "shield.h"
 #include "Viewer.h"
 #include "Bullet.h"
+#include "draw/WarDraw.h"
 #include <cpplib/quat.h>
 extern "C"{
 #include <clib/gl/gldraw.h>

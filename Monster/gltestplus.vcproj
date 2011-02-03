@@ -887,6 +887,15 @@
 				RelativePath="..\include\Warpable.h"
 				>
 			</File>
+			<Filter
+				Name="draw"
+				Filter="../include/draw/*"
+				>
+				<File
+					RelativePath="..\include\draw\WarDraw.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"

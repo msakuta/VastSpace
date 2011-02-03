@@ -12,6 +12,7 @@
 #include "Sceptor.h"
 #include "EntityCommand.h"
 #include "draw/effects.h"
+#include "draw/WarDraw.h"
 //#include "sensor.h"
 extern "C"{
 #include "bitmap.h"

@@ -257,7 +257,7 @@ void ContainerHead::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-//	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
 	static bool init = false;
 	static suf_t *sufs[3] = {NULL};

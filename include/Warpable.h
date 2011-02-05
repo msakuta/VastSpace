@@ -87,7 +87,7 @@ private:
 	static const maneuve mymn;
 };
 
-void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);
+EXPORT void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);
 #ifdef NDEBUG
 #define hitbox_draw
 #else

@@ -104,7 +104,22 @@ public:
 };
 
 static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
-static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
+//static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
+class WarDrawInt{
+	Viewer &vw;
+	const CoordSys *cs;
+	void (WarField::*method)(wardraw_t *wd);
+	GLuint tod;
+	bool shadowmapping;
+	void war_draw_int();
+public:
+	WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
+	WarDrawInt(WarDrawInt &vw, const CoordSys *cs);
+	~WarDrawInt();
+	WarDrawInt &shadowmap(bool b = true){shadowmapping = b; return *this;}
+};
+typedef WarDrawInt war_draw;
+
 
 Player pl;
 double &flypower = pl.freelook->flypower;
@@ -369,8 +384,9 @@ static void drawindics(Viewer *vw){
 	if(pl.chase){
 		wardraw_t wd;
 		wd.vw = vw;
-		wd.w = pl.chase->w;
-		pl.chase->drawHUD(&wd);
+		wd.w = *pl.chase->w;
+		if(wd.w)
+			pl.chase->drawHUD(&wd);
 	}
 	pl.drawindics(vw);
 	{
@@ -509,7 +525,7 @@ static void drawindics(Viewer *vw){
 	}
 }
 
-static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod){
+void WarDrawInt::war_draw_int(){
 	Viewer localvw = vw;
 	wardraw_t wd;
 	localvw.cs = cs;
@@ -524,25 +540,30 @@ static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method
 //	wd.maprange = 1.;
 	wd.vw = &localvw;
 	wd.light = g_light;
-	wd.shadowmapping = false;
+	wd.shadowmapping = shadowmapping;
 	wd.texShadow = tod;
-	wd.w = cs->w;
-	GLmatrix ma;
-	gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
-	gldMultQuat(vw.cs->tocsq(cs));
-	(cs->w->*method)(&wd);
+	wd.w = *cs->w;
+	if(wd.w){
+		GLmatrix ma;
+		gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
+		gldMultQuat(vw.cs->tocsq(cs));
+		(cs->w->*method)(&wd);
+	}
 }
 
 /// \param tod Texture of Depth
-static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod){
+WarDrawInt::WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::* method)(wardraw_t *w), GLuint tod) : vw(vw), cs(cs), method(method), tod(tod), shadowmapping(false){}
+
+/// Destructor actualy does drawing
+WarDrawInt::~WarDrawInt(){
 	if(cs->parent)
-		war_draw(vw, cs->parent, method, tod);
+		war_draw(vw, cs->parent, method, tod).shadowmap(shadowmapping);
 	if(cs->w){
 		// Call an internal function to avoid excess use of the stack by recursive calls.
 		// It also helps the optimizer to reduce frame pointers.
-		war_draw_int(vw, cs, method, tod);
+		war_draw_int();
 	}
-	if(pl.cs == cs && method != &WarField::drawOverlay){
+	if(pl.cs == cs && method != &WarField::drawOverlay && !shadowmapping){
 		(pl.*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&vw);
 	}
 }
@@ -756,6 +777,7 @@ void draw_func(Viewer &vw, double dt){
 		if(fbo && glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)){
 			fboUsed = true;
 			Mat4d proj;
+			Mat4d lightModelView;
 			{
 			GLpmmatrix pmm;
 			projection((
@@ -770,25 +792,25 @@ void draw_func(Viewer &vw, double dt){
 			glClearColor(0,0,0,1);
 	        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glLoadIdentity();
+			lightModelView = Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos);
+			glLoadMatrixd(lightModelView);
 
-			{
 			GLattrib gla(GL_POLYGON_BIT);
 			glCullFace(GL_FRONT);
+			glEnable(GL_POLYGON_OFFSET_FILL);
 
-			//			glFrontFace(GL_CW);
-			gldMultQuat(Quatd::direction(g_light).cnj());
-			gldTranslate3dv(-vw.pos);
+			// This polygon offset prevents aliasing of two-sided polys.
+			glPolygonOffset(1., 1.);
+
 			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
 			Viewer vw2 = vw;
 			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
 			vw2.gc = &gc;
 //			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-			war_draw(vw2, pl.cs, &WarField::draw);
+			war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
 //			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glViewport(0, 0, vw.vp.w, vw.vp.h);
-			}
 			glGetDoublev(GL_PROJECTION_MATRIX, proj);
 			}
 
@@ -813,7 +835,7 @@ void draw_func(Viewer &vw, double dt){
 									Vec4d(.0, .5, .0, .0),
 									Vec4d(.0, .0, .5, .0),
 									Vec4d(.5, .5, .5, 1.));	//bias from [-1, 1] to [0, 1]
-			Mat4d textureMatrix = (biasMatrix2 * proj * Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos)).transpose()/**lightProjectionMatrix*lightViewMatrix*/;
+			Mat4d textureMatrix = (biasMatrix2 * proj * lightModelView).transpose();
 			glEnable(GL_TEXTURE_GEN_S);
 			glEnable(GL_TEXTURE_GEN_T);
 			glEnable(GL_TEXTURE_GEN_R);
@@ -827,26 +849,22 @@ void draw_func(Viewer &vw, double dt){
 			glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.vec4(2));
 			glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.vec4(3));
 
-			if(true || fmod(vw.viewtime, 2. ) < 1.){
-				//Enable shadow comparison
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
+			//Enable shadow comparison
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
 
-				//Shadow comparison should be true (ie not in shadow) if r<=texture
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LESS);
+			//Shadow comparison should be true (ie not in shadow) if r<=texture
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
 
-				//Shadow comparison should generate an INTENSITY result
-				glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
+			//Shadow comparison should generate an INTENSITY result
+			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
 
-				//Set alpha test to discard false comparisons
-				glAlphaFunc(GL_GEQUAL, 0.99f);
-				glEnable(GL_ALPHA_TEST);
-			}
-			else{
-				//Enable shadow comparison
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
+			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+			//Set alpha test to discard false comparisons
+			glAlphaFunc(GL_GEQUAL, 0.99f);
+			glEnable(GL_ALPHA_TEST);
 
-			}
 			glActiveTextureARB(GL_TEXTURE0_ARB);
+
 			glDepthFunc(GL_LEQUAL);
 
 			war_draw(vw, pl.cs, &WarField::draw, tod);

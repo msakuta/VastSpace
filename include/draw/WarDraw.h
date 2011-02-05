@@ -3,6 +3,7 @@
 #include "war.h"
 #include <gl/gl.h>
 
+/// Parameters when drawing a WarSpace.
 struct WarDraw{
 //	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
 //	void (*light_on)(void); /* processes to turn */
@@ -16,14 +17,14 @@ struct WarDraw{
 //	double viewdir[3]; /* unit vector pointing view direction */
 //	double fov; /* field of view */
 //	GLcull *pgc;
-	Viewer *vw;
-	Vec3d light; ///< light direction
+	Viewer *vw; ///< The viewer object
+	Vec3d light; ///< Light direction in world coordinates
 //	double gametime;
 //	double maprange;
-	int lightdraws;
+	int lightdraws; ///< Counter of drawing of lit objects
 	bool shadowmapping; ///< Wheter this pass draws shadow map.
 	GLubyte texShadow; ///< The texture name for the shadow map.
-	WarField *w;
+	WarSpace *w; ///< Reference to the associated WarSpace.
 	WarDraw() : shadowmapping(false), texShadow(0){}
 };
 

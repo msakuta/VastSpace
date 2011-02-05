@@ -362,7 +362,7 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
 	double x = v * 2. - 1., h = MIN(.1, .1 / (1. + scale)), hs = h / 2.;
-	if(!g_healthbar || !Player::g_overlay)
+	if(!g_healthbar || !Player::g_overlay || wd->shadowmapping)
 		return;
 	if(g_healthbar == 1 && wd->w && wd->w->pl){
 		Entity *pt2;

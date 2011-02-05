@@ -422,7 +422,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 					tex4[pos][0] = bmi->bmiColors[idx].rgbRed;
 					tex4[pos][1] = bmi->bmiColors[idx].rgbGreen;
 					tex4[pos][2] = bmi->bmiColors[idx].rgbBlue;
-					tex4[pos][3] = stp->mipmap & 0x80 ? idx ? 255 : 0 : 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+//					tex4[pos][3] = stp->mipmap & 0x80 ? idx ? 255 : 0 : 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+					tex4[pos][3] = stp->transparentColor == idx ? 0 : 255;
 				}
 			}
 		}
@@ -452,7 +453,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 				tex4[pos][0] = bmi->bmiColors[idx].rgbRed;
 				tex4[pos][1] = bmi->bmiColors[idx].rgbGreen;
 				tex4[pos][2] = bmi->bmiColors[idx].rgbBlue;
-				tex4[pos][3] = 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+//				tex4[pos][3] = 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+				tex4[pos][3] = stp->transparentColor == idx ? 0 : 255;
 			}
 		}
 		else{
@@ -489,7 +491,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 				tex4[pos][0] = src[pos][2];
 				tex4[pos][1] = src[pos][1];
 				tex4[pos][2] = src[pos][0];
-				tex4[pos][3] = alphatex ? alphasrc[pos] : 255;
+				tex4[pos][3] = alphatex ? alphasrc[pos] : stp->transparentColor == tex4[pos][0] | (tex4[pos][1] << 8) | (tex4[pos][2] << 16) ? 0 : 255;
 			}
 		}
 		else{

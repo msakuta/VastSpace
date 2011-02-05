@@ -532,6 +532,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\include\clib\gl\fbo.h"
+					>
+				</File>
+				<File
 					RelativePath="..\include\clib\gl\gldraw.h"
 					>
 				</File>

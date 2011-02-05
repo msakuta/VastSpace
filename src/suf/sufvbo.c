@@ -242,13 +242,13 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 				}
 			}
 			else{
-				glBindTexture(GL_TEXTURE_2D, 0);
+/*				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
 				if(glActiveTextureARB){
 					glActiveTextureARB(GL_TEXTURE1_ARB);
 					glDisable(GL_TEXTURE_2D);
 					glActiveTextureARB(GL_TEXTURE0_ARB);
-				}
+				}*/
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, vbo->natris[i]);

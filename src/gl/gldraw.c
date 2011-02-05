@@ -1,5 +1,6 @@
 #include "clib/gl/gldraw.h"
 #include "clib/gl/multitex.h"
+#include "clib/gl/fbo.h"
 #include "clib/avec3.h"
 #include "clib/aquatrot.h"
 #include "clib/amat4.h"
@@ -31,13 +32,47 @@ PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB = NULL;
 PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB = NULL;
 PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB = NULL;
 
-void MultiTextureInit(){
-	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB");
-	glMultiTexCoord3dARB = (PFNGLMULTITEXCOORD3DARBPROC)wglGetProcAddress("glMultiTexCoord3dARB");
-	glMultiTexCoord3dvARB = (PFNGLMULTITEXCOORD3DVARBPROC)wglGetProcAddress("glMultiTexCoord3dvARB");
-	glMultiTexCoord2dARB = (PFNGLMULTITEXCOORD2DARBPROC)wglGetProcAddress("glMultiTexCoord2dARB");
-	glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC)wglGetProcAddress("glMultiTexCoord2fARB");
-	glMultiTexCoord1fARB = (PFNGLMULTITEXCOORD1FARBPROC)wglGetProcAddress("glMultiTexCoord1fARB");
+/// Returns nonzero if the multitexturing is available.
+int MultiTextureInit(){
+	static init = 0;
+	static ret = 0;
+	if(!init){
+		ret = init = 1;
+		ret &= !!(glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)wglGetProcAddress("glActiveTextureARB"));
+		ret &= !!(glMultiTexCoord3dARB = (PFNGLMULTITEXCOORD3DARBPROC)wglGetProcAddress("glMultiTexCoord3dARB"));
+		ret &= !!(glMultiTexCoord3dvARB = (PFNGLMULTITEXCOORD3DVARBPROC)wglGetProcAddress("glMultiTexCoord3dvARB"));
+		ret &= !!(glMultiTexCoord2dARB = (PFNGLMULTITEXCOORD2DARBPROC)wglGetProcAddress("glMultiTexCoord2dARB"));
+		ret &= !!(glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC)wglGetProcAddress("glMultiTexCoord2fARB"));
+		ret &= !!(glMultiTexCoord1fARB = (PFNGLMULTITEXCOORD1FARBPROC)wglGetProcAddress("glMultiTexCoord1fARB"));
+	}
+	return ret;
+}
+
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
+PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = NULL;
+PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = NULL;
+PFNGLGENRENDERBUFFERSEXTPROC glGenRenderbuffersEXT = NULL;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
+PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT = NULL;
+PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT = NULL;
+PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT = NULL;
+
+/// Returns nonzero if the FBO is available.
+int FBOInit(){
+	static init = 0;
+	static ret = 0;
+	if(!init){
+		ret = init = 1;
+		ret &= !!(glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)wglGetProcAddress("glCheckFramebufferStatusEXT"));
+		ret &= !!(glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT"));
+		ret &= !!(glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC)wglGetProcAddress("glBindFramebufferEXT"));
+		ret &= !!(glGenRenderbuffersEXT = (PFNGLGENRENDERBUFFERSEXTPROC)wglGetProcAddress("glGenRenderbuffersEXT"));
+		ret &= !!(glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)wglGetProcAddress("glFramebufferTexture2DEXT"));
+		ret &= !!(glBindRenderbufferEXT = (PFNGLBINDRENDERBUFFEREXTPROC)wglGetProcAddress("glBindRenderbufferEXT"));
+		ret &= !!(glRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)wglGetProcAddress("glRenderbufferStorageEXT"));
+		ret &= !!(glFramebufferRenderbufferEXT = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)wglGetProcAddress("glFramebufferRenderbufferEXT"));
+	}
+	return ret;
 }
 
 void gldColor32(COLOR32 col){
@@ -900,10 +935,10 @@ void gldTextureBeam(const double view[3], const double start[3], const double en
 	glRotated(atan2(sx, sy) * 360 / 2 / M_PI, 0., -1., 0.);
 	glScaled(width, len, 1.);
 	glBegin(GL_QUADS);
-	glTexCoord2d(0., 0.); glVertex3d(-1., 0., 0.);
-	glTexCoord2d(0., 1.); glVertex3d(-1., 1., 0.);
-	glTexCoord2d(1., 1.); glVertex3d( 1., 1., 0.);
-	glTexCoord2d(1., 0.); glVertex3d( 1., 0., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., 0.); glTexCoord2d(0., 0.); glVertex3d(-1., 0., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 0., 1.); glTexCoord2d(0., 1.); glVertex3d(-1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., 1.); glTexCoord2d(1., 1.); glVertex3d( 1., 1., 0.);
+	glMultiTexCoord2dARB(GL_TEXTURE1_ARB, 1., 0.); glTexCoord2d(1., 0.); glVertex3d( 1., 0., 0.);
 	glEnd();
 	glPopMatrix();
 }

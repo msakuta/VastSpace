@@ -13,6 +13,6 @@ extern PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
 extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
 extern PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
 
-void MultiTextureInit();
+int MultiTextureInit();
 
 #endif

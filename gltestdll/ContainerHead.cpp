@@ -13,6 +13,8 @@
 //#include "sensor.h"
 #include "motion.h"
 #include "btadapt.h"
+#include "glstack.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -277,6 +279,8 @@ void ContainerHead::draw(wardraw_t *wd){
 		}
 		init = true;
 	}
+	static int drawcount = 0;
+	drawcount++;
 	{
 		static const double normal[3] = {0., 1., 0.};
 		double scale = sufscale;
@@ -295,9 +299,12 @@ void ContainerHead::draw(wardraw_t *wd){
 			}
 			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
 				if(vbo)
-					DrawVBO(vbo, SUF_ATR | SUF_TEX, tex);
+					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
 				else if(suf)
 					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
+			}
+			void glTranslated(double x, double y, double z){
+				::glTranslated(x, y, z);
 			}
 		} id(wd);
 
@@ -317,21 +324,41 @@ void ContainerHead::draw(wardraw_t *wd){
 		}
 #endif
 
+		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+/*		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		if(wd->texShadow){
+			glBindTexture(GL_TEXTURE_2D, wd->texShadow);
+			glEnable(GL_TEXTURE_2D);
+		}
+		else{
+			glDisable(GL_ALPHA_TEST);
+		}*/
+//		glEnable(GL_ALPHA_TEST);
+//		glAlphaFunc(GL_GEQUAL, .5f);
+
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
-		glTranslated(0, 0, 150 * ncontainers);
+		id.glTranslated(0, 0, 150 * ncontainers);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
-		glTranslated(0, 0, -150);
+		id.glTranslated(0, 0, -150);
 		for(int i = 0; i < ncontainers; i++){
 			id.drawModel(sufs[1], vbo[1], pst[1]);
-			glTranslated(0, 0, -300);
+			id.glTranslated(0, 0, -300);
 		}
-		glTranslated(0, 0, 150);
+		id.glTranslated(0, 0, 150);
 		id.drawModel(sufs[2], vbo[2], pst[2]);
 		glPopMatrix();
 
+/*		glMatrixMode(GL_TEXTURE);
 		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);*/
+
+		glPopMatrix();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 }
 

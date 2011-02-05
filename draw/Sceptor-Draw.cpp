@@ -156,7 +156,7 @@ void Sceptor::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
-#if 1
+#if 0
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();

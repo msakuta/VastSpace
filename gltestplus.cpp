@@ -72,6 +72,7 @@ extern "C"{
 
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
+#define texturemat(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
 
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
@@ -521,8 +522,10 @@ static void war_draw_int(Viewer &vw, const CoordSys *cs, void (WarField::*method
 	wd.lightdraws = 0;
 //	wd.maprange = 1.;
 	wd.vw = &localvw;
+	wd.light = g_light;
+	wd.shadowmapping = false;
+	wd.texShadow = tod;
 	wd.w = cs->w;
-	wd.shadowmapping = tod;
 	GLmatrix ma;
 	gldTranslate3dv(vw.cs->tocs(avec3_000, cs));
 	gldMultQuat(vw.cs->tocsq(cs));
@@ -599,7 +602,7 @@ bool checkFramebufferStatus()
     }
 }
 
-#define SHADOWMAPSIZE 512
+#define SHADOWMAPSIZE 1024
 
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
@@ -681,13 +684,17 @@ void draw_func(Viewer &vw, double dt){
 		// texture object
 		glGenTextures(1, &to);
 		glBindTexture(GL_TEXTURE_2D, to);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 //		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -758,37 +765,136 @@ void draw_func(Viewer &vw, double dt){
 		GLenum glerr20 = glGetError();
 		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 		GLenum glerr21 = glGetError();
+		bool fboUsed = false;
 		if(fbo && glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)){
+			fboUsed = true;
+			Mat4d proj;
+			{
 			GLpmmatrix pmm;
 			projection((
 				glLoadIdentity(),
 				glOrtho(-1, 1, -1, 1, -1, 1),
-				glScaled(2.5, 2.5, 2.5)
+				gldScaled(4)
 //				vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
 			));
+
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+			glClearDepth(1.);
+			glClearColor(0,0,0,1);
+	        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 			glLoadIdentity();
+
+			glPushMatrix();
+			glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT);
+			glDepthMask(GL_FALSE);
+			glDisable(GL_LIGHTING);
+			gldScaled(1. / 4);
+			glBegin(GL_QUADS);
+			glColor4f(0,0,0,1);
+			glVertex3d(-1,-1,0);
+			glColor4f(1,0,0,1);
+			glVertex3d( 1,-1,0);
+			glColor4f(1,1,0,1);
+			glVertex3d( 1, 1,0);
+			glColor4f(0,1,0,1);
+			glVertex3d(-1, 1,0);
+			glEnd();
+			glPopAttrib();
+			glPopMatrix();
+
+			{
+			GLattrib gla(GL_POLYGON_BIT);
+			glCullFace(GL_FRONT);
+
+			//			glFrontFace(GL_CW);
 			gldMultQuat(Quatd::direction(g_light).cnj());
 			gldTranslate3dv(-vw.pos);
 			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
 			Viewer vw2 = vw;
 			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
 			vw2.gc = &gc;
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-			glClearDepth(1.);
-			glClearColor(0,0,0,1);
-	        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 //			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-			war_draw(vw2, pl.cs, &WarField::draw, tod);
+			war_draw(vw2, pl.cs, &WarField::draw);
 //			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glViewport(0, 0, vw.vp.w, vw.vp.h);
+			}
+			glGetDoublev(GL_PROJECTION_MATRIX, proj);
+			}
+
+			glPushAttrib(GL_LIGHTING_BIT);
+			glDisable(GL_LIGHT0);
+			war_draw(vw, pl.cs, &WarField::draw);
+			glPopAttrib();
+
+//			glClear(GL_DEPTH_BUFFER_BIT);
+
+			texturemat(glPushMatrix());
+
+			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, tod);
+			static Mat4d biasMatrix(Vec4d(.5, .0, .0, .5),
+									Vec4d(.0, .5, .0, .5),
+									Vec4d(.0, .0, .5, .5),
+									Vec4d(.0, .0, .0, 1.));	//bias from [-1, 1] to [0, 1]
+			static Mat4d biasMatrix2(Vec4d(.5, .0, .0, .0),
+									Vec4d(.0, .5, .0, .0),
+									Vec4d(.0, .0, .5, .0),
+									Vec4d(.5, .5, .5, 1.));	//bias from [-1, 1] to [0, 1]
+			Mat4d textureMatrix = (biasMatrix2 * proj * Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos)).transpose()/**lightProjectionMatrix*lightViewMatrix*/;
+			glEnable(GL_TEXTURE_GEN_S);
+			glEnable(GL_TEXTURE_GEN_T);
+			glEnable(GL_TEXTURE_GEN_R);
+			glEnable(GL_TEXTURE_GEN_Q);
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+			glTexGendv(GL_S, GL_EYE_PLANE, textureMatrix.vec4(0));
+			glTexGendv(GL_T, GL_EYE_PLANE, textureMatrix.vec4(1));
+			glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.vec4(2));
+			glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.vec4(3));
+
+			if(true || fmod(vw.viewtime, 2. ) < 1.){
+				//Enable shadow comparison
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
+
+				//Shadow comparison should be true (ie not in shadow) if r<=texture
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
+
+				//Shadow comparison should generate an INTENSITY result
+				glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
+
+				//Set alpha test to discard false comparisons
+				glAlphaFunc(GL_GEQUAL, 0.99f);
+				glEnable(GL_ALPHA_TEST);
+			}
+			else{
+				//Enable shadow comparison
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
+
+			}
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glDepthFunc(GL_LEQUAL);
+
+			war_draw(vw, pl.cs, &WarField::draw, tod);
+
+			glActiveTextureARB(GL_TEXTURE2_ARB);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+
+			glPopAttrib();
+			texturemat(glPopMatrix());
 		}
-		GLenum glerr = glGetError();
-		war_draw(vw, pl.cs, &WarField::draw);
+		else
+			war_draw(vw, pl.cs, &WarField::draw);
 
 #if 1 // FBO
 		if(to){
+			static GLubyte pixels[SHADOWMAPSIZE][SHADOWMAPSIZE][4];
 			GLattrib a(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 			{
 			GLpmmatrix pma;
@@ -805,11 +911,11 @@ void draw_func(Viewer &vw, double dt){
 //			glReadBuffer(GL_BACK);
 //			glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, vw.vp.w, vw.vp.h, 0);
 	//		glReadPixels(0, 0, 512, 512, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-/*			static GLubyte pixels[SHADOWMAPSIZE][SHADOWMAPSIZE][4];
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+/*			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 			glRasterPos2d(0, 0);
 			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_RGBA, GL_UNSIGNED_BYTE, pixels);*/
 			}
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			glEnable(GL_TEXTURE_2D);
 			glDisable(GL_BLEND);
@@ -817,8 +923,8 @@ void draw_func(Viewer &vw, double dt){
 			{
 			GLmatrix mat;
 			glLoadIdentity();
-			glTranslated(0, 0, -3);
-//			glScaled(.1, .1, .1);
+			glTranslated(.5, .5, -3);
+			glScaled(.5, .5, .5);
 			glBegin(GL_QUADS);
 			glTexCoord2i(0, 0); glVertex3d( 0, -1, 1);
 			glTexCoord2i(1, 0); glVertex3d( 1, -1, 1);
@@ -826,18 +932,18 @@ void draw_func(Viewer &vw, double dt){
 			glTexCoord2i(0, 1); glVertex3d( 0, 0, 1);
 			glEnd();
 
-			glBindTexture(GL_TEXTURE_2D, tod);
+/*			glBindTexture(GL_TEXTURE_2D, tod);
 			glBegin(GL_QUADS);
 			glTexCoord2i(0, 0); glVertex3d( 0, 0, 1);
 			glTexCoord2i(1, 0); glVertex3d( 1, 0, 1);
 			glTexCoord2i(1, 1); glVertex3d( 1, 1, 1);
 			glTexCoord2i(0, 1); glVertex3d( 0, 1, 1);
-			glEnd();
+			glEnd();*/
 			}
 //			static GLubyte pixelsd[SHADOWMAPSIZE][SHADOWMAPSIZE];
-/*			glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
-			glRasterPos2d(0, 0);
-			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);*/
+//			glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
+//			glRasterPos2d(0, 0);
+//			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}

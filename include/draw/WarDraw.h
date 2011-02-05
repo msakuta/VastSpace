@@ -1,6 +1,7 @@
 #ifndef WARDRAW_H
 #define WARDRAW_H
 #include "war.h"
+#include <gl/gl.h>
 
 struct WarDraw{
 //	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
@@ -16,12 +17,12 @@ struct WarDraw{
 //	double fov; /* field of view */
 //	GLcull *pgc;
 	Viewer *vw;
-//	double light[3]; /* light direction */
+	Vec3d light; ///< light direction
 //	double gametime;
 //	double maprange;
 	int lightdraws;
 	bool shadowmapping; ///< Wheter this pass draws shadow map.
-	unsigned texShadow; ///< The texture name for the shadow map.
+	GLubyte texShadow; ///< The texture name for the shadow map.
 	WarField *w;
 	WarDraw() : shadowmapping(false), texShadow(0){}
 };

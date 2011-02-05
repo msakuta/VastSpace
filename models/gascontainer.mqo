@@ -4,15 +4,15 @@ Format Text Ver 1.0
 Scene {
 	pos -330.0950 75.2043 1500.0000
 	lookat 0.0000 0.0000 0.0000
-	head 3.4064
-	pich 0.2792
+	head 3.1064
+	pich 0.3792
 	ortho 0
 	zoom2 1.9531
 	amb 0.250 0.250 0.250
 }
 Material 3 {
 	"rail" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00) tex("containerrail.bmp")
-	"gastank" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00)
+	"gastank" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00) tex("E:\projects\gltestplus\models\bricks.bmp")
 	"container_connect" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("container_connect.bmp")
 }
 Object "gascontainer" {

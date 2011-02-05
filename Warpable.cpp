@@ -19,6 +19,7 @@
 //#include "sensor.h"
 #include "motion.h"
 #include "draw/WarDraw.h"
+#include "glsl.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -372,6 +373,8 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 		if(!pt2)
 			return;
 	}
+	if(wd->shader)
+		glUseProgram(0);
 	glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT | GL_TEXTURE_BIT);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
@@ -448,6 +451,8 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 	glEnd();*/
 	glPopMatrix();
 	glPopAttrib();
+	if(wd->shader)
+		glUseProgram(wd->shader);
 }
 
 

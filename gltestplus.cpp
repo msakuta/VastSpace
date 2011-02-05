@@ -46,6 +46,7 @@ extern "C"{
 #include <clib/aquatrot.h>
 #include <clib/gl/gldraw.h>
 #include <clib/gl/multitex.h>
+#include <clib/gl/fbo.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/zip/UnZip.h>
 }
@@ -553,8 +554,6 @@ static void cswardraw(const Viewer *vw, CoordSys *cs, void (CoordSys::*method)(c
 	}
 }
 
-static PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
-
 ///////////////////////////////////////////////////////////////////////////////
 // check FBO completeness
 ///////////////////////////////////////////////////////////////////////////////
@@ -602,7 +601,7 @@ bool checkFramebufferStatus()
     }
 }
 
-#define SHADOWMAPSIZE 1024
+#define SHADOWMAPSIZE 2048
 
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
@@ -650,28 +649,8 @@ void draw_func(Viewer &vw, double dt){
 	projection(glPopMatrix());
 	}
 
-	static bool init = false;
-//	PFNGLGENFRAMEBUFFERSEXT gl;
-	static void (APIENTRYP glGenFramebuffersEXT)(GLsizei n, GLuint* ids) = NULL;
-	static void (APIENTRYP glBindFramebufferEXT)(GLenum target, GLuint id) = NULL;
-	static PFNGLGENRENDERBUFFERSEXTPROC glGenRenderbuffersEXT = NULL;
-	static PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
-	static PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT = NULL;
-	static PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT = NULL;
-	static PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT = NULL;
-	if(!init){
-		init = true;
-		glGenFramebuffersEXT = (void (APIENTRYP)(GLsizei n, GLuint* ids))wglGetProcAddress("glGenFramebuffersEXT");
-		glBindFramebufferEXT = (void (APIENTRYP)(GLenum target, GLuint id))wglGetProcAddress("glBindFramebufferEXT");
-		glGenRenderbuffersEXT = (PFNGLGENRENDERBUFFERSEXTPROC)wglGetProcAddress("glGenRenderbuffersEXT");
-		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)wglGetProcAddress("glFramebufferTexture2DEXT");
-		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)wglGetProcAddress("glCheckFramebufferStatusEXT");
-		glBindRenderbufferEXT = (PFNGLBINDRENDERBUFFEREXTPROC)wglGetProcAddress("glBindRenderbufferEXT");
-		glRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)wglGetProcAddress("glRenderbufferStorageEXT");
-		glFramebufferRenderbufferEXT = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)wglGetProcAddress("glFramebufferRenderbufferEXT");
-	}
 	static GLuint fbo = 0, rboId = 0, to = 0, tod = 0;
-	if(glGenFramebuffersEXT && glBindFramebufferEXT && !fbo){
+	if(FBOInit() && !fbo){
 		glGenFramebuffersEXT(1, &fbo);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 
@@ -691,10 +670,12 @@ void draw_func(Viewer &vw, double dt){
 		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 //		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -702,13 +683,19 @@ void draw_func(Viewer &vw, double dt){
 		// texture for depth
 		glGenTextures(1, &tod);
 		glBindTexture(GL_TEXTURE_2D, tod);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
 //		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -785,24 +772,6 @@ void draw_func(Viewer &vw, double dt){
 
 			glLoadIdentity();
 
-			glPushMatrix();
-			glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT);
-			glDepthMask(GL_FALSE);
-			glDisable(GL_LIGHTING);
-			gldScaled(1. / 4);
-			glBegin(GL_QUADS);
-			glColor4f(0,0,0,1);
-			glVertex3d(-1,-1,0);
-			glColor4f(1,0,0,1);
-			glVertex3d( 1,-1,0);
-			glColor4f(1,1,0,1);
-			glVertex3d( 1, 1,0);
-			glColor4f(0,1,0,1);
-			glVertex3d(-1, 1,0);
-			glEnd();
-			glPopAttrib();
-			glPopMatrix();
-
 			{
 			GLattrib gla(GL_POLYGON_BIT);
 			glCullFace(GL_FRONT);
@@ -863,7 +832,7 @@ void draw_func(Viewer &vw, double dt){
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
 
 				//Shadow comparison should be true (ie not in shadow) if r<=texture
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LESS);
 
 				//Shadow comparison should generate an INTENSITY result
 				glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
@@ -892,62 +861,6 @@ void draw_func(Viewer &vw, double dt){
 		else
 			war_draw(vw, pl.cs, &WarField::draw);
 
-#if 1 // FBO
-		if(to){
-			static GLubyte pixels[SHADOWMAPSIZE][SHADOWMAPSIZE][4];
-			GLattrib a(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-			{
-			GLpmmatrix pma;
-			projection((glLoadIdentity()));
-			glDisable(GL_LIGHTING);
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_BLEND);
-			glColor4f(1,1,1,1);
-			glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glLoadIdentity();
-//			glLoadMatrixd(vw.rot);
-//			gldTranslate3dv(-vw.pos);
-			glBindTexture(GL_TEXTURE_2D, to);
-//			glReadBuffer(GL_BACK);
-//			glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, vw.vp.w, vw.vp.h, 0);
-	//		glReadPixels(0, 0, 512, 512, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-/*			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-			glRasterPos2d(0, 0);
-			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_RGBA, GL_UNSIGNED_BYTE, pixels);*/
-			}
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
-			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glEnable(GL_TEXTURE_2D);
-			glDisable(GL_BLEND);
-			glDisable(GL_CULL_FACE);
-			{
-			GLmatrix mat;
-			glLoadIdentity();
-			glTranslated(.5, .5, -3);
-			glScaled(.5, .5, .5);
-			glBegin(GL_QUADS);
-			glTexCoord2i(0, 0); glVertex3d( 0, -1, 1);
-			glTexCoord2i(1, 0); glVertex3d( 1, -1, 1);
-			glTexCoord2i(1, 1); glVertex3d( 1, 0, 1);
-			glTexCoord2i(0, 1); glVertex3d( 0, 0, 1);
-			glEnd();
-
-/*			glBindTexture(GL_TEXTURE_2D, tod);
-			glBegin(GL_QUADS);
-			glTexCoord2i(0, 0); glVertex3d( 0, 0, 1);
-			glTexCoord2i(1, 0); glVertex3d( 1, 0, 1);
-			glTexCoord2i(1, 1); glVertex3d( 1, 1, 1);
-			glTexCoord2i(0, 1); glVertex3d( 0, 1, 1);
-			glEnd();*/
-			}
-//			static GLubyte pixelsd[SHADOWMAPSIZE][SHADOWMAPSIZE];
-//			glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
-//			glRasterPos2d(0, 0);
-//			glDrawPixels(SHADOWMAPSIZE, SHADOWMAPSIZE, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
-
-			glBindTexture(GL_TEXTURE_2D, 0);
-		}
-#endif
 #if 0 // buffer copy
 		if(!screentex){
 			glGenTextures(1, &screentex);

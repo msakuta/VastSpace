@@ -393,6 +393,10 @@ static void cachemtex(const suftexparam_t *stp){
 	else
 		glDisable(GL_ALPHA_TEST);
 	glEnable(GL_TEXTURE_2D);
+	{
+		GLfloat envcolor[4] = {1., 1., 1., 1.};
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+	}
 }
 
 static GLuint cachetex(const suftexparam_t *stp){

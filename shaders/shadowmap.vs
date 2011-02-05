@@ -15,6 +15,8 @@ void main(void)
 
 	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
 	gl_TexCoord[2] = gl_TextureMatrix[2] * gl_ModelViewMatrix * gl_Vertex;
+	gl_TexCoord[3] = gl_TextureMatrix[3] * gl_ModelViewMatrix * gl_Vertex;
+	gl_TexCoord[4] = gl_TextureMatrix[4] * gl_ModelViewMatrix * gl_Vertex;
 
 	gl_Position = ftransform();
 }

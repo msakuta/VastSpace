@@ -158,7 +158,7 @@ void Attacker::draw(wardraw_t *wd){
 		transform(mat);
 		glMultMatrixd(mat);
 
-#if 1
+#if 0
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();

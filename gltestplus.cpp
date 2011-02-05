@@ -600,7 +600,7 @@ bool checkFramebufferStatus()
     switch(status)
     {
     case GL_FRAMEBUFFER_COMPLETE_EXT:
-        std::cout << "Framebuffer complete." << std::endl;
+//        std::cout << "Framebuffer complete." << std::endl;
         return true;
 
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
@@ -637,7 +637,7 @@ bool checkFramebufferStatus()
     }
 }
 
-#define SHADOWMAPSIZE 2048
+#define SHADOWMAPSIZE 1024
 
 void draw_func(Viewer &vw, double dt){
 	glClearDepth(1.);
@@ -685,7 +685,8 @@ void draw_func(Viewer &vw, double dt){
 	projection(glPopMatrix());
 	}
 
-	static GLuint fbo = 0, rboId = 0, to = 0, tod = 0;
+	static GLuint fbo = 0, rboId = 0, to = 0;
+	static GLuint depthTextures[3] = {0};
 	if(FBOInit() && !fbo){
 		glGenFramebuffersEXT(1, &fbo);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
@@ -699,10 +700,10 @@ void draw_func(Viewer &vw, double dt){
 		// texture object
 		glGenTextures(1, &to);
 		glBindTexture(GL_TEXTURE_2D, to);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -717,30 +718,33 @@ void draw_func(Viewer &vw, double dt){
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		// texture for depth
-		glGenTextures(1, &tod);
-		glBindTexture(GL_TEXTURE_2D, tod);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
-//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glGenTextures(3, depthTextures);
+		for(int i = 0; i < 3; i++){
+			GLuint tod = depthTextures[i];
+			glBindTexture(GL_TEXTURE_2D, tod);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+	//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
 
 		// attach a renderbuffer to depth attachment point
 //        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, tod, 0);
+//		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, tod, 0);
 
 		checkFramebufferStatus();
 
@@ -788,50 +792,55 @@ void draw_func(Viewer &vw, double dt){
 		GLenum glerr20 = glGetError();
 		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 		GLenum glerr21 = glGetError();
-		if(fbo && glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)){
-			Mat4d proj;
+		if(fbo && checkFramebufferStatus()){
+			Mat4d lightProjection[3];
 			Mat4d lightModelView;
-			GLfloat shadowCell = 1. / 1.;
+			GLfloat shadowCell[3] = {1. / 2., 1. / .5, 1. / .1};
 			{
-			GLpmmatrix pmm;
-			projection((
-				glLoadIdentity(),
-				glOrtho(-1, 1, -1, 1, -1, 1),
-				gldScaled(shadowCell)
-//				vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
-			));
-
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-			glClearDepth(1.);
-			glClearColor(0,0,0,1);
-	        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++) if(checkFramebufferStatus()){
+				GLpmmatrix pmm;
+				projection((
+					glLoadIdentity(),
+					glOrtho(-1, 1, -1, 1, -10, 10),
+					gldScaled(shadowCell[i])
+	//				vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
+				));
 
-			lightModelView = Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos);
-			glLoadMatrixd(lightModelView);
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, depthTextures[i], 0);
 
-			GLattrib gla(GL_POLYGON_BIT);
-			glCullFace(GL_FRONT);
-			glEnable(GL_POLYGON_OFFSET_FILL);
+				glClearDepth(1.);
+				glClearColor(0,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			// This polygon offset prevents aliasing of two-sided polys.
-			glPolygonOffset(1., 1.);
+				lightModelView = Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos);
+				glLoadMatrixd(lightModelView);
 
-			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
-			Viewer vw2 = vw;
-			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
-			vw2.gc = &gc;
-//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-			war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
-//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
+				GLattrib gla(GL_POLYGON_BIT);
+				glCullFace(GL_FRONT);
+				glEnable(GL_POLYGON_OFFSET_FILL);
+
+				// This polygon offset prevents aliasing of two-sided polys.
+				glPolygonOffset(1., 1.);
+
+				glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
+				Viewer vw2 = vw;
+				GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
+				vw2.gc = &gc;
+	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
+				war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
+	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
+				glGetDoublev(GL_PROJECTION_MATRIX, lightProjection[i]);
+			}
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glViewport(0, 0, vw.vp.w, vw.vp.h);
-			glGetDoublev(GL_PROJECTION_MATRIX, proj);
 			}
 
 			static GLuint shader = 0;
 			static GLint textureLoc = -1;
 			static GLint shadowmapLoc = -1;
-			static GLint ambientLoc = -1;
+			static GLint shadowmap2Loc = -1;
+			static GLint shadowmap3Loc = -1;
 			if(!g_shader_enable){
 				glPushAttrib(GL_LIGHTING_BIT);
 	//			glDisable(GL_LIGHT0);
@@ -852,7 +861,8 @@ void draw_func(Viewer &vw, double dt){
 						break;
 					textureLoc = glGetUniformLocation(shader, "texture");
 					shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
-					ambientLoc = glGetUniformLocation(shader, "ambient");
+					shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
+					shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
 				}
 			} while(0);
 
@@ -860,55 +870,59 @@ void draw_func(Viewer &vw, double dt){
 
 
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glActiveTextureARB(GL_TEXTURE2_ARB);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, tod);
-			texturemat(glPushMatrix());
+			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+				glActiveTextureARB(GL_TEXTURE2_ARB + i);
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, depthTextures[i]);
+				texturemat(glPushMatrix());
 
-			//Enable shadow comparison
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
+				//Enable shadow comparison
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
 
-			//Shadow comparison should be true (ie not in shadow) if r<=texture
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
+				//Shadow comparison should be true (ie not in shadow) if r<=texture
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
 
-			//Shadow comparison should generate an INTENSITY result
-			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
+				//Shadow comparison should generate an INTENSITY result
+				glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
 
-			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+				glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
 
-			static Mat4d biasMatrix(Vec4d(.5, .0, .0, .0),
-									Vec4d(.0, .5, .0, .0),
-									Vec4d(.0, .0, .5, .0),
-									Vec4d(.5, .5, .5, 1.));	//bias from [-1, 1] to [0, 1]
-			Mat4d textureMatrix = (biasMatrix * proj * lightModelView);
-			if(!g_shader_enable){
-				textureMatrix = textureMatrix.transpose();
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				glEnable(GL_TEXTURE_GEN_R);
-				glEnable(GL_TEXTURE_GEN_Q);
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-				glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-				glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-				glTexGendv(GL_S, GL_EYE_PLANE, textureMatrix.vec4(0));
-				glTexGendv(GL_T, GL_EYE_PLANE, textureMatrix.vec4(1));
-				glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.vec4(2));
-				glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.vec4(3));
+				static Mat4d biasMatrix(Vec4d(.5, .0, .0, .0),
+										Vec4d(.0, .5, .0, .0),
+										Vec4d(.0, .0, .5, .0),
+										Vec4d(.5, .5, .5, 1.));	//bias from [-1, 1] to [0, 1]
+				Mat4d textureMatrix = (biasMatrix * lightProjection[i] * lightModelView);
 
-				//Set alpha test to discard false comparisons
-				glAlphaFunc(GL_GEQUAL, 0.99f);
-				glEnable(GL_ALPHA_TEST);
-			}
-			else{
-				Mat4d itrans = vw.irot;
-				itrans.vec3(3) = vw.pos;
-				texturemat(glLoadMatrixd(textureMatrix * itrans));
-				glUseProgram(shader);
-				glUniform1i(textureLoc, 0);
-				glUniform1i(shadowmapLoc, 2);
-				glUniform1f(ambientLoc, .2f);
-				glDisable(GL_ALPHA_TEST);
+				if(!g_shader_enable){
+					textureMatrix = textureMatrix.transpose();
+					glEnable(GL_TEXTURE_GEN_S);
+					glEnable(GL_TEXTURE_GEN_T);
+					glEnable(GL_TEXTURE_GEN_R);
+					glEnable(GL_TEXTURE_GEN_Q);
+					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+					glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+					glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+					glTexGendv(GL_S, GL_EYE_PLANE, textureMatrix.vec4(0));
+					glTexGendv(GL_T, GL_EYE_PLANE, textureMatrix.vec4(1));
+					glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.vec4(2));
+					glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.vec4(3));
+
+					//Set alpha test to discard false comparisons
+					glAlphaFunc(GL_GEQUAL, 0.99f);
+					glEnable(GL_ALPHA_TEST);
+				}
+				else{
+					Mat4d itrans = vw.irot;
+					itrans.vec3(3) = vw.pos;
+					texturemat(glLoadMatrixd(textureMatrix * itrans));
+					glUseProgram(shader);
+					glUniform1i(textureLoc, 0);
+					glUniform1i(shadowmapLoc, 2);
+					glUniform1i(shadowmap2Loc, 3);
+					glUniform1i(shadowmap3Loc, 4);
+					glDisable(GL_ALPHA_TEST);
+				}
 			}
 
 			glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -916,9 +930,9 @@ void draw_func(Viewer &vw, double dt){
 			glDepthFunc(GL_LEQUAL);
 
 			if(g_shader_enable)
-				war_draw(vw, pl.cs, &WarField::draw, tod).setShader(shader, textureLoc, shadowmapLoc);
+				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
 			else
-				war_draw(vw, pl.cs, &WarField::draw, tod);
+				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]);
 
 			if(g_shader_enable)
 				glUseProgram(0);
@@ -1035,11 +1049,12 @@ void draw_func(Viewer &vw, double dt){
 		if(!tex){
 			suftexparam_t stp;
 			stp.bmi = NULL;
-			stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
 			stp.env = GL_MODULATE;
 			stp.mipmap = 0x80;
 			stp.alphamap = 1;
 			stp.magfil = GL_LINEAR;
+			stp.transparentColor = 0;
 //			tex = CacheSUFMTex("pointer.bmp", &stp, NULL);
 			tex = CallCacheBitmap("pointer.bmp", "pointer.bmp", &stp, NULL);
 			if(stp.bmi){

@@ -267,7 +267,8 @@ void ContainerHead::draw(wardraw_t *wd){
 
 		// Register alpha test texture
 		suftexparam_t stp;
-		stp.flags = STP_ALPHA | STP_ALPHA_TEST;
+		stp.flags = STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
+		stp.transparentColor = 0;
 		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);
 
 		static const char *names[3] = {"models/containerhead.bin", "models/gascontainer.bin", "models/containertail.bin"};

@@ -812,6 +812,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\EntityCommand.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\export.h"
 				>
 			</File>

@@ -31,6 +31,7 @@ extern "C"{
 #include <clib/suf/suf.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
+#include <clib/suf/sufvbo.h>
 #include <clib/gl/gldraw.h>
 #include <clib/gl/cull.h>
 #include <clib/lzw/lzw.h>
@@ -152,6 +153,7 @@ public:
 	virtual double maxhealth()const{return 1e6;}
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart);
+	virtual void draw(wardraw_t *);
 };
 
 class Island3Building : public Entity{
@@ -1059,6 +1061,65 @@ void Island3::draw(const Viewer *vw){
 			glPopAttrib();
 //			shadow_draw(csint->w);
 		}
+	}
+
+	// Docking bays
+	if(0 && vw->zslice == 0){
+		static bool init = false;
+		static suf_t *sufs[3] = {NULL};
+		static VBO *vbo[3] = {NULL};
+		static suftex_t *pst[3] = {NULL};
+		if(!init){
+			static const char *names[1] = {"models/island3dock.bin"};
+			for(int i = 0; i < 1; i++){
+				sufs[i] = CallLoadSUF(names[i]);
+				vbo[i] = CacheVBO(sufs[i]);
+				CacheSUFMaterials(sufs[i]);
+				pst[i] = AllocSUFTex(sufs[i]);
+			}
+			init = true;
+		}
+		static const double normal[3] = {0., 1., 0.};
+		double scale = .01;
+		static const GLdouble rotaxis[16] = {
+			-1,0,0,0,
+			0,0,-1,0,
+			0,-1,0,0,
+			0,0,0,1,
+		};
+
+		class IntDraw{
+		public:
+			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
+				if(vbo)
+					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
+				else if(suf)
+					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
+			}
+			void glTranslated(double x, double y, double z){
+				::glTranslated(x, y, z);
+			}
+		} id;
+
+		glPushMatrix();
+//		glMultMatrixd(mat);
+
+		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+
+		glPushMatrix();
+		glTranslated(0, -16. - 3.25, 0.);
+		glScaled(scale, scale, scale);
+		glMultMatrixd(rotaxis);
+		id.drawModel(sufs[0], vbo[0], pst[0]);
+		glPopMatrix();
+
+/*		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);*/
+
+		glPopMatrix();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	// Buildings
@@ -2169,6 +2230,70 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+		// Docking bays
+void Island3Entity::draw(WarDraw *wd){
+#if 1
+	{
+		static bool init = false;
+		static suf_t *sufs[3] = {NULL};
+		static VBO *vbo[3] = {NULL};
+		static suftex_t *pst[3] = {NULL};
+		if(!init){
+			static const char *names[1] = {"models/island3dock.bin"};
+			for(int i = 0; i < 1; i++){
+				sufs[i] = CallLoadSUF(names[i]);
+				vbo[i] = CacheVBO(sufs[i]);
+				CacheSUFMaterials(sufs[i]);
+				pst[i] = AllocSUFTex(sufs[i]);
+			}
+			init = true;
+		}
+		static const double normal[3] = {0., 1., 0.};
+		static const double dscale = .01;
+		static const GLdouble rotaxis[16] = {
+			-1,0,0,0,
+			0,0,-1,0,
+			0,-1,0,0,
+			0,0,0,1,
+		};
+
+		class IntDraw{
+		public:
+			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
+				if(vbo)
+					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
+				else if(suf)
+					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
+			}
+			void glTranslated(double x, double y, double z){
+				::glTranslated(x, y, z);
+			}
+		} id;
+
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		gldMultQuat(rot);
+//		glMultMatrixd(mat);
+
+		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+
+		glPushMatrix();
+		glTranslated(0, -16. - 3.25, 0.);
+		gldScaled(dscale);
+		glMultMatrixd(rotaxis);
+		id.drawModel(sufs[0], vbo[0], pst[0]);
+		glPopMatrix();
+
+/*		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);*/
+
+		glPopMatrix();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+#endif
+}
 
 
 static const double cutheight = .2;
@@ -2325,6 +2450,7 @@ void Island3Building::draw(wardraw_t *wd){
 			}
 		}
 		glEnd();
+
 #if 0 // Disable internal structure drawing for the moment.
 		if(0 || pos[0] - halfsize[0] < wd->vw->pos[0] && wd->vw->pos[0] < pos[0] + halfsize[0]
 		&& pos[2] - halfsize[2] < wd->vw->pos[2] && wd->vw->pos[2] < pos[2] + halfsize[2]
@@ -2370,5 +2496,4 @@ void Island3Building::draw(wardraw_t *wd){
 		glPopAttrib();
 		glPopMatrix();
 	}
-
 }

@@ -789,13 +789,13 @@ void draw_func(Viewer &vw, double dt){
 		ie = glGetError();*/
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
-		GLenum glerr20 = glGetError();
+
 		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
-		GLenum glerr21 = glGetError();
+
 		if(fbo && checkFramebufferStatus()){
 			Mat4d lightProjection[3];
 			Mat4d lightModelView;
-			GLfloat shadowCell[3] = {1. / 2., 1. / .5, 1. / .1};
+			GLfloat shadowCell[3] = {1. / 5., 1. / .75, 1. / .1};
 			{
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++) if(checkFramebufferStatus()){
@@ -828,6 +828,9 @@ void draw_func(Viewer &vw, double dt){
 				GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
 				vw2.gc = &gc;
 	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
+				GLenum glerr20 = glGetError();
+//				cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
+				GLenum glerr21 = glGetError();
 				war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
 	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
 				glGetDoublev(GL_PROJECTION_MATRIX, lightProjection[i]);
@@ -944,8 +947,9 @@ void draw_func(Viewer &vw, double dt){
 
 			glPopAttrib();
 		}
-		else
+		else{
 			war_draw(vw, pl.cs, &WarField::draw);
+		}
 
 #if 0 // buffer copy
 		if(!screentex){

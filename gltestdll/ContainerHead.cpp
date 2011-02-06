@@ -2,6 +2,7 @@
 #include "Docker.h"
 #include "Player.h"
 #include "Viewer.h"
+#include "EntityCommand.h"
 #include "cmd.h"
 //#include "glwindow.h"
 #include "judge.h"
@@ -74,6 +75,7 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;
 	virtual Props props()const;
+	virtual bool command(EntityCommand *);
 	virtual bool undock(Docker*);
 	static Entity *create(WarField *w, Builder *);
 };
@@ -84,7 +86,7 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
-		static btCompoundShape *shapes[4] = {NULL};
+		static btCompoundShape *shapes[5] = {NULL};
 		btCompoundShape *&shape = shapes[ncontainers];
 		if(!shape){
 			shape = new btCompoundShape();
@@ -184,6 +186,21 @@ void ContainerHead::anim(double dt){
 					task = sship_parade;
 			}
 		}
+		else if(task == sship_dockque || task == sship_dock){
+			for(Entity *pt = w->entlist(); pt; pt = pt->next) if(!strcmp(pt->classname(), "Island3Entity")){
+				Vec3d target = pt->rot.trans(task == sship_dockque ? Vec3d(0, -16. - 3.25 - 1.5, 0.) : Vec3d(0, -16. - 3.25, 0.)) + pt->pos;
+				steerArrival(dt, target, pt->velo, 1. / 10., .001);
+				if((target - pos).slen() < .2 * .2){
+					if(task == sship_dockque)
+						task = sship_dock;
+					else{
+						this->w = NULL;
+						return;
+					}
+				}
+				break;
+			}
+		}
 		else if(w->getPlayer()->control == this){
 		}
 		else if(!enemy && task == sship_parade){
@@ -259,11 +276,11 @@ void ContainerHead::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
-	static bool init = false;
+	static bool initialized = false;
 	static suf_t *sufs[3] = {NULL};
 	static VBO *vbo[3] = {NULL};
 	static suftex_t *pst[3] = {NULL};
-	if(!init){
+	if(!initialized){
 
 		// Register alpha test texture
 		suftexparam_t stp;
@@ -278,7 +295,7 @@ void ContainerHead::draw(wardraw_t *wd){
 			CacheSUFMaterials(sufs[i]);
 			pst[i] = AllocSUFTex(sufs[i]);
 		}
-		init = true;
+		initialized = true;
 	}
 	static int drawcount = 0;
 	drawcount++;
@@ -382,6 +399,14 @@ Entity::Props ContainerHead::props()const{
 	Props ret = st::props();
 	ret.push_back(gltestp::dstring("I am ContainerHead!"));
 	return ret;
+}
+
+bool ContainerHead::command(EntityCommand *com){
+	if(InterpretCommand<DockCommand>(com)){
+		task = sship_dockque;
+		return true;
+	}
+	else return st::command(com);
 }
 
 bool ContainerHead::undock(Docker *d){

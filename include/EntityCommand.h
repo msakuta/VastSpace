@@ -2,6 +2,7 @@
 #define ENTITYCOMMAND_H
 /** \file
  * \brief Definition of EntityCommand and its subclasses. */
+#include "export.h"
 #include "CoordSys.h"
 #include <set>
 #include <map>
@@ -12,7 +13,7 @@ class Entity;
 
 typedef const char *EntityCommandID;
 
-#define DERIVE_COMMAND(name,base) struct name : public base{\
+#define DERIVE_COMMAND(name,base) struct EXPORT name : public base{\
 	typedef base st;\
 	static int construction_dummy;\
 	static EntityCommandID sid;\
@@ -56,7 +57,7 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 // If you really need to remember an EntityCommand for later use, I recommend using Squirrel
 // function call to express a command.
  */
-struct EntityCommand{
+struct EXPORT EntityCommand{
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
 	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> &ctormap();
 
@@ -101,7 +102,7 @@ CmdType *InterpretDerivedCommand(EntityCommand *com){
 
 DERIVE_COMMAND(HaltCommand, EntityCommand);
 
-struct AttackCommand : public EntityCommand{
+struct EXPORT AttackCommand : public EntityCommand{
 	typedef EntityCommand st;
 	static int construction_dummy;
 	static EntityCommandID sid;
@@ -114,7 +115,7 @@ struct AttackCommand : public EntityCommand{
 
 DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 
-struct MoveCommand : public EntityCommand{
+struct EXPORT MoveCommand : public EntityCommand{
 	typedef EntityCommand st;
 	static int construction_dummy;
 	static EntityCommandID sid;
@@ -150,7 +151,7 @@ struct WarpCommand : public MoveCommand{
 	CoordSys *destcs;
 };
 
-struct RemainDockedCommand : public EntityCommand{
+struct EXPORT RemainDockedCommand : public EntityCommand{
 	typedef EntityCommand st;
 	static int construction_dummy;
 	static EntityCommandID sid;

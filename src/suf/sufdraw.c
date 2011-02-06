@@ -323,6 +323,10 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 							glDisable(GL_TEXTURE_2D);
 							glActiveTextureARB(GL_TEXTURE0);
 						}
+						{
+							GLfloat envcolor[4] = {0., 0., 0., 1.};
+							glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+						}
 						if(c)
 							c->texenabled = 0;
 					}

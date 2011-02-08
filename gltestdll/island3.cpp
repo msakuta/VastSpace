@@ -1351,12 +1351,11 @@ nobridgemodel:
 						glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
 						if(!texbb){
 							suftexparam_t stp;
-							stp.flags = STP_ALPHA | STP_ENV | STP_MAGFIL;
+							stp.flags = STP_ALPHA | STP_TRANSPARENTCOLOR | STP_ENV | STP_MAGFIL;
 							stp.alphamap = 1;
-//								stp.bmi = lzuc(lzw_bbrail, sizeof lzw_bbrail, NULL);
+							stp.transparentColor = 0;
 							stp.env = GL_MODULATE;
 							stp.magfil = GL_NEAREST;
-							stp.mipmap = 0x80;
 							texbb = CallCacheBitmap("bbrail.bmp", "bbrail.bmp", &stp, NULL);
 						}
 						glCallList(texbb);

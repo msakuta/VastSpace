@@ -103,8 +103,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="..\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="..\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -127,7 +127,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN64;_DEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
@@ -295,7 +295,7 @@
 				AdditionalOptions="/MACHINE:X64"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
+				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
 				PreprocessorDefinitions="WIN64;NDEBUG;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport)"
 				ExceptionHandling="2"
 				RuntimeLibrary="0"

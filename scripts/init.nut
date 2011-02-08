@@ -310,7 +310,11 @@ tlate <- translate;
 
 // load the module
 {
-	local dllpath = debugBuild() ? x64Build() ? "gltestdll\\x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" : "gltestdll.dll";
+	local dllpath = debugBuild() ?
+		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
+//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
 	local gltestdll = loadModule(dllpath);
 	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }

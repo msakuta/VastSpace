@@ -76,6 +76,7 @@ namespace cpplib{
 		strcpy(buf);
 	}
 
+	inline dstring::dstring(const char *a){init(a);}
 	inline dstring::dstring(long a){init(a);}
 	inline dstring::dstring(int a){init(long(a));}
 	inline dstring::dstring(unsigned a){initu(a);}

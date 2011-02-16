@@ -4,11 +4,15 @@
 #ifndef EXPORT_H
 #define EXPORT_H
 
+#ifndef _WIN32
+#define EXPORT
+#else
 #ifndef EXPORT
 #ifdef DLL
 #define EXPORT __declspec(dllimport)
 #else
 #define EXPORT __declspec(dllexport)
+#endif
 #endif
 #endif
 

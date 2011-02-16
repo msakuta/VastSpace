@@ -17,19 +17,19 @@ extern "C"{
 class FormatException : public std::exception{
 public:
 	FormatException(){}
-	const char *what()const{return "FormatException";}
+	const char *what()const throw(){return "FormatException";}
 };
 
 class InputShortageException : public std::exception{
 public:
 	InputShortageException(){}
-	const char *what()const{return "InputShortageException";}
+	const char *what()const throw(){return "InputShortageException";}
 };
 
 class ClassNotFoundException : public std::exception{
 public:
 	ClassNotFoundException(){}
-	const char *what()const{return "ClassNotFoundException";}
+	const char *what()const throw(){return "ClassNotFoundException";}
 };
 
 
@@ -158,12 +158,12 @@ public:
 	virtual tt &operator>>(const char *a) = 0;
 	virtual tt &operator>>(cpplib::dstring &a) = 0;
 	virtual tt *substream(size_t size) = 0;
-	template<class T> tt &operator>>(T *&p){
+	template<class T> tt &operator>>(T *&p);/*{
 		unsigned id;
 		*this >> id;
 		p = static_cast<T*>(usc->map[id]);
 		return *this;
-	}
+	}*/
 };
 
 class StdUnserializeStream : public UnserializeStream{
@@ -244,5 +244,13 @@ public:
 	CtorMap &cons;
 	UnserializeMap &map;
 };
+
+
+	template<class T> UnserializeStream &UnserializeStream::operator>>(T *&p){
+		unsigned id;
+		*this >> id;
+		p = static_cast<T*>(usc->map[id]);
+		return *this;
+	}
 
 #endif

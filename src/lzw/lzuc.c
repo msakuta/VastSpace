@@ -1,4 +1,6 @@
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include "clib/lzw/lzw.h"
 /*#include <stdlib.h>*/
 
@@ -71,7 +73,7 @@ unsigned char *lzuc(const unsigned char *in, size_t sz, size_t *retsz){
 	size_t osz = 0, as;
 	int i, n = 2;
 	int buf, bp = 0, bits;
-	HLOCAL hl;
+//	HLOCAL hl;
 
 /*	printf("in size %d\n", sz);*/
 

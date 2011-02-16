@@ -13,13 +13,34 @@ CFLAGS = ${DEBUG} -I include
 OUT = ${OUTDIR}/clib.a
 default: ${OUT}
 
-${OUT}: ${OUT}(amat3.o) ${OUT}(amat4.o) ${OUT}(aquat.o) ${OUT}(aquatrot.o)\
- ${OUT}(avec3.o) ${OUT}(cfloat.o) ${OUT}(dstr.o) ${OUT}(rseq.o) ${OUT}(timemeas.o)\
- ${OUT}(cs.o) ${OUT}(cs2.o) ${OUT}(cs2x.o) ${OUT}(cs2xcut.o) ${OUT}(cs2xedit.o)\
- ${OUT}(lzc.o) ${OUT}(lzuc.o)
+${OUT}: ${OUTDIR}\
+ ${OUT}(UnZip.o)\
+ ${OUT}(amat3.o)\
+ ${OUT}(amat4.o)\
+ ${OUT}(aquat.o)\
+ ${OUT}(aquatrot.o)\
+ ${OUT}(avec3.o)\
+ ${OUT}(cfloat.o)\
+ ${OUT}(dstr.o)\
+ ${OUT}(rseq.o)\
+ ${OUT}(timemeas.o)\
+ ${OUT}(cs.o)\
+ ${OUT}(cs2.o)\
+ ${OUT}(cs2x.o)\
+ ${OUT}(cs2xcut.o)\
+ ${OUT}(cs2xedit.o)\
+ ${OUT}(lzc.o)\
+ ${OUT}(lzuc.o)\
+ ${OUT}(suf.o)\
+ ${OUT}(sufreloc.o)
+# ${OUT}(sufdraw.o)
 # ${OUT}(wavsound.o)
 # ${OUT}(UnZip.o)\
 
+${OUTDIR}:
+	mkdir $@
+
+${OUT}(UnZip.o): src/UnZip.c
 ${OUT}(amat3.o): src/amat3.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(amat4.o): src/amat4.c
@@ -56,4 +77,9 @@ ${OUT}(lzc.o): src/lzw/lzc.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(lzuc.o): src/lzw/lzuc.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
+${OUT}(suf.o): src/suf/suf.c
+${OUT}(sufdraw.o): src/suf/sufdraw.c
+${OUT}(sufreloc.o): src/suf/sufreloc.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
+
 

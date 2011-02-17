@@ -1,11 +1,14 @@
 #ifndef CPPLIB_DSTRING_H
 #define CPPLIB_DSTRING_H
+/** \file
+ * \brief Definition ofc cpplib::dstring.
+ */
 
 namespace cpplib{
 
-	// The re-invention of wheels, copy-on-write string.
-	// Unicode strings cannot be handled.
-	// It does not pool the same string appears in the heap, unlike MFC CString.
+	/// The re-invention of wheels, copy-on-write string.
+	/// Unicode strings cannot be handled.
+	/// It does not pool the same string appears in the heap, unlike MFC CString.
 	class dstring{
 	public:
 		dstring();
@@ -27,12 +30,12 @@ namespace cpplib{
 		dstring &strcat(const char *src);
 		dstring &strcat(const dstring &);
 		~dstring();
-		operator const char *()const; // conversion to c-str
-		dstring operator +(const dstring &o)const{return dstring(*this).strcat(o);} // returns newly created string with string passed by argument concatenated
-		dstring &operator +=(const dstring &o){strcat(o); return *this;} // append to the string
-		dstring &operator <<(const dstring &o){strcat(o); return *this;} // equivalent to += but more comfortable binding direction
-		dstring &operator <<(const char *src){return strcat(src);} // optimize c-str concatenation
-		dstring &operator <<(char); // optimize single character concatenation
+		operator const char *()const; ///< conversion to c-str
+		dstring operator +(const dstring &o)const{return dstring(*this).strcat(o);} ///< returns newly created string with string passed by argument concatenated
+		dstring &operator +=(const dstring &o){strcat(o); return *this;} ///< append to the string
+		dstring &operator <<(const dstring &o){strcat(o); return *this;} ///< equivalent to += but more comfortable binding direction
+		dstring &operator <<(const char *src){return strcat(src);} ///< optimize c-str concatenation
+		dstring &operator <<(char); ///< optimize single character concatenation
 		dstring &operator <<(int a){return operator <<(dstring(a));}
 		dstring &operator <<(long a){return operator <<(dstring(a));}
 		dstring &operator <<(unsigned a){return operator <<(dstring(a));}
@@ -87,11 +90,11 @@ namespace cpplib{
 
 	inline dstring dstring::operator =(const dstring &ds){
 		this->dstring::~dstring();
-		this->p = ds.p;
+		strncat(ds, ds.len());
 		return *this;
 	}
 
-	// Optimized implementation of single character concatenation reduces unnecessary memory allocations to the bottom.
+	/// Optimized implementation of single character concatenation reduces unnecessary memory allocations to the bottom.
 	inline dstring &dstring::operator <<(char c){
 		return strncat(&c, 1);
 	}

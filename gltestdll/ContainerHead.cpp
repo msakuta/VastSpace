@@ -56,6 +56,9 @@ class ContainerHead : public Frigate{
 public:
 	typedef Frigate st;
 protected:
+	static const int maxcontainers = 6;
+	enum ContainerType{gascontainer, hexcontainer, Num_ContainerType};
+	ContainerType containers[maxcontainers];
 	int ncontainers; ///< Count of containers connected.
 	float undocktime;
 	static const double sufscale;
@@ -86,7 +89,7 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
-		static btCompoundShape *shapes[5] = {NULL};
+		static btCompoundShape *shapes[maxcontainers] = {NULL};
 		btCompoundShape *&shape = shapes[ncontainers];
 		if(!shape){
 			shape = new btCompoundShape();
@@ -119,7 +122,10 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 }
 
 void ContainerHead::init(){
-	ncontainers = RandomSequence((unsigned long)this).next() % 4 + 1;
+	ncontainers = RandomSequence((unsigned long)this).next() % (maxcontainers - 1) + 1;
+	RandomSequence rs((unsigned long)this);
+	for(int i = 0; i < ncontainers; i++)
+		containers[i] = ContainerType(rs.next() % Num_ContainerType);
 	undocktime = 0.f;
 	health = maxhealth();
 	mass = 2e7 + 1e7 * ncontainers;
@@ -277,9 +283,9 @@ void ContainerHead::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
 	static bool initialized = false;
-	static suf_t *sufs[3] = {NULL};
-	static VBO *vbo[3] = {NULL};
-	static suftex_t *pst[3] = {NULL};
+	static suf_t *sufs[2 + Num_ContainerType] = {NULL};
+	static VBO *vbo[2 + Num_ContainerType] = {NULL};
+	static suftex_t *pst[2 + Num_ContainerType] = {NULL};
 	if(!initialized){
 
 		// Register alpha test texture
@@ -288,8 +294,8 @@ void ContainerHead::draw(wardraw_t *wd){
 		stp.transparentColor = 0;
 		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);
 
-		static const char *names[3] = {"models/containerhead.bin", "models/gascontainer.bin", "models/containertail.bin"};
-		for(int i = 0; i < 3; i++){
+		static const char *names[2 + Num_ContainerType] = {"models/containerhead.bin", "models/containertail.bin", "models/gascontainer.bin", "models/hexcontainer0.bin"};
+		for(int i = 0; i < 2 + Num_ContainerType; i++){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
 			CacheSUFMaterials(sufs[i]);
@@ -317,9 +323,9 @@ void ContainerHead::draw(wardraw_t *wd){
 			}
 			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
 				if(vbo)
-					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
+					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
 				else if(suf)
-					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
+					DecalDrawSUF(suf, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
 			}
 			void glTranslated(double x, double y, double z){
 				::glTranslated(x, y, z);
@@ -363,11 +369,11 @@ void ContainerHead::draw(wardraw_t *wd){
 		id.drawModel(sufs[0], vbo[0], pst[0]);
 		id.glTranslated(0, 0, -150);
 		for(int i = 0; i < ncontainers; i++){
-			id.drawModel(sufs[1], vbo[1], pst[1]);
+			id.drawModel(sufs[2 + containers[i]], vbo[2 + containers[i]], pst[2 + containers[i]]);
 			id.glTranslated(0, 0, -300);
 		}
 		id.glTranslated(0, 0, 150);
-		id.drawModel(sufs[2], vbo[2], pst[2]);
+		id.drawModel(sufs[1], vbo[1], pst[1]);
 		glPopMatrix();
 
 /*		glMatrixMode(GL_TEXTURE);

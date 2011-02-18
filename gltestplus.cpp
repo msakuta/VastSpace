@@ -82,6 +82,7 @@ static double g_space_near_clip = .5, g_space_far_clip = 1e10;
 static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
 static double r_dynamic_range = 1.;
 static int r_orbit_axis = 0;
+static int r_shadows = 1;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -97,6 +98,10 @@ static int s_mousedragx, s_mousedragy;
 static int s_mouseoldx, s_mouseoldy;
 
 static double wdtime = 0., watime = 0.;
+
+#if defined _WIN32
+HWND hWndApp;
+#endif
 
 class select_box_callback{
 public:
@@ -549,9 +554,13 @@ void WarDrawInt::war_draw_int(){
 	vw = &localvw;
 	if(this->w){
 		GLmatrix ma;
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
 		gldTranslate3dv(vw->cs->tocs(avec3_000, cs));
 		gldMultQuat(vw->cs->tocsq(cs));
 		(cs->w->*method)(this);
+//		int	glerr = glGetError();
+//		printf("%lg %d: %s\n", TimeMeasLap(&tm), glerr, (const char*)cs->getpath());
 	}
 }
 
@@ -640,6 +649,79 @@ bool checkFramebufferStatus()
 #define SHADOWMAPSIZE 1024
 
 void draw_func(Viewer &vw, double dt){
+	int	glerr = glGetError();
+	static GLuint fbo = 0, rboId = 0, to = 0;
+	static GLuint depthTextures[3] = {0};
+	if(r_shadows && FBOInit() && !glIsFrameBufferEXT(fbo)){
+		int	gerr = glGetError();
+		glGenFramebuffersEXT(1, &fbo);
+		gerr = glGetError();
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+		gerr = glGetError();
+
+		// renderbuffer
+        glGenRenderbuffersEXT(1, &rboId);
+        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId);
+        glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE);
+        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+		gerr = glGetError();
+
+		// texture object
+		glGenTextures(1, &to);
+		glBindTexture(GL_TEXTURE_2D, to);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
+		gerr = glGetError();
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		// texture for depth
+		glGenTextures(3, depthTextures);
+		for(int i = 0; i < 3; i++){
+			GLuint tod = depthTextures[i];
+			glBindTexture(GL_TEXTURE_2D, tod);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
+	//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
+			gerr = glGetError();
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
+
+		// attach a renderbuffer to depth attachment point
+//        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, depthTextures[0], 0);
+
+		checkFramebufferStatus();
+
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	}
+
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -685,72 +767,6 @@ void draw_func(Viewer &vw, double dt){
 	projection(glPopMatrix());
 	}
 
-	static GLuint fbo = 0, rboId = 0, to = 0;
-	static GLuint depthTextures[3] = {0};
-	if(FBOInit() && !fbo){
-		glGenFramebuffersEXT(1, &fbo);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-
-		// renderbuffer
-        glGenRenderbuffersEXT(1, &rboId);
-        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId);
-        glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE);
-        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
-
-		// texture object
-		glGenTextures(1, &to);
-		glBindTexture(GL_TEXTURE_2D, to);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		// texture for depth
-		glGenTextures(3, depthTextures);
-		for(int i = 0; i < 3; i++){
-			GLuint tod = depthTextures[i];
-			glBindTexture(GL_TEXTURE_2D, tod);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
-	//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
-			glBindTexture(GL_TEXTURE_2D, 0);
-		}
-
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-
-		// attach a renderbuffer to depth attachment point
-//        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
-//		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, tod, 0);
-
-		checkFramebufferStatus();
-
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	}
-
 	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -792,11 +808,12 @@ void draw_func(Viewer &vw, double dt){
 
 		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 
-		if(fbo && checkFramebufferStatus()){
+		if(r_shadows && fbo){
 			Mat4d lightProjection[3];
 			Mat4d lightModelView;
 			GLfloat shadowCell[3] = {1. / 5., 1. / .75, 1. / .1};
-			{
+
+			bool shadowok = true;
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++) if(checkFramebufferStatus()){
 				GLpmmatrix pmm;
@@ -835,9 +852,16 @@ void draw_func(Viewer &vw, double dt){
 	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
 				glGetDoublev(GL_PROJECTION_MATRIX, lightProjection[i]);
 			}
+			else{
+				shadowok = false;
+				break;
+			}
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glViewport(0, 0, vw.vp.w, vw.vp.h);
-			}
+
+			if(!shadowok)
+				war_draw(vw, pl.cs, &WarField::draw);
+			else{
 
 			static GLuint shader = 0;
 			static GLint textureLoc = -1;
@@ -946,6 +970,7 @@ void draw_func(Viewer &vw, double dt){
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 
 			glPopAttrib();
+			}
 		}
 		else{
 			war_draw(vw, pl.cs, &WarField::draw);
@@ -1224,6 +1249,12 @@ void display_func(void){
 
 		gametime = t1;
 	}
+
+#ifdef _WIN32
+	if(!IsWindowVisible(hWndApp))
+		return;
+#endif
+
 	Viewer viewer;
 	{
 		double hack[16] = {
@@ -1234,6 +1265,8 @@ void display_func(void){
 		};
 		GLint vp[4];
 		glGetIntegerv(GL_VIEWPORT, vp);
+		if(vp[2] <= vp[0] || vp[3] <= vp[1])
+			return;
 		viewer.vp.set(vp);
 		viewer.fov = pl.fov;
 		double dnear = g_warspace_near_clip, dfar = g_warspace_far_clip;
@@ -2012,10 +2045,6 @@ static int cmd_exit(int argc, char *argv[]){
 }
 
 
-#if defined _WIN32
-HWND hWndApp;
-#endif
-
 extern double g_nlips_factor;
 
 
@@ -2098,6 +2127,7 @@ int main(int argc, char *argv[])
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
+	CvarAdd("r_shadows", &r_shadows, cvar_int);
 	Player::cmdInit(pl);
 
 	sqa_init();

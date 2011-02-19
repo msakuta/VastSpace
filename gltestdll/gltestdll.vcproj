@@ -127,7 +127,7 @@
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool

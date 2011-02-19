@@ -2229,7 +2229,7 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-		// Docking bays
+// Docking bays
 void Island3Entity::draw(WarDraw *wd){
 #if 1
 	{

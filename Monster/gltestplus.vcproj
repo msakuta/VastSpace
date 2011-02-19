@@ -492,6 +492,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\ShadowMap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\shield.cpp"
 				>
 			</File>
@@ -702,6 +706,10 @@
 			</File>
 			<File
 				RelativePath="..\Sceptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\ShadowMap.h"
 				>
 			</File>
 			<File

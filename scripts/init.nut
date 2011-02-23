@@ -319,6 +319,17 @@ tlate <- translate;
 	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }
 
+// load the module
+{
+	local dllpath = debugBuild() ?
+		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
+		x64Build() ? "surface.dll" : "surface.dll";
+//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
+	local gltestdll = loadModule(dllpath);
+	print("\"" + dllpath + "\"l refc is " + gltestdll);
+}
+
 // set stellar file
 stellar_file = 1 || debugBuild() ? "space_debug.dat" : "space.dat";
 

@@ -666,15 +666,3 @@ Vec3f Star::spectralRGB(SpectralType spect){
 	return Vec3f(1., 1., 1.);
 }
 
-class Surface : public CoordSys{
-	Astrobj *a;
-	Vec3d offset;
-public:
-	typedef CoordSys st;
-	Surface(){}
-	Surface(const char *path, CoordSys *parent) : st(path, parent), a(NULL), offset(0,0,0){}
-	Surface(Astrobj *aa) : st(aa->getpath(), aa), a(aa){}
-	virtual void anim(double dt){
-	}
-};
-

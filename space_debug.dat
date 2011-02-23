@@ -55,8 +55,10 @@ coordsys Orbit venus{
 		fullname "Venus orbit"
 		warp
 		teleport
-		new astro Island3 "Venus Side"{
-			pos 10 -18 0
+#		new astro Island3 "Venus Side"{
+#			pos 10 -18 0
+#		}
+		coordsys Surface venuss{
 		}
 	}
 }

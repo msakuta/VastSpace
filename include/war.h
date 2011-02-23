@@ -30,9 +30,6 @@ struct input_t{
 	}
 };
 
-typedef struct warmap warmap_t;
-typedef struct warmapdecal_s warmapdecal_t;
-
 extern suf_t *CacheSUF(const char *fname);
 
 typedef struct suf_model{

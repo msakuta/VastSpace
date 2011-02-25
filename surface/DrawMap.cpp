@@ -5,9 +5,10 @@
 #include "WarMap.h"
 #include "drawmap.h"
 #include "Player.h"
-#include "astro.h"
+#include "astrodraw.h"
 #include "material.h"
 #include "bitmap.h"
+#include "cmd.h"
 //#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>
@@ -323,7 +324,6 @@ protected:
 	};
 
 	static GLuint tex0, tex;
-	static double g_map_lod_factor;
 	static double detail_factor;
 	int checkmap_maxlevel, checkmap_invokes;
 	int underwater;
@@ -348,8 +348,13 @@ protected:
 	double map_width;
 	short (*pwmdi)[2];
 	short wmdi[2046][2]; ///< warmapdecal index cache
+	static double g_map_lod_factor;
 public:
+	static void init_map_lod_factor(){CvarAdd("g_map_lod_factor", &g_map_lod_factor, cvar_double);}
+
+	/// The constructor does all drawing.
 	DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked);
+
 protected:
 	void checkmap(char *top, int x, int y, int level);
 	double drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, int level, int lastpos[2]);
@@ -364,6 +369,8 @@ GLuint DrawMap::tex0 = 0, DrawMap::tex = 0;
 double DrawMap::g_map_lod_factor = 1.;
 double DrawMap::detail_factor = 2.;
 GLuint DrawMap::matlist = 0;
+
+static Initializator s_map_lod_factor(DrawMap::init_map_lod_factor);
 
 void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked){
 	try{

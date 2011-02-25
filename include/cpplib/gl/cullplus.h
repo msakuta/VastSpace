@@ -29,6 +29,8 @@ public:
 	double getFov()const{return fov;}
 	double getNear()const{return znear;}
 	double getFar()const{return zfar;}
+	Vec3d getViewpoint()const{return viewpoint;}
+	Vec3d getViewdir()const{return viewdir;}
 	Mat4d getInvrot()const{return invrot;}
 	bool isOrtho()const{return ortho;}
 };

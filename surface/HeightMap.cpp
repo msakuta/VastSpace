@@ -152,7 +152,7 @@ static WarMap *OpenAVMap(const char *fname){
 	size_t filesize = sizeof *ret;
 
 	/* export raw */
-	if(1){
+	if(0){
 		short *buf2;
 		const short (*src)[MAPSIZE] = ret->value;
 		char strbuf[256];

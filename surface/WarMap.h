@@ -18,7 +18,7 @@ public:
 	virtual Vec3d normal(double x, double y);
 	virtual int linehit(const Vec3d &src, const Vec3d &dir, double t, Vec3d &ret);
 	virtual ~WarMap();
-	virtual void levelterrain(int x0, int y0, int x1, int y1) = 0;
+	virtual void levelterrain(int x0, int y0, int x1, int y1){}
 	double height(double x, double y, Vec3d *normal);
 	void altterrain(int x0, int y0, int x1, int y1, void altfunc(WarMap *, int x, int y, void *hint), void *hint);
 	/* Road check */

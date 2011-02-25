@@ -287,9 +287,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\$(PlatformName)\$(ConfigurationName)"
+				AdditionalLibraryDirectories="..\$(PlatformName)\$(ConfigurationName);&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

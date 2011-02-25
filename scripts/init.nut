@@ -887,6 +887,7 @@ function init_Universe(){
 	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
 	mainmenu.addItem("test", callTest);
 	mainmenu.addItem("Walkthrough", function(){mainmenu.close();});
+	mainmenu.addItem("Exit", "exit");
 
 	// Adjust window position to center of screen, after all menu items are added.
 	mainmenu.x = scw / 2 - mainmenu.width / 2;

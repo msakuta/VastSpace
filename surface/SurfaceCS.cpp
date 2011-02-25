@@ -1,6 +1,9 @@
 #include "CoordSys.h"
 #include "WarMap.h"
 #include "drawmap.h"
+extern "C"{
+#include <clib/gl/gldraw.h>
+}
 
 class SurfaceCS : public CoordSys{
 public:
@@ -10,9 +13,11 @@ public:
 	SurfaceCS(const char *path, CoordSys *root);
 	~SurfaceCS();
 
+	virtual void predraw(const Viewer *);
 	virtual void draw(const Viewer *);
 protected:
 	WarMap *wm;
+	int map_checked;
 	char *map_top;
 };
 
@@ -29,9 +34,19 @@ SurfaceCS::~SurfaceCS(){
 	delete wm;
 }
 
+/// Reset the flag to instruct the drawmap function to recalculate the pyramid buffer.
+void SurfaceCS::predraw(const Viewer *vw){
+	map_checked = 0;
+}
 
+/// Note that this function is going to be called at least twice a frame.
 void SurfaceCS::draw(const Viewer *vw){
-	int map_checked = 0;
-	if(wm)
+	if(wm && vw->zslice < 2){
+		glPushMatrix();
+		if(vw->zslice == 1){
+			gldTranslate3dv(-vw->pos);
+		}
 		drawmap(wm, vw->pos, 0, vw->viewtime, vw->gc, &map_top, &map_checked);
+		glPopMatrix();
+	}
 }

@@ -68,57 +68,34 @@ static bool checkFramebufferStatus()
     }
 }
 
+#if 0
+#include "ShadowHelper.h"
+#else
+void printFramebufferInfo(){}
+#endif
+
 #define SHADOWMAPSIZE 1024
 
 GLuint ShadowMap::fbo = 0; ///< Framebuffer object
-GLuint ShadowMap::rboId = 0; ///< Renderbuffer object
+//GLuint ShadowMap::rboId = 0; ///< Renderbuffer object
 GLuint ShadowMap::to = 0; ///< Texture object
 GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
 
 /// Initializes shadow map textures
 ShadowMap::ShadowMap(){
-	if(FBOInit() && !glIsFrameBufferEXT(fbo)){
+	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
-		gerr = glGetError();
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-		gerr = glGetError();
-
-		// renderbuffer
-        glGenRenderbuffersEXT(1, &rboId);
-        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId);
-        glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE);
-        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
-		gerr = glGetError();
-
-		// texture object
-		glGenTextures(1, &to);
-		glBindTexture(GL_TEXTURE_2D, to);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_RGBA, GL_BYTE, NULL);
-		gerr = glGetError();
-		glBindTexture(GL_TEXTURE_2D, 0);
 
 		// texture for depth
 		glGenTextures(3, depthTextures);
 		for(int i = 0; i < 3; i++){
 			GLuint tod = depthTextures[i];
 			glBindTexture(GL_TEXTURE_2D, tod);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -126,23 +103,28 @@ ShadowMap::ShadowMap(){
 			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
 	//		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap generation included in OpenGL v1.4
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
 			gerr = glGetError();
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-
 		// attach a renderbuffer to depth attachment point
-//        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
+//		glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId);
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, depthTextures[0], 0);
 
-		checkFramebufferStatus();
+		// These are necessary to complete framebuffer object.
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+
+        printFramebufferInfo();
+		if(!checkFramebufferStatus()){
+			glDeleteFramebuffersEXT(1, &fbo);
+		}
+		gerr = glGetError();
 
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	}
@@ -150,7 +132,7 @@ ShadowMap::ShadowMap(){
 
 /// Actually draws shadow maps and the scene.
 void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &drawcallback){
-	if(fbo){
+	if(fbo && glIsFrameBufferEXT(fbo)){
 		Mat4d lightProjection[3];
 		Mat4d lightModelView;
 		GLfloat shadowCell[3] = {1. / 5., 1. / .75, 1. / .1};
@@ -161,7 +143,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			GLpmmatrix pmm;
 			projection((
 				glLoadIdentity(),
-				glOrtho(-1, 1, -1, 1, -10, 10),
+				glOrtho(-1, 1, -1, 1, -100, 100),
 				gldScaled(shadowCell[i])
 	//				vw.frustum(g_warspace_near_clip, g_warspace_far_clip)
 			));
@@ -206,6 +188,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 			static GLuint shader = 0;
 			static GLint textureLoc = -1;
+			static GLint texture2Loc = -1;
 			static GLint shadowmapLoc = -1;
 			static GLint shadowmap2Loc = -1;
 			static GLint shadowmap3Loc = -1;
@@ -228,6 +211,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					if(!shader)
 						break;
 					textureLoc = glGetUniformLocation(shader, "texture");
+					texture2Loc = glGetUniformLocation(shader, "texture2");
 					shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 					shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 					shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
@@ -286,6 +270,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
 					glUseProgram(shader);
 					glUniform1i(textureLoc, 0);
+					glUniform1i(textureLoc, 1);
 					glUniform1i(shadowmapLoc, 2);
 					glUniform1i(shadowmap2Loc, 3);
 					glUniform1i(shadowmap3Loc, 4);

@@ -17,7 +17,7 @@
 /// A class to support shadow drawing with shadow mapping technique.
 /// It depends on several OpenGL extensions.
 class ShadowMap{
-	static GLuint fbo, rboId, to;
+	static GLuint fbo, to;
 	static GLuint depthTextures[3];
 public:
 	class DrawCallback{

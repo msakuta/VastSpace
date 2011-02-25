@@ -372,8 +372,10 @@ GLuint DrawMap::matlist = 0;
 
 static Initializator s_map_lod_factor(DrawMap::init_map_lod_factor);
 
+
 void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked){
 	try{
+		MultiTextureInit();
 		DrawMap(wm, pos, detail, t, glc, ptop, checked);
 	}
 	catch(...){
@@ -533,16 +535,17 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, dif);
 			glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 			glEnable(GL_CULL_FACE);
-			glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-			glEnable(GL_COLOR_MATERIAL);
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, Vec4f(1,1,1,1));
+//			glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+//			glEnable(GL_COLOR_MATERIAL);
 			glEndList();
 
 			glNewList(matlist + 1, GL_COMPILE);
 			{
 				GLfloat mat_diffuse[] = { .25, .5, .75, 1.0 };
 				GLfloat mat_ambient_color[] = { .25, .5, .75, 1.0 };
-				glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-				glEnable(GL_COLOR_MATERIAL);
+//				glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+//				glEnable(GL_COLOR_MATERIAL);
 	/*			glDisable(GL_COLOR_MATERIAL);*/
 				glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
 				glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient_color);
@@ -848,13 +851,12 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 	/* drawmapnode is always be used at least once, so caching ground falloff here
 	  is expected to be effective */
 #if 0
-	{
-		extern struct astrobj earth;
-		double rad = earth.rad /* EARTH_RAD */;
-		d->gnd = sqrt(rad * rad - d->x * d->x - d->z * d->z) - rad;
-		d->sealevel = ret < d->gnd ? -1 : 1/*d->gnd < ret ? 1 : 0*/;
-	}
+	extern struct astrobj earth;
+	double rad = earth.rad /* EARTH_RAD */;
+#else
+	d->gnd = 0.;
 #endif
+	d->sealevel = ret < d->gnd ? -1 : 1/*d->gnd < ret ? 1 : 0*/;
 
 	lastpos[0] = x;
 	lastpos[1] = y;
@@ -1065,12 +1067,14 @@ void DrawMap::drawmap_in(char *top, int x, int y, int level){
 			wt.height,
 			orgy + (y + .5) * cell);
 #if 1
-		Vec3d delta = pos - g_pglcull->getViewpoint();
-		sp = g_pglcull->getViewdir().sp(delta);
-		if(g_pglcull->getFar() + cellmax < sp)
-			return;
-		if(sp < g_pglcull->getNear() - cellmax)
-			return;
+		if(!g_pglcull->isOrtho()){
+			Vec3d delta = pos - g_pglcull->getViewpoint();
+			sp = g_pglcull->getViewdir().sp(delta);
+			if(g_pglcull->getFar() + cellmax < sp)
+				return;
+			if(sp < g_pglcull->getNear() - cellmax)
+				return;
+		}
 #else
 		if(glcullFar(&pos, cellmax, g_pglcull) || glcullNear(&pos, cellmax, g_pglcull))
 			return;

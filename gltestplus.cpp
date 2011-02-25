@@ -692,18 +692,17 @@ void draw_func(Viewer &vw, double dt){
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
 
-		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
-//		printf("%lg %d: cswardraw\n", TimeMeasLap(&tm), glGetError());
-
 		if(r_shadows){
 			class WarDrawCallback : public ShadowMap::DrawCallback{
 			public:
 				const CoordSys *cs;
 				WarDrawCallback(const CoordSys *cs) : cs(cs){}
 				void drawShadowMaps(Viewer &vw2){
+					cswardraw(&vw2, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 					war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
 				}
 				void draw(Viewer &vw, GLuint shader, GLint textureLoc, GLint shadowmapLoc){
+					cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 					if(g_shader_enable)
 						war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
 					else
@@ -713,6 +712,9 @@ void draw_func(Viewer &vw, double dt){
 			shadowMap.drawShadowMaps(vw, g_light, WarDrawCallback(pl.cs));
 		}
 		else{
+			cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
+	//		printf("%lg %d: cswardraw\n", TimeMeasLap(&tm), glGetError());
+
 			war_draw(vw, pl.cs, &WarField::draw);
 		}
 
@@ -1780,7 +1782,12 @@ static int cmd_toggleconsole(int argc, char *argv[]){
 }
 
 static int cmd_exit(int argc, char *argv[]){
+#ifdef _WIN32
+	// Safely close the window
+	PostMessage(hWndApp, WM_SYSCOMMAND, SC_CLOSE, 0);
+#else
 	exit(0);
+#endif
 	return 0;
 }
 

@@ -161,7 +161,7 @@ void lightOn(){
 	const Astrobj *sun = pl.cs->findBrightest(pl.getpos());
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	g_light = pl.cs->tocs(vec3_000, sun).normin();
+	g_light = sun ? pl.cs->tocs(vec3_000, sun).normin() : vec3_010;
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
 }
 

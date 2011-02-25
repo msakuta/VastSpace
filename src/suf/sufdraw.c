@@ -397,10 +397,6 @@ static void cachemtex(const suftexparam_t *stp){
 	else
 		glDisable(GL_ALPHA_TEST);
 	glEnable(GL_TEXTURE_2D);
-	{
-		GLfloat envcolor[4] = {1., 1., 1., 1.};
-		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
-	}
 }
 
 static GLuint cachetex(const suftexparam_t *stp){
@@ -637,6 +633,10 @@ unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const su
 	if(!glActiveTextureARB){
 		cachemtex(tex1);
 		glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[0]);
+		{
+			GLfloat envcolor[4] = {1., 0., 0., 1.};
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+		}
 	}
 	else{
 		if(tex2){
@@ -647,6 +647,10 @@ unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const su
 			glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[1]);
 			cachemtex(tex2);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
+			{
+				GLfloat envcolor[4] = {1., 1., 0., 1.};
+				glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+			}
 		}
 		else{
 			glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -655,6 +659,10 @@ unsigned long CacheSUFMTex(const char *name, const suftexparam_t *tex1, const su
 			glActiveTextureARB(GL_TEXTURE1_ARB);
 			glDisable(GL_TEXTURE_2D);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
+			{
+				GLfloat envcolor[4] = {1., 0., 0., 1.};
+				glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+			}
 		}
 	}
 	glEndList();

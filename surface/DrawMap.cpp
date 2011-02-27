@@ -61,7 +61,7 @@ GLuint generate_ground_texture();
 
 static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec3d *ret){
 	wartile_t t, tr, td, tl, tu;
-	avec3_t total, nh, xh, zh;
+	avec3_t nh, xh, zh;
 	double height = 0;
 	int count = 0, k = 0;
 	wm->getat(&t, i, j);
@@ -69,7 +69,11 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 	if(j < sy-1) wm->getat(&td, i, j+1), k |= 2;
 	if(0 < i) wm->getat(&tl, i-1, j), k |= 4;
 	if(0 < j) wm->getat(&tu, i, j-1), k |= 8;
-	VECNULL(total);
+	Vec3d total = vec3_000;
+/*	Vec3d xh0 = k & 1 ? Vec3d(cell, tr.height - t.height, 0) : vec3_010;
+	Vec3d xh1 = k & 4 ? Vec3d(-cell, tl.height - t.height, 0) : vec3_010;
+	Vec3d zh0 = k & 2 ? Vec3d(0, td.height - t.height, cell) : vec3_010;
+	Vec3d zh1 = k & 8 ? Vec3d(0, tu.height - t.height, -cell) : vec3_010;*/
 	if(!~(k | ~3)){
 		count++;
 		xh[0] = cell;
@@ -81,6 +85,7 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 		VECVP(nh, zh, xh);
 		VECNORMIN(nh);
 		VECADDIN(total, nh);
+//		total += zh0.vp(xh0).normin();
 	}
 	if(!~(k | ~9)){
 		count++;
@@ -93,6 +98,7 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 		VECVP(nh, xh, zh);
 		VECNORMIN(nh);
 		VECADDIN(total, nh);
+//		total += xh0.vp(zh1).normin();
 	}
 	if(!~(k | ~12)){
 		count++;
@@ -105,6 +111,7 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 		VECVP(nh, zh, xh);
 		VECNORMIN(nh);
 		VECADDIN(total, nh);
+//		total += zh1.vp(xh1).normin();
 	}
 	if(!~(k | ~6)){
 		count++;
@@ -117,15 +124,17 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 		VECVP(nh, xh, zh);
 		VECNORMIN(nh);
 		VECADDIN(total, nh);
+//		total += xh1.vp(zh0).normin();
 	}
 	if(count){
-		VECSCALEIN(total, 1. / count);
+		total /= count;
+//		if((k & 3) == 3 && )
 		glNormal3dv(total);
 		if(ret)
-			VECCPY(*ret, total);
+			*ret = total;
 	}
 	else if(ret)
-		VECCPY(*ret, avec3_010);
+		ret->clear();
 }
 
 /*warmapdecal_t *AllocWarmapDecal(unsigned size){
@@ -319,7 +328,7 @@ protected:
 		double x, z, h, gnd;
 		double t[2][2];
 	/*	double n[3];*/
-		int ix, iy; ///< integral indices of map array, dont matter in intermidiate vertex
+		int ix, iy; ///< integral indices of map array, dont matter in intermediate vertex
 		int valid, skip, inter, sealevel;
 	};
 
@@ -338,6 +347,7 @@ protected:
 	int polys, drawmap_invokes, shadows;
 	GLcull *g_pglcull;
 	WarMap *wm;
+	DrawMapCache *dmc;
 	//static warmapdecal_t *gwmd = NULL;
 	//void *gwmdg = NULL;
 	int gsx, gsy;
@@ -353,7 +363,7 @@ public:
 	static void init_map_lod_factor(){CvarAdd("g_map_lod_factor", &g_map_lod_factor, cvar_double);}
 
 	/// The constructor does all drawing.
-	DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked);
+	DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc);
 
 protected:
 	void checkmap(char *top, int x, int y, int level);
@@ -361,8 +371,30 @@ protected:
 	void drawmap_node(const dmn *d);
 	void drawmap_face(dmn *d);
 	void drawmap_in(char *top, int x, int y, int level);
-	int interm(dmn *d0, dmn *d1, dmn *d01);
+	int interm(const dmn *d0, const dmn *d1, dmn *d01);
 };
+
+class DrawMapCache{
+public:
+	DrawMapCache(WarMap *wm) : wm(wm){update();}
+	void update();
+	wartile_t getat(int x, int y, int level);
+protected:
+	static const unsigned CACHESIZE = 64;
+	static const unsigned NPANELS = 64;
+	WarMap *wm;
+	int nlevels;
+	struct Panel{
+		int x, y;
+		wartile_t nodecache[CACHESIZE][CACHESIZE];
+	};
+	Panel panels[NPANELS];
+
+	wartile_t **layers;
+
+	void update_int(int x, int y, int level);
+};
+
 extern avec3_t cp0[16];
 
 GLuint DrawMap::tex0 = 0, DrawMap::tex = 0;
@@ -373,10 +405,10 @@ GLuint DrawMap::matlist = 0;
 static Initializator s_map_lod_factor(DrawMap::init_map_lod_factor);
 
 
-void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked){
+void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc){
 	try{
 		MultiTextureInit();
-		DrawMap(wm, pos, detail, t, glc, ptop, checked);
+		DrawMap(wm, pos, detail, t, glc, ptop, checked, dmc);
 	}
 	catch(...){
 		fprintf(stderr, __FILE__": ERROR!\n");
@@ -386,7 +418,7 @@ void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*
 #define EARTH_RAD 6378.
 #define EPSILON .01
 
-DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked) :
+DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc) :
 	checkmap_maxlevel(0),
 	checkmap_invokes(0),
 	underwater(0),
@@ -399,6 +431,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	polys(0), drawmap_invokes(0), shadows(0),
 	g_pglcull(NULL),
 	wm(wm),
+	dmc(dmc),
 	gsx(0), gsy(0),
 	g_scale(1),
 	lasttex(0),
@@ -785,7 +818,7 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 /*		glNormal3dv(avec3_010);*/
 	}
 	else if(level == 0 || x == 0 || y == 0 || sx <= x-1 || sy <= y-1 || (x + y) % 2 == 0){
-		wm->getat(&wt, x * scale, y * scale);
+		wt = dmc->getat(x, y, level);
 /*		normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		ret = wt.height;
 	}
@@ -805,9 +838,11 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 			(!(sup[sind / 8] & (1 << (sind % 8))) || !(sup[sind2 / 8] & (1 << (sind2 % 8)))))
 		{
 			double h0, h1, n0[3], n1[3];
-			wm->getat(&wt, x / 2 * sscale, y / 2 * sscale);
+			wt = dmc->getat(x / 2, y / 2, level - 1);
+//			wm->getat(&wt, x / 2 * sscale, y / 2 * sscale);
 			h0 = wt.height;
-			wm->getat(&wt, (x + 1) / 2 * sscale, (y + 1) / 2 * sscale);
+			wt = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1);
+//			wm->getat(&wt, (x + 1) / 2 * sscale, (y + 1) / 2 * sscale);
 			h1 = wt.height;
 			ret = h1;
 /*			normalmap(wm, x / 2 * sscale, y / 2 * sscale, sx, sy, mcell, &n0);*/
@@ -819,7 +854,8 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 			y = (y + 1) / 2 * 2;
 		}
 		else{
-			wm->getat(&wt, x * scale, y * scale);
+			wt = dmc->getat(x, y, level);
+//			wm->getat(&wt, x * scale, y * scale);
 			ret = wt.height;
 /*			normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		}
@@ -867,7 +903,7 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 	return ret;
 }
 
-int DrawMap::interm(dmn *d0, dmn *d1, dmn *d01){
+int DrawMap::interm(const dmn *d0, const dmn *d1, dmn *d01){
 	double t;
 	double h;
 	d01->skip = 0;
@@ -1062,7 +1098,8 @@ void DrawMap::drawmap_in(char *top, int x, int y, int level){
 	{
 		double cellmax = cell * 1.41421356;
 		double sp;
-		wm->getat(&wt, x * scale, y * scale);
+		wt = dmc->getat(x, y, level);
+//		wm->getat(&wt, x * scale, y * scale);
 		Vec3d pos(orgx + (x + .5) * cell,
 			wt.height,
 			orgy + (y + .5) * cell);
@@ -1118,29 +1155,19 @@ void DrawMap::drawmap_in(char *top, int x, int y, int level){
 		glEnable(GL_CULL_FACE);*/
 		last_dmn = NULL;
 
-/*		wm->vft->getat(wm, &wt, x * scale, y * scale);*/
-	/*	glVertex3d*/(x * cell, h = drawmap_height(&d[0], top, sx, sy, x, y, level, pos), y * cell);
+		h = drawmap_height(&d[0], top, sx, sy, x, y, level, pos);
 		if(h < minh)
 			minh = h;
 
-/*		normalmap(wm, x * scale, (y+1) * scale, sx, sy, mcell, NULL);
-		wm->vft->getat(wm, &wt, x * scale, (y+1) * scale);*/
-/*		glTexCoord2d(x * cell, (y+1) * cell);*/
-	/*	glVertex3d*/(x * cell, h = drawmap_height(&d[1], top, sx, sy, x, y+1, level, pos), (y+1) * cell);
+		h = drawmap_height(&d[1], top, sx, sy, x, y+1, level, pos);
 		if(h < minh)
 			minh = h;
 
-/*		normalmap(wm, (x+1) * scale, (y+1) * scale, sx, sy, mcell, NULL);
-		wm->vft->getat(wm, &wt, (x+1) * scale, (y+1) * scale);*/
-/*		glTexCoord2d((x+1) * cell, (y+1) * cell);*/
-	/*	glVertex3d*/((x+1) * cell, h = drawmap_height(&d[2], top, sx, sy, x+1, y+1, level, pos), (y+1) * cell);
+		h = drawmap_height(&d[2], top, sx, sy, x+1, y+1, level, pos);
 		if(h < minh)
 			minh = h;
 
-/*		normalmap(wm, (x+1) * scale, y * scale, sx, sy, mcell, NULL);
-		wm->vft->getat(wm, &wt, (x+1) * scale, y * scale);*/
-/*		glTexCoord2d((x+1) * cell, y * cell);*/
-	/*	glVertex3d*/((x+1) * cell, h = drawmap_height(&d[3], top, sx, sy, x+1, y, level, pos), y * cell);
+		h = drawmap_height(&d[3], top, sx, sy, x+1, y, level, pos);
 		if(h < minh)
 			minh = h;
 
@@ -2023,4 +2050,79 @@ int DrawMiniMap(WarMap *wm, const avec3_t pos, double scale, double angle){
 		return 1;
 	}
 	return 0;
+}
+
+/* ===============================================
+  Implementation of DrawMapCache class
+================================================*/
+
+DrawMapCache *CacheDrawMap(WarMap *wm){
+	return new DrawMapCache(wm);
+}
+
+void DrawMapCache::update(){
+	int sx, sy;
+	wm->size(&sx, &sy);
+	int size = MAX(sx, sy);
+	nlevels = 0;
+	for(int i = 1; i < size; i *= 2) nlevels++;
+	double wid = wm->width();
+//	double cell = map_width / size;
+	double dx, dy;
+	layers = new wartile_t*[nlevels];
+	for(int level = nlevels-1; 0 <= level; level--){
+		layers[level] = new wartile_t[1 << (level * 2)];
+		for(int y = 0; y < (1 << level); y++) for(int x = 0; x < (1 << level); x++){
+			wartile_t *t = &layers[level][y * (1 << level) + x];
+			if(level == nlevels - 1){
+				wm->getat(t, x * 2, y * 2);
+/*				wartile_t t2;
+				t->height = 0.;
+				wm->getat(&t2, x * 2, y * 2);
+				t->height += t2.height;
+				wm->getat(&t2, x * 2, y * 2 + 1);
+				t->height += t2.height;
+				wm->getat(&t2, x * 2 + 1, y * 2 + 1);
+				t->height += t2.height;
+				wm->getat(&t2, x * 2 + 1, y * 2);
+				t->height += t2.height;
+				t->height /= 4;*/
+			}
+			else{
+				*t = layers[level+1][y * 2 * (1 << level) + x * 2];
+/*				t->height = (
+					layers[level+1][y * 2 * (1 << level) + x * 2].height +
+					layers[level+1][y * 2 * (1 << level) + x * 2 + 1].height +
+					layers[level+1][(y * 2 + 1) * (1 << level) + x * 2].height +
+					layers[level+1][(y * 2 + 1) * (1 << level) + x * 2 + 1].height) / 4;*/
+			}
+		}
+	}
+//	update_int(0, 0, 0);
+}
+
+wartile_t DrawMapCache::getat(int x, int y, int level){
+	if(level < nlevels && layers[level]){
+		assert(0 <= level && level < nlevels);
+		int scale = (1 << (nlevels - level)) / 2;
+		y *= scale;
+		x *= scale;
+		y %= 1 << (nlevels - 1);
+		x %= 1 << (nlevels - 1);
+		return layers[nlevels - 1][y * (1 << (nlevels - 1)) + x];
+/*		y %= 1 << level;
+		x %= 1 << level;
+		assert(0 <= x && x < (1 << level) && 0 <= y && y < (1 << level));
+//		assert(0 <= x && 0 <= y);
+		return layers[level][y * (1 << level) + x];*/
+	}
+	else{
+		wartile_t ret;
+		int scale = 1 << (nlevels - level);
+		wm->getat(&ret, x * scale, y * scale);
+		return ret;
+	}
+}
+
+void DrawMapCache::update_int(int x, int y, int level){
 }

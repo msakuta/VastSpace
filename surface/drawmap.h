@@ -22,7 +22,9 @@ void FreeWarmapDecal(warmapdecal_t *wmd);
 int AddWarmapDecal(warmapdecal_t *, const double (*pos)[2], void *data);
 */
 
-void drawmap(WarMap *wm, const Vec3d &pos, int, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmd_global,*/ char **ptop, int *checked);
+class DrawMapCache;
+
+void drawmap(WarMap *wm, const Vec3d &pos, int, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmd_global,*/ char **ptop, int *checked, DrawMapCache *dmc);
 //int DrawMiniMap(warmap_t *wm, const avec3_t pos, double scale, double angle);
 //int mapcheck(struct player *p, warmap_t *wm);
 

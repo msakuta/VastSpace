@@ -158,11 +158,11 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glLoadMatrixd(lightModelView);
 
 			GLattrib gla(GL_POLYGON_BIT);
-			glCullFace(GL_FRONT);
+//			glCullFace(GL_FRONT);
 			glEnable(GL_POLYGON_OFFSET_FILL);
 
 			// This polygon offset prevents aliasing of two-sided polys.
-			glPolygonOffset(1., 1.);
+			glPolygonOffset(2., 2.);
 
 			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
 			Viewer vw2 = vw;

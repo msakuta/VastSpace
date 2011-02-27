@@ -5,6 +5,9 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
+class DrawMapCache;
+DrawMapCache *CacheDrawMap(WarMap *);
+
 class SurfaceCS : public CoordSys{
 public:
 	typedef CoordSys st;
@@ -17,6 +20,7 @@ public:
 	virtual void draw(const Viewer *);
 protected:
 	WarMap *wm;
+	DrawMapCache *dmc;
 	int map_checked;
 	char *map_top;
 };
@@ -28,10 +32,12 @@ SurfaceCS::SurfaceCS() : wm(NULL), map_top(NULL){
 
 SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), map_top(NULL){
 	wm = OpenHGTMap("N36W113.av.zip");
+	dmc = CacheDrawMap(wm);
 }
 
 SurfaceCS::~SurfaceCS(){
 	delete wm;
+	delete dmc;
 }
 
 /// Reset the flag to instruct the drawmap function to recalculate the pyramid buffer.
@@ -46,7 +52,7 @@ void SurfaceCS::draw(const Viewer *vw){
 		if(vw->zslice == 1){
 			gldTranslate3dv(-vw->pos);
 		}
-		drawmap(wm, vw->pos, 0, vw->viewtime, vw->gc, &map_top, &map_checked);
+		drawmap(wm, vw->pos, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
 		glPopMatrix();
 	}
 }

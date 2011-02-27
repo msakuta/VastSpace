@@ -817,31 +817,83 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 		ret = 0;
 /*		glNormal3dv(avec3_010);*/
 	}
-	else if(level == 0 || x == 0 || y == 0 || sx <= x-1 || sy <= y-1 || (x + y) % 2 == 0){
+	else if(level == 0 || x == 0 || y == 0 || sx <= x-1 || sy <= y-1){
 		wt = dmc->getat(x, y, level);
 /*		normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		ret = wt.height;
 	}
 	else{
 		int ssize = 1 << (level - 1);
+
+		/// Detail level flag of one level above. (Content of pyramid buffer)
 		char *sup = &top[-(ssize * ssize + 7) / 8];
-		int sind, sind2;
-		int xx, yy, xx2, yy2;
-		xx = x / 2 + x % 2 - 1;
-		yy = y / 2 + y % 2 - 1;
-		xx2 = x / 2;
-		yy2 = y / 2;
-		sind = xx + yy * ssize;
-		sind2 = xx2 + yy2 * ssize;
+
+		/* Vertex joining with upper level.
+		  I'm not sure this diagram helps to understand what's going on.
+
+		        | x = even      | x = odd
+		--------+---------------+--------------
+		        |  xx      xx2  |  xx2
+		y = even| yy+---+---+   | yy+-------+
+		        |   |   |   |   |   |\      |
+		        |   |   |   |   |   | \     |
+		        |   |   |   |   |   |  \    |
+		        |   +---+---+   |   +---+---+
+		        |   |   |   |   |   |   |   |
+		        |   |   |   |   |   |   |   |
+		        |   |   |   |   |   |   |   |
+		        |   +---+---+   |   +---+---+
+		        |  yy2          |  yy2
+		--------+---------------+--------------
+		        |  xx      xx2  |  xx2
+		y = odd |yy2+---+---+   |yy2+-------+
+		        |   |\  |   |   |   |\      |
+		        |   | \ |   |   |   | \     |
+		        |   |  \|   |   |   |  \    |
+		        |   |   +---+   |   |   +---+
+		        |   |   |   |   |   |   |   |
+		        |   |   |   |   |   |   |   |
+		        |   |   |   |   |   |   |   |
+		        |   +---+---+   |   +---+---+
+		        |               |
+		*/
+
+		int xx = x / 2 + x % 2 - 1;
+		int yy = y / 2 + y % 2 - 1;
+		int xx2 = x / 2;
+		int yy2 = y / 2;
+
+		/// Super layer index of left top vertex
+		int sind = xx + yy * ssize;
+
+		/// Super layer index of in super coordinates
+		int sind2 = xx2 + yy2 * ssize;
+		int sindx = xx2 + yy * ssize;
+		int sindy = xx + yy2 * ssize;
+
+		if((x + y) % 2 == 0){
+			if(!(sup[sind / 8] & (1 << (sind % 8)))
+				|| !(sup[sind2 / 8] & (1 << (sind2 % 8)))
+				|| !(sup[sindx / 8] & (1 << (sindx % 8)))
+				|| !(sup[sindy / 8] & (1 << (sindy % 8))))
+				ret = dmc->getat(x / 2, y / 2, level - 1).height;
+			else
+				ret = dmc->getat(x, y, level).height;
+		}
+		else
 		if(!(xx < 0 || sx <= xx * sscale || yy < 0 || sy <= yy * sscale) &&
 			!(xx2 < 0 || sx <= xx2 * sscale || yy2 < 0 || sy <= yy2 * sscale) &&
 			(!(sup[sind / 8] & (1 << (sind % 8))) || !(sup[sind2 / 8] & (1 << (sind2 % 8)))))
 		{
 			double h0, h1, n0[3], n1[3];
 			wt = dmc->getat(x / 2, y / 2, level - 1);
+//			wt = dmc->getat(x / 2 * 2, y / 2 * 2, level);
+//			wt = dmc->getat(x / 2 * 4, y / 2 * 4, level + 1);
 //			wm->getat(&wt, x / 2 * sscale, y / 2 * sscale);
 			h0 = wt.height;
 			wt = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1);
+//			wt = dmc->getat((x + 1) / 2 * 2, (y + 1) / 2 * 2, level);
+//			wt = dmc->getat((x + 1) / 2 * 4, (y + 1) / 2 * 4, level + 1);
 //			wm->getat(&wt, (x + 1) / 2 * sscale, (y + 1) / 2 * sscale);
 			h1 = wt.height;
 			ret = h1;
@@ -854,9 +906,15 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 			y = (y + 1) / 2 * 2;
 		}
 		else{
-			wt = dmc->getat(x, y, level);
+			if(!(sup[sind / 8] & (1 << (sind % 8)))
+				|| !(sup[sind2 / 8] & (1 << (sind2 % 8)))
+				|| !(sup[sindx / 8] & (1 << (sindx % 8)))
+				|| !(sup[sindy / 8] & (1 << (sindy % 8))))
+				ret = dmc->getat(x / 2, y / 2, level - 1).height;
+			else
+				ret = dmc->getat(x, y, level).height;
 //			wm->getat(&wt, x * scale, y * scale);
-			ret = wt.height;
+//			ret = wt.height;
 /*			normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		}
 	}
@@ -2075,8 +2133,8 @@ void DrawMapCache::update(){
 		for(int y = 0; y < (1 << level); y++) for(int x = 0; x < (1 << level); x++){
 			wartile_t *t = &layers[level][y * (1 << level) + x];
 			if(level == nlevels - 1){
-				wm->getat(t, x * 2, y * 2);
-/*				wartile_t t2;
+//				wm->getat(t, x * 2, y * 2);
+				wartile_t t2;
 				t->height = 0.;
 				wm->getat(&t2, x * 2, y * 2);
 				t->height += t2.height;
@@ -2086,35 +2144,42 @@ void DrawMapCache::update(){
 				t->height += t2.height;
 				wm->getat(&t2, x * 2 + 1, y * 2);
 				t->height += t2.height;
-				t->height /= 4;*/
+				t->height /= 4;
 			}
 			else{
-				*t = layers[level+1][y * 2 * (1 << level) + x * 2];
-/*				t->height = (
-					layers[level+1][y * 2 * (1 << level) + x * 2].height +
-					layers[level+1][y * 2 * (1 << level) + x * 2 + 1].height +
-					layers[level+1][(y * 2 + 1) * (1 << level) + x * 2].height +
-					layers[level+1][(y * 2 + 1) * (1 << level) + x * 2 + 1].height) / 4;*/
+				int wid = 1 << (level + 1);
+//				*t = layers[level+1][y * 2 * (1 << (level + 1)) + x * 2];
+				t->height = (
+					layers[level+1][y * 2 * wid + x * 2].height +
+					layers[level+1][y * 2 * wid + x * 2 + 1].height +
+					layers[level+1][(y * 2 + 1) * wid + x * 2].height +
+					layers[level+1][(y * 2 + 1) * wid + x * 2 + 1].height) / 4;
 			}
 		}
 	}
 //	update_int(0, 0, 0);
 }
 
+static int g_map_cache = 1;
+static void init_map_cache(){
+	CvarAdd("g_map_cache", &g_map_cache, cvar_int);
+}
+static Initializator s_map_cache(init_map_cache);
+
 wartile_t DrawMapCache::getat(int x, int y, int level){
-	if(level < nlevels && layers[level]){
+	if(g_map_cache && level < nlevels && layers[level]){
 		assert(0 <= level && level < nlevels);
-		int scale = (1 << (nlevels - level)) / 2;
+/*		int scale = (1 << (nlevels - level)) / 2;
 		y *= scale;
 		x *= scale;
 		y %= 1 << (nlevels - 1);
 		x %= 1 << (nlevels - 1);
-		return layers[nlevels - 1][y * (1 << (nlevels - 1)) + x];
-/*		y %= 1 << level;
+		return layers[nlevels - 1][y * (1 << (nlevels - 1)) + x];*/
+		y %= 1 << level;
 		x %= 1 << level;
 		assert(0 <= x && x < (1 << level) && 0 <= y && y < (1 << level));
 //		assert(0 <= x && 0 <= y);
-		return layers[level][y * (1 << level) + x];*/
+		return layers[level][y * (1 << level) + x];
 	}
 	else{
 		wartile_t ret;

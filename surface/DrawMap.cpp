@@ -37,6 +37,7 @@ extern "C"{
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
 
 #define BMPSRC_LINKAGE static
 //#include "bmpsrc/block.h"
@@ -372,6 +373,11 @@ protected:
 	void drawmap_face(dmn *d);
 	void drawmap_in(char *top, int x, int y, int level);
 	int interm(const dmn *d0, const dmn *d1, dmn *d01);
+	double mapscale(int x, int y, int level);
+	double maplevel(int x, int y, int level);
+	double interpolateEdge(int x, int y, int level);
+
+	friend class DrawMapCache;
 };
 
 class DrawMapCache{
@@ -379,6 +385,7 @@ public:
 	DrawMapCache(WarMap *wm) : wm(wm){update();}
 	void update();
 	wartile_t getat(int x, int y, int level);
+	wartile_t getat(int x, int y, int level, DrawMap &dm);
 protected:
 	static const unsigned CACHESIZE = 64;
 	static const unsigned NPANELS = 64;
@@ -776,16 +783,27 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 #endif
 }
 
+double DrawMap::mapscale(int x, int y, int level){
+	int size = 1 << level;
+	double cell = map_width / size;
+	double dx, dy;
+	dx = orgx + (x + .5) * cell - map_viewer[0];
+	dy = orgy + (y + .5) * cell - map_viewer[2];
+	double divisor = dx * dx + dy * dy;
+	if(divisor < DBL_EPSILON)
+		return map_width * map_width * (1 << (checkmap_maxlevel + 1));
+	return map_width * map_width * detail_factor * detail_factor / divisor;
+}
+
+double DrawMap::maplevel(int x, int y, int level){
+	return log(mapscale(x, y, level)) / log(4.);
+}
+
 
 void DrawMap::checkmap(char *top, int x, int y, int level){
 	int size = 1 << level;
 	int ind = x + y * size;
-	double cell = map_width / size;
-	double dx, dy;
-	checkmap_invokes++;
-	dx = orgx + (x + .5) * cell - map_viewer[0];
-	dy = orgy + (y + .5) * cell - map_viewer[2];
-	if(dx * dx + dy * dy < cell * cell * detail_factor * detail_factor){
+	if(level < maplevel(x, y, level)){
 		if(level < checkmap_maxlevel){
 			char *sub = &top[(size * size + 7) / 8];
 			top[ind / 8] |= 1 << (ind % 8);
@@ -799,6 +817,36 @@ void DrawMap::checkmap(char *top, int x, int y, int level){
 	}
 	else
 		top[ind / 8] &= ~(1 << (ind % 8));
+}
+
+double DrawMap::interpolateEdge(int x, int y, int level){
+			double dl = maplevel(x, y, level);
+			int il = int(dl);
+			double f = level < il ? 1. : il < level ? 0. : dl - il;
+//			ret = dmc->getat(x, y, level).height * (dl - il)
+			if(checkmap_maxlevel <= il)
+				return dmc->getat(x, y, level).height;
+//			else if(level < il && level + 1 <= checkmap_maxlevel)
+//				return interpolateEdge(x * 2, y * 2, level + 1);
+//				ret = dmc->getat(x, y, level).height;
+			else if(il < level)
+				return interpolateEdge(x / 2, y / 2, level - 1);
+			else if(x % 2 != 0 && y % 2 == 0){
+				return dmc->getat(x, y, level).height * f +
+				(1. - f) * (
+				+ dmc->getat(x / 2, y / 2, level - 1).height
+				+ dmc->getat(x / 2 + 1, y / 2, level - 1).height
+				) / 2.;
+			}
+			else if(x % 2 == 0 && y % 2 != 0){
+				return dmc->getat(x, y, level).height * f +
+				(1. - f) * (
+				+ dmc->getat(x / 2, y / 2, level - 1).height
+				+ dmc->getat(x / 2, y / 2 + 1, level - 1).height
+				) / 2.;
+			}
+			else
+				return dmc->getat(x, y, level).height;
 }
 
 double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, int level, int lastpos[2]){
@@ -815,11 +863,9 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 	d->sealevel = -1;
 	if(wm == NULL){
 		ret = 0;
-/*		glNormal3dv(avec3_010);*/
 	}
 	else if(level == 0 || x == 0 || y == 0 || sx <= x-1 || sy <= y-1){
 		wt = dmc->getat(x, y, level);
-/*		normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		ret = wt.height;
 	}
 	else{
@@ -871,50 +917,38 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 		int sindx = xx2 + yy * ssize;
 		int sindy = xx + yy2 * ssize;
 
-		if((x + y) % 2 == 0){
-			if(!(sup[sind / 8] & (1 << (sind % 8)))
-				|| !(sup[sind2 / 8] & (1 << (sind2 % 8)))
-				|| !(sup[sindx / 8] & (1 << (sindx % 8)))
-				|| !(sup[sindy / 8] & (1 << (sindy % 8))))
-				ret = dmc->getat(x / 2, y / 2, level - 1).height;
-			else
-				ret = dmc->getat(x, y, level).height;
-		}
-		else
-		if(!(xx < 0 || sx <= xx * sscale || yy < 0 || sy <= yy * sscale) &&
+		if((x + y) % 2 != 0 &&
+			!(xx < 0 || sx <= xx * sscale || yy < 0 || sy <= yy * sscale) &&
 			!(xx2 < 0 || sx <= xx2 * sscale || yy2 < 0 || sy <= yy2 * sscale) &&
 			(!(sup[sind / 8] & (1 << (sind % 8))) || !(sup[sind2 / 8] & (1 << (sind2 % 8)))))
 		{
-			double h0, h1, n0[3], n1[3];
-			wt = dmc->getat(x / 2, y / 2, level - 1);
-//			wt = dmc->getat(x / 2 * 2, y / 2 * 2, level);
-//			wt = dmc->getat(x / 2 * 4, y / 2 * 4, level + 1);
-//			wm->getat(&wt, x / 2 * sscale, y / 2 * sscale);
-			h0 = wt.height;
-			wt = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1);
-//			wt = dmc->getat((x + 1) / 2 * 2, (y + 1) / 2 * 2, level);
-//			wt = dmc->getat((x + 1) / 2 * 4, (y + 1) / 2 * 4, level + 1);
-//			wm->getat(&wt, (x + 1) / 2 * sscale, (y + 1) / 2 * sscale);
-			h1 = wt.height;
-			ret = h1;
-/*			normalmap(wm, x / 2 * sscale, y / 2 * sscale, sx, sy, mcell, &n0);*/
-/*			normalmap(wm, (x + 1) / 2 * sscale, (y + 1) / 2 * sscale, sx, sy, mcell, d->n);*/
-/*			VECADDIN(n0, n1);
-			VECSCALEIN(n0, 1. / 2.);
-			glNormal3dv(n0);*/
+			ret = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1).height;
+
+			// Round to even number to match rougher mesh
 			x = (x + 1) / 2 * 2;
 			y = (y + 1) / 2 * 2;
 		}
+		else if(!(sup[sind / 8] & (1 << (sind % 8)))
+			|| !(sup[sind2 / 8] & (1 << (sind2 % 8)))
+			|| !(sup[sindx / 8] & (1 << (sindx % 8)))
+			|| !(sup[sindy / 8] & (1 << (sindy % 8))))
+		{
+			ret = dmc->getat(x / 2, y / 2, level - 1).height;
+		}
+		else if((x + y) % 2 == 0){
+			ret = dmc->getat(x, y, level).height;
+		}
 		else{
-			if(!(sup[sind / 8] & (1 << (sind % 8)))
-				|| !(sup[sind2 / 8] & (1 << (sind2 % 8)))
-				|| !(sup[sindx / 8] & (1 << (sindx % 8)))
-				|| !(sup[sindy / 8] & (1 << (sindy % 8))))
-				ret = dmc->getat(x / 2, y / 2, level - 1).height;
-			else
-				ret = dmc->getat(x, y, level).height;
-//			wm->getat(&wt, x * scale, y * scale);
-//			ret = wt.height;
+//			ret = interpolateEdge(x, y, level);
+/*				ret = dmc->getat(x, y, level).height * (1. + il - dl) +
+				(dl - il) * (
+				+ dmc->getat(xx, yy, level - 1).height
+				+ dmc->getat(xx2, yy, level - 1).height
+				+ dmc->getat(xx, yy2, level - 1).height
+				+ dmc->getat(xx2, yy2, level - 1).height
+				) / 4.;*/
+			wt = dmc->getat(x, y, level);
+			ret = wt.height;
 /*			normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		}
 	}
@@ -929,11 +963,16 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 	d->iy = y * scale;
 
 	if(glMultiTexCoord2fARB){
-		/*glMultiTexCoord2fARB*/(GL_TEXTURE0_ARB, d->t[0][0] = t + x * tcell, d->t[0][1] = t + y * tcell);
-		if(checkmap_maxlevel == level)
-			/*glMultiTexCoord2fARB*/(GL_TEXTURE1_ARB, d->t[1][0] = (t + x * tcell) * 13.78, d->t[1][1] = (t + y * tcell) * 13.78);
-		else
-			/*glMultiTexCoord2fARB*/(GL_TEXTURE1_ARB, d->t[1][0] = 0, d->t[1][1] = 0);
+		d->t[0][0] = t + x * tcell;
+		d->t[0][1] = t + y * tcell;
+		if(checkmap_maxlevel == level){
+			d->t[1][0] = (t + x * tcell) * 13.78;
+			d->t[1][1] = (t + y * tcell) * 13.78;
+		}
+		else{
+			d->t[1][0] = 0;
+			d->t[1][1] = 0;
+		}
 	}
 	else{
 		d->t[0][0] = t + x * cell;
@@ -2187,6 +2226,32 @@ wartile_t DrawMapCache::getat(int x, int y, int level){
 		wm->getat(&ret, x * scale, y * scale);
 		return ret;
 	}
+}
+
+wartile_t DrawMapCache::getat(int x, int y, int level, DrawMap &dm){
+	double dl = dm.maplevel(x, y, level);
+	int il = int(dl);
+/*	x <<= dm.checkmap_maxlevel - level;
+	y <<= dm.checkmap_maxlevel - level;
+	x >>= il;
+	y >>= il;*/
+	if(dl < level || dm.checkmap_maxlevel <= level)
+		return getat(x / 2, y / 2, level - 1);
+	else if(level + 1 < dl)
+		return getat(x, y, level);
+	else{
+		wartile_t ret;
+		ret.height = getat(x / 2, y / 2, level - 1).height * (1. + il - dl) + getat(x, y, level).height * (dl - il);
+		return ret;
+	}
+/*	if(dm.checkmap_maxlevel <= il)
+		return getat(x, y, il);
+	else{
+		wartile_t ret;
+		ret.height = getat(x, y, il).height * (1. + il - dl) + getat(x * 2, y * 2, il + 1).height * (dl - il);
+//		ret.height = getat(x / 2, y / 2, il - 1).height * (1. + il - dl) + getat(x, y, il).height * (dl - il);
+		return ret;
+	}*/
 }
 
 void DrawMapCache::update_int(int x, int y, int level){

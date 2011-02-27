@@ -1211,6 +1211,16 @@ unsigned CoordSys::registerClass(Static &s){
 	if(cm.find(s.id) != cm.end())
 		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << s.id);
 	cm[s.id] = &s;
+
+	// If an extension module is loaded and a CoordSys derived class is newly defined through this function,
+	// the Squirrel VM is already initialized to load definition of classes.
+	// Therefore, extension module classes must define themselves in Squirrel code as they register.
+	if(sqa::g_sqvm){
+		sq_pushroottable(g_sqvm);
+		s.sq_define(sqa::g_sqvm);
+		sq_poptop(g_sqvm);
+	}
+
 	return cm.size();
 }
 
@@ -1391,7 +1401,8 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 			return sq_throwerror(v, _SC("Error wrong classname"));
 		sq_pushstring(v, it->second->s_sqclassname, -1);
 		sq_get(v, -2);
-		sq_createinstance(v, -1);
+		if(SQ_FAILED(sq_createinstance(v, -1)))
+			return sq_throwerror(v, dstring() << "Couldn't create class " << it->second->s_sqclassname);
 		sqa_newobj(v, cs);
 //		sq_setinstanceup(v, -1, cs);
 		return 1;

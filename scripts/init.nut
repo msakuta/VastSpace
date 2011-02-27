@@ -370,7 +370,7 @@ register_console_command("coordsys", function(...){
 			transit = false;
 		print("Transit " + bool(vargv[1]));
 	}
-	if(cs != null && player.cs != cs){
+	if(cs != null && cs.alive && player.cs != cs){
 		if(transit){
 			local newrot = player.getrot() * cs.transRotation(player.cs);
 			local newpos = cs.transPosition(player.getpos(), player.cs);
@@ -869,6 +869,7 @@ function init_Universe(){
 		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
 		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
 		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
+		mainmenu.addItem("Surface Demo", function(){loadmission("scripts/demo7.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;

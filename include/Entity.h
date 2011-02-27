@@ -155,6 +155,6 @@ inline Entity *Entity::getUltimateOwner(){
 struct GLwindowState;
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);
 
-int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
+int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
 
 #endif

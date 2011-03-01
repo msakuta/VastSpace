@@ -1,5 +1,5 @@
 OUTDIR = Debug
-CFLAGS += -I ../clib/include -I ../cpplib/include -I /usr/include/squirrel
+CFLAGS += -I ../clib/include -I ../cpplib/include -I /usr/include/squirrel -I ../squirrel3/include
 
 ${OUTDIR}/gltestplus: ${OUTDIR}\
  ${OUTDIR}/serial.o

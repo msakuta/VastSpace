@@ -1,6 +1,7 @@
 #ifndef WARMAP_H
 #define WARMAP_H
 #include <cpplib/vec3.h>
+#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 
 #define SHADOWS 8 /* count of shadow textures */
 
@@ -19,6 +20,8 @@ public:
 	virtual int linehit(const Vec3d &src, const Vec3d &dir, double t, Vec3d &ret);
 	virtual ~WarMap();
 	virtual void levelterrain(int x0, int y0, int x1, int y1){}
+	virtual const void *rawData()const{return NULL;} ///< Access to the raw data, NULL if not available
+	virtual PHY_ScalarType rawType()const{return PHY_SHORT;} ///< Type of raw data, if available
 	double height(double x, double y, Vec3d *normal);
 	void altterrain(int x0, int y0, int x1, int y1, void altfunc(WarMap *, int x, int y, void *hint), void *hint);
 	/* Road check */

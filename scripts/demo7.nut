@@ -1,7 +1,7 @@
 // Container Ship Demo
 initUI();
 
-deltaFormation("Tank", 0, Quatd(0,0,0,1), Vec3d(0, 2., 0.), 0.15, 3, player.cs, null);
+deltaFormation("Tank", 0, Quatd(0,0,0,1), Vec3d(0, 2., 0.), 0.05, 7, player.cs, null);
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook

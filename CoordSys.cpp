@@ -709,6 +709,7 @@ CoordSys::~CoordSys(){
 		delete cs;
 		cs = csnext;
 	}
+	delete w;
 }
 
 

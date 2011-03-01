@@ -3,6 +3,7 @@
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
+#include <btBulletDynamicsCommon.h>
 
 class DrawMapCache;
 DrawMapCache *CacheDrawMap(WarMap *);
@@ -16,6 +17,7 @@ public:
 	SurfaceCS(const char *path, CoordSys *root);
 	~SurfaceCS();
 
+	virtual void anim(double dt);
 	virtual void predraw(const Viewer *);
 	virtual void draw(const Viewer *);
 
@@ -25,5 +27,8 @@ protected:
 	DrawMapCache *dmc;
 	int map_checked;
 	char *map_top;
+	btCollisionShape *mapshape;
+	btRigidBody *bbody;
+	friend class SurfaceWar;
 };
 

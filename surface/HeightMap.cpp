@@ -59,6 +59,7 @@ public:
 	double width();
 	void levelterrain(int x0, int y0, int x1, int y1);
 	int hitline(const double (*src)[3], const double (*dir)[3], double dt, double (*ret)[3]);
+	const void *rawData()const{return value;}
 
 	/* cache value is more precise and matched type to result */
 	typedef struct mapcache{

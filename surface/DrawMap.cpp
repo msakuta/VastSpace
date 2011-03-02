@@ -375,6 +375,8 @@ protected:
 	int interm(const dmn *d0, const dmn *d1, dmn *d01);
 	double mapscale(int x, int y, int level);
 	double maplevel(int x, int y, int level);
+	double mapscaleVertex(int x, int y, int level);
+	double maplevelVertex(int x, int y, int level);
 	double interpolateEdge(int x, int y, int level);
 
 	friend class DrawMapCache;
@@ -799,6 +801,22 @@ double DrawMap::maplevel(int x, int y, int level){
 	return log(mapscale(x, y, level)) / log(4.);
 }
 
+double DrawMap::mapscaleVertex(int x, int y, int level){
+	int size = 1 << level;
+	double cell = map_width / size;
+	double dx, dy;
+	dx = orgx + (x) * cell - map_viewer[0];
+	dy = orgy + (y) * cell - map_viewer[2];
+	double divisor = dx * dx + dy * dy;
+	if(divisor < DBL_EPSILON)
+		return map_width * map_width * (1 << (checkmap_maxlevel + 1));
+	return map_width * map_width * detail_factor * detail_factor / divisor;
+}
+
+double DrawMap::maplevelVertex(int x, int y, int level){
+	return log(mapscaleVertex(x, y, level)) / log(4.);
+}
+
 
 void DrawMap::checkmap(char *top, int x, int y, int level){
 	int size = 1 << level;
@@ -865,7 +883,7 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 		ret = 0;
 	}
 	else if(level == 0 || x == 0 || y == 0 || sx <= x-1 || sy <= y-1){
-		wt = dmc->getat(x, y, level);
+		wt = dmc->getat(x, y, level, *this);
 		ret = wt.height;
 	}
 	else{
@@ -922,7 +940,7 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 			!(xx2 < 0 || sx <= xx2 * sscale || yy2 < 0 || sy <= yy2 * sscale) &&
 			(!(sup[sind / 8] & (1 << (sind % 8))) || !(sup[sind2 / 8] & (1 << (sind2 % 8)))))
 		{
-			ret = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1).height;
+			ret = dmc->getat((x + 1) / 2, (y + 1) / 2, level - 1, *this).height;
 
 			// Round to even number to match rougher mesh
 			x = (x + 1) / 2 * 2;
@@ -933,10 +951,10 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 			|| !(sup[sindx / 8] & (1 << (sindx % 8)))
 			|| !(sup[sindy / 8] & (1 << (sindy % 8))))
 		{
-			ret = dmc->getat(x / 2, y / 2, level - 1).height;
+			ret = dmc->getat(x / 2, y / 2, level - 1, *this).height;
 		}
 		else if((x + y) % 2 == 0){
-			ret = dmc->getat(x, y, level).height;
+			ret = dmc->getat(x, y, level, *this).height;
 		}
 		else{
 //			ret = interpolateEdge(x, y, level);
@@ -947,7 +965,7 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 				+ dmc->getat(xx, yy2, level - 1).height
 				+ dmc->getat(xx2, yy2, level - 1).height
 				) / 4.;*/
-			wt = dmc->getat(x, y, level);
+			wt = dmc->getat(x, y, level, *this);
 			ret = wt.height;
 /*			normalmap(wm, x * scale, y * scale, sx, sy, mcell, d->n);*/
 		}
@@ -2200,8 +2218,10 @@ void DrawMapCache::update(){
 }
 
 static int g_map_cache = 1;
+static int g_map_interp = 1;
 static void init_map_cache(){
 	CvarAdd("g_map_cache", &g_map_cache, cvar_int);
+	CvarAdd("g_map_interp", &g_map_interp, cvar_int);
 }
 static Initializator s_map_cache(init_map_cache);
 
@@ -2229,19 +2249,39 @@ wartile_t DrawMapCache::getat(int x, int y, int level){
 }
 
 wartile_t DrawMapCache::getat(int x, int y, int level, DrawMap &dm){
-	double dl = dm.maplevel(x, y, level);
+	if(!g_map_interp)
+		return getat(x, y, level);
+	double dl = dm.maplevelVertex(x, y, level);
 	int il = int(dl);
+	double f = 1. - (.55 < dl - il ? 1. : .35 < dl - il ? (dl - il - .35) / .2 : 0.);
+//	double f = 1. - (.75 < dl - il ? (dl - il - .75) / .25 : 0.);
 /*	x <<= dm.checkmap_maxlevel - level;
 	y <<= dm.checkmap_maxlevel - level;
 	x >>= il;
 	y >>= il;*/
-	if(dl < level || dm.checkmap_maxlevel <= level)
+	if(dl < level - 1)
 		return getat(x / 2, y / 2, level - 1);
-	else if(level + 1 < dl)
+	else if(level < dl /*|| f <= DBL_EPSILON *//* || dm.checkmap_maxlevel <= level*/)
 		return getat(x, y, level);
+	else if(x % 2 == 0 && y % 2 == 0){
+		wartile_t ret;
+		ret.height =
+			getat(x / 2, y / 2, level - 1).height * f
+			+ getat(x, y, level).height * (1. - f);
+		return ret;
+	}
+	else if((x + y) % 2 != 0){
+		wartile_t ret;
+		ret.height =
+			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).height) / 2. * f
+			+ getat(x, y, level).height * (1. - f);
+		return ret;
+	}
 	else{
 		wartile_t ret;
-		ret.height = getat(x / 2, y / 2, level - 1).height * (1. + il - dl) + getat(x, y, level).height * (dl - il);
+		ret.height =
+			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + 1, y / 2 + 1, level -1).height) / 2. * f
+			+ getat(x, y, level).height * (1. - f);
 		return ret;
 	}
 /*	if(dm.checkmap_maxlevel <= il)

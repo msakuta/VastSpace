@@ -54,7 +54,7 @@ static WarMap *OpenDatMap(const char *fname);
 class HeightMap : public WarMap{
 public:
 	HeightMap();
-	int getat(wartile_t *wt, int x, int y);
+	int getat(WarMapTile *wt, int x, int y);
 	void size(int *x, int *y);
 	double width();
 	void levelterrain(int x0, int y0, int x1, int y1);
@@ -180,7 +180,7 @@ class TopoMap : public WarMap{
 public:
 	short value[TOPOSIZE][TOPOSIZE];
 
-	int getat(wartile_t *wt, int x, int y);
+	int getat(WarMapTile *wt, int x, int y);
 	void size(int *x, int *y);
 	double width();
 	void levelterrain(int x0, int y0, int x1, int y1);
@@ -551,7 +551,7 @@ static void spline_cubic_f(const double a[4], double f[4]){
 }
 
 
-int HeightMap::getat(wartile_t *wt, int x00, int y00){
+int HeightMap::getat(WarMapTile *wt, int x00, int y00){
 	int x, y, x0 = x00/*MAPSIZE * SUBPIXEL - x00 - 1*/, y0 = y00/*MAPSIZE * SUBPIXEL - y00 - 1*/, xb = x0 / SUBPIXEL, yb = y0 / SUBPIXEL;
 	if(SUBPIXEL <= 1){
 /*		timemeas_t tm;
@@ -748,7 +748,7 @@ int HeightMap::hitline(const double (*src)[3], const double (*dir)[3], double dt
 			double maxcell = 0.;
 
 			for(j = 0; j < 2; j++) for(k = 0; k < 2; k++){
-				wartile_t a;
+				WarMapTile a;
 				getat(&a, ix + j, iy + k);
 				p[j + 2 * k][0] = xcell * (ix + j);
 				p[j + 2 * k][1] = a.height;
@@ -818,7 +818,7 @@ void HeightMap::levelterrain(int x00, int y00, int x10, int y10){
 	x1++;
 	y1++;
 	for(x = x0; x <= x1; x++) for(y = y0; y <= y1; y++){
-		wartile_t t;
+		WarMapTile t;
 		getat(&t, x, y);
 		avg += t.height;
 	}
@@ -836,7 +836,7 @@ void HeightMap::levelterrain(int x00, int y00, int x10, int y10){
 
 
 
-int TopoMap::getat(wartile_t *wt, int x0, int y0){
+int TopoMap::getat(WarMapTile *wt, int x0, int y0){
 	int x = TOPOSIZE - x0 - 1;
 	int y = y0/*TOPOSIZE - y0 - 1*/;
 	wt->height = .001 * value[(TOPOSIZE <= y ? TOPOSIZE-1 : y < 0 ? 0 : (TOPOSIZE - y - 1))][(TOPOSIZE <= x ? TOPOSIZE-1 : x < 0 ? 0 : x)];
@@ -863,7 +863,7 @@ void TopoMap::levelterrain(int x0, int y0, int x1, int y1){
 	x1++;
 	y1++;
 	for(x = x0; x <= x1; x++) for(y = y0; y <= y1; y++){
-		wartile_t t;
+		WarMapTile t;
 		getat(&t, x, y);
 		avg += t.height;
 	}

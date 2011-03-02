@@ -26,7 +26,7 @@ Vec3d WarMap::normal(double x, double y){
 }
 
 double WarMap::height(double x, double y, Vec3d *normal){
-	wartile_t a;
+	WarMapTile a;
 	double xf, yf;
 	int sx, sy;
 	int size;
@@ -670,7 +670,7 @@ static void drawminimap(){
 		my = MIN(ys, 512);
 		dbuf = (double*)malloc(mx * my * sizeof(double));
 		for(y = 0; y < my; y++) for(x = 0; x < mx; x++){
-			wartile_t wt;
+			WarMapTile wt;
 			double h;
 			g_map->vft->getat(g_map, &wt, x * xs / mx, y * ys / my);
 			dbuf[x + y * mx] = h = MAX(0, wt.height);

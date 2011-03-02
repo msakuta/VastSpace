@@ -60,8 +60,9 @@ extern "C"{
 
 GLuint generate_ground_texture();
 
-static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec3d *ret){
-	wartile_t t, tr, td, tl, tu;
+static Vec3d normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell){
+	Vec3d ret;
+	WarMapTile t, tr, td, tl, tu;
 	avec3_t nh, xh, zh;
 	double height = 0;
 	int count = 0, k = 0;
@@ -131,11 +132,11 @@ static void normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell, Vec
 		total /= count;
 //		if((k & 3) == 3 && )
 		glNormal3dv(total);
-		if(ret)
-			*ret = total;
+		ret = total;
 	}
-	else if(ret)
-		ret->clear();
+	else
+		ret.clear();
+	return ret;
 }
 
 /*warmapdecal_t *AllocWarmapDecal(unsigned size){
@@ -310,6 +311,35 @@ GLuint generate_ground_texture(){
 }
 
 
+struct WarMapTileCache : WarMapTile{
+	Vec3d normal;
+
+	WarMapTileCache &operator+=(const WarMapTileCache &o){
+		WarMapTile::operator +=(o);
+		normal += o.normal;
+		return *this;
+	}
+	WarMapTileCache operator+(const WarMapTileCache &o)const{
+		return WarMapTileCache(*this) += o;
+	}
+	WarMapTileCache &operator*=(double d){
+		WarMapTile::operator *=(d);
+		normal *= d;
+		return *this;
+	}
+	WarMapTileCache operator*(int d){
+		return WarMapTileCache(*this) *= d;
+	}
+	WarMapTileCache &operator/=(int d){
+		WarMapTile::operator /=(d);
+		normal /= d;
+		return *this;
+	}
+	WarMapTileCache operator/(int d){
+		return WarMapTileCache(*this) /= d;
+	}
+};
+
 
 /** \brief A class to draw WarMaps.
  *
@@ -329,6 +359,7 @@ protected:
 		double x, z, h, gnd;
 		double t[2][2];
 	/*	double n[3];*/
+		int lx, ly; ///< Index in local level
 		int ix, iy; ///< integral indices of map array, dont matter in intermediate vertex
 		int valid, skip, inter, sealevel;
 	};
@@ -357,8 +388,9 @@ protected:
 	GLuint lasttex;
 	double orgx, orgy;
 	double map_width;
-	short (*pwmdi)[2];
-	short wmdi[2046][2]; ///< warmapdecal index cache
+//	short (*pwmdi)[2];
+//	short wmdi[2046][2]; ///< warmapdecal index cache
+	int currentlevel; ///< Currently processing level
 	static double g_map_lod_factor;
 public:
 	static void init_map_lod_factor(){CvarAdd("g_map_lod_factor", &g_map_lod_factor, cvar_double);}
@@ -386,8 +418,9 @@ class DrawMapCache{
 public:
 	DrawMapCache(WarMap *wm) : wm(wm){update();}
 	void update();
-	wartile_t getat(int x, int y, int level);
-	wartile_t getat(int x, int y, int level, DrawMap &dm);
+	WarMapTileCache getat(int x, int y, int level)const;
+	WarMapTileCache getat(int x, int y, int level, DrawMap &dm)const;
+	Vec3d normalmap(int x, int y, int level, int sx, int sy, double cell, DrawMap &dm)const;
 protected:
 	static const unsigned CACHESIZE = 64;
 	static const unsigned NPANELS = 64;
@@ -395,13 +428,13 @@ protected:
 	int nlevels;
 	struct Panel{
 		int x, y;
-		wartile_t nodecache[CACHESIZE][CACHESIZE];
+		WarMapTileCache nodecache[CACHESIZE][CACHESIZE];
 	};
 	Panel panels[NPANELS];
 
-	wartile_t **layers;
+	WarMapTileCache **layers;
 
-	void update_int(int x, int y, int level);
+	Vec3d cacheNormalmap(int x, int y, int level);
 };
 
 extern avec3_t cp0[16];
@@ -518,7 +551,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	orgx = -map_width / 2.;
 	orgy = -map_width / 2.;
 	{
-		wartile_t t;
+		WarMapTile t;
 		int x = (map_viewer[0] - orgx) * sx / map_width, y = (map_viewer[2] - orgy) * sy / map_width;
 		if(0 <= x && x < sx && 0 <= y && y < sy){
 			wm->getat(&t, x, y);
@@ -726,7 +759,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 		glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 		glBegin(GL_QUADS);
 		for(i = 0; i < sx-1; i++) for(j = 0; j < sy-1; j++){
-			wartile_t t, tr, td, trd, tl, tu;
+			WarMapTile t, tr, td, trd, tl, tu;
 			avec3_t dx, dz, nh;
 			wm->vft->getat(wm, &t, i, j);
 			wm->vft->getat(wm, &tr, i+1, j);
@@ -758,7 +791,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 		glDepthMask(0);
 		for(i = 0; i < sx-1; i++) for(j = 0; j < sy-1; j++){
 			double pos[3];
-			wartile_t t;
+			WarMapTile t;
 			wm->vft->getat(wm, &t, i, j);
 			normalmap(wm, i+1, j, sx, sy, .01, &pos);
 			glColor4ub(255,0,0,255);
@@ -868,7 +901,7 @@ double DrawMap::interpolateEdge(int x, int y, int level){
 }
 
 double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, int level, int lastpos[2]){
-	wartile_t wt;
+	WarMapTile wt;
 	double ret;
 	int size = 1 << level;
 	int scale = 1 << (checkmap_maxlevel - level);
@@ -977,6 +1010,8 @@ double DrawMap::drawmap_height(dmn *d, char *top, int sx, int sy, int x, int y, 
 		return 0.;
 	}
 
+	d->lx = x;
+	d->ly = y;
 	d->ix = x * scale;
 	d->iy = y * scale;
 
@@ -1075,9 +1110,9 @@ void DrawMap::drawmap_node(const dmn *d){
 	if(watersurface)
 		glNormal3d(0, 1, 0);
 	else if(d->valid == 1)
-		normalmap(wm, d->ix, d->iy, gsx, gsy, map_width / gsx, &normal);
+		normal = dmc->normalmap(d->lx, d->ly, currentlevel, gsx, gsy, map_width / gsx, *this);
 	else
-		normalmap(wm, (d->x - orgx) / g_cell, (d->z - orgy) / g_cell, gsx, gsy, g_cell, &normal);
+		normal = dmc->normalmap((d->x - orgx) / g_cell, (d->z - orgy) / g_cell, currentlevel, gsx, gsy, g_cell, *this);
 /*	glNormal3dv(d->n);*/
 	if(flatsurface){
 		glColor3f(.5, .5, .5);
@@ -1203,10 +1238,11 @@ void DrawMap::drawmap_face(dmn *d){
 void DrawMap::drawmap_in(char *top, int x, int y, int level){
 	int size = 1 << level;
 	double cell = map_width / size;
-	dmn d[4];
-	wartile_t wt;
+	WarMapTile wt;
 	int scale = 1 << (checkmap_maxlevel - level);
 	int ind = x + y * size;
+
+	currentlevel = level;
 
 	drawmap_invokes++;
 
@@ -1241,6 +1277,7 @@ void DrawMap::drawmap_in(char *top, int x, int y, int level){
 		drawmap_in(sub, x * 2 + 1, y * 2 + 1, level + 1);
 	}
 	else{
+		dmn d[4];
 		int scale = 1 << (checkmap_maxlevel - level);
 		int sx, sy;
 		double mcell = map_width / (1 << checkmap_maxlevel);
@@ -1940,7 +1977,7 @@ int DrawMiniMap(WarMap *wm, const avec3_t pos, double scale, double angle){
 		orgy = -width / 2.;
 		dbuf = (double*)malloc(mx * my * sizeof(double));
 		for(y = 0; y < my; y++) for(x = 0; x < mx; x++){
-			wartile_t wt;
+			WarMapTile wt;
 			double h;
 			wm->getat(&wt, x * xs / mx, y * ys / my);
 			dbuf[x + y * mx] = h = /*MAX*/(0, wt.height);
@@ -1981,7 +2018,7 @@ int DrawMiniMap(WarMap *wm, const avec3_t pos, double scale, double angle){
 				h -= sqrt(rad * rad - dx * dx - dz * dz) - rad;
 			}
 #endif
-			normalmap(wm, x * xs / mx, y * ys / my, xs, ys, width / xs, &normal);
+			normal = normalmap(wm, x * xs / mx, y * ys / my, xs, ys, width / xs);
 			initfull_rseq(&rs, x, y);
 			r = 0./*(drseq(&rs) - .5) / 1.5*/;
 			if(0. <= h){
@@ -2171,10 +2208,142 @@ int DrawMiniMap(WarMap *wm, const avec3_t pos, double scale, double angle){
   Implementation of DrawMapCache class
 ================================================*/
 
+static int g_map_cache = 1;
+static int g_map_interp = 1;
+static void init_map_cache(){
+	CvarAdd("g_map_cache", &g_map_cache, cvar_int);
+	CvarAdd("g_map_interp", &g_map_interp, cvar_int);
+}
+static Initializator s_map_cache(init_map_cache);
+
 DrawMapCache *CacheDrawMap(WarMap *wm){
 	return new DrawMapCache(wm);
 }
 
+Vec3d DrawMapCache::normalmap(int x, int y, int level, int sx, int sy, double cell, DrawMap &dm)const{
+	if(nlevels <= level){
+		return ::normalmap(wm, x, y, sx, sy, cell);
+	}
+	else{
+		if(!g_map_interp)
+			return ::normalmap(wm, x * (1 << level), y * (1 << level), sx, sy, cell);
+		Vec3d ret;
+
+		double dl = dm.maplevelVertex(x, y, level);
+		int il = int(dl);
+
+		// Interpolation factor.
+		double f = 1. - (.55 < dl - il ? 1. : .35 < dl - il ? (dl - il - .35) / .2 : 0.);
+
+		if(dl < level - 1)
+			ret = getat(x / 2, y / 2, level - 1).normal;
+		else if(level < dl /*|| f <= DBL_EPSILON *//* || dm.checkmap_maxlevel <= level*/)
+			ret = getat(x, y, level).normal;
+		else if(x % 2 == 0 && y % 2 == 0){ // x and y are even
+			// Interpolate with vertex of cell in one level up. It's the simplest case.
+			ret =
+				getat(x / 2, y / 2, level - 1).normal * f
+				+ getat(x, y, level).normal * (1. - f);
+		}
+		else if((x + y) % 2 != 0){ // either x or y is odd
+			// Interpolate with edge of cell in one level up.
+			ret =
+				(getat(x / 2, y / 2, level - 1).normal + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).normal) / 2. * f
+				+ getat(x, y, level).normal * (1. - f);
+		}
+		else{ // x and y are odd
+			// Interpolate with center of cell in one level up.
+			ret =
+				(getat(x / 2, y / 2, level - 1).normal + getat(x / 2 + 1, y / 2 + 1, level -1).normal) / 2. * f
+				+ getat(x, y, level).normal * (1. - f);
+		}
+//		WarMapTileCache t = getat(x, y, level);
+		glNormal3dv(ret);
+		return ret;
+	}
+}
+
+/// Calculate and cache normal vectors for each vertex in the pyramid buffer.
+Vec3d DrawMapCache::cacheNormalmap(int x, int y, int level){
+	WarMapTileCache tr, td, tl, tu;
+	avec3_t nh, xh, zh;
+	Vec3d ret;
+	double height = 0;
+	int count = 0, k = 0;
+	double cell = wm->width() / (1 << level);
+
+	WarMapTileCache t = getat(x, y, level);
+	if(x < (1 << nlevels)-1) tr = getat(x+1, y, level), k |= 1;
+	if(y < (1 << nlevels)-1) td = getat(x, y+1, level), k |= 2;
+	if(0 < x) tl = getat(x-1, y, level), k |= 4;
+	if(0 < y) tu = getat(y, y-1, level), k |= 8;
+	Vec3d total = vec3_000;
+
+	if(!~(k | ~3)){
+		count++;
+		xh[0] = cell;
+		xh[1] = tr.height - t.height;
+		xh[2] = 0;
+		zh[0] = 0;
+		zh[1] = td.height - t.height;
+		zh[2] = cell;
+		VECVP(nh, zh, xh);
+		VECNORMIN(nh);
+		VECADDIN(total, nh);
+//		total += zh0.vp(xh0).normin();
+	}
+	if(!~(k | ~9)){
+		count++;
+		xh[0] = cell;
+		xh[1] = tr.height - t.height;
+		xh[2] = 0;
+		zh[0] = 0;
+		zh[1] = tu.height - t.height;
+		zh[2] = -cell;
+		VECVP(nh, xh, zh);
+		VECNORMIN(nh);
+		VECADDIN(total, nh);
+//		total += xh0.vp(zh1).normin();
+	}
+	if(!~(k | ~12)){
+		count++;
+		xh[0] = -cell;
+		xh[1] = tl.height - t.height;
+		xh[2] = 0;
+		zh[0] = 0;
+		zh[1] = tu.height - t.height;
+		zh[2] = -cell;
+		VECVP(nh, zh, xh);
+		VECNORMIN(nh);
+		VECADDIN(total, nh);
+//		total += zh1.vp(xh1).normin();
+	}
+	if(!~(k | ~6)){
+		count++;
+		xh[0] = -cell;
+		xh[1] = tl.height - t.height;
+		xh[2] = 0;
+		zh[0] = 0;
+		zh[1] = td.height - t.height;
+		zh[2] = cell;
+		VECVP(nh, xh, zh);
+		VECNORMIN(nh);
+		VECADDIN(total, nh);
+//		total += xh1.vp(zh0).normin();
+	}
+	if(count){
+		total /= count;
+		ret = total;
+	}
+	else
+		ret.clear();
+	
+	if(level < nlevels)
+		layers[level][y * (1 << level) + x].normal = ret;
+	return ret;
+}
+
+/// Reconstruct the pyramid buffer of averaged heightmap cache.
 void DrawMapCache::update(){
 	int sx, sy;
 	wm->size(&sx, &sy);
@@ -2184,14 +2353,16 @@ void DrawMapCache::update(){
 	double wid = wm->width();
 //	double cell = map_width / size;
 	double dx, dy;
-	layers = new wartile_t*[nlevels];
+	layers = new WarMapTileCache*[nlevels];
 	for(int level = nlevels-1; 0 <= level; level--){
-		layers[level] = new wartile_t[1 << (level * 2)];
+		layers[level] = new WarMapTileCache[1 << (level * 2)];
 		for(int y = 0; y < (1 << level); y++) for(int x = 0; x < (1 << level); x++){
-			wartile_t *t = &layers[level][y * (1 << level) + x];
+			WarMapTileCache *t = &layers[level][y * (1 << level) + x];
+
+			// If the current level is one level before the last level, retrieve raw data.
 			if(level == nlevels - 1){
 //				wm->getat(t, x * 2, y * 2);
-				wartile_t t2;
+				WarMapTile t2;
 				t->height = 0.;
 				wm->getat(&t2, x * 2, y * 2);
 				t->height += t2.height;
@@ -2203,7 +2374,7 @@ void DrawMapCache::update(){
 				t->height += t2.height;
 				t->height /= 4;
 			}
-			else{
+			else{ // Otherwise, retrieve from cached data in one level down.
 				int wid = 1 << (level + 1);
 //				*t = layers[level+1][y * 2 * (1 << (level + 1)) + x * 2];
 				t->height = (
@@ -2213,19 +2384,14 @@ void DrawMapCache::update(){
 					layers[level+1][(y * 2 + 1) * wid + x * 2 + 1].height) / 4;
 			}
 		}
+		for(int y = 0; y < (1 << level); y++) for(int x = 0; x < (1 << level); x++){
+			cacheNormalmap(x, y, level);
+		}
 	}
-//	update_int(0, 0, 0);
 }
 
-static int g_map_cache = 1;
-static int g_map_interp = 1;
-static void init_map_cache(){
-	CvarAdd("g_map_cache", &g_map_cache, cvar_int);
-	CvarAdd("g_map_interp", &g_map_interp, cvar_int);
-}
-static Initializator s_map_cache(init_map_cache);
-
-wartile_t DrawMapCache::getat(int x, int y, int level){
+/// Get vertex position of the heightmap, applying caching.
+WarMapTileCache DrawMapCache::getat(int x, int y, int level)const{
 	if(g_map_cache && level < nlevels && layers[level]){
 		assert(0 <= level && level < nlevels);
 /*		int scale = (1 << (nlevels - level)) / 2;
@@ -2241,58 +2407,50 @@ wartile_t DrawMapCache::getat(int x, int y, int level){
 		return layers[level][y * (1 << level) + x];
 	}
 	else{
-		wartile_t ret;
+		WarMapTileCache ret;
 		int scale = 1 << (nlevels - level);
 		wm->getat(&ret, x * scale, y * scale);
 		return ret;
 	}
 }
 
-wartile_t DrawMapCache::getat(int x, int y, int level, DrawMap &dm){
+/// Get vertex position of the heightmap, applying caching and interpolation.
+WarMapTileCache DrawMapCache::getat(int x, int y, int level, DrawMap &dm)const{
 	if(!g_map_interp)
 		return getat(x, y, level);
 	double dl = dm.maplevelVertex(x, y, level);
 	int il = int(dl);
+
+	// Interpolation factor.
 	double f = 1. - (.55 < dl - il ? 1. : .35 < dl - il ? (dl - il - .35) / .2 : 0.);
-//	double f = 1. - (.75 < dl - il ? (dl - il - .75) / .25 : 0.);
-/*	x <<= dm.checkmap_maxlevel - level;
-	y <<= dm.checkmap_maxlevel - level;
-	x >>= il;
-	y >>= il;*/
+
 	if(dl < level - 1)
 		return getat(x / 2, y / 2, level - 1);
 	else if(level < dl /*|| f <= DBL_EPSILON *//* || dm.checkmap_maxlevel <= level*/)
 		return getat(x, y, level);
-	else if(x % 2 == 0 && y % 2 == 0){
-		wartile_t ret;
+	else if(x % 2 == 0 && y % 2 == 0){ // x and y are even
+		WarMapTileCache ret;
+		// Interpolate with vertex of cell in one level up. It's the simplest case.
 		ret.height =
 			getat(x / 2, y / 2, level - 1).height * f
 			+ getat(x, y, level).height * (1. - f);
 		return ret;
 	}
-	else if((x + y) % 2 != 0){
-		wartile_t ret;
+	else if((x + y) % 2 != 0){ // either x or y is odd
+		WarMapTileCache ret;
+		// Interpolate with edge of cell in one level up.
 		ret.height =
 			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).height) / 2. * f
 			+ getat(x, y, level).height * (1. - f);
 		return ret;
 	}
-	else{
-		wartile_t ret;
+	else{ // x and y are odd
+		WarMapTileCache ret;
+		// Interpolate with center of cell in one level up.
 		ret.height =
 			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + 1, y / 2 + 1, level -1).height) / 2. * f
 			+ getat(x, y, level).height * (1. - f);
 		return ret;
 	}
-/*	if(dm.checkmap_maxlevel <= il)
-		return getat(x, y, il);
-	else{
-		wartile_t ret;
-		ret.height = getat(x, y, il).height * (1. + il - dl) + getat(x * 2, y * 2, il + 1).height * (dl - il);
-//		ret.height = getat(x / 2, y / 2, il - 1).height * (1. + il - dl) + getat(x, y, il).height * (dl - il);
-		return ret;
-	}*/
 }
 
-void DrawMapCache::update_int(int x, int y, int level){
-}

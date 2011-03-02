@@ -16,15 +16,15 @@ extern "C"{
 
 class Mas : public WarMap{
 public:
-	virtual int getat(wartile_t *, int x, int y);
+	virtual int getat(WarMapTile *, int x, int y);
 	virtual void size(int *x, int *y);
 	virtual double width();
 	virtual void levelterrain(int x0, int y0, int x1, int y1);
 //	virtual int linehit(const Vec3d &src, const Vec3d &dir, double dt, Vec3d &ret);
 	int sx, sy;
-	wartile_t *value;
+	WarMapTile *value;
 	Mas(int sx, int sy) : sx(sx), sy(sy){
-		value = new wartile_t[sx * sy];
+		value = new WarMapTile[sx * sy];
 	}
 };
 
@@ -98,7 +98,7 @@ static void read_params(Mas *p, const char *buf)
 }
 
 
-int Mas::getat(wartile_t *wt, int x, int y){
+int Mas::getat(WarMapTile *wt, int x, int y){
 	*wt = value[(sx <= x ? sx-1 : x) + (sy <= y ? sy-1 : y) * sx];
 	return 1;
 }
@@ -119,7 +119,7 @@ void Mas::levelterrain(int x0, int y0, int x1, int y1){
 	x1++;
 	y1++;
 	for(x = x0; x <= x1; x++) for(y = y0; y <= y1; y++){
-		wartile_t &t = value[(sx <= x ? sx-1 : x) + (sy <= y ? sy-1 : y) * sx];
+		WarMapTile &t = value[(sx <= x ? sx-1 : x) + (sy <= y ? sy-1 : y) * sx];
 		avg += t.height;
 	}
 	avg /= (x1 - x0 + 1) * (y1 - y0 + 1);
@@ -136,7 +136,7 @@ static void interpolate_normal(WarMap *wm, double x, double y, double (*ret)[3])
 #if 1
 
 class MemoryMap : public WarMap{
-	int getat(wartile_t *, int x, int y);
+	int getat(WarMapTile *, int x, int y);
 	void size(int *x, int *y);
 	double width();
 };
@@ -145,7 +145,7 @@ WarMap *CreateMemap(void){
 	return new MemoryMap();
 }
 
-int MemoryMap::getat(wartile_t *wt, int x, int y){
+int MemoryMap::getat(WarMapTile *wt, int x, int y){
 	double hoy = 16. * 16. - ((x - 16.) * (x - 16.) + (y - 16.) * (y - 16.));
 	wt->height = hoy > 0 ? (hoy) * 2e-4 : 0.;
 	return 1;
@@ -165,7 +165,7 @@ class RepeatMap : public WarMap{
 public:
 	RepeatMap(WarMap *src, int xmin, int ymin, int xmax, int ymax);
 	~RepeatMap();
-	int getat(wartile_t *, int x, int y);
+	int getat(WarMapTile *, int x, int y);
 	void size(int *x, int *y);
 	double width();
 	Vec3d normal(double x, double y);
@@ -189,7 +189,7 @@ RepeatMap::RepeatMap(WarMap *src, int xmin, int ymin, int xmax, int ymax) : src(
 	y1 = ymax;
 }
 
-int RepeatMap::getat(wartile_t *wt, int x, int y){
+int RepeatMap::getat(WarMapTile *wt, int x, int y){
 	int xs, ys;
 	int ret;
 	int size;

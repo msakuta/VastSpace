@@ -5,15 +5,37 @@
 
 #define SHADOWS 8 /* count of shadow textures */
 
-typedef struct warmap_tile{
+struct WarMapTile{
 	double height; /* altitude */
 	/*int grass;*/ /* grass density */
-} wartile_t;
+
+	WarMapTile &operator+=(const WarMapTile &o){
+		height = o.height;
+		return *this;
+	}
+	WarMapTile operator+(const WarMapTile &o)const{
+		return WarMapTile(*this) += o;
+	}
+	WarMapTile &operator*=(double d){
+		height *= d;
+		return *this;
+	}
+	WarMapTile operator*(int d){
+		return WarMapTile(*this) *= d;
+	}
+	WarMapTile &operator/=(int d){
+		height /= d;
+		return *this;
+	}
+	WarMapTile operator/(int d){
+		return WarMapTile(*this) /= d;
+	}
+};
 
 class WarMap{
 public:
 	WarMap();
-	virtual int getat(wartile_t *return_info, int x, int y) = 0;
+	virtual int getat(WarMapTile *return_info, int x, int y) = 0;
 	virtual void size(int *retx, int *rety) = 0;
 	virtual double width() = 0;
 	virtual Vec3d normal(double x, double y);

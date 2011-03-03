@@ -327,15 +327,15 @@ struct WarMapTileCache : WarMapTile{
 		normal *= d;
 		return *this;
 	}
-	WarMapTileCache operator*(int d){
+	WarMapTileCache operator*(double d){
 		return WarMapTileCache(*this) *= d;
 	}
-	WarMapTileCache &operator/=(int d){
+	WarMapTileCache &operator/=(double d){
 		WarMapTile::operator /=(d);
 		normal /= d;
 		return *this;
 	}
-	WarMapTileCache operator/(int d){
+	WarMapTileCache operator/(double d){
 		return WarMapTileCache(*this) /= d;
 	}
 };
@@ -2221,47 +2221,47 @@ DrawMapCache *CacheDrawMap(WarMap *wm){
 }
 
 Vec3d DrawMapCache::normalmap(int x, int y, int level, int sx, int sy, double cell, DrawMap &dm)const{
-	if(nlevels <= level){
-		return ::normalmap(wm, x, y, sx, sy, cell);
-	}
+	if(!g_map_interp)
+		return ::normalmap(wm, x * (1 << (dm.checkmap_maxlevel - level)), y * (1 << (dm.checkmap_maxlevel - level)), sx, sy, cell);
+	Vec3d ret;
+
+	double dl = dm.maplevelVertex(x, y, level);
+	int il = int(dl);
+
+	// Interpolation factor.
+	double f = 1. - (.55 < dl - il ? 1. : .35 < dl - il ? (dl - il - .35) / .2 : 0.);
+
+	if(dl < level - 1)
+		ret = getat(x / 2, y / 2, level - 1).normal;
 	else{
-		if(!g_map_interp)
-			return ::normalmap(wm, x * (1 << level), y * (1 << level), sx, sy, cell);
-		Vec3d ret;
+		// Get the default normal value here, because we need it anyway.
+		Vec3d defaultRet = level == nlevels ? ::normalmap(wm, x, y, sx, sy, cell) : getat(x, y, level).normal;
 
-		double dl = dm.maplevelVertex(x, y, level);
-		int il = int(dl);
-
-		// Interpolation factor.
-		double f = 1. - (.55 < dl - il ? 1. : .35 < dl - il ? (dl - il - .35) / .2 : 0.);
-
-		if(dl < level - 1)
-			ret = getat(x / 2, y / 2, level - 1).normal;
-		else if(level < dl /*|| f <= DBL_EPSILON *//* || dm.checkmap_maxlevel <= level*/)
-			ret = getat(x, y, level).normal;
+		if(level < dl /*|| f <= DBL_EPSILON *//* || dm.checkmap_maxlevel <= level*/)
+			ret = defaultRet;
 		else if(x % 2 == 0 && y % 2 == 0){ // x and y are even
 			// Interpolate with vertex of cell in one level up. It's the simplest case.
 			ret =
 				getat(x / 2, y / 2, level - 1).normal * f
-				+ getat(x, y, level).normal * (1. - f);
+				+ defaultRet * (1. - f);
 		}
 		else if((x + y) % 2 != 0){ // either x or y is odd
 			// Interpolate with edge of cell in one level up.
 			ret =
 				(getat(x / 2, y / 2, level - 1).normal + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).normal) / 2. * f
-				+ getat(x, y, level).normal * (1. - f);
+				+ defaultRet * (1. - f);
 		}
 		else{ // x and y are odd
 			// Interpolate with center of cell in one level up.
 			ret =
 				(getat(x / 2, y / 2, level - 1).normal + getat(x / 2 + 1, y / 2 + 1, level -1).normal) / 2. * f
-				+ getat(x, y, level).normal * (1. - f);
+				+ defaultRet * (1. - f);
 		}
-//		WarMapTileCache t = getat(x, y, level);
-		glNormal3dv(ret);
-		return ret;
 	}
+	glNormal3dv(ret);
+	return ret;
 }
+
 
 /// Calculate and cache normal vectors for each vertex in the pyramid buffer.
 Vec3d DrawMapCache::cacheNormalmap(int x, int y, int level){
@@ -2331,10 +2331,8 @@ Vec3d DrawMapCache::cacheNormalmap(int x, int y, int level){
 		VECADDIN(total, nh);
 //		total += xh1.vp(zh0).normin();
 	}
-	if(count){
-		total /= count;
-		ret = total;
-	}
+	if(count)
+		ret = total.normin();
 	else
 		ret.clear();
 	
@@ -2440,7 +2438,7 @@ WarMapTileCache DrawMapCache::getat(int x, int y, int level, DrawMap &dm)const{
 		WarMapTileCache ret;
 		// Interpolate with edge of cell in one level up.
 		ret.height =
-			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).height) / 2. * f
+			(getat(x / 2, y / 2, level - 1).height + getat(x / 2 + x % 2, y / 2 + y % 2, level - 1).height) * (f / 2.)
 			+ getat(x, y, level).height * (1. - f);
 		return ret;
 	}

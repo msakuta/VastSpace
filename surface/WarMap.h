@@ -10,7 +10,7 @@ struct WarMapTile{
 	/*int grass;*/ /* grass density */
 
 	WarMapTile &operator+=(const WarMapTile &o){
-		height = o.height;
+		height += o.height;
 		return *this;
 	}
 	WarMapTile operator+(const WarMapTile &o)const{

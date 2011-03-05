@@ -1,6 +1,7 @@
 #ifndef DRAWMAP_H
 #define DRAWMAP_H
 #include "WarMap.h"
+#include "Viewer.h"
 #include <cpplib/vec3.h>
 #include <cpplib/gl/cullplus.h>
 
@@ -24,7 +25,7 @@ int AddWarmapDecal(warmapdecal_t *, const double (*pos)[2], void *data);
 
 class DrawMapCache;
 
-void drawmap(WarMap *wm, const Vec3d &pos, int, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmd_global,*/ char **ptop, int *checked, DrawMapCache *dmc);
+void drawmap(WarMap *wm, const Viewer &vw, int, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmd_global,*/ char **ptop, int *checked, DrawMapCache *dmc);
 //int DrawMiniMap(warmap_t *wm, const avec3_t pos, double scale, double angle);
 //int mapcheck(struct player *p, warmap_t *wm);
 

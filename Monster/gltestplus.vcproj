@@ -705,10 +705,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\ShadowMap.h"
-				>
-			</File>
-			<File
 				RelativePath="..\tent3d_p.h"
 				>
 			</File>
@@ -865,6 +861,10 @@
 			</File>
 			<File
 				RelativePath="..\include\serial_util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\ShadowMap.h"
 				>
 			</File>
 			<File

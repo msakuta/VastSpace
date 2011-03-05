@@ -9,6 +9,8 @@
 #include "material.h"
 #include "bitmap.h"
 #include "cmd.h"
+#include "glsl.h"
+#include "ShadowMap.h"
 //#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>
@@ -55,7 +57,7 @@ extern "C"{
 #endif
 
 #define ROOT2 1.41421356
-
+#define MAPPROFILE 1
 
 
 GLuint generate_ground_texture();
@@ -366,6 +368,7 @@ protected:
 
 	static GLuint tex0, tex;
 	static double detail_factor;
+	const Viewer &vw;
 	int checkmap_maxlevel, checkmap_invokes;
 	int underwater;
 	int watersurface;
@@ -391,12 +394,19 @@ protected:
 //	short (*pwmdi)[2];
 //	short wmdi[2046][2]; ///< warmapdecal index cache
 	int currentlevel; ///< Currently processing level
+	char **ptop;
+	int *checked;
+	int detail;
+	bool useNormalMap;
 	static double g_map_lod_factor;
 public:
 	static void init_map_lod_factor(){CvarAdd("g_map_lod_factor", &g_map_lod_factor, cvar_double);}
 
-	/// The constructor does all drawing.
-	DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc);
+	/// The constructor does not draw anything.
+	DrawMap(WarMap *wm, const Viewer &vw, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc);
+
+	/// \brief The function that actually draws the height field.
+	void runDrawMap();
 
 protected:
 	void checkmap(char *top, int x, int y, int level);
@@ -416,11 +426,12 @@ protected:
 
 class DrawMapCache{
 public:
-	DrawMapCache(WarMap *wm) : wm(wm){update();}
+	DrawMapCache(WarMap *wm) : wm(wm), normalTexture(0){update();}
 	void update();
 	WarMapTileCache getat(int x, int y, int level)const;
 	WarMapTileCache getat(int x, int y, int level, DrawMap &dm)const;
 	Vec3d normalmap(int x, int y, int level, int sx, int sy, double cell, DrawMap &dm)const;
+	GLuint createNormalTexture();
 protected:
 	static const unsigned CACHESIZE = 64;
 	static const unsigned NPANELS = 64;
@@ -433,6 +444,8 @@ protected:
 	Panel panels[NPANELS];
 
 	WarMapTileCache **layers;
+
+	GLuint normalTexture;
 
 	Vec3d cacheNormalmap(int x, int y, int level);
 };
@@ -447,10 +460,10 @@ GLuint DrawMap::matlist = 0;
 static Initializator s_map_lod_factor(DrawMap::init_map_lod_factor);
 
 
-void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc){
+void drawmap(WarMap *wm, const Viewer &vw, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc){
 	try{
 		MultiTextureInit();
-		DrawMap(wm, pos, detail, t, glc, ptop, checked, dmc);
+		DrawMap(wm, vw, detail, t, glc, ptop, checked, dmc).runDrawMap();
 	}
 	catch(...){
 		fprintf(stderr, __FILE__": ERROR!\n");
@@ -460,7 +473,7 @@ void drawmap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*
 #define EARTH_RAD 6378.
 #define EPSILON .01
 
-DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc) :
+DrawMap::DrawMap(WarMap *wm, const Viewer &vw, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc) :
 	checkmap_maxlevel(0),
 	checkmap_invokes(0),
 	underwater(0),
@@ -471,15 +484,26 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	mat_ambient_color(1., 1., 1., 1.0),
 	last_dmn(NULL),
 	polys(0), drawmap_invokes(0), shadows(0),
-	g_pglcull(NULL),
+	g_pglcull(glc),
 	wm(wm),
 	dmc(dmc),
 	gsx(0), gsy(0),
 	g_scale(1),
 	lasttex(0),
 	orgx(-3601 * .03 / 2.), orgy(-3601 * .03 / 2.),
-	map_width(3601 * .03)
+	map_width(3601 * .03),
+	vw(vw),
+	map_viewer(vw.pos),
+	ptop(ptop),
+	checked(checked),
+	detail(detail),
+	useNormalMap(false)
 {
+}
+
+/// It's separated from the constructor, because the constructor ideally initializes the object itself and
+/// member variables are not supposed to be always initialzed there.
+void DrawMap::runDrawMap(){
 	int i, j, sx, sy;
 	Vec4f dif(1., 1., 1., 1.), amb(0.2, .2, 0.2, 1.);
 /*	GLfloat dif[4] = {0.125, .5, 0.125, 1.}, amb[4] = {0., .2, 0., 1.};*/
@@ -497,7 +521,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 #endif
 	GLuint oldtex;
 
-	if(!wm || !pos)
+	if(!wm)
 		return;
 
 	glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&oldtex);
@@ -513,8 +537,6 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	}
 	running = 1;
 #endif
-
-	map_viewer = pos;
 
 #if 1
 
@@ -545,7 +567,7 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	memset(top, 0, ((4 << (2 * ex)) - 1) / 3);
 		printf("mset: %lg\n", TimeMeasLap(&tm));*/
 
-	detail_factor = (glc ? 4. / (glc->getFov() + .5) : 3.) * g_map_lod_factor;
+	detail_factor = (g_pglcull ? 4. / (g_pglcull->getFov() + .5) : 3.) * g_map_lod_factor;
 	checkmap_invokes = 0;
 	map_width = wm->width();
 	orgx = -map_width / 2.;
@@ -573,8 +595,10 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	checkmap_time = TimeMeasLap(&tm);
 
 	TimeMeasStart(&tm);
-	drawmapt = fmod(t, 1.);
+//	drawmapt = fmod(t, 1.);
 #endif
+	bool shaderUsed = false;
+	const Vec3d &pos = map_viewer;
 	underwater = pos[1] < sqrt(EARTH_RAD * EARTH_RAD - pos[0] * pos[0] - pos[2] * pos[2]) - EARTH_RAD;
 	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_TEXTURE_BIT);
 	if(detail){
@@ -587,6 +611,60 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 		glDisable(GL_TEXTURE_2D);
 	}
 	else{
+		if(vw.shadowmap){
+			static GLuint shader = 0;
+			static GLint textureLoc = -1;
+			static GLint texture2Loc = -1;
+			static GLint texture3Loc = -1;
+			static GLint shadowmapLoc = -1;
+			static GLint shadowmap2Loc = -1;
+			static GLint shadowmap3Loc = -1;
+			static GLint bumpInvEyeMat3Loc = -1;
+			if(!g_shader_enable){
+			}
+			else do{
+				static bool shader_compile = false;
+				if(!shader_compile){
+					shader_compile = true;
+					GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+					vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
+					if(!glsl_load_shader(vtx, "shaders/shadowmapForHeightmap.vs") || !glsl_load_shader(frg, "shaders/shadowmapForHeightmap.fs"))
+						break;
+					shader = glsl_register_program(shaders, 2);
+					if(!shader)
+						break;
+					textureLoc = glGetUniformLocation(shader, "texture");
+					texture2Loc = glGetUniformLocation(shader, "texture2");
+					texture3Loc = glGetUniformLocation(shader, "texture3");
+					shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
+					shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
+					shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+					bumpInvEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+				}
+				shaderUsed = true;
+				Mat4d itrans = vw.irot;
+				itrans.vec3(3) = vw.pos;
+				glUseProgram(shader);
+				glUniform1i(textureLoc, 0);
+				glUniform1i(texture2Loc, 1);
+				glUniform1i(texture3Loc, 5);
+				glUniform1i(shadowmapLoc, 2);
+				glUniform1i(shadowmap2Loc, 3);
+				glUniform1i(shadowmap3Loc, 4);
+
+				Quatd rot = quat_u/*vw->cs->tocsq(sun)*/;
+				Mat4d rot2 = (rot * vw.qrot/*.cnj()*/).tomat4();
+				Mat3<float> irot3 = rot2.tomat3().cast<float>();
+				glUniformMatrix3fv(bumpInvEyeMat3Loc, 1, GL_FALSE, irot3);
+
+				glDisable(GL_ALPHA_TEST);
+
+				glActiveTextureARB(GL_TEXTURE5_ARB);
+				glBindTexture(GL_TEXTURE_2D, dmc->createNormalTexture());
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+				useNormalMap = true;
+			} while(0);
+		}
 		int i;
 		GLfloat mat_specular[] = {0., 0., 0., 1.}/*{ 1., 1., .1, 1.0 }*/;
 		Vec4f mat_diffuse(.75, .75, .75, 1.0);
@@ -692,7 +770,6 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 	}
 /*	printf("map tex: %lg\n", textime = TimeMeasLap(&tm));*/
 
-	g_pglcull = glc;
 	polys = 0;
 	lasttex = 0;
 	drawmap_invokes = 0;
@@ -810,6 +887,9 @@ DrawMap::DrawMap(WarMap *wm, const Vec3d &pos, int detail, double t, GLcull *glc
 #ifndef NDEBUG
 	running = 0;
 #endif
+
+	if(shaderUsed)
+		glUseProgram(vw.shadowmap->getShader());
 
 	glBindTexture(GL_TEXTURE_2D, oldtex);
 
@@ -1104,10 +1184,11 @@ void DrawMap::drawmap_node(const dmn *d){
 	if(glMultiTexCoord2fARB){
 		glMultiTexCoord2fARB(GL_TEXTURE0_ARB, d->t[0][0] + t, d->t[0][1] + t);
 		glMultiTexCoord2fARB(GL_TEXTURE1_ARB, d->t[1][0] + t * 13.78, d->t[1][1] + t * 13.78);
+		glMultiTexCoord2dARB(GL_TEXTURE5_ARB, (double)d->ix / gsx, (double)d->iy / gsx);
 	}
     else
 		glTexCoord2d(d->t[0][0] + t, d->t[0][1] + t);
-	if(watersurface)
+	if(watersurface || this->useNormalMap)
 		glNormal3d(0, 1, 0);
 	else if(d->valid == 1)
 		normal = dmc->normalmap(d->lx, d->ly, currentlevel, gsx, gsy, map_width / gsx, *this);
@@ -2387,6 +2468,29 @@ void DrawMapCache::update(){
 		}
 	}
 }
+
+GLuint DrawMapCache::createNormalTexture(){
+	if(!normalTexture){
+		GLenum gerr;
+		Vec3f *texbuf = new Vec3f[1 << ((nlevels + 1) * 2)];
+		glGenTextures(1, &normalTexture);
+		glBindTexture(GL_TEXTURE_2D, normalTexture);
+		for(int y = 0; y < (1 << (nlevels - 1)); y++) for(int x = 0; x < (1 << (nlevels - 1)); x++){
+			texbuf[y * (1 << (nlevels - 1)) + x] = layers[nlevels - 1][y * (1 << (nlevels - 1)) + x].normal.cast<GLfloat>();
+		}
+		gerr = glGetError();
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1 << (nlevels - 1), 1 << (nlevels - 1), 0, GL_RGB, GL_FLOAT, texbuf);
+		gerr = glGetError();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		delete texbuf;
+	}
+	return normalTexture;
+}
+
 
 /// Get vertex position of the heightmap, applying caching.
 WarMapTileCache DrawMapCache::getat(int x, int y, int level)const{

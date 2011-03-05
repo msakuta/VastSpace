@@ -985,12 +985,7 @@ void Island3::draw(const Viewer *vw){
 				for(k = 0; k < 4; k++){
 					double st[2];
 					Vec3d norm = prot[k]->dvp3(pos1[k / 2]);
-					if(n)
-						glNormal3dv(norm);
-					else{
-						VECSCALEIN(norm, -1.);
-						glNormal3dv(norm);
-					}
+					glNormal3dv(n ? norm : -norm);
 					st[0] = pos1[k / 2][1];
 					st[1] = (i % 16 + leap * !!(9 & (1<<k))) / 8.;
 					glTexCoord2dv(st);

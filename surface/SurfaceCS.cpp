@@ -80,12 +80,12 @@ void SurfaceCS::predraw(const Viewer *vw){
 
 /// Note that this function is going to be called at least twice a frame.
 void SurfaceCS::draw(const Viewer *vw){
-	if(wm && vw->zslice < 2){
+	if(wm && vw->zslice == 0){
 		glPushMatrix();
 		if(vw->zslice == 1){
 			gldTranslate3dv(-vw->pos);
 		}
-		drawmap(wm, vw->pos, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
+		drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
 		glPopMatrix();
 	}
 }

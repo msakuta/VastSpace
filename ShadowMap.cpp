@@ -80,6 +80,7 @@ GLuint ShadowMap::fbo = 0; ///< Framebuffer object
 //GLuint ShadowMap::rboId = 0; ///< Renderbuffer object
 GLuint ShadowMap::to = 0; ///< Texture object
 GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
+GLuint ShadowMap::shader = 0;
 
 /// Initializes shadow map textures
 ShadowMap::ShadowMap(){
@@ -130,8 +131,13 @@ ShadowMap::ShadowMap(){
 	}
 }
 
+inline GLuint ShadowMap::getShader()const{
+	return shader;
+}
+
 /// Actually draws shadow maps and the scene.
 void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &drawcallback){
+	vw.shadowmap = this;
 	if(fbo && glIsFrameBufferEXT(fbo)){
 		Mat4d lightProjection[3];
 		Mat4d lightModelView;
@@ -185,8 +191,6 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 		glViewport(0, 0, vw.vp.w, vw.vp.h);
 				
 		if(shadowok){
-
-			static GLuint shader = 0;
 			static GLint textureLoc = -1;
 			static GLint texture2Loc = -1;
 			static GLint shadowmapLoc = -1;
@@ -299,5 +303,6 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glPopAttrib();
 		}
 	}
+	vw.shadowmap = NULL;
 }
 

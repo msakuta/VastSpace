@@ -4,6 +4,7 @@
  * \brief Definition of ShadowMap class handling shadow map textures.
  */
 
+#include "export.h"
 #include "Viewer.h"
 
 #include "antiglut.h"
@@ -15,10 +16,13 @@
 #include <gl/GL.h>
 
 /// A class to support shadow drawing with shadow mapping technique.
+///
 /// It depends on several OpenGL extensions.
-class ShadowMap{
-	static GLuint fbo, to;
+class EXPORT ShadowMap{
+	static GLuint fbo;
+	static GLuint to;
 	static GLuint depthTextures[3];
+	static GLuint shader;
 public:
 	class DrawCallback{
 	public:
@@ -27,8 +31,8 @@ public:
 	};
 	ShadowMap();
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
+	GLuint getShader()const;
 };
-
 
 
 #endif

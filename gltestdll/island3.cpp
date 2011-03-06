@@ -24,6 +24,7 @@
 #include "judge.h"
 #include "bitmap.h"
 #include "draw/WarDraw.h"
+#include "ShadowMap.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -799,6 +800,18 @@ bool Island3::cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &ma
 void Island3::draw(const Viewer *vw){
 	if(1 < vw->zslice) // No way we can draw it without z buffering.
 		return;
+	if(vw->shadowmap && vw->shadowmap->isDrawingShadow())
+		return;
+	struct ShaderReserver{
+		const Viewer *vw;
+		ShaderReserver(const Viewer *vw) : vw(vw){}
+		~ShaderReserver(){
+			if(vw->shadowmap)
+				glUseProgram(vw->shadowmap->getShader());
+		}
+	} sr(vw);
+	if(vw->shadowmap)
+		glUseProgram(0);
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 

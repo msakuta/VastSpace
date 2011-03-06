@@ -83,7 +83,7 @@ GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
 GLuint ShadowMap::shader = 0;
 
 /// Initializes shadow map textures
-ShadowMap::ShadowMap(){
+ShadowMap::ShadowMap() : shadowing(false){
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
@@ -131,7 +131,7 @@ ShadowMap::ShadowMap(){
 	}
 }
 
-inline GLuint ShadowMap::getShader()const{
+GLuint ShadowMap::getShader()const{
 	return shader;
 }
 
@@ -164,7 +164,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glLoadMatrixd(lightModelView);
 
 			GLattrib gla(GL_POLYGON_BIT);
-//			glCullFace(GL_FRONT);
+			glCullFace(GL_FRONT);
 			glEnable(GL_POLYGON_OFFSET_FILL);
 
 			// This polygon offset prevents aliasing of two-sided polys.
@@ -178,6 +178,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			GLenum glerr20 = glGetError();
 	//				cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 			GLenum glerr21 = glGetError();
+			shadowing = true; // Notify the callback implicitly that it's the shadow map texture pass.
 			drawcallback.drawShadowMaps(vw2);
 	//				war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
 	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
@@ -200,6 +201,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 				glPushAttrib(GL_LIGHTING_BIT);
 	//			glDisable(GL_LIGHT0);
 				glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec4f(.2,.2,.2,1.));
+				shadowing = false; // Notify the callback implicitly that it's the real scene pass.
 				drawcallback.draw(vw, 0, 0, 0); // war_draw(vw, pl.cs, &WarField::draw);
 				glPopAttrib();
 			}
@@ -274,7 +276,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
 					glUseProgram(shader);
 					glUniform1i(textureLoc, 0);
-					glUniform1i(textureLoc, 1);
+					glUniform1i(texture2Loc, 1);
 					glUniform1i(shadowmapLoc, 2);
 					glUniform1i(shadowmap2Loc, 3);
 					glUniform1i(shadowmap3Loc, 4);
@@ -286,6 +288,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 			glDepthFunc(GL_LEQUAL);
 
+			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
 			drawcallback.draw(vw, shader, textureLoc, shadowmapLoc);
 	/*		if(g_shader_enable)
 				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);

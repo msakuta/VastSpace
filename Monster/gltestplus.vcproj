@@ -448,6 +448,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\LagrangePoint.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\material.c"
 				>
 			</File>

@@ -230,6 +230,9 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 //		argc = argtok(argv, sc.buf, &post, numof(argv));
 		if(argc == 0)
 			continue;
+
+		bool enterBrace = false;
+
 		if(!strcmp("}", argv[argc - 1])){
 			argv.pop_back();
 			argc = argv.size();
@@ -241,6 +244,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 		if(!strcmp("{", argv[argc - 1])){
 			argv.pop_back();
 			argc = argv.size();
+			enterBrace = true;
 			if(argc == 0)
 				continue;
 		}
@@ -276,15 +280,14 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 /*		if(s[0] == '/')
 			cs2 = findcspath(root, s+1);
 		else if(cs2 = findcs(root, s));
-		else*/ if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || /*argc == 1 &&*/ argv[argc-1][strlen(argv[argc-1])-1] == '{'){
+		else*/ if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
 			CoordSys *a = NULL;
 			CC constructor = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
 			const char *pp;
 //			if(pp = strchr(s, '{')){
 //				*pp = '\0';
-			if(argv[argv.size()-1] == "}"){
-				argv.pop_back();
+			if(argv.size() == 1){
 				constructor = Cons<CoordSys>;
 				ps = s;
 			}

@@ -1,7 +1,7 @@
 #ifndef STELLAR_FILE_H
 #define STELLAR_FILE_H
 /** \file
- * \breif Functions to load stellar information file. */
+ * \breif Functions to load Stellar Structure Definition file. */
 
 #include "CoordSys.h"
 #include "astro.h"
@@ -41,16 +41,18 @@ void sun_draw(const struct astrobj *, const struct viewer *, int relative);
 void saturn_draw(const struct astrobj *a, const struct viewer *vw, int relative);
 void blackhole_draw(const struct astrobj *, const struct viewer*, int relative);
 
+class StellarStructureScanner;
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
 	const char *fname;
 	CoordSys *root;
 	FILE *fp;
-	char *buf;
+	cpplib::dstring buf;
 	long line;
 	struct varlist *vl;
 	HSQUIRRELVM v;
+	StellarStructureScanner *scanner;
 };
 
 

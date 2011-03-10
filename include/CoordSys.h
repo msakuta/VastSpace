@@ -109,7 +109,7 @@ public:
 	virtual bool belongs(const Vec3d &pos)const; ///< Definition of 'inside' of the system.
 
 	virtual bool readFileStart(StellarContext &); ///< Enter block in a stellar file.
-	virtual bool readFile(StellarContext &, int argc, char *argv[]); /// Interpret a line in stellar file
+	virtual bool readFile(StellarContext &, int argc, const char *argv[]); /// Interpret a line in stellar file
 	virtual bool readFileEnd(StellarContext &); ///< Exit block in a stellar file.
 
 	/** Definition of appropriate rotation. some coordinate systems like space colonies have

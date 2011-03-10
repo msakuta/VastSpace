@@ -111,8 +111,8 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	this->texlist = 0;
 }
 
-bool TexSphere::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "oblateness")){
 		if(1 < argc){

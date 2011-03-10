@@ -726,8 +726,8 @@ bool CoordSys::readFileStart(StellarContext &){
 
 std::map<const CoordSys *, std::vector<dstring> > linemap;
 
-bool CoordSys::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
 		if(s = ps/*strtok(ps, " \t\r\n")*/){
 			char *name;

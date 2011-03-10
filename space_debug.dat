@@ -1,5 +1,5 @@
-define MINUTE_SECONDS 60
-define HOUR_SECONDS 60*60
+define MINUTE_SECONDS 60 # comment
+define HOUR_SECONDS 60*60 /* block comment */
 define DAY_SECONDS 24*60*60
 define RAD_PER_DEG 2*pi/360
 define AU 149597870.691
@@ -27,7 +27,7 @@ coordsys Orbit sunlo{
 	teleport
 }
 
-coordsys Orbit earth{
+/*coordsys Orbit earth{
 	orbits Sol
 	orbit_radius AU
 	inclination 0.00005
@@ -180,7 +180,7 @@ coordsys Orbit earth{
 		warp
 		teleport
 	}
-}
+}*/
 
 coordsys Orbit venus{
 	fullname Venus

@@ -17,7 +17,7 @@ public:
 	LagrangeCS(const char *path, CoordSys *root);
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	bool readFile(StellarContext &, int argc, char *argv[]);
+	bool readFile(StellarContext &, int argc, const char *argv[]);
 protected:
 	Astrobj *objs[2];
 };
@@ -92,8 +92,8 @@ void Lagrange1CS::anim(double dt){
 		velo = (pos - oldpos) * (1. / dt);
 }
 
-bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool LagrangeCS::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "object1")){
 		if(1 < argc){

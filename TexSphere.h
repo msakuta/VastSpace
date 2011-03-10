@@ -50,7 +50,7 @@ public:
 	static const ClassRegister<TexSphere> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	bool readFile(StellarContext &, int argc, char *argv[]);
+	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	virtual void anim(double dt);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;

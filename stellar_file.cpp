@@ -59,7 +59,132 @@ void teleport::unserialize(UnserializeContext &sc){
 
 
 
+/// \brief The scanner class to interpret a Stellar Structure Definition file.
+///
+/// Can handle line comments, block comments and curly braces.
+/// It would be even possible to suspend scanning per-character basis.
+class StellarStructureScanner{
+public:
+	StellarStructureScanner(FILE *fp);
+	cpplib::dstring nextLine(std::vector<cpplib::dstring>* = NULL);
+	bool eof()const{return 0 != feof(fp);}
+	long long getLine()const{return line;} /// Returns line number.
+protected:
+	FILE *fp;
+	long long line;
+	enum{Normal, LineComment, BlockComment, Quotes} state;
+	cpplib::dstring buf;
+	cpplib::dstring currentToken;
+	std::vector<cpplib::dstring> tokens;
+};
 
+StellarStructureScanner::StellarStructureScanner(FILE *fp) : fp(fp), line(0), state(Normal){
+}
+
+/// Scan and interpret input stream, separate them into tokens, returns on end of line.
+cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *argv){
+	buf = "";
+	tokens.clear();
+	currentToken = "";
+	int c, lc = EOF;
+	while((c = getc(fp)) != EOF){
+
+		// Return the line
+		if(c == '\n'){
+			if(0 < currentToken.len()){
+				tokens.push_back(currentToken);
+				currentToken = "";
+			}
+			if(argv){
+				*argv = tokens;
+			}
+			if(state == LineComment)
+				state = Normal;
+			line++;
+			return buf;
+		}
+
+		switch(state){
+		case Normal:
+
+			// Line comment scan till newline
+			if(c == '#'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				state = LineComment;
+				continue;
+			}
+
+			if(c == '*' && lc == '/'){
+				if(1 < currentToken.len()){
+					tokens.push_back(currentToken[1]);
+				}
+				currentToken = "";
+				state = BlockComment;
+				continue;
+			}
+
+			if(c == '{' || c == '}'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				tokens.push_back(char(c));
+				if(argv)
+					*argv = tokens;
+				return buf;
+			}
+
+			if(c == '"'){
+				state = Quotes;
+			}
+			else if(isspace(c)){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+			}
+			else
+				currentToken << char(c);
+
+//			if(argv && isspace(c))
+//				argv->push_back(buf);
+
+			buf << char(c);
+			break;
+
+		case LineComment:
+			if(c == '\n')
+				state = Normal;
+			break;
+
+		case BlockComment:
+			if(c == '/' && lc == '*')
+				state = Normal;
+			break;
+
+		case Quotes:
+			if(lc != '\\' && c == '"'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				state = Normal;
+			}
+			else
+				currentToken << char(c);
+
+			buf << char(c);
+			break;
+		}
+		lc = c;
+	}
+				if(argv)
+					*argv = tokens;
+	return buf;
+}
 
 
 
@@ -94,28 +219,33 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
-	while(mode && fgets(sc.buf, MAX_LINE_LENGTH, sc.fp)){
-		char *s = NULL, *ps;
-		int argc, c = 0;
-		char *argv[16], *post;
-		sc.line++;
-		argc = argtok(argv, sc.buf, &post, numof(argv));
+	while(mode && !sc.scanner->eof()){
+//		fgets(sc.buf, MAX_LINE_LENGTH, sc.fp);
+		std::vector<cpplib::dstring> argv;
+		sc.buf = sc.scanner->nextLine(&argv);
+//		char *s = NULL, *ps;
+		int argc = int(argv.size()), c = 0;
+//		char *argv[16], *post;
+		sc.line = long(sc.scanner->getLine());
+//		argc = argtok(argv, sc.buf, &post, numof(argv));
 		if(argc == 0)
 			continue;
 		if(!strcmp("}", argv[argc - 1])){
-			argv[--argc] = NULL;
+			argv.pop_back();
+			argc = argv.size();
 			mode = 0;
 			if(argc == 0){
 				break;
 			}
 		}
 		if(!strcmp("{", argv[argc - 1])){
-			argv[--argc] = NULL;
+			argv.pop_back();
+			argc = argv.size();
 			if(argc == 0)
 				continue;
 		}
-		s = argv[0];
-		ps = argv[1];
+		cpplib::dstring s = argv[0];
+		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
 			struct var *v;
 			sc.vl->l = (var*)realloc(sc.vl->l, ++sc.vl->c * sizeof *sc.vl->l);
@@ -123,7 +253,8 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			v->name = (char*)malloc(strlen(ps) + 1);
 			strcpy(v->name, ps);
 			v->type = var::CALC_D;
-			v->value.d = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
+			const char *av2 = argv[2];
+			v->value.d = 2 < argc ? calc3(&av2, sc.vl, NULL) : 0.;
 			sq_pushstring(sc.v, ps, -1);
 			sq_pushfloat(sc.v, SQFloat(v->value.d));
 			sq_createslot(sc.v, -3);
@@ -149,9 +280,11 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			CoordSys *a = NULL;
 			CC constructor = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
-			char *pp;
-			if(pp = strchr(s, '{')){
-				*pp = '\0';
+			const char *pp;
+//			if(pp = strchr(s, '{')){
+//				*pp = '\0';
+			if(argv[argv.size()-1] == "}"){
+				argv.pop_back();
 				constructor = Cons<CoordSys>;
 				ps = s;
 			}
@@ -169,8 +302,8 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				}
 			}
 			if(ps){
-				if(pp = strchr(ps, '{'))
-					*pp = '\0';
+//				if(pp = strchr(ps, '{'))
+//					*pp = '\0';
 				if((a = cs->findastrobj(ps)) && a->parent == cs)
 					stellar_coordsys(sc, a);
 				else
@@ -188,10 +321,15 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				stellar_coordsys(sc, a);
 			}
 		}
-		else if(cs->readFile(sc, argc, (argv)));
-		else if(s = strtok(s, " \t\r\n")){
-//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-			printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s);
+		else{
+			const char *cargs[64];
+			for(int i = 0; i < argv.size(); i++)
+				cargs[i] = argv[i];
+			if(cs->readFile(sc, argc, cargs));
+			else{
+	//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
+				printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+			}
 		}
 	}
 //	sq_poptop(v);
@@ -214,6 +352,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		sc.root = root;
 		sc.line = 0;
 		sc.fp = fp = fopen(fname, "r");
+		sc.scanner = new StellarStructureScanner(fp);
 		if(!fp)
 			return -1;
 		sc.buf = buf;
@@ -235,6 +374,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 			free(sc.vl->l);
 		}
 		free(sc.vl);
+		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
 		printf("%s loaded time %lg\n", fname, TimeMeasLap(&tm));

@@ -220,32 +220,25 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
 	while(mode && !sc.scanner->eof()){
-//		fgets(sc.buf, MAX_LINE_LENGTH, sc.fp);
 		std::vector<cpplib::dstring> argv;
 		sc.buf = sc.scanner->nextLine(&argv);
-//		char *s = NULL, *ps;
-		int argc = int(argv.size()), c = 0;
-//		char *argv[16], *post;
+		int c = 0;
 		sc.line = long(sc.scanner->getLine());
-//		argc = argtok(argv, sc.buf, &post, numof(argv));
-		if(argc == 0)
+		if(argv.size() == 0)
 			continue;
 
 		bool enterBrace = false;
 
-		if(!strcmp("}", argv[argc - 1])){
+		if(!strcmp("}", argv.back())){
 			argv.pop_back();
-			argc = argv.size();
 			mode = 0;
-			if(argc == 0){
+			if(argv.size() == 0)
 				break;
-			}
 		}
-		if(!strcmp("{", argv[argc - 1])){
+		if(!strcmp("{", argv.back())){
 			argv.pop_back();
-			argc = argv.size();
 			enterBrace = true;
-			if(argc == 0)
+			if(argv.size() == 0)
 				continue;
 		}
 		cpplib::dstring s = argv[0];
@@ -258,35 +251,22 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			strcpy(v->name, ps);
 			v->type = var::CALC_D;
 			const char *av2 = argv[2];
-			v->value.d = 2 < argc ? calc3(&av2, sc.vl, NULL) : 0.;
+			v->value.d = 2 < argv.size() ? calc3(&av2, sc.vl, NULL) : 0.;
 			sq_pushstring(sc.v, ps, -1);
 			sq_pushfloat(sc.v, SQFloat(v->value.d));
 			sq_createslot(sc.v, -3);
 			continue;
-/*			definition = 2, ps = NULL;*/
 		}
 		else if(!strcmp(s, "include")){
 			StellarFileLoadInt(ps, cs, vl);
 			continue;
 		}
-/*		else if(definition == 2){
-			struct var *v;
-			v = &sc.vl->l[sc.vl->c-1];
-			v->value.d = calc3(&s, calc_mathvars(), NULL);
-			s = NULL;
-		}*/
 		if(!strcmp(argv[0], "new"))
 			s = argv[1], ps = argv[2], c++;
-/*		if(s[0] == '/')
-			cs2 = findcspath(root, s+1);
-		else if(cs2 = findcs(root, s));
-		else*/ if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
+		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
 			CoordSys *a = NULL;
 			CC constructor = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
-			const char *pp;
-//			if(pp = strchr(s, '{')){
-//				*pp = '\0';
 			if(argv.size() == 1){
 				constructor = Cons<CoordSys>;
 				ps = s;
@@ -305,8 +285,6 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				}
 			}
 			if(ps){
-//				if(pp = strchr(ps, '{'))
-//					*pp = '\0';
 				if((a = cs->findastrobj(ps)) && a->parent == cs)
 					stellar_coordsys(sc, a);
 				else
@@ -314,21 +292,18 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			}
 			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? ctor(ps, cs) : Cons<Astrobj>(ps, cs)))){
 				if(!constructor && ctor){
-//					a->init(argv[c+2], cs);
 					CoordSys *eis = a->findeisystem();
 					if(eis)
 						eis->addToDrawList(a);
-//					a->parent = cs;
-//					a->legitimize_child();
 				}
 				stellar_coordsys(sc, a);
 			}
 		}
 		else{
-			const char *cargs[64];
+			std::vector<const char *> cargs(argv.size());
 			for(int i = 0; i < argv.size(); i++)
 				cargs[i] = argv[i];
-			if(cs->readFile(sc, argc, cargs));
+			if(cs->readFile(sc, argv.size(), &cargs[0]));
 			else{
 	//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
 				printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
@@ -345,7 +320,6 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 	TimeMeasStart(&tm);
 	{
 		FILE *fp;
-		char buf[MAX_LINE_LENGTH];
 		int mode = 0;
 		int inquote = 0;
 		StellarContext sc;
@@ -358,7 +332,6 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		sc.scanner = new StellarStructureScanner(fp);
 		if(!fp)
 			return -1;
-		sc.buf = buf;
 		sc.vl = (varlist*)malloc(sizeof *sc.vl);
 		sc.vl->c = 0;
 		sc.vl->l = NULL;

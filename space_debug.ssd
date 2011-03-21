@@ -27,7 +27,7 @@ coordsys Orbit sunlo{
 	teleport
 }
 
-/*coordsys Orbit earth{
+coordsys Orbit earth{
 	orbits Sol
 	orbit_radius AU
 	inclination 0.00005
@@ -180,7 +180,7 @@ coordsys Orbit sunlo{
 		warp
 		teleport
 	}
-}*/
+}
 
 coordsys Orbit venus{
 	fullname Venus

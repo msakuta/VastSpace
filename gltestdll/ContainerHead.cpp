@@ -1,17 +1,15 @@
-#include "Frigate.h"
+#include "ContainerHead.h"
 #include "Docker.h"
 #include "Player.h"
 #include "Viewer.h"
 #include "EntityCommand.h"
 #include "cmd.h"
-//#include "glwindow.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
 #include "material.h"
-//#include "sensor.h"
 #include "motion.h"
 #include "btadapt.h"
 #include "glstack.h"
@@ -41,53 +39,32 @@ extern "C"{
 #define BEAMER_SCALE .0002
 
 
-/// \brief A civilian ship transporting containers.
-///
-/// This ship routinely transports goods such as fuel, air, meal, etc in the background to add
-/// the game a bit of taste of space era.
-///
-/// The ship can have variable number of containers. Random number and types of containers are generated
-/// for variation.
-/// Participating containers are connected linearly, sandwitched by head and tail module.
-/// The head module is merely a terminator, while the tail module has cockpit and thrust engines.
-///
-/// The base class is Frigate, which is usually for military ships.
-class ContainerHead : public Frigate{
-public:
-	typedef Frigate st;
-protected:
-	static const int maxcontainers = 6;
-	enum ContainerType{gascontainer, hexcontainer, Num_ContainerType};
-	ContainerType containers[maxcontainers];
-	int ncontainers; ///< Count of containers connected.
-	float undocktime;
-	static const double sufscale;
-public:
-	ContainerHead(){init();}
-	ContainerHead(WarField *w);
-	void init();
-	const char *idname()const;
-	virtual const char *classname()const;
-	static const unsigned classid, entityid;
-	virtual void serialize(SerializeContext &sc);
-	virtual void unserialize(UnserializeContext &sc);
-	virtual const char *dispname()const;
-	virtual void anim(double);
-	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	virtual void draw(wardraw_t *);
-	virtual void drawtra(wardraw_t *);
-	virtual double maxhealth()const;
-	virtual Props props()const;
-	virtual bool command(EntityCommand *);
-	virtual bool undock(Docker*);
-	static Entity *create(WarField *w, Builder *);
-};
 
 
 ContainerHead::ContainerHead(WarField *aw) : st(aw){
 	init();
 
-	WarSpace *ws = *aw;
+}
+
+ContainerHead::ContainerHead(CoordSys *docksite) : st(docksite->w), docksite(docksite){
+	init();
+	task = sship_undock;
+	undocktime = 30.;
+}
+
+void ContainerHead::init(){
+	ncontainers = RandomSequence((unsigned long)this).next() % (maxcontainers - 1) + 1;
+	RandomSequence rs((unsigned long)this);
+	for(int i = 0; i < ncontainers; i++)
+		containers[i] = ContainerType(rs.next() % Num_ContainerType);
+	undocktime = 0.f;
+	health = maxhealth();
+	mass = 2e7 + 1e7 * ncontainers;
+
+	if(!w)
+		return;
+
+	WarSpace *ws = *w;
 	if(ws && ws->bdw){
 		static btCompoundShape *shapes[maxcontainers] = {NULL};
 		btCompoundShape *&shape = shapes[ncontainers];
@@ -118,18 +95,7 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 //		rbInfo.m_linearDamping = .5;
 //		rbInfo.m_angularDamping = .25;
 		bbody = new btRigidBody(rbInfo);
-	}
-}
-
-void ContainerHead::init(){
-	ncontainers = RandomSequence((unsigned long)this).next() % (maxcontainers - 1) + 1;
-	RandomSequence rs((unsigned long)this);
-	for(int i = 0; i < ncontainers; i++)
-		containers[i] = ContainerType(rs.next() % Num_ContainerType);
-	undocktime = 0.f;
-	health = maxhealth();
-	mass = 2e7 + 1e7 * ncontainers;
-}
+	}}
 
 const char *ContainerHead::idname()const{
 	return "ContainerHead";
@@ -180,16 +146,13 @@ void ContainerHead::anim(double dt){
 	if(0 < health){
 		Entity *collideignore = NULL;
 		if(task == sship_undock){
-			if(!mother || !mother->e)
+			if(!docksite || docksite->parent->w != w || undocktime < 0.){
+				inputs.press&= ~PL_W;
 				task = sship_idle;
+			}
 			else{
-				double sp;
-				Vec3d dm = this->pos - mother->e->pos;
-				Vec3d mzh = this->rot.trans(vec3_001);
-				sp = -mzh.sp(dm);
 				inputs.press |= PL_W;
-				if(1. < sp)
-					task = sship_parade;
+				undocktime -= dt;
 			}
 		}
 		else if(task == sship_dockque || task == sship_dock){

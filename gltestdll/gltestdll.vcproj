@@ -354,6 +354,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ContainerHead.h"
+				>
+			</File>
+			<File
 				RelativePath=".\island3.h"
 				>
 			</File>

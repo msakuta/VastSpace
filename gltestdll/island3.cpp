@@ -2,6 +2,7 @@
  * \brief Implementation of Island3 class.
  */
 #include "island3.h"
+#include "ContainerHead.h"
 #include "astrodraw.h"
 //#include "astro_star.h"
 #include "CoordSys.h"
@@ -140,14 +141,16 @@ protected:
 	static suf_t *sufbridgetower;
 };
 
-/// Island3 bound Entity. Not registered as a creatable object, create Island3 instead.
+/// Island3 companion Entity. If this object exists, corresponding Island3 class is always present,
+/// but the revese is not necessarily true.
+/// It's not registered as a user-creatable object, but will be automatically created when Island3 class is created.
 class Island3Entity : public Entity{
 public:
 	friend Island3;
 	Island3 &astro;
 	Island3Entity(Island3 &astro);
 	virtual ~Island3Entity();
-	virtual const char *classname()const{return "Island3Entity";}
+	virtual const char *classname()const{return "Island3Entity";} ///< Overridden because getStatic() is not defined
 	virtual double hitradius()const{return 20.;}
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
@@ -321,6 +324,24 @@ void Island3::anim(double dt){
 		ent->velo = this->velo;
 		ent->omg = this->omg;
 		ent->mass = this->mass;
+
+		RandomSequence rs((unsigned long)this + ws->war_time() / .001);
+
+		// Randomly create container heads
+		if(rs.nextd() * dt < .0001){
+			ContainerHead *ch = new ContainerHead(this);
+			ws->addent(ch);
+			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
+			ch->pos = rpos + this->pos + .1 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
+			ch->rot = this->rot.rotate(-M_PI / 2., Vec3d(1,0,0));
+			ch->velo = this->velo + this->omg.vp(rpos);
+			ch->omg = this->omg;
+			if(btRigidBody *bbody = ch->get_bbody()){
+				bbody->setWorldTransform(btTransform(btqc(ch->rot), btvc(ch->pos)));
+				bbody->setLinearVelocity(btvc(ch->velo));
+				bbody->setAngularVelocity(btvc(ch->omg));
+			}
+		}
 	}
 	if(ws && ws->bdw && ent){
 		btRigidBody *bbody = ent->bbody;
@@ -1606,6 +1627,7 @@ nobridgemodel:
 
 }
 
+#ifndef NDEBUG
 static void hitbox_draw(const double sc[3], int hitflags){
 	glPushMatrix();
 	glScaled(sc[0], sc[1], sc[2]);
@@ -1636,6 +1658,7 @@ static void hitbox_draw(const double sc[3], int hitflags){
 	glPopAttrib();
 	glPopMatrix();
 }
+#endif
 
 void Island3::drawtra(const Viewer *vw){
 	GLcull *gc = vw->gc, *gc2 = vw->gclist[0];

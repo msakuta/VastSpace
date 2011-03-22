@@ -10,7 +10,6 @@ extern "C"{
 #include "judge.h"
 #include "Player.h"
 #include "cmd.h"
-#include "sceptor.h"
 #include "Scarry.h"
 #include "RStation.h"
 #include "glw/glwindow.h"

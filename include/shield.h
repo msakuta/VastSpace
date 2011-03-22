@@ -1,7 +1,7 @@
 #ifndef SHIELD_H
 #define SHIELD_H
 // shield effect
-#include "entity.h"
+#include "Entity.h"
 
 class Bullet;
 

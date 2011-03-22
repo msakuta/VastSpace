@@ -2,7 +2,7 @@
 #ifndef JUDGE_H
 #define JUDGE_H
 #include "export.h"
-#include "entity.h"
+#include "Entity.h"
 #include <cpplib/quat.h>
 #include <cpplib/vec3.h>
 

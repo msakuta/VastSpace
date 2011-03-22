@@ -1,14 +1,11 @@
 #ifndef WARPABLE_H
 #define WARPABLE_H
 
-#include "entity.h"
-#include "coordsys.h"
+#include "Entity.h"
+#include "CoordSys.h"
 #include "war.h"
 #include "shield.h"
-extern "C"{
-#include <clib/avec3.h>
-#include <clib/suf/sufdraw.h>
-}
+
 
 struct hitbox;
 

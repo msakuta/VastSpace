@@ -116,17 +116,18 @@ EXPORT void DrawTefpol3D(struct tent3d_fpol_list *tepl, const double viewpoint[3
 #endif
 
 #ifndef NPROFILE
-const struct tent3d_line_debug{
+struct tent3d_line_debug{
 	double drawteline;
 	size_t so_teline3_t;
 	unsigned teline_c;
 	unsigned teline_m;
 	unsigned teline_s;
-} *Teline3DDebug(const struct tent3d_line_list *);
+};
+const struct tent3d_line_debug *Teline3DDebug(const struct tent3d_line_list *);
 #ifdef __cplusplus
 extern "C"{
 #endif
-const struct tent3d_fpol_debug{
+struct tent3d_fpol_debug{
 	double animtefpol, drawtefpol;
 	size_t so_tefpol3_t, so_tevert3_t;
 	unsigned tefpol_c;
@@ -134,7 +135,8 @@ const struct tent3d_fpol_debug{
 	unsigned tefpol_s;
 	unsigned tevert_c;
 	unsigned tevert_s;
-} *Tefpol3DDebug(const struct tent3d_fpol_list *);
+};
+const struct tent3d_fpol_debug *Tefpol3DDebug(const struct tent3d_fpol_list *);
 #ifdef __cplusplus
 }
 #endif

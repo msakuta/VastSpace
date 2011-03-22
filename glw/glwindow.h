@@ -132,9 +132,6 @@ public:
 	static void glwEndFrame();
 	friend GLwindow **glwFindPP(GLwindow *);
 	template<class C> static GLwindow **findpp(GLwindow **root, C compar);
-	template<const char *title> static bool namecmp(const GLwindow *w){
-		return !strcmp(w->title, title);
-	}
 	class TitleCmp;
 	static int glwMouseCursorState(int mousex, int mousey);
 	virtual int mouseCursorState(int mousex, int mousey)const;

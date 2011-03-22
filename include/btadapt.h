@@ -10,7 +10,9 @@
 #ifdef _WIN32
 #pragma warning ( push )
 #pragma warning ( disable : 4244 ) // The Bullet library gets conversion warnings if btScalar == double.
+#endif
 #include <btBulletDynamicsCommon.h>
+#ifdef _WIN32
 #pragma warning ( pop )
 #endif
 

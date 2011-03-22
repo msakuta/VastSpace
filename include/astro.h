@@ -3,7 +3,7 @@
  */
 #ifndef ASTRO_H
 #define ASTRO_H
-#include "coordsys.h"
+#include "CoordSys.h"
 #include <clib/aquat.h>
 #include <clib/avec3.h>
 #include <clib/colseq/color.h>

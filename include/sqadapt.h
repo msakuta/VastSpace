@@ -11,6 +11,7 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 #ifdef __cplusplus
 
 #include <squirrel.h>
+#include <string.h>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
@@ -54,11 +55,11 @@ void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct SQFError{
-	SQFError(SQChar *a = NULL) : description(a){}
+	SQFError(const SQChar *a = NULL) : description(a){}
 	const SQChar *what()const;
-	SQChar *description;
+	const SQChar *description;
 };
-struct SQFArgumentError : SQFError{ SQFArgumentError() : SQFError("Argument error"){} };
+struct SQFArgumentError : SQFError{ SQFArgumentError() : SQFError(_SC("Argument error")){} };
 struct SQIntrinsicError : SQFError{};
 struct TypeMatch : SQIntrinsicError{};
 struct NoIndex : SQIntrinsicError{};
@@ -152,7 +153,7 @@ inline MType membergetter(Class *p){
 }
 
 template<typename Class, typename MType, MType Class::*member>
-inline void membersetter(Class p, MType Class::*member, MType &newvalue){
+inline void membersetter(Class p, MType &newvalue){
 	p->*member = newvalue;
 }
 
@@ -162,7 +163,7 @@ inline MType accessorgetter(Class *p){
 }
 
 template<typename Class, typename MType, void (Class::*member)(MType)>
-inline void accessorsetter(Class p, MType Class::*member, MType &newvalue){
+inline void accessorsetter(Class p, MType &newvalue){
 	(p->*member)(newvalue);
 }
 

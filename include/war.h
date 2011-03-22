@@ -131,14 +131,4 @@ public:
 	static int g_otdrawflags;
 };
 
-
-
-template<Entity *WarField::*list> inline int WarField::countEnts()const{
-	int ret = 0;
-	for(Entity *p = this->*list; p; p = p->next)
-		ret++;
-	return ret;
-}
-
-
 #endif

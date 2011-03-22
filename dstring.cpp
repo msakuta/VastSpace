@@ -18,27 +18,31 @@ int dstring::reallocs = 0;
 int dstring::frees = 0;
 #endif
 
-dstring::dstring(const char *a) : p(NULL){
+void dstring::init(const char *a){
+	p = NULL;
 	if(a)
 		strcat(a);
 }
 
-dstring::dstring(long src) : p(NULL){
+void dstring::init(long src){
+	p = NULL;
 	char buf[1 + 8*sizeof src]; /* n-bit long's maximum string expression width is far less than 8*n, plus null */
 	sprintf(buf, "%ld", src);
-	this->dstring::dstring(buf);
+	init(buf);
 }
 
-dstring::dstring(unsigned long src) : p(NULL){
+void dstring::initu(unsigned long src){
+	p = NULL;
 	char buf[1 + 8*sizeof src]; /* n-bit long's maximum string expression width is far less than 8*n, plus null */
 	sprintf(buf, "%lu", src);
-	this->dstring::dstring(buf);
+	init(buf);
 }
 
-dstring::dstring(double src) : p(NULL){
+void dstring::initd(double src){
+	p = NULL;
 	char buf[1 + 8*sizeof src]; // double expression is mystery
 	sprintf(buf, "%lg", src);
-	this->dstring::dstring(buf);
+	init(buf);
 }
 
 dstring &dstring::strncat(const char *src, unsigned long len){

@@ -638,7 +638,8 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 	if(mn.maxanglespeed * mn.maxanglespeed < this->omg.slen())
 		this->omg.normin().scalein(mn.maxanglespeed);
 //	this->rot = this->rot.quatrotquat(this->omg * dt);
-	bbody->setAngularVelocity(btvc(this->omg));
+	if(bbody)
+		bbody->setAngularVelocity(btvc(this->omg));
 //	dr.normin();
 //	Vec3d sidevelo = velo - dr * dr.sp(velo);
 //	bbody->applyCentralForce(btvc(-sidevelo * mass));
@@ -648,6 +649,7 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 
 
 Warpable::Warpable(WarField *aw) : st(aw), task(sship_idle){
+	w = aw;
 	Warpable::init();
 }
 

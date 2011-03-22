@@ -637,6 +637,24 @@ bookmarks <- {
 	["Earth surface"] = BookmarkSymbolic("/sol/earth/Earth/earths")
 };
 
+/// Recall a bookmark instantly.
+register_console_command("jump_bookmark", function(...){
+	if(vargc < 1){
+		print("Usage: jump_bookmark bookmark_name");
+		return;
+	}
+	if(vargv[0] in bookmarks){
+		local item = bookmarks[vargv[0]];
+		local newcs = item.cs();
+		if(newcs != null){
+			player.cs = newcs;
+			player.setpos(item.pos);
+			player.setvelo(Vec3d(0,0,0));
+			player.setrot(item.rot);
+		}
+	}
+});
+
 /// Shows bookmarks window to let the player pick one.
 register_console_command("bookmarks", function(){
 	if(bookmarks == null || bookmarks.len() == 0)

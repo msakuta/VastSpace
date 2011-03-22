@@ -325,7 +325,7 @@ void Island3::anim(double dt){
 		ent->omg = this->omg;
 		ent->mass = this->mass;
 
-		RandomSequence rs((unsigned long)this + ws->war_time() / .001);
+		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
 
 		// Randomly create container heads
 		if(rs.nextd() * dt < .0001){

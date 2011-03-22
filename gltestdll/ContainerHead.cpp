@@ -43,18 +43,17 @@ extern "C"{
 
 ContainerHead::ContainerHead(WarField *aw) : st(aw){
 	init();
-
 }
 
-ContainerHead::ContainerHead(CoordSys *docksite) : st(docksite->w), docksite(docksite){
+ContainerHead::ContainerHead(CoordSys *docksite) : st(docksite->parent->w), docksite(docksite){
 	init();
 	task = sship_undock;
 	undocktime = 30.;
 }
 
 void ContainerHead::init(){
-	ncontainers = RandomSequence((unsigned long)this).next() % (maxcontainers - 1) + 1;
 	RandomSequence rs((unsigned long)this);
+	ncontainers = rs.next() % (maxcontainers - 1) + 1;
 	for(int i = 0; i < ncontainers; i++)
 		containers[i] = ContainerType(rs.next() % Num_ContainerType);
 	undocktime = 0.f;
@@ -95,7 +94,8 @@ void ContainerHead::init(){
 //		rbInfo.m_linearDamping = .5;
 //		rbInfo.m_angularDamping = .25;
 		bbody = new btRigidBody(rbInfo);
-	}}
+	}
+}
 
 const char *ContainerHead::idname()const{
 	return "ContainerHead";
@@ -199,6 +199,12 @@ void ContainerHead::anim(double dt){
 			}
 			else
 				task = sship_idle;
+		}
+		else if(task == sship_idle){
+			if(RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).nextd() < .0001){
+				task = sship_dockque;
+			}
+			inputs.press = 0;
 		}
 		else{
 			inputs.press = 0;

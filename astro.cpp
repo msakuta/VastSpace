@@ -134,8 +134,8 @@ bool OrbitCS::readFileStart(StellarContext &){
 	return true;
 }
 
-bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "orbits")){
 		if(argv[1]){
@@ -155,8 +155,8 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
-		if(s = strtok(ps, " \t\r\n"))
-			orbit_rad = calc3(&s, sc.vl, NULL);
+//		if(s = strtok(ps, " \t\r\n"))
+			orbit_rad = calc3(&ps, sc.vl, NULL);
 		return true;
 	}
 	else if(!strcmp(s, "eccentricity")){
@@ -345,8 +345,8 @@ void Astrobj::unserialize(UnserializeContext &sc){
 	sc.i >> " " >> basecolor;
 }
 
-bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "radius")){
 		if(argv[1]){
@@ -398,7 +398,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, char *argv[]){
 			flags |= AO_PLANET;
 	}
 	else if(!strcmp(s, "color")){
-		if(s = strtok(ps, " \t\r\n")){
+/*		if(s = strtok(ps, " \t\r\n"))*/{
 			COLOR32 c;
 			c = strtoul(s, NULL, 16);
 			basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
@@ -600,8 +600,8 @@ bool Star::sq_define(HSQUIRRELVM v){
 	return true;
 }
 
-bool Star::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
+bool Star::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "spectral")){
 		if(argv[1]){
@@ -665,16 +665,4 @@ Vec3f Star::spectralRGB(SpectralType spect){
 	}
 	return Vec3f(1., 1., 1.);
 }
-
-class Surface : public CoordSys{
-	Astrobj *a;
-	Vec3d offset;
-public:
-	typedef CoordSys st;
-	Surface(){}
-	Surface(const char *path, CoordSys *parent) : st(path, parent), a(NULL), offset(0,0,0){}
-	Surface(Astrobj *aa) : st(aa->getpath(), aa), a(aa){}
-	virtual void anim(double dt){
-	}
-};
 

@@ -234,9 +234,9 @@ void Sceptor::draw(wardraw_t *wd){
 					glTranslated(0, 0, 25);
 				}
 				if(vbo[2])
-					DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suft);
+					DrawVBO(vbo[2], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suft);
 				else
-					DecalDrawSUF(sufrev, SUF_ATR, NULL, suft, NULL, NULL);
+					DecalDrawSUF(sufrev, wd->shadowmapping ? 0 : SUF_ATR, NULL, suft, NULL, NULL);
 				glPopMatrix();
 			}
 			glFrontFace(GL_CCW);

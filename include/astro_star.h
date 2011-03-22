@@ -20,7 +20,7 @@ public:
 	static const ClassRegister<Star> classRegister;
 	virtual void predraw(const Viewer*);
 	virtual void draw(const Viewer*);
-	virtual bool readFile(StellarContext &sc, int argc, char *argv[]);
+	virtual bool readFile(StellarContext &sc, int argc, const char *argv[]);
 	virtual bool readFileEnd(StellarContext &sc);
 
 	double appmag(const Vec3d &pos, const CoordSys &cs)const; ///< Apparent magnitude

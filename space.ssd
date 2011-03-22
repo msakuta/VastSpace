@@ -65,8 +65,8 @@ sol{
 	solarsystem
 #	eisystem
 
-#	include space_debug.dat
-	include sol.dat
+#	include space_debug.ssd
+	include sol.ssd
 
 	bookmark sol
 

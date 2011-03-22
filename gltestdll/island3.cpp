@@ -24,6 +24,7 @@
 #include "judge.h"
 #include "bitmap.h"
 #include "draw/WarDraw.h"
+#include "ShadowMap.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -799,6 +800,18 @@ bool Island3::cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &ma
 void Island3::draw(const Viewer *vw){
 	if(1 < vw->zslice) // No way we can draw it without z buffering.
 		return;
+	if(vw->shadowmap && vw->shadowmap->isDrawingShadow())
+		return;
+	struct ShaderReserver{
+		const Viewer *vw;
+		ShaderReserver(const Viewer *vw) : vw(vw){}
+		~ShaderReserver(){
+			if(vw->shadowmap)
+				glUseProgram(vw->shadowmap->getShader());
+		}
+	} sr(vw);
+	if(vw->shadowmap)
+		glUseProgram(0);
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 
@@ -985,12 +998,7 @@ void Island3::draw(const Viewer *vw){
 				for(k = 0; k < 4; k++){
 					double st[2];
 					Vec3d norm = prot[k]->dvp3(pos1[k / 2]);
-					if(n)
-						glNormal3dv(norm);
-					else{
-						VECSCALEIN(norm, -1.);
-						glNormal3dv(norm);
-					}
+					glNormal3dv(n ? norm : -norm);
 					st[0] = pos1[k / 2][1];
 					st[1] = (i % 16 + leap * !!(9 & (1<<k))) / 8.;
 					glTexCoord2dv(st);
@@ -2229,7 +2237,7 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-		// Docking bays
+// Docking bays
 void Island3Entity::draw(WarDraw *wd){
 #if 1
 	{

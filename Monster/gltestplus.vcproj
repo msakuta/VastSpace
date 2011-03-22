@@ -152,10 +152,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64D.lib sqstdlib64D.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64D.lib sqstdlib64D.lib BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				Version="1.6"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\cpplib\Monster\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\$(PlatformName)\Release&quot;;..\..\sqplus\lib\;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;;&quot;..\..\lpng143\projects\visualc71\$(PlatformName)\LIB Release&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\cpplib\Monster\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\$(PlatformName)\Release&quot;;..\..\sqplus\lib\;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;;&quot;..\..\lpng143\projects\visualc71\$(PlatformName)\LIB Release&quot;;&quot;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\&quot;"
 				GenerateManifest="false"
 				ModuleDefinitionFile="gltestplus.def"
 				GenerateDebugInformation="true"
@@ -448,6 +448,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\LagrangePoint.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\material.c"
 				>
 			</File>
@@ -489,6 +493,10 @@
 			</File>
 			<File
 				RelativePath="..\serial_util.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\ShadowMap.cpp"
 				>
 			</File>
 			<File
@@ -641,10 +649,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Bullet.h"
-				>
-			</File>
-			<File
 				RelativePath="..\calc\calc.h"
 				>
 			</File>
@@ -792,6 +796,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\Bullet.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\cmd.h"
 				>
 			</File>
@@ -857,6 +865,10 @@
 			</File>
 			<File
 				RelativePath="..\include\serial_util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\ShadowMap.h"
 				>
 			</File>
 			<File

@@ -37,30 +37,41 @@ struct viewport{
 };
 
 #ifdef __cplusplus
+
+class ShadowMap;
+
+/// Logical object of view camera, representing position, orientation, field of view, etc.
+///
+/// It volatilely created and deleted in a drawing frame, so keep it's implementation minimum.
 class Viewer{
 public:
 	Viewer(){
 		std::memset(this, 0, sizeof *this);
 		fov = 1.; // Field of View
 	}
-	Quatd qrot; // Rotation expressed in quaternion
+	Quatd qrot; ///< Rotation expressed in quaternion
 	Mat4d rot, irot, relrot, relirot;
 	Mat4d trans; ///< Actual perspective transformation
 	Vec3d pos, pyr, velo;
 	double velolen;
-	double fov, ar;
-	double dynamic_range; /* experimental; to simulate high dynamic range */
-	double viewtime; // not a physical time, just for blinking lights
-	double dt; // Delta time of this drawing frame
-	const CoordSys *cs;
-	GLcull *gc; /* current culling information */
-	GLcull *gclist[3]; /* list of glculls in order of z-slices */
-	int ngclist; /* number of z-slices which can change in occasions */
-	int zslice; /* index of gc into gclist */
-	int relative; /* whether effect of relativity cannot be ignored */
-	int detail; /* wireframe */
-	int mousex, mousey; // Indicates mouse cursor position in viewport coordinates.
-	struct viewport vp;
+	double fov; ///< Field of View, in cosine angle. E.g. 1 means 45 degrees cone.
+	double ar;
+	double dynamic_range; ///< experimental; to simulate high dynamic range
+	double viewtime; ///< not a physical time, just for blinking lights
+	double dt; ///< Delta time of this drawing frame
+	const CoordSys *cs; ///< The coordinate system this camera belongs to.
+	ShadowMap *shadowmap; ///< The shadow mapping object, if exists.
+	GLcull *gc; ///< current culling information
+	GLcull *gclist[3]; ///< list of glculls in order of z-slices
+	int ngclist; ///< number of z-slices which can change in occasions
+	int zslice; ///< index of gc into gclist
+	int relative; ///< non-active; whether effect of relativity cannot be ignored
+	int detail; ///< wireframe mode
+	int mousex; ///< Indicates mouse cursor position in viewport coordinates.
+	int mousey; ///< Indicates mouse cursor position in viewport coordinates.
+	struct viewport vp; ///< Viewport information (cache)
+
+	/// Multiply current OpenGL matrix with frustum projection matrix, determined by near, far and fov parameters.
 	void frustum(double n, double f){
 		int w = vp.w, h = vp.h, m = vp.m;
 		double l = -n * fov * w / m, t = n * fov * h / m, r = n * fov * w / m, b = -n * fov * h / m;

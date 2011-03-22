@@ -1,0 +1,219 @@
+define MINUTE_SECONDS 60 # comment
+define HOUR_SECONDS 60*60 /* block comment */
+define DAY_SECONDS 24*60*60
+define RAD_PER_DEG 2*pi/360
+define AU 149597870.691
+define Rsun 6.960e5
+define Msun 1.9884e30
+
+astro Star "Sol"{
+	radius 1.5*Rsun
+	pos 0 10*Rsun 0
+	mass 3*Msun
+	absolute_magnitude 4.1
+}
+
+coordsys Orbit sunlo{
+	fullname "Sun Low Orbit"
+	cs_radius 500
+	orbits Sol
+	showorbit
+	semimajor_axis 5*600.2686*6378.
+	eccentricity 0.
+	inclination 3.85
+	argument_of_periapsis 150.2075
+	ascending_node 80.6198
+	warp
+	teleport
+}
+
+coordsys Orbit earth{
+	orbits Sol
+	orbit_radius AU
+	inclination 0.00005
+	cs_radius 100000
+	showorbit
+
+	astro TextureSphere "Earth"{
+		define tilt 23.2621*RAD_PER_DEG
+		radius 6375
+		mass 5.972e24
+		omega (Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1))*PI*2/DAY_SECONDS
+#		omega 0 cos(tilt) sin(tilt) pi*2/DAY_SECONDS  #rotation speed
+#		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
+		rotation Quatd.rotation(PI/2.,Vec3d(1,0,0))*Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
+#		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
+#		updirection 0 cos(tilt) sin(tilt)
+		texture earth.jpg
+		basecolor .5 .65 1.
+
+		extexture "bumptexture" textures/earth_bump.jpg 0 normal
+		extexture "cloudtexture" textures/cloud.jpg
+		extexture "lightstexture" textures/earth_lights.jpg
+		fragmentshader shaders/earth.fs
+		fragmentshader shaders/earth_cloud_noise.fs
+		vertexshader shaders/earth.vs
+#		fragmentshader shaders/ringsphereshadow.fs
+#		vertexshader shaders/ringsphereshadow.vs
+#		ringmin 74000/60268
+#		ringmax 2.4
+#		ringthick 1.
+#		ringtexture saturn_ring_front.bmp
+#		ringbacktexture saturn_ring_back.bmp
+
+		cloudtexture textures/cloud.jpg
+		cloudfragmentshader shaders/earth_cloud.fs
+		cloudfragmentshader shaders/earth_cloud_noise.fs
+		cloudvertexshader shaders/earth_cloud.vs
+		cloudheight 5.
+
+#		updirection 0 1 0
+		atmosphere_height 10.
+		atmosphere_color .2 .7 1.
+		atmosphere_dawn 1 .2 .1
+
+		coordsys earths{
+			define theta .13*pi
+			define phi .3*pi
+			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
+			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
+			teleport "Earth Surface" 0 0 0
+		}
+	}
+
+	coordsys Orbit moon{
+		cs_radius .5e4
+		orbits Earth
+		semimajor_axis 60.2686*6378.
+		eccentricity 0.09341233
+		inclination 1.85
+		argument_of_periapsis 336.2075
+		ascending_node 49.6198
+		showorbit
+
+		astro TextureSphere Moon{
+			radius 1738
+			mass 0.0123*5.977e24
+			omega 0 0 1 pi*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
+			texture moon.jpg
+			extexture bumptexture textures/moonbump.jpg 0 normal
+			fragmentshader shaders/moon.fs
+			vertexshader shaders/moon.vs
+			updirection 0 1 0
+			planet
+			spherehit
+		}
+		coordsys Orbit moonlo{
+			fullname "Moon Low Orbit"
+			orbits Moon
+			orbit_radius 6378.
+			inclination 13.3
+			argument_of_periapsis 180
+			ascending_node 0
+			updirection 0 1 
+			warp
+			teleport
+		}
+	}
+
+	new coordsys Lagrange1 el1{
+		cs_radius 200
+		object1 Earth
+		object2 moon/Moon
+		updirection 0 1 
+		fullname "Earth Lagrange 1"
+		teleport
+		bookmark "Earth Lagrange 1" 0 0 10
+		bookmark "Earth Lagrange 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
+		warp
+		rstation 0 -25
+#		addent scarry 5 -25 0
+#		addent scontainer 4 -24 0
+#		addent scontainer 4 -24 0.05
+#		addent assault 4 -24 2 1
+		new astro Asteroid "Side 7 Asteroid"{
+			pos 70 0 0
+			radius 50
+			omega 0 0 0
+			cs_radius 50
+		}
+		new astro Island3 "Side 7"{
+			pos 10 0 10
+		}
+	}
+	
+	coordsys Lagrange2 el2{
+		cs_radius 500
+		object1 Earth
+		object2 moon/Moon
+		teleport "Earth Lagrange 2" 0 0 100
+		warp "Earth Lagrange 2" 0 0 100
+		astro Iserlohn Iserlohn{
+		}
+	}
+
+	coordsys Orbit geo{
+		cs_radius 200
+		fullname "Earth's Geostationary orbit"
+		orbits Earth
+		orbit_radius 35786+6378.
+		inclination -23.4
+		argument_of_periapsis 180
+		ascending_node 0
+		updirection 0 1 
+#			warp
+		teleport
+		rstation
+#		addent assault 3 -3 0 1
+#		addent assault 3 3 0 1
+	}
+
+	coordsys Orbit lo{
+		cs_radius 200
+		fullname "Earth's Low orbit"
+		orbits Earth
+		orbit_radius 500+6378.
+		inclination -23.4
+		argument_of_periapsis 180
+		ascending_node 0
+		updirection 0 1 
+		warp
+		teleport
+	}
+}
+
+coordsys Orbit venus{
+	fullname Venus
+	cs_radius 1000000
+	orbits Sol
+	orbit_radius 108208930
+	inclination 3.39471
+	argument_of_periapsis 131.6758
+	ascending_node 76.7520
+	showorbit
+	astro TextureSphere Venus{
+		diameter 12103.6
+		mass 3.3022e23
+		color afafaf
+		omega 0 0 1 -2/243.0187/DAY_SECONDS*pi   #rotation speed
+		texture ven0mss2.jpg
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30.
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1 
+	}
+	coordsys Orbit venuso{
+		orbits Venus
+		orbit_radius 10000
+		fullname "Venus orbit"
+		warp
+		teleport
+		new astro Island3 "Venus Side"{
+			pos 10 -18 0
+		}
+#		coordsys Surface venuss{
+#		}
+	}
+}

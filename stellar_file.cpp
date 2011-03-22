@@ -56,102 +56,135 @@ void teleport::unserialize(UnserializeContext &sc){
 	this->name = strnewdup(name, name.len());
 }
 
-/* Lagrange 1 point between two bodies */
-LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
-	init(path, root);
-	objs[0] = objs[1] = NULL;
+
+
+
+/// \brief The scanner class to interpret a Stellar Structure Definition file.
+///
+/// Can handle line comments, block comments and curly braces.
+/// It would be even possible to suspend scanning per-character basis.
+class StellarStructureScanner{
+public:
+	StellarStructureScanner(FILE *fp);
+	cpplib::dstring nextLine(std::vector<cpplib::dstring>* = NULL);
+	bool eof()const{return 0 != feof(fp);}
+	long long getLine()const{return line;} /// Returns line number.
+protected:
+	FILE *fp;
+	long long line;
+	enum{Normal, LineComment, BlockComment, Quotes} state;
+	cpplib::dstring buf;
+	cpplib::dstring currentToken;
+	std::vector<cpplib::dstring> tokens;
+};
+
+StellarStructureScanner::StellarStructureScanner(FILE *fp) : fp(fp), line(0), state(Normal){
 }
 
-void LagrangeCS::serialize(SerializeContext &sc){
-	st::serialize(sc);
-	sc.o << objs[0] << objs[1];
-}
+/// Scan and interpret input stream, separate them into tokens, returns on end of line.
+cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *argv){
+	buf = "";
+	tokens.clear();
+	currentToken = "";
+	int c, lc = EOF;
+	while((c = getc(fp)) != EOF){
 
-void LagrangeCS::unserialize(UnserializeContext &sc){
-	st::unserialize(sc);
-	sc.i >> objs[0] >> objs[1];
-}
-
-const char *Lagrange1CS::classname()const{return "Lagrange1";}
-
-const ClassRegister<Lagrange1CS> Lagrange1CS::classRegister("Lagrange1");
-
-
-
-void Lagrange1CS::anim(double dt){
-	st::anim(dt);
-	static int init = 0;
-	double f, alpha;
-	Vec3d delta, oldpos, pos1, pos2;
-
-	if(!objs[0] || !objs[1])
-		return;
-
-	alpha = objs[1]->mass / (objs[0]->mass + objs[1]->mass);
-	f = (1. - pow(alpha, 1. / 3.));
-
-	pos1 = parent->tocs(objs[0]->pos, objs[0]->parent);
-	pos2 = parent->tocs(objs[1]->pos, objs[1]->parent);
-
-	oldpos = pos;
-	delta = pos2 - pos1;
-	pos = delta * f;
-	pos += pos1;
-	if(dt)
-		velo = (pos - oldpos) * (1. / dt);
-}
-
-bool LagrangeCS::readFile(StellarContext &sc, int argc, char *argv[]){
-	char *s = argv[0], *ps = argv[1];
-	if(0);
-	else if(!strcmp(s, "object1")){
-		if(1 < argc){
-			objs[0] = parent->findastrobj(argv[1]);
+		// Return the line
+		if(c == '\n'){
+			if(0 < currentToken.len()){
+				tokens.push_back(currentToken);
+				currentToken = "";
+			}
+			if(argv){
+				*argv = tokens;
+			}
+			if(state == LineComment)
+				state = Normal;
+			line++;
+			return buf;
 		}
-	}
-	else if(!strcmp(s, "object2")){
-		if(1 < argc){
-			objs[1] = parent->findastrobj(argv[1]);
+
+		switch(state){
+		case Normal:
+
+			// Line comment scan till newline
+			if(c == '#'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				state = LineComment;
+				continue;
+			}
+
+			if(c == '*' && lc == '/'){
+				if(1 < currentToken.len()){
+					tokens.push_back(currentToken[1]);
+				}
+				currentToken = "";
+				state = BlockComment;
+				continue;
+			}
+
+			if(c == '{' || c == '}'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				tokens.push_back(char(c));
+				if(argv)
+					*argv = tokens;
+				return buf;
+			}
+
+			if(c == '"'){
+				state = Quotes;
+			}
+			else if(isspace(c)){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+			}
+			else
+				currentToken << char(c);
+
+//			if(argv && isspace(c))
+//				argv->push_back(buf);
+
+			buf << char(c);
+			break;
+
+		case LineComment:
+			if(c == '\n')
+				state = Normal;
+			break;
+
+		case BlockComment:
+			if(c == '/' && lc == '*')
+				state = Normal;
+			break;
+
+		case Quotes:
+			if(lc != '\\' && c == '"'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				state = Normal;
+			}
+			else
+				currentToken << char(c);
+
+			buf << char(c);
+			break;
 		}
+		lc = c;
 	}
-	else
-		return st::readFile(sc, argc, argv);
-	return true;
+				if(argv)
+					*argv = tokens;
+	return buf;
 }
-
-const char *Lagrange2CS::classname()const{return "Lagrange2";}
-
-const ClassRegister<Lagrange2CS> Lagrange2CS::classRegister("Lagrange2");
-
-void Lagrange2CS::anim(double dt){
-	st::anim(dt);
-	static int init = 0;
-	double f, alpha;
-	Vec3d delta, oldpos, pos1, pos2;
-
-	if(!objs[0] || !objs[1])
-		return;
-
-	alpha = objs[1]->mass / (objs[0]->mass + objs[1]->mass);
-	f = (1. - pow(alpha, 1. / 3.));
-
-	pos1 = parent->tocs(objs[0]->pos, objs[0]->parent);
-	pos2 = parent->tocs(objs[1]->pos, objs[1]->parent);
-
-	oldpos = pos;
-	delta = pos2 - pos1;
-	pos = delta * -1.;
-	pos += pos1;
-	if(dt)
-		velo = (pos - oldpos) * (1. / dt);
-}
-
-
-
-
-
-
-
 
 
 
@@ -186,28 +219,30 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
-	while(mode && fgets(sc.buf, MAX_LINE_LENGTH, sc.fp)){
-		char *s = NULL, *ps;
-		int argc, c = 0;
-		char *argv[16], *post;
-		sc.line++;
-		argc = argtok(argv, sc.buf, &post, numof(argv));
-		if(argc == 0)
+	while(mode && !sc.scanner->eof()){
+		std::vector<cpplib::dstring> argv;
+		sc.buf = sc.scanner->nextLine(&argv);
+		int c = 0;
+		sc.line = long(sc.scanner->getLine());
+		if(argv.size() == 0)
 			continue;
-		if(!strcmp("}", argv[argc - 1])){
-			argv[--argc] = NULL;
+
+		bool enterBrace = false;
+
+		if(!strcmp("}", argv.back())){
+			argv.pop_back();
 			mode = 0;
-			if(argc == 0){
+			if(argv.size() == 0)
 				break;
-			}
 		}
-		if(!strcmp("{", argv[argc - 1])){
-			argv[--argc] = NULL;
-			if(argc == 0)
+		if(!strcmp("{", argv.back())){
+			argv.pop_back();
+			enterBrace = true;
+			if(argv.size() == 0)
 				continue;
 		}
-		s = argv[0];
-		ps = argv[1];
+		cpplib::dstring s = argv[0];
+		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
 			struct var *v;
 			sc.vl->l = (var*)realloc(sc.vl->l, ++sc.vl->c * sizeof *sc.vl->l);
@@ -215,35 +250,24 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			v->name = (char*)malloc(strlen(ps) + 1);
 			strcpy(v->name, ps);
 			v->type = var::CALC_D;
-			v->value.d = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
+			const char *av2 = argv[2];
+			v->value.d = 2 < argv.size() ? calc3(&av2, sc.vl, NULL) : 0.;
 			sq_pushstring(sc.v, ps, -1);
 			sq_pushfloat(sc.v, SQFloat(v->value.d));
 			sq_createslot(sc.v, -3);
 			continue;
-/*			definition = 2, ps = NULL;*/
 		}
 		else if(!strcmp(s, "include")){
 			StellarFileLoadInt(ps, cs, vl);
 			continue;
 		}
-/*		else if(definition == 2){
-			struct var *v;
-			v = &sc.vl->l[sc.vl->c-1];
-			v->value.d = calc3(&s, calc_mathvars(), NULL);
-			s = NULL;
-		}*/
 		if(!strcmp(argv[0], "new"))
 			s = argv[1], ps = argv[2], c++;
-/*		if(s[0] == '/')
-			cs2 = findcspath(root, s+1);
-		else if(cs2 = findcs(root, s));
-		else*/ if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || /*argc == 1 &&*/ argv[argc-1][strlen(argv[argc-1])-1] == '{'){
+		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
 			CoordSys *a = NULL;
 			CC constructor = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
-			char *pp;
-			if(pp = strchr(s, '{')){
-				*pp = '\0';
+			if(argv.size() == 1){
 				constructor = Cons<CoordSys>;
 				ps = s;
 			}
@@ -261,8 +285,6 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				}
 			}
 			if(ps){
-				if(pp = strchr(ps, '{'))
-					*pp = '\0';
 				if((a = cs->findastrobj(ps)) && a->parent == cs)
 					stellar_coordsys(sc, a);
 				else
@@ -270,20 +292,22 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			}
 			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? ctor(ps, cs) : Cons<Astrobj>(ps, cs)))){
 				if(!constructor && ctor){
-//					a->init(argv[c+2], cs);
 					CoordSys *eis = a->findeisystem();
 					if(eis)
 						eis->addToDrawList(a);
-//					a->parent = cs;
-//					a->legitimize_child();
 				}
 				stellar_coordsys(sc, a);
 			}
 		}
-		else if(cs->readFile(sc, argc, (argv)));
-		else if(s = strtok(s, " \t\r\n")){
-//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-			printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s);
+		else{
+			std::vector<const char *> cargs(argv.size());
+			for(int i = 0; i < argv.size(); i++)
+				cargs[i] = argv[i];
+			if(cs->readFile(sc, argv.size(), &cargs[0]));
+			else{
+	//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
+				printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+			}
 		}
 	}
 //	sq_poptop(v);
@@ -296,7 +320,6 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 	TimeMeasStart(&tm);
 	{
 		FILE *fp;
-		char buf[MAX_LINE_LENGTH];
 		int mode = 0;
 		int inquote = 0;
 		StellarContext sc;
@@ -306,9 +329,9 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		sc.root = root;
 		sc.line = 0;
 		sc.fp = fp = fopen(fname, "r");
+		sc.scanner = new StellarStructureScanner(fp);
 		if(!fp)
 			return -1;
-		sc.buf = buf;
 		sc.vl = (varlist*)malloc(sizeof *sc.vl);
 		sc.vl->c = 0;
 		sc.vl->l = NULL;
@@ -327,6 +350,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 			free(sc.vl->l);
 		}
 		free(sc.vl);
+		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
 		printf("%s loaded time %lg\n", fname, TimeMeasLap(&tm));

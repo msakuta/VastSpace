@@ -320,6 +320,11 @@ void WarSpace::endframe(){
 	st::endframe();
 }
 
+EXPORT btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo &ci){
+	return new btRigidBody(ci);
+}
+
+
 //static double gradius = 1.;
 static int g_debugdraw_bullet = 0;
 

@@ -51,8 +51,6 @@ void Bullet::unserialize(UnserializeContext &sc){
 	sc.i >> grav;
 }
 
-void sufmodel_normalize(sufmodel_t *mdl);
-
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
 static const struct color_node cnl_fireburn[] = {

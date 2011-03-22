@@ -7,7 +7,7 @@
   to find out where the jupiter's satellite is in the earth's 
   coordinates, for example. */
 
-#include "viewer.h"
+#include "Viewer.h"
 #include "serial.h"
 
 extern "C"{
@@ -109,7 +109,7 @@ public:
 	virtual bool belongs(const Vec3d &pos)const; ///< Definition of 'inside' of the system.
 
 	virtual bool readFileStart(StellarContext &); ///< Enter block in a stellar file.
-	virtual bool readFile(StellarContext &, int argc, char *argv[]); /// Interpret a line in stellar file
+	virtual bool readFile(StellarContext &, int argc, const char *argv[]); /// Interpret a line in stellar file
 	virtual bool readFileEnd(StellarContext &); ///< Exit block in a stellar file.
 
 	/** Definition of appropriate rotation. some coordinate systems like space colonies have
@@ -256,9 +256,13 @@ public:
 	template<typename T> static CoordSys *Conster(const char *path, CoordSys *root){
 		return new T(path, root);
 	}
-	template<typename T, typename ST = T::st> class Register : public Static{
+	template<typename T> class Register : public Static{
 	public:
-		Register(ClassId id, bool (*asq_define)(HSQUIRRELVM)) : Static(id, &ST::classRegister, Conster<T>, st::Conster<T>, id, asq_define){}
+		Register(ClassId id, bool (*asq_define)(HSQUIRRELVM))
+		 : Static(id, &T::st::classRegister,
+		   Conster<T>,
+		   st::Conster<T>,
+		   id, asq_define){}
 	};
 	virtual const Static &getStatic()const{return classRegister;}
 	template<typename T> friend class ClassRegister;
@@ -278,9 +282,9 @@ private:
 
 /// Template class to register derived classes to global class list.
 /// This way modifications can safely be made without altering CoordSys class definition.
-template<typename T> class ClassRegister : public T::Register<T>{
+template<typename T> class ClassRegister : public T::template Register<T>{
 public:
-	ClassRegister(ClassId id, bool (*asq_define)(HSQUIRRELVM) = sq_define) : Register(id, asq_define){}
+	ClassRegister(ClassId id, bool (*asq_define)(HSQUIRRELVM) = sq_define) : T::template Register<T>(id, asq_define){}
 	static bool sq_define(HSQUIRRELVM v){
 		sq_pushstring(v, T::classRegister.s_sqclassname, -1);
 		sq_pushstring(v, T::st::classRegister.s_sqclassname, -1);

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="gltestdll"
-	ProjectGUID="{E85222DE-B358-457D-BA79-59E88FFB3D29}"
-	RootNamespace="gltestdll"
+	Name="surface"
+	ProjectGUID="{2DB1949F-D6A5-4D12-A9D0-7F2C8A65B06D}"
+	RootNamespace="surface"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -45,14 +45,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -65,9 +64,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\$(ConfigurationName)"
+				AdditionalLibraryDirectories="&quot;..\$(ConfigurationName)&quot;;&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -121,14 +120,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="4"
-				DisableSpecificWarnings="4819;4251"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -141,9 +139,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\$(PlatformName)\$(ConfigurationName)"
+				AdditionalLibraryDirectories="&quot;..\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="17"
@@ -198,14 +196,12 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
-				RuntimeLibrary="0"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -218,9 +214,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\$(ConfigurationName)"
+				AdditionalLibraryDirectories="..\$(ConfigurationName);&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -278,14 +274,13 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../include;../../clib\include;../../cpplib\include;&quot;../../jpeg-7&quot;;../../sqplus/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../../zlib/"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4819;4251"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -298,10 +293,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
-				OutputFile="$(OutDir)\$(ProjectName).dll"
+				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\$(PlatformName)\$(ConfigurationName)"
+				AdditionalLibraryDirectories="..\$(PlatformName)\$(ConfigurationName);&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -340,11 +334,27 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ContainerHead.cpp"
+				RelativePath=".\DrawMap.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\island3.cpp"
+				RelativePath=".\HeightMap.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\mas.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SurfaceCS.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Tank.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\WarMap.cpp"
 				>
 			</File>
 		</Filter>
@@ -354,7 +364,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\island3.h"
+				RelativePath=".\drawmap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SurfaceCS.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Tank.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WarMap.h"
 				>
 			</File>
 		</Filter>

@@ -1,7 +1,7 @@
 #ifndef STELLAR_FILE_H
 #define STELLAR_FILE_H
 /** \file
- * \breif Functions to load stellar information file. */
+ * \breif Functions to load Stellar Structure Definition file. */
 
 #include "CoordSys.h"
 #include "astro.h"
@@ -27,40 +27,6 @@ struct teleport/* : public Serializable*/{
 	Vec3d pos;
 };
 
-/// Base class for Lagrange points
-class LagrangeCS : public CoordSys{
-public:
-	typedef CoordSys st;
-	LagrangeCS(){}
-	LagrangeCS(const char *path, CoordSys *root);
-	virtual void serialize(SerializeContext &sc);
-	virtual void unserialize(UnserializeContext &sc);
-	bool readFile(StellarContext &, int argc, char *argv[]);
-protected:
-	Astrobj *objs[2];
-};
-
-/// L1 point of two celestial bodies
-class Lagrange1CS : public LagrangeCS{
-public:
-	typedef LagrangeCS st;
-	Lagrange1CS(){}
-	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
-	const char *classname()const;
-	static const ClassRegister<Lagrange1CS> classRegister;
-	void anim(double dt);
-};
-
-/// L2 point of two celestial bodies
-class Lagrange2CS : public LagrangeCS{
-public:
-	typedef LagrangeCS st;
-	Lagrange2CS(){}
-	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
-	const char *classname()const;
-	static const ClassRegister<Lagrange2CS> classRegister;
-	void anim(double dt);
-};
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);
 Astrobj *satellite_new(const char *name, CoordSys *cs);
@@ -75,16 +41,18 @@ void sun_draw(const struct astrobj *, const struct viewer *, int relative);
 void saturn_draw(const struct astrobj *a, const struct viewer *vw, int relative);
 void blackhole_draw(const struct astrobj *, const struct viewer*, int relative);
 
+class StellarStructureScanner;
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
 	const char *fname;
 	CoordSys *root;
 	FILE *fp;
-	char *buf;
+	cpplib::dstring buf;
 	long line;
 	struct varlist *vl;
 	HSQUIRRELVM v;
+	StellarStructureScanner *scanner;
 };
 
 

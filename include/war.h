@@ -30,19 +30,6 @@ struct input_t{
 	}
 };
 
-typedef struct warmap warmap_t;
-typedef struct warmapdecal_s warmapdecal_t;
-
-extern suf_t *CacheSUF(const char *fname);
-
-typedef struct suf_model{
-	suf_t *suf;
-	double trans[16];
-	double bs[3]; /* trivial; bounding sphere center */
-	double rad; /* trivial; bounding sphere radius */
-	int valid; /* validity of bounding sphere */
-} sufmodel_t;
-
 typedef struct war_race{
 	double money;
 	double moneygain;
@@ -60,17 +47,6 @@ struct otnt;
 
 typedef struct WarDraw wardraw_t;
 struct tent3d_line_list;
-
-struct war_field_static{
-	void (*const accel)(struct war_field *, avec3_t *dst, const avec3_t *srcpos, const avec3_t *srcvelo);
-	double (*const atmospheric_pressure)(struct war_field *, const avec3_t *pos);
-	double (*const sonic_speed)(struct war_field *, const avec3_t *pos); /* it can change in various planets */
-	int (*const spherehit)(struct war_field*, const double (*pos)[3], double rad, struct contact_info*);
-	int (*const orientation)(struct war_field*, amat3_t *dst, const avec3_t *pos);
-	double (*const nearplane)(const struct war_field*); /* distance at objects begin to show */
-	double (*const farplane)(const struct war_field*); /* distance at objects begin to hide (not if farmap) */
-	int (*const inwater)(const struct war_field*, const avec3_t *pos); /* TODO: return viscosity? (for non-water oceans) */
-};
 
 class WarField;
 class EXPORT Entlist{
@@ -154,15 +130,5 @@ public:
 
 	static int g_otdrawflags;
 };
-
-
-
-template<Entity *WarField::*list> inline int WarField::countEnts()const{
-	int ret = 0;
-	for(Entity *p = this->*list; p; p = p->next)
-		ret++;
-	return ret;
-}
-
 
 #endif

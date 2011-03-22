@@ -194,7 +194,7 @@ void hook_delete_Entity(Entity e);
 string translate(string source);
 
 // The file name of the stellar file.
-string stellar_file = "space.dat";
+string stellar_file = "space.ssd";
 
 */
 
@@ -319,8 +319,19 @@ tlate <- translate;
 	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }
 
+// load the module
+{
+	local dllpath = debugBuild() ?
+		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
+		x64Build() ? "surface.dll" : "surface.dll";
+//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
+	local gltestdll = loadModule(dllpath);
+	print("\"" + dllpath + "\"l refc is " + gltestdll);
+}
+
 // set stellar file
-stellar_file = 1 || debugBuild() ? "space_debug.dat" : "space.dat";
+stellar_file = 0 || debugBuild() ? "space_debug.ssd" : "space.ssd";
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){
@@ -359,7 +370,7 @@ register_console_command("coordsys", function(...){
 			transit = false;
 		print("Transit " + bool(vargv[1]));
 	}
-	if(cs != null && player.cs != cs){
+	if(cs != null && cs.alive && player.cs != cs){
 		if(transit){
 			local newrot = player.getrot() * cs.transRotation(player.cs);
 			local newpos = cs.transPosition(player.getpos(), player.cs);
@@ -858,6 +869,7 @@ function init_Universe(){
 		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
 		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
 		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
+		mainmenu.addItem("Surface Demo", function(){loadmission("scripts/demo7.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
@@ -875,6 +887,8 @@ function init_Universe(){
 	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
 	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
 	mainmenu.addItem("test", callTest);
+	mainmenu.addItem("Walkthrough", function(){mainmenu.close();});
+	mainmenu.addItem("Exit", "exit");
 
 	// Adjust window position to center of screen, after all menu items are added.
 	mainmenu.x = scw / 2 - mainmenu.width / 2;

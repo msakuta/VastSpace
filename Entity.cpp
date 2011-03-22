@@ -151,16 +151,27 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 
 
 double Entity::maxhealth()const{return 100.;}
+
+/// Called when this Entity is entering a WarField, just after adding to Entity list in the WarField.
+///
+/// This function is also called when creating an Entity.
 void Entity::enterField(WarField *aw){
 	WarSpace *ws = *aw;
-	if(ws->bdw && bbody)
+	if(ws && ws->bdw && bbody){
 		ws->bdw->addRigidBody(bbody);
+		bbody->activate(); // Is it necessary?
+	}
 }
+
+/// Called when this Entity is leaving a WarField, after removing from Entity list in the WarField.
+///
+/// This function is also called when deleting an Entity.
 void Entity::leaveField(WarField *aw){
 	WarSpace *ws = *aw;
-	if(ws->bdw && bbody)
+	if(ws && ws->bdw && bbody)
 		ws->bdw->removeRigidBody(bbody);
 }
+
 void Entity::setPosition(const Vec3d *apos, const Quatd *arot, const Vec3d *avelo, const Vec3d *aavelo){
 	if(apos && apos != &pos) pos = *apos;
 	if(arot && arot != &rot) rot = *arot;

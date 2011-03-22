@@ -65,6 +65,10 @@ namespace gltestp{
 		static int frees;
 #endif
 	private:
+		void init(const char *);
+		void init(long);
+		void initu(unsigned long);
+		void initd(double);
 		struct in{
 			unsigned long size;
 			unsigned refs;
@@ -84,14 +88,18 @@ namespace gltestp{
 		strcpy(buf);
 	}
 
-	inline dstring::dstring(int a){this->dstring::dstring(long(a));}
-	inline dstring::dstring(unsigned a){this->dstring::dstring((unsigned long)(a));}
-	inline dstring::dstring(unsigned long long a){this->dstring::dstring((unsigned long)(a));}
-	inline dstring::dstring(float a){this->dstring::dstring(double(a));}
+	inline dstring::dstring(const char *a){init(a);}
+	inline dstring::dstring(long a){init(a);}
+	inline dstring::dstring(int a){init(long(a));}
+	inline dstring::dstring(unsigned a){initu(a);}
+	inline dstring::dstring(unsigned long a){initu(a);}
+	inline dstring::dstring(unsigned long long a){initu((unsigned long)(a));}
+	inline dstring::dstring(float a){initd(a);}
+	inline dstring::dstring(double a){initd(a);}
 
 	inline dstring dstring::operator =(const dstring &ds){
 		this->dstring::~dstring();
-		this->dstring::dstring(ds);
+		strncat(ds, ds.len());
 		return *this;
 	}
 

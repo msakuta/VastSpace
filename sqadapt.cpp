@@ -7,7 +7,7 @@
 #include "btadapt.h"
 #include "EntityCommand.h"
 #include "Docker.h"
-#include "Astro.h"
+#include "astro.h"
 #include "TexSphere.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
@@ -17,6 +17,7 @@ extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
 }
+#include <cpplib/vec3.h>
 #include <squirrel.h>
 #include <sqstdio.h>
 #include <sqstdaux.h>
@@ -26,6 +27,9 @@ extern "C"{
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
 
 #ifndef NDEBUG
 #define verify(a) assert(a)
@@ -57,7 +61,7 @@ void Push<const CoordSys>(SQVM *v, const CoordSys *cs){
 
 static const SQChar *CONSOLE_COMMANDS = _SC("console_commands");
 
-int ::sqa_console_command(int argc, char *argv[], int *retval){
+int sqa_console_command(int argc, char *argv[], int *retval){
 	HSQUIRRELVM &v = sqa::g_sqvm;
 	sqa::StackReserver sr(v);
 	sq_pushroottable(v); // root
@@ -121,10 +125,10 @@ HSQUIRRELVM g_sqvm;
 static HSQUIRRELVM &v = g_sqvm;
 
 // The Squirrel type tags can be any pointer that never overlap.
-const SQUserPointer tt_Vec3d = "Vec3d";
-const SQUserPointer tt_Quatd = "Quatd";
-const SQUserPointer tt_Entity = "Entity";
-const SQUserPointer tt_GLwindow = "GLwindow";
+const SQUserPointer tt_Vec3d = const_cast<char*>("Vec3d");
+const SQUserPointer tt_Quatd = const_cast<char*>("Quatd");
+const SQUserPointer tt_Entity = const_cast<char*>("Entity");
+const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
 
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
@@ -312,7 +316,7 @@ static SQInteger sqf_TimeMeas_lap(HSQUIRRELVM v){
 	return 1;
 #endif
 }
-const SQUserPointer tt_TimeMeas = "TimeMeas";
+const SQUserPointer tt_TimeMeas = const_cast<char*>("TimeMeas");
 
 
 
@@ -752,7 +756,7 @@ static SQInteger sqf_screenheight(HSQUIRRELVM v){
 
 
 template<>
-static SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
+SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
 	try{
 		Entity *p;
 		SQRESULT sr;
@@ -775,7 +779,7 @@ static SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
 }
 
 template<>
-static SQInteger sqf_setintrinsic<Entity, Vec3d, &Entity::pos>(HSQUIRRELVM v){
+SQInteger sqf_setintrinsic<Entity, Vec3d, &Entity::pos>(HSQUIRRELVM v){
 	try{
 		Entity *p;
 		SQRESULT sr;
@@ -850,7 +854,9 @@ static SQInteger sqf_unary(HSQUIRRELVM v){
 	try{
 		SQIntrinsic<T> q;
 		q.getValue(v, 1);
-		SQIntrinsic<T> r((q.value.*proc)());
+		// This local variable is necessary for gcc.
+		T rv = (q.value.*proc)();
+		SQIntrinsic<T> r(rv);
 		r.push(v);
 		return 1;
 	}
@@ -867,7 +873,9 @@ static SQInteger sqf_binary(HSQUIRRELVM v){
 		q.getValue(v, 1);
 		SQIntrinsic<T> o;
 		o.getValue(v, 2);
-		SQIntrinsic<T> r((q.value.*proc)(o.value));
+		// This local variable is necessary for gcc.
+		T rv = (q.value.*proc)(o.value);
+		SQIntrinsic<T> r(rv);
 		r.push(v);
 		return 1;
 	}
@@ -1167,6 +1175,10 @@ static SQInteger sqf_reg(HSQUIRRELVM v){
 	return 1;
 }
 
+#ifndef _WIN32
+#define __stdcall
+#endif
+
 template<void (__stdcall *fp)()> SQInteger sqf_adapter0(HSQUIRRELVM v){
 	fp();
 	return 0;
@@ -1239,21 +1251,33 @@ static SQInteger sqf_gldprint(HSQUIRRELVM v){
 	return 0;
 }
 
+struct ModuleEntry{
+	void *handle;
+	int refs;
+};
 
-static std::map<cpplib::dstring, int> modules;
+typedef std::map<cpplib::dstring, ModuleEntry> ModuleMap;
+
+static ModuleMap modules;
 
 static SQInteger sqf_loadModule(HSQUIRRELVM v){
 	try{
 		const SQChar *name;
 		if(SQ_FAILED(sq_getstring(v, 2, &name)))
 			return SQ_ERROR;
-		if(LoadLibrary(name)){
-			std::map<cpplib::dstring, int>::iterator it = modules.find(name);
+#ifdef _WIN32
+		if(void *lib = LoadLibrary(name)){
+#else
+		if(void *lib = dlopen(name, RTLD_LAZY)){
+#endif
+			ModuleMap::iterator it = modules.find(name);
 			if(it != modules.end())
-				(it->second)++;
-			else
-				modules[name] = 1;
-			sq_pushinteger(v, modules[name]);
+				it->second.refs++;
+			else{
+				modules[name].handle = lib;
+				modules[name].refs = 1;
+			}
+			sq_pushinteger(v, modules[name].refs);
 		}
 		else{
 			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!");
@@ -1271,6 +1295,7 @@ static SQInteger sqf_unloadModule(HSQUIRRELVM v){
 		const SQChar *name;
 		if(SQ_FAILED(sq_getstring(v, 2, &name)))
 			return SQ_ERROR;
+#ifdef _WIN32
 		HMODULE hm = GetModuleHandle(name);
 		if(hm){
 			FreeLibrary(hm);
@@ -1278,6 +1303,11 @@ static SQInteger sqf_unloadModule(HSQUIRRELVM v){
 		}
 		else
 			return sq_throwerror(v, _SC("Failed to unload library."));
+#else
+		ModuleMap::iterator it = modules.find(name);
+		if(it != modules.end())
+			dlclose(it->second.handle);
+#endif
 		return 1;
 	}
 	catch(SQIntrinsicError){
@@ -1286,10 +1316,14 @@ static SQInteger sqf_unloadModule(HSQUIRRELVM v){
 }
 
 void unloadAllModules(){
-	for(std::map<cpplib::dstring, int>::iterator it = modules.begin(); it != modules.end(); it++) for(int i = 0; i < it->second; i++){
+	for(ModuleMap::iterator it = modules.begin(); it != modules.end(); it++) for(int i = 0; i < it->second.refs; i++){
+#ifdef _WIN32
 		HMODULE hm = GetModuleHandle(it->first);
 		if(hm)
 			FreeLibrary(hm);
+#else
+		dlclose(it->second.handle);
+#endif
 	}
 	modules.clear();
 }
@@ -1368,11 +1402,11 @@ void sqa_init(HSQUIRRELVM *pv){
 	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
 	sq_createslot(v, -3);
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
-	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &(Vec3d::operator +)>);
-	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &(Vec3d::operator -)>);
+	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &Vec3d::operator+ >);
+	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &Vec3d::operator+ >);
 	register_closure(v, _SC("_mul"), sqf_Vec3d_scale);
 	register_closure(v, _SC("_div"), sqf_Vec3d_divscale);
-	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &(Vec3d::operator -)>);
+	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &Vec3d::operator- >);
 	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
 	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);
 	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
@@ -1394,7 +1428,7 @@ void sqa_init(HSQUIRRELVM *pv){
 	register_closure(v, _SC("_get"), sqf_Quatd_get);
 	register_closure(v, _SC("_set"), sqf_Quatd_set);
 	register_closure(v, _SC("normin"), sqf_normin<Quatd>);
-	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &(Quatd::operator *)>);
+	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &Quatd::operator* >);
 	register_closure(v, _SC("trans"), sqf_Quatd_trans);
 	register_closure(v, _SC("cnj"), sqf_unary<Quatd, &Quatd::cnj>/*sqf_Quatd_cnj*/);
 	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);

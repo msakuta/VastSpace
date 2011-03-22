@@ -34,7 +34,7 @@ class GLWstateButton;
  *
  * Conceptually, the camera and the player is separate entity, but they heavily depend on each other.
  */
-class Player : public Serializable{
+class EXPORT Player : public Serializable{
 public:
 	/// Base class for camera controller classes.
 	class mover_t{

@@ -51,7 +51,7 @@ double Defender::nlipsFactor(Viewer &vw)const{
 
 void Defender::draw(wardraw_t *wd){
 	static int init = 0;
-	static suf_t *sufbase = NULL/*, *sufbase1 = NULL*/;
+	static suf_t *sufbase = NULL, *sufbase1 = NULL;
 	static suf_t *sufengine = NULL, *sufengine1 = NULL;
 	static suf_t *sufrev = NULL;
 	static VBO *vbo[4] = {NULL};
@@ -76,12 +76,12 @@ void Defender::draw(wardraw_t *wd){
 	if(init == 0) do{
 //		FILE *fp;
 		sufbase = CallLoadSUF("models/defender0_body.bin");
-//		sufbase1 = CallLoadSUF("models/interceptor1.bin");
+		sufbase1 = CallLoadSUF("models/defender1_body.bin");
 		sufengine = CallLoadSUF("models/defender0_engine.bin");
 		sufengine1 = CallLoadSUF("models/defender1_engine.bin");
 //		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
 		vbo[0] = CacheVBO(sufbase);
-//		vbo[1] = CacheVBO(sufbase1);
+		vbo[1] = CacheVBO(sufbase1);
 		vbo[2] = CacheVBO(sufengine);
 		vbo[3] = CacheVBO(sufengine1);
 //		vbo[2] = CacheVBO(sufrev);
@@ -162,11 +162,19 @@ void Defender::draw(wardraw_t *wd){
 		else
 #endif
 		{
-			if(vbo[0])
-				DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
-			else
-//				DrawSUF(sufbase, SUF_ATR, NULL);
-				DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+			if(pixels < 25){
+				if(vbo[1])
+					DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft);
+				else
+					DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft, NULL, NULL);
+			}
+			else{
+				if(vbo[0])
+					DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
+				else
+	//				DrawSUF(sufbase, SUF_ATR, NULL);
+					DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+			}
 
 			for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++){
 				glFrontFace((ix + iy) % 2 ? GL_CW : GL_CCW);

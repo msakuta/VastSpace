@@ -221,6 +221,28 @@ coordsys Orbit earth{
 		}
 	}
 
+	coordsys Lagrange4 el4{
+		cs_radius 500
+		object1 Earth
+		object2 moon/Moon
+		updirection 0 1 
+		bookmark "Earth Lagrange 4" 0 0 10
+		astro Island3 "Side 3"{
+			
+		}
+	}
+
+	coordsys Lagrange5 el5{
+		cs_radius 500
+		object1 Earth
+		object2 moon/Moon
+		updirection 0 1 
+		bookmark "Earth Lagrange 5" 0 0 10
+		astro Island3 "Side 5"{
+			
+		}
+	}
+
 	coordsys Orbit geo{
 		cs_radius 200
 		fullname "Earth's Geostationary orbit"

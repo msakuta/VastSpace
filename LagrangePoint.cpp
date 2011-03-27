@@ -42,6 +42,37 @@ public:
 	void anim(double dt);
 };
 
+/// Base class of Lagrange4CS and Lagrange5CS. Calculates offset along orbit plane.
+/// Assumes object 2 orbits around orbit 1.
+class LagrangeTrojan : public LagrangeCS{
+public:
+	typedef LagrangeCS st;
+	LagrangeTrojan(){}
+	LagrangeTrojan(const char *path, CoordSys *root) : st(path, root){}
+	void anim(double dt);
+	virtual Vec3d offsetPos()const = 0;
+};
+
+/// Lagrange 4 point. Resides ahead of orbiting body.
+class Lagrange4CS : public LagrangeTrojan{
+public:
+	typedef LagrangeTrojan st;
+	Lagrange4CS(){}
+	Lagrange4CS(const char *path, CoordSys *root) : st(path, root){}
+	static const ClassRegister<Lagrange4CS> classRegister;
+	virtual Vec3d offsetPos()const{return Vec3d(0.5, sqrt(3.) / 2., 0.);}
+};
+
+/// Lagrange 5 point. Resides after the body.
+class Lagrange5CS : public LagrangeTrojan{
+public:
+	typedef LagrangeTrojan st;
+	Lagrange5CS(){}
+	Lagrange5CS(const char *path, CoordSys *root) : st(path, root){}
+	static const ClassRegister<Lagrange5CS> classRegister;
+	virtual Vec3d offsetPos()const{return Vec3d(0.5, -sqrt(3.) / 2., 0.);}
+};
+
 
 /* Lagrange 1 point between two bodies */
 LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
@@ -131,6 +162,42 @@ void Lagrange2CS::anim(double dt){
 	delta = pos2 - pos1;
 	pos = delta * -1.;
 	pos += pos1;
+	if(dt)
+		velo = (pos - oldpos) * (1. / dt);
+}
+
+
+const ClassRegister<Lagrange4CS> Lagrange4CS::classRegister("Lagrange4");
+const ClassRegister<Lagrange5CS> Lagrange5CS::classRegister("Lagrange5");
+
+void LagrangeTrojan::anim(double dt){
+	st::anim(dt);
+	static int init = 0;
+	double f, alpha;
+
+	if(!objs[0] || !objs[1])
+		return;
+
+	// We assume objs[1] orbits around objs[0].
+	CoordSys *cs;
+	for(cs = objs[1]; cs; cs = cs->parent) if(OrbitCS *o = cs->toOrbitCS()){
+		if(o->orbit_home == objs[0])
+			break;
+	}
+	if(!cs)
+		return;
+
+	Vec3d pos1 = parent->tocs(objs[0]->pos, objs[0]->parent);
+	Vec3d pos2 = parent->tocs(objs[1]->pos, objs[1]->parent);
+	Vec3d delta = pos2 - pos1;
+	if(delta.slen() < DBL_EPSILON)
+		return;
+
+	Vec3d lpos = offsetPos();
+	Vec3d xhat = delta;
+	Vec3d zhat = parent->tocs(objs[1]->orbit_axis.trans(Vec3d(0,0,1)), objs[1]->parent, true).vp(xhat);
+	Vec3d oldpos = pos;
+	pos = lpos[0] * xhat + lpos[1] * zhat + pos1;
 	if(dt)
 		velo = (pos - oldpos) * (1. / dt);
 }

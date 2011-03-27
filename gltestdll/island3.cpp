@@ -4,18 +4,10 @@
 #include "island3.h"
 #include "ContainerHead.h"
 #include "astrodraw.h"
-//#include "astro_star.h"
 #include "CoordSys.h"
 #include "Universe.h"
-//#include "coordcnv.h"
 #include "Player.h"
 #include "war.h"
-//#include "entity_p.h"
-//#include "train.h"
-//#include "warmap.h"
-//#include "walk.h"
-//#include "apache.h"
-//#include "warutil.h"
 #include "glsl.h"
 #include "glstack.h"
 #include "material.h"
@@ -65,42 +57,13 @@ extern "C"{
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
 
 
-/*
-static void i3war_anim( *, double dt);
-static void i3war_draw(struct war_field *, struct war_draw_data *);
-static int i3war_pointhit(warf_t *w, const avec3_t *pos, const avec3_t *velo, double dt, const struct contact_info *);
-static void i3war_accel(warf_t *w, avec3_t *dst, const avec3_t *srcpos, const avec3_t *srcvelo);
-static double i3war_atmospheric_pressure(warf_t *w, const avec3_t *pos);
-static double i3war_sonic_speed(warf_t *w, const avec3_t *pos);
-static int i3war_spherehit(warf_t *w, const avec3_t *pos, double rad, struct contact_info *ci);
-static int i3war_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos);
-
-
-static struct war_field_static i3war_static = {
-	i3war_anim,
-	WarPostFrame,
-	WarEndFrame,
-	i3war_draw,
-	i3war_pointhit,
-	i3war_accel,
-	i3war_atmospheric_pressure,
-	i3war_sonic_speed,
-	i3war_spherehit,
-	i3war_orientation,
-	WarNearPlane,
-	WarFarPlane,
-};*/
-
-/*warf_t i3warf = {
-	&i3war_static,
-};*/
-
-
-
 class Island3Entity;
 class Island3Building;
 
-/// Space colony Island3, A.K.A. O'Neill Cylinder.
+/// \brief Space colony Island3, A.K.A. O'Neill Cylinder.
+///
+/// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class Island3Entity,
+/// not as multiple inheritance.
 class Island3 : public Astrobj{
 public:
 //	static const unsigned classid;
@@ -141,7 +104,9 @@ protected:
 	static suf_t *sufbridgetower;
 };
 
-/// Island3 companion Entity. If this object exists, corresponding Island3 class is always present,
+/// \brief Island3 companion Entity.
+///
+/// If this object exists, corresponding Island3 class is always present,
 /// but the revese is not necessarily true.
 /// It's not registered as a user-creatable object, but will be automatically created when Island3 class is created.
 class Island3Entity : public Entity{

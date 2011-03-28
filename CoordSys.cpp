@@ -632,10 +632,6 @@ void CoordSys::endframe(){
 			cs = csnext;
 		}
 
-		// delete WarField if present
-		if(w)
-			delete w;
-
 		// rest in peace..
 		delete this;
 	}

@@ -34,6 +34,7 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 #include <gl/glext.h>
+#include <iostream>
 
 
 
@@ -106,6 +107,7 @@ const char *ContainerHead::dispname()const{
 }
 
 void ContainerHead::anim(double dt){
+	try{
 	WarSpace *ws = *w;
 	if(!ws){
 		st::anim(dt);
@@ -257,6 +259,10 @@ void ContainerHead::anim(double dt){
 		}
 	}
 #endif
+	}
+	catch(...){
+		std::cerr << __FILE__"(%d) Exception ?\n" << __LINE__;
+	}
 }
 
 void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

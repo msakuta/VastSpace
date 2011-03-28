@@ -315,8 +315,10 @@ public:
 	WarpBubble(){}
 	WarpBubble(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const{return "WarpBubble";}
+	static int serialNo;
 };
 const ClassRegister<WarpBubble> WarpBubble::classRegister("WarpBubble");
+int WarpBubble::serialNo = 0;
 
 
 
@@ -1230,7 +1232,7 @@ void Warpable::anim(double dt){
 		}
 		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
 			int i;
-			p->warpcs = new WarpBubble("warpbubble", w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
+			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;
 /*			VECNULL(pt->velo);*/

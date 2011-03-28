@@ -158,7 +158,8 @@ void ContainerHead::anim(double dt){
 		}
 		else if(task == sship_dockque || task == sship_dock){
 			if(docksite == NULL){
-				std::vector<CoordSys *> set = findIsland3(w->cs->findcspath("/"));
+				std::vector<CoordSys *> set;
+				findIsland3(w->cs->findcspath("/"), set);
 				if(set.size()){
 					int i = RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).next() % set.size();
 					docksite = set[i];
@@ -413,14 +414,10 @@ void ContainerHead::post_warp(){
 
 double ContainerHead::maxhealth()const{return BEAMER_HEALTH;}
 
-std::vector<CoordSys *> ContainerHead::findIsland3(CoordSys *root)const{
-	std::vector<CoordSys *> ret;
+void ContainerHead::findIsland3(CoordSys *root, std::vector<CoordSys *> &ret)const{
 	for(CoordSys *cs = root->children; cs; cs = cs->next){
 		if(!strcmp(cs->classname(), "Island3") && cs)
 			ret.push_back(cs);
-		std::vector<CoordSys *> set = findIsland3(cs);
-		for(std::vector<CoordSys *>::iterator it = set.begin(); it != set.end(); it++)
-			ret.push_back(*it);
+		findIsland3(cs, ret);
 	}
-	return ret;
 }

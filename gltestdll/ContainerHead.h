@@ -50,7 +50,7 @@ public:
 	static Entity *create(WarField *w, Builder *);
 	btRigidBody *get_bbody(){return bbody;}
 protected:
-	std::vector<CoordSys *> findIsland3(CoordSys *root)const;
+	void findIsland3(CoordSys *root, std::vector<CoordSys *> &ret)const;
 };
 
 #endif

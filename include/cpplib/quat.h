@@ -279,7 +279,7 @@ template<typename T> template<typename T2> inline Quat<T2> Quat<T>::cast()const{
 		static_cast<T2>(a[3]));
 }
 
-/// Instanciation of sqrtepsilon in case of float.
+/// Instantiation of sqrtepsilon in case of float.
 template<> float Quat<float>::sqrtepsilon(){return ::sqrt(FLT_EPSILON);}
 
 }

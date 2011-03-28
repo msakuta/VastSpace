@@ -46,8 +46,11 @@ public:
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);
 	virtual bool undock(Docker*);
+	virtual void post_warp();
 	static Entity *create(WarField *w, Builder *);
 	btRigidBody *get_bbody(){return bbody;}
+protected:
+	std::vector<CoordSys *> findIsland3(CoordSys *root)const;
 };
 
 #endif

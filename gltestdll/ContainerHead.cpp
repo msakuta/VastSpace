@@ -14,6 +14,7 @@
 #include "btadapt.h"
 #include "glstack.h"
 #include "draw/WarDraw.h"
+#include "Island3.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -156,18 +157,33 @@ void ContainerHead::anim(double dt){
 			}
 		}
 		else if(task == sship_dockque || task == sship_dock){
-			for(Entity *pt = w->entlist(); pt; pt = pt->next) if(!strcmp(pt->classname(), "Island3Entity")){
-				Vec3d target = pt->rot.trans(task == sship_dockque ? Vec3d(0, -16. - 3.25 - 1.5, 0.) : Vec3d(0, -16. - 3.25, 0.)) + pt->pos;
-				steerArrival(dt, target, pt->velo, 1. / 10., .001);
-				if((target - pos).slen() < .2 * .2){
-					if(task == sship_dockque)
-						task = sship_dock;
-					else{
-						this->w = NULL;
-						return;
+			if(docksite == NULL){
+				std::vector<CoordSys *> set = findIsland3(w->cs->findcspath("/"));
+				if(set.size()){
+					int i = RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).next() % set.size();
+					docksite = set[i];
+				}
+			}
+			if(docksite && !this->warping){
+				if(docksite->parent != w->cs){
+					WarpCommand com;
+					com.destcs = docksite->parent;
+					com.destpos = docksite->pos + docksite->rot.trans(Vec3d(0, -16. - 3.25 - 1.5 - 1., 0.));
+					command(&com);
+					task = sship_dockque;
+				}
+				else{
+					Vec3d target = docksite->rot.trans(task == sship_dockque ? Vec3d(0, -16. - 3.25 - 1.5, 0.) : Vec3d(0, -16. - 3.25, 0.)) + docksite->pos;
+					steerArrival(dt, target, docksite->velo, 1. / 10., .001);
+					if((target - pos).slen() < .2 * .2){
+						if(task == sship_dockque)
+							task = sship_dock;
+						else{
+							this->w = NULL;
+							return;
+						}
 					}
 				}
-				break;
 			}
 		}
 		else if(w->getPlayer()->control == this){
@@ -201,8 +217,8 @@ void ContainerHead::anim(double dt){
 				task = sship_idle;
 		}
 		else if(task == sship_idle){
-			if(RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).nextd() < .0001){
-				task = sship_dockque;
+			if(race != 0 /*RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).nextd() < .0001*/){
+				command(&DockCommand());
 			}
 			inputs.press = 0;
 		}
@@ -379,6 +395,7 @@ Entity::Props ContainerHead::props()const{
 bool ContainerHead::command(EntityCommand *com){
 	if(InterpretCommand<DockCommand>(com)){
 		task = sship_dockque;
+		docksite = NULL;
 		return true;
 	}
 	else return st::command(com);
@@ -390,4 +407,20 @@ bool ContainerHead::undock(Docker *d){
 	return true;
 }
 
+void ContainerHead::post_warp(){
+	task = sship_dockque;
+}
+
 double ContainerHead::maxhealth()const{return BEAMER_HEALTH;}
+
+std::vector<CoordSys *> ContainerHead::findIsland3(CoordSys *root)const{
+	std::vector<CoordSys *> ret;
+	for(CoordSys *cs = root->children; cs; cs = cs->next){
+		if(!strcmp(cs->classname(), "Island3") && cs)
+			ret.push_back(cs);
+		std::vector<CoordSys *> set = findIsland3(cs);
+		for(std::vector<CoordSys *>::iterator it = set.begin(); it != set.end(); it++)
+			ret.push_back(*it);
+	}
+	return ret;
+}

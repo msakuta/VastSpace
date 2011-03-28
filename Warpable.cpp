@@ -1188,6 +1188,7 @@ void Warpable::anim(double dt){
 			if(w->pl->chase == pt){
 				w->pl->setvelo(w->pl->cs->tocsv(pt->velo, pt->pos, w->cs));
 			}
+			post_warp();
 		}
 		else if(desiredvelo < velo){
 			Vec3d delta, dst, dstvelo;
@@ -1451,3 +1452,5 @@ int Warpable::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	return 0/*st::tracehit(src, dir, rad, dt, ret, retp, retn)*/;
 }
 
+void Warpable::post_warp(){
+}

@@ -133,7 +133,7 @@ DERIVE_COMMAND(DockCommand, EntityCommand);
 DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
 DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
 
-struct WarpCommand : public MoveCommand{
+struct EXPORT WarpCommand : public MoveCommand{
 	typedef MoveCommand st;
 	static int construction_dummy;
 	static EntityCommandID sid;

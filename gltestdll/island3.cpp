@@ -13,7 +13,6 @@
 #include "material.h"
 #include "cmd.h"
 #include "btadapt.h"
-#include "Entity.h"
 #include "judge.h"
 #include "bitmap.h"
 #include "draw/WarDraw.h"
@@ -34,7 +33,6 @@ extern "C"{
 #include <gl/glu.h>
 #include <gl/glext.h>
 #include <assert.h>
-#include <btBulletDynamicsCommon.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 
 
@@ -44,11 +42,6 @@ extern "C"{
 #define ISLAND3_HALFLEN 16.
 #define ISLAND3_MIRRORTHICK .1 ///< Thickness of the mirrors
 #define ISLAND3_FARMRAD 20.
-#ifndef NDEBUG
-#define ISLAND3_BUILDINGS 32
-#else
-#define ISLAND3_BUILDINGS 128
-#endif
 #define MIRROR_LENGTH (ISLAND3_HALFLEN * 2.)
 #define BRIDGE_HALFWID .01
 #define BRIDGE_THICK .01
@@ -57,73 +50,7 @@ extern "C"{
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
 
 
-class Island3Entity;
-class Island3Building;
 
-/// \brief Space colony Island3, A.K.A. O'Neill Cylinder.
-///
-/// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class Island3Entity,
-/// not as multiple inheritance.
-class Island3 : public Astrobj{
-public:
-//	static const unsigned classid;
-	static ClassRegister<Island3> classRegister;
-	typedef Astrobj st;
-
-	double sun_phase;
-	Island3Entity *ent;
-	Island3Building *bldgs[ISLAND3_BUILDINGS];
-//	btRigidBody *bbody;
-	btCompoundShape *btshape;
-	btBoxShape *wings[3];
-	btTransform wingtrans[3];
-
-	Island3();
-	Island3(const char *path, CoordSys *root);
-	virtual ~Island3();
-	virtual const char *classname()const{return "Island3";}
-//	virtual void init(const char *path, CoordSys *root);
-	virtual bool belongs(const Vec3d &pos)const;
-	virtual void anim(double dt);
-	virtual void predraw(const Viewer *);
-	virtual void draw(const Viewer *);
-	virtual void drawtra(const Viewer *);
-	virtual void onChangeParent(CoordSys *oldParent);
-
-	static int &g_shader_enable;
-protected:
-	bool headToSun;
-	bool cullLevel; ///< -1 = indeterminant, 0 = near, 1 = far
-	int getCutnum(const Viewer *vw)const;
-	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
-	Mat4d transform(const Viewer *vw)const;
-	bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat);
-	void beginWallTexture(const Viewer *);
-	void endWallTexture();
-	static GLuint walllist, walltex;
-	static suf_t *sufbridgetower;
-};
-
-/// \brief Island3 companion Entity.
-///
-/// If this object exists, corresponding Island3 class is always present,
-/// but the revese is not necessarily true.
-/// It's not registered as a user-creatable object, but will be automatically created when Island3 class is created.
-class Island3Entity : public Entity{
-public:
-	friend Island3;
-	Island3 &astro;
-	Island3Entity(Island3 &astro);
-	virtual ~Island3Entity();
-	virtual const char *classname()const{return "Island3Entity";} ///< Overridden because getStatic() is not defined
-	virtual double hitradius()const{return 20.;}
-	virtual bool isTargettable()const{return true;}
-	virtual bool isSelectable()const{return true;}
-	virtual double maxhealth()const{return 1e6;}
-	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual int takedamage(double damage, int hitpart);
-	virtual void draw(wardraw_t *);
-};
 
 class Island3Building : public Entity{
 public:
@@ -159,6 +86,7 @@ Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
 Island3::Island3(const char *path, CoordSys *root) : st(path, root){
 	this->Island3::Island3();
 	init(path, root);
+	race = 0;
 }
 
 Island3::~Island3(){
@@ -293,8 +221,9 @@ void Island3::anim(double dt){
 		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
 
 		// Randomly create container heads
-		if(rs.nextd() * dt < .0001){
+		if(rs.nextd() * dt < .00002){
 			ContainerHead *ch = new ContainerHead(this);
+			ch->race = race;
 			ws->addent(ch);
 			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
 			ch->pos = rpos + this->pos + .1 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
@@ -2112,9 +2041,20 @@ void Island3::onChangeParent(CoordSys *oldParent){
 	}
 }
 
+bool Island3::readFile(StellarContext &sc, int argc, const char *argv[]){
+	if(!strcmp(argv[0], "race")){
+		if(1 < argc)
+			race = atoi(argv[1]);
+		return true;
+	}
+	else
+		return st::readFile(sc, argc, argv);
+}
+
 
 Island3Entity::Island3Entity(Island3 &astro) : astro(astro){
 	health = maxhealth();
+	race = astro.race;
 }
 
 Island3Entity::~Island3Entity(){

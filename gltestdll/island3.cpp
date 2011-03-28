@@ -1774,6 +1774,24 @@ void Island3::drawtra(const Viewer *vw){
 #endif
 }
 
+void Island3Entity::drawOverlay(wardraw_t *){
+	glScaled(10, 10, 1);
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(-.10,  .00);
+	glVertex2d(-.09, -.02);
+	glVertex2d( .09, -.02);
+	glVertex2d( .10,  .00);
+	glVertex2d( .09,  .02);
+	glVertex2d(-.09,  .02);
+	glEnd();
+	glBegin(GL_LINES);
+	glVertex2d( .09,  .02);
+	glVertex2d(-.09,  .10);
+	glVertex2d( .09, -.02);
+	glVertex2d(-.09, -.10);
+	glEnd();
+}
+
 #if 0
 static void Island3DrawGrass(const Viewer *vw){
 	const Mat4d &rotmat = vw->rot;

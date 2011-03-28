@@ -438,6 +438,19 @@ void ContainerHead::drawtra(wardraw_t *wd){
 //	drawShield(wd);
 }
 
+void ContainerHead::drawOverlay(wardraw_t *){
+	glScaled(10, 10, 1);
+	glBegin(GL_LINE_LOOP);
+	glVertex2d(-.10,  .00);
+	glVertex2d(-.05, -.05 * sqrt(3.));
+	glVertex2d( .05, -.05 * sqrt(3.));
+	glVertex2d( .10,  .00);
+	glVertex2d( .05,  .05 * sqrt(3.));
+	glVertex2d(-.05,  .05 * sqrt(3.));
+	glEnd();
+}
+
+
 Entity::Props ContainerHead::props()const{
 	Props ret = st::props();
 	ret.push_back(gltestp::dstring("I am ContainerHead!"));

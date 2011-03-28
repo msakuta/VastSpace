@@ -87,6 +87,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart);
 	virtual void draw(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 };
 
 

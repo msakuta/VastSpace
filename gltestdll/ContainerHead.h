@@ -45,6 +45,7 @@ public:
 	virtual void leaveField(WarField *);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);

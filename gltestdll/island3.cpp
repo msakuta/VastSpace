@@ -72,20 +72,13 @@ GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
 suf_t *Island3::sufbridgetower = NULL;
 
-Island3::Island3() : sun_phase(0.), ent(NULL), btshape(NULL), headToSun(false){
-	absmag = 30.;
-	rad = 100.;
-	orbit_home = NULL;
-	mass = 1e10;
-	basecolor = Vec4f(1., .5, .5, 1.);
-	omg.clear();
-	for(int i = 0; i < numof(bldgs); i++)
-		bldgs[i] = new Island3Building(*this);
+Island3::Island3(){
+	init();
 }
 
 Island3::Island3(const char *path, CoordSys *root) : st(path, root){
-	this->Island3::Island3();
-	init(path, root);
+	init();
+	st::init(path, root);
 	race = 0;
 }
 
@@ -94,6 +87,23 @@ Island3::~Island3(){
 		delete ent;
 	if(btshape)
 		delete btshape;
+}
+
+void Island3::init(){
+	sun_phase = 0.;
+	ent = NULL;
+	btshape = NULL;
+	headToSun = false;
+	absmag = 30.;
+	rad = 100.;
+	orbit_home = NULL;
+	mass = 1e10;
+	basecolor = Vec4f(1., .5, .5, 1.);
+	omg.clear();
+	for(int i = 0; i < numof(bldgs); i++)
+		bldgs[i] = new Island3Building(*this);
+	gases = 100;
+	solids = 100;
 }
 
 bool Island3::belongs(const Vec3d &lpos)const{
@@ -164,7 +174,7 @@ void Island3::anim(double dt){
 	sun_phase += 2 * M_PI / 24. / 60. / 60. * dt;
 
 	if(!parent->w)
-		return;
+		parent->w = new WarSpace(parent);
 	WarSpace *ws = *parent->w;
 	if(ws && !ent){
 		ent = new Island3Entity(*this);
@@ -221,8 +231,8 @@ void Island3::anim(double dt){
 		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
 
 		// Randomly create container heads
-		if(rs.nextd() * dt < .00002){
-			ContainerHead *ch = new ContainerHead(this);
+		if(floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.1){
+			ContainerHead *ch = new ContainerHead(this->ent);
 			ch->race = race;
 			ws->addent(ch);
 			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
@@ -234,6 +244,9 @@ void Island3::anim(double dt){
 				bbody->setWorldTransform(btTransform(btqc(ch->rot), btvc(ch->pos)));
 				bbody->setLinearVelocity(btvc(ch->velo));
 				bbody->setAngularVelocity(btvc(ch->omg));
+			}
+			for(int i = 0; i < ch->ncontainers; i++){
+				ch->containers[i] == ch->gascontainer ? gases-- : solids--;
 			}
 		}
 	}
@@ -1792,6 +1805,14 @@ void Island3Entity::drawOverlay(wardraw_t *){
 	glEnd();
 }
 
+Entity::Props Island3Entity::props()const{
+	Props ret = st::props();
+	ret.push_back(gltestp::dstring("Gases: ") << astro.gases);
+	ret.push_back(gltestp::dstring("Solids: ") << astro.solids);
+	return ret;		
+}
+
+
 #if 0
 static void Island3DrawGrass(const Viewer *vw){
 	const Mat4d &rotmat = vw->rot;
@@ -2449,4 +2470,14 @@ void Island3Building::draw(wardraw_t *wd){
 		glPopAttrib();
 		glPopMatrix();
 	}
+}
+
+bool Island3Entity::command(EntityCommand *com){
+	if(TransportResourceCommand *trc = InterpretCommand<TransportResourceCommand>(com)){
+		astro.gases += trc->gases;
+		astro.solids += trc->solids;
+		return true;
+	}
+	else		
+		return st::command(com);
 }

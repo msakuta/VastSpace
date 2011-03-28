@@ -15,6 +15,7 @@
 #include "glstack.h"
 #include "draw/WarDraw.h"
 #include "Island3.h"
+#include "sqadapt.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -57,7 +58,7 @@ ContainerHead::ContainerHead(WarField *aw) : st(aw){
 	init();
 }
 
-ContainerHead::ContainerHead(CoordSys *docksite) : st(docksite->parent->w), docksite(docksite){
+ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), docksite(docksite){
 	init();
 	task = sship_undock;
 	undocktime = 30.;
@@ -128,7 +129,7 @@ void ContainerHead::anim(double dt){
 	if(0 < health){
 		Entity *collideignore = NULL;
 		if(task == sship_undock){
-			if(!docksite || docksite->parent->w != w || undocktime < 0.){
+			if(!docksite || docksite->w != w || undocktime < 0.){
 				inputs.press&= ~PL_W;
 				task = sship_idle;
 			}
@@ -137,9 +138,9 @@ void ContainerHead::anim(double dt){
 				undocktime -= dt;
 			}
 		}
-		else if(task == sship_dockque || task == sship_dock){
+		else if(task == sship_dockqueque || task == sship_dockque || task == sship_dock){
 			if(docksite == NULL){
-				std::vector<CoordSys *> set;
+				std::vector<Entity *> set;
 				findIsland3(w->cs->findcspath("/"), set);
 				if(set.size()){
 					int i = RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).next() % set.size();
@@ -147,21 +148,38 @@ void ContainerHead::anim(double dt){
 				}
 			}
 			if(docksite && !this->warping){
-				if(docksite->parent != w->cs){
+				if(docksite->w->cs != w->cs){
 					WarpCommand com;
-					com.destcs = docksite->parent;
-					com.destpos = docksite->pos + docksite->rot.trans(Vec3d(0, -16. - 3.25 - 1.5 - 1., 0.));
+					com.destcs = docksite->w->cs;
+					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+					com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+					Vec3d target = com.destpos;
+					Vec3d delta = target - com.destcs->tocs(pos, w->cs);
+					Vec3d parallel = yhat * delta.sp(yhat);
+					Vec3d lateral = delta - parallel;
+					if(task == sship_dockqueque && delta.sp(yhat) < 0)
+						com.destpos += lateral.normin() * -10.;
 					command(&com);
-					task = sship_dockque;
+//					task = sship_dockque;
 				}
 				else{
-					Vec3d target = docksite->rot.trans(task == sship_dockque ? Vec3d(0, -16. - 3.25 - 1.5, 0.) : Vec3d(0, -16. - 3.25, 0.)) + docksite->pos;
+					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+					Vec3d target = yhat * (task == sship_dockque || task == sship_dockqueque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
+					Vec3d delta = target - pos;
+					Vec3d parallel = yhat * delta.sp(yhat);
+					Vec3d lateral = delta - parallel;
+					if(task == sship_dockqueque && delta.sp(yhat) < 0)
+						target += lateral.normin() * -5.;
 					steerArrival(dt, target, docksite->velo, 1. / 10., .001);
 					if((target - pos).slen() < .2 * .2){
-						if(task == sship_dockque)
+						if(task == sship_dockqueque)
+							task = sship_dockque;
+						else if(task == sship_dockque)
 							task = sship_dock;
 						else{
 							this->w = NULL;
+							for(int i = 0; i < ncontainers; i++)
+								docksite->command(&TransportResourceCommand(containers[i] == gascontainer, containers[i] == hexcontainer));
 							return;
 						}
 					}
@@ -459,7 +477,7 @@ Entity::Props ContainerHead::props()const{
 
 bool ContainerHead::command(EntityCommand *com){
 	if(InterpretCommand<DockCommand>(com)){
-		task = sship_dockque;
+		task = (sship_task)sship_dockqueque;
 		docksite = NULL;
 		return true;
 	}
@@ -473,15 +491,35 @@ bool ContainerHead::undock(Docker *d){
 }
 
 void ContainerHead::post_warp(){
-	task = sship_dockque;
+	task = (sship_task)sship_dockqueque;
 }
 
 double ContainerHead::maxhealth()const{return BEAMER_HEALTH;}
 
-void ContainerHead::findIsland3(CoordSys *root, std::vector<CoordSys *> &ret)const{
+void ContainerHead::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
 	for(CoordSys *cs = root->children; cs; cs = cs->next){
-		if(!strcmp(cs->classname(), "Island3") && cs)
-			ret.push_back(cs);
 		findIsland3(cs, ret);
 	}
+	if(root->w) for(Entity *e = root->w->entlist(); e; e = e->next){
+		if(!strcmp(e->classname(), "Island3Entity") && e){
+			ret.push_back(e);
+		}
+	}
 }
+
+
+IMPLEMENT_COMMAND(TransportResourceCommand, "TransportResource")
+
+TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 4)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFArgumentError();
+	gases = i;
+	if(SQ_FAILED(sq_getinteger(v, 4, &i)))
+		throw SQFArgumentError();
+	solids = i;
+}
+

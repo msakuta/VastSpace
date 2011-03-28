@@ -1,6 +1,8 @@
 #ifndef SQADAPT_H
 #define SQADAPT_H
-// Squirrel library adapter for gltestplus project.
+/// \file
+/// \brief Squirrel library adapter for gltestplus project.
+#include "export.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -43,7 +45,10 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 extern HSQUIRRELVM g_sqvm;
 
 /// Type tags for intrinsic types.
-extern const SQUserPointer tt_Vec3d, tt_Quatd, tt_Entity;
+extern EXPORT const SQUserPointer tt_Vec3d;
+extern EXPORT const SQUserPointer tt_Quatd;
+extern EXPORT const SQUserPointer tt_Entity;
+extern EXPORT const SQUserPointer tt_GLwindow;
 
 /// \param instanceindex The index of Squirrel class instance that is to be assigned.
 bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -1);

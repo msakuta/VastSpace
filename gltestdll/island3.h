@@ -54,9 +54,12 @@ public:
 	static int &g_shader_enable;
 protected:
 	int race; ///< Equivalent to ent->race
+	int gases; ///< Resource units
+	int solids; ///< Resource units
 	bool headToSun;
 	bool cullLevel; ///< -1 = indeterminant, 0 = near, 1 = far
 
+	void init();
 	int getCutnum(const Viewer *vw)const;
 	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
 	Mat4d transform(const Viewer *vw)const;
@@ -88,6 +91,8 @@ public:
 	virtual int takedamage(double damage, int hitpart);
 	virtual void draw(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
+	virtual Props props()const;
+	virtual bool command(EntityCommand *);
 };
 
 

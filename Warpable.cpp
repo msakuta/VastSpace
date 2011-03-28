@@ -845,7 +845,8 @@ Warpable *Warpable::toWarpable(){
 
 Entity::Props Warpable::props()const{
 	Props ret = st::props();
-//	ret.push_back(cpplib::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
+	ret.push_back(gltestp::dstring("Capacitor: ") << capacitor << '/' << maxenergy());
+	ret.push_back(gltestp::dstring("task: ") << task);
 	return ret;
 }
 

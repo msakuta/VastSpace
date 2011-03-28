@@ -12,4 +12,6 @@ EXPORTS
 	sq_settypetag
 	sq_newclass
 	sq_get
+	sq_getinteger
+	sq_gettop
 	sq_pushstring

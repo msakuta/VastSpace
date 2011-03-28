@@ -2,6 +2,7 @@
 #define CONTAINERHEAD_H
 
 #include "Frigate.h"
+#include "EntityCommand.h"
 
 class Island3;
 
@@ -19,19 +20,19 @@ class Island3;
 class ContainerHead : public Frigate{
 public:
 	typedef Frigate st;
-protected:
 	static const int maxcontainers = 6;
 	enum ContainerType{gascontainer, hexcontainer, Num_ContainerType};
 	ContainerType containers[maxcontainers];
 	int ncontainers; ///< Count of containers connected.
+protected:
 	float undocktime;
-	CoordSys *docksite;
+	Entity *docksite;
 	struct tent3d_fpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
 	ContainerHead(){init();}
 	ContainerHead(WarField *w);
-	ContainerHead(CoordSys *docksite);
+	ContainerHead(Entity *docksite);
 	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
@@ -53,8 +54,23 @@ public:
 	virtual void post_warp();
 	static Entity *create(WarField *w, Builder *);
 	btRigidBody *get_bbody(){return bbody;}
+	enum sship_task_ch{sship_dockqueque = num_sship_task};
 protected:
-	void findIsland3(CoordSys *root, std::vector<CoordSys *> &ret)const;
+	void findIsland3(CoordSys *root, std::vector<Entity *> &ret)const;
 };
+
+
+struct TransportResourceCommand : EntityCommand{
+	typedef EntityCommand st;
+	static int construction_dummy;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	TransportResourceCommand(HSQUIRRELVM v, Entity &e);
+	TransportResourceCommand(int gases, int solids) : gases(gases), solids(solids){}
+	int gases;
+	int solids;
+};
+
 
 #endif

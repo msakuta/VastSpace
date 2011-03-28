@@ -26,6 +26,7 @@ protected:
 	int ncontainers; ///< Count of containers connected.
 	float undocktime;
 	CoordSys *docksite;
+	struct tent3d_fpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
 	ContainerHead(){init();}
@@ -40,6 +41,8 @@ public:
 	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	virtual void enterField(WarField *);
+	virtual void leaveField(WarField *);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double maxhealth()const;

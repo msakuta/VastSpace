@@ -28,6 +28,7 @@ extern "C"{
 #include <clib/GL/multitex.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
+#include <clib/colseq/cs.h>
 }
 #include <assert.h>
 #include <string.h>
@@ -39,6 +40,16 @@ extern "C"{
 #define BEAMER_HEALTH 15000.
 #define BEAMER_SCALE .0002
 
+
+#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
+static const struct color_node cnl_orangeburn[] = {
+	{0.2, COLOR32RGBA(255,255,191,0)},
+	{0.2, COLOR32RGBA(255,255,191,255)},
+	{0.3, COLOR32RGBA(255,255,31,191)},
+	{0.9, COLOR32RGBA(255,127,31,95)},
+	{0.6, COLOR32RGBA(255,31,0,63)},
+};
+static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
 
 
@@ -61,41 +72,11 @@ void ContainerHead::init(){
 	health = maxhealth();
 	mass = 2e7 + 1e7 * ncontainers;
 
+	for(int i = 0; i < numof(pf); i++)
+		pf[i] = NULL;
+
 	if(!w)
 		return;
-
-	WarSpace *ws = *w;
-	if(ws && ws->bdw){
-		static btCompoundShape *shapes[maxcontainers] = {NULL};
-		btCompoundShape *&shape = shapes[ncontainers];
-		if(!shape){
-			shape = new btCompoundShape();
-			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * sufscale;
-			const Quatd rot = quat_u;
-			const Vec3d pos = Vec3d(0,0,0);
-			btBoxShape *box = new btBoxShape(btvc(sc));
-			btTransform trans = btTransform(btqc(rot), btvc(pos));
-			shape->addChildShape(trans, box);
-		}
-
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
-		bbody = new btRigidBody(rbInfo);
-	}
 }
 
 const char *ContainerHead::idname()const{
@@ -233,6 +214,19 @@ void ContainerHead::anim(double dt){
 	}
 
 	st::anim(dt);
+
+	const Vec3d engines[3] = {
+		Vec3d(0, 80, 250 + 150 * ncontainers) * sufscale,
+		Vec3d(75, -25, 250 + 150 * ncontainers) * sufscale,
+		Vec3d(-75, -25, 250 + 150 * ncontainers) * sufscale,
+	};
+
+	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
+	for(int i = 0; i < 3; i++) if(pf[i]){
+		MoveTefpol3D(pf[i], mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
+	}
+
+
 #if 0
 	if(p->pf){
 		int i;
@@ -252,6 +246,63 @@ void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	rot = this->rot;
 }
 
+void ContainerHead::enterField(WarField *target){
+	WarSpace *ws = *target;
+	if(ws && ws->bdw){
+		static btCompoundShape *shapes[maxcontainers] = {NULL};
+		btCompoundShape *&shape = shapes[ncontainers];
+		if(!shape){
+			shape = new btCompoundShape();
+			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * sufscale;
+			const Quatd rot = quat_u;
+			const Vec3d pos = Vec3d(0,0,0);
+			btBoxShape *box = new btBoxShape(btvc(sc));
+			btTransform trans = btTransform(btqc(rot), btvc(pos));
+			shape->addChildShape(trans, box);
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+	if(ws){
+		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
+		for(int i = 0; i < 3; i++){
+			if(this->pf[i])
+				ImmobilizeTefpol3D(this->pf[i]);
+			if(tepl)
+				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+			else
+				pf[i] = NULL;
+		}
+	}
+}
+
+/// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
+void ContainerHead::leaveField(WarField *w){
+	for(int i = 0; i < 3; i++) if(this->pf[i]){
+		ImmobilizeTefpol3D(this->pf[i]);
+		this->pf[i] = NULL;
+	}
+	st::leaveField(w);
+}
 
 
 const double ContainerHead::sufscale = BEAMER_SCALE;

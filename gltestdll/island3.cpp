@@ -333,10 +333,10 @@ static GLuint createdetail(unsigned long seed, int level, GLuint base, const str
 			bmi.bmiHeader.biPlanes = 1;
 			bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
 			memcpy(bmi.buf, tex, sizeof bmi.buf);
+			stp.flags = STP_ENV | STP_MIPMAP;
 			stp.bmi = (BITMAPINFO*)&bmi;
 			stp.env = GL_MODULATE;
 			stp.mipmap = 1;
-			stp.alphamap = 0;
 			list = CacheSUFMTex("road.bmp", &stp, &stp);
 		}
 

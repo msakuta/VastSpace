@@ -44,6 +44,8 @@ VBO *CacheVBO(suf_t *suf){
 	GLdouble (**texcs)[3] = NULL;
 	int i, n = 0;
 
+	if(!suf)
+		return NULL;
 	if(init_VBO < 0)
 		return NULL;
 	if(!init_VBO){

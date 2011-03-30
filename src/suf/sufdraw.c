@@ -719,6 +719,8 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 	int i, n, k;
 /*	for(i = n = 0; i < suf->na; i++) if(suf->a[i].colormap)
 		n++;*/
+	if(!suf)
+		return NULL;
 	n = suf->na;
 	ret = (suftex_t*)malloc(offsetof(suftex_t, a) + n * sizeof *ret->a);
 	ret->n = n;

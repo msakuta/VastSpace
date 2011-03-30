@@ -816,6 +816,7 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 	}
 //	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
 	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
+	glwAppend(wnd);
 /*	for(i = 0; i < left; i++){
 		free(cmds[i]);
 	}*/
@@ -1068,12 +1069,8 @@ void Warpable::warp_collapse(){
 	int i;
 	Warpable *p = this;
 	Entity *pt2;
-	Vec3d dstcspos; /* current position measured in destination coordinate system */
-/*	tocs(dstcspos, p->warpdstcs, pt->pos, w->cs);
-	VECCPY(pt->pos, dstcspos);
-	tocsv(dstcspos, p->warpdstcs, pt->velo, pt->pos, w->cs);
-	VECCPY(pt->velo, dstcspos);*/
-/*	transit_cs(pt, w, p->warpdstcs);*/
+	if(!warpcs)
+		return;
 	for(pt2 = w->el; pt2; pt2 = pt2->next)
 		transit_cs(p->warpdstcs);
 	if(p->warpcs){
@@ -1231,11 +1228,9 @@ void Warpable::anim(double dt){
 	/*		VECSADD(p->velo, delta, dt * 1e-8 * (1e0 + VECLEN(p->velo)));*/
 		}
 		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
-			int i;
-			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);//malloc(sizeof *p->warpcs + sizeof *p->warpcs->w);
+			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;
-/*			VECNULL(pt->velo);*/
 			p->warpcs->csrad = pt->hitradius() * 10.;
 			p->warpcs->flags = 0;
 			p->warpcs->w = new WarSpace(p->warpcs);

@@ -228,6 +228,7 @@ coordsys Orbit earth{
 		object2 moon/Moon
 		updirection 0 1 
 		bookmark "Earth Lagrange 4" 0 0 10
+		warp "Earth Lagrange 4" 0 0 100
 		astro Island3 "Side 3"{
 			race 2
 		}
@@ -239,6 +240,7 @@ coordsys Orbit earth{
 		object2 moon/Moon
 		updirection 0 1 
 		bookmark "Earth Lagrange 5" 0 0 10
+		warp "Earth Lagrange 5" 0 0 100
 		astro Island3 "Side 5"{
 			race 2
 		}

@@ -118,7 +118,7 @@ void ContainerHead::anim(double dt){
 		return;
 	}
 
-	if(bbody){
+	if(bbody && !warping){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
 		pos = btvc(tra.getOrigin());
 		rot = btqc(tra.getRotation());
@@ -525,7 +525,8 @@ bool ContainerHead::undock(Docker *d){
 }
 
 void ContainerHead::post_warp(){
-	task = (sship_task)sship_dockqueque;
+	if(race != 0 && docksite)
+		task = (sship_task)sship_dockqueque;
 }
 
 double ContainerHead::maxhealth()const{return BEAMER_HEALTH;}

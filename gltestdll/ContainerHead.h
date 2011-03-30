@@ -20,11 +20,18 @@ class Island3;
 class ContainerHead : public Frigate{
 public:
 	typedef Frigate st;
+	struct AI{
+		virtual Vec3d dest(ContainerHead *) = 0;
+		virtual bool control(ContainerHead *, double dt) = 0;
+	};
+	struct TransportAI;
+
 	static const int maxcontainers = 6;
 	enum ContainerType{gascontainer, hexcontainer, Num_ContainerType};
 	ContainerType containers[maxcontainers];
 	int ncontainers; ///< Count of containers connected.
 protected:
+	AI *ai;
 	float undocktime;
 	Entity *docksite;
 	Entity *leavesite;

@@ -54,15 +54,156 @@ static const struct color_node cnl_orangeburn[] = {
 static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
 
+struct DockToCommand : DockCommand{
+	typedef DockCommand st;
+	static int construction_dummy;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	DockToCommand(Entity *e) : deste(e){}
+	DockToCommand(HSQUIRRELVM v, Entity &e);
+	Entity *deste;
+};
+struct ContainerHead::TransportAI : ContainerHead::AI{
+	enum Phase{Undock, Avoid, Warp, WarpWait, Dockque2, Dockque, Dock, num_Phase} phase;
+	Entity *docksite;
+	Entity *leavesite;
+	TransportAI(Entity *ch, Entity *leavesite) : phase(Undock), docksite(NULL), leavesite(leavesite){
+		std::vector<Entity *> set;
+		findIsland3(ch->w->cs->findcspath("/"), set);
+		if(set.size()){
+			int i = RandomSequence((unsigned long)this + (unsigned long)(ch->w->war_time() / .0001)).next() % set.size();
+			docksite = set[i];
+		}
+	}
+	Vec3d dest(ContainerHead *ch){
+		Vec3d yhat = ch->leavesite->rot.trans(Vec3d(0,1,0));
+		return yhat * (-16. - 3.25 - 1.5) + ch->leavesite->pos;
+	}
+	bool control(ContainerHead *ch, double dt){
+		if(!docksite)
+			return true;
+		switch(phase){
+			case Undock:
+			{
+				Vec3d target = dest(ch);
+				MoveCommand com;
+				com.destpos = target;
+				ch->command(&com);
+//				ch->steerArrival(dt, target, Vec3d(0,0,0), 1. / 10., .001);
+				if((target - ch->pos).slen() < .2 * .2){
+					phase = Avoid;
+//					ch->task = sship_idle;
+				}
+				break;
+			}
 
-ContainerHead::ContainerHead(WarField *aw) : st(aw), leavesite(NULL){
+			case Avoid:
+			{
+				CoordSys *destcs = docksite->w->cs;
+				Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+				Vec3d destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+				Vec3d delta = destpos - destcs->tocs(ch->pos, ch->w->cs);
+				Vec3d parallel = yhat * delta.sp(yhat);
+				Vec3d lateral = delta - parallel;
+				if(delta.sp(destcs->tocs(leavesite->pos, leavesite->w->cs) - destcs->tocs(ch->pos, ch->w->cs)) < 0.)
+					phase = Warp;
+				else{
+					yhat = leavesite->rot.trans(Vec3d(0,1,0));
+					Vec3d target = ch->w->cs->tocs(target, destcs);
+					Vec3d source = yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+					delta = target - source;
+					parallel = yhat * delta.sp(yhat);
+					lateral = delta - parallel;
+					double fpos = ch->pos.sp(yhat);
+					double fsrc = source.sp(yhat);
+					Vec3d destination = (fpos < fsrc ? source + parallel.norm() * (fpos - fsrc) : source) + lateral.norm() * 5.;
+					if((destination - ch->pos).slen() < .2 * .2)
+						phase = Warp;
+					else{
+						MoveCommand com;
+						com.destpos = destination;
+						ch->command(&com);
+					}
+				}
+				break;
+			}
+
+			case Warp:
+			{
+				WarpCommand com;
+				com.destcs = docksite->w->cs;
+				Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+				com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+				Vec3d target = com.destpos;
+				Vec3d delta = target - com.destcs->tocs(ch->pos, ch->w->cs);
+				Vec3d parallel = yhat * delta.sp(yhat);
+				Vec3d lateral = delta - parallel;
+				if(delta.sp(yhat) < 0)
+					com.destpos += lateral.normin() * -10.;
+				ch->command(&com);
+				phase = WarpWait;
+				break;
+			}
+
+			case WarpWait:
+				if(!ch->warping)
+					phase = Dockque;
+				break;
+
+			case Dockque2:
+			case Dockque:
+			{
+				Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+				Vec3d target = yhat * (phase == Dockque2 || phase == Dockque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
+				Vec3d delta = target - ch->pos;
+				Vec3d parallel = yhat * delta.sp(yhat);
+				Vec3d lateral = delta - parallel;
+				if(phase == Dockque2 && delta.sp(yhat) < 0)
+					target += lateral.normin() * -5.;
+				MoveCommand com;
+				com.destpos = target;
+				ch->command(&com);
+				if((target - ch->pos).slen() < .2 * .2){
+					if(phase == Dockque2)
+						phase = Dockque;
+					else if(phase == Dockque)
+						phase = Dock;
+				}
+				break;
+			}
+
+			case Dock:
+			{
+				ch->command(&DockToCommand(docksite));
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
+		for(CoordSys *cs = root->children; cs; cs = cs->next){
+			findIsland3(cs, ret);
+		}
+		if(root->w) for(Entity *e = root->w->entlist(); e; e = e->next){
+			if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
+				ret.push_back(e);
+			}
+		}
+	}
+};
+
+
+
+
+ContainerHead::ContainerHead(WarField *aw) : st(aw), leavesite(NULL), ai(NULL){
 	init();
 }
 
-ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), leavesite(docksite){
+ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), leavesite(docksite), ai(NULL){
 	init();
-	task = sship_undock;
-	undocktime = 30.;
+	ai = new TransportAI(this, leavesite);
 }
 
 void ContainerHead::init(){
@@ -97,6 +238,9 @@ void ContainerHead::serialize(SerializeContext &sc){
 	sc.o << leavesite;
 	sc.o << docksite;
 	sc.o << undocktime;
+	sc.o << ncontainers;
+	for(int i = 0; i < ncontainers; i++)
+		sc.o << containers[i];
 }
 
 void ContainerHead::unserialize(UnserializeContext &sc){
@@ -104,6 +248,9 @@ void ContainerHead::unserialize(UnserializeContext &sc){
 	sc.i >> leavesite;
 	sc.i >> docksite;
 	sc.i >> undocktime;
+	sc.i >> ncontainers;
+	for(int i = 0; i < ncontainers; i++)
+		sc.i >> (int&)containers[i];
 }
 
 const char *ContainerHead::dispname()const{
@@ -134,7 +281,13 @@ void ContainerHead::anim(double dt){
 
 	if(0 < health){
 		Entity *collideignore = NULL;
-		if(task == sship_undock){
+		if(ai){
+			if(ai->control(this, dt)){
+				delete ai;
+				ai = NULL;
+			}
+		}
+		else if(task == sship_undock){
 			if(!leavesite || leavesite->w != w || undocktime < 0.){
 				inputs.press &= ~PL_W;
 				task = sship_idle;
@@ -510,7 +663,12 @@ Entity::Props ContainerHead::props()const{
 }
 
 bool ContainerHead::command(EntityCommand *com){
-	if(InterpretCommand<DockCommand>(com)){
+	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
+		task = sship_dockque;
+		docksite = dtc->deste;
+		return true;
+	}
+	else if(InterpretCommand<DockCommand>(com)){
 		task = (sship_task)sship_dockqueque;
 		docksite = NULL;
 		return true;
@@ -543,7 +701,18 @@ void ContainerHead::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const
 }
 
 
+IMPLEMENT_COMMAND(DockToCommand, "DockTo")
 IMPLEMENT_COMMAND(TransportResourceCommand, "TransportResource")
+
+DockToCommand::DockToCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	Entity *pe;
+	if(sqa_refobj(v, (SQUserPointer*)&pe, NULL, 2))
+		throw SQFArgumentError();
+	deste = pe;
+}
 
 TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
 	int argc = sq_gettop(v);

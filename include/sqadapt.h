@@ -51,12 +51,12 @@ extern EXPORT const SQUserPointer tt_Entity;
 extern EXPORT const SQUserPointer tt_GLwindow;
 
 /// \param instanceindex The index of Squirrel class instance that is to be assigned.
-bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -1);
-bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
-void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
+EXPORT bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -1);
+EXPORT bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
+EXPORT void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 /// Translate given string with Squirrel defined translation function.
-::cpplib::dstring sqa_translate(const SQChar *);
+EXPORT ::cpplib::dstring sqa_translate(const SQChar *);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct SQFError{

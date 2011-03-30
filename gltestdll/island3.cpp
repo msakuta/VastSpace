@@ -3,6 +3,7 @@
  */
 #include "island3.h"
 #include "ContainerHead.h"
+#include "SpacePlane.h"
 #include "astrodraw.h"
 #include "CoordSys.h"
 #include "Universe.h"
@@ -232,7 +233,7 @@ void Island3::anim(double dt){
 
 		// Randomly create container heads
 		if(floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
-			ContainerHead *ch = new ContainerHead(this->ent);
+			Entity *ch = rs.next() % 2 ? (Entity*)(new ContainerHead(this->ent)) : new SpacePlane(this->ent);
 			ch->race = race;
 			ws->addent(ch);
 			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
@@ -240,13 +241,17 @@ void Island3::anim(double dt){
 			ch->rot = this->rot.rotate(-M_PI / 2., Vec3d(1,0,0));
 			ch->velo = this->velo + this->omg.vp(rpos);
 			ch->omg = this->omg;
-			if(btRigidBody *bbody = ch->get_bbody()){
+			ch->setPosition(&ch->pos, &ch->rot, &ch->velo, &ch->omg);
+/*			if(btRigidBody *bbody = ch->get_bbody()){
 				bbody->setWorldTransform(btTransform(btqc(ch->rot), btvc(ch->pos)));
 				bbody->setLinearVelocity(btvc(ch->velo));
 				bbody->setAngularVelocity(btvc(ch->omg));
-			}
-			for(int i = 0; i < ch->ncontainers; i++){
-				ch->containers[i] == ch->gascontainer ? gases-- : solids--;
+			}*/
+			if(!strcmp(ch->idname(), "ContainerHead")){
+				ContainerHead *ch2 = (ContainerHead*)ch->toWarpable();
+				for(int i = 0; i < ch2->ncontainers; i++){
+					ch2->containers[i] == ch2->gascontainer ? gases-- : solids--;
+				}
 			}
 		}
 	}

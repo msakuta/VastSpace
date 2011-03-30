@@ -92,6 +92,8 @@ GLuint CacheMaterial(const char *name){
 
 void CacheSUFMaterials(const suf_t *suf){
 	int i, j;
+	if(!suf)
+		return;
 	for(i = 0; i < suf->na; i++) if(suf->a[i].colormap){
 
 		/* an unreasonable filtering to exclude default mapping. */
@@ -578,8 +580,10 @@ suf_t *CallLoadSUF(const char *fname){
 		void *src;
 		unsigned long size;
 		src = ZipUnZip("rc.zip", fname, &size);
-		ret = UnserializeSUF(src, size);
-		free(src);
+		if(src){
+			ret = UnserializeSUF(src, size);
+			free(src);
+		}
 	}
 	if(!ret)
 		return NULL;

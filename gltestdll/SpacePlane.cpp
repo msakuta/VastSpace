@@ -1,4 +1,4 @@
-#include "ContainerHead.h"
+#include "SpacePlane.h"
 #include "Docker.h"
 #include "Player.h"
 #include "Viewer.h"
@@ -55,67 +55,54 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
-ContainerHead::ContainerHead(WarField *aw) : st(aw), leavesite(NULL), ai(NULL){
+SpacePlane::SpacePlane(WarField *aw) : st(aw), leavesite(NULL), ai(NULL){
 	init();
 }
 
-ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), leavesite(docksite), ai(NULL){
+SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w), leavesite(docksite), ai(NULL){
 	init();
 	ai = new TransportAI(this, leavesite);
 }
 
-void ContainerHead::init(){
-	RandomSequence rs((unsigned long)this);
-	ncontainers = rs.next() % (maxcontainers - 1) + 1;
-	for(int i = 0; i < ncontainers; i++)
-		containers[i] = ContainerType(rs.next() % Num_ContainerType);
+void SpacePlane::init(){
 	undocktime = 0.f;
 	health = maxhealth();
-	mass = 2e7 + 1e7 * ncontainers;
+	mass = 2e7;
 
 	for(int i = 0; i < numof(pf); i++)
 		pf[i] = NULL;
-
-	if(!w)
-		return;
 }
 
-const char *ContainerHead::idname()const{
-	return "ContainerHead";
+const char *SpacePlane::idname()const{
+	return "SpacePlane";
 }
 
-const char *ContainerHead::classname()const{
-	return "ContainerHead";
+const char *SpacePlane::classname()const{
+	return "SpacePlane";
 }
 
-const unsigned ContainerHead::classid = registerClass("ContainerHead", Conster<ContainerHead>);
-const unsigned ContainerHead::entityid = registerEntity("ContainerHead", new Constructor<ContainerHead>);
+const unsigned SpacePlane::classid = registerClass("SpacePlane", Conster<SpacePlane>);
+const unsigned SpacePlane::entityid = registerEntity("SpacePlane", new Constructor<SpacePlane>);
 
-void ContainerHead::serialize(SerializeContext &sc){
+void SpacePlane::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << leavesite;
 	sc.o << docksite;
 	sc.o << undocktime;
-	sc.o << ncontainers;
-	for(int i = 0; i < ncontainers; i++)
-		sc.o << containers[i];
 }
 
-void ContainerHead::unserialize(UnserializeContext &sc){
+void SpacePlane::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> leavesite;
 	sc.i >> docksite;
 	sc.i >> undocktime;
-	sc.i >> ncontainers;
-	for(int i = 0; i < ncontainers; i++)
-		sc.i >> (int&)containers[i];
 }
 
-const char *ContainerHead::dispname()const{
-	return "Container Ship";
+const char *SpacePlane::dispname()const{
+	return "SpacePlane";
 }
 
-void ContainerHead::anim(double dt){
+void SpacePlane::anim(double dt){
 	try{
 	WarSpace *ws = *w;
 	if(!ws){
@@ -198,8 +185,6 @@ void ContainerHead::anim(double dt){
 							task = sship_dock;
 						else{
 							this->w = NULL;
-							for(int i = 0; i < ncontainers; i++)
-								docksite->command(&TransportResourceCommand(containers[i] == gascontainer, containers[i] == hexcontainer));
 							return;
 						}
 					}
@@ -253,10 +238,10 @@ void ContainerHead::anim(double dt){
 
 	st::anim(dt);
 
-	const Vec3d engines[3] = {
-		Vec3d(0, 80, 250 + 150 * ncontainers) * sufscale,
-		Vec3d(75, -25, 250 + 150 * ncontainers) * sufscale,
-		Vec3d(-75, -25, 250 + 150 * ncontainers) * sufscale,
+	static const Vec3d engines[3] = {
+		Vec3d(0, 0, 150) * sufscale,
+		Vec3d(75, 0, 150) * sufscale,
+		Vec3d(-75, 0, 150) * sufscale,
 	};
 
 	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
@@ -283,7 +268,7 @@ void ContainerHead::anim(double dt){
 	}
 }
 
-void ContainerHead::postframe(){
+void SpacePlane::postframe(){
 	if((task == sship_dock || task == sship_dockque) && docksite && docksite->w != w)
 		docksite = NULL;
 	if((task == sship_undock || task == sship_undockque) && leavesite && leavesite->w != w)
@@ -291,24 +276,24 @@ void ContainerHead::postframe(){
 	st::postframe();
 }
 
-void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	pos = this->rot.trans(Vec3d(0, 120, 150 * ncontainers + 50) * sufscale) + this->pos;
+void SpacePlane::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	pos = this->rot.trans(Vec3d(0, 120, 50) * sufscale) + this->pos;
 	rot = this->rot;
 }
 
-void ContainerHead::enterField(WarField *target){
+void SpacePlane::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
-		static btCompoundShape *shapes[maxcontainers] = {NULL};
-		btCompoundShape *&shape = shapes[ncontainers];
+		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * sufscale;
+			Vec3d sc = Vec3d(50, 40, 150) * sufscale;
 			const Quatd rot = quat_u;
 			const Vec3d pos = Vec3d(0,0,0);
 			btBoxShape *box = new btBoxShape(btvc(sc));
 			btTransform trans = btTransform(btqc(rot), btvc(pos));
 			shape->addChildShape(trans, box);
+			shape->addChildShape(btTransform(btqc(rot), btVector3(0, 0, 100) * sufscale), new btBoxShape(btVector3(150, 10, 50) * sufscale));
 		}
 
 		btTransform startTransform;
@@ -346,7 +331,7 @@ void ContainerHead::enterField(WarField *target){
 }
 
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-void ContainerHead::leaveField(WarField *w){
+void SpacePlane::leaveField(WarField *w){
 	for(int i = 0; i < 3; i++) if(this->pf[i]){
 		ImmobilizeTefpol3D(this->pf[i]);
 		this->pf[i] = NULL;
@@ -355,10 +340,10 @@ void ContainerHead::leaveField(WarField *w){
 }
 
 
-const double ContainerHead::sufscale = .0002;
+const double SpacePlane::sufscale = .0004;
 
-void ContainerHead::draw(wardraw_t *wd){
-	ContainerHead *const p = this;
+void SpacePlane::draw(wardraw_t *wd){
+	SpacePlane *const p = this;
 	if(!w)
 		return;
 
@@ -370,19 +355,12 @@ void ContainerHead::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
 	static bool initialized = false;
-	static suf_t *sufs[2 + Num_ContainerType] = {NULL};
-	static VBO *vbo[2 + Num_ContainerType] = {NULL};
-	static suftex_t *pst[2 + Num_ContainerType] = {NULL};
+	static suf_t *sufs[2] = {NULL};
+	static VBO *vbo[2] = {NULL};
+	static suftex_t *pst[2] = {NULL};
 	if(!initialized){
-
-		// Register alpha test texture
-		suftexparam_t stp;
-		stp.flags = STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
-		stp.transparentColor = 0;
-		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);
-
-		static const char *names[2 + Num_ContainerType] = {"models/containerhead.bin", "models/containertail.bin", "models/gascontainer.bin", "models/hexcontainer0.bin"};
-		for(int i = 0; i < 2 + Num_ContainerType; i++){
+		static const char *names[] = {"models/spaceplane0.bin"};
+		for(int i = 0; i < numof(names); i++){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
 			CacheSUFMaterials(sufs[i]);
@@ -452,15 +430,7 @@ void ContainerHead::draw(wardraw_t *wd){
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
-		id.glTranslated(0, 0, 150 * ncontainers);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
-		id.glTranslated(0, 0, -150);
-		for(int i = 0; i < ncontainers; i++){
-			id.drawModel(sufs[2 + containers[i]], vbo[2 + containers[i]], pst[2 + containers[i]]);
-			id.glTranslated(0, 0, -300);
-		}
-		id.glTranslated(0, 0, 150);
-		id.drawModel(sufs[1], vbo[1], pst[1]);
 		glPopMatrix();
 
 /*		glMatrixMode(GL_TEXTURE);
@@ -473,41 +443,33 @@ void ContainerHead::draw(wardraw_t *wd){
 	}
 }
 
-void ContainerHead::drawtra(wardraw_t *wd){
+void SpacePlane::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
-	ContainerHead *p = this;
-	Mat4d mat;
-
-/*	if(p->dock && p->undocktime == 0)
-		return;*/
-
-	transform(mat);
-
-//	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
-
-//	drawShield(wd);
 }
 
-void ContainerHead::drawOverlay(wardraw_t *){
+void SpacePlane::drawOverlay(wardraw_t *){
 	glScaled(10, 10, 1);
 	glBegin(GL_LINE_LOOP);
 	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.05 * sqrt(3.));
-	glVertex2d( .05, -.05 * sqrt(3.));
-	glVertex2d( .10,  .00);
-	glVertex2d( .05,  .05 * sqrt(3.));
-	glVertex2d(-.05,  .05 * sqrt(3.));
+	glVertex2d(-.05, -.03);
+	glVertex2d( .00, -.03);
+	glVertex2d( .08, -.05);
+	glVertex2d( .10, -.03);
+	glVertex2d( .10,  .03);
+	glVertex2d( .08,  .05);
+	glVertex2d( .00,  .03);
+	glVertex2d(-.05,  .03);
 	glEnd();
 }
 
 
-Entity::Props ContainerHead::props()const{
+Entity::Props SpacePlane::props()const{
 	Props ret = st::props();
-	ret.push_back(gltestp::dstring("I am ContainerHead!"));
+	ret.push_back(gltestp::dstring("I am SpacePlane!"));
 	return ret;
 }
 
-bool ContainerHead::command(EntityCommand *com){
+bool SpacePlane::command(EntityCommand *com){
 	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
 		task = sship_dockque;
 		docksite = dtc->deste;
@@ -521,43 +483,17 @@ bool ContainerHead::command(EntityCommand *com){
 	else return st::command(com);
 }
 
-bool ContainerHead::undock(Docker *d){
+bool SpacePlane::undock(Docker *d){
 	task = sship_undock;
 	mother = d;
 	return true;
 }
 
-void ContainerHead::post_warp(){
+void SpacePlane::post_warp(){
 	if(race != 0 && docksite)
 		task = (sship_task)sship_dockqueque;
 }
 
-double ContainerHead::maxhealth()const{return 15000.;}
+double SpacePlane::maxhealth()const{return 15000.;}
 
-
-IMPLEMENT_COMMAND(DockToCommand, "DockTo")
-IMPLEMENT_COMMAND(TransportResourceCommand, "TransportResource")
-
-DockToCommand::DockToCommand(HSQUIRRELVM v, Entity &e){
-	int argc = sq_gettop(v);
-	if(argc < 2)
-		throw SQFArgumentError();
-	Entity *pe;
-	if(sqa_refobj(v, (SQUserPointer*)&pe, NULL, 2))
-		throw SQFArgumentError();
-	deste = pe;
-}
-
-TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
-	int argc = sq_gettop(v);
-	if(argc < 4)
-		throw SQFArgumentError();
-	SQInteger i;
-	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
-		throw SQFArgumentError();
-	gases = i;
-	if(SQ_FAILED(sq_getinteger(v, 4, &i)))
-		throw SQFArgumentError();
-	solids = i;
-}
 

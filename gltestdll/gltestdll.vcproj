@@ -348,6 +348,10 @@
 				RelativePath=".\island3.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\SpacePlane.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
@@ -360,6 +364,10 @@
 			</File>
 			<File
 				RelativePath=".\island3.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SpacePlane.h"
 				>
 			</File>
 		</Filter>

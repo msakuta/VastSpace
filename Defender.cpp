@@ -17,6 +17,7 @@
 #include "BeamProjectile.h"
 #include "sqadapt.h"
 #include "motion.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

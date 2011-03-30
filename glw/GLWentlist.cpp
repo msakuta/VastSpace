@@ -452,7 +452,7 @@ struct PopupMenuItemFunctionT : public PopupMenuItem{
 	typedef PopupMenuItem st;
 	T *p;
 	void (T::*func)();
-	PopupMenuItemFunctionT(cpplib::dstring title, T *p, void (T::*func)()) : st(title), p(p), func(func){}
+	PopupMenuItemFunctionT(gltestp::dstring title, T *p, void (T::*func)()) : st(title), p(p), func(func){}
 	virtual void execute(){
 		(p->*func)();
 	}
@@ -776,7 +776,7 @@ public:
 		typedef PopupMenuItem st;
 		Criterion *p;
 		T src;
-		PopupMenuItemCriterion(cpplib::dstring title, Criterion *p, T src) : p(p), src(src){
+		PopupMenuItemCriterion(gltestp::dstring title, Criterion *p, T src) : p(p), src(src){
 			this->title = title;
 		}
 		virtual void execute(){
@@ -847,9 +847,9 @@ public:
 			return ret;
 		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && y0 < mp.my && mp.my < y1){
 			PopupMenu pm;
-			pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(cpplib::dstring() << "Unspecified", this, -1));
+			pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(gltestp::dstring() << "Unspecified", this, -1));
 			for(int i = 0; i < 4; i++)
-				pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(cpplib::dstring() << "Team " << i, this, i));
+				pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(gltestp::dstring() << "Team " << i, this, i));
 			glwPopupMenu(ws, pm);
 			return 1;
 		}
@@ -887,7 +887,7 @@ protected:
 		typedef PopupMenuItemCriterion<tt, const CoordSys *, &tt::cs> PopupMenuItemCS;
 		if(!cs) return;
 		if(cs->w)
-			pm.append(new PopupMenuItemCS(cs->getpath(), this, cs));
+			pm.append(new PopupMenuItemCS((const char*)cs->getpath(), this, cs));
 		mouseint(cs->next, pm);
 		mouseint(cs->children, pm);
 	}

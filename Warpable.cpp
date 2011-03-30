@@ -20,6 +20,7 @@
 #include "motion.h"
 #include "draw/WarDraw.h"
 #include "glsl.h"
+#include "dstring.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -812,7 +813,7 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		teleport *tp = Player::getTeleport(it);
 		if(!(tp->flags & TELEPORT_WARP))
 			continue;
-		pm.append(tp->name, 0, cpplib::dstring("warp \"") << tp->name << '"');
+		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');
 	}
 //	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
 	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);

@@ -14,6 +14,7 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 //#include "sensor.h"
+#include "glw/popup.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

@@ -6,6 +6,7 @@
 #include "sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -418,7 +419,7 @@ int cmd_dockmenu(int argc, char *argv[], void *pv){
 		return 0;
 	Docker *pb = pl.selected->getDocker();
 	if(pb)
-		new GLWdock("Dock", pb);
+		glwAppend(new GLWdock("Dock", pb));
 	return 0;
 }
 

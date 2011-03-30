@@ -3,6 +3,7 @@
 /// \file
 /// \brief Squirrel library adapter for gltestplus project.
 #include "export.h"
+#include "dstring.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -56,7 +57,7 @@ EXPORT bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int
 EXPORT void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 
 /// Translate given string with Squirrel defined translation function.
-EXPORT ::cpplib::dstring sqa_translate(const SQChar *);
+EXPORT ::gltestp::dstring sqa_translate(const SQChar *);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct SQFError{

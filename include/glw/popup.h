@@ -4,16 +4,16 @@
 #ifndef POPUP_H
 #define POPUP_H
 #include "../cmd.h"
+#include "dstring.h"
 #include <stddef.h>
 #include <squirrel.h>
-#include <cpplib/dstring.h>
 
 /// Base class for all menu items.
-struct PopupMenuItem{
-	cpplib::dstring title; ///< String shown to identify the menu item.
+struct EXPORT PopupMenuItem{
+	gltestp::dstring title; ///< String shown to identify the menu item.
 	int key; ///< Shortcut key.
 	PopupMenuItem *next; ///< Link to next node in the linked list.
-	PopupMenuItem(cpplib::dstring title = "") : title(title){}
+	PopupMenuItem(gltestp::dstring title = "") : title(title){}
 	virtual bool isSeparator()const{return false;}
 	virtual void execute(){};
 	virtual PopupMenuItem *clone()const = 0;
@@ -21,20 +21,20 @@ struct PopupMenuItem{
 };
 
 /// A separator.
-struct PopupMenuItemSeparator : public PopupMenuItem{
+struct EXPORT PopupMenuItemSeparator : public PopupMenuItem{
 	virtual bool isSeparator()const{return true;}
 	virtual PopupMenuItem *clone()const{return new PopupMenuItemSeparator(*this);}
 };
 
 /// Menu item that executes a console command.
-struct PopupMenuItemCmd : public PopupMenuItem{
-	cpplib::dstring cmd;
+struct EXPORT PopupMenuItemCmd : public PopupMenuItem{
+	gltestp::dstring cmd;
 	virtual void execute(){CmdExec(cmd);}
 	virtual PopupMenuItem *clone()const{return new PopupMenuItemCmd(*this);}
 };
 
 /// Menu item that executes a Squirrel closure.
-struct PopupMenuItemClosure : public PopupMenuItem{
+struct EXPORT PopupMenuItemClosure : public PopupMenuItem{
 	HSQUIRRELVM v; ///< It's redundant to store the Squirrel VM handle here, but it's required to add reference for ho member anyway.
 	HSQOBJECT ho; ///< Squirrel closure that will be executed. Reference count must be managed.
 	PopupMenuItemClosure(HSQOBJECT ho, HSQUIRRELVM v) : ho(ho), v(v){sq_addref(v, const_cast<HSQOBJECT*>(&ho));}
@@ -50,13 +50,13 @@ struct PopupMenuItemClosure : public PopupMenuItem{
 };
 
 /// List of menu items that is commonly used by GLWmenu. Aggrigates PopupMenuItems.
-class PopupMenu{
+class EXPORT PopupMenu{
 	PopupMenuItem *list, **end;
 public:
 	PopupMenu();
 	PopupMenu(const PopupMenu &o);
 	~PopupMenu();
-	PopupMenu &append(cpplib::dstring title, int key, cpplib::dstring cmd, bool unique = true); // appends an menu item to the last
+	PopupMenu &append(gltestp::dstring title, int key, gltestp::dstring cmd, bool unique = true); // appends an menu item to the last
 	PopupMenu &appendSeparator(bool mergenext = true); // append an separator at the end
 	PopupMenu &append(PopupMenuItem *item, bool unique = true);
 	const PopupMenuItem *get()const;

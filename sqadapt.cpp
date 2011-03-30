@@ -1150,7 +1150,7 @@ void sqa_deleteobj(HSQUIRRELVM v, Serializable *o){
 
 /// \return Translated string. It is dynamic string because the Squirrel VM does not promise
 /// returned string pointer is kept alive untl returning this function.
-::cpplib::dstring sqa_translate(const SQChar *src){
+gltestp::dstring sqa_translate(const SQChar *src){
 	HSQUIRRELVM v = g_sqvm;
 	const SQChar *str;
 	sq_pushroottable(v); // root
@@ -1164,7 +1164,7 @@ void sqa_deleteobj(HSQUIRRELVM v, Serializable *o){
 	sq_call(v, 2, SQTrue, SQTrue); // root tlate "..."
 	if(SQ_FAILED(sq_getstring(v, -1, &str)))
 		str = "Deploy";
-	cpplib::dstring ret = str;
+	gltestp::dstring ret = str;
 	sq_pop(v, 3);
 	return ret;
 }

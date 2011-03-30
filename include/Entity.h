@@ -5,7 +5,7 @@
 #define ENTITY_H
 #include "serial.h"
 #include "war.h"
-#include "glw/popup.h"
+//#include "glw/popup.h"
 #include "dstring.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -22,6 +22,7 @@ class ArmBase;
 class Builder;
 class Docker;
 struct EntityCommand;
+class PopupMenu;
 
 /// Primary object in the space. Many object classes derive this.
 /// Serializable and accessible from Squirrel codes.

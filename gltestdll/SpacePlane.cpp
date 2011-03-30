@@ -55,22 +55,27 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
-SpacePlane::SpacePlane(WarField *aw) : st(aw), leavesite(NULL), ai(NULL){
+SpacePlane::SpacePlane(WarField *aw) : st(aw), ai(NULL){
 	init();
 }
 
-SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w), leavesite(docksite), ai(NULL){
+SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w),ai(NULL){
 	init();
-	ai = new TransportAI(this, leavesite);
+	ai = new TransportAI(this, docksite);
 }
 
 void SpacePlane::init(){
 	undocktime = 0.f;
 	health = maxhealth();
 	mass = 2e7;
+	people = RandomSequence((unsigned long)this).next() % 100 + 100;
 
 	for(int i = 0; i < numof(pf); i++)
 		pf[i] = NULL;
+}
+
+SpacePlane::~SpacePlane(){
+	delete ai;
 }
 
 const char *SpacePlane::idname()const{
@@ -86,15 +91,11 @@ const unsigned SpacePlane::entityid = registerEntity("SpacePlane", new Construct
 
 void SpacePlane::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << leavesite;
-	sc.o << docksite;
 	sc.o << undocktime;
 }
 
 void SpacePlane::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> leavesite;
-	sc.i >> docksite;
 	sc.i >> undocktime;
 }
 
@@ -103,7 +104,6 @@ const char *SpacePlane::dispname()const{
 }
 
 void SpacePlane::anim(double dt){
-	try{
 	WarSpace *ws = *w;
 	if(!ws){
 		st::anim(dt);
@@ -131,64 +131,17 @@ void SpacePlane::anim(double dt){
 				delete ai;
 				ai = NULL;
 			}
+			if(!w)
+				return;
 		}
 		else if(task == sship_undock){
-			if(!leavesite || leavesite->w != w || undocktime < 0.){
+			if(undocktime < 0.){
 				inputs.press &= ~PL_W;
 				task = sship_idle;
 			}
 			else{
 				inputs.press |= PL_W;
 				undocktime -= dt;
-			}
-		}
-		else if(task == sship_dockqueque || task == sship_dockque || task == sship_dock){
-			if(docksite == NULL){
-				std::vector<Entity*> set;
-				for(Entity *e = w->entlist(); e; e = e->next){
-					if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
-						set.push_back(e);
-					}
-				}
-				if(set.size()){
-					int i = RandomSequence((unsigned long)this + (unsigned long)(w->war_time() / .0001)).next() % set.size();
-					docksite = set[i];
-				}
-			}
-			if(docksite && !this->warping){
-				if(docksite->w->cs != w->cs){
-					WarpCommand com;
-					com.destcs = docksite->w->cs;
-					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-					com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
-					Vec3d target = com.destpos;
-					Vec3d delta = target - com.destcs->tocs(pos, w->cs);
-					Vec3d parallel = yhat * delta.sp(yhat);
-					Vec3d lateral = delta - parallel;
-					if(task == sship_dockqueque && delta.sp(yhat) < 0)
-						com.destpos += lateral.normin() * -10.;
-					command(&com);
-				}
-				else{
-					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-					Vec3d target = yhat * (task == sship_dockque || task == sship_dockqueque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
-					Vec3d delta = target - pos;
-					Vec3d parallel = yhat * delta.sp(yhat);
-					Vec3d lateral = delta - parallel;
-					if(task == sship_dockqueque && delta.sp(yhat) < 0)
-						target += lateral.normin() * -5.;
-					steerArrival(dt, target, docksite->velo, 1. / 10., .001);
-					if((target - pos).slen() < .2 * .2){
-						if(task == sship_dockqueque)
-							task = sship_dockque;
-						else if(task == sship_dockque)
-							task = sship_dock;
-						else{
-							this->w = NULL;
-							return;
-						}
-					}
-				}
 			}
 		}
 		else if(w->getPlayer()->control == this){
@@ -262,17 +215,9 @@ void SpacePlane::anim(double dt){
 		}
 	}
 #endif
-	}
-	catch(...){
-		std::cerr << __FILE__"(%d) Exception ?\n" << __LINE__;
-	}
 }
 
 void SpacePlane::postframe(){
-	if((task == sship_dock || task == sship_dockque) && docksite && docksite->w != w)
-		docksite = NULL;
-	if((task == sship_undock || task == sship_undockque) && leavesite && leavesite->w != w)
-		leavesite = NULL;
 	st::postframe();
 }
 
@@ -343,14 +288,12 @@ void SpacePlane::leaveField(WarField *w){
 const double SpacePlane::sufscale = .0004;
 
 void SpacePlane::draw(wardraw_t *wd){
-	SpacePlane *const p = this;
 	if(!w)
 		return;
 
 	/* cull object */
 	if(cull(wd))
 		return;
-//	wd->lightdraws++;
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
@@ -414,28 +357,12 @@ void SpacePlane::draw(wardraw_t *wd){
 #endif
 
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-/*		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		if(wd->texShadow){
-			glBindTexture(GL_TEXTURE_2D, wd->texShadow);
-			glEnable(GL_TEXTURE_2D);
-		}
-		else{
-			glDisable(GL_ALPHA_TEST);
-		}*/
-//		glEnable(GL_ALPHA_TEST);
-//		glAlphaFunc(GL_GEQUAL, .5f);
 
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
 		glPopMatrix();
-
-/*		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);*/
 
 		glPopMatrix();
 
@@ -453,10 +380,10 @@ void SpacePlane::drawOverlay(wardraw_t *){
 	glVertex2d(-.10,  .00);
 	glVertex2d(-.05, -.03);
 	glVertex2d( .00, -.03);
-	glVertex2d( .08, -.05);
+	glVertex2d( .08, -.07);
 	glVertex2d( .10, -.03);
 	glVertex2d( .10,  .03);
-	glVertex2d( .08,  .05);
+	glVertex2d( .08,  .07);
 	glVertex2d( .00,  .03);
 	glVertex2d(-.05,  .03);
 	glEnd();
@@ -465,35 +392,48 @@ void SpacePlane::drawOverlay(wardraw_t *){
 
 Entity::Props SpacePlane::props()const{
 	Props ret = st::props();
+	ret.push_back(gltestp::dstring("People: ") << people);
 	ret.push_back(gltestp::dstring("I am SpacePlane!"));
 	return ret;
 }
 
 bool SpacePlane::command(EntityCommand *com){
 	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
-		task = sship_dockque;
-		docksite = dtc->deste;
+		ai = new DockAI(this, dtc->deste);
 		return true;
 	}
 	else if(InterpretCommand<DockCommand>(com)){
-		task = (sship_task)sship_dockqueque;
-		docksite = NULL;
+		ai = new DockAI(this);
 		return true;
 	}
 	else return st::command(com);
 }
 
-bool SpacePlane::undock(Docker *d){
-	task = sship_undock;
-	mother = d;
+bool SpacePlane::dock(Docker *d){
+	d->e->command(&TransportPeopleCommand(people));
 	return true;
 }
 
-void SpacePlane::post_warp(){
-	if(race != 0 && docksite)
-		task = (sship_task)sship_dockqueque;
+bool SpacePlane::undock(Docker *d){
+	task = sship_undock;
+	mother = d;
+	d->e->command(&TransportPeopleCommand(-people));
+	return true;
 }
 
 double SpacePlane::maxhealth()const{return 15000.;}
+
+
+IMPLEMENT_COMMAND(TransportPeopleCommand, "TransportPeople")
+
+TransportPeopleCommand::TransportPeopleCommand(HSQUIRRELVM v, Entity &e){
+	int argc = sq_gettop(v);
+	if(argc < 3)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFArgumentError();
+	people = i;
+}
 
 

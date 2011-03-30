@@ -18,6 +18,7 @@
 #include "bitmap.h"
 #include "draw/WarDraw.h"
 #include "ShadowMap.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -105,6 +106,7 @@ void Island3::init(){
 		bldgs[i] = new Island3Building(*this);
 	gases = 100;
 	solids = 100;
+	people = 100000;
 }
 
 bool Island3::belongs(const Vec3d &lpos)const{
@@ -242,17 +244,7 @@ void Island3::anim(double dt){
 			ch->velo = this->velo + this->omg.vp(rpos);
 			ch->omg = this->omg;
 			ch->setPosition(&ch->pos, &ch->rot, &ch->velo, &ch->omg);
-/*			if(btRigidBody *bbody = ch->get_bbody()){
-				bbody->setWorldTransform(btTransform(btqc(ch->rot), btvc(ch->pos)));
-				bbody->setLinearVelocity(btvc(ch->velo));
-				bbody->setAngularVelocity(btvc(ch->omg));
-			}*/
-			if(!strcmp(ch->idname(), "ContainerHead")){
-				ContainerHead *ch2 = (ContainerHead*)ch->toWarpable();
-				for(int i = 0; i < ch2->ncontainers; i++){
-					ch2->containers[i] == ch2->gascontainer ? gases-- : solids--;
-				}
-			}
+			ch->undock(this->ent->docker);
 		}
 	}
 	if(ws && ws->bdw && ent){
@@ -1814,6 +1806,7 @@ Entity::Props Island3Entity::props()const{
 	Props ret = st::props();
 	ret.push_back(gltestp::dstring("Gases: ") << astro.gases);
 	ret.push_back(gltestp::dstring("Solids: ") << astro.solids);
+	ret.push_back(gltestp::dstring("Population: ") << astro.people);
 	return ret;		
 }
 
@@ -2099,6 +2092,7 @@ bool Island3::readFile(StellarContext &sc, int argc, const char *argv[]){
 Island3Entity::Island3Entity(Island3 &astro) : astro(astro){
 	health = maxhealth();
 	race = astro.race;
+	docker = new Island3Docker(this);
 }
 
 Island3Entity::~Island3Entity(){
@@ -2272,6 +2266,10 @@ void Island3Entity::draw(WarDraw *wd){
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 #endif
+}
+
+Docker *Island3Entity::getDockerInt(){
+	return docker;
 }
 
 
@@ -2477,12 +2475,51 @@ void Island3Building::draw(wardraw_t *wd){
 	}
 }
 
+int Island3Entity::popupMenu(PopupMenu &list){
+	int ret = st::popupMenu(list);
+	list.append("Dock Window", 'd', "dockmenu");
+	return ret;
+}
+
 bool Island3Entity::command(EntityCommand *com){
 	if(TransportResourceCommand *trc = InterpretCommand<TransportResourceCommand>(com)){
 		astro.gases += trc->gases;
 		astro.solids += trc->solids;
 		return true;
 	}
+	if(TransportPeopleCommand *tpc = InterpretCommand<TransportPeopleCommand>(com)){
+		astro.people += tpc->people;
+		return true;
+	}
 	else		
 		return st::command(com);
 }
+
+
+
+Island3Docker::Island3Docker(Island3Entity *ent) : ent(ent), st(ent){
+}
+
+void Island3Docker::dock(Dockable *d){
+	d->dock(this);
+	if(!strcmp(d->idname(), "ContainerHead") || !strcmp(d->idname(), "SpacePlane"))
+		d->w = NULL;
+	else{
+		if(e->w)
+			e->w = this;
+		else{
+			e->w = this;
+			addent(e);
+		}
+	}
+}
+
+Vec3d Island3Docker::getPortPos()const{
+	Vec3d yhat = ent->rot.trans(Vec3d(0,1,0));
+	return yhat * (-16. - 3.25) + ent->pos;
+}
+
+Quatd Island3Docker::getPortRot()const{
+	return ent->rot;
+}
+

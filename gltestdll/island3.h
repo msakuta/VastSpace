@@ -2,6 +2,7 @@
 #define ISLAND3_H
 #include "astro.h"
 #include "Entity.h"
+#include "Docker.h"
 #include <btBulletDynamicsCommon.h>
 extern "C"{
 #include <clib/suf/suf.h>
@@ -56,6 +57,7 @@ protected:
 	int race; ///< Equivalent to ent->race
 	int gases; ///< Resource units
 	int solids; ///< Resource units
+	int people; ///< Population of this colony
 	bool headToSun;
 	bool cullLevel; ///< -1 = indeterminant, 0 = near, 1 = far
 
@@ -69,6 +71,9 @@ protected:
 	static GLuint walllist, walltex;
 	static suf_t *sufbridgetower;
 };
+
+
+class Island3Docker;
 
 /// \brief Island3 companion Entity.
 ///
@@ -92,7 +97,22 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual Props props()const;
+	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *);
+protected:
+	Island3Docker *docker;
+	virtual Docker *getDockerInt();
+};
+
+class Island3Docker : public Docker{
+public:
+	typedef Docker st;
+	Island3Docker(Island3Entity *);
+	virtual void dock(Dockable *d);
+	virtual Vec3d getPortPos()const;
+	virtual Quatd getPortRot()const;
+protected:
+	Entity *ent;
 };
 
 

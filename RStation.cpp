@@ -13,6 +13,7 @@
 //#include "sensor.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>

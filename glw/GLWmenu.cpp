@@ -447,7 +447,7 @@ PopupMenu::~PopupMenu(){
 	}
 }
 
-PopupMenu &PopupMenu::append(cpplib::dstring title, int key, cpplib::dstring cmd, bool unique){
+PopupMenu &PopupMenu::append(gltestp::dstring title, int key, gltestp::dstring cmd, bool unique){
 	if(unique){
 		// Returns unchanged if duplicate menu item is present. This determination is done by title, not command.
 		for(PopupMenuItem *p = list; p; p = p->next) if(p->title == title)

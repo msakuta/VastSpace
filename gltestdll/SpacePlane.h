@@ -24,14 +24,14 @@ public:
 protected:
 	EntityAI *ai;
 	float undocktime;
-	Entity *docksite;
-	Entity *leavesite;
+	int people;
 	struct tent3d_fpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
 	SpacePlane(){init();}
 	SpacePlane(WarField *w);
 	SpacePlane(Entity *docksite);
+	~SpacePlane();
 	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
@@ -50,11 +50,20 @@ public:
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);
+	virtual bool dock(Docker*);
 	virtual bool undock(Docker*);
-	virtual void post_warp();
 	static Entity *create(WarField *w, Builder *);
-	btRigidBody *get_bbody(){return bbody;}
-	enum sship_task_ch{sship_dockqueque = num_sship_task};
+};
+
+struct TransportPeopleCommand : EntityCommand{
+	typedef EntityCommand st;
+	static int construction_dummy;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	TransportPeopleCommand(HSQUIRRELVM v, Entity &e);
+	TransportPeopleCommand(int people) : people(people){}
+	int people;
 };
 
 

@@ -757,10 +757,6 @@
 					RelativePath="..\glw\message.h"
 					>
 				</File>
-				<File
-					RelativePath="..\glw\popup.h"
-					>
-				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -856,10 +852,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\popup.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\serial.h"
 				>
 			</File>
@@ -909,6 +901,14 @@
 				>
 				<File
 					RelativePath="..\include\draw\WarDraw.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="glw"
+				>
+				<File
+					RelativePath="..\include\glw\popup.h"
 					>
 				</File>
 			</Filter>

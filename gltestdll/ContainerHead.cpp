@@ -80,6 +80,10 @@ void ContainerHead::init(){
 		return;
 }
 
+ContainerHead::~ContainerHead(){
+	delete ai;
+}
+
 const char *ContainerHead::idname()const{
 	return "ContainerHead";
 }
@@ -144,6 +148,8 @@ void ContainerHead::anim(double dt){
 				delete ai;
 				ai = NULL;
 			}
+			if(!w)
+				return;
 		}
 		else if(task == sship_undock){
 			if(!leavesite || leavesite->w != w || undocktime < 0.){
@@ -521,9 +527,17 @@ bool ContainerHead::command(EntityCommand *com){
 	else return st::command(com);
 }
 
+bool ContainerHead::dock(Docker *d){
+	for(int i = 0; i < ncontainers; i++)
+		d->e->command(&TransportResourceCommand(containers[i] == gascontainer, containers[i] == hexcontainer));
+	return true;
+}
+
 bool ContainerHead::undock(Docker *d){
 	task = sship_undock;
 	mother = d;
+	for(int i = 0; i < ncontainers; i++)
+		d->e->command(&TransportResourceCommand(-(containers[i] == gascontainer), -(containers[i] == hexcontainer)));
 	return true;
 }
 
@@ -561,3 +575,176 @@ TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
 	solids = i;
 }
 
+
+TransportAI::TransportAI(Entity *ch, Entity *leavesite) : phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
+	std::vector<Entity *> set;
+	findIsland3(ch->w->cs->findcspath("/"), set);
+	if(set.size()){
+		int i = RandomSequence((unsigned long)this + (unsigned long)(ch->w->war_time() / .0001)).next() % set.size();
+		docksite = set[i];
+	}
+}
+
+
+bool TransportAI::control(Entity *ch, double dt){
+	if(!docksite)
+		return true;
+	switch(phase){
+		case Undock:
+		{
+			Vec3d target = dest(ch);
+			MoveCommand com;
+			com.destpos = target;
+			ch->command(&com);
+//				ch->steerArrival(dt, target, Vec3d(0,0,0), 1. / 10., .001);
+			if((target - ch->pos).slen() < .2 * .2){
+				phase = Avoid;
+//					ch->task = sship_idle;
+			}
+			break;
+		}
+
+		case Avoid:
+		{
+			CoordSys *destcs = docksite->w->cs;
+			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+			Vec3d destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+			Vec3d delta = destpos - destcs->tocs(ch->pos, ch->w->cs);
+			Vec3d parallel = yhat * delta.sp(yhat);
+			Vec3d lateral = delta - parallel;
+			if(delta.sp(destcs->tocs(leavesite->pos, leavesite->w->cs) - destcs->tocs(ch->pos, ch->w->cs)) < 0.)
+				phase = Warp;
+			else{
+				yhat = leavesite->rot.trans(Vec3d(0,1,0));
+				Vec3d target = ch->w->cs->tocs(target, destcs);
+				Vec3d source = yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+				delta = target - source;
+				parallel = yhat * delta.sp(yhat);
+				lateral = delta - parallel;
+				double fpos = ch->pos.sp(yhat);
+				double fsrc = source.sp(yhat);
+				Vec3d destination = (fpos < fsrc ? source + parallel.norm() * (fpos - fsrc) : source) + lateral.norm() * 5.;
+				if((destination - ch->pos).slen() < .2 * .2)
+					phase = Warp;
+				else{
+					MoveCommand com;
+					com.destpos = destination;
+					ch->command(&com);
+				}
+			}
+			break;
+		}
+
+		case Warp:
+		{
+			WarpCommand com;
+			com.destcs = docksite->w->cs;
+			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+			com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+			Vec3d target = com.destpos;
+			Vec3d delta = target - com.destcs->tocs(ch->pos, ch->w->cs);
+			Vec3d parallel = yhat * delta.sp(yhat);
+			Vec3d lateral = delta - parallel;
+			if(delta.sp(yhat) < 0)
+				com.destpos += lateral.normin() * -10.;
+			ch->command(&com);
+			phase = WarpWait;
+			break;
+		}
+
+		case WarpWait:
+			if(!ch->toWarpable() || ch->toWarpable()->warping)
+				phase = Dockque;
+			break;
+
+		case Dockque:
+			dockAI = DockAI(ch, docksite);
+			phase = Dock;
+			// Fall through
+		case Dock:
+			return dockAI.control(ch, dt);
+	}
+	return false;
+}
+
+
+Vec3d TransportAI::dest(Entity *ch){
+	Vec3d yhat = leavesite->rot.trans(Vec3d(0,1,0));
+	return yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+}
+
+void TransportAI::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
+	for(CoordSys *cs = root->children; cs; cs = cs->next){
+		findIsland3(cs, ret);
+	}
+	if(root->w) for(Entity *e = root->w->entlist(); e; e = e->next){
+		if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
+			ret.push_back(e);
+		}
+	}
+}
+
+DockAI::DockAI(Entity *ch, Entity *docksite) : phase(Dockque2), docksite(docksite){
+	if(!docksite){
+		std::vector<Entity*> set;
+		for(Entity *e = ch->w->entlist(); e; e = e->next){
+			if(!strcmp(e->classname(), "Island3Entity")){
+				set.push_back(e);
+			}
+		}
+		if(set.size()){
+			int i = RandomSequence((unsigned long)this + (unsigned long)(ch->w->war_time() / .0001)).next() % set.size();
+			this->docksite = set[i];
+		}
+	}
+}
+
+bool DockAI::control(Entity *ch, double dt){
+	if(!docksite)
+		return true;
+	switch(phase){
+		case Dockque2:
+		case Dockque:
+		{
+			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+			Vec3d target = yhat * (phase == Dockque2 || phase == Dockque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
+			Vec3d delta = target - ch->pos;
+			Vec3d parallel = yhat * delta.sp(yhat);
+			Vec3d lateral = delta - parallel;
+			if(phase == Dockque2 && delta.sp(yhat) < 0 && sqrt(DBL_EPSILON) < lateral.slen())
+				target += lateral.normin() * -5.;
+			MoveCommand com;
+			com.destpos = target;
+			ch->command(&com);
+			if((target - ch->pos).slen() < .2 * .2){
+				if(phase == Dockque2)
+					phase = Dockque;
+				else if(phase == Dockque)
+					phase = Dock;
+			}
+			break;
+		}
+
+		case Dock:
+		{
+			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
+			Vec3d target = docksite->pos;
+			Docker *docker = docksite->getDocker();
+			if(docker)
+				target = docker->getPortPos();
+			Vec3d delta = target - ch->pos;
+			Vec3d parallel = yhat * delta.sp(yhat);
+			Vec3d lateral = delta - parallel;
+			MoveCommand com;
+			com.destpos = target;
+			ch->command(&com);
+			if((target - ch->pos).slen() < .2 * .2){
+				if(docker)
+					docker->dock(ch);
+				return true;
+			}
+			break;
+		}
+	}
+	return false;
+}

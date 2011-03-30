@@ -9,7 +9,7 @@
 /// The base class for those ships that can contain other ships.
 /// It derives WarField for they have similarities about containing Entities, but Docker
 /// does not maintain position of each Entity.
-class Docker : public WarField{
+class EXPORT Docker : public WarField{
 public:
 	typedef WarField st;
 	typedef Entity::Dockable Dockable;
@@ -29,7 +29,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	void anim(double dt);
-	void dock(Dockable *);
+	virtual void dock(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
 	int enumParadeC(enum ShipClass sc){return paradec[sc]++;}
 	virtual Entity *addent(Entity*);

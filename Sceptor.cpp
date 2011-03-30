@@ -21,6 +21,7 @@
 #include "sqadapt.h"
 #include "draw/effects.h"
 #include "motion.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

@@ -548,7 +548,12 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("chase"))){
-		if(OT_INSTANCE != sq_gettype(v, 3))
+		SQObjectType ot = sq_gettype(v, 3);
+		if(OT_NULL == ot){
+			p->chase = NULL;
+			return 1;
+		}
+		if(OT_INSTANCE != ot)
 			return SQ_ERROR;
 		if(!sqa_refobj(v, (SQUserPointer*)&p->chase, &sr, 3))
 			return sr;

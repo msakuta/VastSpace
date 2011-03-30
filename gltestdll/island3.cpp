@@ -231,7 +231,7 @@ void Island3::anim(double dt){
 		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
 
 		// Randomly create container heads
-		if(floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.1){
+		if(floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
 			ContainerHead *ch = new ContainerHead(this->ent);
 			ch->race = race;
 			ws->addent(ch);

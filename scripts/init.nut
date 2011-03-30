@@ -651,6 +651,7 @@ register_console_command("jump_bookmark", function(...){
 			player.setpos(item.pos);
 			player.setvelo(Vec3d(0,0,0));
 			player.setrot(item.rot);
+			player.chase = null;
 		}
 	}
 });
@@ -677,6 +678,7 @@ register_console_command("bookmarks", function(){
 				player.setpos("pos" in item ? item.pos : Vec3d(0,0,0));
 				player.setvelo(Vec3d(0,0,0));
 				player.setrot(item.rot);
+				player.chase = null;
 			}
 		});
 	}

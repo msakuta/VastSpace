@@ -55,11 +55,11 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
-ContainerHead::ContainerHead(WarField *aw) : st(aw){
+ContainerHead::ContainerHead(WarField *aw) : st(aw), leavesite(NULL){
 	init();
 }
 
-ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), docksite(docksite){
+ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), leavesite(docksite){
 	init();
 	task = sship_undock;
 	undocktime = 30.;
@@ -94,11 +94,15 @@ const unsigned ContainerHead::entityid = registerEntity("ContainerHead", new Con
 
 void ContainerHead::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << leavesite;
+	sc.o << docksite;
 	sc.o << undocktime;
 }
 
 void ContainerHead::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> leavesite;
+	sc.i >> docksite;
 	sc.i >> undocktime;
 }
 
@@ -131,8 +135,8 @@ void ContainerHead::anim(double dt){
 	if(0 < health){
 		Entity *collideignore = NULL;
 		if(task == sship_undock){
-			if(!docksite || docksite->w != w || undocktime < 0.){
-				inputs.press&= ~PL_W;
+			if(!leavesite || leavesite->w != w || undocktime < 0.){
+				inputs.press &= ~PL_W;
 				task = sship_idle;
 			}
 			else{
@@ -159,10 +163,26 @@ void ContainerHead::anim(double dt){
 					Vec3d delta = target - com.destcs->tocs(pos, w->cs);
 					Vec3d parallel = yhat * delta.sp(yhat);
 					Vec3d lateral = delta - parallel;
-					if(task == sship_dockqueque && delta.sp(yhat) < 0)
-						com.destpos += lateral.normin() * -10.;
-					command(&com);
-//					task = sship_dockque;
+					if(leavesite && 0. < delta.sp(com.destcs->tocs(leavesite->pos, leavesite->w->cs) - com.destcs->tocs(pos, w->cs))){
+						yhat = leavesite->rot.trans(Vec3d(0,1,0));
+						target = w->cs->tocs(target, com.destcs);
+						Vec3d source = yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+						delta = target - source;
+						parallel = yhat * delta.sp(yhat);
+						lateral = delta - parallel;
+						double fpos = pos.sp(yhat);
+						double fsrc = source.sp(yhat);
+						Vec3d destination = (fpos < fsrc ? source + parallel.norm() * (fpos - fsrc) : source) + lateral.norm() * 5.;
+						if((destination - pos).slen() < .2 * .2)
+							leavesite = NULL;
+						else
+							steerArrival(dt, destination, leavesite->velo, 1. / 10., .001);
+					}
+					else{
+						if(task == sship_dockqueque && delta.sp(yhat) < 0)
+							com.destpos += lateral.normin() * -10.;
+						command(&com);
+					}
 				}
 				else{
 					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
@@ -263,6 +283,14 @@ void ContainerHead::anim(double dt){
 	catch(...){
 		std::cerr << __FILE__"(%d) Exception ?\n" << __LINE__;
 	}
+}
+
+void ContainerHead::postframe(){
+	if((task == sship_dock || task == sship_dockque) && docksite && docksite->w != w)
+		docksite = NULL;
+	if((task == sship_undock || task == sship_undockque) && leavesite && leavesite->w != w)
+		leavesite = NULL;
+	st::postframe();
 }
 
 void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -507,7 +535,7 @@ void ContainerHead::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const
 		findIsland3(cs, ret);
 	}
 	if(root->w) for(Entity *e = root->w->entlist(); e; e = e->next){
-		if(!strcmp(e->classname(), "Island3Entity") && e){
+		if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
 			ret.push_back(e);
 		}
 	}

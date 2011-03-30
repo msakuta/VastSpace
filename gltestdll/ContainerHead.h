@@ -27,6 +27,7 @@ public:
 protected:
 	float undocktime;
 	Entity *docksite;
+	Entity *leavesite;
 	struct tent3d_fpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
@@ -41,6 +42,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
 	virtual void anim(double);
+	virtual void postframe();
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void leaveField(WarField *);

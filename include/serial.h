@@ -1,6 +1,7 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 #include "export.h"
+#include "dstring.h"
 #include <map>
 #include <vector>
 #include <iostream>
@@ -10,7 +11,7 @@
 
 class Serializable;
 typedef const char *ClassId;
-typedef std::map<ClassId, Serializable *(*)()> CtorMap;
+typedef std::map<gltestp::dstring, Serializable *(*)()> CtorMap;
 typedef std::map<const Serializable*, unsigned> SerializeMap;
 typedef std::vector<Serializable*> UnserializeMap;
 

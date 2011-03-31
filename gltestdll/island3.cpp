@@ -19,6 +19,7 @@
 #include "draw/WarDraw.h"
 #include "ShadowMap.h"
 #include "glw/popup.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -58,9 +59,10 @@ class Island3Building : public Entity{
 public:
 	Vec3d halfsize;
 	friend Island3;
+	static unsigned classid;
 	Island3 &host;
 	Island3Building(Island3 &host);
-	virtual const char *classname()const{return "Island3Entity";}
+	virtual const char *classname()const{return "Island3Building";}
 	virtual double hitradius()const{return .1;}
 	virtual bool isTargettable()const{return false;}
 	virtual void draw(wardraw_t *);
@@ -87,14 +89,11 @@ Island3::Island3(const char *path, CoordSys *root) : st(path, root){
 Island3::~Island3(){
 	if(ent)
 		delete ent;
-	if(btshape)
-		delete btshape;
 }
 
 void Island3::init(){
 	sun_phase = 0.;
 	ent = NULL;
-	btshape = NULL;
 	headToSun = false;
 	absmag = 30.;
 	rad = 100.;
@@ -108,6 +107,22 @@ void Island3::init(){
 	solids = 100;
 	people = 100000;
 }
+
+void Island3::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << ent;
+}
+
+void Island3::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> ent;
+}
+
+void Island3::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+//	ent->dive(sc, method);
+}
+
 
 bool Island3::belongs(const Vec3d &lpos)const{
 	double sdxy;
@@ -138,7 +153,7 @@ Mat4d Island3::transform(const Viewer *vw)const{
 	}
 	else{
 		ret = mat4_u;
-		if(vw->cs == this || !ent){
+		if(vw->cs == this || !ent || !ent->bbody){
 			Mat4d rot = vw->cs->tocsim(this);
 			ret.translatein(vw->cs->tocs(vec3_000, this));
 			ret = ret * rot;
@@ -182,47 +197,6 @@ void Island3::anim(double dt){
 	if(ws && !ent){
 		ent = new Island3Entity(*this);
 		ws->addent(ent);
-		if(!btshape){
-			btshape = new btCompoundShape();
-			for(int i = 0; i < 3; i++){
-				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
-				Quatd rot;
-				Vec3d pos;
-				calcWingTrans(i, rot, pos);
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				wings[i] = box;
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				wingtrans[i] = trans;
-				btshape->addChildShape(trans, box);
-			}
-			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + .01, ISLAND3_HALFLEN, ISLAND3_RAD + .01));
-			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
-		}
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		mass = 1e10;
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			btshape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .5;
-		ent->bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-//			ws->bdw->addRigidBody(bbody, 1, ~2);
-		ws->bdw->addRigidBody(ent->bbody);
 	}
 	if(ws && ent){
 		ent->pos = this->pos;
@@ -248,16 +222,20 @@ void Island3::anim(double dt){
 		}
 	}
 	if(ws && ws->bdw && ent){
-		btRigidBody *bbody = ent->bbody;
-		bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
-		bbody->setAngularVelocity(btvc(omg));
-		int i;
-		for(int n = 0; n < 3; n++) for(i = 0; i < btshape->getNumChildShapes(); i++) if(wings[n] == btshape->getChildShape(i)){
-			Quatd rot;
-			Vec3d pos;
-			calcWingTrans(i, rot, pos);
-			wingtrans[i] = btTransform(btqc(rot), btvc(pos));
-			btshape->updateChildTransform(i, wingtrans[i]);
+		if(!ent->bbody)
+			ent->buildShape();
+		if(ent->bbody){
+			btRigidBody *bbody = ent->bbody;
+			bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+			bbody->setAngularVelocity(btvc(omg));
+			int i;
+			for(int n = 0; n < 3; n++) for(i = 0; i < ent->btshape->getNumChildShapes(); i++) if(ent->wings[n] == ent->btshape->getChildShape(i)){
+				Quatd rot;
+				Vec3d pos;
+				calcWingTrans(i, rot, pos);
+				ent->wingtrans[i] = btTransform(btqc(rot), btvc(pos));
+				ent->btshape->updateChildTransform(i, ent->wingtrans[i]);
+			}
 		}
 	}
 }
@@ -1414,7 +1392,7 @@ nobridgemodel:
 			gldTranslaten3dv(joint);*/
 			Mat4d localmat;
 			if(ent)
-				wingtrans[m].getOpenGLMatrix(localmat);
+				ent->wingtrans[m].getOpenGLMatrix(localmat);
 			else{
 				Vec3d pos;
 				Quatd rot;
@@ -1472,7 +1450,7 @@ nobridgemodel:
 		gldTranslaten3dv(joint);*/
 		Mat4d localmat;
 		if(ent)
-			wingtrans[m].getOpenGLMatrix(localmat);
+			ent->wingtrans[m].getOpenGLMatrix(localmat);
 		else{
 			Vec3d pos;
 			Quatd rot;
@@ -1784,6 +1762,36 @@ void Island3::drawtra(const Viewer *vw){
 #endif
 }
 
+
+
+
+
+
+
+unsigned Island3Entity::classid = registerClass("Island3Entity", Conster<Island3Entity>);
+
+
+void Island3Entity::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << astro;
+	sc.o << docker;
+}
+
+void Island3Entity::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> astro;
+	sc.i >> docker;
+}
+
+void Island3Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	docker->dive(sc, method);
+}
+
+void Island3Entity::enterField(WarField *w){
+	st::enterField(w);
+}
+
 void Island3Entity::drawOverlay(wardraw_t *){
 	glScaled(10, 10, 1);
 	glBegin(GL_LINE_LOOP);
@@ -1804,11 +1812,60 @@ void Island3Entity::drawOverlay(wardraw_t *){
 
 Entity::Props Island3Entity::props()const{
 	Props ret = st::props();
-	ret.push_back(gltestp::dstring("Gases: ") << astro.gases);
-	ret.push_back(gltestp::dstring("Solids: ") << astro.solids);
-	ret.push_back(gltestp::dstring("Population: ") << astro.people);
+	ret.push_back(gltestp::dstring("Gases: ") << astro->gases);
+	ret.push_back(gltestp::dstring("Solids: ") << astro->solids);
+	ret.push_back(gltestp::dstring("Population: ") << astro->people);
 	return ret;		
 }
+
+void Island3Entity::buildShape(){
+	WarSpace *ws = *w;
+	if(ws){
+		if(!btshape){
+			btshape = new btCompoundShape();
+			for(int i = 0; i < 3; i++){
+				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
+				Quatd rot;
+				Vec3d pos;
+				astro->calcWingTrans(i, rot, pos);
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				wings[i] = box;
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				wingtrans[i] = trans;
+				btshape->addChildShape(trans, box);
+			}
+			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + .01, ISLAND3_HALFLEN, ISLAND3_RAD + .01));
+			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		mass = 1e10;
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			btshape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .5;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//			ws->bdw->addRigidBody(bbody, 1, ~2);
+		ws->bdw->addRigidBody(bbody);
+	}
+}
+
+
 
 
 #if 0
@@ -2089,14 +2146,18 @@ bool Island3::readFile(StellarContext &sc, int argc, const char *argv[]){
 }
 
 
-Island3Entity::Island3Entity(Island3 &astro) : astro(astro){
+Island3Entity::Island3Entity() : btshape(NULL){
+}
+
+Island3Entity::Island3Entity(Island3 &astro) : astro(&astro), btshape(NULL){
 	health = maxhealth();
 	race = astro.race;
 	docker = new Island3Docker(this);
 }
 
 Island3Entity::~Island3Entity(){
-	astro.ent = NULL;
+	astro->ent = NULL;
+	delete btshape;
 }
 
 bool singleObjectRaytest(btRigidBody *bbody, const btVector3& rayFrom,const btVector3& rayTo,btScalar &fraction,btVector3& worldNormal,btVector3& worldHitPoint)
@@ -2196,7 +2257,7 @@ int Island3Entity::takedamage(double damage, int hitpart){
 		if(ws){
 			AddTeline3D(ws->tell, this->pos, vec3_000, 30., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 		}
-		astro.flags |= CS_DELETE;
+		astro->flags |= CS_DELETE;
 		w = NULL;
 	}
 	health -= damage;
@@ -2483,12 +2544,12 @@ int Island3Entity::popupMenu(PopupMenu &list){
 
 bool Island3Entity::command(EntityCommand *com){
 	if(TransportResourceCommand *trc = InterpretCommand<TransportResourceCommand>(com)){
-		astro.gases += trc->gases;
-		astro.solids += trc->solids;
+		astro->gases += trc->gases;
+		astro->solids += trc->solids;
 		return true;
 	}
 	if(TransportPeopleCommand *tpc = InterpretCommand<TransportPeopleCommand>(com)){
-		astro.people += tpc->people;
+		astro->people += tpc->people;
 		return true;
 	}
 	else		
@@ -2497,8 +2558,13 @@ bool Island3Entity::command(EntityCommand *com){
 
 
 
-Island3Docker::Island3Docker(Island3Entity *ent) : ent(ent), st(ent){
+const unsigned Island3Docker::classid = registerClass("Island3Docker", Conster<Island3Docker>);
+
+Island3Docker::Island3Docker(Island3Entity *ent) : st(ent){
 }
+
+const char *Island3Docker::classname()const{return "Island3Docker";}
+
 
 void Island3Docker::dock(Dockable *d){
 	d->dock(this);
@@ -2515,11 +2581,11 @@ void Island3Docker::dock(Dockable *d){
 }
 
 Vec3d Island3Docker::getPortPos()const{
-	Vec3d yhat = ent->rot.trans(Vec3d(0,1,0));
-	return yhat * (-16. - 3.25) + ent->pos;
+	Vec3d yhat = e->rot.trans(Vec3d(0,1,0));
+	return yhat * (-16. - 3.25) + e->pos;
 }
 
 Quatd Island3Docker::getPortRot()const{
-	return ent->rot;
+	return e->rot;
 }
 

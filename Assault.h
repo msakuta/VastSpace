@@ -40,6 +40,8 @@ public:
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
+protected:
+	bool buildBody();
 };
 
 int cmd_armswindow(int argc, char *argv[], void *pv);

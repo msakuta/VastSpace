@@ -114,7 +114,7 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 	sc.i >> formPrev;
 
-	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
+	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);

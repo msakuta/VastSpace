@@ -91,12 +91,37 @@ const unsigned SpacePlane::entityid = registerEntity("SpacePlane", new Construct
 
 void SpacePlane::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << ai;
 	sc.o << undocktime;
+	sc.o << people;
 }
 
 void SpacePlane::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> ai;
 	sc.i >> undocktime;
+	sc.i >> people;
+
+	// Re-create temporary entities if flying in a WarSpace.
+	// If surrounding WarSpace is unserialized after this function, it would cause errors,
+	// but while WarSpace::dive defines that the WarSpace itself go first, it will never happen.
+	WarSpace *ws;
+	if(w && (ws = (WarSpace*)w)){
+		buildBody();
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+		for(int i = 0; i < numof(pf); i++)
+			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+	}
+	else{
+		for(int i = 0; i < numof(pf); i++)
+			pf[i] = NULL;
+	}
+}
+
+void SpacePlane::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	if(ai)
+		ai->dive(sc, method);
 }
 
 const char *SpacePlane::dispname()const{
@@ -229,6 +254,24 @@ void SpacePlane::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 void SpacePlane::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
+		buildBody();
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+	if(ws){
+		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
+		for(int i = 0; i < 3; i++){
+			if(this->pf[i])
+				ImmobilizeTefpol3D(this->pf[i]);
+			if(tepl)
+				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+			else
+				pf[i] = NULL;
+		}
+	}
+}
+
+bool SpacePlane::buildBody(){
+	if(!bbody){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
@@ -255,24 +298,10 @@ void SpacePlane::enterField(WarField *target){
 		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
 		bbody = new btRigidBody(rbInfo);
-
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
+		return true;
 	}
-	if(ws){
-		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
-		for(int i = 0; i < 3; i++){
-			if(this->pf[i])
-				ImmobilizeTefpol3D(this->pf[i]);
-			if(tepl)
-				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
-			else
-				pf[i] = NULL;
-		}
-	}
+	return false;
 }
 
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.

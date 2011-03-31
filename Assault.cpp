@@ -51,41 +51,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
 		return;
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
-
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-//		ws->bdw->addRigidBody(bbody);
+		buildBody();
 	}
 }
 
@@ -123,6 +89,56 @@ void Assault::unserialize(UnserializeContext &sc){
 	sc.i >> (Entity*&)formPrev;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
+
+	WarSpace *ws = w ? *w : NULL;
+	if(ws){
+		// Assumes environment WarSpace is serialized first. Otherwise, this code would try to
+		// add a rigid body to uninitialized dynamics world.
+		buildBody();
+		ws->bdw->addRigidBody(bbody);
+	}
+}
+
+bool Assault::buildBody(){
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//		ws->bdw->addRigidBody(bbody);
+		return true;
+	}
+	return false;
 }
 
 const char *Assault::dispname()const{
@@ -136,7 +152,7 @@ void Assault::anim(double dt){
 		return;
 	}
 
-	if(bbody){
+	if(bbody && !warping){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
 		pos = btvc(tra.getOrigin());
 		rot = btqc(tra.getRotation());
@@ -335,7 +351,7 @@ void Assault::draw(wardraw_t *wd){
 		glMultMatrixd(mat);
 /*		if(!list){
 		glNewList(list = glGenLists(1), GL_COMPILE);*/
-#if 1
+#if 0
 		for(int i = 0; i < nhitboxes; i++){
 			Mat4d rot;
 			glPushMatrix();

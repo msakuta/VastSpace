@@ -35,15 +35,14 @@ public:
 	Island3Entity *ent;
 	Island3Building *bldgs[ISLAND3_BUILDINGS];
 //	btRigidBody *bbody;
-	btCompoundShape *btshape;
-	btBoxShape *wings[3];
-	btTransform wingtrans[3];
 
 	Island3();
 	Island3(const char *path, CoordSys *root);
 	virtual ~Island3();
 	virtual const char *classname()const{return "Island3";}
-//	virtual void init(const char *path, CoordSys *root);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual bool belongs(const Vec3d &pos)const;
 	virtual void anim(double dt);
 	virtual void predraw(const Viewer *);
@@ -84,11 +83,17 @@ class Island3Entity : public Entity{
 public:
 	typedef Entity st;
 	friend Island3;
-	Island3 &astro;
+	static unsigned classid;
+	Island3 *astro;
+	Island3Entity();
 	Island3Entity(Island3 &astro);
 	virtual ~Island3Entity();
 	virtual const char *classname()const{return "Island3Entity";} ///< Overridden because getStatic() is not defined
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual double hitradius()const{return 20.;}
+	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
 	virtual double maxhealth()const{return 1e6;}
@@ -100,19 +105,23 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *);
 protected:
+	btCompoundShape *btshape;
+	btBoxShape *wings[3];
+	btTransform wingtrans[3];
 	Island3Docker *docker;
 	virtual Docker *getDockerInt();
+	void buildShape();
 };
 
 class Island3Docker : public Docker{
 public:
 	typedef Docker st;
-	Island3Docker(Island3Entity *);
+	static const unsigned classid;
+	Island3Docker(Island3Entity * = NULL);
+	virtual const char *classname()const;
 	virtual void dock(Dockable *d);
 	virtual Vec3d getPortPos()const;
 	virtual Quatd getPortRot()const;
-protected:
-	Entity *ent;
 };
 
 

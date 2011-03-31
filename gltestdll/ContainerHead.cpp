@@ -55,11 +55,11 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
-ContainerHead::ContainerHead(WarField *aw) : st(aw), leavesite(NULL), ai(NULL){
+ContainerHead::ContainerHead(WarField *aw) : st(aw), docksite(NULL), leavesite(NULL), ai(NULL){
 	init();
 }
 
-ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), leavesite(docksite), ai(NULL){
+ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), docksite(NULL), leavesite(docksite), ai(NULL){
 	init();
 	ai = new TransportAI(this, leavesite);
 }
@@ -97,6 +97,7 @@ const unsigned ContainerHead::entityid = registerEntity("ContainerHead", new Con
 
 void ContainerHead::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << ai;
 	sc.o << leavesite;
 	sc.o << docksite;
 	sc.o << undocktime;
@@ -107,13 +108,32 @@ void ContainerHead::serialize(SerializeContext &sc){
 
 void ContainerHead::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> ai;
 	sc.i >> leavesite;
 	sc.i >> docksite;
 	sc.i >> undocktime;
 	sc.i >> ncontainers;
 	for(int i = 0; i < ncontainers; i++)
 		sc.i >> (int&)containers[i];
+
+	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
+	WarSpace *ws;
+	if(w && (ws = (WarSpace*)w)){
+		for(int i = 0; i < numof(pf); i++)
+			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+	}
+	else{
+		for(int i = 0; i < numof(pf); i++)
+			pf[i] = NULL;
+	}
 }
+
+void ContainerHead::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	if(ai)
+		ai->dive(sc, method);
+}
+
 
 const char *ContainerHead::dispname()const{
 	return "Container Ship";
@@ -126,6 +146,7 @@ void ContainerHead::anim(double dt){
 		st::anim(dt);
 		return;
 	}
+	buildBody();
 
 	if(bbody && !warping){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
@@ -305,6 +326,24 @@ void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 void ContainerHead::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
+		if(!buildBody())
+			ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+	if(ws){
+		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
+		for(int i = 0; i < 3; i++){
+			if(this->pf[i])
+				ImmobilizeTefpol3D(this->pf[i]);
+			if(tepl)
+				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+			else
+				pf[i] = NULL;
+		}
+	}
+}
+
+bool ContainerHead::buildBody(){
+	if(!bbody){
 		static btCompoundShape *shapes[maxcontainers] = {NULL};
 		btCompoundShape *&shape = shapes[ncontainers];
 		if(!shape){
@@ -335,20 +374,16 @@ void ContainerHead::enterField(WarField *target){
 //		rbInfo.m_angularDamping = .25;
 		bbody = new btRigidBody(rbInfo);
 
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
-	}
-	if(ws){
-		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
-		for(int i = 0; i < 3; i++){
-			if(this->pf[i])
-				ImmobilizeTefpol3D(this->pf[i]);
-			if(tepl)
-				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
-			else
-				pf[i] = NULL;
+		// If bbody is not initialized but surrounding dynamics world is initialized, assume it's because
+		// the object is just loaded from a save file.
+		// Other means (creation or transpoting) always use enterField method, where adding is already done.
+		WarSpace *ws = w ? *w : NULL;
+		if(ws){
+			ws->bdw->addRigidBody(bbody, 1, ~2);
+			return true;
 		}
 	}
+	return false;
 }
 
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
@@ -549,6 +584,7 @@ void ContainerHead::post_warp(){
 double ContainerHead::maxhealth()const{return 15000.;}
 
 
+
 IMPLEMENT_COMMAND(DockToCommand, "DockTo")
 IMPLEMENT_COMMAND(TransportResourceCommand, "TransportResource")
 
@@ -584,6 +620,22 @@ TransportAI::TransportAI(Entity *ch, Entity *leavesite) : phase(Undock), docksit
 		docksite = set[i];
 	}
 }
+
+void TransportAI::serialize(SerializeContext &sc){
+	sc.o << phase;
+	sc.o << docksite;
+	sc.o << leavesite;
+}
+
+void TransportAI::unserialize(UnserializeContext &sc){
+	sc.i >> (int&)phase;
+	sc.i >> docksite;
+	sc.i >> leavesite;
+}
+
+const unsigned TransportAI::classid = registerClass("TransportAI", Conster<TransportAI>);
+const char *TransportAI::classname()const{return "TransportAI";}
+
 
 
 bool TransportAI::control(Entity *ch, double dt){
@@ -697,6 +749,19 @@ DockAI::DockAI(Entity *ch, Entity *docksite) : phase(Dockque2), docksite(docksit
 			this->docksite = set[i];
 		}
 	}
+}
+
+const unsigned DockAI::classid = registerClass("DockAI", Conster<DockAI>);
+const char *DockAI::classname()const{return "DockAI";}
+
+void DockAI::serialize(SerializeContext &sc){
+	sc.o << phase;
+	sc.o << docksite;
+}
+
+void DockAI::unserialize(UnserializeContext &sc){
+	sc.i >> (int&)phase;
+	sc.i >> docksite;
 }
 
 bool DockAI::control(Entity *ch, double dt){

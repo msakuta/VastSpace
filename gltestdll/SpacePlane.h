@@ -38,6 +38,7 @@ public:
 	static const unsigned classid, entityid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void postframe();
@@ -53,6 +54,8 @@ public:
 	virtual bool dock(Docker*);
 	virtual bool undock(Docker*);
 	static Entity *create(WarField *w, Builder *);
+protected:
+	bool buildBody();
 };
 
 struct TransportPeopleCommand : EntityCommand{

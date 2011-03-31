@@ -16,7 +16,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 6;
+const unsigned Universe::version = 8;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
@@ -59,11 +59,14 @@ void Universe::csUnmap(UnserializeContext &sc){
 		UnserializeStream *us = sc.i.substream(size);
 		cpplib::dstring src;
 		*us >> src;
-		cpplib::dstring scname(src);
-		if(src != "Player" && src != "Universe" && sc.cons.find(scname) == sc.cons.end())
-			throw ClassNotFoundException();
-		if(sc.cons[scname]){
-			sc.map.push_back(sc.cons[scname]());
+		gltestp::dstring scname((const char*)src);
+		if(src != "Player" && src != "Universe"){
+			::CtorMap::iterator it = sc.cons.find(scname);
+			if(it == sc.cons.end())
+				throw ClassNotFoundException();
+			if(it->second){
+				sc.map.push_back(it->second());
+			}
 		}
 		delete us;
 	}

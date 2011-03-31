@@ -173,14 +173,20 @@ const char *Player::classname()const{
 
 void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << chase << selected << pos << velo << rot << cs;
+	sc.o << chase;
+	sc.o << selected;
+	sc.o << pos << velo << rot;
+	sc.o << cs;
 	sc.o << ntplist;
 	for(int i = 0; i < ntplist; i++)
 		tplist[i].serialize(sc);
 }
 
 void Player::unserialize(UnserializeContext &sc){
-	sc.i >> chase >> selected >> pos >> velo >> rot >> cs;
+	sc.i >> chase;
+	sc.i >> selected;
+	sc.i >> pos >> velo >> rot;
+	sc.i >> cs;
 	sc.i >> ntplist;
 	tplist = (teleport*)::malloc(ntplist * sizeof *tplist);
 	for(int i = 0; i < ntplist; i++)

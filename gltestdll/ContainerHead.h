@@ -5,7 +5,7 @@
 #include "EntityCommand.h"
 
 
-struct EntityAI{
+struct EntityAI : Serializable{
 	virtual bool control(Entity *, double dt) = 0;
 };
 
@@ -48,6 +48,7 @@ public:
 	static const unsigned classid, entityid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual const char *dispname()const;
 	virtual void anim(double);
 	virtual void postframe();
@@ -66,6 +67,8 @@ public:
 	static Entity *create(WarField *w, Builder *);
 	btRigidBody *get_bbody(){return bbody;}
 	enum sship_task_ch{sship_dockqueque = num_sship_task};
+protected:
+	bool buildBody();
 };
 
 
@@ -98,8 +101,14 @@ struct DockToCommand : DockCommand{
 struct DockAI : EntityAI{
 	enum Phase{Dockque2, Dockque, Dock, num_Phase} phase;
 	Entity *docksite;
+	DockAI(){}
 	DockAI(Entity *ch, Entity *docksite = NULL);
+	const char *classname()const;
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &usc);
 	bool control(Entity *ch, double dt);
+protected:
+	static const unsigned classid;
 };
 
 struct TransportAI : EntityAI{
@@ -107,11 +116,16 @@ struct TransportAI : EntityAI{
 	Entity *docksite;
 	Entity *leavesite;
 	DockAI dockAI;
+	TransportAI(){}
 	TransportAI(Entity *ch, Entity *leavesite);
+	const char *classname()const;
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &usc);
 	bool control(Entity *ch, double dt);
 protected:
 	Vec3d dest(Entity *ch);
 	void findIsland3(CoordSys *root, std::vector<Entity *> &ret)const;
+	static const unsigned classid;
 };
 
 

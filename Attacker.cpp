@@ -11,6 +11,7 @@
 #include "EntityCommand.h"
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
+#include "serial_util.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -21,6 +22,7 @@ class AttackerDocker;
 class Attacker : public Warpable{
 	AttackerDocker *docker;
 	ArmBase **turrets;
+	bool justLoaded; ///< A flag indicates this object is just loaded from a save file.
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 public:
@@ -32,6 +34,9 @@ public:
 	Attacker();
 	Attacker(WarField *);
 	~Attacker();
+	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	void static_init();
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
@@ -48,6 +53,8 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int takedamage(double damage, int hitpart);
 	virtual void enterField(WarField *);
+protected:
+	void buildBody();
 };
 
 class AttackerDocker : public Docker{
@@ -85,9 +92,9 @@ const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 const unsigned Attacker::entityid = registerEntity("Attacker", new Constructor<Attacker>);
 
-Attacker::Attacker() : docker(NULL){}
+Attacker::Attacker() : justLoaded(true), docker(NULL){}
 
-Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
+Attacker::Attacker(WarField *aw) : st(aw), justLoaded(false), docker(new AttackerDocker(this)){
 	static_init();
 	init();
 	static int count = 0;
@@ -105,6 +112,28 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)){
 
 Attacker::~Attacker(){delete docker;}
 
+void Attacker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+	st::dive(sc, method);
+	docker->dive(sc, method);
+}
+
+void Attacker::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << docker;
+	sc.o << nhardpoints;
+	for(int i = 0; i < nhardpoints; i++)
+		sc.o << turrets[i];
+}
+
+void Attacker::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> docker;
+	sc.i >> nhardpoints;
+	turrets = new ArmBase*[nhardpoints];
+	for(int i = 0; i < nhardpoints; i++)
+		sc.i >> turrets[i];
+}
+
 void Attacker::static_init(){
 	if(!hardpoints){
 		hardpoints = hardpoint_static::load("Attacker.hps", nhardpoints);
@@ -112,6 +141,7 @@ void Attacker::static_init(){
 }
 
 void Attacker::anim(double dt){
+	buildBody();
 	st::anim(dt);
 	docker->anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
@@ -362,6 +392,13 @@ void Attacker::enterField(WarField *target){
 	if(!ws || !ws->bdw)
 		return;
 
+	buildBody();
+
+	//add the body to the dynamics world
+	ws->bdw->addRigidBody(bbody, 2, ~0);
+}
+
+void Attacker::buildBody(){
 	// If a rigid body object is brought from the old WarSpace, reuse it rather than to reconstruct.
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
@@ -397,8 +434,13 @@ void Attacker::enterField(WarField *target){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 
-	//add the body to the dynamics world
-	ws->bdw->addRigidBody(bbody, 2, ~0);
+	// If the flag is indicating that this object is just loaded from a save file, we need to restore the rigid body
+	// and add it to environment's dynamics world.
+	if(justLoaded){
+		if(WarSpace *ws = *w)
+			ws->bdw->addRigidBody(bbody);
+		justLoaded = false;
+	}
 }
 
 

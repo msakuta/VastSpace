@@ -16,6 +16,8 @@
 #include "draw/WarDraw.h"
 #include "Island3.h"
 #include "sqadapt.h"
+#include "ShadowMap.h"
+#include "glsl.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -317,7 +319,7 @@ void SpacePlane::leaveField(WarField *w){
 
 const double SpacePlane::sufscale = .0004;
 
-void SpacePlane::draw(wardraw_t *wd){
+void SpacePlane::draw(WarDraw *wd){
 	if(!w)
 		return;
 
@@ -333,10 +335,18 @@ void SpacePlane::draw(wardraw_t *wd){
 	static suftex_t *pst[2] = {NULL};
 	if(!initialized){
 		static const char *names[] = {"models/spaceplane0.bin"};
+		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		stp.env = GL_ADD;
+		stp.mipmap = 0;
+		CallCacheBitmap5("spaceplane.bmp", "models/spaceplane_br.bmp", &stp, "models/spaceplane.bmp", NULL);
+		CallCacheBitmap5("engine2.bmp", "models/engine2br.bmp", &stp, "models/engine2.bmp", NULL);
 		for(int i = 0; i < numof(names); i++){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
-			CacheSUFMaterials(sufs[i]);
+//			CacheSUFMaterials(sufs[i]);
 			pst[i] = AllocSUFTex(sufs[i]);
 		}
 		initialized = true;
@@ -360,9 +370,9 @@ void SpacePlane::draw(wardraw_t *wd){
 			IntDraw(WarDraw *wd) : wd(wd){
 			}
 			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-				if(vbo)
-					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
-				else if(suf)
+//				if(vbo)
+//					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
+//				else if(suf)
 					DecalDrawSUF(suf, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
 			}
 			void glTranslated(double x, double y, double z){
@@ -388,6 +398,13 @@ void SpacePlane::draw(wardraw_t *wd){
 
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
+		GLint additiveLoc = -1;
+		if(wd->shader){
+			additiveLoc = glGetUniformLocation(wd->shader, "additive");
+			if(0 <= additiveLoc)
+				glUniform1i(additiveLoc, 1);
+		}
+
 		glPushMatrix();
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
@@ -395,6 +412,12 @@ void SpacePlane::draw(wardraw_t *wd){
 		glPopMatrix();
 
 		glPopMatrix();
+
+		if(wd->shader && 0 <= additiveLoc)
+			glUniform1i(additiveLoc, 0);
+
+//		if(wd->shadowMap)
+//			wd->shadowMap->setAdditive(false);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}

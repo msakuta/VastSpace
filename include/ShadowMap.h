@@ -24,6 +24,7 @@ class EXPORT ShadowMap{
 	static GLuint depthTextures[3];
 	static GLuint shader;
 	bool shadowing;
+	bool additive;
 public:
 	class DrawCallback{
 	public:
@@ -34,6 +35,8 @@ public:
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
 	GLuint getShader()const;
 	bool isDrawingShadow()const{return shadowing;}
+	void setAdditive(bool b);
+	bool getAdditive()const;
 };
 
 

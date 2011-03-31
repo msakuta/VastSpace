@@ -7,6 +7,7 @@ uniform sampler2DShadow shadowmap;
 uniform sampler2DShadow shadowmap2;
 uniform sampler2DShadow shadowmap3;
 uniform float ambient;
+uniform int additive;
  
 varying vec3 view;
 //varying vec3 nrm;
@@ -44,19 +45,29 @@ void main (void)
 	}
 
 
-//	vec4 texColor = shadow;
-	vec4 texColor = gl_TextureEnvColor[0].x < .5 ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
-
-	// Apply the second texture
-	if(.5 < gl_TextureEnvColor[0].y)
-		texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
-
 	vec3 lightProduct = (shadow[3] * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse
 			+ gl_FrontLightProduct[0].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
-	texColor.xyz *= gl_FrontMaterial.emission.xyz + (vec3(1,1,1) - gl_FrontMaterial.emission.xyz)
-		* min(vec3(1,1,1), lightProduct);
+//	vec4 texColor = shadow;
+	vec4 texColor = gl_TextureEnvColor[0].x < .5 ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
+
+	if(additive != 0){
+		texColor.xyz = (gl_FrontMaterial.emission.xyz + texColor.xyz) + (vec3(1,1,1) - (gl_FrontMaterial.emission.xyz) + texColor.xyz)
+			* min(vec3(1,1,1), lightProduct);
+
+		// Apply the second texture
+//		if(.5 < gl_TextureEnvColor[0].y)
+			texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
+	}
+	else{
+		// Apply the second texture
+		if(.5 < gl_TextureEnvColor[0].y)
+			texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
+
+		texColor.xyz *= gl_FrontMaterial.emission.xyz + (vec3(1,1,1) - gl_FrontMaterial.emission.xyz)
+			* min(vec3(1,1,1), lightProduct);
+	}
 
 //	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .5 * vec3(texColor);
 //	texColor *= col;

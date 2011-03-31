@@ -120,7 +120,7 @@ class WarDrawInt : public WarDraw{
 	GLuint shaderName;*/
 	void war_draw_int();
 public:
-	WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
+	WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0, ShadowMap *sm = NULL);
 	~WarDrawInt();
 	WarDrawInt &shadowmap(bool b = true){shadowmapping = b; return *this;}
 	WarDrawInt &setShader(GLuint a, GLint textureLoc, GLint shadowmapLoc){shader = a; this->textureLoc = textureLoc; this->shadowmapLoc = shadowmapLoc; return *this;}
@@ -566,19 +566,20 @@ void WarDrawInt::war_draw_int(){
 }
 
 /// \param tod Texture of Depth
-WarDrawInt::WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::* method)(wardraw_t *w), GLuint tod) :
+WarDrawInt::WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::* method)(wardraw_t *w), GLuint tod, ShadowMap *sm) :
 	gvw(vw),
 	cs(cs),
 	method(method)
 {
 	w = cs->w ? *cs->w : NULL;
 	texShadow = tod;
+	shadowMap = sm;
 }
 
 /// Destructor actualy does drawing
 WarDrawInt::~WarDrawInt(){
 	if(cs->parent)
-		war_draw(gvw, cs->parent, method, texShadow).shadowmap(shadowmapping).setShader(shader, textureLoc, shadowmapLoc);
+		war_draw(gvw, cs->parent, method, texShadow, shadowMap).shadowmap(shadowmapping).setShader(shader, textureLoc, shadowmapLoc);
 	if(w){
 		// Call an internal function to avoid excess use of the stack by recursive calls.
 		// It also helps the optimizer to reduce frame pointers.
@@ -696,20 +697,21 @@ void draw_func(Viewer &vw, double dt){
 			class WarDrawCallback : public ShadowMap::DrawCallback{
 			public:
 				const CoordSys *cs;
-				WarDrawCallback(const CoordSys *cs) : cs(cs){}
+				ShadowMap *shadowMap;
+				WarDrawCallback(const CoordSys *cs, ShadowMap *sm) : cs(cs), shadowMap(sm){}
 				void drawShadowMaps(Viewer &vw2){
 					cswardraw(&vw2, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
-					war_draw(vw2, pl.cs, &WarField::draw).shadowmap();
+					war_draw(vw2, pl.cs, &WarField::draw, 0, shadowMap).shadowmap();
 				}
 				void draw(Viewer &vw, GLuint shader, GLint textureLoc, GLint shadowmapLoc){
 					cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 					if(g_shader_enable)
-						war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
+						war_draw(vw, pl.cs, &WarField::draw, depthTextures[0], shadowMap).setShader(shader, textureLoc, shadowmapLoc);
 					else
-						war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]);
+						war_draw(vw, pl.cs, &WarField::draw, depthTextures[0], shadowMap);
 				}
 			};
-			shadowMap.drawShadowMaps(vw, g_light, WarDrawCallback(pl.cs));
+			shadowMap.drawShadowMaps(vw, g_light, WarDrawCallback(pl.cs, &shadowMap));
 		}
 		else{
 			cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);

@@ -81,9 +81,10 @@ GLuint ShadowMap::fbo = 0; ///< Framebuffer object
 GLuint ShadowMap::to = 0; ///< Texture object
 GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
 GLuint ShadowMap::shader = 0;
+static GLint additiveLoc = -1;
 
 /// Initializes shadow map textures
-ShadowMap::ShadowMap() : shadowing(false){
+ShadowMap::ShadowMap() : shadowing(false), additive(false){
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
@@ -221,6 +222,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 					shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 					shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+					additiveLoc = glGetUniformLocation(shader, "additive");
 				}
 			} while(0);
 
@@ -309,3 +311,14 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 	vw.shadowmap = NULL;
 }
 
+
+void ShadowMap::setAdditive(bool b){
+	additive = b;
+	if(0 <= additiveLoc){
+		glUniform1i(additiveLoc, b);
+	}
+}
+
+bool ShadowMap::getAdditive()const{
+	return additive;
+}

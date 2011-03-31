@@ -3,6 +3,8 @@
 #include "war.h"
 #include <gl/gl.h>
 
+class ShadowMap;
+
 /// Parameters when drawing a WarSpace.
 struct WarDraw{
 //	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
@@ -22,13 +24,14 @@ struct WarDraw{
 //	double gametime;
 //	double maprange;
 	int lightdraws; ///< Counter of drawing of lit objects
+	ShadowMap *shadowMap; ///< The shadow mapping object, non NULL if active.
 	bool shadowmapping; ///< Wheter this pass draws shadow map.
 	GLubyte texShadow; ///< The texture name for the shadow map.
 	GLuint shader; ///< GLSL shader unit name or 0 if not available.
 	GLint textureLoc; ///< GLSL location in shader for texture uniform value.
 	GLint shadowmapLoc;  ///< GLSL location in shader for shadowmap uniform value.
 	WarSpace *w; ///< Reference to the associated WarSpace.
-	WarDraw() : shadowmapping(false), texShadow(0), shader(0), textureLoc(0), shadowmapLoc(0){}
+	WarDraw() : shadowmapping(false), shadowMap(NULL), texShadow(0), shader(0), textureLoc(0), shadowmapLoc(0){}
 };
 
 typedef WarDraw war_draw_data;

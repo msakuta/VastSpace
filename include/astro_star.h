@@ -15,6 +15,8 @@ public:
 	float subspect; ///< Fractional sub-spectral type is permitted
 	Star(){}
 	Star(const char *name, CoordSys *cs);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual const Static &getStatic()const{return classRegister;}
 	static bool sq_define(HSQUIRRELVM);
 	static const ClassRegister<Star> classRegister;

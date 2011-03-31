@@ -380,6 +380,7 @@ bool ContainerHead::buildBody(){
 		WarSpace *ws = w ? *w : NULL;
 		if(ws){
 			ws->bdw->addRigidBody(bbody, 1, ~2);
+			setPosition(&pos, &rot, &this->velo, &omg);
 			return true;
 		}
 	}
@@ -625,12 +626,14 @@ void TransportAI::serialize(SerializeContext &sc){
 	sc.o << phase;
 	sc.o << docksite;
 	sc.o << leavesite;
+	dockAI.serialize(sc);
 }
 
 void TransportAI::unserialize(UnserializeContext &sc){
 	sc.i >> (int&)phase;
 	sc.i >> docksite;
 	sc.i >> leavesite;
+	dockAI.unserialize(sc);
 }
 
 const unsigned TransportAI::classid = registerClass("TransportAI", Conster<TransportAI>);

@@ -111,11 +111,17 @@ void Island3::init(){
 void Island3::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << ent;
+	sc.o << gases;
+	sc.o << solids;
+	sc.o << people;
 }
 
 void Island3::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> ent;
+	sc.i >> gases;
+	sc.i >> solids;
+	sc.i >> people;
 }
 
 void Island3::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){

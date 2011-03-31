@@ -109,6 +109,7 @@ void SpacePlane::unserialize(UnserializeContext &sc){
 	if(w && (ws = (WarSpace*)w)){
 		buildBody();
 		ws->bdw->addRigidBody(bbody, 1, ~2);
+		setPosition(&pos, &rot, &this->velo, &omg);
 		for(int i = 0; i < numof(pf); i++)
 			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
 	}

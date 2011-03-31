@@ -573,6 +573,18 @@ bool Astrobj::sq_define(HSQUIRRELVM v){
 
 Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown), subspect(0){ absmag = 0; }
 
+void Star::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << spect;
+	sc.o << subspect;
+}
+
+void Star::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> (int&)spect;
+	sc.i >> subspect;
+}
+
 const ClassRegister<Star> Star::classRegister("Star", sq_define);
 
 int Star::sqf_get(HSQUIRRELVM v){

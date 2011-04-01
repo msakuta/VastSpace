@@ -3,9 +3,6 @@ uniform sampler2D texture2;
 //uniform samplerCube envmap;
 uniform mat3 invEyeRot3x3;
 uniform sampler2D nrmmap;
-uniform sampler2DShadow shadowmap;
-uniform sampler2DShadow shadowmap2;
-uniform sampler2DShadow shadowmap3;
 uniform float ambient;
 uniform int additive;
  
@@ -13,6 +10,8 @@ varying vec3 view;
 //varying vec3 nrm;
 varying float diffuse;
 //varying vec4 col;
+
+float shadowMapIntensity();
 
 void main (void)
 {
@@ -27,25 +26,9 @@ void main (void)
 
 //	float diffuse = max(0., dot(flight, fnormal));
 
-	vec4 shadow;
-	if(	   0.001 < gl_TexCoord[4].x && gl_TexCoord[4].x < 0.999
-		&& 0.001 < gl_TexCoord[4].y && gl_TexCoord[4].y < 0.999
-		&& 0.001 < gl_TexCoord[4].z && gl_TexCoord[4].z < 0.999)
-		shadow = shadow2DProj(shadowmap3, gl_TexCoord[4]);
-	else if(0.001 < gl_TexCoord[3].x && gl_TexCoord[3].x < 0.999
-		&& 0.001 < gl_TexCoord[3].y && gl_TexCoord[3].y < 0.999
-		&& 0.001 < gl_TexCoord[3].z && gl_TexCoord[3].z < 0.999)
-		shadow = shadow2DProj(shadowmap2, gl_TexCoord[3]);
-	else{
-		float shadowedge = min(gl_TexCoord[2].x, 1. - gl_TexCoord[2].x);
-		shadowedge = min(shadowedge, min(gl_TexCoord[2].y, 1. - gl_TexCoord[2].y));
-		shadowedge = min(shadowedge, min(gl_TexCoord[2].z, 1. - gl_TexCoord[2].z));
-		shadowedge = 1. - min(1., 10. * shadowedge);
-		shadow = shadow2DProj(shadowmap, gl_TexCoord[2]) * (1. - shadowedge) + shadowedge;
-	}
+	float shadow = shadowMapIntensity();
 
-
-	vec3 lightProduct = (shadow[3] * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse
+	vec3 lightProduct = (shadow * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse
 			+ gl_FrontLightProduct[0].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 

@@ -15,14 +15,13 @@
 #endif
 #include <gl/GL.h>
 
-/// A class to support shadow drawing with shadow mapping technique.
+/// \brief A class to support shadow drawing with shadow mapping technique.
 ///
 /// It depends on several OpenGL extensions.
 class EXPORT ShadowMap{
 	static GLuint fbo;
 	static GLuint to;
 	static GLuint depthTextures[3];
-	static GLuint shader;
 	bool shadowing;
 	bool additive;
 public:

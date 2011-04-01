@@ -68,6 +68,46 @@ static bool checkFramebufferStatus()
     }
 }
 
+/// \brief A class that binds shader object name with location indices.
+///
+/// The specification of location names are specific to this ShadowMap class's use.
+struct ShaderBind{
+	GLuint shader;
+	GLint textureLoc;
+	GLint texture2Loc;
+	GLint shadowmapLoc;
+	GLint shadowmap2Loc;
+	GLint shadowmap3Loc;
+	ShaderBind(GLuint shader = 0) :
+		shader(shader),
+		textureLoc(-1),
+		texture2Loc(-1),
+		shadowmapLoc(-1),
+		shadowmap2Loc(-1),
+		shadowmap3Loc(-1){}
+
+	void getUniformLocations(){
+		textureLoc = glGetUniformLocation(shader, "texture");
+		texture2Loc = glGetUniformLocation(shader, "texture2");
+		shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
+		shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
+		shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+	}
+
+	void use(){
+		glUseProgram(shader);
+		glUniform1i(textureLoc, 0);
+		glUniform1i(texture2Loc, 1);
+		glUniform1i(shadowmapLoc, 2);
+		glUniform1i(shadowmap2Loc, 3);
+		glUniform1i(shadowmap3Loc, 4);
+	}
+};
+static ShaderBind shaderBind;
+static ShaderBind additiveShaderBind;
+
+
+
 #if 0
 #include "ShadowHelper.h"
 #else
@@ -80,7 +120,6 @@ GLuint ShadowMap::fbo = 0; ///< Framebuffer object
 //GLuint ShadowMap::rboId = 0; ///< Renderbuffer object
 GLuint ShadowMap::to = 0; ///< Texture object
 GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
-GLuint ShadowMap::shader = 0;
 static GLint additiveLoc = -1;
 
 /// Initializes shadow map textures
@@ -133,8 +172,9 @@ ShadowMap::ShadowMap() : shadowing(false), additive(false){
 }
 
 GLuint ShadowMap::getShader()const{
-	return shader;
+	return shaderBind.shader;
 }
+
 
 /// Actually draws shadow maps and the scene.
 void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &drawcallback){
@@ -193,11 +233,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 		glViewport(0, 0, vw.vp.w, vw.vp.h);
 				
 		if(shadowok){
-			static GLint textureLoc = -1;
-			static GLint texture2Loc = -1;
-			static GLint shadowmapLoc = -1;
-			static GLint shadowmap2Loc = -1;
-			static GLint shadowmap3Loc = -1;
+
 			if(!g_shader_enable){
 				glPushAttrib(GL_LIGHTING_BIT);
 	//			glDisable(GL_LIGHT0);
@@ -214,15 +250,18 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
 					if(!glsl_load_shader(vtx, "shaders/shadowmap.vs") || !glsl_load_shader(frg, "shaders/shadowmap.fs"))
 						break;
-					shader = glsl_register_program(shaders, 2);
-					if(!shader)
+					shaderBind.shader = glsl_register_program(shaders, 2);
+					if(!shaderBind.shader)
 						break;
-					textureLoc = glGetUniformLocation(shader, "texture");
-					texture2Loc = glGetUniformLocation(shader, "texture2");
-					shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
-					shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
-					shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
-					additiveLoc = glGetUniformLocation(shader, "additive");
+					shaderBind.getUniformLocations();
+
+					vtx = glCreateShader(GL_VERTEX_SHADER), frg = glCreateShader(GL_FRAGMENT_SHADER);
+					if(!glsl_load_shader(vtx, "shaders/additiveshadowmap.vs") || !glsl_load_shader(frg, "shaders/additiveshadowmap.fs"))
+						break;
+					additiveShaderBind.shader = glsl_register_program(shaders, 2);
+					if(!additiveShaderBind.shader)
+						break;
+					additiveShaderBind.getUniformLocations();
 				}
 			} while(0);
 
@@ -276,12 +315,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					Mat4d itrans = vw.irot;
 					itrans.vec3(3) = vw.pos;
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
-					glUseProgram(shader);
-					glUniform1i(textureLoc, 0);
-					glUniform1i(texture2Loc, 1);
-					glUniform1i(shadowmapLoc, 2);
-					glUniform1i(shadowmap2Loc, 3);
-					glUniform1i(shadowmap3Loc, 4);
+					shaderBind.use();
 					glDisable(GL_ALPHA_TEST);
 				}
 			}
@@ -291,7 +325,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glDepthFunc(GL_LEQUAL);
 
 			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
-			drawcallback.draw(vw, shader, textureLoc, shadowmapLoc);
+			drawcallback.draw(vw, shaderBind.shader, shaderBind.textureLoc, shaderBind.shadowmapLoc);
 	/*		if(g_shader_enable)
 				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
 			else
@@ -314,9 +348,11 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 void ShadowMap::setAdditive(bool b){
 	additive = b;
-	if(0 <= additiveLoc){
-		glUniform1i(additiveLoc, b);
+	if(additive){
+		additiveShaderBind.use();
 	}
+	else
+		shaderBind.use();
 }
 
 bool ShadowMap::getAdditive()const{

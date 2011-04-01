@@ -398,12 +398,8 @@ void SpacePlane::draw(WarDraw *wd){
 
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
-		GLint additiveLoc = -1;
-		if(wd->shader){
-			additiveLoc = glGetUniformLocation(wd->shader, "additive");
-			if(0 <= additiveLoc)
-				glUniform1i(additiveLoc, 1);
-		}
+		if(wd->shadowMap)
+			wd->shadowMap->setAdditive(true);
 
 		glPushMatrix();
 		glScaled(scale, scale, scale);
@@ -413,11 +409,8 @@ void SpacePlane::draw(WarDraw *wd){
 
 		glPopMatrix();
 
-		if(wd->shader && 0 <= additiveLoc)
-			glUniform1i(additiveLoc, 0);
-
-//		if(wd->shadowMap)
-//			wd->shadowMap->setAdditive(false);
+		if(wd->shadowMap)
+			wd->shadowMap->setAdditive(false);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}

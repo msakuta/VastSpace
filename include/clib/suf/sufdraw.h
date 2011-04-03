@@ -24,13 +24,23 @@ typedef struct sufdecal_s{
 	void *p[1];
 } sufdecal_t;
 
+/// A internal structure to store texture unit and its initialization methods.
+struct suftexlist{
+	GLuint list; ///< OpenGL list executed when the beginning of texture
+	GLuint tex[2]; ///< Texture names for each multitexture
+	double scale; ///< Scale of the second texture (for detail texturing)
+	void (*onBeginTexture)(void *data); ///< Called just before the texture is activated
+	void *onBeginTextureData; ///< Argument for onBeginTexture
+	void (*onInitedTexture)(void *data); ///< Called just after the texture is initialized
+	void *onInitedTextureData; ///< Argument for onInitedTexture
+	void (*onEndTexture)(void *data); ///< Called when the texture unit is ended.
+	void *onEndTextureData; ///< Argument for onEndTexture
+};
+
+/// A cached object that maps an instance of suf_t and its textures.
 typedef struct suftex_s{
 	unsigned n;
-	struct suftexlist{
-		GLuint list; /* OpenGL list indices */
-		GLuint tex[2];
-		double scale;
-	} a[1];
+	struct suftexlist a[1];
 } suftex_t;
 
 CLIB_SUFDRAW_EXPORT extern sufdecal_t *AllocSUFDecal(const suf_t *);
@@ -38,11 +48,11 @@ CLIB_SUFDRAW_EXPORT extern void FreeSUFDecal(sufdecal_t *);
 CLIB_SUFDRAW_EXPORT extern void AddSUFDecal(sufdecal_t *, sufindex ip, void *);
 CLIB_SUFDRAW_EXPORT extern void DecalDrawSUF(const suf_t*, unsigned long flags, struct gldCache *c, const suftex_t *tex, sufdecal_t *, void *global_var);
 
-/// the mechanism to avoid multiple list compilation of the same texture.
+/// The mechanism to avoid multiple list compilation of the same texture.
 struct suftexcache{
 	char *name;
 	GLuint list;
-	GLuint tex[2]; ///< texture names for each multitexture
+	GLuint tex[2]; ///< Texture names for each multitexture
 };
 
 const struct suftexcache *FindTexCache(const char *name);

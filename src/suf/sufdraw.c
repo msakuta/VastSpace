@@ -251,7 +251,8 @@ void EndFrameSUF(void){
 void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, const suftex_t *tex, sufdecal_t *sd, void *sdg){
 	int i;
 	unsigned k;
-	sufindex last = SUFINDEX_MAX, ai = SUFINDEX_MAX;
+	sufindex last = SUFINDEX_MAX;
+	sufindex ai = SUFINDEX_MAX;
 	assert(suf);
 	for(i = k = 0; i < suf->np; i++){
 		struct suf_poly_t *p = &suf->p[i]->p;
@@ -274,6 +275,8 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
 			if(tex && flags & SUF_TEX){
 				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
+				if(ai != last && last != SUFINDEX_MAX && tex->a[last].onEndTexture)
+					tex->a[last].onEndTexture(tex->a[last].onEndTextureData);
 				if(atr->valid & SUF_TEX){
 					if(mismatch){
 						if(tex->a[ai].list == 0){
@@ -285,7 +288,11 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 							timemeas_t tm;
 							double t;
 							TimeMeasStart(&tm);
+							if(tex->a[ai].onBeginTexture)
+								tex->a[ai].onBeginTexture(tex->a[ai].onBeginTextureData);
 							glCallList(tex->a[ai].list);
+							if(tex->a[ai].onInitedTexture)
+								tex->a[ai].onInitedTexture(tex->a[ai].onInitedTextureData);
 /*							if(glActiveTextureARB){
 								glActiveTextureARB(GL_TEXTURE0_ARB);
 								glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
@@ -353,7 +360,10 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 		}
 		else
 			polydraw(suf, flags, c, i, &last, tex);
+		last = ai;
 	}
+	if(tex->a[ai].onEndTexture)
+		tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
 /*	if(ai != USHRT_MAX)
 		glPopAttrib();*/
 }
@@ -495,7 +505,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 				tex4[pos][0] = src[pos][2];
 				tex4[pos][1] = src[pos][1];
 				tex4[pos][2] = src[pos][0];
-				tex4[pos][3] = alphatex ? alphasrc[pos] : stp->transparentColor == tex4[pos][0] | (tex4[pos][1] << 8) | (tex4[pos][2] << 16) ? 0 : 255;
+				tex4[pos][3] = alphatex ? alphasrc[pos] : stp->transparentColor == (tex4[pos][0] | (tex4[pos][1] << 8) | (tex4[pos][2] << 16)) ? 0 : 255;
 			}
 		}
 		else{
@@ -729,18 +739,33 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		const char *name = texes && i < ntexes && texes[i] ? texes[i] : suf->a[i].colormap;
 		k = i;
 		if(!(suf->a[i].valid & SUF_TEX) || !name){
-			ret->a[k].list = 0;
-			ret->a[k].tex[0] = 0;
-			ret->a[k].tex[1] = 0;
+			struct suftexlist *s = &ret->a[k];
+			s->list = 0;
+			s->tex[0] = 0;
+			s->tex[1] = 0;
+			s->scale = 1.;
+			s->onBeginTexture = NULL;
+			s->onBeginTextureData = NULL;
+			s->onInitedTexture = NULL;
+			s->onInitedTextureData = NULL;
+			s->onEndTexture = NULL;
+			s->onEndTextureData = NULL;
 			continue;
 		}
 
 		/* if we have already compiled the texture into a list, reuse it */
 		for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
-			ret->a[k].list = gstc[j].list;
-			ret->a[k].tex[0] = gstc[j].tex[0];
-			ret->a[k].tex[1] = gstc[j].tex[1];
-			ret->a[k].scale = 1.;
+			struct suftexlist *s = &ret->a[k];
+			s->list = gstc[j].list;
+			s->tex[0] = gstc[j].tex[0];
+			s->tex[1] = gstc[j].tex[1];
+			s->scale = 1.;
+			s->onBeginTexture = NULL;
+			s->onBeginTextureData = NULL;
+			s->onInitedTexture = NULL;
+			s->onInitedTextureData = NULL;
+			s->onEndTexture = NULL;
+			s->onEndTextureData = NULL;
 			break;
 		}
 

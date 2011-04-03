@@ -11,6 +11,11 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
+struct AttackerTextureParams{
+	Attacker *p;
+	WarDraw *wd;
+};
+
 void Attacker::draw(wardraw_t *wd){
 	static suf_t *sufbase, *sufbridge;
 	static suftex_t *pst, *pstbridge;
@@ -46,10 +51,14 @@ void Attacker::draw(wardraw_t *wd){
 	} while(0);
 
 	if(sufbase){
+		AttackerTextureParams atp;
+		atp.p = this;
+		atp.wd = wd;
+
 		// This values could change every frame, so we assign them here.
 		for(int i = 0; i < pst->n; i++) if(pst->a[i].tex[1]){
-			pst->a[i].onBeginTextureData = wd->shadowMap;
-			pst->a[i].onEndTextureData = wd->shadowMap;
+			pst->a[i].onBeginTextureData = &atp;
+			pst->a[i].onEndTextureData = &atp;
 		}
 
 		double scale = .001;
@@ -118,13 +127,16 @@ void Attacker::drawOverlay(wardraw_t *){
 
 
 void Attacker::onBeginTexture(void *pv){
-	ShadowMap *shadowMap = (ShadowMap*)pv;
-	if(shadowMap)
-		shadowMap->setAdditive(true);
+	AttackerTextureParams *p = (AttackerTextureParams*)pv;
+	if(p && p->wd && p->wd->shadowMap){
+		p->wd->shadowMap->setAdditive(true);
+		const AdditiveShaderBind *asb = p->wd->shadowMap->getAdditive();
+		asb->setIntensity(p->p->engineHeat);
+	}
 }
 
 void Attacker::onEndTexture(void *pv){
-	ShadowMap *shadowMap = (ShadowMap*)pv;
-	if(shadowMap)
-		shadowMap->setAdditive(false);
+	AttackerTextureParams *p = (AttackerTextureParams*)pv;
+	if(p && p->wd && p->wd->shadowMap)
+		p->wd->shadowMap->setAdditive(false);
 }

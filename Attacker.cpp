@@ -11,8 +11,10 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "serial_util.h"
+#include "motion.h"
 extern "C"{
-#include <clib/gl/gldraw.h>
+#include <clib/cfloat.h>
+#include <clib/mathdef.h>
 }
 
 
@@ -30,9 +32,9 @@ const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 const unsigned Attacker::entityid = registerEntity("Attacker", new Constructor<Attacker>);
 
-Attacker::Attacker() : justLoaded(true), docker(NULL){}
+Attacker::Attacker() : justLoaded(true), docker(NULL), engineHeat(0){}
 
-Attacker::Attacker(WarField *aw) : st(aw), justLoaded(false), docker(new AttackerDocker(this)){
+Attacker::Attacker(WarField *aw) : st(aw), justLoaded(false), docker(new AttackerDocker(this)), engineHeat(0){
 	static_init();
 	init();
 	static int count = 0;
@@ -84,6 +86,7 @@ void Attacker::anim(double dt){
 	docker->anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
+	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

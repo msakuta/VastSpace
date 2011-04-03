@@ -4,8 +4,8 @@ uniform sampler2D texture2;
 uniform mat3 invEyeRot3x3;
 uniform sampler2D nrmmap;
 uniform float ambient;
-uniform int additive;
- 
+uniform float intensity;
+
 varying vec3 view;
 //varying vec3 nrm;
 varying float diffuse;
@@ -32,8 +32,8 @@ void main (void)
 			+ gl_FrontLightProduct[0].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
-//	vec4 texColor = shadow;
-	vec4 texColor = gl_TextureEnvColor[0].x < .5 ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
+	// Assume texture unit 0 is always present, because if not it doesn't make sense to use add blended texture.
+	vec4 texColor = vec4(intensity * texture2D(texture, vec2(gl_TexCoord[0])).xyz, 1);
 
 	texColor.xyz = (gl_FrontMaterial.emission.xyz + texColor.xyz) + (vec3(1,1,1) - (gl_FrontMaterial.emission.xyz) + texColor.xyz)
 		* min(vec3(1,1,1), lightProduct);

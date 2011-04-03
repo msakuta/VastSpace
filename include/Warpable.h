@@ -41,6 +41,7 @@ public:
 	CoordSys *warpcs, *warpdstcs;
 //	WarField *warp_next_warf;
 	enum sship_task task;
+	int direction;
 
 	Warpable(){}
 	Warpable(WarField *w);

@@ -13,6 +13,8 @@ class Attacker : public Warpable{
 	AttackerDocker *docker;
 	ArmBase **turrets;
 	bool justLoaded; ///< A flag indicates this object is just loaded from a save file.
+	float engineHeat; ///< Integration of direction & PL_W
+
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 public:

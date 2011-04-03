@@ -68,43 +68,41 @@ static bool checkFramebufferStatus()
     }
 }
 
-/// \brief A class that binds shader object name with location indices.
-///
-/// The specification of location names are specific to this ShadowMap class's use.
-struct ShaderBind{
-	GLuint shader;
-	GLint textureLoc;
-	GLint texture2Loc;
-	GLint shadowmapLoc;
-	GLint shadowmap2Loc;
-	GLint shadowmap3Loc;
-	ShaderBind(GLuint shader = 0) :
-		shader(shader),
-		textureLoc(-1),
-		texture2Loc(-1),
-		shadowmapLoc(-1),
-		shadowmap2Loc(-1),
-		shadowmap3Loc(-1){}
 
-	void getUniformLocations(){
-		textureLoc = glGetUniformLocation(shader, "texture");
-		texture2Loc = glGetUniformLocation(shader, "texture2");
-		shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
-		shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
-		shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
-	}
+void ShaderBind::getUniformLocations(){
+	textureLoc = glGetUniformLocation(shader, "texture");
+	texture2Loc = glGetUniformLocation(shader, "texture2");
+	shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
+	shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
+	shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+}
 
-	void use(){
-		glUseProgram(shader);
-		glUniform1i(textureLoc, 0);
-		glUniform1i(texture2Loc, 1);
-		glUniform1i(shadowmapLoc, 2);
-		glUniform1i(shadowmap2Loc, 3);
-		glUniform1i(shadowmap3Loc, 4);
-	}
-};
+void ShaderBind::use(){
+	glUseProgram(shader);
+	glUniform1i(textureLoc, 0);
+	glUniform1i(texture2Loc, 1);
+	glUniform1i(shadowmapLoc, 2);
+	glUniform1i(shadowmap2Loc, 3);
+	glUniform1i(shadowmap3Loc, 4);
+}
+
+void AdditiveShaderBind::getUniformLocations(){
+	ShaderBind::getUniformLocations();
+	intensityLoc = glGetUniformLocation(shader, "intensity");
+}
+
+void AdditiveShaderBind::use(){
+	ShaderBind::use();
+	glUniform1f(intensityLoc, 0.f);
+}
+
+void AdditiveShaderBind::setIntensity(GLfloat inten)const{
+	glUniform1f(intensityLoc, inten);
+}
+
+
 static ShaderBind shaderBind;
-static ShaderBind additiveShaderBind;
+static AdditiveShaderBind additiveShaderBind;
 
 
 
@@ -369,6 +367,7 @@ void ShadowMap::setAdditive(bool b){
 		shaderBind.use();
 }
 
-bool ShadowMap::getAdditive()const{
-	return additive;
+const AdditiveShaderBind *ShadowMap::getAdditive()const{
+	return additive ? &additiveShaderBind : NULL;
 }
+

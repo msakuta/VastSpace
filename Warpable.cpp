@@ -619,6 +619,7 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 			}
 		}
 	}
+	direction = inputs.press;
 }
 
 void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){

@@ -15,6 +15,41 @@
 #endif
 #include <gl/GL.h>
 
+
+/// \brief A class that binds shader object name with location indices.
+///
+/// The specification of location names are specific to this ShadowMap class's use.
+struct EXPORT ShaderBind{
+	GLuint shader;
+	GLint textureLoc;
+	GLint texture2Loc;
+	GLint shadowmapLoc;
+	GLint shadowmap2Loc;
+	GLint shadowmap3Loc;
+	ShaderBind(GLuint shader = 0) :
+		shader(shader),
+		textureLoc(-1),
+		texture2Loc(-1),
+		shadowmapLoc(-1),
+		shadowmap2Loc(-1),
+		shadowmap3Loc(-1){}
+
+	void getUniformLocations();
+	void use();
+};
+
+struct EXPORT AdditiveShaderBind : ShaderBind{
+	GLint intensityLoc;
+	AdditiveShaderBind(GLuint shader = 0) : ShaderBind(0),
+		intensityLoc(-1){}
+
+	void getUniformLocations();
+	void use();
+	void setIntensity(GLfloat)const;
+};
+
+
+
 /// \brief A class to support shadow drawing with shadow mapping technique.
 ///
 /// It depends on several OpenGL extensions.
@@ -35,7 +70,7 @@ public:
 	GLuint getShader()const;
 	bool isDrawingShadow()const{return shadowing;}
 	void setAdditive(bool b);
-	bool getAdditive()const;
+	const AdditiveShaderBind *getAdditive()const;
 };
 
 

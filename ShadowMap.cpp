@@ -93,7 +93,7 @@ void AdditiveShaderBind::getUniformLocations(){
 
 void AdditiveShaderBind::use(){
 	ShaderBind::use();
-	glUniform1f(intensityLoc, 0.f);
+	glUniform1f(intensityLoc, 1.f);
 }
 
 void AdditiveShaderBind::setIntensity(GLfloat inten)const{

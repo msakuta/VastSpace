@@ -71,6 +71,7 @@ void SpacePlane::init(){
 	health = maxhealth();
 	mass = 2e7;
 	people = RandomSequence((unsigned long)this).next() % 100 + 100;
+	engineHeat = 0.f;
 
 	for(int i = 0; i < numof(pf); i++)
 		pf[i] = NULL;
@@ -230,6 +231,8 @@ void SpacePlane::anim(double dt){
 		MoveTefpol3D(pf[i], mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
 	}
 
+	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
+
 
 #if 0
 	if(p->pf){
@@ -329,10 +332,39 @@ void SpacePlane::draw(WarDraw *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
+	struct TextureParams{
+		SpacePlane *p;
+		WarDraw *wd;
+		static void onBeginTextureWindows(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd && p->wd->shadowMap)
+				p->wd->shadowMap->setAdditive(true);
+		}
+		static void onEndTextureWindows(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd && p->wd->shadowMap)
+				p->wd->shadowMap->setAdditive(false);
+		}
+		static void onBeginTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd && p->wd->shadowMap){
+				p->wd->shadowMap->setAdditive(true);
+				const AdditiveShaderBind *asb = p->wd->shadowMap->getAdditive();
+				asb->setIntensity(p->p->engineHeat);
+			}
+		}
+		static void onEndTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd && p->wd->shadowMap)
+				p->wd->shadowMap->setAdditive(false);
+		}
+	} tp = {this, wd};
+
 	static bool initialized = false;
 	static suf_t *sufs[2] = {NULL};
 	static VBO *vbo[2] = {NULL};
 	static suftex_t *pst[2] = {NULL};
+	static int engineAtrIndex = -1, windowsAtrIndex = -1;
 	if(!initialized){
 		static const char *names[] = {"models/spaceplane0.bin"};
 		suftexparam_t stp;
@@ -349,8 +381,29 @@ void SpacePlane::draw(WarDraw *wd){
 //			CacheSUFMaterials(sufs[i]);
 			pst[i] = AllocSUFTex(sufs[i]);
 		}
+		for(int i = 0; i < pst[0]->n; i++) if(!strcmp(sufs[0]->a[i].colormap, "engine2.bmp")){
+			engineAtrIndex = i;
+			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+		}
+		else if(!strcmp(sufs[0]->a[i].colormap, "spaceplane.bmp")){
+			windowsAtrIndex = i;
+			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureWindows;
+			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureWindows;
+		}
 		initialized = true;
 	}
+	if(pst[0]){
+		if(0 <= engineAtrIndex){
+			pst[0]->a[engineAtrIndex].onBeginTextureData = &tp;
+			pst[0]->a[engineAtrIndex].onEndTextureData = &tp;
+		}
+		if(0 <= windowsAtrIndex){
+			pst[0]->a[windowsAtrIndex].onBeginTextureData = &tp;
+			pst[0]->a[windowsAtrIndex].onEndTextureData = &tp;
+		}
+	}
+
 	static int drawcount = 0;
 	drawcount++;
 	{
@@ -398,8 +451,10 @@ void SpacePlane::draw(WarDraw *wd){
 
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
-		if(wd->shadowMap)
+/*		if(wd->shadowMap){
 			wd->shadowMap->setAdditive(true);
+			wd->shadowMap->getAdditive()->setIntensity(engineHeat);
+		}*/
 
 		glPushMatrix();
 		glScaled(scale, scale, scale);
@@ -409,8 +464,8 @@ void SpacePlane::draw(WarDraw *wd){
 
 		glPopMatrix();
 
-		if(wd->shadowMap)
-			wd->shadowMap->setAdditive(false);
+/*		if(wd->shadowMap)
+			wd->shadowMap->setAdditive(false);*/
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}

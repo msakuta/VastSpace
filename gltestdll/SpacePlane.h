@@ -26,6 +26,7 @@ protected:
 	float undocktime;
 	int people;
 	struct tent3d_fpol *pf[3]; ///< Trailing smoke
+	float engineHeat;
 	static const double sufscale;
 public:
 	SpacePlane(){init();}

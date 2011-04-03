@@ -216,9 +216,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
 			vw2.gc = &gc;
 	//			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, to, 0);
-			GLenum glerr20 = glGetError();
 	//				cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
-			GLenum glerr21 = glGetError();
 			shadowing = true; // Notify the callback implicitly that it's the shadow map texture pass.
 			drawcallback.drawShadowMaps(vw2);
 	//				war_draw(vw2, pl.cs, &WarField::draw).shadowmap();

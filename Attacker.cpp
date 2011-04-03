@@ -1,9 +1,8 @@
 /** \file
- * \brief Defines Attacker and AttackerDocker.
+ * \brief Implements Attacker and AttackerDocker.
  */
+#include "Attacker.h"
 #include "war.h"
-#include "Warpable.h"
-#include "material.h"
 #include "btadapt.h"
 #include "judge.h"
 #include "Docker.h"
@@ -15,67 +14,6 @@
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
-
-class AttackerDocker;
-
-/// A heavy assault ship with docking bay.
-class Attacker : public Warpable{
-	AttackerDocker *docker;
-	ArmBase **turrets;
-	bool justLoaded; ///< A flag indicates this object is just loaded from a save file.
-	static hardpoint_static *hardpoints;
-	static int nhardpoints;
-public:
-	typedef Warpable st;
-	static hitbox hitboxes[];
-	static const unsigned nhitboxes;
-	const char *classname()const;
-	static const unsigned classid, entityid;
-	Attacker();
-	Attacker(WarField *);
-	~Attacker();
-	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual void serialize(SerializeContext &sc);
-	virtual void unserialize(UnserializeContext &sc);
-	void static_init();
-	virtual void anim(double dt);
-	virtual void draw(wardraw_t *);
-	virtual void drawOverlay(wardraw_t *);
-	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	virtual bool command(EntityCommand *com);
-	virtual double hitradius()const;
-	virtual double maxhealth()const;
-	virtual double maxenergy()const;
-	virtual ArmBase *armsGet(int);
-	virtual int armsCount()const;
-	virtual const maneuve &getManeuve()const;
-	virtual Docker *getDockerInt();
-	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
-	virtual int takedamage(double damage, int hitpart);
-	virtual void enterField(WarField *);
-protected:
-	void buildBody();
-};
-
-class AttackerDocker : public Docker{
-public:
-	int nextport;
-	AttackerDocker(Entity *ae = NULL) : st(ae), nextport(0){}
-	typedef Docker st;
-	static const unsigned classid;
-	const char *classname()const;
-	virtual bool undock(Dockable *);
-	virtual Vec3d getPortPos()const;
-	virtual Quatd getPortRot()const;
-};
-
-
-
-
-
-
-
-
 
 
 
@@ -146,100 +84,6 @@ void Attacker::anim(double dt){
 	docker->anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
-}
-
-
-void Attacker::draw(wardraw_t *wd){
-	static suf_t *sufbase, *sufbridge;
-	static suftex_t *pst, *pstbridge;
-	static bool init = false;
-
-	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
-
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
-		return;
-
-	if(!init) do{
-		sufbase = CallLoadSUF("models/attack_body.bin");
-		if(!sufbase) break;
-		sufbridge = CallLoadSUF("models/attack_bridge.bin");
-//		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
-//		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
-		suftexparam_t stp;
-		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
-		stp.magfil = GL_LINEAR;
-		stp.minfil = GL_LINEAR;
-		stp.env = GL_ADD;
-		stp.mipmap = 0;
-		CallCacheBitmap5("attacker_engine.bmp", "models/attacker_engine_br.bmp", &stp, "models/attacker_engine.bmp", NULL);
-		CacheSUFMaterials(sufbase);
-		CacheSUFMaterials(sufbridge);
-		pst = AllocSUFTex(sufbase);
-		pstbridge = AllocSUFTex(sufbridge);
-		init = true;
-	} while(0);
-
-	if(sufbase){
-		double scale = .001;
-		Mat4d mat;
-
-		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
-		glPushMatrix();
-		transform(mat);
-		glMultMatrixd(mat);
-
-#if 0
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
-
-		glPushMatrix();
-		glScaled(-scale, scale, -scale);
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
-		glPushMatrix();
-		glScaled(-1,1,1);
-		glFrontFace(GL_CW);
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
-		glFrontFace(GL_CCW);
-		glPopMatrix();
-		DecalDrawSUF(sufbridge, SUF_ATR, NULL, pstbridge, NULL, NULL);
-		glPopMatrix();
-
-		glPopMatrix();
-		glPopAttrib();
-	}
-}
-
-void Attacker::drawOverlay(wardraw_t *){
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.15,  1.0);
-	glVertex2d(-.4,  1.0);
-	glVertex2d(-.5,  0.9);
-	glVertex2d(-.5,  0.2);
-	glVertex2d(-.9, -0.5);
-	glVertex2d(-.9, -0.7);
-	glVertex2d(-.5, -0.8);
-	glVertex2d(-.5, -0.9);
-	glVertex2d(-.2, -1.0);
-	glVertex2d( .2, -1.0);
-	glVertex2d( .5, -0.9);
-	glVertex2d( .5, -0.8);
-	glVertex2d( .9, -0.7);
-	glVertex2d( .9, -0.5);
-	glVertex2d( .5,  0.2);
-	glVertex2d( .5,  0.9);
-	glVertex2d( .4,  1.0);
-	glVertex2d( .15,  1.0);
-	glVertex2d( .15,  0.3);
-	glVertex2d(-.15,  0.3);
-	glEnd();
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

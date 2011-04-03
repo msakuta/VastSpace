@@ -548,6 +548,10 @@
 				Filter="../draw/*"
 				>
 				<File
+					RelativePath="..\draw\Attacker-Draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\Defender-Draw.cpp"
 					>
 				</File>
@@ -634,6 +638,10 @@
 			</File>
 			<File
 				RelativePath="..\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Attacker.h"
 				>
 			</File>
 			<File

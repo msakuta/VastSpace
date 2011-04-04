@@ -540,6 +540,15 @@ void WarDraw::setAdditive(bool b){
 	}
 }
 
+const ShaderBind *WarDraw::getShaderBind(){
+	if(!g_shader_enable)
+		return NULL;
+	else if(shadowMap)
+		return shadowMap->getShader();
+	else
+		return &additiveShaderBind;
+}
+
 const AdditiveShaderBind *WarDraw::getAdditiveShaderBind(){
 	if(!g_shader_enable)
 		return NULL;

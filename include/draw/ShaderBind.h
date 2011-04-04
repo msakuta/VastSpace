@@ -20,15 +20,20 @@
 /// The specification of location names are specific to this ShadowMap class's use.
 struct EXPORT ShaderBind{
 	GLuint shader;
+	GLint textureEnableLoc;
+	GLint texture2EnableLoc;
 	GLint textureLoc;
 	GLint texture2Loc;
 	ShaderBind(GLuint shader = 0) : shader(shader),
+		textureEnableLoc(-1),
+		texture2EnableLoc(-1),
 		textureLoc(-1),
 		texture2Loc(-1){}
 
-	void getUniformLocations();
+	virtual void getUniformLocations();
+	void use()const;
 protected:
-	void useInt();
+	virtual void useInt()const;
 };
 
 /// Binding of shadow mapping shader program.
@@ -44,9 +49,8 @@ struct EXPORT ShadowMapShaderBind : virtual ShaderBind{
 
 	void build();
 	void getUniformLocations();
-	void use();
 protected:
-	void useInt();
+	void useInt()const;
 };
 
 /// Binding of additive (brightness mapped) texturing shader program.
@@ -57,10 +61,9 @@ struct EXPORT AdditiveShaderBind : virtual ShaderBind{
 
 	void build();
 	void getUniformLocations();
-	void use();
 	void setIntensity(GLfloat)const;
 protected:
-	void useInt();
+	void useInt()const;
 };
 
 /// Binding of additive and shadow mapped shader program.
@@ -70,9 +73,8 @@ struct AdditiveShadowMapShaderBind : ShadowMapShaderBind, AdditiveShaderBind{
 
 	void build();
 	void getUniformLocations();
-	void use();
 protected:
-	void useInt();
+	void useInt()const;
 };
 
 

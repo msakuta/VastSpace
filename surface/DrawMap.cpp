@@ -11,6 +11,7 @@
 #include "cmd.h"
 #include "glsl.h"
 #include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 //#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>
@@ -888,8 +889,10 @@ void DrawMap::runDrawMap(){
 	running = 0;
 #endif
 
-	if(shaderUsed)
-		glUseProgram(vw.shadowmap->getShader());
+	if(shaderUsed){
+		const ShaderBind *sb = vw.shadowmap->getShader();
+		sb->use();
+	}
 
 	glBindTexture(GL_TEXTURE_2D, oldtex);
 

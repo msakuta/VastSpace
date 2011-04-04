@@ -71,11 +71,20 @@ static bool checkFramebufferStatus()
 
 
 void ShaderBind::getUniformLocations(){
+	textureEnableLoc = glGetUniformLocation(shader, "textureEnable");
+	texture2EnableLoc = glGetUniformLocation(shader, "texture2Enable");
 	textureLoc = glGetUniformLocation(shader, "texture");
 	texture2Loc = glGetUniformLocation(shader, "texture2");
 }
 
-void ShaderBind::useInt(){
+void ShaderBind::use()const{
+	glUseProgram(shader);
+	useInt();
+}
+
+void ShaderBind::useInt()const{
+	glUniform1i(textureEnableLoc, 1);
+	glUniform1i(texture2EnableLoc, 1);
 	glUniform1i(textureLoc, 0);
 	glUniform1i(texture2Loc, 1);
 }
@@ -106,12 +115,7 @@ void ShadowMapShaderBind::getUniformLocations(){
 	shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
 }
 
-void ShadowMapShaderBind::use(){
-	glUseProgram(shader);
-	useInt();
-}
-
-void ShadowMapShaderBind::useInt(){
+void ShadowMapShaderBind::useInt()const{
 	ShaderBind::useInt();
 	glUniform1i(shadowmapLoc, 2);
 	glUniform1i(shadowmap2Loc, 3);
@@ -138,12 +142,7 @@ void AdditiveShaderBind::getUniformLocations(){
 	intensityLoc = glGetUniformLocation(shader, "intensity");
 }
 
-void AdditiveShaderBind::use(){
-	glUseProgram(shader);
-	useInt();
-}
-
-void AdditiveShaderBind::useInt(){
+void AdditiveShaderBind::useInt()const{
 	ShaderBind::useInt();
 	glUniform1f(intensityLoc, .5f);
 }
@@ -176,8 +175,7 @@ void AdditiveShadowMapShaderBind::getUniformLocations(){
 	AdditiveShaderBind::getUniformLocations();
 }
 
-void AdditiveShadowMapShaderBind::use(){
-	glUseProgram(shader);
+void AdditiveShadowMapShaderBind::useInt()const{
 	ShadowMapShaderBind::useInt();
 	AdditiveShaderBind::useInt();
 }
@@ -252,8 +250,8 @@ ShadowMap::ShadowMap() : shadowing(false), additive(false){
 	}
 }
 
-GLuint ShadowMap::getShader()const{
-	return shaderBind.shader;
+const ShaderBind *ShadowMap::getShader()const{
+	return &shaderBind;
 }
 
 

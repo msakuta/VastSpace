@@ -1,5 +1,7 @@
 uniform sampler2D texture;
 uniform sampler2D texture2;
+uniform bool textureEnable;
+uniform bool texture2Enable;
 //uniform samplerCube envmap;
 uniform mat3 invEyeRot3x3;
 uniform sampler2D nrmmap;
@@ -33,7 +35,7 @@ void main (void)
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
 //	vec4 texColor = shadow;
-	vec4 texColor = gl_TextureEnvColor[0].x < .5 ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
+	vec4 texColor = !textureEnable ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
 
 	// Apply the second texture
 	if(.5 < gl_TextureEnvColor[0].y)

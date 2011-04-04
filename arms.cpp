@@ -19,6 +19,8 @@
 #include "draw/effects.h"
 #include "motion.h"
 #include "draw/WarDraw.h"
+#include "draw/ShaderBind.h"
+#include "glsl.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -293,6 +295,8 @@ void MTurret::draw(wardraw_t *wd){
 			0,0,0,1,
 		};
 
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 0);
 		glPushMatrix();
 		gldTranslate3dv(pos);
 		gldMultQuat(rot);
@@ -312,6 +316,8 @@ void MTurret::draw(wardraw_t *wd){
 			DrawSUF(suf_barrel, SUF_ATR, NULL);
 		}
 		glPopMatrix();
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 1);
 	}
 }
 
@@ -656,6 +662,8 @@ void GatlingTurret::draw(wardraw_t *wd){
 			0,0,0,1,
 		};
 
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 0);
 		glPushMatrix();
 		gldTranslate3dv(pos);
 		gldMultQuat(rot);
@@ -678,6 +686,8 @@ void GatlingTurret::draw(wardraw_t *wd){
 			DrawSUF(suf_barrels, SUF_ATR, NULL);
 		}
 		glPopMatrix();
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 1);
 	}
 }
 
@@ -812,6 +822,8 @@ void LTurret::draw(wardraw_t *wd){
 		0,0,0,1,
 	};
 
+	if(const ShaderBind *sb = wd->getShaderBind())
+		glUniform1i(sb->textureEnableLoc, 0);
 	glPushMatrix();
 	gldTranslate3dv(pos);
 	gldMultQuat(rot);
@@ -833,6 +845,8 @@ void LTurret::draw(wardraw_t *wd){
 		glPopMatrix();
 	}
 	glPopMatrix();
+	if(const ShaderBind *sb = wd->getShaderBind())
+		glUniform1i(sb->textureEnableLoc, 1);
 }
 
 void LTurret::drawtra(wardraw_t *wd){

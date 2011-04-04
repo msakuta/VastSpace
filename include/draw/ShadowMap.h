@@ -15,6 +15,7 @@
 #endif
 #include <gl/GL.h>
 
+struct ShaderBind;
 struct AdditiveShaderBind;
 
 /// \brief A class to support shadow drawing with shadow mapping technique.
@@ -34,7 +35,7 @@ public:
 	};
 	ShadowMap();
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
-	GLuint getShader()const;
+	const ShaderBind *getShader()const;
 	bool isDrawingShadow()const{return shadowing;}
 	void setAdditive(bool b);
 	const AdditiveShaderBind *getAdditive()const;

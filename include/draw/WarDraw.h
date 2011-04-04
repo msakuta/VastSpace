@@ -41,6 +41,7 @@ struct EXPORT WarDraw{
 
 	static void init();
 	void setAdditive(bool);
+	const ShaderBind *getShaderBind();
 	const AdditiveShaderBind *getAdditiveShaderBind();
 };
 

@@ -18,6 +18,7 @@
 #include "bitmap.h"
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 #include "glw/popup.h"
 #include "serial_util.h"
 extern "C"{
@@ -715,8 +716,11 @@ void Island3::draw(const Viewer *vw){
 		const Viewer *vw;
 		ShaderReserver(const Viewer *vw) : vw(vw){}
 		~ShaderReserver(){
-			if(vw->shadowmap)
-				glUseProgram(vw->shadowmap->getShader());
+			if(vw->shadowmap){
+				const ShaderBind *shaderBind = vw->shadowmap->getShader();
+				if(shaderBind)
+					shaderBind->use();
+			}
 		}
 	} sr(vw);
 	if(vw->shadowmap)

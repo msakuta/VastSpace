@@ -10,7 +10,7 @@
 #include "bitmap.h"
 #include "cmd.h"
 #include "glsl.h"
-#include "ShadowMap.h"
+#include "draw/ShadowMap.h"
 //#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>

@@ -5,7 +5,7 @@
 #include "../material.h"
 #include "effects.h"
 #include "draw/WarDraw.h"
-#include "ShadowMap.h"
+#include "draw/ShaderBind.h"
 #include "motion.h"
 extern "C"{
 #include <clib/gl/gldraw.h>

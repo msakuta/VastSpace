@@ -2,7 +2,8 @@
  * \brief Implementation of ShadowMap class.
  */
 
-#include "ShadowMap.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 
 #include "glstack.h"
 #include "glsl.h"

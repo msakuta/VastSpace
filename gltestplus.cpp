@@ -37,7 +37,8 @@
 #include "EntityCommand.h"
 #include "astro_star.h"
 #include "draw/WarDraw.h"
-#include "ShadowMap.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 
 extern "C"{
 #include <clib/timemeas.h>

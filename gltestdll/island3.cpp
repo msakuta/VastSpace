@@ -17,7 +17,7 @@
 #include "judge.h"
 #include "bitmap.h"
 #include "draw/WarDraw.h"
-#include "ShadowMap.h"
+#include "draw/ShadowMap.h"
 #include "glw/popup.h"
 #include "serial_util.h"
 extern "C"{

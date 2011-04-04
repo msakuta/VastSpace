@@ -868,10 +868,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\ShadowMap.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\shield.h"
 				>
 			</File>
@@ -907,6 +903,14 @@
 				Name="draw"
 				Filter="../include/draw/*"
 				>
+				<File
+					RelativePath="..\include\draw\ShaderBind.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\draw\ShadowMap.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\draw\WarDraw.h"
 					>

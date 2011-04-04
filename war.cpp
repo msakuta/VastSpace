@@ -11,7 +11,8 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "draw/WarDraw.h"
-#include "ShadowMap.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 #include "glsl.h"
 extern "C"{
 #include <clib/mathdef.h>

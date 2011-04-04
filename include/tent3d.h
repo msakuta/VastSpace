@@ -1,8 +1,15 @@
 #ifndef TENT3D_H
 #define TENT3D_H
 
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include <clib/colseq/color.h>
 #include <clib/colseq/cs.h>
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef __cplusplus
 #include <cpplib/vec3.h>
 #include <cpplib/mat4.h>
@@ -91,6 +98,7 @@ struct tent3d_line_drawdata{
 	GLcull *pgc;
 };
 struct tent3d_fpol_list;
+struct glcull;
 
 EXPORT struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
 EXPORT struct tent3d_line_list *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */

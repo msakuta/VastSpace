@@ -512,7 +512,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\tefpol3d.c"
+				RelativePath="..\tefpol3d.cpp"
 				>
 			</File>
 			<File

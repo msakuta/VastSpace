@@ -1,10 +1,12 @@
 #include "tent3d.h"
 #include "tent3d_p.h"
+extern "C"{
 #include <clib/avec3.h>
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
 #include <clib/gl/cull.h>
 #include <clib/rseq.h>
+}
 #include <math.h>
 #include <assert.h>
 #include <stddef.h>
@@ -54,7 +56,7 @@ typedef struct tent3d_fpol{
 	unsigned long flags; /* entity options */
 	unsigned cnt; /* generated trail node count */
 	struct te_vertex *head, *tail; /* polyline's */
-	struct te_followpolyline *next;
+	struct tent3d_fpol *next;
 } tefpol_t;
 
 /* a tefpol can have arbitrary number of vertices in the vertices buffer. */
@@ -64,16 +66,18 @@ typedef struct te_vertex{
 	struct te_vertex *next;
 } tevert_t;
 
+struct te_fpol_extra_list{
+	struct te_fpol_extra_list *next;
+	tefpol_t l[1]; /* variable */
+};
+
 typedef struct tent3d_fpol_list{
 	unsigned m;
 	unsigned ml;
 	unsigned mex;
 	tefpol_t *l;
 	tefpol_t *lfree, *lactv, *last;
-	struct te_fpol_extra_list{
-		struct te_fpol_extra_list *next;
-		tefpol_t l[1]; /* variable */
-	} *ex;
+	te_fpol_extra_list *ex;
 	unsigned bs; /* verbose buffer size */
 #ifndef NDEBUG
 	struct tent3d_fpol_debug debug;
@@ -179,12 +183,12 @@ static void freeTefpolExtra(struct te_fpol_extra_list *p){
 	free(p);
 }
 
-tepl_t *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit){
+tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit){
 	int i;
 	tepl_t *ret;
-	ret = malloc(sizeof *ret);
+	ret = new tepl_t;
 	if(!ret) return NULL;
-	ret->lfree = ret->l = malloc(init * sizeof *ret->l);
+	ret->lfree = ret->l = (tefpol_t*)malloc(init * sizeof *ret->l);
 	if(!ret->l) return NULL;
 	ret->m = maxt;
 	ret->ml = ret->bs = init;
@@ -217,10 +221,10 @@ void DelTefpol(tepl_t *p){
 		free(p->l);
 	}
 	if(p->ex) freeTefpolExtra(p->ex);
-	free(p);
+	delete(p);
 }
 
-static allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
+static tefpol_t *allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
 			   const double grv[3], const colseq_t *col, tent3d_flags_t f, double life)
 {
 
@@ -231,7 +235,7 @@ static allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
 		if(p->mex && p->bs + p->mex <= p->m){
 			struct te_fpol_extra_list *ex;
 			unsigned i;
-			ex = malloc(offsetof(struct te_fpol_extra_list, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
+			ex = (te_fpol_extra_list*)malloc(offsetof(struct te_fpol_extra_list, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
 			ex->next = p->ex;
 			p->ex = ex;
 			p->lfree = ex->l;
@@ -373,7 +377,7 @@ void AnimTefpol3D(tepl_t *p, double dt){
 		}
 		if(!svl.l){ /* allocate the vertex buffer */
 			int i;
-			svl.l = svl.lfree = malloc((svl.m = VERTEX_SIZE) * sizeof *svl.l);
+			svl.l = svl.lfree = (tevert_t*)malloc((svl.m = VERTEX_SIZE) * sizeof *svl.l);
 			for(i = 0; i < svl.m-1; i++)
 				svl.l[i].next = &svl.l[i+1];
 			if(svl.m){
@@ -582,7 +586,7 @@ const struct tent3d_fpol_debug *Tefpol3DDebug(const struct tent3d_fpol_list *tep
 }
 #endif
 
-void DrawTefpol3D(tepl_t *p, const double view[3], struct glcull *glc){
+void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull *glc){
 #ifndef NDEBUG
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -692,13 +696,13 @@ void DrawTefpol3D(tepl_t *p, const double view[3], struct glcull *glc){
 				static const double thicknesses[5] = {.00, .001, .002, .005, .00025};
 				if(thickness == TEP3_FAINT){
 					struct random_sequence rs;
-					init_rseq(&rs, pv/*(unsigned long)((*d)[0] * (*d)[1] * 1e6)*/);
+					init_rseq(&rs, (unsigned long)pv/*(unsigned long)((*d)[0] * (*d)[1] * 1e6)*/);
 					ncol = COLOR32RGBA(COLOR32R(ncol),COLOR32G(ncol),COLOR32B(ncol),COLOR32A(ncol) * (rseq(&rs) % 256) / 256);
 				}
 				else if(thickness == TEP3_THICK && pv == pl->tail){
 					ncol = COLOR32RGBA(COLOR32R(ncol),COLOR32G(ncol),COLOR32B(ncol),0);
 				}
-				apparence = !thickness || !glc ? 1. : fabs(glcullScale(pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
+				apparence = !thickness || !glc ? 1. : fabs(glcullScale(&pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
 				if(thickness && 1. < apparence/*VECSDIST(pv->pos, view) < visdists[thickness >> THICK_BIT]*/){
 					double width =
 						thickness == TEP3_THICK ? /*t < .5 ? t * .002 :*/ .001 :

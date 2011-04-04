@@ -128,15 +128,16 @@ void Attacker::drawOverlay(wardraw_t *){
 
 void Attacker::onBeginTexture(void *pv){
 	AttackerTextureParams *p = (AttackerTextureParams*)pv;
-	if(p && p->wd && p->wd->shadowMap){
-		p->wd->shadowMap->setAdditive(true);
-		const AdditiveShaderBind *asb = p->wd->shadowMap->getAdditive();
-		asb->setIntensity(p->p->engineHeat);
+	if(p && p->wd){
+		p->wd->setAdditive(true);
+		const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+		if(asb)
+			asb->setIntensity(p->p->engineHeat);
 	}
 }
 
 void Attacker::onEndTexture(void *pv){
 	AttackerTextureParams *p = (AttackerTextureParams*)pv;
-	if(p && p->wd && p->wd->shadowMap)
-		p->wd->shadowMap->setAdditive(false);
+	if(p && p->wd)
+		p->wd->setAdditive(false);
 }

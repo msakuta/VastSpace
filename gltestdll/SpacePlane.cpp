@@ -337,26 +337,27 @@ void SpacePlane::draw(WarDraw *wd){
 		WarDraw *wd;
 		static void onBeginTextureWindows(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd && p->wd->shadowMap)
-				p->wd->shadowMap->setAdditive(true);
+			if(p && p->wd)
+				p->wd->setAdditive(true);
 		}
 		static void onEndTextureWindows(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd && p->wd->shadowMap)
-				p->wd->shadowMap->setAdditive(false);
+			if(p && p->wd)
+				p->wd->setAdditive(false);
 		}
 		static void onBeginTextureEngine(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd && p->wd->shadowMap){
-				p->wd->shadowMap->setAdditive(true);
-				const AdditiveShaderBind *asb = p->wd->shadowMap->getAdditive();
-				asb->setIntensity(p->p->engineHeat);
+			if(p && p->wd){
+				p->wd->setAdditive(true);
+				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+				if(asb)
+					asb->setIntensity(p->p->engineHeat);
 			}
 		}
 		static void onEndTextureEngine(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd && p->wd->shadowMap)
-				p->wd->shadowMap->setAdditive(false);
+			if(p && p->wd)
+				p->wd->setAdditive(false);
 		}
 	} tp = {this, wd};
 

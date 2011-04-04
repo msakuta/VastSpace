@@ -23,29 +23,54 @@ struct EXPORT ShaderBind{
 	GLuint shader;
 	GLint textureLoc;
 	GLint texture2Loc;
+	ShaderBind(GLuint shader = 0) : shader(shader),
+		textureLoc(-1),
+		texture2Loc(-1){}
+
+	void getUniformLocations();
+protected:
+	void useInt();
+};
+
+struct EXPORT ShadowMapShaderBind : virtual ShaderBind{
 	GLint shadowmapLoc;
 	GLint shadowmap2Loc;
 	GLint shadowmap3Loc;
-	ShaderBind(GLuint shader = 0) :
-		shader(shader),
-		textureLoc(-1),
-		texture2Loc(-1),
+	ShadowMapShaderBind(GLuint shader = 0) :
+		ShaderBind(shader),
 		shadowmapLoc(-1),
 		shadowmap2Loc(-1),
 		shadowmap3Loc(-1){}
 
+	void build();
 	void getUniformLocations();
 	void use();
+protected:
+	void useInt();
 };
 
-struct EXPORT AdditiveShaderBind : ShaderBind{
+struct EXPORT AdditiveShaderBind : virtual ShaderBind{
 	GLint intensityLoc;
 	AdditiveShaderBind(GLuint shader = 0) : ShaderBind(0),
 		intensityLoc(-1){}
 
+	void build();
 	void getUniformLocations();
 	void use();
 	void setIntensity(GLfloat)const;
+protected:
+	void useInt();
+};
+
+struct AdditiveShadowMapShaderBind : ShadowMapShaderBind, AdditiveShaderBind{
+	AdditiveShadowMapShaderBind(GLuint shader = 0) : ShadowMapShaderBind(shader), AdditiveShaderBind(shader){
+	}
+
+	void build();
+	void getUniformLocations();
+	void use();
+protected:
+	void useInt();
 };
 
 

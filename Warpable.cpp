@@ -29,6 +29,7 @@ extern "C"{
 #include <clib/suf/sufbin.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/GL/gldraw.h>
+#include <clib/GL/multitex.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
@@ -382,6 +383,13 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 	glDisable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_CULL_FACE);
+	if(glActiveTextureARB){
+		for(int i = 1; i < 5; i++){
+			glActiveTextureARB(GL_TEXTURE0_ARB + i);
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+	}
 	glPushMatrix();
 	gldTranslate3dv(pt->pos);
 	glMultMatrixd(wd->vw->irot);

@@ -4,9 +4,13 @@
 #include <gl/gl.h>
 
 class ShadowMap;
+struct ShaderBind;
+struct ShadowMapShaderBind;
+struct AdditiveShaderBind;
+struct AdditiveShadowMapShaderBind;
 
 /// Parameters when drawing a WarSpace.
-struct WarDraw{
+struct EXPORT WarDraw{
 //	unsigned listLight; /* OpenGL list name to switch on a light to draw solid faces */
 //	void (*light_on)(void); /* processes to turn */
 //	void (*light_off)(void); /* the light on and off. */
@@ -26,12 +30,18 @@ struct WarDraw{
 	int lightdraws; ///< Counter of drawing of lit objects
 	ShadowMap *shadowMap; ///< The shadow mapping object, non NULL if active.
 	bool shadowmapping; ///< Wheter this pass draws shadow map.
+	bool additive; ///< A flag indicating current texture has a brightness map.
 	GLubyte texShadow; ///< The texture name for the shadow map.
 	GLuint shader; ///< GLSL shader unit name or 0 if not available.
 	GLint textureLoc; ///< GLSL location in shader for texture uniform value.
 	GLint shadowmapLoc;  ///< GLSL location in shader for shadowmap uniform value.
 	WarSpace *w; ///< Reference to the associated WarSpace.
+
 	WarDraw() : shadowmapping(false), shadowMap(NULL), texShadow(0), shader(0), textureLoc(0), shadowmapLoc(0){}
+
+	static void init();
+	void setAdditive(bool);
+	const AdditiveShaderBind *getAdditiveShaderBind();
 };
 
 typedef WarDraw war_draw_data;

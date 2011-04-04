@@ -717,7 +717,15 @@ void draw_func(Viewer &vw, double dt){
 			cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
 	//		printf("%lg %d: cswardraw\n", TimeMeasLap(&tm), glGetError());
 
-			war_draw(vw, pl.cs, &WarField::draw);
+			WarDraw::init();
+			{
+				war_draw wd(vw, pl.cs, &WarField::draw);
+				const AdditiveShaderBind *asb = wd.getAdditiveShaderBind();
+				if(asb)
+					wd.setShader(asb->shader, -1, -1);
+			}
+			if(g_shader_enable)
+				glUseProgram(0);
 		}
 
 #if 0 // buffer copy

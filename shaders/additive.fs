@@ -11,8 +11,6 @@ varying vec3 view;
 varying float diffuse;
 //varying vec4 col;
 
-float shadowMapIntensity();
-
 void main (void)
 {
     float offsetEnv;
@@ -26,9 +24,7 @@ void main (void)
 
 //	float diffuse = max(0., dot(flight, fnormal));
 
-	float shadow = shadowMapIntensity();
-
-	vec3 lightProduct = (shadow * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse
+	vec3 lightProduct = gl_FrontLightProduct[0].diffuse.xyz * diffuse
 			+ gl_FrontLightProduct[0].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 

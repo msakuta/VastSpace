@@ -72,18 +72,64 @@ static bool checkFramebufferStatus()
 void ShaderBind::getUniformLocations(){
 	textureLoc = glGetUniformLocation(shader, "texture");
 	texture2Loc = glGetUniformLocation(shader, "texture2");
+}
+
+void ShaderBind::useInt(){
+	glUniform1i(textureLoc, 0);
+	glUniform1i(texture2Loc, 1);
+}
+
+
+void ShadowMapShaderBind::build(){
+	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
+	if(!glsl_load_shader(vtx, "shaders/normalShadowmap.vs"))
+		return;
+	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!glsl_load_shader(frg, "shaders/normalShadowmap.fs"))
+		return;
+	GLuint shadow = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!glsl_load_shader(shadow, "shaders/shadowmap.fs"))
+		return;
+	GLuint shaders[3] = {vtx, frg, shadow};
+	shader = glsl_register_program(shaders, 3);
+	if(!shader)
+		return;
+	glDeleteShader(vtx);
+	glDeleteShader(frg);
+}
+
+void ShadowMapShaderBind::getUniformLocations(){
+	ShaderBind::getUniformLocations();
 	shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 	shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 	shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
 }
 
-void ShaderBind::use(){
+void ShadowMapShaderBind::use(){
 	glUseProgram(shader);
-	glUniform1i(textureLoc, 0);
-	glUniform1i(texture2Loc, 1);
+	useInt();
+}
+
+void ShadowMapShaderBind::useInt(){
+	ShaderBind::useInt();
 	glUniform1i(shadowmapLoc, 2);
 	glUniform1i(shadowmap2Loc, 3);
 	glUniform1i(shadowmap3Loc, 4);
+}
+
+void AdditiveShaderBind::build(){
+	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
+	if(!glsl_load_shader(vtx, "shaders/additive.vs"))
+		return;
+	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!glsl_load_shader(frg, "shaders/additive.fs"))
+		return;
+	GLuint shaders[2] = {vtx, frg};
+	shader = glsl_register_program(shaders, 2);
+	if(!shader)
+		return;
+	glDeleteShader(vtx);
+	glDeleteShader(frg);
 }
 
 void AdditiveShaderBind::getUniformLocations(){
@@ -92,17 +138,53 @@ void AdditiveShaderBind::getUniformLocations(){
 }
 
 void AdditiveShaderBind::use(){
-	ShaderBind::use();
-	glUniform1f(intensityLoc, 1.f);
+	glUseProgram(shader);
+	useInt();
+}
+
+void AdditiveShaderBind::useInt(){
+	ShaderBind::useInt();
+	glUniform1f(intensityLoc, .5f);
 }
 
 void AdditiveShaderBind::setIntensity(GLfloat inten)const{
 	glUniform1f(intensityLoc, inten);
 }
 
+void AdditiveShadowMapShaderBind::build(){
+	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
+	if(!glsl_load_shader(vtx, "shaders/additiveShadowmap.vs"))
+		return;
+	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!glsl_load_shader(frg, "shaders/additiveShadowmap.fs"))
+		return;
+	GLuint shadow = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!glsl_load_shader(shadow, "shaders/shadowmap.fs"))
+		return;
+	GLuint shaders[3] = {vtx, frg, shadow};
+	shader = glsl_register_program(shaders, 3);
+	if(!shader)
+		return;
+	glDeleteShader(vtx);
+	glDeleteShader(frg);
+	glDeleteShader(shadow);
+}
 
-static ShaderBind shaderBind;
+void AdditiveShadowMapShaderBind::getUniformLocations(){
+	ShadowMapShaderBind::getUniformLocations();
+	AdditiveShaderBind::getUniformLocations();
+}
+
+void AdditiveShadowMapShaderBind::use(){
+	glUseProgram(shader);
+	ShadowMapShaderBind::useInt();
+	AdditiveShaderBind::useInt();
+}
+
+
+static ShadowMapShaderBind shaderBind;
 static AdditiveShaderBind additiveShaderBind;
+static AdditiveShadowMapShaderBind additiveShadowMapShaderBind;
 
 
 
@@ -242,38 +324,10 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 				static bool shader_compile = false;
 				if(!shader_compile){
 					shader_compile = true;
-					GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-					if(!glsl_load_shader(vtx, "shaders/normalShadowmap.vs"))
-						break;
-					GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-					if(!glsl_load_shader(frg, "shaders/normalShadowmap.fs"))
-						break;
-					GLuint shadow = glCreateShader(GL_FRAGMENT_SHADER);
-					if(!glsl_load_shader(shadow, "shaders/shadowmap.fs"))
-						break;
-					GLuint shaders[3] = {vtx, frg, shadow};
-					shaderBind.shader = glsl_register_program(shaders, 3);
-					if(!shaderBind.shader)
-						break;
+					shaderBind.build();
 					shaderBind.getUniformLocations();
-					glDeleteShader(vtx);
-					glDeleteShader(frg);
-
-					vtx = glCreateShader(GL_VERTEX_SHADER);
-					if(!glsl_load_shader(vtx, "shaders/additiveShadowmap.vs"))
-						break;
-					frg = glCreateShader(GL_FRAGMENT_SHADER);
-					if(!glsl_load_shader(frg, "shaders/additiveShadowmap.fs"))
-						break;
-					shaders[0] = vtx;
-					shaders[1] = frg;
-					additiveShaderBind.shader = glsl_register_program(shaders, 3);
-					if(!additiveShaderBind.shader)
-						break;
-					additiveShaderBind.getUniformLocations();
-					glDeleteShader(vtx);
-					glDeleteShader(frg);
-					glDeleteShader(shadow);
+					additiveShadowMapShaderBind.build();
+					additiveShadowMapShaderBind.getUniformLocations();
 				}
 			} while(0);
 
@@ -361,13 +415,13 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 void ShadowMap::setAdditive(bool b){
 	additive = b;
 	if(additive){
-		additiveShaderBind.use();
+		additiveShadowMapShaderBind.use();
 	}
 	else
 		shaderBind.use();
 }
 
 const AdditiveShaderBind *ShadowMap::getAdditive()const{
-	return additive ? &additiveShaderBind : NULL;
+	return additive ? &additiveShadowMapShaderBind : NULL;
 }
 

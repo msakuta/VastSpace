@@ -11,6 +11,8 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "draw/WarDraw.h"
+#include "ShadowMap.h"
+#include "glsl.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -506,3 +508,41 @@ void WarSpace::drawOverlay(wardraw_t *wd){
 struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}
 struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}
+
+
+static AdditiveShaderBind additiveShaderBind;
+
+void WarDraw::init(){
+	if(g_shader_enable){
+		if(!additiveShaderBind.shader && g_shader_enable){
+			additiveShaderBind.build();
+			additiveShaderBind.getUniformLocations();
+		}
+	}
+}
+
+void WarDraw::setAdditive(bool b){
+	if(shadowMap){
+		shadowMap->setAdditive(b);
+		return;
+	}
+	additive = b;
+	if(additive){
+		if(g_shader_enable){
+			additiveShaderBind.use();
+			shader = additiveShaderBind.shader;
+		}
+	}
+	else{
+		glUseProgram(0);
+		shader = 0;
+	}
+}
+
+const AdditiveShaderBind *WarDraw::getAdditiveShaderBind(){
+	if(shadowMap)
+		return shadowMap->getAdditive();
+	else
+		return &additiveShaderBind;
+}
+

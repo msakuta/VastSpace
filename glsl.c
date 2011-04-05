@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 PFNGLCREATESHADERPROC pglCreateShader;
+PFNGLDELETEPROGRAMPROC glDeleteProgram;
 PFNGLSHADERSOURCEPROC glShaderSource;
 PFNGLCOMPILESHADERPROC glCompileShader;
 PFNGLGETSHADERIVPROC glGetShaderiv;
@@ -127,6 +128,7 @@ static int glsl_registered = 0;
 void glsl_register(){
 	glsl_registered = 1;
 	pglCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
+	glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
 	glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
 	glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
 	glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");

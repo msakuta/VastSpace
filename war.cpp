@@ -511,27 +511,28 @@ struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}
 
 
-static AdditiveShaderBind additiveShaderBind;
+static OpenGLState::weak_ptr<AdditiveShaderBind> additiveShaderBind;
 
 void WarDraw::init(){
 	if(g_shader_enable){
-		if(!additiveShaderBind.shader && g_shader_enable){
-			additiveShaderBind.build();
-			additiveShaderBind.getUniformLocations();
+		if(!additiveShaderBind){
+			additiveShaderBind.create(*openGLState);
+			additiveShaderBind->build();
+			additiveShaderBind->getUniformLocations();
 		}
 	}
 }
 
 void WarDraw::setAdditive(bool b){
-	if(shadowMap){
-		shadowMap->setAdditive(b);
+	if(vw->shadowmap){
+		vw->shadowmap->setAdditive(b);
 		return;
 	}
 	additive = b;
 	if(additive){
 		if(g_shader_enable){
-			additiveShaderBind.use();
-			shader = additiveShaderBind.shader;
+			additiveShaderBind->use();
+			shader = additiveShaderBind->shader;
 		}
 	}
 	else{
@@ -544,17 +545,17 @@ const ShaderBind *WarDraw::getShaderBind(){
 	if(!g_shader_enable)
 		return NULL;
 	else if(shadowMap)
-		return shadowMap->getShader();
+		return vw->shadowmap->getShader();
 	else
-		return &additiveShaderBind;
+		return additiveShaderBind;
 }
 
 const AdditiveShaderBind *WarDraw::getAdditiveShaderBind(){
 	if(!g_shader_enable)
 		return NULL;
-	else if(shadowMap)
-		return shadowMap->getAdditive();
+	else if(vw->shadowmap)
+		return vw->shadowmap->getAdditive();
 	else
-		return &additiveShaderBind;
+		return additiveShaderBind;
 }
 

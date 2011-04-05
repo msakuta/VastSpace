@@ -13,6 +13,38 @@
 #include <windows.h>
 #endif
 #include <gl/GL.h>
+#include <vector>
+
+class EXPORT OpenGLState{
+	class weak_ptr_base{
+	public:
+		virtual void destroy() = 0;
+	};
+public:
+	template<typename T> class weak_ptr : public weak_ptr_base{
+		T *p;
+	public:
+		weak_ptr(T *ap = NULL) : p(ap){}
+		~weak_ptr(){delete p;}
+		void destroy(){delete p; p = NULL;}
+		T *create(OpenGLState &o){
+			weak_ptr::~weak_ptr();
+			p = new T;
+			o.add(this);
+			return p;
+		}
+		operator T*(){return p;}
+		T *operator->(){return p;}
+	};
+	friend void *operator new(size_t size, OpenGLState &);
+	void *add(weak_ptr_base *);
+	~OpenGLState();
+
+protected:
+	std::vector<weak_ptr_base *> objs;
+};
+
+extern OpenGLState *openGLState;
 
 
 /// \brief A class that binds shader object name with location indices.
@@ -29,6 +61,7 @@ struct EXPORT ShaderBind{
 		texture2EnableLoc(-1),
 		textureLoc(-1),
 		texture2Loc(-1){}
+	~ShaderBind();
 
 	virtual void getUniformLocations();
 	void use()const;

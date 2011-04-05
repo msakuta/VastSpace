@@ -1859,6 +1859,15 @@ int main(int argc, char *argv[])
 //	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CmdAdd("sq", cmd_sq);
+	class Reflesh{
+	public:
+		static int reflesh(int argc, char *argv[]){
+			delete openGLState;
+			openGLState = new OpenGLState;
+			return 1;
+		}
+	};
+	CmdAdd("reflesh", &Reflesh::reflesh);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

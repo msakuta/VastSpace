@@ -12,6 +12,7 @@ extern "C"{
 #endif
 
 EXPORT extern PFNGLCREATESHADERPROC pglCreateShader;
+EXPORT extern PFNGLDELETEPROGRAMPROC glDeleteProgram;
 EXPORT extern PFNGLSHADERSOURCEPROC glShaderSource;
 EXPORT extern PFNGLCOMPILESHADERPROC glCompileShader;
 EXPORT extern PFNGLGETSHADERIVPROC glGetShaderiv;

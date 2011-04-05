@@ -20,6 +20,26 @@ extern "C"{
 #include <iostream>
 
 
+void *operator new(size_t size, OpenGLState &o){
+	void *ret = ::operator new(size);
+	return ret;
+}
+
+void *OpenGLState::add(weak_ptr_base *wp){
+	objs.push_back(wp);
+	return wp;
+}
+
+OpenGLState::~OpenGLState(){
+	std::vector<weak_ptr_base*>::iterator it = objs.begin();
+	for(it; it != objs.end(); it++)
+		(*it)->destroy();
+}
+
+OpenGLState *openGLState = new OpenGLState;
+
+
+
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
 #define texturemat(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
 
@@ -69,6 +89,11 @@ static bool checkFramebufferStatus()
     }
 }
 
+
+ShaderBind::~ShaderBind(){
+	if(shader)
+		glDeleteProgram(shader);
+}
 
 void ShaderBind::getUniformLocations(){
 	textureEnableLoc = glGetUniformLocation(shader, "textureEnable");
@@ -188,9 +213,9 @@ void AdditiveShadowMapShaderBind::useInt()const{
 }
 
 
-static ShadowMapShaderBind shaderBind;
-static AdditiveShaderBind additiveShaderBind;
-static AdditiveShadowMapShaderBind additiveShadowMapShaderBind;
+static OpenGLState::weak_ptr<ShadowMapShaderBind> shaderBind;
+static OpenGLState::weak_ptr<AdditiveShaderBind> additiveShaderBind;
+static OpenGLState::weak_ptr<AdditiveShadowMapShaderBind> additiveShadowMapShaderBind;
 
 
 
@@ -258,7 +283,7 @@ ShadowMap::ShadowMap() : shadowing(false), additive(false){
 }
 
 const ShaderBind *ShadowMap::getShader()const{
-	return &shaderBind;
+	return shaderBind;
 }
 
 
@@ -327,13 +352,15 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 				glPopAttrib();
 			}
 			else do{
-				static bool shader_compile = false;
-				if(!shader_compile){
-					shader_compile = true;
-					shaderBind.build();
-					shaderBind.getUniformLocations();
-					additiveShadowMapShaderBind.build();
-					additiveShadowMapShaderBind.getUniformLocations();
+				if(!shaderBind){
+					shaderBind.create(*openGLState);
+					shaderBind->build();
+					shaderBind->getUniformLocations();
+				}
+				if(!additiveShadowMapShaderBind){
+					additiveShadowMapShaderBind.create(*openGLState);
+					additiveShadowMapShaderBind->build();
+					additiveShadowMapShaderBind->getUniformLocations();
 				}
 			} while(0);
 
@@ -387,7 +414,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					Mat4d itrans = vw.irot;
 					itrans.vec3(3) = vw.pos;
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
-					shaderBind.use();
+					shaderBind->use();
 					glDisable(GL_ALPHA_TEST);
 				}
 			}
@@ -397,7 +424,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glDepthFunc(GL_LEQUAL);
 
 			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
-			drawcallback.draw(vw, shaderBind.shader, shaderBind.textureLoc, shaderBind.shadowmapLoc);
+			drawcallback.draw(vw, shaderBind->shader, shaderBind->textureLoc, shaderBind->shadowmapLoc);
 	/*		if(g_shader_enable)
 				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
 			else
@@ -421,13 +448,16 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 void ShadowMap::setAdditive(bool b){
 	additive = b;
 	if(additive){
-		additiveShadowMapShaderBind.use();
+		if(additiveShadowMapShaderBind)
+			additiveShadowMapShaderBind->use();
 	}
-	else
-		shaderBind.use();
+	else{
+		if(shaderBind)
+			shaderBind->use();
+	}
 }
 
 const AdditiveShaderBind *ShadowMap::getAdditive()const{
-	return additive ? &additiveShadowMapShaderBind : NULL;
+	return additive ? additiveShadowMapShaderBind : NULL;
 }
 

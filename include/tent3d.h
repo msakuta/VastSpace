@@ -113,12 +113,12 @@ EXPORT void DrawTeline3D(struct tent3d_line_list *tell, struct tent3d_line_drawd
 extern "C"{
 #endif
 EXPORT struct tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
-EXPORT void AddTefpol3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
-EXPORT struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const double pos[3], const double velo[3], const double gravity[3], const struct color_sequence *col, tent3d_flags_t flags, double life);
-EXPORT void MoveTefpol3D(struct tent3d_fpol *fpol, const double pos[3], const double velo[3], double life, int skip);
+EXPORT void AddTefpol3D(struct tent3d_fpol_list *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tent3d_flags_t flags, double life);
+EXPORT struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tent3d_flags_t flags, double life);
+EXPORT void MoveTefpol3D(struct tent3d_fpol *fpol, const Vec3d &pos, const Vec3d &velo, double life, int skip);
 EXPORT void ImmobilizeTefpol3D(struct tent3d_fpol*);
 EXPORT void AnimTefpol3D(struct tent3d_fpol_list *tell, double dt);
-EXPORT void DrawTefpol3D(struct tent3d_fpol_list *tepl, const double viewpoint[3], const struct glcull *);
+EXPORT void DrawTefpol3D(struct tent3d_fpol_list *tepl, const Vec3d &viewpoint, const struct glcull *);
 #ifdef __cplusplus
 }
 #endif

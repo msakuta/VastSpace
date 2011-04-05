@@ -48,10 +48,10 @@ typedef struct color_sequence colseq_t;
 
 /* a set of auto-decaying line segments */
 typedef struct tent3d_fpol{
-	double pos[3];
-	double velo[3];
+	Vec3d pos;
+	Vec3d velo;
 	double life;
-	double grv[3];
+	Vec3d grv;
 	const colseq_t *cs;
 	unsigned long flags; /* entity options */
 	unsigned cnt; /* generated trail node count */
@@ -61,7 +61,7 @@ typedef struct tent3d_fpol{
 
 /* a tefpol can have arbitrary number of vertices in the vertices buffer. */
 typedef struct te_vertex{
-	double pos[3];
+	Vec3d pos;
 	float dt;
 	struct te_vertex *next;
 } tevert_t;
@@ -224,8 +224,8 @@ void DelTefpol(tepl_t *p){
 	delete(p);
 }
 
-static tefpol_t *allocTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
-			   const double grv[3], const colseq_t *col, tent3d_flags_t f, double life)
+static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
 {
 
 	tefpol_t *pl;
@@ -285,9 +285,9 @@ static tefpol_t *allocTefpol3D(tepl_t *p, const double pos[3], const double velo
 //	if(flags & TEL_NOLINE) flags &= ~TEL_HEADFORWARD;
 //	if((flags & TEL_FORMS) == TEL_POINT) flags &= ~TEL_VELOLEN;
 
-	VECCPY(pl->pos, pos);
-	VECCPY(pl->velo, velo);
-	VECCPY(pl->grv, grv);
+	pl->pos = pos;
+	pl->velo = velo;
+	pl->grv = grv;
 	pl->cs = col;
 	pl->flags = f;
 	pl->cnt = 0;
@@ -300,24 +300,26 @@ static tefpol_t *allocTefpol3D(tepl_t *p, const double pos[3], const double velo
 	return pl;
 }
 
-void AddTefpol3D(tepl_t *p, const double pos[3], const double velo[3],
-			   const double grv[3], const colseq_t *col, tent3d_flags_t f, double life)
+void AddTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
 {
 	allocTefpol3D(p, pos, velo, grv, col, f & ~(TEP3_MOVABLE | TEP3_SKIP), life);
 }
 
-tefpol_t *AddTefpolMovable3D(tepl_t *p, const double pos[3], const double velo[3],
-			   const double grv[3], const colseq_t *col, tent3d_flags_t f, double life)
+tefpol_t *AddTefpolMovable3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
 {
 	return allocTefpol3D(p, pos, velo, grv, col, f | TEP3_MOVABLE, life);
 }
 
-void MoveTefpol3D(tefpol_t *pl, const double pos[3], const double velo[3], const double life, int skip){
+void MoveTefpol3D(tefpol_t *pl, const Vec3d &pos, const Vec3d &velo, const double life, int skip){
 	if(!pl || !(pl->flags & TEP3_MOVABLE))
 		return;
-	VECCPY(pl->pos, pos);
-	if(velo){ VECCPY(pl->velo, velo); }
-	else{ VECNULL(pl->velo); }
+	pl->pos = pos;
+	if(velo)
+		pl->velo = velo;
+	else
+		pl->velo.clear();
 	pl->life = life;
 	if(skip)
 		pl->flags |= TEP3_SKIP;
@@ -339,7 +341,6 @@ void AnimTefpol3D(tepl_t *p, double dt){
 
 	while(pl){
 		tefpol_t *pl2;
-		int genvert = 0; /* whether a vertex is generated */
 #	if ENABLE_THICK
 		tent3d_flags_t thickness = pl->flags & TEP3_THICKNESS;
 		double width =
@@ -420,113 +421,116 @@ void AnimTefpol3D(tepl_t *p, double dt){
 		if(pl->flags & TEP3_SKIP){
 #if DRAWORDER
 			if(pl->head){
-				VECCPY(pl->head->pos, pl->pos);
+				pl->head->pos = pl->pos;
 				pl->head->dt = -ABS(pl->head->dt) - dt;
 			}
 #else
 			if(pl->tail){
-				VECCPY(pl->tail->pos, pl->pos);
+				pl->tail->pos = pl->pos;
 				pl->tail->dt = -ABS(pl->tail->dt) - dt;
 			}
 #endif
 		}
-		else if(genvert = pl->life > 0 && (!pl->head || !pl->tail || (thickness ? width * width < VECSDIST(pl->pos, pl->tail->pos) : !VECEQ(pl->pos, pl->head->pos)))){
-		pl->cnt++;
-		if(!(pl->flags & TEP3_ROUGH) || pl->cnt % 2){
-		tevert_t *pv = svl.lfree;
-		if(!pv){
-			pv = pl->head; /* RerollVertex: reuse the oldest active node */
-			if(!pv) goto novertice;
+		else{ // If not skipping, try to add vertices.
+			bool genvert = pl->life > 0 && (!pl->head || !pl->tail || (thickness ? width * width < (pl->pos - pl->tail->pos).slen() : pl->pos != pl->head->pos));
+			if(genvert){
+				pl->cnt++;
+				if(!(pl->flags & TEP3_ROUGH) || pl->cnt % 2){
+					tevert_t *pv = svl.lfree;
+					if(!pv){
+						pv = pl->head; /* RerollVertex: reuse the oldest active node */
+						if(!pv) goto novertice;
 
-			/* roll pointers */
+						/* roll pointers */
 #if /*DRAWORDER*/0
-			pl->tail->next = pl->head;
-			pl->head = pl->tail;
-			for(pv = pl->head; pv->next != pl->tail; pv = pv->next);
-			pl->tail = pv;
-			pv->next = NULL;
+						pl->tail->next = pl->head;
+						pl->head = pl->tail;
+						for(pv = pl->head; pv->next != pl->tail; pv = pv->next);
+						pl->tail = pv;
+						pv->next = NULL;
 #else
-			pl->tail->next = pl->head;
-			pl->tail = pl->head;
-			pl->head = pl->head->next;
-			pv->next = NULL;
+						pl->tail->next = pl->head;
+						pl->tail = pl->head;
+						pl->head = pl->head->next;
+						pv->next = NULL;
 #endif
-			checkVertices(p);
-		}
-		else{ /* AllocVertex: allocate from the pool */
+						checkVertices(p);
+					}
+					else{ /* AllocVertex: allocate from the pool */
 #if DRAWORDER
-			svl.lfree = pv->next;
-			if(!svl.lfree) svl.lfst = NULL;
-			pv->next = pl->head;
-			pl->head = pv;
-			if(!pv->next) pl->tail = pv;
+						svl.lfree = pv->next;
+						if(!svl.lfree) svl.lfst = NULL;
+						pv->next = pl->head;
+						pl->head = pv;
+						if(!pv->next) pl->tail = pv;
 #else
-			svl.lfree = pv->next;
-			if(!svl.lfree) svl.lfst = NULL;
-			pv->next = NULL;
-			if(pl->tail) pl->tail->next = pv;
-			else pl->head = pv;
-			pl->tail = pv;
+						svl.lfree = pv->next;
+						if(!svl.lfree) svl.lfst = NULL;
+						pv->next = NULL;
+						if(pl->tail) pl->tail->next = pv;
+						else pl->head = pv;
+						pl->tail = pv;
 #endif
-			checkVertices(p);
-		}
+						checkVertices(p);
+					}
 #if 0
-		if(pl->flags & TEP_DRUNK){
-			pv->pos[0] = pl->pos[0] + drseq(&rs) - .5;
-			pv->pos[1] = pl->pos[1] + drseq(&rs) - .5;
-			pv->pos[2] = pl->pos[2] + drseq(&rs) - .5;
-		}
-		else if(pl->flags & TEP_WIND){
-			pv->x = (int)pl->x + rand() % 4 - 2;
-			pv->y = (int)pl->y + rand() % 4 - 2;
-		}
-		else{
-			pv->x = (int)pl->x;
-			pv->y = (int)pl->y;
-		}
+					if(pl->flags & TEP_DRUNK){
+						pv->pos[0] = pl->pos[0] + drseq(&rs) - .5;
+						pv->pos[1] = pl->pos[1] + drseq(&rs) - .5;
+						pv->pos[2] = pl->pos[2] + drseq(&rs) - .5;
+					}
+					else if(pl->flags & TEP_WIND){
+						pv->x = (int)pl->x + rand() % 4 - 2;
+						pv->y = (int)pl->y + rand() % 4 - 2;
+					}
+					else{
+						pv->x = (int)pl->x;
+						pv->y = (int)pl->y;
+					}
 #endif
-		VECCPY(pv->pos, pl->pos);
-		pv->dt = dt;
-	//	pl->cnt++;
+					pv->pos = pl->pos;
+					pv->dt = dt;
+				//	pl->cnt++;
 #ifndef NDEBUG
-		p->debug.tevert_s++;
+					p->debug.tevert_s++;
 #endif
-		}
-		else{
+				}
+				else{
 #if DRAWORDER
-			if(pl->head){
-				VECCPY(pl->head->pos, pl->pos);
-			}
+					if(pl->head){
+						pl->head->pos = pl->pos;
+					}
 #else
-			if(pl->tail){
-				VECCPY(pl->tail->pos, pl->pos);
-			}
+					if(pl->tail){
+						pl->tail->pos = pl->pos;
+					}
 #endif
-		}
-		}
+				}
+			}
 novertice:
 
-		/* if a vertex is not added, let the next one carry the load. */
+			/* if a vertex is not added, let the next one carry the load. */
 #if DRAWORDER
-		if(!genvert && pl->head)
-			pl->head->dt += dt;
+			if(!genvert && pl->head)
+				pl->head->dt += dt;
 #else
-		if(!genvert && pl->tail)
-			pl->tail->dt += dt;
+			if(!genvert && pl->tail)
+				pl->tail->dt += dt;
 #endif
+		}
 
 		pl->life -= dt;
 		/* if out, don't think of it anymore, with exceptions on return and reflect,
 		  which is expceted to be always inside the region. */
 		if(pl->life > 0){
-			VECSADD(pl->velo, pl->grv, dt); /* apply gravity */
+			pl->velo += pl->grv * dt; /* apply gravity */
 #if 0
 			if(pl->flags & TEP_DRUNK){
 				pl->vx += dt * ((drand() - .5) * 9000 - (pl->vx / 3));
 				pl->vy += dt * ((drand() - .5) * 9000 - (pl->vy / 3));
 			}
 #endif
-			VECSADD(pl->pos, pl->velo, dt);
+			pl->pos += pl->velo * dt;
 		}
 #if DRAWORDER
 		else if(pl->head)
@@ -586,7 +590,7 @@ const struct tent3d_fpol_debug *Tefpol3DDebug(const struct tent3d_fpol_list *tep
 }
 #endif
 
-void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull *glc){
+void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *glc){
 #ifndef NDEBUG
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -599,7 +603,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 	GetObject(pwg->hVBmp, sizeof bm, &bm);
 #endif
 	for(; pl; pl = pl->next) if(pl->head){
-		double o[3];
+		Vec3d o;
 		int c = pl->cnt;
 #if INTERP_CS
 		COLORREF ocol;
@@ -613,9 +617,9 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 		const int thick = 0;
 #endif
 #if DRAWORDER
-		VECCPY(o, pl->pos);
+		o = pl->pos;
 #else
-		VECCPY(o, pl->head->pos);
+		o = pl->head->pos;
 #endif
 #if !DRAWORDER
 		for(pv = pl->head; pv; pv = pv->next) t += ABS(pv->dt);
@@ -653,7 +657,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 				y += rand() % 8 - 4;
 			}
 #else
-			const double (*d)[3] = &pv->pos;
+			const Vec3d &d = pv->pos;
 /*			const int x = pl->flags & TEP_SHAKE ? pv->x + rand() % 6 - 3 : pv->x,
 				y = pl->flags & TEP_SHAKE ? pv->y + rand() % 6 - 3 : pv->y;*/
 #endif
@@ -702,7 +706,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 				else if(thickness == TEP3_THICK && pv == pl->tail){
 					ncol = COLOR32RGBA(COLOR32R(ncol),COLOR32G(ncol),COLOR32B(ncol),0);
 				}
-				apparence = !thickness || !glc ? 1. : fabs(glcullScale(&pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
+				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
 				if(thickness && 1. < apparence/*VECSDIST(pv->pos, view) < visdists[thickness >> THICK_BIT]*/){
 					double width =
 						thickness == TEP3_THICK ? /*t < .5 ? t * .002 :*/ .001 :
@@ -720,7 +724,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 					}
 					gldColor32(ocol);
 /*					gldGradBeam(view, o, pv->pos, .001, ncol);*/
-					gldBeams(&bd, view, *d, width, ncol);
+					gldBeams(&bd, view, d, width, ncol);
 /*					glBegin(GL_LINES);
 					glColor3ub(0,0,255);
 					glVertex3dv(o);
@@ -742,7 +746,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 #	endif
 						glColor4ub(COLOR32R(ncol), COLOR32G(ncol), COLOR32B(ncol), COLOR32A(ncol) * apparence);
 						/*gldColor32(ColorSequence(pl->cs, t + pv->dt));*/
-						glVertex3dv(*d);
+						glVertex3dv(d);
 #	if ENABLE_THICK
 					}
 				}
@@ -827,7 +831,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const double view[3], const struct glcull
 #if INTERP_CS
 			ocol = ncol;
 #endif
-			VECCPY(o, *d);
+			o = d;
 			pv = pv->next;
 		}
 		if(linestrip)

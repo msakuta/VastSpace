@@ -145,6 +145,10 @@ void AdditiveShaderBind::getUniformLocations(){
 void AdditiveShaderBind::useInt()const{
 	ShaderBind::useInt();
 	glUniform1f(intensityLoc, .5f);
+
+	// Override super class definitions
+//	glUniform1i(textureLoc, 1);
+//	glUniform1i(texture2Loc, 0);
 }
 
 void AdditiveShaderBind::setIntensity(const Vec3f &inten)const{

@@ -231,7 +231,9 @@ void SpacePlane::anim(double dt){
 		MoveTefpol3D(pf[i], mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
 	}
 
-	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
+//	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
+	// Exponential approach is more realistic (but costs more CPU cycles)
+	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
 
 
 #if 0
@@ -337,8 +339,12 @@ void SpacePlane::draw(WarDraw *wd){
 		WarDraw *wd;
 		static void onBeginTextureWindows(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd)
+			if(p && p->wd){
 				p->wd->setAdditive(true);
+				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+				if(asb)
+					asb->setIntensity(Vec3f(1,1,1));
+			}
 		}
 		static void onEndTextureWindows(void *pv){
 			TextureParams *p = (TextureParams*)pv;
@@ -351,7 +357,7 @@ void SpacePlane::draw(WarDraw *wd){
 				p->wd->setAdditive(true);
 				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
 				if(asb)
-					asb->setIntensity(p->p->engineHeat);
+					asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
 			}
 		}
 		static void onEndTextureEngine(void *pv){

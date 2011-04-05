@@ -132,7 +132,7 @@ void Attacker::onBeginTexture(void *pv){
 		p->wd->setAdditive(true);
 		const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
 		if(asb)
-			asb->setIntensity(p->p->engineHeat);
+			asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
 	}
 }
 

@@ -61,7 +61,7 @@ struct EXPORT AdditiveShaderBind : virtual ShaderBind{
 
 	void build();
 	void getUniformLocations();
-	void setIntensity(GLfloat)const;
+	void setIntensity(const Vec3f&)const;
 protected:
 	void useInt()const;
 };

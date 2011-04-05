@@ -86,7 +86,10 @@ void Attacker::anim(double dt){
 	docker->anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
-	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
+
+//	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
+	// Exponential approach is more realistic (but costs more CPU cycles)
+	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

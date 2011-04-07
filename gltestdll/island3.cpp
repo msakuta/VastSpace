@@ -11,7 +11,7 @@
 #include "war.h"
 #include "glsl.h"
 #include "glstack.h"
-#include "material.h"
+#include "draw/material.h"
 #include "cmd.h"
 #include "btadapt.h"
 #include "judge.h"

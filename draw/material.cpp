@@ -8,33 +8,23 @@
  *
  * JPEG and PNG reading methods are defined here too.
  */
-#include "material.h"
+#include "draw/material.h"
 #include "bitmap.h"
-//extern "C"{
+#include "dstring.h"
+#include <vector>
+extern "C"{
 #include <clib/c.h>
 #include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
-#include <clib/dstr.h>
 #include <clib/gl/multitex.h>
 #include <jpeglib.h>
 #include <jerror.h>
 #include <png.h>
-//}
+}
 #include <setjmp.h>
 #include <gl/glu.h>
 
-
-
-/// Material object.
-struct material{
-	char *name;
-	char *texname[2];
-	suftexparam_t stp[2];
-};
-
-static struct material *g_mats = NULL;
-static int g_nmats = 0;
 
 static const suftexparam_t defstp = {
 	STP_MAGFIL, // unsigned long flags;
@@ -43,49 +33,59 @@ static const suftexparam_t defstp = {
 	GL_LINEAR, // GLuint magfil, minfil, wraps, wrapt;
 };
 
+/// Material object.
+struct MaterialBind{
+	gltestp::dstring name;
+	gltestp::dstring texname[2];
+	suftexparam_t stp[2];
+	MaterialBind(const gltestp::dstring &name, const gltestp::dstring &texname0, const gltestp::dstring &texname1 = "", const suftexparam_t &stp0 = defstp, const suftexparam_t &stp1 = defstp) :
+	name(name)
+	{
+		texname[0] = texname0;
+		texname[1] = texname1;
+		stp[0] = stp0;
+		stp[1] = stp1;
+	}
+};
+
+static std::vector<MaterialBind> g_mats;
+
 void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, const char *texname2, suftexparam_t *stp2){
-	struct material *m;
-	int i;
-	for(i = 0; i < g_nmats; i++) if(!strcmp(name, g_mats[i].name)){
-		m = &g_mats[i];
-		m->texname[0] = realloc(m->texname[0], texname1 ? strlen(texname1) + 1 : 0);
+	MaterialBind *m;
+	std::vector<MaterialBind>::iterator i;
+	for(i = g_mats.begin(); i != g_mats.end(); i++) if(!strcmp(name, i->name)){
+		m = &*i;
 		if(texname1)
-			strcpy(m->texname[0], texname1);
-		m->texname[1] = realloc(m->texname[1], texname2 ? strlen(texname2) + 1 : 0);
+			m->texname[0] = texname1;
 		if(texname2)
-			strcpy(m->texname[1], texname2);
+			m->texname[1] = texname2;
 		m->stp[0] = stp1 ? *stp1 : defstp;
 		m->stp[1] = stp2 ? *stp2 : defstp;
 		return;
 	}
-	m = &(g_mats = realloc(g_mats, (++g_nmats) * sizeof*g_mats))[g_nmats - 1];
-	m->name = malloc(strlen(name) + 1);
-	strcpy(m->name, name);
-	m->texname[0] = texname1 ? malloc(strlen(texname1) + 1) : NULL;
+	g_mats.push_back(MaterialBind(name, texname1, texname2, stp1 ? *stp1 : defstp, stp2 ? *stp2 : defstp));
+/*	m = &(g_mats = (MaterialBind*)realloc(g_mats, (++g_nmats) * sizeof*g_mats))[g_nmats - 1];
+	m->name = name;
 	if(texname1)
-		strcpy(m->texname[0], texname1);
-	m->texname[1] = texname2 ? malloc(strlen(texname2) + 1) : NULL;
+		m->texname[0] = texname1;
 	if(texname2)
-		strcpy(m->texname[1], texname2);
+		m->texname[1] = texname2;
 	m->stp[0] = stp1 ? *stp1 : defstp;
-	m->stp[1] = stp2 ? *stp2 : defstp;
+	m->stp[1] = stp2 ? *stp2 : defstp;*/
 }
 
 GLuint CacheMaterial(const char *name){
-	struct material *m;
+	MaterialBind *m;
 	GLuint ret;
-	int i;
-	for(i = 0; i < g_nmats; i++) if(!strcmp(name, g_mats[i].name)){
-		m = &g_mats[i];
-		return CallCacheBitmap5(name, m->texname[0], &m->stp[0], m->texname[1], &m->stp[1]);
+	std::vector<MaterialBind>::iterator i;
+	for(i = g_mats.begin(); i != g_mats.end(); i++) if(name == i->name){
+		return CallCacheBitmap5(name, i->texname[0], &i->stp[0], i->texname[1], &i->stp[1]);
 	}
 	ret = CallCacheBitmap(name, name, NULL, NULL);
 	if(!ret){
-		dstr_t ds = dstr0;
-		dstrcat(&ds, "models/");
-		dstrcat(&ds, name);
-		ret = CallCacheBitmap(name, dstr(&ds), NULL, NULL);
-		dstrfree(&ds);
+		gltestp::dstring ds = "models/";
+		ds << name;
+		ret = CallCacheBitmap(name, ds, NULL, NULL);
 	}
 	return ret;
 }
@@ -232,7 +232,7 @@ static void jpeg_memory_src (j_decompress_ptr cinfo, const JOCTET * buffer, size
 	src->pub.term_source = term_source;
 	src->pub.bytes_in_buffer = 0; // forces fill_input_buffer on first read
 	src->pub.next_input_byte = NULL; // until buffer loaded
-	src->source_data = buffer;
+	src->source_data = const_cast<JOCTET*>(buffer);
 	src->source_size = bufsize;
 	src->start_of_file = 0;
 }
@@ -252,7 +252,7 @@ BITMAPINFO *ReadJpeg(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	infile = fopen(fname, "rb");
 
 	if(!infile){
-		image_buffer = ZipUnZip("rc.zip", fname, &size);
+		image_buffer = (BYTE*)ZipUnZip("rc.zip", fname, &size);
 		if(!image_buffer)
 			return NULL;
 	}
@@ -326,7 +326,7 @@ BITMAPINFO *ReadJpeg(const char *fname, void (**freeproc)(BITMAPINFO*)){
 		fclose(infile);
 
 	if(freeproc)
-		*freeproc = free;
+		*freeproc = (void(*)(BITMAPINFO*))free;
 	return bmi;
 }
 
@@ -360,7 +360,7 @@ BITMAPINFO *ReadPNG(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	infile = fopen(fname, "rb");
 
 	if(!infile){
-		rpd.image_buffer = ZipUnZip("rc.zip", fname, &rpd.size);
+		rpd.image_buffer = (BYTE*)ZipUnZip("rc.zip", fname, &rpd.size);
 		if(!rpd.image_buffer)
 			return NULL;
 	}
@@ -412,7 +412,8 @@ shortjmp:
 
 	{
 		BITMAPINFO *bmi;
-		int width, height, bit_depth, color_type, interlace_type, comps;
+		png_uint_32 width, height;
+		int bit_depth, color_type, interlace_type, comps;
 		int i;
 
 		/* The native order of RGB components differs in order against Windows bitmaps,
@@ -434,7 +435,7 @@ shortjmp:
 		 * which must be copied to single bitmap buffer. */
 		ret = png_get_rows(png_ptr, info_ptr);
 
-		bmi = malloc(sizeof(BITMAPINFOHEADER) + width * height * 4);
+		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + width * height * 4);
 		bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 		bmi->bmiHeader.biWidth = width;
 		bmi->bmiHeader.biHeight = height;
@@ -455,11 +456,18 @@ shortjmp:
 		else
 			ZipFree(rpd.image_buffer);
 		if(freeproc)
-			*freeproc = free;
+			*freeproc = (void(*)(BITMAPINFO*))free;
 		return bmi;
 	}
 }
 
+/// \brief Makes a texture bitmap name known as a material that have given characteristics.
+///
+/// I have tried to make the arguments dstring, but no luck.
+/// The reason is that NULL pointers to be treated as integral values and converted to "0".
+///
+/// If we could make the arguments dstring, the same strings would share memory to improve space
+/// performance, but it's not much drastic.
 GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2){
 	const struct suftexcache *stc;
 	suftexparam_t stp, stp2;
@@ -494,25 +502,21 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 
 	/* Alpha channel texture */
 	if(stp.flags & STP_ALPHATEX){
-		dstr_t ds = dstr0;
-		dstrcat(&ds, fname1);
-		dstrcat(&ds, ".a.bmp");
-		bfhMask = ZipUnZip("rc.zip", dstr(&ds), NULL);
-		stp.bmiMask = !bfhMask ? ReadBitmap(dstr(&ds)) : (BITMAPINFO*)&bfhMask[1];
+		gltestp::dstring ds = fname1;
+		ds << ".a.bmp";
+		bfhMask = (BITMAPFILEHEADER*)ZipUnZip("rc.zip", ds, NULL);
+		stp.bmiMask = !bfhMask ? ReadBitmap(ds) : (BITMAPINFO*)&bfhMask[1];
 		mask = !!stp.bmiMask;
-		dstrfree(&ds);
 		if(!stp.bmiMask){
-			ds = dstr0;
-			dstrcat(&ds, fname1);
-			dstrcat(&ds, ".a.jpg");
-			stp.bmiMask = ReadJpeg(dstr(&ds), NULL);
-			dstrfree(&ds);
+			ds = fname1;
+			ds << ".a.jpg";
+			stp.bmiMask = ReadJpeg(ds, NULL);
 			mask = maskjpeg = !!stp.bmiMask;
 		}
 	}
 
 	stp2 = pstp2 ? *pstp2 : defstp;
-	if(fname2){
+	if(fname2 && *fname2){
 		/* Try loading from plain bitmap first */
 		stp2.bmi = ReadBitmap(fname2);
 		if(!stp2.bmi){
@@ -524,7 +528,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			return 0;
 	}
 
-	ret = CacheSUFMTex(entry, &stp, fname2 ? &stp2 : NULL);
+	ret = CacheSUFMTex(entry, &stp, fname2 && *fname2 ? &stp2 : NULL);
 	if(bfh)
 		ZipFree(bfh);
 	else if(jpeg)
@@ -539,7 +543,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		else
 			LocalFree((BITMAPINFO*)stp.bmiMask);
 	}
-	if(fname2){
+	if(fname2 && *fname2){
 		if(jpeg2)
 			free((BITMAPINFO*)stp2.bmi);
 		else if(stp2.bmi)
@@ -548,6 +552,12 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	return ret;
 }
 
+/// \brief Makes a texture bitmap name known as a material that have given characteristics.
+///
+/// I have tried to make the arguments dstring, but no luck.
+///
+/// Simply calls CallCacheBitmap5 with the last argument NULL.
+/// With C++ function definition, this function is no longer necessary.
 GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2){
 	return CallCacheBitmap5(entry, fname1, pstp, fname2, pstp);
 }
@@ -555,7 +565,7 @@ GLuint CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pst
 suf_t *CallLoadSUF(const char *fname){
 	suf_t *ret = NULL;
 	do{
-		char *p;
+		const char *p;
 		p = strrchr(fname, '.');
 		if(p && !strcmp(p, ".bin")){
 			FILE *fp;

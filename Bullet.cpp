@@ -7,9 +7,9 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 //#include "warutil.h"
+#include "draw/material.h"
 extern "C"{
 #include "bitmap.h"
-#include "material.h"
 #include <clib/amat4.h>
 #include <clib/c.h>
 #include <clib/mathdef.h>

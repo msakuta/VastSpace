@@ -15,6 +15,7 @@
 #include <gl/GL.h>
 #include <vector>
 
+/// A class that accumulates OpenGL status variables such as texture units or shader program objects.
 class EXPORT OpenGLState{
 	class weak_ptr_base{
 	public:
@@ -44,6 +45,7 @@ protected:
 	std::vector<weak_ptr_base *> objs;
 };
 
+/// Current OpenGL status vector. Re-createing this object will force all OpeGL resources to be reallocated.
 extern OpenGLState *openGLState;
 
 

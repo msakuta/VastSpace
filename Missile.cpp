@@ -1,5 +1,5 @@
 #include "Missile.h"
-#include "material.h"
+#include "draw/material.h"
 #include "Viewer.h"
 #include "draw/WarDraw.h"
 extern "C"{

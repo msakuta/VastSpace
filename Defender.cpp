@@ -8,7 +8,7 @@
 #include "serial_util.h"
 #include "Warpable.h"
 #include "Docker.h"
-#include "material.h"
+#include "draw/material.h"
 #include "cmd.h"
 #include "astrodraw.h"
 #include "EntityCommand.h"

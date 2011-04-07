@@ -6,7 +6,7 @@
 //#include "cmd.h"
 //#include "glwindow.h"
 //#include "arms.h"
-#include "material.h"
+#include "draw/material.h"
 //#include "warutil.h"
 #include "judge.h"
 //#include "astrodef.h"

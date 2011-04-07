@@ -10,7 +10,7 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
-#include "material.h"
+#include "draw/material.h"
 //#include "sensor.h"
 #include "motion.h"
 #include "draw/WarDraw.h"

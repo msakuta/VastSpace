@@ -6,7 +6,7 @@
 #include "cmd.h"
 #include "antiglut.h"
 #include "Viewer.h"
-#include "material.h"
+#include "draw/material.h"
 #include "Player.h" // GLWmoveOrderButton
 #include "sqadapt.h"
 #include "message.h"

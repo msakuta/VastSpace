@@ -28,7 +28,7 @@
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
 #include "Docker.h"
-#include "material.h"
+#include "draw/material.h"
 #include "Sceptor.h"
 #include "glstack.h"
 #include "Universe.h"

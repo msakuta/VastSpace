@@ -31,6 +31,7 @@ namespace gltestp{
 		dstring(unsigned long long);
 		dstring(double);
 		dstring(float);
+		dstring(const void*); ///< General pointer
 		dstring operator=(const dstring &);
 		long len()const;
 		long strncpy(const char *src, unsigned long len);
@@ -69,6 +70,7 @@ namespace gltestp{
 		void init(long);
 		void initu(unsigned long);
 		void initd(double);
+		void initp(const void*);
 		struct in{
 			unsigned long size;
 			unsigned refs;
@@ -96,6 +98,7 @@ namespace gltestp{
 	inline dstring::dstring(unsigned long long a){initu((unsigned long)(a));}
 	inline dstring::dstring(float a){initd(a);}
 	inline dstring::dstring(double a){initd(a);}
+	inline dstring::dstring(const void *a){initp(a);}
 
 	inline dstring dstring::operator =(const dstring &ds){
 		this->dstring::~dstring();

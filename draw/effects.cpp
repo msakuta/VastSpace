@@ -1,6 +1,6 @@
 #include "effects.h"
 #include "bitmap.h"
-#include "material.h"
+#include "draw/material.h"
 #include "tent3d.h"
 extern "C"{
 #include <clib/c.h>

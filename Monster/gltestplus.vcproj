@@ -452,10 +452,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\material.c"
-				>
-			</File>
-			<File
 				RelativePath="..\calc\mathvars.c"
 				>
 			</File>
@@ -557,6 +553,10 @@
 				</File>
 				<File
 					RelativePath="..\draw\effects.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\draw\material.cpp"
 					>
 				</File>
 				<File
@@ -690,10 +690,6 @@
 			</File>
 			<File
 				RelativePath="..\keybind.h"
-				>
-			</File>
-			<File
-				RelativePath="..\material.h"
 				>
 			</File>
 			<File
@@ -848,10 +844,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\material.h"
-				>
-			</File>
-			<File
 				RelativePath="..\include\motion.h"
 				>
 			</File>
@@ -903,6 +895,10 @@
 				Name="draw"
 				Filter="../include/draw/*"
 				>
+				<File
+					RelativePath="..\include\draw\material.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\draw\ShaderBind.h"
 					>

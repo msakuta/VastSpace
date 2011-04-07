@@ -6,7 +6,7 @@
 #include "drawmap.h"
 #include "Player.h"
 #include "astrodraw.h"
-#include "material.h"
+#include "draw/material.h"
 #include "bitmap.h"
 #include "cmd.h"
 #include "glsl.h"

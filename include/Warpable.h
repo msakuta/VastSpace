@@ -92,7 +92,6 @@ EXPORT void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, do
 #else
 void hitbox_draw(const Entity *pt, const double sc[3], int hitflags = 0);
 #endif
-//suf_t *CallLoadSUF(const char *fname);
 
 void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2);
 

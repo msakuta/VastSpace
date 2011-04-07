@@ -45,6 +45,12 @@ void dstring::initd(double src){
 	init(buf);
 }
 
+void dstring::initp(const void *a){
+	char buf[32]; // OK with 128-bit machine or something?
+	sprintf(buf, "%p", a);
+	init(buf);
+}
+
 dstring &dstring::strncat(const char *src, unsigned long len){
 	size_t sl;
 	assert(this && src);
@@ -59,7 +65,7 @@ loopback:
 	}
 #elif 1
 	{// thing like strnlen
-		int length = 0;
+		unsigned length = 0;
 		const char *str = src;
 		while(length < len && *str++ )
 			++length;

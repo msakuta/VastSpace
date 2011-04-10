@@ -823,7 +823,10 @@ void draw_func(Viewer &vw, double dt){
 		static const MouseCursor mc_vertsize = {96, 32, 128, 64};
 //		GLuint oldtex;
 		static int texw = 128, texh = 128;
-		if(!tex){
+
+		const gltestp::TexCacheBind *stc;
+		stc = gltestp::FindTexture("pointer.bmp");
+		if(!stc){
 			suftexparam_t stp;
 			stp.bmi = NULL;
 			stp.flags = STP_ENV | STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
@@ -1859,15 +1862,15 @@ int main(int argc, char *argv[])
 //	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
 	CmdAdd("sq", cmd_sq);
-	class Reflesh{
+	class Refresh{
 	public:
-		static int reflesh(int argc, char *argv[]){
+		static int refresh(int argc, char *argv[]){
 			delete openGLState;
 			openGLState = new OpenGLState;
 			return 1;
 		}
 	};
-	CmdAdd("reflesh", &Reflesh::reflesh);
+	CmdAdd("refresh", &Refresh::refresh);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

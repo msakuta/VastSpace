@@ -887,13 +887,11 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 	return 0;
 }
 
-GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips){
+GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips) :
+	texname(filename)
+{
 	xpos = ypos = 0;
 	width = height = 32;
-	suftexparam_t stp;
-	stp.flags = STP_MINFIL;
-	stp.minfil = GL_LINEAR;
-	texname = CallCacheBitmap(filename, filename, &stp, NULL);
 	if(command){
 		this->command = new const char[strlen(command) + 1];
 		strcpy(const_cast<char*>(this->command), command);
@@ -916,11 +914,21 @@ GLWcommandButton::~GLWcommandButton(){
 
 void GLWcommandButton::draw(GLwindowState &ws, double){
 	GLubyte mod = depress ? 127 : 255;
-	if(!texname)
+	const gltestp::TexCacheBind *tcb = gltestp::FindTexture(texname);
+	GLuint texlist;
+	if(tcb)
+		texlist = tcb->getList();
+	else{
+		suftexparam_t stp;
+		stp.flags = STP_MINFIL;
+		stp.minfil = GL_LINEAR;
+		texlist = CallCacheBitmap(texname, texname, &stp, NULL);
+	}
+	if(!texlist)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glColor4ub(mod,mod,mod,255);
-	glCallList(texname);
+	glCallList(texlist);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
 	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);
@@ -945,11 +953,11 @@ void GLWcommandButton::mouseLeave(GLwindowState &ws){
 
 
 
-GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips){
+GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips) :
+	texname(filename), texname1(filename1)
+{
 	xpos = ypos = 0;
 	width = height = 32;
-	texname = CallCacheBitmap(filename, filename, NULL, NULL);
-	texname1 = CallCacheBitmap(filename1, filename1, NULL, NULL);
 /*	if(command){
 		this->command = new const char[strlen(command) + 1];
 		strcpy(const_cast<char*>(this->command), command);
@@ -983,12 +991,18 @@ void GLWstateButton::mouseLeave(GLwindowState &ws){
 /// active.
 void GLWstateButton::draw(GLwindowState &ws, double){
 	GLubyte mod = depress ? 127 : 255;
-	GLuint texname = state() ? this->texname : this->texname1;
-	if(!texname)
+	gltestp::dstring texname = state() ? this->texname : this->texname1;
+	GLuint texlist;
+	const gltestp::TexCacheBind *tcb = gltestp::FindTexture(texname);
+	if(tcb)
+		texlist = tcb->getList();
+	else
+		texlist = CallCacheBitmap(texname, texname, NULL, NULL);
+	if(!texlist)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glColor4ub(mod,mod,mod,255);
-	glCallList(texname);
+	glCallList(texlist);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
 	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);

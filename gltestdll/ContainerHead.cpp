@@ -16,6 +16,7 @@
 #include "draw/WarDraw.h"
 #include "Island3.h"
 #include "sqadapt.h"
+#include "draw/ShaderBind.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -411,7 +412,8 @@ void ContainerHead::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
 
-	static bool initialized = false;
+	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
+	static OpenGLState::weak_ptr<bool> initialized = false;
 	static suf_t *sufs[2 + Num_ContainerType] = {NULL};
 	static VBO *vbo[2 + Num_ContainerType] = {NULL};
 	static suftex_t *pst[2 + Num_ContainerType] = {NULL};
@@ -430,7 +432,7 @@ void ContainerHead::draw(wardraw_t *wd){
 			CacheSUFMaterials(sufs[i]);
 			pst[i] = gltestp::AllocSUFTex(sufs[i]);
 		}
-		initialized = true;
+		initialized.create(*openGLState);
 	}
 	static int drawcount = 0;
 	drawcount++;

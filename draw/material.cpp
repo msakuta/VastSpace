@@ -11,6 +11,7 @@
 #include "draw/material.h"
 #include "bitmap.h"
 #include "dstring.h"
+#include "draw/ShaderBind.h"
 #include <vector>
 extern "C"{
 #include <clib/c.h>
@@ -40,7 +41,7 @@ struct MaterialBind{
 	gltestp::dstring name;
 	gltestp::dstring texname[2];
 	suftexparam_t stp[2];
-	MaterialBind(const gltestp::dstring &name, const gltestp::dstring &texname0, const gltestp::dstring &texname1 = "", const suftexparam_t &stp0 = defstp, const suftexparam_t &stp1 = defstp) :
+	MaterialBind(const gltestp::dstring &name = "", const gltestp::dstring &texname0 = "", const gltestp::dstring &texname1 = "", const suftexparam_t &stp0 = defstp, const suftexparam_t &stp1 = defstp) :
 	name(name)
 	{
 		texname[0] = texname0;
@@ -50,13 +51,16 @@ struct MaterialBind{
 	}
 };
 
-static std::vector<MaterialBind> g_mats;
+typedef std::map<gltestp::dstring, MaterialBind> Materials;
+static Materials g_mats;
 
 void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, const char *texname2, suftexparam_t *stp2){
 	MaterialBind *m;
-	std::vector<MaterialBind>::iterator i;
-	for(i = g_mats.begin(); i != g_mats.end(); i++) if(!strcmp(name, i->name)){
-		m = &*i;
+	gltestp::dstring aname = name;
+	Materials::iterator i = g_mats.find(aname);
+	if(i != g_mats.end()){
+//	for(i = g_mats.begin(); i != g_mats.end(); i++) if(!strcmp(name, i->name)){
+		m = &i->second;
 		if(texname1)
 			m->texname[0] = texname1;
 		if(texname2)
@@ -65,20 +69,22 @@ void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, co
 		m->stp[1] = stp2 ? *stp2 : defstp;
 		return;
 	}
-	g_mats.push_back(MaterialBind(name, texname1, texname2, stp1 ? *stp1 : defstp, stp2 ? *stp2 : defstp));
+	g_mats[aname] = MaterialBind(aname, texname1, texname2, stp1 ? *stp1 : defstp, stp2 ? *stp2 : defstp);
 }
 
 GLuint CacheMaterial(const char *name){
 	MaterialBind *m;
 	GLuint ret;
-	std::vector<MaterialBind>::iterator i;
-	for(i = g_mats.begin(); i != g_mats.end(); i++) if(name == i->name){
-		return CallCacheBitmap5(name, i->texname[0], &i->stp[0], i->texname[1], &i->stp[1]);
+	gltestp::dstring aname = name;
+	Materials::iterator i = g_mats.find(aname);
+	if(i != g_mats.end()){
+//	for(i = g_mats.begin(); i != g_mats.end(); i++) if(name == i->name){
+		return CallCacheBitmap5(name, i->second.texname[0], &i->second.stp[0], i->second.texname[1], &i->second.stp[1]);
 	}
 	ret = CallCacheBitmap(name, name, NULL, NULL);
 	if(!ret){
 		gltestp::dstring ds = "models/";
-		ds << name;
+		ds << aname;
 		ret = CallCacheBitmap(name, ds, NULL, NULL);
 	}
 	return ret;
@@ -599,12 +605,22 @@ namespace gltestp{
 
 //static std::map<TextureKey, TextureBind> textures;
 
-static std::map<gltestp::dstring, TexCacheBind> gstc;
+static std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> > gstc;
 
+TexCacheBind::TexCacheBind(const gltestp::dstring &aname) : name(aname), list(0){
+	tex[0] = tex[1] = NULL;
+}
+
+TexCacheBind::~TexCacheBind(){
+	if(tex[0])
+		glDeleteTextures(2, tex);
+	if(list)
+		glDeleteLists(list, 1);
+}
 
 /* if we have already compiled the texture into a list, reuse it */
-const TexCacheBind *FindTexture(const char *name){
-	return &gstc[name];
+const TexCacheBind *FindTexture(const gltestp::dstring &name){
+	return gstc[name];
 }
 
 
@@ -811,10 +827,12 @@ static GLuint cachetex(const suftexparam_t *stp){
 unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const TextureKey *tex2){
 
 	/* allocate cache list space */
-	if(gstc.find(name) != gstc.end())
-		return gstc[name].getList();
-//	gstc.push_back(TextureBind(name));
-	TexCacheBind tcb(name);
+	std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);
+	if(it != gstc.end() && it->second)
+		return it->second->getList();
+	OpenGLState::weak_ptr<TexCacheBind> &wp = gstc[name];
+	wp.create(*openGLState);
+	TexCacheBind &tcb(*wp);
 //	gstc = realloc(gstc, ++nstc * sizeof *gstc);
 //	gstc[nstc-1].name = malloc(strlen(name)+1);
 //	strcpy(gstc[nstc-1].name, name);
@@ -826,7 +844,7 @@ unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const Textu
 		return 0;
 	}
 /*	glNewList(gstc[nstc-1].list = glGenLists(1), GL_COMPILE);*/
-	tcb.setTex(1, NULL);
+	tcb.setTex(1, 0);
 	if(!glActiveTextureARB){
 //		TextureBind tb = textures[*tex1];
 //		if(!tb){
@@ -929,8 +947,6 @@ unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const Textu
 	glEndList();
 #endif
 
-	gstc[name] = tcb;
-
 	return tcb.getList();
 }
 
@@ -981,8 +997,9 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		}
 
 		/* if we have already compiled the texture into a list, reuse it */
-		if(gstc.find(name) != gstc.end()){
-			TexCacheBind &tcb = gstc[name];
+		std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);
+		if(it != gstc.end()){
+			TexCacheBind &tcb = *gstc[name];
 //		for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
 			struct suftexlist *s = &ret->a[k];
 			s->list = tcb.getList();

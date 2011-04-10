@@ -367,7 +367,8 @@ void SpacePlane::draw(WarDraw *wd){
 		}
 	} tp = {this, wd};
 
-	static bool initialized = false;
+	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
+	static OpenGLState::weak_ptr<bool> initialized = false;
 	static suf_t *sufs[2] = {NULL};
 	static VBO *vbo[2] = {NULL};
 	static suftex_t *pst[2] = {NULL};
@@ -398,7 +399,7 @@ void SpacePlane::draw(WarDraw *wd){
 			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureWindows;
 			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureWindows;
 		}
-		initialized = true;
+		initialized.create(*openGLState);
 	}
 	if(pst[0]){
 		if(0 <= engineAtrIndex){

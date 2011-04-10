@@ -1,6 +1,7 @@
 #ifndef GLW_GLWINDOW_H
 #define GLW_GLWINDOW_H
 #include "serial.h"
+#include "dstring.h"
 extern "C"{
 #include <clib/c.h>
 #include <string.h>
@@ -305,7 +306,7 @@ public:
 /// Impulsive command buttons that activates when mouse button is pressed down and released.
 class GLWcommandButton : public GLWbutton{
 public:
-	unsigned texname;
+	gltestp::dstring texname;
 	const char *command;
 	GLWcommandButton(const char *filename, const char *command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
@@ -318,7 +319,7 @@ public:
 /// 2-State button.
 class GLWstateButton : public GLWbutton{
 public:
-	unsigned texname, texname1;
+	gltestp::dstring texname, texname1;
 	const char *command;
 	GLWstateButton(const char *filename, const char *filename1, const char *tips = NULL);
 	virtual ~GLWstateButton();

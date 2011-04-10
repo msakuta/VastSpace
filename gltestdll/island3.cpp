@@ -254,7 +254,15 @@ struct randomness{
 };
 
 #define DETAILSIZE 64
-static GLuint createdetail(unsigned long seed, int level, GLuint base, const struct randomness (*ran)[3]){
+static const gltestp::TexCacheBind *createdetail(unsigned long seed, int level, const struct randomness (*ran)[3]){
+	// Explicitly name the texture procedural to avoid possible name collision.
+	static const gltestp::dstring roadtexpath("proc/road.bmp");
+
+	const gltestp::TexCacheBind *stc;
+	stc = gltestp::FindTexture(roadtexpath);
+	if(stc)
+		return stc;
+
 	int n;
 	GLuint list;
 	struct random_sequence rs;
@@ -263,7 +271,7 @@ static GLuint createdetail(unsigned long seed, int level, GLuint base, const str
 	for(n = 0; n < level; n++){
 		int i, j;
 		int tsize = DETAILSIZE;
-		GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
+		static GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
 
 		/* the higher you go, the less the ground details are */
 		for(i = 0; i < tsize; i++) for(j = 0; j < tsize; j++){
@@ -301,41 +309,35 @@ static GLuint createdetail(unsigned long seed, int level, GLuint base, const str
 			}
 		}
 
-		{
-			struct BMIhack{
-				BITMAPINFOHEADER bmiHeader;
-				GLubyte buf[DETAILSIZE][DETAILSIZE][3];
-			} bmi;
-			suftexparam_t stp;
-			bmi.bmiHeader.biSize = 0;
-			bmi.bmiHeader.biSizeImage = sizeof bmi.buf;
-			bmi.bmiHeader.biBitCount = 24;
-			bmi.bmiHeader.biClrUsed = 0;
-			bmi.bmiHeader.biClrImportant = 0;
-			bmi.bmiHeader.biCompression = BI_RGB;
-			bmi.bmiHeader.biPlanes = 1;
-			bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
-			memcpy(bmi.buf, tex, sizeof bmi.buf);
-			stp.flags = STP_ENV | STP_MIPMAP;
-			stp.bmi = (BITMAPINFO*)&bmi;
-			stp.env = GL_MODULATE;
-			stp.mipmap = 1;
-			list = CacheSUFMTex("road.bmp", &stp, &stp);
-		}
-
+		static struct BMIhack{
+			BITMAPINFOHEADER bmiHeader;
+			GLubyte buf[DETAILSIZE][DETAILSIZE][3];
+		} bmi;
+		suftexparam_t stp;
+		bmi.bmiHeader.biSize = 0;
+		bmi.bmiHeader.biSizeImage = sizeof bmi.buf;
+		bmi.bmiHeader.biBitCount = 24;
+		bmi.bmiHeader.biClrUsed = 0;
+		bmi.bmiHeader.biClrImportant = 0;
+		bmi.bmiHeader.biCompression = BI_RGB;
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biHeight = bmi.bmiHeader.biWidth = DETAILSIZE;
+		memcpy(bmi.buf, tex, sizeof bmi.buf);
+		stp.flags = STP_ENV | STP_MIPMAP;
+		stp.bmi = (BITMAPINFO*)&bmi;
+		stp.env = GL_MODULATE;
+		stp.mipmap = 1;
+		gltestp::CacheSUFMTex(roadtexpath, &gltestp::TextureKey(&stp), &gltestp::TextureKey(&stp));
 	}
-	return list;
+	return gltestp::FindTexture(roadtexpath);
 }
 
 
-GLuint generate_road_texture(){
-	static GLuint list = 0;
-	static int init = 0;
-	if(!init){
+static const gltestp::TexCacheBind *generate_road_texture(){
 		struct randomness ran[3] = {{192, 64}, {192, 64}, {192, 64}};
 #if 1
 /*		list = glGenLists(1);*/
-		list = createdetail(1, 1, list, &ran);
+		return createdetail(1, 1, &ran);
 #else
 		list = glGenLists(MIPMAPS * 2);
 		createdetail(1, MIPMAPS, list, &ran);
@@ -347,9 +349,6 @@ GLuint generate_road_texture(){
 		ran[0].range = ran[1].range = ran[2].range = 128;
 		createdetail(1, MIPMAPS, list + MIPMAPS, &ran);
 #endif
-		init = 1;
-	}
-	return list;
 }
 
 static GLuint cubetex = 0;
@@ -620,9 +619,7 @@ static GLuint BumpList(){
 
 void Island3::beginWallTexture(const Viewer *vw){
 	static GLuint wallbumptex = 0, nrmmap = 0;
-	static bool init = false;
-	if(!init){
-		init = true;
+	if(!gltestp::FindTexture("bricks.bmp") || !gltestp::FindTexture("bricks_bump.bmp")){
 		suftexparam_t stp;
 		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL | STP_NORMALMAP;
 		stp.wraps = GL_REPEAT;
@@ -747,13 +744,18 @@ void Island3::draw(const Viewer *vw){
 
 	Vec3d pos = vw->cs->tocs(vec3_000, this);
 
-	static GLuint roadlist = 0, roadtex = 0, groundtex = 0, groundlist, noisetex;
-	static bool init = false;
-	if(!init){
-		init = 1;
+	static GLuint groundtex = 0, groundlist, noisetex;
+	GLuint roadtex = 0, roadlist = 0;
+	const gltestp::TexCacheBind *stc;
+	stc = generate_road_texture();
+	if(stc){
+		roadtex = stc->getTex(0);
+		roadlist = stc->getList();
+	}
+
+	stc = gltestp::FindTexture("grass.jpg");
+	if(!stc){
 		suftexparam_t stp;
-		roadlist = generate_road_texture();
-		roadtex = FindTexCache("road.bmp")->tex[0];
 		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL;
 		stp.wraps = GL_MIRRORED_REPEAT;
 		stp.wrapt = GL_MIRRORED_REPEAT;
@@ -762,6 +764,11 @@ void Island3::draw(const Viewer *vw){
 		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
 		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture("grass.jpg"))
 			groundtex = stc->getTex(0);
+	}
+
+	stc = gltestp::FindTexture("noise.jpg");
+	if(!stc){
+		suftexparam_t stp;
 		stp.flags |= STP_NORMALMAP;
 		stp.normalfactor = 1.;
 		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
@@ -1271,7 +1278,10 @@ nobridgemodel:
 					{
 						static GLuint texbb = 0;
 						glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
-						if(!texbb){
+
+						const gltestp::TexCacheBind *stc;
+						stc = gltestp::FindTexture("bbrail.bmp");
+						if(!stc){
 							suftexparam_t stp;
 							stp.flags = STP_ALPHA | STP_TRANSPARENTCOLOR | STP_ENV | STP_MAGFIL;
 							stp.alphamap = 1;
@@ -2428,9 +2438,7 @@ Island3Building::Island3Building(Island3 &host) : host(host){
 
 
 void Island3Building::draw(wardraw_t *wd){
-	static bool init = false;
-	if(!init){
-		init = true;
+	if(!gltestp::FindTexture("bldg.jpg")){
 		suftexparam_t stp;
 		stp.flags = STP_ALPHA | STP_MIPMAP | STP_MINFIL | STP_MAGFIL;
 		stp.alphamap = STP_MASKTEX;

@@ -46,13 +46,13 @@ public:
 
 typedef GLuint TextureBind;
 
-EXPORT class TexCacheBind{
+class EXPORT TexCacheBind{
 	TextureBind tex[2];
 	GLuint list;
 	gltestp::dstring name;
 public:
-	TexCacheBind(gltestp::dstring a = "") : name(a){tex[0] = tex[1] = NULL;}
-	~TexCacheBind(){}
+	TexCacheBind(const gltestp::dstring &a = gltestp::dstring(""));
+	~TexCacheBind();
 	gltestp::dstring getName()const{return name;}
 	void setList(GLuint a){list = a;}
 	GLuint getList()const{return list;}
@@ -60,7 +60,7 @@ public:
 	TextureBind getTex(int i)const{return tex[i];}
 };
 
-EXPORT const TexCacheBind *FindTexture(const char *name);
+EXPORT const TexCacheBind *FindTexture(const gltestp::dstring &name);
 EXPORT unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const TextureKey *tex2);
 EXPORT unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap);
 EXPORT suftex_t *AllocSUFTex(const suf_t *suf);

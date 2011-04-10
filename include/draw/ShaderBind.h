@@ -12,6 +12,7 @@
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 #endif
+#include <cpplib/vec3.h>
 #include <gl/GL.h>
 #include <vector>
 
@@ -46,7 +47,7 @@ protected:
 };
 
 /// Current OpenGL status vector. Re-createing this object will force all OpeGL resources to be reallocated.
-extern OpenGLState *openGLState;
+EXPORT extern OpenGLState *openGLState;
 
 
 /// \brief A class that binds shader object name with location indices.

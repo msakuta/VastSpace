@@ -417,8 +417,13 @@ void Beamer::anim(double dt){
 
 
 void Beamer::cache_bridge(void){
-	CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
-	CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
+	const gltestp::TexCacheBind *tcb;
+	tcb = gltestp::FindTexture("bridge.bmp");
+	if(!tcb)
+		CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
+	tcb = gltestp::FindTexture("beamer_panel.bmp");
+	if(!tcb)
+		CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
 /*	if(!FindTexCache("bridge.bmp")){
 		suftexparam_t stp;
 		stp.bmi = lzuc(lzw_bridge, sizeof lzw_bridge, NULL);

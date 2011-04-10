@@ -544,6 +544,10 @@
 				Filter="../draw/*"
 				>
 				<File
+					RelativePath="..\draw\Assault-Draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\Attacker-Draw.cpp"
 					>
 				</File>

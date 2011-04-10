@@ -3,21 +3,11 @@
  */
 #include "../sceptor.h"
 #include "Player.h"
-//#include "cmd.h"
-//#include "glwindow.h"
-//#include "arms.h"
 #include "draw/material.h"
-//#include "warutil.h"
-#include "judge.h"
-//#include "astrodef.h"
-//#include "stellar_file.h"
-//#include "antiglut.h"
-//#include "worker.h"
-//#include "glsl.h"
-//#include "astro_star.h"
-//#include "sensor.h"
+//#include "judge.h"
 #include "effects.h"
 #include "draw/WarDraw.h"
+#include "draw/OpenGLState.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -89,7 +79,7 @@ double Sceptor::nlipsFactor(Viewer &vw)const{
 }
 
 void Sceptor::draw(wardraw_t *wd){
-	static int init = 0;
+	static OpenGLState::weak_ptr<bool> init;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
 	static suf_t *sufrev = NULL;
 	static VBO *vbo[3] = {NULL};
@@ -111,7 +101,7 @@ void Sceptor::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
-	if(init == 0) do{
+	if(!init) do{
 //		FILE *fp;
 		sufbase = CallLoadSUF("models/interceptor0.bin");
 		sufbase1 = CallLoadSUF("models/interceptor1.bin");
@@ -121,9 +111,9 @@ void Sceptor::draw(wardraw_t *wd){
 		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
-		suft = AllocSUFTex(sufbase);
-		suft1 = AllocSUFTex(sufbase1);
-		suft2 = AllocSUFTex(sufrev);
+		suft = gltestp::AllocSUFTex(sufbase);
+		suft1 = gltestp::AllocSUFTex(sufbase1);
+		suft2 = gltestp::AllocSUFTex(sufrev);
 
 /*		do{
 			GLuint vtx, frg;
@@ -140,7 +130,7 @@ void Sceptor::draw(wardraw_t *wd){
 			transparency = glGetUniformLocation(shader, "transparency");
 		}while(0);*/
 
-		init = 1;
+		init.create(*openGLState);
 	} while(0);
 	if(!sufbase){
 		double pos[3];
@@ -299,10 +289,9 @@ void Sceptor::drawtra(wardraw_t *wd){
 		pos += this->pos;
 		gldSpriteGlow(pos, p->throttle * .002, col, wd->vw->irot);*/
 
-		static bool init = false;
-		static GLuint texname = 0;
-		if(!init){
-			init = true;
+		GLuint texname = 0;
+		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("textures/blast.jpg");
+		if(!tcb){
 			suftexparam_t stp, stp2;
 			stp.flags = STP_MAGFIL;
 			stp.magfil = GL_LINEAR;
@@ -312,6 +301,8 @@ void Sceptor::drawtra(wardraw_t *wd){
 //			texname = CallCacheBitmap("textures/blast.jpg", "textures/blast.jpg", &stp, NULL);
 			texname = CallCacheBitmap5("textures/blast.jpg", "textures/blast.jpg", &stp, "textures/noise.jpg", &stp2);
 		}
+		else
+			texname = tcb->getList();
 
 		glPushMatrix();
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);

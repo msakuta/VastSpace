@@ -2290,7 +2290,7 @@ int Island3Entity::takedamage(double damage, int hitpart){
 void Island3Entity::draw(WarDraw *wd){
 #if 1
 	{
-		static bool init = false;
+		static OpenGLState::weak_ptr<bool> init;
 		static suf_t *sufs[3] = {NULL};
 		static VBO *vbo[3] = {NULL};
 		static suftex_t *pst[3] = {NULL};
@@ -2302,7 +2302,7 @@ void Island3Entity::draw(WarDraw *wd){
 				CacheSUFMaterials(sufs[i]);
 				pst[i] = gltestp::AllocSUFTex(sufs[i]);
 			}
-			init = true;
+			init.create(*openGLState);
 		}
 		static const double normal[3] = {0., 1., 0.};
 		static const double dscale = .01;

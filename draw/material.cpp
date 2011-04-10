@@ -14,6 +14,7 @@
 #include <vector>
 extern "C"{
 #include <clib/c.h>
+#include <clib/cfloat.h>
 #include <clib/zip/UnZip.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
@@ -24,6 +25,7 @@ extern "C"{
 }
 #include <setjmp.h>
 #include <gl/glu.h>
+#include <map>
 
 
 static const suftexparam_t defstp = {
@@ -64,14 +66,6 @@ void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, co
 		return;
 	}
 	g_mats.push_back(MaterialBind(name, texname1, texname2, stp1 ? *stp1 : defstp, stp2 ? *stp2 : defstp));
-/*	m = &(g_mats = (MaterialBind*)realloc(g_mats, (++g_nmats) * sizeof*g_mats))[g_nmats - 1];
-	m->name = name;
-	if(texname1)
-		m->texname[0] = texname1;
-	if(texname2)
-		m->texname[1] = texname2;
-	m->stp[0] = stp1 ? *stp1 : defstp;
-	m->stp[1] = stp2 ? *stp2 : defstp;*/
 }
 
 GLuint CacheMaterial(const char *name){
@@ -528,7 +522,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			return 0;
 	}
 
-	ret = CacheSUFMTex(entry, &stp, fname2 && *fname2 ? &stp2 : NULL);
+	ret = gltestp::CacheSUFMTex(entry, &gltestp::TextureKey(&stp), fname2 && *fname2 ? &gltestp::TextureKey(&stp2) : NULL);
 	if(bfh)
 		ZipFree(bfh);
 	else if(jpeg)
@@ -598,4 +592,496 @@ suf_t *CallLoadSUF(const char *fname){
 	if(!ret)
 		return NULL;
 	return (ret);
+}
+
+
+namespace gltestp{
+
+//static std::map<TextureKey, TextureBind> textures;
+
+static std::map<gltestp::dstring, TexCacheBind> gstc;
+
+
+/* if we have already compiled the texture into a list, reuse it */
+const TexCacheBind *FindTexture(const char *name){
+	return &gstc[name];
+}
+
+
+static void cachemtex(const suftexparam_t *stp){
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, stp->flags & STP_WRAP_S ? stp->wraps : GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, stp->flags & STP_WRAP_T ? stp->wrapt : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, stp->flags & STP_MAGFIL ? stp->magfil : GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, stp->flags & STP_MINFIL ? stp->minfil : stp->flags & STP_MIPMAP ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, stp->flags & STP_ENV ? stp->env : GL_MODULATE);
+	if(stp->flags & STP_ALPHA_TEST /*stp->mipmap & 0x80*/){
+		glEnable(GL_ALPHA_TEST);
+		glAlphaFunc(GL_GREATER, .5f);
+	}
+	else
+		glDisable(GL_ALPHA_TEST);
+	glEnable(GL_TEXTURE_2D);
+}
+
+static GLuint cachetex(const suftexparam_t *stp){
+	GLuint ret;
+	const BITMAPINFO *bmi = stp->bmi;
+	GLint env = stp->env;
+	unsigned char *head;
+	int alpha = stp->flags & STP_ALPHA;
+	int mipmap = stp->flags & STP_MIPMAP;
+#if 1
+	GLubyte (*tex)[3], (*tex4)[4];
+
+	head = &((unsigned char*)bmi)[offsetof(BITMAPINFO, bmiColors) + bmi->bmiHeader.biClrUsed * sizeof(RGBQUAD)];
+
+	switch(bmi->bmiHeader.biBitCount){
+	case 4:
+	{
+		int x, y;
+		int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 16;
+		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
+		if(alpha){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
+			for(y = 0; y < bmi->bmiHeader.biHeight; y++){
+				unsigned char *buf = head + (bmi->bmiHeader.biWidth * bmi->bmiHeader.biBitCount + 31) / 32 * 4 * y;
+				for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+					int pos = x + y * bmi->bmiHeader.biWidth, idx = 0xf & (buf[x / 2] >> ((x+1) % 2 * 4));
+					tex4[pos][0] = bmi->bmiColors[idx].rgbRed;
+					tex4[pos][1] = bmi->bmiColors[idx].rgbGreen;
+					tex4[pos][2] = bmi->bmiColors[idx].rgbBlue;
+//					tex4[pos][3] = stp->mipmap & 0x80 ? idx ? 255 : 0 : 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+					tex4[pos][3] = stp->transparentColor == idx ? 0 : 255;
+				}
+			}
+		}
+		else{
+			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
+			for(y = 0; y < bmi->bmiHeader.biHeight; y++){
+				unsigned char *buf = head + (bmi->bmiHeader.biWidth * bmi->bmiHeader.biBitCount + 31) / 32 * 4 * y;
+				for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+					int pos = x + y * bmi->bmiHeader.biWidth, idx = 0xf & (buf[x / 2] >> ((x+1) % 2 * 4));
+					tex[pos][0] = bmi->bmiColors[idx].rgbRed;
+					tex[pos][1] = bmi->bmiColors[idx].rgbGreen;
+					tex[pos][2] = bmi->bmiColors[idx].rgbBlue;
+				}
+			}
+		}
+		break;
+	}
+	case 8:
+	{
+		int x, y;
+		int cols = bmi->bmiHeader.biClrUsed;
+		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
+		if(alpha){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
+			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
+				tex4[pos][0] = bmi->bmiColors[idx].rgbRed;
+				tex4[pos][1] = bmi->bmiColors[idx].rgbGreen;
+				tex4[pos][2] = bmi->bmiColors[idx].rgbBlue;
+//				tex4[pos][3] = 128 == bmi->bmiColors[idx].rgbRed && 128 == bmi->bmiColors[idx].rgbGreen && 128 == bmi->bmiColors[idx].rgbBlue ? 0 : 255;
+				tex4[pos][3] = stp->transparentColor == idx ? 0 : 255;
+			}
+		}
+		else{
+			int w = bmi->bmiHeader.biWidth, h = bmi->bmiHeader.biHeight, wb = (bmi->bmiHeader.biWidth + 3) / 4 * 4;
+			tex = (GLubyte(*)[3])malloc(w * h * sizeof*tex);
+			if(stp->flags & STP_NORMALMAP) for(y = 0; y < h; y++) for(x = 0; x < w; x++){
+				int pos = x + y * w;
+				tex[pos][0] = (unsigned char)rangein(127 + (double)stp->normalfactor * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
+				tex[pos][1] = (unsigned char)rangein(127 + stp->normalfactor * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
+				tex[pos][2] = 255;
+			}
+			else  for(y = 0; y < h; y++) for(x = 0; x < w; x++){
+				int pos = x + y * w, idx = src[x + y * wb];
+				tex[pos][0] = bmi->bmiColors[idx].rgbRed;
+				tex[pos][1] = bmi->bmiColors[idx].rgbGreen;
+				tex[pos][2] = bmi->bmiColors[idx].rgbBlue;
+			}
+		}
+		break;
+	}
+	case 24:
+	{
+		int x, y;
+		int cols = bmi->bmiHeader.biClrUsed;
+		const unsigned char (*src)[3] = (const unsigned char(*)[3])&bmi->bmiColors[cols];
+		if(alpha){
+			int alphatex = stp->flags & STP_ALPHATEX && stp->bmiMask->bmiHeader.biBitCount == 8 && stp->bmi->bmiHeader.biWidth == stp->bmiMask->bmiHeader.biWidth && stp->bmi->bmiHeader.biHeight == stp->bmiMask->bmiHeader.biHeight;
+			BYTE *alphasrc;
+			if(alphatex)
+				alphasrc = (BYTE*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
+			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				tex4[pos][0] = src[pos][2];
+				tex4[pos][1] = src[pos][1];
+				tex4[pos][2] = src[pos][0];
+				tex4[pos][3] = alphatex ? alphasrc[pos] : stp->transparentColor == (tex4[pos][0] | (tex4[pos][1] << 8) | (tex4[pos][2] << 16)) ? 0 : 255;
+			}
+		}
+		else{
+			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
+			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				tex[pos][0] = src[pos][2];
+				tex[pos][1] = src[pos][1];
+				tex[pos][2] = src[pos][0];
+			}
+		}
+		break;
+	}
+	case 32:
+	{
+		int x, y, h = ABS(bmi->bmiHeader.biHeight);
+		int cols = bmi->bmiHeader.biClrUsed;
+		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
+		if(stp->flags & STP_MASKTEX)
+			mask = (const unsigned char*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
+		if((stp->flags & (STP_ALPHA | STP_RGBA32)) == (STP_ALPHA | STP_RGBA32)){
+			tex4 = (unsigned char(*)[4])src;
+		}
+		else if(alpha /*stp->alphamap & (3 | STP_MASKTEX)*/){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * h * sizeof*tex4);
+			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				int pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth;
+				tex4[pos1][0] = src[pos][2];
+				tex4[pos1][1] = src[pos][1];
+				tex4[pos1][2] = src[pos][0];
+				tex4[pos1][3] = stp->alphamap & STP_MASKTEX ?
+					((mask[x / 8 + (stp->bmiMask->bmiHeader.biWidth + 31) / 32 * 4 * (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y)] >> (7 - x % 8)) & 1) * 127 + 127 :
+					stp->alphamap == 2 ? src[pos][3] : 255;
+			}
+		}
+		else{
+			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * h * sizeof*tex);
+			for(y = 0; y < h; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+				int pos = x + y * bmi->bmiHeader.biWidth;
+				int pos1 = x + (bmi->bmiHeader.biHeight < 0 ? h - y - 1 : y) * bmi->bmiHeader.biWidth;
+				tex[pos1][0] = src[pos][2];
+				tex[pos1][1] = src[pos][1];
+				tex[pos1][2] = src[pos][0];
+			}
+		}
+		break;
+	}
+	default:
+		return 0;
+	}
+	glGenTextures(1, &ret);
+	glBindTexture(GL_TEXTURE_2D, ret);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	if(mipmap)
+		gluBuild2DMipmaps(GL_TEXTURE_2D, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight),
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? (void*)tex4 : (void*)tex);
+	else
+		glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight), 0,
+			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? (void*)tex4 : (void*)tex);
+	if(!(bmi->bmiHeader.biBitCount == 32 && (stp->flags & (STP_ALPHA | STP_RGBA32)) == (STP_ALPHA | STP_RGBA32)))
+		free(stp->flags & STP_ALPHA ? (void*)tex4 : (void*)tex);
+#else
+	{
+		int i;
+		static const GLenum target[3] = {GL_PIXEL_MAP_I_TO_B, GL_PIXEL_MAP_I_TO_G, GL_PIXEL_MAP_I_TO_R};
+		GLushort *map;
+		map = malloc(cols * sizeof*map);
+		for(i = 0; i < 3; i++){
+			int j;
+			for(j = 0; j < cols; j++)
+				map[j] = (GLushort)(*(unsigned long*)&bmi->bmiColors[j] >> i * 8 << 8);
+			glPixelMapusv(target[i], cols, map);
+		}
+		free(map);
+	}
+	glGenTextures(1, &ret);
+	glBindTexture(GL_TEXTURE_2D, ret);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB4, bmi->bmiHeader.biWidth, bmi->bmiHeader.biHeight, 0,
+		GL_COLOR_INDEX, GL_UNSIGNED_BYTE, &bmi->bmiColors[cols]);
+/*	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, bmi->bmiHeader.biWidth, bmi->bmiHeader.biHeight,
+		GL_COLOR_INDEX, GL_UNSIGNED_BYTE, &bmi->bmiColors[cols]);*/
+#endif
+/*	cachemtex(stp);*/
+	return ret;
+}
+
+unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const TextureKey *tex2){
+
+	/* allocate cache list space */
+	if(gstc.find(name) != gstc.end())
+		return gstc[name].getList();
+//	gstc.push_back(TextureBind(name));
+	TexCacheBind tcb(name);
+//	gstc = realloc(gstc, ++nstc * sizeof *gstc);
+//	gstc[nstc-1].name = malloc(strlen(name)+1);
+//	strcpy(gstc[nstc-1].name, name);
+
+/*	cachetex(bmi);*/
+	glPushAttrib(GL_TEXTURE_BIT);
+/*	glGetIntegerv(GL_TEXTURE_2D_BINDING, &prevtex);*/
+	if(!strcmp(name, "Mapping1.bmp")){
+		return 0;
+	}
+/*	glNewList(gstc[nstc-1].list = glGenLists(1), GL_COMPILE);*/
+	tcb.setTex(1, NULL);
+	if(!glActiveTextureARB){
+//		TextureBind tb = textures[*tex1];
+//		if(!tb){
+			TextureBind tb = cachetex(tex1);
+//			textures[*tex1] = tb;
+//		}
+		tcb.setTex(0, tb);
+	}
+	else{
+		if(tex2){
+/*			glActiveTextureARB(GL_TEXTURE0_ARB);*/
+			TextureBind tb = cachetex(tex1);
+			tcb.setTex(0, tb);
+/*			glActiveTextureARB(GL_TEXTURE1_ARB);*/
+/*			if(tex1->bmi == tex2->bmi){
+				gstc[nstc-1].tex[1] = gstc[nstc-1].tex[0];
+				glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[1] = gstc[nstc-1].tex[0]);
+				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else*/
+				tb = cachetex(tex2);
+				tcb.setTex(1, tb);
+/*			glActiveTextureARB(GL_TEXTURE0_ARB);*/
+		}
+		else{
+/*			glActiveTextureARB(GL_TEXTURE0_ARB);*/
+			tcb.setTex(0, cachetex(tex1));
+/*			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);*/
+		}
+	}
+/*	glBindTexture(GL_TEXTURE_2D, prevtex);*/
+	glPopAttrib();
+/*	glEndList();*/
+
+	tcb.setList(glGenLists(1));
+	glNewList(tcb.getList(), GL_COMPILE);
+	if(!glActiveTextureARB){
+		cachemtex(tex1);
+		glBindTexture(GL_TEXTURE_2D, tcb.getTex(0));
+		{
+			GLfloat envcolor[4] = {1., 0., 0., 1.};
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+		}
+	}
+	else{
+		if(tex2){
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glBindTexture(GL_TEXTURE_2D, tcb.getTex(0));
+			cachemtex(tex1);
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, tcb.getTex(1));
+			cachemtex(tex2);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			{
+				GLfloat envcolor[4] = {1., 1., 0., 1.};
+				glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+			}
+		}
+		else{
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glBindTexture(GL_TEXTURE_2D, tcb.getTex(0));
+			cachemtex(tex1);
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			{
+				GLfloat envcolor[4] = {1., 0., 0., 1.};
+				glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+			}
+		}
+	}
+	glEndList();
+#if 0
+	glNewList(gstc[nstc-1].list = glGenLists(1), GL_COMPILE);
+	if(!glActiveTextureARB){
+		glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[0]);
+		cachemtex(tex1);
+	}
+	else{
+		if(tex2){
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[0]);
+			cachemtex(tex1);
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[1]);
+			cachemtex(tex2);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+		else{
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glBindTexture(GL_TEXTURE_2D, gstc[nstc-1].tex[0]);
+			cachemtex(tex1);
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+	}
+	glEndList();
+#endif
+
+	gstc[name] = tcb;
+
+	return tcb.getList();
+}
+
+unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap){
+	suftexparam_t stp;
+	if(!bmi)
+		return 0;
+	stp.bmi = bmi;
+	stp.flags = STP_ENV | STP_ALPHA | (mipmap ? STP_MIPMAP : 0);
+	stp.env = GL_MODULATE;
+	stp.mipmap = mipmap;
+	stp.magfil = GL_NEAREST;
+	stp.alphamap = 1;
+	return CacheSUFMTex(name, &stp, NULL);
+}
+
+suftex_t *AllocSUFTex(const suf_t *suf){
+	return gltestp::AllocSUFTexScales(suf, NULL, 0, NULL, 0);
+}
+
+suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes){
+	suftex_t *ret;
+	int i, n, k;
+/*	for(i = n = 0; i < suf->na; i++) if(suf->a[i].colormap)
+		n++;*/
+	if(!suf)
+		return NULL;
+	n = suf->na;
+	ret = (suftex_t*)malloc(offsetof(suftex_t, a) + n * sizeof *ret->a);
+	ret->n = n;
+	for(i = k = 0; i < n; i++){
+		unsigned j;
+		const char *name = texes && i < ntexes && texes[i] ? texes[i] : suf->a[i].colormap;
+		k = i;
+		if(!(suf->a[i].valid & SUF_TEX) || !name){
+			struct suftexlist *s = &ret->a[k];
+			s->list = 0;
+			s->tex[0] = 0;
+			s->tex[1] = 0;
+			s->scale = 1.;
+			s->onBeginTexture = NULL;
+			s->onBeginTextureData = NULL;
+			s->onInitedTexture = NULL;
+			s->onInitedTextureData = NULL;
+			s->onEndTexture = NULL;
+			s->onEndTextureData = NULL;
+			continue;
+		}
+
+		/* if we have already compiled the texture into a list, reuse it */
+		if(gstc.find(name) != gstc.end()){
+			TexCacheBind &tcb = gstc[name];
+//		for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
+			struct suftexlist *s = &ret->a[k];
+			s->list = tcb.getList();
+			s->tex[0] = tcb.getTex(0);
+			s->tex[1] = tcb.getTex(1);
+			s->scale = 1.;
+			s->onBeginTexture = NULL;
+			s->onBeginTextureData = NULL;
+			s->onInitedTexture = NULL;
+			s->onInitedTextureData = NULL;
+			s->onEndTexture = NULL;
+			s->onEndTextureData = NULL;
+			continue;
+		}
+		else{
+			/* otherwise, compile it */
+			HANDLE hbm;
+			BITMAP bm;
+			BITMAPINFOHEADER dbmi;
+			FILE *fp;
+			LPVOID pbuf;
+			LONG lines, liens;
+			HDC hdc;
+			int err;
+
+			/* allocate cache list space */
+			TexCacheBind tcb(name);
+//			gstc = realloc(gstc, ++nstc * sizeof *gstc);
+//			gstc[nstc-1].name = malloc(strlen(name)+1);
+//			strcpy(gstc[nstc-1].name, name);
+
+			fp = fopen(suf->a[i].colormap, "rb");
+			if(!fp){
+				ret->a[k].list = 0;
+				ret->a[k].tex[0] = ret->a[k].tex[1] = 0;
+				continue;
+			}
+/*			glNewList(ret->a[k].list = gstc[nstc-1].list = glGenLists(1), GL_COMPILE);*/
+			hbm = LoadImage(0, suf->a[i].colormap, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE/* | LR_CREATEDIBSECTION*/);
+			GetObject(hbm, sizeof bm, &bm);
+			pbuf = malloc(bm.bmWidth * bm.bmHeight * 4);
+			lines = bm.bmHeight;
+			dbmi.biSize = sizeof dbmi;
+			dbmi.biWidth = bm.bmWidth;
+			dbmi.biHeight = bm.bmHeight;
+			dbmi.biPlanes = 1;
+			dbmi.biBitCount = 24;
+			dbmi.biCompression = BI_RGB;
+			dbmi.biSizeImage = 0;
+			dbmi.biClrUsed = dbmi.biClrImportant = 0;
+			hdc = GetDC(GetDesktopWindow());
+			if(lines != (liens = GetDIBits(hdc, (HBITMAP)hbm, 0, bm.bmHeight, pbuf, (LPBITMAPINFO)&dbmi, DIB_RGB_COLORS))){
+/*				glEndList();
+				glDeleteLists(ret->a[k].list, 1);*/
+				ret->a[k].list = 0;
+			}
+			ReleaseDC(GetDesktopWindow(), hdc);
+			if(lines == liens){
+				GLint align;
+				GLboolean swapbyte;
+				glGenTextures(1, ret->a[k].tex);
+				tcb.setTex(0, ret->a[k].tex[0]);
+				tcb.setTex(1, ret->a[k].tex[1] = 0);
+				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex[0]);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+				glGetBooleanv(GL_UNPACK_SWAP_BYTES, &swapbyte);
+				glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_TRUE);
+				err = gluBuild2DMipmaps(GL_TEXTURE_2D, 3, dbmi.biWidth, dbmi.biHeight, GL_RGB, GL_UNSIGNED_BYTE, pbuf);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, align);
+				glPixelStorei(GL_UNPACK_SWAP_BYTES, swapbyte);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+				tcb.setList(glGenLists(1));
+				glNewList(ret->a[k].list = tcb.getList(), GL_COMPILE);
+				glBindTexture(GL_TEXTURE_2D, ret->a[k].tex[0]);
+				glEnable(GL_TEXTURE_2D);
+				if(glActiveTextureARB){
+					glActiveTextureARB(GL_TEXTURE1_ARB);
+					glDisable(GL_TEXTURE_2D);
+					glActiveTextureARB(GL_TEXTURE0_ARB);
+				}
+				glEndList();
+			}
+			fclose(fp);
+			DeleteObject(hbm);
+			free(pbuf);
+			if(k < nscales)
+				ret->a[k].scale = scales[k];
+		}
+	}
+	return ret;
+}
+
+
 }

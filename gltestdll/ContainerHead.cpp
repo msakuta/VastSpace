@@ -428,7 +428,7 @@ void ContainerHead::draw(wardraw_t *wd){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
 			CacheSUFMaterials(sufs[i]);
-			pst[i] = AllocSUFTex(sufs[i]);
+			pst[i] = gltestp::AllocSUFTex(sufs[i]);
 		}
 		initialized = true;
 	}

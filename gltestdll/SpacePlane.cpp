@@ -386,7 +386,7 @@ void SpacePlane::draw(WarDraw *wd){
 			sufs[i] = CallLoadSUF(names[i]);
 			vbo[i] = CacheVBO(sufs[i]);
 //			CacheSUFMaterials(sufs[i]);
-			pst[i] = AllocSUFTex(sufs[i]);
+			pst[i] = gltestp::AllocSUFTex(sufs[i]);
 		}
 		for(int i = 0; i < pst[0]->n; i++) if(!strcmp(sufs[0]->a[i].colormap, "engine2.bmp")){
 			engineAtrIndex = i;

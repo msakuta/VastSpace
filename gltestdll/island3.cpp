@@ -39,6 +39,7 @@ extern "C"{
 #include <assert.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 
+using namespace gltestp;
 
 #define ISLAND3_RAD 3.25 ///< outer radius
 #define ISLAND3_INRAD 3.2 ///< inner radius
@@ -630,12 +631,12 @@ void Island3::beginWallTexture(const Viewer *vw){
 		stp.minfil = GL_LINEAR;
 		stp.normalfactor = 2.;
 		walllist = CallCacheBitmap("bricks.bmp", "models/bricks.bmp", NULL, NULL);
-		if(const suftexcache *stc = FindTexCache("bricks.bmp"))
-			walltex = stc->tex[0];
+		if(const TexCacheBind *stc = FindTexture("bricks.bmp"))
+			walltex = stc->getTex(0);
 		CallCacheBitmap5("bricks_bump.bmp", "textures/bricks.bmp", NULL, "textures/bricks_hgt.bmp", &stp);
-		if(const suftexcache *stc = FindTexCache("bricks_bump.bmp")){
-			wallbumptex = stc->tex[0];
-			nrmmap = stc->tex[1];
+		if(const TexCacheBind *stc = FindTexture("bricks_bump.bmp")){
+			wallbumptex = stc->getTex(0);
+			nrmmap = stc->getTex(1);
 		}
 	}
 	GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.};
@@ -759,13 +760,13 @@ void Island3::draw(const Viewer *vw){
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
 		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
-		if(const suftexcache *stc = FindTexCache("grass.jpg"))
-			groundtex = stc->tex[0];
+		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture("grass.jpg"))
+			groundtex = stc->getTex(0);
 		stp.flags |= STP_NORMALMAP;
 		stp.normalfactor = 1.;
 		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
-		if(const suftexcache *stc = FindTexCache("noise.jpg"))
-			noisetex = stc->tex[0];
+		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture("noise.jpg"))
+			noisetex = stc->getTex(0);
 	}
 
 	/* Shader is togglable on running */
@@ -996,7 +997,7 @@ void Island3::draw(const Viewer *vw){
 				sufs[i] = CallLoadSUF(names[i]);
 				vbo[i] = CacheVBO(sufs[i]);
 				CacheSUFMaterials(sufs[i]);
-				pst[i] = AllocSUFTex(sufs[i]);
+				pst[i] = gltestp::AllocSUFTex(sufs[i]);
 			}
 			init = true;
 		}
@@ -1252,7 +1253,7 @@ void Island3::draw(const Viewer *vw){
 								glDisable(GL_LIGHTING);
 								glDepthMask(GL_FALSE);
 								glColor4ub(0,0,0,255);
-								dstring buf = dstring() << j << "-" << 'A' + m << i;
+								gltestp::dstring buf = gltestp::dstring() << j << "-" << 'A' + m << i;
 								glTranslated(buf.len() * -.5 * 2., 187, 1.2);
 								glScaled(2., 2., 1.);
 								gldPutTextureString(buf);
@@ -2288,7 +2289,7 @@ void Island3Entity::draw(WarDraw *wd){
 				sufs[i] = CallLoadSUF(names[i]);
 				vbo[i] = CacheVBO(sufs[i]);
 				CacheSUFMaterials(sufs[i]);
-				pst[i] = AllocSUFTex(sufs[i]);
+				pst[i] = gltestp::AllocSUFTex(sufs[i]);
 			}
 			init = true;
 		}
@@ -2463,8 +2464,8 @@ void Island3Building::draw(wardraw_t *wd){
 		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 		glMaterialf(GL_FRONT, GL_SHININESS, 50.f);
 		glDisable(GL_TEXTURE_2D);
-		if(const struct suftexcache *stc = FindTexCache("bldg.jpg"))
-			glCallList(stc->list);
+		if(const TexCacheBind *stc = FindTexture("bldg.jpg"))
+			glCallList(stc->getList());
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_BLEND);
 //		glEnable(GL_ALPHA_TEST);

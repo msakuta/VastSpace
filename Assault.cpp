@@ -4,6 +4,7 @@
 #include "Player.h"
 #include "serial_util.h"
 #include "draw/material.h"
+#include "draw/OpenGLState.h"
 #include "EntityCommand.h"
 #include "judge.h"
 #include "btadapt.h"
@@ -304,7 +305,7 @@ void Assault::postframe(){
 
 void Assault::draw(wardraw_t *wd){
 	Assault *const p = this;
-	static int init = 0;
+	static OpenGLState::weak_ptr<bool> init;
 	static suftex_t *pst;
 	static GLuint list = 0;
 	if(!w)
@@ -317,12 +318,12 @@ void Assault::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
 
-	if(init == 0) do{
+	if(!init) do{
 		sufbase = CallLoadSUF("models/assault.bin");
 		if(!sufbase) break;
 		Beamer::cache_bridge();
-		pst = AllocSUFTex(sufbase);
-		init = 1;
+		pst = gltestp::AllocSUFTex(sufbase);
+		init.create(*openGLState);
 	} while(0);
 	if(sufbase){
 		static const double normal[3] = {0., 1., 0.};

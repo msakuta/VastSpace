@@ -12,6 +12,7 @@
 #include "btadapt.h"
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
+#include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
 extern "C"{

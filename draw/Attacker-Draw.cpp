@@ -6,6 +6,7 @@
 #include "effects.h"
 #include "draw/WarDraw.h"
 #include "draw/ShaderBind.h"
+#include "draw/OpenGLState.h"
 #include "motion.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
@@ -19,7 +20,7 @@ struct AttackerTextureParams{
 void Attacker::draw(wardraw_t *wd){
 	static suf_t *sufbase, *sufbridge;
 	static suftex_t *pst, *pstbridge;
-	static bool init = false;
+	static OpenGLState::weak_ptr<bool> init;
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
 
@@ -41,13 +42,13 @@ void Attacker::draw(wardraw_t *wd){
 		CallCacheBitmap5("attacker_engine.bmp", "models/attacker_engine_br.bmp", &stp, "models/attacker_engine.bmp", NULL);
 		CacheSUFMaterials(sufbase);
 		CacheSUFMaterials(sufbridge);
-		pst = AllocSUFTex(sufbase);
+		pst = gltestp::AllocSUFTex(sufbase);
 		for(int i = 0; i < pst->n; i++) if(pst->a[i].tex[1]){
 			pst->a[i].onBeginTexture = onBeginTexture;
 			pst->a[i].onEndTexture = onEndTexture;
 		}
-		pstbridge = AllocSUFTex(sufbridge);
-		init = true;
+		pstbridge = gltestp::AllocSUFTex(sufbridge);
+		init.create(*openGLState);
 	} while(0);
 
 	if(sufbase){

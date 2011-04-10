@@ -900,6 +900,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\include\draw\OpenGLState.h"
+					>
+				</File>
+				<File
 					RelativePath="..\include\draw\ShaderBind.h"
 					>
 				</File>

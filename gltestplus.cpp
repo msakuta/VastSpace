@@ -39,6 +39,7 @@
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "draw/OpenGLState.h"
 
 extern "C"{
 #include <clib/timemeas.h>

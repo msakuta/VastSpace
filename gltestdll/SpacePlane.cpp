@@ -16,6 +16,7 @@
 #include "draw/WarDraw.h"
 #include "Island3.h"
 #include "sqadapt.h"
+#include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
 extern "C"{

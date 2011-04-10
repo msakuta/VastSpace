@@ -2,6 +2,7 @@
  * \brief Implementation of ShadowMap class.
  */
 
+#include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
 

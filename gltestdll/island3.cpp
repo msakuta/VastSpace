@@ -17,6 +17,7 @@
 #include "judge.h"
 #include "bitmap.h"
 #include "draw/WarDraw.h"
+#include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
 #include "glw/popup.h"

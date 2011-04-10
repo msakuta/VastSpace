@@ -11,7 +11,7 @@
 #include "draw/material.h"
 #include "bitmap.h"
 #include "dstring.h"
-#include "draw/ShaderBind.h"
+#include "draw/OpenGLState.h"
 #include <vector>
 extern "C"{
 #include <clib/c.h>

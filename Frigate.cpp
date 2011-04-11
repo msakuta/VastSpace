@@ -13,6 +13,7 @@
 #include "EntityCommand.h"
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
+#include "draw/OpenGLState.h"
 //#include "sensor.h"
 #include "glw/popup.h"
 extern "C"{
@@ -156,8 +157,19 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 
 	if(DBL_EPSILON < vsp){
 		const Vec3d pos0 = nozzlepos + Vec3d(0,0, scale * vsp);
-		static GLuint texname = 0;
-		glPushAttrib(GL_TEXTURE_BIT);
+		class Tex1d{
+		public:
+			GLuint tex[2];
+			Tex1d(){
+				glGenTextures(2, tex);
+			}
+			~Tex1d(){
+				glDeleteTextures(2, tex);
+			}
+		};
+		static OpenGLState::weak_ptr<Tex1d> texname;
+		glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		{
 			Vec3d v = rot.cnj().trans(wd->vw->pos - mat.vp3(pos0));
 			v[2] /= 2. * vsp;
@@ -170,23 +182,44 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 		glDisable(GL_TEXTURE_2D);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		if(!texname){
+			texname.create(*openGLState);
 			static const GLubyte texture[4][4] = {
 				{255,0,0,0},
 				{255,127,0,127},
 				{255,255,0,191},
 				{255,255,255,255},
 			};
-			GLint er = glGetError();
-			glGenTextures(1, &texname);
-			glBindTexture(GL_TEXTURE_1D, texname);
+			glBindTexture(GL_TEXTURE_1D, texname->tex[0]);
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
-			er = glGetError();
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			static const GLubyte texture2[4][4] = {
+				{255,127,64,0},
+				{255,191,127,127},
+				{255,255,255,191},
+				{191,255,255,255},
+			};
+			glBindTexture(GL_TEXTURE_1D, texname->tex[1]);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture2);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		}
+		if(!texname)
+			return;
 		glEnable(GL_TEXTURE_1D);
-		glBindTexture(GL_TEXTURE_1D, texname);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glBindTexture(GL_TEXTURE_1D, texname->tex[0]);
+		if(glActiveTextureARB){
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(0,0,-.5,.5));
+			glEnable(GL_TEXTURE_GEN_S);
+			glEnable(GL_TEXTURE_1D);
+			glBindTexture(GL_TEXTURE_1D, texname->tex[1]);
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
 		glPushMatrix();
 		glMultMatrixd(mat);
 		gldTranslate3dv(pos0);

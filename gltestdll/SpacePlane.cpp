@@ -53,6 +53,12 @@ static const struct color_node cnl_orangeburn[] = {
 };
 static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
+const Vec3d SpacePlane::engines[3] = {
+	Vec3d(0, 0, 155) * sufscale,
+	Vec3d(75, 0, 135) * sufscale,
+	Vec3d(-75, 0, 135) * sufscale,
+};
+
 
 
 
@@ -220,12 +226,6 @@ void SpacePlane::anim(double dt){
 	}
 
 	st::anim(dt);
-
-	static const Vec3d engines[3] = {
-		Vec3d(0, 0, 150) * sufscale,
-		Vec3d(75, 0, 150) * sufscale,
-		Vec3d(-75, 0, 150) * sufscale,
-	};
 
 	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
 	for(int i = 0; i < 3; i++) if(pf[i]){
@@ -482,6 +482,9 @@ void SpacePlane::draw(WarDraw *wd){
 
 void SpacePlane::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
+	drawCapitalBlast(wd, engines[0] + Vec3d(0,0,.01), .01);
+	drawCapitalBlast(wd, engines[1] + Vec3d(0,0,.0075), .0075);
+	drawCapitalBlast(wd, engines[2] + Vec3d(0,0,.0075), .0075);
 }
 
 void SpacePlane::drawOverlay(wardraw_t *){

@@ -5,6 +5,7 @@
  */
 
 #include "export.h"
+#include "OpenGLState.h"
 
 #include "antiglut.h"
 #ifdef _WIN32
@@ -34,9 +35,12 @@ struct EXPORT ShaderBind{
 
 	virtual void getUniformLocations();
 	void use()const;
+	void enableTextures(bool texture1, bool texture2 = false)const;
 protected:
 	virtual void useInt()const;
 };
+
+EXPORT extern OpenGLState::weak_ptr<const ShaderBind*> g_currentShaderBind;
 
 /// Binding of shadow mapping shader program.
 struct EXPORT ShadowMapShaderBind : virtual ShaderBind{

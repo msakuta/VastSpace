@@ -7,6 +7,7 @@
 #include "judge.h"
 #include "effects.h"
 #include "draw/WarDraw.h"
+#include "draw/OpenGLState.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -50,7 +51,7 @@ double Defender::nlipsFactor(Viewer &vw)const{
 }
 
 void Defender::draw(wardraw_t *wd){
-	static int init = 0;
+	static OpenGLState::weak_ptr<bool> init;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
 	static suf_t *sufengine = NULL, *sufengine1 = NULL;
 	static suf_t *sufrev = NULL;
@@ -73,8 +74,12 @@ void Defender::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
-	if(init == 0) do{
+	if(!init) do{
 //		FILE *fp;
+		free(sufbase);
+		free(sufbase1);
+		free(sufengine);
+		free(sufengine1);
 		sufbase = CallLoadSUF("models/defender0_body.bin");
 		sufbase1 = CallLoadSUF("models/defender1_body.bin");
 		sufengine = CallLoadSUF("models/defender0_engine.bin");
@@ -87,13 +92,13 @@ void Defender::draw(wardraw_t *wd){
 //		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
-		suft = AllocSUFTex(sufbase);
-//		suft1 = AllocSUFTex(sufbase1);
-		suftengine = AllocSUFTex(sufengine);
-		suftengine1 = AllocSUFTex(sufengine1);
-//		suft2 = AllocSUFTex(sufrev);
+		suft = gltestp::AllocSUFTex(sufbase);
+//		suft1 = gltestp::AllocSUFTex(sufbase1);
+		suftengine = gltestp::AllocSUFTex(sufengine);
+		suftengine1 = gltestp::AllocSUFTex(sufengine1);
+//		suft2 = gltestp::AllocSUFTex(sufrev);
 
-		init = 1;
+		init.create(*openGLState);
 	} while(0);
 	if(!sufbase){
 		double pos[3];
@@ -261,10 +266,11 @@ void Defender::drawtra(wardraw_t *wd){
 	if(p->throttle || Dodge0 <= task && task <= Dodge3){
 		Vec3d pos0(0, 0, 40. * scale);
 
-		static bool init = false;
-		static GLuint texname = 0;
-		if(!init){
-			init = true;
+		GLuint texname = 0;
+		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("textures/blast.jpg");
+		if(tcb)
+			texname = tcb->getList();
+		else{
 			suftexparam_t stp, stp2;
 			stp.flags = STP_MAGFIL;
 			stp.magfil = GL_LINEAR;

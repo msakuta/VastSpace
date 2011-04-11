@@ -91,6 +91,8 @@ static bool checkFramebufferStatus()
 }
 
 
+OpenGLState::weak_ptr<const ShaderBind*> g_currentShaderBind;
+
 ShaderBind::~ShaderBind(){
 	if(shader)
 		glDeleteProgram(shader);
@@ -106,6 +108,13 @@ void ShaderBind::getUniformLocations(){
 void ShaderBind::use()const{
 	glUseProgram(shader);
 	useInt();
+	g_currentShaderBind.create(*openGLState);
+	*g_currentShaderBind = this;
+}
+
+void ShaderBind::enableTextures(bool texture1, bool texture2)const{
+	glUniform1i(textureEnableLoc, texture1);
+	glUniform1i(texture2EnableLoc, texture2);
 }
 
 void ShaderBind::useInt()const{

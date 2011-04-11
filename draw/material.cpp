@@ -12,6 +12,8 @@
 #include "bitmap.h"
 #include "dstring.h"
 #include "draw/OpenGLState.h"
+#include "draw/ShaderBind.h"
+#include "glsl.h"
 #include <vector>
 extern "C"{
 #include <clib/c.h>
@@ -967,6 +969,18 @@ suftex_t *AllocSUFTex(const suf_t *suf){
 	return gltestp::AllocSUFTexScales(suf, NULL, 0, NULL, 0);
 }
 
+static void shaderOnBeginTexture(void *){
+	if(g_shader_enable && g_currentShaderBind){
+		(*g_currentShaderBind)->enableTextures(false, false);
+	}
+}
+
+static void shaderOnEndTexture(void *){
+	if(g_shader_enable && g_currentShaderBind){
+		(*g_currentShaderBind)->enableTextures(true, false);
+	}
+}
+
 suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes){
 	suftex_t *ret;
 	int i, n, k;
@@ -987,18 +1001,18 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			s->tex[0] = 0;
 			s->tex[1] = 0;
 			s->scale = 1.;
-			s->onBeginTexture = NULL;
+			s->onBeginTexture = shaderOnBeginTexture; // Tell the shader that the texture is disabled.
 			s->onBeginTextureData = NULL;
 			s->onInitedTexture = NULL;
 			s->onInitedTextureData = NULL;
-			s->onEndTexture = NULL;
+			s->onEndTexture = shaderOnEndTexture; // Tell The shader to restore texture usage.
 			s->onEndTextureData = NULL;
 			continue;
 		}
 
 		/* if we have already compiled the texture into a list, reuse it */
 		std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);
-		if(it != gstc.end()){
+		if(it != gstc.end() && it->second){
 			TexCacheBind &tcb = *gstc[name];
 //		for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
 			struct suftexlist *s = &ret->a[k];

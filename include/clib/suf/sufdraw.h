@@ -1,10 +1,14 @@
 #ifndef CLIB_SUF_SUFDRAW_H
 #define CLIB_SUF_SUFDRAW_H
 #include "suf.h"
-#ifdef _WIN32
+#if defined _WIN32
+#if !defined __cplusplus
 #define exit something_meanless
+#endif
 #include <windows.h>
+#if !defined __cplusplus
 #undef exit
+#endif
 #endif
 #include <GL/gl.h>
 

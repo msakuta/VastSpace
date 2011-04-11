@@ -169,6 +169,15 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 			glBindBuffer(GL_ARRAY_BUFFER, vbo->atris[i][2]);
 			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
 
+			// Trying to pass second texture coordinates to rendering pipeline.
+/*			if(glActiveTextureARB){
+				glActiveTextureARB(GL_TEXTURE1_ARB);
+				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+				glBindBuffer(GL_ARRAY_BUFFER, vbo->atris[i][2]);
+				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+			}*/
+
 			/* Vertex index array */
 		//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
 
@@ -185,6 +194,15 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, NULL);
 			if(tex && flags & SUF_TEX){
 				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
+
+				// Execute user-provided callback function when an attribute is exiting.
+				if(ai != last && last != SUFINDEX_MAX && tex->a[last].onEndTexture)
+					tex->a[last].onEndTexture(tex->a[last].onEndTextureData);
+
+				// Execute user-provided callback function when texture is being initialized (even if texture is absent).
+				if(tex->a[ai].onBeginTexture)
+					tex->a[ai].onBeginTexture(tex->a[ai].onBeginTextureData);
+
 				if(atr->valid & SUF_TEX){
 					if(mismatch){
 						if(tex->a[ai].list == 0){
@@ -225,6 +243,10 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 						glEnable(GL_TEXTURE_2D);
 						c->texenabled = 1;
 					}
+
+					// Execute user-provided callback function when texture initialization is complete (even if texture is absent).
+					if(tex->a[ai].onInitedTexture)
+						tex->a[ai].onInitedTexture(tex->a[ai].onInitedTexture);
 				}
 				else{
 					if(mismatch){
@@ -234,6 +256,8 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 							glDisable(GL_TEXTURE_2D);
 							glActiveTextureARB(GL_TEXTURE0);
 						}
+						if(tex->a[ai].onInitedTexture)
+							tex->a[ai].onInitedTexture(tex->a[ai].onInitedTexture);
 						{
 							GLfloat envcolor[4] = {0., 0., 0., 1.};
 							glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
@@ -258,11 +282,15 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, vbo->natris[i]);
+			last = ai;
 		}
+
+		// Execute user-provided callback function when exiting.
+		if(tex->a[ai].onEndTexture)
+			tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
 	}
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
 }

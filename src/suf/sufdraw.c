@@ -275,8 +275,15 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
 			if(tex && flags & SUF_TEX){
 				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
+
+				// Execute user-provided callback function when an attribute is exiting.
 				if(ai != last && last != SUFINDEX_MAX && tex->a[last].onEndTexture)
 					tex->a[last].onEndTexture(tex->a[last].onEndTextureData);
+
+				// Execute user-provided callback function when texture is being initialized (even if texture is absent).
+				if(tex->a[ai].onBeginTexture)
+					tex->a[ai].onBeginTexture(tex->a[ai].onBeginTextureData);
+
 				if(atr->valid & SUF_TEX){
 					if(mismatch){
 						if(tex->a[ai].list == 0){
@@ -288,11 +295,7 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 							timemeas_t tm;
 							double t;
 							TimeMeasStart(&tm);
-							if(tex->a[ai].onBeginTexture)
-								tex->a[ai].onBeginTexture(tex->a[ai].onBeginTextureData);
 							glCallList(tex->a[ai].list);
-							if(tex->a[ai].onInitedTexture)
-								tex->a[ai].onInitedTexture(tex->a[ai].onInitedTextureData);
 /*							if(glActiveTextureARB){
 								glActiveTextureARB(GL_TEXTURE0_ARB);
 								glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
@@ -321,6 +324,10 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 						glEnable(GL_TEXTURE_2D);
 						c->texenabled = 1;
 					}
+					
+					// Execute user-provided callback function when texture initialization is complete (even if texture is absent).
+					if(tex->a[ai].onInitedTexture)
+						tex->a[ai].onInitedTexture(tex->a[ai].onInitedTextureData);
 				}
 				else{
 					if(mismatch){
@@ -362,6 +369,8 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 			polydraw(suf, flags, c, i, &last, tex);
 		last = ai;
 	}
+
+	// Execute user-provided callback function when exiting.
 	if(tex->a[ai].onEndTexture)
 		tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
 /*	if(ai != USHRT_MAX)

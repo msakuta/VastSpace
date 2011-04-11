@@ -170,13 +170,13 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
 
 			// Trying to pass second texture coordinates to rendering pipeline.
-/*			if(glActiveTextureARB){
-				glActiveTextureARB(GL_TEXTURE1_ARB);
+			if(glClientActiveTextureARB){
+				glClientActiveTextureARB(GL_TEXTURE1_ARB);
 				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo->atris[i][2]);
 				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
-				glActiveTextureARB(GL_TEXTURE0_ARB);
-			}*/
+				glClientActiveTextureARB(GL_TEXTURE0_ARB);
+			}
 
 			/* Vertex index array */
 		//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);

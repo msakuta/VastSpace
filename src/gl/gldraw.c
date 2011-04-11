@@ -31,6 +31,7 @@ PFNGLMULTITEXCOORD3DVARBPROC glMultiTexCoord3dvARB = NULL;
 PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB = NULL;
 PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB = NULL;
 PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB = NULL;
+PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = NULL;
 
 /// Returns nonzero if the multitexturing is available.
 int MultiTextureInit(){
@@ -44,6 +45,7 @@ int MultiTextureInit(){
 		ret &= !!(glMultiTexCoord2dARB = (PFNGLMULTITEXCOORD2DARBPROC)wglGetProcAddress("glMultiTexCoord2dARB"));
 		ret &= !!(glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC)wglGetProcAddress("glMultiTexCoord2fARB"));
 		ret &= !!(glMultiTexCoord1fARB = (PFNGLMULTITEXCOORD1FARBPROC)wglGetProcAddress("glMultiTexCoord1fARB"));
+		ret &= !!(glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)wglGetProcAddress("glClientActiveTextureARB"));
 	}
 	return ret;
 }

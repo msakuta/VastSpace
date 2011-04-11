@@ -432,9 +432,9 @@ void SpacePlane::draw(WarDraw *wd){
 			IntDraw(WarDraw *wd) : wd(wd){
 			}
 			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-//				if(vbo)
-//					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
-//				else if(suf)
+				if(vbo)
+					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
+				else if(suf)
 					DecalDrawSUF(suf, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
 			}
 			void glTranslated(double x, double y, double z){

@@ -10,6 +10,7 @@
 #include "motion.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
+#include <clib/suf/sufvbo.h>
 }
 
 struct AttackerTextureParams{
@@ -19,6 +20,7 @@ struct AttackerTextureParams{
 
 void Attacker::draw(wardraw_t *wd){
 	static suf_t *sufbase, *sufbridge;
+	static VBO *vbo[2] = {NULL};
 	static suftex_t *pst, *pstbridge;
 	static OpenGLState::weak_ptr<bool> init;
 
@@ -28,9 +30,13 @@ void Attacker::draw(wardraw_t *wd){
 		return;
 
 	if(!init) do{
+		free(sufbase);
+		free(sufbridge);
 		sufbase = CallLoadSUF("models/attack_body.bin");
 		if(!sufbase) break;
 		sufbridge = CallLoadSUF("models/attack_bridge.bin");
+		vbo[0] = CacheVBO(sufbase);
+		vbo[1] = CacheVBO(sufbridge);
 //		CallCacheBitmap("bricks.bmp", "bricks.bmp", NULL, NULL);
 //		CallCacheBitmap("runway.bmp", "runway.bmp", NULL, NULL);
 		suftexparam_t stp;
@@ -86,14 +92,23 @@ void Attacker::draw(wardraw_t *wd){
 
 		glPushMatrix();
 		glScaled(-scale, scale, -scale);
-		DecalDrawSUF(sufbase, SUF_ATR, &c, pst, NULL, NULL);
+		if(vbo[0])
+			DrawVBO(vbo[0], wd->shadowmapping ? 0 : SUF_ATR, pst);
+		else
+			DecalDrawSUF(sufbase, SUF_ATR, &c, pst, NULL, NULL);
 		glPushMatrix();
 		glScaled(-1,1,1);
 		glFrontFace(GL_CW);
-		DecalDrawSUF(sufbase, SUF_ATR, &c, pst, NULL, NULL);
+		if(vbo[0])
+			DrawVBO(vbo[0], wd->shadowmapping ? 0 : SUF_ATR, pst);
+		else
+			DecalDrawSUF(sufbase, SUF_ATR, &c, pst, NULL, NULL);
 		glFrontFace(GL_CCW);
 		glPopMatrix();
-		DecalDrawSUF(sufbridge, SUF_ATR, &c, pstbridge, NULL, NULL);
+		if(vbo[1])
+			DrawVBO(vbo[1], wd->shadowmapping ? 0 : SUF_ATR, pstbridge);
+		else
+			DecalDrawSUF(sufbridge, SUF_ATR, &c, pstbridge, NULL, NULL);
 		glPopMatrix();
 
 		glPopMatrix();

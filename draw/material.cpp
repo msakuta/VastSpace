@@ -427,17 +427,24 @@ shortjmp:
 
 		/* Grayscale images are not supported.
 		 * TODO: alpha channel? */
-		if(bit_depth != 8 || color_type != PNG_COLOR_TYPE_RGB && color_type != PNG_COLOR_TYPE_RGBA)
+		if(bit_depth != 8 || color_type != PNG_COLOR_TYPE_RGB && color_type != PNG_COLOR_TYPE_RGBA && color_type != PNG_COLOR_TYPE_PALETTE)
 			goto shortjmp;
 
 		/* Calculate number of components. */
-		comps = (color_type == PNG_COLOR_TYPE_RGB ? 3 : 4);
+		comps = (color_type == PNG_COLOR_TYPE_PALETTE ? 1 : color_type == PNG_COLOR_TYPE_RGB ? 3 : 4);
+
+		// Supports paletted images
+		png_colorp pal;
+		int npal = 0;
+		if(color_type == PNG_COLOR_TYPE_PALETTE){
+			png_get_PLTE(png_ptr, info_ptr, &pal, &npal);
+		}
 
 		/* png_get_rows returns array of pointers to rows allocated by the library,
 		 * which must be copied to single bitmap buffer. */
 		ret = png_get_rows(png_ptr, info_ptr);
 
-		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + width * height * 4);
+		bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + npal * sizeof(*bmi->bmiColors) + (width * comps + 3) / 4 * 4 * height);
 		bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 		bmi->bmiHeader.biWidth = width;
 		bmi->bmiHeader.biHeight = height;
@@ -447,10 +454,16 @@ shortjmp:
 		bmi->bmiHeader.biSizeImage = 0;
 		bmi->bmiHeader.biXPelsPerMeter = 0;
 		bmi->bmiHeader.biYPelsPerMeter = 0;
-		bmi->bmiHeader.biClrUsed = 0;
-		bmi->bmiHeader.biClrImportant = 0;
+		bmi->bmiHeader.biClrUsed = npal;
+		bmi->bmiHeader.biClrImportant = npal;
+		for(i = 0; i < npal; i++){
+			bmi->bmiColors[i].rgbBlue = pal[i].blue;
+			bmi->bmiColors[i].rgbGreen = pal[i].green;
+			bmi->bmiColors[i].rgbRed = pal[i].red;
+			bmi->bmiColors[i].rgbReserved = 0;
+		}
 		for(i = 0; i < height; i++)
-			memcpy(&((unsigned char*)&bmi->bmiColors[0])[4 * i * width], ret[i], width * comps);
+			memcpy(&((unsigned char*)&bmi->bmiColors[npal])[(height - i - 1) * width * comps], ret[i], width * comps);
 
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		if(infile)
@@ -1014,7 +1027,6 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);
 		if(it != gstc.end() && it->second){
 			TexCacheBind &tcb = *gstc[name];
-//		for(j = 0; j < nstc; j++) if(!strcmp(name, gstc[j].name)){
 			struct suftexlist *s = &ret->a[k];
 			s->list = tcb.getList();
 			s->tex[0] = tcb.getTex(0);
@@ -1030,6 +1042,40 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		}
 		else{
 			/* otherwise, compile it */
+#if 1
+			CallCacheBitmap(name, name, NULL, NULL);
+			it = gstc.find(name);
+			if(it != gstc.end() && it->second){
+				TexCacheBind &tcb = *gstc[name];
+				struct suftexlist *s = &ret->a[k];
+				s->list = tcb.getList();
+				s->tex[0] = tcb.getTex(0);
+				s->tex[1] = tcb.getTex(1);
+				s->scale = 1.;
+				s->onBeginTexture = NULL;
+				s->onBeginTextureData = NULL;
+				s->onInitedTexture = NULL;
+				s->onInitedTextureData = NULL;
+				s->onEndTexture = NULL;
+				s->onEndTextureData = NULL;
+				continue;
+			}
+			else{
+				TexCacheBind &tcb = *gstc[name];
+				struct suftexlist *s = &ret->a[k];
+				s->list = 0;
+				s->tex[0] = 0;
+				s->tex[1] = 0;
+				s->scale = 1.;
+				s->onBeginTexture = shaderOnBeginTexture; // Tell the shader that the texture is disabled.
+				s->onBeginTextureData = NULL;
+				s->onInitedTexture = NULL;
+				s->onInitedTextureData = NULL;
+				s->onEndTexture = shaderOnEndTexture; // Tell The shader to restore texture usage.
+				s->onEndTextureData = NULL;
+				continue;
+			}
+#else
 			HANDLE hbm;
 			BITMAP bm;
 			BITMAPINFOHEADER dbmi;
@@ -1117,6 +1163,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			free(pbuf);
 			if(k < nscales)
 				ret->a[k].scale = scales[k];
+#endif
 		}
 	}
 	return ret;

@@ -2,6 +2,7 @@
 #include "draw/material.h"
 #include "Viewer.h"
 #include "draw/WarDraw.h"
+#include "draw/OpenGLState.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -428,7 +429,7 @@ void Missile::postframe(){
 void Missile::draw(wardraw_t *wd){
 	static suf_t *suf;
 	static suftex_t *suft;
-	static bool init = false;
+	static OpenGLState::weak_ptr<bool> init;
 
 	if(wd->vw->gc->cullFrustum(pos, .01))
 		return;
@@ -437,13 +438,13 @@ void Missile::draw(wardraw_t *wd){
 		return;
 
 	if(!init) do{
-		init = true;
 		FILE *fp;
 		suf = CallLoadSUF("models/missile.bin");
 		if(!suf)
 			break;
 		CallCacheBitmap("missile_body.bmp", "models/missile_body.bmp", NULL, NULL);
-		suft = AllocSUFTex(suf);
+		suft = gltestp::AllocSUFTex(suf);
+		init.create(*openGLState);
 	} while(0);
 	if(suf){
 		static const double normal[3] = {0., 1., 0.};

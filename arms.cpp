@@ -995,16 +995,23 @@ void LMissileTurret::draw(wardraw_t *wd){
 	// Scale too small culling
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
-	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
-	static suftex_t *pst_barrel;
+	static OpenGLState::weak_ptr<suf_t *> suf_turret = NULL, suf_barrel = NULL;
+	static suftex_t *pst_turret, *pst_barrel;
 	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/missile_launcher.bin");
+	if(!suf_turret){
+		suf_turret.create(*openGLState);
+		*suf_turret = CallLoadSUF("models/missile_launcher.bin");
+		if(*suf_turret){
+			CacheSUFMaterials(*suf_turret);
+			pst_turret = gltestp::AllocSUFTex(*suf_turret);
+		}
+	}
 	if(!suf_barrel){
-		suf_barrel = CallLoadSUF("models/missile_launcher_barrel.bin");
-		if(suf_barrel){
-			CacheSUFMaterials(suf_barrel);
-			pst_barrel = AllocSUFTex(suf_barrel);
+		suf_barrel.create(*openGLState);
+		*suf_barrel = CallLoadSUF("models/missile_launcher_barrel.bin");
+		if(*suf_barrel){
+			CacheSUFMaterials(*suf_barrel);
+			pst_barrel = gltestp::AllocSUFTex(*suf_barrel);
 		}
 	}
 
@@ -1024,10 +1031,10 @@ void LMissileTurret::draw(wardraw_t *wd){
 	gldScaled(bscale);
 //	glMultMatrixf(rotaxis2);
 	glScalef(-1,1,-1);
-	if(suf_turret)
-		DrawSUF(suf_turret, SUF_ATR, NULL);
+	if(*suf_turret)
+		DecalDrawSUF(*suf_turret, SUF_ATR, NULL, pst_turret, NULL, NULL);
 	glPopMatrix();
-	if(suf_barrel){
+	if(*suf_barrel){
 		const Vec3d pos = Vec3d(0, 200, 0) * deploy;
 		Vec3d joint = Vec3d(0, 120, 60);
 		gldScaled(bscale);
@@ -1036,7 +1043,7 @@ void LMissileTurret::draw(wardraw_t *wd){
 		gldTranslate3dv(-joint);
 //		glMultMatrixf(rotaxis2);
 		glScalef(-1,1,-1);
-		DecalDrawSUF(suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
+		DecalDrawSUF(*suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
 	}
 	glPopMatrix();
 	glPopAttrib();

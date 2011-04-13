@@ -1,7 +1,7 @@
 // Defender vs Destroyer
 initUI();
 
-deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.025, 20, player.cs, function(e){e.command("Deploy");});
+deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, function(e){e.command("Deploy");});
 deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 0., 2.), 0.500, 1, player.cs, null);
 
 cmd("pause 0");

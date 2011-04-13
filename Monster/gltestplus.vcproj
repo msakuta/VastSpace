@@ -556,6 +556,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\draw\Destroyer-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\effects.cpp"
 					>
 				</File>

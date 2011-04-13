@@ -930,10 +930,10 @@ void GLWcommandButton::draw(GLwindowState &ws, double){
 	glColor4ub(mod,mod,mod,255);
 	glCallList(texlist);
 	glBegin(GL_QUADS);
-	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
-	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);
-	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos + height);
-	glTexCoord2i(0,1); glVertex2i(xpos, ypos + height);
+	glTexCoord2i(0,1); glVertex2i(xpos, ypos);
+	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos);
+	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos + height);
+	glTexCoord2i(0,0); glVertex2i(xpos, ypos + height);
 	glEnd();
 	glPopAttrib();
 }
@@ -1004,10 +1004,10 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 	glColor4ub(mod,mod,mod,255);
 	glCallList(texlist);
 	glBegin(GL_QUADS);
-	glTexCoord2i(0,0); glVertex2i(xpos, ypos);
-	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos);
-	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos + height);
-	glTexCoord2i(0,1); glVertex2i(xpos, ypos + height);
+	glTexCoord2i(0,1); glVertex2i(xpos, ypos);
+	glTexCoord2i(1,1); glVertex2i(xpos + width, ypos);
+	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos + height);
+	glTexCoord2i(0,0); glVertex2i(xpos, ypos + height);
 	glEnd();
 	glPopAttrib();
 }

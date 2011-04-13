@@ -43,6 +43,8 @@ extern "C"{
 #define DEFENDER_MAX_ANGLESPEED (M_PI * .5)
 
 
+const float Defender::rotateTime = 2.f;
+
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
@@ -891,6 +893,19 @@ void Defender::anim(double dt){
 				p->cooldown = 0;
 			else
 				p->cooldown -= dt;
+
+			if(frotate == 0.){
+				if(isDeployed() && rotateTime < cooldown)
+					frotate = rotateTime;
+			}
+			else{
+				if(frotate < dt){
+					frotate = 0.f;
+					cooldown = 0.;
+				}
+				else
+					frotate -= dt;
+			}
 
 #if 0
 			if((pf->away ? 1. * 1. : .3 * .3) < VECSLEN(delta)/* && 0 < VECSP(pt->velo, pt->pos)*/){

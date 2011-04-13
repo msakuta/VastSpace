@@ -63,6 +63,8 @@ protected:
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	float fdeploy; ///< Factor of deployment
 	float fdodge; ///< Factor where dodging movement
+	float frotate; ///< Phase of barrel rotation, 1. == quarter of a round
+	static const float rotateTime; ///< Time taken to rotate the barrel.
 //	Sceptor *formPrev; ///< previous member in the formation
 //	Attitude attitude;
 

@@ -98,6 +98,9 @@ void CacheSUFMaterials(const suf_t *suf){
 		return;
 	for(i = 0; i < suf->na; i++) if(suf->a[i].colormap){
 
+		if(gltestp::FindTexture(suf->a[i].colormap))
+			continue;
+
 		/* an unreasonable filtering to exclude default mapping. */
 		if(!strcmp(suf->a[i].colormap, "Mapping1.bmp"))
 			continue;
@@ -476,6 +479,10 @@ shortjmp:
 	}
 }
 
+static void LocalFreer(BITMAPINFO *bmi){
+	LocalFree(bmi);
+}
+
 /// \brief Makes a texture bitmap name known as a material that have given characteristics.
 ///
 /// I have tried to make the arguments dstring, but no luck.
@@ -488,12 +495,15 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	suftexparam_t stp, stp2;
 	BITMAPFILEHEADER *bfh = NULL, *bfhMask = NULL;
 	GLuint ret;
-	int mask = 0, jpeg = 0, maskjpeg = 0, jpeg2 = 0;
+	int mask = 0, maskjpeg = 0;
+	void (*freeproc)(BITMAPINFO*) = LocalFreer;
+	void (*freeproc2)(BITMAPINFO*) = LocalFreer;
 	stp.bmiMask = NULL;
 
-	stc = FindTexCache(entry);
-	if(stc)
-		return stc->list;
+	// We must not rely onto sufdraw's global variables.
+//	stc = FindTexCache(entry);
+//	if(stc)
+//		return stc->list;
 	stp = pstp1 ? *pstp1 : defstp;
 
 	/* Try loading from plain bitmap first */
@@ -501,14 +511,12 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 
 	if(!stp.bmi){
 		/* If no luck yet, try jpeg decoding. */
-		stp.bmi = ReadJpeg(fname1, NULL);
-		jpeg = 1;
+		stp.bmi = ReadJpeg(fname1, &freeproc);
 	}
 
 	if(!stp.bmi){
 		/* If still not, try PNG. */
-		stp.bmi = ReadPNG(fname1, NULL);
-		jpeg = 2;
+		stp.bmi = ReadPNG(fname1, &freeproc);
 	}
 
 	/* If all above fail, give up loading image. */
@@ -534,22 +542,18 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 	if(fname2 && *fname2){
 		/* Try loading from plain bitmap first */
 		stp2.bmi = ReadBitmap(fname2);
-		if(!stp2.bmi){
-			/* If no luck yet, try jpeg decoding. */
-			stp2.bmi = ReadJpeg(fname2, NULL);
-			jpeg2 = 1;
-		}
+		if(!stp2.bmi)
+			stp2.bmi = ReadJpeg(fname2, &freeproc2);
+		if(!stp2.bmi)
+			stp2.bmi = ReadPNG(fname2, &freeproc2);
 		if(!stp2.bmi)
 			return 0;
 	}
 
 	ret = gltestp::CacheSUFMTex(entry, &gltestp::TextureKey(&stp), fname2 && *fname2 ? &gltestp::TextureKey(&stp2) : NULL);
-	if(bfh)
-		ZipFree(bfh);
-	else if(jpeg)
-		free((BITMAPINFO*)stp.bmi);
-	else
-		LocalFree((BITMAPINFO*)stp.bmi);
+
+	freeproc(const_cast<BITMAPINFO*>(stp.bmi));
+
 	if(mask){
 		if(bfhMask)
 			ZipFree(bfhMask);
@@ -559,10 +563,7 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 			LocalFree((BITMAPINFO*)stp.bmiMask);
 	}
 	if(fname2 && *fname2){
-		if(jpeg2)
-			free((BITMAPINFO*)stp2.bmi);
-		else if(stp2.bmi)
-			LocalFree((BITMAPINFO*)stp2.bmi);
+		freeproc2(const_cast<BITMAPINFO*>(stp2.bmi));
 	}
 	return ret;
 }

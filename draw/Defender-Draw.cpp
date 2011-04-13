@@ -54,9 +54,9 @@ void Defender::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	static suf_t *sufbase = NULL, *sufbase1 = NULL;
 	static suf_t *sufengine = NULL, *sufengine1 = NULL;
-	static suf_t *sufrev = NULL;
-	static VBO *vbo[4] = {NULL};
-	static suftex_t *suft, *suft1, *suft2, *suftengine, *suftengine1;
+	static suf_t *sufmagazine = NULL, *sufmagazine1 = NULL;
+	static VBO *vbo[5] = {NULL};
+	static suftex_t *suft, *suft1, *suft2, *suftengine, *suftengine1, *suftmagazine;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
@@ -74,32 +74,68 @@ void Defender::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
+	struct TextureParams{
+		Defender *p;
+		WarDraw *wd;
+		static void onBeginTextureMagazine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd)
+				p->wd->setAdditive(true);
+		}
+		static void onEndTextureMagazine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd)
+				p->wd->setAdditive(false);
+		}
+	} tp = {this, wd};
+
+	static int magazineIndex = -1;
+
 	if(!init) do{
-//		FILE *fp;
 		free(sufbase);
 		free(sufbase1);
 		free(sufengine);
 		free(sufengine1);
+		free(sufmagazine);
 		sufbase = CallLoadSUF("models/defender0_body.bin");
 		sufbase1 = CallLoadSUF("models/defender1_body.bin");
 		sufengine = CallLoadSUF("models/defender0_engine.bin");
 		sufengine1 = CallLoadSUF("models/defender1_engine.bin");
-//		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
+		sufmagazine = CallLoadSUF("models/defender0_magazine.bin");
 		vbo[0] = CacheVBO(sufbase);
 		vbo[1] = CacheVBO(sufbase1);
 		vbo[2] = CacheVBO(sufengine);
 		vbo[3] = CacheVBO(sufengine1);
-//		vbo[2] = CacheVBO(sufrev);
+		vbo[4] = CacheVBO(sufmagazine);
 		if(!sufbase) break;
+		suftexparam_t stp;
+		stp.flags = STP_ENV;
+		stp.env = GL_ADD;
+		AddMaterial("defender_magazine.png", "models/defender_magazine_br.png", &stp, "models/defender_magazine.png", NULL);
 		CacheSUFMaterials(sufbase);
+		CacheSUFMaterials(sufmagazine);
 		suft = gltestp::AllocSUFTex(sufbase);
 //		suft1 = gltestp::AllocSUFTex(sufbase1);
 		suftengine = gltestp::AllocSUFTex(sufengine);
 		suftengine1 = gltestp::AllocSUFTex(sufengine1);
-//		suft2 = gltestp::AllocSUFTex(sufrev);
+		suftmagazine = gltestp::AllocSUFTex(sufmagazine);
+
+		if(suftmagazine) for(int i = 0; i < suftmagazine->n; i++) if(sufmagazine->a[i].name == gltestp::dstring("defender_magazine")){
+			suftmagazine->a[i].onBeginTexture = TextureParams::onBeginTextureMagazine;
+			suftmagazine->a[i].onEndTexture = TextureParams::onEndTextureMagazine;
+			magazineIndex = i;
+		}
 
 		init.create(*openGLState);
 	} while(0);
+
+	if(suftmagazine){
+		if(0 <= magazineIndex){
+			suftmagazine->a[magazineIndex].onBeginTextureData = &tp;
+			suftmagazine->a[magazineIndex].onEndTextureData = &tp;
+		}
+	}
+
 	if(!sufbase){
 		double pos[3];
 		GLubyte col[4] = {255,255,0,255};
@@ -177,9 +213,16 @@ void Defender::draw(wardraw_t *wd){
 				if(vbo[0])
 					DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
 				else
-	//				DrawSUF(sufbase, SUF_ATR, NULL);
 					DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
 			}
+
+			glPushMatrix();
+			glRotated(90. * rangein((frotate / rotateTime * 2. - .5), 0., 1.), 0, 0, 1);
+			if(vbo[4])
+				DrawVBO(vbo[4], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suftmagazine);
+			else
+				DecalDrawSUF(sufmagazine, wd->shadowmapping ? 0 : SUF_ATR, NULL, suftmagazine, NULL, NULL);
+			glPopMatrix();
 
 			for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++){
 				glFrontFace((ix + iy) % 2 ? GL_CW : GL_CCW);

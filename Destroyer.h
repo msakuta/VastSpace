@@ -5,11 +5,13 @@
 
 class Destroyer : public Warpable{
 protected:
+	float engineHeat;
 	ArmBase **turrets;
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 	static struct hitbox hitboxes[];
 	static const int nhitboxes;
+	static const double sufscale;
 public:
 	typedef Warpable st;
 	Destroyer(){init();}
@@ -25,6 +27,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *wd);
+	virtual void drawtra(wardraw_t *wd);
 	virtual int takedamage(double damage, int hitpart);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;

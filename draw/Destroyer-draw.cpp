@@ -3,15 +3,17 @@
 #include "effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
+#include "draw/ShaderBind.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 
+const double Destroyer::sufscale = .001;
+
 void Destroyer::draw(wardraw_t *wd){
-	static suf_t *sufbase = NULL;
-	static suf_t *sufbridge = NULL;
-	static suftex_t *pst, *pstbridge;
+	static suf_t *sufs[2] = {NULL};
+	static suftex_t *pst[2];
 	static OpenGLState::weak_ptr<bool> init;
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
@@ -19,12 +21,32 @@ void Destroyer::draw(wardraw_t *wd){
 	if(wd->vw->gc->cullFrustum(pos, hitradius()))
 		return;
 
+	struct TextureParams{
+		Destroyer *p;
+		WarDraw *wd;
+		static void onBeginTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd){
+				p->wd->setAdditive(true);
+				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+				if(asb)
+					asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
+			}
+		}
+		static void onEndTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd)
+				p->wd->setAdditive(false);
+		}
+	} tp = {this, wd};
+
+	static int engineAtrIndex = -1;
 	if(!init) do{
-		free(sufbase);
-		free(sufbridge);
-		sufbase = CallLoadSUF("models/destroyer0.bin");
-		sufbridge = CallLoadSUF("models/destroyer0_bridge.bin");
-		if(!sufbase) break;
+		for(int i = 0; i < 2; i++)
+			free(sufs[i]);
+		sufs[0] = CallLoadSUF("models/destroyer0.bin");
+		sufs[1] = CallLoadSUF("models/destroyer0_bridge.bin");
+		if(!sufs[0]) break;
 		suftexparam_t stp;
 		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
 		stp.magfil = GL_LINEAR;
@@ -32,16 +54,28 @@ void Destroyer::draw(wardraw_t *wd){
 		stp.env = GL_ADD;
 		stp.mipmap = 0;
 		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
-		CacheSUFMaterials(sufbase);
-		CacheSUFMaterials(sufbridge);
-		pst = gltestp::AllocSUFTex(sufbase);
-		pstbridge = gltestp::AllocSUFTex(sufbridge);
+		for(int i = 0; i < 2; i++)
+			CacheSUFMaterials(sufs[i]);
+		for(int i = 0; i < 2; i++)
+			pst[i] = gltestp::AllocSUFTex(sufs[i]);
+
+		for(int i = 0; i < pst[0]->n; i++) if(sufs[0]->a[i].colormap && !strcmp(sufs[0]->a[i].colormap, "engine2.bmp")){
+			engineAtrIndex = i;
+			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+		}
+
 		init.create(*openGLState);
 	} while(0);
 
-	if(sufbase){
-		static const double normal[3] = {0., 1., 0.};
-		double scale = .001;
+	if(pst[0]){
+		if(0 <= engineAtrIndex){
+			pst[0]->a[engineAtrIndex].onBeginTextureData = &tp;
+			pst[0]->a[engineAtrIndex].onEndTextureData = &tp;
+		}
+	}
+
+	if(sufs[0]){
 		static const GLdouble rotaxis[16] = {
 			-1,0,0,0,
 			0,1,0,0,
@@ -56,23 +90,23 @@ void Destroyer::draw(wardraw_t *wd){
 		glMultMatrixd(mat);
 
 		glPushMatrix();
-		glScaled(scale, scale, scale);
+		gldScaled(sufscale);
 		glMultMatrixd(rotaxis);
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
+		DecalDrawSUF(sufs[0], SUF_ATR, NULL, pst[0], NULL, NULL);
 
-		DecalDrawSUF(sufbridge, SUF_ATR, NULL, pstbridge, NULL, NULL);
+		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
 		glScalef(-1, 1, 1);
-		glCullFace(GL_FRONT);
-//		glCullFace(GL_BACK);
-		DecalDrawSUF(sufbridge, SUF_ATR, NULL, pstbridge, NULL, NULL);
-		glScalef(1, -1, 1);
-		glCullFace(GL_BACK);
+		glFrontFace(GL_CW);
 //		glCullFace(GL_FRONT);
-		DecalDrawSUF(sufbridge, SUF_ATR, NULL, pstbridge, NULL, NULL);
-		glScalef(-1, 1, 1);
-		glCullFace(GL_FRONT);
+		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
+		glScalef(1, -1, 1);
+		glFrontFace(GL_CCW);
 //		glCullFace(GL_BACK);
-		DecalDrawSUF(sufbridge, SUF_ATR, NULL, pstbridge, NULL, NULL);
+		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
+		glScalef(-1, 1, 1);
+		glFrontFace(GL_CW);
+//		glCullFace(GL_FRONT);
+		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
 
 		glPopMatrix();
 
@@ -80,6 +114,23 @@ void Destroyer::draw(wardraw_t *wd){
 		glPopAttrib();
 	}
 }
+
+void Destroyer::drawtra(wardraw_t *wd){
+	st::drawtra(wd);
+	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+		return;
+	static const Vec3d engines[] = {
+		Vec3d(0, 0, 180) * sufscale,
+		Vec3d(28, 22, 180) * sufscale,
+		Vec3d(-28, 22, 180) * sufscale,
+		Vec3d(28, -22, 180) * sufscale,
+		Vec3d(-28, -22, 180) * sufscale,
+	};
+	for(int i = 0; i < numof(engines); i++)
+		drawCapitalBlast(wd, engines[i], .02);
+//	drawShield(wd);
+}
+
 
 void WireDestroyer::draw(wardraw_t *wd){
 	static suf_t *sufbase;

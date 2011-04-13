@@ -4,6 +4,7 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "draw/effects.h"
+#include "motion.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -25,7 +26,7 @@ struct hitbox Destroyer::hitboxes[] = {
 const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
 
 
-Destroyer::Destroyer(WarField *aw) : st(aw){
+Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 	init();
 	for(int i = 0; i < nhardpoints; i++){
 		turrets[i] = 1&&i % 3 != 0 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]);
@@ -88,6 +89,7 @@ void Destroyer::init(){
 	st::init();
 	turrets = new ArmBase*[nhardpoints];
 	mass = 1e8;
+	engineHeat = 0.;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
@@ -118,6 +120,9 @@ void Destroyer::anim(double dt){
 	st::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
+
+	// Exponential approach is more realistic (but costs more CPU cycles)
+	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
 }
 
 void Destroyer::postframe(){
@@ -256,7 +261,7 @@ double Destroyer::maxenergy()const{return getManeuve().capacity;}
 const Warpable::maneuve &Destroyer::getManeuve()const{
 	static const struct Warpable::maneuve frigate_mn = {
 		.025, /* double accel; */
-		.1, /* double maxspeed; */
+		.075, /* double maxspeed; */
 		2000000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */

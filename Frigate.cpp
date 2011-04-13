@@ -195,7 +195,7 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			static const GLubyte texture2[4][4] = {
-				{255,127,64,0},
+				{255,127,64,63},
 				{255,191,127,127},
 				{255,255,255,191},
 				{191,255,255,255},

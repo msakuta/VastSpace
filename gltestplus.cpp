@@ -1221,7 +1221,7 @@ int cmd_move(int argc, char *argv[], void *pv){
 	Quatd headrot;
 	int n = 0;
 	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w){
-		if(n == 0)
+		if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
 			headrot = Quatd::direction(-(comdst - pt->pos));
 		n++;
 		Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);

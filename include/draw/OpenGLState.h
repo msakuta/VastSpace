@@ -6,7 +6,7 @@
 
 #include "export.h"
 
-#include <vector>
+#include <set>
 
 /// \brief A class that accumulates OpenGL status variables such as texture units or shader program objects.
 ///
@@ -37,7 +37,7 @@ public:
 	~OpenGLState();
 
 protected:
-	std::vector<weak_ptr_base *> objs;
+	std::set<weak_ptr_base *> objs;
 };
 
 /// Current OpenGL status vector. Re-createing this object will force all OpeGL resources to be reallocated.

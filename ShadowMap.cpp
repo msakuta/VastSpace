@@ -27,12 +27,12 @@ void *operator new(size_t size, OpenGLState &o){
 }
 
 void *OpenGLState::add(weak_ptr_base *wp){
-	objs.push_back(wp);
+	objs.insert(wp);
 	return wp;
 }
 
 OpenGLState::~OpenGLState(){
-	std::vector<weak_ptr_base*>::iterator it = objs.begin();
+	std::set<weak_ptr_base*>::iterator it = objs.begin();
 	for(it; it != objs.end(); it++)
 		(*it)->destroy();
 }

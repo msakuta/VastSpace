@@ -10,6 +10,7 @@
 /// Medium class ship with replaceable turrets.
 class Assault : public Frigate{
 protected:
+	float engineHeat;
 	Assault *formPrev;
 	static suf_t *sufbase;
 	ArmBase **turrets;

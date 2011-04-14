@@ -32,7 +32,7 @@ int Assault::nhardpoints = 0;
 
 
 
-Assault::Assault(WarField *aw) : st(aw), formPrev(NULL){
+Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++){
@@ -57,7 +57,7 @@ void Assault::init(){
 	mass = 1e5;
 	mother = NULL;
 	paradec = -1;
-
+	engineHeat = 0.f;
 }
 
 const char *Assault::idname()const{
@@ -286,6 +286,9 @@ void Assault::anim(double dt){
 	st::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
+
+	// Exponential approach is more realistic (but costs more CPU cycles)
+	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
 }
 
 void Assault::postframe(){

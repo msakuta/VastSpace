@@ -2,6 +2,8 @@
 #include "../Beamer.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
+#include "draw/ShaderBind.h"
+#include "draw/WarDraw.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -32,14 +34,67 @@ void Assault::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
 
+	struct TextureParams{
+		Assault *p;
+		WarDraw *wd;
+		static void onInitedTextureEngineValve(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd){
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Vec4f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3, 1.));
+			}
+		}
+		static void onBeginTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd){
+				p->wd->setAdditive(true);
+				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+				if(asb)
+					asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
+			}
+		}
+		static void onEndTextureEngine(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			if(p && p->wd)
+				p->wd->setAdditive(false);
+		}
+	} tp = {this, wd};
+
+	static int engineValveAtrIndex = -1, engineAtrIndex = -1;
 	if(!init) do{
 		sufbase = CallLoadSUF("models/assault.bin");
 		if(!sufbase) break;
+		suftexparam_t stp;
+		stp.flags = STP_ENV;
+		stp.env = GL_ADD;
+		AddMaterial("enginenozzle.png", "models/enginenozzle_br.png", &stp, "models/enginenozzle.png", NULL);
 		Beamer::cache_bridge();
+		CacheSUFMaterials(sufbase);
 		pst = gltestp::AllocSUFTex(sufbase);
+
+		for(int i = 0; i < pst->n; i++) if(!strcmp(sufbase->a[i].colormap, "engine.bmp")){
+			engineValveAtrIndex = i;
+			pst->a[i].onInitedTexture = TextureParams::onInitedTextureEngineValve;
+		}
+		else if(!strcmp(sufbase->a[i].colormap, "enginenozzle.png")){
+			engineAtrIndex = i;
+			pst->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+			pst->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+		}
+
 		init.create(*openGLState);
 	} while(0);
+
 	if(sufbase){
+		if(pst){
+			if(0 <= engineValveAtrIndex){
+				pst->a[engineValveAtrIndex].onInitedTextureData = &tp;
+			}
+			if(0 <= engineAtrIndex){
+				pst->a[engineAtrIndex].onBeginTextureData = &tp;
+				pst->a[engineAtrIndex].onEndTextureData = &tp;
+			}
+		}
+
 		static const double normal[3] = {0., 1., 0.};
 		double scale = BEAMER_SCALE;
 		static const GLdouble rotaxis[16] = {

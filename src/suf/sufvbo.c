@@ -286,7 +286,7 @@ void DrawVBO(const VBO *vbo, unsigned long flags, suftex_t *tex){
 		}
 
 		// Execute user-provided callback function when exiting.
-		if(tex->a[ai].onEndTexture)
+		if(tex && flags & SUF_TEX && tex->a[ai].onEndTexture)
 			tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
 	}
 

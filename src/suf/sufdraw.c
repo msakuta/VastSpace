@@ -371,7 +371,7 @@ void DecalDrawSUF(const suf_t *suf, unsigned long flags, struct gldCache *c, con
 	}
 
 	// Execute user-provided callback function when exiting.
-	if(tex->a[ai].onEndTexture)
+	if(tex && flags & SUF_TEX && tex->a[ai].onEndTexture)
 		tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
 /*	if(ai != USHRT_MAX)
 		glPopAttrib();*/

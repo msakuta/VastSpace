@@ -25,6 +25,7 @@ public:
 	Vec4(){}
 	Vec4(const T o[4]){a[0] = o[0], a[1] = o[1], a[2] = o[2], a[3] = o[3];}
 	Vec4(T x, T y, T z, T w){a[0] = x, a[1] = y, a[2] = z, a[3] = w;}
+	Vec4(const Vec3<T> &vec3, T w){a[0] = vec3[0], a[1] = vec3[1], a[2] = vec3[2], a[3] = w;}
 	void clear(){a[0] = a[1] = a[2] = a[3] = 0;} // assign zero element
 	tt &addin(const tt &o){
 		a[0] += o.a[0], a[1] += o.a[1], a[2] += o.a[2], a[3] += o.a[3];

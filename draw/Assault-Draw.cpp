@@ -4,15 +4,13 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "draw/WarDraw.h"
+#include "draw/blackbody.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 
 #define BEAMER_SCALE .0002
-
-
-
 
 
 
@@ -40,7 +38,7 @@ void Assault::draw(wardraw_t *wd){
 		static void onInitedTextureEngineValve(void *pv){
 			TextureParams *p = (TextureParams*)pv;
 			if(p && p->wd){
-				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Vec4f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3, 1.));
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Vec4f(blackbodyEmit(p->p->engineHeat * 13000.), 1.));
 			}
 		}
 		static void onBeginTextureEngine(void *pv){
@@ -49,7 +47,7 @@ void Assault::draw(wardraw_t *wd){
 				p->wd->setAdditive(true);
 				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
 				if(asb)
-					asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
+					asb->setIntensity(Vec4f(blackbodyEmit(p->p->engineHeat * 13000.), 1.));
 			}
 		}
 		static void onEndTextureEngine(void *pv){

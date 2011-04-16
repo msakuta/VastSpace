@@ -392,6 +392,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\draw\blackbody.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Bullet.cpp"
 				>
 			</File>
@@ -903,6 +907,10 @@
 				Name="draw"
 				Filter="../include/draw/*"
 				>
+				<File
+					RelativePath="..\include\draw\blackbody.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\draw\material.h"
 					>

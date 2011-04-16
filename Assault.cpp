@@ -288,7 +288,7 @@ void Assault::anim(double dt){
 		turrets[i]->align();
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
-	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
+	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt / 2.)) : engineHeat * exp(-dt / 2.);
 }
 
 void Assault::postframe(){

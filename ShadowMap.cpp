@@ -92,6 +92,7 @@ static bool checkFramebufferStatus()
 
 
 OpenGLState::weak_ptr<const ShaderBind*> g_currentShaderBind;
+OpenGLState::weak_ptr<ShadowMap*> g_currentShadowMap;
 
 ShaderBind::~ShaderBind(){
 	if(shader)
@@ -298,6 +299,8 @@ const ShaderBind *ShadowMap::getShader()const{
 /// Actually draws shadow maps and the scene.
 void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &drawcallback){
 	vw.shadowmap = this;
+	g_currentShadowMap.create(*openGLState);
+	*g_currentShadowMap = this;
 	if(fbo && glIsFrameBufferEXT(fbo)){
 		Mat4d lightProjection[3];
 		Mat4d lightModelView;
@@ -450,6 +453,8 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 		}
 	}
 	vw.shadowmap = NULL;
+	if(g_currentShadowMap)
+		*g_currentShadowMap = NULL;
 }
 
 

@@ -61,11 +61,11 @@ void Assault::draw(wardraw_t *wd){
 	if(!init) do{
 		sufbase = CallLoadSUF("models/assault.bin");
 		if(!sufbase) break;
-		suftexparam_t stp;
+/*		suftexparam_t stp;
 		stp.flags = STP_ENV;
 		stp.env = GL_ADD;
-		AddMaterial("enginenozzle.png", "models/enginenozzle_br.png", &stp, "models/enginenozzle.png", NULL);
-		Beamer::cache_bridge();
+		AddMaterial("enginenozzle.png", "models/enginenozzle_br.png", &stp, "models/enginenozzle.png", NULL);*/
+//		Beamer::cache_bridge();
 		CacheSUFMaterials(sufbase);
 		pst = gltestp::AllocSUFTex(sufbase);
 

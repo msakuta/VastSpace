@@ -13,7 +13,9 @@
 #include "dstring.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
+#include "draw/ShadowMap.h"
 #include "glsl.h"
+#include "sqadapt.h"
 #include <vector>
 extern "C"{
 #include <clib/c.h>
@@ -22,10 +24,14 @@ extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
 #include <clib/gl/multitex.h>
+#include <clib/timemeas.h>
 #include <jpeglib.h>
 #include <jerror.h>
 #include <png.h>
 }
+#include <sqstdio.h>
+#include <sqstdaux.h>
+#include <sqstdmath.h>
 #include <setjmp.h>
 #include <gl/glu.h>
 #include <map>
@@ -38,12 +44,16 @@ static const suftexparam_t defstp = {
 	GL_LINEAR, // GLuint magfil, minfil, wraps, wrapt;
 };
 
+TexParam::TexParam(const suftexparam_t &o) : suftexparam_t(o){
+}
+
+
 /// Material object.
 struct MaterialBind{
 	gltestp::dstring name;
 	gltestp::dstring texname[2];
-	suftexparam_t stp[2];
-	MaterialBind(const gltestp::dstring &name = "", const gltestp::dstring &texname0 = "", const gltestp::dstring &texname1 = "", const suftexparam_t &stp0 = defstp, const suftexparam_t &stp1 = defstp) :
+	TexParam stp[2];
+	MaterialBind(const gltestp::dstring &name = "", const gltestp::dstring &texname0 = "", const gltestp::dstring &texname1 = "", const TexParam &stp0 = TexParam(defstp), const TexParam &stp1 = TexParam(defstp)) :
 	name(name)
 	{
 		texname[0] = texname0;
@@ -56,7 +66,7 @@ struct MaterialBind{
 typedef std::map<gltestp::dstring, MaterialBind> Materials;
 static Materials g_mats;
 
-void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, const char *texname2, suftexparam_t *stp2){
+void AddMaterial(const char *name, const char *texname1, TexParam *stp1, const char *texname2, TexParam *stp2){
 	MaterialBind *m;
 	gltestp::dstring aname = name;
 	Materials::iterator i = g_mats.find(aname);
@@ -623,7 +633,7 @@ namespace gltestp{
 
 static std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> > gstc;
 
-TexCacheBind::TexCacheBind(const gltestp::dstring &aname) : name(aname), list(0){
+TexCacheBind::TexCacheBind(const gltestp::dstring &aname, bool additive) : name(aname), list(0), additive(additive){
 	tex[0] = tex[1] = NULL;
 }
 
@@ -853,6 +863,8 @@ unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, const Textu
 //	gstc[nstc-1].name = malloc(strlen(name)+1);
 //	strcpy(gstc[nstc-1].name, name);
 
+	tcb.setAdditive(tex1->flags & STP_ENV && tex1->env == GL_ADD);
+
 /*	cachetex(bmi);*/
 	glPushAttrib(GL_TEXTURE_BIT);
 /*	glGetIntegerv(GL_TEXTURE_2D_BINDING, &prevtex);*/
@@ -995,6 +1007,18 @@ static void shaderOnEndTexture(void *){
 	}
 }
 
+static void additiveShaderOnBeginTexture(void *){
+	if(g_shader_enable && g_currentShadowMap){
+		(*g_currentShadowMap)->setAdditive(true);
+	}
+}
+
+static void additiveShaderOnEndTexture(void *){
+	if(g_shader_enable && g_currentShadowMap){
+		(*g_currentShadowMap)->setAdditive(false);
+	}
+}
+
 suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes){
 	suftex_t *ret;
 	int i, n, k;
@@ -1033,11 +1057,11 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			s->tex[0] = tcb.getTex(0);
 			s->tex[1] = tcb.getTex(1);
 			s->scale = 1.;
-			s->onBeginTexture = NULL;
+			s->onBeginTexture = it->second->getAdditive() ? additiveShaderOnBeginTexture : NULL;
 			s->onBeginTextureData = NULL;
 			s->onInitedTexture = NULL;
 			s->onInitedTextureData = NULL;
-			s->onEndTexture = NULL;
+			s->onEndTexture = it->second->getAdditive() ? additiveShaderOnEndTexture :NULL;
 			s->onEndTextureData = NULL;
 			continue;
 		}
@@ -1170,5 +1194,83 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 	return ret;
 }
 
+
+class SQMaterial{
+	HSQUIRRELVM v;
+public:
+	SQMaterial();
+	~SQMaterial();
+protected:
+	static SQInteger sqf_addMaterial(HSQUIRRELVM v);
+};
+
+SQMaterial::SQMaterial(){
+	v = sq_open(1024);
+
+	sqstd_seterrorhandlers(v);
+
+//	sq_setprintfunc(v, sqa::sqf_print); //sets the print function
+	sqa::register_global_func(v, sqf_addMaterial, "addMaterial");
+
+    sq_pushroottable(v);
+
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/materials.nut"), 0, 1))) // also prints syntax errors if any 
+	{
+		double d = TimeMeasLap(&tm);
+//		CmdPrint(cpplib::dstring() << "materials.nut total: " << d << " sec");
+	}
+//	else
+//		CmdPrint("scripts/init.nut failed.");
+
+	sq_poptop(v);
+	sq_close(v);
+}
+
+SQMaterial::~SQMaterial(){
+}
+
+SQInteger SQMaterial::sqf_addMaterial(HSQUIRRELVM v){
+	try{
+		const SQChar *name;
+		if(SQ_FAILED(sq_getstring(v, 2, &name)))
+			return SQ_ERROR;
+
+		const SQChar *texname;
+		if(SQ_FAILED(sq_getstring(v, 3, &texname)))
+			return SQ_ERROR;
+
+		TexParam stp;
+		stp.flags = 0;
+
+		const SQChar *env;
+		sq_pushstring(v, _SC("env"), -1);
+		if(SQ_SUCCEEDED(sq_get(v, 4)) && SQ_SUCCEEDED(sq_getstring(v, -1, &env))){
+			if(!strcmp(env, "GL_MODULATE")){
+				stp.flags |= STP_ENV;
+				stp.env = GL_MODULATE;
+			}
+			else if(!strcmp(env, "GL_ADD")){
+				stp.flags |= STP_ENV;
+				stp.env = GL_ADD;
+			}
+			sq_poptop(v);
+		}
+
+		const SQChar *texname2;
+		if(SQ_FAILED(sq_getstring(v, 5, &texname2)))
+			texname2 = NULL;
+
+		AddMaterial(name, texname, &stp, texname2, NULL);
+		return 1;
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+
+static SQMaterial sqm;
 
 }

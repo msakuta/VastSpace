@@ -6,6 +6,7 @@
 
 #include "export.h"
 #include "Viewer.h"
+#include "OpenGLState.h"
 
 #include "antiglut.h"
 #ifdef _WIN32
@@ -41,5 +42,6 @@ public:
 	const AdditiveShaderBind *getAdditive()const;
 };
 
+EXPORT extern OpenGLState::weak_ptr<ShadowMap*> g_currentShadowMap;
 
 #endif

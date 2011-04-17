@@ -74,7 +74,7 @@ void Defender::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
-	struct TextureParams{
+/*	struct TextureParams{
 		Defender *p;
 		WarDraw *wd;
 		static void onBeginTextureMagazine(void *pv){
@@ -87,7 +87,7 @@ void Defender::draw(wardraw_t *wd){
 			if(p && p->wd)
 				p->wd->setAdditive(false);
 		}
-	} tp = {this, wd};
+	} tp = {this, wd};*/
 
 	static int magazineIndex = -1;
 
@@ -108,10 +108,10 @@ void Defender::draw(wardraw_t *wd){
 		vbo[3] = CacheVBO(sufengine1);
 		vbo[4] = CacheVBO(sufmagazine);
 		if(!sufbase) break;
-		suftexparam_t stp;
+/*		TexParam stp;
 		stp.flags = STP_ENV;
 		stp.env = GL_ADD;
-		AddMaterial("defender_magazine.png", "models/defender_magazine_br.png", &stp, "models/defender_magazine.png", NULL);
+		AddMaterial("defender_magazine.png", "models/defender_magazine_br.png", &stp, "models/defender_magazine.png", NULL);*/
 		CacheSUFMaterials(sufbase);
 		CacheSUFMaterials(sufmagazine);
 		suft = gltestp::AllocSUFTex(sufbase);
@@ -120,21 +120,21 @@ void Defender::draw(wardraw_t *wd){
 		suftengine1 = gltestp::AllocSUFTex(sufengine1);
 		suftmagazine = gltestp::AllocSUFTex(sufmagazine);
 
-		if(suftmagazine) for(int i = 0; i < suftmagazine->n; i++) if(sufmagazine->a[i].name == gltestp::dstring("defender_magazine")){
+/*		if(suftmagazine) for(int i = 0; i < suftmagazine->n; i++) if(sufmagazine->a[i].name == gltestp::dstring("defender_magazine")){
 			suftmagazine->a[i].onBeginTexture = TextureParams::onBeginTextureMagazine;
 			suftmagazine->a[i].onEndTexture = TextureParams::onEndTextureMagazine;
 			magazineIndex = i;
-		}
+		}*/
 
 		init.create(*openGLState);
 	} while(0);
 
-	if(suftmagazine){
+/*	if(suftmagazine){
 		if(0 <= magazineIndex){
 			suftmagazine->a[magazineIndex].onBeginTextureData = &tp;
 			suftmagazine->a[magazineIndex].onEndTextureData = &tp;
 		}
-	}
+	}*/
 
 	if(!sufbase){
 		double pos[3];

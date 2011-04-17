@@ -420,7 +420,7 @@ void ContainerHead::draw(wardraw_t *wd){
 	if(!initialized){
 
 		// Register alpha test texture
-		suftexparam_t stp;
+		TexParam stp;
 		stp.flags = STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
 		stp.transparentColor = 0;
 		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);

@@ -13,7 +13,16 @@ extern "C"{
 #include "dstring.h"
 #endif
 
-EXPORT void AddMaterial(const char *name, const char *texname1, suftexparam_t *stp1, const char *texname2, suftexparam_t *stp2);
+#ifdef __cplusplus
+struct EXPORT TexParam : public suftexparam_t{
+	gltestp::dstring shaderProgram[2];
+
+	TexParam(){ flags = 0; }
+	TexParam(const suftexparam_t &o);
+};
+#endif
+
+EXPORT void AddMaterial(const char *name, const char *texname1, TexParam *stp1, const char *texname2, TexParam *stp2);
 EXPORT void CacheSUFMaterials(const suf_t *suf);
 EXPORT extern unsigned CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
 EXPORT unsigned CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2);
@@ -50,14 +59,17 @@ class EXPORT TexCacheBind{
 	TextureBind tex[2];
 	GLuint list;
 	gltestp::dstring name;
+	bool additive;
 public:
-	TexCacheBind(const gltestp::dstring &a = gltestp::dstring(""));
+	TexCacheBind(const gltestp::dstring &a = gltestp::dstring(""), bool additive = false);
 	~TexCacheBind();
 	gltestp::dstring getName()const{return name;}
 	void setList(GLuint a){list = a;}
 	GLuint getList()const{return list;}
 	void setTex(int i, TextureBind t){tex[i] = t;}
 	TextureBind getTex(int i)const{return tex[i];}
+	void setAdditive(bool a){additive = a;}
+	bool getAdditive()const{return additive;}
 };
 
 EXPORT const TexCacheBind *FindTexture(const gltestp::dstring &name);

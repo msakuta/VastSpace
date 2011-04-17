@@ -330,6 +330,15 @@ tlate <- translate;
 	print("\"" + dllpath + "\"l refc is " + gltestdll);
 }
 
+// load the module
+{
+	local dllpath = debugBuild() ?
+		x64Build() ? "gundam.dll" : "..\\gltestplus\\Debug\\gundam.dll" :
+		x64Build() ? "gundam.dll" : "gundam.dll";
+	local gltestdll = loadModule(dllpath);
+	print("\"" + dllpath + "\"l refc is " + gltestdll);
+}
+
 // set stellar file
 stellar_file = 0 || debugBuild() ? "space_debug.ssd" : "space.ssd";
 
@@ -890,6 +899,7 @@ function init_Universe(){
 		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
 		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
 		mainmenu.addItem("Surface Demo", function(){loadmission("scripts/demo7.nut");});
+		mainmenu.addItem("Demo 8", function(){loadmission("gundam/demo.nut");});
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;

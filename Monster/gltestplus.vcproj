@@ -689,10 +689,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\draw\effects.h"
-				>
-			</File>
-			<File
 				RelativePath="..\EntityCommand.h"
 				>
 			</File>
@@ -909,6 +905,10 @@
 				>
 				<File
 					RelativePath="..\include\draw\blackbody.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\draw\effects.h"
 					>
 				</File>
 				<File

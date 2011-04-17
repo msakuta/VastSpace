@@ -5,7 +5,7 @@
 #include "Player.h"
 #include "draw/material.h"
 //#include "judge.h"
-#include "effects.h"
+#include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 extern "C"{

@@ -1,4 +1,4 @@
-#include "effects.h"
+#include "draw/effects.h"
 #include "bitmap.h"
 #include "draw/material.h"
 #include "tent3d.h"

@@ -5,7 +5,7 @@
 
 class Bullet;
 
-class ShieldEffect{
+class EXPORT ShieldEffect{
 public:
 	ShieldEffect();
 	~ShieldEffect();

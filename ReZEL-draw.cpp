@@ -82,12 +82,22 @@ void ReZEL::draw(wardraw_t *wd){
 		"gundam/models/ReZEL_waist.bin",
 		"gundam/models/ReZEL_head.bin",
 		"gundam/models/ReZEL_wing.bin",
-		"gundam/models/ReZEL_shoulder.bin",
-		"gundam/models/ReZEL_upleg.bin",
-		"gundam/models/ReZEL_leg.bin",
-		"gundam/models/ReZEL_uparm.bin",
-		"gundam/models/ReZEL_arm.bin",
-		"gundam/models/ReZEL_hand.bin",
+		"gundam/models/ReZEL_lshoulder.bin",
+		"gundam/models/ReZEL_luparm.bin",
+		"gundam/models/ReZEL_larm.bin",
+		"gundam/models/ReZEL_lhand.bin",
+		"gundam/models/ReZEL_rshoulder.bin",
+		"gundam/models/ReZEL_ruparm.bin",
+		"gundam/models/ReZEL_rarm.bin",
+		"gundam/models/ReZEL_rhand.bin",
+		"gundam/models/ReZEL_lupleg.bin",
+		"gundam/models/ReZEL_lmidleg.bin",
+		"gundam/models/ReZEL_lleg.bin",
+		"gundam/models/ReZEL_ltoe.bin",
+		"gundam/models/ReZEL_rupleg.bin",
+		"gundam/models/ReZEL_rmidleg.bin",
+		"gundam/models/ReZEL_rleg.bin",
+		"gundam/models/ReZEL_rtoe.bin",
 	};
 	static suf_t *suf[numof(models)] = {NULL};
 	static VBO *vbo[numof(models)] = {NULL};
@@ -135,19 +145,20 @@ void ReZEL::draw(wardraw_t *wd){
 		glScalef(-1, 1, -1);
 
 		for(int i = 0; i < numof(models); i++){
-			for(int j = 0; j < 2; j++){
-				glPushMatrix();
+//			for(int j = 0; j < 2; j++)
+			{
+/*				glPushMatrix();
 				if(j){
 					glScalef(-1, 1, 1);
 					glFrontFace(GL_CW);
-				}
+				}*/
 				if(vbo[i])
 					DrawVBO(vbo[i], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suft[i]);
 				else
 					DecalDrawSUF(suf[i], wd->shadowmapping ? 0 : SUF_ATR, NULL, suft[i], NULL, NULL);
-				glPopMatrix();
+//				glPopMatrix();
 			}
-			glFrontFace(GL_CCW);
+//			glFrontFace(GL_CCW);
 		}
 
 		glPopMatrix();

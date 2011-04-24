@@ -468,6 +468,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mqo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\mqodraw.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Player.cpp"
 				>
 			</File>
@@ -541,6 +549,10 @@
 			</File>
 			<File
 				RelativePath="..\Warpable.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\ysdnmmot.cpp"
 				>
 			</File>
 			<Filter
@@ -856,6 +868,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\mqo.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\Player.h"
 				>
 			</File>
@@ -897,6 +913,10 @@
 			</File>
 			<File
 				RelativePath="..\include\Warpable.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\ysdnmmot.h"
 				>
 			</File>
 			<Filter

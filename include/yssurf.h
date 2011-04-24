@@ -1,5 +1,6 @@
 #ifndef YSSURF_H
 #define YSSURF_H
+#include "export.h"
 #include <clib/suf/suf.h>
 #include <string.h>
 
@@ -125,9 +126,9 @@ void DrawYSDNM_V(ysdnm_t *dnm, ysdnmv_t *);
 void TransYSDNM_V(ysdnm_t *dnm, ysdnmv_t *v, void (*callback)(const char *name, void *hint), void *hint);
 
 
-struct ysdnm_motion *YSDNM_MotionLoad(const char *fname);
-struct ysdnm_var *YSDNM_MotionInterpolate(struct ysdnm_motion **mot, double *time, int nmot);
-void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot);
+EXPORT struct ysdnm_motion *YSDNM_MotionLoad(const char *fname);
+EXPORT struct ysdnm_var *YSDNM_MotionInterpolate(struct ysdnm_motion **mot, double *time, int nmot);
+EXPORT void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot);
 void YSDNM_MotionSave(const char *fname, struct ysdnm_motion *mot);
 void YSDNM_MotionAddKeyframe(struct ysdnm_motion *mot, double dt);
 

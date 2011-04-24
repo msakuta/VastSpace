@@ -13,7 +13,7 @@
 #include "astrodraw.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
-//#include "sqadapt.h"
+#include "sqadapt.h"
 #include "motion.h"
 #include "glw/popup.h"
 extern "C"{
@@ -89,7 +89,9 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << cooldown;
 	sc.o << dest;
 	sc.o << fcloak;
+	sc.o << waverider;
 	sc.o << fwaverider;
+	sc.o << weapon;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
@@ -107,7 +109,9 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> cooldown;
 	sc.i >> dest;
 	sc.i >> fcloak;
+	sc.i >> waverider;
 	sc.i >> fwaverider;
+	sc.i >> weapon;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
@@ -144,7 +148,10 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	task(Auto),
 	fuel(maxfuel()),
 	reverser(0),
+	waverider(false),
 	fwaverider(0.),
+	weapon(0),
+	fweapon(0.),
 	mf(0),
 	paradec(-1),
 	forcedEnemy(false),
@@ -206,6 +213,11 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 
 int ReZEL::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
+	list.append("Transform to Waverider", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Transform\\\", 1);})\"");
+	list.append("Transform to Fighter", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Transform\\\", 0);})\"");
+	list.appendSeparator();
+	list.append("Arm Beam Rifle", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 0);})\"");
+	list.append("Arm Shield Beam", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 1);})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -1080,7 +1092,8 @@ void ReZEL::anim(double dt){
 		}
 
 		{
-			double consump = dt * (fabs(pf->throttle) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
+			// Half the top acceleration if not transformed
+			double consump = dt * (fabs(pf->throttle / (1. + fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)
@@ -1121,7 +1134,8 @@ void ReZEL::anim(double dt){
 //		pt->pos += pt->velo * dt;
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
-		fwaverider = approach(fwaverider, task == Moveto, dt, 0.);
+		fwaverider = approach(fwaverider, waverider, dt, 0.);
+		fweapon = approach(fweapon, weapon, dt, 0.);
 	}
 	else{
 		pt->health += dt;
@@ -1369,6 +1383,12 @@ bool ReZEL::command(EntityCommand *com){
 		}
 		return true;
 	}*/
+	else if(TransformCommand *tc = InterpretCommand<TransformCommand>(com)){
+		waverider = !!tc->formid;
+	}
+	else if(WeaponCommand *wc = InterpretCommand<WeaponCommand>(com)){
+		weapon = wc->weaponid;
+	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
@@ -1457,3 +1477,30 @@ static Initializator sss(register_sceptor_cmd);
 double ReZEL::pid_pfactor = 1.;
 double ReZEL::pid_ifactor = 1.;
 double ReZEL::pid_dfactor = 1.;
+
+
+
+IMPLEMENT_COMMAND(TransformCommand, "Transform");
+
+TransformCommand::TransformCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFError(_SC("Invalid argument type"));
+	formid = i;
+}
+
+IMPLEMENT_COMMAND(WeaponCommand, "Weapon");
+
+WeaponCommand::WeaponCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFError(_SC("Invalid argument type"));
+	weaponid = i;
+}
+

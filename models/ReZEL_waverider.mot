@@ -1,6 +1,6 @@
 ysdnm_motion 2
 {
-	keyframe 16 10
+	keyframe 17 10
 	{
 		"ReZEL_waist" 1.87258e-016 0 0 1 0 0 0
 		"ReZEL_lupleg" 6.93547e-018 0 0 1 0 0 0
@@ -18,8 +18,9 @@ ysdnm_motion 2
 		"ReZEL_lshoulder" -0.0314004 -6.93205e-018 2.17777e-019 0.999507 0 0 0
 		"ReZEL_torso" 0 0 0 1 0 0 0
 		"ReZEL_rifle" 0 0 0 1 0 0 0
+		"ReZEL_shield" 0 0 0 1 0 0 0
 	}
-	keyframe 16 10
+	keyframe 17 10
 	{
 		"ReZEL_waist" 0.706924 0 0 0.707289 0 81.4 -40.9
 		"ReZEL_lupleg" -1 0 0 0 46.3 55.5 -7.2
@@ -37,5 +38,6 @@ ysdnm_motion 2
 		"ReZEL_lshoulder" 0.484045 -0.515445 -0.483795 0.515712 -75.8 -93 7.9
 		"ReZEL_torso" 0 0 0 1 0 -96.9 2.1
 		"ReZEL_rifle" 0.707195 -0.00265106 0.707008 0.00302448 -39 157 2.5
+		"ReZEL_shield" 0.707289 -0.000365102 -0.706924 0.000365291 0 140 68.1
 	}
 }

@@ -81,7 +81,7 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 void ReZEL::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	static Model *model;
-	static ysdnm_motion *motions[3];
+	static ysdnm_motion *motions[4];
 	double nf = nlipsFactor(*wd->vw);
 	double scale = REZEL_SCALE * nf;
 	ReZEL *const p = this;
@@ -110,6 +110,7 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[0] = YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
 		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
 		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
+		motions[3] = YSDNM_MotionLoad("gundam/models/ReZEL_aimsub.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -127,12 +128,13 @@ void ReZEL::draw(wardraw_t *wd){
 		glScalef(-1, 1, -1);
 
 #if 1
-		double motion_time[3] = {
+		double motion_time[4] = {
 			10. * fwaverider,
 			10. * (1. - fwaverider),
-			10. * (1. - fwaverider),
+			10. * (1. - fwaverider) * (1. - fweapon),
+			10. * (1. - fwaverider) * fweapon,
 		};
-		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 3);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
 		DrawMQO_V(model, v);
 #else
 		for(int i = 0; i < numof(models); i++){

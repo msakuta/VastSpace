@@ -418,12 +418,12 @@ static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
 
-		EntityCommandCreatorFunc *func = EntityCommand::ctormap()[s];
+		EntityCommandStatic ecs = EntityCommand::ctormap()[s];
 
-		if(func){
-			EntityCommand *com = func(v, *p);
+		if(ecs.newproc){
+			EntityCommand *com = ecs.newproc(v, *p);
 			p->command(com);
-			delete com;
+			ecs.deleteproc(com);
 		}
 		else
 			return sq_throwerror(v, _SC("Entity::command(): Undefined Entity Command"));

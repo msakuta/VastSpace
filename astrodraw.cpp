@@ -1117,6 +1117,8 @@ static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g
 static Initializator s_tscuts(g_tscuts_init);
 
 void TexSphere::draw(const Viewer *vw){
+	if(1)
+		return;
 	if(vw->zslice != 2)
 		return;
 	Astrobj *sun = findBrightest();

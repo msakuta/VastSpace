@@ -24,7 +24,7 @@ typedef const char *EntityCommandID;
 }
 
 #define IMPLEMENT_COMMAND(name,idname) const char *name::sid = idname;\
-	int name::construction_dummy = registerEntityCommand(idname, EntityCommandCreator<name>);\
+	int name::construction_dummy = registerEntityCommand(idname, EntityCommandStatic(EntityCommandCreator<name>, EntityCommandDeletor<name>));\
 	EntityCommandID name::id()const{return sid;}\
 	bool name::derived(EntityCommandID aid)const{if(aid==sid)return true;else return st::derived(aid);}
 
@@ -32,9 +32,20 @@ struct EntityCommand;
 
 typedef EntityCommand *EntityCommandCreatorFunc(HSQUIRRELVM, Entity &);
 
+struct EntityCommandStatic{
+	EntityCommandCreatorFunc *newproc;
+	void (*deleteproc)(void*);
+	EntityCommandStatic(EntityCommandCreatorFunc a = NULL, void b(void*) = NULL) : newproc(a), deleteproc(b){}
+};
+
 template<typename Command>
 EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 	return new Command(v, e);
+}
+
+template<typename Command>
+void EntityCommandDeletor(void *pv){
+	delete pv;
 }
 
 /** \brief Base class for all Entity commands.
@@ -59,7 +70,7 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
  */
 struct EXPORT EntityCommand{
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
-	static std::map<const char *, EntityCommandCreatorFunc*, bool (*)(const char *, const char *)> &ctormap();
+	static std::map<const char *, EntityCommandStatic, bool (*)(const char *, const char *)> &ctormap();
 
 	/** \brief Returns unique ID for this class.
 	 *
@@ -83,7 +94,7 @@ struct EXPORT EntityCommand{
 
 protected:
 	/// Derived classes use this utility to register class.
-	static int registerEntityCommand(const char *name, EntityCommandCreatorFunc ctor){
+	static int registerEntityCommand(const char *name, EntityCommandStatic ctor){
 		ctormap()[name] = ctor;
 		return 0;
 	}

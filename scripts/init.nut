@@ -228,6 +228,12 @@ function foreachents(cs, proc){
 		proc(e);
 }
 
+function foreachselectedents(proc){
+	local e;
+	for(e = player.selected; e != null; e = e.selectnext)
+		proc(e);
+}
+
 function foreachsubents(cs, proc){
 	local cs1 = cs.child();
 	for(; cs1 != null; cs1 = cs1.next())

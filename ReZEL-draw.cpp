@@ -5,6 +5,9 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
+#include "mqo.h"
+#include "yssurf.h"
+#include "ysdnmmot.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -104,6 +107,8 @@ void ReZEL::draw(wardraw_t *wd){
 	static suftex_t *suft[numof(models)];
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
+	static Model *model;
+	static ysdnm_motion *mot;
 	double nf = nlipsFactor(*wd->vw);
 	double scale = REZEL_SCALE * nf;
 	ReZEL *const p = this;
@@ -120,14 +125,16 @@ void ReZEL::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
-		for(int i = 0 ; i < numof(models); i++){
+/*		for(int i = 0 ; i < numof(models); i++){
 			suf[i] = CallLoadSUF(models[i]);
 			if(suf[i]){
 				vbo[i] = CacheVBO(suf[i]);
 				CacheSUFMaterials(suf[i]);
 				suft[i] = gltestp::AllocSUFTex(suf[i]);
 			}
-		}
+		}*/
+		model = LoadMQOModel("gundam/models/ReZEL.mqo", .05);
+		mot =  YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -141,9 +148,13 @@ void ReZEL::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
-		gldScaled(scale);
+		gldScaled(scale / .05);
 		glScalef(-1, 1, -1);
 
+#if 1
+		double motion_time = 10. * velo.len() / .1;
+		DrawMQO_V(model, YSDNM_MotionInterpolate(&mot, &motion_time, 1));
+#else
 		for(int i = 0; i < numof(models); i++){
 //			for(int j = 0; j < 2; j++)
 			{
@@ -160,6 +171,7 @@ void ReZEL::draw(wardraw_t *wd){
 			}
 //			glFrontFace(GL_CCW);
 		}
+#endif
 
 		glPopMatrix();
 

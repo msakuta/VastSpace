@@ -80,35 +80,8 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 
 void ReZEL::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
-	static const char *models[] = {
-		"gundam/models/ReZEL_torso.bin",
-		"gundam/models/ReZEL_waist.bin",
-		"gundam/models/ReZEL_head.bin",
-		"gundam/models/ReZEL_wing.bin",
-		"gundam/models/ReZEL_lshoulder.bin",
-		"gundam/models/ReZEL_luparm.bin",
-		"gundam/models/ReZEL_larm.bin",
-		"gundam/models/ReZEL_lhand.bin",
-		"gundam/models/ReZEL_rshoulder.bin",
-		"gundam/models/ReZEL_ruparm.bin",
-		"gundam/models/ReZEL_rarm.bin",
-		"gundam/models/ReZEL_rhand.bin",
-		"gundam/models/ReZEL_lupleg.bin",
-		"gundam/models/ReZEL_lmidleg.bin",
-		"gundam/models/ReZEL_lleg.bin",
-		"gundam/models/ReZEL_ltoe.bin",
-		"gundam/models/ReZEL_rupleg.bin",
-		"gundam/models/ReZEL_rmidleg.bin",
-		"gundam/models/ReZEL_rleg.bin",
-		"gundam/models/ReZEL_rtoe.bin",
-	};
-	static suf_t *suf[numof(models)] = {NULL};
-	static VBO *vbo[numof(models)] = {NULL};
-	static suftex_t *suft[numof(models)];
-	static GLuint shader = 0;
-	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	static Model *model;
-	static ysdnm_motion *mot;
+	static ysdnm_motion *motions[3];
 	double nf = nlipsFactor(*wd->vw);
 	double scale = REZEL_SCALE * nf;
 	ReZEL *const p = this;
@@ -133,8 +106,10 @@ void ReZEL::draw(wardraw_t *wd){
 				suft[i] = gltestp::AllocSUFTex(suf[i]);
 			}
 		}*/
-		model = LoadMQOModel("gundam/models/ReZEL.mqo", .05);
-		mot =  YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
+		model = LoadMQOModel("gundam/models/ReZEL.mqo", 1.);
+		motions[0] = YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
+		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
+		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -148,12 +123,17 @@ void ReZEL::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
-		gldScaled(scale / .05);
+		gldScaled(scale);
 		glScalef(-1, 1, -1);
 
 #if 1
-		double motion_time = 10. * velo.len() / .1;
-		DrawMQO_V(model, YSDNM_MotionInterpolate(&mot, &motion_time, 1));
+		double motion_time[3] = {
+			10. * fwaverider,
+			10. * (1. - fwaverider),
+			10. * (1. - fwaverider),
+		};
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 3);
+		DrawMQO_V(model, v);
 #else
 		for(int i = 0; i < numof(models); i++){
 //			for(int j = 0; j < 2; j++)

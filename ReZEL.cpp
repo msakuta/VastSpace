@@ -89,6 +89,7 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << cooldown;
 	sc.o << dest;
 	sc.o << fcloak;
+	sc.o << fwaverider;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
@@ -106,6 +107,7 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> cooldown;
 	sc.i >> dest;
 	sc.i >> fcloak;
+	sc.i >> fwaverider;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
@@ -142,6 +144,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	task(Auto),
 	fuel(maxfuel()),
 	reverser(0),
+	fwaverider(0.),
 	mf(0),
 	paradec(-1),
 	forcedEnemy(false),
@@ -1118,6 +1121,7 @@ void ReZEL::anim(double dt){
 //		pt->pos += pt->velo * dt;
 
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
+		fwaverider = approach(fwaverider, task == Moveto, dt, 0.);
 	}
 	else{
 		pt->health += dt;

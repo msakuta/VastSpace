@@ -35,6 +35,7 @@ protected:
 	Vec3d dest;
 	float fcloak;
 	float heat;
+	float fwaverider; ///< Phase of transformation to wave rider
 	struct tent3d_fpol *pf; ///< Trailing smoke
 	Docker *mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;

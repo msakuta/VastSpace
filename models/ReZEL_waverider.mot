@@ -1,6 +1,6 @@
 ysdnm_motion 2
 {
-	keyframe 15 10
+	keyframe 16 10
 	{
 		"ReZEL_waist" 1.87258e-016 0 0 1 0 0 0
 		"ReZEL_lupleg" 6.93547e-018 0 0 1 0 0 0
@@ -17,23 +17,25 @@ ysdnm_motion 2
 		"ReZEL_rshoulder" 0.031385 0.031385 -0.000985987 0.999014 0 0 0
 		"ReZEL_lshoulder" -0.0314004 -6.93205e-018 2.17777e-019 0.999507 0 0 0
 		"ReZEL_torso" 0 0 0 1 0 0 0
+		"ReZEL_rifle" 0 0 0 1 0 0 0
 	}
-	keyframe 15 10
+	keyframe 16 10
 	{
-		"ReZEL_waist" 0.706924 0 0 0.707289 0 5.4 -3.9
-		"ReZEL_lupleg" -1 0 0 0 2.3 4.5 0.8
+		"ReZEL_waist" 0.706924 0 0 0.707289 0 81.4 -40.9
+		"ReZEL_lupleg" -1 0 0 0 46.3 55.5 -7.2
 		"ReZEL_lmidleg" 0.706924 0 0 0.707289 0 0 0
 		"ReZEL_lleg" 0.684366 0 0 0.729138 0 0 0
 		"ReZEL_ltoe" 0.637249 0 0 0.770658 0 0 0
-		"ReZEL_rupleg" -1 0 0 0 -2.3 3.8 0.8
+		"ReZEL_rupleg" -1 0 0 0 -49.3 48.8 -9.2
 		"ReZEL_rmidleg" 0.706924 0 0 0.707289 0 0 0
 		"ReZEL_rleg" 0.706924 0 0 0.707289 0 0 0
-		"ReZEL_wing" 0.728785 0 0 0.684743 0 5.4 3.5
-		"ReZEL_head" 0 0 0 1 0 -3.1 -0.2
+		"ReZEL_wing" 0.728785 0 0 0.684743 0 104.4 58.5
+		"ReZEL_head" 0 0 0 1 0 -66.1 -0.2
 		"ReZEL_rtoe" 0.661134 0 0 0.750268 0 0 0
-		"ReZEL_ruparm" -6.93547e-018 0 0 1 0 0 0
-		"ReZEL_rshoulder" 0.484045 0.515445 0.483795 0.515712 4 -4 2.8
-		"ReZEL_lshoulder" 0.484045 -0.515445 -0.483795 0.515712 -3.8 -4 2.9
-		"ReZEL_torso" 0 0 0 1 0 -6.9 2.1
+		"ReZEL_ruparm" -1.38709e-017 0 0 1 0 0 0
+		"ReZEL_rshoulder" 0.484045 0.515445 0.483795 0.515712 71 -93 10.8
+		"ReZEL_lshoulder" 0.484045 -0.515445 -0.483795 0.515712 -75.8 -93 7.9
+		"ReZEL_torso" 0 0 0 1 0 -96.9 2.1
+		"ReZEL_rifle" 0.707195 -0.00265106 0.707008 0.00302448 -39 157 2.5
 	}
 }

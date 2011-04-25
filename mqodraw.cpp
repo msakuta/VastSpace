@@ -1,6 +1,6 @@
 #include "yssurf.h"
-extern "C"{
 #include "mqo.h"
+extern "C"{
 #include <clib/amat4.h>
 #include <clib/gl/gldraw.h>
 #include <clib/suf/sufdraw.h>

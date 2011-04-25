@@ -14,7 +14,7 @@ struct bullet_static{
 };
 #endif
 
-class Bullet : public Entity{
+class EXPORT Bullet : public Entity{
 public:
 	typedef Entity st;
 

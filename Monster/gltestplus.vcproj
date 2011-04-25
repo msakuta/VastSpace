@@ -673,10 +673,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\BeamProjectile.h"
-				>
-			</File>
-			<File
 				RelativePath="..\btadapt.h"
 				>
 			</File>
@@ -805,6 +801,10 @@
 			</File>
 			<File
 				RelativePath="..\include\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\BeamProjectile.h"
 				>
 			</File>
 			<File

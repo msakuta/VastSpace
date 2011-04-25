@@ -4,7 +4,7 @@
 //#include "arms.h"
 #include "shield.h"
 #include "Player.h"
-#include "Bullet.h"
+#include "BeamProjectile.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Docker.h"
@@ -26,6 +26,9 @@ extern "C"{
 
 
 
+/* color sequences */
+extern const struct color_sequence cs_orangeburn, cs_shortburn;
+
 
 
 
@@ -41,15 +44,15 @@ extern "C"{
 
 #define SCEPTOR_SCALE 1./10000
 #define SCEPTOR_SMOKE_FREQ 20.
-#define SCEPTOR_COOLTIME .2
+#define SCEPTOR_COOLTIME 1.
 #define SCEPTOR_ROLLSPEED (.2 * M_PI)
 #define SCEPTOR_ROTSPEED (.3 * M_PI)
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
-#define SCEPTOR_MAGAZINE 10
-#define SCEPTOR_RELOADTIME 2.
+#define SCEPTOR_MAGAZINE 5
+#define SCEPTOR_RELOADTIME 5.
 
 
 
@@ -92,6 +95,8 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << waverider;
 	sc.o << fwaverider;
 	sc.o << weapon;
+	sc.o << magazine;
+	sc.o << submagazine;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
@@ -112,6 +117,8 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> waverider;
 	sc.i >> fwaverider;
 	sc.i >> weapon;
+	sc.i >> magazine;
+	sc.i >> submagazine;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
@@ -121,11 +128,11 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> formPrev;
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
-/*	WarSpace *ws;
+	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
-		pf = NULL;*/
+		pf = NULL;
 }
 
 const char *ReZEL::dispname()const{
@@ -152,6 +159,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	fwaverider(0.),
 	weapon(0),
 	fweapon(0.),
+	submagazine(3),
 	mf(0),
 	paradec(-1),
 	forcedEnemy(false),
@@ -170,10 +178,10 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->throttle = .5;
 	p->cooldown = 1.;
 	WarSpace *ws;
-/*	if(w && (ws = (WarSpace*)w))
+	if(w && (ws = (WarSpace*)w))
 		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
-		p->pf = NULL;*/
+		p->pf = NULL;
 //	p->mother = mother;
 	p->hitsound = -1;
 	p->docked = false;
@@ -239,8 +247,8 @@ bool ReZEL::undock(Docker *d){
 	if(this->pf)
 		ImmobilizeTefpol3D(this->pf);
 	WarSpace *ws;
-/*	if(w && w->getTefpol3d())
-		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);*/
+	if(w && w->getTefpol3d())
+		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	d->baycool += 1.;
 	return true;
 }
@@ -256,31 +264,25 @@ void cmd_cloak(int argc, char *argv[]){
 	}
 }
 */
-#if 0
-void ReZEL::shootDualGun(double dt){
+
+void ReZEL::shootRifle(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
 	Mat4d mat;
 	int i = 0;
 	if(dt <= cooldown)
 		return;
 	transform(mat);
-	do{
-		Bullet *pb;
+	{
+		BeamProjectile *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, 15.);
+		pb = new BeamProjectile(this, 5, 25.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos[i]);
-/*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
-		theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
-		VECCPY(pb->velo, pt->velo);
-		pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
-		pb->velo[1] += -BULLETSPEED * sin(theta);
-		pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025;
-	} while(!i++);
+	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	if(0 < --magazine)
@@ -291,7 +293,44 @@ void ReZEL::shootDualGun(double dt){
 	}
 	this->mf = .1;
 }
-#endif
+
+void ReZEL::shootShieldBeam(double dt){
+#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
+	static const struct color_node cnl_shortburn[] = {
+		{0.1, COLOR32RGBA(255,127,255,255)},
+		{0.15, COLOR32RGBA(255,63,255,191)},
+		{0.25, COLOR32RGBA(255,31,255,0)},
+	};
+	static const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
+
+	Vec3d velo, gunpos, velo0(0., 0., -1.5);
+	Mat4d mat;
+	int i = 0;
+	if(dt <= cooldown)
+		return;
+	transform(mat);
+	{
+		BeamProjectile *pb;
+		double phi, theta;
+		pb = new BeamProjectile(this, 5, 15., .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
+		w->addent(pb);
+		pb->pos = mat.vp3(gunPos[i]);
+		pb->velo = mat.dvp3(velo0);
+		pb->velo += this->velo;
+		pb->life = 3.;
+		this->heat += .025;
+	}
+//	shootsound(pt, w, p->cooldown);
+//	pt->shoots += 1;
+	if(0 < --submagazine)
+		this->cooldown += 1. / 3.;
+	else{
+		submagazine = 3;
+		this->cooldown += 1.;
+	}
+	this->mf = .1;
+}
+
 
 // find the nearest enemy
 bool ReZEL::findEnemy(){
@@ -541,7 +580,7 @@ void ReZEL::anim(double dt){
 		return;
 	}*/
 
-#if 0
+#if 1
 	if(pf->pf)
 		MoveTefpol3D(pf->pf, pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 #endif
@@ -1000,7 +1039,10 @@ void ReZEL::anim(double dt){
 			}*/
 
 			if(pt->inputs.press & (PL_ENTER | PL_LCLICK)){
-//				shootDualGun(dt);
+				if(weapon == 0)
+					shootRifle(dt);
+				else
+					shootShieldBeam(dt);
 			}
 
 			if(p->cooldown < dt)
@@ -1093,7 +1135,7 @@ void ReZEL::anim(double dt){
 
 		{
 			// Half the top acceleration if not transformed
-			double consump = dt * (fabs(pf->throttle / (1. + fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
+			double consump = dt * (fabs(pf->throttle / (1. + !fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)

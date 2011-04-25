@@ -44,6 +44,7 @@ protected:
 	int paradec;
 	int magazine; ///< remaining bullet count in the magazine to shoot before reloading
 	int weapon; ///< Armed weapon id
+	int submagazine; ///< Remaining rounds in sub-arm
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
@@ -54,7 +55,9 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
-	void shootDualGun(double dt);
+	void shootRifle(double dt);
+	void shootShieldBeam(double dt);
+	void shootMegaBeam(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);
 	bool cull(Viewer &)const;

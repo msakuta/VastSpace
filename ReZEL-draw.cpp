@@ -5,7 +5,7 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
-#include "mqo.h"
+#include "draw/mqoadapt.h"
 #include "yssurf.h"
 extern "C"{
 #include <clib/c.h>
@@ -116,7 +116,7 @@ void ReZEL::draw(wardraw_t *wd){
 				suft[i] = gltestp::AllocSUFTex(suf[i]);
 			}
 		}*/
-		model = LoadMQOModel("gundam/models/ReZEL.mqo", 1.);
+		model = LoadMQOModel("gundam/models/ReZEL.mqo");
 		motions[0] = YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
 		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
 		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
@@ -214,26 +214,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		getMotionTime(&motion_time);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
 
-		model->getBonePos("ReZEL_torso", *v, &pos, &lrot);
-		pos *= scale;
-		pos[0] *= -1;
-		pos[2] *= -1;
-		pos = rot.trans(pos) + this->pos;
-		lrot = rot * rotaxis * lrot;
-		gldSpriteGlow(pos, .002, Vec4<GLubyte>(255,255,255,min(1*255,255)), wd->vw->irot);
-		glBegin(GL_LINES);
-		glColor3f(1,0,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
-		glColor3f(0,1,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
-		glColor3f(0,0,1);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
-		glEnd();
-
-		model->getBonePos("ReZEL_rifle", *v, &pos, &lrot);
+		model->getBonePos("ReZEL_riflemuzzle", *v, &pos, &lrot);
 		pos *= scale;
 		pos[0] *= -1;
 		pos[2] *= -1;
@@ -252,7 +233,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
 		glEnd();
 
-		model->getBonePos("ReZEL_shield", *v, &pos, &lrot);
+		model->getBonePos("ReZEL_shieldmuzzle", *v, &pos, &lrot);
 		pos *= scale;
 		pos[0] *= -1;
 		pos[2] *= -1;
@@ -392,6 +373,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	}
 #endif
 
+#if 0
 	if(false && mf) for(int i = 0; i < 2; i++){
 		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
@@ -410,6 +392,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glMatrixMode(GL_MODELVIEW);*/
 		glPopAttrib();
 	}
+#endif
 }
 
 void ReZEL::drawOverlay(wardraw_t *){

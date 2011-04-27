@@ -2,12 +2,12 @@ Metasequoia Document
 Format Text Ver 1.0
 
 Scene {
-	pos -73.9864 -122.8220 1500.0000
+	pos -5.3169 63.4441 1500.0000
 	lookat 0.0000 0.0000 0.0000
-	head -6.5336
-	pich -0.9308
+	head -6.8936
+	pich -0.8808
 	ortho 0
-	zoom2 20.4800
+	zoom2 5.0000
 	amb 0.250 0.250 0.250
 }
 Material 7 {
@@ -1008,9 +1008,29 @@ Object "ReZEL_shield" {
 		2 V(75 76) M(5)
 	}
 }
+Object "ReZEL_shieldmuzzle" {
+	depth 5
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		115.0000 60.0000 -25.0000
+		115.0000 -80.0000 -25.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
 Object "ReZEL_rshoulder" {
 	depth 1
-	folding 1
+	folding 0
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
@@ -1512,6 +1532,26 @@ Object "ReZEL_rifle" {
 		4 V(42 18 19 76) M(5)
 		3 V(42 76 27) M(5)
 		2 V(77 78) M(5)
+	}
+}
+Object "ReZEL_riflemuzzle" {
+	depth 6
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		-120.0000 -15.0000 45.0000
+		-120.0000 -280.4328 45.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
 	}
 }
 Object "ReZEL_waist" {

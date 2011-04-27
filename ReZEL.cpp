@@ -147,7 +147,9 @@ double ReZEL::maxhealth()const{
 
 
 
-ReZEL::ReZEL() : mother(NULL), mf(0), paradec(-1){
+ReZEL::ReZEL() : mother(NULL), paradec(-1){
+	muzzleFlash[0] = 0.;
+	muzzleFlash[1] = 0.;
 }
 
 ReZEL::ReZEL(WarField *aw) : st(aw),
@@ -160,13 +162,14 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	weapon(0),
 	fweapon(0.),
 	submagazine(3),
-	mf(0),
 	paradec(-1),
 	forcedEnemy(false),
 	formPrev(NULL),
 	evelo(vec3_000),
 	attitude(Passive)
 {
+	muzzleFlash[0] = 0.;
+	muzzleFlash[1] = 0.;
 	ReZEL *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -291,7 +294,7 @@ void ReZEL::shootRifle(double dt){
 		magazine = SCEPTOR_MAGAZINE;
 		this->cooldown += SCEPTOR_RELOADTIME;
 	}
-	this->mf = .1;
+//	this->mf = .1;
 }
 
 void ReZEL::shootShieldBeam(double dt){
@@ -328,7 +331,7 @@ void ReZEL::shootShieldBeam(double dt){
 		submagazine = 3;
 		this->cooldown += 1.;
 	}
-	this->mf = .1;
+//	this->mf = .1;
 }
 
 
@@ -1275,10 +1278,10 @@ void ReZEL::anim(double dt){
 
 	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
-	if(mf < dt)
+/*	if(mf < dt)
 		mf = 0.;
 	else
-		mf -= dt;
+		mf -= dt;*/
 
 	st::anim(dt);
 

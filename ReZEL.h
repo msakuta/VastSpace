@@ -51,7 +51,8 @@ protected:
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
-	float mf; ///< trivial muzzle flashes
+//	float mf; ///< trivial muzzle flashes
+	float muzzleFlash[2]; ///< Muzzle flashes for each arms.
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;

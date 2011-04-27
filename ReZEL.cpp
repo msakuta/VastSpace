@@ -147,7 +147,10 @@ double ReZEL::maxhealth()const{
 
 
 
-ReZEL::ReZEL() : mother(NULL), paradec(-1){
+ReZEL::ReZEL() : mother(NULL), paradec(-1),
+	twist(0.f),
+	pitch(0.f)
+{
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
 }
@@ -162,6 +165,8 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	weapon(0),
 	fweapon(0.),
 	submagazine(3),
+	twist(0.f),
+	pitch(0.f),
 	paradec(-1),
 	forcedEnemy(false),
 	formPrev(NULL),
@@ -274,13 +279,27 @@ void ReZEL::shootRifle(double dt){
 	int i = 0;
 	if(dt <= cooldown)
 		return;
+
+	// Retrieve muzzle position from model, but not the velocity
+	double motion_time[numof(motions)];
+	getMotionTime(&motion_time);
+	ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+	if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
+		gunpos *= sufscale;
+		gunpos[0] *= -1;
+		gunpos[2] *= -1;
+	}
+	else
+		gunpos = vec3_000;
+	YSDNM_MotionInterpolateFree(v);
+
 	transform(mat);
 	{
 		BeamProjectile *pb;
 		double phi, theta;
 		pb = new BeamProjectile(this, 5, 25.);
 		w->addent(pb);
-		pb->pos = mat.vp3(gunPos[i]);
+		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
@@ -294,7 +313,7 @@ void ReZEL::shootRifle(double dt){
 		magazine = SCEPTOR_MAGAZINE;
 		this->cooldown += SCEPTOR_RELOADTIME;
 	}
-//	this->mf = .1;
+	this->muzzleFlash[0] = .5;
 }
 
 void ReZEL::shootShieldBeam(double dt){
@@ -311,13 +330,27 @@ void ReZEL::shootShieldBeam(double dt){
 	int i = 0;
 	if(dt <= cooldown)
 		return;
+
+	// Retrieve muzzle position from model, but not the velocity
+	double motion_time[numof(motions)];
+	getMotionTime(&motion_time);
+	ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+	if(model->getBonePos("ReZEL_shieldmuzzle", *v, &gunpos)){
+		gunpos *= sufscale;
+		gunpos[0] *= -1;
+		gunpos[2] *= -1;
+	}
+	else
+		gunpos = vec3_000;
+	YSDNM_MotionInterpolateFree(v);
+
 	transform(mat);
 	{
 		BeamProjectile *pb;
 		double phi, theta;
 		pb = new BeamProjectile(this, 5, 15., .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
 		w->addent(pb);
-		pb->pos = mat.vp3(gunPos[i]);
+		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
 		pb->life = 3.;
@@ -331,7 +364,7 @@ void ReZEL::shootShieldBeam(double dt){
 		submagazine = 3;
 		this->cooldown += 1.;
 	}
-//	this->mf = .1;
+	this->muzzleFlash[1] = .3;
 }
 
 
@@ -569,9 +602,10 @@ void ReZEL::anim(double dt){
 
 	if(bbody){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
-		pos = btvc(tra.getOrigin());
-		rot = btqc(tra.getRotation());
-		velo = btvc(bbody->getLinearVelocity());
+		this->pos = btvc(tra.getOrigin());
+		this->rot = btqc(tra.getRotation());
+		this->velo = btvc(bbody->getLinearVelocity());
+		this->omg = btvc(bbody->getAngularVelocity());
 	}
 
 /*	if(!mother){
@@ -861,7 +895,7 @@ void ReZEL::anim(double dt){
 							btVector3 btsideomg = btomg - btxh * btxh.dot(btomg);
 							btVector3 btaac = btxh * len - btsideomg * 1.;
 //							bbody->applyTorque(btaac);
-							bbody->setAngularVelocity(btxh * len / dt);
+							bbody->setAngularVelocity(btxh * len * (3. - 2. * fwaverider) / dt);
 /*							Vec3d omg, laac;
 							qrot = xh * len / len2;
 							qrot[3] = sqrt(1. - len * len);
@@ -1138,7 +1172,7 @@ void ReZEL::anim(double dt){
 
 		{
 			// Half the top acceleration if not transformed
-			double consump = dt * (fabs(pf->throttle / (1. + !fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
+			double consump = dt * (fabs(pf->throttle / (2. - fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)
@@ -1151,7 +1185,7 @@ void ReZEL::anim(double dt){
 				p->fuel -= consump;
 			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			acc = pt->rot.trans(acc0);
-			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
+			bbody->applyCentralForce(btvc(acc * spd * 10. * mass));
 			pt->velo += acc * spd;
 		}
 
@@ -1178,9 +1212,11 @@ void ReZEL::anim(double dt){
 		}
 //		pt->pos += pt->velo * dt;
 
-		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
+		fcloak = approach(fcloak, p->cloak, dt, 0.);
 		fwaverider = approach(fwaverider, waverider, dt, 0.);
 		fweapon = approach(fweapon, weapon, dt, 0.);
+		twist = approach(twist, omg.sp(rot.trans(vec3_010)), dt, 0.);
+		pitch = approach(pitch, omg.sp(rot.trans(vec3_100)), dt, 0.);
 	}
 	else{
 		pt->health += dt;
@@ -1278,10 +1314,13 @@ void ReZEL::anim(double dt){
 
 	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
-/*	if(mf < dt)
-		mf = 0.;
-	else
-		mf -= dt;*/
+	// Decay muzzle flashes
+	for(int i = 0; i < numof(muzzleFlash); i++){
+		if(muzzleFlash[i] < dt)
+			muzzleFlash[i] = 0.;
+		else
+			muzzleFlash[i] -= dt;
+	}
 
 	st::anim(dt);
 

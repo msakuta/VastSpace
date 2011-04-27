@@ -53,14 +53,17 @@ protected:
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
 //	float mf; ///< trivial muzzle flashes
 	float muzzleFlash[2]; ///< Muzzle flashes for each arms.
+	float twist; ///< Twist value (integration of angular velocity around Y axis)
+	float pitch; ///< Pitch value (integration of angular velocity around X axis)
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
 
+	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[4];
-	void getMotionTime(double (*motion_time)[4]);
+	static ysdnm_motion *motions[6];
+	void getMotionTime(double (*motion_time)[numof(motions)]);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
 	void shootMegaBeam(double dt);

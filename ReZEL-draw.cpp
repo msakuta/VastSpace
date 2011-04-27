@@ -27,7 +27,6 @@ extern "C"{
 #include <string.h>
 
 
-#define REZEL_SCALE 1./40000
 #define SCEPTER_SMOKE_FREQ 10.
 #define SCEPTER_RELOADTIME .3
 #define SCEPTER_ROLLSPEED (.2 * M_PI)
@@ -60,6 +59,8 @@ const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32
 double g_nlips_factor = 1.;
 static int g_shader_enable = 0;
 
+const double ReZEL::sufscale = 1./40000;
+
 
 bool ReZEL::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
@@ -78,14 +79,16 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[4];
+ysdnm_motion *ReZEL::motions[6];
 
-void ReZEL::getMotionTime(double (*motion_time)[4]){
-	double motion_time1[4] = {
+void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
+	double motion_time1[numof(motions)] = {
 		10. * fwaverider,
 		10. * (1. - fwaverider),
 		10. * (1. - fwaverider) * (1. - fweapon),
 		10. * (1. - fwaverider) * fweapon,
+		(-twist * (1. - fwaverider) + 1.) * 10.,
+		(-pitch * (1. - fwaverider) + 1.) * 10.,
 	};
 	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -93,7 +96,7 @@ void ReZEL::getMotionTime(double (*motion_time)[4]){
 void ReZEL::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	double nf = nlipsFactor(*wd->vw);
-	double scale = REZEL_SCALE * nf;
+	double scale = sufscale * nf;
 	ReZEL *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
@@ -121,6 +124,8 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
 		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
 		motions[3] = YSDNM_MotionLoad("gundam/models/ReZEL_aimsub.mot");
+		motions[4] = YSDNM_MotionLoad("gundam/models/ReZEL_twist.mot");
+		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -138,10 +143,11 @@ void ReZEL::draw(wardraw_t *wd){
 		glScalef(-1, 1, -1);
 
 #if 1
-		double motion_time[4];
+		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
-		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
 		DrawMQO_V(model, v);
+		YSDNM_MotionInterpolateFree(v);
 #else
 		for(int i = 0; i < numof(models); i++){
 //			for(int j = 0; j < 2; j++)
@@ -177,7 +183,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	ReZEL *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
-	double scale = REZEL_SCALE * nlips;
+	double scale = sufscale * nlips;
 
 #if PIDAIM_PROFILE
 	glBegin(GL_LINES);
@@ -210,47 +216,31 @@ void ReZEL::drawtra(wardraw_t *wd){
 		Vec3d pos;
 		Quatd lrot;
 		static const Quatd rotaxis(0, 1., 0., 0.);
-		double motion_time[4];
+		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
-		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
 
-		model->getBonePos("ReZEL_riflemuzzle", *v, &pos, &lrot);
-		pos *= scale;
-		pos[0] *= -1;
-		pos[2] *= -1;
-		pos = rot.trans(pos) + this->pos;
-		lrot = rot * rotaxis * lrot;
-		gldSpriteGlow(pos, .002, Vec4<GLubyte>(127,255,255,min(1*255,255)), wd->vw->irot);
-		glBegin(GL_LINES);
-		glColor3f(1,0,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
-		glColor3f(0,1,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
-		glColor3f(0,0,1);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
-		glEnd();
+		if(0 < muzzleFlash[0]){
+			model->getBonePos("ReZEL_riflemuzzle", *v, &pos, &lrot);
+			pos *= scale;
+			pos[0] *= -1;
+			pos[2] *= -1;
+			pos = rot.trans(pos) + this->pos;
+			lrot = rot * rotaxis * lrot;
+			gldSpriteGlow(pos, .0015 + (.5 - muzzleFlash[0]) * .0015, Vec4<GLubyte>(127,255,255,min(muzzleFlash[0] / .3 * 255, 255)), wd->vw->irot);
+		}
 
-		model->getBonePos("ReZEL_shieldmuzzle", *v, &pos, &lrot);
-		pos *= scale;
-		pos[0] *= -1;
-		pos[2] *= -1;
-		pos = rot.trans(pos) + this->pos;
-		lrot = rot * rotaxis * lrot;
-		gldSpriteGlow(pos, .0015, Vec4<GLubyte>(255,127,255,255), wd->vw->irot);
-		glBegin(GL_LINES);
-		glColor3f(1,0,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
-		glColor3f(0,1,0);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
-		glColor3f(0,0,1);
-		glVertex3dv(pos);
-		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
-		glEnd();
+		if(0 < muzzleFlash[1]){
+			model->getBonePos("ReZEL_shieldmuzzle", *v, &pos, &lrot);
+			pos *= scale;
+			pos[0] *= -1;
+			pos[2] *= -1;
+			pos = rot.trans(pos) + this->pos;
+			lrot = rot * rotaxis * lrot;
+			gldSpriteGlow(pos, .0010 + (.3 - muzzleFlash[1]) * .001, Vec4<GLubyte>(255,127,255,min(muzzleFlash[1] / .3 * 255, 255)), wd->vw->irot);
+		}
+
+		YSDNM_MotionInterpolateFree(v);
 		glPopAttrib();
 	}
 

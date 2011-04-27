@@ -1,4 +1,5 @@
 #include "mqo.h"
+#include "ysdnmmot.h"
 #include "draw/material.h"
 #include <clib/avec3.h>
 #include <clib/avec4.h>
@@ -729,5 +730,44 @@ struct Model *LoadMQOModel(const char *fname, double scale){
 	ret = (struct Model*)malloc(sizeof *ret);
 	ret->n = LoadMQO_Scale(fname, &ret->sufs, NULL, scale, &ret->bones, &ret->tex);
 	return ret;
+}
+
+
+bool Model::getBonePos(const char *boneName, const ysdnmv_t &var, Vec3d *pos, Quatd *rot)const{
+	for(int i = 0; i < this->n; i++) if(bones[i]->depth == 0)
+		if(getBonePosInt(boneName, var, bones[i], Vec3d(0,0,0), Quatd(0,0,0,1), pos, rot))
+			return true;
+	return false;
+}
+
+
+bool Model::getBonePosInt(const char *boneName, const ysdnmv_t &v0, const Bone *bone, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const{
+	Vec3d apos = spos;
+	Quatd arot = srot;
+	for(const ysdnmv_t *v = &v0; v; v = v->next){
+		const char **bonenames = v->bonenames;
+		double (*bonerot)[7] = v->bonerot;
+		int bones = min(v->bones, this->n);
+		for(int i = 0; i < bones; i++) if(!strcmp(bonenames[i], bone->name)){
+			apos += arot.trans(bone->joint);
+			apos += arot.trans(Vec3d(&v->bonerot[i][4]));
+			arot *= Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]);
+			apos -= arot.trans(bone->joint);
+		}
+	}
+	if(!strcmp(boneName, bone->name)){
+		if(pos)
+			*pos = apos + arot.trans(bone->joint);
+		if(rot)
+			*rot = arot;
+		return true;
+	}
+	for(const Bone *nextbone = bone->children; nextbone; nextbone = nextbone->nextSibling){
+		if(nextbone->suf){
+			if(getBonePosInt(boneName, v0, nextbone, apos, arot, pos, rot))
+				return true;
+		}
+	}
+	return false;
 }
 

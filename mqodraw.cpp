@@ -14,7 +14,7 @@ extern "C"{
 
 static int nestlevel = 0;
 static int dumped = 0;
-static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone){
+static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, const Quatd &srot, const Vec3d &spos){
 	int i;
 	int nodraw = 0;
 	int target = 0;
@@ -40,16 +40,22 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone){
 	glPushMatrix();
 /*	gldTranslate3dv(srf->pos);*/
 
+	Vec3d apos = spos;
+	Quatd arot = srot;
 	for(v = v0; v; v = v->next){
 		const char **bonenames = v->bonenames;
 		double (*bonerot)[7] = v->bonerot;
 		int bones = min(v->bones, model->n);
 		for(i = 0; i < bones; i++) if(!strcmp(bonenames[i], bone->name)){
-			Mat4d rotmat = Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]).tomat4();
+/*			Mat4d rotmat = Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]).tomat4();
 			gldTranslate3dv(bone->joint);
 			gldTranslate3dv(&bonerot[i][4]);
 			glMultMatrixd(rotmat);
-			gldTranslaten3dv(bone->joint);
+			gldTranslaten3dv(bone->joint);*/
+			apos += arot.trans(bone->joint);
+			apos += arot.trans(Vec3d(&v->bonerot[i][4]));
+			arot *= Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]);
+			apos -= arot.trans(bone->joint);
 		}
 #if 0
 		if(v->fcla & (1 << srf->cla) && 2 <= srf->nst){
@@ -75,6 +81,10 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone){
 #endif
 	}
 
+	Mat4d rotmat = arot.tomat4();
+	rotmat.vec3(3) = apos;
+	glMultMatrixd(rotmat);
+
 /*	if(srf->pck && !nodraw)*/{
 		if(target){
 			glPushAttrib(GL_DEPTH_BUFFER_BIT);
@@ -85,16 +95,17 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone){
 			glPopAttrib();
 		}
 	}
+	glPopMatrix();
+
 	nestlevel++;
 	for(Bone *nextbone = bone->children; nextbone; nextbone = nextbone->nextSibling){
 //		if(!srf->cld[i].srf)
 //			srf->cld[i].srf = find_node(dnm, srf->cld[i].name);
 		if(nextbone->suf){
-			draw_mqo_node(model, v0, nextbone);
+			draw_mqo_node(model, v0, nextbone, arot, apos);
 		}
 	}
 	nestlevel--;
-	glPopMatrix();
 }
 
 /*void DrawMQO(suf_t **sufs, const char *bonenames[], double (*bonerot)[7], int bones, const char *skipnames[], int skips){
@@ -119,7 +130,7 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone){
 void DrawMQO_V(const Model *model, const ysdnmv_t *v){
 	nestlevel = 0;
 	for(int i = 0; i < model->n; i++) if(model->bones[i]->depth == 0)
-		draw_mqo_node(model, v, model->bones[i]);
+		draw_mqo_node(model, v, model->bones[i], quat_u, vec3_000);
 	if(!dumped)
 		dumped = 1;
 }

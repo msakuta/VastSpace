@@ -3,6 +3,9 @@
 #include "export.h"
 
 #ifdef __cplusplus
+#include <cpplib/vec3.h>
+#include <cpplib/quat.h>
+#include <cpplib/mat4.h>
 extern "C"{
 #endif
 
@@ -11,6 +14,9 @@ extern "C"{
 
 /* it's not that generic task to convert mqo to suf, so don't make
  library member. */
+
+typedef struct ysdnm_var ysdnmv_t;
+
 
 struct Bone{
 	double joint[3];
@@ -23,11 +29,14 @@ struct Bone{
 	struct Bone *nextSibling;
 };
 
-struct Model{
+struct EXPORT Model{
 	suf_t **sufs;
 	suftex_t **tex;
 	struct Bone **bones;
 	int n;
+	bool getBonePos(const char *boneName, const ysdnmv_t &var, Vec3d *pos, Quatd *rot = NULL)const;
+protected:
+	bool getBonePosInt(const char *boneName, const ysdnmv_t &var, const Bone *, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const;
 };
 
 suf_t *LoadMQO_SUF(const char *fname);
@@ -35,8 +44,6 @@ suf_t *LoadMQO_SUF(const char *fname);
 EXPORT int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, suftex_t ***texes = NULL);
 EXPORT int LoadMQO(const char *fname, suf_t ***ret, char ***pname, struct Bone ***bones);
 EXPORT struct Model *LoadMQOModel(const char *fname, double scale);
-
-typedef struct ysdnm_var ysdnmv_t;
 
 EXPORT void DrawMQO_V(const struct Model*, const ysdnmv_t *);
 

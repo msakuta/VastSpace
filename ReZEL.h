@@ -3,6 +3,8 @@
 
 #include "Frigate.h"
 #include "EntityCommand.h"
+#include "mqo.h"
+#include "ysdnmmot.h"
 
 
 /// ReZEL
@@ -55,6 +57,9 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
+	static Model *model;
+	static ysdnm_motion *motions[4];
+	void getMotionTime(double (*motion_time)[4]);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
 	void shootMegaBeam(double dt);

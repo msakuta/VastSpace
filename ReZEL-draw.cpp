@@ -7,7 +7,6 @@
 #include "draw/OpenGLState.h"
 #include "mqo.h"
 #include "yssurf.h"
-#include "ysdnmmot.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -78,10 +77,21 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 	return MAX(1., f);
 }
 
+Model *ReZEL::model = NULL;
+ysdnm_motion *ReZEL::motions[4];
+
+void ReZEL::getMotionTime(double (*motion_time)[4]){
+	double motion_time1[4] = {
+		10. * fwaverider,
+		10. * (1. - fwaverider),
+		10. * (1. - fwaverider) * (1. - fweapon),
+		10. * (1. - fwaverider) * fweapon,
+	};
+	memcpy(*motion_time, motion_time1, sizeof motion_time1);
+}
+
 void ReZEL::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
-	static Model *model;
-	static ysdnm_motion *motions[4];
 	double nf = nlipsFactor(*wd->vw);
 	double scale = REZEL_SCALE * nf;
 	ReZEL *const p = this;
@@ -128,12 +138,8 @@ void ReZEL::draw(wardraw_t *wd){
 		glScalef(-1, 1, -1);
 
 #if 1
-		double motion_time[4] = {
-			10. * fwaverider,
-			10. * (1. - fwaverider),
-			10. * (1. - fwaverider) * (1. - fweapon),
-			10. * (1. - fwaverider) * fweapon,
-		};
+		double motion_time[4];
+		getMotionTime(&motion_time);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
 		DrawMQO_V(model, v);
 #else
@@ -168,7 +174,6 @@ void ReZEL::draw(wardraw_t *wd){
 #define COLIST4(a) COLOR32R(a),COLOR32G(a),COLOR32B(a),COLOR32A(a)
 
 void ReZEL::drawtra(wardraw_t *wd){
-	return;
 	ReZEL *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
@@ -199,7 +204,76 @@ void ReZEL::drawtra(wardraw_t *wd){
 	/* cull object */
 	if(cull(*wd->vw))
 		return;
-	if(p->throttle){
+
+	if(model){
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		Vec3d pos;
+		Quatd lrot;
+		static const Quatd rotaxis(0, 1., 0., 0.);
+		double motion_time[4];
+		getMotionTime(&motion_time);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, 4);
+
+		model->getBonePos("ReZEL_torso", *v, &pos, &lrot);
+		pos *= scale;
+		pos[0] *= -1;
+		pos[2] *= -1;
+		pos = rot.trans(pos) + this->pos;
+		lrot = rot * rotaxis * lrot;
+		gldSpriteGlow(pos, .002, Vec4<GLubyte>(255,255,255,min(1*255,255)), wd->vw->irot);
+		glBegin(GL_LINES);
+		glColor3f(1,0,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
+		glColor3f(0,1,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
+		glColor3f(0,0,1);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
+		glEnd();
+
+		model->getBonePos("ReZEL_rifle", *v, &pos, &lrot);
+		pos *= scale;
+		pos[0] *= -1;
+		pos[2] *= -1;
+		pos = rot.trans(pos) + this->pos;
+		lrot = rot * rotaxis * lrot;
+		gldSpriteGlow(pos, .002, Vec4<GLubyte>(127,255,255,min(1*255,255)), wd->vw->irot);
+		glBegin(GL_LINES);
+		glColor3f(1,0,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
+		glColor3f(0,1,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
+		glColor3f(0,0,1);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
+		glEnd();
+
+		model->getBonePos("ReZEL_shield", *v, &pos, &lrot);
+		pos *= scale;
+		pos[0] *= -1;
+		pos[2] *= -1;
+		pos = rot.trans(pos) + this->pos;
+		lrot = rot * rotaxis * lrot;
+		gldSpriteGlow(pos, .0015, Vec4<GLubyte>(255,127,255,255), wd->vw->irot);
+		glBegin(GL_LINES);
+		glColor3f(1,0,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(.01, 0, 0)));
+		glColor3f(0,1,0);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, .01, 0)));
+		glColor3f(0,0,1);
+		glVertex3dv(pos);
+		glVertex3dv(pos + lrot.trans(Vec3d(0, 0, .01)));
+		glEnd();
+		glPopAttrib();
+	}
+
+	if(false && p->throttle){
 		Vec3d pos, pos0(0, 0, 40. * scale);
 /*		GLubyte col[4] = {COLIST4(cnl_shortburn[0].col)};
 		pos = this->rot.trans(pos0);
@@ -318,7 +392,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	}
 #endif
 
-	if(mf) for(int i = 0; i < 2; i++){
+	if(false && mf) for(int i = 0; i < 2; i++){
 		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		glCallList(muzzle_texture());

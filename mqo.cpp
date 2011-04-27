@@ -1,6 +1,6 @@
 #include "mqo.h"
 #include "ysdnmmot.h"
-#include "draw/material.h"
+//#include "draw/material.h"
 #include <clib/avec3.h>
 #include <clib/avec4.h>
 #include <clib/c.h>
@@ -593,7 +593,10 @@ suf_t *LoadMQO_SUF(const char *fname){
 	return ret;
 }
 
-int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, suftex_t ***texes){
+/// 
+/// \param tex_callback Texture allocator function.
+/// \param tex_callback_data Pointer to buffer that texture objects resides.
+int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **), suftex_t ***tex_callback_data){
 	FILE *fp;
 	char buf[128], *s = NULL, *name = NULL;
 	suf_t **ret = NULL;
@@ -608,8 +611,8 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 
 	if(bones)
 		*bones = NULL;
-	if(texes)
-		*texes = NULL;
+	if(tex_callback_data)
+		*tex_callback_data = NULL;
 
 	fo.fp = fp, fo.n = sizeof buf, fo.buf = buf;
 
@@ -621,8 +624,8 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 	if(!(s = ftok(&fo)) || stricmp(s, "Ver")) return NULL;
 	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
 
-	if(texes){
-		*texes = (suftex_t**)malloc(num * sizeof *texes);
+	if(tex_callback_data){
+		*tex_callback_data = (suftex_t**)malloc(num * sizeof *tex_callback_data);
 	}
 
 	do{
@@ -696,12 +699,13 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 			}
 			if(!chunk_object(ret[num], &fo, scale, bones, num))
 				return NULL;
-			if(texes){
-				*texes = (suftex_t**)realloc(*texes, (num + 1) * sizeof **texes);
-				CacheSUFMaterials(ret[num]);
-				(*texes)[num] = gltestp::AllocSUFTex(ret[num]);
+			if(tex_callback && tex_callback_data){
+				*tex_callback_data = (suftex_t**)realloc(*tex_callback_data, (num + 1) * sizeof **tex_callback_data);
+				tex_callback(ret[num], &(*tex_callback_data)[num]);
+/*				CacheSUFMaterials(ret[num]);
+				(*texes)[num] = gltestp::AllocSUFTex(ret[num]);*/
 				if(bones){
-					(*bones)[num]->suftex = (*texes)[num];
+					(*bones)[num]->suftex = (*tex_callback_data)[num];
 				}
 			}
 			num++;
@@ -725,10 +729,10 @@ int LoadMQO(const char *fname, suf_t ***pret, char ***pname, struct Bone ***bone
 }
 
 
-struct Model *LoadMQOModel(const char *fname, double scale){
+struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **)){
 	struct Model *ret;
 	ret = (struct Model*)malloc(sizeof *ret);
-	ret->n = LoadMQO_Scale(fname, &ret->sufs, NULL, scale, &ret->bones, &ret->tex);
+	ret->n = LoadMQO_Scale(fname, &ret->sufs, NULL, scale, &ret->bones, tex_callback, &ret->tex);
 	return ret;
 }
 

@@ -472,6 +472,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mqoadapt.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\mqodraw.cpp"
 				>
 			</File>
@@ -933,6 +937,10 @@
 				</File>
 				<File
 					RelativePath="..\include\draw\material.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\draw\mqoadapt.h"
 					>
 				</File>
 				<File

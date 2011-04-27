@@ -41,9 +41,9 @@ protected:
 
 suf_t *LoadMQO_SUF(const char *fname);
 
-EXPORT int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, suftex_t ***texes = NULL);
+EXPORT int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **) = NULL, suftex_t ***callback_data = NULL);
 EXPORT int LoadMQO(const char *fname, suf_t ***ret, char ***pname, struct Bone ***bones);
-EXPORT struct Model *LoadMQOModel(const char *fname, double scale);
+EXPORT struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **));
 
 EXPORT void DrawMQO_V(const struct Model*, const ysdnmv_t *);
 

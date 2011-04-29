@@ -79,16 +79,17 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[6];
+ysdnm_motion *ReZEL::motions[7];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 	double motion_time1[numof(motions)] = {
 		10. * fwaverider,
 		10. * (1. - fwaverider),
-		10. * (1. - fwaverider) * (1. - fweapon),
+		10. * (1. - fwaverider) * (freload == 0. ? 1. - fweapon : 0.),
 		10. * (1. - fwaverider) * fweapon,
 		(-twist * (1. - fwaverider) + 1.) * 10.,
 		(-pitch * (1. - fwaverider) + 1.) * 10.,
+		(1. - fwaverider) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
 	};
 	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -126,6 +127,7 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[3] = YSDNM_MotionLoad("gundam/models/ReZEL_aimsub.mot");
 		motions[4] = YSDNM_MotionLoad("gundam/models/ReZEL_twist.mot");
 		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
+		motions[6] = YSDNM_MotionLoad("gundam/models/ReZEL_reload.mot");
 
 		init.create(*openGLState);
 	} while(0);

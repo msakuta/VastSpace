@@ -52,7 +52,7 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
 #define SCEPTOR_MAGAZINE 5
-#define SCEPTOR_RELOADTIME 5.
+const double ReZEL::reloadTime = 5.;
 
 
 
@@ -140,7 +140,7 @@ const char *ReZEL::dispname()const{
 };
 
 double ReZEL::maxhealth()const{
-	return 200.;
+	return 500.;
 }
 
 
@@ -149,7 +149,8 @@ double ReZEL::maxhealth()const{
 
 ReZEL::ReZEL() : mother(NULL), paradec(-1),
 	twist(0.f),
-	pitch(0.f)
+	pitch(0.f),
+	freload(0.f)
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
@@ -167,6 +168,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	submagazine(3),
 	twist(0.f),
 	pitch(0.f),
+	freload(0.f),
 	paradec(-1),
 	forcedEnemy(false),
 	formPrev(NULL),
@@ -311,7 +313,8 @@ void ReZEL::shootRifle(double dt){
 		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
 	else{
 		magazine = SCEPTOR_MAGAZINE;
-		this->cooldown += SCEPTOR_RELOADTIME;
+		this->cooldown += reloadTime;
+		this->freload = reloadTime;
 	}
 	this->muzzleFlash[0] = .5;
 }
@@ -864,22 +867,17 @@ void ReZEL::anim(double dt){
 
 					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
-						struct random_sequence rs;
-						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
+						RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
-							randomvec[i] = drseq(&rs) - .5;
-						pt->velo += randomvec * dt * .5;
-						bbody->applyCentralForce(btvc(randomvec * mass * .5));
+							randomvec[i] = rs.nextd() - .5;
+						bbody->applyCentralForce(btvc(randomvec * mass * .15));
 					}
 
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);
 						len = len2 = xh.len();
 						len = asin(len);
-						if(maxspeed < len){
-							len = maxspeed;
-						}
 						len = sin(len / 2.);
 
 						double velolen = bbody->getLinearVelocity().length();
@@ -892,22 +890,21 @@ void ReZEL::anim(double dt){
 						if(len && len2){
 							btVector3 btomg = bbody->getAngularVelocity();
 							btVector3 btxh = btvc(xh.norm());
-							btVector3 btsideomg = btomg - btxh * btxh.dot(btomg);
-							btVector3 btaac = btxh * len - btsideomg * 1.;
-//							bbody->applyTorque(btaac);
-							bbody->setAngularVelocity(btxh * len * (3. - 2. * fwaverider) / dt);
-/*							Vec3d omg, laac;
-							qrot = xh * len / len2;
-							qrot[3] = sqrt(1. - len * len);
-							qres = qrot * pt->rot;
-							pt->rot = qres.norm();*/
 
-							/* calculate angular acceleration for displaying thruster bursts */
-/*							omg = qrot.operator Vec3d&() * 1. / dt;
-							p->aac = omg - pt->omg;
-							p->aac *= 1. / dt;
-							pt->omg = omg;
-							laac = pt->rot.cnj().trans(p->aac);*/
+							// The second term is for suppressing rotation.
+							btVector3 btaac = btxh * len - btomg * .15;
+
+							// Maneuvering ability is limited. We cap angular acceleration here to simulate it.
+							if((M_PI / 50.) * (M_PI / 50.) < btaac.length2())
+								btaac.normalize() *= (M_PI / 50.);
+
+							// Thruster's responsivity is also limited, we integrate it over time to simulate.
+							for(int i = 0; i < 3; i++)
+								aac[i] = approach(aac[i], btaac[i], 2. * dt, 0);
+
+							// Torque is applied to the rigid bory, so we must convert angular acceleration to torque by taking product with inverse inertia tensor.
+							bbody->applyTorque(bbody->getInvInertiaTensorWorld() * btvc(aac) * 2.e-2 * (3. - 2. * fwaverider));
+
 							btTransform bttr = bbody->getWorldTransform();
 							btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
 							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
@@ -915,7 +912,7 @@ void ReZEL::anim(double dt){
 							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == Attack && dist < 5. * 2. && .99 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 20. && .99 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
@@ -1086,6 +1083,8 @@ void ReZEL::anim(double dt){
 				p->cooldown = 0;
 			else
 				p->cooldown -= dt;
+
+			freload = approach(freload, 0., dt, 0.);
 
 #if 0
 			if((pf->away ? 1. * 1. : .3 * .3) < VECSLEN(delta)/* && 0 < VECSP(pt->velo, pt->pos)*/){
@@ -1450,7 +1449,7 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 #endif
 
 double ReZEL::maxfuel()const{
-	return 120.;
+	return 600.;
 }
 
 bool ReZEL::command(EntityCommand *com){

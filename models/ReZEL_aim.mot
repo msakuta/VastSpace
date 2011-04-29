@@ -1,6 +1,6 @@
 ysdnm_motion 2
 {
-	keyframe 7 10
+	keyframe 8 10
 	{
 		"ReZEL_torso" 0 -6.93547e-018 0 1 0 0 0
 		"ReZEL_luparm" -6.93547e-018 0 0 1 0 0 0
@@ -9,6 +9,7 @@ ysdnm_motion 2
 		"ReZEL_rarm" 0 0 0 1 0 0 0
 		"ReZEL_waist" 0 0 0 1 0 0 0
 		"ReZEL_head" 0 0 0 1 0 0 0
+		"ReZEL_rhand" 0 0 0 1 0 0 0
 	}
 	keyframe 8 10
 	{
@@ -16,8 +17,8 @@ ysdnm_motion 2
 		"ReZEL_larm" -0.278901 0 0 0.96032 0 0 0
 		"ReZEL_ruparm" -0.145874 0.392554 0.161995 0.893521 0 0 0
 		"ReZEL_rarm" -0.535406 -0.0265154 -0.0168203 0.844011 0 0 0
-		"ReZEL_torso" 0 -0.24861 0 0.968604 0 0 0
-		"ReZEL_waist" 0 0.24861 0 0.968604 0 0 0
+		"ReZEL_torso" 0 -0.308919 0 0.951088 0 0 0
+		"ReZEL_waist" 0 0.308919 0 0.951088 0 0 0
 		"ReZEL_head" 0.0938919 0.247507 0.00590523 0.964308 0 0 0
 		"ReZEL_rhand" -0.0624915 -0.00590523 -0.0938919 0.993602 0 0 0
 	}

@@ -56,13 +56,15 @@ protected:
 	float twist; ///< Twist value (integration of angular velocity around Y axis)
 	float pitch; ///< Pitch value (integration of angular velocity around X axis)
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
+	float freload; ///< Reload phase
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
 
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[6];
+	static ysdnm_motion *motions[7];
+	static const double reloadTime;
 	void getMotionTime(double (*motion_time)[numof(motions)]);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);

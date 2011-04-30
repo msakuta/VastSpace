@@ -133,9 +133,6 @@ void ReZEL::draw(wardraw_t *wd){
 	} while(0);
 	
 	if(true){
-		static const double normal[3] = {0., 1., 0.};
-		double x;
-		double pyr[3];
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
 		glPushMatrix();
@@ -144,37 +141,42 @@ void ReZEL::draw(wardraw_t *wd){
 		gldScaled(scale);
 		glScalef(-1, 1, -1);
 
-#if 1
 		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+
+		if(0 < muzzleFlash[0]){
+			Vec3d pos;
+			model->getBonePos("ReZEL_riflemuzzle", *v, &pos);
+/*			pos *= scale;
+			pos[0] *= -1;
+			pos[2] *= -1;
+			pos = rot.trans(pos) + this->pos;*/
+			glEnable(GL_LIGHT1);
+			glLightfv(GL_LIGHT1, GL_POSITION, Vec4f(pos.cast<GLfloat>(), 1.));
+			glLightfv(GL_LIGHT1, GL_AMBIENT, Vec4f(0,0,0,0));
+			glLightfv(GL_LIGHT1, GL_DIFFUSE, Vec4f(.5f, 1.f, 1.f, 1.f));
+			glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, (.5 - muzzleFlash[0]) / .5 / .5);
+			glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, (.5 - muzzleFlash[0]) / .5 / .05);
+//			gldSpriteGlow(pos, .0015 + (.5 - muzzleFlash[0]) * .0015, Vec4<GLubyte>(127,255,255,min(muzzleFlash[0] / .3 * 255, 255)), wd->vw->irot);
+		}
+		else if(0 < muzzleFlash[1]){
+			Vec3d pos;
+			model->getBonePos("ReZEL_shieldmuzzle", *v, &pos);
+			glEnable(GL_LIGHT1);
+			glLightfv(GL_LIGHT1, GL_POSITION, Vec4f(pos.cast<GLfloat>(), 1.));
+			glLightfv(GL_LIGHT1, GL_AMBIENT, Vec4f(0,0,0,0));
+			glLightfv(GL_LIGHT1, GL_DIFFUSE, Vec4f(1.f, .5f, 1.f, 1.f));
+			glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, (.3 - muzzleFlash[1]) / .5 / .05);
+			glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, (.3 - muzzleFlash[1]) / .5 / .003);
+//			gldSpriteGlow(pos, .0010 + (.3 - muzzleFlash[1]) * .001, Vec4<GLubyte>(255,127,255,min(muzzleFlash[1] / .3 * 255, 255)), wd->vw->irot);
+		}
+
 		DrawMQO_V(model, v);
 		YSDNM_MotionInterpolateFree(v);
-#else
-		for(int i = 0; i < numof(models); i++){
-//			for(int j = 0; j < 2; j++)
-			{
-/*				glPushMatrix();
-				if(j){
-					glScalef(-1, 1, 1);
-					glFrontFace(GL_CW);
-				}*/
-				if(vbo[i])
-					DrawVBO(vbo[i], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suft[i]);
-				else
-					DecalDrawSUF(suf[i], wd->shadowmapping ? 0 : SUF_ATR, NULL, suft[i], NULL, NULL);
-//				glPopMatrix();
-			}
-//			glFrontFace(GL_CCW);
-		}
-#endif
 
 		glPopMatrix();
 
-/*		if(0 < wd->light[1]){
-			static const double normal[3] = {0., 1., 0.};
-			ShadowSUF(scepter_s.sufbase, wd->light, normal, pt->pos, pt->pyr, scale, NULL);
-		}*/
 		glPopAttrib();
 	}
 }
@@ -229,7 +231,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 			pos[2] *= -1;
 			pos = rot.trans(pos) + this->pos;
 			lrot = rot * rotaxis * lrot;
-			gldSpriteGlow(pos, .0015 + (.5 - muzzleFlash[0]) * .0015, Vec4<GLubyte>(127,255,255,min(muzzleFlash[0] / .3 * 255, 255)), wd->vw->irot);
+			gldSpriteGlow(pos, .0025 + (.5 - muzzleFlash[0]) * .0025, Vec4<GLubyte>(127,255,255,min(muzzleFlash[0] / .3 * 255, 255)), wd->vw->irot);
 		}
 
 		if(0 < muzzleFlash[1]){

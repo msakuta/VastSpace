@@ -929,6 +929,7 @@ void gldTextureBeam(const double view[3], const double start[3], const double en
 	double dx, dy, dz, sx, sy, len;
 	double pitch, yaw;
 	avec3_t diff, xh, yh;
+	MultiTextureInit();
 	dy = end[1] - start[1];
 	yaw = atan2(dx = end[0] - start[0], dz = end[2] - start[2]) + M_PI;
 	pitch = -atan2(dy, sqrt(dx * dx + dz * dz)) + M_PI / 2;

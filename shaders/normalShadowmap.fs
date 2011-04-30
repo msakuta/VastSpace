@@ -10,7 +10,7 @@ uniform int additive;
  
 varying vec3 view;
 //varying vec3 nrm;
-varying float diffuse;
+varying float diffuse[2];
 //varying vec4 col;
 
 float shadowMapIntensity();
@@ -30,8 +30,9 @@ void main (void)
 
 	float shadow = shadowMapIntensity();
 
-	vec3 lightProduct = (shadow * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse
+	vec3 lightProduct = (shadow * .8 + .2) * gl_FrontLightProduct[0].diffuse.xyz * diffuse[0]
 			+ gl_FrontLightProduct[0].ambient.xyz
+			+ gl_FrontLightProduct[1].diffuse.xyz * diffuse[1] + gl_FrontLightProduct[1].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
 //	vec4 texColor = shadow;

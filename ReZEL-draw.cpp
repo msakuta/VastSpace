@@ -242,6 +242,31 @@ void ReZEL::drawtra(wardraw_t *wd){
 			gldSpriteGlow(pos, .0010 + (.3 - muzzleFlash[1]) * .001, Vec4<GLubyte>(255,127,255,min(muzzleFlash[1] / .3 * 255, 255)), wd->vw->irot);
 		}
 
+		if(0 < muzzleFlash[2]){
+			Vec3d gunpos[2];
+			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+			for(int i = 0; i < 2; i++){
+				if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", *v, &gunpos[i], &lrot)){
+					gunpos[i] *= sufscale;
+					gunpos[i][0] *= -1;
+					gunpos[i][2] *= -1;
+				}
+				else
+					gunpos[i] = vec3_000;
+				gunpos[i] = rot.trans(gunpos[i]) + this->pos;
+				lrot = rot * rotaxis * lrot;
+
+				glCallList(muzzle_texture());
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_ONE, GL_ONE); // Add blend
+				float f = muzzleFlash[2] / .1 * 2., fi = 1. - muzzleFlash[2] / .1;
+				glColor4f(f,f,f,1);
+				gldTextureBeam(wd->vw->pos, gunpos[i], gunpos[i] + rot.trans(-vec3_001) * .01 * fi, .003 * fi);
+//				gldSpriteGlow(gunpos[i], .0010 + (.3 - muzzleFlash[2]) * .001, Vec4<GLubyte>(255,255,127,min(muzzleFlash[2] / .3 * 255, 255)), wd->vw->irot);
+			}
+			glPopAttrib();
+		}
+
 		YSDNM_MotionInterpolateFree(v);
 		glPopAttrib();
 	}

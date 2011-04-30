@@ -36,6 +36,7 @@ protected:
 	double fuel;
 	double cooldown;
 	Vec3d dest;
+	float vulcancooldown;
 	float fcloak;
 	float heat;
 	float fwaverider; ///< Phase of transformation to wave rider
@@ -47,12 +48,12 @@ protected:
 	int magazine; ///< remaining bullet count in the magazine to shoot before reloading
 	int weapon; ///< Armed weapon id
 	int submagazine; ///< Remaining rounds in sub-arm
+	int vulcanmag; ///< Vulcan magazine
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
-//	float mf; ///< trivial muzzle flashes
-	float muzzleFlash[2]; ///< Muzzle flashes for each arms.
+	float muzzleFlash[3]; ///< Muzzle flashes for each arms.
 	float twist; ///< Twist value (integration of angular velocity around Y axis)
 	float pitch; ///< Pitch value (integration of angular velocity around X axis)
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
@@ -65,9 +66,11 @@ protected:
 	static Model *model;
 	static ysdnm_motion *motions[7];
 	static const double reloadTime;
+	static const int magazineSize[3];
 	void getMotionTime(double (*motion_time)[numof(motions)]);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
+	void shootVulcan(double dt);
 	void shootMegaBeam(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);

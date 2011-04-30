@@ -22,6 +22,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
+#include <clib/timemeas.h>
 }
 
 
@@ -52,6 +53,11 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
 #define SCEPTOR_MAGAZINE 5
+const int ReZEL::magazineSize[3] = {
+	5,
+	3,
+	20,
+};
 const double ReZEL::reloadTime = 5.;
 
 
@@ -148,6 +154,8 @@ double ReZEL::maxhealth()const{
 
 
 ReZEL::ReZEL() : mother(NULL), paradec(-1),
+	vulcancooldown(0.f),
+	vulcanmag(magazineSize[2]),
 	twist(0.f),
 	pitch(0.f),
 	freload(0.f)
@@ -165,6 +173,8 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	fwaverider(0.),
 	weapon(0),
 	fweapon(0.),
+	vulcancooldown(0.f),
+	vulcanmag(magazineSize[2]),
 	submagazine(3),
 	twist(0.f),
 	pitch(0.f),
@@ -236,6 +246,7 @@ int ReZEL::popupMenu(PopupMenu &list){
 	list.appendSeparator();
 	list.append("Arm Beam Rifle", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 0);})\"");
 	list.append("Arm Shield Beam", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 1);})\"");
+	list.append("Arm Vulcan", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 2);})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -283,17 +294,22 @@ void ReZEL::shootRifle(double dt){
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
-	double motion_time[numof(motions)];
-	getMotionTime(&motion_time);
-	ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
-	if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
-		gunpos *= sufscale;
-		gunpos[0] *= -1;
-		gunpos[2] *= -1;
+	{
+		double motion_time[numof(motions)];
+		getMotionTime(&motion_time);
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
+		if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
+			gunpos *= sufscale;
+			gunpos[0] *= -1;
+			gunpos[2] *= -1;
+		}
+		else
+			gunpos = vec3_000;
+		YSDNM_MotionInterpolateFree(v);
 	}
-	else
-		gunpos = vec3_000;
-	YSDNM_MotionInterpolateFree(v);
 
 	transform(mat);
 	{
@@ -368,6 +384,52 @@ void ReZEL::shootShieldBeam(double dt){
 		this->cooldown += 1.;
 	}
 	this->muzzleFlash[1] = .3;
+}
+
+void ReZEL::shootVulcan(double dt){
+	Vec3d velo, gunpos[2], velo0(0., 0., -1.);
+	Mat4d mat;
+
+	// Cannot shoot in waverider form
+	if(dt <= vulcancooldown || 0 < fwaverider)
+		return;
+
+	// Retrieve muzzle position from model, but not the velocity
+	{
+		double motion_time[numof(motions)];
+		getMotionTime(&motion_time);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", *v, &gunpos[i])){
+			gunpos[i] *= sufscale;
+			gunpos[i][0] *= -1;
+			gunpos[i][2] *= -1;
+		}
+		else
+			gunpos[i] = vec3_000;
+		YSDNM_MotionInterpolateFree(v);
+	}
+
+	transform(mat);
+	for(int i = 0; i < 2; i++){
+		Bullet *pb;
+		double phi, theta;
+		pb = new Bullet(this, 5, 5.);
+		w->addent(pb);
+		pb->pos = mat.vp3(gunpos[i]);
+		pb->velo = mat.dvp3(velo0);
+		pb->velo += this->velo;
+		pb->life = 2.;
+		this->heat += .025;
+	}
+//	shootsound(pt, w, p->cooldown);
+//	pt->shoots += 2;
+	if(0 < --vulcanmag)
+		this->vulcancooldown += .1;
+	else{
+		vulcanmag = magazineSize[2];
+		this->vulcancooldown += reloadTime;
+	}
+	this->muzzleFlash[2] = .1;
 }
 
 
@@ -777,7 +839,7 @@ void ReZEL::anim(double dt){
 #endif
 */
 				// Do not try shooting at very small target, that's just waste of ammo.
-				if(enemy->hitradius() < dist / 100.)
+				if(enemy->hitradius() < dist / 300.)
 					trigger = 0;
 
 			}
@@ -898,11 +960,11 @@ void ReZEL::anim(double dt){
 							if((M_PI / 50.) * (M_PI / 50.) < btaac.length2())
 								btaac.normalize() *= (M_PI / 50.);
 
-							// Thruster's responsivity is also limited, we integrate it over time to simulate.
+							// Thruster's responsivity is also limited, we integrate desired accel over time to simulate.
 							for(int i = 0; i < 3; i++)
 								aac[i] = approach(aac[i], btaac[i], 2. * dt, 0);
 
-							// Torque is applied to the rigid bory, so we must convert angular acceleration to torque by taking product with inverse inertia tensor.
+							// Torque is applied to the rigid body, so we must convert angular acceleration to torque by taking product with inverse inertia tensor.
 							bbody->applyTorque(bbody->getInvInertiaTensorWorld() * btvc(aac) * 2.e-2 * (3. - 2. * fwaverider));
 
 							btTransform bttr = bbody->getWorldTransform();
@@ -1075,8 +1137,12 @@ void ReZEL::anim(double dt){
 			if(pt->inputs.press & (PL_ENTER | PL_LCLICK)){
 				if(weapon == 0)
 					shootRifle(dt);
-				else
+				else if(weapon == 1)
 					shootShieldBeam(dt);
+
+				// Do not shoot vulcan to too far targets
+				if(enemy && (this->pos - enemy->pos).len() < 2.)
+					shootVulcan(dt);
 			}
 
 			if(p->cooldown < dt)
@@ -1085,6 +1151,7 @@ void ReZEL::anim(double dt){
 				p->cooldown -= dt;
 
 			freload = approach(freload, 0., dt, 0.);
+			vulcancooldown = approach(vulcancooldown, 0., dt, 0.);
 
 #if 0
 			if((pf->away ? 1. * 1. : .3 * .3) < VECSLEN(delta)/* && 0 < VECSP(pt->velo, pt->pos)*/){
@@ -1213,7 +1280,7 @@ void ReZEL::anim(double dt){
 
 		fcloak = approach(fcloak, p->cloak, dt, 0.);
 		fwaverider = approach(fwaverider, waverider, dt, 0.);
-		fweapon = approach(fweapon, weapon, dt, 0.);
+		fweapon = approach(fweapon, weapon == 1, dt, 0.);
 		twist = approach(twist, omg.sp(rot.trans(vec3_010)), dt, 0.);
 		pitch = approach(pitch, omg.sp(rot.trans(vec3_100)), dt, 0.);
 	}

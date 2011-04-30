@@ -21,8 +21,8 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, co
 	const ysdnmv_t *v;
 
 	if(!dumped){
-		for(i = 0; i < nestlevel; i++)
-			putchar('|');
+//		for(i = 0; i < nestlevel; i++)
+//			putchar('|');
 //		printf("\"%s\" \"%s\" %d (%lg,%lg,%lg)\n", srf->name, srf->pck->name, srf->cla, srf->pos[0], srf->pos[1], srf->pos[2]);
 	}
 

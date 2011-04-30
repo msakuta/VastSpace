@@ -380,6 +380,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\avi.c"
+				>
+			</File>
+			<File
 				RelativePath="..\Beamer.cpp"
 				>
 			</File>
@@ -670,6 +674,10 @@
 			</File>
 			<File
 				RelativePath="..\Attacker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\avi.h"
 				>
 			</File>
 			<File

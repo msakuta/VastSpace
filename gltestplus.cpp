@@ -40,6 +40,7 @@
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
 #include "draw/OpenGLState.h"
+#include "avi.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -895,6 +896,8 @@ void draw_func(Viewer &vw, double dt){
 	glPopAttrib();
 
 	glFlush();
+
+	video_frame();
 }
 
 static POINT mouse_pos = {0, 0};
@@ -1872,6 +1875,8 @@ int main(int argc, char *argv[])
 		}
 	};
 	CmdAdd("refresh", &Refresh::refresh);
+	CmdAdd("video", video);
+	CmdAdd("video_stop", video_stop);
 	CoordSys::registerCommands(&pl);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -1894,6 +1899,7 @@ int main(int argc, char *argv[])
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
+	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	Player::cmdInit(pl);
 
 	sqa_init();

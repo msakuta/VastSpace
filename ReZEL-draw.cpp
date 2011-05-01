@@ -79,17 +79,18 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[7];
+ysdnm_motion *ReZEL::motions[8];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 	double motion_time1[numof(motions)] = {
 		10. * fwaverider,
 		10. * (1. - fwaverider),
-		10. * (1. - fwaverider) * (freload == 0. ? 1. - fweapon : 0.),
-		10. * (1. - fwaverider) * fweapon,
+		10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.),
+		10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 		(-twist * (1. - fwaverider) + 1.) * 10.,
 		(-pitch * (1. - fwaverider) + 1.) * 10.,
-		(1. - fwaverider) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
+		(1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
+		(1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
 	};
 	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -128,6 +129,7 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[4] = YSDNM_MotionLoad("gundam/models/ReZEL_twist.mot");
 		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
 		motions[6] = YSDNM_MotionLoad("gundam/models/ReZEL_reload.mot");
+		motions[7] = YSDNM_MotionLoad("gundam/models/ReZEL_sabre.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -188,6 +190,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
 	double scale = sufscale * nlips;
+	static const Quatd rotaxis(0, 1., 0., 0.);
 
 #if PIDAIM_PROFILE
 	glBegin(GL_LINES);
@@ -219,7 +222,6 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		Vec3d pos;
 		Quatd lrot;
-		static const Quatd rotaxis(0, 1., 0., 0.);
 		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
@@ -339,6 +341,54 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glActiveTextureARB(GL_TEXTURE0_ARB);
 		glPopAttrib();
 		glPopMatrix();
+	}
+
+	// Beam sabre
+	if(0. < fsabre && model){
+		double motion_time[numof(motions)];
+		getMotionTime(&motion_time);
+		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+
+		struct gldBeamsData bd;
+		Vec3d v0(.0, .0, .0);
+		const Vec3d &viewpos = wd->vw->pos;
+		int lumi;
+		struct random_sequence rs;
+		double viewdist;
+		const double widscale = 10.;
+		bd.cc = bd.solid = 0;
+		init_rseq(&rs, (long)(wd->vw->viewtime * 1e6) + (unsigned long)this);
+		lumi = 191 + rseq(&rs) % 63;
+		Vec3d pos;
+		Quatd lrot;
+		model->getBonePos("ReZEL_riflemuzzle", *v, &pos, &lrot);
+		pos *= scale;
+		pos[0] *= -1;
+		pos[2] *= -1;
+		pos = rot.trans(pos) + this->pos;
+		lrot = rot * rotaxis * lrot;
+		mat = lrot.tomat4();
+		mat.vec3(3) = pos;
+		Vec3d end = mat.vp3(v0);
+
+		viewdist = (end - viewpos).len();
+//		drawglow(end, wd->irot, .0015, COLOR32RGBA(255,255,255, 127 / (1. + viewdist)));
+		glColor4ub(255,255,255,255);
+		Vec4<GLubyte> col(255,255,255, 127 / (1. + viewdist));
+		gldTextureGlow(end, .0020, col, wd->vw->irot);
+
+		gldBeams(&bd, viewpos, end, .00001 * widscale, COLOR32RGBA(3,127,191,0));
+		v0[1] -= .0003 * widscale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00003 * widscale, COLOR32RGBA(255,127,255,lumi));
+		v0[1] -= .0003 * widscale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00003 * widscale, COLOR32RGBA(255,131,255,lumi));
+		v0[1] -= .0003 * widscale;
+		end = mat.vp3(v0);
+		gldBeams(&bd, viewpos, end, .00001 * widscale, COLOR32RGBA(255,191,255,0));
+
+		YSDNM_MotionInterpolateFree(v);
 	}
 
 #if 0 /* thrusters appear unimpressing */

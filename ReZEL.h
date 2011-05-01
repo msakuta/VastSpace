@@ -56,6 +56,7 @@ protected:
 	float muzzleFlash[3]; ///< Muzzle flashes for each arms.
 	float twist; ///< Twist value (integration of angular velocity around Y axis)
 	float pitch; ///< Pitch value (integration of angular velocity around X axis)
+	float fsabre; ///< Sabre swing phase
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	float freload; ///< Reload phase
 	ReZEL *formPrev; ///< previous member in the formation
@@ -64,7 +65,7 @@ protected:
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[7];
+	static ysdnm_motion *motions[8];
 	static const double reloadTime;
 	static const int magazineSize[3];
 	void getMotionTime(double (*motion_time)[numof(motions)]);

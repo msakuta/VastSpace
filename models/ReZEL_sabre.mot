@@ -1,0 +1,42 @@
+ysdnm_motion 3
+{
+	keyframe 10 10
+	{
+		"ReZEL_torso" 0 -3.46945e-018 0 1 0 0 0
+		"ReZEL_lshoulder" 0 0 0 1 0 0 0
+		"ReZEL_luparm" 0 0 0 1 0 0 0
+		"ReZEL_larm" 0 0 0 1 0 0 0
+		"ReZEL_rshoulder" 0 0 0 1 0 0 0
+		"ReZEL_ruparm" 0 0 0 1 0 0 0.1
+		"ReZEL_rarm" 0 0 0 1 0 0 0
+		"ReZEL_rifle" 0 0 0 1 0 0 0
+		"ReZEL_head" 0 0 0 1 0 0 0
+		"ReZEL_waist" 0 0 0 1 0 0 0
+	}
+	keyframe 10 10
+	{
+		"ReZEL_torso" 0.182869 -0.214279 0.040876 0.95863 0 0 0
+		"ReZEL_lshoulder" -0.46793 0 0 0.883766 0 0 0
+		"ReZEL_luparm" -0.226562 -0.609245 -0.187428 0.736451 0 0 0
+		"ReZEL_larm" -0.263873 0 0 0.964558 0 0 0
+		"ReZEL_rshoulder" -0.453991 0 0 0.891006 0 0 0
+		"ReZEL_ruparm" 0.115363 -0.0850677 -0.00407968 0.989666 0 0 0
+		"ReZEL_rarm" -0.323917 0 0 0.946085 0 0 0
+		"ReZEL_rifle" 0.0917167 -0.0602466 -0.545707 0.83076 0 0 0
+		"ReZEL_head" -0.0610556 0.226111 -0.0580555 0.970451 0 0 -0.9
+		"ReZEL_waist" -0.121767 0.190495 -0.0806186 0.970765 0 0 0
+	}
+	keyframe 10 10
+	{
+		"ReZEL_torso" 0 0.29404 0 0.955793 0 0 0
+		"ReZEL_head" 0 -0.29404 0 0.955793 0 0 0
+		"ReZEL_lshoulder" -0.411514 0 0 0.911403 0 0 0
+		"ReZEL_luparm" -0.353475 0 0 0.935444 0 0 0
+		"ReZEL_larm" -0.323917 0 0 0.946085 0 0 0
+		"ReZEL_rshoulder" -0.406448 0.142575 -0.064375 0.900182 0 0 0
+		"ReZEL_ruparm" -0.155756 0.0679887 0.405824 0.898011 0 0 0
+		"ReZEL_rarm" -0.382683 0 0 0.92388 0 0 0
+		"ReZEL_rifle" 0 0 0 1 0 0 0
+		"ReZEL_waist" 0 -0.29404 0 0.955793 0 0 0
+	}
+}

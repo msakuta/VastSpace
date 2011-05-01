@@ -158,7 +158,8 @@ ReZEL::ReZEL() : mother(NULL), paradec(-1),
 	vulcanmag(magazineSize[2]),
 	twist(0.f),
 	pitch(0.f),
-	freload(0.f)
+	freload(0.f),
+	fsabre(0.f)
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
@@ -183,7 +184,8 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	forcedEnemy(false),
 	formPrev(NULL),
 	evelo(vec3_000),
-	attitude(Passive)
+	attitude(Passive),
+	fsabre(0.f)
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
@@ -212,8 +214,6 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
 }
-
-const avec3_t ReZEL::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
 
 void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 //	Player *ppl = w->pl;
@@ -247,6 +247,7 @@ int ReZEL::popupMenu(PopupMenu &list){
 	list.append("Arm Beam Rifle", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 0);})\"");
 	list.append("Arm Shield Beam", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 1);})\"");
 	list.append("Arm Vulcan", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 2);})\"");
+	list.append("Arm Beam Sabre", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 3);})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -1283,6 +1284,9 @@ void ReZEL::anim(double dt){
 		fweapon = approach(fweapon, weapon == 1, dt, 0.);
 		twist = approach(twist, omg.sp(rot.trans(vec3_010)), dt, 0.);
 		pitch = approach(pitch, omg.sp(rot.trans(vec3_100)), dt, 0.);
+		if(3. <= fsabre)
+			fsabre = 1.;
+		fsabre = approach(fsabre, weapon == 3 ? 3. : 0., dt, 0.);
 	}
 	else{
 		pt->health += dt;

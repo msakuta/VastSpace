@@ -69,6 +69,7 @@ extern "C"{
 #define exit something_meanless
 /*#include <windows.h>*/
 #undef exit
+#include <mmsystem.h>
 #include <GL/glext.h>
 #include <strstream>
 #include <fstream>
@@ -900,6 +901,107 @@ void draw_func(Viewer &vw, double dt){
 	video_frame();
 }
 
+class JoyStick{
+	unsigned m_uiJoystickID;
+	RECT m_rcJoystickTrip;
+public:
+	typedef WORD  JOYSTATE;
+	static const JOYSTATE JOY_NONE = 0x0000L,
+        JOY_LEFT = 0x0001L,
+        JOY_RIGHT = 0x0002L,
+        JOY_UP  = 0x0004L,
+        JOY_DOWN = 0x0008L,
+        JOY_FIRE1 = 0x0010L,
+        JOY_FIRE2 = 0x0020L;
+	BOOL InitJoystick();
+	double getX()const;
+	double getY()const;
+	void CaptureJoystick();
+	void ReleaseJoystick();
+	void CheckJoystick(input_t &input);
+};
+
+static JoyStick joyStick;
+
+BOOL JoyStick::InitJoystick()
+{
+	static bool init = false;
+	if(init)
+		return TRUE;
+	// Make sure joystick driver is present
+	UINT uiNumJoysticks;
+	if ((uiNumJoysticks = joyGetNumDevs()) == 0)
+		return FALSE;
+
+	// Make sure the joystick is attached
+	JOYINFO jiInfo;
+	if (joyGetPos(JOYSTICKID1, &jiInfo) != JOYERR_UNPLUGGED)
+		m_uiJoystickID = JOYSTICKID1;
+	else
+		return FALSE;
+
+	// Calculate the trip values
+	JOYCAPS jcCaps;
+	joyGetDevCaps(m_uiJoystickID, &jcCaps, sizeof(JOYCAPS));
+	DWORD dwXCenter = ((DWORD)jcCaps.wXmin + jcCaps.wXmax) / 2;
+	DWORD dwYCenter = ((DWORD)jcCaps.wYmin + jcCaps.wYmax) / 2;
+	m_rcJoystickTrip.left = (jcCaps.wXmin + (WORD)dwXCenter) / 2;
+	m_rcJoystickTrip.right = (jcCaps.wXmax + (WORD)dwXCenter) / 2;
+	m_rcJoystickTrip.top = (jcCaps.wYmin + (WORD)dwYCenter) / 2;
+	m_rcJoystickTrip.bottom = (jcCaps.wYmax + (WORD)dwYCenter) / 2;
+
+	init = true;
+	return TRUE;
+}
+
+void JoyStick::CaptureJoystick()
+{
+	// Capture the joystick
+	if (m_uiJoystickID == JOYSTICKID1)
+		joySetCapture(hWndApp, m_uiJoystickID, NULL, TRUE);
+}
+
+void JoyStick::ReleaseJoystick()
+{
+	// Release the joystick
+	if (m_uiJoystickID == JOYSTICKID1)
+		joyReleaseCapture(m_uiJoystickID);
+}
+
+void JoyStick::CheckJoystick(input_t &input)
+{
+	 if (m_uiJoystickID == JOYSTICKID1)
+	 {
+		  JOYINFO jiInfo;
+		  unsigned jsJoystickState = 0;
+		  if (joyGetPos(m_uiJoystickID, &jiInfo) == JOYERR_NOERROR)
+		  {
+			   // Check horizontal movement
+			   if (jiInfo.wXpos < (WORD)m_rcJoystickTrip.left)
+					jsJoystickState |= JOY_LEFT;
+			   else if (jiInfo.wXpos > (WORD)m_rcJoystickTrip.right)
+					jsJoystickState |= JOY_RIGHT;
+			   input.analog[0] = jiInfo.wXpos / ((m_rcJoystickTrip.left + m_rcJoystickTrip.right) / 2.) - 1.;
+
+			   // Check vertical movement
+			   if (jiInfo.wYpos < (WORD)m_rcJoystickTrip.top)
+					jsJoystickState |= JOY_UP;
+			   else if (jiInfo.wYpos > (WORD)m_rcJoystickTrip.bottom)
+					jsJoystickState |= JOY_DOWN;
+			   input.analog[1] = jiInfo.wYpos / ((m_rcJoystickTrip.top + m_rcJoystickTrip.bottom) / 2.) - 1.;
+
+			   // Check buttons
+			   if(jiInfo.wButtons & JOY_BUTTON1)
+					jsJoystickState |= JOY_FIRE1;
+			   if(jiInfo.wButtons & JOY_BUTTON2)
+					jsJoystickState |= JOY_FIRE2;
+		  }
+
+		  // Allow the game to handle the joystick
+	//  HandleJoystick(jsJoystickState);
+	 }
+}
+
 static POINT mouse_pos = {0, 0};
 
 void display_func(void){
@@ -980,6 +1082,9 @@ void display_func(void){
 		input_t inputs;
 		inputs.press = MotionGet();
 		inputs.change = MotionGetChange();
+		if(joyStick.InitJoystick()){
+			joyStick.CheckJoystick(inputs);
+		}
 		(*pl.mover)(inputs, dt);
 		if(pl.nextmover && pl.nextmover != pl.mover){
 /*			Vec3d pos = pl.pos;

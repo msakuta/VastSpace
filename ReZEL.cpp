@@ -109,6 +109,8 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << paradec;
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
+	sc.o << beingControlled;
+	sc.o << stabilizer;
 	sc.o << formPrev;
 }
 
@@ -131,6 +133,8 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
+	sc.i >> beingControlled;
+	sc.i >> stabilizer;
 	sc.i >> formPrev;
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
@@ -185,7 +189,9 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	formPrev(NULL),
 	evelo(vec3_000),
 	attitude(Passive),
-	fsabre(0.f)
+	fsabre(0.f),
+	beingControlled(false),
+	stabilizer(true)
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
@@ -232,12 +238,12 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	pos = this->pos + ofs;
 }
 
-/*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
-	SCEPTOR_t *p = (SCEPTOR_t*)pt;
-	if(!pt->active || pt->health <= 0.)
+void ReZEL::control(const input_t *inputs, double dt){
+	if(!w || health <= 0.)
 		return;
-	pt->inputs = *inputs;
-}*/
+	this->inputs = *inputs;
+	beingControlled = true;
+}
 
 int ReZEL::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
@@ -248,6 +254,9 @@ int ReZEL::popupMenu(PopupMenu &list){
 	list.append("Arm Shield Beam", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 1);})\"");
 	list.append("Arm Vulcan", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 2);})\"");
 	list.append("Arm Beam Sabre", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 3);})\"");
+	list.appendSeparator();
+	list.append("Turn on Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 1);})\"");
+	list.append("Turn off Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 0);})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -257,8 +266,10 @@ int ReZEL::popupMenu(PopupMenu &list){
 
 Entity::Props ReZEL::props()const{
 	Props ret = st::props();
-//	ret.push_back(cpplib::dstring("Task: ") << task);
-//	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
+	ret.push_back(gltestp::dstring("Task: ") << task);
+	ret.push_back(gltestp::dstring("Fuel: ") << fuel << '/' << maxfuel());
+	ret.push_back(gltestp::dstring("Throttle: ") << throttle);
+	ret.push_back(gltestp::dstring("Stabilizer: ") << stabilizer);
 	return ret;
 }
 
@@ -751,7 +762,7 @@ void ReZEL::anim(double dt){
 
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
-		bool controlled = false/*w->pl->control == this*/;
+		bool controlled = beingControlled/*w->pl->control == this*/;
 		int parking = 0;
 		Entity *collideignore = NULL;
 
@@ -759,8 +770,10 @@ void ReZEL::anim(double dt){
 		if(bbody)
 			bbody->getBroadphaseProxy()->m_collisionFilterMask |= 2;
 
+		// Clear inputs when not controlled
 		if(!controlled)
 			pt->inputs.press = 0;
+
 		if(false/*pf->docked*/);
 		else if(p->task == Undockque){
 			// Avoid collision with mother if in a progress of undocking.
@@ -803,6 +816,7 @@ void ReZEL::anim(double dt){
 		else if(5. * 5. < VECSDIST(pt->pos, mother->st.pos)){
 			pf->returning = 1;
 		}*/
+		// Docking is high priority task that being controlled by a human can cause errors, but for the other tasks, humans can take role.
 		else{
 //			double pos[3], dv[3], dist;
 			Vec3d delta;
@@ -868,7 +882,7 @@ void ReZEL::anim(double dt){
 						p->task = Parade;
 				}
 			}
-			else/* if(w->pl->control != pt)*/ do{
+			else if(!controlled) do{
 				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
@@ -1140,9 +1154,11 @@ void ReZEL::anim(double dt){
 					shootRifle(dt);
 				else if(weapon == 1)
 					shootShieldBeam(dt);
+				else if(controlled && weapon == 2)
+					shootVulcan(dt);
 
 				// Do not shoot vulcan to too far targets
-				if(enemy && (this->pos - enemy->pos).len() < 2.)
+				if(!controlled && enemy && (this->pos - enemy->pos).len() < 2.)
 					shootVulcan(dt);
 			}
 
@@ -1220,27 +1236,37 @@ void ReZEL::anim(double dt){
 				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
 		}
 
-		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
-		if(maxvelo < speed)
-			p->throttle = 0.;
-		else{
-			if(!controlled && (p->task == Attack || p->task == Away))
-				p->throttle = 1.;
-			if(1. - speed / maxvelo < throttle)
-				throttle = 1. - speed / maxvelo;
+		if(stabilizer){
+			/* you're not allowed to accel further than certain velocity. */
+			const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
+			if(maxvelo < speed)
+				p->throttle = 0.;
+			else{
+				if(!controlled && (p->task == Attack || p->task == Away))
+					p->throttle = 1.;
+				if(0 < speed && 1. - speed / maxvelo < throttle)
+					throttle = 1. - speed / maxvelo;
+			}
+
+			// Suppress rotation if it's not intensional.
+			if(!(pt->inputs.press & (PL_A | PL_D | PL_W | PL_S))){
+				btVector3 btomg = bbody->getAngularVelocity();
+				btScalar len = btomg.length();
+				if(1. < len)
+					btomg /= len;
+				bbody->applyTorque(-btomg * torqueAmount);
+			}
 		}
 
 		/* Friction (in space!) */
-		if(parking){
+/*		if(parking){
 			double f = 1. / (1. + dt / (parking ? 1. : 3.));
 			pt->velo *= f;
-		}
+		}*/
 
 		{
 			// Half the top acceleration if not transformed
 			double consump = dt * (fabs(pf->throttle / (2. - fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
-			Vec3d acc, acc0(0., 0., -1.);
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)
 					pf->throttle = .05;
@@ -1250,10 +1276,10 @@ void ReZEL::anim(double dt){
 			}
 			else
 				p->fuel -= consump;
-			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
-			acc = pt->rot.trans(acc0);
-			bbody->applyCentralForce(btvc(acc * spd * 10. * mass));
-			pt->velo += acc * spd;
+			double spd = consump * (p->task != Attack ? .01 : .005);
+			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.));
+			bbody->applyCentralForce(btvc(acc * spd * 10. * mass / dt));
+//			pt->velo += acc * spd;
 		}
 
 		/* heat dissipation */
@@ -1282,8 +1308,8 @@ void ReZEL::anim(double dt){
 		fcloak = approach(fcloak, p->cloak, dt, 0.);
 		fwaverider = approach(fwaverider, waverider, dt, 0.);
 		fweapon = approach(fweapon, weapon == 1, dt, 0.);
-		twist = approach(twist, omg.sp(rot.trans(vec3_010)), dt, 0.);
-		pitch = approach(pitch, omg.sp(rot.trans(vec3_100)), dt, 0.);
+		twist = approach(twist, rangein(omg.sp(rot.trans(vec3_010)), -1., 1.), dt, 0.);
+		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
 		if(3. <= fsabre)
 			fsabre = 1.;
 		fsabre = approach(fsabre, weapon == 3 ? 3. : 0., dt, 0.);
@@ -1543,6 +1569,9 @@ bool ReZEL::command(EntityCommand *com){
 	else if(WeaponCommand *wc = InterpretCommand<WeaponCommand>(com)){
 		weapon = wc->weaponid;
 	}
+	else if(StabilizerCommand *sc = InterpretCommand<StabilizerCommand>(com)){
+		stabilizer = sc->stabilizer;
+	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
@@ -1656,5 +1685,17 @@ WeaponCommand::WeaponCommand(HSQUIRRELVM v, Entity &){
 	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
 		throw SQFError(_SC("Invalid argument type"));
 	weaponid = i;
+}
+
+IMPLEMENT_COMMAND(StabilizerCommand, "Stabilizer");
+
+StabilizerCommand::StabilizerCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFError(_SC("Invalid argument type"));
+	stabilizer = i;
 }
 

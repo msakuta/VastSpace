@@ -52,6 +52,8 @@ protected:
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
+	bool beingControlled;
+	bool stabilizer;
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
 	float muzzleFlash[3]; ///< Muzzle flashes for each arms.
 	float twist; ///< Twist value (integration of angular velocity around Y axis)
@@ -90,6 +92,7 @@ public:
 	virtual double maxhealth()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
+	virtual void control(const input_t *inputs, double dt);
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
@@ -145,6 +148,17 @@ struct WeaponCommand : public EntityCommand{
 	WeaponCommand(){}
 	WeaponCommand(HSQUIRRELVM v, Entity &e);
 	int weaponid;
+};
+
+struct StabilizerCommand : public EntityCommand{
+	typedef EntityCommand st;
+	static int construction_dummy;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	StabilizerCommand(){}
+	StabilizerCommand(HSQUIRRELVM v, Entity &e);
+	int stabilizer;
 };
 
 #endif

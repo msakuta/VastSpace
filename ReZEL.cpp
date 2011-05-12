@@ -1216,24 +1216,33 @@ void ReZEL::anim(double dt){
 
 		static const double torqueAmount = .1;
 		bbody->activate(true);
-		if(pt->inputs.press & PL_A){
-			bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
+		if(inputs.analog[0] != 0 || inputs.analog[1] != 0){
+			if(inputs.analog[0] != 0)
+				bbody->applyTorque(btvc(inputs.analog[0] * -mat.vec3(1) * torqueAmount));
+			if(inputs.analog[1] != 0)
+				bbody->applyTorque(btvc(inputs.analog[1] * mat.vec3(0) * torqueAmount));
 		}
-		if(pt->inputs.press & PL_D){
-			bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
-		}
-		if(pt->inputs.press & PL_W){
-			bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
-		}
-		if(pt->inputs.press & PL_S){
-			bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
+		else{
+			if(pt->inputs.press & PL_A){
+				bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_D){
+				bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_W){
+				bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_S){
+				bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
+			}
 		}
 
 		if(controlled){
-			if(inputs.press & PL_Q)
+			p->throttle = approach(throttle, inputs.analog[3], dt, 0.);
+/*			if(inputs.press & PL_Q)
 				p->throttle = MIN(throttle + dt, 1.);
 			if(inputs.press & PL_Z)
-				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
+				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted*/
 		}
 
 		if(stabilizer){
@@ -1246,6 +1255,11 @@ void ReZEL::anim(double dt){
 					p->throttle = 1.;
 				if(0 < speed && 1. - speed / maxvelo < throttle)
 					throttle = 1. - speed / maxvelo;
+			}
+
+			{
+				btVector3 btvelo = bbody->getLinearVelocity();
+				bbody->applyCentralForce(-btvelo * mass * .1);
 			}
 
 			// Suppress rotation if it's not intensional.

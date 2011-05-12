@@ -904,6 +904,8 @@ void draw_func(Viewer &vw, double dt){
 class JoyStick{
 	unsigned m_uiJoystickID;
 	RECT m_rcJoystickTrip;
+	RECT m_rcJoystickTrip2;
+	bool init;
 public:
 	typedef WORD  JOYSTATE;
 	static const JOYSTATE JOY_NONE = 0x0000L,
@@ -913,6 +915,7 @@ public:
         JOY_DOWN = 0x0008L,
         JOY_FIRE1 = 0x0010L,
         JOY_FIRE2 = 0x0020L;
+	JoyStick(unsigned id) : m_uiJoystickID(id), init(false){}
 	BOOL InitJoystick();
 	double getX()const;
 	double getY()const;
@@ -921,11 +924,11 @@ public:
 	void CheckJoystick(input_t &input);
 };
 
-static JoyStick joyStick;
+static JoyStick joyStick(JOYSTICKID1);
+//static JoyStick joyStick2(JOYSTICKID2);
 
 BOOL JoyStick::InitJoystick()
 {
-	static bool init = false;
 	if(init)
 		return TRUE;
 	// Make sure joystick driver is present
@@ -935,20 +938,33 @@ BOOL JoyStick::InitJoystick()
 
 	// Make sure the joystick is attached
 	JOYINFO jiInfo;
-	if (joyGetPos(JOYSTICKID1, &jiInfo) != JOYERR_UNPLUGGED)
-		m_uiJoystickID = JOYSTICKID1;
-	else
+	unsigned i;
+	for(i = m_uiJoystickID; i < uiNumJoysticks; i++){
+		MMRESULT mr = joyGetPos(i, &jiInfo);
+		if (mr == JOYERR_NOERROR){
+			m_uiJoystickID = i;
+			break;
+		}
+	}
+	if(i == uiNumJoysticks){
 		return FALSE;
+	}
 
 	// Calculate the trip values
 	JOYCAPS jcCaps;
 	joyGetDevCaps(m_uiJoystickID, &jcCaps, sizeof(JOYCAPS));
 	DWORD dwXCenter = ((DWORD)jcCaps.wXmin + jcCaps.wXmax) / 2;
 	DWORD dwYCenter = ((DWORD)jcCaps.wYmin + jcCaps.wYmax) / 2;
+	DWORD dwZCenter = ((DWORD)jcCaps.wZmin + jcCaps.wZmax) / 2;
+	DWORD dwRCenter = ((DWORD)jcCaps.wRmin + jcCaps.wRmax) / 2;
 	m_rcJoystickTrip.left = (jcCaps.wXmin + (WORD)dwXCenter) / 2;
 	m_rcJoystickTrip.right = (jcCaps.wXmax + (WORD)dwXCenter) / 2;
 	m_rcJoystickTrip.top = (jcCaps.wYmin + (WORD)dwYCenter) / 2;
 	m_rcJoystickTrip.bottom = (jcCaps.wYmax + (WORD)dwYCenter) / 2;
+	m_rcJoystickTrip2.left = (jcCaps.wZmin + (WORD)dwZCenter) / 2;
+	m_rcJoystickTrip2.right = (jcCaps.wZmax + (WORD)dwZCenter) / 2;
+	m_rcJoystickTrip2.top = (jcCaps.wRmin + (WORD)dwRCenter) / 2;
+	m_rcJoystickTrip2.bottom = (jcCaps.wRmax + (WORD)dwRCenter) / 2;
 
 	init = true;
 	return TRUE;
@@ -970,31 +986,47 @@ void JoyStick::ReleaseJoystick()
 
 void JoyStick::CheckJoystick(input_t &input)
 {
-	 if (m_uiJoystickID == JOYSTICKID1)
+	 if (m_uiJoystickID == JOYSTICKID1 || m_uiJoystickID == JOYSTICKID2)
 	 {
-		  JOYINFO jiInfo;
+		  JOYINFOEX jiInfo;
 		  unsigned jsJoystickState = 0;
-		  if (joyGetPos(m_uiJoystickID, &jiInfo) == JOYERR_NOERROR)
+		  jiInfo.dwSize = sizeof jiInfo;
+		  jiInfo.dwFlags = JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ | JOY_RETURNR | JOY_RETURNBUTTONS;
+		  if (joyGetPosEx(JOYSTICKID1, &jiInfo) == JOYERR_NOERROR)
 		  {
 			   // Check horizontal movement
-			   if (jiInfo.wXpos < (WORD)m_rcJoystickTrip.left)
+			   if (jiInfo.dwXpos < (WORD)m_rcJoystickTrip.left)
 					jsJoystickState |= JOY_LEFT;
-			   else if (jiInfo.wXpos > (WORD)m_rcJoystickTrip.right)
+			   else if (jiInfo.dwXpos > (WORD)m_rcJoystickTrip.right)
 					jsJoystickState |= JOY_RIGHT;
-			   input.analog[0] = jiInfo.wXpos / ((m_rcJoystickTrip.left + m_rcJoystickTrip.right) / 2.) - 1.;
+			   input.analog[0] = jiInfo.dwXpos / ((m_rcJoystickTrip.left + m_rcJoystickTrip.right) / 2.) - 1.;
 
 			   // Check vertical movement
-			   if (jiInfo.wYpos < (WORD)m_rcJoystickTrip.top)
+			   if (jiInfo.dwYpos < (WORD)m_rcJoystickTrip.top)
 					jsJoystickState |= JOY_UP;
-			   else if (jiInfo.wYpos > (WORD)m_rcJoystickTrip.bottom)
+			   else if (jiInfo.dwYpos > (WORD)m_rcJoystickTrip.bottom)
 					jsJoystickState |= JOY_DOWN;
-			   input.analog[1] = jiInfo.wYpos / ((m_rcJoystickTrip.top + m_rcJoystickTrip.bottom) / 2.) - 1.;
+			   input.analog[1] = jiInfo.dwYpos / ((m_rcJoystickTrip.top + m_rcJoystickTrip.bottom) / 2.) - 1.;
 
-			   // Check buttons
-			   if(jiInfo.wButtons & JOY_BUTTON1)
-					jsJoystickState |= JOY_FIRE1;
-			   if(jiInfo.wButtons & JOY_BUTTON2)
-					jsJoystickState |= JOY_FIRE2;
+			   // Check horizontal movement of right joystick
+			   if (jiInfo.dwZpos < (WORD)m_rcJoystickTrip2.left)
+					jsJoystickState |= JOY_LEFT;
+			   else if (jiInfo.dwZpos > (WORD)m_rcJoystickTrip2.right)
+					jsJoystickState |= JOY_RIGHT;
+			   input.analog[2] = jiInfo.dwZpos / ((m_rcJoystickTrip2.left + m_rcJoystickTrip2.right) / 2.) - 1.;
+
+			   // Check vertical movement of right joystick
+			   if (jiInfo.dwRpos < (WORD)m_rcJoystickTrip2.top)
+					jsJoystickState |= JOY_UP;
+			   else if (jiInfo.dwRpos > (WORD)m_rcJoystickTrip2.bottom)
+					jsJoystickState |= JOY_DOWN;
+			   input.analog[3] = jiInfo.dwRpos / ((m_rcJoystickTrip2.top + m_rcJoystickTrip2.bottom) / 2.) - 1.;
+
+				// Check buttons
+				if(jiInfo.dwButtons & JOY_BUTTON1)
+					input.press |= PL_ENTER, jsJoystickState |= JOY_FIRE1;
+				if(jiInfo.dwButtons & JOY_BUTTON2)
+					input.press |= PL_RCLICK, jsJoystickState |= JOY_FIRE2;
 		  }
 
 		  // Allow the game to handle the joystick

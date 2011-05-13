@@ -452,7 +452,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\keybind.c"
+				RelativePath="..\keybind.cpp"
 				>
 			</File>
 			<File

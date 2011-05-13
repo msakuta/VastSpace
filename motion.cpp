@@ -47,6 +47,7 @@ fgather(crouch, PL_CTRL);
 fgather(focusset, PL_ALT);
 fgather(gear, PL_G);
 fgather(lclick, PL_LCLICK);
+fgather(rclick, PL_RCLICK);
 fgather(move_z, PL_SHIFT);
 
 
@@ -95,6 +96,8 @@ void MotionInit(){
 	CmdAddParam("-gear", cmd_ngear, &inputstate);
 	CmdAddParam("+lclick", cmd_plclick, &inputstate);
 	CmdAddParam("-lclick", cmd_nlclick, &inputstate);
+	CmdAddParam("+rclick", cmd_prclick, &inputstate);
+	CmdAddParam("-rclick", cmd_nrclick, &inputstate);
 	CmdAddParam("+move_z", cmd_pmove_z, &inputstate);
 	CmdAddParam("-move_z", cmd_nmove_z, &inputstate);
 }

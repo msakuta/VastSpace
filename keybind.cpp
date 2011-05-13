@@ -1,6 +1,8 @@
 #include "keybind.h"
 #include "cmd.h"
 #include "antiglut.h"
+#include "war.h"
+#include "motion.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +67,20 @@ static int name2key(const char *name){
 		return KEYBIND_MOUSE_BASE + GLUT_WHEEL_UP;
 	else if(!strcmp(name, "wheeldown"))
 		return KEYBIND_MOUSE_BASE + GLUT_WHEEL_DOWN;
+	else if(!strcmp(name, "joy1"))
+		return KEYBIND_JOYSTICK_BASE;
+	else if(!strcmp(name, "joy2"))
+		return KEYBIND_JOYSTICK_BASE + 1;
+	else if(!strcmp(name, "joy3"))
+		return KEYBIND_JOYSTICK_BASE + 2;
+	else if(!strcmp(name, "joy4"))
+		return KEYBIND_JOYSTICK_BASE + 3;
+	else if(!strcmp(name, "joy5"))
+		return KEYBIND_JOYSTICK_BASE + 4;
+	else if(!strcmp(name, "joy6"))
+		return KEYBIND_JOYSTICK_BASE + 5;
+	else if(!strcmp(name, "joy7"))
+		return KEYBIND_JOYSTICK_BASE + 6;
 	else if((name[0] == 'f' || name[0] == 'F')){
 		if(name[1] == '1' && '0' <= name[2] && name[2] <= '2')
 			return 0x80 + 10 + (name[2] - '0');
@@ -119,6 +135,13 @@ static const char *key2name(int key){
 		case KEYBIND_MOUSE_BASE + GLUT_RIGHT_BUTTON: return "rclick";
 		case KEYBIND_MOUSE_BASE + GLUT_WHEEL_UP: return "wheelup";
 		case KEYBIND_MOUSE_BASE + GLUT_WHEEL_DOWN: return "wheeldown";
+		case KEYBIND_JOYSTICK_BASE: return "joy1";
+		case KEYBIND_JOYSTICK_BASE + 1: return "joy2";
+		case KEYBIND_JOYSTICK_BASE + 2: return "joy3";
+		case KEYBIND_JOYSTICK_BASE + 3: return "joy4";
+		case KEYBIND_JOYSTICK_BASE + 4: return "joy5";
+		case KEYBIND_JOYSTICK_BASE + 5: return "joy6";
+		case KEYBIND_JOYSTICK_BASE + 6: return "joy7";
 		default:
 		{
 			ret[0] = key;
@@ -167,7 +190,7 @@ int cmd_bind(int argc, char *argv[]){
 	thekey = argv[1];
 	for(valuelen = 0, i = argstart; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
-	thevalue = malloc(valuelen);
+	thevalue = (char*)malloc(valuelen);
 	for(valuelen = 0, i = argstart; i < argc; i++){
 		strcpy(&thevalue[valuelen], argv[i]);
 		valuelen += strlen(argv[i]) + 1;
@@ -203,13 +226,13 @@ int cmd_bind(int argc, char *argv[]){
 
 int cmd_pushbind(int argc, char *argv[]){
 	int i;
-	bindstack = realloc(bindstack, (nbindstack + 1) * sizeof *bindstack);
+	bindstack = (bindset*)realloc(bindstack, (nbindstack + 1) * sizeof *bindstack);
 	bindstack[nbindstack].binds = binds;
 	bindstack[nbindstack].n = nbinds;
-	binds = malloc(nbinds * sizeof *binds);
+	binds = (binding*)malloc(nbinds * sizeof *binds);
 	memcpy(binds, bindstack[nbindstack].binds, nbinds * sizeof *binds);
 	for(i = 0; i < nbinds; i++){
-		binds[i].cmd = malloc(strlen(bindstack[nbindstack].binds[i].cmd) + 1);
+		binds[i].cmd = (char*)malloc(strlen(bindstack[nbindstack].binds[i].cmd) + 1);
 		strcpy(binds[i].cmd, bindstack[nbindstack].binds[i].cmd);
 	}
 	nbindstack++;
@@ -228,7 +251,7 @@ int cmd_popbind(int argc, char *argv[]){
 	nbindstack--;
 	binds = bindstack[nbindstack].binds;
 	nbinds = bindstack[nbindstack].n;
-	bindstack = realloc(bindstack, nbindstack * sizeof *bindstack);
+	bindstack = (bindset*)realloc(bindstack, nbindstack * sizeof *bindstack);
 	return 0;
 }
 
@@ -278,5 +301,143 @@ void BindKillFocus(void){
 		binds[i].cmd[0] = '-';
 		CmdExec(binds[i].cmd);
 		binds[i].cmd[0] = '+';
+	}
+}
+
+
+
+bool JoyStick::InitJoystick()
+{
+	if(init)
+		return true;
+	// Make sure joystick driver is present
+	UINT uiNumJoysticks;
+	if ((uiNumJoysticks = joyGetNumDevs()) == 0)
+		return false;
+
+	// Make sure the joystick is attached
+	JOYINFO jiInfo;
+	unsigned i;
+	for(i = m_uiJoystickID; i < uiNumJoysticks; i++){
+		MMRESULT mr = joyGetPos(i, &jiInfo);
+		if (mr == JOYERR_NOERROR){
+			m_uiJoystickID = i;
+			break;
+		}
+	}
+	if(i == uiNumJoysticks){
+		return false;
+	}
+
+	// Calculate the trip values
+	JOYCAPS jcCaps;
+	joyGetDevCaps(m_uiJoystickID, &jcCaps, sizeof(JOYCAPS));
+	DWORD dwXCenter = ((DWORD)jcCaps.wXmin + jcCaps.wXmax) / 2;
+	DWORD dwYCenter = ((DWORD)jcCaps.wYmin + jcCaps.wYmax) / 2;
+	DWORD dwZCenter = ((DWORD)jcCaps.wZmin + jcCaps.wZmax) / 2;
+	DWORD dwRCenter = ((DWORD)jcCaps.wRmin + jcCaps.wRmax) / 2;
+	m_rcJoystickTrip.left = (jcCaps.wXmin + (WORD)dwXCenter) / 2;
+	m_rcJoystickTrip.right = (jcCaps.wXmax + (WORD)dwXCenter) / 2;
+	m_rcJoystickTrip.top = (jcCaps.wYmin + (WORD)dwYCenter) / 2;
+	m_rcJoystickTrip.bottom = (jcCaps.wYmax + (WORD)dwYCenter) / 2;
+	m_rcJoystickTrip2.left = (jcCaps.wZmin + (WORD)dwZCenter) / 2;
+	m_rcJoystickTrip2.right = (jcCaps.wZmax + (WORD)dwZCenter) / 2;
+	m_rcJoystickTrip2.top = (jcCaps.wRmin + (WORD)dwRCenter) / 2;
+	m_rcJoystickTrip2.bottom = (jcCaps.wRmax + (WORD)dwRCenter) / 2;
+
+	init = true;
+	return true;
+}
+
+void JoyStick::CaptureJoystick()
+{
+	// Capture the joystick
+//	if (m_uiJoystickID == JOYSTICKID1)
+//		joySetCapture(hWndApp, m_uiJoystickID, NULL, TRUE);
+}
+
+void JoyStick::ReleaseJoystick()
+{
+	// Release the joystick
+//	if (m_uiJoystickID == JOYSTICKID1)
+//		joyReleaseCapture(m_uiJoystickID);
+}
+
+void JoyStick::CheckJoystick(input_t &input)
+{
+	if (m_uiJoystickID == JOYSTICKID1 || m_uiJoystickID == JOYSTICKID2){
+		// Reserve old press state for taking differences
+		int oldpress = input.press;
+		JOYINFOEX jiInfo;
+		JOYSTATE jsJoystickState = 0;
+
+		// JOYINFOEX has members that need to be initialized before using.
+		jiInfo.dwSize = sizeof jiInfo;
+		jiInfo.dwFlags = JOY_RETURNX | JOY_RETURNY | JOY_RETURNZ | JOY_RETURNR | JOY_RETURNBUTTONS;
+
+		if(joyGetPosEx(m_uiJoystickID, &jiInfo) == JOYERR_NOERROR){
+			// Check horizontal movement
+			if (jiInfo.dwXpos < (WORD)m_rcJoystickTrip.left)
+				jsJoystickState |= JOY_LEFT;
+			else if (jiInfo.dwXpos > (WORD)m_rcJoystickTrip.right)
+				jsJoystickState |= JOY_RIGHT;
+			input.analog[0] = jiInfo.dwXpos / ((m_rcJoystickTrip.left + m_rcJoystickTrip.right) / 2.) - 1.;
+
+			// Check vertical movement
+			if (jiInfo.dwYpos < (WORD)m_rcJoystickTrip.top)
+				jsJoystickState |= JOY_UP;
+			else if (jiInfo.dwYpos > (WORD)m_rcJoystickTrip.bottom)
+				jsJoystickState |= JOY_DOWN;
+			input.analog[1] = jiInfo.dwYpos / ((m_rcJoystickTrip.top + m_rcJoystickTrip.bottom) / 2.) - 1.;
+
+			// Check horizontal movement of right joystick
+			if (jiInfo.dwZpos < (WORD)m_rcJoystickTrip2.left)
+				jsJoystickState |= JOY_LEFT;
+			else if (jiInfo.dwZpos > (WORD)m_rcJoystickTrip2.right)
+				jsJoystickState |= JOY_RIGHT;
+			input.analog[2] = jiInfo.dwZpos / ((m_rcJoystickTrip2.left + m_rcJoystickTrip2.right) / 2.) - 1.;
+
+			// Check vertical movement of right joystick
+			if (jiInfo.dwRpos < (WORD)m_rcJoystickTrip2.top)
+				jsJoystickState |= JOY_UP;
+			else if (jiInfo.dwRpos > (WORD)m_rcJoystickTrip2.bottom)
+				jsJoystickState |= JOY_DOWN;
+			input.analog[3] = jiInfo.dwRpos / ((m_rcJoystickTrip2.top + m_rcJoystickTrip2.bottom) / 2.) - 1.;
+
+			// Check buttons
+			if(jiInfo.dwButtons & JOY_BUTTON1)
+				/*input.press |= PL_ENTER,*/ jsJoystickState |= JOY_FIRE1;
+			if(jiInfo.dwButtons & JOY_BUTTON2)
+				/*input.press |= PL_RCLICK,*/ jsJoystickState |= JOY_FIRE2;
+			if(jiInfo.dwButtons & JOY_BUTTON3)
+				jsJoystickState |= JOY_FIRE3;
+			if(jiInfo.dwButtons & JOY_BUTTON4)
+				jsJoystickState |= JOY_FIRE4;
+			if(jiInfo.dwButtons & JOY_BUTTON5)
+				jsJoystickState |= JOY_FIRE5;
+			if(jiInfo.dwButtons & JOY_BUTTON6)
+				jsJoystickState |= JOY_FIRE6;
+			if(jiInfo.dwButtons & JOY_BUTTON7)
+				jsJoystickState |= JOY_FIRE7;
+
+			// Compare new and old state and indicate changed keys.
+//			input.change ^= (input.press ^ oldpress) & (PL_ENTER | PL_RCLICK);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE1)
+				(jsJoystickState & JOY_FIRE1 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE2)
+				(jsJoystickState & JOY_FIRE2 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 1);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE3)
+				(jsJoystickState & JOY_FIRE3 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 2);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE4)
+				(jsJoystickState & JOY_FIRE4 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 3);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE5)
+				(jsJoystickState & JOY_FIRE5 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 4);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE6)
+				(jsJoystickState & JOY_FIRE6 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 5);
+			if((m_joyState ^ jsJoystickState) & JOY_FIRE7)
+				(jsJoystickState & JOY_FIRE7 ? BindExec : BindKeyUp)(KEYBIND_JOYSTICK_BASE + 6);
+
+			m_joyState = jsJoystickState;
+		}
 	}
 }

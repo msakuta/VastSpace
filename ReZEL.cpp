@@ -1154,12 +1154,14 @@ void ReZEL::anim(double dt){
 					shootRifle(dt);
 				else if(weapon == 1)
 					shootShieldBeam(dt);
-				else if(controlled && weapon == 2)
-					shootVulcan(dt);
 
 				// Do not shoot vulcan to too far targets
 				if(!controlled && enemy && (this->pos - enemy->pos).len() < 2.)
 					shootVulcan(dt);
+			}
+
+			if(controlled && (weapon == 2 && pt->inputs.press & (PL_ENTER | PL_LCLICK) || pt->inputs.press & PL_RCLICK)){
+				shootVulcan(dt);
 			}
 
 			if(p->cooldown < dt)

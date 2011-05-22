@@ -1299,7 +1299,7 @@ void Warpable::anim(double dt){
 		else
 			p->capacitor = mn->capacity;
 
-		if(w->pl->control == this)
+		if(controller)
 			;
 		else if(task == sship_idle)
 			inputs.press = 0;

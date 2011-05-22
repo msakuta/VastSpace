@@ -590,7 +590,7 @@ void Sceptor::anim(double dt){
 
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
-		bool controlled = w->pl->control == this;
+		bool controlled = controller;
 		int parking = 0;
 		Entity *collideignore = NULL;
 
@@ -707,7 +707,7 @@ void Sceptor::anim(double dt){
 						p->task = Parade;
 				}
 			}
-			else if(w->pl->control != pt) do{
+			else if(controller) do{
 				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;

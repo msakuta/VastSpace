@@ -192,7 +192,7 @@ void Beamer::anim(double dt){
 					task = sship_parade;
 			}
 		}
-		else if(w->getPlayer()->control == this){
+		else if(controller){
 		}
 		else if(!enemy && task == sship_parade){
 			Entity *pm = mother ? mother->e : NULL;
@@ -309,7 +309,7 @@ void Beamer::anim(double dt){
 				if(0 && !enemy && !warping){
 					Entity *pt2;
 					Warpable *leader = NULL;
-					for(pt2 = w->el; pt2; pt2 = pt2->next) if(this != pt2 && race == pt2->race && pt2->toWarpable() && w->pl->control == pt2){
+					for(pt2 = w->el; pt2; pt2 = pt2->next) if(this != pt2 && race == pt2->race && pt2->toWarpable() && pt2->controller){
 						leader = pt2->toWarpable();
 						break;
 					}

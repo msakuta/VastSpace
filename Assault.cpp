@@ -173,7 +173,7 @@ void Assault::anim(double dt){
 				task = sship_parade;
 		}
 	}
-	else if(w->getPlayer()->control != this){
+	else if(!controller){
 		inputs.press = 0;
 		if(!enemy){ /* find target */
 			double best = 20. * 20.;

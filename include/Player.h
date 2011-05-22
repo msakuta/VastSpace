@@ -1,6 +1,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 #include "serial.h"
+#include "Entity.h"
 //#include <cstring>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -34,7 +35,7 @@ class GLWstateButton;
  *
  * Conceptually, the camera and the player is separate entity, but they heavily depend on each other.
  */
-class EXPORT Player : public Serializable{
+class EXPORT Player : public EntityController{
 public:
 	/// Base class for camera controller classes.
 	class mover_t{
@@ -54,6 +55,7 @@ public:
 	};
 	class FreelookMover;
 protected:
+	virtual bool control(Entity *, double dt);
 	Vec3d getrawpos(mover_t*)const;
 	Quatd getrawrot(mover_t*)const;
 public:
@@ -74,7 +76,7 @@ public:
 	mover_t *mover; ///< virtual mover function
 	mover_t *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
 	float blendmover; ///< Blending factor of mover and nextmover.
-	Entity *chase, *control, *selected, *lastchase; ///< Various entity lists
+	Entity *chase, *controlled, *selected, *lastchase; ///< Various entity lists
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
 	int detail;
 	int mousex, mousey;
@@ -126,7 +128,12 @@ public:
 #ifdef _WIN32
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
-	void uncontrol(){ control = NULL; } ///< Quit controlling an Entity.
+	/// Quit controlling an Entity.
+	void uncontrol(){
+		if(controlled && controlled->controller == this)
+			controlled->controller = NULL;
+		controlled = NULL;
+	}
 
 	static float camera_mode_switch_time;
 	static int g_overlay; // Overlay display level

@@ -1002,7 +1002,7 @@ void display_func(void){
 			pl.chase->control(&inputs, dt);
 		}
 
-		if(pl.control)
+		if(pl.controlled)
 			glwfocus = NULL;
 
 		// Really should be in draw method, since windows are property of the client.
@@ -1376,7 +1376,7 @@ void mouse_func(int button, int state, int x, int y){
 	}*/
 
 #if USEWIN && defined _WIN32
-	if(!cmdwnd && !pl.control && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
+	if(!cmdwnd && !pl.controlled && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
 /*		printf("right up %d\n", mouse_captured);*/
 		if(mouse_captured){

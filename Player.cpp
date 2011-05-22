@@ -222,8 +222,8 @@ void Player::unlink(const Entity *pe){
 	chases.erase(pe);
 	if(chase == pe)
 		chase = chases.empty() ? NULL : const_cast<Entity*>(*chases.begin());
-	if(control == pe)
-		control = NULL;
+	if(controlled == pe)
+		controlled = NULL;
 	if(lastchase == pe)
 		lastchase = NULL;
 	Entity **ppe;
@@ -400,16 +400,22 @@ int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 
 int Player::cmd_control(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
-	if(pl.control)
-		pl.control = NULL;
+	if(pl.controlled)
+		pl.uncontrol();
 	else if(pl.selected){
-		pl.control = pl.selected;
+		pl.controlled = pl.selected;
 		pl.mover = pl.nextmover = pl.freelook;
 		pl.chase = pl.selected;
 		pl.mover->setrot(quat_u);
 		capture_mouse();
+		pl.selected->controller = &pl;
 	}
 	return 0;
+}
+
+bool Player::control(Entity *e, double dt){
+	e->control(NULL, dt);
+	return false;
 }
 
 
@@ -641,7 +647,7 @@ class GLWcontrolButton : public GLWstateButton{
 public:
 	typedef GLWstateButton st;
 	GLWcontrolButton(Player &apl, const char *filename, const char *filename2, const char *tips = NULL) : st(filename, filename2, tips), pl(apl){}
-	virtual bool state()const{return !!pl.control;}
+	virtual bool state()const{return !!pl.controlled;}
 	/// Issues "control" console command.
 	virtual void press(){
 		char *str[1] = {"control"};

@@ -438,7 +438,7 @@ void MTurret::anim(double dt){
 	else
 		a->mf -= dt;
 
-	if(w->pl && w->pl->control == this){
+	if(w->pl && controller){
 		double pydst[2] = {py[0], py[1]};
 		if(inputs.press & PL_A)
 			pydst[1] += MTURRETMANUALROTSPEED * dt;

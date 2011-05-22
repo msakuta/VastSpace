@@ -180,7 +180,7 @@ void SpacePlane::anim(double dt){
 				undocktime -= dt;
 			}
 		}
-		else if(w->getPlayer()->control == this){
+		else if(controller){
 		}
 		else if(!enemy && task == sship_parade){
 			Entity *pm = mother ? mother->e : NULL;

@@ -24,6 +24,11 @@ class Docker;
 struct EntityCommand;
 class PopupMenu;
 
+class EXPORT EntityController : public Serializable{
+public:
+	virtual bool control(Entity *, double dt) = 0;
+};
+
 /// Primary object in the space. Many object classes derive this.
 /// Serializable and accessible from Squirrel codes.
 class EXPORT Entity : public Serializable{
@@ -109,6 +114,7 @@ public:
 	int race;
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
+	EntityController *controller; /// The controller class, could be either a player or an AI.
 	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
 	int otflag;
 //	char weapon;

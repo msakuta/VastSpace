@@ -109,7 +109,6 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << paradec;
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
-	sc.o << beingControlled;
 	sc.o << stabilizer;
 	sc.o << formPrev;
 }
@@ -133,7 +132,6 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
-	sc.i >> beingControlled;
 	sc.i >> stabilizer;
 	sc.i >> formPrev;
 
@@ -190,7 +188,6 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	evelo(vec3_000),
 	attitude(Passive),
 	fsabre(0.f),
-	beingControlled(false),
 	stabilizer(true)
 {
 	muzzleFlash[0] = 0.;
@@ -242,7 +239,6 @@ void ReZEL::control(const input_t *inputs, double dt){
 	if(!w || health <= 0.)
 		return;
 	this->inputs = *inputs;
-	beingControlled = true;
 }
 
 int ReZEL::popupMenu(PopupMenu &list){
@@ -762,7 +758,7 @@ void ReZEL::anim(double dt){
 
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
-		bool controlled = beingControlled/*w->pl->control == this*/;
+		bool controlled = controller;
 		int parking = 0;
 		Entity *collideignore = NULL;
 

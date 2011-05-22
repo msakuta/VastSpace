@@ -52,7 +52,6 @@ protected:
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
-	bool beingControlled;
 	bool stabilizer;
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
 	float muzzleFlash[3]; ///< Muzzle flashes for each arms.

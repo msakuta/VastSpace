@@ -54,6 +54,11 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
+bool EntityAI::unlink(Entity *){
+	// Do nothing and allow unlinking by default
+	return true;
+}
+
 
 
 ContainerHead::ContainerHead(WarField *aw) : st(aw), docksite(NULL), leavesite(NULL), ai(NULL){
@@ -82,7 +87,11 @@ void ContainerHead::init(){
 }
 
 ContainerHead::~ContainerHead(){
-	delete ai;
+	if(ai){
+		ai->unlink(this);
+		ai = NULL;
+	}
+//	delete ai;
 }
 
 const char *ContainerHead::idname()const{
@@ -167,7 +176,7 @@ void ContainerHead::anim(double dt){
 		Entity *collideignore = NULL;
 		if(ai){
 			if(ai->control(this, dt)){
-				delete ai;
+				ai->unlink(this);
 				ai = NULL;
 			}
 			if(!w)
@@ -724,6 +733,11 @@ bool TransportAI::control(Entity *ch, double dt){
 	return false;
 }
 
+bool TransportAI::unlink(Entity *){
+	delete this;
+	return true;
+}
+
 
 Vec3d TransportAI::dest(Entity *ch){
 	Vec3d yhat = leavesite->rot.trans(Vec3d(0,1,0));
@@ -817,4 +831,9 @@ bool DockAI::control(Entity *ch, double dt){
 		}
 	}
 	return false;
+}
+
+bool DockAI::unlink(Entity *e){
+	delete this;
+	return true;
 }

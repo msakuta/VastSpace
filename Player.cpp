@@ -414,7 +414,7 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 }
 
 bool Player::control(Entity *e, double dt){
-	e->control(NULL, dt);
+//	e->control(NULL, dt);
 	return false;
 }
 

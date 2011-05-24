@@ -5,8 +5,17 @@
 #include "EntityCommand.h"
 
 
+/// A class with similar concept of EntityController, but issues EntityCommands only.
 struct EntityAI : Serializable{
+	/// Called when this controller has to control an Entity.
 	virtual bool control(Entity *, double dt) = 0;
+
+	/// Called on destructor of the Entity being controlled.
+	///
+	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
+	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
+	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
+	virtual bool unlink(Entity *);
 };
 
 
@@ -107,6 +116,7 @@ struct DockAI : EntityAI{
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);
 	bool control(Entity *ch, double dt);
+	bool unlink(Entity *);
 protected:
 	static const unsigned classid;
 };
@@ -122,6 +132,7 @@ struct TransportAI : EntityAI{
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);
 	bool control(Entity *ch, double dt);
+	bool unlink(Entity *);
 protected:
 	Vec3d dest(Entity *ch);
 	void findIsland3(CoordSys *root, std::vector<Entity *> &ret)const;

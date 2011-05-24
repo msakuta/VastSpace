@@ -68,7 +68,7 @@ SpacePlane::SpacePlane(WarField *aw) : st(aw), ai(NULL){
 	init();
 }
 
-SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w),ai(NULL){
+SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w), ai(NULL){
 	init();
 	ai = new TransportAI(this, docksite);
 }
@@ -85,7 +85,11 @@ void SpacePlane::init(){
 }
 
 SpacePlane::~SpacePlane(){
-	delete ai;
+	if(ai){
+		ai->unlink(this);
+		ai = NULL;
+	}
+//	delete ai;
 }
 
 const char *SpacePlane::idname()const{
@@ -164,7 +168,7 @@ void SpacePlane::anim(double dt){
 		Entity *collideignore = NULL;
 		if(ai){
 			if(ai->control(this, dt)){
-				delete ai;
+				ai->unlink(this);
 				ai = NULL;
 			}
 			if(!w)
@@ -512,10 +516,14 @@ Entity::Props SpacePlane::props()const{
 
 bool SpacePlane::command(EntityCommand *com){
 	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
+		if(ai && !ai->unlink(this))
+			return false;
 		ai = new DockAI(this, dtc->deste);
 		return true;
 	}
 	else if(InterpretCommand<DockCommand>(com)){
+		if(ai && !ai->unlink(this))
+			return false;
 		ai = new DockAI(this);
 		return true;
 	}

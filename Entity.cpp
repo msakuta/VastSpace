@@ -23,6 +23,12 @@ extern "C"{
 #include <iostream>
 
 
+bool EntityController::unlink(Entity *){
+	// Do nothing and allow unlinking by default
+	return true;
+}
+
+
 Entity::Entity(WarField *aw) :
 	pos(vec3_000),
 	velo(vec3_000),
@@ -56,6 +62,8 @@ Entity::~Entity(){
 			ws->bdw->removeRigidBody(bbody);
 		delete bbody;
 	}
+	if(controller && controller->unlink(this))
+		controller = NULL;
 }
 
 void Entity::init(){
@@ -159,6 +167,8 @@ void Entity::unserialize(UnserializeContext &sc){
 
 void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	st::dive(sc, method);
+	if(controller)
+		controller->dive(sc, method);
 	if(next)
 		next->dive(sc, method);
 }
@@ -238,6 +248,7 @@ Entity::Props Entity::props()const{
 	ret.push_back(gltestp::dstring("CoordSys: ") << w->cs->getpath());
 	ret.push_back(gltestp::dstring("Health: ") << dstring(health) << "/" << dstring(maxhealth()));
 	ret.push_back(gltestp::dstring("Race: ") << dstring(race));
+	ret.push_back(gltestp::dstring("Controller: ") << dstring(controller ? controller->classname() : "(None)"));
 	return ret;
 }
 double Entity::getRU()const{return 0.;}

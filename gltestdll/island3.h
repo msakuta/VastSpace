@@ -53,6 +53,7 @@ public:
 
 	static int &g_shader_enable;
 protected:
+	double rotation; ///< Rotation of the cylinder
 	int race; ///< Equivalent to ent->race
 	int gases; ///< Resource units
 	int solids; ///< Resource units

@@ -630,23 +630,6 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	direction = inputs.press;
 }
 
-class EXPORT WarpableSteerArrival : public EntityController{
-	Vec3d target;
-	Vec3d targetvelo;
-	double speedfactor;
-	double minspeed;
-	WarpableSteerArrival(const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed) :
-		target(atarget), targetvelo(targetvelo), speedfactor(speedfactor), minspeed(minspeed)
-	{
-	}
-public:
-	bool control(Entity *e, double dt){
-		Warpable *w = e->toWarpable();
-		if(w)
-			w->steerArrival(dt, target, targetvelo, speedfactor, minspeed);
-		return true;
-	}
-};
 
 void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);

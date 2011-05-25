@@ -95,6 +95,7 @@ Island3::~Island3(){
 }
 
 void Island3::init(){
+	rotation = 0.;
 	sun_phase = 0.;
 	ent = NULL;
 	headToSun = false;
@@ -114,6 +115,7 @@ void Island3::init(){
 void Island3::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << ent;
+	sc.o << rotation;
 	sc.o << gases;
 	sc.o << solids;
 	sc.o << people;
@@ -122,6 +124,7 @@ void Island3::serialize(SerializeContext &sc){
 void Island3::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> ent;
+	sc.i >> rotation;
 	sc.i >> gases;
 	sc.i >> solids;
 	sc.i >> people;
@@ -183,17 +186,20 @@ void Island3::anim(double dt){
 
 	// Head toward sun
 	if(sun){
-/*		if(!headToSun){
+		if(!headToSun){
 			headToSun = true;
 			rot = Quatd::direction(parent->tocs(pos, sun)).rotate(-M_PI / 2., avec3_100);
-		}*/
+		}
 		Vec3d sunpos = parent->tocs(pos, sun);
 		CoordSys *top = findcspath("/");
 //		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
 //		Quatd qrot = Quatd::direction(sunpos);
 //		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
-		this->omg = this->rot.trans(Vec3d(0, sqrt(.0098 / 3.25), 0)) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
-		this->rot = this->rot.quatrotquat(omg * dt);
+		double omg = sqrt(.0098 / 3.25);
+		Vec3d vomg = Vec3d(0, omg, 0);
+		this->rotation += 2 * omg * dt;
+		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
+		this->rot = this->rot.quatrotquat(this->omg * dt);
 //		this->rot = qrot1.rotate(phase, avec3_010);
 	}
 
@@ -1529,6 +1535,121 @@ nobridgemodel:
 	endWallTexture();
 	}
 
+	/* farm ring */
+	glEnable(GL_TEXTURE_2D);
+	if(vw->zslice == 0){
+		int i, c = 0;
+		double rad_0 = ISLAND3_FARMRAD - .2, rad_1 = ISLAND3_FARMRAD, rad_2 = ISLAND3_FARMRAD + .2; /* silly that "rad1" is used by windows. */
+
+		double phase = rotation;
+		const double suby = -(ISLAND3_HALFLEN + ISLAND3_RAD + .2);
+
+		glPushMatrix();
+		glRotated(-phase * deg_per_rad, 0., 1., 0.);
+		Quatd qrot2 = rot.rotate(-phase, Vec3d(0,1,0));
+		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+		for(i = 0; i < cutnum; i++){
+			int i1 = (i+1) % cutnum;
+			Vec3d org(rad_1 * cuts[i][0], suby, rad_1 * cuts[i][1]);
+			Vec3d viewpos = mat.vp3(org);
+			viewpos[2] -= 2.;
+
+			/* culling is done for 4 polygons at once. */
+//			if(!(farmap ? gc2->getFar() < -viewpos[2] : -viewpos[2] <= gc2->getFar()))
+//				continue;
+
+			viewpos = qrot2.trans(org) + pos;
+			if(vw->gc->cullFrustum(viewpos, 2.))
+				continue;
+
+			glBegin(GL_QUAD_STRIP);
+			glNormal3d(-cuts[i][0], 0., -cuts[i][1]);
+			glTexCoord2d(0., 0.);
+			glVertex3d(rad_0 * cuts[i][0], suby, rad_0 * cuts[i][1]);
+			glTexCoord2d(1., 0.);
+			glVertex3d(rad_0 * cuts[i1][0], suby, rad_0 * cuts[i1][1]);
+			glNormal3d(0., -1., 0.);
+			glTexCoord2d(0., 1.);
+			glVertex3d(rad_1 * cuts[i][0], suby - .2, rad_1 * cuts[i][1]);
+			glTexCoord2d(1., 1.);
+			glVertex3d(rad_1 * cuts[i1][0], suby - .2, rad_1 * cuts[i1][1]);
+			glNormal3d(cuts[i][0], 0., cuts[i][1]);
+			glTexCoord2d(0., 2.);
+			glVertex3d(rad_2 * cuts[i][0], suby, rad_2 * cuts[i][1]);
+			glTexCoord2d(1., 2.);
+			glVertex3d(rad_2 * cuts[i1][0], suby, rad_2 * cuts[i1][1]);
+			glNormal3d(0., 1., 0.);
+			glTexCoord2d(0., 1.);
+			glVertex3d(rad_1 * cuts[i][0], suby + .2, rad_1 * cuts[i][1]);
+			glTexCoord2d(1., 1.);
+			glVertex3d(rad_1 * cuts[i1][0], suby + .2, rad_1 * cuts[i1][1]);
+			glNormal3d(-cuts[i][0], 0., -cuts[i][1]);
+			glTexCoord2d(0., 0.);
+			glVertex3d(rad_0 * cuts[i][0], suby, rad_0 * cuts[i][1]);
+			glTexCoord2d(1., 0.);
+			glVertex3d(rad_0 * cuts[i1][0], suby, rad_0 * cuts[i1][1]);
+			glEnd();
+			c++;
+		}
+		const double subfarmrad = .75 - ISLAND3_FARMRAD;
+		for(i = 0; i < 3; i++){
+			int j, leaps = 12;
+			glPushMatrix();
+			glRotated(i * 120., 0., 1., 0.);
+			glTranslated(ISLAND3_FARMRAD, -(ISLAND3_HALFLEN + ISLAND3_RAD + .2), 0.);
+			glEnable(GL_TEXTURE_2D);
+			glBegin(GL_QUAD_STRIP);
+			glNormal3d(0., 1., 0.);
+			glTexCoord2d(0., .2);
+			glVertex3d(0., .2, 0.);
+			glTexCoord2d(subfarmrad, .2);
+			glVertex3d(subfarmrad, .2, 0.);
+			glNormal3d(0., 0., 1.);
+			glTexCoord2d(0., .0);
+			glVertex3d(0., .0, .2);
+			glTexCoord2d(subfarmrad, .0);
+			glVertex3d(subfarmrad, .0, .2);
+			glNormal3d(0., -1., 0.);
+			glTexCoord2d(0., -.2);
+			glVertex3d(0., -.2, 0.);
+			glTexCoord2d(subfarmrad, -.2);
+			glVertex3d(subfarmrad, -.2, 0.);
+			glNormal3d(0., 0., -1.);
+			glTexCoord2d(0., 0.);
+			glVertex3d(0., .0, -.2);
+			glTexCoord2d(subfarmrad, .0);
+			glVertex3d(subfarmrad, .0, -.2);
+			glNormal3d(0., 1., 0.);
+			glTexCoord2d(0., .2);
+			glVertex3d(0., .2, 0.);
+			glTexCoord2d(subfarmrad, .2);
+			glVertex3d(subfarmrad, .2, 0.);
+			glEnd();
+			glDisable(GL_TEXTURE_2D);
+			glBegin(GL_QUAD_STRIP);
+			for(j = 0; j <= cutnum; j += leaps){
+				int jj = (j) % (cutnum);
+				glVertex3d(cuts[jj][0], .5, cuts[jj][1]);
+				glVertex3d(cuts[jj][0], -.5, cuts[jj][1]);
+			}
+			glEnd();
+			glBegin(GL_POLYGON);
+			glNormal3d(0., -1., 0.);
+			for(j = 0; j < cutnum; j += leaps){
+				glVertex3d(-cuts[j][0], -.5, cuts[j][1]);
+			}
+			glEnd();
+			glBegin(GL_POLYGON);
+			glNormal3d(0., 1., 0.);
+			for(j = 0; j < cutnum; j += leaps){
+				glVertex3d(cuts[j][0], .5, cuts[j][1]);
+			}
+			glEnd();
+			glPopMatrix();
+		}
+		glPopMatrix();
+/*			printf("farmpoly: %d\n", c);*/
+	}
 }
 
 #ifndef NDEBUG
@@ -1743,6 +1864,15 @@ void Island3::drawtra(const Viewer *vw){
 	}
 	glPopMatrix();
 	}
+
+	// Docking nav lights
+	Quatd vrot = rot.rotate(-rotation, /*rot.trans*/(Vec3d(0,1,0)));
+	for(int n = 0; n < 2; n++){
+		for(int i = 0; i < 16; i++){
+			gldSpriteGlow(vrot.trans(Vec3d((n * 2 - 1) * -.05, -ISLAND3_HALFLEN - ISLAND3_RAD - i * .1, 0)) + pos, .01, Vec4<GLubyte>(255,127,127, 255 * (1. - fmod(vw->viewtime + (16 - i) * .1, 1.))), vw->irot);
+		}
+	}
+
 
 #if 0
 	/* Bridge tower navlights */
@@ -2336,6 +2466,7 @@ void Island3Entity::draw(WarDraw *wd){
 		glPushMatrix();
 		glTranslated(0, -16. - 3.25, 0.);
 		gldScaled(dscale);
+		glRotatef(-astro->rotation * deg_per_rad, 0, 1, 0);
 		glMultMatrixd(rotaxis);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
 		glPopMatrix();

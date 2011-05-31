@@ -276,6 +276,8 @@ protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 
 private:
+	CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *skipcs)const;
+	const CoordSys *findparentb(Vec3d &ret, const Vec3d &src)const;
 	int getpathint(char *buf, size_t size)const;
 	int getpathint(cpplib::dstring &)const;
 };

@@ -377,9 +377,9 @@ register_console_command("coordsys", function(...){
 			print("aka: " + name);
 		return 0;
 	}
+	print("Arg[" + vargc + "] " + vargv[0]);
 	local cs = player.cs.findcspath(vargv[0]);
 	local transit = true;
-	print("Arg[" + vargc + "] " + vargv[0]);
 	if(1 < vargc){
 		if(bool(vargv[1]))
 			transit = false;

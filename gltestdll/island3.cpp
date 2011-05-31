@@ -197,10 +197,12 @@ void Island3::anim(double dt){
 //		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
 		double omg = sqrt(.0098 / 3.25);
 		Vec3d vomg = Vec3d(0, omg, 0);
-		this->rotation += 2 * omg * dt;
+		this->rotation += omg * dt;
 		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
-		this->rot = this->rot.quatrotquat(this->omg * dt);
+		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
+//		this->rot = this->rot.quatrotquat(this->omg * dt);
 //		this->rot = qrot1.rotate(phase, avec3_010);
+//		this->omg.clear();
 	}
 
 	// Calculate phase of the simulated sun.
@@ -859,7 +861,8 @@ void Island3::draw(const Viewer *vw){
 		}
 	}
 
-	glMultMatrixd(transform(vw));
+	Mat4d transmat = transform(vw);
+	glMultMatrixd(transmat);
 	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 	glDisable(GL_BLEND);
@@ -1544,6 +1547,8 @@ nobridgemodel:
 		double phase = rotation;
 		const double suby = -(ISLAND3_HALFLEN + ISLAND3_RAD + .2);
 
+		Mat4d rotmat = Quatd::rotation(-phase, 0, 1, 0).tomat4();
+
 		glPushMatrix();
 		glRotated(-phase * deg_per_rad, 0., 1., 0.);
 		Quatd qrot2 = rot.rotate(-phase, Vec3d(0,1,0));
@@ -1551,15 +1556,15 @@ nobridgemodel:
 		for(i = 0; i < cutnum; i++){
 			int i1 = (i+1) % cutnum;
 			Vec3d org(rad_1 * cuts[i][0], suby, rad_1 * cuts[i][1]);
-			Vec3d viewpos = mat.vp3(org);
-			viewpos[2] -= 2.;
+			Vec3d viewpos = rotmat.vp3(org);
+//			viewpos[2] -= 2.;
 
 			/* culling is done for 4 polygons at once. */
 //			if(!(farmap ? gc2->getFar() < -viewpos[2] : -viewpos[2] <= gc2->getFar()))
 //				continue;
 
-			viewpos = qrot2.trans(org) + pos;
-			if(vw->gc->cullFrustum(viewpos, 2.))
+//			viewpos = qrot2.trans(org) + pos;
+			if(vw->gc->cullFrustum(vw->cs->tocs(viewpos, this), 2.))
 				continue;
 
 			glBegin(GL_QUAD_STRIP);
@@ -2459,7 +2464,6 @@ void Island3Entity::draw(WarDraw *wd){
 		glPushMatrix();
 		gldTranslate3dv(pos);
 		gldMultQuat(rot);
-//		glMultMatrixd(mat);
 
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
@@ -2470,10 +2474,6 @@ void Island3Entity::draw(WarDraw *wd){
 		glMultMatrixd(rotaxis);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
 		glPopMatrix();
-
-/*		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);*/
 
 		glPopMatrix();
 

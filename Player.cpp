@@ -278,13 +278,13 @@ void FreelookMover::operator ()(const input_t &inputs, double dt){
 		pl.velolen = velo.len();
 		pos += velo /** (1. + velolen)*/ * dt;
 		Vec3d pos;
-		const CoordSys *cs = pl.cs->belongcs(pos, pl.pos);
+		const CoordSys *cs = pl.cs->belongcs(pos, pl.getpos());
 		if(cs != pl.cs){
 			Quatd rot = cs->tocsq(pl.cs);
 			pl.rot *= rot;
-			pl.velo = rot.cnj().trans(pl.velo);
+			pl.setvelo(rot.cnj().trans(pl.velo));
 			pl.cs = cs;
-			pl.pos = pos;
+			pl.setpos(pos);
 		}
 	}
 }

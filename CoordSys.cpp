@@ -367,9 +367,9 @@ bool CoordSys::belongs(const Vec3d &pos)const{
 	return pos.slen() < csrad * csrad;
 }
 
-CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
+CoordSys *CoordSys::findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *skipcs)const{
 	CoordSys *cs2;
-	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
+	for(cs2 = children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
 	{
 		Vec3d v1, v;
 		v1 = src - cs2->pos;
@@ -380,52 +380,50 @@ CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *cs, const Coo
 		  we do not belong to this one. */
 		if(cs2->belongs(v)){
 			CoordSys *csret;
-			if(csret = findchildb(ret, v, cs2, NULL))
+			if(csret = cs2->findchildb(ret, v, NULL))
 				return csret;
-			VECCPY(ret, v);
+			ret = v;
 			return cs2;
 		}
 	}
 	return NULL;
 }
 
-static const CoordSys *findparentb(Vec3d &ret, const Vec3d &src, const CoordSys *cs){
-	Vec3d v1, v;
-	const CoordSys *cs2 = cs->parent;
+const CoordSys *CoordSys::findparentb(Vec3d &ret, const Vec3d &src)const{
+	const CoordSys *cs2 = this->parent;
 
 	/* if it is root node, we belong to it no matter how its radius is */
-	if(!cs->parent){
+	if(!this->parent || belongs(src)){
 		ret = src;
-		return cs;
+		return this;
 	}
 
-	v1 = cs->rot.trans(src);
-/*	MAT4VP3(v1, cs->rot, src);*/
-	v = v1 + cs->pos;
+	Vec3d v1 = this->rot.trans(src);
+	Vec3d v = v1 + this->pos;
 
 	/* if the position vector exceeds sphere's radius, check for parents.
 	  otherwise, check for all the children. */
-	if(cs->parent->belongs(src)){
-		CoordSys *csret;
+	if(this->parent->belongs(src)){
+		CoordSys *csret = parent->findchildb(ret, v, this);
 		/* do not scan subtrees already checked! */
-		if(csret = findchildb(ret, v, cs->parent, cs))
+		if(csret)
 			return csret;
 
 		/* if no children has the vector in its volume, it's for parent. */
-		VECCPY(ret, v);
+		ret = v;
 		return cs2;
 	}
-	return findparentb(ret, v, cs->parent);
+	return parent->findparentb(ret, v);
 }
 
 const CoordSys *CoordSys::belongcs(Vec3d &ret, const Vec3d &src)const{
 	CoordSys *csret;
-	if(csret = findchildb(ret, src, this, NULL))
+	if(csret = findchildb(ret, src, NULL))
 		return csret;
 	else if(belongs(src))
 		return this;
 	else
-		return findparentb(ret, src, this);
+		return findparentb(ret, src);
 }
 
 /* oneself is by definition excluded from ancestor */

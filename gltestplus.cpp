@@ -549,7 +549,7 @@ void WarDrawInt::war_draw_int(){
 	localvw.cs = cs;
 	localvw.pos = cs->tocs(gvw.pos, gvw.cs);
 	localvw.velo = cs->tocsv(gvw.velo, gvw.pos, gvw.cs);
-	localvw.qrot = cs->tocsq(gvw.cs) * gvw.qrot;
+	localvw.qrot = gvw.qrot * cs->tocsq(gvw.cs);
 	localvw.relrot = localvw.rot = localvw.qrot.tomat4();
 	localvw.relirot = localvw.irot = localvw.qrot.cnj().tomat4();
 

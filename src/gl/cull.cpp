@@ -20,15 +20,28 @@ GLcull::GLcull(double afov, const Vec3d &viewpoint, const Mat4d &invrot, double 
 	/* initiate the matrix for culling */
 	{
 		Mat4d modelmat, persmat;
-		glGetDoublev(GL_MODELVIEW_MATRIX, modelmat);
-		modelmat.vec3(3).clear();
+		modelmat = invrot.transpose();
 		modelmat.translatein(-viewpoint[0], -viewpoint[1], -viewpoint[2]);
-		glGetDoublev(GL_PROJECTION_MATRIX, persmat);
+
+		persmat[0] = 1. / fov;
+		persmat[1] = 0;
+		persmat[2] = 0;
+		persmat[3] = 0;
+		persmat[4] = 0;
+		persmat[5] = 1. / fov;
+		persmat[6] = 0;
+		persmat[7] = 0;
+		persmat[8] = 0;
+		persmat[9] = 0;
+		persmat[10] = - (zfar + znear) / (zfar - znear);
+		persmat[11] = -1;
+		persmat[12] = 0;
+		persmat[13] = 0;
+		persmat[14] = 2 * zfar * znear / (zfar - znear);
+		persmat[15] = 0;
 
 		/* TODO: aspect ratio other than 1 causes troubles determining intersection against
 		  sphere geometries unless we assign fake ratio here. */
-		persmat[0] = 1. / fov;
-		persmat[5] = 1. / fov;
 		persmat[14] = 0.; /* assign 0 to this element to make negative coords to be culled */
 		trans = persmat * modelmat;
 	}

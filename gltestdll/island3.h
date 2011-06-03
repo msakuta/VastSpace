@@ -66,6 +66,7 @@ protected:
 	void calcWingTrans(int i, Quatd &rot, Vec3d &pos);
 	Mat4d transform(const Viewer *vw)const;
 	bool cullQuad(const Vec3d (&pos)[4], const GLcull *gc2, const Mat4d &mat);
+	GLuint compileWallTexture();
 	void beginWallTexture(const Viewer *);
 	void endWallTexture();
 	static GLuint walllist, walltex;

@@ -626,8 +626,9 @@ static GLuint BumpList(){
 	return bumplist + !!Island3::g_shader_enable * 2;
 }
 
-void Island3::beginWallTexture(const Viewer *vw){
-	static GLuint wallbumptex = 0, nrmmap = 0;
+static GLuint wallbumptex = 0, nrmmap = 0;
+
+GLuint Island3::compileWallTexture(){
 	if(!gltestp::FindTexture("bricks.bmp") || !gltestp::FindTexture("bricks_bump.bmp")){
 		suftexparam_t stp;
 		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL | STP_NORMALMAP;
@@ -645,6 +646,10 @@ void Island3::beginWallTexture(const Viewer *vw){
 			nrmmap = stc->getTex(1);
 		}
 	}
+	return walllist;
+}
+
+void Island3::beginWallTexture(const Viewer *vw){
 	GLfloat dif[4] = {.75f, .75f, .75f, 1.}, amb[4] = {.2f, .2f, .2f, 1.};
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
 	glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
@@ -664,7 +669,7 @@ void Island3::beginWallTexture(const Viewer *vw){
 		glUniform1f(bumpAmbientLoc, .2f);
 	}
 	else
-		glCallList(walllist);
+		glCallList(compileWallTexture());
 }
 
 void Island3::endWallTexture(){
@@ -852,7 +857,8 @@ void Island3::draw(const Viewer *vw){
 			rot2[2] = -cuts[i][0];
 			rot2[8] = cuts[i][0];
 			rot2[10] = cuts[i][1];
-			Vec3d pos = trans.vp3(rot2.vp3(pos0[1]));
+//			Vec3d pos = trans.vp3(rot2.vp3(pos0[1]));
+			Vec3d pos = trans.vp3(rot2.vp3(Vec3d(ISLAND3_INRAD, 0, 0)));
 			if((vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
 				finecuts[i] = 1;
 			}
@@ -871,9 +877,8 @@ void Island3::draw(const Viewer *vw){
 
 	Mat4d rot2 = mat4_u;
 
-	/* hull draw */
+	/* hull draw, n == 0 when drawing inside, n == 1 when outside. */
 	for(n = 0; n < 2; n++){
-		Mat4d rot;
 		const double hullrad = n ? ISLAND3_RAD : ISLAND3_INRAD;
 		if(n){
 			beginWallTexture(vw);
@@ -886,7 +891,7 @@ void Island3::draw(const Viewer *vw){
 			glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
 			glCallList(groundlist);
 		}
-		rot = mat4_u;
+		Mat4d rot = mat4_u;
 		for(int i = 0; i < cutnum; i += leap){
 			int i1, j;
 			Mat4d *prot[4];
@@ -904,8 +909,10 @@ void Island3::draw(const Viewer *vw){
 			prot[1] = prot[2] = &rot;
 			glBegin(GL_QUADS);
 
-			/* northan hemisphere */
-			for(j = 0; j < cutnum / 4 /*/ (i % (leap * 2) + 1)*/; j += defleap * northleap){
+			/* northan hemisphere. North means closer to the sun. */
+			if(n == 0){
+			}
+			else for(j = 0; j < cutnum / 4 - 2 /*/ (i % (leap * 2) + 1)*/; j += defleap * northleap){
 				int j1 = (j + defleap * northleap) % cutnum, k, i2 = /*i % (leap * 2) == 0 && !(j1 < cutnum / 8) ? (i+leap*2) % cutnum :*/ i1;
 				Vec3d pos[4], pos1[2];
 				rot2[0] = cuts[i2][1];
@@ -944,12 +951,15 @@ void Island3::draw(const Viewer *vw){
 			rot2[8] = cuts[i1][0];
 			rot2[10] = cuts[i1][1];
 
-			for(j = 0; j < numof(pos0)-2; j++) if(i % (cutnum / 3) < cutnum / 6 || j < 1 || numof(pos0)-2 <= j){
+			for(j = 0; j < 8; j++) if(i % (cutnum / 3) < cutnum / 6){
 				int k;
 				Vec3d pos[4], pos001[2];
-				pos001[0] = pos0[j];
-				pos001[1] = pos0[j+1];
-				if(0 < j && j < numof(pos0)-2){
+//				pos001[0] = pos0[j];
+//				pos001[1] = pos0[j+1];
+				pos001[0] = Vec3d(!n ? ISLAND3_INRAD : ISLAND3_RAD, ISLAND3_HALFLEN * 2. * -(j - 4) / 8, 0);
+				pos001[1] = Vec3d(j == 8 ? 0. : !n ? ISLAND3_INRAD : ISLAND3_RAD, ISLAND3_HALFLEN * 2. * -(j - 4 + 1) / 8, 0);
+#if 0
+				if(0 < j && j < numof(pos0)-3){
 					if(!n){
 						pos001[0][0] = pos001[1][0] = ISLAND3_INRAD;
 					}
@@ -960,9 +970,10 @@ void Island3::draw(const Viewer *vw){
 				else{
 					if(j == 0)
 						pos001[1][0] = hullrad/*ISLAND3_INRAD*/;
-					else if(j == numof(pos0)-1)
+					else if(j == numof(pos0)-2)
 						pos001[0][0] = ISLAND3_INRAD;
 				}
+#endif
 				pos[0] = rot2.dvp3(pos001[0]);
 				pos[1] = rot.dvp3(pos001[0]);
 				pos[2] = rot.dvp3(pos001[1]);
@@ -991,14 +1002,166 @@ void Island3::draw(const Viewer *vw){
 					glVertex3dv(pos[k]);
 				}
 			}
+
+			// Draw southan seal
+			if(n == 1) do{
+				Vec3d pos[4], pos001[2];
+				pos001[0] = Vec3d(0., ISLAND3_HALFLEN + 1., 0);
+				pos001[1] = Vec3d(ISLAND3_RAD, ISLAND3_HALFLEN, 0);
+				pos[0] = rot2.dvp3(pos001[0]);
+				pos[1] = rot.dvp3(pos001[0]);
+				pos[2] = rot.dvp3(pos001[1]);
+				pos[3] = rot2.dvp3(pos001[1]);
+				int k;
+				for(k = 0; k < 4; k++){
+					Vec3d viewpos = mat.vp3(pos[k]);
+					if(gc2->getFar() < -viewpos[2])
+						break;
+				}
+				if(farmap ? 4 == k : 4 != k)
+					continue;
+				for(k = 0; k < 4; k++){
+					double st[2];
+					Vec3d norm = prot[k]->dvp3(norm0[j][k / 2]);
+					glNormal3d(0, 1, 0);
+					st[0] = !!(12 & (1 << k));
+					st[1] = (i % 16 + leap * !!(9 & (1<<k))) / 8.;
+					glTexCoord2dv(st);
+					if(glMultiTexCoord2fARB)
+						glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(st[0] * 16.), GLfloat(st[1] * 16.));
+					glVertex3dv(pos[k]);
+				}
+			} while(0);
+
 			glEnd();
+
 			rot = rot2;
 		}
 		if(n)
 			endWallTexture();
 		else{
 			glPopAttrib();
-//			shadow_draw(csint->w);
+
+			static const Vec3d pos00[3][2] = {
+				{Vec3d(ISLAND3_INRAD, ISLAND3_HALFLEN, 0), Vec3d(.0, ISLAND3_HALFLEN + .2, 0)},
+				{Vec3d(ISLAND3_INRAD, -ISLAND3_HALFLEN, 0), Vec3d(.1, -ISLAND3_HALFLEN, 0)},
+				{Vec3d(.1, -ISLAND3_HALFLEN, 0), Vec3d(.1, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
+			};
+			for(int h = 0; h < 2; h++){
+				glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
+				glCallList(compileWallTexture());
+				glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4f(.75f, .75f, .75f, 1.));
+
+				Mat4d rot = mat4_u;
+
+				for(int k = 0; k < 4; k++){
+					for(int i = 0; i < cutnum; i += leap){
+						leap = defleap;
+						leap <<= k;
+
+						int i1 = (i+leap) % cutnum;
+
+						rot2[0] = cuts[i1][1];
+						rot2[2] = -cuts[i1][0];
+						rot2[8] = cuts[i1][0];
+						rot2[10] = cuts[i1][1];
+
+						int i3 = (i + (leap >> 1)) % cutnum;
+						Mat4d rot3 = rot2;
+						rot3[0] = cuts[i3][1];
+						rot3[2] = -cuts[i3][0];
+						rot3[8] = cuts[i3][0];
+						rot3[10] = cuts[i3][1];
+
+						/* set rotation matrices cyclically */
+						Mat4d *prot[5] = {h ? &rot2 : &rot, &rot3, h ? &rot : &rot2, h ? &rot : &rot2, h ? &rot2 : &rot};
+
+						Vec3d pos[5], pos001[2];
+						pos001[1] = (pos00[h][0] * (4 - (k + 1)) + pos00[h][1] * (k + 1)) / 4;
+						pos001[0] = (pos00[h][0] * (4 - k) + pos00[h][1] * k) / 4;
+						pos[0] = prot[0]->dvp3(pos001[0]);
+						pos[1] = prot[1]->dvp3(pos001[0]);
+						pos[2] = prot[2]->dvp3(pos001[0]);
+						pos[3] = prot[3]->dvp3(pos001[1]);
+						pos[4] = prot[4]->dvp3(pos001[1]);
+						int l = 0;
+						for(l = 0; l < 5; l++){
+							Vec3d viewpos = mat.vp3(pos[l]);
+							if(gc2->getFar() < -viewpos[2])
+								break;
+						}
+						if(farmap ? 5 == l : 5 != l)
+							continue;
+
+						static const double phase0[5] = {0., .5, 1., 1., 0.};
+						glBegin(GL_POLYGON);
+						for(l = 0; l < 5; l++){
+							double st[2];
+							Vec3d norm = Vec3d(1, 0, 0) /*prot[k]->dvp3(norm0[j][k / 2])*/;
+							norm *= -1.;
+							glNormal3dv(norm);
+							st[0] = !!(7 & (1 << l));
+							st[1] = (i % 16 + leap * phase0[l]) / 8.;
+							glTexCoord2dv(st);
+							if(glMultiTexCoord2fARB)
+								glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(st[0] * 16.), GLfloat(st[1] * 16.));
+							glVertex3dv(pos[l]);
+						}
+						glEnd();
+
+						rot = rot2;
+					}
+				}
+
+				glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4f(.5f, .5f, .5f, 1.));
+				glBegin(GL_QUADS);
+				for(int i = 0; i < cutnum; i += leap){
+					leap = defleap;
+					leap <<= 3;
+
+					int i1 = (i+leap) % cutnum;
+
+					rot2[0] = cuts[i1][1];
+					rot2[2] = -cuts[i1][0];
+					rot2[8] = cuts[i1][0];
+					rot2[10] = cuts[i1][1];
+
+					Vec3d pos[4], pos001[2];
+					pos001[0] = pos00[2][0];
+					pos001[1] = pos00[2][1];
+					pos[0] = rot2.dvp3(pos001[0]);
+					pos[1] = rot.dvp3(pos001[0]);
+					pos[2] = rot.dvp3(pos001[1]);
+					pos[3] = rot2.dvp3(pos001[1]);
+					int l = 0;
+					for(l = 0; l < 4; l++){
+						Vec3d viewpos = mat.vp3(pos[l]);
+						if(gc2->getFar() < -viewpos[2])
+							break;
+					}
+					if(farmap ? 4 == l : 4 != l)
+						continue;
+
+					static const double phase0[4] = {1., 0., 0., 1.};
+					for(l = 0; l < 4; l++){
+						double st[2];
+						Vec3d norm = Vec3d(-1, 0, 0);
+						norm *= -1.;
+						glNormal3dv(rot.dvp3(norm));
+						st[0] = !!(12 & (1 << l));
+						st[1] = (i % 16 + leap * phase0[l]) / 8.;
+						glTexCoord2dv(st);
+						if(glMultiTexCoord2fARB)
+							glMultiTexCoord2fARB(GL_TEXTURE1_ARB, GLfloat(st[0] * 16.), GLfloat(st[1] * 16.));
+						glVertex3dv(pos[l]);
+					}
+
+					rot = rot2;
+				}
+				glEnd();
+
+				glPopAttrib();
+			}
 		}
 	}
 

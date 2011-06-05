@@ -589,6 +589,8 @@ void ReZEL::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvel
 	Vec3d dr = this->pos - target;
 	this->throttle = rangein((dr.len() - dv.len() * 5.5) * speedfactor + minspeed, -1, 1);
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
+	if(.9 < dr.norm().sp(-this->rot.trans(vec3_001)))
+		this->omg += this->rot.trans(vec3_010);
 	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
 		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
 	bbody->setAngularVelocity(btvc(this->omg));
@@ -613,37 +615,39 @@ Entity *ReZEL::findMother(){
 void ReZEL::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
+		if(!bbody){
+			static btCompoundShape *shape = NULL;
+			if(!shape){
+				shape = new btCompoundShape();
+				for(int i = 0; i < nhitboxes; i++){
+					const Vec3d &sc = hitboxes[i].sc;
+					const Quatd &rot = hitboxes[i].rot;
+					const Vec3d &pos = hitboxes[i].org;
+					btBoxShape *box = new btBoxShape(btvc(sc));
+					btTransform trans = btTransform(btqc(rot), btvc(pos));
+					shape->addChildShape(trans, box);
+				}
 			}
+			btTransform startTransform;
+			startTransform.setIdentity();
+			startTransform.setOrigin(btvc(pos));
+
+			//rigidbody is dynamic if and only if mass is non zero, otherwise static
+			bool isDynamic = (mass != 0.f);
+
+			btVector3 localInertia(0,0,0);
+			if (isDynamic)
+				shape->calculateLocalInertia(mass,localInertia);
+
+			//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+			btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+	//		rbInfo.m_linearDamping = .5;
+	//		rbInfo.m_angularDamping = .5;
+			bbody = new btRigidBody(rbInfo);
+
+	//		bbody->setSleepingThresholds(.0001, .0001);
 		}
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .5;
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
 
 		//add the body to the dynamics world
 		ws->bdw->addRigidBody(bbody, 1, ~2);
@@ -665,6 +669,21 @@ void ReZEL::anim(double dt){
 		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
+	}
+
+	// Transit to another CoordSys when its border is reached.
+	// Exceptions should be made to prevent greatly remote CoordSys to be transited, because more remote
+	// results more floating point errors.
+	{
+		Vec3d pos;
+		const CoordSys *cs = w->cs->belongcs(pos, this->pos);
+		if(cs != w->cs){
+			dest = cs->tocs(dest, w->cs);
+			transit_cs(const_cast<CoordSys*>(cs));
+
+			// The later calculation should be done in destination CoordSys, which is not here.
+			return;
+		}
 	}
 
 	// Do not follow remote mothership. Probably you'd better finding another mothership.

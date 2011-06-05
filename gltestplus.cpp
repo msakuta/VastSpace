@@ -130,7 +130,7 @@ public:
 };
 
 static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(WarDraw *)){
-	WarDrawInt(vw, cs, method).draw();
+	WarDrawInt(vw, cs, method).setViewer(&vw).draw();
 }
 
 

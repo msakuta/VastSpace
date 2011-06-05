@@ -449,6 +449,14 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glBindTexture(GL_TEXTURE_2D, 0);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 
+			// Disable texture units for shadow map to eliminate the inappropriate influence to the following drawings.
+			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+				glActiveTextureARB(GL_TEXTURE2_ARB + i);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				glDisable(GL_TEXTURE_2D);
+			}
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+
 			glPopAttrib();
 		}
 	}
@@ -473,4 +481,25 @@ void ShadowMap::setAdditive(bool b){
 const AdditiveShaderBind *ShadowMap::getAdditive()const{
 	return additive ? additiveShadowMapShaderBind : NULL;
 }
+
+/// Explicitly enable shadows when drawing real objects and shadowing is temporalily disabled.
+void ShadowMap::enableShadows(){
+	for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+		glActiveTextureARB(GL_TEXTURE2_ARB + i);
+//		glBindTexture(GL_TEXTURE_2D, 0);
+		glEnable(GL_TEXTURE_2D);
+	}
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+}
+
+/// Explicitly disable shadows when drawing real objects and shadowing is enabled.
+void ShadowMap::disableShadows(){
+	for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+		glActiveTextureARB(GL_TEXTURE2_ARB + i);
+//		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
+	}
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+}
+
 

@@ -735,13 +735,15 @@ void Island3::draw(const Viewer *vw){
 			}
 		}
 	} sr(vw);
-	if(vw->shadowmap)
-		glUseProgram(0);
+
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 
 	if(vw->gc->cullFrustum(vw->cs->tocs(pos, parent), 50.))
 		return;
+
+	if(vw->shadowmap)
+		vw->shadowmap->disableShadows();
 
 	// If any part of the colony has chance to go beyond far clipping plane of z slice of 0,
 	// it's enough to decide cullLevel to 1.
@@ -1097,7 +1099,7 @@ void Island3::draw(const Viewer *vw){
 						glBegin(GL_POLYGON);
 						for(l = 0; l < 5; l++){
 							double st[2];
-							Vec3d norm = Vec3d(1, 0, 0) /*prot[k]->dvp3(norm0[j][k / 2])*/;
+							Vec3d norm = Vec3d(1, 0, 0);
 							norm *= -1.;
 							glNormal3dv(norm);
 							st[0] = !!(7 & (1 << l));
@@ -1818,6 +1820,9 @@ nobridgemodel:
 		glPopMatrix();
 /*			printf("farmpoly: %d\n", c);*/
 	}
+
+	if(vw->shadowmap)
+		vw->shadowmap->enableShadows();
 }
 
 #ifndef NDEBUG

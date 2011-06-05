@@ -40,6 +40,8 @@ public:
 	bool isDrawingShadow()const{return shadowing;}
 	void setAdditive(bool b);
 	const AdditiveShaderBind *getAdditive()const;
+	void enableShadows();
+	void disableShadows();
 };
 
 EXPORT extern OpenGLState::weak_ptr<ShadowMap*> g_currentShadowMap;

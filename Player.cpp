@@ -210,8 +210,8 @@ void Player::transit_cs(CoordSys *cs){
 	// so we do not need to convert here.
 	if(!chase || mover == tactical){
 		Quatd rot = cs->tocsq(this->cs);
-		this->rot *= rot;
-		this->velo = rot.cnj().trans(this->velo);
+		this->setrot(getrot() * rot);
+		this->setvelo(rot.cnj().trans(this->getvelo()));
 	}
 	if(!chase)
 		this->pos = cs->tocs(this->pos, this->cs);

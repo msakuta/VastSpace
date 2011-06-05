@@ -241,26 +241,23 @@ static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const
 }
 
 static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs){
-	Vec3d v1, v, vrot, pos;
-
 	if(!cs->parent)
 		return 0;
 
 	/* velocity */
-	v = cs->rot.trans(src);
+	Vec3d v = cs->rot.trans(src);
 	v += cs->velo;
-	vrot = cs->omg.vp(srcpos);
-	v1 = cs->rot.trans(vrot);
+	Vec3d vrot = /*cs->rot.trans*/(cs->omg).vp(cs->rot.trans(srcpos));
+	Vec3d v1 = /*cs->rot.trans*/(vrot);
 	v += v1;
 
 	if(cs->parent == retcs){
-		VECCPY(ret, v);
+		ret = v;
 		return 1;
 	}
 
 	/* position */
-	v1 = cs->rot.trans(srcpos);
-	pos = v1 + cs->pos;
+	Vec3d pos = cs->rot.trans(srcpos) + cs->pos;
 
 	/* do not scan subtrees already checked! */
 	if(findchildv(ret, retcs, v, pos, cs->parent, cs))
@@ -274,8 +271,8 @@ Vec3d CoordSys::tocsv(const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs)
 		return src;
 	else if(findchildv(ret, this, src, srcpos, cs, NULL))
 		return ret;
-	else if(!findparentv(ret, this, src, srcpos, cs))
-		return src;
+	else if(findparentv(ret, this, src, srcpos, cs))
+		return ret;
 	return src;
 }
 

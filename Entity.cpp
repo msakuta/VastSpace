@@ -290,7 +290,6 @@ Warpable *Entity::toWarpable(){return NULL;}
 Entity::Dockable *Entity::toDockable(){return NULL;}
 
 void Entity::transit_cs(CoordSys *cs){
-	Vec3d pos;
 	Mat4d mat;
 	if(w == cs->w)
 		return;
@@ -298,8 +297,10 @@ void Entity::transit_cs(CoordSys *cs){
 //	leaveField(w);
 
 	// Transform position to target CoordSys
-	this->pos = cs->tocs(this->pos, w->cs);
-	velo = cs->tocsv(velo, pos, w->cs);
+	Vec3d pos = cs->tocs(this->pos, w->cs);
+	Vec3d velo = cs->tocsv(this->velo, this->pos, w->cs);
+	this->pos = pos;
+	this->velo = velo;
 	if(!cs->w){
 		cs->w = new WarSpace(cs);
 	}
@@ -312,8 +313,21 @@ void Entity::transit_cs(CoordSys *cs){
 		pl->transit_cs(cs);
 	}
 
+	if(bbody){
+/*		WarSpace *ws = *w;
+		if(ws)
+			ws->bdw->removeRigidBody(bbody);
+		WarSpace *ws2 = *cs->w;
+		if(ws2)
+			ws2->bdw->addRigidBody(bbody);*/
+		bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setLinearVelocity(btvc(velo));
+		bbody->setAngularVelocity(btvc(omg));
+	}
+
 //	cs->w->addent(this);
 	w = cs->w;
+
 }
 
 class GLWprop : public GLwindowSizeable{

@@ -168,7 +168,7 @@ public:
 	/// Converts position, velocity, rotation matrix into one coordinate system
 	/// to another.
 	Vec3d tocs(const Vec3d &src, const CoordSys *cs, bool delta = false)const;
-	Vec3d tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)const;
+	Vec3d tocsv(const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs)const;
 	Quatd tocsq(const CoordSys *cs)const;
 	Mat4d tocsm(const CoordSys *cs)const;
 	Mat4d tocsim(const CoordSys *cs)const;

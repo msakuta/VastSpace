@@ -211,7 +211,7 @@ Vec3d CoordSys::tocs(const Vec3d &src, const CoordSys *cs, bool delta)const{
 	return ret;
 }
 
-static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs, const CoordSys *skipcs){
+static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs, const CoordSys *skipcs){
 #if 1
 	CoordSys *cs2;
 	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
@@ -221,18 +221,14 @@ static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const 
 	for(i = 0; i < cs->nchildren; i++) if(cs->children[i] && cs->children[i] != skipcs){
 		const coordsys *cs2 = cs->children[i];
 #endif
-		Vec3d v1, v, vrot, pos;
-
 		/* position */
-		v1 = srcpos - cs2->pos;
-		pos = cs2->rot.itrans(v1);
+		Vec3d pos = cs2->rot.itrans(srcpos - cs2->pos);
 
 		/* velocity */
-		v1 = src - cs2->velo;
-		vrot = cs2->omg.vp(pos);
+		Vec3d v1 = src - cs2->velo;
+		Vec3d vrot = cs2->rot.itrans(cs2->omg).vp(pos); // Centrifugal force
 		v1 -= vrot;
-		v = v1;
-		v = cs2->rot.itrans(v1);
+		Vec3d v = cs2->rot.itrans(v1);
 
 		if(retcs == cs2){
 			ret = v;
@@ -244,7 +240,7 @@ static int findchildv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const 
 	return 0;
 }
 
-static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const Vec3d srcpos, const CoordSys *cs){
+static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs){
 	Vec3d v1, v, vrot, pos;
 
 	if(!cs->parent)
@@ -272,7 +268,7 @@ static int findparentv(Vec3d &ret, const CoordSys *retcs, const Vec3d src, const
 	return findparentv(ret, retcs, v, pos, cs->parent);
 }
 
-Vec3d CoordSys::tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)const{
+Vec3d CoordSys::tocsv(const Vec3d &src, const Vec3d &srcpos, const CoordSys *cs)const{
 	Vec3d ret;
 	if(cs == this)
 		return src;
@@ -280,7 +276,7 @@ Vec3d CoordSys::tocsv(const Vec3d src, const Vec3d srcpos, const CoordSys *cs)co
 		return ret;
 	else if(!findparentv(ret, this, src, srcpos, cs))
 		return src;
-	return ret;
+	return src;
 }
 
 
@@ -569,8 +565,10 @@ void CoordSys::anim(double dt){
 	Vec3d omgdt;
 /*	extern double get_timescale();
 	dt *= get_timescale();*/
-	omgdt = omg * dt;
-	rot = rot.quatrotquat(omgdt);
+	if(0 < this->omg.slen())
+		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
+//	omgdt = omg * dt;
+//	rot = rot.quatrotquat(omgdt);
 	CoordSys *cs;
 	for(cs = children; cs; cs = cs->next)
 		cs->anim(dt);

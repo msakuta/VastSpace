@@ -125,7 +125,6 @@ void OrbitCS::anim(double dt){
 			velo *= 1. / dt;
 		}
 	}
-	rot = rot.quatrotquat(omg * dt * astro_timescale);
 	st::anim(dt);
 }
 

@@ -199,7 +199,7 @@ void Island3::anim(double dt){
 		Vec3d vomg = Vec3d(0, omg, 0);
 		this->rotation += omg * dt;
 		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
-		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
+//		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
 //		this->rot = this->rot.quatrotquat(this->omg * dt);
 //		this->rot = qrot1.rotate(phase, avec3_010);
 //		this->omg.clear();
@@ -255,6 +255,7 @@ void Island3::anim(double dt){
 			}
 		}
 	}
+	st::anim(dt);
 }
 
 

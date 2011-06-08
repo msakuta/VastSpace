@@ -27,9 +27,7 @@ extern "C"{
 #include <clib/gl/multitex.h>
 #include <clib/amat3.h>
 #include <clib/suf/suf.h>
-#include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>
-#include <clib/suf/sufvbo.h>
 #include <clib/gl/gldraw.h>
 #include <clib/gl/cull.h>
 #include <clib/lzw/lzw.h>
@@ -1045,10 +1043,11 @@ void Island3::draw(const Viewer *vw){
 		else{
 			glPopAttrib();
 
-			static const Vec3d pos00[3][2] = {
+			static const Vec3d pos00[4][2] = {
 				{Vec3d(ISLAND3_INRAD, ISLAND3_HALFLEN, 0), Vec3d(.0, ISLAND3_HALFLEN + .2, 0)},
-				{Vec3d(ISLAND3_INRAD, -ISLAND3_HALFLEN, 0), Vec3d(.1, -ISLAND3_HALFLEN, 0)},
-				{Vec3d(.1, -ISLAND3_HALFLEN, 0), Vec3d(.1, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
+				{Vec3d(ISLAND3_INRAD, -ISLAND3_HALFLEN, 0), Vec3d(.2, -ISLAND3_HALFLEN, 0)},
+				{Vec3d(.2, -ISLAND3_HALFLEN, 0), Vec3d(.2, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
+				{Vec3d(.2, -ISLAND3_HALFLEN - ISLAND3_RAD, 0), Vec3d(.3, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
 			};
 			for(int h = 0; h < 2; h++){
 				glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
@@ -1118,7 +1117,7 @@ void Island3::draw(const Viewer *vw){
 
 				glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4f(.5f, .5f, .5f, 1.));
 				glBegin(GL_QUADS);
-				for(int i = 0; i < cutnum; i += leap){
+				for(int h = 0; h < 2; h++) for(int i = 0; i < cutnum; i += leap){
 					leap = defleap;
 					leap <<= 3;
 
@@ -1130,8 +1129,8 @@ void Island3::draw(const Viewer *vw){
 					rot2[10] = cuts[i1][1];
 
 					Vec3d pos[4], pos001[2];
-					pos001[0] = pos00[2][0];
-					pos001[1] = pos00[2][1];
+					pos001[0] = pos00[2 + h][0];
+					pos001[1] = pos00[2 + h][1];
 					pos[0] = rot2.dvp3(pos001[0]);
 					pos[1] = rot.dvp3(pos001[0]);
 					pos[2] = rot.dvp3(pos001[1]);
@@ -2148,6 +2147,7 @@ void Island3Entity::buildShape(){
 	WarSpace *ws = *w;
 	if(ws){
 		if(!btshape){
+			suf_t *suf = loadModel(NULL, NULL, NULL);
 			btshape = new btCompoundShape();
 			for(int i = 0; i < 3; i++){
 				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
@@ -2162,6 +2162,26 @@ void Island3Entity::buildShape(){
 			}
 			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + .01, ISLAND3_HALFLEN, ISLAND3_RAD + .01));
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
+
+			// Adding surface model (mesh) itself as collision model, but it doesn't seem to work.
+			if(suf){
+				static std::vector<Vec3i> tris;
+				if(!tris.size()) for(int i = 0; i < suf->np; i++) for(int j = 2; j < suf->p[i]->p.n; j++){
+					Vec3i intVec;
+					for(int k = 0; k < 3; k++){
+						int k1 = k == 0 ? 0 : j + k - 2;
+						if(suf->p[i]->t == suf_t::suf_prim_t::suf_poly)
+							intVec[k] = (suf->p[i]->p.v[k1][0]);
+						else
+							intVec[k] = (suf->p[i]->uv.v[k1].p);
+					}
+					tris.push_back(intVec);
+				}
+				btTriangleIndexVertexArray *mesh = new btTriangleIndexVertexArray(tris.size(), &tris[0][0], sizeof(tris[0]), suf->nv, suf->v[0], sizeof *suf->v);
+				btBvhTriangleMeshShape *meshShape = new btBvhTriangleMeshShape(mesh, true);
+				mesh->setScaling(btVector3(.01, .01, .01));
+				btshape->addChildShape(btTransform(btqc(Quatd(sqrt(2.)/2.,0,0,sqrt(2.)/2.)), btVector3(0, -16. - 3.25,0)), meshShape);
+			}
 		}
 		btTransform startTransform;
 		startTransform.setIdentity();
@@ -2590,24 +2610,38 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+suf_t *Island3Entity::loadModel(suf_t *(*psufs)[3], VBO *(*pvbo)[3], suftex_t* (*ppst)[3]){
+	static OpenGLState::weak_ptr<bool> init;
+	static suf_t *sufs[3] = {NULL};
+	static VBO *vbo[3] = {NULL};
+	static suftex_t *pst[3] = {NULL};
+	if(!init){
+		static const char *names[1] = {"models/island3dock.bin"};
+		for(int i = 0; i < 1; i++){
+			sufs[i] = CallLoadSUF(names[i]);
+			vbo[i] = CacheVBO(sufs[i]);
+			CacheSUFMaterials(sufs[i]);
+			pst[i] = gltestp::AllocSUFTex(sufs[i]);
+		}
+		init.create(*openGLState);
+	}
+	if(psufs)
+		memcpy(*psufs, sufs, sizeof sufs);
+	if(pvbo)
+		memcpy(*pvbo, vbo, sizeof vbo);
+	if(ppst)
+		memcpy(*ppst, pst, sizeof pst);
+	return sufs[0];
+}
+
 // Docking bays
 void Island3Entity::draw(WarDraw *wd){
 #if 1
 	{
-		static OpenGLState::weak_ptr<bool> init;
-		static suf_t *sufs[3] = {NULL};
-		static VBO *vbo[3] = {NULL};
-		static suftex_t *pst[3] = {NULL};
-		if(!init){
-			static const char *names[1] = {"models/island3dock.bin"};
-			for(int i = 0; i < 1; i++){
-				sufs[i] = CallLoadSUF(names[i]);
-				vbo[i] = CacheVBO(sufs[i]);
-				CacheSUFMaterials(sufs[i]);
-				pst[i] = gltestp::AllocSUFTex(sufs[i]);
-			}
-			init.create(*openGLState);
-		}
+		suf_t *sufs[3] = {NULL};
+		VBO *vbo[3] = {NULL};
+		suftex_t *pst[3] = {NULL};
+		loadModel(&sufs, &vbo, &pst);
 		static const double normal[3] = {0., 1., 0.};
 		static const double dscale = .01;
 		static const GLdouble rotaxis[16] = {

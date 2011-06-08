@@ -707,7 +707,7 @@ void Sceptor::anim(double dt){
 						p->task = Parade;
 				}
 			}
-			else if(controller) do{
+			else if(!controller) do{
 				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;

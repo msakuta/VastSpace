@@ -6,6 +6,8 @@
 #include <btBulletDynamicsCommon.h>
 extern "C"{
 #include <clib/suf/suf.h>
+#include <clib/suf/sufdraw.h>
+#include <clib/suf/sufvbo.h>
 }
 
 #ifndef NDEBUG
@@ -111,8 +113,10 @@ protected:
 	btBoxShape *wings[3];
 	btTransform wingtrans[3];
 	Island3Docker *docker;
+	static suf_t *sufdock;
 	virtual Docker *getDockerInt();
 	void buildShape();
+	static suf_t *loadModel(suf_t *(*sufs)[3], VBO *(*vbo)[3], suftex_t *(*pst)[3]);
 };
 
 class Island3Docker : public Docker{

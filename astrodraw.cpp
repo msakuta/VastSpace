@@ -540,13 +540,17 @@ static GLuint noise3DTexture(){
 	static GLuint ret = 0;
 	if(!init){
 		init = true;
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 		PFNGLTEXIMAGE3DPROC glTexImage3D = (PFNGLTEXIMAGE3DPROC)wglGetProcAddress("glTexImage3D");
 		if(GLenum err = glGetError())
 			CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
 		if(glTexImage3D){
 			static const int NNOISE = 64;
 			static GLubyte field[NNOISE][NNOISE][NNOISE][1];
+		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
 			perlin_noise_3d(field, 48275);
+		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
 			glGenTextures(1, &ret);
 			glBindTexture(GL_TEXTURE_3D, ret);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_ALPHA, NNOISE, NNOISE, NNOISE, 0, GL_ALPHA, GL_UNSIGNED_BYTE, field);
@@ -558,6 +562,7 @@ static GLuint noise3DTexture(){
 			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 		}
+		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
 	}
 	return ret;
 }
@@ -643,32 +648,59 @@ void DrawTextureSphere::useShader(){
 	GLuint shader = m_shader;
 	double dist = (apos - vw->pos).len();
 	if(shader && g_shader_enable){
+		/// A class that prevents redundant uniform location lookups for every frame, in conjunction with std::map.
+		struct Locs{
+			GLint textureLoc;
+			GLint noise3DLoc;
+			GLint invEyeMat3Loc;
+			GLint timeLoc;
+			GLint heightLoc;
+			void getLocs(GLuint shader){
+				textureLoc = glGetUniformLocation(shader, "texture");
+				noise3DLoc = glGetUniformLocation(shader, "noise3D");
+				invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
+				timeLoc = glGetUniformLocation(shader, "time");
+				heightLoc = glGetUniformLocation(shader, "height");
+			}
+		};
+		static std::map<GLuint, Locs> locmap;
+		bool newLocs = locmap.find(shader) == locmap.end();
+		Locs &locs = locmap[shader];
+
+		if(newLocs)
+			locs.getLocs(shader);
+
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+
 		glUseProgram(shader);
-		GLint textureLoc = glGetUniformLocation(shader, "texture");
-		if(0 <= textureLoc && ptexlist){
-			glUniform1i(textureLoc, 0);
+
+		fprintf(stderr, "ProjectSphereCubeJpg0: %10g\n", TimeMeasLap(&tm));
+
+		if(0 <= locs.textureLoc && ptexlist){
+			glUniform1i(locs.textureLoc, 0);
 		}
-		GLint noise3DLoc = glGetUniformLocation(shader, "noise3D");
-		if(0 <= noise3DLoc && ptexlist){
+		if(0 <= locs.noise3DLoc && ptexlist){
 			glActiveTextureARB(GL_TEXTURE2_ARB);
-			glUniform1i(noise3DLoc, 2);
+			glUniform1i(locs.noise3DLoc, 2);
 			glBindTexture(GL_TEXTURE_3D, noise3tex);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
-		GLint invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
-		if(0 <= invEyeMat3Loc){
+		if(0 <= locs.invEyeMat3Loc){
 			Mat4d rot2 = /*a->rot.tomat4() **/ vw->irot;
 			Mat3<float> irot3 = rot2.tomat3().cast<float>();
-			glUniformMatrix3fv(invEyeMat3Loc, 1, GL_FALSE, irot3);
+			glUniformMatrix3fv(locs.invEyeMat3Loc, 1, GL_FALSE, irot3);
 		}
-		GLint timeLoc = glGetUniformLocation(shader, "time");
-		if(0 <= timeLoc){
-			glUniform1f(timeLoc, GLfloat(vw->viewtime));
+		if(0 <= locs.timeLoc){
+			glUniform1f(locs.timeLoc, GLfloat(vw->viewtime));
 		}
-		GLint heightLoc = glGetUniformLocation(shader, "height");
-		if(0 <= heightLoc){
-			glUniform1f(heightLoc, GLfloat(max(0, dist - a->rad)));
+		if(0 <= locs.heightLoc){
+			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
 		}
+
+		fprintf(stderr, "ProjectSphereCubeJpg: %g\n", TimeMeasLap(&tm));
+
+
 		TexSphere::TextureIterator it;
 		int i;
 		if(m_textures) for(it = m_textures->begin(), i = 3; it != m_textures->end(); it++, i++){
@@ -676,8 +708,9 @@ void DrawTextureSphere::useShader(){
 //			if(tex.shaderLoc == -2)
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
 			if(0 <= tex.shaderLoc){
-				if(!tex.list)
+				if(1&&!tex.list){
 					tex.list = ProjectSphereCubeJpg(tex.filename, m_flags | DTS_NODETAIL | (tex.normalmap ? DTS_NORMALMAP : 0));
+				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(tex.list);
 				glUniform1i(tex.shaderLoc, i);
@@ -687,6 +720,12 @@ void DrawTextureSphere::useShader(){
 				glActiveTextureARB(GL_TEXTURE0_ARB);
 			}
 		}
+
+		static double maxt = 0.;
+		double tt = TimeMeasLap(&tm);
+		if(maxt < tt)
+			maxt = tt;
+		fprintf(stderr, "ProjectSphereCubeJpg: %10g, %g\n", TimeMeasLap(&tm), maxt);
 	}
 }
 
@@ -708,6 +747,8 @@ bool DrawTextureSphere::draw(){
 	
 	if(rad == 0.)
 		rad = a->rad;
+					timemeas_t tm;
+					TimeMeasStart(&tm);
 
 	params.vw = vw;
 	params.texenable = texenable;
@@ -738,11 +779,11 @@ bool DrawTextureSphere::draw(){
 
 	// Allocate surface texture
 	do if(ptexlist && !*ptexlist && texname){
-//		timemeas_t tm;
-//		TimeMeasStart(&tm);
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
 		*ptexlist = ProjectSphereCubeJpg(texname, flags);
-//		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
+		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
 	double (*cuts)[2] = CircleCuts(m_ncuts);
@@ -772,6 +813,9 @@ bool DrawTextureSphere::draw(){
 		glDisable(GL_TEXTURE_2D);
 
 	useShader();
+
+	if(this->a->name == gltestp::dstring("Earth"))
+		fprintf(stderr, "DrawTextureSphere::draw0: %g\n", TimeMeasLap(&tm));
 
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -851,6 +895,9 @@ bool DrawTextureSphere::draw(){
 		}
 		params.mat = qirot.tomat4().translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
+
+	if(this->a->name == gltestp::dstring("Earth"))
+		fprintf(stderr, "DrawTextureSphere::draw1: %g\n", TimeMeasLap(&tm));
 
 	double tangent = rad < dist ? asin(rad / dist) : M_PI / 2.;
 /*	fine = M_PI / 3. < tangent;*/
@@ -964,6 +1011,10 @@ bool DrawTextureSphere::draw(){
 
 	glPopAttrib();
 	glPopMatrix();
+
+	if(this->a->name == gltestp::dstring("Earth"))
+		fprintf(stderr, "DrawTextureSphere::draw: %g\n", TimeMeasLap(&tm));
+
 	return texenable;
 }
 
@@ -1117,7 +1168,7 @@ static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g
 static Initializator s_tscuts(g_tscuts_init);
 
 void TexSphere::draw(const Viewer *vw){
-	if(1)
+	if(0)
 		return;
 	if(vw->zslice != 2)
 		return;

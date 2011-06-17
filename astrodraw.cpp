@@ -670,12 +670,7 @@ void DrawTextureSphere::useShader(){
 		if(newLocs)
 			locs.getLocs(shader);
 
-		timemeas_t tm;
-		TimeMeasStart(&tm);
-
 		glUseProgram(shader);
-
-		fprintf(stderr, "ProjectSphereCubeJpg0: %10g\n", TimeMeasLap(&tm));
 
 		if(0 <= locs.textureLoc && ptexlist){
 			glUniform1i(locs.textureLoc, 0);
@@ -698,9 +693,6 @@ void DrawTextureSphere::useShader(){
 			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
 		}
 
-		fprintf(stderr, "ProjectSphereCubeJpg: %g\n", TimeMeasLap(&tm));
-
-
 		TexSphere::TextureIterator it;
 		int i;
 		if(m_textures) for(it = m_textures->begin(), i = 3; it != m_textures->end(); it++, i++){
@@ -720,12 +712,6 @@ void DrawTextureSphere::useShader(){
 				glActiveTextureARB(GL_TEXTURE0_ARB);
 			}
 		}
-
-		static double maxt = 0.;
-		double tt = TimeMeasLap(&tm);
-		if(maxt < tt)
-			maxt = tt;
-		fprintf(stderr, "ProjectSphereCubeJpg: %10g, %g\n", TimeMeasLap(&tm), maxt);
 	}
 }
 
@@ -747,8 +733,6 @@ bool DrawTextureSphere::draw(){
 	
 	if(rad == 0.)
 		rad = a->rad;
-					timemeas_t tm;
-					TimeMeasStart(&tm);
 
 	params.vw = vw;
 	params.texenable = texenable;
@@ -783,7 +767,7 @@ bool DrawTextureSphere::draw(){
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
 		*ptexlist = ProjectSphereCubeJpg(texname, flags);
-		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
+		CmdPrintf("DrawTextureSphere::draw(\"%s\") projection: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
 	double (*cuts)[2] = CircleCuts(m_ncuts);
@@ -813,9 +797,6 @@ bool DrawTextureSphere::draw(){
 		glDisable(GL_TEXTURE_2D);
 
 	useShader();
-
-	if(this->a->name == gltestp::dstring("Earth"))
-		fprintf(stderr, "DrawTextureSphere::draw0: %g\n", TimeMeasLap(&tm));
 
 	if(vw->detail){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -895,9 +876,6 @@ bool DrawTextureSphere::draw(){
 		}
 		params.mat = qirot.tomat4().translatein(0., 0., dist).scalein(-rad, -rad, -rad);
 	}
-
-	if(this->a->name == gltestp::dstring("Earth"))
-		fprintf(stderr, "DrawTextureSphere::draw1: %g\n", TimeMeasLap(&tm));
 
 	double tangent = rad < dist ? asin(rad / dist) : M_PI / 2.;
 /*	fine = M_PI / 3. < tangent;*/
@@ -1011,9 +989,6 @@ bool DrawTextureSphere::draw(){
 
 	glPopAttrib();
 	glPopMatrix();
-
-	if(this->a->name == gltestp::dstring("Earth"))
-		fprintf(stderr, "DrawTextureSphere::draw: %g\n", TimeMeasLap(&tm));
 
 	return texenable;
 }

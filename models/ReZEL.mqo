@@ -2,12 +2,12 @@ Metasequoia Document
 Format Text Ver 1.0
 
 Scene {
-	pos 28.3417 -195.1112 1500.0000
+	pos -108.9974 99.3093 1500.0000
 	lookat 0.0000 0.0000 0.0000
-	head -6.9835
-	pich 0.3292
+	head -7.3435
+	pich -1.0908
 	ortho 0
-	zoom2 12.8000
+	zoom2 8.0000
 	amb 0.250 0.250 0.250
 }
 Material 7 {
@@ -25,7 +25,7 @@ Object "ReZEL_torso" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 30.0
@@ -173,11 +173,11 @@ Object "ReZEL_torso" {
 }
 Object "ReZEL_head" {
 	depth 1
-	folding 0
+	folding 1
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -400,7 +400,7 @@ Object "ReZEL_lvulcan" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -420,7 +420,7 @@ Object "ReZEL_rvulcan" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -440,7 +440,7 @@ Object "ReZEL_wing" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -582,13 +582,73 @@ Object "ReZEL_wing" {
 		2 V(66 67) M(5)
 	}
 }
-Object "ReZEL_lshoulder" {
-	depth 1
+Object "ReZEL_thruster0" {
+	depth 2
 	folding 0
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0.0000 117.4597 -92.0059
+		-100.0000 85.0000 -90.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
+Object "ReZEL_thruster1" {
+	depth 2
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 0
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0.0000 117.4597 -92.0059
+		100.0000 85.0000 -90.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
+Object "ReZEL_thruster2" {
+	depth 2
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 0
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0.0000 117.4597 -92.0059
+		0.0000 20.0000 -120.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
+Object "ReZEL_lshoulder" {
+	depth 1
+	folding 1
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -669,11 +729,11 @@ Object "ReZEL_lshoulder" {
 }
 Object "ReZEL_luparm" {
 	depth 2
-	folding 0
+	folding 1
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -809,7 +869,7 @@ Object "ReZEL_larm" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -865,7 +925,7 @@ Object "ReZEL_lhand" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -910,7 +970,7 @@ Object "ReZEL_shield" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1077,7 +1137,7 @@ Object "ReZEL_shieldmuzzle" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1091,13 +1151,33 @@ Object "ReZEL_shieldmuzzle" {
 		2 V(0 1) M(0)
 	}
 }
-Object "ReZEL_rshoulder" {
-	depth 1
-	folding 0
+Object "ReZEL_thruster3" {
+	depth 2
+	folding 1
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		109.8633 160.3863 4.4566
+		145.0000 165.0000 25.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
+Object "ReZEL_rshoulder" {
+	depth 1
+	folding 1
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1178,11 +1258,11 @@ Object "ReZEL_rshoulder" {
 }
 Object "ReZEL_ruparm" {
 	depth 2
-	folding 0
+	folding 1
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1318,7 +1398,7 @@ Object "ReZEL_rarm" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1374,7 +1454,7 @@ Object "ReZEL_rhand" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1422,7 +1502,7 @@ Object "ReZEL_rifle" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1603,7 +1683,7 @@ Object "ReZEL_riflemuzzle" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1617,13 +1697,33 @@ Object "ReZEL_riflemuzzle" {
 		2 V(0 1) M(0)
 	}
 }
-Object "ReZEL_waist" {
-	depth 1
-	folding 1
+Object "ReZEL_thruster4" {
+	depth 2
+	folding 0
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		-109.8633 160.3863 4.4566
+		-145.0000 165.0000 25.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
+Object "ReZEL_waist" {
+	depth 1
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1735,7 +1835,7 @@ Object "ReZEL_lupleg" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -1791,7 +1891,7 @@ Object "ReZEL_lmidleg" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -2064,13 +2164,33 @@ Object "ReZEL_ltoe" {
 		4 V(15 14 10 11) M(2)
 	}
 }
+Object "ReZEL_thruster5" {
+	depth 5
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		43.3242 -146.5249 -0.4658
+		75.0000 -270.0000 -15.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
 Object "ReZEL_rupleg" {
 	depth 2
 	folding 0
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -2126,7 +2246,7 @@ Object "ReZEL_rmidleg" {
 	scale 1.000000 1.000000 1.000000
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
-	visible 15
+	visible 0
 	locking 0
 	shading 1
 	facet 59.5
@@ -2397,6 +2517,26 @@ Object "ReZEL_rtoe" {
 		4 V(13 12 4 3) M(0)
 		4 V(13 15 14 12) M(2)
 		4 V(15 11 10 14) M(2)
+	}
+}
+Object "ReZEL_thruster6" {
+	depth 5
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		-43.3242 -146.5249 -0.4658
+		-75.0000 -270.0000 -15.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
 	}
 }
 Eof

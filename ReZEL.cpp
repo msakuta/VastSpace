@@ -1256,10 +1256,10 @@ void ReZEL::anim(double dt){
 
 		if(controlled){
 			p->throttle = approach(throttle, inputs.analog[3], dt, 0.);
-/*			if(inputs.press & PL_Q)
+			if(inputs.press & PL_Q)
 				p->throttle = MIN(throttle + dt, 1.);
 			if(inputs.press & PL_Z)
-				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted*/
+				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
 		}
 
 		if(stabilizer){

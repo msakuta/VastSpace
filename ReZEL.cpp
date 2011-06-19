@@ -61,6 +61,15 @@ const int ReZEL::magazineSize[3] = {
 const double ReZEL::reloadTime = 5.;
 
 
+const Vec3d ReZEL::thrusterDir[7] = {
+	Vec3d(0, -1, 0),
+	Vec3d(0, -1, 0),
+	Vec3d(0, -1, 0),
+	Vec3d(1, 0, 0),
+	Vec3d(-1, 0, 0),
+	Vec3d(0, -1, 0),
+	Vec3d(0, -1, 0),
+};
 
 
 Entity::Dockable *ReZEL::toDockable(){return this;}
@@ -165,6 +174,10 @@ ReZEL::ReZEL() : mother(NULL), paradec(-1),
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
+	for(int i = 0; i < numof(thrusterDirs); i++){
+		thrusterDirs[i] = thrusterDir[i];
+		thrusterPower[i] = 0.;
+	}
 }
 
 ReZEL::ReZEL(WarField *aw) : st(aw),
@@ -192,6 +205,10 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
+	for(int i = 0; i < numof(thrusterDirs); i++){
+		thrusterDirs[i] = thrusterDir[i];
+		thrusterPower[i] = 0.;
+	}
 	ReZEL *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -1313,6 +1330,36 @@ void ReZEL::anim(double dt){
 //			pt->velo += acc * spd;
 		}
 
+		if(model){
+			static const Quatd rotaxis(0, 1., 0., 0.);
+			double motion_time[numof(motions)];
+			getMotionTime(&motion_time);
+			ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+			Vec3d accel = btvc(bbody->getTotalForce() * bbody->getInvMass() / dt);
+			Vec3d relpos; // Relative position to gravitational center
+			// Torque in Bullet dynamics engine. 
+			Vec3d bttorque = btvc(bbody->getTotalTorque() / dt /* bbody->getInvInertiaTensorWorld()*/);
+			Quatd lrot; // Rotational component of transformation from world coordinates to local coordinates.
+			for(int i = 0; i < numof(thrusterDirs); i++) if(model->getBonePos(gltestp::dstring("ReZEL_thruster") << i, *v, &relpos, &lrot)){
+				Vec3d localAccel = -(rot * rotaxis * lrot).cnj().trans(accel + relpos.vp(bttorque));
+				if(localAccel.slen() < .1 * .1)
+					localAccel /= .1;
+				else
+					localAccel.normin();
+				Vec3d delta = localAccel - thrusterDirs[i];
+/*				if(thrusterDirs[i].sp(thrusterDir[i]) < .5 && delta.sp(thrusterDir[i]) < 0.)
+					continue;
+				thrusterDirs[i] = Quatd::rotation(dt * 5., localAccel.vp(thrusterDirs[i])).trans(thrusterDirs[i]).normin();*/
+				const Vec3d &target = .5 < localAccel.sp(thrusterDir[i]) ? localAccel : thrusterDir[i];
+				for(int j = 0; j < 3; j++)
+					thrusterDirs[i][j] = approach(thrusterDirs[i][j], target[j], dt, 0.);
+				thrusterDirs[i].normin();
+				// The shoulder thrusters are not available when in MA (Waverider) form.
+				thrusterPower[i] = approach(thrusterPower[i], max(0, (i == 3 || i == 4) && waverider ? 0. : localAccel.sp(thrusterDirs[i])), dt * 2., 0.);
+			}
+			YSDNM_MotionInterpolateFree(v);
+		}
+
 		/* heat dissipation */
 		p->heat *= exp(-dt * .2);
 
@@ -1432,10 +1479,14 @@ void ReZEL::anim(double dt){
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-//					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
 			pt->pos += pt->velo * dt;
+
+			// Stop thrusters
+			for(int i = 0; i < numof(thrusterDirs); i++)
+				thrusterPower[i] = approach(thrusterPower[i], 0, dt * 2., 0.);
 		}
 	}
 

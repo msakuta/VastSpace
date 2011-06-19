@@ -30,6 +30,8 @@ protected:
 		Passive,
 		Aggressive
 	};
+	static const Vec3d thrusterDir[7];
+
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
 	double throttle;
@@ -62,6 +64,8 @@ protected:
 	float freload; ///< Reload phase
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
+	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
+	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
 
 	static const double sufscale;
 	static const avec3_t gunPos[2];

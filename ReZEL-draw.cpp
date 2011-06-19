@@ -82,17 +82,17 @@ Model *ReZEL::model = NULL;
 ysdnm_motion *ReZEL::motions[8];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
-	double motion_time1[numof(motions)] = {
-		10. * fwaverider,
-		10. * (1. - fwaverider),
-		10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.),
-		10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
-		(-twist * (1. - fwaverider) + 1.) * 10.,
-		(-pitch * (1. - fwaverider) + 1.) * 10.,
-		(1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
-		(1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
-	};
-	memcpy(*motion_time, motion_time1, sizeof motion_time1);
+//	double motion_time1[numof(motions)] = {
+		(*motion_time)[0] = 10. * fwaverider,
+		(*motion_time)[1] = 10. * (1. - fwaverider),
+		(*motion_time)[2] = 10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.),
+		(*motion_time)[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
+		(*motion_time)[4] = (-twist * (1. - fwaverider) + 1.) * 10.,
+		(*motion_time)[5] = (-pitch * (1. - fwaverider) + 1.) * 10.,
+		(*motion_time)[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
+		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
+//	};
+//	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
 
 void ReZEL::draw(wardraw_t *wd){
@@ -323,27 +323,18 @@ void ReZEL::drawtra(wardraw_t *wd){
 			glColor4f(1., 1., 1., amp);
 
 			// Thruster ejection effects
-			static const Vec3d thrusterDir[7] = {
-				Vec3d(0, -1, 0),
-				Vec3d(0, -1, 0),
-				Vec3d(0, -1, 0),
-				Vec3d(1, 0, 0),
-				Vec3d(-1, 0, 0),
-				Vec3d(0, -1, 0),
-				Vec3d(0, -1, 0),
-			};
 			Vec3d thrustVector = velo.slen() < .1 * .1 ? velo / .1 : velo.norm();
 			for(int i = 0; i < numof(thrusterDir); i++){
 				Vec3d pos0;
 				if(model->getBonePos(gltestp::dstring("ReZEL_thruster") << i, *v, &pos0, &lrot)){
-					Vec3d dir = (rot * rotaxis * lrot).trans(thrusterDir[i]);
-					double mag = -thrustVector.sp(dir);
+					Vec3d dir = (rot * rotaxis * lrot).trans(thrusterDirs[i]);
+					double mag = thrusterPower[i]/*-thrustVector.sp(dir)*/;
 					if(0. < mag){
 						pos0 *= sufscale;
 						pos0[0] *= -1;
 						pos0[2] *= -1;
 						Vec3d pos = rot.trans(pos0) + this->pos;
-						dir = (dir).norm();
+//						dir = (dir).norm();
 						gldScrollTextureBeam(wd->vw->pos, pos, pos + dir * mag * .01, mag * .0025, tim + 100. * rs.nextd());
 					}
 				}

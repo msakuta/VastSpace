@@ -1202,7 +1202,7 @@ void Sceptor::anim(double dt){
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
 			pt->pos += pt->velo * dt;

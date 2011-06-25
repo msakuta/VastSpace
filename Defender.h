@@ -112,7 +112,6 @@ public:
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
-	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
 	Mat4d legTransform(int legIndex)const; ///< Returns transformation matrix for a given leg.
 private:
 };

@@ -1,3 +1,4 @@
+#include "draw/effects.h"
 #include "ReZEL.h"
 #include "CoordSys.h"
 #include "war.h"
@@ -157,7 +158,7 @@ const char *ReZEL::dispname()const{
 };
 
 double ReZEL::maxhealth()const{
-	return 500.;
+	return 100.;
 }
 
 
@@ -1326,7 +1327,7 @@ void ReZEL::anim(double dt){
 				p->fuel -= consump;
 			double spd = consump * (p->task != Attack ? .01 : .005);
 			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.));
-			bbody->applyCentralForce(btvc(acc * spd * 10. * mass / dt));
+			bbody->applyCentralImpulse(btvc(acc * spd * 10. * mass));
 //			pt->velo += acc * spd;
 		}
 
@@ -1393,6 +1394,7 @@ void ReZEL::anim(double dt){
 		fsabre = approach(fsabre, weapon == 3 ? 3. : 0., dt, 0.);
 	}
 	else{
+		bbody->activate();
 		pt->health += dt;
 		if(0. < pt->health){
 			struct tent3d_line_list *tell = w->getTeline3d();
@@ -1440,7 +1442,7 @@ void ReZEL::anim(double dt){
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-//				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
 			}
 
 			{/* explode shockwave thingie */
@@ -1479,16 +1481,19 @@ void ReZEL::anim(double dt){
 					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
 					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, smokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
-			pt->pos += pt->velo * dt;
+//			pt->pos += pt->velo * dt;
 
 			// Stop thrusters
 			for(int i = 0; i < numof(thrusterDirs); i++)
 				thrusterPower[i] = approach(thrusterPower[i], 0, dt * 2., 0.);
 		}
 	}
+
+	if(w)
+		bbody->applyCentralForce(btvc(w->accel(this->pos, this->velo) * mass));
 
 	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
@@ -1536,7 +1541,7 @@ int ReZEL::takedamage(double damage, int hitpart){
 		}
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-		health = -2.;
+		health = -2.; // Death animation timer
 //		pt->deaths++;
 	}
 	else

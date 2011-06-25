@@ -1,7 +1,9 @@
 // Container Ship Demo
 initUI();
 
-//deltaFormation("ReZEL", 0, Quatd(0,0,0,1), Vec3d(10, 0., 10. - 20.), 0.05, 1, player.cs, function(e){e.command("Move", Vec3d(10,0,0));});
+player.cs = bookmarks["Side 7"].cs();
+
+//deltaFormation("ReZEL", 0, Quatd(0,0,0,1), Vec3d(10, 0., 10. - 19.), 0.05, 1, player.cs, function(e){e.command("Move", Vec3d(10,0,0));});
 //deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(10.01, 0., 10.01 - 20.), 0.05, 1, player.cs, null);
 deltaFormation("ReZEL", 0, Quatd(0,0,0,1), Vec3d(0, 0., 0.), 0.05, 1, player.cs, null);
 deltaFormation("ReZEL", 1, Quatd(0,1,0,0), Vec3d(0, 0., -3.), 0.05, 1, player.cs, null);

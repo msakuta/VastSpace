@@ -34,6 +34,22 @@ static double diprint(const char *s, double x, double y){
 	return x + strlen(s) * 8;
 }
 
+/// Returns a rotation represents which direction should be "up", relative to current CoordSys.
+Quatd Player::orientation()const{
+	// Some WarSpaces do have special orientation rules
+	if(cs->w){
+		WarSpace *ws = *cs->w;
+		if(ws){
+			if(selected)
+				return ws->orientation(selected->pos);
+			else
+				return ws->orientation(Vec3d(0,0,0));
+		}
+	}
+	return Quatd(0,0,0,1);
+}
+
+/// Draw Player related objects.
 void Player::draw(Viewer *vw){
 	if(moveorder) do{
 		bool move_lockz = this->move_lockz || MotionGet() & PL_SHIFT;
@@ -42,9 +58,9 @@ void Player::draw(Viewer *vw){
 		glDisable(GL_TEXTURE_1D);
 		glDisable(GL_TEXTURE_2D);
 		glColor4f(1,1,1,1);
-		glLoadMatrixd(vw->rot);
-		gldTranslate3dv(-vw->pos);
-//		char *strtargetcs;
+
+		Quatd ort = orientation();
+
 		const CoordSys *cs;
 		Mat4d rot, mat;
 //		strtargetcs = CvarGetString("r_coordsys");
@@ -66,8 +82,13 @@ void Player::draw(Viewer *vw){
 			cs = this->cs;
 			if(!cs)
 				break;
-			rot = vw->cs->tocsim(cs).rotx(M_PI / 2.);
+
+			rot = (vw->cs->tocsq(cs).cnj().rotate(M_PI / 2., 1, 0, 0) * ort.cnj()).tomat4();
 		}
+		
+
+		glLoadMatrixd(vw->rot);
+		gldTranslate3dv(-vw->pos);
 
 		Mat4d imat;
 		Vec3d ray, lray, mpos, vwpos, mlpos;
@@ -106,10 +127,6 @@ void Player::draw(Viewer *vw){
 		}
 		ray = imat.dvp3(lray);
 		t = -vwpos[2] / ray[2];
-/*			glBegin(GL_LINES);
-		glVertex3dv(avec3_000);
-		glVertex3dv(ray);
-		glEnd();*/
 
 		glPushMatrix();
 		double magnitude;
@@ -180,6 +197,7 @@ void Player::draw(Viewer *vw){
 
 void Player::drawtra(Viewer *){}
 
+/// Draw Player's HUD objects.
 void Player::drawindics(Viewer *vw){
 	const Universe *u;
 /*	if(u = cs->findcspath("/")->toUniverse()){
@@ -216,9 +234,11 @@ void Player::drawindics(Viewer *vw){
 		glEnd();
 		glPopMatrix();*/
 
+		Quatd ort = orientation();
+
 		glLoadIdentity();
-		Mat4d irot = mat4_u.rotx(M_PI / 2.);
-		Vec4d mpos4 = irot.dvp3(mpos) + move_z * vec3_010 + move_src;
+		Mat4d irot = (Quatd::rotation(M_PI / 2., 1, 0, 0) * ort.cnj()).tomat4();
+		Vec4d mpos4 = irot.dvp3(mpos) + move_z * irot.dvp3(-vec3_001) + move_src;
 		mpos4[3] = 1.;
 		Vec4d spos = move_trans.vp(mpos4);
 		glPushMatrix();
@@ -245,22 +265,28 @@ void Player::drawindics(Viewer *vw){
 	}
 }
 
+/// Called when mouse pointer moves.
 void Player::mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam){
 	Player &pl = *this;
 	if(pl.moveorder && wParam & MK_SHIFT && !pl.move_lockz){
-		Mat4d rotmat = mat4_u.rotx(M_PI / 2.);
+		Quatd ort = orientation();
+
+		Mat4d rotmat = (Quatd::rotation(M_PI / 2., 1, 0, 0) * ort.cnj()).tomat4();
 		Vec3d lpos = rotmat.dvp3(pl.move_hitpos + move_src);
-		int maxpix, minpix;
 		RECT crect;
 		GetClientRect(hWnd, &crect);
-		maxpix = MAX(crect.right, crect.bottom);
-		minpix = MIN(crect.right, crect.bottom);
+		int maxpix = MAX(crect.right, crect.bottom);
+		int minpix = MIN(crect.right, crect.bottom);
 #if 1 /* TODO: screen to space z axis coordinates transformation */
 		Vec3d delta(deltax, deltay, 0);
-		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos) + vec4_0001()) - pl.move_trans.vp(Vec4d((lpos + vec3_010)) + vec4_0001())).norm();
+
+		// The local up vector.
+		Vec3d up = rotmat.dvp3(-vec3_001);
+
+		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos) + vec4_0001()) - pl.move_trans.vp(Vec4d(lpos + up) + vec4_0001())).norm();
 		double sp = normal.sp(delta);
 		pl.move_z += sp * (rotmat.dvp3(pl.move_hitpos) + move_src - pl.move_viewpos).len() / maxpix;
-		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos) + pl.move_z * vec3_010 + move_src) + vec4_0001();
+		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos + pl.move_z * -vec3_001) + move_src) + vec4_0001();
 		Vec4d redelta = pl.move_trans.vp(worlddest);
 		POINT p, p0;
 		p.x = LONG((redelta[0] / redelta[3] + 1.) * crect.right / 2);

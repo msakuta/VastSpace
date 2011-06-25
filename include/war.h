@@ -118,6 +118,7 @@ public:
 	virtual struct tent3d_line_list *getTeline3d();
 	virtual struct tent3d_fpol_list *getTefpol3d();
 	virtual operator WarSpace*();
+	virtual Quatd orientation(const Vec3d &pos)const;
 
 	struct tent3d_line_list *tell, *gibs;
 	struct tent3d_fpol_list *tepl;

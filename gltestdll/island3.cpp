@@ -60,6 +60,7 @@ public:
 	Island3WarSpace() : bbody(NULL){}
 	Island3WarSpace(CoordSys *cs);
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
+	virtual Quatd orientation(const Vec3d &pos)const;
 
 protected:
 	btRigidBody *bbody;
@@ -2995,5 +2996,11 @@ Vec3d Island3WarSpace::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{
 	Vec3d coriolis = srcvelo.vp(cs->omg);
 	ret += coriolis;
 	return ret;
+}
+
+Quatd Island3WarSpace::orientation(const Vec3d &pos)const{
+	static const Quatd org(-sqrt(2.) / 2., 0, 0, sqrt(2.) / 2.);
+	double phase = atan2(pos[0], pos[2]);
+	return org.rotate(phase, 0, 0, 1);
 }
 

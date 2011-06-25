@@ -134,6 +134,7 @@ public:
 			controlled->controller = NULL;
 		controlled = NULL;
 	}
+	Quatd orientation()const;
 
 	static float camera_mode_switch_time;
 	static int g_overlay; // Overlay display level

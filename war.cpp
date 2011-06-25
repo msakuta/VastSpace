@@ -511,6 +511,10 @@ struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}
 struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}
 
+Quatd WarSpace::orientation(const Vec3d &)const{
+	return quat_u;
+}
+
 
 static OpenGLState::weak_ptr<AdditiveShaderBind> additiveShaderBind;
 

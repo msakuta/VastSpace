@@ -96,6 +96,14 @@ void TacticalMover::rotateLook(double dx, double dy){
 	const double speed = .001 / 2. * pl.fov;
 	const double one_minus_epsilon = .999;
 
+	// Some WarSpaces have special rules for which direction is up.
+	WarSpace *ws;
+	Quatd ort = quat_u;
+	if(pl.cs->w && (ws = *pl.cs->w)){
+		ort = ws->orientation(pl.cpos);
+	}
+	Quatd rot = this->rot * ort;
+
 	// Fully calculate pitch, yaw and roll from quaternion.
 	// This calculation is costly, but worth doing everytime mouse moves, for majority of screen is affected.
 	Vec3d view = rot.itrans(vec3_001);
@@ -109,7 +117,7 @@ void TacticalMover::rotateLook(double dx, double dy){
 	phi += dx * speed;
 	theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
 	double roll = -atan2(right[1], right[0]);
-	rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+	this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2)) * ort.cnj();
 }
 
 Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), viewdist(1.),
@@ -296,6 +304,16 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 	Vec3d &cpos = pl.cpos;
 	std::set<const Entity*> &chases = pl.chases;
 	Entity *&chase = pl.chase;
+
+	// Some WarSpaces have special rules for which direction is up.
+	// Camera rotation by mouse rotation should follow the rules when in trackball type rotation.
+	WarSpace *ws;
+	Quatd ort = quat_u;
+	if(pl.cs->w && (ws = *pl.cs->w)){
+		ort = ws->orientation(pl.cpos);
+	}
+	Quatd rot = this->rot * ort;
+
 	Vec3d view = rot.itrans(vec3_001);
 	double phi = -atan2(view[0], view[2]);
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
@@ -306,7 +324,7 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 		Vec3d right = rot2.itrans(vec3_100);
 		roll = -atan2(right[1], right[0]);
 		roll *= exp(-dt);
-		rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * rot1;
+		this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * rot1 * ort.cnj();
 	}
 	if(!chases.empty()){
 		int n = 0;
@@ -318,7 +336,7 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 	else if(chase && chase->w->cs == pl.cs){
 		cpos = chase->pos;
 	}
-	pos = cpos + view * pl.aviewdist;
+	pos = cpos + this->rot.itrans(vec3_001) * pl.aviewdist;
 }
 
 template<typename T, T Player::*M>

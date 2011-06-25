@@ -521,10 +521,10 @@ static void drawindics(Viewer *vw){
 
 	// Guide for tactical rotation
 	if(mouse_captured && pl.mover == pl.tactical){
-		int i, j;
-		for(i = 0; i < 12; i++) for(j = -3; j < 3; j++){
+		Quatd ort = pl.cs->w && (WarSpace*)*pl.cs->w ? ((WarSpace*)*pl.cs->w)->orientation(pl.cpos) : quat_u;
+		for(int i = 0; i < 12; i++) for(int j = -3; j < 3; j++){
 			glPushMatrix();
-			glLoadMatrixd(vw->rot);
+			glLoadMatrixd(vw->rot * ort.tomat4());
 			glRotatef(j * 360 / 12, 0, 1, 0);
 			glRotatef(i * 360 / 12, 1, 0, 0);
 			glBegin(GL_LINES);

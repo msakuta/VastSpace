@@ -140,6 +140,7 @@ coordsys Orbit earth{
 		new astro Island3 "Side 7"{
 			pos 10 0 10
 			race 2
+			bookmark "Side 7"
 		}
 	}
 	

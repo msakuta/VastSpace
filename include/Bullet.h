@@ -41,7 +41,7 @@ protected:
 	void bulletkill(int hitground, const struct contact_info *ci);
 };
 
-inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(false), life(alife), runlength(0){
+inline Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(true), life(alife), runlength(0){
 	if(owner)
 		race = owner->race;
 	extern int bullet_shoots;

@@ -54,7 +54,16 @@ using namespace gltestp;
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
 
 
+class Island3WarSpace : public WarSpace{
+public:
+	typedef WarSpace st;
+	Island3WarSpace() : bbody(NULL){}
+	Island3WarSpace(CoordSys *cs);
+	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 
+protected:
+	btRigidBody *bbody;
+};
 
 class Island3Building : public Entity{
 public:
@@ -85,6 +94,7 @@ Island3::Island3(const char *path, CoordSys *root) : st(path, root){
 	init();
 	st::init(path, root);
 	race = 0;
+	w = new Island3WarSpace(this);
 }
 
 Island3::~Island3(){
@@ -2941,5 +2951,49 @@ Vec3d Island3Docker::getPortPos()const{
 
 Quatd Island3Docker::getPortRot()const{
 	return e->rot;
+}
+
+
+Island3WarSpace::Island3WarSpace(CoordSys *cs) : st(cs), bbody(NULL){
+	if(bdw){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			const int cuts = 64;
+			shape = new btCompoundShape();
+			for(int i = 0; i < cuts; i++){
+				const Vec3d sc(.5, ISLAND3_HALFLEN, .5);
+				const Quatd rot = Quatd::rotation(2 * M_PI * i / cuts, 0, 1, 0);
+				const Vec3d pos = rot.trans(Vec3d(0, 0, ISLAND3_INRAD + .5 - .01));
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+//		startTransform.setOrigin(btvc(pos));
+
+		// Assume Island hull is static
+		btVector3 localInertia(0,0,0);
+
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(0,myMotionState,shape,localInertia);
+		bbody = new btRigidBody(rbInfo);
+
+		//add the body to the dynamics world
+		bdw->addRigidBody(bbody);
+	}
+}
+
+Vec3d Island3WarSpace::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{
+	double omg2 = cs->omg.slen();
+
+	/* centrifugal force */
+	Vec3d ret(srcpos[0] * omg2, 0., srcpos[2] * omg2);
+
+	/* coriolis force */
+	Vec3d coriolis = srcvelo.vp(cs->omg);
+	ret += coriolis;
+	return ret;
 }
 

@@ -78,9 +78,9 @@ Entity::Dockable *ReZEL::toDockable(){return this;}
 /* color sequences */
 //extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
-
+// Height 20.5m
 struct hitbox ReZEL::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .003)),
 };
 const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);
 
@@ -239,12 +239,18 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 //	Player *ppl = w->pl;
 	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
+	static const Vec3d src[4] = {
+		Vec3d(0., .001, -.002),
+		Vec3d(0., .012,  .022),
+		Vec3d(0., .013,  .022),
+		Vec3d(0.008, .007,  .010),
+	};
 	Mat4d mat;
-	seatid = (seatid + 3) % 3;
-	if(seatid == 2 && enemy && enemy->w == w){
+	Player *pl = w->getPlayer();
+	seatid = (seatid + 4) % 4;
+	if(seatid == 2 && enemy && enemy->w == w && pl){
 		q = this->rot * Quatd::direction(this->rot.cnj().trans(this->pos - enemy->pos));
-//		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / ppl->fov)); // Trackback if zoomed
+		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / pl->fov)); // Trackback if zoomed
 	}
 	else{
 		q = this->rot;

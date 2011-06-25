@@ -59,7 +59,7 @@ const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32
 double g_nlips_factor = 1.;
 static int g_shader_enable = 0;
 
-const double ReZEL::sufscale = 1./40000;
+const double ReZEL::sufscale = 1./30000;
 
 
 bool ReZEL::cull(Viewer &vw)const{

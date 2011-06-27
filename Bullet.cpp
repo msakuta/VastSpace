@@ -659,9 +659,9 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 }
 
 void Bullet::anim(double dt){
-	WarSpace *ws = *w;
 	if(!w)
 		return;
+	WarSpace *ws = *w;
 	Bullet *const pb = this;
 	struct contact_info ci;
 

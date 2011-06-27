@@ -60,6 +60,12 @@ public:
 class WarSpace;
 class Docker;
 
+/// \brief A virtual world that can contain multiple Entities inside.
+///
+/// It does not necessarily have real 3-D space but can be merely a list of Entities.
+/// The latter one is used for storing small ships inside bases or carriers.
+///
+/// It's usually tied together with a CoordSys.
 class EXPORT WarField : public Serializable, public Entlist{
 public:
 	WarField();
@@ -89,16 +95,25 @@ public:
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 
-	CoordSys *cs; // redundant pointer to indicate belonging coordinate system
-	Player *pl;
-	Entity *el; /* entity list */
-	Entity *bl; /* bullet list */
-	RandomSequence rs;
-	double realtime;
+	CoordSys *cs; ///< redundant pointer to indicate belonging coordinate system
+	Player *pl; ///< Player pointer
+	Entity *el; ///< Local Entity list
+	Entity *bl; ///< bullet list
+	RandomSequence rs; ///< The pseudo-random number sequence generator local to this WarField.
+	double realtime; ///< Time accumulator for this WarField. Some WarFields (or CoordSys') could have different progression of time.
 };
 
+class btRigidBody;
 class btDiscreteDynamicsWorld;
 
+/// \brief A real space that can contain multiple Entities and can simulate rigid-body dynamics.
+///
+/// All Entities belong to a WarField, but not necessarily WarSpace. Even though, majority of Entities
+/// belong to a WarSpace.
+///
+/// The WarSpace class could be named "World" in normal gaming terminology, but the notable thing is that
+/// there could be multiple instances of the class in a game.
+/// WarSpace is a world in such ways that no two objects in separate WarSpaces could never directly interact.
 class EXPORT WarSpace : public WarField{
 	void init();
 public:
@@ -119,6 +134,7 @@ public:
 	virtual struct tent3d_fpol_list *getTefpol3d();
 	virtual operator WarSpace*();
 	virtual Quatd orientation(const Vec3d &pos)const;
+	virtual btRigidBody *worldBody();
 
 	struct tent3d_line_list *tell, *gibs;
 	struct tent3d_fpol_list *tepl;

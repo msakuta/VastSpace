@@ -511,8 +511,17 @@ struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}
 struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}
 
+/// Returns rotation that represents which direction should be up and which should be down.
 Quatd WarSpace::orientation(const Vec3d &)const{
 	return quat_u;
+}
+
+/// Returns rigid body object of the surrounding world in a WarSpace.
+/// The world is probably static, solid object that has approximately infinite mass.
+///
+/// \return NULL if no world rigid body is available.
+btRigidBody *WarSpace::worldBody(){
+	return NULL;
 }
 
 

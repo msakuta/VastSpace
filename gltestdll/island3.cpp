@@ -61,6 +61,7 @@ public:
 	Island3WarSpace(CoordSys *cs);
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	virtual Quatd orientation(const Vec3d &pos)const;
+	virtual btRigidBody *worldBody();
 
 protected:
 	btRigidBody *bbody;
@@ -2964,7 +2965,7 @@ Island3WarSpace::Island3WarSpace(CoordSys *cs) : st(cs), bbody(NULL){
 			for(int i = 0; i < cuts; i++){
 				const Vec3d sc(.5, ISLAND3_HALFLEN, .5);
 				const Quatd rot = Quatd::rotation(2 * M_PI * i / cuts, 0, 1, 0);
-				const Vec3d pos = rot.trans(Vec3d(0, 0, ISLAND3_INRAD + .5 - .01));
+				const Vec3d pos = rot.trans(Vec3d(0, 0, ISLAND3_INRAD + .5 - .001));
 				btBoxShape *box = new btBoxShape(btvc(sc));
 				btTransform trans = btTransform(btqc(rot), btvc(pos));
 				shape->addChildShape(trans, box);
@@ -3003,4 +3004,9 @@ Quatd Island3WarSpace::orientation(const Vec3d &pos)const{
 	double phase = atan2(pos[0], pos[2]);
 	return org.rotate(phase, 0, 0, 1);
 }
+
+btRigidBody *Island3WarSpace::worldBody(){
+	return bbody;
+}
+
 

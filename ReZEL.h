@@ -24,6 +24,8 @@ protected:
 		Attack = sship_attack,
 		Away = sship_away,
 		Auto, // Automatically targets near enemy or parade with mother.
+		StandupOnBack,
+		StandupOnStomach,
 		num_sceptor_task
 	};
 	enum Attitude{

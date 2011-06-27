@@ -695,6 +695,8 @@ void ReZEL::anim(double dt){
 		return;
 	}
 
+	WarSpace *ws = *w;
+
 	// Transit to another CoordSys when its border is reached.
 	// Exceptions should be made to prevent greatly remote CoordSys to be transited, because more remote
 	// results more floating point errors.
@@ -922,7 +924,67 @@ void ReZEL::anim(double dt){
 				}
 			}
 			else if(!controlled) do{
-				if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
+				btRigidBody *worldBody = ws->worldBody();
+				double elevation = 0; // Cosine of angle of elevation relative to local acceleration
+
+				// Check if we are touching the ground.
+				if(worldBody){
+					bool touched = false;
+					int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
+					for (int i=0;i<numManifolds;i++)
+					{
+						btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
+						btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+						btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+
+						if(obA != bbody && obB != bbody)
+							continue;
+					
+						int numContacts = contactManifold->getNumContacts();
+						for (int j=0;j<numContacts;j++)
+						{
+							btManifoldPoint& pt = contactManifold->getContactPoint(j);
+							if (pt.getDistance()<0.f)
+							{
+								const btVector3& ptA = pt.getPositionWorldOnA();
+								const btVector3& ptB = pt.getPositionWorldOnB();
+								const btVector3& normalOnB = pt.m_normalWorldOnB;
+								if(obA == worldBody && obB == bbody || obA == bbody && obB == worldBody){
+									touched = true;
+									break;
+								}
+							}
+						}
+					}
+
+					if(touched){
+						Vec3d accel = w->accel(pos, velo);
+
+						// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
+						if(DBL_EPSILON < accel.slen()){
+							Vec3d downDir = accel.norm();
+							elevation = rot.trans(Vec3d(0,0,-1)).sp(downDir);
+
+							// If we are looking against down vector, we're lying on back. If looking as the same direction as it, lying on stomach.
+							if(elevation < -.5)
+								task = StandupOnBack;
+							else if(.5 < elevation)
+								task = StandupOnStomach;
+						}
+					}
+				}
+
+				if(task == StandupOnBack){
+					bbody->applyTorque(btvc(rot.trans(Vec3d(-1,0,0)) / bbody->getInvMass() * 10e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 5e-4);
+					if(-.05 < elevation)
+						task = Auto;
+				}
+				else if(task == StandupOnStomach){
+					bbody->applyTorque(btvc(rot.trans(Vec3d(1,0,0)) / bbody->getInvMass() * 10e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 5e-4);
+					if(elevation < .05)
+						task = Auto;
+				}
+				else if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
 					}
@@ -1306,6 +1368,8 @@ void ReZEL::anim(double dt){
 			// Suppress rotation if it's not intensional.
 			if(!(pt->inputs.press & (PL_A | PL_D | PL_W | PL_S))){
 				btVector3 btomg = bbody->getAngularVelocity();
+//				if(ws)
+//					btomg += btvc(ws->orientation(pos).trans(vec3_010).vp(rot.trans(vec3_010)) * .2);
 				btScalar len = btomg.length();
 				if(1. < len)
 					btomg /= len;

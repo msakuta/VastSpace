@@ -184,6 +184,7 @@ ReZEL::ReZEL() : mother(NULL), paradec(-1),
 ReZEL::ReZEL(WarField *aw) : st(aw),
 	mother(NULL),
 	task(Auto),
+	standingUp(false),
 	fuel(maxfuel()),
 	reverser(0),
 	waverider(false),
@@ -929,7 +930,11 @@ void ReZEL::anim(double dt){
 
 				// Check if we are touching the ground.
 				if(worldBody){
+					Vec3d accel = w->accel(pos, velo);
+					btVector3 btaccel = btvc(accel);
 					bool touched = false;
+
+					// Query all contact pairs to find out if this object and the world's floor face is in contact.
 					int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
 					for (int i=0;i<numManifolds;i++)
 					{
@@ -949,7 +954,9 @@ void ReZEL::anim(double dt){
 								const btVector3& ptA = pt.getPositionWorldOnA();
 								const btVector3& ptB = pt.getPositionWorldOnB();
 								const btVector3& normalOnB = pt.m_normalWorldOnB;
-								if(obA == worldBody && obB == bbody || obA == bbody && obB == worldBody){
+
+								// Assume static objects to be parts of the world.
+								if(obA->isStaticObject() && obB == bbody && 0 < normalOnB.dot(btaccel) || obA == bbody && obB->isStaticObject() && normalOnB.dot(btaccel) < 0){
 									touched = true;
 									break;
 								}
@@ -958,31 +965,32 @@ void ReZEL::anim(double dt){
 					}
 
 					if(touched){
-						Vec3d accel = w->accel(pos, velo);
 
 						// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
 						if(DBL_EPSILON < accel.slen()){
 							Vec3d downDir = accel.norm();
 							elevation = rot.trans(Vec3d(0,0,-1)).sp(downDir);
+							double uprightness = rot.trans(Vec3d(0,1,0)).sp(downDir);
 
-							// If we are looking against down vector, we're lying on back. If looking as the same direction as it, lying on stomach.
-							if(elevation < -.5)
-								task = StandupOnBack;
-							else if(.5 < elevation)
-								task = StandupOnStomach;
+							// If we are lying or going to lay down on the floor, try to stand up.
+							if(-.5 < uprightness)
+								standingUp = true;
 						}
 					}
 				}
 
-				if(task == StandupOnBack){
-					bbody->applyTorque(btvc(rot.trans(Vec3d(-1,0,0)) / bbody->getInvMass() * 10e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 5e-4);
-					if(-.05 < elevation)
-						task = Auto;
-				}
-				else if(task == StandupOnStomach){
-					bbody->applyTorque(btvc(rot.trans(Vec3d(1,0,0)) / bbody->getInvMass() * 10e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 5e-4);
-					if(elevation < .05)
-						task = Auto;
+				if(standingUp){
+					Vec3d accel = w->accel(pos, velo);
+
+					// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
+					if(DBL_EPSILON < accel.slen()){
+						Vec3d downDir = accel.norm();
+						bbody->applyTorque(btvc(-rot.trans(Vec3d(0,1,0)).vp(downDir) / bbody->getInvMass() * 10e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 2e-4);
+						if(rot.trans(Vec3d(0,1,0)).sp(downDir) < -.99)
+							standingUp = false;
+					}
+					else
+						standingUp = false;
 				}
 				else if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){

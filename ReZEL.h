@@ -24,8 +24,6 @@ protected:
 		Attack = sship_attack,
 		Away = sship_away,
 		Auto, // Automatically targets near enemy or parade with mother.
-		StandupOnBack,
-		StandupOnStomach,
 		num_sceptor_task
 	};
 	enum Attitude{
@@ -54,6 +52,7 @@ protected:
 	int submagazine; ///< Remaining rounds in sub-arm
 	int vulcanmag; ///< Vulcan magazine
 	Task task;
+	bool standingUp; ///< Standing up against acceleration
 	bool docked, returning, away, cloak, forcedEnemy;
 	bool waverider;
 	bool stabilizer;

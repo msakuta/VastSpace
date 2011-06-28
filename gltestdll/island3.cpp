@@ -75,8 +75,12 @@ public:
 	Island3 &host;
 	Island3Building(Island3 &host);
 	virtual const char *classname()const{return "Island3Building";}
-	virtual double hitradius()const{return .1;}
-	virtual bool isTargettable()const{return false;}
+	virtual double maxhealth()const{return 10000.;}
+	virtual void enterField(WarField *);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+	virtual double hitradius()const{return halfsize.len();}
+	virtual bool isTargettable()const{return true;}
+	virtual bool isSelectable()const{return false;}
 	virtual void draw(wardraw_t *);
 };
 
@@ -93,10 +97,9 @@ Island3::Island3(){
 }
 
 Island3::Island3(const char *path, CoordSys *root) : st(path, root){
-	init();
 	st::init(path, root);
+	init();
 	race = 0;
-	w = new Island3WarSpace(this);
 }
 
 Island3::~Island3(){
@@ -115,8 +118,14 @@ void Island3::init(){
 	mass = 1e10;
 	basecolor = Vec4f(1., .5, .5, 1.);
 	omg.clear();
-	for(int i = 0; i < numof(bldgs); i++)
+	
+	// All Island3's have a WarSpace by default.
+	w = new Island3WarSpace(this);
+	for(int i = 0; i < numof(bldgs); i++){
 		bldgs[i] = new Island3Building(*this);
+		w->addent(bldgs[i]);
+	}
+
 	gases = 100;
 	solids = 100;
 	people = 100000;
@@ -1238,15 +1247,15 @@ void Island3::draw(const Viewer *vw){
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	// Buildings
-	if(vw->zslice == 0){
+	// Buildings will draw themselves in Entity drawing pass.
+/*	if(vw->zslice == 0){
 		wardraw_t wd;
 		wd.lightdraws = 0;
 		wd.vw = (Viewer*)vw;
 		wd.w = NULL;
 		for(i = 0; i < numof(bldgs); i++)
 			bldgs[i]->draw(&wd);
-	}
+	}*/
 
 	/* seal at glass bondaries */
 	if(100 < pixels && !farmap ^ cullLevel){
@@ -2770,6 +2779,7 @@ static const double texcoord[][3] = {
 };
 
 Island3Building::Island3Building(Island3 &host) : host(host){
+	health = maxhealth();
 	RandomSequence rs((unsigned long)this);
 	double phase = rs.nextd() * M_PI;
 	phase += floor(phase / (M_PI / 3.)) * M_PI / 3. - M_PI / 6.;
@@ -2783,6 +2793,55 @@ Island3Building::Island3Building(Island3 &host) : host(host){
 	halfsize[2] = rs.nextd() * .10 + .010;
 }
 
+
+void Island3Building::enterField(WarField *target){
+	WarSpace *ws = *target;
+	if(ws && ws->bdw){
+		if(!bbody){
+			btBoxShape *shape = new btBoxShape(btvc(halfsize));
+
+			btTransform startTransform;
+			startTransform.setIdentity();
+			startTransform.setOrigin(btvc(pos));
+			startTransform.setRotation(btqc(rot));
+
+			//rigidbody is dynamic if and only if mass is non zero, otherwise static
+			bool isDynamic = false && (mass != 0.f);
+
+			btVector3 localInertia(0,0,0);
+			if (isDynamic)
+				shape->calculateLocalInertia(mass,localInertia);
+
+			//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+			btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+			btRigidBody::btRigidBodyConstructionInfo rbInfo(0*mass,myMotionState,shape,localInertia);
+	//		rbInfo.m_linearDamping = .5;
+	//		rbInfo.m_angularDamping = .5;
+			bbody = new btRigidBody(rbInfo);
+
+	//		bbody->setSleepingThresholds(.0001, .0001);
+		}
+
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody);
+	}
+}
+
+int Island3Building::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	double retf;
+	int reti = 0, n;
+	Vec3d org = this->pos;
+	Quatd rot = this->rot;
+
+	double sc[3];
+	for(int j = 0; j < 3; j++)
+		sc[j] = halfsize[j] + rad;
+	if((jHitBox(org, sc, rot, src, dir, 0., dt, &retf, retp, retn)) && retf < dt){
+		if(ret) *ret = retf;
+		reti = 1;
+	}
+	return reti;
+}
 
 void Island3Building::draw(wardraw_t *wd){
 	if(!gltestp::FindTexture("bldg.jpg")){

@@ -163,7 +163,7 @@ class TimeMeas{
 }
 
 // Registers a console command with name, defined by func.
-// Variable-length arguments may be present as strings, use vargc and vargv to interpret them.
+// Variable-length arguments may be present as strings, use vargv.len() and vargv to interpret them.
 void register_console_command(string name, function func);
 
 /// Loads an external module, implemented as DLL or shared library.
@@ -246,7 +246,7 @@ function foreachsubents(cs, proc){
 function countents(cs, team, classname){
 	local a = { ents = 0, team = team };
 	foreachsubents(cs,
-		function(e):(a,classname){ if(e.race == a.team && e.classname == classname) a.ents++; });
+		function(e)/*:(a,classname)*/{ if(e.race == a.team && e.classname == classname) a.ents++; });
 	return a.ents;
 }
 
@@ -368,7 +368,7 @@ function bool(a){
 }
 
 register_console_command("coordsys", function(...){
-	if(vargc == 0){
+	if(vargv.len() == 0){
 		print("identity: " + player.cs.name());
 		print("path: " + player.cs.getpath());
 		print("formal name: " + player.cs.name());
@@ -377,10 +377,10 @@ register_console_command("coordsys", function(...){
 			print("aka: " + name);
 		return 0;
 	}
-	print("Arg[" + vargc + "] " + vargv[0]);
+	print("Arg[" + vargv.len() + "] " + vargv[0]);
 	local cs = player.cs.findcspath(vargv[0]);
 	local transit = true;
-	if(1 < vargc){
+	if(1 < vargv.len()){
 		if(bool(vargv[1]))
 			transit = false;
 		print("Transit " + bool(vargv[1]));
@@ -402,7 +402,7 @@ register_console_command("coordsys", function(...){
 });
 
 register_console_command("position", function(...){
-	if(vargc < 3){
+	if(vargv.len() < 3){
 		print(player.getpos());
 		return;
 	}
@@ -410,7 +410,7 @@ register_console_command("position", function(...){
 });
 
 register_console_command("velocity", function(...){
-	if(vargc < 3){
+	if(vargv.len() < 3){
 		print(player.getvelo());
 		return;
 	}
@@ -424,7 +424,7 @@ register_console_command("halt", function(...){
 });
 
 register_console_command("moveto", function(...){
-	if(vargc < 3){
+	if(vargv.len() < 3){
 		print("Usage: moveto x y z");
 		return;
 	}
@@ -463,7 +463,7 @@ register_console_command("sqcmdlist", function(...){
 groups <- {}
 
 register_console_command("setgroup", function(...){
-	if(vargc < 1){
+	if(vargv.len() < 1){
 		print("Usage: setgroup groupid");
 		return;
 	}
@@ -476,7 +476,7 @@ register_console_command("setgroup", function(...){
 });
 
 register_console_command("recallgroup", function(...){
-	if(vargc < 1){
+	if(vargv.len() < 1){
 		print("Usage: recallgroup groupid");
 		return;
 	}
@@ -489,7 +489,7 @@ register_console_command("recallgroup", function(...){
 });
 
 register_console_command("showgroup", function(...){
-	if(vargc == 0){
+	if(vargv.len() == 0){
 		foreach(key, group in groups){
 			print("group " + key + " count: " + group.len());
 		}
@@ -543,7 +543,7 @@ register_console_command("disoblate", function(){
 
 register_console_command("typecs", function(...){
 	local cs;
-	if(vargc == 0)
+	if(vargv.len() == 0)
 		cs = player.cs;
 	else{
 		cs = player.cs.findcspath(vargv[0]);
@@ -573,7 +573,7 @@ register_console_command("matchcs", function(...){
 		}
 	};
 	local pat = "";
-	if(vargc == 0)
+	if(vargv.len() == 0)
 		pat = "";
 	else
 		pat = vargv[0];
@@ -654,7 +654,7 @@ bookmarks <- {
 
 /// Recall a bookmark instantly.
 register_console_command("jump_bookmark", function(...){
-	if(vargc < 1){
+	if(vargv.len() < 1){
 		print("Usage: jump_bookmark bookmark_name");
 		return;
 	}
@@ -685,7 +685,7 @@ register_console_command("bookmarks", function(){
 
 	for(local i = 0; i < names.len(); i++){
 		local entry = names[i];
-		menu.addItem(entry[0], function():(entry){
+		menu.addItem(entry[0], function()/*:(entry)*/{
 			local item = entry[1];
 			local newcs = item.cs();
 			if(newcs != null){
@@ -748,7 +748,7 @@ stellarContext <- {
 ::CoordSys.readFile[0] = function(cs, varlist, name, ...){
 
 	// Define temporary function that take varlist as a free variable.
-	local eval = function(s):(varlist){
+	local eval = function(s)/*:(varlist)*/{
 		return compilestring("return (" + s + ")").call(varlist);
 	};
 
@@ -756,9 +756,9 @@ stellarContext <- {
 		if(::bookmarks == null)
 			::bookmarks <- {};
 		local item = BookmarkCoordSys(cs);
-		item.pos = Vec3d(1 < vargc ? eval(vargv[1]).tofloat() : 0, 2 < vargc ? eval(vargv[2]).tofloat() : 0, 3 < vargc ? eval(vargv[3]).tofloat() : 0);
-		item.rot = 4 < vargc ? eval(vargv[4]) : Quatd(0,0,0,1);
-		if(0 < vargc){
+		item.pos = Vec3d(1 < vargv.len() ? eval(vargv[1]).tofloat() : 0, 2 < vargv.len() ? eval(vargv[2]).tofloat() : 0, 3 < vargv.len() ? eval(vargv[3]).tofloat() : 0);
+		item.rot = 4 < vargv.len() ? eval(vargv[4]) : Quatd(0,0,0,1);
+		if(0 < vargv.len()){
 			print(vargv[0] + ": " + item);
 			::bookmarks[vargv[0]] <- item;
 		}
@@ -798,7 +798,7 @@ stellarContext <- {
 ::cslabelpat <- "";
 
 register_console_command("cslabel", function(...){
-	if(vargc == 0){
+	if(vargv.len() == 0){
 		print("cslabel: " + ::cslabelpat);
 		return;
 	}
@@ -869,7 +869,7 @@ mainmenu <- GLWbigMenu();
 function loadmission(script){
 	mainmenu.close();
 	print("loading " + script);
-	local ret = timemeas(function():(script){return loadfile(script);});
+	local ret = timemeas(function()/*:(script)*/{return loadfile(script);});
 	print("compile time " + ret.time);
 	local exe = ret.result;
 	if(exe == null){

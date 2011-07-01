@@ -108,7 +108,7 @@ int sqa_console_command(int argc, char *argv[], int *retval){
 	}
 
 	// Assume returned value integer.
-	int retint;
+	SQInteger retint;
 	if(SQ_SUCCEEDED(sq_getinteger(v, -1, &retint))){
 		*retval = retint;
 		return 2;
@@ -402,8 +402,10 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 		return SQ_ERROR;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("race"))){
-		if(SQ_FAILED(sq_getinteger(v, 3, &p->race)))
+		SQInteger retint;
+		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
 			return SQ_ERROR;
+		p->race = int(retint);
 		return 0;
 	}
 	else
@@ -1193,10 +1195,10 @@ template<void (__stdcall *fp)()> SQInteger sqf_adapter0(HSQUIRRELVM v){
 }*/
 
 template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
-	GLenum a0;
-	if(SQ_FAILED(sq_getinteger(v, 2, (int*)&a0)))
+	SQInteger a0;
+	if(SQ_FAILED(sq_getinteger(v, 2, &a0)))
 		return sq_throwerror(v, _SC("The first argument must be integer"));
-	fp(a0);
+	fp(GLenum(a0));
 	return 0;
 }
 
@@ -1348,7 +1350,7 @@ void sqa_init(HSQUIRRELVM *pv){
 
 	sqstd_seterrorhandlers(v);
 
-	sq_setprintfunc(v, sqf_print); //sets the print function
+	sq_setprintfunc(v, sqf_print, sqf_print); //sets the print function
 
 	// Set object table for weak referencing.
 	// This table resides in registry table, which normally cannot be reached by script codes,

@@ -998,7 +998,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 				throw sqa::SQFError(_SC("readFile function could not be called"));
 
 			// Assume returned value integer.
-			int retint;
+			SQInteger retint;
 			if(SQ_SUCCEEDED(sq_getinteger(v, -1, &retint)) && retint != 0)
 				return true;
 		}

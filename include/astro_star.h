@@ -32,7 +32,7 @@ public:
 	static Vec3<float> spectralHSB(SpectralType);
 	static Vec3<float> spectralRGB(SpectralType);
 protected:
-	static int sqf_get(HSQUIRRELVM v);
+	static SQInteger sqf_get(HSQUIRRELVM v);
 };
 
 #endif

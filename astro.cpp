@@ -586,7 +586,7 @@ void Star::unserialize(UnserializeContext &sc){
 
 const ClassRegister<Star> Star::classRegister("Star", sq_define);
 
-int Star::sqf_get(HSQUIRRELVM v){
+SQInteger Star::sqf_get(HSQUIRRELVM v){
 	Star *p;
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);

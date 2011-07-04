@@ -7,6 +7,8 @@
 #include "ysdnmmot.h"
 
 
+struct btCompoundShape;
+
 /// ReZEL
 class ReZEL : public Entity{
 public:
@@ -63,6 +65,8 @@ protected:
 	float fsabre; ///< Sabre swing phase
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	float freload; ///< Reload phase
+	float fonfeet; ///< Factor of on-feetness
+	float walkphase; ///< Walk phase
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
 	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
@@ -71,9 +75,11 @@ protected:
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[8];
+	static ysdnm_motion *motions[9];
 	static const double reloadTime;
 	static const int magazineSize[3];
+	static btCompoundShape *shape;
+	static btCompoundShape *waveRiderShape;
 	void getMotionTime(double (*motion_time)[numof(motions)]);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
@@ -116,6 +122,8 @@ public:
 	virtual double maxfuel()const;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
+	static hitbox waveRiderHitboxes[];
+	static const int nWaveRiderHitboxes;
 //	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);

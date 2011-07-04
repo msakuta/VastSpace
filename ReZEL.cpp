@@ -80,9 +80,14 @@ Entity::Dockable *ReZEL::toDockable(){return this;}
 
 // Height 20.5m
 struct hitbox ReZEL::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .003)),
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .004)),
 };
 const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);
+
+struct hitbox ReZEL::waveRiderHitboxes[] = {
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .005, .005)),
+};
+const int ReZEL::nWaveRiderHitboxes = numof(ReZEL::waveRiderHitboxes);
 
 
 /*static const struct hitbox sceptor_hb[] = {
@@ -171,7 +176,9 @@ ReZEL::ReZEL() : mother(NULL), paradec(-1),
 	twist(0.f),
 	pitch(0.f),
 	freload(0.f),
-	fsabre(0.f)
+	fsabre(0.f),
+	fonfeet(0.f),
+	walkphase(0.f)
 {
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
@@ -203,6 +210,8 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	evelo(vec3_000),
 	attitude(Passive),
 	fsabre(0.f),
+	fonfeet(0.f),
+	walkphase(0.f),
 	stabilizer(true)
 {
 	muzzleFlash[0] = 0.;
@@ -242,9 +251,9 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Vec3d ofs;
 	static const Vec3d src[4] = {
 		Vec3d(0., .001, -.002),
-		Vec3d(0., .012,  .022),
-		Vec3d(0., .013,  .022),
-		Vec3d(0.008, .007,  .010),
+		Vec3d(0., .012,  .025),
+		Vec3d(0., .013,  .025),
+		Vec3d(0.008, .007,  .013),
 	};
 	Mat4d mat;
 	Player *pl = w->getPlayer();
@@ -637,11 +646,13 @@ Entity *ReZEL::findMother(){
 	return pm;
 }
 
+btCompoundShape *ReZEL::shape = NULL;
+btCompoundShape *ReZEL::waveRiderShape = NULL;
+
 void ReZEL::enterField(WarField *target){
 	WarSpace *ws = *target;
 	if(ws && ws->bdw){
 		if(!bbody){
-			static btCompoundShape *shape = NULL;
 			if(!shape){
 				shape = new btCompoundShape();
 				for(int i = 0; i < nhitboxes; i++){
@@ -651,6 +662,17 @@ void ReZEL::enterField(WarField *target){
 					btBoxShape *box = new btBoxShape(btvc(sc));
 					btTransform trans = btTransform(btqc(rot), btvc(pos));
 					shape->addChildShape(trans, box);
+				}
+			}
+			if(!waveRiderShape){
+				waveRiderShape = new btCompoundShape();
+				for(int i = 0; i < nWaveRiderHitboxes; i++){
+					const Vec3d &sc = waveRiderHitboxes[i].sc;
+					const Quatd &rot = waveRiderHitboxes[i].rot;
+					const Vec3d &pos = waveRiderHitboxes[i].org;
+					btBoxShape *box = new btBoxShape(btvc(sc));
+					btTransform trans = btTransform(btqc(rot), btvc(pos));
+					waveRiderShape->addChildShape(trans, box);
 				}
 			}
 			btTransform startTransform;
@@ -802,6 +824,8 @@ void ReZEL::anim(double dt){
 //	if(pm)
 //		pt->race = pm->race;
 
+	bool floorTouched = false;
+
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
 		bool controlled = controller;
@@ -815,6 +839,73 @@ void ReZEL::anim(double dt){
 		// Clear inputs when not controlled
 		if(!controlled)
 			pt->inputs.press = 0;
+
+		btRigidBody *worldBody = ws->worldBody();
+		double elevation = 0; // Cosine of angle of elevation relative to local acceleration
+
+		// Check if we are touching the ground.
+		if(worldBody){
+			Vec3d accel = w->accel(pos, velo);
+			btVector3 btaccel = btvc(accel);
+
+			// Query all contact pairs to find out if this object and the world's floor face is in contact.
+			int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
+			for (int i=0;i<numManifolds;i++)
+			{
+				btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
+				btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+				btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+
+				if(obA != bbody && obB != bbody)
+					continue;
+			
+				int numContacts = contactManifold->getNumContacts();
+				for (int j=0;j<numContacts;j++)
+				{
+					btManifoldPoint& pt = contactManifold->getContactPoint(j);
+					if (pt.getDistance()<0.f)
+					{
+						const btVector3& ptA = pt.getPositionWorldOnA();
+						const btVector3& ptB = pt.getPositionWorldOnB();
+						const btVector3& normalOnB = pt.m_normalWorldOnB;
+
+						// Assume static objects to be parts of the world.
+						if(obA->isStaticObject() && obB == bbody && 0 < normalOnB.dot(btaccel) || obA == bbody && obB->isStaticObject() && normalOnB.dot(btaccel) < 0){
+							floorTouched = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if(floorTouched){
+
+				// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
+				if(DBL_EPSILON < accel.slen()){
+					Vec3d downDir = accel.norm();
+					elevation = rot.trans(Vec3d(0,0,-1)).sp(downDir);
+					double uprightness = rot.trans(Vec3d(0,1,0)).sp(downDir);
+
+					// If we are lying or going to lay down on the floor, try to stand up.
+					if(-.5 < uprightness)
+						standingUp = true;
+				}
+			}
+		}
+
+		if(standingUp && controlled){
+			Vec3d accel = w->accel(pos, velo);
+
+			// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
+			if(DBL_EPSILON < accel.slen()){
+				Vec3d downDir = accel.norm();
+				bbody->applyTorque(btvc(-rot.trans(Vec3d(0,1,0)).vp(downDir) / bbody->getInvMass() * 6e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 3e-4);
+				if(rot.trans(Vec3d(0,1,0)).sp(downDir) < -.99)
+					standingUp = false;
+			}
+			else
+				standingUp = false;
+		}
 
 		if(false/*pf->docked*/);
 		else if(p->task == Undockque){
@@ -925,59 +1016,6 @@ void ReZEL::anim(double dt){
 				}
 			}
 			else if(!controlled) do{
-				btRigidBody *worldBody = ws->worldBody();
-				double elevation = 0; // Cosine of angle of elevation relative to local acceleration
-
-				// Check if we are touching the ground.
-				if(worldBody){
-					Vec3d accel = w->accel(pos, velo);
-					btVector3 btaccel = btvc(accel);
-					bool touched = false;
-
-					// Query all contact pairs to find out if this object and the world's floor face is in contact.
-					int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
-					for (int i=0;i<numManifolds;i++)
-					{
-						btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
-						btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-						btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
-
-						if(obA != bbody && obB != bbody)
-							continue;
-					
-						int numContacts = contactManifold->getNumContacts();
-						for (int j=0;j<numContacts;j++)
-						{
-							btManifoldPoint& pt = contactManifold->getContactPoint(j);
-							if (pt.getDistance()<0.f)
-							{
-								const btVector3& ptA = pt.getPositionWorldOnA();
-								const btVector3& ptB = pt.getPositionWorldOnB();
-								const btVector3& normalOnB = pt.m_normalWorldOnB;
-
-								// Assume static objects to be parts of the world.
-								if(obA->isStaticObject() && obB == bbody && 0 < normalOnB.dot(btaccel) || obA == bbody && obB->isStaticObject() && normalOnB.dot(btaccel) < 0){
-									touched = true;
-									break;
-								}
-							}
-						}
-					}
-
-					if(touched){
-
-						// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
-						if(DBL_EPSILON < accel.slen()){
-							Vec3d downDir = accel.norm();
-							elevation = rot.trans(Vec3d(0,0,-1)).sp(downDir);
-							double uprightness = rot.trans(Vec3d(0,1,0)).sp(downDir);
-
-							// If we are lying or going to lay down on the floor, try to stand up.
-							if(-.5 < uprightness)
-								standingUp = true;
-						}
-					}
-				}
 
 				if(standingUp){
 					Vec3d accel = w->accel(pos, velo);
@@ -1333,6 +1371,40 @@ void ReZEL::anim(double dt){
 			if(inputs.analog[1] != 0)
 				bbody->applyTorque(btvc(inputs.analog[1] * mat.vec3(0) * torqueAmount));
 		}
+		else if(0 < fonfeet){
+			const double maxspeed = .03;
+			btScalar lateral = (inputs.press & PL_A ? -1 : 0) + (inputs.press & PL_D ? 1 : 0);
+			btScalar frontal = (inputs.press & PL_W ? -1 : 0) + (inputs.press & PL_S ? 1 : 0);
+
+			// Normalize if we are heading diagonal direction.
+			if(lateral && frontal){
+				lateral /= (lateral * lateral + frontal * frontal);
+				frontal /= (lateral * lateral + frontal * frontal);
+			}
+
+			btScalar lvelo(0);
+			if(1){
+				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(0);
+				lvelo = bbody->getLinearVelocity().dot(v);
+				bbody->applyCentralForce(v.normalize() * (lateral * maxspeed - lvelo) / bbody->getInvMass());
+				twist = approach(twist, lateral * M_PI / 2., M_PI / 2. * dt, 0);
+			}
+			if(1){
+				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(2);
+				btScalar svelo = bbody->getLinearVelocity().dot(v);
+				bbody->applyCentralForce(v.normalize() * (frontal * maxspeed - svelo) / bbody->getInvMass());
+				walkphase = (walkphase + (-svelo + fabs(lvelo)) / maxspeed * dt);
+				walkphase -= floor(walkphase); // Normalize
+			}
+			btScalar yaw = (inputs.press & PL_4 ? 1 : 0) + (inputs.press & PL_6 ? -1 : 0);
+			bbody->applyTorque(btvc((2 * yaw - 2e1 * bbody->getWorldTransform().getBasis().getColumn(1).dot(bbody->getAngularVelocity()) / bbody->getInvInertiaDiagLocal().y()) * mat.vec3(1) * torqueAmount));
+			if(pt->inputs.press & PL_8){
+				bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_2){
+				bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
+			}
+		}
 		else{
 			if(pt->inputs.press & PL_A){
 				bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
@@ -1461,6 +1533,8 @@ void ReZEL::anim(double dt){
 				space_collide(pt, ws, dt, collideignore, NULL);*/
 		}
 //		pt->pos += pt->velo * dt;
+
+		fonfeet = approach(fonfeet, floorTouched, dt, 0);
 
 		fcloak = approach(fcloak, p->cloak, dt, 0.);
 		fwaverider = approach(fwaverider, waverider, dt, 0.);
@@ -1730,6 +1804,8 @@ bool ReZEL::command(EntityCommand *com){
 	}*/
 	else if(TransformCommand *tc = InterpretCommand<TransformCommand>(com)){
 		waverider = !!tc->formid;
+		if(bbody)
+			bbody->setCollisionShape(waverider ? waveRiderShape : shape);
 	}
 	else if(WeaponCommand *wc = InterpretCommand<WeaponCommand>(com)){
 		weapon = wc->weaponid;

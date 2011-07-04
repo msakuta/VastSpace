@@ -79,18 +79,19 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[8];
+ysdnm_motion *ReZEL::motions[9];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 //	double motion_time1[numof(motions)] = {
 		(*motion_time)[0] = 10. * fwaverider,
-		(*motion_time)[1] = 10. * (1. - fwaverider),
+		(*motion_time)[1] = 10. * (1. - fwaverider) * (1. - fonfeet),
 		(*motion_time)[2] = 10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.),
 		(*motion_time)[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 		(*motion_time)[4] = (-twist * (1. - fwaverider) + 1.) * 10.,
 		(*motion_time)[5] = (-pitch * (1. - fwaverider) + 1.) * 10.,
 		(*motion_time)[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
-		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
+		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
+		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * (walkphase * 7 + 1.) : 10. * (1. - fwaverider) * fonfeet;
 //	};
 //	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -130,6 +131,7 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
 		motions[6] = YSDNM_MotionLoad("gundam/models/ReZEL_reload.mot");
 		motions[7] = YSDNM_MotionLoad("gundam/models/ReZEL_sabre.mot");
+		motions[8] = YSDNM_MotionLoad("gundam/models/ReZEL_walk.mot");
 
 		init.create(*openGLState);
 	} while(0);

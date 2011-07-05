@@ -170,7 +170,9 @@ double ReZEL::maxhealth()const{
 
 
 
-ReZEL::ReZEL() : mother(NULL), paradec(-1),
+ReZEL::ReZEL() : 
+	mother(NULL),
+	paradec(-1),
 	vulcancooldown(0.f),
 	vulcanmag(magazineSize[2]),
 	twist(0.f),
@@ -251,8 +253,8 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Vec3d ofs;
 	static const Vec3d src[4] = {
 		Vec3d(0., .001, -.002),
-		Vec3d(0., .012,  .025),
-		Vec3d(0., .013,  .025),
+		Vec3d(0., .018,  .035),
+		Vec3d(0., .018,  .035),
 		Vec3d(0.008, .007,  .013),
 	};
 	Mat4d mat;
@@ -1363,6 +1365,8 @@ void ReZEL::anim(double dt){
 #endif
 		}
 
+		Vec3d desiredAccel = mat.vec3(2) * throttle;
+
 		static const double torqueAmount = .1;
 		bbody->activate(true);
 		if(inputs.analog[0] != 0 || inputs.analog[1] != 0){
@@ -1383,13 +1387,13 @@ void ReZEL::anim(double dt){
 			}
 
 			btScalar lvelo(0);
-			if(1){
+			{
 				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(0);
 				lvelo = bbody->getLinearVelocity().dot(v);
 				bbody->applyCentralForce(v.normalize() * (lateral * maxspeed - lvelo) / bbody->getInvMass());
 				twist = approach(twist, lateral * M_PI / 2., M_PI / 2. * dt, 0);
 			}
-			if(1){
+			{
 				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(2);
 				btScalar svelo = bbody->getLinearVelocity().dot(v);
 				bbody->applyCentralForce(v.normalize() * (frontal * maxspeed - svelo) / bbody->getInvMass());
@@ -1406,26 +1410,55 @@ void ReZEL::anim(double dt){
 			}
 		}
 		else{
-			if(pt->inputs.press & PL_A){
-				bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
+/*			if(inputs.press & PL_W)
+				p->throttle = MIN(throttle + dt, 1.);
+			if(inputs.press & PL_S)
+				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted*/
+
+			const double maxspeed = .2;
+			btScalar lateral = (inputs.press & PL_A ? -1 : 0) + (inputs.press & PL_D ? 1 : 0);
+			btScalar frontal = (inputs.press & PL_W ? -1 : 0) + (inputs.press & PL_S ? 1 : 0);
+
+			btScalar lvelo(0);
+			if(lateral){ // lateral thrust (leftward or rightward)
+				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(0);
+				lvelo = bbody->getLinearVelocity().dot(v);
+				/*bbody->applyCentralForce*/ desiredAccel += btvc(v.normalize() * .1 * (lateral * maxspeed - lvelo) / bbody->getInvMass());
 			}
-			if(pt->inputs.press & PL_D){
-				bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
+			if(frontal){ // frontal thrust (forward or backward)
+				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(2);
+				btScalar svelo = bbody->getLinearVelocity().dot(v);
+				/*bbody->applyCentralForce*/ desiredAccel += btvc(v.normalize() * .1 * (frontal * maxspeed - svelo) / bbody->getInvMass());
 			}
-			if(pt->inputs.press & PL_W){
+
+			if(pt->inputs.press & PL_8){
 				bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
 			}
-			if(pt->inputs.press & PL_S){
+			if(pt->inputs.press & PL_2){
 				bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_4){
+				bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_6){
+				bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_7){
+				bbody->applyTorque(btvc(mat.vec3(2) * torqueAmount));
+			}
+			if(pt->inputs.press & PL_9){
+				bbody->applyTorque(btvc(-mat.vec3(2) * torqueAmount));
 			}
 		}
 
-		if(controlled){
-			p->throttle = approach(throttle, inputs.analog[3], dt, 0.);
-			if(inputs.press & PL_Q)
-				p->throttle = MIN(throttle + dt, 1.);
-			if(inputs.press & PL_Z)
-				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
+		{ // vertical thrust (upward and downward)
+			const double maxspeed = .2;
+			btScalar vertical = (inputs.press & PL_Z ? -1 : 0) + (inputs.press & PL_Q ? 1 : 0);
+			if(vertical){
+				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(1);
+				btScalar svelo = bbody->getLinearVelocity().dot(v);
+				/*bbody->applyCentralForce*/ desiredAccel += btvc(v.normalize() * .1 * (vertical * maxspeed - svelo) / bbody->getInvMass());
+			}
 		}
 
 		if(stabilizer){
@@ -1440,10 +1473,10 @@ void ReZEL::anim(double dt){
 					throttle = 1. - speed / maxvelo;
 			}
 
-			{
+/*			{
 				btVector3 btvelo = bbody->getLinearVelocity();
 				bbody->applyCentralForce(-btvelo * mass * .1);
-			}
+			}*/
 
 			// Suppress rotation if it's not intensional.
 			if(!(pt->inputs.press & (PL_A | PL_D | PL_W | PL_S))){
@@ -1465,19 +1498,29 @@ void ReZEL::anim(double dt){
 
 		{
 			// Half the top acceleration if not transformed
-			double consump = dt * (fabs(pf->throttle / (2. - fwaverider)) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
+			double desiredAccelLen = desiredAccel.len();
+			double consump = dt * (desiredAccelLen + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			if(p->fuel <= consump){
 				if(.05 < pf->throttle)
 					pf->throttle = .05;
 				if(p->cloak)
 					p->cloak = 0;
 				p->fuel = 0.;
+
+				// Capped by max capability times 0.05
+				if(.05 < desiredAccelLen)
+					desiredAccel *= .05 / desiredAccelLen;
 			}
 			else
 				p->fuel -= consump;
-			double spd = consump * (p->task != Attack ? .01 : .005);
-			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.));
-			bbody->applyCentralImpulse(btvc(acc * spd * 10. * mass));
+
+			// fuel is constantly regained by the aid of fusion reactor.
+			fuel = approach(fuel, maxfuel(), 10. * dt, 0.);
+
+			double spd = (controlled ? .025 : p->task != Attack ? .01 : .005);
+//			Vec3d acc = (this->rot.rotate(thrustvector * M_PI / 2., /*this->rot.trans*/(Vec3d(1,0,0)))).trans(Vec3d(0., 0., -1.));
+			Vec3d acc = desiredAccel;
+			bbody->applyCentralImpulse(btvc(acc * spd * .001 * mass));
 //			pt->velo += acc * spd;
 		}
 
@@ -1785,7 +1828,7 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 #endif
 
 double ReZEL::maxfuel()const{
-	return 600.;
+	return 200.;
 }
 
 bool ReZEL::command(EntityCommand *com){

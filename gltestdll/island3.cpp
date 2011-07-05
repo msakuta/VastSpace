@@ -3019,16 +3019,40 @@ Island3WarSpace::Island3WarSpace(CoordSys *cs) : st(cs), bbody(NULL){
 	if(bdw){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
-			const int cuts = 64;
 			shape = new btCompoundShape();
-			for(int i = 0; i < cuts; i++){
-				const Vec3d sc(.5, ISLAND3_HALFLEN, .5);
-				const Quatd rot = Quatd::rotation(2 * M_PI * i / cuts, 0, 1, 0);
-				const Vec3d pos = rot.trans(Vec3d(0, 0, ISLAND3_INRAD + .5 - .001));
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
+
+			static const double radius[2][2] = {
+				{.2 + ISLAND3_RAD / 2., .2 + ISLAND3_RAD / 2.},
+				{ISLAND3_GRAD + .5 - .001, ISLAND3_INRAD + .5 - .001},
+			};
+			static const double thickness[2] = {
+				ISLAND3_RAD / 2.,
+				.5,
+			};
+			static const double widths[2] = {
+				.13 * 8,
+				.13,
+			};
+			static const double lengths[2][2] = {
+				{-ISLAND3_HALFLEN - ISLAND3_RAD, -ISLAND3_HALFLEN},
+				{-ISLAND3_HALFLEN, ISLAND3_HALFLEN},
+			};
+			static const int cuts_n[2] = {12, 96};
+
+			for(int n = 0; n < 2; n++){
+				const int cuts = cuts_n[n];
+				for(int i = 0; i < cuts; i++){
+					const Vec3d sc(widths[n], (lengths[n][1] - lengths[n][0]) / 2., thickness[n]);
+					const Quatd rot = Quatd::rotation(2 * M_PI * (i + .5) / cuts, 0, 1, 0);
+					const Vec3d pos = rot.trans(Vec3d(0, (lengths[n][1] + lengths[n][0]) / 2., radius[n][(i + cuts / 12) % (cuts / 3) < cuts / 6]));
+					btBoxShape *box = new btBoxShape(btvc(sc));
+					btTransform trans = btTransform(btqc(rot), btvc(pos));
+					shape->addChildShape(trans, box);
+				}
 			}
+
+			btBoxShape *endbox = new btBoxShape(btVector3(ISLAND3_RAD, ISLAND3_RAD / 2., ISLAND3_RAD));
+			shape->addChildShape(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, ISLAND3_HALFLEN + ISLAND3_RAD / 2., 0)), endbox);
 		}
 		btTransform startTransform;
 		startTransform.setIdentity();

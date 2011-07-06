@@ -80,7 +80,7 @@ Entity::Dockable *ReZEL::toDockable(){return this;}
 
 // Height 20.5m
 struct hitbox ReZEL::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .004)),
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .005)),
 };
 const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);
 
@@ -827,6 +827,7 @@ void ReZEL::anim(double dt){
 //		pt->race = pm->race;
 
 	bool floorTouched = false;
+	bool floorProximity = false;
 
 	if(0 < pt->health){
 //		double oldyaw = pt->pyr[1];
@@ -842,45 +843,67 @@ void ReZEL::anim(double dt){
 		if(!controlled)
 			pt->inputs.press = 0;
 
-		btRigidBody *worldBody = ws->worldBody();
+//		btRigidBody *worldBody = ws->worldBody();
 		double elevation = 0; // Cosine of angle of elevation relative to local acceleration
+		Vec3d accel = w->accel(pos, velo);
+		btVector3 btaccel = btVector3(btvc(accel));
+		btVector3 btdown = btaccel.normalized();
 
 		// Check if we are touching the ground.
-		if(worldBody){
-			Vec3d accel = w->accel(pos, velo);
-			btVector3 btaccel = btvc(accel);
+		if(!btaccel.isZero()) do{
+			const btVector3 &btpos = bbody->getWorldTransform().getOrigin();
+			const btVector3 &from = btpos;
+			const btVector3 &btvelo = bbody->getLinearVelocity();
+			btScalar closingSpeed = btvelo.dot(btdown);
+			const btVector3 to = btpos + btaccel.normalized() * (closingSpeed < .05 ? .05 : closingSpeed);
+
+			btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
+
+			ws->bdw->rayTest(from, to, rayCallback);
+
+			if(rayCallback.hasHit()){
+				btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+				if(body && body->hasContactResponse() && body->isStaticObject()){
+					floorProximity = true;
+					btScalar hitDistance = (rayCallback.m_hitPointWorld - from).dot(btaccel.normalized());
+					if(hitDistance < .02)
+						floorTouched = true;
+				}
+			}
 
 			// Query all contact pairs to find out if this object and the world's floor face is in contact.
-			int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
-			for (int i=0;i<numManifolds;i++)
-			{
-				btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
-				btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-				btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
-
-				if(obA != bbody && obB != bbody)
-					continue;
-			
-				int numContacts = contactManifold->getNumContacts();
-				for (int j=0;j<numContacts;j++)
+			if(!floorTouched){
+				int numManifolds = ws->bdw->getDispatcher()->getNumManifolds();
+				for (int i=0;i<numManifolds;i++)
 				{
-					btManifoldPoint& pt = contactManifold->getContactPoint(j);
-					if (pt.getDistance()<0.f)
-					{
-						const btVector3& ptA = pt.getPositionWorldOnA();
-						const btVector3& ptB = pt.getPositionWorldOnB();
-						const btVector3& normalOnB = pt.m_normalWorldOnB;
+					btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
+					btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+					btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
 
-						// Assume static objects to be parts of the world.
-						if(obA->isStaticObject() && obB == bbody && 0 < normalOnB.dot(btaccel) || obA == bbody && obB->isStaticObject() && normalOnB.dot(btaccel) < 0){
-							floorTouched = true;
-							break;
+					if(obA != bbody && obB != bbody)
+						continue;
+				
+					int numContacts = contactManifold->getNumContacts();
+					for (int j=0;j<numContacts;j++)
+					{
+						btManifoldPoint& pt = contactManifold->getContactPoint(j);
+						if (pt.getDistance()<0.f)
+						{
+							const btVector3& ptA = pt.getPositionWorldOnA();
+							const btVector3& ptB = pt.getPositionWorldOnB();
+							const btVector3& normalOnB = pt.m_normalWorldOnB;
+
+							// Assume static objects to be parts of the world.
+							if(obA->isStaticObject() && obB == bbody && 0 < normalOnB.dot(btaccel) || obA == bbody && obB->isStaticObject() && normalOnB.dot(btaccel) < 0){
+								floorTouched = true;
+								break;
+							}
 						}
 					}
 				}
 			}
 
-			if(floorTouched){
+			if(floorProximity){
 
 				// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
 				if(DBL_EPSILON < accel.slen()){
@@ -888,21 +911,33 @@ void ReZEL::anim(double dt){
 					elevation = rot.trans(Vec3d(0,0,-1)).sp(downDir);
 					double uprightness = rot.trans(Vec3d(0,1,0)).sp(downDir);
 
-					// If we are lying or going to lay down on the floor, try to stand up.
-					if(-.5 < uprightness)
+					// Try to stand up no matter how you are upright.
+					if(-.95 < uprightness)
 						standingUp = true;
 				}
 			}
-		}
+		} while(0);
+
+		bbody->setFriction(floorTouched ? 0.05 : .5);
 
 		if(standingUp && controlled){
-			Vec3d accel = w->accel(pos, velo);
+			if(!btaccel.isZero()){
+				const btVector3 &btOmega = bbody->getAngularVelocity();
 
-			// If some acceleration, no matter gravitational or artificial, is present, we ought to stand againt it.
-			if(DBL_EPSILON < accel.slen()){
-				Vec3d downDir = accel.norm();
-				bbody->applyTorque(btvc(-rot.trans(Vec3d(0,1,0)).vp(downDir) / bbody->getInvMass() * 6e-4) - bbody->getAngularVelocity() / bbody->getInvMass() * 3e-4);
-				if(rot.trans(Vec3d(0,1,0)).sp(downDir) < -.99)
+				// Allow rotation around vertical axis by ignoring vertical component of the angular velocity.
+				btVector3 lateralOmega = btOmega - btdown.dot(btOmega) * btdown;
+				const btVector3 up = bbody->getWorldTransform().getBasis().getColumn(1);
+
+				// We need to invert the tensor to determine which torque is required to get the head up.
+				btMatrix3x3 inertiaTensor = bbody->getInvInertiaTensorWorld().inverse();
+				bbody->applyTorque(btvc(-up.cross(btdown) * inertiaTensor * (6e-4 * 5e4)) - lateralOmega * inertiaTensor * 1e+1);
+
+				// Directly modifying rotation transformation should be more stable (but cannot handle collisions, etc. correctly),
+				// but the fact is that it didn't work.
+//				bbody->setWorldTransform(btTransform(bbody->getWorldTransform().getRotation() * btQuaternion(-up.cross(btdown), dt), bbody->getWorldTransform().getOrigin()));
+
+				// Quit stanging up only if we're really upright and stable.
+				if(up.dot(btdown) < -.99 && lateralOmega.length2() < .05 * .05)
 					standingUp = false;
 			}
 			else
@@ -1382,8 +1417,9 @@ void ReZEL::anim(double dt){
 
 			// Normalize if we are heading diagonal direction.
 			if(lateral && frontal){
-				lateral /= (lateral * lateral + frontal * frontal);
-				frontal /= (lateral * lateral + frontal * frontal);
+				double normalizer = sqrt(lateral * lateral + frontal * frontal);
+				lateral /= normalizer;
+				frontal /= normalizer;
 			}
 
 			btScalar lvelo(0);
@@ -1461,7 +1497,7 @@ void ReZEL::anim(double dt){
 			}
 		}
 
-		if(stabilizer){
+		if(stabilizer && !fonfeet){
 			/* you're not allowed to accel further than certain velocity. */
 			const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
 			if(maxvelo < speed)
@@ -1479,7 +1515,7 @@ void ReZEL::anim(double dt){
 			}*/
 
 			// Suppress rotation if it's not intensional.
-			if(!(pt->inputs.press & (PL_A | PL_D | PL_W | PL_S))){
+			if(!(pt->inputs.press & (PL_4 | PL_6 | PL_8 | PL_2 | PL_7 | PL_9))){
 				btVector3 btomg = bbody->getAngularVelocity();
 //				if(ws)
 //					btomg += btvc(ws->orientation(pos).trans(vec3_010).vp(rot.trans(vec3_010)) * .2);

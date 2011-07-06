@@ -75,7 +75,7 @@ protected:
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[9];
+	static ysdnm_motion *motions[10];
 	static const double reloadTime;
 	static const int magazineSize[3];
 	static btCompoundShape *shape;

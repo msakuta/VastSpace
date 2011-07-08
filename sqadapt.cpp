@@ -1341,6 +1341,15 @@ static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, const CoordSys::Stati
 	clset.insert(s.sq_define);
 }
 
+static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, Entity::EntityStatic &s){
+	if(s.st())
+		traceParent(v, clset, *s.st());
+//	if(clset.find(&s.sq_define) != clset.end())
+//		return;
+	s.sq_define(v);
+//	clset.insert(s.sq_define);
+}
+
 void sqa_init(HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
@@ -1444,6 +1453,14 @@ void sqa_init(HSQUIRRELVM *pv){
 	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().begin();
 	for(; it != CoordSys::ctormap().end(); it++){
 		traceParent(v, clset, *it->second);
+	}
+
+	// Define all Entity-derived classes.
+	{
+		Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin();
+		for(; it != Entity::constEntityCtorMap().end(); it++){
+			traceParent(v, clset, *it->second);
+		}
 	}
 
 	// Define class Entity

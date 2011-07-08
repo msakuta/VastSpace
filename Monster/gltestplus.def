@@ -61,6 +61,7 @@ EXPORTS
 	sq_getthread
 	sq_getuserpointer
 	sq_getuserdata
+	sq_getstring
 	sq_settypetag
 	sq_gettypetag
 	sq_setreleasehook

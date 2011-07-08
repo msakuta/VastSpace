@@ -12,7 +12,8 @@ public:
 	RStation(WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid, entid;
+	static const unsigned classid;
+	static EntityRegister<RStation> entityRegister;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

@@ -3026,7 +3026,7 @@ Island3WarSpace::Island3WarSpace(CoordSys *cs) : st(cs), bbody(NULL){
 				{ISLAND3_GRAD + .5 - .001, ISLAND3_INRAD + .5 - .001},
 			};
 			static const double thickness[2] = {
-				ISLAND3_RAD / 2.,
+				ISLAND3_RAD / 2. + .009,
 				.5,
 			};
 			static const double widths[2] = {

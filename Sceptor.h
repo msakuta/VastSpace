@@ -72,7 +72,8 @@ public:
 	Sceptor(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<Sceptor> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;

@@ -103,7 +103,7 @@ const char *ContainerHead::classname()const{
 }
 
 const unsigned ContainerHead::classid = registerClass("ContainerHead", Conster<ContainerHead>);
-const unsigned ContainerHead::entityid = registerEntity("ContainerHead", new Constructor<ContainerHead>);
+Entity::EntityRegister<ContainerHead> ContainerHead::entityRegister("ContainerHead");
 
 void ContainerHead::serialize(SerializeContext &sc){
 	st::serialize(sc);

@@ -106,7 +106,8 @@ public:
 	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<Scarry> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));

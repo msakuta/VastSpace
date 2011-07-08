@@ -30,7 +30,7 @@ int Attacker::nhardpoints = 0;
 
 const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
-const unsigned Attacker::entityid = registerEntity("Attacker", new Constructor<Attacker>);
+Entity::EntityRegister<Attacker> Attacker::entityRegister("Attacker");
 
 Attacker::Attacker() : justLoaded(true), docker(NULL), engineHeat(0){}
 

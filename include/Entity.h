@@ -11,6 +11,7 @@
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
+#include <squirrel.h>
 
 
 
@@ -135,10 +136,16 @@ public:
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
-	class EntityStatic{
+	class EXPORT EntityStatic{
 	public:
-		virtual Entity *create(WarField*) = 0;
-		virtual void destroy(Entity*) = 0;
+		virtual ClassId classid() = 0;
+		virtual Entity *create(WarField*) = 0; ///< Allocate and construct a new object as a member of a WarField.
+		virtual Entity *stcreate() = 0; ///< Allocate and construct empty object for use in unserialization.
+		virtual void destroy(Entity*) = 0; ///< Destruct and deallocate
+		virtual const SQChar *sq_classname() = 0; ///< Squirrel class name.
+		virtual bool sq_define(HSQUIRRELVM) = 0; ///< Defines Squirrel bound class.
+		virtual EntityStatic *st() = 0; ///< Super type
+		EntityStatic(ClassId);
 	};
 
 	/// Entity class static list is typedefed in public privilege.
@@ -156,10 +163,46 @@ protected:
 	virtual Builder *getBuilderInt();
 	static unsigned registerEntity(ClassId name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
-	template<class T> class Constructor : public EntityStatic{
+
+	template<class T> class EntityRegister : public EntityStatic{
+		const SQChar *m_sq_classname;
+		ClassId m_classid;
+		virtual ClassId classid(){ return m_classid; }
 		virtual Entity *create(WarField *w){ return new T(w); }
+		virtual Entity *stcreate(){ return new T(); }
 		virtual void destroy(Entity *p){ delete p; }
+		virtual const SQChar *sq_classname(){ return m_sq_classname; }
+		virtual bool sq_define(HSQUIRRELVM v){
+			sq_pushstring(v, sq_classname(), -1);
+			sq_pushstring(v, T::st::entityRegister.sq_classname(), -1);
+			sq_get(v, 1);
+			sq_newclass(v, SQTrue);
+			sq_settypetag(v, -1, SQUserPointer(m_classid));
+			sq_createslot(v, -3);
+			return true;
+		}
+		virtual EntityStatic *st(){ return &T::st::entityRegister; }
+	public:
+		EntityRegister(const SQChar *classname) : EntityStatic(classname), m_sq_classname(classname), m_classid(classname){
+			Entity::registerEntity(classname, this);
+		}
+		EntityRegister(const SQChar *classname, ClassId classid) : EntityStatic(classname), m_sq_classname(classname), m_classid(classid){
+			Entity::registerEntity(classname, this);
+		}
 	};
+
+	class EXPORT EntityStaticBase : public EntityStatic{
+	public:
+		EntityStaticBase();
+		virtual ClassId classid();
+		virtual Entity *create(WarField *w);
+		virtual Entity *stcreate();
+		virtual void destroy(Entity *p);
+		virtual const SQChar *sq_classname();
+		virtual bool sq_define(HSQUIRRELVM v);
+		virtual EntityStatic *st();
+	};
+	static EntityStaticBase entityRegister;
 };
 
 inline Entity *Entity::getUltimateOwner(){
@@ -172,5 +215,6 @@ struct GLwindowState;
 void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);
 
 int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
+
 
 #endif

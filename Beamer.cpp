@@ -77,7 +77,7 @@ const char *Beamer::classname()const{
 }
 
 const unsigned Beamer::classid = registerClass("Beamer", Conster<Beamer>);
-const unsigned Beamer::entityid = registerEntity("Beamer", new Constructor<Beamer>);
+Entity::EntityRegister<Beamer> Beamer::entityRegister("Beamer");
 
 void Beamer::serialize(SerializeContext &sc){
 	st::serialize(sc);

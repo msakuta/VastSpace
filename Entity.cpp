@@ -86,12 +86,62 @@ Entity *Entity::create(const char *cname, WarField *w){
 	return e;
 }
 
+Entity::EntityStaticBase Entity::entityRegister;
+
+Entity::EntityStaticBase::EntityStaticBase() : EntityStatic("Entity"){
+}
+
+ClassId Entity::EntityStaticBase::classid(){
+	return "Entity";
+}
+
+Entity *Entity::EntityStaticBase::create(WarField *){
+	return NULL;
+}
+
+Entity *Entity::EntityStaticBase::stcreate(){
+	return NULL;
+}
+
+void Entity::EntityStaticBase::destroy(Entity *){
+}
+
+const SQChar *Entity::EntityStaticBase::sq_classname(){
+	return _SC("Entity");
+}
+
+bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, sq_classname(), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
+	sq_createslot(v, -3);
+	return true;
+}
+
+Entity::EntityStatic *Entity::EntityStaticBase::st(){
+	return NULL;
+}
+
+
 unsigned Entity::registerEntity(ClassId name, EntityStatic *ctor){
 	EntityCtorMap &ctormap = entityCtorMap();
 	if(ctormap.find(name) != ctormap.end())
 		CmdPrintf(cpplib::dstring("WARNING: Duplicate class name: ") << name);
 	ctormap[name] = ctor;
+
+	// If an extension module is loaded and a Entity derived class is newly defined through this function,
+	// the Squirrel VM is already initialized to load definition of classes.
+	// Therefore, extension module classes must define themselves in Squirrel code as they register.
+	if(sqa::g_sqvm){
+		sq_pushroottable(g_sqvm);
+		ctor->sq_define(sqa::g_sqvm);
+		sq_poptop(g_sqvm);
+	}
+
 	return ctormap.size();
+}
+
+Entity::EntityStatic::EntityStatic(ClassId classname){
 }
 
 Entity::EntityCtorMap &Entity::entityCtorMap(){

@@ -22,7 +22,8 @@ public:
 	static hitbox hitboxes[];
 	static const unsigned nhitboxes;
 	const char *classname()const;
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<Attacker> entityRegister;
 	Attacker();
 	Attacker(WarField *);
 	~Attacker();

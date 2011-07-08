@@ -101,7 +101,7 @@ const char *SpacePlane::classname()const{
 }
 
 const unsigned SpacePlane::classid = registerClass("SpacePlane", Conster<SpacePlane>);
-const unsigned SpacePlane::entityid = registerEntity("SpacePlane", new Constructor<SpacePlane>);
+Entity::EntityRegister<SpacePlane> SpacePlane::entityRegister("SpacePlane");
 
 void SpacePlane::serialize(SerializeContext &sc){
 	st::serialize(sc);

@@ -90,7 +90,7 @@ const char *Tank::idname()const{return "tank";}
 const char *Tank::classname()const{return "Tank";}
 
 const unsigned Tank::classid = registerClass("Tank", Conster<Tank>);
-const unsigned Tank::entityid = registerEntity("Tank", new Constructor<Tank>);
+Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
 
 Tank::Tank(){

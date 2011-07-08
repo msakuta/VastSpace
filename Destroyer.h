@@ -16,7 +16,8 @@ public:
 	typedef Warpable st;
 	Destroyer(){init();}
 	Destroyer(WarField *w);
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<Destroyer> entityRegister;
 	virtual const char *classname()const;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
@@ -51,7 +52,8 @@ public:
 	typedef Warpable st;
 	WireDestroyer(){}
 	WireDestroyer(WarField *w);
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<WireDestroyer> entityRegister;
 	virtual const char *classname()const;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);

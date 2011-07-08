@@ -12,7 +12,8 @@ struct hitbox;
 class Tank : public Entity{
 public:
 	typedef Entity st;
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<Tank> entityRegister;
 
 	Tank();
 	Tank(WarField *);

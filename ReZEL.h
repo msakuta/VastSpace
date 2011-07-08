@@ -90,12 +90,17 @@ protected:
 	bool cull(Viewer &)const;
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
+	static SQInteger sqf_get(HSQUIRRELVM);
+	static SQInteger sqf_getBulletSpeed(HSQUIRRELVM);
+	static SQInteger sqf_setBulletSpeed(HSQUIRRELVM);
+	friend class EntityRegister<ReZEL>;
 public:
 	ReZEL();
 	ReZEL(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid, entityid;
+	static const unsigned classid;
+	static EntityRegister<ReZEL> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;

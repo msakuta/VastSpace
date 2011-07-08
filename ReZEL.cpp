@@ -52,7 +52,7 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
-#define BULLETSPEED 2.
+static double BULLETSPEED = 2.;
 #define SCEPTOR_MAGAZINE 5
 const int ReZEL::magazineSize[3] = {
 	5,
@@ -102,8 +102,55 @@ const char *ReZEL::classname()const{
 	return "ReZEL";
 }
 
+SQInteger ReZEL::sqf_get(HSQUIRRELVM v){
+	Astrobj *p;
+	const SQChar *wcs;
+	sq_getstring(v, -1, &wcs);
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	if(!strcmp(wcs, _SC("BULLETSPEED"))){
+		sq_pushfloat(v, SQFloat(BULLETSPEED));
+		return 1;
+	}
+	else
+		return -1;
+}
+
+SQInteger ReZEL::sqf_getBulletSpeed(HSQUIRRELVM v){
+	Astrobj *p;
+	const SQChar *wcs;
+	sq_pushfloat(v, SQFloat(BULLETSPEED));
+	return 1;
+}
+
+SQInteger ReZEL::sqf_setBulletSpeed(HSQUIRRELVM v){
+	Astrobj *p;
+	SQFloat f;
+	if(SQ_SUCCEEDED(sq_getfloat(v, 2, &f)))
+		BULLETSPEED = f;
+	return 0;
+}
+
+template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, sq_classname(), -1);
+	sq_pushstring(v, ReZEL::st::entityRegister.sq_classname(), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(m_classid));
+	sq_pushstring(v, _SC("getBulletSpeed"), -1);
+	sq_newclosure(v, ReZEL::sqf_getBulletSpeed, 0);
+	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
+		return false;
+	sq_pushstring(v, _SC("setBulletSpeed"), -1);
+	sq_newclosure(v, ReZEL::sqf_setBulletSpeed, 0);
+	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
+		return false;
+	sq_createslot(v, -3);
+	return true;
+}
+
 const unsigned ReZEL::classid = registerClass("ReZEL", Conster<ReZEL>);
-const unsigned ReZEL::entityid = registerEntity("ReZEL", new Constructor<ReZEL>);
+Entity::EntityRegister<ReZEL> ReZEL::entityRegister("ReZEL");
 
 void ReZEL::serialize(SerializeContext &sc){
 	st::serialize(sc);

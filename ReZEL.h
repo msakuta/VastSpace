@@ -6,6 +6,54 @@
 #include "mqo.h"
 #include "ysdnmmot.h"
 
+/// The base class for Squirrel-bound static variables.
+///
+/// Derived classes implement abstruct methods to interact with Squirrel VM.
+///
+/// This method's overhead compared to plain variable is just a virtual function
+/// table pointer for each instance.
+class StaticBind{
+public:
+	virtual void push(HSQUIRRELVM v) = 0;
+	virtual bool set(HSQUIRRELVM v) = 0;
+};
+
+/// Integer binding.
+class StaticBindInt : public StaticBind{
+	int value;
+	virtual void push(HSQUIRRELVM v){
+		sq_pushinteger(v, value);
+	}
+	virtual bool set(HSQUIRRELVM v){
+		SQInteger sqi;
+		bool ret = SQ_SUCCEEDED(sq_getinteger(v, -1, &sqi));
+		if(ret)
+			value = sqi;
+		return ret;
+	}
+public:
+	StaticBindInt(int a) : value(a){}
+	operator int&(){return value;}
+};
+
+/// Double binding.
+class StaticBindDouble : public StaticBind{
+	double value;
+	virtual void push(HSQUIRRELVM v){
+		sq_pushfloat(v, value);
+	}
+	virtual bool set(HSQUIRRELVM v){
+		SQFloat sqi;
+		bool ret = SQ_SUCCEEDED(sq_getfloat(v, -1, &sqi));
+		if(ret)
+			value = sqi;
+		return ret;
+	}
+public:
+	StaticBindDouble(double a) : value(a){}
+	operator double&(){return value;}
+};
+
 
 struct btCompoundShape;
 
@@ -91,26 +139,27 @@ protected:
 	Entity *findMother();
 	static SQInteger sqf_get(HSQUIRRELVM);
 	friend class EntityRegister<ReZEL>;
-	static double rotationSpeed;
-	static double maxAngleSpeed;
-	static double deathSmokeFreq;
-	static double bulletSpeed;
-	static double walkSpeed;
-	static double airMoveSpeed;
-	static double torqueAmount;
-	static double floorProximityDistance;
-	static double floorTouchDistance;
-	static double standUpTorque;
-	static double standUpFeedbackTorque;
-	static double maxFuel;
-	static double fuelRegenRate;
-	static double cooldownTime;
-	static double reloadTime;
-	static double rifleDamage;
-	static double vulcanDamage;
-	static double vulcanCooldownTime;
-	static double vulcanReloadTime;
-	static double randomVibration;
+	static StaticBindDouble rotationSpeed;
+	static StaticBindDouble maxAngleSpeed;
+	static StaticBindDouble deathSmokeFreq;
+	static StaticBindDouble bulletSpeed;
+	static StaticBindDouble walkSpeed;
+	static StaticBindDouble airMoveSpeed;
+	static StaticBindDouble torqueAmount;
+	static StaticBindDouble floorProximityDistance;
+	static StaticBindDouble floorTouchDistance;
+	static StaticBindDouble standUpTorque;
+	static StaticBindDouble standUpFeedbackTorque;
+	static StaticBindDouble maxFuel;
+	static StaticBindDouble fuelRegenRate;
+	static StaticBindDouble cooldownTime;
+	static StaticBindDouble reloadTime;
+	static StaticBindDouble rifleDamage;
+	static StaticBindDouble vulcanDamage;
+	static StaticBindDouble vulcanCooldownTime;
+	static StaticBindDouble vulcanReloadTime;
+	static StaticBindDouble randomVibration;
+	static StaticBindInt rifleMagazineSize;
 public:
 	ReZEL();
 	ReZEL(WarField *aw);

@@ -45,26 +45,27 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define COS15 0.9659258262890682867497431997289
 
 //#define SCEPTOR_SCALE 1./10000
-double ReZEL::deathSmokeFreq = 20.; ///< Smokes per second
-double ReZEL::rotationSpeed = (.3 * M_PI);
-double ReZEL::maxAngleSpeed = (M_PI * .5);
-double ReZEL::bulletSpeed = 2.;
-double ReZEL::walkSpeed = .03;
-double ReZEL::airMoveSpeed = .2;
-double ReZEL::torqueAmount = .1;
-double ReZEL::floorProximityDistance = .05;
-double ReZEL::floorTouchDistance = .02;
-double ReZEL::standUpTorque = (6e-4 * 5e4);
-double ReZEL::standUpFeedbackTorque = 1e1;
-double ReZEL::maxFuel = 300;
-double ReZEL::fuelRegenRate = 10.; ///< Units per second
-double ReZEL::cooldownTime = 1.;
-double ReZEL::reloadTime = 5.;
-double ReZEL::rifleDamage = 25.;
-double ReZEL::vulcanCooldownTime = .1;
-double ReZEL::vulcanReloadTime = 5.;
-double ReZEL::vulcanDamage = 5.;
-double ReZEL::randomVibration = .15;
+StaticBindDouble ReZEL::deathSmokeFreq = 20.; ///< Smokes per second
+StaticBindDouble ReZEL::rotationSpeed = (.3 * M_PI);
+StaticBindDouble ReZEL::maxAngleSpeed = (M_PI * .5);
+StaticBindDouble ReZEL::bulletSpeed = 2.;
+StaticBindDouble ReZEL::walkSpeed = .03;
+StaticBindDouble ReZEL::airMoveSpeed = .2;
+StaticBindDouble ReZEL::torqueAmount = .1;
+StaticBindDouble ReZEL::floorProximityDistance = .05;
+StaticBindDouble ReZEL::floorTouchDistance = .02;
+StaticBindDouble ReZEL::standUpTorque = (6e-4 * 5e4);
+StaticBindDouble ReZEL::standUpFeedbackTorque = 1e1;
+StaticBindDouble ReZEL::maxFuel = 300;
+StaticBindDouble ReZEL::fuelRegenRate = 10.; ///< Units per second
+StaticBindDouble ReZEL::cooldownTime = 1.;
+StaticBindDouble ReZEL::reloadTime = 5.;
+StaticBindDouble ReZEL::rifleDamage = 25.;
+StaticBindDouble ReZEL::vulcanCooldownTime = .1;
+StaticBindDouble ReZEL::vulcanReloadTime = 5.;
+StaticBindDouble ReZEL::vulcanDamage = 5.;
+StaticBindDouble ReZEL::randomVibration = .15;
+StaticBindInt ReZEL::rifleMagazineSize = 5;
 const int ReZEL::magazineSize[3] = {
 	5,
 	3,
@@ -112,15 +113,18 @@ const char *ReZEL::classname()const{
 	return "ReZEL";
 }
 
+
+typedef std::map<gltestp::dstring, StaticBind *> StaticBindSet;
+
 SQInteger ReZEL::sqf_get(HSQUIRRELVM v){
-	std::map<gltestp::dstring, double *> *p;
+	StaticBindSet *p;
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
 		return SQ_ERROR;
-	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	StaticBindSet::iterator it = p->find(wcs);
 	if(it != p->end()){
-		sq_pushfloat(v, SQFloat(*it->second));
+		it->second->push(v);
 		return 1;
 	}
 	else
@@ -128,18 +132,15 @@ SQInteger ReZEL::sqf_get(HSQUIRRELVM v){
 }
 
 SQInteger sqf_set(HSQUIRRELVM v){
-	std::map<gltestp::dstring, double *> *p;
+	StaticBindSet *p;
 	const SQChar *wcs;
 	if(SQ_FAILED(sq_getstring(v, 2, &wcs)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
 		return SQ_ERROR;
-	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	StaticBindSet::iterator it = p->find(wcs);
 	if(it != p->end()){
-		SQFloat f;
-		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
-			return -1;
-		*it->second = f;
+		it->second->set(v);
 		return 1;
 	}
 	else
@@ -147,7 +148,7 @@ SQInteger sqf_set(HSQUIRRELVM v){
 }
 
 SQInteger sqf_nexti(HSQUIRRELVM v){
-	std::map<gltestp::dstring, double *> *p;
+	StaticBindSet *p;
 	const SQChar *wcs;
 
 	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
@@ -162,23 +163,20 @@ SQInteger sqf_nexti(HSQUIRRELVM v){
 	// Next iteration
 	if(SQ_FAILED(sq_getstring(v, 2, &wcs)))
 		return SQ_ERROR;
-//	gltestp::dstring prev;
-//	for(std::map<gltestp::dstring, double *>::iterator it = p->begin(); it != p->end(); it++){
-	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	StaticBindSet::iterator it = p->find(wcs);
 	if(it != p->end()){
 		it++; // next
 		if(it != p->end()){
 			sq_pushstring(v, it->first, -1);
 			return 1;
 		}
-//		prev = it->first;
 	}
 	return 0;
 }
 
 static HSQUIRRELVM sqvm;
 
-std::map<gltestp::dstring, double *> staticBind;
+StaticBindSet staticBind;
 
 template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	sqa::StackReserver sr(v);
@@ -219,6 +217,7 @@ template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	staticBind["vulcanCooldownTime"] = &ReZEL::vulcanCooldownTime;
 	staticBind["vulcanReloadTime"] = &ReZEL::vulcanReloadTime;
 	staticBind["randomVibration"] = &ReZEL::randomVibration;
+	staticBind["rifleMagazineSize"] = &ReZEL::rifleMagazineSize;
 
 	sq_pushstring(v, sq_classname(), -1);
 	sq_pushstring(v, ReZEL::st::entityRegister.sq_classname(), -1);

@@ -44,22 +44,32 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define SCEPTOR_SCALE 1./10000
-#define SCEPTOR_SMOKE_FREQ 20.
-#define SCEPTOR_COOLTIME 1.
-#define SCEPTOR_ROLLSPEED (.2 * M_PI)
-#define SCEPTOR_ROTSPEED (.3 * M_PI)
-#define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
-#define SCEPTOR_ANGLEACCEL (M_PI * .2)
-#define SCEPTOR_MAX_GIBS 20
-static double BULLETSPEED = 2.;
-#define SCEPTOR_MAGAZINE 5
+//#define SCEPTOR_SCALE 1./10000
+double ReZEL::deathSmokeFreq = 20.; ///< Smokes per second
+double ReZEL::rotationSpeed = (.3 * M_PI);
+double ReZEL::maxAngleSpeed = (M_PI * .5);
+double ReZEL::bulletSpeed = 2.;
+double ReZEL::walkSpeed = .03;
+double ReZEL::airMoveSpeed = .2;
+double ReZEL::torqueAmount = .1;
+double ReZEL::floorProximityDistance = .05;
+double ReZEL::floorTouchDistance = .02;
+double ReZEL::standUpTorque = (6e-4 * 5e4);
+double ReZEL::standUpFeedbackTorque = 1e1;
+double ReZEL::maxFuel = 300;
+double ReZEL::fuelRegenRate = 10.; ///< Units per second
+double ReZEL::cooldownTime = 1.;
+double ReZEL::reloadTime = 5.;
+double ReZEL::rifleDamage = 25.;
+double ReZEL::vulcanCooldownTime = .1;
+double ReZEL::vulcanReloadTime = 5.;
+double ReZEL::vulcanDamage = 5.;
+double ReZEL::randomVibration = .15;
 const int ReZEL::magazineSize[3] = {
 	5,
 	3,
 	20,
 };
-const double ReZEL::reloadTime = 5.;
 
 
 const Vec3d ReZEL::thrusterDir[7] = {
@@ -103,49 +113,122 @@ const char *ReZEL::classname()const{
 }
 
 SQInteger ReZEL::sqf_get(HSQUIRRELVM v){
-	Astrobj *p;
+	std::map<gltestp::dstring, double *> *p;
 	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
+	sq_getstring(v, 2, &wcs);
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
 		return SQ_ERROR;
-	if(!strcmp(wcs, _SC("BULLETSPEED"))){
-		sq_pushfloat(v, SQFloat(BULLETSPEED));
+	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	if(it != p->end()){
+		sq_pushfloat(v, SQFloat(*it->second));
 		return 1;
 	}
 	else
 		return -1;
 }
 
-SQInteger ReZEL::sqf_getBulletSpeed(HSQUIRRELVM v){
-	Astrobj *p;
+SQInteger sqf_set(HSQUIRRELVM v){
+	std::map<gltestp::dstring, double *> *p;
 	const SQChar *wcs;
-	sq_pushfloat(v, SQFloat(BULLETSPEED));
-	return 1;
+	if(SQ_FAILED(sq_getstring(v, 2, &wcs)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return SQ_ERROR;
+	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	if(it != p->end()){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return -1;
+		*it->second = f;
+		return 1;
+	}
+	else
+		return -1;
 }
 
-SQInteger ReZEL::sqf_setBulletSpeed(HSQUIRRELVM v){
-	Astrobj *p;
-	SQFloat f;
-	if(SQ_SUCCEEDED(sq_getfloat(v, 2, &f)))
-		BULLETSPEED = f;
+SQInteger sqf_nexti(HSQUIRRELVM v){
+	std::map<gltestp::dstring, double *> *p;
+	const SQChar *wcs;
+
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return SQ_ERROR;
+
+	// First iteration
+	if(sq_gettype(v, 2) == OT_NULL){
+		sq_pushstring(v, p->begin()->first, -1);
+		return 1;
+	}
+
+	// Next iteration
+	if(SQ_FAILED(sq_getstring(v, 2, &wcs)))
+		return SQ_ERROR;
+//	gltestp::dstring prev;
+//	for(std::map<gltestp::dstring, double *>::iterator it = p->begin(); it != p->end(); it++){
+	std::map<gltestp::dstring, double *>::iterator it = p->find(wcs);
+	if(it != p->end()){
+		it++; // next
+		if(it != p->end()){
+			sq_pushstring(v, it->first, -1);
+			return 1;
+		}
+//		prev = it->first;
+	}
 	return 0;
 }
 
+static HSQUIRRELVM sqvm;
+
+std::map<gltestp::dstring, double *> staticBind;
+
 template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
+	sqa::StackReserver sr(v);
+	sqvm = v;
+	sq_newclass(v, SQFalse); // class
+	sq_pushstring(v, _SC("_get"), -1); // class "_get"
+	sq_newclosure(v, ReZEL::sqf_get, 0); // class "_get" sqf_get
+	sq_newslot(v, -3, SQFalse); // class
+	sq_pushstring(v, _SC("_set"), -1); // class "_get"
+	sq_newclosure(v, sqf_set, 0); // class "_get" sqf_get
+	sq_newslot(v, -3, SQFalse); // class
+	sq_pushstring(v, _SC("_nexti"), -1);
+	sq_newclosure(v, sqf_nexti, 0);
+	sq_newslot(v, -3, SQFalse);
+	sq_pushstring(v, _SC("StaticBind"), -1); // class "StaticBind"
+	sq_push(v, -2); // class "StaticBind" class
+	sq_createslot(v, -4); // class
+	sq_createinstance(v, -1); // class instance
+	sq_setinstanceup(v, -1, SQUserPointer(&staticBind)); // class instance
+
+	staticBind["rotationSpeed"] = &ReZEL::rotationSpeed;
+	staticBind["maxAngleSpeed"] = &ReZEL::maxAngleSpeed;
+	staticBind["bulletSpeed"] = &ReZEL::bulletSpeed;
+//	staticBind["rifleMagazineSize"] = &ReZEL::magazineSize[0];
+	staticBind["walkSpeed"] = &ReZEL::walkSpeed;
+	staticBind["airMoveSpeed"] = &ReZEL::airMoveSpeed;
+	staticBind["torqueAmount"] = &ReZEL::torqueAmount;
+	staticBind["floorProximityDistance"] = &ReZEL::floorProximityDistance;
+	staticBind["floorTouchDistance"] = &ReZEL::floorTouchDistance;
+	staticBind["standUpTorque"] = &ReZEL::standUpTorque;
+	staticBind["standUpFeedbackTorque"] = &ReZEL::standUpFeedbackTorque;
+	staticBind["maxFuel"] = &ReZEL::maxFuel;
+	staticBind["fuelRegenRate"] = &ReZEL::fuelRegenRate;
+	staticBind["reloadTime"] = &ReZEL::reloadTime;
+	staticBind["cooldownTime"] = &ReZEL::cooldownTime;
+	staticBind["rifleDamage"] = &ReZEL::rifleDamage;
+	staticBind["vulcanDamage"] = &ReZEL::vulcanDamage;
+	staticBind["vulcanCooldownTime"] = &ReZEL::vulcanCooldownTime;
+	staticBind["vulcanReloadTime"] = &ReZEL::vulcanReloadTime;
+	staticBind["randomVibration"] = &ReZEL::randomVibration;
+
 	sq_pushstring(v, sq_classname(), -1);
 	sq_pushstring(v, ReZEL::st::entityRegister.sq_classname(), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(m_classid));
-	sq_pushstring(v, _SC("getBulletSpeed"), -1);
-	sq_newclosure(v, ReZEL::sqf_getBulletSpeed, 0);
-	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
-		return false;
-	sq_pushstring(v, _SC("setBulletSpeed"), -1);
-	sq_newclosure(v, ReZEL::sqf_setBulletSpeed, 0);
-	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
-		return false;
-	sq_createslot(v, -3);
+	sq_pushstring(v, _SC("set"), -1);
+	sq_push(v, -4);
+	sq_newslot(v, -3, SQTrue);
+	sq_createslot(v, 1);
 	return true;
 }
 
@@ -288,7 +371,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->magazine = SCEPTOR_MAGAZINE;
+	p->magazine = magazineSize[0];
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -378,7 +461,7 @@ void cmd_cloak(int argc, char *argv[]){
 */
 
 void ReZEL::shootRifle(double dt){
-	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
+	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed);
 	Mat4d mat;
 	int i = 0;
 	if(dt <= cooldown)
@@ -406,7 +489,7 @@ void ReZEL::shootRifle(double dt){
 	{
 		BeamProjectile *pb;
 		double phi, theta;
-		pb = new BeamProjectile(this, 5, 25.);
+		pb = new BeamProjectile(this, 5, rifleDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(velo0);
@@ -417,9 +500,9 @@ void ReZEL::shootRifle(double dt){
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	if(0 < --magazine)
-		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
+		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
-		magazine = SCEPTOR_MAGAZINE;
+		magazine = magazineSize[0];
 		this->cooldown += reloadTime;
 		this->freload = reloadTime;
 	}
@@ -504,7 +587,7 @@ void ReZEL::shootVulcan(double dt){
 	for(int i = 0; i < 2; i++){
 		Bullet *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, 5.);
+		pb = new Bullet(this, 5, vulcanDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos[i]);
 		pb->velo = mat.dvp3(velo0);
@@ -515,10 +598,10 @@ void ReZEL::shootVulcan(double dt){
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	if(0 < --vulcanmag)
-		this->vulcancooldown += .1;
+		this->vulcancooldown += vulcanCooldownTime;
 	else{
 		vulcanmag = magazineSize[2];
-		this->vulcancooldown += reloadTime;
+		this->vulcancooldown += vulcanReloadTime;
 	}
 	this->muzzleFlash[2] = .1;
 }
@@ -674,8 +757,8 @@ void ReZEL::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvel
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	if(.9 < dr.norm().sp(-this->rot.trans(vec3_001)))
 		this->omg += this->rot.trans(vec3_010);
-	if(SCEPTOR_ROTSPEED * SCEPTOR_ROTSPEED < this->omg.slen())
-		this->omg.normin().scalein(SCEPTOR_ROTSPEED);
+	if(rotationSpeed * rotationSpeed < this->omg.slen())
+		this->omg.normin().scalein(rotationSpeed);
 	bbody->setAngularVelocity(btvc(this->omg));
 	dr.normin();
 	Vec3d sidevelo = velo - dr * dr.sp(velo);
@@ -902,7 +985,7 @@ void ReZEL::anim(double dt){
 			const btVector3 &from = btpos;
 			const btVector3 &btvelo = bbody->getLinearVelocity();
 			btScalar closingSpeed = btvelo.dot(btdown);
-			const btVector3 to = btpos + btaccel.normalized() * (closingSpeed < .05 ? .05 : closingSpeed);
+			const btVector3 to = btpos + btaccel.normalized() * (closingSpeed < floorProximityDistance ? floorProximityDistance : closingSpeed);
 
 			btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
 
@@ -913,7 +996,7 @@ void ReZEL::anim(double dt){
 				if(body && body->hasContactResponse() && body->isStaticObject()){
 					floorProximity = true;
 					btScalar hitDistance = (rayCallback.m_hitPointWorld - from).dot(btaccel.normalized());
-					if(hitDistance < .02)
+					if(hitDistance < floorTouchDistance)
 						floorTouched = true;
 				}
 			}
@@ -977,13 +1060,13 @@ void ReZEL::anim(double dt){
 
 				// We need to invert the tensor to determine which torque is required to get the head up.
 				btMatrix3x3 inertiaTensor = bbody->getInvInertiaTensorWorld().inverse();
-				bbody->applyTorque(btvc(-up.cross(btdown) * inertiaTensor * (6e-4 * 5e4)) - lateralOmega * inertiaTensor * 1e+1);
+				bbody->applyTorque(btvc(-up.cross(btdown) * inertiaTensor * standUpTorque) - lateralOmega * inertiaTensor * standUpFeedbackTorque);
 
 				// Directly modifying rotation transformation should be more stable (but cannot handle collisions, etc. correctly),
 				// but the fact is that it didn't work.
 //				bbody->setWorldTransform(btTransform(bbody->getWorldTransform().getRotation() * btQuaternion(-up.cross(btdown), dt), bbody->getWorldTransform().getOrigin()));
 
-				// Quit stanging up only if we're really upright and stable.
+				// Quit standing up only if we're really upright and stable.
 				if(up.dot(btdown) < -.99 && lateralOmega.length2() < .05 * .05)
 					standingUp = false;
 			}
@@ -1047,7 +1130,7 @@ void ReZEL::anim(double dt){
 				Vec3d xh, dh, vh;
 				Vec3d epos;
 				double phi;
-				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, BULLETSPEED, w);
+				estimate_pos(epos, enemy->pos, enemy->velo, pt->pos, pt->velo, bulletSpeed, w);
 /*				xh[0] = pt->velo[2];
 				xh[1] = pt->velo[1];
 				xh[2] = -pt->velo[0];*/
@@ -1143,7 +1226,7 @@ void ReZEL::anim(double dt){
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
 					Vec3d dv, forward;
 					Vec3d xh, yh;
-					double sx, sy, len, len2, maxspeed = SCEPTOR_MAX_ANGLESPEED * dt;
+					double sx, sy, len, len2, maxspeed = maxAngleSpeed * dt;
 					Quatd qres, qrot;
 
 					// If a mother could not be aquired, fight to the death alone.
@@ -1174,12 +1257,12 @@ void ReZEL::anim(double dt){
 					p->throttle = 1.;
 
 					// Randomly vibrates to avoid bullets
-					if(0 < fuel){
+					if(0 < fuel && !floorTouched){
 						RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
 							randomvec[i] = rs.nextd() - .5;
-						bbody->applyCentralForce(btvc(randomvec * mass * .15));
+						bbody->applyCentralForce(btvc(randomvec * mass * randomVibration));
 					}
 
 					if(p->task == Attack || forward.sp(dv) < -.5){
@@ -1449,7 +1532,6 @@ void ReZEL::anim(double dt){
 
 		Vec3d desiredAccel = mat.vec3(2) * throttle;
 
-		static const double torqueAmount = .1;
 		bbody->activate(true);
 		if(inputs.analog[0] != 0 || inputs.analog[1] != 0){
 			if(inputs.analog[0] != 0)
@@ -1458,7 +1540,7 @@ void ReZEL::anim(double dt){
 				bbody->applyTorque(btvc(inputs.analog[1] * mat.vec3(0) * torqueAmount));
 		}
 		else if(0 < fonfeet){
-			const double maxspeed = .03;
+			const double maxspeed = walkSpeed;
 			btScalar lateral = (inputs.press & PL_A ? -1 : 0) + (inputs.press & PL_D ? 1 : 0);
 			btScalar frontal = (inputs.press & PL_W ? -1 : 0) + (inputs.press & PL_S ? 1 : 0);
 
@@ -1498,7 +1580,7 @@ void ReZEL::anim(double dt){
 			if(inputs.press & PL_S)
 				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted*/
 
-			const double maxspeed = .2;
+			const double maxspeed = airMoveSpeed;
 			btScalar lateral = (inputs.press & PL_A ? -1 : 0) + (inputs.press & PL_D ? 1 : 0);
 			btScalar frontal = (inputs.press & PL_W ? -1 : 0) + (inputs.press & PL_S ? 1 : 0);
 
@@ -1535,7 +1617,7 @@ void ReZEL::anim(double dt){
 		}
 
 		{ // vertical thrust (upward and downward)
-			const double maxspeed = .2;
+			const double maxspeed = airMoveSpeed;
 			btScalar vertical = (inputs.press & PL_Z ? -1 : 0) + (inputs.press & PL_Q ? 1 : 0);
 			if(vertical){
 				btVector3 v = bbody->getWorldTransform().getBasis().getColumn(1);
@@ -1598,7 +1680,7 @@ void ReZEL::anim(double dt){
 				p->fuel -= consump;
 
 			// fuel is constantly regained by the aid of fusion reactor.
-			fuel = approach(fuel, maxfuel(), 10. * dt, 0.);
+			fuel = approach(fuel, maxfuel(), fuelRegenRate * dt, 0.);
 
 			double spd = (controlled ? .025 : p->task != Attack ? .01 : .005);
 //			Vec3d acc = (this->rot.rotate(thrustvector * M_PI / 2., /*this->rot.trans*/(Vec3d(1,0,0)))).trans(Vec3d(0., 0., -1.));
@@ -1750,7 +1832,7 @@ void ReZEL::anim(double dt){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
 				int i, n;
-				n = (int)(dt * SCEPTOR_SMOKE_FREQ + drseq(&w->rs));
+				n = (int)(dt * deathSmokeFreq + drseq(&w->rs));
 				for(i = 0; i < n; i++){
 					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * .01;
 					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * .01;
@@ -1911,7 +1993,7 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 #endif
 
 double ReZEL::maxfuel()const{
-	return 200.;
+	return maxFuel;
 }
 
 bool ReZEL::command(EntityCommand *com){

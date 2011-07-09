@@ -1,4 +1,10 @@
-// Container Ship Demo
+// ReZEL demo
+
+ReZEL.set.bulletSpeed = 10;
+ReZEL.set.walkSpeed = 0.05;
+
+function printeach(e){foreach(a,b in e) print(a + ": " + b);}
+
 initUI();
 
 player.cs = bookmarks["Side 7"].cs();

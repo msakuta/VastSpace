@@ -27,15 +27,6 @@ extern "C"{
 #include <string.h>
 
 
-#define SCEPTER_SMOKE_FREQ 10.
-#define SCEPTER_RELOADTIME .3
-#define SCEPTER_ROLLSPEED (.2 * M_PI)
-#define SCEPTER_ROTSPEED (.3 * M_PI)
-#define SCEPTER_MAX_ANGLESPEED (M_PI * .5)
-#define SCEPTER_ANGLEACCEL (M_PI * .2)
-#define SCEPTER_MAX_GIBS 20
-#define BULLETSPEED 2.
-
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;

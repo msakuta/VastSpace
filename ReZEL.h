@@ -76,7 +76,6 @@ protected:
 	static const avec3_t gunPos[2];
 	static Model *model;
 	static ysdnm_motion *motions[10];
-	static const double reloadTime;
 	static const int magazineSize[3];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
@@ -91,9 +90,27 @@ protected:
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
 	static SQInteger sqf_get(HSQUIRRELVM);
-	static SQInteger sqf_getBulletSpeed(HSQUIRRELVM);
-	static SQInteger sqf_setBulletSpeed(HSQUIRRELVM);
 	friend class EntityRegister<ReZEL>;
+	static double rotationSpeed;
+	static double maxAngleSpeed;
+	static double deathSmokeFreq;
+	static double bulletSpeed;
+	static double walkSpeed;
+	static double airMoveSpeed;
+	static double torqueAmount;
+	static double floorProximityDistance;
+	static double floorTouchDistance;
+	static double standUpTorque;
+	static double standUpFeedbackTorque;
+	static double maxFuel;
+	static double fuelRegenRate;
+	static double cooldownTime;
+	static double reloadTime;
+	static double rifleDamage;
+	static double vulcanDamage;
+	static double vulcanCooldownTime;
+	static double vulcanReloadTime;
+	static double randomVibration;
 public:
 	ReZEL();
 	ReZEL(WarField *aw);

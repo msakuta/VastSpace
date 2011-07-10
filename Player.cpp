@@ -23,18 +23,18 @@ static int ntplist;
 
 static long framecount = 0;
 
-void Player::mover_t::operator ()(const input_t &inputs, double dt){}
+void Player::CameraController::operator ()(const input_t &inputs, double dt){}
 
-Vec3d Player::mover_t::getpos()const{
+Vec3d Player::CameraController::getpos()const{
 	return pl.pos;
 }
 
-Quatd Player::mover_t::getrot()const{
+Quatd Player::CameraController::getrot()const{
 	return pl.rot;
 }
 
 // Response to rotational movement depends on mover.
-void Player::mover_t::rotateLook(double dx, double dy){
+void Player::CameraController::rotateLook(double dx, double dy){
 	Quatd &rot = pl.rot;
 	const double speed = .001 / 2. * pl.fov;
 	const double one_minus_epsilon = .999;
@@ -44,17 +44,37 @@ void Player::mover_t::rotateLook(double dx, double dy){
 }
 
 
-class CockpitviewMover : public Player::mover_t{
+class CockpitviewMover : public Player::CameraController{
 public:
-	typedef Player::mover_t st;
-	CockpitviewMover(Player &a) : st(a){}
-/*	virtual Quatd getrot()const{
+	typedef Player::CameraController st;
+	double py[2]; /// Pitch and yaw
+	CockpitviewMover(Player &a) : st(a){py[0] = py[1] = 0.;}
+	virtual Quatd getrot()const{
+		Quatd pyrot = Quatd::rotation(py[1], 1, 0, 0).rotate(py[0], 0, 1, 0);
 		if(!pl.chase)
-			return pl.rot;
+			return pyrot;
 		Vec3d dummy;
 		Quatd crot;
 		pl.chase->cockpitView(dummy, crot, pl.chasecamera);
-		return pl.rot * crot.cnj();
+		return /*pyrot */ crot.cnj();
+	}
+	virtual Vec3d getpos()const{
+		if(pl.chase){
+			Vec3d pos;
+			Quatd dummy;
+			pl.chase->cockpitView(pos, dummy, pl.chasecamera);
+			return pos;
+		}
+		return Vec3d(0,0,0);
+	}
+	virtual void rotateLook(double dx, double dy){
+		const double speed = .001 / 2. * pl.fov;
+		py[0] += dy * speed;
+		py[1] += dx * speed;
+	}
+/*	virtual void operator ()(const input_t &input, double dt){
+		const_cast<double&>(input.analog[0]) = py[0];
+		const_cast<double&>(input.analog[1]) = py[1];
 	}*/
 };
 
@@ -78,9 +98,9 @@ void FreelookMover::setpos(const Vec3d &apos){
 }
 
 
-class TacticalMover : public Player::mover_t{
+class TacticalMover : public Player::CameraController{
 public:
-	typedef Player::mover_t st;
+	typedef Player::CameraController st;
 	Vec3d pos;
 	Quatd rot;
 	TacticalMover(Player &a) : st(a), rot(0,0,0,1){}
@@ -131,8 +151,8 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), 
 	// initialized at the time initialization list is executed.
 	// Class object members need not to warry about read-only memory storage class.
 	const_cast<FreelookMover*>(freelook) = new FreelookMover(*this);
-	const_cast<mover_t*>(cockpitview) = new CockpitviewMover(*this);
-	const_cast<mover_t*>(tactical) = new TacticalMover(*this);
+	const_cast<CameraController*>(cockpitview) = new CockpitviewMover(*this);
+	const_cast<CameraController*>(tactical) = new TacticalMover(*this);
 	mover = freelook;
 }
 
@@ -151,11 +171,11 @@ void Player::free(){
 }
 
 
-inline Quatd Player::getrawrot(mover_t *mover)const{
+inline Quatd Player::getrawrot(CameraController *mover)const{
 	return mover->getrot();
 }
 
-inline Vec3d Player::getrawpos(mover_t *mover)const{
+inline Vec3d Player::getrawpos(CameraController *mover)const{
 	return mover->getpos();
 }
 
@@ -422,7 +442,7 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 		pl.uncontrol();
 	else if(pl.selected){
 		pl.controlled = pl.selected;
-		pl.mover = pl.nextmover = pl.freelook;
+		pl.mover = pl.nextmover = pl.cockpitview;
 		pl.chase = pl.selected;
 		pl.mover->setrot(quat_u);
 		capture_mouse();
@@ -630,7 +650,7 @@ SQInteger Player::sqf_setmover(HSQUIRRELVM v){
 	SQBool instant;
 	if(SQ_FAILED(sq_getbool(v, 3, &instant)))
 		instant = true; // defaults true
-	mover_t *&mover = instant ? p->mover : p->nextmover;
+	CameraController *&mover = instant ? p->mover : p->nextmover;
 	if(!instant)
 		p->blendmover = 1.;
 

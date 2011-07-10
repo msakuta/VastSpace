@@ -966,6 +966,7 @@ void display_func(void){
 
 		sqa_anim(dt);
 
+		int mousedelta[2] = {0, 0};
 		if(mouse_captured){
 			POINT p;
 			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){
@@ -973,6 +974,8 @@ void display_func(void){
 				while(ShowCursor(TRUE) <= 0);
 			}
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
+				mousedelta[0] = p.x - mouse_pos.x;
+				mousedelta[1] = p.y - mouse_pos.y;
 				pl.rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
 				SetCursorPos(mouse_pos.x, mouse_pos.y);
 			}
@@ -1024,6 +1027,8 @@ void display_func(void){
 		}
 
 		if(pl.chase){
+			inputs.analog[1] += mousedelta[0];
+			inputs.analog[0] += mousedelta[1];
 			pl.chase->control(&inputs, dt);
 		}
 

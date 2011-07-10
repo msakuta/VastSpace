@@ -37,11 +37,15 @@ class GLWstateButton;
  */
 class EXPORT Player : public EntityController{
 public:
+
 	/// Base class for camera controller classes.
-	class mover_t{
+	///
+	/// It defines how the camera reacts to user inputs. There're multiple ways to navigate the camera
+	/// in 3-D space, so we virtualize it with this class.
+	class CameraController{
 	public:
 		Player &pl;
-		mover_t(Player &a) : pl(a){}
+		CameraController(Player &a) : pl(a){}
 		virtual void operator ()(const input_t &inputs, double dt);
 		virtual Vec3d getpos()const;
 		virtual void setpos(const Vec3d &apos){pl.pos = apos;}
@@ -53,11 +57,12 @@ public:
 	protected:
 		Vec3d &refvelo(){return pl.velo;}
 	};
+
 	class FreelookMover;
 protected:
 	virtual bool control(Entity *, double dt);
-	Vec3d getrawpos(mover_t*)const;
-	Quatd getrawrot(mover_t*)const;
+	Vec3d getrawpos(CameraController*)const;
+	Quatd getrawrot(CameraController*)const;
 public:
 	Player();
 	~Player();
@@ -73,8 +78,8 @@ public:
 	double viewdist; ///< view distance from focused object
 	double aviewdist; ///< actual viewdist approaching constantly to viewdist
 	const CoordSys *cs;
-	mover_t *mover; ///< virtual mover function
-	mover_t *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
+	CameraController *mover; ///< virtual mover function
+	CameraController *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
 	float blendmover; ///< Blending factor of mover and nextmover.
 	Entity *chase, *controlled, *selected, *lastchase; ///< Various entity lists
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
@@ -120,8 +125,8 @@ public:
 	void unlink(const Entity *);
 	void rotateLook(double dx, double dy);
 	FreelookMover *const freelook;
-	mover_t *const cockpitview;
-	mover_t *const tactical;
+	CameraController *const cockpitview;
+	CameraController *const tactical;
 	void draw(Viewer *wd);
 	void drawtra(Viewer *wd);
 	void drawindics(Viewer *vw);
@@ -174,9 +179,9 @@ private:
 //	int gear; /* acceleration gear in ghost mode */
 };
 
-typedef class Player::FreelookMover : public Player::mover_t{
+typedef class Player::FreelookMover : public Player::CameraController{
 public:
-	typedef Player::mover_t st;
+	typedef Player::CameraController st;
 	double flypower;
 	int gear;
 	Vec3d pos;

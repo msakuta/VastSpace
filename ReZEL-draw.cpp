@@ -6,6 +6,7 @@
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
+#include "glstack.h"
 #include "yssurf.h"
 extern "C"{
 #include <clib/c.h>
@@ -479,6 +480,51 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glPopAttrib();
 	}
 #endif
+}
+
+void ReZEL::drawHUD(WarDraw *wd){
+	GLpmatrix pm;
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+//	glOrtho(0, wd->vw->vp.w, wd->vw->vp.h, 0, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glColor4f(1,1,1,1);
+
+	glBegin(GL_LINES);
+	glVertex2d(-.05, 0);
+	glVertex2d( .05, 0);
+	glVertex2d(0, -.05);
+	glVertex2d(0,  .05);
+	glEnd();
+
+	glScaled(.2, .2, .2);
+	glColor4f(1,1,1,.3);
+
+	glBegin(GL_QUAD_STRIP);
+	glVertex2d(-.3, .3);
+	glVertex2d(-.4, .3);
+	glVertex2d(-.4, .15);
+	glVertex2d(-.5, .15);
+	glVertex2d(-.4, -.15);
+	glVertex2d(-.5, -.15);
+	glVertex2d(-.3, -.3);
+	glVertex2d(-.4, -.3);
+	glEnd();
+
+	glBegin(GL_QUAD_STRIP);
+	glVertex2d( .3, .3);
+	glVertex2d( .4, .3);
+	glVertex2d( .4, .15);
+	glVertex2d( .5, .15);
+	glVertex2d( .4, -.15);
+	glVertex2d( .5, -.15);
+	glVertex2d( .3, -.3);
+	glVertex2d( .4, -.3);
+	glEnd();
+
+	glPopMatrix();
 }
 
 void ReZEL::drawOverlay(wardraw_t *){

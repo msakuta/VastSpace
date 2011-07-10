@@ -115,6 +115,7 @@ protected:
 	float freload; ///< Reload phase
 	float fonfeet; ///< Factor of on-feetness
 	float walkphase; ///< Walk phase
+	double aimdir[2]; ///< Pitch and yaw. They're different from twist and pitch in that they represent manipulator
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
 	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
@@ -137,6 +138,7 @@ protected:
 	bool cull(Viewer &)const;
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
+	Quatd aimRot()const;
 	static SQInteger sqf_get(HSQUIRRELVM);
 	friend class EntityRegister<ReZEL>;
 	static StaticBindDouble rotationSpeed;
@@ -175,8 +177,9 @@ public:
 	virtual void enterField(WarField *);
 	virtual void control(const input_t *inputs, double dt);
 	virtual void anim(double dt);
-	virtual void draw(wardraw_t *);
-	virtual void drawtra(wardraw_t *);
+	virtual void draw(WarDraw *);
+	virtual void drawtra(WarDraw *);
+	virtual void drawHUD(WarDraw *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);

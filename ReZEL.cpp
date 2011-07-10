@@ -251,6 +251,8 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
 	sc.o << paradec;
+	sc.o << aimdir[0];
+	sc.o << aimdir[1];
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
 	sc.o << stabilizer;
@@ -274,6 +276,8 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
 	sc.i >> paradec;
+	sc.i >> aimdir[0];
+	sc.i >> aimdir[1];
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 	sc.i >> stabilizer;
@@ -345,6 +349,8 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	walkphase(0.f),
 	stabilizer(true)
 {
+	aimdir[0] = 0.;
+	aimdir[1] = 0.;
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
 	for(int i = 0; i < numof(thrusterDirs); i++){
@@ -394,7 +400,7 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / pl->fov)); // Trackback if zoomed
 	}
 	else{
-		q = this->rot;
+		q = this->rot * aimRot();
 		ofs = q.trans(src[seatid]);
 	}
 	pos = this->pos + ofs;
@@ -491,7 +497,7 @@ void ReZEL::shootRifle(double dt){
 		pb = new BeamProjectile(this, 5, rifleDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
-		pb->velo = mat.dvp3(velo0);
+		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025;
@@ -543,7 +549,7 @@ void ReZEL::shootShieldBeam(double dt){
 		pb = new BeamProjectile(this, 5, 15., .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
-		pb->velo = mat.dvp3(velo0);
+		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
 		pb->life = 3.;
 		this->heat += .025;
@@ -589,7 +595,7 @@ void ReZEL::shootVulcan(double dt){
 		pb = new Bullet(this, 5, vulcanDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos[i]);
-		pb->velo = mat.dvp3(velo0);
+		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
 		pb->life = 2.;
 		this->heat += .025;
@@ -775,6 +781,10 @@ Entity *ReZEL::findMother(){
 		best = sl;
 	}
 	return pm;
+}
+
+Quatd ReZEL::aimRot()const{
+	return Quatd::rotation(aimdir[0], -1, 0, 0) * Quatd::rotation(aimdir[1], 0, -1, 0);
 }
 
 btCompoundShape *ReZEL::shape = NULL;
@@ -974,7 +984,7 @@ void ReZEL::anim(double dt){
 
 //		btRigidBody *worldBody = ws->worldBody();
 		double elevation = 0; // Cosine of angle of elevation relative to local acceleration
-		Vec3d accel = w->accel(pos, velo);
+		Vec3d accel = w->accel(pos, vec3_000);
 		btVector3 btaccel = btVector3(btvc(accel));
 		btVector3 btdown = btaccel.normalized();
 
@@ -1532,11 +1542,11 @@ void ReZEL::anim(double dt){
 		Vec3d desiredAccel = mat.vec3(2) * throttle;
 
 		bbody->activate(true);
-		if(inputs.analog[0] != 0 || inputs.analog[1] != 0){
-			if(inputs.analog[0] != 0)
-				bbody->applyTorque(btvc(inputs.analog[0] * -mat.vec3(1) * torqueAmount));
-			if(inputs.analog[1] != 0)
-				bbody->applyTorque(btvc(inputs.analog[1] * mat.vec3(0) * torqueAmount));
+		if(inputs.analog[2] != 0 || inputs.analog[3] != 0){
+			if(inputs.analog[2] != 0)
+				bbody->applyTorque(btvc(inputs.analog[2] * -mat.vec3(1) * torqueAmount));
+			if(inputs.analog[3] != 0)
+				bbody->applyTorque(btvc(inputs.analog[3] * mat.vec3(0) * torqueAmount));
 		}
 		else if(0 < fonfeet){
 			const double maxspeed = walkSpeed;
@@ -1614,6 +1624,26 @@ void ReZEL::anim(double dt){
 				bbody->applyTorque(btvc(-mat.vec3(2) * torqueAmount));
 			}
 		}
+
+		if(1){
+//			Quatd aimq = Quatd::rotation(aimdir[0], 1, 0, 0) * Quatd::rotation(aimdir[1], 0, 1, 0);
+//			Vec3d aimv = aimq.trans(Vec3d(0,0,-1));
+//			bbody->applyTorque(btvc(aimv[0] * mat.vec3(0) * torqueAmount));
+			btTransform wt = bbody->getWorldTransform();
+
+			if(!floorProximity){
+				double dyaw = rangein(aimdir[0], -dt, dt);
+				wt.setRotation(wt.getRotation() * btQuaternion(btVector3(1, 0, 0), -dyaw));
+				aimdir[0] -= dyaw;
+			}
+
+			double dyaw = rangein(aimdir[1], -dt, dt);
+			wt.setRotation(wt.getRotation() * btQuaternion(btVector3(0, 1, 0), -dyaw));
+			aimdir[1] -= dyaw;
+
+			bbody->setWorldTransform(wt);
+		}
+
 
 		{ // vertical thrust (upward and downward)
 			const double maxspeed = airMoveSpeed;
@@ -1748,6 +1778,16 @@ void ReZEL::anim(double dt){
 		fweapon = approach(fweapon, weapon == 1, dt, 0.);
 		twist = approach(twist, rangein(omg.sp(rot.trans(vec3_010)), -1., 1.), dt, 0.);
 		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
+		if(controlled){
+			Quatd plrot = ((Player*)controller)->getrot();
+			Vec3d zhat = plrot.trans(Vec3d(0,0,1));
+			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3/*asin(zhat[1])*/;
+			Quatd plrot2 = plrot.rotate(-dpitch, 1, 0, 0);
+			Vec3d xhat = plrot2.trans(Vec3d(1,0,0));
+			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3/*atan2(xhat[0], xhat[2])*/;
+			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 3., M_PI / 3.), dt, 0);
+			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -M_PI / 3., M_PI / 3.), dt, 0);
+		}
 		if(3. <= fsabre)
 			fsabre = 1.;
 		fsabre = approach(fsabre, weapon == 3 ? 3. : 0., dt, 0.);

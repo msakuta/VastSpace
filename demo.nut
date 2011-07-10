@@ -1,6 +1,6 @@
 // ReZEL demo
 
-ReZEL.set.bulletSpeed = 10;
+ReZEL.set.bulletSpeed = 2;
 ReZEL.set.walkSpeed = 0.05;
 
 function printeach(e){foreach(a,b in e) print(a + ": " + b);}

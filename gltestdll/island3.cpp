@@ -3077,7 +3077,7 @@ Vec3d Island3WarSpace::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{
 	Vec3d ret(srcpos[0] * omg2, 0., srcpos[2] * omg2);
 
 	/* coriolis force */
-	Vec3d coriolis = srcvelo.vp(cs->omg);
+	Vec3d coriolis = srcvelo.vp(sqrt(omg2) * Vec3d(0,1,0));
 	ret += coriolis;
 	return ret;
 }

@@ -58,19 +58,19 @@ StaticBindDouble ReZEL::standUpTorque = (6e-4 * 5e4);
 StaticBindDouble ReZEL::standUpFeedbackTorque = 1e1;
 StaticBindDouble ReZEL::maxFuel = 300;
 StaticBindDouble ReZEL::fuelRegenRate = 10.; ///< Units per second
+StaticBindDouble ReZEL::randomVibration = .15;
 StaticBindDouble ReZEL::cooldownTime = 1.;
 StaticBindDouble ReZEL::reloadTime = 5.;
 StaticBindDouble ReZEL::rifleDamage = 25.;
+StaticBindInt ReZEL::rifleMagazineSize = 5;
+StaticBindDouble ReZEL::shieldBeamCooldownTime = 1. / 3.;
+StaticBindDouble ReZEL::shieldBeamReloadTime = 1.;
+StaticBindDouble ReZEL::shieldBeamDamage = 10.;
+StaticBindInt ReZEL::shieldBeamMagazineSize = 3;
 StaticBindDouble ReZEL::vulcanCooldownTime = .1;
 StaticBindDouble ReZEL::vulcanReloadTime = 5.;
 StaticBindDouble ReZEL::vulcanDamage = 5.;
-StaticBindDouble ReZEL::randomVibration = .15;
-StaticBindInt ReZEL::rifleMagazineSize = 5;
-const int ReZEL::magazineSize[3] = {
-	5,
-	3,
-	20,
-};
+StaticBindInt ReZEL::vulcanMagazineSize = 20;
 
 
 const Vec3d ReZEL::thrusterDir[7] = {
@@ -200,7 +200,6 @@ template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	staticBind["rotationSpeed"] = &ReZEL::rotationSpeed;
 	staticBind["maxAngleSpeed"] = &ReZEL::maxAngleSpeed;
 	staticBind["bulletSpeed"] = &ReZEL::bulletSpeed;
-//	staticBind["rifleMagazineSize"] = &ReZEL::magazineSize[0];
 	staticBind["walkSpeed"] = &ReZEL::walkSpeed;
 	staticBind["airMoveSpeed"] = &ReZEL::airMoveSpeed;
 	staticBind["torqueAmount"] = &ReZEL::torqueAmount;
@@ -210,14 +209,19 @@ template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	staticBind["standUpFeedbackTorque"] = &ReZEL::standUpFeedbackTorque;
 	staticBind["maxFuel"] = &ReZEL::maxFuel;
 	staticBind["fuelRegenRate"] = &ReZEL::fuelRegenRate;
+	staticBind["randomVibration"] = &ReZEL::randomVibration;
 	staticBind["reloadTime"] = &ReZEL::reloadTime;
 	staticBind["cooldownTime"] = &ReZEL::cooldownTime;
 	staticBind["rifleDamage"] = &ReZEL::rifleDamage;
-	staticBind["vulcanDamage"] = &ReZEL::vulcanDamage;
+	staticBind["rifleMagazineSize"] = &ReZEL::rifleMagazineSize;
+	staticBind["shieldBeamCooldownTime"] = &ReZEL::shieldBeamCooldownTime;
+	staticBind["shieldBeamReloadTime"] = &ReZEL::shieldBeamReloadTime;
+	staticBind["shieldBeamDamage"] = &ReZEL::shieldBeamDamage;
+	staticBind["shieldBeamMagazineSize"] = &ReZEL::shieldBeamMagazineSize;
 	staticBind["vulcanCooldownTime"] = &ReZEL::vulcanCooldownTime;
 	staticBind["vulcanReloadTime"] = &ReZEL::vulcanReloadTime;
-	staticBind["randomVibration"] = &ReZEL::randomVibration;
-	staticBind["rifleMagazineSize"] = &ReZEL::rifleMagazineSize;
+	staticBind["vulcanDamage"] = &ReZEL::vulcanDamage;
+	staticBind["vulcanMagazineSize"] = &ReZEL::vulcanMagazineSize;
 
 	sq_pushstring(v, sq_classname(), -1);
 	sq_pushstring(v, ReZEL::st::entityRegister.sq_classname(), -1);
@@ -307,7 +311,7 @@ ReZEL::ReZEL() :
 	mother(NULL),
 	paradec(-1),
 	vulcancooldown(0.f),
-	vulcanmag(magazineSize[2]),
+	vulcanmag(vulcanMagazineSize),
 	twist(0.f),
 	pitch(0.f),
 	freload(0.f),
@@ -334,7 +338,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	weapon(0),
 	fweapon(0.),
 	vulcancooldown(0.f),
-	vulcanmag(magazineSize[2]),
+	vulcanmag(vulcanMagazineSize),
 	submagazine(3),
 	twist(0.f),
 	pitch(0.f),
@@ -376,7 +380,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->magazine = magazineSize[0];
+	p->magazine = rifleMagazineSize;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -410,6 +414,12 @@ void ReZEL::control(const input_t *inputs, double dt){
 	if(!w || health <= 0.)
 		return;
 	this->inputs = *inputs;
+	if(inputs->change & PL_RCLICK)
+		weapon = (weapon + 1) % 4;
+	if(inputs->change & PL_MWU)
+		weapon = (weapon + 1) % 4;
+	else if(inputs->change & PL_MWD)
+		weapon = (weapon - 1 + 4) % 4;
 }
 
 int ReZEL::popupMenu(PopupMenu &list){
@@ -507,7 +517,7 @@ void ReZEL::shootRifle(double dt){
 	if(0 < --magazine)
 		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
-		magazine = magazineSize[0];
+		magazine = rifleMagazineSize;
 		this->cooldown += reloadTime;
 		this->freload = reloadTime;
 	}
@@ -546,7 +556,7 @@ void ReZEL::shootShieldBeam(double dt){
 	{
 		BeamProjectile *pb;
 		double phi, theta;
-		pb = new BeamProjectile(this, 5, 15., .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
+		pb = new BeamProjectile(this, 5, shieldBeamDamage, .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(aimRot().trans(velo0));
@@ -557,10 +567,10 @@ void ReZEL::shootShieldBeam(double dt){
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 1;
 	if(0 < --submagazine)
-		this->cooldown += 1. / 3.;
+		this->cooldown += shieldBeamCooldownTime/*1. / 3.*/;
 	else{
-		submagazine = 3;
-		this->cooldown += 1.;
+		submagazine = shieldBeamMagazineSize;
+		this->cooldown += shieldBeamReloadTime;
 	}
 	this->muzzleFlash[1] = .3;
 }
@@ -605,7 +615,7 @@ void ReZEL::shootVulcan(double dt){
 	if(0 < --vulcanmag)
 		this->vulcancooldown += vulcanCooldownTime;
 	else{
-		vulcanmag = magazineSize[2];
+		vulcanmag = vulcanMagazineSize;
 		this->vulcancooldown += vulcanReloadTime;
 	}
 	this->muzzleFlash[2] = .1;
@@ -784,7 +794,7 @@ Entity *ReZEL::findMother(){
 }
 
 Quatd ReZEL::aimRot()const{
-	return Quatd::rotation(aimdir[0], -1, 0, 0) * Quatd::rotation(aimdir[1], 0, -1, 0);
+	return Quatd::rotation(aimdir[1], 0, -1, 0) * Quatd::rotation(aimdir[0], -1, 0, 0);
 }
 
 btCompoundShape *ReZEL::shape = NULL;
@@ -1625,10 +1635,11 @@ void ReZEL::anim(double dt){
 			}
 		}
 
-		if(1){
-//			Quatd aimq = Quatd::rotation(aimdir[0], 1, 0, 0) * Quatd::rotation(aimdir[1], 0, 1, 0);
-//			Vec3d aimv = aimq.trans(Vec3d(0,0,-1));
-//			bbody->applyTorque(btvc(aimv[0] * mat.vec3(0) * torqueAmount));
+		// Face the body to the aimed direction.
+		// Typically, the body is slower in response compared to manipulators's aim.
+		// So the body follows the aim gradually.
+		// TODO: Add torque instead of changing orientation directly to increase physical reality.
+		{
 			btTransform wt = bbody->getWorldTransform();
 
 			if(!floorProximity){
@@ -1779,14 +1790,10 @@ void ReZEL::anim(double dt){
 		twist = approach(twist, rangein(omg.sp(rot.trans(vec3_010)), -1., 1.), dt, 0.);
 		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
 		if(controlled){
-			Quatd plrot = ((Player*)controller)->getrot();
-			Vec3d zhat = plrot.trans(Vec3d(0,0,1));
-			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3/*asin(zhat[1])*/;
-			Quatd plrot2 = plrot.rotate(-dpitch, 1, 0, 0);
-			Vec3d xhat = plrot2.trans(Vec3d(1,0,0));
-			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3/*atan2(xhat[0], xhat[2])*/;
-			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 3., M_PI / 3.), dt, 0);
-			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -M_PI / 3., M_PI / 3.), dt, 0);
+			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
+			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
+			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);
+			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);
 		}
 		if(3. <= fsabre)
 			fsabre = 1.;

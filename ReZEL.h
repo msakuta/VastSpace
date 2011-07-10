@@ -125,7 +125,6 @@ protected:
 	static const avec3_t gunPos[2];
 	static Model *model;
 	static ysdnm_motion *motions[10];
-	static const int magazineSize[3];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
 	void getMotionTime(double (*motion_time)[numof(motions)]);
@@ -154,14 +153,19 @@ protected:
 	static StaticBindDouble standUpFeedbackTorque;
 	static StaticBindDouble maxFuel;
 	static StaticBindDouble fuelRegenRate;
+	static StaticBindDouble randomVibration;
 	static StaticBindDouble cooldownTime;
 	static StaticBindDouble reloadTime;
 	static StaticBindDouble rifleDamage;
-	static StaticBindDouble vulcanDamage;
+	static StaticBindInt rifleMagazineSize;
+	static StaticBindDouble shieldBeamCooldownTime;
+	static StaticBindDouble shieldBeamReloadTime;
+	static StaticBindDouble shieldBeamDamage;
+	static StaticBindInt shieldBeamMagazineSize;
 	static StaticBindDouble vulcanCooldownTime;
 	static StaticBindDouble vulcanReloadTime;
-	static StaticBindDouble randomVibration;
-	static StaticBindInt rifleMagazineSize;
+	static StaticBindDouble vulcanDamage;
+	static StaticBindInt vulcanMagazineSize;
 public:
 	ReZEL();
 	ReZEL(WarField *aw);

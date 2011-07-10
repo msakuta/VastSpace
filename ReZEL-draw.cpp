@@ -490,8 +490,9 @@ void ReZEL::drawHUD(WarDraw *wd){
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	glColor4f(1,1,1,1);
 
+	// Crosshair
+	glColor4f(1,1,1,1);
 	glBegin(GL_LINES);
 	glVertex2d(-.05, 0);
 	glVertex2d( .05, 0);
@@ -522,6 +523,27 @@ void ReZEL::drawHUD(WarDraw *wd){
 	glVertex2d( .5, -.15);
 	glVertex2d( .3, -.3);
 	glVertex2d( .4, -.3);
+	glEnd();
+
+	// Ammo indicator
+	int divisor = rifleMagazineSize;
+	glBegin(GL_QUADS);
+	for(int i = 0; i < divisor; i++){
+		double s0 = sin((i + .1) * M_PI / divisor);
+		double c0 = -cos((i + .1) * M_PI / divisor);
+		double s1 = sin((i + .9) * M_PI / divisor);
+		double c1 = -cos((i + .9) * M_PI / divisor);
+		double r0 = .8;
+		double r1 = 1.;
+		if(freload != 0.)
+			glColor4f(1,0,0, i < rifleMagazineSize * (1. - freload / reloadTime) ? .8 : .5);
+		else
+			glColor4f(1,1,1, i < magazine ? .8 : .5);
+		glVertex2d(r0 * s0, r0 * c0);
+		glVertex2d(r1 * s0, r1 * c0);
+		glVertex2d(r1 * s1, r1 * c1);
+		glVertex2d(r0 * s1, r0 * c1);
+	}
 	glEnd();
 
 	glPopMatrix();

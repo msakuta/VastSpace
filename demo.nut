@@ -2,6 +2,8 @@
 
 ReZEL.set.bulletSpeed = 2;
 ReZEL.set.walkSpeed = 0.05;
+ReZEL.set.reloadTime = 2.;
+ReZEL.set.rifleMagazineSize = 5;
 
 function printeach(e){foreach(a,b in e) print(a + ": " + b);}
 

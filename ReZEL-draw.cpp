@@ -486,6 +486,10 @@ void ReZEL::drawHUD(WarDraw *wd){
 	GLpmatrix pm;
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+	int wmin = min(wd->vw->vp.w, wd->vw->vp.h);
+	double xf = (double)wd->vw->vp.w / wmin;
+	double yf = (double)wd->vw->vp.h / wmin;
+	glOrtho(-xf, xf, -yf, yf, -1, 1);
 //	glOrtho(0, wd->vw->vp.w, wd->vw->vp.h, 0, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -526,25 +530,37 @@ void ReZEL::drawHUD(WarDraw *wd){
 	glEnd();
 
 	// Ammo indicator
-	int divisor = rifleMagazineSize;
-	glBegin(GL_QUADS);
-	for(int i = 0; i < divisor; i++){
-		double s0 = sin((i + .1) * M_PI / divisor);
-		double c0 = -cos((i + .1) * M_PI / divisor);
-		double s1 = sin((i + .9) * M_PI / divisor);
-		double c1 = -cos((i + .9) * M_PI / divisor);
-		double r0 = .8;
-		double r1 = 1.;
-		if(freload != 0.)
-			glColor4f(1,0,0, i < rifleMagazineSize * (1. - freload / reloadTime) ? .8 : .5);
-		else
-			glColor4f(1,1,1, i < magazine ? .8 : .5);
-		glVertex2d(r0 * s0, r0 * c0);
-		glVertex2d(r1 * s0, r1 * c0);
-		glVertex2d(r1 * s1, r1 * c1);
-		glVertex2d(r0 * s1, r0 * c1);
+	for(int n = 0; n < 2; n++){
+		int divisor = n ? rifleMagazineSize : vulcanMagazineSize;
+		for(int m = 0; m < 2; m++){
+			for(int i = 0; i < divisor; i++){
+				double s0 = sin((n * 2 - 1) * (i + .1) * M_PI / divisor);
+				double c0 = -cos((i + .1) * M_PI / divisor);
+				double s1 = sin((n * 2 - 1) * (i + .9) * M_PI / divisor);
+				double c1 = -cos((i + .9) * M_PI / divisor);
+				double r0 = .8;
+				double r1 = 1.;
+				if(m){
+					float f = (n ? freload != 0. : vulcanCooldownTime < vulcancooldown) ?
+						i < divisor * (n ? 1. - freload / reloadTime : 1. - vulcancooldown / vulcanReloadTime) ? 1. : 0. :
+						(n ? i < magazine : i < vulcanmag) ? 1. : 0.;
+					glColor4f(1, f, f, 1);
+				}
+				else{
+					if(n ? freload != 0. : vulcanCooldownTime < vulcancooldown)
+						glColor4f(1,0,0, i < divisor * (n ? 1. - freload / reloadTime : 1. - vulcancooldown / vulcanReloadTime) ? .8 : .3);
+					else
+						glColor4f(1,1,1, (n ? i < magazine : i < vulcanmag) ? .8 : .3);
+				}
+				glBegin(m ? GL_LINE_LOOP : GL_QUADS);
+				glVertex2d(r0 * s0, r0 * c0);
+				glVertex2d(r1 * s0, r1 * c0);
+				glVertex2d(r1 * s1, r1 * c1);
+				glVertex2d(r0 * s1, r0 * c1);
+				glEnd();
+			}
+		}
 	}
-	glEnd();
 
 	glPopMatrix();
 }

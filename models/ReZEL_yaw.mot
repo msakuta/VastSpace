@@ -4,9 +4,9 @@ ysdnm_motion 3
 	{
 		"ReZEL_waist" 0 -0.338669 0 0.940906 0 0 0
 		"ReZEL_head" 0 0.278902 0 0.96032 0 0 0
-		"ReZEL_torso" 0 -0.382683 0 0.92388 0 0 0
-		"ReZEL_lshoulder" 0 0.382683 0 0.92388 0 0 0
-		"ReZEL_rshoulder" 0 0.382683 0 0.92388 0 0 0
+		"ReZEL_torso" 0 0.338739 0 0.940881 0 0 0
+		"ReZEL_lshoulder" 0 0.202787 0 0.979223 0 0 0
+		"ReZEL_rshoulder" 0 0.202787 0 0.979223 0 0 0
 	}
 	keyframe 5 10
 	{
@@ -20,8 +20,8 @@ ysdnm_motion 3
 	{
 		"ReZEL_waist" 0 0.338669 0 0.940906 0 0 0
 		"ReZEL_head" 0 -0.278902 0 0.96032 0 0 0
-		"ReZEL_torso" 0 0.382683 0 0.92388 0 0 0
-		"ReZEL_lshoulder" 0 -0.382683 0 0.92388 0 0 0
-		"ReZEL_rshoulder" 0 -0.382683 0 0.92388 0 0 0
+		"ReZEL_torso" 0 -0.338739 0 0.940881 0 0 0
+		"ReZEL_lshoulder" 0 -0.156434 0 0.987689 0 0 0
+		"ReZEL_rshoulder" 0 -0.171929 0 0.98511 0 0 0
 	}
 }

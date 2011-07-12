@@ -124,7 +124,7 @@ protected:
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[10];
+	static ysdnm_motion *motions[12];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
 	void getMotionTime(double (*motion_time)[numof(motions)]);

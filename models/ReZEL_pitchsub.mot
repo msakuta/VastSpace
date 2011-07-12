@@ -1,0 +1,18 @@
+ysdnm_motion 3
+{
+	keyframe 2 10
+	{
+		"ReZEL_head" -0.338699 0 0 0.940895 0 0 0
+		"ReZEL_luparm" -0.495459 0 0 0.868631 0 0 0
+	}
+	keyframe 2 10
+	{
+		"ReZEL_head" 0 0 0 1 0 0 0
+		"ReZEL_luparm" 0 0 0 1 0 0 0
+	}
+	keyframe 2 10
+	{
+		"ReZEL_head" 0.125292 0 0 0.99212 0 0 0
+		"ReZEL_luparm" 0.425779 0 0 0.904827 0 0 0
+	}
+}

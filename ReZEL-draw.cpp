@@ -71,7 +71,7 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[10];
+ysdnm_motion *ReZEL::motions[12];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 //	double motion_time1[numof(motions)] = {
@@ -84,7 +84,9 @@ void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 		(*motion_time)[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
 		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
 		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * (walkphase * 7 + 1.) : 10. * (1. - fwaverider) * fonfeet;
-		(*motion_time)[9] = fwaverider == 0 && fonfeet == 1.f ? 10. * (-twist * (1. - fwaverider) + 1.) : 10.;
+		(*motion_time)[9] = fwaverider == 0 ? 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.) : 10.;
+		(*motion_time)[10] = weapon == 0 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
+		(*motion_time)[11] = weapon == 1 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
 //	};
 //	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -121,11 +123,13 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
 		motions[3] = YSDNM_MotionLoad("gundam/models/ReZEL_aimsub.mot");
 		motions[4] = YSDNM_MotionLoad("gundam/models/ReZEL_airtwist.mot");
-		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
+		motions[5] = YSDNM_MotionLoad("gundam/models/ReZEL_airpitch.mot");
 		motions[6] = YSDNM_MotionLoad("gundam/models/ReZEL_reload.mot");
 		motions[7] = YSDNM_MotionLoad("gundam/models/ReZEL_sabre.mot");
 		motions[8] = YSDNM_MotionLoad("gundam/models/ReZEL_walk.mot");
-		motions[9] = YSDNM_MotionLoad("gundam/models/ReZEL_twist.mot");
+		motions[9] = YSDNM_MotionLoad("gundam/models/ReZEL_yaw.mot");
+		motions[10] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
+		motions[11] = YSDNM_MotionLoad("gundam/models/ReZEL_pitchsub.mot");
 
 		init.create(*openGLState);
 	} while(0);

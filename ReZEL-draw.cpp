@@ -71,7 +71,7 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-ysdnm_motion *ReZEL::motions[12];
+ysdnm_motion *ReZEL::motions[13];
 
 void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 //	double motion_time1[numof(motions)] = {
@@ -83,10 +83,11 @@ void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 		(*motion_time)[5] = (-pitch * (1. - fwaverider) + 1.) * 10.,
 		(*motion_time)[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
 		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
-		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * (walkphase * 7 + 1.) : 10. * (1. - fwaverider) * fonfeet;
-		(*motion_time)[9] = fwaverider == 0 ? 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.) : 10.;
-		(*motion_time)[10] = weapon == 0 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
-		(*motion_time)[11] = weapon == 1 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
+		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.) : 10. * (1. - fwaverider) * fonfeet;
+		(*motion_time)[9] = fwaverider == 0 && fonfeet == 1.f ? 10. * min(1., 1. - velo.len() / walkSpeed) : 10. * (1. - fwaverider) * fonfeet;
+		(*motion_time)[10] = fwaverider == 0 ? 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.) : 10.;
+		(*motion_time)[11] = weapon == 0 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
+		(*motion_time)[12] = weapon == 1 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
 //	};
 //	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
@@ -119,7 +120,7 @@ void ReZEL::draw(wardraw_t *wd){
 		}*/
 		model = LoadMQOModel("gundam/models/ReZEL.mqo");
 		motions[0] = YSDNM_MotionLoad("gundam/models/ReZEL_waverider.mot");
-		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
+		motions[1] = YSDNM_MotionLoad("gundam/models/ReZEL_airidle.mot");
 		motions[2] = YSDNM_MotionLoad("gundam/models/ReZEL_aim.mot");
 		motions[3] = YSDNM_MotionLoad("gundam/models/ReZEL_aimsub.mot");
 		motions[4] = YSDNM_MotionLoad("gundam/models/ReZEL_airtwist.mot");
@@ -127,9 +128,10 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[6] = YSDNM_MotionLoad("gundam/models/ReZEL_reload.mot");
 		motions[7] = YSDNM_MotionLoad("gundam/models/ReZEL_sabre.mot");
 		motions[8] = YSDNM_MotionLoad("gundam/models/ReZEL_walk.mot");
-		motions[9] = YSDNM_MotionLoad("gundam/models/ReZEL_yaw.mot");
-		motions[10] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
-		motions[11] = YSDNM_MotionLoad("gundam/models/ReZEL_pitchsub.mot");
+		motions[9] = YSDNM_MotionLoad("gundam/models/ReZEL_stand.mot");
+		motions[10] = YSDNM_MotionLoad("gundam/models/ReZEL_yaw.mot");
+		motions[11] = YSDNM_MotionLoad("gundam/models/ReZEL_pitch.mot");
+		motions[12] = YSDNM_MotionLoad("gundam/models/ReZEL_pitchsub.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -536,6 +538,8 @@ void ReZEL::drawHUD(WarDraw *wd){
 	// Ammo indicator
 	for(int n = 0; n < 2; n++){
 		int divisor = n ? rifleMagazineSize : vulcanMagazineSize;
+		glPushMatrix();
+		glTranslated((n * 2 - 1) * .2, 0., 0.);
 		for(int m = 0; m < 2; m++){
 			for(int i = 0; i < divisor; i++){
 				double s0 = sin((n * 2 - 1) * (i + .1) * M_PI / divisor);
@@ -564,6 +568,7 @@ void ReZEL::drawHUD(WarDraw *wd){
 				glEnd();
 			}
 		}
+		glPopMatrix();
 	}
 
 	glPopMatrix();

@@ -8,6 +8,11 @@ EXPORTS
 	AllocSUFTexScales
 	DrawSUF
 	DecalDrawSUF
+	YSDNM_MotionInterpolateFree
+	YSDNM_MotionInterpolate
+	YSDNM_MotionLoad
+
+
 	sq_newslot
 	sq_settypetag
 	sq_newclass

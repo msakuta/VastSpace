@@ -8,6 +8,7 @@
 #include "draw/WarDraw.h"
 //#include "warutil.h"
 #include "draw/material.h"
+#include "btadapt.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/amat4.h>
@@ -842,6 +843,50 @@ void Bullet::anim(double dt){
 			}
 		}
 	}
+#endif
+
+#if 0
+	if(ws) do{
+		const btVector3 &btvelo = btvc(velo);
+		btScalar velolen = btvelo.length();
+		if(velolen == 0. || runlength == 0.)
+			break;
+		const btVector3 &to = btvc(pos) + dt * btvelo;
+		const btVector3 from = btvc(pos) - min(runlength, velolen * dt) / velolen * btvelo; // backtrace
+		btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
+
+		ws->bdw->rayTest(from, to, rayCallback);
+
+		if(rayCallback.hasHit() /*&& (!owner || rayCallback.m_collisionObject != owner->bbody)*/){
+					Vec3d accel = w->accel(pb->pos, pb->velo);
+					int j, n;
+					frexp(pb->damage, &n);
+					n = n / 2 + drseq(&w->rs);
+
+//					if(rayCallback.m_collisionObject->upcast().getLinearVelocity());
+
+					// Add spark sprite
+					{
+						double angle = w->rs.nextd() * 2. * M_PI / 2.;
+						AddTelineCallback3D(ws->tell, pos, Vec3d(0,0,0), .0010 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+							vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
+					}
+
+					// Add spark traces
+					for(j = 0; j < n; j++){
+						Vec3d velo = -pb->velo.norm() * .2;
+						for(int k = 0; k < 3; k++)
+							velo[k] += .15 * (drseq(&w->rs) - .5);
+/*						AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
+							j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
+							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);*/
+						AddTelineCallback3D(ws->tell, pos, velo, .00025 + n * .0001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
+					}
+			bulletkill(-1, NULL);
+			w = NULL;
+			return;
+		}
+	}while(0);
 #endif
 
 	if(pb->grav){

@@ -6,6 +6,7 @@ extern "C"{
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
+#include <assert.h>
 
 struct ysdnm_motion{
 	struct keyframe : public ysdnm_var{
@@ -32,6 +33,15 @@ struct ysdnm_motion{
 		kfl[nkfl-1].dt = dt;
 		return kfl[nkfl-1];
 	}
+	keyframe &insertKeyframe(double dt, int index){
+		assert(0 <= index && index < nkfl);
+		kfl = (keyframe*)realloc(kfl, (nkfl + 1) * sizeof *kfl);
+		memmove(&kfl[index+1], &kfl[index], (nkfl - index) * sizeof *kfl);
+		kfl[index].keyframe::keyframe();
+		kfl[index].dt = dt;
+		nkfl++;
+		return kfl[index];
+	}
 	keyframe &getKeyframe(double time){
 		return kfl[getKeyframeIndex(time)];
 	}
@@ -42,8 +52,15 @@ struct ysdnm_motion{
 		for(i = 0; i < nkfl && kfl[i].dt <= time; time -= kfl[i].dt, i++);
 		return nkfl <= i ? nkfl - 1 : i;
 	}
+	double getTimeOfKeyframe(int keyframe){
+		double ret = 0;
+		for(int i = 0; i < keyframe && i < nkfl; i++)
+			ret += kfl[i].dt;
+		return ret;
+	}
 	ysdnm_var &interpolate(ysdnm_var &v, double time);
 	void save(std::ostream&);
+	void save2(std::ostream&);
 	bool load(std::istream&);
 };
 

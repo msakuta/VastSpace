@@ -1026,7 +1026,7 @@ void display_func(void){
 			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
 		}
 
-		if(pl.chase){
+		if(pl.chase && pl.controlled == pl.chase){
 			inputs.analog[1] += mousedelta[0];
 			inputs.analog[0] += mousedelta[1];
 			pl.chase->control(&inputs, dt);

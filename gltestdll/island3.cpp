@@ -2780,6 +2780,7 @@ static const double texcoord[][3] = {
 
 Island3Building::Island3Building(Island3 &host) : host(host){
 	health = maxhealth();
+	race = -1;
 	RandomSequence rs((unsigned long)this);
 	double phase = rs.nextd() * M_PI;
 	phase += floor(phase / (M_PI / 3.)) * M_PI / 3. - M_PI / 6.;

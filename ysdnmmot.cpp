@@ -8,6 +8,7 @@ extern "C"{
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <iomanip>
 
 ysdnm_var *ysdnm_var::dup()const{
 	ysdnm_var *ret = new ysdnm_var;
@@ -26,6 +27,36 @@ ysdnm_var *ysdnm_var::dup()const{
 	return ret;
 }
 
+double *ysdnm_var::addBone(const char *name){
+	char **names = new char*[bones+1];
+	memcpy(names, bonenames, bones * sizeof *names);
+	if(bonenames)
+		delete[] bonenames;
+	names[bones] = new char[strlen(name)+1];
+	strcpy(names[bones], name);
+	bonenames = const_cast<const char**>(names);
+	double (*rots)[7] = new double[bones+1][7];
+	memcpy(rots, bonerot, bones * sizeof *rots);
+	QUATIDENTITY(rots[bones]);
+	rots[bones][4] = 0;
+	rots[bones][5] = 0;
+	rots[bones][6] = 0;
+	if(bonerot)
+		delete[] bonerot;
+	bonerot = rots;
+
+	float *newvisible = new float[bones+1];
+	if(visible)
+		memcpy(newvisible, visible, bones * sizeof *visible);
+	else for(int i = 0; i < bones+1; i++)
+		newvisible[i] = 1.;
+	newvisible[bones] = 1.;
+	if(visible)
+		delete[] visible;
+	visible = newvisible;
+
+	return bonerot[bones++];
+}
 
 
 
@@ -35,13 +66,13 @@ static void slerp(double p[], const double q[], const double r[], const double t
   double qr = q[0] * r[0] + q[1] * r[1] + q[2] * r[2] + q[3] * r[3];
   double ss = 1.0 - qr * qr;
   
-  if (ss == 0.0) {
+  if (ss < DBL_EPSILON) {
     p[0] = q[0];
     p[1] = q[1];
     p[2] = q[2];
     p[3] = q[3];
   }
-  else if(!::memcmp(q, r, sizeof(double[4]))){
+  else if(q[0] == r[0] && q[1] == r[1] && q[2] == r[2] && q[3] == r[3]){
 	  QUATCPY(p, q);
   }
   else {
@@ -90,7 +121,25 @@ void ysdnm_motion::save(std::ostream &os){
 		for(int j = 0; j < kfl[i].bones; j++){
 			os << "\t\t\"" << kfl[i].bonenames[j] << "\"";
 			for(int k = 0; k < 7; k++)
-				os << " " << kfl[i].bonerot[j][k];
+				os << " " << std::setprecision(15) << kfl[i].bonerot[j][k];
+			os << std::endl;
+		}
+		os << "\t}" << std::endl;
+	}
+	os << "}" << std::endl;
+}
+
+void ysdnm_motion::save2(std::ostream &os){
+	os << "model_motion " << nkfl << std::endl;
+	os << "{" << std::endl;
+	for(int i = 0; i < nkfl; i++){
+		os << "\tkeyframe " << kfl[i].bones << " " << kfl[i].dt << std::endl;
+		os << "\t{" << std::endl;
+		for(int j = 0; j < kfl[i].bones; j++){
+			os << "\t\t\"" << kfl[i].bonenames[j] << "\"";
+			for(int k = 0; k < 7; k++)
+				os << " " << std::setprecision(15) << kfl[i].bonerot[j][k];
+			os << " " << (kfl[i].visible ? kfl[i].visible[j] : 1.);
 			os << std::endl;
 		}
 		os << "\t}" << std::endl;
@@ -125,6 +174,7 @@ bool ysdnm_motion::load(std::istream &is){
 			std::istringstream iss(name1+1);
 			for(int k = 0; k < 7; k++)
 				iss >> kfl[i].bonerot[j][k];
+			QUATNORMIN(&kfl[i].bonerot[j][0]);
 		}
 		is.getline(buf, sizeof buf);
 	}
@@ -146,12 +196,16 @@ struct ysdnm_motion *YSDNM_MotionLoad(const char *fname){
 static ysdnmv_t sdnmv;
 
 struct ysdnm_var *YSDNM_MotionInterpolate(struct ysdnm_motion **mot, double *time, int nmot){
-	ysdnm_var *ret = new ysdnm_var[nmot];
-	for(int i = 0; i < nmot; i++){
-		mot[i]->interpolate(ret[i], time[i]);
-		ret[i].next = i+1 < nmot ? &ret[i+1] : NULL;
+	if(nmot){
+		ysdnm_var *ret = new ysdnm_var[nmot];
+		for(int i = 0; i < nmot; i++) if(mot[i]){
+			mot[i]->interpolate(ret[i], time[i]);
+			ret[i].next = i+1 < nmot ? &ret[i+1] : NULL;
+		}
+		return ret;
 	}
-	return ret;
+	else
+		return NULL;
 }
 
 void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot){

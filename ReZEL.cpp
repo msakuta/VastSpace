@@ -486,10 +486,10 @@ void ReZEL::shootRifle(double dt){
 	{
 		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
-		timemeas_t tm;
-		TimeMeasStart(&tm);
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
-		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
+//		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
 		if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
 			gunpos *= sufscale;
 			gunpos[0] *= -1;
@@ -1665,9 +1665,9 @@ void ReZEL::anim(double dt){
 			btTransform wt = bbody->getWorldTransform();
 
 			if(!floorProximity){
-				double dyaw = rangein(aimdir[0], -dt, dt);
-				wt.setRotation(wt.getRotation() * btQuaternion(btVector3(1, 0, 0), -dyaw));
-				aimdir[0] -= dyaw;
+				double dpitch = rangein(aimdir[0], -dt, dt);
+				wt.setRotation(wt.getRotation() * btQuaternion(btVector3(1, 0, 0), -dpitch));
+				aimdir[0] -= dpitch;
 			}
 
 			double dyaw = rangein(aimdir[1], -dt, dt);
@@ -1814,7 +1814,7 @@ void ReZEL::anim(double dt){
 		{
 			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
 			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
-			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);
+			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 2., M_PI / 2.), M_PI * dt, 0);
 			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);
 		}
 		if(3. <= fsabre)

@@ -42,3 +42,26 @@ function frameproc(dt){
 	}
 }
 
+ReZEL_deaths <- [0,0];
+
+try{
+	local f = file("ReZEL_deaths", "rb");
+	for(local i = 0; i < 2; i++){
+		ReZEL_deaths[i] = f.readn('i');
+		print("ReZEL death[" + i + "]: " + ReZEL_deaths[i]);
+	}
+}
+catch(e){
+	print("Could not load ReZEL_deaths: " + e);
+}
+
+function hook_delete_Entity(e){
+	if(e.classname == "ReZEL"){
+		ReZEL_deaths[e.race]++;
+		print("ReZEL death[" + e.race + "]: " + ReZEL_deaths[e.race]);
+		local f = file("ReZEL_deaths", "wb");
+		for(local i = 0; i < 2; i++)
+			f.writen(ReZEL_deaths[i], 'i');
+	}
+}
+

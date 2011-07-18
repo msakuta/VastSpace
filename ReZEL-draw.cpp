@@ -86,8 +86,8 @@ void ReZEL::getMotionTime(double (*motion_time)[numof(motions)]){
 		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.) : 10. * (1. - fwaverider) * fonfeet;
 		(*motion_time)[9] = fwaverider == 0 && fonfeet == 1.f ? 10. * min(1., 1. - velo.len() / walkSpeed) : 10. * (1. - fwaverider) * fonfeet;
 		(*motion_time)[10] = fwaverider == 0 ? 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.) : 10.;
-		(*motion_time)[11] = weapon == 0 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
-		(*motion_time)[12] = weapon == 1 && fwaverider == 0 ? 10. * (aimdir[0] / (M_PI / 3.) * (1. - fwaverider) + 1.) : 10.;
+		(*motion_time)[11] = weapon == 0 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
+		(*motion_time)[12] = weapon == 1 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
 //	};
 //	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }

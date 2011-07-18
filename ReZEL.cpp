@@ -1243,92 +1243,114 @@ void ReZEL::anim(double dt){
 					}
 				}
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
-					Vec3d dv, forward;
-					Vec3d xh, yh;
-					double sx, sy, len, len2, maxspeed = maxAngleSpeed * dt;
-					Quatd qres, qrot;
+					const Vec3d dv = delta.norm();
 
-					// If a mother could not be aquired, fight to the death alone.
-					if(p->fuel < 30. && (pm || (pm = findMother()))){
-						p->task = Dockque;
-						break;
-					}
+					if(floorTouched){
+						Quatd totalrot = rot * aimRot();
 
-					double dist = delta.len();
-					dv = delta;
-					double awaybase = pt->enemy->hitradius() * 3. + .1;
-					if(.6 < awaybase)
-						awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
-					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
-					if(p->task == Attack && dist < awaybase){
-						p->task = Away;
-					}
-					else if(p->task == Away && attackrad < dist){
-						p->task = Attack;
-					}
-					dv.normin();
-					forward = pt->rot.trans(avec3_001);
-					if(p->task == Attack)
-						forward *= -1;
-		/*				sx = VECSP(&mat[0], dv);
-					sy = VECSP(&mat[4], dv);
-					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
-					p->throttle = 1.;
+						// How much we face the enemy straight.
+						double confrontness = dv.sp(totalrot.trans(Vec3d(0,0,-1)));
 
-					// Randomly vibrates to avoid bullets
-					if(0 < fuel && !floorTouched){
-						RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
-						Vec3d randomvec;
-						for(int i = 0; i < 3; i++)
-							randomvec[i] = rs.nextd() - .5;
-						bbody->applyCentralForce(btvc(randomvec * mass * randomVibration));
-					}
+						inputs.analog[0] = dv.sp(totalrot.trans(Vec3d(0,-1,0))) * 2e2;
+						inputs.analog[1] = dv.sp(totalrot.trans(Vec3d(1,0,0))) * 2e2;
 
-					if(p->task == Attack || forward.sp(dv) < -.5){
-						xh = forward.vp(dv);
-						len = len2 = xh.len();
-						len = asin(len);
-						len = sin(len / 2.);
-
-						double velolen = bbody->getLinearVelocity().length();
-						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
-
-						// Suppress side slips
-						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
-						bbody->applyCentralForce(btvc(-sidevelo * mass));
-
-						if(len && len2){
-							btVector3 btomg = bbody->getAngularVelocity();
-							btVector3 btxh = btvc(xh.norm());
-
-							// The second term is for suppressing rotation.
-							btVector3 btaac = btxh * len - btomg * .15;
-
-							// Maneuvering ability is limited. We cap angular acceleration here to simulate it.
-							if((M_PI / 50.) * (M_PI / 50.) < btaac.length2())
-								btaac.normalize() *= (M_PI / 50.);
-
-							// Thruster's responsivity is also limited, we integrate desired accel over time to simulate.
-							for(int i = 0; i < 3; i++)
-								aac[i] = approach(aac[i], btaac[i], 2. * dt, 0);
-
-							// Torque is applied to the rigid body, so we must convert angular acceleration to torque by taking product with inverse inertia tensor.
-							bbody->applyTorque(bbody->getInvInertiaTensorWorld() * btvc(aac) * 2.e-2 * (3. - 2. * fwaverider));
-
-							btTransform bttr = bbody->getWorldTransform();
-							btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
-							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
-							if(0 < laac[0]) p->thrusts[0][1] += laac[0];
-							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
-							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
+						// If we are facing 
+						if(confrontness < .99){
 						}
-						if(trigger && p->task == Attack && dist < 20. && .99 < dv.sp(forward)){
+						else if(.5 * .5 < delta.slen()){
+							inputs.press |= PL_W;
+						}
+						if(.995 < confrontness){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
 					}
 					else{
-						p->aac.clear();
+						Vec3d forward;
+						Vec3d xh, yh;
+						double sx, sy, len, len2, maxspeed = maxAngleSpeed * dt;
+						Quatd qres, qrot;
+
+						// If a mother could not be aquired, fight to the death alone.
+						if(p->fuel < 30. && (pm || (pm = findMother()))){
+							p->task = Dockque;
+							break;
+						}
+
+						double dist = delta.len();
+						double awaybase = pt->enemy->hitradius() * 3. + .1;
+						if(.6 < awaybase)
+							awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
+						double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
+						if(p->task == Attack && dist < awaybase){
+							p->task = Away;
+						}
+						else if(p->task == Away && attackrad < dist){
+							p->task = Attack;
+						}
+						forward = pt->rot.trans(avec3_001);
+						if(p->task == Attack)
+							forward *= -1;
+			/*				sx = VECSP(&mat[0], dv);
+						sy = VECSP(&mat[4], dv);
+						pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
+						p->throttle = 1.;
+
+						// Randomly vibrates to avoid bullets
+						if(0 < fuel && !floorTouched){
+							RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
+							Vec3d randomvec;
+							for(int i = 0; i < 3; i++)
+								randomvec[i] = rs.nextd() - .5;
+							bbody->applyCentralForce(btvc(randomvec * mass * randomVibration));
+						}
+
+						if(p->task == Attack || forward.sp(dv) < -.5){
+							xh = forward.vp(dv);
+							len = len2 = xh.len();
+							len = asin(len);
+							len = sin(len / 2.);
+
+							double velolen = bbody->getLinearVelocity().length();
+							throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
+
+							// Suppress side slips
+							Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
+							bbody->applyCentralForce(btvc(-sidevelo * mass));
+
+							if(len && len2){
+								btVector3 btomg = bbody->getAngularVelocity();
+								btVector3 btxh = btvc(xh.norm());
+
+								// The second term is for suppressing rotation.
+								btVector3 btaac = btxh * len - btomg * .15;
+
+								// Maneuvering ability is limited. We cap angular acceleration here to simulate it.
+								if((M_PI / 50.) * (M_PI / 50.) < btaac.length2())
+									btaac.normalize() *= (M_PI / 50.);
+
+								// Thruster's responsivity is also limited, we integrate desired accel over time to simulate.
+								for(int i = 0; i < 3; i++)
+									aac[i] = approach(aac[i], btaac[i], 2. * dt, 0);
+
+								// Torque is applied to the rigid body, so we must convert angular acceleration to torque by taking product with inverse inertia tensor.
+								bbody->applyTorque(bbody->getInvInertiaTensorWorld() * btvc(aac) * 2.e-2 * (3. - 2. * fwaverider));
+
+								btTransform bttr = bbody->getWorldTransform();
+								btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
+								if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
+								if(0 < laac[0]) p->thrusts[0][1] += laac[0];
+								p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
+								p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
+							}
+							if(trigger && p->task == Attack && dist < 20. && .99 < dv.sp(forward)){
+								pt->inputs.change |= PL_ENTER;
+								pt->inputs.press |= PL_ENTER;
+							}
+						}
+						else{
+							p->aac.clear();
+						}
 					}
 				}
 				else if(!pt->enemy && (p->task == Attack || p->task == Away)){
@@ -1789,7 +1811,7 @@ void ReZEL::anim(double dt){
 		fweapon = approach(fweapon, weapon == 1, dt, 0.);
 		twist = approach(twist, rangein(omg.sp(rot.trans(vec3_010)), -1., 1.), dt, 0.);
 		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
-		if(controlled){
+		{
 			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
 			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
 			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);

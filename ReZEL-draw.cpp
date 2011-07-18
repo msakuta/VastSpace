@@ -489,6 +489,8 @@ void ReZEL::drawtra(wardraw_t *wd){
 }
 
 void ReZEL::drawHUD(WarDraw *wd){
+	if(wd->w->pl->mover != wd->w->pl->cockpitview)
+		return;
 	GLpmatrix pm;
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();

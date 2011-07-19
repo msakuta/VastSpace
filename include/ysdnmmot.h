@@ -11,6 +11,14 @@ extern "C"{
 struct ysdnm_motion{
 	struct keyframe : public ysdnm_var{
 		double dt;
+		keyframe() : dt(0.){}
+		keyframe(const keyframe &o) : ysdnm_var(o), dt(o.dt){
+		}
+		keyframe &operator=(const keyframe &o){
+			this->ysdnm_var::~ysdnm_var();
+			this->keyframe::keyframe(o);
+			return *this;
+		}
 	} *kfl;
 	int nkfl;
 	ysdnm_motion() : kfl(NULL), nkfl(0){}

@@ -92,15 +92,26 @@ typedef struct ysdnm_var{
 		fviscla = 0;
 		bonenames = new const char*[o.bones];
 		for(int i = 0; i < o.bones; i++){
-			char *name = new char[strlen(o.bonenames[i])];
+			char *name = new char[strlen(o.bonenames[i])+1];
 			strcpy(name, o.bonenames[i]);
 			bonenames[i] = name;
 		}
-		bonerot = new double [o.bones][7];
+		if(o.bonerot){
+			bonerot = new double [o.bones][7];
+			memcpy(bonerot, o.bonerot, o.bones * sizeof *bonerot);
+		}
+		else
+			bonerot = NULL;
 		bones = o.bones;
 		skipnames = NULL;
 		skips = 0;
 		next = NULL;
+		if(o.visible){
+			visible = new float[o.bones];
+			memcpy(visible, o.visible, o.bones * sizeof *visible);
+		}
+		else
+			visible = NULL;
 	}
 	~ysdnm_var(){
 		if(bonenames){

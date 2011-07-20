@@ -7,7 +7,7 @@
 #include "astrodraw.h"
 #include "../galaxy_field.h"
 #include "Player.h"
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "GLWmenu.h"
 #include "CoordSys.h"
 #include "stellar_file.h"

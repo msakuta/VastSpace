@@ -4,7 +4,7 @@
  */
 #ifndef GLW_GLWTIP_H
 #define GLW_GLWTIP_H
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif

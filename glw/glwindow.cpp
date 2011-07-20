@@ -2,14 +2,14 @@
  * \brief Implementation of GLwindow and its subclasses.
  * Implements GLWbutton branch too.
  */
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "cmd.h"
 #include "antiglut.h"
 #include "Viewer.h"
 #include "draw/material.h"
 #include "Player.h" // GLWmoveOrderButton
 #include "sqadapt.h"
-#include "message.h"
+#include "glw/message.h"
 #include "GLWtip.h"
 extern "C"{
 #include <clib/c.h>

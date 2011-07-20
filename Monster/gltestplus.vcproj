@@ -448,6 +448,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\glw\GLWchart.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\judge.cpp"
 				>
 			</File>
@@ -717,6 +721,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\glw\GLWchart.h"
+				>
+			</File>
+			<File
 				RelativePath="..\keybind.h"
 				>
 			</File>
@@ -774,19 +782,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\glw\glwindow.h"
-					>
-				</File>
-				<File
 					RelativePath="..\glw\GLWmenu.h"
 					>
 				</File>
 				<File
 					RelativePath="..\glw\GLWtip.h"
-					>
-				</File>
-				<File
-					RelativePath="..\glw\message.h"
 					>
 				</File>
 			</Filter>
@@ -971,6 +971,14 @@
 			<Filter
 				Name="glw"
 				>
+				<File
+					RelativePath="..\include\glw\glwindow.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\glw\message.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\glw\popup.h"
 					>

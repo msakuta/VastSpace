@@ -1,5 +1,6 @@
 #ifndef GLW_GLWINDOW_H
 #define GLW_GLWINDOW_H
+#include "export.h"
 #include "serial.h"
 #include "dstring.h"
 extern "C"{
@@ -89,7 +90,7 @@ struct GLwindowState{
  *
  * All drawable OpenGL window system elements should derive this class.
  */
-class GLelement : public Serializable{
+class EXPORT GLelement : public Serializable{
 public:
 	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0){}
 	void setExtent(const GLWrect &r){xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;}
@@ -110,7 +111,7 @@ protected:
  *
  * GLwindow is also bound to Squirrel class object.
  */
-class GLwindow : public GLelement{
+class EXPORT GLwindow : public GLelement{
 public:
 	typedef GLwindow st;
 
@@ -123,8 +124,8 @@ public:
 
 	// Global methods
 	static int mouseFunc(int button, int state, int x, int y, GLwindowState &gvp);
-	friend GLwindow **glwAppend(GLwindow *wnd);
-	friend void glwActivate(GLwindow **ppwnd);
+	EXPORT friend GLwindow **glwAppend(GLwindow *wnd);
+	EXPORT friend void glwActivate(GLwindow **ppwnd);
 	static void reshapeFunc(int w, int h);
 	void glwDraw(GLwindowState &, double t, int *);
 	void glwDrawMinimized(GLwindowState &gvp, double t, int *pp);
@@ -256,24 +257,24 @@ inline void GLwindow::setVisible(bool f){
 
 
 /* UI strings are urged to be printed by this function. */
-int glwPutTextureStringN(const char *s, int n, int size);
-int glwPutTextureString(const char *s, int size = GLwindow::getFontHeight());
-int glwGetSizeTextureStringN(const char *s, long n, int isize);
-int glwGetSizeTextureString(const char *s, int size = -1);
-int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
-void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
-void glwpos2d(double x, double y);
-int glwprintf(const char *f, ...);
-int glwsizef(const char *f, ...);
-void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
-void glwHScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int ix);
-int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
-int glwHScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
+EXPORT int glwPutTextureStringN(const char *s, int n, int size);
+EXPORT int glwPutTextureString(const char *s, int size = GLwindow::getFontHeight());
+EXPORT int glwGetSizeTextureStringN(const char *s, long n, int isize);
+EXPORT int glwGetSizeTextureString(const char *s, int size = -1);
+EXPORT int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
+EXPORT void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
+EXPORT void glwpos2d(double x, double y);
+EXPORT int glwprintf(const char *f, ...);
+EXPORT int glwsizef(const char *f, ...);
+EXPORT void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
+EXPORT void glwHScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int ix);
+EXPORT int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int iy);
+EXPORT int glwHScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, int w, int h, int range, int ix);
 
 
 
 /// Base class for sizeable windows.
-class GLwindowSizeable : public GLwindow{
+class EXPORT GLwindowSizeable : public GLwindow{
 protected:
 	float ratio; /* ratio of window size if it is to be reserved */
 	int sizing; /* edge flags of changing borders */

@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of GLWmenu.
  */
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "cmd.h"
 #include "antiglut.h"
 #include "Viewer.h"

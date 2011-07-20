@@ -3,7 +3,7 @@
  */
 #ifndef GLW_GLWENTLIST_H
 #define GLW_GLWENTLIST_H
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "CoordSys.h"
 #include "Entity.h"
 

@@ -3,7 +3,7 @@
  */
 #ifndef GLW_GLWMENU_H
 #define GLW_GLWMENU_H
-#include "glwindow.h"
+#include "glw/glwindow.h"
 #include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>

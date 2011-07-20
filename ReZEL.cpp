@@ -1174,7 +1174,7 @@ void ReZEL::anim(double dt){
 */
 				// Do not try shooting at very small target, that's just waste of ammo.
 				if(enemy->hitradius() < dist / 300.)
-					trigger = 0;
+					trigger = false;
 
 			}
 /*			else
@@ -1216,7 +1216,7 @@ void ReZEL::anim(double dt){
 					else
 						standingUp = false;
 				}
-				else if((task == Attack || task == Away) && !pt->enemy || task == Auto || task == Parade){
+				else if((task == Attack || task == Rest || task == Away) && !pt->enemy || task == Auto || task == Parade){
 					if(forcedEnemy && enemy || pm && (pt->enemy = pm->enemy)){
 						p->task = Attack;
 					}
@@ -1242,27 +1242,52 @@ void ReZEL::anim(double dt){
 						steerArrival(dt, dest, vec3_000, 1. / 2., .0);
 					}
 				}
-				else if(pt->enemy && (p->task == Attack || p->task == Away)){
+				else if(pt->enemy && (p->task == Attack || p->task == Away || task == Rest)){
 					const Vec3d dv = delta.norm();
+					Quatd totalrot = rot * aimRot();
+					inputs.analog[0] = dv.sp(totalrot.trans(Vec3d(0,-1,0))) * 2e2;
+					inputs.analog[1] = dv.sp(totalrot.trans(Vec3d(1,0,0))) * 2e2;
+
+					// How much we face the enemy straight.
+					double confrontness = dv.sp(totalrot.trans(Vec3d(0,0,-1)));
 
 					if(floorTouched){
-						Quatd totalrot = rot * aimRot();
 
-						// How much we face the enemy straight.
-						double confrontness = dv.sp(totalrot.trans(Vec3d(0,0,-1)));
+						// Try jumping only if the fuel is enough.
+						if(.5 < confrontness && maxfuel() / 2. < fuel){
+							// If we face some obstacles, try to jump over it.
+							const btVector3 &btpos = bbody->getWorldTransform().getOrigin();
+							const btVector3 &from = btpos;
+							const btVector3 to = btpos + btvc(-mat.vec3(2) * .05);
 
-						inputs.analog[0] = dv.sp(totalrot.trans(Vec3d(0,-1,0))) * 2e2;
-						inputs.analog[1] = dv.sp(totalrot.trans(Vec3d(1,0,0))) * 2e2;
+							btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
 
-						// If we are facing 
-						if(confrontness < .99){
+							ws->bdw->rayTest(from, to, rayCallback);
+
+							if(rayCallback.hasHit()){
+								btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+								if(body && body->hasContactResponse() && body->isStaticObject()){
+									inputs.press |= PL_Q;
+									task = Jump;
+									jumptime = 2.;
+								}
+							}
+
 						}
-						else if(.5 * .5 < delta.slen()){
-							inputs.press |= PL_W;
+
+						// If we are facing towards enemy, walk forward.
+						if(.99 < confrontness){
+							if((inputs.press & PL_Q) == 0 && .5 * .5 < delta.slen())
+								inputs.press |= PL_W;
 						}
-						if(.995 < confrontness){
+						if(trigger && .999 < confrontness){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
+						}
+
+						if(maxfuel() * .9 < fuel){
+							task = Jump;
+							jumptime = 1.;
 						}
 					}
 					else{
@@ -1282,7 +1307,7 @@ void ReZEL::anim(double dt){
 						if(.6 < awaybase)
 							awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
 						double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
-						if(p->task == Attack && dist < awaybase){
+/*						if(p->task == Attack && dist < awaybase){
 							p->task = Away;
 						}
 						else if(p->task == Away && attackrad < dist){
@@ -1290,23 +1315,23 @@ void ReZEL::anim(double dt){
 						}
 						forward = pt->rot.trans(avec3_001);
 						if(p->task == Attack)
-							forward *= -1;
+							forward *= -1;*/
 			/*				sx = VECSP(&mat[0], dv);
 						sy = VECSP(&mat[4], dv);
 						pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 						p->throttle = 1.;
 
 						// Randomly vibrates to avoid bullets
-						if(0 < fuel && !floorTouched){
+/*						if(0 < fuel && !floorTouched){
 							RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
 							Vec3d randomvec;
 							for(int i = 0; i < 3; i++)
 								randomvec[i] = rs.nextd() - .5;
 							bbody->applyCentralForce(btvc(randomvec * mass * randomVibration));
-						}
+						}*/
 
-						if(p->task == Attack || forward.sp(dv) < -.5){
-							xh = forward.vp(dv);
+						if((p->task == Attack || task == Rest) /*|| forward.sp(dv) < -.5*/){
+/*							xh = forward.vp(dv);
 							len = len2 = xh.len();
 							len = asin(len);
 							len = sin(len / 2.);
@@ -1316,10 +1341,10 @@ void ReZEL::anim(double dt){
 
 							// Suppress side slips
 							Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
-							bbody->applyCentralForce(btvc(-sidevelo * mass));
+							bbody->applyCentralForce(btvc(-sidevelo * mass));*/
 
-							if(len && len2){
-								btVector3 btomg = bbody->getAngularVelocity();
+							/*if(len && len2)*/{
+/*								btVector3 btomg = bbody->getAngularVelocity();
 								btVector3 btxh = btvc(xh.norm());
 
 								// The second term is for suppressing rotation.
@@ -1341,9 +1366,20 @@ void ReZEL::anim(double dt){
 								if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
 								if(0 < laac[0]) p->thrusts[0][1] += laac[0];
 								p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
-								p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
+								p->thrusts[0][1] = min(p->thrusts[0][1], 1.);*/
+
+								if(task == Rest){
+									if(maxfuel() * .9 < fuel)
+										task = Attack;
+								}
+								else{
+									if(fuel < maxfuel() / 10.)
+										task = Rest;
+									else
+										inputs.press |= PL_W;
+								}
 							}
-							if(trigger && p->task == Attack && dist < 20. && .99 < dv.sp(forward)){
+							if(trigger && (task == Attack || task == Rest) && dist < 20. && .999 < confrontness){
 								pt->inputs.change |= PL_ENTER;
 								pt->inputs.press |= PL_ENTER;
 							}
@@ -1353,9 +1389,41 @@ void ReZEL::anim(double dt){
 						}
 					}
 				}
-				else if(!pt->enemy && (p->task == Attack || p->task == Away)){
+				else if(!pt->enemy && (p->task == Attack || task == Rest || p->task == Away)){
 					p->task = Parade;
 				}
+				else if(task == Jump){
+					inputs.press |= PL_Q;
+					jumptime = approach(jumptime, 0., dt, 0);
+					if(jumptime == 0.)
+						task = Attack;
+					else{
+
+						// Keep watching the obstacle forward.
+						const btVector3 &btpos = bbody->getWorldTransform().getOrigin();
+						const btVector3 &from = btpos;
+						const btVector3 to = btpos + btvc(-mat.vec3(2) * .05);
+
+						btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
+
+						ws->bdw->rayTest(from, to, rayCallback);
+
+						if(rayCallback.hasHit()){
+							btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+							if(!(body && body->hasContactResponse() && body->isStaticObject())){
+								jumptime = 2.;
+								task = JumpForward;
+							}
+						}
+					}
+				}
+				else if(task == JumpForward){
+					inputs.press |= PL_W;
+					jumptime = approach(jumptime, 0., dt, 0);
+					if(jumptime == 0.)
+						task = Attack;
+				}
+
 				if(p->task == Parade){
 					if(mother){
 						if(paradec == -1)
@@ -1694,7 +1762,7 @@ void ReZEL::anim(double dt){
 			if(maxvelo < speed)
 				p->throttle = 0.;
 			else{
-				if(!controlled && (p->task == Attack || p->task == Away))
+				if(!controlled && (p->task == Attack || task == Rest || p->task == Away))
 					p->throttle = 1.;
 				if(0 < speed && 1. - speed / maxvelo < throttle)
 					throttle = 1. - speed / maxvelo;
@@ -1744,7 +1812,7 @@ void ReZEL::anim(double dt){
 			// fuel is constantly regained by the aid of fusion reactor.
 			fuel = approach(fuel, maxfuel(), fuelRegenRate * dt, 0.);
 
-			double spd = (controlled ? .025 : p->task != Attack ? .01 : .005);
+			double spd = .025/*(controlled ? .025 : p->task != Attack ? .01 : .005)*/;
 //			Vec3d acc = (this->rot.rotate(thrustvector * M_PI / 2., /*this->rot.trans*/(Vec3d(1,0,0)))).trans(Vec3d(0., 0., -1.));
 			Vec3d acc = desiredAccel;
 			bbody->applyCentralImpulse(btvc(acc * spd * .001 * mass));

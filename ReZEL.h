@@ -74,6 +74,9 @@ protected:
 		Attack = sship_attack,
 		Away = sship_away,
 		Auto, // Automatically targets near enemy or parade with mother.
+		Jump, ///< Jump over some obstacles
+		JumpForward, ///< Move forward after jumping over obstacles.
+		Rest, ///< Rest a while to wait energy to regain.
 		num_sceptor_task
 	};
 	enum Attitude{
@@ -115,6 +118,7 @@ protected:
 	float freload; ///< Reload phase
 	float fonfeet; ///< Factor of on-feetness
 	float walkphase; ///< Walk phase
+	float jumptime; ///< Time left for jump
 	double aimdir[2]; ///< Pitch and yaw. They're different from twist and pitch in that they represent manipulator
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;

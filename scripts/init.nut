@@ -994,4 +994,88 @@ function initUI(){
 
 showdt <- false;
 
+
+/// An experimental function that dumps list of all defined symbols in a table.
+/// Also prints classes' base class names and instances' class names, if available in the root table.
+/// Specifying this as default value of the argument seems to cause problems.
+function traceSymbols(table){
+	foreach(i,v in table){
+		local ext = "";
+		if(typeof(v) == "class"){
+			local baseclass = v.getbase();
+			if(baseclass != null){
+				foreach(i2,v2 in this){
+					if(v2 == baseclass){
+						ext = "extends " + i2;
+						break;
+					}
+				}
+				if(ext == "")
+					ext = "extends " + baseclass.tostring();
+			}
+		}
+		else if(typeof(v) == "instance"){
+			try{
+				local baseclass = v.getclass();
+				foreach(i2,v2 in this){
+					if(v2 == baseclass){
+						ext = "instanceof " + i2;
+						break;
+					}
+				}
+				if(ext == "")
+					ext = "instanceof " + baseclass.tostring();
+			}
+			catch(e){
+				ext = "";
+				foreach(i2,v2 in this){
+					if(typeof(v2) == "class" && v instanceof v2){
+						ext = "instanceof " + i2;
+						break;
+					}
+				}
+			}
+		}
+		print(typeof(v) + " " + i + " = " + v + " " + ext);
+	}
+}
+
+function tst(){
+	traceSymbols(this);
+}
+
+/// A functionoid (function-like class object) that groups symbols in the root table
+/// and dumps the groups using ::traceSymbols().
+class GroupTraceSymbols{
+	static Classes = 1;
+	static Instances = 2;
+	static Functions = 4;
+	function _call(othis, flags = 7){
+		local classes = {};
+		local instances = {};
+		local functions = {};
+
+		foreach(i,v in othis){
+			local typestring = typeof(v);
+			if(typestring == "class")
+				classes[i] <- v;
+			else if(typestring == "instance")
+				instances[i] <- v;
+			else if(typestring == "function")
+				functions[i] <- v;
+		}
+
+		if(flags & Classes)
+			::traceSymbols(classes);
+		if(flags & Instances)
+			::traceSymbols(instances);
+		if(flags & Functions)
+			::traceSymbols(functions);
+	}
+}
+
+groupTraceSymbols <- GroupTraceSymbols();
+
+gts <- groupTraceSymbols;
+
 //print("init.nut execution time: " + tm.lap() + " sec");

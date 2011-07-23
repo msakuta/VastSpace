@@ -65,3 +65,7 @@ function hook_delete_Entity(e){
 	}
 }
 
+function sqtimechart(){
+	return ReZEL_deaths[0];
+}
+

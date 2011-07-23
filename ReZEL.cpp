@@ -174,13 +174,13 @@ SQInteger sqf_nexti(HSQUIRRELVM v){
 	return 0;
 }
 
-static HSQUIRRELVM sqvm;
+HSQUIRRELVM ReZEL::sqvm;
 
 StaticBindSet staticBind;
 
 template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	sqa::StackReserver sr(v);
-	sqvm = v;
+	ReZEL::sqvm = v;
 	sq_newclass(v, SQFalse); // class
 	sq_pushstring(v, _SC("_get"), -1); // class "_get"
 	sq_newclosure(v, ReZEL::sqf_get, 0); // class "_get" sqf_get
@@ -475,6 +475,8 @@ void cmd_cloak(int argc, char *argv[]){
 }
 */
 
+double ReZEL::motionInterpolateTime = 0.;
+
 void ReZEL::shootRifle(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed);
 	Mat4d mat;
@@ -486,10 +488,11 @@ void ReZEL::shootRifle(double dt){
 	{
 		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
-//		timemeas_t tm;
-//		TimeMeasStart(&tm);
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
 //		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
+		motionInterpolateTime = TimeMeasLap(&tm);
 		if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
 			gunpos *= sufscale;
 			gunpos[0] *= -1;

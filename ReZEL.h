@@ -213,6 +213,8 @@ public:
 	static double pid_ifactor;
 	static double pid_pfactor;
 	static double pid_dfactor;
+	static double motionInterpolateTime;
+	static HSQUIRRELVM sqvm;
 private:
 	Vec3d evelo;
 #if PIDAIM_PROFILE

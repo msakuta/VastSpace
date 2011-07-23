@@ -8,6 +8,9 @@
 #include "draw/mqoadapt.h"
 #include "glstack.h"
 #include "yssurf.h"
+#include "glw/GLWchart.h"
+#include "cmd.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -22,6 +25,7 @@ extern "C"{
 #include <clib/GL/multitex.h>
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
+#include <clib/timemeas.h>
 }
 #include <gl/glext.h>
 #include <assert.h>
@@ -147,7 +151,10 @@ void ReZEL::draw(wardraw_t *wd){
 
 		double motion_time[numof(motions)];
 		getMotionTime(&motion_time);
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+		motionInterpolateTime = TimeMeasLap(&tm);
 
 		if(0 < muzzleFlash[0]){
 			Vec3d pos;
@@ -589,4 +596,59 @@ void ReZEL::drawOverlay(wardraw_t *){
 	glVertex2d( .00, -.05);
 	glEnd();
 }
+
+
+
+
+
+
+
+
+
+
+class ReZELchartCmdRegister{
+	class ReZELDrawTimeChartSeries : public GLWchart::TimeChartSeries{
+		virtual double timeProc(double dt){
+			return ReZEL::motionInterpolateTime;
+		}
+	};
+	class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
+		virtual Vec4f color()const{return Vec4f(0.5,0.5,1,1);}
+		virtual double timeProc(double dt){return dt;}
+	};
+	class SqTimeChartSeries : public GLWchart::TimeChartSeries{
+		virtual Vec4f color()const{return Vec4f(1,0.5,.5,.5);}
+		virtual double timeProc(double dt){
+			HSQUIRRELVM v = ReZEL::sqvm;
+			sqa::StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("sqtimechart"), -1);
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				sq_pushroottable(v);
+				if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue)))
+					return 0.;
+				SQFloat f;
+				if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+					return f;
+				else
+					return 0.;
+			}
+			else
+				return 0;
+		}
+	};
+
+	static int cmd_chart(int argc, char *argv[]){
+		GLWchart *wnd = new GLWchart("MotionInterpolateTime", new ReZELDrawTimeChartSeries);
+		wnd->addSeries(new FrameTimeChartSeries());
+		wnd->addSeries(new SqTimeChartSeries());
+		glwAppend(wnd);
+		return 0;
+	}
+public:
+	ReZELchartCmdRegister(){
+		CmdAdd("ReZELchart", cmd_chart);
+	}
+} ReZELchartcmdreg;
+
 

@@ -1,8 +1,6 @@
 #ifndef YSDNMMOT_H
 #define YSDNMMOT_H
-extern "C"{
 #include "yssurf.h"
-}
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
@@ -22,6 +20,11 @@ struct ysdnm_motion{
 	} *kfl;
 	int nkfl;
 	ysdnm_motion() : kfl(NULL), nkfl(0){}
+	ysdnm_motion(const ysdnm_motion &o){
+		kfl = new keyframe[o.nkfl];
+		for(int i = 0; i < o.nkfl; i++)
+			kfl[i] = o.kfl[i];
+	}
 	~ysdnm_motion(){
 		for(int i = 0; i < nkfl; i++)
 			kfl[i].ysdnm_var::~ysdnm_var();

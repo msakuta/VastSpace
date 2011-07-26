@@ -1,7 +1,33 @@
 #ifndef YSSURF_H
 #define YSSURF_H
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include <clib/suf/suf.h>
+#include <clib/avec3.h>
+#include <clib/aquat.h>
+#ifdef __cplusplus
+}
+#include <cpplib/vec3.h>
+#include <cpplib/quat.h>
+#endif
+
 #include <string.h>
+
+// Type definitions varies in languages
+#ifdef __cplusplus
+typedef Vec3d YSVec3;
+typedef Quatd YSQuat;
+typedef Vec3<sufcoord> sufvector;
+#else
+typedef avec3_t YSVec3;
+typedef aquat_t YSQuat;
+typedef sufcoord sufvector[3];
+#endif
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 suf_t *LoadYSSUF(const char *fname);
 
@@ -19,7 +45,7 @@ struct ysdnm_srf{
 	char *name;
 	struct ysdnm_pck *pck;
 	int cla, nst;
-	sufcoord pos[3];
+	sufvector pos;
 	sufcoord sta[2][6];
 	char stav[2];
 	int nch; /* number of children */
@@ -34,8 +60,9 @@ typedef struct ysdnm{
 } ysdnm_t;
 
 ysdnm_t *LoadYSDNM(const char *fname);
-void DrawYSDNM(ysdnm_t *dnm, const char *bonenames[], double (*bonerot)[4], int bones, const char *skipnames[], int skips);
-void TransYSDNM(ysdnm_t *dnm, const char *bonenames[], double (*bonerot)[4], int bones, const char *skipnames[], int skips, void (*callback)(const char *name, void *hint), void *hint);
+void DrawYSDNM(ysdnm_t *dnm, const char *bonenames[], struct ysdnm_bone_var *bonerot, int bones, const char *skipnames[], int skips);
+void TransYSDNM(ysdnm_t *dnm, const char *bonenames[], struct ysdnm_bone_var *bonerot, int bones, const char *skipnames[], int skips, void (*callback)(const char *name, void *hint), void *hint);
+
 
 /*
 CLA の値  	パーツの種類  	NST の値  	各 STA 行での状態  	対応する操作  	説明
@@ -62,76 +89,69 @@ CLA の値  	パーツの種類  	NST の値  	各 STA 行での状態  	対応する操作  	説明
 21 	回転銃座 	0 	　 	Rotate Turret 	回転軸はＹ軸です。手動の場合のみ操作できます。
 */
 
-/* variation info */
+/// Single bone modifier (variation).
+struct ysdnm_bone_var{
+	const char *name; ///< Name of the bone being matched against a ysdnm or Model.
+	YSQuat rot; ///< Rotation modifier.
+	YSVec3 pos; ///< Position modifier, applied after rotation.
+	float visible; ///< Visibility factor. Visible if > 0.
+};
+
+/// YSFlight dynamic model modifier, also called variation information.
 typedef struct ysdnm_var{
-	int fcla;
-	int fviscla;
-	double cla[21];
-	const char **bonenames;
-	double (*bonerot)[7];
-	int bones;
+	int fcla; ///< Bitfield for available predefined modifier classes.
+	int fviscla; ///< Bitfield for visible modifier classes.
+	double cla[21]; ///< Amplitude of each modifier classes.
+	struct ysdnm_bone_var *bonevar; ///< Arbitrary modifier.
+	int bones; ///< Count of bonevar
 	const char **skipnames;
 	int skips;
 	const char *target;
 	struct ysdnm_var *next;
-	float *visible; ///< Visibility factor. Visible if > 0.
 #ifdef __cplusplus
 	ysdnm_var() : target(NULL){
 		fcla = 0;
 		fviscla = 0;
-		bonenames = NULL;
-		bonerot = NULL;
+		bonevar = NULL;
 		bones = 0;
 		skipnames = NULL;
 		skips = 0;
 		next = NULL;
-		visible = NULL;
 	}
 	ysdnm_var(const ysdnm_var &o) : target(NULL){
 		fcla = 0;
 		fviscla = 0;
-		bonenames = new const char*[o.bones];
-		for(int i = 0; i < o.bones; i++){
-			char *name = new char[strlen(o.bonenames[i])+1];
-			strcpy(name, o.bonenames[i]);
-			bonenames[i] = name;
-		}
-		if(o.bonerot){
-			bonerot = new double [o.bones][7];
-			memcpy(bonerot, o.bonerot, o.bones * sizeof *bonerot);
+		if(o.bonevar){
+			bonevar = new ysdnm_bone_var [o.bones];
+			for(int i = 0; i < o.bones; i++){
+				char *name = new char[strlen(o.bonevar[i].name)+1];
+				strcpy(name, o.bonevar[i].name);
+				bonevar[i].name = name;
+				bonevar[i].pos = o.bonevar[i].pos;
+				bonevar[i].rot = o.bonevar[i].rot;
+				bonevar[i].visible = o.bonevar[i].visible;
+			}
 		}
 		else
-			bonerot = NULL;
+			bonevar = NULL;
 		bones = o.bones;
 		skipnames = NULL;
 		skips = 0;
 		next = NULL;
-		if(o.visible){
-			visible = new float[o.bones];
-			memcpy(visible, o.visible, o.bones * sizeof *visible);
-		}
-		else
-			visible = NULL;
 	}
 	~ysdnm_var(){
-		if(bonenames){
+		if(bonevar){
 			for(int i = 0; i < bones; i++)
-				delete[] bonenames[i];
-			delete[] bonenames;
-			bonenames = NULL;
-		}
-		if(bonerot){
-			delete[] bonerot;
-			bonerot = NULL;
-		}
-		if(visible){
-			delete[] visible;
-			visible = NULL;
+				delete[] bonevar[i].name;
+			delete[] bonevar;
+			bonevar = NULL;
 		}
 		bones = 0;
 	}
 	ysdnm_var *dup()const;
-	double *addBone(const char *name);
+	ysdnm_bone_var *findBone(const char *name);
+	ysdnm_bone_var *addBone(const char *name);
+	ysdnm_var &amplify(double f);
 #endif
 } ysdnmv_t;
 
@@ -141,10 +161,16 @@ void TransYSDNM_V(ysdnm_t *dnm, ysdnmv_t *v, void (*callback)(const char *name, 
 
 struct ysdnm_motion *YSDNM_MotionLoad(const char *fname);
 struct ysdnm_var *YSDNM_MotionInterpolate(struct ysdnm_motion **mot, double *time, int nmot);
+struct ysdnm_var *YSDNM_MotionInterpolateAmp(struct ysdnm_motion **mot, double *time, int nmot, double *amplitude);
 void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot);
 void YSDNM_MotionSave(const char *fname, struct ysdnm_motion *mot);
+void YSDNM_MotionSave2(const char *fname, struct ysdnm_motion *mot);
 void YSDNM_MotionAddKeyframe(struct ysdnm_motion *mot, double dt);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

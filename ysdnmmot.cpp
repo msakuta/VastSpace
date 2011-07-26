@@ -1,5 +1,5 @@
-extern "C"{
 #include "yssurf.h"
+extern "C"{
 #include <clib/aquat.h>
 }
 #include "ysdnmmot.h"
@@ -12,50 +12,53 @@ extern "C"{
 
 ysdnm_var *ysdnm_var::dup()const{
 	ysdnm_var *ret = new ysdnm_var;
-	if(bonenames){
-		ret->bonenames = new const char *[bones];
+	if(bonevar){
+		ret->bonevar = new ysdnm_bone_var[bones];
 		for(int i = 0; i < bones; i++){
-			ret->bonenames[i] = new char[strlen(bonenames[i]) + 1];
-			strcpy(const_cast<char*>(ret->bonenames[i]), bonenames[i]);
+			char *name = new char[strlen(bonevar[i].name) + 1];
+			strcpy(name, bonevar[i].name);
+			ret->bonevar[i].name = name;
+			ret->bonevar[i].rot = bonevar[i].rot;
+			ret->bonevar[i].pos = bonevar[i].pos;
+			ret->bonevar[i].visible = bonevar[i].visible;
 		}
-	}
-	if(bonerot){
-		ret->bonerot = new double[bones][7];
-		memcpy(ret->bonerot, bonerot, bones * sizeof *ret->bonerot);
 	}
 	ret->bones = bones;
 	return ret;
 }
 
-double *ysdnm_var::addBone(const char *name){
-	char **names = new char*[bones+1];
-	memcpy(names, bonenames, bones * sizeof *names);
-	if(bonenames)
-		delete[] bonenames;
-	names[bones] = new char[strlen(name)+1];
-	strcpy(names[bones], name);
-	bonenames = const_cast<const char**>(names);
-	double (*rots)[7] = new double[bones+1][7];
-	memcpy(rots, bonerot, bones * sizeof *rots);
-	QUATIDENTITY(rots[bones]);
-	rots[bones][4] = 0;
-	rots[bones][5] = 0;
-	rots[bones][6] = 0;
-	if(bonerot)
-		delete[] bonerot;
-	bonerot = rots;
+ysdnm_bone_var *ysdnm_var::findBone(const char *name){
+	for(int i = 0; i < bones; i++){
+		if(!::strcmp(bonevar[i].name, name))
+			return &bonevar[i];
+	}
+	return NULL;
+}
 
-	float *newvisible = new float[bones+1];
-	if(visible)
-		memcpy(newvisible, visible, bones * sizeof *visible);
-	else for(int i = 0; i < bones+1; i++)
-		newvisible[i] = 1.;
-	newvisible[bones] = 1.;
-	if(visible)
-		delete[] visible;
-	visible = newvisible;
+ysdnm_bone_var *ysdnm_var::addBone(const char *name){
+	ysdnm_bone_var *newbonevar = new ysdnm_bone_var[bones+1];
+	memcpy(newbonevar, bonevar, bones * sizeof *bonevar);
+	char *newname = new char[strlen(name)+1];
+	strcpy(newname, name);
+	newbonevar[bones].name = newname;
+	newbonevar[bones].rot = quat_u;
+	newbonevar[bones].pos.clear();
+	newbonevar[bones].visible = 1.;
+	bonevar = newbonevar;
 
-	return bonerot[bones++];
+	return &bonevar[bones++];
+}
+
+/// Amplify this modifier's offset and rotation by given factor.
+///
+/// The argument should be between 0 and 1, but values greater than 1
+/// might work too.
+ysdnm_var &ysdnm_var::amplify(double f){
+	for(int i = 0; i < bones; i++){
+		bonevar[i].rot = Quatd::slerp(Quatd(0,0,0,1), bonevar[i].rot, f);
+		bonevar[i].pos *= f;
+	}
+	return *this;
 }
 
 
@@ -103,9 +106,10 @@ ysdnm_var &ysdnm_motion::interpolate(ysdnm_var &v, double time){
 	if(time == 0. || &prev == &next)
 		return v;
 	for(i = 0; i < prev.bones; i++){
-		for(int j = 0; j < next.bones; j++) if(!strcmp(next.bonenames[j], prev.bonenames[i])){
-			slerp(v.bonerot[i], prev.bonerot[i], next.bonerot[j], time / prev.dt);
-			Vec3d::atoc(&v.bonerot[i][4]) = Vec3d::atoc(&prev.bonerot[i][4]) * (1. - time / prev.dt) + Vec3d::atoc(&next.bonerot[j][4]) * time / prev.dt;
+		for(int j = 0; j < next.bones; j++) if(!strcmp(next.bonevar[j].name, prev.bonevar[i].name)){
+			v.bonevar[i].rot = Quatd::slerp(prev.bonevar[i].rot, next.bonevar[j].rot, time / prev.dt);
+			v.bonevar[i].pos = prev.bonevar[i].pos * (1. - time / prev.dt) + next.bonevar[j].pos * time / prev.dt;
+			v.bonevar[i].visible = prev.bonevar[i].visible * (1. - time / prev.dt) + next.bonevar[j].visible * time / prev.dt;
 			break;
 		}
 	}
@@ -119,9 +123,11 @@ void ysdnm_motion::save(std::ostream &os){
 		os << "\tkeyframe " << kfl[i].bones << " " << kfl[i].dt << std::endl;
 		os << "\t{" << std::endl;
 		for(int j = 0; j < kfl[i].bones; j++){
-			os << "\t\t\"" << kfl[i].bonenames[j] << "\"";
-			for(int k = 0; k < 7; k++)
-				os << " " << std::setprecision(15) << kfl[i].bonerot[j][k];
+			os << "\t\t\"" << kfl[i].bonevar[j].name << "\"";
+			for(int k = 0; k < 4; k++)
+				os << " " << std::setprecision(15) << kfl[i].bonevar[j].rot[k];
+			for(int k = 0; k < 3; k++)
+				os << " " << std::setprecision(15) << kfl[i].bonevar[j].pos[k];
 			os << std::endl;
 		}
 		os << "\t}" << std::endl;
@@ -136,10 +142,12 @@ void ysdnm_motion::save2(std::ostream &os){
 		os << "\tkeyframe " << kfl[i].bones << " " << kfl[i].dt << std::endl;
 		os << "\t{" << std::endl;
 		for(int j = 0; j < kfl[i].bones; j++){
-			os << "\t\t\"" << kfl[i].bonenames[j] << "\"";
-			for(int k = 0; k < 7; k++)
-				os << " " << std::setprecision(15) << kfl[i].bonerot[j][k];
-			os << " " << (kfl[i].visible ? kfl[i].visible[j] : 1.);
+			os << "\t\t\"" << kfl[i].bonevar[j].name << "\"";
+			for(int k = 0; k < 4; k++)
+				os << " " << std::setprecision(15) << kfl[i].bonevar[j].rot[k];
+			for(int k = 0; k < 3; k++)
+				os << " " << std::setprecision(15) << kfl[i].bonevar[j].pos[k];
+			os << " " << kfl[i].bonevar[j].visible;
 			os << std::endl;
 		}
 		os << "\t}" << std::endl;
@@ -154,7 +162,13 @@ bool ysdnm_motion::load(std::istream &is){
 	char buf[512];
 	is.getline(buf, sizeof buf);
 	line = std::string(buf);
-	nkfl = atoi(line.substr(line.find(' ')).c_str());
+
+	// Obtain and remember very first token of the file, that's version string.
+	int firstspace = line.find(' ');
+	std::string firsttoken = line.substr(0, firstspace);
+	int version = firsttoken == "model_motion";
+	nkfl = atoi(line.substr(firstspace).c_str());
+
 	is.getline(buf, sizeof buf);
 	kfl = (keyframe*)malloc(nkfl * sizeof *kfl);
 	for(int i = 0; i < nkfl; i++){
@@ -162,19 +176,25 @@ bool ysdnm_motion::load(std::istream &is){
 		is.getline(buf, sizeof buf);
 		sscanf(buf, "\tkeyframe %d %lg", &kfl[i].bones, &kfl[i].dt);
 		is.getline(buf, sizeof buf);
-		kfl[i].bonenames = new const char *[kfl[i].bones];
-		kfl[i].bonerot = new double [kfl[i].bones][7];
+		kfl[i].bonevar = new ysdnm_bone_var [kfl[i].bones];
 		for(int j = 0; j < kfl[i].bones; j++){
 			is.getline(buf, sizeof buf);
 			char *name0 = ::strchr(buf, '"')+1;
 			char *name1 = ::strchr(name0, '"');
-			kfl[i].bonenames[j] = new char[name1 - name0 + 1];
-			::strncpy(const_cast<char*>(kfl[i].bonenames[j]), name0, name1 - name0 + 1);
-			const_cast<char*>(kfl[i].bonenames[j])[name1 - name0] = '\0';
+			char *newname = new char[name1 - name0 + 1];
+			::strncpy(newname, name0, name1 - name0 + 1);
+			newname[name1 - name0] = '\0';
+			kfl[i].bonevar[j].name = newname;
 			std::istringstream iss(name1+1);
-			for(int k = 0; k < 7; k++)
-				iss >> kfl[i].bonerot[j][k];
-			QUATNORMIN(&kfl[i].bonerot[j][0]);
+			for(int k = 0; k < 4; k++)
+				iss >> kfl[i].bonevar[j].rot[k];
+			for(int k = 0; k < 3; k++)
+				iss >> kfl[i].bonevar[j].pos[k];
+			kfl[i].bonevar[j].rot.normin();
+			if(version)
+				iss >> kfl[i].bonevar[j].visible;
+			else
+				kfl[i].bonevar[j].visible = 1.;
 		}
 		is.getline(buf, sizeof buf);
 	}
@@ -208,6 +228,20 @@ struct ysdnm_var *YSDNM_MotionInterpolate(struct ysdnm_motion **mot, double *tim
 		return NULL;
 }
 
+struct ysdnm_var *YSDNM_MotionInterpolateAmp(struct ysdnm_motion **mot, double *time, int nmot, double *amplitude){
+	if(nmot){
+		ysdnm_var *ret = new ysdnm_var[nmot];
+		for(int i = 0; i < nmot; i++) if(mot[i]){
+			mot[i]->interpolate(ret[i], time[i]);
+			ret[i].amplify(amplitude[i]);
+			ret[i].next = i+1 < nmot ? &ret[i+1] : NULL;
+		}
+		return ret;
+	}
+	else
+		return NULL;
+}
+
 void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot){
 	if(mot)
 		delete[] mot;
@@ -219,6 +253,10 @@ void YSDNM_MotionInterpolateFree(struct ysdnm_var *mot){
 
 void YSDNM_MotionSave(const char *fname, ysdnm_motion *mot){
 	mot->save(std::ofstream(fname));
+}
+
+void YSDNM_MotionSave2(const char *fname, ysdnm_motion *mot){
+	mot->save2(std::ofstream(fname));
 }
 
 void YSDNM_MotionAddKeyframe(ysdnm_motion *mot, double dt){

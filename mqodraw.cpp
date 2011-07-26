@@ -37,25 +37,28 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, co
 			return;
 		}
 	}*/
-	glPushMatrix();
 /*	gldTranslate3dv(srf->pos);*/
 
 	Vec3d apos = spos;
 	Quatd arot = srot;
+
+	// Normally, '1' means visible.
+	float avisible = 1.;
+
 	for(v = v0; v; v = v->next){
-		const char **bonenames = v->bonenames;
-		double (*bonerot)[7] = v->bonerot;
+		ysdnm_bone_var *bonevar = v->bonevar;
 		int bones = min(v->bones, model->n);
-		for(i = 0; i < bones; i++) if(!strcmp(bonenames[i], bone->name)){
+		for(i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
 /*			Mat4d rotmat = Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]).tomat4();
 			gldTranslate3dv(bone->joint);
 			gldTranslate3dv(&bonerot[i][4]);
 			glMultMatrixd(rotmat);
 			gldTranslaten3dv(bone->joint);*/
 			apos += arot.trans(bone->joint);
-			apos += arot.trans(Vec3d(&v->bonerot[i][4]));
-			arot *= Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]);
+			apos += arot.trans(v->bonevar[i].pos);
+			arot *= bonevar[i].rot;
 			apos -= arot.trans(bone->joint);
+			avisible = v->bonevar[i].visible;
 		}
 #if 0
 		if(v->fcla & (1 << srf->cla) && 2 <= srf->nst){
@@ -81,11 +84,14 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, co
 #endif
 	}
 
-	Mat4d rotmat = arot.tomat4();
-	rotmat.vec3(3) = apos;
-	glMultMatrixd(rotmat);
+	// Visibility factor can be any value, but only relation to 0 matters.
+	// Magnitude of visibility factor come into play when interpolation between keyframes involves.
+	if(0. < avisible /*srf->pck && !nodraw*/){
+		glPushMatrix();
+		Mat4d rotmat = arot.tomat4();
+		rotmat.vec3(3) = apos;
+		glMultMatrixd(rotmat);
 
-/*	if(srf->pck && !nodraw)*/{
 		if(target){
 			glPushAttrib(GL_DEPTH_BUFFER_BIT);
 			glDisable(GL_DEPTH_TEST);
@@ -94,8 +100,8 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, co
 		if(target){
 			glPopAttrib();
 		}
+		glPopMatrix();
 	}
-	glPopMatrix();
 
 	nestlevel++;
 	for(Bone *nextbone = bone->children; nextbone; nextbone = nextbone->nextSibling){

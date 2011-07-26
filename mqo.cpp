@@ -607,7 +607,7 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 
 	fp = fopen(fname, "r");
 	if(!fp)
-		return NULL;
+		return 0;
 
 	if(bones)
 		*bones = NULL;
@@ -733,6 +733,10 @@ struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(su
 	struct Model *ret;
 	ret = (struct Model*)malloc(sizeof *ret);
 	ret->n = LoadMQO_Scale(fname, &ret->sufs, NULL, scale, &ret->bones, tex_callback, &ret->tex);
+	if(!ret->n){
+		free(ret);
+		return NULL;
+	}
 	return ret;
 }
 
@@ -749,13 +753,12 @@ bool Model::getBonePosInt(const char *boneName, const ysdnmv_t &v0, const Bone *
 	Vec3d apos = spos;
 	Quatd arot = srot;
 	for(const ysdnmv_t *v = &v0; v; v = v->next){
-		const char **bonenames = v->bonenames;
-		double (*bonerot)[7] = v->bonerot;
+		ysdnm_bone_var *bonevar = v->bonevar;
 		int bones = min(v->bones, this->n);
-		for(int i = 0; i < bones; i++) if(!strcmp(bonenames[i], bone->name)){
+		for(int i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
 			apos += arot.trans(bone->joint);
-			apos += arot.trans(Vec3d(&v->bonerot[i][4]));
-			arot *= Quatd(bonerot[i][0], bonerot[i][1], bonerot[i][2], bonerot[i][3]);
+			apos += arot.trans(v->bonevar[i].pos);
+			arot *= bonevar[i].rot;
 			apos -= arot.trans(bone->joint);
 		}
 	}

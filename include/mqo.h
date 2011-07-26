@@ -19,7 +19,7 @@ typedef struct ysdnm_var ysdnmv_t;
 
 
 struct Bone{
-	double joint[3];
+	Vec3d joint;
 	int depth;
 	char *name;
 	suf_t *suf;

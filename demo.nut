@@ -34,10 +34,11 @@ player.viewdist = 0.25;
 
 function frameproc(dt){
 	for(local i = 0; i < 2; i++){
-		if(countents(warfield, i, "ReZEL") == 0){
+		if(countents(warfield, i, "ReZEL") < 2){
+			local axis = rand() % 3 * 2. - 2.;
 			local phase = rand() % 3 * 2. * PI / 3.;
 			deltaFormation("ReZEL", i, Quatd(0,0,0,1) * Quatd.rotation(phase, Vec3d(0,1,0)),
-				Vec3d(3. * sin(phase), 3. * (1. - i), 3. * cos(phase)), 0.05, 2, warfield, null);
+				Vec3d(3. * sin(phase), 3. * (1. - i) + axis, 3. * cos(phase)), 0.05, 2, warfield, null);
 		}
 	}
 }

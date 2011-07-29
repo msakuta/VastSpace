@@ -5,6 +5,7 @@
 #include "EntityCommand.h"
 #include "mqo.h"
 #include "ysdnmmot.h"
+#include "libmotion.h"
 
 /// The base class for Squirrel-bound static variables.
 ///
@@ -128,10 +129,11 @@ protected:
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static ysdnm_motion *motions[13];
+	static Motion *motions[13];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
-	void getMotionTime(double (*motion_time)[numof(motions)]);
+	void getMotionTime(double (*motion_time)[numof(motions)], double (*motion_amplitude)[numof(motions)] = NULL);
+	std::vector<MotionPose> *motionInterpolate();
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
 	void shootVulcan(double dt);

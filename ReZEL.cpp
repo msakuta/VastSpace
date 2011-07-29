@@ -486,21 +486,22 @@ void ReZEL::shootRifle(double dt){
 
 	// Retrieve muzzle position from model, but not the velocity
 	{
-		double motion_time[numof(motions)];
-		getMotionTime(&motion_time);
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+		std::vector<MotionPose> *pv = motionInterpolate();
+		std::vector<MotionPose> &v = *pv;
+
 //		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
 		motionInterpolateTime = TimeMeasLap(&tm);
-		if(model->getBonePos("ReZEL_riflemuzzle", *v, &gunpos)){
+		if(model->getBonePos("ReZEL_riflemuzzle", v[0], &gunpos)){
 			gunpos *= sufscale;
 			gunpos[0] *= -1;
 			gunpos[2] *= -1;
 		}
 		else
 			gunpos = vec3_000;
-		YSDNM_MotionInterpolateFree(v);
+//		YSDNM_MotionInterpolateFree(v);
+		delete pv;
 	}
 
 	transform(mat);
@@ -543,17 +544,17 @@ void ReZEL::shootShieldBeam(double dt){
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
-	double motion_time[numof(motions)];
-	getMotionTime(&motion_time);
-	ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
-	if(model->getBonePos("ReZEL_shieldmuzzle", *v, &gunpos)){
+	std::vector<MotionPose> *pv = motionInterpolate();
+	std::vector<MotionPose> &v = *pv;
+	if(model->getBonePos("ReZEL_shieldmuzzle", v[0], &gunpos)){
 		gunpos *= sufscale;
 		gunpos[0] *= -1;
 		gunpos[2] *= -1;
 	}
 	else
 		gunpos = vec3_000;
-	YSDNM_MotionInterpolateFree(v);
+//	YSDNM_MotionInterpolateFree(v);
+	delete pv;
 
 	transform(mat);
 	{
@@ -588,17 +589,17 @@ void ReZEL::shootVulcan(double dt){
 
 	// Retrieve muzzle position from model, but not the velocity
 	{
-		double motion_time[numof(motions)];
-		getMotionTime(&motion_time);
-		ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
-		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", *v, &gunpos[i])){
+		std::vector<MotionPose> *pv = motionInterpolate();
+		std::vector<MotionPose> &v = *pv;
+		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", v[0], &gunpos[i])){
 			gunpos[i] *= sufscale;
 			gunpos[i][0] *= -1;
 			gunpos[i][2] *= -1;
 		}
 		else
 			gunpos[i] = vec3_000;
-		YSDNM_MotionInterpolateFree(v);
+//		YSDNM_MotionInterpolateFree(v)
+		delete pv;
 	}
 
 	transform(mat);
@@ -1826,13 +1827,14 @@ void ReZEL::anim(double dt){
 			static const Quatd rotaxis(0, 1., 0., 0.);
 			double motion_time[numof(motions)];
 			getMotionTime(&motion_time);
-			ysdnm_var *v = YSDNM_MotionInterpolate(motions, motion_time, numof(motions));
+			std::vector<MotionPose> *pv = motionInterpolate();
+			std::vector<MotionPose> &v = *pv;
 			Vec3d accel = btvc(bbody->getTotalForce() * bbody->getInvMass() / dt);
 			Vec3d relpos; // Relative position to gravitational center
 			// Torque in Bullet dynamics engine. 
 			Vec3d bttorque = btvc(bbody->getTotalTorque() / dt /* bbody->getInvInertiaTensorWorld()*/);
 			Quatd lrot; // Rotational component of transformation from world coordinates to local coordinates.
-			for(int i = 0; i < numof(thrusterDirs); i++) if(model->getBonePos(gltestp::dstring("ReZEL_thruster") << i, *v, &relpos, &lrot)){
+			for(int i = 0; i < numof(thrusterDirs); i++) if(model->getBonePos(gltestp::dstring("ReZEL_thruster") << i, v[0], &relpos, &lrot)){
 				Vec3d localAccel = -(rot * rotaxis * lrot).cnj().trans(accel + relpos.vp(bttorque));
 				if(localAccel.slen() < .1 * .1)
 					localAccel /= .1;
@@ -1849,7 +1851,8 @@ void ReZEL::anim(double dt){
 				// The shoulder thrusters are not available when in MA (Waverider) form.
 				thrusterPower[i] = approach(thrusterPower[i], max(0, (i == 3 || i == 4) && waverider ? 0. : localAccel.sp(thrusterDirs[i])), dt * 2., 0.);
 			}
-			YSDNM_MotionInterpolateFree(v);
+//			YSDNM_MotionInterpolateFree(v);
+			delete pv;
 		}
 
 		/* heat dissipation */

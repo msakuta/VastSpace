@@ -876,6 +876,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libmotion.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\motion.h"
 				>
 			</File>

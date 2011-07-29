@@ -10,6 +10,7 @@ EXPORTS
 	DecalDrawSUF
 	YSDNM_MotionInterpolateFree
 	YSDNM_MotionInterpolate
+	YSDNM_MotionInterpolateAmp
 	YSDNM_MotionLoad
 
 

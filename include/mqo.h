@@ -1,6 +1,7 @@
 #ifndef MQO_H
 #define MQO_H
 #include "export.h"
+#include "libmotion.h"
 
 #ifdef __cplusplus
 #include <cpplib/vec3.h>
@@ -35,8 +36,10 @@ struct EXPORT Model{
 	struct Bone **bones;
 	int n;
 	bool getBonePos(const char *boneName, const ysdnmv_t &var, Vec3d *pos, Quatd *rot = NULL)const;
+	bool getBonePos(const char *boneName, const MotionPose &var, Vec3d *pos, Quatd *rot = NULL)const;
 protected:
 	bool getBonePosInt(const char *boneName, const ysdnmv_t &var, const Bone *, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const;
+	bool getBonePosInt(const char *boneName, const MotionPose &var, const Bone *, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const;
 };
 
 suf_t *LoadMQO_SUF(const char *fname);
@@ -46,6 +49,7 @@ EXPORT int LoadMQO(const char *fname, suf_t ***ret, char ***pname, struct Bone *
 EXPORT struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **));
 
 EXPORT void DrawMQO_V(const struct Model*, const ysdnmv_t *);
+EXPORT void DrawMQOPose(const struct Model*, const MotionPose *);
 
 #ifdef __cplusplus
 }

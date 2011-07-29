@@ -778,3 +778,44 @@ bool Model::getBonePosInt(const char *boneName, const ysdnmv_t &v0, const Bone *
 	return false;
 }
 
+
+
+
+
+bool Model::getBonePos(const char *boneName, const MotionPose &var, Vec3d *pos, Quatd *rot)const{
+	for(int i = 0; i < this->n; i++) if(bones[i]->depth == 0)
+		if(getBonePosInt(boneName, var, bones[i], Vec3d(0,0,0), Quatd(0,0,0,1), pos, rot))
+			return true;
+	return false;
+}
+
+
+bool Model::getBonePosInt(const char *boneName, const MotionPose &v0, const Bone *bone, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const{
+	Vec3d apos = spos;
+	Quatd arot = srot;
+	for(const MotionPose *v = &v0; v; v = v->next){
+		MotionPose::const_iterator it = v->nodes.find(bone->name);
+//		for(int i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
+		if(it != v->nodes.end()){
+			apos += arot.trans(bone->joint);
+			apos += arot.trans(it->second.pos);
+			arot *= it->second.rot;
+			apos -= arot.trans(bone->joint);
+		}
+	}
+	if(!strcmp(boneName, bone->name)){
+		if(pos)
+			*pos = apos + arot.trans(bone->joint);
+		if(rot)
+			*rot = arot;
+		return true;
+	}
+	for(const Bone *nextbone = bone->children; nextbone; nextbone = nextbone->nextSibling){
+		if(nextbone->suf){
+			if(getBonePosInt(boneName, v0, nextbone, apos, arot, pos, rot))
+				return true;
+		}
+	}
+	return false;
+}
+

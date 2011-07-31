@@ -488,8 +488,8 @@ void ReZEL::shootRifle(double dt){
 	{
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		std::vector<MotionPose> *pv = motionInterpolate();
-		std::vector<MotionPose> &v = *pv;
+		MotionPoseSet v;
+		motionInterpolate(v);
 
 //		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
 		motionInterpolateTime = TimeMeasLap(&tm);
@@ -501,7 +501,8 @@ void ReZEL::shootRifle(double dt){
 		else
 			gunpos = vec3_000;
 //		YSDNM_MotionInterpolateFree(v);
-		delete pv;
+		motionInterpolateFree(v);
+//		delete pv;
 	}
 
 	transform(mat);
@@ -544,8 +545,8 @@ void ReZEL::shootShieldBeam(double dt){
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
-	std::vector<MotionPose> *pv = motionInterpolate();
-	std::vector<MotionPose> &v = *pv;
+	MotionPoseSet v;
+	motionInterpolate(v);
 	if(model->getBonePos("ReZEL_shieldmuzzle", v[0], &gunpos)){
 		gunpos *= sufscale;
 		gunpos[0] *= -1;
@@ -554,7 +555,8 @@ void ReZEL::shootShieldBeam(double dt){
 	else
 		gunpos = vec3_000;
 //	YSDNM_MotionInterpolateFree(v);
-	delete pv;
+//	delete pv;
+	motionInterpolateFree(v);
 
 	transform(mat);
 	{
@@ -589,8 +591,8 @@ void ReZEL::shootVulcan(double dt){
 
 	// Retrieve muzzle position from model, but not the velocity
 	{
-		std::vector<MotionPose> *pv = motionInterpolate();
-		std::vector<MotionPose> &v = *pv;
+		MotionPoseSet v;
+		motionInterpolate(v);
 		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", v[0], &gunpos[i])){
 			gunpos[i] *= sufscale;
 			gunpos[i][0] *= -1;
@@ -599,7 +601,8 @@ void ReZEL::shootVulcan(double dt){
 		else
 			gunpos[i] = vec3_000;
 //		YSDNM_MotionInterpolateFree(v)
-		delete pv;
+//		delete pv;
+		motionInterpolateFree(v);
 	}
 
 	transform(mat);
@@ -1827,8 +1830,8 @@ void ReZEL::anim(double dt){
 			static const Quatd rotaxis(0, 1., 0., 0.);
 			double motion_time[numof(motions)];
 			getMotionTime(&motion_time);
-			std::vector<MotionPose> *pv = motionInterpolate();
-			std::vector<MotionPose> &v = *pv;
+			MotionPoseSet v;
+			motionInterpolate(v);
 			Vec3d accel = btvc(bbody->getTotalForce() * bbody->getInvMass() / dt);
 			Vec3d relpos; // Relative position to gravitational center
 			// Torque in Bullet dynamics engine. 
@@ -1852,7 +1855,8 @@ void ReZEL::anim(double dt){
 				thrusterPower[i] = approach(thrusterPower[i], max(0, (i == 3 || i == 4) && waverider ? 0. : localAccel.sp(thrusterDirs[i])), dt * 2., 0.);
 			}
 //			YSDNM_MotionInterpolateFree(v);
-			delete pv;
+//			delete pv;
+			motionInterpolateFree(v);
 		}
 
 		/* heat dissipation */

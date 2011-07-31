@@ -126,6 +126,26 @@ protected:
 	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
 	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
 
+	/// Set of MotionPoses produced by interpolating motions.
+	///
+	/// std::vector would do the same thing, but we know maximum count of MotionPoses,
+	/// so we can avoid heap memory allocations.
+	class MotionPoseSet{
+		MotionPose *a[13];
+		int n;
+	public:
+		MotionPoseSet() : n(0){}
+		~MotionPoseSet(){
+			for(int i = 0; i < n; i++)
+				delete a[i];
+		}
+		MotionPose &operator[](int i){return *a[i];}
+		void push_back(MotionPose *p){
+			a[n++] = p;
+		}
+		int getn()const{return n;}
+	};
+
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
@@ -133,7 +153,8 @@ protected:
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
 	void getMotionTime(double (*motion_time)[numof(motions)], double (*motion_amplitude)[numof(motions)] = NULL);
-	std::vector<MotionPose> *motionInterpolate();
+	void motionInterpolate(MotionPoseSet &set);
+	void motionInterpolateFree(MotionPoseSet &set);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
 	void shootVulcan(double dt);

@@ -3,7 +3,7 @@
  */
 #include "cmd.h"
 #include "sqadapt.h"
-#include "message.h"
+#include "glw/message.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>

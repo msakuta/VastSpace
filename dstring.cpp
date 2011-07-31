@@ -18,10 +18,14 @@ int dstring::reallocs = 0;
 int dstring::frees = 0;
 #endif
 
-void dstring::init(const char *a){
+void dstring::init(const char *a, long len){
 	p = NULL;
-	if(a)
-		strcat(a);
+	if(a){
+		if(len < 0)
+			strcat(a);
+		else
+			strncat(a, len);
+	}
 }
 
 void dstring::init(long src){

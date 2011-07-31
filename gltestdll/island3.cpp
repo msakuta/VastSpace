@@ -789,7 +789,8 @@ void Island3::draw(const Viewer *vw){
 		roadlist = stc->getList();
 	}
 
-	stc = gltestp::FindTexture("grass.jpg");
+	static const gltestp::dstring glassname = "grass.jpg";
+	stc = gltestp::FindTexture(glassname);
 	if(!stc){
 		suftexparam_t stp;
 		stp.flags = STP_WRAP_S | STP_WRAP_T | STP_MAGFIL | STP_MINFIL;
@@ -798,17 +799,18 @@ void Island3::draw(const Viewer *vw){
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
 		groundlist = CallCacheBitmap("grass.jpg", "textures/grass.jpg", &stp, NULL);
-		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture("grass.jpg"))
+		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture(glassname))
 			groundtex = stc->getTex(0);
 	}
 
-	stc = gltestp::FindTexture("noise.jpg");
+	static const gltestp::dstring noisename = "noise.jpg";
+	stc = gltestp::FindTexture(noisename);
 	if(!stc){
 		suftexparam_t stp;
 		stp.flags |= STP_NORMALMAP;
 		stp.normalfactor = 1.;
 		CallCacheBitmap("noise.jpg", "textures/noise.jpg", &stp, NULL);
-		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture("noise.jpg"))
+		if(const gltestp::TexCacheBind *stc = gltestp::FindTexture(noisename))
 			noisetex = stc->getTex(0);
 	}
 
@@ -2845,7 +2847,8 @@ int Island3Building::tracehit(const Vec3d &src, const Vec3d &dir, double rad, do
 }
 
 void Island3Building::draw(wardraw_t *wd){
-	if(!gltestp::FindTexture("bldg.jpg")){
+	static const gltestp::dstring bldgname("bldg.jpg");
+	if(!gltestp::FindTexture(bldgname)){
 		suftexparam_t stp;
 		stp.flags = STP_ALPHA | STP_MIPMAP | STP_MINFIL | STP_MAGFIL;
 		stp.alphamap = STP_MASKTEX;
@@ -2879,7 +2882,7 @@ void Island3Building::draw(wardraw_t *wd){
 		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 		glMaterialf(GL_FRONT, GL_SHININESS, 50.f);
 		glDisable(GL_TEXTURE_2D);
-		if(const TexCacheBind *stc = FindTexture("bldg.jpg"))
+		if(const TexCacheBind *stc = FindTexture(bldgname))
 			glCallList(stc->getList());
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_BLEND);

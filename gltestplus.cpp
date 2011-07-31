@@ -413,9 +413,11 @@ static void drawindics(Viewer *vw){
 		glTranslatef(0,0,-1);
 #ifdef _DEBUG
 		static int dstrallocs = 0;
-		sprintf(buf, "dstralloc: %d, %d", cpplib::dstring::allocs - dstrallocs, cpplib::dstring::allocs);
+//		sprintf(buf, "dstralloc: %d, %d", cpplib::dstring::allocs - dstrallocs, cpplib::dstring::allocs);
+		sprintf(buf, "dstralloc: %d, %d", gltestp::dstring::allocs - dstrallocs, gltestp::dstring::allocs);
 		diprint(buf, 0, gvp.h - 12.);
-		dstrallocs = cpplib::dstring::allocs;
+//		dstrallocs = cpplib::dstring::allocs;
+		dstrallocs = gltestp::dstring::allocs;
 #endif
 		sprintf(buf, "%s %s", pl.cs->classname(), pl.cs->name);
 		diprint(buf, 0, gvp.h);

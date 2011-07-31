@@ -683,14 +683,18 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 			}
 			if(bones){
 				struct Bone *bone;
+//				Bone *newbones = new Bone*[num+1];
 				*bones = (Bone**)realloc(*bones, (num + 1) * sizeof **bones);
-				(*bones)[num] = (Bone*)malloc(sizeof ***bones);
+//				(*bones)[num] = (Bone*)malloc(sizeof ***bones);
+				(*bones)[num] = new Bone;
 				bone = (*bones)[num];
 				bone->depth = 0;
 				VECNULL(bone->joint);
-				bone->name = (char*)malloc(strlen(s) - 1);
-				strncpy(bone->name, &s[1], strlen(s) - 1);
-				bone->name[strlen(s) - 2] = '\0';
+//				bone->name = (char*)malloc(strlen(s) - 1);
+//				strncpy(bone->name, &s[1], strlen(s) - 1);
+//				bone->name[strlen(s) - 2] = '\0';
+				s[strlen(s)-1] = '\0';
+				bone->name = &s[1];
 				bone->suf = ret[num];
 				bone->suftex = NULL;
 				bone->parent = NULL;

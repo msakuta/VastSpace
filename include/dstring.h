@@ -21,7 +21,7 @@ namespace gltestp{
 	class EXPORT dstring{
 	public:
 		dstring();
-		dstring(const char*);
+		dstring(const char*, long len = -1);
 		dstring(const dstring &);
 		dstring(char);
 		dstring(long);
@@ -66,7 +66,7 @@ namespace gltestp{
 		static int frees;
 #endif
 	private:
-		void init(const char *);
+		void init(const char *, long len = -1);
 		void init(long);
 		void initu(unsigned long);
 		void initd(double);
@@ -90,7 +90,7 @@ namespace gltestp{
 		strcpy(buf);
 	}
 
-	inline dstring::dstring(const char *a){init(a);}
+	inline dstring::dstring(const char *a, long len){init(a, len);}
 	inline dstring::dstring(long a){init(a);}
 	inline dstring::dstring(int a){init(long(a));}
 	inline dstring::dstring(unsigned a){initu(a);}

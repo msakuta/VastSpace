@@ -18,11 +18,13 @@ extern "C"{
 #include <clib/suf/suf.h>
 #include <clib/avec3.h>
 #include <clib/aquat.h>
+#include <clib/timemeas.h>
 
 #ifdef __cplusplus
 }
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include "dstring.h"
 
 #include <map>
 #include <vector>
@@ -74,15 +76,108 @@ struct MotionNode{
 /// Nodes are identified by names (strings), so arbitrary model could apply any MotionPose.
 /// This will enable re-utilization of motion data.
 struct MotionPose{
-	typedef std::map<std::string, MotionNode> NodeMap;
+#if 0
+	typedef std::map<gltestp::dstring, MotionNode> NodeMap;
+#else
+
+	/// Experimental std::map-compatible class that maps a dstring to a MotionNode.
+	///
+	/// Its implementation is so simple that is just an array of std::pairs,
+	/// but its heap memory usage is expected to be lower than std::map.
+	/// Specifically, getting an iterator or finding a key won't cost a heap
+	/// memory allocation, provided the key argument is prepared as a dstring, too.
+	///
+	/// In reality, its performance is not much different compared to std::map, but
+	/// speed of debug build is closer to that of release build.
+	class NodeMap{
+		typedef std::pair<gltestp::dstring, MotionNode> Node; ///< Internal node type.
+		Node **nodes; ///< Array of pointers to the nodes.
+		int n; ///< Count of nodes in the array nodes.
+	public:
+
+		/// Iterator type is just a pointer to the node array in the source class.
+		/// Templating const and non-const iterator saves lines.
+		template<typename T> class titerator{
+			T **p;
+		public:
+			titerator(T **a) : p(a){}
+			T &operator*(){return **p;}
+			T *operator->(){return *p;}
+			titerator &operator++(){p++; return *this;}
+			titerator &operator++(int){++p; return *this;}
+			bool operator==(const titerator &o)const{return p == o.p;}
+			bool operator!=(const titerator &o)const{return p != o.p;}
+			friend NodeMap;
+		};
+		typedef titerator<Node> iterator;
+		typedef titerator<const Node> const_iterator;
+
+		NodeMap() : nodes(NULL), n(0){}
+		NodeMap(const NodeMap &o) : nodes(new Node*[o.n]), n(o.n){
+			for(int i = 0; i < n; i++)
+				nodes[i] = new Node(*o.nodes[i]);
+		}
+		~NodeMap(){
+			for(int i = 0; i < n; i++)
+				delete nodes[i];
+			delete[] nodes;
+		}
+
+		NodeMap &operator=(const NodeMap &o){
+			NodeMap::~NodeMap();
+			n = o.n;
+			nodes = new Node*[o.n];
+			for(int i = 0; i < n; i++)
+				nodes[i] = new Node(*o.nodes[i]);
+			return *this;
+		}
+
+		iterator begin(){return nodes;}
+		iterator end(){return &nodes[n];}
+		const_iterator begin()const{return const_cast<const Node**>(nodes);}
+		const_iterator end()const{return const_cast<const Node**>(&nodes[n]);}
+		iterator find(const gltestp::dstring &a){
+			for(int i = 0; i < n; i++) if(nodes[i]->first == a)
+				return &nodes[i];
+			return end();
+		}
+		const_iterator find(const gltestp::dstring &a)const{
+			return const_cast<const Node**>(const_cast<NodeMap*>(this)->find(a).p);
+		}
+		MotionNode &operator[](const gltestp::dstring &a){
+			iterator it = find(a);
+			if(it != end())
+				return it->second;
+			else
+				return push_back(a).second;
+		}
+		Node &push_back(const gltestp::dstring &a){
+			Node **newnodes = new Node*[n+1];
+			memcpy(newnodes, nodes, n * sizeof *nodes);
+			delete[] nodes;
+			nodes = newnodes;
+			nodes[n] = new Node(a, MotionNode());
+			n++;
+			return *nodes[n-1];
+		}
+
+		size_t size()const{return n;}
+	};
+#endif
 	typedef NodeMap::iterator iterator;
 	typedef NodeMap::const_iterator const_iterator;
 
 	MotionPose *next;
-	std::map<std::string, MotionNode> nodes;
+	NodeMap nodes;
 
 
 	MotionPose() : next(NULL){
+	}
+
+	MotionPose &operator=(const MotionPose &o){
+		next = o.next;
+		nodes = o.nodes;
+		return *this;
 	}
 
 	MotionNode *addNode(const char *name);
@@ -260,6 +355,8 @@ inline MotionPose &MotionPose::amplify(double f){
 inline MotionPose &Motion::interpolate(MotionPose &v, double time){
 	if(!this || !kfl.size())
 		return v;
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
 	double f;
 	int i;
 	if(time < 0.)
@@ -280,6 +377,7 @@ inline MotionPose &Motion::interpolate(MotionPose &v, double time){
 			v.nodes[it->first] = node;
 		}
 	}
+//		std::cerr << "interpolate " << TimeMeasLap(&tm) << std::endl;
 	return v;
 }
 
@@ -371,7 +469,7 @@ inline bool Motion::load(std::istream &is){
 			is.getline(buf, sizeof buf);
 			char *name0 = ::strchr(buf, '"')+1;
 			char *name1 = ::strchr(name0, '"');
-			std::string newname(name0, name1 - name0);
+			gltestp::dstring newname(name0, name1 - name0);
 			std::istringstream iss(name1+1);
 
 			MotionNode node;

@@ -22,7 +22,7 @@ typedef struct ysdnm_var ysdnmv_t;
 struct Bone{
 	Vec3d joint;
 	int depth;
-	char *name;
+	gltestp::dstring name;
 	suf_t *suf;
 	suftex_t *suftex;
 	struct Bone *parent;

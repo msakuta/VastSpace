@@ -103,13 +103,21 @@ void ReZEL::getMotionTime(double (*motion_time)[numof(motions)], double (*motion
 //	memcpy(*motion_time, motion_time1, sizeof motion_time1);
 }
 
-void ReZEL::motionInterpolate(MotionPoseSet &set){
+ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
 	double motion_time[numof(motions)];
 	double motion_amplitude[numof(motions)];
 	getMotionTime(&motion_time, &motion_amplitude);
 	double vectime[numof(motions)];
 	double vecamp[numof(motions)];
 	Motion* vecmotions[numof(motions)];
+
+	if(memcmp(motion_time, this->motion_time, sizeof motion_time) || memcmp(motion_amplitude, this->motion_amplitude, sizeof motion_amplitude)){
+		memcpy(this->motion_time, motion_time, sizeof motion_time);
+		memcpy(this->motion_amplitude, motion_amplitude, sizeof motion_amplitude);
+	}
+	else{
+		return poseSet;
+	}
 
 	int n = 0;
 	for(int i = 0; i < numof(motions); i++) if(motion_amplitude[i] != 0. && motions[i]){
@@ -124,7 +132,8 @@ void ReZEL::motionInterpolate(MotionPoseSet &set){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
 //		std::vector<MotionPose> *ret = new std::vector<MotionPose>(n);
-		MotionPoseSet *ret = &set;
+		MotionPoseSet &set = poseSet;
+		set.clear();
 //		fprintf(stderr, "%lg\n", TimeMeasLap(&tm));
 		for(int i = 0; i < n; i++) if(vecmotions[i]){
 			MotionPose *a = new MotionPose();
@@ -132,14 +141,16 @@ void ReZEL::motionInterpolate(MotionPoseSet &set){
 			a->amplify(vecamp[i]);
 			a->next = NULL;
 			if(0 < i)
-				(*ret)[i-1].next = a;
+				set[i-1].next = a;
 //			(*ret)[i].next = i+1 < n ? &(*ret)[i+1] : NULL;
 			set.push_back(a);
 		}
+		return set;
 //		return ret;
 	}
 //	else
 //		return new std::vector<MotionPose>();
+	return poseSet;
 }
 
 void ReZEL::motionInterpolateFree(MotionPoseSet &set){
@@ -200,10 +211,11 @@ void ReZEL::draw(wardraw_t *wd){
 
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		MotionPoseSet v;
-		motionInterpolate(v);
+		MotionPoseSet &v = motionInterpolate();
 		motionInterpolateTime = TimeMeasLap(&tm);
-//		printf("interp[%d]: %lg\n", v.getn(), motionInterpolateTime);
+		motionInterpolateTimeAverage = (motionInterpolateTimeAverage * motionInterpolateTimeAverageCount + motionInterpolateTime) / (motionInterpolateTimeAverageCount + 1);
+		motionInterpolateTimeAverageCount++;
+		printf("interp[%d]: %lg, %lg\n", v.getn(), motionInterpolateTimeAverage, motionInterpolateTime);
 
 		if(0 < muzzleFlash[0]){
 			Vec3d pos;
@@ -281,8 +293,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		Vec3d pos;
 		Quatd lrot;
-		MotionPoseSet v;
-		motionInterpolate(v);
+		MotionPoseSet &v = motionInterpolate();
 
 		if(0 < muzzleFlash[0]){
 			model->getBonePos("ReZEL_riflemuzzle", v[0], &pos, &lrot);
@@ -427,8 +438,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 
 	// Beam sabre
 	if(0. < fsabre && model){
-		MotionPoseSet v;
-		motionInterpolate(v);
+		MotionPoseSet &v = motionInterpolate();
 
 		struct gldBeamsData bd;
 		Vec3d v0(.0, .0, .0);
@@ -664,6 +674,11 @@ class ReZELchartCmdRegister{
 			return ReZEL::motionInterpolateTime;
 		}
 	};
+	class ReZELInterpAvgTimeChartSeries : public GLWchart::TimeChartSeries{
+		virtual double timeProc(double dt){
+			return ReZEL::motionInterpolateTimeAverage;
+		}
+	};
 	class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
 		virtual Vec4f color()const{return Vec4f(0.5,0.5,1,1);}
 		virtual double timeProc(double dt){return dt;}
@@ -692,6 +707,7 @@ class ReZELchartCmdRegister{
 
 	static int cmd_chart(int argc, char *argv[]){
 		GLWchart *wnd = new GLWchart("MotionInterpolateTime", new ReZELDrawTimeChartSeries);
+		wnd->addSeries(new ReZELInterpAvgTimeChartSeries());
 		wnd->addSeries(new FrameTimeChartSeries());
 		wnd->addSeries(new SqTimeChartSeries());
 		glwAppend(wnd);

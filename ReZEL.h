@@ -126,34 +126,44 @@ protected:
 	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
 	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
 
+	static const int motionCount = 13;
+
 	/// Set of MotionPoses produced by interpolating motions.
 	///
 	/// std::vector would do the same thing, but we know maximum count of MotionPoses,
 	/// so we can avoid heap memory allocations.
 	class MotionPoseSet{
-		MotionPose *a[13];
+		MotionPose *a[motionCount];
 		int n;
 	public:
 		MotionPoseSet() : n(0){}
 		~MotionPoseSet(){
-			for(int i = 0; i < n; i++)
-				delete a[i];
 		}
 		MotionPose &operator[](int i){return *a[i];}
 		void push_back(MotionPose *p){
 			a[n++] = p;
 		}
 		int getn()const{return n;}
+		void clear(){
+			for(int i = 0; i < n; i++)
+				delete a[i];
+			n = 0;
+		}
 	};
+
+	MotionPoseSet poseSet; ///< Last motion pose set
+	double motion_time[motionCount];
+	double motion_amplitude[motionCount];
+	
 
 	static const double sufscale;
 	static const avec3_t gunPos[2];
 	static Model *model;
-	static Motion *motions[13];
+	static Motion *motions[motionCount];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
 	void getMotionTime(double (*motion_time)[numof(motions)], double (*motion_amplitude)[numof(motions)] = NULL);
-	void motionInterpolate(MotionPoseSet &set);
+	MotionPoseSet &motionInterpolate();
 	void motionInterpolateFree(MotionPoseSet &set);
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
@@ -237,6 +247,8 @@ public:
 	static double pid_pfactor;
 	static double pid_dfactor;
 	static double motionInterpolateTime;
+	static double motionInterpolateTimeAverage;
+	static int motionInterpolateTimeAverageCount;
 	static HSQUIRRELVM sqvm;
 private:
 	Vec3d evelo;

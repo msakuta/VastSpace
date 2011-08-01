@@ -867,6 +867,9 @@ void ReZEL::anim(double dt){
 	Entity *pm = mother && mother->e ? mother->e : NULL;
 	Mat4d mat, imat;
 
+	if(!w)
+		return;
+
 	if(Docker *docker = *w){
 		fuel = min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
 		health = min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
@@ -1827,8 +1830,6 @@ void ReZEL::anim(double dt){
 
 		if(model){
 			static const Quatd rotaxis(0, 1., 0., 0.);
-			double motion_time[numof(motions)];
-			getMotionTime(&motion_time);
 			MotionPoseSet &v = motionInterpolate();
 			Vec3d accel = btvc(bbody->getTotalForce() * bbody->getInvMass() / dt);
 			Vec3d relpos; // Relative position to gravitational center

@@ -77,36 +77,41 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 Model *ReZEL::model = NULL;
 Motion *ReZEL::motions[13];
 
-void ReZEL::getMotionTime(double (*motion_time)[numof(motions)], double (*motion_amplitude)[numof(motions)]){
-	if(motion_amplitude)
-		for(int i = 0; i < numof(motions); i++)
-			(*motion_amplitude)[i] = 1.;
-//	double motion_time1[numof(motions)] = {
-		(*motion_time)[0] = 10. * fwaverider;
-		if(motion_amplitude)
-			(*motion_amplitude)[0] = fwaverider ? 1. : 0.;
-		(*motion_time)[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
-		if(motion_amplitude)
-			(*motion_amplitude)[1] = fwaverider != 1. ? 1. : 0.;
-		(*motion_time)[2] = 10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.),
-		(*motion_time)[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
-		(*motion_time)[4] = fonfeet != 1.f ? (-twist * (1. - fwaverider) + 1.) * 10. : 10.,
-		(*motion_time)[5] = (-pitch * (1. - fwaverider) + 1.) * 10.,
-		(*motion_time)[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.),
-		(*motion_time)[7] = (1. - fwaverider) * (fsabre < 2. ? fsabre : 4. - fsabre) * 10.,
-		(*motion_time)[8] = fwaverider == 0 && fonfeet == 1.f ? 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.) : 10. * (1. - fwaverider) * fonfeet;
-		(*motion_time)[9] = fwaverider == 0 && fonfeet == 1.f ? 10. * min(1., 1. - velo.len() / walkSpeed) : 10. * (1. - fwaverider) * fonfeet;
-		(*motion_time)[10] = fwaverider == 0 ? 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.) : 10.;
-		(*motion_time)[11] = weapon == 0 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
-		(*motion_time)[12] = weapon == 1 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
-//	};
-//	memcpy(*motion_time, motion_time1, sizeof motion_time1);
+void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
+	for(int i = 0; i < numof(motions); i++)
+		motion_amplitude[i] = 1.;
+	motion_time[0] = 10. * fwaverider;
+	motion_amplitude[0] = fwaverider ? 1. : 0.;
+	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
+	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;
+	motion_time[2] = 10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.);
+	motion_amplitude[2] = fwaverider != 1. ? 1. : 0.;
+	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
+	motion_amplitude[3] = fwaverider != 1. ? 1. : 0.;
+	motion_time[4] = fonfeet != 1.f ? (-twist * (1. - fwaverider) + 1.) * 10. : 10.;
+	motion_amplitude[4] = 0.; // disable airtwist
+	motion_time[5] = (-pitch * (1. - fwaverider) + 1.) * 10.;
+	motion_amplitude[5] = 0.; // disable airpitch
+	motion_time[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.);
+	motion_amplitude[6] = fwaverider != 1. && fsabre != 1. ? 1. : 0.;
+	motion_time[7] = (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
+	motion_amplitude[7] = 1. - fwaverider;
+	motion_time[8] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
+	motion_amplitude[8] = fwaverider == 0. ? fonfeet : 0.;
+	motion_time[9] = 10. * min(1., 1. - velo.len() / walkSpeed);
+	motion_amplitude[9] = fwaverider == 0. ? fonfeet : 0.;
+	motion_time[10] = 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.);
+	motion_amplitude[10] = fwaverider == 0. ? 1. : 0.;
+	motion_time[11] = weapon == 0 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
+	motion_amplitude[11] = weapon == 0 && fwaverider == 0. ? 1. : 0.;
+	motion_time[12] = weapon == 1 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
+	motion_amplitude[12] = weapon == 1 && fwaverider == 0. ? 1. : 0.;
 }
 
 ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
 	double motion_time[numof(motions)];
 	double motion_amplitude[numof(motions)];
-	getMotionTime(&motion_time, &motion_amplitude);
+	getMotionTime(motion_time, motion_amplitude);
 	double vectime[numof(motions)];
 	double vecamp[numof(motions)];
 	Motion* vecmotions[numof(motions)];
@@ -215,7 +220,7 @@ void ReZEL::draw(wardraw_t *wd){
 		motionInterpolateTime = TimeMeasLap(&tm);
 		motionInterpolateTimeAverage = (motionInterpolateTimeAverage * motionInterpolateTimeAverageCount + motionInterpolateTime) / (motionInterpolateTimeAverageCount + 1);
 		motionInterpolateTimeAverageCount++;
-		printf("interp[%d]: %lg, %lg\n", v.getn(), motionInterpolateTimeAverage, motionInterpolateTime);
+//		printf("interp[%d]: %lg, %lg\n", v.getn(), motionInterpolateTimeAverage, motionInterpolateTime);
 
 		if(0 < muzzleFlash[0]){
 			Vec3d pos;

@@ -162,7 +162,7 @@ protected:
 	static Motion *motions[motionCount];
 	static btCompoundShape *shape;
 	static btCompoundShape *waveRiderShape;
-	void getMotionTime(double (*motion_time)[numof(motions)], double (*motion_amplitude)[numof(motions)] = NULL);
+	void getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]);
 	MotionPoseSet &motionInterpolate();
 	void motionInterpolateFree(MotionPoseSet &set);
 	void shootRifle(double dt);

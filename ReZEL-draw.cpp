@@ -11,6 +11,7 @@
 #include "glw/GLWchart.h"
 #include "cmd.h"
 #include "sqadapt.h"
+#include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -560,6 +561,32 @@ void ReZEL::drawtra(wardraw_t *wd){
 		glPopAttrib();
 	}
 #endif
+
+	// Find and display cover points
+	if(w->getPlayer()->chase == this){
+		GetCoverPointsMessage com;
+		com.org = pos;
+		com.radius = 1.;
+		if(w->sendMessage(com)){
+			CoverPointVector &vcp = com.cpv;
+			for(int i = 0; i < vcp.size(); i++){
+				const CoverPoint &cp = vcp[i];
+				glPushMatrix();
+				gldTranslate3dv(cp.pos);
+				gldMultQuat(cp.rot);
+				glColor4f(1,.5,.5,1.);
+				glBegin(GL_LINES);
+				glVertex3d(0, -.1, 0.);
+				glVertex3d(0, .1, 0.);
+				glVertex3d(-.1, 0, 0.);
+				glVertex3d(.1, 0, 0.);
+				glVertex3d(0, 0, -.1);
+				glVertex3d(0, 0, .1);
+				glEnd();
+				glPopMatrix();
+			}
+		}
+	}
 }
 
 void ReZEL::drawHUD(WarDraw *wd){

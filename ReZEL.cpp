@@ -1005,10 +1005,11 @@ void ReZEL::anim(double dt){
 		double elevation = 0; // Cosine of angle of elevation relative to local acceleration
 		Vec3d accel = w->accel(pos, vec3_000);
 		btVector3 btaccel = btVector3(btvc(accel));
-		btVector3 btdown = btaccel.normalized();
+		btVector3 btdown;
 
 		// Check if we are touching the ground.
 		if(!btaccel.isZero()) do{
+			btdown = btaccel.normalized();
 			const btVector3 &btpos = bbody->getWorldTransform().getOrigin();
 			const btVector3 &from = btpos;
 			const btVector3 &btvelo = bbody->getLinearVelocity();

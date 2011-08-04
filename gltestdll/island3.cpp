@@ -22,6 +22,7 @@
 #include "draw/ShaderBind.h"
 #include "glw/popup.h"
 #include "serial_util.h"
+#include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>
@@ -58,10 +59,11 @@ class Island3WarSpace : public WarSpace{
 public:
 	typedef WarSpace st;
 	Island3WarSpace() : bbody(NULL){}
-	Island3WarSpace(CoordSys *cs);
+	Island3WarSpace(Island3 *cs);
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	virtual Quatd orientation(const Vec3d &pos)const;
 	virtual btRigidBody *worldBody();
+	virtual bool sendMessage(Message &);
 
 protected:
 	btRigidBody *bbody;
@@ -2515,6 +2517,24 @@ bool Island3::readFile(StellarContext &sc, int argc, const char *argv[]){
 }
 
 
+/*
+CoverPointVector Island3::getCoverPoint(const Vec3d &org, double radius){
+	CoverPointVector ret;
+	for(int i = 0; i < numof(bldgs); i++){
+		Island3Building *b = bldgs[i];
+		double dist = (b->pos - org).len();
+		if(dist < radius) for(int ix = -1; ix < 2; ix += 2) for(int iz = -1; iz < 2; iz += 2){
+			CoverPoint cp;
+			cp.pos = b->pos + b->rot.trans(Vec3d(ix * b->halfsize[0], 0, iz * b->halfsize[2]));
+			cp.rot = b->rot;
+			cp.type = ix < 0 ? cp.LeftEdge : cp.RightEdge;
+			ret.push_back(cp);
+		}
+	}
+	return ret;
+}*/
+
+
 Island3Entity::Island3Entity() : btshape(NULL){
 }
 
@@ -3019,7 +3039,7 @@ Quatd Island3Docker::getPortRot()const{
 }
 
 
-Island3WarSpace::Island3WarSpace(CoordSys *cs) : st(cs), bbody(NULL){
+Island3WarSpace::Island3WarSpace(Island3 *cs) : st(cs), bbody(NULL){
 	if(bdw){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
@@ -3094,6 +3114,27 @@ Quatd Island3WarSpace::orientation(const Vec3d &pos)const{
 
 btRigidBody *Island3WarSpace::worldBody(){
 	return bbody;
+}
+
+bool Island3WarSpace::sendMessage(Message &com){
+	if(GetCoverPointsMessage *p = InterpretMessage<GetCoverPointsMessage>(com)){
+		CoverPointVector &ret = p->cpv;
+		Island3 *i3 = static_cast<Island3*>(cs);
+		for(int i = 0; i < numof(i3->bldgs); i++){
+			Island3Building *b = i3->bldgs[i];
+			double dist = (b->pos - p->org).len();
+			if(dist < p->radius) for(int ix = -1; ix < 2; ix += 2) for(int iz = -1; iz < 2; iz += 2){
+				CoverPoint cp;
+				cp.pos = b->pos + b->rot.trans(Vec3d(ix * b->halfsize[0], 0, iz * b->halfsize[2]));
+				cp.rot = b->rot;
+				cp.type = ix < 0 ? cp.LeftEdge : cp.RightEdge;
+				ret.push_back(cp);
+			}
+		}
+		return true;
+	}
+	else
+		return false;
 }
 
 

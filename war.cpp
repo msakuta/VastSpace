@@ -15,6 +15,8 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
+#include "msg/Message.h"
+#include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -165,6 +167,7 @@ struct tent3d_line_list *WarField::getTeline3d(){return NULL;}
 struct tent3d_fpol_list *WarField::getTefpol3d(){return NULL;}
 WarField::operator WarSpace*(){return NULL;}
 WarField::operator Docker*(){return NULL;}
+bool WarField::sendMessage(Message &){return false;}
 
 Entity *WarField::addent(Entity *e){
 	Entity **plist = e->isTargettable() ? &el : &bl;
@@ -571,5 +574,30 @@ const AdditiveShaderBind *WarDraw::getAdditiveShaderBind(){
 		return vw->shadowmap->getAdditive();
 	else
 		return additiveShaderBind;
+}
+
+
+
+static bool strless(const char *a, const char *b){
+	return strcmp(a, b) < 0;
+}
+
+
+/// Using Constructor on First Use idiom, described in C++ FAQ lite.
+std::map<const char *, MessageStatic*, bool (*)(const char *, const char *)> &Message::ctormap(){
+	static std::map<const char *, MessageStatic*, bool (*)(const char *, const char *)> s(strless);
+	return s;
+}
+
+bool Message::derived(MessageID)const{
+	return false;
+}
+
+
+
+IMPLEMENT_MESSAGE(GetCoverPointsMessage, "GetCoverPoints")
+
+
+GetCoverPointsMessage::GetCoverPointsMessage(HSQUIRRELVM v, Entity &){
 }
 

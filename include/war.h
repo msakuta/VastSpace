@@ -59,6 +59,7 @@ public:
 
 class WarSpace;
 class Docker;
+struct Message;
 
 /// \brief A virtual world that can contain multiple Entities inside.
 ///
@@ -92,6 +93,7 @@ public:
 	operator WarField&(){return *this;}
 	virtual operator WarSpace*();
 	virtual operator Docker*();
+	virtual bool sendMessage(Message &);
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 

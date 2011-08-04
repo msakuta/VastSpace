@@ -988,6 +988,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="msg"
+				>
+				<File
+					RelativePath="..\include\msg\GetCoverPointsMessage.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\msg\Message.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"

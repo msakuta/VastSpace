@@ -21,12 +21,11 @@ class Island3Entity;
 class Island3Building;
 
 
-
 /// \brief Space colony Island3, A.K.A. O'Neill Cylinder.
 ///
 /// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class Island3Entity,
 /// not as multiple inheritance.
-class Island3 : public Astrobj{
+class GLTESTDLL_EXPORT Island3 : public Astrobj{
 public:
 //	static const unsigned classid;
 	static ClassRegister<Island3> classRegister;
@@ -38,8 +37,11 @@ public:
 	Island3Building *bldgs[ISLAND3_BUILDINGS];
 //	btRigidBody *bbody;
 
+	// Constructors
 	Island3();
 	Island3(const char *path, CoordSys *root);
+
+	// Overridden methods
 	virtual ~Island3();
 	virtual const char *classname()const{return "Island3";}
 	virtual void serialize(SerializeContext &sc);
@@ -52,6 +54,10 @@ public:
 	virtual void drawtra(const Viewer *);
 	virtual void onChangeParent(CoordSys *oldParent);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
+	virtual const Static &getStatic()const{return classRegister;}
+
+	// Public methods
+//	CoverPointVector getCoverPoint(const Vec3d &org, double radius);
 
 	static int &g_shader_enable;
 protected:
@@ -71,7 +77,8 @@ protected:
 	GLuint compileWallTexture();
 	void beginWallTexture(const Viewer *);
 	void endWallTexture();
-	static GLuint walllist, walltex;
+	static GLuint walllist;
+	static GLuint walltex;
 	static suf_t *sufbridgetower;
 };
 

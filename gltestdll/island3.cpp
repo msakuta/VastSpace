@@ -3126,8 +3126,8 @@ bool Island3WarSpace::sendMessage(Message &com){
 			if(dist < p->radius) for(int ix = -1; ix < 2; ix += 2) for(int iz = -1; iz < 2; iz += 2){
 				CoverPoint cp;
 				cp.pos = b->pos + b->rot.trans(Vec3d(ix * b->halfsize[0], 0, iz * b->halfsize[2]));
-				cp.rot = b->rot;
-				cp.type = ix < 0 ? cp.LeftEdge : cp.RightEdge;
+				cp.rot = b->rot * (iz == -1 ? Quatd::rotation(M_PI, 0, 1, 0) : quat_u);
+				cp.type = ix * iz < 0 ? cp.LeftEdge : cp.RightEdge;
 				ret.push_back(cp);
 			}
 		}

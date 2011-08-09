@@ -19,8 +19,8 @@ static const struct color_node cnl_beamtrail[] = {
 };
 const struct color_sequence BeamProjectile::cs_beamtrail = DEFINE_COLSEQ(cnl_beamtrail, (COLOR32)-1, 1.);
 
-BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs)
-: st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs){
+BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs, double hitradius)
+: st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs), m_hitradius(hitradius){
 }
 
 void BeamProjectile::enterField(WarField *w){
@@ -49,4 +49,4 @@ void BeamProjectile::drawtra(wardraw_t *wd){
 	gldSpriteGlow(pos, radius, col, wd->vw->irot);
 }
 
-double BeamProjectile::hitradius()const{return .01;}
+double BeamProjectile::hitradius()const{return m_hitradius;}

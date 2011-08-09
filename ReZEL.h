@@ -6,6 +6,7 @@
 #include "mqo.h"
 #include "ysdnmmot.h"
 #include "libmotion.h"
+#include "msg/GetCoverPointsMessage.h"
 
 /// The base class for Squirrel-bound static variables.
 ///
@@ -78,6 +79,7 @@ protected:
 		Jump, ///< Jump over some obstacles
 		JumpForward, ///< Move forward after jumping over obstacles.
 		Rest, ///< Rest a while to wait energy to regain.
+		CoverRight,
 		num_sceptor_task
 	};
 	enum Attitude{
@@ -120,13 +122,15 @@ protected:
 	float fonfeet; ///< Factor of on-feetness
 	float walkphase; ///< Walk phase
 	float jumptime; ///< Time left for jump
+	float coverRight; ///< Factor
 	double aimdir[2]; ///< Pitch and yaw. They're different from twist and pitch in that they represent manipulator
 	ReZEL *formPrev; ///< previous member in the formation
 	Attitude attitude;
 	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
 	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
+	CoverPoint coverPoint; ///< Cover point
 
-	static const int motionCount = 13;
+	static const int motionCount = 16;
 
 	/// Set of MotionPoses produced by interpolating motions.
 	///
@@ -175,6 +179,7 @@ protected:
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
 	Quatd aimRot()const;
+	double coverFactor()const{return min(coverRight, 1.);}
 	static SQInteger sqf_get(HSQUIRRELVM);
 	friend class EntityRegister<ReZEL>;
 	static StaticBindDouble rotationSpeed;
@@ -290,6 +295,17 @@ struct StabilizerCommand : public EntityCommand{
 	StabilizerCommand(){}
 	StabilizerCommand(HSQUIRRELVM v, Entity &e);
 	int stabilizer;
+};
+
+struct GetCoverCommand : public EntityCommand{
+	typedef EntityCommand st;
+	static int construction_dummy;
+	static EntityCommandID sid;
+	virtual EntityCommandID id()const;
+	virtual bool derived(EntityCommandID)const;
+	GetCoverCommand(){}
+	GetCoverCommand(HSQUIRRELVM v, Entity &e);
+	int v;
 };
 
 #endif

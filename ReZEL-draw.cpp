@@ -76,7 +76,7 @@ double ReZEL::nlipsFactor(Viewer &vw)const{
 }
 
 Model *ReZEL::model = NULL;
-Motion *ReZEL::motions[13];
+Motion *ReZEL::motions[ReZEL::motionCount];
 
 void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
 	for(int i = 0; i < numof(motions); i++)
@@ -85,8 +85,8 @@ void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion
 	motion_amplitude[0] = fwaverider ? 1. : 0.;
 	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
 	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;
-	motion_time[2] = 10. * (1. - fwaverider) * (1. - fsabre) * (freload == 0. ? 1. - fweapon : 0.);
-	motion_amplitude[2] = fwaverider != 1. ? 1. : 0.;
+	motion_time[2] = 10. * (freload == 0. ? 1. - fweapon : 0.);
+	motion_amplitude[2] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
 	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 	motion_amplitude[3] = fwaverider != 1. ? 1. : 0.;
 	motion_time[4] = fonfeet != 1.f ? (-twist * (1. - fwaverider) + 1.) * 10. : 10.;
@@ -98,15 +98,21 @@ void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion
 	motion_time[7] = (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
 	motion_amplitude[7] = 1. - fwaverider;
 	motion_time[8] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
-	motion_amplitude[8] = fwaverider == 0. ? fonfeet : 0.;
+	motion_amplitude[8] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
 	motion_time[9] = 10. * min(1., 1. - velo.len() / walkSpeed);
-	motion_amplitude[9] = fwaverider == 0. ? fonfeet : 0.;
+	motion_amplitude[9] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
 	motion_time[10] = 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.);
-	motion_amplitude[10] = fwaverider == 0. ? 1. : 0.;
+	motion_amplitude[10] = (1. - fwaverider) * (1. - coverFactor());
 	motion_time[11] = weapon == 0 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
-	motion_amplitude[11] = weapon == 0 && fwaverider == 0. ? 1. : 0.;
+	motion_amplitude[11] = weapon == 0 ? (1. - fwaverider) * (1. - coverFactor()) : 0.;
 	motion_time[12] = weapon == 1 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
 	motion_amplitude[12] = weapon == 1 && fwaverider == 0. ? 1. : 0.;
+	motion_time[13] = weapon == 0 ? 10. * coverRight : 0;
+	motion_amplitude[13] = (1. - fwaverider) * (weapon == 0 ? coverFactor() : 0.);
+	motion_time[14] = weapon == 0 ? 10. * rangein(aimdir[1] / (M_PI / 6.) + 1., 0., 2.) : 0;
+	motion_amplitude[14] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
+	motion_time[15] = weapon == 0 ? 10. * rangein(aimdir[0] / (M_PI / 4.) + 1., 0., 2.) : 0;
+	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
 }
 
 ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
@@ -202,6 +208,9 @@ void ReZEL::draw(wardraw_t *wd){
 		motions[10] = new Motion("gundam/models/ReZEL_yaw.mot");
 		motions[11] = new Motion("gundam/models/ReZEL_pitch.mot");
 		motions[12] = new Motion("gundam/models/ReZEL_pitchsub.mot");
+		motions[13] = new Motion("gundam/models/ReZEL_cover_right.mot");
+		motions[14] = new Motion("gundam/models/ReZEL_cover_right_yaw.mot");
+		motions[15] = new Motion("gundam/models/ReZEL_cover_right_pitch.mot");
 
 		init.create(*openGLState);
 	} while(0);
@@ -566,7 +575,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	if(w->getPlayer()->chase == this){
 		GetCoverPointsMessage com;
 		com.org = pos;
-		com.radius = 1.;
+		com.radius = .3;
 		if(w->sendMessage(com)){
 			CoverPointVector &vcp = com.cpv;
 			for(int i = 0; i < vcp.size(); i++){
@@ -575,6 +584,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 				gldTranslate3dv(cp.pos);
 				gldMultQuat(cp.rot);
 				glColor4f(1,.5,.5,1.);
+
 				glBegin(GL_LINES);
 				glVertex3d(0, -.1, 0.);
 				glVertex3d(0, .1, 0.);
@@ -583,6 +593,20 @@ void ReZEL::drawtra(wardraw_t *wd){
 				glVertex3d(0, 0, -.1);
 				glVertex3d(0, 0, .1);
 				glEnd();
+
+				if(cp.type == cp.LeftEdge)
+					glScaled(-1, 1, 1);
+
+				glBegin(GL_LINE_LOOP);
+				glVertex3d(-.05, .06, 0.05);
+				glVertex3d( .02, .06, 0.05);
+				glVertex3d( .02, .07, 0.05);
+				glVertex3d( .05, .05, 0.05);
+				glVertex3d( .02, .03, 0.05);
+				glVertex3d( .02, .04, 0.05);
+				glVertex3d(-.05, .04, 0.05);
+				glEnd();
+
 				glPopMatrix();
 			}
 		}

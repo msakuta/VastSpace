@@ -261,6 +261,7 @@ void ReZEL::serialize(SerializeContext &sc){
 	sc.o << docked << returning << away << cloak << forcedEnemy;
 	sc.o << stabilizer;
 	sc.o << formPrev;
+	sc.o << coverRight;
 }
 
 void ReZEL::unserialize(UnserializeContext &sc){
@@ -286,6 +287,7 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 	sc.i >> stabilizer;
 	sc.i >> formPrev;
+	sc.i >> coverRight;
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 	WarSpace *ws;
@@ -350,6 +352,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	attitude(Passive),
 	fsabre(0.f),
 	fonfeet(0.f),
+	coverRight(0.f),
 	walkphase(0.f),
 	stabilizer(true)
 {
@@ -405,7 +408,7 @@ void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	}
 	else{
 		q = this->rot * aimRot();
-		ofs = q.trans(src[seatid]);
+		ofs = q.trans(src[seatid] * (1. - coverFactor()) + Vec3d(.009, .007, .015) * coverFactor());
 	}
 	pos = this->pos + ofs;
 }
@@ -434,6 +437,9 @@ int ReZEL::popupMenu(PopupMenu &list){
 	list.appendSeparator();
 	list.append("Turn on Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 1);})\"");
 	list.append("Turn off Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 0);})\"");
+	list.appendSeparator();
+	list.append("Get Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 1);})\"");
+	list.append("Exit Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 0);})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -1565,24 +1571,16 @@ void ReZEL::anim(double dt){
 					}
 				}
 			}while(0);
-/*			else{
-				double common = 0., normal = 0.;
-				Vec3d qrot;
-				Vec3d pos, velo;
-				int i;
-				if(common){
-					avec3_t th0[2] = {{0., 0., .003}, {0., 0., -.003}};
-					qrot = mat.vec3(0) * common;
-					pt->rot = pt->rot.quatrotquat(qrot);
-				}
-				if(normal){
-					avec3_t th0[2] = {{.005, 0., .0}, {-.005, 0., 0.}};
-					qrot = mat.vec3(1) * normal;
-					pt->rot = pt->rot.quatrotquat(qrot);
-				}
-			}*/
 
-			if(pt->inputs.press & (PL_ENTER | PL_LCLICK)){
+			if(task == CoverRight){
+				Vec3d delta = coverPoint.pos + coverPoint.rot.trans(Vec3d(-.003, hitboxes[0].sc[1], .01)) - pos;
+				bbody->applyCentralForce(btvc((delta * 2. - velo * 1.) * mass));
+				btTransform wt = bbody->getWorldTransform();
+				wt.setRotation(wt.getRotation().slerp(btqc(coverPoint.rot), dt));
+				bbody->setWorldTransform(wt);
+			}
+
+			if(pt->inputs.press & (PL_ENTER | PL_LCLICK) && (task != CoverRight || coverRight == 2.)){
 				if(weapon == 0)
 					shootRifle(dt);
 				else if(weapon == 1)
@@ -1739,7 +1737,7 @@ void ReZEL::anim(double dt){
 		// Typically, the body is slower in response compared to manipulators's aim.
 		// So the body follows the aim gradually.
 		// TODO: Add torque instead of changing orientation directly to increase physical reality.
-		{
+		if(task != CoverRight){
 			btTransform wt = bbody->getWorldTransform();
 
 			if(!floorProximity){
@@ -1890,14 +1888,17 @@ void ReZEL::anim(double dt){
 		twist = approach(twist, rangein(omg.sp(rot.trans(vec3_010)), -1., 1.), dt, 0.);
 		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
 		{
+			const double pitchrange = task == CoverRight ? M_PI / 4. : M_PI / 2.;
+			const double yawrange = task == CoverRight ? M_PI / 6. : M_PI / 3.;
 			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
 			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
-			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -M_PI / 2., M_PI / 2.), M_PI * dt, 0);
-			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -M_PI / 3., M_PI / 3.), M_PI * dt, 0);
+			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -pitchrange, pitchrange), M_PI * dt, 0);
+			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -yawrange, yawrange), M_PI * dt, 0);
 		}
 		if(3. <= fsabre)
 			fsabre = 1.;
 		fsabre = approach(fsabre, weapon == 3 ? 3. : 0., dt, 0.);
+		coverRight = approach(coverRight, task == CoverRight ? inputs.press & (PL_ENTER | PL_LCLICK) ? 2. : 1. : 0., coverRight <= 1. ? dt : 3. * dt, 0.);
 	}
 	else{
 		bbody->activate();
@@ -2167,6 +2168,29 @@ bool ReZEL::command(EntityCommand *com){
 	else if(StabilizerCommand *sc = InterpretCommand<StabilizerCommand>(com)){
 		stabilizer = sc->stabilizer;
 	}
+	else if(GetCoverCommand *gc = InterpretCommand<GetCoverCommand>(com)){
+		if(gc->v == 2)
+			gc->v = task != CoverRight;
+		if(gc->v){
+			GetCoverPointsMessage gcpm;
+			gcpm.org = pos;
+			gcpm.radius = .3;
+			if(w->sendMessage(gcpm) && gcpm.cpv.size()){
+				double best = .1 * .1;
+				CoverPointVector::iterator it = gcpm.cpv.begin();
+				for(; it != gcpm.cpv.end(); it++) if(it->type == it->RightEdge){
+					double sdist = (it->pos - pos).slen();
+					if(sdist < best){
+						coverPoint = *it;
+						best = sdist;
+						task = CoverRight;
+					}
+				}
+			}
+		}
+		else
+			task = Auto;
+	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
@@ -2292,5 +2316,17 @@ StabilizerCommand::StabilizerCommand(HSQUIRRELVM v, Entity &){
 	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
 		throw SQFError(_SC("Invalid argument type"));
 	stabilizer = i;
+}
+
+IMPLEMENT_COMMAND(GetCoverCommand, "GetCover");
+
+GetCoverCommand::GetCoverCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+		throw SQFError(_SC("Invalid argument type"));
+	this->v = i;
 }
 

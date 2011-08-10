@@ -3123,12 +3123,21 @@ bool Island3WarSpace::sendMessage(Message &com){
 		for(int i = 0; i < numof(i3->bldgs); i++){
 			Island3Building *b = i3->bldgs[i];
 			double dist = (b->pos - p->org).len();
-			if(dist < p->radius) for(int ix = -1; ix < 2; ix += 2) for(int iz = -1; iz < 2; iz += 2){
-				CoverPoint cp;
-				cp.pos = b->pos + b->rot.trans(Vec3d(ix * b->halfsize[0], 0, iz * b->halfsize[2]));
-				cp.rot = b->rot * (iz == -1 ? Quatd::rotation(M_PI, 0, 1, 0) : quat_u);
-				cp.type = ix * iz < 0 ? cp.LeftEdge : cp.RightEdge;
-				ret.push_back(cp);
+			if(dist < p->radius) for(int ip = -1; ip < 2; ip += 2){
+				int adder = (ip - 1) / 2;
+				for(int ir = 0; ir < 4; ir++){
+					Quatd tr = b->rot * Quatd::rotation(M_PI / 2. * (ir + adder), 0, ip, 0);
+					CoverPoint cp;
+
+					// Position is determined in the Entity's local frame of reference.
+					cp.pos = b->pos + b->rot.rotate(M_PI / 2. * ir, 0, ip, 0).trans(Vec3d(b->halfsize[ir % 2 * 2], 0, b->halfsize[(ir + 1) % 2 * 2]));
+
+					// Rotation is made by ir
+					cp.rot = tr;
+
+					cp.type = ip < 0 ? cp.LeftEdge : cp.RightEdge;
+					ret.push_back(cp);
+				}
 			}
 		}
 		return true;

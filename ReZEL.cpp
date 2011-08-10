@@ -440,6 +440,8 @@ int ReZEL::popupMenu(PopupMenu &list){
 	list.appendSeparator();
 	list.append("Get Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 1);})\"");
 	list.append("Exit Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 0);})\"");
+	list.appendSeparator();
+	list.append("Reload", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Reload\\\");})\"");
 /*	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
@@ -529,9 +531,7 @@ void ReZEL::shootRifle(double dt){
 	if(0 < --magazine)
 		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
-		magazine = rifleMagazineSize;
-		this->cooldown += reloadTime;
-		this->freload = reloadTime;
+		reloadRifle();
 	}
 	this->muzzleFlash[0] = .5;
 }
@@ -807,6 +807,14 @@ Entity *ReZEL::findMother(){
 
 Quatd ReZEL::aimRot()const{
 	return Quatd::rotation(aimdir[1], 0, -1, 0) * Quatd::rotation(aimdir[0], -1, 0, 0);
+}
+
+void ReZEL::reloadRifle(){
+	if(magazine < rifleMagazineSize){
+		magazine = rifleMagazineSize;
+		this->cooldown += reloadTime;
+		this->freload = reloadTime;
+	}
 }
 
 btCompoundShape *ReZEL::shape = NULL;
@@ -2191,6 +2199,9 @@ bool ReZEL::command(EntityCommand *com){
 		else
 			task = Auto;
 	}
+	else if(InterpretCommand<ReloadCommand>(com)){
+		reloadRifle();
+	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
 		if(!mother)
@@ -2329,4 +2340,6 @@ GetCoverCommand::GetCoverCommand(HSQUIRRELVM v, Entity &){
 		throw SQFError(_SC("Invalid argument type"));
 	this->v = i;
 }
+
+IMPLEMENT_COMMAND(ReloadCommand, "Reload");
 

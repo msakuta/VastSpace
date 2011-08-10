@@ -180,6 +180,7 @@ protected:
 	Entity *findMother();
 	Quatd aimRot()const;
 	double coverFactor()const{return min(coverRight, 1.);}
+	void reloadRifle();
 	static SQInteger sqf_get(HSQUIRRELVM);
 	friend class EntityRegister<ReZEL>;
 	static StaticBindDouble rotationSpeed;
@@ -264,48 +265,14 @@ private:
 };
 
 
-struct TransformCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
-	TransformCommand(){}
-	TransformCommand(HSQUIRRELVM v, Entity &e);
-	int formid;
-};
+DERIVE_COMMAND_EXT_ADD(TransformCommand, EntityCommand, int formid);
 
-struct WeaponCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
-	WeaponCommand(){}
-	WeaponCommand(HSQUIRRELVM v, Entity &e);
-	int weaponid;
-};
+DERIVE_COMMAND_EXT_ADD(WeaponCommand, EntityCommand, int weaponid);
 
-struct StabilizerCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
-	StabilizerCommand(){}
-	StabilizerCommand(HSQUIRRELVM v, Entity &e);
-	int stabilizer;
-};
+DERIVE_COMMAND_EXT_ADD(StabilizerCommand, EntityCommand, int stabilizer);
 
-struct GetCoverCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
-	GetCoverCommand(){}
-	GetCoverCommand(HSQUIRRELVM v, Entity &e);
-	int v;
-};
+DERIVE_COMMAND_EXT_ADD(GetCoverCommand, EntityCommand, int v);
+
+DERIVE_COMMAND_EXT(ReloadCommand, EntityCommand);
 
 #endif

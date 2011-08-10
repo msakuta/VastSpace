@@ -466,8 +466,8 @@ static bool strless(const char *a, const char *b){
 }
 
 /// Using Constructor on First Use idiom, described in C++ FAQ lite.
-std::map<const char *, EntityCommandStatic, bool (*)(const char *, const char *)> &EntityCommand::ctormap(){
-	static std::map<const char *, EntityCommandStatic, bool (*)(const char *, const char *)> s(strless);
+EntityCommand::MapType &EntityCommand::ctormap(){
+	static EntityCommand::MapType s(strless);
 	return s;
 }
 

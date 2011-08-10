@@ -13,29 +13,63 @@ class Entity;
 
 typedef const char *EntityCommandID;
 
-#define DERIVE_COMMAND(name,base) struct EXPORT name : public base{\
+
+/// Basic set of members necessary to operate EntityCommand offspring.
+/// Constructors are necessary in addition to this.
+#define COMMAND_BASIC_MEMBERS(name,base) \
 	typedef base st;\
-	static int construction_dummy;\
+	static EntityCommandRegister<name> commandRegister;\
 	static EntityCommandID sid;\
 	virtual EntityCommandID id()const;\
 	virtual bool derived(EntityCommandID)const;\
+
+/// Define a EntityCommand-derived class in the main executable.
+#define DERIVE_COMMAND(name,base) DERIVE_COMMAND_FULL(name,base,EXPORT,{},)
+
+/// Define a EntityCommand-derived class with additional member variable defined in the main executable.
+#define DERIVE_COMMAND_ADD(name,base,addmember) DERIVE_COMMAND_FULL(name,base,EXPORT,,addmember)
+
+/// Define a EntityCommand-derived class in a extension module.
+#define DERIVE_COMMAND_EXT(name,base) DERIVE_COMMAND_FULL(name,base,,{},)
+
+/// Define a EntityCommand-derived class with additional member variable defined in a extension module.
+#define DERIVE_COMMAND_EXT_ADD(name,base,addmember) DERIVE_COMMAND_FULL(name,base,,,addmember)
+
+/// Define a EntityCommand-derived class with all options available.
+#define DERIVE_COMMAND_FULL(name,base,linkage,sqconstructor,addmember) struct linkage name : public base{\
+	COMMAND_BASIC_MEMBERS(name,base)\
 	name(){}\
-	name(HSQUIRRELVM v, Entity &e) : st(v,e){}\
+	name(HSQUIRRELVM v, Entity &) sqconstructor;\
+	addmember;\
 }
 
+/// Implement basic members of EntityCommand offspring.
 #define IMPLEMENT_COMMAND(name,idname) const char *name::sid = idname;\
-	int name::construction_dummy = registerEntityCommand(idname, EntityCommandStatic(EntityCommandCreator<name>, EntityCommandDeletor<name>));\
+	EntityCommandRegister<name> name::commandRegister(EntityCommandCreator<name>, EntityCommandDeletor<name>);\
 	EntityCommandID name::id()const{return sid;}\
 	bool name::derived(EntityCommandID aid)const{if(aid==sid)return true;else return st::derived(aid);}
 
 struct EntityCommand;
 
-typedef EntityCommand *EntityCommandCreatorFunc(HSQUIRRELVM, Entity &);
+typedef EntityCommand *EntityCommandCreatorFunc(HSQUIRRELVM, Entity &); ///< Type of EntityCommand-derived classes' constructor.
+typedef void EntityCommandDeleteFunc(void *); ///< Type of EntityCommand-derived classes' destructor.
+typedef void EntityCommandSqFunc(HSQUIRRELVM, Entity &); ///< Type of EntityCommand-derived classes' method to apply.
 
+/// Static data type for a EntityCommand-derived class.
 struct EntityCommandStatic{
-	EntityCommandCreatorFunc *newproc;
-	void (*deleteproc)(void*);
-	EntityCommandStatic(EntityCommandCreatorFunc a = NULL, void b(void*) = NULL) : newproc(a), deleteproc(b){}
+	EntityCommandCreatorFunc *newproc; ///< Constructor for the class object. It's not really used.
+	EntityCommandDeleteFunc *deleteproc; ///< Destructor for the class object. It's not really used.
+	EntityCommandSqFunc *sq_command; ///< Squirrel binding for the class. Construct, pass, destroy in the single function.
+	EntityCommandStatic(EntityCommandCreatorFunc a = NULL, EntityCommandDeleteFunc b = NULL, EntityCommandSqFunc c = NULL) : newproc(a), deleteproc(b), sq_command(c){}
+};
+
+/// A template class to implement EntityCommandStatic object for a given EntityCommand-derived class.
+template<typename CommandDerived> struct EntityCommandRegister : public EntityCommandStatic{
+	EntityCommandRegister(EntityCommandCreatorFunc a, EntityCommandDeleteFunc b)
+		: EntityCommandStatic(a, b, EntityCommandSq<CommandDerived>)
+	{
+		EntityCommand::registerEntityCommand(CommandDerived::sid, this);
+	}
 };
 
 template<typename Command>
@@ -46,6 +80,15 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 template<typename Command>
 void EntityCommandDeletor(void *pv){
 	delete pv;
+}
+
+/// A template to generate squirrel bindings automatically.
+///
+/// You can instanciate this function template for any Command to implement custom codes.
+template<typename Command>
+void EntityCommandSq(HSQUIRRELVM v, Entity &e){
+	Command com(v, e);
+	e.command(&com);
 }
 
 /** \brief Base class for all Entity commands.
@@ -69,8 +112,11 @@ void EntityCommandDeletor(void *pv){
 // function call to express a command.
  */
 struct EXPORT EntityCommand{
+	/// Type of the constructor map.
+	typedef std::map<const char *, EntityCommandStatic*, bool (*)(const char *, const char *)> MapType;
+
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
-	static std::map<const char *, EntityCommandStatic, bool (*)(const char *, const char *)> &ctormap();
+	static MapType &ctormap();
 
 	/** \brief Returns unique ID for this class.
 	 *
@@ -92,19 +138,24 @@ struct EXPORT EntityCommand{
 	/// In a Squirrel execution context, an Entity which will this command be sent to is known.
 	EntityCommand(HSQUIRRELVM v, Entity &e){}
 
-protected:
 	/// Derived classes use this utility to register class.
-	static int registerEntityCommand(const char *name, EntityCommandStatic ctor){
+	static int registerEntityCommand(const char *name, EntityCommandStatic *ctor){
 		ctormap()[name] = ctor;
 		return 0;
 	}
 };
 
+/// A template function that tests whether given command matches the template argument class.
+///
+/// Re-invention of RTTI, but expected faster.
 template<typename CmdType>
 CmdType *InterpretCommand(EntityCommand *com){
 	return com->id() == CmdType::sid ? static_cast<CmdType*>(com) : NULL;
 }
 
+/// A template function that tests whether given command derives the template argument class.
+///
+/// Re-invention of RTTI, but expected faster.
 template<typename CmdType>
 CmdType *InterpretDerivedCommand(EntityCommand *com){
 	return com->derived(CmdType::sid) ? static_cast<CmdType*>(com) : NULL;
@@ -114,11 +165,7 @@ CmdType *InterpretDerivedCommand(EntityCommand *com){
 DERIVE_COMMAND(HaltCommand, EntityCommand);
 
 struct EXPORT AttackCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(AttackCommand, EntityCommand);
 	AttackCommand(){}
 	AttackCommand(HSQUIRRELVM v, Entity &e);
 	std::set<Entity*> ents;
@@ -127,11 +174,7 @@ struct EXPORT AttackCommand : public EntityCommand{
 DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 
 struct EXPORT MoveCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(MoveCommand, EntityCommand);
 	MoveCommand(){}
 	MoveCommand(HSQUIRRELVM v, Entity &e);
 	Vec3d destpos;
@@ -145,11 +188,7 @@ DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
 DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
 
 struct EXPORT WarpCommand : public MoveCommand{
-	typedef MoveCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(WarpCommand, MoveCommand);
 	WarpCommand(){}
 	WarpCommand(HSQUIRRELVM v, Entity &e);
 
@@ -163,11 +202,7 @@ struct EXPORT WarpCommand : public MoveCommand{
 };
 
 struct EXPORT RemainDockedCommand : public EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(RemainDockedCommand, EntityCommand);
 	RemainDockedCommand(bool a = true) : enable(a){}
 	RemainDockedCommand(HSQUIRRELVM v, Entity &e);
 	bool enable;

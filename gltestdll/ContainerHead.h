@@ -83,11 +83,7 @@ protected:
 
 
 struct TransportResourceCommand : EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(TransportResourceCommand, EntityCommand);
 	TransportResourceCommand(HSQUIRRELVM v, Entity &e);
 	TransportResourceCommand(int gases, int solids) : gases(gases), solids(solids){}
 	int gases;
@@ -95,17 +91,7 @@ struct TransportResourceCommand : EntityCommand{
 };
 
 
-
-struct DockToCommand : DockCommand{
-	typedef DockCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
-	DockToCommand(Entity *e) : deste(e){}
-	DockToCommand(HSQUIRRELVM v, Entity &e);
-	Entity *deste;
-};
+DERIVE_COMMAND_EXT_ADD(DockToCommand, EntityCommand, Entity *deste);
 
 
 struct DockAI : EntityAI{

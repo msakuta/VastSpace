@@ -62,11 +62,7 @@ protected:
 };
 
 struct TransportPeopleCommand : EntityCommand{
-	typedef EntityCommand st;
-	static int construction_dummy;
-	static EntityCommandID sid;
-	virtual EntityCommandID id()const;
-	virtual bool derived(EntityCommandID)const;
+	COMMAND_BASIC_MEMBERS(TransportPeopleCommand, EntityCommand);
 	TransportPeopleCommand(HSQUIRRELVM v, Entity &e);
 	TransportPeopleCommand(int people) : people(people){}
 	int people;

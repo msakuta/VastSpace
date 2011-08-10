@@ -109,7 +109,7 @@ void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion
 	motion_amplitude[12] = weapon == 1 && fwaverider == 0. ? 1. : 0.;
 	motion_time[13] = weapon == 0 ? 10. * coverRight : 0;
 	motion_amplitude[13] = (1. - fwaverider) * (weapon == 0 ? coverFactor() : 0.);
-	motion_time[14] = weapon == 0 ? 10. * rangein(aimdir[1] / (M_PI / 6.) + 1., 0., 2.) : 0;
+	motion_time[14] = weapon == 0 ? 10. * rangein(aimdir[1] / (M_PI / 4.) + 1., 0., 2.) : 0;
 	motion_amplitude[14] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
 	motion_time[15] = weapon == 0 ? 10. * rangein(aimdir[0] / (M_PI / 4.) + 1., 0., 2.) : 0;
 	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);

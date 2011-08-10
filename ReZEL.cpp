@@ -1581,8 +1581,8 @@ void ReZEL::anim(double dt){
 			}while(0);
 
 			if(task == CoverRight){
-				Vec3d delta = coverPoint.pos + coverPoint.rot.trans(Vec3d(-.003, hitboxes[0].sc[1], .01)) - pos;
-				bbody->applyCentralForce(btvc((delta * 2. - velo * 1.) * mass));
+				Vec3d delta = coverPoint.pos + coverPoint.rot.trans(Vec3d(-.001 + aimdir[1] * -.015 / M_PI, hitboxes[0].sc[1], .01)) - pos;
+				bbody->applyCentralForce(btvc((delta * 5. - velo * 2.) * mass));
 				btTransform wt = bbody->getWorldTransform();
 				wt.setRotation(wt.getRotation().slerp(btqc(coverPoint.rot), dt));
 				bbody->setWorldTransform(wt);
@@ -1897,7 +1897,7 @@ void ReZEL::anim(double dt){
 		pitch = approach(pitch, rangein(omg.sp(rot.trans(vec3_100)), -1., 1.), dt, 0.);
 		{
 			const double pitchrange = task == CoverRight ? M_PI / 4. : M_PI / 2.;
-			const double yawrange = task == CoverRight ? M_PI / 6. : M_PI / 3.;
+			const double yawrange = task == CoverRight ? M_PI / 4. : M_PI / 3.;
 			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
 			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
 			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -pitchrange, pitchrange), M_PI * dt, 0);

@@ -351,6 +351,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\random\mt19937ar.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\rseq.c"
 				>
 			</File>
@@ -458,6 +462,10 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\mathdef.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\clib\random\mt19937ar.h"
 				>
 			</File>
 			<File

@@ -245,7 +245,7 @@ template<typename T> inline Quat<T> Quat<T>::slerp(const typename Quat<T>::tt &q
 	double qr = q.a[0] * r.a[0] + q.a[1] * r.a[1] + q.a[2] * r.a[2] + q.a[3] * r.a[3];
 	double ss = 1.0 - qr * qr;
   
-	if (ss == 0.0) {
+	if (ss <= sqrtepsilon()) {
 		return q;
 	}
 	else if(q == r){

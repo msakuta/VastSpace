@@ -16,6 +16,7 @@
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 #endif
+#include "Game.h"
 #include "Viewer.h"
 #include "Player.h"
 #include "Entity.h"
@@ -117,11 +118,12 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 //static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), GLuint tod = 0);
 class WarDrawInt : public WarDraw{
 	Viewer &gvw;
+	Player *&player;
 	const CoordSys *cs;
 	void (WarField::*method)(wardraw_t *wd);
 	void war_draw_int();
 public:
-	WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), ShadowMap *sm = NULL);
+	WarDrawInt(Viewer &vw, Player *&player, const CoordSys *cs, void (WarField::*method)(wardraw_t *wd), ShadowMap *sm = NULL);
 	void draw();
 	~WarDrawInt();
 	WarDrawInt &setViewer(Viewer *vw){this->vw = vw; return *this;}
@@ -129,15 +131,26 @@ public:
 	WarDrawInt &setShader(GLuint a, GLint textureLoc, GLint shadowmapLoc){shader = a; this->textureLoc = textureLoc; this->shadowmapLoc = shadowmapLoc; return *this;}
 };
 
-static void war_draw(Viewer &vw, const CoordSys *cs, void (WarField::*method)(WarDraw *)){
-	WarDrawInt(vw, cs, method).setViewer(&vw).draw();
+static void war_draw(Viewer &vw, Player *&player, const CoordSys *cs, void (WarField::*method)(WarDraw *)){
+	WarDrawInt(vw, player, cs, method).setViewer(&vw).draw();
 }
 
+/// List of registered initialization functions. Too bad std::vector cannot be used because the class static parameters
+/// are not initialized.
+void (*Game::serverInits[64])(Game&);
+int Game::nserverInits = 0;
 
-Player pl;
-double &flypower = pl.freelook->flypower;
-Universe *g_pUniverse = new Universe(&pl);
-#define universe (*g_pUniverse)
+ServerGame *server; ///< The server game.
+Game *client; ///< The client game.
+
+/// \brief Register initialization function to be executed when a ServerGame instance is created.
+///
+/// The caller must call this function at initialization step, typically the constructor of static class instance.
+/// The constructor of ServerGame will automatically call those registered functions to perform initial operations
+/// required for various classes, including extensions.
+void Game::addServerInits(void (*f)(Game &)){
+	serverInits[nserverInits++] = f;
+}
 
 extern GLuint screentex;
 GLuint screentex = 0;
@@ -162,22 +175,22 @@ void drawShadeSphere(){
 
 static Vec3d g_light;
 
-void lightOn(){
+void Game::lightOn(){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
-	const Astrobj *sun = pl.cs->findBrightest(pl.getpos());
+	const Astrobj *sun = player->cs->findBrightest(player->getpos());
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	g_light = sun ? pl.cs->tocs(vec3_000, sun).normin() : vec3_010;
+	g_light = sun ? player->cs->tocs(vec3_000, sun).normin() : vec3_010;
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
 }
 
-static void draw_gear(double dt){
+void Game::draw_gear(double dt){
 	double (*cuts)[2];
 	double desired;
 	int i;
 	static double gearphase = 0;
 
-	desired = pl.freelook->getGear() * 360 / 8;
+	desired = player->freelook->getGear() * 360 / 8;
 	if(gearphase == desired && !((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G))
 		return;
 	if(gearphase != desired)
@@ -383,7 +396,7 @@ extern int bullet_kills, missile_kills;
 int bullet_kills = 0, missile_kills = 0, wire_kills = 0;
 int bullet_shoots = 0, bullet_hits = 0;
 
-static void drawindics(Viewer *vw){
+void Game::drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
 		Mat4d model;
@@ -391,24 +404,24 @@ static void drawindics(Viewer *vw){
 		model.translatein(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
 		GLpmatrix();
 //		projection(vw->frustum(g_space_near_clip, g_space_far_clip));
-		drawastro(vw, &universe, model);
+		drawastro(vw, universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
-	if(pl.chase){
+	if(player->chase){
 		wardraw_t wd;
 		wd.vw = vw;
-		wd.w = *pl.chase->w;
+		wd.w = *player->chase->w;
 		if(wd.w)
-			pl.chase->drawHUD(&wd);
+			player->chase->drawHUD(&wd);
 	}
-	pl.drawindics(vw);
+	player->drawindics(vw);
 	{
 		char buf[128];
 		GLpmatrix pm;
 		projection((glLoadIdentity(), glOrtho(0, gvp.w, gvp.h, 0, -1, 1)));
 		glPushMatrix();
 		glLoadIdentity();
-		war_draw(*vw, pl.cs, &WarField::drawOverlay);
+		war_draw(*vw, player, player->cs, &WarField::drawOverlay);
 		glColor4f(1,1,1,1);
 		glTranslatef(0,0,-1);
 #ifdef _DEBUG
@@ -419,9 +432,9 @@ static void drawindics(Viewer *vw){
 //		dstrallocs = cpplib::dstring::allocs;
 		dstrallocs = gltestp::dstring::allocs;
 #endif
-		sprintf(buf, "%s %s", pl.cs->classname(), pl.cs->name);
+		sprintf(buf, "%s %s", player->cs->classname(), player->cs->name);
 		diprint(buf, 0, gvp.h);
-		if(pl.cs && pl.cs->w){
+		if(player->cs && player->cs->w){
 /*			int y = 0;
 			int ce;
 			int cb;
@@ -456,7 +469,7 @@ static void drawindics(Viewer *vw){
 		diprint(buf, gvp.w - 8 * strlen(buf), 24);
 		sprintf(buf, "watime: %10.8lf/%10.8lf sec", watime, vw->dt);
 		diprint(buf, gvp.w - 8 * strlen(buf), 36);
-		if(universe.paused){
+		if(universe->paused){
 			diprint("PAUSED", gvp.w / 2 - 8 * sizeof"PAUSED" / 2, gvp.h / 2 + 20);
 		}
 		glPopMatrix();
@@ -474,7 +487,7 @@ static void drawindics(Viewer *vw){
 		glMatrixMode(GL_MODELVIEW);*/
 		glPushMatrix();
 		glLoadIdentity();
-		Mat4d rot = pl.getrot().tomat4();
+		Mat4d rot = player->getrot().tomat4();
 		glMultMatrixd(rot);
 		gldTranslaten3dv(vw->pos);
 
@@ -522,8 +535,8 @@ static void drawindics(Viewer *vw){
 	}
 
 	// Guide for tactical rotation
-	if(mouse_captured && pl.mover == pl.tactical){
-		Quatd ort = pl.cs->w && (WarSpace*)*pl.cs->w ? ((WarSpace*)*pl.cs->w)->orientation(pl.cpos) : quat_u;
+	if(mouse_captured && player->mover == player->tactical){
+		Quatd ort = player->cs->w && (WarSpace*)*player->cs->w ? ((WarSpace*)*player->cs->w)->orientation(player->cpos) : quat_u;
 		for(int i = 0; i < 12; i++) for(int j = -3; j < 3; j++){
 			glPushMatrix();
 			glLoadMatrixd(vw->rot * ort.tomat4());
@@ -580,8 +593,9 @@ void WarDrawInt::war_draw_int(){
 }
 
 /// \param tod Texture of Depth
-WarDrawInt::WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::* method)(wardraw_t *w), ShadowMap *sm) :
+WarDrawInt::WarDrawInt(Viewer &vw, Player *&player, const CoordSys *cs, void (WarField::* method)(wardraw_t *w), ShadowMap *sm) :
 	WarDraw(),
+	player(player),
 	gvw(vw),
 	cs(cs),
 	method(method)
@@ -594,7 +608,7 @@ WarDrawInt::WarDrawInt(Viewer &vw, const CoordSys *cs, void (WarField::* method)
 /// Destructor actualy does drawing
 void WarDrawInt::draw(){
 	if(cs->parent){
-		WarDrawInt(gvw, cs->parent, method, shadowMap)
+		WarDrawInt(gvw, player, cs->parent, method, shadowMap)
 			.setViewer(vw)
 			.shadowmap(shadowmapping)
 			.setShader(shader, textureLoc, shadowmapLoc)
@@ -605,10 +619,10 @@ void WarDrawInt::draw(){
 		// It also helps the optimizer to reduce frame pointers.
 		war_draw_int();
 	}
-	if(pl.cs == cs && method != &WarField::drawOverlay && !shadowmapping){
+	if(player->cs == cs && method != &WarField::drawOverlay && !shadowmapping){
 		if(shader)
 			glUseProgram(0);
-		(pl.*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&gvw);
+		(player->*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&gvw);
 		if(shader)
 			glUseProgram(shader);
 	}
@@ -626,7 +640,7 @@ static void cswardraw(const Viewer *vw, CoordSys *cs, void (CoordSys::*method)(c
 
 
 
-void draw_func(Viewer &vw, double dt){
+void Game::draw_func(Viewer &vw, double dt){
 	int	glerr = glGetError();
 	static GLuint fbo = 0, rboId = 0, to = 0;
 	static GLuint depthTextures[3] = {0};
@@ -659,10 +673,10 @@ void draw_func(Viewer &vw, double dt){
 	));
 	vw.zslice = 2;
 	vw.gc = &glc[2];
-	universe.startdraw();
-	universe.predraw(&vw);
-	universe.drawcs(&vw);
-	pl.draw(&vw);
+	universe->startdraw();
+	universe->predraw(&vw);
+	universe->drawcs(&vw);
+	player->draw(&vw);
 	projection(glPopMatrix());
 
 	projection((
@@ -671,9 +685,9 @@ void draw_func(Viewer &vw, double dt){
 	));
 	vw.zslice = 1;
 	vw.gc = &glc[1];
-	universe.predraw(&vw);
-	universe.drawcs(&vw);
-	pl.draw(&vw);
+	universe->predraw(&vw);
+	universe->drawcs(&vw);
+	player->draw(&vw);
 	projection(glPopMatrix());
 	}
 
@@ -719,37 +733,38 @@ void draw_func(Viewer &vw, double dt){
 		if(r_shadows){
 			class WarDrawCallback : public ShadowMap::DrawCallback{
 			public:
+				Game &game;
 				const CoordSys *cs;
 				ShadowMap *shadowMap;
-				WarDrawCallback(const CoordSys *cs, ShadowMap *sm) : cs(cs), shadowMap(sm){}
+				WarDrawCallback(Game &game, const CoordSys *cs, ShadowMap *sm) : game(game), cs(cs), shadowMap(sm){}
 				void drawShadowMaps(Viewer &vw2){
-					cswardraw(&vw2, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
-					WarDrawInt(vw2, pl.cs, &WarField::draw, shadowMap)
+					cswardraw(&vw2, const_cast<CoordSys*>(game.player->cs), &CoordSys::draw);
+					WarDrawInt(vw2, game.player, game.player->cs, &WarField::draw, shadowMap)
 						.setViewer(&vw2)
 						.shadowmap()
 						.draw();
 				}
 				void draw(Viewer &vw, GLuint shader, GLint textureLoc, GLint shadowmapLoc){
-					cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
+					cswardraw(&vw, const_cast<CoordSys*>(game.player->cs), &CoordSys::draw);
 					if(g_shader_enable)
-						WarDrawInt(vw, pl.cs, &WarField::draw, shadowMap)
+						WarDrawInt(vw, game.player, game.player->cs, &WarField::draw, shadowMap)
 							.setViewer(&vw)
 							.setShader(shader, textureLoc, shadowmapLoc)
 							.draw();
 					else
-						WarDrawInt(vw, pl.cs, &WarField::draw, shadowMap)
+						WarDrawInt(vw, game.player, game.player->cs, &WarField::draw, shadowMap)
 							.setViewer(&vw)
 							.draw();
 				}
 			};
-			shadowMap.drawShadowMaps(vw, g_light, WarDrawCallback(pl.cs, &shadowMap));
+			shadowMap.drawShadowMaps(vw, g_light, WarDrawCallback(*this, player->cs, &shadowMap));
 		}
 		else{
-			cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::draw);
+			cswardraw(&vw, const_cast<CoordSys*>(player->cs), &CoordSys::draw);
 	//		printf("%lg %d: cswardraw\n", TimeMeasLap(&tm), glGetError());
 
 			WarDraw::init();
-			war_draw(vw, pl.cs, &WarField::draw);
+			war_draw(vw, player, player->cs, &WarField::draw);
 			if(g_shader_enable)
 				glUseProgram(0);
 		}
@@ -798,8 +813,8 @@ void draw_func(Viewer &vw, double dt){
 		glDisable(GL_CULL_FACE);
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
-		cswardraw(&vw, const_cast<CoordSys*>(pl.cs), &CoordSys::drawtra);
-		war_draw(vw, pl.cs, &WarField::drawtra);
+		cswardraw(&vw, const_cast<CoordSys*>(player->cs), &CoordSys::drawtra);
+		war_draw(vw, player, player->cs, &WarField::drawtra);
 		wdtime = TimeMeasLap(&tm);
 		projection(glPopMatrix());
 	}
@@ -828,8 +843,8 @@ void draw_func(Viewer &vw, double dt){
 		ws.m = vw.vp.m;
 		ws.mx = s_mousex;
 		ws.my = s_mousey;
-		glwlist->glwDrawMinimized(ws, pl.gametime, &minix);
-		glwlist->glwDraw(ws, pl.gametime, &minix);
+		glwlist->glwDrawMinimized(ws, player->gametime, &minix);
+		glwlist->glwDraw(ws, player->gametime, &minix);
 		glPopAttrib();
 	}
 
@@ -874,7 +889,7 @@ void draw_func(Viewer &vw, double dt){
 		}
 		GLattrib attrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
-		bool attackorder = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
+		bool attackorder = MotionGet() & PL_CTRL || player->attackorder || player->forceattackorder;
 		static const MouseCursor *mc0[2][2] = {&mc_normal, &mc_attack, &mc_chasecamera, &mc_forceattack};
 		static const MouseCursor mcg0[] = {
 			mc_normal,
@@ -891,7 +906,7 @@ void draw_func(Viewer &vw, double dt){
 			{0},
 		};
 		int mstate = GLwindow::glwMouseCursorState(s_mousex, s_mousey);
-		const MouseCursor &mc = mstate ? mcg0[mstate] : *mc0[MotionGet() & PL_ALT || pl.forceattackorder][attackorder];
+		const MouseCursor &mc = mstate ? mcg0[mstate] : *mc0[MotionGet() & PL_ALT || player->forceattackorder][attackorder];
 
 		glPushMatrix();
 		glLoadIdentity();
@@ -935,7 +950,7 @@ static JoyStick joyStick(JOYSTICKID1);
 
 static POINT mouse_pos = {0, 0};
 
-void display_func(void){
+void Game::display_func(void){
 	static int init = 0;
 	static timemeas_t tm;
 	static double gametime = 0.;
@@ -947,7 +962,7 @@ void display_func(void){
 		MultiTextureInit();
 
 //		anim_sun(0.);
-		universe.anim(0.);
+		universe->anim(0.);
 
 		sqa_anim0();
 
@@ -962,7 +977,7 @@ void display_func(void){
 		if(g_fix_dt)
 			rdt = g_fix_dt;
 		else
-			rdt = (t1 - gametime) * universe.timescale;
+			rdt = (t1 - gametime) * universe->timescale;
 
 		dt = !init ? 0. : rdt < 1. ? rdt : 1.;
 
@@ -978,29 +993,29 @@ void display_func(void){
 			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
 				mousedelta[0] = p.x - mouse_pos.x;
 				mousedelta[1] = p.y - mouse_pos.y;
-				pl.rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
+				player->rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
 				SetCursorPos(mouse_pos.x, mouse_pos.y);
 			}
 		}
 
 		MotionFrame(dt);
 
-		MotionAnim(pl, dt, flypower);
+		MotionAnim(*player, dt, flypower);
 
-		pl.anim(dt);
+		player->anim(dt);
 
 #if 0
 #define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
 #else
 #define TRYBLOCK(a) (a);
 #endif
-		if(!universe.paused) try{
+		if(!universe->paused) try{
 			timemeas_t tm;
 			TimeMeasStart(&tm);
-			TRYBLOCK(universe.anim(dt));
-			TRYBLOCK(universe.postframe());
+			TRYBLOCK(universe->anim(dt));
+			TRYBLOCK(universe->postframe());
 			TRYBLOCK(GLwindow::glwpostframe());
-			TRYBLOCK(universe.endframe());
+			TRYBLOCK(universe->endframe());
 			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){
@@ -1019,22 +1034,22 @@ void display_func(void){
 		if(joyStick.InitJoystick()){
 			joyStick.CheckJoystick(inputs);
 		}
-		(*pl.mover)(inputs, dt);
-		if(pl.nextmover && pl.nextmover != pl.mover){
+		(*player->mover)(inputs, dt);
+		if(player->nextmover && player->nextmover != player->mover){
 /*			Vec3d pos = pl.pos;
 			Quatd rot = pl.rot;*/
-			(*pl.nextmover)(inputs, dt);
+			(*player->nextmover)(inputs, dt);
 /*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
 			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
 		}
 
-		if(pl.chase && pl.controlled == pl.chase){
+		if(player->chase && player->controlled == player->chase){
 			inputs.analog[1] += mousedelta[0];
 			inputs.analog[0] += mousedelta[1];
-			pl.chase->control(&inputs, dt);
+			player->chase->control(&inputs, dt);
 		}
 
-		if(pl.controlled)
+		if(player->controlled)
 			glwfocus = NULL;
 
 		// Really should be in draw method, since windows are property of the client.
@@ -1064,7 +1079,7 @@ void display_func(void){
 		if(vp[2] <= vp[0] || vp[3] <= vp[1])
 			return;
 		viewer.vp.set(vp);
-		viewer.fov = pl.fov;
+		viewer.fov = player->fov;
 		double dnear = g_warspace_near_clip, dfar = g_warspace_far_clip;
 /*		if(pl.cs->w && pl.cs->w->vft->nearplane)
 			dnear = pl.cs->w->vft->nearplane(pl.cs->w);
@@ -1078,15 +1093,15 @@ void display_func(void){
 		glMatrixMode (GL_MODELVIEW);  /* back to modelview matrix */
 /*		glDepthRange(.5,100);*/
 	}
-	viewer.cs = pl.cs;
-	viewer.qrot = pl.getrot();
+	viewer.cs = player->cs;
+	viewer.qrot = player->getrot();
 	viewer.rot = viewer.qrot.tomat4();
 	viewer.irot = viewer.qrot.cnj().tomat4();
-	viewer.pos = pl.getpos();
+	viewer.pos = player->getpos();
 	viewer.relrot = viewer.rot;
 	viewer.relirot = viewer.irot;
 	viewer.viewtime = gametime;
-	viewer.velo = pl.getvelo();
+	viewer.velo = player->getvelo();
 	viewer.dt = dt;
 	viewer.mousex = s_mousex;
 	viewer.mousey = s_mousey;
@@ -1121,7 +1136,7 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
  * \param flags 4 - point selection, which means up to 1 Entity enumeration.
  * \param sbc Callback functionoid that receives enumerated Entities in selection box.
  * \return if any Entity is enumerated */
-static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc){
+bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc){
 	Entity *pt;
 	Mat4d mat, mat2;
 //	int viewstate = 0;
@@ -1130,10 +1145,10 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	double g_far = g_warspace_far_clip, g_near = g_warspace_near_clip;
 	Entity *ptbest = NULL;
 
-	if(!pl.cs->w)
+	if(!player->cs->w)
 		return false;
 
-	WarField *w = pl.cs->w;
+	WarField *w = player->cs->w;
 
 /*	if(g_ally_view){
 		entity_t *pt;
@@ -1167,13 +1182,13 @@ static bool select_box(double x0, double x1, double y0, double y1, const Mat4d &
 	mat[2] = 0., mat[6] = 0., mat[10] = -(g_far + g_near) / (g_far - g_near), mat[14] = -2. * g_far * g_near / (g_far - g_near);
 	mat[3] = 0., mat[7] = 0., mat[11] = -1., mat[15] = 0.;
 	mat2 = mat * rot;
-	Vec3d plpos = pl.getpos();
+	Vec3d plpos = player->getpos();
 	bool ret = false;
 
 	// Cycle through both Entity list and Bullet list, but only ones that tells its selectable.
 	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int li = 0; li < 2; li++)
-	for(pt = pl.cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()){
+	for(pt = player->cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;
@@ -1277,7 +1292,7 @@ int cmd_move(int argc, char *argv[], void *pv){
 
 
 
-void mouse_func(int button, int state, int x, int y){
+void Game::mouse_func(int button, int state, int x, int y){
 
 	if(cmdwnd){
 		CmdMouseInput(button, state, x, y);
@@ -1305,20 +1320,20 @@ void mouse_func(int button, int state, int x, int y){
 			s_mousedragy = s_mousey;
 			return;
 		}
-		if(pl.moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		if(player->moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			char buf[3][64];
 			char *args[4] = {"move", buf[0], buf[1], buf[2]};
-			Vec3d lpos(pl.move_hitpos);
-			lpos[2] -= pl.move_z;
-			Vec3d pos = pl.move_rot.vp3(lpos);
+			Vec3d lpos(player->move_hitpos);
+			lpos[2] -= player->move_z;
+			Vec3d pos = player->move_rot.vp3(lpos);
 /*			VECSUBIN(pos, pl.pos);*/
-			if(pl.selected)
-				pos += pl.selected->pos;
+			if(player->selected)
+				pos += player->selected->pos;
 			sprintf(buf[0], "%15lg", pos[0]);
 			sprintf(buf[1], "%15lg", pos[1]);
 			sprintf(buf[2], "%15lg", pos[2]);
-			cmd_move(4, args, &pl);
-			pl.moveorder = 0;
+			cmd_move(4, args, player);
+			player->moveorder = 0;
 			return;
 		}
 		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
@@ -1327,11 +1342,12 @@ void mouse_func(int button, int state, int x, int y){
 				/// Temporary object to select objects.
 				class SelectSelect : public select_box_callback{
 				public:
+					Game &game;
 					virtual void onEntity(Entity *e){
-						e->selectnext = pl.selected;
-						pl.selected = e;
+						e->selectnext = game.player->selected;
+						game.player->selected = e;
 					}
-					SelectSelect(){ pl.selected = NULL; }
+					SelectSelect(Game &game) : game(game){ game.player->selected = NULL; }
 				};
 
 				/// Temporary object that accumulates and issues attack command to entities.
@@ -1340,15 +1356,16 @@ void mouse_func(int button, int state, int x, int y){
 					virtual void onEntity(Entity *e){
 						com.ents.insert(e);
 					}
+					Game &game;
 					AttackCommand ac;
 					ForceAttackCommand fac;
 					AttackCommand &com;
 					Entity *list;
-					AttackSelect(bool force, Entity *alist) : com(force ? fac : ac), list(alist){}
+					AttackSelect(Game &game, bool force, Entity *alist) : game(game), com(force ? fac : ac), list(alist){}
 					/// The destructor issues command.
 					~AttackSelect(){
 						if(!com.ents.empty())
-							pl.attackorder = pl.forceattackorder = 0;
+							game.player->attackorder = game.player->forceattackorder = 0;
 						for(; list; list = list->selectnext)
 							list->command(&com);
 					}
@@ -1357,30 +1374,33 @@ void mouse_func(int button, int state, int x, int y){
 				/// Temporary object to select entities to chase the camera on.
 				class FocusSelect : public select_box_callback{
 				public:
+					Game &game;
 					virtual void onEntity(Entity *e){
-						pl.chase = e;
-						pl.chases.insert(e);
+						game.player->chase = e;
+						game.player->chases.insert(e);
 					}
-					FocusSelect(){pl.chases.clear();}
+					FocusSelect(Game &game) : game(game){game.player->chases.clear();}
 				};
 
 				int x0 = MIN(s_mousedragx, s_mousex);
 				int x1 = MAX(s_mousedragx, s_mousex) + 1;
 				int y0 = MIN(s_mousedragy, s_mousey);
 				int y1 = MAX(s_mousedragy, s_mousey) + 1;
-				Mat4d rot = pl.getrot().tomat4();
-				bool attacking = MotionGet() & PL_CTRL || pl.attackorder || pl.forceattackorder;
-				bool forced = MotionGet() & PL_ALT && (MotionGet() & PL_CTRL) || pl.forceattackorder;
+				Mat4d rot = player->getrot().tomat4();
+				bool attacking = MotionGet() & PL_CTRL || player->attackorder || player->forceattackorder;
+				bool forced = MotionGet() & PL_ALT && (MotionGet() & PL_CTRL) || player->forceattackorder;
 				select_box((2. * x0 / gvp.w - 1.) * gvp.w / gvp.m, (2. * x1 / gvp.w - 1.) * gvp.w / gvp.m,
 					-(2. * y1 / gvp.h - 1.) * gvp.h / gvp.m, -(2. * y0 / gvp.h - 1.) * gvp.h / gvp.m, rot,
 					((s_mousedragx == s_mousex && s_mousedragy == s_mousey) << 2),
-					attacking ? (select_box_callback*)&AttackSelect(forced, pl.selected) : MotionGet() & PL_ALT ? (select_box_callback*)&FocusSelect() : (select_box_callback*)&SelectSelect());
+					attacking ? (select_box_callback*)&AttackSelect(*this, forced, player->selected) :
+					MotionGet() & PL_ALT ? (select_box_callback*)&FocusSelect(*this) :
+					(select_box_callback*)&SelectSelect(*this));
 				s_mousedragx = s_mousex;
 				s_mousedragy = s_mousey;
 			}
 		}
 		else if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
-			entity_popup(pl.selected, ws, 1);
+			entity_popup(player->selected, ws, 1);
 		}
 		glwfocus = NULL;
 	}
@@ -1408,7 +1428,7 @@ void mouse_func(int button, int state, int x, int y){
 	}*/
 
 #if USEWIN && defined _WIN32
-	if(!cmdwnd && !pl.controlled && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
+	if(!cmdwnd && !player->controlled && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
 /*		printf("right up %d\n", mouse_captured);*/
 		if(mouse_captured){
@@ -1430,27 +1450,27 @@ void reshape_func(int w, int h)
 }
 
 static int cmd_eject(int argc, char *argv[]){
-	if(pl.chase){
-		pl.chase = NULL;
-		pl.freelook->pos += pl.getrot().cnj() * Vec3d(0,0,.3);
-		pl.mover = pl.freelook;
+	if(server->player->chase){
+		server->player->chase = NULL;
+		server->player->freelook->pos += server->player->getrot().cnj() * Vec3d(0,0,.3);
+		server->player->mover = server->player->freelook;
 	}
 	return 0;
 }
 
 static int cmd_chasecamera(int argc, char *argv[]){
-	if(pl.selected){
-		pl.chase = pl.selected;
-		pl.cs = pl.selected->w->cs;
-		pl.chases.clear();
-		for(Entity *e = pl.selected; e; e = e->selectnext)
-			pl.chases.insert(e);
+	if(server->player->selected){
+		server->player->chase = server->player->selected;
+		server->player->cs = server->player->selected->w->cs;
+		server->player->chases.clear();
+		for(Entity *e = server->player->selected; e; e = e->selectnext)
+			server->player->chases.insert(e);
 	}
 	return 0;
 }
 
 static int cmd_originrotation(int, char *[]){
-	pl.setrot(quat_u);
+	server->player->setrot(quat_u);
 	return 0;
 }
 
@@ -1583,12 +1603,12 @@ static void key_func(unsigned char key, int x, int y){
 
 	// The Esc key is the last resort to exit controlling
 	if(key == ESC)
-		pl.uncontrol();
+		server->player->uncontrol();
 
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
 			if((g_gear_toggle_mode ? MotionGetToggle : MotionGet)() & PL_G){
-				pl.freelook->setGear(key - '1');
+				server->player->freelook->setGear(key - '1');
 				MotionSetToggle(PL_G, 0);
 
 /*				if(warp_move == pl.mover && key != '9'){
@@ -1655,7 +1675,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 //				HGLRC hgl;
 				hdc = GetDC(hWnd);
 //				hgl = winglstart(hdc);
-				display_func();
+				server->display_func();
 //				wglSwapLayerBuffers(hdc, WGL_SWAP_MAIN_PLANE);
 				SwapBuffers(hdc);
 //				winglend(hgl);
@@ -1687,7 +1707,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
-				pl.mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
+				server->player->mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){
 					s_mousedragx = s_mousex;
 					s_mousedragy = s_mousey;
@@ -1724,16 +1744,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			break;
 
 		case WM_RBUTTONDOWN:
-			mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			server->mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONDOWN:
-			mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			server->mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_RBUTTONUP:
-			mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			server->mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONUP:
-			mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			server->mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 
 		case WM_MOUSEWHEEL:
@@ -1741,7 +1761,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				int ret = 0;
 				POINT p = {LOWORD(lParam), HIWORD(lParam)};
 				ScreenToClient(hWnd, &p);
-				mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_DOWN, p.x, p.y);
+				server->mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_DOWN, p.x, p.y);
 			}
 			break;
 
@@ -1877,7 +1897,9 @@ int main(int argc, char *argv[])
 
 //	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 //	glwfocus = NULL;
-	pl.cs = &universe;
+//	pl.cs = &universe;
+	server = new ServerGame();
+	client = server;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -1891,21 +1913,21 @@ int main(int argc, char *argv[])
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
-	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &pl);
+	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &server->player);
 	extern int cmd_togglewarpmenu(int argc, char *argv[], void *);
-	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &pl);
+	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &server->player);
 	extern int cmd_transit(int argc, char *argv[], void *pv);
-	CmdAddParam("transit", cmd_transit, &pl);
+	CmdAddParam("transit", cmd_transit, &server->player);
 	extern int cmd_warp(int argc, char *argv[], void *pv);
-	CmdAddParam("warp", cmd_warp, &pl);
+	CmdAddParam("warp", cmd_warp, &server->player);
 	CmdAdd("chasecamera", cmd_chasecamera);
-	CmdAddParam("property", Entity::cmd_property, &pl);
+	CmdAddParam("property", Entity::cmd_property, &server->player);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
-	CmdAddParam("armswindow", cmd_armswindow, &pl);
-	CmdAddParam("save", Universe::cmd_save, &universe);
-	CmdAddParam("load", Universe::cmd_load, &universe);
+	CmdAddParam("armswindow", cmd_armswindow, &server->player);
+	CmdAddParam("save", Universe::cmd_save, &server->universe);
+	CmdAddParam("load", Universe::cmd_load, &server->universe);
 //	CmdAddParam("buildmenu", cmd_build, &pl);
-	CmdAddParam("dockmenu", cmd_dockmenu, &pl);
+	CmdAddParam("dockmenu", cmd_dockmenu, &server->player);
 	CmdAdd("sq", cmd_sq);
 	class Refresh{
 	public:
@@ -1918,15 +1940,15 @@ int main(int argc, char *argv[])
 	CmdAdd("refresh", &Refresh::refresh);
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
-	CoordSys::registerCommands(&pl);
+	CoordSys::registerCommands(server->player);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
-	CvarAdd("pause", &universe.paused, cvar_int);
-	CvarAdd("g_timescale", &universe.timescale, cvar_double);
-	CvarAdd("viewdist", &pl.viewdist, cvar_double);
+	CvarAdd("pause", &server->universe->paused, cvar_int);
+	CvarAdd("g_timescale", &server->universe->timescale, cvar_double);
+	CvarAdd("viewdist", &server->player->viewdist, cvar_double);
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
-	CvarAdd("seat", &pl.chasecamera, cvar_int);
+	CvarAdd("seat", &server->player->chasecamera, cvar_int);
 	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
 	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
 	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
@@ -1941,9 +1963,9 @@ int main(int argc, char *argv[])
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
-	Player::cmdInit(pl);
+	Player::cmdInit(*server->player);
 
-	sqa_init();
+	sqa_init(server);
 
 	{
 		const SQChar *s = _SC("space.dat");
@@ -1953,7 +1975,7 @@ int main(int argc, char *argv[])
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
 			sq_getstring(v, -1, &s);
 		}
-		StellarFileLoad(s, &universe);
+		StellarFileLoad(s, server->universe);
 	}
 	CmdExec("@exec autoexec.cfg");
 
@@ -2017,8 +2039,7 @@ int main(int argc, char *argv[])
 
 	// We need to free the universe here, or class static objects can be freed before all instances are deleted.
 	// The chance depends on the compiler condition which is not stable.
-	delete g_pUniverse;
-	g_pUniverse = NULL;
+	delete server;
 
 	sqa_exit();
 

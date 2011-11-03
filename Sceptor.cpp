@@ -21,6 +21,7 @@
 #include "sqadapt.h"
 #include "draw/effects.h"
 #include "motion.h"
+#include "Game.h"
 #include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>
@@ -1438,12 +1439,15 @@ static int cmd_delta_formation(int argc, char *argv[], void *pv){
 	return 0;
 }
 
-static void register_sceptor_cmd(void){
-	extern Player pl;
-	CmdAddParam("delta_formation", cmd_delta_formation, &pl);
+static void register_sceptor_cmd(Game &game){
+	CmdAddParam("delta_formation", cmd_delta_formation, game.player);
 }
 
-static Initializator sss(register_sceptor_cmd);
+static void register_server(){
+	Game::addServerInits(register_sceptor_cmd);
+}
+
+static Initializator sss(register_server);
 
 
 double Sceptor::pid_pfactor = 1.;

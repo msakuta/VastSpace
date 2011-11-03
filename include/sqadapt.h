@@ -19,14 +19,14 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 
-
+class Game;
 class Serializable;
 class Entity;
 
 /// Namespace for Squirrel adaption functions and classes.
 namespace sqa{
 
-void sqa_init(HSQUIRRELVM *v = NULL);
+void sqa_init(Game *game, HSQUIRRELVM *v = NULL);
 void sqa_anim0();
 void sqa_anim(double dt);
 void sqa_delete_Entity(Entity *);

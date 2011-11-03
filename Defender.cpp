@@ -17,6 +17,7 @@
 #include "BeamProjectile.h"
 #include "sqadapt.h"
 #include "motion.h"
+#include "Game.h"
 #include "glw/popup.h"
 extern "C"{
 #include <clib/c.h>
@@ -1302,13 +1303,16 @@ static int cmd_undeploy(int argc, char *argv[], void *pv){
 	return 0;
 }
 
-static void register_defender_cmd(void){
-	extern Player pl;
-	CmdAddParam("deploy", cmd_deploy, &pl);
-	CmdAddParam("undeploy", cmd_undeploy, &pl);
+static void register_defender_cmd(Game &game){
+	CmdAddParam("deploy", cmd_deploy, game.player);
+	CmdAddParam("undeploy", cmd_undeploy, game.player);
 }
 
-static Initializator sss(register_defender_cmd);
+static void register_server(){
+	Game::addServerInits(register_defender_cmd);
+}
+
+static Initializator sss(register_server);
 
 IMPLEMENT_COMMAND(DeployCommand, "Deploy")
 IMPLEMENT_COMMAND(UndeployCommand, "Undeploy")

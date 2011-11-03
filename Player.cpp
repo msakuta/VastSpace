@@ -103,7 +103,7 @@ public:
 	typedef Player::CameraController st;
 	Vec3d pos;
 	Quatd rot;
-	TacticalMover(Player &a) : st(a), rot(0,0,0,1){}
+	TacticalMover(Player &a) : st(a), pos(0,0,0), rot(0,0,0,1){}
 	void operator ()(const input_t &inputs, double dt);
 	Quatd getrot()const{return rot;}
 	Vec3d getpos()const{return pos;}
@@ -142,8 +142,9 @@ void TacticalMover::rotateLook(double dx, double dy){
 
 Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), viewdist(1.),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
+	cpos(0,0,0),
 	r_move_path(false), r_attack_path(false), r_overlay(false),
-	moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
+	selected(NULL), controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
 	freelook(NULL), cockpitview(NULL), tactical(NULL)
 {
 	// Special case that needs const member variables to be initialized outside initialization list.

@@ -864,6 +864,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\Game.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\glsl.h"
 				>
 			</File>

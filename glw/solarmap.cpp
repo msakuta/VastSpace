@@ -1340,7 +1340,7 @@ static class cmd_info_initializer{
 			CmdPrint("usage: info target");
 			return 0;
 		}
-		ret = glwInfo(pl.cs->findcspath("/"), argc < 3 ? 0 : !strcmp(argv[1], "Astro") ? 1 : !strcmp(argv[1], "Coordsys") ? 2 : !strcmp(argv[1], "Teleport") ? 3 : 0, argv[argc < 3 ? 1 : 2]);
+//		ret = glwInfo(pl.cs->findcspath("/"), argc < 3 ? 0 : !strcmp(argv[1], "Astro") ? 1 : !strcmp(argv[1], "Coordsys") ? 2 : !strcmp(argv[1], "Teleport") ? 3 : 0, argv[argc < 3 ? 1 : 2]);
 	/*	if(glwcmdmenu == glwfocus)
 			glwfocus = ret;
 		glwcmdmenu = ret;*/

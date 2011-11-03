@@ -9,6 +9,7 @@
 #include "Docker.h"
 #include "astro.h"
 #include "TexSphere.h"
+#include "Game.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
@@ -45,9 +46,10 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
-extern Universe *g_pUniverse;
-#define universe (*g_pUniverse)
-extern Player pl;
+static Universe *puniverse;
+#define universe (*puniverse)
+static Player *player;
+#define pl (*player)
 extern GLwindow *glwlist;
 
 /*DECLARE_INSTANCE_TYPE(Player)
@@ -1348,9 +1350,14 @@ static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, Entity::EntityStatic 
 //	clset.insert(s.sq_define);
 }
 
-void sqa_init(HSQUIRRELVM *pv){
+
+void sqa_init(Game *game, HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
+	player = game->player;
+#undef universe
+	puniverse = game->universe;
+#define universe (*puniverse)
 	if(!pv)
 		pv = &g_sqvm;
 	HSQUIRRELVM &v = *pv = sq_open(1024);

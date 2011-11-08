@@ -64,7 +64,7 @@ const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit");
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << orbit_rad << orbit_home << orbit_axis;
+	sc.o << orbit_rad << orbit_home << orbit_center << orbit_axis;
 	sc.o << orbit_phase;
 	sc.o << eccentricity; /* orbital element */
 	sc.o << flags2;
@@ -72,7 +72,7 @@ void OrbitCS::serialize(SerializeContext &sc){
 
 void OrbitCS::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> orbit_rad >> orbit_home >> orbit_axis;
+	sc.i >> orbit_rad >> orbit_home >> orbit_center >> orbit_axis;
 	sc.i >> orbit_phase;
 	sc.i >> eccentricity; /* orbital element */
 	sc.i >> flags2;

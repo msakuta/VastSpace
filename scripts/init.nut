@@ -346,7 +346,7 @@ tlate <- translate;
 }
 
 // set stellar file
-stellar_file = 0 || debugBuild() ? "space_debug.ssd" : "space.ssd";
+stellar_file = 1 || debugBuild() ? "space_debug.ssd" : "space.ssd";
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){

@@ -13,7 +13,7 @@ astro Star "Sol"{
 	absolute_magnitude 4.1
 }
 
-coordsys Orbit sunlo{
+/*coordsys Orbit sunlo{
 	fullname "Sun Low Orbit"
 	cs_radius 500
 	orbits Sol
@@ -25,7 +25,7 @@ coordsys Orbit sunlo{
 	ascending_node 80.6198
 	warp
 	teleport
-}
+}*/
 
 coordsys Orbit earth{
 	orbits Sol
@@ -72,13 +72,13 @@ coordsys Orbit earth{
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
 
-		coordsys earths{
+/*		coordsys earths{
 			define theta .13*pi
 			define phi .3*pi
 			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
 			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			teleport "Earth Surface" 0 0 0
-		}
+		}*/
 	}
 
 	coordsys Orbit moon{
@@ -103,7 +103,7 @@ coordsys Orbit earth{
 			planet
 			spherehit
 		}
-		coordsys Orbit moonlo{
+/*		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
 			orbit_radius 6378.
@@ -113,7 +113,7 @@ coordsys Orbit earth{
 			updirection 0 1 
 			warp
 			teleport
-		}
+		}*/
 	}
 
 	new coordsys Lagrange1 el1{
@@ -131,20 +131,20 @@ coordsys Orbit earth{
 #		addent scontainer 4 -24 0
 #		addent scontainer 4 -24 0.05
 #		addent assault 4 -24 2 1
-		new astro Asteroid "Side 7 Asteroid"{
+/*		new astro Asteroid "Side 7 Asteroid"{
 			pos 70 0 0
 			radius 50
 			omega 0 0 0
 			cs_radius 50
-		}
-		new astro Island3 "Side 7"{
+		}*/
+/*		new astro Island3 "Side 7"{
 			pos 10 0 10
 			race 2
 			bookmark "Side 7"
-		}
+		}*/
 	}
 	
-	coordsys Lagrange2 el2{
+/*	coordsys Lagrange2 el2{
 		cs_radius 500
 		object1 Earth
 		object2 moon/Moon
@@ -176,9 +176,9 @@ coordsys Orbit earth{
 		astro Island3 "Side 5"{
 			race 2
 		}
-	}
+	}*/
 
-	coordsys Orbit geo{
+/*	coordsys Orbit geo{
 		cs_radius 200
 		fullname "Earth's Geostationary orbit"
 		orbits Earth
@@ -205,10 +205,10 @@ coordsys Orbit earth{
 		updirection 0 1 
 		warp
 		teleport
-	}
+	}*/
 }
 
-coordsys Orbit venus{
+/*coordsys Orbit venus{
 	fullname Venus
 	cs_radius 1000000
 	orbits Sol
@@ -235,11 +235,11 @@ coordsys Orbit venus{
 		orbit_radius 10000
 		fullname "Venus orbit"
 		warp
-		teleport
+		teleport*/
 /*		new astro Island3 "Venus Side"{
 			pos 10 -18 0
 		}*/
 #		coordsys Surface venuss{
 #		}
-	}
-}
+#	}
+#}

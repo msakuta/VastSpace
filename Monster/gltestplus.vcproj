@@ -436,6 +436,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Game.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\glsl.c"
 				>
 			</File>
@@ -673,10 +677,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\astrodraw.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Attacker.h"
 				>
 			</File>
@@ -758,10 +758,6 @@
 			</File>
 			<File
 				RelativePath="..\calc\tokker.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Universe.h"
 				>
 			</File>
 			<Filter

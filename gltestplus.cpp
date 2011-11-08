@@ -37,6 +37,7 @@
 #include "sqadapt.h"
 #include "EntityCommand.h"
 #include "astro_star.h"
+#include "serial_util.h"
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
@@ -135,22 +136,9 @@ static void war_draw(Viewer &vw, Player *&player, const CoordSys *cs, void (WarF
 	WarDrawInt(vw, player, cs, method).setViewer(&vw).draw();
 }
 
-/// List of registered initialization functions. Too bad std::vector cannot be used because the class static parameters
-/// are not initialized.
-void (*Game::serverInits[64])(Game&);
-int Game::nserverInits = 0;
-
 ServerGame *server; ///< The server game.
 Game *client; ///< The client game.
 
-/// \brief Register initialization function to be executed when a ServerGame instance is created.
-///
-/// The caller must call this function at initialization step, typically the constructor of static class instance.
-/// The constructor of ServerGame will automatically call those registered functions to perform initial operations
-/// required for various classes, including extensions.
-void Game::addServerInits(void (*f)(Game &)){
-	serverInits[nserverInits++] = f;
-}
 
 extern GLuint screentex;
 GLuint screentex = 0;
@@ -1066,6 +1054,45 @@ void Game::display_func(void){
 		return;
 #endif
 
+	{
+		SerializeMap map;
+		map[NULL] = 0;
+		map[player] = map.size();
+		Serializable* visit_list = NULL;
+		SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
+		universe->dive(sc0, &Serializable::map);
+
+		BinSerializeStream bss;
+		SerializeContext sc(bss, map, visit_list);
+		bss.sc = &sc;
+		player->packSerialize(sc);
+		universe->dive(sc, &Serializable::packSerialize);
+		(sc.visit_list)->clearVisitList();
+
+		delete client;
+		client = new Game();
+		{
+			std::vector<Serializable*> map;
+			map.push_back(NULL);
+			map.push_back(client->player);
+			map.push_back(client->universe);
+			BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
+			UnserializeContext usc(bus, Serializable::ctormap(), map);
+			bus.usc = &usc;
+			client->universe->csUnmap(usc);
+			{
+				BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
+				UnserializeContext usc(bus, Serializable::ctormap(), map);
+				bus.usc = &usc;
+				client->universe->csUnserialize(usc);
+			}
+		}
+	}
+
+	client->clientDraw(gametime, dt);
+}
+	
+void Game::clientDraw(double gametime, double dt){
 	Viewer viewer;
 	{
 		double hack[16] = {
@@ -1899,7 +1926,7 @@ int main(int argc, char *argv[])
 //	glwfocus = NULL;
 //	pl.cs = &universe;
 	server = new ServerGame();
-	client = server;
+	client = new Game();
 
 	viewport vp;
 	CmdInit(&vp);
@@ -1924,8 +1951,8 @@ int main(int argc, char *argv[])
 	CmdAddParam("property", Entity::cmd_property, &server->player);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &server->player);
-	CmdAddParam("save", Universe::cmd_save, &server->universe);
-	CmdAddParam("load", Universe::cmd_load, &server->universe);
+	CmdAddParam("save", Universe::cmd_save, server->universe);
+	CmdAddParam("load", Universe::cmd_load, server->universe);
 //	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &server->player);
 	CmdAdd("sq", cmd_sq);

@@ -34,6 +34,7 @@ void Universe::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << timescale << global_time;
 	sc.o << astro_time;
+	sc.o << paused;
 }
 
 extern std::istream &operator>>(std::istream &o, const char *cstr);
@@ -42,6 +43,7 @@ void Universe::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> timescale >> global_time;
 	sc.i >> astro_time;
+	sc.i >> paused;
 }
 
 void Universe::anim(double dt){
@@ -186,8 +188,15 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	Player &pl = *universe.ppl;
 	cpplib::dstring plpath = pl.cs->getpath();
 	cs_destructs = 0;
-	delete universe.children;
-	delete universe.next;
+
+	for(CoordSys *cs = universe.children; cs;){
+		CoordSys *csnext = cs->next;
+		delete cs;
+		cs = csnext;
+	}
+
+//	delete universe.children;
+//	delete universe.next;
 	pl.free();
 	printf("destructs %d\n", cs_destructs);
 	universe.aorder.clear();

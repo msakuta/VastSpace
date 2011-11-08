@@ -71,11 +71,14 @@ protected:
 
 class Island3Building : public Entity{
 public:
+	typedef Entity st;
+	static const unsigned classid;
+	static EntityRegister<Island3Building> entityRegister;
 	Vec3d halfsize;
 	friend Island3;
-	static unsigned classid;
-	Island3 &host;
-	Island3Building(Island3 &host);
+	Island3 *host;
+	Island3Building(Island3 *host = NULL);
+	Island3Building(WarField *){}
 	virtual const char *classname()const{return "Island3Building";}
 	virtual double maxhealth()const{return 10000.;}
 	virtual void enterField(WarField *);
@@ -89,6 +92,8 @@ public:
 
 //const unsigned Island3::classid = registerClass("Island3", Serializable::Conster<Island3>);
 ClassRegister<Island3> Island3::classRegister("Island3");
+const unsigned Island3Building::classid = registerClass("Island3Building", Conster<Island3Building>);
+Entity::EntityRegister<Island3Building> Island3Building::entityRegister("Island3Building");
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
@@ -124,7 +129,7 @@ void Island3::init(){
 	// All Island3's have a WarSpace by default.
 	w = new Island3WarSpace(this);
 	for(int i = 0; i < numof(bldgs); i++){
-		bldgs[i] = new Island3Building(*this);
+		bldgs[i] = new Island3Building(this);
 		w->addent(bldgs[i]);
 	}
 
@@ -2800,7 +2805,7 @@ static const double texcoord[][3] = {
 	{ 1.,  0., 0.},
 };
 
-Island3Building::Island3Building(Island3 &host) : host(host){
+Island3Building::Island3Building(Island3 *host) : host(host){
 	health = maxhealth();
 	race = -1;
 	RandomSequence rs((unsigned long)this);
@@ -2879,7 +2884,7 @@ void Island3Building::draw(wardraw_t *wd){
 		LocalFree((void*)stp.bmiMask);
 	}
 
-	if(wd->vw->gc->cullFrustum(wd->vw->cs->tocs(pos, &host), hitradius() + halfsize[1]))
+	if(wd->vw->gc->cullFrustum(wd->vw->cs->tocs(pos, host), hitradius() + halfsize[1]))
 		return;
 
 	{

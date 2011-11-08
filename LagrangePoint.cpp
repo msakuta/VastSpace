@@ -29,6 +29,7 @@ public:
 	Lagrange1CS(){}
 	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange1CS> classRegister;
+	virtual const Static &getStatic()const{return classRegister;}
 	void anim(double dt);
 };
 
@@ -39,6 +40,7 @@ public:
 	Lagrange2CS(){}
 	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange2CS> classRegister;
+	virtual const Static &getStatic()const{return classRegister;}
 	void anim(double dt);
 };
 

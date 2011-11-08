@@ -48,6 +48,7 @@ public:
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();
 	static const ClassRegister<TexSphere> classRegister;
+	virtual const Static &getStatic()const{return classRegister;}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);

@@ -1173,6 +1173,27 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+static int cmd_ll(int argc, char *argv[], void *pv){
+	Player *ppl = (Player*)pv;
+	if(argc <= 1){
+		for(CoordSys *cs = ppl->cs->children; cs; cs = cs->next){
+			cpplib::dstring ds = cs->getrpath(cs) << ": " << cs->classname();
+			CmdPrint(ds);
+		}
+		return 0;
+	}
+	const CoordSys *parent;
+	if(parent = ppl->cs->findcspath(argv[1])){
+		for(const CoordSys *cs = parent->children; cs; cs = cs->next){
+			cpplib::dstring ds = cs->getrpath(cs) << ": " << cs->classname();
+			CmdPrint(ds);
+		}
+	}
+	else
+		CmdPrint(cpplib::dstring() << "Could not find path " << argv[1]);
+	return 0;
+}
+
 static int cmd_pwd(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
 	CmdPrint(ppl->cs->getpath());
@@ -1181,6 +1202,7 @@ static int cmd_pwd(int argc, char *argv[], void *pv){
 
 bool CoordSys::registerCommands(Player *ppl){
 	CmdAddParam("ls", cmd_ls, ppl);
+	CmdAddParam("ll", cmd_ll, ppl);
 	CmdAddParam("pwd", cmd_pwd, ppl);
 	return true;
 }

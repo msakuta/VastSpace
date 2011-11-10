@@ -77,6 +77,51 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 	delete us;
 }
 
+
+static std::map<Serializable *, unsigned long> idmap;
+static unsigned long nextid = 0;
+
+void Serializable::idPackSerialize(SerializeContext &sc){
+	if(visit_list) // avoid duplicate objects
+		return;
+	visit_list = sc.visit_list; // register itself as visited
+	sc.visit_list = this;
+/*	if(sc.visits.find(this) != sc.visits.end()){
+		return; // avoid duplicate objects
+	}
+	sc.visits.insert(this);*/
+
+	unsigned long thisid;
+	std::map<Serializable *, unsigned long>::iterator it = idmap.find(this);
+	if(it == idmap.end()){
+		thisid = nextid;
+		idmap[this] = nextid++;
+	}
+	else
+		thisid = it->second;
+	SerializeStream *ss = sc.o.substream();
+	SerializeContext sc2(*ss, sc);
+	sc2.o << classname();
+	sc2.o << thisid;
+	serialize(sc2);
+	sc.o.join(ss);
+	delete ss;
+}
+
+void Serializable::idPackUnserialize(UnserializeContext &sc){
+	unsigned size;
+	sc.i >> size;
+	UnserializeStream *us = sc.i.substream(size);
+	UnserializeContext sc2(*us, sc.cons, sc.map);
+	us->usc = &sc2;
+	unsigned long thisid;
+	sc2.i >> classname();
+	sc2.i >> thisid;
+	unserialize(sc2);
+	delete us;
+}
+
+
 /// \param name name of the class.
 /// \param constructor function that creates the object of class.
 /// class constructor cannot be passed directly, use Conster() template function to generate a function

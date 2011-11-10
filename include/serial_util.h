@@ -1,5 +1,8 @@
 #ifndef SERIAL_UTIL_H
 #define SERIAL_UTIL_H
+/** \file
+ * \brief Defines classes necessary to perform serialization of Serializable classes.
+ */
 #include "serial.h"
 extern "C"{
 #include <clib/rseq.h>
@@ -33,6 +36,9 @@ public:
 };
 
 
+/// \brief The abstract base class for serialization stream classes.
+///
+/// It's much like std::stream, but interprets various objects in specific ways.
 class SerializeStream{
 public:
 	SerializeContext *sc; // redundant pointer to point each other, but useful to automate serialization syntax.
@@ -56,6 +62,8 @@ public:
 	virtual void join(tt *) = 0;
 };
 
+/// \brief Serialization class that converts whole object "web" into a sequence of text.
+/// \sa StdUnserializeStream
 class StdSerializeStream : public SerializeStream{
 protected:
 	std::ostream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
@@ -82,6 +90,8 @@ public:
 	friend class StdSerializeSubStream;
 };
 
+/// \brief Serialization class that converts objects into binary stream.
+/// \sa BinUnserializeStream
 class BinSerializeStream : public SerializeStream{
 public:
 	typedef SerializeStream tt;
@@ -136,9 +146,12 @@ inline SerializeStream &SerializeStream::operator<<(const Serializable *p){
 
 
 
+/// \brief The abstract base class for unserialization stream classes.
+///
+/// It's much like std::stream, but distinct class tree from SerializeStream.
 class UnserializeStream{
 public:
-	UnserializeContext *usc; // redundant pointer to point each other, but useful to automate serialization syntax.
+	UnserializeContext *usc; ///< redundant pointer to point each other, but useful to automate serialization syntax.
 	typedef UnserializeStream tt;
 	UnserializeStream(UnserializeContext *ausc = NULL) : usc(ausc){}
 	virtual ~UnserializeStream(){}
@@ -158,14 +171,10 @@ public:
 	virtual tt &operator>>(const char *a) = 0;
 	virtual tt &operator>>(cpplib::dstring &a) = 0;
 	virtual tt *substream(size_t size) = 0;
-	template<class T> tt &operator>>(T *&p);/*{
-		unsigned id;
-		*this >> id;
-		p = static_cast<T*>(usc->map[id]);
-		return *this;
-	}*/
+	template<class T> tt &operator>>(T *&p);
 };
 
+/// \brief Unserialization counterparts of StdSerializeStream.
 class StdUnserializeStream : public UnserializeStream{
 protected:
 	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
@@ -191,6 +200,7 @@ public:
 	virtual tt *substream(size_t size);
 };
 
+/// \brief Unserialization counterpart of BinSerializeSteram.
 class BinUnserializeStream : public UnserializeStream{
 public:
 	BinUnserializeStream(const unsigned char *src = NULL, size_t size = 0, UnserializeContext *ausc = NULL);

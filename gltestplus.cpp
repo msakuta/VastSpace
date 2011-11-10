@@ -1065,12 +1065,12 @@ void Game::display_func(void){
 		BinSerializeStream bss;
 		SerializeContext sc(bss, map, visit_list);
 		bss.sc = &sc;
-		player->packSerialize(sc);
-		universe->dive(sc, &Serializable::packSerialize);
+		player->idPackSerialize(sc);
+		universe->dive(sc, &Serializable::idPackSerialize);
 		(sc.visit_list)->clearVisitList();
 
-		delete client;
-		client = new Game();
+/*		delete client;
+		client = new Game();*/
 		{
 			std::vector<Serializable*> map;
 			map.push_back(NULL);
@@ -1079,12 +1079,12 @@ void Game::display_func(void){
 			BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
 			UnserializeContext usc(bus, Serializable::ctormap(), map);
 			bus.usc = &usc;
-			client->universe->csUnmap(usc);
+			client->universe->csIdUnmap(usc);
 			{
 				BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
 				UnserializeContext usc(bus, Serializable::ctormap(), map);
 				bus.usc = &usc;
-				client->universe->csUnserialize(usc);
+				client->universe->csIdUnserialize(usc);
 			}
 		}
 	}

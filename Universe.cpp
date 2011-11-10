@@ -82,6 +82,48 @@ void Universe::csUnserialize(UnserializeContext &usc){
 	}
 }
 
+void Universe::csIdUnserialize(UnserializeContext &usc){
+	unsigned l = 1;
+	while(/*!usc.i.eof() &&*/ l < usc.map.size()){
+		usc.map[l]->idPackUnserialize(usc);
+		l++;
+	}
+}
+
+static std::map<unsigned long, Serializable *> idunmap;
+
+void Universe::csIdUnmap(UnserializeContext &sc){
+	while(!sc.i.eof()){
+		unsigned long size;
+		sc.i >> size;
+		if(sc.i.fail())
+			break;
+		UnserializeStream *us = sc.i.substream(size);
+		cpplib::dstring src;
+		unsigned long thisid;
+		*us >> src;
+		*us >> thisid;
+		std::map<unsigned long, Serializable *>::iterator it = idunmap.find(thisid);
+		if(it == idunmap.end()){
+			gltestp::dstring scname((const char*)src);
+			if(src != "Player" && src != "Universe"){
+				::CtorMap::iterator it = sc.cons.find(scname);
+				if(it == sc.cons.end())
+					throw ClassNotFoundException();
+				if(it->second){
+					Serializable *ret = it->second();
+					sc.map.push_back(ret);
+					idunmap[thisid] = ret;
+				}
+			}
+		}
+		else
+			sc.map.push_back(it->second);
+		delete us;
+	}
+}
+
+
 int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
 	Player &pl = *universe.ppl;

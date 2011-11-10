@@ -43,23 +43,39 @@ public:
 
 	void map(SerializeContext &sc);
 
-	/// Serialize this object into given stream in the context.
+	/// \brief Serialize this object into given stream in the context.
+	///
 	/// It effectively adds class identification information (i.e. class name) prior to calling serialize virtual function.
 	void packSerialize(SerializeContext &sc);
 
-	/// Unserialize this object from a stream.
+	/// \brief Unserialize this object from a stream.
+	///
 	/// Size and class identification is checked.
 	void packUnserialize(UnserializeContext &sc);
 
-	/// Binds a class ID with its constructor.
+	/// \brief Serialize this object into given stream in the context.
+	///
+	/// It effectively adds class identification information and object identification prior to calling serialize virtual function.
+	void idPackSerialize(SerializeContext &sc);
+
+	/// \brief Unserialize this object from a stream.
+	///
+	/// Size and class identification is checked.
+	void idPackUnserialize(UnserializeContext &sc);
+
+	/// \brief Binds a class ID with its constructor.
+	///
 	/// Derived classes must register themselves to unserialize.
 	static unsigned registerClass(ClassId id, Serializable *(*constructor)());
 
-	/// Unbind name and class. Note that if the same name is registered from multiple modules, they compare different as
+	/// \brief Unbind name and class.
+	///
+	/// Note that if the same name is registered from multiple modules, they compare different as
 	/// pointers to these names that reside in separate modules.
 	static void unregisterClass(ClassId id);
 
 	/// \brief Returns global constructor map.
+	///
 	/// Registered classes via registerClass reside in this map.
 	static CtorMap &ctormap();
 
@@ -70,11 +86,13 @@ public:
 	void clearVisitList()const;
 
 protected:
-	/// Serialize this object using given serialize context.
+	/// \brief Serialize this object using given serialize context.
+	///
 	/// Derived classes override this function to define how to serialize themselves.
 	virtual void serialize(SerializeContext &sc);
 
-	/// Restore this object using given context.
+	/// \brief Restore this object using given context.
+	///
 	/// Derived classes override this function to define how to restore themselves from serialized stream.
 	virtual void unserialize(UnserializeContext &usc);
 

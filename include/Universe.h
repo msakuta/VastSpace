@@ -28,6 +28,8 @@ public:
 	virtual Universe *toUniverse(){return this;}
 	void csUnserialize(UnserializeContext &usc);
 	void csUnmap(UnserializeContext &);
+	void csIdUnserialize(UnserializeContext &usc);
+	void csIdUnmap(UnserializeContext &);
 	static int cmd_save(int argc, char *argv[], void *pv);
 	static int cmd_load(int argc, char *argv[], void *pv);
 	static bool sq_define(HSQUIRRELVM);

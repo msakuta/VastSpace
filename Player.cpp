@@ -140,7 +140,9 @@ void TacticalMover::rotateLook(double dx, double dy){
 	this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2)) * ort.cnj();
 }
 
-Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), rot(quat_u), fov(1.), chasecamera(0), viewdist(1.),
+Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
+	chasecamera(0), detail(0), mousex(0), mousey(0), race(0), fov(1.), viewdist(1.),
+	gametime(0), velolen(0),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	cpos(0,0,0),
 	r_move_path(false), r_attack_path(false), r_overlay(false),
@@ -204,7 +206,8 @@ void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
 	sc.o << chase;
 	sc.o << selected;
-	sc.o << pos << velo << rot;
+	sc.o << pos << velo << accel << rot;
+	sc.o << fov;
 	sc.o << cs;
 	sc.o << ntplist;
 	for(int i = 0; i < ntplist; i++)
@@ -214,7 +217,8 @@ void Player::serialize(SerializeContext &sc){
 void Player::unserialize(UnserializeContext &sc){
 	sc.i >> chase;
 	sc.i >> selected;
-	sc.i >> pos >> velo >> rot;
+	sc.i >> pos >> velo >> accel >> rot;
+	sc.i >> fov;
 	sc.i >> cs;
 	sc.i >> ntplist;
 	tplist = (teleport*)::malloc(ntplist * sizeof *tplist);

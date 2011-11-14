@@ -16,7 +16,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 9;
+const unsigned Universe::version = 10;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 

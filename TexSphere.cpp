@@ -67,14 +67,26 @@ template<typename T> UnserializeStream &operator>>(UnserializeStream &i, std::ve
 SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
 	o << a.uniformname;
 	o << a.filename;
+	o << a.cloudSync;
+	o << a.normalmap;
 	return o;
 }
 
 UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 	i >> a.uniformname;
 	i >> a.filename;
+	i >> a.cloudSync;
+	i >> a.normalmap;
 	a.list = 0;
 	return i;
+}
+
+inline bool operator==(const TexSphere::Texture &a, const TexSphere::Texture &b){
+	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.normalmap == b.normalmap;
+}
+
+inline bool operator!=(const TexSphere::Texture &a, const TexSphere::Texture &b){
+	return !operator==(a,b);
 }
 
 void TexSphere::serialize(SerializeContext &sc){
@@ -94,6 +106,8 @@ void TexSphere::serialize(SerializeContext &sc){
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
+	std::vector<Texture> textures; // Temporary vector to merge to this->textures in postprocessing
+
 	st::unserialize(sc);
 	sc.i >> texname;
 	sc.i >> oblateness;
@@ -108,7 +122,11 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> vertexShaderName;
 	sc.i >> fragmentShaderName;
 
-	this->texlist = 0;
+	// Postprocessing
+	if(textures.size() != this->textures.size())
+		this->textures = textures;
+	else for(int i = 0; i < this->textures.size(); i++) if(textures[i] != this->textures[i])
+		this->textures[i] = textures[i];
 }
 
 bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){

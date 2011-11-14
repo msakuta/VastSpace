@@ -1143,7 +1143,7 @@ static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g
 static Initializator s_tscuts(g_tscuts_init);
 
 void TexSphere::draw(const Viewer *vw){
-	if(1)
+	if(0)
 		return;
 	if(vw->zslice != 2)
 		return;
@@ -1357,7 +1357,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 	sdist = delta.slen();
 
 	/* too far */
-	if(a->rad * a->rad / sdist < .01 * .01)
+	if(DBL_EPSILON < sdist && a->rad * a->rad / sdist < .01 * .01)
 		return;
 
 	dist = sqrt(sdist);

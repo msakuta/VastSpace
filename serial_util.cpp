@@ -308,6 +308,9 @@ UnserializeStream &BinUnserializeStream::operator>>(const char *a){
 }
 
 UnserializeStream &BinUnserializeStream::operator>>(cpplib::dstring &a){
+	// We must clear the string here or it will expand everytime call is made,
+	// which is not straightforward behavior compared to the operator>>()s for the other types.
+	a = "";
 	char c;
 	while(c = get()){
 		if(c == -1)

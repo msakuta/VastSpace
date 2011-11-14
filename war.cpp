@@ -276,7 +276,8 @@ static btDiscreteDynamicsWorld *bulletInit(){
 void WarSpace::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> pl >> effects >> soundtime >> cs;
-	bdw = bulletInit();
+	if(!bdw)
+		bdw = bulletInit();
 }
 
 void WarSpace::init(){
@@ -285,13 +286,13 @@ void WarSpace::init(){
 	tepl = NewTefpol3D(128, 32, 32);
 }
 
-WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0){
+WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0), bdw(NULL){
 	init();
 }
 
 
 WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots(0),
-	effects(0), soundtime(0)
+	effects(0), soundtime(0), bdw(NULL)
 {
 	init();
 	for(CoordSys *root = cs; root; root = root->parent){

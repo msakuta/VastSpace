@@ -9,10 +9,19 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 : i(ai), cons(acons), map(amap){
 }
 
+static std::map<Serializable *, unsigned long> idmap;
+static unsigned long nextid = 0;
+std::vector<unsigned long> deleteque;
+
 
 Serializable::~Serializable(){
 	if(g_sqvm)
 		sqa_deleteobj(g_sqvm, this);
+	std::map<Serializable *, unsigned long>::iterator it = idmap.find(this);
+	if(it != idmap.end()){
+		deleteque.push_back(it->second);
+		idmap.erase(it);
+	}
 }
 
 void Serializable::serialize(SerializeContext &sc){
@@ -77,9 +86,6 @@ void Serializable::packUnserialize(UnserializeContext &sc){
 	delete us;
 }
 
-
-static std::map<Serializable *, unsigned long> idmap;
-static unsigned long nextid = 0;
 
 void Serializable::idPackSerialize(SerializeContext &sc){
 	if(visit_list) // avoid duplicate objects

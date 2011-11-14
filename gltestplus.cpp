@@ -589,7 +589,7 @@ WarDrawInt::WarDrawInt(Viewer &vw, Player *&player, const CoordSys *cs, void (Wa
 	method(method)
 {
 	this->vw = NULL;
-	w = cs->w ? *cs->w : NULL;
+	w = cs->w ? cs->w->operator WarSpace *() : NULL;
 	shadowMap = sm;
 }
 
@@ -1055,6 +1055,7 @@ void Game::display_func(void){
 #endif
 
 	{
+		extern std::vector<unsigned long> deleteque;
 		SerializeMap map;
 		map[NULL] = 0;
 		map[player] = 1;
@@ -1063,11 +1064,18 @@ void Game::display_func(void){
 		universe->dive(sc0, &Serializable::map);
 
 		BinSerializeStream bss;
+		bss << (unsigned long)deleteque.size();
+		std::vector<unsigned long>::iterator it = deleteque.begin();
+		for(; it != deleteque.end(); it++)
+			bss << *it;
+		deleteque.clear();
+
 		SerializeContext sc(bss, map, visit_list);
 		bss.sc = &sc;
 		player->idPackSerialize(sc);
 		universe->dive(sc, &Serializable::idPackSerialize);
 		(sc.visit_list)->clearVisitList();
+
 
 /*		delete client;
 		client = new Game();*/
@@ -1076,9 +1084,9 @@ void Game::display_func(void){
 			map.push_back(NULL);
 			map.push_back(client->player);
 			map.push_back(client->universe);
-			BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
-			UnserializeContext usc(bus, Serializable::ctormap(), map);
-			bus.usc = &usc;
+			BinUnserializeStream bus0((const unsigned char*)bss.getbuf(), bss.getsize());
+			UnserializeContext usc(bus0, Serializable::ctormap(), map);
+			bus0.usc = &usc;
 			client->universe->csIdUnmap(usc);
 			{
 				BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());

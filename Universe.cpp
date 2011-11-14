@@ -83,6 +83,12 @@ void Universe::csUnserialize(UnserializeContext &usc){
 }
 
 void Universe::csIdUnserialize(UnserializeContext &usc){
+	unsigned long delsize;
+	usc.i >> delsize;
+	for(int i = 0; i < delsize; i++){
+		unsigned long id;
+		usc.i >> id;
+	}
 	unsigned l = 1;
 	while(/*!usc.i.eof() &&*/ l < usc.map.size()){
 		usc.map[l]->idPackUnserialize(usc);
@@ -90,9 +96,21 @@ void Universe::csIdUnserialize(UnserializeContext &usc){
 	}
 }
 
-static std::map<unsigned long, Serializable *> idunmap;
+std::map<unsigned long, Serializable *> idunmap;
 
 void Universe::csIdUnmap(UnserializeContext &sc){
+	std::vector<unsigned long> cldeleteque;
+	unsigned long delsize;
+	sc.i >> delsize;
+	for(int i = 0; i < delsize; i++){
+		unsigned long id;
+		sc.i >> id;
+		std::map<unsigned long, Serializable*>::iterator it = idunmap.find(id);
+		if(it != idunmap.end()){
+			delete it->second;
+			idunmap.erase(it);
+		}
+	}
 	while(!sc.i.eof()){
 		unsigned long size;
 		sc.i >> size;

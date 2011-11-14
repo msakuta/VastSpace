@@ -117,8 +117,12 @@ void Universe::csIdUnmap(UnserializeContext &sc){
 				}
 			}
 		}
-		else
+		else{
+			// Report anomaly as early as possible
+			if(src != it->second->classname())
+				throw ClassNotFoundException();
 			sc.map.push_back(it->second);
+		}
 		delete us;
 	}
 }

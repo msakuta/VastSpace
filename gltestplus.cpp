@@ -1057,7 +1057,7 @@ void Game::display_func(void){
 	{
 		SerializeMap map;
 		map[NULL] = 0;
-		map[player] = map.size();
+		map[player] = 1;
 		Serializable* visit_list = NULL;
 		SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
 		universe->dive(sc0, &Serializable::map);

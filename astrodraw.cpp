@@ -409,10 +409,12 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 
 		/* cheaty trick to show the object having real sphere shape. */
 		/*if(fmod(p->gametime, .5) < .45)*/{
-			Vec3d plane, side;
-			plane = sunp.vp(tp);
-			side = plane.vp(delta).norm();
-			tp += side * -ps->rad;
+			Vec3d plane = sunp.vp(tp);
+			Vec3d vp = plane.vp(delta);
+			if(DBL_EPSILON < vp.slen()){
+				Vec3d side = vp.norm();
+				tp += side * -ps->rad;
+			}
 		}
 	}
 
@@ -427,6 +429,10 @@ static void drawShadeSphere(Astrobj *ps, const Viewer *p, const Vec3d &sunpos, c
 		sp = spa = VECSP(sunp, tp) < 0. ? -1. : 1.;
 	}
 	else*/{
+		double sunlen = sunp.len();
+		double tplen = tp.len();
+		if(sunlen <= DBL_EPSILON || tplen < DBL_EPSILON)
+			return;
 		sp = sunp.sp(tp) / sunp.len() / tp.len();
 		spa = sp + .3 * (1. - sp * sp);
 	}

@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <math.h>
 #include <limits.h>
+#include <float.h>
 
 #if !defined _MSC_VER || _MSC_VER < 1500
 #define vsprintf_s(a,s,b,c) vsprintf(a,b,c)
@@ -592,7 +593,16 @@ void gldLookatMatrix(double (*mat)[16], const double (*pos)[3]){
 	avec3_t dr, v;
 	aquat_t q;
 	double p;
-	VECNORM(dr, *pos);
+	double slen;
+
+	/* Check if the argument pos is a zero vector, which case results a zero division. */
+	slen = VECSLEN(*pos);
+	if(slen < DBL_EPSILON){
+		MAT4IDENTITY(*mat); /* In case of zero vector, return identity matrix. */
+		return;
+	}
+	slen = 1. / sqrt(slen);
+	VECSCALE(dr, *pos, slen);
 
 	/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
 	q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;

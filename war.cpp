@@ -339,6 +339,7 @@ void WarSpace::anim(double dt){
 }
 
 void WarSpace::clientUpdate(double dt){
+	aaanim(dt, this, list[0], &Entity::clientUpdate);
 	aaanim(dt, this, list[1], &Entity::clientUpdate);
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTeline3D(gibs, dt));

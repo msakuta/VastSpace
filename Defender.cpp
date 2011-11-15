@@ -465,12 +465,6 @@ void Defender::anim(double dt){
 	transform(mat);
 //	quat2imat(imat, mat);
 
-	for(int i = 0; i < 4; i++) if(pf->pf[i]){
-		Mat4d mat5 = legTransform(i);
-		MoveTefpol3D(pf->pf[i], mat5.vp3(Vec3d(0, 0, 130 * modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
-//		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
-	}
-
 	fdeploy = (float)approach(fdeploy, isDeployed(), dt, 0.);
 
 
@@ -1141,6 +1135,15 @@ void Defender::anim(double dt){
 //	for(int i = 0; i < 4; i++) if(this->pf[i] && w != oldw)
 //		ImmobilizeTefpol3D(this->pf[i]);
 //	movesound3d(pf->hitsound, pt->pos);
+}
+
+void Defender::clientUpdate(double dt){
+	for(int i = 0; i < 4; i++) if(pf[i]){
+		Mat4d mat5 = legTransform(i);
+		MoveTefpol3D(pf[i], mat5.vp3(Vec3d(0, 0, 130 * modelScale())), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+//		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+	}
+
 }
 
 /// Docking and undocking will never stack.

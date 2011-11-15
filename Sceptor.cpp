@@ -116,11 +116,11 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> formPrev;
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
-	WarSpace *ws;
+/*	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
-		pf = NULL;
+		pf = NULL;*/
 }
 
 const char *Sceptor::dispname()const{
@@ -135,7 +135,7 @@ double Sceptor::maxhealth()const{
 
 
 
-Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1){
+Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1), pf(NULL){
 }
 
 Sceptor::Sceptor(WarField *aw) : st(aw),
@@ -144,6 +144,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	fuel(maxfuel()),
 	reverser(0),
 	mf(0),
+	pf(NULL),
 	paradec(-1),
 	forcedEnemy(false),
 	formPrev(NULL),
@@ -448,6 +449,10 @@ Entity *Sceptor::findMother(){
 
 void Sceptor::enterField(WarField *target){
 	WarSpace *ws = *target;
+
+	if(ws)
+		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+
 	if(ws && ws->bdw){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
@@ -484,6 +489,14 @@ void Sceptor::enterField(WarField *target){
 		//add the body to the dynamics world
 		ws->bdw->addRigidBody(bbody, 1, ~2);
 	}
+}
+
+void Sceptor::leaveField(WarField *w){
+	if(pf){
+		ImmobilizeTefpol3D(pf);
+		pf = NULL;
+	}
+	st::leaveField(w);
 }
 
 void Sceptor::anim(double dt){
@@ -524,9 +537,6 @@ void Sceptor::anim(double dt){
 		pt->active = 0;
 		return;
 	}*/
-
-	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 
 #if 0
 	if(pf->docked){
@@ -1220,9 +1230,19 @@ void Sceptor::anim(double dt){
 	st::anim(dt);
 
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-	if(this->pf && w != oldw)
-		ImmobilizeTefpol3D(this->pf);
+//	if(this->pf && w != oldw)
+//		ImmobilizeTefpol3D(this->pf);
 //	movesound3d(pf->hitsound, pt->pos);
+}
+
+void Sceptor::clientUpdate(double dt){
+	if(this->pf)
+		MoveTefpol3D(this->pf, pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
+
+	if(0 < this->health){
+	}
+	else{
+	}
 }
 
 // Docking and undocking will never stack.

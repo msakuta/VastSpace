@@ -104,13 +104,13 @@ void Defender::unserialize(UnserializeContext &sc){
 //	sc.i >> formPrev;
 
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
-	WarSpace *ws;
+/*	WarSpace *ws;
 	for(int i = 0; i < 4; i++){
 		if(w && (ws = (WarSpace*)w))
 			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 		else
 			pf[i] = NULL;
-	}
+	}*/
 }
 
 const char *Defender::dispname()const{
@@ -126,6 +126,7 @@ double Defender::maxhealth()const{
 
 
 Defender::Defender() : mother(NULL), mf(0), paradec(-1){
+	pf[0] = pf[1] = pf[2] = pf[3] = NULL;
 }
 
 Defender::Defender(WarField *aw) : st(aw),
@@ -378,8 +379,8 @@ void Defender::enterField(WarField *target){
 	}
 	if(ws){
 		for(int i = 0; i < 4; i++){
-			if(this->pf[i])
-				ImmobilizeTefpol3D(this->pf[i]);
+/*			if(this->pf[i])
+				ImmobilizeTefpol3D(this->pf[i]);*/
 			if(w && w->getTefpol3d())
 				this->pf[i] = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 		}

@@ -1004,6 +1004,7 @@ void Game::display_func(void){
 			TRYBLOCK(universe->postframe());
 			TRYBLOCK(GLwindow::glwpostframe());
 			TRYBLOCK(universe->endframe());
+			TRYBLOCK(client->universe->clientUpdate(dt));
 			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){

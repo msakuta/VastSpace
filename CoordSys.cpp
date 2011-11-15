@@ -573,6 +573,14 @@ void CoordSys::anim(double dt){
 		w->anim(dt);
 }
 
+void CoordSys::clientUpdate(double dt){
+	CoordSys *cs;
+	for(cs = children; cs; cs = cs->next)
+		cs->clientUpdate(dt);
+	if(w)
+		w->clientUpdate(dt);
+}
+
 void CoordSys::postframe(){
 	if(w)
 		w->postframe();

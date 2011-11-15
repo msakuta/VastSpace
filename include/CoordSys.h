@@ -97,6 +97,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt); ///< Animate this system
+	virtual void clientUpdate(double dt);
 	virtual void postframe(); ///< Clear pointers to dead objects.
 	virtual void endframe(); ///< Terminating frame. Objects are deallocated in this function.
 	virtual void predraw(const Viewer *); ///< called just before draw method.

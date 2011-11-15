@@ -71,6 +71,7 @@ public:
 	virtual void setPosition(const Vec3d *pos, const Quatd *rot = NULL, const Vec3d *velo = NULL, const Vec3d *avelo = NULL); // Arguments can be NULL
 	virtual void getPosition(Vec3d *pos, Quatd *rot = NULL, Vec3d *velo = NULL, Vec3d *avelo = NULL)const; // Arguments can be NULL
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
 	virtual void control(const input_t *inputs, double dt);
 	virtual unsigned analog_mask();

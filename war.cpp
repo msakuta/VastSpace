@@ -77,11 +77,11 @@ void WarField::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 
 static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
-void aaanim(double dt, WarField *w, Entity *WarField::*li){
+void aaanim(double dt, WarField *w, Entity *WarField::*li, void (Entity::*method)(double)){
 	Player *pl = w->getPlayer();
 	for(Entity *pe = w->*li; pe; pe = pe->next){
 		try{
-			pe->anim(dt);
+			(pe->*method)(dt);
 		}
 		catch(std::exception e){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): %s\n", __LINE__, pe, pe->idname(), e.what());
@@ -109,8 +109,21 @@ void WarField::anim(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, list[0]);
-	aaanim(dt, this, list[1]);
+	aaanim(dt, this, list[0], &Entity::anim);
+	aaanim(dt, this, list[1], &Entity::anim);
+}
+
+void WarField::clientUpdate(double dt){
+	CoordSys *root = cs;
+	for(; root; root = root->parent){
+		Universe *u = root->toUniverse();
+		if(u){
+			pl = u->ppl;
+			break;
+		}
+	}
+	aaanim(dt, this, list[0], &Entity::clientUpdate);
+	aaanim(dt, this, list[1], &Entity::clientUpdate);
 }
 
 void WarField::postframe(){
@@ -315,14 +328,18 @@ void WarSpace::anim(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, list[0]);
+	aaanim(dt, this, list[0], &Entity::anim);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 
 	bdw->stepSimulation(dt / 1., 0);
 
 	TRYBLOCK(ot_build(this, dt));
-	aaanim(dt, this, list[1]);
+	aaanim(dt, this, list[1], &Entity::anim);
 	TRYBLOCK(ot_check(this, dt));
+}
+
+void WarSpace::clientUpdate(double dt){
+	aaanim(dt, this, list[1], &Entity::clientUpdate);
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTeline3D(gibs, dt));
 	TRYBLOCK(AnimTefpol3D(tepl, dt));

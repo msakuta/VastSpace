@@ -56,10 +56,12 @@ Entity::Entity(WarField *aw) :
 }
 
 Entity::~Entity(){
+	if(w)
+		leaveField(w);
 	if(bbody){
-		WarSpace *ws;
+/*		WarSpace *ws;
 		if(w && (ws = *w) && ws->bdw)
-			ws->bdw->removeRigidBody(bbody);
+			ws->bdw->removeRigidBody(bbody);*/
 		delete bbody;
 	}
 	if(controller && controller->unlink(this))
@@ -200,6 +202,8 @@ void Entity::serialize(SerializeContext &sc){
 }
 
 void Entity::unserialize(UnserializeContext &sc){
+	WarField *oldwf = w;
+
 	st::unserialize(sc);
 	sc.i >> w;
 	sc.i >> pos;
@@ -213,6 +217,12 @@ void Entity::unserialize(UnserializeContext &sc){
 	sc.i >> enemy;
 	sc.i >> race;
 	sc.i >> otflag;
+
+	// Postprocessing calls leave/enterField according to frame deltas.
+	if(oldwf != w){
+		leaveField(oldwf);
+		enterField(w);
+	}
 }
 
 void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
@@ -241,6 +251,8 @@ void Entity::enterField(WarField *aw){
 ///
 /// This function is also called when deleting an Entity.
 void Entity::leaveField(WarField *aw){
+	if(!aw)
+		return;
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw && bbody)
 		ws->bdw->removeRigidBody(bbody);
@@ -271,7 +283,25 @@ void Entity::getPosition(Vec3d *apos, Quatd *arot, Vec3d *avelo, Vec3d *aavelo)c
 	if(avelo) *avelo = velo;
 	if(aavelo) *aavelo = omg;
 }
-void Entity::anim(double){}
+
+/// \brief Updates the Entity.
+///
+/// This method is called periodically to advance simulation steps.
+/// Entity-derived classes can override this method to define how to time-develop
+/// themselves.
+///
+/// \param dt Delta-time of this frame.
+/// \sa clientUpdate
+void Entity::anim(double dt){dt;}
+
+/// \brief Updates the Entity in the client side.
+///
+/// Almost all physics are calculated in server side, but the client needs to update
+/// itself to maintain rendering states.
+///
+/// \param dt Delta-time of this frame.
+void Entity::clientUpdate(double dt){dt;}
+
 void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
 void Entity::control(const input_t *i, double){inputs = *i;}
 unsigned Entity::analog_mask(){return 0;}

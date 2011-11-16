@@ -3,6 +3,7 @@
  */
 
 #include "antiglut.h"
+#include "serial_util.h"
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
@@ -23,8 +24,34 @@ void Game::addServerInits(void (*f)(Game &)){
 	serverInits[nserverInits++] = f;
 }
 
-void Game::serialize(SerializeContext &sc){
+void Game::serialize(SerializeStream &ss){
+	extern std::vector<unsigned long> deleteque;
+	SerializeMap map;
+	map[NULL] = 0;
+	map[player] = 1;
+	Serializable* visit_list = NULL;
+	SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
+	universe->dive(sc0, &Serializable::map);
+
+	BinSerializeStream bss;
+	bss << (unsigned long)deleteque.size();
+	std::vector<unsigned long>::iterator it = deleteque.begin();
+	for(; it != deleteque.end(); it++)
+		bss << *it;
+	deleteque.clear();
+
+	SerializeContext sc(bss, map, visit_list);
+	bss.sc = &sc;
+	player->idPackSerialize(sc);
+	universe->dive(sc, &Serializable::idPackSerialize);
+	(sc.visit_list)->clearVisitList();
 }
 
 void Game::unserialize(UnserializeContext &usc){
+}
+
+
+void Game::anim(double dt){
+	universe->anim(dt);
+	universe->postframe();
 }

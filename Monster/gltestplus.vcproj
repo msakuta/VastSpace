@@ -70,7 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlibd.lib squirrelD.lib sqstdlibD.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\SQUIRREL3\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				GenerateManifest="false"
@@ -152,7 +152,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64D.lib sqstdlib64D.lib BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64D.lib sqstdlib64D.lib BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				Version="1.6"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\cpplib\Monster\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\$(PlatformName)\Release&quot;;..\..\SQUIRREL3\lib\;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;;&quot;..\..\lpng143\projects\visualc71\$(PlatformName)\LIB Release&quot;;&quot;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\&quot;"
@@ -234,7 +234,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\SQUIRREL3\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				ModuleDefinitionFile="gltestplus.def"
@@ -318,7 +318,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64.lib sqstdlib64.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel64.lib sqstdlib64.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib libpng.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\cpplib\Monster\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\$(PlatformName)\Release&quot;;..\..\SQUIRREL3\lib;&quot;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release&quot;;&quot;..\..\lpng143\projects\visualc71\$(PlatformName)\LIB Release&quot;"
 				ModuleDefinitionFile="gltestplus.def"
@@ -401,6 +401,10 @@
 			</File>
 			<File
 				RelativePath="..\Bullet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Client.cpp"
 				>
 			</File>
 			<File
@@ -517,6 +521,10 @@
 			</File>
 			<File
 				RelativePath="..\serial_util.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Server.cpp"
 				>
 			</File>
 			<File
@@ -701,6 +709,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Client.h"
+				>
+			</File>
+			<File
 				RelativePath="..\cmd_int.h"
 				>
 			</File>
@@ -746,6 +758,10 @@
 			</File>
 			<File
 				RelativePath="..\Sceptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Server.h"
 				>
 			</File>
 			<File

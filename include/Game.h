@@ -10,6 +10,9 @@
 
 class select_box_callback;
 
+class SerializeStream;
+class UnserializeStream;
+
 /// \brief The object that stores everything in a game.
 class EXPORT Game{
 protected:
@@ -38,8 +41,10 @@ public:
 	bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
 	void mouse_func(int button, int state, int x, int y);
 
-	virtual void serialize(SerializeContext &sc);
+	virtual void serialize(SerializeStream &ss);
 	virtual void unserialize(UnserializeContext &usc);
+
+	void anim(double dt);
 
 	static void addServerInits(void (*f)(Game &));
 };

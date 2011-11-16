@@ -12,6 +12,7 @@
 #include <GL/glut.h>
 #else
 #include "antiglut.h"
+#include "Client.h"
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
@@ -61,7 +62,6 @@ extern "C"{
 #include <cpplib/gl/cullplus.h>
 
 
-#include <GL/gl.h>
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -71,7 +71,7 @@ extern "C"{
 #define exit something_meanless
 /*#include <windows.h>*/
 #undef exit
-#include <mmsystem.h>
+//#include <mmsystem.h>
 #include <GL/glext.h>
 #include <strstream>
 #include <fstream>
@@ -1000,8 +1000,7 @@ void Game::display_func(void){
 		if(!universe->paused) try{
 			timemeas_t tm;
 			TimeMeasStart(&tm);
-			TRYBLOCK(universe->anim(dt));
-			TRYBLOCK(universe->postframe());
+			TRYBLOCK(anim(dt));
 			TRYBLOCK(GLwindow::glwpostframe());
 			TRYBLOCK(universe->endframe());
 			TRYBLOCK(client->universe->clientUpdate(dt));
@@ -1922,6 +1921,37 @@ static int cmd_sq(int argc, char *argv[]){
 	return 0;
 }
 
+
+
+
+
+
+static Client gcl;
+
+
+static void SendChat(Client *pc, const char *buf){
+	if(pc->mode == Client::ServerWaitGame || pc->mode == Client::ServerGame){
+		SendChatServer(&pc->server, buf);
+	}
+	else if(pc->mode == Client::ClientWaitGame || pc->mode == Client::ClientGame){
+		dstring ds = dstring() << "SAY " << buf << "\r\n";
+		send(pc->con, ds, ds.len(), 0);
+	}
+}
+
+static int cmd_say(int argc, char *argv[]){
+	dstring text;
+	for(int i = 1; i < argc; i++){
+		if(i != 1)
+			text << " ";
+		text << argv[i];
+	}
+	SendChat(&gcl, text);
+	return 0;
+}
+
+
+
 int main(int argc, char *argv[])
 {
 #if defined _WIN32 && defined _DEBUG
@@ -1976,6 +2006,7 @@ int main(int argc, char *argv[])
 	CmdAdd("refresh", &Refresh::refresh);
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
+	CmdAdd("say", cmd_say);
 	CoordSys::registerCommands(server->player);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -2014,6 +2045,11 @@ int main(int argc, char *argv[])
 		StellarFileLoad(s, server->universe);
 	}
 	CmdExec("@exec autoexec.cfg");
+
+	if(1 < argc && !strcmp(argv[1], "/client"))
+		gcl.joingame();
+	else
+		gcl.hostgame();
 
 #if USEWIN
 	{

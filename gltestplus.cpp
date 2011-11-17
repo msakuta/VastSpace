@@ -1090,7 +1090,7 @@ void Game::display_func(void){
 			memcpy(buf, bss.getbuf(), bss.getsize());
 			unlock_mutex(&gcl.server.sv->mg);
 			sbuf = (const unsigned char*)bss.getbuf();
-			WaitModified(gcl.server.sv);
+			gcl.server.sv->WaitModified();
 			size = bss.getsize();
 
 			extern double server_lastdt;

@@ -11,8 +11,6 @@ extern "C"{
 //#include <string.h>
 //#include <stdlib.h>
 
-typedef struct serverclient cl_t;
-
 #ifdef DEDICATED
 #include <stdio.h>
 #else
@@ -40,11 +38,11 @@ static int altprintf(const char *s, ...){
 #define numof(a) (sizeof(a)/sizeof*(a))
 
 
-static cl_t *cl_add(cl_t **root, mutex_t *m);
-static void cl_freenode(cl_t *p);
-static int cl_delp(cl_t **root, cl_t *dst, mutex_t *m);
-static int cl_clean(cl_t **root, mutex_t *m);
-static int cl_destroy(cl_t **root);
+static ServerClient *cl_add(ServerClient **root, mutex_t *m);
+static void cl_freenode(ServerClient *p);
+static int cl_delp(ServerClient **root, ServerClient *dst, mutex_t *m);
+static int cl_clean(ServerClient **root, mutex_t *m);
+static int cl_destroy(ServerClient **root);
 
 #ifdef _WIN32
 #include <crtdbg.h>
@@ -119,8 +117,8 @@ static void timer_set(timer_t *timer, unsigned long period, event_t *set){
 	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (sockopt_t)&nd, size);\
 }
 
-static void WaitCommand(cl_t *, char *);
-static void GameCommand(cl_t *, char *);
+static void WaitCommand(ServerClient *, char *);
+static void GameCommand(ServerClient *, char *);
 static DWORD WINAPI ClientThread(LPVOID lpv);
 double server_lastdt = 0.;
 
@@ -133,28 +131,28 @@ Server::~Server(){
 	fclose(logfp);
 }
 
-void SendWait(struct serverclient *cl, Server *sv){
+void Server::SendWait(ServerClient *cl){
 	static int sendcount = 0;
 	char buf[64];
 	SOCKET s = cl->s;
 //	send(s, "Modified\r\n", sizeof"Modified\r\n"-1, 0);
 	{
 		int c;
-		struct serverclient *psc;
-		for(c = 0, psc = sv->cl; psc; psc = psc->next) if(sv->scs == psc || psc->s != INVALID_SOCKET)
+		ServerClient *psc;
+		for(c = 0, psc = this->cl; psc; psc = psc->next) if(this->scs == psc || psc->s != INVALID_SOCKET)
 			c++;
 		sprintf(buf, "%d Clients\r\n", c);
 
 		dstring ds = dstring("M ") << sendcount << " " << c << " " << server_lastdt << " " << (double)clock() / CLOCKS_PER_SEC << "\r\n";
-		fwrite(ds, 1, ds.len(), sv->logfp);
+		fwrite(ds, 1, ds.len(), logfp);
 	}
 	{
 		dstring ds = dstring("Modified ") << sendcount++ << " " << server_lastdt << "\r\n" << buf;
 		send(s, ds, ds.len(), 0);
 	}
 	{
-		struct serverclient *psc;
-		for(psc = sv->cl; psc; psc = psc->next) if(sv->scs == psc || psc->s != INVALID_SOCKET){
+		ServerClient *psc;
+		for(psc = this->cl; psc; psc = psc->next) if(this->scs == psc || psc->s != INVALID_SOCKET){
 			if(psc->name){
 				dstr_t ds = dstr0;
 				char str[7];
@@ -179,26 +177,20 @@ void SendWait(struct serverclient *cl, Server *sv){
 		}
 	}
 
-//	BinSerializeStream bss;
-//	sv->pg->serialize(bss);
-//	size_t sz = bss.getsize();
 	{
 		dstring dsbuf;
-		lock_mutex(&sv->mg);
+		lock_mutex(&mg);
 		char sizebuf[16];
-		sprintf(sizebuf, "%08X", sv->pg->bufsiz);
+		sprintf(sizebuf, "%08X", pg->bufsiz);
 		dsbuf << sizebuf;
-//		send(s, (const char*)&sizebuf, 8, 0);
-		for(int i = 0; i < sv->pg->bufsiz; i++){
+		for(int i = 0; i < pg->bufsiz; i++){
 			char bytebuf[8];
-			sprintf(bytebuf, "%02X", sv->pg->buf[i]);
+			sprintf(bytebuf, "%02X", pg->buf[i]);
 			dsbuf << bytebuf;
-//			send(s, (const char*)bytebuf, 2, 0);
 		}
 		dsbuf << "\r\n";
-//		send(s, "\r\n", 2, 0);
 		send(s, dsbuf, dsbuf.len(), 0);
-		unlock_mutex(&sv->mg);
+		unlock_mutex(&mg);
 
 		// Test output to see interval of updates in the client
 //		dsbuf = dstring("MSG Sent ") << sendcount << "\r\n";
@@ -211,19 +203,19 @@ void SendWait(struct serverclient *cl, Server *sv){
 	unsetflush(s);
 }
 
-void WaitModified(Server *sv){
-	if(thread_isvalid(&sv->animThread))
+void Server::WaitModified(){
+	if(thread_isvalid(&animThread))
 		return;
-	if(lock_mutex(&sv->mcl)){
-		struct serverclient *pc = sv->cl;
+	if(lock_mutex(&mcl)){
+		ServerClient *pc = cl;
 		while(pc){
 			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
-				SendWait(pc, sv);
+				SendWait(pc);
 				unlock_mutex(&pc->m);
 			}
 			pc = pc->next;
 		}
-		unlock_mutex(&sv->mcl);
+		unlock_mutex(&mcl);
 	}
 //	if(sv->std.modified)
 //		sv->std.modified(sv->std.modified_data);
@@ -235,7 +227,7 @@ static void WaitBroadcast(Server *sv, const char *msg){
 		dstrcat(&ds, "MSG ");
 		dstrcat(&ds, msg);
 		dstrcat(&ds, "\r\n");
-		struct serverclient *pc = sv->cl;
+		ServerClient *pc = sv->cl;
 		while(pc){
 			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
 				send(pc->s, dstr(&ds), dstrlen(&ds), 0);
@@ -252,7 +244,7 @@ static void WaitBroadcast(Server *sv, const char *msg){
 
 static void RawBroadcast(Server *sv, const char *msg, int len){
 	if(lock_mutex(&sv->mcl)){
-		struct serverclient *pc = sv->cl;
+		ServerClient *pc = sv->cl;
 		while(pc){
 			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
 				send(pc->s, msg, len, 0);
@@ -266,7 +258,7 @@ static void RawBroadcast(Server *sv, const char *msg, int len){
 
 static void RawBroadcastTeam(Server *sv, const char *msg, int len, int team){
 	if(lock_mutex(&sv->mcl)){
-		struct serverclient *pc = sv->cl;
+		ServerClient *pc = sv->cl;
 		while(pc){
 			if(pc->team == team && pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
 				send(pc->s, msg, len, 0);
@@ -278,7 +270,7 @@ static void RawBroadcastTeam(Server *sv, const char *msg, int len, int team){
 	}
 }
 
-static void ShutdownClient(struct serverclient *p){
+static void ShutdownClient(ServerClient *p){
 	if(p->s)
 		shutdown(p->s, SD_BOTH);
 }
@@ -303,7 +295,8 @@ struct ServerThreadDataInt{
 	int port;
 };
 
-/*
+/** \brief The server's accept thread.
+ *
  * Server mechanism (no matter embedded or dedicated) contains a set of threads:
  *   ServerThread - accepts incoming connections
  *   AnimThread - animate the world in constant pace
@@ -312,7 +305,7 @@ struct ServerThreadDataInt{
 
 DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 	Server &sv = *pstdi->sv;
-	struct serverclient *&scs = sv.scs;
+	ServerClient *&scs = sv.scs;
 	volatile u_short port;
 	char *hostname = sv.hostname;
 	port = pstdi->port;
@@ -331,7 +324,7 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 		#ifndef _WIN32
 				pthread_t pt;
 		#endif
-				cl_t *pcl;
+				ServerClient *pcl;
 
 				printf("Waiting for a client to connect...\n");
 				AcceptSocket = accept( ListenSocket, (struct sockaddr*) &client, &size );
@@ -481,7 +474,7 @@ static void *AnimThread(Server *ps){
 			break;
 		if(ps->pg && lock_mutex(&ps->mg)){
 			ps->pg->anim(NULL);
-			struct serverclient *psc = ps->cl;
+			ServerClient *psc = ps->cl;
 #ifndef DEDICATED
 			SocketOutStream vos(INVALID_SOCKET);
 			ps->pg->serialize(vos);
@@ -615,7 +608,7 @@ void SendChatServer(ServerThreadHandle *p, const char *buf){
 		dstrcat(&ds, "> ");
 		dstrcat(&ds, buf);
 		dstrcat(&ds, "\r\n");
-		struct serverclient *psc = p->sv->cl;
+		ServerClient *psc = p->sv->cl;
 		while(psc){
 			if(psc->s != INVALID_SOCKET){
 				send(psc->s, dstr(&ds), strlen(dstr(&ds)), 0);
@@ -637,11 +630,11 @@ void SendChatServer(ServerThreadHandle *p, const char *buf){
 void KickClientServer(ServerThreadHandle *ph, int clid){
 	assert(ph && ph->sv);
 	lock_mutex(&ph->sv->mcl);
-	struct serverclient **pp = &ph->sv->cl;
+	ServerClient **pp = &ph->sv->cl;
 	while(*pp){
-		struct serverclient *p = *pp;
+		ServerClient *p = *pp;
 		if(!clid--){
-			struct serverclient *pn = p->next;
+			ServerClient *pn = p->next;
 			if(p->s != INVALID_SOCKET){
 				printf("Kicked %s\n", pn->name);
 				send(p->s, "KICK\r\n", sizeof"KICK\r\n", 0);
@@ -759,8 +752,8 @@ void LinetoBroadcast(Server *sv, int cx, int cy){
 }
 #endif
 
-static void GameCommand(cl_t *cl, char *lbuf){
 #if 0
+static void GameCommand(cl_t *cl, char *lbuf){
 	if(!strncmp(lbuf, "MOV ", 4)){
 		if(thread_isvalid(&cl->sv->animThread) && lock_mutex(&cl->sv->mg)){
 			Squad *me;
@@ -851,10 +844,10 @@ static void GameCommand(cl_t *cl, char *lbuf){
 			}
 		}
 	}
-#endif
 }
+#endif
 
-static void WaitCommand(cl_t *cl, char *lbuf){
+static void WaitCommand(ServerClient *cl, char *lbuf){
 /*	if(!strncmp(lbuf, "SEL ", 4)){
 		short team, unit;
 		team = lbuf[4] - '0';
@@ -873,7 +866,7 @@ static void WaitCommand(cl_t *cl, char *lbuf){
 		/* although along with nothing good, sum being less than 100 is permitted. */
 		if(0 <= sum && sum <= 100){
 			memcpy(cl->attr, attr, sizeof cl->attr);
-			WaitModified(cl->sv);
+			cl->sv->WaitModified();
 		}
 	}
 	else if(!strcmp(lbuf, "READY")){
@@ -890,7 +883,7 @@ static void WaitCommand(cl_t *cl, char *lbuf){
 			str2 = (char*)malloc(strlen(str)+1);
 			strcpy(str2, str);
 			do{
-				struct serverclient *psc = cl->sv->cl;
+				ServerClient *psc = cl->sv->cl;
 				while(psc){
 					if(psc != cl && psc->name && !strcmp(psc->name, str2))
 						break;
@@ -918,8 +911,9 @@ static void WaitCommand(cl_t *cl, char *lbuf){
 	}
 }
 
+/// Receive thread for the connection to the client
 static DWORD WINAPI ClientThread(LPVOID lpv){
-	cl_t *cl = (cl_t*)lpv; /* Copy the value as soon as possible */
+	ServerClient *cl = (ServerClient*)lpv; /* Copy the value as soon as possible */
 	SOCKET s = cl->s;
 	int tid = cl->id;
 	int size;
@@ -992,15 +986,15 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 	cl->s = INVALID_SOCKET;
 
 	if(!cl->sv->terminating)
-		WaitModified(cl->sv);
+		cl->sv->WaitModified();
 
 	return 0;
 }
 
-/* insert so that the newest comes first */
-static cl_t *cl_add(cl_t **root, mutex_t *m){
-	cl_t *ret;
-	if(NULL == (ret = (cl_t*)malloc(sizeof*ret))) return NULL;
+/** insert so that the newest comes first */
+static ServerClient *cl_add(ServerClient **root, mutex_t *m){
+	ServerClient *ret;
+	if(NULL == (ret = (ServerClient*)malloc(sizeof*ret))) return NULL;
 	ret->status = 0;
 	ret->meid = ULONG_MAX;
 	ret->team = ret->unit = -1;
@@ -1033,9 +1027,9 @@ static cl_t *cl_add(cl_t **root, mutex_t *m){
 	return ret;
 }
 
-/* freeing memory occupied by a client is not that easy in that you must first
+/** freeing memory occupied by a client is not that easy in that you must first
   ensure termination of the ClientThread */
-static void cl_freenode(cl_t *p){
+static void cl_freenode(ServerClient *p){
 	/* by closing the client's socket, signal the thread that it is shutting down. */
 	if(p->s != INVALID_SOCKET)
 		shutdown(p->s, SD_BOTH);
@@ -1052,9 +1046,9 @@ static void cl_freenode(cl_t *p){
 	free(p);
 }
 
-/* delete, returns nonzero on failure */
-static int cl_delp(cl_t **root, cl_t *dst, mutex_t *m){
-	cl_t *p = *root, **pp = root;
+/** delete, returns nonzero on failure */
+static int cl_delp(ServerClient **root, ServerClient *dst, mutex_t *m){
+	ServerClient *p = *root, **pp = root;
 	lock_mutex(m);
 	while(p){
 		if(p == dst){
@@ -1071,13 +1065,13 @@ static int cl_delp(cl_t **root, cl_t *dst, mutex_t *m){
 	return 1;
 }
 
-/* delete terminated thread, returns nonzero on failure */
-static int cl_clean(cl_t **root, mutex_t *m){
+/** delete terminated thread, returns nonzero on failure */
+static int cl_clean(ServerClient **root, mutex_t *m){
 	int ret = 0;
-	cl_t **pp = root;
+	ServerClient **pp = root;
 /*	lock_mutex(m);*/
 	while(*pp){
-		cl_t *p = *pp;
+		ServerClient *p = *pp;
 		if(p->id && p->s == INVALID_SOCKET){
 			thread_t t;
 			*pp = p->next;
@@ -1092,13 +1086,13 @@ static int cl_clean(cl_t **root, mutex_t *m){
 	return ret;
 }
 
-/* delete all under the root node */
-static int cl_destroy(cl_t **root){
+/** delete all under the root node */
+static int cl_destroy(ServerClient **root){
 	int ret;
-	cl_t *p = *root;
+	ServerClient *p = *root;
 	if(!p) return 0;
 	for(ret = 0; p; ret++){
-		cl_t *p1 = p->next;
+		ServerClient *p1 = p->next;
 		cl_freenode(p);
 		p = p1;
 	}

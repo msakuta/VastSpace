@@ -154,8 +154,8 @@ typedef struct ServerThreadData{
 } ServerThreadData;
 
 /// \brief The object represents a client in the server process.
-struct serverclient{
-	struct serverclient *next; /* link-list */
+struct ServerClient{
+	ServerClient *next; /* link-list */
 	Server *sv; /* redundant */
 	int status;
 #define KICKED 1
@@ -183,11 +183,11 @@ struct Server{
 	timer_t timer;
 	void *client;
 	SOCKET listener;
-	struct serverclient *cl; /* client list */
+	ServerClient *cl; /* client list */
 	int ncl, maxncl;
-	struct serverclient *scs; /* serverclient server (fake client indicating the server) */
-	struct serverclient *(*position)[2]; /* assignments */
-	void (*command_proc)(struct serverclient *, char *);
+	ServerClient *scs; /* serverclient server (fake client indicating the server) */
+	ServerClient *(*position)[2]; /* assignments */
+	void (*command_proc)(ServerClient *, char *);
 	volatile long terminating; /* the server is shutting down! */
 	volatile long started; /* game started; no further users can log in */
 	mutex_t mcl; /* client list's mutex object */
@@ -197,19 +197,14 @@ struct Server{
 
 	Server();
 	~Server();
+	void WaitModified();
+protected:
+	void SendWait(ServerClient *cl);
 };
-
-extern void ServerUpdate(void *client, Game *);
 
 extern int StartServer(ServerThreadData *, struct ServerThreadHandle *);
 extern void StopServer(ServerThreadHandle *);
 extern void SendChatServer(ServerThreadHandle *, const char *buf);
 extern void KickClientServer(ServerThreadHandle *, int clid);
-extern void WaitModified(Server*);
-void SendWait(struct serverclient *cl, Server *sv);
-extern void MovetoBroadcast(struct server *, int cx, int cy);
-extern void LinetoBroadcast(struct server *, int cx, int cy);
-extern void SelectPositionServer(struct server*, struct serverclient*, short team, short unit);
-extern int ReadyClientServer(struct server*, struct serverclient*);
 
 #endif

@@ -63,14 +63,14 @@ struct EntityCommandStatic{
 	EntityCommandStatic(EntityCommandCreatorFunc a = NULL, EntityCommandDeleteFunc b = NULL, EntityCommandSqFunc c = NULL) : newproc(a), deleteproc(b), sq_command(c){}
 };
 
-/// A template class to implement EntityCommandStatic object for a given EntityCommand-derived class.
-template<typename CommandDerived> struct EntityCommandRegister : public EntityCommandStatic{
-	EntityCommandRegister(EntityCommandCreatorFunc a, EntityCommandDeleteFunc b)
-		: EntityCommandStatic(a, b, EntityCommandSq<CommandDerived>)
-	{
-		EntityCommand::registerEntityCommand(CommandDerived::sid, this);
-	}
-};
+/// A template to generate squirrel bindings automatically.
+///
+/// You can instanciate this function template for any Command to implement custom codes.
+template<typename Command>
+void EntityCommandSq(HSQUIRRELVM v, Entity &e){
+	Command com(v, e);
+	e.command(&com);
+}
 
 template<typename Command>
 EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
@@ -80,15 +80,6 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 template<typename Command>
 void EntityCommandDeletor(void *pv){
 	delete pv;
-}
-
-/// A template to generate squirrel bindings automatically.
-///
-/// You can instanciate this function template for any Command to implement custom codes.
-template<typename Command>
-void EntityCommandSq(HSQUIRRELVM v, Entity &e){
-	Command com(v, e);
-	e.command(&com);
 }
 
 /** \brief Base class for all Entity commands.
@@ -142,6 +133,15 @@ struct EXPORT EntityCommand{
 	static int registerEntityCommand(const char *name, EntityCommandStatic *ctor){
 		ctormap()[name] = ctor;
 		return 0;
+	}
+};
+
+/// A template class to implement EntityCommandStatic object for a given EntityCommand-derived class.
+template<typename CommandDerived> struct EntityCommandRegister : public EntityCommandStatic{
+	EntityCommandRegister(EntityCommandCreatorFunc a, EntityCommandDeleteFunc b)
+		: EntityCommandStatic(a, b, EntityCommandSq<CommandDerived>)
+	{
+		EntityCommand::registerEntityCommand(CommandDerived::sid, this);
 	}
 };
 

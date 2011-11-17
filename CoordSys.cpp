@@ -505,7 +505,7 @@ class AstroCmp{
 public:
 	static int invokes;
 	AstroCmp(const Viewer &avw) : vw(avw){}
-	bool operator()(CoordSys *&a, CoordSys *&b){
+	bool operator()(CoordSys *const &a, CoordSys *const &b){
 		double ad, bd;
 		Astrobj *aa = a->toAstrobj(), *ab = b->toAstrobj();
 		invokes++;
@@ -795,7 +795,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			return true;
 		}
 		tp = Player::addTeleport();
-		tp->teleport::teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
+		*tp = teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
 			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
 		return true;
 	}
@@ -1388,7 +1388,8 @@ static SQInteger sqf_transRotation(HSQUIRRELVM v){
 			return SQ_ERROR;
 		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 2))
 			return SQ_ERROR;
-		SQQuatd qv(p->tocsq(p2));
+		Quatd q = p->tocsq(p2);
+		SQQuatd qv(q);
 		qv.push(v);
 		return 1;
 	}
@@ -1488,7 +1489,7 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, "CoordSys");
+	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);

@@ -61,6 +61,12 @@ void Push<const CoordSys>(SQVM *v, const CoordSys *cs){
 }
 }*/
 
+template<> const SQChar *const SQIntrinsic<Quatd>::classname = _SC("Quatd");
+template<> const SQUserPointer *const SQIntrinsic<Quatd>::typetag = &tt_Quatd;
+
+template<> const SQChar *const SQIntrinsic<Vec3d>::classname = _SC("Vec3d");
+template<> const SQUserPointer *const SQIntrinsic<Vec3d>::typetag = &tt_Vec3d;
+
 static const SQChar *CONSOLE_COMMANDS = _SC("console_commands");
 
 int sqa_console_command(int argc, char *argv[], int *retval){
@@ -457,6 +463,7 @@ static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 	return 1;
 }
 
+#ifdef _WIN32
 static SQInteger sqf_GLwindow_get(HSQUIRRELVM v){
 	try{
 		GLwindow *p;
@@ -752,7 +759,7 @@ static SQInteger sqf_screenheight(HSQUIRRELVM v){
 	sq_pushinteger(v, vp[3] - vp[1]);
 	return 1;
 }
-
+#endif
 
 
 
@@ -1205,6 +1212,7 @@ template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
 template<typename FP, FP fp> SQInteger sqf_adapter(HSQUIRRELVM v){
 }
 
+#ifdef _WIN32
 SQInteger sqf_glVertex(HSQUIRRELVM v){
 	try{
 		SQVec3d sqv;
@@ -1252,6 +1260,7 @@ static SQInteger sqf_gldprint(HSQUIRRELVM v){
 	}
 	return 0;
 }
+#endif
 
 struct ModuleEntry{
 	void *handle;
@@ -1385,6 +1394,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_timemeas, _SC("timemeas"));
 	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
 	register_global_func(v, sqf_x64Build, _SC("x64Build"));
+#ifdef _WIN32
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));
 	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
@@ -1395,6 +1405,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
 	register_global_var(v, GL_LINES, _SC("GL_LINES"));
+#endif
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
@@ -1486,7 +1497,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_createslot(v, -3);
 
 	// Define class Docker, leaving details to the class itself.
-	Docker::sq_define(v);
+//	Docker::sq_define(v);
 
 	// Define instance of class Universe
 	sq_pushstring(v, _SC("universe"), -1); // this "universe"
@@ -1513,6 +1524,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
 
+#ifdef _WIN32
 	// Define class GLwindow
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_newclass(v, SQFalse);
@@ -1562,6 +1574,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("screenheight"), -1);
 	sq_newclosure(v, sqf_screenheight, 0);
 	sq_createslot(v, 1);
+#endif
 
 	sq_pushstring(v, _SC("stellar_file"), -1);
 	sq_pushstring(v, _SC("space.dat"), -1);

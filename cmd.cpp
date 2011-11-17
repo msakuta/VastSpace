@@ -15,6 +15,9 @@ extern "C"{
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 static struct viewport gvp;
 
@@ -33,7 +36,7 @@ static int console_pageskip = 8;
 static int console_mousewheelskip = 4;
 static int console_undefinedecho = 0;
 
-int CmdExecD(char *);
+static int CmdExecD(char *);
 struct cmdalias **CmdAliasFindP(const char *name);
 
 /* binary tree */

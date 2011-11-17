@@ -1,7 +1,9 @@
 #ifndef WARDRAW_H
 #define WARDRAW_H
 #include "war.h"
+#ifdef _WIN32
 #include <gl/gl.h>
+#endif
 
 class ShadowMap;
 struct ShaderBind;

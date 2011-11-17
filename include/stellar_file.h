@@ -16,8 +16,12 @@ struct teleport/* : public Serializable*/{
 /*	typedef Serializable st;
 	virtual const char *classname()const;
 	static const unsigned classid;*/
-	teleport(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
+	teleport(CoordSys *cs, const char *name, int flags, const Vec3d &pos){
+		init(cs, name, flags, pos);
+	}
 	~teleport();
+	void init(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
+
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &sc);
 

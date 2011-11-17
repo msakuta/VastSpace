@@ -237,11 +237,6 @@ SQInteger sqf_setintrinsic(HSQUIRRELVM v){
 	return sqf_setintrinsic_in<MType>(v, (unsigned long)&(((Class*)NULL)->*member));
 }
 #endif
-template<> const SQChar *const SQIntrinsic<Quatd>::classname = _SC("Quatd");
-template<> const SQUserPointer *const SQIntrinsic<Quatd>::typetag = &tt_Quatd;
-
-template<> const SQChar *const SQIntrinsic<Vec3d>::classname = _SC("Vec3d");
-template<> const SQUserPointer *const SQIntrinsic<Vec3d>::typetag = &tt_Vec3d;
 
 typedef SQIntrinsic<Quatd> SQQuatd;
 typedef SQIntrinsic<Vec3d> SQVec3d;

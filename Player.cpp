@@ -153,9 +153,9 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat
 	// We do not want to alter these pointers outside the constructor, but Player class is not yet
 	// initialized at the time initialization list is executed.
 	// Class object members need not to warry about read-only memory storage class.
-	const_cast<FreelookMover*>(freelook) = new FreelookMover(*this);
-	const_cast<CameraController*>(cockpitview) = new CockpitviewMover(*this);
-	const_cast<CameraController*>(tactical) = new TacticalMover(*this);
+	const_cast<FreelookMover*&>(freelook) = new FreelookMover(*this);
+	const_cast<CameraController*&>(cockpitview) = new CockpitviewMover(*this);
+	const_cast<CameraController*&>(tactical) = new TacticalMover(*this);
 	mover = freelook;
 }
 

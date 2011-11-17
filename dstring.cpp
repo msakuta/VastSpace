@@ -146,7 +146,7 @@ dstring &dstring::strcat(const dstring &src){
 long dstring::strncpy(const char *src, unsigned long len){
 	size_t sl;
 	assert(this && src);
-	dstring::~dstring();
+	this->dstring::~dstring();
 	strncat(src, len);
 	return this->len();
 }

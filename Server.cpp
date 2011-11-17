@@ -4,6 +4,7 @@
 //#include "game/scout.h"
 extern "C"{
 #include <clib/dstr.h>
+#include <clib/timemeas.h>
 }
 //#include <assert.h>
 //#include <limits.h>
@@ -121,20 +122,36 @@ static void timer_set(timer_t *timer, unsigned long period, event_t *set){
 static void WaitCommand(cl_t *, char *);
 static void GameCommand(cl_t *, char *);
 static DWORD WINAPI ClientThread(LPVOID lpv);
+double server_lastdt = 0.;
 
+
+Server::Server(){
+	logfp = fopen("server.log", "wb");
+}
+
+Server::~Server(){
+	fclose(logfp);
+}
 
 void SendWait(struct serverclient *cl, Server *sv){
+	static int sendcount = 0;
 	char buf[64];
 	SOCKET s = cl->s;
-	send(s, "Modified\r\n", sizeof"Modified\r\n"-1, 0);
+//	send(s, "Modified\r\n", sizeof"Modified\r\n"-1, 0);
 	{
 		int c;
 		struct serverclient *psc;
 		for(c = 0, psc = sv->cl; psc; psc = psc->next) if(sv->scs == psc || psc->s != INVALID_SOCKET)
 			c++;
 		sprintf(buf, "%d Clients\r\n", c);
+
+		dstring ds = dstring("M ") << sendcount << " " << c << " " << server_lastdt << " " << (double)clock() / CLOCKS_PER_SEC << "\r\n";
+		fwrite(ds, 1, ds.len(), sv->logfp);
 	}
-	send(s, buf, strlen(buf), 0);
+	{
+		dstring ds = dstring("Modified ") << sendcount++ << " " << server_lastdt << "\r\n" << buf;
+		send(s, ds, ds.len(), 0);
+	}
 	{
 		struct serverclient *psc;
 		for(psc = sv->cl; psc; psc = psc->next) if(sv->scs == psc || psc->s != INVALID_SOCKET){
@@ -160,6 +177,32 @@ void SendWait(struct serverclient *cl, Server *sv){
 				send(s, buf, strlen(buf), 0);
 			}
 		}
+	}
+
+//	BinSerializeStream bss;
+//	sv->pg->serialize(bss);
+//	size_t sz = bss.getsize();
+	{
+		dstring dsbuf;
+		lock_mutex(&sv->mg);
+		char sizebuf[16];
+		sprintf(sizebuf, "%08X", sv->pg->bufsiz);
+		dsbuf << sizebuf;
+//		send(s, (const char*)&sizebuf, 8, 0);
+		for(int i = 0; i < sv->pg->bufsiz; i++){
+			char bytebuf[8];
+			sprintf(bytebuf, "%02X", sv->pg->buf[i]);
+			dsbuf << bytebuf;
+//			send(s, (const char*)bytebuf, 2, 0);
+		}
+		dsbuf << "\r\n";
+//		send(s, "\r\n", 2, 0);
+		send(s, dsbuf, dsbuf.len(), 0);
+		unlock_mutex(&sv->mg);
+
+		// Test output to see interval of updates in the client
+//		dsbuf = dstring("MSG Sent ") << sendcount << "\r\n";
+//		send(s, dsbuf, dsbuf.len(), 0);
 	}
 
 	/* does this work? */
@@ -381,7 +424,7 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 
 				/* Hand process to the new thread */
 				thread_create(&pcl->t, ClientThread, pcl);
-				WaitModified(&sv);
+//				WaitModified(&sv);
 			}
 			lock_mutex(&sv.mcl);
 			sv.terminating = 1;
@@ -616,6 +659,7 @@ void KickClientServer(ServerThreadHandle *ph, int clid){
 	return;
 }
 
+#if 0
 void SelectPositionServer(Server*, struct serverclient *cl, short team, short unit){
 	if(0 <= team && team < 2 && 0 <= unit && unit < (cl->sv->maxncl + 1) / 2){
 		if(lock_mutex(&cl->sv->mcl)){
@@ -713,6 +757,7 @@ void LinetoBroadcast(Server *sv, int cx, int cy){
 	RawBroadcastTeam(sv, dstr(&ds), dstrlen(&ds), sv->scs->team);
 	dstrfree(&ds);
 }
+#endif
 
 static void GameCommand(cl_t *cl, char *lbuf){
 #if 0
@@ -810,13 +855,13 @@ static void GameCommand(cl_t *cl, char *lbuf){
 }
 
 static void WaitCommand(cl_t *cl, char *lbuf){
-	if(!strncmp(lbuf, "SEL ", 4)){
+/*	if(!strncmp(lbuf, "SEL ", 4)){
 		short team, unit;
 		team = lbuf[4] - '0';
 		unit = lbuf[5] - '0';
 		SelectPositionServer(cl->sv, cl, team, unit);
 	}
-	else if(!strncmp(lbuf, "ATTR ", 5)){
+	else*/ if(!strncmp(lbuf, "ATTR ", 5)){
 		char attr[3];
 		int i, sum = 0;
 		for(i = 0; i < 3; i++){
@@ -862,7 +907,7 @@ static void WaitCommand(cl_t *cl, char *lbuf){
 			cl->name = str2;
 			unlock_mutex(&cl->sv->mcl);
 		}
-		WaitModified(cl->sv);
+//		WaitModified(cl->sv);
 		{
 			dstr_t ds = dstr0;
 			dstrcat(&ds, cl->name);

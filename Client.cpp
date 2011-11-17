@@ -12,6 +12,15 @@ struct JoinGameData{
 };
 
 
+Client::Client(){
+	hGameMutex = CreateMutex(NULL, FALSE, NULL);
+}
+
+Client::~Client(){
+	CloseHandle(hGameMutex);
+}
+
+
 static void quitgame(Client *, bool ret){
 	exit(ret);
 }
@@ -24,13 +33,17 @@ static void SignalMessage(const char *text, void *){
 
 static DWORD WINAPI RecvThread(Client *pc){
 	int size;
-	char buf[32], *lbuf = NULL, *src = NULL;
+	char buf[1024], *lbuf = NULL, *src = NULL;
 	size_t lbs = 0, lbp = 0;
 //	ClientWaiter::addr *ad = NULL;
 //	BufOutStream os;
 	int mode = -1, modn, modi;
+	FILE *fp;
+	fp = fopen("client.log", "wb");
 
 	while(SOCKET_ERROR != (size = recv(pc->con, buf, sizeof buf, 0)) && size){
+		fwrite(buf, size, 1, fp);
+		fflush(fp);
 		char *p;
 		if(lbs < lbp + size + 1) lbuf = (char*)realloc(lbuf, lbs = lbp + size + 1);
 		memcpy(&lbuf[lbp], buf, size);
@@ -160,10 +173,41 @@ static DWORD WINAPI RecvThread(Client *pc){
 //							cw->src = ad;
 //							cw->n = modn;
 //							SetEvent(pc->hDrawEvent);
-							mode = 0;
+							size_t sz;
+/*							recv(pc->con, (char*)&sz, sizeof sz, 0);
+							fwrite(&sz, sizeof sz, 1, fp);
+							fflush(fp);
+							char *buf = new char[sz];
+							recv(pc->con, buf, sz, 0);
+							fwrite(buf, sz, 1, fp);
+							fflush(fp);*/
+							mode = 3;
+//							delete[] buf;
 						}
 					}
 				}
+				break;
+			case 3:
+				if(lbp == 0)
+					break;
+				if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 1000)){
+					char sizebuf[16];
+					char *endptr;
+					strncpy(sizebuf, lbuf, 8);
+					sizebuf[8] = '\0';
+					pc->pg->bufsiz = strtoul(sizebuf, &endptr, 16);
+					delete[] pc->pg->buf;
+					pc->pg->buf = new unsigned char[pc->pg->bufsiz];
+					int i = 0;
+					for(const char *p = &lbuf[8]; p && i < pc->pg->bufsiz; i++){
+						sizebuf[0] = *p++;
+						sizebuf[1] = *p++;
+						sizebuf[2] = '\0';
+						pc->pg->buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
+					}
+					ReleaseMutex(pc->hGameMutex);
+				}
+				mode = 0;
 				break;
 			case 4:
 				if(!strcmp(lbuf, "SERIALIZE END") && WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 50)){
@@ -193,6 +237,7 @@ static DWORD WINAPI RecvThread(Client *pc){
 		}
 	}
 cleanup:
+	fclose(fp);
 	realloc(lbuf, 0); /* free line buffer */
 	if(!pc->shutclient){
 		quitgame(pc, true);
@@ -289,7 +334,7 @@ int Client::joingame(){
 	return 0;
 }
 
-void Client::hostgame(){
+void Client::hostgame(Game *game){
 #if 0
 	static bool init = false;
 	static DLGTEMPLATE *dt;
@@ -340,6 +385,7 @@ void Client::hostgame(){
 			MessageBox(w, "Server could not start.", "", 0);
 			return;
 		}
+		server.sv->pg = game;
 //		pc->waiter = new ServerWaiter(&pc->server);
 //		pc->attr[0] = 33;
 //		pc->attr[1] = 33;

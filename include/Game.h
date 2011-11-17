@@ -22,14 +22,17 @@ public:
 	Player *player;
 	Universe *universe;
 	double &flypower;
+	unsigned char *buf;
+	int bufsiz;
 
-	Game() : player(new Player()), universe(new Universe(player)), flypower(player->freelook->flypower){
+	Game() : player(new Player()), universe(new Universe(player)), flypower(player->freelook->flypower), buf(NULL){
 		player->cs = universe;
 	}
 
 	~Game(){
 		delete player;
 		delete universe;
+		delete buf;
 	}
 
 	void lightOn();

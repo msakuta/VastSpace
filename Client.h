@@ -56,7 +56,9 @@ struct Client{
 //	PictVertexList *pvlist;
 //	PictVertex *pvroot, *pvfree, vertices[128];
 
-	void hostgame();
+	Client();
+	~Client();
+	void hostgame(Game *);
 	int joingame();
 };
 

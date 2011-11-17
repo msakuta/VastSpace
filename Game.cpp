@@ -33,15 +33,14 @@ void Game::serialize(SerializeStream &ss){
 	SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
 	universe->dive(sc0, &Serializable::map);
 
-	BinSerializeStream bss;
-	bss << (unsigned long)deleteque.size();
+	ss << (unsigned long)deleteque.size();
 	std::vector<unsigned long>::iterator it = deleteque.begin();
 	for(; it != deleteque.end(); it++)
-		bss << *it;
+		ss << *it;
 	deleteque.clear();
 
-	SerializeContext sc(bss, map, visit_list);
-	bss.sc = &sc;
+	SerializeContext sc(ss, map, visit_list);
+	ss.sc = &sc;
 	player->idPackSerialize(sc);
 	universe->dive(sc, &Serializable::idPackSerialize);
 	(sc.visit_list)->clearVisitList();

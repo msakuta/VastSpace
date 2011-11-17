@@ -99,6 +99,8 @@ static int show_planets_name = 0;
 static int cmdwnd = 0;
 //static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
+static Client gcl;
+
 
 int s_mousex, s_mousey;
 static int s_mousedragx, s_mousedragy;
@@ -1076,6 +1078,36 @@ void Game::display_func(void){
 		universe->dive(sc, &Serializable::idPackSerialize);
 		(sc.visit_list)->clearVisitList();
 
+		const unsigned char *sbuf;
+		size_t size;
+		if(gcl.mode & gcl.ServerBit){
+			timemeas_t tm;
+			TimeMeasStart(&tm);
+			lock_mutex(&gcl.server.sv->mg);
+			delete[] buf;
+			bufsiz = bss.getsize();
+			buf = new unsigned char[bss.getsize()];
+			memcpy(buf, bss.getbuf(), bss.getsize());
+			unlock_mutex(&gcl.server.sv->mg);
+			sbuf = (const unsigned char*)bss.getbuf();
+			WaitModified(gcl.server.sv);
+			size = bss.getsize();
+
+			extern double server_lastdt;
+			server_lastdt = TimeMeasLap(&tm);
+		}
+		else{
+			if(WAIT_OBJECT_0 == WaitForSingleObject(gcl.hGameMutex, 50)){
+				if(!buf){
+					ReleaseMutex(gcl.hGameMutex);
+					return;
+				}
+				sbuf = buf;
+				size = bufsiz;
+			}
+			else
+				return;
+		}
 
 /*		delete client;
 		client = new Game();*/
@@ -1084,16 +1116,20 @@ void Game::display_func(void){
 			map.push_back(NULL);
 			map.push_back(client->player);
 			map.push_back(client->universe);
-			BinUnserializeStream bus0((const unsigned char*)bss.getbuf(), bss.getsize());
+			BinUnserializeStream bus0(sbuf, size);
 			UnserializeContext usc(bus0, Serializable::ctormap(), map);
 			bus0.usc = &usc;
 			client->universe->csIdUnmap(usc);
 			{
-				BinUnserializeStream bus((const unsigned char*)bss.getbuf(), bss.getsize());
+				BinUnserializeStream bus(sbuf, size);
 				UnserializeContext usc(bus, Serializable::ctormap(), map);
 				bus.usc = &usc;
 				client->universe->csIdUnserialize(usc);
 			}
+		}
+
+		if(!(gcl.mode & gcl.ServerBit)){
+			ReleaseMutex(gcl.hGameMutex);
 		}
 	}
 
@@ -1926,8 +1962,6 @@ static int cmd_sq(int argc, char *argv[]){
 
 
 
-static Client gcl;
-
 
 static void SendChat(Client *pc, const char *buf){
 	if(pc->mode == Client::ServerWaitGame || pc->mode == Client::ServerGame){
@@ -1966,6 +2000,7 @@ int main(int argc, char *argv[])
 //	pl.cs = &universe;
 	server = new ServerGame();
 	client = new Game();
+	gcl.pg = server;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -2049,7 +2084,7 @@ int main(int argc, char *argv[])
 	if(1 < argc && !strcmp(argv[1], "/client"))
 		gcl.joingame();
 	else
-		gcl.hostgame();
+		gcl.hostgame(server);
 
 #if USEWIN
 	{

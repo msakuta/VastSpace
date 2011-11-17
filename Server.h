@@ -5,6 +5,7 @@
  */
 
 //#include "game/gamedata.h"
+#include <stdio.h>
 
 
 #define MAX_HOSTNAME 128
@@ -172,7 +173,7 @@ struct serverclient{
 	/* if tcp connection is established, no need to store the address, but udp needs its destination */
 };
 
-/// \brief The objec to represent the server in the server process itself.
+/// \brief The object to represent the server in the server process itself.
 struct Server{
 	class Game *pg;
 //	struct GameAnimData ad;
@@ -192,6 +193,10 @@ struct Server{
 	mutex_t mcl; /* client list's mutex object */
 	mutex_t mg; /* Game object access */
 	ServerThreadData std;
+	FILE *logfp;
+
+	Server();
+	~Server();
 };
 
 extern void ServerUpdate(void *client, Game *);
@@ -200,7 +205,8 @@ extern int StartServer(ServerThreadData *, struct ServerThreadHandle *);
 extern void StopServer(ServerThreadHandle *);
 extern void SendChatServer(ServerThreadHandle *, const char *buf);
 extern void KickClientServer(ServerThreadHandle *, int clid);
-extern void WaitModified(struct server*);
+extern void WaitModified(Server*);
+void SendWait(struct serverclient *cl, Server *sv);
 extern void MovetoBroadcast(struct server *, int cx, int cy);
 extern void LinetoBroadcast(struct server *, int cx, int cy);
 extern void SelectPositionServer(struct server*, struct serverclient*, short team, short unit);

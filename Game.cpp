@@ -43,6 +43,10 @@ void Game::idUnmap(UnserializeContext &sc){
 			idunmap.erase(it);
 		}
 	}
+
+	// We'll reconstruct player list from the input stream, so we need to clear the existing one.
+	players.clear();
+
 	while(!sc.i.eof()){
 		unsigned long size;
 		sc.i >> size;
@@ -67,6 +71,9 @@ void Game::idUnmap(UnserializeContext &sc){
 					if(src == "Universe"){
 						universe = static_cast<Universe*>(ret);
 					}
+					if(src == "Player"){
+						players.push_back(static_cast<Player*>(ret));
+					}
 				}
 			}
 		}
@@ -75,6 +82,9 @@ void Game::idUnmap(UnserializeContext &sc){
 			if(src != it->second->classname())
 				throw ClassNotFoundException();
 			sc.map.push_back(it->second);
+			if(src == "Player"){
+				players.push_back(static_cast<Player*>(it->second));
+			}
 		}
 		delete us;
 	}

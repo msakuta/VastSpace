@@ -76,7 +76,7 @@ protected:
 public:
 	unsigned playerId; ///< Index of player list
 	Vec3d cpos; ///< chase pos, used after chased object is destroyed to keep vision
-	double rad;
+	double rad; ///< Radius of bounding sphere
 //	double flypower; // acceleration force
 	double viewdist; ///< view distance from focused object
 	double aviewdist; ///< actual viewdist approaching constantly to viewdist

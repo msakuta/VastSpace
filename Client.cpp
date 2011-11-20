@@ -222,16 +222,6 @@ static DWORD WINAPI RecvThread(Client *pc){
 						pc->pg->buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
 					}
 
-					// Experimenting; moved to Game::display_func().
-/*					Game::IdMap::const_iterator it = pc->pg->idmap().begin();
-					for(; it != pc->pg->idmap().end(); it++){
-						Serializable *s = it->second;
-						if(!strcmp("Player", s->classname())){
-							Player *p = (Player*)s;
-							if(p->playerId == pc->thisad)
-								pc->pg->player = p;
-						}
-					}*/
 					ReleaseMutex(pc->hGameMutex);
 				}
 				mode = 0;

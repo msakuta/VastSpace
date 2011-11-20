@@ -66,12 +66,15 @@ protected:
 public:
 	Player();
 	~Player();
+
+	static const unsigned classId;
 protected:
 	Vec3d pos;
 	Vec3d velo;
 	Vec3d accel;
 	Quatd rot;
 public:
+	unsigned playerId; ///< Index of player list
 	Vec3d cpos; ///< chase pos, used after chased object is destroyed to keep vision
 	double rad;
 //	double flypower; // acceleration force

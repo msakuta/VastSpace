@@ -148,7 +148,7 @@ static DWORD WINAPI RecvThread(Client *pc){
 					int i;
 					if(sscanf(lbuf, "%d Clients", &i)){
 						modn = modi = i;
-//						ad = new ClientWaiter::addr[modn = modi = i];
+						pc->ad.resize(modn);
 						mode = 2;
 					}
 					else
@@ -158,13 +158,29 @@ static DWORD WINAPI RecvThread(Client *pc){
 			case 2:
 				{
 					if(modi--){
-//						int ip, port;
-//						ad[modi].name = new char[strlen(lbuf)+1];
-//						strcpy(ad[modi].name, lbuf);
-/*						if(sscanf(lbuf, "%08x:%4x", &ip, &port)){
-							ad[modi].ip = ip;
-							ad[modi].port = port;
-						}*/
+						unsigned int ip, port;
+						char ipbuf[12];
+						char *namebuf;
+						Client::ClientClient &cc = pc->ad[modi];
+
+						strncpy(ipbuf, lbuf, 8+1+4);
+						ipbuf[8+1+4] = '\0';
+						namebuf = &lbuf[8+1+4];
+
+						// Parse ip and port
+						if(sscanf(ipbuf, "%08x:%4x", &ip, &port)){
+							cc.ip = ip;
+							cc.port = port;
+						}
+
+						// Parse the flag whether this user entry is me
+						if(namebuf[0] == 'U')
+							pc->thisad = modi;
+
+						// If the name is given, save it to local user dictionary.
+						if(1 < strlen(namebuf))
+							cc.name = &namebuf[1];
+
 						if(!modi){
 //							if(!pc->waiter)
 //								pc->waiter = new ClientWaiter();
@@ -205,6 +221,17 @@ static DWORD WINAPI RecvThread(Client *pc){
 						sizebuf[2] = '\0';
 						pc->pg->buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
 					}
+
+					// Experimenting; moved to Game::display_func().
+/*					Game::IdMap::const_iterator it = pc->pg->idmap().begin();
+					for(; it != pc->pg->idmap().end(); it++){
+						Serializable *s = it->second;
+						if(!strcmp("Player", s->classname())){
+							Player *p = (Player*)s;
+							if(p->playerId == pc->thisad)
+								pc->pg->player = p;
+						}
+					}*/
 					ReleaseMutex(pc->hGameMutex);
 				}
 				mode = 0;

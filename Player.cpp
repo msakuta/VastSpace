@@ -163,6 +163,8 @@ Player::~Player(){
 	free();
 }
 
+const unsigned Player::classId = registerClass("Player", Conster<Player>);
+
 void Player::free(){
 	if(tplist){
 		for(int i = 0; i < ntplist; i++)
@@ -204,6 +206,7 @@ const char *Player::classname()const{
 
 void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
+	sc.o << playerId;
 	sc.o << chase;
 	sc.o << selected;
 	sc.o << pos << velo << accel << rot;
@@ -215,6 +218,7 @@ void Player::serialize(SerializeContext &sc){
 }
 
 void Player::unserialize(UnserializeContext &sc){
+	sc.i >> playerId;
 	sc.i >> chase;
 	sc.i >> selected;
 	sc.i >> pos >> velo >> accel >> rot;

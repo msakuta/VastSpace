@@ -83,6 +83,7 @@ void Universe::csUnserialize(UnserializeContext &usc){
 }
 
 void Universe::csIdUnserialize(UnserializeContext &usc){
+#if 0
 	unsigned long delsize;
 	usc.i >> delsize;
 	for(int i = 0; i < delsize; i++){
@@ -94,11 +95,11 @@ void Universe::csIdUnserialize(UnserializeContext &usc){
 		usc.map[l]->idPackUnserialize(usc);
 		l++;
 	}
+#endif
 }
 
-std::map<unsigned long, Serializable *> idunmap;
-
 void Universe::csIdUnmap(UnserializeContext &sc){
+#if 0
 	std::vector<unsigned long> cldeleteque;
 	unsigned long delsize;
 	sc.i >> delsize;
@@ -143,6 +144,7 @@ void Universe::csIdUnmap(UnserializeContext &sc){
 		}
 		delete us;
 	}
+#endif
 }
 
 

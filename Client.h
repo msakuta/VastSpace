@@ -23,6 +23,13 @@ struct Client{
 		ClientGame     = 0x83, /* playing game on remote server */
 	};
 
+	/// \biref Client registry in the Client process.
+	struct ClientClient{
+		gltestp::dstring name;
+		unsigned ip;
+		unsigned port;
+	};
+
 	HWND w;
 	HANDLE hDrawThread; // the drawing thread
 //	HANDLE hWaveThread; // is it necessary??
@@ -30,6 +37,8 @@ struct Client{
 	HANDLE hGameMutex; /* game data storage must be mutually exclusive */
 //	void *offbuf;
 	volatile enum GameMode mode;
+	std::vector<ClientClient> ad;
+	unsigned thisad;
 //	int mousemode;
 	Game *pg; // game
 //	Game::DrawData dd;

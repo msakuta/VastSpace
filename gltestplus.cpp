@@ -990,7 +990,7 @@ void Game::display_func(void){
 
 		MotionFrame(dt);
 
-		MotionAnim(*player, dt, flypower);
+		MotionAnim(*player, dt, flypower());
 
 		player->anim(dt);
 
@@ -1057,16 +1057,20 @@ void Game::display_func(void){
 #endif
 
 	{
-		extern std::vector<unsigned long> deleteque;
-		SerializeMap map;
+		// This method is moved to Game::serialize().
+//		extern std::vector<unsigned long> deleteque;
+/*		SerializeMap map;
 		map[NULL] = 0;
-		map[player] = 1;
+//		map[player] = 1;
 		Serializable* visit_list = NULL;
 		SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
-		universe->dive(sc0, &Serializable::map);
+		for(std::vector<Player*>::iterator it = server->players.begin(); it != server->players.end(); it++)
+			(*it)->dive(sc0, &Serializable::map);
+		universe->dive(sc0, &Serializable::map);*/
 
 		BinSerializeStream bss;
-		bss << (unsigned long)deleteque.size();
+		serialize(bss);
+/*		bss << (unsigned long)deleteque.size();
 		std::vector<unsigned long>::iterator it = deleteque.begin();
 		for(; it != deleteque.end(); it++)
 			bss << *it;
@@ -1076,10 +1080,11 @@ void Game::display_func(void){
 		bss.sc = &sc;
 		player->idPackSerialize(sc);
 		universe->dive(sc, &Serializable::idPackSerialize);
-		(sc.visit_list)->clearVisitList();
+		(sc.visit_list)->clearVisitList();*/
 
 		const unsigned char *sbuf;
 		size_t size;
+		static FILE *fp = NULL;
 		if(gcl.mode & gcl.ServerBit){
 			timemeas_t tm;
 			TimeMeasStart(&tm);
@@ -1104,6 +1109,10 @@ void Game::display_func(void){
 				}
 				sbuf = buf;
 				size = bufsiz;
+
+				// Output content being unserialized for debugging.
+				if(!fp)
+					fp = fopen("clientstream.log", "wb");
 			}
 			else
 				return;
@@ -1114,18 +1123,45 @@ void Game::display_func(void){
 		{
 			std::vector<Serializable*> map;
 			map.push_back(NULL);
-			map.push_back(client->player);
-			map.push_back(client->universe);
+//			map.push_back(client->player);
+//			map.push_back(client->universe);
+
+			// Output content being unserialized for debugging.
+			if(fp){
+				fwrite(sbuf, size, 1, fp);
+				fflush(fp);
+			}
 			BinUnserializeStream bus0(sbuf, size);
 			UnserializeContext usc(bus0, Serializable::ctormap(), map);
 			bus0.usc = &usc;
-			client->universe->csIdUnmap(usc);
+			client->idUnmap(usc);
 			{
 				BinUnserializeStream bus(sbuf, size);
 				UnserializeContext usc(bus, Serializable::ctormap(), map);
 				bus.usc = &usc;
-				client->universe->csIdUnserialize(usc);
+				client->idUnserialize(usc);
 			}
+
+			// Find the player this client should assume itself.
+			if(gcl.mode & gcl.ServerBit){
+				// In the server, the first Player should be the player.
+				client->player = static_cast<Player*>(map[1]);
+			}
+			else{
+				// In the client, the Player is indicated by client list's property and Player::playerId.
+				// We must find it by searching all the objects.
+				std::vector<Serializable*>::iterator it = map.begin();
+				for(; it != map.end(); it++){
+					if(*it && !strcmp((*it)->classname(), "Player")){
+						Player *p = static_cast<Player*>(*it);
+						if(p->playerId == gcl.thisad){
+							client->player = p;
+							break;
+						}
+					}
+				}
+			}
+
 		}
 
 		if(!(gcl.mode & gcl.ServerBit)){
@@ -1137,6 +1173,8 @@ void Game::display_func(void){
 }
 	
 void Game::clientDraw(double gametime, double dt){
+	if(!player || !universe)
+		return;
 	Viewer viewer;
 	{
 		double hack[16] = {

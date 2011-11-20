@@ -153,9 +153,12 @@ void Server::SendWait(ServerClient *cl){
 	{
 		ServerClient *psc;
 		for(psc = this->cl; psc; psc = psc->next) if(this->scs == psc || psc->s != INVALID_SOCKET){
+			dstr_t ds = dstr0;
+			sprintf(buf, "%08x:%04x", ntohl(psc->tcp.sin_addr.s_addr), ntohs(psc->tcp.sin_port));
+			dstrcat(&ds, buf);
+			dstrcat(&ds, psc == cl ? "U" : "O");
 			if(psc->name){
-				dstr_t ds = dstr0;
-				char str[7];
+/*				char str[7];
 				str[0] = 0 <= psc->team ? psc->team + '0' : '-';
 				str[1] = 0 <= psc->unit ? psc->unit + '0' : '-';
 				str[2] = psc->attr[0] + '0';
@@ -163,17 +166,12 @@ void Server::SendWait(ServerClient *cl){
 				str[4] = psc->attr[2] + '0';
 				str[5] = psc->status & SC_READY ? 'R' : '-';
 				str[6] = '\0';
-				dstrcat(&ds, psc == cl ? "U" : "O");
-				dstrcat(&ds, str);
+				dstrcat(&ds, str);*/
 				dstrcat(&ds, psc->name);
-				dstrcat(&ds, "\r\n");
-				send(s, dstr(&ds), dstrlen(&ds), 0);
-				dstrfree(&ds);
 			}
-			else{
-				sprintf(buf, "%08x:%04x\r\n", ntohl(psc->tcp.sin_addr.s_addr), ntohs(psc->tcp.sin_port));
-				send(s, buf, strlen(buf), 0);
-			}
+			dstrcat(&ds, "\r\n");
+			send(s, dstr(&ds), dstrlen(&ds), 0);
+			dstrfree(&ds);
 		}
 	}
 
@@ -898,6 +896,25 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 				else break;
 			} while(1);
 			cl->name = str2;
+
+			// If the client logs in, assign a Player object for the client.
+			Player *clientPlayer = new Player();
+
+			// Temporary treatment to make newly added Player's coordsys to be the same as the first Player.
+			std::vector<Player*>::iterator it = cl->sv->pg->players.begin();
+			if(it != cl->sv->pg->players.end()){
+				clientPlayer->cs = (*it)->cs;
+				clientPlayer->setpos((*it)->getpos());
+				clientPlayer->setvelo((*it)->getvelo());
+				clientPlayer->setrot((*it)->getrot());
+			}
+
+			// Assign an unique id to the newly added Player.
+			clientPlayer->playerId = cl->sv->pg->players.size();
+
+			// Actually add the Player to the Game's player list.
+			cl->sv->pg->players.push_back(clientPlayer);
+
 			unlock_mutex(&cl->sv->mcl);
 		}
 //		WaitModified(cl->sv);

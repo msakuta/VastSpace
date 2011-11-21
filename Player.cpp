@@ -41,6 +41,9 @@ void Player::CameraController::rotateLook(double dx, double dy){
 
 	rot = rot.quatrotquat(Vec3d(0, dx * speed, 0));
 	rot = rot.quatrotquat(Vec3d(dy * speed, 0, 0));
+
+	// Notify the server that this client wants the angle changed.
+	CmdExec(dstring("rot ") << rot[0] << " " << rot[1] << " " << rot[2] << " " << rot[3]);
 }
 
 

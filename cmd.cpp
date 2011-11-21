@@ -36,7 +36,7 @@ static int console_pageskip = 8;
 static int console_mousewheelskip = 4;
 static int console_undefinedecho = 0;
 
-static int CmdExecD(char *);
+static int CmdExecD(char *, bool server, ServerClient *);
 struct cmdalias **CmdAliasFindP(const char *name);
 
 /* binary tree */
@@ -44,6 +44,7 @@ static struct command{
 	union commandproc{
 		int (*a)(int argc, char *argv[]);
 		int (*p)(int argc, char *argv[], void *);
+		int (*s)(int argc, char *argv[], ServerClient *);
 	} proc;
 	int type;
 	void *param;
@@ -376,7 +377,7 @@ static int cmd_time(int argc, char *argv[]){
 			thevalue[valuelen-1] = ' ';
 	}
 	TimeMeasStart(&tm);
-	CmdExecD(thevalue);
+	CmdExecD(thevalue, false, NULL);
 	CmdPrint(cpplib::dstring() << TimeMeasLap(&tm) << " seconds");
 	free(thevalue);
 	return 0;
@@ -536,7 +537,7 @@ int CmdInput(char key){
 				cmdcurline = (cmdcurline + 1) % CB_LINES;
 			}
 			cmd_preprocess(linebuf, cmdline);
-			ret = CmdExecD(linebuf);
+			ret = CmdExecD(linebuf, false, NULL);
 			cmdline = "";
 			if(console_cursorposdisp)
 				cmddispline = 0;
@@ -681,7 +682,7 @@ static int aliasnest = 0;
 
 /** destructive, i.e. cmdstring is modified by strtok or similar
  * method to tokenize. */
-static int CmdExecD(char *cmdstring){
+static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 	int ret = 0;
 	struct command *pc;
 	struct cmdalias *pa;
@@ -730,7 +731,10 @@ static int CmdExecD(char *cmdstring){
 		continue;
 	}
 	if(pc = CmdFind(cmd)){
-		ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
+		if(pc->type != 2)
+			ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
+		else if(server)
+			ret = pc->proc.s(argc, argv, sc);
 		continue;
 	}
 
@@ -782,7 +786,17 @@ gcon:;
 int CmdExec(const char *cmdstring){
 	char *buf = new char[strlen(cmdstring) + 2];
 	strcpy(buf, cmdstring);
-	int ret = CmdExecD(buf);
+	int ret = CmdExecD(buf, false, NULL);
+	delete[] buf;
+	return ret;
+}
+
+
+/// \brief The command executed in the server.
+int ServerCmdExec(const char *cmdstring, ServerClient *sc){
+	char *buf = new char[strlen(cmdstring) + 2];
+	strcpy(buf, cmdstring);
+	int ret = CmdExecD(buf, true, sc);
 	delete[] buf;
 	return ret;
 }
@@ -813,6 +827,26 @@ void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *p
 	p->proc.p = proc;
 	p->type = 1;
 	p->param = param;
+	p->name = cmdname;
+	p->left = NULL;
+	p->right = NULL;
+}
+
+/// \brief Registers a cmdname as a server command and binds it with a callback function.
+///
+/// Might not necessary to share list of command strings with the client commands, because remote users
+/// should not execute arbitrary client commands in the server.
+void ServerCmdAdd(const char *cmdname, int (*proc)(int, char *[], ServerClient*)){
+	struct command **pp, *p;
+	int i;
+	p = (struct command*)malloc(sizeof *cmdlist);
+	++cmdlists;
+	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
+		break;
+	*pp = p;
+	p->proc.s = proc;
+	p->type = 2;
+	p->param = NULL;
 	p->name = cmdname;
 	p->left = NULL;
 	p->right = NULL;

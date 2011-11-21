@@ -1793,7 +1793,9 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
-				server->player->mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
+				Game *game = gcl.mode & gcl.ServerBit ? server : client;
+				if(game->player)
+					game->player->mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){
 					s_mousedragx = s_mousex;
 					s_mousedragy = s_mousey;
@@ -1951,6 +1953,27 @@ static int cmd_exit(int argc, char *argv[]){
 	return 0;
 }
 
+/// \brief Sends the command message to the server that this client wants to change direction of sight.
+static int cmd_rot(int argc, char *argv[]){
+	if(!(gcl.mode & gcl.ServerBit)){
+		dstring ds = "C srot";
+		for(int i = 1; i < argc; i++)
+			ds << " " << argv[i];
+		ds << "\r\n";
+		send(gcl.con, ds, ds.len(), 0);
+	}
+	return 0;
+}
+
+/// \brief A server command that acceps messages from the client to change the direction of sight.
+static int scmd_srot(int argc, char *argv[], ServerClient *sc){
+	if(argc == 5){
+		Quatd q(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+		gcl.pg->players[sc->id]->setrot(q);
+	}
+	return 0;
+}
+
 
 extern double g_nlips_factor;
 
@@ -2026,6 +2049,8 @@ int main(int argc, char *argv[])
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("eject", cmd_eject);
 	CmdAdd("exit", cmd_exit);
+	CmdAdd("rot", cmd_rot);
+	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);

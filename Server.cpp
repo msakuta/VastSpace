@@ -1,7 +1,7 @@
 #include "server.h"
 #include "Game.h"
 #include "serial_util.h"
-//#include "game/scout.h"
+#include "cmd.h"
 extern "C"{
 #include <clib/dstr.h>
 #include <clib/timemeas.h>
@@ -846,13 +846,11 @@ static void GameCommand(cl_t *cl, char *lbuf){
 #endif
 
 static void WaitCommand(ServerClient *cl, char *lbuf){
-/*	if(!strncmp(lbuf, "SEL ", 4)){
-		short team, unit;
-		team = lbuf[4] - '0';
-		unit = lbuf[5] - '0';
-		SelectPositionServer(cl->sv, cl, team, unit);
+	// "C" is the server game command request.
+	if(!strncmp(lbuf, "C ", 2)){
+		ServerCmdExec(&lbuf[2], cl);
 	}
-	else*/ if(!strncmp(lbuf, "ATTR ", 5)){
+	else if(!strncmp(lbuf, "ATTR ", 5)){
 		char attr[3];
 		int i, sum = 0;
 		for(i = 0; i < 3; i++){
@@ -936,6 +934,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 	int size;
 	char buf[32], *lbuf = NULL;
 	size_t lbs = 0, lbp = 0;
+	FILE *fp = fopen("serverrecv.log", "wb");
 	printf("ClientThread[%d] started.\n", tid);
 	while(SOCKET_ERROR != (size = recv(s, buf, sizeof buf, MSG_NOSIGNAL)) && size){
 		char *p;
@@ -945,6 +944,10 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 		lbuf[lbp] = '\0'; /* null terminate for strchr */
 		while(p = strpbrk(lbuf, "\r\n")){/* some terminals doesn't end line with \n? */
 			*p = '\0';
+
+			fwrite(lbuf, strlen(lbuf), 1, fp);
+			fwrite("\r\n", 2, 1, fp);
+			fflush(fp);
 
 			/* SAY command is common among all modes */
 			if(!strncmp(lbuf, "SAY ", 4)){
@@ -1004,6 +1007,8 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 
 	if(!cl->sv->terminating)
 		cl->sv->WaitModified();
+
+	fclose(fp);
 
 	return 0;
 }

@@ -40,7 +40,8 @@ struct Client{
 	std::vector<ClientClient> ad;
 	unsigned thisad;
 //	int mousemode;
-	Game *pg; // game
+	Game *pg; ///< The server game
+	Game *clientGame; ///< The client's game, a copy of the server in the client process.
 //	Game::DrawData dd;
 //	Game::AnimData ad;
 //	Game::squadid meid; // Squad ID for the player
@@ -69,6 +70,7 @@ struct Client{
 	~Client();
 	void hostgame(Game *);
 	int joingame();
+	void display_func();
 };
 
 

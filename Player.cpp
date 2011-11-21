@@ -1,3 +1,4 @@
+#include "Client.h"
 #include "Player.h"
 #include "Universe.h"
 #include "Entity.h"
@@ -383,7 +384,56 @@ int cmd_cvar(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+
+extern Client client;
+
+/// \brief Sends the command message to the server that this client wants to change direction of sight.
+static int cmd_rot(int argc, char *argv[]){
+	if(!(client.mode & client.ServerBit)){
+		dstring ds = "C srot";
+		for(int i = 1; i < argc; i++)
+			ds << " " << argv[i];
+		ds << "\r\n";
+		send(client.con, ds, ds.len(), 0);
+	}
+	return 0;
+}
+
+/// \brief A server command that acceps messages from the client to change the direction of sight.
+static int scmd_srot(int argc, char *argv[], ServerClient *sc){
+	if(argc == 5){
+		Quatd q(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+		client.pg->players[sc->id]->setrot(q);
+	}
+	return 0;
+}
+
+/// \brief Sends the command message to the server that this client wants to change position of eyes.
+static int cmd_pos(int argc, char *argv[]){
+	if(!(client.mode & client.ServerBit)){
+		dstring ds = "C spos";
+		for(int i = 1; i < argc; i++)
+			ds << " " << argv[i];
+		ds << "\r\n";
+		send(client.con, ds, ds.len(), 0);
+	}
+	return 0;
+}
+
+/// \brief A server command that acceps messages from the client to change the position of eyes.
+static int scmd_spos(int argc, char *argv[], ServerClient *sc){
+	if(argc == 4){
+		Vec3d v(atof(argv[1]), atof(argv[2]), atof(argv[3]));
+		client.pg->players[sc->id]->setrot(v);
+	}
+	return 0;
+}
+
 void Player::cmdInit(Player &pl){
+	CmdAdd("rot", cmd_rot);
+	ServerCmdAdd("srot", scmd_srot);
+	CmdAdd("pos", cmd_pos);
+	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("mover", cmd_mover, &pl);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &pl);

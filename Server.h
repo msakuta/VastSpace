@@ -125,7 +125,6 @@ static DWORD dummyThreadId;
 
 
 class Game;
-struct client;
 struct Server;
 
 struct ServerThreadHandle{

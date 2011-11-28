@@ -985,17 +985,19 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && targete && hold != 2){
 		if(targetc){
 			Entity *pt;
-			ppl->selected = targetc->el;
+//			ppl->selected = targetc->el;
 			for(pt = targetc->el; pt; pt = pt->next){
-				pt->selectnext = pt->next;
+				ppl->selected.insert(pt);
+//				pt->selectnext = pt->next;
 			}
 		}
 		else{
-			ppl->selected = targete;
-			targete->selectnext = NULL;
+			ppl->selected.insert(targete);
+//			ppl->selected = targete;
+//			targete->selectnext = NULL;
 		}
 		if(mbutton != GLUT_LEFT_BUTTON){
-			entity_popup(targete, ws, 1);
+			entity_popup(ppl->selected, ws, 1);
 		}
 		hold = 2;
 		pointer[0] = pointer[1] = 0;

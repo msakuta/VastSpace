@@ -71,6 +71,7 @@ struct Client{
 	void hostgame(Game *);
 	int joingame();
 	void display_func();
+	void mouse_func(int button, int state, int x, int y);
 };
 
 

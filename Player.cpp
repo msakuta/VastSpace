@@ -150,7 +150,7 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	cpos(0,0,0),
 	r_move_path(false), r_attack_path(false), r_overlay(false),
-	selected(NULL), controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
+	controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
 	freelook(NULL), cockpitview(NULL), tactical(NULL)
 {
 	// Special case that needs const member variables to be initialized outside initialization list.
@@ -212,7 +212,9 @@ void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
 	sc.o << playerId;
 	sc.o << chase;
-	sc.o << selected;
+	sc.o << (unsigned)selected.size();
+	for(SelectSet::iterator it = selected.begin(); it != selected.end(); it++)
+		sc.o << *it;
 	sc.o << pos << velo << accel << rot;
 	sc.o << fov;
 	sc.o << cs;
@@ -222,9 +224,18 @@ void Player::serialize(SerializeContext &sc){
 }
 
 void Player::unserialize(UnserializeContext &sc){
+	unsigned selectedSize;
+//	selected.clear();
+
 	sc.i >> playerId;
 	sc.i >> chase;
-	sc.i >> selected;
+	sc.i >> selectedSize;
+	for(int i = 0; i++; i < selectedSize){
+		Entity *e;
+		sc.i >> e;
+		// Read and discard stream
+//		selected.insert(e);
+	}
 	sc.i >> pos >> velo >> accel >> rot;
 	sc.i >> fov;
 	sc.i >> cs;
@@ -267,13 +278,11 @@ void Player::unlink(const Entity *pe){
 		controlled = NULL;
 	if(lastchase == pe)
 		lastchase = NULL;
-	Entity **ppe;
-	for(ppe = &selected; *ppe;) if(*ppe == pe){
-		*ppe = pe->selectnext;
+	SelectSet::iterator ppe;
+	for(ppe = selected.begin(); ppe != selected.end(); ppe++) if(*ppe == pe){
+		selected.erase(ppe);
 		break;
 	}
-	else
-		ppe = &(*ppe)->selectnext;
 }
 
 void Player::rotateLook(double dx, double dy){
@@ -502,13 +511,14 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
 	if(pl.controlled)
 		pl.uncontrol();
-	else if(pl.selected){
-		pl.controlled = pl.selected;
+	else if(!pl.selected.empty()){
+		Entity *e = *pl.selected.begin();
+		pl.controlled = e;
 		pl.mover = pl.nextmover = pl.cockpitview;
-		pl.chase = pl.selected;
+		pl.chase = e;
 		pl.mover->setrot(quat_u);
 		capture_mouse();
-		pl.selected->controller = &pl;
+		e->controller = &pl;
 	}
 	return 0;
 }
@@ -552,7 +562,6 @@ static SQInteger sqf_select(HSQUIRRELVM v){
 	int n = sq_getsize(v, 2);
 	if(n < 0)
 		return SQ_ERROR;
-	Entity **pnext = &p->selected;
 	for(int i = 0; i < n; i++){
 		Entity *pe;
 		sq_pushinteger(v, i);
@@ -561,10 +570,8 @@ static SQInteger sqf_select(HSQUIRRELVM v){
 		sq_poptop(v);
 		if(!ret) // Entities can have been deleted
 			continue;
-		*pnext = pe;
-		pnext = &pe->selectnext;
+		p->selected.insert(pe);
 	}
-	*pnext = NULL;
 	return 0;
 }
 
@@ -609,7 +616,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("selected"))){
-		if(!p->selected){
+		if(p->selected.empty()){
 			sq_pushnull(v);
 			return 1;
 		}
@@ -617,7 +624,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		sq_pushstring(v, _SC("Entity"), -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
-		if(!sqa_newobj(v, p->selected))
+		if(!sqa_newobj(v, *p->selected.begin()))
 			return sq_throwerror(v, _SC("no selected"));
 		return 1;
 	}

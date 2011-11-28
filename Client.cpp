@@ -414,3 +414,7 @@ void Client::hostgame(Game *game){
 	}
 #endif
 }
+
+void Client::mouse_func(int button, int state, int x, int y){
+	clientGame->mouse_func(button, state, x, y);
+}

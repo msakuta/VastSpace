@@ -11,6 +11,7 @@
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
+#include <set>
 #include <squirrel.h>
 
 
@@ -120,7 +121,7 @@ public:
 	double health;
 //	double cooldown, cooldown2;
 	Entity *next;
-	Entity *selectnext; /* selection list */
+//	Entity *selectnext; ///< selection list is no longer needed
 	Entity *enemy;
 	int race;
 //	int shoots, shoots2, kills, deaths;
@@ -213,7 +214,7 @@ inline Entity *Entity::getUltimateOwner(){
 }
 
 struct GLwindowState;
-void entity_popup(Entity *pt, GLwindowState &ws, int selectchain);
+void entity_popup(std::set<Entity *> &pt, GLwindowState &ws, int selectchain);
 
 int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
 

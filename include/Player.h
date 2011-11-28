@@ -84,7 +84,7 @@ public:
 	CameraController *mover; ///< virtual mover function
 	CameraController *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
 	float blendmover; ///< Blending factor of mover and nextmover.
-	Entity *chase, *controlled, *selected, *lastchase; ///< Various entity lists
+	Entity *chase, *controlled, *lastchase; ///< Various entity lists
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
 	int detail;
 	int mousex, mousey;
@@ -96,7 +96,10 @@ public:
 	double gametime; ///< global time
 	double velolen; ///< trivial; performance keeper
 	double height; ///< trivial; indicates air pressure surrounding the player
+	typedef std::set<const Entity*> ChaseSet; ///< The type to hold set of Entities for chasing camera.
 	std::set<const Entity*> chases; ///< Chased group of Entities. viewing volume shows all of them.
+	typedef std::set<Entity*> SelectSet; ///< The type that holds selected list of Entities.
+	std::set<Entity*> selected; ///< The list of selected Entities, moved from Entity-embedded linked list, which is meaningless in multiplayer game.
 	int attackorder; ///< Issueing attacking order
 	int forceattackorder;
 	bool moveorder; ///< Issueing moving order

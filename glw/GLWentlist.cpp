@@ -233,8 +233,9 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		ents[i].clear();
 
 	if(listmode == Select){
-		Entity *pt;
-		for(pt = pl.selected; pt; pt = pt->selectnext){
+		Player::SelectSet::iterator it;
+		for(it = pl.selected.begin(); it != pl.selected.end(); it++){
+			Entity *pt = *it;
 
 			/* show only member of current team */
 //			if(teamOnly && pl.race != pt->race)
@@ -365,7 +366,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 			bool ret;
 			PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
 			virtual void proc(Entity *pe){
-				for(Entity *pe2 = pl.selected; pe2; pe2 = pe2->selectnext) if(pe2 == pe){
+				for(Player::SelectSet::iterator it = pl.selected.begin(); it != pl.selected.end(); it++) if(*it == pe){
 					ret = true;
 					return;
 				}
@@ -532,15 +533,18 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 					if(state == GLUT_UP){
 						class SelectorProc : public ItemSelector::ForEachProc{
 						public:
-							Entity **prev;
-							SelectorProc(Entity **prev) : prev(prev){}
+							Player::SelectSet &set;
+//							Entity **prev;
+//							SelectorProc(Entity **prev) : prev(prev){}
+							SelectorProc(Player::SelectSet &set) : set(set){}
 							virtual void proc(Entity *pe){
-								*prev = pe;
+								set.insert(pe);
+/*								*prev = pe;
 								prev = &pe->selectnext;
-								pe->selectnext = NULL;
+								pe->selectnext = NULL;*/
 							}
 						};
-						is.foreach(SelectorProc(&pl.selected));
+						is.foreach(SelectorProc(pl.selected));
 					}
 					else{
 						int xs, ys;
@@ -793,7 +797,8 @@ public:
 	Player &pl;
 	SelectedItemCriterion(GLWentlist &entlist) : pl(entlist.pl), LeafItemCriterion(entlist){}
 	virtual bool match(const Entity *e)const{
-		for(Entity *pt = pl.selected; pt; pt = pt->selectnext) if(pt == e)
+		Player::SelectSet::iterator it = pl.selected.begin();
+		for(; it != pl.selected.end(); it++) if(*it == e)
 			 return true;
 		return false;
 	}

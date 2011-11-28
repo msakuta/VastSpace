@@ -356,7 +356,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("selectnext"))){
+/*	else if(!strcmp(wcs, _SC("selectnext"))){
 		if(!p->selectnext){
 			sq_pushnull(v);
 			return 1;
@@ -368,7 +368,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sqa_newobj(v, p->selectnext);
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
-	}
+	}*/
 	else if(!strcmp(wcs, _SC("dockedEntList"))){
 		Docker *d = p->getDocker();
 		if(!d || !d->el){

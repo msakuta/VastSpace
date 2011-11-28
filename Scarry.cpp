@@ -192,9 +192,9 @@ void GLWbuild::postframe(){
 
 int cmd_build(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
-	if(!pl.selected || !pl.selected->w)
+	if(pl.selected.empty() || (*pl.selected.begin())->w)
 		return 0;
-	Builder *pb = pl.selected->getBuilder();
+	Builder *pb = (*pl.selected.begin())->getBuilder();
 	if(pb)
 		new GLWbuild("Build", pb);
 	return 0;
@@ -415,9 +415,9 @@ void GLWdock::postframe(){
 
 int cmd_dockmenu(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
-	if(!pl.selected || !pl.selected->w)
+	if(pl.selected.empty() || !(*pl.selected.begin())->w)
 		return 0;
-	Docker *pb = pl.selected->getDocker();
+	Docker *pb = (*pl.selected.begin())->getDocker();
 	if(pb)
 		glwAppend(new GLWdock("Dock", pb));
 	return 0;

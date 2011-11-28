@@ -1437,24 +1437,24 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 
 int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&DockCommand());
+	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
+		(*e)->command(&DockCommand());
 	}
 	return 0;
 }
 
 int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&ParadeCommand());
+	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
+		(*e)->command(&ParadeCommand());
 	}
 	return 0;
 }
 
 static int cmd_delta_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(Entity *e = pl->selected; e; e = e->selectnext){
-		e->command(&DeltaCommand());
+	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
+		(*e)->command(&DeltaCommand());
 	}
 	return 0;
 }

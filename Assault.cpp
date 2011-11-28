@@ -412,9 +412,9 @@ void GLWarms::postframe(){
 
 int cmd_armswindow(int argc, char *argv[], void *pv){
 	Player *ppl = (Player*)pv;
-	if(!ppl || !ppl->selected)
+	if(!ppl || ppl->selected.empty())
 		return 0;
-	glwAppend(new GLWarms("Arms", ppl->selected));
+	glwAppend(new GLWarms("Arms", *ppl->selected.begin()));
 	return 0;
 }
 

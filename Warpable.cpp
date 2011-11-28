@@ -370,11 +370,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 	if(!g_healthbar || !Player::g_overlay || wd->shadowmapping)
 		return;
 	if(g_healthbar == 1 && wd->w && wd->w->pl){
-		Entity *pt2;
-		for(pt2 = wd->w->pl->selected; pt2; pt2 = pt2->selectnext) if(pt2 == pt){
-			break;
-		}
-		if(!pt2)
+		if(wd->w->pl->selected.find(pt) == wd->w->pl->selected.end())
 			return;
 	}
 	if(wd->shader)
@@ -683,11 +679,11 @@ int cmd_transit(int argc, char *argv[], void *pv){
 		CmdPrintf("Usage: transit dest");
 		return 1;
 	}
-	for(pt = ppl->selected; pt; pt = pt->selectnext){
+	for(Player::SelectSet::iterator pt = ppl->selected.begin(); pt != ppl->selected.end(); pt++){
 		Vec3d pos;
 		CoordSys *pcs;
 		if(pcs = const_cast<CoordSys*>(ppl->cs)->findcspath(argv[1])){
-			pt->transit_cs(pcs);
+			(*pt)->transit_cs(pcs);
 		}
 	}
 	return 0;
@@ -715,10 +711,10 @@ int cmd_warp(int argc, char *argv[], void *pv){
 	else
 		return 1;
 
-	for(pt = ppl->selected; pt; pt = pt->selectnext){
-		pt->command(&com);
+	for(Player::SelectSet::iterator pt = ppl->selected.begin(); pt != ppl->selected.end(); pt++){
+		(*pt)->command(&com);
 #if 0
-		Warpable *p = pt->toWarpable();
+		Warpable *p = (*pt)->toWarpable();
 		if(!p)
 			continue;
 		WarField *w = p->w;

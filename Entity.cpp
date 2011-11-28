@@ -195,7 +195,7 @@ void Entity::serialize(SerializeContext &sc){
 	sc.o << mass;
 	sc.o << moi;
 	sc.o << health;
-	sc.o << next << selectnext;
+	sc.o << next /*<< selectnext*/;
 	sc.o << enemy;
 	sc.o << race;
 	sc.o << otflag;
@@ -213,7 +213,7 @@ void Entity::unserialize(UnserializeContext &sc){
 	sc.i >> mass;
 	sc.i >> moi;
 	sc.i >> health;
-	sc.i >> next >> selectnext;
+	sc.i >> next /*>> selectnext*/;
 	sc.i >> enemy;
 	sc.i >> race;
 	sc.i >> otflag;
@@ -429,9 +429,9 @@ protected:
 int Entity::cmd_property(int argc, char *argv[], void *pv){
 	static int counter = 0;
 	Player *ppl = (Player*)pv;
-	if(!ppl || !ppl->selected)
+	if(!ppl || ppl->selected.empty())
 		return 0;
-	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, ppl->selected));
+	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
 	return 0;
 }
 

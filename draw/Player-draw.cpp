@@ -40,8 +40,8 @@ Quatd Player::orientation()const{
 	if(cs->w){
 		WarSpace *ws = *cs->w;
 		if(ws){
-			if(selected)
-				return ws->orientation(selected->pos);
+			if(!selected.empty())
+				return ws->orientation((*selected.begin())->pos);
 			else
 				return ws->orientation(Vec3d(0,0,0));
 		}
@@ -105,9 +105,10 @@ void Player::draw(Viewer *vw){
 			move_trans = move_proj * move_model;
 		}
 		Vec3d tpos = vw->pos;
-		if(selected){
-			tpos -= selected->pos;
-			move_src = selected->pos;
+		if(!selected.empty()){
+			Entity *e = *selected.begin();
+			tpos -= e->pos;
+			move_src = e->pos;
 		}
 		else
 			move_src = vec3_000;
@@ -131,9 +132,10 @@ void Player::draw(Viewer *vw){
 		glPushMatrix();
 		double magnitude;
 		Vec3d pos = getpos();
-		if(selected){
-			gldTranslate3dv(selected->pos);
-			magnitude = floor(log10((pos - selected->pos).len()) - .5);
+		if(!selected.empty()){
+			Entity *e = *selected.begin();
+			gldTranslate3dv(e->pos);
+			magnitude = floor(log10((pos - e->pos).len()) - .5);
 		}
 		else
 			magnitude = floor(log10((pos).len()) - .5);
@@ -180,8 +182,8 @@ void Player::draw(Viewer *vw){
 			glVertex3d(0, 0, 0.);
 			glVertex3d(0, 0, -move_z);
 			glEnd();
-			if(selected){
-				gldScaled(selected->hitradius());
+			if(!selected.empty()){
+				gldScaled((*selected.begin())->hitradius());
 				glBegin(GL_LINE_LOOP);
 				for(int i = 0; i < 32; i++){
 					glVertex2d(cuts[i][0], cuts[i][1]);

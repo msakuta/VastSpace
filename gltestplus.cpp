@@ -1205,7 +1205,7 @@ void Game::clientDraw(double gametime, double dt){
 	draw_func(viewer, dt);
 }
 
-void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
+void entity_popup(Player::SelectSet &ss, GLwindowState &ws, int selectchain){
 	PopupMenu *menus = new PopupMenu;
 	menus->append(sqa_translate("Halt"), '\0', "halt")
 		.append(sqa_translate("Move"), '\0', "moveorder")
@@ -1213,12 +1213,12 @@ void entity_popup(Entity *pt, GLwindowState &ws, int selectchain){
 		.append(sqa_translate("Properties"), '\0', "property");
 	GLwindow *glw;
 	if(selectchain){
-		for(; pt; pt = pt->selectnext)
-			pt->popupMenu(*menus);
+		for(Player::SelectSet::iterator it = ss.begin(); it != ss.end(); it++)
+			(*it)->popupMenu(*menus);
 		glw = glwPopupMenu(ws, *menus);
 	}
-	else if(pt){
-		pt->popupMenu(*menus);
+	else if(!ss.empty()){
+		(*ss.begin())->popupMenu(*menus);
 		glw = glwPopupMenu(ws, *menus);
 	}
 	else
@@ -1357,8 +1357,10 @@ static void uncapture_mouse(){
 
 int cmd_halt(int, char *[], void *pv){
 	Player *pl = (Player*)pv;
-	for(Entity *pt = pl->selected; pt; pt = pt->selectnext)
-		pt->command(&HaltCommand());
+	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++)
+		(*it)->command(&HaltCommand());
+//	for(Entity *pt = pl->selected; pt; pt = pt->selectnext)
+//		pt->command(&HaltCommand());
 	return 0;
 }
 
@@ -1375,7 +1377,8 @@ int cmd_move(int argc, char *argv[], void *pv){
 	com.destpos = comdst;
 	Quatd headrot;
 	int n = 0;
-	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w){
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++) if(pt->w == pl->cs->w){
+//	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w){
 		if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
 			headrot = Quatd::direction(-(comdst - pt->pos));
 		n++;
@@ -1423,8 +1426,8 @@ void Game::mouse_func(int button, int state, int x, int y){
 			lpos[2] -= player->move_z;
 			Vec3d pos = player->move_rot.vp3(lpos);
 /*			VECSUBIN(pos, pl.pos);*/
-			if(player->selected)
-				pos += player->selected->pos;
+			if(!player->selected.empty())
+				pos += (*player->selected.begin())->pos;
 			sprintf(buf[0], "%15lg", pos[0]);
 			sprintf(buf[1], "%15lg", pos[1]);
 			sprintf(buf[2], "%15lg", pos[2]);
@@ -1440,10 +1443,9 @@ void Game::mouse_func(int button, int state, int x, int y){
 				public:
 					Game &game;
 					virtual void onEntity(Entity *e){
-						e->selectnext = game.player->selected;
-						game.player->selected = e;
+						game.player->selected.insert(e);
 					}
-					SelectSelect(Game &game) : game(game){ game.player->selected = NULL; }
+					SelectSelect(Game &game) : game(game){ game.player->selected.clear(); }
 				};
 
 				/// Temporary object that accumulates and issues attack command to entities.
@@ -1456,14 +1458,14 @@ void Game::mouse_func(int button, int state, int x, int y){
 					AttackCommand ac;
 					ForceAttackCommand fac;
 					AttackCommand &com;
-					Entity *list;
-					AttackSelect(Game &game, bool force, Entity *alist) : game(game), com(force ? fac : ac), list(alist){}
+					Player::SelectSet &list;
+					AttackSelect(Game &game, bool force, Player::SelectSet &alist) : game(game), com(force ? fac : ac), list(alist){}
 					/// The destructor issues command.
 					~AttackSelect(){
 						if(!com.ents.empty())
 							game.player->attackorder = game.player->forceattackorder = 0;
-						for(; list; list = list->selectnext)
-							list->command(&com);
+						for(Player::SelectSet::iterator it = list.begin(); it != list.end(); it++)
+							(*it)->command(&com);
 					}
 				};
 
@@ -1555,12 +1557,12 @@ static int cmd_eject(int argc, char *argv[]){
 }
 
 static int cmd_chasecamera(int argc, char *argv[]){
-	if(server->player->selected){
-		server->player->chase = server->player->selected;
-		server->player->cs = server->player->selected->w->cs;
+	if(!server->player->selected.empty()){
+		server->player->chase = *server->player->selected.begin();
+		server->player->cs = (*server->player->selected.begin())->w->cs;
 		server->player->chases.clear();
-		for(Entity *e = server->player->selected; e; e = e->selectnext)
-			server->player->chases.insert(e);
+		for(Player::SelectSet::iterator it = server->player->selected.begin(); it != server->player->selected.end(); it++)
+			server->player->chases.insert(*it);
 	}
 	return 0;
 }
@@ -1842,16 +1844,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			break;
 
 		case WM_RBUTTONDOWN:
-			server->mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			client.mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONDOWN:
-			server->mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			client.mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_RBUTTONUP:
-			server->mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			client.mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONUP:
-			server->mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			client.mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 
 		case WM_MOUSEWHEEL:

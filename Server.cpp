@@ -1,7 +1,8 @@
-#include "server.h"
+#include "Server.h"
 #include "Game.h"
 #include "serial_util.h"
 #include "cmd.h"
+#include "Client.h"
 extern "C"{
 #include <clib/dstr.h>
 #include <clib/timemeas.h>
@@ -10,6 +11,7 @@ extern "C"{
 //#include <limits.h>
 //#include <string.h>
 //#include <stdlib.h>
+#include <sstream>
 
 #ifdef DEDICATED
 #include <stdio.h>
@@ -848,7 +850,18 @@ static void GameCommand(cl_t *cl, char *lbuf){
 static void WaitCommand(ServerClient *cl, char *lbuf){
 	// "C" is the server game command request.
 	if(!strncmp(lbuf, "C ", 2)){
-		ServerCmdExec(&lbuf[2], cl);
+		char *p = strchr(&lbuf[2], ' ');
+		if(p){
+			dstring ds;
+			ds.strncpy(&lbuf[2], p - &lbuf[2]);
+			ClientMessageStatic::CtorMap::iterator it = ClientMessageStatic::ctormap().find(ds);
+			if(it != ClientMessageStatic::ctormap().end()){
+				std::istringstream iss(std::string(p+1, strlen(p+1)));
+				StdUnserializeStream uss(iss);
+				it->second->interpret(*cl, uss);
+			}
+//			ServerCmdExec(&lbuf[2], cl);
+		}
 	}
 	else if(!strncmp(lbuf, "ATTR ", 5)){
 		char attr[3];

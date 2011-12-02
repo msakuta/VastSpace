@@ -17,6 +17,7 @@ typedef std::vector<Serializable*> UnserializeMap;
 
 class SerializeContext;
 class UnserializeContext;
+class Game;
 
 
 /** \brief Base class of all serializable objects.
@@ -30,6 +31,8 @@ class UnserializeContext;
  */
 class EXPORT Serializable{
 public:
+	typedef unsigned long Id;
+
 	/// Virtual destructor defined to make all derived classes have default destructor.
 	virtual ~Serializable();
 
@@ -85,6 +88,8 @@ public:
 	/// Clear visit list used to eliminate duplicate visits.
 	void clearVisitList()const;
 
+	Id getid()const{return id;}
+
 protected:
 	/// \brief Serialize this object using given serialize context.
 	///
@@ -98,6 +103,9 @@ protected:
 
 	Serializable() : visit_list(NULL){}
 	mutable Serializable *visit_list; ///< Visit list for object network diving. Must be initially NULL and NULLified after use.
+	Id id; ///< The number shared among server and clients to identify the object regardless of memory address.
+
+	friend class Game;
 };
 
 template<class T> inline Serializable *Serializable::Conster(){

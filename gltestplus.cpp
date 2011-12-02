@@ -951,21 +951,6 @@ void Game::init(){
 void Game::display_func(double dt){
 		sqa_anim(dt);
 
-		int mousedelta[2] = {0, 0};
-		if(mouse_captured){
-			POINT p;
-			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){
-				mouse_captured = 0;
-				while(ShowCursor(TRUE) <= 0);
-			}
-			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
-				mousedelta[0] = p.x - mouse_pos.x;
-				mousedelta[1] = p.y - mouse_pos.y;
-				player->rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
-				SetCursorPos(mouse_pos.x, mouse_pos.y);
-			}
-		}
-
 		MotionFrame(dt);
 
 		MotionAnim(*player, dt, flypower());
@@ -1011,11 +996,11 @@ void Game::display_func(double dt){
 			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
 		}
 
-		if(player->chase && player->controlled == player->chase){
+/*		if(player->chase && player->controlled == player->chase){
 			inputs.analog[1] += mousedelta[0];
 			inputs.analog[0] += mousedelta[1];
 			player->chase->control(&inputs, dt);
-		}
+		}*/
 
 		if(player->controlled)
 			glwfocus = NULL;
@@ -1058,7 +1043,24 @@ void Client::display_func(void){
 
 		dt = !init ? 0. : rdt < 1. ? rdt : 1.;
 
-		pg->display_func(dt);
+		int mousedelta[2] = {0, 0};
+		if(mouse_captured){
+			POINT p;
+			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){
+				mouse_captured = 0;
+				while(ShowCursor(TRUE) <= 0);
+			}
+			if(GetCursorPos(&p) && (p.x != mouse_pos.x || p.y != mouse_pos.y)){
+				mousedelta[0] = p.x - mouse_pos.x;
+				mousedelta[1] = p.y - mouse_pos.y;
+				pg->player->rotateLook(p.x - mouse_pos.x, p.y - mouse_pos.y);
+				SetCursorPos(mouse_pos.x, mouse_pos.y);
+			}
+		}
+
+		if(mode & ServerBit)
+			pg->display_func(dt);
+
 		gametime = t1;
 #ifdef _WIN32
 		if(!IsWindowVisible(hWndApp))
@@ -1364,9 +1366,26 @@ int cmd_halt(int, char *[], void *pv){
 	return 0;
 }
 
+struct CMMove : public ClientMessageStatic{
+	typedef ClientMessageStatic st;
+//	static ClientMessageRegister<CMMove> messageRegister;
+//	static ClientMessageID sid;
+//	virtual ClientMessageID id()const;
+//	virtual bool derived(ClientMessageID)const;
+//	virtual dstring encode()const;
+
+	static CMMove s;
+
+//	Vec3d destpos;
+//	Entity *pt;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(const Vec3d &, Entity &);
+private:
+	CMMove() : st("Move"){}
+};
+
 int cmd_move(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	Entity *pt;
 	if(argc < 4 || !pl->cs)
 		return 0;
 	MoveCommand com;
@@ -1377,16 +1396,72 @@ int cmd_move(int argc, char *argv[], void *pv){
 	com.destpos = comdst;
 	Quatd headrot;
 	int n = 0;
-	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++) if(pt->w == pl->cs->w){
-//	for(pt = pl->selected; pt; pt = pt->selectnext) if(pt->w == pl->cs->w){
-		if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
-			headrot = Quatd::direction(-(comdst - pt->pos));
-		n++;
-		Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);
-		com.destpos = comdst + headrot.trans(dp);
-		pt->command(&com);
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
+		Entity *pt = *it;
+		if(pt->w == pl->cs->w){
+			if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
+				headrot = Quatd::direction(-(comdst - pt->pos));
+			n++;
+			Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);
+			com.destpos = comdst + headrot.trans(dp);
+			pt->command(&com);
+
+			if(client.con){
+				CMMove::send(com.destpos, *pt);
+//				ds << "m " << com.destpos[0] << " " << com.destpos[1] << " " << com.destpos[2] << " " << pt->getid();
+//				send(client.con, ds, ds.len(), 0);
+			}
+		}
 	}
+
 	return 0;
+}
+
+
+void CMMove::send(const Vec3d &destpos, Entity &pt){
+	BinSerializeStream ss;
+	ss << "m " << destpos[0] << " " << destpos[1] << " " << destpos[2] << " " << pt.getid();
+	s.st::send(client, ss.getbuf(), ss.getsize());
+}
+
+static void scmd_m(const char *arg, ServerClient *sc);
+
+//ClientMessageID CMMove::sid = "CMMove";
+//ClientMessageRegister<CMMove> CMMove::messageRegister(ClientMessageCreator<CMMove>, ClientMessageDeletor<CMMove>);
+CMMove CMMove::s;
+
+/*
+CMMove::CMMove(const cpplib::dstring &arg){
+	extern std::map<unsigned long, Serializable*> idunmap;
+//	if(argc < 4)
+//		return -1;
+//	Serializable::Id id = atoi(argv[4]);
+	char *p;
+	Serializable::Id id = strtol(arg, &p, 10);
+	std::map<unsigned long, Serializable*>::iterator it = idunmap.find(id);
+	if(it != idunmap.end()){
+		pt = (Entity*)it->second;
+		destpos[0] = strtod(p, &p);
+		destpos[1] = strtod(p, &p);
+		destpos[2] = strtod(p, &p);
+	}
+}
+
+ClientMessageID CMMove::id()const{
+	return sid;
+}
+
+bool CMMove::derived(ClientMessageID id)const{
+	return sid == id;
+}*/
+
+void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
+		MoveCommand com;
+		Entity *pt;
+		uss >> pt;
+		uss >> com.destpos;
+		pt->command(&com);
+//	return 0;
 }
 
 
@@ -2027,8 +2102,13 @@ int main(int argc, char *argv[])
 //	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
 //	glwfocus = NULL;
 //	pl.cs = &universe;
+	bool isClient = 1 < argc && !strcmp(argv[1], "/client");
+
 	server = new ServerGame();
-	client.clientGame = new Game();
+	if(isClient)
+		client.clientGame = server;
+	else
+		client.clientGame = new Game();
 	client.pg = server;
 
 	viewport vp;
@@ -2071,6 +2151,7 @@ int main(int argc, char *argv[])
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
 	CmdAdd("say", cmd_say);
+//	ServerCmdAdd("m", scmd_m);
 	CoordSys::registerCommands(server->player);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
@@ -2094,7 +2175,7 @@ int main(int argc, char *argv[])
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
-	Player::cmdInit(*server->player);
+	Player::cmdInit(client);
 
 	sqa_init(server);
 
@@ -2110,7 +2191,7 @@ int main(int argc, char *argv[])
 	}
 	CmdExec("@exec autoexec.cfg");
 
-	if(1 < argc && !strcmp(argv[1], "/client"))
+	if(isClient)
 		client.joingame();
 	else
 		client.hostgame(server);

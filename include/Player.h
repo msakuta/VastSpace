@@ -30,6 +30,7 @@ class CoordSys;
 class Viewer;
 struct teleport;
 class GLWstateButton;
+class Client;
 
 /** \brief The Player in front of display.
  *
@@ -149,7 +150,7 @@ public:
 
 	static float camera_mode_switch_time;
 	static int g_overlay; // Overlay display level
-	static void cmdInit(Player &pl);
+	static void cmdInit(Client &);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);

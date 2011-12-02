@@ -28,7 +28,7 @@ extern "C"{
 
 int WarSpace::g_otdrawflags = 0;
 
-WarField::WarField(){}
+WarField::WarField() : pl(NULL){}
 
 WarField::WarField(CoordSys *acs) : cs(acs), el(NULL), bl(NULL), pl(NULL), realtime(0){
 	init_rseq(&rs, 2426);
@@ -78,7 +78,7 @@ void WarField::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
 void aaanim(double dt, WarField *w, Entity *WarField::*li, void (Entity::*method)(double)){
-	Player *pl = w->getPlayer();
+//	Player *pl = w->getPlayer();
 	for(Entity *pe = w->*li; pe; pe = pe->next){
 		try{
 			(pe->*method)(dt);
@@ -89,8 +89,8 @@ void aaanim(double dt, WarField *w, Entity *WarField::*li, void (Entity::*method
 		catch(...){
 			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::anim(): ?\n", __LINE__, pe, pe->idname());
 		}
-		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->getpos()).slen() < .002 * .002)
-			pl->chase = pe;
+//		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->getpos()).slen() < .002 * .002)
+//			pl->chase = pe;
 	}
 }
 

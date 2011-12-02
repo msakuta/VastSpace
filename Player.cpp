@@ -15,6 +15,19 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
+#include <sstream>
+
+
+/// \brief The client message that tells the server that this Player wants to change rotation.
+struct CMRot : ClientMessageStatic{
+	typedef ClientMessageStatic st;
+	static CMRot s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(const Quatd &);
+private:
+	CMRot() : st("Rot"){}
+};
+
 
 float Player::camera_mode_switch_time = 1.f;
 int Player::g_overlay = 1;
@@ -44,7 +57,7 @@ void Player::CameraController::rotateLook(double dx, double dy){
 	rot = rot.quatrotquat(Vec3d(dy * speed, 0, 0));
 
 	// Notify the server that this client wants the angle changed.
-	CmdExec(dstring("rot ") << rot[0] << " " << rot[1] << " " << rot[2] << " " << rot[3]);
+	CMRot::send(rot);
 }
 
 
@@ -396,25 +409,42 @@ int cmd_cvar(int argc, char *argv[], void *pv){
 
 extern Client client;
 
+CMRot CMRot::s;
+
 /// \brief Sends the command message to the server that this client wants to change direction of sight.
 static int cmd_rot(int argc, char *argv[]){
 	if(!(client.mode & client.ServerBit)){
-		dstring ds = "C srot";
-		for(int i = 1; i < argc; i++)
-			ds << " " << argv[i];
-		ds << "\r\n";
-		send(client.con, ds, ds.len(), 0);
+		Quatd q;
+		int c = min(argc - 1, 4);
+		for(int i = 0; i < c; i++)
+			q[i] = atof(argv[i+1]);
+		if(DBL_EPSILON < q.slen()){
+			q.normin();
+			CMRot::send(q);
+		}
 	}
 	return 0;
 }
 
-/// \brief A server command that acceps messages from the client to change the direction of sight.
-static int scmd_srot(int argc, char *argv[], ServerClient *sc){
-	if(argc == 5){
-		Quatd q(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
-		client.pg->players[sc->id]->setrot(q);
-	}
-	return 0;
+/// \brief Sends to the server that this player wants to change rotation to the given quaternion.
+///
+/// Note that the argument is not the delta, but absolute rotation in the current CoordSys which is the Player
+/// lives in. This is to prevent numerical errors to sum up.
+void CMRot::send(const Quatd &q){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	for(int i = 0; i < 4; i++)
+		sss << q[i];
+	std::string str = ss.str();
+	s.st::send(client, str.c_str(), str.size());
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
+	Quatd q;//(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+	for(int i = 0; i < 4; i++)
+		uss >> q[i];
+	client.pg->players[sc.id]->setrot(q);
 }
 
 /// \brief Sends the command message to the server that this client wants to change position of eyes.
@@ -438,14 +468,15 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	return 0;
 }
 
-void Player::cmdInit(Player &pl){
+void Player::cmdInit(Client &client){
+	Player &pl = *client.pg->player;
 	CmdAdd("rot", cmd_rot);
-	ServerCmdAdd("srot", scmd_srot);
+//	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
 	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("mover", cmd_mover, &pl);
 	CmdAddParam("teleport", cmd_teleport, &pl);
-	CmdAddParam("moveorder", cmd_moveorder, &pl);
+	CmdAddParam("moveorder", cmd_moveorder, &client);
 	CmdAddParam("control", cmd_control, &pl);
 	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, &pl);
 	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, &pl);
@@ -501,9 +532,9 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 }
 
 int Player::cmd_moveorder(int argc, char *argv[], void *pv){
-	Player &pl = *(Player*)pv;
-	pl.moveorder = !pl.moveorder;
-	pl.move_z = 0.;
+	Client &cl = *(Client*)pv;
+	cl.clientGame->player->moveorder = !cl.clientGame->player->moveorder;
+	cl.clientGame->player->move_z = 0.;
 	return 0;
 }
 

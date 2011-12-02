@@ -66,6 +66,7 @@ void Game::idUnmap(UnserializeContext &sc){
 					throw ClassNotFoundException();
 				if(it->second){
 					Serializable *ret = it->second();
+					ret->id = thisid;
 					sc.map.push_back(ret);
 					idunmap[thisid] = ret;
 					if(src == "Universe"){

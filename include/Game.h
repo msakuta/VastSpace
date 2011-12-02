@@ -57,6 +57,9 @@ public:
 	void anim(double dt);
 
 	static void addServerInits(void (*f)(Game &));
+
+protected:
+	IdMap idunmap;
 };
 
 /// \brief Game for the server.

@@ -419,26 +419,25 @@ void Client::mouse_func(int button, int state, int x, int y){
 	clientGame->mouse_func(button, state, x, y);
 }
 
+//-----------------------------------------------------------------------------
+//  ClientMessage implementation
+//-----------------------------------------------------------------------------
 
-static bool strless(const char *a, const char *b){
-	return strcmp(a, b) < 0;
-}
-
-ClientMessageStatic::CtorMap &ClientMessageStatic::ctormap(){
+ClientMessage::CtorMap &ClientMessage::ctormap(){
 	static CtorMap s;
 	return s;
 }
 
-ClientMessageStatic::ClientMessageStatic(dstring id){
+ClientMessage::ClientMessage(dstring id){
 	this->id = id;
 	ctormap()[id] = this;
 }
 
-ClientMessageStatic::~ClientMessageStatic(){
+ClientMessage::~ClientMessage(){
 	ctormap().erase(id);
 }
 
-void ClientMessageStatic::send(Client &cl, const void *p, size_t size){
+void ClientMessage::send(Client &cl, const void *p, size_t size){
 	dstring vb = "C ";
 	vb << id << ' ';
 	vb.strncat((const char*)p, size);
@@ -447,15 +446,3 @@ void ClientMessageStatic::send(Client &cl, const void *p, size_t size){
 }
 
 
-#if 0
-bool ClientMessage::derived(ClientMessageID)const{
-	return false;
-}
-
-dstring ClientMessage::encode()const{
-	return dstring(id()) << " ";
-}
-
-void ClientMessage::interpret(ServerClient&){
-}
-#endif

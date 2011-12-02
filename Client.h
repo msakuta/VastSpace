@@ -74,91 +74,32 @@ struct Client{
 	void mouse_func(int button, int state, int x, int y);
 };
 
-/// Type to identify message classes.
-/// No two message classes shall share this value.
-typedef const char *ClientMessageID;
-
-struct ClientMessage;
-
-typedef ClientMessage *ClientMessageCreatorFunc(const dstring &);
-
-/// Static data structure for Messages.
-struct ClientMessageStatic{
-//	ClientMessageCreatorFunc *newproc;
-//	void (*deleteproc)(void*);
-//	ClientMessageStatic(ClientMessageCreatorFunc a = NULL, void b(void*) = NULL) : newproc(a), deleteproc(b){}
+/// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the
+/// server world.
+///
+/// The overriders should be sigleton class, which means only one instance of that class is permitted.
+///
+/// The overriders registers themselves with the constructor of ClientMessage and de-register in the destructor.
+struct ClientMessage{
 
 	/// Type for the constructor map.
-	typedef std::map<dstring, ClientMessageStatic*> CtorMap;
+	typedef std::map<dstring, ClientMessage*> CtorMap;
 
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
 	static CtorMap &ctormap();
 
+	/// The virtual function that defines how to interpret serialized stream.
 	virtual void interpret(ServerClient &sc, UnserializeStream &uss) = 0;
+
 protected:
+	/// The id (name) of this ClientMessage automatically sent and matched.
 	dstring id;
 
-	ClientMessageStatic(dstring id);
-	~ClientMessageStatic();
+	ClientMessage(dstring id);
+	~ClientMessage();
 
 	void send(Client &, const void *, size_t);
 };
-
-#if 0
-template<typename ClientMessageDerived> struct ClientMessageRegister : public ClientMessageStatic{
-	ClientMessageRegister(ClientMessageCreatorFunc a, void b(void*)) : ClientMessageStatic(a, b){
-		ClientMessageDerived::registerMessage(ClientMessageDerived::sid, this);
-	}
-};
-
-template<typename Command>
-ClientMessage *ClientMessageCreator(const dstring &ds){
-	return new Command(ds);
-}
-
-template<typename Command>
-void ClientMessageDeletor(void *pv){
-	delete pv;
-}
-
-/// \brief Message sent from the client over the network.
-///
-/// Base class for all messages.
-struct EXPORT ClientMessage{
-	/// Type for the constructor map.
-	typedef std::map<const char *, ClientMessageStatic*, bool (*)(const char *, const char *)> CtorMap;
-
-	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
-	static CtorMap &ctormap();
-
-	/** \brief Returns unique ID for this class.
-	 *
-	 * The returned pointer never be dereferenced without debugging purposes,
-	 * it is just required to point the same address for all the instances but
-	 * never coincides between different classes.
-	 * A static const string of class name is ideal for this returned vale.
-	 */
-	virtual ClientMessageID id()const = 0;
-
-	/** \brief Derived or exact class returns true.
-	 *
-	 * Returns whether the given message ID is the same as this object's class's or its derived classes.
-	 */
-	virtual bool derived(ClientMessageID)const;
-
-	virtual dstring encode()const;
-
-	virtual void interpret(ServerClient &);
-
-	ClientMessage(){}
-
-	/// Derived classes use this utility to register class.
-	static int registerMessage(const char *name, ClientMessageStatic *stat){
-		ctormap()[name] = stat;
-		return 0;
-	}
-};
-#endif
 
 
 #endif

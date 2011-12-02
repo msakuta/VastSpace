@@ -854,13 +854,12 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 		if(p){
 			dstring ds;
 			ds.strncpy(&lbuf[2], p - &lbuf[2]);
-			ClientMessageStatic::CtorMap::iterator it = ClientMessageStatic::ctormap().find(ds);
-			if(it != ClientMessageStatic::ctormap().end()){
+			ClientMessage::CtorMap::iterator it = ClientMessage::ctormap().find(ds);
+			if(it != ClientMessage::ctormap().end()){
 				std::istringstream iss(std::string(p+1, strlen(p+1)));
 				StdUnserializeStream uss(iss);
 				it->second->interpret(*cl, uss);
 			}
-//			ServerCmdExec(&lbuf[2], cl);
 		}
 	}
 	else if(!strncmp(lbuf, "ATTR ", 5)){

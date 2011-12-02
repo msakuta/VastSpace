@@ -101,7 +101,7 @@ protected:
 	/// Derived classes override this function to define how to restore themselves from serialized stream.
 	virtual void unserialize(UnserializeContext &usc);
 
-	Serializable() : visit_list(NULL){}
+	Serializable();
 	mutable Serializable *visit_list; ///< Visit list for object network diving. Must be initially NULL and NULLified after use.
 	Id id; ///< The number shared among server and clients to identify the object regardless of memory address.
 

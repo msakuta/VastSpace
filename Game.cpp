@@ -24,8 +24,6 @@ void Game::addServerInits(void (*f)(Game &)){
 	serverInits[nserverInits++] = f;
 }
 
-std::map<unsigned long, Serializable *> idunmap;
-
 const Game::IdMap &Game::idmap()const{
 	return idunmap;
 }
@@ -37,7 +35,7 @@ void Game::idUnmap(UnserializeContext &sc){
 	for(int i = 0; i < delsize; i++){
 		unsigned long id;
 		sc.i >> id;
-		std::map<unsigned long, Serializable*>::iterator it = idunmap.find(id);
+		IdMap::iterator it = idunmap.find(id);
 		if(it != idunmap.end()){
 			delete it->second;
 			idunmap.erase(it);
@@ -115,6 +113,11 @@ void Game::serialize(SerializeStream &ss){
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
 		(*it)->dive(sc0, &Serializable::map);
 	universe->dive(sc0, &Serializable::map);
+
+	for(SerializeMap::iterator it = map.begin(); it != map.end(); it++){
+		if(it->first)
+			idunmap[it->first->getid()] = const_cast<Serializable*>(it->first);
+	}
 
 	ss << (unsigned long)deleteque.size();
 	std::vector<unsigned long>::iterator it = deleteque.begin();

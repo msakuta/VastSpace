@@ -1366,18 +1366,9 @@ int cmd_halt(int, char *[], void *pv){
 	return 0;
 }
 
-struct CMMove : public ClientMessageStatic{
-	typedef ClientMessageStatic st;
-//	static ClientMessageRegister<CMMove> messageRegister;
-//	static ClientMessageID sid;
-//	virtual ClientMessageID id()const;
-//	virtual bool derived(ClientMessageID)const;
-//	virtual dstring encode()const;
-
+struct CMMove : public ClientMessage{
+	typedef ClientMessage st;
 	static CMMove s;
-
-//	Vec3d destpos;
-//	Entity *pt;
 	void interpret(ServerClient &sc, UnserializeStream &uss);
 	static void send(const Vec3d &, Entity &);
 private:
@@ -1408,8 +1399,6 @@ int cmd_move(int argc, char *argv[], void *pv){
 
 			if(client.con){
 				CMMove::send(com.destpos, *pt);
-//				ds << "m " << com.destpos[0] << " " << com.destpos[1] << " " << com.destpos[2] << " " << pt->getid();
-//				send(client.con, ds, ds.len(), 0);
 			}
 		}
 	}
@@ -1418,50 +1407,24 @@ int cmd_move(int argc, char *argv[], void *pv){
 }
 
 
-void CMMove::send(const Vec3d &destpos, Entity &pt){
-	BinSerializeStream ss;
-	ss << "m " << destpos[0] << " " << destpos[1] << " " << destpos[2] << " " << pt.getid();
-	s.st::send(client, ss.getbuf(), ss.getsize());
-}
-
-static void scmd_m(const char *arg, ServerClient *sc);
-
-//ClientMessageID CMMove::sid = "CMMove";
-//ClientMessageRegister<CMMove> CMMove::messageRegister(ClientMessageCreator<CMMove>, ClientMessageDeletor<CMMove>);
 CMMove CMMove::s;
 
-/*
-CMMove::CMMove(const cpplib::dstring &arg){
-	extern std::map<unsigned long, Serializable*> idunmap;
-//	if(argc < 4)
-//		return -1;
-//	Serializable::Id id = atoi(argv[4]);
-	char *p;
-	Serializable::Id id = strtol(arg, &p, 10);
-	std::map<unsigned long, Serializable*>::iterator it = idunmap.find(id);
-	if(it != idunmap.end()){
-		pt = (Entity*)it->second;
-		destpos[0] = strtod(p, &p);
-		destpos[1] = strtod(p, &p);
-		destpos[2] = strtod(p, &p);
-	}
+void CMMove::send(const Vec3d &destpos, Entity &pt){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << pt.getid() << destpos;
+	std::string str = ss.str();
+	s.st::send(client, str.c_str(), str.size());
 }
-
-ClientMessageID CMMove::id()const{
-	return sid;
-}
-
-bool CMMove::derived(ClientMessageID id)const{
-	return sid == id;
-}*/
 
 void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
-		MoveCommand com;
-		Entity *pt;
-		uss >> pt;
-		uss >> com.destpos;
-		pt->command(&com);
-//	return 0;
+	MoveCommand com;
+	Serializable::Id id;
+	uss >> id;
+	uss >> com.destpos;
+	Game::IdMap::const_iterator it = sc.sv->pg->idmap().find(id);
+	if(it != sc.sv->pg->idmap().end())
+		((Entity*)it->second)->command(&com);
 }
 
 
@@ -2131,7 +2094,7 @@ int main(int argc, char *argv[])
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &server->player);
 	CmdAdd("chasecamera", cmd_chasecamera);
-	CmdAddParam("property", Entity::cmd_property, &server->player);
+	CmdAddParam("property", Entity::cmd_property, &client);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &server->player);
 	CmdAddParam("save", Universe::cmd_save, server->universe);

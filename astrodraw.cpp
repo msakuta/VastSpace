@@ -780,6 +780,9 @@ bool DrawTextureSphere::draw(){
 	double (*finecuts)[2] = CircleCutsPartial(m_nfinecuts, 9);
 
 	double dist = (apos - vw->pos).len();
+	if(dist < DBL_EPSILON)
+		return false;
+
 	if(m_drawint ^ (dist < rad))
 		return true;
 

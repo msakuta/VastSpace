@@ -2,6 +2,7 @@
  * \brief Implements Entity class and its collaborative classes.
  */
 #include "Entity.h"
+#include "Client.h"
 #include "EntityCommand.h"
 extern "C"{
 #include <clib/aquat.h>
@@ -428,7 +429,10 @@ protected:
 
 int Entity::cmd_property(int argc, char *argv[], void *pv){
 	static int counter = 0;
-	Player *ppl = (Player*)pv;
+	Client *pclient = (Client*)pv;
+	if(!pclient || !pclient->clientGame)
+		return 0;
+	Player *ppl = pclient->clientGame->player;
 	if(!ppl || ppl->selected.empty())
 		return 0;
 	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));

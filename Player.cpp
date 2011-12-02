@@ -19,8 +19,8 @@ extern "C"{
 
 
 /// \brief The client message that tells the server that this Player wants to change rotation.
-struct CMRot : ClientMessageStatic{
-	typedef ClientMessageStatic st;
+struct CMRot : ClientMessage{
+	typedef ClientMessage st;
 	static CMRot s;
 	void interpret(ServerClient &sc, UnserializeStream &uss);
 	static void send(const Quatd &);

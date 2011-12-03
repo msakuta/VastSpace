@@ -1376,7 +1376,10 @@ private:
 };
 
 int cmd_move(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
+	Client *cl = (Client*)pv;
+	if(!cl || !cl->clientGame)
+		return 0;
+	Player *pl = cl->clientGame->player;
 	if(argc < 4 || !pl->cs)
 		return 0;
 	MoveCommand com;
@@ -1397,9 +1400,7 @@ int cmd_move(int argc, char *argv[], void *pv){
 			com.destpos = comdst + headrot.trans(dp);
 			pt->command(&com);
 
-			if(client.con){
-				CMMove::send(com.destpos, *pt);
-			}
+			CMMove::send(com.destpos, *pt);
 		}
 	}
 
@@ -1410,11 +1411,20 @@ int cmd_move(int argc, char *argv[], void *pv){
 CMMove CMMove::s;
 
 void CMMove::send(const Vec3d &destpos, Entity &pt){
-	std::stringstream ss;
-	StdSerializeStream sss(ss);
-	sss << pt.getid() << destpos;
-	std::string str = ss.str();
-	s.st::send(client, str.c_str(), str.size());
+	if(client.mode & client.ServerBit){
+		MoveCommand com;
+		com.destpos = destpos;
+		Game::IdMap::const_iterator it = client.pg->idmap().find(pt.getid());
+		if(it != client.pg->idmap().end())
+			((Entity*)it->second)->command(&com);
+	}
+	else{
+		std::stringstream ss;
+		StdSerializeStream sss(ss);
+		sss << pt.getid() << destpos;
+		std::string str = ss.str();
+		s.st::send(client, str.c_str(), str.size());
+	}
 }
 
 void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
@@ -1463,13 +1473,12 @@ void Game::mouse_func(int button, int state, int x, int y){
 			Vec3d lpos(player->move_hitpos);
 			lpos[2] -= player->move_z;
 			Vec3d pos = player->move_rot.vp3(lpos);
-/*			VECSUBIN(pos, pl.pos);*/
 			if(!player->selected.empty())
 				pos += (*player->selected.begin())->pos;
 			sprintf(buf[0], "%15lg", pos[0]);
 			sprintf(buf[1], "%15lg", pos[1]);
 			sprintf(buf[2], "%15lg", pos[2]);
-			cmd_move(4, args, player);
+			cmd_move(4, args, &client);
 			player->moveorder = 0;
 			return;
 		}

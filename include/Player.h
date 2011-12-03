@@ -30,7 +30,7 @@ class CoordSys;
 class Viewer;
 struct teleport;
 class GLWstateButton;
-class Client;
+struct Client;
 
 /** \brief The Player in front of display.
  *
@@ -169,7 +169,7 @@ public:
 	static GLWstateButton *newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips);
 
 	/// Creates a button to toggle move ordering mode.
-	static GLWstateButton *newMoveOrderButton(Player &pl, const char *filename, const char *filename2, const char *tips);
+	static GLWstateButton *newMoveOrderButton(Client &cl, const char *filename, const char *filename2, const char *tips);
 
 private:
 	static SQInteger sqf_get(HSQUIRRELVM v);

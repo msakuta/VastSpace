@@ -51,6 +51,7 @@ static Universe *puniverse;
 static Player *player;
 #define pl (*player)
 extern GLwindow *glwlist;
+extern struct Client client;
 
 /*DECLARE_INSTANCE_TYPE(Player)
 
@@ -708,7 +709,7 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
 		tips = NULL;
-	GLWstateButton *b = Player::newMoveOrderButton(pl, path, path1, tips);
+	GLWstateButton *b = Player::newMoveOrderButton(client, path, path1, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));

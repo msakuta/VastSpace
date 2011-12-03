@@ -805,18 +805,18 @@ GLWstateButton *Player::newControlButton(Player &pl, const char *filename, const
 /// \param filename File name of button image when being active
 /// \param filename2 File name of button image when being inactive
 /// \param tips Displayed when mouse cursor is floating over.
-GLWstateButton *Player::newMoveOrderButton(Player &pl, const char *filename, const char *filename2, const char *tips){
+GLWstateButton *Player::newMoveOrderButton(Client &pl, const char *filename, const char *filename2, const char *tips){
 	/// Command
 	class GLWmoveOrderButton : public GLWstateButton{
 	public:
-		Player *pl;
-		GLWmoveOrderButton(const char *filename, const char *filename1, Player *apl, const char *tip = NULL) :
-			GLWstateButton(filename, filename1, tip), pl(apl){}
+		Client *cl;
+		GLWmoveOrderButton(const char *filename, const char *filename1, Client *acl, const char *tip = NULL) :
+			GLWstateButton(filename, filename1, tip), cl(acl){}
 		virtual bool state()const{
-			return pl->moveorder;
+			return cl && cl->pg && cl->pg->player && cl->pg->player->moveorder;
 		}
 		virtual void press(){
-			pl->cmd_moveorder(0, NULL, pl);
+			Player::cmd_moveorder(0, NULL, cl);
 		}
 	};
 	return new GLWmoveOrderButton(filename, filename2, &pl, tips);

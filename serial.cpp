@@ -9,7 +9,6 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 : i(ai), cons(acons), map(amap){
 }
 
-//static std::map<Serializable *, unsigned long> idmap;
 static unsigned long nextid = 0;
 std::vector<unsigned long> deleteque;
 
@@ -20,11 +19,8 @@ Serializable::Serializable() : id(nextid++), visit_list(NULL){
 Serializable::~Serializable(){
 	if(g_sqvm)
 		sqa_deleteobj(g_sqvm, this);
-//	std::map<Serializable *, unsigned long>::iterator it = idmap.find(this);
-	/*if(it != idmap.end())*/{
-		deleteque.push_back(id/*it->second*/);
-//		idmap.erase(it);
-	}
+
+	deleteque.push_back(id);
 }
 
 void Serializable::serialize(SerializeContext &sc){
@@ -101,13 +97,7 @@ void Serializable::idPackSerialize(SerializeContext &sc){
 	sc.visits.insert(this);*/
 
 	unsigned long thisid;
-//	std::map<Serializable *, unsigned long>::iterator it = idmap.find(this);
-/*	if(it == idmap.end()){
-		thisid = nextid;
-		idmap[this] = nextid++;
-	}
-	else*/
-		thisid = this->id;
+	thisid = this->id;
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);
 	sc2.o << classname();

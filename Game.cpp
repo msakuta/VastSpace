@@ -107,24 +107,29 @@ void Game::serialize(SerializeStream &ss){
 	extern std::vector<unsigned long> deleteque;
 	SerializeMap map;
 	map[NULL] = 0;
-//	map[player] = 1;
 	Serializable* visit_list = NULL;
+
+	// The first pass enumerates all the entities in the object web.
 	SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
 		(*it)->dive(sc0, &Serializable::map);
 	universe->dive(sc0, &Serializable::map);
 
+	// Update the server's id map for receiving client messages that requires access to the server objects
+	// designated by the id.
 	for(SerializeMap::iterator it = map.begin(); it != map.end(); it++){
 		if(it->first)
 			idunmap[it->first->getid()] = const_cast<Serializable*>(it->first);
 	}
 
+	// Update delete queue to notify that particular objects should be dead, destructed and freed.
 	ss << (unsigned long)deleteque.size();
 	std::vector<unsigned long>::iterator it = deleteque.begin();
 	for(; it != deleteque.end(); it++)
 		ss << *it;
 	deleteque.clear();
 
+	// The second pass actually writes to the stream, replacing pointers with the object ids.
 	SerializeContext sc(ss, map, visit_list);
 	ss.sc = &sc;
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)

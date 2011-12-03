@@ -163,7 +163,7 @@ Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	cpos(0,0,0),
 	r_move_path(false), r_attack_path(false), r_overlay(false),
-	controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
+	chase(NULL), controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
 	freelook(NULL), cockpitview(NULL), tactical(NULL)
 {
 	// Special case that needs const member variables to be initialized outside initialization list.

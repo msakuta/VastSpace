@@ -1,4 +1,5 @@
 #include "sqadapt.h"
+#include "Client.h"
 #include "cmd.h"
 #include "cmd_int.h"
 #include "Universe.h"
@@ -1360,6 +1361,13 @@ static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, Entity::EntityStatic 
 //	clset.insert(s.sq_define);
 }
 
+typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
+
+SQDefineMap &defineMap(){
+	static SQDefineMap s;
+	return s;
+}
+
 
 void sqa_init(Game *game, HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
@@ -1371,6 +1379,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	if(!pv)
 		pv = &g_sqvm;
 	HSQUIRRELVM &v = *pv = sq_open(1024);
+	game->sqvm = v;
 
 	sqstd_seterrorhandlers(v);
 
@@ -1480,6 +1489,10 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		}
 	}
 
+	// Execute initializations registered to defineMap.
+	for(SQDefineMap::iterator it = defineMap().begin(); it != defineMap().end(); it++)
+		it->second(v);
+
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
@@ -1583,14 +1596,15 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	timemeas_t tm;
 	TimeMeasStart(&tm);
-	if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("scripts/init.nut"), 0, 1))) // also prints syntax errors if any 
+	const SQChar *scriptFile = game == client.pg ? _SC("scripts/init.nut") : _SC("scripts/initClient.nut");
+	if(SQ_SUCCEEDED(sqstd_dofile(v, scriptFile, 0, 1))) // also prints syntax errors if any 
 	{
 		double d = TimeMeasLap(&tm);
-		CmdPrint(cpplib::dstring() << "init.nut total: " << d << " sec");
+		CmdPrint(cpplib::dstring() << scriptFile << " total: " << d << " sec");
 //		call_foo(v,1,2.5,_SC("teststring"));
 	}
 	else
-		CmdPrint("scripts/init.nut failed.");
+		CmdPrint(cpplib::dstring(scriptFile) << " failed.");
 
 	sq_poptop(v); // Pop the root table.
 }

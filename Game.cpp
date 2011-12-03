@@ -4,6 +4,7 @@
 
 #include "antiglut.h"
 #include "serial_util.h"
+#include "sqadapt.h"
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
@@ -145,6 +146,18 @@ void Game::unserialize(UnserializeContext &usc){
 void Game::anim(double dt){
 	universe->anim(dt);
 	universe->postframe();
+}
+
+void Game::sq_replacePlayer(Player *p){
+	player = p;
+	HSQUIRRELVM v = sqvm;
+	sq_pushstring(v, _SC("player"), -1); // this "player"
+	sq_pushstring(v, _SC("Player"), -1); // this "player" "Player"
+	sq_get(v, 1); // this "player" Player
+	sq_createinstance(v, -1); // this "player" Player Player-instance
+	sqa_newobj(v, p); // this "player" Player Player-instance
+	sq_remove(v, -2); // this "player" Player-instance
+	sq_createslot(v, 1); // this
 }
 
 

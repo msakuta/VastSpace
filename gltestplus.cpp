@@ -1134,7 +1134,7 @@ void Client::display_func(void){
 			// Find the player this client should assume itself.
 			if(mode & ServerBit){
 				// In the server, the first Player should be the player.
-				clientGame->player = static_cast<Player*>(map[1]);
+				clientGame->sq_replacePlayer(static_cast<Player*>(map[1]));
 			}
 			else{
 				// In the client, the Player is indicated by client list's property and Player::playerId.
@@ -1144,7 +1144,7 @@ void Client::display_func(void){
 					if(*it && !strcmp((*it)->classname(), "Player")){
 						Player *p = static_cast<Player*>(*it);
 						if(p->playerId == thisad){
-							clientGame->player = p;
+							clientGame->sq_replacePlayer(p);
 							break;
 						}
 					}
@@ -1357,12 +1357,78 @@ static void uncapture_mouse(){
 /*	while(ShowCursor(TRUE) < 0);*/
 }
 
+namespace sqa{
+typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
+
+extern SQDefineMap &defineMap();
+}
+
+struct CMHalt : public ClientMessage{
+	typedef ClientMessage st;
+	static CMHalt s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(Entity &);
+private:
+	static bool sqf_define(HSQUIRRELVM v);
+	static SQInteger sqf_call(HSQUIRRELVM v);
+	CMHalt();
+};
+
+CMHalt CMHalt::s;
+
+CMHalt::CMHalt() : st("Halt"){
+	defineMap()[id] = sqf_define;
+}
+
+void CMHalt::send(Entity &pt){
+	if(client.mode & client.ServerBit){
+		HaltCommand com;
+		Game::IdMap::const_iterator it = client.pg->idmap().find(pt.getid());
+		if(it != client.pg->idmap().end())
+			((Entity*)it->second)->command(&com);
+	}
+	else{
+		std::stringstream ss;
+		StdSerializeStream sss(ss);
+		sss << pt.getid();
+		std::string str = ss.str();
+		s.st::send(client, str.c_str(), str.size());
+	}
+}
+
+void CMHalt::interpret(ServerClient &sc, UnserializeStream &uss){
+	HaltCommand com;
+	Serializable::Id id;
+	uss >> id;
+	Game::IdMap::const_iterator it = sc.sv->pg->idmap().find(id);
+	if(it != sc.sv->pg->idmap().end())
+		((Entity*)it->second)->command(&com);
+}
+
+bool CMHalt::sqf_define(HSQUIRRELVM v){
+	register_closure(v, _SC("CMHalt"), &sqf_call);
+	return true;
+}
+
+SQInteger CMHalt::sqf_call(HSQUIRRELVM v){
+	try{
+		SQRESULT sr;
+		Entity *p;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
+		send(*p);
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
 int cmd_halt(int, char *[], void *pv){
 	Player *pl = (Player*)pv;
-	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++)
+	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		(*it)->command(&HaltCommand());
-//	for(Entity *pt = pl->selected; pt; pt = pt->selectnext)
-//		pt->command(&HaltCommand());
+		CMHalt::send(**it);
+	}
 	return 0;
 }
 
@@ -2150,6 +2216,8 @@ int main(int argc, char *argv[])
 	Player::cmdInit(client);
 
 	sqa_init(server);
+	if(!isClient)
+		sqa_init(client.clientGame);
 
 	{
 		const SQChar *s = _SC("space.dat");

@@ -25,8 +25,9 @@ public:
 	double flypower()const;
 	unsigned char *buf;
 	int bufsiz;
+	HSQUIRRELVM sqvm;
 
-	Game() : player(NULL), universe(NULL), buf(NULL){
+	Game() : player(NULL), universe(NULL), buf(NULL), sqvm(NULL){
 	}
 
 	~Game(){
@@ -57,6 +58,8 @@ public:
 	void anim(double dt);
 
 	static void addServerInits(void (*f)(Game &));
+
+	void sq_replacePlayer(Player *);
 
 protected:
 	IdMap idunmap;

@@ -12,23 +12,6 @@
 #define TELEPORT_WARP   2
 #define TELEPORT_PORTAL 4 /* should really have different data structure. */
 
-struct teleport/* : public Serializable*/{
-/*	typedef Serializable st;
-	virtual const char *classname()const;
-	static const unsigned classid;*/
-	teleport(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
-	~teleport();
-	void init(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
-
-	void serialize(SerializeContext &sc);
-	void unserialize(UnserializeContext &sc);
-
-	CoordSys *cs;
-	char *name;
-	int flags;
-	Vec3d pos;
-};
-
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);
 Astrobj *satellite_new(const char *name, CoordSys *cs);

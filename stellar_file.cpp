@@ -5,6 +5,8 @@
 #include "serial_util.h"
 #include "argtok.h"
 #include "sqadapt.h"
+#include "Universe.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -28,13 +30,10 @@ extern "C"{
 extern double gravityfactor;
 
 
-teleport::teleport(CoordSys *acs, const char *aname, int aflags, const Vec3d &apos) : cs(acs), flags(aflags), pos(apos){
-	name = new char[strlen(aname) + 1];
-	strcpy(name, aname);
+teleport::teleport(CoordSys *acs, const char *aname, int aflags, const Vec3d &apos) : cs(acs), name(aname), flags(aflags), pos(apos){
 }
 
 teleport::~teleport(){
-	delete name;
 }
 
 void teleport::serialize(SerializeContext &sc){
@@ -323,6 +322,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		int mode = 0;
 		int inquote = 0;
 		StellarContext sc;
+		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
 		Astrobj *a = NULL;
 		sc.fname = fname;
@@ -336,7 +336,7 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 		sc.vl->c = 0;
 		sc.vl->l = NULL;
 		sc.vl->next = vl;
-		sc.v = g_sqvm;
+		sc.v = univ && univ->getGame ()? univ->getGame()->sqvm : g_sqvm;
 //		sqa_init(&sc.v);
 		sq_pushroottable(sc.v);
 

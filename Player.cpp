@@ -32,8 +32,8 @@ private:
 float Player::camera_mode_switch_time = 1.f;
 int Player::g_overlay = 1;
 
-static teleport *tplist;
-static int ntplist;
+//static teleport *tplist;
+//static int ntplist;
 
 static long framecount = 0;
 
@@ -183,13 +183,6 @@ Player::~Player(){
 const unsigned Player::classId = registerClass("Player", Conster<Player>);
 
 void Player::free(){
-	if(tplist){
-		for(int i = 0; i < ntplist; i++)
-			tplist[i].teleport::~teleport();
-		::free(tplist);
-	}
-	tplist = NULL;
-	ntplist = 0;
 }
 
 
@@ -231,14 +224,15 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << pos << velo << accel << rot;
 	sc.o << fov;
 	sc.o << cs;
-	sc.o << ntplist;
-	for(int i = 0; i < ntplist; i++)
+	sc.o << (unsigned)tplist.size();
+	for(int i = 0; i < tplist.size(); i++)
 		tplist[i].serialize(sc);
 }
 
 void Player::unserialize(UnserializeContext &sc){
 	unsigned selectedSize;
 //	selected.clear();
+	unsigned ntplist;
 
 	sc.i >> playerId;
 	sc.i >> chase;
@@ -253,7 +247,7 @@ void Player::unserialize(UnserializeContext &sc){
 	sc.i >> fov;
 	sc.i >> cs;
 	sc.i >> ntplist;
-	tplist = (teleport*)::malloc(ntplist * sizeof *tplist);
+	tplist.resize(ntplist);
 	for(int i = 0; i < ntplist; i++)
 		tplist[i].unserialize(sc);
 }
@@ -519,13 +513,13 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 	}
 	{
 		int i;
-		for(i = 0; i < ntplist; i++) if(!strcmp(argv[1], tplist[i].name)){
-			pl.cs = tplist[i].cs;
-			pl.pos = tplist[i].pos;
+		for(i = 0; i < pl.tplist.size(); i++) if(!strcmp(argv[1], pl.tplist[i].name)){
+			pl.cs = pl.tplist[i].cs;
+			pl.pos = pl.tplist[i].pos;
 			pl.velo.clear();
 			break;
 		}
-		if(i == ntplist)
+		if(i == pl.tplist.size())
 			CmdPrint(cpplib::dstring() << "Could not find location \"" << arg << "\".");
 	}
 	return 0;
@@ -561,14 +555,14 @@ bool Player::control(Entity *e, double dt){
 
 
 teleport *Player::findTeleport(const char *name, int flags){
-	for(int i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)
+	for(int i = 0; i < tplist.size(); i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)
 		return &tplist[i];
 	return NULL;
 }
 
 teleport *Player::addTeleport(){
-	tplist = (teleport*)realloc(tplist, ++ntplist * sizeof *tplist);
-	return &tplist[ntplist-1];
+	tplist.push_back(teleport());
+	return &tplist.back();
 }
 
 Player::teleport_iterator Player::beginTeleport(){
@@ -580,7 +574,7 @@ teleport *Player::getTeleport(teleport_iterator i){
 }
 
 Player::teleport_iterator Player::endTeleport(){
-	return ntplist;
+	return tplist.size();
 }
 
 static SQInteger sqf_select(HSQUIRRELVM v){

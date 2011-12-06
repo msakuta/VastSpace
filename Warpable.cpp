@@ -700,7 +700,7 @@ int cmd_warp(int argc, char *argv[], void *pv){
 	com.destpos = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
 
 	// Search path is based on player's CoordSys, though this function would be soon unnecessary anyway.
-	teleport *tp = Player::findTeleport(argv[1], TELEPORT_WARP);
+	teleport *tp = ppl->findTeleport(argv[1], TELEPORT_WARP);
 	if(tp){
 		com.destcs = tp->cs;
 		com.destpos = tp->pos;
@@ -786,7 +786,8 @@ static int enum_cs_flags(const CoordSys *root, int mask, int flags, const CoordS
 
 
 
-int cmd_togglewarpmenu(int argc, char *argv[], void *){
+int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
+	Player *player = (Player*)pv;
 	extern coordsys *g_galaxysystem;
 	char *cmds[64]; /* not much of menu items as 64 are able to displayed after all */
 	const char *subtitles[64];
@@ -814,9 +815,11 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *){
 		subtitles[left] = tp->name;
 		left++;
 	}*/
+	if(!player)
+		return -1;
 	PopupMenu pm;
-	for(Player::teleport_iterator it = Player::beginTeleport(); it != Player::endTeleport(); it++){
-		teleport *tp = Player::getTeleport(it);
+	for(Player::teleport_iterator it = player->beginTeleport(); it != player->endTeleport(); it++){
+		teleport *tp = player->getTeleport(it);
 		if(!(tp->flags & TELEPORT_WARP))
 			continue;
 		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');

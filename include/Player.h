@@ -28,13 +28,34 @@ struct coordsys;
 class Entity;
 class CoordSys;
 class Viewer;
-struct teleport;
 class GLWstateButton;
 struct Client;
+
+/** \brief The Teleport desination record.
+ *
+ * Partially obsolete. It may be replaced with Squirrel bookmarks.
+ */
+struct EXPORT teleport{
+	teleport(CoordSys *cs = NULL, const char *name = NULL, int flags = 0, const Vec3d &pos = Vec3d(0,0,0));
+	~teleport();
+	void init(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
+
+	/// Serialization for save games. Not really necessary to transmit between server and client.
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &sc);
+
+	CoordSys *cs; ///< CoordSys object of destination local space.
+	gltestp::dstring name; ///< Name of this entry
+	int flags;
+	Vec3d pos; ///< Offset to the center of local CoordSys designating the destination.
+};
+
 
 /** \brief The Player in front of display.
  *
  * Conceptually, the camera and the player is separate entity, but they heavily depend on each other.
+ *
+ * If the game is multiplayer game over the network, there are multiple Player instances.
  */
 class EXPORT Player : public EntityController{
 public:
@@ -116,7 +137,7 @@ public:
 	Mat4d move_proj;
 	Mat4d move_trans;
 
-	void free(); // Frees internal memories but keep the object memory
+	void free(); ///< Frees internal memories but keep the object memory
 	Vec3d getpos()const;
 	void setpos(const Vec3d &apos){mover->setpos(apos);}
 	Vec3d getvelo()const{return mover->getvelo();}
@@ -124,11 +145,11 @@ public:
 	Quatd getrot()const;
 	void setrot(const Quatd &arot){mover->setrot(arot);}
 	const CoordSys *getcs()const{return cs;}
-	const char *classname()const; // returned string storage must be static
+	const char *classname()const; ///< returned string storage must be static
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
-	void transit_cs(CoordSys *cs); // Explicitly change current CoordSys, keeping position, velocity and rotation.
+	void transit_cs(CoordSys *cs); ///< Explicitly change current CoordSys, keeping position, velocity and rotation.
 	void unlink(const Entity *);
 	void rotateLook(double dx, double dy);
 	FreelookMover *const freelook;
@@ -147,20 +168,21 @@ public:
 		controlled = NULL;
 	}
 	Quatd orientation()const;
+	const std::vector<teleport> &getTplist()const{return tplist;}
 
 	static float camera_mode_switch_time;
-	static int g_overlay; // Overlay display level
+	static int g_overlay; ///< Overlay display level
 	static void cmdInit(Client &);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);
 	static int cmd_control(int argc, char *argv[], void *pv); ///< Switch control of selected Entity
-	static teleport *findTeleport(const char *, int flags = ~0); // returns teleport node found
-	static teleport *addTeleport(); // returns allocated uninitialized struct
+	teleport *findTeleport(const char *, int flags = ~0); ///< returns teleport node found
+	teleport *addTeleport(); ///< returns allocated uninitialized struct
 	typedef unsigned teleport_iterator;
-	static teleport_iterator beginTeleport();
-	static teleport *getTeleport(teleport_iterator);
-	static teleport_iterator endTeleport();
+	teleport_iterator beginTeleport();
+	teleport *getTeleport(teleport_iterator);
+	teleport_iterator endTeleport();
 
 	/// Define class Player for Squirrel.
 	static void sq_define(HSQUIRRELVM v);
@@ -171,6 +193,8 @@ public:
 	/// Creates a button to toggle move ordering mode.
 	static GLWstateButton *newMoveOrderButton(Client &cl, const char *filename, const char *filename2, const char *tips);
 
+protected:
+	std::vector<teleport> tplist;
 private:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 	static SQInteger sqf_set(HSQUIRRELVM v);

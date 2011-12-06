@@ -4,6 +4,8 @@
 #define UNIVERSE_H
 #include "CoordSys.h"
 
+class Game;
+
 /// Class that is only one in the game.
 class Universe : public CoordSys{
 public:
@@ -15,7 +17,7 @@ public:
 	bool paused;
 	static const unsigned version; ///< Saved file version, checked on loading
 
-	Universe(Player *pl);
+	Universe(Player *pl, Game *game);
 	Universe(){}
 	Universe(const char *path, CoordSys *root) : st(path, root){}
 	~Universe();
@@ -28,11 +30,18 @@ public:
 	virtual Universe *toUniverse(){return this;}
 	void csUnserialize(UnserializeContext &usc);
 	void csUnmap(UnserializeContext &);
+	Game *getGame();
 	static int cmd_save(int argc, char *argv[], void *pv);
 	static int cmd_load(int argc, char *argv[], void *pv);
 	static bool sq_define(HSQUIRRELVM);
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM);
+	Game *game;
 };
+
+
+inline Game *Universe::getGame(){
+	return game;
+}
 
 #endif

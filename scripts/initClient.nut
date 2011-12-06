@@ -466,58 +466,6 @@ stellarContext <- {
 	LY= 9.4605284e12
 };
 
-// Assign event handler for CoordSys::readFile. Because Squirrel does not allow class static variables to be altered
-// after definition, we must introduce one extra layer of indirection to make it modifiable, or give it up to make class
-// member.
-::CoordSys.readFile[0] = function(cs, varlist, name, ...){
-
-	// Define temporary function that take varlist as a free variable.
-	local eval = function(s)/*:(varlist)*/{
-		return compilestring("return (" + s + ")").call(varlist);
-	};
-
-	if(name == "bookmark"){
-		if(::bookmarks == null)
-			::bookmarks <- {};
-		local item = BookmarkCoordSys(cs);
-		item.pos = Vec3d(1 < vargv.len() ? eval(vargv[1]).tofloat() : 0, 2 < vargv.len() ? eval(vargv[2]).tofloat() : 0, 3 < vargv.len() ? eval(vargv[3]).tofloat() : 0);
-		item.rot = 4 < vargv.len() ? eval(vargv[4]) : Quatd(0,0,0,1);
-		if(0 < vargv.len()){
-			print(vargv[0] + ": " + item);
-			::bookmarks[vargv[0]] <- item;
-		}
-		else{
-			local csname = cs.name();
-			local i = 0;
-			while(csname in ::bookmarks)
-				csname = cs.name() + " (" + i++ + ")";
-			::bookmarks[csname] <- item;
-		}
-		return 1;
-	}
-	else if(name == "equatorial_coord"){
-		local RA = vargv[0].tofloat() * 2 * PI / 360;
-		local dec = vargv[1].tofloat() * 2 * PI / 360;
-		local dist = eval(vargv[2]);
-		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
-//		print(cs.name() + ": " + RA + ", " + dec + pos);
-		local earths = universe.findcspath("/sol/earth/Earth");
-		local sol = universe.findcspath("/sol");
-		print(universe.transRotation(earths) + "=" + sol.transRotation(earths) + "*" + universe.transRotation(sol));
-		if(earths != null)
-			pos = 
-			Quatd.rotation(-PI / 2, Vec3d(1,0,0)).trans
-//			(pos);
-//			(universe.transRotation(earths).cnj().trans(pos));
-			(universe.transPosition(pos, earths));
-		pos = /*Quatd.rotation(-PI / 2, Vec3d(1,0,0)).trans*/(pos);
-		cs.setpos(pos);
-		return 1;
-	}
-	else if(name == "sol_coord"){
-	}
-	return 0;
-};
 
 ::cslabelpat <- "";
 
@@ -636,9 +584,6 @@ function init_Universe(){
 		mainmenu.y = screenheight() / 2 - mainmenu.height / 2;
 	}
 
-	player.setpos(Vec3d(0.0, 0.2, 5.5));
-	player.setrot(Quatd(0., 1., 0., 0.));
-
 	local scw = screenwidth();
 	local sch = screenheight();
 
@@ -656,11 +601,6 @@ function init_Universe(){
 
 	cmd("r_overlay 0");
 	cmd("r_move_path 1");
-
-	local earths = universe.findcspath("/sol/earth/Earth/earths");
-	if(earths){
-		earths.setrot(Quatd.direction(earths.getpos()) * Quatd.rotation(PI / 2, Vec3d(1, 0, 0)));
-	}
 }
 
 sysbut <- null;

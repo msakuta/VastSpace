@@ -11,6 +11,7 @@
 #include "serial_util.h"
 #include "Respawn.h"
 #include "sqadapt.h"
+#include "Universe.h"
 #include "draw/WarDraw.h"
 extern "C"{
 #include "calc/calc.h"
@@ -790,11 +791,12 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
 		struct teleport *tp;
 		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
-		if(tp = Player::findTeleport(name)){
+		Player *player = findcspath("/")->toUniverse()->ppl;
+		if(tp = player->findTeleport(name)){
 			tp->flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
 			return true;
 		}
-		tp = Player::addTeleport();
+		tp = player->addTeleport();
 		*tp = teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
 			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
 		return true;
@@ -969,21 +971,21 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else{ // An undefined parameter name is passed to Squirrel extension code.
-		HSQUIRRELVM v = g_sqvm;
+		HSQUIRRELVM v = sc.v;
 		StackReserver sr(v);
 
 		// This code is somewhat similar to sqa_console_command.
 		try{
-			sq_pushroottable(g_sqvm);
-			sq_pushstring(g_sqvm, _SC("CoordSys"), -1);
-			sq_get(g_sqvm, -2);
-			sq_pushstring(g_sqvm, _SC("readFile"), -1);
-			sq_get(g_sqvm, -2);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("CoordSys"), -1);
+			sq_get(v, -2);
+			sq_pushstring(v, _SC("readFile"), -1);
+			sq_get(v, -2);
 			sq_pushinteger(v, 0);
 
-			if(SQ_FAILED(sq_get(g_sqvm, -2)))
+			if(SQ_FAILED(sq_get(v, -2)))
 				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
-//			sq_pushstring(g_sqvm, s, -1);
+//			sq_pushstring(v, s, -1);
 			sq_pushroottable(v);
 			sq_createinstance(v, -4);
 			sqa_newobj(v, this);

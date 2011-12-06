@@ -570,7 +570,8 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 		double landrad;
 		double dist, cost;
 		extern coordsys *g_galaxysystem;
-		teleport *tp = Player::findTeleport(destname, TELEPORT_WARP);
+		Universe *u = w->cs->findcspath("/")->toUniverse();
+		teleport *tp = u->ppl->findTeleport(destname, TELEPORT_WARP);
 		if(tp){
 			destpos = tp->pos;
 			destcs = tp->cs;

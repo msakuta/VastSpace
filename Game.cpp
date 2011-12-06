@@ -172,7 +172,7 @@ ServerGame::ServerGame(){
 	player = new Player();
 	player->playerId = 0;
 	players.push_back(player);
-	universe = new Universe(player);
+	universe = new Universe(player, this);
 	player->cs = universe;
 	for(int i = 0; i < nserverInits; i++)
 		serverInits[i](*this);

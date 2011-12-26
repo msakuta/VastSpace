@@ -463,6 +463,8 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 }
 
 void Player::cmdInit(Client &client){
+	if(!client.pg)
+		return;
 	Player &pl = *client.pg->player;
 	CmdAdd("rot", cmd_rot);
 //	ServerCmdAdd("srot", scmd_srot);

@@ -125,11 +125,12 @@ static DWORD WINAPI ClientThread(LPVOID lpv);
 double server_lastdt = 0.;
 
 
-Server::Server(){
+Server::Server() : sendbuf(NULL), sendbufsiz(0){
 	logfp = fopen("server.log", "wb");
 }
 
 Server::~Server(){
+	delete[] sendbuf;
 	fclose(logfp);
 }
 
@@ -181,11 +182,11 @@ void Server::SendWait(ServerClient *cl){
 		dstring dsbuf;
 		lock_mutex(&mg);
 		char sizebuf[16];
-		sprintf(sizebuf, "%08X", pg->bufsiz);
+		sprintf(sizebuf, "%08X", sendbufsiz);
 		dsbuf << sizebuf;
-		for(int i = 0; i < pg->bufsiz; i++){
+		for(int i = 0; i < sendbufsiz; i++){
 			char bytebuf[8];
-			sprintf(bytebuf, "%02X", pg->buf[i]);
+			sprintf(bytebuf, "%02X", sendbuf[i]);
 			dsbuf << bytebuf;
 		}
 		dsbuf << "\r\n";

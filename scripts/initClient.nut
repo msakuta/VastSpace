@@ -539,19 +539,9 @@ register_console_command("att", att);
 mainmenu <- GLWbigMenu();
 
 function loadmission(script){
-	mainmenu.close();
-	print("loading " + script);
-	local ret = timemeas(function()/*:(script)*/{return loadfile(script);});
-	print("compile time " + ret.time);
-	local exe = ret.result;
-	if(exe == null){
-		print("Failed to load file " + script);
-	}
-	else{
-		ret = timemeas(exe);
-		print("execution time " + ret.time);
-	}
-	return exe;
+	local ret = timemeas(function(){return CMSQ();});
+	print("send time " + ret.time);
+	return ret;
 }
 
 register_console_command("loadmission", loadmission);
@@ -566,11 +556,13 @@ function init_Universe(){
 //	foreach(value in lang)
 //		print(value);
 	function callTest(){
+		print("Closing mainmenu" + mainmenu);
 		mainmenu.close();
 		mainmenu = GLWbigMenu();
+		print("New mainmenu" + mainmenu);
 		mainmenu.title = "Test Missions";
 		mainmenu.addItem("Eternal Fight Demo", function(){loadmission("scripts/eternalFight.nut");});
-		mainmenu.addItem("Interceptor vs Defender", function(){CMSQ();});
+		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
 		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
 		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
 		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
@@ -750,6 +742,7 @@ function frameproc(dt){
 		local mission = squirrelBind.mission;
 		if(mission != ""){
 			missionLoaded = true;
+			print("Closing mainmenu" + mainmenu);
 			mainmenu.close();
 			initUI();
 		}

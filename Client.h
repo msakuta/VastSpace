@@ -65,6 +65,8 @@ struct Client{
 //	int ncl; /* number of allocated pvlist */
 //	PictVertexList *pvlist;
 //	PictVertex *pvroot, *pvfree, vertices[128];
+	unsigned char *recvbuf;
+	int recvbufsiz;
 
 	Client();
 	~Client();

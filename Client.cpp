@@ -4,6 +4,8 @@
 #include "Client.h"
 #include "cmd.h"
 //#include "remotegame.h"
+#include "serial_util.h"
+#include <sstream>
 
 struct JoinGameData{
 	char addr[256], name[MAX_HOSTNAME];
@@ -12,12 +14,13 @@ struct JoinGameData{
 };
 
 
-Client::Client(){
+Client::Client() : recvbuf(NULL), recvbufsiz(0){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
 }
 
 Client::~Client(){
 	CloseHandle(hGameMutex);
+	delete[] recvbuf;
 }
 
 
@@ -211,15 +214,15 @@ static DWORD WINAPI RecvThread(Client *pc){
 					char *endptr;
 					strncpy(sizebuf, lbuf, 8);
 					sizebuf[8] = '\0';
-					pc->pg->bufsiz = strtoul(sizebuf, &endptr, 16);
-					delete[] pc->pg->buf;
-					pc->pg->buf = new unsigned char[pc->pg->bufsiz];
+					pc->recvbufsiz = strtoul(sizebuf, &endptr, 16);
+					delete[] pc->recvbuf;
+					pc->recvbuf = new unsigned char[pc->recvbufsiz];
 					int i = 0;
-					for(const char *p = &lbuf[8]; p && i < pc->pg->bufsiz; i++){
+					for(const char *p = &lbuf[8]; p && i < pc->recvbufsiz; i++){
 						sizebuf[0] = *p++;
 						sizebuf[1] = *p++;
 						sizebuf[2] = '\0';
-						pc->pg->buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
+						pc->recvbuf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
 					}
 
 					ReleaseMutex(pc->hGameMutex);
@@ -438,11 +441,21 @@ ClientMessage::~ClientMessage(){
 }
 
 void ClientMessage::send(Client &cl, const void *p, size_t size){
-	dstring vb = "C ";
-	vb << id << ' ';
-	vb.strncat((const char*)p, size);
-	vb << "\r\n";
-	::send(cl.con, vb, vb.len(), 0);
+	if(cl.mode & cl.ServerBit){
+		ClientMessage::CtorMap::iterator it = ClientMessage::ctormap().find(id);
+		if(it != ClientMessage::ctormap().end()){
+			std::istringstream iss(std::string((const char*)p, strlen((const char*)p)));
+			StdUnserializeStream uss(iss);
+			it->second->interpret(*cl.server.sv->scs, uss);
+		}
+	}
+	else{
+		dstring vb = "C ";
+		vb << id << ' ';
+		vb.strncat((const char*)p, size);
+		vb << "\r\n";
+		::send(cl.con, vb, vb.len(), 0);
+	}
 }
 
 

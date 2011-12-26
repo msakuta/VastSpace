@@ -193,6 +193,8 @@ struct Server{
 	mutex_t mg; /* Game object access */
 	ServerThreadData std;
 	FILE *logfp;
+	unsigned char *sendbuf;
+	size_t sendbufsiz;
 
 	Server();
 	~Server();

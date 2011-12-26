@@ -866,10 +866,8 @@ function sce(){
 register_console_command("ass", ass);
 register_console_command("att", att);
 
-mainmenu <- GLWbigMenu();
 
 function loadmission(script){
-	mainmenu.close();
 	print("loading " + script);
 	local ret = timemeas(function()/*:(script)*/{return loadfile(script);});
 	print("compile time " + ret.time);

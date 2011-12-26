@@ -47,17 +47,14 @@ public:
 	std::vector<Player *> players;
 	Universe *universe;
 	double flypower()const;
-	unsigned char *buf;
-	int bufsiz;
 	HSQUIRRELVM sqvm;
 
-	Game() : player(NULL), universe(NULL), buf(NULL), sqvm(NULL), sqbind(NULL){
+	Game() : player(NULL), universe(NULL), sqvm(NULL), sqbind(NULL){
 	}
 
 	~Game(){
 		delete player;
 		delete universe;
-		delete buf;
 	}
 
 	void lightOn();

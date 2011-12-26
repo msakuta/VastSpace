@@ -739,16 +739,21 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 	const SQChar *cvarname, *path, *path1, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
 		return SQ_ERROR;
+	int value;
 	cvar *cv = CvarFind(cvarname);
 	if(!cv || cv->type != cvar_int)
-		return SQ_ERROR;
+		value = 0;
+	else
+		value = *cv->v.i;
 	if(SQ_FAILED(sq_getstring(v, 3, &path)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &path1)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 5, &tips)))
 		tips = NULL;
-	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, *cv->v.i, tips);
+
+	// Temporary!! the third param must be a reference to persistent object, which is not in this case!
+	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, value, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));
@@ -1685,7 +1690,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	timemeas_t tm;
 	TimeMeasStart(&tm);
-	const SQChar *scriptFile = game == client.pg ? _SC("scripts/init.nut") : _SC("scripts/initClient.nut");
+	const SQChar *scriptFile = game->isServer() ? _SC("scripts/init.nut") : _SC("scripts/initClient.nut");
 	if(SQ_SUCCEEDED(sqstd_dofile(v, scriptFile, 0, 1))) // also prints syntax errors if any 
 	{
 		double d = TimeMeasLap(&tm);
@@ -1839,7 +1844,7 @@ bool CMSQ::sqf_define(HSQUIRRELVM v){
 }
 
 void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
-	if(!(client.mode & client.ServerBit)){
+	if(client.mode & client.ServerBit){
 		HSQUIRRELVM v = client.pg->sqvm;
 		StackReserver sr(v);
 		sq_pushroottable(v);

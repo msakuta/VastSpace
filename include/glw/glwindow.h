@@ -334,8 +334,8 @@ public:
 /// 2-state button that is bound to a boolean cvar.
 class GLWtoggleCvarButton : public GLWstateButton{
 public:
-	int &var;
-	GLWtoggleCvarButton(const char *filename, const char *filename1, int &cvar, const char *tip = NULL) :
+	gltestp::dstring var;
+	GLWtoggleCvarButton(const char *filename, const char *filename1, gltestp::dstring cvar, const char *tip = NULL) :
 		GLWstateButton(filename, filename1, tip), var(cvar){}
 	virtual bool state()const;
 	virtual void press();

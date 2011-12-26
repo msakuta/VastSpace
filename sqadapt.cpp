@@ -739,12 +739,12 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 	const SQChar *cvarname, *path, *path1, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
 		return SQ_ERROR;
-	int value;
+/*	int value;
 	cvar *cv = CvarFind(cvarname);
 	if(!cv || cv->type != cvar_int)
 		value = 0;
 	else
-		value = *cv->v.i;
+		value = *cv->v.i;*/
 	if(SQ_FAILED(sq_getstring(v, 3, &path)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &path1)))
@@ -753,7 +753,7 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 		tips = NULL;
 
 	// Temporary!! the third param must be a reference to persistent object, which is not in this case!
-	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, value, tips);
+	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, cvarname, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));

@@ -4,6 +4,7 @@
  */
 #include "glw/glwindow.h"
 #include "cmd.h"
+#include "../cmd_int.h"
 #include "antiglut.h"
 #include "Viewer.h"
 #include "draw/material.h"
@@ -1016,11 +1017,19 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 
 
 bool GLWtoggleCvarButton::state()const{
-	return var;
+	cvar *cv = CvarFind(var);
+	if(!cv || cv->type != cvar_int)
+		return 0;
+	else
+		return *cv->v.i;
 }
 
 void GLWtoggleCvarButton::press(){
-	var = !var;
+	cvar *cv = CvarFind(var);
+	if(!cv || cv->type != cvar_int)
+		;
+	else
+		*cv->v.i = !*cv->v.i;
 }
 
 

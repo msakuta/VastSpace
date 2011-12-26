@@ -135,10 +135,17 @@ void Player::draw(Viewer *vw){
 		if(!selected.empty()){
 			Entity *e = *selected.begin();
 			gldTranslate3dv(e->pos);
-			magnitude = floor(log10((pos - e->pos).len()) - .5);
+			magnitude = (pos - e->pos).len();
 		}
 		else
-			magnitude = floor(log10((pos).len()) - .5);
+			magnitude = pos.len();
+
+		// Avoid negative infinite
+		if(magnitude < DBL_EPSILON)
+			magnitude = -10;
+		else
+			magnitude = floor(log10(magnitude) - .5);
+
 		glMultMatrixd(rot);
 
 		glPushMatrix();

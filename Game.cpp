@@ -75,16 +75,7 @@ void Game::idUnmap(UnserializeContext &sc){
 						players.push_back(static_cast<Player*>(ret));
 					}
 					if(src == "SquirrelBind"){
-						sqbind = static_cast<SquirrelBind*>(ret);
-						HSQUIRRELVM v = sqvm;
-						sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
-						sq_pushstring(v, _SC("SquirrelBind"), -1);
-						sq_get(v, 1); // this "player" Player
-						sq_createinstance(v, -1); // this "player" Player Player-instance
-						sqa_newobj(v, sqbind); // this "player" Player Player-instance
-					//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
-						sq_remove(v, -2); // this "player" Player-instance
-						sq_createslot(v, 1); // this
+						setSquirrelBind(static_cast<SquirrelBind*>(ret));
 					}
 				}
 			}
@@ -180,7 +171,22 @@ void Game::init(){
 	sqa_anim0(sqvm);
 }
 
+bool Game::isServer()const{
+	return false;
+}
 
+void Game::setSquirrelBind(SquirrelBind *p){
+	sqbind = p;
+	HSQUIRRELVM v = sqvm;
+	sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
+	sq_pushstring(v, _SC("SquirrelBind"), -1);
+	sq_get(v, 1); // this "player" Player
+	sq_createinstance(v, -1); // this "player" Player Player-instance
+	sqa_newobj(v, sqbind); // this "player" Player Player-instance
+//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
+	sq_remove(v, -2); // this "player" Player-instance
+	sq_createslot(v, 1); // this
+}
 
 
 
@@ -205,3 +211,6 @@ void ServerGame::init(){
 	Game::init();
 }
 
+bool ServerGame::isServer()const{
+	return true;
+}

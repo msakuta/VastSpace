@@ -1453,7 +1453,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		pv = &g_sqvm;
 	HSQUIRRELVM &v = *pv = sq_open(1024);
 	game->sqvm = v;
-	game->sqbind = new SquirrelBind();
 
 	sqstd_seterrorhandlers(v);
 
@@ -1620,14 +1619,10 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_closure(v, _SC("_set"), &SquirrelBind::sqf_set);
 	sq_createslot(v, -3);
 
-	sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
-	sq_pushstring(v, _SC("SquirrelBind"), -1);
-	sq_get(v, 1); // this "player" Player
-	sq_createinstance(v, -1); // this "player" Player Player-instance
-	sqa_newobj(v, game->sqbind); // this "player" Player Player-instance
-//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
-	sq_remove(v, -2); // this "player" Player-instance
-	sq_createslot(v, 1); // this
+	// Prevent duplicate instance of SquirrelBind.
+	// The client will define one as it receives serialization stream.
+	if(game->isServer())
+		game->setSquirrelBind(new SquirrelBind());
 
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));

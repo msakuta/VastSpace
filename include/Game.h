@@ -50,7 +50,6 @@ public:
 	unsigned char *buf;
 	int bufsiz;
 	HSQUIRRELVM sqvm;
-	SquirrelBind *sqbind;
 
 	Game() : player(NULL), universe(NULL), buf(NULL), sqvm(NULL), sqbind(NULL){
 	}
@@ -86,8 +85,15 @@ public:
 
 	void sq_replacePlayer(Player *);
 
+	virtual bool isServer()const;
+
+	void setSquirrelBind(SquirrelBind *p);
+	SquirrelBind *getSquirrelBind(){return sqbind;}
+	const SquirrelBind *getSquirrelBind()const{return sqbind;}
+
 protected:
 	IdMap idunmap;
+	SquirrelBind *sqbind;
 };
 
 /// \brief Game for the server.
@@ -96,6 +102,7 @@ public:
 	/// \brief Server constructor executes initializers
 	ServerGame();
 	void init();
+	virtual bool isServer()const;
 };
 
 

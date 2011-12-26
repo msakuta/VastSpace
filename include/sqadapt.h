@@ -27,8 +27,8 @@ class Entity;
 namespace sqa{
 
 void sqa_init(Game *game, HSQUIRRELVM *v = NULL);
-void sqa_anim0();
-void sqa_anim(double dt);
+void sqa_anim0(HSQUIRRELVM);
+void sqa_anim(HSQUIRRELVM v, double dt);
 void sqa_delete_Entity(Entity *);
 void sqa_exit();
 

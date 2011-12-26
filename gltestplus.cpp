@@ -940,16 +940,8 @@ static JoyStick joyStick(JOYSTICKID1);
 static POINT mouse_pos = {0, 0};
 
 
-void Game::init(){
-//		anim_sun(0.);
-		universe->anim(0.);
-
-		sqa_anim0();
-
-}
-
 void Game::display_func(double dt){
-		sqa_anim(dt);
+		sqa_anim(sqvm, dt);
 
 		MotionFrame(dt);
 
@@ -1027,6 +1019,8 @@ void Client::display_func(void){
 		MultiTextureInit();
 
 		pg->init();
+		if(clientGame && pg != clientGame)
+			clientGame->init();
 
 		TimeMeasStart(&tm);
 //		warf.soundtime = TimeMeasLap(&tmwo) - dwo;
@@ -1150,6 +1144,8 @@ void Client::display_func(void){
 					}
 				}
 			}
+
+			sqa_anim(clientGame->sqvm, dt);
 
 		}
 

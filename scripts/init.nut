@@ -881,61 +881,30 @@ function loadmission(script){
 		ret = timemeas(exe);
 		print("execution time " + ret.time);
 	}
+	squirrelBind.mission = script;
 	return exe;
 }
 
 register_console_command("loadmission", loadmission);
 
+function clientMessage(){
+	print("calling demo1...");
+	loadmission("scripts/demo1.nut");
+}
+
 //tutorial1 <- loadmission("scripts/tutorial1.nut");
 
 function init_Universe(){
-	//des();
-	//att();
-	//sce();
-	//deltaFormation("Destroyer", 1, Quatd(0,1,0,0), Vec3d(0,0.1,-2.1), 0.3, 3, null);
-//	foreach(value in lang)
-//		print(value);
-	function callTest(){
-		mainmenu.close();
-		mainmenu = GLWbigMenu();
-		mainmenu.title = "Test Missions";
-		mainmenu.addItem("Eternal Fight Demo", function(){loadmission("scripts/eternalFight.nut");});
-		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
-		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
-		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
-		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
-		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
-		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
-		mainmenu.addItem("Surface Demo", function(){loadmission("scripts/demo7.nut");});
-		mainmenu.addItem("Demo 8", function(){loadmission("gundam/demo.nut");});
-
-		// Adjust window position to center of screen, after all menu items are added.
-		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
-		mainmenu.y = screenheight() / 2 - mainmenu.height / 2;
-	}
 
 	player.setpos(Vec3d(0.0, 0.2, 5.5));
 	player.setrot(Quatd(0., 1., 0., 0.));
-
-	local scw = screenwidth();
-	local sch = screenheight();
-
-	mainmenu.title = "Select Mission";
-	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.dat\"");
-	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
-	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
-	mainmenu.addItem("test", callTest);
-	mainmenu.addItem("Walkthrough", function(){mainmenu.close();});
-	mainmenu.addItem("Exit", "exit");
-
-	// Adjust window position to center of screen, after all menu items are added.
-	mainmenu.x = scw / 2 - mainmenu.width / 2;
-	mainmenu.y = sch / 2 - mainmenu.height / 2;
 
 	cmd("r_overlay 0");
 	cmd("r_move_path 1");
 
 	local earths = universe.findcspath("/sol/earth/Earth/earths");
+	if(!earths)
+		earths = universe.findcspath("/earth/Earth/earths");
 	if(earths){
 		earths.setrot(Quatd.direction(earths.getpos()) * Quatd.rotation(PI / 2, Vec3d(1, 0, 0)));
 	}

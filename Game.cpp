@@ -74,6 +74,18 @@ void Game::idUnmap(UnserializeContext &sc){
 					if(src == "Player"){
 						players.push_back(static_cast<Player*>(ret));
 					}
+					if(src == "SquirrelBind"){
+						sqbind = static_cast<SquirrelBind*>(ret);
+						HSQUIRRELVM v = sqvm;
+						sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
+						sq_pushstring(v, _SC("SquirrelBind"), -1);
+						sq_get(v, 1); // this "player" Player
+						sq_createinstance(v, -1); // this "player" Player Player-instance
+						sqa_newobj(v, sqbind); // this "player" Player Player-instance
+					//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
+						sq_remove(v, -2); // this "player" Player-instance
+						sq_createslot(v, 1); // this
+					}
 				}
 			}
 		}
@@ -114,6 +126,8 @@ void Game::serialize(SerializeStream &ss){
 	SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
 		(*it)->dive(sc0, &Serializable::map);
+	if(sqbind)
+		sqbind->dive(sc0, &Serializable::map);
 	universe->dive(sc0, &Serializable::map);
 
 	// Update the server's id map for receiving client messages that requires access to the server objects
@@ -135,6 +149,8 @@ void Game::serialize(SerializeStream &ss){
 	ss.sc = &sc;
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
 		(*it)->dive(sc, &Serializable::idPackSerialize);
+	if(sqbind)
+		sqbind->dive(sc, &Serializable::idPackSerialize);
 	universe->dive(sc, &Serializable::idPackSerialize);
 	(sc.visit_list)->clearVisitList();
 }
@@ -160,6 +176,10 @@ void Game::sq_replacePlayer(Player *p){
 	sq_createslot(v, 1); // this
 }
 
+void Game::init(){
+	sqa_anim0(sqvm);
+}
+
 
 
 
@@ -177,3 +197,11 @@ ServerGame::ServerGame(){
 	for(int i = 0; i < nserverInits; i++)
 		serverInits[i](*this);
 }
+
+void ServerGame::init(){
+//	anim_sun(0.);
+	universe->anim(0.);
+
+	Game::init();
+}
+

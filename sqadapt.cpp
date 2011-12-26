@@ -11,6 +11,7 @@
 #include "astro.h"
 #include "TexSphere.h"
 #include "Game.h"
+#include "serial_util.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
@@ -127,6 +128,62 @@ int sqa_console_command(int argc, char *argv[], int *retval){
 		*retval = 0;
 		return 1;
 	}
+}
+
+const unsigned SquirrelBind::classId = registerClass("SquirrelBind", Conster<SquirrelBind>);
+const char *SquirrelBind::classname()const{return "SquirrelBind";}
+
+void SquirrelBind::serialize(SerializeContext &sc){
+	sc.o << int(dict.size());
+	for(std::map<dstring, dstring>::iterator it = dict.begin(); it != dict.end(); it++)
+		sc.o << it->first << it->second;
+}
+
+void SquirrelBind::unserialize(UnserializeContext &sc){
+	dict.clear();
+	int c;
+	sc.i >> c;
+	for(int i = 0; i < c; i++){
+		dstring a, b;
+		sc.i >> a;
+		sc.i >> b;
+		dict[a] = b;
+	}
+}
+
+SQInteger SquirrelBind::sqf_get(HSQUIRRELVM v){
+	SquirrelBind *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	std::map<dstring, dstring>::iterator it = p->dict.find(wcs);
+	if(it != p->dict.end()){
+		sq_pushstring(v, it->second, -1);
+		return 1;
+	}
+	else{
+		sq_pushstring(v, _SC(""), -1);
+		return 1;
+	}
+}
+
+SQInteger SquirrelBind::sqf_set(HSQUIRRELVM v){
+	SquirrelBind *p;
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+		return sr;
+//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	if(OT_STRING != sq_gettype(v, 3))
+		return SQ_ERROR;
+	const SQChar *value;
+	if(SQ_FAILED(sq_getstring(v, 3, &value)))
+		return SQ_ERROR;
+	p->dict[wcs] = value;
 }
 
 namespace sqa{
@@ -729,7 +786,15 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
 		tips = NULL;
-	GLWstateButton *b = Player::newControlButton(pl, path, path1, tips);
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("player"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return SQ_ERROR;
+	Player *player;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer *)&player, &sr, -2, true))
+		return sr;
+	GLWstateButton *b = Player::newControlButton(*player, path, path1, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));
@@ -741,7 +806,15 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 
 static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
-	GLWentlist *p = new GLWentlist(pl);
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("player"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return SQ_ERROR;
+	Player *player;
+	SQRESULT sr;
+	if(!sqa_refobj(v, (SQUserPointer *)&player, &sr, -2, true))
+		return sr;
+	GLWentlist *p = new GLWentlist(*player);
 	if(!sqa_newobj(v, p, 1))
 		return SQ_ERROR;
 	glwAppend(p);
@@ -1380,6 +1453,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		pv = &g_sqvm;
 	HSQUIRRELVM &v = *pv = sq_open(1024);
 	game->sqvm = v;
+	game->sqbind = new SquirrelBind();
 
 	sqstd_seterrorhandlers(v);
 
@@ -1535,6 +1609,26 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_remove(v, -2); // this "player" Player-instance
 	sq_createslot(v, 1); // this
 
+	// Define class SquirrelBind
+	sq_pushstring(v, _SC("SquirrelBind"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, "SquirrelBind");
+	sq_pushstring(v, _SC("ref"), -1);
+	sq_pushnull(v);
+	sq_newslot(v, -3, SQFalse);
+	register_closure(v, _SC("_get"), &SquirrelBind::sqf_get);
+	register_closure(v, _SC("_set"), &SquirrelBind::sqf_set);
+	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
+	sq_pushstring(v, _SC("SquirrelBind"), -1);
+	sq_get(v, 1); // this "player" Player
+	sq_createinstance(v, -1); // this "player" Player Player-instance
+	sqa_newobj(v, game->sqbind); // this "player" Player Player-instance
+//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
+	sq_remove(v, -2); // this "player" Player-instance
+	sq_createslot(v, 1); // this
+
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
 
@@ -1609,7 +1703,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_poptop(v); // Pop the root table.
 }
 
-void sqa_anim0(){
+void sqa_anim0(HSQUIRRELVM v){
 	sq_pushroottable(v); // root
 	sq_pushstring(v, _SC("init_Universe"), -1); // root "init_Universe"
 	if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
@@ -1620,7 +1714,7 @@ void sqa_anim0(){
 //	sq_poptop(v);
 }
 
-void sqa_anim(double dt){
+void sqa_anim(HSQUIRRELVM v, double dt){
 	sq_pushroottable(v);
 	sq_pushstring(v, _SC("frameproc"), -1);
 	if(SQ_SUCCEEDED(sq_get(v, -2))){
@@ -1705,5 +1799,70 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 	return true;
 }
 
+
+
+
+
+
+/// \brief ClientMessage to notify something from the client's Squirrel VM to the server's one.
+struct CMSQ : public ClientMessage{
+	typedef ClientMessage st;
+	static CMSQ s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send();
+private:
+	static bool sqf_define(HSQUIRRELVM);
+	static SQInteger sqf_call(HSQUIRRELVM);
+	CMSQ();
+};
+
+CMSQ CMSQ::s;
+
+CMSQ::CMSQ() : st("SQ"){
+	defineMap()[id] = sqf_define;
+}
+
+void CMSQ::send(){
+	if(client.mode & client.ServerBit){
+		HSQUIRRELVM v = client.pg->sqvm;
+		StackReserver sr(v);
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("clientMessage"), -1);
+		if(SQ_SUCCEEDED(sq_get(v, -2))){
+			sq_pushroottable(v);
+			sq_call(v, 1, SQFalse, SQFalse);
+		}
+	}
+	else{
+		s.st::send(client, "", 0);
+	}
+}
+
+bool CMSQ::sqf_define(HSQUIRRELVM v){
+	register_closure(v, _SC("CMSQ"), &sqf_call);
+	return true;
+}
+
+void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
+	if(!(client.mode & client.ServerBit)){
+		HSQUIRRELVM v = client.pg->sqvm;
+		StackReserver sr(v);
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("clientMessage"), -1);
+		if(SQ_SUCCEEDED(sq_get(v, -2))){
+			sq_pushroottable(v);
+			sq_call(v, 1, SQFalse, SQFalse);
+		}
+	}
+}
+
+SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
+	try{
+		send();
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
 
 }

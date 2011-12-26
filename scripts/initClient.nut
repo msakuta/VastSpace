@@ -570,7 +570,7 @@ function init_Universe(){
 		mainmenu = GLWbigMenu();
 		mainmenu.title = "Test Missions";
 		mainmenu.addItem("Eternal Fight Demo", function(){loadmission("scripts/eternalFight.nut");});
-		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
+		mainmenu.addItem("Interceptor vs Defender", function(){CMSQ();});
 		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
 		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
 		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
@@ -741,5 +741,19 @@ class GroupTraceSymbols{
 groupTraceSymbols <- GroupTraceSymbols();
 
 gts <- groupTraceSymbols;
+
+
+missionLoaded <- false;
+
+function frameproc(dt){
+	if(!missionLoaded){
+		local mission = squirrelBind.mission;
+		if(mission != ""){
+			missionLoaded = true;
+			mainmenu.close();
+			initUI();
+		}
+	}
+}
 
 //print("init.nut execution time: " + tm.lap() + " sec");

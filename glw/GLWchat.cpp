@@ -36,14 +36,29 @@ std::set<GLWchat*> GLWchat::wndlist;
 
 extern HWND hWndApp;
 
+extern HFONT newFont(int size);
+
+
 static LRESULT WINAPI CALLBACK EditWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT (WINAPI CALLBACK *DefEditWndProc)(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static HFONT hEditFont = NULL;
 
 /** \brief Constructs a chat window.
  */
 GLWchat::GLWchat() : GLwindowSizeable("Chat Window"), scrollpos(0){
 	wndlist.insert(this);
+
+	// Create the Windows Edit window instance
 	hEdit = CreateWindow("Edit", "", WS_CHILD | WS_VISIBLE, 100, 100, 300, int(fontheight), hWndApp, NULL, GetModuleHandle(NULL), NULL);
+
+	// Initialize Edit font
+	if(!hEditFont)
+		hEditFont = newFont(GLwindow::getFontHeight());
+
+	// Set the edit font
+	SendMessage(hEdit, WM_SETFONT, (WPARAM)hEditFont, FALSE);
+
+	// Get the old window procedure and replace it with the custom one.
 	DefEditWndProc = (LRESULT (WINAPI CALLBACK *)(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam))GetWindowLongPtr(hEdit, GWLP_WNDPROC);
 	SetWindowLongPtr(hEdit, GWLP_WNDPROC, (LONG_PTR)EditWndProc);
 }
@@ -113,7 +128,7 @@ void GLWchat::append(dstring str){
 
 	// If a new string is added, force scrolling down to the bottom to notice the player that there's a new message.
 	if(0 < scrollrange())
-		scrollpos = scrollrange();
+		scrollpos = scrollrange() - 1;
 }
 
 /// Define class GLWmessage for Squirrel

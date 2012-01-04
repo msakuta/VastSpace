@@ -1177,7 +1177,7 @@ struct GlyphCache{
 	GlyphCacheKey c; ///< For debugging purpose
 };
 
-static HFONT newFont(int size){
+HFONT newFont(int size){
 	return CreateFont(size,
 		size * 8 / 12,
 		0,
@@ -1196,12 +1196,13 @@ static HFONT newFont(int size){
 
 
 static HDC InitGlwHDC(int size){
+	extern HWND hWndApp;
 	static bool init = false;
 	static HDC g_glwhdc = NULL;
 	HDC &hdc = g_glwhdc;
 	if(!init){
 		init = true;
-		HWND hw = GetDesktopWindow();
+		HWND hw = hWndApp;
 		HDC hwdc = GetDC(hw);
 		hdc = CreateCompatibleDC(hwdc);
 		ReleaseDC(hw,hwdc);

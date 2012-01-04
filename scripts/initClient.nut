@@ -639,6 +639,7 @@ function initUI(){
 	chat.x = 0;
 	chat.width = 300;
 	chat.y = 0;
+	chat.height = 200;
 	chat.closable = true;
 	chat.pinnable = true;
 	chat.pinned = true;

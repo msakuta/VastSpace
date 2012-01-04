@@ -2190,7 +2190,7 @@ int main(int argc, char *argv[])
 	CmdAdd("video_stop", video_stop);
 	CmdAdd("say", cmd_say);
 //	ServerCmdAdd("m", scmd_m);
-	CoordSys::registerCommands(client.clientGame->player);
+	CoordSys::registerCommands(client.clientGame);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);

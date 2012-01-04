@@ -13,6 +13,7 @@
 #include "sqadapt.h"
 #include "Universe.h"
 #include "draw/WarDraw.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -1069,11 +1070,18 @@ cpplib::dstring CoordSys::getpath()const{
 }
 
 int CoordSys::getpathint(cpplib::dstring &ret)const{
-	if(!parent)
+	if(!parent){
+		ret = '/';
 		return 0;
+	}
 	int depth = parent->getpathint(ret);
-	ret << '/' << name;
-	return depth;
+
+	// Merge path delimiters
+	if(ret[ret.len()-1] != '/')
+		ret << '/';
+
+	ret << name;
+	return depth+1;
 }
 
 
@@ -1163,7 +1171,12 @@ void CoordSys::deleteAll(CoordSys **pp){
 }
 
 static int cmd_ls(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
+	if(!ppl){
+		CmdPrint("ERROR: Player object could not be found.");
+		return 1;
+	}
 	if(argc <= 1){
 		for(CoordSys *cs = ppl->cs->children; cs; cs = cs->next){
 			cpplib::dstring ds = cs->getrpath(cs);
@@ -1184,7 +1197,12 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 }
 
 static int cmd_ll(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
+	if(!ppl){
+		CmdPrint("ERROR: Player object could not be found.");
+		return 1;
+	}
 	if(argc <= 1){
 		for(CoordSys *cs = ppl->cs->children; cs; cs = cs->next){
 			cpplib::dstring ds = cs->getrpath(cs) << ": " << cs->classname();
@@ -1205,15 +1223,20 @@ static int cmd_ll(int argc, char *argv[], void *pv){
 }
 
 static int cmd_pwd(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
+	if(!ppl){
+		CmdPrint("ERROR: Player object could not be found.");
+		return 1;
+	}
 	CmdPrint(ppl->cs->getpath());
 	return 0;
 }
 
-bool CoordSys::registerCommands(Player *ppl){
-	CmdAddParam("ls", cmd_ls, ppl);
-	CmdAddParam("ll", cmd_ll, ppl);
-	CmdAddParam("pwd", cmd_pwd, ppl);
+bool CoordSys::registerCommands(Game *game){
+	CmdAddParam("ls", cmd_ls, game);
+	CmdAddParam("ll", cmd_ll, game);
+	CmdAddParam("pwd", cmd_pwd, game);
 	return true;
 }
 

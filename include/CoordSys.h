@@ -35,6 +35,7 @@ class Astrobj;
 class OrbitCS;
 class Universe;
 class Player;
+class Game;
 struct StellarContext;
 struct WarDraw;
 
@@ -228,8 +229,8 @@ public:
 	double calcScale(const Viewer &vw);
 
 	// Called once at startup
-	static bool registerCommands(Player *);
-	static bool unregisterCommands(Player *);
+	static bool registerCommands(Game *);
+	static bool unregisterCommands(Game *);
 
 	/// Class static information specific to CoordSys-derived class branch.
 	class Static{

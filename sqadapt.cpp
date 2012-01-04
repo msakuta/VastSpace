@@ -1567,10 +1567,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		}
 	}
 
-	// Execute initializations registered to defineMap.
-	for(SQDefineMap::iterator it = defineMap().begin(); it != defineMap().end(); it++)
-		it->second(v);
-
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
@@ -1683,6 +1679,11 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_newclosure(v, sqf_screenheight, 0);
 	sq_createslot(v, 1);
 #endif
+
+	// Execute initializations registered to defineMap.
+	// This must be placed after all other base classes are defined.
+	for(SQDefineMap::iterator it = defineMap().begin(); it != defineMap().end(); it++)
+		it->second(v);
 
 	sq_pushstring(v, _SC("stellar_file"), -1);
 	sq_pushstring(v, _SC("space.dat"), -1);

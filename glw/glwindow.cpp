@@ -32,6 +32,11 @@ double GLwindow::getFontHeight(){return fontheight;}
 /// Window margin
 const long margin = 6;
 
+void GLelement::changeExtent(){
+	if(onChangeExtent)
+		onChangeExtent(this);
+}
+
 GLWrect GLelement::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 
 GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
@@ -662,6 +667,7 @@ void GLwindow::mouseDrag(int x, int y){
 		glwdrag->ypos = 0;
 	if(gvp.h - snapdist < glwdrag->ypos + glwdrag->height && glwdrag->ypos + glwdrag->height < gvp.h + snapdist)
 		glwdrag->ypos = gvp.h - glwdrag->height;
+	glwdrag->changeExtent();
 }
 
 /// Called at very end of a frame, to free objects marked as to be deleted.

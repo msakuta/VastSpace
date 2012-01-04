@@ -1503,6 +1503,8 @@ void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
 
 
 void Game::mouse_func(int button, int state, int x, int y){
+	if(state == GLUT_UP)
+		SetForegroundWindow(hWndApp);
 
 	if(cmdwnd){
 		CmdMouseInput(button, state, x, y);
@@ -2102,16 +2104,6 @@ static int cmd_sq(int argc, char *argv[]){
 
 
 
-static void SendChat(Client *pc, const char *buf){
-	if(pc->mode == Client::ServerWaitGame || pc->mode == Client::ServerGame){
-		SendChatServer(&pc->server, buf);
-	}
-	else if(pc->mode == Client::ClientWaitGame || pc->mode == Client::ClientGame){
-		dstring ds = dstring() << "SAY " << buf << "\r\n";
-		send(pc->con, ds, ds.len(), 0);
-	}
-}
-
 static int cmd_say(int argc, char *argv[]){
 	dstring text;
 	for(int i = 1; i < argc; i++){
@@ -2119,7 +2111,7 @@ static int cmd_say(int argc, char *argv[]){
 			text << " ";
 		text << argv[i];
 	}
-	SendChat(&client, text);
+	client.sendChat(text);
 	return 0;
 }
 
@@ -2271,7 +2263,7 @@ int main(int argc, char *argv[])
 
 		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW | WS_SYSMENU | WS_CAPTION, FALSE);
 
-		hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltestplus", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltestplus", WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
 			rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
 /*		hWnd = CreateWindow(atom, "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			100, 100, 400, 400, NULL, NULL, hInst, NULL);*/

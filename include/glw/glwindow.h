@@ -92,8 +92,10 @@ struct GLwindowState{
  */
 class EXPORT GLelement : public Serializable{
 public:
-	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0){}
-	void setExtent(const GLWrect &r){xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;}
+	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
+	void rawSetExtent(const GLWrect &r); ///< Changes the extent rectangle without invoking the event handler.
+	virtual void changeExtent(); ///< Invokes event handler that is called when the size of this element is changed.
+	void setExtent(const GLWrect &r); ///< Changes the extent rectangle. onChangeExtent event handler may be called.
 	virtual GLWrect extentRect()const; ///< Something like GetWindowRect
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
@@ -101,6 +103,7 @@ protected:
 	int xpos, ypos;
 	int width, height;
 	unsigned int flags;
+	void (*onChangeExtent)(GLelement *); ///< The event handler that is called whenever the element size is changed.
 };
 
 /** \brief Overlapped window in OpenGL window system.
@@ -359,7 +362,19 @@ public:
 
 
 
-// Implementation
+//-----------------------------------------------------------------------------
+//     Implementation
+//-----------------------------------------------------------------------------
+
+
+inline void GLelement::rawSetExtent(const GLWrect &r){
+	xpos = r.x0; ypos = r.y0; width = r.x1 - r.x0; height = r.y1 - r.y0;
+}
+
+inline void GLelement::setExtent(const GLWrect &r){
+	rawSetExtent(r);
+	changeExtent();
+}
 
 /// Runs postframe for all windows. Also takes care of lastover pointer.
 inline void GLwindow::glwpostframe(){

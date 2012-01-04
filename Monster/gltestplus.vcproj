@@ -456,10 +456,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\glw\GLWchart.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\judge.cpp"
 				>
 			</File>
@@ -646,6 +642,14 @@
 				Filter="../glw/*"
 				>
 				<File
+					RelativePath="..\glw\GLWchart.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\glw\GLWchat.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\glw\GLWentlist.cpp"
 					>
 				</File>
@@ -725,15 +729,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\EntityCommand.h"
-				>
-			</File>
-			<File
 				RelativePath="..\galaxy_field.h"
-				>
-			</File>
-			<File
-				RelativePath="..\include\glw\GLWchart.h"
 				>
 			</File>
 			<File
@@ -991,6 +987,18 @@
 			<Filter
 				Name="glw"
 				>
+				<File
+					RelativePath="..\include\glw\chat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\glw\GLWchart.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\glw\GLWchat.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\glw\glwindow.h"
 					>

@@ -5,6 +5,7 @@
 #include "cmd.h"
 //#include "remotegame.h"
 #include "serial_util.h"
+#include "glw/GLWchat.h"
 #include <sstream>
 
 struct JoinGameData{
@@ -30,6 +31,8 @@ static void quitgame(Client *, bool ret){
 
 static void SignalMessage(const char *text, void *){
 	CmdPrint(dstring() << "MSG> " << text);
+	for(std::set<GLWchat*>::iterator it = GLWchat::wndlist.begin(); it != GLWchat::wndlist.end(); it++)
+		(*it)->append(text);
 }
 
 
@@ -420,6 +423,16 @@ void Client::hostgame(Game *game){
 
 void Client::mouse_func(int button, int state, int x, int y){
 	clientGame->mouse_func(button, state, x, y);
+}
+
+void Client::sendChat(const char *buf){
+	if(mode == Client::ServerWaitGame || mode == Client::ServerGame){
+		SendChatServer(&server, buf);
+	}
+	else if(mode == Client::ClientWaitGame || mode == Client::ClientGame){
+		dstring ds = dstring() << "SAY " << buf << "\r\n";
+		send(con, ds, ds.len(), 0);
+	}
 }
 
 //-----------------------------------------------------------------------------

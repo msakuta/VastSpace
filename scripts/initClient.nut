@@ -635,6 +635,14 @@ function initUI(){
 	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 	cambut.pinned = true;
 
+	local chat = GLWchat();
+	chat.x = 0;
+	chat.width = 300;
+	chat.y = 0;
+	chat.closable = true;
+	chat.pinnable = true;
+	chat.pinned = true;
+
 	sysbut = GLWbuttonMatrix(3, 2, 32, 32);
 	sysbut.title = tlate("System");
 	sysbut.x = scw - sysbut.width;

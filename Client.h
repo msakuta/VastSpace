@@ -74,6 +74,7 @@ struct Client{
 	int joingame();
 	void display_func();
 	void mouse_func(int button, int state, int x, int y);
+	void sendChat(const char *buf);
 };
 
 /// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the

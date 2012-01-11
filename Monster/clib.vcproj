@@ -307,6 +307,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\circut.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\colseq\cs.c"
 				>
 			</File>
@@ -332,14 +336,6 @@
 			</File>
 			<File
 				RelativePath="..\src\dstr.c"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gl\gldraw.c"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gl\glfont.c"
 				>
 			</File>
 			<File
@@ -410,6 +406,18 @@
 				RelativePath="..\src\gl\wgltext.c"
 				>
 			</File>
+			<Filter
+				Name="gl"
+				>
+				<File
+					RelativePath="..\src\gl\gldraw.c"
+					>
+				</File>
+				<File
+					RelativePath="..\src\gl\glfont.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Headers"
@@ -450,6 +458,10 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\cfloat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\clib\circut.h"
 				>
 			</File>
 			<File

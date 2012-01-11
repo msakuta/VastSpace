@@ -11,7 +11,7 @@ endif
 
 CFLAGS = ${DEBUG} -I include
 OUT = ${OUTDIR}/clib.a
-default: ${OUT}
+all: ${OUT}
 
 ${OUT}: ${OUTDIR}\
  ${OUT}(UnZip.o)\
@@ -32,7 +32,8 @@ ${OUT}: ${OUTDIR}\
  ${OUT}(lzc.o)\
  ${OUT}(lzuc.o)\
  ${OUT}(suf.o)\
- ${OUT}(sufreloc.o)
+ ${OUT}(sufreloc.o)\
+ ${OUT}(circut.o)
 # ${OUT}(sufdraw.o)
 # ${OUT}(wavsound.o)
 # ${OUT}(UnZip.o)\
@@ -80,6 +81,8 @@ ${OUT}(lzuc.o): src/lzw/lzuc.c
 ${OUT}(suf.o): src/suf/suf.c
 ${OUT}(sufdraw.o): src/suf/sufdraw.c
 ${OUT}(sufreloc.o): src/suf/sufreloc.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
+${OUT}(circut.o): src/circut.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 
 

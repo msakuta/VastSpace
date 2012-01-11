@@ -1612,7 +1612,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	// Define class SquirrelBind
 	sq_pushstring(v, _SC("SquirrelBind"), -1);
 	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, "SquirrelBind");
+	sq_settypetag(v, -1, (void*)"SquirrelBind");
 	sq_pushstring(v, _SC("ref"), -1);
 	sq_pushnull(v);
 	sq_newslot(v, -3, SQFalse);
@@ -1804,7 +1804,7 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 
 
 
-
+#ifdef _WIN32
 /// \brief ClientMessage to notify something from the client's Squirrel VM to the server's one.
 struct CMSQ : public ClientMessage{
 	typedef ClientMessage st;
@@ -1865,5 +1865,7 @@ SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
 		return SQ_ERROR;
 	}
 }
+
+#endif
 
 }

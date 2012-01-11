@@ -12,6 +12,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/CoordSys.o\
  ${OUTDIR}/Universe.o\
  ${OUTDIR}/Player.o\
+ ${OUTDIR}/Game.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -19,6 +20,8 @@ objects = ${OUTDIR}/serial.o\
  ../cpplib/Release/cpplib.a\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
+ 
+ all: ${OUTDIR}/gltestplus
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl
@@ -44,6 +47,8 @@ ${OUTDIR}/CoordSys.o: $(call depends,CoordSys.cpp)
 ${OUTDIR}/Universe.o: $(call depends,Universe.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Player.o: $(call depends,Player.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Game.o: $(call depends,Game.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

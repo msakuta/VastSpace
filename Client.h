@@ -7,6 +7,7 @@
 #include "Server.h"
 #include "Game.h"
 
+#ifdef _WIN32
 
 /// \brief Representation of Client in the client process.
 struct Client{
@@ -76,6 +77,8 @@ struct Client{
 	void mouse_func(int button, int state, int x, int y);
 	void sendChat(const char *buf);
 };
+
+#endif
 
 /// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the
 /// server world.

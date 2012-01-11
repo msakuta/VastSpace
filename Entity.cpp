@@ -428,6 +428,7 @@ protected:
 };
 
 int Entity::cmd_property(int argc, char *argv[], void *pv){
+#ifdef _WIN32
 	static int counter = 0;
 	Client *pclient = (Client*)pv;
 	if(!pclient || !pclient->clientGame)
@@ -436,6 +437,7 @@ int Entity::cmd_property(int argc, char *argv[], void *pv){
 	if(!ppl || ppl->selected.empty())
 		return 0;
 	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
+#endif
 	return 0;
 }
 

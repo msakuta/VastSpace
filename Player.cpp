@@ -407,6 +407,7 @@ CMRot CMRot::s;
 
 /// \brief Sends the command message to the server that this client wants to change direction of sight.
 static int cmd_rot(int argc, char *argv[]){
+#ifdef _WIN32
 	if(!(client.mode & client.ServerBit)){
 		Quatd q;
 		int c = min(argc - 1, 4);
@@ -417,6 +418,7 @@ static int cmd_rot(int argc, char *argv[]){
 			CMRot::send(q);
 		}
 	}
+#endif
 	return 0;
 }
 
@@ -438,31 +440,43 @@ void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
 	Quatd q;//(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
 	for(int i = 0; i < 4; i++)
 		uss >> q[i];
+#ifndef _WIN32
+	sc.sv->pg->players[sc.id]->setrot(q);
+#else
 	client.pg->players[sc.id]->setrot(q);
+#endif
 }
 
 /// \brief Sends the command message to the server that this client wants to change position of eyes.
 static int cmd_pos(int argc, char *argv[]){
-	if(!(client.mode & client.ServerBit)){
+#ifdef _WIN32
+	if(!(client.mode & client.ServerBit))
+	{
 		dstring ds = "C spos";
 		for(int i = 1; i < argc; i++)
 			ds << " " << argv[i];
 		ds << "\r\n";
 		send(client.con, ds, ds.len(), 0);
 	}
+#endif
 	return 0;
 }
 
-/// \brief A server command that acceps messages from the client to change the position of eyes.
+/// \brief A server command that accepts messages from the client to change the position of eyes.
 static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	if(argc == 4){
 		Vec3d v(atof(argv[1]), atof(argv[2]), atof(argv[3]));
+#ifdef _WIN32
 		client.pg->players[sc->id]->setrot(v);
+#else
+		sc->sv->pg->players[sc->id]->setrot(v);
+#endif
 	}
 	return 0;
 }
 
 void Player::cmdInit(Client &client){
+#ifdef _WIN32
 	if(!client.pg)
 		return;
 	Player &pl = *client.pg->player;
@@ -482,6 +496,7 @@ void Player::cmdInit(Client &client){
 	CvarAdd("g_overlay", &g_overlay, cvar_int);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
 	CvarAdd("forceattackorder", &pl.forceattackorder, cvar_int);
+#endif
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){
@@ -528,9 +543,11 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 }
 
 int Player::cmd_moveorder(int argc, char *argv[], void *pv){
+#ifdef _WIN32
 	Client &cl = *(Client*)pv;
 	cl.clientGame->player->moveorder = !cl.clientGame->player->moveorder;
 	cl.clientGame->player->move_z = 0.;
+#endif
 	return 0;
 }
 
@@ -809,7 +826,11 @@ GLWstateButton *Player::newMoveOrderButton(Client &pl, const char *filename, con
 		GLWmoveOrderButton(const char *filename, const char *filename1, Client *acl, const char *tip = NULL) :
 			GLWstateButton(filename, filename1, tip), cl(acl){}
 		virtual bool state()const{
+#ifdef _WIN32
 			return cl && cl->pg && cl->pg->player && cl->pg->player->moveorder;
+#else
+			return false;
+#endif
 		}
 		virtual void press(){
 			Player::cmd_moveorder(0, NULL, cl);

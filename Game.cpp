@@ -5,9 +5,11 @@
 #include "antiglut.h"
 #include "serial_util.h"
 #include "sqadapt.h"
+#ifdef _WIN32
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
+#endif
 #include "Game.h"
 
 

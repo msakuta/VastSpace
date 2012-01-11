@@ -104,7 +104,7 @@ typedef struct event_s{
 } event_t;
 
 /* Linux timers are per-process, variable is dummy */
-typedef int timer_t;
+//typedef int timer_t;
 
 #define SOCKET_ERROR (-1)
 #define INVALID_SOCKET (-1)

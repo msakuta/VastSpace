@@ -79,7 +79,7 @@ EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
 
 template<typename Command>
 void EntityCommandDeletor(void *pv){
-	delete pv;
+	delete reinterpret_cast<Command*>(pv);
 }
 
 /** \brief Base class for all Entity commands.

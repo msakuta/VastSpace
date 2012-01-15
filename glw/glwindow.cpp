@@ -1123,8 +1123,53 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 
 
 
+class GLWprop : public GLwindowSizeable{
+public:
+	typedef GLwindowSizeable st;
+	GLWprop(const char *title, Entity *e = NULL) : st(title), a(e){
+		xpos = 120;
+		ypos = 40;
+		width = 200;
+		height = 200;
+		flags |= GLW_COLLAPSABLE | GLW_CLOSE;
+	}
+	virtual void draw(GLwindowState &ws, double t);
+	virtual void postframe();
+protected:
+	Entity *a;
+};
 
+int Entity::cmd_property(int argc, char *argv[], void *pv){
+#ifdef _WIN32
+	static int counter = 0;
+	Client *pclient = (Client*)pv;
+	if(!pclient || !pclient->clientGame)
+		return 0;
+	Player *ppl = pclient->clientGame->player;
+	if(!ppl || ppl->selected.empty())
+		return 0;
+	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
+#endif
+	return 0;
+}
 
+void GLWprop::draw(GLwindowState &ws, double t){
+	if(!a)
+		return;
+	GLWrect cr = clientRect();
+	Entity::Props pl = a->props();
+	int i = 0;
+	for(Entity::Props::iterator e = pl.begin(); e != pl.end(); e++){
+		glColor4f(0,1,1,1);
+		glwpos2d(cr.x0, cr.y0 + (1 + i++) * getFontHeight());
+		glwprintf(*e);
+	}
+}
+
+void GLWprop::postframe(){
+	if(a && !a->w)
+		a = NULL;
+}
 
 
 

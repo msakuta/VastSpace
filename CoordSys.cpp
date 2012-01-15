@@ -9,7 +9,6 @@
 #include "Entity.h"
 #include "cmd.h"
 #include "serial_util.h"
-#include "Respawn.h"
 #include "sqadapt.h"
 #include "Universe.h"
 #include "draw/WarDraw.h"
@@ -835,6 +834,9 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			printf("%s(%ld): addent: Unknown entity class name: %s\n", sc.fname, sc.line, argv[1]);
 		return true;
 	}
+	// Specifying an Entity type directly is obsolete. You can use Squirrel codes to extend
+	// the specification of SSD files. Respawn points are not actively used anyway.
+#if 0
 	else if(!strcmp(s, "respawn")){
 		if(argc < 2)
 			return false;
@@ -862,6 +864,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		}
 		return true;
 	}
+#endif
 	else if(!strcmp(s, "solarsystem")){
 		/* solar system is by default extent and isolated */
 		if(1 < argc){

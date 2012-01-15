@@ -3,6 +3,7 @@
  * Implements GLWbutton branch too.
  */
 #include "glw/glwindow.h"
+#include "../Client.h"
 #include "cmd.h"
 #include "../cmd_int.h"
 #include "antiglut.h"

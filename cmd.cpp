@@ -539,8 +539,10 @@ int CmdInput(char key){
 			cmd_preprocess(linebuf, cmdline);
 			ret = CmdExecD(linebuf, false, NULL);
 			cmdline = "";
+#ifdef _WIN32
 			if(console_cursorposdisp)
 				cmddispline = 0;
+#endif
 			delete[] linebuf;
 		}
 	}

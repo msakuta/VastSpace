@@ -13,6 +13,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Universe.o\
  ${OUTDIR}/Player.o\
  ${OUTDIR}/Game.o\
+ ${OUTDIR}/judge.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -49,6 +50,8 @@ ${OUTDIR}/Universe.o: $(call depends,Universe.cpp)
 ${OUTDIR}/Player.o: $(call depends,Player.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Game.o: $(call depends,Game.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/judge.o: $(call depends,judge.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

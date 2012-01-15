@@ -11,6 +11,7 @@ extern "C"{
 #include <clib/stats.h>
 }
 #include <stddef.h>
+#include <stdlib.h>
 
 bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt){
 	return jHitSpherePos(obj, radius, src, dir, dt, NULL, NULL);
@@ -484,7 +485,7 @@ gcontinue:;
 	return NULL;
 }
 
-static Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
+Entity *otjEnumNearestPoint(const struct otjEnumHitSphereParam *param){
 	Entity *ret;
 	if(!param->root)
 		return NULL;
@@ -589,7 +590,7 @@ static otnt *ot_update_int(otnt *root, WarField *w){
 	}
 	else{
 		root->pos = *pos[0];
-		root->rad = max(rad[0], rad[1]);
+		root->rad = MAX(rad[0], rad[1]);
 	}
 	return root;
 }
@@ -748,7 +749,7 @@ otnt *ot_build(WarSpace *w, double dt){
 	o = 0;
 	otiterator it(n, w, ot, &o);
 //	for(pt = w->el, i = -n; i < o; (i < 0 ? pt = pt->next : 0), (i < 0 && pt->w != w ? 0 : i++)) if(i < 0 && pt->w != w){
-	for(; it; it++) if(!it.paired()){
+	for(; it; ++it) if(!it.paired()){
 		double slen, best = 1e15, rad;
 		const Vec3d *pos = it.getpos();
 		Entity *pt2, *pt3;
@@ -756,7 +757,7 @@ otnt *ot_build(WarSpace *w, double dt){
 		pt3 = NULL;
 		bool found = false;
 		otiterator it3;
-		for(otiterator it2 = it.next(); it2; it2++) if(!it2.paired()){
+		for(otiterator it2 = it.next(); it2; ++it2) if(!it2.paired()){
 			double rad_2 = it2.getrad();
 			const Vec3d *pos2 = it2.getpos();
 			slen = (*pos - *pos2).slen() + rad * rad + rad_2 * rad_2;

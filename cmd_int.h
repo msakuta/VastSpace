@@ -28,7 +28,9 @@ extern int cmdcurline;
 extern int cmddispline;
 //extern int cmdcur;
 extern cpplib::dstring cmdline;
+#ifdef _WIN32
 extern int console_cursorposdisp;
+#endif
 
 
 #ifdef __cplusplus

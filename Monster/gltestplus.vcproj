@@ -669,6 +669,10 @@
 					RelativePath="..\glw\solarmap.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\draw\war-draw.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter

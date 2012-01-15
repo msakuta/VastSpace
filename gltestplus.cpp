@@ -1503,8 +1503,9 @@ void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
 
 
 void Game::mouse_func(int button, int state, int x, int y){
-	if(state == GLUT_UP)
-		SetForegroundWindow(hWndApp);
+	// If the Player clicks on the window, defocus any edit controls.
+	if(state == GLUT_DOWN)
+		SetFocus(NULL);
 
 	if(cmdwnd){
 		CmdMouseInput(button, state, x, y);

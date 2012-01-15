@@ -56,6 +56,9 @@ GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 typedef GLubyte cubetype;
 #define GL_cubetype GL_UNSIGNED_BYTE
 
+static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
+
+
 void WarSpace::draw(wardraw_t *wd){
 	for(int i = 0; i < 2; i++)
 	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){

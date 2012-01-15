@@ -14,7 +14,7 @@
 #include <windows.h>
 #endif
 #include <cpplib/vec3.h>
-#include <gl/GL.h>
+#include <GL/gl.h>
 
 
 /// \brief A class that binds shader object name with location indices.

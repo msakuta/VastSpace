@@ -4,8 +4,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <gl/gl.h>
-#include <gl/glext.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 
 #ifdef __cplusplus
 extern "C"{

@@ -14,7 +14,7 @@
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 #endif
-#include <gl/GL.h>
+#include <GL/gl.h>
 
 struct ShaderBind;
 struct AdditiveShaderBind;

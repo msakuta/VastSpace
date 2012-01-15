@@ -4,9 +4,11 @@
 #include "Viewer.h"
 #include <clib/colseq/color.h>
 #include <cpplib/quat.h>
+#ifdef _WIN32
 #define exit something_meanless
 #include <windows.h>
 #undef exit
+#endif
 #include <GL/gl.h>
 /*#include <GL/glut.h>*/
 

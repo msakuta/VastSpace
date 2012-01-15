@@ -51,7 +51,7 @@ Message *MessageCreator(HSQUIRRELVM v, Entity &e){
 
 template<typename Command>
 void MessageDeletor(void *pv){
-	delete pv;
+	delete reinterpret_cast<Command*>(pv);
 }
 
 

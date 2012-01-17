@@ -772,7 +772,7 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
 		tips = NULL;
-	GLWstateButton *b = Player::newMoveOrderButton(client, path, path1, tips);
+	GLWstateButton *b = Player::newMoveOrderButton(application, path, path1, tips);
 	if(!p->addButton(b)){
 		delete b;
 		return sq_throwerror(v, _SC("Could not add button"));
@@ -1824,8 +1824,8 @@ CMSQ::CMSQ() : st("SQ"){
 }
 
 void CMSQ::send(){
-	if(client.mode & client.ServerBit){
-		HSQUIRRELVM v = client.pg->sqvm;
+	if(application.mode & application.ServerBit){
+		HSQUIRRELVM v = application.pg->sqvm;
 		StackReserver sr(v);
 		sq_pushroottable(v);
 		sq_pushstring(v, _SC("clientMessage"), -1);
@@ -1835,7 +1835,7 @@ void CMSQ::send(){
 		}
 	}
 	else{
-		s.st::send(client, "", 0);
+		s.st::send(application, "", 0);
 	}
 }
 
@@ -1845,8 +1845,8 @@ bool CMSQ::sqf_define(HSQUIRRELVM v){
 }
 
 void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
-	if(client.mode & client.ServerBit){
-		HSQUIRRELVM v = client.pg->sqvm;
+	if(application.mode & application.ServerBit){
+		HSQUIRRELVM v = application.pg->sqvm;
 		StackReserver sr(v);
 		sq_pushroottable(v);
 		sq_pushstring(v, _SC("clientMessage"), -1);

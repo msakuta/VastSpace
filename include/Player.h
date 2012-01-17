@@ -29,7 +29,7 @@ class Entity;
 class CoordSys;
 class Viewer;
 class GLWstateButton;
-struct Client;
+class ClientApplication;
 
 /** \brief The Teleport desination record.
  *
@@ -172,7 +172,7 @@ public:
 
 	static float camera_mode_switch_time;
 	static int g_overlay; ///< Overlay display level
-	static void cmdInit(Client &);
+	static void cmdInit(ClientApplication &);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);
@@ -191,7 +191,7 @@ public:
 	static GLWstateButton *newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips);
 
 	/// Creates a button to toggle move ordering mode.
-	static GLWstateButton *newMoveOrderButton(Client &cl, const char *filename, const char *filename2, const char *tips);
+	static GLWstateButton *newMoveOrderButton(ClientApplication &cl, const char *filename, const char *filename2, const char *tips);
 
 protected:
 	std::vector<teleport> tplist;

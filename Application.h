@@ -13,6 +13,7 @@
 /// it is the client or the dedicated server, but we want to treat it somehow uniformly.
 /// So we made it a class and constructed class hierarchy to achieve this.
 class Application{
+public:
 	enum GameMode{
 		ChatBit   = 0x80, /* bitmask for game mode that allow chatting or logging */
 		WaitBit   = 0x01, /* bitmask for waiting rooms */
@@ -26,6 +27,9 @@ class Application{
 		ClientGame     = 0x83, /* playing game on remote server */
 	};
 
+	/// The game mode
+	volatile enum GameMode mode;
+
 	/// \brief The server game object.
 	///
 	/// Available only if the game is running in a dedicated server or a standalone client.
@@ -36,6 +40,14 @@ class Application{
 	/// Available only if the game is running in a standalone or remote client.
 	/// If it's a standalone client, this object is a copy of the object indicated by pg.
 	Game *clientGame;
+
+	/// Embedded server thread
+	ServerThreadHandle server;
+
+	/// \brief The connection socket.
+	///
+	/// Only meaningful in Client, but placed here to simplify codes that'll need reinterpret_cast otherwise.
+	SOCKET con;
 };
 
 #ifdef _WIN32
@@ -44,6 +56,7 @@ class Application{
 ///
 /// Only available in Windows client.
 class ClientApplication : public Application{
+public:
 
 	/// \biref Client registry in the Client process.
 	struct ClientClient{
@@ -58,7 +71,6 @@ class ClientApplication : public Application{
 //	HANDLE hDrawEvent;
 	HANDLE hGameMutex; /* game data storage must be mutually exclusive */
 //	void *offbuf;
-	volatile enum GameMode mode;
 	std::vector<ClientClient> ad;
 	unsigned thisad;
 //	int mousemode;
@@ -72,8 +84,6 @@ class ClientApplication : public Application{
 //	HWAVEOUT hwo;
 //	CRITICAL_SECTION cswave;
 //	MMRESULT timer;
-	ServerThreadHandle server; /* embedded server thread */
-	SOCKET con; /* connection */
 //	Waiter *waiter;
 	HANDLE hRecvThread;
 //	HWND hChatbox;
@@ -88,8 +98,8 @@ class ClientApplication : public Application{
 	unsigned char *recvbuf;
 	int recvbufsiz;
 
-	Client();
-	~Client();
+	ClientApplication();
+	~ClientApplication();
 	void hostgame(Game *);
 	int joingame();
 	void display_func();

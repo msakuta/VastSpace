@@ -3,7 +3,7 @@
  * Implements GLWbutton branch too.
  */
 #include "glw/glwindow.h"
-#include "../Client.h"
+#include "../Application.h"
 #include "cmd.h"
 #include "../cmd_int.h"
 #include "antiglut.h"
@@ -1143,7 +1143,7 @@ protected:
 int Entity::cmd_property(int argc, char *argv[], void *pv){
 #ifdef _WIN32
 	static int counter = 0;
-	Client *pclient = (Client*)pv;
+	ClientApplication *pclient = (ClientApplication*)pv;
 	if(!pclient || !pclient->clientGame)
 		return 0;
 	Player *ppl = pclient->clientGame->player;

@@ -12,7 +12,7 @@
 #include <GL/glut.h>
 #else
 #include "antiglut.h"
-#include "Client.h"
+#include "Application.h"
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
@@ -99,7 +99,7 @@ static int show_planets_name = 0;
 static int cmdwnd = 0;
 //static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
-Client client;
+ClientApplication application;
 
 
 int s_mousex, s_mousey;
@@ -960,7 +960,7 @@ void Game::display_func(double dt){
 			TRYBLOCK(anim(dt));
 			TRYBLOCK(GLwindow::glwpostframe());
 			TRYBLOCK(universe->endframe());
-			TRYBLOCK(client.clientGame->universe->clientUpdate(dt));
+			TRYBLOCK(application.clientGame->universe->clientUpdate(dt));
 			watime = TimeMeasLap(&tm);
 		}
 		catch(std::exception e){
@@ -1003,7 +1003,7 @@ void Game::display_func(double dt){
 }
 	
 
-void Client::display_func(void){
+void ClientApplication::display_func(void){
 	static int init = 0;
 	static timemeas_t tm;
 	static double gametime = 0.;
@@ -1378,10 +1378,10 @@ CMHalt::CMHalt() : st("Halt"){
 }
 
 void CMHalt::send(Entity &pt){
-	if(client.mode & client.ServerBit){
+	if(application.mode & application.ServerBit){
 		HaltCommand com;
-		Game::IdMap::const_iterator it = client.pg->idmap().find(pt.getid());
-		if(it != client.pg->idmap().end())
+		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
+		if(it != application.pg->idmap().end())
 			((Entity*)it->second)->command(&com);
 	}
 	else{
@@ -1389,7 +1389,7 @@ void CMHalt::send(Entity &pt){
 		StdSerializeStream sss(ss);
 		sss << pt.getid();
 		std::string str = ss.str();
-		s.st::send(client, str.c_str(), str.size());
+		s.st::send(application, str.c_str(), str.size());
 	}
 }
 
@@ -1439,7 +1439,7 @@ private:
 };
 
 int cmd_move(int argc, char *argv[], void *pv){
-	Client *cl = (Client*)pv;
+	ClientApplication *cl = (ClientApplication*)pv;
 	if(!cl || !cl->clientGame)
 		return 0;
 	Player *pl = cl->clientGame->player;
@@ -1474,11 +1474,11 @@ int cmd_move(int argc, char *argv[], void *pv){
 CMMove CMMove::s;
 
 void CMMove::send(const Vec3d &destpos, Entity &pt){
-	if(client.mode & client.ServerBit){
+	if(application.mode & application.ServerBit){
 		MoveCommand com;
 		com.destpos = destpos;
-		Game::IdMap::const_iterator it = client.pg->idmap().find(pt.getid());
-		if(it != client.pg->idmap().end())
+		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
+		if(it != application.pg->idmap().end())
 			((Entity*)it->second)->command(&com);
 	}
 	else{
@@ -1486,7 +1486,7 @@ void CMMove::send(const Vec3d &destpos, Entity &pt){
 		StdSerializeStream sss(ss);
 		sss << pt.getid() << destpos;
 		std::string str = ss.str();
-		s.st::send(client, str.c_str(), str.size());
+		s.st::send(application, str.c_str(), str.size());
 	}
 }
 
@@ -1544,7 +1544,7 @@ void Game::mouse_func(int button, int state, int x, int y){
 			sprintf(buf[0], "%15lg", pos[0]);
 			sprintf(buf[1], "%15lg", pos[1]);
 			sprintf(buf[2], "%15lg", pos[2]);
-			cmd_move(4, args, &client);
+			cmd_move(4, args, &application);
 			player->moveorder = 0;
 			return;
 		}
@@ -1886,7 +1886,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 //				HGLRC hgl;
 				hdc = GetDC(hWnd);
 //				hgl = winglstart(hdc);
-				client.display_func();
+				application.display_func();
 //				wglSwapLayerBuffers(hdc, WGL_SWAP_MAIN_PLANE);
 				SwapBuffers(hdc);
 //				winglend(hgl);
@@ -1918,7 +1918,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
-				Game *game = client.mode & client.ServerBit ? server : client.clientGame;
+				Game *game = application.mode & application.ServerBit ? server : application.clientGame;
 				if(game->player)
 					game->player->mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){
@@ -1957,16 +1957,16 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			break;
 
 		case WM_RBUTTONDOWN:
-			client.mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			application.mouse_func(GLUT_RIGHT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONDOWN:
-			client.mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
+			application.mouse_func(GLUT_LEFT_BUTTON, GLUT_DOWN, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_RBUTTONUP:
-			client.mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			application.mouse_func(GLUT_RIGHT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		case WM_LBUTTONUP:
-			client.mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
+			application.mouse_func(GLUT_LEFT_BUTTON, GLUT_UP, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 
 		case WM_MOUSEWHEEL:
@@ -2112,7 +2112,7 @@ static int cmd_say(int argc, char *argv[]){
 			text << " ";
 		text << argv[i];
 	}
-	client.sendChat(text);
+	application.sendChat(text);
 	return 0;
 }
 
@@ -2134,13 +2134,13 @@ int main(int argc, char *argv[])
 
 	if(isClient){
 		server = NULL;
-		client.clientGame = new Game();
+		application.clientGame = new Game();
 	}
 	else{
 		server = new ServerGame();
-		client.clientGame = new Game();
+		application.clientGame = new Game();
 	}
-	client.pg = server;
+	application.pg = server;
 
 	viewport vp;
 	CmdInit(&vp);
@@ -2162,7 +2162,7 @@ int main(int argc, char *argv[])
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &server->player);
 	CmdAdd("chasecamera", cmd_chasecamera);
-	CmdAddParam("property", Entity::cmd_property, &client);
+	CmdAddParam("property", Entity::cmd_property, &application);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &server->player);
 //	CmdAddParam("save", Universe::cmd_save, server->universe);
@@ -2183,7 +2183,7 @@ int main(int argc, char *argv[])
 	CmdAdd("video_stop", video_stop);
 	CmdAdd("say", cmd_say);
 //	ServerCmdAdd("m", scmd_m);
-	CoordSys::registerCommands(client.clientGame);
+	CoordSys::registerCommands(application.clientGame);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
@@ -2208,11 +2208,11 @@ int main(int argc, char *argv[])
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
-	Player::cmdInit(client);
+	Player::cmdInit(application);
 
 	if(server)
 		sqa_init(server);
-	sqa_init(client.clientGame);
+	sqa_init(application.clientGame);
 	if(!isClient){
 
 		const SQChar *s = _SC("space.dat");
@@ -2227,9 +2227,9 @@ int main(int argc, char *argv[])
 	CmdExec("@exec autoexec.cfg");
 
 	if(isClient)
-		client.joingame();
+		application.joingame();
 	else
-		client.hostgame(server);
+		application.hostgame(server);
 
 #if USEWIN
 	{

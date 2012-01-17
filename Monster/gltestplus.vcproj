@@ -681,6 +681,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\Application.h"
+				>
+			</File>
+			<File
 				RelativePath="..\argtok.h"
 				>
 			</File>
@@ -714,10 +718,6 @@
 			</File>
 			<File
 				RelativePath="..\calc\calc_p.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Client.h"
 				>
 			</File>
 			<File

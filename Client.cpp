@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of Client class and related callbacks.
  */
-#include "Client.h"
+#include "Application.h"
 #include "cmd.h"
 //#include "remotegame.h"
 #include "serial_util.h"
@@ -15,17 +15,17 @@ struct JoinGameData{
 };
 
 
-Client::Client() : recvbuf(NULL), recvbufsiz(0){
+ClientApplication::ClientApplication() : recvbuf(NULL), recvbufsiz(0){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
 }
 
-Client::~Client(){
+ClientApplication::~ClientApplication(){
 	CloseHandle(hGameMutex);
 	delete[] recvbuf;
 }
 
 
-static void quitgame(Client *, bool ret){
+static void quitgame(ClientApplication *, bool ret){
 	exit(ret);
 }
 
@@ -37,7 +37,7 @@ static void SignalMessage(const char *text, void *){
 
 
 
-static DWORD WINAPI RecvThread(Client *pc){
+static DWORD WINAPI RecvThread(ClientApplication *pc){
 	int size;
 	char buf[1024], *lbuf = NULL, *src = NULL;
 	size_t lbs = 0, lbp = 0;
@@ -167,7 +167,7 @@ static DWORD WINAPI RecvThread(Client *pc){
 						unsigned int ip, port;
 						char ipbuf[12];
 						char *namebuf;
-						Client::ClientClient &cc = pc->ad[modi];
+						ClientApplication::ClientClient &cc = pc->ad[modi];
 
 						strncpy(ipbuf, lbuf, 8+1+4);
 						ipbuf[8+1+4] = '\0';
@@ -272,7 +272,7 @@ cleanup:
 }
 
 
-int Client::joingame(){
+int ClientApplication::joingame(){
 	JoinGameData data;
 //	quitgame(pc);
 //	data.plogfile = &pc->logfile;
@@ -357,7 +357,7 @@ int Client::joingame(){
 	return 0;
 }
 
-void Client::hostgame(Game *game){
+void ClientApplication::hostgame(Game *game){
 #if 0
 	static bool init = false;
 	static DLGTEMPLATE *dt;
@@ -421,15 +421,15 @@ void Client::hostgame(Game *game){
 #endif
 }
 
-void Client::mouse_func(int button, int state, int x, int y){
+void ClientApplication::mouse_func(int button, int state, int x, int y){
 	clientGame->mouse_func(button, state, x, y);
 }
 
-void Client::sendChat(const char *buf){
-	if(mode == Client::ServerWaitGame || mode == Client::ServerGame){
+void ClientApplication::sendChat(const char *buf){
+	if(mode == ServerWaitGame || mode == ServerGame){
 		SendChatServer(&server, buf);
 	}
-	else if(mode == Client::ClientWaitGame || mode == Client::ClientGame){
+	else if(mode == ClientWaitGame || mode == ClientGame){
 		dstring ds = dstring() << "SAY " << buf << "\r\n";
 		send(con, ds, ds.len(), 0);
 	}
@@ -453,7 +453,7 @@ ClientMessage::~ClientMessage(){
 	ctormap().erase(id);
 }
 
-void ClientMessage::send(Client &cl, const void *p, size_t size){
+void ClientMessage::send(Application &cl, const void *p, size_t size){
 	if(cl.mode & cl.ServerBit){
 		ClientMessage::CtorMap::iterator it = ClientMessage::ctormap().find(id);
 		if(it != ClientMessage::ctormap().end()){

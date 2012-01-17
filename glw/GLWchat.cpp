@@ -2,7 +2,7 @@
  * \brief Implementation of GLWmessage.
  */
 #include "cmd.h"
-#include "../Client.h"
+#include "../Application.h"
 #include "sqadapt.h"
 #include "glw/GLWchat.h"
 #include "antiglut.h"
@@ -159,7 +159,6 @@ static LRESULT WINAPI CALLBACK EditWndProc(HWND hWnd, UINT message, WPARAM wPara
 	switch(message){
 		case WM_CHAR:
 			if(wParam == VK_RETURN){
-				extern Client client;
 				char buf[256];
 				wchar_t wbuf[128];
 				GetWindowText(hWnd, buf, sizeof buf);
@@ -167,7 +166,7 @@ static LRESULT WINAPI CALLBACK EditWndProc(HWND hWnd, UINT message, WPARAM wPara
 					return 0;
 				MultiByteToWideChar(CP_THREAD_ACP, 0, buf, -1, wbuf, sizeof wbuf);
 				WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, buf, sizeof buf, NULL, NULL);
-				client.sendChat(buf);
+				application.sendChat(buf);
 				SetWindowText(hWnd, "");
 				return 0;
 			}

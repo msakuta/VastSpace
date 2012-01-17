@@ -407,7 +407,7 @@ CMRot CMRot::s;
 /// \brief Sends the command message to the server that this client wants to change direction of sight.
 static int cmd_rot(int argc, char *argv[]){
 #ifdef _WIN32
-	if(!(client.mode & client.ServerBit)){
+	if(!(application.mode & application.ServerBit)){
 		Quatd q;
 		int c = min(argc - 1, 4);
 		for(int i = 0; i < c; i++)
@@ -442,20 +442,20 @@ void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
 #ifndef _WIN32
 	sc.sv->pg->players[sc.id]->setrot(q);
 #else
-	client.pg->players[sc.id]->setrot(q);
+	application.pg->players[sc.id]->setrot(q);
 #endif
 }
 
 /// \brief Sends the command message to the server that this client wants to change position of eyes.
 static int cmd_pos(int argc, char *argv[]){
 #ifdef _WIN32
-	if(!(client.mode & client.ServerBit))
+	if(!(application.mode & application.ServerBit))
 	{
 		dstring ds = "C spos";
 		for(int i = 1; i < argc; i++)
 			ds << " " << argv[i];
 		ds << "\r\n";
-		send(client.con, ds, ds.len(), 0);
+		send(application.con, ds, ds.len(), 0);
 	}
 #endif
 	return 0;
@@ -466,7 +466,7 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	if(argc == 4){
 		Vec3d v(atof(argv[1]), atof(argv[2]), atof(argv[3]));
 #ifdef _WIN32
-		client.pg->players[sc->id]->setrot(v);
+		application.pg->players[sc->id]->setrot(v);
 #else
 		sc->sv->pg->players[sc->id]->setrot(v);
 #endif
@@ -474,18 +474,18 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	return 0;
 }
 
-void Player::cmdInit(Client &client){
+void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
-	if(!client.pg)
+	if(!application.pg)
 		return;
-	Player &pl = *client.pg->player;
+	Player &pl = *application.pg->player;
 	CmdAdd("rot", cmd_rot);
 //	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
 	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("mover", cmd_mover, &pl);
 	CmdAddParam("teleport", cmd_teleport, &pl);
-	CmdAddParam("moveorder", cmd_moveorder, &client);
+	CmdAddParam("moveorder", cmd_moveorder, &application);
 	CmdAddParam("control", cmd_control, &pl);
 	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, &pl);
 	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, &pl);
@@ -543,7 +543,7 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 
 int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 #ifdef _WIN32
-	Client &cl = *(Client*)pv;
+	ClientApplication &cl = *(ClientApplication*)pv;
 	cl.clientGame->player->moveorder = !cl.clientGame->player->moveorder;
 	cl.clientGame->player->move_z = 0.;
 #endif
@@ -817,12 +817,12 @@ GLWstateButton *Player::newControlButton(Player &pl, const char *filename, const
 /// \param filename File name of button image when being active
 /// \param filename2 File name of button image when being inactive
 /// \param tips Displayed when mouse cursor is floating over.
-GLWstateButton *Player::newMoveOrderButton(Client &pl, const char *filename, const char *filename2, const char *tips){
+GLWstateButton *Player::newMoveOrderButton(ClientApplication &pl, const char *filename, const char *filename2, const char *tips){
 	/// Command
 	class GLWmoveOrderButton : public GLWstateButton{
 	public:
-		Client *cl;
-		GLWmoveOrderButton(const char *filename, const char *filename1, Client *acl, const char *tip = NULL) :
+		ClientApplication *cl;
+		GLWmoveOrderButton(const char *filename, const char *filename1, ClientApplication *acl, const char *tip = NULL) :
 			GLWstateButton(filename, filename1, tip), cl(acl){}
 		virtual bool state()const{
 #ifdef _WIN32

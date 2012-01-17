@@ -2,7 +2,7 @@
 #include "Game.h"
 #include "serial_util.h"
 #include "cmd.h"
-#include "Client.h"
+#include "Application.h"
 extern "C"{
 #include <clib/dstr.h>
 #include <clib/timemeas.h>

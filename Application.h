@@ -1,5 +1,5 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef APPLICATION_H
+#define APPLICATION_H
 /** \file
  * \brief Definition of Client class.
  */
@@ -7,10 +7,12 @@
 #include "Server.h"
 #include "Game.h"
 
-#ifdef _WIN32
-
-/// \brief Representation of Client in the client process.
-struct Client{
+/// \brief The base class of singleton object of various application types.
+///
+/// The application has different properties and methods depending on whether
+/// it is the client or the dedicated server, but we want to treat it somehow uniformly.
+/// So we made it a class and constructed class hierarchy to achieve this.
+class Application{
 	enum GameMode{
 		ChatBit   = 0x80, /* bitmask for game mode that allow chatting or logging */
 		WaitBit   = 0x01, /* bitmask for waiting rooms */
@@ -23,6 +25,25 @@ struct Client{
 		ClientWaitGame = 0x82, /* joinning game, waiting */
 		ClientGame     = 0x83, /* playing game on remote server */
 	};
+
+	/// \brief The server game object.
+	///
+	/// Available only if the game is running in a dedicated server or a standalone client.
+	Game *pg;
+
+	/// \brief The client's game, a copy of the server in the client process.
+	///
+	/// Available only if the game is running in a standalone or remote client.
+	/// If it's a standalone client, this object is a copy of the object indicated by pg.
+	Game *clientGame;
+};
+
+#ifdef _WIN32
+
+/// \brief Representation of Client in the client process.
+///
+/// Only available in Windows client.
+class ClientApplication : public Application{
 
 	/// \biref Client registry in the Client process.
 	struct ClientClient{
@@ -41,8 +62,6 @@ struct Client{
 	std::vector<ClientClient> ad;
 	unsigned thisad;
 //	int mousemode;
-	Game *pg; ///< The server game
-	Game *clientGame; ///< The client's game, a copy of the server in the client process.
 //	Game::DrawData dd;
 //	Game::AnimData ad;
 //	Game::squadid meid; // Squad ID for the player
@@ -78,6 +97,19 @@ struct Client{
 	void sendChat(const char *buf);
 };
 
+extern ClientApplication application;
+
+#else
+
+/// \brief Representation of a dedicated server process.
+///
+/// Only available in Linux dedicated server.
+class DedicatedServerApplication : public Application{
+
+};
+
+extern DedicatedServerApplication application;
+
 #endif
 
 /// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the
@@ -102,9 +134,9 @@ protected:
 	dstring id;
 
 	ClientMessage(dstring id);
-	~ClientMessage();
+	virtual ~ClientMessage();
 
-	void send(Client &, const void *, size_t);
+	void send(Application &, const void *, size_t);
 };
 
 

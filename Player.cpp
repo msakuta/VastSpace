@@ -1,4 +1,4 @@
-#include "Client.h"
+#include "Application.h"
 #include "Player.h"
 #include "Universe.h"
 #include "Entity.h"
@@ -401,7 +401,6 @@ int cmd_cvar(int argc, char *argv[], void *pv){
 }
 
 
-extern Client client;
 
 CMRot CMRot::s;
 
@@ -432,7 +431,7 @@ void CMRot::send(const Quatd &q){
 	for(int i = 0; i < 4; i++)
 		sss << q[i];
 	std::string str = ss.str();
-	s.st::send(client, str.c_str(), str.size());
+	s.st::send(application, str.c_str(), str.size());
 }
 
 /// \brief A server command that accepts messages from the client to change the direction of sight.

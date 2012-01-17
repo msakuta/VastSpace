@@ -1,8 +1,9 @@
+#include "Application.h"
 #include "Game.h"
 #include <stdio.h>
 
-Game *g_pGame = new Game();
+DedicatedServerApplication application;
 
 int main(int argc, char *argv[]){
-	printf("Hello Universe %p\n", g_pGame);
+	printf("Hello Universe %p\n", &application);
 }

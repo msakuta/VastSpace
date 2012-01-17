@@ -13,6 +13,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Universe.o\
  ${OUTDIR}/Player.o\
  ${OUTDIR}/Game.o\
+ ${OUTDIR}/astro.o\
  ${OUTDIR}/judge.o\
  ${OUTDIR}/war.o\
  ${OUTDIR}/stellar_file.o\
@@ -52,6 +53,8 @@ ${OUTDIR}/Universe.o: $(call depends,Universe.cpp)
 ${OUTDIR}/Player.o: $(call depends,Player.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Game.o: $(call depends,Game.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/astro.o: $(call depends,astro.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/judge.o: $(call depends,judge.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

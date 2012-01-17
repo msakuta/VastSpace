@@ -2,7 +2,7 @@
  * \brief Implements Entity class and its collaborative classes.
  */
 #include "Entity.h"
-#include "Client.h"
+#include "Application.h"
 #include "EntityCommand.h"
 extern "C"{
 #include <clib/aquat.h>

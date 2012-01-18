@@ -1,4 +1,10 @@
+ifeq "$d" "y"
 OUTDIR = Debug
+CFLAGS += -g
+else
+OUTDIR = Release
+CFLAGS += -O3
+endif
 CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I /usr/include/bullet
 
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM $(1))))
@@ -17,6 +23,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/judge.o\
  ${OUTDIR}/war.o\
  ${OUTDIR}/stellar_file.o\
+ ${OUTDIR}/Application.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -63,17 +70,21 @@ ${OUTDIR}/war.o: $(call depends,war.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/stellar_file.o: $(call depends,stellar_file.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Application.o: $(call depends,Application.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
+	mkdir -p ${OUTDIR}/calc
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 clean:
-	rm Debug -r
+	rm ${OUTDIR} -r
 
 

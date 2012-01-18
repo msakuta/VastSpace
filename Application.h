@@ -48,6 +48,10 @@ public:
 	///
 	/// Only meaningful in Client, but placed here to simplify codes that'll need reinterpret_cast otherwise.
 	SOCKET con;
+
+	void init(bool isClient);
+
+	void sendChat(const char *buf);
 };
 
 #ifdef _WIN32
@@ -104,7 +108,6 @@ public:
 	int joingame();
 	void display_func();
 	void mouse_func(int button, int state, int x, int y);
-	void sendChat(const char *buf);
 };
 
 extern ClientApplication application;

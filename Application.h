@@ -50,6 +50,7 @@ public:
 	SOCKET con;
 
 	void init(bool isClient);
+	void hostgame(Game *);
 
 	void sendChat(const char *buf);
 };

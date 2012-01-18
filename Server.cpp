@@ -10,7 +10,7 @@ extern "C"{
 //#include <assert.h>
 //#include <limits.h>
 //#include <string.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <sstream>
 
 #ifdef DEDICATED
@@ -87,23 +87,25 @@ static void sigalrm(int i){
 		event_set(timerevent);
 }
 #define timer_init(timer) (*(timer)=0)
+
+/// Use pthread timer in Linux. Linux kernel version must be 2.4 or later.
 static void timer_set(timer_t *timer, unsigned long period, event_t *set){
-	struct itimerval it;
+	struct sigaction sigact;
+	sigact.sa_handler = sigalrm;
+	sigact.sa_flags = 0;
+	sigemptyset(&sigact.sa_mask);
+	if(sigaction(SIGALRM, &sigact, NULL) == -1)
+		return;
+	struct itimerspec it;
 	it.it_interval.tv_sec = (period) / 1000;
-	it.it_interval.tv_usec = ((period) * 1000) % 1000000;
+	it.it_interval.tv_nsec = ((period) * 10000000) % 10000000000;
 	it.it_value = it.it_interval;
-	setitimer(ITIMER_REAL, &it, NULL);
-	signal(SIGALRM, sigalrm);
 	timerevent = (set);
-	*(timer) = 1;
+	timer_create(CLOCK_REALTIME, NULL, timer);
+	timer_settime(timer, 0, &it, NULL);
 }
-#define timer_kill(timer) {\
-	struct itimerval it;\
-	it.it_interval.tv_sec = it.it_interval.tv_usec = 0;\
-	it.it_value = it.it_interval;\
-	setitimer(ITIMER_REAL, &it, NULL);\
-	timerevent = NULL;\
-	*(timer) = 1;\
+static void timer_kill(timer_t *timer){
+	timer_delete(*timer);
 }
 
 #endif
@@ -474,7 +476,7 @@ static void *AnimThread(Server *ps){
 		if(ps->terminating)
 			break;
 		if(ps->pg && lock_mutex(&ps->mg)){
-			ps->pg->anim(NULL);
+			ps->pg->anim(0.);
 			ServerClient *psc = ps->cl;
 #ifndef DEDICATED
 			SocketOutStream vos(INVALID_SOCKET);

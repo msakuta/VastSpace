@@ -759,7 +759,7 @@ void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunp
 			double lbase = floor(r / concentrical);
 			for(double l = lbase - lcells / 2 + 1; l < lbase + (lcells + 1) / 2 + 1; l++){
 				double dist = l * concentrical;
-				double omega = ::sqrt(UGC * a->mass / dist) / dist; // orbital speed at cell
+				double omega = ::sqrt(Universe::getGravityFactor(a) * DEF_UGC * a->mass / dist) / dist; // orbital speed at cell
 				double angle = omega * gtime;
 				double mbase = floor((phase - angle) / radial);
 				for(double m = mbase - mcells / 2; m < mbase + (mcells + 1) / 2; m++){

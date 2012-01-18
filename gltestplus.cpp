@@ -1360,145 +1360,8 @@ typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
 extern SQDefineMap &defineMap();
 }
 
-struct CMHalt : public ClientMessage{
-	typedef ClientMessage st;
-	static CMHalt s;
-	void interpret(ServerClient &sc, UnserializeStream &uss);
-	static void send(Entity &);
-private:
-	static bool sqf_define(HSQUIRRELVM v);
-	static SQInteger sqf_call(HSQUIRRELVM v);
-	CMHalt();
-};
-
-CMHalt CMHalt::s;
-
-CMHalt::CMHalt() : st("Halt"){
-	defineMap()[id] = sqf_define;
-}
-
-void CMHalt::send(Entity &pt){
-	if(application.mode & application.ServerBit){
-		HaltCommand com;
-		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
-		if(it != application.pg->idmap().end())
-			((Entity*)it->second)->command(&com);
-	}
-	else{
-		std::stringstream ss;
-		StdSerializeStream sss(ss);
-		sss << pt.getid();
-		std::string str = ss.str();
-		s.st::send(application, str.c_str(), str.size());
-	}
-}
-
-void CMHalt::interpret(ServerClient &sc, UnserializeStream &uss){
-	HaltCommand com;
-	Serializable::Id id;
-	uss >> id;
-	Game::IdMap::const_iterator it = sc.sv->pg->idmap().find(id);
-	if(it != sc.sv->pg->idmap().end())
-		((Entity*)it->second)->command(&com);
-}
-
-bool CMHalt::sqf_define(HSQUIRRELVM v){
-	register_closure(v, _SC("CMHalt"), &sqf_call);
-	return true;
-}
-
-SQInteger CMHalt::sqf_call(HSQUIRRELVM v){
-	try{
-		SQRESULT sr;
-		Entity *p;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		send(*p);
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
-int cmd_halt(int, char *[], void *pv){
-	Player *pl = (Player*)pv;
-	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
-		(*it)->command(&HaltCommand());
-		CMHalt::send(**it);
-	}
-	return 0;
-}
-
-struct CMMove : public ClientMessage{
-	typedef ClientMessage st;
-	static CMMove s;
-	void interpret(ServerClient &sc, UnserializeStream &uss);
-	static void send(const Vec3d &, Entity &);
-private:
-	CMMove() : st("Move"){}
-};
-
-int cmd_move(int argc, char *argv[], void *pv){
-	ClientApplication *cl = (ClientApplication*)pv;
-	if(!cl || !cl->clientGame)
-		return 0;
-	Player *pl = cl->clientGame->player;
-	if(argc < 4 || !pl->cs)
-		return 0;
-	MoveCommand com;
-	Vec3d comdst;
-	comdst[0] = atof(argv[1]);
-	comdst[1] = atof(argv[2]);
-	comdst[2] = atof(argv[3]);
-	com.destpos = comdst;
-	Quatd headrot;
-	int n = 0;
-	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
-		Entity *pt = *it;
-		if(pt->w == pl->cs->w){
-			if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
-				headrot = Quatd::direction(-(comdst - pt->pos));
-			n++;
-			Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);
-			com.destpos = comdst + headrot.trans(dp);
-			pt->command(&com);
-
-			CMMove::send(com.destpos, *pt);
-		}
-	}
-
-	return 0;
-}
 
 
-CMMove CMMove::s;
-
-void CMMove::send(const Vec3d &destpos, Entity &pt){
-	if(application.mode & application.ServerBit){
-		MoveCommand com;
-		com.destpos = destpos;
-		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
-		if(it != application.pg->idmap().end())
-			((Entity*)it->second)->command(&com);
-	}
-	else{
-		std::stringstream ss;
-		StdSerializeStream sss(ss);
-		sss << pt.getid() << destpos;
-		std::string str = ss.str();
-		s.st::send(application, str.c_str(), str.size());
-	}
-}
-
-void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
-	MoveCommand com;
-	Serializable::Id id;
-	uss >> id;
-	uss >> com.destpos;
-	Game::IdMap::const_iterator it = sc.sv->pg->idmap().find(id);
-	if(it != sc.sv->pg->idmap().end())
-		((Entity*)it->second)->command(&com);
-}
 
 
 
@@ -1544,7 +1407,8 @@ void Game::mouse_func(int button, int state, int x, int y){
 			sprintf(buf[0], "%15lg", pos[0]);
 			sprintf(buf[1], "%15lg", pos[1]);
 			sprintf(buf[2], "%15lg", pos[2]);
-			cmd_move(4, args, &application);
+			CmdExec(dstring("move") << " " << buf[0] << " " << buf[1] << " " << buf[2]);
+//			cmd_move(4, args, &application);
 			player->moveorder = 0;
 			return;
 		}
@@ -2142,15 +2006,13 @@ int main(int argc, char *argv[])
 	}
 	application.pg = server;
 
-	viewport vp;
-	CmdInit(&vp);
+	application.init(isClient);
 	MotionInit();
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("eject", cmd_eject);
-	CmdAdd("exit", cmd_exit);
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
@@ -2169,7 +2031,6 @@ int main(int argc, char *argv[])
 //	CmdAddParam("load", Universe::cmd_load, server->universe);
 //	CmdAddParam("buildmenu", cmd_build, &pl);
 	CmdAddParam("dockmenu", cmd_dockmenu, &server->player);
-	CmdAdd("sq", cmd_sq);
 	class Refresh{
 	public:
 		static int refresh(int argc, char *argv[]){
@@ -2181,24 +2042,18 @@ int main(int argc, char *argv[])
 	CmdAdd("refresh", &Refresh::refresh);
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
-	CmdAdd("say", cmd_say);
 //	ServerCmdAdd("m", scmd_m);
-	CoordSys::registerCommands(application.clientGame);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
 	if(server){
-		CvarAdd("pause", &server->universe->paused, cvar_int);
-		CvarAdd("g_timescale", &server->universe->timescale, cvar_double);
 		CvarAdd("viewdist", &server->player->viewdist, cvar_double);
-		CvarAdd("seat", &server->player->chasecamera, cvar_int);
 	}
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
 	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
 	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
-	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
 	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);
 	CvarAdd("g_warspace_near_clip", &g_warspace_near_clip, cvar_double);
@@ -2210,20 +2065,6 @@ int main(int argc, char *argv[])
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	Player::cmdInit(application);
 
-	if(server)
-		sqa_init(server);
-	sqa_init(application.clientGame);
-	if(!isClient){
-
-		const SQChar *s = _SC("space.dat");
-		StackReserver sr(v);
-		sq_pushroottable(v); // root
-		sq_pushstring(v, _SC("stellar_file"), -1); // root "init_Universe"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
-			sq_getstring(v, -1, &s);
-		}
-		StellarFileLoad(s, server->universe);
-	}
 	CmdExec("@exec autoexec.cfg");
 
 	if(isClient)
@@ -2264,7 +2105,7 @@ int main(int argc, char *argv[])
 
 		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW | WS_SYSMENU | WS_CAPTION, FALSE);
 
-		hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltestplus", WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
+		application.w = hWndApp = hWnd = CreateWindow(LPCTSTR(atom), "gltestplus", WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
 			rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
 /*		hWnd = CreateWindow(atom, "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			100, 100, 400, 400, NULL, NULL, hInst, NULL);*/

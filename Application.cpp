@@ -35,7 +35,7 @@ extern "C"{
 #include <sstream>
 
 
-
+#if 0
 void Game::display_func(double dt){
 #ifdef _WIN32
 		sqa_anim(sqvm, dt);
@@ -98,7 +98,7 @@ void Game::display_func(double dt){
 		glwlist->glwAnim(dt);
 #endif
 }
-	
+#endif
 
 	
 
@@ -256,7 +256,7 @@ void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
 static int cmd_exit(int argc, char *argv[]){
 #ifdef _WIN32
 	// Safely close the window
-	PostMessage(hWndApp, WM_SYSCOMMAND, SC_CLOSE, 0);
+	PostMessage(application.w, WM_SYSCOMMAND, SC_CLOSE, 0);
 #else
 	exit(0);
 #endif
@@ -320,6 +320,7 @@ void Application::init(bool isClient)
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("sq", cmd_sq);
 	CmdAdd("say", cmd_say);
+	CmdAddParam("move", cmd_move, this);
 	CoordSys::registerCommands(application.clientGame);
 	if(server){
 		CvarAdd("pause", &server->universe->paused, cvar_int);
@@ -344,7 +345,6 @@ void Application::init(bool isClient)
 		}
 		StellarFileLoad(s, server->universe);
 	}
-	CmdExec("@exec autoexec.cfg");
 
 #if 0
 	if(isClient)

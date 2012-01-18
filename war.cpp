@@ -282,9 +282,11 @@ void WarSpace::unserialize(UnserializeContext &sc){
 }
 
 void WarSpace::init(){
+#ifdef _WIN32
 	tell = NewTeline3D(2048, 128, 128);
 	gibs = NewTeline3D(1024, 128, 128);
 	tepl = NewTefpol3D(128, 32, 32);
+#endif
 }
 
 WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0), bdw(NULL){
@@ -329,14 +331,25 @@ void WarSpace::anim(double dt){
 void WarSpace::clientUpdate(double dt){
 	aaanim(dt, this, list[0], &Entity::clientUpdate);
 	aaanim(dt, this, list[1], &Entity::clientUpdate);
+#ifdef _WIN32
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTeline3D(gibs, dt));
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
+#endif
 }
 
 void WarSpace::endframe(){
 	st::endframe();
 }
+
+#ifndef _WIN32
+void WarField::draw(WarDraw*){}
+void WarField::drawtra(WarDraw*){}
+void WarField::drawOverlay(WarDraw*){}
+void WarSpace::draw(WarDraw*){}
+void WarSpace::drawtra(WarDraw*){}
+void WarSpace::drawOverlay(WarDraw*){}
+#endif
 
 EXPORT btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo &ci){
 	return new btRigidBody(ci);

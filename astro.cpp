@@ -13,6 +13,7 @@
 #include "Player.h"
 #include "cmd.h"
 #include "sqadapt.h"
+#include "Universe.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -676,4 +677,12 @@ Vec3f Star::spectralRGB(SpectralType spect){
 	}
 	return Vec3f(1., 1., 1.);
 }
+
+#ifndef _WIN32
+void Star::predraw(const Viewer *){
+}
+
+void Star::draw(const Viewer *){
+}
+#endif
 

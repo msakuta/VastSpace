@@ -13,6 +13,7 @@ public:
 	double timescale;
 	double global_time;
 	double astro_time;
+	double gravityfactor;
 	Player *ppl;
 	bool paused;
 	static const unsigned version; ///< Saved file version, checked on loading
@@ -34,6 +35,7 @@ public:
 	static int cmd_save(int argc, char *argv[], void *pv);
 	static int cmd_load(int argc, char *argv[], void *pv);
 	static bool sq_define(HSQUIRRELVM);
+	static double getGravityFactor(const CoordSys *);
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM);
 	Game *game;
@@ -42,6 +44,19 @@ protected:
 
 inline Game *Universe::getGame(){
 	return game;
+}
+
+/// \brief Returns Universal Gravitational Constant from any node of a CoordSys tree.
+///
+/// Returns 1.0 if the Universe object cannot be obtained.
+inline double Universe::getGravityFactor(const CoordSys *cs){
+	const CoordSys *root = cs->findcspath("/");
+	if(!root)
+		return 1.;
+	const Universe *u = root->toUniverse();
+	if(!u)
+		return 1.;
+	return u->gravityfactor;
 }
 
 #endif

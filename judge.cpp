@@ -922,6 +922,7 @@ otnt *ot_check(WarSpace *w, double dt){
 	return w->ot;
 }
 
+#ifdef _WIN32
 static void circle(Vec3d &org, double s, Mat4d &rot){
 	int i;
 		double (*cuts)[2];
@@ -938,6 +939,7 @@ static void circle(Vec3d &org, double s, Mat4d &rot){
 		glEnd();
 		glPopMatrix();
 }
+#endif
 
 #if 0 || 1 <= OTDEBUG
 static int ot_nodes[10];

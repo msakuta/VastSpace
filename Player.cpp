@@ -550,6 +550,7 @@ int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+#ifdef _WIN32
 int Player::cmd_control(int argc, char *argv[], void *pv){
 	Player &pl = *(Player*)pv;
 	if(pl.controlled)
@@ -565,6 +566,7 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 	}
 	return 0;
 }
+#endif
 
 bool Player::control(Entity *e, double dt){
 //	e->control(NULL, dt);
@@ -790,6 +792,7 @@ SQInteger Player::sqf_getmover(HSQUIRRELVM v){
 	return 1;
 }
 
+#ifdef _WIN32
 /// A 2-state button that represents whether the player is controlling something.
 /// \sa Player::newControlButton
 class GLWcontrolButton : public GLWstateButton{
@@ -837,4 +840,5 @@ GLWstateButton *Player::newMoveOrderButton(ClientApplication &pl, const char *fi
 	};
 	return new GLWmoveOrderButton(filename, filename2, &pl, tips);
 }
+#endif
 

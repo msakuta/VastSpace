@@ -20,6 +20,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
+ ${OUTDIR}/calc/calc0.o\
  ../clib/Release/clib.a\
  ../cpplib/Release/cpplib.a\
  ../SQUIRREL3/lib/libsquirrel.a\
@@ -68,6 +69,7 @@ ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
+${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 

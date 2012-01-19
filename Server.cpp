@@ -78,32 +78,42 @@ typedef void *sockopt_t;
 #define event_isnull(pe) mutex_isnull(&(pe)->m)
 #define event_create(pe) (pthread_cond_init(&(pe)->c, NULL), create_mutex(&(pe)->m))
 #define event_set(pe) (lock_mutex(&(pe)->m), pthread_cond_signal(&(pe)->c), unlock_mutex(&(pe)->m))
-#define event_wait(pe) (lock_mutex(&(pe)->m), pthread_cond_wait(&(pe)->c, &(pe)->m.m), unlock_mutex(&(pe)->m))
+inline bool event_wait(event_t *pe){
+	lock_mutex(&(pe)->m);
+	pthread_cond_wait(&(pe)->c, &(pe)->m.m);
+	return unlock_mutex(&(pe)->m);
+}
 #define event_delete(pe) (pthread_cond_destroy(&(pe)->c), delete_mutex(&(pe)->m))
 
-static event_t *timerevent = NULL;
-static void sigalrm(int i){
-	if(timerevent)
-		event_set(timerevent);
-}
 #define timer_init(timer) (*(timer)=0)
 
+/// Dummy signal handler that would never be called
+void sigalrm(int){}
+
 /// Use pthread timer in Linux. Linux kernel version must be 2.4 or later.
-static void timer_set(timer_t *timer, unsigned long period, event_t *set){
-	struct sigaction sigact;
+static bool timer_set(timer_t *timer, unsigned long period, event_t *set){
+
+	struct sigaction sigact, oldsa;
 	sigact.sa_handler = sigalrm;
 	sigact.sa_flags = 0;
 	sigemptyset(&sigact.sa_mask);
-	if(sigaction(SIGALRM, &sigact, NULL) == -1)
-		return;
+	if(sigaction(SIGUSR2, &sigact, &oldsa) == -1)
+		return false;
 	struct itimerspec it;
 	it.it_interval.tv_sec = (period) / 1000;
-	it.it_interval.tv_nsec = ((period) * 10000000) % 10000000000;
+	it.it_interval.tv_nsec = ((period) * 1000000) % 1000000000;
 	it.it_value = it.it_interval;
-	timerevent = (set);
-	timer_create(CLOCK_REALTIME, NULL, timer);
-	timer_settime(timer, 0, &it, NULL);
+	struct sigevent se;
+	se.sigev_notify = SIGEV_SIGNAL;
+	se.sigev_signo = SIGUSR2;
+	if(timer_create(CLOCK_REALTIME, &se, timer) == -1)
+		return false;
+	if(timer_settime(*timer, 0, &it, NULL) == -1)
+		return false;
+//	signal(SIGALRM, sigalrm);
+	return true;
 }
+
 static void timer_kill(timer_t *timer){
 	timer_delete(*timer);
 }
@@ -121,6 +131,7 @@ static void timer_kill(timer_t *timer){
 	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (sockopt_t)&nd, size);\
 }
 
+static void *AnimThread(Server *);
 static void WaitCommand(ServerClient *, char *);
 static void GameCommand(ServerClient *, char *);
 static DWORD WINAPI ClientThread(LPVOID lpv);
@@ -207,8 +218,8 @@ void Server::SendWait(ServerClient *cl){
 }
 
 void Server::WaitModified(){
-	if(thread_isvalid(&animThread))
-		return;
+//	if(thread_isvalid(&animThread))
+//		return;
 	if(lock_mutex(&mcl)){
 		ServerClient *pc = cl;
 		while(pc){
@@ -309,6 +320,10 @@ struct ServerThreadDataInt{
 DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 	Server &sv = *pstdi->sv;
 	ServerClient *&scs = sv.scs;
+
+	thread_create(&sv.animThread, AnimThread, &sv);
+	timer_set(&sv.timer, 1000, &sv.hAnimEvent);
+
 	volatile u_short port;
 	char *hostname = sv.hostname;
 	port = pstdi->port;
@@ -472,17 +487,35 @@ int SocketOutStream::write(const char *data, size_t size){
 }
 
 static void *AnimThread(Server *ps){
+#ifdef _WIN32
 	while(event_wait(&ps->hAnimEvent)){
+#else
+	// Wait SIGUSR2
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGUSR2);
+	int sig;
+
+	while(sigwait(&set, &sig) == 0){
+#endif
+//		printf("AnimThread\n");
 		if(ps->terminating)
 			break;
 		if(ps->pg && lock_mutex(&ps->mg)){
-			ps->pg->anim(0.);
+			ps->pg->anim(1.);
 			ServerClient *psc = ps->cl;
-#ifndef DEDICATED
-			SocketOutStream vos(INVALID_SOCKET);
-			ps->pg->serialize(vos);
-#endif
+
+			BinSerializeStream bss;
+			ps->pg->serialize(bss);
+			delete[] ps->sendbuf;
+			ps->sendbufsiz = bss.getsize();
+			ps->sendbuf = new unsigned char[bss.getsize()];
+			memcpy(ps->sendbuf, bss.getbuf(), bss.getsize());
+
 			unlock_mutex(&ps->mg);
+#ifdef DEDICATED
+			ps->WaitModified();
+#endif
 		}
 	}
 	return 0;
@@ -498,6 +531,13 @@ int StartServer(struct ServerThreadData *pstd, struct ServerThreadHandle *ph){
 	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != NO_ERROR)
 		return 0;
+#else
+	// Block SIGUSR2 from invoking signal handler.
+	sigset_t newmask;
+	sigemptyset(&newmask);
+	sigaddset(&newmask, SIGUSR2);
+	pthread_sigmask(SIG_BLOCK, &newmask, NULL);
+
 #endif
 
 /*	static struct server svsv;

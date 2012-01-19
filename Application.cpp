@@ -300,9 +300,7 @@ static int cmd_say(int argc, char *argv[]){
 
 void Application::sendChat(const char *buf){
 	if(mode == ServerWaitGame || mode == ServerGame){
-#ifdef _WIN32
 		SendChatServer(&server, buf);
-#endif
 	}
 	else if(mode == ClientWaitGame || mode == ClientGame){
 		dstring ds = dstring() << "SAY " << buf << "\r\n";

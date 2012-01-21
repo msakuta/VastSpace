@@ -5,7 +5,10 @@ else
 OUTDIR = Release
 CFLAGS += -O3
 endif
-CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I /usr/include/bullet
+ifndef BULLET_INCLUDE
+BULLET_INCLUDE=/usr/include/bullet
+endif
+CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM $(1))))

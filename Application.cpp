@@ -319,7 +319,7 @@ void Application::init(bool isClient)
 	CmdAdd("sq", cmd_sq);
 	CmdAdd("say", cmd_say);
 	CmdAddParam("move", cmd_move, this);
-	CoordSys::registerCommands(application.clientGame);
+	CoordSys::registerCommands(&application);
 	if(server){
 		CvarAdd("pause", &server->universe->paused, cvar_int);
 		CvarAdd("g_timescale", &server->universe->timescale, cvar_double);
@@ -434,5 +434,6 @@ void ClientMessage::send(Application &cl, const void *p, size_t size){
 	}
 #endif
 }
+
 
 

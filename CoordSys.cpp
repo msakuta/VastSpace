@@ -13,6 +13,7 @@
 #include "Universe.h"
 #include "draw/WarDraw.h"
 #include "Game.h"
+#include "Application.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -1173,11 +1174,26 @@ void CoordSys::deleteAll(CoordSys **pp){
 	free(cs2);
 }
 
+static Player *obtainPlayer(void *pvapp){
+	Application *app = (Application*)pvapp;
+	if(!app){
+		CmdPrint("ERROR: Application object could not be obtained.");
+		return NULL;
+	}
+	Game *game = app->clientGame ? app->clientGame : app->pg;
+	if(!game){
+		CmdPrint("ERROR: Game object could not be obtained.");
+		return NULL;
+	}
+	Player *player = game->player;
+	if(!player)
+		CmdPrint("ERROR: Player object could not be obtained.");
+	return player;
+}
+
 static int cmd_ls(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
-	Player *ppl = game->player;
+	Player *ppl = obtainPlayer(pv);
 	if(!ppl){
-		CmdPrint("ERROR: Player object could not be found.");
 		return 1;
 	}
 	if(argc <= 1){
@@ -1200,10 +1216,8 @@ static int cmd_ls(int argc, char *argv[], void *pv){
 }
 
 static int cmd_ll(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
-	Player *ppl = game->player;
+	Player *ppl = obtainPlayer(pv);
 	if(!ppl){
-		CmdPrint("ERROR: Player object could not be found.");
 		return 1;
 	}
 	if(argc <= 1){
@@ -1226,20 +1240,18 @@ static int cmd_ll(int argc, char *argv[], void *pv){
 }
 
 static int cmd_pwd(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
-	Player *ppl = game->player;
+	Player *ppl = obtainPlayer(pv);
 	if(!ppl){
-		CmdPrint("ERROR: Player object could not be found.");
 		return 1;
 	}
 	CmdPrint(ppl->cs->getpath());
 	return 0;
 }
 
-bool CoordSys::registerCommands(Game *game){
-	CmdAddParam("ls", cmd_ls, game);
-	CmdAddParam("ll", cmd_ll, game);
-	CmdAddParam("pwd", cmd_pwd, game);
+bool CoordSys::registerCommands(Application *app){
+	CmdAddParam("ls", cmd_ls, app);
+	CmdAddParam("ll", cmd_ll, app);
+	CmdAddParam("pwd", cmd_pwd, app);
 	return true;
 }
 

@@ -253,6 +253,7 @@ template<typename T> inline Quat<T> Quat<T>::slerp(const typename Quat<T>::tt &q
 	}
 	else {
 		double sp = ::sqrt(ss);
+
 		double ph = ::acos(qr);
 		double pt = ph * t;
 		double t1 = ::sin(pt) / sp;
@@ -280,7 +281,7 @@ template<typename T> template<typename T2> inline Quat<T2> Quat<T>::cast()const{
 }
 
 /// Instantiation of sqrtepsilon in case of float.
-template<> float Quat<float>::sqrtepsilon(){return ::sqrt(FLT_EPSILON);}
+template<> inline float Quat<float>::sqrtepsilon(){return ::sqrt(FLT_EPSILON);}
 
 }
 

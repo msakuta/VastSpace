@@ -1,7 +1,10 @@
 /** \file
  * \brief Implementation of Sceptor class.
  */
-#include "sceptor.h"
+
+#define NOMINMAX // Prevent Windows.h from defining min and max macros
+
+#include "Sceptor.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "judge.h"
@@ -9,13 +12,13 @@
 #include "Warpable.h"
 #include "Docker.h"
 #include "Scarry.h"
-#include "draw/material.h"
+//#include "draw/material.h"
 //#include "worker.h"
 //#include "glsl.h"
 //#include "astro_star.h"
 //#include "sensor.h"
 #include "cmd.h"
-#include "astrodraw.h"
+//#include "astrodraw.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "sqadapt.h"
@@ -32,6 +35,7 @@ extern "C"{
 }
 #include <assert.h>
 #include <string.h>
+#include <algorithm>
 
 
 /* some common constants that can be used in static data definition. */
@@ -162,9 +166,11 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->throttle = .5;
 	p->cooldown = 1.;
 	WarSpace *ws;
+#ifndef DEDICATED
 	if(w && (ws = (WarSpace*)w))
 		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
+#endif
 		p->pf = NULL;
 //	p->mother = mother;
 	p->hitsound = -1;
@@ -204,12 +210,16 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 }*/
 
 int Sceptor::popupMenu(PopupMenu &list){
+#ifndef DEDICATED
 	int ret = st::popupMenu(list);
 	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 		.append(sqa_translate("Cloak"), 0, "cloak")
 		.append(sqa_translate("Delta Formation"), 0, "delta_formation");
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 Entity::Props Sceptor::props()const{
@@ -223,11 +233,13 @@ bool Sceptor::undock(Docker *d){
 	st::undock(d);
 	task = Undock;
 	mother = d;
+#ifndef DEDICATED
 	if(this->pf)
 		ImmobilizeTefpol3D(this->pf);
 	WarSpace *ws;
 	if(w && w->getTefpol3d())
 		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+#endif
 	d->baycool += 1.;
 	return true;
 }
@@ -450,8 +462,10 @@ Entity *Sceptor::findMother(){
 void Sceptor::enterField(WarField *target){
 	WarSpace *ws = *target;
 
+#ifndef DEDICATED
 	if(ws)
 		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+#endif
 
 	if(ws && ws->bdw){
 		static btCompoundShape *shape = NULL;
@@ -492,10 +506,12 @@ void Sceptor::enterField(WarField *target){
 }
 
 void Sceptor::leaveField(WarField *w){
+#ifndef DEDICATED
 	if(pf){
 		ImmobilizeTefpol3D(pf);
 		pf = NULL;
 	}
+#endif
 	st::leaveField(w);
 }
 
@@ -509,8 +525,8 @@ void Sceptor::anim(double dt){
 	Mat4d mat, imat;
 
 	if(Docker *docker = *w){
-		fuel = min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
-		health = min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
+		fuel = std::min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
+		health = std::min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
 		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
@@ -828,8 +844,8 @@ void Sceptor::anim(double dt){
 							btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
 							if(laac[0] < 0) p->thrusts[0][0] += -laac[0];
 							if(0 < laac[0]) p->thrusts[0][1] += laac[0];
-							p->thrusts[0][0] = min(p->thrusts[0][0], 1.);
-							p->thrusts[0][1] = min(p->thrusts[0][1], 1.);
+							p->thrusts[0][0] = std::min(p->thrusts[0][0], 1.);
+							p->thrusts[0][1] = std::min(p->thrusts[0][1], 1.);
 						}
 						if(trigger && p->task == Attack && dist < 5. * 2. && .99 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
@@ -941,10 +957,12 @@ void Sceptor::anim(double dt){
 								p->task = Dock;
 							else{
 								mother->dock(pt);
+#ifndef DEDICATED
 								if(p->pf){
 									ImmobilizeTefpol3D(p->pf);
 									p->pf = NULL;
 								}
+#endif
 								p->docked = true;
 	/*							if(mother->cargo < scarry_cargousage(mother)){
 									scarry_undock(mother, pt, w);
@@ -1129,6 +1147,7 @@ void Sceptor::anim(double dt){
 	else{
 		pt->health += dt;
 		if(0. < pt->health){
+#ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
@@ -1196,9 +1215,11 @@ void Sceptor::anim(double dt){
 #endif
 				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
+#endif
 			this->w = NULL;
 		}
 		else{
+#ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 			if(tell){
 				double pos[3], dv[3], dist;
@@ -1216,6 +1237,7 @@ void Sceptor::anim(double dt){
 					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
+#endif
 			pt->pos += pt->velo * dt;
 		}
 	}
@@ -1236,8 +1258,10 @@ void Sceptor::anim(double dt){
 }
 
 void Sceptor::clientUpdate(double dt){
+#ifndef DEDICATED
 	if(this->pf)
 		MoveTefpol3D(this->pf, pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
+#endif
 
 	if(0 < this->health){
 	}
@@ -1259,6 +1283,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
+#ifndef DEDICATED
 /*		effectDeath(w, pt);*/
 		if(tell) for(i = 0; i < 32; i++){
 			double pos[3], velo[3];
@@ -1273,6 +1298,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 		}
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+#endif
 		health = -2.;
 //		pt->deaths++;
 	}
@@ -1438,7 +1464,8 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
-		(*e)->command(&DockCommand());
+		DockCommand com;
+		(*e)->command(&com);
 	}
 	return 0;
 }
@@ -1446,7 +1473,8 @@ int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
 int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
-		(*e)->command(&ParadeCommand());
+		ParadeCommand com;
+		(*e)->command(&com);
 	}
 	return 0;
 }
@@ -1454,7 +1482,8 @@ int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 static int cmd_delta_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
-		(*e)->command(&DeltaCommand());
+		DeltaCommand com;
+		(*e)->command(&com);
 	}
 	return 0;
 }
@@ -1467,9 +1496,22 @@ static void register_server(){
 	Game::addServerInits(register_sceptor_cmd);
 }
 
-static Initializator sss(register_server);
+static class SceptorInit{
+public:
+	SceptorInit(){
+		register_server();
+	}
+} sss;
+
 
 
 double Sceptor::pid_pfactor = 1.;
 double Sceptor::pid_ifactor = 1.;
 double Sceptor::pid_dfactor = 1.;
+
+#ifdef DEDICATED
+void Sceptor::draw(WarDraw*){}
+void Sceptor::drawtra(WarDraw*){}
+void Sceptor::drawOverlay(WarDraw*){}
+#endif
+

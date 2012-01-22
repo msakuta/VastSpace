@@ -11,7 +11,7 @@
 #include "shield.h"
 extern "C"{
 #include <clib/avec3.h>
-#include <clib/suf/sufdraw.h>
+//#include <clib/suf/sufdraw.h>
 }
 
 #define PIDAIM_PROFILE 0

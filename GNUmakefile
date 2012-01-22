@@ -30,6 +30,9 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Application.o\
  ${OUTDIR}/Server.o\
  ${OUTDIR}/dedsvr.o\
+ ${OUTDIR}/Bullet.o\
+ ${OUTDIR}/Sceptor.o\
+ ${OUTDIR}/Docker.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
  ${OUTDIR}/calc/calc0.o\
@@ -80,6 +83,12 @@ ${OUTDIR}/Application.o: $(call depends,Application.cpp)
 ${OUTDIR}/Server.o: $(call depends,Server.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Bullet.o: $(call depends,Bullet.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc

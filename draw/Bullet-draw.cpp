@@ -7,12 +7,10 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 //#include "warutil.h"
-//#include "draw/material.h"
+#include "draw/material.h"
 #include "btadapt.h"
 extern "C"{
-#ifndef DEDICATED
 #include "bitmap.h"
-#endif
 #include <clib/amat4.h>
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -55,7 +53,6 @@ void Bullet::unserialize(UnserializeContext &sc){
 }
 
 /* color sequences */
-#ifndef DEDICATED
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
 static const struct color_node cnl_fireburn[] = {
 	{0.03, COLOR32RGBA(255, 255, 255, 255)},
@@ -63,7 +60,6 @@ static const struct color_node cnl_fireburn[] = {
 	{0.035, COLOR32RGBA(128, 32, 32, 127)},
 };
 static const struct color_sequence cs_fireburn = DEFINE_COLSEQ(cnl_fireburn, (COLORREF)-1, 0.1);
-#endif
 
 
 #if 0
@@ -224,7 +220,6 @@ struct bullet *BulletNew(warf_t *w, entity_t *owner, double damage){
 }
 #endif
 
-#ifndef DEDICATED
 static double noise_pixel(int x, int y, int bit){
 	struct random_sequence rs;
 	initfull_rseq(&rs, x + (bit << 16), y);
@@ -391,7 +386,6 @@ void explosmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_
 	glPopMatrix();
 	glPopAttrib();
 }
-#endif
 
 #if 0
 static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
@@ -471,7 +465,6 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 
 void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 	int j;
-#ifndef DEDICATED
 	struct tent3d_line_list *tell = w->getTeline3d();
 	struct tent3d_fpol_list *tepl = w->getTefpol3d();
 	if(!tell)
@@ -510,7 +503,6 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 			}
 		}
 	}
-#endif
 	if(/*pb->vft == &ExplosiveBullet_s || */30. < damage){
 		Entity *pt;
 		Vec3d pos;
@@ -525,7 +517,6 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 			makedamage(pb, pt, w, (pb->damage * pb->damage / 20000. / 20000. - VECSDIST(pos, pt->pos)) * 20000. * 20000. / pb->damage, 0);
 		}*/
 
-#ifndef DEDICATED
 		if(30. < damage) for(j = 0; j < 5; j++){
 			double velo[3];
 			velo[0] = .05 * (drseq(&w->rs) - .5);
@@ -555,7 +546,6 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 			AddWarmapDecal(w->wmd, pos, (void*)4);
 		}*/
 		AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000. + .003, quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
-#endif
 	}
 #if 0
 	else if(pb->vft != &ShotgunBullet_s || rseq(&w->rs) % 8 == 0/*VECSDIST(pb->pos, w->pl->pos) < .05*/){
@@ -719,7 +709,6 @@ void Bullet::anim(double dt){
 			pb->pos = pos;
 			pt->bullethit(pb);
 #if 1
-#ifndef DEDICATED
 			{ /* ricochet */
 				if(ws->tell && rseq(&w->rs) % (ws->effects + 1) == 0){
 /*					int j, n;
@@ -780,7 +769,6 @@ void Bullet::anim(double dt){
 					}
 #endif
 			}
-#endif
 			damage = pb->damage;
 
 #if 0
@@ -810,7 +798,6 @@ void Bullet::anim(double dt){
 #endif
 #endif
 
-#ifndef DEDICATED
 			if(pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
 				extern int bullet_kills, missile_kills;
 				if(!strcmp("Bullet", classname()))
@@ -818,16 +805,13 @@ void Bullet::anim(double dt){
 				else if(!strcmp("Missile", classname()))
 					missile_kills++;
 			}
-#endif
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
 			bulletkill(-1, NULL);
 			w = NULL;
 
-#ifndef DEDICATED
 			extern int bullet_hits;
 			bullet_hits++;
-#endif
 
 /*			{
 				avec3_t delta;
@@ -930,9 +914,100 @@ void Bullet::postframe(){
 		owner = NULL;
 }
 
-#ifdef DEDICATED
-void Bullet::drawtra(wardraw_t *wd){}
+void Bullet::drawtra(wardraw_t *wd){
+	double length = (this->damage * .25 + VECSLEN(this->velo) * 5 * 5 + 20) * .0005;
+	double span, scale;
+	double pixels;
+	double width = this->damage * .00005, wpix;
+
+	Vec3d velo = this->velo - wd->vw->velo;
+	double velolen = velo.len();
+	double f = 1. * velolen * length;
+	span = MIN(f, .1);
+	length *= span / f;
+
+	if(wd->vw->gc->cullFrustum(pos, span))
+		return;
+	scale = fabs(wd->vw->gc->scale(pos));
+	pixels = span * scale;
+	if(pixels < 2)
+		return;
+
+	wpix = width * scale;
+
+	/*	glLineWidth((GLfloat)m / DISTANCE(view, pb->pos));*/
+	if(/*VECSDIST(pb->pos, wd->view) < .2 * .2*/ 1 < wpix){
+		Vec3d start, end;
+		glColor4ub(255,127,0,255);
+		start = this->pos;
+		end = this->pos;
+		end += velo * -(runlength / velolen < length ? runlength / velolen : length);
+		if(true || damage < 500.){
+			static GLuint texname = 0;
+			static const GLfloat envcolor[4] = {.5,0,0,1};
+			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+#if 1
+			if(!texname){
+				suftexparam_t stp;
+				stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+				stp.env = GL_REPLACE;
+				stp.magfil = GL_LINEAR;
+				stp.minfil = GL_LINEAR;
+				texname = CallCacheBitmap5("bullet.bmp", "bullet.bmp", &stp, NULL, NULL);
+			}
+			glCallList(texname);
+/*			glMatrixMode(GL_TEXTURE);
+			glPushMatrix();
+			glRotatef(90, 0, 0, 1);
+			glScalef(9./32., 1, 1);
+			glMatrixMode(GL_MODELVIEW);*/
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE); // Add blend
+			gldTextureBeam(wd->vw->pos, start, end, length / width < 10. ? length / 10. : width);
+/*			glMatrixMode(GL_TEXTURE);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);*/
+#else
+			if(!texname){
+				GLubyte texbits[64][64][2];
+				int i, j;
+				for(i = 0; i < 64; i++) for(j = 0; j < 64; j++){
+					int a, r;
+					r = (32 * 32 - (i - 32) * (i - 32) - (j - 32) * (j - 32)) * 255 / 32 / 32;
+					texbits[i][j][0] = 255 - MIN(255, MAX(0, r));
+					r = (32 * 32 - (i - 32) * (i - 32) - (j - 32) * (j - 32)) * 255 / 32 / 32;
+					texbits[i][j][1] = MIN(255, MAX(0, r));
+				}
+				glGenTextures(1, &texname);
+				glBindTexture(GL_TEXTURE_2D, texname);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 64, 64, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texbits);
+			}
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_BLEND);
+			glDisable(GL_CULL_FACE);
+			glColor4f(1,.5,0,1);
+			glBindTexture(GL_TEXTURE_2D, texname);
+			gldTextureBeam(wd->vw->pos, start, end, width);
 #endif
+			glPopAttrib();
+		}
+		else
+			gldBeam(wd->vw->pos, start, end, length / 100.);
+	}
+	else if(.05 < wpix){
+		glBegin(GL_LINES);
+		glColor4d(1., .75, .25, wpix);
+		glVertex3dv(pos);
+		glVertex3dv(pos - velo * (runlength / velolen < length ? runlength / velolen : length));
+		glEnd();
+	}
+}
 
 bool Bullet::isTargettable()const{
 	return false;

@@ -7,7 +7,7 @@
 #ifdef _WIN32
 typedef unsigned int GLuint;
 #else
-#include <gl/gl.h>
+#include <GL/gl.h>
 #endif
 
 EXPORT void sparkdraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);

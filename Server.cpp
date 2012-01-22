@@ -322,7 +322,7 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 	ServerClient *&scs = sv.scs;
 
 	thread_create(&sv.animThread, AnimThread, &sv);
-	timer_set(&sv.timer, 1000, &sv.hAnimEvent);
+	timer_set(&sv.timer, FRAMETIME, &sv.hAnimEvent);
 
 	volatile u_short port;
 	char *hostname = sv.hostname;
@@ -502,7 +502,7 @@ static void *AnimThread(Server *ps){
 		if(ps->terminating)
 			break;
 		if(ps->pg && lock_mutex(&ps->mg)){
-			ps->pg->anim(1.);
+			ps->pg->anim(FRAMETIME / 1000.);
 			ServerClient *psc = ps->cl;
 
 			BinSerializeStream bss;

@@ -1248,10 +1248,22 @@ static int cmd_pwd(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+CoordSys::CtorMap &ctormap();
+
+static int cmd_cslist(int argc, char *argv[], void *pv){
+	CoordSys::CtorMap &cm = ctormap();
+	for(CoordSys::CtorMap::iterator it = cm.begin(); it != cm.end(); it++){
+		CmdPrint(it->first);
+	}
+	CmdPrint(cpplib::dstring() << cm.size() << " CoordSys-derived classes are listed");
+	return 0;
+}
+
 bool CoordSys::registerCommands(Application *app){
 	CmdAddParam("ls", cmd_ls, app);
 	CmdAddParam("ll", cmd_ll, app);
 	CmdAddParam("pwd", cmd_pwd, app);
+	CmdAddParam("cslist", cmd_cslist, app);
 	return true;
 }
 

@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "Application.h"
 #include "CoordSys.h"
 #include "astro.h"
 #include "Viewer.h"
@@ -13,7 +14,6 @@
 #include "Universe.h"
 #include "draw/WarDraw.h"
 #include "Game.h"
-#include "Application.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>

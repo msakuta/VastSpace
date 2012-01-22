@@ -321,8 +321,10 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 	Server &sv = *pstdi->sv;
 	ServerClient *&scs = sv.scs;
 
+#ifdef DEDICATED
 	thread_create(&sv.animThread, AnimThread, &sv);
 	timer_set(&sv.timer, FRAMETIME, &sv.hAnimEvent);
+#endif
 
 	volatile u_short port;
 	char *hostname = sv.hostname;

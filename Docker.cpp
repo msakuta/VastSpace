@@ -2,7 +2,9 @@
 #include "judge.h"
 #include "serial_util.h"
 #include "Player.h"
-//#include "antiglut.h"
+#ifndef DEDICATED
+#include "antiglut.h"
+#endif
 //#include "sceptor.h"
 //#include "Beamer.h"
 #include "sqadapt.h"

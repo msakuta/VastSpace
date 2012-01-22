@@ -206,60 +206,6 @@ const unsigned ScarryDocker::classid = registerClass("ScarryDocker", Conster<Sca
 
 const char *ScarryDocker::classname()const{return "ScarryDocker";}
 
-int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
-	GLWdock *p = this;
-	int ind, sel0, sel1, ix;
-	int fonth = (int)getFontHeight();
-	if(st::mouse(ws, mbutton, state, mx, my))
-		return 1;
-	ind = (my - 5 * 12) / 12;
-	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
-		int num = 1, i;
-		if(ind == -2)
-			docker->remainDocked = !docker->remainDocked;
-		if(ind == -1)
-			grouping = !grouping;
-		else if(grouping){
-			std::map<cpplib::dstring, int> map;
-
-			for(Entity *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
-				map[e->dispname()]++;
-			}
-			for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++) if(!ind--){
-				for(Entity *e = docker->el; e;){
-					Entity *next = e->next;
-					if(!strcmp(e->dispname(), it->first))
-						docker->postUndock(e->toDockable());
-					e = next;
-				}
-				break;
-			}
-		}
-		else for(Entity *e = docker->el; e; e = e->next) if(!ind--){
-			docker->postUndock(e->toDockable());
-			break;
-		}
-		return 1;
-	}
-	return 0;
-}
-
-void GLWdock::postframe(){
-	if(docker && !docker->e->w)
-		docker = NULL;
-}
-
-
-int cmd_dockmenu(int argc, char *argv[], void *pv){
-	Player &pl = *(Player*)pv;
-	if(pl.selected.empty() || !(*pl.selected.begin())->w)
-		return 0;
-	Docker *pb = (*pl.selected.begin())->getDocker();
-	if(pb)
-		glwAppend(new GLWdock("Dock", pb));
-	return 0;
-}
-
 
 #define SCARRY_MAX_HEALTH 200000
 #define SCARRY_MAX_SPEED .03

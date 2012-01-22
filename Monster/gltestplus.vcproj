@@ -432,6 +432,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Docker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\dstring.cpp"
 				>
 			</File>
@@ -589,6 +593,10 @@
 				</File>
 				<File
 					RelativePath="..\draw\Attacker-Draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\draw\Bullet-draw.cpp"
 					>
 				</File>
 				<File

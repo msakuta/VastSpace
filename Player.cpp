@@ -221,7 +221,8 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << (unsigned)selected.size();
 	for(SelectSet::iterator it = selected.begin(); it != selected.end(); it++)
 		sc.o << *it;
-	sc.o << pos << velo << accel << rot;
+	sc.o << pos << velo << accel;
+	sc.o << rot;
 	sc.o << fov;
 	sc.o << cs;
 	sc.o << (unsigned)tplist.size();
@@ -243,7 +244,17 @@ void Player::unserialize(UnserializeContext &sc){
 		// Read and discard stream
 //		selected.insert(e);
 	}
-	sc.i >> pos >> velo >> accel >> rot;
+	sc.i >> pos >> velo >> accel;
+
+	// Ignore rotation updates if this Player is me, in order to prevent lagged server
+	// from slowing the client's camera.
+	if(application.clientGame && application.clientGame->player == this){
+		Quatd dummyrot;
+		sc.i >> dummyrot;
+	}
+	else
+		sc.i >> rot;
+
 	sc.i >> fov;
 	sc.i >> cs;
 	sc.i >> ntplist;

@@ -21,7 +21,7 @@
 #define PROTOCOL_MINOR 1
 
 /// The default port for the protocol.
-#define PROTOCOL_PORT 54345
+#define PROTOCOL_PORT 6668
 
 /* note that this header file is designed to be compatible among
   Windows platforms and others, typically GNU Linux. So it's here

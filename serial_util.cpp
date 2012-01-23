@@ -5,6 +5,7 @@ extern "C"{
 #include <sstream>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h> // Exact-width integer types
 using namespace std;
 
 
@@ -93,10 +94,13 @@ inline SerializeStream &BinSerializeStream::write(T a){
 	return *this;
 }
 
-SerializeStream &BinSerializeStream::operator <<(int a){return write(a);}
-SerializeStream &BinSerializeStream::operator <<(unsigned a){return write(a);}
-SerializeStream &BinSerializeStream::operator <<(long a){return write(a);}
-SerializeStream &BinSerializeStream::operator <<(unsigned long a){return write(a);}
+// Fixes #37 Binary serialized stream cares about exact size of the variable.
+// We'll use C99 standard's exact-width integer types to explicitly specify
+// the size of output variable size.
+SerializeStream &BinSerializeStream::operator <<(int a){return write((int32_t)a);}
+SerializeStream &BinSerializeStream::operator <<(unsigned a){return write((uint32_t)a);}
+SerializeStream &BinSerializeStream::operator <<(long a){return write((int32_t)a);}
+SerializeStream &BinSerializeStream::operator <<(unsigned long a){return write((uint32_t)a);}
 SerializeStream &BinSerializeStream::operator <<(bool a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(float a){return write(a);}
 SerializeStream &BinSerializeStream::operator <<(double a){return write(a);}
@@ -140,7 +144,7 @@ SerializeStream *BinSerializeStream::substream(){
 }
 
 void BinSerializeStream::join(tt *o){
-	*this << (unsigned long)((BinSerializeStream*)o)->size;
+	*this << (unsigned)((BinSerializeStream*)o)->size;
 	write(*(BinSerializeStream*)o);
 }
 
@@ -271,6 +275,9 @@ UnserializeStream &BinUnserializeStream::read(char *s, std::streamsize ssize){
 	return *this;
 }
 
+// Refs #37 We'd have to care about variable sizes in unserialization stream,
+// too. But now, these methods are only called in Windows client, which means
+// interpreted by VC9's IL32P64 rule.
 bool BinUnserializeStream::eof()const{return !size;}
 bool BinUnserializeStream::fail()const{return !size;}
 UnserializeStream &BinUnserializeStream::operator>>(int &a){return read(a);}

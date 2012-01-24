@@ -50,9 +50,20 @@ public:
 	SOCKET con;
 
 	void init(bool isClient);
-	void hostgame(Game *);
 
+	/// \brief Try to start a server game.
+	/// \param game The game object to host as a server.
+	/// \param port Port the server listen to.
+	/// \returns False if failed to start server.
+	bool hostgame(Game *game, int port);
+
+	/// \brief Send chat message to the server.
 	void sendChat(const char *buf);
+
+	/// \brief Called when the application needs to report something bad to the user.
+	///
+	/// Override in the derived classes to implement the method.
+	virtual void errorMessage(const char *);
 };
 
 #ifdef _WIN32
@@ -105,10 +116,10 @@ public:
 
 	ClientApplication();
 	~ClientApplication();
-	void hostgame(Game *);
-	int joingame();
+	int joingame(const char *host, int port);
 	void display_func();
 	void mouse_func(int button, int state, int x, int y);
+	void errorMessage(const char *str);
 };
 
 extern ClientApplication application;

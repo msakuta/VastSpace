@@ -26,7 +26,7 @@ ClientApplication::~ClientApplication(){
 
 
 static void quitgame(ClientApplication *, bool ret){
-	exit(ret);
+//	exit(ret);
 }
 
 static void SignalMessage(const char *text, void *){
@@ -272,12 +272,15 @@ cleanup:
 }
 
 
-int ClientApplication::joingame(){
+int ClientApplication::joingame(const char *host, int port){
 	JoinGameData data;
 //	quitgame(pc);
 //	data.plogfile = &pc->logfile;
-	data.port = PROTOCOL_PORT;
-	strncpy(data.addr,  "127.0.0.1", sizeof data.addr);
+	data.port = port;
+	if(!host) // If not specified, connect to localhost.
+		strncpy(data.addr, "127.0.0.1", sizeof data.addr);
+	else
+		strncpy(data.addr, host, sizeof data.addr);
 	strncpy(data.name, "The Client", sizeof data.name);
 	if(!ServerThreadHandleValid(server)/* && IDCANCEL != DialogBoxParam(hInst, (LPCTSTR)IDD_JOINGAME, pc->w, JoinGameDlg, (LPARAM)&data)*/){
 		static ServerThreadData std;
@@ -357,69 +360,10 @@ int ClientApplication::joingame(){
 	return 0;
 }
 
-void ClientApplication::hostgame(Game *game){
-#if 0
-	static bool init = false;
-	static DLGTEMPLATE *dt;
-	if(!init){
-		DLGITEMTEMPLATE *it;
-		init = true;
-		dt = (DLGTEMPLATE*)malloc(sizeof*dt + sizeof*it);
-		dt->style = WS_CAPTION | WS_VISIBLE;
-		dt->dwExtendedStyle = 0;
-		dt->cdit = 1;
-		dt->x = 200;
-		dt->y = 200;
-		dt->cx = 200;
-		dt->cy = 200;
-		it = (DLGITEMTEMPLATE*)&dt[1];
-		it->style = 0;
-		it->dwExtendedStyle = 0;
-		it->x = 20;
-		it->y = 20;
-		it->cx = 30;
-		it->cy = 30;
-		it->id = IDOK;
-	}
-	DialogBoxIndirect(hInst, dt, pc->w, (DLGPROC)About);
-#else
-//	quitgame(pc);
-	ServerThreadData gstd;
-//	HostGameDlgData data;
-//	data.pstd = &gstd;
-//	data.plogfile = &pc->logfile;
-	gstd.maxclients = 2;
-	gstd.client = (void*)this;
-	gstd.port = PROTOCOL_PORT;
-	if(!ServerThreadHandleValid(server) /*&& IDCANCEL != DialogBoxParam(hInst, (LPCTSTR)IDD_HOSTGAME, pc->w, HostGameDlg, (LPARAM)&data)*/){
-		strncpy(gstd.hostname, "localhost", sizeof gstd.hostname);
-//		gstd.modified = (void(*)(void*))SignalEvent;
-//		gstd.modified_data = (void*)pc->hDrawEvent;
-		gstd.message = SignalMessage;
-		gstd.message_data = this;
-//		gstd.already = SignalAlready;
-//		gstd.already_data = pc;
-//		gstd.moveto = SignalMoveto;
-//		gstd.moveto_data = pc;
-//		gstd.lineto = SignalLineto;
-//		gstd.lineto_data = pc;
-/*		hServerThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ServerThread, &std, 0, &dw);*/
-		if(!StartServer(&gstd, &server)){
-			MessageBox(w, "Server could not start.", "", 0);
-			return;
-		}
-		server.sv->pg = game;
-//		pc->waiter = new ServerWaiter(&pc->server);
-//		pc->attr[0] = 33;
-//		pc->attr[1] = 33;
-//		pc->attr[2] = 34;
-//		pc->pvlist = new PictVertexList[pc->ncl = gstd.maxclients];
-		mode = ServerWaitGame;
-//		RedrawMenu(pc);
-//		DrawWaiting(pc);
-	}
-#endif
+void ClientApplication::errorMessage(const char *str){
+	MessageBox(w, "Server could not start.", "", 0);
 }
+
 
 void ClientApplication::mouse_func(int button, int state, int x, int y){
 	clientGame->mouse_func(button, state, x, y);

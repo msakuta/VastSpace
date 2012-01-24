@@ -356,44 +356,29 @@ static void SignalMessage(const char *text, void *){
 	CmdPrint(dstring() << "MSG> " << text);
 }
 
-void Application::hostgame(Game *game){
-//	quitgame(pc);
+bool Application::hostgame(Game *game, int port){
 	ServerThreadData gstd;
-//	HostGameDlgData data;
-//	data.pstd = &gstd;
-//	data.plogfile = &pc->logfile;
 	gstd.maxclients = 2;
 	gstd.client = (void*)this;
-	gstd.port = PROTOCOL_PORT;
-	if(!ServerThreadHandleValid(server) /*&& IDCANCEL != DialogBoxParam(hInst, (LPCTSTR)IDD_HOSTGAME, pc->w, HostGameDlg, (LPARAM)&data)*/){
+	gstd.port = port;
+	if(!ServerThreadHandleValid(server)){
 		strncpy(gstd.hostname, "localhost", sizeof gstd.hostname);
-//		gstd.modified = (void(*)(void*))SignalEvent;
-//		gstd.modified_data = (void*)pc->hDrawEvent;
 		gstd.message = SignalMessage;
 		gstd.message_data = this;
-//		gstd.already = SignalAlready;
-//		gstd.already_data = pc;
-//		gstd.moveto = SignalMoveto;
-//		gstd.moveto_data = pc;
-//		gstd.lineto = SignalLineto;
-//		gstd.lineto_data = pc;
-/*		hServerThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ServerThread, &std, 0, &dw);*/
 		if(!StartServer(&gstd, &server)){
-			fprintf(stderr, "Server could not start.");
-			return;
+			errorMessage("Server could not start.");
+			return false;
 		}
 		server.sv->pg = game;
-//		pc->waiter = new ServerWaiter(&pc->server);
-//		pc->attr[0] = 33;
-//		pc->attr[1] = 33;
-//		pc->attr[2] = 34;
-//		pc->pvlist = new PictVertexList[pc->ncl = gstd.maxclients];
 		mode = ServerWaitGame;
-//		RedrawMenu(pc);
-//		DrawWaiting(pc);
+		return true;
 	}
+	return false;
 }
 
+void Application::errorMessage(const char *str){
+	fprintf(stderr, "%s\n", str);
+}
 
 
 

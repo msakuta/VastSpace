@@ -1906,6 +1906,10 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			BindKillFocus();
 			break;
 
+		case WM_USER:
+			MessageBox(hWnd, (LPCTSTR)wParam, "Message", MB_ICONERROR);
+			break;
+
 		case WM_DESTROY:
 			KillTimer(hWnd, 2);
 
@@ -1989,12 +1993,33 @@ int main(int argc, char *argv[])
 	unsigned flags = _controlfp(0,_EM_INVALID|_EM_ZERODIVIDE);
 	printf("controlfp %p\n", flags);
 #endif
-	HSQUIRRELVM &v = g_sqvm;
 
-//	glwcmdmenu = glwMenu("Command Menu", 0, NULL, NULL, NULL, 1);
-//	glwfocus = NULL;
-//	pl.cs = &universe;
-	bool isClient = 1 < argc && !strcmp(argv[1], "/client");
+	bool isClient = false;
+	const char *host = NULL;
+	int port = PROTOCOL_PORT;
+
+	// Parse the command line
+	for(int i = 1; i < argc; i++){
+		if(!strcmp(argv[i], "-h")){ // host
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -h parameter is missing.\n");
+				return 1;
+			}
+			host = argv[i+1];
+			i++;
+		}
+		else if(!strcmp(argv[i], "-p")){ // port
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -h parameter is missing.\n");
+				return 1;
+			}
+			port = atoi(argv[i+1]);
+			i++;
+		}
+		else if(!strcmp(argv[i], "-c")){ // client
+			isClient = true;
+		}
+	}
 
 	if(isClient){
 		server = NULL;
@@ -2067,11 +2092,6 @@ int main(int argc, char *argv[])
 
 	CmdExec("@exec autoexec.cfg");
 
-	if(isClient)
-		application.joingame();
-	else
-		application.hostgame(server);
-
 #if USEWIN
 	{
 		MSG msg;
@@ -2109,6 +2129,16 @@ int main(int argc, char *argv[])
 			rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
 /*		hWnd = CreateWindow(atom, "gltest", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 			100, 100, 400, 400, NULL, NULL, hInst, NULL);*/
+
+#endif
+
+		// Try to host or join game after the window is created to enable message boxes to report errors.
+		if(isClient)
+			application.joingame(host, port);
+		else
+			application.hostgame(server, port);
+
+#if USEWIN
 
 		do{
 			if(PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)){

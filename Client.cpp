@@ -138,7 +138,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 						pc->maxclients = n;
 				}
 				else if(!strcmp(lbuf, "START")){
-					assert(!pc->pg);
+					assert(!pc->serverGame);
 //					pc->pg = new RemoteGame(pc->con);
 //					pc->mode = ClientGame;
 					mode = 4;
@@ -316,6 +316,8 @@ int ClientApplication::joingame(const char *host, int port){
 				struct hostent *he;
 				he = gethostbyname(data.addr);
 				if(!he){
+					MessageBox(w, "gethostbyname() failed.\n"
+					"Make sure the destination host name is valid and try again.", "Error", MB_OK);
 					closesocket(s);
 					WSACleanup();
 					return FALSE;

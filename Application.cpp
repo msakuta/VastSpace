@@ -262,6 +262,7 @@ static int cmd_maxclients(int argc, char *argv[], void *pv){
 	else{
 		CmdPrint(gltestp::dstring() << "maxclient is " << app->maxclients);
 	}
+	return 0;
 }
 
 

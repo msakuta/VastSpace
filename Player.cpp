@@ -451,9 +451,9 @@ void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
 	for(int i = 0; i < 4; i++)
 		uss >> q[i];
 #ifndef _WIN32
-	sc.sv->pg->players[sc.id]->setrot(q);
+	sc.sv->serverGame->players[sc.id]->setrot(q);
 #else
-	application.pg->players[sc.id]->setrot(q);
+	application.serverGame->players[sc.id]->setrot(q);
 #endif
 }
 
@@ -477,9 +477,9 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	if(argc == 4){
 		Vec3d v(atof(argv[1]), atof(argv[2]), atof(argv[3]));
 #ifdef _WIN32
-		application.pg->players[sc->id]->setrot(v);
+		application.serverGame->players[sc->id]->setrot(v);
 #else
-		sc->sv->pg->players[sc->id]->setrot(v);
+		sc->sv->serverGame->players[sc->id]->setrot(v);
 #endif
 	}
 	return 0;
@@ -487,9 +487,9 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 
 void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
-	if(!application.pg)
+	if(!application.serverGame)
 		return;
-	Player &pl = *application.pg->player;
+	Player &pl = *application.serverGame->player;
 	CmdAdd("rot", cmd_rot);
 //	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
@@ -840,7 +840,7 @@ GLWstateButton *Player::newMoveOrderButton(ClientApplication &pl, const char *fi
 			GLWstateButton(filename, filename1, tip), cl(acl){}
 		virtual bool state()const{
 #ifdef _WIN32
-			return cl && cl->pg && cl->pg->player && cl->pg->player->moveorder;
+			return cl && cl->serverGame && cl->serverGame->player && cl->serverGame->player->moveorder;
 #else
 			return false;
 #endif

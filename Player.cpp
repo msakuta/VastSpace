@@ -451,7 +451,7 @@ void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
 	for(int i = 0; i < 4; i++)
 		uss >> q[i];
 #ifndef _WIN32
-	sc.sv->serverGame->players[sc.id]->setrot(q);
+	sc.sv->pg->players[sc.id]->setrot(q);
 #else
 	application.serverGame->players[sc.id]->setrot(q);
 #endif
@@ -479,7 +479,7 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 #ifdef _WIN32
 		application.serverGame->players[sc->id]->setrot(v);
 #else
-		sc->sv->serverGame->players[sc->id]->setrot(v);
+		sc->sv->pg->players[sc->id]->setrot(v);
 #endif
 	}
 	return 0;

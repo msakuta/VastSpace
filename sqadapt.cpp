@@ -1824,7 +1824,7 @@ CMSQ::CMSQ() : st("SQ"){
 
 void CMSQ::send(){
 	if(application.mode & application.ServerBit){
-		HSQUIRRELVM v = application.pg->sqvm;
+		HSQUIRRELVM v = application.serverGame->sqvm;
 		StackReserver sr(v);
 		sq_pushroottable(v);
 		sq_pushstring(v, _SC("clientMessage"), -1);
@@ -1845,7 +1845,7 @@ bool CMSQ::sqf_define(HSQUIRRELVM v){
 
 void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
 	if(application.mode & application.ServerBit){
-		HSQUIRRELVM v = application.pg->sqvm;
+		HSQUIRRELVM v = application.serverGame->sqvm;
 		StackReserver sr(v);
 		sq_pushroottable(v);
 		sq_pushstring(v, _SC("clientMessage"), -1);

@@ -11,11 +11,11 @@ int main(int argc, char *argv[]){
 	if(!application.parseArgs(argc, argv))
 		return 1;
 
-	application.pg = new ServerGame();
+	application.serverGame = new ServerGame();
 
 	application.init(false);
 
-	application.hostgame(application.pg, application.port);
+	application.hostgame(application.serverGame, application.port);
 
 	char line[512];
 	while(fgets(line, sizeof line, stdin))

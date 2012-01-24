@@ -1086,7 +1086,7 @@ static ServerClient *cl_add(ServerClient **root, mutex_t *m){
 	ret->attr[1] = 33;
 	ret->attr[2] = 34;
 
-	ret->id = *root == NULL ? 0 : (*root)->id + 1; /* numbered from zero */
+	ret->id = *root == NULL ? 1 : (*root)->id + 1; /* numbered from zero */
 	ret->name = NULL;
 	create_mutex(&ret->m);
 #if OUTFILE

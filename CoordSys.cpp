@@ -1180,7 +1180,7 @@ static Player *obtainPlayer(void *pvapp){
 		CmdPrint("ERROR: Application object could not be obtained.");
 		return NULL;
 	}
-	Game *game = app->clientGame ? app->clientGame : app->pg;
+	Game *game = app->clientGame ? app->clientGame : app->serverGame;
 	if(!game){
 		CmdPrint("ERROR: Game object could not be obtained.");
 		return NULL;

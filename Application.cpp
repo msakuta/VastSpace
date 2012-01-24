@@ -128,8 +128,8 @@ CMHalt::CMHalt() : st("Halt"){
 void CMHalt::send(Entity &pt){
 	if(application.mode & application.ServerBit){
 		HaltCommand com;
-		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
-		if(it != application.pg->idmap().end())
+		Game::IdMap::const_iterator it = application.serverGame->idmap().find(pt.getid());
+		if(it != application.serverGame->idmap().end())
 			((Entity*)it->second)->command(&com);
 	}
 	else{
@@ -225,8 +225,8 @@ void CMMove::send(const Vec3d &destpos, Entity &pt){
 	if(application.mode & application.ServerBit){
 		MoveCommand com;
 		com.destpos = destpos;
-		Game::IdMap::const_iterator it = application.pg->idmap().find(pt.getid());
-		if(it != application.pg->idmap().end())
+		Game::IdMap::const_iterator it = application.serverGame->idmap().find(pt.getid());
+		if(it != application.serverGame->idmap().end())
 			((Entity*)it->second)->command(&com);
 	}
 	else{
@@ -248,6 +248,21 @@ void CMMove::interpret(ServerClient &sc, UnserializeStream &uss){
 		((Entity*)it->second)->command(&com);
 }
 
+
+
+
+/// \brief Returns maximum clients allowed in the hosted or joined game.
+///
+/// You cannot set the value with this console command, yet.
+static int cmd_maxclients(int argc, char *argv[], void *pv){
+	Application *app = (Application*)pv;
+	if(app->server.sv){
+		CmdPrint(gltestp::dstring() << "maxclient is " << app->server.sv->maxncl);
+	}
+	else{
+		CmdPrint(gltestp::dstring() << "maxclient is " << app->maxclients);
+	}
+}
 
 
 
@@ -311,39 +326,39 @@ void Application::sendChat(const char *buf){
 
 Application::Application() :
 	mode(InactiveGame),
-	pg(NULL),
+	serverGame(NULL),
 	clientGame(NULL),
 	con(INVALID_SOCKET),
 	isClient(false),
 	host(""),
-	port(PROTOCOL_PORT)
+	port(PROTOCOL_PORT),
+	maxclients(2)
 {}
 
 void Application::init(bool isClient)
 {
-	Game *&server = pg;
-
 	viewport vp;
 	CmdInit(&vp);
 	CmdAdd("exit", cmd_exit);
 	CmdAdd("sq", cmd_sq);
 	CmdAdd("say", cmd_say);
 	CmdAddParam("move", cmd_move, this);
+	CmdAddParam("maxclients", cmd_maxclients, this);
 	CoordSys::registerCommands(&application);
-	if(server){
-		CvarAdd("pause", &server->universe->paused, cvar_int);
-		CvarAdd("g_timescale", &server->universe->timescale, cvar_double);
-		CvarAdd("seat", &server->player->chasecamera, cvar_int);
+	if(serverGame){
+		CvarAdd("pause", &serverGame->universe->paused, cvar_int);
+		CvarAdd("g_timescale", &serverGame->universe->timescale, cvar_double);
+		CvarAdd("seat", &serverGame->player->chasecamera, cvar_int);
 	}
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 //	Player::cmdInit(application);
 
-	if(server)
-		sqa_init(server);
+	if(serverGame)
+		sqa_init(serverGame);
 	if(clientGame)
 		sqa_init(clientGame);
 	if(!isClient){
-		HSQUIRRELVM v = pg->sqvm;
+		HSQUIRRELVM v = serverGame->sqvm;
 		const SQChar *s = _SC("space.dat");
 		StackReserver sr(v);
 		sq_pushroottable(v); // root
@@ -351,7 +366,7 @@ void Application::init(bool isClient)
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
 			sq_getstring(v, -1, &s);
 		}
-		StellarFileLoad(s, server->universe);
+		StellarFileLoad(s, serverGame->universe);
 	}
 
 #if 0
@@ -374,10 +389,18 @@ bool Application::parseArgs(int argc, char *argv[]){
 		}
 		else if(!strcmp(argv[i], "-p")){ // port
 			if(argc <= i+1){
-				fprintf(stderr, "Argument for -h parameter is missing.\n");
+				fprintf(stderr, "Argument for -p parameter is missing.\n");
 				return false;
 			}
 			port = atoi(argv[i+1]);
+			i++;
+		}
+		else if(!strcmp(argv[i], "-m")){ // maxclients
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -m parameter is missing.\n");
+				return false;
+			}
+			maxclients = atoi(argv[i+1]);
 			i++;
 		}
 		else if(!strcmp(argv[i], "-c")){ // client
@@ -393,7 +416,7 @@ static void SignalMessage(const char *text, void *){
 
 bool Application::hostgame(Game *game, int port){
 	ServerThreadData gstd;
-	gstd.maxclients = 2;
+	gstd.maxclients = maxclients;
 	gstd.client = (void*)this;
 	gstd.port = port;
 	if(!ServerThreadHandleValid(server)){

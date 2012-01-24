@@ -132,10 +132,10 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 				else if(!strncmp(lbuf, "MAXCLT ", sizeof"MAXCLT "-1)){
 					int n;
 					n = atoi(&lbuf[sizeof"MAXCLT "-1]);
-//					static_cast<ClientWaiter*>(pc->waiter)->m = n;
-//					if(pc->pvlist)
-//						free(pc->pvlist);
-//					pc->pvlist = new PictVertexList[pc->ncl = n];
+
+					// To be perfect, it needs synchronization
+					if(pc)
+						pc->maxclients = n;
 				}
 				else if(!strcmp(lbuf, "START")){
 					assert(!pc->pg);

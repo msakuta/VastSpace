@@ -33,7 +33,7 @@ public:
 	/// \brief The server game object.
 	///
 	/// Available only if the game is running in a dedicated server or a standalone client.
-	Game *pg;
+	Game *serverGame;
 
 	/// \brief The client's game, a copy of the server in the client process.
 	///
@@ -54,6 +54,8 @@ public:
 	gltestp::dstring host;
 
 	int port;
+
+	int maxclients;
 
 	void init(bool isClient);
 

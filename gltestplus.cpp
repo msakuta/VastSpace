@@ -1994,32 +1994,11 @@ int main(int argc, char *argv[])
 	printf("controlfp %p\n", flags);
 #endif
 
-	bool isClient = false;
-	const char *host = NULL;
-	int port = PROTOCOL_PORT;
-
 	// Parse the command line
-	for(int i = 1; i < argc; i++){
-		if(!strcmp(argv[i], "-h")){ // host
-			if(argc <= i+1){
-				fprintf(stderr, "Argument for -h parameter is missing.\n");
-				return 1;
-			}
-			host = argv[i+1];
-			i++;
-		}
-		else if(!strcmp(argv[i], "-p")){ // port
-			if(argc <= i+1){
-				fprintf(stderr, "Argument for -h parameter is missing.\n");
-				return 1;
-			}
-			port = atoi(argv[i+1]);
-			i++;
-		}
-		else if(!strcmp(argv[i], "-c")){ // client
-			isClient = true;
-		}
-	}
+	if(!application.parseArgs(argc, argv))
+		return 1;
+
+	bool isClient = application.isClient;
 
 	if(isClient){
 		server = NULL;
@@ -2134,9 +2113,9 @@ int main(int argc, char *argv[])
 
 		// Try to host or join game after the window is created to enable message boxes to report errors.
 		if(isClient)
-			application.joingame(host, port);
+			application.joingame(application.host, application.port);
 		else
-			application.hostgame(server, port);
+			application.hostgame(server, application.port);
 
 #if USEWIN
 

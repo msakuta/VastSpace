@@ -8,11 +8,14 @@
 DedicatedServerApplication application;
 
 int main(int argc, char *argv[]){
+	if(!application.parseArgs(argc, argv))
+		return 1;
+
 	application.pg = new ServerGame();
 
 	application.init(false);
 
-	application.hostgame(application.pg);
+	application.hostgame(application.pg, application.port);
 
 	char line[512];
 	while(fgets(line, sizeof line, stdin))

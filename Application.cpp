@@ -309,6 +309,16 @@ void Application::sendChat(const char *buf){
 }
 
 
+Application::Application() :
+	mode(InactiveGame),
+	pg(NULL),
+	clientGame(NULL),
+	con(INVALID_SOCKET),
+	isClient(false),
+	host(""),
+	port(PROTOCOL_PORT)
+{}
+
 void Application::init(bool isClient)
 {
 	Game *&server = pg;
@@ -350,6 +360,31 @@ void Application::init(bool isClient)
 	else
 		application.hostgame(server);
 #endif
+}
+
+bool Application::parseArgs(int argc, char *argv[]){
+	for(int i = 1; i < argc; i++){
+		if(!strcmp(argv[i], "-h")){ // host
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -h parameter is missing.\n");
+				return false;
+			}
+			host = argv[i+1];
+			i++;
+		}
+		else if(!strcmp(argv[i], "-p")){ // port
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -h parameter is missing.\n");
+				return false;
+			}
+			port = atoi(argv[i+1]);
+			i++;
+		}
+		else if(!strcmp(argv[i], "-c")){ // client
+			isClient = true;
+		}
+	}
+	return true;
 }
 
 static void SignalMessage(const char *text, void *){

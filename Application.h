@@ -49,7 +49,15 @@ public:
 	/// Only meaningful in Client, but placed here to simplify codes that'll need reinterpret_cast otherwise.
 	SOCKET con;
 
+	bool isClient;
+
+	gltestp::dstring host;
+
+	int port;
+
 	void init(bool isClient);
+
+	bool parseArgs(int argc, char *argv[]);
 
 	/// \brief Try to start a server game.
 	/// \param game The game object to host as a server.
@@ -64,6 +72,10 @@ public:
 	///
 	/// Override in the derived classes to implement the method.
 	virtual void errorMessage(const char *);
+
+protected:
+	/// Make this singleton by protecting the constructor.
+	Application();
 };
 
 #ifdef _WIN32

@@ -389,7 +389,10 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 				}
 
 				if(sv.started || sv.maxncl <= sv.ncl){
+//					int flag = 1;
+//					setsockopt(AcceptSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, sizeof flag);
 					send(AcceptSocket, "FULL\r\n", sizeof"FULL\r\n"-1, 0);
+//					fsync(AcceptSocket);
 					shutdown(AcceptSocket, SD_BOTH);
 					closesocket(AcceptSocket);
 					unlock_mutex(&sv.mcl);

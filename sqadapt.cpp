@@ -1804,7 +1804,6 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 
 
 
-#ifdef _WIN32
 /// \brief ClientMessage to notify something from the client's Squirrel VM to the server's one.
 struct CMSQ : public ClientMessage{
 	typedef ClientMessage st;
@@ -1866,6 +1865,5 @@ SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
 	}
 }
 
-#endif
 
 }

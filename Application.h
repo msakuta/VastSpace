@@ -70,9 +70,14 @@ public:
 	/// \brief Send chat message to the server.
 	void sendChat(const char *buf);
 
+	/// \brief Called when the application receives a message from the server object, typically a chat message.
+	///
+	/// The default is to output to console. Override in the derived classes to implement the method.
+	virtual void signalMessage(const char *text);
+
 	/// \brief Called when the application needs to report something bad to the user.
 	///
-	/// Override in the derived classes to implement the method.
+	/// The default is to write to stdout. Override in the derived classes to implement the method.
 	virtual void errorMessage(const char *);
 
 protected:
@@ -133,6 +138,7 @@ public:
 	int joingame(const char *host, int port);
 	void display_func();
 	void mouse_func(int button, int state, int x, int y);
+	void signalMessage(const char *text);
 	void errorMessage(const char *str);
 };
 

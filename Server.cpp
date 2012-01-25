@@ -250,8 +250,8 @@ static void WaitBroadcast(Server *sv, const char *msg){
 			pc++;
 		}
 		unlock_mutex(&sv->mcl);
-		if(sv->std.message)
-			sv->std.message(msg, sv->std.message_data);
+		if(sv->std.app)
+			sv->std.app->signalMessage(msg);
 		dstrfree(&ds);
 	}
 }
@@ -603,7 +603,7 @@ int StartServer(struct ServerThreadData *pstd, struct ServerThreadHandle *ph){
 		thread_null(&sv.animThread);
 		event_create(&sv.hAnimEvent);
 		timer_init(&sv.timer);
-		sv.client = pstd->client;
+		sv.app = pstd->app;
 		sv.maxncl = pstd->maxclients;
 		sv.command_proc = WaitCommand;
 		sv.terminating = 0;
@@ -659,12 +659,12 @@ void SendChatServer(ServerThreadHandle *p, const char *buf){
 			psc++;
 		}
 		unlock_mutex(&p->sv->mcl);
-		if(p->sv->std.message){
+		if(p->sv->std.app){
 			char *s;
 			s = strpbrk(dstr(&ds), "\r\n");
 			if(s)
 				*s = '\0';
-			p->sv->std.message(&dstr(&ds)[4], p->sv->std.message_data);
+			p->sv->std.app->signalMessage(&dstr(&ds)[4]);
 		}
 		dstrfree(&ds);
 	}

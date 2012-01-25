@@ -411,19 +411,13 @@ bool Application::parseArgs(int argc, char *argv[]){
 	return true;
 }
 
-static void SignalMessage(const char *text, void *){
-	CmdPrint(dstring() << "MSG> " << text);
-}
-
 bool Application::hostgame(Game *game, int port){
 	ServerThreadData gstd;
 	gstd.maxclients = maxclients;
-	gstd.client = (void*)this;
+	gstd.app = this;
 	gstd.port = port;
 	if(!ServerThreadHandleValid(server)){
 		strncpy(gstd.hostname, "localhost", sizeof gstd.hostname);
-		gstd.message = SignalMessage;
-		gstd.message_data = this;
 		if(!StartServer(&gstd, &server)){
 			errorMessage("Server could not start.");
 			return false;
@@ -433,6 +427,10 @@ bool Application::hostgame(Game *game, int port){
 		return true;
 	}
 	return false;
+}
+
+void Application::signalMessage(const char *text){
+	CmdPrint(dstring() << "MSG> " << text);
 }
 
 void Application::errorMessage(const char *str){

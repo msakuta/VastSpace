@@ -29,7 +29,7 @@ static void quitgame(ClientApplication *, bool ret){
 //	exit(ret);
 }
 
-static void SignalMessage(const char *text, void *){
+void ClientApplication::signalMessage(const char *text){
 	CmdPrint(dstring() << "MSG> " << text);
 	for(std::set<GLWchat*>::iterator it = GLWchat::wndlist.begin(); it != GLWchat::wndlist.end(); it++)
 		(*it)->append(text);
@@ -105,7 +105,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 					mode = 4;
 				}
 				else if(!strncmp(lbuf, "MSG ", 4)){
-					SignalMessage(&lbuf[4], (void*)pc);
+					pc->signalMessage(&lbuf[4]);
 				}
 /*				else if(!strncmp(lbuf, "MTO ", 4)){
 					int cid, cx, cy;

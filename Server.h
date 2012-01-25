@@ -128,6 +128,7 @@ static DWORD dummyThreadId;
 
 class Game;
 struct Server;
+class Application;
 
 struct ServerThreadHandle{
 	SOCKET listener;
@@ -137,22 +138,13 @@ struct ServerThreadHandle{
 #define ServerThreadHandleInit(p) ((p)->listener = INVALID_SOCKET, (p)->thread = NULL)
 #define ServerThreadHandleValid(p) thread_isvalid(&(p).thread)
 
-typedef struct ServerThreadData{
+/// \brief The data given to initialize the server object.
+struct ServerThreadData{
 	char hostname[MAX_HOSTNAME];
 	unsigned short port;
 	int maxclients;
-	void *client;
-/*	void (*modified)(void *);
-	void *modified_data;*/
-	void (*message)(const char *messagestring, void *);
-	void *message_data;
-/*	void (*already)(void *);
-	void *already_data;
-	void (*moveto)(unsigned long cid, int team, const char *coords, void *);
-	void *moveto_data;
-	void (*lineto)(unsigned long cid, int team, const char *coords, void *);
-	void *lineto_data;*/
-} ServerThreadData;
+	Application *app; ///< Reference to the Application object used to notify server events to the application.
+};
 
 /// \brief The object represents a client in the server process.
 struct ServerClient{
@@ -177,7 +169,7 @@ struct Server{
 	thread_t animThread;
 	event_t hAnimEvent;
 	timer_t timer;
-	void *client;
+	Application *app; ///< Reference to the Application object used to notify server events to the application.
 	SOCKET listener;
 	typedef std::list<ServerClient> ServerClientList;
 	ServerClientList cl; ///< Client list

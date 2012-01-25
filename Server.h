@@ -7,6 +7,8 @@
 //#include "game/gamedata.h"
 #include <stdio.h>
 
+#include <list>
+
 
 #define MAX_HOSTNAME 128
 
@@ -154,20 +156,15 @@ typedef struct ServerThreadData{
 
 /// \brief The object represents a client in the server process.
 struct ServerClient{
-	ServerClient *next; /* link-list */
-	Server *sv; /* redundant */
-	int status;
-#define KICKED 1
-#define SC_READY 2
-	short team, unit;
-	char attr[3];
-/*	void *p; *//* pointer into engine's entity list which indicate this client's ship */
-	unsigned long meid; /* id of the entity */
-	SOCKET s; /* keep connection on this socket */
-	mutex_t m; /* the mutex object to the socket, to make some longer messages atomic */
-	thread_t t;
-	int id;
-	char *name;
+	Server *sv; ///< Redundant reference to the server
+	bool kicked; ///< Flag indicating this client is being kicked.
+	short team; ///< Team id to filter chat messages.
+	unsigned long meid; ///< id of the player entity
+	SOCKET s; ///< keep connection on this socket
+	mutex_t m; ///< the mutex object to the socket, to make some longer messages atomic
+	thread_t t; ///< Thread handle for receive thread for this client.
+	int id; ///< Id of this Client.
+	char *name; ///< Name of this client, used for chatting.
 	struct sockaddr_in tcp, udp;
 	/* if tcp connection is established, no need to store the address, but udp needs its destination */
 };
@@ -182,10 +179,10 @@ struct Server{
 	timer_t timer;
 	void *client;
 	SOCKET listener;
-	ServerClient *cl; /* client list */
-	int ncl, maxncl;
-	ServerClient *scs; /* serverclient server (fake client indicating the server) */
-	ServerClient *(*position)[2]; /* assignments */
+	typedef std::list<ServerClient> ServerClientList;
+	ServerClientList cl; ///< Client list
+	int maxncl; ///< Maximum size of cl allowed
+	ServerClient *scs; ///< serverclient server (fake client indicating the server)
 	void (*command_proc)(ServerClient *, char *);
 	volatile long terminating; /* the server is shutting down! */
 	volatile long started; /* game started; no further users can log in */
@@ -199,6 +196,7 @@ struct Server{
 	Server();
 	~Server();
 	void WaitModified();
+	ServerClient &addServerClient();
 protected:
 	void SendWait(ServerClient *cl);
 };

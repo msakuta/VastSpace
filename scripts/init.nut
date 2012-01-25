@@ -315,7 +315,7 @@ function translate(id){
 tlate <- translate;
 
 // load the module
-{
+if(0){
 	local dllpath = debugBuild() ?
 		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
 		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
@@ -326,7 +326,7 @@ tlate <- translate;
 }
 
 // load the module
-{
+if(0){
 	local dllpath = debugBuild() ?
 		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
 		x64Build() ? "surface.dll" : "surface.dll";
@@ -337,7 +337,7 @@ tlate <- translate;
 }
 
 // load the module
-{
+if(0){
 	local dllpath = debugBuild() ?
 		x64Build() ? "gundam.dll" : "..\\gltestplus\\Debug\\gundam.dll" :
 		x64Build() ? "gundam.dll" : "gundam.dll";

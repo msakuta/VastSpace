@@ -363,16 +363,7 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 					printf("%d ClientThreads deleted\n", dels = cl_clean(sv.cl, &sv.mcl));
 				}
 
-#ifdef _WIN32
-				printf("Client connected. family=%d, port=%d, addr=%d.%d.%d.%d\n", client.sin_family, client.sin_port
-					, client.sin_addr.S_un.S_un_b.s_b1
-					, client.sin_addr.S_un.S_un_b.s_b2
-					, client.sin_addr.S_un.S_un_b.s_b3
-					, client.sin_addr.S_un.S_un_b.s_b4
-					);
-#else
-				printf("Client connected. family=%d, port=%d, addr=%s\n", client.sin_family, client.sin_port, inet_ntoa(client.sin_addr));
-#endif
+				printf("Client connected. family=%d, port=%d, addr=%s\n", client.sin_family, ntohs(client.sin_port), inet_ntoa(client.sin_addr));
 				{
 					int sb;
 					socklen_t size = sizeof sb;
@@ -1026,10 +1017,10 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 		cl->s = INVALID_SOCKET;
 
 		if(cl->kicked){
-			printf("[%d] Socket Closed by kicking. %s:%d\n", tid, inet_ntoa(cl->tcp.sin_addr), cl->tcp.sin_port);
+			printf("[%d] Socket Closed by kicking. %s:%d\n", tid, inet_ntoa(cl->tcp.sin_addr), ntohs(cl->tcp.sin_port));
 		}
 		else{
-			printf("[%d] Socket Closed by foreign host. %s:%d\n", tid, inet_ntoa(cl->tcp.sin_addr), cl->tcp.sin_port);
+			printf("[%d] Socket Closed by foreign host. %s:%d\n", tid, inet_ntoa(cl->tcp.sin_addr), ntohs(cl->tcp.sin_port));
 		}
 		if(cl->name){
 			dstr_t ds = dstr0;

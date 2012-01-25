@@ -637,7 +637,7 @@ function initUI(){
 
 	local chat = GLWchat();
 	chat.x = 0;
-	chat.width = 300;
+	chat.width = 500;
 	chat.y = 0;
 	chat.height = 200;
 	chat.closable = true;

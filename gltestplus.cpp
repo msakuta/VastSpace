@@ -1677,8 +1677,10 @@ static void key_func(unsigned char key, int x, int y){
 	}
 
 	// The Esc key is the last resort to exit controlling
-	if(key == ESC)
-		server->player->uncontrol();
+	if(key == ESC){
+		if(server && server->player)
+			server->player->uncontrol();
+	}
 
 	switch(key){
 		case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':

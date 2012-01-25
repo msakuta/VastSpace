@@ -265,6 +265,52 @@ static int cmd_maxclients(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+static gltestp::dstring dstrip(const sockaddr_in &s){
+	unsigned long ipa;
+	ipa = ntohl(s.sin_addr.s_addr);
+	gltestp::dstring ret = (ipa>>24) & 0xff;
+	ret << ".";
+	ret << ((ipa>>16) & 0xff);
+	ret << ".";
+	ret << ((ipa>>8) & 0xff);
+	ret << ".";
+	ret << (ipa % 0x100);
+	ret << ":";
+	ret << ntohs(s.sin_port);
+	return ret;
+}
+
+/// \brief Console command to return connected client list.
+///
+/// You cannot edit or something about the printed list.
+///
+/// Actually, the server's dummy client entry is printed too.
+static int cmd_clients(int argc, char *argv[], void *pv){
+	Application *app = (Application*)pv;
+	if(app->server.sv){
+		Server &server = *app->server.sv;
+		if(lock_mutex(&server.mcl)){
+			Server::ServerClientList::iterator it = server.cl.begin();
+			for(; it != server.cl.end(); it++)
+				CmdPrint(gltestp::dstring() << it->id << ": \"" << it->name << "\", " << dstrip(it->tcp));
+			CmdPrint(gltestp::dstring() << server.cl.size() << " clients listed");
+			unlock_mutex(&server.mcl);
+		}
+	}
+#ifndef DEDICATED
+	else{
+		// TODO: mutex synchronization is necessary to avoid dirty writes from the ClientThread.
+		ClientApplication *capp = (ClientApplication*)app;
+		ClientApplication::ClientList::iterator it = capp->ad.begin();
+		int i = 0;
+		for(; it != capp->ad.end(); it++)
+			CmdPrint(gltestp::dstring() << i++ << ": \"" << it->name << "\", " << dstrip(it->tcp));
+		CmdPrint(gltestp::dstring() << capp->ad.size() << " clients listed");
+	}
+#endif
+	return 0;
+}
+
 
 
 
@@ -345,6 +391,7 @@ void Application::init(bool isClient)
 	CmdAdd("say", cmd_say);
 	CmdAddParam("move", cmd_move, this);
 	CmdAddParam("maxclients", cmd_maxclients, this);
+	CmdAddParam("clients", cmd_clients, this);
 	CoordSys::registerCommands(&application);
 	if(serverGame){
 		CvarAdd("pause", &serverGame->universe->paused, cvar_int);

@@ -167,7 +167,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 						unsigned int ip, port;
 						char ipbuf[12];
 						char *namebuf;
-						ClientApplication::ClientClient &cc = pc->ad[modi];
+						ClientApplication::ClientClient &cc = pc->ad[pc->ad.size() - modi - 1];
 
 						strncpy(ipbuf, lbuf, 8+1+4);
 						ipbuf[8+1+4] = '\0';
@@ -175,8 +175,8 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 
 						// Parse ip and port
 						if(sscanf(ipbuf, "%08x:%4x", &ip, &port)){
-							cc.ip = ip;
-							cc.port = port;
+							cc.tcp.sin_addr.s_addr = htonl(ip);
+							cc.tcp.sin_port = htons(port);
 						}
 
 						// Parse the flag whether this user entry is me

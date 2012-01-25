@@ -96,9 +96,9 @@ public:
 	/// \biref Client registry in the Client process.
 	struct ClientClient{
 		gltestp::dstring name;
-		unsigned ip;
-		unsigned port;
+		struct sockaddr_in tcp;
 	};
+	typedef std::vector<ClientClient> ClientList;
 
 	HWND w;
 	HANDLE hDrawThread; // the drawing thread
@@ -106,7 +106,7 @@ public:
 //	HANDLE hDrawEvent;
 	HANDLE hGameMutex; /* game data storage must be mutually exclusive */
 //	void *offbuf;
-	std::vector<ClientClient> ad;
+	ClientList ad;
 	unsigned thisad;
 //	int mousemode;
 //	Game::DrawData dd;

@@ -413,7 +413,6 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 					pcl = &sv.addServerClient();
 					pcl->s = AcceptSocket;
 			//		pcl->rate = .5;
-					pcl->name = NULL;
 					pcl->tcp = client;
 					unlock_mutex(&sv.mcl);
 				}
@@ -610,7 +609,7 @@ int StartServer(struct ServerThreadData *pstd, struct ServerThreadHandle *ph){
 		sv.started = 0;
 		create_mutex(&sv.mcl);
 		create_mutex(&sv.mg);
-#ifdef DEDICATED
+#if 0 && defined DEDICATED
 		sv.scs = NULL;
 #else
 		ServerClient &scs = sv.addServerClient();
@@ -678,7 +677,7 @@ void KickClientServer(ServerThreadHandle *ph, int clid){
 		ServerClient *p = &*pp;
 		if(!clid--){
 			if(p->s != INVALID_SOCKET){
-				printf("Kicked %s\n", p->name);
+				printf("Kicked %s\n", static_cast<const char*>(p->name));
 				send(p->s, "KICK\r\n", sizeof"KICK\r\n", 0);
 				ShutdownClient(p);
 				p->kicked = true;
@@ -923,26 +922,21 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 //			cl->sv->std.already(cl->sv->std.already_data);
 	}
 	else if(!strncmp(lbuf, "LOGIN ", sizeof "LOGIN "-1)){
-		const char *const str = &lbuf[sizeof "LOGIN "-1];
+		gltestp::dstring str = &lbuf[sizeof "LOGIN "-1];
 		if(lock_mutex(&cl->sv->mcl)){
-			if(cl->name)
-				free(cl->name);
 			int ai = 0;
-			char *str2;
-			str2 = (char*)malloc(strlen(str)+1);
-			strcpy(str2, str);
+			gltestp::dstring str2 = str;
+			// Loop until there is no duplicate name
 			do{
 				Server::ServerClientList::iterator psc = cl->sv->cl.begin();
 				while(psc != cl->sv->cl.end()){
-					if(&*psc != cl && psc->name && !strcmp(psc->name, str2))
+					ServerClient *p = &*psc;
+					if(p != cl && p->name == str2)
 						break;
 					psc++;
 				}
 				if(psc != cl->sv->cl.end()){
-					char *oldstr2 = str2;
-					str2 = (char*)malloc(strlen(str)+12+1);
-					sprintf(str2, "%s (%d)", str, ++ai);
-					free(oldstr2);
+					str2 = str << " (" << ++ai << ")";
 				}
 				else break;
 			} while(1);
@@ -1074,7 +1068,7 @@ ServerClient &Server::addServerClient(){
 	ret.s = INVALID_SOCKET;
 
 	ret.id = id;
-	ret.name = NULL;
+	ret.name = "";
 	create_mutex(&ret.m);
 #if OUTFILE
 	ret->obytes = 0;
@@ -1108,29 +1102,10 @@ static void cl_freenode(Server::ServerClientList::iterator p){
 	if(p->id)
 		thread_join(&p->t);
 
-	if(p->id && p->name) free(p->name); /* name is always stored in heap */
 	delete_mutex(&p->m); /* the mutex object is always created so always deleted */
 #if OUTFILE
 	if(p->ofp) fclose(p->ofp);
 #endif
-}
-
-/** delete, returns nonzero on failure */
-static int cl_delp(Server::ServerClientList &root, ServerClient *dst, mutex_t *m){
-	lock_mutex(m);
-	Server::ServerClientList::iterator p = root.begin();
-	while(p != root.end()){
-		if(&*p == dst){
-			thread_t t;
-			t = p->t;
-			cl_freenode(p);
-			unlock_mutex(m);
-			root.erase(p);
-			return 0;
-		}
-	}
-	unlock_mutex(m);
-	return 1;
 }
 
 /** delete terminated thread, returns nonzero on failure */
@@ -1139,14 +1114,15 @@ static int cl_clean(Server::ServerClientList &root, mutex_t *m){
 	Server::ServerClientList::iterator p = root.begin();
 /*	lock_mutex(m);*/
 	while(p != root.end()){
-		if(p->id && p->s == INVALID_SOCKET){
-			thread_t t;
-			t = p->t;
+		ServerClient *psc = &*p;
+		if(psc->id && psc->s == INVALID_SOCKET){
 			cl_freenode(p);
+			p = root.erase(p);
 			ret++;
-			continue;
+			continue; // Do not advance the iterator if erased one
 		}
-		p++;
+		else
+			p++;
 	}
 /*	unlock_mutex(m);*/
 	return ret;

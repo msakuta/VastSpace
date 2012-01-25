@@ -4,7 +4,7 @@
  * \brief Definition of Server class and related classes and functions.
  */
 
-//#include "game/gamedata.h"
+#include "dstring.h"
 #include <stdio.h>
 
 #include <list>
@@ -156,7 +156,7 @@ struct ServerClient{
 	mutex_t m; ///< the mutex object to the socket, to make some longer messages atomic
 	thread_t t; ///< Thread handle for receive thread for this client.
 	int id; ///< Id of this Client.
-	char *name; ///< Name of this client, used for chatting.
+	gltestp::dstring name; ///< Name of this client, used for chatting.
 	struct sockaddr_in tcp, udp;
 	/* if tcp connection is established, no need to store the address, but udp needs its destination */
 };

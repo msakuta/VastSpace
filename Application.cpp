@@ -331,7 +331,7 @@ Application::Application() :
 	clientGame(NULL),
 	con(INVALID_SOCKET),
 	isClient(false),
-	host(""),
+	host("Server"),
 	port(PROTOCOL_PORT),
 	maxclients(2)
 {}
@@ -417,7 +417,7 @@ bool Application::hostgame(Game *game, int port){
 	gstd.app = this;
 	gstd.port = port;
 	if(!ServerThreadHandleValid(server)){
-		strncpy(gstd.hostname, "localhost", sizeof gstd.hostname);
+		strncpy(gstd.hostname, host, sizeof gstd.hostname);
 		if(!StartServer(&gstd, &server)){
 			errorMessage("Server could not start.");
 			return false;

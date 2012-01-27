@@ -51,11 +51,14 @@ public:
 
 	bool isClient;
 
-	gltestp::dstring host;
+	/// Parameters required for starting a Server.
+	ServerParams serverParams;
 
-	int port;
+	/// Login name for joining a remote game.
+	gltestp::dstring loginName;
 
-	int maxclients;
+	/// The file pointer to write chat logs.
+	FILE *logfile;
 
 	void init(bool isClient);
 
@@ -83,6 +86,7 @@ public:
 protected:
 	/// Make this singleton by protecting the constructor.
 	Application();
+	~Application();
 };
 
 #ifdef _WIN32

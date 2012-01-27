@@ -139,8 +139,8 @@ struct ServerThreadHandle{
 #define ServerThreadHandleValid(p) thread_isvalid(&(p).thread)
 
 /// \brief The data given to initialize the server object.
-struct ServerThreadData{
-	char hostname[MAX_HOSTNAME];
+struct ServerParams{
+	gltestp::dstring hostname;
 	unsigned short port;
 	int maxclients;
 	Application *app; ///< Reference to the Application object used to notify server events to the application.
@@ -180,7 +180,7 @@ struct Server{
 	volatile long started; /* game started; no further users can log in */
 	mutex_t mcl; /* client list's mutex object */
 	mutex_t mg; /* Game object access */
-	ServerThreadData std;
+	ServerParams std;
 	FILE *logfp;
 	unsigned char *sendbuf;
 	size_t sendbufsiz;
@@ -193,7 +193,7 @@ protected:
 	void SendWait(ServerClient *cl);
 };
 
-extern int StartServer(ServerThreadData *, struct ServerThreadHandle *);
+extern int StartServer(ServerParams *, struct ServerThreadHandle *);
 extern void StopServer(ServerThreadHandle *);
 extern void SendChatServer(ServerThreadHandle *, const char *buf);
 extern void KickClientServer(ServerThreadHandle *, int clid);

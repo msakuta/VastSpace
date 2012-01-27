@@ -235,6 +235,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
+				OutputFile="..\..\gltestptest\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\SQUIRREL3\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				ModuleDefinitionFile="gltestplus.def"
@@ -757,6 +758,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Respawn.h"
 				>
 			</File>
@@ -1051,6 +1056,10 @@
 		</File>
 		<File
 			RelativePath=".\EntityCommand.cd"
+			>
+		</File>
+		<File
+			RelativePath="..\gltestplus.rc"
 			>
 		</File>
 	</Files>

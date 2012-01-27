@@ -260,7 +260,7 @@ static int cmd_maxclients(int argc, char *argv[], void *pv){
 		CmdPrint(gltestp::dstring() << "maxclient is " << app->server.sv->maxncl);
 	}
 	else{
-		CmdPrint(gltestp::dstring() << "maxclient is " << app->maxclients);
+		CmdPrint(gltestp::dstring() << "maxclient is " << app->serverParams.maxclients);
 	}
 	return 0;
 }
@@ -377,10 +377,19 @@ Application::Application() :
 	clientGame(NULL),
 	con(INVALID_SOCKET),
 	isClient(false),
-	host("Server"),
-	port(PROTOCOL_PORT),
-	maxclients(2)
-{}
+	logfile(NULL),
+	loginName("The Client")
+{
+	serverParams.app = this;
+	serverParams.hostname = "Server";
+	serverParams.port = PROTOCOL_PORT;
+	serverParams.maxclients = 2;
+}
+
+Application::~Application(){
+	if(logfile)
+		fclose(logfile);
+}
 
 void Application::init(bool isClient)
 {
@@ -432,7 +441,7 @@ bool Application::parseArgs(int argc, char *argv[]){
 				fprintf(stderr, "Argument for -h parameter is missing.\n");
 				return false;
 			}
-			host = argv[i+1];
+			serverParams.hostname = argv[i+1];
 			i++;
 		}
 		else if(!strcmp(argv[i], "-p")){ // port
@@ -440,7 +449,7 @@ bool Application::parseArgs(int argc, char *argv[]){
 				fprintf(stderr, "Argument for -p parameter is missing.\n");
 				return false;
 			}
-			port = atoi(argv[i+1]);
+			serverParams.port = atoi(argv[i+1]);
 			i++;
 		}
 		else if(!strcmp(argv[i], "-m")){ // maxclients
@@ -448,7 +457,15 @@ bool Application::parseArgs(int argc, char *argv[]){
 				fprintf(stderr, "Argument for -m parameter is missing.\n");
 				return false;
 			}
-			maxclients = atoi(argv[i+1]);
+			serverParams.maxclients = atoi(argv[i+1]);
+			i++;
+		}
+		else if(!strcmp(argv[i], "-n")){ // login name
+			if(argc <= i+1){
+				fprintf(stderr, "Argument for -n parameter is missing.\n");
+				return false;
+			}
+			loginName = argv[i+1];
 			i++;
 		}
 		else if(!strcmp(argv[i], "-c")){ // client
@@ -459,13 +476,8 @@ bool Application::parseArgs(int argc, char *argv[]){
 }
 
 bool Application::hostgame(Game *game, int port){
-	ServerThreadData gstd;
-	gstd.maxclients = maxclients;
-	gstd.app = this;
-	gstd.port = port;
 	if(!ServerThreadHandleValid(server)){
-		strncpy(gstd.hostname, host, sizeof gstd.hostname);
-		if(!StartServer(&gstd, &server)){
+		if(!StartServer(&serverParams, &server)){
 			errorMessage("Server could not start.");
 			return false;
 		}
@@ -478,6 +490,8 @@ bool Application::hostgame(Game *game, int port){
 
 void Application::signalMessage(const char *text){
 	CmdPrint(dstring() << "MSG> " << text);
+	if(logfile)
+		fprintf(logfile, "%s\n", text);
 }
 
 void Application::errorMessage(const char *str){

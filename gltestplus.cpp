@@ -44,6 +44,7 @@
 #include "draw/ShaderBind.h"
 #include "draw/OpenGLState.h"
 #include "avi.h"
+#include "resource.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -1534,7 +1535,16 @@ static int cmd_eject(int argc, char *argv[]){
 }
 
 static int cmd_chasecamera(int argc, char *argv[]){
-	if(!server->player->selected.empty()){
+	if(application.clientGame){
+		Player *player = application.clientGame->player;
+		if(player && !player->selected.empty()){
+			player->cs = (*player->selected.begin())->w->cs;
+			player->chases.clear();
+			for(Player::SelectSet::iterator it = player->selected.begin(); it != player->selected.end(); it++)
+				player->chases.insert(*it);
+		}
+	}
+	else if(!server->player->selected.empty()){
 		server->player->chase = *server->player->selected.begin();
 		server->player->cs = (*server->player->selected.begin())->w->cs;
 		server->player->chases.clear();
@@ -1987,6 +1997,121 @@ static int cmd_say(int argc, char *argv[]){
 }
 
 
+#ifdef _WIN32
+static bool LogSelect(HWND hDlg, int res, bool overwrite = true, char *retbuf = NULL, size_t retbufsiz = 0){
+	char buf[MAX_PATH] = "tdos.log";
+	OPENFILENAME ofn = {
+		sizeof(OPENFILENAME), //  DWORD         lStructSize; 
+		hDlg, //  HWND          hwndOwner; 
+		NULL, // HINSTANCE     hInstance; ignored
+		"Log File\0*\0", //  LPCTSTR       lpstrFilter; 
+		NULL, //  LPTSTR        lpstrCustomFilter; 
+		0, // DWORD         nMaxCustFilter; 
+		0, // DWORD         nFilterIndex; 
+		buf, // LPTSTR        lpstrFile; 
+		sizeof buf, // DWORD         nMaxFile; 
+		NULL, //LPTSTR        lpstrFileTitle; 
+		0, // DWORD         nMaxFileTitle; 
+		".", // LPCTSTR       lpstrInitialDir; 
+		"Select File Name for the Logfile", // LPCTSTR       lpstrTitle; 
+		overwrite ? OFN_OVERWRITEPROMPT : 0, // DWORD         Flags; 
+		0, // WORD          nFileOffset; 
+		0, // WORD          nFileExtension; 
+		NULL, // LPCTSTR       lpstrDefExt; 
+		0, // LPARAM        lCustData; 
+		NULL, // LPOFNHOOKPROC lpfnHook; 
+		NULL, // LPCTSTR       lpTemplateName; 
+	};
+	if(GetSaveFileName(&ofn)){
+		if(res)
+			SetDlgItemText(hDlg, res, buf);
+		if(retbuf)
+			strncpy(retbuf, buf, retbufsiz);
+		return true;
+	}
+	return false;
+}
+
+struct HostGameDlgData{
+	ServerParams *params;
+	gltestp::dstring loginName;
+	FILE **plogfile;
+	bool isClient;
+};
+
+static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
+	static char logfilename[MAX_PATH] = "chatlog.log";
+	static bool append = false;
+	switch(message){
+	case WM_INITDIALOG:
+		SetWindowLongPtr(hDlg, DWLP_USER, (LONG_PTR)lParam);
+		{
+			HostGameDlgData *pd = (HostGameDlgData*)lParam;
+			SetDlgItemText(hDlg, IDC_HOSTNAME, pd->params->hostname);
+			SetDlgItemInt(hDlg, IDC_PORT, pd->params->port, FALSE);
+			CheckDlgButton(hDlg, pd->isClient ? IDC_JOINGAME : IDC_HOSTGAME, BST_CHECKED);
+			SetDlgItemInt(hDlg, IDC_MAXCLIENTS, pd->params->maxclients, FALSE);
+			EnableWindow(GetDlgItem(hDlg, IDC_MAXCLIENTS), pd->isClient ? FALSE : TRUE);
+			SetDlgItemText(hDlg, IDC_NAME, pd->loginName);
+			EnableWindow(GetDlgItem(hDlg, IDC_NAME), pd->isClient ? TRUE : FALSE);
+			SetDlgItemText(hDlg, IDC_LOGFILENAME, logfilename);
+			CheckDlgButton(hDlg, IDC_LOGFILEAPPEND, append ? BST_CHECKED : BST_UNCHECKED);
+			SetFocus(GetDlgItem(hDlg, IDC_HOSTNAME));
+		}
+		break;
+	case WM_COMMAND:
+		{
+			UINT id = LOWORD(wParam);
+			HostGameDlgData *pd = (HostGameDlgData*)GetWindowLongPtr(hDlg, DWLP_USER);
+			if (id == IDOK || id == IDCANCEL) 
+			{
+				if(id == IDOK){
+					BOOL res;
+					ServerParams &params = *pd->params;
+					char buf[MAX_HOSTNAME];
+					GetDlgItemText(hDlg, IDC_HOSTNAME, buf, sizeof buf);
+					params.hostname = buf;
+					params.port = GetDlgItemInt(hDlg, IDC_PORT, &res, FALSE);
+					if(!res || !params.port){
+						MessageBox(hDlg, "Invalid Port Number.", "Error", MB_ICONERROR);
+						return FALSE;
+					}
+					pd->isClient = IsDlgButtonChecked(hDlg, IDC_JOINGAME);
+
+					if(!GetDlgItemText(hDlg, IDC_NAME, buf, sizeof buf)){
+						MessageBox(hDlg, "Invalid Login Name.", "Error", MB_ICONERROR);
+						return FALSE;
+					}
+					pd->loginName = buf;
+
+					params.maxclients = params.maxclients = GetDlgItemInt(hDlg, IDC_MAXCLIENTS, &res, FALSE);
+					if(!res || params.maxclients < 1){
+						MessageBox(hDlg, "Max clients must be greater than one.", "Error", MB_ICONERROR);
+						return FALSE;
+					}
+					if(GetDlgItemText(hDlg, IDC_LOGFILENAME, logfilename, sizeof logfilename) && logfilename[0]){
+						append = IsDlgButtonChecked(hDlg, IDC_LOGFILEAPPEND);
+						*pd->plogfile = fopen(logfilename, append ? "a" : "w");
+					}
+				}
+				EndDialog(hDlg, LOWORD(wParam));
+				return TRUE;
+			}
+			else if(id == IDC_LOGFILESELECT){
+				LogSelect(hDlg, IDC_LOGFILENAME);
+			}
+			else if(id == IDC_HOSTGAME || id == IDC_JOINGAME){
+				pd->isClient = IsDlgButtonChecked(hDlg, IDC_JOINGAME);
+				EnableWindow(GetDlgItem(hDlg, IDC_MAXCLIENTS), pd->isClient ? FALSE : TRUE);
+				EnableWindow(GetDlgItem(hDlg, IDC_NAME), pd->isClient ? TRUE : FALSE);
+			}
+		}
+		break;
+	}
+	return FALSE;
+}
+#endif
+
 
 int main(int argc, char *argv[])
 {
@@ -2000,7 +2125,21 @@ int main(int argc, char *argv[])
 	if(!application.parseArgs(argc, argv))
 		return 1;
 
-	bool isClient = application.isClient;
+	bool &isClient = application.isClient;
+
+#ifdef _WIN32
+	// In Windows, the user have an opportunity to review and change the startup settings with GUI.
+	HostGameDlgData data;
+	data.params = &application.serverParams;
+	data.loginName = application.loginName;
+	data.plogfile = &application.logfile;
+	data.isClient = application.isClient;
+	UINT dialogRet = DialogBoxParam(GetModuleHandle(NULL), (LPCTSTR)IDD_JOINGAME, NULL, HostGameDlg, (LPARAM)&data);
+	if(IDCANCEL == dialogRet)
+		return 0;
+	isClient = data.isClient;
+	application.loginName = data.loginName;
+#endif
 
 	if(isClient){
 		server = NULL;
@@ -2115,9 +2254,9 @@ int main(int argc, char *argv[])
 
 		// Try to host or join game after the window is created to enable message boxes to report errors.
 		if(isClient)
-			application.joingame(application.host, application.port);
+			application.joingame(application.serverParams.hostname, application.serverParams.port);
 		else
-			application.hostgame(server, application.port);
+			application.hostgame(server, application.serverParams.port);
 
 #if USEWIN
 

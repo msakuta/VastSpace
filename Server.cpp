@@ -516,7 +516,7 @@ static void *AnimThread(Server *ps){
 
 
 
-int StartServer(struct ServerThreadData *pstd, struct ServerThreadHandle *ph){
+int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 	DWORD dw;
 	static struct ServerThreadDataInt stdi;
 #ifdef _WIN32

@@ -9,7 +9,8 @@
 #include <sstream>
 
 struct JoinGameData{
-	char addr[256], name[MAX_HOSTNAME];
+	char addr[256];
+	gltestp::dstring name;
 	u_short port;
 	FILE **plogfile;
 };
@@ -30,7 +31,7 @@ static void quitgame(ClientApplication *, bool ret){
 }
 
 void ClientApplication::signalMessage(const char *text){
-	CmdPrint(dstring() << "MSG> " << text);
+	Application::signalMessage(text);
 	for(std::set<GLWchat*>::iterator it = GLWchat::wndlist.begin(); it != GLWchat::wndlist.end(); it++)
 		(*it)->append(text);
 }
@@ -135,7 +136,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 
 					// To be perfect, it needs synchronization
 					if(pc)
-						pc->maxclients = n;
+						pc->serverParams.maxclients = n;
 				}
 				else if(!strcmp(lbuf, "START")){
 					assert(!pc->serverGame);
@@ -281,9 +282,9 @@ int ClientApplication::joingame(const char *host, int port){
 		strncpy(data.addr, "127.0.0.1", sizeof data.addr);
 	else
 		strncpy(data.addr, host, sizeof data.addr);
-	strncpy(data.name, "The Client", sizeof data.name);
+	data.name = loginName;
 	if(!ServerThreadHandleValid(server)/* && IDCANCEL != DialogBoxParam(hInst, (LPCTSTR)IDD_JOINGAME, pc->w, JoinGameDlg, (LPARAM)&data)*/){
-		static ServerThreadData std;
+		static ServerParams std;
 		DWORD dw;
 		WSADATA wsaData;
 
@@ -341,10 +342,6 @@ int ClientApplication::joingame(const char *host, int port){
 				return 0;
 			}
 		}
-/*		pc->waiter = new ClientWaiter();
-		pc->attr[0] = 33;
-		pc->attr[1] = 33;
-		pc->attr[2] = 34;*/
 		{
 			DWORD dw;
 			hRecvThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RecvThread, (LPVOID)this, 0, &dw);

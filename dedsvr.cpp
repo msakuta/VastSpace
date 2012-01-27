@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
 
 	application.init(false);
 
-	application.hostgame(application.serverGame, application.port);
+	application.hostgame(application.serverGame, application.serverParams.port);
 
 	char line[512];
 	while(fgets(line, sizeof line, stdin))

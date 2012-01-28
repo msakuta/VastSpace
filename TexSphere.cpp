@@ -11,6 +11,8 @@ extern "C"{
 #include "calc/calc.h"
 }
 
+#include <stdlib.h>
+
 TexSphere::TexSphere() :
 	texlist(0),
 	cloudtexlist(0),
@@ -310,6 +312,10 @@ bool TexSphere::sq_define(HSQUIRRELVM v){
 	sq_createslot(v, -3);
 	return true;
 }
+
+#ifdef DEDICATED
+void TexSphere::draw(const Viewer *){}
+#endif
 
 
 

@@ -985,7 +985,7 @@ void ClientGame::anim(double dt){
 			player->chase->control(&inputs, dt);
 		}*/
 
-		if(player->controlled)
+		if(player && player->controlled)
 			glwfocus = NULL;
 
 		// Really should be in draw method, since windows are property of the client.
@@ -1047,9 +1047,6 @@ void ClientApplication::display_func(void){
 			serverGame->anim(dt);
 			watime = TimeMeasLap(&tm);
 		}
-
-		if(clientGame)
-			clientGame->anim(dt);
 
 		// Quite suspicious about position, but at least postframe opportunity must be kept.
 		GLwindow::glwEndFrame();
@@ -1154,7 +1151,11 @@ void ClientApplication::display_func(void){
 		}
 	}
 
-	clientGame->clientDraw(gametime, dt);
+	if(clientGame){
+		clientGame->anim(dt);
+
+		clientGame->clientDraw(gametime, dt);
+	}
 }
 	
 void Game::clientDraw(double gametime, double dt){

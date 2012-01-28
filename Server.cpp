@@ -66,6 +66,10 @@ typedef char *sockopt_t;
 
 bool TryLockMutex(mutex_t *pm, const char *file, int line){
 	muprintf("mlocking %p %s(%d)\n", pm, file, line);
+#ifdef NDEBUG
+	DWORD ret = WaitForSingleObject(pm, 0);
+	return WAIT_OBJECT_0;
+#else
 	DWORD ret = WaitForSingleObject(pm->m, 0);
 	if(WAIT_TIMEOUT == ret)
 		return false;
@@ -75,6 +79,7 @@ bool TryLockMutex(mutex_t *pm, const char *file, int line){
 	pm->line = line;
 	pm->thread = GetCurrentThreadId();
 	return WAIT_OBJECT_0 == ret;
+#endif
 }
 
 #else /* LINUX */

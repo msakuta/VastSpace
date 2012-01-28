@@ -85,6 +85,18 @@ inline bool event_wait(event_t *pe){
 }
 #define event_delete(pe) (pthread_cond_destroy(&(pe)->c), delete_mutex(&(pe)->m))
 
+bool LockMutex(mutex_t *pm, const char *file, int line){
+	muprintf("mlocking %p %s(%d)\n", pm, file, line);
+	return !pthread_mutex_lock(&(pm)->m);
+}
+
+bool TryLockMutex(mutex_t *pm, const char *file, int line){
+	muprintf("mlocking %p %s(%d)\n", pm, file, line);
+	return !pthread_mutex_trylock(&pm->m);
+}
+
+#define trylock_mutex(pm) TryLockMutex(pm, __FILE__, __LINE__)
+
 #define timer_init(timer) (*(timer)=0)
 
 /// Dummy signal handler that would never be called
@@ -192,23 +204,31 @@ void Server::SendWait(ServerClient *cl){
 	}
 
 	{
-		dstring dsbuf;
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+//		dstring dsbuf;
 		lock_mutex(&mg);
-		char sizebuf[16];
-		sprintf(sizebuf, "%08X", sendbufsiz);
-		dsbuf << sizebuf;
+//		char sizebuf[16];
+//		sprintf(sizebuf, "%08X", sendbufsiz);
+		char *buf = new char[8+sendbufsiz*2+3];
+		sprintf(buf, "%08X", sendbufsiz);
+//		dsbuf << sizebuf;
 		for(int i = 0; i < sendbufsiz; i++){
-			char bytebuf[8];
-			sprintf(bytebuf, "%02X", sendbuf[i]);
-			dsbuf << bytebuf;
+//			char bytebuf[8];
+			sprintf(&buf[8+i*2], "%02X", sendbuf[i]);
+//			dsbuf << bytebuf;
 		}
-		dsbuf << "\r\n";
-		send(s, dsbuf, dsbuf.len(), 0);
+//		dsbuf << "\r\n";
+		strcpy(&buf[8+sendbufsiz*2], "\r\n");
+		send(s, buf, 8+sendbufsiz*2+2, 0);
+		delete[] buf;
+//		send(s, dsbuf, dsbuf.len(), 0);
 		unlock_mutex(&mg);
 
 		// Test output to see interval of updates in the client
 //		dsbuf = dstring("MSG Sent ") << sendcount << "\r\n";
 //		send(s, dsbuf, dsbuf.len(), 0);
+		printf("SendWait %p %g\n", cl, TimeMeasLap(&tm));
 	}
 
 	/* does this work? */
@@ -495,7 +515,7 @@ static void *AnimThread(Server *ps){
 //		printf("AnimThread\n");
 		if(ps->terminating)
 			break;
-		if(ps->pg && lock_mutex(&ps->mg)){
+		if(ps->pg && trylock_mutex(&ps->mg)){
 			ps->pg->anim(FRAMETIME / 1000.);
 
 			BinSerializeStream bss;

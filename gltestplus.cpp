@@ -953,9 +953,11 @@ void ClientGame::anim(double dt){
 
 		MotionAnim(*player, dt, flypower());
 
-		player->anim(dt);
+		if(player)
+			player->anim(dt);
 
-		universe->clientUpdate(dt);
+		if(universe)
+			universe->clientUpdate(dt);
 
 		if(glwfocus && cmdwnd)
 			glwfocus = NULL;
@@ -966,13 +968,15 @@ void ClientGame::anim(double dt){
 		if(joyStick.InitJoystick()){
 			joyStick.CheckJoystick(inputs);
 		}
-		(*player->mover)(inputs, dt);
-		if(player->nextmover && player->nextmover != player->mover){
-/*			Vec3d pos = pl.pos;
-			Quatd rot = pl.rot;*/
-			(*player->nextmover)(inputs, dt);
-/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
-			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
+		if(player){
+			(*player->mover)(inputs, dt);
+			if(player->nextmover && player->nextmover != player->mover){
+	/*			Vec3d pos = pl.pos;
+				Quatd rot = pl.rot;*/
+				(*player->nextmover)(inputs, dt);
+	/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
+				pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
+			}
 		}
 
 /*		if(player->chase && player->controlled == player->chase){

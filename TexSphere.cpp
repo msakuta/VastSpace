@@ -33,7 +33,7 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	cloudPhase(0.)
 {
 	texlist = cloudtexlist = 0;
-	ringmin = ringmax = 0;
+	ringmin = ringmax = ringthick = 0;
 	atmodensity = 0.;
 }
 
@@ -47,7 +47,7 @@ TexSphere::~TexSphere(){
 
 template<typename T> SerializeStream &operator<<(SerializeStream &o, const std::vector<T> &v){
 	o << unsigned(v.size());
-	for(std::vector<T>::const_iterator it = v.begin(); it != v.end(); it++)
+	for(typename std::vector<T>::const_iterator it = v.begin(); it != v.end(); it++)
 		o << *it;
 	return o;
 }

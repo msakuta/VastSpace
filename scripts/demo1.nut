@@ -58,6 +58,7 @@ function frameproc(dt){
 					if(e.race == i){
 						print("Set players[" + i + "].chase to " + e);
 						pl.chase = e;
+						pl.chasecamera = 1;
 						pl.setrot(Quatd(0,0,0,1));
 						break;
 					}

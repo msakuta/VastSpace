@@ -25,6 +25,9 @@
 /// The default port for the protocol.
 #define PROTOCOL_PORT 6668
 
+/// Print Mutex debugging information
+#define muprintf
+
 /* note that this header file is designed to be compatible among
   Windows platforms and others, typically GNU Linux. So it's here
   to get issues solved. */
@@ -73,8 +76,6 @@ typedef struct{
 #define FreeConsole()
 #define socketty() socket(PF_INET, SOCK_STREAM, 0)
 #define closesocket(s) close(s)
-
-#define muprintf
 
 /* pthread's mutex */
 typedef struct mutex_s{

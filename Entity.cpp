@@ -222,7 +222,8 @@ void Entity::unserialize(UnserializeContext &sc){
 	// Postprocessing calls leave/enterField according to frame deltas.
 	if(oldwf != w){
 		leaveField(oldwf);
-		enterField(w);
+		if(w)
+			enterField(w);
 	}
 }
 

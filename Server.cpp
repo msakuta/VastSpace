@@ -63,6 +63,20 @@ typedef char *sockopt_t;
 	*(timer) = (timer_t)timeSetEvent(FRAMETIME, tc.wPeriodMax, (LPTIMECALLBACK)*(set), (DWORD_PTR)0, TIME_PERIODIC | TIME_CALLBACK_EVENT_SET);\
 }
 #define timer_kill(timer) (TIMERR_NOERROR == timeKillEvent(*(timer)) && (*(timer) = NULL, 1))
+
+bool TryLockMutex(mutex_t *pm, const char *file, int line){
+	muprintf("mlocking %p %s(%d)\n", pm, file, line);
+	DWORD ret = WaitForSingleObject(pm->m, 0);
+	if(WAIT_TIMEOUT == ret)
+		return false;
+	assert(!pm->locks);
+	pm->locks++;
+	pm->file = file;
+	pm->line = line;
+	pm->thread = GetCurrentThreadId();
+	return WAIT_OBJECT_0 == ret;
+}
+
 #else /* LINUX */
 #include <arpa/inet.h>
 #include <sys/time.h>
@@ -94,8 +108,6 @@ bool TryLockMutex(mutex_t *pm, const char *file, int line){
 	muprintf("mlocking %p %s(%d)\n", pm, file, line);
 	return !pthread_mutex_trylock(&pm->m);
 }
-
-#define trylock_mutex(pm) TryLockMutex(pm, __FILE__, __LINE__)
 
 #define timer_init(timer) (*(timer)=0)
 
@@ -131,6 +143,8 @@ static void timer_kill(timer_t *timer){
 }
 
 #endif
+
+#define trylock_mutex(pm) TryLockMutex(pm, __FILE__, __LINE__)
 
 #define setflush(s) {\
 	int nd = 1;\

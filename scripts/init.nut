@@ -109,11 +109,15 @@ class Player{
 	void setmover(string movertype);
 	string getmover();
 	Entity chase;
+	int chasecamera;
 	float viewdist;
 	CoordSys cs;
 }
 
 ::player <- Player();
+
+/// Returns array of all players
+Player[] ::players();
 
 // Registers a function as a console command. You can manually add entries to global table 'console_commands' too.
 void register_console_command(string name, function);

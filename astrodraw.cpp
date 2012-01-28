@@ -1164,7 +1164,7 @@ void TexSphere::draw(const Viewer *vw){
 	double sunar = sun ? sun->rad / (parent->tocs(sun->pos, sun->parent) - pos).len() : .01;
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
-	if(drawring){
+	if(drawring && 0. < ringmin){
 		double dist = (vw->pos - pos).len();
 		double ratio = this->rad / dist;
 		// Avoid domain error

@@ -11,6 +11,9 @@
 #include <windows.h>
 #endif
 #include "Game.h"
+extern "C"{
+#include <clib/timemeas.h>
+}
 
 
 /// List of registered initialization functions. Too bad std::vector cannot be used because the class static parameters
@@ -152,9 +155,25 @@ void Game::unserialize(UnserializeContext &usc){
 }
 
 
-void Game::anim(double dt){
-	universe->anim(dt);
-	universe->postframe();
+void ServerGame::anim(double dt){
+#if 0
+#define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
+#else
+#define TRYBLOCK(a) (a);
+#endif
+		if(!universe->paused) try{
+			sqa_anim(sqvm, dt);
+			TRYBLOCK(universe->anim(dt));
+			postframe();
+			TRYBLOCK(universe->endframe());
+		}
+		catch(std::exception e){
+			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
+		}
+		catch(...){
+			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
+		}
+
 }
 
 void Game::sq_replacePlayer(Player *p){
@@ -194,6 +213,11 @@ void Game::setSquirrelBind(SquirrelBind *p){
 
 
 
+#ifndef DEDICATED
+ClientGame::ClientGame(){}
+#endif
+
+
 
 
 ServerGame::ServerGame(){
@@ -211,6 +235,10 @@ void ServerGame::init(){
 	universe->anim(0.);
 
 	Game::init();
+}
+
+void ServerGame::postframe(){
+	universe->postframe();
 }
 
 bool ServerGame::isServer()const{

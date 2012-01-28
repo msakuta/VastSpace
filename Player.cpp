@@ -631,6 +631,24 @@ static SQInteger sqf_select(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_players(HSQUIRRELVM v){
+	Game *game = application.serverGame ? application.serverGame : application.clientGame;
+	sq_newarray(v, game->players.size()); // array
+	for(int i = 0; i < game->players.size(); i++){
+		sq_pushinteger(v, i); // array i
+		sq_pushroottable(v); // array i root
+		sq_pushstring(v, _SC("Player"), -1); // array i root name
+		sq_get(v, -2); // array i root class
+		sq_createinstance(v, -1); // array i root class instance
+		if(!sqa_newobj(v, game->players[i]))
+			return sq_throwerror(v, _SC("Player is NULL pointer"));
+		sq_remove(v, -2); // array i root instance
+		sq_remove(v, -2); // array i instance
+		sq_set(v, -3); // array
+	}
+	return 1;
+}
+
 void Player::sq_define(HSQUIRRELVM v){
 /*	SqPlus::SQClassDef<Player>(_SC("Player")).
 		func(&Player::classname, _SC("classname")).
@@ -652,6 +670,8 @@ void Player::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("_get"), &Player::sqf_get);
 	register_closure(v, _SC("_set"), &Player::sqf_set);
 	sq_createslot(v, -3);
+
+	register_global_func(v, sqf_players, _SC("players"));
 }
 
 SQInteger Player::sqf_get(HSQUIRRELVM v){
@@ -699,6 +719,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->chase);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("chasecamera"))){
+		sq_pushinteger(v, p->chasecamera);
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("viewdist"))){
 		sq_pushfloat(v, SQFloat(p->viewdist));
 		return 1;
@@ -734,6 +758,15 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			return sr;
 //		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
 		return 1;
+	}
+	else if(!strcmp(wcs, _SC("chasecamera"))){
+		SQInteger i;
+		if(SQ_SUCCEEDED(sq_getinteger(v, 3, &i))){
+			p->chasecamera = i;
+			return 1;
+		}
+		else
+			return SQ_ERROR;
 	}
 	else if(!strcmp(wcs, _SC("viewdist"))){
 		if(OT_FLOAT != sq_gettype(v, 3))

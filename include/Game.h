@@ -62,7 +62,6 @@ public:
 	void draw_gear(double dt);
 	void drawindics(Viewer *vw);
 	virtual void init();
-	void display_func(double dt);
 	void clientDraw(double gametime, double dt);
 	bool select_box(double x0, double x1, double y0, double y1, const Mat4d &rot, unsigned flags, select_box_callback *sbc);
 	void mouse_func(int button, int state, int x, int y);
@@ -76,7 +75,8 @@ public:
 	virtual void serialize(SerializeStream &ss);
 	virtual void unserialize(UnserializeContext &usc);
 
-	void anim(double dt);
+	virtual void anim(double dt) = 0;
+	virtual void postframe() = 0;
 
 	static void addServerInits(void (*f)(Game &));
 
@@ -93,12 +93,24 @@ protected:
 	SquirrelBind *sqbind;
 };
 
+
+#ifndef DEDICATED
+class ClientGame : public Game{
+public:
+	ClientGame();
+	virtual void anim(double dt);
+	virtual void postframe();
+};
+#endif
+
 /// \brief Game for the server.
 class ServerGame : public Game{
 public:
 	/// \brief Server constructor executes initializers
 	ServerGame();
 	void init();
+	virtual void anim(double dt);
+	virtual void postframe();
 	virtual bool isServer()const;
 };
 

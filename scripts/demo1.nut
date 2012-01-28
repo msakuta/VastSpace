@@ -29,6 +29,7 @@ framecount <- 0;
 checktime <- 0;
 autochase <- true;
 deaths <- {};
+targetcs <- player.cs;
 
 function frameproc(dt){
 	framecount++;
@@ -40,18 +41,39 @@ function frameproc(dt){
 	local currenttime = universe.global_time + 9.;
 
 	if(true && checktime + 10. < currenttime){
-		local cs = player.cs;
+		local cs = targetcs;
 		checktime = currenttime;
+
+		// Force the players to chase someone
+		local pls = players();
+		print("Players = " + pls.len());
+		local i = 0;
+		for(; i < pls.len(); i++){
+			local pl = pls[i];
+			pl.cs = targetcs;
+
+			if(pl.chase == null){
+				local e;
+				for(e = cs.entlist; e != null; e = e.next){
+					if(e.race == i){
+						print("Set players[" + i + "].chase to " + e);
+						pl.chase = e;
+						pl.setrot(Quatd(0,0,0,1));
+						break;
+					}
+				}
+			}
+		}
 
 		local racec = [countents(cs, 0, "Sceptor"), countents(cs, 1, "Sceptor")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(racec[0] < 2){
-			deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);
+			deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -2.025), 0.025, 2, player.cs, null);
 		}
 		if(racec[1] < 2){
-			deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 0.025), -2.025, 2, player.cs, null);
+			deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 2.025), 0.025, 2, player.cs, null);
 		}
 
 

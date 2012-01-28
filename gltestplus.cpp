@@ -941,7 +941,12 @@ static JoyStick joyStick(JOYSTICKID1);
 static POINT mouse_pos = {0, 0};
 
 
-void Game::display_func(double dt){
+void ClientGame::postframe(){
+	universe->postframe();
+	GLwindow::glwpostframe();
+}
+
+void ClientGame::anim(double dt){
 		sqa_anim(sqvm, dt);
 
 		MotionFrame(dt);
@@ -950,26 +955,7 @@ void Game::display_func(double dt){
 
 		player->anim(dt);
 
-#if 0
-#define TRYBLOCK(a) {try{a;}catch(std::exception e){fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());}catch(...){fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);}}
-#else
-#define TRYBLOCK(a) (a);
-#endif
-		if(!universe->paused) try{
-			timemeas_t tm;
-			TimeMeasStart(&tm);
-			TRYBLOCK(anim(dt));
-			TRYBLOCK(GLwindow::glwpostframe());
-			TRYBLOCK(universe->endframe());
-			TRYBLOCK(application.clientGame->universe->clientUpdate(dt));
-			watime = TimeMeasLap(&tm);
-		}
-		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception %s\n", __LINE__, e.what());
-		}
-		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
-		}
+		universe->clientUpdate(dt);
 
 		if(glwfocus && cmdwnd)
 			glwfocus = NULL;
@@ -1050,8 +1036,16 @@ void ClientApplication::display_func(void){
 			}
 		}
 
-		if(mode & ServerBit)
-			serverGame->display_func(dt);
+		if(mode & ServerBit){
+//			serverGame->display_func(dt);
+			timemeas_t tm;
+			TimeMeasStart(&tm);
+			serverGame->anim(dt);
+			watime = TimeMeasLap(&tm);
+		}
+
+		if(clientGame)
+			clientGame->anim(dt);
 
 		// Quite suspicious about position, but at least postframe opportunity must be kept.
 		GLwindow::glwEndFrame();
@@ -2143,11 +2137,11 @@ int main(int argc, char *argv[])
 
 	if(isClient){
 		server = NULL;
-		application.clientGame = new Game();
+		application.clientGame = new ClientGame();
 	}
 	else{
 		server = new ServerGame();
-		application.clientGame = new Game();
+		application.clientGame = new ClientGame();
 	}
 	application.serverGame = server;
 

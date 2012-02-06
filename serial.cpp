@@ -49,12 +49,16 @@ void Serializable::dive(SerializeContext &sc, void (Serializable::*method)(Seria
 ///
 /// Serialized stream identify objects by ID numbers, not pointers in memory. Therefore, all objects must
 /// translate themselves into an ID prior to serialization.
+///
+/// Now that SerializeContext::map has been deleted, this function does nothing.
+/// You can always refer to the object's id with getid(), not with separate mapping object.
 void Serializable::map(SerializeContext &sc){
-	SerializeMap &cm = sc.map;
+	// Disabled
+/*	SerializeMap &cm = sc.map;
 	if(cm.find(this) == cm.end()){
 		unsigned id = cm.size();
 		cm[this] = id;
-	}
+	}*/
 }
 
 void Serializable::packSerialize(SerializeContext &sc){

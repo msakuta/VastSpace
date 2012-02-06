@@ -7,13 +7,15 @@
 #include <iostream>
 
 
-
+/// This type should match the definition of Serializable::Id, which is not
+/// necessarily included in this header.
+typedef unsigned SerializableId;
 
 class Serializable;
 typedef const char *ClassId;
 typedef std::map<gltestp::dstring, Serializable *(*)()> CtorMap;
-typedef std::map<const Serializable*, unsigned> SerializeMap;
-typedef std::vector<Serializable*> UnserializeMap;
+typedef std::map<const Serializable*, SerializableId> SerializeMap;
+typedef std::map<SerializableId, Serializable*> UnserializeMap;
 
 class SerializeContext;
 class UnserializeContext;

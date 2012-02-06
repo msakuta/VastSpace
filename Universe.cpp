@@ -16,7 +16,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 10;
+const unsigned Universe::version = 11;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
@@ -55,6 +55,9 @@ void Universe::anim(double dt){
 }
 
 void Universe::csUnmap(UnserializeContext &sc){
+#if 1 // Disabled because you cannot know which Entity to unserialize this buffer without parsing embedded SerializableId.
+	assert(0);
+#else
 	while(!sc.i.eof()){
 		unsigned long size;
 		sc.i >> size;
@@ -69,11 +72,12 @@ void Universe::csUnmap(UnserializeContext &sc){
 			if(it == sc.cons.end())
 				throw ClassNotFoundException();
 			if(it->second){
-				sc.map.push_back(it->second());
+				sc.map[it->first] = (it->second());
 			}
 		}
 		delete us;
 	}
+#endif
 }
 
 void Universe::csUnserialize(UnserializeContext &usc){
@@ -96,7 +100,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 	map[&pl] = map.size();
 	Serializable* visit_list = NULL;
 	{
-		SerializeContext sc(*(SerializeStream*)NULL, map, visit_list);
+		SerializeContext sc(*(SerializeStream*)NULL, visit_list);
 		universe.dive(sc, &Serializable::map);
 	}
 #if ENABLE_TEXTFORMAT
@@ -105,7 +109,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 		fs << "savetext";
 		fs << version;
 		StdSerializeStream sss(fs);
-		SerializeContext sc(sss, map, visit_list);
+		SerializeContext sc(sss, visit_list);
 		sss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
@@ -115,7 +119,7 @@ int Universe::cmd_save(int argc, char *argv[], void *pv){
 #endif
 	{
 		BinSerializeStream bss;
-		SerializeContext sc(bss, map, visit_list);
+		SerializeContext sc(bss, visit_list);
 		bss.sc = &sc;
 		pl.packSerialize(sc);
 		universe.dive(sc, &Serializable::packSerialize);
@@ -204,10 +208,10 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	pl.free();
 	printf("destructs %d\n", cs_destructs);
 	universe.aorder.clear();
-	std::vector<Serializable*> map;
-	map.push_back(NULL);
-	map.push_back(&pl);
-	map.push_back(&universe);
+	UnserializeMap map;
+	map[0] = (NULL);
+//	map.push_back(&pl);
+//	map.push_back(&universe);
 	unsigned char *buf;
 	long size;
 	do{

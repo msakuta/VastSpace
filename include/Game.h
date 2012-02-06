@@ -69,7 +69,8 @@ public:
 	void idUnmap(UnserializeContext &sc);
 	void idUnserialize(UnserializeContext &usc);
 
-	typedef std::map<unsigned long, Serializable*> IdMap;
+//	typedef std::map<unsigned long, Serializable*> IdMap;
+	typedef UnserializeMap IdMap;
 	const IdMap &idmap()const;
 
 	virtual void serialize(SerializeStream &ss);

@@ -47,7 +47,13 @@ SerializeStream &StdSerializeStream::operator<<(const char *a){
 	base.put('"');
 	return *this;
 }
-SerializeStream &StdSerializeStream::operator<<(const Serializable *p){ base << sc->map[p] << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(const Serializable *p){
+	if(p)
+		base << p->getid()/*sc->map[p]*/ << " ";
+	else
+		base << Serializable::Id(0) << " ";
+	return *this;
+}
 
 
 
@@ -119,7 +125,12 @@ SerializeStream &BinSerializeStream::operator<<(const std::string &a){
 	return *this;
 }
 
-SerializeStream &BinSerializeStream::operator <<(const Serializable *p){return write(sc->map[p]);}
+SerializeStream &BinSerializeStream::operator <<(const Serializable *p){
+	if(p)
+		return write(p->getid()/*sc->map[p]*/);
+	else
+		return write(Serializable::Id(0));
+}
 
 SerializeStream &BinSerializeStream::operator<<(const Vec3d &v){
 	return *this << v[0] << v[1] << v[2];

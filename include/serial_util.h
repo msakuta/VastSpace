@@ -126,16 +126,17 @@ protected:
 
 class SerializeContext{
 public:
-	SerializeContext(SerializeStream &ao, SerializeMap &amap, Serializable *&avisit_list) : o(ao), map(amap), visit_list(avisit_list), trunk(true){}
-	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), map(copy_src.map), visit_list(copy_src.visit_list), trunk(true){}
+	SerializeContext(SerializeStream &ao, Serializable *&avisit_list) : o(ao), visit_list(avisit_list), trunk(true){}
+	SerializeContext(SerializeStream &ao, const SerializeContext &copy_src) : o(ao), visit_list(copy_src.visit_list), trunk(true){}
 	SerializeStream &o;
-	SerializeMap &map;
+//	SerializeMap &map;
 	Serializable *&visit_list;
 	bool trunk; // Whether processing node in class inheritance graph is trunk (base virtual class) or branch (no base serialization).
 };
 
 inline SerializeStream &SerializeStream::operator<<(const Serializable *p){
-	return *this << sc->map[p];
+//	return *this << sc->map[p];
+	return *this << p->getid();
 }
 
 
@@ -256,11 +257,11 @@ public:
 };
 
 
-	template<class T> UnserializeStream &UnserializeStream::operator>>(T *&p){
-		unsigned id;
-		*this >> id;
-		p = static_cast<T*>(usc->map[id]);
-		return *this;
-	}
+template<class T> UnserializeStream &UnserializeStream::operator>>(T *&p){
+	SerializableId id;
+	*this >> id;
+	p = static_cast<T*>(usc->map[id]);
+	return *this;
+}
 
 #endif

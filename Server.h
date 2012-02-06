@@ -20,7 +20,7 @@
 /** protocol version. If major version is different, no communication can
   be made. As for minor, I don't know. */
 #define PROTOCOL_MAJOR 1
-#define PROTOCOL_MINOR 1
+#define PROTOCOL_MINOR 2
 
 /// The default port for the protocol.
 #define PROTOCOL_PORT 6668

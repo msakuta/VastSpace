@@ -1103,8 +1103,8 @@ void ClientApplication::display_func(void){
 		}
 
 		{
-			std::vector<Serializable*> map;
-			map.push_back(NULL);
+			UnserializeMap &map = (UnserializeMap&)clientGame->idmap();
+			map[0] = NULL;
 
 			// Output content being unserialized for debugging.
 			if(fp){
@@ -1130,10 +1130,10 @@ void ClientApplication::display_func(void){
 			else{
 				// In the client, the Player is indicated by client list's property and Player::playerId.
 				// We must find it by searching all the objects.
-				std::vector<Serializable*>::iterator it = map.begin();
+				UnserializeMap::iterator it = map.begin();
 				for(; it != map.end(); it++){
-					if(*it && !strcmp((*it)->classname(), "Player")){
-						Player *p = static_cast<Player*>(*it);
+					if(it->second && !strcmp((it->second)->classname(), "Player")){
+						Player *p = static_cast<Player*>(it->second);
 						if(p->playerId == thisad){
 							clientGame->sq_replacePlayer(p);
 							break;

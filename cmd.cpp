@@ -82,7 +82,39 @@ static unsigned long hashfunc(const char *s){
 /// This overloaded version reallocates memory less times.
 void CmdPrint(const cpplib::dstring &str){
 	cmdbuffer[cmdcurline] = str;
+
+	// Windows default encoding for multibyte string is often not UTF-8, so we
+	// convert it with wide char functions.
+#ifdef _WIN32
+	// This buffer is reused every time this function is called for speed,
+	// meaning it will be left allcated when the program exits, which is
+	// usually freed by OS instead.
+	static wchar_t *wbuf = NULL;
+	static size_t wbufsiz = 0;
+	int wcc = MultiByteToWideChar(CP_UTF8, 0, str, str.len(), NULL, 0);
+	if(wbufsiz < wcc){
+		wbuf = (wchar_t*)realloc(wbuf, sizeof(*wbuf) * (wcc + 1));
+		wbufsiz = wcc;
+	}
+	MultiByteToWideChar(CP_UTF8, 0, str, str.len(), wbuf, wbufsiz);
+	wbuf[wcc] = '\0';
+
+	// And the multibyte string buffer.
+	// It should not be necessary if wprintf worked, but it didn't.
+	static char *buf = NULL;
+	static size_t bufsiz = 0;
+	int cc = WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf, wbufsiz, NULL, 0, NULL, NULL);
+	if(bufsiz < cc){
+		buf = (char*)realloc(buf, sizeof(*buf) * (cc + 1));
+		bufsiz = cc;
+	}
+	WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf, wbufsiz, buf, bufsiz, NULL, NULL);
+	buf[cc] = '\0';
+
+	printf("%s\n", buf);
+#else
 	puts(cmdbuffer[cmdcurline]);
+#endif
 	cmdcurline = (cmdcurline + 1) % CB_LINES;
 }
 

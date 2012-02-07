@@ -262,7 +262,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			s = argv[1], ps = argv[2], c++;
 		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
 			CoordSys *a = NULL;
-			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
+			CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
 			if(argv.size() == 1){
 				// If the block begins with keyword "astro", make Astrobj's constructor to default,
 				// otherwise use CoordSys.

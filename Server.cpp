@@ -973,7 +973,7 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 			cl->name = str2;
 
 			// If the client logs in, assign a Player object for the client.
-			Player *clientPlayer = new Player();
+			Player *clientPlayer = new Player(cl->sv->pg);
 
 			// Temporary treatment to make newly added Player's coordsys to be the same as the first Player.
 			std::vector<Player*>::iterator it = cl->sv->pg->players.begin();

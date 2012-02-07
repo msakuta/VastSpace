@@ -1751,6 +1751,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 		case WM_CREATE:
 			hgl = wingl(hWnd, &hdc);
 			glsl_register();
+			glwInit();
 /*			if(!SetTimer(hWnd, 2, 10, NULL))
 				assert(0);*/
 			break;

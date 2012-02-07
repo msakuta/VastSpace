@@ -248,6 +248,9 @@ extern GLwindow *glwfocus;
 extern GLwindow *glwdrag;
 extern int glwdragpos[2];
 
+/// \brief Initializes the GLwindow system.
+extern int glwInit();
+
 /// Inverting logic
 inline void GLwindow::setVisible(bool f){
 	if(!f){

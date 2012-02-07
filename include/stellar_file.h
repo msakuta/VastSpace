@@ -19,7 +19,7 @@ Astrobj *texsphere_new(const char *name, CoordSys *cs);
 Astrobj *blackhole_new(const char *name, CoordSys *cs);
 Astrobj *add_astrobj(Astrobj *a);
 
-int StellarFileLoad(const char *fname, CoordSys *);
+//int StellarFileLoad(const char *fname, CoordSys *);
 
 
 void sun_draw(const struct astrobj *, const struct viewer *, int relative);

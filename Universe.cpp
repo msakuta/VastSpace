@@ -20,7 +20,7 @@ const unsigned Universe::version = 11;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
-Universe::Universe(Player *pl, Game *game) : ppl(pl), game(game), paused(true), timescale(1), global_time(0), astro_time(0),
+Universe::Universe(Player *pl, Game *game) : st(game), ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0),
 	gravityfactor(1.)
 {
 	name = new char[sizeof"root"];

@@ -31,6 +31,7 @@ bool EntityController::unlink(Entity *){
 
 
 Entity::Entity(WarField *aw) :
+	st(aw ? aw->getGame() : NULL),
 	pos(vec3_000),
 	velo(vec3_000),
 	omg(vec3_000),

@@ -96,6 +96,7 @@ extern const struct Builder::BuildStatic sceptor_build;
 
 int cmd_build(int argc, char *argv[], void *pv);
 
+#if 0
 class Scarry : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
@@ -144,6 +145,7 @@ protected:
 
 	virtual void doneBuild(Entity *);
 };
+#endif
 
 #if 0
 /* Active Radar or Hyperspace Sonar.

@@ -59,6 +59,7 @@ struct EXPORT teleport{
  */
 class EXPORT Player : public EntityController{
 public:
+	typedef EntityController st;
 
 	/// Base class for camera controller classes.
 	///
@@ -86,7 +87,7 @@ protected:
 	Vec3d getrawpos(CameraController*)const;
 	Quatd getrawrot(CameraController*)const;
 public:
-	Player();
+	Player(Game * = NULL);
 	~Player();
 
 	static const unsigned classId;

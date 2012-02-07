@@ -20,6 +20,7 @@ typedef std::map<SerializableId, Serializable*> UnserializeMap;
 class SerializeContext;
 class UnserializeContext;
 class Game;
+class ServerGame;
 
 
 /** \brief Base class of all serializable objects.
@@ -92,6 +93,25 @@ public:
 
 	Id getid()const{return id;}
 
+	/// \brief Returns the game object this Serializable object belongs to.
+	///
+	/// Provided because there could be multiple Game instances in a process.
+	/// The overhead caused by an almost-redundant pointer is assumed negligible,
+	/// because it does not need to be serialized.
+	///
+	/// In fact, we have been able to make it without this pointer for hundreds of
+	/// Subversion revisions, which means it's not really necessary.
+	/// But we came to think that we need an universal way to instantly query an object
+	/// is in a client or server game object. We also want to know if an object being
+	/// constructed is really created or just allocated for further unserialization.
+	/// If it's the former, we must fetch the id via game->nextId().
+	///
+	/// Normally the game reference in a Serializable object should be set in the constructor and
+	/// never be altered. For this purpose, a C++ reference is suitable, but Serializable object
+	/// cannot contain reference member because it must be 'raw' created before unserialized.
+	/// In that case, the constructor is invoked with no arguments.
+	Game *getGame()const{return game;}
+
 protected:
 	/// \brief Serialize this object using given serialize context.
 	///
@@ -103,11 +123,13 @@ protected:
 	/// Derived classes override this function to define how to restore themselves from serialized stream.
 	virtual void unserialize(UnserializeContext &usc);
 
-	Serializable();
+	Serializable(Game *game = NULL);
 	mutable Serializable *visit_list; ///< Visit list for object network diving. Must be initially NULL and NULLified after use.
+	Game *game; ///< The game object this Serializable object belongs to.
 	Id id; ///< The number shared among server and clients to identify the object regardless of memory address.
 
 	friend class Game;
+	friend class ServerGame;
 };
 
 template<class T> inline Serializable *Serializable::Conster(){

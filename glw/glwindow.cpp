@@ -843,8 +843,9 @@ int GLwindowSizeable::mouseCursorState(int x, int y)const{
 
 
 
-
-GLWtip *glwtip = new GLWtip();
+/// Initially NULL. Created in glwInit() which is deferred after the Game object is created.
+///
+GLWtip *glwtip = NULL;
 
 
 
@@ -1582,5 +1583,6 @@ static int vrc_fontscale(void *pv){
 
 int glwInit(){
 	CvarAddVRC("g_font_scale", &GLwindow::glwfontscale, cvar_double, vrc_fontscale);
+	glwtip = new GLWtip();
 	return 0;
 }

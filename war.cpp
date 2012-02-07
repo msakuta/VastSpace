@@ -22,7 +22,7 @@ extern "C"{
 
 WarField::WarField() : pl(NULL){}
 
-WarField::WarField(CoordSys *acs) : cs(acs), el(NULL), bl(NULL), pl(NULL), realtime(0){
+WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), cs(acs), el(NULL), bl(NULL), pl(NULL), realtime(0){
 	init_rseq(&rs, 2426);
 }
 

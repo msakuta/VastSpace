@@ -423,7 +423,7 @@ void Application::init(bool isClient)
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root closure
 			sq_getstring(v, -1, &s);
 		}
-		StellarFileLoad(s, serverGame->universe);
+		serverGame->StellarFileLoad(s);
 	}
 
 #if 0

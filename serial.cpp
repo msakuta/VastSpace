@@ -2,6 +2,7 @@
 #include "cmd.h"
 #include "serial_util.h"
 #include "sqadapt.h"
+#include "Game.h"
 #include <string>
 #include <sstream>
 
@@ -9,11 +10,10 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 : i(ai), cons(acons), map(amap){
 }
 
-static unsigned long nextid = 0;
-std::vector<unsigned long> deleteque;
+std::vector<Serializable::Id> deleteque;
 
-
-Serializable::Serializable() : id(nextid++), visit_list(NULL){
+// The id value of 0 means not initialized or invalid object.
+Serializable::Serializable(Game *game) : game(game), id(!game || game->isRawCreateMode() ? 0 : game->nextId()), visit_list(NULL){
 }
 
 Serializable::~Serializable(){
@@ -102,6 +102,7 @@ void Serializable::idPackSerialize(SerializeContext &sc){
 
 	unsigned long thisid;
 	thisid = this->id;
+	assert(thisid != 0); // id == 0 means it's invalid object.
 	SerializeStream *ss = sc.o.substream();
 	SerializeContext sc2(*ss, sc);
 	sc2.o << classname();

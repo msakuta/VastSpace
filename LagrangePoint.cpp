@@ -77,8 +77,7 @@ public:
 
 
 /* Lagrange 1 point between two bodies */
-LagrangeCS::LagrangeCS(const char *path, CoordSys *root){
-	init(path, root);
+LagrangeCS::LagrangeCS(const char *path, CoordSys *root) : st(path, root){
 	objs[0] = objs[1] = NULL;
 }
 

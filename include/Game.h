@@ -19,6 +19,8 @@ class UnserializeStream;
 /// but only a dictionary of variables.
 class SquirrelBind : public Serializable{
 public:
+	SquirrelBind(Game *game = NULL) : Serializable(game){}
+
 	std::map<dstring, dstring> dict;
 
 	static const unsigned classId;
@@ -49,7 +51,7 @@ public:
 	double flypower()const;
 	HSQUIRRELVM sqvm;
 
-	Game() : player(NULL), universe(NULL), sqvm(NULL), sqbind(NULL){
+	Game() : player(NULL), universe(NULL), sqvm(NULL), sqbind(NULL), idGenerator(1){
 	}
 
 	~Game(){
@@ -84,14 +86,26 @@ public:
 	void sq_replacePlayer(Player *);
 
 	virtual bool isServer()const;
+	virtual bool isRawCreateMode()const;
 
 	void setSquirrelBind(SquirrelBind *p);
 	SquirrelBind *getSquirrelBind(){return sqbind;}
 	const SquirrelBind *getSquirrelBind()const{return sqbind;}
 
+	/// \brief Fetch the next Serializable id in this Game object's environment.
+	Serializable::Id nextId();
+
+	/// \brief Loads a Stellar Structure Definition file (.ssd) of a given name.
+	int StellarFileLoad(const char *fname);
+
+	static SQInteger sqf_addent(HSQUIRRELVM v);
 protected:
 	IdMap idunmap;
 	SquirrelBind *sqbind;
+	Serializable::Id idGenerator;
+
+	int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
+	int stellar_coordsys(StellarContext &sc, CoordSys *cs);
 };
 
 
@@ -113,14 +127,27 @@ public:
 	virtual void anim(double dt);
 	virtual void postframe();
 	virtual bool isServer()const;
+	virtual bool isRawCreateMode()const;
+protected:
+	bool loading; ///< The flag only active when unserialized from a file.
 };
 
+
+
+
+//-----------------------------------------------------------------------------
+//     Inline Implementation
+//-----------------------------------------------------------------------------
 
 inline double Game::flypower()const{
 	if(!player)
 		return 0;
 	else
 		return player->freelook->flypower;
+}
+
+inline Serializable::Id Game::nextId(){
+	return idGenerator++;
 }
 
 #endif

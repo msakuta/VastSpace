@@ -196,6 +196,7 @@ const SQUserPointer tt_Vec3d = const_cast<char*>("Vec3d");
 const SQUserPointer tt_Quatd = const_cast<char*>("Quatd");
 const SQUserPointer tt_Entity = const_cast<char*>("Entity");
 const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
+const SQUserPointer tt_Game = const_cast<char*>("Game");
 
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
@@ -1567,6 +1568,21 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		}
 	}
 
+	// Define class Game
+	sq_pushstring(v, _SC("Game"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_Game);
+	sq_createslot(v, -3);
+
+	// Define instance of class Game
+	sq_pushstring(v, _SC("game"), -1); // this "game"
+	sq_pushstring(v, _SC("Game"), -1); // this "game" "Game"
+	sq_get(v, -3); // this "game" Game
+	sq_createinstance(v, -1); // this "game" Game Game-instance
+	sq_setinstanceup(v, -1, &universe); // this "game" Game Game-instance
+	sq_remove(v, -2); // this "game" Game-instance
+	sq_createslot(v, -3); // this
+
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
@@ -1623,7 +1639,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	// Prevent duplicate instance of SquirrelBind.
 	// The client will define one as it receives serialization stream.
 	if(game->isServer())
-		game->setSquirrelBind(new SquirrelBind());
+		game->setSquirrelBind(new SquirrelBind(game));
 
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));

@@ -29,6 +29,10 @@ class PopupMenu;
 /// An abstract class to implement Player or AI controlling in the common way.
 class EXPORT EntityController : public Serializable{
 public:
+	typedef Serializable st;
+
+	EntityController(Game *game) : st(game){}
+
 	/// Called when this controller has to control an Entity.
 	virtual bool control(Entity *, double dt) = 0;
 

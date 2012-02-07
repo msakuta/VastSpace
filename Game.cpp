@@ -211,6 +211,12 @@ bool Game::isServer()const{
 	return false;
 }
 
+/// Defaults true
+bool Game::isRawCreateMode()const{
+	return true;
+}
+
+
 void Game::setSquirrelBind(SquirrelBind *p){
 	sqbind = p;
 	HSQUIRRELVM v = sqvm;
@@ -235,8 +241,8 @@ ClientGame::ClientGame(){}
 
 
 
-ServerGame::ServerGame(){
-	player = new Player();
+ServerGame::ServerGame() : loading(false){
+	player = new Player(this);
 	player->playerId = 0;
 	players.push_back(player);
 	universe = new Universe(player, this);
@@ -258,4 +264,8 @@ void ServerGame::postframe(){
 
 bool ServerGame::isServer()const{
 	return true;
+}
+
+bool ServerGame::isRawCreateMode()const{
+	return loading;
 }

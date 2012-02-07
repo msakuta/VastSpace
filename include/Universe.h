@@ -38,7 +38,6 @@ public:
 	static double getGravityFactor(const CoordSys *);
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM);
-	Game *game;
 };
 
 

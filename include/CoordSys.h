@@ -278,11 +278,18 @@ protected:
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
 
+	/// A protected constructor that do not initialize the object with parent node,
+	/// but within a known Game object.
+	/// Universe is known to need this function to invoke Serializable's constructor.
+	CoordSys(Game *game);
+
 private:
 	CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *skipcs)const;
 	const CoordSys *findparentb(Vec3d &ret, const Vec3d &src)const;
 	int getpathint(char *buf, size_t size)const;
 	int getpathint(cpplib::dstring &)const;
+
+	friend class Game;
 };
 
 /// Template class to register derived classes to global class list.

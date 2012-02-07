@@ -653,12 +653,19 @@ Quatd CoordSys::rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)c
 }
 
 
-
+/// \brief The constructor for reserving space for unserialization.
 CoordSys::CoordSys(){
 	init(NULL, NULL);
 }
-CoordSys::CoordSys(const char *path, CoordSys *root){
+
+/// \brief The constructor for the real object.
+CoordSys::CoordSys(const char *path, CoordSys *root) : st(root ? root->getGame() : NULL){
 	init(path, root);
+}
+
+/// \brief The constructor that only Universe uses (apparently).
+CoordSys::CoordSys(Game *game) : st(game){
+	init(NULL, NULL);
 }
 
 void CoordSys::init(const char *path, CoordSys *root){
@@ -1336,10 +1343,9 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(SQ_FAILED(sq_getstring(v, 2, &arg)))
 		return SQ_ERROR;
 
-	extern Player *ppl;
 	WarField *&w = p->w;
 	if(!w)
-		w = new WarSpace(p)/*spacewar_create(cs, ppl)*/;
+		w = new WarSpace(p);
 	Entity *pt = Entity::create(arg, w);
 	if(pt){
 		pt->setPosition(&pos);

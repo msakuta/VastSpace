@@ -201,7 +201,7 @@ int cmd_build(int argc, char *argv[], void *pv){
 }
 
 
-
+#if 0
 const unsigned ScarryDocker::classid = registerClass("ScarryDocker", Conster<ScarryDocker>);
 
 const char *ScarryDocker::classname()const{return "ScarryDocker";}
@@ -414,3 +414,4 @@ Vec3d ScarryDocker::getPortPos()const{
 Quatd ScarryDocker::getPortRot()const{
 	return quat_u;
 }
+#endif

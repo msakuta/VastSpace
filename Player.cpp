@@ -157,7 +157,7 @@ void TacticalMover::rotateLook(double dx, double dy){
 	this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2)) * ort.cnj();
 }
 
-Player::Player() : pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
+Player::Player(Game *game) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
 	chasecamera(0), detail(0), mousex(0), mousey(0), race(0), fov(1.), viewdist(1.),
 	gametime(0), velolen(0),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),

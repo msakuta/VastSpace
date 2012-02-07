@@ -191,10 +191,6 @@ cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *
 
 
 
-template<class T> CoordSys *Cons(const char *name, CoordSys *cs){
-	return new T(name, cs);
-};
-typedef CoordSys *(*CC)(const char *name, CoordSys *cs);
 
 
 #define MAX_LINE_LENGTH 512
@@ -203,7 +199,9 @@ typedef CoordSys *(*CC)(const char *name, CoordSys *cs);
 static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
 static int stellar_astro(StellarContext *sc, Astrobj *a);
 
-static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
+int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
+	typedef CoordSys *(Game::*CC)(const char *name, CoordSys *cs);
+
 	const char *fname = sc.fname;
 	const CoordSys *root = sc.root;
 	struct varlist *vl = sc.vl;
@@ -264,10 +262,14 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			s = argv[1], ps = argv[2], c++;
 		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
 			CoordSys *a = NULL;
-			CC constructor = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = NULL;
 			if(argv.size() == 1){
-				constructor = Cons<CoordSys>;
+				// If the block begins with keyword "astro", make Astrobj's constructor to default,
+				// otherwise use CoordSys.
+				if(!strcmp(s, "astro"))
+					ctor = Astrobj::classRegister.construct;
+				else
+					ctor = CoordSys::classRegister.construct;
 				ps = s;
 			}
 			else{
@@ -289,13 +291,16 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				else
 					a = NULL;
 			}
-			if(!a && (a = (constructor ? constructor(ps, cs) : ctor ? ctor(ps, cs) : Cons<Astrobj>(ps, cs)))){
-				if(!constructor && ctor){
-					CoordSys *eis = a->findeisystem();
-					if(eis)
-						eis->addToDrawList(a);
+			if(!a){
+				a = ctor(ps, cs);
+				if(a){
+					if(ctor){
+						CoordSys *eis = a->findeisystem();
+						if(eis)
+							eis->addToDrawList(a);
+					}
+					stellar_coordsys(sc, a);
 				}
-				stellar_coordsys(sc, a);
 			}
 		}
 		else{
@@ -314,7 +319,7 @@ static int stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	return mode;
 }
 
-static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl){
+int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
@@ -358,6 +363,6 @@ static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist 
 	return 0;
 }
 
-int StellarFileLoad(const char *fname, CoordSys *root){
-	return StellarFileLoadInt(fname, root, const_cast<varlist*>(calc_mathvars()));
+int Game::StellarFileLoad(const char *fname){
+	return StellarFileLoadInt(fname, universe, const_cast<varlist*>(calc_mathvars()));
 }

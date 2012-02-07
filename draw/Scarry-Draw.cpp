@@ -193,7 +193,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 	}
 }
 
-
+#if 0
 void Scarry::draw(wardraw_t *wd){
 	Scarry *const p = this;
 	static int init = 0;
@@ -468,3 +468,4 @@ void Scarry::drawtra(wardraw_t *wd){
 		glPopAttrib();
 	}
 }
+#endif

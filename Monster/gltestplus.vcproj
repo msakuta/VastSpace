@@ -398,6 +398,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\BinDiff.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\bitmap.c"
 				>
 			</File>
@@ -720,6 +724,10 @@
 			</File>
 			<File
 				RelativePath="..\Beamer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\BinDiff.h"
 				>
 			</File>
 			<File

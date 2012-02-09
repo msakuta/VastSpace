@@ -5,9 +5,12 @@
  */
 
 #include "dstring.h"
+#include "serial_util.h"
+#include "BinDiff.h"
 #include <stdio.h>
 
 #include <list>
+#include <vector>
 
 
 #define MAX_HOSTNAME 128
@@ -19,8 +22,8 @@
 
 /** protocol version. If major version is different, no communication can
   be made. As for minor, I don't know. */
-#define PROTOCOL_MAJOR 1
-#define PROTOCOL_MINOR 2
+#define PROTOCOL_MAJOR 2
+#define PROTOCOL_MINOR 0
 
 /// The default port for the protocol.
 #define PROTOCOL_PORT 6668
@@ -163,6 +166,8 @@ struct ServerClient{
 	/* if tcp connection is established, no need to store the address, but udp needs its destination */
 };
 
+
+
 /// \brief The object to represent the server in the server process itself.
 struct Server{
 	class Game *pg;
@@ -186,6 +191,7 @@ struct Server{
 	FILE *logfp;
 	unsigned char *sendbuf;
 	size_t sendbufsiz;
+	SyncBuf syncbuf;
 
 	Server();
 	~Server();
@@ -199,5 +205,58 @@ extern int StartServer(ServerParams *, struct ServerThreadHandle *);
 extern void StopServer(ServerThreadHandle *);
 extern void SendChatServer(ServerThreadHandle *, const char *buf);
 extern void KickClientServer(ServerThreadHandle *, int clid);
+
+
+
+/// \brief The serialize stream object that is used to generate compressed stream for sending from the server to the client.
+///
+/// Defined here in Server.h because the server needs it anyway.
+class DiffSectionStream : public SerializeStream{
+public:
+	typedef SerializeStream tt;
+	typedef SerializeStream st;
+	Serializable::Id id;
+	BinDiff bd;
+
+	DiffSectionStream(SerializeContext *asc, Serializable::Id id, const unsigned char *src, patchsize_t size) : st(asc), id(id), bd(src, size){}
+
+	virtual tt &operator<<(int a);
+	virtual tt &operator<<(unsigned a);
+	virtual tt &operator<<(long a);
+	virtual tt &operator<<(unsigned long a);
+	virtual tt &operator<<(bool a);
+	virtual tt &operator<<(float a);
+	virtual tt &operator<<(double a);
+	virtual tt &operator<<(const char *a);
+	virtual tt &operator<<(const std::string &a);
+	virtual tt &operator<<(const Serializable *p);
+	virtual tt &operator<<(const Vec3d &v);
+	virtual tt &operator<<(const Quatd &v);
+	virtual tt &operator<<(const random_sequence &v);
+	virtual tt *substream(Serializable::Id id){return this;}
+	virtual void join(tt *){}
+
+	template<typename T> SerializeStream &write(T a);
+};
+
+/// \brief Serialization class that converts objects into binary stream.
+/// \sa BinUnserializeStream
+class SectBinSerializeStream : public BinSerializeStream{
+public:
+	typedef SerializeStream tt;
+	typedef BinSerializeStream st;
+
+	SectBinSerializeStream(SerializeContext *asc, SyncBuf &records) : st(asc), records(records){}
+	virtual tt *substream(Serializable::Id id);
+	virtual void join(tt *);
+//	typedef std::vector<byte> Record;
+
+	const SyncBuf &getRecords()const{return records;}
+
+	const std::map<SerializableId, std::list<Patch> > getPatches()const{ return patches; }
+protected:
+	SyncBuf &records;
+	std::map<SerializableId, std::list<Patch> > patches;
+};
 
 #endif

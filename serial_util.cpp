@@ -78,8 +78,9 @@ StdSerializeSubStream::~StdSerializeSubStream(){
 StdSerializeStream::~StdSerializeStream(){
 }
 
-SerializeStream *StdSerializeStream::substream(){
+SerializeStream *StdSerializeStream::substream(Serializable::Id id){
 	StdSerializeSubStream *ret = new StdSerializeSubStream(*this);
+	*ret << id;
 	return ret;
 }
 
@@ -150,8 +151,9 @@ SerializeStream &BinSerializeStream::write(const BinSerializeStream &o){
 	return *this;
 }
 
-SerializeStream *BinSerializeStream::substream(){
-	return new BinSerializeStream(sc);
+SerializeStream *BinSerializeStream::substream(Serializable::Id id){
+	BinSerializeStream *ret = new BinSerializeStream(sc);
+	return ret;
 }
 
 void BinSerializeStream::join(tt *o){

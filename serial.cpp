@@ -7,7 +7,7 @@
 #include <sstream>
 
 UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, UnserializeMap &amap)
-: i(ai), cons(acons), map(amap){
+: i(ai), cons(acons), map(amap), syncbuf(NULL){
 }
 
 std::vector<Serializable::Id> deleteque;
@@ -70,7 +70,7 @@ void Serializable::packSerialize(SerializeContext &sc){
 		return; // avoid duplicate objects
 	}
 	sc.visits.insert(this);*/
-	SerializeStream *ss = sc.o.substream();
+	SerializeStream *ss = sc.o.substream(id);
 	SerializeContext sc2(*ss, sc);
 	sc2.o << classname();
 	serialize(sc2);
@@ -100,13 +100,10 @@ void Serializable::idPackSerialize(SerializeContext &sc){
 	}
 	sc.visits.insert(this);*/
 
-	unsigned long thisid;
-	thisid = this->id;
-	assert(thisid != 0); // id == 0 means it's invalid object.
-	SerializeStream *ss = sc.o.substream();
+	assert(this->id != 0); // id == 0 means it's invalid object.
+	SerializeStream *ss = sc.o.substream(id);
 	SerializeContext sc2(*ss, sc);
 	sc2.o << classname();
-	sc2.o << thisid;
 	serialize(sc2);
 	sc.o.join(ss);
 	delete ss;

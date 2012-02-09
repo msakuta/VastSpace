@@ -14,6 +14,7 @@ extern "C"{
 #include <iostream>
 #include <string>
 #include <set>
+#include <list>
 #include <exception>
 
 
@@ -58,7 +59,7 @@ public:
 	virtual tt &operator<<(const Quatd &v) = 0;
 	virtual tt &operator<<(const random_sequence &v) = 0;
 	template<typename T> tt &operator<<(const Vec4<T> &v);
-	virtual tt *substream() = 0;
+	virtual tt *substream(Serializable::Id id) = 0;
 	virtual void join(tt *) = 0;
 };
 
@@ -84,7 +85,7 @@ public:
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
 	virtual tt &operator<<(const random_sequence &v);
-	virtual tt *substream();
+	virtual tt *substream(Serializable::Id id);
 	virtual void join(tt *);
 
 	friend class StdSerializeSubStream;
@@ -111,7 +112,7 @@ public:
 	virtual tt &operator<<(const Vec3d &v);
 	virtual tt &operator<<(const Quatd &v);
 	virtual tt &operator<<(const random_sequence &v);
-	virtual tt *substream();
+	virtual tt *substream(Serializable::Id id);
 	virtual void join(tt *);
 
 	tt &write(const BinSerializeStream &o);
@@ -247,6 +248,12 @@ char *strnewdup(const char *src, size_t len);
 
 char *strmdup(const char *src, size_t len);
 
+struct SyncRecord{
+	SerializableId id;
+	std::vector<unsigned char> buf;
+};
+
+typedef std::map<SerializableId, std::vector<unsigned char> > SyncBuf;
 
 class UnserializeContext{
 public:
@@ -254,6 +261,7 @@ public:
 	UnserializeStream &i;
 	CtorMap &cons;
 	UnserializeMap &map;
+	SyncBuf *syncbuf;
 };
 
 

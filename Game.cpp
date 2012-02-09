@@ -51,27 +51,23 @@ void Game::idUnmap(UnserializeContext &sc){
 	// We'll reconstruct player list from the input stream, so we need to clear the existing one.
 	players.clear();
 
-	while(!sc.i.eof()){
-		unsigned long size;
-		sc.i >> size;
-		if(sc.i.fail())
-			break;
-		UnserializeStream *us = sc.i.substream(size);
+	// Iterate through SyncBuf entries to apply patches to each of them.
+	SyncBuf::iterator it0 = sc.syncbuf->begin();
+	for(; it0 != sc.syncbuf->end(); it0++){
+		UnserializeStream *us = new BinUnserializeStream(&it0->second.front(), it0->second.size(), &sc);
 		cpplib::dstring src;
-		unsigned long thisid;
+		unsigned long thisid = it0->first;
 		*us >> src;
-		*us >> thisid;
 		UnserializeMap::iterator it = idunmap.find(thisid);
 		if(it == idunmap.end()){
 			gltestp::dstring scname((const char*)src);
-			/*if(src != "Player" && src != "Universe")*/{
+			{
 				::CtorMap::iterator it = sc.cons.find(scname);
 				if(it == sc.cons.end())
 					throw ClassNotFoundException();
 				if(it->second){
 					Serializable *ret = it->second();
 					ret->id = thisid;
-//					sc.map.push_back(ret);
 					idunmap[thisid] = ret;
 					if(src == "Universe"){
 						universe = static_cast<Universe*>(ret);
@@ -89,7 +85,6 @@ void Game::idUnmap(UnserializeContext &sc){
 			// Report anomaly as early as possible
 			if(src != it->second->classname())
 				throw ClassNotFoundException();
-//			sc.map.push_back(it->second);
 			if(src == "Player"){
 				players.push_back(static_cast<Player*>(it->second));
 			}
@@ -105,22 +100,21 @@ void Game::idUnserialize(UnserializeContext &usc){
 		unsigned long id;
 		usc.i >> id;
 	}
+
+	assert(usc.syncbuf);
 	unsigned l = 1;
-	while(!usc.i.eof()){
-		unsigned size;
+	SyncBuf::iterator it0 = usc.syncbuf->begin();
+	for(; it0 != usc.syncbuf->end(); it0++){
+		SerializableId thisid = it0->first;
 		cpplib::dstring name;
-		usc.i >> size;
-		UnserializeStream *us = usc.i.substream(size);
+		UnserializeStream *us = new BinUnserializeStream(&it0->second.front(), it0->second.size(), &usc);
 		UnserializeContext sc2(*us, usc.cons, usc.map);
 		us->usc = &sc2;
-		SerializableId thisid;
 		sc2.i >> name;
-		sc2.i >> thisid;
 		IdMap::iterator it = usc.map.find(thisid);
 		if(it != usc.map.end())
 			it->second->unserialize(sc2);
 		delete us;
-//		usc.map[l]->idPackUnserialize(usc);
 		l++;
 	}
 }
@@ -128,25 +122,6 @@ void Game::idUnserialize(UnserializeContext &usc){
 void Game::serialize(SerializeStream &ss){
 	extern std::vector<unsigned long> deleteque;
 	Serializable* visit_list = NULL;
-#if 0
-	SerializeMap map;
-	map[NULL] = 0;
-
-	// The first pass enumerates all the entities in the object web.
-	SerializeContext sc0(*(SerializeStream*)NULL, map, visit_list);
-	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
-		(*it)->dive(sc0, &Serializable::map);
-	if(sqbind)
-		sqbind->dive(sc0, &Serializable::map);
-	universe->dive(sc0, &Serializable::map);
-
-	// Update the server's id map for receiving client messages that requires access to the server objects
-	// designated by the id.
-	for(SerializeMap::iterator it = map.begin(); it != map.end(); it++){
-		if(it->first)
-			idunmap[it->first->getid()] = const_cast<Serializable*>(it->first);
-	}
-#endif
 
 	// Update delete queue to notify that particular objects should be dead, destructed and freed.
 	ss << (unsigned long)deleteque.size();

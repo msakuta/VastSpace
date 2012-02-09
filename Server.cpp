@@ -12,6 +12,7 @@ extern "C"{
 //#include <string.h>
 #include <stdlib.h>
 #include <sstream>
+#include <stdint.h>
 
 #ifdef DEDICATED
 #include <stdio.h>
@@ -1170,3 +1171,77 @@ static int cl_destroy(Server::ServerClientList &root){
 	return ret;
 }
 
+
+
+
+
+//-----------------------------------------------------------------------------
+//     DiffSectionStream Implementation
+//-----------------------------------------------------------------------------
+
+
+template<typename T>
+inline SerializeStream &DiffSectionStream::write(T a){
+	bd.put(reinterpret_cast<const unsigned char*>(&a), sizeof a);
+	return *this;
+}
+
+SerializeStream &DiffSectionStream::operator <<(int a){return write((int32_t)a);}
+SerializeStream &DiffSectionStream::operator <<(unsigned a){return write((uint32_t)a);}
+SerializeStream &DiffSectionStream::operator <<(long a){return write((int32_t)a);}
+SerializeStream &DiffSectionStream::operator <<(unsigned long a){return write((uint32_t)a);}
+SerializeStream &DiffSectionStream::operator <<(bool a){return write(a);}
+SerializeStream &DiffSectionStream::operator <<(float a){return write(a);}
+SerializeStream &DiffSectionStream::operator <<(double a){return write(a);}
+
+SerializeStream &DiffSectionStream::operator <<(const char *a){
+	bd.put(reinterpret_cast<const unsigned char*>(a), patchsize_t(strlen(a)+1));
+	return *this;
+}
+
+SerializeStream &DiffSectionStream::operator<<(const std::string &a){
+	bd.put(reinterpret_cast<const unsigned char*>(a.c_str()), patchsize_t(a.length()));
+	return *this;
+}
+
+SerializeStream &DiffSectionStream::operator <<(const Serializable *p){
+	if(p)
+		return write(p->getid()/*sc->map[p]*/);
+	else
+		return write(Serializable::Id(0));
+}
+
+SerializeStream &DiffSectionStream::operator<<(const Vec3d &v){
+	return *this << v[0] << v[1] << v[2];
+}
+
+SerializeStream &DiffSectionStream::operator<<(const Quatd &v){
+	return *this << v.i() << v.j() << v.k() << v.re();
+}
+
+SerializeStream &DiffSectionStream::operator<<(const struct ::random_sequence &rs){
+	return *this << rs.w << rs.z;
+}
+
+
+//-----------------------------------------------------------------------------
+//     SectBinSerializeStream Implementation
+//-----------------------------------------------------------------------------
+
+SerializeStream *SectBinSerializeStream::substream(Serializable::Id id){
+	SyncBuf::iterator it = records.find(id);
+	if(it == records.end())
+		return new DiffSectionStream(sc, id, NULL, 0);
+	else
+		return new DiffSectionStream(sc, id, &it->second.front(), it->second.size());
+}
+
+void SectBinSerializeStream::join(SerializeStream *o){
+	DiffSectionStream *sss = (DiffSectionStream*)o;
+//	SyncRecord r = {sss->id, std::vector<byte>(sss->getsize())};
+//	r.size = ((BinSerializeStream*)o)->getsize();
+//	r.buf = new unsigned char[r.size];
+//	memcpy(&r.buf.front(), sss->getbuf(), r.buf.size());
+//	records.push_back(r);
+	patches[sss->id] = sss->bd.getPatches();
+}

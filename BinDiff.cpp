@@ -2,6 +2,7 @@
  * \brief Implementation of BinDiff class and its companions.
  */
 #include "BinDiff.h"
+#include <string.h>
 
 void BinDiff::put(const unsigned char *dst, patchsize_t dstsize){
 	while(dstsize){

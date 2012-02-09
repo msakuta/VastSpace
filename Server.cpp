@@ -163,7 +163,6 @@ static void timer_kill(timer_t *timer){
 	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (sockopt_t)&nd, size);\
 }
 
-static void *AnimThread(Server *);
 static void WaitCommand(ServerClient *, char *);
 static void GameCommand(ServerClient *, char *);
 static DWORD WINAPI ClientThread(LPVOID lpv);
@@ -179,11 +178,13 @@ Server::~Server(){
 	fclose(logfp);
 }
 
-void Server::SendWait(ServerClient *cl){
+/// \brief Sends the update stream to a given client.
+/// \param cl The client handle to send to.
+/// \param first Instructs to send the stream for first updates for the client.
+void Server::SendUpdateStream(ServerClient *cl, bool first){
 	static int sendcount = 0;
 	char buf[64];
 	SOCKET s = cl->s;
-//	send(s, "Modified\r\n", sizeof"Modified\r\n"-1, 0);
 	{
 		int c;
 		ServerClientList::iterator psc = this->cl.begin();
@@ -206,15 +207,6 @@ void Server::SendWait(ServerClient *cl){
 			dstrcat(&ds, buf);
 			dstrcat(&ds, &*psc == cl ? "U" : "O");
 			if(psc->name){
-/*				char str[7];
-				str[0] = 0 <= psc->team ? psc->team + '0' : '-';
-				str[1] = 0 <= psc->unit ? psc->unit + '0' : '-';
-				str[2] = psc->attr[0] + '0';
-				str[3] = psc->attr[1] + '0';
-				str[4] = psc->attr[2] + '0';
-				str[5] = psc->status & SC_READY ? 'R' : '-';
-				str[6] = '\0';
-				dstrcat(&ds, str);*/
 				dstrcat(&ds, psc->name);
 			}
 			dstrcat(&ds, "\r\n");
@@ -226,10 +218,20 @@ void Server::SendWait(ServerClient *cl){
 	{
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-//		dstring dsbuf;
 		lock_mutex(&mg);
-//		char sizebuf[16];
-//		sprintf(sizebuf, "%08X", sendbufsiz);
+		unsigned char *sendbuf;
+		size_t sendbufsiz;
+		if(first){
+			sendbuf = NULL;
+			sendbufsiz = 0;
+			unsigned zero = 0;
+			SyncBuf syncbuf;
+			CreateDiffStream(sendbuf, sendbufsiz, syncbuf, &zero, sizeof zero);
+		}
+		else{
+			sendbuf = this->sendbuf;
+			sendbufsiz = this->sendbufsiz;
+		}
 		char *buf = new char[8+sendbufsiz*2+3];
 		sprintf(buf, "%08X", sendbufsiz);
 //		dsbuf << sizebuf;
@@ -263,8 +265,8 @@ void Server::WaitModified(){
 	if(lock_mutex(&mcl)){
 		ServerClientList::iterator pc = cl.begin();
 		while(pc != cl.end()){
-			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
-				SendWait(&*pc);
+			if(pc->s != INVALID_SOCKET && pc->sentFirst && lock_mutex(&pc->m)){
+				SendUpdateStream(&*pc, false);
 				unlock_mutex(&pc->m);
 			}
 			pc++;
@@ -343,11 +345,6 @@ static void dstrip(dstr_t *pds, const sockaddr_in *s){
 	dstrlong(pds, ntohs(s->sin_port));
 }
 
-struct ServerThreadDataInt{
-	sockaddr_in svtcp;
-	Server *sv;
-	int port;
-};
 
 /** \brief The server's accept thread.
  *
@@ -357,12 +354,12 @@ struct ServerThreadDataInt{
  *   ClientThread - communicate with the associated client via socket
  */
 
-DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
+threadret_t WINAPI Server::ServerThread(ServerThreadDataInt *pstdi){
 	Server &sv = *pstdi->sv;
 	ServerClient *&scs = sv.scs;
 
 #ifdef DEDICATED
-	thread_create(&sv.animThread, AnimThread, &sv);
+	thread_create(&sv.animThread, &Server::AnimThread, &sv);
 	timer_set(&sv.timer, FRAMETIME, &sv.hAnimEvent);
 #endif
 
@@ -443,6 +440,7 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 				try{
 					pcl = &sv.addServerClient();
 					pcl->s = AcceptSocket;
+					pcl->sentFirst = false;
 			//		pcl->rate = .5;
 					pcl->tcp = client;
 					unlock_mutex(&sv.mcl);
@@ -466,6 +464,8 @@ DWORD WINAPI ServerThread(struct ServerThreadDataInt *pstdi){
 						PROTOCOL_MAJOR, PROTOCOL_MINOR,
 						sv.maxncl);
 					send(AcceptSocket, buf, strlen(buf), 0);
+					sv.SendUpdateStream(pcl, true);
+					pcl->sentFirst = true;
 				}
 
 				/* Hand process to the new thread */
@@ -520,7 +520,8 @@ int SocketOutStream::write(const char *data, size_t size){
 	return send(sock, data, (int)size, 0);
 }
 
-static void *AnimThread(Server *ps){
+/// \brief Dedicated server's routine for simulation computation.
+threadret_t Server::AnimThread(Server *ps){
 #ifdef _WIN32
 	while(event_wait(&ps->hAnimEvent)){
 #else
@@ -535,30 +536,90 @@ static void *AnimThread(Server *ps){
 //		printf("AnimThread\n");
 		if(ps->terminating)
 			break;
-		if(ps->pg && trylock_mutex(&ps->mg)){
-			ps->pg->anim(FRAMETIME / 1000.);
-
-			BinSerializeStream bss;
-			ps->pg->serialize(bss);
-			delete[] ps->sendbuf;
-			ps->sendbufsiz = bss.getsize();
-			ps->sendbuf = new unsigned char[bss.getsize()];
-			memcpy(ps->sendbuf, bss.getbuf(), bss.getsize());
-
-			unlock_mutex(&ps->mg);
-#ifdef DEDICATED
-			ps->WaitModified();
-#endif
-		}
+		ps->FrameProc(FRAMETIME / 1000.);
 	}
 	return 0;
 }
 
+/// \brief Called once a frame (simulation step) proceeds.
+/// \param dt Delta-time of the frame.
+void Server::FrameProc(double dt){
+	if(pg && trylock_mutex(&mg)){
+		pg->anim(dt);
+
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+
+		SectBinSerializeStream bss(NULL, syncbuf);
+		pg->serialize(bss);
+		CreateDiffStream(sendbuf, sendbufsiz, syncbuf, bss.getbuf(), bss.getsize());
+
+		unlock_mutex(&mg);
+#ifdef DEDICATED
+		WaitModified();
+#endif
+		extern double server_lastdt;
+		server_lastdt = TimeMeasLap(&tm);
+	}
+}
+
+/// \brief Creates differential stream for client updates.
+/// \param sendbuf Returns the new buffer for sending.
+/// \param sendbufsiz Returns size of sendbuf.
+/// \param syncbuf A SyncBuf object that is representation of the client's assumed serialized buffers.
+/// \param header A buffer that will be inserted before the returned stream.
+/// \param headersize The size of header.
+void Server::CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,
+		SyncBuf &syncbuf, const void *header, size_t headersize)
+{
+	SectBinSerializeStream bss(NULL, syncbuf);
+	pg->serialize(bss);
+
+	delete[] sendbuf;
+	sendbufsiz = headersize;
+	sendbuf = new unsigned char[headersize];
+	memcpy(sendbuf, header, headersize);
+
+	const std::map<SerializableId, std::list<Patch> > &rc = bss.getPatches();
+	std::map<SerializableId, std::list<Patch> >::const_iterator it = rc.begin();
+	std::vector<unsigned char> compstream;
+	for(; it != rc.end(); it++){
+		std::vector<unsigned char> buf;
+		applyPatches(syncbuf[it->first], it->second);
+
+		if(it->second.empty())
+			continue;
+		patchsize_t org = compstream.size();
+		compstream.resize(compstream.size() + sizeof(SerializableId) + sizeof(unsigned));
+		*(SerializableId*)&compstream[org] = it->first;
+		*(unsigned*)&compstream[org+sizeof(SerializableId)] = it->second.size();
+
+		std::list<Patch>::const_iterator it3 = it->second.begin();
+		for(; it3 != it->second.end(); it3++){
+			patchsize_t org = compstream.size();
+			compstream.resize(compstream.size() + 3 * sizeof(patchsize_t) + it3->buf.size());
+			*(patchsize_t*)&compstream[org] = it3->start;
+			*(patchsize_t*)&compstream[org+sizeof(patchsize_t)] = it3->size;
+			*(patchsize_t*)&compstream[org+2*sizeof(patchsize_t)] = it3->buf.size();
+			memcpy(&compstream[org+3*sizeof(patchsize_t)], &it3->buf.front(), it3->buf.size());
+		}
+	}
+	if(compstream.size()){
+			unsigned newsize = sendbufsiz + compstream.size();
+			unsigned char *newbuf = new unsigned char [newsize];
+			memcpy(newbuf, sendbuf, sendbufsiz);
+			memcpy(&newbuf[sendbufsiz], &compstream.front(), compstream.size());
+			delete[] sendbuf;
+			sendbuf = newbuf;
+			sendbufsiz = newsize;
+	}
+
+}
 
 
 int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 	DWORD dw;
-	static struct ServerThreadDataInt stdi;
+	static struct Server::ServerThreadDataInt stdi;
 #ifdef _WIN32
 	WSADATA wsaData;
 	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -652,7 +713,7 @@ int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 		sv.std = *pstd;
 	}
 
-	thread_create(&ph->thread, ServerThread, &stdi);
+	thread_create(&ph->thread, &Server::ServerThread, &stdi);
 /*	event_wait(&stdi.initiated);
 	event_delete(&stdi.initiated);*/
 	ph->listener = stdi.sv->listener;

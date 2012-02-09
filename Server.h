@@ -40,6 +40,7 @@
 typedef HANDLE event_t;
 typedef UINT timer_t;
 typedef HANDLE thread_t;
+typedef DWORD threadret_t; ///< Thread return value type
 #	ifdef NDEBUG
 typedef HANDLE mutex_t;
 #	else
@@ -98,6 +99,7 @@ typedef struct thread_s{
 	pthread_t p;
 	int init;
 } thread_t;
+typedef void *threadret_t; ///< Thread return value type
 typedef unsigned long DWORD;
 typedef void *LPVOID;
 typedef int SOCKET;
@@ -155,6 +157,7 @@ struct ServerParams{
 struct ServerClient{
 	Server *sv; ///< Redundant reference to the server
 	bool kicked; ///< Flag indicating this client is being kicked.
+	bool sentFirst; ///< Flag that the initial update stream is sent.
 	short team; ///< Team id to filter chat messages.
 	unsigned long meid; ///< id of the player entity
 	SOCKET s; ///< keep connection on this socket
@@ -197,8 +200,18 @@ struct Server{
 	~Server();
 	void WaitModified();
 	ServerClient &addServerClient();
+	void FrameProc(double dt);
+	static threadret_t AnimThread(Server *);
+	struct ServerThreadDataInt{
+		sockaddr_in svtcp;
+		Server *sv;
+		int port;
+	};
+	static threadret_t ServerThread(ServerThreadDataInt*);
 protected:
-	void SendWait(ServerClient *cl);
+	void SendUpdateStream(ServerClient *cl, bool first);
+	void CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,
+			SyncBuf &syncbuf, 	const void *header, size_t headersize);
 };
 
 extern int StartServer(ServerParams *, struct ServerThreadHandle *);

@@ -1076,7 +1076,7 @@ void ClientApplication::display_func(void){
 		size_t size;
 		static FILE *fp = NULL;
 		if(mode & ServerBit){
-			server.sv->FrameProc();
+			server.sv->FrameProc(dt);
 			sbuf = (const unsigned char*)server.sv->sendbuf;
 			size = server.sv->sendbufsiz;
 

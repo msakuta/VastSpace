@@ -1001,28 +1001,6 @@ void ClientGame::anim(double dt){
 
 
 
-#if 0
-/// \brief Unserialization counterpart of BinSerializeSteram.
-class SectBinUnserializeStream : public BinUnserializeStream{
-public:
-	SyncBuf &syncbuf;
-	SyncBuf::iterator it;
-	SectBinUnserializeStream(SyncBuf &syncbuf, UnserializeContext *ausc = NULL) : BinUnserializeStream(NULL, 0, ausc), syncbuf(syncbuf), it(syncbuf.begin()){}
-	virtual bool eof()const;
-//	virtual bool fail()const;
-	virtual tt *substream(size_t size);
-
-private:
-};
-
-bool SectBinUnserializeStream::eof()const{
-	return it == syncbuf.end();
-}
-
-UnserializeStream *SectBinUnserializeStream::substream(size_t size){
-	return new BinUnserializeStream(&it->second.front(), it->second.size(), usc);
-}
-#endif
 
 
 
@@ -1111,19 +1089,10 @@ void ClientApplication::display_func(void){
 			memcpy(server.sv->sendbuf, bss.getbuf(), bss.getsize());
 			const std::map<SerializableId, std::list<Patch> > &rc = bss.getPatches();
 			std::map<SerializableId, std::list<Patch> >::const_iterator it = rc.begin();
-//			BinSerializeStream bss(NULL, server.sv->syncbuf);
 			std::vector<unsigned char> compstream;
 			for(; it != rc.end(); it++){
-//				SyncBuf::iterator it2 = server.sv->syncbuf.find(it->first);
 				std::vector<unsigned char> buf;
-//				if(it2 == server.sv->syncbuf.end()){
-					applyPatches(server.sv->syncbuf[it->first], it->second);
-//					server.sv->syncbuf[it->first] = buf;
-//				}
-//				else{
-//					applyPatches(buf, &it2->second.front(), it2->second.size(), it->second);
-//					it2->second = buf;
-//				}
+				applyPatches(server.sv->syncbuf[it->first], it->second);
 
 				if(it->second.empty())
 					continue;
@@ -1151,47 +1120,7 @@ void ClientApplication::display_func(void){
 					server.sv->sendbuf = newbuf;
 					server.sv->sendbufsiz = newsize;
 			}
-/*			const SyncBuf &rc = bss.getRecords();
-			SyncBuf::const_iterator it = rc.begin();
-			SyncBuf::const_iterator it2 = server.sv->syncbuf.begin();
-			for(; it != rc.end(); it++){
-				bool tail = it2 == server.sv->syncbuf.end();
-				if(tail || it->buf.size() != it2->buf.size()){
-					unsigned newsize = server.sv->sendbufsiz + 2 * sizeof(unsigned) + it->buf.size();
-					unsigned char *newbuf = new unsigned char [newsize];
-					memcpy(newbuf, server.sv->sendbuf, server.sv->sendbufsiz);
-					*(unsigned*)&newbuf[server.sv->sendbufsiz] = 0;
-					((unsigned*)&newbuf[server.sv->sendbufsiz])[1] = it->buf.size();
-					memcpy(&newbuf[server.sv->sendbufsiz + 2 * sizeof(unsigned)], &it->buf.front(), it->buf.size());
-					delete[] server.sv->sendbuf;
-					server.sv->sendbuf = newbuf;
-					server.sv->sendbufsiz = newsize;
-				}
-				else{
-					// nail down the different part
-					int begin = 0, end = it->buf.size() - 1;
-					for(; begin < it->buf.size(); begin++)
-						if(it->buf[begin] != it2->buf[begin])
-							break;
-					for(; begin < end; end--)
-						if(it->buf[end] != it2->buf[end])
-							break;
-					if(begin < end){
-						unsigned newsize = server.sv->sendbufsiz + 2 * sizeof(unsigned) + end - begin;
-						unsigned char *newbuf = new unsigned char [newsize];
-						memcpy(newbuf, server.sv->sendbuf, server.sv->sendbufsiz);
-						*(unsigned*)&newbuf[server.sv->sendbufsiz] = begin;
-						((unsigned*)&newbuf[server.sv->sendbufsiz])[1] = end;
-						memcpy(&newbuf[server.sv->sendbufsiz + 2 * sizeof(unsigned)], &it->buf[begin], end - begin);
-						delete[] server.sv->sendbuf;
-						server.sv->sendbuf = newbuf;
-						server.sv->sendbufsiz = newsize;
-					}
-				}
-				if(!tail)
-					it2++;
-			}
-			server.sv->syncbuf = rc;*/
+
 			unlock_mutex(&server.sv->mg);
 			sbuf = (const unsigned char*)server.sv->sendbuf;
 			server.sv->WaitModified();
@@ -1200,8 +1129,10 @@ void ClientApplication::display_func(void){
 			extern double server_lastdt;
 			server_lastdt = TimeMeasLap(&tm);
 			// Output content being unserialized for debugging.
-//			if(!fp)
-//				fp = fopen(dstring() << "clientstream" << gametime << ".log", "wb");
+			if(!fp){
+				system("mkdir logs");
+				fp = fopen(dstring() << "logs/clientstream" << gametime << ".log", "wb");
+			}
 		}
 		else{
 			if(WAIT_OBJECT_0 == WaitForSingleObject(hGameMutex, 50)){
@@ -1245,11 +1176,6 @@ void ClientApplication::display_func(void){
 					}
 
 					applyPatches(clientSyncBuf[id], pl);
-//					SyncBuf::iterator it = clientSyncBuf.find(id);
-//					if(it != clientSyncBuf.end())
-//						applyPatches(it->second, &it->second.front(), it->second.size(), pl);
-//					else
-//						applyPatches(clientSyncBuf[id], NULL, 0, pl);
 				}
 			}
 
@@ -1259,48 +1185,15 @@ void ClientApplication::display_func(void){
 				fclose(fp);
 				fp = NULL;
 			}
+
+			// The first pass aquires class names in incoming stream and allocates spaces for them.
 			BinUnserializeStream bus0(sbuf, size);
 			UnserializeContext usc(bus0, Serializable::ctormap(), map);
 			bus0.usc = &usc;
 			usc.syncbuf = &clientSyncBuf;
 			clientGame->idUnmap(usc);
-#if 0
-			{
-				Game::IdMap &idunmap = const_cast<Game::IdMap&>(clientGame->idmap());
-				SyncBuf::iterator it0 = clientSyncBuf.begin();
-				while(it0 != clientSyncBuf.end()){
-					UnserializeStream *us = new BinUnserializeStream(&it0->second.front(), it0->second.size(), &usc);
-					Game::IdMap::iterator it2 = idunmap.find(it0->first);
-					if(it2 == idunmap.end()){
-						cpplib::dstring src;
-						*us >> src;
-						gltestp::dstring scname((const char*)src);
-						/*if(src != "Player" && src != "Universe")*/{
-							::CtorMap::iterator it = usc.cons.find(scname);
-							if(it == usc.cons.end())
-								throw ClassNotFoundException();
-							if(it->second){
-								Serializable *ret = it->second();
-								ret->id = it0->first;
-			//					sc.map.push_back(ret);
-								idunmap[thisid] = ret;
-								if(src == "Universe"){
-									universe = static_cast<Universe*>(ret);
-								}
-								if(src == "Player"){
-									players.push_back(static_cast<Player*>(ret));
-								}
-								if(src == "SquirrelBind"){
-									setSquirrelBind(static_cast<SquirrelBind*>(ret));
-								}
-							}
-						}
-					}
-					delete us;
-					it++;
-				}
-			}
-#endif
+
+			// The second pass actually fills the created instances with unserialized data.
 			{
 				BinUnserializeStream bus(sbuf, size);
 				UnserializeContext usc(bus, Serializable::ctormap(), map);

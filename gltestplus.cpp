@@ -58,7 +58,6 @@ extern "C"{
 #include <clib/gl/fbo.h>
 #include <clib/suf/sufdraw.h>
 #include <clib/zip/UnZip.h>
-#include <clib/lzw/lzw.h>
 }
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -1076,7 +1075,6 @@ void ClientApplication::display_func(void){
 		const unsigned char *sbuf;
 		size_t size;
 		static FILE *fp = NULL;
-		static FILE *fpc = NULL;
 		if(mode & ServerBit){
 			server.sv->FrameProc(dt);
 			sbuf = (const unsigned char*)server.sv->sendbuf;
@@ -1084,9 +1082,12 @@ void ClientApplication::display_func(void){
 
 			// Output content being unserialized for debugging.
 			if(!fp){
-				system("mkdir logs");
+#ifdef _WIN32
+				CreateDirectory("logs", NULL);
+#else
+				mkdir("logs", 0644);
+#endif
 				fp = fopen(dstring() << "logs/clientstream" << gametime << ".log", "wb");
-				fpc = fopen(dstring() << "logs/clientstream" << gametime << "c.log", "wb");
 			}
 		}
 		else{
@@ -1139,13 +1140,6 @@ void ClientApplication::display_func(void){
 				fwrite(sbuf, size, 1, fp);
 				fclose(fp);
 				fp = NULL;
-			}
-			if(fpc){
-				size_t retsize;
-				unsigned char *cbuf = lzc(sbuf, size, &retsize);
-				fwrite(cbuf, retsize, 1, fpc);
-				fclose(fpc);
-				fpc = NULL;
 			}
 
 			// The first pass aquires class names in incoming stream and allocates spaces for them.

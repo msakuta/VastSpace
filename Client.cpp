@@ -16,13 +16,12 @@ struct JoinGameData{
 };
 
 
-ClientApplication::ClientApplication() : recvbuf(NULL), recvbufsiz(0){
+ClientApplication::ClientApplication(){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
 }
 
 ClientApplication::~ClientApplication(){
 	CloseHandle(hGameMutex);
-	delete[] recvbuf;
 }
 
 
@@ -218,15 +217,20 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 					char *endptr;
 					strncpy(sizebuf, lbuf, 8);
 					sizebuf[8] = '\0';
-					pc->recvbufsiz = strtoul(sizebuf, &endptr, 16);
-					delete[] pc->recvbuf;
-					pc->recvbuf = new unsigned char[pc->recvbufsiz];
+					size_t recvbufsiz = strtoul(sizebuf, &endptr, 16);
+
+					// Allocate a new buffer in the queue and get a reference to it.
+					pc->recvbuf.push_back(std::vector<unsigned char>());
+					std::vector<unsigned char> &buf = pc->recvbuf.back();
+
+					// Fill the buffer by decoding hex-encoded input stream.
+					buf.resize(recvbufsiz);
 					int i = 0;
-					for(const char *p = &lbuf[8]; p && i < pc->recvbufsiz; i++){
+					for(const char *p = &lbuf[8]; p && i < recvbufsiz; i++){
 						sizebuf[0] = *p++;
 						sizebuf[1] = *p++;
 						sizebuf[2] = '\0';
-						pc->recvbuf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
+						buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
 					}
 
 					ReleaseMutex(pc->hGameMutex);

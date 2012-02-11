@@ -68,8 +68,7 @@ typedef char *sockopt_t;
 bool TryLockMutex(mutex_t *pm, const char *file, int line){
 	muprintf("mlocking %p %s(%d)\n", pm, file, line);
 #ifdef NDEBUG
-	DWORD ret = WaitForSingleObject(pm, 0);
-	return WAIT_OBJECT_0;
+	DWORD ret = WaitForSingleObject(*pm, 0);
 #else
 	DWORD ret = WaitForSingleObject(pm->m, 0);
 	if(WAIT_TIMEOUT == ret)
@@ -79,8 +78,8 @@ bool TryLockMutex(mutex_t *pm, const char *file, int line){
 	pm->file = file;
 	pm->line = line;
 	pm->thread = GetCurrentThreadId();
-	return WAIT_OBJECT_0 == ret;
 #endif
+	return WAIT_OBJECT_0 == ret;
 }
 
 #else /* LINUX */
@@ -553,9 +552,7 @@ void Server::FrameProc(double dt){
 		CreateDiffStream(sendbuf, sendbufsiz, syncbuf, NULL, 0);
 
 		unlock_mutex(&mg);
-#ifdef DEDICATED
 		WaitModified();
-#endif
 		extern double server_lastdt;
 		server_lastdt = TimeMeasLap(&tm);
 	}

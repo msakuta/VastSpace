@@ -1081,7 +1081,7 @@ void ClientApplication::display_func(void){
 			size = server.sv->sendbufsiz;
 
 			// Output content being unserialized for debugging.
-			if(!fp){
+			if(false && !fp){
 #ifdef _WIN32
 				CreateDirectory("logs", NULL);
 #else
@@ -1092,12 +1092,17 @@ void ClientApplication::display_func(void){
 		}
 		else{
 			if(WAIT_OBJECT_0 == WaitForSingleObject(hGameMutex, 50)){
-				if(!recvbuf){
-					ReleaseMutex(hGameMutex);
-					return;
+				if(recvbuf.empty()){
+					// If input stream buffer is empty, ignore it while the receive thread fills it in,
+					// but process the rest of calculation and graphics.
+					sbuf = NULL;
+					size = 0;
 				}
-				sbuf = recvbuf;
-				size = recvbufsiz;
+				else{
+					// If a stream buffer is available, interpret it.
+					sbuf = &recvbuf.front().front();
+					size = recvbuf.front().size();
+				}
 
 				// Output content being unserialized for debugging.
 				if(!fp)
@@ -1107,7 +1112,7 @@ void ClientApplication::display_func(void){
 				return;
 		}
 
-		{
+		if(sbuf){
 			static SyncBuf clientSyncBuf;
 			UnserializeMap &map = (UnserializeMap&)clientGame->idmap();
 			map[0] = NULL;
@@ -1184,6 +1189,9 @@ void ClientApplication::display_func(void){
 		}
 
 		if(!(mode & ServerBit)){
+			// Erase the last received buffer (pop from the queue)
+			if(!recvbuf.empty())
+				recvbuf.pop_front();
 			ReleaseMutex(hGameMutex);
 		}
 	}

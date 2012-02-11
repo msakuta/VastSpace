@@ -212,7 +212,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 			case 3:
 				if(lbp == 0)
 					break;
-				if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 1000)){
+				if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10000)){
 					char sizebuf[16];
 					char *endptr;
 					strncpy(sizebuf, lbuf, 8);
@@ -235,6 +235,8 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 
 					ReleaseMutex(pc->hGameMutex);
 				}
+				else
+					assert(0);
 				mode = 0;
 				break;
 			case 4:

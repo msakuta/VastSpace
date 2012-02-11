@@ -550,9 +550,7 @@ void Server::FrameProc(double dt){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 
-		SectBinSerializeStream bss(NULL, syncbuf);
-		pg->serialize(bss);
-		CreateDiffStream(sendbuf, sendbufsiz, syncbuf, bss.getbuf(), bss.getsize());
+		CreateDiffStream(sendbuf, sendbufsiz, syncbuf, NULL, 0);
 
 		unlock_mutex(&mg);
 #ifdef DEDICATED
@@ -574,6 +572,12 @@ void Server::CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,
 {
 	SectBinSerializeStream bss(NULL, syncbuf);
 	pg->serialize(bss);
+
+	// If the given header is unavailable, make it with our own.
+	if(!header){
+		header = bss.getbuf();
+		headersize = bss.getsize();
+	}
 
 	delete[] sendbuf;
 	sendbufsiz = headersize;

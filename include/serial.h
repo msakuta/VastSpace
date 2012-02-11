@@ -7,8 +7,7 @@
 #include <iostream>
 
 
-/// This type should match the definition of Serializable::Id, which is not
-/// necessarily included in this header.
+/// This type should match the definition of Serializable::Id.
 typedef unsigned SerializableId;
 
 class Serializable;
@@ -34,7 +33,7 @@ class ServerGame;
  */
 class EXPORT Serializable{
 public:
-	typedef unsigned long Id;
+	typedef SerializableId Id;
 
 	/// Virtual destructor defined to make all derived classes have default destructor.
 	virtual ~Serializable();

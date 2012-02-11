@@ -10,8 +10,6 @@ UnserializeContext::UnserializeContext(UnserializeStream &ai, CtorMap &acons, Un
 : i(ai), cons(acons), map(amap), syncbuf(NULL){
 }
 
-std::vector<Serializable::Id> deleteque;
-
 // The id value of 0 means not initialized or invalid object.
 Serializable::Serializable(Game *game) : game(game), id(!game || game->isRawCreateMode() ? 0 : game->nextId()), visit_list(NULL){
 }
@@ -20,7 +18,8 @@ Serializable::~Serializable(){
 	if(g_sqvm)
 		sqa_deleteobj(g_sqvm, this);
 
-	deleteque.push_back(id);
+	if(game)
+		game->getDeleteQue().push_back(id);
 }
 
 void Serializable::serialize(SerializeContext &sc){

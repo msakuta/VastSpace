@@ -99,10 +99,14 @@ public:
 	int StellarFileLoad(const char *fname);
 
 	static SQInteger sqf_addent(HSQUIRRELVM v);
+
+	typedef std::vector<SerializableId> DeleteQue;
+	DeleteQue &getDeleteQue(){return deleteque;}
 protected:
 	IdMap idunmap;
 	SquirrelBind *sqbind;
 	Serializable::Id idGenerator;
+	DeleteQue deleteque;
 
 	int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
 	int stellar_coordsys(StellarContext &sc, CoordSys *cs);

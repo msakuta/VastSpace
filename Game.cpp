@@ -35,7 +35,6 @@ const Game::IdMap &Game::idmap()const{
 }
 
 void Game::idUnmap(UnserializeContext &sc){
-	std::vector<unsigned long> cldeleteque;
 	unsigned long delsize;
 	sc.i >> delsize;
 	for(int i = 0; i < delsize; i++){
@@ -120,12 +119,11 @@ void Game::idUnserialize(UnserializeContext &usc){
 }
 
 void Game::serialize(SerializeStream &ss){
-	extern std::vector<unsigned long> deleteque;
 	Serializable* visit_list = NULL;
 
 	// Update delete queue to notify that particular objects should be dead, destructed and freed.
-	ss << (unsigned long)deleteque.size();
-	std::vector<unsigned long>::iterator it = deleteque.begin();
+	ss << (unsigned)deleteque.size();
+	DeleteQue::iterator it = deleteque.begin();
 	for(; it != deleteque.end(); it++)
 		ss << *it;
 	deleteque.clear();

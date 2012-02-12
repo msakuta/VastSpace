@@ -1050,17 +1050,6 @@ void ClientApplication::display_func(void){
 			}
 		}
 
-		if(mode & ServerBit){
-//			serverGame->display_func(dt);
-			timemeas_t tm;
-			TimeMeasStart(&tm);
-			serverGame->anim(dt);
-			watime = TimeMeasLap(&tm);
-		}
-
-		// Quite suspicious about position, but at least postframe opportunity must be kept.
-		GLwindow::glwEndFrame();
-
 		gametime = t1;
 #ifdef _WIN32
 		if(!IsWindowVisible(hWndApp))
@@ -1078,6 +1067,12 @@ void ClientApplication::display_func(void){
 		static FILE *fp = NULL;
 		if(mode & ServerBit){
 			server.sv->FrameProc(dt);
+
+			// Now that the game simulation steps are calculated in Server::FrameProc(),
+			// we need to move the GLwindow system's frame end process to here from the
+			// previous block.
+			GLwindow::glwEndFrame();
+
 			sbuf = (const unsigned char*)server.sv->sendbuf;
 			size = server.sv->sendbufsiz;
 

@@ -46,6 +46,10 @@ public:
 	typedef SerializeStream tt;
 	SerializeStream(SerializeContext *asc = NULL) : sc(asc){}
 	virtual ~SerializeStream(){}
+	virtual tt &operator<<(char a) = 0;
+	virtual tt &operator<<(unsigned char a) = 0;
+	virtual tt &operator<<(short a) = 0;
+	virtual tt &operator<<(unsigned short a) = 0;
 	virtual tt &operator<<(int a) = 0;
 	virtual tt &operator<<(unsigned a) = 0;
 	virtual tt &operator<<(long a) = 0;
@@ -73,6 +77,10 @@ public:
 
 	StdSerializeStream(std::ostream &abase, SerializeContext *asc = NULL) : base(abase), tt(asc){}
 	~StdSerializeStream();
+	virtual tt &operator<<(char a);
+	virtual tt &operator<<(unsigned char a);
+	virtual tt &operator<<(short a);
+	virtual tt &operator<<(unsigned short a);
 	virtual tt &operator<<(int a);
 	virtual tt &operator<<(unsigned a);
 	virtual tt &operator<<(long a);
@@ -99,6 +107,10 @@ public:
 
 	BinSerializeStream(SerializeContext *asc = NULL) : buf(NULL), size(0), tt(asc){}
 	~BinSerializeStream();
+	virtual tt &operator<<(char a);
+	virtual tt &operator<<(unsigned char a);
+	virtual tt &operator<<(short a);
+	virtual tt &operator<<(unsigned short a);
 	virtual tt &operator<<(int a);
 	virtual tt &operator<<(unsigned a);
 	virtual tt &operator<<(long a);
@@ -160,6 +172,10 @@ public:
 	virtual bool eof()const = 0;
 	virtual bool fail()const = 0;
 	virtual tt &read(char *s, std::streamsize size) = 0;
+	virtual tt &operator>>(char &a) = 0;
+	virtual tt &operator>>(unsigned char &a) = 0;
+	virtual tt &operator>>(short &a) = 0;
+	virtual tt &operator>>(unsigned short &a) = 0;
 	virtual tt &operator>>(int &a) = 0;
 	virtual tt &operator>>(unsigned &a) = 0;
 	virtual tt &operator>>(long &a) = 0;
@@ -172,6 +188,7 @@ public:
 	virtual tt &operator>>(struct random_sequence &rs) = 0;
 	virtual tt &operator>>(const char *a) = 0;
 	virtual tt &operator>>(cpplib::dstring &a) = 0;
+	virtual tt &operator>>(gltestp::dstring &a) = 0;
 	virtual tt *substream(size_t size) = 0;
 	template<class T> tt &operator>>(T *&p);
 };
@@ -187,6 +204,10 @@ public:
 	virtual bool eof()const;
 	virtual bool fail()const;
 	virtual tt &read(char *s, std::streamsize size);
+	virtual tt &operator>>(char &a);
+	virtual tt &operator>>(unsigned char &a);
+	virtual tt &operator>>(short &a);
+	virtual tt &operator>>(unsigned short &a);
 	virtual tt &operator>>(int &a);
 	virtual tt &operator>>(unsigned &a);
 	virtual tt &operator>>(long &a);
@@ -199,6 +220,7 @@ public:
 	virtual tt &operator>>(struct random_sequence &rs);
 	virtual tt &operator>>(const char *a);
 	virtual tt &operator>>(cpplib::dstring &a);
+	virtual tt &operator>>(gltestp::dstring &a);
 	virtual tt *substream(size_t size);
 };
 
@@ -209,6 +231,10 @@ public:
 	virtual bool eof()const;
 	virtual bool fail()const;
 	virtual tt &read(char *s, std::streamsize size);
+	virtual tt &operator>>(char &a);
+	virtual tt &operator>>(unsigned char &a);
+	virtual tt &operator>>(short &a);
+	virtual tt &operator>>(unsigned short &a);
 	virtual tt &operator>>(int &a);
 	virtual tt &operator>>(unsigned &a);
 	virtual tt &operator>>(long &a);
@@ -221,7 +247,11 @@ public:
 	virtual tt &operator>>(struct random_sequence &rs);
 	virtual tt &operator>>(const char *a);
 	virtual tt &operator>>(cpplib::dstring &a);
+	virtual tt &operator>>(gltestp::dstring &a);
 	virtual tt *substream(size_t size);
+
+	const unsigned char *getCur()const{return src;} ///< Returns current reading pointer.
+	size_t getSize()const{return size;} ///< Returns remaining bytes.
 
 private:
 	const unsigned char *src;

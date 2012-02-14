@@ -30,6 +30,10 @@ SerializeStream &StdSerializeStream::operator<<(const struct ::random_sequence &
 	return *this;
 }
 
+SerializeStream &StdSerializeStream::operator<<(char a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(unsigned char a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(short a){ base << a << " "; return *this; }
+SerializeStream &StdSerializeStream::operator<<(unsigned short a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(int a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(unsigned a){ base << a << " "; return *this; }
 SerializeStream &StdSerializeStream::operator<<(long a){ base << a << " "; return *this; }
@@ -70,7 +74,7 @@ public:
 };
 
 StdSerializeSubStream::~StdSerializeSubStream(){
-	unsigned len = src.str().length();
+	unsigned len = unsigned(src.str().length());
 	parent << len;
 	parent.base << src.str();
 }
@@ -104,6 +108,10 @@ inline SerializeStream &BinSerializeStream::write(T a){
 // Fixes #37 Binary serialized stream cares about exact size of the variable.
 // We'll use C99 standard's exact-width integer types to explicitly specify
 // the size of output variable size.
+SerializeStream &BinSerializeStream::operator <<(char a){return write(a);} ///< Char is always 1 byte wide.
+SerializeStream &BinSerializeStream::operator <<(unsigned char a){return write(a);} ///< Unsigned char is always 1 byte wide.
+SerializeStream &BinSerializeStream::operator <<(short a){return write((int16_t)a);}
+SerializeStream &BinSerializeStream::operator <<(unsigned short a){return write((uint16_t)a);}
 SerializeStream &BinSerializeStream::operator <<(int a){return write((int32_t)a);}
 SerializeStream &BinSerializeStream::operator <<(unsigned a){return write((uint32_t)a);}
 SerializeStream &BinSerializeStream::operator <<(long a){return write((int32_t)a);}
@@ -187,6 +195,10 @@ UnserializeStream &StdUnserializeStream::consume(const char *cstr){
 bool StdUnserializeStream::eof()const{ return base.eof(); }
 bool StdUnserializeStream::fail()const{ return base.fail(); }
 UnserializeStream &StdUnserializeStream::read(char *s, std::streamsize size){ base.read(s, size); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(char &a){ base >> a; if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(unsigned char &a){ base >> a; if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(short &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
+UnserializeStream &StdUnserializeStream::operator>>(unsigned short &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(int &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(unsigned &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
 UnserializeStream &StdUnserializeStream::operator>>(long &a){ base.operator>>(a); if(!fail()) consume(" "); return *this; }
@@ -249,6 +261,24 @@ UnserializeStream &StdUnserializeStream::operator >>(cpplib::dstring &a){
 	return *this;
 }
 
+UnserializeStream &StdUnserializeStream::operator >>(gltestp::dstring &a){
+	// eat until the first double-quote
+	while(char c = base.get()) if(c == '"')
+		break;
+	else if(c == -1)
+		return *this;
+
+	do{
+		char c = base.get();
+		if(c == '\\')
+			c = base.get();
+		else if(c == '"')
+			break;
+		a << c;
+	}while(true);
+	return *this;
+}
+
 UnserializeStream *StdUnserializeStream::substream(size_t size){
 	char *buf = new char[size+1];
 	base.read(buf, size);
@@ -293,6 +323,10 @@ UnserializeStream &BinUnserializeStream::read(char *s, std::streamsize ssize){
 // interpreted by VC9's IL32P64 rule.
 bool BinUnserializeStream::eof()const{return !size;}
 bool BinUnserializeStream::fail()const{return !size;}
+UnserializeStream &BinUnserializeStream::operator>>(char &a){return read(a);}
+UnserializeStream &BinUnserializeStream::operator>>(unsigned char &a){return read(a);}
+UnserializeStream &BinUnserializeStream::operator>>(short &a){return read(a);}
+UnserializeStream &BinUnserializeStream::operator>>(unsigned short &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(int &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(unsigned &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(long &a){return read(a);}
@@ -328,6 +362,19 @@ UnserializeStream &BinUnserializeStream::operator>>(const char *a){
 }
 
 UnserializeStream &BinUnserializeStream::operator>>(cpplib::dstring &a){
+	// We must clear the string here or it will expand everytime call is made,
+	// which is not straightforward behavior compared to the operator>>()s for the other types.
+	a = "";
+	char c;
+	while(c = get()){
+		if(c == -1)
+			throw InputShortageException();
+		a << c;
+	}
+	return *this;
+}
+
+UnserializeStream &BinUnserializeStream::operator>>(gltestp::dstring &a){
 	// We must clear the string here or it will expand everytime call is made,
 	// which is not straightforward behavior compared to the operator>>()s for the other types.
 	a = "";

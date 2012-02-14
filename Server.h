@@ -22,7 +22,7 @@
 
 /** protocol version. If major version is different, no communication can
   be made. As for minor, I don't know. */
-#define PROTOCOL_MAJOR 2
+#define PROTOCOL_MAJOR 3
 #define PROTOCOL_MINOR 0
 
 /// The default port for the protocol.
@@ -233,6 +233,10 @@ public:
 
 	DiffSectionStream(SerializeContext *asc, Serializable::Id id, const unsigned char *src, patchsize_t size) : st(asc), id(id), bd(src, size){}
 
+	virtual tt &operator<<(char a);
+	virtual tt &operator<<(unsigned char a);
+	virtual tt &operator<<(short a);
+	virtual tt &operator<<(unsigned short a);
 	virtual tt &operator<<(int a);
 	virtual tt &operator<<(unsigned a);
 	virtual tt &operator<<(long a);

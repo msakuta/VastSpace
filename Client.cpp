@@ -39,7 +39,7 @@ void ClientApplication::signalMessage(const char *text){
 
 static DWORD WINAPI RecvThread(ClientApplication *pc){
 	int size;
-	char buf[1024], *lbuf = NULL, *src = NULL;
+	char buf[4096], *lbuf = NULL, *src = NULL;
 	size_t lbs = 0, lbp = 0;
 //	ClientWaiter::addr *ad = NULL;
 //	BufOutStream os;
@@ -56,6 +56,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 		lbp += size;
 		lbuf[lbp] = '\0'; /* null terminate for strchr */
 
+		if(mode == -1)
 		while(p = strpbrk(lbuf, "\r\n")){/* some terminals doesn't end line with \n? */
 			char *np = p;
 			while(*np == '\r' || *np == '\n'){
@@ -63,8 +64,6 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 				assert(np - lbuf <= lbp);
 			}
 			*p = '\0';
-			switch(mode){
-			case -1:
 				{
 					int major, minor;
 					if(!strncmp(lbuf, PROTOCOL_SIGNATURE, sizeof(PROTOCOL_SIGNATURE)-1) &&
@@ -95,10 +94,100 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 						goto cleanup;
 					}
 				}
+			if(lbp < np - lbuf)
+				assert(0);
+			memmove(lbuf, np, lbp -= (np - lbuf)); /* reorient */
+			lbuf[lbp] = '\0';
+		}
+		else
+			// Consume all message frames. The given size does not include the size integer itself.
+			while(*(unsigned*)lbuf + sizeof(unsigned) <= lbp)
+			switch(lbuf[sizeof(unsigned)]){
+			case 'L':
+				{
+					char *p = &lbuf[sizeof(unsigned) + sizeof 'L'];
+					if(pc)
+						pc->serverParams.maxclients = *(unsigned*)p;
+					((unsigned*&)p)++;
+					memmove(lbuf, p, lbp -= (p - lbuf)); /* reorient */
+				}
 				break;
-			default:
-			case 0:
-				if(!strncmp(lbuf, "Modified", sizeof"Modified"-1)){
+			case 'U':
+				try{
+					struct Mutex{
+						HANDLE h;
+						Mutex(HANDLE h) : h(h){}
+						~Mutex(){ReleaseMutex(h);}
+					};
+					if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10000)){
+						Mutex hm(pc->hGameMutex);
+						BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
+						int sendcount;
+						us >> sendcount;
+						double server_lastdt;
+						us >> server_lastdt;
+						int client_count;
+						us >> client_count;
+
+						pc->ad.resize(client_count);
+						int modi = 0;
+						for(; modi < client_count; modi++){
+							ClientApplication::ClientClient &cc = pc->ad[modi];
+							us >> cc.tcp.sin_addr.s_addr;
+							us >> cc.tcp.sin_port;
+							char you_indicator;
+							us >> you_indicator;
+							if(you_indicator == 'U')
+								pc->thisad = modi;
+							us >> cc.name;
+						}
+
+						unsigned recvbufsiz;
+						us >> recvbufsiz;
+
+						if(recvbufsiz){
+							// Allocate a new buffer in the queue and get a reference to it.
+							pc->recvbuf.push_back(std::vector<unsigned char>());
+							std::vector<unsigned char> &buf = pc->recvbuf.back();
+
+							// Fill the buffer by decoding hex-encoded input stream.
+							buf.resize(recvbufsiz);
+							us.read((char*)&buf.front(), recvbufsiz);
+						}
+
+						if(lbp < us.getCur() - (unsigned char*)lbuf)
+							assert(0);
+						memmove(lbuf, us.getCur(), lbp -= (us.getCur() - (unsigned char*)lbuf)); /* reorient */
+					}
+					else
+						assert(0);
+				}
+				catch(InputShortageException e){
+					// If input buffer is not complete yet, wait for another input to retry interpretation.
+					printf("Shorty!\n");
+					assert(0);
+				}
+				break;
+			case 'M':
+				try{
+					BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
+					dstring ds;
+					us >> ds;
+					pc->signalMessage(ds);
+
+					if(lbp < us.getCur() - (unsigned char*)&lbuf[5])
+						assert(0);
+					memmove(lbuf, us.getCur(), lbp -= (us.getCur() - (unsigned char*)lbuf)); /* reorient */
+				}
+				catch(InputShortageException e){
+					// If input buffer is not complete yet, wait for another input to retry interpretation.
+					printf("Shorty!\n");
+					assert(0);
+				}
+				break;
+		}
+#if 0
+/*				if(!strncmp(lbuf, "Modified", sizeof"Modified"-1)){
 					mode = 1;
 				}
 				else if(!strcmp(lbuf, "SERIALIZE START")){
@@ -106,7 +195,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 				}
 				else if(!strncmp(lbuf, "MSG ", 4)){
 					pc->signalMessage(&lbuf[4]);
-				}
+				}*/
 /*				else if(!strncmp(lbuf, "MTO ", 4)){
 					int cid, cx, cy;
 					if(3 == sscanf(&lbuf[4], "%d %d %d", &cid, &cx, &cy) && WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10)){
@@ -265,6 +354,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 			memmove(lbuf, np, lbp -= (np - lbuf)); /* reorient */
 			lbuf[lbp] = '\0';
 		}
+#endif
 	}
 cleanup:
 	fclose(fp);

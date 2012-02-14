@@ -180,43 +180,73 @@ Server::~Server(){
 /// \brief Sends the update stream to a given client.
 /// \param cl The client handle to send to.
 /// \param first Instructs to send the stream for first updates for the client.
+/**
+ * Below is a pseudo-BNF notation representing structure of server to client stream.
+ *
+ * all ::= greeting frame*
+ *
+ * greeting ::= "GLTESTPLUS *.*\r\n"
+ *
+ * frame ::= frame_size ( maxclient_frame | message_frame | update_frame )
+ *
+ * frame_size ::= integer
+ *
+ * maxclient_frame ::= 'L' maxclient
+ *
+ * maxclient ::= integer
+ *
+ * message_frame ::= 'M' string
+ *
+ * update_frame ::= 'U' sendcount server_lastdt client_list update_buffer
+ *
+ * sendcount ::= integer
+ *
+ * server_lastdt ::= double
+ *
+ * client_list ::= client_count client_entry*
+ *
+ * client_count ::= integer
+ *
+ * client_entry ::= ip_address tcp_port you_indicator name
+ *
+ * ip_address ::= integer
+ *
+ * tcp_port ::= short
+ *
+ * you_indicator ::= 'U' | 'O'
+ *
+ * name ::= string
+ *
+ * string ::= char* '\0'
+ *
+ */
 void Server::SendUpdateStream(ServerClient *cl, bool first){
 	static int sendcount = 0;
-	char buf[64];
+	BinSerializeStream ss;
 	SOCKET s = cl->s;
+
+	ss << 'U';
+	ss << sendcount++ << server_lastdt;
 	{
 		int c;
 		ServerClientList::iterator psc = this->cl.begin();
 		for(c = 0; psc != this->cl.end(); psc++) if(this->scs == &*psc || psc->s != INVALID_SOCKET)
 			c++;
-		sprintf(buf, "%d Clients\r\n", c);
-
-		dstring ds = dstring("M ") << sendcount << " " << c << " " << server_lastdt << " " << (double)clock() / CLOCKS_PER_SEC << "\r\n";
-		fwrite(ds, 1, ds.len(), logfp);
-	}
-	{
-		dstring ds = dstring("Modified ") << sendcount++ << " " << server_lastdt << "\r\n" << buf;
-		send(s, ds, ds.len(), 0);
+		ss << c;
 	}
 	{
 		ServerClientList::iterator psc;
 		for(psc = this->cl.begin(); psc != this->cl.end(); psc++) if(this->scs == &*psc || psc->s != INVALID_SOCKET){
-			dstr_t ds = dstr0;
-			sprintf(buf, "%08x:%04x", ntohl(psc->tcp.sin_addr.s_addr), ntohs(psc->tcp.sin_port));
-			dstrcat(&ds, buf);
-			dstrcat(&ds, &*psc == cl ? "U" : "O");
-			if(psc->name){
-				dstrcat(&ds, psc->name);
-			}
-			dstrcat(&ds, "\r\n");
-			send(s, dstr(&ds), dstrlen(&ds), 0);
-			dstrfree(&ds);
+			ss << psc->tcp.sin_addr.s_addr;
+			ss << psc->tcp.sin_port;
+			ss << (&*psc == cl ? 'U' : 'O');
+			ss << psc->name;
 		}
 	}
 
 	{
-		timemeas_t tm;
-		TimeMeasStart(&tm);
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
 		lock_mutex(&mg);
 		unsigned char *sendbuf;
 		size_t sendbufsiz;
@@ -231,25 +261,19 @@ void Server::SendUpdateStream(ServerClient *cl, bool first){
 			sendbuf = this->sendbuf;
 			sendbufsiz = this->sendbufsiz;
 		}
-		char *buf = new char[8+sendbufsiz*2+3];
-		sprintf(buf, "%08X", sendbufsiz);
-//		dsbuf << sizebuf;
-		for(int i = 0; i < sendbufsiz; i++){
-//			char bytebuf[8];
-			sprintf(&buf[8+i*2], "%02X", sendbuf[i]);
-//			dsbuf << bytebuf;
-		}
-//		dsbuf << "\r\n";
-		strcpy(&buf[8+sendbufsiz*2], "\r\n");
-		send(s, buf, 8+sendbufsiz*2+2, 0);
-		delete[] buf;
-//		send(s, dsbuf, dsbuf.len(), 0);
+
+		unsigned umsgsiz = unsigned(ss.getsize() + sizeof(unsigned) + sendbufsiz);
+		send(s, (const char*)&umsgsiz, sizeof umsgsiz, 0);
+		send(s, (const char*)ss.getbuf(), ss.getsize(), 0);
+		unsigned usendbufsiz = unsigned(sendbufsiz);
+		send(s, (const char*)&usendbufsiz, sizeof usendbufsiz, 0);
+		send(s, (const char*)sendbuf, sendbufsiz, 0);
 		unlock_mutex(&mg);
 
-		// Test output to see interval of updates in the client
-//		dsbuf = dstring("MSG Sent ") << sendcount << "\r\n";
-//		send(s, dsbuf, dsbuf.len(), 0);
-		printf("SendWait %p %g\n", cl, TimeMeasLap(&tm));
+		fwrite(ss.getbuf(), ss.getsize(), 1, logfp);
+		fwrite((const char*)&usendbufsiz, sizeof usendbufsiz, 1, logfp);
+		fwrite(sendbuf, usendbufsiz, 1, logfp);
+//		printf("SendWait %p %g\n", cl, TimeMeasLap(&tm));
 	}
 
 	/* does this work? */
@@ -281,16 +305,21 @@ static void WaitBroadcast(Server *sv, const char *msg){
 		dstr_t ds = dstr0;
 		dstrcat(&ds, "MSG ");
 		dstrcat(&ds, msg);
-		dstrcat(&ds, "\r\n");
+		BinSerializeStream ss;
+		ss << 'M';
+		ss << dstr(&ds);
+		unsigned sssize = unsigned(ss.getsize());
 		Server::ServerClientList::iterator pc = sv->cl.begin();
 		while(pc != sv->cl.end()){
 			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
-				send(pc->s, dstr(&ds), dstrlen(&ds), 0);
+				send(pc->s, (const char*)&sssize, sizeof sssize, 0);
+				send(pc->s, (const char*)ss.getbuf(), ss.getsize(), 0);
 				unlock_mutex(&pc->m);
 			}
 			pc++;
 		}
 		unlock_mutex(&sv->mcl);
+		fwrite(ss.getbuf(), ss.getsize(), 1, sv->logfp);
 		if(sv->std.app)
 			sv->std.app->signalMessage(msg);
 		dstrfree(&ds);
@@ -459,10 +488,17 @@ threadret_t WINAPI Server::ServerThread(ServerThreadDataInt *pstdi){
 				/* send protocol signature, versions and basic info about the server. */
 				{
 					char buf[128];
-					sprintf(buf, PROTOCOL_SIGNATURE"%d.%d\r\nMAXCLT %d\r\n",
-						PROTOCOL_MAJOR, PROTOCOL_MINOR,
-						sv.maxncl);
-					send(AcceptSocket, buf, strlen(buf), 0);
+					sprintf(buf, PROTOCOL_SIGNATURE"%d.%d\r\n",
+						PROTOCOL_MAJOR, PROTOCOL_MINOR);
+					int len = strlen(buf);
+					unsigned size = sizeof'L' + sizeof sv.maxncl;
+					char *p = &buf[len];
+					memcpy(p, &size, sizeof size);
+					p += sizeof size;
+					*p++ = 'L';
+					memcpy(p, &sv.maxncl, sizeof sv.maxncl);
+					p += sizeof sv.maxncl;
+					send(AcceptSocket, buf, p - buf, 0);
 					sv.SendUpdateStream(pcl, true);
 					pcl->sentFirst = true;
 				}
@@ -738,15 +774,16 @@ void SendChatServer(ServerThreadHandle *p, const char *buf){
 	if(lock_mutex(&p->sv->mcl)){
 		/* concat the message header and the message content to make it atomic */
 		dstr_t ds = dstr0;
-		dstrcat(&ds, "MSG ");
 		dstrcat(&ds, p->sv->scs ? p->sv->scs->name : "server");
 		dstrcat(&ds, "> ");
 		dstrcat(&ds, buf);
-		dstrcat(&ds, "\r\n");
+		BinSerializeStream ss;
+		ss << 'M';
+		ss << dstr(&ds);
 		Server::ServerClientList::iterator psc = p->sv->cl.begin();
 		while(psc != p->sv->cl.end()){
 			if(psc->s != INVALID_SOCKET){
-				send(psc->s, dstr(&ds), strlen(dstr(&ds)), 0);
+				send(psc->s, (const char*)ss.getbuf(), ss.getsize(), 0);
 			}
 			psc++;
 		}
@@ -756,7 +793,7 @@ void SendChatServer(ServerThreadHandle *p, const char *buf){
 			s = strpbrk(dstr(&ds), "\r\n");
 			if(s)
 				*s = '\0';
-			p->sv->std.app->signalMessage(&dstr(&ds)[4]);
+			p->sv->std.app->signalMessage(dstr(&ds));
 		}
 		dstrfree(&ds);
 	}
@@ -1248,6 +1285,10 @@ inline SerializeStream &DiffSectionStream::write(T a){
 	return *this;
 }
 
+SerializeStream &DiffSectionStream::operator <<(char a){return write(a);}
+SerializeStream &DiffSectionStream::operator <<(unsigned char a){return write(a);}
+SerializeStream &DiffSectionStream::operator <<(short a){return write((int16_t)a);}
+SerializeStream &DiffSectionStream::operator <<(unsigned short a){return write((uint16_t)a);}
 SerializeStream &DiffSectionStream::operator <<(int a){return write((int32_t)a);}
 SerializeStream &DiffSectionStream::operator <<(unsigned a){return write((uint32_t)a);}
 SerializeStream &DiffSectionStream::operator <<(long a){return write((int32_t)a);}

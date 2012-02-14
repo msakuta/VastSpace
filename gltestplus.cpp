@@ -1068,11 +1068,6 @@ void ClientApplication::display_func(void){
 		if(mode & ServerBit){
 			server.sv->FrameProc(dt);
 
-			// Now that the game simulation steps are calculated in Server::FrameProc(),
-			// we need to move the GLwindow system's frame end process to here from the
-			// previous block.
-			GLwindow::glwEndFrame();
-
 			sbuf = (const unsigned char*)server.sv->sendbuf;
 			size = server.sv->sendbufsiz;
 
@@ -1203,6 +1198,11 @@ void ClientApplication::display_func(void){
 
 		clientGame->clientDraw(gametime, dt);
 	}
+
+	// Now that the game simulation steps are calculated in Server::FrameProc(),
+	// we need to move the GLwindow system's frame end process.
+	// Also we must run the function in pure client too.
+	GLwindow::glwEndFrame();
 }
 	
 void Game::clientDraw(double gametime, double dt){

@@ -208,6 +208,8 @@ struct Server{
 		int port;
 	};
 	static threadret_t ServerThread(ServerThreadDataInt*);
+	void BroadcastMessage(const char *msg);
+	void SendChatMessage(const char *msg);
 protected:
 	void SendUpdateStream(ServerClient *cl, bool first);
 	void CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,

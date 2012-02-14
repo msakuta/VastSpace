@@ -300,17 +300,14 @@ void Server::WaitModified(){
 //		sv->std.modified(sv->std.modified_data);
 }
 
-static void WaitBroadcast(Server *sv, const char *msg){
-	if(lock_mutex(&sv->mcl)){
-		dstr_t ds = dstr0;
-		dstrcat(&ds, "MSG ");
-		dstrcat(&ds, msg);
+void Server::BroadcastMessage(const char *msg){
+	if(lock_mutex(&mcl)){
 		BinSerializeStream ss;
 		ss << 'M';
-		ss << dstr(&ds);
+		ss << msg;
 		unsigned sssize = unsigned(ss.getsize());
-		Server::ServerClientList::iterator pc = sv->cl.begin();
-		while(pc != sv->cl.end()){
+		Server::ServerClientList::iterator pc = cl.begin();
+		while(pc != cl.end()){
 			if(pc->s != INVALID_SOCKET && lock_mutex(&pc->m)){
 				send(pc->s, (const char*)&sssize, sizeof sssize, 0);
 				send(pc->s, (const char*)ss.getbuf(), ss.getsize(), 0);
@@ -318,11 +315,10 @@ static void WaitBroadcast(Server *sv, const char *msg){
 			}
 			pc++;
 		}
-		unlock_mutex(&sv->mcl);
-		fwrite(ss.getbuf(), ss.getsize(), 1, sv->logfp);
-		if(sv->std.app)
-			sv->std.app->signalMessage(msg);
-		dstrfree(&ds);
+		unlock_mutex(&mcl);
+		fwrite(ss.getbuf(), ss.getsize(), 1, logfp);
+		if(std.app)
+			std.app->signalMessage(msg);
 	}
 }
 
@@ -769,34 +765,8 @@ void StopServer(struct ServerThreadHandle *p){
 	}
 }
 
-void SendChatServer(ServerThreadHandle *p, const char *buf){
-	assert(p && p->sv);
-	if(lock_mutex(&p->sv->mcl)){
-		/* concat the message header and the message content to make it atomic */
-		dstr_t ds = dstr0;
-		dstrcat(&ds, p->sv->scs ? p->sv->scs->name : "server");
-		dstrcat(&ds, "> ");
-		dstrcat(&ds, buf);
-		BinSerializeStream ss;
-		ss << 'M';
-		ss << dstr(&ds);
-		Server::ServerClientList::iterator psc = p->sv->cl.begin();
-		while(psc != p->sv->cl.end()){
-			if(psc->s != INVALID_SOCKET){
-				send(psc->s, (const char*)ss.getbuf(), ss.getsize(), 0);
-			}
-			psc++;
-		}
-		unlock_mutex(&p->sv->mcl);
-		if(p->sv->std.app){
-			char *s;
-			s = strpbrk(dstr(&ds), "\r\n");
-			if(s)
-				*s = '\0';
-			p->sv->std.app->signalMessage(dstr(&ds));
-		}
-		dstrfree(&ds);
-	}
+void Server::SendChatMessage(const char *buf){
+	BroadcastMessage(gltestp::dstring() << (scs ? scs->name : "server") << "> " << buf);
 }
 
 void KickClientServer(ServerThreadHandle *ph, int clid){
@@ -1097,7 +1067,7 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 			dstr_t ds = dstr0;
 			dstrcat(&ds, cl->name);
 			dstrcat(&ds, " logged in");
-			WaitBroadcast(cl->sv, dstr(&ds));
+			cl->sv->BroadcastMessage(dstr(&ds));
 			dstrfree(&ds);
 		}
 	}
@@ -1135,7 +1105,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 					dstrip(&ds, &cl->tcp);
 				dstrcat(&ds, "> ");
 				dstrcat(&ds, &lbuf[4]);
-				WaitBroadcast(cl->sv, dstr(&ds));
+				cl->sv->BroadcastMessage(dstr(&ds));
 				dstrfree(&ds);
 			}
 			else
@@ -1165,7 +1135,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 			dstr_t ds = dstr0;
 			dstrcat(&ds, cl->name);
 			dstrcat(&ds, cl->kicked ? " is kicked from server" : " left the server");
-			WaitBroadcast(cl->sv, dstr(&ds));
+			cl->sv->BroadcastMessage(dstr(&ds));
 			dstrfree(&ds);
 		}
 	}

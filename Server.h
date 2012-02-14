@@ -207,7 +207,7 @@ struct Server{
 		Server *sv;
 		int port;
 	};
-	static threadret_t ServerThread(ServerThreadDataInt*);
+	static threadret_t WINAPI ServerThread(ServerThreadDataInt*);
 	void BroadcastMessage(const char *msg);
 	void SendChatMessage(const char *msg);
 protected:

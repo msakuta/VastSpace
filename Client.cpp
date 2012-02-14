@@ -54,7 +54,7 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 		if(lbs < lbp + size + 1) lbuf = (char*)realloc(lbuf, lbs = lbp + size + 1);
 		memcpy(&lbuf[lbp], buf, size);
 		lbp += size;
-		lbuf[lbp] = '\0'; /* null terminate for strchr */
+		lbuf[lbp] = '\0'; /* null terminate for strpbrk */
 
 		if(mode == -1)
 		while(p = strpbrk(lbuf, "\r\n")){/* some terminals doesn't end line with \n? */
@@ -99,262 +99,96 @@ static DWORD WINAPI RecvThread(ClientApplication *pc){
 			memmove(lbuf, np, lbp -= (np - lbuf)); /* reorient */
 			lbuf[lbp] = '\0';
 		}
-		else
+		else{
+			// Automatic Mutex Manager which releases the mutex even if there's an exception.
+			struct Mutex{
+				HANDLE h;
+				Mutex(HANDLE h) : h(h){}
+				~Mutex(){ReleaseMutex(h);}
+			};
+
 			// Consume all message frames. The given size does not include the size integer itself.
-			while(*(unsigned*)lbuf + sizeof(unsigned) <= lbp)
-			switch(lbuf[sizeof(unsigned)]){
-			case 'L':
-				{
-					char *p = &lbuf[sizeof(unsigned) + sizeof 'L'];
-					if(pc)
-						pc->serverParams.maxclients = *(unsigned*)p;
-					((unsigned*&)p)++;
-					memmove(lbuf, p, lbp -= (p - lbuf)); /* reorient */
-				}
-				break;
-			case 'U':
+			while(*(unsigned*)lbuf + sizeof(unsigned) <= lbp){
+				unsigned framesize = *(unsigned*)lbuf;
+
 				try{
-					struct Mutex{
-						HANDLE h;
-						Mutex(HANDLE h) : h(h){}
-						~Mutex(){ReleaseMutex(h);}
-					};
-					if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10000)){
-						Mutex hm(pc->hGameMutex);
-						BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
-						int sendcount;
-						us >> sendcount;
-						double server_lastdt;
-						us >> server_lastdt;
-						int client_count;
-						us >> client_count;
-
-						pc->ad.resize(client_count);
-						int modi = 0;
-						for(; modi < client_count; modi++){
-							ClientApplication::ClientClient &cc = pc->ad[modi];
-							us >> cc.tcp.sin_addr.s_addr;
-							us >> cc.tcp.sin_port;
-							char you_indicator;
-							us >> you_indicator;
-							if(you_indicator == 'U')
-								pc->thisad = modi;
-							us >> cc.name;
+					switch(lbuf[sizeof(unsigned)]){
+					case 'L': // The maxclient notification message. Only sent in the beginning of stream once.
+						{
+							char *p = &lbuf[sizeof(unsigned) + sizeof 'L'];
+							if(pc)
+								pc->serverParams.maxclients = *(unsigned*)p;
 						}
+						break;
 
-						unsigned recvbufsiz;
-						us >> recvbufsiz;
+					case 'U': // The update message.
+						if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10000)){
+							Mutex hm(pc->hGameMutex);
+							BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
+							int sendcount;
+							us >> sendcount;
+							double server_lastdt;
+							us >> server_lastdt;
+							int client_count;
+							us >> client_count;
 
-						if(recvbufsiz){
-							// Allocate a new buffer in the queue and get a reference to it.
-							pc->recvbuf.push_back(std::vector<unsigned char>());
-							std::vector<unsigned char> &buf = pc->recvbuf.back();
+							pc->ad.resize(client_count);
+							int modi = 0;
+							for(; modi < client_count; modi++){
+								ClientApplication::ClientClient &cc = pc->ad[modi];
+								us >> cc.tcp.sin_addr.s_addr;
+								us >> cc.tcp.sin_port;
+								char you_indicator;
+								us >> you_indicator;
+								if(you_indicator == 'U')
+									pc->thisad = modi;
+								us >> cc.name;
+							}
 
-							// Fill the buffer by decoding hex-encoded input stream.
-							buf.resize(recvbufsiz);
-							us.read((char*)&buf.front(), recvbufsiz);
+							unsigned recvbufsiz;
+							us >> recvbufsiz;
+
+							if(recvbufsiz){
+								// Allocate a new buffer in the queue and get a reference to it.
+								pc->recvbuf.push_back(std::vector<unsigned char>());
+								std::vector<unsigned char> &buf = pc->recvbuf.back();
+
+								// Fill the buffer by decoding hex-encoded input stream.
+								buf.resize(recvbufsiz);
+								us.read((char*)&buf.front(), recvbufsiz);
+							}
 						}
-
-						if(lbp < us.getCur() - (unsigned char*)lbuf)
+						else{
+							// If the mutex could not be locked in time, give up interpreting this frame.
+							// TODO: Better reaction?
 							assert(0);
-						memmove(lbuf, us.getCur(), lbp -= (us.getCur() - (unsigned char*)lbuf)); /* reorient */
-					}
-					else
+						}
+						break;
+
+					case 'M': // The message message, seriously.
+						{
+							BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
+							dstring ds;
+							us >> ds;
+							pc->signalMessage(ds);
+						}
+						break;
+
+					default:
 						assert(0);
+					}
 				}
 				catch(InputShortageException e){
-					// If input buffer is not complete yet, wait for another input to retry interpretation.
-					printf("Shorty!\n");
+					// This exception should not happen as long as the protocol is consistent, but if it does,
+					// discard current frame and advance to next one.
+					printf("InputShortageException in RecvThread: %s\n", e.what());
 					assert(0);
 				}
-				break;
-			case 'M':
-				try{
-					BinUnserializeStream us((unsigned char*)&lbuf[5], lbp - 5);
-					dstring ds;
-					us >> ds;
-					pc->signalMessage(ds);
 
-					if(lbp < us.getCur() - (unsigned char*)&lbuf[5])
-						assert(0);
-					memmove(lbuf, us.getCur(), lbp -= (us.getCur() - (unsigned char*)lbuf)); /* reorient */
-				}
-				catch(InputShortageException e){
-					// If input buffer is not complete yet, wait for another input to retry interpretation.
-					printf("Shorty!\n");
-					assert(0);
-				}
-				break;
-		}
-#if 0
-/*				if(!strncmp(lbuf, "Modified", sizeof"Modified"-1)){
-					mode = 1;
-				}
-				else if(!strcmp(lbuf, "SERIALIZE START")){
-					mode = 4;
-				}
-				else if(!strncmp(lbuf, "MSG ", 4)){
-					pc->signalMessage(&lbuf[4]);
-				}*/
-/*				else if(!strncmp(lbuf, "MTO ", 4)){
-					int cid, cx, cy;
-					if(3 == sscanf(&lbuf[4], "%d %d %d", &cid, &cx, &cy) && WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10)){
-						if(pc->pvlist && cid < pc->ncl)
-							PVLAdd(&pc->pvlist[cid], cx, cy, 0);
-						ReleaseMutex(pc->hGameMutex);
-					}
-				}
-				else if(!strncmp(lbuf, "LTO ", 4)){
-					int cid, cx, cy;
-					if(3 == sscanf(&lbuf[4], "%d %d %d", &cid, &cx, &cy) && WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10)){
-						if(pc->pvlist && cid < pc->ncl)
-							PVLAdd(&pc->pvlist[cid], cx, cy, 1);
-						ReleaseMutex(pc->hGameMutex);
-					}
-				}
-				else if(!strncmp(lbuf, "SEL ", 4)){
-					if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 50)){
-						pc->meid = atol(&lbuf[4]);
-						ReleaseMutex(pc->hGameMutex);
-					}
-				}*/
-				else if(!strncmp(lbuf, "MAXCLT ", sizeof"MAXCLT "-1)){
-					int n;
-					n = atoi(&lbuf[sizeof"MAXCLT "-1]);
-
-					// To be perfect, it needs synchronization
-					if(pc)
-						pc->serverParams.maxclients = n;
-				}
-				else if(!strcmp(lbuf, "START")){
-					assert(!pc->serverGame);
-//					pc->pg = new RemoteGame(pc->con);
-//					pc->mode = ClientGame;
-					mode = 4;
-				}
-				else if(!strcmp(lbuf, "KICK")){
-					quitgame(pc, true);
-					PostMessage(pc->w, WM_USER, (WPARAM)"You are kicked.", 0);
-					goto cleanup;
-				}
-				break;
-			case 1:
-				{
-					int i;
-					if(sscanf(lbuf, "%d Clients", &i)){
-						modn = modi = i;
-						pc->ad.resize(modn);
-						mode = 2;
-					}
-					else
-						mode = 0;
-				}
-				break;
-			case 2:
-				{
-					if(modi--){
-						unsigned int ip, port;
-						char ipbuf[12];
-						char *namebuf;
-						ClientApplication::ClientClient &cc = pc->ad[pc->ad.size() - modi - 1];
-
-						strncpy(ipbuf, lbuf, 8+1+4);
-						ipbuf[8+1+4] = '\0';
-						namebuf = &lbuf[8+1+4];
-
-						// Parse ip and port
-						if(sscanf(ipbuf, "%08x:%4x", &ip, &port)){
-							cc.tcp.sin_addr.s_addr = htonl(ip);
-							cc.tcp.sin_port = htons(port);
-						}
-
-						// Parse the flag whether this user entry is me
-						if(namebuf[0] == 'U')
-							pc->thisad = modi;
-
-						// If the name is given, save it to local user dictionary.
-						if(1 < strlen(namebuf))
-							cc.name = &namebuf[1];
-
-						if(!modi){
-//							if(!pc->waiter)
-//								pc->waiter = new ClientWaiter();
-//							ClientWaiter *cw = static_cast<ClientWaiter*>(pc->waiter);
-//							cw->freesrc();
-//							cw->src = ad;
-//							cw->n = modn;
-//							SetEvent(pc->hDrawEvent);
-							size_t sz;
-/*							recv(pc->con, (char*)&sz, sizeof sz, 0);
-							fwrite(&sz, sizeof sz, 1, fp);
-							fflush(fp);
-							char *buf = new char[sz];
-							recv(pc->con, buf, sz, 0);
-							fwrite(buf, sz, 1, fp);
-							fflush(fp);*/
-							mode = 3;
-//							delete[] buf;
-						}
-					}
-				}
-				break;
-			case 3:
-				if(lbp == 0)
-					break;
-				if(WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 10000)){
-					char sizebuf[16];
-					char *endptr;
-					strncpy(sizebuf, lbuf, 8);
-					sizebuf[8] = '\0';
-					size_t recvbufsiz = strtoul(sizebuf, &endptr, 16);
-
-					// Allocate a new buffer in the queue and get a reference to it.
-					pc->recvbuf.push_back(std::vector<unsigned char>());
-					std::vector<unsigned char> &buf = pc->recvbuf.back();
-
-					// Fill the buffer by decoding hex-encoded input stream.
-					buf.resize(recvbufsiz);
-					int i = 0;
-					for(const char *p = &lbuf[8]; p && i < recvbufsiz; i++){
-						sizebuf[0] = *p++;
-						sizebuf[1] = *p++;
-						sizebuf[2] = '\0';
-						buf[i] = (unsigned char)strtoul(sizebuf, &endptr, 16);
-					}
-
-					ReleaseMutex(pc->hGameMutex);
-				}
-				else
-					assert(0);
-				mode = 0;
-				break;
-			case 4:
-				if(!strcmp(lbuf, "SERIALIZE END") && WAIT_OBJECT_0 == WaitForSingleObject(pc->hGameMutex, 50)){
-/*					ScoutData *psd = NULL;
-					{
-						unsigned long enid = pc->dd.enemy ? pc->dd.enemy->id : ULONG_MAX;
-						if(pc->pg)
-							delete pc->pg;
-						pc->pg = new RemoteGame(BufOutStream::BufInStream(os), *pc->waiter, &psd, pc->con);
-						pc->dd.enemy = enid == ULONG_MAX ? NULL : pc->pg->findSDById(enid);
-					}
-					pc->meid = psd ? psd->id : ULONG_MAX;
-					ReleaseMutex(pc->hGameMutex);
-					os.~BufOutStream();
-					SetEvent(pc->hDrawEvent);*/
-					mode = 0;
-				}
-				else{
-//					os.write(lbuf, strlen(lbuf));
-//					os.write("\r\n", 2);
-				}
+				// Move the next frame to front.
+				memmove(lbuf, &lbuf[framesize + sizeof(unsigned)], lbp -= (framesize + sizeof(unsigned)));
 			}
-			if(lbp < np - lbuf)
-				assert(0);
-			memmove(lbuf, np, lbp -= (np - lbuf)); /* reorient */
-			lbuf[lbp] = '\0';
 		}
-#endif
 	}
 cleanup:
 	fclose(fp);

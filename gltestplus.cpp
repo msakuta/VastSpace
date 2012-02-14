@@ -2086,7 +2086,13 @@ struct HostGameDlgData{
 	bool isClient;
 };
 
+/// You wouldn't be able to pick from this many items in a combo box.
+static const int MAX_HOSTNAME_HISTORY = 128;
+
 static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam){
+	// Be careful on changing this value. Keep it as local as possible, or unrelated items could get modified or deleted.
+	static const TCHAR *hostNameKey = TEXT("Software\\VastSpace\\HostNameHistory");
+
 	static char logfilename[MAX_PATH] = "chatlog.log";
 	static bool append = false;
 	switch(message){
@@ -2095,6 +2101,19 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 		{
 			HostGameDlgData *pd = (HostGameDlgData*)lParam;
 			SetDlgItemText(hDlg, IDC_HOSTNAME, pd->params->hostname);
+
+			// Maybe a RegOpenKeyTransacted is safier.
+			for(int i = 0; i < MAX_HOSTNAME_HISTORY; i++){
+				char data[256];
+				DWORD dwType, datasize = sizeof data;
+				LONG ret = RegGetValue(HKEY_CURRENT_USER, hostNameKey, dstring() << i, RRF_RT_REG_SZ, &dwType, &data, &datasize);
+				if(ERROR_SUCCESS != ret && ERROR_MORE_DATA != ret)
+					break;
+				SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_ADDSTRING, 0, (LPARAM)&data);
+			}
+			if(SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_GETCOUNT, 0, 0) == 0)
+				SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_ADDSTRING, 0, (LPARAM)(const char*)pd->params->hostname);
+
 			SetDlgItemInt(hDlg, IDC_PORT, pd->params->port, FALSE);
 			CheckDlgButton(hDlg, pd->isClient ? IDC_JOINGAME : IDC_HOSTGAME, BST_CHECKED);
 			SetDlgItemInt(hDlg, IDC_MAXCLIENTS, pd->params->maxclients, FALSE);
@@ -2118,6 +2137,29 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 					char buf[MAX_HOSTNAME];
 					GetDlgItemText(hDlg, IDC_HOSTNAME, buf, sizeof buf);
 					params.hostname = buf;
+
+					// Delete the registry key first to ensure no garbage value is left.
+					RegDeleteKey(HKEY_CURRENT_USER, hostNameKey);
+					HKEY hKey;
+					// Maybe RegOpenKeyTransacted or RegCreateKeyTransacted is safier.
+					if(ERROR_SUCCESS == RegOpenKey(HKEY_CURRENT_USER, hostNameKey, &hKey)
+						|| ERROR_SUCCESS == RegCreateKey(HKEY_CURRENT_USER, hostNameKey, &hKey))
+					{
+						// Add the value currently selected or typed directly to the top.
+						RegSetKeyValue(hKey, NULL, TEXT("0"), REG_SZ, params.hostname, params.hostname.len());
+						int i, n = 1;
+						for(i = 0; i < MAX_HOSTNAME_HISTORY; i++){
+							char serverName[256];
+							if(CB_ERR == SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_GETLBTEXT, i, (LPARAM)&serverName))
+								break;
+							if(params.hostname == serverName) // Discard duplicates
+								continue;
+							RegSetKeyValue(hKey, NULL, dstring() << n, REG_SZ, &serverName, sizeof serverName);
+							n++;
+						}
+						RegCloseKey(hKey);
+					}
+
 					params.port = GetDlgItemInt(hDlg, IDC_PORT, &res, FALSE);
 					if(!res || !params.port){
 						MessageBox(hDlg, "Invalid Port Number.", "Error", MB_ICONERROR);
@@ -2144,6 +2186,10 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				EndDialog(hDlg, LOWORD(wParam));
 				return TRUE;
 			}
+			else if(id == IDC_DELETEHOST){ // Delete an item from host name history.
+				int index = SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_GETCURSEL, 0, 0);
+				SendMessage(GetDlgItem(hDlg, IDC_HOSTNAME), CB_DELETESTRING, index, 0);
+			}
 			else if(id == IDC_LOGFILESELECT){
 				LogSelect(hDlg, IDC_LOGFILENAME);
 			}
@@ -2166,6 +2212,10 @@ int main(int argc, char *argv[])
 	// Unmask invalid floating points to detect bugs
 	unsigned flags = _controlfp(0,_EM_INVALID|_EM_ZERODIVIDE);
 	printf("controlfp %p\n", flags);
+#endif
+
+#ifdef _WIN32
+	application.serverParams.hostname = "";  // The dialog defaults empty string
 #endif
 
 	// Parse the command line

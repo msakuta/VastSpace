@@ -13,6 +13,7 @@
 #define IDC_LOGFILEAPPEND               1008
 #define IDC_HOSTGAME                    1009
 #define IDC_JOINGAME                    1010
+#define IDC_DELETEHOST                  1011
 
 // Next default values for new objects
 // 

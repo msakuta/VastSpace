@@ -767,7 +767,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\resource.h"
+				RelativePath="..\resource.h"
 				>
 			</File>
 			<File

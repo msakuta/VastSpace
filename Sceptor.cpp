@@ -808,11 +808,17 @@ void Sceptor::anim(double dt){
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);
 						len = len2 = xh.len();
-						len = asin(len);
-						if(maxspeed < len){
-							len = maxspeed;
+
+						// Avoid domain error for asin()
+						if(len < 1.0){
+							len = asin(len);
+							if(maxspeed < len){
+								len = maxspeed;
+							}
+							len = sin(len / 2.);
 						}
-						len = sin(len / 2.);
+						else
+							len = sin(M_PI / 4.);
 
 						double velolen = bbody->getLinearVelocity().length();
 						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;

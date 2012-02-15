@@ -4,10 +4,19 @@
 #include "sqadapt.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <fenv.h>
+#include <signal.h>
 
 DedicatedServerApplication application;
 
+static void sigfpe(int signal){
+	printf("SIGFPE!\n");
+	abort();
+}
+
 int main(int argc, char *argv[]){
+	feenableexcept(FE_INVALID | FE_DIVBYZERO);
+	signal(SIGFPE, sigfpe);
 	if(!application.parseArgs(argc, argv))
 		return 1;
 

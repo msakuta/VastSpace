@@ -385,7 +385,7 @@ threadret_t WINAPI Server::ServerThread(ServerThreadDataInt *pstdi){
 
 #ifdef DEDICATED
 	thread_create(&sv.animThread, &Server::AnimThread, &sv);
-	timer_set(&sv.timer, FRAMETIME, &sv.hAnimEvent);
+	timer_set(&sv.timer, 10, &sv.hAnimEvent);
 #endif
 
 	volatile u_short port;
@@ -562,13 +562,17 @@ threadret_t Server::AnimThread(Server *ps){
 	sigemptyset(&set);
 	sigaddset(&set, SIGUSR2);
 	int sig;
+	double last = 0.;
 
 	while(sigwait(&set, &sig) == 0){
 #endif
 //		printf("AnimThread\n");
 		if(ps->terminating)
 			break;
-		ps->FrameProc(FRAMETIME / 1000.);
+		double t = TimeMeasLap(&ps->gameTimer);
+		// Limit the frametime below 1 second.
+		ps->FrameProc(MIN(t - last, 1.));
+		last = t;
 	}
 	return 0;
 }

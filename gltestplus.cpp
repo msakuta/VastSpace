@@ -1007,7 +1007,7 @@ void ClientGame::anim(double dt){
 void ClientApplication::display_func(void){
 	static int init = 0;
 	static timemeas_t tm;
-	static double gametime = 0.;
+	static double gametime = 0., lastsenttime = 0.;
 	double dt = 0.;
 	if(!init){
 		extern double dwo;
@@ -1066,7 +1066,8 @@ void ClientApplication::display_func(void){
 		size_t size;
 		static FILE *fp = NULL;
 		if(mode & ServerBit){
-			server.sv->FrameProc(dt);
+			if(!server.sv->FrameProc(dt))
+				break;
 
 			sbuf = (const unsigned char*)server.sv->sendbuf;
 			size = server.sv->sendbufsiz;

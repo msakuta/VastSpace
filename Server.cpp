@@ -168,8 +168,9 @@ static DWORD WINAPI ClientThread(LPVOID lpv);
 double server_lastdt = 0.;
 
 
-Server::Server() : sendbuf(NULL), sendbufsiz(0){
+Server::Server() : sendbuf(NULL), sendbufsiz(0), lastSentTime(0), updateInterval(FRAMETIME / 1000.){
 	logfp = fopen("server.log", "wb");
+	TimeMeasStart(&gameTimer);
 }
 
 Server::~Server(){
@@ -574,9 +575,25 @@ threadret_t Server::AnimThread(Server *ps){
 
 /// \brief Called once a frame (simulation step) proceeds.
 /// \param dt Delta-time of the frame.
-void Server::FrameProc(double dt){
+/// \returns whether this frame is serialized for update stream.
+bool Server::FrameProc(double dt){
 	if(pg && trylock_mutex(&mg)){
 		pg->anim(dt);
+
+		double gametime = TimeMeasLap(&gameTimer);
+
+		// Break the loop if update period is not reached.
+		if(gametime < lastSentTime + updateInterval){
+			unlock_mutex(&mg);
+			return false;
+		}
+
+		// Instead of just assigning gametime to lastSentTime, we add updateInterval to it
+		// in order to keep the update interval as constant as possible, but it could be
+		// possible that pg->anim() does not return in time. In that case, we just skip
+		// that heavy frame for updating.
+		while(lastSentTime + updateInterval <= gametime)
+			lastSentTime += updateInterval;
 
 		timemeas_t tm;
 		TimeMeasStart(&tm);
@@ -587,7 +604,9 @@ void Server::FrameProc(double dt){
 		WaitModified();
 		extern double server_lastdt;
 		server_lastdt = TimeMeasLap(&tm);
+		return true;
 	}
+	return false;
 }
 
 /// \brief Creates differential stream for client updates.
@@ -767,6 +786,12 @@ void StopServer(struct ServerThreadHandle *p){
 
 void Server::SendChatMessage(const char *buf){
 	BroadcastMessage(gltestp::dstring() << (scs ? scs->name : "server") << "> " << buf);
+}
+
+double Server::setUpdateInterval(double value){
+	if(0. < value)
+		updateInterval = value;
+	return updateInterval;
 }
 
 void KickClientServer(ServerThreadHandle *ph, int clid){

@@ -132,6 +132,10 @@ static DWORD dummyThreadId;
 #define thread_isvalid(t) ((t)->init)
 #endif
 
+// You cannot place this include before #include <windows.h> for unclear reason.
+extern "C"{
+#include <clib/timemeas.h>
+}
 
 class Game;
 struct Server;
@@ -200,7 +204,7 @@ struct Server{
 	~Server();
 	void WaitModified();
 	ServerClient &addServerClient();
-	void FrameProc(double dt);
+	bool FrameProc(double dt);
 	static threadret_t AnimThread(Server *);
 	struct ServerThreadDataInt{
 		sockaddr_in svtcp;
@@ -210,10 +214,16 @@ struct Server{
 	static threadret_t WINAPI ServerThread(ServerThreadDataInt*);
 	void BroadcastMessage(const char *msg);
 	void SendChatMessage(const char *msg);
+	double getUpdateInterval()const{return updateInterval;}
+	double setUpdateInterval(double value);
 protected:
 	void SendUpdateStream(ServerClient *cl, bool first);
 	void CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,
 			SyncBuf &syncbuf, 	const void *header, size_t headersize);
+
+	timemeas_t gameTimer; ///< A stop watch to measure interval of updates.
+	double lastSentTime; ///< The time last update stream is sent.
+	double updateInterval; ///< Update rate
 };
 
 extern int StartServer(ServerParams *, struct ServerThreadHandle *);

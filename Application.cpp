@@ -266,6 +266,22 @@ static int cmd_maxclients(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+/// \brief Sets or gets server update rate.
+///
+/// You cannot query this value from the client (at this time).
+static int cmd_uprate(int argc, char *argv[], void *pv){
+	Application *app = (Application*)pv;
+	if(app->server.sv){
+		if(argc < 2)
+			CmdPrint(gltestp::dstring() << "UpdateInterval is " << app->server.sv->getUpdateInterval());
+		else
+			CmdPrint(gltestp::dstring() << "UpdateInterval is set to " << app->server.sv->setUpdateInterval(atof(argv[1])));
+	}
+	else
+		CmdPrint("You are a client; UpdateInterval is unknown");
+	return 0;
+}
+
 static gltestp::dstring dstrip(const sockaddr_in &s){
 	unsigned long ipa;
 	ipa = ntohl(s.sin_addr.s_addr);
@@ -403,6 +419,7 @@ void Application::init(bool isClient)
 	CmdAddParam("move", cmd_move, this);
 	CmdAddParam("maxclients", cmd_maxclients, this);
 	CmdAddParam("clients", cmd_clients, this);
+	CmdAddParam("uprate", cmd_uprate, this);
 	CoordSys::registerCommands(&application);
 	if(serverGame){
 		CvarAdd("pause", &serverGame->universe->paused, cvar_int);

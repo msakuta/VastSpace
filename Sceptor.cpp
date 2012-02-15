@@ -188,7 +188,7 @@ const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
 	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, -.002) * 3, Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
+	static const Vec3d src[3] = {Vec3d(0., .001, .002) * 3, Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
 	Mat4d mat;
 	seatid = (seatid + 3) % 3;
 	if(seatid == 2 && enemy && enemy->w == w){

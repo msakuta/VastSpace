@@ -9,6 +9,8 @@
 typedef union time_meas{
 #ifdef _WIN32
 	LARGE_INTEGER li;
+#elif _POSIX_C_SOURCE >= 199309L
+	struct timespec ts;
 #endif
 	clock_t c;
 } timemeas_t;

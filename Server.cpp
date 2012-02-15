@@ -554,6 +554,7 @@ int SocketOutStream::write(const char *data, size_t size){
 
 /// \brief Dedicated server's routine for simulation computation.
 threadret_t Server::AnimThread(Server *ps){
+	double last = 0.;
 #ifdef _WIN32
 	while(event_wait(&ps->hAnimEvent)){
 #else
@@ -562,7 +563,6 @@ threadret_t Server::AnimThread(Server *ps){
 	sigemptyset(&set);
 	sigaddset(&set, SIGUSR2);
 	int sig;
-	double last = 0.;
 
 	while(sigwait(&set, &sig) == 0){
 #endif

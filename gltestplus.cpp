@@ -1007,7 +1007,7 @@ void ClientGame::anim(double dt){
 void ClientApplication::display_func(void){
 	static int init = 0;
 	static timemeas_t tm;
-	static double gametime = 0., lastsenttime = 0.;
+	static double gametime = 0.;
 	double dt = 0.;
 	if(!init){
 		extern double dwo;

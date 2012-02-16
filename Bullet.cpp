@@ -519,6 +519,17 @@ void Bullet::anim(double dt){
 	pb->pos += move;
 }
 
+/// In the client, Bullet only advances as if there're no obstacles.
+void Bullet::clientUpdate(double dt){
+	if(grav){
+		Vec3d accel = w->accel(pos, velo);
+		velo += accel * dt;
+	}
+	Vec3d move = velo * dt;
+	runlength += move.len();
+	pos += move;
+}
+
 double Bullet::hitradius()const{
 	return 0.;
 }

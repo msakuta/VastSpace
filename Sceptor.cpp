@@ -119,6 +119,13 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 	sc.i >> formPrev;
 
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 /*	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
@@ -139,7 +146,7 @@ double Sceptor::maxhealth()const{
 
 
 
-Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1), pf(NULL){
+Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1), pf(NULL), active(true){
 }
 
 Sceptor::Sceptor(WarField *aw) : st(aw),
@@ -153,7 +160,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	forcedEnemy(false),
 	formPrev(NULL),
 	evelo(vec3_000),
-	attitude(Passive)
+	attitude(Passive),
+	active(true)
 {
 	Sceptor *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
@@ -256,6 +264,8 @@ void cmd_cloak(int argc, char *argv[]){
 }
 */
 void Sceptor::shootDualGun(double dt){
+	if(!game->isServer())
+		return;
 	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
 	Mat4d mat;
 	int i = 0;
@@ -615,7 +625,13 @@ void Sceptor::anim(double dt){
 //	if(pm)
 //		pt->race = pm->race;
 
-	if(0 < pt->health){
+	// The active flag indicates this object really lives or not in the client.
+	// The client cannot really delete an Entity, so some way to indicate that
+	// the object is inactive is necessary.
+	// There could be a case the server sends delete message before the client
+	// determines the object should be deleted. In that case, death effects
+	// may not displayed, but it'd be rare case since there's always a lag.
+	if(0 < pt->health && active){
 //		double oldyaw = pt->pyr[1];
 		bool controlled = controller;
 		int parking = 0;
@@ -1222,7 +1238,14 @@ void Sceptor::anim(double dt){
 				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
 #endif
-			this->w = NULL;
+			// Deleting an Entity in the client without permission from the server is prohibited,
+			// so we cannot just assign a NULL to this->w. We must remember the WarField object
+			// belong, or Bullet dynamics body object wouldn't be correctly detached from dynamics world.
+			// Assigning NULL to w to indicate the object being deleted no longer works.
+			if(game->isServer())
+				this->w = NULL;
+			else
+				this->active = false; // The active flag came back!
 		}
 		else{
 #ifndef DEDICATED
@@ -1264,6 +1287,9 @@ void Sceptor::anim(double dt){
 }
 
 void Sceptor::clientUpdate(double dt){
+	// Directly calls anim() because there're so many logics which should be shared among server and client
+	// that sharing code also is a fair way to do it.
+	anim(dt);
 #ifndef DEDICATED
 	if(this->pf)
 		MoveTefpol3D(this->pf, pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
@@ -1496,6 +1522,9 @@ static int cmd_delta_formation(int argc, char *argv[], void *pv){
 
 static void register_sceptor_cmd(Game &game){
 	CmdAddParam("delta_formation", cmd_delta_formation, game.player);
+	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
+	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
+	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 }
 
 static void register_server(){

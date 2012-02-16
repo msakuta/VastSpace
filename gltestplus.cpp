@@ -31,7 +31,7 @@
 #include "glw/GLWmenu.h"
 #include "Docker.h"
 #include "draw/material.h"
-#include "Sceptor.h"
+//#include "Sceptor.h"
 #include "glstack.h"
 #include "Universe.h"
 #include "glsl.h"
@@ -399,7 +399,7 @@ void Game::drawindics(Viewer *vw){
 		drawastro(vw, universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
 	}
-	if(player->chase){
+	if(player->chase && player->chase->w){
 		wardraw_t wd;
 		wd.vw = vw;
 		wd.w = *player->chase->w;
@@ -2293,9 +2293,6 @@ int main(int argc, char *argv[])
 		CvarAdd("viewdist", &server->player->viewdist, cvar_double);
 	}
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
-	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
-	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
-	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);
 	CvarAdd("g_space_far_clip", &g_space_far_clip, cvar_double);

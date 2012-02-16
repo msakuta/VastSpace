@@ -331,6 +331,9 @@ void WarSpace::anim(double dt){
 void WarSpace::clientUpdate(double dt){
 	aaanim(dt, this, list[0], &Entity::clientUpdate);
 	aaanim(dt, this, list[1], &Entity::clientUpdate);
+
+	bdw->stepSimulation(dt / 1., 0);
+
 #ifdef _WIN32
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTeline3D(gibs, dt));

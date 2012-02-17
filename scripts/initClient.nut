@@ -536,6 +536,13 @@ function sce(){
 register_console_command("ass", ass);
 register_console_command("att", att);
 
+function printPlayers(){
+	local pls = ::players();
+	local i;
+	for(i = 0; i < pls.len(); i++)
+		print("Player[" + i + "] = {playerId = " + pls[i].playerId + ", chase = " + pls[i].chase + "}");
+}
+
 mainmenu <- GLWbigMenu();
 
 function loadmission(script){

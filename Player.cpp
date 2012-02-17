@@ -727,6 +727,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		sq_pushfloat(v, SQFloat(p->viewdist));
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("playerId"))){
+		sq_pushinteger(v, SQInteger(p->playerId));
+		return 1;
+	}
 	else
 		return sqa::sqf_get<Player>(v);
 }

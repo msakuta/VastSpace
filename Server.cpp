@@ -1089,6 +1089,9 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 			// Actually add the Player to the Game's player list.
 			cl->sv->pg->players.push_back(clientPlayer);
 
+			// Remember the object id of this Player.
+			cl->meid = clientPlayer->getid();
+
 			unlock_mutex(&cl->sv->mcl);
 		}
 //		WaitModified(cl->sv);
@@ -1161,11 +1164,20 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 			printf("[%d] Socket Closed by foreign host. %s:%d\n", tid, inet_ntoa(cl->tcp.sin_addr), ntohs(cl->tcp.sin_port));
 		}
 		if(cl->name){
-			dstr_t ds = dstr0;
-			dstrcat(&ds, cl->name);
-			dstrcat(&ds, cl->kicked ? " is kicked from server" : " left the server");
-			cl->sv->BroadcastMessage(dstr(&ds));
-			dstrfree(&ds);
+			gltestp::dstring ds;
+			ds << cl->name;
+			ds << (cl->kicked ? " is kicked from server" : " left the server");
+			cl->sv->BroadcastMessage(ds);
+			std::vector<Player*> &players = cl->sv->pg->players;
+
+			// Delete the Player object from the game's player list.
+			std::vector<Player*>::iterator it = players.begin();
+			for(; it != players.end(); it++){
+				if(cl->meid == (*it)->getid()){
+					players.erase(it);
+					break;
+				}
+			}
 		}
 	}
 

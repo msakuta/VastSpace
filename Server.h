@@ -163,7 +163,7 @@ struct ServerClient{
 	bool kicked; ///< Flag indicating this client is being kicked.
 	bool sentFirst; ///< Flag that the initial update stream is sent.
 	short team; ///< Team id to filter chat messages.
-	unsigned long meid; ///< id of the player entity
+	SerializableId meid; ///< id of the player entity
 	SOCKET s; ///< keep connection on this socket
 	mutex_t m; ///< the mutex object to the socket, to make some longer messages atomic
 	thread_t t; ///< Thread handle for receive thread for this client.

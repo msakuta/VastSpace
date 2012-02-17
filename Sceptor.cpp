@@ -1287,6 +1287,8 @@ void Sceptor::anim(double dt){
 }
 
 void Sceptor::clientUpdate(double dt){
+	if(dt <= 0.)
+		return;
 	// Directly calls anim() because there're so many logics which should be shared among server and client
 	// that sharing code also is a fair way to do it.
 	anim(dt);
@@ -1294,11 +1296,6 @@ void Sceptor::clientUpdate(double dt){
 	if(this->pf)
 		MoveTefpol3D(this->pf, pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
 #endif
-
-	if(0 < this->health){
-	}
-	else{
-	}
 }
 
 // Docking and undocking will never stack.

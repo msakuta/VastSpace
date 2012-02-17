@@ -162,7 +162,6 @@ static void timer_kill(timer_t *timer){
 	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (sockopt_t)&nd, size);\
 }
 
-static void WaitCommand(ServerClient *, char *);
 static void GameCommand(ServerClient *, char *);
 static DWORD WINAPI ClientThread(LPVOID lpv);
 double server_lastdt = 0.;
@@ -752,7 +751,6 @@ int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 		timer_init(&sv.timer);
 		sv.app = pstd->app;
 		sv.maxncl = pstd->maxclients;
-		sv.command_proc = WaitCommand;
 		sv.terminating = 0;
 		sv.started = 0;
 		create_mutex(&sv.mcl);
@@ -1017,7 +1015,12 @@ static void GameCommand(cl_t *cl, char *lbuf){
 }
 #endif
 
-static void WaitCommand(ServerClient *cl, char *lbuf){
+/// \brief Interprets a command in a client thread.
+///
+/// Parses the stream sent from the corresponding client.
+///
+/// \param lbuf The input buffer. The caller allocates a buffer for this function, thus not const.
+void ServerClient::interpretCommand(char *lbuf){
 	// "C" is the server game command request.
 	if(!strncmp(lbuf, "C ", 2)){
 		char *p = strchr(&lbuf[2], ' ');
@@ -1028,55 +1031,37 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 			if(it != ClientMessage::ctormap().end()){
 				std::istringstream iss(std::string(p+1, strlen(p+1)));
 				StdUnserializeStream uss(iss);
-				it->second->interpret(*cl, uss);
+				it->second->interpret(*this, uss);
 			}
 		}
 	}
-	else if(!strncmp(lbuf, "ATTR ", 5)){
-		char attr[3];
-		int i, sum = 0;
-		for(i = 0; i < 3; i++){
-			sum += attr[i] = lbuf[5+i] - '0';
-			if(attr[i] < 0 || 100 < attr[i])
-				continue;
-		}
-
-		/* although along with nothing good, sum being less than 100 is permitted. */
-		if(0 <= sum && sum <= 100){
-			cl->sv->WaitModified();
-		}
-	}
-	else if(!strcmp(lbuf, "READY")){
-//		if(2 == ReadyClientServer(cl->sv, cl) && cl->sv->std.already)
-//			cl->sv->std.already(cl->sv->std.already_data);
-	}
 	else if(!strncmp(lbuf, "LOGIN ", sizeof "LOGIN "-1)){
 		gltestp::dstring str = &lbuf[sizeof "LOGIN "-1];
-		if(lock_mutex(&cl->sv->mcl)){
+		if(lock_mutex(&sv->mcl)){
 			int ai = 0;
 			gltestp::dstring str2 = str;
 			// Loop until there is no duplicate name
 			do{
-				Server::ServerClientList::iterator psc = cl->sv->cl.begin();
-				while(psc != cl->sv->cl.end()){
+				Server::ServerClientList::iterator psc = sv->cl.begin();
+				while(psc != sv->cl.end()){
 					ServerClient *p = &*psc;
-					if(p != cl && p->name == str2)
+					if(p != this && p->name == str2)
 						break;
 					psc++;
 				}
-				if(psc != cl->sv->cl.end()){
+				if(psc != sv->cl.end()){
 					str2 = str << " (" << ++ai << ")";
 				}
 				else break;
 			} while(1);
-			cl->name = str2;
+			name = str2;
 
 			// If the client logs in, assign a Player object for the client.
-			Player *clientPlayer = new Player(cl->sv->pg);
+			Player *clientPlayer = new Player(sv->pg);
 
 			// Temporary treatment to make newly added Player's coordsys to be the same as the first Player.
-			std::vector<Player*>::iterator it = cl->sv->pg->players.begin();
-			if(it != cl->sv->pg->players.end()){
+			std::vector<Player*>::iterator it = sv->pg->players.begin();
+			if(it != sv->pg->players.end()){
 				clientPlayer->cs = (*it)->cs;
 				clientPlayer->setpos((*it)->getpos());
 				clientPlayer->setvelo((*it)->getvelo());
@@ -1084,24 +1069,17 @@ static void WaitCommand(ServerClient *cl, char *lbuf){
 			}
 
 			// Assign an unique id to the newly added Player.
-			clientPlayer->playerId = cl->sv->pg->players.size();
+			clientPlayer->playerId = sv->pg->players.size();
 
 			// Actually add the Player to the Game's player list.
-			cl->sv->pg->players.push_back(clientPlayer);
+			sv->pg->players.push_back(clientPlayer);
 
 			// Remember the object id of this Player.
-			cl->meid = clientPlayer->getid();
+			meid = clientPlayer->getid();
 
-			unlock_mutex(&cl->sv->mcl);
+			unlock_mutex(&sv->mcl);
 		}
-//		WaitModified(cl->sv);
-		{
-			dstr_t ds = dstr0;
-			dstrcat(&ds, cl->name);
-			dstrcat(&ds, " logged in");
-			cl->sv->BroadcastMessage(dstr(&ds));
-			dstrfree(&ds);
-		}
+		sv->BroadcastMessage(gltestp::dstring() << name << " logged in");
 	}
 }
 
@@ -1141,7 +1119,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 				dstrfree(&ds);
 			}
 			else
-				cl->sv->command_proc(cl, lbuf);
+				cl->interpretCommand(lbuf);
 
 			memmove(lbuf, p+1, lbp -= (p+1 - lbuf)); /* reorient */
 		}

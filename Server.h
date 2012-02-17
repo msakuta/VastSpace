@@ -171,6 +171,8 @@ struct ServerClient{
 	gltestp::dstring name; ///< Name of this client, used for chatting.
 	struct sockaddr_in tcp, udp;
 	/* if tcp connection is established, no need to store the address, but udp needs its destination */
+
+	void interpretCommand(char *);
 };
 
 
@@ -189,7 +191,6 @@ struct Server{
 	ServerClientList cl; ///< Client list
 	int maxncl; ///< Maximum size of cl allowed
 	ServerClient *scs; ///< serverclient server (fake client indicating the server)
-	void (*command_proc)(ServerClient *, char *);
 	volatile long terminating; /* the server is shutting down! */
 	volatile long started; /* game started; no further users can log in */
 	mutex_t mcl; /* client list's mutex object */

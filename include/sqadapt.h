@@ -259,6 +259,18 @@ SQInteger sqf_get(HSQUIRRELVM v){
 		sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("id"))){
+		SQUserPointer o;
+		SQRESULT sr;
+		if(!sqa_refobj(v, &o, &sr, 1, true))
+			return sr;
+		Class *p = (Class*)o;
+		if(p)
+			sq_pushinteger(v, p->getid());
+		else
+			return sq_throwerror(v, _SC("Object is deleted"));
+		return 1;
+	}
 	sq_pushnull(v);
 	return 1;
 }

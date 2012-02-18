@@ -649,6 +649,20 @@ static SQInteger sqf_players(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_tostring(HSQUIRRELVM v){
+	SQUserPointer o;
+	SQRESULT sr;
+	if(!sqa_refobj(v, &o, &sr, 1, true))
+		return sr;
+	Player *p = (Player*)o;
+	if(p){
+		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
+	}
+	else
+		return sq_throwerror(v, _SC("Object is deleted"));
+	return 1;
+}
+
 void Player::sq_define(HSQUIRRELVM v){
 /*	SqPlus::SQClassDef<Player>(_SC("Player")).
 		func(&Player::classname, _SC("classname")).
@@ -669,6 +683,7 @@ void Player::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("select"), sqf_select);
 	register_closure(v, _SC("_get"), &Player::sqf_get);
 	register_closure(v, _SC("_set"), &Player::sqf_set);
+	register_closure(v, _SC("_tostring"), sqf_tostring);
 	sq_createslot(v, -3);
 
 	register_global_func(v, sqf_players, _SC("players"));

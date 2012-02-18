@@ -679,8 +679,10 @@ function Polaris(){
 function printPlayers(){
 	local pls = ::players();
 	local i;
-	for(i = 0; i < pls.len(); i++)
-		print("Player[" + i + "].playerId = " + pls[i].playerId);
+	for(i = 0; i < pls.len(); i++){
+		local pl = pls[i];
+		print("Player[" + i + "] = {playerId = " + pl.playerId + ", chase = " + pl.chase + "}");
+	}
 }
 
 

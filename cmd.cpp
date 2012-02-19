@@ -35,6 +35,7 @@ static int cvar_cmd_echo = 1;
 static int console_pageskip = 8;
 static int console_mousewheelskip = 4;
 static int console_undefinedecho = 0;
+static int cvar_cmdlog = 0;
 
 static int CmdExecD(char *, bool server, ServerClient *);
 struct cmdalias **CmdAliasFindP(const char *name);
@@ -78,10 +79,20 @@ static unsigned long hashfunc(const char *s){
 	return ret;
 }
 
+
+static FILE *logfp(){
+	static FILE *fp = NULL;
+	if(!fp)
+		fp = fopen("cmdlog.log", "w");
+	return fp;
+}
+
 /// Directly assign dstring to command buffer.
 /// This overloaded version reallocates memory less times.
 void CmdPrint(const cpplib::dstring &str){
 	cmdbuffer[cmdcurline] = str;
+	if(cvar_cmdlog)
+		fprintf(logfp(), "%s\n", (const char*)str);
 
 	// Windows default encoding for multibyte string is often not UTF-8, so we
 	// convert it with wide char functions.
@@ -540,6 +551,7 @@ void CmdInit(struct viewport *pvp){
 	CvarAdd("console_mousewheelskip", &console_mousewheelskip, cvar_int);
 	CvarAdd("console_pageskip", &console_pageskip, cvar_int);
 	CvarAdd("console_undefinedecho", &console_undefinedecho, cvar_int);
+	CvarAdd("cmdlog", &cvar_cmdlog, cvar_int);
 	CmdPrint("gltestplus running.");
 	CmdPrint("build: " __DATE__ ", " __TIME__);
 }

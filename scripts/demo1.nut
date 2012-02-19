@@ -10,8 +10,8 @@ if(earthlo){
 }
 
 
-deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);
-deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 0.025), -2.025, 2, player.cs, null);
+//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);
+//deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 0.025), -2.025, 2, player.cs, null);
 //deltaFormation("Defender", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  1.7), 0.05, 1, player.cs, function(e){e.command("Deploy");});
 
 cmd("pause 0");
@@ -30,6 +30,9 @@ checktime <- 0;
 autochase <- true;
 deaths <- {};
 targetcs <- player.cs;
+invokes <- 0;
+obj1 <- null;
+obj2 <- null;
 
 function frameproc(dt){
 	framecount++;
@@ -40,7 +43,31 @@ function frameproc(dt){
 
 	local currenttime = universe.global_time + 9.;
 
-	if(true && checktime + 10. < currenttime){
+	if(checktime + 2. < currenttime){
+		checktime = currenttime;
+		switch(invokes){
+			case 0:
+				obj1 = player.cs.addent("Sceptor", Vec3d(0.1, 0., 0.));
+				print("obj1 is " + obj1);
+				obj2 = player.cs.addent("Sceptor", Vec3d(-0.1, 0., 0.));
+				print("obj2 is " + obj2);
+				obj1.enemy = obj2;
+				print("obj1.enemy is " + obj1.enemy);
+				break;
+			case 1:
+				obj1.kill();
+				print("obj1 is deleted " + obj1);
+				break;
+			case 2:
+				print("obj1 is " + obj1.alive);
+				obj2.kill();
+				print("obj2 is deleted " + obj2);
+				break;
+		}
+		invokes++;
+	}
+
+	if(false && checktime + 10. < currenttime){
 		local cs = targetcs;
 		checktime = currenttime;
 

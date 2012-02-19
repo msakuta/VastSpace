@@ -322,6 +322,7 @@ bool Sceptor::findEnemy(){
 	}
 	if(closest){
 		enemy = closest;
+		enemy->addObserver(this);
 		integral[0] = integral[1] = 0.f;
 		evelo = vec3_000;
 	}
@@ -526,6 +527,8 @@ void Sceptor::leaveField(WarField *w){
 }
 
 void Sceptor::anim(double dt){
+	if(!w)
+		return;
 	WarField *oldw = w;
 	Entity *pt = this;
 	Sceptor *const pf = this;
@@ -1344,8 +1347,8 @@ void Sceptor::postframe(){
 		if(task == Dock || task == Dockque)
 			task = Auto;
 	}
-	if(enemy && enemy->w != w)
-		enemy = NULL;
+//	if(enemy && enemy->w != w)
+//		enemy = NULL;
 	if(formPrev && formPrev->w != w)
 		formPrev = NULL;
 	st::postframe();
@@ -1463,6 +1466,7 @@ bool Sceptor::command(EntityCommand *com){
 			Entity *e = *ac->ents.begin();
 			if(e && e->getUltimateOwner() != getUltimateOwner()){
 				enemy = e;
+				e->addObserver(this);
 				forcedEnemy = ac->id() == ForceAttackCommand::sid;
 				task = Auto;
 				return true;

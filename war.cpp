@@ -120,9 +120,9 @@ void WarField::clientUpdate(double dt){
 }
 
 void WarField::postframe(){
-	for(int i = 0; i < 2; i++)
-	for(Entity *e = this->*list[i]; e; e = e->next)
-		e->postframe();
+//	for(int i = 0; i < 2; i++)
+//	for(Entity *e = this->*list[i]; e; e = e->next)
+//		e->postframe();
 }
 
 void WarField::endframe(){

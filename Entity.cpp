@@ -39,6 +39,10 @@ void Observable::addObserver(Observer *o){
 	observers.insert(o);
 }
 
+void Observable::removeObserver(Observer *o){
+	observers.erase(o);
+}
+
 
 Entity::Entity(WarField *aw) :
 	st(aw ? aw->getGame() : NULL),
@@ -205,6 +209,18 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sqa_newobj(v, d);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("enemy"))){
+		SQUserPointer o;
+		if(!p || !p->enemy){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->enemy);
+	}
 	else
 		return sqf_get<Entity>(v);
 }
@@ -224,6 +240,14 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 			return SQ_ERROR;
 		p->race = int(retint);
 		return 0;
+	}
+	else if(!strcmp(wcs, _SC("enemy"))){
+		SQUserPointer o;
+		SQRESULT sr;
+		if(!sqa_refobj(v, &o, &sr, 3))
+			return sr;
+		p->enemy = (Entity*)(o);
+		p->enemy->addObserver(p);
 	}
 	else
 		return sqf_set<Entity>(v);
@@ -272,8 +296,22 @@ static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
+	try{
+		Entity *p;
+		if(!sqa_refobj(v, (SQUserPointer*)&p))
+			return 0;
+		const SQChar *s;
+		if(p->getGame()->isServer())
+			p->w = NULL;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 1;
+}
+
 bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
-#if 1
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
@@ -290,14 +328,8 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("_tostring"), sqf_Entity_tostring, 1);
 	register_closure(v, _SC("command"), sqf_Entity_command);
 	register_closure(v, _SC("create"), sqf_Entity_create);
+	register_closure(v, _SC("kill"), sqf_Entity_kill);
 	sq_createslot(v, -3);
-#else
-	sq_pushstring(v, sq_classname(), -1);
-	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
-	register_closure(v, _SC("_tostring"), sqf_Entity_tostring, 1);
-	sq_createslot(v, -3);
-#endif
 	return true;
 }
 
@@ -519,6 +551,14 @@ Docker *Entity::getDockerInt(){return NULL;}
 bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
 bool Entity::command(EntityCommand *){return false;}
+
+bool Entity::unlink(Observable*o){
+	if(enemy == o)
+		enemy = NULL;
+	if(next == o)
+		next = next->next;
+	return true;
+}
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;

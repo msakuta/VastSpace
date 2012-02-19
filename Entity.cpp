@@ -147,8 +147,13 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr)){
+		if(!strcmp(wcs, _SC("alive"))){
+			sq_pushbool(v, SQFalse);
+			return 1;
+		}
 		return sr;
+	}
 	if(!p)
 		return -1;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
@@ -248,6 +253,7 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 			return sr;
 		p->enemy = (Entity*)(o);
 		p->enemy->addObserver(p);
+		return 1;
 	}
 	else
 		return sqf_set<Entity>(v);

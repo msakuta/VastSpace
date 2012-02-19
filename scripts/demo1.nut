@@ -59,7 +59,9 @@ function frameproc(dt){
 				print("obj1 is deleted " + obj1);
 				break;
 			case 2:
-				print("obj1 is " + obj1.alive);
+				print("obj1 is " + obj1);
+				if(obj1)
+					print("obj1 is " + (obj1.alive ? "" : "not ") + "alive");
 				obj2.kill();
 				print("obj2 is deleted " + obj2);
 				break;

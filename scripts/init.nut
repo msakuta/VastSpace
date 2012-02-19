@@ -224,5 +224,6 @@ function init_Universe(){
 	}
 }
 
+register_console_command("sq1", @() loadmission("scripts/demo1.nut") );
 
 //print("init.nut execution time: " + tm.lap() + " sec");

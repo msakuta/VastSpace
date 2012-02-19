@@ -292,11 +292,11 @@ bool Player::unlink(Observable *pe){
 //	chases.erase(reinterpret_cast<Entity*>(pe));
 	// chases.erase() cannot be used because the raw pointer value changes when upcasting from multiple-inherited object to
 	// the super class, and we do not use dynamic cast. We must iterate and find the pointer in the set to erase one.
-	for(std::set<const Entity*>::iterator it = chases.begin(); it != chases.end();){
-		if(*it == pe)
-			it = chases.erase(it);
-		else
-			it++;
+	for(std::set<const Entity*>::const_iterator it = chases.begin(); it != chases.end();){
+		if(*it == pe){
+			chases.erase(it);
+			break;
+		}
 	}
 	if(chase == pe)
 		chase = chases.empty() ? NULL : const_cast<Entity*>(*chases.begin());

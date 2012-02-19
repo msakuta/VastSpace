@@ -24,9 +24,19 @@ extern "C"{
 #include <iostream>
 
 
-bool EntityController::unlink(Entity *){
+bool Observer::unlink(Observable *){
 	// Do nothing and allow unlinking by default
 	return true;
+}
+
+Observable::~Observable(){
+	for(ObserverList::iterator it = observers.begin(); it != observers.end(); it++){
+		(*it)->unlink(this);
+	}
+}
+
+void Observable::addObserver(Observer *o){
+	observers.insert(o);
 }
 
 

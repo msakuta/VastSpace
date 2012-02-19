@@ -236,7 +236,7 @@ void Player::unserialize(UnserializeContext &sc){
 	unsigned ntplist;
 
 	sc.i >> playerId;
-	sc.i >> chase;
+	sc.i >> chase; if(chase) chase->addObserver(this);
 	sc.i >> selectedSize;
 	for(int i = 0; i++; i < selectedSize){
 		Entity *e;
@@ -288,8 +288,16 @@ void Player::transit_cs(CoordSys *cs){
 	this->cs = cs;
 }
 
-void Player::unlink(const Entity *pe){
-	chases.erase(pe);
+bool Player::unlink(Observable *pe){
+//	chases.erase(reinterpret_cast<Entity*>(pe));
+	// chases.erase() cannot be used because the raw pointer value changes when upcasting from multiple-inherited object to
+	// the super class, and we do not use dynamic cast. We must iterate and find the pointer in the set to erase one.
+	for(std::set<const Entity*>::iterator it = chases.begin(); it != chases.end();){
+		if(*it == pe)
+			it = chases.erase(it);
+		else
+			it++;
+	}
 	if(chase == pe)
 		chase = chases.empty() ? NULL : const_cast<Entity*>(*chases.begin());
 	if(controlled == pe)
@@ -301,6 +309,7 @@ void Player::unlink(const Entity *pe){
 		selected.erase(ppe);
 		break;
 	}
+	return true;
 }
 
 void Player::rotateLook(double dx, double dy){
@@ -773,8 +782,12 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		}
 		if(OT_INSTANCE != ot)
 			return SQ_ERROR;
-		if(!sqa_refobj(v, (SQUserPointer*)&p->chase, &sr, 3))
+		SQUserPointer o;
+		if(!sqa_refobj(v, &o, &sr, 3))
 			return sr;
+		p->chase = (Entity*)o;
+		p->chases.insert(p->chase);
+		p->chase->addObserver(p);
 //		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
 		return 1;
 	}

@@ -25,9 +25,20 @@ class Builder;
 class Docker;
 struct EntityCommand;
 class PopupMenu;
+class Observable;
+
+class Observer{
+public:
+	/// Called on destructor of the Entity being controlled.
+	///
+	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
+	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
+	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
+	virtual bool unlink(Observable *);
+};
 
 /// An abstract class to implement Player or AI controlling in the common way.
-class EXPORT EntityController : public Serializable{
+class EXPORT EntityController : public Serializable, public Observer{
 public:
 	typedef Serializable st;
 
@@ -35,18 +46,20 @@ public:
 
 	/// Called when this controller has to control an Entity.
 	virtual bool control(Entity *, double dt) = 0;
+};
 
-	/// Called on destructor of the Entity being controlled.
-	///
-	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
-	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
-	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
-	virtual bool unlink(Entity *);
+class EXPORT Observable{
+public:
+	typedef std::set<Observer*> ObserverList;
+	~Observable();
+	void addObserver(Observer *);
+protected:
+	ObserverList observers;
 };
 
 /// Primary object in the space. Many object classes derive this.
 /// Serializable and accessible from Squirrel codes.
-class EXPORT Entity : public Serializable{
+class EXPORT Entity : public Serializable, public Observable{
 public:
 	typedef Serializable st;
 	typedef Entity Dockable;

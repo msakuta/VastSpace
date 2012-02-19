@@ -134,10 +134,10 @@ void WarField::endframe(){
 		e->leaveField(this);
 
 		// Player does not follow entities into WarField, which has no positional information.
-		if(!e->w || !(WarSpace*)*e->w){
+/*		if(!e->w || !(WarSpace*)*e->w){
 			for(int i = 0; i < game->players.size(); i++)
 				game->players[i]->unlink(e);
-		}
+		}*/
 
 		// Delete if actually NULL is assigned.
 		if(!e->w){

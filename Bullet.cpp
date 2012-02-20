@@ -285,7 +285,7 @@ void Bullet::anim(double dt){
 /*		if(hitobj)
 			*hitobj = NULL;
 		return 0;*/
-		w = NULL;
+		delete this;
 		return;
 	}
 
@@ -427,7 +427,7 @@ void Bullet::anim(double dt){
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
 			bulletkill(-1, NULL);
-			w = NULL;
+			delete this;
 
 #ifndef DEDICATED
 			extern int bullet_hits;

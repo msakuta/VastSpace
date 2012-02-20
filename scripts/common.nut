@@ -56,6 +56,7 @@ class CoordSys{
 	CoordSys findcspath();
 	Entity addent(string classname, Vec3d pos);
 	Entity entlist;
+	Entity bulletlist;
 	Vec3d transPosition(Vec3d pos, CoordSys from, bool delta); // Converts position coordinates from given system to this system.
 	Vec3d transVelocity(Vec3d velo, CoordSys from); // Converts velocity vector. Equivalent to transPosition(velo, from, true).
 	Quatd transRotation(CoordSys from); // Converts rotation expressed in quaternion from given system to this system.
@@ -93,6 +94,7 @@ class Entity{
 	Entity next;
 	Entity dockedEntList;
 	Docker docker; // readonly, may be null
+	float health; // readonly
 }
 
 class Docker{
@@ -189,6 +191,12 @@ function printtree(cs){
 function foreachents(cs, proc){
 	local e;
 	for(e = cs.entlist; e != null; e = e.next)
+		proc(e);
+}
+
+function foreachbullets(cs, proc){
+	local e;
+	for(e = cs.bulletlist; e != null; e = e.next)
 		proc(e);
 }
 

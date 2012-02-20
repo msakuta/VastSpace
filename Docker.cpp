@@ -110,9 +110,19 @@ void Docker::dock(Dockable *e){
 }
 
 bool Docker::postUndock(Dockable *e){
-	Dockable **pp;
-	for(pp = &el; *pp; pp = reinterpret_cast<Dockable**>(&(*pp)->next)) if(*pp == e){
-		*pp = reinterpret_cast<Dockable*>(e->next);
+	if(!el)
+		return false;
+	ObservePtr<WarField,0,Entity> &pp0 = el;
+	if(pp0 == e){
+		pp0 = e->next;
+		Dockable **qend = &undockque;
+		if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
+		*qend = e;
+		e->next = NULL; // Appending to end means next is equal to NULL
+		return true;
+	}
+	for(ObservePtr<Entity,0,Entity> *pp = &pp0->next; *pp; pp = &(*pp)->next) if(*pp == e){
+		*pp = e->next;
 		Dockable **qend = &undockque;
 		if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
 		*qend = e;

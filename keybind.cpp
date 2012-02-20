@@ -3,6 +3,7 @@
 #include "antiglut.h"
 #include "war.h"
 #include "motion.h"
+#include "Entity.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -637,6 +637,10 @@
 					RelativePath="..\draw\Sceptor-Draw.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\draw\war-draw.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="calc"
@@ -685,10 +689,6 @@
 				</File>
 				<File
 					RelativePath="..\glw\solarmap.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\draw\war-draw.cpp"
 					>
 				</File>
 			</Filter>

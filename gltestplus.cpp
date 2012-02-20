@@ -1273,6 +1273,8 @@ void entity_popup(Player::SelectSet &ss, GLwindowState &ws, int selectchain){
 	delete menus;
 }
 
+typedef WarField::UnionPtr UnionPtr;
+
 /** \brief Box selection routine that can execute any operation via callback. 
  * \param x0,x1,y0,y1 Selection box in screen coordinates.
  * \param rot Camera transformation matrix.
@@ -1287,6 +1289,7 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 	double best = 1e50;
 	double g_far = g_warspace_far_clip, g_near = g_warspace_near_clip;
 	Entity *ptbest = NULL;
+	Vec3d plpos = player->getpos();
 
 	if(!player->cs->w)
 		return false;
@@ -1325,13 +1328,11 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 	mat[2] = 0., mat[6] = 0., mat[10] = -(g_far + g_near) / (g_far - g_near), mat[14] = -2. * g_far * g_near / (g_far - g_near);
 	mat[3] = 0., mat[7] = 0., mat[11] = -1., mat[15] = 0.;
 	mat2 = mat * rot;
-	Vec3d plpos = player->getpos();
 	bool ret = false;
 
 	// Cycle through both Entity list and Bullet list, but only ones that tells its selectable.
-	static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
-	for(int li = 0; li < 2; li++)
-	for(pt = player->cs->w->*list[li]; pt; pt = pt->next) if(pt->w && pt->isSelectable()){
+	for(int i = 0; i < 2; i++)
+	for(UnionPtr pt = (i == 0 ? UnionPtr(player->cs->w->el) : UnionPtr(player->cs->w->bl)); pt; pt = pt->next) if(pt->w && pt->isSelectable()){
 		Vec4d lpos, dpos;
 		double sp;
 		double scradx, scrady;
@@ -1362,6 +1363,7 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 			}
 		}
 	}
+
 
 	// Leave all detail to callback
 	if(pointselect && ptbest && sbc)

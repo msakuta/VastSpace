@@ -1510,6 +1510,19 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->w->el);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("bulletlist"))){
+		if(!p->w || !p->w->bl){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Entity"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		sqa_newobj(v, p->w->bl);
+//		sq_setinstanceup(v, -1, p->w->el);
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("parentcs"))){
 		if(!p->parent){
 			sq_pushnull(v);

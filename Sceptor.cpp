@@ -322,7 +322,6 @@ bool Sceptor::findEnemy(){
 	}
 	if(closest){
 		enemy = closest;
-		enemy->addObserver(this);
 		integral[0] = integral[1] = 0.f;
 		evelo = vec3_000;
 	}
@@ -1245,8 +1244,10 @@ void Sceptor::anim(double dt){
 			// so we cannot just assign a NULL to this->w. We must remember the WarField object
 			// belong, or Bullet dynamics body object wouldn't be correctly detached from dynamics world.
 			// Assigning NULL to w to indicate the object being deleted no longer works.
-			if(game->isServer())
-				this->w = NULL;
+			if(game->isServer()){
+				delete this;
+				return;
+			}
 			else
 				this->active = false; // The active flag came back!
 		}
@@ -1466,7 +1467,6 @@ bool Sceptor::command(EntityCommand *com){
 			Entity *e = *ac->ents.begin();
 			if(e && e->getUltimateOwner() != getUltimateOwner()){
 				enemy = e;
-				e->addObserver(this);
 				forcedEnemy = ac->id() == ForceAttackCommand::sid;
 				task = Auto;
 				return true;

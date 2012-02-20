@@ -11,7 +11,6 @@
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 #include <vector>
-#include <set>
 #include <squirrel.h>
 
 
@@ -25,17 +24,6 @@ class Builder;
 class Docker;
 struct EntityCommand;
 class PopupMenu;
-class Observable;
-
-class Observer{
-public:
-	/// Called on destructor of the Entity being controlled.
-	///
-	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
-	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
-	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
-	virtual bool unlink(Observable *);
-};
 
 /// An abstract class to implement Player or AI controlling in the common way.
 class EXPORT EntityController : public Serializable, public Observer{
@@ -48,15 +36,6 @@ public:
 	virtual bool control(Entity *, double dt) = 0;
 };
 
-class EXPORT Observable{
-public:
-	typedef std::set<Observer*> ObserverList;
-	~Observable();
-	void addObserver(Observer *);
-	void removeObserver(Observer *);
-protected:
-	ObserverList observers;
-};
 
 /// Primary object in the space. Many object classes derive this.
 /// Serializable and accessible from Squirrel codes.
@@ -139,9 +118,9 @@ public:
 //	double desired[2];
 	double health;
 //	double cooldown, cooldown2;
-	Entity *next;
+	ObservePtr<Entity,0,Entity> next;
 //	Entity *selectnext; ///< selection list is no longer needed
-	Entity *enemy;
+	ObservePtr<Entity,1,Entity> enemy;
 	int race;
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
@@ -226,6 +205,13 @@ protected:
 	static EntityStaticBase entityRegister;
 };
 
+
+
+//-----------------------------------------------------------------------------
+//     Implementation
+//-----------------------------------------------------------------------------
+
+
 inline Entity *Entity::getUltimateOwner(){
 	Entity *ret;
 	for(ret = this; ret && ret->getOwner(); ret = ret->getOwner());
@@ -237,5 +223,12 @@ void entity_popup(std::set<Entity *> &pt, GLwindowState &ws, int selectchain);
 
 int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
 
+
+
+
+template<>
+inline size_t ObservePtr<Entity, 0, Entity>::ofs(){return offsetof(Entity, next);}
+template<>
+inline size_t ObservePtr<Entity, 1, Entity>::ofs(){return offsetof(Entity, enemy);}
 
 #endif

@@ -23,7 +23,6 @@ extern "C"{
 #include <sstream>
 #include <iostream>
 
-
 bool Observer::unlink(Observable *){
 	// Do nothing and allow unlinking by default
 	return true;
@@ -31,16 +30,23 @@ bool Observer::unlink(Observable *){
 
 Observable::~Observable(){
 	for(ObserverList::iterator it = observers.begin(); it != observers.end(); it++){
-		(*it)->unlink(this);
+		it->first->unlink(this);
 	}
 }
 
 void Observable::addObserver(Observer *o){
-	observers.insert(o);
+	ObserverList::iterator it = observers.find(o);
+	if(it != observers.end())
+		it->second++;
+	else
+		observers[o] = 1;
 }
 
 void Observable::removeObserver(Observer *o){
-	observers.erase(o);
+	ObserverList::iterator it = observers.find(o);
+	assert(it != observers.end());
+	if(0 == --it->second)
+		observers.erase(it);
 }
 
 
@@ -80,8 +86,12 @@ Entity::~Entity(){
 			ws->bdw->removeRigidBody(bbody);*/
 		delete bbody;
 	}
-	if(controller && controller->unlink(this))
-		controller = NULL;
+	if(game->isServer()){
+		sqa_delete_Entity(this);
+		sqa_deleteobj(game->sqvm, this);
+	}
+//	if(controller && controller->unlink(this))
+//		controller = NULL;
 }
 
 void Entity::init(){
@@ -131,8 +141,10 @@ const SQChar *Entity::EntityStaticBase::sq_classname(){
 static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
 	SQUserPointer o;
 	SQRESULT sr;
-	if(!sqa_refobj(v, &o, &sr, 1, true))
-		return sr;
+	if(!sqa_refobj(v, &o, NULL, 1)){
+		sq_pushstring(v, _SC("(deleted)"), -1);
+		return 1;
+	}
 	Entity *p = (Entity*)o;
 	if(p){
 		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
@@ -225,6 +237,16 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
 		sqa_newobj(v, p->enemy);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("health"))){
+		SQUserPointer o;
+		if(!p){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushfloat(v, SQFloat(p->health));
+		return 1;
 	}
 	else
 		return sqf_get<Entity>(v);
@@ -252,7 +274,7 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 		if(!sqa_refobj(v, &o, &sr, 3))
 			return sr;
 		p->enemy = (Entity*)(o);
-		p->enemy->addObserver(p);
+//		p->enemy->addObserver(p);
 		return 1;
 	}
 	else
@@ -309,7 +331,7 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 			return 0;
 		const SQChar *s;
 		if(p->getGame()->isServer())
-			p->w = NULL;
+			delete p;
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.description);
@@ -560,9 +582,9 @@ bool Entity::command(EntityCommand *){return false;}
 
 bool Entity::unlink(Observable*o){
 	if(enemy == o)
-		enemy = NULL;
+		enemy.unlinkReplace(NULL);
 	if(next == o)
-		next = next->next;
+		next.unlinkReplace(next->next);
 	return true;
 }
 

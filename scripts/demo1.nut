@@ -24,7 +24,7 @@ player.setrot(lookrot);
 player.viewdist = 0.25;
 */
 
-showdt <- false;
+showdt <- true;
 framecount <- 0;
 checktime <- 0;
 autochase <- true;
@@ -38,38 +38,44 @@ function frameproc(dt){
 	framecount++;
 	local global_time = universe.global_time;
 
-	if(showdt)
-		print("DT = " + dt + ", FPS = " + (1. / dt) + ", FC = " + framecount);
+	if(showdt){
+		local counte = 0, countb = 0;
+		local entl = [];
+		foreachents(targetcs, @(e) (/*print(e + ": " + e.health),*/ counte++) );
+		foreachbullets(targetcs, @(e) (/*print(e + ": " + e.health),*/ countb++) );
+		print("DT = " + dt + ", FPS = " + (1. / dt) + ", FC = " + framecount + " counte = " + counte + ", countb = " + countb);
+	}
 
 	local currenttime = universe.global_time + 9.;
 
-	if(checktime + 2. < currenttime){
-		checktime = currenttime;
-		switch(invokes){
-			case 0:
-				obj1 = player.cs.addent("Sceptor", Vec3d(0.1, 0., 0.));
-				print("obj1 is " + obj1);
-				obj2 = player.cs.addent("Sceptor", Vec3d(-0.1, 0., 0.));
-				print("obj2 is " + obj2);
-				obj1.enemy = obj2;
-				print("obj1.enemy is " + obj1.enemy);
-				break;
-			case 1:
-				obj1.kill();
-				print("obj1 is deleted " + obj1);
-				break;
-			case 2:
-				print("obj1 is " + obj1);
-				if(obj1)
-					print("obj1 is " + (obj1.alive ? "" : "not ") + "alive");
-				obj2.kill();
-				print("obj2 is deleted " + obj2);
-				break;
+	if(false){
+		if(checktime + 2. < currenttime){
+			checktime = currenttime;
+			switch(invokes){
+				case 0:
+					obj1 = player.cs.addent("Sceptor", Vec3d(0.1, 0., 0.));
+					print("obj1 is " + obj1);
+					obj2 = player.cs.addent("Sceptor", Vec3d(-0.1, 0., 0.));
+					print("obj2 is " + obj2);
+					obj1.enemy = obj2;
+					print("obj1.enemy is " + obj1.enemy);
+					break;
+				case 1:
+					obj1.kill();
+					print("obj1 is deleted " + obj1);
+					break;
+				case 2:
+					print("obj1 is " + obj1);
+					if(obj1)
+						print("obj1 is " + (obj1.alive ? "" : "not ") + "alive");
+					obj2.kill();
+					print("obj2 is deleted " + obj2);
+					break;
+			}
+			invokes++;
 		}
-		invokes++;
 	}
-
-	if(false && checktime + 10. < currenttime){
+	else if(true && checktime + 10. < currenttime){
 		local cs = targetcs;
 		checktime = currenttime;
 
@@ -86,8 +92,8 @@ function frameproc(dt){
 				for(e = cs.entlist; e != null; e = e.next){
 					if(e.race == i){
 						print("Set players[" + i + "].chase to " + e);
-						pl.chase = e;
-						pl.chasecamera = 1;
+//						pl.chase = e;
+//						pl.chasecamera = 1;
 						pl.setrot(Quatd(0,0,0,1));
 						break;
 					}

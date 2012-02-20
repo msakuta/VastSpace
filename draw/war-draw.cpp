@@ -56,12 +56,11 @@ GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
 typedef GLubyte cubetype;
 #define GL_cubetype GL_UNSIGNED_BYTE
 
-static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
 
 void WarSpace::draw(wardraw_t *wd){
 	for(int i = 0; i < 2; i++)
-	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+	for(UnionPtr pe = (i == 0 ? UnionPtr(this->el) : UnionPtr(this->bl)); pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
 		try{
 			pe->draw(wd);
 		}
@@ -148,7 +147,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 	DrawTefpol3D(tepl, wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 
 	for(int i = 0; i < 2; i++)
-	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+	for(UnionPtr pe = (i == 0 ? UnionPtr(el) : UnionPtr(bl)); pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
 		try{
 			pe->drawtra(wd);
 		}
@@ -187,7 +186,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 void WarSpace::drawOverlay(wardraw_t *wd){
 	Player *ppl = getPlayer();
 	for(int i = 0; i < 2; i++)
-	for(Entity *pe = this->*list[i]; pe; pe = pe->next) if(pe->w == this){
+	for(UnionPtr pe = (i == 0 ? UnionPtr(el) : UnionPtr(bl)); pe; pe = pe->next) if(pe->w == this){
 		double pixels;
 		if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
 			Vec4d spos = wd->vw->trans.vp(Vec4d(pe->pos) + Vec4d(0,0,0,1));

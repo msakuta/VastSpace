@@ -44,6 +44,7 @@ void Game::idUnmap(UnserializeContext &sc){
 		if(it != idunmap.end()){
 			delete it->second;
 			idunmap.erase(it);
+			sc.syncbuf->erase(id);
 		}
 	}
 

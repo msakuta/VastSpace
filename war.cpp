@@ -68,11 +68,13 @@ void WarField::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 		bl->dive(sc, method);
 }
 
-static Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
+//static ObservePtr<WarField,0,Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
-void aaanim(double dt, WarField *w, Entity *WarField::*li, void (Entity::*method)(double)){
+template<int I>
+void aaanim(double dt, WarField *w, ObservePtr<WarField,I,Entity> WarField::*li, void (Entity::*method)(double)){
 //	Player *pl = w->getPlayer();
-	for(Entity *pe = w->*li; pe; pe = pe->next){
+	for(Entity *pe = w->*li; pe;){
+		Entity *next = pe->next;
 		try{
 			(pe->*method)(dt);
 		}
@@ -84,6 +86,7 @@ void aaanim(double dt, WarField *w, Entity *WarField::*li, void (Entity::*method
 		}
 //		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->getpos()).slen() < .002 * .002)
 //			pl->chase = pe;
+		pe = next;
 	}
 }
 
@@ -102,8 +105,8 @@ void WarField::anim(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, list[0], &Entity::anim);
-	aaanim(dt, this, list[1], &Entity::anim);
+	aaanim(dt, this, &WarField::el, &Entity::anim);
+	aaanim(dt, this, &WarField::bl, &Entity::anim);
 }
 
 void WarField::clientUpdate(double dt){
@@ -115,8 +118,8 @@ void WarField::clientUpdate(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, list[0], &Entity::clientUpdate);
-	aaanim(dt, this, list[1], &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::el, &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::bl, &Entity::clientUpdate);
 }
 
 void WarField::postframe(){
@@ -125,13 +128,20 @@ void WarField::postframe(){
 //		e->postframe();
 }
 
-void WarField::endframe(){
-	for(int i = 0; i < 2; i++)
-	for(Entity **pe = &(this->*list[i]); *pe;) if((*pe)->w != this){
-		Entity *e = *pe;
-		*pe = e->next;
+bool WarField::unlink(Observable *o){
+	if(el == o)
+		el.unlinkReplace(el->next);
+	if(bl == o)
+		bl.unlinkReplace(bl->next);
+	return true;
+}
 
-		e->leaveField(this);
+template<typename PT>
+static Entity *endframe_int2(WarField *w, PT &pe){
+		Entity *e = pe;
+		pe = e->next;
+
+		e->leaveField(w);
 
 		// Player does not follow entities into WarField, which has no positional information.
 /*		if(!e->w || !(WarSpace*)*e->w){
@@ -139,16 +149,40 @@ void WarField::endframe(){
 				game->players[i]->unlink(e);
 		}*/
 
-		// Delete if actually NULL is assigned.
+		// Don't allow just assigning NULL to mark for delete, because you'll
+		// have to perform cleanup processes like removing dynamics body from
+		// Bullet Dynamics Engine, etc.
+		assert(e->w);
+
+/*		// Delete if actually NULL is assigned.
 		if(!e->w){
 			sqa_delete_Entity(e);
+			Entity *ret = e->next;
 			delete e;
+			return ret;
 		}
-		else
-			e->w->addent(e);
+		else*/
+			return e->w->addent(e);
+}
+
+template<int I>
+static void endframe_int(WarField *w, ObservePtr<WarField,I,Entity> WarField::*li){
+	ObservePtr<WarField,I,Entity> &pe0 = w->*li;
+	if(!pe0)
+		return;
+	if(pe0->w != w){
+		endframe_int2(w, pe0);
+	}
+	for(ObservePtr<Entity,0,Entity> *pe = &(pe0->next); *pe;) if((*pe)->w != w){
+		endframe_int2(w, *pe);
 	}
 	else
 		pe = &(*pe)->next;
+}
+
+void WarField::endframe(){
+	endframe_int(this, &WarField::el);
+	endframe_int(this, &WarField::bl);
 }
 
 bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
@@ -174,11 +208,20 @@ WarField::operator Docker*(){return NULL;}
 bool WarField::sendMessage(Message &){return false;}
 
 Entity *WarField::addent(Entity *e){
-	Entity **plist = e->isTargettable() ? &el : &bl;
-	e->w = this;
-	e->next = *plist;
-	*plist = e;
-	e->enterField(this); // This method is called after the object is brought into entity list.
+	if(e->isTargettable()){
+		ObservePtr<WarField,0,Entity> *plist = &el;
+		e->w = this;
+		e->next = *plist;
+		*plist = e;
+		e->enterField(this); // This method is called after the object is brought into entity list.
+	}
+	else{
+		ObservePtr<WarField,1,Entity> *plist = &bl;
+		e->w = this;
+		e->next = *plist;
+		*plist = e;
+		e->enterField(this); // This method is called after the object is brought into entity list.
+	}
 	return e;
 }
 
@@ -321,19 +364,19 @@ void WarSpace::anim(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, list[0], &Entity::anim);
+	aaanim(dt, this, &WarField::el, &Entity::anim);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 
 	bdw->stepSimulation(dt / 1., 0);
 
 	TRYBLOCK(ot_build(this, dt));
-	aaanim(dt, this, list[1], &Entity::anim);
+	aaanim(dt, this, &WarField::bl, &Entity::anim);
 	TRYBLOCK(ot_check(this, dt));
 }
 
 void WarSpace::clientUpdate(double dt){
-	aaanim(dt, this, list[0], &Entity::clientUpdate);
-	aaanim(dt, this, list[1], &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::el, &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::bl, &Entity::clientUpdate);
 
 	bdw->stepSimulation(dt / 1., 0);
 

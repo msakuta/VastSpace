@@ -214,6 +214,7 @@ Entity *WarField::addent(Entity *e){
 		e->next = *plist;
 		*plist = e;
 		e->enterField(this); // This method is called after the object is brought into entity list.
+		e->addObserver(this); // Add this extra observer reference for object tree in WarSpace.
 	}
 	else{
 		ObservePtr<WarField,1,Entity> *plist = &bl;
@@ -390,6 +391,15 @@ void WarSpace::clientUpdate(double dt){
 void WarSpace::endframe(){
 	st::endframe();
 }
+
+bool WarSpace::unlink(Observable *o){
+	st::unlink(o);
+	ot = (otnt*)realloc(ot, ots = 0);
+	otroot = NULL;
+//	ot_build(this, 0.);
+	return true;
+}
+
 
 #ifndef _WIN32
 void WarField::draw(WarDraw*){}

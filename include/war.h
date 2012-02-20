@@ -1,5 +1,6 @@
 #ifndef WAR_H
 #define WAR_H
+/// \brief Definition of WarField, WarSpace and its companion classes.
 #include "serial_util.h"
 #include "tent3d.h"
 extern "C"{
@@ -12,6 +13,7 @@ extern "C"{
 #include <cpplib/RandomSequence.h>
 #include <cpplib/gl/cullplus.h>
 #include <map>
+#include <stddef.h> // offsetof
 
 class Player;
 class Viewer;
@@ -252,6 +254,7 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void endframe();
+	virtual bool unlink(Observable *o);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);

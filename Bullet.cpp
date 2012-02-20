@@ -313,7 +313,7 @@ void Bullet::anim(double dt){
 //		pt = w->ot ? otjHitSphere(&w->ot[w->oti-1], pb->pos, pb->velo, dt, 0., NULL) : NULL;
 		for(pt = w->el; pt; pt = pt->next){
 #else
-		for(pt = ws->ot ? (otjEnumHitSphere(&param)) : ws->el; pt; pt = ws->ot ? NULL : pt->next){
+		for(pt = ws->ot ? (otjEnumHitSphere(&param)) : (Entity*)ws->el; pt; pt = ws->ot ? NULL : (Entity*)pt->next){
 #endif
 			sufindex pi;
 			double damage; /* calculated damaga*/

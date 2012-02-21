@@ -107,7 +107,8 @@ public:
 	CameraController *mover; ///< virtual mover function
 	CameraController *nextmover; ///< next mover function, interpolate with mover at factor of blendmover to smoothly switch modes
 	float blendmover; ///< Blending factor of mover and nextmover.
-	Entity *chase, *controlled, *lastchase; ///< Various entity lists
+	ObservePtr<Player,0,Entity> chase;
+	Entity *controlled, *lastchase; ///< Various entity lists
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
 	int detail;
 	int mousex, mousey;
@@ -227,6 +228,12 @@ public:
 } FreelookMover;
 
 
+//-----------------------------------------------------------------------------
+//     Implementation
+//-----------------------------------------------------------------------------
+
+template<>
+inline size_t ObservePtr<Player,0,Entity>::ofs(){return offsetof(Player, chase);}
 
 inline int FreelookMover::getGear()const{return gear;}
 

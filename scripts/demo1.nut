@@ -24,7 +24,7 @@ player.setrot(lookrot);
 player.viewdist = 0.25;
 */
 
-showdt <- true;
+showdt <- false;
 framecount <- 0;
 checktime <- 0;
 autochase <- true;
@@ -92,8 +92,8 @@ function frameproc(dt){
 				for(e = cs.entlist; e != null; e = e.next){
 					if(e.race == i){
 						print("Set players[" + i + "].chase to " + e);
-//						pl.chase = e;
-//						pl.chasecamera = 1;
+						pl.chase = e;
+						pl.chasecamera = 1;
 						pl.setrot(Quatd(0,0,0,1));
 						break;
 					}

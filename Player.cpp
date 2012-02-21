@@ -236,7 +236,7 @@ void Player::unserialize(UnserializeContext &sc){
 	unsigned ntplist;
 
 	sc.i >> playerId;
-	sc.i >> chase; if(chase) chase->addObserver(this);
+	sc.i >> chase;
 	sc.i >> selectedSize;
 	for(int i = 0; i++; i < selectedSize){
 		Entity *e;
@@ -299,7 +299,7 @@ bool Player::unlink(Observable *pe){
 		}
 	}
 	if(chase == pe)
-		chase = chases.empty() ? NULL : const_cast<Entity*>(*chases.begin());
+		chase.unlinkReplace(chases.empty() ? NULL : const_cast<Entity*>(*chases.begin()));
 	if(controlled == pe)
 		controlled = NULL;
 	if(lastchase == pe)
@@ -342,7 +342,7 @@ void FreelookMover::operator ()(const input_t &inputs, double dt){
 	if(inputstate & PL_E)
 		velo = Vec3d(0,0,0);
 
-	Entity *&chase = pl.chase;
+	Entity *chase = pl.chase;
 	if(chase){
 		WarSpace *ws = (WarSpace*)chase->w;
 		if(ws)
@@ -372,7 +372,7 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 //	Quatd &rot = pl.rot;
 	Vec3d &cpos = pl.cpos;
 	std::set<const Entity*> &chases = pl.chases;
-	Entity *&chase = pl.chase;
+	Entity *chase = pl.chase;
 
 	// Some WarSpaces have special rules for which direction is up.
 	// Camera rotation by mouse rotation should follow the rules when in trackball type rotation.

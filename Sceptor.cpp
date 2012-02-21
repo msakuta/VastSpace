@@ -286,7 +286,7 @@ void Sceptor::shootDualGun(double dt){
 		pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
 		pb->velo = mat.dvp3(velo0);
 		pb->velo += this->velo;
-		pb->life = 3.;
+		pb->life = 6.;
 		this->heat += .025;
 	} while(!i++);
 //	shootsound(pt, w, p->cooldown);
@@ -1332,7 +1332,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 #endif
-		health = -2.;
+		health = -0.5;
 //		pt->deaths++;
 	}
 	else

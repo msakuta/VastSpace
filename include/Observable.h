@@ -149,7 +149,7 @@ protected:
 		if(ptr == o)
 			ptr = NULL;
 	}
-	friend Observable;
+	friend class Observable;
 };
 
 /// \brief A weak pointer to an Observable-derived object.

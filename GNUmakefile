@@ -19,6 +19,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/dstring.o\
  ${OUTDIR}/cmd.o\
  ${OUTDIR}/BinDiff.o\
+ ${OUTDIR}/Observable.o\
  ${OUTDIR}/Entity.o\
  ${OUTDIR}/CoordSys.o\
  ${OUTDIR}/Universe.o\
@@ -63,6 +64,8 @@ ${OUTDIR}/cmd.o: CFLAGS += -I /usr/lib/gcc-lib/i386-
 ${OUTDIR}/cmd.o: $(call depends,cmd.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/BinDiff.o: $(call depends,BinDiff.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Observable.o: $(call depends,Observable.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Entity.o: $(call depends,Entity.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

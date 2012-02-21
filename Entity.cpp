@@ -23,31 +23,6 @@ extern "C"{
 #include <sstream>
 #include <iostream>
 
-bool Observer::unlink(Observable *){
-	// Do nothing and allow unlinking by default
-	return true;
-}
-
-Observable::~Observable(){
-	for(ObserverList::iterator it = observers.begin(); it != observers.end(); it++){
-		it->first->unlink(this);
-	}
-}
-
-void Observable::addObserver(Observer *o){
-	ObserverList::iterator it = observers.find(o);
-	if(it != observers.end())
-		it->second++;
-	else
-		observers[o] = 1;
-}
-
-void Observable::removeObserver(Observer *o){
-	ObserverList::iterator it = observers.find(o);
-	assert(it != observers.end());
-	if(0 == --it->second)
-		observers.erase(it);
-}
 
 
 Entity::Entity(WarField *aw) :

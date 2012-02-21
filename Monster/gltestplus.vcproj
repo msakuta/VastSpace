@@ -506,6 +506,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Observable.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Player.cpp"
 				>
 			</File>
@@ -927,6 +931,10 @@
 			</File>
 			<File
 				RelativePath="..\include\mqo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Observable.h"
 				>
 			</File>
 			<File

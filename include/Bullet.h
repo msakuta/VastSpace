@@ -5,51 +5,6 @@
 #define BULLET_H
 #include "Entity.h"
 
-/// \brief Exact implementation of a weak pointer to an Observable object.
-///
-/// That's a re-invention of wheels.
-/// Deriving Observer class wouldn't be necessary.
-/// Probably we should use boost library or C++11's std::weak_ptr.
-template<typename TP>
-class EXPORT ObservePtr2 : public Observer{
-	TP *ptr;
-public:
-	ObservePtr2(TP *o = NULL) : ptr(o){
-		if(o)
-			o->addObserver(this);
-	}
-	~ObservePtr2(){
-		if(ptr)
-			ptr->removeObserver(this);
-	}
-	ObservePtr2 &operator=(TP *o){
-		if(ptr)
-			ptr->removeObserver(this);
-		if(o)
-			o->addObserver(this);
-		ptr = o;
-		return *this;
-	}
-	void unlinkReplace(TP *o){
-		if(o)
-			o->addObserver(this);
-		ptr = o;
-	}
-	operator TP *()const{
-		return ptr;
-	}
-	TP *operator->()const{
-		return ptr;
-	}
-	operator bool()const{
-		return !!ptr;
-	}
-	bool unlink(Observable *o){
-		if(o == ptr)
-			ptr = NULL;
-		return true;
-	}
-};
 
 
 /// \brief An Entity representing traveling projectile, damages another Entity if hit.
@@ -67,7 +22,7 @@ public:
 	double damage; ///< Damaging amount
 	float life; ///< Entity is removed after this value runs out
 	float runlength; ///< Run length since creation. Note that it's not age after creation.
-	ObservePtr2<Entity> owner; ///< Owner of this Entity. If this projectile kills something, this event is reported to the owner.
+	WeakPtr<Entity> owner; ///< Owner of this Entity. If this projectile kills something, this event is reported to the owner.
 	bool grav; ///< Flag to enable gravity.
 
 	Bullet(){}
@@ -87,26 +42,6 @@ public:
 protected:
 	void bulletkill(int hitground, const struct contact_info *ci);
 };
-
-
-//-----------------------------------------------------------------------------
-//    Inline Implementation
-//-----------------------------------------------------------------------------
-
-template<typename TP>
-inline SerializeStream &operator<<(SerializeStream &us, const ObservePtr2<TP> &p){
-	TP *a = p;
-	us << a;
-	return us;
-}
-
-template<typename TP>
-inline UnserializeStream &operator>>(UnserializeStream &us, ObservePtr2<TP> &p){
-	TP *a;
-	us >> a;
-	p = a;
-	return us;
-}
 
 
 #endif

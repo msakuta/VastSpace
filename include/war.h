@@ -2,6 +2,7 @@
 #define WAR_H
 /// \brief Definition of WarField, WarSpace and its companion classes.
 #include "serial_util.h"
+#include "Observable.h"
 #include "tent3d.h"
 extern "C"{
 #include <clib/colseq/color.h>
@@ -12,8 +13,6 @@ extern "C"{
 }
 #include <cpplib/RandomSequence.h>
 #include <cpplib/gl/cullplus.h>
-#include <map>
-#include <stddef.h> // offsetof
 
 class Player;
 class Viewer;
@@ -21,106 +20,6 @@ class CoordSys;
 class Entity;
 class Bullet;
 
-class Observable;
-
-/// \brief The object that can watch an Observable object for its destruction.
-class EXPORT Observer{
-public:
-	/// \brief Called on destructor of the Entity being controlled.
-	///
-	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
-	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
-	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
-	virtual bool unlink(Observable *);
-};
-
-/// \brief The object that can notify its observers when it is deleted.
-///
-/// It internally uses a list of pairs of Observer and its reference count.
-/// The reference count is necessary for those Observers who has multiple
-/// pointers that can point to the same Observable.
-///
-/// It's the Observer's responsibility to remove itself from the list when
-/// the Observer itself is deleted.
-class EXPORT Observable{
-public:
-	typedef std::map<Observer*, int> ObserverList;
-	~Observable();
-	void addObserver(Observer *);
-	void removeObserver(Observer *);
-protected:
-	ObserverList observers;
-};
-
-/// \brief The class template to generate automatic pointers that adds the
-///  containing object to referred Observable's Observer list.
-///
-/// It's a kind of smart pointers that behaves like a plain pointer, but
-/// assigning a pointer to this object implicitly adds reference to the
-/// pointed object, and setting another pointer value removes the
-/// reference.
-///
-/// It costs no additional memory usage compared to plain pointer, because
-/// it refers to its containing object by statically subtracting address.
-/// It is implemented with template instantiation, which I'm afraid is less
-/// portable, especially for Linux gcc.
-///
-/// Another problem in practice is that ObservePtr requires separate type
-/// for each occurrence in a class members. For this purpose, the second
-/// template parameter is provided to just distinguish those occurrences.
-///
-/// Also it's suspicious that it worths saving a little memory space in
-/// exchange with code complexity, in terms of speed optimization.
-///
-/// At least it works on Windows with VC.
-///
-/// Either way, the big difference is that it obsoletes the postframe() and
-/// even endframe(). An Observable object can delete itself as soon as it
-/// wants to, and the containing pointer list adjusts the missing link with
-/// the object's destructor.
-/// It should eliminate the overhead for checking delete flag for all the
-/// objects in the list each frame.
-///
-/// TODO: Notify other events, such as WarField transition.
-template<typename T, int I, typename TP>
-class EXPORT ObservePtr{
-	TP *ptr;
-	size_t ofs();
-	T *getThis(){
-		return (T*)((char*)this - ofs());
-	}
-public:
-	ObservePtr(TP *o = NULL) : ptr(o){
-		if(o)
-			o->addObserver(getThis());
-	}
-	~ObservePtr(){
-		if(ptr)
-			ptr->removeObserver(getThis());
-	}
-	ObservePtr &operator=(TP *o){
-		if(ptr)
-			ptr->removeObserver(getThis());
-		if(o)
-			o->addObserver(getThis());
-		ptr = o;
-		return *this;
-	}
-	void unlinkReplace(TP *o){
-		if(o)
-			o->addObserver(getThis());
-		ptr = o;
-	}
-	operator TP *()const{
-		return ptr;
-	}
-	TP *operator->()const{
-		return ptr;
-	}
-	operator bool()const{
-		return ptr;
-	}
-};
 
 
 /// \brief The object to contain input data from the player.
@@ -286,20 +185,5 @@ inline size_t ObservePtr<WarField,0,Entity>::ofs(){return offsetof(WarField, el)
 template<>
 inline size_t ObservePtr<WarField,1,Entity>::ofs(){return offsetof(WarField, bl);}
 
-
-template<typename T, int I, typename TP>
-inline SerializeStream &operator<<(SerializeStream &us, const ObservePtr<T,I,TP> &p){
-	TP *a = p;
-	us << a;
-	return us;
-}
-
-template<typename T, int I, typename TP>
-inline UnserializeStream &operator>>(UnserializeStream &us, ObservePtr<T,I,TP> &p){
-	TP *a;
-	us >> a;
-	p = a;
-	return us;
-}
 
 #endif

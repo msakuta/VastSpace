@@ -195,7 +195,8 @@ void ContainerHead::anim(double dt){
 		else if(task == sship_dockqueque || task == sship_dockque || task == sship_dock){
 			if(docksite == NULL){
 				std::vector<Entity*> set;
-				for(Entity *e = w->entlist(); e; e = e->next){
+				for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
+					Entity *e = *it;
 					if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
 						set.push_back(e);
 					}
@@ -748,7 +749,8 @@ void TransportAI::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
 	for(CoordSys *cs = root->children; cs; cs = cs->next){
 		findIsland3(cs, ret);
 	}
-	if(root->w) for(Entity *e = root->w->entlist(); e; e = e->next){
+	if(root->w) for(WarField::EntityList::iterator it = root->w->entlist().begin(); it != root->w->entlist().end(); it++) if(*it){
+		Entity *e = *it;
 		if(!strcmp(e->classname(), "Island3Entity") && e != leavesite){
 			ret.push_back(e);
 		}
@@ -758,7 +760,8 @@ void TransportAI::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
 DockAI::DockAI(Entity *ch, Entity *docksite) : phase(Dockque2), docksite(docksite){
 	if(!docksite){
 		std::vector<Entity*> set;
-		for(Entity *e = ch->w->entlist(); e; e = e->next){
+		for(WarField::EntityList::iterator it = ch->w->entlist().begin(); it != ch->w->entlist().end(); it++) if(*it){
+			Entity *e = *it;
 			if(!strcmp(e->classname(), "Island3Entity")){
 				set.push_back(e);
 			}

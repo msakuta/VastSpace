@@ -175,8 +175,10 @@ void GLWdock::draw(GLwindowState &ws, double t){
 	if(grouping){
 		std::map<cpplib::dstring, int> map;
 
-		for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
-			map[e->dispname()]++;
+		for(WarField::EntityList::iterator it = docker->el.begin(); it != docker->el.end(); it++) if(*it){
+			Entity *e = (*it)->toDockable();
+			if(e)
+				map[e->dispname()]++;
 		}
 		for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++){
 			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
@@ -184,7 +186,10 @@ void GLWdock::draw(GLwindowState &ws, double t){
 		}
 	}
 	else{
-		for(Dockable *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
+		for(WarField::EntityList::iterator it = docker->el.begin(); it != docker->el.end(); it++) if(*it){
+			Entity *e = (*it)->toDockable();
+			if(!e)
+				continue;
 			if(height < (2 + iy) * fonth)
 				return;
 			glwpos2d(xpos, ypos + (2 + iy++) * fonth);

@@ -21,6 +21,12 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
+
+
+
+
+
+
 WarField::WarField() : pl(NULL){}
 
 WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), cs(acs), el(NULL), bl(NULL), pl(NULL), realtime(0){
@@ -62,20 +68,23 @@ void WarField::unserialize(UnserializeContext &sc){
 
 void WarField::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
 	(this->*method)(sc);
-	if(el)
-		el->dive(sc, method);
-	if(bl)
-		bl->dive(sc, method);
+	for(EntityList::iterator it = el.begin(); it != el.end(); it++)
+		(*it)->dive(sc, method);
+	for(EntityList::iterator it = bl.begin(); it != bl.end(); it++)
+		(*it)->dive(sc, method);
 }
 
 //static ObservePtr<WarField,0,Entity *WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
-template<int I>
-void aaanim(double dt, WarField *w, ObservePtr<WarField,I,Entity> WarField::*li, void (Entity::*method)(double)){
+
+void aaanim(double dt, WarField *w, WarField::EntityList WarField::*li, void (Entity::*method)(double)){
 //	Player *pl = w->getPlayer();
-	for(Entity *pe = w->*li; pe;){
-		Entity *next = pe->next;
+	for(WarField::EntityList::iterator it = (w->*li).begin(); it != (w->*li).end();){
+		WarField::EntityList::iterator next = it;
+		next++;
+		Entity *pe = *it;
 		try{
+			// The object can be deleted in the method.
 			(pe->*method)(dt);
 		}
 		catch(std::exception e){
@@ -86,7 +95,7 @@ void aaanim(double dt, WarField *w, ObservePtr<WarField,I,Entity> WarField::*li,
 		}
 //		if(pl->cs == w->cs && !pl->chase && (pe->pos - pl->getpos()).slen() < .002 * .002)
 //			pl->chase = pe;
-		pe = next;
+		it = next;
 	}
 }
 
@@ -129,17 +138,12 @@ void WarField::postframe(){
 }
 
 bool WarField::unlink(Observable *o){
-	if(el == o)
-		el.unlinkReplace(el->next);
-	if(bl == o)
-		bl.unlinkReplace(bl->next);
 	return true;
 }
 
-template<typename PT>
-static Entity *endframe_int2(WarField *w, PT &pe){
+static Entity *endframe_int2(WarField *w, WeakPtr<Entity> &pe){
 		Entity *e = pe;
-		pe = e->next;
+//		pe = e->next;
 
 		e->leaveField(w);
 
@@ -165,19 +169,15 @@ static Entity *endframe_int2(WarField *w, PT &pe){
 			return e->w->addent(e);
 }
 
-template<int I>
-static void endframe_int(WarField *w, ObservePtr<WarField,I,Entity> WarField::*li){
-	ObservePtr<WarField,I,Entity> &pe0 = w->*li;
-	if(!pe0)
-		return;
-	if(pe0->w != w){
-		endframe_int2(w, pe0);
-	}
-	for(ObservePtr<Entity,0,Entity> *pe = &(pe0->next); *pe;) if((*pe)->w != w){
-		endframe_int2(w, *pe);
+static void endframe_int(WarField *w, WarField::EntityList WarField::*li){
+	WarField::EntityList::iterator it = (w->*li).begin();
+	for(; it != (w->*li).end();) if(!*it)
+		it = (w->*li).erase(it);
+	else if((*it)->w != w){
+		endframe_int2(w, *it);
 	}
 	else
-		pe = &(*pe)->next;
+		it++;
 }
 
 void WarField::endframe(){
@@ -209,18 +209,20 @@ bool WarField::sendMessage(Message &){return false;}
 
 Entity *WarField::addent(Entity *e){
 	if(e->isTargettable()){
-		ObservePtr<WarField,0,Entity> *plist = &el;
+//		WeakPtr<Entity> *plist = &el;
 		e->w = this;
-		e->next = *plist;
-		*plist = e;
+//		EnttyList::iterator *next = *plist;
+		WeakPtr<Entity> p(e);
+		WeakPtr<Entity> p2(p);
+		el.push_back(e);
 		e->enterField(this); // This method is called after the object is brought into entity list.
-		e->addObserver(this); // Add this extra observer reference for object tree in WarSpace.
+//		e->addObserver(this); // Add this extra observer reference for object tree in WarSpace.
 	}
 	else{
-		ObservePtr<WarField,1,Entity> *plist = &bl;
+//		WeakPtr<Entity> *plist = &bl;
 		e->w = this;
-		e->next = *plist;
-		*plist = e;
+//		e->next = *plist;
+		bl.push_back(e);
 		e->enterField(this); // This method is called after the object is brought into entity list.
 	}
 	return e;

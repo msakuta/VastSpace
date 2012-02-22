@@ -298,8 +298,6 @@ bool Player::unlink(Observable *pe){
 			break;
 		}
 	}
-	if(chase == pe)
-		chase.unlinkReplace(chases.empty() ? NULL : const_cast<Entity*>(*chases.begin()));
 	if(controlled == pe)
 		controlled = NULL;
 	if(lastchase == pe)

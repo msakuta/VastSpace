@@ -33,15 +33,17 @@ Docker::Docker(Entity *ae) : st(NULL), baycool(0), e(ae), undockque(NULL), remai
 
 Docker::~Docker(){
 	// Docked entities die with their base.
-	for(Entity *e = el; e;){
-		Entity *next = e->next;
-		delete e;
-		e = next;
+	for(WarField::EntityList::iterator it = el.begin(); it != el.end(); it++){
+		WarField::EntityList::iterator next = it;
+		next++;
+		delete *it;
+		it = next;
 	}
-	for(Entity *e = undockque; e;){
-		Entity *next = e->next;
+	for(EntityList::iterator it = undockque.begin(); it != undockque.end(); it++){
+		EntityList::iterator next = it;
+		it++;
 		delete e;
-		e = next;
+		it = next;
 	}
 }
 
@@ -68,10 +70,10 @@ void Docker::unserialize(UnserializeContext &sc){
 void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	// Do NOT call st::dive here because this class is a virtual branch class.
 	(this->*method)(sc);
-	if(el)
-		el->dive(sc, method);
-	if(undockque)
-		undockque->dive(sc, method);
+	for(EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it)
+		(*it)->dive(sc, method);
+	for(EntityList::iterator it = undockque.begin(); it != undockque.end(); it++) if(*it)
+		(*it)->dive(sc, method);
 }
 
 void Docker::anim(double dt){
@@ -81,13 +83,13 @@ void Docker::anim(double dt){
 		*end = el;
 		el = NULL;
 	}*/
-	for(Dockable *pe = el; pe; pe = pe->next)
-		pe->anim(dt);
-	while(undockque && baycool < dt){
-		Entity *next = undockque->next;
-		if(!undock(undockque))
+	for(EntityList::iterator it = el.begin(); it != el.end(); it++)
+		if(*it)
+			(*it)->anim(dt);
+	while(!undockque.empty() && baycool < dt){
+		if(!undock(undockque.front()))
 			break;
-		undockque = next ? next->toDockable() : NULL;
+//		undockque = next ? next->toDockable() : NULL;
 	}
 
 	if(baycool < dt){
@@ -110,37 +112,40 @@ void Docker::dock(Dockable *e){
 }
 
 bool Docker::postUndock(Dockable *e){
-	if(!el)
-		return false;
-	ObservePtr<WarField,0,Entity> &pp0 = el;
-	if(pp0 == e){
-		pp0 = e->next;
-		Dockable **qend = &undockque;
-		if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
-		*qend = e;
-		e->next = NULL; // Appending to end means next is equal to NULL
-		return true;
-	}
-	for(ObservePtr<Entity,0,Entity> *pp = &pp0->next; *pp; pp = &(*pp)->next) if(*pp == e){
-		*pp = e->next;
-		Dockable **qend = &undockque;
-		if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
-		*qend = e;
-		e->next = NULL; // Appending to end means next is equal to NULL
-		return true;
+	for(EntityList::iterator it = el.begin(); it != el.end();){
+		EntityList::iterator next = it;
+		next++;
+		if(*it == e){
+			el.erase(it);
+			undockque.push_back(*it);
+//			Dockable **qend = &undockque;
+//			if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
+//			*qend = e;
+//			e->next = NULL; // Appending to end means next is equal to NULL
+			return true;
+		}
+		it = next;
 	}
 	return false;
 }
 
 Entity *Docker::addent(Entity *e){
 	e->w = this;
-	e->next = el;
-	return el = e;
+//	e->next = el;
+	el.push_back(e);
+	return e;
 }
 
 Docker::operator Docker *(){return this;}
 
 bool Docker::undock(Dockable *e){
+	EntityList::iterator it = undockque.begin();
+	while(it != undockque.end()){
+		if(*it == e)
+			it = undockque.erase(it);
+		else
+			it++;
+	}
 	e->w = this->e->w;
 	this->e->w->addent(e);
 	e->undock(this);
@@ -216,21 +221,27 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		else if(grouping){
 			std::map<cpplib::dstring, int> map;
 
-			for(Entity *e = docker->el; e; e = e->next ? e->next->toDockable() : NULL){
-				map[e->dispname()]++;
+			for(WarField::EntityList::iterator it = docker->el.begin(); it != docker->el.end(); it++) if(*it){
+				Entity *e = (*it)->toDockable();
+				if(e)
+					map[e->dispname()]++;
 			}
 			for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++) if(!ind--){
-				for(Entity *e = docker->el; e;){
-					Entity *next = e->next;
-					if(!strcmp(e->dispname(), it->first))
+				for(WarField::EntityList::iterator it2 = docker->el.begin(); it2 != docker->el.end(); it2++){
+					WarField::EntityList::iterator next = it2;
+					next++;
+					Entity *e = *it2;
+					if(e && !strcmp(e->dispname(), it->first))
 						docker->postUndock(e->toDockable());
-					e = next;
+					it2 = next;
 				}
 				break;
 			}
 		}
-		else for(Entity *e = docker->el; e; e = e->next) if(!ind--){
-			docker->postUndock(e->toDockable());
+		else for(WarField::EntityList::iterator it = docker->el.begin(); it != docker->el.end(); it++) if(!ind--){
+			Entity *e = *it;
+			if(e)
+				docker->postUndock(e->toDockable());
 			break;
 		}
 		return 1;

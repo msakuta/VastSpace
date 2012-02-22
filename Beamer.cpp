@@ -229,13 +229,15 @@ void Beamer::anim(double dt){
 			inputs.press = 0;
 			if((task == sship_idle || task == sship_attack) && !enemy){ /* find target */
 				double best = 20. * 20.;
-				Entity *t;
-				for(t = w->el; t; t = t->next) if(t != this && t->race != -1 && t->race != race && 0. < t->health){
-					double sdist = (this->pos - t->pos).slen();
-					if(sdist < best){
-						enemy = t;
-						best = sdist;
-						task = sship_attack;
+				for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+					Entity *t = *it;
+					if(t != this && t->race != -1 && t->race != race && 0. < t->health){
+						double sdist = (this->pos - t->pos).slen();
+						if(sdist < best){
+							enemy = t;
+							best = sdist;
+							task = sship_attack;
+						}
 					}
 				}
 			}
@@ -309,9 +311,12 @@ void Beamer::anim(double dt){
 				if(0 && !enemy && !warping){
 					Entity *pt2;
 					Warpable *leader = NULL;
-					for(pt2 = w->el; pt2; pt2 = pt2->next) if(this != pt2 && race == pt2->race && pt2->toWarpable() && pt2->controller){
-						leader = pt2->toWarpable();
-						break;
+					for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+						Entity *pt2 = *it;
+						if(this != pt2 && race == pt2->race && pt2->toWarpable() && pt2->controller){
+							leader = pt2->toWarpable();
+							break;
+						}
 					}
 
 /*					if(leader && leader->charge){
@@ -361,13 +366,14 @@ void Beamer::anim(double dt){
 	}
 
 	if(0. < charge && charge < 4.){
-		Entity *pt2, *hit = NULL;
+		Entity *hit = NULL;
 		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);
 		double best = 10., sdist;
 		int besthitpart = 0, hitpart;
 		start = rot.trans(start0) + pos;
 		dir = rot.trans(dir0);
-		for(pt2 = w->el; pt2; pt2 = pt2->next){
+		for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+			Entity *pt2 = *it;
 			double rad = pt2->hitradius();
 			Vec3d delta = pt2->pos - pos;
 			if(pt2 == this)

@@ -1081,7 +1081,7 @@ void Warpable::warp_collapse(){
 	Entity *pt2;
 	if(!warpcs)
 		return;
-	for(pt2 = w->el; pt2; pt2 = pt2->next)
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it)
 		transit_cs(p->warpdstcs);
 	if(p->warpcs){
 /*		for(i = 0; i < npf; i++){

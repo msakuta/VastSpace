@@ -189,14 +189,12 @@ function printtree(cs){
 }
 
 function foreachents(cs, proc){
-	local e;
-	for(e = cs.entlist; e != null; e = e.next)
+	foreach(e in cs.entlist)
 		proc(e);
 }
 
 function foreachbullets(cs, proc){
-	local e;
-	for(e = cs.bulletlist; e != null; e = e.next)
+	foreach(e in cs.bulletlist)
 		proc(e);
 }
 

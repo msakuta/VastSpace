@@ -274,52 +274,16 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 	return ret;
 }
 
-void Bullet::anim(double dt){
-	if(!w)
-		return;
-	WarSpace *ws = *w;
-	Bullet *const pb = this;
-	struct contact_info ci;
+bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
+	Bullet *pb = this;
+	void **hint = (void**)param.hint;
+	int &hitpart = *(int*)hint[2];
 
-	if(0 < pb->life && (pb->life -= dt) <= 0.){
-/*		if(hitobj)
-			*hitobj = NULL;
-		return 0;*/
-		delete this;
-		return;
-	}
-
-	/* tank hit check */
-	if(1){
-		struct otjEnumHitSphereParam param;
-		void *hint[3];
-		Entity *pt;
-		Vec3d pos, nh;
-		int hitpart = 0;
-		hint[0] = w;
-		hint[1] = pb;
-		hint[2] = &hitpart;
-		param.root = ws->otroot;
-		param.src = &pb->pos;
-		param.dir = &pb->velo;
-		param.dt = dt;
-		param.rad = 0.;
-		param.pos = &pos;
-		param.norm = &nh;
-		param.flags = OTJ_CALLBACK;
-		param.callback = bullet_hit_callback;
-		param.hint = hint;
-#if 0
-//		pt = w->ot ? otjHitSphere(&w->ot[w->oti-1], pb->pos, pb->velo, dt, 0., NULL) : NULL;
-		for(pt = w->el; pt; pt = pt->next){
-#else
-		for(pt = ws->ot ? (otjEnumHitSphere(&param)) : (Entity*)ws->el; pt; pt = ws->ot ? NULL : (Entity*)pt->next){
-#endif
 			sufindex pi;
 			double damage; /* calculated damaga*/
 
 			if(!ws->ot && !bullet_hit_callback(&param, pt))
-				continue;
+				return true;
 
 			pb->pos = pos;
 			pt->bullethit(pb);
@@ -443,8 +407,61 @@ void Bullet::anim(double dt){
 				bulletkill(pb, w, w->tell, avec3_000, 1, &ci);
 			}*/
 
-			return;
-		}while(0);
+			return false;
+}
+
+void Bullet::anim(double dt){
+	if(!w)
+		return;
+	WarSpace *ws = *w;
+	Bullet *const pb = this;
+	struct contact_info ci;
+
+	if(0 < pb->life && (pb->life -= dt) <= 0.){
+/*		if(hitobj)
+			*hitobj = NULL;
+		return 0;*/
+		delete this;
+		return;
+	}
+
+	/* tank hit check */
+	if(1){
+		struct otjEnumHitSphereParam param;
+		void *hint[3];
+		Entity *pt;
+		Vec3d pos, nh;
+		int hitpart = 0;
+		hint[0] = w;
+		hint[1] = pb;
+		hint[2] = &hitpart;
+		param.root = ws->otroot;
+		param.src = &pb->pos;
+		param.dir = &pb->velo;
+		param.dt = dt;
+		param.rad = 0.;
+		param.pos = &pos;
+		param.norm = &nh;
+		param.flags = OTJ_CALLBACK;
+		param.callback = bullet_hit_callback;
+		param.hint = hint;
+#if 0
+//		pt = w->ot ? otjHitSphere(&w->ot[w->oti-1], pb->pos, pb->velo, dt, 0., NULL) : NULL;
+		for(pt = w->el; pt; pt = pt->next){
+#else
+		if(ws->ot){
+			Entity *pt = otjEnumHitSphere(&param);
+			if(pt)
+				if(!bullethit(pt, ws, param))
+					return;
+		}
+		else{
+			for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
+				if(!bullethit(*it, ws, param))
+					return;
+		}
+#endif
+
 	}
 
 #if 0 // world hit

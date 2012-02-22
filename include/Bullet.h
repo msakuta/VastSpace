@@ -5,7 +5,7 @@
 #define BULLET_H
 #include "Entity.h"
 
-
+struct otjEnumHitSphereParam;
 
 /// \brief An Entity representing traveling projectile, damages another Entity if hit.
 ///
@@ -41,6 +41,7 @@ public:
 	virtual bool isTargettable()const;
 protected:
 	void bulletkill(int hitground, const struct contact_info *ci);
+	bool bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);
 };
 
 

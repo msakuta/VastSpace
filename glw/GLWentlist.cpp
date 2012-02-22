@@ -49,7 +49,7 @@ public:
 
 
 
-static bool pents_pred(std::vector<Entity*> *a, std::vector<Entity*> *b){
+static bool pents_pred(std::vector<const Entity*> *a, std::vector<const Entity*> *b){
 	// Comparing returned pointers themselves by dispname() would be enough for sorting, but it's better
 	// that the player can see items sorted alphabetically.
 	return strcmp((*a)[0]->dispname(), (*b)[0]->dispname()) < 0;
@@ -67,15 +67,16 @@ GLWentlist::GLWentlist(Player &player) :
 	scrollpos(0),
 	crtRoot(NULL){}
 
-void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]){
+void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<const Entity*> ents[]){
 	if(!cs)
 		return;
 	for(const CoordSys *cs1 = cs->children; cs1; cs1 = cs1->next)
 		draw_int(cs1, n, ents);
 	if(!cs->w)
 		return;
-	Entity *pt;
-	for(pt = cs->w->el; pt; pt = pt->next){
+	WarField::EntityList::iterator it = cs->w->el.begin();
+	for(; it != cs->w->el.end(); it++) if(*it){
+		Entity *pt = *it;
 
 		/* show only member of current team */
 //		if(teamOnly && pl.race != pt->race)
@@ -99,12 +100,12 @@ void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[
 /// Class that defines how GLWentlist items are grouped.
 typedef class GLWentlist::ItemSelector{
 public:
-	std::vector<Entity*> *(&pents)[GLWentlist::OV_COUNT];
+	std::vector<const Entity*> *(&pents)[GLWentlist::OV_COUNT];
 	int n;
 	ItemSelector(GLWentlist *p) : pents(p->pents), n(p->n){}
 	virtual int count() = 0; ///< Returns count of displayed items
 	virtual bool begin() = 0; ///< Starts enumeration of displayed items
-	virtual Entity *get() = 0; ///< Gets current item, something like STL's iterator::operator* (unary)
+	virtual const Entity *get() = 0; ///< Gets current item, something like STL's iterator::operator* (unary)
 	virtual bool next() = 0; ///< Returns true if there are more items to go
 	virtual bool stack() = 0; ///< If items are stackable
 	virtual int countInGroup() = 0; ///< Count stacked items
@@ -112,7 +113,7 @@ public:
 	/// Callback class that is to be derived to define procedure for each item. Used with foreach().
 	class ForEachProc{
 	public:
-		virtual void proc(Entity*) = 0;
+		virtual void proc(const Entity*) = 0;
 	};
 	virtual void foreach(ForEachProc&) = 0; ///< Call ForEachProc::proc for each of all items, regardless of how grouping works.
 } ItemSelector;
@@ -124,12 +125,12 @@ public:
 	ClassItemSelector(GLWentlist *p) : ItemSelector(p){}
 	virtual int count(){return n;}
 	virtual bool begin(){i = 0; return true;}
-	virtual Entity *get(){return (*pents[i])[0];}
+	virtual const Entity *get(){return (*pents[i])[0];}
 	virtual bool next(){return ++i < n;}
 	virtual bool stack(){return true;}
 	virtual int countInGroup(){return pents[i]->size();}
 	virtual void foreach(ForEachProc &proc){
-		std::vector<Entity*>::iterator it = pents[i]->begin();
+		std::vector<const Entity*>::iterator it = pents[i]->begin();
 		for(; it != pents[i]->end(); it++)
 			proc.proc(*it);
 	}
@@ -139,7 +140,7 @@ public:
 class ExpandItemSelector : public ItemSelector{
 public:
 	int i;
-	std::vector<Entity*>::iterator it;
+	std::vector<const Entity*>::iterator it;
 	ExpandItemSelector(GLWentlist *p) : ItemSelector(p){}
 	virtual int count(){
 		int ret = 0;
@@ -153,7 +154,7 @@ public:
 			it = pents[0]->begin();
 		return true;
 	}
-	virtual Entity *get(){
+	virtual const Entity *get(){
 		return it == pents[i]->end() ? NULL : *it;
 	}
 	virtual bool next(){
@@ -255,8 +256,9 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		}
 	}
 	else if(listmode == All && w){
-		Entity *pt;
-		for(pt = w->el; pt; pt = pt->next){
+		WarField::EntityList::const_iterator it = w->el.begin();
+		for(; it != w->el.end(); it++) if(*it){
+			const Entity *pt = *it;
 
 			/* show only member of current team */
 //			if(teamOnly && pl.race != pt->race)
@@ -346,7 +348,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 	glPushMatrix();
 	glTranslated(0, -scrollpos + switches * fontheight, 0);
 	for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
-		Entity *pe = is.get();
+		const Entity *pe = is.get();
 		GLWrect iconRect = il.getRect();
 			
 		if(iconRect.include(ws.mx, ws.my + scrollpos + switches * fontheight)){
@@ -365,7 +367,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 			Player &pl;
 			bool ret;
 			PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
-			virtual void proc(Entity *pe){
+			virtual void proc(const Entity *pe){
 				for(Player::SelectSet::iterator it = pl.selected.begin(); it != pl.selected.end(); it++) if(*it == pe){
 					ret = true;
 					return;
@@ -386,7 +388,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 						cols *= .5;
 				}
 				glColor4f(cols[0], cols[1], cols[2], 1);
-				pe->drawOverlay(NULL);
+				const_cast<Entity*>(pe)->drawOverlay(NULL);
 				glPopMatrix();
 			}
 			GLWrect borderRect = iconRect.expand(-2);
@@ -528,7 +530,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10) for(is.begin(), il.begin(), i = 0; i < itemCount; i++, is.next(), il.next()){
 			GLWrect itemRect = il.getRect().rmove(0, -scrollpos + switches * int(getFontHeight()));
 			if(itemRect.include(mx + r.x0, my + r.y0)){
-				Entity *pe = is.get();
+				const Entity *pe = is.get();
 				if(pe){
 					if(state == GLUT_UP){
 						class SelectorProc : public ItemSelector::ForEachProc{
@@ -537,8 +539,8 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 //							Entity **prev;
 //							SelectorProc(Entity **prev) : prev(prev){}
 							SelectorProc(Player::SelectSet &set) : set(set){}
-							virtual void proc(Entity *pe){
-								set.insert(pe);
+							virtual void proc(const Entity *pe){
+								set.insert(const_cast<Entity*>(pe));
 /*								*prev = pe;
 								prev = &pe->selectnext;
 								pe->selectnext = NULL;*/

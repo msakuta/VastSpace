@@ -57,18 +57,24 @@ typedef GLubyte cubetype;
 #define GL_cubetype GL_UNSIGNED_BYTE
 
 
+static WarField::EntityList WarField::*const list[2] = {&WarField::el, &WarField::bl};
 
 void WarSpace::draw(wardraw_t *wd){
 	for(int i = 0; i < 2; i++)
-	for(UnionPtr pe = (i == 0 ? UnionPtr(this->el) : UnionPtr(this->bl)); pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
-		try{
-			pe->draw(wd);
-		}
-		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): %s\n", __LINE__, pe, pe->idname(), e.what());
-		}
-		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): ?\n", __LINE__, pe, pe->idname());
+	for(WarField::EntityList::iterator it = (this->*list[i]).begin(); it != (this->*list[i]).end(); it++){
+		if(!*it)
+			continue;
+		Entity *pe = *it;
+		if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+			try{
+				pe->draw(wd);
+			}
+			catch(std::exception e){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): %s\n", __LINE__, pe, pe->idname(), e.what());
+			}
+			catch(...){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::draw(): ?\n", __LINE__, pe, pe->idname());
+			}
 		}
 	}
 
@@ -147,15 +153,20 @@ void WarSpace::drawtra(wardraw_t *wd){
 	DrawTefpol3D(tepl, wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 
 	for(int i = 0; i < 2; i++)
-	for(UnionPtr pe = (i == 0 ? UnionPtr(el) : UnionPtr(bl)); pe; pe = pe->next) if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
-		try{
-			pe->drawtra(wd);
-		}
-		catch(std::exception e){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): %s\n", __LINE__, pe, pe->idname(), e.what());
-		}
-		catch(...){
-			fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
+	for(WarField::EntityList::iterator it = (this->*list[i]).begin(); it != (this->*list[i]).end(); it++){
+		if(!*it)
+			continue;
+		Entity *pe = *it;
+		if(pe->w == this/* && wd->vw->zslice == (pl->chase && pl->mover == &Player::freelook && pl->chase->getUltimateOwner() == pe->getUltimateOwner() ? 0 : 1)*/){
+			try{
+				pe->drawtra(wd);
+			}
+			catch(std::exception e){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): %s\n", __LINE__, pe, pe->idname(), e.what());
+			}
+			catch(...){
+				fprintf(stderr, __FILE__"(%d) Exception in %p->%s::drawtra(): ?\n", __LINE__, pe, pe->idname());
+			}
 		}
 	}
 
@@ -186,7 +197,10 @@ void WarSpace::drawtra(wardraw_t *wd){
 void WarSpace::drawOverlay(wardraw_t *wd){
 	Player *ppl = getPlayer();
 	for(int i = 0; i < 2; i++)
-	for(UnionPtr pe = (i == 0 ? UnionPtr(el) : UnionPtr(bl)); pe; pe = pe->next) if(pe->w == this){
+	for(WarField::EntityList::iterator it = (this->*list[i]).begin(); it != (this->*list[i]).end(); it++){
+		if(!*it)
+			continue;
+		Entity *pe = *it;
 		double pixels;
 		if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
 			Vec4d spos = wd->vw->trans.vp(Vec4d(pe->pos) + Vec4d(0,0,0,1));

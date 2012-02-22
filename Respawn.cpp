@@ -34,18 +34,24 @@ void Respawn::anim(double dt){
 		Entity *pt2;
 
 		{
+			bool found = false;
 			int c = 0;
-			for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2->w && 0. < pt2->health && pt2->race == race && !strcmp(pt2->classname(), creator)){
-				if(count <= ++c){
-					timer += interval;
-					break;
-				}
-				if((pt2->pos - pos).slen() < pt2->hitradius() * pt2->hitradius()){
-					timer += interval;
-					break;
+			for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+				Entity *pt2 = *it;
+				if(pt2->w && 0. < pt2->health && pt2->race == race && !strcmp(pt2->classname(), creator)){
+					if(count <= ++c){
+						timer += interval;
+						found = true;
+						break;
+					}
+					if((pt2->pos - pos).slen() < pt2->hitradius() * pt2->hitradius()){
+						timer += interval;
+						found = true;
+						break;
+					}
 				}
 			}
-			if(pt2)
+			if(found)
 				continue;
 		}
 

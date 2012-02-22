@@ -1331,37 +1331,43 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 	bool ret = false;
 
 	// Cycle through both Entity list and Bullet list, but only ones that tells its selectable.
+	static WarField::EntityList WarField::*const list[2] = {&WarField::el, &WarField::bl};
 	for(int i = 0; i < 2; i++)
-	for(UnionPtr pt = (i == 0 ? UnionPtr(player->cs->w->el) : UnionPtr(player->cs->w->bl)); pt; pt = pt->next) if(pt->w && pt->isSelectable()){
-		Vec4d lpos, dpos;
-		double sp;
-		double scradx, scrady;
-		dpos = pt->pos - plpos;
-		dpos[3] = 1.;
-		lpos = mat2.vp(dpos);
-		if(lpos[3] == 0.)
-			continue;
-		lpos[0] /= lpos[3];
-		lpos[1] /= lpos[3];
-		lpos[2] /= lpos[3];
-		sp = -(dpos[0] * rot[2] + dpos[1] * rot[6] + dpos[2] * rot[10])/*VECSP(&rot[8], dpos)*/;
-		scradx = pt->hitradius() / sp * 2 / (x1 - x0);
-		scrady = pt->hitradius() / sp * 2 / (y1 - y0);
-		if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
+		for(WarField::EntityList::const_iterator it = (player->cs->w->*list[i]).begin(); it != (player->cs->w->*list[i]).end(); it++){
+			if(!*it)
+				continue;
+			Entity *pt = *it;
+			if(pt->w && pt->isSelectable()){
+				Vec4d lpos, dpos;
+				double sp;
+				double scradx, scrady;
+				dpos = pt->pos - plpos;
+				dpos[3] = 1.;
+				lpos = mat2.vp(dpos);
+				if(lpos[3] == 0.)
+					continue;
+				lpos[0] /= lpos[3];
+				lpos[1] /= lpos[3];
+				lpos[2] /= lpos[3];
+				sp = -(dpos[0] * rot[2] + dpos[1] * rot[6] + dpos[2] * rot[10])/*VECSP(&rot[8], dpos)*/;
+				scradx = pt->hitradius() / sp * 2 / (x1 - x0);
+				scrady = pt->hitradius() / sp * 2 / (y1 - y0);
+				if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
 
-			// Leave all detail to callback
-			if(!pointselect && sbc)
-				sbc->onEntity(pt);
+					// Leave all detail to callback
+					if(!pointselect && sbc)
+						sbc->onEntity(pt);
 
-			// If only one Entity is to be selected, find the nearest one to the camera.
-			if(pointselect){
-				double size = pt->hitradius() + sp;
-				if(0 <= size && size < best){
-					best = size;
-					ptbest = pt;
+					// If only one Entity is to be selected, find the nearest one to the camera.
+					if(pointselect){
+						double size = pt->hitradius() + sp;
+						if(0 <= size && size < best){
+							best = size;
+							ptbest = pt;
+						}
+					}
 				}
 			}
-		}
 	}
 
 

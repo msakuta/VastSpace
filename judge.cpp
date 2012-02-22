@@ -654,55 +654,55 @@ struct otiterator{
 	int i, n;
 	const int *o;
 	WarField *w;
-	Entity * pt;
+	WarField::EntityList::iterator it;
 	otnt *ot;
 
 	otiterator() : o(NULL){}
-	otiterator(int an, WarField *aw, otnt *aot, const int *ao) : n(an), i(0), o(ao), w(aw), pt(aw->el), ot(aot){
-		while(pt && pt->w != w)
-			pt = pt->next;
+	otiterator(int an, WarField *aw, otnt *aot, const int *ao) : n(an), i(0), o(ao), w(aw), it(aw->el.begin()), ot(aot){
+		// Skip invalid pointers
+		while(it != w->el.end() && (!*it || (*it)->w != w))
+			it++;
 	}
 	Vec3d *getpos(){
-		return pt ? &pt->pos : &ot[i].pos;
+		return it != w->el.end() ? &(*it)->pos : &ot[i].pos;
 	}
 	double getrad(){
-		return pt ? pt->hitradius() : ot[i].rad;
+		return it != w->el.end() ? (*it)->hitradius() : ot[i].rad;
 	}
 	otiterator next(){
 		otiterator ret = *this;
 		return ++ret;
 	}
 	otiterator &operator++(){
-		if(pt) do{
-			pt = pt->next;
-		}while(pt && pt->w != w);
+		if(it != w->el.end()) do{
+			it++;
+		}while(it != w->el.end() && (!*it || (*it)->w != w));
 		else
 			i++;
 		return *this;
 	}
 	operator bool(){
-		return pt || i != *o;
+		return it != w->el.end() || i != *o;
 	}
 	bool paired()const{
-		return pt ? pt->otflag & 2 : ot[i].leaf & OT_PAIRED;
+		return it != w->el.end() ? (*it)->otflag & 2 : ot[i].leaf & OT_PAIRED;
 	}
 	bool get(otnt::unode &u){
-		if(pt)
-			u.t = pt;
+		if(it != w->el.end())
+			u.t = *it;
 		else
 			u.n = &ot[i];
-		return pt;
+		return it != w->el.end();
 	}
 	void pair(){
-		if(pt)
-			pt->otflag |= 2;
+		if(it != w->el.end())
+			(*it)->otflag |= 2;
 		else
 			ot[i].leaf |= OT_PAIRED;
 	}
 };
 
 otnt *ot_build(WarSpace *w, double dt){
-	Entity *pt;
 	int i, n = 0, m = 0, o, loops = 0;
 	otnt *ot = w->ot;
 #if 1 <= OTDEBUG
@@ -726,8 +726,8 @@ otnt *ot_build(WarSpace *w, double dt){
 		}
 	}
 	otjHitSphere_framecalls = otjHitSphere_frameloops = 0;
-	for(pt = w->el; pt; pt = pt->next) if(pt->w == w){
-		pt->otflag &= ~2;
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it && (*it)->w == w){
+		(*it)->otflag &= ~2;
 		n++;
 	}
 
@@ -806,8 +806,8 @@ otnt *ot_build(WarSpace *w, double dt){
 	}
 	w->ot = ot;
 	w->oti = o;
-	for(pt = w->el; pt; pt = pt->next){
-		pt->otflag &= ~2;
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		(*it)->otflag &= ~2;
 	}
 #if 1 <= OTDEBUG
 	printf("ot nobjs %d, nodes %d, loops %d, %lg s\n", n, o, loops, TimeMeasLap(&tm));
@@ -917,7 +917,7 @@ otnt *ot_build(WarSpace *w, double dt){
 }
 
 otnt *ot_check(WarSpace *w, double dt){
-	for(Entity *pe = w->el; pe; pe = pe->next) if(pe->w != w)
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it && (*it)->w != w)
 		return ot_build(w, dt);
 	return w->ot;
 }

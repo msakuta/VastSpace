@@ -118,9 +118,9 @@ public:
 //	double desired[2];
 	double health;
 //	double cooldown, cooldown2;
-	ObservePtr<Entity,0,Entity> next;
+//	WeakPtr<Entity> next;
 //	Entity *selectnext; ///< selection list is no longer needed
-	ObservePtr<Entity,1,Entity> enemy;
+	WeakPtr<Entity> enemy;
 	int race;
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
@@ -225,10 +225,5 @@ int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const V
 
 
 
-
-template<>
-inline size_t ObservePtr<Entity, 0, Entity>::ofs(){return offsetof(Entity, next);}
-template<>
-inline size_t ObservePtr<Entity, 1, Entity>::ofs(){return offsetof(Entity, enemy);}
 
 #endif

@@ -120,7 +120,7 @@ int RStation::popupMenu(PopupMenu &pm){
 
 void RStation::anim(double dt){
 	RStation *p = this;
-	Entity *pt2;
+	Entity *pt2 = NULL;
 	int orace = -1, mix = 0;
 
 	if(p->ru + dt * 2. < RSTATION_MAX_RU)
@@ -130,14 +130,19 @@ void RStation::anim(double dt){
 
 	/* Rstations can only be occupied by staying space vehicles in distance of
 	  5 kilometers with no other races. */
-	for(pt2 = w->el; pt2; pt2 = pt2->next)
-		if(this != pt2 && w == pt2->w && 0 <= pt2->race &&
-			(this->pos - pt2->pos).slen() < 8. * 8.)
-	{
-		if(orace < 0)
-			orace = pt2->race;
-		else if(orace != pt2->race){
-			break;
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++){
+		if(*it){
+			Entity *e = *it;
+			if(this != e && w == e->w && 0 <= e->race &&
+				(this->pos - e->pos).slen() < 8. * 8.)
+			{
+				if(orace < 0)
+					orace = e->race;
+				else if(orace != e->race){
+					pt2 = e;
+					break;
+				}
+			}
 		}
 	}
 	if(!pt2 && (0 <= orace) && orace != this->race){

@@ -58,6 +58,7 @@ struct Message;
 /// It's usually tied together with a CoordSys.
 class EXPORT WarField : public Serializable, public Observer{
 public:
+	typedef std::list<WeakPtr<Entity> > EntityList;
 
 	/// \brief An internal class that unites behaviors of several types of ObservePtr's.
 	///
@@ -68,6 +69,9 @@ public:
 	/// different from the rest of the pointers in the list.
 	/// A template function is another way to do it, but it will increase code size
 	/// with little optimization.
+#if 1
+	typedef WeakPtr<Entity> &UnionPtr;
+#else
 	class UnionPtr{
 		union{
 			ObservePtr<WarField,0,Entity> *p0;
@@ -91,6 +95,7 @@ public:
 		UnionPtr(ObservePtr<WarField,1,Entity> &p1) : p1(&p1), type(P1){}
 		UnionPtr(ObservePtr<Entity,0,Entity> &p2) : p2(&p2), type(P2){}
 	};
+#endif
 	WarField();
 	WarField(CoordSys *cs);
 	virtual const char *classname()const;
@@ -111,7 +116,7 @@ public:
 	virtual struct tent3d_line_list *getTeline3d();
 	virtual struct tent3d_fpol_list *getTefpol3d();
 	Entity *addent(Entity *);
-	Entity *entlist(){return el;}
+	EntityList &entlist(){return el;}
 	Player *getPlayer();
 	virtual operator WarSpace*();
 	virtual operator Docker*();
@@ -122,8 +127,8 @@ public:
 
 	CoordSys *cs; ///< redundant pointer to indicate belonging coordinate system
 	Player *pl; ///< Player pointer
-	ObservePtr<WarField,0,Entity> el; ///< Local Entity list
-	ObservePtr<WarField,1,Entity> bl; ///< bullet list
+	EntityList el; ///< Local Entity list
+	EntityList bl; ///< bullet list
 	RandomSequence rs; ///< The pseudo-random number sequence generator local to this WarField.
 	double realtime; ///< Time accumulator for this WarField. Some WarFields (or CoordSys') could have different progression of time.
 };
@@ -175,15 +180,23 @@ public:
 	static int g_otdrawflags;
 };
 
+inline SerializeStream &operator<<(SerializeStream &us, const WarField::EntityList &p){
+	us << unsigned(p.size());
+	for(WarField::EntityList::const_iterator it = p.begin(); it != p.end(); it++)
+		us << *it;
+	return us;
+}
 
-//-----------------------------------------------------------------------------
-//     Implementation
-//-----------------------------------------------------------------------------
-
-template<>
-inline size_t ObservePtr<WarField,0,Entity>::ofs(){return offsetof(WarField, el);}
-template<>
-inline size_t ObservePtr<WarField,1,Entity>::ofs(){return offsetof(WarField, bl);}
-
+inline UnserializeStream &operator>>(UnserializeStream &us, WarField::EntityList &p){
+	unsigned c;
+	p.clear();
+	us >> c;
+	for(unsigned i = 0; i < c; i++){
+		Entity *e;
+		us >> e;
+		p.push_back(e);
+	}
+	return us;
+}
 
 #endif

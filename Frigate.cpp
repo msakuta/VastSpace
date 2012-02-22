@@ -441,10 +441,13 @@ bool Frigate::command(EntityCommand *com){
 Entity *Frigate::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-		mother = e->getDocker();
-		pm = mother->e;
-		best = sl;
+	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
+		Entity *e = *it;
+		if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+			mother = e->getDocker();
+			pm = mother->e;
+			best = sl;
+		}
 	}
 	return pm;
 }

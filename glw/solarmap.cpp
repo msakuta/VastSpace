@@ -370,39 +370,44 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 		}*/
 		rrange = this->range * params->sol->csrad * 10. / this->width;
 		collapse = cs->csrad < rrange;
-		for(pt = cs->w->el; pt; pt = pt->next) if(strcmp(pt->classname(), "rstation") && (pt->race == ppl->race /*|| race_entity_visible(ppl->race, pt)*/)){
-//			avec3_t warpdst, pos1;
-			int enter = 1;
-			params->apos0 = vwcs->tocs(pt->pos, cs);
-/*			if(warpable_dest(pt, warpdst, vwcs)){
-				glBegin(GL_LINES);
-				mat4vp3(pos1, params->viewmat, params->apos0);
-				glColor4ub(31,63,255,255);
-				glVertex3dv(pos1);
-				mat4vp3(pos1, params->viewmat, warpdst);
-				glColor4ub(31,255,255,255);
-				glVertex3dv(pos1);
-				glEnd();
-			}*/
-			if(plent && ppl->race == pt->race && collapse)
-				enter = 0;
-			if(!plent && ppl->race == pt->race)
-				plent = 1;
-			if(plene && ppl->race != pt->race && collapse)
-				enter = 0;
-			if(!plene && ppl->race != pt->race)
-				plene = 1;
-			if(enter){
-				params->rad = std::max(rrange, pt->hitradius());
-				params->name = collapse ? ppl->race == pt->race ? "Your Units" : "Enemy Units" : pt->classname();
-				params->pointcolor[0] = 255 * (ppl->race != pt->race);
-				params->pointcolor[1] = 255 * (ppl->race == pt->race || pt->race < -1);
-				params->pointcolor[2] = 255 * (ppl->race == pt->race);
-				VECCPY(params->textcolor, params->pointcolor);
-				if(drawSolarMapItem(params)){
-					targete = pt;
-					if(ppl->race == pt->race && collapse)
-						targetc = cs->w;
+		for(WarField::EntityList::iterator it = cs->w->el.begin(); it != cs->w->el.end(); it++){
+			if(!*it)
+				continue;
+			Entity *pt = *it;
+			if(strcmp(pt->classname(), "rstation") && (pt->race == ppl->race /*|| race_entity_visible(ppl->race, pt)*/)){
+	//			avec3_t warpdst, pos1;
+				int enter = 1;
+				params->apos0 = vwcs->tocs(pt->pos, cs);
+	/*			if(warpable_dest(pt, warpdst, vwcs)){
+					glBegin(GL_LINES);
+					mat4vp3(pos1, params->viewmat, params->apos0);
+					glColor4ub(31,63,255,255);
+					glVertex3dv(pos1);
+					mat4vp3(pos1, params->viewmat, warpdst);
+					glColor4ub(31,255,255,255);
+					glVertex3dv(pos1);
+					glEnd();
+				}*/
+				if(plent && ppl->race == pt->race && collapse)
+					enter = 0;
+				if(!plent && ppl->race == pt->race)
+					plent = 1;
+				if(plene && ppl->race != pt->race && collapse)
+					enter = 0;
+				if(!plene && ppl->race != pt->race)
+					plene = 1;
+				if(enter){
+					params->rad = std::max(rrange, pt->hitradius());
+					params->name = collapse ? ppl->race == pt->race ? "Your Units" : "Enemy Units" : pt->classname();
+					params->pointcolor[0] = 255 * (ppl->race != pt->race);
+					params->pointcolor[1] = 255 * (ppl->race == pt->race || pt->race < -1);
+					params->pointcolor[2] = 255 * (ppl->race == pt->race);
+					VECCPY(params->textcolor, params->pointcolor);
+					if(drawSolarMapItem(params)){
+						targete = pt;
+						if(ppl->race == pt->race && collapse)
+							targetc = cs->w;
+					}
 				}
 			}
 		}
@@ -984,10 +989,9 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 	// Unit selection over solarmap
 	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && targete && hold != 2){
 		if(targetc){
-			Entity *pt;
 //			ppl->selected = targetc->el;
-			for(pt = targetc->el; pt; pt = pt->next){
-				ppl->selected.insert(pt);
+			for(WarField::EntityList::iterator it = targetc->el.begin(); it != targetc->el.end(); it++) if(*it){
+				ppl->selected.insert(*it);
 //				pt->selectnext = pt->next;
 			}
 		}

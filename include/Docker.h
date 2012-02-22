@@ -19,7 +19,7 @@ public:
 
 	Entity *e; // The pointed Entity is always resident when a Docker object exists. Propagating functions and destructor is always invoked from the Entity's.
 	double baycool;
-	Dockable *undockque;
+	EntityList undockque;
 	int paradec[num_ShipClass];
 	bool remainDocked;
 

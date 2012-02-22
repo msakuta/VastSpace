@@ -18,9 +18,9 @@ class ItemCriterion;
 /// It can select view modes from two flavors, list and icons.
 class GLWentlist : public GLwindowSizeable{
 protected:
-	void draw_int(const CoordSys *cs, int &n, std::vector<Entity*> ents[]);
+	void draw_int(const CoordSys *cs, int &n, std::vector<const Entity*> ents[]);
 	static const int OV_COUNT = 32; ///< Overview count
-	static int ent_pred(Entity *a, Entity *b){
+	static int ent_pred(const Entity *a, const Entity *b){
 		return a->race < b->race;
 	}
 	void menu_select(){listmode = Select;}
@@ -41,7 +41,7 @@ public:
 	bool icons;
 	bool switches;
 	bool teamOnly;
-	std::vector<Entity*> ents[OV_COUNT], *pents[OV_COUNT];
+	std::vector<const Entity*> ents[OV_COUNT], *pents[OV_COUNT];
 	int n; ///< Count of ents.
 	int scrollpos; ///< Current scroll position in the vertical scroll bar.
 	GLWentlist(Player &player);

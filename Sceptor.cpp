@@ -304,9 +304,10 @@ void Sceptor::shootDualGun(double dt){
 bool Sceptor::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
-	Entity *pt2, *closest = NULL;
+	Entity *closest = NULL;
 	double best = 1e2 * 1e2;
-	for(pt2 = w->el; pt2; pt2 = pt2->next){
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		Entity *pt2 = *it;
 
 		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
@@ -427,8 +428,11 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 			space_collide_resolve(pt, pt2, dt);
 		}
 	}
-	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
-		space_collide_resolve(pt, pt2, dt);
+	else for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		Entity *pt2 = *it;
+		if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
+			space_collide_resolve(pt, pt2, dt);
+		}
 	}
 }
 #endif
@@ -461,10 +465,13 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 Entity *Sceptor::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-		mother = e->getDocker();
-		pm = mother->e;
-		best = sl;
+	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
+		Entity *e = *it;
+		if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+			mother = e->getDocker();
+			pm = mother->e;
+			best = sl;
+		}
 	}
 	return pm;
 }
@@ -1433,11 +1440,20 @@ bool Sceptor::command(EntityCommand *com){
 		forcedEnemy = false;
 	}
 	else if(InterpretCommand<DeltaCommand>(com)){
-		Entity *e;
-		for(e = next; e; e = e->next) if(e->classname() == classname() && e->race == race){
-			formPrev = static_cast<Sceptor*>(e);
-			task = DeltaFormation;
-			break;
+		bool foundself = false;
+		WarField::EntityList::iterator it = w->el.begin();
+		for(; it != w->el.end(); it++) if(*it){
+			Entity *e = *it;
+			if(!foundself){
+				if(e == this)
+					foundself = true;
+				continue;
+			}
+			if(e->classname() == classname() && e->race == race){
+				formPrev = static_cast<Sceptor*>(e);
+				task = DeltaFormation;
+				break;
+			}
 		}
 		return true;
 	}

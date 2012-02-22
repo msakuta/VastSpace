@@ -148,7 +148,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_pushinteger(v, p->race);
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("next"))){
+/*	else if(!strcmp(wcs, _SC("next"))){
 		if(!p->next){
 			sq_pushnull(v);
 			return 1;
@@ -160,7 +160,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sqa_newobj(v, p->next);
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
-	}
+	}*/
 /*	else if(!strcmp(wcs, _SC("selectnext"))){
 		if(!p->selectnext){
 			sq_pushnull(v);
@@ -176,16 +176,25 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 	}*/
 	else if(!strcmp(wcs, _SC("dockedEntList"))){
 		Docker *d = p->getDocker();
-		if(!d || !d->el){
+		if(!d){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Entity"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, d->el);
-//		sq_setinstanceup(v, -1, p->next);
+		WarField::EntityList &el = d->el;
+		sq_pushroottable(v); // root
+		sq_pushstring(v, _SC("Entity"), -1); // root "Entity"
+		sq_get(v, -2); // root Entity
+		sq_newarray(v, el.size()); // root Entity array
+		int idx = 0;
+		for(WarField::EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it){
+			Entity *e = *it;
+			sq_pushinteger(v, idx); // root Entity array idx instance
+			sq_createinstance(v, -3); // root Entity array idx instance
+			sqa_newobj(v, e); // root Entity array idx instance
+			sq_set(v, -3); // root Entity array
+			idx++;
+	//		sq_setinstanceup(v, -1, p->w->el);
+		}
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("docker"))){
@@ -411,7 +420,7 @@ void Entity::serialize(SerializeContext &sc){
 	sc.o << mass;
 	sc.o << moi;
 	sc.o << health;
-	sc.o << next /*<< selectnext*/;
+//	sc.o << next /*<< selectnext*/;
 	sc.o << enemy;
 	sc.o << race;
 	sc.o << otflag;
@@ -429,7 +438,7 @@ void Entity::unserialize(UnserializeContext &sc){
 	sc.i >> mass;
 	sc.i >> moi;
 	sc.i >> health;
-	sc.i >> next /*>> selectnext*/;
+//	sc.i >> next /*>> selectnext*/;
 	sc.i >> enemy;
 	sc.i >> race;
 	sc.i >> otflag;
@@ -446,8 +455,8 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 	st::dive(sc, method);
 	if(controller)
 		controller->dive(sc, method);
-	if(next)
-		next->dive(sc, method);
+/*	if(next)
+		next->dive(sc, method);*/
 }
 
 
@@ -556,10 +565,6 @@ bool Entity::undock(Docker*){return false;}
 bool Entity::command(EntityCommand *){return false;}
 
 bool Entity::unlink(Observable*o){
-	if(enemy == o)
-		enemy.unlinkReplace(NULL);
-	if(next == o)
-		next.unlinkReplace(next->next);
 	return true;
 }
 

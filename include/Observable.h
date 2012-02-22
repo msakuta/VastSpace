@@ -127,6 +127,9 @@ public:
 /// That's a re-invention of wheels.
 /// Probably we should use boost library or C++11's std::weak_ptr.
 class EXPORT WeakPtrBase{
+	/// Prohibit using the copy constructor.
+	/// One must initialize the object with raw pointer as the argument, or the pointed Observable will miss counting.
+	WeakPtrBase(WeakPtrBase &){}
 protected:
 	Observable *ptr;
 	WeakPtrBase(Observable *o = NULL) : ptr(o){
@@ -165,6 +168,7 @@ template<typename P>
 class EXPORT WeakPtr : public WeakPtrBase{
 public:
 	WeakPtr(P *o = NULL) : WeakPtrBase(o){}
+	WeakPtr(WeakPtr &o) : WeakPtrBase(static_cast<Observable*>(o)){} ///< Prevent the default copy constructor from being called.
 	WeakPtr &operator=(P *o){
 		return static_cast<WeakPtr&>(WeakPtrBase::operator=(o));
 	}

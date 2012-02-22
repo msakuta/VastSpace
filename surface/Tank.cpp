@@ -336,13 +336,16 @@ int Tank::tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mp
 void Tank::find_enemy_logic(){
 	double best = 10. * 10.; /* sense range */
 	double sdist;
-	Entity *pt2, *closest = NULL;
+	Entity *closest = NULL;
 /*			pt->enemy = &head[(i+1)%n];*/
-	for(pt2 = w->entlist(); pt2; pt2 = pt2->next)
+	WarField::EntityList::iterator it = w->entlist().begin();
+	for(; it != w->entlist().end(); it++) if(*it){
+		Entity *pt2 = *it;
 		if(pt2 != this && pt2->w == w && pt2->health > 0. && 0 <= pt2->race && pt2->race != race
 			&& strcmp(pt2->idname(), "respawn") && (sdist = (pt2->pos - pos).slen()) < best){
-		best = sdist;
-		closest = pt2;
+			best = sdist;
+			closest = pt2;
+		}
 	}
 	if(closest)
 		enemy = closest;

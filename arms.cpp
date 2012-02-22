@@ -339,7 +339,8 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 	if(target && best < (target->pos - pos).slen())
 		target = NULL;
 
-	for(pt2 = w->el; pt2; pt2 = pt2->next){
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		Entity *pt2 = *it;
 		Vec3d delta, ldelta;
 		double theta, phi, f;
 

@@ -88,8 +88,7 @@ function frameproc(dt){
 			pl.cs = targetcs;
 
 			if(pl.chase == null){
-				local e;
-				for(e = cs.entlist; e != null; e = e.next){
+				foreach(e in cs.entlist){
 					if(e.race == i){
 						print("Set players[" + i + "].chase to " + e);
 						pl.chase = e;

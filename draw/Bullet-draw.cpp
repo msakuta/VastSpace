@@ -286,10 +286,12 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 	if(!tell)
 		return;
 	if(1000. < this->damage){
-		Entity *pt;
-		pt = w->el;
-		for(; pt; pt = pt->next) if(pt->w == w && (pos - pt->pos).slen() < damage * damage / 10000. / 10000.){
-			pt->takedamage(damage / (1. + VECSDIST(pos, pt->pos)), 0);
+		WarField::EntityList::iterator it = w->el.begin();
+		for(; it != w->el.end(); it++) if(*it){
+			Entity *pt = *it;
+			if(pt->w == w && (pos - pt->pos).slen() < damage * damage / 10000. / 10000.){
+				pt->takedamage(damage / (1. + VECSDIST(pos, pt->pos)), 0);
+			}
 		}
 		if(tell){
 			int j;

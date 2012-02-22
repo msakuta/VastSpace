@@ -359,6 +359,7 @@ void WireDestroyer::anim(double dt){
 	wireomega = 6. * M_PI;
 
 	int subwires = 8;
+#if 0 // Temporarily disabled wire hit check
 	if(WarSpace *ws = *w) for(int n = 0; n < subwires; n++){
 		Mat4d mat;
 		transform(mat);
@@ -399,6 +400,7 @@ void WireDestroyer::anim(double dt){
 			}while(0);
 		}
 	}
+#endif
 	wirephase += wireomega * dt;
 }
 

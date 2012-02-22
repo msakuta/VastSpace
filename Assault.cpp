@@ -178,11 +178,14 @@ void Assault::anim(double dt){
 		if(!enemy){ /* find target */
 			double best = 20. * 20.;
 			Entity *t;
-			for(t = w->entlist(); t; t = t->next) if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
-				double sdist = (this->pos - t->pos).slen();
-				if(sdist < best){
-					this->enemy = t;
-					best = sdist;
+			for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
+				Entity *t = *it;
+				if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
+					double sdist = (this->pos - t->pos).slen();
+					if(sdist < best){
+						this->enemy = t;
+						best = sdist;
+					}
 				}
 			}
 		}
@@ -322,11 +325,20 @@ bool Assault::undock(Docker *d){
 
 bool Assault::command(EntityCommand *com){
 	if(InterpretCommand<DeltaCommand>(com)){
-		Entity *e;
-		for(e = next; e; e = e->next) if(e->classname() == classname() && e->race == race){
-			formPrev = static_cast<Assault*>(e->toWarpable());
-			task = sship_delta;
-			break;
+		bool foundself = false;
+		WarField::EntityList::iterator it = w->el.begin();
+		for(; it != w->el.end(); it++) if(*it){
+			Entity *e = *it;
+			if(!foundself){
+				if(e == this)
+					foundself = true;
+				continue;
+			}
+			if(e->classname() == classname() && e->race == race){
+				formPrev = static_cast<Assault*>(e->toWarpable());
+				task = sship_delta;
+				break;
+			}
 		}
 		return true;
 	}

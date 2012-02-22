@@ -241,7 +241,8 @@ bool Defender::findEnemy(){
 		return !!enemy;
 	Entity *pt2, *closest = NULL;
 	double best = 1e2 * 1e2;
-	for(pt2 = w->el; pt2; pt2 = pt2->next){
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		Entity *pt2 = *it;
 
 		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
@@ -291,10 +292,13 @@ void Defender::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 Entity *Defender::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-		mother = e->getDocker();
-		pm = mother->e;
-		best = sl;
+	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
+		Entity *e = *it;
+		if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+			mother = e->getDocker();
+			pm = mother->e;
+			best = sl;
+		}
 	}
 	return pm;
 }
@@ -723,7 +727,8 @@ void Defender::anim(double dt){
 						pt->inputs.change |= PL_ENTER;
 						pt->inputs.press |= PL_ENTER;
 					}
-					for(Entity *pb = w->bl; pb; pb = pb->next){
+					for(WarField::EntityList::iterator it = w->bl.begin(); it != w->bl.end(); it++) if(*it){
+						Entity *pb = *it;
 						if(jHitSphere(this->pos, this->hitradius(), pb->pos, pb->velo, 10.)){
 							task = Task(w->rs.next() % 4 + Dodge0);
 							fdodge = 1.;

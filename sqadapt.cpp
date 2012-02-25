@@ -677,36 +677,7 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 
 
 
-static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
-	SQInteger argc = sq_gettop(v);
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("player"), -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		return SQ_ERROR;
-	Player *player;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer *)&player, &sr, -2, true))
-		return sr;
-	GLWentlist *p = new GLWentlist(*player);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
-	glwAppend(p);
-	return 0;
-}
 
-static SQInteger sqf_screenwidth(HSQUIRRELVM v){
-	GLint vp[4];
-	glGetIntegerv(GL_VIEWPORT, vp);
-	sq_pushinteger(v, vp[2] - vp[0]);
-	return 1;
-}
-
-static SQInteger sqf_screenheight(HSQUIRRELVM v){
-	GLint vp[4];
-	glGetIntegerv(GL_VIEWPORT, vp);
-	sq_pushinteger(v, vp[3] - vp[1]);
-	return 1;
-}
 #endif
 
 
@@ -1307,8 +1278,6 @@ static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, Entity::EntityStatic 
 //	clset.insert(s.sq_define);
 }
 
-typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
-
 SQDefineMap &defineMap(){
 	static SQDefineMap s;
 	return s;
@@ -1446,9 +1415,12 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("Game"), -1); // this "game" "Game"
 	sq_get(v, -3); // this "game" Game
 	sq_createinstance(v, -1); // this "game" Game Game-instance
-	sq_setinstanceup(v, -1, &universe); // this "game" Game Game-instance
+	sq_setinstanceup(v, -1, game); // this "game" Game Game-instance
 	sq_remove(v, -2); // this "game" Game-instance
 	sq_createslot(v, -3); // this
+
+	// Register the game as the foreign pointer of the VM.
+	sq_setforeignptr(v, game);
 
 	// Define class Docker, leaving details to the class itself.
 //	Docker::sq_define(v);
@@ -1530,20 +1502,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	// Define class GLWmessage
 	GLWmessage::sq_define(v);
 
-	// Define class GLWentlist
-	sq_pushstring(v, _SC("GLWentlist"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	register_closure(v, _SC("constructor"), sqf_GLWentlist_constructor);
-	sq_createslot(v, -3);
-
-	sq_pushstring(v, _SC("screenwidth"), -1);
-	sq_newclosure(v, sqf_screenwidth, 0);
-	sq_createslot(v, 1);
-	sq_pushstring(v, _SC("screenheight"), -1);
-	sq_newclosure(v, sqf_screenheight, 0);
-	sq_createslot(v, 1);
 #endif
 
 	// Execute initializations registered to defineMap.

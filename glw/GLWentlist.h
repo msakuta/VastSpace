@@ -32,10 +32,11 @@ protected:
 	void menu_team(){teamOnly = !teamOnly;}
 	void menu_criteria();
 	class ItemSelector;
+
+	WeakPtr<Player> player;
 public:
 	typedef GLwindowSizeable st;
 
-	Player &pl;
 	enum ListMode{ Select, All, Universe } listmode;
 	bool groupByClass;
 	bool icons;
@@ -44,12 +45,15 @@ public:
 	std::vector<const Entity*> ents[OV_COUNT], *pents[OV_COUNT];
 	int n; ///< Count of ents.
 	int scrollpos; ///< Current scroll position in the vertical scroll bar.
-	GLWentlist(Player &player);
+	GLWentlist(Game *game);
 	virtual void draw(GLwindowState &ws, double);
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);
+	Player *getPlayer();
 
 	ItemCriterion *crtRoot;
+
+	static bool sq_define(HSQUIRRELVM v);
 };
 
 #endif

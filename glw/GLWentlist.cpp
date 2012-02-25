@@ -7,6 +7,8 @@
 #include "antiglut.h"
 #include "Player.h"
 #include "war.h"
+#include "Game.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/timemeas.h>
 }
@@ -16,6 +18,7 @@ extern "C"{
 /// Set nonzero to measure sorting speed
 #define PROFILE_SORT 0
 
+static sqa::Initializer definer("GLWentlist", GLWentlist::sq_define);
 
 /// Class that represents a criterion to determine if given Entity is included in the Entity Listing.
 class ItemCriterion{
@@ -56,16 +59,26 @@ static bool pents_pred(std::vector<const Entity*> *a, std::vector<const Entity*>
 }
 
 
-GLWentlist::GLWentlist(Player &player) :
+GLWentlist::GLWentlist(Game *game) :
 	st("Entity List"),
-	pl(player),
+	player(NULL),
 	listmode(Select),
 	groupByClass(true),
 	icons(true),
 	switches(false),
 	teamOnly(false),
 	scrollpos(0),
-	crtRoot(NULL){}
+	crtRoot(NULL)
+{
+	this->game = game;
+}
+
+Player *GLWentlist::getPlayer(){
+	if(player)
+		return player;
+	if(game && game->player)
+		return player = game->player;
+}
 
 void GLWentlist::draw_int(const CoordSys *cs, int &n, std::vector<const Entity*> ents[]){
 	if(!cs)
@@ -226,6 +239,11 @@ public:
 };
 
 void GLWentlist::draw(GLwindowState &ws, double){
+	// Ensure the player is present. There can be no player in the game.
+	Player *player = getPlayer();
+	if(!player)
+		return;
+	Player &pl = *player;
 	const WarField *const w = pl.cs->w;
 	int i;
 
@@ -235,7 +253,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 
 	if(listmode == Select){
 		Player::SelectSet::iterator it;
-		for(it = pl.selected.begin(); it != pl.selected.end(); it++){
+		for(it = player->selected.begin(); it != player->selected.end(); it++){
 			Entity *pt = *it;
 
 			/* show only member of current team */
@@ -278,7 +296,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		}
 	}
 	else if(listmode == Universe){
-		draw_int(pl.cs->findcspath("/"), n, ents);
+		draw_int(player->cs->findcspath("/"), n, ents);
 	}
 
 	GLWrect r = clientRect();
@@ -366,7 +384,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		public:
 			Player &pl;
 			bool ret;
-			PlayerSelection(GLWentlist *p) : ret(false), pl(p->pl){}
+			PlayerSelection(GLWentlist *p) : ret(false), pl(*p->player){}
 			virtual void proc(const Entity *pe){
 				for(Player::SelectSet::iterator it = pl.selected.begin(); it != pl.selected.end(); it++) if(*it == pe){
 					ret = true;
@@ -476,6 +494,11 @@ struct PopupMenuItemFunctionArgT : public PopupMenuItem{
 };
 
 int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
+	// Ensure the player is present. There can be no player in the game.
+	Player *player = getPlayer();
+	if(!player)
+		return 0;
+	Player &pl = *player;
 	GLWrect r = clientRect();
 	ClassItemSelector cis(this);
 	ExpandItemSelector eis(this);
@@ -593,6 +616,8 @@ void GLWentlist::mouseLeave(GLwindowState &ws){
 		glwtip->setExtent(GLWrect(-10,-10,-10,-10));
 	}
 }
+
+
 
 struct ItemCriterion::DrawParams{
 	int x;
@@ -797,7 +822,7 @@ const ClassId LeafItemCriterion::sid = "LeafItemCriterion";
 class SelectedItemCriterion : public LeafItemCriterion{
 public:
 	Player &pl;
-	SelectedItemCriterion(GLWentlist &entlist) : pl(entlist.pl), LeafItemCriterion(entlist){}
+	SelectedItemCriterion(GLWentlist &entlist) : pl(*entlist.getPlayer()), LeafItemCriterion(entlist){}
 	virtual bool match(const Entity *e)const{
 		Player::SelectSet::iterator it = pl.selected.begin();
 		for(; it != pl.selected.end(); it++) if(*it == e)
@@ -881,7 +906,7 @@ public:
 			return ret;
 		if(mp.key == GLUT_LEFT_BUTTON && mp.state == GLUT_UP && y0 < mp.my && mp.my < y1){
 			PopupMenu pm;
-			const CoordSys *root = p->p->pl.cs->findcspath("/");
+			const CoordSys *root = p->p->getPlayer()->cs->findcspath("/");
 			mouseint(root, pm);
 			glwPopupMenu(ws, pm);
 			return 1;
@@ -1098,4 +1123,56 @@ void BinaryOpItemCriterion::alterNode(const ItemCriterion *from, ItemCriterion *
 		right = to;
 	else
 		right->alterNode(from, to);
+}
+
+
+
+
+// ------------------------------
+// Squirrel Initializer Implementation
+// ------------------------------
+
+static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
+	if(!game)
+		return sq_throwerror(v, _SC("The game object is not assigned"));
+	GLWentlist *p = new GLWentlist(game);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	glwAppend(p);
+	return 0;
+}
+
+static SQInteger sqf_screenwidth(HSQUIRRELVM v){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	sq_pushinteger(v, vp[2] - vp[0]);
+	return 1;
+}
+
+static SQInteger sqf_screenheight(HSQUIRRELVM v){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	sq_pushinteger(v, vp[3] - vp[1]);
+	return 1;
+}
+
+
+bool GLWentlist::sq_define(HSQUIRRELVM v){
+	// Define class GLWentlist
+	sq_pushstring(v, _SC("GLWentlist"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	register_closure(v, _SC("constructor"), sqf_GLWentlist_constructor);
+	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("screenwidth"), -1);
+	sq_newclosure(v, sqf_screenwidth, 0);
+	sq_createslot(v, 1);
+	sq_pushstring(v, _SC("screenheight"), -1);
+	sq_newclosure(v, sqf_screenheight, 0);
+	sq_createslot(v, 1);
+	return true;
 }

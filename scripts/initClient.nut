@@ -219,21 +219,18 @@ showdt <- false;
 missionLoaded <- false;
 
 function frameproc(dt){
-	try{
-		if(!("squirrelBind" in this))
-			return;
-		if(!missionLoaded){
-			local mission = squirrelBind.mission;
-			if(mission != ""){
-				missionLoaded = true;
+	if(!("squirrelBind" in this))
+		return;
+	if(!missionLoaded){
+		local mission = squirrelBind.mission;
+		if(mission != ""){
+			missionLoaded = true;
+			if(mainmenu.alive){
 				print("Closing mainmenu" + mainmenu);
 				mainmenu.close();
-				initUI();
 			}
+			initUI();
 		}
-	}
-	catch(id){
-		print("Except: " + id);
 	}
 }
 

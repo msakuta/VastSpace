@@ -57,7 +57,7 @@ struct EXPORT teleport{
  *
  * If the game is multiplayer game over the network, there are multiple Player instances.
  */
-class EXPORT Player : public EntityController{
+class EXPORT Player : public EntityController, public Observable{
 public:
 	typedef EntityController st;
 

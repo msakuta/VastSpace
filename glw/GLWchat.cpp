@@ -18,19 +18,8 @@ extern "C"{
 #define fontwidth (GLwindow::glwfontwidth * glwfontscale)
 #define fontheight (GLwindow::glwfontheight * glwfontscale)
 
-namespace sqa{
-typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
 
-extern SQDefineMap &defineMap();
-}
-
-struct GLWchatDefiner{
-	GLWchatDefiner(){
-		sqa::defineMap()["GLWchat"] = GLWchat::sq_define;
-	}
-};
-
-static GLWchatDefiner definer;
+static sqa::Initializer definer("GLWchat", GLWchat::sq_define);
 
 std::set<GLWchat*> GLWchat::wndlist;
 

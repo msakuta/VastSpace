@@ -19,6 +19,8 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 #include <cpplib/quat.h>
 #include <cpplib/dstring.h>
 
+#include <map>
+
 class Game;
 class Serializable;
 class Entity;
@@ -41,6 +43,26 @@ EXPORT bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, S
 
 /// Register a Squirrel scripted closure bound to the top of the stack.
 bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, bool nested = false);
+
+/// \brief Type for the Squirrel VM initializer callbacks.
+///
+/// Not necessary to be a map.
+typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
+
+/// \brief Returns the map object to initialize the Squirrel VM in the Game object.
+///
+/// Global initialize codes can call this function without caring order of initialization.
+SQDefineMap &defineMap();
+
+/// \brief An utility class to register some function into defineMap().
+///
+/// Be sure to define a global (static) variable of this class to function.
+class Initializer{
+public:
+	Initializer(dstring name, bool sqf(HSQUIRRELVM)){
+		defineMap()[name] = sqf;
+	}
+};
 
 /// Global Squirrel VM.
 extern HSQUIRRELVM g_sqvm;

@@ -102,11 +102,6 @@ void Game::display_func(double dt){
 
 	
 
-namespace sqa{
-typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
-
-extern SQDefineMap &defineMap();
-}
 
 struct CMHalt : public ClientMessage{
 	typedef ClientMessage st;

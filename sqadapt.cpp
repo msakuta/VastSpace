@@ -563,120 +563,6 @@ static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
 }
 
 
-static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
-	SQInteger argc = sq_gettop(v);
-	SQInteger x, y, sx, sy;
-	if(argc <= 1 || SQ_FAILED(sq_getinteger(v, 2, &x)))
-		x = 3;
-	if(argc <= 2 || SQ_FAILED(sq_getinteger(v, 3, &y)))
-		y = 3;
-	if(argc <= 3 || SQ_FAILED(sq_getinteger(v, 4, &sx)))
-		sx = 64;
-	if(argc <= 4 || SQ_FAILED(sq_getinteger(v, 5, &sy)))
-		sy = 64;
-	GLWbuttonMatrix *p = new GLWbuttonMatrix(x, y, sx, sy);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
-	glwAppend(p);
-	return 0;
-}
-
-static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *cmd, *path, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 3, &path)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
-		tips = NULL;
-	GLWcommandButton *b = new GLWcommandButton(path, cmd, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	return 0;
-}
-
-static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *cvarname, *path, *path1, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
-		return SQ_ERROR;
-/*	int value;
-	cvar *cv = CvarFind(cvarname);
-	if(!cv || cv->type != cvar_int)
-		value = 0;
-	else
-		value = *cv->v.i;*/
-	if(SQ_FAILED(sq_getstring(v, 3, &path)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &path1)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 5, &tips)))
-		tips = NULL;
-
-	// Temporary!! the third param must be a reference to persistent object, which is not in this case!
-	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(path, path1, cvarname, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	return 0;
-}
-
-static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *path, *path1, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &path)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
-		tips = NULL;
-	GLWstateButton *b = Player::newMoveOrderButton(application, path, path1, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	return 0;
-}
-
-static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-	const SQChar *path, *path1, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &path)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
-		tips = NULL;
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("player"), -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		return SQ_ERROR;
-	Player *player;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer *)&player, &sr, -2, true))
-		return sr;
-	GLWstateButton *b = Player::newControlButton(*player, path, path1, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	return 0;
-}
-
-
-
 
 #endif
 
@@ -1486,18 +1372,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	// Define class GLWmenu
 	// Define class GLWbigMenu
 	GLWmenu::sq_define(v);
-
-	// Define class GLWbuttonMatrix
-	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	register_closure(v, _SC("constructor"), sqf_GLWbuttonMatrix_constructor);
-	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
-	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
-	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
-	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);
-	sq_createslot(v, -3);
 
 	// Define class GLWmessage
 	GLWmessage::sq_define(v);

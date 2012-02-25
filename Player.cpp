@@ -570,6 +570,8 @@ int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 
 #ifdef _WIN32
 int Player::cmd_control(int argc, char *argv[], void *pv){
+	// TODO: Passing Player as static user pointer is not safe, because the player can be
+	// absent.
 	Player &pl = *(Player*)pv;
 	if(pl.controlled)
 		pl.uncontrol();
@@ -870,49 +872,53 @@ SQInteger Player::sqf_getmover(HSQUIRRELVM v){
 /// A 2-state button that represents whether the player is controlling something.
 /// \sa Player::newControlButton
 class GLWcontrolButton : public GLWstateButton{
-	Player &pl;
 public:
 	typedef GLWstateButton st;
-	GLWcontrolButton(Player &apl, const char *filename, const char *filename2, const char *tips = NULL) : st(filename, filename2, tips), pl(apl){}
-	virtual bool state()const{return !!pl.controlled;}
+	GLWcontrolButton(Game *game, const char *filename, const char *filename2, const char *tips = NULL) : st(game, filename, filename2, tips){}
+	virtual bool state()const{
+		return game && game->player ? !!game->player->controlled : false;
+	}
 	/// Issues "control" console command.
 	virtual void press(){
-		char *str[1] = {"control"};
-		Player::cmd_control(1, str, &pl);
+		if(game && game->player){
+			char *str[1] = {"control"};
+			Player::cmd_control(1, str, game->player);
+		}
 	}
 };
 
-/// \param pl The Player object that is bound to the newly created button.
+/// \param game The Game object that is bound to the newly created button.
 /// \param filename File name of button image when being active
 /// \param filename2 File name of button image when being inactive
 /// \param tips Displayed when mouse cursor is floating over.
-GLWstateButton *Player::newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips){
-	return new GLWcontrolButton(pl, filename, filename2, tips);
+GLWstateButton *Player::newControlButton(Game *game, const char *filename, const char *filename2, const char *tips){
+	return new GLWcontrolButton(game, filename, filename2, tips);
 };
 
-/// \param pl The Player object that is bound to the newly created button.
+/// \param game The Game object that is bound to the newly created button.
 /// \param filename File name of button image when being active
 /// \param filename2 File name of button image when being inactive
 /// \param tips Displayed when mouse cursor is floating over.
-GLWstateButton *Player::newMoveOrderButton(ClientApplication &pl, const char *filename, const char *filename2, const char *tips){
+GLWstateButton *Player::newMoveOrderButton(Game *game, const char *filename, const char *filename2, const char *tips){
 	/// Command
 	class GLWmoveOrderButton : public GLWstateButton{
 	public:
-		ClientApplication *cl;
-		GLWmoveOrderButton(const char *filename, const char *filename1, ClientApplication *acl, const char *tip = NULL) :
-			GLWstateButton(filename, filename1, tip), cl(acl){}
+		WeakPtr<Player> player;
+		GLWmoveOrderButton(Game *game, const char *filename, const char *filename1, const char *tip = NULL) :
+			GLWstateButton(game, filename, filename1, tip){}
 		virtual bool state()const{
-#ifdef _WIN32
-			return cl && cl->serverGame && cl->serverGame->player && cl->serverGame->player->moveorder;
-#else
-			return false;
-#endif
+			if(!game || !game->player)
+				return false;
+			return game->player->moveorder;
 		}
 		virtual void press(){
-			Player::cmd_moveorder(0, NULL, cl);
+			if(!game || !game->player)
+				return;
+			// The client has only one global application.
+			Player::cmd_moveorder(0, NULL, &application);
 		}
 	};
-	return new GLWmoveOrderButton(filename, filename2, &pl, tips);
+	return new GLWmoveOrderButton(game, filename, filename2, tips);
 }
 #endif
 

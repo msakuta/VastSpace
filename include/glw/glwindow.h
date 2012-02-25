@@ -92,7 +92,12 @@ struct GLwindowState{
  */
 class EXPORT GLelement : public Serializable{
 public:
+	/// Obsolete; the version with two args is recommended, the game object should be initialized.
 	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
+
+	/// The constructor that can initialize the game object pointer.
+	GLelement(Game *game, const char *title = NULL) : Serializable(game), xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
+
 	void rawSetExtent(const GLWrect &r); ///< Changes the extent rectangle without invoking the event handler.
 	virtual void changeExtent(); ///< Invokes event handler that is called when the size of this element is changed.
 	void setExtent(const GLWrect &r); ///< Changes the extent rectangle. onChangeExtent event handler may be called.
@@ -200,7 +205,13 @@ public:
 	static GLwindow *getDragStart(){return dragstart;}
 	void postClose(){ flags |= GLW_TODELETE; }
 protected:
+	/// Obsolete; the version with two args is recommended, the game object should be initialized.
 	GLwindow(const char *title = NULL);
+
+	/// The constructor that can initialize the game object pointer.
+	GLwindow(Game *game, const char *title = NULL);
+
+	/// The title string of this window.
 	char *title;
 
 	/// Next window in window list. Early windows are drawn over later windows in the list.
@@ -286,7 +297,12 @@ protected:
 	int sizing; /* edge flags of changing borders */
 	int minw, minh, maxw, maxh;
 public:
+	/// Obsolete; the version with two args is recommended, the game object should be initialized.
 	GLwindowSizeable(const char *title);
+
+	/// The constructor that can initialize the game object pointer.
+	GLwindowSizeable(Game *game, const char *title = NULL);
+
 	int mouseCursorState(int mousex, int mousey)const;
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	bool mouseNC(GLwindowState &ws, int button, int state, int x, int y);
@@ -296,11 +312,12 @@ public:
 /// and all actual buttons inherit this class.
 class GLWbutton : public GLelement{
 public:
+	typedef GLelement st;
 	const char *classname()const;
 	GLwindow *parent;
 	const char *tipstring;
 	bool depress;
-	GLWbutton() : parent(NULL), tipstring(NULL), depress(false){}
+	GLWbutton(Game *game) : st(game), parent(NULL), tipstring(NULL), depress(false){}
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 	virtual void draw(GLwindowState &, double) = 0;
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
@@ -313,9 +330,10 @@ public:
 /// Impulsive command buttons that activates when mouse button is pressed down and released.
 class GLWcommandButton : public GLWbutton{
 public:
+	typedef GLWbutton st;
 	gltestp::dstring texname;
 	const char *command;
-	GLWcommandButton(const char *filename, const char *command, const char *tips = NULL);
+	GLWcommandButton(Game *game, const char *filename, const char *command, const char *tips = NULL);
 	virtual void draw(GLwindowState &, double);
 //	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseLeave(GLwindowState &);
@@ -326,9 +344,10 @@ public:
 /// 2-State button.
 class GLWstateButton : public GLWbutton{
 public:
+	typedef GLWbutton st;
 	gltestp::dstring texname, texname1;
 	const char *command;
-	GLWstateButton(const char *filename, const char *filename1, const char *tips = NULL);
+	GLWstateButton(Game *game, const char *filename, const char *filename1, const char *tips = NULL);
 	virtual ~GLWstateButton();
 	virtual void draw(GLwindowState &, double);
 //	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
@@ -341,8 +360,8 @@ public:
 class GLWtoggleCvarButton : public GLWstateButton{
 public:
 	gltestp::dstring var;
-	GLWtoggleCvarButton(const char *filename, const char *filename1, gltestp::dstring cvar, const char *tip = NULL) :
-		GLWstateButton(filename, filename1, tip), var(cvar){}
+	GLWtoggleCvarButton(Game *game, const char *filename, const char *filename1, gltestp::dstring cvar, const char *tip = NULL) :
+		GLWstateButton(game, filename, filename1, tip), var(cvar){}
 	virtual bool state()const;
 	virtual void press();
 };
@@ -353,7 +372,7 @@ class GLWbuttonMatrix : public GLwindow{
 public:
 	int xbuttons, ybuttons;
 	int xbuttonsize, ybuttonsize;
-	GLWbuttonMatrix(int x, int y, int xsize = 32, int ysize = 32);
+	GLWbuttonMatrix(Game *game, int x, int y, int xsize = 32, int ysize = 32);
 	virtual void draw(GLwindowState &,double);
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseEnter(GLwindowState &);

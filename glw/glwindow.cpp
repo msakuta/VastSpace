@@ -55,9 +55,15 @@ GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 	}
 	else
 		title = NULL;
-/*	next = glwlist;
-	glwlist = this;
-	glwActivate(&glwlist);*/
+}
+
+GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL), next(NULL){
+	if(atitle){
+		title = new char[strlen(atitle)+1];
+		strcpy(title, atitle);
+	}
+	else
+		title = NULL;
 }
 
 /// Appends a GLwindow to screen window list.
@@ -777,6 +783,14 @@ GLwindowSizeable::GLwindowSizeable(const char *title) : st(title){
 	maxw = maxh = 1000;
 }
 
+GLwindowSizeable::GLwindowSizeable(Game *game, const char *title) : st(game, title){
+	flags |= GLW_SIZEABLE;
+	ratio = 1.;
+	sizing = 0;
+	minw = minh = 40;
+	maxw = maxh = 1000;
+}
+
 int GLwindowSizeable::mouse(GLwindowState &, int, int, int, int){return 0;}
 
 bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, int y){
@@ -896,7 +910,8 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 	return 0;
 }
 
-GLWcommandButton::GLWcommandButton(const char *filename, const char *command, const char *tips) :
+GLWcommandButton::GLWcommandButton(Game *game, const char *filename, const char *command, const char *tips) :
+	st(game),
 	texname(filename)
 {
 	xpos = ypos = 0;
@@ -962,7 +977,8 @@ void GLWcommandButton::mouseLeave(GLwindowState &ws){
 
 
 
-GLWstateButton::GLWstateButton(const char *filename, const char *filename1, const char *tips) :
+GLWstateButton::GLWstateButton(Game *game, const char *filename, const char *filename1, const char *tips) :
+	st(game),
 	texname(filename), texname1(filename1)
 {
 	xpos = ypos = 0;
@@ -1045,7 +1061,12 @@ void GLWtoggleCvarButton::press(){
 
 
 
-GLWbuttonMatrix::GLWbuttonMatrix(int x, int y, int xsize, int ysize) : st("Button Matrix"), xbuttons(x), ybuttons(y), xbuttonsize(xsize), ybuttonsize(ysize), buttons(new (GLWbutton*[x * y])){
+GLWbuttonMatrix::GLWbuttonMatrix(Game *game, int x, int y, int xsize, int ysize) :
+	st(game, "Button Matrix"),
+	xbuttons(x), ybuttons(y),
+	xbuttonsize(xsize), ybuttonsize(ysize),
+	buttons(new (GLWbutton*[x * y]))
+{
 	flags |= GLW_COLLAPSABLE | GLW_CLOSE | GLW_PINNABLE;
 	GLWrect r = adjustRect(GLWrect(0, 0, x * xsize, y * ysize));
 	width = r.x1 - r.x0;
@@ -1122,6 +1143,131 @@ bool GLWbuttonMatrix::addButton(GLWbutton *b, int x, int y){
 	return true;
 }
 
+static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
+	if(!game)
+		return sq_throwerror(v, _SC("The game object is not assigned"));
+	SQInteger x, y, sx, sy;
+	if(argc <= 1 || SQ_FAILED(sq_getinteger(v, 2, &x)))
+		x = 3;
+	if(argc <= 2 || SQ_FAILED(sq_getinteger(v, 3, &y)))
+		y = 3;
+	if(argc <= 3 || SQ_FAILED(sq_getinteger(v, 4, &sx)))
+		sx = 64;
+	if(argc <= 4 || SQ_FAILED(sq_getinteger(v, 5, &sy)))
+		sy = 64;
+	GLWbuttonMatrix *p = new GLWbuttonMatrix(game, x, y, sx, sy);
+	if(!sqa_newobj(v, p, 1))
+		return SQ_ERROR;
+	glwAppend(p);
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *cmd, *path, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
+		tips = NULL;
+	GLWcommandButton *b = new GLWcommandButton(p->getGame(), path, cmd, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *cvarname, *path, *path1, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
+		return SQ_ERROR;
+/*	int value;
+	cvar *cv = CvarFind(cvarname);
+	if(!cv || cv->type != cvar_int)
+		value = 0;
+	else
+		value = *cv->v.i;*/
+	if(SQ_FAILED(sq_getstring(v, 3, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &path1)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 5, &tips)))
+		tips = NULL;
+
+	// Temporary!! the third param must be a reference to persistent object, which is not in this case!
+	GLWtoggleCvarButton *b = new GLWtoggleCvarButton(p->getGame(), path, path1, cvarname, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *path, *path1, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
+		tips = NULL;
+	GLWstateButton *b = Player::newMoveOrderButton(p->getGame(), path, path1, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
+static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p;
+	if(!sqa_refobj(v, (SQUserPointer*)&p))
+		return SQ_ERROR;
+	const SQChar *path, *path1, *tips;
+	if(SQ_FAILED(sq_getstring(v, 2, &path)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
+		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
+		tips = NULL;
+	GLWstateButton *b = Player::newControlButton(p->getGame(), path, path1, tips);
+	if(!p->addButton(b)){
+		delete b;
+		return sq_throwerror(v, _SC("Could not add button"));
+	}
+	return 0;
+}
+
+
+
+static bool GLWbuttonMatrix_sq_define(HSQUIRRELVM v){
+	// Define class GLWbuttonMatrix
+	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	register_closure(v, _SC("constructor"), sqf_GLWbuttonMatrix_constructor);
+	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
+	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
+	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
+	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);
+	sq_createslot(v, -3);
+	return true;
+}
+
+static sqa::Initializer init_GLWbuttonMatrix("GLWbuttonMatrix", GLWbuttonMatrix_sq_define);
 
 
 

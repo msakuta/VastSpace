@@ -60,7 +60,7 @@ static bool pents_pred(std::vector<const Entity*> *a, std::vector<const Entity*>
 
 
 GLWentlist::GLWentlist(Game *game) :
-	st("Entity List"),
+	st(game, "Entity List"),
 	player(NULL),
 	listmode(Select),
 	groupByClass(true),
@@ -70,7 +70,6 @@ GLWentlist::GLWentlist(Game *game) :
 	scrollpos(0),
 	crtRoot(NULL)
 {
-	this->game = game;
 }
 
 Player *GLWentlist::getPlayer(){

@@ -190,10 +190,10 @@ public:
 	static void sq_define(HSQUIRRELVM v);
 
 	/// Creates a button to toggle control of selected Entity.
-	static GLWstateButton *newControlButton(Player &pl, const char *filename, const char *filename2, const char *tips);
+	static GLWstateButton *newControlButton(Game *game, const char *filename, const char *filename2, const char *tips);
 
 	/// Creates a button to toggle move ordering mode.
-	static GLWstateButton *newMoveOrderButton(ClientApplication &cl, const char *filename, const char *filename2, const char *tips);
+	static GLWstateButton *newMoveOrderButton(Game *game, const char *filename, const char *filename2, const char *tips);
 
 protected:
 	std::vector<teleport> tplist;

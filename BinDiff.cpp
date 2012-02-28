@@ -39,6 +39,18 @@ void BinDiff::put(const unsigned char *dst, patchsize_t dstsize){
 	}
 }
 
+void BinDiff::close(){
+	if(cur - src < size){
+		Patch pa;
+		pa.start = patchsize_t(cur - src);
+		pa.size = patchsize_t(size - (cur - src));
+		patches.push_back(pa);
+		patchClosed = true;
+	}
+	else
+		patchClosed = true;
+}
+
 void applyPatches(std::vector<unsigned char> &result, const std::list<Patch> &patches){
 	// You must apply the patches in reverse order of creation because the former patches could change the offset of the latter patches.
 	std::list<Patch>::const_reverse_iterator it = patches.rbegin();

@@ -1125,7 +1125,8 @@ void ClientApplication::display_func(void){
 						pa.start = *((patchsize_t*&)p)++;
 						pa.size = *((patchsize_t*&)p)++;
 						pa.buf.resize(*((patchsize_t*&)p)++);
-						memcpy(&pa.buf.front(), p, pa.buf.size());
+						if(pa.buf.size())
+							memcpy(&pa.buf.front(), p, pa.buf.size());
 						p += pa.buf.size();
 						pl.push_back(pa);
 					}

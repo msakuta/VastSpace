@@ -656,17 +656,18 @@ void Server::CreateDiffStream(unsigned char *&sendbuf, size_t &sendbufsiz,
 			*(patchsize_t*)&compstream[org] = it3->start;
 			*(patchsize_t*)&compstream[org+sizeof(patchsize_t)] = it3->size;
 			*(patchsize_t*)&compstream[org+2*sizeof(patchsize_t)] = it3->buf.size();
-			memcpy(&compstream[org+3*sizeof(patchsize_t)], &it3->buf.front(), it3->buf.size());
+			if(it3->buf.size())
+				memcpy(&compstream[org+3*sizeof(patchsize_t)], &it3->buf.front(), it3->buf.size());
 		}
 	}
 	if(compstream.size()){
-			unsigned newsize = sendbufsiz + compstream.size();
-			unsigned char *newbuf = new unsigned char [newsize];
-			memcpy(newbuf, sendbuf, sendbufsiz);
-			memcpy(&newbuf[sendbufsiz], &compstream.front(), compstream.size());
-			delete[] sendbuf;
-			sendbuf = newbuf;
-			sendbufsiz = newsize;
+		unsigned newsize = sendbufsiz + compstream.size();
+		unsigned char *newbuf = new unsigned char [newsize];
+		memcpy(newbuf, sendbuf, sendbufsiz);
+		memcpy(&newbuf[sendbufsiz], &compstream.front(), compstream.size());
+		delete[] sendbuf;
+		sendbuf = newbuf;
+		sendbufsiz = newsize;
 	}
 
 }
@@ -1330,10 +1331,6 @@ SerializeStream *SectBinSerializeStream::substream(Serializable::Id id){
 
 void SectBinSerializeStream::join(SerializeStream *o){
 	DiffSectionStream *sss = (DiffSectionStream*)o;
-//	SyncRecord r = {sss->id, std::vector<byte>(sss->getsize())};
-//	r.size = ((BinSerializeStream*)o)->getsize();
-//	r.buf = new unsigned char[r.size];
-//	memcpy(&r.buf.front(), sss->getbuf(), r.buf.size());
-//	records.push_back(r);
+	sss->bd.close();
 	patches[sss->id] = sss->bd.getPatches();
 }

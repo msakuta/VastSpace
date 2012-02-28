@@ -37,6 +37,10 @@ public:
 	/// Feeds a part of destination stream. The source position is advanced by size.
 	void put(const unsigned char *dst, patchsize_t size);
 
+	/// Instruct this BinDiff object that there is no more input.
+	/// Necessary to handle the case where the destination stream has less size than source.
+	void close();
+
 	/// Returns resulting list of patches.
 	const std::list<Patch> &getPatches(){return patches;}
 };

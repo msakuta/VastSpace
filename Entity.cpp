@@ -62,11 +62,29 @@ Entity::~Entity(){
 		delete bbody;
 	}
 	if(game->isServer()){
-		sqa_delete_Entity(this);
-		sqa_deleteobj(game->sqvm, this);
+		if(game->sqvm){
+			HSQUIRRELVM v = game->sqvm;
+
+			// Invoke the delete hook that may be defined in the Squirrel VM.
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("hook_delete_Entity"), -1);
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				sq_pushroottable(v); // root func root
+				sq_pushstring(v, _SC("Entity"), -1); // root func root "Entity"
+				sq_get(v, -2); // root func root Entity
+				sq_createinstance(v, -1); // root func root Entity Entity-instance
+				sqa_newobj(v, this);
+		//		sq_setinstanceup(v, -1, e); // root func root Entity Entity-instance
+				sq_remove(v, -2); // root func root Entity-instance
+				sq_call(v, 2, SQFalse, SQTrue); // root func
+				sq_poptop(v); // root
+			}
+			sq_poptop(v);
+
+			// Actually delete the string pointer in the Squirrel VM.
+			sqa_deleteobj(v, this);
+		}
 	}
-//	if(controller && controller->unlink(this))
-//		controller = NULL;
 }
 
 void Entity::init(){

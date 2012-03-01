@@ -1425,24 +1425,6 @@ void sqa_anim(HSQUIRRELVM v, double dt){
 	sq_poptop(v);
 }
 
-void sqa_delete_Entity(Entity *e){
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("hook_delete_Entity"), -1);
-	if(SQ_SUCCEEDED(sq_get(v, -2))){
-		sq_pushroottable(v); // root func root
-		sq_pushstring(v, _SC("Entity"), -1); // root func root "Entity"
-		sq_get(v, -2); // root func root Entity
-		sq_createinstance(v, -1); // root func root Entity Entity-instance
-		sqa_newobj(v, e);
-//		sq_setinstanceup(v, -1, e); // root func root Entity Entity-instance
-		sq_remove(v, -2); // root func root Entity-instance
-		sq_call(v, 2, SQFalse, SQTrue); // root func
-		sq_poptop(v); // root
-	}
-	sq_poptop(v);
-//	sqa_deleteobj(v, e); // The object's destructor will do that job.
-}
-
 void sqa_exit(){
 	sq_pop(v,1); //pops the root table
 

@@ -117,4 +117,8 @@ function frameproc(dt){
 	}
 }
 
+function hook_delete_Entity(e){
+	print(e + " is deleted");
+}
+
 

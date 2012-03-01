@@ -46,6 +46,7 @@ protected:
 	WeakPtrList ptrs;
 };
 
+#if 0
 /// \brief The class template to generate automatic pointers that adds the
 ///  containing object to referred Observable's Observer list.
 ///
@@ -115,6 +116,7 @@ public:
 		return !!ptr;
 	}
 };
+#endif
 
 /// \brief A base class for the weak pointer to an Observable object.
 ///
@@ -147,6 +149,10 @@ protected:
 			o->addWeakPtr(this);
 		ptr = o;
 		return *this;
+	}
+	/// This operator overloading is necessary to correctly handle assignment expression.
+	WeakPtrBase &operator=(WeakPtrBase &o){
+		return operator=(o.ptr);
 	}
 	void unlink(Observable *o){
 		if(ptr == o)
@@ -205,7 +211,7 @@ inline UnserializeStream &operator>>(UnserializeStream &us, WeakPtr<P> &p){
 	return us;
 }
 
-
+#if 0
 template<typename T, int I, typename TP>
 inline SerializeStream &operator<<(SerializeStream &us, const ObservePtr<T,I,TP> &p){
 	TP *a = p;
@@ -220,5 +226,6 @@ inline UnserializeStream &operator>>(UnserializeStream &us, ObservePtr<T,I,TP> &
 	p = a;
 	return us;
 }
+#endif
 
 #endif

@@ -232,9 +232,6 @@ public:
 //     Implementation
 //-----------------------------------------------------------------------------
 
-template<>
-inline size_t ObservePtr<Player,0,Entity>::ofs(){return offsetof(Player, chase);}
-
 inline int FreelookMover::getGear()const{return gear;}
 
 extern void capture_mouse();

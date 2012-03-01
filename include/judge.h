@@ -29,8 +29,10 @@ struct otnt{
 	Vec3d pos;
 	double rad;
 	int leaf;
-	union unode{
-		Entity *t;
+	/// We want this member to be a union, but we cannot because
+	/// it contains an object that needs constructor invocation to initialize.
+	struct unode{
+		WeakPtr<Entity> t;
 		otnt *n;
 	} a[2];
 };

@@ -12,6 +12,7 @@ extern "C"{
 }
 #include <stddef.h>
 #include <stdlib.h>
+#include <signal.h>
 
 bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt){
 	return jHitSpherePos(obj, radius, src, dir, dt, NULL, NULL);
@@ -558,6 +559,8 @@ static otnt *ot_update_int(otnt *root, WarField *w){
 	double len, newrad;
 	int i;
 	for(i = 0; i < 2; i++) if(root->leaf & (1 << i)){
+		if(!root->a[i].t)
+			return NULL;
 		if(root->a[i].t->w != w)
 			return NULL;
 		rad[i] = root->a[i].t->hitradius();
@@ -663,11 +666,11 @@ struct otiterator{
 		while(it != w->el.end() && (!*it || (*it)->w != w))
 			it++;
 	}
-	Vec3d *getpos(){
-		return it != w->el.end() ? &(*it)->pos : &ot[i].pos;
+	Vec3d getpos(){
+		return it != w->el.end() ? *it ? (*it)->pos : Vec3d(0,0,0) : ot[i].pos;
 	}
 	double getrad(){
-		return it != w->el.end() ? (*it)->hitradius() : ot[i].rad;
+		return it != w->el.end() ? *it ? (*it)->hitradius() : 0. : ot[i].rad;
 	}
 	otiterator next(){
 		otiterator ret = *this;
@@ -682,14 +685,15 @@ struct otiterator{
 		return *this;
 	}
 	operator bool(){
-		return it != w->el.end() || i != *o;
+		return it != w->el.end() && *it || i != *o;
 	}
 	bool paired()const{
-		return it != w->el.end() ? (*it)->otflag & 2 : ot[i].leaf & OT_PAIRED;
+		return it != w->el.end() ? *it && (*it)->otflag & 2 : ot[i].leaf & OT_PAIRED;
 	}
 	bool get(otnt::unode &u){
-		if(it != w->el.end())
+		if(it != w->el.end()){
 			u.t = *it;
+		}
 		else
 			u.n = &ot[i];
 		return it != w->el.end();
@@ -703,6 +707,14 @@ struct otiterator{
 };
 
 otnt *ot_build(WarSpace *w, double dt){
+	class Thrower{
+	public:
+		static void thrower(int h){
+			throw h;
+		}
+	};
+	void (*prevHandler)(int) = signal(SIGSEGV, Thrower::thrower);
+	try{
 	int i, n = 0, m = 0, o, loops = 0;
 	otnt *ot = w->ot;
 #if 1 <= OTDEBUG
@@ -741,8 +753,18 @@ otnt *ot_build(WarSpace *w, double dt){
 /*	for(i = n; i; i--)
 		m += i;*/
 	m = n * n;
-	if(w->ots < m)
-		w->ot = ot = (otnt*)realloc(ot, (w->ots = m) * sizeof *ot);
+	if(w->ots < m){
+		ot = (otnt*)malloc(m * sizeof *ot);
+		for(int i = 0; i < w->ots; i++){
+			new(&ot[i]) otnt(w->ot[i]);
+			w->ot[i].~otnt();
+		}
+		for(int i = w->ots; i < m; i++)
+			new(&ot[i]) otnt();
+		free(w->ot);
+		w->ot = ot;
+		w->ots = m;
+	}
 #if 1
 #define PAIRED(i,pt) ((i) < 0 ? (pt)->otflag & 2 : (ot[i]).leaf & OT_PAIRED)
 #define PAIR(i,pt) ((i) < 0 ? ((pt)->otflag |= 2) : ((ot[i]).leaf |= OT_PAIRED))
@@ -751,7 +773,7 @@ otnt *ot_build(WarSpace *w, double dt){
 //	for(pt = w->el, i = -n; i < o; (i < 0 ? pt = pt->next : 0), (i < 0 && pt->w != w ? 0 : i++)) if(i < 0 && pt->w != w){
 	for(; it; ++it) if(!it.paired()){
 		double slen, best = 1e15, rad;
-		const Vec3d *pos = it.getpos();
+		const Vec3d pos = it.getpos();
 		Entity *pt2, *pt3;
 		rad = it.getrad();
 		pt3 = NULL;
@@ -759,8 +781,8 @@ otnt *ot_build(WarSpace *w, double dt){
 		otiterator it3;
 		for(otiterator it2 = it.next(); it2; ++it2) if(!it2.paired()){
 			double rad_2 = it2.getrad();
-			const Vec3d *pos2 = it2.getpos();
-			slen = (*pos - *pos2).slen() + rad * rad + rad_2 * rad_2;
+			const Vec3d pos2 = it2.getpos();
+			slen = (pos - pos2).slen() + rad * rad + rad_2 * rad_2;
 			if(slen < best){
 				it3 = it2;
 /*				jj = it2.i;
@@ -913,7 +935,17 @@ otnt *ot_build(WarSpace *w, double dt){
 #endif
 	/* The last node is not necessarily the root node, but it is. */
 	w->otroot = &w->ot[o-1];
+	signal(SIGSEGV, prevHandler);
 	return w->otroot;
+	}
+	catch(...){
+		FILE *fp = fopen("otnt.dump", "wb");
+		if(fp){
+			fwrite(w->ot, sizeof *w->ot, w->ots, fp);
+			fclose(fp);
+		}
+	}
+	signal(SIGSEGV, prevHandler);
 }
 
 otnt *ot_check(WarSpace *w, double dt){

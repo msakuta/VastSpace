@@ -64,25 +64,18 @@ Entity::~Entity(){
 	if(game->isServer()){
 		if(game->sqvm){
 			HSQUIRRELVM v = game->sqvm;
+			StackReserver sr(v);
 
 			// Invoke the delete hook that may be defined in the Squirrel VM.
 			sq_pushroottable(v);
 			sq_pushstring(v, _SC("hook_delete_Entity"), -1);
 			if(SQ_SUCCEEDED(sq_get(v, -2))){
-				sq_pushroottable(v); // root func root
-				sq_pushstring(v, _SC("Entity"), -1); // root func root "Entity"
-				sq_get(v, -2); // root func root Entity
-				sq_createinstance(v, -1); // root func root Entity Entity-instance
-				sqa_newobj(v, this);
-		//		sq_setinstanceup(v, -1, e); // root func root Entity Entity-instance
-				sq_remove(v, -2); // root func root Entity-instance
-				sq_call(v, 2, SQFalse, SQTrue); // root func
-				sq_poptop(v); // root
+				sq_pushroottable(v);
+				sq_pushobj(v, this);
+				if(SQ_FAILED(sq_call(v, 2, SQFalse, SQTrue)))
+					CmdPrint("Squirrel error: hook_delete_Entity is not a function"); // root func
 			}
 			sq_poptop(v);
-
-			// Actually delete the string pointer in the Squirrel VM.
-			sqa_deleteobj(v, this);
 		}
 	}
 }
@@ -131,37 +124,77 @@ const SQChar *Entity::EntityStaticBase::sq_classname(){
 	return _SC("Entity");
 }
 
-static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
-	SQUserPointer o;
-	SQRESULT sr;
-	if(!sqa_refobj(v, &o, NULL, 1)){
-		sq_pushstring(v, _SC("(deleted)"), -1);
-		return 1;
-	}
-	Entity *p = (Entity*)o;
-	if(p){
-		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
-	}
-	else
-		return sq_throwerror(v, _SC("Object is deleted"));
+static SQInteger sqf_Entity_constructor(HSQUIRRELVM v){
+	SQUserPointer squp;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, &squp, NULL)))
+		return sq_throwerror(v, _SC("No instance UP"));
+	new(squp) WeakPtr<Entity>;
+	return 0;
+}
+
+/// \brief The release hook of Entity that clears the weak pointer.
+///
+/// \param size is always 0?
+static SQInteger sqh_release(SQUserPointer p, SQInteger size){
+	((WeakPtr<Entity>*)p)->~WeakPtr<Entity>();
 	return 1;
 }
 
+static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
+	Entity *p = Entity::sq_refobj(v, 1);
+
+	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+	if(!p){
+		sq_pushstring(v, _SC("(deleted)"), -1);
+		return 1;
+	}
+
+	sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
+	return 1;
+}
+
+void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Entity"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with Entity class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Something's wrong with Entity class instance.");
+	SQUserPointer p;
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
+	new(p) WeakPtr<Entity>(e);
+	sq_setreleasehook(v, -1, sqh_release);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
+	return *(WeakPtr<Entity>*)up;
+}
+
 static SQInteger sqf_Entity_get(HSQUIRRELVM v){
-	Entity *p;
+	try{
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr)){
-		if(!strcmp(wcs, _SC("alive"))){
-			sq_pushbool(v, SQFalse);
-			return 1;
-		}
-		return sr;
+
+	// Retrieve Entity pointer
+	Entity *p = Entity::sq_refobj(v, 1);
+
+	// The "alive" property is always accessible even though the actual object is destroyed.
+	if(!strcmp(wcs, _SC("alive"))){
+		sq_pushbool(v, p ? SQTrue : SQFalse);
+		return 1;
 	}
+
+	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
 	if(!p)
-		return -1;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
 	if(!strcmp(wcs, _SC("race"))){
 		sq_pushinteger(v, p->race);
 		return 1;
@@ -250,19 +283,35 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_pushfloat(v, SQFloat(p->health));
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("classname"))){
+		sq_pushstring(v, p->classname(), -1);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("id"))){
+		sq_pushinteger(v, p->getid());
+		return 1;
+	}
 	else
-		return sqf_get<Entity>(v);
+		return SQ_ERROR;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
 }
 
 static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
-	Entity *p;
+
+	// Retrieve Entity pointer
+	Entity *p = Entity::sq_refobj(v, 1);
+
+	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+	if(!p)
+		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("race"))){
 		SQInteger retint;
 		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
@@ -271,22 +320,18 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("enemy"))){
-		SQUserPointer o;
-		SQRESULT sr;
-		if(!sqa_refobj(v, &o, &sr, 3))
-			return sr;
-		p->enemy = (Entity*)(o);
-//		p->enemy->addObserver(p);
+		Entity *o = Entity::sq_refobj(v, 3);
+		p->enemy = o;
 		return 1;
 	}
 	else
-		return sqf_set<Entity>(v);
+		return SQ_ERROR;
 }
 
 static SQInteger sqf_Entity_command(HSQUIRRELVM v){
 	try{
-		Entity *p;
-		if(!sqa_refobj(v, (SQUserPointer*)&p))
+		Entity *p = Entity::sq_refobj(v);
+		if(!p) // It should be valid to send a command to destroyed object; it's just ignored.
 			return 0;
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
@@ -314,11 +359,7 @@ static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 
 		if(!pt)
 			return sq_throwerror(v, _SC("Undefined Entity class name"));
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Entity"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, pt);
+		Entity::sq_pushobj(v, pt);
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.description);
@@ -328,8 +369,8 @@ static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 
 static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 	try{
-		Entity *p;
-		if(!sqa_refobj(v, (SQUserPointer*)&p))
+		Entity *p = Entity::sq_refobj(v);
+		if(!p)
 			return 0;
 		const SQChar *s;
 		if(p->getGame()->isServer())
@@ -341,18 +382,53 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 	return 1;
 }
 
+
+
+/// "Class" can be Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
+/// I think I cannot write this logic shorter.
+template<typename Class, typename MType, MType getter(Class *p)>
+SQInteger sqf_Entity_getintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p = Entity::sq_refobj(v);
+		SQIntrinsic<MType> r;
+		r.value = getter(p);
+		r.push(v);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+/// This template function is rather straightforward, but produces similar instances rapidly.
+/// Probably classes with the same member variables should share base class, but it's not always feasible.
+template<typename Class, typename MType, MType Class::*member>
+static SQInteger sqf_Entity_setintrinsic(HSQUIRRELVM v){
+	try{
+		Class *p = Entity::sq_refobj(v);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		p->*member = r.value;
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+
+
 bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	// Define class Entity
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
-	register_closure(v, _SC("getpos"), sqf_getintrinsic<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos> >);
-	register_closure(v, _SC("setpos"), sqf_setintrinsic<Entity, Vec3d, &Entity::pos>);
-	register_closure(v, _SC("getrot"), sqf_getintrinsic<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot> >);
-	register_closure(v, _SC("setrot"), sqf_setintrinsic<Entity, Quatd, &Entity::rot>);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>));
+	register_closure(v, _SC("constructor"), sqf_Entity_constructor);
+	register_closure(v, _SC("getpos"), sqf_Entity_getintrinsic<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos> >);
+	register_closure(v, _SC("setpos"), sqf_Entity_setintrinsic<Entity, Vec3d, &Entity::pos>);
+	register_closure(v, _SC("getrot"), sqf_Entity_getintrinsic<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot> >);
+	register_closure(v, _SC("setrot"), sqf_Entity_setintrinsic<Entity, Quatd, &Entity::rot>);
 	register_closure(v, _SC("_get"), sqf_Entity_get);
 	register_closure(v, _SC("_set"), sqf_Entity_set);
 	register_closure(v, _SC("_tostring"), sqf_Entity_tostring, 1);
@@ -718,8 +794,8 @@ AttackCommand::AttackCommand(HSQUIRRELVM v, Entity &){
 	int argc = sq_gettop(v);
 	if(argc < 3)
 		throw SQFArgumentError();
-	Entity *ent;
-	if(sqa_refobj(v, (SQUserPointer*)&ent, NULL, 3)){
+	Entity *ent = Entity::sq_refobj(v, 3);
+	if(ent){
 		ents.insert(ent);
 	}
 }

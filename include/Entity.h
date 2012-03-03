@@ -136,6 +136,12 @@ public:
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, Entity *);
+
+	/// Returns an Entity object being pointed to by an object in Squirrel stack.
+	static Entity *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+
 	class EXPORT EntityStatic{
 	public:
 		virtual ClassId classid() = 0;

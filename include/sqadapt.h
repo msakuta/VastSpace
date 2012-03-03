@@ -81,17 +81,17 @@ EXPORT void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
 EXPORT ::gltestp::dstring sqa_translate(const SQChar *);
 
 /// Any recoverable errors in Squirrel VM is thrown and inherits this class.
-struct SQFError{
+struct EXPORT SQFError{
 	SQFError(const SQChar *a = NULL) : description(a){}
-	const SQChar *what()const;
+	const SQChar *what()const{return description;}
 	const SQChar *description;
 };
-struct SQFArgumentError : SQFError{ SQFArgumentError() : SQFError(_SC("Argument error")){} };
-struct SQIntrinsicError : SQFError{};
-struct TypeMatch : SQIntrinsicError{};
-struct NoIndex : SQIntrinsicError{};
-struct NoUserData : SQIntrinsicError{};
-struct NoCreateInstance : SQIntrinsicError{};
+struct EXPORT SQFArgumentError : SQFError{ SQFArgumentError() : SQFError(_SC("Argument error")){} };
+struct EXPORT SQIntrinsicError : SQFError{};
+struct EXPORT TypeMatch : SQIntrinsicError{};
+struct EXPORT NoIndex : SQIntrinsicError{};
+struct EXPORT NoUserData : SQIntrinsicError{};
+struct EXPORT NoCreateInstance : SQIntrinsicError{};
 
 /// Adapter for Squirrel class instances that behave like an intrinsic type.
 template<typename Class>

@@ -176,32 +176,21 @@ SQInteger Docker::sqf_get(HSQUIRRELVM v){
 }
 
 SQInteger Docker::sqf_addent(HSQUIRRELVM v){
-	if(sq_gettop(v) < 2)
-		return SQ_ERROR;
-	Docker *p;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+	try{
+		if(sq_gettop(v) < 2)
+			return SQ_ERROR;
+		Docker *p;
+		SQRESULT sr;
+		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
+			return sr;
 
-/*	const SQChar *arg;
-	if(SQ_FAILED(sq_getstring(v, 2, &arg)))
-		return SQ_ERROR;
-
-	extern Player *ppl;
-	Entity *pt = Entity::create(arg, p);
-	if(!pt)
-		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: %s") << arg);
-
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("Entity"), -1);
-	sq_get(v, -2);
-	sq_createinstance(v, -1);
-	sqa_newobj(v, pt);*/
-	Entity *pt;
-	if(!sqa_refobj(v, (SQUserPointer*)&pt, &sr, 2))
+		Entity *pt = Entity::sq_refobj(v, 2);
+		p->addent(pt);
 		return 0;
-	p->addent(pt);
-	return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
 }
 
 #ifndef DEDICATED

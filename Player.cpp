@@ -628,12 +628,11 @@ static SQInteger sqf_select(HSQUIRRELVM v){
 	if(n < 0)
 		return SQ_ERROR;
 	for(int i = 0; i < n; i++){
-		Entity *pe;
 		sq_pushinteger(v, i);
 		sq_get(v, 2);
-		bool ret = sqa_refobj(v, (SQUserPointer*)&pe, &sr, 3);
+		Entity *pe = Entity::sq_refobj(v, 3);
 		sq_poptop(v);
-		if(!ret) // Entities can have been deleted
+		if(!pe) // Entities can have been deleted
 			continue;
 		p->selected.insert(pe);
 	}
@@ -782,10 +781,10 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		}
 		if(OT_INSTANCE != ot)
 			return SQ_ERROR;
-		SQUserPointer o;
-		if(!sqa_refobj(v, &o, &sr, 3))
-			return sr;
-		p->chase = (Entity*)o;
+		Entity *o = Entity::sq_refobj(v, 3);
+		if(!o)
+			return SQ_ERROR;
+		p->chase = o;
 		p->chases.insert(p->chase);
 		p->chase->addObserver(p);
 //		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);

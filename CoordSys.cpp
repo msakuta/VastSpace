@@ -1359,13 +1359,9 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 /*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
 	}
 	else
-		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: %s") << arg);
+		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: ") << arg);
 
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("Entity"), -1);
-	sq_get(v, -2);
-	sq_createinstance(v, -1);
-	sqa_newobj(v, pt);
+	Entity::sq_pushobj(v, pt);
 	return 1;
 }
 
@@ -1504,19 +1500,14 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 			return 1;
 		}
 		WarField::EntityList &el = p->w->entlist();
-		sq_pushroottable(v); // root
-		sq_pushstring(v, _SC("Entity"), -1); // root "Entity"
-		sq_get(v, -2); // root Entity
-		sq_newarray(v, el.size()); // root Entity array
+		sq_newarray(v, el.size()); // this array
 		int idx = 0;
 		for(WarField::EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it){
 			Entity *e = *it;
-			sq_pushinteger(v, idx); // root Entity array idx instance
-			sq_createinstance(v, -3); // root Entity array idx instance
-			sqa_newobj(v, e); // root Entity array idx instance
-			sq_set(v, -3); // root Entity array
+			sq_pushinteger(v, idx); // this array idx
+			Entity::sq_pushobj(v, e); // this array idx Entity-instance
+			sq_set(v, -3); // this array
 			idx++;
-	//		sq_setinstanceup(v, -1, p->w->el);
 		}
 		return 1;
 	}

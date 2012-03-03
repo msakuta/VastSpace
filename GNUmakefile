@@ -3,7 +3,7 @@ OUTDIR = Debug
 CFLAGS += -g
 else
 OUTDIR = Release
-CFLAGS += -O3
+CFLAGS += -O3 -g
 endif
 ifndef BULLET_INCLUDE
 BULLET_INCLUDE=/usr/include/bullet

@@ -636,16 +636,16 @@ static SQInteger sqf_unary(HSQUIRRELVM v){
 }
 
 /// It's too repetitive to write this for binary add, subtract, vector product of Vec3d and multiplication of Quatd separately.
-template<typename T, T (T::*proc)(const T &)const, T (T::*scalarproc)(double)const>
+template<typename T, T (T::*proc)(const T &)const, bool hasScalarproc, T (*scalarproc)(const T &, double)>
 static SQInteger sqf_binary(HSQUIRRELVM v){
 	try{
 		SQIntrinsic<T> q;
 		q.getValue(v, 1);
 		T rv;
-		if(scalarproc && sq_gettype(v, 2) & SQOBJECT_NUMERIC){
+		if(hasScalarproc && sq_gettype(v, 2) & SQOBJECT_NUMERIC){
 			SQFloat f;
 			sq_getfloat(v, 2, &f);
-			rv = (q.value.*scalarproc)(f);
+			rv = scalarproc(q.value, f);
 		}
 		else{
 			SQIntrinsic<T> o;
@@ -662,6 +662,25 @@ static SQInteger sqf_binary(HSQUIRRELVM v){
 	}
 }
 
+template<typename T, T (T::*proc)(double)>
+T t_scalarproc(const T &a, double o){
+	return (a.*proc)(o);
+}
+
+template<typename T>
+T dummyproc(const T &a, double){
+	return a;
+}
+
+template<typename T, T (T::*proc)(const T &)const>
+static SQInteger sqf_binary(HSQUIRRELVM v){
+	return sqf_binary<T, proc, false, dummyproc<T> >(v);
+}
+
+template<typename T, T (T::*proc)(double)const>
+T scalarproc(const T &a, double o){
+	return (a.*proc)(o);
+}
 // What a nonsense method...
 static SQInteger sqf_Vec3d_get(HSQUIRRELVM v){
 	try{
@@ -1202,15 +1221,15 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_setclassudsize(v, -1, sizeof(Vec3d));
 	register_closure(v, _SC("constructor"), sqf_Vec3d_constructor);
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
-	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &Vec3d::operator+, NULL >);
-	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &Vec3d::operator+, NULL >);
+	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &Vec3d::operator+ >);
+	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &Vec3d::operator- >);
 	register_closure(v, _SC("_mul"), sqf_Vec3d_scale);
 	register_closure(v, _SC("_div"), sqf_Vec3d_divscale);
 	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &Vec3d::operator- >);
 	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
 	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);
 	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
-	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp, NULL>);
+	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>);
 	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
@@ -1226,7 +1245,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_closure(v, _SC("_get"), sqf_Quatd_get);
 	register_closure(v, _SC("_set"), sqf_Quatd_set);
 	register_closure(v, _SC("normin"), sqf_normin<Quatd>);
-	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &Quatd::operator*, &Quatd::scale >);
+	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &Quatd::operator*, true, scalarproc<Quatd, &Quatd::scale> >);
 	register_closure(v, _SC("trans"), sqf_Quatd_trans);
 	register_closure(v, _SC("cnj"), sqf_unary<Quatd, &Quatd::cnj>/*sqf_Quatd_cnj*/);
 	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);

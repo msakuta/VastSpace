@@ -569,56 +569,12 @@ static SQInteger sqf_GLwindow_close(HSQUIRRELVM v){
 
 
 
-template<>
-SQInteger sqf_setintrinsic<Entity, Quatd, &Entity::rot>(HSQUIRRELVM v){
-	try{
-		Entity *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<Quatd> r;
-		r.getValue(v, 2);
-		p->setPosition(NULL, &r.value);
-/*		p->rot = r.value;
-		if(p->bbody){
-			btTransform tra = p->bbody->getWorldTransform();
-			tra.setRotation(btqc(p->rot));
-			p->bbody->setWorldTransform(tra);
-		}*/
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
-template<>
-SQInteger sqf_setintrinsic<Entity, Vec3d, &Entity::pos>(HSQUIRRELVM v){
-	try{
-		Entity *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<Vec3d> r;
-		r.getValue(v, 2);
-		p->setPosition(&r.value);
-/*		p->pos = r.value;
-		if(p->bbody){
-			btTransform tra = p->bbody->getWorldTransform();
-			tra.setOrigin(btvc(p->pos));
-			p->bbody->setCenterOfMassTransform(tra);
-		}*/
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
 static SQInteger sqf_Vec3d_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
-	sq_pushstring(v, _SC("a"), -1);
-	Vec3d &vec = *(Vec3d*)sq_newuserdata(v, sizeof(Vec3d));
+	SQUserPointer up;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, &up, tt_Vec3d)))
+		return sq_throwerror(v, _SC("NoInstanceUP"));
+	Vec3d &vec = *(Vec3d*)up;
 	for(int i = 0; i < 3; i++){
 		if(i + 2 <= argc){
 			SQFloat f;
@@ -631,14 +587,15 @@ static SQInteger sqf_Vec3d_constructor(HSQUIRRELVM v){
 		else
 			vec[i] = 0.;
 	}
-	sq_set(v, 1);
 	return 0;
 }
 
 static SQInteger sqf_Quatd_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
-	sq_pushstring(v, _SC("a"), -1);
-	Quatd &vec = *(Quatd*)sq_newuserdata(v, sizeof(Quatd));
+	SQUserPointer up;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, &up, tt_Quatd)))
+		return sq_throwerror(v, _SC("NoInstanceUP"));
+	Quatd &vec = *(Quatd*)up;
 	for(int i = 0; i < 4; i++){
 		SQFloat f;
 		if(i + 2 <= argc && !SQ_FAILED(sq_getfloat(v, i + 2, &f)))
@@ -646,7 +603,6 @@ static SQInteger sqf_Quatd_constructor(HSQUIRRELVM v){
 		else
 			vec[i] = 0.;
 	}
-	sq_set(v, 1);
 	return 0;
 }
 
@@ -680,15 +636,23 @@ static SQInteger sqf_unary(HSQUIRRELVM v){
 }
 
 /// It's too repetitive to write this for binary add, subtract, vector product of Vec3d and multiplication of Quatd separately.
-template<typename T, T (T::*proc)(const T &)const>
+template<typename T, T (T::*proc)(const T &)const, T (T::*scalarproc)(double)const>
 static SQInteger sqf_binary(HSQUIRRELVM v){
 	try{
 		SQIntrinsic<T> q;
 		q.getValue(v, 1);
-		SQIntrinsic<T> o;
-		o.getValue(v, 2);
-		// This local variable is necessary for gcc.
-		T rv = (q.value.*proc)(o.value);
+		T rv;
+		if(scalarproc && sq_gettype(v, 2) & SQOBJECT_NUMERIC){
+			SQFloat f;
+			sq_getfloat(v, 2, &f);
+			rv = (q.value.*scalarproc)(f);
+		}
+		else{
+			SQIntrinsic<T> o;
+			o.getValue(v, 2);
+			// This local variable is necessary for gcc.
+			rv = (q.value.*proc)(o.value);
+		}
 		SQIntrinsic<T> r(rv);
 		r.push(v);
 		return 1;
@@ -1235,20 +1199,18 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("Vec3d"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_Vec3d);
+	sq_setclassudsize(v, -1, sizeof(Vec3d));
 	register_closure(v, _SC("constructor"), sqf_Vec3d_constructor);
-	sq_pushstring(v, _SC("a"), -1);
-	*(Vec3d*)sq_newuserdata(v, sizeof(Vec3d)) = vec3_000;
-	sq_createslot(v, -3);
 	register_closure(v, _SC("_tostring"), sqf_Vec3d_tostring);
-	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &Vec3d::operator+ >);
-	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &Vec3d::operator+ >);
+	register_closure(v, _SC("_add"), sqf_binary<Vec3d, &Vec3d::operator+, NULL >);
+	register_closure(v, _SC("_sub"), sqf_binary<Vec3d, &Vec3d::operator+, NULL >);
 	register_closure(v, _SC("_mul"), sqf_Vec3d_scale);
 	register_closure(v, _SC("_div"), sqf_Vec3d_divscale);
 	register_closure(v, _SC("_unm"), sqf_unary<Vec3d, &Vec3d::operator- >);
 	register_closure(v, _SC("normin"), sqf_normin<Vec3d>);
 	register_closure(v, _SC("norm"), sqf_unary<Vec3d, &Vec3d::norm>);
 	register_closure(v, _SC("sp"), sqf_Vec3d_sp);
-	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>);
+	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp, NULL>);
 	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
@@ -1258,15 +1220,13 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("Quatd"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_Quatd);
+	sq_setclassudsize(v, -1, sizeof(Quatd));
 	register_closure(v, _SC("constructor"), sqf_Quatd_constructor);
-	sq_pushstring(v, _SC("a"), -1);
-	*(Quatd*)sq_newuserdata(v, sizeof(Quatd)) = quat_0;
-	sq_createslot(v, -3);
 	register_closure(v, _SC("_tostring"), sqf_Quatd_tostring);
 	register_closure(v, _SC("_get"), sqf_Quatd_get);
 	register_closure(v, _SC("_set"), sqf_Quatd_set);
 	register_closure(v, _SC("normin"), sqf_normin<Quatd>);
-	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &Quatd::operator* >);
+	register_closure(v, _SC("_mul"), sqf_binary<Quatd, &Quatd::operator*, &Quatd::scale >);
 	register_closure(v, _SC("trans"), sqf_Quatd_trans);
 	register_closure(v, _SC("cnj"), sqf_unary<Quatd, &Quatd::cnj>/*sqf_Quatd_cnj*/);
 	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);

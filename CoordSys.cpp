@@ -1325,19 +1325,9 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 		return sr;
 //	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	
-	Vec3d pos = vec3_000;
-	if(OT_INSTANCE == sq_gettype(v, -1)){
-		SQUserPointer typetag;
-		sq_gettypetag(v, -1, &typetag);
-		if(typetag == tt_Vec3d){
-			Vec3d *pvec;
-			sq_pushstring(v, _SC("a"), -1);
-			sq_get(v, -2); // this classname vec3 vec3.a
-			if(!SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pvec, NULL)))
-				pos = *pvec;
-		}
-	}
-	sq_pop(v, 2); // this classname
+	SQVec3d qv;
+	qv.getValue(v, -1);
+	Vec3d &pos = qv.value;
 
 	const SQChar *arg;
 	if(SQ_FAILED(sq_getstring(v, 2, &arg)))

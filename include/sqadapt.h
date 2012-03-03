@@ -91,9 +91,10 @@ struct EXPORT SQIntrinsicError : SQFError{};
 struct EXPORT TypeMatch : SQIntrinsicError{};
 struct EXPORT NoIndex : SQIntrinsicError{};
 struct EXPORT NoUserData : SQIntrinsicError{};
+struct EXPORT NoInstanceUP : SQIntrinsicError{};
 struct EXPORT NoCreateInstance : SQIntrinsicError{};
 
-/// Adapter for Squirrel class instances that behave like an intrinsic type.
+/// \brief Adapter for Squirrel class instances that behave like an intrinsic type, such as vectors and quaternions.
 template<typename Class>
 class SQIntrinsic{
 	static const SQChar *const classname;
@@ -105,6 +106,7 @@ public:
 	SQIntrinsic() : pointer(NULL){}
 	SQIntrinsic(Class &initValue) : value(initValue), pointer(NULL){}
 
+	/// \brief Pushes the object to Squirrel stack.
 	void push(HSQUIRRELVM v){
 		sq_pushroottable(v); // ... root
 		sq_pushstring(v, classname, -1); // ... root "Quatd"
@@ -113,14 +115,12 @@ public:
 			throw NoCreateInstance();
 		sq_remove(v, -2); // ... root Quatd-instance
 		sq_remove(v, -2); // ... Quatd-instance
-		sq_pushstring(v, _SC("a"), -1); // ... Quatd-instance "a"
-		pointer = (Class*)sq_newuserdata(v, sizeof value); // ... Quatd-instance "a" {ud}
+		if(SQ_FAILED(sq_getinstanceup(v, -1, (SQUserPointer*)&pointer, NULL))) // ... Quatd-instance "a" {ud}
+			throw NoInstanceUP();
 		*pointer = value;
-		if(SQ_FAILED(sq_set(v, -3)))
-			throw NoIndex();
 	}
 
-	// Gets a variable at index idx from Squirrel stack
+	/// \brief Gets a variable at index idx from Squirrel stack
 	void getValue(HSQUIRRELVM v, int idx = -1){
 #ifndef NDEBUG
 		assert(OT_INSTANCE == sq_gettype(v, idx));
@@ -128,16 +128,12 @@ public:
 		sq_gettypetag(v, idx, &tt);
 		assert(tt == *typetag);
 #endif
-		sq_pushstring(v, _SC("a"), -1); // ... "a"
-		if(SQ_FAILED(sq_get(v, idx < 0 ? idx - 1 : idx))) // ... a
-			throw NoIndex();
-		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
-			throw NoUserData();
+		if(SQ_FAILED(sq_getinstanceup(v, idx, (SQUserPointer*)&pointer, NULL)))
+			throw NoInstanceUP();
 		value = *pointer;
-		sq_poptop(v);
 	}
 
-	// Sets a variable at index idx in Squirrel stack
+	/// \brief Sets a variable at index idx in Squirrel stack
 	void setValue(HSQUIRRELVM v, int idx = -1){
 #ifndef NDEBUG
 		assert(OT_INSTANCE == sq_gettype(v, idx));
@@ -145,11 +141,8 @@ public:
 		sq_gettypetag(v, idx, &tt);
 		assert(tt == *typetag);
 #endif
-		sq_pushstring(v, _SC("a"), -1); // ... "a"
-		if(SQ_FAILED(sq_get(v, idx))) // ... a
-			throw NoIndex();
-		if(SQ_FAILED(sq_getuserdata(v, -1, (SQUserPointer*)&pointer, NULL)))
-			throw NoUserData();
+		if(SQ_FAILED(sq_getinstanceup(v, -1, (SQUserPointer*)&pointer, NULL)))
+			throw NoInstanceUP();
 		*pointer = value;
 		sq_poptop(v);
 	}

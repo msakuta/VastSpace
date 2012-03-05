@@ -195,9 +195,19 @@ public:
 	/// Creates a button to toggle move ordering mode.
 	static GLWstateButton *newMoveOrderButton(Game *game, const char *filename, const char *filename2, const char *tips);
 
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, Player *);
+
+	/// Returns an Player object being pointed to by an object in Squirrel stack.
+	static Player *sq_refobj(HSQUIRRELVM v, SQInteger idx = 1);
+
 protected:
 	std::vector<teleport> tplist;
 private:
+	static SQInteger sqf_players(HSQUIRRELVM v);
+	static SQInteger sqf_select(HSQUIRRELVM v);
+	static SQInteger sqf_tostring(HSQUIRRELVM v);
+
 	static SQInteger sqf_get(HSQUIRRELVM v);
 	static SQInteger sqf_set(HSQUIRRELVM v);
 

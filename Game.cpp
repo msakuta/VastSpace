@@ -170,11 +170,7 @@ void Game::sq_replacePlayer(Player *p){
 	player = p;
 	HSQUIRRELVM v = sqvm;
 	sq_pushstring(v, _SC("player"), -1); // this "player"
-	sq_pushstring(v, _SC("Player"), -1); // this "player" "Player"
-	sq_get(v, 1); // this "player" Player
-	sq_createinstance(v, -1); // this "player" Player Player-instance
-	sqa_newobj(v, p); // this "player" Player Player-instance
-	sq_remove(v, -2); // this "player" Player-instance
+	Player::sq_pushobj(v, p);
 	sq_createslot(v, 1); // this
 }
 

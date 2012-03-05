@@ -617,11 +617,40 @@ Player::teleport_iterator Player::endTeleport(){
 	return tplist.size();
 }
 
-static SQInteger sqf_select(HSQUIRRELVM v){
-	Player *p;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+/// \brief The release hook of Entity that clears the weak pointer.
+///
+/// \param size is always 0?
+static SQInteger sqh_release(SQUserPointer p, SQInteger size){
+	((WeakPtr<Player>*)p)->~WeakPtr<Player>();
+	return 1;
+}
+
+void Player::sq_pushobj(HSQUIRRELVM v, Player *e){
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Player"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with Player class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Something's wrong with Player class instance.");
+	SQUserPointer p;
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of Player.");
+	new(p) WeakPtr<Player>(e);
+	sq_setreleasehook(v, -1, sqh_release);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+Player *Player::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of Player.");
+	return *(WeakPtr<Player>*)up;
+}
+
+SQInteger Player::sqf_select(HSQUIRRELVM v){
+	Player *p = sq_refobj(v);
 	if(OT_ARRAY != sq_gettype(v, 2))
 		return sq_throwerror(v, _SC("Player::setSelection: Argument must be an array."));
 	int n = sq_getsize(v, 2);
@@ -639,30 +668,19 @@ static SQInteger sqf_select(HSQUIRRELVM v){
 	return 0;
 }
 
-static SQInteger sqf_players(HSQUIRRELVM v){
-	Game *game = application.serverGame ? application.serverGame : application.clientGame;
+SQInteger Player::sqf_players(HSQUIRRELVM v){
+	Game *game = (Game*)sq_getforeignptr(v);
 	sq_newarray(v, game->players.size()); // array
 	for(int i = 0; i < game->players.size(); i++){
 		sq_pushinteger(v, i); // array i
-		sq_pushroottable(v); // array i root
-		sq_pushstring(v, _SC("Player"), -1); // array i root name
-		sq_get(v, -2); // array i root class
-		sq_createinstance(v, -1); // array i root class instance
-		if(!sqa_newobj(v, game->players[i]))
-			return sq_throwerror(v, _SC("Player is NULL pointer"));
-		sq_remove(v, -2); // array i root instance
-		sq_remove(v, -2); // array i instance
+		sq_pushobj(v, game->players[i]); // array i instance
 		sq_set(v, -3); // array
 	}
 	return 1;
 }
 
-static SQInteger sqf_tostring(HSQUIRRELVM v){
-	SQUserPointer o;
-	SQRESULT sr;
-	if(!sqa_refobj(v, &o, &sr, 1, true))
-		return sr;
-	Player *p = (Player*)o;
+SQInteger Player::sqf_tostring(HSQUIRRELVM v){
+	Player *p = Player::sq_refobj(v);
 	if(p){
 		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
 	}
@@ -671,21 +689,63 @@ static SQInteger sqf_tostring(HSQUIRRELVM v){
 	return 1;
 }
 
+/// "Class" can be Player. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
+/// I think I cannot write this logic shorter.
+template<typename Class, typename MType, MType getter(Class *p), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+SQInteger sqf_getintrinsic2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.value = getter(p);
+		r.push(v);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+/// This template function is rather straightforward, but produces similar instances rapidly.
+/// Probably classes with the same member variables should share base class, but it's not always feasible.
+template<typename Class, typename MType, MType Class::*member, Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+static SQInteger sqf_setintrinsic2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		p->*member = r.value;
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+template<typename Class, typename MType, void (Class::*member)(const MType &), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+static SQInteger sqf_setintrinsica2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		(p->*member)(r.value);
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
 void Player::sq_define(HSQUIRRELVM v){
-/*	SqPlus::SQClassDef<Player>(_SC("Player")).
-		func(&Player::classname, _SC("classname")).
-		func(&Player::getcs, _SC("cs"));*/
 	sq_pushstring(v, _SC("Player"), -1);
 	sq_newclass(v, SQFalse);
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
-	register_closure(v, _SC("getpos"), sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getpos> >);
-	register_closure(v, _SC("setpos"), sqf_setintrinsica<Player, Vec3d, &Player::setpos>);
-	register_closure(v, _SC("getvelo"), sqf_getintrinsic<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getvelo> >, 1, _SC("x"));
-	register_closure(v, _SC("setvelo"), sqf_setintrinsica<Player, Vec3d, &Player::setvelo>, 2, _SC("xx"));
-	register_closure(v, _SC("getrot"), sqf_getintrinsic<Player, Quatd, accessorgetter<Player, Quatd, &Player::getrot> >);
-	register_closure(v, _SC("setrot"), sqf_setintrinsica<Player, Quatd, &Player::setrot>);
+	sq_settypetag(v, -1, SQUserPointer(_SC("Player")));
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<Player>));
+	register_closure(v, _SC("getpos"), sqf_getintrinsic2<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getpos>, sq_refobj >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsica2<Player, Vec3d, &Player::setpos, sq_refobj>);
+	register_closure(v, _SC("getvelo"), sqf_getintrinsic2<Player, Vec3d, accessorgetter<Player, Vec3d, &Player::getvelo>, sq_refobj >, 1, _SC("x"));
+	register_closure(v, _SC("setvelo"), sqf_setintrinsica2<Player, Vec3d, &Player::setvelo, sq_refobj>, 2, _SC("xx"));
+	register_closure(v, _SC("getrot"), sqf_getintrinsic2<Player, Quatd, accessorgetter<Player, Quatd, &Player::getrot>, sq_refobj >);
+	register_closure(v, _SC("setrot"), sqf_setintrinsica2<Player, Quatd, &Player::setrot, sq_refobj>);
 	register_closure(v, _SC("getmover"), Player::sqf_getmover);
 	register_closure(v, _SC("setmover"), Player::sqf_setmover);
 	register_closure(v, _SC("select"), sqf_select);
@@ -698,13 +758,9 @@ void Player::sq_define(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_get(HSQUIRRELVM v){
-	Player *p;
+	Player *p = sq_refobj(v);
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("cs"))){
 		sq_pushroottable(v);
 		sq_pushstring(v, p->cs->getStatic().s_sqclassname, -1);
@@ -732,14 +788,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Entity"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		if(!sqa_newobj(v, p->chase)){
-			return sq_throwerror(v, _SC("no ent"));
-		}
-//		sq_setinstanceup(v, -1, p->chase);
+		Entity::sq_pushobj(v, p->chase);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("chasecamera"))){
@@ -759,13 +808,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_set(HSQUIRRELVM v){
-	Player *p;
+	Player *p = sq_refobj(v);
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("cs"))){
 		if(OT_INSTANCE != sq_gettype(v, 3))
 			return SQ_ERROR;
@@ -812,10 +858,7 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_getpos(HSQUIRRELVM v){
-	SQRESULT sr;
-	Player *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+	Player *p = sq_refobj(v);
 	SQVec3d sqpos;
 	sqpos.value = p->getpos();
 	sqpos.push(v);
@@ -829,10 +872,7 @@ SQInteger Player::sqf_getpos(HSQUIRRELVM v){
  * indicating what mover a Player currently has.
  */
 SQInteger Player::sqf_setmover(HSQUIRRELVM v){
-	SQRESULT sr;
-	Player *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+	Player *p = sq_refobj(v);
 	const SQChar *movername;
 	if(SQ_FAILED(sq_getstring(v, 2, &movername)))
 		return SQ_ERROR;
@@ -854,10 +894,7 @@ SQInteger Player::sqf_setmover(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_getmover(HSQUIRRELVM v){
-	SQRESULT sr;
-	Player *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+	Player *p = sq_refobj(v);
 	if(p->mover == p->freelook)
 		sq_pushstring(v, _SC("freelook"), -1);
 	else if(p->mover == p->tactical)

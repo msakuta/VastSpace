@@ -1303,14 +1303,11 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	// Define class Player
 	Player::sq_define(v);
 
-	sq_pushstring(v, _SC("player"), -1); // this "player"
-	sq_pushstring(v, _SC("Player"), -1); // this "player" "Player"
-	sq_get(v, 1); // this "player" Player
-	sq_createinstance(v, -1); // this "player" Player Player-instance
-	sqa_newobj(v, &pl); // this "player" Player Player-instance
-//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
-	sq_remove(v, -2); // this "player" Player-instance
-	sq_createslot(v, 1); // this
+	if(game->player){
+		sq_pushstring(v, _SC("player"), -1); // this "player"
+		Player::sq_pushobj(v, game->player); // this "player" Player-instance
+		sq_createslot(v, -3); // this
+	}
 
 	// Define class SquirrelBind
 	sq_pushstring(v, _SC("SquirrelBind"), -1);

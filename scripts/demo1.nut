@@ -118,7 +118,12 @@ function frameproc(dt){
 }
 
 function hook_delete_Entity(e){
-	print(e + " is deleted");
+	if(!(e.race in deaths))
+		deaths[e.race] <- {};
+	if(!(e.classname in deaths[e.race]))
+		deaths[e.race][e.classname] <- 0;
+	deaths[e.race][e.classname]++;
+	print(e + " pos:" + e.getpos() + " is deleted");
 }
 
 

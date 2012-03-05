@@ -255,6 +255,10 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		for(it = player->selected.begin(); it != player->selected.end(); it++){
 			Entity *pt = *it;
 
+			// It is possible that a weak pointer has lost a reference to deleted Entity.
+			if(!pt)
+				continue;
+
 			/* show only member of current team */
 //			if(teamOnly && pl.race != pt->race)
 //				continue;
@@ -276,6 +280,10 @@ void GLWentlist::draw(GLwindowState &ws, double){
 		WarField::EntityList::const_iterator it = w->el.begin();
 		for(; it != w->el.end(); it++) if(*it){
 			const Entity *pt = *it;
+
+			// It is possible that a weak pointer has lost a reference to deleted Entity.
+			if(!pt)
+				continue;
 
 			/* show only member of current team */
 //			if(teamOnly && pl.race != pt->race)

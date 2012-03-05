@@ -165,7 +165,7 @@ SQInteger CMHalt::sqf_call(HSQUIRRELVM v){
 
 int cmd_halt(int, char *[], void *pv){
 	Player *pl = (Player*)pv;
-	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		HaltCommand com;
 		(*it)->command(&com);
 		CMHalt::send(**it);

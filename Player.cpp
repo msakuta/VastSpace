@@ -292,7 +292,7 @@ bool Player::unlink(Observable *pe){
 //	chases.erase(reinterpret_cast<Entity*>(pe));
 	// chases.erase() cannot be used because the raw pointer value changes when upcasting from multiple-inherited object to
 	// the super class, and we do not use dynamic cast. We must iterate and find the pointer in the set to erase one.
-	for(std::set<const Entity*>::const_iterator it = chases.begin(); it != chases.end();){
+	for(ChaseSet::const_iterator it = chases.begin(); it != chases.end();){
 		if(*it == pe){
 			chases.erase(it);
 			break;
@@ -369,7 +369,7 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 	Vec3d &velo = refvelo();
 //	Quatd &rot = pl.rot;
 	Vec3d &cpos = pl.cpos;
-	std::set<const Entity*> &chases = pl.chases;
+	Player::ChaseSet &chases = pl.chases;
 	Entity *chase = pl.chase;
 
 	// Some WarSpaces have special rules for which direction is up.
@@ -395,7 +395,7 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 	}
 	if(!chases.empty()){
 		int n = 0;
-		for(std::set<const Entity*>::iterator it = chases.begin(); it != chases.end(); it++){
+		for(Player::ChaseSet::iterator it = chases.begin(); it != chases.end(); it++){
 			cpos = (cpos * n + (*it)->pos) / (n + 1);
 			n++;
 		}
@@ -771,16 +771,27 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("selected"))){
-		if(p->selected.empty()){
-			sq_pushnull(v);
-			return 1;
+		// We cannot foresee how many items in the selection list are really alive.
+		// So we just append each item to the array, examining if each one is alive in the way.
+		sq_newarray(v, 0); // array
+
+		// Retrieve library-provided "append" method for an array.
+		// We'll reuse the method for all the elements, which is not exactly the same way as
+		// an ordinally Squirrel codes evaluate.
+		sq_pushstring(v, _SC("append"), -1); // array "append"
+		if(SQ_FAILED(sq_get(v, -2))) // array array.append
+			return sq_throwerror(v, _SC("append not found"));
+
+		// Note the "if"
+		for(SelectSet::iterator it = p->selected.begin(); it != p->selected.end(); it++) if(*it){
+			sq_push(v, -2); // array array.append array
+			Entity::sq_pushobj(v, *it); // array array.append array Entity-instance
+			sq_call(v, 2, SQFalse, SQFalse); // array array.append
 		}
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Entity"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		if(!sqa_newobj(v, *p->selected.begin()))
-			return sq_throwerror(v, _SC("no selected"));
+
+		// Pop the saved "append" method
+		sq_poptop(v); // array
+
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("chase"))){

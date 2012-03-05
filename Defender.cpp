@@ -1298,7 +1298,7 @@ Mat4d Defender::legTransform(int i)const{
 
 static int cmd_deploy(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		(*it)->command(&DeployCommand());
 	}
 //	for(Entity *e = pl->selected; e; e = e->selectnext){
@@ -1309,7 +1309,7 @@ static int cmd_deploy(int argc, char *argv[], void *pv){
 
 static int cmd_undeploy(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
-	for(std::set<Entity*>::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		(*it)->command(&UndeployCommand());
 	}
 //	for(Entity *e = pl->selected; e; e = e->selectnext){

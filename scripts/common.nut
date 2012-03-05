@@ -688,6 +688,13 @@ function printPlayers(){
 	for(i = 0; i < pls.len(); i++){
 		local pl = pls[i];
 		print("Player[" + i + "] = {playerId = " + pl.playerId + ", chase = " + pl.chase + "}");
+
+		local plsel = pl.selected;
+		if(0 < plsel.len()){
+			print(pl + " has " + plsel.len() + " selections");
+			foreach(e in pl.selected)
+				print(e);
+		}
 	}
 }
 

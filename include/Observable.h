@@ -187,6 +187,9 @@ public:
 	operator bool()const{
 		return !!ptr;
 	}
+	bool operator<(const WeakPtr &o)const{
+		return ptr < o.ptr;
+	}
 };
 
 

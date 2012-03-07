@@ -230,12 +230,17 @@ public:
 			o->addObserver(this);
 		set_.insert(o);
 	}
-	void erase(iterator &it){
+
+	// The types iterator and const_iterator seem to have the same
+	// signature in gcc, so defining both causes conflict.
+	// I'm not sure leaving const_iterator version is correct choice,
+	// but it should be easy to cast to non-const version.
+/*	void erase(iterator &it){
 		if(it != set_.end()){
 			(*it)->removeObserver(this);
 			set_.erase(it);
 		}
-	}
+	}*/
 	void erase(const_iterator &it){
 		if(it != set_.end()){
 			(*it)->removeObserver(this);

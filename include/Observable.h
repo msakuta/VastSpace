@@ -193,6 +193,69 @@ public:
 };
 
 
+/// \brief A set of Observables that automatically removes expired elements.
+/// \param T is element type, must be a subclass of and be static_cast-able from Observable.
+///
+/// All occasions of item insertion are overridden so that all pointers to
+/// Observables are managed to prevent dangling pointer.
+///
+/// I thought it could publicly inherit std::set<T*>, but it would introduce so many
+/// ways to add or remove elements that overriding them all would be a pain.
+/// Instead, we limited the ways to access the contents for changing to ensure
+/// the pointers to be managed.
+///
+/// Basically, this class can be used much like std::set, for it resembles std::set
+/// in methods such as begin() and end(). Actually, most methods just delegates
+/// to internal set object.
+template<typename T>
+class ObservableSet : public Observer{
+	std::set<T*> set_;
+	ObservableSet &operator=(ObservableSet&){} ///< Prohibit copy construction.
+public:
+	typedef typename std::set<T*>::iterator iterator;
+	typedef typename std::set<T*>::const_iterator const_iterator;
+	~ObservableSet(){
+		clear();
+	}
+	iterator begin(){return set_.begin();}
+	iterator end(){return set_.end();}
+	const_iterator begin()const{return set_.begin();}
+	const_iterator end()const{return set_.end();}
+	size_t size()const{return set_.size();}
+	bool empty()const{return set_.empty();}
+	iterator find(T *o){return set_.find(o);}
+	void insert(T *o){
+		iterator it = set_.find(o);
+		if(it == set_.end())
+			o->addObserver(this);
+		set_.insert(o);
+	}
+	void erase(iterator &it){
+		if(it != set_.end()){
+			(*it)->removeObserver(this);
+			set_.erase(it);
+		}
+	}
+	void erase(const_iterator &it){
+		if(it != set_.end()){
+			(*it)->removeObserver(this);
+			set_.erase(it);
+		}
+	}
+	void clear(){
+		for(iterator it = set_.begin(); it != set_.end(); it++)
+			(*it)->removeObserver(this);
+		set_.clear();
+	}
+	bool unlink(Observable *o){
+		iterator it = set_.find(static_cast<T*>(o));
+		if(it != set_.end())
+			set_.erase(it);
+		return true;
+	}
+};
+
+
 
 
 //-----------------------------------------------------------------------------

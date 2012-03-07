@@ -120,9 +120,9 @@ public:
 	double gametime; ///< global time
 	double velolen; ///< trivial; performance keeper
 	double height; ///< trivial; indicates air pressure surrounding the player
-	typedef std::set<WeakPtr<Entity> > ChaseSet; ///< The type to hold set of Entities for chasing camera.
+	typedef ObservableSet<Entity> ChaseSet; ///< The type to hold set of Entities for chasing camera.
 	ChaseSet chases; ///< Chased group of Entities. viewing volume shows all of them.
-	typedef std::set<WeakPtr<Entity> > SelectSet; ///< The type that holds selected list of Entities.
+	typedef ObservableSet<Entity> SelectSet; ///< The type that holds selected list of Entities.
 	SelectSet selected; ///< The list of selected Entities, moved from Entity-embedded linked list, which is meaningless in multiplayer game.
 	int attackorder; ///< Issueing attacking order
 	int forceattackorder;

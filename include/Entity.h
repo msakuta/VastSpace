@@ -212,20 +212,6 @@ protected:
 };
 
 
-/// \param T must be a subclass of Observable
-///
-/// TODO: Override all occasions of item insertion and deletion and
-/// add registration/unregistration codes of the set to observed object.
-template<typename T>
-class ObservableSet : public std::set<T*>, public Observer{
-public:
-	bool unlink(Observable *o){
-		iterator it = find(o);
-		if(it != end())
-			erase(it);
-		return true;
-	}
-};
 
 //-----------------------------------------------------------------------------
 //     Implementation
@@ -239,7 +225,7 @@ inline Entity *Entity::getUltimateOwner(){
 }
 
 struct GLwindowState;
-void entity_popup(std::set<WeakPtr<Entity> > &pt, GLwindowState &ws, int selectchain);
+void entity_popup(ObservableSet<Entity> &pt, GLwindowState &ws, int selectchain);
 
 int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &srcpos, const Vec3d &srcvelo, double speed, const WarField *w);
 

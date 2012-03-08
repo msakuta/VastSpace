@@ -83,6 +83,7 @@ public:
 
 	static void addServerInits(void (*f)(Game &));
 
+	void sq_replaceUniverse(Universe *);
 	void sq_replacePlayer(Player *);
 
 	virtual bool isServer()const;

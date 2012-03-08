@@ -232,16 +232,12 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 			return 1;
 		}
 		WarField::EntityList &el = d->el;
-		sq_pushroottable(v); // root
-		sq_pushstring(v, _SC("Entity"), -1); // root "Entity"
-		sq_get(v, -2); // root Entity
 		sq_newarray(v, el.size()); // root Entity array
 		int idx = 0;
 		for(WarField::EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it){
 			Entity *e = *it;
-			sq_pushinteger(v, idx); // root Entity array idx instance
-			sq_createinstance(v, -3); // root Entity array idx instance
-			sqa_newobj(v, e); // root Entity array idx instance
+			sq_pushinteger(v, idx); // root Entity array idx
+			Entity::sq_pushobj(v, e); // root Entity array idx instance
 			sq_set(v, -3); // root Entity array
 			idx++;
 	//		sq_setinstanceup(v, -1, p->w->el);
@@ -249,17 +245,18 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("docker"))){
-		Docker *d = p->getDocker();
-		if(!d){
+		// TODO: Not yet supported!
+//		Docker *d = p->getDocker();
+//		if(!d){
 			sq_pushnull(v);
 			return 1;
-		}
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Docker"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, d);
-		return 1;
+//		}
+//		sq_pushroottable(v);
+//		sq_pushstring(v, _SC("Docker"), -1);
+//		sq_get(v, -2);
+//		sq_createinstance(v, -1);
+//		Entity::sq_pushobj(v, d);
+//		return 1;
 	}
 	else if(!strcmp(wcs, _SC("enemy"))){
 		SQUserPointer o;
@@ -267,11 +264,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("Entity"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, p->enemy);
+		Entity::sq_pushobj(v, p->enemy);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("health"))){

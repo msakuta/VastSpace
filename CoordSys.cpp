@@ -995,14 +995,12 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			sq_get(v, -2);
 			sq_pushinteger(v, 0);
 
-			if(SQ_FAILED(sq_get(v, -2)))
+			if(SQ_FAILED(sq_get(v, -2))) // readFile
 				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
-//			sq_pushstring(v, s, -1);
-			sq_pushroottable(v);
-			sq_createinstance(v, -4);
-			sqa_newobj(v, this);
+			sq_pushroottable(v); // readFile root
+			CoordSys::sq_pushobj(v, this); // readFile root cs
 
-			sq_newtable(v);
+			sq_newtable(v); // readFile root cs defineTable
 			for(const varlist *vl = sc.vl; vl; vl = vl->next){
 				for(int i = 0; i < vl->c; i++){
 					sq_pushstring(v, vl->l[i].name, -1);
@@ -1015,6 +1013,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			for(int i = 0; i < argc; i++)
 				sq_pushstring(v, argv[i], -1);
 
+			// Call the function readFile with arguments (root, cs, defineTable, ...)
 			// It's no use examining returned value in that case calling the function iteslf fails.
 			if(SQ_FAILED(sq_call(v, argc+3, SQTrue, SQTrue)))
 				throw sqa::SQFError(_SC("readFile function could not be called"));
@@ -1308,6 +1307,41 @@ void CoordSys::unregisterClass(ClassId id){
 	::ctormap().erase(id);
 }
 
+/// \brief The release hook of Entity that clears the weak pointer.
+///
+/// \param size is always 0?
+static SQInteger sqh_release(SQUserPointer p, SQInteger size){
+	((WeakPtr<CoordSys>*)p)->~WeakPtr<CoordSys>();
+	return 1;
+}
+
+void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
+	sq_pushroottable(v);
+	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
+	if(it == CoordSys::ctormap().end())
+		throw SQFError(_SC("Error wrong classname"));
+	sq_pushstring(v, it->second->s_sqclassname, -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with CoordSys class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError(dstring() << "Couldn't create class " << it->second->s_sqclassname);
+	SQUserPointer p;
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+	new(p) WeakPtr<CoordSys>(cs);
+	sq_setreleasehook(v, -1, sqh_release);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+	return *(WeakPtr<CoordSys>*)up;
+}
+
 
 /// It's shame
 static SQInteger sqf_getclass(HSQUIRRELVM v){
@@ -1319,11 +1353,7 @@ static SQInteger sqf_getclass(HSQUIRRELVM v){
 static SQInteger sqf_addent(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
-	CoordSys *p;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	CoordSys *p = CoordSys::sq_refobj(v);
 	
 	SQVec3d qv;
 	qv.getValue(v, -1);
@@ -1349,68 +1379,42 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 /*		pt->race = 5 < argc ? atoi(argv[5]) : 0;*/
 	}
 	else
-		sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: ") << arg);
+		return sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: ") << arg);
 
 	Entity::sq_pushobj(v, pt);
 	return 1;
 }
 
 static SQInteger sqf_name(HSQUIRRELVM v){
-	CoordSys *p;
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+	CoordSys *p = CoordSys::sq_refobj(v);
 	sq_pushstring(v, p->name, -1);
 	return 1;
 }
 
 static SQInteger sqf_child(HSQUIRRELVM v){
-	CoordSys *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	CoordSys *p = CoordSys::sq_refobj(v);
 	if(!p->children){
 		sq_pushnull(v);
 		return 1;
 	}
-/*	int n;
-	CoordSys *cs = p->children;
-	for(n = 0; cs; n++, cs = cs->next){*/
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("CoordSys"), -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-	sqa_newobj(v, p->children);
-//		sq_setinstanceup(v, -1, p->children);
-//	}
+	CoordSys::sq_pushobj(v, p->children);
 	return 1;
 }
 
 static SQInteger sqf_next(HSQUIRRELVM v){
-	CoordSys *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	CoordSys *p = CoordSys::sq_refobj(v);
 	if(!p->next){
 		sq_pushnull(v);
 		return 1;
 	}
-	sq_pushroottable(v);
-	sq_pushstring(v, p->next->getStatic().s_sqclassname, -1);
-	sq_get(v, -2);
-	sq_createinstance(v, -1);
-	sqa_newobj(v, p->next);
-//	sq_setinstanceup(v, -1, p->next);
+	CoordSys::sq_pushobj(v, p->next);
 	return 1;
 }
 
 static SQInteger sqf_transPosition(HSQUIRRELVM v){
 	try{
-		CoordSys *p, *p2;
-		if(!sqa_refobj(v, (SQUserPointer*)&p))
-			return SQ_ERROR;
-		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 3))
-			return SQ_ERROR;
+		CoordSys *p = CoordSys::sq_refobj(v);
+		CoordSys *p2 = CoordSys::sq_refobj(v, 3);
 		SQBool delta;
 		if(SQ_FAILED(sq_getbool(v, 4, &delta)))
 			delta = SQFalse;
@@ -1420,56 +1424,38 @@ static SQInteger sqf_transPosition(HSQUIRRELVM v){
 		qv.push(v);
 		return 1;
 	}
-	catch(...){
-		return SQ_ERROR;
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
 	}
 }
 
 static SQInteger sqf_transRotation(HSQUIRRELVM v){
 	try{
-		CoordSys *p, *p2;
-		if(!sqa_refobj(v, (SQUserPointer*)&p))
-			return SQ_ERROR;
-		if(!sqa_refobj(v, (SQUserPointer*)&p2, NULL, 2))
-			return SQ_ERROR;
+		CoordSys *p = CoordSys::sq_refobj(v);
+		CoordSys *p2 = CoordSys::sq_refobj(v, 3);
 		Quatd q = p->tocsq(p2);
 		SQQuatd qv(q);
 		qv.push(v);
 		return 1;
 	}
-	catch(...){
-		return SQ_ERROR;
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
 	}
 }
 
 static SQInteger sqf_getpath(HSQUIRRELVM v){
-	CoordSys *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	CoordSys *p = CoordSys::sq_refobj(v);
 	sq_pushstring(v, p->getpath(), -1);
 	return 1;
 }
 
 static SQInteger sqf_findcspath(HSQUIRRELVM v){
-	CoordSys *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
+	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *s;
 	sq_getstring(v, -1, &s);
 	CoordSys *cs = p->findcspath(s);
 	if(cs){
-		sq_pushroottable(v);
-		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
-		if(it == CoordSys::ctormap().end())
-			return sq_throwerror(v, _SC("Error wrong classname"));
-		sq_pushstring(v, it->second->s_sqclassname, -1);
-		sq_get(v, -2);
-		if(SQ_FAILED(sq_createinstance(v, -1)))
-			return sq_throwerror(v, dstring() << "Couldn't create class " << it->second->s_sqclassname);
-		sqa_newobj(v, cs);
-//		sq_setinstanceup(v, -1, cs);
+		CoordSys::sq_pushobj(v, cs);
 		return 1;
 	}
 	sq_pushnull(v);
@@ -1477,16 +1463,12 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 }
 
 SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
-	CoordSys *p;
+	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("entlist"))){
 		if(!p->w){
-//			sq_pushnull(v);
-			sq_newarray(v, 0); // Returning null makes the caller unable to use foreach
+			sq_newarray(v, 0); // Returning empty array makes the caller be able to use foreach
 			return 1;
 		}
 		WarField::EntityList &el = p->w->entlist();
@@ -1503,24 +1485,18 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	}
 	else if(!strcmp(wcs, _SC("bulletlist"))){
 		if(!p->w){
-//			sq_pushnull(v);
-			sq_newarray(v, 0); // Returning null makes the caller unable to use foreach
+			sq_newarray(v, 0); // Returning empty array makes the caller be able to use foreach
 			return 1;
 		}
 		WarField::EntityList &bl = p->w->bl;
-		sq_pushroottable(v); // root
-		sq_pushstring(v, _SC("Entity"), -1); // root "Entity"
-		sq_get(v, -2); // root Entity
 		sq_newarray(v, bl.size()); // root Entity array
 		int idx = 0;
 		for(WarField::EntityList::iterator it = bl.begin(); it != bl.end(); it++) if(*it){
 			Entity *e = *it;
-			sq_pushinteger(v, idx); // root Entity array idx instance
-			sq_createinstance(v, -3); // root Entity array idx instance
-			sqa_newobj(v, e); // root Entity array idx instance
+			sq_pushinteger(v, idx); // root Entity array idx
+			Entity::sq_pushobj(v, e); // root Entity array idx instance
 			sq_set(v, -3); // root Entity array
 			idx++;
-	//		sq_setinstanceup(v, -1, p->w->el);
 		}
 		return 1;
 	}
@@ -1529,14 +1505,7 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushroottable(v);
-		CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(p->classname());
-		if(it == CoordSys::ctormap().end())
-			return sq_throwerror(v, _SC("Error no match class names"));
-		sq_pushstring(v, it->second->s_sqclassname, -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		sqa_newobj(v, p->parent);
+		sq_pushobj(v, p->parent);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("extranames"))){
@@ -1555,26 +1524,34 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else
-		return sqa::sqf_get<CoordSys>(v);
+		return SQ_ERROR;
 }
+
+SQInteger sqf_set(HSQUIRRELVM v){
+	if(sq_gettop(v) < 3)
+		return SQ_ERROR;
+	CoordSys *p = CoordSys::sq_refobj(v);
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	return SQ_ERROR;
+}
+
 
 bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>));
 	register_closure(v, _SC("name"), sqf_name);
 	register_closure(v, _SC("getclass"), sqf_getclass);
-	register_closure(v, _SC("getpos"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos> >);
-	register_closure(v, _SC("setpos"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::pos>);
-	register_closure(v, _SC("getvelo"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::velo> >);
-	register_closure(v, _SC("setvelo"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::velo>);
-	register_closure(v, _SC("getrot"), sqf_getintrinsic<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot> >);
-	register_closure(v, _SC("setrot"), sqf_setintrinsic<CoordSys, Quatd, &CoordSys::rot>);
-	register_closure(v, _SC("getomg"), sqf_getintrinsic<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::omg> >);
-	register_closure(v, _SC("setomg"), sqf_setintrinsic<CoordSys, Vec3d, &CoordSys::omg>);
+	register_closure(v, _SC("getpos"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos>, CoordSys::sq_refobj >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::pos, CoordSys::sq_refobj>);
+	register_closure(v, _SC("getvelo"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::velo>, CoordSys::sq_refobj >);
+	register_closure(v, _SC("setvelo"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::velo, CoordSys::sq_refobj>);
+	register_closure(v, _SC("getrot"), sqf_getintrinsic2<CoordSys, Quatd, membergetter<CoordSys, Quatd, &CoordSys::rot>, CoordSys::sq_refobj>);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic2<CoordSys, Quatd, &CoordSys::rot, CoordSys::sq_refobj>);
+	register_closure(v, _SC("getomg"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::omg>, CoordSys::sq_refobj>);
+	register_closure(v, _SC("setomg"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::omg, CoordSys::sq_refobj>);
 	register_closure(v, _SC("child"), sqf_child);
 	register_closure(v, _SC("next"), sqf_next);
 	register_closure(v, _SC("transPosition"), sqf_transPosition);
@@ -1584,7 +1561,7 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
 	register_closure(v, _SC("_get"), sqf_get);
-	register_closure(v, _SC("_set"), sqf_set<CoordSys>);
+	register_closure(v, _SC("_set"), sqf_set);
 	sq_pushstring(v, _SC("readFile"), -1);
 	sq_newarray(v, 1);
 	sq_newslot(v, -3, SQFalse); // The last argument is important to designate the readFile handler is static.

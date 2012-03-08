@@ -347,14 +347,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			sq_pushstring(v, _SC("drawCoordSysLabel"), -1);
 			if(SQ_FAILED(sq_get(v, -2)))
 				break;
-			sq_pushroottable(v);
-			sq_pushstring(v, cs->getStatic().s_sqclassname, -1);
-			if(SQ_FAILED(sq_get(v, -2)))
-				break;
-			if(SQ_FAILED(sq_createinstance(v, -1)))
-				break;
-			sqa_newobj(v, cs, -1);
-			sq_remove(v, -2);
+			CoordSys::sq_pushobj(v, cs);
 			sq_call(v, 2, SQTrue, SQTrue);
 			const SQChar *s;
 			if(SQ_FAILED(sq_getstring(v, -1, &s)))

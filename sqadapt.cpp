@@ -48,8 +48,6 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
-static Universe *puniverse;
-#define universe (*puniverse)
 static Player *player;
 #define pl (*player)
 extern GLwindow *glwlist;
@@ -1157,9 +1155,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 //    SquirrelVM::Init();
 //	v = SquirrelVM::GetVMPtr();
 	player = game->player;
-#undef universe
-	puniverse = game->universe;
-#define universe (*puniverse)
 	if(!pv)
 		pv = &g_sqvm;
 	HSQUIRRELVM &v = *pv = sq_open(1024);
@@ -1291,14 +1286,11 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 //	Docker::sq_define(v);
 
 	// Define instance of class Universe
-	sq_pushstring(v, _SC("universe"), -1); // this "universe"
-	sq_pushstring(v, _SC("Universe"), -1); // this "universe" "Universe"
-	sq_get(v, -3); // this "universe" Universe
-	sq_createinstance(v, -1); // this "universe" Universe Universe-instance
-	sqa_newobj(v, &universe);
-//	sq_setinstanceup(v, -1, &universe); // this "universe" Universe Universe-instance
-	sq_remove(v, -2); // this "universe" Universe-instance
-	sq_createslot(v, -3); // this
+	if(game->universe){
+		sq_pushstring(v, _SC("universe"), -1); // this "universe"
+		CoordSys::sq_pushobj(v, game->universe);
+		sq_createslot(v, -3); // this
+	}
 
 	// Define class Player
 	Player::sq_define(v);

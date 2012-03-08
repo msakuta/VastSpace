@@ -225,6 +225,52 @@ static SQInteger sqf_setintrinsica(HSQUIRRELVM v){
 	}
 }
 
+/// "Class" can be Player. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
+/// I think I cannot write this logic shorter.
+template<typename Class, typename MType, MType getter(Class *p), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+SQInteger sqf_getintrinsic2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.value = getter(p);
+		r.push(v);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+/// This template function is rather straightforward, but produces similar instances rapidly.
+/// Probably classes with the same member variables should share base class, but it's not always feasible.
+template<typename Class, typename MType, MType Class::*member, Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+static SQInteger sqf_setintrinsic2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		p->*member = r.value;
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+template<typename Class, typename MType, void (Class::*member)(const MType &), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+static SQInteger sqf_setintrinsica2(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		(p->*member)(r.value);
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
 #else
 
 // This implementation is a bit dirty and requires unsigned long to have equal or greater size compared to pointer's,

@@ -283,12 +283,9 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 }
 
 SQInteger Universe::sqf_get(HSQUIRRELVM v){
-	Universe *p;
+	Universe *p = sq_refobj(v)->toUniverse();
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
-//	sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL);
 	if(!strcmp(wcs, _SC("timescale"))){
 		sq_pushfloat(v, SQFloat(p->timescale));
 		return 1;
@@ -307,6 +304,7 @@ bool Universe::sq_define(HSQUIRRELVM v){
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>)); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;

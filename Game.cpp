@@ -71,7 +71,7 @@ void Game::idUnmap(UnserializeContext &sc){
 					ret->id = thisid;
 					idunmap[thisid] = ret;
 					if(src == "Universe"){
-						universe = static_cast<Universe*>(ret);
+						sq_replaceUniverse(static_cast<Universe*>(ret));
 					}
 					if(src == "Player"){
 						players.push_back(static_cast<Player*>(ret));
@@ -164,6 +164,14 @@ void ServerGame::anim(double dt){
 			fprintf(stderr, __FILE__"(%d) Exception ?\n", __LINE__);
 		}
 
+}
+
+void Game::sq_replaceUniverse(Universe *p){
+	universe = p;
+	HSQUIRRELVM v = sqvm;
+	sq_pushstring(v, _SC("universe"), -1); // this "universe"
+	Universe::sq_pushobj(v, p);
+	sq_createslot(v, 1); // this
 }
 
 void Game::sq_replacePlayer(Player *p){

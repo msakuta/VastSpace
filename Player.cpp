@@ -689,51 +689,6 @@ SQInteger Player::sqf_tostring(HSQUIRRELVM v){
 	return 1;
 }
 
-/// "Class" can be Player. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
-/// I think I cannot write this logic shorter.
-template<typename Class, typename MType, MType getter(Class *p), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
-SQInteger sqf_getintrinsic2(HSQUIRRELVM v){
-	try{
-		Class *p = sq_refobj(v, 1);
-		SQIntrinsic<MType> r;
-		r.value = getter(p);
-		r.push(v);
-		return 1;
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
-}
-
-/// This template function is rather straightforward, but produces similar instances rapidly.
-/// Probably classes with the same member variables should share base class, but it's not always feasible.
-template<typename Class, typename MType, MType Class::*member, Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
-static SQInteger sqf_setintrinsic2(HSQUIRRELVM v){
-	try{
-		Class *p = sq_refobj(v, 1);
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		p->*member = r.value;
-		return 0;
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
-}
-
-template<typename Class, typename MType, void (Class::*member)(const MType &), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
-static SQInteger sqf_setintrinsica2(HSQUIRRELVM v){
-	try{
-		Class *p = sq_refobj(v, 1);
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		(p->*member)(r.value);
-		return 0;
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
-}
 
 void Player::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("Player"), -1);
@@ -762,12 +717,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	if(!strcmp(wcs, _SC("cs"))){
-		sq_pushroottable(v);
-		sq_pushstring(v, p->cs->getStatic().s_sqclassname, -1);
-		sq_get(v, -2);
-		sq_createinstance(v, -1);
-		if(!sqa_newobj(v, const_cast<CoordSys*>(p->cs)))
-			return sq_throwerror(v, _SC("no cs"));
+		CoordSys::sq_pushobj(v, const_cast<CoordSys*>(p->cs));
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("selected"))){
@@ -826,8 +776,7 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 	if(!strcmp(wcs, _SC("cs"))){
 		if(OT_INSTANCE != sq_gettype(v, 3))
 			return SQ_ERROR;
-		if(!sqa_refobj(v, (SQUserPointer*)&p->cs, &sr, 3))
-			return sr;
+		p->cs = CoordSys::sq_refobj(v, 3);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("chase"))){

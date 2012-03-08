@@ -9,6 +9,7 @@
 
 #include "Viewer.h"
 #include "serial.h"
+#include "Observable.h"
 
 extern "C"{
 #include <clib/avec3.h>
@@ -49,7 +50,7 @@ struct WarDraw;
  * Child nodes define translation and rotation relative to its parent node,
  * to express layered structure of systems.
  */
-class EXPORT CoordSys : public Serializable{
+class EXPORT CoordSys : public Serializable, public Observable{
 public:
 	typedef Serializable st; ///< Super Type. As a convention, all derived classes must define this typedef as the super class.
 
@@ -233,6 +234,12 @@ public:
 	static bool registerCommands(Application *);
 	static bool unregisterCommands(Application *);
 
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, CoordSys *);
+
+	/// Returns an Entity object being pointed to by an object in Squirrel stack.
+	static CoordSys *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+
 	/// Class static information specific to CoordSys-derived class branch.
 	class Static{
 	public:
@@ -303,6 +310,7 @@ public:
 		sq_get(v, 1);
 		sq_newclass(v, SQTrue);
 		sq_settypetag(v, -1, SQUserPointer(T::classRegister.id));
+		sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>)); // classudsize is not inherited from CoordSys
 		sq_createslot(v, -3);
 		return true;
 	}

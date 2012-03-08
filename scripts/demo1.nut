@@ -123,7 +123,7 @@ function hook_delete_Entity(e){
 	if(!(e.classname in deaths[e.race]))
 		deaths[e.race][e.classname] <- 0;
 	deaths[e.race][e.classname]++;
-	print(e + " pos:" + e.getpos() + " is deleted");
+//	print(e + " pos:" + e.getpos() + " is deleted");
 }
 
 

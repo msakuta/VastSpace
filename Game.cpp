@@ -199,13 +199,8 @@ bool Game::isRawCreateMode()const{
 void Game::setSquirrelBind(SquirrelBind *p){
 	sqbind = p;
 	HSQUIRRELVM v = sqvm;
-	sq_pushstring(v, _SC("squirrelBind"), -1); // this "player"
-	sq_pushstring(v, _SC("SquirrelBind"), -1);
-	sq_get(v, 1); // this "player" Player
-	sq_createinstance(v, -1); // this "player" Player Player-instance
-	sqa_newobj(v, sqbind); // this "player" Player Player-instance
-//	sq_setinstanceup(v, -1, &pl); // this "player" Player Player-instance
-	sq_remove(v, -2); // this "player" Player-instance
+	sq_pushstring(v, _SC("squirrelBind"), -1); // this "squirrelBind"
+	SquirrelBind::sq_pushobj(v, p);
 	sq_createslot(v, 1); // this
 }
 

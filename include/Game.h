@@ -17,7 +17,7 @@ class UnserializeStream;
 ///
 /// For security reasons, we do not allow the network stream to transmit arbitrary code of Squirrel,
 /// but only a dictionary of variables.
-class SquirrelBind : public Serializable{
+class SquirrelBind : public Serializable, public Observable{
 public:
 	SquirrelBind(Game *game = NULL) : Serializable(game){}
 
@@ -25,6 +25,12 @@ public:
 
 	static const unsigned classId;
 	const char *classname()const;
+
+	/// Creates and pushes an SquirrelBind object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM v, SquirrelBind *e);
+
+	/// Returns an SquirrelBind object being pointed to by an object in Squirrel stack.
+	static SquirrelBind *sq_refobj(HSQUIRRELVM v, SQInteger idx = 1);
 
 	/// Define class Player for Squirrel.
 	static void sq_define(HSQUIRRELVM v);

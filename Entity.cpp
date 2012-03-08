@@ -377,39 +377,6 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 
 
 
-/// "Class" can be Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
-/// I think I cannot write this logic shorter.
-template<typename Class, typename MType, MType getter(Class *p)>
-SQInteger sqf_Entity_getintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p = Entity::sq_refobj(v);
-		SQIntrinsic<MType> r;
-		r.value = getter(p);
-		r.push(v);
-		return 1;
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
-}
-
-/// This template function is rather straightforward, but produces similar instances rapidly.
-/// Probably classes with the same member variables should share base class, but it's not always feasible.
-template<typename Class, typename MType, MType Class::*member>
-static SQInteger sqf_Entity_setintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p = Entity::sq_refobj(v);
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		p->*member = r.value;
-		return 0;
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
-}
-
-
 
 bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	// Define class Entity
@@ -418,10 +385,12 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>));
 	register_closure(v, _SC("constructor"), sqf_Entity_constructor);
-	register_closure(v, _SC("getpos"), sqf_Entity_getintrinsic<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos> >);
-	register_closure(v, _SC("setpos"), sqf_Entity_setintrinsic<Entity, Vec3d, &Entity::pos>);
-	register_closure(v, _SC("getrot"), sqf_Entity_getintrinsic<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot> >);
-	register_closure(v, _SC("setrot"), sqf_Entity_setintrinsic<Entity, Quatd, &Entity::rot>);
+	register_closure(v, _SC("getpos"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos>, sq_refobj >);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic2<Entity, Vec3d, &Entity::pos, sq_refobj>);
+	register_closure(v, _SC("getvelo"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::velo>, sq_refobj >);
+	register_closure(v, _SC("setvelo"), sqf_setintrinsic2<Entity, Vec3d, &Entity::velo, sq_refobj>);
+	register_closure(v, _SC("getrot"), sqf_getintrinsic2<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot>, sq_refobj >);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic2<Entity, Quatd, &Entity::rot, sq_refobj>);
 	register_closure(v, _SC("_get"), sqf_Entity_get);
 	register_closure(v, _SC("_set"), sqf_Entity_set);
 	register_closure(v, _SC("_tostring"), sqf_Entity_tostring, 1);

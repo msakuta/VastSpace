@@ -13,24 +13,24 @@ class select_box_callback;
 class SerializeStream;
 class UnserializeStream;
 
-/// \brief The Squirrel binding entity to share Squirrel state variables among server and clients.
+/// \brief The state vector object that is shared among server and client Squirrel VM.
 ///
 /// For security reasons, we do not allow the network stream to transmit arbitrary code of Squirrel,
 /// but only a dictionary of variables.
-class SquirrelBind : public Serializable, public Observable{
+class SquirrelShare : public Serializable, public Observable{
 public:
-	SquirrelBind(Game *game = NULL) : Serializable(game){}
+	SquirrelShare(Game *game = NULL) : Serializable(game){}
 
 	std::map<dstring, dstring> dict;
 
 	static const unsigned classId;
 	const char *classname()const;
 
-	/// Creates and pushes an SquirrelBind object to Squirrel stack.
-	static void sq_pushobj(HSQUIRRELVM v, SquirrelBind *e);
+	/// Creates and pushes an SquirrelShare object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM v, SquirrelShare *e);
 
-	/// Returns an SquirrelBind object being pointed to by an object in Squirrel stack.
-	static SquirrelBind *sq_refobj(HSQUIRRELVM v, SQInteger idx = 1);
+	/// Returns an SquirrelShare object being pointed to by an object in Squirrel stack.
+	static SquirrelShare *sq_refobj(HSQUIRRELVM v, SQInteger idx = 1);
 
 	/// Define class Player for Squirrel.
 	static void sq_define(HSQUIRRELVM v);
@@ -57,7 +57,7 @@ public:
 	double flypower()const;
 	HSQUIRRELVM sqvm;
 
-	Game() : player(NULL), universe(NULL), sqvm(NULL), sqbind(NULL), idGenerator(1){
+	Game() : player(NULL), universe(NULL), sqvm(NULL), sqshare(NULL), idGenerator(1){
 	}
 
 	~Game(){
@@ -95,9 +95,9 @@ public:
 	virtual bool isServer()const;
 	virtual bool isRawCreateMode()const;
 
-	void setSquirrelBind(SquirrelBind *p);
-	SquirrelBind *getSquirrelBind(){return sqbind;}
-	const SquirrelBind *getSquirrelBind()const{return sqbind;}
+	void setSquirrelShare(SquirrelShare *p);
+	SquirrelShare *getSquirrelShare(){return sqshare;}
+	const SquirrelShare *getSquirrelShare()const{return sqshare;}
 
 	/// \brief Fetch the next Serializable id in this Game object's environment.
 	Serializable::Id nextId();
@@ -111,7 +111,7 @@ public:
 	DeleteQue &getDeleteQue(){return deleteque;}
 protected:
 	IdMap idunmap;
-	SquirrelBind *sqbind;
+	SquirrelShare *sqshare;
 	Serializable::Id idGenerator;
 	DeleteQue deleteque;
 

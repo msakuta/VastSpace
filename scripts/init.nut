@@ -195,7 +195,7 @@ function loadmission(script){
 		ret = timemeas(exe);
 		print("execution time " + ret.time);
 	}
-	squirrelBind.mission = script;
+	squirrelShare.mission = script;
 	return exe;
 }
 

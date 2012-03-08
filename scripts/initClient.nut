@@ -219,10 +219,10 @@ showdt <- false;
 missionLoaded <- false;
 
 function frameproc(dt){
-	if(!("squirrelBind" in this))
+	if(!("squirrelShare" in this))
 		return;
 	if(!missionLoaded){
-		local mission = squirrelBind.mission;
+		local mission = squirrelShare.mission;
 		if(mission != ""){
 			missionLoaded = true;
 			if(mainmenu.alive){

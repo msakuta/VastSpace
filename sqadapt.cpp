@@ -128,97 +128,6 @@ int sqa_console_command(int argc, char *argv[], int *retval){
 	}
 }
 
-const unsigned SquirrelBind::classId = registerClass("SquirrelBind", Conster<SquirrelBind>);
-const char *SquirrelBind::classname()const{return "SquirrelBind";}
-const SQUserPointer tt_SquirrelBind = const_cast<char*>("SquirrelBind");
-
-void SquirrelBind::serialize(SerializeContext &sc){
-	sc.o << int(dict.size());
-	for(std::map<dstring, dstring>::iterator it = dict.begin(); it != dict.end(); it++)
-		sc.o << it->first << it->second;
-}
-
-void SquirrelBind::unserialize(UnserializeContext &sc){
-	dict.clear();
-	int c;
-	sc.i >> c;
-	for(int i = 0; i < c; i++){
-		dstring a, b;
-		sc.i >> a;
-		sc.i >> b;
-		dict[a] = b;
-	}
-}
-
-/// \brief The release hook of Entity that clears the weak pointer.
-///
-/// \param size is always 0?
-static SQInteger sqh_release(SQUserPointer p, SQInteger size){
-	((WeakPtr<SquirrelBind>*)p)->~WeakPtr<SquirrelBind>();
-	return 1;
-}
-
-void SquirrelBind::sq_pushobj(HSQUIRRELVM v, SquirrelBind *e){
-	sq_pushroottable(v);
-	sq_pushstring(v, _SC("SquirrelBind"), -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError("Something's wrong with SquirrelBind class definition.");
-	if(SQ_FAILED(sq_createinstance(v, -1)))
-		throw SQFError("Something's wrong with SquirrelBind class instance.");
-	SQUserPointer p;
-	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
-		throw SQFError("Something's wrong with Squirrel Class Instace of SquirrelBind.");
-	new(p) WeakPtr<SquirrelBind>(e);
-	sq_setreleasehook(v, -1, sqh_release);
-	sq_remove(v, -2); // Remove Class
-	sq_remove(v, -2); // Remove root table
-}
-
-SquirrelBind *SquirrelBind::sq_refobj(HSQUIRRELVM v, SQInteger idx){
-	SQUserPointer up;
-	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
-	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
-		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
-	return *(WeakPtr<SquirrelBind>*)up;
-}
-
-SQInteger SquirrelBind::sqf_get(HSQUIRRELVM v){
-	SquirrelBind *p = sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	std::map<dstring, dstring>::iterator it = p->dict.find(wcs);
-	if(it != p->dict.end()){
-		sq_pushstring(v, it->second, -1);
-		return 1;
-	}
-	else{
-		sq_pushstring(v, _SC(""), -1);
-		return 1;
-	}
-}
-
-SQInteger SquirrelBind::sqf_set(HSQUIRRELVM v){
-	SquirrelBind *p = sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	if(OT_STRING != sq_gettype(v, 3))
-		return SQ_ERROR;
-	const SQChar *value;
-	if(SQ_FAILED(sq_getstring(v, 3, &value)))
-		return SQ_ERROR;
-	p->dict[wcs] = value;
-}
-
-void SquirrelBind::sq_define(HSQUIRRELVM v){
-	// Define class SquirrelBind
-	sq_pushstring(v, _SC("SquirrelBind"), -1);
-	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, tt_SquirrelBind);
-	sq_setclassudsize(v, -1, sizeof(WeakPtr<SquirrelBind>));
-	register_closure(v, _SC("_get"), &SquirrelBind::sqf_get);
-	register_closure(v, _SC("_set"), &SquirrelBind::sqf_set);
-	sq_createslot(v, -3);
-}
 
 
 namespace sqa{
@@ -1338,13 +1247,13 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		sq_createslot(v, -3); // this
 	}
 
-	// Define class SquirrelBind
-	SquirrelBind::sq_define(v);
+	// Define class SquirrelShare
+	SquirrelShare::sq_define(v);
 
-	// Prevent duplicate instance of SquirrelBind.
+	// Prevent duplicate instance of SquirrelShare.
 	// The client will define one as it receives serialization stream.
 	if(game->isServer())
-		game->setSquirrelBind(new SquirrelBind(game));
+		game->setSquirrelShare(new SquirrelShare(game));
 
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));

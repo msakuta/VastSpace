@@ -16,6 +16,106 @@ extern "C"{
 }
 
 
+const unsigned SquirrelShare::classId = registerClass("SquirrelShare", Conster<SquirrelShare>);
+const char *SquirrelShare::classname()const{return "SquirrelShare";}
+const SQUserPointer tt_SquirrelBind = const_cast<char*>("SquirrelShare");
+
+void SquirrelShare::serialize(SerializeContext &sc){
+	sc.o << int(dict.size());
+	for(std::map<dstring, dstring>::iterator it = dict.begin(); it != dict.end(); it++)
+		sc.o << it->first << it->second;
+}
+
+void SquirrelShare::unserialize(UnserializeContext &sc){
+	dict.clear();
+	int c;
+	sc.i >> c;
+	for(int i = 0; i < c; i++){
+		dstring a, b;
+		sc.i >> a;
+		sc.i >> b;
+		dict[a] = b;
+	}
+}
+
+/// \brief The release hook of Entity that clears the weak pointer.
+///
+/// \param size is always 0?
+static SQInteger sqh_release(SQUserPointer p, SQInteger size){
+	((WeakPtr<SquirrelShare>*)p)->~WeakPtr<SquirrelShare>();
+	return 1;
+}
+
+void SquirrelShare::sq_pushobj(HSQUIRRELVM v, SquirrelShare *e){
+	sq_pushroottable(v);
+	// It may seem ineffective to obtain SquirrelShare class from the root table everytime,
+	// but we must resolve it anyway, because there can be multiple Squirrel VM.
+	// Sharing a dedicated member variables of type HSQOBJECT in Game object is one way,
+	// but it couldn't support further classes that would be added to the Game.
+	sq_pushstring(v, _SC("SquirrelShare"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with SquirrelShare class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Something's wrong with SquirrelShare class instance.");
+	SQUserPointer p;
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of SquirrelShare.");
+	new(p) WeakPtr<SquirrelShare>(e);
+	sq_setreleasehook(v, -1, sqh_release);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+SquirrelShare *SquirrelShare::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
+	return *(WeakPtr<SquirrelShare>*)up;
+}
+
+SQInteger SquirrelShare::sqf_get(HSQUIRRELVM v){
+	SquirrelShare *p = sq_refobj(v);
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	std::map<dstring, dstring>::iterator it = p->dict.find(wcs);
+	if(it != p->dict.end()){
+		sq_pushstring(v, it->second, -1);
+		return 1;
+	}
+	else{
+		sq_pushstring(v, _SC(""), -1);
+		return 1;
+	}
+}
+
+SQInteger SquirrelShare::sqf_set(HSQUIRRELVM v){
+	SquirrelShare *p = sq_refobj(v);
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	if(OT_STRING != sq_gettype(v, 3))
+		return SQ_ERROR;
+	const SQChar *value;
+	if(SQ_FAILED(sq_getstring(v, 3, &value)))
+		return SQ_ERROR;
+	p->dict[wcs] = value;
+}
+
+void SquirrelShare::sq_define(HSQUIRRELVM v){
+	// Define class SquirrelShare
+	sq_pushstring(v, _SC("SquirrelShare"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_SquirrelBind);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<SquirrelShare>));
+	register_closure(v, _SC("_get"), &SquirrelShare::sqf_get);
+	register_closure(v, _SC("_set"), &SquirrelShare::sqf_set);
+	sq_createslot(v, -3);
+}
+
+
+
+
+
 /// List of registered initialization functions. Too bad std::vector cannot be used because the class static parameters
 /// are not initialized.
 void (*Game::serverInits[64])(Game&);
@@ -76,8 +176,8 @@ void Game::idUnmap(UnserializeContext &sc){
 					if(src == "Player"){
 						players.push_back(static_cast<Player*>(ret));
 					}
-					if(src == "SquirrelBind"){
-						setSquirrelBind(static_cast<SquirrelBind*>(ret));
+					if(src == "SquirrelShare"){
+						setSquirrelShare(static_cast<SquirrelShare*>(ret));
 					}
 				}
 			}
@@ -135,8 +235,8 @@ void Game::serialize(SerializeStream &ss){
 	ss.sc = &sc;
 	for(std::vector<Player*>::iterator it = players.begin(); it != players.end(); it++)
 		(*it)->dive(sc, &Serializable::idPackSerialize);
-	if(sqbind)
-		sqbind->dive(sc, &Serializable::idPackSerialize);
+	if(sqshare)
+		sqshare->dive(sc, &Serializable::idPackSerialize);
 	universe->dive(sc, &Serializable::idPackSerialize);
 	(sc.visit_list)->clearVisitList();
 }
@@ -196,11 +296,11 @@ bool Game::isRawCreateMode()const{
 }
 
 
-void Game::setSquirrelBind(SquirrelBind *p){
-	sqbind = p;
+void Game::setSquirrelShare(SquirrelShare *p){
+	sqshare = p;
 	HSQUIRRELVM v = sqvm;
-	sq_pushstring(v, _SC("squirrelBind"), -1); // this "squirrelBind"
-	SquirrelBind::sq_pushobj(v, p);
+	sq_pushstring(v, _SC("squirrelShare"), -1); // this "squirrelShare"
+	SquirrelShare::sq_pushobj(v, p);
 	sq_createslot(v, 1); // this
 }
 

@@ -40,6 +40,184 @@ void GLelement::changeExtent(){
 
 GLWrect GLelement::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
 
+void GLelement::sq_pushobj(HSQUIRRELVM v, GLelement *p){
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("GLelement"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with GLelement class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Couldn't create class GLelement");
+	sq_assignobj(v, p);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+GLelement *GLelement::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of GLelement.");
+	return *(WeakPtr<GLelement>*)up;
+}
+
+/// \param idx Index of the instance in the stack. Default is 1, which is the case of constructor.
+void GLelement::sq_assignobj(HSQUIRRELVM v, GLelement *p, SQInteger idx){
+	SQUserPointer up;
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of GLelement.");
+
+	// We made the WeakPtr's raw type a GLelement pointer, though GLelement is barely used
+	// compared to GLwindow, because having many base types for WeakPtr would be inefficient.
+	// I have considered making this type WeakPtr<GLwindow>, but it would require duplicate
+	// codes to take care of.
+	new(up) WeakPtr<GLelement>(p);
+
+	sq_setreleasehook(v, idx, sqh_release);
+}
+
+const SQUserPointer GLelement::tt_GLelement = SQUserPointer("GLelement");
+
+static Initializer init_GLelement("GLelement", GLelement::sq_define);
+
+bool GLelement::sq_define(HSQUIRRELVM v){
+	StackReserver sr(v);
+	sq_pushstring(v, _SC("GLelement"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2)))
+		return false;
+	sq_pushstring(v, _SC("GLelement"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_GLelement);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("_set"), sqf_set);
+	register_closure(v, _SC("close"), sqf_close);
+	sq_createslot(v, -3);
+	return true;
+}
+
+SQInteger GLelement::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
+	if(!strcmp(wcs, _SC("x"))){
+		SQInteger x = extentRect().x0;
+		sq_pushinteger(v, x);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("y"))){
+		SQInteger y = extentRect().y0;
+		sq_pushinteger(v, y);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("width"))){
+		sq_pushinteger(v, extentRect().width());
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("height"))){
+		sq_pushinteger(v, extentRect().height());
+		return 1;
+	}
+	else
+		return SQ_ERROR;
+}
+
+SQInteger GLelement::sqf_get(HSQUIRRELVM v){
+	try{
+		GLelement *p = sq_refobj(v);
+		const SQChar *wcs;
+		sq_getstring(v, 2, &wcs);
+
+		// Check if alive first
+		if(!strcmp(wcs, _SC("alive"))){
+			sq_pushbool(v, SQBool(!!p));
+			return 1;
+		}
+
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p)
+			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
+		return p->sqGet(v, wcs);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+SQInteger GLelement::sqSet(HSQUIRRELVM v, const SQChar *wcs){
+	if(!strcmp(wcs, _SC("x"))){
+		SQInteger x;
+		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+			return SQ_ERROR;
+		GLWrect r = extentRect();
+		r.x1 += x - r.x0;
+		r.x0 = x;
+		setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("y"))){
+		SQInteger y;
+		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
+			return SQ_ERROR;
+		GLWrect r = extentRect();
+		r.y1 += y - r.y0;
+		r.y0 = y;
+		setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("width"))){
+		SQInteger x;
+		if(SQ_FAILED(sq_getinteger(v, 3, &x)))
+			return SQ_ERROR;
+		GLWrect r = extentRect();
+		r.x1 = r.x0 + x;
+		setExtent(r);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("height"))){
+		SQInteger y;
+		if(SQ_FAILED(sq_getinteger(v, 3, &y)))
+			return SQ_ERROR;
+		GLWrect r = extentRect();
+		r.y1 = r.y0 + y;
+		setExtent(r);
+		return 0;
+	}
+	else
+		return SQ_ERROR;
+}
+
+SQInteger GLelement::sqf_set(HSQUIRRELVM v){
+	try{
+		if(sq_gettop(v) < 3)
+			return SQ_ERROR;
+		GLelement *p = sq_refobj(v);
+		const SQChar *wcs;
+		sq_getstring(v, 2, &wcs);
+
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p)
+			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
+		return p->sqSet(v, wcs);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+SQInteger GLelement::sqf_close(HSQUIRRELVM v){
+	GLelement *p = sq_refobj(v);
+	// close?
+//	p->postClose();
+	return 0;
+}
+
+/// \brief The release hook of Entity that clears the weak pointer.
+SQInteger GLelement::sqh_release(SQUserPointer p, SQInteger){
+	((WeakPtr<GLelement>*)p)->~WeakPtr<GLelement>();
+	return 1;
+}
+
+
+
 GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
 GLwindow *glwfocus = NULL; ///< Focused window.
 GLwindow *glwdrag = NULL; ///< Window being dragged.
@@ -694,6 +872,127 @@ void GLwindow::glwEndFrame(){
 		ret = ret->next;
 }
 
+void GLwindow::sq_pushobj(HSQUIRRELVM v, GLwindow *p){
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with GLwindow class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Couldn't create class GLwindow");
+	sq_assignobj(v, p);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+GLwindow *GLwindow::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of GLwindow.");
+
+	// It's crucial to static_cast in this order, not just reinterpret_cast.
+	// It'll make difference when multiple inheritance is involved.
+	// Either way, virtual inheritances are prohibited, or use dynamic_cast.
+	return static_cast<GLwindow*>(static_cast<GLelement*>(*(WeakPtr<GLelement>*)up));
+}
+
+const SQUserPointer GLwindow::tt_GLwindow = SQUserPointer("GLwindow");
+
+const SQChar *GLwindow::sq_classname(){return _SC("GLwindow");}
+
+static Initializer init_GLwindow("GLwindow", GLwindow::sq_define);
+
+bool GLwindow::sq_define(HSQUIRRELVM v){
+	StackReserver sr(v);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2)))
+		return false;
+	GLelement::sq_define(v);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, _SC("GLelement"), -1);
+	if(SQ_FAILED(sq_get(v, -3)))
+		throw SQFError(_SC("GLelement is not defined"));
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, tt_GLwindow);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("close"), sqf_close);
+	sq_createslot(v, -3);
+	return true;
+}
+
+SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
+	if(!strcmp(wcs, _SC("next"))){
+		if(!getNext())
+			sq_pushnull(v);
+		else{
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("GLwindow"), -1);
+			sq_get(v, -2);
+			sq_createinstance(v, -1);
+			sq_pushobj(v, getNext());
+		}
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("closable"))){
+		sq_pushbool(v, getClosable());
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("pinned"))){
+		sq_pushbool(v, getPinned());
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("pinnable"))){
+		sq_pushbool(v, getPinnable());
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("title"))){
+		sq_pushstring(v, getTitle(), -1);
+		return 1;
+	}
+	else
+		return GLelement::sqGet(v, wcs);
+}
+
+SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
+	if(!strcmp(wcs, _SC("closable"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		setClosable(!!b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("pinned"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		setPinned(!!b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("pinnable"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		setPinnable(!!b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("title"))){
+		const SQChar *s;
+		if(SQ_FAILED(sq_getstring(v, 3, &s)))
+			return SQ_ERROR;
+		setTitle(s);
+		return 0;
+	}
+	else
+		return GLelement::sqSet(v, wcs);
+}
+
+SQInteger GLwindow::sqf_close(HSQUIRRELVM v){
+	GLwindow *p = sq_refobj(v);
+	p->postClose();
+	return 0;
+}
+
 
 
 
@@ -1158,16 +1457,13 @@ static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
 	if(argc <= 4 || SQ_FAILED(sq_getinteger(v, 5, &sy)))
 		sy = 64;
 	GLWbuttonMatrix *p = new GLWbuttonMatrix(game, x, y, sx, sy);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	GLelement::sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }
 
 static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
 	const SQChar *cmd, *path, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
 		return SQ_ERROR;
@@ -1184,9 +1480,7 @@ static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
 	const SQChar *cvarname, *path, *path1, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &cvarname)))
 		return SQ_ERROR;
@@ -1213,9 +1507,7 @@ static SQInteger sqf_GLWbuttonMatrix_addToggleButton(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
 	const SQChar *path, *path1, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &path)))
 		return SQ_ERROR;
@@ -1232,9 +1524,7 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
 	const SQChar *path, *path1, *tips;
 	if(SQ_FAILED(sq_getstring(v, 2, &path)))
 		return SQ_ERROR;
@@ -1250,14 +1540,24 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 	return 0;
 }
 
+GLWbuttonMatrix *GLWbuttonMatrix::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	// It's crucial to static_cast in this order, not just reinterpret_cast.
+	// It'll make difference when multiple inheritance is involved.
+	// Either way, virtual inheritances are prohibited, or use dynamic_cast.
+	return static_cast<GLWbuttonMatrix*>(GLwindow::sq_refobj(v, idx));
+}
+
 
 
 static bool GLWbuttonMatrix_sq_define(HSQUIRRELVM v){
 	// Define class GLWbuttonMatrix
+	GLwindow::sq_define(v);
 	sq_pushstring(v, _SC("GLWbuttonMatrix"), -1);
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLWbuttonMatrix");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
 	register_closure(v, _SC("constructor"), sqf_GLWbuttonMatrix_constructor);
 	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
 	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);

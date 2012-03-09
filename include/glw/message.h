@@ -22,7 +22,7 @@ public:
 	virtual void anim(double dt);
 	virtual bool focusable()const{return false;} ///< Message window needs not focusable.
 
-	static void sq_define(HSQUIRRELVM v);
+	static bool sq_define(HSQUIRRELVM v);
 
 private:
 	bool resized; ///< Internal flag that remember whether this window is sized to fit the string.

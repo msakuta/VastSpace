@@ -36,7 +36,8 @@ public:
 	GLWmenu *addItem(const char *title, int key, HSQOBJECT ho);
 	static int cmd_addcmdmenuitem(int argc, char *argv[], void *p);
 	static GLWmenu *newBigMenu();
-	static void sq_define(HSQUIRRELVM v);
+	static bool sq_define(HSQUIRRELVM v);
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
 };
 
 extern const int glwMenuAllAllocated[];

@@ -92,14 +92,21 @@ void GLWmessage::anim(double dt){
 	}
 }
 
+
+static Initializer init_GLWmessage("GLWmessage", GLWmessage::sq_define);
+
 /// Define class GLWmessage for Squirrel
-void GLWmessage::sq_define(HSQUIRRELVM v){
+bool GLWmessage::sq_define(HSQUIRRELVM v){
+	GLwindow::sq_define(v);
 	sq_pushstring(v, _SC("GLWmessage"), -1);
 	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
+	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLWmessage");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
 	register_closure(v, _SC("constructor"), sqf_constructor);
 	sq_createslot(v, -3);
+	return true;
 }
 
 /// Squirrel constructor
@@ -124,8 +131,7 @@ SQInteger GLWmessage::sqf_constructor(HSQUIRRELVM v){
 	if(!p)
 		p = new GLWmessage(string, timer);
 
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }

@@ -53,6 +53,7 @@ public:
 
 	ItemCriterion *crtRoot;
 
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
 	static bool sq_define(HSQUIRRELVM v);
 };
 

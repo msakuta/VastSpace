@@ -1258,7 +1258,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
 
-#ifdef _WIN32
+#if 0 && defined _WIN32
 	// Define class GLwindow
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_newclass(v, SQFalse);

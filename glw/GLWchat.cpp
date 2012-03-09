@@ -122,10 +122,13 @@ void GLWchat::append(dstring str){
 
 /// Define class GLWmessage for Squirrel
 bool GLWchat::sq_define(HSQUIRRELVM v){
+	st::sq_define(v);
 	sq_pushstring(v, _SC("GLWchat"), -1);
 	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
+	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLWchat");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
 	register_closure(v, _SC("constructor"), sqf_constructor);
 	sq_createslot(v, -3);
 	return true;
@@ -137,8 +140,7 @@ SQInteger GLWchat::sqf_constructor(HSQUIRRELVM v){
 
 	GLWchat *p = new GLWchat();
 
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }

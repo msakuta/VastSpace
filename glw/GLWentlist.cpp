@@ -1139,14 +1139,13 @@ void BinaryOpItemCriterion::alterNode(const ItemCriterion *from, ItemCriterion *
 // Squirrel Initializer Implementation
 // ------------------------------
 
-static SQInteger sqf_GLWentlist_constructor(HSQUIRRELVM v){
+SQInteger GLWentlist::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	Game *game = (Game*)sq_getforeignptr(v);
 	if(!game)
 		return sq_throwerror(v, _SC("The game object is not assigned"));
 	GLWentlist *p = new GLWentlist(game);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }
@@ -1167,12 +1166,15 @@ static SQInteger sqf_screenheight(HSQUIRRELVM v){
 
 
 bool GLWentlist::sq_define(HSQUIRRELVM v){
+	GLwindow::sq_define(v);
 	// Define class GLWentlist
 	sq_pushstring(v, _SC("GLWentlist"), -1);
 	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_get(v, 1);
+	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
-	register_closure(v, _SC("constructor"), sqf_GLWentlist_constructor);
+	sq_settypetag(v, -1, "GLWentlist");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLwindow>));
+	register_closure(v, _SC("constructor"), sqf_constructor);
 	sq_createslot(v, -3);
 
 	sq_pushstring(v, _SC("screenwidth"), -1);

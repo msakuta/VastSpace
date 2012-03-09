@@ -3,10 +3,12 @@
 #include "export.h"
 #include "serial.h"
 #include "dstring.h"
+#include "Observable.h"
 extern "C"{
 #include <clib/c.h>
 #include <string.h>
 }
+#include <squirrel.h>
 /** \file
  * \brief A header for OpenGL window system.
  *
@@ -90,7 +92,7 @@ struct GLwindowState{
  *
  * All drawable OpenGL window system elements should derive this class.
  */
-class EXPORT GLelement : public Serializable{
+class EXPORT GLelement : public Serializable, public Observable{
 public:
 	/// Obsolete; the version with two args is recommended, the game object should be initialized.
 	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
@@ -104,11 +106,33 @@ public:
 	virtual GLWrect extentRect()const; ///< Something like GetWindowRect
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
+
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, GLelement *);
+
+	/// Returns an Entity object being pointed to by an object in Squirrel stack.
+	static GLelement *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+
+	/// Assign a GLelement-derived object to the instance on top of Squirrel stack instead of pushing.
+	static void sq_assignobj(HSQUIRRELVM v, GLelement *, SQInteger idx = 1);
+
+	/// Define this class for Squirrel VM.
+	static bool sq_define(HSQUIRRELVM v);
+
+	/// The type tag for this class in Squirrel VM.
+	static const SQUserPointer tt_GLelement;
+
 protected:
 	int xpos, ypos;
 	int width, height;
 	unsigned int flags;
 	void (*onChangeExtent)(GLelement *); ///< The event handler that is called whenever the element size is changed.
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *)const; ///< The internal method to get properties, can be overridden.
+	static SQInteger sqf_get(HSQUIRRELVM v);
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *); ///< The internal method to set properties, can be overridden.
+	static SQInteger sqf_set(HSQUIRRELVM v);
+	static SQInteger sqf_close(HSQUIRRELVM v);
+	static SQInteger sqh_release(SQUserPointer p, SQInteger);
 };
 
 /** \brief Overlapped window in OpenGL window system.
@@ -188,7 +212,7 @@ public:
 	/// that point to objects being destroyed.
 	virtual void postframe();
 	static void glwpostframe();
-	GLwindow *getNext(){return next;} ///< \brief Getter for next member.
+	GLwindow *getNext()const{return next;} ///< \brief Getter for next member.
 	void setVisible(bool f);
 	void setClosable(bool f){if(f) flags |= GLW_CLOSE; else flags &= ~GLW_CLOSE;}
 	void setCollapsable(bool f){if(f) flags |= GLW_COLLAPSABLE; else flags &= ~GLW_COLLAPSABLE;}
@@ -204,6 +228,21 @@ public:
 	static GLwindow *getCaptor(){return captor;} ///< You can refer to but cannot alter captor window.
 	static GLwindow *getDragStart(){return dragstart;}
 	void postClose(){ flags |= GLW_TODELETE; }
+
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, GLwindow *);
+
+	/// Returns an Entity object being pointed to by an object in Squirrel stack.
+	static GLwindow *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+
+	/// Define this class for Squirrel VM.
+	static bool sq_define(HSQUIRRELVM v);
+
+	/// The type tag for this class in Squirrel VM.
+	static const SQUserPointer tt_GLwindow;
+
+	const SQChar *sq_classname();
+
 protected:
 	/// Obsolete; the version with two args is recommended, the game object should be initialized.
 	GLwindow(const char *title = NULL);
@@ -232,6 +271,10 @@ protected:
 	static GLwindow *lastover;
 	static GLwindow *captor; ///< Mouse captor
 	static GLwindow *dragstart; ///< \brief The wnidow dragging is began on.
+
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *)const;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *);
+	static SQInteger sqf_close(HSQUIRRELVM v);
 
 	static const int GLWSIZEABLE_BORDER;
 private:
@@ -378,6 +421,7 @@ public:
 	virtual void mouseEnter(GLwindowState &);
 	virtual void mouseLeave(GLwindowState &);
 	bool addButton(GLWbutton *button, int x = -1, int y = -1);
+	static GLWbuttonMatrix *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
 };
 
 

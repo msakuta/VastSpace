@@ -22,6 +22,38 @@ extern "C"{
 #define fontwidth (GLwindow::glwfontwidth * GLwindow::glwfontscale)
 #define fontheight (GLwindow::glwfontheight * GLwindow::glwfontscale)
 
+class GLWbigMenu : public GLWmenu{
+public:
+	typedef GLWmenu st;
+	static const int bigfontheight = 24;
+	int *widths;
+	GLWbigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
+		: st(title, count, menutitles, keys, cmd, sticky), widths(NULL){
+		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
+	}
+	virtual GLWmenu *addItem(MenuItem *item){
+		menus->append(item, false);
+		GLWrect cr = clientRect();
+		count = menus->count();
+		cr.y1 = cr.y0 + count * (bigfontheight + 40) + 0;
+		int strwidth = glwGetSizeTextureString(item->title, bigfontheight);
+		cr.x1 = cr.x0 + 20 + strwidth + 20;
+		cr = adjustRect(cr);
+		height = cr.y1 - cr.y0;
+		if(width < cr.x1 - cr.x0)
+			width = cr.x1 - cr.x0;
+		widths = (int*)realloc(widths, count * sizeof*widths);
+		widths[count-1] = strwidth;
+		return this;
+	}
+	int mouse(GLwindowState &, int button, int state, int x, int y);
+	virtual void draw(GLwindowState &ws, double t);
+	virtual ~GLWbigMenu(){
+		free(widths);
+	}
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
+};
+
 
 const int glwMenuAllAllocated[] = {1};
 const char glwMenuSeparator[] = "-";
@@ -208,7 +240,7 @@ int GLWmenu::cmd_addcmdmenuitem(int argc, char *argv[], void *p){
 	return 0;
 }
 
-static SQInteger sqf_GLwindowMenu_constructor(HSQUIRRELVM v){
+SQInteger GLWmenu::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	const SQChar *title;
 	SQBool sticky;
@@ -217,16 +249,13 @@ static SQInteger sqf_GLwindowMenu_constructor(HSQUIRRELVM v){
 	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
 		sticky = false;
 	GLWmenu *p = new GLWmenu(title, 0, NULL, NULL, NULL, sticky);
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }
 
 static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
-	GLWmenu *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWmenu *p = static_cast<GLWmenu*>(GLwindow::sq_refobj(v));
 	const SQChar *title, *cmd;
 	if(SQ_FAILED(sq_getstring(v, 2, &title)))
 		return SQ_ERROR;
@@ -241,15 +270,13 @@ static SQInteger sqf_GLwindowMenu_addItem(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_GLwindowMenu_hide(HSQUIRRELVM v){
-	GLWmenu *p;
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+	GLWmenu *p = static_cast<GLWmenu*>(GLwindow::sq_refobj(v));
 	const SQChar *title, *cmd;
 	p->setVisible(false);
 	return 0;
 }
 
-static SQInteger sqf_GLWbigMenu_constructor(HSQUIRRELVM v){
+SQInteger GLWbigMenu::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	const SQChar *title;
 	SQBool sticky;
@@ -258,20 +285,24 @@ static SQInteger sqf_GLWbigMenu_constructor(HSQUIRRELVM v){
 	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
 		sticky = false;
 	GLWmenu *p = GLWmenu::newBigMenu();
-	if(!sqa_newobj(v, p, 1))
-		return SQ_ERROR;
+	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
 }
 
+static Initializer init_GLWmenu("GLWmenu", GLWmenu::sq_define);
 
 /// Define class GLWmenu and GLWbigMenu for Squirrel
-void GLWmenu::sq_define(HSQUIRRELVM v){
+bool GLWmenu::sq_define(HSQUIRRELVM v){
+	StackReserver sr(v);
+	GLwindow::sq_define(v);
 	sq_pushstring(v, _SC("GLWmenu"), -1);
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	register_closure(v, _SC("constructor"), sqf_GLwindowMenu_constructor);
+	sq_settypetag(v, -1, "GLWmenu");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("constructor"), GLWmenu::sqf_constructor);
 	register_closure(v, _SC("addItem"), sqf_GLwindowMenu_addItem);
 	register_closure(v, _SC("hide"), sqf_GLwindowMenu_hide);
 	sq_createslot(v, -3);
@@ -280,45 +311,17 @@ void GLWmenu::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("GLWmenu"), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
-	register_closure(v, _SC("constructor"), sqf_GLWbigMenu_constructor);
+	sq_settypetag(v, -1, "GLWbigMenu");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("constructor"), GLWbigMenu::sqf_constructor);
 	sq_createslot(v, -3);
+	return true;
 }
 
 
 
 
 
-
-class GLWbigMenu : public GLWmenu{
-public:
-	typedef GLWmenu st;
-	static const int bigfontheight = 24;
-	int *widths;
-	GLWbigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
-		: st(title, count, menutitles, keys, cmd, sticky), widths(NULL){
-		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
-	}
-	virtual GLWmenu *addItem(MenuItem *item){
-		menus->append(item, false);
-		GLWrect cr = clientRect();
-		count = menus->count();
-		cr.y1 = cr.y0 + count * (bigfontheight + 40) + 0;
-		int strwidth = glwGetSizeTextureString(item->title, bigfontheight);
-		cr.x1 = cr.x0 + 20 + strwidth + 20;
-		cr = adjustRect(cr);
-		height = cr.y1 - cr.y0;
-		if(width < cr.x1 - cr.x0)
-			width = cr.x1 - cr.x0;
-		widths = (int*)realloc(widths, count * sizeof*widths);
-		widths[count-1] = strwidth;
-		return this;
-	}
-	int mouse(GLwindowState &, int button, int state, int x, int y);
-	virtual void draw(GLwindowState &ws, double t);
-	virtual ~GLWbigMenu(){
-		free(widths);
-	}
-};
 
 int GLWbigMenu::mouse(GLwindowState &, int button, int state, int x, int y){
 	int ind = (y) / (bigfontheight + 40);

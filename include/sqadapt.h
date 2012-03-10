@@ -143,24 +143,6 @@ public:
 	}
 };
 
-/// "Class" can be CoordSys, Player or Entity. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
-/// I think I cannot write this logic shorter.
-template<typename Class, typename MType, MType getter(Class *p)>
-SQInteger sqf_getintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.value = getter(p);
-		r.push(v);
-		return 1;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
 
 template<typename Class, typename MType, MType Class::*member>
 inline MType membergetter(Class *p){

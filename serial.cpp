@@ -15,9 +15,6 @@ Serializable::Serializable(Game *game) : game(game), id(!game || game->isRawCrea
 }
 
 Serializable::~Serializable(){
-	if(g_sqvm)
-		sqa_deleteobj(g_sqvm, this);
-
 	if(game)
 		game->getDeleteQue().push_back(id);
 }

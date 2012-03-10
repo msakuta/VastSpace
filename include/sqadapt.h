@@ -72,11 +72,6 @@ extern EXPORT const SQUserPointer tt_Quatd;
 extern EXPORT const SQUserPointer tt_Entity;
 extern EXPORT const SQUserPointer tt_GLwindow;
 
-/// \param instanceindex The index of Squirrel class instance that is to be assigned.
-EXPORT bool sqa_newobj(HSQUIRRELVM v, Serializable *o, SQInteger instanceindex = -1);
-EXPORT bool sqa_refobj(HSQUIRRELVM v, SQUserPointer* o, SQRESULT *sr = NULL, int idx = 1, bool throwError = true);
-EXPORT void sqa_deleteobj(HSQUIRRELVM v, Serializable *o);
-
 /// Translate given string with Squirrel defined translation function.
 EXPORT ::gltestp::dstring sqa_translate(const SQChar *);
 
@@ -187,43 +182,6 @@ inline void accessorsetter(Class p, MType &newvalue){
 	(p->*member)(newvalue);
 }
 
-#if 1
-
-/// This template function is rather straightforward, but produces similar instances rapidly.
-/// Probably classes with the same member variables should share base class, but it's not always feasible.
-template<typename Class, typename MType, MType Class::*member>
-static SQInteger sqf_setintrinsic(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		p->*member = r.value;
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
-
-template<typename Class, typename MType, void (Class::*member)(const MType &)>
-static SQInteger sqf_setintrinsica(HSQUIRRELVM v){
-	try{
-		Class *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		(p->*member)(r.value);
-		return 0;
-	}
-	catch(SQFError){
-		return SQ_ERROR;
-	}
-}
 
 /// "Class" can be Player. "MType" can be Vec3d or Quatd. "member" can be pos or rot, respectively.
 /// I think I cannot write this logic shorter.
@@ -271,82 +229,11 @@ static SQInteger sqf_setintrinsica2(HSQUIRRELVM v){
 	}
 }
 
-#else
-
-// This implementation is a bit dirty and requires unsigned long to have equal or greater size compared to pointer's,
-// but actually reduces code size and probably execution time, by CPU caching effect.
-template<typename MType>
-static SQInteger sqf_setintrinsic_in(HSQUIRRELVM v, unsigned long offset){
-	try{
-		void *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
-		SQIntrinsic<MType> r;
-		r.getValue(v, 2);
-		*(MType*)&((unsigned char*)p)[offset] = r.value;
-		return 0;
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
-	}
-}
-
-template<typename Class, typename MType, MType Class::*member>
-SQInteger sqf_setintrinsic(HSQUIRRELVM v){
-	return sqf_setintrinsic_in<MType>(v, (unsigned long)&(((Class*)NULL)->*member));
-}
-#endif
-
 typedef SQIntrinsic<Quatd> SQQuatd;
 typedef SQIntrinsic<Vec3d> SQVec3d;
 
 
-template<typename Class>
-SQInteger sqf_get(HSQUIRRELVM v){
-	Class *p;
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-	if(!strcmp(wcs, _SC("classname"))){
-		sq_pushstring(v, p->classname(), -1);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("alive"))){
-		SQUserPointer o;
-		sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("id"))){
-		SQUserPointer o;
-		SQRESULT sr;
-		if(!sqa_refobj(v, &o, &sr, 1, true))
-			return sr;
-		Class *p = (Class*)o;
-		if(p)
-			sq_pushinteger(v, p->getid());
-		else
-			return sq_throwerror(v, _SC("Object is deleted"));
-		return 1;
-	}
-	sq_pushnull(v);
-	return 1;
-}
 
-template<typename Class>
-SQInteger sqf_set(HSQUIRRELVM v){
-	if(sq_gettop(v) < 3)
-		return SQ_ERROR;
-	Class *p;
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
-	return SQ_ERROR;
-}
 
 
 /// A class to automatically restores Squirrel stack depth at the destruction of this object.

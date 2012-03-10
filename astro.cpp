@@ -546,11 +546,11 @@ Astrobj *CoordSys::findBrightest(const Vec3d &pos){
 }
 
 SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
-	Astrobj *p;
+	Astrobj *p = static_cast<Astrobj*>(sq_refobj(v));
+	if(!p)
+		return SQ_ERROR;
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
 	if(!strcmp(wcs, _SC("rad"))){
 		sq_pushfloat(v, SQFloat(p->rad));
 		return 1;
@@ -588,10 +588,10 @@ void Star::unserialize(UnserializeContext &sc){
 const ClassRegister<Star> Star::classRegister("Star", sq_define);
 
 SQInteger Star::sqf_get(HSQUIRRELVM v){
-	Star *p;
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
+	Star *p = static_cast<Star*>(sq_refobj(v));
+	if(!p)
 		return SQ_ERROR;
 	if(!strcmp(wcs, _SC("spectral"))){
 		sq_pushstring(v, cpplib::dstring() << spectralToName(p->spect) << p->subspect, -1);

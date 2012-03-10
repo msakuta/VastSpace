@@ -605,8 +605,8 @@ DockToCommand::DockToCommand(HSQUIRRELVM v, Entity &e){
 	int argc = sq_gettop(v);
 	if(argc < 2)
 		throw SQFArgumentError();
-	Entity *pe;
-	if(sqa_refobj(v, (SQUserPointer*)&pe, NULL, 2))
+	Entity *pe = Entity::sq_refobj(v, 2);
+	if(!pe)
 		throw SQFArgumentError();
 	deste = pe;
 }

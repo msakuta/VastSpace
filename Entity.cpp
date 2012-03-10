@@ -825,7 +825,7 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 		else
 			throw SQFError();
 	}
-	else if(sqa_refobj(v, (SQUserPointer*)&destcs, NULL, 3)){
+	else if(destcs = CoordSys::sq_refobj(v, 3)){
 		destpos = vec3_000;
 	}
 	else

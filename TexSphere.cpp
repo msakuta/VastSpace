@@ -269,11 +269,19 @@ void TexSphere::anim(double dt){
 
 
 SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
-	TexSphere *p;
+	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
-	if(!sqa_refobj(v, (SQUserPointer*)&p))
-		return SQ_ERROR;
+
+	if(!strcmp(wcs, _SC("alive"))){
+		sq_pushbool(v, !!p);
+		return 1;
+	}
+
+	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+	if(!p)
+		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
 	if(!strcmp(wcs, _SC("oblateness"))){
 		sq_pushfloat(v, SQFloat(p->oblateness));
 		return 1;
@@ -285,12 +293,14 @@ SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
 SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
-	TexSphere *p;
+	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	SQRESULT sr;
-	if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-		return sr;
+
+	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+	if(!p)
+		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
 	if(!strcmp(wcs, _SC("oblateness"))){
 		SQFloat f;
 		sq_getfloat(v, 3, &f);
@@ -298,7 +308,7 @@ SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
 		return 0;
 	}
 	else
-		return sqa::sqf_get<Astrobj>(v);
+		return st::sqf_get(v);
 }
 
 bool TexSphere::sq_define(HSQUIRRELVM v){

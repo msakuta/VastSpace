@@ -153,9 +153,7 @@ bool CMHalt::sqf_define(HSQUIRRELVM v){
 SQInteger CMHalt::sqf_call(HSQUIRRELVM v){
 	try{
 		SQRESULT sr;
-		Entity *p;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
+		Entity *p = Entity::sq_refobj(v, -1);
 		send(*p);
 	}
 	catch(SQIntrinsicError){

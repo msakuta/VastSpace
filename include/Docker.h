@@ -9,7 +9,7 @@
 /// The base class for those ships that can contain other ships.
 /// It derives WarField for they have similarities about containing Entities, but Docker
 /// does not maintain position of each Entity.
-class EXPORT Docker : public WarField{
+class EXPORT Docker : public WarField, public Observable{
 public:
 	typedef WarField st;
 	typedef Entity::Dockable Dockable;
@@ -38,7 +38,14 @@ public:
 	virtual Vec3d getPortPos()const = 0; ///< Retrieves position to dock to
 	virtual Quatd getPortRot()const = 0; ///< Retrieves rotation of the port
 
-	static void sq_define(HSQUIRRELVM v); ///< Define Squirrel class
+
+	/// Creates and pushes an Entity object to Squirrel stack.
+	static void sq_pushobj(HSQUIRRELVM, Docker *);
+
+	/// Returns an Entity object being pointed to by an object in Squirrel stack.
+	static Docker *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+
+	static bool sq_define(HSQUIRRELVM v); ///< Define Squirrel class
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 	static SQInteger sqf_addent(HSQUIRRELVM v);

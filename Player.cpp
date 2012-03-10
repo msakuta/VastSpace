@@ -713,108 +713,132 @@ void Player::sq_define(HSQUIRRELVM v){
 }
 
 SQInteger Player::sqf_get(HSQUIRRELVM v){
-	Player *p = sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	if(!strcmp(wcs, _SC("cs"))){
-		CoordSys::sq_pushobj(v, const_cast<CoordSys*>(p->cs));
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("selected"))){
-		// We cannot foresee how many items in the selection list are really alive.
-		// So we just append each item to the array, examining if each one is alive in the way.
-		sq_newarray(v, 0); // array
-
-		// Retrieve library-provided "append" method for an array.
-		// We'll reuse the method for all the elements, which is not exactly the same way as
-		// an ordinally Squirrel codes evaluate.
-		sq_pushstring(v, _SC("append"), -1); // array "append"
-		if(SQ_FAILED(sq_get(v, -2))) // array array.append
-			return sq_throwerror(v, _SC("append not found"));
-
-		// Note the "if"
-		for(SelectSet::iterator it = p->selected.begin(); it != p->selected.end(); it++) if(*it){
-			sq_push(v, -2); // array array.append array
-			Entity::sq_pushobj(v, *it); // array array.append array Entity-instance
-			sq_call(v, 2, SQFalse, SQFalse); // array array.append
-		}
-
-		// Pop the saved "append" method
-		sq_poptop(v); // array
-
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("chase"))){
-		if(!p->chase){
-			sq_pushnull(v);
+	try{
+		Player *p = sq_refobj(v);
+		const SQChar *wcs;
+		sq_getstring(v, 2, &wcs);
+		if(!strcmp(wcs, _SC("alive"))){
+			sq_pushbool(v, !!p);
 			return 1;
 		}
-		Entity::sq_pushobj(v, p->chase);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("chasecamera"))){
-		sq_pushinteger(v, p->chasecamera);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("viewdist"))){
-		sq_pushfloat(v, SQFloat(p->viewdist));
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("playerId"))){
-		sq_pushinteger(v, SQInteger(p->playerId));
-		return 1;
-	}
-	else
-		return sqa::sqf_get<Player>(v);
-}
 
-SQInteger Player::sqf_set(HSQUIRRELVM v){
-	Player *p = sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	SQRESULT sr;
-	if(!strcmp(wcs, _SC("cs"))){
-		if(OT_INSTANCE != sq_gettype(v, 3))
-			return SQ_ERROR;
-		p->cs = CoordSys::sq_refobj(v, 3);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("chase"))){
-		SQObjectType ot = sq_gettype(v, 3);
-		if(OT_NULL == ot){
-			p->chase = NULL;
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p)
+			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
+		if(!strcmp(wcs, _SC("cs"))){
+			CoordSys::sq_pushobj(v, const_cast<CoordSys*>(p->cs));
 			return 1;
 		}
-		if(OT_INSTANCE != ot)
-			return SQ_ERROR;
-		Entity *o = Entity::sq_refobj(v, 3);
-		if(!o)
-			return SQ_ERROR;
-		p->chase = o;
-		p->chases.insert(p->chase);
-		p->chase->addObserver(p);
-//		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("chasecamera"))){
-		SQInteger i;
-		if(SQ_SUCCEEDED(sq_getinteger(v, 3, &i))){
-			p->chasecamera = i;
+		else if(!strcmp(wcs, _SC("selected"))){
+			// We cannot foresee how many items in the selection list are really alive.
+			// So we just append each item to the array, examining if each one is alive in the way.
+			sq_newarray(v, 0); // array
+
+			// Retrieve library-provided "append" method for an array.
+			// We'll reuse the method for all the elements, which is not exactly the same way as
+			// an ordinally Squirrel codes evaluate.
+			sq_pushstring(v, _SC("append"), -1); // array "append"
+			if(SQ_FAILED(sq_get(v, -2))) // array array.append
+				return sq_throwerror(v, _SC("append not found"));
+
+			// Note the "if"
+			for(SelectSet::iterator it = p->selected.begin(); it != p->selected.end(); it++) if(*it){
+				sq_push(v, -2); // array array.append array
+				Entity::sq_pushobj(v, *it); // array array.append array Entity-instance
+				sq_call(v, 2, SQFalse, SQFalse); // array array.append
+			}
+
+			// Pop the saved "append" method
+			sq_poptop(v); // array
+
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("chase"))){
+			if(!p->chase){
+				sq_pushnull(v);
+				return 1;
+			}
+			Entity::sq_pushobj(v, p->chase);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("chasecamera"))){
+			sq_pushinteger(v, p->chasecamera);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("viewdist"))){
+			sq_pushfloat(v, SQFloat(p->viewdist));
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("playerId"))){
+			sq_pushinteger(v, SQInteger(p->playerId));
 			return 1;
 		}
 		else
 			return SQ_ERROR;
 	}
-	else if(!strcmp(wcs, _SC("viewdist"))){
-		if(OT_FLOAT != sq_gettype(v, 3))
-			return SQ_ERROR;
-		SQFloat f;
-		sq_getfloat(v, 3, &f);
-		p->viewdist = f;
-		return 1;
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
 	}
-	else
-		return sqa::sqf_set<Player>(v);
+}
+
+SQInteger Player::sqf_set(HSQUIRRELVM v){
+	try{
+		Player *p = sq_refobj(v);
+		const SQChar *wcs;
+		sq_getstring(v, 2, &wcs);
+		SQRESULT sr;
+
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p)
+			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
+
+		if(!strcmp(wcs, _SC("cs"))){
+			if(OT_INSTANCE != sq_gettype(v, 3))
+				return SQ_ERROR;
+			p->cs = CoordSys::sq_refobj(v, 3);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("chase"))){
+			SQObjectType ot = sq_gettype(v, 3);
+			if(OT_NULL == ot){
+				p->chase = NULL;
+				return 1;
+			}
+			if(OT_INSTANCE != ot)
+				return SQ_ERROR;
+			Entity *o = Entity::sq_refobj(v, 3);
+			if(!o)
+				return SQ_ERROR;
+			p->chase = o;
+			p->chases.insert(p->chase);
+			p->chase->addObserver(p);
+	//		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("chasecamera"))){
+			SQInteger i;
+			if(SQ_SUCCEEDED(sq_getinteger(v, 3, &i))){
+				p->chasecamera = i;
+				return 1;
+			}
+			else
+				return SQ_ERROR;
+		}
+		else if(!strcmp(wcs, _SC("viewdist"))){
+			if(OT_FLOAT != sq_gettype(v, 3))
+				return SQ_ERROR;
+			SQFloat f;
+			sq_getfloat(v, 3, &f);
+			p->viewdist = f;
+			return 1;
+		}
+		else
+			return SQ_ERROR;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
 }
 
 SQInteger Player::sqf_getpos(HSQUIRRELVM v){

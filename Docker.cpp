@@ -152,17 +152,46 @@ bool Docker::undock(Dockable *e){
 	return true;
 }
 
-void Docker::sq_define(HSQUIRRELVM v){
+/// \brief The release hook of Entity that clears the weak pointer.
+static SQInteger sqh_release(SQUserPointer p, SQInteger){
+	((WeakPtr<Docker>*)p)->~WeakPtr<Docker>();
+	return 1;
+}
+
+void Docker::sq_pushobj(HSQUIRRELVM v, Docker *cs){
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("Docker"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError("Something's wrong with CoordSys class definition.");
+	if(SQ_FAILED(sq_createinstance(v, -1)))
+		throw SQFError("Couldn't create class Docker");
+	SQUserPointer p;
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+	new(p) WeakPtr<Docker>(cs);
+	sq_setreleasehook(v, -1, sqh_release);
+	sq_remove(v, -2); // Remove Class
+	sq_remove(v, -2); // Remove root table
+}
+
+Docker *Docker::sq_refobj(HSQUIRRELVM v, SQInteger idx){
+	SQUserPointer up;
+	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
+	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
+		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+	return *(WeakPtr<Docker>*)up;
+}
+
+bool Docker::sq_define(HSQUIRRELVM v){
 	static const SQChar *tt_Docker = "Docker";
 	sq_pushstring(v, _SC("Docker"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<SQChar*>(tt_Docker));
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<Docker>));
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("addent"), sqf_addent);
 	sq_createslot(v, -3);
+	return true;
 }
 
 SQInteger Docker::sqf_get(HSQUIRRELVM v){
@@ -170,7 +199,7 @@ SQInteger Docker::sqf_get(HSQUIRRELVM v){
 	sq_getstring(v, 2, &wcs);
 	if(!strcmp(wcs, _SC("alive"))){
 		SQUserPointer o;
-		sq_pushbool(v, sqa_refobj(v, &o, NULL, 1, false));
+		sq_pushbool(v, SQBool(!!sq_refobj(v)));
 		return 1;
 	}
 }
@@ -179,10 +208,7 @@ SQInteger Docker::sqf_addent(HSQUIRRELVM v){
 	try{
 		if(sq_gettop(v) < 2)
 			return SQ_ERROR;
-		Docker *p;
-		SQRESULT sr;
-		if(!sqa_refobj(v, (SQUserPointer*)&p, &sr))
-			return sr;
+		Docker *p = sq_refobj(v);
 
 		Entity *pt = Entity::sq_refobj(v, 2);
 		p->addent(pt);

@@ -4,6 +4,7 @@
 
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
+#include "Application.h"
 #include "Sceptor.h"
 #include "Player.h"
 #include "Bullet.h"
@@ -26,6 +27,7 @@
 #include "motion.h"
 #include "Game.h"
 #include "glw/popup.h"
+#include "ClientMessage.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -36,6 +38,7 @@ extern "C"{
 #include <assert.h>
 #include <string.h>
 #include <algorithm>
+#include <sstream>
 
 
 /* some common constants that can be used in static data definition. */
@@ -58,6 +61,17 @@ extern "C"{
 #define SCEPTOR_MAGAZINE 10
 #define SCEPTOR_RELOADTIME 2.
 
+
+/// \brief The client message for docking command.
+struct CMDockCommand : ClientMessage{
+	typedef ClientMessage st;
+	static CMDockCommand s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	bool sq_send(Application &, HSQUIRRELVM v)const;
+	static void send(Entity *e);
+public:
+	CMDockCommand() : st("DockCommand"){}
+};
 
 
 Entity::Dockable *Sceptor::toDockable(){return this;}
@@ -1510,14 +1524,40 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 
 
 
-int Sceptor::cmd_dock(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
-	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
-		DockCommand com;
-		(*e)->command(&com);
-	}
-	return 0;
+CMDockCommand CMDockCommand::s;
+
+void CMDockCommand::send(Entity *e){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << e;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
 }
+
+bool CMDockCommand::sq_send(Application &, HSQUIRRELVM v)const{
+	if(OT_INSTANCE != sq_gettype(v, 3))
+		return false;
+	Entity *p = Entity::sq_refobj(v, 3);
+	if(!p)
+		return false;
+	s.send(p);
+	return true;
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMDockCommand::interpret(ServerClient &sc, UnserializeStream &uss){
+	Entity *e;
+	uss >> e;
+	DockCommand com;
+	if(!(0 <= sc.id && sc.id < sc.sv->pg->players.size()))
+		return;
+	Player *pl = sc.sv->pg->players[sc.id];
+	// Prohibit Players that do not own this Entity from dispatching commands.
+	if(pl && pl->race == e->race)
+		e->command(&com);
+}
+
+
 
 int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;

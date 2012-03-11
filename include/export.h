@@ -4,7 +4,7 @@
 #ifndef EXPORT_H
 #define EXPORT_H
 
-#ifndef _WIN32
+#if defined DOXYGEN || !defined _WIN32
 #define EXPORT
 #else
 #ifndef EXPORT

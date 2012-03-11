@@ -134,6 +134,10 @@ const Game::IdMap &Game::idmap()const{
 	return idunmap;
 }
 
+Game::IdMap &Game::idmap(){
+	return idunmap;
+}
+
 void Game::idUnmap(UnserializeContext &sc){
 	unsigned long delsize;
 	sc.i >> delsize;
@@ -226,8 +230,10 @@ void Game::serialize(SerializeStream &ss){
 	// Update delete queue to notify that particular objects should be dead, destructed and freed.
 	ss << (unsigned)deleteque.size();
 	DeleteQue::iterator it = deleteque.begin();
-	for(; it != deleteque.end(); it++)
+	for(; it != deleteque.end(); it++){
 		ss << *it;
+		idmap().erase(*it); // Delete from the server game too.
+	}
 	deleteque.clear();
 
 	// The second pass actually writes to the stream, replacing pointers with the object ids.

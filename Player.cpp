@@ -11,6 +11,7 @@
 #include "btadapt.h"
 #include "glw/glwindow.h"
 #include "motion.h"
+#include "ClientMessage.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>

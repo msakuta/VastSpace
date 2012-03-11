@@ -1,7 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 /** \file
- * \brief Definition of Client class.
+ * \brief Definition of Application, ClientApplication and ServerApplication class.
  */
 
 #include "Server.h"
@@ -159,33 +159,5 @@ class DedicatedServerApplication : public Application{
 extern DedicatedServerApplication application;
 
 #endif
-
-/// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the
-/// server world.
-///
-/// The overriders should be sigleton class, which means only one instance of that class is permitted.
-///
-/// The overriders registers themselves with the constructor of ClientMessage and de-register in the destructor.
-struct ClientMessage{
-
-	/// Type for the constructor map.
-	typedef std::map<dstring, ClientMessage*> CtorMap;
-
-	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
-	static CtorMap &ctormap();
-
-	/// The virtual function that defines how to interpret serialized stream.
-	virtual void interpret(ServerClient &sc, UnserializeStream &uss) = 0;
-
-protected:
-	/// The id (name) of this ClientMessage automatically sent and matched.
-	dstring id;
-
-	ClientMessage(dstring id);
-	virtual ~ClientMessage();
-
-	void send(Application &, const void *, size_t);
-};
-
 
 #endif

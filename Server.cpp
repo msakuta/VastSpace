@@ -3,6 +3,7 @@
 #include "serial_util.h"
 #include "cmd.h"
 #include "Application.h"
+#include "ClientMessage.h"
 extern "C"{
 #include <clib/dstr.h>
 #include <clib/timemeas.h>
@@ -763,6 +764,8 @@ int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 		scs.id = 0; // The client id 0 means special, that is the server client.
 		scs.name = sv.hostname;
 		scs.tcp = stdi.svtcp;
+		if(pstd->app->serverGame && pstd->app->serverGame->player)
+			scs.meid = pstd->app->serverGame->player->getid();
 		sv.scs = &scs;
 #endif
 		sv.std = *pstd;
@@ -1184,7 +1187,7 @@ ServerClient &Server::addServerClient(){
 	ret.sv = this;
 	ret.kicked = false;
 	ret.team = -1;
-	ret.meid = ULONG_MAX;
+	ret.meid = 0;
 	ret.s = INVALID_SOCKET;
 
 	ret.id = id;

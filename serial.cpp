@@ -97,6 +97,8 @@ void Serializable::idPackSerialize(SerializeContext &sc){
 	sc.visits.insert(this);*/
 
 	assert(this->id != 0); // id == 0 means it's invalid object.
+	assert(game != NULL); // game == 0 means it's non-initialized object.
+	game->idmap()[id] = this;
 	SerializeStream *ss = sc.o.substream(id);
 	SerializeContext sc2(*ss, sc);
 	sc2.o << classname();

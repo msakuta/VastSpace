@@ -80,6 +80,7 @@ public:
 //	typedef std::map<unsigned long, Serializable*> IdMap;
 	typedef UnserializeMap IdMap;
 	const IdMap &idmap()const;
+	IdMap &idmap();
 
 	virtual void serialize(SerializeStream &ss);
 	virtual void unserialize(UnserializeContext &usc);

@@ -5,6 +5,7 @@
  */
 
 #include "Application.h"
+#include "ClientMessage.h"
 #include "Game.h"
 #include "Player.h"
 #include "Entity.h"
@@ -529,6 +530,10 @@ ClientMessage::~ClientMessage(){
 	ctormap().erase(id);
 }
 
+bool ClientMessage::sq_send(Application &app, HSQUIRRELVM v)const{
+	return false;
+}
+
 void ClientMessage::send(Application &cl, const void *p, size_t size){
 #ifdef _WIN32
 	if(cl.mode & cl.ServerBit){
@@ -536,6 +541,8 @@ void ClientMessage::send(Application &cl, const void *p, size_t size){
 		if(it != ClientMessage::ctormap().end()){
 			std::istringstream iss(std::string((const char*)p, strlen((const char*)p)));
 			StdUnserializeStream uss(iss);
+			UnserializeContext usc(uss, Serializable::ctormap(), (UnserializeMap&)cl.serverGame->idmap());
+			uss.usc = &usc;
 			it->second->interpret(*cl.server.sv->scs, uss);
 		}
 	}

@@ -16,6 +16,7 @@
 #include "glw/GLWmenu.h"
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
+#include "ClientMessage.h"
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
@@ -684,6 +685,23 @@ static SQInteger sqf_reg(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_sendClientMessage(HSQUIRRELVM v){
+	try{
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return SQ_ERROR;
+		ClientMessage::CtorMap::iterator it = ClientMessage::ctormap().find(str);
+		if(it != ClientMessage::ctormap().end()){
+			if(!it->second->sq_send(application, v))
+				return sq_throwerror(v, _SC("The client message is not supported for Squirrel scripts."));
+		}
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
 #ifndef _WIN32
 #define __stdcall
 #endif
@@ -1015,6 +1033,8 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
+
+	register_global_func(v, sqf_sendClientMessage, _SC("sendClientMessage"));
 
 	// Execute initializations registered to defineMap.
 	// This must be placed after all other base classes are defined.

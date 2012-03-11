@@ -149,6 +149,11 @@ int loadModule(string path);
 /// \return Reference count.
 int unloadModule(string path);
 
+/// Sends a client message to the server. Only effective in the client.
+/// The variable length arguments are interpreted depending clientMessageId.
+/// For example, the following line shows the signature of DockCommand client message.
+///   sendClientMessage("DockCommand", Entity e);
+void sendClientMessage(string clientMessageId, ...);
 
 
 // The application will try to call the following functions occasionary.
@@ -360,9 +365,10 @@ register_console_command("moveto", function(...){
 });
 
 register_console_command("dock", function(...){
-	local e = player.selected;
-	for(; e != null; e = e.selectnext)
+	foreach(e in player.selected){
 		e.command("Dock");
+		sendClientMessage("DockCommand", e);
+	}
 });
 
 register_console_command("undock", function(...){

@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Docker class.
+ */
 #include "Scarry.h"
 #include "judge.h"
 #include "serial_util.h"
@@ -24,7 +27,7 @@ extern "C"{
 
 
 
-Docker::Docker(Entity *ae) : st(NULL), baycool(0), e(ae), remainDocked(false){
+Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){
 	for(int i = 0; i < numof(paradec); i++)
 		paradec[i] = 0;
 	if(ae && ae->w && ae->w->cs)

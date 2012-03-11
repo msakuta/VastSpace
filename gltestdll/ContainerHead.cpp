@@ -388,7 +388,7 @@ bool ContainerHead::buildBody(){
 		// If bbody is not initialized but surrounding dynamics world is initialized, assume it's because
 		// the object is just loaded from a save file.
 		// Other means (creation or transpoting) always use enterField method, where adding is already done.
-		WarSpace *ws = w ? *w : NULL;
+		WarSpace *ws = w ? static_cast<WarSpace*>(*w) : NULL;
 		if(ws){
 			ws->bdw->addRigidBody(bbody, 1, ~2);
 			setPosition(&pos, &rot, &this->velo, &omg);

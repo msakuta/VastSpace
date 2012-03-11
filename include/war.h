@@ -97,6 +97,7 @@ public:
 	};
 #endif
 	WarField();
+	WarField(Game *);
 	WarField(CoordSys *cs);
 	virtual const char *classname()const;
 	static const unsigned classid;

@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of WarField and WarSpace.
+ */
 #include "war.h"
 #include "Universe.h"
 #include "Entity.h"

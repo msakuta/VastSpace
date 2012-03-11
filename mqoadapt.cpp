@@ -6,6 +6,6 @@ static void tex_callback(suf_t *suf, suftex_t **ret){
 	*ret = gltestp::AllocSUFTex(suf);
 }
 
-Model *LoadMQOModel(const char *fname){
-	return LoadMQOModel(fname, 1., tex_callback);
+Model *LoadMQOModel(const char *fname, double scale){
+	return LoadMQOModel(fname, scale, tex_callback);
 }

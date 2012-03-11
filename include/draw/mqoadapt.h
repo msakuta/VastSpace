@@ -9,7 +9,7 @@
  */
 #include "mqo.h"
 
-EXPORT Model *LoadMQOModel(const char *fname);
+EXPORT Model *LoadMQOModel(const char *fname, double scale = 1.);
 
 #endif
 

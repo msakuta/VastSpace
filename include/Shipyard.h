@@ -1,18 +1,15 @@
-#ifndef SCARRY_H
-#define SCARRY_H
-#include "Warpable.h"
+#ifndef SHIPYARD_H
+#define SHIPYARD_H
 #include "Builder.h"
+#include "Warpable.h"
 #include "arms.h"
 #include "glw/glwindow.h"
 #include "Docker.h"
 
-#define SCARRY_BUILDQUESIZE 8
-#define SCARRY_SCALE .0010
-#define SCARRY_BAYCOOL 2.
 
-class ScarryDocker : public Docker{
+class EXPORT ShipyardDocker : public Docker{
 public:
-	ScarryDocker(Entity *ae = NULL) : st(ae){}
+	ShipyardDocker(Entity *ae = NULL) : st(ae){}
 	typedef Docker st;
 	static const unsigned classid;
 	const char *classname()const;
@@ -21,41 +18,18 @@ public:
 	virtual Quatd getPortRot()const;
 };
 
-class GLWdock : public GLwindowSizeable{
-public:
-	typedef GLwindowSizeable st;
-	GLWdock(const char *title, Docker *a) : st(title), docker(a), grouping(false){
-		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
-		xpos = 100;
-		ypos = 200;
-		width = 250;
-		height = 100;
-	}
-	virtual void draw(GLwindowState &ws, double t);
-	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
-	virtual void postframe();
-
-	Docker *docker;
-	bool grouping;
-};
-
-extern const struct Builder::BuildStatic sceptor_build;
-
-int cmd_build(int argc, char *argv[], void *pv);
-
-#if 0
-class Scarry : public Warpable, public Builder{
+class EXPORT Shipyard : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Scarry() : docker(new ScarryDocker(this)){init();}
-	Scarry(WarField *w);
-	~Scarry();
+	Shipyard() : docker(new ShipyardDocker(this)), Builder(this->Entity::w){init();}
+	Shipyard(WarField *w);
+	~Shipyard();
 	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	static const unsigned classid;
-	static EntityRegister<Scarry> entityRegister;
+	static EntityRegister<Shipyard> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
@@ -78,10 +52,9 @@ public:
 	virtual const maneuve &getManeuve()const;
 
 protected:
-	double ru;
-
 	ArmBase **turrets;
-	ScarryDocker *docker;
+	ShipyardDocker *docker;
+//	Builder *builder;
 
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
@@ -92,23 +65,5 @@ protected:
 
 	virtual void doneBuild(Entity *);
 };
-#endif
-
-#if 0
-/* Active Radar or Hyperspace Sonar.
-   AR costs less energy but has limitation in speed (light), while
-  HS propagates on hyperspace field where limitation of speed do not exist.
-*/
-struct hypersonar{
-	avec3_t pos;
-	double life;
-	double rad;
-	double speed;
-	struct coordsys *cs;
-	struct hypersonar *next;
-	int type; /* 0 - Active Radar, 1 - Hyperspace Sonar. */
-} *g_hsonar;
-#endif
-
 
 #endif

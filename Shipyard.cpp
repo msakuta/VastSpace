@@ -1,4 +1,4 @@
-#include "Scarry.h"
+#include "Shipyard.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Player.h"
@@ -22,10 +22,11 @@ extern "C"{
 
 
 
-#if 0
-const unsigned ScarryDocker::classid = registerClass("ScarryDocker", Conster<ScarryDocker>);
 
-const char *ScarryDocker::classname()const{return "ScarryDocker";}
+#if 1
+const unsigned ShipyardDocker::classid = registerClass("ShipyardDocker", Conster<ShipyardDocker>);
+
+const char *ShipyardDocker::classname()const{return "ShipyardDocker";}
 
 
 #define SCARRY_MAX_HEALTH 200000
@@ -34,7 +35,7 @@ const char *ScarryDocker::classname()const{return "ScarryDocker";}
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
-hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
+hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 	hardpoint_static(Vec3d(.100, .060, -.760), Quatd(0., 0., 0., 1.), "Turret 1", 0),
 	hardpoint_static(Vec3d(.100, -.060, -.760), Quatd(0., 0., 1., 0.), "Turret 2", 0),
 	hardpoint_static(Vec3d(-.180,  .180, .420), Quatd(0., 0., 0., 1.), "Turret 3", 0),
@@ -46,16 +47,17 @@ hardpoint_static *Scarry::hardpoints = NULL/*[10] = {
 	hardpoint_static(Vec3d( .180,  .180, -.380), Quatd(0., 0., 0., 1.), "Turret 9", 0),
 	hardpoint_static(Vec3d( .180, -.180, -.380), Quatd(0., 0., 1., 0.), "Turret 10", 0),
 }*/;
-int Scarry::nhardpoints = 0;
+int Shipyard::nhardpoints = 0;
 
-Scarry::Scarry(WarField *w) : st::st(w), st(w), docker(new ScarryDocker(this)){
+Shipyard::Shipyard(WarField *w) : st::st(w), st(w), docker(new ShipyardDocker(this)), Builder(this->Entity::w){
 	st::init();
 	init();
 	for(int i = 0; i < nhardpoints; i++)
-		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
+		turrets[i] = NULL;
+//		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
 }
 
-void Scarry::init(){
+void Shipyard::init(){
 	ru = 0.;
 	if(!hardpoints){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
@@ -64,80 +66,78 @@ void Scarry::init(){
 	mass = 5e6;
 }
 
-Scarry::~Scarry(){
+Shipyard::~Shipyard(){
 	delete docker;
 }
 
-const char *Scarry::idname()const{return "scarry";}
-const char *Scarry::classname()const{return "Scarry";}
+const char *Shipyard::idname()const{return "Shipyard";}
+const char *Shipyard::classname()const{return "Shipyard";}
 
-const unsigned Scarry::classid = registerClass("Scarry", Conster<Scarry>);
-Entity::EntityRegister<Scarry> Scarry::entityRegister("Scarry");
+const unsigned Shipyard::classid = registerClass("Shipyard", Conster<Shipyard>);
+Entity::EntityRegister<Shipyard> Shipyard::entityRegister("Shipyard");
 
-void Scarry::serialize(SerializeContext &sc){
+void Shipyard::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << docker;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.o << turrets[i];
-	Builder::serialize(sc);
 }
 
-void Scarry::unserialize(UnserializeContext &sc){
+void Shipyard::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> docker;
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
-	Builder::unserialize(sc);
 }
 
-void Scarry::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
+void Shipyard::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	st::dive(sc, method);
 	docker->dive(sc, method);
 }
 
-const char *Scarry::dispname()const{
-	return "Space Carrier";
+const char *Shipyard::dispname()const{
+	return "Shipyard";
 };
 
-double Scarry::maxhealth()const{
+double Shipyard::maxhealth()const{
 	return 200000;
 }
 
-double Scarry::hitradius()const{
+double Shipyard::hitradius()const{
 	return 1.;
 }
 
-double Scarry::maxenergy()const{
+double Shipyard::maxenergy()const{
 	return 5e8;
 }
 
-void Scarry::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = this->pos + this->rot.trans(Vec3d(.100, .22, -.610));
 	rot = this->rot;
 }
 
-void Scarry::anim(double dt){
+void Shipyard::anim(double dt){
 	st::anim(dt);
 	docker->anim(dt);
-	Builder::anim(dt);
+//	Builder::anim(dt);
 	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 		turrets[i]->align();
 }
 
-int Scarry::popupMenu(PopupMenu &list){
+int Shipyard::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
 	list.append("Build Window", 'b', "buildmenu").append("Dock Window", 'd', "dockmenu");
 	return ret;
 }
 
-Entity::Props Scarry::props()const{
+Entity::Props Shipyard::props()const{
 	Props ret = st::props();
 //	ret.push_back(cpplib::dstring("?: "));
 	return ret;
 }
 
-int Scarry::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	Scarry *p = this;
+int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	Shipyard *p = this;
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
@@ -163,20 +163,20 @@ int Scarry::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 	return reti;
 }
 
-int Scarry::armsCount()const{
+int Shipyard::armsCount()const{
 	return nhardpoints;
 }
 
-ArmBase *Scarry::armsGet(int i){
+ArmBase *Shipyard::armsGet(int i){
 	return turrets[i];
 }
 
-double Scarry::getRU()const{return ru;}
-Builder *Scarry::getBuilderInt(){return this;}
-Docker *Scarry::getDockerInt(){return docker;}
+double Shipyard::getRU()const{return ru;}
+Builder *Shipyard::getBuilderInt(){return this;}
+Docker *Shipyard::getDockerInt(){return docker;}
 
 
-const Scarry::maneuve Scarry::mymn = {
+const Shipyard::maneuve Shipyard::mymn = {
 	SCARRY_ACCELERATE, /* double accel; */
 	SCARRY_MAX_SPEED, /* double maxspeed; */
 	SCARRY_ANGLEACCEL, /* double angleaccel; */
@@ -185,9 +185,9 @@ const Scarry::maneuve Scarry::mymn = {
 	1e6, /* double capacitor_gen; */
 };
 
-const Warpable::maneuve &Scarry::getManeuve()const{return mymn;}
+const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
 
-struct hitbox Scarry::hitboxes[] = {
+struct hitbox Shipyard::hitboxes[] = {
 /*	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
@@ -198,16 +198,16 @@ struct hitbox Scarry::hitboxes[] = {
 	hitbox(Vec3d( .100, 0., -.640), Quatd(0,0,0,1), Vec3d(.100, .060, .180)),
 	hitbox(Vec3d( .100, .0, -.600), Quatd(0,0,0,1), Vec3d(.040, .260, .040)),
 };
-const int Scarry::nhitboxes = numof(Scarry::hitboxes);
+const int Shipyard::nhitboxes = numof(Shipyard::hitboxes);
 
 
-void Scarry::doneBuild(Entity *e){
+void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();
 	if(d)
 		docker->dock(d);
 	else{
-		e->w = this->w;
-		w->addent(e);
+		e->w = this->Entity::w;
+		this->Entity::w->addent(e);
 		e->pos = pos + rot.trans(Vec3d(-.10, 0.05, 0));
 		e->velo = velo;
 		e->rot = rot;
@@ -218,7 +218,7 @@ void Scarry::doneBuild(Entity *e){
 	static_cast<Dockable*>(e)->undock(this);*/
 }
 
-bool ScarryDocker::undock(Entity::Dockable *pe){
+bool ShipyardDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
 		pe->pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
 		pe->velo = e->velo;
@@ -228,11 +228,11 @@ bool ScarryDocker::undock(Entity::Dockable *pe){
 	return false;
 }
 
-Vec3d ScarryDocker::getPortPos()const{
+Vec3d ShipyardDocker::getPortPos()const{
 	return Vec3d(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
 }
 
-Quatd ScarryDocker::getPortRot()const{
+Quatd ShipyardDocker::getPortRot()const{
 	return quat_u;
 }
 #endif

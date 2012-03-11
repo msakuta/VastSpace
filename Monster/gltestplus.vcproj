@@ -410,6 +410,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Builder.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\Bullet.cpp"
 				>
 			</File>
@@ -550,6 +554,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Shipyard.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\sqadapt.cpp"
 				>
 			</File>
@@ -642,6 +650,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\draw\Shipyard-Draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\draw\war-draw.cpp"
 					>
 				</File>
@@ -708,10 +720,6 @@
 			</File>
 			<File
 				RelativePath="..\argtok.h"
-				>
-			</File>
-			<File
-				RelativePath="..\arms.h"
 				>
 			</File>
 			<File
@@ -842,6 +850,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\arms.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\astro.h"
 				>
 			</File>
@@ -867,6 +879,10 @@
 			</File>
 			<File
 				RelativePath="..\include\btadapt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Builder.h"
 				>
 			</File>
 			<File
@@ -951,6 +967,10 @@
 			</File>
 			<File
 				RelativePath="..\include\shield.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Shipyard.h"
 				>
 			</File>
 			<File

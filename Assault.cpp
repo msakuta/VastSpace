@@ -84,7 +84,7 @@ void Assault::unserialize(UnserializeContext &sc){
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
 
-	WarSpace *ws = w ? *w : NULL;
+	WarSpace *ws = w ? (WarSpace*)(*w) : NULL;
 	if(ws){
 		// Assumes environment WarSpace is serialized first. Otherwise, this code would try to
 		// add a rigid body to uninitialized dynamics world.

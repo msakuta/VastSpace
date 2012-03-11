@@ -109,7 +109,9 @@ public:
 	float blendmover; ///< Blending factor of mover and nextmover.
 	WeakPtr<Entity> chase;
 	WeakPtr<Entity> controlled, lastchase; ///< Various entity lists
+protected:
 	int chasecamera; ///< Camera ID of chased object. Multiple cameras can be mounted on a vehicle for having fun!
+public:
 	int detail;
 	int mousex, mousey;
 	int race;
@@ -147,6 +149,8 @@ public:
 	Quatd getrot()const;
 	void setrot(const Quatd &arot){mover->setrot(arot);}
 	const CoordSys *getcs()const{return cs;}
+	int getChaseCamera()const{return chasecamera;}
+	void setChaseCamera(int);
 	const char *classname()const; ///< returned string storage must be static
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);

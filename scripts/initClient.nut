@@ -93,7 +93,13 @@ function drawCoordSysLabel(cs){
 	return cs.name();
 }
 
-
+register_console_command("seat", function(...){
+	if(vargv.len() == 0){
+		print("seat is " + player.chasecamera);
+		return;
+	}
+	player.chasecamera = vargv[0].tointeger();
+});
 
 
 

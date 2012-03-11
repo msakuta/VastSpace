@@ -417,7 +417,6 @@ void Application::init(bool isClient)
 	if(serverGame){
 		CvarAdd("pause", &serverGame->universe->paused, cvar_int);
 		CvarAdd("g_timescale", &serverGame->universe->timescale, cvar_double);
-		CvarAdd("seat", &serverGame->player->chasecamera, cvar_int);
 	}
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 //	Player::cmdInit(application);

@@ -1339,7 +1339,7 @@ int Sceptor::takedamage(double damage, int hitpart){
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 #endif
-		health = -0.5;
+		health = -1.5;
 //		pt->deaths++;
 	}
 	else

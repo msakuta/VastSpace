@@ -28,6 +28,16 @@ private:
 	CMRot() : st("Rot"){}
 };
 
+/// \brief The client message for changing chase camera number.
+struct CMChaseCamera : ClientMessage{
+	typedef ClientMessage st;
+	static CMChaseCamera s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(int camera);
+public:
+	CMChaseCamera() : st("ChaseCamera"){}
+};
+
 
 float Player::camera_mode_switch_time = 1.f;
 int Player::g_overlay = 1;
@@ -72,14 +82,14 @@ public:
 			return pyrot;
 		Vec3d dummy;
 		Quatd crot;
-		pl.chase->cockpitView(dummy, crot, pl.chasecamera);
+		pl.chase->cockpitView(dummy, crot, pl.getChaseCamera());
 		return /*pyrot */ crot.cnj();
 	}
 	virtual Vec3d getpos()const{
 		if(pl.chase){
 			Vec3d pos;
 			Quatd dummy;
-			pl.chase->cockpitView(pos, dummy, pl.chasecamera);
+			pl.chase->cockpitView(pos, dummy, pl.getChaseCamera());
 			return pos;
 		}
 		return Vec3d(0,0,0);
@@ -185,6 +195,34 @@ const unsigned Player::classId = registerClass("Player", Conster<Player>);
 void Player::free(){
 }
 
+/// \brief Setter accessor for chasecamera member. Sends client message to the server.
+void Player::setChaseCamera(int i){
+	chasecamera = i;
+	if(!game->isServer())
+		CMChaseCamera::s.send(i);
+}
+
+CMChaseCamera CMChaseCamera::s;
+
+void CMChaseCamera::send(int camera){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << camera;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMChaseCamera::interpret(ServerClient &sc, UnserializeStream &uss){
+	int n;
+	uss >> n;
+#ifndef _WIN32
+	sc.sv->pg->players[sc.id]->setChaseCamera(n);
+#else
+	application.serverGame->players[sc.id]->setChaseCamera(n);
+#endif
+}
+
 
 inline Quatd Player::getrawrot(CameraController *mover)const{
 	return mover->getrot();
@@ -221,6 +259,7 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << (unsigned)selected.size();
 	for(SelectSet::iterator it = selected.begin(); it != selected.end(); it++)
 		sc.o << *it;
+	sc.o << chasecamera;
 	sc.o << pos << velo << accel;
 	sc.o << rot;
 	sc.o << fov;
@@ -244,6 +283,7 @@ void Player::unserialize(UnserializeContext &sc){
 		// Read and discard stream
 //		selected.insert(e);
 	}
+	sc.i >> chasecamera;
 	sc.i >> pos >> velo >> accel;
 
 	// Ignore rotation updates if this Player is me, in order to prevent lagged server
@@ -819,11 +859,11 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		else if(!strcmp(wcs, _SC("chasecamera"))){
 			SQInteger i;
 			if(SQ_SUCCEEDED(sq_getinteger(v, 3, &i))){
-				p->chasecamera = i;
-				return 1;
+				p->setChaseCamera(i);
+				return 0;
 			}
 			else
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("The value set to Player::chasecamera must be an integer"));
 		}
 		else if(!strcmp(wcs, _SC("viewdist"))){
 			if(OT_FLOAT != sq_gettype(v, 3))

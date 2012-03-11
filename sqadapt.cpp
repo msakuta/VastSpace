@@ -878,16 +878,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	sq_setprintfunc(v, sqf_print, sqf_print); //sets the print function
 
-	// Set object table for weak referencing.
-	// This table resides in registry table, which normally cannot be reached by script codes,
-	// because ordinary script user never needs to access it.
-	// Introducing chance to ruin object memory management should be avoided.
-	sq_pushregistrytable(v);
-	sq_pushstring(v, _SC("objects"), -1);
-	sq_newtable(v);
-	sq_newslot(v, -3, SQFalse);
-	sq_poptop(v);
-
 	register_global_func(v, sqf_set_cvar, _SC("set_cvar"));
 	register_global_func(v, sqf_get_cvar, _SC("get_cvar"));
 	register_global_func(v, sqf_cmd, _SC("cmd"));
@@ -1025,32 +1015,6 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	register_global_func(v, sqf_register_console_command, _SC("register_console_command"));
 	register_global_func(v, sqf_register_console_command_a, _SC("register_console_command_a"));
-
-#if 0 && defined _WIN32
-	// Define class GLwindow
-	sq_pushstring(v, _SC("GLwindow"), -1);
-	sq_newclass(v, SQFalse);
-	sq_settypetag(v, -1, tt_GLwindow);
-	sq_pushstring(v, _SC("ref"), -1);
-	sq_pushnull(v);
-	sq_newslot(v, -3, SQFalse);
-	register_closure(v, _SC("_get"), sqf_GLwindow_get);
-	register_closure(v, _SC("_set"), sqf_GLwindow_set);
-	register_closure(v, _SC("close"), sqf_GLwindow_close);
-	sq_createslot(v, -3);
-
-	sq_pushstring(v, _SC("glwlist"), -1);
-	sq_newclosure(v, sqf_glwlist, 0);
-	sq_createslot(v, 1);
-
-	// Define class GLWmenu
-	// Define class GLWbigMenu
-	GLWmenu::sq_define(v);
-
-	// Define class GLWmessage
-	GLWmessage::sq_define(v);
-
-#endif
 
 	// Execute initializations registered to defineMap.
 	// This must be placed after all other base classes are defined.

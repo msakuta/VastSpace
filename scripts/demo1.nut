@@ -9,13 +9,13 @@ if(earthlo){
 	player.setpos(Vec3d(0,0,0));
 }
 
-if(0){
+if(1){
 	local e = player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 	e.race = 1;
 }
 {
-	local e = player.cs.addent("Shipyard", Vec3d(1.0, 0, 0));
+	local e = player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
 	e.setrot(Quatd.rotation(-PI/2., Vec3d(0,1,0)));
 	e.race = 0;
 }
@@ -85,7 +85,7 @@ function frameproc(dt){
 			invokes++;
 		}
 	}
-	else if(false && checktime + 10. < currenttime){
+	else if(true && checktime + 10. < currenttime){
 		local cs = targetcs;
 		checktime = currenttime;
 

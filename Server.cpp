@@ -1035,6 +1035,8 @@ void ServerClient::interpretCommand(char *lbuf){
 			if(it != ClientMessage::ctormap().end()){
 				std::istringstream iss(std::string(p+1, strlen(p+1)));
 				StdUnserializeStream uss(iss);
+				UnserializeContext usc(uss, Serializable::ctormap(), (UnserializeMap&)sv->pg->idmap());
+				uss.usc = &usc;
 				it->second->interpret(*this, uss);
 			}
 		}
@@ -1062,6 +1064,7 @@ void ServerClient::interpretCommand(char *lbuf){
 
 			// If the client logs in, assign a Player object for the client.
 			Player *clientPlayer = new Player(sv->pg);
+			clientPlayer->race = id;
 
 			// Temporary treatment to make newly added Player's coordsys to be the same as the first Player.
 			std::vector<Player*>::iterator it = sv->pg->players.begin();

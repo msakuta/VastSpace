@@ -3,7 +3,7 @@
 #include "serial_util.h"
 #include "Player.h"
 #include "antiglut.h"
-#include "sceptor.h"
+#include "Sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
 #include "glw/popup.h"
@@ -20,6 +20,13 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
+
+const Builder::BuildStatic sceptor_build = {
+	"Interceptor",
+	Sceptor::create,
+	10.,
+	60.,
+};
 
 const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&Beamer::builds, &Assault::builds*/};
 const unsigned Builder::nbuilder0 = numof(builder0);
@@ -93,7 +100,7 @@ double Builder::getRU()const{
 
 
 
-
+#ifdef _WIN32
 static int select_tab(GLwindow *wnd, int ix, int iy, const char *s, int *selected, int mx, int my){
 	int ix0 = ix;
 	ix += 3;
@@ -204,4 +211,4 @@ int cmd_build(int argc, char *argv[], void *pv){
 	return 0;
 }
 
-
+#endif

@@ -3,7 +3,7 @@
 #include "serial_util.h"
 #include "Player.h"
 #include "antiglut.h"
-#include "sceptor.h"
+#include "Sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
 #include "glw/popup.h"
@@ -52,17 +52,17 @@ int Shipyard::nhardpoints = 0;
 Shipyard::Shipyard(WarField *w) : st::st(w), st(w), docker(new ShipyardDocker(this)), Builder(this->Entity::w){
 	st::init();
 	init();
-	for(int i = 0; i < nhardpoints; i++)
-		turrets[i] = NULL;
+//	for(int i = 0; i < nhardpoints; i++)
+//		turrets[i] = NULL;
 //		w->addent(turrets[i] = new MTurret(this, &hardpoints[i]));
 }
 
 void Shipyard::init(){
 	ru = 0.;
-	if(!hardpoints){
+/*	if(!hardpoints){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
-	turrets = new ArmBase*[nhardpoints];
+	turrets = new ArmBase*[nhardpoints];*/
 	mass = 5e6;
 }
 
@@ -120,13 +120,13 @@ void Shipyard::anim(double dt){
 	st::anim(dt);
 	docker->anim(dt);
 //	Builder::anim(dt);
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
-		turrets[i]->align();
+//	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+//		turrets[i]->align();
 }
 
 int Shipyard::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	list.append("Build Window", 'b', "buildmenu").append("Dock Window", 'd', "dockmenu");
+//	list.append("Build Window", 'b', "buildmenu").append("Dock Window", 'd', "dockmenu");
 	return ret;
 }
 
@@ -235,4 +235,9 @@ Vec3d ShipyardDocker::getPortPos()const{
 Quatd ShipyardDocker::getPortRot()const{
 	return quat_u;
 }
+#endif
+
+#ifndef _WIN32
+void Shipyard::draw(WarDraw*){}
+void Shipyard::drawtra(WarDraw*){}
 #endif

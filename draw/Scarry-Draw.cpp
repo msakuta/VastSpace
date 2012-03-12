@@ -30,13 +30,6 @@ void GLWbuild::progress_bar(double f, int width, int *piy){
 	glwprintf("%3.0lf%%", 100. * f);
 }
 
-const Builder::BuildStatic sceptor_build = {
-	"Interceptor",
-	Sceptor::create,
-	10.,
-	60.,
-};
-
 int GLWbuild::draw_tab(int ix, int iy, const char *s, int selected){
 	int ix0 = ix;
 	glBegin(GL_LINE_STRIP);

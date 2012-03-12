@@ -36,6 +36,9 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Bullet.o\
  ${OUTDIR}/Sceptor.o\
  ${OUTDIR}/Docker.o\
+ ${OUTDIR}/Builder.o\
+ ${OUTDIR}/Warpable.o\
+ ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
  ${OUTDIR}/calc/calc0.o\
@@ -98,6 +101,12 @@ ${OUTDIR}/Bullet.o: $(call depends,Bullet.cpp)
 ${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Builder.o: $(call depends,Builder.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Warpable.o: $(call depends,Warpable.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc

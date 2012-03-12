@@ -10,7 +10,7 @@ void BinDiff::put(const unsigned char *dst, patchsize_t dstsize){
 			if(patchClosed){
 				Patch pa;
 				pa.start = patchsize_t(cur - src);
-				pa.size = patchsize_t(cur - srcdiff);
+				pa.size = 0;
 				patches.push_back(pa);
 				patchClosed = false;
 			}

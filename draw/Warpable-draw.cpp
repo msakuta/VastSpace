@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of WarField and WarSpace's graphics.
+ */
 #include "Warpable.h"
 #include "Player.h"
 #include "Viewer.h"

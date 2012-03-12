@@ -85,7 +85,7 @@ void aaanim(double dt, WarField *w, WarField::EntityList WarField::*li, void (En
 		WarField::EntityList::iterator next = it;
 		next++;
 		Entity *pe = *it;
-		try{
+		if(pe) try{
 			// The object can be deleted in the method.
 			(pe->*method)(dt);
 		}
@@ -139,45 +139,21 @@ void WarField::postframe(){
 //		e->postframe();
 }
 
-bool WarField::unlink(Observable *o){
-	return true;
-}
-
-static Entity *endframe_int2(WarField *w, WeakPtr<Entity> &pe){
-		Entity *e = pe;
-//		pe = e->next;
-
-		e->leaveField(w);
-
-		// Player does not follow entities into WarField, which has no positional information.
-/*		if(!e->w || !(WarSpace*)*e->w){
-			for(int i = 0; i < game->players.size(); i++)
-				game->players[i]->unlink(e);
-		}*/
-
-		// Don't allow just assigning NULL to mark for delete, because you'll
-		// have to perform cleanup processes like removing dynamics body from
-		// Bullet Dynamics Engine, etc.
-		assert(e->w);
-
-/*		// Delete if actually NULL is assigned.
-		if(!e->w){
-			sqa_delete_Entity(e);
-			Entity *ret = e->next;
-			delete e;
-			return ret;
+bool WarField::EntityPtr::handleEvent(Observable *o, ObserveEvent &e){
+	if(TransitEvent *pe = InterpretEvent<TransitEvent>(e)){
+		if(ptr){
+			ptr->removeWeakPtr(this);
+			ptr = NULL;
 		}
-		else*/
-			return e->w->addent(e);
+		return true;
+	}
+	return false;
 }
 
 static void endframe_int(WarField *w, WarField::EntityList WarField::*li){
 	WarField::EntityList::iterator it = (w->*li).begin();
 	for(; it != (w->*li).end();) if(!*it)
 		it = (w->*li).erase(it);
-	else if((*it)->w != w){
-		endframe_int2(w, *it);
-	}
 	else
 		it++;
 }
@@ -397,7 +373,7 @@ void WarSpace::endframe(){
 }
 
 bool WarSpace::unlink(Observable *o){
-	st::unlink(o);
+//	st::unlink(o);
 	ot = (otnt*)realloc(ot, ots = 0);
 	otroot = NULL;
 //	ot_build(this, 0.);

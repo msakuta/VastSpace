@@ -50,15 +50,34 @@ class WarSpace;
 class Docker;
 struct Message;
 
+
 /// \brief A virtual world that can contain multiple Entities inside.
 ///
 /// It does not necessarily have real 3-D space but can be merely a list of Entities.
 /// The latter one is used for storing small ships inside bases or carriers.
 ///
 /// It's usually tied together with a CoordSys.
-class EXPORT WarField : public Serializable, public Observer{
+class EXPORT WarField : public Serializable{
 public:
-	typedef std::list<WeakPtr<Entity> > EntityList;
+
+	/// \brief This internal class is for WarField's member pointer.
+	///
+	/// The observed Entities can transit to another WarField. In that case, we must 
+	/// notify the old WarField that it no longer belongs.
+	class EntityPtr : public WeakPtr<Entity>{
+	public:
+		EntityPtr(Entity *o = NULL) : WeakPtr<Entity>(o){}
+		EntityPtr(EntityPtr &o) : WeakPtr<Entity>(o){} ///< Prevent the default copy constructor from being called.
+
+		/// \brief Assignment operator that prohibits 'memcpy' copy.
+		EntityPtr &operator=(Entity *o){
+			return static_cast<EntityPtr&>(WeakPtr<Entity>::operator=(o));
+		}
+		bool handleEvent(Observable *o, ObserveEvent &e);
+	};
+
+	/// \brief Type of Entity list.
+	typedef std::list<EntityPtr > EntityList;
 
 	/// \brief An internal class that unites behaviors of several types of ObservePtr's.
 	///
@@ -122,7 +141,6 @@ public:
 	virtual operator WarSpace*();
 	virtual operator Docker*();
 	virtual bool sendMessage(Message &);
-	virtual bool unlink(Observable *);
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 

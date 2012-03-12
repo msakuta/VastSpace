@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of WarField and WarSpace's motions.
+ */
 #include "Warpable.h"
 #include "Player.h"
 #include "Bullet.h"

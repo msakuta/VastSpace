@@ -17,12 +17,11 @@ bool Observer::unlink(Observable *){
 	return true;
 }
 
+bool Observer::handleEvent(Observable *o, ObserveEvent &e){return false;}
+
 Observable::~Observable(){
 	for(ObserverList::iterator it = observers.begin(); it != observers.end(); it++){
 		it->first->unlink(this);
-	}
-	for(WeakPtrList::iterator it = ptrs.begin(); it != ptrs.end(); it++){
-		(*it)->unlink(this);
 	}
 }
 
@@ -41,14 +40,41 @@ void Observable::removeObserver(Observer *o){
 		observers.erase(it);
 }
 
+/// Obsolete; should call addObserver from the first place.
 void Observable::addWeakPtr(WeakPtrBase *o){
-	WeakPtrList::iterator it = ptrs.find(o);
-	if(it == ptrs.end())
-		ptrs.insert(o);
+	addObserver(o);
 }
 
+/// Obsolete; should call removeObserver from the first place.
 void Observable::removeWeakPtr(WeakPtrBase *o){
-	WeakPtrList::iterator it = ptrs.find(o);
-	assert(it != ptrs.end());
-	ptrs.erase(it);
+	removeObserver(o);
 }
+
+/// \brief Notifies the event to all observers that observe this object.
+///
+/// The event is virtual, so any event can be passed.
+void Observable::notifyEvent(ObserveEvent &e){
+	ObserverList::iterator it = observers.begin();
+	for(; it != observers.end();){
+		// The iterator pointed object can be cleared in it->handleEvent, so we
+		// first reserve iterator to the next and then call handleEvent.
+		ObserverList::iterator next = it;
+		next++;
+		it->first->handleEvent(this, e);
+		it = next;
+	}
+}
+
+
+
+//-----------------------------------------------------------------------------
+//  ObserveEvent implementation
+//-----------------------------------------------------------------------------
+
+ObserveEvent::MapType &ObserveEvent::ctormap(){
+	static MapType s;
+	return s;
+}
+
+bool ObserveEvent::derived(ObserveEventID)const{return false;}
+

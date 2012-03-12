@@ -1,14 +1,18 @@
 #ifndef OBSERVABLE_H
 #define OBSERVABLE_H
-/// \brief Definition of Observer, Observable, ObservePtr, WeakPtrBase and WeakPtr classes.
+/** \file
+ * \brief Definition of Observer, Observable, ObservePtr, WeakPtrBase and WeakPtr classes.
+ */
 #include "serial_util.h"
 
 #include <map>
 #include <set>
 #include <stddef.h> // offsetof
+#include <squirrel.h>
 
 class Observable;
 class WeakPtrBase;
+struct ObserveEvent;
 
 /// \brief The object that can watch an Observable object for its destruction.
 class EXPORT Observer{
@@ -19,6 +23,12 @@ public:
 	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
 	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
 	virtual bool unlink(Observable *);
+
+	/// \brief The function that receives event messages sent from the observed object.
+	/// \param o The observed object that invoked the event.
+	/// \param e The event object.
+	/// \returns True if handled.
+	virtual bool handleEvent(Observable *o, ObserveEvent &e);
 };
 
 
@@ -35,88 +45,76 @@ public:
 class EXPORT Observable{
 public:
 	typedef std::map<Observer*, int> ObserverList;
-	typedef std::set<WeakPtrBase*> WeakPtrList;
 	~Observable();
 	void addObserver(Observer *);
 	void removeObserver(Observer *);
 	void addWeakPtr(WeakPtrBase *);
 	void removeWeakPtr(WeakPtrBase *);
+	void notifyEvent(ObserveEvent &e);
 protected:
 	ObserverList observers;
-	WeakPtrList ptrs;
 };
 
-#if 0
-/// \brief The class template to generate automatic pointers that adds the
-///  containing object to referred Observable's Observer list.
+
+/// \brief The type of value to identify ObserveEvent derived classes.
+typedef const char *ObserveEventID;
+
+/// \brief The event object type that can be sent from Observable to Observer.
 ///
-/// It's a kind of smart pointers that behaves like a plain pointer, but
-/// assigning a pointer to this object implicitly adds reference to the
-/// pointed object, and setting another pointer value removes the
-/// reference.
-///
-/// It costs no additional memory usage compared to plain pointer, because
-/// it refers to its containing object by statically subtracting address.
-/// It is implemented with template instantiation, which I'm afraid is less
-/// portable, especially for Linux gcc.
-///
-/// Another problem in practice is that ObservePtr requires separate type
-/// for each occurrence in a class members. For this purpose, the second
-/// template parameter is provided to just distinguish those occurrences.
-///
-/// Also it's suspicious that it worths saving a little memory space in
-/// exchange with code complexity, in terms of speed optimization.
-///
-/// At least it works on Windows with VC.
-///
-/// Either way, the big difference is that it obsoletes the postframe() and
-/// even endframe(). An Observable object can delete itself as soon as it
-/// wants to, and the containing pointer list adjusts the missing link with
-/// the object's destructor.
-/// It should eliminate the overhead for checking delete flag for all the
-/// objects in the list each frame.
-///
-/// TODO: Notify other events, such as WarField transition.
-template<typename T, int I, typename TP>
-class EXPORT ObservePtr{
-	TP *ptr;
-	size_t ofs();
-	T *getThis(){
-		return (T*)((char*)this - ofs());
-	}
-public:
-	ObservePtr(TP *o = NULL) : ptr(o){
-		if(o)
-			o->addObserver(getThis());
-	}
-	~ObservePtr(){
-		if(ptr)
-			ptr->removeObserver(getThis());
-	}
-	ObservePtr &operator=(TP *o){
-		if(ptr)
-			ptr->removeObserver(getThis());
-		if(o)
-			o->addObserver(getThis());
-		ptr = o;
-		return *this;
-	}
-	void unlinkReplace(TP *o){
-		if(o)
-			o->addObserver(getThis());
-		ptr = o;
-	}
-	operator TP *()const{
-		return ptr;
-	}
-	TP *operator->()const{
-		return ptr;
-	}
-	operator bool()const{
-		return !!ptr;
+/// The convention is that derived structs must have a static member variable named sid that
+/// stores ObserveEventID uniquely indicate the struct type.
+/// A string literal of the struct name is commonly used.
+/// This rule is required to enable InterpretEvent and InterpretDerivedEvent to function properly.
+struct ObserveEvent{
+	/// Type of the constructor map.
+	typedef std::map<ObserveEventID, ObserveEvent *(*)(HSQUIRRELVM, Observer &), bool (*)(ObserveEventID, ObserveEventID)> MapType;
+
+	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
+	static MapType &ctormap();
+
+	/** \brief Returns unique ID for this class.
+	 *
+	 * The returned pointer never be dereferenced without debugging purposes,
+	 * it is just required to point the same address for all the instances but
+	 * never coincides between different classes.
+	 * A static const string of class name is ideal for this returned vale.
+	 */
+	virtual ObserveEventID id()const = 0;
+
+	/** \brief Derived or exact class returns true.
+	 *
+	 * Returns whether the given event ID is the same as this object's class's or its derived classes.
+	 */
+	virtual bool derived(ObserveEventID)const;
+
+	ObserveEvent(){}
+
+	/// Derived classes use this utility to register class.
+	static int registerObserveEvent(const char *name, ObserveEvent *(*ctor)(HSQUIRRELVM, Observer &)){
+		ctormap()[name] = ctor;
+		return 0;
 	}
 };
-#endif
+
+/// A template function that tests whether given event matches the template argument class.
+///
+/// Re-invention of RTTI, but expected faster.
+template<typename EvtType>
+EvtType *InterpretEvent(ObserveEvent &evt){
+	return evt.id() == EvtType::sid ? static_cast<EvtType*>(&evt) : NULL;
+}
+
+/// A template function that tests whether given event derives the template argument class.
+///
+/// Re-invention of RTTI, but expected faster.
+template<typename EvtType>
+EvtType *InterpretDerivedEvent(ObserveEvent &evt){
+	return evt.derived(EvtType::sid) ? static_cast<EvtType*>(&evt) : NULL;
+}
+
+
+
+
 
 /// \brief A base class for the weak pointer to an Observable object.
 ///
@@ -128,7 +126,7 @@ public:
 ///
 /// That's a re-invention of wheels.
 /// Probably we should use boost library or C++11's std::weak_ptr.
-class EXPORT WeakPtrBase{
+class EXPORT WeakPtrBase : public Observer{
 	/// Prohibit using the copy constructor.
 	/// One must initialize the object with raw pointer as the argument, or the pointed Observable will miss counting.
 	WeakPtrBase(WeakPtrBase &){}
@@ -154,9 +152,10 @@ protected:
 	WeakPtrBase &operator=(WeakPtrBase &o){
 		return operator=(o.ptr);
 	}
-	void unlink(Observable *o){
+	bool unlink(Observable *o){
 		if(ptr == o)
 			ptr = NULL;
+		return true;
 	}
 	friend class Observable;
 };
@@ -282,21 +281,5 @@ inline UnserializeStream &operator>>(UnserializeStream &us, WeakPtr<P> &p){
 	return us;
 }
 
-#if 0
-template<typename T, int I, typename TP>
-inline SerializeStream &operator<<(SerializeStream &us, const ObservePtr<T,I,TP> &p){
-	TP *a = p;
-	us << a;
-	return us;
-}
-
-template<typename T, int I, typename TP>
-inline UnserializeStream &operator>>(UnserializeStream &us, ObservePtr<T,I,TP> &p){
-	TP *a;
-	us >> a;
-	p = a;
-	return us;
-}
-#endif
 
 #endif

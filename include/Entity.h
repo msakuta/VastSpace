@@ -212,6 +212,16 @@ protected:
 };
 
 
+/// \brief Notify event that will sent just before an Entity changes belonging WarField.
+///
+/// Note that when this event is invoked, Entity::w still points to former WarField.
+struct TransitEvent : ObserveEvent{
+	static ObserveEventID sid;
+	virtual ObserveEventID id()const;
+	TransitEvent(WarField *w) : w(w){}
+	WarField *w; ///< New WarField
+};
+
 
 //-----------------------------------------------------------------------------
 //     Implementation

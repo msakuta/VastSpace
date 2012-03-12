@@ -840,3 +840,10 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 	sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
 	destpos = *pvec3;
 }
+
+
+
+
+
+ObserveEventID TransitEvent::sid = "TransitEvent";
+ObserveEventID TransitEvent::id()const{return sid;}

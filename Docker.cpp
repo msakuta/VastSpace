@@ -86,9 +86,13 @@ void Docker::anim(double dt){
 		*end = el;
 		el = NULL;
 	}*/
-	for(EntityList::iterator it = el.begin(); it != el.end(); it++)
+	for(EntityList::iterator it = el.begin(); it != el.end();){
+		EntityList::iterator next = it;
+		next++;
 		if(*it)
 			(*it)->anim(dt);
+		it = next;
+	}
 	while(!undockque.empty() && baycool < dt){
 		if(!undock(undockque.front()))
 			break;
@@ -104,14 +108,14 @@ void Docker::anim(double dt){
 
 void Docker::dock(Dockable *e){
 	e->dock(this);
-	if(e->w)
-		e->w = this;
-	else{
-		e->w = this;
-		addent(e);
-	}
-/*	e->next = el;
-	el = e;*/
+
+	// If the Entity has been belonged to another WarField, notify TransitEvent
+	// to clear old references.
+	TransitEvent te(this);
+	e->notifyEvent(te);
+
+	e->w = this;
+	addent(e);
 }
 
 bool Docker::postUndock(Dockable *e){
@@ -119,8 +123,8 @@ bool Docker::postUndock(Dockable *e){
 		EntityList::iterator next = it;
 		next++;
 		if(*it == e){
-			el.erase(it);
 			undockque.push_back(*it);
+			el.erase(it);
 //			Dockable **qend = &undockque;
 //			if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
 //			*qend = e;

@@ -4,10 +4,6 @@
 #include "CoordSys.h"
 #include "Viewer.h"
 #include "cmd.h"
-#ifdef _WIN32
-#include "glw/glwindow.h"
-#include "glw/GLWmenu.h"
-#endif
 #include "judge.h"
 #include "astrodef.h"
 #include "stellar_file.h"
@@ -81,7 +77,6 @@ Very basic raytracer, rendering into a texture.
 
 
 
-int g_healthbar = 1;
 double g_capacitor_gen_factor = 1.;
 
 /* color sequences */

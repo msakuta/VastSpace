@@ -1,88 +1,26 @@
 #include "Warpable.h"
 #include "Player.h"
-#include "Bullet.h"
-#include "CoordSys.h"
 #include "Viewer.h"
-#include "cmd.h"
 #ifdef _WIN32
 #include "glw/glwindow.h"
-#include "glw/GLWmenu.h"
+#include "../glw/GLWmenu.h"
 #endif
-#include "judge.h"
-#include "astrodef.h"
 #include "stellar_file.h"
-#include "astro_star.h"
-#include "serial_util.h"
 #include "glstack.h"
-#include "EntityCommand.h"
-#include "btadapt.h"
-#include "arms.h"
-#include "Docker.h"
-//#include "sensor.h"
-#include "motion.h"
 #include "draw/WarDraw.h"
 #include "glsl.h"
-#include "dstring.h"
 extern "C"{
-#ifdef _WIN32
-#include "bitmap.h"
-#endif
 #include <clib/c.h>
 #include <clib/cfloat.h>
-#include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
 #ifdef _WIN32
-#include <clib/suf/sufdraw.h>
 #include <clib/GL/gldraw.h>
 #include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
 #endif
-#include <clib/zip/UnZip.h>
 }
-#include <cpplib/vec4.h>
-#include <assert.h>
-#include <string.h>
-#include <btBulletDynamicsCommon.h>
-#include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
-
-#include "LinearMath/btQuaternion.h"
-#include "LinearMath/btTransform.h"
-
-
-
-
-
-
-/* some common constants that can be used in static data definition. */
-#define SQRT_2 1.4142135623730950488016887242097
-#define SQRT_3 1.4422495703074083823216383107801
-#define SIN30 0.5
-#define COS30 0.86602540378443864676372317075294
-#define SIN15 0.25881904510252076234889883762405
-#define COS15 0.9659258262890682867497431997289
 
 
 
 int g_healthbar = 1;
-double g_capacitor_gen_factor = 1.;
-
-/* color sequences */
-#if 0
-#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
-static const struct color_node cnl_orangeburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.45, COLOR32RGBA(255,127,31,95)},
-	{2.3, COLOR32RGBA(255,31,0,63)},
-};
-static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 3.);
-static const struct color_node cnl_shortburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.25, COLOR32RGBA(255,127,31,0)},
-};
-static const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
-#endif
 
 
 

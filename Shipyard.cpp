@@ -86,8 +86,8 @@ void Shipyard::serialize(SerializeContext &sc){
 void Shipyard::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> docker;
-	for(int i = 0; i < nhardpoints; i++)
-		sc.i >> turrets[i];
+//	for(int i = 0; i < nhardpoints; i++)
+//		sc.i >> turrets[i];
 }
 
 void Shipyard::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){

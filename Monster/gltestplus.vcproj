@@ -1099,18 +1099,6 @@
 			</Filter>
 		</Filter>
 		<File
-			RelativePath=".\ClassDiagram1.cd"
-			>
-		</File>
-		<File
-			RelativePath=".\ClassDiagram2.cd"
-			>
-		</File>
-		<File
-			RelativePath=".\EntityCommand.cd"
-			>
-		</File>
-		<File
 			RelativePath="..\gltestplus.rc"
 			>
 		</File>

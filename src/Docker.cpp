@@ -8,6 +8,8 @@
 #include "serial_util.h"
 #include "Player.h"
 #include "cmd.h"
+#include "ClientMessage.h"
+#include "EntityCommand.h"
 #ifndef DEDICATED
 #include "antiglut.h"
 #endif
@@ -16,6 +18,7 @@ extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
 }
+#include <sstream>
 
 /* some common constants that can be used in static data definition. */
 #define SQRT_2 1.4142135623730950488016887242097
@@ -26,7 +29,15 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
-
+/// \brief A client message that encapsulates RemainDockedCommand.
+struct CMRemainDockedCommand : ClientMessage{
+	typedef ClientMessage st;
+	static CMRemainDockedCommand s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	void send(Entity *e, bool flag);
+protected:
+	CMRemainDockedCommand() : st("RemainDockedCommand"){}
+};
 
 Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){
 	for(int i = 0; i < numof(paradec); i++)
@@ -255,8 +266,10 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	ind = (my - 5 * 12) / 12;
 	if(docker && (mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
-		if(ind == -2)
+		if(ind == -2){
 			docker->remainDocked = !docker->remainDocked;
+			CMRemainDockedCommand::s.send(docker->e, docker->remainDocked);
+		}
 		if(ind == -1)
 			grouping = !grouping;
 		else if(grouping){
@@ -316,3 +329,32 @@ void Docker::init(){
 #else
 void Docker::init(){}
 #endif
+
+
+
+//-----------------------------------------------------------------------------
+//  CMRemainDockedCommand implementation
+//-----------------------------------------------------------------------------
+
+CMRemainDockedCommand CMRemainDockedCommand::s;
+
+void CMRemainDockedCommand::interpret(ServerClient &sc, UnserializeStream &uss){
+	bool b;
+	Entity *e;
+	uss >> e;
+	uss >> b;
+	if(!e)
+		return;
+	Player *player = application.serverGame->players[sc.id];
+	if(player && player->race == e->race)
+		e->command(&RemainDockedCommand(b));
+}
+
+void CMRemainDockedCommand::send(Entity *e, bool flag){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << e;
+	sss << flag;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}

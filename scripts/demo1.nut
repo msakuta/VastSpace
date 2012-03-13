@@ -10,17 +10,19 @@ if(earthlo){
 }
 
 if(1){
-	local e = player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));
+	redbase <- player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));
+	local e = redbase;
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 	e.race = 1;
 }
 {
 	local e = player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
+	bluebase <- e;
 	e.setrot(Quatd.rotation(-PI/2., Vec3d(0,1,0)));
 	e.race = 0;
 }
 
-deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);
+//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);
 //deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 0.025), -2.025, 2, player.cs, null);
 //deltaFormation("Defender", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  1.7), 0.05, 1, player.cs, function(e){e.command("Deploy");});
 
@@ -115,10 +117,20 @@ function frameproc(dt){
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(racec[0] < 2){
-			deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -2.025), 0.025, 2, player.cs, null);
+			local d = bluebase.docker;
+			if(d != null){
+				local e = d.addent("Sceptor");
+				e.race = 0;
+			}
+//			deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -2.025), 0.025, 2, player.cs, null);
 		}
 		if(racec[1] < 2){
-			deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 2.025), 0.025, 2, player.cs, null);
+			local d = redbase.docker;
+			if(d != null){
+				local e = d.addent("Sceptor");
+				e.race = 1;
+			}
+//			deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, -0.01, 2.025), 0.025, 2, player.cs, null);
 		}
 
 

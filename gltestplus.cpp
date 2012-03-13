@@ -2254,7 +2254,7 @@ int main(int argc, char *argv[])
 //	CmdAddParam("save", Universe::cmd_save, server->universe);
 //	CmdAddParam("load", Universe::cmd_load, server->universe);
 //	CmdAddParam("buildmenu", cmd_build, &pl);
-	CmdAddParam("dockmenu", cmd_dockmenu, &server->player);
+	Docker::init();
 	class Refresh{
 	public:
 		static int refresh(int argc, char *argv[]){

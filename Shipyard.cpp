@@ -126,7 +126,8 @@ void Shipyard::anim(double dt){
 
 int Shipyard::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-//	list.append("Build Window", 'b', "buildmenu").append("Dock Window", 'd', "dockmenu");
+//	list.append("Build Window", 'b', "buildmenu");
+	list.append("Dock Window", 'd', "dockmenu");
 	return ret;
 }
 
@@ -220,9 +221,8 @@ void Shipyard::doneBuild(Entity *e){
 
 bool ShipyardDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
-		pe->pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
-		pe->velo = e->velo;
-		pe->rot = e->rot;
+		Vec3d pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
+		pe->setPosition(&pos, &e->rot, &e->velo, &e->omg);
 		return true;
 	}
 	return false;

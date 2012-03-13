@@ -21,24 +21,6 @@ public:
 	virtual Quatd getPortRot()const;
 };
 
-class GLWdock : public GLwindowSizeable{
-public:
-	typedef GLwindowSizeable st;
-	GLWdock(const char *title, Docker *a) : st(title), docker(a), grouping(false){
-		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
-		xpos = 100;
-		ypos = 200;
-		width = 250;
-		height = 100;
-	}
-	virtual void draw(GLwindowState &ws, double t);
-	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
-	virtual void postframe();
-
-	Docker *docker;
-	bool grouping;
-};
-
 extern const struct Builder::BuildStatic sceptor_build;
 
 int cmd_build(int argc, char *argv[], void *pv);

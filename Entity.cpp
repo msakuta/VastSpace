@@ -245,18 +245,18 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("docker"))){
-		// TODO: Not yet supported!
-//		Docker *d = p->getDocker();
-//		if(!d){
+		// Returns a Docker object if available.
+		Docker *d = p->getDocker();
+		if(!d){
 			sq_pushnull(v);
 			return 1;
-//		}
-//		sq_pushroottable(v);
-//		sq_pushstring(v, _SC("Docker"), -1);
-//		sq_get(v, -2);
-//		sq_createinstance(v, -1);
-//		Entity::sq_pushobj(v, d);
-//		return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("Docker"), -1);
+		sq_get(v, -2);
+		sq_createinstance(v, -1);
+		d->sq_pushobj(v, d);
+		return 1;
 	}
 	else if(!strcmp(wcs, _SC("enemy"))){
 		SQUserPointer o;

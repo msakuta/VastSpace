@@ -189,7 +189,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->cooldown = 1.;
 	WarSpace *ws;
 #ifndef DEDICATED
-	if(w && (ws = (WarSpace*)w))
+	if(w && (ws = static_cast<WarSpace*>(*w)))
 		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 #endif

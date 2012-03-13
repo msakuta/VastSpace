@@ -4,6 +4,10 @@
 #ifndef DOCKER_H
 #define DOCKER_H
 #include "war.h"
+#include "Entity.h"
+#ifndef DEDICATED
+#include "glw/glwindow.h"
+#endif
 #include <squirrel.h>
 
 /// The base class for those ships that can contain other ships.
@@ -39,6 +43,8 @@ public:
 	virtual Quatd getPortRot()const = 0; ///< Retrieves rotation of the port
 
 
+	static void init();
+
 	/// Creates and pushes an Entity object to Squirrel stack.
 	static void sq_pushobj(HSQUIRRELVM, Docker *);
 
@@ -51,7 +57,25 @@ protected:
 	static SQInteger sqf_addent(HSQUIRRELVM v);
 };
 
-int cmd_dockmenu(int argc, char *argv[], void *pv);
+#ifndef DEDICATED
+class GLWdock : public GLwindowSizeable{
+public:
+	typedef GLwindowSizeable st;
+	GLWdock(const char *title, Docker *a) : st(title), docker(a), grouping(false){
+		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
+		xpos = 100;
+		ypos = 200;
+		width = 250;
+		height = 100;
+	}
+	virtual void draw(GLwindowState &ws, double t);
+	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
+	virtual void postframe();
+
+	Docker *docker;
+	bool grouping;
+};
+#endif
 
 
 #endif

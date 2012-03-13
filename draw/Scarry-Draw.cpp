@@ -137,31 +137,32 @@ void GLWdock::draw(GLwindowState &ws, double t){
 	int ix;
 	if(!docker)
 		return;
+	GLWrect cr = clientRect();
 	glColor4ub(255,255,255,255);
-	glwpos2d(this->xpos, this->ypos + 2 * getFontHeight());
+	glwpos2d(cr.x0, cr.y0 + 1 * getFontHeight());
 	glwprintf("Resource Units: %.0lf", docker->e->getRU());
 	glColor4ub(255,255,0,255);
 	int fonth = getFontHeight();
-	int iy = 1;
+	int iy = 0;
 
 	if(!docker)
 		return;
 	glColor4ub(255,255,255,255);
-	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 	glwprintf("Cool: %lg", docker->baycool);
-	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 	glwprintf("Remain docked: %s", docker->remainDocked ? "Yes" : "No");
-	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 	glwprintf("Grouping: %s", grouping ? "Yes" : "No");
-	glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+	glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 	glwprintf("Docked:");
 	glColor4ub(255,255,255,255);
 
-	int mx = ws.mx - xpos, my = ws.my - ypos;
+	int mx = ws.mx - cr.x0, my = ws.my - cr.y0;
 	/* Mouse cursor highlights */
 	if(!modal && 0 < mx && mx < width && (iy - 2 <= my / fonth && my / fonth <= iy - 1 || (1 + iy) * fonth < my)){
 		glColor4ub(0,0,255,127);
-		glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
+		glRecti(cr.x0, cr.y0 + (my / fonth) * fonth, cr.x1, cr.y0 + (my / fonth + 1) * fonth);
 		glColor4ub(255,255,255,255);
 	}
 
@@ -174,7 +175,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 				map[e->dispname()]++;
 		}
 		for(std::map<cpplib::dstring, int>::iterator it = map.begin(); it != map.end(); it++){
-			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 			glwprintf("%d X %s", it->second, (const char*)it->first);
 		}
 	}
@@ -185,7 +186,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 				continue;
 			if(height < (2 + iy) * fonth)
 				return;
-			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
 			glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->hitradius() * e->hitradius() * e->hitradius());
 		}
 	}

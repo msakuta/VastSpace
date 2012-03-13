@@ -1,18 +1,19 @@
 /** \file
  * \brief Implementation of Docker class.
  */
-#include "Scarry.h"
-#include "judge.h"
+#ifndef DEDICATED
+#include "Application.h"
+#endif
+#include "Docker.h"
 #include "serial_util.h"
 #include "Player.h"
+#include "cmd.h"
 #ifndef DEDICATED
 #include "antiglut.h"
 #endif
-//#include "sceptor.h"
-//#include "Beamer.h"
 #include "sqadapt.h"
-//#include "glw/popup.h"
 extern "C"{
+#include <clib/c.h>
 #include <clib/mathdef.h>
 }
 
@@ -189,6 +190,8 @@ Docker *Docker::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	return *(WeakPtr<Docker>*)up;
 }
 
+static Initializer dockerInit("Docker", Docker::sq_define);
+
 bool Docker::sq_define(HSQUIRRELVM v){
 	static const SQChar *tt_Docker = "Docker";
 	sq_pushstring(v, _SC("Docker"), -1);
@@ -209,6 +212,7 @@ SQInteger Docker::sqf_get(HSQUIRRELVM v){
 		sq_pushbool(v, SQBool(!!sq_refobj(v)));
 		return 1;
 	}
+	return SQ_ERROR;
 }
 
 SQInteger Docker::sqf_addent(HSQUIRRELVM v){
@@ -216,10 +220,25 @@ SQInteger Docker::sqf_addent(HSQUIRRELVM v){
 		if(sq_gettop(v) < 2)
 			return SQ_ERROR;
 		Docker *p = sq_refobj(v);
+		Entity *pt = NULL;
+		if(sq_gettype(v, 2) == OT_INSTANCE){
+			pt = Entity::sq_refobj(v, 2);
+			p->addent(pt);
+		}
+		else{
+			const SQChar *arg;
+			if(SQ_FAILED(sq_getstring(v, 2, &arg)))
+				return SQ_ERROR;
+			pt = Entity::create(arg, p);
+		}
 
-		Entity *pt = Entity::sq_refobj(v, 2);
-		p->addent(pt);
-		return 0;
+		// Return added Entity
+		if(pt){
+			Entity::sq_pushobj(v, pt);
+			return 1;
+		}
+		else
+			return SQ_ERROR;
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.what());
@@ -277,14 +296,23 @@ void GLWdock::postframe(){
 }
 
 
-int cmd_dockmenu(int argc, char *argv[], void *pv){
-	Player &pl = *(Player*)pv;
-	if(pl.selected.empty() || !(*pl.selected.begin())->w)
+static int cmd_dockmenu(int argc, char *argv[], void *pv){
+	Application *app = (Application*)pv;
+	Player *pl = app->clientGame ? app->clientGame->player : app->serverGame->player;
+	if(!pl)
 		return 0;
-	Docker *pb = (*pl.selected.begin())->getDocker();
+	if(pl->selected.empty() || !(*pl->selected.begin())->w)
+		return 0;
+	Docker *pb = (*pl->selected.begin())->getDocker();
 	if(pb)
 		glwAppend(new GLWdock("Dock", pb));
 	return 0;
 }
 
+void Docker::init(){
+	CmdAddParam("dockmenu", cmd_dockmenu, &application);
+}
+
+#else
+void Docker::init(){}
 #endif

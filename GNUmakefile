@@ -11,7 +11,7 @@ endif
 CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 
-depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM $(1))))
+depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM src/$(1))))
 
 objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/serial_util.o\

@@ -235,7 +235,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="opengl32.lib glu32.lib winmm.lib ws2_32.lib Vfw32.lib clib.lib cpplib.lib jpeg.lib zlib.lib squirrel.lib sqstdlib.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib libpng.lib"
-				OutputFile="..\..\gltestptest\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\clib\$(ConfigurationName)&quot;;&quot;..\..\cpplib\$(ConfigurationName)&quot;;&quot;..\..\jpeg-7\Release&quot;;&quot;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName)&quot;;..\..\SQUIRREL3\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release"
 				ModuleDefinitionFile="gltestplus.def"
@@ -362,15 +361,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\Application.cpp"
+				RelativePath="..\src\Application.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\arms.cpp"
+				RelativePath="..\src\arms.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Assault.cpp"
+				RelativePath="..\src\Assault.cpp"
 				>
 			</File>
 			<File
@@ -378,95 +377,91 @@
 				>
 			</File>
 			<File
-				RelativePath="..\astrodraw.cpp"
+				RelativePath="..\src\astrodraw.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Attacker.cpp"
+				RelativePath="..\src\Attacker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\avi.c"
+				RelativePath="..\src\avi.c"
 				>
 			</File>
 			<File
-				RelativePath="..\Beamer.cpp"
+				RelativePath="..\src\Beamer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\BeamProjectile.cpp"
+				RelativePath="..\src\BeamProjectile.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\BinDiff.cpp"
+				RelativePath="..\src\BinDiff.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\bitmap.c"
+				RelativePath="..\src\bitmap.c"
 				>
 			</File>
 			<File
-				RelativePath="..\draw\blackbody.cpp"
+				RelativePath="..\src\Builder.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Builder.cpp"
+				RelativePath="..\src\Bullet.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Bullet.cpp"
+				RelativePath="..\src\Client.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Client.cpp"
+				RelativePath="..\src\cmd.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\cmd.cpp"
+				RelativePath="..\src\cmddraw.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\cmddraw.cpp"
+				RelativePath="..\src\CoordSys.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\CoordSys.cpp"
+				RelativePath="..\src\Defender.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Defender.cpp"
+				RelativePath="..\src\Destroyer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Destroyer.cpp"
+				RelativePath="..\src\Docker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Docker.cpp"
+				RelativePath="..\src\dstring.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\dstring.cpp"
+				RelativePath="..\src\Entity.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Entity.cpp"
+				RelativePath="..\src\Frigate.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Frigate.cpp"
+				RelativePath="..\src\Game.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Game.cpp"
+				RelativePath="..\src\glsl.c"
 				>
 			</File>
 			<File
-				RelativePath="..\glsl.c"
-				>
-			</File>
-			<File
-				RelativePath="..\gltestplus.cpp"
+				RelativePath="..\src\gltestplus.cpp"
 				>
 			</File>
 			<File
@@ -474,131 +469,119 @@
 				>
 			</File>
 			<File
-				RelativePath="..\judge.cpp"
+				RelativePath="..\src\judge.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\keybind.cpp"
+				RelativePath="..\src\keybind.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\LagrangePoint.cpp"
+				RelativePath="..\src\LagrangePoint.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\calc\mathvars.c"
+				RelativePath="..\src\Missile.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Missile.cpp"
+				RelativePath="..\src\motion.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\motion.cpp"
+				RelativePath="..\src\mqo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\mqo.cpp"
+				RelativePath="..\src\mqoadapt.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\mqoadapt.cpp"
+				RelativePath="..\src\mqodraw.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\mqodraw.cpp"
+				RelativePath="..\src\Observable.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Observable.cpp"
+				RelativePath="..\src\Player.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Player.cpp"
+				RelativePath="..\src\Respawn.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Respawn.cpp"
+				RelativePath="..\src\RStation.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\RStation.cpp"
+				RelativePath="..\src\Scarry.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Scarry.cpp"
+				RelativePath="..\src\Sceptor.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Sceptor.cpp"
+				RelativePath="..\src\serial.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\serial.cpp"
+				RelativePath="..\src\serial_util.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\serial_util.cpp"
+				RelativePath="..\src\Server.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Server.cpp"
+				RelativePath="..\src\ShadowMap.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\ShadowMap.cpp"
+				RelativePath="..\src\shield.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\shield.cpp"
+				RelativePath="..\src\Shipyard.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Shipyard.cpp"
+				RelativePath="..\src\sqadapt.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\sqadapt.cpp"
+				RelativePath="..\src\stellar_file.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\stellar_file.cpp"
+				RelativePath="..\src\tefpol3d.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\tefpol3d.cpp"
+				RelativePath="..\src\teline3d.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\teline3d.cpp"
+				RelativePath="..\src\TexSphere.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\TexSphere.cpp"
+				RelativePath="..\src\Universe.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Universe.cpp"
+				RelativePath="..\src\war.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\war.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\Warpable.cpp"
+				RelativePath="..\src\Warpable.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\ysdnmmot.cpp"
+				RelativePath="..\src\ysdnmmot.cpp"
 				>
 			</File>
 			<Filter
@@ -606,59 +589,63 @@
 				Filter="../draw/*"
 				>
 				<File
-					RelativePath="..\draw\Assault-Draw.cpp"
+					RelativePath="..\src\draw\Assault-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Attacker-Draw.cpp"
+					RelativePath="..\src\draw\Attacker-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Bullet-draw.cpp"
+					RelativePath="..\src\draw\blackbody.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Defender-Draw.cpp"
+					RelativePath="..\src\draw\Bullet-draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Destroyer-draw.cpp"
+					RelativePath="..\src\draw\Defender-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\effects.cpp"
+					RelativePath="..\src\draw\Destroyer-draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\material.cpp"
+					RelativePath="..\src\draw\effects.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Player-draw.cpp"
+					RelativePath="..\src\draw\material.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\ring-draw.cpp"
+					RelativePath="..\src\draw\Player-draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Scarry-Draw.cpp"
+					RelativePath="..\src\draw\ring-draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Sceptor-Draw.cpp"
+					RelativePath="..\src\draw\Scarry-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Shipyard-Draw.cpp"
+					RelativePath="..\src\draw\Sceptor-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\war-draw.cpp"
+					RelativePath="..\src\draw\Shipyard-Draw.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\draw\Warpable-draw.cpp"
+					RelativePath="..\src\draw\war-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\Warpable-draw.cpp"
 					>
 				</File>
 			</Filter>
@@ -667,15 +654,19 @@
 				Filter="../calc/*"
 				>
 				<File
-					RelativePath="..\calc\calc.c"
+					RelativePath="..\src\calc\calc.c"
 					>
 				</File>
 				<File
-					RelativePath="..\calc\calc0.c"
+					RelativePath="..\src\calc\calc0.c"
 					>
 				</File>
 				<File
-					RelativePath="..\calc\calc3.c"
+					RelativePath="..\src\calc\calc3.c"
+					>
+				</File>
+				<File
+					RelativePath="..\src\calc\mathvars.c"
 					>
 				</File>
 			</Filter>
@@ -684,31 +675,31 @@
 				Filter="../glw/*"
 				>
 				<File
-					RelativePath="..\glw\GLWchart.cpp"
+					RelativePath="..\src\glw\GLWchart.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWchat.cpp"
+					RelativePath="..\src\glw\GLWchat.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWentlist.cpp"
+					RelativePath="..\src\glw\GLWentlist.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\glwindow.cpp"
+					RelativePath="..\src\glw\glwindow.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWmenu.cpp"
+					RelativePath="..\src\glw\GLWmenu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\message.cpp"
+					RelativePath="..\src\glw\message.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\solarmap.cpp"
+					RelativePath="..\src\glw\solarmap.cpp"
 					>
 				</File>
 			</Filter>
@@ -719,31 +710,31 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\Application.h"
+				RelativePath="..\src\Application.h"
 				>
 			</File>
 			<File
-				RelativePath="..\argtok.h"
+				RelativePath="..\src\argtok.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Assault.h"
+				RelativePath="..\src\Assault.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Attacker.h"
+				RelativePath="..\src\Attacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\avi.h"
+				RelativePath="..\src\avi.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Beamer.h"
+				RelativePath="..\src\Beamer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\BinDiff.h"
+				RelativePath="..\src\BinDiff.h"
 				>
 			</File>
 			<File
@@ -759,59 +750,59 @@
 				>
 			</File>
 			<File
-				RelativePath="..\cmd_int.h"
+				RelativePath="..\src\cmd_int.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Defender.h"
+				RelativePath="..\src\Defender.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Destroyer.h"
+				RelativePath="..\src\Destroyer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\galaxy_field.h"
+				RelativePath="..\src\galaxy_field.h"
 				>
 			</File>
 			<File
-				RelativePath="..\keybind.h"
+				RelativePath="..\src\keybind.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Missile.h"
+				RelativePath="..\src\Missile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\resource.h"
+				RelativePath="..\src\resource.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Respawn.h"
+				RelativePath="..\src\Respawn.h"
 				>
 			</File>
 			<File
-				RelativePath="..\RStation.h"
+				RelativePath="..\src\RStation.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Scarry.h"
+				RelativePath="..\src\Scarry.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Sceptor.h"
+				RelativePath="..\src\Sceptor.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Server.h"
+				RelativePath="..\src\Server.h"
 				>
 			</File>
 			<File
-				RelativePath="..\tent3d_p.h"
+				RelativePath="..\src\tent3d_p.h"
 				>
 			</File>
 			<File
-				RelativePath="..\TexSphere.h"
+				RelativePath="..\src\TexSphere.h"
 				>
 			</File>
 			<File
@@ -823,7 +814,7 @@
 				Filter="../draw/*"
 				>
 				<File
-					RelativePath="..\draw\ring-draw.h"
+					RelativePath="..\src\draw\ring-draw.h"
 					>
 				</File>
 			</Filter>
@@ -832,15 +823,31 @@
 				Filter="../glw/*"
 				>
 				<File
-					RelativePath="..\glw\GLWentlist.h"
+					RelativePath="..\src\glw\GLWentlist.h"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWmenu.h"
+					RelativePath="..\src\glw\GLWmenu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\glw\GLWtip.h"
+					RelativePath="..\src\glw\GLWtip.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="calc"
+				>
+				<File
+					RelativePath="..\src\calc\calc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\src\calc\calc_p.h"
+					>
+				</File>
+				<File
+					RelativePath="..\src\calc\tokker.h"
 					>
 				</File>
 			</Filter>

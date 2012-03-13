@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Player class and its companions.
+ */
 #include "Application.h"
 #include "Player.h"
 #include "Universe.h"
@@ -29,6 +32,7 @@ private:
 	CMRot() : st("Rot"){}
 };
 
+/// \brief The client message to request chase target change.
 struct CMChase : ClientMessage{
 	typedef ClientMessage st;
 	static CMChase s;
@@ -226,11 +230,14 @@ void CMChaseCamera::send(int camera){
 void CMChaseCamera::interpret(ServerClient &sc, UnserializeStream &uss){
 	int n;
 	uss >> n;
+	Player *player;
 #ifndef _WIN32
-	sc.sv->pg->players[sc.id]->setChaseCamera(n);
+	player = sc.sv->pg->players[sc.id];
 #else
-	application.serverGame->players[sc.id]->setChaseCamera(n);
+	player = application.serverGame->players[sc.id];
 #endif
+	if(player)
+		player->setChaseCamera(n);
 }
 
 
@@ -511,11 +518,14 @@ void CMRot::interpret(ServerClient &sc, UnserializeStream &uss){
 	Quatd q;//(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
 	for(int i = 0; i < 4; i++)
 		uss >> q[i];
+	Player *player;
 #ifndef _WIN32
-	sc.sv->pg->players[sc.id]->setrot(q);
+	player = sc.sv->pg->players[sc.id];
 #else
-	application.serverGame->players[sc.id]->setrot(q);
+	player = application.serverGame->players[sc.id];
 #endif
+	if(player)
+		player->setrot(q);
 }
 
 /// \brief Sends the command message to the server that this client wants to change position of eyes.
@@ -1048,6 +1058,7 @@ void CMChase::interpret(ServerClient &sc, UnserializeStream &uss){
 	player = application.serverGame->players[sc.id];
 #endif
 	if(player){
+		player->chases.clear();
 		player->chase = e;
 		player->chases.insert(e);
 	}

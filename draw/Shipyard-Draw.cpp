@@ -4,15 +4,24 @@
 #include "Shipyard.h"
 #include "judge.h"
 #include "draw/material.h"
-#include "../sceptor.h"
+#include "../Sceptor.h"
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 #define texture(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
+
+
+int Shipyard::popupMenu(PopupMenu &list){
+	int ret = st::popupMenu(list);
+//	list.append("Build Window", 'b', "buildmenu");
+	list.append("Dock Window", 'd', "dockmenu");
+	return ret;
+}
 
 
 void Shipyard::draw(wardraw_t *wd){

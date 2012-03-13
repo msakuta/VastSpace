@@ -6,7 +6,6 @@
 #include "Sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
-#include "glw/popup.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -124,13 +123,6 @@ void Shipyard::anim(double dt){
 //		turrets[i]->align();
 }
 
-int Shipyard::popupMenu(PopupMenu &list){
-	int ret = st::popupMenu(list);
-//	list.append("Build Window", 'b', "buildmenu");
-	list.append("Dock Window", 'd', "dockmenu");
-	return ret;
-}
-
 Entity::Props Shipyard::props()const{
 	Props ret = st::props();
 //	ret.push_back(cpplib::dstring("?: "));
@@ -238,6 +230,7 @@ Quatd ShipyardDocker::getPortRot()const{
 #endif
 
 #ifndef _WIN32
+int Shipyard::popupMenu(PopupMenu &list){return st::popupMenu(list);}
 void Shipyard::draw(WarDraw*){}
 void Shipyard::drawtra(WarDraw*){}
 #endif

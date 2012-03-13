@@ -29,6 +29,15 @@ private:
 	CMRot() : st("Rot"){}
 };
 
+struct CMChase : ClientMessage{
+	typedef ClientMessage st;
+	static CMChase s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(Entity *);
+private:
+	CMChase() : st("Chase"){}
+};
+
 /// \brief The client message for changing chase camera number.
 struct CMChaseCamera : ClientMessage{
 	typedef ClientMessage st;
@@ -335,9 +344,13 @@ bool Player::unlink(Observable *pe){
 	// the super class, and we do not use dynamic cast. We must iterate and find the pointer in the set to erase one.
 	for(ChaseSet::const_iterator it = chases.begin(); it != chases.end();){
 		if(*it == pe){
+			ChaseSet::const_iterator next = it;
+			++next;
 			chases.erase(it);
-			break;
+			it = next;
 		}
+		else
+			++it;
 	}
 	if(controlled == pe)
 		controlled = NULL;
@@ -533,8 +546,31 @@ static int scmd_spos(int argc, char *argv[], ServerClient *sc){
 	return 0;
 }
 
+static int cmd_chasecamera(int argc, char *argv[]){
+	Game *server = application.serverGame;
+	if(application.clientGame){
+		Player *player = application.clientGame->player;
+		if(player && !player->selected.empty()){
+			player->cs = (*player->selected.begin())->w->cs;
+			player->chases.clear();
+			for(Player::SelectSet::iterator it = player->selected.begin(); it != player->selected.end(); it++)
+				player->chases.insert(*it);
+			CMChase::send(*player->selected.begin());
+		}
+	}
+	else if(server && !server->player->selected.empty()){
+		server->player->chase = *server->player->selected.begin();
+		server->player->cs = (*server->player->selected.begin())->w->cs;
+		server->player->chases.clear();
+		for(Player::SelectSet::iterator it = server->player->selected.begin(); it != server->player->selected.end(); it++)
+			server->player->chases.insert(*it);
+	}
+	return 0;
+}
+
 void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
+	CmdAdd("chasecamera", cmd_chasecamera);
 	if(!application.serverGame)
 		return;
 	Player &pl = *application.serverGame->player;
@@ -982,4 +1018,38 @@ GLWstateButton *Player::newMoveOrderButton(Game *game, const char *filename, con
 	return new GLWmoveOrderButton(game, filename, filename2, tips);
 }
 #endif
+
+
+
+
+
+//-----------------------------------------------------------------------------
+//  CMChase implementation
+//-----------------------------------------------------------------------------
+
+CMChase CMChase::s;
+
+void CMChase::send(Entity *e){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << e;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMChase::interpret(ServerClient &sc, UnserializeStream &uss){
+	Entity *e;
+	uss >> e;
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player){
+		player->chase = e;
+		player->chases.insert(e);
+	}
+}
 

@@ -1583,26 +1583,6 @@ static int cmd_eject(int argc, char *argv[]){
 	return 0;
 }
 
-static int cmd_chasecamera(int argc, char *argv[]){
-	if(application.clientGame){
-		Player *player = application.clientGame->player;
-		if(player && !player->selected.empty()){
-			player->cs = (*player->selected.begin())->w->cs;
-			player->chases.clear();
-			for(Player::SelectSet::iterator it = player->selected.begin(); it != player->selected.end(); it++)
-				player->chases.insert(*it);
-		}
-	}
-	else if(!server->player->selected.empty()){
-		server->player->chase = *server->player->selected.begin();
-		server->player->cs = (*server->player->selected.begin())->w->cs;
-		server->player->chases.clear();
-		for(Player::SelectSet::iterator it = server->player->selected.begin(); it != server->player->selected.end(); it++)
-			server->player->chases.insert(*it);
-	}
-	return 0;
-}
-
 static int cmd_originrotation(int, char *[]){
 	server->player->setrot(quat_u);
 	return 0;
@@ -2268,7 +2248,6 @@ int main(int argc, char *argv[])
 	CmdAddParam("transit", cmd_transit, &server->player);
 	extern int cmd_warp(int argc, char *argv[], void *pv);
 	CmdAddParam("warp", cmd_warp, &server->player);
-	CmdAdd("chasecamera", cmd_chasecamera);
 	CmdAddParam("property", Entity::cmd_property, &application);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &server->player);

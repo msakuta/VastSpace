@@ -934,6 +934,11 @@ void CMEntityCommand::interpret(ServerClient &sc, UnserializeStream &uss){
 	if(!player || player->race != e->race)
 		return;
 
+#if 1
+	// Rest of the works are done in the function.
+	it->second->unserializeFunc(*uss.usc, *e);
+#else
+
 	EntityCommand *com = it->second->newproc();
 	assert(com);
 
@@ -950,6 +955,7 @@ void CMEntityCommand::interpret(ServerClient &sc, UnserializeStream &uss){
 
 	// Delete dynamically allocated command.
 	it->second->deleteproc(scom);
+#endif
 }
 
 void CMEntityCommand::send(Entity *e, SerializableCommand &com){

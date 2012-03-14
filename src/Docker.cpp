@@ -29,16 +29,6 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
-/// \brief A client message that encapsulates RemainDockedCommand.
-struct CMRemainDockedCommand : ClientMessage{
-	typedef ClientMessage st;
-	static CMRemainDockedCommand s;
-	void interpret(ServerClient &sc, UnserializeStream &uss);
-	void send(Entity *e, bool flag);
-protected:
-	CMRemainDockedCommand() : st("RemainDockedCommand"){}
-};
-
 Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){
 	for(int i = 0; i < numof(paradec); i++)
 		paradec[i] = 0;
@@ -333,30 +323,3 @@ void Docker::init(){}
 #endif
 
 
-
-//-----------------------------------------------------------------------------
-//  CMRemainDockedCommand implementation
-//-----------------------------------------------------------------------------
-
-CMRemainDockedCommand CMRemainDockedCommand::s;
-
-void CMRemainDockedCommand::interpret(ServerClient &sc, UnserializeStream &uss){
-	bool b;
-	Entity *e;
-	uss >> e;
-	uss >> b;
-	if(!e)
-		return;
-	Player *player = application.serverGame->players[sc.id];
-	if(player && player->race == e->race)
-		e->command(&RemainDockedCommand(b));
-}
-
-void CMRemainDockedCommand::send(Entity *e, bool flag){
-	std::stringstream ss;
-	StdSerializeStream sss(ss);
-	sss << e;
-	sss << flag;
-	std::string str = ss.str();
-	s.st::send(application, str.c_str(), str.size());
-}

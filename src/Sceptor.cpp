@@ -62,18 +62,6 @@ extern "C"{
 #define SCEPTOR_RELOADTIME 2.
 
 
-/// \brief The client message for docking command.
-struct CMDockCommand : ClientMessage{
-	typedef ClientMessage st;
-	static CMDockCommand s;
-	void interpret(ServerClient &sc, UnserializeStream &uss);
-	bool sq_send(Application &, HSQUIRRELVM v)const;
-	static void send(Entity *e);
-public:
-	CMDockCommand() : st("DockCommand"){}
-};
-
-
 Entity::Dockable *Sceptor::toDockable(){return this;}
 
 /* color sequences */
@@ -1523,39 +1511,6 @@ Entity *Sceptor::create(WarField *w, Builder *mother){
 
 
 
-
-CMDockCommand CMDockCommand::s;
-
-void CMDockCommand::send(Entity *e){
-	std::stringstream ss;
-	StdSerializeStream sss(ss);
-	sss << e;
-	std::string str = ss.str();
-	s.st::send(application, str.c_str(), str.size());
-}
-
-bool CMDockCommand::sq_send(Application &, HSQUIRRELVM v)const{
-	if(OT_INSTANCE != sq_gettype(v, 3))
-		return false;
-	Entity *p = Entity::sq_refobj(v, 3);
-	if(!p)
-		return false;
-	s.send(p);
-	return true;
-}
-
-/// \brief A server command that accepts messages from the client to change the direction of sight.
-void CMDockCommand::interpret(ServerClient &sc, UnserializeStream &uss){
-	Entity *e;
-	uss >> e;
-	DockCommand com;
-	if(!(0 <= sc.id && sc.id < sc.sv->pg->players.size()))
-		return;
-	Player *pl = sc.sv->pg->players[sc.id];
-	// Prohibit Players that do not own this Entity from dispatching commands.
-	if(pl && pl->race == e->race)
-		e->command(&com);
-}
 
 
 

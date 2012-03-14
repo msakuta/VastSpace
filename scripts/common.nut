@@ -365,10 +365,8 @@ register_console_command("moveto", function(...){
 });
 
 register_console_command("dock", function(...){
-	foreach(e in player.selected){
+	foreach(e in player.selected)
 		e.command("Dock");
-		sendClientMessage("DockCommand", e);
-	}
 });
 
 register_console_command("undock", function(...){

@@ -4,6 +4,7 @@
  * \brief Definition of EntityCommand and its subclasses. */
 #include "export.h"
 #include "CoordSys.h"
+#include "ClientMessage.h"
 #include <set>
 #include <map>
 #include <cpplib/vec3.h>
@@ -51,19 +52,24 @@ typedef const char *EntityCommandID;
 
 struct EntityCommand;
 
-typedef EntityCommand *EntityCommandCreatorFunc(HSQUIRRELVM, Entity &); ///< Type of EntityCommand-derived classes' constructor.
+typedef EntityCommand *EntityCommandCreatorFunc(); ///< Type of EntityCommand-derived classes' constructor.
 typedef void EntityCommandDeleteFunc(void *); ///< Type of EntityCommand-derived classes' destructor.
 typedef void EntityCommandSqFunc(HSQUIRRELVM, Entity &); ///< Type of EntityCommand-derived classes' method to apply.
 
-/// Static data type for a EntityCommand-derived class.
+/// \brief Static data type for a EntityCommand-derived class.
 struct EntityCommandStatic{
-	EntityCommandCreatorFunc *newproc; ///< Constructor for the class object. It's not really used.
+	/// \brief Constructor for the class object.
+	/// 
+	/// The object is 'raw' constructed. That means the content is not really initialized.
+	/// Typically, the object is unserialized to initialize later.
+	EntityCommandCreatorFunc *newproc;
+
 	EntityCommandDeleteFunc *deleteproc; ///< Destructor for the class object. It's not really used.
 	EntityCommandSqFunc *sq_command; ///< Squirrel binding for the class. Construct, pass, destroy in the single function.
 	EntityCommandStatic(EntityCommandCreatorFunc a = NULL, EntityCommandDeleteFunc b = NULL, EntityCommandSqFunc c = NULL) : newproc(a), deleteproc(b), sq_command(c){}
 };
 
-/// A template to generate squirrel bindings automatically.
+/// \brief A template to generate squirrel bindings automatically.
 ///
 /// You can instanciate this function template for any Command to implement custom codes.
 template<typename Command>
@@ -73,14 +79,16 @@ void EntityCommandSq(HSQUIRRELVM v, Entity &e){
 }
 
 template<typename Command>
-EntityCommand *EntityCommandCreator(HSQUIRRELVM v, Entity &e){
-	return new Command(v, e);
+EntityCommand *EntityCommandCreator(){
+	return new Command();
 }
 
 template<typename Command>
 void EntityCommandDeletor(void *pv){
 	delete reinterpret_cast<Command*>(pv);
 }
+
+struct SerializableCommand;
 
 /** \brief Base class for all Entity commands.
 //
@@ -124,6 +132,9 @@ struct EXPORT EntityCommand{
 	 */
 	virtual bool derived(EntityCommandID)const;
 
+	/// \brief Returns pointer to SerializableCommand if the class really derives it.
+	virtual SerializableCommand *toSerializable();
+
 	EntityCommand(){}
 
 	/// In a Squirrel execution context, an Entity which will this command be sent to is known.
@@ -134,6 +145,26 @@ struct EXPORT EntityCommand{
 		ctormap()[name] = ctor;
 		return 0;
 	}
+};
+
+/// \brief Serializable EntityCommand.
+///
+/// Although EntityCommand is not allowed to be stored to inter-frame storage (i.e. lives longer than
+/// the span of a frame), there's a necessity of serialization when one wants to send an
+/// EntityCommand to the server. But not all EntityCommands do need it, so we insert a intermediate
+/// class that guarantee derived classes are serializable.
+struct EXPORT SerializableCommand : EntityCommand{
+	typedef EntityCommand st;
+
+	/// \brief Default construction is allowed.
+	SerializableCommand(){}
+
+	/// \brief Returns this object.
+	virtual SerializableCommand *toSerializable();
+
+	virtual void serialize(SerializeContext &sc);
+
+	virtual void unserialize(UnserializeContext &usc);
 };
 
 /// A template class to implement EntityCommandStatic object for a given EntityCommand-derived class.
@@ -162,27 +193,31 @@ CmdType *InterpretDerivedCommand(EntityCommand *com){
 }
 
 
-DERIVE_COMMAND(HaltCommand, EntityCommand);
+DERIVE_COMMAND(HaltCommand, SerializableCommand);
 
-struct EXPORT AttackCommand : public EntityCommand{
+struct EXPORT AttackCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(AttackCommand, EntityCommand);
 	AttackCommand(){}
 	AttackCommand(HSQUIRRELVM v, Entity &e);
 	std::set<Entity*> ents;
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
 };
 
 DERIVE_COMMAND(ForceAttackCommand, AttackCommand);
 
-struct EXPORT MoveCommand : public EntityCommand{
+struct EXPORT MoveCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(MoveCommand, EntityCommand);
 	MoveCommand(){}
 	MoveCommand(HSQUIRRELVM v, Entity &e);
 	Vec3d destpos;
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
 };
 
 DERIVE_COMMAND(ParadeCommand, EntityCommand);
 DERIVE_COMMAND(DeltaCommand, EntityCommand);
-DERIVE_COMMAND(DockCommand, EntityCommand);
+DERIVE_COMMAND(DockCommand, SerializableCommand);
 
 DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
 DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
@@ -201,11 +236,26 @@ struct EXPORT WarpCommand : public MoveCommand{
 	CoordSys *destcs;
 };
 
-struct EXPORT RemainDockedCommand : public EntityCommand{
+struct EXPORT RemainDockedCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(RemainDockedCommand, EntityCommand);
 	RemainDockedCommand(bool a = true) : enable(a){}
 	RemainDockedCommand(HSQUIRRELVM v, Entity &e);
 	bool enable;
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
 };
+
+
+/// \brief A client message that encapsulates EntityCommand (precisely, SerializableCommand).
+struct CMEntityCommand : ClientMessage{
+	typedef ClientMessage st;
+	static CMEntityCommand s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	void send(Entity *e, SerializableCommand &com);
+protected:
+	CMEntityCommand() : st("EntityCommand"){}
+};
+
+
 
 #endif

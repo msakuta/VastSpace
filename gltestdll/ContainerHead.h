@@ -84,6 +84,7 @@ protected:
 
 struct TransportResourceCommand : EntityCommand{
 	COMMAND_BASIC_MEMBERS(TransportResourceCommand, EntityCommand);
+	TransportResourceCommand(){}
 	TransportResourceCommand(HSQUIRRELVM v, Entity &e);
 	TransportResourceCommand(int gases, int solids) : gases(gases), solids(solids){}
 	int gases;

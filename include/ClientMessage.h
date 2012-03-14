@@ -8,6 +8,7 @@
 #include <map>
 
 
+struct ServerClient;
 class Application;
 
 /// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the

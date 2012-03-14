@@ -63,6 +63,7 @@ protected:
 
 struct TransportPeopleCommand : EntityCommand{
 	COMMAND_BASIC_MEMBERS(TransportPeopleCommand, EntityCommand);
+	TransportPeopleCommand(){}
 	TransportPeopleCommand(HSQUIRRELVM v, Entity &e);
 	TransportPeopleCommand(int people) : people(people){}
 	int people;

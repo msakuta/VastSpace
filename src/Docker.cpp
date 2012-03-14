@@ -268,7 +268,9 @@ int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		int num = 1, i;
 		if(ind == -2){
 			docker->remainDocked = !docker->remainDocked;
-			CMRemainDockedCommand::s.send(docker->e, docker->remainDocked);
+			RemainDockedCommand com;
+			com.enable = docker->remainDocked;
+			CMEntityCommand::s.send(docker->e, com);
 		}
 		if(ind == -1)
 			grouping = !grouping;

@@ -737,6 +737,10 @@ int estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const Vec3d &s
 }
 
 
+//-----------------------------------------------------------------------------
+//  EntityCommand implementation
+//-----------------------------------------------------------------------------
+
 static bool strless(const char *a, const char *b){
 	return strcmp(a, b) < 0;
 }
@@ -749,6 +753,25 @@ EntityCommand::MapType &EntityCommand::ctormap(){
 
 
 bool EntityCommand::derived(EntityCommandID)const{return false;}
+
+SerializableCommand *EntityCommand::toSerializable(){
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+//  SerializableCommand implementation
+//-----------------------------------------------------------------------------
+
+SerializableCommand *SerializableCommand::toSerializable(){
+	return this;
+}
+
+void SerializableCommand::serialize(SerializeContext &sc){
+}
+
+void SerializableCommand::unserialize(UnserializeContext &usc){
+}
+
 IMPLEMENT_COMMAND(HaltCommand, "Halt")
 IMPLEMENT_COMMAND(AttackCommand, "Attack")
 
@@ -762,8 +785,33 @@ AttackCommand::AttackCommand(HSQUIRRELVM v, Entity &){
 	}
 }
 
+void AttackCommand::serialize(SerializeContext &sc){
+	sc.o << unsigned(ents.size());
+	for(std::set<Entity*>::iterator it = ents.begin(); it != ents.end(); ++it)
+		sc.o << *it;
+}
+
+void AttackCommand::unserialize(UnserializeContext &usc){
+	unsigned size;
+	usc.i >> size;
+	for(int i = 0; i < size; i++){
+		Entity *pe;
+		usc.i >> pe;
+		ents.insert(pe);
+	}
+}
+
 IMPLEMENT_COMMAND(ForceAttackCommand, "ForceAttack")
 IMPLEMENT_COMMAND(MoveCommand, "Move")
+
+void MoveCommand::serialize(SerializeContext &sc){
+	sc.o << destpos;
+}
+
+void MoveCommand::unserialize(UnserializeContext &sc){
+	sc.i >> destpos;
+}
+
 IMPLEMENT_COMMAND(ParadeCommand, "Parade")
 IMPLEMENT_COMMAND(DeltaCommand, "Delta")
 IMPLEMENT_COMMAND(DockCommand, "Dock")
@@ -784,6 +832,16 @@ RemainDockedCommand::RemainDockedCommand(HSQUIRRELVM v, Entity &){
 		throw SQFArgumentError();
 	enable = b;
 }
+
+void RemainDockedCommand::serialize(SerializeContext &sc){
+	sc.o << enable;
+}
+
+void RemainDockedCommand::unserialize(UnserializeContext &sc){
+	sc.i >> enable;
+}
+
+
 
 MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &){
 	int argc = sq_gettop(v);
@@ -847,3 +905,62 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 
 ObserveEventID TransitEvent::sid = "TransitEvent";
 ObserveEventID TransitEvent::id()const{return sid;}
+
+
+//-----------------------------------------------------------------------------
+//  CMRemainDockedCommand implementation
+//-----------------------------------------------------------------------------
+
+CMEntityCommand CMEntityCommand::s;
+
+void CMEntityCommand::interpret(ServerClient &sc, UnserializeStream &uss){
+	gltestp::dstring cmdname;
+	uss >> cmdname;
+
+	// First, find the EntityCommand static record of given name.
+	// If it's not found, just ignore the message.
+	EntityCommand::MapType::iterator it = EntityCommand::ctormap().find(cmdname);
+	if(it == EntityCommand::ctormap().end())
+		return;
+
+	// Find the specified Entity. It can be destructed in the server.
+	Entity *e;
+	uss >> e;
+	if(!e)
+		return;
+
+	// Only dispatch commands from those who have right privileges.
+	Player *player = application.serverGame->players[sc.id];
+	if(!player || player->race != e->race)
+		return;
+
+	EntityCommand *com = it->second->newproc();
+	assert(com);
+
+	// Check if the EntityCommand is really a SerializableCommand.
+	SerializableCommand *scom = com->toSerializable();
+	if(!scom)
+		return;
+
+	// Unserialize from client stream.
+	scom->unserialize(*uss.usc);
+
+	// Actually sends the command to the Entity.
+	e->command(scom);
+
+	// Delete dynamically allocated command.
+	it->second->deleteproc(scom);
+}
+
+void CMEntityCommand::send(Entity *e, SerializableCommand &com){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	Serializable* visit_list = NULL;
+	SerializeContext sc(sss, visit_list);
+	sss.sc = &sc;
+	sss << com.id();
+	sss << e;
+	com.serialize(sc);
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}

@@ -240,7 +240,8 @@ void EntityCommandUnserializeInt(UnserializeContext &usc, Entity &e, Serializabl
 /// Function template and its specialization are suitable for such metaprogramming.
 template<typename Command>
 void EntityCommandUnserialize(UnserializeContext &usc, Entity &e){
-	EntityCommandUnserializeInt<Command>(usc, e, Command());
+	Command com;
+	EntityCommandUnserializeInt<Command>(usc, e, com);
 }
 
 

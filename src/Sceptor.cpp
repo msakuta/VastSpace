@@ -148,7 +148,13 @@ double Sceptor::maxhealth()const{
 
 
 
-Sceptor::Sceptor() : mother(NULL), mf(0), paradec(-1), pf(NULL), active(true){
+Sceptor::Sceptor() : mother(NULL),
+	reverser(0),
+	mf(0),
+	pf(NULL),
+	paradec(-1), 
+	active(true)
+{
 }
 
 Sceptor::Sceptor(WarField *aw) : st(aw),

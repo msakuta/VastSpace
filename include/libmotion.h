@@ -32,6 +32,7 @@ extern "C"{
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <stdlib.h> // atoi
 #endif
 
 
@@ -50,7 +51,7 @@ typedef sufcoord sufvector[3];
 
 /// The exception type used by this class library.
 class MotionException : std::exception{
-	virtual const char *what()const{
+	virtual const char *what()const throw(){
 		return "Exception in motion class libraries";
 	}
 };
@@ -107,7 +108,7 @@ struct MotionPose{
 			titerator &operator++(int){++p; return *this;}
 			bool operator==(const titerator &o)const{return p == o.p;}
 			bool operator!=(const titerator &o)const{return p != o.p;}
-			friend NodeMap;
+			friend class NodeMap;
 		};
 		typedef titerator<Node> iterator;
 		typedef titerator<const Node> const_iterator;
@@ -124,7 +125,7 @@ struct MotionPose{
 		}
 
 		NodeMap &operator=(const NodeMap &o){
-			NodeMap::~NodeMap();
+			this->NodeMap::~NodeMap();
 			n = o.n;
 			nodes = new Node*[o.n];
 			for(int i = 0; i < n; i++)
@@ -206,7 +207,8 @@ struct Motion{
 		keyframe(const keyframe &o) : MotionPose(o), dt(o.dt){
 		}
 		keyframe &operator=(const keyframe &o){
-			this->keyframe::keyframe(o);
+			MotionPose::operator=(o);
+			dt = o.dt;
 			return *this;
 		}
 	};
@@ -284,6 +286,9 @@ typedef struct Motion Motion;
 //     Implementation
 //-----------------------------------------------------------------------------
 
+
+namespace cpplib{
+/// Template specialization for spherical linear interpolation of Quaternions.
 template<> inline Quat<double> Quat<double>::slerp(const Quatd &q, const Quatd &r, const double t){
 	tt ret;
 	double qr = q.a[0] * r.a[0] + q.a[1] * r.a[1] + q.a[2] * r.a[2] + q.a[3] * r.a[3];
@@ -313,7 +318,7 @@ template<> inline Quat<double> Quat<double>::slerp(const Quatd &q, const Quatd &
 			q.a[3] * t0 + r.a[3] * t1);
 	}
 }
-
+}
 
 
 /// Returns existing node or create a new one if it doesn't.
@@ -406,7 +411,8 @@ inline void Motion::save(std::ostream &os){
 
 /// Save to given file path, overwriting existing one.
 inline void Motion::save(const std::string &file){
-	save(std::ofstream(file.c_str()));
+	std::ofstream ofs(file.c_str());
+	save(ofs);
 }
 
 
@@ -434,7 +440,8 @@ inline void Motion::save2(std::ostream &os){
 
 /// Save to given file path in version 2, overwriting existing one.
 inline void Motion::save2(const std::string &file){
-	save2(std::ofstream(file.c_str()));
+	std::ofstream ofs(file.c_str());
+	save2(ofs);
 }
 
 

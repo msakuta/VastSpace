@@ -63,6 +63,8 @@ void Shipyard::init(){
 	}
 	turrets = new ArmBase*[nhardpoints];*/
 	mass = 5e6;
+	doorphase[0] = 0.;
+	doorphase[1] = 0.;
 }
 
 Shipyard::~Shipyard(){
@@ -111,8 +113,20 @@ double Shipyard::maxenergy()const{
 }
 
 void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	pos = this->pos + this->rot.trans(Vec3d(.100, .22, -.610));
-	rot = this->rot;
+	static const Vec3d pos0[] = {
+		Vec3d(.100, .22, -.610),
+		Vec3d(.100, .10, -1.000),
+		Vec3d(-.100, .10, 1.000),
+	};
+	if(seatid < numof(pos0)){
+		pos = this->pos + this->rot.trans(pos0[seatid % numof(pos0)]);
+		rot = this->rot;
+	}
+	else{
+		Quatd trot = this->rot.rotate(Entity::w->war_time() * M_PI / 6., 0, 1, 0).rotate(sin(Entity::w->war_time() * M_PI / 23.) * M_PI / 3., 1, 0, 0);
+		pos = this->pos + trot.trans(Vec3d(0, 0, 1.));
+		rot = trot;
+	}
 }
 
 void Shipyard::anim(double dt){
@@ -121,6 +135,15 @@ void Shipyard::anim(double dt){
 //	Builder::anim(dt);
 //	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 //		turrets[i]->align();
+	clientUpdate(dt);
+}
+
+void Shipyard::clientUpdate(double dt){
+	for(int i = 0; i < numof(doorphase); i++){
+		doorphase[i] = fmod(Entity::w->war_time() / (i + 1), 2.);
+		if(1 < doorphase[i])
+			doorphase[i] = 2. - doorphase[i];
+	}
 }
 
 Entity::Props Shipyard::props()const{

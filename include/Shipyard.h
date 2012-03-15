@@ -1,10 +1,14 @@
 #ifndef SHIPYARD_H
 #define SHIPYARD_H
+/** \file
+ * \brief Definition of Shipyard class.
+ */
 #include "Builder.h"
 #include "Warpable.h"
 #include "arms.h"
 #include "glw/glwindow.h"
 #include "Docker.h"
+#include "libmotion.h"
 
 
 class EXPORT ShipyardDocker : public Docker{
@@ -39,6 +43,7 @@ public:
 	virtual double maxenergy()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double);
 	virtual Props props()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
@@ -56,12 +61,16 @@ protected:
 	ShipyardDocker *docker;
 //	Builder *builder;
 
+	double doorphase[2];
+
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 
 	static const maneuve mymn;
 	static hitbox hitboxes[];
 	static const int nhitboxes;
+
+	static Motion *motions[2];
 
 	virtual void doneBuild(Entity *);
 };

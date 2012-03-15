@@ -202,7 +202,8 @@ coordsys Orbit earth{
 		inclination -23.4
 		argument_of_periapsis 180
 		ascending_node 0
-		updirection 0 1 
+		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
+#		updirection 0 1 
 		warp
 		teleport
 	}

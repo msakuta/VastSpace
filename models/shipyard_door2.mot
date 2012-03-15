@@ -1,0 +1,13 @@
+model_motion 2
+{
+	keyframe 2 10
+	{
+		"door2" 0 0 0 1 0 0 0 1
+		"door3" 0 0 0 1 0 0 0 1
+	}
+	keyframe 2 10
+	{
+		"door2" 0 0 0 1 0 50 0 1
+		"door3" 0 0 0 1 0 -50 0 1
+	}
+}

@@ -1,38 +1,17 @@
+/** \file
+ * \brief Implementation of Beamer class's drawing methods.
+ */
 #include "../Beamer.h"
-#include "Player.h"
-#include "Bullet.h"
-#include "CoordSys.h"
-#include "Viewer.h"
-#include "cmd.h"
-//#include "glwindow.h"
-#include "judge.h"
-#include "astrodef.h"
-#include "stellar_file.h"
-#include "astro_star.h"
-#include "serial_util.h"
 #include "draw/material.h"
-//#include "sensor.h"
-#include "motion.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 extern "C"{
-#include "bitmap.h"
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
 #include <clib/GL/gldraw.h>
-#include <clib/GL/cull.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
 }
-#include <assert.h>
-#include <string.h>
-#include <gl/glext.h>
 
 
 
@@ -54,6 +33,31 @@ extern "C"{
 #define BEAMER_SHIELDRAD .09
 
 
+void Beamer::cache_bridge(void){
+	const gltestp::TexCacheBind *tcb;
+	tcb = gltestp::FindTexture("bridge.bmp");
+	if(!tcb)
+		CallCacheBitmap("bridge.bmp", "bridge.bmp", NULL, NULL);
+	tcb = gltestp::FindTexture("beamer_panel.bmp");
+	if(!tcb)
+		CallCacheBitmap("beamer_panel.bmp", "beamer_panel.bmp", NULL, NULL);
+/*	if(!FindTexCache("bridge.bmp")){
+		suftexparam_t stp;
+		stp.bmi = lzuc(lzw_bridge, sizeof lzw_bridge, NULL);
+		stp.env = GL_MODULATE;
+		stp.mipmap = 0;
+		stp.alphamap = 0;
+		stp.magfil = GL_LINEAR;
+		CacheSUFMTex("bridge.bmp", &stp, NULL);
+		free(stp.bmi);
+	}
+	if(!FindTexCache("beamer_panel.bmp")){
+		BITMAPINFO *bmi;
+		bmi = lzuc(lzw_beamer_panel, sizeof lzw_beamer_panel, NULL);
+		CacheSUFTex("beamer_panel.bmp", bmi, 0);
+		free(bmi);
+	}*/
+}
 
 suf_t *Beamer::sufbase = NULL;
 const double Beamer::sufscale = BEAMER_SCALE;

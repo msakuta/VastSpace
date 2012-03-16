@@ -27,6 +27,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

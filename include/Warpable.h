@@ -29,7 +29,7 @@ enum sship_task{
 };
 
 
-class EXPORT Warpable : public virtual Entity{
+class EXPORT Warpable : public Entity{
 public:
 	typedef Entity st;
 	Vec3d dest; // Move order destination

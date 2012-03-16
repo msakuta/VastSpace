@@ -128,39 +128,27 @@ void beamer_undock(beamer_t *p, scarry_t *pm){
 }
 #endif
 
-#if 0
-static void beamer_cockpitview(struct entity *pt, warf_t *w, double (*pos)[3], int *chasecamera){
-	avec3_t ofs;
-	static const avec3_t src[] = {
-		{.002, .018, .022},
-#if 1
-		{0., 0., 1.0},
-#else
-		{0., 0./*05*/, 0.150},
-		{0., 0./*1*/, 0.300},
-		{0., 0., 1.000},
-		{0., 0., 2.000},
-#endif
+void Beamer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	static const Vec3d src[] = {
+		Vec3d(.002, .018, .022),
+		Vec3d(0., 0./*05*/, 0.150),
+		Vec3d(0., 0./*1*/, 0.300),
+		Vec3d(0., 0., 0.300),
+		Vec3d(0., 0., 1.000),
 	};
-	amat4_t mat;
-	aquat_t q;
-	*chasecamera = (*chasecamera + numof(src)) % numof(src);
-	if(*chasecamera){
-		QUATMUL(q, pt->rot, w->pl->rot);
-		quat2mat(&mat, q);
-	}
-	else
-		quat2mat(&mat, pt->rot);
-	mat4vp3(ofs, mat, src[*chasecamera]);
-	if(*chasecamera)
-		VECSCALEIN(ofs, g_viewdist);
-	VECADD(*pos, pt->pos, ofs);
+	static const Quatd rot0[] = {
+		quat_u,
+		quat_u,
+		Quatd::rotation(M_PI / 3., 0, 1, 0).rotate(M_PI / 8., 1, 0, 0),
+		Quatd::rotation(-M_PI / 3., 0, 1, 0).rotate(-M_PI / 8., 1, 0, 0),
+		Quatd::rotation(M_PI / 3., 0, 1, 0),
+	};
+	Mat4d mat;
+	seatid = (seatid + numof(src)) % numof(src);
+	rot = this->rot * rot0[seatid];
+	Vec3d ofs = src[seatid];
+	pos = this->pos + rot.trans(src[seatid]);
 }
-
-extern struct astrobj earth, island3, moon, jupiter;
-extern struct player *ppl;
-#endif
-
 
 
 void Beamer::anim(double dt){
@@ -448,236 +436,6 @@ void Beamer::cache_bridge(void){
 	}*/
 }
 
-suf_t *Beamer::sufbase = NULL;
-const double Beamer::sufscale = BEAMER_SCALE;
-
-void Beamer::draw(wardraw_t *wd){
-	Beamer *const p = this;
-	static int init = 0;
-	static suftex_t *pst;
-	if(!w)
-		return;
-
-	/* cull object */
-	if(cull(wd))
-		return;
-//	wd->lightdraws++;
-
-	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / frigate_mn.capacity);
-
-	if(init == 0) do{
-//		suftexparam_t stp, stp2;
-/*		beamer_s.sufbase = LZUC(lzw_assault);*/
-/*		beamer_s.sufbase = LZUC(lzw_beamer);*/
-		sufbase = CallLoadSUF("models/beamer.bin");
-		if(!sufbase) break;
-		cache_bridge();
-		pst = AllocSUFTex(sufbase);
-/*		beamer_hb[1].rot[2] = sin(M_PI / 3.);
-		beamer_hb[1].rot[3] = cos(M_PI / 3.);
-		beamer_hb[2].rot[2] = sin(-M_PI / 3.);
-		beamer_hb[2].rot[3] = cos(-M_PI / 3.);*/
-		init = 1;
-	} while(0);
-	if(sufbase){
-		static const double normal[3] = {0., 1., 0.};
-		double scale = BEAMER_SCALE;
-//		double x;
-//		int i;
-/*		static const GLdouble rotaxis[16] = {
-			0,0,-1,0,
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,0,1,
-		};*/
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
-		Mat4d mat;
-/*		glBegin(GL_POINTS);
-		glVertex3dv(pt->pos);
-		glEnd();*/
-
-		glPushMatrix();
-		transform(mat);
-		glMultMatrixd(mat);
-
-#if 1
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
-
-/*		glTranslated(pt->pos[0], pt->pos[1], pt->pos[2]);
-		glRotated(deg_per_rad * pt->pyr[1], 0., -1., 0.);
-		glRotated(deg_per_rad * pt->pyr[0], -1.,  0., 0.);
-		glRotated(deg_per_rad * pt->pyr[2], 0.,  0., -1.);*/
-		glPushMatrix();
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
-/*		glPushAttrib(GL_TEXTURE_BIT);*/
-/*		DrawSUF(beamer_s.sufbase, SUF_ATR, &g_gldcache);*/
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
-/*		DecalDrawSUF(&suf_beamer, SUF_ATR, &g_gldcache, beamer_s.tex, pf->sd, &beamer_s);*/
-/*		glPopAttrib();*/
-		glPopMatrix();
-
-/*		for(i = 0; i < numof(pf->turrets); i++)
-			mturret_draw(&pf->turrets[i], pt, wd);*/
-		glPopMatrix();
-
-/*		if(0 < wd->light[1]){
-			static const double normal[3] = {0., 1., 0.};
-			ShadowSUF(&suf_beamer, wd->light, normal, pt->pos, pt->pyr, scale, rotaxis);
-		}*/
-	/*
-		glPushMatrix();
-		VECCPY(pyr, pt->pyr);
-		pyr[0] += M_PI / 2;
-		pyr[1] += pt->turrety;
-		glMultMatrixd(rotaxis);
-		ShadowSUF(train_s.sufbase, wd->light, normal, pt->pos, pt->pyr, scale);
-		VECCPY(pyr, pt->pyr);
-		pyr[1] += pt->turrety;
-		ShadowSUF(train_s.sufturret, wd->light, normal, pt->pos, pyr, tscale);
-		glPopMatrix();*/
-	}
-}
-
-void Beamer::drawtra(wardraw_t *wd){
-	st::drawtra(wd);
-	Beamer *p = this;
-	Mat4d mat;
-
-/*	if(p->dock && p->undocktime == 0)
-		return;*/
-
-	transform(mat);
-
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
-
-	drawShield(wd);
-
-#if 1
-	if(charge){
-		int i;
-		GLubyte azure[4] = {63,0,255,95}, bright[4] = {127,63,255,255};
-		Vec3d muzzle, muzzle0(0., 0., -.100);
-		double glowrad;
-		muzzle = mat.vp3(muzzle0);
-/*		quatrot(muzzle, pt->rot, muzzle0);
-		VECADDIN(muzzle, pt->pos);*/
-
-		if(0. < charge && charge < 4.){
-			double beamrad;
-			Vec3d end, end0(0., 0., -10.);
-			end0[2] = -beamlen;
-			end = mat.vp3(end0);
-/*			quatrot(end, pt->rot, end0);
-			VECADDIN(end, pt->pos);*/
-			beamrad = (charge < .5 ? charge / .5 : 3.5 < charge ? (4. - charge) / .5 : 1.) * .005;
-			for(i = 0; i < 5; i++){
-				Vec3d p0, p1;
-				p0 = muzzle * i / 5.;
-				p0 += end * (5 - i) / 5.;
-				p1 = muzzle * (i + 1) / 5.;
-				p1 += end * (5 - i - 1) / 5.;
-				glColor4ub(63,191,255, GLubyte(MIN(1., charge / 2.) * 255));
-				gldBeam(wd->vw->pos, p0, p1, beamrad);
-				glColor4ub(63,0,255, GLubyte(MIN(1., charge / 2.) * 95));
-				gldBeam(wd->vw->pos, p0, p1, beamrad * 5.);
-			}
-#if 0
-			for(i = 0; i < 3; i++){
-				int j;
-				avec3_t pos1, pos;
-				struct random_sequence rs;
-				struct gldBeamsData bd;
-				init_rseq(&rs, (unsigned long)pt + i);
-				bd.cc = 0;
-				bd.solid = 0;
-				glColor4ub(63,0,255, MIN(1., p->charge / 2.) * 95);
-				VECCPY(pos1, pt->pos);
-				pos1[0] += (drseq(&rs) - .5) * .5;
-				pos1[1] += (drseq(&rs) - .5) * .5;
-				pos1[2] += (drseq(&rs) - .5) * .5;
-				init_rseq(&rs, *(unsigned long*)&wd->gametime + i);
-				for(j = 0; j <= 64; j++){
-					int c;
-					avec3_t p1;
-					for(c = 0; c < 3; c++)
-						p1[c] = (muzzle[c] * j + end[c] * (64 - j)) / 64. + (drseq(&rs) - .5) * .05;
-/*					glColor4ub(63,127,255, MIN(1., p->charge / 2.) * 191);*/
-					gldBeams(&bd, wd->view, p1, beamrad * .5, COLOR32RGBA(63,127,255,MIN(1., p->charge / 2.) * 191));
-				}
-			}
-#endif
-		}
-
-#if 0
-		if(0) for(i = 0; i < 64; i++){
-			int j;
-			avec3_t pos1, pos;
-			struct random_sequence rs;
-			struct gldBeamsData bd;
-			init_rseq(&rs, (unsigned long)pt + i);
-			bd.cc = 0;
-			bd.solid = 0;
-			glColor4ub(63,0,255, MIN(1., p->charge / 2.) * 95);
-			VECCPY(pos1, pt->pos);
-			pos1[0] += (drseq(&rs) - .5) * .5;
-			pos1[1] += (drseq(&rs) - .5) * .5;
-			pos1[2] += (drseq(&rs) - .5) * .5;
-			init_rseq(&rs, *(unsigned long*)&wd->gametime + i);
-			for(j = 0; j < 16; j++){
-				int c;
-				for(c = 0; c < 3; c++)
-					pos[c] = (pt->pos[c] * j + pos1[c] * (16 - j)) / 16. + (drseq(&rs) - .5) * .01;
-				gldBeams(&bd, wd->view, pos, .001, COLOR32RGBA(255, j * 256 / 16, j * 64 / 16, MIN(1., p->charge / 2.) * j * 128 / 16));
-			}
-		}
-#endif
-		glowrad = charge < 4. ? charge / 4. * .02 : (6. - charge) / 2. * .02;
-		gldSpriteGlow(muzzle, glowrad * 3., azure, wd->vw->irot);
-		gldSpriteGlow(muzzle, glowrad, bright, wd->vw->irot);
-	}
-#endif
-}
-
-#if 0
-static void beamer_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	int i = (int)pv;
-	suf_t *suf;
-	double scalex, scaley;
-	struct random_sequence rs;
-	init_rseq(&rs, (unsigned long)pl);
-	scalex = (drseq(&rs) + .5) * .1 * pl->len;
-	scaley = (drseq(&rs) + .5) * 1. * pl->len;
-	glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT);
-	glDisable(GL_CULL_FACE);
-	glPushMatrix();
-	gldTranslate3dv(pl->pos);
-	gldMultQuat(pl->rot);
-	glBegin(GL_QUADS);
-	glNormal3d(0, 0, 1.);
-	glVertex2d(-scalex, -scaley);
-	glVertex2d( scalex, -scaley);
-	glVertex2d( scalex,  scaley);
-	glVertex2d(-scalex,  scaley);
-	glEnd();
-	glPopMatrix();
-	glPopAttrib();
-}
-#endif
 
 Entity::Props Beamer::props()const{
 	Props ret = st::props();
@@ -712,3 +470,8 @@ const Builder::BuildStatic Beamer::builds = {
 
 
 double Beamer::maxhealth()const{return BEAMER_HEALTH;}
+
+#ifdef DEDICATED
+void Beamer::draw(wardraw_t *wd){}
+void Beamer::drawtra(wardraw_t *wd){}
+#endif

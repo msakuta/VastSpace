@@ -20,6 +20,11 @@ if(1){
 	bluebase <- e;
 	e.setrot(Quatd.rotation(-PI/2., Vec3d(0,1,0)));
 	e.race = 0;
+	local docker = e.docker;
+	if(docker != null){
+		local be = docker.addent("Beamer");
+		be.race = 0;
+	}
 }
 
 //deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, -0.01, -0.025), 2.025, 2, player.cs, null);

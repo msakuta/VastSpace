@@ -597,6 +597,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\draw\Beamer-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\draw\blackbody.cpp"
 					>
 				</File>

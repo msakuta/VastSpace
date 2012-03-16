@@ -48,7 +48,7 @@ hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 }*/;
 int Shipyard::nhardpoints = 0;
 
-Shipyard::Shipyard(WarField *w) : st::st(w), st(w), docker(new ShipyardDocker(this)), Builder(this->Entity::w){
+Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Builder(this->Entity::w){
 	st::init();
 	init();
 //	for(int i = 0; i < nhardpoints; i++)

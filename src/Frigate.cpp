@@ -4,36 +4,22 @@
 #include "CoordSys.h"
 #include "Viewer.h"
 #include "cmd.h"
-//#include "glwindow.h"
 #include "judge.h"
-#include "astrodef.h"
 #include "serial_util.h"
-#include "draw/material.h"
 #include "Sceptor.h"
 #include "EntityCommand.h"
-#include "draw/effects.h"
-#include "draw/WarDraw.h"
-#include "draw/OpenGLState.h"
 //#include "sensor.h"
 #include "glw/popup.h"
+#include "shield.h"
 extern "C"{
-#include "bitmap.h"
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
-#include <clib/GL/gldraw.h>
-#include <clib/GL/cull.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
 }
 #include <assert.h>
 #include <string.h>
-#include <gl/glext.h>
 #include <float.h>
+#include <algorithm>
 
 
 
@@ -96,7 +82,7 @@ void Frigate::anim(double dt){
 
 	// If docked
 	if(Docker *docker = *w){
-		health = min(health + dt * 300., maxhealth()); // it takes several seconds to be fully repaired
+		health = std::min(health + dt * 300., maxhealth()); // it takes several seconds to be fully repaired
 		if(health == maxhealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
@@ -129,16 +115,6 @@ Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::maneuve &Frigate::getManeuve()const{return frigate_mn;}
 
 
-bool Frigate::cull(wardraw_t *wd){
-	double pixels;
-	if(wd->vw->gc->cullFrustum(this->pos, .6))
-		return true;
-	pixels = .8 * fabs(wd->vw->gc->scale(this->pos));
-	if(pixels < 2)
-		return true;
-	return false;
-}
-
 struct hitbox Frigate::hitboxes[] = {
 	hitbox(Vec3d(0., 0., -.005), Quatd(0,0,0,1), Vec3d(.015, .015, .060)),
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
@@ -146,132 +122,6 @@ struct hitbox Frigate::hitboxes[] = {
 	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
 };
 const int Frigate::nhitboxes = numof(Frigate::hitboxes);
-
-
-void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale){
-	Mat4d mat;
-	transform(mat);
-	double vsp = -mat.vec3(2).sp(velo) / getManeuve().maxspeed;
-	if(1. < vsp)
-		vsp = 1.;
-
-	if(DBL_EPSILON < vsp){
-		const Vec3d pos0 = nozzlepos + Vec3d(0,0, scale * vsp);
-		class Tex1d{
-		public:
-			GLuint tex[2];
-			Tex1d(){
-				glGenTextures(2, tex);
-			}
-			~Tex1d(){
-				glDeleteTextures(2, tex);
-			}
-		};
-		static OpenGLState::weak_ptr<Tex1d> texname;
-		glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-		{
-			Vec3d v = rot.cnj().trans(wd->vw->pos - mat.vp3(pos0));
-			v[2] /= 2. * vsp;
-			v.normin() *= (4. / 5.);
-
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(v));
-			glEnable(GL_TEXTURE_GEN_S);
-		}
-		glDisable(GL_TEXTURE_2D);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		if(!texname){
-			texname.create(*openGLState);
-			static const GLubyte texture[4][4] = {
-				{255,0,0,0},
-				{255,127,0,127},
-				{255,255,0,191},
-				{255,255,255,255},
-			};
-			glBindTexture(GL_TEXTURE_1D, texname->tex[0]);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			static const GLubyte texture2[4][4] = {
-				{255,127,64,63},
-				{255,191,127,127},
-				{255,255,255,191},
-				{191,255,255,255},
-			};
-			glBindTexture(GL_TEXTURE_1D, texname->tex[1]);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture2);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		}
-		if(!texname)
-			return;
-		glEnable(GL_TEXTURE_1D);
-		glBindTexture(GL_TEXTURE_1D, texname->tex[0]);
-		if(glActiveTextureARB){
-			glActiveTextureARB(GL_TEXTURE1_ARB);
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(0,0,-.5,.5));
-			glEnable(GL_TEXTURE_GEN_S);
-			glEnable(GL_TEXTURE_1D);
-			glBindTexture(GL_TEXTURE_1D, texname->tex[1]);
-			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glActiveTextureARB(GL_TEXTURE0_ARB);
-		}
-		glPushMatrix();
-		glMultMatrixd(mat);
-		gldTranslate3dv(pos0);
-		glScaled(scale, scale, scale * 2. * (0. + vsp));
-		glColor4f(1,1,1, vsp);
-//		gldMultQuat(rot.cnj() * wd->vw->qrot.cnj());
-		gldOctSphere(2);
-		glPopMatrix();
-		glPopAttrib();
-	}
-}
-
-void Frigate::drawShield(wardraw_t *wd){
-	Frigate *p = this;
-	if(!wd->vw->gc->cullFrustum(pos, .1)){
-		Mat4d mat;
-		transform(mat);
-		glColor4ub(255,255,9,255);
-		glBegin(GL_LINES);
-		glVertex3dv(mat.vp3(Vec3d(.001,0,0)));
-		glVertex3dv(mat.vp3(Vec3d(-.001,0,0)));
-		glEnd();
-		{
-			int i, n = 3;
-			static const avec3_t pos0[] = {
-				{0, 210 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{190 * BEAMER_SCALE, -120 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{-190 * BEAMER_SCALE, -120 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{0, .002 + 50 * BEAMER_SCALE, -60 * BEAMER_SCALE},
-				{0, .002 + 60 * BEAMER_SCALE, 40 * BEAMER_SCALE},
-				{0, -.002 + -50 * BEAMER_SCALE, -60 * BEAMER_SCALE},
-				{0, -.002 + -60 * BEAMER_SCALE, 40 * BEAMER_SCALE},
-			};
-			avec3_t pos;
-			double rad = .002;
-			GLubyte col[4] = {255, 127, 127, 255};
-			random_sequence rs;
-			init_rseq(&rs, (unsigned long)this);
-			if(fmod(wd->vw->viewtime + drseq(&rs) * 2., 2.) < .2){
-				col[1] = col[2] = 255;
-				n = numof(pos0);
-				rad = .003;
-			}
-			for(i = 0 ; i < n; i++){
-				mat4vp3(pos, mat, pos0[i]);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
-			}
-		}
-
-		se.draw(wd, this, BEAMER_SHIELDRAD, p->shieldAmount / MAX_SHIELD_AMOUNT);
-	}
-}
 
 
 
@@ -329,6 +179,7 @@ int Frigate::takedamage(double damage, int hitpart){
 			}
 #endif
 
+#ifndef DEDICATED
 			if(ws->gibs) for(i = 0; i < 32; i++){
 				double pos[3], velo[3] = {0}, omg[3];
 				/* gaussian spread is desired */
@@ -361,6 +212,7 @@ int Frigate::takedamage(double damage, int hitpart){
 
 			/* explode shockwave thingie */
 			AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+#endif
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 //		p->w = NULL;
@@ -411,12 +263,6 @@ Entity::Props Frigate::props()const{
 	return ret;
 }
 
-int Frigate::popupMenu(PopupMenu &list){
-	int ret = st::popupMenu(list);
-	list.append("Dock", 0, "dock").append("Military Parade Formation", 0, "parade_formation").append("Cloak", 0, "cloak");
-	return ret;
-}
-
 bool Frigate::solid(const Entity *o)const{
 	return !(task == sship_undock || task == sship_warp);
 }
@@ -455,3 +301,8 @@ Entity *Frigate::findMother(){
 
 double Frigate::maxenergy()const{return frigate_mn.capacity;}
 double Frigate::maxshield()const{return MAX_SHIELD_AMOUNT;}
+
+#ifdef DEDICATED
+int Frigate::popupMenu(PopupMenu &){}
+void Frigate::drawShield(wardraw_t *wd){}
+#endif

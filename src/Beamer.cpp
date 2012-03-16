@@ -356,12 +356,11 @@ void Beamer::anim(double dt){
 			}
 		}
 		if(ws && hit){
-			Vec3d pos;
-			Quatd qrot;
 			beamlen = best;
 			hit->takedamage(1000. * dt, besthitpart);
-			pos = mat.vec3(2) * -best + this->pos;
-			qrot = Quatd::direction(mat.vec3(2));
+#ifndef DEDICATED
+			Vec3d pos = mat.vec3(2) * -best + this->pos;
+			Quatd qrot = Quatd::direction(mat.vec3(2));
 			if(drseq(&w->rs) * .1 < dt){
 				avec3_t velo;
 				int i;
@@ -370,6 +369,7 @@ void Beamer::anim(double dt){
 				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
 			AddTeline3D(ws->tell, pos, vec3_000, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+#endif
 		}
 		else
 			beamlen = 10.;

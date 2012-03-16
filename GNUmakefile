@@ -38,6 +38,8 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
  ${OUTDIR}/Warpable.o\
+ ${OUTDIR}/Frigate.o\
+ ${OUTDIR}/Beamer.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -105,6 +107,10 @@ ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
 ${OUTDIR}/Builder.o: $(call depends,Builder.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Warpable.o: $(call depends,Warpable.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Frigate.o: $(call depends,Frigate.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Beamer.o: $(call depends,Beamer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

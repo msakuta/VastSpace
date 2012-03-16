@@ -796,8 +796,16 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 
 			fp = fopen(suf->a[i].colormap, "rb");
 			if(!fp){
-				ret->a[k].list = gstc[nstc-1].list = 0;
-				ret->a[k].tex[0] = ret->a[k].tex[1] = gstc[nstc-1].tex[0] = gstc[nstc-1].tex[0] = 0;
+				struct suftexlist *s = &ret->a[k];
+				s->list = gstc[nstc-1].list = 0;
+				s->tex[0] = s->tex[1] = gstc[nstc-1].tex[0] = gstc[nstc-1].tex[1] = 0;
+				s->scale = 1.;
+				s->onBeginTexture = NULL;
+				s->onBeginTextureData = NULL;
+				s->onInitedTexture = NULL;
+				s->onInitedTextureData = NULL;
+				s->onEndTexture = NULL;
+				s->onEndTextureData = NULL;
 				continue;
 			}
 /*			glNewList(ret->a[k].list = gstc[nstc-1].list = glGenLists(1), GL_COMPILE);*/

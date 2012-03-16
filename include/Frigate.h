@@ -25,6 +25,7 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual double hitradius()const;
+	virtual double shieldRadius()const;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
@@ -38,6 +39,7 @@ public:
 	virtual bool command(EntityCommand *);
 	static hitbox hitboxes[];
 	static const int nhitboxes;
+	static const double modelScale;
 };
 
 #endif

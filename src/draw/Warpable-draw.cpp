@@ -12,6 +12,8 @@
 #include "glstack.h"
 #include "draw/WarDraw.h"
 #include "glsl.h"
+#include "draw/OpenGLState.h"
+#include "Frigate.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -473,13 +475,13 @@ void Frigate::drawShield(wardraw_t *wd){
 		{
 			int i, n = 3;
 			static const avec3_t pos0[] = {
-				{0, 210 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{190 * BEAMER_SCALE, -120 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{-190 * BEAMER_SCALE, -120 * BEAMER_SCALE, 240 * BEAMER_SCALE},
-				{0, .002 + 50 * BEAMER_SCALE, -60 * BEAMER_SCALE},
-				{0, .002 + 60 * BEAMER_SCALE, 40 * BEAMER_SCALE},
-				{0, -.002 + -50 * BEAMER_SCALE, -60 * BEAMER_SCALE},
-				{0, -.002 + -60 * BEAMER_SCALE, 40 * BEAMER_SCALE},
+				{0, 210 * modelScale, 240 * modelScale},
+				{190 * modelScale, -120 * modelScale, 240 * modelScale},
+				{-190 * modelScale, -120 * modelScale, 240 * modelScale},
+				{0, .002 + 50 * modelScale, -60 * modelScale},
+				{0, .002 + 60 * modelScale, 40 * modelScale},
+				{0, -.002 + -50 * modelScale, -60 * modelScale},
+				{0, -.002 + -60 * modelScale, 40 * modelScale},
 			};
 			avec3_t pos;
 			double rad = .002;
@@ -497,7 +499,7 @@ void Frigate::drawShield(wardraw_t *wd){
 			}
 		}
 
-		se.draw(wd, this, BEAMER_SHIELDRAD, p->shieldAmount / MAX_SHIELD_AMOUNT);
+		se.draw(wd, this, hitradius(), p->shieldAmount / maxshield());
 	}
 }
 

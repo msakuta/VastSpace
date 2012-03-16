@@ -1,3 +1,7 @@
+/** \file
+ * \brief Implementation of Frigate class (non-drawing methods).
+ */
+#define NOMINMAX // Prevent VC headers from defining min and max macros
 #include "Frigate.h"
 #include "Player.h"
 #include "Bullet.h"
@@ -11,6 +15,9 @@
 //#include "sensor.h"
 #include "glw/popup.h"
 #include "shield.h"
+#ifndef DEDICATED
+#include "draw/effects.h"
+#endif
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -31,20 +38,14 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define MAX_SHIELD_AMOUNT 5000.
-#define BEAMER_HEALTH 15000.
-#define BEAMER_SCALE .0002
-#define BEAMER_MAX_SPEED .1
-#define BEAMER_ACCELERATE .025
-#define BEAMER_MAX_ANGLESPEED .4
-#define BEAMER_SHIELDRAD .09
-
+const double Frigate::modelScale = .0002;
+double Frigate::shieldRadius()const{return .09;}
 
 const struct Warpable::maneuve Frigate::frigate_mn = {
-	BEAMER_ACCELERATE, /* double accel; */
-	BEAMER_MAX_SPEED, /* double maxspeed; */
+	.025, /* double accel; */
+	.1, /* double maxspeed; */
 	100., /* double angleaccel; */
-	BEAMER_MAX_ANGLESPEED, /* double maxanglespeed; */
+	.4, /* double maxanglespeed; */
 	50000., /* double capacity; [MJ] */
 	100., /* double capacitor_gen; [MW] */
 };
@@ -95,7 +96,7 @@ void Frigate::anim(double dt){
 		double gen = shieldGenSpeed * dt;
 		if(capacitor < gen / shieldPerEnergy)
 			gen = capacitor * shieldPerEnergy;
-		if(MAX_SHIELD_AMOUNT < shieldAmount + gen){
+		if(maxshield() < shieldAmount + gen){
 			shieldAmount = maxshield();
 			capacitor -= (maxshield() - shieldAmount) / shieldPerEnergy;
 		}
@@ -235,7 +236,7 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	int reti = 0, i, n;
 	if(0 < p->shieldAmount){
 		Vec3d hitpos;
-		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, &hitpos)){
+		if(jHitSpherePos(pos, hitradius() + rad, src, dir, dt, ret, &hitpos)){
 			if(retp) *retp = hitpos;
 			if(retn) *retn = (hitpos - pos).norm();
 			return 1000; /* something quite unlikely to reach */
@@ -300,7 +301,7 @@ Entity *Frigate::findMother(){
 
 
 double Frigate::maxenergy()const{return frigate_mn.capacity;}
-double Frigate::maxshield()const{return MAX_SHIELD_AMOUNT;}
+double Frigate::maxshield()const{return 5000.;}
 
 #ifdef DEDICATED
 int Frigate::popupMenu(PopupMenu &){}

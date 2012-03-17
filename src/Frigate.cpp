@@ -51,7 +51,7 @@ const struct Warpable::maneuve Frigate::frigate_mn = {
 };
 
 
-Frigate::Frigate(WarField *aw) : st(aw), shieldGenSpeed(0), paradec(-1){
+Frigate::Frigate(WarField *aw) : st(aw), mother(NULL), shieldGenSpeed(0), paradec(-1){
 	health = maxhealth();
 	shieldAmount = maxshield();
 }
@@ -280,6 +280,10 @@ bool Frigate::command(EntityCommand *com){
 			enemy = *ac->ents.begin();
 			task = sship_attack;
 		}
+		return true;
+	}
+	else if(QueryClassCommand *qc = InterpretCommand<QueryClassCommand>(com)){
+		qc->ret = Docker::Frigate;
 		return true;
 	}
 	else return st::command(com);

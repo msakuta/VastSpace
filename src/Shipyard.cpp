@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Shipyard class non-drawing member functions.
+ */
 #include "Shipyard.h"
 #include "judge.h"
 #include "serial_util.h"
@@ -8,6 +11,7 @@
 #include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
+#include <clib/cfloat.h>
 }
 
 /* some common constants that can be used in static data definition. */
@@ -80,13 +84,15 @@ Entity::EntityRegister<Shipyard> Shipyard::entityRegister("Shipyard");
 void Shipyard::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << docker;
-	for(int i = 0; i < nhardpoints; i++)
-		sc.o << turrets[i];
+	sc.o << undockingFrigate;
+//	for(int i = 0; i < nhardpoints; i++)
+//		sc.o << turrets[i];
 }
 
 void Shipyard::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> docker;
+	sc.i >> undockingFrigate;
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.i >> turrets[i];
 }
@@ -139,11 +145,17 @@ void Shipyard::anim(double dt){
 }
 
 void Shipyard::clientUpdate(double dt){
-	for(int i = 0; i < numof(doorphase); i++){
-		doorphase[i] = fmod(Entity::w->war_time() / (i + 1), 2.);
-		if(1 < doorphase[i])
-			doorphase[i] = 2. - doorphase[i];
+	if(undockingFrigate){
+		double threshdist = .5 + undockingFrigate->hitradius();
+		const Vec3d &udpos = undockingFrigate->pos;
+		Vec3d delta = udpos - (pos + rot.trans(Vec3d(0.1, 0, -0.35)));
+		if(threshdist * threshdist < delta.slen())
+			undockingFrigate = NULL;
+		else
+			doorphase[0] = approach(doorphase[0], 1., dt * .5, 0.);
 	}
+	else
+		doorphase[0] = approach(doorphase[0], 0., dt * 0.5, 0.);
 }
 
 Entity::Props Shipyard::props()const{
@@ -236,7 +248,19 @@ void Shipyard::doneBuild(Entity *e){
 
 bool ShipyardDocker::undock(Entity::Dockable *pe){
 	if(st::undock(pe)){
-		Vec3d pos = e->pos + e->rot.trans(Vec3d(-.10, 0.05, 0));
+		QueryClassCommand com;
+		com.ret = Docker::Fighter;
+		pe->command(&com);
+		Vec3d dockPos;
+		if(com.ret == Docker::Fighter)
+			dockPos = Vec3d(-.10, 0.05, 0);
+		else if(com.ret == Docker::Frigate){
+			dockPos = Vec3d(.10, 0.0, -.350);
+			static_cast<Shipyard*>(e)->undockingFrigate = pe;
+		}
+		else
+			dockPos = Vec3d(1.0, 0.0, 0);
+		Vec3d pos = e->pos + e->rot.trans(dockPos);
 		pe->setPosition(&pos, &e->rot, &e->velo, &e->omg);
 		return true;
 	}

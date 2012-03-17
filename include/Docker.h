@@ -5,6 +5,7 @@
 #define DOCKER_H
 #include "war.h"
 #include "Entity.h"
+#include "EntityCommand.h"
 #ifndef DEDICATED
 #include "glw/glwindow.h"
 #endif
@@ -55,6 +56,21 @@ public:
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 	static SQInteger sqf_addent(HSQUIRRELVM v);
+};
+
+/// \brief An EntityCommand to query a ship's class in Docker::ShipClass enumeration.
+///
+/// It does not affect the Entity, just queries a value, so it'd be meaningless to send to the server,
+/// thus not derived SerializableCommand.
+///
+/// Entities that are aware of ShipClass should assign QueryClassCommand::ret a value and return true
+/// in command().
+/// Entities that won't dock to a Docker can ignore the command, though.
+struct QueryClassCommand : EntityCommand{
+	COMMAND_BASIC_MEMBERS(QueryClassCommand, EntityCommand);
+	QueryClassCommand(){}
+	QueryClassCommand(HSQUIRRELVM, Entity&){}
+	Docker::ShipClass ret;
 };
 
 #ifndef DEDICATED

@@ -46,8 +46,8 @@ Docker::~Docker(){
 	}
 	for(EntityList::iterator it = undockque.begin(); it != undockque.end(); it++){
 		EntityList::iterator next = it;
-		it++;
-		delete e;
+		next++;
+		delete *it;
 		it = next;
 	}
 }
@@ -245,6 +245,8 @@ SQInteger Docker::sqf_addent(HSQUIRRELVM v){
 		return sq_throwerror(v, e.what());
 	}
 }
+
+IMPLEMENT_COMMAND(QueryClassCommand, "QueryClassCommand");
 
 #ifndef DEDICATED
 int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){

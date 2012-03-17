@@ -10,10 +10,11 @@
 #include "Docker.h"
 #include "libmotion.h"
 
+class Shipyard;
 
 class EXPORT ShipyardDocker : public Docker{
 public:
-	ShipyardDocker(Entity *ae = NULL) : st(ae){}
+	ShipyardDocker(Shipyard *ae = NULL);
 	typedef Docker st;
 	static const unsigned classid;
 	const char *classname()const;
@@ -60,6 +61,7 @@ protected:
 	ArmBase **turrets;
 	ShipyardDocker *docker;
 //	Builder *builder;
+	WeakPtr<Entity> undockingFrigate;
 
 	double doorphase[2];
 
@@ -73,6 +75,11 @@ protected:
 	static Motion *motions[2];
 
 	virtual void doneBuild(Entity *);
+
+	friend class ShipyardDocker;
 };
+
+
+inline ShipyardDocker::ShipyardDocker(Shipyard *ae) : st(ae){}
 
 #endif

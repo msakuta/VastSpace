@@ -376,19 +376,19 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 	return 1;
 }
 
-static void setpos(Entity *e, const Vec3d &v){
+void setpos(Entity *e, const Vec3d &v){
 	e->setPosition(&v);
 }
 
-static void setvelo(Entity *e, const Vec3d &v){
+void setvelo(Entity *e, const Vec3d &v){
 	e->setPosition(NULL, NULL, &v);
 }
 
-static void setrot(Entity *e, const Quatd &v){
+void setrot(Entity *e, const Quatd &v){
 	e->setPosition(NULL, &v);
 }
 
-static void setomg(Entity *e, const Vec3d &v){
+void setomg(Entity *e, const Vec3d &v){
 	e->setPosition(NULL, NULL, NULL, &v);
 }
 

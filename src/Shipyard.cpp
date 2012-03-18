@@ -6,14 +6,15 @@
 #include "serial_util.h"
 #include "Player.h"
 #include "antiglut.h"
-#include "Sceptor.h"
-#include "Beamer.h"
 #include "sqadapt.h"
 #include "btadapt.h"
+#include "Game.h"
+#include "cmd.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
+#include <sqstdio.h>
 
 /* some common constants that can be used in static data definition. */
 #define SQRT_2 1.4142135623730950488016887242097
@@ -166,7 +167,76 @@ bool Shipyard::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
+			std::vector<struct hitbox> hitboxes;
+			const SQChar *scriptFile = _SC("models/Shipyard.nut");
+			try{
+				HSQUIRRELVM v = game->sqvm;
+				StackReserver sr(v);
+				timemeas_t tm;
+				TimeMeasStart(&tm);
+				sq_newtable(v);
+				sq_pushroottable(v); // root
+				sq_setdelegate(v, -2);
+				if(SQ_SUCCEEDED(sqstd_dofile(game->sqvm, scriptFile, 0, 1))){
+					sq_pushstring(v, _SC("hitbox"), -1); // root string
+					if(SQ_FAILED(sq_get(v, -2))) // root obj
+						throw SQFError(_SC("hitbox not found"));
+					sq_pushstring(v, _SC("len"), -1); // root obj "len"
+					if(SQ_FAILED(sq_get(v, -2))) // root obj obj.len
+						throw SQFError(_SC("Shipyard_hitbox has no member named len"));
+					sq_push(v, -2); // root obj obj.len obj
+					if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))) // root obj obj.len integer
+						throw SQFError(_SC("Shipyard_hitbox.len() failed"));
+					SQInteger len;
+					if(SQ_FAILED(sq_getinteger(v, -1, &len))) // root obj obj.len
+						throw SQFError(_SC("Shipyard_hitbox.len() returns non-integer"));
+					sq_pop(v, 2); // root obj
+					for(int i = 0; i < len; i++){
+						sq_pushinteger(v, i); // root obj i
+						if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+							throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "] get failed");
+						Vec3d org;
+						Quatd rot;
+						Vec3d sc;
+
+						{
+							sq_pushinteger(v, 0); // root obj obj[i] 0
+							if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][0]
+								throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][0] get failed");
+							SQVec3d r;
+							r.getValue(v, -1);
+							org = r.value;
+							sq_poptop(v); // root obj obj[i]
+						}
+
+						{
+							sq_pushinteger(v, 1); // root obj obj[i] 1
+							if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i][1]
+								throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][1] get failed");
+							SQQuatd r;
+							r.getValue(v, -1);
+							rot = r.value;
+							sq_poptop(v); // root obj obj[i]
+						}
+						{
+							sq_pushinteger(v, 2); // root obj obj[i] 2
+							if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][2]
+								throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][2] get failed");
+							SQVec3d r;
+							r.getValue(v, -1);
+							sc = r.value;
+							sq_poptop(v); // root obj obj[i]
+						}
+						hitboxes.push_back(hitbox(org, rot, sc));
+					}
+				}
+				double d = TimeMeasLap(&tm);
+				CmdPrint(gltestp::dstring() << scriptFile << " total: " << d << " sec");
+			}
+			catch(SQFError &e){
+				CmdPrint(gltestp::dstring() << scriptFile << " error: " << e.what());
+			}
+			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
 				const Vec3d &pos = hitboxes[i].org;
@@ -308,15 +378,7 @@ const Shipyard::maneuve Shipyard::mymn = {
 const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
 
 struct hitbox Shipyard::hitboxes[] = {
-/*	hitbox(Vec3d(0., 0., -.02), Quatd(0,0,0,1), Vec3d(.015, .015, .075)),
-	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
-	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
-	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),*/
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)),
-/*	{{0.105, 0., .0}, {0,0,0,1}, {.100, .2, .050}},*/
-/*	hitbox(Vec3d(-.105, 0., -.700), Quatd(0,0,0,1), Vec3d(.095, .020, .250)),
-	hitbox(Vec3d( .100, 0., -.640), Quatd(0,0,0,1), Vec3d(.100, .060, .180)),
-	hitbox(Vec3d( .100, .0, -.600), Quatd(0,0,0,1), Vec3d(.040, .260, .040)),*/
 };
 const int Shipyard::nhitboxes = numof(Shipyard::hitboxes);
 

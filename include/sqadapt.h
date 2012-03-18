@@ -32,6 +32,7 @@ void sqa_init(Game *game, HSQUIRRELVM *v = NULL);
 void sqa_anim0(HSQUIRRELVM);
 void sqa_anim(HSQUIRRELVM v, double dt);
 void sqa_exit();
+SQRESULT sqa_dofile(HSQUIRRELVM, const char *filename, SQInteger retval = 0, SQBool printerror = SQTrue);
 
 /// Register a Squirrel native function to the given VM.
 void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);

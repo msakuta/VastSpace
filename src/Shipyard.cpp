@@ -177,7 +177,7 @@ bool Shipyard::buildBody(){
 				sq_newtable(v);
 				sq_pushroottable(v); // root
 				sq_setdelegate(v, -2);
-				if(SQ_SUCCEEDED(sqstd_dofile(game->sqvm, scriptFile, 0, 1))){
+				if(SQ_SUCCEEDED(sqa_dofile(game->sqvm, scriptFile, 0, 1))){
 					sq_pushstring(v, _SC("hitbox"), -1); // root string
 					if(SQ_FAILED(sq_get(v, -2))) // root obj
 						throw SQFError(_SC("hitbox not found"));

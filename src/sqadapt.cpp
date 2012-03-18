@@ -20,6 +20,7 @@
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
+#include <clib/zip/UnZip.h>
 }
 #include <cpplib/vec3.h>
 #include <squirrel.h>
@@ -1091,6 +1092,39 @@ void sqa_exit(){
 	v = NULL; // To prevent other destructors from using dangling pointer.
 
 	unloadAllModules();
+}
+
+/// \brief Loads a Squirrel script file, optionally in a zip file.
+///
+/// Currently it cannot load compiled binary object of Squirrel source in a zipfile.
+/// Otherwise it's compatible with sqstd_dofile().
+SQRESULT sqa_dofile(HSQUIRRELVM v, const char *filename, SQInteger retval, SQBool printerror){
+	// TODO: use stat() in Linux.
+#ifndef DEDICATED
+	if(-1 == GetFileAttributes(filename)){
+		unsigned long size;
+		void *buf = ZipUnZip("rc.zip", filename, &size);
+		if(!buf)
+			return SQ_ERROR;
+		try{
+			if(SQ_FAILED(sq_compilebuffer(v, (SQChar*)buf, size, filename, SQTrue))) // ...root closure
+				throw SQFError(gltestp::dstring("Squirrel source in a zip file comilation Error: ") << filename);
+			sq_push(v, -2); // ...root closure root
+			if(SQ_FAILED(sq_call(v, 1, retval, printerror))) // ...root closure ret*retval
+				throw SQFError(gltestp::dstring("Squirrel source in a zip file call Error: ") << filename);
+			// Remove the closure while keeping returned values.
+			sq_remove(v, -1 - retval); // ...root ret*retval
+		}
+		catch(SQFError &e){
+			CmdPrint(e.what());
+			ZipFree(buf);
+			return SQ_ERROR;
+		}
+		ZipFree(buf);
+		return SQ_OK;
+	}
+#endif
+	return sqstd_dofile(v, filename, retval, printerror);
 }
 
 

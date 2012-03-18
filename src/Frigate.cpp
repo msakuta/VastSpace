@@ -286,6 +286,11 @@ bool Frigate::command(EntityCommand *com){
 		qc->ret = Docker::Frigate;
 		return true;
 	}
+	else if(InterpretCommand<DockCommand>(com)){
+		findMother();
+		task = sship_dockque;
+		return true;
+	}
 	else return st::command(com);
 }
 

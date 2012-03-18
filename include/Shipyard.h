@@ -18,9 +18,12 @@ public:
 	typedef Docker st;
 	static const unsigned classid;
 	const char *classname()const;
+	virtual void dock(Dockable *);
+	virtual void dockque(Dockable *);
 	virtual bool undock(Dockable *);
-	virtual Vec3d getPortPos()const;
-	virtual Quatd getPortRot()const;
+	virtual Vec3d getPortPos(Dockable *)const;
+	virtual Quatd getPortRot(Dockable *)const;
+	Shipyard *getent();
 };
 
 class EXPORT Shipyard : public Warpable, public Builder{
@@ -62,6 +65,7 @@ protected:
 	ShipyardDocker *docker;
 //	Builder *builder;
 	WeakPtr<Entity> undockingFrigate;
+	WeakPtr<Entity> dockingFrigate;
 
 	double doorphase[2];
 
@@ -80,6 +84,12 @@ protected:
 };
 
 
+//-----------------------------------------------------------------------------
+//    Inline Implementation
+//-----------------------------------------------------------------------------
+
 inline ShipyardDocker::ShipyardDocker(Shipyard *ae) : st(ae){}
+
+inline Shipyard *ShipyardDocker::getent(){return static_cast<Shipyard*>(e);}
 
 #endif

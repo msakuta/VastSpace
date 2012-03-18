@@ -120,6 +120,9 @@ void Docker::dock(Dockable *e){
 	addent(e);
 }
 
+/// Default is to ignore.
+void Docker::dockque(Dockable *){}
+
 bool Docker::postUndock(Dockable *e){
 	for(EntityList::iterator it = el.begin(); it != el.end();){
 		EntityList::iterator next = it;

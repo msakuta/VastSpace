@@ -31,6 +31,21 @@ const unsigned ShipyardDocker::classid = registerClass("ShipyardDocker", Conster
 
 const char *ShipyardDocker::classname()const{return "ShipyardDocker";}
 
+void ShipyardDocker::dock(Dockable *e){
+	st::dock(e);
+	if(getent()->dockingFrigate == e)
+		getent()->dockingFrigate = NULL;
+}
+
+void ShipyardDocker::dockque(Dockable *e){
+	QueryClassCommand com;
+	com.ret = Docker::Fighter;
+	e->command(&com);
+	if(com.ret == Docker::Frigate){
+		static_cast<Shipyard*>(this->e)->dockingFrigate = e;
+	}
+}
+
 
 #define SCARRY_MAX_HEALTH 200000
 #define SCARRY_MAX_SPEED .03
@@ -85,6 +100,7 @@ void Shipyard::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << docker;
 	sc.o << undockingFrigate;
+	sc.o << dockingFrigate;
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.o << turrets[i];
 }
@@ -93,6 +109,7 @@ void Shipyard::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> docker;
 	sc.i >> undockingFrigate;
+	sc.i >> dockingFrigate;
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.i >> turrets[i];
 }
@@ -156,6 +173,15 @@ void Shipyard::clientUpdate(double dt){
 	}
 	else
 		doorphase[0] = approach(doorphase[0], 0., dt * 0.5, 0.);
+
+	if(dockingFrigate){
+		if(dockingFrigate->w != Entity::w)
+			dockingFrigate = NULL;
+		else
+			doorphase[1] = approach(doorphase[1], 1., dt * .5, 0.);
+	}
+	else
+		doorphase[1] = approach(doorphase[1], 0., dt * .5, 0.);
 }
 
 Entity::Props Shipyard::props()const{
@@ -267,11 +293,17 @@ bool ShipyardDocker::undock(Entity::Dockable *pe){
 	return false;
 }
 
-Vec3d ShipyardDocker::getPortPos()const{
-	return Vec3d(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, 0.);
+Vec3d ShipyardDocker::getPortPos(Dockable *e)const{
+	QueryClassCommand com;
+	com.ret = Fighter;
+	e->command(&com);
+	if(com.ret == Fighter)
+		return Vec3d(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, -0.350);
+	else if(com.ret == Frigate)
+		return Vec3d(100. * SCARRY_SCALE, 0, 0.350);
 }
 
-Quatd ShipyardDocker::getPortRot()const{
+Quatd ShipyardDocker::getPortRot(Dockable *)const{
 	return quat_u;
 }
 #endif

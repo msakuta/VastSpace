@@ -812,7 +812,7 @@ void Defender::anim(double dt){
 					if(!pm)
 						p->task = Auto;
 					else{
-						Vec3d target0(pm->getDocker()->getPortPos());
+						Vec3d target0(pm->getDocker()->getPortPos(this));
 						Quatd q2, q1;
 						collideignore = pm;
 
@@ -822,7 +822,7 @@ void Defender::anim(double dt){
 
 						// Runup length
 						if(p->task == Dockque)
-							target0 += pm->getDocker()->getPortRot().trans(Vec3d(0, 0, -.3));
+							target0 += pm->getDocker()->getPortRot(this).trans(Vec3d(0, 0, -.3));
 
 						// Suppress side slips
 						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);

@@ -7,6 +7,7 @@
 #include "serial_util.h"
 //#include "sensor.h"
 #include "motion.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -37,6 +38,13 @@ extern "C"{
 
 Beamer::Beamer(WarField *aw) : st(aw){
 	init();
+
+	if(!aw)
+		return;
+	WarSpace *ws = *aw;
+	if(ws && ws->bdw){
+		buildBody();
+	}
 }
 
 void Beamer::init(){
@@ -78,6 +86,55 @@ void Beamer::unserialize(UnserializeContext &sc){
 	sc.i >> cooldown;
 //	scarry_t *dock;
 	sc.i >> undocktime;
+
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+}
+
+bool Beamer::buildBody(){
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//		ws->bdw->addRigidBody(bbody);
+		return true;
+	}
+	return false;
 }
 
 const char *Beamer::dispname()const{
@@ -131,6 +188,19 @@ void Beamer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = this->pos + rot.trans(src[seatid]);
 }
 
+void Beamer::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+}
+
+void Beamer::leaveField(WarField *w){
+	st::leaveField(w);
+}
 
 void Beamer::anim(double dt){
 	if(!w->operator WarSpace *()){
@@ -305,6 +375,48 @@ void Beamer::anim(double dt){
 						warpdstcs = p2->warpdstcs;
 	/*					break;*/
 					}
+				}
+			}
+			else if(task == sship_dockque || task == sship_dock){
+				Entity *pm = findMother();
+
+				// It is possible that no one is glad to become a mother.
+				if(!pm)
+					task = sship_idle;
+				else{
+					Vec3d target0(mother->getPortPos(this));
+					Quatd q2, q1;
+					collideignore = pm;
+
+					if(bbody){
+						// Mask to avoid collision with the mother
+						bbody->getBroadphaseProxy()->m_collisionFilterMask &= ~2;
+
+						// Suppress side slips
+						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
+						bbody->applyCentralForce(btvc(-sidevelo * mass));
+					}
+
+					// Runup length
+					if(task == sship_dockque)
+						target0 += mother->getPortRot(this).trans(Vec3d(0, 0, .8));
+
+					Vec3d target = pm->rot.trans(target0);
+					target += pm->pos;
+					steerArrival(dt, target, pm->velo, task == sship_dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+					double dist = (target - this->pos).len();
+					if(dist < .01){
+						if(task == sship_dockque){
+							task = sship_dock;
+							mother->dockque(this); // Notify the mother that this Entity is queued for docking.
+						}
+						else{
+							mother->dock(this);
+							return;
+						}
+					}
+//					if(1. < p->throttle)
+//						p->throttle = 1.;
 				}
 			}
 		}

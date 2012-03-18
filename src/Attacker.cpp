@@ -341,10 +341,10 @@ bool AttackerDocker::undock(Entity::Dockable *pe){
 	return false;
 }
 
-Vec3d AttackerDocker::getPortPos()const{
+Vec3d AttackerDocker::getPortPos(Dockable *)const{
 	return Vec3d(0., -0.035, 0.070);
 }
 
-Quatd AttackerDocker::getPortRot()const{
+Quatd AttackerDocker::getPortRot(Dockable *)const{
 	return Quatd(1, 0, 0, 0);
 }

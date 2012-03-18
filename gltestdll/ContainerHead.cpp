@@ -818,7 +818,7 @@ bool DockAI::control(Entity *ch, double dt){
 			Vec3d target = docksite->pos;
 			Docker *docker = docksite->getDocker();
 			if(docker)
-				target = docker->getPortPos();
+				target = docker->getPortPos(ch);
 			Vec3d delta = target - ch->pos;
 			Vec3d parallel = yhat * delta.sp(yhat);
 			Vec3d lateral = delta - parallel;

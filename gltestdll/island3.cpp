@@ -3034,12 +3034,12 @@ void Island3Docker::dock(Dockable *d){
 	}
 }
 
-Vec3d Island3Docker::getPortPos()const{
+Vec3d Island3Docker::getPortPos(Dockable *)const{
 	Vec3d yhat = e->rot.trans(Vec3d(0,1,0));
 	return yhat * (-16. - 3.25) + e->pos;
 }
 
-Quatd Island3Docker::getPortRot()const{
+Quatd Island3Docker::getPortRot(Dockable *)const{
 	return e->rot;
 }
 

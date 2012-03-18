@@ -133,8 +133,8 @@ public:
 	Island3Docker(Island3Entity * = NULL);
 	virtual const char *classname()const;
 	virtual void dock(Dockable *d);
-	virtual Vec3d getPortPos()const;
-	virtual Quatd getPortRot()const;
+	virtual Vec3d getPortPos(Dockable *)const;
+	virtual Quatd getPortRot(Dockable *)const;
 };
 
 

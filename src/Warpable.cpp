@@ -344,9 +344,10 @@ short Warpable::getDefaultCollisionMask()const{
 	return -1;
 }
 
-/* maneuvering spaceships, integrated common responses.
- assumption is that accelerations towards all directions except forward movement
- is a half the maximum accel. */
+/** \brief Definition of how to maneuver spaceships, shared among ship classes deriving Warpable.
+ *
+ * Assumption is that accelerations towards all directions except forward movement
+ * is a half the maximum accel. */
 void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
@@ -492,7 +493,10 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 	direction = inputs.press;
 }
 
-
+/** \brief A steering behavior of arrival, gradually decreases relative velocity to the destination in the way of approaching.
+ *
+ * It's suitable for docking and such, but not very quick way to reach the destination.
+ */
 void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);
 	Vec3d rdr = target - this->pos; // real dr

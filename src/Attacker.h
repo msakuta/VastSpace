@@ -62,7 +62,7 @@ public:
 	static const unsigned classid;
 	const char *classname()const;
 	virtual bool undock(Dockable *);
-	virtual Vec3d getPortPos()const;
-	virtual Quatd getPortRot()const;
+	virtual Vec3d getPortPos(Dockable *)const;
+	virtual Quatd getPortRot(Dockable *)const;
 };
 

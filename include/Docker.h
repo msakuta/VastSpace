@@ -35,13 +35,15 @@ public:
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	void anim(double dt);
 	virtual void dock(Dockable *);
+	/// \brief Called when an Dockable entity is approaching.
+	virtual void dockque(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
 	int enumParadeC(enum ShipClass sc){return paradec[sc]++;}
 	virtual Entity *addent(Entity*);
 	virtual operator Docker*();
 	virtual bool undock(Dockable *);
-	virtual Vec3d getPortPos()const = 0; ///< Retrieves position to dock to
-	virtual Quatd getPortRot()const = 0; ///< Retrieves rotation of the port
+	virtual Vec3d getPortPos(Dockable *)const = 0; ///< Retrieves position to dock to
+	virtual Quatd getPortRot(Dockable *)const = 0; ///< Retrieves rotation of the port
 
 
 	static void init();

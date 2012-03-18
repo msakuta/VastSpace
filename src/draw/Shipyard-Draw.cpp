@@ -46,8 +46,8 @@ void Shipyard::draw(wardraw_t *wd){
 #if 1
 	if(!init) do{
 		model = LoadMQOModel("models/shipyard.mqo");
-		motions[0] = new Motion("models/shipyard_door.mot");
-		motions[1] = new Motion("models/shipyard_door2.mot");
+		motions[0] = LoadMotion("models/shipyard_door.mot");
+		motions[1] = LoadMotion("models/shipyard_door2.mot");
 		init.create(*openGLState);
 	} while(0);
 	if(model){

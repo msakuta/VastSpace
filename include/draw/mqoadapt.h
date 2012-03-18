@@ -10,6 +10,7 @@
 #include "mqo.h"
 
 EXPORT Model *LoadMQOModel(const char *fname, double scale = 1.);
+EXPORT Motion *LoadMotion(const char *fname);
 
 #endif
 

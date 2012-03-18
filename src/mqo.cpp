@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Metasequoia object loading functions and Model class.
+ */
 #include "mqo.h"
 #include "ysdnmmot.h"
 //#include "draw/material.h"
@@ -6,7 +9,6 @@
 #include <clib/c.h>
 #include <clib/mathdef.h>
 #include <string.h>
-#include <stdio.h>
 #include <assert.h>
 #include <ctype.h>
 #include <limits.h>
@@ -21,7 +23,7 @@
 #endif
 
 typedef struct{
-	FILE *fp;
+	std::istream *is;
 	size_t n;
 	char *buf;
 } FPOS;
@@ -31,11 +33,11 @@ static char *ftok(FPOS *fp){
 	int lc;
 	char *s = fp->buf;
 	for(i = 0; i < fp->n; i++){
-		int c;
-		c = getc(fp->fp);
-		if(c == EOF || isspace(c)){
+		char c;
+		fp->is->get(c);
+		if(fp->is->eof() || isspace(c)){
 			if(i == 0 || isspace(lc)){
-				if(c == EOF) return NULL;
+				if(fp->is->eof()) return NULL;
 				lc = c;
 				continue;
 			}
@@ -114,7 +116,7 @@ static int chunk_material(suf_t *ret, FPOS *pfo){
 		char line[512], *cur;
 		struct suf::suf_atr_t *atr = &ret->a[i];
 		double opa = 1.;
-		fgets(line, sizeof line, pfo->fp);
+		pfo->is->getline(line, sizeof line);
 		cur = line;
 		s = quotok(&cur);
 		if(!s || s[0] == '}')
@@ -204,7 +206,8 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	int mirror = 0, mirror_axis = 0;
 	int mirrornv;
 
-	s = fgets(line, sizeof line, pfo->fp);
+	pfo->is->getline(line, sizeof line);
+	s = line;
 	if(!s) return NULL;
 	cur = s;
 	s = quotok(&cur);
@@ -220,7 +223,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	}
 
 	/* forward until vertex chunk */
-	while(fgets(line, sizeof line, pfo->fp) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "vertex"))){
+	while((pfo->is->getline(line, sizeof line), !pfo->is->eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "vertex"))){
 		if(!stricmp(s, "shading"))
 			shading = atoi(quotok(&cur));
 		else if(!stricmp(s, "facet"))
@@ -263,7 +266,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	ret->v = (sufcoord(*)[3])malloc(n * (mirror ? 2 : 1) * sizeof *ret->v);
 
 	i = 0;
-	while(i < n && (s = fgets(line, sizeof line, pfo->fp))){
+	while(i < n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
 		if(!s)
 			return NULL;
 		if(*s == '{')
@@ -284,7 +287,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	}
 
 	/* forward until face chunk */
-	while(fgets(line, sizeof line, pfo->fp) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "face")));
+	while((pfo->is->getline(line, sizeof line), !pfo->is->eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "face")));
 
 	/* multiple face chunks leads to an error. */
 	if(ret->p)
@@ -295,7 +298,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	ret->p = (suf::suf_prim_t**)malloc(n * (mirror ? 2 : 1) * sizeof *ret->p);
 
 	i = 0;
-	while(i <= n && (s = fgets(line, sizeof line, pfo->fp))){
+	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
 		int polys;
 		enum suf::suf_prim_t::suf_elemtype type = suf::suf_prim_t::suf_poly;
 		sufindex verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
@@ -550,7 +553,9 @@ suf_t *LoadMQO_SUF(const char *fname){
 	if(!fp)
 		return NULL;
 
-	fo.fp = fp, fo.n = sizeof buf, fo.buf = buf;
+	std::ifstream is(fname);
+	fo.is = &is;
+	fo.n = sizeof buf, fo.buf = buf;
 
 	/* checking signatures */
 	if(!(s = ftok(&fo)) || stricmp(s, "Metasequoia")) return NULL;
@@ -596,8 +601,7 @@ suf_t *LoadMQO_SUF(const char *fname){
 /// 
 /// \param tex_callback Texture allocator function.
 /// \param tex_callback_data Pointer to buffer that texture objects resides.
-int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **), suftex_t ***tex_callback_data){
-	FILE *fp;
+int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **), suftex_t ***tex_callback_data){
 	char buf[128], *s = NULL, *name = NULL;
 	suf_t **ret = NULL;
 	suf_t *sufatr = NULL;
@@ -605,8 +609,7 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 	FPOS fo;
 	int num = 0;
 
-	fp = fopen(fname, "r");
-	if(!fp)
+	if(is.eof() || !is.good())
 		return 0;
 
 	if(bones)
@@ -614,7 +617,8 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 	if(tex_callback_data)
 		*tex_callback_data = NULL;
 
-	fo.fp = fp, fo.n = sizeof buf, fo.buf = buf;
+	fo.is = &is;
+	fo.n = sizeof buf, fo.buf = buf;
 
 	/* checking signatures */
 	if(!(s = ftok(&fo)) || stricmp(s, "Metasequoia")) return NULL;
@@ -722,26 +726,29 @@ int LoadMQO_Scale(const char *fname, suf_t ***pret, char ***pname, sufcoord scal
 		}
 	} while(s);
 
-	fclose(fp);
-
 	*pret = ret;
 	return num;
 }
 
-int LoadMQO(const char *fname, suf_t ***pret, char ***pname, struct Bone ***bones){
-	return LoadMQO_Scale(fname, pret, pname, 1., bones);
+int LoadMQO(std::istream &is, suf_t ***pret, char ***pname, struct Bone ***bones){
+	return LoadMQO_Scale(is, pret, pname, 1., bones);
 }
 
 
-struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **)){
+struct Model *LoadMQOModelSource(std::istream &is, double scale, void tex_callback(suf_t *, suftex_t **)){
 	struct Model *ret;
 	ret = (struct Model*)malloc(sizeof *ret);
-	ret->n = LoadMQO_Scale(fname, &ret->sufs, NULL, scale, &ret->bones, tex_callback, &ret->tex);
+	ret->n = LoadMQO_Scale(is, &ret->sufs, NULL, scale, &ret->bones, tex_callback, &ret->tex);
 	if(!ret->n){
 		free(ret);
 		return NULL;
 	}
 	return ret;
+}
+
+struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **)){
+	std::ifstream ifs(fname);
+	return LoadMQOModelSource(static_cast<std::istream&>(ifs), scale, tex_callback);
 }
 
 

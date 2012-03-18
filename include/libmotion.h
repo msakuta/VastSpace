@@ -218,6 +218,10 @@ struct Motion{
 
 	Motion(){}
 
+	Motion(std::istream &is){
+		load(is);
+	}
+
 	Motion(const std::string &file){
 		std::ifstream is(file.c_str());
 		if(is.fail())

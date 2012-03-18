@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of WarField and WarSpace.
+ */
 #include "war.h"
 #include "Game.h"
 #include "Universe.h"
@@ -83,7 +86,7 @@ void aaanim(double dt, WarField *w, WarField::EntityList WarField::*li, void (En
 //	Player *pl = w->getPlayer();
 	for(WarField::EntityList::iterator it = (w->*li).begin(); it != (w->*li).end();){
 		WarField::EntityList::iterator next = it;
-		next++;
+		++next;
 		Entity *pe = *it;
 		if(pe) try{
 			// The object can be deleted in the method.
@@ -189,17 +192,15 @@ Entity *WarField::addent(Entity *e){
 	if(e->isTargettable()){
 //		WeakPtr<Entity> *plist = &el;
 		e->w = this;
-//		EnttyList::iterator *next = *plist;
-		WeakPtr<Entity> p(e);
-		WeakPtr<Entity> p2(p);
+		e->addObserver(this);
 		el.push_back(e);
 		e->enterField(this); // This method is called after the object is brought into entity list.
-//		e->addObserver(this); // Add this extra observer reference for object tree in WarSpace.
 	}
 	else{
 //		WeakPtr<Entity> *plist = &bl;
 		e->w = this;
 //		e->next = *plist;
+		e->addObserver(this);
 		bl.push_back(e);
 		e->enterField(this); // This method is called after the object is brought into entity list.
 	}
@@ -212,6 +213,35 @@ Player *WarField::getPlayer(){
 	CoordSys *root = this->cs->findcspath("/");
 	if(root && root->toUniverse())
 		return root->toUniverse()->ppl;
+}
+
+bool WarField::unlink(Observable *o){
+	unlinkList(el, o);
+	unlinkList(bl, o);
+	return true;
+}
+
+bool WarField::handleEvent(Observable *o, ObserveEvent &e){
+	if(InterpretEvent<TransitEvent>(e)){
+		// Just unlink transiting Entities
+		unlink(o);
+		return true;
+	}
+	else
+		return Observer::handleEvent(o, e);
+}
+
+void WarField::unlinkList(EntityList &el, Observable *o){
+	EntityList::iterator it = el.begin();
+	while(it != el.end()){
+		EntityList::iterator next = it;
+		++next;
+		if(*it == o){
+			o->removeObserver(this);
+			el.erase(it);
+		}
+		it = next;
+	}
 }
 
 
@@ -373,9 +403,11 @@ void WarSpace::endframe(){
 }
 
 bool WarSpace::unlink(Observable *o){
-//	st::unlink(o);
-	ot = (otnt*)realloc(ot, ots = 0);
-	otroot = NULL;
+	st::unlink(o);
+
+	// Object tree manages pointers in its own with WeaPtrs.
+//	ot = (otnt*)realloc(ot, ots = 0);
+//	otroot = NULL;
 //	ot_build(this, 0.);
 	return true;
 }

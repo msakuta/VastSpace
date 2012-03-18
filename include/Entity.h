@@ -242,4 +242,34 @@ int EXPORT estimate_pos(Vec3d &ret, const Vec3d &pos, const Vec3d &velo, const V
 
 
 
+
+//-----------------------------------------------------------------------------
+//    Inline Implementation for WarField
+//-----------------------------------------------------------------------------
+
+
+inline SerializeStream &operator<<(SerializeStream &us, const WarField::EntityList &p){
+	us << unsigned(p.size());
+	for(WarField::EntityList::const_iterator it = p.begin(); it != p.end(); it++){
+		Entity *e = *it;
+		us << e;
+	}
+	return us;
+}
+
+inline UnserializeStream &operator>>(UnserializeStream &us, WarField::EntityList &p){
+	unsigned c;
+	p.clear();
+	us >> c;
+	for(unsigned i = 0; i < c; i++){
+		Entity *e;
+		us >> e;
+		p.push_back(e);
+	}
+	return us;
+}
+
+
+
+
 #endif

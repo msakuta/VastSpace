@@ -60,6 +60,7 @@ Entity::~Entity(){
 		if(w && (ws = *w) && ws->bdw)
 			ws->bdw->removeRigidBody(bbody);*/
 		delete bbody;
+		bbody = NULL;
 	}
 	if(game->isServer()){
 		if(game->sqvm){

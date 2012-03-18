@@ -1,6 +1,8 @@
 #ifndef WAR_H
 #define WAR_H
-/// \brief Definition of WarField, WarSpace and its companion classes.
+/** \file
+ * \brief Definition of WarField, WarSpace and its companion classes.
+ */
 #include "serial_util.h"
 #include "Observable.h"
 #include "tent3d.h"
@@ -57,7 +59,7 @@ struct Message;
 /// The latter one is used for storing small ships inside bases or carriers.
 ///
 /// It's usually tied together with a CoordSys.
-class EXPORT WarField : public Serializable{
+class EXPORT WarField : public Serializable, public Observer{
 public:
 
 	/// \brief This internal class is for WarField's member pointer.
@@ -77,7 +79,7 @@ public:
 	};
 
 	/// \brief Type of Entity list.
-	typedef std::list<EntityPtr > EntityList;
+	typedef std::list<Entity*> EntityList;
 
 	/// \brief An internal class that unites behaviors of several types of ObservePtr's.
 	///
@@ -144,12 +146,19 @@ public:
 	template<Entity *WarField::*list> int countEnts()const;
 	int countBullets()const;
 
+	// Observer member function overrides
+	bool unlink(Observable *);
+	bool handleEvent(Observable *, ObserveEvent &);
+
 	CoordSys *cs; ///< redundant pointer to indicate belonging coordinate system
 	Player *pl; ///< Player pointer
 	EntityList el; ///< Local Entity list
 	EntityList bl; ///< bullet list
 	RandomSequence rs; ///< The pseudo-random number sequence generator local to this WarField.
 	double realtime; ///< Time accumulator for this WarField. Some WarFields (or CoordSys') could have different progression of time.
+
+protected:
+	void unlinkList(EntityList &el, Observable *o);
 };
 
 class btRigidBody;
@@ -199,23 +208,6 @@ public:
 	static int g_otdrawflags;
 };
 
-inline SerializeStream &operator<<(SerializeStream &us, const WarField::EntityList &p){
-	us << unsigned(p.size());
-	for(WarField::EntityList::const_iterator it = p.begin(); it != p.end(); it++)
-		us << *it;
-	return us;
-}
 
-inline UnserializeStream &operator>>(UnserializeStream &us, WarField::EntityList &p){
-	unsigned c;
-	p.clear();
-	us >> c;
-	for(unsigned i = 0; i < c; i++){
-		Entity *e;
-		us >> e;
-		p.push_back(e);
-	}
-	return us;
-}
 
 #endif

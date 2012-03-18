@@ -116,7 +116,7 @@ void Docker::dock(Dockable *e){
 	TransitEvent te(this);
 	e->notifyEvent(te);
 
-	e->w = this;
+	e->leaveField(e->w);
 	addent(e);
 }
 
@@ -126,7 +126,7 @@ void Docker::dockque(Dockable *){}
 bool Docker::postUndock(Dockable *e){
 	for(EntityList::iterator it = el.begin(); it != el.end();){
 		EntityList::iterator next = it;
-		next++;
+		++next;
 		if(*it == e){
 			undockque.push_back(*it);
 			el.erase(it);
@@ -144,6 +144,7 @@ bool Docker::postUndock(Dockable *e){
 Entity *Docker::addent(Entity *e){
 	e->w = this;
 //	e->next = el;
+	e->addObserver(this);
 	el.push_back(e);
 	return e;
 }
@@ -153,8 +154,10 @@ Docker::operator Docker *(){return this;}
 bool Docker::undock(Dockable *e){
 	EntityList::iterator it = undockque.begin();
 	while(it != undockque.end()){
-		if(*it == e)
+		if(*it == e){
+			e->removeObserver(this);
 			it = undockque.erase(it);
+		}
 		else
 			it++;
 	}
@@ -321,6 +324,20 @@ static int cmd_dockmenu(int argc, char *argv[], void *pv){
 
 void Docker::init(){
 	CmdAddParam("dockmenu", cmd_dockmenu, &application);
+}
+
+bool Docker::unlink(Observable *o){
+	unlinkList(el, o);
+	// Make sure the super class processes the event too.
+	return st::unlink(o);
+}
+
+bool Docker::handleEvent(Observable *o, ObserveEvent &e){
+	if(InterpretEvent<TransitEvent>(e)){
+		return unlink(o);
+	}
+	else
+		return st::handleEvent(o, e);
 }
 
 #else

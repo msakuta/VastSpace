@@ -45,6 +45,10 @@ public:
 	virtual Vec3d getPortPos(Dockable *)const = 0; ///< Retrieves position to dock to
 	virtual Quatd getPortRot(Dockable *)const = 0; ///< Retrieves rotation of the port
 
+	// Observer member function overrides
+	bool unlink(Observable *);
+	bool handleEvent(Observable *, ObserveEvent &);
+
 
 	static void init();
 

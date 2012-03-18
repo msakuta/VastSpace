@@ -20,8 +20,11 @@ bool Observer::unlink(Observable *){
 bool Observer::handleEvent(Observable *o, ObserveEvent &e){return false;}
 
 Observable::~Observable(){
-	for(ObserverList::iterator it = observers.begin(); it != observers.end(); it++){
+	for(ObserverList::iterator it = observers.begin(); it != observers.end();){
+		ObserverList::iterator next = it;
+		++next;
 		it->first->unlink(this);
+		it = next;
 	}
 }
 
@@ -59,7 +62,7 @@ void Observable::notifyEvent(ObserveEvent &e){
 		// The iterator pointed object can be cleared in it->handleEvent, so we
 		// first reserve iterator to the next and then call handleEvent.
 		ObserverList::iterator next = it;
-		next++;
+		++next;
 		it->first->handleEvent(this, e);
 		it = next;
 	}

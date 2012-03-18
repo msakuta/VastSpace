@@ -59,13 +59,10 @@ void Beamer::cache_bridge(void){
 	}*/
 }
 
-suf_t *Beamer::sufbase = NULL;
-const double Beamer::sufscale = BEAMER_SCALE;
+//const double Beamer::sufscale = BEAMER_SCALE;
 
 void Beamer::draw(wardraw_t *wd){
 	Beamer *const p = this;
-//	static int init = 0;
-//	static suftex_t *pst;
 	static OpenGLState::weak_ptr<bool> init;
 	static Model *model = NULL;
 	if(!w)
@@ -79,22 +76,10 @@ void Beamer::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / frigate_mn.capacity);
 
 	if(!init) do{
-//		suftexparam_t stp, stp2;
-/*		beamer_s.sufbase = LZUC(lzw_assault);*/
-/*		beamer_s.sufbase = LZUC(lzw_beamer);*/
-		sufbase = CallLoadSUF("models/beamer.bin");
-		if(!sufbase) break;
 		model = LoadMQOModel("models/beamer.mqo");
-		CacheSUFMaterials(sufbase);
-//		cache_bridge();
-//		pst = AllocSUFTex(sufbase);
-/*		beamer_hb[1].rot[2] = sin(M_PI / 3.);
-		beamer_hb[1].rot[3] = cos(M_PI / 3.);
-		beamer_hb[2].rot[2] = sin(-M_PI / 3.);
-		beamer_hb[2].rot[3] = cos(-M_PI / 3.);*/
 		init.create(*openGLState);
 	} while(0);
-	if(sufbase){
+	if(model){
 		double scale = BEAMER_SCALE;
 		Mat4d mat;
 

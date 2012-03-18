@@ -8,6 +8,7 @@
 
 
 struct hitbox;
+struct hardpoint_static;
 
 /* List of spaceship tasks that all types of ship share. */
 enum sship_task{
@@ -82,6 +83,10 @@ public:
 	};
 protected:
 	virtual void init();
+
+	/// \brief Initializes hitboxes and hardpoints by Squirrel script.
+	bool sq_init(const SQChar *scriptFile, std::vector<hitbox> *hitboxes = NULL, std::vector<hardpoint_static> *hardpoints = NULL);
+
 private:
 	static const maneuve mymn;
 };

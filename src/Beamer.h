@@ -14,8 +14,7 @@ protected:
 //	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	float undocktime;
-	static suf_t *sufbase;
-	static const double sufscale;
+//	static const double sufscale;
 public:
 	Beamer(){init();}
 	Beamer(WarField *w);

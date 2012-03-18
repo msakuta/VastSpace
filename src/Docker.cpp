@@ -167,6 +167,21 @@ bool Docker::undock(Dockable *e){
 	return true;
 }
 
+bool Docker::unlink(Observable *o){
+	unlinkList(el, o);
+	// Make sure the super class processes the event too.
+	return st::unlink(o);
+}
+
+bool Docker::handleEvent(Observable *o, ObserveEvent &e){
+	if(InterpretEvent<TransitEvent>(e)){
+		return unlink(o);
+	}
+	else
+		return st::handleEvent(o, e);
+}
+
+
 /// \brief The release hook of Entity that clears the weak pointer.
 static SQInteger sqh_release(SQUserPointer p, SQInteger){
 	((WeakPtr<Docker>*)p)->~WeakPtr<Docker>();
@@ -324,20 +339,6 @@ static int cmd_dockmenu(int argc, char *argv[], void *pv){
 
 void Docker::init(){
 	CmdAddParam("dockmenu", cmd_dockmenu, &application);
-}
-
-bool Docker::unlink(Observable *o){
-	unlinkList(el, o);
-	// Make sure the super class processes the event too.
-	return st::unlink(o);
-}
-
-bool Docker::handleEvent(Observable *o, ObserveEvent &e){
-	if(InterpretEvent<TransitEvent>(e)){
-		return unlink(o);
-	}
-	else
-		return st::handleEvent(o, e);
 }
 
 #else

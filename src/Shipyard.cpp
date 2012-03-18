@@ -9,6 +9,7 @@
 #include "Sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -110,6 +111,14 @@ void Shipyard::unserialize(UnserializeContext &sc){
 	sc.i >> docker;
 	sc.i >> undockingFrigate;
 	sc.i >> dockingFrigate;
+
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.i >> turrets[i];
 }
@@ -150,6 +159,63 @@ void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = this->pos + trot.trans(Vec3d(0, 0, 1.));
 		rot = trot;
 	}
+}
+
+bool Shipyard::buildBody(){
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < nhitboxes; i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//		ws->bdw->addRigidBody(bbody);
+		return true;
+	}
+	return false;
+}
+
+
+void Shipyard::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 2, ~2);
+	}
+}
+
+void Shipyard::leaveField(WarField *w){
+	st::leaveField(w);
 }
 
 void Shipyard::anim(double dt){
@@ -246,11 +312,11 @@ struct hitbox Shipyard::hitboxes[] = {
 	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
 	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),*/
-	hitbox(Vec3d(0., 0., .050), Quatd(0,0,0,1), Vec3d(.3, .2, .500)),
+	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)),
 /*	{{0.105, 0., .0}, {0,0,0,1}, {.100, .2, .050}},*/
-	hitbox(Vec3d(-.105, 0., -.700), Quatd(0,0,0,1), Vec3d(.095, .020, .250)),
+/*	hitbox(Vec3d(-.105, 0., -.700), Quatd(0,0,0,1), Vec3d(.095, .020, .250)),
 	hitbox(Vec3d( .100, 0., -.640), Quatd(0,0,0,1), Vec3d(.100, .060, .180)),
-	hitbox(Vec3d( .100, .0, -.600), Quatd(0,0,0,1), Vec3d(.040, .260, .040)),
+	hitbox(Vec3d( .100, .0, -.600), Quatd(0,0,0,1), Vec3d(.040, .260, .040)),*/
 };
 const int Shipyard::nhitboxes = numof(Shipyard::hitboxes);
 

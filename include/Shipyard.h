@@ -46,6 +46,8 @@ public:
 	virtual double hitradius()const;
 	virtual double maxenergy()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	virtual void enterField(WarField *target);
+	virtual void leaveField(WarField *w);
 	virtual void anim(double dt);
 	virtual void clientUpdate(double);
 	virtual Props props()const;
@@ -79,6 +81,8 @@ protected:
 	static Motion *motions[2];
 
 	virtual void doneBuild(Entity *);
+
+	bool buildBody();
 
 	friend class ShipyardDocker;
 };

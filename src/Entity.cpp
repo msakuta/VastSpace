@@ -376,6 +376,40 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 	return 1;
 }
 
+static void setpos(Entity *e, const Vec3d &v){
+	e->setPosition(&v);
+}
+
+static void setvelo(Entity *e, const Vec3d &v){
+	e->setPosition(NULL, NULL, &v);
+}
+
+static void setrot(Entity *e, const Quatd &v){
+	e->setPosition(NULL, &v);
+}
+
+static void setomg(Entity *e, const Vec3d &v){
+	e->setPosition(NULL, NULL, NULL, &v);
+}
+
+/// \brief Squirrel closure to set Entity::bbody related parameters.
+/// \param Class can be Entity
+/// \param MType can be Vec3d or Quatd.
+/// \param setter function to set value natively.
+/// \param sq_refobj function to return an object contained in a Squirrel instance.
+template<typename Class, typename MType, void setter(Class *p, const MType &), Class *sq_refobj(HSQUIRRELVM v, SQInteger idx)>
+SQInteger sqf_setintrinsic3(HSQUIRRELVM v){
+	try{
+		Class *p = sq_refobj(v, 1);
+		SQIntrinsic<MType> r;
+		r.getValue(v, 2);
+		setter(p, r.value);
+		return 0;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
 
 
 
@@ -387,11 +421,13 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>));
 	register_closure(v, _SC("constructor"), sqf_Entity_constructor);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos>, sq_refobj >);
-	register_closure(v, _SC("setpos"), sqf_setintrinsic2<Entity, Vec3d, &Entity::pos, sq_refobj>);
+	register_closure(v, _SC("setpos"), sqf_setintrinsic3<Entity, Vec3d, setpos, sq_refobj>);
 	register_closure(v, _SC("getvelo"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::velo>, sq_refobj >);
-	register_closure(v, _SC("setvelo"), sqf_setintrinsic2<Entity, Vec3d, &Entity::velo, sq_refobj>);
+	register_closure(v, _SC("setvelo"), sqf_setintrinsic3<Entity, Vec3d, setvelo, sq_refobj>);
 	register_closure(v, _SC("getrot"), sqf_getintrinsic2<Entity, Quatd, membergetter<Entity, Quatd, &Entity::rot>, sq_refobj >);
-	register_closure(v, _SC("setrot"), sqf_setintrinsic2<Entity, Quatd, &Entity::rot, sq_refobj>);
+	register_closure(v, _SC("setrot"), sqf_setintrinsic3<Entity, Quatd, setrot, sq_refobj>);
+	register_closure(v, _SC("getomg"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::omg>, sq_refobj >);
+	register_closure(v, _SC("setomg"), sqf_setintrinsic3<Entity, Vec3d, setomg, sq_refobj>);
 	register_closure(v, _SC("_get"), sqf_Entity_get);
 	register_closure(v, _SC("_set"), sqf_Entity_set);
 	register_closure(v, _SC("_tostring"), sqf_Entity_tostring, 1);

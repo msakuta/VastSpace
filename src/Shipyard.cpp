@@ -403,5 +403,5 @@ Quatd ShipyardDocker::getPortRot(Dockable *)const{
 int Shipyard::popupMenu(PopupMenu &list){return st::popupMenu(list);}
 void Shipyard::draw(WarDraw*){}
 void Shipyard::drawtra(WarDraw*){}
-virtual void Shipyard::drawOverlay(wardraw_t *){}
+void Shipyard::drawOverlay(wardraw_t *){}
 #endif

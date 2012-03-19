@@ -53,6 +53,7 @@ public:
 	virtual Props props()const;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(wardraw_t *);
 	virtual int popupMenu(PopupMenu &list);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int armsCount()const;
@@ -75,8 +76,10 @@ protected:
 	static int nhardpoints;
 
 	static const maneuve mymn;
-	static hitbox hitboxes[];
-	static const int nhitboxes;
+	static std::vector<hitbox> hitboxes;
+
+	static HSQOBJECT sq_drawOverlayProc;
+	static unsigned long disp;
 
 	static Motion *motions[2];
 

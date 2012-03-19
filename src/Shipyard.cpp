@@ -13,6 +13,9 @@ extern "C"{
 #include <clib/cfloat.h>
 }
 #include <sqstdio.h>
+#ifndef DEDICATED
+#include <gl/GL.h>
+#endif
 
 /* some common constants that can be used in static data definition. */
 #define SQRT_2 1.4142135623730950488016887242097
@@ -161,12 +164,43 @@ void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Shipyard::buildBody(){
+	class DrawOverlayProcess : public SqInitProcess{
+	public:
+//		HSQOBJECT &ho;
+//		DrawOverlayProcess(HSQOBJECT &ho) : ho(ho){}
+		unsigned long &disp;
+		DrawOverlayProcess(unsigned long &disp) : disp(disp){}
+		virtual void process(HSQUIRRELVM v){
+#ifndef DEDICATED // Do nothing in the server.
+			sq_pushstring(v, _SC("drawOverlay"), -1); // root string
+			if(SQ_FAILED(sq_get(v, -2))) // root obj
+				throw SQFError(_SC("drawOverlay not found"));
+			sq_pushroottable(v);
+			glNewList(disp = glGenLists(1), GL_COMPILE);
+			SQRESULT res = sq_call(v, 1, 0, SQTrue);
+			glEndList();
+			if(SQ_FAILED(res))
+				throw SQFError(_SC("drawOverlay not found"));
+//			if(SQ_FAILED(sq_getstackobj(v, -1, &ho)))
+//				throw SQFError(_SC("drawOverlay could not be aquired"));
+//			sq_addref(v, &ho);
+			sq_poptop(v);
+#endif
+		}
+	};
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			std::vector<struct hitbox> hitboxes;
-			sq_init(_SC("models/Shipyard.nut"), &hitboxes);
+			std::vector<SqInitProcess*> procs;
+			HitboxProcess hp(hitboxes);
+			procs.push_back(&hp);
+			DrawOverlayProcess dop(disp);
+			procs.push_back(&dop);
+			sq_init(_SC("models/Shipyard.nut"), procs);
+			// Assign dummy value if the file is not available.
+			if(hitboxes.empty())
+				hitboxes.push_back(hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)));
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
@@ -268,7 +302,7 @@ int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 			return 1000; /* something quite unlikely to reach */
 	}
 #endif
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;
@@ -308,11 +342,9 @@ const Shipyard::maneuve Shipyard::mymn = {
 
 const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
 
-struct hitbox Shipyard::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)),
-};
-const int Shipyard::nhitboxes = numof(Shipyard::hitboxes);
-
+struct std::vector<hitbox> Shipyard::hitboxes;
+HSQOBJECT Shipyard::sq_drawOverlayProc;
+unsigned long Shipyard::disp = 0;
 
 void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();
@@ -371,4 +403,5 @@ Quatd ShipyardDocker::getPortRot(Dockable *)const{
 int Shipyard::popupMenu(PopupMenu &list){return st::popupMenu(list);}
 void Shipyard::draw(WarDraw*){}
 void Shipyard::drawtra(WarDraw*){}
+virtual void Shipyard::drawOverlay(wardraw_t *){}
 #endif

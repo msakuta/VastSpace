@@ -101,7 +101,10 @@ bool Beamer::buildBody(){
 		if(!shape){
 			shape = new btCompoundShape();
 			std::vector<hitbox> hitboxes;
-			sq_init(_SC("models/Beamer.nut"), &hitboxes);
+			std::vector<SqInitProcess*> procs;
+			HitboxProcess hp(hitboxes);
+			procs.push_back(&hp);
+			sq_init(_SC("models/Beamer.nut"), procs);
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;

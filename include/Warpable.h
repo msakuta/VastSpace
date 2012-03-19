@@ -84,8 +84,27 @@ public:
 protected:
 	virtual void init();
 
+	class SqInitProcess{
+	public:
+		virtual void process(HSQUIRRELVM v) = 0;
+	};
+
 	/// \brief Initializes hitboxes and hardpoints by Squirrel script.
-	bool sq_init(const SQChar *scriptFile, std::vector<hitbox> *hitboxes = NULL, std::vector<hardpoint_static> *hardpoints = NULL);
+	bool sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &procs);
+
+	class HitboxProcess : public SqInitProcess{
+	public:
+		std::vector<hitbox> &hitboxes;
+		HitboxProcess(std::vector<hitbox> &hitboxes) : hitboxes(hitboxes){}
+		virtual void process(HSQUIRRELVM);
+	};
+
+	class HardPointProcess : public SqInitProcess{
+	public:
+		std::vector<hardpoint_static> &hardpoints;
+		HardPointProcess(std::vector<hardpoint_static> &hardpoints) : hardpoints(hardpoints){}
+		virtual void process(HSQUIRRELVM);
+	};
 
 private:
 	static const maneuve mymn;

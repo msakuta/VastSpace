@@ -9,6 +9,8 @@
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
 #include "glw/popup.h"
+#include "sqadapt.h"
+#include "Game.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -176,4 +178,13 @@ void Shipyard::drawtra(wardraw_t *wd){
 			mturret_drawtra(&p->turrets[i], pt, wd);*/
 	}
 
+}
+
+void Shipyard::drawOverlay(WarDraw *wd){
+	glCallList(disp);
+/*	HSQUIRRELVM v = game->sqvm;
+	StackReserver sr(v);
+	sq_pushobject(v, sq_drawOverlayProc);
+	sq_pushroottable(v);
+	sq_call(v, 1, 0, SQTrue);*/
 }

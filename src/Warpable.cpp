@@ -1141,7 +1141,13 @@ int Warpable::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 void Warpable::post_warp(){
 }
 
-bool Warpable::sq_init(const SQChar *scriptFile, std::vector<hitbox> *hitboxes, std::vector<hardpoint_static> *hardpoints){
+/// \brief The function that is called to initialize static customizable variables to a specific Entity class.
+///
+/// Be aware that this function can be called in both the client game and the server game.
+/// It depends on initialization order. Specifically, dedicated server always invoke in the server game,
+/// while the Windows client invokes in the client game if it's connected to a server.
+/// As for a standalone server, it's not determined.
+bool Warpable::sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &procs){
 	try{
 		HSQUIRRELVM v = game->sqvm;
 		StackReserver sr(v);
@@ -1151,60 +1157,8 @@ bool Warpable::sq_init(const SQChar *scriptFile, std::vector<hitbox> *hitboxes, 
 		sq_pushroottable(v); // root
 		sq_setdelegate(v, -2);
 		if(SQ_SUCCEEDED(sqa_dofile(game->sqvm, scriptFile, 0, 1))){
-			if(hitboxes){
-				sq_pushstring(v, _SC("hitbox"), -1); // root string
-				if(SQ_FAILED(sq_get(v, -2))) // root obj
-					throw SQFError(_SC("hitbox not found"));
-				sq_pushstring(v, _SC("len"), -1); // root obj "len"
-				if(SQ_FAILED(sq_get(v, -2))) // root obj obj.len
-					throw SQFError(_SC("Shipyard_hitbox has no member named len"));
-				sq_push(v, -2); // root obj obj.len obj
-				if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))) // root obj obj.len integer
-					throw SQFError(_SC("Shipyard_hitbox.len() failed"));
-				SQInteger len;
-				if(SQ_FAILED(sq_getinteger(v, -1, &len))) // root obj obj.len
-					throw SQFError(_SC("Shipyard_hitbox.len() returns non-integer"));
-				sq_pop(v, 2); // root obj
-				for(int i = 0; i < len; i++){
-					sq_pushinteger(v, i); // root obj i
-					if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
-						throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "] get failed");
-					Vec3d org;
-					Quatd rot;
-					Vec3d sc;
-
-					{
-						sq_pushinteger(v, 0); // root obj obj[i] 0
-						if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][0]
-							throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][0] get failed");
-						SQVec3d r;
-						r.getValue(v, -1);
-						org = r.value;
-						sq_poptop(v); // root obj obj[i]
-					}
-
-					{
-						sq_pushinteger(v, 1); // root obj obj[i] 1
-						if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i][1]
-							throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][1] get failed");
-						SQQuatd r;
-						r.getValue(v, -1);
-						rot = r.value;
-						sq_poptop(v); // root obj obj[i]
-					}
-					{
-						sq_pushinteger(v, 2); // root obj obj[i] 2
-						if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][2]
-							throw SQFError(gltestp::dstring("Shipyard_hitbox.len[") << i << "][2] get failed");
-						SQVec3d r;
-						r.getValue(v, -1);
-						sc = r.value;
-						sq_poptop(v); // root obj obj[i]
-					}
-					hitboxes->push_back(hitbox(org, rot, sc));
-					sq_poptop(v); // root obj
-				}
-			}
+			for(int i = 0; i < procs.size(); i++)
+				procs[i]->process(v);
 		}
 		double d = TimeMeasLap(&tm);
 		CmdPrint(gltestp::dstring() << scriptFile << " total: " << d << " sec");
@@ -1212,4 +1166,61 @@ bool Warpable::sq_init(const SQChar *scriptFile, std::vector<hitbox> *hitboxes, 
 	catch(SQFError &e){
 		CmdPrint(gltestp::dstring() << scriptFile << " error: " << e.what());
 	}
+	return true;
+}
+
+void Warpable::HitboxProcess::process(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("hitbox"), -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		throw SQFError(_SC("hitbox not found"));
+	sq_pushstring(v, _SC("len"), -1); // root obj "len"
+	if(SQ_FAILED(sq_get(v, -2))) // root obj obj.len
+		throw SQFError(_SC("hitbox has no member named len"));
+	sq_push(v, -2); // root obj obj.len obj
+	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))) // root obj obj.len integer
+		throw SQFError(_SC("hitbox.len() failed"));
+	SQInteger len;
+	if(SQ_FAILED(sq_getinteger(v, -1, &len))) // root obj obj.len
+		throw SQFError(_SC("hitbox.len() returns non-integer"));
+	sq_pop(v, 2); // root obj
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			throw SQFError(gltestp::dstring("hitbox.len[") << i << "] get failed");
+		Vec3d org;
+		Quatd rot;
+		Vec3d sc;
+
+		{
+			sq_pushinteger(v, 0); // root obj obj[i] 0
+			if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][0]
+				throw SQFError(gltestp::dstring("hitbox.len[") << i << "][0] get failed");
+			SQVec3d r;
+			r.getValue(v, -1);
+			org = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+
+		{
+			sq_pushinteger(v, 1); // root obj obj[i] 1
+			if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i][1]
+				throw SQFError(gltestp::dstring("hitbox.len[") << i << "][1] get failed");
+			SQQuatd r;
+			r.getValue(v, -1);
+			rot = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		{
+			sq_pushinteger(v, 2); // root obj obj[i] 2
+			if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i][2]
+				throw SQFError(gltestp::dstring("hitbox.len[") << i << "][2] get failed");
+			SQVec3d r;
+			r.getValue(v, -1);
+			sc = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		hitboxes.push_back(hitbox(org, rot, sc));
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
 }

@@ -144,6 +144,7 @@ const SQUserPointer tt_Entity = const_cast<char*>("Entity");
 const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
 const SQUserPointer tt_Game = const_cast<char*>("Game");
 
+static void register_const(HSQUIRRELVM v, int var, const SQChar *vname);
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
@@ -744,6 +745,38 @@ SQInteger sqf_glVertex(HSQUIRRELVM v){
 	return 0;
 }
 
+SQInteger sqf_glVertex2d(HSQUIRRELVM v){
+	try{
+		GLfloat f[2];
+		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
+			return SQ_ERROR;
+		glVertex2d(f[0], f[1]);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
+SQInteger sqf_glScaled(HSQUIRRELVM v){
+	try{
+		GLfloat f[3];
+		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 4, &f[2])))
+			return SQ_ERROR;
+		glScalef(f[0], f[1], f[2]);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
 SQInteger sqf_glTranslate(HSQUIRRELVM v){
 	try{
 		SQVec3d sqv;
@@ -909,14 +942,18 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 #ifdef _WIN32
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));
+	register_global_func(v, sqf_glVertex2d, _SC("glVertex2d"));
 	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
 	register_global_func(v, sqf_adapter0<glPushMatrix>, _SC("glPushMatrix"));
 	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
 	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
+	register_global_func(v, sqf_glScaled, _SC("glScaled"));
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
-	register_global_var(v, GL_LINES, _SC("GL_LINES"));
+	register_const(v, GL_LINES, _SC("GL_LINES"));
+	register_const(v, GL_LINE_STRIP, _SC("GL_LINE_STRIP"));
+	register_const(v, GL_LINE_LOOP, _SC("GL_LINE_LOOP"));
 #endif
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
@@ -1143,6 +1180,14 @@ void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname){
     sq_pushinteger(v,var);
     sq_createslot(v,-3); 
     sq_pop(v,1); //pops the root table    
+}
+
+void register_const(HSQUIRRELVM v, int var, const SQChar *vname){
+    sq_pushconsttable(v);
+    sq_pushstring(v,vname,-1);
+    sq_pushinteger(v,var);
+    sq_createslot(v,-3); 
+    sq_pop(v,1); //pops the const table    
 }
 
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams, const SQChar *params){

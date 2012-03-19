@@ -548,6 +548,7 @@ const Builder::BuildStatic Beamer::builds = {
 double Beamer::maxhealth()const{return BEAMER_HEALTH;}
 
 #ifdef DEDICATED
-void Beamer::draw(wardraw_t *wd){}
-void Beamer::drawtra(wardraw_t *wd){}
+void Beamer::draw(WarDraw *){}
+void Beamer::drawtra(WarDraw *){}
+void Beamer::drawOverlay(WarDraw *){}
 #endif

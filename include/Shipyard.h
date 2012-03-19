@@ -78,8 +78,7 @@ protected:
 	static const maneuve mymn;
 	static std::vector<hitbox> hitboxes;
 
-	static HSQOBJECT sq_drawOverlayProc;
-	static unsigned long disp;
+	static GLuint disp;
 
 	static Motion *motions[2];
 

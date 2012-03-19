@@ -206,3 +206,6 @@ void Beamer::drawtra(wardraw_t *wd){
 #endif
 }
 
+void Beamer::drawOverlay(WarDraw *){
+	glCallList(disp);
+}

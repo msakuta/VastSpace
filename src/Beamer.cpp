@@ -34,6 +34,7 @@ extern "C"{
 #define BEAMER_SHIELDRAD .09
 
 
+GLuint Beamer::disp = 0;
 
 
 Beamer::Beamer(WarField *aw) : st(aw){
@@ -104,6 +105,8 @@ bool Beamer::buildBody(){
 			std::vector<SqInitProcess*> procs;
 			HitboxProcess hp(hitboxes);
 			procs.push_back(&hp);
+			DrawOverlayProcess dop(disp);
+			procs.push_back(&dop);
 			sq_init(_SC("models/Beamer.nut"), procs);
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;

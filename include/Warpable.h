@@ -5,6 +5,11 @@
 #include "CoordSys.h"
 #include "war.h"
 #include "shield.h"
+#ifndef DEDICATED
+#include <gl/GL.h>
+#else
+typedef unsigned int GLuint;
+#endif
 
 
 struct hitbox;
@@ -106,6 +111,12 @@ protected:
 		virtual void process(HSQUIRRELVM);
 	};
 
+	class DrawOverlayProcess : public SqInitProcess{
+	public:
+		GLuint &disp;
+		DrawOverlayProcess(GLuint &disp) : disp(disp){}
+		virtual void process(HSQUIRRELVM v);
+	};
 private:
 	static const maneuve mymn;
 };

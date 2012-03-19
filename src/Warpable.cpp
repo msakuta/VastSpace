@@ -1224,3 +1224,18 @@ void Warpable::HitboxProcess::process(HSQUIRRELVM v){
 	}
 	sq_poptop(v); // root
 }
+
+void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v){
+#ifndef DEDICATED // Do nothing in the server.
+	sq_pushstring(v, _SC("drawOverlay"), -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		throw SQFError(_SC("drawOverlay not found"));
+	sq_pushroottable(v);
+	glNewList(disp = glGenLists(1), GL_COMPILE);
+	SQRESULT res = sq_call(v, 1, 0, SQTrue);
+	glEndList();
+	if(SQ_FAILED(res))
+		throw SQFError(_SC("drawOverlay not found"));
+	sq_poptop(v);
+#endif
+}

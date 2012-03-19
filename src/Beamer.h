@@ -14,6 +14,7 @@ protected:
 //	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	float undocktime;
+	static GLuint disp;
 //	static const double sufscale;
 public:
 	Beamer(){init();}
@@ -33,6 +34,7 @@ public:
 	virtual void anim(double);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	virtual void drawOverlay(WarDraw *);
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	virtual bool undock(Docker*);

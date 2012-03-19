@@ -164,30 +164,6 @@ void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Shipyard::buildBody(){
-	class DrawOverlayProcess : public SqInitProcess{
-	public:
-//		HSQOBJECT &ho;
-//		DrawOverlayProcess(HSQOBJECT &ho) : ho(ho){}
-		unsigned long &disp;
-		DrawOverlayProcess(unsigned long &disp) : disp(disp){}
-		virtual void process(HSQUIRRELVM v){
-#ifndef DEDICATED // Do nothing in the server.
-			sq_pushstring(v, _SC("drawOverlay"), -1); // root string
-			if(SQ_FAILED(sq_get(v, -2))) // root obj
-				throw SQFError(_SC("drawOverlay not found"));
-			sq_pushroottable(v);
-			glNewList(disp = glGenLists(1), GL_COMPILE);
-			SQRESULT res = sq_call(v, 1, 0, SQTrue);
-			glEndList();
-			if(SQ_FAILED(res))
-				throw SQFError(_SC("drawOverlay not found"));
-//			if(SQ_FAILED(sq_getstackobj(v, -1, &ho)))
-//				throw SQFError(_SC("drawOverlay could not be aquired"));
-//			sq_addref(v, &ho);
-			sq_poptop(v);
-#endif
-		}
-	};
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
@@ -343,8 +319,7 @@ const Shipyard::maneuve Shipyard::mymn = {
 const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
 
 struct std::vector<hitbox> Shipyard::hitboxes;
-HSQOBJECT Shipyard::sq_drawOverlayProc;
-unsigned long Shipyard::disp = 0;
+GLuint Shipyard::disp = 0;
 
 void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();

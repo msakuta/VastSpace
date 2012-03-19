@@ -449,7 +449,7 @@ void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
 				// If desired steering direction is differing from real velocity,
 				// compensate sliding velocity with side thrusts.
 				if(!btvelo.isZero()){
-					if(btvelo.dot(btdirection) < .0)
+					if(btvelo.dot(btdirection) < -DBL_EPSILON)
 						btmainThrust = -btvelo.normalized() * mn->accel * .5;
 					else{
 						btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
@@ -1171,18 +1171,13 @@ bool Warpable::sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &pr
 
 void Warpable::HitboxProcess::process(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("hitbox"), -1); // root string
+
+	// Not defining a hitbox is probably not intended, since any rigid body must have a spatial body.
 	if(SQ_FAILED(sq_get(v, -2))) // root obj
 		throw SQFError(_SC("hitbox not found"));
-	sq_pushstring(v, _SC("len"), -1); // root obj "len"
-	if(SQ_FAILED(sq_get(v, -2))) // root obj obj.len
-		throw SQFError(_SC("hitbox has no member named len"));
-	sq_push(v, -2); // root obj obj.len obj
-	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))) // root obj obj.len integer
-		throw SQFError(_SC("hitbox.len() failed"));
-	SQInteger len;
-	if(SQ_FAILED(sq_getinteger(v, -1, &len))) // root obj obj.len
-		throw SQFError(_SC("hitbox.len() returns non-integer"));
-	sq_pop(v, 2); // root obj
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(_SC("hitbox size could not be aquired"));
 	for(int i = 0; i < len; i++){
 		sq_pushinteger(v, i); // root obj i
 		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
@@ -1231,11 +1226,104 @@ void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v){
 	if(SQ_FAILED(sq_get(v, -2))) // root obj
 		throw SQFError(_SC("drawOverlay not found"));
 	sq_pushroottable(v);
+	
+	// Compile the function into display list
 	glNewList(disp = glGenLists(1), GL_COMPILE);
 	SQRESULT res = sq_call(v, 1, 0, SQTrue);
 	glEndList();
+
 	if(SQ_FAILED(res))
-		throw SQFError(_SC("drawOverlay not found"));
+		throw SQFError(_SC("drawOverlay call error"));
 	sq_poptop(v);
+#endif
+}
+
+void Warpable::NavlightsProcess::process(HSQUIRRELVM v){
+#ifndef DEDICATED // Do nothing in the server.
+	sq_pushstring(v, _SC("navlights"), -1); // root string
+
+	// Not defining Navlights is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		return;
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(_SC("navlights size could not be aquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		Navlight n;
+
+		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
+			SQVec3d r;
+			r.getValue(v, -1);
+			n.pos = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign default.
+			n.pos = Vec3d(0,0,0);
+
+		sq_pushstring(v, _SC("color"), -1); // root obj obj[i] "color"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].color
+			for(int j = 0; j < 4; j++){
+				static const SQFloat defaultColor[4] = {1., 1., 1., 1.};
+				sq_pushinteger(v, j); // root obj obj[i] obj[i].color j
+				if(SQ_FAILED(sq_get(v, -2))){ // root obj obj[i] obj[i].color obj[i].color[j]
+					n.color[j] = defaultColor[j];
+					continue;
+				}
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+					n.color[j] = defaultColor[j];
+				else
+					n.color[j] = f;
+				sq_poptop(v);
+			}
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign default.
+			n.color = Vec4f(1,0,0,1);
+
+		sq_pushstring(v, _SC("radius"), -1); // root obj obj[i] "radius"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].radius
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				n.radius = f;
+			else
+				n.radius = 0.01;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign default.
+			n.radius = 0.01;
+
+		sq_pushstring(v, _SC("period"), -1); // root obj obj[i] "radius"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].radius
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				n.period = f;
+			else
+				n.period = 1.;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign default.
+			n.period = 1.;
+
+		sq_pushstring(v, _SC("phase"), -1); // root obj obj[i] "phase"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].phase
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				n.phase = f;
+			else
+				n.phase = 0.;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign default.
+			n.phase = 0.;
+
+		navlights.push_back(n);
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
 #endif
 }

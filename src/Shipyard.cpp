@@ -173,6 +173,8 @@ bool Shipyard::buildBody(){
 			procs.push_back(&hp);
 			DrawOverlayProcess dop(disp);
 			procs.push_back(&dop);
+			NavlightsProcess np(navlights);
+			procs.push_back(&np);
 			sq_init(_SC("models/Shipyard.nut"), procs);
 			// Assign dummy value if the file is not available.
 			if(hitboxes.empty())
@@ -318,8 +320,9 @@ const Shipyard::maneuve Shipyard::mymn = {
 
 const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
 
-struct std::vector<hitbox> Shipyard::hitboxes;
+std::vector<hitbox> Shipyard::hitboxes;
 GLuint Shipyard::disp = 0;
+std::vector<Shipyard::Navlight> Shipyard::navlights;
 
 void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();

@@ -117,6 +117,22 @@ protected:
 		DrawOverlayProcess(GLuint &disp) : disp(disp){}
 		virtual void process(HSQUIRRELVM v);
 	};
+
+	/// \brief Static information for navigation lights.
+	struct Navlight{
+		Vec3d pos; ///< Position of this navlight relative to origin of the Entity.
+		Vec4f color; ///< Color values in RGBA
+		float radius; ///< Apparent radius of the light.
+		float period; ///< Period of light cycle
+		float phase; ///< Phase offset in the period
+	};
+
+	class NavlightsProcess : public SqInitProcess{
+	public:
+		std::vector<Navlight> &navlights;
+		NavlightsProcess(std::vector<Navlight> &navlights) : navlights(navlights){}
+		virtual void process(HSQUIRRELVM v);
+	};
 private:
 	static const maneuve mymn;
 };

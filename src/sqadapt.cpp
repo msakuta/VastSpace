@@ -70,6 +70,12 @@ template<> const SQUserPointer *const SQIntrinsic<Quatd>::typetag = &tt_Quatd;
 template<> const SQChar *const SQIntrinsic<Vec3d>::classname = _SC("Vec3d");
 template<> const SQUserPointer *const SQIntrinsic<Vec3d>::typetag = &tt_Vec3d;
 
+namespace sqa{
+extern const SQUserPointer tt_Vec4f;
+}
+template<> const SQChar *const SQIntrinsic<Vec4f>::classname = _SC("Vec4f");
+template<> const SQUserPointer *const SQIntrinsic<Vec4f>::typetag = &tt_Vec4f;
+
 static const SQChar *CONSOLE_COMMANDS = _SC("console_commands");
 
 int sqa_console_command(int argc, char *argv[], int *retval){
@@ -140,6 +146,7 @@ static HSQUIRRELVM &v = g_sqvm;
 // The Squirrel type tags can be any pointer that never overlap.
 const SQUserPointer tt_Vec3d = const_cast<char*>("Vec3d");
 const SQUserPointer tt_Quatd = const_cast<char*>("Quatd");
+const SQUserPointer tt_Vec4f = const_cast<char*>("Vec4f");
 const SQUserPointer tt_Entity = const_cast<char*>("Entity");
 const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
 const SQUserPointer tt_Game = const_cast<char*>("Game");

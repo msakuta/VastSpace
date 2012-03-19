@@ -2,6 +2,28 @@ hitbox <- [
 	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.3, 0.2, 0.500)]
 ]
 
+local scale = 0.0010;
+
+navlights <- [
+	{pos = Vec3d(0, 520 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(0, -520 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(140 * scale, 370 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(-140 * scale, 370 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(140 * scale, -370 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(-140 * scale, -370 * scale, 220 * scale), period = 2},
+]
+
+if(true){
+	local cuts = 32;
+	for(local i = 0; i < cuts; i++)
+		navlights.append({
+			pos = Vec3d(0.50 * cos(i * 2 * PI / cuts), 0.50 * sin(i * 2 * PI / cuts)),
+			color = [i.tofloat() / cuts, 0.5, 0, 1],
+			radius = 0.1,
+			period = i * 0.01 + 1,
+		});
+}
+
 function drawOverlay(){
 	local cuts = 12;
 

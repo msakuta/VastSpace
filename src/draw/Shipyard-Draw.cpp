@@ -117,39 +117,33 @@ void Shipyard::drawtra(wardraw_t *wd){
 	glEnd();
 
 	{
-		int i;
-		static const avec3_t lights[] = {
-			{0, 520 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-			{0, -520 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-			{140 * SCARRY_SCALE, 370 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-			{-140 * SCARRY_SCALE, 370 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-			{140 * SCARRY_SCALE, -370 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-			{-140 * SCARRY_SCALE, -370 * SCARRY_SCALE, 220 * SCARRY_SCALE},
-		};
-		avec3_t pos;
-		double rad = .01;
-		double t;
-		GLubyte col[4] = {255, 31, 31, 255};
+		double rad = 1.;
 		random_sequence rs;
 		init_rseq(&rs, (unsigned long)this);
 
 		/* color calculation of static navlights */
-		t = fmod(wd->vw->viewtime + drseq(&rs) * 2., 2.);
-		if(t < 1.){
-			rad *= (t + 1.) / 2.;
-			col[3] *= t;
-		}
-		else{
-			rad *= (2. - t + 1.) / 2.;
-			col[3] *= 2. - t;
-		}
-		for(i = 0 ; i < numof(lights); i++){
-			mat4vp3(pos, mat, lights[i]);
-			gldSpriteGlow(pos, rad, col, wd->vw->irot);
+		double t0 = drseq(&rs);
+		for(int i = 0 ; i < navlights.size(); i++){
+			Navlight &nv = navlights[i];
+			double t = fmod(wd->vw->viewtime + t0 + nv.phase, double(nv.period)) / nv.period;
+			double luminance = 1.;
+			if(t < 0.5){
+				rad = t + 1. / 2.;
+				luminance = t * 2.;
+			}
+			else{
+				rad = 1. - t + 1. / 2.;
+				luminance = 2. - t * 2.;
+			}
+			GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
+			gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
 		}
 
+		double t = fmod(wd->vw->viewtime + t0, 2.);
 		/* runway lights */
 		if(1 < scale * .01){
+			Vec3d pos;
+			GLubyte col[4];
 			col[0] = 0;
 			col[1] = 191;
 			col[2] = 255;

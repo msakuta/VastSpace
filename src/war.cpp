@@ -153,19 +153,6 @@ bool WarField::EntityPtr::handleEvent(Observable *o, ObserveEvent &e){
 	return false;
 }
 
-static void endframe_int(WarField *w, WarField::EntityList WarField::*li){
-	WarField::EntityList::iterator it = (w->*li).begin();
-	for(; it != (w->*li).end();) if(!*it)
-		it = (w->*li).erase(it);
-	else
-		it++;
-}
-
-void WarField::endframe(){
-	endframe_int(this, &WarField::el);
-	endframe_int(this, &WarField::bl);
-}
-
 bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
 	return false;
 }
@@ -396,10 +383,6 @@ void WarSpace::clientUpdate(double dt){
 	TRYBLOCK(AnimTeline3D(gibs, dt));
 	TRYBLOCK(AnimTefpol3D(tepl, dt));
 #endif
-}
-
-void WarSpace::endframe(){
-	st::endframe();
 }
 
 bool WarSpace::unlink(Observable *o){

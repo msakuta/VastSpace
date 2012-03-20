@@ -128,7 +128,6 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void postframe(); ///< Gives an opportunity to clear pointers to objects being destroyed
-	virtual void endframe(); ///< Actually destructs invalid objects.
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
@@ -185,7 +184,6 @@ public:
 //	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual void endframe();
 	virtual bool unlink(Observable *o);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

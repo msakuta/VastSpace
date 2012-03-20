@@ -591,8 +591,6 @@ void CoordSys::postframe(){
 		cs->postframe();
 }
 void CoordSys::endframe(){
-	if(w)
-		w->endframe();
 	vwvalid = 0;
 	CoordSys *cs;
 	for(cs = children; cs;){

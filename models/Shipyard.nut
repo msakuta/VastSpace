@@ -11,16 +11,25 @@ navlights <- [
 	{pos = Vec3d(-140 * scale, 370 * scale, 220 * scale), period = 2},
 	{pos = Vec3d(140 * scale, -370 * scale, 220 * scale), period = 2},
 	{pos = Vec3d(-140 * scale, -370 * scale, 220 * scale), period = 2},
+	{pos = Vec3d(-200 * scale, -180 * scale,  500 * scale), period = 2},
+	{pos = Vec3d( 200 * scale, -180 * scale,  500 * scale), period = 2},
+	{pos = Vec3d(-200 * scale,  180 * scale,  500 * scale), period = 2},
+	{pos = Vec3d( 200 * scale,  180 * scale,  500 * scale), period = 2},
+	{pos = Vec3d(-200 * scale, -180 * scale, -500 * scale), period = 2},
+	{pos = Vec3d( 200 * scale, -180 * scale, -500 * scale), period = 2},
+	{pos = Vec3d(-200 * scale,  180 * scale, -500 * scale), period = 2},
+	{pos = Vec3d( 200 * scale,  180 * scale, -500 * scale), period = 2},
 ]
 
-if(true){
+if(false){
 	local cuts = 32;
 	for(local i = 0; i < cuts; i++)
 		navlights.append({
 			pos = Vec3d(0.50 * cos(i * 2 * PI / cuts), 0.50 * sin(i * 2 * PI / cuts)),
-			color = [i.tofloat() / cuts, 0.5, 0, 1],
-			radius = 0.1,
-			period = i * 0.01 + 1,
+			color = [i.tofloat() / cuts, 1.0, 0, 1],
+			radius = 0.2,
+			period = 1,
+			phase = i.tofloat() / cuts,
 		});
 }
 

@@ -139,32 +139,34 @@ void Shipyard::drawtra(wardraw_t *wd){
 			gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
 		}
 
-		double t = fmod(wd->vw->viewtime + t0, 2.);
-		/* runway lights */
-		if(1 < scale * .01){
-			Vec3d pos;
-			GLubyte col[4];
-			col[0] = 0;
-			col[1] = 191;
-			col[2] = 255;
-			for(i = 0 ; i <= 10; i++){
-				avec3_t pos0;
-				pos0[0] = 180 * SCARRY_SCALE;
-				pos0[1] = 60 * SCARRY_SCALE;
-				pos0[2] = (i * -460 + (10 - i) * -960) * SCARRY_SCALE / 10;
-				rad = .005 * (1. - fmod(i / 10. + t / 2., 1.));
-				col[3] = 255/*rad * 255 / .01*/;
-				mat4vp3(pos, mat, pos0);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
-				pos0[0] = 20 * SCARRY_SCALE;
-				mat4vp3(pos, mat, pos0);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
-				pos0[1] = -60 * SCARRY_SCALE;
-				mat4vp3(pos, mat, pos0);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
-				pos0[0] = 180 * SCARRY_SCALE;
-				mat4vp3(pos, mat, pos0);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
+		if(undockingFrigate){
+			double t = fmod(wd->vw->viewtime + t0, 2.);
+			/* runway lights */
+			if(1 < scale * .01){
+				Vec3d pos;
+				GLubyte col[4];
+				col[0] = 0;
+				col[1] = 191;
+				col[2] = 255;
+				for(int i = 0 ; i <= 10; i++){
+					avec3_t pos0;
+					pos0[0] = 180 * SCARRY_SCALE;
+					pos0[1] = 60 * SCARRY_SCALE;
+					pos0[2] = (i * -460 + (10 - i) * -960) * SCARRY_SCALE / 10;
+					rad = .005 * (1. - fmod(i / 10. + t / 2., 1.));
+					col[3] = 255/*rad * 255 / .01*/;
+					mat4vp3(pos, mat, pos0);
+					gldSpriteGlow(pos, rad, col, wd->vw->irot);
+					pos0[0] = 20 * SCARRY_SCALE;
+					mat4vp3(pos, mat, pos0);
+					gldSpriteGlow(pos, rad, col, wd->vw->irot);
+					pos0[1] = -60 * SCARRY_SCALE;
+					mat4vp3(pos, mat, pos0);
+					gldSpriteGlow(pos, rad, col, wd->vw->irot);
+					pos0[0] = 180 * SCARRY_SCALE;
+					mat4vp3(pos, mat, pos0);
+					gldSpriteGlow(pos, rad, col, wd->vw->irot);
+				}
 			}
 		}
 

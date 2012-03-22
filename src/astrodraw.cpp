@@ -1194,6 +1194,8 @@ void TexSphere::draw(const Viewer *vw){
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), fragmentShaderName[i]))
 							throw 2;
 					shader = glsl_register_program(&shaders.front(), vertexShaderName.size() + fragmentShaderName.size());
+					for(unsigned i = 0; i < shaders.size(); i++)
+						glDeleteShader(shaders[i]);
 					if(!shader)
 						throw 3;
 				}
@@ -1214,6 +1216,8 @@ void TexSphere::draw(const Viewer *vw){
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), cloudFragmentShaderName[i]))
 							throw 2;
 					cloudShader = glsl_register_program(&shaders.front(), shaders.size());
+					for(unsigned i = 0; i < shaders.size(); i++)
+						glDeleteShader(shaders[i]);
 					if(!shader)
 						throw 3;
 				}

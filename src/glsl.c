@@ -110,7 +110,7 @@ GLuint glsl_register_program(const GLuint *shaders, int nshaders){
 
 	for(i = 0; i < nshaders; i++){
 	    glAttachShader(prog, shaders[i]);
-	    glDeleteShader(shaders[i]); // Is this really necessary?
+//	    glDeleteShader(shaders[i]); // Is this really necessary? The caller should be responsible for destructing them.
 	}
 
     glLinkProgram(prog);

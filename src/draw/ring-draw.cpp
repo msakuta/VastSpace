@@ -351,6 +351,8 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 			if(!glsl_load_shader(vtx, "shaders/ringshadow.vs") || !glsl_load_shader(frg, "shaders/ringshadow.fs"))
 				break;
 			shader = glsl_register_program(shaders, 2);
+			glDeleteShader(vtx);
+			glDeleteShader(frg);
 			if(!shader)
 				break;
 			texRingLoc = glGetUniformLocation(shader, "texRing");

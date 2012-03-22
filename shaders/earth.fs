@@ -19,63 +19,20 @@ varying vec3 texa1; // texture axis component 1
 //#include "shaders/earth_cloud_noise.fs"
 vec4 cloudfunc(samplerCube texture, vec3 v, float z);
 
-#extension GL_EXT_gpu_shader4 : enable
+//#extension GL_EXT_gpu_shader4 : enable
 
 bool waving;
 
-vec3 innoise(vec3 v, int level){
-	vec3 ret = vec3(0,0,0);
-	float f[4];
-	f[0] = mod(v[0], 65536.);
-	f[1] = mod(v[1], 65536.);
-	f[2] = mod(v[2], 65536.);
-	f[3] = mod(time / pow(2., float(level)), 65536.);
-	for(int x = 0; x < 2; x++){
-		float fx = x == 0 ? 1. - mod(f[0], 1.) : mod(f[0], 1.);
-		for(int y = 0; y < 2; y++){
-			float fy = y == 0 ? 1. - mod(f[1], 1.) : mod(f[1], 1.);
-			for(int z = 0; z < 2; z++){
-				float fz = z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.);
-				for(int t = 0; t < 2; t++){
-					uint z0 =
-						(532516436u * (uint(f[0]) + uint(x))) ^
-						(974594270u * (uint(f[1]) + uint(y))) ^
-						(442532635u * (uint(f[2]) + uint(z))) ^
-						(waving ? 342943251u * (uint(f[3]) + uint(t)) : 0u) /*^
-						(545389780u * uint(i))*/;
-					for(int i = 0; i < 3; i++){
-			//			uint w = 0u;
-						z0 = 36969u * (z0 & 65535u) + (z0 >> 16u);
-			//			uint w1 = 18000u * (w & 65535u) + (w >> 16u);
-
-						// I cannot believe the compiler cannot optimize the inside-loop variables.
-						ret[i] +=
-							fx *
-		//					(x == 0 ? 1. - mod(f[0], 1.) : mod(f[0], 1.)) *
-							fy *
-		//					(y == 0 ? 1. - mod(f[1], 1.) : mod(f[1], 1.)) *
-							fz *
-		//					(z == 0 ? 1. - mod(f[2], 1.) : mod(f[2], 1.)) *
-							(t == 0 ? 1. - mod(f[3], 1.) : mod(f[3], 1.)) *
-							float(z0 & 65535u) / 65536.;
-					}
-				}
-			}
-		}
-	}
-	return ret;
-}
-
 vec3 anoise1(vec3 v){
-	return innoise(v, 0);
+	return noise3(v);
 }
 
 vec3 anoise2(vec3 v){
-	return 2. * anoise1(v * 16.) + innoise(v, 1);
+	return 2. * anoise1(v * 16.) + noise3(v);
 }
 
 vec3 anoise3(vec3 v){
-	return 1. * anoise2(v * 16.) + innoise(v, 2);
+	return 1. * anoise2(v * 16.) + noise3(v);
 }
 
 void main (void)

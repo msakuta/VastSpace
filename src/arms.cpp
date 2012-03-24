@@ -1,38 +1,32 @@
+/** \file
+ * \brief Implementation of ArmBase derived classes.
+ */
 #include "arms.h"
 #include "Player.h"
 #include "astro.h"
-#include "Viewer.h"
 #include "argtok.h"
 //#include "entity_p.h"
 #include "antiglut.h"
 #include "cmd.h"
-#include "Bullet.h"
 //#include "aim9.h"
 //#include "suflist.h"
 //#include "yssurf.h"
 //#include "walk.h"
 #include "Bullet.h"
 #include "serial_util.h"
-#include "draw/material.h"
 #include "Missile.h"
 #include "EntityCommand.h"
-#include "draw/effects.h"
 #include "motion.h"
-#include "draw/WarDraw.h"
-#include "draw/ShaderBind.h"
-#include "glsl.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
+#include <clib/mathdef.h>
 #include <clib/cfloat.h>
-#include <clib/gl/gldraw.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
 #include <clib/zip/UnZip.h>
 #include <clib/zip/UniformLoader.h>
 }
 #include <limits.h>
-#include <gl/glext.h>
+
 
 const char *hardpoint_static::classname()const{
 	return "hardpoint_static";
@@ -127,93 +121,6 @@ void ArmBase::align(){
 	this->rot = base->rot * hp->rot;
 }
 
-void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4d &irot, struct random_sequence *prs, const Vec3d &viewer){
-	int i;
-	glPushMatrix();
-	gldTranslate3dv(pos);
-/*	glRotated(deg_per_rad * (*pyr)[1], 0., -1., 0.);
-	glRotated(deg_per_rad * (*pyr)[0], 1., 0., 0.);
-	glRotated(deg_per_rad * (*pyr)[2], 0., 0., -1.);*/
-	glMultMatrixd(rot);
-	glScaled(rad, rad, rad);
-	for(i = 0; i < 4; i++){
-		Vec3d pz;
-		glRotated(90, 0., 0., 1.);
-		glBegin(GL_TRIANGLE_FAN);
-		glColor4ub(255,255,31,255);
-		pz[0] = drseq(prs) * .25 + .5;
-		pz[1] = drseq(prs) * .3 - .15;
-		pz[2] = -drseq(prs) * .25;
-		glVertex3dv(pz);
-		glVertex3d(0., 0., 0.);
-		glColor4ub(255,0,0,0);
-		pz[0] = drseq(prs) * .25 + .5;
-		pz[1] = drseq(prs) * .15 + .15;
-		pz[2] = -drseq(prs) * .25;
-		glVertex3dv(pz);
-		pz[0] = drseq(prs) * .25 + .75;
-		pz[1] = drseq(prs) * .3 - .15;
-		pz[2] = -drseq(prs) * .15 - .25;
-		glVertex3dv(pz);
-		pz[0] = drseq(prs) * .25 + .5;
-		pz[1] = -drseq(prs) * .15 - .15;
-		pz[2] = -drseq(prs) * .25;
-		glVertex3dv(pz);
-		glColor4ub(255,255,31,255);
-		glVertex3d(0., 0., 0.);
-		glEnd();
-	}
-	glPopMatrix();
-/*	{
-		struct gldBeamsData bd;
-		amat4_t mat;
-		avec3_t nh, nh0 = {0., 0., -.002}, v;
-		pyrmat(*pyr, &mat);
-		MAT4VP3(nh, mat, nh0);
-		bd.cc = 0;
-		bd.solid = 0;
-		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
-		VECADD(v, *pos, nh);
-		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
-		VECADDIN(v, nh);
-		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
-	}*/
-/*	{
-		static int init = 0;
-		static GLuint list;
-		struct gldBeamsData bd;
-		amat4_t mat;
-		avec3_t nh, nh0 = {0., 0., -.002}, v;
-		if(!init){
-			GLbyte buf[4][4] = {
-				{255,255,255,0},
-				{255,255,255,64},
-				{255,255,255,191},
-				{255,255,255,255}
-			};
-			glNewList(list = glGenLists(1), GL_COMPILE);
-			glEnable(GL_TEXTURE_1D);
-			glDisable(GL_BLEND);
-			glTexImage1D(GL_TEXTURE_1D, 0, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-			glEndList();
-			init = 1;
-		}
-		glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
-		glCallList(list);
-		pyrmat(*pyr, &mat);
-		MAT4VP3(nh, mat, nh0);
-		bd.cc = 0;
-		bd.solid = 0;
-			glEnable(GL_TEXTURE_1D);
-		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
-		VECADD(v, *pos, nh);
-		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
-		VECADDIN(v, nh);
-		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
-		glPopAttrib();
-	}*/
-}
 
 
 
@@ -226,8 +133,6 @@ void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4
 #define MTURRETROTSPEED (.4*M_PI)
 #define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
 
-suf_t *MTurret::suf_turret = NULL;
-suf_t *MTurret::suf_barrel = NULL;
 
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
@@ -270,55 +175,6 @@ const char *MTurret::dispname()const{
 void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
 	pos = this->pos + rot.trans(Vec3d(.0, .005, .015));
-}
-
-void MTurret::draw(wardraw_t *wd){
-	// Viewing volume culling
-	if(wd->vw->gc->cullFrustum(pos, .03))
-		return;
-	// Scale too small culling
-	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
-		return;
-	MTurret *a = this;
-	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/turretz1.bin");
-	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("models/barrelz1.bin");
-
-	{
-		const double bscale = MTURRET_SCALE;
-		static const GLfloat rotaxis2[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
-
-		if(const ShaderBind *sb = wd->getShaderBind())
-			glUniform1i(sb->textureEnableLoc, 0);
-		glPushMatrix();
-		gldTranslate3dv(pos);
-		gldMultQuat(rot);
-		glRotated(deg_per_rad * a->py[1], 0., 1., 0.);
-		glPushMatrix();
-		gldScaled(bscale);
-		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_turret, SUF_ATR, NULL);
-		glPopMatrix();
-/*		if(5 < scale)*/{
-			const Vec3d pos(0., .00075, -0.0015);
-			gldTranslate3dv(pos);
-			glRotated(deg_per_rad * a->py[0], 1., 0., 0.);
-			gldTranslate3dv(-pos);
-			gldScaled(bscale);
-			glMultMatrixf(rotaxis2);
-			DrawSUF(suf_barrel, SUF_ATR, NULL);
-		}
-		glPopMatrix();
-		if(const ShaderBind *sb = wd->getShaderBind())
-			glUniform1i(sb->textureEnableLoc, 1);
-	}
 }
 
 static const double mturret_ofs[3] = {0., 0., -.001};
@@ -513,35 +369,6 @@ void MTurret::postframe(){
 		base = NULL;
 }
 
-
-void MTurret::drawtra(wardraw_t *wd){
-	Entity *pb = base;
-	double bscale = MTURRET_SCALE, tscale = .00002;
-	if(this->mf){
-		struct random_sequence rs;
-		Mat4d mat2, mat, rot;
-		Vec3d pos, const pos0(0, 0, -.008);
-		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
-		this->transform(mat);
-		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(0., .001, -0.002);
-		mat = mat2.rotx(this->py[0]);
-		pos = mat.vp3(pos0);
-		rot = mat;
-		rot.vec3(3).clear();
-		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);
-
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .1, fi = 1. - mf / .2;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .075 * fi, .02 * fi);
-		glPopAttrib();
-	}
-}
-
 double MTurret::hitradius()const{
 	return .005;
 }
@@ -599,6 +426,11 @@ bool MTurret::command(EntityCommand *com){
 	return false;
 }
 
+#ifdef DEDICATED
+void MTurret::draw(WarDraw *){}
+void MTurret::drawtra(WarDraw *){}
+#endif
+
 
 
 
@@ -636,91 +468,6 @@ void GatlingTurret::anim(double dt){
 	st::anim(dt);
 }
 
-void GatlingTurret::draw(wardraw_t *wd){
-	// Viewing volume culling
-	if(wd->vw->gc->cullFrustum(pos, .03))
-		return;
-	// Scale too small culling
-	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
-		return;
-	static suf_t *suf_turret = NULL;
-	static suf_t *suf_barrel = NULL;
-	static suf_t *suf_barrels = NULL;
-	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/turretg1.bin");
-	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("models/barrelg1.bin");
-	if(!suf_barrels)
-		suf_barrels = CallLoadSUF("models/barrelsg1.bin");
-
-	{
-		const double bscale = MTURRET_SCALE;
-		static const GLfloat rotaxis2[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
-
-		if(const ShaderBind *sb = wd->getShaderBind())
-			glUniform1i(sb->textureEnableLoc, 0);
-		glPushMatrix();
-		gldTranslate3dv(pos);
-		gldMultQuat(rot);
-		glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-		glPushMatrix();
-		gldScaled(bscale);
-		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_turret, SUF_ATR, NULL);
-		glPopMatrix();
-/*		if(5 < scale)*/{
-			gldScaled(bscale);
-			gldTranslate3dv(barrelpos);
-			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-			gldTranslate3dv(-barrelpos);
-			glMultMatrixf(rotaxis2);
-			DrawSUF(suf_barrel, SUF_ATR, NULL);
-			gldTranslate3dv(barrelpos);
-			glRotated(barrelrot * deg_per_rad/*w->war_time() * 360. / reloadtime() / 3*/, 0, 0, 1);
-			gldTranslate3dv(-barrelpos);
-			DrawSUF(suf_barrels, SUF_ATR, NULL);
-		}
-		glPopMatrix();
-		if(const ShaderBind *sb = wd->getShaderBind())
-			glUniform1i(sb->textureEnableLoc, 1);
-	}
-}
-
-void GatlingTurret::drawtra(wardraw_t *wd){
-	Entity *pb = base;
-	double bscale = MTURRET_SCALE;
-	if(this->mf){
-		struct random_sequence rs;
-		Mat4d mat2, mat, rot;
-		Vec3d pos, const muzzlepos(0, .003 * .5, -.0134 * .5);
-		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
-		this->transform(mat);
-		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(barrelpos * bscale);
-		mat = mat2.rotx(this->py[0]);
-		mat.translatein(-barrelpos * bscale);
-		pos = mat.vp3(muzzlepos);
-		rot = mat;
-		rot.vec3(3).clear();
-		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
-
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .075 * 2, fi = 1. - mf / .075;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .03 * fi, .01 * fi);
-		glPopAttrib();
-	}
-}
-
 float GatlingTurret::reloadtime()const{
 	return .1;
 }
@@ -754,6 +501,10 @@ void GatlingTurret::tryshoot(){
 	}
 }
 
+#ifdef DEDICATED
+void GatlingTurret::draw(WarDraw *){}
+void GatlingTurret::drawtra(WarDraw *){}
+#endif
 
 
 
@@ -801,84 +552,6 @@ void LTurret::anim(double dt){
 	blowback *= exp(-dt);
 }
 
-void LTurret::draw(wardraw_t *wd){
-	// Viewing volume culling
-	if(wd->vw->gc->cullFrustum(pos, .03))
-		return;
-	// Scale too small culling
-	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
-		return;
-	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
-	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/lturret.bin");
-	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("models/lbarrel.bin");
-
-	const double bscale = .001;
-	static const GLfloat rotaxis2[16] = {
-		-1,0,0,0,
-		0,1,0,0,
-		0,0,-1,0,
-		0,0,0,1,
-	};
-
-	if(const ShaderBind *sb = wd->getShaderBind())
-		glUniform1i(sb->textureEnableLoc, 0);
-	glPushMatrix();
-	gldTranslate3dv(pos);
-	gldMultQuat(rot);
-	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-	glPushMatrix();
-	gldScaled(bscale);
-	glMultMatrixf(rotaxis2);
-	DrawSUF(suf_turret, SUF_ATR, NULL);
-	glPopMatrix();
-	for(int i = 0; i < 2; i++){
-		Vec3d pos(.005 * (i * 2 - 1), .005, -0.0025);
-		glPushMatrix();
-		gldTranslate3dv(pos);
-		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-		glTranslated(0, 0, blowback);
-		gldScaled(bscale);
-		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_barrel, SUF_ATR, NULL);
-		glPopMatrix();
-	}
-	glPopMatrix();
-	if(const ShaderBind *sb = wd->getShaderBind())
-		glUniform1i(sb->textureEnableLoc, 1);
-}
-
-void LTurret::drawtra(wardraw_t *wd){
-	Entity *pb = base;
-	double bscale = 1;
-	if(this->mf) for(int i = 0; i < 2; i++){
-		struct random_sequence rs;
-		Mat4d mat2, mat, rot;
-		Vec3d pos, const barrelpos(.005 * (i * 2 - 1), .005, -.0025), const muzzlepos(0, .0, -.030 + blowback);
-		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
-		this->transform(mat);
-		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(barrelpos * bscale);
-		mat = mat2.rotx(this->py[0]);
-//		mat.translatein(-barrelpos * bscale);
-		pos = mat.vp3(muzzlepos);
-		rot = mat;
-		rot.vec3(3).clear();
-//		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
-
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .3 * 2, fi = 1. - mf / .3;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .200 * fi, .060 * fi);
-		glPopAttrib();
-	}
-}
-
 float LTurret::reloadtime()const{return 4.;}
 float LTurret::bulletlife()const{return 5.;}
 
@@ -906,35 +579,7 @@ void LTurret::tryshoot(){
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = direction * bulletspeed() + this->velo;
 		pz->rot = qrot;
-
-		if(WarSpace *ws = *w) for(int j = 0; j < 3; j++){
-			Vec3d pos;
-//			COLOR32 col = 0;
-			pos[0] = .02 * (drseq(&w->rs) - .5);
-			pos[1] = .02 * (drseq(&w->rs) - .5);
-			pos[2] = .02 * (drseq(&w->rs) - .5);
-/*			col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
-			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 95,0,0);
-			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 80,0);
-			col |= COLOR32RGBA(0,0,0,191);*/
-			Vec3d smokevelo = direction * .02 * (drseq(&w->rs) + .5) + this->velo;
-			smokevelo[0] += .02 * (drseq(&w->rs) - .5);
-			smokevelo[1] += .02 * (drseq(&w->rs) - .5);
-			smokevelo[2] += .02 * (drseq(&w->rs) - .5);
-			static smokedraw_swirl_data sdata = {COLOR32RGBA(127,95,80,191), true};
-			AddTelineCallback3D(ws->tell, pos + pz->pos, smokevelo, .015, quat_u, Vec3d(0, 0, 2. * M_PI * (drseq(&w->rs) - .5)),
-				vec3_000, smokedraw_swirl, (void*)&sdata, TEL3_INVROTATE | TEL3_NOLINE, 1.5);
-		}
-		if(WarSpace *ws = *w) for(int j = 0; j < 15; j++){
-			double triangle = drseq(&w->rs);
-			triangle += drseq(&w->rs); // Triangular distributed random value
-			Vec3d smokevelo = direction * .1 * triangle + this->velo;
-			smokevelo[0] += .05 * (drseq(&w->rs) - .5);
-			smokevelo[1] += .05 * (drseq(&w->rs) - .5);
-			smokevelo[2] += .05 * (drseq(&w->rs) - .5);
-			AddTelineCallback3D(ws->tell, pz->pos, smokevelo, .0004, quat_u, vec3_000,
-				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5 + .25 * (drseq(&w->rs) - .5));
-		}
+		shootEffect(pz, direction);
 	}
 	this->cooldown += reloadtime();
 	this->mf += .3;
@@ -947,6 +592,11 @@ double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, con
 	return pt2->hitradius() / .01;
 }
 
+#ifdef DEDICATED
+void LTurret::draw(WarDraw *){}
+void LTurret::drawtra(WarDraw *){}
+void LTurret::shootEffect(Bullet *, const Vec3d &){}
+#endif
 
 
 
@@ -986,98 +636,6 @@ void LMissileTurret::anim(double dt){
 		py[0] = approach(py[0], 0., dt, 0.);
 		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 //		py[1] = approach(py[1], 0., dt, 0.);
-	}
-}
-
-void LMissileTurret::draw(wardraw_t *wd){
-	// Viewing volume culling
-	if(wd->vw->gc->cullFrustum(pos, .03))
-		return;
-	// Scale too small culling
-	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
-		return;
-	static OpenGLState::weak_ptr<suf_t *> suf_turret = NULL, suf_barrel = NULL;
-	static suftex_t *pst_turret, *pst_barrel;
-	double scale;
-	if(!suf_turret){
-		suf_turret.create(*openGLState);
-		*suf_turret = CallLoadSUF("models/missile_launcher.bin");
-		if(*suf_turret){
-			CacheSUFMaterials(*suf_turret);
-			pst_turret = gltestp::AllocSUFTex(*suf_turret);
-		}
-	}
-	if(!suf_barrel){
-		suf_barrel.create(*openGLState);
-		*suf_barrel = CallLoadSUF("models/missile_launcher_barrel.bin");
-		if(*suf_barrel){
-			CacheSUFMaterials(*suf_barrel);
-			pst_barrel = gltestp::AllocSUFTex(*suf_barrel);
-		}
-	}
-
-/*	static const GLfloat rotaxis2[16] = {
-		-1,0,0,0,
-		0,1,0,0,
-		0,0,-1,0,
-		0,0,0,1,
-	};*/
-
-	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT);
-	glPushMatrix();
-	gldTranslate3dv(pos);
-	gldMultQuat(rot);
-	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-	glPushMatrix();
-	gldScaled(bscale);
-//	glMultMatrixf(rotaxis2);
-	glScalef(-1,1,-1);
-	if(*suf_turret)
-		DecalDrawSUF(*suf_turret, SUF_ATR, NULL, pst_turret, NULL, NULL);
-	glPopMatrix();
-	if(*suf_barrel){
-		const Vec3d pos = Vec3d(0, 200, 0) * deploy;
-		Vec3d joint = Vec3d(0, 120, 60);
-		gldScaled(bscale);
-		gldTranslate3dv(pos + joint);
-		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-		gldTranslate3dv(-joint);
-//		glMultMatrixf(rotaxis2);
-		glScalef(-1,1,-1);
-		DecalDrawSUF(*suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
-	}
-	glPopMatrix();
-	glPopAttrib();
-}
-
-void LMissileTurret::drawtra(wardraw_t *wd){
-	Entity *pb = base;
-//	double bscale = 1;
-	if(this->mf){
-		struct random_sequence rs;
-		Mat4d mat2, mat, rot;
-		Vec3d const barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
-		Vec3d const joint = bscale * Vec3d(0, 120, 60);
-		Vec3d pos, const muzzlepos = bscale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
-		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
-		this->transform(mat);
-		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(barrelpos + joint);
-		mat = mat2.rotx(this->py[0]);
-		mat.translatein(-joint);
-		pos = mat.vp3(muzzlepos);
-		rot = mat;
-		rot.vec3(3).clear();
-//		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);
-
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .3 * 2, fi = 1. - mf / .3;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .050 * fi, .020 * fi);
-		glPopAttrib();
 	}
 }
 
@@ -1134,6 +692,13 @@ double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *
 	}
 	return 1. / pt2->hitradius(); // precede small objects that conventional guns can hardly hit.
 }
+
+#ifdef DEDICATED
+void LMissileTurret::draw(WarDraw *){}
+void LMissileTurret::drawtra(WarDraw *){}
+#endif
+
+
 
 #if 0
 const struct arms_static_info arms_static[num_armstype] = {

@@ -138,6 +138,8 @@ public:
 	virtual float bulletlife()const;
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
+protected:
+	void shootEffect(Bullet *pz, const Vec3d &direction);
 };
 
 class LMissileTurret : public LTurretBase{

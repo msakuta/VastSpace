@@ -623,7 +623,23 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\draw\GatlingTurret-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\LMissileTurret-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\LTurret-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\draw\material.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\MTurret-draw.cpp"
 					>
 				</File>
 				<File

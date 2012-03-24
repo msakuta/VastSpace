@@ -342,3 +342,90 @@ void gldScrollTextureBeam(const Vec3d &view, const Vec3d &start, const Vec3d &en
 	glPopMatrix();
 }
 
+void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4d &irot, struct random_sequence *prs, const Vec3d &viewer){
+	int i;
+	glPushMatrix();
+	gldTranslate3dv(pos);
+/*	glRotated(deg_per_rad * (*pyr)[1], 0., -1., 0.);
+	glRotated(deg_per_rad * (*pyr)[0], 1., 0., 0.);
+	glRotated(deg_per_rad * (*pyr)[2], 0., 0., -1.);*/
+	glMultMatrixd(rot);
+	glScaled(rad, rad, rad);
+	for(i = 0; i < 4; i++){
+		Vec3d pz;
+		glRotated(90, 0., 0., 1.);
+		glBegin(GL_TRIANGLE_FAN);
+		glColor4ub(255,255,31,255);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = drseq(prs) * .3 - .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		glVertex3d(0., 0., 0.);
+		glColor4ub(255,0,0,0);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = drseq(prs) * .15 + .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		pz[0] = drseq(prs) * .25 + .75;
+		pz[1] = drseq(prs) * .3 - .15;
+		pz[2] = -drseq(prs) * .15 - .25;
+		glVertex3dv(pz);
+		pz[0] = drseq(prs) * .25 + .5;
+		pz[1] = -drseq(prs) * .15 - .15;
+		pz[2] = -drseq(prs) * .25;
+		glVertex3dv(pz);
+		glColor4ub(255,255,31,255);
+		glVertex3d(0., 0., 0.);
+		glEnd();
+	}
+	glPopMatrix();
+/*	{
+		struct gldBeamsData bd;
+		amat4_t mat;
+		avec3_t nh, nh0 = {0., 0., -.002}, v;
+		pyrmat(*pyr, &mat);
+		MAT4VP3(nh, mat, nh0);
+		bd.cc = 0;
+		bd.solid = 0;
+		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
+		VECADD(v, *pos, nh);
+		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
+		VECADDIN(v, nh);
+		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
+	}*/
+/*	{
+		static int init = 0;
+		static GLuint list;
+		struct gldBeamsData bd;
+		amat4_t mat;
+		avec3_t nh, nh0 = {0., 0., -.002}, v;
+		if(!init){
+			GLbyte buf[4][4] = {
+				{255,255,255,0},
+				{255,255,255,64},
+				{255,255,255,191},
+				{255,255,255,255}
+			};
+			glNewList(list = glGenLists(1), GL_COMPILE);
+			glEnable(GL_TEXTURE_1D);
+			glDisable(GL_BLEND);
+			glTexImage1D(GL_TEXTURE_1D, 0, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+			glEndList();
+			init = 1;
+		}
+		glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
+		glCallList(list);
+		pyrmat(*pyr, &mat);
+		MAT4VP3(nh, mat, nh0);
+		bd.cc = 0;
+		bd.solid = 0;
+			glEnable(GL_TEXTURE_1D);
+		gldBeams(&bd, *viewer, *pos, rad * .2, COLOR32RGBA(255,255,31,255));
+		VECADD(v, *pos, nh);
+		gldBeams(&bd, *viewer, v, rad * .4, COLOR32RGBA(255,127,0,255));
+		VECADDIN(v, nh);
+		gldBeams(&bd, *viewer, v, rad * .01, COLOR32RGBA(255,127,0,255));
+		glPopAttrib();
+	}*/
+}

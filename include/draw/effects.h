@@ -32,4 +32,7 @@ EXPORT GLuint muzzle_texture();
 
 EXPORT void gldScrollTextureBeam(const Vec3d &view, const Vec3d &start, const Vec3d &end, double width, double offset);
 
+EXPORT void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4d &irot, struct random_sequence *prs, const Vec3d &viewer);
+
+
 #endif

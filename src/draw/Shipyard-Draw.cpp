@@ -117,27 +117,11 @@ void Shipyard::drawtra(wardraw_t *wd){
 	glEnd();
 
 	{
-		double rad = 1.;
 		random_sequence rs;
 		init_rseq(&rs, (unsigned long)this);
 
-		/* color calculation of static navlights */
 		double t0 = drseq(&rs);
-		for(int i = 0 ; i < navlights.size(); i++){
-			Navlight &nv = navlights[i];
-			double t = fmod(wd->vw->viewtime + t0 + nv.phase, double(nv.period)) / nv.period;
-			double luminance = 1.;
-			if(t < 0.5){
-				rad = t + 1. / 2.;
-				luminance = t * 2.;
-			}
-			else{
-				rad = 1. - t + 1. / 2.;
-				luminance = 2. - t * 2.;
-			}
-			GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
-			gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
-		}
+		drawNavlights(wd, navlights, &mat);
 
 		if(undockingFrigate){
 			double t = fmod(wd->vw->viewtime + t0, 2.);
@@ -153,7 +137,7 @@ void Shipyard::drawtra(wardraw_t *wd){
 					pos0[0] = 180 * SCARRY_SCALE;
 					pos0[1] = 60 * SCARRY_SCALE;
 					pos0[2] = (i * -460 + (10 - i) * -960) * SCARRY_SCALE / 10;
-					rad = .005 * (1. - fmod(i / 10. + t / 2., 1.));
+					double rad = .005 * (1. - fmod(i / 10. + t / 2., 1.));
 					col[3] = 255/*rad * 255 / .01*/;
 					mat4vp3(pos, mat, pos0);
 					gldSpriteGlow(pos, rad, col, wd->vw->irot);

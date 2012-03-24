@@ -125,6 +125,15 @@ protected:
 		float radius; ///< Apparent radius of the light.
 		float period; ///< Period of light cycle
 		float phase; ///< Phase offset in the period
+		enum Pattern{Constant, Triangle, Step} pattern; ///< Pattern of light intensity over time
+		float duty; ///< Duty factor of pattern in case of Step.
+
+		/// \brief The constructor. Try to keep it a POD.
+		Navlight();
+
+		/// \brief Returns pattern's intensity at given time.
+		/// \param t Time parameter in the range of [0,period)
+		double patternIntensity(double t)const;
 	};
 
 	class NavlightsProcess : public SqInitProcess{
@@ -133,6 +142,13 @@ protected:
 		NavlightsProcess(std::vector<Navlight> &navlights) : navlights(navlights){}
 		virtual void process(HSQUIRRELVM v);
 	};
+
+	/// \brief Helper function to draw navigation lights.
+	/// \param wd The WarDraw object.
+	/// \param navlights List of navigation lights.
+	/// \param transmat The transformation for the lights. Can be NULL to specify
+	///        the default transformation, i.e. return value of transform().
+	void drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat = NULL);
 private:
 	static const maneuve mymn;
 };
@@ -145,5 +161,16 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags = 0);
 #endif
 
 void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2);
+
+
+
+
+//-----------------------------------------------------------------------------
+//    Inline Implementation
+//-----------------------------------------------------------------------------
+
+
+inline Warpable::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1){
+}
 
 #endif

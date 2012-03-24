@@ -1290,15 +1290,11 @@ void Warpable::NavlightsProcess::process(HSQUIRRELVM v){
 			SQFloat f;
 			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
 				n.radius = f;
-			else
-				n.radius = 0.01;
 			sq_poptop(v); // root obj obj[i]
 		}
-		else // Don't take it serously when the item is undefined, just assign default.
-			n.radius = 0.01;
 
-		sq_pushstring(v, _SC("period"), -1); // root obj obj[i] "radius"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].radius
+		sq_pushstring(v, _SC("period"), -1); // root obj obj[i] "period"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].period
 			SQFloat f;
 			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
 				n.period = f;
@@ -1306,20 +1302,38 @@ void Warpable::NavlightsProcess::process(HSQUIRRELVM v){
 				n.period = 1.;
 			sq_poptop(v); // root obj obj[i]
 		}
-		else // Don't take it serously when the item is undefined, just assign default.
-			n.period = 1.;
 
 		sq_pushstring(v, _SC("phase"), -1); // root obj obj[i] "phase"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].phase
 			SQFloat f;
 			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
 				n.phase = f;
-			else
-				n.phase = 0.;
 			sq_poptop(v); // root obj obj[i]
 		}
-		else // Don't take it serously when the item is undefined, just assign default.
-			n.phase = 0.;
+
+		sq_pushstring(v, _SC("pattern"), -1); // root obj obj[i] "pattern"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pattern
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				if(!strcmp(sqstr, "Constant"))
+					n.pattern = n.Constant;
+				else if(!strcmp(sqstr, "Triangle"))
+					n.pattern = n.Triangle;
+				else if(!strcmp(sqstr, "Step"))
+					n.pattern = n.Step;
+				else
+					CmdPrint(gltestp::dstring("NavlightProcess Warning: pattern not recognized: ") << sqstr);
+			}
+			sq_poptop(v); // root obj obj[i]
+		}
+
+		sq_pushstring(v, _SC("duty"), -1); // root obj obj[i] "duty"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].duty
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				n.duty = f;
+			sq_poptop(v); // root obj obj[i]
+		}
 
 		navlights.push_back(n);
 		sq_poptop(v); // root obj
@@ -1327,3 +1341,8 @@ void Warpable::NavlightsProcess::process(HSQUIRRELVM v){
 	sq_poptop(v); // root
 #endif
 }
+
+#ifdef DEDICATED
+double Warpable::Navlight::patternIntensity(double)const{return 0.;}
+void Warpable::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){}
+#endif

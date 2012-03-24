@@ -35,6 +35,8 @@ extern "C"{
 
 
 GLuint Beamer::disp = 0;
+std::vector<hitbox> Beamer::hitboxes;
+std::vector<Warpable::Navlight> Beamer::navlights;
 
 
 Beamer::Beamer(WarField *aw) : st(aw){
@@ -107,6 +109,8 @@ bool Beamer::buildBody(){
 			procs.push_back(&hp);
 			DrawOverlayProcess dop(disp);
 			procs.push_back(&dop);
+			NavlightsProcess np(navlights);
+			procs.push_back(&np);
 			sq_init(_SC("models/Beamer.nut"), procs);
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;

@@ -41,6 +41,9 @@ public:
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
+protected:
+	static std::vector<hitbox> hitboxes;
+	static std::vector<Navlight> navlights;
 };
 
 #endif

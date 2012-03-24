@@ -120,6 +120,8 @@ void Beamer::drawtra(wardraw_t *wd){
 
 	drawShield(wd);
 
+	drawNavlights(wd, navlights, &mat);
+
 #if 1
 	if(charge){
 		int i;

@@ -446,6 +446,45 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 	}
 }
 
+double Warpable::Navlight::patternIntensity(double t0)const{
+	double t = fmod(t0 + phase, double(period)) / period;
+	if(pattern == Constant){
+		return 1.;
+	}
+	else if(pattern == Triangle){ // Triangle function
+		if(t < 0.5){
+			return t * 2.;
+		}
+		else{
+			return 2. - t * 2.;
+		}
+	}
+	else if(pattern == Step){ // Step function
+		if(t < duty)
+			return 1.;
+		else
+			return 0.;
+	}
+}
+
+void Warpable::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){
+	Mat4d defaultmat;
+	if(!transmat)
+		transform(defaultmat);
+	const Mat4d &mat = transmat ? *transmat : defaultmat;
+	/* color calculation of static navlights */
+	double t0 = RandomSequence((unsigned long)this).nextd();
+	for(int i = 0 ; i < navlights.size(); i++){
+		const Navlight &nv = navlights[i];
+		double t = fmod(wd->vw->viewtime + t0 + nv.phase, double(nv.period)) / nv.period;
+		double luminance = nv.patternIntensity(wd->vw->viewtime + t0 + nv.phase);
+		double rad = (luminance + 1.) / 2.;
+		GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
+		gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
+	}
+
+}
+
 bool Frigate::cull(wardraw_t *wd){
 	double pixels;
 	if(wd->vw->gc->cullFrustum(this->pos, .6))
@@ -472,6 +511,7 @@ void Frigate::drawShield(wardraw_t *wd){
 		glVertex3dv(mat.vp3(Vec3d(.001,0,0)));
 		glVertex3dv(mat.vp3(Vec3d(-.001,0,0)));
 		glEnd();
+#if 0 // Inappropriate to draw here
 		{
 			int i, n = 3;
 			static const avec3_t pos0[] = {
@@ -498,6 +538,7 @@ void Frigate::drawShield(wardraw_t *wd){
 				gldSpriteGlow(pos, rad, col, wd->vw->irot);
 			}
 		}
+#endif
 
 		se.draw(wd, this, hitradius(), p->shieldAmount / maxshield());
 	}

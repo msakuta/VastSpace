@@ -84,12 +84,11 @@ void Assault::unserialize(UnserializeContext &sc){
 	for(int i = 0; i < nhardpoints; i++)
 		sc.i >> turrets[i];
 
-	WarSpace *ws = w ? (WarSpace*)(*w) : NULL;
-	if(ws){
-		// Assumes environment WarSpace is serialized first. Otherwise, this code would try to
-		// add a rigid body to uninitialized dynamics world.
-		buildBody();
-		ws->bdw->addRigidBody(bbody);
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
 	}
 }
 
@@ -138,6 +137,21 @@ bool Assault::buildBody(){
 const char *Assault::dispname()const{
 	return "Sabre class";
 }
+
+void Assault::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+}
+
+void Assault::leaveField(WarField *w){
+	st::leaveField(w);
+}
+
 
 void Assault::anim(double dt){
 	WarSpace *ws;

@@ -123,10 +123,10 @@ function frameproc(dt){
 				e.race = 0;
 			}
 		}
-		if(countents(cs, 0, "Beamer") < 1){
+		if(countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
-				local be = docker.addent("Beamer");
+				local be = docker.addent("Assault");
 				be.race = 0;
 			}
 		}

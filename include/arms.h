@@ -35,7 +35,7 @@ public:
 	const hardpoint_static *hp;
 	int ammo;
 	ArmBase(){}
-	ArmBase(Entity *abase, const hardpoint_static *ahp) : base(abase), target(NULL), hp(ahp), ammo(0){}
+	ArmBase(Entity *abase, const hardpoint_static *ahp) : st(abase->w), base(abase), target(NULL), hp(ahp), ammo(0){}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&));

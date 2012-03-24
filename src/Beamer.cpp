@@ -8,6 +8,7 @@
 //#include "sensor.h"
 #include "motion.h"
 #include "btadapt.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -434,7 +435,8 @@ void Beamer::anim(double dt){
 		}
 	}
 	else{
-		this->w = NULL;
+		if(game->isServer())
+			delete this;
 		return;
 	}
 

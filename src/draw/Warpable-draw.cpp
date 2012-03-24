@@ -511,34 +511,6 @@ void Frigate::drawShield(wardraw_t *wd){
 		glVertex3dv(mat.vp3(Vec3d(.001,0,0)));
 		glVertex3dv(mat.vp3(Vec3d(-.001,0,0)));
 		glEnd();
-#if 0 // Inappropriate to draw here
-		{
-			int i, n = 3;
-			static const avec3_t pos0[] = {
-				{0, 210 * modelScale, 240 * modelScale},
-				{190 * modelScale, -120 * modelScale, 240 * modelScale},
-				{-190 * modelScale, -120 * modelScale, 240 * modelScale},
-				{0, .002 + 50 * modelScale, -60 * modelScale},
-				{0, .002 + 60 * modelScale, 40 * modelScale},
-				{0, -.002 + -50 * modelScale, -60 * modelScale},
-				{0, -.002 + -60 * modelScale, 40 * modelScale},
-			};
-			avec3_t pos;
-			double rad = .002;
-			GLubyte col[4] = {255, 127, 127, 255};
-			random_sequence rs;
-			init_rseq(&rs, (unsigned long)this);
-			if(fmod(wd->vw->viewtime + drseq(&rs) * 2., 2.) < .2){
-				col[1] = col[2] = 255;
-				n = numof(pos0);
-				rad = .003;
-			}
-			for(i = 0 ; i < n; i++){
-				mat4vp3(pos, mat, pos0[i]);
-				gldSpriteGlow(pos, rad, col, wd->vw->irot);
-			}
-		}
-#endif
 
 		se.draw(wd, this, hitradius(), p->shieldAmount / maxshield());
 	}

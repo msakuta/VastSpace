@@ -73,10 +73,7 @@ void Docker::unserialize(UnserializeContext &sc){
 }
 
 void Docker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
-	// Do NOT call st::dive here because this class is a virtual branch class.
-	(this->*method)(sc);
-	for(EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it)
-		(*it)->dive(sc, method);
+	st::dive(sc, method);
 	for(EntityList::iterator it = undockque.begin(); it != undockque.end(); it++) if(*it)
 		(*it)->dive(sc, method);
 }

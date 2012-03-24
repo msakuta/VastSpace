@@ -79,7 +79,7 @@ void ArmBase::unserialize(UnserializeContext &sc){
 
 void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
 	st::dive(sc, method);
-	const_cast<hardpoint_static*>(hp)->dive(sc, method);
+//	const_cast<hardpoint_static*>(hp)->dive(sc, method);
 }
 
 void ArmBase::postframe(){

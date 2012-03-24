@@ -24,11 +24,13 @@ public:
 	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
+	virtual const char *dispname()const;
 	static const unsigned classid;
 	static EntityRegister<Assault> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual const char *dispname()const;
+	virtual void enterField(WarField *);
+	virtual void leaveField(WarField *);
 	virtual void anim(double);
 	virtual void postframe();
 	virtual void draw(wardraw_t *);

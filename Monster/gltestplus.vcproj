@@ -483,6 +483,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LTurret.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\Missile.cpp"
 				>
 			</File>
@@ -976,6 +980,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libmotion.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\LTurret.h"
 				>
 			</File>
 			<File

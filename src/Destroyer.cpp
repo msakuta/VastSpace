@@ -5,6 +5,7 @@
 #include "btadapt.h"
 #include "draw/effects.h"
 #include "motion.h"
+#include "LTurret.h"
 extern "C"{
 #include <clib/mathdef.h>
 }

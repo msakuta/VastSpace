@@ -140,6 +140,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4819"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -306,6 +307,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4819"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

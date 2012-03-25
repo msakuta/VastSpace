@@ -14,8 +14,9 @@ class Shipyard;
 
 class EXPORT ShipyardDocker : public Docker{
 public:
-	ShipyardDocker(Shipyard *ae = NULL);
 	typedef Docker st;
+	ShipyardDocker(Game *game) : st(game){}
+	ShipyardDocker(Shipyard *ae = NULL);
 	static const unsigned classid;
 	const char *classname()const;
 	virtual void dock(Dockable *);
@@ -30,7 +31,7 @@ class EXPORT Shipyard : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Shipyard() : docker(new ShipyardDocker(this)), Builder(this->Entity::w){init();}
+	Shipyard(Game *game) : st(game), docker(NULL), Builder(this->Warpable::w){init();}
 	Shipyard(WarField *w);
 	~Shipyard();
 	void init();

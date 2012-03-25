@@ -19,7 +19,7 @@ public:
 	static const unsigned version; ///< Saved file version, checked on loading
 
 	Universe(Player *pl, Game *game);
-	Universe(){}
+	Universe(Game *game) : st(game){}
 	Universe(const char *path, CoordSys *root) : st(path, root){}
 	~Universe();
 	const Static &getStatic()const{return classRegister;}

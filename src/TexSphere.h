@@ -44,7 +44,7 @@ public:
 	};
 	typedef Astrobj st;
 	typedef TexSphere tt;
-	TexSphere();
+	TexSphere(Game *game);
 	TexSphere(const char *name, CoordSys *cs);
 	virtual ~TexSphere();
 	static const ClassRegister<TexSphere> classRegister;
@@ -75,7 +75,7 @@ class Satellite : public TexSphere{
 public:
 	typedef TexSphere st;
 	static const ClassRegister<Satellite> classRegister;
-	Satellite(){}
+	Satellite(Game *game) : st(game){}
 	Satellite(const char *name, CoordSys *cs) : st(name, cs){}
 };
 

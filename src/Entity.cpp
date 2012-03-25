@@ -24,6 +24,7 @@ extern "C"{
 #include <iostream>
 
 
+Entity::Entity(Game *game) : st(game), w(NULL), bbody(NULL){}
 
 Entity::Entity(WarField *aw) :
 	st(aw ? aw->getGame() : NULL),
@@ -114,7 +115,7 @@ Entity *Entity::EntityStaticBase::create(WarField *){
 	return NULL;
 }
 
-Entity *Entity::EntityStaticBase::stcreate(){
+Entity *Entity::EntityStaticBase::stcreate(Game *game){
 	return NULL;
 }
 

@@ -8,7 +8,7 @@
 class RStation : public Entity{
 public:
 	typedef Entity st;
-	RStation(){}
+	RStation(Game *game) : st(game){}
 	RStation(WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;

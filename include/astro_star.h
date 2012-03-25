@@ -13,7 +13,7 @@ public:
 		Unknown, O, B, A, F, G, K, M, Num_SpectralType
 	} spect;
 	float subspect; ///< Fractional sub-spectral type is permitted
-	Star(){}
+	Star(Game *game) : st(game){}
 	Star(const char *name, CoordSys *cs);
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

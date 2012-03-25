@@ -246,12 +246,12 @@ public:
 		ClassId id; ///< Class id.
 		const Static *st; ///< Super type.
 		CoordSys *(*construct)(const char *path, CoordSys *root); ///< Construct an instance of this class.
-		Serializable *(*stconstruct)(); ///< Construct empty object for use in unserialization.
+		Serializable *(*stconstruct)(Game *); ///< Construct empty object for use in unserialization.
 		const SQChar *s_sqclassname; ///< Squirrel class name.
 		bool (*sq_define)(HSQUIRRELVM v); ///< Procedure to define this class in a Squirrel VM.
 		/// Derived classes, no matter in the executable or in shared libraries or DLLs,
 		/// will automatically register themselves through this destructor at startup.
-		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(), const SQChar *sqclassname, bool (*sq_define)(HSQUIRRELVM v))
+		Static(ClassId id, const Static *st, CoordSys *(*construct)(const char *path, CoordSys *root), Serializable *(*stconstruct)(Game*), const SQChar *sqclassname, bool (*sq_define)(HSQUIRRELVM v))
 			: id(id), st(st), construct(construct), stconstruct(stconstruct), s_sqclassname(sqclassname), sq_define(sq_define)
 		{
 			CoordSys::registerClass(*this);
@@ -276,6 +276,12 @@ public:
 	};
 	virtual const Static &getStatic()const{return classRegister;}
 	template<typename T> friend class ClassRegister;
+
+	/// A public constructor that do not initialize the object with parent node,
+	/// but within a known Game object.
+	/// Universe is known to need this function to invoke Serializable's constructor.
+	CoordSys(Game *game);
+
 protected:
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
@@ -284,11 +290,6 @@ protected:
 
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
-
-	/// A protected constructor that do not initialize the object with parent node,
-	/// but within a known Game object.
-	/// Universe is known to need this function to invoke Serializable's constructor.
-	CoordSys(Game *game);
 
 private:
 	CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *skipcs)const;

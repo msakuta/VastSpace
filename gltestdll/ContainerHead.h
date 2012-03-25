@@ -7,6 +7,8 @@
 
 /// A class with similar concept of EntityController, but issues EntityCommands only.
 struct EntityAI : Serializable{
+	EntityAI(Game *game) : Serializable(game){}
+
 	/// Called when this controller has to control an Entity.
 	virtual bool control(Entity *, double dt) = 0;
 
@@ -47,7 +49,7 @@ protected:
 	struct tent3d_fpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
-	ContainerHead(){init();}
+	ContainerHead(Game *game) : st(game){init();}
 	ContainerHead(WarField *w);
 	ContainerHead(Entity *docksite);
 	~ContainerHead();
@@ -98,7 +100,7 @@ DERIVE_COMMAND_EXT_ADD(DockToCommand, EntityCommand, Entity *deste);
 struct DockAI : EntityAI{
 	enum Phase{Dockque2, Dockque, Dock, num_Phase} phase;
 	Entity *docksite;
-	DockAI(){}
+	DockAI(Game *game) : EntityAI(game){}
 	DockAI(Entity *ch, Entity *docksite = NULL);
 	const char *classname()const;
 	void serialize(SerializeContext &sc);
@@ -114,7 +116,7 @@ struct TransportAI : EntityAI{
 	Entity *docksite;
 	Entity *leavesite;
 	DockAI dockAI;
-	TransportAI(){}
+	TransportAI(Game *game) : EntityAI(game), dockAI(game){}
 	TransportAI(Entity *ch, Entity *leavesite);
 	const char *classname()const;
 	void serialize(SerializeContext &sc);

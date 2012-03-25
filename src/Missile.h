@@ -15,7 +15,7 @@ class Missile : public Bullet{
 	void unlinkTarget();
 public:
 	typedef Bullet st;
-	Missile() : pf(NULL), ft(0), fuel(maxfuel), throttle(0){}
+	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0){}
 	Missile(Entity *parent, float life, double damage, Entity *target = NULL);
 	~Missile();
 	static const unsigned classid;

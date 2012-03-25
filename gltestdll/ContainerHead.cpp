@@ -625,7 +625,7 @@ TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
 }
 
 
-TransportAI::TransportAI(Entity *ch, Entity *leavesite) : phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
+TransportAI::TransportAI(Entity *ch, Entity *leavesite) : EntityAI(game), phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
 	std::vector<Entity *> set;
 	findIsland3(ch->w->cs->findcspath("/"), set);
 	if(set.size()){
@@ -757,7 +757,7 @@ void TransportAI::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
 	}
 }
 
-DockAI::DockAI(Entity *ch, Entity *docksite) : phase(Dockque2), docksite(docksite){
+DockAI::DockAI(Entity *ch, Entity *docksite) : EntityAI(ch->getGame()), phase(Dockque2), docksite(docksite){
 	if(!docksite){
 		std::vector<Entity*> set;
 		for(WarField::EntityList::iterator it = ch->w->entlist().begin(); it != ch->w->entlist().end(); it++) if(*it){

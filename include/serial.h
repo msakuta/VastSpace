@@ -11,15 +11,15 @@
 typedef unsigned SerializableId;
 
 class Serializable;
-typedef const char *ClassId;
-typedef std::map<gltestp::dstring, Serializable *(*)()> CtorMap;
-typedef std::map<const Serializable*, SerializableId> SerializeMap;
-typedef std::map<SerializableId, Serializable*> UnserializeMap;
-
 class SerializeContext;
 class UnserializeContext;
 class Game;
 class ServerGame;
+typedef const char *ClassId;
+typedef std::map<gltestp::dstring, Serializable *(*)(Game*)> CtorMap;
+typedef std::map<const Serializable*, SerializableId> SerializeMap;
+typedef std::map<SerializableId, Serializable*> UnserializeMap;
+
 
 
 /** \brief Base class of all serializable objects.
@@ -71,7 +71,7 @@ public:
 	/// \brief Binds a class ID with its constructor.
 	///
 	/// Derived classes must register themselves to unserialize.
-	static unsigned registerClass(ClassId id, Serializable *(*constructor)());
+	static unsigned registerClass(ClassId id, Serializable *(*constructor)(Game *));
 
 	/// \brief Unbind name and class.
 	///
@@ -85,7 +85,7 @@ public:
 	static CtorMap &ctormap();
 
 	/// \brief Template helper function that generate global constructor of given class.
-	template<class T> static Serializable *Conster();
+	template<class T> static Serializable *Conster(Game *);
 
 	/// Clear visit list used to eliminate duplicate visits.
 	void clearVisitList()const;
@@ -131,8 +131,8 @@ protected:
 	friend class ServerGame;
 };
 
-template<class T> inline Serializable *Serializable::Conster(){
-	return new T();
+template<class T> inline Serializable *Serializable::Conster(Game *game){
+	return new T(game);
 };
 
 inline void Serializable::clearVisitList()const{

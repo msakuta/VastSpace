@@ -15,7 +15,7 @@ public:
 	static const unsigned classid;
 	static EntityRegister<Tank> entityRegister;
 
-	Tank();
+	Tank(Game *game);
 	Tank(WarField *);
 	void control(WarField *, const input_t *inputs, double dt);
 	const char *idname()const;

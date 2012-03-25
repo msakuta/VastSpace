@@ -10,7 +10,7 @@ class Respawn : public Entity{
 	int count;
 public:
 	typedef Entity st;
-	Respawn(){}
+	Respawn(Game *game) : st(game){}
 	Respawn(WarField *w, double interval, double initial_phase, int max_count, const char *childClassName);
 	static const unsigned classid;
 	virtual const char *classname()const;

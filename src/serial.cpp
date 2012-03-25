@@ -126,7 +126,7 @@ void Serializable::idPackUnserialize(UnserializeContext &sc){
 /// class constructor cannot be passed directly, use Conster() template function to generate a function
 /// that can be passed here.
 /// \sa Conster(), ctormap()
-unsigned Serializable::registerClass(ClassId name, Serializable *(*constructor)()){
+unsigned Serializable::registerClass(ClassId name, Serializable *(*constructor)(Game*)){
 	CtorMap &cm = Serializable::ctormap();
 	if(cm.find(name) != cm.end())
 		CmdPrint(cpplib::dstring("WARNING: Duplicate class name: ") << name);

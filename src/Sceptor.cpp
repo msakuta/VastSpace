@@ -148,7 +148,8 @@ double Sceptor::maxhealth()const{
 
 
 
-Sceptor::Sceptor() : mother(NULL),
+Sceptor::Sceptor(Game *game) : st(game),
+	mother(NULL),
 	reverser(0),
 	mf(0),
 	pf(NULL),
@@ -1505,7 +1506,7 @@ bool Sceptor::command(EntityCommand *com){
 
 
 Entity *Sceptor::create(WarField *w, Builder *mother){
-	Sceptor *ret = new Sceptor(NULL);
+	Sceptor *ret = new Sceptor(w);
 /*	ret->pos = mother->pos;
 	ret->velo = mother->velo;
 	ret->rot = mother->rot;

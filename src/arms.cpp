@@ -437,7 +437,7 @@ void MTurret::drawtra(WarDraw *){}
 
 
 
-GatlingTurret::GatlingTurret() : barrelrot(0), barrelomg(0){}
+GatlingTurret::GatlingTurret(Game *game) : st(game), barrelrot(0), barrelomg(0){}
 
 GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){
 	ammo = 50;
@@ -958,6 +958,7 @@ glwindow *ArmsShowWindow(entity_t *creator(warf_t *), double baseprice, size_t a
 
 
 hardpoint_static *hardpoint_static::load(const char *fname, int &num){
+#if 0
 	char buf[512];
 	UniformLoader *ss;
 	ss = ULzopen("rc.zip", fname, UL_TRYFILE);
@@ -1012,4 +1013,6 @@ hardpoint_static *hardpoint_static::load(const char *fname, int &num){
 	free(vl.l);
 	ULclose(ss);
 	return ret;
+#endif
+	return NULL;
 }

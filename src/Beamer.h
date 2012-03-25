@@ -17,7 +17,7 @@ protected:
 	static GLuint disp;
 //	static const double sufscale;
 public:
-	Beamer(){init();}
+	Beamer(Game *game) : st(game){init();}
 	Beamer(WarField *w);
 	void init();
 	const char *idname()const;

@@ -7,7 +7,7 @@
 
 class LTurretBase : public MTurret{
 public:
-	LTurretBase(){}
+	LTurretBase(Game *game) : MTurret(game){}
 	LTurretBase(Entity *abase, const hardpoint_static *hp) : MTurret(abase, hp){}
 };
 
@@ -15,7 +15,7 @@ class LTurret : public LTurretBase{
 	float blowback, blowbackspeed;
 public:
 	typedef LTurretBase st;
-	LTurret() : blowback(0), blowbackspeed(0){}
+	LTurret(Game *game) : st(game), blowback(0), blowbackspeed(0){}
 	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
 	virtual const char *classname()const;
 	static const unsigned classid;
@@ -41,7 +41,7 @@ protected:
 public:
 	typedef LTurretBase st;
 	static const double bscale;
-	LMissileTurret();
+	LMissileTurret(Game *game);
 	LMissileTurret(Entity *abase, const hardpoint_static *hp);
 	~LMissileTurret();
 	virtual const char *classname()const;

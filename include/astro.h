@@ -64,7 +64,7 @@ public:
 		Num_OrbitType
 	};
 	typedef CoordSys st;
-	OrbitCS(){}
+	OrbitCS(Game *game) : st(game){}
 	OrbitCS(const char *path, CoordSys *root);
 	static const ClassRegister<OrbitCS> classRegister;
 	virtual const Static &getStatic()const{return classRegister;}
@@ -97,7 +97,7 @@ public:
 	float absmag; /* Absolute Magnitude */
 	Vec4f basecolor; /* rough approximation of apparent color */
 
-	Astrobj(){}
+	Astrobj(Game *game) : st(game){}
 	Astrobj(const char *name, CoordSys *cs);
 //	void init(const char *name, CoordSys *cs);
 

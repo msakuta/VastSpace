@@ -58,7 +58,7 @@ static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const ave
 class Island3WarSpace : public WarSpace{
 public:
 	typedef WarSpace st;
-	Island3WarSpace() : bbody(NULL){}
+	Island3WarSpace(Game *game) : st(game), bbody(NULL){}
 	Island3WarSpace(Island3 *cs);
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	virtual Quatd orientation(const Vec3d &pos)const;
@@ -77,6 +77,7 @@ public:
 	Vec3d halfsize;
 	friend Island3;
 	Island3 *host;
+	Island3Building(Game *game) : st(game){}
 	Island3Building(Island3 *host = NULL);
 	Island3Building(WarField *){}
 	virtual const char *classname()const{return "Island3Building";}
@@ -99,7 +100,7 @@ GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
 suf_t *Island3::sufbridgetower = NULL;
 
-Island3::Island3(){
+Island3::Island3(Game *game) : st(game){
 	init();
 }
 
@@ -2540,7 +2541,7 @@ CoverPointVector Island3::getCoverPoint(const Vec3d &org, double radius){
 }*/
 
 
-Island3Entity::Island3Entity() : btshape(NULL){
+Island3Entity::Island3Entity(Game *game) : st(game), btshape(NULL){
 }
 
 Island3Entity::Island3Entity(Island3 &astro) : astro(&astro), btshape(NULL){

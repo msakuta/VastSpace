@@ -19,7 +19,7 @@
 
 
 
-std::vector<hardpoint_static> Assault::hardpoints;
+std::vector<hardpoint_static*> Assault::hardpoints;
 GLuint Assault::disp = 0;
 std::vector<hitbox> Assault::hitboxes;
 std::vector<Warpable::Navlight> Assault::navlights;
@@ -30,7 +30,7 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 	st::init();
 	init();
 	for(int i = 0; i < hardpoints.size(); i++){
-		turrets[i] = (0 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
+		turrets[i] = (0 || i % 2 ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}

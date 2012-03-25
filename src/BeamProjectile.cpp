@@ -22,7 +22,7 @@ const struct color_sequence BeamProjectile::cs_beamtrail = DEFINE_COLSEQ(cnl_bea
 
 const unsigned BeamProjectile::classid = registerClass("BeamProjectile", Conster<BeamProjectile>);
 
-BeamProjectile::BeamProjectile() : cs(&cs_beamtrail), pf(NULL){}
+BeamProjectile::BeamProjectile(Game *game) : st(game), cs(&cs_beamtrail), pf(NULL){}
 
 BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs, double hitradius)
 : st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs), m_hitradius(hitradius){

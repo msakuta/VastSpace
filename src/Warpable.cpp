@@ -321,7 +321,7 @@ class WarpBubble : public CoordSys{
 public:
 	typedef CoordSys st;
 	static const ClassRegister<WarpBubble> classRegister;
-	WarpBubble(){}
+	WarpBubble(Game *game) : st(game){}
 	WarpBubble(const char *path, CoordSys *root) : st(path, root){}
 	const char *classname()const{return "WarpBubble";}
 	static int serialNo;
@@ -1229,11 +1229,13 @@ void Warpable::HardPointProcess::process(HSQUIRRELVM v){
 	SQInteger len = sq_getsize(v, -1);
 	if(-1 == len)
 		throw SQFError(_SC("hardpoints size could not be aquired"));
+	Game *game = (Game*)sq_getforeignptr(v);
 	for(int i = 0; i < len; i++){
 		sq_pushinteger(v, i); // root obj i
 		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
 			continue;
-		hardpoint_static n;
+		hardpoint_static *np = new hardpoint_static(game);
+		hardpoint_static &n(*np);
 
 		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
@@ -1282,7 +1284,7 @@ void Warpable::HardPointProcess::process(HSQUIRRELVM v){
 		else
 			n.flagmask = 0;
 
-		hardpoints.push_back(n);
+		hardpoints.push_back(np);
 		sq_poptop(v); // root obj
 	}
 	sq_poptop(v); // root

@@ -12,7 +12,7 @@ protected:
 	Docker *mother;
 	int paradec;
 
-	Frigate(){}
+	Frigate(Game *game) : st(game){}
 	Frigate(WarField *);
 	void drawShield(wardraw_t *wd);
 	bool cull(wardraw_t *);

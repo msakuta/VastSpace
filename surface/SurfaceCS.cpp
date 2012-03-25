@@ -13,7 +13,7 @@ extern "C"{
 class SurfaceWar : public WarSpace{
 public:
 	typedef WarSpace st;
-	SurfaceWar(){}
+	SurfaceWar(Game *game) : st(game){}
 	SurfaceWar(SurfaceCS *);
 	~SurfaceWar();
 protected:
@@ -26,7 +26,7 @@ const CoordSys::Static &SurfaceCS::getStatic()const{
 	return classRegister;
 }
 
-SurfaceCS::SurfaceCS() : wm(NULL), map_top(NULL), mapshape(NULL){
+SurfaceCS::SurfaceCS(Game *game) : st(game), wm(NULL), map_top(NULL), mapshape(NULL){
 }
 
 extern btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo&);

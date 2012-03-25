@@ -93,7 +93,7 @@ const unsigned Tank::classid = registerClass("Tank", Conster<Tank>);
 Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
 
-Tank::Tank(){
+Tank::Tank(Game *game) : st(game){
 }
 
 Tank::Tank(WarField *aw) : st(aw){

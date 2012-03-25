@@ -38,7 +38,7 @@ public:
 //	btRigidBody *bbody;
 
 	// Constructors
-	Island3();
+	Island3(Game *game);
 	Island3(const char *path, CoordSys *root);
 
 	// Overridden methods
@@ -96,7 +96,7 @@ public:
 	friend Island3;
 	static unsigned classid;
 	Island3 *astro;
-	Island3Entity();
+	Island3Entity(Game *game);
 	Island3Entity(Island3 &astro);
 	virtual ~Island3Entity();
 	virtual const char *classname()const{return "Island3Entity";} ///< Overridden because getStatic() is not defined
@@ -130,6 +130,7 @@ class Island3Docker : public Docker{
 public:
 	typedef Docker st;
 	static const unsigned classid;
+	Island3Docker(Game *game) : st(game){}
 	Island3Docker(Island3Entity * = NULL);
 	virtual const char *classname()const;
 	virtual void dock(Dockable *d);

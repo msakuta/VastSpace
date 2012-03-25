@@ -125,7 +125,7 @@ double Defender::maxhealth()const{
 
 
 
-Defender::Defender() : mother(NULL), mf(0), paradec(-1){
+Defender::Defender(Game *game) : st(game), mother(NULL), mf(0), paradec(-1){
 	pf[0] = pf[1] = pf[2] = pf[3] = NULL;
 }
 

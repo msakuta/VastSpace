@@ -170,7 +170,7 @@ void Game::idUnmap(UnserializeContext &sc){
 				if(it == sc.cons.end())
 					throw ClassNotFoundException();
 				if(it->second){
-					Serializable *ret = it->second();
+					Serializable *ret = it->second(this);
 					ret->game = this;
 					ret->id = thisid;
 					idunmap[thisid] = ret;

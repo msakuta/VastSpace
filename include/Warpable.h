@@ -49,7 +49,7 @@ public:
 	enum sship_task task;
 	int direction;
 
-	Warpable(){}
+	Warpable(Game *game) : st(game){}
 	Warpable(WarField *w);
 
 	virtual void serialize(SerializeContext &sc);
@@ -106,8 +106,8 @@ protected:
 
 	class HardPointProcess : public SqInitProcess{
 	public:
-		std::vector<hardpoint_static> &hardpoints;
-		HardPointProcess(std::vector<hardpoint_static> &hardpoints) : hardpoints(hardpoints){}
+		std::vector<hardpoint_static*> &hardpoints;
+		HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
 		virtual void process(HSQUIRRELVM);
 	};
 

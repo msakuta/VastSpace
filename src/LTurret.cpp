@@ -118,7 +118,7 @@ void LTurret::shootEffect(Bullet *, const Vec3d &){}
 
 
 
-LMissileTurret::LMissileTurret(){
+LMissileTurret::LMissileTurret(Game *game) : st(game){
 }
 
 LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), deploy(0){

@@ -13,7 +13,7 @@ public:
 	typedef CoordSys st;
 	static ClassRegister<SurfaceCS> classRegister;
 	const Static &getStatic()const;
-	SurfaceCS();
+	SurfaceCS(Game *game);
 	SurfaceCS(const char *path, CoordSys *root);
 	~SurfaceCS();
 

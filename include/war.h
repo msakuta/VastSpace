@@ -117,7 +117,6 @@ public:
 		UnionPtr(ObservePtr<Entity,0,Entity> &p2) : p2(&p2), type(P2){}
 	};
 #endif
-	WarField();
 	WarField(Game *);
 	WarField(CoordSys *cs);
 	virtual const char *classname()const;
@@ -175,7 +174,7 @@ class EXPORT WarSpace : public WarField{
 	void init();
 public:
 	typedef WarField st;
-	WarSpace();
+	WarSpace(Game *game);
 	WarSpace(CoordSys *cs);
 	virtual const char *classname()const;
 	static const unsigned classid;

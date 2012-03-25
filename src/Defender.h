@@ -81,7 +81,7 @@ protected:
 	static double modelScale(){return 1./10000.;} ///< Model scale
 	bool isDeployed()const{return task == Deploy || Dodge0 <= task && task <= Dodge3;}
 public:
-	Defender();
+	Defender(Game *game);
 	Defender(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;

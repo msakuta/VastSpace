@@ -30,7 +30,7 @@ protected:
 	static const Vec3d engines[3];
 	static const double sufscale;
 public:
-	SpacePlane(){init();}
+	SpacePlane(Game *game) : st(game){init();}
 	SpacePlane(WarField *w);
 	SpacePlane(Entity *docksite);
 	~SpacePlane();

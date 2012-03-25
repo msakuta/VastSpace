@@ -33,7 +33,7 @@ extern "C"{
 class Barycenter : public OrbitCS{
 public:
 	typedef OrbitCS st;
-	Barycenter(){}
+	Barycenter(Game *game) : st(game){}
 	Barycenter(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Barycenter> classRegister;
 	ClassId classname()const{return classRegister.id;}

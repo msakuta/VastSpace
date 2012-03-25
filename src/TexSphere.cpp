@@ -13,7 +13,8 @@ extern "C"{
 
 #include <stdlib.h>
 
-TexSphere::TexSphere() :
+TexSphere::TexSphere(Game *game) :
+	st(game),
 	texlist(0),
 	cloudtexlist(0),
 	shader(0),

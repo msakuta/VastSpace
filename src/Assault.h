@@ -17,7 +17,7 @@ protected:
 
 public:
 	typedef Frigate st;
-	Assault(){init();}
+	Assault(Game *game) : st(game){init();}
 	Assault(WarField *w);
 	void init();
 	const char *idname()const;
@@ -44,7 +44,7 @@ public:
 //	static const Builder::BuildStatic builds;
 protected:
 	bool buildBody();
-	static std::vector<hardpoint_static> hardpoints;
+	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;

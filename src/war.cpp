@@ -30,8 +30,6 @@ extern "C"{
 
 
 
-WarField::WarField() : pl(NULL){}
-
 WarField::WarField(Game *g) : Serializable(g), cs(NULL), pl(NULL), realtime(0){}
 
 WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), cs(acs), pl(NULL), realtime(0){
@@ -333,7 +331,7 @@ void WarSpace::init(){
 #endif
 }
 
-WarSpace::WarSpace() : ot(NULL), otroot(NULL), oti(0), ots(0), bdw(NULL){
+WarSpace::WarSpace(Game *game) : st(game), ot(NULL), otroot(NULL), oti(0), ots(0), bdw(NULL){
 	init();
 }
 

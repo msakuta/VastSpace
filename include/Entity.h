@@ -54,6 +54,7 @@ public:
 		iterator end();
 	};
 //	typedef std::vector<gltestp::dstring> Props;
+	Entity(Game *game);
 	Entity(WarField *aw = NULL);
 	~Entity();
 	static Entity *create(const char *cname, WarField *w);
@@ -146,7 +147,7 @@ public:
 	public:
 		virtual ClassId classid() = 0;
 		virtual Entity *create(WarField*) = 0; ///< Allocate and construct a new object as a member of a WarField.
-		virtual Entity *stcreate() = 0; ///< Allocate and construct empty object for use in unserialization.
+		virtual Entity *stcreate(Game *) = 0; ///< Allocate and construct empty object for use in unserialization.
 		virtual void destroy(Entity*) = 0; ///< Destruct and deallocate
 		virtual const SQChar *sq_classname() = 0; ///< Squirrel class name.
 		virtual bool sq_define(HSQUIRRELVM) = 0; ///< Defines Squirrel bound class.
@@ -175,7 +176,7 @@ protected:
 		ClassId m_classid;
 		virtual ClassId classid(){ return m_classid; }
 		virtual Entity *create(WarField *w){ return new T(w); }
-		virtual Entity *stcreate(){ return new T(); }
+		virtual Entity *stcreate(Game *game){ return new T(game); }
 		virtual void destroy(Entity *p){ delete p; }
 		virtual const SQChar *sq_classname(){ return m_sq_classname; }
 		virtual bool sq_define(HSQUIRRELVM v){
@@ -202,7 +203,7 @@ protected:
 		EntityStaticBase();
 		virtual ClassId classid();
 		virtual Entity *create(WarField *w);
-		virtual Entity *stcreate();
+		virtual Entity *stcreate(Game *game);
 		virtual void destroy(Entity *p);
 		virtual const SQChar *sq_classname();
 		virtual bool sq_define(HSQUIRRELVM v);

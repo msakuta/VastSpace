@@ -13,7 +13,7 @@ extern double gravityfactor;
 class LagrangeCS : public CoordSys{
 public:
 	typedef CoordSys st;
-	LagrangeCS(){}
+	LagrangeCS(Game *game) : st(game){}
 	LagrangeCS(const char *path, CoordSys *root);
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -26,7 +26,7 @@ protected:
 class Lagrange1CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
-	Lagrange1CS(){}
+	Lagrange1CS(Game *game) : st(game){}
 	Lagrange1CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange1CS> classRegister;
 	virtual const Static &getStatic()const{return classRegister;}
@@ -37,7 +37,7 @@ public:
 class Lagrange2CS : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
-	Lagrange2CS(){}
+	Lagrange2CS(Game *game) : st(game){}
 	Lagrange2CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange2CS> classRegister;
 	virtual const Static &getStatic()const{return classRegister;}
@@ -49,7 +49,7 @@ public:
 class LagrangeTrojan : public LagrangeCS{
 public:
 	typedef LagrangeCS st;
-	LagrangeTrojan(){}
+	LagrangeTrojan(Game *game) : st(game){}
 	LagrangeTrojan(const char *path, CoordSys *root) : st(path, root){}
 	void anim(double dt);
 	virtual Vec3d offsetPos()const = 0;
@@ -59,7 +59,7 @@ public:
 class Lagrange4CS : public LagrangeTrojan{
 public:
 	typedef LagrangeTrojan st;
-	Lagrange4CS(){}
+	Lagrange4CS(Game *game) : st(game){}
 	Lagrange4CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange4CS> classRegister;
 	virtual Vec3d offsetPos()const{return Vec3d(0.5, sqrt(3.) / 2., 0.);}
@@ -69,7 +69,7 @@ public:
 class Lagrange5CS : public LagrangeTrojan{
 public:
 	typedef LagrangeTrojan st;
-	Lagrange5CS(){}
+	Lagrange5CS(Game *game) : st(game){}
 	Lagrange5CS(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Lagrange5CS> classRegister;
 	virtual Vec3d offsetPos()const{return Vec3d(0.5, -sqrt(3.) / 2., 0.);}

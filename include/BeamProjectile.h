@@ -10,7 +10,7 @@ public:
 	typedef Bullet st;
 	static const unsigned classid;
 	struct tent3d_fpol *pf;
-	BeamProjectile();
+	BeamProjectile(Game *game);
 	BeamProjectile(Entity *owner, float life, double damage, double radius = .01, Vec4<unsigned char> col = Vec4<unsigned char>(127,127,255,255), const color_sequence &cs = cs_beamtrail, double hitradius = 0.);
 	virtual const char *classname()const;
 	virtual void serialize(SerializeContext &sc);

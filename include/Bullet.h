@@ -25,7 +25,7 @@ public:
 	WeakPtr<Entity> owner; ///< Owner of this Entity. If this projectile kills something, this event is reported to the owner.
 	bool grav; ///< Flag to enable gravity.
 
-	Bullet(){}
+	Bullet(Game *game) : st(game){}
 	Bullet(Entity *owner, float life, double damage);
 	virtual const char *idname()const;
 	virtual const char *classname()const;

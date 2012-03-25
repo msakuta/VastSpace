@@ -24,7 +24,7 @@ public:
 	const char *classname()const;
 	static const unsigned classid;
 	static EntityRegister<Attacker> entityRegister;
-	Attacker();
+	Attacker(Game *game);
 	Attacker(WarField *);
 	~Attacker();
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
@@ -57,6 +57,7 @@ protected:
 class AttackerDocker : public Docker{
 public:
 	int nextport;
+	AttackerDocker(Game *game) : Docker(game){}
 	AttackerDocker(Entity *ae = NULL) : st(ae), nextport(0){}
 	typedef Docker st;
 	static const unsigned classid;

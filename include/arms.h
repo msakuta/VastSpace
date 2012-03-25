@@ -24,7 +24,7 @@ struct hardpoint_static : public Serializable{
 	Quatd rot; /* base rotation */
 	const char *name;
 	unsigned flagmask;
-	hardpoint_static(){}
+	hardpoint_static(Game *game) : st(game){}
 	hardpoint_static(Vec3d &apos, Quatd &arot, const char *aname, unsigned aflagmask) :
 	pos(apos), rot(arot), name(aname), flagmask(aflagmask){}
 	static hardpoint_static *load(const char *fname, int &num);
@@ -37,7 +37,7 @@ public:
 	Entity *target;
 	const hardpoint_static *hp;
 	int ammo;
-	ArmBase(){}
+	ArmBase(Game *game) : st(game){}
 	ArmBase(Entity *abase, const hardpoint_static *ahp) : st(abase->w), base(abase), target(NULL), hp(ahp), ammo(0){}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -68,7 +68,7 @@ public:
 	float mf; // muzzle flash time
 	bool forceEnemy;
 
-	MTurret(){}
+	MTurret(Game *game) : st(game){}
 	MTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -97,7 +97,7 @@ protected:
 class GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
-	GatlingTurret();
+	GatlingTurret(Game *game);
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
 	virtual const char *idname()const;
 	virtual const char *classname()const;

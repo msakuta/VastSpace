@@ -68,7 +68,7 @@ protected:
 	double nlipsFactor(Viewer &)const;
 	Entity *findMother();
 public:
-	Sceptor();
+	Sceptor(Game *game);
 	Sceptor(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;

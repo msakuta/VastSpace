@@ -14,7 +14,7 @@ protected:
 	static const double sufscale;
 public:
 	typedef Warpable st;
-	Destroyer(){init();}
+	Destroyer(Game *game) : st(game){init();}
 	Destroyer(WarField *w);
 	static const unsigned classid;
 	static EntityRegister<Destroyer> entityRegister;
@@ -50,7 +50,7 @@ protected:
 	static const int nhitboxes;
 public:
 	typedef Warpable st;
-	WireDestroyer(){}
+	WireDestroyer(Game *game) : st(game){}
 	WireDestroyer(WarField *w);
 	static const unsigned classid;
 	static EntityRegister<WireDestroyer> entityRegister;

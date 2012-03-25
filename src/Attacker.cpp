@@ -32,7 +32,7 @@ const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 Entity::EntityRegister<Attacker> Attacker::entityRegister("Attacker");
 
-Attacker::Attacker() : justLoaded(true), docker(NULL), engineHeat(0){}
+Attacker::Attacker(Game *game) : st(game), justLoaded(true), docker(NULL), engineHeat(0){}
 
 Attacker::Attacker(WarField *aw) : st(aw), justLoaded(false), docker(new AttackerDocker(this)), engineHeat(0){
 	static_init();

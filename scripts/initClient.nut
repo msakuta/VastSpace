@@ -102,6 +102,21 @@ register_console_command("seat", function(...){
 });
 
 
+register_console_command("viewdist", function(...){
+	if(vargv.len() == 0){
+		print("viewdist is " + player.viewdist);
+		return;
+	}
+	player.viewdist = vargv[0].tofloat();
+});
+
+register_console_command("viewdist_zoom", function(...){
+	if(vargv.len() == 0){
+		print("viewdist is " + player.viewdist);
+		return;
+	}
+	player.viewdist *= vargv[0].tofloat();
+});
 
 mainmenu <- GLWbigMenu();
 

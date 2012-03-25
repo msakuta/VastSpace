@@ -258,6 +258,8 @@ void ServerGame::anim(double dt){
 #define TRYBLOCK(a) (a);
 #endif
 		if(!universe->paused) try{
+			for(int i = 0; i < players.size(); i++)
+				players[i]->anim(dt);
 			sqa_anim(sqvm, dt);
 			TRYBLOCK(universe->anim(dt));
 			postframe();

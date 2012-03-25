@@ -2270,9 +2270,6 @@ int main(int argc, char *argv[])
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
-	if(server){
-		CvarAdd("viewdist", &server->player->viewdist, cvar_double);
-	}
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);

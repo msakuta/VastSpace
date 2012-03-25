@@ -8,6 +8,9 @@
 #include "btadapt.h"
 //#include "glw/glwindow.h"
 #include "motion.h"
+extern "C"{
+#include <clib/mathdef.h>
+}
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
@@ -142,6 +145,28 @@ bool Assault::buildBody(){
 
 const char *Assault::dispname()const{
 	return "Sabre class";
+}
+
+void Assault::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	static const Vec3d src[] = {
+		Vec3d(.002, .018, .022),
+		Vec3d(0., 0./*05*/, 0.150),
+		Vec3d(0., 0./*1*/, 0.300),
+		Vec3d(0., 0., 0.300),
+		Vec3d(0., 0., 1.000),
+	};
+	static const Quatd rot0[] = {
+		quat_u,
+		quat_u,
+		Quatd::rotation(M_PI / 3., 0, 1, 0).rotate(M_PI / 8., 1, 0, 0),
+		Quatd::rotation(-M_PI / 3., 0, 1, 0).rotate(-M_PI / 8., 1, 0, 0),
+		Quatd::rotation(M_PI / 3., 0, 1, 0),
+	};
+	Mat4d mat;
+	seatid = (seatid + numof(src)) % numof(src);
+	rot = this->rot * rot0[seatid];
+	Vec3d ofs = src[seatid];
+	pos = this->pos + rot.trans(src[seatid]);
 }
 
 void Assault::enterField(WarField *target){

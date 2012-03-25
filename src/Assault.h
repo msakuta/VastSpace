@@ -27,6 +27,7 @@ public:
 	static EntityRegister<Assault> entityRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void leaveField(WarField *);
 	virtual void anim(double);

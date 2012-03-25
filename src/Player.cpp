@@ -1,8 +1,8 @@
 /** \file
  * \brief Implementation of Player class and its companions.
  */
-#include "Application.h"
 #include "Player.h"
+#include "Application.h"
 #include "Universe.h"
 #include "Entity.h"
 #include "cmd.h"
@@ -21,6 +21,17 @@ extern "C"{
 }
 #include <sstream>
 
+
+/// \brief The client message that tells the server that this Player wants to change rotation.
+struct CMMover : ClientMessage{
+	typedef ClientMessage st;
+	static CMMover s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	enum Type{Freelook, Chase, Tactical};
+	static void send(Type);
+private:
+	CMMover() : st("Mover"){}
+};
 
 /// \brief The client message that tells the server that this Player wants to change rotation.
 struct CMRot : ClientMessage{
@@ -51,6 +62,17 @@ struct CMChaseCamera : ClientMessage{
 public:
 	CMChaseCamera() : st("ChaseCamera"){}
 };
+
+/// \brief The client message that tells the server that this Player wants to change rotation.
+struct CMViewDist : ClientMessage{
+	typedef ClientMessage st;
+	static CMViewDist s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(double viewdist);
+private:
+	CMViewDist() : st("ViewDist"){}
+};
+
 
 
 float Player::camera_mode_switch_time = 1.f;
@@ -280,6 +302,7 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << pos << velo << accel;
 	sc.o << rot;
 	sc.o << fov;
+	sc.o << viewdist;
 	sc.o << cs;
 	sc.o << (unsigned)tplist.size();
 	for(int i = 0; i < tplist.size(); i++)
@@ -313,6 +336,7 @@ void Player::unserialize(UnserializeContext &sc){
 		sc.i >> rot;
 
 	sc.i >> fov;
+	sc.i >> viewdist;
 	sc.i >> cs;
 	sc.i >> ntplist;
 	tplist.resize(ntplist);
@@ -588,7 +612,7 @@ void Player::cmdInit(ClientApplication &application){
 //	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
 	ServerCmdAdd("spos", scmd_spos);
-	CmdAddParam("mover", cmd_mover, &pl);
+	CmdAddParam("mover", cmd_mover, application.clientGame);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
 	CmdAddParam("control", cmd_control, &pl);
@@ -604,19 +628,26 @@ void Player::cmdInit(ClientApplication &application){
 }
 
 int Player::cmd_mover(int argc, char *argv[], void *pv){
-	Player *p = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *p = game->player;
 	if(argc < 2){
 		CmdPrint("usage: mover func");
 		CmdPrint("  func - freelook or tactical");
 		return 0;
 	}
 	p->blendmover = 0.;
-	if(!strcmp(argv[1], "freelook"))
+	if(!strcmp(argv[1], "freelook")){
 		p->nextmover = p->freelook;
-	else if(!strcmp(argv[1], "tactical"))
+		CMMover::s.send(CMMover::Freelook);
+	}
+	else if(!strcmp(argv[1], "tactical")){
 		p->nextmover = p->tactical;
-	else if(!strcmp(argv[1], "cycle"))
+		CMMover::s.send(CMMover::Tactical);
+	}
+	else if(!strcmp(argv[1], "cycle")){
 		p->nextmover = p->mover == p->freelook ? p->tactical : p->freelook;
+		CMMover::s.send(p->mover == p->freelook ? CMMover::Freelook : CMMover::Tactical);
+	}
 	else
 		CmdPrint("unknown func");
 	return 0;
@@ -918,6 +949,7 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			SQFloat f;
 			sq_getfloat(v, 3, &f);
 			p->viewdist = f;
+			CMViewDist::s.send(f);
 			return 1;
 		}
 		else
@@ -1034,6 +1066,40 @@ GLWstateButton *Player::newMoveOrderButton(Game *game, const char *filename, con
 
 
 //-----------------------------------------------------------------------------
+//  CMMover implementation
+//-----------------------------------------------------------------------------
+
+CMMover CMMover::s;
+
+void CMMover::send(Type t){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << t;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMMover::interpret(ServerClient &sc, UnserializeStream &uss){
+	Type t;
+	uss >> (int&)t;
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player){
+		player->blendmover = 0.;
+		if(t == Freelook)
+			player->nextmover = player->freelook;
+		else if(t == Tactical)
+			player->nextmover = player->tactical;
+	}
+}
+
+
+//-----------------------------------------------------------------------------
 //  CMChase implementation
 //-----------------------------------------------------------------------------
 
@@ -1061,6 +1127,35 @@ void CMChase::interpret(ServerClient &sc, UnserializeStream &uss){
 		player->chases.clear();
 		player->chase = e;
 		player->chases.insert(e);
+	}
+}
+
+//-----------------------------------------------------------------------------
+//  CMViewDist implementation
+//-----------------------------------------------------------------------------
+
+CMViewDist CMViewDist::s;
+
+void CMViewDist::send(double viewdist){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << viewdist;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+/// \brief A server command that accepts messages from the client to change the direction of sight.
+void CMViewDist::interpret(ServerClient &sc, UnserializeStream &uss){
+	double viewdist;
+	uss >> viewdist;
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player){
+		player->viewdist = viewdist;
 	}
 }
 

@@ -19,23 +19,17 @@
 
 
 
-#define SQRT2P2 (M_SQRT2/2.)
-
-struct hardpoint_static *Assault::hardpoints = NULL/*[5] = {
-	hardpoint_static(Vec3d(.000, 50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,0,1), "Top Turret", 0),
-	hardpoint_static(Vec3d(.000, -50 * BEAMER_SCALE, -110 * BEAMER_SCALE), Quatd(0,0,1,0), "Bottom Turret", 0),
-	hardpoint_static(Vec3d(40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,-SQRT2P2,SQRT2P2), "Right Turret", 0),
-	hardpoint_static(Vec3d(-40 * BEAMER_SCALE,  .000, -225 * BEAMER_SCALE), Quatd(0,0,SQRT2P2,SQRT2P2), "Left Turret", 0),
-	hardpoint_static(Vec3d(0, 0, 0), Quatd(0,0,0,1), "Shield Generator", 0),
-}*/;
-int Assault::nhardpoints = 0;
+std::vector<hardpoint_static> Assault::hardpoints;
+GLuint Assault::disp = 0;
+std::vector<hitbox> Assault::hitboxes;
+std::vector<Warpable::Navlight> Assault::navlights;
 
 
 
 Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 	st::init();
 	init();
-	for(int i = 0; i < nhardpoints; i++){
+	for(int i = 0; i < hardpoints.size(); i++){
 		turrets[i] = (0 || i % 2 ? new MTurret(this, &hardpoints[i]) : new GatlingTurret(this, &hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
@@ -50,10 +44,22 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 }
 
 void Assault::init(){
-	if(!hardpoints){
-		hardpoints = hardpoint_static::load("assault.hb", nhardpoints);
+	static bool initialized = false;
+	if(!initialized){
+		std::vector<hitbox> hitboxes;
+		std::vector<SqInitProcess*> procs;
+		HitboxProcess hp(hitboxes);
+		procs.push_back(&hp);
+		DrawOverlayProcess dop(disp);
+		procs.push_back(&dop);
+		NavlightsProcess np(navlights);
+		procs.push_back(&np);
+		HardPointProcess hdp(hardpoints);
+		procs.push_back(&hdp);
+		sq_init(_SC("models/Assault.nut"), procs);
+		initialized = true;
 	}
-	turrets = new ArmBase*[nhardpoints];
+	turrets = new ArmBase*[hardpoints.size()];
 	mass = 1e5;
 	mother = NULL;
 	paradec = -1;
@@ -74,14 +80,14 @@ Entity::EntityRegister<Assault> Assault::entityRegister("Assault");
 void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << formPrev;
-	for(int i = 0; i < nhardpoints; i++)
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }
 
 void Assault::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> (Entity*&)formPrev;
-	for(int i = 0; i < nhardpoints; i++)
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.i >> turrets[i];
 
 	// Update the dynamics body's parameters too.
@@ -97,7 +103,7 @@ bool Assault::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
+			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
 				const Vec3d &pos = hitboxes[i].org;
@@ -301,7 +307,7 @@ void Assault::anim(double dt){
 		space_collide(this, ws, dt, NULL, NULL);
 
 	st::anim(dt);
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
 		turrets[i]->align();
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
@@ -310,7 +316,7 @@ void Assault::anim(double dt){
 
 void Assault::postframe(){
 	st::postframe();
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i] && turrets[i]->w != w)
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i] && turrets[i]->w != w)
 		turrets[i] = NULL;
 	if(mother && (!mother->e || !mother->e->w))
 		mother = NULL;
@@ -331,7 +337,7 @@ bool Assault::undock(Docker *d){
 //		return false;
 	task = sship_undock;
 	mother = d;
-	for(int i = 0; i < 4; i++) if(turrets[i])
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
 		d->e->w->addent(turrets[i]);
 	d->baycool += 5.;
 	return true;
@@ -357,7 +363,7 @@ bool Assault::command(EntityCommand *com){
 		return true;
 	}
 	if(com->derived(AttackCommand::sid)){
-		for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+		for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
 			turrets[i]->command(com);
 		return st::command(com);
 	}

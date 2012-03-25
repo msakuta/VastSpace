@@ -14,8 +14,6 @@ protected:
 	Assault *formPrev;
 	static suf_t *sufbase;
 	ArmBase **turrets;
-	static hardpoint_static *hardpoints;
-	static int nhardpoints;
 
 public:
 	typedef Frigate st;
@@ -46,6 +44,10 @@ public:
 //	static const Builder::BuildStatic builds;
 protected:
 	bool buildBody();
+	static std::vector<hardpoint_static> hardpoints;
+	static GLuint disp;
+	static std::vector<hitbox> hitboxes;
+	static std::vector<Navlight> navlights;
 };
 
 int cmd_armswindow(int argc, char *argv[], void *pv);

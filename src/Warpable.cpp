@@ -1220,6 +1220,74 @@ void Warpable::HitboxProcess::process(HSQUIRRELVM v){
 	sq_poptop(v); // root
 }
 
+void Warpable::HardPointProcess::process(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("hardpoints"), -1); // root string
+
+	// Not defining Navlights is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		return;
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(_SC("hardpoints size could not be aquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		hardpoint_static n;
+
+		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
+			SQVec3d r;
+			r.getValue(v, -1);
+			n.pos = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign the default.
+			n.pos = Vec3d(0,0,0);
+
+		sq_pushstring(v, _SC("rot"), -1); // root obj obj[i] "rot"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].rot
+			SQQuatd r;
+			r.getValue(v);
+			n.rot = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Don't take it serously when the item is undefined, just assign the default.
+			n.rot = Quatd(0,0,0,1);
+
+		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				char *name = new char[strlen(sqstr) + 1];
+				strcpy(name, sqstr);
+				n.name = name;
+			}
+			else // Throw an error because there's no such thing like default name.
+				throw SQFError("HardPointsProcess: name is not specified");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else // Throw an error because there's no such thing like default name.
+			throw SQFError("HardPointsProcess: name is not specified");
+
+		sq_pushstring(v, _SC("flagmask"), -1); // root obj obj[i] "flagmask"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].flagmask
+			SQInteger i;
+			if(SQ_SUCCEEDED(sq_getinteger(v, -1, &i)))
+				n.flagmask = i;
+			else
+				n.flagmask = 0;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.flagmask = 0;
+
+		hardpoints.push_back(n);
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
+}
+
 void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v){
 #ifndef DEDICATED // Do nothing in the server.
 	sq_pushstring(v, _SC("drawOverlay"), -1); // root string

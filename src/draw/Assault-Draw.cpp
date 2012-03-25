@@ -156,24 +156,11 @@ void Assault::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
 	if(cull(wd))
 		return;
+	drawNavlights(wd, navlights);
 	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
 	drawShield(wd);
 }
 
 void Assault::drawOverlay(wardraw_t *){
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.40, -.25);
-	glVertex2d(-.80, -.1);
-	glVertex2d(-.80,  .05);
-	glVertex2d(-.4 ,  .3);
-	glVertex2d( .1 ,  .3);
-	glVertex2d( .7 ,  .6);
-	glVertex2d( .7 ,  .3);
-	glVertex2d( .8 ,  .3);
-	glVertex2d( .8 , -.2);
-	glVertex2d( .7 , -.2);
-	glVertex2d( .7 , -.6);
-	glVertex2d( .4 , -.4);
-	glVertex2d( .3 , -.25);
-	glEnd();
+	glCallList(disp);
 }

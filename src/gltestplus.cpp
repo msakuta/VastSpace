@@ -1880,7 +1880,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 				int ret = 0;
 				POINT p = {LOWORD(lParam), HIWORD(lParam)};
 				ScreenToClient(hWnd, &p);
-				server->mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_DOWN, p.x, p.y);
+				application.clientGame->mouse_func((short)HIWORD(wParam) < 0 ? GLUT_WHEEL_DOWN : GLUT_WHEEL_UP, GLUT_DOWN, p.x, p.y);
 			}
 			break;
 

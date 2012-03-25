@@ -11,6 +11,7 @@
 extern "C"{
 #include <clib/mathdef.h>
 }
+#include <algorithm>
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
@@ -303,7 +304,7 @@ void Assault::anim(double dt){
 			forward *= -1;
 			xh = forward.vp(dv);
 			len = len2 = xh.len();
-			len = asinl(len);
+			len = asinl(std::min(len, (long double)1.));
 			if(maxspeed < len){
 				len = maxspeed;
 			}

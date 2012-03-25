@@ -1,5 +1,6 @@
 #include "../Assault.h"
 #include "../Beamer.h"
+#include "Player.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"

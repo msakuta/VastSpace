@@ -26,6 +26,7 @@ extern "C"{
 #include <clib/zip/UniformLoader.h>
 }
 #include <limits.h>
+#include <stdlib.h>
 
 #define LTURRET_VARIANCE (.001 * M_PI)
 #define LTURRETROTSPEED (.4*M_PI)

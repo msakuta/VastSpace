@@ -26,6 +26,7 @@ extern "C"{
 #include <clib/zip/UniformLoader.h>
 }
 #include <limits.h>
+#include <stdlib.h>
 
 
 const char *hardpoint_static::classname()const{

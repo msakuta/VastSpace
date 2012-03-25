@@ -40,12 +40,15 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Warpable.o\
  ${OUTDIR}/Frigate.o\
  ${OUTDIR}/Beamer.o\
+ ${OUTDIR}/arms.o\
+ ${OUTDIR}/Assault.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
  ${OUTDIR}/calc/calc0.o\
  ../clib/Release/clib.a\
  ../cpplib/Release/cpplib.a\
+ ../zlib/libz.a\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
  
@@ -100,6 +103,8 @@ ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Bullet.o: $(call depends,Bullet.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Missile.o: $(call depends,Missile.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
@@ -111,6 +116,10 @@ ${OUTDIR}/Warpable.o: $(call depends,Warpable.cpp)
 ${OUTDIR}/Frigate.o: $(call depends,Frigate.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Beamer.o: $(call depends,Beamer.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/arms.o: $(call depends,arms.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Assault.o: $(call depends,Assault.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

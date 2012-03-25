@@ -6,7 +6,7 @@
 #include "EntityCommand.h"
 #include "judge.h"
 #include "btadapt.h"
-#include "glw/glwindow.h"
+//#include "glw/glwindow.h"
 #include "motion.h"
 
 #include <btBulletDynamicsCommon.h>
@@ -390,6 +390,11 @@ bool Assault::command(EntityCommand *com){
 	600.,
 };*/
 
+#ifdef DEDICATED
+void Assault::draw(WarDraw*){}
+void Assault::drawtra(WarDraw*){}
+void Assault::drawOverlay(WarDraw*){}
+#endif
 
 
 
@@ -398,55 +403,4 @@ bool Assault::command(EntityCommand *com){
 
 
 
-
-
-class GLWarms : public GLwindowSizeable{
-	Entity *a;
-public:
-	typedef GLwindowSizeable st;
-	GLWarms(const char *title, Entity *a);
-	virtual void draw(GLwindowState &ws, double t);
-	virtual void postframe();
-};
-
-GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
-	xpos = 120;
-	ypos = 40;
-	width = 200;
-	height = 200;
-	flags |= GLW_CLOSE;
-}
-
-void GLWarms::draw(GLwindowState &ws, double t){
-	if(!a)
-		return;
-	glColor4f(0,1,1,1);
-	glwpos2d(xpos, ypos + (2) * getFontHeight());
-	glwprintf(a->classname());
-	glColor4f(1,1,0,1);
-	glwpos2d(xpos, ypos + (3) * getFontHeight());
-	glwprintf("%lg / %lg", a->health, a->maxhealth());
-	for(int i = 0; i < a->armsCount(); i++){
-		const ArmBase *arm = a->armsGet(i);
-		glColor4f(0,1,1,1);
-		glwpos2d(xpos, ypos + (4 + 2 * i) * getFontHeight());
-		glwprintf(arm->hp->name);
-		glColor4f(1,1,0,1);
-		glwpos2d(xpos, ypos + (5 + 2 * i) * getFontHeight());
-		glwprintf(arm ? arm->descript() : "N/A");
-	}
-}
-
-void GLWarms::postframe(){
-	if(a && !a->w)
-		a = NULL;
-}
-
-int cmd_armswindow(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
-	if(!ppl || ppl->selected.empty())
-		return 0;
-	glwAppend(new GLWarms("Arms", *ppl->selected.begin()));
-	return 0;
-}
 

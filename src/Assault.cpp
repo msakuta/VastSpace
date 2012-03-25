@@ -1,3 +1,7 @@
+/** \file
+ * \brief Implementation of Assault class.
+ */
+#define NOMINMAX
 #include "Assault.h"
 #include "Beamer.h"
 #include "judge.h"

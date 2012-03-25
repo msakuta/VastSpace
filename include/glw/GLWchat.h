@@ -17,6 +17,8 @@ public:
 	~GLWchat();
 	virtual void changeExtent();
 	virtual void draw(GLwindowState &ws, double);
+	virtual void focusEnter();
+	virtual void focusLeave();
 	virtual void anim(double dt);
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 

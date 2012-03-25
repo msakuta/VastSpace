@@ -605,6 +605,7 @@ static int cmd_chasecamera(int argc, char *argv[]){
 void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
 	CmdAdd("chasecamera", cmd_chasecamera);
+	CmdAddParam("mover", cmd_mover, application.clientGame);
 	if(!application.serverGame)
 		return;
 	Player &pl = *application.serverGame->player;
@@ -612,7 +613,6 @@ void Player::cmdInit(ClientApplication &application){
 //	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
 	ServerCmdAdd("spos", scmd_spos);
-	CmdAddParam("mover", cmd_mover, application.clientGame);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
 	CmdAddParam("control", cmd_control, &pl);

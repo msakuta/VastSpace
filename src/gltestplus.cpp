@@ -459,7 +459,7 @@ void Game::drawindics(Viewer *vw){
 		}
 		glPopMatrix();
 	}
-	if(!mouse_captured && !glwfocus && !GLwindow::getCaptor() && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
+	if(!mouse_captured && !GLwindow::getFocus() && !GLwindow::getCaptor() && s_mousedragx != s_mousex && s_mousedragy != s_mousey){
 		int x0 = MIN(s_mousedragx, s_mousex);
 		int x1 = MAX(s_mousedragx, s_mousex) + 1;
 		int y0 = MIN(s_mousedragy, s_mousey);
@@ -954,8 +954,8 @@ void ClientGame::anim(double dt){
 		if(universe)
 			universe->clientUpdate(dt);
 
-		if(glwfocus && cmdwnd)
-			glwfocus = NULL;
+		if(GLwindow::getFocus() && cmdwnd)
+			GLwindow::getFocus()->defocus();
 
 		input_t inputs;
 		inputs.press = MotionGet();
@@ -981,7 +981,7 @@ void ClientGame::anim(double dt){
 		}*/
 
 		if(player && player->controlled)
-			glwfocus = NULL;
+			GLwindow::getFocus()->defocus();
 
 		// Really should be in draw method, since windows are property of the client.
 		glwlist->glwAnim(dt);
@@ -1387,7 +1387,7 @@ void capture_mouse(){
 	c = ShowCursor(FALSE);
 	while(0 <= c)
 		c = ShowCursor(FALSE);
-	glwfocus = NULL;
+	GLwindow::getFocus()->defocus();
 	mouse_captured = true;
 }
 
@@ -1417,8 +1417,8 @@ extern SQDefineMap &defineMap();
 
 void Game::mouse_func(int button, int state, int x, int y){
 	// If the Player clicks on the window, defocus any edit controls.
-	if(state == GLUT_DOWN)
-		SetFocus(NULL);
+//	if(state == GLUT_DOWN)
+//		SetFocus(NULL);
 
 	if(cmdwnd){
 		CmdMouseInput(button, state, x, y);
@@ -1462,8 +1462,8 @@ void Game::mouse_func(int button, int state, int x, int y){
 			player->moveorder = 0;
 			return;
 		}
-		if(!glwfocus && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
-			if(/*boxable &&*/ !glwfocus){
+		if(!GLwindow::getFocus() && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+			if(/*boxable &&*/ !GLwindow::getFocus()){
 
 				/// Temporary object to select objects.
 				class SelectSelect : public select_box_callback{
@@ -1527,7 +1527,7 @@ void Game::mouse_func(int button, int state, int x, int y){
 		else if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
 			entity_popup(player->selected, ws, 1);
 		}
-		glwfocus = NULL;
+		GLwindow::getFocus()->defocus();
 	}
 
 	if(state == GLUT_DOWN || state == GLUT_UP)
@@ -1685,10 +1685,10 @@ static void special_func(int key, int x, int y){
 		CmdSpecialInput(key);
 		return;
 	}
-	if(glwfocus){
+	if(GLwindow::getFocus()){
 		int ret;
 		GLwindow **referrer;
-		ret = glwfocus->specialKey(key);
+		ret = GLwindow::getFocus()->specialKey(key);
 		if(ret)
 			return;
 	}
@@ -1707,11 +1707,11 @@ static void key_func(unsigned char key, int x, int y){
 			return;
 	}
 
-	if(glwfocus){
+	if(GLwindow::getFocus()){
 		if(key == ESC)
-			glwfocus = NULL;
+			GLwindow::getFocus()->defocus();
 		else
-			glwfocus->key(key);
+			GLwindow::getFocus()->key(key);
 		return;
 	}
 
@@ -1852,7 +1852,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 					s_mousedragy = s_mousey;
 				}
 
-				if(!glwfocus && (wParam & MK_RBUTTON) && !mouse_captured){
+				if(!GLwindow::getFocus() && (wParam & MK_RBUTTON) && !mouse_captured){
 					capture_mouse();
 				}
 			}

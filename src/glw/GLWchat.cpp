@@ -1,10 +1,10 @@
 /** \file
  * \brief Implementation of GLWmessage.
  */
+#include "glw/GLWchat.h"
 #include "cmd.h"
 #include "../Application.h"
 #include "sqadapt.h"
-#include "glw/GLWchat.h"
 #include "antiglut.h"
 extern "C"{
 #include <clib/c.h>
@@ -38,7 +38,7 @@ GLWchat::GLWchat() : GLwindowSizeable("Chat Window"), scrollpos(0){
 	wndlist.insert(this);
 
 	// Create the Windows Edit window instance
-	hEdit = CreateWindow("Edit", "", WS_CHILD | WS_VISIBLE, 100, 100, 300, int(fontheight), hWndApp, NULL, GetModuleHandle(NULL), NULL);
+	hEdit = CreateWindow("Edit", "", WS_CHILD, 100, 100, 300, int(fontheight), hWndApp, NULL, GetModuleHandle(NULL), NULL);
 
 	// Initialize Edit font
 	if(!hEditFont)
@@ -97,6 +97,15 @@ void GLWchat::draw(GLwindowState &ws, double){
 	glEnd();
 }
 
+void GLWchat::focusEnter(){
+	ShowWindow(hEdit, SW_SHOW);
+	SetFocus(hEdit);
+}
+
+void GLWchat::focusLeave(){
+	ShowWindow(hEdit, SW_HIDE);
+}
+
 void GLWchat::anim(double dt){
 }
 
@@ -108,6 +117,10 @@ int GLWchat::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 		if(0 <= iy)
 			scrollpos = iy;
 		return 1;
+	}
+	else if(r.y1 - fontheight < my){
+		ShowWindow(hEdit, SW_SHOW);
+		SetFocus(hEdit);
 	}
 	return 0;
 }

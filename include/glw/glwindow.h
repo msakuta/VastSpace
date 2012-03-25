@@ -1,3 +1,10 @@
+/** \file
+ * \brief A header for OpenGL window system.
+ *
+ * OpenGL window system is somewhat like Windows' one, it has messaging mechanism
+ * to notify and response events. The difference is that it does not have a message
+ * queue like Windows. All messages are sent from calling thread immediately.
+ */
 #ifndef GLW_GLWINDOW_H
 #define GLW_GLWINDOW_H
 #include "export.h"
@@ -9,13 +16,6 @@ extern "C"{
 #include <string.h>
 }
 #include <squirrel.h>
-/** \file
- * \brief A header for OpenGL window system.
- *
- * OpenGL window system is somewhat like Windows' one, it has messaging mechanism
- * to notify and response events. The difference is that it does not have a message
- * queue like Windows. All messages are sent from calling thread immediately.
- */
 
 /* flags */
 #define GLW_CLOSE		1 ///< Presense of close button (x) at titlebar.
@@ -23,7 +23,7 @@ extern "C"{
 #define GLW_COLLAPSABLE 4 ///< Collapsable window has a button on its titlebar to toggle collapsed state.
 #define GLW_COLLAPSE	8 ///< Whether this window is collapsed.
 #define GLW_PINNABLE	0x10 ///< Pinnable window has a button on its titlebar to toggle pinned state.
-#define GLW_PINNED		0x20 ///< Pinned window cannot be moved nor focused.
+#define GLW_PINNED		0x20 ///< Pinned window cannot be moved, but can be focused.
 #define GLW_SIZEPROP	0x40 ///< proportional size change, i.e. ratio is reserved
 #define GLW_POPUP		0x80 ///< hidden as soon as defocused
 #define GLW_TIP			0x100 ///< hidden as soon as the cursor moves out
@@ -188,11 +188,17 @@ public:
 	/// Derived classes can override to define mouse responses.
 	virtual int mouse(GLwindowState &ws, int key, int state, int x, int y);
 
-	/// Called when the mouse pointer enters the window.
+	/// \brief Called when the mouse pointer enters the window.
 	virtual void mouseEnter(GLwindowState &ws); 
 
-	/// Called when the mouse pointer leaves the window.
+	/// \brief Called when the mouse pointer leaves the window.
 	virtual void mouseLeave(GLwindowState &ws);
+
+	/// \brief Called when this window is to be focused.
+	virtual void focusEnter();
+
+	/// \brief Called when this window is to be not focused.
+	virtual void focusLeave();
 
 	/// \brief Opportunity to override default mouse behavior on non-client area.
 	/// \param x,y mouse position in screen coordinates.
@@ -228,6 +234,9 @@ public:
 	static GLwindow *getCaptor(){return captor;} ///< You can refer to but cannot alter captor window.
 	static GLwindow *getDragStart(){return dragstart;}
 	void postClose(){ flags |= GLW_TODELETE; }
+	void focus(); ///< \brief Make this GLwindow focused.
+	void defocus(); ///< \brief Make this GLwindow not focused.
+	static GLwindow *getFocus(); ///< \brief Returns currently focused GLwindow.
 
 	/// Creates and pushes an Entity object to Squirrel stack.
 	static void sq_pushobj(HSQUIRRELVM, GLwindow *);
@@ -242,6 +251,9 @@ public:
 	static const SQUserPointer tt_GLwindow;
 
 	const SQChar *sq_classname();
+
+	void (*onFocusEnter)(GLwindow*); ///< Assignable event handler for focusEnter event.
+	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.
 
 protected:
 	/// Obsolete; the version with two args is recommended, the game object should be initialized.
@@ -277,6 +289,7 @@ protected:
 	static SQInteger sqf_close(HSQUIRRELVM v);
 
 	static const int GLWSIZEABLE_BORDER;
+	static GLwindow *glwfocus;
 private:
 	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
@@ -298,7 +311,6 @@ public:
 };
 
 extern GLwindow *glwlist;
-extern GLwindow *glwfocus;
 extern GLwindow *glwdrag;
 extern int glwdragpos[2];
 
@@ -310,7 +322,7 @@ inline void GLwindow::setVisible(bool f){
 	if(!f){
 		flags |= GLW_INVISIBLE;
 		if(glwfocus == this) // defocus from hiding window
-			glwfocus = NULL;
+			glwfocus->defocus();
 	}
 	else flags &= ~GLW_INVISIBLE;
 }
@@ -417,6 +429,7 @@ public:
 	int xbuttonsize, ybuttonsize;
 	GLWbuttonMatrix(Game *game, int x, int y, int xsize = 32, int ysize = 32);
 	virtual void draw(GLwindowState &,double);
+	virtual bool focusable()const;
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
 	virtual void mouseEnter(GLwindowState &);
 	virtual void mouseLeave(GLwindowState &);
@@ -456,13 +469,30 @@ inline void GLwindow::glwpostframe(){
 
 /// Pinned window cannot be focused.
 inline void GLwindow::setPinned(bool f){
-	if(f){
+	if(f)
 		flags |= GLW_PINNED;
-		if(this == glwfocus)
-			glwfocus = NULL;
-	}
 	else
 		flags &= ~GLW_PINNED;
+}
+
+inline void GLwindow::focus(){
+	if(!this)
+		return;
+	if(glwfocus != NULL)
+		glwfocus->defocus();
+	glwfocus = this;
+	focusEnter();
+}
+
+inline void GLwindow::defocus(){
+	if(!this || this != glwfocus)
+		return;
+	glwfocus = NULL;
+	focusLeave();
+}
+
+inline GLwindow *GLwindow::getFocus(){
+	return glwfocus;
 }
 
 #endif

@@ -407,7 +407,7 @@ public:
 	}
 	~GLWpopup(){
 		if(glwfocus == this)
-			glwfocus = NULL;
+			glwfocus->defocus();
 	}
 };
 

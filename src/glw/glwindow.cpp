@@ -219,14 +219,14 @@ SQInteger GLelement::sqh_release(SQUserPointer p, SQInteger){
 
 
 GLwindow *glwlist = NULL; ///< Global list of all GLwindows. 
-GLwindow *glwfocus = NULL; ///< Focused window.
+GLwindow *GLwindow::glwfocus = NULL; ///< Focused window.
 GLwindow *glwdrag = NULL; ///< Window being dragged.
 int glwdragpos[2] = {0}; ///< Memory for starting position of dragging.
 
 /** \brief Sets title string
  * \param title pointer to string to initialize the window's title. Can be freed after construction.
  */
-GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
+GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
 	if(atitle){
 		title = new char[strlen(atitle)+1];
 		strcpy(title, atitle);
@@ -235,7 +235,7 @@ GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL){
 		title = NULL;
 }
 
-GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL), next(NULL){
+GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
 	if(atitle){
 		title = new char[strlen(atitle)+1];
 		strcpy(title, atitle);
@@ -267,11 +267,11 @@ void glwActivate(GLwindow **ppwnd){
 	wnd->next = glwlist;
 	glwlist = wnd;
 	if(wnd->focusable()){
-		glwfocus = wnd;
-		glwfocus->flags &= ~GLW_COLLAPSE;
+		wnd->focus();
+		wnd->flags &= ~GLW_COLLAPSE;
 	}
-	else if(glwfocus == wnd)
-		glwfocus = NULL;
+	else if(GLwindow::getFocus() == wnd)
+		GLwindow::getFocus()->defocus();
 }
 
 /// Called when a window is changed its size.
@@ -327,7 +327,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	glVertex2d(wx, wy + wh);
 	glEnd();
 	const int border = (flags & (GLW_POPUP | GLW_COLLAPSE) ? 2 : margin)/* + !!(wnd->flags & GLW_SIZEABLE)*/;
-	alpha = flags & GLW_PINNED ? wx <= s_mousex && s_mousex < wx + ww && wy <= s_mousey && s_mousey < wy + wh ? 63 : 31 : 255;
+	alpha = glwfocus != this && flags & GLW_PINNED ? wx <= s_mousex && s_mousex < wx + ww && wy <= s_mousey && s_mousey < wy + wh ? 63 : 31 : 255;
 	for(i = 0; i < border; i++){
 		static const GLubyte cols[4] = {255, 127, 95, 191};
 		GLubyte col;
@@ -511,7 +511,7 @@ void GLwindow::glwFree(){
 	GLwindow *wnd = this;
 	GLwindow **ppwnd, *wnd2;
 	if(wnd == glwfocus)
-		glwfocus = glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next;
+		(glwfocus->flags & GLW_POPUP || wnd->next && wnd->next->flags & GLW_COLLAPSE ? NULL : wnd->next)->focus();
 	if(wnd == lastover)
 		lastover = NULL;
 	if(wnd == dragstart)
@@ -561,6 +561,19 @@ int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
 
 void GLwindow::mouseEnter(GLwindowState&){} ///< Derived classes can override to define mouse responses.
 void GLwindow::mouseLeave(GLwindowState&){} ///< Derived classes can override to define mouse responses.
+
+/// Derived classes can override to define focus responses.
+void GLwindow::focusEnter(){
+	if(onFocusEnter)
+		onFocusEnter(this);
+}
+
+///< Derived classes can override to define focus responses.
+void GLwindow::focusLeave(){
+	if(onFocusLeave)
+		onFocusLeave(this);
+}
+
 /// \param key Key code of inputs from the keyboard. Printable keys are passed as its ASCII code.
 /// \return 0 if this window does not process the key event, otherwise consume the event.
 int GLwindow::key(int key){return 0;}
@@ -689,7 +702,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 						wnd->next = NULL;
 						/* Defocus also to avoid the window catching key strokes */
 						if(wnd == glwfocus)
-							glwfocus = NULL;
+							glwfocus->defocus();
 					}
 					else
 						glwActivate(ppwnd);
@@ -721,8 +734,8 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 				killfocus = 0;
 				if(nowheel && state == GLUT_UP){
 					wnd->flags ^= GLW_PINNED;
-					if(wnd->flags & GLW_PINNED && wnd == glwfocus)
-						glwfocus = NULL;
+//					if(wnd->flags & GLW_PINNED && wnd == glwfocus)
+//						glwfocus->defocus();
 					return 1;
 	//					break;
 				}
@@ -775,8 +788,8 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 				wnd->mouse(ws, button, state, x - cr.x0, y - cr.y0);
 			}
 
-			if(!(wnd->flags & GLW_PINNED) && wnd->focusable() && glwfocus != wnd){
-				glwfocus = wnd;
+			if(/*!(wnd->flags & GLW_PINNED) &&*/ wnd->focusable() && glwfocus != wnd){
+				wnd->focus();
 				glwActivate(ppwnd);
 			}
 			killfocus = 0;
@@ -1394,6 +1407,10 @@ void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
 			buttons[y * xbuttons + x]->draw(ws, dt);
 	}
 	glPopMatrix();
+}
+
+bool GLWbuttonMatrix::focusable()const{
+	return false;
 }
 
 int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){

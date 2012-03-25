@@ -49,7 +49,6 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 void Assault::init(){
 	static bool initialized = false;
 	if(!initialized){
-		std::vector<hitbox> hitboxes;
 		std::vector<SqInitProcess*> procs;
 		HitboxProcess hp(hitboxes);
 		procs.push_back(&hp);

@@ -1359,7 +1359,7 @@ public:
 } cii;
 
 int cmd_focus(int argc, const char *argv[]){
-	GLwindow *w = glwfocus ? glwfocus : glwlist;
+	GLwindow *w = GLwindow::getFocus() ? GLwindow::getFocus() : glwlist;
 	int i;
 
 	for(w = glwlist; w; w = w->getNext()) if(!strcmp(w->classname(), "GLwindowSolarMap"))

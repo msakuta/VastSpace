@@ -97,6 +97,13 @@ protected:
 	/// \brief Initializes hitboxes and hardpoints by Squirrel script.
 	bool sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &procs);
 
+	class ModelScaleProcess : public SqInitProcess{
+	public:
+		double &modelScale;
+		ModelScaleProcess(double &modelScale) : modelScale(modelScale){}
+		virtual void process(HSQUIRRELVM);
+	};
+
 	class HitboxProcess : public SqInitProcess{
 	public:
 		std::vector<hitbox> &hitboxes;

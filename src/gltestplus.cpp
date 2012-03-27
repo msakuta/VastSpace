@@ -1446,7 +1446,7 @@ void Game::mouse_func(int button, int state, int x, int y){
 			s_mousedragy = s_mousey;
 			return;
 		}
-		if(player->moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		if(player && player->moveorder && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 			char buf[3][64];
 			char *args[4] = {"move", buf[0], buf[1], buf[2]};
 			Vec3d lpos(player->move_hitpos);

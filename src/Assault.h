@@ -12,7 +12,6 @@ class Assault : public Frigate{
 protected:
 	float engineHeat;
 	WeakPtr<Assault> formPrev;
-	static suf_t *sufbase;
 	ArmBase **turrets;
 
 public:
@@ -46,6 +45,7 @@ public:
 //	static const Builder::BuildStatic builds;
 protected:
 	bool buildBody();
+	static double modelScale;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;
 	static std::vector<hitbox> hitboxes;

@@ -23,7 +23,7 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
 
-#define BEAMER_SCALE .0002
+double Assault::modelScale = 0.0002;
 
 
 
@@ -56,6 +56,8 @@ void Assault::init(){
 	static bool initialized = false;
 	if(!initialized){
 		std::vector<SqInitProcess*> procs;
+		ModelScaleProcess msp(modelScale);
+		procs.push_back(&msp);
 		HitboxProcess hp(hitboxes);
 		procs.push_back(&hp);
 		DrawOverlayProcess dop(disp);

@@ -1164,9 +1164,31 @@ bool Warpable::sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &pr
 		CmdPrint(gltestp::dstring() << scriptFile << " total: " << d << " sec");
 	}
 	catch(SQFError &e){
-		CmdPrint(gltestp::dstring() << scriptFile << " error: " << e.what());
+		// TODO: We wanted to know which line caused the error, but it seems it's not possible because the errors
+		// occur in the deferred loading callback objects.
+/*		SQStackInfos si0;
+		if(SQ_SUCCEEDED(sq_stackinfos(game->sqvm, 0, &si0))){
+			SQStackInfos si;
+			for(int i = 1; SQ_SUCCEEDED(sq_stackinfos(game->sqvm, i, &si)); i++)
+				si0 = si;
+			CmdPrint(gltestp::dstring() << scriptFile << "(" << int(si0.line) << "): " << si0.funcname << ": error: " << e.what());
+		}
+		else*/
+			CmdPrint(gltestp::dstring() << scriptFile << " error: " << e.what());
 	}
 	return true;
+}
+
+/// ModelScale is mandatory if specified by the caller.
+void Warpable::ModelScaleProcess::process(HSQUIRRELVM v){
+	sq_pushstring(v, _SC("modelScale"), -1); // root string
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError(_SC("modelScale not found"));
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+		throw SQFError(_SC("modelScale couldn't be converted to float"));
+	modelScale = f;
+	sq_poptop(v);
 }
 
 void Warpable::HitboxProcess::process(HSQUIRRELVM v){

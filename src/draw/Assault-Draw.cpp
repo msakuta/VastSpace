@@ -15,18 +15,8 @@ extern "C"{
 }
 
 
-#define BEAMER_SCALE .0002
-
-
-
-suf_t *Assault::sufbase = NULL;
-
-
 void Assault::draw(wardraw_t *wd){
-	Assault *const p = this;
 	static OpenGLState::weak_ptr<bool> init;
-	static suftex_t *pst;
-	static GLuint list = 0;
 	static Model *model = NULL;
 	if(!w)
 		return;
@@ -93,7 +83,7 @@ void Assault::draw(wardraw_t *wd){
 			}
 		}
 
-		double scale = BEAMER_SCALE;
+		const double scale = modelScale;
 		Mat4d mat;
 
 		glPushMatrix();

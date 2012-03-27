@@ -1147,7 +1147,7 @@ void Warpable::post_warp(){
 /// It depends on initialization order. Specifically, dedicated server always invoke in the server game,
 /// while the Windows client invokes in the client game if it's connected to a server.
 /// As for a standalone server, it's not determined.
-bool Warpable::sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &procs){
+bool Warpable::sq_init(const SQChar *scriptFile, SqInitProcess &procs){
 	try{
 		HSQUIRRELVM v = game->sqvm;
 		StackReserver sr(v);
@@ -1157,8 +1157,9 @@ bool Warpable::sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &pr
 		sq_pushroottable(v); // root
 		sq_setdelegate(v, -2);
 		if(SQ_SUCCEEDED(sqa_dofile(game->sqvm, scriptFile, 0, 1))){
-			for(int i = 0; i < procs.size(); i++)
-				procs[i]->process(v);
+			SqInitProcess *proc = &procs;
+			for(; proc; proc = proc->next)
+				proc->process(v);
 		}
 		double d = TimeMeasLap(&tm);
 		CmdPrint(gltestp::dstring() << scriptFile << " total: " << d << " sec");

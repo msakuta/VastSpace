@@ -89,13 +89,31 @@ public:
 protected:
 	virtual void init();
 
+	/// \brief Callback functionoid that processes Squirrel VM that is initialized in sq_init().
+	///
+	/// Multiple SqInitProcess derived class objects can be specified.
+	///
+	/// sq_init() uses temporary table that delegates the root table (can read from the root table but
+	/// writing won't affect it) that will be popped from the stack before the function returns.
+	/// It means the SqInitProcess derived class objects must process the defined values in the table
+	/// before sq_init() returns.
 	class SqInitProcess{
 	public:
+		SqInitProcess() : next(NULL){}
+
+		/// \brief The method called after the VM is initialized.
 		virtual void process(HSQUIRRELVM v) = 0;
+
+		/// \brief Multiple SqInitProcesses can be connected with this operator before passing to sq_init().
+		SqInitProcess &operator<<=(SqInitProcess &o);
+
+	protected:
+		SqInitProcess *next;
+		friend class Warpable;
 	};
 
 	/// \brief Initializes hitboxes and hardpoints by Squirrel script.
-	bool sq_init(const SQChar *scriptFile, std::vector<SqInitProcess*> &procs);
+	bool sq_init(const SQChar *scriptFile, SqInitProcess &procs);
 
 	class ModelScaleProcess : public SqInitProcess{
 	public:
@@ -175,6 +193,42 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 //-----------------------------------------------------------------------------
 //    Inline Implementation
 //-----------------------------------------------------------------------------
+
+
+/// Now this is interesting. If it is used properly, it does not use heap memory at all, so it
+/// would be way faster than std::vector or something. In addition, the code is more readable too.
+/// For example, expressions like sq_init("file", A <<= B <<= C) will chain the objects in the
+/// stack.
+///
+/// The selection of the operator is arbitrary (nothing to do with bit shifting), but needs to be
+/// right associative in order to process them in the order they appear in the argument
+/// (in the above example, order of A, B, C), or this operator or sq_init() has to do recursive calls
+/// somehow.
+///
+/// Also, += could be more readable, but it implies the left object accumulates the right
+/// and the right could be deleted thereafter. It's not true; both object must be allocated
+/// until sq_init() exits.
+///
+/// In association with std::streams, it could have << operator overloaded to do the same thing.
+/// But the operator is left associative and we cannot simply assign neighboring object to next
+/// unless we chain them in the reverse order (if the expression is like sq_init("file, A << B << C),
+/// order of C, B, A). It would be not obvious to the user (of this class).
+///
+/// The appearance and usage of the operator remind me of Haskell Monads, but internal functioning is
+/// nothing to do with them.
+///
+/// Only worry is whether gcc supports stack-reserved objects chained with this operator.
+/// Anyway we'll see it soon.
+inline Warpable::SqInitProcess &Warpable::SqInitProcess::operator<<=(SqInitProcess &o){
+	next = &o;
+	return *this;
+}
+/*
+SqInitProcess &SqInitProcess::operator<<(SqInitProcess &o){
+	o.next = this;
+	return o;
+}
+*/
 
 
 inline Warpable::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1){

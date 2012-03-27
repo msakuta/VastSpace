@@ -55,18 +55,12 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 void Assault::init(){
 	static bool initialized = false;
 	if(!initialized){
-		std::vector<SqInitProcess*> procs;
-		ModelScaleProcess msp(modelScale);
-		procs.push_back(&msp);
-		HitboxProcess hp(hitboxes);
-		procs.push_back(&hp);
-		DrawOverlayProcess dop(disp);
-		procs.push_back(&dop);
-		NavlightsProcess np(navlights);
-		procs.push_back(&np);
-		HardPointProcess hdp(hardpoints);
-		procs.push_back(&hdp);
-		sq_init(_SC("models/Assault.nut"), procs);
+		sq_init(_SC("models/Assault.nut"),
+			ModelScaleProcess(modelScale) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(disp) <<=
+			NavlightsProcess(navlights) <<=
+			HardPointProcess(hardpoints));
 		initialized = true;
 	}
 	turrets = new ArmBase*[hardpoints.size()];

@@ -104,15 +104,10 @@ bool Beamer::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			std::vector<hitbox> hitboxes;
-			std::vector<SqInitProcess*> procs;
-			HitboxProcess hp(hitboxes);
-			procs.push_back(&hp);
-			DrawOverlayProcess dop(disp);
-			procs.push_back(&dop);
-			NavlightsProcess np(navlights);
-			procs.push_back(&np);
-			sq_init(_SC("models/Beamer.nut"), procs);
+			sq_init(_SC("models/Beamer.nut"),
+				HitboxProcess(hitboxes) <<=
+				DrawOverlayProcess(disp) <<=
+				NavlightsProcess(navlights));
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;

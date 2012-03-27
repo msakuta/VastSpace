@@ -188,9 +188,12 @@ void AdditiveShaderBind::useInt()const{
 
 void AdditiveShaderBind::setIntensity(const Vec3f &inten)const{
 //	glUniform3fv(intensityLoc, 1, inten);
-	glUniform1f(glGetUniformLocation(shader, "intensity[0]"), inten[0]);
-	glUniform1f(glGetUniformLocation(shader, "intensity[1]"), inten[1]);
-	glUniform1f(glGetUniformLocation(shader, "intensity[2]"), inten[2]);
+	static const char *strinten[3] = {"intensity[0]", "intensity[1]", "intensity[2]"};
+	GLint intenloc[3];
+	for(int i = 0; i < 3; i++){
+		intenloc[i] = glGetUniformLocation(shader, strinten[i]);
+		glUniform1f(intenloc[i], inten[i]);
+	}
 }
 
 void AdditiveShadowMapShaderBind::build(){

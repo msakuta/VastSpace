@@ -12,6 +12,7 @@
 #include "btadapt.h"
 //#include "glw/glwindow.h"
 #include "motion.h"
+#include "Game.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -203,7 +204,8 @@ void Assault::anim(double dt){
 	}
 
 	if(health <= 0){
-		w = NULL;
+		if(game->isServer())
+			delete this;
 		return;
 	}
 
@@ -341,6 +343,10 @@ void Assault::anim(double dt){
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
 	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt / 2.)) : engineHeat * exp(-dt / 2.);
+}
+
+void Assault::clientUpdate(double dt){
+	anim(dt);
 }
 
 void Assault::postframe(){

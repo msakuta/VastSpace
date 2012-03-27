@@ -26,7 +26,7 @@ struct EntityCommand;
 class PopupMenu;
 
 /// An abstract class to implement Player or AI controlling in the common way.
-class EXPORT EntityController : public Serializable, public Observer{
+class EXPORT EntityController : public Serializable, public Observable, public Observer{
 public:
 	typedef Serializable st;
 
@@ -37,8 +37,9 @@ public:
 };
 
 
-/// Primary object in the space. Many object classes derive this.
-/// Serializable and accessible from Squirrel codes.
+/// \brief Primary object in the space. Many object classes derive this.
+///
+/// It's Serializable and accessible from Squirrel codes.
 class EXPORT Entity : public Serializable, public Observable, public Observer{
 public:
 	typedef Serializable st;
@@ -109,24 +110,24 @@ public:
 	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
 	Entity *getUltimateOwner();
 
-	Vec3d pos; // Position vector
-	Vec3d velo; // Linear velocity vector
-	Vec3d omg; // Angular velocity vector
-	Quatd rot; // rotation expressed in quaternion
-	double mass; /* [kg] */
-	double moi;  /* moment of inertia, [kg m^2] should be a tensor */
+	Vec3d pos; ///< Position vector
+	Vec3d velo; ///< Linear velocity vector
+	Vec3d omg; ///< Angular velocity vector
+	Quatd rot; ///< rotation expressed in quaternion
+	double mass; ///< [kg]
+	double moi;  ///< moment of inertia, [kg m^2] should be a tensor
 //	double turrety, barrelp;
 //	double desired[2];
-	double health;
+	double health; ///< Health or armor strength
 //	double cooldown, cooldown2;
 //	WeakPtr<Entity> next;
 //	Entity *selectnext; ///< selection list is no longer needed
-	WeakPtr<Entity> enemy;
+	WeakPtr<Entity> enemy; ///< Currently recognizing enemy
 	int race;
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
-	EntityController *controller; /// The controller class, could be either a player or an AI.
-	WarField *w; // belonging WarField, NULL means being bestroyed. Assigning another WarField marks it to transit to new CoordSys.
+	WeakPtr<EntityController> controller; ///< The controller class, could be either a player or an AI.
+	WarField *w; ///< belonging WarField.
 	int otflag;
 //	char weapon;
 

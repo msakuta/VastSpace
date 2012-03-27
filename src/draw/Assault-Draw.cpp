@@ -1,3 +1,6 @@
+/** \file
+ * \brief Visual implementation of Assault class.
+ */
 #include "../Assault.h"
 #include "../Beamer.h"
 #include "Player.h"
@@ -6,6 +9,7 @@
 #include "draw/ShaderBind.h"
 #include "draw/WarDraw.h"
 #include "draw/blackbody.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -23,6 +27,7 @@ void Assault::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	static suftex_t *pst;
 	static GLuint list = 0;
+	static Model *model = NULL;
 	if(!w)
 		return;
 
@@ -60,60 +65,36 @@ void Assault::draw(wardraw_t *wd){
 
 	static int engineValveAtrIndex = -1, engineAtrIndex = -1;
 	if(!init) do{
-		sufbase = CallLoadSUF("models/assault.bin");
-		if(!sufbase) break;
-/*		suftexparam_t stp;
-		stp.flags = STP_ENV;
-		stp.env = GL_ADD;
-		AddMaterial("enginenozzle.png", "models/enginenozzle_br.png", &stp, "models/enginenozzle.png", NULL);*/
-//		Beamer::cache_bridge();
-		CacheSUFMaterials(sufbase);
-		pst = gltestp::AllocSUFTex(sufbase);
+		model = LoadMQOModel("models/assault.mqo");
 
-		for(int i = 0; i < pst->n; i++) if(!strcmp(sufbase->a[i].colormap, "engine.bmp")){
-			engineValveAtrIndex = i;
-			pst->a[i].onInitedTexture = TextureParams::onInitedTextureEngineValve;
-		}
-		else if(!strcmp(sufbase->a[i].colormap, "enginenozzle.png")){
-			engineAtrIndex = i;
-			pst->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
-			pst->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+		if(model && model->sufs[0]){
+			for(int i = 0; i < model->tex[0]->n; i++) if(!strcmp(model->sufs[0]->a[i].colormap, "engine.bmp")){
+				engineValveAtrIndex = i;
+				model->tex[0]->a[i].onInitedTexture = TextureParams::onInitedTextureEngineValve;
+			}
+			else if(!strcmp(model->sufs[0]->a[i].colormap, "enginenozzle.png")){
+				engineAtrIndex = i;
+				model->tex[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+				model->tex[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+			}
 		}
 
 		init.create(*openGLState);
 	} while(0);
 
-	if(sufbase){
-		if(pst){
+	if(model){
+		if(model && model->tex[0]){
 			if(0 <= engineValveAtrIndex){
-				pst->a[engineValveAtrIndex].onInitedTextureData = &tp;
+				model->tex[0]->a[engineValveAtrIndex].onInitedTextureData = &tp;
 			}
 			if(0 <= engineAtrIndex){
-				pst->a[engineAtrIndex].onBeginTextureData = &tp;
-				pst->a[engineAtrIndex].onEndTextureData = &tp;
+				model->tex[0]->a[engineAtrIndex].onBeginTextureData = &tp;
+				model->tex[0]->a[engineAtrIndex].onEndTextureData = &tp;
 			}
 		}
 
-		static const double normal[3] = {0., 1., 0.};
 		double scale = BEAMER_SCALE;
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
 		Mat4d mat;
-
-		// testing global mesh
-/*		glColor4ub(255,0,255,255);
-		glBegin(GL_LINES);
-		for(int i = -10; i <= 10; i++){
-			glVertex3d(i / 10., -1., 0.);
-			glVertex3d(i / 10.,  1., 0.);
-			glVertex3d(-1., i / 10., 0.);
-			glVertex3d( 1., i / 10., 0.);
-		}
-		glEnd();*/
 
 		glPushMatrix();
 		transform(mat);
@@ -133,22 +114,8 @@ void Assault::draw(wardraw_t *wd){
 		}
 #endif
 
-		glPushMatrix();
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
-/*		glPushAttrib(GL_TEXTURE_BIT);*/
-/*		DrawSUF(beamer_s.sufbase, SUF_ATR, &g_gldcache);*/
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, pst, NULL, NULL);
-/*		DecalDrawSUF(&suf_beamer, SUF_ATR, &g_gldcache, beamer_s.tex, pf->sd, &beamer_s);*/
-/*		glPopAttrib();*/
-		glPopMatrix();
-/*		glEndList();
-		}
-
-		glCallList(list);*/
-
-/*		for(i = 0; i < numof(pf->turrets); i++)
-			mturret_draw(&pf->turrets[i], pt, wd);*/
+		glScaled(-scale, scale, -scale);
+		DrawMQOPose(model, NULL);
 		glPopMatrix();
 	}
 }

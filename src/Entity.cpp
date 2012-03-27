@@ -517,6 +517,7 @@ void Entity::serialize(SerializeContext &sc){
 //	sc.o << next /*<< selectnext*/;
 	sc.o << enemy;
 	sc.o << race;
+	sc.o << controller;
 	sc.o << otflag;
 }
 
@@ -535,6 +536,7 @@ void Entity::unserialize(UnserializeContext &sc){
 //	sc.i >> next /*>> selectnext*/;
 	sc.i >> enemy;
 	sc.i >> race;
+	sc.i >> controller;
 	sc.i >> otflag;
 
 	// Postprocessing calls leave/enterField according to frame deltas.

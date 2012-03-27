@@ -11,7 +11,7 @@
 class Assault : public Frigate{
 protected:
 	float engineHeat;
-	Assault *formPrev;
+	WeakPtr<Assault> formPrev;
 	static suf_t *sufbase;
 	ArmBase **turrets;
 
@@ -31,6 +31,7 @@ public:
 	virtual void enterField(WarField *);
 	virtual void leaveField(WarField *);
 	virtual void anim(double);
+	virtual void clientUpdate(double);
 	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

@@ -17,6 +17,7 @@
 #include "Missile.h"
 #include "EntityCommand.h"
 #include "motion.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -74,7 +75,21 @@ void ArmBase::unserialize(UnserializeContext &sc){
 
 void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
 	st::dive(sc, method);
-//	const_cast<hardpoint_static*>(hp)->dive(sc, method);
+
+	// Dive in if it's the first occurrence of the associated hardpoint object.
+	// Multiple ArmBases can share the same hardpoint object, and we do not want duplicate data sent.
+	// Hardpoint_static class is a weird class. It's like a static data, but is a Serializable
+	// because it can be saved to and loaded from a file to restore the state at the moment of save
+	// operation, regardless of loaded environment's settings.
+	// It's hard to decide if this applies to server and client transmission too.
+	// But for the moment, it'd be too tough job to separate the logic between saved games and network games.
+	//
+	// TODO: Server side modification won't be sent, since game->idmap() continues to store the id
+	// after the first frame. Probably this won't be a problem because the hardpoint object is fairly
+	// static, but it's not forced to be.
+	Game::IdMap &idmap = game->idmap();
+	if(idmap.find(hp->getid()) == idmap.end())
+		const_cast<hardpoint_static*>(hp)->dive(sc, method);
 }
 
 void ArmBase::postframe(){

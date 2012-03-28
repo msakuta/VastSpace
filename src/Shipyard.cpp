@@ -168,10 +168,11 @@ bool Shipyard::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			sq_init(_SC("models/Shipyard.nut"),
-				HitboxProcess(hitboxes) <<=
-				DrawOverlayProcess(disp) <<=
-				NavlightsProcess(navlights));
+			SqInit init;
+			HitboxProcess hp(init, hitboxes);
+			DrawOverlayProcess dop(init, disp);
+			NavlightsProcess np(init, navlights);
+			sq_init(_SC("models/Shipyard.nut"), init);
 			// Assign dummy value if the file is not available.
 			if(hitboxes.empty())
 				hitboxes.push_back(hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)));

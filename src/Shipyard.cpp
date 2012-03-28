@@ -56,6 +56,8 @@ void ShipyardDocker::dockque(Dockable *e){
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
+double Shipyard::modelScale = 0.0010;
+
 hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 	hardpoint_static(Vec3d(.100, .060, -.760), Quatd(0., 0., 0., 1.), "Turret 1", 0),
 	hardpoint_static(Vec3d(.100, -.060, -.760), Quatd(0., 0., 1., 0.), "Turret 2", 0),
@@ -79,6 +81,16 @@ Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Build
 }
 
 void Shipyard::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit init;
+		ModelScaleProcess msp(init, modelScale);
+		HitboxProcess hp(init, hitboxes);
+		DrawOverlayProcess dop(init, disp);
+		NavlightsProcess np(init, navlights);
+		sq_init(_SC("models/Shipyard.nut"), init);
+		initialized = true;
+	}
 	ru = 0.;
 /*	if(!hardpoints){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
@@ -168,12 +180,7 @@ bool Shipyard::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			SqInit init;
-			HitboxProcess hp(init, hitboxes);
-			DrawOverlayProcess dop(init, disp);
-			NavlightsProcess np(init, navlights);
-			sq_init(_SC("models/Shipyard.nut"), init);
-			// Assign dummy value if the file is not available.
+			// Assign dummy value if the initialize file is not available.
 			if(hitboxes.empty())
 				hitboxes.push_back(hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)));
 			for(int i = 0; i < hitboxes.size(); i++){

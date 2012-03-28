@@ -27,14 +27,13 @@ extern "C"{
 
 #define MAX_SHIELD_AMOUNT 5000.
 #define BEAMER_HEALTH 15000.
-#define BEAMER_SCALE .0002
 #define BEAMER_MAX_SPEED .1
 #define BEAMER_ACCELERATE .05
 #define BEAMER_MAX_ANGLESPEED .4
 #define BEAMER_ANGLEACCEL .2
 #define BEAMER_SHIELDRAD .09
 
-
+double Beamer::modelScale = 0.0002;
 GLuint Beamer::disp = 0;
 std::vector<hitbox> Beamer::hitboxes;
 std::vector<Warpable::Navlight> Beamer::navlights;
@@ -52,6 +51,16 @@ Beamer::Beamer(WarField *aw) : st(aw){
 }
 
 void Beamer::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit init;
+		ModelScaleProcess msp(init, modelScale);
+		HitboxProcess hp(init, hitboxes);
+		NavlightsProcess np(init, navlights);
+		DrawOverlayProcess dop(init, disp);
+		sq_init(_SC("models/Beamer.nut"), init);
+		initialized = true;
+	}
 	charge = 0.;
 //	dock = NULL;
 	undocktime = 0.f;
@@ -104,11 +113,6 @@ bool Beamer::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			SqInit init;
-			HitboxProcess hp(init, hitboxes);
-			NavlightsProcess np(init, navlights);
-			DrawOverlayProcess dop(init, disp);
-			sq_init(_SC("models/Beamer.nut"), init);
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;

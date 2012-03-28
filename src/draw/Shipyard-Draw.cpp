@@ -58,7 +58,7 @@ void Shipyard::draw(wardraw_t *wd){
 		motions[1]->interpolate(mp[1], doorphase[1] * 10.);
 		mp[0].next = &mp[1];
 
-		double scale = SCARRY_SCALE;
+		const double scale = modelScale;
 		Mat4d mat;
 
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);

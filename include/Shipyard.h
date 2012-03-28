@@ -77,6 +77,7 @@ protected:
 	static int nhardpoints;
 
 	static const maneuve mymn;
+	static double modelScale;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;
 

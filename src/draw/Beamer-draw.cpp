@@ -25,7 +25,6 @@ extern "C"{
 
 #define MAX_SHIELD_AMOUNT 5000.
 #define BEAMER_HEALTH 15000.
-#define BEAMER_SCALE .0002
 #define BEAMER_MAX_SPEED .1
 #define BEAMER_ACCELERATE .05
 #define BEAMER_MAX_ANGLESPEED .4
@@ -80,7 +79,7 @@ void Beamer::draw(wardraw_t *wd){
 		init.create(*openGLState);
 	} while(0);
 	if(model){
-		double scale = BEAMER_SCALE;
+		const double scale = modelScale;
 		Mat4d mat;
 
 		glPushMatrix();

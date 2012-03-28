@@ -14,8 +14,6 @@ protected:
 //	struct tent3d_fpol *pf[1];
 //	scarry_t *dock;
 	float undocktime;
-	static GLuint disp;
-//	static const double sufscale;
 public:
 	Beamer(Game *game) : st(game){init();}
 	Beamer(WarField *w);
@@ -42,6 +40,8 @@ public:
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
 protected:
+	static GLuint disp;
+	static double modelScale;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;
 };

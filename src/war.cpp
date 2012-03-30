@@ -408,15 +408,6 @@ EXPORT btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInf
 }
 
 
-//static double gradius = 1.;
-static int g_debugdraw_bullet = 0;
-
-static void init_gsc(){
-//	CvarAdd("gradius", &gradius, cvar_double);
-	CvarAdd("g_debugdraw_bullet", &g_debugdraw_bullet, cvar_int);
-}
-
-
 struct tent3d_line_list *WarSpace::getTeline3d(){return tell;}
 struct tent3d_fpol_list *WarSpace::getTefpol3d(){return tepl;}
 WarSpace::operator WarSpace *(){return this;}

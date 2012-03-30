@@ -948,8 +948,12 @@ void ClientGame::anim(double dt){
 
 		MotionAnim(*player, dt, flypower());
 
-		if(player)
+		for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
+			Player *player = *it;
+			if(!player)
+				continue;
 			player->anim(dt);
+		}
 
 		if(universe)
 			universe->clientUpdate(dt);
@@ -963,7 +967,10 @@ void ClientGame::anim(double dt){
 		if(joyStick.InitJoystick()){
 			joyStick.CheckJoystick(inputs);
 		}
-		if(player){
+		for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
+			Player *player = *it;
+			if(!player)
+				continue;
 			(*player->mover)(inputs, dt);
 			if(player->nextmover && player->nextmover != player->mover){
 	/*			Vec3d pos = pl.pos;

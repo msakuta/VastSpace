@@ -77,6 +77,8 @@ public:
 		virtual Quatd getrot()const;
 		virtual void setrot(const Quatd &arot){pl.rot = arot;}
 		virtual void rotateLook(double dx, double dy);
+		virtual void serialize(SerializeContext &sc){}
+		virtual void unserialize(UnserializeContext &){}
 	protected:
 		Vec3d &refvelo(){return pl.velo;}
 	};
@@ -239,6 +241,8 @@ public:
 	Vec3d getpos()const;
 	void setGear(int g);
 	int getGear()const;
+	void serialize(SerializeContext &sc);
+	void unserialize(UnserializeContext &);
 } FreelookMover;
 
 

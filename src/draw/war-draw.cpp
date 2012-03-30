@@ -20,6 +20,7 @@
 #include "glsl.h"
 #include "msg/Message.h"
 #include "msg/GetCoverPointsMessage.h"
+#include "Game.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -38,10 +39,12 @@ void WarField::drawOverlay(wardraw_t *){}
 
 //static double gradius = 1.;
 static int g_debugdraw_bullet = 0;
+static int g_player_viewport = 0;
 
 static void init_gsc(){
 //	CvarAdd("gradius", &gradius, cvar_double);
 	CvarAdd("g_debugdraw_bullet", &g_debugdraw_bullet, cvar_int);
+	CvarAdd("g_player_viewport", &g_player_viewport, cvar_int);
 }
 
 static Initializator initializator(init_gsc);
@@ -193,6 +196,42 @@ void WarSpace::drawtra(wardraw_t *wd){
 		bdw->debugDrawWorld();
 	}
 
+	if(g_player_viewport){
+		Game *game = wd->w->getGame();
+		for(Game::PlayerList::iterator it = game->players.begin(); it != game->players.end(); ++it){
+			Player *player = *it;
+			if(player == game->player || player->cs != cs)
+				continue;
+			double f = player->fov;
+			const Vec3d pos = player->getpos();
+			const Quatd irot = player->getrot().cnj();
+			glBegin(GL_LINES);
+			for(int level = 4; 0 <= level; --level){
+				double l = double(1 << level);
+				glColor4f(!!((1 << level) & 8), !!((1 << level) & 5), !!((1 << level) & 19), 1);
+				glVertex3dv(pos);
+				glVertex3dv(pos + irot.trans(l * Vec3d(0,0,-1)));
+				for(int y = -1; y <= 1; y++){
+					glVertex3dv(pos + irot.trans(l * Vec3d(-f, y * f, -1)));
+					glVertex3dv(pos + irot.trans(l * Vec3d(f, y * f, -1)));
+				}
+				for(int x = -1; x <= 1; x++){
+					glVertex3dv(pos + irot.trans(l * Vec3d(x * f, -f,-1)));
+					glVertex3dv(pos + irot.trans(l * Vec3d(x * f, f,-1)));
+				}
+				glVertex3dv(pos);
+				glVertex3dv(pos + irot.trans(l * Vec3d(-1,-1,-1)));
+				glVertex3dv(pos);
+				glVertex3dv(pos + irot.trans(l * Vec3d(1,-1,-1)));
+				glVertex3dv(pos);
+				glVertex3dv(pos + irot.trans(l * Vec3d(-1,1,-1)));
+				glVertex3dv(pos);
+				glVertex3dv(pos + irot.trans(l * Vec3d(1,1,-1)));
+			}
+			glEnd();
+		}
+	}
+
 	if(g_otdrawflags)
 		ot_draw(this, wd);
 }
@@ -211,7 +250,7 @@ void WarSpace::drawOverlay(wardraw_t *wd){
 			glLoadIdentity();
 			glTranslated((spos[0] / spos[3] + 1.) * wd->vw->vp.w / 2., (1. - spos[1] / spos[3]) * wd->vw->vp.h / 2., 0.);
 			glScaled(20, 20, 1);
-			glColor4f(pe->race % 2, 1, (pe->race + 1) % 2, 1. - pixels * 20. / wd->vw->vp.m);
+			glColor4f(GLfloat(pe->race % 2), 1, GLfloat((pe->race + 1) % 2), GLfloat(1. - pixels * 20. / wd->vw->vp.m));
 			try{
 				pe->drawOverlay(wd);
 			}

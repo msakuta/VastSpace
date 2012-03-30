@@ -123,13 +123,13 @@ function frameproc(dt){
 				e.race = 0;
 			}
 		}
-		if(countents(cs, 0, "Assault") < 1){
+/*		if(countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
 				local be = docker.addent("Assault");
 				be.race = 0;
 			}
-		}
+		}*/
 		if(racec[1] < 2){
 			local d = redbase.docker;
 			if(d != null){
@@ -137,13 +137,13 @@ function frameproc(dt){
 				e.race = 1;
 			}
 		}
-		if(countents(cs, 1, "Beamer") < 1){
+/*		if(countents(cs, 1, "Beamer") < 1){
 			local docker = redbase.docker;
 			if(docker != null){
 				local be = docker.addent("Beamer");
 				be.race = 1;
 			}
-		}
+		}*/
 
 
 		foreach(key,value in deaths) foreach(key1,value1 in value)

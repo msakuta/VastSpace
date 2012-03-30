@@ -51,8 +51,9 @@ protected:
 	static void(*serverInits[])(Game&);
 	static int nserverInits;
 public:
+	typedef std::vector<Player*> PlayerList;
 	Player *player;
-	std::vector<Player *> players;
+	PlayerList players;
 	Universe *universe;
 	double flypower()const;
 	HSQUIRRELVM sqvm;

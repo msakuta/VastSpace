@@ -27,7 +27,7 @@ struct CMMover : ClientMessage{
 	typedef ClientMessage st;
 	static CMMover s;
 	void interpret(ServerClient &sc, UnserializeStream &uss);
-	enum Type{Freelook, Chase, Tactical};
+	enum Type{NoMover, Freelook, Chase, Tactical};
 	static void send(Type);
 private:
 	CMMover() : st("Mover"){}
@@ -160,6 +160,19 @@ void FreelookMover::setpos(const Vec3d &apos){
 	pos = apos;
 }
 
+void FreelookMover::serialize(SerializeContext &sc){
+	sc.o << flypower;
+	sc.o << gear;
+	sc.o << pos;
+}
+
+void FreelookMover::unserialize(UnserializeContext &sc){
+	sc.i >> flypower;
+	sc.i >> gear;
+	sc.i >> pos;
+}
+
+
 
 class TacticalMover : public Player::CameraController{
 public:
@@ -172,6 +185,14 @@ public:
 	Vec3d getpos()const{return pos;}
 	void setrot(const Quatd &arot){rot = arot;}
 	void rotateLook(double dx, double dy);
+	void serialize(SerializeContext &sc){
+		sc.o << pos;
+		sc.o << rot;
+	}
+	void unserialize(UnserializeContext &sc){
+		sc.i >> pos;
+		sc.i >> rot;
+	}
 };
 
 // Response to rotational movement depends on mover.
@@ -201,6 +222,9 @@ void TacticalMover::rotateLook(double dx, double dy){
 	theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
 	double roll = -atan2(right[1], right[0]);
 	this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2)) * ort.cnj();
+
+	// Notify the server that this client wants the angle changed.
+	CMRot::send(this->rot);
 }
 
 Player::Player(Game *game) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
@@ -299,7 +323,9 @@ void Player::serialize(SerializeContext &sc){
 	for(SelectSet::iterator it = selected.begin(); it != selected.end(); it++)
 		sc.o << *it;
 	sc.o << chasecamera;
-	sc.o << pos << velo << accel;
+	sc.o << pos;
+	sc.o << velo;
+	sc.o << accel;
 	sc.o << rot;
 	sc.o << fov;
 	sc.o << viewdist;
@@ -307,6 +333,12 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << (unsigned)tplist.size();
 	for(int i = 0; i < tplist.size(); i++)
 		tplist[i].serialize(sc);
+	sc.o << cpos;
+	sc.o << (mover == NULL ? CMMover::NoMover : mover == freelook ? CMMover::Freelook : CMMover::Tactical);
+	sc.o << (nextmover == NULL ? CMMover::NoMover : nextmover == freelook ? CMMover::Freelook : CMMover::Tactical);
+	sc.o << blendmover;
+	freelook->serialize(sc);
+	tactical->serialize(sc);
 }
 
 void Player::unserialize(UnserializeContext &sc){
@@ -324,7 +356,9 @@ void Player::unserialize(UnserializeContext &sc){
 //		selected.insert(e);
 	}
 	sc.i >> chasecamera;
-	sc.i >> pos >> velo >> accel;
+	sc.i >> pos;
+	sc.i >> velo;
+	sc.i >> accel;
 
 	// Ignore rotation updates if this Player is me, in order to prevent lagged server
 	// from slowing the client's camera.
@@ -342,6 +376,17 @@ void Player::unserialize(UnserializeContext &sc){
 	tplist.resize(ntplist);
 	for(int i = 0; i < ntplist; i++)
 		tplist[i].unserialize(sc);
+	if(application.clientGame && application.clientGame->player != this){
+		sc.i >> cpos;
+		int i;
+		sc.i >> i;
+		mover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : tactical;
+		sc.i >> i;
+		nextmover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : tactical;
+		sc.i >> blendmover;
+		freelook->unserialize(sc);
+		tactical->unserialize(sc);
+	}
 }
 
 void Player::anim(double dt){
@@ -646,7 +691,7 @@ int Player::cmd_mover(int argc, char *argv[], void *pv){
 	}
 	else if(!strcmp(argv[1], "cycle")){
 		p->nextmover = p->mover == p->freelook ? p->tactical : p->freelook;
-		CMMover::s.send(p->mover == p->freelook ? CMMover::Freelook : CMMover::Tactical);
+		CMMover::s.send(p->nextmover == p->freelook ? CMMover::Freelook : CMMover::Tactical);
 	}
 	else
 		CmdPrint("unknown func");

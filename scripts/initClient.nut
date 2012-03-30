@@ -208,7 +208,8 @@ function initUI(){
 	cambut.addButton("mover cycle", "textures/cammode.png", tlate("Switch Camera Mode"));
 	cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
 	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
-	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
+	cambut.addButton("toggle g_player_viewport", "textures/playercams.png", tlate("Toggle Other Players Camera View"));
+//	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 	cambut.pinned = true;
 
 	local chat = GLWchat();

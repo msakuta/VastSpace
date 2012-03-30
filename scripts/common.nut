@@ -274,6 +274,7 @@ jpn <- {
 	["Military Parade Formation"]="行進隊形",
 	["Cloak"]="隠密",
 	["Delta Formation"]="Δ隊形",
+	["Toggle Other Players Camera View"]="他プレイヤーカメラの表示",
 }
 
 // Set default language to english

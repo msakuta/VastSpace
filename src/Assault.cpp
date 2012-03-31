@@ -55,13 +55,12 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 void Assault::init(){
 	static bool initialized = false;
 	if(!initialized){
-		SqInit init;
-		ModelScaleProcess msp(init, modelScale);
-		HitboxProcess hp(init, hitboxes);
-		DrawOverlayProcess dop(init, disp);
-		NavlightsProcess np(init, navlights);
-		HardPointProcess hpp(init, hardpoints);
-		sq_init(_SC("models/Assault.nut"), init);
+		sq_init(_SC("models/Assault.nut"),
+			ModelScaleProcess(modelScale) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(disp) <<=
+			NavlightsProcess(navlights) <<=
+			HardPointProcess(hardpoints));
 		initialized = true;
 	}
 	turrets = new ArmBase*[hardpoints.size()];

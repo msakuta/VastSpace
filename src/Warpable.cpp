@@ -1147,7 +1147,7 @@ void Warpable::post_warp(){
 /// It depends on initialization order. Specifically, dedicated server always invoke in the server game,
 /// while the Windows client invokes in the client game if it's connected to a server.
 /// As for a standalone server, it's not determined.
-bool Warpable::sq_init(const SQChar *scriptFile, SqInitProcess &procs){
+bool Warpable::sq_init(const SQChar *scriptFile, const SqInitProcess &procs){
 	try{
 		HSQUIRRELVM v = game->sqvm;
 		StackReserver sr(v);
@@ -1157,7 +1157,7 @@ bool Warpable::sq_init(const SQChar *scriptFile, SqInitProcess &procs){
 		sq_pushroottable(v); // root
 		sq_setdelegate(v, -2);
 		if(SQ_SUCCEEDED(sqa_dofile(game->sqvm, scriptFile, 0, 1))){
-			SqInitProcess *proc = &procs;
+			const SqInitProcess *proc = &procs;
 			for(; proc; proc = proc->next)
 				proc->process(v);
 		}
@@ -1181,7 +1181,7 @@ bool Warpable::sq_init(const SQChar *scriptFile, SqInitProcess &procs){
 }
 
 /// ModelScale is mandatory if specified by the caller.
-void Warpable::ModelScaleProcess::process(HSQUIRRELVM v){
+void Warpable::ModelScaleProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, _SC("modelScale"), -1); // root string
 	if(SQ_FAILED(sq_get(v, -2)))
 		throw SQFError(_SC("modelScale not found"));
@@ -1192,7 +1192,7 @@ void Warpable::ModelScaleProcess::process(HSQUIRRELVM v){
 	sq_poptop(v);
 }
 
-void Warpable::HitboxProcess::process(HSQUIRRELVM v){
+void Warpable::HitboxProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, _SC("hitbox"), -1); // root string
 
 	// Not defining a hitbox is probably not intended, since any rigid body must have a spatial body.
@@ -1243,7 +1243,7 @@ void Warpable::HitboxProcess::process(HSQUIRRELVM v){
 	sq_poptop(v); // root
 }
 
-void Warpable::HardPointProcess::process(HSQUIRRELVM v){
+void Warpable::HardPointProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, _SC("hardpoints"), -1); // root string
 
 	// Not defining Navlights is valid. Just ignore the case.
@@ -1313,7 +1313,7 @@ void Warpable::HardPointProcess::process(HSQUIRRELVM v){
 	sq_poptop(v); // root
 }
 
-void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v){
+void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v)const{
 #ifndef DEDICATED // Do nothing in the server.
 	sq_pushstring(v, _SC("drawOverlay"), -1); // root string
 	if(SQ_FAILED(sq_get(v, -2))) // root obj
@@ -1331,7 +1331,7 @@ void Warpable::DrawOverlayProcess::process(HSQUIRRELVM v){
 #endif
 }
 
-void Warpable::NavlightsProcess::process(HSQUIRRELVM v){
+void Warpable::NavlightsProcess::process(HSQUIRRELVM v)const{
 #ifndef DEDICATED // Do nothing in the server.
 	sq_pushstring(v, _SC("navlights"), -1); // root string
 

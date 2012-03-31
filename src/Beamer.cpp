@@ -53,12 +53,11 @@ Beamer::Beamer(WarField *aw) : st(aw){
 void Beamer::init(){
 	static bool initialized = false;
 	if(!initialized){
-		SqInit init;
-		ModelScaleProcess msp(init, modelScale);
-		HitboxProcess hp(init, hitboxes);
-		NavlightsProcess np(init, navlights);
-		DrawOverlayProcess dop(init, disp);
-		sq_init(_SC("models/Beamer.nut"), init);
+		sq_init(_SC("models/Beamer.nut"),
+			ModelScaleProcess(modelScale) <<=
+			HitboxProcess(hitboxes) <<=
+			NavlightsProcess(navlights) <<=
+			DrawOverlayProcess(disp));
 		initialized = true;
 	}
 	charge = 0.;

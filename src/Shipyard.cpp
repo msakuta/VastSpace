@@ -83,12 +83,11 @@ Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Build
 void Shipyard::init(){
 	static bool initialized = false;
 	if(!initialized){
-		SqInit init;
-		ModelScaleProcess msp(init, modelScale);
-		HitboxProcess hp(init, hitboxes);
-		DrawOverlayProcess dop(init, disp);
-		NavlightsProcess np(init, navlights);
-		sq_init(_SC("models/Shipyard.nut"), init);
+		sq_init(_SC("models/Shipyard.nut"),
+				ModelScaleProcess(modelScale) <<=
+				HitboxProcess(hitboxes) <<=
+				DrawOverlayProcess(disp) <<=
+				NavlightsProcess(navlights));
 		initialized = true;
 	}
 	ru = 0.;

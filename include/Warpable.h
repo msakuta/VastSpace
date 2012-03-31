@@ -89,21 +89,6 @@ public:
 protected:
 	virtual void init();
 
-	class SqInitProcess;
-
-	/// \brief A pseudo-pointer of SqInitProcess that automatically initializes to NULL
-	class SqInit{
-		SqInitProcess *root;
-	public:
-		SqInit() : root(NULL){}
-		operator SqInitProcess *&(){
-			return root;
-		}
-		SqInitProcess *&operator =(SqInitProcess *node){
-			return root = node;
-		}
-	};
-
 	/// \brief Callback functionoid that processes Squirrel VM that is initialized in sq_init().
 	///
 	/// Multiple SqInitProcess derived class objects can be specified.
@@ -114,58 +99,50 @@ protected:
 	/// before sq_init() returns.
 	class SqInitProcess{
 	public:
-		SqInitProcess(SqInit &init) : next(NULL){
-			next = init;
-			init = this;
-		}
+		SqInitProcess() : next(NULL){}
 
 		/// \brief The method called after the VM is initialized.
-		virtual void process(HSQUIRRELVM v) = 0;
+		virtual void process(HSQUIRRELVM v)const = 0;
 
 		/// \brief Multiple SqInitProcesses can be connected with this operator before passing to sq_init().
-		SqInitProcess &operator<<=(SqInitProcess &o);
+		const SqInitProcess &operator<<=(const SqInitProcess &o)const;
+
+		const SqInitProcess &chain(const SqInitProcess &o)const;
 
 	protected:
-		SqInitProcess *next;
+		mutable const SqInitProcess *next;
 		friend class Warpable;
 	};
 
 	/// \brief Initializes various settings of Warpable-derived class by Squirrel script.
-	bool sq_init(const SQChar *scriptFile, SqInitProcess &procs);
-
-	/// \brief SqInit accumulated version of sq_init().
-	bool sq_init(const SQChar *scriptFile, SqInit &init);
+	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs);
 
 	class ModelScaleProcess : public SqInitProcess{
 	public:
 		double &modelScale;
-		ModelScaleProcess(SqInit &init, double &modelScale) :
-			SqInitProcess(init), modelScale(modelScale){}
-		virtual void process(HSQUIRRELVM);
+		ModelScaleProcess(double &modelScale) : modelScale(modelScale){}
+		virtual void process(HSQUIRRELVM)const;
 	};
 
 	class HitboxProcess : public SqInitProcess{
 	public:
 		std::vector<hitbox> &hitboxes;
-		HitboxProcess(SqInit &init, std::vector<hitbox> &hitboxes) :
-			SqInitProcess(init), hitboxes(hitboxes){}
-		virtual void process(HSQUIRRELVM);
+		HitboxProcess(std::vector<hitbox> &hitboxes) : hitboxes(hitboxes){}
+		virtual void process(HSQUIRRELVM)const;
 	};
 
 	class HardPointProcess : public SqInitProcess{
 	public:
 		std::vector<hardpoint_static*> &hardpoints;
-		HardPointProcess(SqInit &init, std::vector<hardpoint_static*> &hardpoints) :
-			SqInitProcess(init), hardpoints(hardpoints){}
-		virtual void process(HSQUIRRELVM);
+		HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
+		virtual void process(HSQUIRRELVM)const;
 	};
 
 	class DrawOverlayProcess : public SqInitProcess{
 	public:
 		GLuint &disp;
-		DrawOverlayProcess(SqInit &init, GLuint &disp) :
-			SqInitProcess(init), disp(disp){}
-		virtual void process(HSQUIRRELVM v);
+		DrawOverlayProcess(GLuint &disp) : disp(disp){}
+		virtual void process(HSQUIRRELVM v)const;
 	};
 
 	/// \brief Static information for navigation lights.
@@ -189,9 +166,8 @@ protected:
 	class NavlightsProcess : public SqInitProcess{
 	public:
 		std::vector<Navlight> &navlights;
-		NavlightsProcess(SqInit &init, std::vector<Navlight> &navlights) :
-			SqInitProcess(init), navlights(navlights){}
-		virtual void process(HSQUIRRELVM v);
+		NavlightsProcess(std::vector<Navlight> &navlights) : navlights(navlights){}
+		virtual void process(HSQUIRRELVM v)const;
 	};
 
 	/// \brief Helper function to draw navigation lights.
@@ -243,9 +219,13 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 /// The appearance and usage of the operator remind me of Haskell Monads, but internal functioning is
 /// nothing to do with them.
 ///
-/// Only worry is whether gcc supports stack-reserved objects chained with this operator.
-/// Anyway we'll see it soon.
-inline Warpable::SqInitProcess &Warpable::SqInitProcess::operator<<=(SqInitProcess &o){
+/// The argument, the returned value and the this pointer all must be const. That's because they
+/// are temporary objects which are rvalues. In fact, we want to modify the content of this object to
+/// construct a linked list, and it requires a mutable pointer (which is next).
+///
+/// The temporary objects resides in memory long enough to pass to the outermost function call.
+/// That's guaranteed by the standard; temporary objects shall be alive within a full expression.
+inline const Warpable::SqInitProcess &Warpable::SqInitProcess::operator<<=(const SqInitProcess &o)const{
 	next = &o;
 	return *this;
 }
@@ -256,33 +236,17 @@ SqInitProcess &SqInitProcess::operator<<(SqInitProcess &o){
 }
 */
 
-/// As I was afraid, SqInitProcess::operator<<= did not work with gcc, so this is an alternative to do
-/// the same thing.
-/// Precisely, it worked but not with temporary object as an operand. You have to allocate the object
-/// in the stack (declare a variable as automatic) and pass those variables names to the operator.
-/// In this case, you have to name each SqInitProcess derived object and write it twice, which is
-/// what we have tried to avoid from the first place.
+/// Ordinary member function version of operator<<=(). It connects objects from right to left, which is the opposite
+/// of the operator. The reason is that function calls in method chaining are usually left associative.
+/// Of course you can call like <code>sq_init("file", A.chain(B.chain(C)))</code> to make it
+/// right associative (sort of), but it would be a pain to keep the parentheses matched like LISP.
 ///
-/// SqInit is a pointer to the head of the SqInitProcess linked list.
-/// You declare and initialize each SqInitProcess derived object with SqInit as an argument in order to
-/// add it to the linked list.
-/// Then you can pass the head pointer (SqInit object) to sq_init() to chain all SqInitProcesses.
-/// In this way, you don't need to write each SqInitProcess derived object name twice.
-///
-/// The downside of this method is that you have to make sure you declare variables of SqInitProcess
-/// derived objects, not to call constructors of temporary objects.
-/// For instance, you have to write like <code>A a(init);</code> or <code>A a = A(init);</code>,
-/// but not <code>A(init);</code>, although the varaible name doesn't matter.
-/// The compiler won't generate warnings if the wrong form is used, and to make matters worse,
-/// the wrong code works for the most cases. The wrong code constructs and destructs a temporary
-/// object in the place, and that node added to the linked list indicated by init may be contaminated
-/// by another object in the stack because the compiler thinks that the temporary object is already
-/// destructed.
-///
-/// Another non-obvious issue is that the SqInitProcess objects are processed in the reverse order of
-/// their appearance. The reason is provided in the comments for SqInitProcess::operator<<=().
-inline bool Warpable::sq_init(const SQChar *scriptFile, SqInit &init){
-	return sq_init(scriptFile, *init);
+/// We just chose usual method chaining style (<code>sq_init("file", A.chain(B).chain(C))</code>), which is
+/// more straightforward and maintainable. In exchange, passed objects are applied in the reverse order of
+/// their appearance.
+inline const Warpable::SqInitProcess &Warpable::SqInitProcess::chain(const SqInitProcess &o)const{
+	o.next = this;
+	return o;
 }
 
 inline Warpable::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1){

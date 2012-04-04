@@ -345,6 +345,17 @@ register_console_command("velocity", function(...){
 	player.setvelo(Vec3d(vargv[0], vargv[1], vargv[2]));
 });
 
+register_console_command("pause", function(...){
+	if(vargv.len() < 1){
+		print("pause is " + universe.paused.tointeger());
+		return;
+	}
+	if(vargv[0] == "t")
+		universe.paused = !universe.paused;
+	else
+		universe.paused = vargv[0].tointeger() != 0;
+});
+
 register_console_command("halt", function(...){
 	local e = player.selected;
 	for(; e != null; e = e.selectnext){

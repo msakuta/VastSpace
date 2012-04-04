@@ -989,7 +989,8 @@ void Warpable::anim(double dt){
 			}
 		}
 
-		maneuver(mat, dt, mn);
+		if(0. < dt)
+			maneuver(mat, dt, mn);
 
 		if(!bbody){
 			pos += velo * dt;

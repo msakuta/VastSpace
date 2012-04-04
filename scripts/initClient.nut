@@ -10,8 +10,8 @@
 
 
 
-
-class GLwindow{
+/// Base class for all OpenGL-drawn GUI elements.
+class GLelement{
 	bool alive;
 	string classname;
 	int x;
@@ -20,19 +20,43 @@ class GLwindow{
 	int height;
 }
 
+/// OpenGL Window
+class GLwindow extends GLelement{
+}
+
+/// Menu list window
 class GLWmenu extends GLwindow{
 	void addItem(string title, string command);
 	void close();
 }
 
+/// Menu list window with big fonts and buttons
 class GLWbigMenu extends GLwindowMenu{
 }
 
+/// Button matrix window. The matrix size is needed to be specified in the constructor.
 class GLWbuttonMatrix extends GLwindow{
-	constructor(int x, int y, int sx, int sy);
+	constructor(int xbuttons, int ybuttons);
 	void addButton(string command, string buttonimagefile, string tips);
+	void addButton(GLWbutton button);
 	void addCvarToggleButton(string cvarname, string buttonimagefile, string pushedimagefile, string tips);
 	void addMoveOrderButton(string buttonimagefile, string pushedimagefile, string tips);
+}
+
+/// Element of GLWbuttonMatrix.
+class GLWbuton extends GLelement{
+}
+
+/// 2-State button.
+class GLWstateButton extends GLWbutton{
+}
+
+/// 2-State button with Squirrel function
+class GLWsqStateButton extends GLWstateButton{
+	/// \param statefunc The function that is called when the button needs to know whether the state is down or up.
+	///                  The function must return a boolean value to indicate that. Can be null for non-stateful buttons.
+	/// \param pressfunc The function that is called when the button is pressed.
+	constructor(string buttonimagefile, string pushedimagefile, function statefunc, function pressfunc, string tips);
 }
 
 class GLWmessage extends GLwindow{

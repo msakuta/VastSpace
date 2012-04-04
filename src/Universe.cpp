@@ -4,6 +4,8 @@
 #include "cmd.h"
 #include "astro.h"
 #include "sqadapt.h"
+#include "Application.h"
+#include "ClientMessage.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -286,7 +288,11 @@ SQInteger Universe::sqf_get(HSQUIRRELVM v){
 	Universe *p = sq_refobj(v)->toUniverse();
 	const SQChar *wcs;
 	sq_getstring(v, -1, &wcs);
-	if(!strcmp(wcs, _SC("timescale"))){
+	if(!strcmp(wcs, _SC("paused"))){
+		sq_pushbool(v, SQBool(p->paused));
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("timescale"))){
 		sq_pushfloat(v, SQFloat(p->timescale));
 		return 1;
 	}
@@ -298,6 +304,62 @@ SQInteger Universe::sqf_get(HSQUIRRELVM v){
 		return st::sqf_get(v);
 }
 
+struct CMPause : public ClientMessage{
+	typedef ClientMessage st;
+	static CMPause s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(bool);
+private:
+	CMPause();
+};
+
+CMPause CMPause::s;
+
+CMPause::CMPause() : st("Pause"){}
+
+void CMPause::send(bool b){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << b;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+void CMPause::interpret(ServerClient &sc, UnserializeStream &uss){
+	bool b;
+	uss >> b;
+	if(sc.sv->pg->universe)
+		sc.sv->pg->universe->paused = b;
+}
+
+/*int cmd_pause(int argc, char *argv[], void *pv){
+	Game *game = (Game*)pv;
+	if(argc <= 1){
+		CmdPrint(cpplib::dstring() << "pause is " << (game->universe ? game->universe->paused : false));
+		return 0;
+	}
+	CMPause::send(atoi(argv[1]));
+	return 0;
+}*/
+
+SQInteger Universe::sqf_set(HSQUIRRELVM v){
+	Universe *p = sq_refobj(v)->toUniverse();
+	const SQChar *wcs;
+	sq_getstring(v, 2, &wcs);
+	if(!strcmp(wcs, _SC("paused"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, _SC("paused member must be bool compatible"));
+		p->paused = !!b;
+		CMPause::s.send(!!b);
+		return 0;
+	}
+	else
+		return SQ_ERROR;
+	// TODO: Not available yet!
+//		return st::sqf_set(v);
+}
+
 bool Universe::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
@@ -306,6 +368,7 @@ bool Universe::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>)); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("_set"), sqf_set);
 	sq_createslot(v, -3);
 	return true;
 }

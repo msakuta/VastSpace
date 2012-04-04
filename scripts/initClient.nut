@@ -231,12 +231,20 @@ function initUI(){
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.png", tlate("Exit game"));
-	sysbut.addToggleButton("pause", "textures/pause.png", "textures/unpause.png", tlate("Toggle Pause"));
+	sysbut.addSqStateButton("textures/pause.png", "textures/unpause.png", "pause_state", "pause_press", tlate("Toggle Pause"));
 	sysbut.addButton("togglesolarmap", "textures/solarmap.png", tlate("Solarmap"));
 	sysbut.addButton("r_overlay t", "textures/overlay.png", tlate("Show Overlay"));
 	sysbut.addButton("r_move_path t", "textures/movepath.png", tlate("Show Move Path"));
 	sysbut.addButton("toggle g_drawastrofig", "textures/showorbit.png", tlate("Show Orbits"));
 	sysbut.pinned = true;
+}
+
+function pause_state(){
+	return universe.paused;
+}
+
+function pause_press(){
+	universe.paused = !universe.paused;
 }
 
 showdt <- false;

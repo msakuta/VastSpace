@@ -942,56 +942,64 @@ void ClientGame::postframe(){
 }
 
 void ClientGame::anim(double dt){
-		sqa_anim(sqvm, dt);
+	double view_dt = dt; // Nonezero though if paused
+	// If the Universe object is lacking, try to run update methods which potentially create one.
+	// Probably paused variable really should be a member of Game object.
+	if(universe && universe->paused)
+		dt = 0.;
 
-		MotionFrame(dt);
+	sqa_anim(sqvm, dt);
 
-		MotionAnim(*player, dt, flypower());
+	MotionFrame(dt);
 
-		for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
-			Player *player = *it;
-			if(!player)
-				continue;
-			player->anim(dt);
+	MotionAnim(*player, dt, flypower());
+
+	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
+		Player *player = *it;
+		if(!player)
+			continue;
+		// The Player is special in that it can move around while paused.
+		// I'm not sure passing view_dt here is right way to realize that.
+		player->anim(view_dt);
+	}
+
+	if(universe)
+		universe->clientUpdate(dt);
+
+	if(GLwindow::getFocus() && cmdwnd)
+		GLwindow::getFocus()->defocus();
+
+	input_t inputs;
+	inputs.press = MotionGet();
+	inputs.change = MotionGetChange();
+	if(joyStick.InitJoystick()){
+		joyStick.CheckJoystick(inputs);
+	}
+	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
+		Player *player = *it;
+		if(!player)
+			continue;
+		(*player->mover)(inputs, dt);
+		if(player->nextmover && player->nextmover != player->mover){
+/*			Vec3d pos = pl.pos;
+			Quatd rot = pl.rot;*/
+			(*player->nextmover)(inputs, dt);
+/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
+			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
 		}
-
-		if(universe)
-			universe->clientUpdate(dt);
-
-		if(GLwindow::getFocus() && cmdwnd)
-			GLwindow::getFocus()->defocus();
-
-		input_t inputs;
-		inputs.press = MotionGet();
-		inputs.change = MotionGetChange();
-		if(joyStick.InitJoystick()){
-			joyStick.CheckJoystick(inputs);
-		}
-		for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
-			Player *player = *it;
-			if(!player)
-				continue;
-			(*player->mover)(inputs, dt);
-			if(player->nextmover && player->nextmover != player->mover){
-	/*			Vec3d pos = pl.pos;
-				Quatd rot = pl.rot;*/
-				(*player->nextmover)(inputs, dt);
-	/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
-				pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
-			}
-		}
+	}
 
 /*		if(player->chase && player->controlled == player->chase){
-			inputs.analog[1] += mousedelta[0];
-			inputs.analog[0] += mousedelta[1];
-			player->chase->control(&inputs, dt);
-		}*/
+		inputs.analog[1] += mousedelta[0];
+		inputs.analog[0] += mousedelta[1];
+		player->chase->control(&inputs, dt);
+	}*/
 
-		if(player && player->controlled)
-			GLwindow::getFocus()->defocus();
+	if(player && player->controlled)
+		GLwindow::getFocus()->defocus();
 
-		// Really should be in draw method, since windows are property of the client.
-		glwlist->glwAnim(dt);
+	// Really should be in draw method, since windows are property of the client.
+	glwlist->glwAnim(dt);
 
 }
 

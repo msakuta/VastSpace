@@ -131,6 +131,7 @@ protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *); ///< The internal method to set properties, can be overridden.
 	static SQInteger sqf_set(HSQUIRRELVM v);
+	virtual const SQChar *sqClassName()const; ///< Returns Squirrel class name, if defined. Should be overridden along with sq_define().
 	static SQInteger sqf_close(HSQUIRRELVM v);
 	static SQInteger sqh_release(SQUserPointer p, SQInteger);
 };
@@ -250,7 +251,7 @@ public:
 	/// The type tag for this class in Squirrel VM.
 	static const SQUserPointer tt_GLwindow;
 
-	const SQChar *sq_classname();
+	const SQChar *sqClassName()const;
 
 	void (*onFocusEnter)(GLwindow*); ///< Assignable event handler for focusEnter event.
 	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.

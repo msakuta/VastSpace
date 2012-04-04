@@ -226,12 +226,18 @@ function initUI(){
 	chat.pinnable = true;
 	chat.pinned = true;
 
+	// Function to return pause state
+	local pause_state = @() universe.paused;
+
+	// Function to toggle pause state
+	local pause_press = @() universe.paused = !universe.paused;
+
 	sysbut = GLWbuttonMatrix(3, 2, 32, 32);
 	sysbut.title = tlate("System");
 	sysbut.x = scw - sysbut.width;
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.png", tlate("Exit game"));
-	sysbut.addSqStateButton("textures/pause.png", "textures/unpause.png", "pause_state", "pause_press", tlate("Toggle Pause"));
+	sysbut.addButton(GLWsqStateButton("textures/pause.png", "textures/unpause.png", pause_state, pause_press, tlate("Toggle Pause")));
 	sysbut.addButton("togglesolarmap", "textures/solarmap.png", tlate("Solarmap"));
 	sysbut.addButton("r_overlay t", "textures/overlay.png", tlate("Show Overlay"));
 	sysbut.addButton("r_move_path t", "textures/movepath.png", tlate("Show Move Path"));
@@ -239,13 +245,6 @@ function initUI(){
 	sysbut.pinned = true;
 }
 
-function pause_state(){
-	return universe.paused;
-}
-
-function pause_press(){
-	universe.paused = !universe.paused;
-}
 
 showdt <- false;
 

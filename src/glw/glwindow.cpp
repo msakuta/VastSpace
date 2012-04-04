@@ -1391,6 +1391,14 @@ GLWbuttonMatrix::GLWbuttonMatrix(Game *game, int x, int y, int xsize, int ysize)
 	memset(buttons, 0, x * y * sizeof(GLWbutton*));
 }
 
+GLWbuttonMatrix::~GLWbuttonMatrix(){
+	// Delete contained controls
+	for(int y = 0; y < ybuttons; y++) for(int x = 0; x < xbuttons; x++){
+		if(buttons[x + y * xbuttons])
+			delete buttons[x + y * xbuttons];
+	}
+}
+
 
 void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
 	GLWrect r = clientRect();
@@ -1487,8 +1495,17 @@ static SQInteger sqf_GLWbuttonMatrix_constructor(HSQUIRRELVM v){
 static SQInteger sqf_GLWbuttonMatrix_addButton(HSQUIRRELVM v){
 	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
 	const SQChar *cmd, *path, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &cmd)))
-		return SQ_ERROR;
+	if(SQ_FAILED(sq_getstring(v, 2, &cmd))){
+		// The addButton function is polymorphic, it can take GLWbutton object as argument too.
+		GLelement *element = GLelement::sq_refobj(v, 2);
+		if(!element)
+			return SQ_ERROR;
+		// TODO: Type unsafe! element can be object other than GLWbutton.
+		if(!p->addButton(static_cast<GLWbutton*>(element)))
+			return sq_throwerror(v, _SC("Could not add button"));
+		element->sq_pushobj(v, element);
+		return 1;
+	}
 	if(SQ_FAILED(sq_getstring(v, 3, &path)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
@@ -1569,21 +1586,28 @@ static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
 
 class GLWsqStateButton : public GLWstateButton{
 public:
-	gltestp::dstring statefunc;
-	gltestp::dstring pressfunc;
-	GLWsqStateButton(Game *game, const char *filename, const char *filename1, gltestp::dstring statefunc, gltestp::dstring pressfunc, const char *tip = NULL) :
-		GLWstateButton(game, filename, filename1, tip), statefunc(statefunc), pressfunc(pressfunc){}
+	HSQOBJECT hstatefunc;
+	HSQOBJECT hpressfunc;
+	GLWsqStateButton(Game *game, const char *filename, const char *filename1, const HSQOBJECT &hstatefunc, const HSQOBJECT &hpressfunc, const char *tip = NULL) :
+		GLWstateButton(game, filename, filename1, tip), hstatefunc(hstatefunc), hpressfunc(hpressfunc){}
 	virtual bool state()const;
 	virtual void press();
+	virtual const SQChar *sqClassName()const{return _SC("GLWsqStateButton");}
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
+	static bool sq_define(HSQUIRRELVM v);
+	~GLWsqStateButton(){
+		HSQUIRRELVM v = game->sqvm;
+		sq_release(v, &hstatefunc);
+		sq_release(v, &hpressfunc);
+	}
 };
 
 bool GLWsqStateButton::state()const{
+	if(hstatefunc._type == OT_NULL)
+		return false;
 	HSQUIRRELVM v = game->sqvm;
 	StackReserver sr(v);
-	sq_pushroottable(v);
-	sq_pushstring(v, statefunc, -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		return false;
+	sq_pushobject(v, hstatefunc);
 	sq_pushroottable(v);
 	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue)))
 		return false;
@@ -1594,38 +1618,63 @@ bool GLWsqStateButton::state()const{
 }
 
 void GLWsqStateButton::press(){
+	if(hpressfunc._type == OT_NULL)
+		return;
 	HSQUIRRELVM v = game->sqvm;
 	StackReserver sr(v);
-	sq_pushroottable(v);
-	sq_pushstring(v, pressfunc, -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		return;
+	sq_pushobject(v, hpressfunc);
 	sq_pushroottable(v);
 	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue)))
 		return;
 }
 
-static SQInteger sqf_GLWbuttonMatrix_addSqStateButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
+SQInteger GLWsqStateButton::sqf_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
+	if(!game)
+		return sq_throwerror(v, _SC("The game object is not assigned"));
 	const SQChar *path, *path1, *tips, *statefunc, *pressfunc;
 	if(SQ_FAILED(sq_getstring(v, 2, &path)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
 		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &statefunc)))
+
+	// Assign hstatefunc member variable
+	HSQOBJECT hstatefunc;
+	if(SQ_FAILED(sq_getstackobj(v, 4, &hstatefunc)))
 		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 5, &pressfunc)))
+	sq_addref(v, &hstatefunc);
+
+	// Assign hpressfunc member variable
+	HSQOBJECT hpressfunc;
+	if(SQ_FAILED(sq_getstackobj(v, 5, &hpressfunc)))
 		return SQ_ERROR;
+	sq_addref(v, &hpressfunc);
+
 	if(SQ_FAILED(sq_getstring(v, 6, &tips)))
 		tips = NULL;
-	GLWstateButton *b = new GLWsqStateButton(p->getGame(), path, path1, statefunc, pressfunc, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	b->sq_pushobj(v, b);
+	GLWsqStateButton *b = new GLWsqStateButton(game, path, path1, hstatefunc, hpressfunc, tips);
+	GLelement::sq_assignobj(v, b);
 	return 1;
 }
+
+bool GLWsqStateButton::sq_define(HSQUIRRELVM v){
+	// Define class GLWsqStateButton
+	GLwindow::sq_define(v);
+	sq_pushstring(v, _SC("GLWsqStateButton"), -1);
+	sq_pushstring(v, _SC("GLelement"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLWsqStateButton");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("constructor"), sqf_constructor);
+	sq_createslot(v, -3);
+	return true;
+}
+
+static sqa::Initializer GLWsqStateButton_init("GLWsqStateButton", GLWsqStateButton::sq_define);
+
+
 
 GLWbuttonMatrix *GLWbuttonMatrix::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	// It's crucial to static_cast in this order, not just reinterpret_cast.
@@ -1650,7 +1699,6 @@ static bool GLWbuttonMatrix_sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
 	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
 	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);
-	register_closure(v, _SC("addSqStateButton"), sqf_GLWbuttonMatrix_addSqStateButton);
 	sq_createslot(v, -3);
 	return true;
 }

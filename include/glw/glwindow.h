@@ -429,6 +429,7 @@ public:
 	int xbuttons, ybuttons;
 	int xbuttonsize, ybuttonsize;
 	GLWbuttonMatrix(Game *game, int x, int y, int xsize = 32, int ysize = 32);
+	~GLWbuttonMatrix();
 	virtual void draw(GLwindowState &,double);
 	virtual bool focusable()const;
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);

@@ -341,12 +341,13 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		}
 		// Draw custom overlay defined in script file.
 		do{
-			HSQUIRRELVM v = g_sqvm;
+			HSQUIRRELVM v = application.clientGame->sqvm;
 			StackReserver sr(v);
 			sq_pushroottable(v);
 			sq_pushstring(v, _SC("drawCoordSysLabel"), -1);
 			if(SQ_FAILED(sq_get(v, -2)))
 				break;
+			sq_pushroottable(v);
 			CoordSys::sq_pushobj(v, cs);
 			sq_call(v, 2, SQTrue, SQTrue);
 			const SQChar *s;

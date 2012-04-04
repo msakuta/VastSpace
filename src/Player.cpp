@@ -538,7 +538,12 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 
 template<typename T, T Player::*M>
 int cmd_cvar(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
+	if(!ppl){
+		CmdPrint(cpplib::dstring(argv[0]) << " is not initialized ");
+		return 0;
+	}
 	if(argc < 2)
 		CmdPrint(cpplib::dstring(argv[0]) << " = " << ppl->*M);
 	else if(toupper(argv[1][0]) == 'T')
@@ -651,6 +656,9 @@ void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
 	CmdAdd("chasecamera", cmd_chasecamera);
 	CmdAddParam("mover", cmd_mover, application.clientGame);
+	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, application.clientGame);
+	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, application.clientGame);
+	CmdAddParam("r_overlay", cmd_cvar<bool, &Player::r_overlay>, application.clientGame);
 	if(!application.serverGame)
 		return;
 	Player &pl = *application.serverGame->player;
@@ -661,9 +669,6 @@ void Player::cmdInit(ClientApplication &application){
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
 	CmdAddParam("control", cmd_control, &pl);
-	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, &pl);
-	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, &pl);
-	CmdAddParam("r_overlay", cmd_cvar<bool, &Player::r_overlay>, &pl);
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("g_overlay", &g_overlay, cvar_int);

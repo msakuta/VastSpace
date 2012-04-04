@@ -36,7 +36,7 @@ class GLWbigMenu extends GLwindowMenu{
 
 /// Button matrix window. The matrix size is needed to be specified in the constructor.
 class GLWbuttonMatrix extends GLwindow{
-	constructor(int xbuttons, int ybuttons);
+	constructor(int xbuttons, int ybuttons, int buttonxsize, int buttonysize);
 	void addButton(string command, string buttonimagefile, string tips);
 	void addButton(GLWbutton button);
 	void addCvarToggleButton(string cvarname, string buttonimagefile, string pushedimagefile, string tips);

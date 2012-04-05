@@ -43,6 +43,7 @@ static int g_player_viewport = 0;
 bool WarDraw::r_move_path = false;
 bool WarDraw::r_attack_path = false;
 bool WarDraw::r_overlay = false;
+int WarDraw::r_healthbar = 1;
 
 template<typename T>
 int cmd_cvar(int argc, char *argv[], void *pv){
@@ -63,6 +64,7 @@ static void init_gsc(){
 	CmdAddParam("r_move_path", cmd_cvar<bool>, &WarDraw::r_move_path);
 	CmdAddParam("r_attack_path", cmd_cvar<bool>, &WarDraw::r_attack_path);
 	CmdAddParam("r_overlay", cmd_cvar<bool>, &WarDraw::r_overlay);
+	CvarAdd("r_healthbar", &WarDraw::r_healthbar, cvar_int);
 }
 
 static Initializator initializator(init_gsc);

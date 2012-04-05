@@ -58,6 +58,11 @@ struct EXPORT WarDraw{
 	static bool r_move_path;
 	static bool r_attack_path;
 	static bool r_overlay;
+
+	/// \brief Level of health bar drawing.
+	///
+	/// 0 = never, 1 = only selected, >2 = always
+	static int r_healthbar;
 };
 
 typedef WarDraw war_draw_data;

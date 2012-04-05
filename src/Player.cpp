@@ -76,7 +76,6 @@ private:
 
 
 float Player::camera_mode_switch_time = 1.f;
-int Player::g_overlay = 1;
 
 //static teleport *tplist;
 //static int ntplist;
@@ -651,7 +650,6 @@ void Player::cmdInit(ClientApplication &application){
 	CmdAddParam("control", cmd_control, &pl);
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
-	CvarAdd("g_overlay", &g_overlay, cvar_int);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
 	CvarAdd("forceattackorder", &pl.forceattackorder, cvar_int);
 #endif

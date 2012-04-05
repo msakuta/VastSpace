@@ -176,7 +176,6 @@ public:
 	const std::vector<teleport> &getTplist()const{return tplist;}
 
 	static float camera_mode_switch_time;
-	static int g_overlay; ///< Overlay display level
 	static void cmdInit(ClientApplication &);
 	static int cmd_mover(int argc, char *argv[], void *pv);
 	static int cmd_teleport(int argc, char *argv[], void *pv);

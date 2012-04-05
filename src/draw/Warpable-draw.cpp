@@ -14,6 +14,7 @@
 #include "glsl.h"
 #include "draw/OpenGLState.h"
 #include "Frigate.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -22,10 +23,6 @@ extern "C"{
 #include <clib/GL/multitex.h>
 #endif
 }
-
-
-
-int g_healthbar = 1;
 
 
 
@@ -67,10 +64,11 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
 	double x = v * 2. - 1., h = MIN(.1, .1 / (1. + scale)), hs = h / 2.;
-	if(!g_healthbar || !Player::g_overlay || wd->shadowmapping)
+	if(!wd->r_healthbar || wd->shadowmapping)
 		return;
-	if(g_healthbar == 1 && wd->w && wd->w->pl){
-		if(wd->w->pl->selected.find(pt) == wd->w->pl->selected.end())
+	Player *player = pt->getGame()->player;
+	if(wd->r_healthbar == 1 && player){
+		if(player->selected.find(pt) == player->selected.end())
 			return;
 	}
 	if(wd->shader)

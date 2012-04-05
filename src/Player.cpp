@@ -33,6 +33,15 @@ private:
 	CMMover() : st("Mover"){}
 };
 
+struct CMPos : ClientMessage{
+	typedef ClientMessage st;
+	static CMPos s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(const Vec3d &);
+private:
+	CMPos() : st("Pos"){}
+};
+
 /// \brief The client message that tells the server that this Player wants to change rotation.
 struct CMRot : ClientMessage{
 	typedef ClientMessage st;
@@ -634,10 +643,26 @@ static int cmd_chasecamera(int argc, char *argv[]){
 	return 0;
 }
 
+static int cmd_eject(int argc, char *argv[], void *pv){
+	Game *game = (Game*)pv;
+	if(game && game->player && game->player->chase){
+		game->player->setrot(game->player->getrot());
+		game->player->chase = NULL;
+		game->player->chases.clear();
+//		game->player->freelook->pos += game->player->getrot().cnj() * Vec3d(0,0,.3);
+//		server->player->mover = server->player->freelook;
+		CMChase::s.send(NULL);
+		CMPos::s.send(game->player->freelook->pos);
+		CMRot::s.send(game->player->getrot());
+	}
+	return 0;
+}
+
 void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
 	CmdAdd("chasecamera", cmd_chasecamera);
 	CmdAddParam("mover", cmd_mover, application.clientGame);
+	CmdAddParam("eject", cmd_eject, static_cast<Game*>(application.clientGame));
 	if(!application.serverGame)
 		return;
 	Player &pl = *application.serverGame->player;
@@ -1128,6 +1153,35 @@ void CMMover::interpret(ServerClient &sc, UnserializeStream &uss){
 
 
 //-----------------------------------------------------------------------------
+//  CMPos implementation
+//-----------------------------------------------------------------------------
+
+CMPos CMPos::s;
+
+void CMPos::send(const Vec3d &pos){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << pos;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+void CMPos::interpret(ServerClient &sc, UnserializeStream &uss){
+	Vec3d pos;
+	uss >> pos;
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player){
+		player->setpos(pos);
+	}
+}
+
+
+//-----------------------------------------------------------------------------
 //  CMChase implementation
 //-----------------------------------------------------------------------------
 
@@ -1154,7 +1208,8 @@ void CMChase::interpret(ServerClient &sc, UnserializeStream &uss){
 	if(player){
 		player->chases.clear();
 		player->chase = e;
-		player->chases.insert(e);
+		if(e) // e can be NULL
+			player->chases.insert(e);
 	}
 }
 

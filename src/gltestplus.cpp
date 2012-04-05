@@ -1590,15 +1590,6 @@ void reshape_func(int w, int h)
 	glViewport(0, 0, w, h);
 }
 
-static int cmd_eject(int argc, char *argv[]){
-	if(server->player->chase){
-		server->player->chase = NULL;
-		server->player->freelook->pos += server->player->getrot().cnj() * Vec3d(0,0,.3);
-		server->player->mover = server->player->freelook;
-	}
-	return 0;
-}
-
 static int cmd_originrotation(int, char *[]){
 	server->player->setrot(quat_u);
 	return 0;
@@ -2253,7 +2244,6 @@ int main(int argc, char *argv[])
 	CmdAdd("pushbind", cmd_pushbind);
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
-	CmdAdd("eject", cmd_eject);
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_togglesolarmap(int argc, char *argv[], void *);

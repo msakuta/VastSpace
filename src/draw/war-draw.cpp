@@ -40,11 +40,29 @@ void WarField::drawOverlay(wardraw_t *){}
 //static double gradius = 1.;
 static int g_debugdraw_bullet = 0;
 static int g_player_viewport = 0;
+bool WarDraw::r_move_path = false;
+bool WarDraw::r_attack_path = false;
+bool WarDraw::r_overlay = false;
+
+template<typename T>
+int cmd_cvar(int argc, char *argv[], void *pv){
+	T *pt = (T*)pv;
+	if(argc < 2)
+		CmdPrint(cpplib::dstring(argv[0]) << " = " << *pt);
+	else if(toupper(argv[1][0]) == 'T')
+		*pt = !*pt;
+	else
+		*pt = !!atoi(argv[1]);
+	return 0;
+}
 
 static void init_gsc(){
 //	CvarAdd("gradius", &gradius, cvar_double);
 	CvarAdd("g_debugdraw_bullet", &g_debugdraw_bullet, cvar_int);
 	CvarAdd("g_player_viewport", &g_player_viewport, cvar_int);
+	CmdAddParam("r_move_path", cmd_cvar<bool>, &WarDraw::r_move_path);
+	CmdAddParam("r_attack_path", cmd_cvar<bool>, &WarDraw::r_attack_path);
+	CmdAddParam("r_overlay", cmd_cvar<bool>, &WarDraw::r_overlay);
 }
 
 static Initializator initializator(init_gsc);
@@ -244,7 +262,7 @@ void WarSpace::drawOverlay(wardraw_t *wd){
 			continue;
 		Entity *pe = *it;
 		double pixels;
-		if(ppl && ppl->r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
+		if(ppl && WarDraw::r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
 			Vec4d spos = wd->vw->trans.vp(Vec4d(pe->pos) + Vec4d(0,0,0,1));
 			glPushMatrix();
 			glLoadIdentity();

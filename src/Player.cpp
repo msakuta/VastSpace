@@ -232,7 +232,6 @@ Player::Player(Game *game) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), ac
 	gametime(0), velolen(0),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	cpos(0,0,0),
-	r_move_path(false), r_attack_path(false), r_overlay(false),
 	chase(NULL), controlled(NULL), moveorder(false), move_lockz(false), move_z(0.), move_org(Vec3d(0,0,0)), move_hitpos(Vec3d(0,0,0)),
 	freelook(NULL), cockpitview(NULL), tactical(NULL)
 {
@@ -536,22 +535,6 @@ void TacticalMover::operator()(const input_t &inputs, double dt){
 	pos = cpos + this->rot.itrans(vec3_001) * pl.aviewdist;
 }
 
-template<typename T, T Player::*M>
-int cmd_cvar(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
-	Player *ppl = game->player;
-	if(!ppl){
-		CmdPrint(cpplib::dstring(argv[0]) << " is not initialized ");
-		return 0;
-	}
-	if(argc < 2)
-		CmdPrint(cpplib::dstring(argv[0]) << " = " << ppl->*M);
-	else if(toupper(argv[1][0]) == 'T')
-		(ppl->*M) = !(ppl->*M);
-	else
-		(ppl->*M) = !!atoi(argv[1]);
-	return 0;
-}
 
 
 
@@ -656,9 +639,6 @@ void Player::cmdInit(ClientApplication &application){
 #ifdef _WIN32
 	CmdAdd("chasecamera", cmd_chasecamera);
 	CmdAddParam("mover", cmd_mover, application.clientGame);
-	CmdAddParam("r_move_path", cmd_cvar<bool, &Player::r_move_path>, application.clientGame);
-	CmdAddParam("r_attack_path", cmd_cvar<bool, &Player::r_attack_path>, application.clientGame);
-	CmdAddParam("r_overlay", cmd_cvar<bool, &Player::r_overlay>, application.clientGame);
 	if(!application.serverGame)
 		return;
 	Player &pl = *application.serverGame->player;

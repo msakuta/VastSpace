@@ -164,7 +164,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 
 
 void Warpable::drawtra(wardraw_t *wd){
-	if(Player::g_overlay && task == sship_moveto){
+	if(wd->r_move_path && task == sship_moveto){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);

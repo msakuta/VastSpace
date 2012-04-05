@@ -51,6 +51,13 @@ struct EXPORT WarDraw{
 	void setAdditive(bool);
 	const ShaderBind *getShaderBind();
 	const AdditiveShaderBind *getAdditiveShaderBind();
+
+	/// Following console variables are moved from Player.
+	/// The Player resides in dedicated server too, which has nothing to do with rendering details.
+	/// Also, this setting should be bound to OpenGL state or window, thus global.
+	static bool r_move_path;
+	static bool r_attack_path;
+	static bool r_overlay;
 };
 
 typedef WarDraw war_draw_data;

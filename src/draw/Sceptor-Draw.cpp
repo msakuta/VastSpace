@@ -260,9 +260,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	glEnd();
 #endif
 
-	Player *ppl = w->getPlayer();
-
-	if(ppl && ppl->r_move_path && (task == Moveto || task == DeltaFormation)){
+	if(wd->r_move_path && (task == Moveto || task == DeltaFormation)){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);

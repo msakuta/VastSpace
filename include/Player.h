@@ -117,9 +117,6 @@ public:
 	int detail;
 	int mousex, mousey;
 	int race;
-	bool r_move_path;
-	bool r_attack_path;
-	bool r_overlay;
 	double fov; ///< Field of view value, in cosine angle
 	double gametime; ///< global time
 	double velolen; ///< trivial; performance keeper

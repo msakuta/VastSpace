@@ -87,8 +87,11 @@ void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeC
 	// TODO: Server side modification won't be sent, since game->idmap() continues to store the id
 	// after the first frame. Probably this won't be a problem because the hardpoint object is fairly
 	// static, but it's not forced to be.
-	Game::IdMap &idmap = game->idmap();
-	if(idmap.find(hp->getid()) == idmap.end())
+	//
+	// This trick does not work in all cases. We just give up and put hardpoint_static objects in the
+	// serialization stream.
+//	Game::IdMap &idmap = game->idmap();
+//	if(idmap.find(hp->getid()) == idmap.end())
 		const_cast<hardpoint_static*>(hp)->dive(sc, method);
 }
 

@@ -1245,15 +1245,23 @@ void Warpable::HitboxProcess::process(HSQUIRRELVM v)const{
 }
 
 void Warpable::HardPointProcess::process(HSQUIRRELVM v)const{
+	Game *game = (Game*)sq_getforeignptr(v);
+
+	// If it's the server, loading the settings from the local file is meaningless,
+	// because they will be sent from the server.
+	// Loading them in client does not hurt more than some little memory leaks,
+	// but we clearly state here that the local settings won't ever used.
+	if(!game->isServer())
+		return;
+
 	sq_pushstring(v, _SC("hardpoints"), -1); // root string
 
-	// Not defining Navlights is valid. Just ignore the case.
+	// Not defining hardpoints is valid. Just ignore the case.
 	if(SQ_FAILED(sq_get(v, -2))) // root obj
 		return;
 	SQInteger len = sq_getsize(v, -1);
 	if(-1 == len)
 		throw SQFError(_SC("hardpoints size could not be aquired"));
-	Game *game = (Game*)sq_getforeignptr(v);
 	for(int i = 0; i < len; i++){
 		sq_pushinteger(v, i); // root obj i
 		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]

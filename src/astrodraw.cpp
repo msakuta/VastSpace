@@ -214,7 +214,7 @@ int g_invert_hyperspace = 0;
 
 void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
-void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
+void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 static GLuint ProjectSphereJpg(const char *fname);
 GLuint ProjectSphereCubeJpg(const char *fname, int flags);
 
@@ -1354,7 +1354,7 @@ static void atmo_dye_vertex(struct atmo_dye_vertex_param &p, double x, double y,
 		p.col[3] * (1. + b) / 2. / (1. + (1. - s * s) * p.air) * (1. - f) + p.dawn[3] * f);
 }
 
-void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
+void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
 	// Don't call me in the first place!
 	if(thick == 0.) return;
 	int hdiv = slices == 0 ? 16 : slices;
@@ -1385,8 +1385,11 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const avec3_t sunpos, do
 
 	{
 		double sp, cen;
-		VECSUB(spos, sunpos, apos);
-		sp = VECSP(spos, delta) / VECLEN(spos) / dist;
+		spos = sunpos - apos;
+		double slen = spos.len();
+		if(slen < EPSILON)
+			return;
+		sp = spos.sp(delta) / slen / dist;
 		b = (1. - sp) / 2.;
 		cen = (sp - .0);
 		redness = (1. / (1. + 500 * cen * cen * cen * cen) / (1. + MAX(0., dist - a->rad) / thick));
@@ -3500,7 +3503,10 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
 		double brightness = pow(100, -a->absmag / 5.);
-		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dv.slen())) * asfactor;
+		double dvslen = dv.slen();
+		if(dvslen < EPSILON)
+			return;
+		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dvslen)) * asfactor;
 		Mat4d mat = mat4_u;
 		spos1.normin();
 		mat.vec3(2) = spos1;

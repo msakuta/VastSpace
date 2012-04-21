@@ -296,7 +296,7 @@ public:
 		return list_[i];
 	}
 
-	void erase(const_iterator &it){
+	void erase(iterator &it){
 		if(it != list_.end()){
 			(*it)->removeObserver(this);
 			list_.erase(it);

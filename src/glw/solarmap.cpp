@@ -15,6 +15,8 @@
 #include "antiglut.h"
 #include "cmd.h"
 #include "astro_star.h"
+#include "sqadapt.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -198,7 +200,7 @@ int nrstations = 0;
 class GLwindowSolarMap : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLwindowSolarMap(const char *title, Player *pl);
+	GLwindowSolarMap(Game *game, const char *title, Player *pl);
 	static GLwindow *showWindow(Player *pl);
 	const char *classname()const{return "GLwindowSolarMap";}
 	void draw(GLwindowState &ws, double t);
@@ -223,7 +225,7 @@ public:
 	Entity *targetr; ///< resource station
 	int focusc, sync; ///< Focus on current position
 	struct teleport *focus;
-	Astrobj *focusa;
+	const Astrobj *focusa;
 	Player *ppl;
 protected:
 
@@ -252,7 +254,7 @@ struct GLwindowSolarMap::drawSolarMapItemParams{
 	int solid;
 };
 
-GLwindowSolarMap::GLwindowSolarMap(const char *title, Player *apl) : st(title), ppl(apl), org(vec3_000), pointer(vec3_000), rot(quat_u){
+GLwindowSolarMap::GLwindowSolarMap(Game *game, const char *title, Player *apl) : st(game, title), ppl(apl), org(vec3_000), pointer(vec3_000), rot(quat_u){
 	xpos = 50;
 	ypos = 50;
 	width = FIELD+1;
@@ -616,8 +618,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			ip[1] = mousey;
 			p->hold = 0;
 		}
-		params.spointer[0] = (2 * range * ip[0] / this->width - range) * fx;
-		params.spointer[1] = (-2 * range * ip[1] / (this->height - 12) + range) * fy;
+		params.spointer[0] = (2 * range * ip[0] / cr.width() - range) * fx;
+		params.spointer[1] = (-2 * range * ip[1] / cr.height() + range) * fy;
 		params.spointer[2] = 0.;
 		params.org = p->rot.trans(p->org);
 //		params.spointer += org * sol->csrad;
@@ -1022,6 +1024,37 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			GLwindow *glw;
 			extern int s_mousex, s_mousey;
 
+#if 1
+			PopupMenu menu;
+
+			struct EXPORT PopupMenuItemFocus : public PopupMenuItem{
+				GLwindowSolarMap *parent;
+				const Astrobj *target;
+				PopupMenuItemFocus(GLwindowSolarMap *parent, const Astrobj *target) : PopupMenuItem("Focus"), parent(parent), target(target){}
+				virtual void execute(){
+					parent->focusa = target;
+				}
+				virtual PopupMenuItem *clone()const{return new PopupMenuItemFocus(*this);}
+			};
+			if(targeta)
+				menu.append(new PopupMenuItemFocus(this, targeta));
+
+			GLwindow *glwInfo(const CoordSys *cs, int type, const char *name);
+			struct PopupMenuItemInfo : public PopupMenuItem{
+				GLwindowSolarMap *parent;
+				const Astrobj *target;
+				PopupMenuItemInfo(GLwindowSolarMap *parent, const Astrobj *target) : PopupMenuItem("Information"), parent(parent), target(target){}
+				virtual void execute(){
+					glwInfo(target, 0, target->name);
+				}
+				virtual PopupMenuItem *clone()const{return new PopupMenuItemInfo(*this);}
+			};
+			if(targeta)
+				menu.append(new PopupMenuItemInfo(this, targeta));
+
+			glw = glwPopupMenu(ws, menu);
+
+#else
 //			sprintf(titles[j] = titles0[i], "Focus");
 			titles[j] = "Focus";
 			keys[j] = 0;
@@ -1049,9 +1082,10 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			sprintf(cmds[j] = cmds0[i], "info %s \"%s\"", typestring, name);
 			i++; j++;
 
-			glw = glwPopupMenu(ws, j, titles, keys, cmds, 0);
+//			glw = glwPopupMenu(ws, j, titles, keys, cmds, 0);
 //			glw->x = s_mousex;
 //			glw->y = s_mousey;
+#endif
 
 			hold = 2;
 			pointer[0] = pointer[1] = 0;
@@ -1147,34 +1181,38 @@ void GLwindowSolarMap::anim(double dt){
 	range = exp(lrange);
 }
 
-GLwindow *GLwindowSolarMap::showWindow(Player *ppl){
-	GLwindow *ret;
-	GLwindow **ppwnd;
-	static const char *windowtitle = "Solarsystem browser";
-	ppwnd = findpp(&glwlist, &TitleCmp("Solarsystem browser"));
-	if(!ppwnd){
-		/*glwActivate(ppwnd =*/ glwAppend(ret = (new GLwindowSolarMap(windowtitle, ppl)));
-	}
-	else{
-		glwActivate(ppwnd);
-		ret = *ppwnd;
-	}
-/*	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if((*ppwnd)->title == windowtitle){
-		glwActivate(ppwnd);
-		return 0;
-	}*/
-/*
-	ret = &p->st;
-	glwsizeable_init(&p->st);*/
-/*	ret->flags |= GLW_SIZEPROP;*/
-	return ret;
-}
 
-
-int cmd_togglesolarmap(int argc, char *argv[], void *pv){
-	GLwindowSolarMap::showWindow((Player*)pv);
+static SQInteger sqf_GLwindowSolarMap_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
+	if(!game)
+		return sq_throwerror(v, _SC("The game object is not assigned"));
+	GLwindowSolarMap *p = new GLwindowSolarMap(game, "Solarsystem browser", game->player);
+	GLelement::sq_assignobj(v, p);
+	glwAppend(p);
 	return 0;
 }
+
+
+static bool sq_GLwindowSolarMap_define(HSQUIRRELVM v){
+	// Define class GLwindowSolarMap
+	GLwindow::sq_define(v);
+	sq_pushstring(v, _SC("GLwindowSolarMap"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLwindowSolarMap");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("constructor"), sqf_GLwindowSolarMap_constructor);
+/*	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
+	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
+	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
+	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);*/
+	sq_createslot(v, -3);
+	return true;
+}
+
+static sqa::Initializer init_GLWbuttonMatrix("GLwindowSolarMap", sq_GLwindowSolarMap_define);
 
 
 
@@ -1268,7 +1306,11 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 		if(&p->a->getStatic() == &Star::classRegister){
 			Star *star = (Star*)p->a;
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-			glwprintf("Spectral Type: %s%g", Star::spectralToName(star->spect), star->subspect);
+			Star::SpectralType spect = star->spect;
+			if(spect == Star::Unknown)
+				glwprintf("Spectral Type: Unknown");
+			else
+				glwprintf("Spectral Type: %s%g", Star::spectralToName(spect), star->subspect);
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
 			glwprintf("Absolute Magnitude: %g", star->absmag);
 		}

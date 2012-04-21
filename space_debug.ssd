@@ -6,11 +6,15 @@ define AU 149597870.691
 define Rsun 6.960e5
 define Msun 1.9884e30
 
+cs_radius 1e10
+solarsystem
+
 astro Star "Sol"{
-	radius 1.5*Rsun
-	pos 0 10*Rsun 0
-	mass 3*Msun
+	radius Rsun
+	pos 0 0 0
+	mass Msun
 	absolute_magnitude 4.1
+	spectral G2
 }
 
 /*coordsys Orbit sunlo{

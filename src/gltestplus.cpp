@@ -2246,8 +2246,6 @@ int main(int argc, char *argv[])
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("originrotation", cmd_originrotation);
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
-	extern int cmd_togglesolarmap(int argc, char *argv[], void *);
-	CmdAddParam("togglesolarmap", cmd_togglesolarmap, &server->player);
 	extern int cmd_togglewarpmenu(int argc, char *argv[], void *);
 	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &server->player);
 	extern int cmd_transit(int argc, char *argv[], void *pv);

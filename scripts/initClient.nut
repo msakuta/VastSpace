@@ -262,7 +262,7 @@ function initUI(){
 	sysbut.y = sch - sysbut.height;
 	sysbut.addButton("exit", "textures/exit.png", tlate("Exit game"));
 	sysbut.addButton(GLWsqStateButton("textures/pause.png", "textures/unpause.png", pause_state, pause_press, tlate("Toggle Pause")));
-	sysbut.addButton("togglesolarmap", "textures/solarmap.png", tlate("Solarmap"));
+	sysbut.addButton("sq GLwindowSolarMap()", "textures/solarmap.png", tlate("Solarmap"));
 	sysbut.addButton("r_overlay t", "textures/overlay.png", tlate("Show Overlay"));
 	sysbut.addButton("r_move_path t", "textures/movepath.png", tlate("Show Move Path"));
 	sysbut.addButton("toggle g_drawastrofig", "textures/showorbit.png", tlate("Show Orbits"));

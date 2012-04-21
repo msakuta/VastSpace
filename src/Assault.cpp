@@ -39,9 +39,10 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 	st::init();
 	init();
 	for(int i = 0; i < hardpoints.size(); i++){
-		turrets[i] = (0 || i % 2 ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]));
+		ArmBase *turret = (0 || i % 2 ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]));
+		turrets.push_back(turret);
 		if(aw)
-			aw->addent(turrets[i]);
+			aw->addent(turret);
 	}
 
 	if(!aw)
@@ -63,7 +64,6 @@ void Assault::init(){
 			HardPointProcess(hardpoints));
 		initialized = true;
 	}
-	turrets = new ArmBase*[hardpoints.size()];
 	mass = 1e5;
 	mother = NULL;
 	paradec = -1;
@@ -84,15 +84,22 @@ Entity::EntityRegister<Assault> Assault::entityRegister("Assault");
 void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << formPrev;
-	for(int i = 0; i < hardpoints.size(); i++)
-		sc.o << turrets[i];
+	sc.o << unsigned(hardpoints.size());
+	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it)
+		sc.o << *it;
 }
 
 void Assault::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> (Entity*&)formPrev;
-	for(int i = 0; i < hardpoints.size(); i++)
-		sc.i >> turrets[i];
+	unsigned size;
+	sc.i >> size;
+	turrets.clear();
+	for(int i = 0; i < size; i++){
+		ArmBase *a;
+		sc.i >> a;
+		turrets.push_back(a);
+	}
 
 	// Update the dynamics body's parameters too.
 	if(bbody){
@@ -334,8 +341,8 @@ void Assault::anim(double dt){
 		space_collide(this, ws, dt, NULL, NULL);
 
 	st::anim(dt);
-	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
-		turrets[i]->align();
+	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it) if(*it)
+		(*it)->align();
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
 	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt / 2.)) : engineHeat * exp(-dt / 2.);
@@ -347,15 +354,20 @@ void Assault::clientUpdate(double dt){
 
 void Assault::postframe(){
 	st::postframe();
-	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i] && turrets[i]->w != w)
-		turrets[i] = NULL;
-	if(mother && (!mother->e || !mother->e->w))
-		mother = NULL;
+	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it){
+		ArmBase *a = *it;
+		if(!a)
+			continue;
+		if(a->w != w)
+			turrets.erase(it);
+		if(mother && (!mother->e || !mother->e->w))
+			mother = NULL;
+	}
 }
 
 double Assault::maxhealth()const{return 10000.;}
 
-int Assault::armsCount()const{return numof(turrets);}
+int Assault::armsCount()const{return turrets.size();}
 
 ArmBase *Assault::armsGet(int i){
 	if(i < 0 || armsCount() <= i)

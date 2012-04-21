@@ -7,15 +7,19 @@
 #include "arms.h"
 #include "Docker.h"
 
+
+
 /// Medium class ship with replaceable turrets.
 class Assault : public Frigate{
+public:
+	typedef Frigate st;
+	typedef ObservableList<ArmBase> TurretList;
 protected:
 	float engineHeat;
 	WeakPtr<Assault> formPrev;
-	ArmBase **turrets;
+	TurretList turrets;
 
 public:
-	typedef Frigate st;
 	Assault(Game *game) : st(game){init();}
 	Assault(WarField *w);
 	void init();

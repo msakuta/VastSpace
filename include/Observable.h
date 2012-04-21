@@ -260,6 +260,55 @@ public:
 };
 
 
+/// \brief A list of Observables that automatically removes expired elements.
+/// \param T is element type, must be a subclass of and be static_cast-able from Observable.
+///
+/// All occasions of item insertion are overridden so that all pointers to
+/// Observables are managed to prevent dangling pointer.
+///
+/// A list (actually, vector) conterpart of ObservableSet.
+/// Sometimes we want to use an ordered list of Observables that manages elements automatically.
+template<typename T>
+class ObservableList : public Observer{
+	std::vector<T*> list_;
+	ObservableList &operator=(ObservableList&){} ///< Prohibit copy construction.
+public:
+	typedef typename std::vector<T*>::iterator iterator;
+	typedef typename std::vector<T*>::const_iterator const_iterator;
+	~ObservableList(){
+		clear();
+	}
+	iterator begin(){return list_.begin();}
+	iterator end(){return list_.end();}
+	const_iterator begin()const{return list_.begin();}
+	const_iterator end()const{return list_.end();}
+	size_t size()const{return list_.size();}
+	bool empty()const{return list_.empty();}
+	iterator find(T *o){return list_.find(o);}
+	void push_back(T *o){
+		o->addObserver(this);
+		list_.push_back(o);
+	}
+
+	// We do not necessarily "own" the elements, so we can return non-const pointer
+	// of elements even if this pointer is const.
+	T *operator[](int i)const{
+		return list_[i];
+	}
+
+	void erase(const_iterator &it){
+		if(it != list_.end()){
+			(*it)->removeObserver(this);
+			list_.erase(it);
+		}
+	}
+	void clear(){
+		for(iterator it = list_.begin(); it != list_.end(); it++)
+			(*it)->removeObserver(this);
+		list_.clear();
+	}
+};
+
 
 
 //-----------------------------------------------------------------------------

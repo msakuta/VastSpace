@@ -24,6 +24,9 @@ extern "C"{
 #include <iostream>
 #include <fstream>
 
+#define DEBUG_ENTERFIELD 0
+#define DEBUG_TRANSIT_CS 0
+
 
 Entity::Entity(Game *game) : st(game), w(NULL), bbody(NULL){}
 
@@ -569,8 +572,10 @@ void Entity::enterField(WarField *aw){
 		ws->bdw->addRigidBody(bbody);
 		bbody->activate(); // Is it necessary?
 	}
+#if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << aw->cs->getpath() << std::endl;
+#endif
 }
 
 /// Called when this Entity is leaving a WarField, after removing from Entity list in the WarField.
@@ -582,8 +587,10 @@ void Entity::leaveField(WarField *aw){
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw && bbody)
 		ws->bdw->removeRigidBody(bbody);
+#if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": leaveField: " << (game->isServer()) << " {" << classname() << ":" << id << "} from " << aw->cs->getpath() << std::endl;
+#endif
 }
 
 void Entity::setPosition(const Vec3d *apos, const Quatd *arot, const Vec3d *avelo, const Vec3d *aavelo){
@@ -702,6 +709,7 @@ Warpable *Entity::toWarpable(){return NULL;}
 Entity::Dockable *Entity::toDockable(){return NULL;}
 
 void Entity::transit_cs(CoordSys *cs){
+#if DEBUG_TRANSIT_CS // The nice thing about C++ is that #if directives need not to be placed at all return statements.
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": transit_cs start: " << game->isServer() << " {" << classname() << ":" << id << "} from " << w->cs->getpath() << " to " << cs->getpath() << std::endl;
 	struct FuncExit{
@@ -714,6 +722,7 @@ void Entity::transit_cs(CoordSys *cs){
 	} fe;
 	fe.e = this;
 	fe.cs = cs;
+#endif
 	Mat4d mat;
 	if(w == cs->w)
 		return;

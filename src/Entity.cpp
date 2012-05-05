@@ -24,8 +24,8 @@ extern "C"{
 #include <iostream>
 #include <fstream>
 
-#define DEBUG_ENTERFIELD 0
-#define DEBUG_TRANSIT_CS 0
+#define DEBUG_ENTERFIELD 1
+#define DEBUG_TRANSIT_CS 1
 
 
 Entity::Entity(Game *game) : st(game), w(NULL), bbody(NULL){}
@@ -45,7 +45,8 @@ Entity::Entity(WarField *aw) :
 	race(0),
 	otflag(0),
 	controller(NULL),
-	bbody(NULL)
+	bbody(NULL),
+	enteringField(false)
 {
 //	The entity must be constructed before being contained by some surroundings.
 //  This generic problem is fairly difficult whether the object should be constructed before being assigned to its container.
@@ -548,7 +549,8 @@ void Entity::unserialize(UnserializeContext &sc){
 		if(oldwf)
 			leaveField(oldwf);
 		if(w)
-			enterField(w);
+			enteringField = true;
+//			enterField(w);
 	}
 }
 
@@ -767,6 +769,21 @@ void Entity::transit_cs(CoordSys *cs){
 	leaveField(oldw);
 	cs->w->addent(this);
 
+}
+
+/// \brief Just call anim().
+void Entity::callServerUpdate(double dt){
+	anim(dt);
+}
+
+/// \brief Calls clientUpdate() with preceding processes that are encapsulated in the class.
+void Entity::callClientUpdate(double dt){
+	// Check the flag that could be set in unserialize().
+	if(enteringField){
+		enterField(w);
+		enteringField = false;
+	}
+	clientUpdate(dt);
 }
 
 

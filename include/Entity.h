@@ -110,6 +110,9 @@ public:
 	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
 	Entity *getUltimateOwner();
 
+	void callServerUpdate(double dt);
+	void callClientUpdate(double dt);
+
 	Vec3d pos; ///< Position vector
 	Vec3d velo; ///< Linear velocity vector
 	Vec3d omg; ///< Angular velocity vector
@@ -211,6 +214,9 @@ protected:
 		virtual EntityStatic *st();
 	};
 	static EntityStaticBase entityRegister;
+
+private:
+	bool enteringField; ///< A private flag to defer invocation of enterField.
 };
 
 

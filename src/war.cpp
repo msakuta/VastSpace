@@ -130,8 +130,8 @@ void WarField::anim(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, &WarField::el, &Entity::anim);
-	aaanim(dt, this, &WarField::bl, &Entity::anim);
+	aaanim(dt, this, &WarField::el, &Entity::callServerUpdate);
+	aaanim(dt, this, &WarField::bl, &Entity::callServerUpdate);
 }
 
 void WarField::clientUpdate(double dt){
@@ -143,8 +143,8 @@ void WarField::clientUpdate(double dt){
 			break;
 		}
 	}
-	aaanim(dt, this, &WarField::el, &Entity::clientUpdate);
-	aaanim(dt, this, &WarField::bl, &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::el, &Entity::callClientUpdate);
+	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 }
 
 void WarField::postframe(){
@@ -387,8 +387,8 @@ void WarSpace::anim(double dt){
 }
 
 void WarSpace::clientUpdate(double dt){
-	aaanim(dt, this, &WarField::el, &Entity::clientUpdate);
-	aaanim(dt, this, &WarField::bl, &Entity::clientUpdate);
+	aaanim(dt, this, &WarField::el, &Entity::callClientUpdate);
+	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 
 	bdw->stepSimulation(dt / 1., 0);
 

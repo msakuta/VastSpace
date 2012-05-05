@@ -17,11 +17,13 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 #include <algorithm>
+#include <fstream>
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
+#define DEBUG_ENTERFIELD 1
 
 double Assault::modelScale = 0.0002;
 
@@ -175,6 +177,20 @@ void Assault::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	rot = this->rot * rot0[seatid];
 	Vec3d ofs = src[seatid];
 	pos = this->pos + rot.trans(src[seatid]);
+}
+
+void Assault::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~2);
+	}
+#if DEBUG_ENTERFIELD
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
+#endif
 }
 
 void Assault::anim(double dt){

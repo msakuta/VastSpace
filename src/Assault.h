@@ -31,6 +31,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
+	virtual void enterField(WarField*);
 	virtual void anim(double);
 	virtual void clientUpdate(double);
 	virtual void postframe();

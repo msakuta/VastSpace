@@ -44,7 +44,8 @@ public:
 	double totalWarpDist, currentWarpDist;
 	double capacitor; /* Temporarily stored energy, MegaJoules */
 	int warping;
-	CoordSys *warpcs, *warpdstcs;
+	WeakPtr<CoordSys> warpcs;
+	WeakPtr<CoordSys> warpdstcs;
 //	WarField *warp_next_warf;
 	enum sship_task task;
 	int direction;

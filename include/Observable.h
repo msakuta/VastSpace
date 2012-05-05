@@ -189,6 +189,24 @@ public:
 	bool operator<(const WeakPtr &o)const{
 		return ptr < o.ptr;
 	}
+/*	bool operator==(const WeakPtr &o)const{
+		return ptr == o.ptr;
+	}
+	bool operator!=(const WeakPtr &o)const{
+		return !operator==(o);
+	}
+	friend bool operator==(P *a, const WeakPtr &b){
+		return a == b.ptr;
+	}
+	friend bool operator!=(P *a, const WeakPtr b){
+		return !operator==(a, b);
+	}
+	friend bool operator==(const WeakPtr &a, P *b){
+		return a.ptr == b;
+	}
+	friend bool operator!=(const WeakPtr &a, P *b){
+		return !operator==(a, b);
+	}*/
 };
 
 

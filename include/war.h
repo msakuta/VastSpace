@@ -119,6 +119,7 @@ public:
 #endif
 	WarField(Game *);
 	WarField(CoordSys *cs);
+	~WarField();
 	virtual const char *classname()const;
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);

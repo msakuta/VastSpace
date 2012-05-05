@@ -406,6 +406,11 @@ void Player::anim(double dt){
 		if(1. < blendmover)
 			mover = nextmover;
 	}
+
+	// The server and the client occasionally become out of sync at which CoordSys it belongs when
+	// the player is chasing something. The player normalizes it every frame here.
+	if(chase && chase->w->cs != cs)
+		cs = chase->w->cs;
 }
 
 void Player::transit_cs(CoordSys *cs){

@@ -36,6 +36,19 @@ WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), c
 	init_rseq(&rs, 2426);
 }
 
+WarField::~WarField(){
+	// Client could never delete a WarField.
+	if(game->isServer()){
+		// Even if it's the server, well-designed sequence would never cause a WarField containing
+		// Entities to be deleted, which means the code below should not be necessary.
+		// But I'm not sure it applies forever, so placed it here. At least we can put a breakpoint
+		// for debugging.
+		for(EntityList::iterator it = el.begin(); it != el.end(); ++it){
+			(*it)->transit_cs(cs->parent);
+		}
+	}
+}
+
 const char *WarField::classname()const{
 	return "WarField";
 }
@@ -222,7 +235,10 @@ void WarField::unlinkList(EntityList &el, Observable *o){
 		EntityList::iterator next = it;
 		++next;
 		if(*it == o){
-			o->removeObserver(this);
+			// Entity CoordSys transition does not work if the line below is commented
+			// by unknown reason.
+			if(game->isServer())
+				o->removeObserver(this);
 			el.erase(it);
 		}
 		it = next;

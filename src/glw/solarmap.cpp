@@ -17,6 +17,7 @@
 #include "astro_star.h"
 #include "sqadapt.h"
 #include "Game.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -1027,7 +1028,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 #if 1
 			PopupMenu menu;
 
-			struct EXPORT PopupMenuItemFocus : public PopupMenuItem{
+			struct PopupMenuItemFocus : public PopupMenuItem{
 				GLwindowSolarMap *parent;
 				const Astrobj *target;
 				PopupMenuItemFocus(GLwindowSolarMap *parent, const Astrobj *target) : PopupMenuItem("Focus"), parent(parent), target(target){}
@@ -1038,6 +1039,25 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			};
 			if(targeta)
 				menu.append(new PopupMenuItemFocus(this, targeta));
+
+			struct PopupMenuItemWarp : public PopupMenuItem{
+				GLwindowSolarMap *parent;
+				teleport *target;
+				PopupMenuItemWarp(GLwindowSolarMap *parent, teleport *target) : PopupMenuItem("Warp"), parent(parent), target(target){}
+				virtual void execute(){
+					Player::SelectSet &selected = parent->game->player->selected;
+					WarpCommand com;
+					com.destpos = target->pos;
+					com.destcs = target->cs;
+					for(Player::SelectSet::iterator it = selected.begin(); it != selected.end(); ++it) if(*it){
+						(*it)->command(&com);
+						CMEntityCommand::s.send(*it, com);
+					}
+				}
+				virtual PopupMenuItem *clone()const{return new PopupMenuItemWarp(*this);}
+			};
+			if(target)
+				menu.append(new PopupMenuItemWarp(this, target));
 
 			GLwindow *glwInfo(const CoordSys *cs, int type, const char *name);
 			struct PopupMenuItemInfo : public PopupMenuItem{
@@ -1379,61 +1399,5 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 	return ret;
 }
 
-/// Temporary class to register command callbacks within initializer.
-static class cmd_info_initializer{
-	static int cmd_info(int argc, char *argv[]){
-		extern Player pl;
-		GLwindow *ret;
-		if(argc < 2){
-			CmdPrint("usage: info target");
-			return 0;
-		}
-//		ret = glwInfo(pl.cs->findcspath("/"), argc < 3 ? 0 : !strcmp(argv[1], "Astro") ? 1 : !strcmp(argv[1], "Coordsys") ? 2 : !strcmp(argv[1], "Teleport") ? 3 : 0, argv[argc < 3 ? 1 : 2]);
-	/*	if(glwcmdmenu == glwfocus)
-			glwfocus = ret;
-		glwcmdmenu = ret;*/
-		return 0;
-	}
-public:
-	cmd_info_initializer(){
-		CmdAdd("info", cmd_info);
-	}
-} cii;
 
-int cmd_focus(int argc, const char *argv[]){
-	GLwindow *w = GLwindow::getFocus() ? GLwindow::getFocus() : glwlist;
-	int i;
-
-	for(w = glwlist; w; w = w->getNext()) if(!strcmp(w->classname(), "GLwindowSolarMap"))
-		break;
-	if(!w)
-		return 1;
-
-	GLwindowSolarMap *sm = (GLwindowSolarMap*)w;
-
-	/* Always reset */
-	if(sm->focus && !strcmp(sm->focus->name, argv[1]) ||
-		sm->focusa && !strcmp(sm->focusa->name, argv[1])||
-		argc < 2)
-	{
-		sm->focus = NULL;
-		sm->focusa = NULL;
-		sm->focusc = 0;
-		return 0;
-	}
-
-/*	for(i = 0; i < nastrobjs; i++) if(!strcmp(astrobjs[i]->name, argv[1])){
-		sm->focusa = astrobjs[i];
-		sm->focus = NULL;
-		sm->focusc = 0;
-		return 0;
-	}
-	for(i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, argv[1])){
-		sm->focus = &tplist[i];
-		sm->focusa = NULL;
-		sm->focusc = 0;
-		return 0;
-	}*/
-	return 0;
-}
 #endif

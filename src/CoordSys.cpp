@@ -600,7 +600,8 @@ void CoordSys::endframe(){
 	}
 
 	// delete offsprings first to avoid adoption of children as possible.
-	if(flags & CS_DELETE){
+	// Actually, only the server can delete a CoordSys.
+	if(game->isServer() && flags & CS_DELETE){
 		// unlink from parent's children list
 		if(parent){
 			bool ok = false;
@@ -708,12 +709,28 @@ CoordSys::~CoordSys(){
 	// Do not delete siblings, they may be alive after this death.
 //	delete next;
 	cs_destructs++;
-	for(CoordSys *cs = children; cs;){
-		CoordSys *csnext = cs->next;
-		delete cs;
-		cs = csnext;
+	if(game->isServer()){
+		for(CoordSys *cs = children; cs;){
+			CoordSys *csnext = cs->next;
+			delete cs;
+			cs = csnext;
+		}
+		delete w;
 	}
-	delete w;
+
+	// Unregister itself from the nearest enclosing extent-isolated system.
+	// The containing system has a strong reference to this object, so just destroying the object
+	// does not automatically clears it, thus we must manually erase it.
+	// This happens no matter server or client.
+	CoordSys *eis = findeisystem();
+	if(eis){
+		for(AOList::iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
+			if(*it == this){
+				eis->aorder.erase(it);
+				break;
+			}
+		}
+	}
 }
 
 
@@ -1078,6 +1095,10 @@ cpplib::dstring CoordSys::getpath()const{
 }
 
 int CoordSys::getpathint(cpplib::dstring &ret)const{
+	if(!this){
+		ret = "(null)";
+		return 0;
+	}
 	if(!parent){
 		ret = '/';
 		return 0;

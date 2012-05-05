@@ -292,7 +292,7 @@ void Warpable::drawHUD(wardraw_t *wd){
 			glTranslated(0, -.65, -1);
 			glScaled(.25, .25, 1.);
 
-			double f = log10(velo / p->warpSpeed);
+			double f = DBL_EPSILON < velo ? log10(velo / p->warpSpeed) : 0;
 			int iphase = -8 < f ? 8 + f : 0;
 
 			/* speed meter */

@@ -323,7 +323,7 @@ public:
 	static const ClassRegister<WarpBubble> classRegister;
 	WarpBubble(Game *game) : st(game){}
 	WarpBubble(const char *path, CoordSys *root) : st(path, root){}
-	const char *classname()const{return "WarpBubble";}
+	virtual const Static &getStatic()const{return classRegister;}
 	static int serialNo;
 };
 const ClassRegister<WarpBubble> WarpBubble::classRegister("WarpBubble");
@@ -759,8 +759,15 @@ void Warpable::warp_collapse(){
 	Entity *pt2;
 	if(!warpcs)
 		return;
-	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it)
-		transit_cs(p->warpdstcs);
+	WarField *w = this->w; // Entity::w could be altered in transit_cs, so we reserve it here.
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end();){
+		WarField::EntityList::iterator next = it;
+		++next;
+		if(*it){
+			(*it)->transit_cs(p->warpdstcs);
+		}
+		it = next;
+	}
 	if(p->warpcs){
 /*		for(i = 0; i < npf; i++){
 			if(pf[i])
@@ -831,8 +838,11 @@ void Warpable::anim(double dt){
 	if(p->warping){
 
 		// Do not interact with normal space objects, for it can push things really fast away.
-		if(bbody)
-			bbody->getBroadphaseProxy()->m_collisionFilterMask = 0;
+		if(bbody){
+			btBroadphaseProxy *proxy = bbody->getBroadphaseProxy();
+			if(proxy)
+				proxy->m_collisionFilterMask = 0;
+		}
 
 		double desiredvelo, velo;
 		Vec3d *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
@@ -915,7 +925,10 @@ void Warpable::anim(double dt){
 			VECCPY(p->velo, dstvelo);*/
 	/*		VECSADD(p->velo, delta, dt * 1e-8 * (1e0 + VECLEN(p->velo)));*/
 		}
-		if(!p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < VECSLEN(pt->pos)){
+
+		// A new warp bubble can only be created in the server. If the client could, we couldn't match two simultaneously
+		// created warp bubbles in the server and the client.
+		if(game->isServer() && !p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < pt->pos.slen()){
 			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;

@@ -22,6 +22,7 @@ extern "C"{
 #include <btBulletDynamicsCommon.h>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 
 Entity::Entity(Game *game) : st(game), w(NULL), bbody(NULL){}
@@ -541,7 +542,8 @@ void Entity::unserialize(UnserializeContext &sc){
 
 	// Postprocessing calls leave/enterField according to frame deltas.
 	if(oldwf != w){
-		leaveField(oldwf);
+		if(oldwf)
+			leaveField(oldwf);
 		if(w)
 			enterField(w);
 	}
@@ -567,6 +569,8 @@ void Entity::enterField(WarField *aw){
 		ws->bdw->addRigidBody(bbody);
 		bbody->activate(); // Is it necessary?
 	}
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << aw->cs->getpath() << std::endl;
 }
 
 /// Called when this Entity is leaving a WarField, after removing from Entity list in the WarField.
@@ -578,6 +582,8 @@ void Entity::leaveField(WarField *aw){
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw && bbody)
 		ws->bdw->removeRigidBody(bbody);
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": leaveField: " << (game->isServer()) << " {" << classname() << ":" << id << "} from " << aw->cs->getpath() << std::endl;
 }
 
 void Entity::setPosition(const Vec3d *apos, const Quatd *arot, const Vec3d *avelo, const Vec3d *aavelo){
@@ -696,6 +702,18 @@ Warpable *Entity::toWarpable(){return NULL;}
 Entity::Dockable *Entity::toDockable(){return NULL;}
 
 void Entity::transit_cs(CoordSys *cs){
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": transit_cs start: " << game->isServer() << " {" << classname() << ":" << id << "} from " << w->cs->getpath() << " to " << cs->getpath() << std::endl;
+	struct FuncExit{
+		Entity *e;
+		CoordSys *cs;
+		~FuncExit(){
+			std::ofstream of("debug.log", std::ios_base::app);
+			of << e->game->universe->global_time << ": transit_cs end: " << e->game->isServer() << " {" << e->classname() << ":" << e->getid() << "}" << std::endl;
+		}
+	} fe;
+	fe.e = this;
+	fe.cs = cs;
 	Mat4d mat;
 	if(w == cs->w)
 		return;
@@ -731,8 +749,14 @@ void Entity::transit_cs(CoordSys *cs){
 		bbody->setAngularVelocity(btvc(omg));
 	}
 
-//	cs->w->addent(this);
-	w = cs->w;
+	// Even in the process of transition, at any moment no two WarFields own the
+	// same Entity.
+	WarField *oldw = w;
+	w->unlink(this);
+	WarField::EntityList &el = w->entlist();
+	w = NULL;
+	leaveField(oldw);
+	cs->w->addent(this);
 
 }
 
@@ -860,6 +884,16 @@ IMPLEMENT_COMMAND(SetAggressiveCommand, "SetAggressive")
 IMPLEMENT_COMMAND(SetPassiveCommand, "SetPassive")
 
 IMPLEMENT_COMMAND(WarpCommand, "Warp")
+
+void WarpCommand::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << destcs;
+}
+
+void WarpCommand::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	sc.i >> destcs;
+}
 
 IMPLEMENT_COMMAND(RemainDockedCommand, "RemainDocked")
 

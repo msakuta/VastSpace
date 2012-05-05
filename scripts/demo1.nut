@@ -45,6 +45,7 @@ targetcs <- player.cs;
 invokes <- 0;
 obj1 <- null;
 obj2 <- null;
+assaults <- 0;
 
 function frameproc(dt){
 	framecount++;
@@ -118,24 +119,25 @@ function frameproc(dt){
 
 		if(racec[0] < 2){
 			local d = bluebase.docker;
-			if(d != null){
+/*			if(d != null){
 				local e = d.addent("Sceptor");
 				e.race = 0;
-			}
+			}*/
 		}
-		if(countents(cs, 0, "Assault") < 1){
+		if(assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
 				local be = docker.addent("Assault");
 				be.race = 0;
 			}
+			assaults++;
 		}
 		if(racec[1] < 2){
 			local d = redbase.docker;
-			if(d != null){
+/*			if(d != null){
 				local e = d.addent("Sceptor");
 				e.race = 1;
-			}
+			}*/
 		}
 		if(countents(cs, 1, "Beamer") < 1){
 			local docker = redbase.docker;

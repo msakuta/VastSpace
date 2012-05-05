@@ -168,7 +168,7 @@ public:
 #endif
 	/// Quit controlling an Entity.
 	void uncontrol(){
-		if(controlled && controlled->controller == this)
+		if(controlled && static_cast<EntityController*>(controlled->controller) == this)
 			controlled->controller = NULL;
 		controlled = NULL;
 	}

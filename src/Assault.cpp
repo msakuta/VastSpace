@@ -177,21 +177,6 @@ void Assault::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = this->pos + rot.trans(src[seatid]);
 }
 
-void Assault::enterField(WarField *target){
-	WarSpace *ws = *target;
-
-	if(ws && ws->bdw){
-		buildBody();
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
-	}
-}
-
-void Assault::leaveField(WarField *w){
-	st::leaveField(w);
-}
-
-
 void Assault::anim(double dt){
 	WarSpace *ws;
 	if(!(ws = *w)){

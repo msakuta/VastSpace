@@ -311,6 +311,9 @@ struct EXPORT WarpCommand : public MoveCommand{
 	// Also, it can be less efficient to convert between path string and pointer when
 	// one that sent the command already know the destination system via pointer. */
 	CoordSys *destcs;
+
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
 };
 
 struct EXPORT RemainDockedCommand : public SerializableCommand{

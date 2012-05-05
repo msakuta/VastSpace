@@ -127,7 +127,7 @@ public:
 //	int shoots, shoots2, kills, deaths;
 	input_t inputs;
 	WeakPtr<EntityController> controller; ///< The controller class, could be either a player or an AI.
-	WarField *w; ///< belonging WarField.
+	WarField *w; ///< belonging WarField. Note that this is strong pointer.
 	int otflag;
 //	char weapon;
 

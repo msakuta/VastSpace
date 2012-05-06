@@ -594,6 +594,7 @@ void gldLookatMatrix(double (*mat)[16], const double (*pos)[3]){
 	aquat_t q;
 	double p;
 	double slen;
+	double len;
 
 	/* Check if the argument pos is a zero vector, which case results a zero division. */
 	slen = VECSLEN(*pos);
@@ -608,7 +609,12 @@ void gldLookatMatrix(double (*mat)[16], const double (*pos)[3]){
 	q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
 
 	VECVP(v, avec3_001, dr);
-	p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+	len = VECLEN(v);
+	if(len < DBL_EPSILON){
+		MAT4IDENTITY(*mat); /* In case of zero vector, return identity matrix. */
+		return;
+	}
+	p = sqrt(1. - q[3] * q[3]) / len;
 	VECSCALE(q, v, p);
 	quat2mat(mat, q);
 }

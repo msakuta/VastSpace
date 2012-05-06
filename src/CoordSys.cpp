@@ -71,6 +71,24 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
+
+	// Clear the previous aorder list prior to unserialize children.
+	// The dive() function must keep the children processed at last to make this method working.
+	//
+	// This is necessary when an element in the list can be transitted to or "grafted" to another node
+	// in the process of simulation in the server.
+	// For example, warp bubbles are the case because they can transit across EI-system and the client has
+	// no way to know that happens (other than simulating the client copy of the universe, which can get
+	// incomplete over time evolution).
+	//
+	// The obvious thing is that the client has responsibility to maintain the aorder list, because the
+	// order depends on the observer's position. In other words, the client can do whatever it wants with
+	// the list, regardless of the server's will.
+	//
+	// TODO: Clearing and reconstructing the list every frame is way too costly for such a rare event like
+	// CoordSys transition. Probably some event handling mechanisms are preferred.
+	if((flags & (CS_EXTENT | CS_ISOLATED)) == (CS_EXTENT | CS_ISOLATED))
+		aorder.clear();
 }
 
 void CoordSys::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
@@ -1451,7 +1469,7 @@ static SQInteger sqf_transPosition(HSQUIRRELVM v){
 static SQInteger sqf_transRotation(HSQUIRRELVM v){
 	try{
 		CoordSys *p = CoordSys::sq_refobj(v);
-		CoordSys *p2 = CoordSys::sq_refobj(v, 3);
+		CoordSys *p2 = CoordSys::sq_refobj(v, 2);
 		Quatd q = p->tocsq(p2);
 		SQQuatd qv(q);
 		qv.push(v);

@@ -5,6 +5,7 @@ define RAD_PER_DEG 2*pi/360
 define AU 149597870.691
 define Rsun 6.960e5
 define Msun 1.9884e30
+define LY 9.4605284e12
 
 cs_radius 1e10
 solarsystem
@@ -244,7 +245,102 @@ coordsys Orbit earth{
 /*		new astro Island3 "Venus Side"{
 			pos 10 -18 0
 		}*/
-#		coordsys Surface venuss{
-#		}
-#	}
-#}
+/*		coordsys Surface venuss{
+		}
+	}
+}*/
+
+coordsys "Alpha Centauri"{
+	extraname "α Cen"
+	extraname "Rigil Kentaurus"
+	extraname "Toliman"
+	extraname "Bungla"
+	extraname "Gliese 559"
+	solarsystem
+#	galactic_coord 315.8 -0.7 4.22*LY
+	equatorial_coord 219.899 -60.835401 4.22*LY
+	bookmark "Alpha Centauri"
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star A{
+		fullname "Rigil Kentaurus A"
+		extraname "Alpha Centauri A"
+		extraname "HIP 71683"
+		orbits barycenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 0.1*79.23
+		argument_of_periapsis 150.2075
+		ascending_node 80.6198
+		radius 1.227*Rsun
+		mass 1.1*Msun
+		pos 0 0 0
+		spectral G2V
+	}
+	coordsys Orbit "orbit"{
+		orbits "Rigil Kentaurus A"
+		showorbit
+		semimajor_axis AU
+		eccentricity 0
+		inclination 0
+		argument_of_periapsis 0
+		ascending_node 0
+		teleport "Rigil Kentaurus A"
+		bookmark "Rigil Kentaurus A" 0 0 0 "Quatd.rotation(PI,Vec3d(1,0,0))"
+	}
+	astro Star B{
+		fullname "Rigil Kentaurus B"
+		extraname "Alpha Centauri B"
+		extraname "HIP 71681"
+		orbits barycenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 0.1*79.23
+		argument_of_periapsis 150.2075
+		ascending_node 80.6198+180
+		radius .865*Rsun
+		mass .907*Msun
+		pos 11*AU 0 0
+		spectral K1V
+	}
+	astro Star C{
+		fullname "Proxima Centauri"
+		extraname "Alpha Centauri C"
+		extraname "HIP 70890"
+		radius .145*Rsun
+		mass .123*Msun
+		pos .2*LY 0 0
+		spectral M5.5Ve
+	}
+	coordsys Orbit hypo{
+		fullname "Hypothetical Planet System"
+		cs_radius 1000000
+		orbits "B"
+		orbit_radius 57909100
+		inclination 7.0051
+		argument_of_periapsis 77.5806
+		ascending_node 48.4257
+		eccentricity 0.205630
+		showorbit
+		astro TextureSphere "Hypothetical Planet"{
+			radius 2439.7
+			mass 3.3022e23
+			color afafaf
+			planet
+			spherehit
+			texture mer0muu2.jpg
+		}
+		coordsys Orbit hypoo{
+			orbits "Hypothetical Planet"
+			orbit_radius 10000
+			fullname "Hypo orbit"
+			warp
+			teleport
+			bookmark "Hypo orbit"
+		}
+	}
+
+}

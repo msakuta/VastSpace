@@ -537,7 +537,7 @@ Warpable::Warpable(WarField *aw) : st(aw), task(sship_idle){
 
 void Warpable::init(){
 	st::init();
-	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */5. * AU_PER_KILOMETER;
+	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */15000. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;
 	capacitor = 0.;
@@ -563,7 +563,8 @@ int cmd_transit(int argc, char *argv[], void *pv){
 }
 
 int cmd_warp(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
 	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: warp dest [x] [y] [z]");
@@ -586,6 +587,7 @@ int cmd_warp(int argc, char *argv[], void *pv){
 
 	for(Player::SelectSet::iterator pt = ppl->selected.begin(); pt != ppl->selected.end(); pt++){
 		(*pt)->command(&com);
+		CMEntityCommand::s.send(*pt, com);
 #if 0
 		Warpable *p = (*pt)->toWarpable();
 		if(!p)

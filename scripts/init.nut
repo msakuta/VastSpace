@@ -134,6 +134,23 @@ stellarContext <- {
 //		print(cs.name() + ": " + RA + ", " + dec + pos);
 		local earths = universe.findcspath("/sol/earth/Earth");
 		local sol = universe.findcspath("/sol");
+
+		// Try to find the earth at the path in case of space_debug.ssd
+		if(earths == null)
+			earths = universe.findcspath("/earth/Earth");
+
+		// Give up if it couldn't
+		if(earths == null)
+			throw "Earth could not be found";
+
+		// Try to find Sol at the path in case of space_debug.ssd
+		if(sol == null)
+			sol = universe;
+
+		// Give up if it couldn't
+		if(sol == null)
+			throw "sol could not be found";
+
 		print(universe.transRotation(earths) + "=" + sol.transRotation(earths) + "*" + universe.transRotation(sol));
 		if(earths != null)
 			pos = 

@@ -235,7 +235,10 @@ void TacticalMover::rotateLook(double dx, double dy){
 	CMRot::send(this->rot);
 }
 
-Player::Player(Game *game) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
+/// \brief Constructor of Player class.
+/// \param game The Game object the new object belongs to. It should match org->game if org is not NULL.
+/// \param org The original Player object in the universe that new Players will be copied from. It can be NULL.
+Player::Player(Game *game, const Player *org) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
 	chasecamera(0), detail(0), mousex(0), mousey(0), race(0), fov(1.), viewdist(1.), aviewdist(1.),
 	gametime(0), velolen(0),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
@@ -251,6 +254,20 @@ Player::Player(Game *game) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), ac
 	const_cast<CameraController*&>(cockpitview) = new CockpitviewMover(*this);
 	const_cast<CameraController*&>(tactical) = new TacticalMover(*this);
 	mover = tactical;
+
+	// Copy properties from original Player, if present.
+	if(org){
+		cs = org->cs;
+		setpos(org->getpos());
+		setvelo(org->getvelo());
+		setrot(org->getrot());
+
+		// Teleport list is only initialized for the first Player object during stellar
+		// structure definition file processing.
+		// Probably tplist is not really member of Player, but it could be altered per Player
+		// or faction.
+		tplist = org->tplist;
+	}
 }
 
 Player::~Player(){

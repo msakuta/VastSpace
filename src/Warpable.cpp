@@ -563,8 +563,10 @@ int cmd_transit(int argc, char *argv[], void *pv){
 	return 0;
 }
 
-int cmd_warp(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
+// This block has no effect in dedicated server.
+#ifndef DEDICATED
+static int cmd_warp(int argc, char *argv[], void *pv){
+	ClientGame *game = (ClientGame*)pv;
 	Player *ppl = game->player;
 	Entity *pt;
 	if(argc < 2){
@@ -657,7 +659,7 @@ static void register_Warpable(){
 }
 
 static StaticInitializer sss(register_Warpable);
-
+#endif
 
 
 static int enum_cs_flags(const CoordSys *root, int mask, int flags, const CoordSys ***ret, int left){

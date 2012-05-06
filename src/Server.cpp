@@ -1062,18 +1062,12 @@ void ServerClient::interpretCommand(char *lbuf){
 			} while(1);
 			name = str2;
 
-			// If the client logs in, assign a Player object for the client.
-			Player *clientPlayer = new Player(sv->pg);
-			clientPlayer->race = id;
-
 			// Temporary treatment to make newly added Player's coordsys to be the same as the first Player.
 			std::vector<Player*>::iterator it = sv->pg->players.begin();
-			if(it != sv->pg->players.end()){
-				clientPlayer->cs = (*it)->cs;
-				clientPlayer->setpos((*it)->getpos());
-				clientPlayer->setvelo((*it)->getvelo());
-				clientPlayer->setrot((*it)->getrot());
-			}
+
+			// If the client logs in, assign a Player object for the client.
+			Player *clientPlayer = new Player(sv->pg, it != sv->pg->players.end() ? *it : NULL);
+			clientPlayer->race = id;
 
 			// Assign an unique id to the newly added Player.
 			clientPlayer->playerId = sv->pg->players.size();

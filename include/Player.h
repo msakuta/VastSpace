@@ -89,7 +89,7 @@ protected:
 	Vec3d getrawpos(CameraController*)const;
 	Quatd getrawrot(CameraController*)const;
 public:
-	Player(Game * = NULL);
+	Player(Game * = NULL, const Player *org = NULL);
 	~Player();
 
 	static const unsigned classId;

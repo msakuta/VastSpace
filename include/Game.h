@@ -8,6 +8,8 @@
  * \brief Defines Game class
  */
 
+class ClientGame;
+
 class select_box_callback;
 
 class SerializeStream;
@@ -48,8 +50,13 @@ protected:
 /// \brief The object that stores everything in a game.
 class EXPORT Game{
 protected:
-	static void(*serverInits[])(Game&);
-	static int nserverInits;
+	typedef void (*ServerInitFunc)(Game &);
+	typedef std::vector<ServerInitFunc> ServerInitList;
+	static ServerInitList &serverInits();
+
+	typedef void (*ClientInitFunc)(ClientGame &);
+	typedef std::vector<ClientInitFunc> ClientInitList;
+	static ClientInitList &clientInits();
 public:
 	typedef std::vector<Player*> PlayerList;
 	Player *player;
@@ -89,7 +96,8 @@ public:
 	virtual void anim(double dt) = 0;
 	virtual void postframe() = 0;
 
-	static void addServerInits(void (*f)(Game &));
+	static void addServerInits(ServerInitFunc f);
+	static void addClientInits(ClientInitFunc f);
 
 	void sq_replaceUniverse(Universe *);
 	void sq_replacePlayer(Player *);

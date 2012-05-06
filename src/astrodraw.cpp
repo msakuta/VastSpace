@@ -14,6 +14,7 @@
 #include "cmd.h"
 #include "glsl.h"
 #include "glstack.h"
+#include "StaticInitializer.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -59,7 +60,7 @@ static void initar(){
 	CvarAdd("gpow", &gpow, cvar_double);
 	CvarAdd("gscale", &gscale, cvar_double);
 }
-static Initializator s_initar(initar);
+static StaticInitializer s_initar(initar);
 
 struct drawIcosaSphereArg{
 	int maxlevel;
@@ -312,7 +313,7 @@ float g_astro_ambient = .5f;
 static void init_astro_ambient(){
 	CvarAdd("g_astro_ambient", &g_astro_ambient, cvar_float);
 }
-static Initializator ini(init_astro_ambient);
+static StaticInitializer ini(init_astro_ambient);
 
 
 
@@ -1149,7 +1150,7 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 static int g_tscuts = 32;
 static int g_cloud = 1;
 static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g_cloud", &g_cloud, cvar_int);}
-static Initializator s_tscuts(g_tscuts_init);
+static StaticInitializer s_tscuts(g_tscuts_init);
 
 void TexSphere::draw(const Viewer *vw){
 	if(0)
@@ -1479,7 +1480,7 @@ static int PROJC = 512;
 static void Init_PROJC(){
 	CvarAdd("g_proj_size", &PROJC, cvar_int);
 }
-static Initializator init_PROJC(Init_PROJC);
+static StaticInitializer init_PROJC(Init_PROJC);
 
 static const GLenum cubetarget[] = {
 GL_TEXTURE_CUBE_MAP_NEGATIVE_X,

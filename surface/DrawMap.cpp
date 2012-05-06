@@ -12,6 +12,7 @@
 #include "glsl.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "StaticInitializer.h"
 //#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>
@@ -458,7 +459,7 @@ double DrawMap::g_map_lod_factor = 1.;
 double DrawMap::detail_factor = 2.;
 GLuint DrawMap::matlist = 0;
 
-static Initializator s_map_lod_factor(DrawMap::init_map_lod_factor);
+static StaticInitializer s_map_lod_factor(DrawMap::init_map_lod_factor);
 
 
 void drawmap(WarMap *wm, const Viewer &vw, int detail, double t, GLcull *glc, /*warmapdecal_t *wmd, void *wmdg,*/ char **ptop, int *checked, DrawMapCache *dmc){
@@ -2298,7 +2299,7 @@ static void init_map_cache(){
 	CvarAdd("g_map_cache", &g_map_cache, cvar_int);
 	CvarAdd("g_map_interp", &g_map_interp, cvar_int);
 }
-static Initializator s_map_cache(init_map_cache);
+static StaticInitializer s_map_cache(init_map_cache);
 
 DrawMapCache *CacheDrawMap(WarMap *wm){
 	return new DrawMapCache(wm);

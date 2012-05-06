@@ -10,7 +10,7 @@
 #include "Docker.h"
 #include "draw/material.h"
 #include "cmd.h"
-#include "astrodraw.h"
+#include "StaticInitializer.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "draw/effects.h"
@@ -1327,7 +1327,7 @@ static void register_server(){
 	Game::addServerInits(register_defender_cmd);
 }
 
-static Initializator sss(register_server);
+static StaticInitializer sss(register_server);
 
 IMPLEMENT_COMMAND(DeployCommand, "Deploy")
 IMPLEMENT_COMMAND(UndeployCommand, "Undeploy")

@@ -116,18 +116,38 @@ void SquirrelShare::sq_define(HSQUIRRELVM v){
 
 
 
-/// List of registered initialization functions. Too bad std::vector cannot be used because the class static parameters
-/// are not initialized.
-void (*Game::serverInits[64])(Game&);
-int Game::nserverInits = 0;
+/// \brief List of registered initialization functions for ServerGame object.
+///
+/// Using construct on first use idiom to avoid static initialization order fiasco.
+Game::ServerInitList &Game::serverInits(){
+	static ServerInitList s_inits;
+	return s_inits;
+}
 
 /// \brief Register initialization function to be executed when a ServerGame instance is created.
 ///
 /// The caller must call this function at initialization step, typically the constructor of static class instance.
 /// The constructor of ServerGame will automatically call those registered functions to perform initial operations
 /// required for various classes, including extensions.
-void Game::addServerInits(void (*f)(Game &)){
-	serverInits[nserverInits++] = f;
+void Game::addServerInits(ServerInitFunc f){
+	serverInits().push_back(f);
+}
+
+/// \brief List of registered initialization functions for ClientGame object.
+///
+/// Using construct on first use idiom to avoid static initialization order fiasco.
+///
+/// TODO: It will be compiled in dedicated server even though it will never be called.
+Game::ClientInitList &Game::clientInits(){
+	static ClientInitList s_inits;
+	return s_inits;
+}
+
+/// \brief Register initialization function to be executed when a ClientGame instance is created.
+///
+/// Remarks are the same as addServerInits().
+void Game::addClientInits(ClientInitFunc f){
+	clientInits().push_back(f);
 }
 
 const Game::IdMap &Game::idmap()const{
@@ -317,7 +337,11 @@ void Game::setSquirrelShare(SquirrelShare *p){
 
 
 #ifndef DEDICATED
-ClientGame::ClientGame(){}
+ClientGame::ClientGame(){
+	ClientInitList &inits = clientInits();
+	for(int i = 0; i < inits.size(); i++)
+		inits[i](*this);
+}
 #endif
 
 
@@ -329,8 +353,9 @@ ServerGame::ServerGame() : loading(false){
 	players.push_back(player);
 	universe = new Universe(player, this);
 	player->cs = universe;
-	for(int i = 0; i < nserverInits; i++)
-		serverInits[i](*this);
+	ServerInitList &inits = serverInits();
+	for(int i = 0; i < inits.size(); i++)
+		inits[i](*this);
 }
 
 void ServerGame::init(){

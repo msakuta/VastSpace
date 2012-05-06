@@ -1023,6 +1023,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\StaticInitializer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\stellar_file.h"
 				>
 			</File>

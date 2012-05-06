@@ -24,6 +24,7 @@
 #include "glsl.h"
 #include "dstring.h"
 #include "Game.h"
+#include "StaticInitializer.h"
 extern "C"{
 #ifdef _WIN32
 #include "bitmap.h"
@@ -646,6 +647,18 @@ int cmd_warp(int argc, char *argv[], void *pv){
 	}
 	return 0;
 }
+
+static void register_Warpable_cmd(ClientGame &game){
+	CmdAddParam("warp", cmd_warp, &game);
+}
+
+static void register_Warpable(){
+	Game::addClientInits(register_Warpable_cmd);
+}
+
+static StaticInitializer sss(register_Warpable);
+
+
 
 static int enum_cs_flags(const CoordSys *root, int mask, int flags, const CoordSys ***ret, int left){
 	const CoordSys *cs;

@@ -21,6 +21,7 @@
 #include "msg/Message.h"
 #include "msg/GetCoverPointsMessage.h"
 #include "Game.h"
+#include "StaticInitializer.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -67,7 +68,7 @@ static void init_gsc(){
 	CvarAdd("r_healthbar", &WarDraw::r_healthbar, cvar_int);
 }
 
-static Initializator initializator(init_gsc);
+static StaticInitializer initializer(init_gsc);
 
 #define TEXSIZE 128
 static const GLenum cubetarget[] = {

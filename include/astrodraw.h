@@ -14,14 +14,6 @@
 
 #define LIGHT_SPEED 299792.458 /* km/s */
 
-template<typename T = void (*)()> class TempInitializator{
-public:
-	TempInitializator<T>(T callback){
-		callback();
-	}
-};
-typedef TempInitializator<void (*)()> Initializator;
-
 void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Vec3d &scales = Vec3d(1,1,1), const Quatd &qrot = quat_u);
 
 /*

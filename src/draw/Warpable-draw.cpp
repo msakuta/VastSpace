@@ -15,6 +15,7 @@
 #include "draw/OpenGLState.h"
 #include "Frigate.h"
 #include "Game.h"
+#include "StaticInitializer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -172,8 +173,9 @@ void Warpable::drawtra(wardraw_t *wd){
 	}
 }
 
-int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
-	Player *player = (Player*)pv;
+static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
+	ClientGame *game = (ClientGame*)pv;
+	Player *player = game->player;
 	extern coordsys *g_galaxysystem;
 	char *cmds[64]; /* not much of menu items as 64 are able to displayed after all */
 	const char *subtitles[64];
@@ -208,10 +210,27 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 		teleport *tp = player->getTeleport(it);
 		if(!(tp->flags & TELEPORT_WARP))
 			continue;
+
+		// Since teleport structure is not Observable, we cannot define a callback to directly invoke WarpCommand.
+		// Instead, the warp console command is registered along with destination teleport name.
+		// This way, we can avoid dangling references when the destination teleport is deleted or renamed while
+		// the user is choosing from the menu.
+		// Note that just making teleport structure Observable won't fix the problem. The telepot objects can
+		// be reallocated between frames, so it doesn't necessarily keep the same address.
+		// The true solution would be that making teleport structure Serializable too.
 		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');
 	}
 //	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
 	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
+
+	// Align the window to the center.
+	// TODO: Window object itself should have an option to adjust itself to the center.
+	GLWrect er = wnd->extentRect();
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	er.move((vp[2] - vp[0]) / 2 - er.width() / 2, (vp[3] - vp[1]) / 2 - er.height() / 2);
+	wnd->setExtent(er);
+
 	glwAppend(wnd);
 /*	for(i = 0; i < left; i++){
 		free(cmds[i]);
@@ -231,6 +250,17 @@ int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 //	wnd->title = windowtitle;
 	return 0;
 }
+
+static void register_Warpable_draw_cmd(ClientGame &game){
+	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &game);
+}
+
+static void register_Warpable_draw(){
+	Game::addClientInits(register_Warpable_draw_cmd);
+}
+
+static StaticInitializer sss(register_Warpable_draw);
+
 
 int Warpable::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);

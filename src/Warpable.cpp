@@ -900,8 +900,8 @@ void Warpable::anim(double dt){
 			p->warping = 0;
 			task = sship_idle;
 			pt->velo.clear();
-			if(w->pl->chase == pt){
-				w->pl->setvelo(w->pl->cs->tocsv(pt->velo, pt->pos, w->cs));
+			if(game->player->chase == pt){
+				game->player->setvelo(game->player->cs->tocsv(pt->velo, pt->pos, w->cs));
 			}
 			post_warp();
 		}

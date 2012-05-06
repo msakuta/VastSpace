@@ -47,6 +47,11 @@ WarField::~WarField(){
 			(*it)->transit_cs(cs->parent);
 		}
 	}
+	else{ // If client's WarField is destructed, it's only by the server's instruction.
+		for(EntityList::iterator it = el.begin(); it != el.end(); ++it){
+			(*it)->w = NULL;
+		}
+	}
 }
 
 const char *WarField::classname()const{

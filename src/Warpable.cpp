@@ -547,7 +547,8 @@ void Warpable::init(){
 
 // transit to a CoordSys from another, keeping absolute position and velocity.
 int cmd_transit(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+	Game *game = (Game*)pv;
+	Player *ppl = game->player;
 	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: transit dest");
@@ -566,7 +567,7 @@ int cmd_transit(int argc, char *argv[], void *pv){
 // This block has no effect in dedicated server.
 #ifndef DEDICATED
 static int cmd_warp(int argc, char *argv[], void *pv){
-	ClientGame *game = (ClientGame*)pv;
+	Game *game = (Game*)pv;
 	Player *ppl = game->player;
 	Entity *pt;
 	if(argc < 2){
@@ -651,7 +652,12 @@ static int cmd_warp(int argc, char *argv[], void *pv){
 }
 
 static void register_Warpable_cmd(ClientGame &game){
-	CmdAddParam("warp", cmd_warp, &game);
+	// It's safer to static_cast to Game pointer, in case Game class is not the first superclass
+	// in ClientGame's derive list.
+	// Which way is better to write this cast, &static_cast<Game&>(game) or static_cast<Game*>(&game) ?
+	// They seems equivalent to me and count of the keystrokes are the same.
+	CmdAddParam("transit", cmd_transit, static_cast<Game*>(&game));
+	CmdAddParam("warp", cmd_warp, static_cast<Game*>(&game));
 }
 
 static void register_Warpable(){

@@ -2248,8 +2248,6 @@ int main(int argc, char *argv[])
 //	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
 	extern int cmd_transit(int argc, char *argv[], void *pv);
 	CmdAddParam("transit", cmd_transit, &server->player);
-	extern int cmd_warp(int argc, char *argv[], void *pv);
-	CmdAddParam("property", Entity::cmd_property, &application);
 	extern int cmd_armswindow(int argc, char *argv[], void *pv);
 	CmdAddParam("armswindow", cmd_armswindow, &server->player);
 //	CmdAddParam("save", Universe::cmd_save, server->universe);

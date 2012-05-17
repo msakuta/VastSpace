@@ -13,6 +13,7 @@
 #include "sqadapt.h"
 #include "glw/message.h"
 #include "GLWtip.h"
+#include "StaticInitializer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -1724,7 +1725,6 @@ protected:
 };
 
 int Entity::cmd_property(int argc, char *argv[], void *pv){
-#ifdef _WIN32
 	static int counter = 0;
 	ClientApplication *pclient = (ClientApplication*)pv;
 	if(!pclient || !pclient->clientGame)
@@ -1733,9 +1733,14 @@ int Entity::cmd_property(int argc, char *argv[], void *pv){
 	if(!ppl || ppl->selected.empty())
 		return 0;
 	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
-#endif
 	return 0;
 }
+
+static void register_cmd_property(){
+	CmdAddParam("property", Entity::cmd_property, &application);
+}
+
+static StaticInitializer init_cmd_property(register_cmd_property);
 
 void GLWprop::draw(GLwindowState &ws, double t){
 	if(!a)

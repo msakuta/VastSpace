@@ -435,6 +435,7 @@ bool Assault::command(EntityCommand *com){
 };*/
 
 #ifdef DEDICATED
+int Assault::popupMenu(PopupMenu &){}
 void Assault::draw(WarDraw*){}
 void Assault::drawtra(WarDraw*){}
 void Assault::drawOverlay(WarDraw*){}

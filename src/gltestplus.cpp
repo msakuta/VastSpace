@@ -2245,9 +2245,6 @@ int main(int argc, char *argv[])
 	CmdAdd("popbind", cmd_popbind);
 	CmdAdd("toggleconsole", cmd_toggleconsole);
 	CmdAdd("originrotation", cmd_originrotation);
-//	CmdAddParam("addcmdmenuitem", GLWmenu::cmd_addcmdmenuitem, (void*)glwcmdmenu);
-	extern int cmd_armswindow(int argc, char *argv[], void *pv);
-	CmdAddParam("armswindow", cmd_armswindow, &server->player);
 //	CmdAddParam("save", Universe::cmd_save, server->universe);
 //	CmdAddParam("load", Universe::cmd_load, server->universe);
 //	CmdAddParam("buildmenu", cmd_build, &pl);

@@ -41,6 +41,7 @@ public:
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);
+	virtual int popupMenu(PopupMenu &list);
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 	friend class GLWarms;

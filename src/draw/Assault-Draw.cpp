@@ -4,12 +4,17 @@
 #include "../Assault.h"
 #include "../Beamer.h"
 #include "Player.h"
+#include "../Application.h"
+#include "Game.h"
+#include "StaticInitializer.h"
+#include "cmd.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "draw/WarDraw.h"
 #include "draw/blackbody.h"
 #include "draw/mqoadapt.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -124,18 +129,23 @@ void Assault::drawOverlay(wardraw_t *){
 }
 
 
+int Assault::popupMenu(PopupMenu &list){
+	int ret = st::popupMenu(list);
+	list.append("Equipments...", 0, "armswindow");
+	return ret;
+}
+
 
 
 
 
 
 class GLWarms : public GLwindowSizeable{
-	Entity *a;
+	WeakPtr<Entity> a;
 public:
 	typedef GLwindowSizeable st;
 	GLWarms(const char *title, Entity *a);
 	virtual void draw(GLwindowState &ws, double t);
-	virtual void postframe();
 };
 
 GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
@@ -147,34 +157,38 @@ GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
 }
 
 void GLWarms::draw(GLwindowState &ws, double t){
+	GLWrect r = clientRect();
 	if(!a)
 		return;
 	glColor4f(0,1,1,1);
-	glwpos2d(xpos, ypos + (2) * getFontHeight());
+	glwpos2d(r.x0, r.y0 + (2) * getFontHeight());
 	glwprintf(a->classname());
 	glColor4f(1,1,0,1);
-	glwpos2d(xpos, ypos + (3) * getFontHeight());
+	glwpos2d(r.x0, r.y0 + (3) * getFontHeight());
 	glwprintf("%lg / %lg", a->health, a->maxhealth());
 	for(int i = 0; i < a->armsCount(); i++){
 		const ArmBase *arm = a->armsGet(i);
 		glColor4f(0,1,1,1);
-		glwpos2d(xpos, ypos + (4 + 2 * i) * getFontHeight());
+		glwpos2d(r.x0, r.y0 + (4 + 2 * i) * getFontHeight());
 		glwprintf(arm->hp->name);
 		glColor4f(1,1,0,1);
-		glwpos2d(xpos, ypos + (5 + 2 * i) * getFontHeight());
+		glwpos2d(r.x0, r.y0 + (5 + 2 * i) * getFontHeight());
 		glwprintf(arm ? arm->descript() : "N/A");
 	}
 }
 
-void GLWarms::postframe(){
-	if(a && !a->w)
-		a = NULL;
-}
-
-int cmd_armswindow(int argc, char *argv[], void *pv){
-	Player *ppl = (Player*)pv;
+static int cmd_armswindow(int argc, char *argv[], void *pv){
+	Application *app = (Application*)pv;
+	Game *game = app->clientGame;
+	Player *ppl = game->player;
 	if(!ppl || ppl->selected.empty())
 		return 0;
-	glwAppend(new GLWarms("Arms", *ppl->selected.begin()));
+	glwAppend(new GLWarms("Equipments Window", *ppl->selected.begin()));
 	return 0;
 }
+
+static void register_cmd_armswindow(){
+	CmdAddParam("armswindow", cmd_armswindow, static_cast<Application*>(&application));
+}
+
+static StaticInitializer init_cmd_armswindow(register_cmd_armswindow);

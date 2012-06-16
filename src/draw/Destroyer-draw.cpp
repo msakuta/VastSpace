@@ -10,8 +10,6 @@ extern "C"{
 }
 
 
-const double Destroyer::sufscale = .001;
-
 void Destroyer::draw(wardraw_t *wd){
 	static suf_t *sufs[2] = {NULL};
 	static suftex_t *pst[2];
@@ -77,12 +75,6 @@ void Destroyer::draw(wardraw_t *wd){
 	}
 
 	if(sufs[0]){
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
 		Mat4d mat;
 
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
@@ -91,8 +83,8 @@ void Destroyer::draw(wardraw_t *wd){
 		glMultMatrixd(mat);
 
 		glPushMatrix();
-		gldScaled(sufscale);
-		glMultMatrixd(rotaxis);
+		gldScaled(modelScale);
+		glScalef(-1,1,-1);
 		DecalDrawSUF(sufs[0], SUF_ATR, NULL, pst[0], NULL, NULL);
 
 		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
@@ -121,11 +113,11 @@ void Destroyer::drawtra(wardraw_t *wd){
 	if(wd->vw->gc->cullFrustum(pos, hitradius()))
 		return;
 	static const Vec3d engines[] = {
-		Vec3d(0, 0, 180) * sufscale,
-		Vec3d(28, 22, 180) * sufscale,
-		Vec3d(-28, 22, 180) * sufscale,
-		Vec3d(28, -22, 180) * sufscale,
-		Vec3d(-28, -22, 180) * sufscale,
+		Vec3d(0, 0, 180) * modelScale,
+		Vec3d(28, 22, 180) * modelScale,
+		Vec3d(-28, 22, 180) * modelScale,
+		Vec3d(28, -22, 180) * modelScale,
+		Vec3d(-28, -22, 180) * modelScale,
 	};
 	for(int i = 0; i < numof(engines); i++)
 		drawCapitalBlast(wd, engines[i], .02);

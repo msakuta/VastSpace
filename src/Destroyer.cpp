@@ -16,6 +16,7 @@ const char *Destroyer::classname()const{return "Destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
 
+double Destroyer::modelScale = .001;
 std::vector<hardpoint_static*> Destroyer::hardpoints;
 std::vector<hitbox> Destroyer::hitboxes;
 
@@ -81,6 +82,7 @@ void Destroyer::static_init(){
 	static bool initialized = false;
 	if(!initialized){
 		sq_init(_SC("models/Destroyer.nut"),
+			ModelScaleProcess(modelScale) <<=
 			HitboxProcess(hitboxes) <<=
 			HardPointProcess(hardpoints));
 		initialized = true;

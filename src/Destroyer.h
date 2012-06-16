@@ -9,7 +9,7 @@ protected:
 	ArmBase **turrets;
 	static std::vector<hardpoint_static*> hardpoints;
 	static std::vector<hitbox> hitboxes;
-	static const double sufscale;
+	static double modelScale;
 public:
 	typedef Warpable st;
 	Destroyer(Game *game) : st(game){init();}

@@ -40,6 +40,8 @@ public:
 	static hitbox hitboxes[];
 	static const int nhitboxes;
 	static const double modelScale;
+protected:
+	short bbodyMask()const;
 };
 
 #endif

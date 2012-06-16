@@ -200,20 +200,6 @@ void Beamer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = this->pos + rot.trans(src[seatid]);
 }
 
-void Beamer::enterField(WarField *target){
-	WarSpace *ws = *target;
-
-	if(ws && ws->bdw){
-		buildBody();
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
-	}
-}
-
-void Beamer::leaveField(WarField *w){
-	st::leaveField(w);
-}
-
 void Beamer::anim(double dt){
 	if(!w->operator WarSpace *()){
 		st::anim(dt);

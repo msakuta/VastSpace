@@ -220,18 +220,12 @@ bool Shipyard::buildBody(){
 }
 
 
-void Shipyard::enterField(WarField *target){
-	WarSpace *ws = *target;
-
-	if(ws && ws->bdw){
-		buildBody();
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 2, ~2);
-	}
+short Shipyard::bbodyGroup()const{
+	return 2;
 }
 
-void Shipyard::leaveField(WarField *w){
-	st::leaveField(w);
+short Shipyard::bbodyMask()const{
+	return ~2;
 }
 
 void Shipyard::anim(double dt){

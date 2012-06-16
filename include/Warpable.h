@@ -55,6 +55,7 @@ public:
 
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void enterField(WarField*);
 	virtual void anim(double dt);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawHUD(wardraw_t *);
@@ -89,6 +90,9 @@ public:
 	};
 protected:
 	virtual void init();
+	virtual bool buildBody();
+	virtual short bbodyGroup()const;
+	virtual short bbodyMask()const;
 
 	/// \brief Callback functionoid that processes Squirrel VM that is initialized in sq_init().
 	///

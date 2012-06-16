@@ -27,8 +27,6 @@ public:
 	bool buildBody();
 	virtual const char *dispname()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	virtual void enterField(WarField *target);
-	virtual void leaveField(WarField *w);
 	virtual void anim(double);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);

@@ -312,6 +312,10 @@ Entity *Frigate::findMother(){
 double Frigate::maxenergy()const{return frigate_mn.capacity;}
 double Frigate::maxshield()const{return 5000.;}
 
+short Frigate::bbodyMask()const{
+	return ~2;
+}
+
 #ifdef DEDICATED
 int Frigate::popupMenu(PopupMenu &){}
 void Frigate::drawShield(wardraw_t *wd){}

@@ -50,7 +50,7 @@ public:
 	static void onBeginTexture(void*);
 	static void onEndTexture(void*);
 protected:
-	void buildBody();
+	bool buildBody();
 };
 
 /// A companion class of Attacker.

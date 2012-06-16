@@ -45,6 +45,7 @@ extern "C"{
 #include <cpplib/vec4.h>
 #include <assert.h>
 #include <string.h>
+#include <fstream>
 #include <btBulletDynamicsCommon.h>
 #include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 
@@ -82,6 +83,8 @@ Very basic raytracer, rendering into a texture.
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
+
+#define DEBUG_ENTERFIELD 1
 
 
 double g_capacitor_gen_factor = 1.;
@@ -846,6 +849,20 @@ void Warpable::unserialize(UnserializeContext &sc){
 	sc.i >> (int&)task;
 }
 
+void Warpable::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, bbodyGroup(), bbodyMask());
+	}
+#if DEBUG_ENTERFIELD
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
+#endif
+}
+
 void Warpable::anim(double dt){
 	WarSpace *ws = *w;
 	if(!ws){
@@ -1176,6 +1193,23 @@ int Warpable::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 }
 
 void Warpable::post_warp(){
+}
+
+/// \brief Virtual method to construct a bullet dynamics body for this Warpable.
+///
+/// By default, it does not build a thing.
+bool Warpable::buildBody(){
+	return false;
+}
+
+/// \return Defaults 1
+short Warpable::bbodyGroup()const{
+	return 1;
+}
+
+/// \return Defaults all bits raised
+short Warpable::bbodyMask()const{
+	return ~0;
 }
 
 /// \brief The function that is called to initialize static customizable variables to a specific Entity class.

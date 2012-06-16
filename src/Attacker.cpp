@@ -248,7 +248,7 @@ void Attacker::enterField(WarField *target){
 	ws->bdw->addRigidBody(bbody, 2, ~0);
 }
 
-void Attacker::buildBody(){
+bool Attacker::buildBody(){
 	// If a rigid body object is brought from the old WarSpace, reuse it rather than to reconstruct.
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
@@ -291,6 +291,7 @@ void Attacker::buildBody(){
 			ws->bdw->addRigidBody(bbody);
 		justLoaded = false;
 	}
+	return true;
 }
 
 

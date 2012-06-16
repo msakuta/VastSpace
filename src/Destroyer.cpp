@@ -115,20 +115,6 @@ void Destroyer::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-void Destroyer::enterField(WarField *target){
-	WarSpace *ws = *target;
-
-	if(ws && ws->bdw){
-		buildBody();
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~0);
-	}
-#if DEBUG_ENTERFIELD
-	std::ofstream of("debug.log", std::ios_base::app);
-	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
-#endif
-}
-
 double Destroyer::hitradius()const{return .27;}
 
 void Destroyer::anim(double dt){

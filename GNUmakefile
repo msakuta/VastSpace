@@ -51,8 +51,8 @@ objects = ${OUTDIR}/serial.o\
  ../zlib/libz.a\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
- 
- all: ${OUTDIR}/gltestplus
+
+all: ${OUTDIR}/gltestplus
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
@@ -132,6 +132,18 @@ ${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
 ${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+
+rc.zip: shaders/*.fs shaders/*.vs models/*.mqo models/*.nut models/*.bmp models/*.jpg \
+models/*.mot \
+models/*.bin \
+models/*.png \
+textures/*.png \
+textures/*.jpg \
+textures/*.bmp \
+Bullet.bmp \
+earth.jpg \
+pointer.bmp 
+	7z u $@ $?
 
 clean:
 	rm ${OUTDIR} -r

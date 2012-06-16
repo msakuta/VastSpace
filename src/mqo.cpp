@@ -203,8 +203,8 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	int shading = 0;
 	double facet = 0.;
 	struct Bone *bone = NULL;
-	int mirror = 0, mirror_axis = 0;
-	int mirrornv;
+	int mirror = 0, mirror_axis = 0, mirrors = 0;
+	int mirrornv[3];
 
 	pfo->is->getline(line, sizeof line);
 	s = line;
@@ -250,7 +250,12 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 			mirror = atoi(quotok(&cur));
 		}
 		else if(!stricmp(s, "mirror_axis")){
-			mirror_axis = atoi(quotok(&cur)) - 1;
+			mirror_axis = atoi(quotok(&cur));
+
+			// There could be multiple mirrors for a object, so we count it for allocating space.
+			mirrors = 0;
+			for(int m = 0; m < 3; m++) if(mirror_axis & (1 << m))
+				mirrors++;
 		}
 	}
 
@@ -263,7 +268,8 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 
 	s = quotok(&cur);
 	ret->nv = n = atoi(s);
-	ret->v = (sufcoord(*)[3])malloc(n * (mirror ? 2 : 1) * sizeof *ret->v);
+	// Mirroring generates twice as many vertices for each mirror, i.e. 2 power count of mirrors.
+	ret->v = (sufcoord(*)[3])malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->v);
 
 	i = 0;
 	while(i < n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
@@ -278,12 +284,18 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	}
 
 	if(mirror){
-		for(i = 0; i < n; i++){
-			VECCPY(ret->v[i+n], ret->v[i]);
-			ret->v[i+n][mirror_axis] *= -1;
+		for(int m = 0; m < 3; m++){
+			// Check for each axis if it's flagged for mirroring.
+			if(mirror_axis & (1 << m)){
+				// Mirrored vertices have simply negated coordinate along axis perpendicular to the mirror.
+				for(i = 0; i < n; i++){
+					VECCPY(ret->v[i+n], ret->v[i]);
+					ret->v[i+n][m] *= -1;
+				}
+				mirrornv[m] = n;
+				n = ret->nv *= 2;
+			}
 		}
-		mirrornv = n;
-		ret->nv *= 2;
 	}
 
 	/* forward until face chunk */
@@ -295,7 +307,8 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 
 	s = quotok(&cur);
 	ret->np = n = atoi(s);
-	ret->p = (suf::suf_prim_t**)malloc(n * (mirror ? 2 : 1) * sizeof *ret->p);
+	// Mirroring generates twice as many vertices for each mirror, i.e. 2 power count of mirrors.
+	ret->p = (suf::suf_prim_t**)malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->p);
 
 	i = 0;
 	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
@@ -464,7 +477,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 		i++;
 	}
 
-	if(mirror){
+	for(int m = 0; m < 3; m++) if(mirror_axis & (1 << m)){
 		n = ret->np;
 		for(i = 0; i < n; i++){
 			if(ret->p[i]->t == suf::suf_prim_t::suf_uvpoly){
@@ -477,9 +490,10 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 				for(j = 0; j < p0->n; j++){
 					avec3_t vecn;
 					// Flip face direction because it's mirrored.
-					p->v[j].p = p0->v[p0->n-j-1].p + mirrornv;
+					p->v[j].p = p0->v[p0->n-j-1].p + mirrornv[m];
 					VECCPY(vecn, ret->v[p0->v[p0->n-j-1].n]);
-					vecn[mirror_axis] *= -1;
+					// Normal vector's coordinate along mirror axis must be negated just like position vector.
+					vecn[m] *= -1;
 					p->v[j].n = add_vertex(ret, vecn);
 					p->v[j].t = p0->v[p0->n-j-1].t; // Keep texture coord to the same.
 				}
@@ -494,9 +508,10 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 				for(j = 0; j < p0->n; j++){
 					avec3_t vecn;
 					// Flip face direction because it's mirrored.
-					p->v[j][0] = p0->v[p0->n-j-1][0] + mirrornv;
+					p->v[j][0] = p0->v[p0->n-j-1][0] + mirrornv[m];
 					VECCPY(vecn, ret->v[p0->v[p0->n-j-1][1]]);
-					vecn[mirror_axis] *= -1;
+					// Normal vector's coordinate along mirror axis must be negated just like position vector.
+					vecn[m] *= -1;
 					p->v[j][1] = add_vertex(ret, vecn);
 				}
 			}

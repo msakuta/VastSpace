@@ -5,14 +5,14 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "glw/popup.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 
 void Destroyer::draw(wardraw_t *wd){
-	static suf_t *sufs[2] = {NULL};
-	static suftex_t *pst[2];
+	static Model *model = NULL;
 	static OpenGLState::weak_ptr<bool> init;
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
@@ -41,40 +41,29 @@ void Destroyer::draw(wardraw_t *wd){
 
 	static int engineAtrIndex = -1;
 	if(!init) do{
-		for(int i = 0; i < 2; i++)
-			free(sufs[i]);
-		sufs[0] = CallLoadSUF("models/destroyer0.bin");
-		sufs[1] = CallLoadSUF("models/destroyer0_bridge.bin");
-		if(!sufs[0]) break;
-		suftexparam_t stp;
-		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
-		stp.magfil = GL_LINEAR;
-		stp.minfil = GL_LINEAR;
-		stp.env = GL_ADD;
-		stp.mipmap = 0;
-		CallCacheBitmap5("engine2.bmp", "engine2br.bmp", &stp, "engine2.bmp", NULL);
-		for(int i = 0; i < 2; i++)
-			CacheSUFMaterials(sufs[i]);
-		for(int i = 0; i < 2; i++)
-			pst[i] = gltestp::AllocSUFTex(sufs[i]);
-
-		for(int i = 0; i < pst[0]->n; i++) if(sufs[0]->a[i].colormap && !strcmp(sufs[0]->a[i].colormap, "engine2.bmp")){
-			engineAtrIndex = i;
-			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
-			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+		model = LoadMQOModel("models/destroyer.mqo");
+		if(model && model->sufs[0]){
+			for(int i = 0; i < model->tex[0]->n; i++){
+				const char *colormap = model->sufs[0]->a[i].colormap;
+				if(colormap && !strcmp(colormap, "engine2.bmp")){
+					engineAtrIndex = i;
+					model->tex[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+					model->tex[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+				}
+			}
 		}
 
 		init.create(*openGLState);
 	} while(0);
 
-	if(pst[0]){
-		if(0 <= engineAtrIndex){
-			pst[0]->a[engineAtrIndex].onBeginTextureData = &tp;
-			pst[0]->a[engineAtrIndex].onEndTextureData = &tp;
+	if(model){
+		if(model->tex[0]){
+			if(0 <= engineAtrIndex){
+				model->tex[0]->a[engineAtrIndex].onBeginTextureData = &tp;
+				model->tex[0]->a[engineAtrIndex].onEndTextureData = &tp;
+			}
 		}
-	}
 
-	if(sufs[0]){
 		Mat4d mat;
 
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
@@ -85,22 +74,7 @@ void Destroyer::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldScaled(modelScale);
 		glScalef(-1,1,-1);
-		DecalDrawSUF(sufs[0], SUF_ATR, NULL, pst[0], NULL, NULL);
-
-		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
-		glScalef(-1, 1, 1);
-		glFrontFace(GL_CW);
-//		glCullFace(GL_FRONT);
-		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
-		glScalef(1, -1, 1);
-		glFrontFace(GL_CCW);
-//		glCullFace(GL_BACK);
-		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
-		glScalef(-1, 1, 1);
-		glFrontFace(GL_CW);
-//		glCullFace(GL_FRONT);
-		DecalDrawSUF(sufs[1], SUF_ATR, NULL, pst[1], NULL, NULL);
-
+		DrawMQOPose(model, NULL);
 		glPopMatrix();
 
 		glPopMatrix();

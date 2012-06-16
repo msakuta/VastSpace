@@ -8,8 +8,7 @@ protected:
 	float engineHeat;
 	ArmBase **turrets;
 	static std::vector<hardpoint_static*> hardpoints;
-	static struct hitbox hitboxes[];
-	static const int nhitboxes;
+	static std::vector<hitbox> hitboxes;
 	static const double sufscale;
 public:
 	typedef Warpable st;
@@ -21,6 +20,7 @@ public:
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void enterField(WarField*);
 	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
@@ -37,6 +37,7 @@ public:
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;
 protected:
+	bool buildBody();
 	void static_init();
 	virtual void init();
 };

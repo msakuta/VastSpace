@@ -15,7 +15,6 @@ extern "C"{
 #include "RStation.h"
 //#include "glw/glwindow.h"
 #include "serial_util.h"
-#include "Destroyer.h"
 #include "btadapt.h"
 #include "sqadapt.h"
 #include "stellar_file.h"

@@ -17,13 +17,7 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 
 
 std::vector<hardpoint_static*> Destroyer::hardpoints;
-struct hitbox Destroyer::hitboxes[] = {
-	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.050, .032, .190)),
-	hitbox(Vec3d(0., 0., .165), Quatd(0,0,0,1), Vec3d(.050, .045, .035)),
-	hitbox(Vec3d(.0, -.06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	hitbox(Vec3d(.0, .06, .005), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-};
-const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
+std::vector<hitbox> Destroyer::hitboxes;
 
 
 Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
@@ -33,15 +27,18 @@ Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 		if(aw)
 			aw->addent(turrets[i]);
 	}
+	buildBody();
+}
 
-	if(!aw)
-		return;
-	WarSpace *ws = *aw;
+bool Destroyer::buildBody(){
+	if(!w || bbody)
+		return false;
+	WarSpace *ws = *w;
 	if(ws && ws->bdw){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
+			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
 				const Vec3d &pos = hitboxes[i].org;
@@ -75,13 +72,16 @@ Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 
 		//add the body to the dynamics world
 //		ws->bdw->addRigidBody(bbody);
+		return true;
 	}
+	return false;
 }
 
 void Destroyer::static_init(){
 	static bool initialized = false;
 	if(!initialized){
 		sq_init(_SC("models/Destroyer.nut"),
+			HitboxProcess(hitboxes) <<=
 			HardPointProcess(hardpoints));
 		initialized = true;
 	}
@@ -103,8 +103,30 @@ void Destroyer::serialize(SerializeContext &sc){
 
 void Destroyer::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+
 	for(int i = 0; i < hardpoints.size(); i++)
 		sc.i >> turrets[i];
+}
+
+void Destroyer::enterField(WarField *target){
+	WarSpace *ws = *target;
+
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		ws->bdw->addRigidBody(bbody, 1, ~0);
+	}
+#if DEBUG_ENTERFIELD
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
+#endif
 }
 
 double Destroyer::hitradius()const{return .27;}
@@ -152,7 +174,7 @@ int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double d
 		}
 	}
 #endif
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;

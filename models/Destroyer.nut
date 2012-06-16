@@ -21,44 +21,26 @@ hardpoints <- [
 ]
 
 navlights <- [
-	{pos = Vec3d(0, 210 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(190 * modelScale, -120 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(-190 * modelScale, -120 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(0, 0.002 + 50 * modelScale, -60 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(0, 0.002 + 60 * modelScale, 40 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(0, -0.002 + -50 * modelScale, -60 * modelScale), radius = 0.002, pattern = "Constant"},
-	{pos = Vec3d(0, -0.002 + -60 * modelScale, 40 * modelScale), radius = 0.002, pattern = "Constant"},
-//	{pos = Vec3d(0, 210 * modelScale, 240 * modelScale), color = [1,1,1,1], radius = 0.003, pattern = "Step", period = 2.},
+	{pos = Vec3d(0, 0, -255 * modelScale), radius = 0.005, pattern = "Constant"},
+	{pos = Vec3d(-30 * modelScale, -12 * modelScale, -250 * modelScale), radius = 0.003},
+	{pos = Vec3d(-30 * modelScale,  12 * modelScale, -250 * modelScale), radius = 0.003},
+	{pos = Vec3d( 30 * modelScale, -12 * modelScale, -250 * modelScale), radius = 0.003},
+	{pos = Vec3d( 30 * modelScale,  12 * modelScale, -250 * modelScale), radius = 0.003},
+	{pos = Vec3d( 0, 90 * modelScale, -23 * modelScale), radius = 0.003},
+	{pos = Vec3d(-54.13 * modelScale, 79.67 * modelScale, 17.88 * modelScale), radius = 0.003},
+	{pos = Vec3d( 54.13 * modelScale, 79.67 * modelScale, 17.88 * modelScale), radius = 0.003},
+	{pos = Vec3d( 0, -90 * modelScale, -23 * modelScale), radius = 0.003},
+	{pos = Vec3d(-54.13 * modelScale, -79.67 * modelScale, 17.88 * modelScale), radius = 0.003},
+	{pos = Vec3d( 54.13 * modelScale, -79.67 * modelScale, 17.88 * modelScale), radius = 0.003},
 ]
-
-{
-	local flashlights = [];
-	foreach(e in navlights){
-		local copy = clone e;
-		copy.color <- [1,1,1,1];
-		copy.radius = 0.003;
-		copy.pattern = "Step";
-		copy.period <- 2.;
-		copy.duty <- 0.1;
-		flashlights.append(copy);
-	}
-	navlights.extend(flashlights);
-}
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(-0.40, -0.25);
-	glVertex2d(-0.80, -0.1);
-	glVertex2d(-0.80,  0.05);
-	glVertex2d(-0.4 ,  0.3);
-	glVertex2d( 0.1 ,  0.3);
-	glVertex2d( 0.7 ,  0.6);
-	glVertex2d( 0.7 ,  0.3);
-	glVertex2d( 0.8 ,  0.3);
-	glVertex2d( 0.8 , -0.2);
-	glVertex2d( 0.7 , -0.2);
-	glVertex2d( 0.7 , -0.6);
-	glVertex2d( 0.4 , -0.4);
-	glVertex2d( 0.3 , -0.25);
+	glVertex2d(-0.8, -0.5);
+	glVertex2d(-0.8, -0.2);
+	glVertex2d( 0.0,  0.4);
+	glVertex2d( 0.8, -0.2);
+	glVertex2d( 0.8, -0.5);
+	glVertex2d( 0.0,  0.1);
 	glEnd();
 }

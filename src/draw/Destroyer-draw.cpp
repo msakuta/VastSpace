@@ -112,6 +112,7 @@ void Destroyer::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
 	if(wd->vw->gc->cullFrustum(pos, hitradius()))
 		return;
+	drawNavlights(wd, navlights);
 	static const Vec3d engines[] = {
 		Vec3d(0, 0, 180) * modelScale,
 		Vec3d(28, 22, 180) * modelScale,
@@ -122,6 +123,10 @@ void Destroyer::drawtra(wardraw_t *wd){
 	for(int i = 0; i < numof(engines); i++)
 		drawCapitalBlast(wd, engines[i], .02);
 //	drawShield(wd);
+}
+
+void Destroyer::drawOverlay(wardraw_t *){
+	glCallList(disp);
 }
 
 int Destroyer::popupMenu(PopupMenu &list){

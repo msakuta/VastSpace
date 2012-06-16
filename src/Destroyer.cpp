@@ -19,6 +19,8 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 double Destroyer::modelScale = .001;
 std::vector<hardpoint_static*> Destroyer::hardpoints;
 std::vector<hitbox> Destroyer::hitboxes;
+GLuint Destroyer::disp = 0;
+std::vector<Warpable::Navlight> Destroyer::navlights;
 
 
 Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
@@ -84,6 +86,8 @@ void Destroyer::static_init(){
 		sq_init(_SC("models/Destroyer.nut"),
 			ModelScaleProcess(modelScale) <<=
 			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(disp) <<=
+			NavlightsProcess(navlights) <<=
 			HardPointProcess(hardpoints));
 		initialized = true;
 	}

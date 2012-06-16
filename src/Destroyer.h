@@ -10,6 +10,8 @@ protected:
 	static std::vector<hardpoint_static*> hardpoints;
 	static std::vector<hitbox> hitboxes;
 	static double modelScale;
+	static GLuint disp;
+	static std::vector<Navlight> navlights;
 public:
 	typedef Warpable st;
 	Destroyer(Game *game) : st(game){init();}
@@ -28,6 +30,7 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);
+	virtual void drawOverlay(wardraw_t *);
 	virtual int takedamage(double damage, int hitpart);
 	virtual double maxhealth()const;
 	virtual int armsCount()const;

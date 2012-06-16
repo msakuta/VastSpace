@@ -4,6 +4,7 @@
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
+#include "glw/popup.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -130,6 +131,14 @@ void Destroyer::drawtra(wardraw_t *wd){
 		drawCapitalBlast(wd, engines[i], .02);
 //	drawShield(wd);
 }
+
+int Destroyer::popupMenu(PopupMenu &list){
+	int ret = st::popupMenu(list);
+	list.append("Equipments...", 0, "armswindow");
+	return ret;
+}
+
+
 
 
 void WireDestroyer::draw(wardraw_t *wd){

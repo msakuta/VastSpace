@@ -19,8 +19,8 @@ public:
 	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
 	virtual const char *classname()const;
 	static const unsigned classid;
-//	virtual void serialize(SerializeContext &sc);
-//	virtual void unserialize(UnserializeContext &sc);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *);

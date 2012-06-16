@@ -23,6 +23,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual double hitradius()const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void postframe();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;

@@ -128,6 +128,10 @@ void Destroyer::anim(double dt){
 	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
 }
 
+void Destroyer::clientUpdate(double dt){
+	anim(dt);
+}
+
 void Destroyer::postframe(){
 	st::postframe();
 	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i] && turrets[i]->w != w)

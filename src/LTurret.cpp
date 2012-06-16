@@ -36,23 +36,19 @@ static const double lturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 const char *LTurret::classname()const{return "LTurret";}
 const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
-/*
+
 void LTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << cooldown;
-	sc.o << py[0] << py[1]; // pitch and yaw
-	sc.o << mf; // muzzle flash time
-	sc.o << forceEnemy;
+	sc.o << blowback;
+	sc.o << blowbackspeed;
 }
 
 void LTurret::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> cooldown;
-	sc.i >> py[0] >> py[1]; // pitch and yaw
-	sc.i >> mf; // muzzle flash time
-	sc.i >> forceEnemy;
+	sc.i >> blowback;
+	sc.i >> blowbackspeed;
 }
-*/
+
 
 double LTurret::hitradius()const{return .03;}
 

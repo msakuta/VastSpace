@@ -16,8 +16,7 @@ const char *Destroyer::classname()const{return "Destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
 
-struct hardpoint_static *Destroyer::hardpoints = NULL;
-int Destroyer::nhardpoints = 0;
+std::vector<hardpoint_static*> Destroyer::hardpoints;
 struct hitbox Destroyer::hitboxes[] = {
 	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.050, .032, .190)),
 	hitbox(Vec3d(0., 0., .165), Quatd(0,0,0,1), Vec3d(.050, .045, .035)),
@@ -29,8 +28,8 @@ const int Destroyer::nhitboxes = numof(Destroyer::hitboxes);
 
 Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 	init();
-	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = 1&&i % 3 != 0 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]);
+	for(int i = 0; i < hardpoints.size(); i++){
+		turrets[i] = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
 		if(aw)
 			aw->addent(turrets[i]);
 	}
@@ -80,28 +79,31 @@ Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 }
 
 void Destroyer::static_init(){
-	if(!hardpoints){
-		hardpoints = hardpoint_static::load("Destroyer.hps", nhardpoints);
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Destroyer.nut"),
+			HardPointProcess(hardpoints));
+		initialized = true;
 	}
 }
 
 void Destroyer::init(){
 	static_init();
 	st::init();
-	turrets = new ArmBase*[nhardpoints];
+	turrets = new ArmBase*[hardpoints.size()];
 	mass = 1e8;
 	engineHeat = 0.;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	for(int i = 0; i < nhardpoints; i++)
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }
 
 void Destroyer::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	for(int i = 0; i < nhardpoints; i++)
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.i >> turrets[i];
 }
 
@@ -119,7 +121,7 @@ void Destroyer::anim(double dt){
 	}*/
 
 	st::anim(dt);
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
 		turrets[i]->align();
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
@@ -128,7 +130,7 @@ void Destroyer::anim(double dt){
 
 void Destroyer::postframe(){
 	st::postframe();
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i] && turrets[i]->w != w)
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i] && turrets[i]->w != w)
 		turrets[i] = NULL;
 }
 
@@ -244,7 +246,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 double Destroyer::maxhealth()const{return 100000./2;}
 
 int Destroyer::armsCount()const{
-	return nhardpoints;
+	return hardpoints.size();
 }
 
 ArmBase *Destroyer::armsGet(int i){

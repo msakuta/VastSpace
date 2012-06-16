@@ -7,8 +7,7 @@ class Destroyer : public Warpable{
 protected:
 	float engineHeat;
 	ArmBase **turrets;
-	static hardpoint_static *hardpoints;
-	static int nhardpoints;
+	static std::vector<hardpoint_static*> hardpoints;
 	static struct hitbox hitboxes[];
 	static const int nhitboxes;
 	static const double sufscale;

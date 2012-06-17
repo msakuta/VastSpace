@@ -391,6 +391,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Battleship.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\Beamer.cpp"
 				>
 			</File>
@@ -603,6 +607,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\draw\Battleship-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\draw\Beamer-draw.cpp"
 					>
 				</File>
@@ -753,6 +761,10 @@
 			</File>
 			<File
 				RelativePath="..\src\avi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Battleship.h"
 				>
 			</File>
 			<File

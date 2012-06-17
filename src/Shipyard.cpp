@@ -95,7 +95,7 @@ void Shipyard::init(){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];*/
-	mass = 5e6;
+	mass = 5e9;
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
 }

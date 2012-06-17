@@ -115,7 +115,7 @@ void LTurret::drawtra(wardraw_t *wd){
 }
 
 /// \brief Effect of shooting a bullet from the larget turret.
-void LTurret::shootEffect(Bullet *pz, const Vec3d &direction){
+void LTurret::shootEffect(const Vec3d &bulletpos, const Vec3d &direction){
 		if(WarSpace *ws = *w) for(int j = 0; j < 3; j++){
 			Vec3d pos;
 //			COLOR32 col = 0;
@@ -131,7 +131,7 @@ void LTurret::shootEffect(Bullet *pz, const Vec3d &direction){
 			smokevelo[1] += .02 * (drseq(&w->rs) - .5);
 			smokevelo[2] += .02 * (drseq(&w->rs) - .5);
 			static smokedraw_swirl_data sdata = {COLOR32RGBA(127,95,80,191), true};
-			AddTelineCallback3D(ws->tell, pos + pz->pos, smokevelo, .015, quat_u, Vec3d(0, 0, 2. * M_PI * (drseq(&w->rs) - .5)),
+			AddTelineCallback3D(ws->tell, pos + bulletpos, smokevelo, .015, quat_u, Vec3d(0, 0, 2. * M_PI * (drseq(&w->rs) - .5)),
 				vec3_000, smokedraw_swirl, (void*)&sdata, TEL3_INVROTATE | TEL3_NOLINE, 1.5);
 		}
 		if(WarSpace *ws = *w) for(int j = 0; j < 15; j++){
@@ -141,7 +141,7 @@ void LTurret::shootEffect(Bullet *pz, const Vec3d &direction){
 			smokevelo[0] += .05 * (drseq(&w->rs) - .5);
 			smokevelo[1] += .05 * (drseq(&w->rs) - .5);
 			smokevelo[2] += .05 * (drseq(&w->rs) - .5);
-			AddTelineCallback3D(ws->tell, pz->pos, smokevelo, .0004, quat_u, vec3_000,
+			AddTelineCallback3D(ws->tell, bulletpos, smokevelo, .0004, quat_u, vec3_000,
 				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5 + .25 * (drseq(&w->rs) - .5));
 		}
 }

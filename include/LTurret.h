@@ -23,6 +23,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual double hitradius()const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual float reloadtime()const;
@@ -30,7 +31,8 @@ public:
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 protected:
-	void shootEffect(Bullet *pz, const Vec3d &direction);
+	void shootTransform(Mat4d &mat, Quatd *qrot = NULL)const;
+	void shootEffect(const Vec3d &bulletpos, const Vec3d &direction);
 };
 
 class LMissileTurret : public LTurretBase{

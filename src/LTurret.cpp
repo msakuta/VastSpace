@@ -17,6 +17,7 @@
 #include "Missile.h"
 #include "EntityCommand.h"
 #include "motion.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -44,9 +45,21 @@ void LTurret::serialize(SerializeContext &sc){
 }
 
 void LTurret::unserialize(UnserializeContext &sc){
+	double orgblowbackspeed = blowbackspeed;
 	st::unserialize(sc);
 	sc.i >> blowback;
 	sc.i >> blowbackspeed;
+
+	// We can expect that only reason the blowbackspeed can increase is shooting the gun.
+	if(orgblowbackspeed < blowbackspeed){
+		Mat4d mat;
+		shootTransform(mat);
+		for(int i = 0; i < 2; i++){
+			Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
+			Vec3d direction = -mat.vec3(2);
+			shootEffect(mat.vp3(lturret_ofs), direction);
+		}
+	}
 }
 
 
@@ -61,34 +74,54 @@ void LTurret::anim(double dt){
 	blowback *= exp(-dt);
 }
 
+void LTurret::clientUpdate(double dt){
+	anim(dt);
+}
+
 float LTurret::reloadtime()const{return 4.;}
 float LTurret::bulletlife()const{return 5.;}
 
-void LTurret::tryshoot(){
-	if(ammo <= 0)
-		return;
-	static const avec3_t forward = {0., 0., -1.};
+/// \brief Returns transformation matrix and optional rotation quaternion indicating shooting bullet's orientation.
+/// \param mat Filled with transformation matrix.
+/// \param qrot Optional; can be NULL.
+void LTurret::shootTransform(Mat4d &mat, Quatd *qrot)const{
 	Mat4d mat2;
 	base->transform(mat2);
 	mat2.translatein(hp->pos);
 	Mat4d rot = hp->rot.tomat4();
-	Mat4d mat = mat2 * rot;
+	mat = mat2 * rot;
 	mat.translatein(0., .005, -0.0025);
 	double yaw = this->py[1] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
 	double pitch = this->py[0] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
 	mat2 = mat.roty(yaw);
 	mat = mat2.rotx(pitch);
-	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
+	if(qrot)
+		*qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
+}
+
+void LTurret::tryshoot(){
+	if(ammo <= 0)
+		return;
+
+	// Do not actually shoot in the client.
+	if(!game->isServer()){
+		this->cooldown += reloadtime();
+		return;
+	}
+
+	Mat4d mat;
+	Quatd qrot;
+	shootTransform(mat, &qrot);
 	for(int i = 0; i < 2; i++){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
-		Vec3d direction = mat.dvp3(forward);
+		Vec3d direction = -mat.vec3(2);
 		Bullet *pz;
 		pz = new Bullet(base, bulletlife(), 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
 		pz->velo = direction * bulletspeed() + this->velo;
 		pz->rot = qrot;
-		shootEffect(pz, direction);
+		shootEffect(pz->pos, direction);
 	}
 	this->cooldown += reloadtime();
 	this->mf += .3;

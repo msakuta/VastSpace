@@ -692,7 +692,6 @@ int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt
 int Entity::takedamage(double damage, int hitpart){
 	if(health <= damage){
 		health = 0;
-		w = NULL;
 		return 0;
 	}
 	health -= damage;

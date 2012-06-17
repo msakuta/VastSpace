@@ -105,8 +105,10 @@ void Frigate::anim(double dt){
 			capacitor -= gen / shieldPerEnergy;
 		}
 	}
-	else
-		w = NULL;
+	else{
+		delete this;
+		return;
+	}
 
 	se.anim(dt);
 

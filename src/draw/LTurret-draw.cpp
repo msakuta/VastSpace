@@ -9,32 +9,42 @@
 #include "draw/WarDraw.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 
 void LTurret::draw(wardraw_t *wd){
+	static OpenGLState::weak_ptr<bool> init;
+
 	// Viewing volume culling
 	if(wd->vw->gc->cullFrustum(pos, .03))
 		return;
 	// Scale too small culling
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
-	static suf_t *suf_turret = NULL, *suf_barrel = NULL;
+	static Model *model = NULL;
+	static Motion *motions[2];
 	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/lturret.bin");
-	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("models/lbarrel.bin");
+	static int turretIndex = -1;
+	static int barrelIndex = -1;
+	if(!init){
+		model = LoadMQOModel("models/lturret1.mqo");
+		motions[0] = LoadMotion("models/lturret_pitch.mot");
+		motions[1] = LoadMotion("models/lturret_blowback.mot");
+
+		// Precache barrel model indices to avoid string match every frame and every instance.
+		for(int i = 0; i < model->n; i++){
+			if(model->bones[i]->name == "lturret")
+				turretIndex = i;
+			if(model->bones[i]->name == "lbarrel")
+				barrelIndex = i;
+		}
+		init.create(*openGLState);
+	}
 
 	const double bscale = .001;
-	static const GLfloat rotaxis2[16] = {
-		-1,0,0,0,
-		0,1,0,0,
-		0,0,-1,0,
-		0,0,0,1,
-	};
 
 	if(const ShaderBind *sb = wd->getShaderBind())
 		glUniform1i(sb->textureEnableLoc, 0);
@@ -42,22 +52,34 @@ void LTurret::draw(wardraw_t *wd){
 	gldTranslate3dv(pos);
 	gldMultQuat(rot);
 	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-	glPushMatrix();
 	gldScaled(bscale);
-	glMultMatrixf(rotaxis2);
-	DrawSUF(suf_turret, SUF_ATR, NULL);
+	glScalef(-1,1,-1);
+
+#if 0
+	// This method has an advantage in extensibility, but has more cost to calculate.
+	MotionPose mp[2];
+	motions[0]->interpolate(mp[0], (1. - py[0] / (M_PI / 2.)) * 10.);
+	motions[1]->interpolate(mp[1], (blowback / 0.010) * 10.);
+	mp[0].next = &mp[1];
+
+	DrawMQOPose(model, mp);
 	glPopMatrix();
-	for(int i = 0; i < 2; i++){
-		Vec3d pos(.005 * (i * 2 - 1), .005, -0.0025);
-		glPushMatrix();
+#else
+	// This method, which is closer to former method, has a limitation in extensibility
+	// (you probably cannot just replace the model but also recompile to change the appearance of the model),
+	// but has little overhead.
+	if(0 <= turretIndex)
+		DrawSUF(model->sufs[turretIndex], SUF_ATR, NULL);
+	if(0 <= barrelIndex){
+		// Bone joint must be defined.
+		const Vec3d &pos = model->bones[barrelIndex]->joint;
 		gldTranslate3dv(pos);
-		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
-		glTranslated(0, 0, blowback);
-		gldScaled(bscale);
-		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_barrel, SUF_ATR, NULL);
-		glPopMatrix();
+		glRotated(deg_per_rad * this->py[0], -1., 0., 0.);
+		gldTranslate3dv(-pos);
+		glTranslated(0, 0, -blowback / bscale);
+		DrawSUF(model->sufs[barrelIndex], SUF_ATR, NULL);
 	}
+#endif
 	glPopMatrix();
 	if(const ShaderBind *sb = wd->getShaderBind())
 		glUniform1i(sb->textureEnableLoc, 1);

@@ -34,6 +34,7 @@ extern "C"{
 #define BEAMER_SHIELDRAD .09
 
 double Beamer::modelScale = 0.0002;
+double Beamer::defaultMass = 1e5;
 GLuint Beamer::disp = 0;
 std::vector<hitbox> Beamer::hitboxes;
 std::vector<Warpable::Navlight> Beamer::navlights;
@@ -55,6 +56,7 @@ void Beamer::init(){
 	if(!initialized){
 		sq_init(_SC("models/Beamer.nut"),
 			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
 			DrawOverlayProcess(disp));
@@ -66,7 +68,7 @@ void Beamer::init(){
 	cooldown = 0.;
 	integral.clear();
 	health = maxhealth();
-	mass = 1e5;
+	mass = defaultMass;
 }
 
 const char *Beamer::idname()const{

@@ -49,6 +49,7 @@ public:
 protected:
 	bool buildBody();
 	static double modelScale;
+	static double defaultMass;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;
 	static std::vector<hitbox> hitboxes;

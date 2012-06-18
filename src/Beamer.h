@@ -40,6 +40,7 @@ public:
 protected:
 	static GLuint disp;
 	static double modelScale;
+	static double defaultMass;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;
 };

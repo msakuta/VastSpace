@@ -23,10 +23,7 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
 double Assault::modelScale = 0.0002;
-
-
-
-
+double Assault::defaultMass = 1e5;
 std::vector<hardpoint_static*> Assault::hardpoints;
 GLuint Assault::disp = 0;
 std::vector<hitbox> Assault::hitboxes;
@@ -57,13 +54,14 @@ void Assault::init(){
 	if(!initialized){
 		sq_init(_SC("models/Assault.nut"),
 			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
 			HardPointProcess(hardpoints));
 		initialized = true;
 	}
-	mass = 1e5;
+	mass = defaultMass;
 	mother = NULL;
 	paradec = -1;
 	engineHeat = 0.f;

@@ -10,6 +10,8 @@ hitbox <- [
 
 modelScale <- 0.0002;
 
+mass <- 1.e5;
+
 navlights <- [
 	{pos = Vec3d(0, 210 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
 	{pos = Vec3d(190 * modelScale, -120 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},

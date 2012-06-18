@@ -10,6 +10,7 @@ protected:
 	static std::vector<hardpoint_static*> hardpoints;
 	static std::vector<hitbox> hitboxes;
 	static double modelScale;
+	static double defaultMass;
 	static GLuint disp;
 	static std::vector<Navlight> navlights;
 public:

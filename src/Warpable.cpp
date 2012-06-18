@@ -1263,6 +1263,17 @@ void Warpable::ModelScaleProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v);
 }
 
+void Warpable::MassProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, _SC("mass"), -1); // root string
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError(_SC("mass not found"));
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+		throw SQFError(_SC("mass couldn't be converted to float"));
+	mass = f;
+	sq_poptop(v);
+}
+
 void Warpable::HitboxProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, _SC("hitbox"), -1); // root string
 

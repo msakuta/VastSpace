@@ -17,6 +17,7 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 
 
 double Destroyer::modelScale = .001;
+double Destroyer::defaultMass = 1e8;
 std::vector<hardpoint_static*> Destroyer::hardpoints;
 std::vector<hitbox> Destroyer::hitboxes;
 GLuint Destroyer::disp = 0;
@@ -85,6 +86,7 @@ void Destroyer::static_init(){
 	if(!initialized){
 		sq_init(_SC("models/Destroyer.nut"),
 			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
@@ -97,7 +99,7 @@ void Destroyer::init(){
 	static_init();
 	st::init();
 	turrets = new ArmBase*[hardpoints.size()];
-	mass = 1e8;
+	mass = defaultMass;
 	engineHeat = 0.;
 }
 

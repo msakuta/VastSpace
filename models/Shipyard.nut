@@ -6,6 +6,8 @@ local scale = 0.0010;
 
 modelScale <- scale;
 
+mass <- 5.e9;
+
 navlights <- [
 	{pos = Vec3d(0, 520 * scale, 220 * scale), period = 2},
 	{pos = Vec3d(0, -520 * scale, 220 * scale), period = 2},

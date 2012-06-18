@@ -11,6 +11,8 @@ hitbox <- [
 local SQRT2P2 = sqrt(2)/2;
 modelScale <- 0.001;
 
+mass <- 1.e8;
+
 hardpoints <- [
 	{pos = Vec3d(0.000, 29 * modelScale, -175 * modelScale), rot = Quatd(0, 0, 0, 1), name = "Top Front Turret"},
 	{pos = Vec3d(0.000, 32 * modelScale, -80 * modelScale), rot = Quatd(0, 0, 0, 1), name = "Top Back Turret"},

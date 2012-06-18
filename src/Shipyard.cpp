@@ -57,6 +57,7 @@ void ShipyardDocker::dockque(Dockable *e){
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
 double Shipyard::modelScale = 0.0010;
+double Shipyard::defaultMass = 5e9;
 
 hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 	hardpoint_static(Vec3d(.100, .060, -.760), Quatd(0., 0., 0., 1.), "Turret 1", 0),
@@ -85,6 +86,7 @@ void Shipyard::init(){
 	if(!initialized){
 		sq_init(_SC("models/Shipyard.nut"),
 				ModelScaleProcess(modelScale) <<=
+				MassProcess(defaultMass) <<=
 				HitboxProcess(hitboxes) <<=
 				DrawOverlayProcess(disp) <<=
 				NavlightsProcess(navlights));
@@ -95,7 +97,7 @@ void Shipyard::init(){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
 	turrets = new ArmBase*[nhardpoints];*/
-	mass = 5e9;
+	mass = defaultMass;
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
 }

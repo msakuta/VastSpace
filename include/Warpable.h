@@ -129,6 +129,13 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+	class MassProcess : public SqInitProcess{
+	public:
+		double &mass;
+		MassProcess(double &mass) : mass(mass){}
+		virtual void process(HSQUIRRELVM)const;
+	};
+
 	class HitboxProcess : public SqInitProcess{
 	public:
 		std::vector<hitbox> &hitboxes;

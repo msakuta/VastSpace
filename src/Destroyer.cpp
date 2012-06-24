@@ -293,7 +293,9 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 	return frigate_mn;
 }
 
-
+double Destroyer::warpCostFactor()const{
+	return 1e3;
+}
 
 
 

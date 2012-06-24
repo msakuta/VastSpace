@@ -193,7 +193,11 @@ GLWmenu::GLWmenu(const char *title, const PopupMenu &list, unsigned aflags) : st
 		if(width < itemwidth)
 			width = itemwidth;
 	}
-	height = (1 + count) * fontheight;
+	GLWrect cr = clientRect();
+	GLWrect er = extentRect();
+	height = count * fontheight;
+	er.y1 = er.y0 + height + er.height() - cr.height();
+	this->setExtent(er);
 }
 
 /// \brief Adds an item to the menu.

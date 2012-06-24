@@ -40,6 +40,7 @@ public:
 	virtual bool command(EntityCommand *com);
 	virtual double maxenergy()const;
 	const maneuve &getManeuve()const;
+	virtual double warpCostFactor()const;
 protected:
 	bool buildBody();
 	void static_init();

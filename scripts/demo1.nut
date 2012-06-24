@@ -128,8 +128,8 @@ function frameproc(dt){
 		if(assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
-				local be = docker.addent("Assault");
-				be.race = 0;
+//				local be = docker.addent("Assault");
+//				be.race = 0;
 			}
 			assaults++;
 		}

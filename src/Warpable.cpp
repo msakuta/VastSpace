@@ -351,6 +351,10 @@ short Warpable::getDefaultCollisionMask()const{
 	return -1;
 }
 
+double Warpable::warpCostFactor()const{
+	return 1.;
+}
+
 /** \brief Definition of how to maneuver spaceships, shared among ship classes deriving Warpable.
  *
  * Assumption is that accelerations towards all directions except forward movement
@@ -785,12 +789,15 @@ void Warpable::warp_collapse(){
 	Entity *pt2;
 	if(!warpcs)
 		return;
+	double sdist = (pos - w->cs->tocs(Vec3d(0,0,0), this->warpcs->parent)).slen();
+	double ddist = (pos - w->cs->tocs(warpdst, warpdstcs)).slen();
+	CoordSys *newcs = sdist < ddist ? warpcs->parent : warpdstcs;
 	WarField *w = this->w; // Entity::w could be altered in transit_cs, so we reserve it here.
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end();){
 		WarField::EntityList::iterator next = it;
 		++next;
 		if(*it){
-			(*it)->transit_cs(p->warpdstcs);
+			(*it)->transit_cs(newcs);
 		}
 		it = next;
 	}
@@ -908,13 +915,23 @@ void Warpable::anim(double dt){
 			omega *= scale;
 			pt->rot = pt->rot.quatrotquat(omega);
 		}
+
+		// If the capacitor cannot feed enough energy to keep the warp field active, slow down.
+		if(capacitor < dt * warpCostFactor()){
+			(*pvelo) *= exp(-dt);
+			capacitor = 0.;
+		}
+		else
+			capacitor -= dt * warpCostFactor();
+
 		velo = (*pvelo).len();
-		desiredvelo = .5 * VECDIST(warpdst, dstcspos);
+		desiredvelo = .5 * (warpdst - dstcspos).len();
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
-		if((warpdst - dstcspos).slen() < 1. * 1.){
-			warp_collapse();
+		if((warpdst - dstcspos).slen() < 1. * 1. || capacitor <= 0. && velo < 1.){
+			if(pos.slen() < w->cs->csrad * w->cs->csrad)
+				warp_collapse();
 
 			// Restore normal collision filter mask.
 			if(bbody)
@@ -928,6 +945,8 @@ void Warpable::anim(double dt){
 			}
 			post_warp();
 		}
+		else if(capacitor <= 0.)
+			;
 		else if(desiredvelo < velo){
 			Vec3d delta, dst, dstvelo;
 			double dstspd, u, len;

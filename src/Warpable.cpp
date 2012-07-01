@@ -916,21 +916,14 @@ void Warpable::anim(double dt){
 			pt->rot = pt->rot.quatrotquat(omega);
 		}
 
-		// If the capacitor cannot feed enough energy to keep the warp field active, slow down.
-		if(capacitor < dt * warpCostFactor()){
-			(*pvelo) *= exp(-dt);
-			capacitor = 0.;
-		}
-		else
-			capacitor -= dt * warpCostFactor();
-
 		velo = (*pvelo).len();
 		desiredvelo = .5 * (warpdst - dstcspos).len();
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
-		if((warpdst - dstcspos).slen() < 1. * 1. || capacitor <= 0. && velo < 1.){
-			if(pos.slen() < w->cs->csrad * w->cs->csrad)
+		double sdist = (warpdst - dstcspos).slen();
+		if(sdist < 1. * 1. || capacitor <= 0. && velo < 1.){
+			if(sdist < warpdstcs->csrad * warpdstcs->csrad)
 				warp_collapse();
 
 			// Restore normal collision filter mask.
@@ -945,8 +938,6 @@ void Warpable::anim(double dt){
 			}
 			post_warp();
 		}
-		else if(capacitor <= 0.)
-			;
 		else if(desiredvelo < velo){
 			Vec3d delta, dst, dstvelo;
 			double dstspd, u, len;
@@ -968,7 +959,12 @@ void Warpable::anim(double dt){
 				p->warpcs->adopt_child(p->warpdstcs);
 			}
 		}
-		else if(.9 < sp){
+		else if(capacitor <= dt * warpCostFactor()){
+			// If the capacitor cannot feed enough energy to keep the warp field active, slow down.
+			(*pvelo) *= exp(-dt);
+			capacitor = 0.;
+		}
+		else if(.99 < sp){
 			double dstspd, u, len;
 			const double L = LIGHT_SPEED;
 			Vec3d delta = warpdst - pt->pos;
@@ -980,14 +976,23 @@ void Warpable::anim(double dt){
 			Vec3d dstvelo = delta * u;
 			dstvelo -= *pvelo;
 			*pvelo += dstvelo * (.2 * dt);
-	/*		VECSUB(delta, dstvelo, p->velo);
-			VECCPY(p->velo, dstvelo);*/
-	/*		VECSADD(p->velo, delta, dt * 1e-8 * (1e0 + VECLEN(p->velo)));*/
+
+			// Consume energy
+			capacitor -= dt * warpCostFactor();
 		}
+
+		// If it's belonging to a warp bubble, adopt it for the warping CoordSys instead of creating a new warpbubble
+		// as a child of the warpbubble. This way we can prevent it from creating multiple warpbubbles by repeatedly
+		// trying warping and stopping.
+		if(!warpcs && !strncmp(w->cs->name, "warpbubble", sizeof"warpbubble"-1))
+			warpcs = w->cs;
+
+		// Obtain the source CoordSys of warping.
+		CoordSys *srccs = warpcs ? warpcs->parent : w->cs;
 
 		// A new warp bubble can only be created in the server. If the client could, we couldn't match two simultaneously
 		// created warp bubbles in the server and the client.
-		if(game->isServer() && !p->warpcs && w->cs != p->warpdstcs && w->cs->csrad * w->cs->csrad < pt->pos.slen()){
+		if(game->isServer() && !p->warpcs && w->cs != p->warpdstcs && srccs->csrad * srccs->csrad < pt->pos.slen()){
 			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;
@@ -995,10 +1000,6 @@ void Warpable::anim(double dt){
 			p->warpcs->flags = 0;
 			p->warpcs->w = new WarSpace(p->warpcs);
 			p->warpcs->w->pl = w->pl;
-/*			for(i = 0; i < npf; i++) if(pf[i]){
-				ImmobilizeTefpol3D(pf[i]);
-				pf[i] = NULL;
-			}*/
 			transit_cs(p->warpcs);
 #if 0
 			/* TODO: bring docked objects along */

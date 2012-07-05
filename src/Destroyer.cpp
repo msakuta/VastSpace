@@ -294,7 +294,7 @@ const Warpable::maneuve &Destroyer::getManeuve()const{
 }
 
 double Destroyer::warpCostFactor()const{
-	return 1e3;
+	return 1e2;
 }
 
 

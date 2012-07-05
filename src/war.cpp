@@ -51,6 +51,9 @@ WarField::~WarField(){
 		for(EntityList::iterator it = el.begin(); it != el.end(); ++it){
 			(*it)->w = NULL;
 		}
+		for(EntityList::iterator it = bl.begin(); it != bl.end(); ++it){
+			(*it)->w = NULL;
+		}
 	}
 }
 

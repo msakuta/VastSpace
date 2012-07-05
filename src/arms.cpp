@@ -129,7 +129,12 @@ void ArmBase::align(){
 	if(health <= 0. || !base)
 		return;
 
-	w = base->w;
+	if(w != base->w){
+		// Notify the refering Observers that this Entity is exiting current WarSpace.
+		TransitEvent te(base->w);
+		notifyEvent(te);
+		base->w->addent(this);
+	}
 	race = base->race;
 
 	/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */

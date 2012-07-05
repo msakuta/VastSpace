@@ -11,7 +11,7 @@ if(earthlo){
 
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
-	player.cs.addent("Destroyer", Vec3d(2.0, 0, 1.0));
+//	player.cs.addent("Destroyer", Vec3d(2.0, 0, 1.0));
 	local e = redbase;
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 	e.race = 1;
@@ -128,8 +128,8 @@ function frameproc(dt){
 		if(assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
-//				local be = docker.addent("Assault");
-//				be.race = 0;
+				local be = docker.addent("Assault");
+				be.race = 0;
 			}
 			assaults++;
 		}

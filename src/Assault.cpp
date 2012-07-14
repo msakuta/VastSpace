@@ -196,7 +196,9 @@ void Assault::anim(double dt){
 
 	Entity *pm = mother ? mother->e : NULL;
 
-	if(task == sship_undock){
+	if(warping)
+		; // do nothing
+	else if(task == sship_undock){
 		if(!mother || !mother->e)
 			task = sship_idle;
 		else{

@@ -894,26 +894,29 @@ void Warpable::anim(double dt){
 		double desiredvelo, velo;
 		Vec3d *pvelo = p->warpcs ? &p->warpcs->velo : &pt->velo;
 		Vec3d dstcspos, warpdst; /* current position measured in destination coordinate system */
-		double sp, scale;
+		double sp;
 		dstcspos = p->warpdstcs->tocs(pt->pos, w->cs);
 		warpdst = w->cs->tocs(p->warpdst, p->warpdstcs);
 		{
-			Quatd qc;
-			Vec3d omega, dv, forward;
-			dv = warpdst - pt->pos;
-			dv.normin();
-			forward = pt->rot.trans(avec3_001);
-			forward *= -1.;
+			Vec3d dv = (warpdst - pt->pos).norm();
+			Vec3d forward = -pt->rot.trans(vec3_001);
 			sp = dv.sp(forward);
-			omega = dv.vp(forward);
+			Vec3d omega = dv.vp(forward);
 			if(sp < 0.){
-				omega += mat.vec3(0) * mn->angleaccel;
+				// Make it continuous function
+				omega += mat.vec3(1) * mn->maxanglespeed * (1. - sp);
 			}
-			scale = -.5 * dt;
+			double scale = -.5 * dt;
 			if(scale < -1.)
 				scale = -1.;
 			omega *= scale;
+#if 0 // This precise calculation seems not necessary.
+			Quatd qomg = Quatd::rotation(asin(omega.len()), omega.norm());
+			pt->rot = qomg * pt->rot;
+#else
 			pt->rot = pt->rot.quatrotquat(omega);
+#endif
+			pt->rot.normin();
 		}
 
 		velo = (*pvelo).len();

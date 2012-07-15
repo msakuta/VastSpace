@@ -183,6 +183,7 @@ int Attacker::takedamage(double damage, int hitpart){
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
+#ifndef DEDICATED
 		WarSpace *ws = *w;
 		if(ws){
 
@@ -253,6 +254,7 @@ int Attacker::takedamage(double damage, int hitpart){
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 		this->w = NULL;
+#endif
 	}
 	health -= damage;
 	return ret;
@@ -356,3 +358,9 @@ Vec3d AttackerDocker::getPortPos(Dockable *)const{
 Quatd AttackerDocker::getPortRot(Dockable *)const{
 	return Quatd(1, 0, 0, 0);
 }
+
+#ifdef DEDICATED
+void Attacker::draw(WarDraw*){}
+void Attacker::drawtra(WarDraw*){}
+void Attacker::drawOverlay(WarDraw*){}
+#endif

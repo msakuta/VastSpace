@@ -137,7 +137,7 @@ double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, con
 #ifdef DEDICATED
 void LTurret::draw(WarDraw *){}
 void LTurret::drawtra(WarDraw *){}
-void LTurret::shootEffect(Bullet *, const Vec3d &){}
+void LTurret::shootEffect(const Vec3d&, const Vec3d&){}
 #endif
 
 

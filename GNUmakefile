@@ -34,6 +34,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Server.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/Bullet.o\
+ ${OUTDIR}/Missile.o\
  ${OUTDIR}/Sceptor.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
@@ -41,7 +42,9 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Frigate.o\
  ${OUTDIR}/Beamer.o\
  ${OUTDIR}/arms.o\
+ ${OUTDIR}/LTurret.o\
  ${OUTDIR}/Assault.o\
+ ${OUTDIR}/Attacker.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -119,7 +122,11 @@ ${OUTDIR}/Beamer.o: $(call depends,Beamer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/arms.o: $(call depends,arms.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/LTurret.o: $(call depends,LTurret.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Assault.o: $(call depends,Assault.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Attacker.o: $(call depends,Attacker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

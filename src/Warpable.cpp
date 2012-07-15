@@ -791,7 +791,7 @@ void Warpable::warp_collapse(){
 		return;
 	double sdist = (pos - w->cs->tocs(Vec3d(0,0,0), this->warpcs->parent)).slen();
 	double ddist = (pos - w->cs->tocs(warpdst, warpdstcs)).slen();
-	CoordSys *newcs = sdist < ddist ? warpcs->parent : warpdstcs;
+	CoordSys *newcs = sdist < ddist ? warpcs->parent : (CoordSys*)warpdstcs;
 	WarField *w = this->w; // Entity::w could be altered in transit_cs, so we reserve it here.
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end();){
 		WarField::EntityList::iterator next = it;

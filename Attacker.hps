@@ -1,8 +1,0 @@
-define SCALE .001
-define SQRT2P2 sqrt(2)/2
-define angle2 0.12248933156343207708604124060564
-
-.070, .0425, -.150, 0, 0, -sin(angle2), cos(angle2), "Top Left Turret", 0,
--.070, .0425, -.150, 0, 0, sin(angle2), cos(angle2), "Top Right Turret", 0,
-.000, -.060, -.0075, 0, 0, 1, 0, "Bottom Turret", 0,
-

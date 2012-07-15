@@ -19,38 +19,63 @@ extern "C"{
 
 
 
-hitbox Attacker::hitboxes[] = {
-	hitbox(Vec3d(0., -0.0025, .050), Quatd(0,0,0,1), Vec3d(.125, .060, .150)),
-	hitbox(Vec3d(0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
-	hitbox(Vec3d(-0.070, 0.015, -.165), Quatd(0,0,0,1), Vec3d(.030, .035, .065)),
+double Attacker::modelScale = .001;
+double Attacker::defaultMass = 2e8;
+Warpable::ManeuverParams Attacker::maneuverParams = {
+	.025, /* double accel; */
+	.1, /* double maxspeed; */
+	5000000 * .1, /* double angleaccel; */
+	.2, /* double maxanglespeed; */
+	200000., /* double capacity; [MJ] */
+	300., /* double capacitor_gen; [MW] */
 };
-const unsigned Attacker::nhitboxes = numof(hitboxes);
-struct hardpoint_static *Attacker::hardpoints = NULL;
-int Attacker::nhardpoints = 0;
+std::vector<hardpoint_static*> Attacker::hardpoints;
+std::vector<hitbox> Attacker::hitboxes;
+GLuint Attacker::overlayDisp = 0;
+std::vector<Warpable::Navlight> Attacker::navlights;
 
 const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 Entity::EntityRegister<Attacker> Attacker::entityRegister("Attacker");
 
-Attacker::Attacker(Game *game) : st(game), justLoaded(true), docker(NULL), engineHeat(0){}
+Attacker::Attacker(Game *game) : st(game), docker(NULL), engineHeat(0){init();}
 
-Attacker::Attacker(WarField *aw) : st(aw), justLoaded(false), docker(new AttackerDocker(this)), engineHeat(0){
-	static_init();
+Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), engineHeat(0){
 	init();
 	static int count = 0;
-	turrets = new ArmBase*[nhardpoints];
-	for(int i = 0; i < nhardpoints; i++){
-		turrets[i] = (true || count % 2 ? (LTurretBase*)new LTurret(this, &hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, &hardpoints[i]));
+	for(int i = 0; i < hardpoints.size(); i++){
+		turrets[i] = (true || count % 2 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}
 	count++;
-	mass = 2e8;
-	health = maxhealth();
-	capacitor = maxenergy();
+	buildBody();
 }
 
 Attacker::~Attacker(){delete docker;}
+
+void Attacker::static_init(){
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Attacker.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			ManeuverParamsProcess(maneuverParams) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp) <<=
+			NavlightsProcess(navlights) <<=
+			HardPointProcess(hardpoints));
+		initialized = true;
+	}
+}
+
+void Attacker::init(){
+	static_init();
+	st::init();
+	turrets = new ArmBase*[hardpoints.size()];
+	mass = defaultMass;
+	engineHeat = 0.;
+}
 
 void Attacker::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &)){
 	st::dive(sc, method);
@@ -60,36 +85,38 @@ void Attacker::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 void Attacker::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << docker;
-	sc.o << nhardpoints;
-	for(int i = 0; i < nhardpoints; i++)
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }
 
 void Attacker::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> docker;
-	sc.i >> nhardpoints;
-	turrets = new ArmBase*[nhardpoints];
-	for(int i = 0; i < nhardpoints; i++)
+
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+
+	for(int i = 0; i < hardpoints.size(); i++)
 		sc.i >> turrets[i];
 }
 
-void Attacker::static_init(){
-	if(!hardpoints){
-		hardpoints = hardpoint_static::load("Attacker.hps", nhardpoints);
-	}
-}
-
 void Attacker::anim(double dt){
-	buildBody();
 	st::anim(dt);
 	docker->anim(dt);
-	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
+	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
 		turrets[i]->align();
 
 //	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
 	// Exponential approach is more realistic (but costs more CPU cycles)
 	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);
+}
+
+void Attacker::clientUpdate(double dt){
+	anim(dt);
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -104,26 +131,20 @@ bool Attacker::command(EntityCommand *com){
 
 double Attacker::hitradius()const{return .3;}
 double Attacker::maxhealth()const{return 100000.;}
-double Attacker::maxenergy()const{return 200000.;}
+double Attacker::maxenergy()const{return maneuverParams.capacity;}
 
 ArmBase *Attacker::armsGet(int index){
-	if(0 <= index && index < nhardpoints)
+	if(0 <= index && index < hardpoints.size())
 		return turrets[index];
 	return NULL;
 }
 
-int Attacker::armsCount()const{return nhardpoints;}
+int Attacker::armsCount()const{
+	return hardpoints.size();
+}
 
 const Warpable::ManeuverParams &Attacker::getManeuve()const{
-	static const ManeuverParams mn = {
-		.025, /* double accel; */
-		.1, /* double maxspeed; */
-		5000000 * .1, /* double angleaccel; */
-		.2, /* double maxanglespeed; */
-		200000., /* double capacity; [MJ] */
-		300., /* double capacitor_gen; [MW] */
-	};
-	return mn;
+	return maneuverParams;
 }
 
 Docker *Attacker::getDockerInt(){
@@ -137,7 +158,7 @@ int Attacker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;
@@ -237,15 +258,8 @@ int Attacker::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-void Attacker::enterField(WarField *target){
-	WarSpace *ws = *target;
-	if(!ws || !ws->bdw)
-		return;
-
-	buildBody();
-
-	//add the body to the dynamics world
-	ws->bdw->addRigidBody(bbody, 2, ~0);
+short Attacker::bbodyGroup()const{
+	return 3; // We could collide with dockable ships, what would we do?
 }
 
 bool Attacker::buildBody(){
@@ -254,7 +268,7 @@ bool Attacker::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
+			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
 				const Vec3d &pos = hitboxes[i].org;
@@ -284,13 +298,6 @@ bool Attacker::buildBody(){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 
-	// If the flag is indicating that this object is just loaded from a save file, we need to restore the rigid body
-	// and add it to environment's dynamics world.
-	if(justLoaded){
-		if(WarSpace *ws = *w)
-			ws->bdw->addRigidBody(bbody);
-		justLoaded = false;
-	}
 	return true;
 }
 

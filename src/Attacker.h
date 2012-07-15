@@ -10,29 +10,35 @@ class AttackerDocker;
 
 /// A heavy assault ship with docking bay.
 class Attacker : public Warpable{
+protected:
 	AttackerDocker *docker;
 	ArmBase **turrets;
-	bool justLoaded; ///< A flag indicates this object is just loaded from a save file.
 	float engineHeat; ///< Integration of direction & PL_W
 
-	static hardpoint_static *hardpoints;
-	static int nhardpoints;
+	static double modelScale;
+	static double defaultMass;
+	static ManeuverParams maneuverParams;
+	static std::vector<hardpoint_static*> hardpoints;
+	static std::vector<hitbox> hitboxes;
+	static GLuint overlayDisp;
+	static std::vector<Navlight> navlights;
 public:
 	typedef Warpable st;
-	static hitbox hitboxes[];
-	static const unsigned nhitboxes;
 	const char *classname()const;
 	static const unsigned classid;
 	static EntityRegister<Attacker> entityRegister;
 	Attacker(Game *game);
 	Attacker(WarField *);
 	~Attacker();
+	void static_init();
+	void init();
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	void static_init();
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
+	virtual void drawtra(WarDraw *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual bool command(EntityCommand *com);
@@ -45,7 +51,7 @@ public:
 	virtual Docker *getDockerInt();
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int takedamage(double damage, int hitpart);
-	virtual void enterField(WarField *);
+	virtual short bbodyGroup()const;
 
 	static void onBeginTexture(void*);
 	static void onEndTexture(void*);

@@ -68,7 +68,7 @@ void Attacker::draw(wardraw_t *wd){
 			pst->a[i].onEndTextureData = &atp;
 		}
 
-		double scale = .001;
+		double scale = modelScale;
 		Mat4d mat;
 
 		glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
@@ -116,7 +116,16 @@ void Attacker::draw(wardraw_t *wd){
 	}
 }
 
+void Attacker::drawtra(WarDraw *wd){
+	st::drawtra(wd);
+	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+		return;
+	drawNavlights(wd, navlights);
+}
+
 void Attacker::drawOverlay(wardraw_t *){
+	glCallList(overlayDisp);
+#if 0
 	glBegin(GL_LINE_LOOP);
 	glVertex2d(-.15,  1.0);
 	glVertex2d(-.4,  1.0);
@@ -139,6 +148,7 @@ void Attacker::drawOverlay(wardraw_t *){
 	glVertex2d( .15,  0.3);
 	glVertex2d(-.15,  0.3);
 	glEnd();
+#endif
 }
 
 

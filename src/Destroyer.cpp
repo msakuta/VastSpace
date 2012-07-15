@@ -18,6 +18,14 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 
 double Destroyer::modelScale = .001;
 double Destroyer::defaultMass = 1e8;
+Warpable::ManeuverParams Destroyer::maneuverParams = {
+	.05, /* double accel; */
+	.1, /* double maxspeed; */
+	10000. * .1, /* double angleaccel; */
+	.2, /* double maxanglespeed; */
+	150000., /* double capacity; [MJ] */
+	300., /* double capacitor_gen; [MW] */
+};
 std::vector<hardpoint_static*> Destroyer::hardpoints;
 std::vector<hitbox> Destroyer::hitboxes;
 GLuint Destroyer::disp = 0;
@@ -87,6 +95,7 @@ void Destroyer::static_init(){
 		sq_init(_SC("models/Destroyer.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			ManeuverParamsProcess(maneuverParams) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
@@ -282,15 +291,7 @@ bool Destroyer::command(EntityCommand *com){
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::ManeuverParams &Destroyer::getManeuve()const{
-	static const Warpable::ManeuverParams frigate_mn = {
-		.025, /* double accel; */
-		.075, /* double maxspeed; */
-		2000000 * .1, /* double angleaccel; */
-		.2, /* double maxanglespeed; */
-		150000., /* double capacity; [MJ] */
-		300., /* double capacitor_gen; [MW] */
-	};
-	return frigate_mn;
+	return maneuverParams;
 }
 
 double Destroyer::warpCostFactor()const{
@@ -465,13 +466,5 @@ void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 const Warpable::ManeuverParams &WireDestroyer::getManeuve()const{
-	static const Warpable::ManeuverParams frigate_mn = {
-		.05, /* double accel; */
-		.1, /* double maxspeed; */
-		10000. * .1, /* double angleaccel; */
-		.2, /* double maxanglespeed; */
-		150000., /* double capacity; [MJ] */
-		300., /* double capacitor_gen; [MW] */
-	};
-	return frigate_mn;
+	return Destroyer::maneuverParams;
 }

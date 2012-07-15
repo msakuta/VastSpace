@@ -11,6 +11,7 @@ protected:
 	static std::vector<hitbox> hitboxes;
 	static double modelScale;
 	static double defaultMass;
+	static ManeuverParams maneuverParams;
 	static GLuint disp;
 	static std::vector<Navlight> navlights;
 public:
@@ -45,6 +46,7 @@ protected:
 	bool buildBody();
 	void static_init();
 	virtual void init();
+	friend class WireDestroyer;
 };
 
 class WireDestroyer : public Warpable{

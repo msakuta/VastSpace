@@ -13,6 +13,14 @@ modelScale <- 0.001;
 
 mass <- 1.e8;
 
+accel <- 0.05;
+maxspeed <-  0.1;
+angleaccel <- 10000. * 0.1;
+maxanglespeed <- 0.2;
+capacity <- 150000; // [MJ]
+capacitorGen <- 300.; // [MW]
+
+
 hardpoints <- [
 	{pos = Vec3d(0.000, 29 * modelScale, -175 * modelScale), rot = Quatd(0, 0, 0, 1), name = "Top Front Turret"},
 	{pos = Vec3d(0.000, 32 * modelScale, -80 * modelScale), rot = Quatd(0, 0, 0, 1), name = "Top Back Turret"},

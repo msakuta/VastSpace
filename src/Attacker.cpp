@@ -114,8 +114,8 @@ ArmBase *Attacker::armsGet(int index){
 
 int Attacker::armsCount()const{return nhardpoints;}
 
-const Warpable::maneuve &Attacker::getManeuve()const{
-	static const struct Warpable::maneuve mn = {
+const Warpable::ManeuverParams &Attacker::getManeuve()const{
+	static const ManeuverParams mn = {
 		.025, /* double accel; */
 		.1, /* double maxspeed; */
 		5000000 * .1, /* double angleaccel; */

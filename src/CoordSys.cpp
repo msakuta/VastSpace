@@ -1361,7 +1361,7 @@ void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
 	if(SQ_FAILED(sq_get(v, -2)))
 		throw SQFError("Something's wrong with CoordSys class definition.");
 	if(SQ_FAILED(sq_createinstance(v, -1)))
-		throw SQFError(dstring() << "Couldn't create class " << it->second->s_sqclassname);
+		throw SQFError(gltestp::dstring() << "Couldn't create class " << it->second->s_sqclassname);
 	SQUserPointer p;
 	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
 		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");

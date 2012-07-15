@@ -41,7 +41,7 @@ extern "C"{
 const double Frigate::modelScale = .0002;
 double Frigate::shieldRadius()const{return .09;}
 
-const struct Warpable::maneuve Frigate::frigate_mn = {
+const struct Warpable::ManeuverParams Frigate::frigate_mn = {
 	.025, /* double accel; */
 	.1, /* double maxspeed; */
 	100., /* double angleaccel; */
@@ -115,7 +115,7 @@ void Frigate::anim(double dt){
 }
 double Frigate::hitradius()const{return .1;}
 Entity::Dockable *Frigate::toDockable(){return this;}
-const Warpable::maneuve &Frigate::getManeuve()const{return frigate_mn;}
+const Warpable::ManeuverParams &Frigate::getManeuve()const{return frigate_mn;}
 
 
 struct hitbox Frigate::hitboxes[] = {

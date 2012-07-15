@@ -60,7 +60,7 @@ public:
 	virtual double getRU()const;
 	virtual Builder *getBuilderInt();
 	virtual Docker *getDockerInt();
-	virtual const maneuve &getManeuve()const;
+	virtual const ManeuverParams &getManeuve()const;
 
 protected:
 	ArmBase **turrets;
@@ -74,7 +74,7 @@ protected:
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 
-	static const maneuve mymn;
+	static const ManeuverParams mymn;
 	static double modelScale;
 	static double defaultMass;
 	static std::vector<hitbox> hitboxes;

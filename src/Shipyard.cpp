@@ -308,7 +308,7 @@ Builder *Shipyard::getBuilderInt(){return this;}
 Docker *Shipyard::getDockerInt(){return docker;}
 
 
-const Shipyard::maneuve Shipyard::mymn = {
+const Shipyard::ManeuverParams Shipyard::mymn = {
 	SCARRY_ACCELERATE, /* double accel; */
 	SCARRY_MAX_SPEED, /* double maxspeed; */
 	SCARRY_ANGLEACCEL, /* double angleaccel; */
@@ -317,7 +317,7 @@ const Shipyard::maneuve Shipyard::mymn = {
 	1e6, /* double capacitor_gen; */
 };
 
-const Warpable::maneuve &Shipyard::getManeuve()const{return mymn;}
+const Warpable::ManeuverParams &Shipyard::getManeuve()const{return mymn;}
 
 std::vector<hitbox> Shipyard::hitboxes;
 GLuint Shipyard::disp = 0;

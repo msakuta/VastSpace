@@ -279,8 +279,8 @@ bool Battleship::command(EntityCommand *com){
 
 double Battleship::maxenergy()const{return getManeuve().capacity;}
 
-const Warpable::maneuve &Battleship::getManeuve()const{
-	static const struct Warpable::maneuve frigate_mn = {
+const Warpable::ManeuverParams &Battleship::getManeuve()const{
+	static const ManeuverParams frigate_mn = {
 		.025, /* double accel; */
 		.075, /* double maxspeed; */
 		2000000 * .1, /* double angleaccel; */

@@ -38,7 +38,7 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *com);
 	virtual double maxenergy()const;
-	const maneuve &getManeuve()const;
+	const ManeuverParams &getManeuve()const;
 protected:
 	bool buildBody();
 	void static_init();

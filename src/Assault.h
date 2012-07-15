@@ -43,6 +43,7 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
+	virtual ManeuverParams &getManeuve()const;
 	friend class GLWarms;
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
@@ -50,6 +51,7 @@ protected:
 	bool buildBody();
 	static double modelScale;
 	static double defaultMass;
+	static ManeuverParams mn;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;
 	static std::vector<hitbox> hitboxes;

@@ -281,8 +281,8 @@ bool Destroyer::command(EntityCommand *com){
 
 double Destroyer::maxenergy()const{return getManeuve().capacity;}
 
-const Warpable::maneuve &Destroyer::getManeuve()const{
-	static const struct Warpable::maneuve frigate_mn = {
+const Warpable::ManeuverParams &Destroyer::getManeuve()const{
+	static const Warpable::ManeuverParams frigate_mn = {
 		.025, /* double accel; */
 		.075, /* double maxspeed; */
 		2000000 * .1, /* double angleaccel; */
@@ -464,8 +464,8 @@ void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = rot.trans(Vec3d(0, .08, .05)) + this->pos;
 }
 
-const Warpable::maneuve &WireDestroyer::getManeuve()const{
-	static const struct Warpable::maneuve frigate_mn = {
+const Warpable::ManeuverParams &WireDestroyer::getManeuve()const{
+	static const Warpable::ManeuverParams frigate_mn = {
 		.05, /* double accel; */
 		.1, /* double maxspeed; */
 		10000. * .1, /* double angleaccel; */

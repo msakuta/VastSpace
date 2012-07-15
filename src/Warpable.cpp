@@ -359,7 +359,7 @@ double Warpable::warpCostFactor()const{
  *
  * Assumption is that accelerations towards all directions except forward movement
  * is a half the maximum accel. */
-void Warpable::maneuver(const Mat4d &mat, double dt, const struct maneuve *mn){
+void Warpable::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
 	if(!warping){
@@ -524,7 +524,7 @@ void Warpable::steerArrival(double dt, const Vec3d &atarget, const Vec3d &target
 		this->inputs.press |= PL_W;
 //	this->throttle = dr.len() * speedfactor + minspeed;
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
-	const maneuve &mn = getManeuve();
+	const ManeuverParams &mn = getManeuve();
 	if(mn.maxanglespeed * mn.maxanglespeed < this->omg.slen())
 		this->omg.normin().scalein(mn.maxanglespeed);
 //	this->rot = this->rot.quatrotquat(this->omg * dt);
@@ -812,7 +812,7 @@ void Warpable::warp_collapse(){
 	}
 }
 
-const Warpable::maneuve Warpable::mymn = {
+const Warpable::ManeuverParams Warpable::mymn = {
 	0, // double accel;
 	0, // double maxspeed;
 	0, // double angleaccel;
@@ -820,7 +820,7 @@ const Warpable::maneuve Warpable::mymn = {
 	0, // double capacity; /* capacity of capacitor [MJ] */
 	0, // double capacitor_gen; /* generated energy [MW] */
 };
-const Warpable::maneuve &Warpable::getManeuve()const{
+const Warpable::ManeuverParams &Warpable::getManeuve()const{
 	return mymn;
 }
 bool Warpable::isTargettable()const{
@@ -880,7 +880,7 @@ void Warpable::anim(double dt){
 	transform(mat);
 	Warpable *const p = this;
 	Entity *pt = this;
-	const maneuve *mn = &getManeuve();
+	const ManeuverParams *mn = &getManeuve();
 
 	if(p->warping){
 
@@ -1295,6 +1295,46 @@ void Warpable::MassProcess::process(HSQUIRRELVM v)const{
 		throw SQFError(_SC("mass couldn't be converted to float"));
 	mass = f;
 	sq_poptop(v);
+}
+
+void Warpable::ManeuveProcess::process(HSQUIRRELVM v)const{
+	static const SQChar *paramNames[] = {
+		_SC("accel"),
+		_SC("maxspeed"),
+		_SC("angleaccel"),
+		_SC("maxanglespeed"),
+		_SC("capacity"),
+		_SC("capacitorGen"),
+	};
+	static double ManeuverParams::*const paramOfs[] = {
+		&ManeuverParams::accel,
+		&ManeuverParams::maxspeed,
+		&ManeuverParams::angleaccel,
+		&ManeuverParams::maxanglespeed,
+		&ManeuverParams::capacity,
+		&ManeuverParams::capacitor_gen,
+	};
+
+	for(int i = 0; i < numof(paramNames); i++){
+		sq_pushstring(v, paramNames[i], -1); // root string
+		if(SQ_FAILED(sq_get(v, -2)))
+			continue; // Ignore not found names
+		SQFloat f;
+		// You can report the error in case the variable cannot be converted.
+		// The user is likely to mistaken rather than omitted definition of the variable.
+		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+			throw SQFError(gltestp::dstring(paramNames[i]) << _SC(" couldn't be converted to float"));
+		mn.*paramOfs[i] = f;
+		sq_poptop(v);
+	}
+
+/*	sq_pushstring(v, _SC("maxspeed"), -1); // root string
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError(_SC("maxspeed not found"));
+	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+		throw SQFError(_SC("maxspeed couldn't be converted to float"));
+	mn.maxspeed = f;
+	sq_poptop(v);*/
 }
 
 void Warpable::HitboxProcess::process(HSQUIRRELVM v)const{

@@ -24,6 +24,14 @@ extern "C"{
 
 double Assault::modelScale = 0.0002;
 double Assault::defaultMass = 1e5;
+Warpable::ManeuverParams Assault::mn = {
+	.025, /* double accel; */
+	.1, /* double maxspeed; */
+	100., /* double angleaccel; */
+	.4, /* double maxanglespeed; */
+	50000., /* double capacity; [MJ] */
+	100., /* double capacitor_gen; [MW] */
+};
 std::vector<hardpoint_static*> Assault::hardpoints;
 GLuint Assault::disp = 0;
 std::vector<hitbox> Assault::hitboxes;
@@ -55,6 +63,7 @@ void Assault::init(){
 		sq_init(_SC("models/Assault.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			ManeuveProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
@@ -397,6 +406,9 @@ bool Assault::command(EntityCommand *com){
 	return st::command(com);
 }
 
+Warpable::ManeuverParams &Assault::getManeuve()const{
+	return mn;
+}
 
 
 /*Entity *Assault::create(WarField *w, Builder *mother){

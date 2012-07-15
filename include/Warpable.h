@@ -64,8 +64,8 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
 	virtual Props props()const;
-	struct maneuve;
-	virtual const maneuve &getManeuve()const;
+	struct ManeuverParams;
+	virtual const ManeuverParams &getManeuve()const;
 	virtual double maxenergy()const = 0;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
@@ -76,18 +76,19 @@ public:
 
 	virtual short getDefaultCollisionMask()const;
 
-	void maneuver(const Mat4d &mat, double dt, const struct maneuve *mn);
+	void maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);
 	void warp_collapse();
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale);
 
-	struct maneuve{
-		double accel;
-		double maxspeed;
-		double angleaccel;
-		double maxanglespeed;
-		double capacity; /* capacity of capacitor [MJ] */
-		double capacitor_gen; /* generated energy [MW] */
+	/// \brief A set of fields that defines maneuverability of the ship.
+	struct ManeuverParams{
+		double accel; ///< Linear acceleration rate [m/s^2]
+		double maxspeed; ///< Maximum linear speed [m/s], which wouldn't really exist in space, but provided for safe sailing.
+		double angleaccel; ///< Angular acceleration [rad/s^2]
+		double maxanglespeed; ///< Maximum angular speed [rad/s], which also wouldn't exist.
+		double capacity; ///< The capacity of capacitor [MJ]
+		double capacitor_gen; ///< Rate of generated energy [MW]
 	};
 protected:
 	virtual void init();
@@ -134,6 +135,14 @@ protected:
 	public:
 		double &mass;
 		MassProcess(double &mass) : mass(mass){}
+		virtual void process(HSQUIRRELVM)const;
+	};
+
+	/// \brief A class that processes maneuver parameters.
+	class ManeuveProcess : public SqInitProcess{
+	public:
+		ManeuverParams &mn;
+		ManeuveProcess(ManeuverParams &mn) : mn(mn){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 
@@ -190,7 +199,7 @@ protected:
 	///        the default transformation, i.e. return value of transform().
 	void drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat = NULL);
 private:
-	static const maneuve mymn;
+	static const ManeuverParams mymn;
 };
 
 EXPORT void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g);

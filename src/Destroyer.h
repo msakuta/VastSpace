@@ -39,7 +39,7 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *com);
 	virtual double maxenergy()const;
-	const maneuve &getManeuve()const;
+	const ManeuverParams &getManeuve()const;
 	virtual double warpCostFactor()const;
 protected:
 	bool buildBody();
@@ -72,7 +72,7 @@ public:
 	virtual void drawtra(wardraw_t *wd);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	const maneuve &getManeuve()const;
+	const ManeuverParams &getManeuve()const;
 };
 
 #endif

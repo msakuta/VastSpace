@@ -76,11 +76,29 @@ extern EXPORT const SQUserPointer tt_GLwindow;
 /// Translate given string with Squirrel defined translation function.
 EXPORT ::gltestp::dstring sqa_translate(const SQChar *);
 
-/// Any recoverable errors in Squirrel VM is thrown and inherits this class.
+/// \brief Any recoverable errors in Squirrel VM is thrown and inherits this class.
 struct EXPORT SQFError{
-	SQFError(const SQChar *a = NULL) : description(a){}
-	const SQChar *what()const{return description;}
-	const SQChar *description;
+	/// \brief Construct this object with a string expression.
+	SQFError(::gltestp::dstring a = "") : description(a){}
+
+	/// \brief Convert this error to text expression.
+	virtual const SQChar *what()const{return description;}
+
+	/// \brief The description text.
+	///
+	/// Formerly, it's type is plain pointer to a character (at the head of a string), but in that way
+	/// we cannot store dynamically constructed string into this object without worrying about storage
+	/// duration, because the string buffer is probably out of scope at the time this object is catched.
+	/// The only method to avoid that situation without the aid of a dynamic string is to make the string
+	/// buffer a static variable, which is dangerous in multithreaded environment.
+	/// We simply gave up to avoid using dynamic memory and used the dynamic string.
+	///
+	/// What if the exception is generated due to memory shortage? Probably we cannot do much anyway,
+	/// just let the program crash.
+	///
+	/// Pure C++ers would use std::string here, but we're dirty ones.
+	/// We want the string to be refcounted and copy-on-writed.
+	::gltestp::dstring description;
 };
 struct EXPORT SQFArgumentError : SQFError{ SQFArgumentError() : SQFError(_SC("Argument error")){} };
 struct EXPORT SQIntrinsicError : SQFError{};

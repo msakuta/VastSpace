@@ -18,7 +18,7 @@ protected:
 	bool cull(wardraw_t *);
 	Entity *findMother();
 
-	static const maneuve frigate_mn;
+	static const ManeuverParams frigate_mn;
 public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -31,7 +31,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
-	virtual const maneuve &getManeuve()const;
+	virtual const ManeuverParams &getManeuve()const;
 	virtual double maxenergy()const;
 	virtual double maxshield()const;
 	virtual Dockable *toDockable();

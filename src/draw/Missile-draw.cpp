@@ -1,4 +1,5 @@
-/** \brief Implemetation of Missile's drawing methods.
+/** \file
+ * \brief Implemetation of Missile's drawing methods.
  */
 #include "Missile.h"
 #include "Viewer.h"

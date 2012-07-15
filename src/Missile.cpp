@@ -1,19 +1,12 @@
-/** \brief Implementation of Missile class.
+/** \file
+ * \brief Implementation of Missile class.
  */
 #include "Missile.h"
 #include "Viewer.h"
-#ifndef DEDICATED
-#include "draw/material.h"
-#include "draw/WarDraw.h"
-#include "draw/OpenGLState.h"
-#endif
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
-#ifndef DEDICATED
-#include <clib/suf/sufdraw.h>
-#include <clib/gl/gldraw.h>
-#endif
+#include <clib/mathdef.h>
 }
 
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}

@@ -1,4 +1,5 @@
-/** \brief Definition of Missile class.
+/** \file
+ * \brief Definition of Missile class.
  */
 #ifndef MISSILE_H
 #define MISSILE_H

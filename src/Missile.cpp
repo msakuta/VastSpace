@@ -28,12 +28,7 @@ ObserveEventID Missile::UnlinkEvent::sid = "Unlink";
 
 Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0){
 	WarSpace *ws = *parent->w;
-#ifndef DEDICATED
-	if(ws)
-		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH, cs_firetrail.t);
-	else
-#endif
-		pf = NULL;
+	initFpol();
 	enemy = target;
 
 	// Make list of missiles targetting to the same Entity.
@@ -74,13 +69,26 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
+void Missile::initFpol(){
+#ifndef DEDICATED
+	if(WarSpace *ws = *w)
+		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH, cs_firetrail.t);
+	else
+#endif
+		pf = NULL;
+}
 
-void Missile::anim(double dt){
-	WarField *oldw = w;
+void Missile::updateFpol(){
 #ifndef DEDICATED
 	if(pf)
 		MoveTefpol3D(pf, pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
 #endif
+}
+
+
+void Missile::anim(double dt){
+	WarField *oldw = w;
+	updateFpol();
 
 	{
 		Entity *target = enemy;
@@ -424,6 +432,11 @@ void Missile::anim(double dt){
 #endif
 }
 
+void Missile::clientUpdate(double dt){
+	st::clientUpdate(dt);
+	updateFpol();
+}
+
 void Missile::postframe(){
 	if(w == NULL && enemy)
 		unlinkTarget();
@@ -460,6 +473,11 @@ void Missile::unlinkTarget(){
 	notifyEvent(UnlinkEvent(targetlist));
 	if(!targetmap[enemy])
 		targetmap.erase(enemy);
+}
+
+void Missile::enterField(WarField *w){
+	st::enterField(w);
+	initFpol();
 }
 
 

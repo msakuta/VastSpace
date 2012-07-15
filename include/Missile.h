@@ -9,6 +9,7 @@
 
 /// \brief A homing missile.
 class EXPORT Missile : public Bullet{
+protected:
 	struct tent3d_fpol *pf;
 	double integral; /* integrated term */
 	double def[2]; /* integrated deflaction of each axes */
@@ -18,6 +19,8 @@ class EXPORT Missile : public Bullet{
 	static const float maxfuel;
 	void steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);
 	void unlinkTarget();
+	void initFpol();
+	void updateFpol();
 public:
 	typedef Bullet st;
 	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0){}
@@ -26,10 +29,12 @@ public:
 	static const unsigned classid;
 	virtual const char *classname()const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double hitradius()const;
+	virtual void enterField(WarField *);
 	static const double maxspeed;
 
 	/// \brief The event notified when a Missile in a damage accumulation chain gets deleted.

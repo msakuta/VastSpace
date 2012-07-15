@@ -63,7 +63,7 @@ void Assault::init(){
 		sq_init(_SC("models/Assault.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
-			ManeuveProcess(mn) <<=
+			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=

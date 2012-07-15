@@ -12,6 +12,13 @@ modelScale <- 0.0002;
 
 mass <- 1.e5;
 
+accel <- 0.025;
+maxspeed <- 0.1;
+angleaccel <- 100.;
+maxanglespeed <- 0.4;
+capacity <- 50000.;
+capacitorGen <- 100.;
+
 navlights <- [
 	{pos = Vec3d(0, 210 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
 	{pos = Vec3d(190 * modelScale, -120 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},

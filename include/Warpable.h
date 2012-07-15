@@ -139,10 +139,10 @@ protected:
 	};
 
 	/// \brief A class that processes maneuver parameters.
-	class ManeuveProcess : public SqInitProcess{
+	class ManeuverParamsProcess : public SqInitProcess{
 	public:
 		ManeuverParams &mn;
-		ManeuveProcess(ManeuverParams &mn) : mn(mn){}
+		ManeuverParamsProcess(ManeuverParams &mn) : mn(mn){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 

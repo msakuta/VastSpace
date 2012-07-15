@@ -35,6 +35,14 @@ extern "C"{
 
 double Beamer::modelScale = 0.0002;
 double Beamer::defaultMass = 1e5;
+Warpable::ManeuverParams Beamer::mn = {
+	.025, /* double accel; */
+	.1, /* double maxspeed; */
+	100., /* double angleaccel; */
+	.4, /* double maxanglespeed; */
+	50000., /* double capacity; [MJ] */
+	100., /* double capacitor_gen; [MW] */
+};
 GLuint Beamer::disp = 0;
 std::vector<hitbox> Beamer::hitboxes;
 std::vector<Warpable::Navlight> Beamer::navlights;
@@ -57,6 +65,7 @@ void Beamer::init(){
 		sq_init(_SC("models/Beamer.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
 			DrawOverlayProcess(disp));
@@ -516,6 +525,10 @@ bool Beamer::undock(Docker *d){
 	task = sship_undock;
 	mother = d;
 	return true;
+}
+
+Warpable::ManeuverParams &Beamer::getManeuve()const{
+	return mn;
 }
 
 /*Entity *Beamer::create(WarField *w, Builder *mother){

@@ -34,6 +34,7 @@ public:
 	virtual double maxhealth()const;
 	virtual Props props()const;
 	virtual bool undock(Docker*);
+	virtual ManeuverParams &getManeuve()const;
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
@@ -41,6 +42,7 @@ protected:
 	static GLuint disp;
 	static double modelScale;
 	static double defaultMass;
+	static ManeuverParams mn;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;
 };

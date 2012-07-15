@@ -1297,7 +1297,7 @@ void Warpable::MassProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v);
 }
 
-void Warpable::ManeuveProcess::process(HSQUIRRELVM v)const{
+void Warpable::ManeuverParamsProcess::process(HSQUIRRELVM v)const{
 	static const SQChar *paramNames[] = {
 		_SC("accel"),
 		_SC("maxspeed"),
@@ -1327,14 +1327,6 @@ void Warpable::ManeuveProcess::process(HSQUIRRELVM v)const{
 		mn.*paramOfs[i] = f;
 		sq_poptop(v);
 	}
-
-/*	sq_pushstring(v, _SC("maxspeed"), -1); // root string
-	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError(_SC("maxspeed not found"));
-	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-		throw SQFError(_SC("maxspeed couldn't be converted to float"));
-	mn.maxspeed = f;
-	sq_poptop(v);*/
 }
 
 void Warpable::HitboxProcess::process(HSQUIRRELVM v)const{

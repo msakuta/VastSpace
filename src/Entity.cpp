@@ -674,7 +674,7 @@ bool Entity::dock(Docker*){return false;}
 bool Entity::undock(Docker*){return false;}
 bool Entity::command(EntityCommand *){return false;}
 
-bool Entity::unlink(Observable*o){
+bool Entity::unlink(const Observable*){
 	return true;
 }
 

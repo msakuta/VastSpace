@@ -22,13 +22,13 @@ public:
 	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
 	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
 	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
-	virtual bool unlink(Observable *);
+	virtual bool unlink(const Observable *);
 
 	/// \brief The function that receives event messages sent from the observed object.
 	/// \param o The observed object that invoked the event.
 	/// \param e The event object.
 	/// \returns True if handled.
-	virtual bool handleEvent(Observable *o, ObserveEvent &e);
+	virtual bool handleEvent(const Observable *o, ObserveEvent &e);
 };
 
 
@@ -46,13 +46,17 @@ class EXPORT Observable{
 public:
 	typedef std::map<Observer*, int> ObserverList;
 	~Observable();
-	void addObserver(Observer *);
-	void removeObserver(Observer *);
-	void addWeakPtr(WeakPtrBase *);
-	void removeWeakPtr(WeakPtrBase *);
-	void notifyEvent(ObserveEvent &e);
+	void addObserver(Observer *)const;
+	void removeObserver(Observer *)const;
+	void addWeakPtr(WeakPtrBase *)const;
+	void removeWeakPtr(WeakPtrBase *)const;
+	void notifyEvent(ObserveEvent &e)const;
 protected:
-	ObserverList observers;
+	/// \brief The list of observers that observing this object.
+	///
+	/// It's qualified as mutable because the observer can have a const-pointer to this object,
+	/// in which case we should manage this list from the observer's perspective.
+	mutable ObserverList observers;
 };
 
 
@@ -152,7 +156,7 @@ protected:
 	WeakPtrBase &operator=(WeakPtrBase &o){
 		return operator=(o.ptr);
 	}
-	bool unlink(Observable *o){
+	bool unlink(const Observable *o){
 		if(ptr == o)
 			ptr = NULL;
 		return true;
@@ -269,8 +273,8 @@ public:
 			(*it)->removeObserver(this);
 		set_.clear();
 	}
-	bool unlink(Observable *o){
-		iterator it = set_.find(static_cast<T*>(o));
+	bool unlink(const Observable *o){
+		iterator it = set_.find(static_cast<T*>(const_cast<Observable*>(o)));
 		if(it != set_.end())
 			set_.erase(it);
 		return true;
@@ -284,7 +288,7 @@ public:
 /// All occasions of item insertion are overridden so that all pointers to
 /// Observables are managed to prevent dangling pointer.
 ///
-/// A list (actually, vector) conterpart of ObservableSet.
+/// A list (actually, vector) counterpart of ObservableSet.
 /// Sometimes we want to use an ordered list of Observables that manages elements automatically.
 template<typename T>
 class ObservableList : public Observer{
@@ -325,8 +329,79 @@ public:
 			(*it)->removeObserver(this);
 		list_.clear();
 	}
+	bool unlink(const Observable *o){
+		for(iterator it = list_.begin(); it != list_.end(); it++){
+			if(*it == o)
+				list_.erase(it);
+		}
+		return true;
+	}
 };
 
+
+/// \brief A map of Observables that automatically removes expired elements.
+/// \param T is key type, must be a subclass of and be static_cast-able from Observable.
+/// \param R is value type, can be anything.
+///
+/// All occasions of item insertion are overridden so that all pointers to
+/// Observables are managed to prevent dangling pointers.
+///
+/// \sa ObservableList, ObservableSet
+template<typename T, typename R>
+class ObservableMap : public Observer{
+	std::map<T*, R> map;
+	ObservableMap &operator=(ObservableMap&){} ///< Prohibit copy construction.
+public:
+	typedef typename std::map<T*, R>::iterator iterator;
+	typedef typename std::map<T*, R>::const_iterator const_iterator;
+	typedef typename std::map<T*, R>::value_type value_type;
+	~ObservableMap(){
+		clear();
+	}
+	iterator begin(){return map.begin();}
+	iterator end(){return map.end();}
+	const_iterator begin()const{return map.begin();}
+	const_iterator end()const{return map.end();}
+	size_t size()const{return map.size();}
+	bool empty()const{return map.empty();}
+	iterator find(T *o){return map.find(o);}
+	void insert(const value_type &v){
+		v.first->addObserver(this);
+		map.insert(v);
+	}
+
+	// We do not necessarily "own" the elements, so we can return non-const pointer
+	// of elements even if this pointer is const.
+	R &operator[](T* i){
+		if(map.find(i) == map.end()){
+			R ret = R();
+			insert(value_type(i, ret));
+		}
+		return map[i];
+	}
+
+	void erase(iterator &it){
+		if(it != map.end()){
+			it->first->removeObserver(this);
+			map.erase(it);
+		}
+	}
+	void erase(T* t){
+		erase(map.find(t));
+	}
+	void clear(){
+		for(iterator it = map.begin(); it != map.end(); it++)
+			it->first->removeObserver(this);
+		map.clear();
+	}
+
+	virtual bool unlink(const Observable *o){
+		iterator it = map.find(static_cast<T*>(o));
+		if(it != map.end())
+			map.erase(it);
+		return true;
+	}
+};
 
 
 //-----------------------------------------------------------------------------

@@ -47,8 +47,8 @@ public:
 	virtual Quatd getPortRot(Dockable *)const = 0; ///< Retrieves rotation of the port
 
 	// Observer member function overrides
-	bool unlink(Observable *);
-	bool handleEvent(Observable *, ObserveEvent &);
+	bool unlink(const Observable *);
+	bool handleEvent(const Observable *, ObserveEvent &);
 
 
 	static void init();

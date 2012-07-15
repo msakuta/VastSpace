@@ -651,6 +651,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\draw\Missile-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\draw\MTurret-draw.cpp"
 					>
 				</File>
@@ -805,10 +809,6 @@
 			</File>
 			<File
 				RelativePath="..\src\keybind.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\Missile.h"
 				>
 			</File>
 			<File
@@ -996,6 +996,10 @@
 			</File>
 			<File
 				RelativePath="..\include\LTurret.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Missile.h"
 				>
 			</File>
 			<File

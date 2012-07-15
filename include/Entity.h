@@ -101,7 +101,7 @@ public:
 	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
 	virtual bool undock(Docker*); // Returns if undockable for its own reason.
 	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
-	virtual bool unlink(Observable*);
+	virtual bool unlink(const Observable*);
 
 	// Assigns transformation matrix to argument object.
 	void transform(Mat4d &mat)const{

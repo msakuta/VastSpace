@@ -12,12 +12,12 @@ extern "C"{
 #include "Observable.h"
 
 
-bool Observer::unlink(Observable *){
+bool Observer::unlink(const Observable *){
 	// Do nothing and allow unlinking by default
 	return true;
 }
 
-bool Observer::handleEvent(Observable *o, ObserveEvent &e){return false;}
+bool Observer::handleEvent(const Observable *o, ObserveEvent &e){return false;}
 
 Observable::~Observable(){
 	for(ObserverList::iterator it = observers.begin(); it != observers.end();){
@@ -28,7 +28,7 @@ Observable::~Observable(){
 	}
 }
 
-void Observable::addObserver(Observer *o){
+void Observable::addObserver(Observer *o)const{
 	ObserverList::iterator it = observers.find(o);
 	if(it != observers.end())
 		it->second++;
@@ -36,7 +36,7 @@ void Observable::addObserver(Observer *o){
 		observers[o] = 1;
 }
 
-void Observable::removeObserver(Observer *o){
+void Observable::removeObserver(Observer *o)const{
 	ObserverList::iterator it = observers.find(o);
 	assert(it != observers.end());
 	if(0 == --it->second)
@@ -44,19 +44,19 @@ void Observable::removeObserver(Observer *o){
 }
 
 /// Obsolete; should call addObserver from the first place.
-void Observable::addWeakPtr(WeakPtrBase *o){
+void Observable::addWeakPtr(WeakPtrBase *o)const{
 	addObserver(o);
 }
 
 /// Obsolete; should call removeObserver from the first place.
-void Observable::removeWeakPtr(WeakPtrBase *o){
+void Observable::removeWeakPtr(WeakPtrBase *o)const{
 	removeObserver(o);
 }
 
 /// \brief Notifies the event to all observers that observe this object.
 ///
 /// The event is virtual, so any event can be passed.
-void Observable::notifyEvent(ObserveEvent &e){
+void Observable::notifyEvent(ObserveEvent &e)const{
 	ObserverList::iterator it = observers.begin();
 	for(; it != observers.end();){
 		// The iterator pointed object can be cleared in it->handleEvent, so we

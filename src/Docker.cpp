@@ -164,13 +164,13 @@ bool Docker::undock(Dockable *e){
 	return true;
 }
 
-bool Docker::unlink(Observable *o){
+bool Docker::unlink(const Observable *o){
 	unlinkList(el, o);
 	// Make sure the super class processes the event too.
 	return st::unlink(o);
 }
 
-bool Docker::handleEvent(Observable *o, ObserveEvent &e){
+bool Docker::handleEvent(const Observable *o, ObserveEvent &e){
 	if(InterpretEvent<TransitEvent>(e)){
 		return unlink(o);
 	}

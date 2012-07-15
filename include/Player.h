@@ -155,7 +155,10 @@ public:
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void transit_cs(CoordSys *cs); ///< Explicitly change current CoordSys, keeping position, velocity and rotation.
-	bool unlink(Observable *);
+
+	// Observer member function overrides
+	bool unlink(const Observable *);
+
 	void rotateLook(double dx, double dy);
 	FreelookMover *const freelook;
 	CameraController *const cockpitview;

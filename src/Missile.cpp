@@ -1,3 +1,5 @@
+/** \brief Implementation of Missile class.
+ */
 #include "Missile.h"
 #include "Viewer.h"
 #ifndef DEDICATED
@@ -25,7 +27,10 @@ const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32
 
 const float Missile::maxfuel = 120.;
 const double Missile::maxspeed = 1.;
-std::map<const Entity *, Missile *> Missile::targetmap;
+Missile::TargetMap Missile::targetmap;
+//std::map<const Entity *, Missile *> Missile::targetmap;
+
+ObserveEventID Missile::UnlinkEvent::sid = "Unlink";
 
 
 Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0){
@@ -44,6 +49,8 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 }
 
 Missile::~Missile(){
+	if(pf)
+		ImmobilizeTefpol3D(pf);
 	if(enemy)
 		unlinkTarget();
 }
@@ -419,8 +426,8 @@ void Missile::anim(double dt){
 
 #ifndef DEDICATED
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
-	if(pf && w != oldw)
-		ImmobilizeTefpol3D(pf);
+//	if(pf && w != oldw)
+//		ImmobilizeTefpol3D(pf);
 #endif
 }
 
@@ -443,7 +450,7 @@ double Missile::hitradius()const{
 
 void Missile::unlinkTarget(){
 	// This case should not happen
-	if(!targetmap[enemy]){
+/*	if(!targetmap[enemy]){
 		targetmap.erase(enemy);
 		return;
 	}
@@ -452,11 +459,12 @@ void Missile::unlinkTarget(){
 	}
 	else{
 		Missile *prev;
-		for(prev = targetmap[enemy]; prev; prev = prev->targetlist) if(prev->targetlist != this){
+		for(prev = targetmap[enemy]; prev; prev = prev->targetlist) if(prev->targetlist == this){
 			prev->targetlist = targetlist;
 			break;
 		}
-	}
+	}*/
+	notifyEvent(UnlinkEvent(targetlist));
 	if(!targetmap[enemy])
 		targetmap.erase(enemy);
 }

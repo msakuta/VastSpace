@@ -226,7 +226,7 @@ void LMissileTurret::tryshoot(){
 
 double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
 	double accumdamage = 0.;
-	std::map<const Entity *, Missile *>::iterator it = Missile::targetmap.find(pt2);
+	Missile::TargetMap::iterator it = Missile::targetmap.find(pt2);
 	if(it != Missile::targetmap.end()) for(Missile *pm = it->second; pm; pm = pm->targetlist){
 		accumdamage += pm->damage;
 		if(pt2->health < accumdamage)

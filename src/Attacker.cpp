@@ -44,7 +44,7 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), eng
 	init();
 	static int count = 0;
 	for(int i = 0; i < hardpoints.size(); i++){
-		turrets[i] = (true || count % 2 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]));
+		turrets[i] = (false || count % 2 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]));
 		if(aw)
 			aw->addent(turrets[i]);
 	}

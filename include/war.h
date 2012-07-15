@@ -75,7 +75,7 @@ public:
 		EntityPtr &operator=(Entity *o){
 			return static_cast<EntityPtr&>(WeakPtr<Entity>::operator=(o));
 		}
-		bool handleEvent(Observable *o, ObserveEvent &e);
+		bool handleEvent(const Observable *o, ObserveEvent &e);
 	};
 
 	/// \brief Type of Entity list.
@@ -146,8 +146,8 @@ public:
 	int countBullets()const;
 
 	// Observer member function overrides
-	bool unlink(Observable *);
-	bool handleEvent(Observable *, ObserveEvent &);
+	bool unlink(const Observable *);
+	bool handleEvent(const Observable *, ObserveEvent &);
 
 	CoordSys *cs; ///< redundant pointer to indicate belonging coordinate system
 	Player *pl; ///< Player pointer
@@ -157,7 +157,7 @@ public:
 	double realtime; ///< Time accumulator for this WarField. Some WarFields (or CoordSys') could have different progression of time.
 
 protected:
-	void unlinkList(EntityList &el, Observable *o);
+	void unlinkList(EntityList &el, const Observable *o);
 };
 
 class btRigidBody;
@@ -184,7 +184,7 @@ public:
 //	virtual void dive(SerializeContext &, void (Serializable::*)(SerializeContext &));
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual bool unlink(Observable *o);
+	virtual bool unlink(const Observable *o);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);

@@ -161,7 +161,7 @@ void WarField::postframe(){
 //		e->postframe();
 }
 
-bool WarField::EntityPtr::handleEvent(Observable *o, ObserveEvent &e){
+bool WarField::EntityPtr::handleEvent(const Observable *o, ObserveEvent &e){
 	if(TransitEvent *pe = InterpretEvent<TransitEvent>(e)){
 		if(ptr){
 			ptr->removeWeakPtr(this);
@@ -221,13 +221,13 @@ Player *WarField::getPlayer(){
 		return root->toUniverse()->ppl;
 }
 
-bool WarField::unlink(Observable *o){
+bool WarField::unlink(const Observable *o){
 	unlinkList(el, o);
 	unlinkList(bl, o);
 	return true;
 }
 
-bool WarField::handleEvent(Observable *o, ObserveEvent &e){
+bool WarField::handleEvent(const Observable *o, ObserveEvent &e){
 	if(InterpretEvent<TransitEvent>(e)){
 		// Just unlink transiting Entities
 		unlink(o);
@@ -237,7 +237,7 @@ bool WarField::handleEvent(Observable *o, ObserveEvent &e){
 		return Observer::handleEvent(o, e);
 }
 
-void WarField::unlinkList(EntityList &el, Observable *o){
+void WarField::unlinkList(EntityList &el, const Observable *o){
 	EntityList::iterator it = el.begin();
 	while(it != el.end()){
 		EntityList::iterator next = it;
@@ -407,7 +407,7 @@ void WarSpace::clientUpdate(double dt){
 #endif
 }
 
-bool WarSpace::unlink(Observable *o){
+bool WarSpace::unlink(const Observable *o){
 	st::unlink(o);
 
 	// Object tree manages pointers in its own with WeaPtrs.

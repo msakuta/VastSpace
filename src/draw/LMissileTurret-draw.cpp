@@ -3,7 +3,7 @@
  */
 #include "LTurret.h"
 #include "Viewer.h"
-#include "../Missile.h"
+#include "Missile.h"
 #include "draw/material.h"
 #include "draw/effects.h"
 #include "draw/WarDraw.h"

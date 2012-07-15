@@ -443,7 +443,7 @@ void Player::transit_cs(CoordSys *cs){
 	this->cs = cs;
 }
 
-bool Player::unlink(Observable *pe){
+bool Player::unlink(const Observable *pe){
 //	chases.erase(reinterpret_cast<Entity*>(pe));
 	// chases.erase() cannot be used because the raw pointer value changes when upcasting from multiple-inherited object to
 	// the super class, and we do not use dynamic cast. We must iterate and find the pointer in the set to erase one.

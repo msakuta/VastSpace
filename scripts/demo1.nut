@@ -126,7 +126,7 @@ function frameproc(dt){
 				e.race = 0;
 			}*/
 		}
-		if(assaults < 1 && countents(cs, 0, "Assault") < 1){
+		if(false && assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;
 			if(docker != null){
 				local be = docker.addent("Assault");
@@ -134,14 +134,14 @@ function frameproc(dt){
 			}
 			assaults++;
 		}
-		if(racec[1] < 2){
+		if(racec[1] < 20){
 			local d = redbase.docker;
-/*			if(d != null){
+			if(d != null){
 				local e = d.addent("Sceptor");
 				e.race = 1;
-			}*/
+			}
 		}
-		if(countents(cs, 1, "Beamer") < 1){
+		if(false && countents(cs, 1, "Beamer") < 1){
 			local docker = redbase.docker;
 			if(docker != null){
 				local be = docker.addent("Beamer");

@@ -1,0 +1,11 @@
+model_motion 2
+{
+	keyframe 1 10
+	{
+		"missile_launcher_arm" 0 0 0 1 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"missile_launcher_arm" 0 0 0 1 0 200 0 1
+	}
+}

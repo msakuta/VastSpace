@@ -9,44 +9,48 @@
 #include "draw/WarDraw.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
 
 void LMissileTurret::draw(wardraw_t *wd){
+	static OpenGLState::weak_ptr<bool> init;
 	// Viewing volume culling
 	if(wd->vw->gc->cullFrustum(pos, .03))
 		return;
 	// Scale too small culling
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
-	static OpenGLState::weak_ptr<suf_t *> suf_turret = NULL, suf_barrel = NULL;
-	static suftex_t *pst_turret, *pst_barrel;
+//	static OpenGLState::weak_ptr<suf_t *> suf_turret = NULL, suf_barrel = NULL;
+//	static suftex_t *pst_turret, *pst_barrel;
+	static Model *model = NULL;
+	static Motion *motions[1];
 	double scale;
-	if(!suf_turret){
-		suf_turret.create(*openGLState);
-		*suf_turret = CallLoadSUF("models/missile_launcher.bin");
-		if(*suf_turret){
+	if(!init/*suf_turret*/){
+		model = LoadMQOModel("models/missile_launcher.mqo");
+		motions[0] = LoadMotion("models/missile_launcher_deploy.mot");
+//		suf_turret.create(*openGLState);
+//		*suf_turret = CallLoadSUF("models/missile_launcher.bin");
+/*		if(*suf_turret){
 			CacheSUFMaterials(*suf_turret);
 			pst_turret = gltestp::AllocSUFTex(*suf_turret);
-		}
+		}*/
+		init.create(*openGLState);
 	}
-	if(!suf_barrel){
+/*	if(!suf_barrel){
 		suf_barrel.create(*openGLState);
 		*suf_barrel = CallLoadSUF("models/missile_launcher_barrel.bin");
 		if(*suf_barrel){
 			CacheSUFMaterials(*suf_barrel);
 			pst_barrel = gltestp::AllocSUFTex(*suf_barrel);
 		}
-	}
+	}*/
 
-/*	static const GLfloat rotaxis2[16] = {
-		-1,0,0,0,
-		0,1,0,0,
-		0,0,-1,0,
-		0,0,0,1,
-	};*/
+	// This method has an advantage in extensibility, but has more cost to calculate.
+	MotionPose mp[1];
+	motions[0]->interpolate(mp[0], deploy * 10.);
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_ENABLE_BIT);
 	glPushMatrix();
@@ -55,22 +59,23 @@ void LMissileTurret::draw(wardraw_t *wd){
 	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
 	glPushMatrix();
 	gldScaled(bscale);
-//	glMultMatrixf(rotaxis2);
 	glScalef(-1,1,-1);
-	if(*suf_turret)
-		DecalDrawSUF(*suf_turret, SUF_ATR, NULL, pst_turret, NULL, NULL);
+	DrawMQOPose(model, mp);
+//	if(*suf_turret)
+//		DecalDrawSUF(*suf_turret, SUF_ATR, NULL, pst_turret, NULL, NULL);
 	glPopMatrix();
-	if(*suf_barrel){
+/*	if(*suf_barrel){
 		const Vec3d pos = Vec3d(0, 200, 0) * deploy;
 		Vec3d joint = Vec3d(0, 120, 60);
+
 		gldScaled(bscale);
 		gldTranslate3dv(pos + joint);
 		glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
 		gldTranslate3dv(-joint);
 //		glMultMatrixf(rotaxis2);
 		glScalef(-1,1,-1);
-		DecalDrawSUF(*suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
-	}
+//		DecalDrawSUF(*suf_barrel, SUF_ATR, NULL, pst_barrel, NULL, NULL);
+	}*/
 	glPopMatrix();
 	glPopAttrib();
 }

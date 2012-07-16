@@ -395,8 +395,10 @@ public:
 	size_type erase(T* t){
 		// gcc does not allow unnamed temporary objects passed as reference.
 		iterator it = find(t);
+		// Now we have to return the value in VC9. The variable 'it' is not valid after erase().
+		size_type ret = it != end();
 		erase(it);
-		return it != end();
+		return ret;
 	}
 	void clear(){
 		for(iterator it = map.begin(); it != map.end(); it++)

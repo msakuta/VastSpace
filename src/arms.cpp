@@ -331,8 +331,10 @@ void MTurret::anim(double dt){
 			pydst[0] -= MTURRETMANUALROTSPEED * dt;
 		a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
 		a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
-		if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
-			tryshoot();
+		if(game->isServer()){
+			if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
+				tryshoot();
+			}
 		}
 	}
 	else if(target && wantsFollowTarget()) do{/* estimating enemy position */
@@ -364,7 +366,7 @@ void MTurret::anim(double dt){
 			a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 
 		/* shooter logic */
-		while(a->cooldown < dt){
+		if(game->isServer()) while(a->cooldown < dt){
 			double yaw = a->py[1];
 			double pitch = a->py[0];
 

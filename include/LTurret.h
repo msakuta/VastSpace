@@ -52,6 +52,7 @@ public:
 //	virtual void unserialize(UnserializeContext &sc);
 	virtual double hitradius()const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual double bulletspeed()const;

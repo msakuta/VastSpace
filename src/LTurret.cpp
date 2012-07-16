@@ -148,7 +148,7 @@ void LTurret::shootEffect(const Vec3d&, const Vec3d&){}
 
 
 
-LMissileTurret::LMissileTurret(Game *game) : st(game){
+LMissileTurret::LMissileTurret(Game *game) : st(game), deploy(0){
 }
 
 LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), deploy(0){
@@ -179,6 +179,10 @@ void LMissileTurret::anim(double dt){
 		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, LTURRETROTSPEED * dt, 2 * M_PI) - M_PI, lturret_range[0][0], lturret_range[0][1]);
 //		py[1] = approach(py[1], 0., dt, 0.);
 	}
+}
+
+void LMissileTurret::clientUpdate(double dt){
+	anim(dt);
 }
 
 double LMissileTurret::bulletspeed()const{return 1.;}

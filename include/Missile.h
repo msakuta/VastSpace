@@ -23,7 +23,7 @@ protected:
 	void updateFpol();
 public:
 	typedef Bullet st;
-	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0){}
+	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0), targetnext(NULL), targetprev(NULL){}
 	Missile(Entity *parent, float life, double damage, Entity *target = NULL);
 	~Missile();
 	static const unsigned classid;
@@ -37,45 +37,46 @@ public:
 	virtual void enterField(WarField *);
 	static const double maxspeed;
 
-	/// \brief The event notified when a Missile in a damage accumulation chain gets deleted.
-	struct UnlinkEvent : public ObserveEvent{
-		static ObserveEventID sid;
-		ObserveEventID id()const{return sid;}
-		UnlinkEvent(Missile *next) : next(next){}
-		Missile *next;
-	};
-
-	/// \brief The list node pointing to the next node.
+	/// \brief The head node in the linked list for a targetted object.
 	///
-	/// If the pointed node (next element) gets deleted, this pointer will automatically
-	/// become to point to the next element's next element.
-	class MissileList : public WeakPtr<Missile>{
+	/// It is merely a pointer to Missile object, but has a destructor that automatically 
+	/// clear the reference from the pointed node.
+	class MissileList{
 	public:
-		MissileList(Missile *m = NULL) : WeakPtr<Missile>(m){}
-		MissileList &operator=(Missile *m){
-			WeakPtr<Missile>::operator =(m);
+		Missile *ptr;
+		MissileList(Missile *a = NULL) : ptr(a){}
+		~MissileList(){
+			if(ptr)
+				ptr->targetprev = NULL;
+		}
+		MissileList &operator=(Missile *a){
+			ptr = a;
 			return *this;
 		}
-		/// We use UnlinkEvent to replace the next pointer rather than to override unlink().
-		/// That's because when unlink() is called, pointed object (Missile) is already reduced to
-		/// Observable, so we cannot assure Missile class member variable is still valid.
-		/// We could downcast the Observable pointer to Missile pointer, but it's conceptually
-		/// undesirable for OO mind.
-		virtual bool handleEvent(const Observable *o, ObserveEvent &e){
-			if(UnlinkEvent *ue = InterpretEvent<UnlinkEvent>(e)){
-				ptr->removeObserver(this);
-				ptr = ue->next;
-				if(ptr)
-					ptr->addObserver(this);
-				return true;
-			}
-			else
-				return WeakPtr<Missile>::handleEvent(o, e);
-		}
 	};
 
-	MissileList targetlist;
-//	static std::map<const Entity *, Missile *> targetmap;
+	/// \brief The pointer to the next node in the Missile list.
+	///
+	/// The linked list is bi-directional, i.e. each node has previous and next pointers.
+	/// The next (forward) pointer is used to trace the chain.
+	Missile *targetnext;
+
+	/// \brief The pointer to pointer that points back to us in the previous node.
+	///
+	/// It is used when this node is being deleted, to clear or replace the previous
+	/// pointer so that the whole list keeps containing the whole nodes but this one.
+	///
+	/// The previous node is not necessarily a Missile object but also can be head node
+	/// (MissileList object), but we do not want to treat the cases individually, so
+	/// it has a type of pointer to pointer.
+	Missile **targetprev;
+
+	/// \brief The type for the map object targetmap.
+	///
+	/// The second argument in the template parameters could be a ObservableSet<Missile>,
+	/// but it costs redundant memory blocks because a Missile can have up to only one
+	/// target.
+	/// The embedded linked list is fast, but unfortunately not intuitive.
 	typedef ObservableMap<const Entity, MissileList > TargetMap;
 
 	/// \brief The global map that accumulates estimated missile damages.

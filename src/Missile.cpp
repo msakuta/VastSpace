@@ -3,6 +3,7 @@
  */
 #include "Missile.h"
 #include "Viewer.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -21,9 +22,6 @@ const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32
 const float Missile::maxfuel = 120.;
 const double Missile::maxspeed = 1.;
 Missile::TargetMap Missile::targetmap;
-//std::map<const Entity *, Missile *> Missile::targetmap;
-
-ObserveEventID Missile::UnlinkEvent::sid = "Unlink";
 
 
 Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0){
@@ -32,8 +30,11 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 	enemy = target;
 
 	// Make list of missiles targetting to the same Entity.
-	targetlist = targetmap[target];
+	targetnext = targetmap[target].ptr;
 	targetmap[target] = this;
+	targetprev = &targetmap[target].ptr;
+	if(targetnext)
+		targetnext->targetprev = &targetnext;
 }
 
 Missile::~Missile(){
@@ -455,24 +456,18 @@ double Missile::hitradius()const{
 }
 
 void Missile::unlinkTarget(){
-	// This case should not happen
-/*	if(!targetmap[enemy]){
-		targetmap.erase(enemy);
-		return;
-	}
-	if(targetmap[enemy] == this){
-		targetmap[enemy] = targetlist;
-	}
-	else{
-		Missile *prev;
-		for(prev = targetmap[enemy]; prev; prev = prev->targetlist) if(prev->targetlist == this){
-			prev->targetlist = targetlist;
-			break;
+	if(game->isServer() && enemy){
+		// If targetnext is NULL, this object is the last node in the list.
+		if(targetnext)
+			targetnext->targetprev = targetprev;
+
+		// If targetprev is NULL, it's destroyed.
+		if(targetprev){
+			*targetprev = targetnext;
+			if(!targetmap[enemy].ptr)
+				targetmap.erase(enemy);
 		}
-	}*/
-	notifyEvent(UnlinkEvent(targetlist));
-	if(!targetmap[enemy])
-		targetmap.erase(enemy);
+	}
 }
 
 void Missile::enterField(WarField *w){

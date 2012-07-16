@@ -53,8 +53,8 @@ public:
 	virtual double hitradius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual void draw(wardraw_t *);
-	virtual void drawtra(wardraw_t *);
+	virtual void draw(WarDraw *);
+	virtual void drawtra(WarDraw *);
 	virtual double bulletspeed()const;
 	virtual float reloadtime()const;
 	virtual void tryshoot();

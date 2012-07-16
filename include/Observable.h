@@ -396,6 +396,7 @@ public:
 		// gcc does not allow unnamed temporary objects passed as reference.
 		iterator it = find(t);
 		erase(it);
+		return it != end();
 	}
 	void clear(){
 		for(iterator it = map.begin(); it != map.end(); it++)

@@ -38,8 +38,10 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 }
 
 Missile::~Missile(){
+#ifndef DEDICATED
 	if(pf)
 		ImmobilizeTefpol3D(pf);
+#endif
 	if(enemy)
 		unlinkTarget();
 }

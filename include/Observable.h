@@ -15,14 +15,19 @@ class WeakPtrBase;
 struct ObserveEvent;
 
 /// \brief The object that can watch an Observable object for its destruction.
+///
+/// We do not define virtual destructor because the user should not delete an
+/// Observer-derived object via Observer pointer, but more concrete pointer.
+/// We may revisit this specification some time.
 class EXPORT Observer{
 public:
-	/// \brief Called on destructor of the Entity being controlled.
+	/// \brief Called on destructor of the Observable being watched.
+	/// \param o The observed object being destroyed.
+	/// \returns True if handled.
 	///
-	/// Not all controller classes need to be destroyed, but some do. For example, the player could control
-	/// entities at his own will, but not going to be deleted everytime it switches controlled object.
-	/// On the other hand, Individual AI may be bound to and is destined to be destroyed with the entity.
-	virtual bool unlink(const Observable *);
+	/// Derived classes must override this function to define how to forget about
+	/// the watched object.
+	virtual bool unlink(const Observable *o);
 
 	/// \brief The function that receives event messages sent from the observed object.
 	/// \param o The observed object that invoked the event.
@@ -44,6 +49,7 @@ public:
 /// The observer list would be obsolete soon.
 class EXPORT Observable{
 public:
+	/// \brief The type for the internal list object.
 	typedef std::map<Observer*, int> ObserverList;
 	~Observable();
 	void addObserver(Observer *)const;
@@ -349,12 +355,12 @@ public:
 /// \sa ObservableList, ObservableSet
 template<typename T, typename R>
 class ObservableMap : public Observer{
-	std::map<T*, R> map;
-	ObservableMap &operator=(ObservableMap&){} ///< Prohibit copy construction.
 public:
-	typedef typename std::map<T*, R>::iterator iterator;
-	typedef typename std::map<T*, R>::const_iterator const_iterator;
-	typedef typename std::map<T*, R>::value_type value_type;
+	typedef std::map<T*,R> Map;
+	typedef typename Map::iterator iterator;
+	typedef typename Map::const_iterator const_iterator;
+	typedef typename Map::value_type value_type;
+	typedef typename Map::size_type size_type;
 	~ObservableMap(){
 		clear();
 	}
@@ -386,8 +392,10 @@ public:
 			map.erase(it);
 		}
 	}
-	void erase(T* t){
-		erase(map.find(t));
+	size_type erase(T* t){
+		// gcc does not allow unnamed temporary objects passed as reference.
+		iterator it = find(t);
+		erase(it);
 	}
 	void clear(){
 		for(iterator it = map.begin(); it != map.end(); it++)
@@ -401,6 +409,10 @@ public:
 			map.erase(it);
 		return true;
 	}
+protected:
+	Map map;
+private:
+	ObservableMap &operator=(ObservableMap&){} ///< Prohibit copy construction.
 };
 
 

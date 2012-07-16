@@ -58,6 +58,7 @@ Entity::Entity(WarField *aw) :
 }
 
 Entity::~Entity(){
+	assert(game->isClientDeleting() || game->isServer());
 	if(w)
 		leaveField(w);
 	if(bbody){

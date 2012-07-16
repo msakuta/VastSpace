@@ -9,6 +9,7 @@
 //#include "warutil.h"
 //#include "draw/material.h"
 #include "btadapt.h"
+#include "Game.h"
 extern "C"{
 #ifndef DEDICATED
 #include "bitmap.h"
@@ -391,7 +392,8 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
 			bulletkill(-1, NULL);
-			delete this;
+			if(game->isServer())
+				delete this;
 
 #ifndef DEDICATED
 			extern int bullet_hits;
@@ -411,7 +413,7 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 }
 
 void Bullet::anim(double dt){
-	if(!w)
+	if(!w || life < 0.)
 		return;
 	WarSpace *ws = *w;
 	Bullet *const pb = this;
@@ -421,7 +423,8 @@ void Bullet::anim(double dt){
 /*		if(hitobj)
 			*hitobj = NULL;
 		return 0;*/
-		delete this;
+		if(game->isServer())
+			delete this;
 		return;
 	}
 
@@ -538,13 +541,14 @@ void Bullet::anim(double dt){
 
 /// In the client, Bullet only advances as if there're no obstacles.
 void Bullet::clientUpdate(double dt){
-	if(grav){
+	anim(dt);
+/*	if(grav){
 		Vec3d accel = w->accel(pos, velo);
 		velo += accel * dt;
 	}
 	Vec3d move = velo * dt;
 	runlength += move.len();
-	pos += move;
+	pos += move;*/
 }
 
 double Bullet::hitradius()const{

@@ -161,6 +161,7 @@ Game::IdMap &Game::idmap(){
 void Game::idUnmap(UnserializeContext &sc){
 	unsigned long delsize;
 	sc.i >> delsize;
+	clientDeleting = true;
 	for(int i = 0; i < delsize; i++){
 		unsigned long id;
 		sc.i >> id;
@@ -171,6 +172,7 @@ void Game::idUnmap(UnserializeContext &sc){
 			sc.syncbuf->erase(id);
 		}
 	}
+	clientDeleting = false;
 
 	// We'll reconstruct player list from the input stream, so we need to clear the existing one.
 	players.clear();

@@ -65,7 +65,7 @@ public:
 	double flypower()const;
 	HSQUIRRELVM sqvm;
 
-	Game() : player(NULL), universe(NULL), sqvm(NULL), sqshare(NULL), idGenerator(1){
+	Game() : player(NULL), universe(NULL), sqvm(NULL), sqshare(NULL), idGenerator(1), clientDeleting(false){
 	}
 
 	~Game(){
@@ -119,11 +119,13 @@ public:
 
 	typedef std::vector<SerializableId> DeleteQue;
 	DeleteQue &getDeleteQue(){return deleteque;}
+	bool isClientDeleting()const{return clientDeleting;}
 protected:
 	IdMap idunmap;
 	SquirrelShare *sqshare;
 	Serializable::Id idGenerator;
 	DeleteQue deleteque;
+	bool clientDeleting;
 
 	int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
 	int stellar_coordsys(StellarContext &sc, CoordSys *cs);

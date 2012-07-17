@@ -204,6 +204,7 @@ function init_Universe(){
 	chart.width = 256;
 	chart.height = 128;
 	chart.addSeries("recvbytes");
+	chart.addSeries("framerate");
 }
 
 sysbut <- null;

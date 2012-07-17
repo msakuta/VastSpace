@@ -2,6 +2,9 @@
 #include "cmd.h"
 #include "../Application.h"
 #include "sqadapt.h"
+#include "antiglut.h"
+#include "glw/popup.h"
+#include "GLWmenu.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -18,6 +21,40 @@ GLWchart::GLWchart(const char *title, ChartSeries *_series) : st(title){
 		series.push_back(_series);
 }
 
+int GLWchart::mouse(GLwindowState &ws, int button, int state, int x, int y){
+	struct PopupMenuItemToggleShow : public PopupMenuItem{
+		typedef PopupMenuItem st;
+		WeakPtr<GLWchart> p;
+		int index;
+		PopupMenuItemToggleShow(gltestp::dstring title, GLWchart *p, int index) : st(title), p(p), index(index){}
+		PopupMenuItemToggleShow(const PopupMenuItemToggleShow &o) : st(o), p(o.p), index(o.index){}
+		virtual void execute(){
+			if(p)
+				p->setSeriesVisible(index, Toggle);
+		}
+		virtual PopupMenuItem *clone(void)const{return new PopupMenuItemToggleShow(*this);}
+	};
+
+	if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
+		PopupMenu pm;
+		for(int i = 0; i < series.size(); i++)
+			pm.append(new PopupMenuItemToggleShow(gltestp::dstring(series[i]->visible ? "Hide " : "Show ") << series[i]->labelname(), this, i));
+
+		glwPopupMenu(ws, pm);
+	}
+	return 1;
+}
+
+void GLWchart::setSeriesVisible(int i, Visibility v){
+	if(i < 0 || series.size() <= i)
+		return;
+	switch(v){
+		case Show: series[i]->visible = true; break;
+		case Hide: series[i]->visible = false; break;
+		case Toggle: series[i]->visible = !series[i]->visible; break;
+	}
+}
+
 void GLWchart::anim(double dt){
 	for(int i = 0; i < series.size(); i++){
 		if(series[i])
@@ -28,7 +65,7 @@ void GLWchart::anim(double dt){
 void GLWchart::draw(GLwindowState &ws, double t){
 	for(int i = 0; i < series.size(); i++){
 		ChartSeries *cs = series[i];
-		if(cs){
+		if(cs && cs->visible){
 			GLWrect cr = clientRect();
 
 			glColor4fv(cs->color());
@@ -71,13 +108,16 @@ SQInteger GLWchart::sqf_constructor(HSQUIRRELVM v){
 }
 
 class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
+	virtual gltestp::dstring labelname()const{return "Frame Time";}
 	virtual double timeProc(double dt){return dt;}
 };
 class FrameRateChartSeries : public GLWchart::TimeChartSeries{
+	virtual gltestp::dstring labelname()const{return "Frame Rate";}
 	virtual Vec4f color()const{return Vec4f(0,0,1,1);}
-	virtual double timeProc(double dt){return 1. / dt;}
+	virtual double timeProc(double dt){return dt == 0. ? 0. : 1. / dt;}
 };
 class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
+	virtual gltestp::dstring labelname()const{return "Received bytes";}
 	virtual Vec4f color()const{return Vec4f(1,0,0,1);}
 	virtual double timeProc(double dt){
 		return application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes;

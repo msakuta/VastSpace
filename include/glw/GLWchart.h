@@ -15,14 +15,21 @@ public:
 		virtual int count() const = 0;
 		virtual Vec4f color()const{return Vec4f(1,1,1,1);}
 		virtual void anim(double dt, GLWchart *){}
+		virtual gltestp::dstring labelname()const{return "none";}
 		virtual gltestp::dstring labelstr()const{return "";}
+		bool visible;
 	};
+
+	enum Visibility{Show,Hide,Toggle};
 
 	class TimeChartSeries;
 
 	GLWchart(const char *title, ChartSeries *_series = NULL);
 
+	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
+
 	void addSeries(ChartSeries *s){series.push_back(s);}
+	void setSeriesVisible(int i, Visibility v);
 
 	static bool sq_define(HSQUIRRELVM v);
 	static SQInteger sqf_constructor(HSQUIRRELVM v);

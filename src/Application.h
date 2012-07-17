@@ -136,6 +136,8 @@ public:
 //	PictVertex *pvroot, *pvfree, vertices[128];
 	std::list<std::vector<unsigned char> > recvbuf; ///< Receive buffer queue. Mutex locked by hGameMutex.
 
+	size_t recvbytes;
+
 	ClientApplication();
 	~ClientApplication();
 	int joingame(const char *host, int port);

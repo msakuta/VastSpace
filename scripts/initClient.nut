@@ -198,6 +198,12 @@ function init_Universe(){
 
 	cmd("r_overlay 0");
 	cmd("r_move_path 1");
+
+	chart <- GLWchart();
+	chart.y = 368;
+	chart.width = 256;
+	chart.height = 128;
+	chart.addSeries("recvbytes");
 }
 
 sysbut <- null;

@@ -15,6 +15,7 @@ public:
 		virtual int count() const = 0;
 		virtual Vec4f color()const{return Vec4f(1,1,1,1);}
 		virtual void anim(double dt, GLWchart *){}
+		virtual gltestp::dstring labelstr()const{return "";}
 	};
 
 	class TimeChartSeries;
@@ -22,6 +23,10 @@ public:
 	GLWchart(const char *title, ChartSeries *_series = NULL);
 
 	void addSeries(ChartSeries *s){series.push_back(s);}
+
+	static bool sq_define(HSQUIRRELVM v);
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
+	static SQInteger sqf_addSeries(HSQUIRRELVM v);
 
 protected:
 	std::vector<ChartSeries *> series;
@@ -49,6 +54,7 @@ class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
 		for(int i = 0; i < chart.size(); i++) if(normalizer < chart[i])
 			normalizer = chart[i];
 	}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << normalizer;}
 protected:
 	virtual double timeProc(double dt) = 0;
 };

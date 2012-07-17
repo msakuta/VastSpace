@@ -1079,7 +1079,7 @@ void ClientApplication::display_func(void){
 				break;
 
 			sbuf = (const unsigned char*)server.sv->sendbuf;
-			size = server.sv->sendbufsiz;
+			recvbytes = size = server.sv->sendbufsiz;
 
 			// Output content being unserialized for debugging.
 			if(false && !fp){
@@ -1102,7 +1102,7 @@ void ClientApplication::display_func(void){
 				else{
 					// If a stream buffer is available, interpret it.
 					sbuf = &recvbuf.front().front();
-					size = recvbuf.front().size();
+					recvbytes = size = recvbuf.front().size();
 				}
 
 				// Output content being unserialized for debugging.

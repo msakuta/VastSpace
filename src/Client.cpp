@@ -16,7 +16,7 @@ struct JoinGameData{
 };
 
 
-ClientApplication::ClientApplication(){
+ClientApplication::ClientApplication() : recvbytes(0){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
 }
 

@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of GLWchart class and its related classes.
+ */
 #include "glw/GLWchart.h"
 #include "cmd.h"
 #include "../Application.h"
@@ -45,14 +48,10 @@ int GLWchart::mouse(GLwindowState &ws, int button, int state, int x, int y){
 	return 1;
 }
 
-void GLWchart::setSeriesVisible(int i, Visibility v){
+void GLWchart::setSeriesVisible(int i, FlagMod v){
 	if(i < 0 || series.size() <= i)
 		return;
-	switch(v){
-		case Show: series[i]->visible = true; break;
-		case Hide: series[i]->visible = false; break;
-		case Toggle: series[i]->visible = !series[i]->visible; break;
-	}
+	series[i]->visible = !!(v & (1 << !!series[i]->visible));
 }
 
 void GLWchart::anim(double dt){
@@ -137,9 +136,10 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	if(SQ_FAILED(sq_getinstanceup(v, 1, &up, NULL)) || !up)
 		throw SQFError("Something's wrong with Squirrel Class Instace of GLWchart.");
 	GLWchart *wnd = static_cast<GLWchart*>(static_cast<GLelement*>(*(WeakPtr<GLelement>*)up));
-	if(!strcmp(sstr, _SC("framerate"))){
+	if(!strcmp(sstr, _SC("frametime")))
+		wnd->addSeries(new FrameTimeChartSeries());
+	else if(!strcmp(sstr, _SC("framerate")))
 		wnd->addSeries(new FrameRateChartSeries());
-	}
 	else if(!strcmp(sstr, _SC("recvbytes")))
 		wnd->addSeries(new RecvBytesChartSeries());
 	return 0;

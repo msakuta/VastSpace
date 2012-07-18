@@ -1,14 +1,20 @@
+/** \file
+ * \brief Definition of GLWchart class.
+ */
 #ifndef GLWCHART_H
 #define GLWCHART_H
 
 #include "glwindow.h"
 #include <cpplib/vec4.h>
 
-
+/// \brief The window that is capable of showing multiple series of values as polygonal lines.
+///
+/// The embedded series is represented by ChartSeries derived classes.
 class EXPORT GLWchart : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
 
+	/// \brief The internal base class that represents a series in a chart.
 	class ChartSeries{
 	public:
 		virtual double value(int index) = 0;
@@ -20,7 +26,11 @@ public:
 		bool visible;
 	};
 
-	enum Visibility{Show,Hide,Toggle};
+	/// \brief A flag modification code that specifies how the flag should be changed from the previous state.
+	///
+	/// It's merely a single-bit truth table. The value's bit 0 designates the resulting state when the
+	/// previous state is off. In contrast, bit 1 indicates the resulting state when it was on.
+	enum FlagMod{Set = 3, Clear = 0, Toggle = 1, Keep = 2};
 
 	class TimeChartSeries;
 
@@ -29,7 +39,7 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 
 	void addSeries(ChartSeries *s){series.push_back(s);}
-	void setSeriesVisible(int i, Visibility v);
+	void setSeriesVisible(int i, FlagMod v);
 
 	static bool sq_define(HSQUIRRELVM v);
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
@@ -44,6 +54,7 @@ protected:
 };
 
 
+/// \brief The series that records track of a value in history.
 class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
 	std::vector<double> chart;
 	double normalizer;
@@ -63,6 +74,7 @@ class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
 	}
 	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << normalizer;}
 protected:
+	/// \breif The derived classes must override this function to mark a value in time line.
 	virtual double timeProc(double dt) = 0;
 };
 

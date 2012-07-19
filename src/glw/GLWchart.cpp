@@ -123,6 +123,58 @@ class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
 	}
 };
 
+/// \brief The base class for a histogram chart.
+class HistogramChartSeries : public GLWchart::ChartSeries{
+public:
+	HistogramChartSeries() : maxvalue(1){}
+protected:
+	std::vector<int> values;
+	int maxvalue;
+	virtual int minThreshold()const{return 0;}
+	virtual int getValue(double dt)const = 0;
+	void anim(double dt, GLWchart *c){
+		int v = getValue(dt);
+		if(v <= minThreshold())
+			return;
+		if(values.size() <= v)
+			values.resize(v+1);
+		values[v]++;
+		if(maxvalue < values[v])
+			maxvalue = values[v];
+	}
+	double value(int index){return (double)values[index] / maxvalue;}
+	int count()const{return values.size();}
+	virtual gltestp::dstring labelname()const{return "histogram";}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring(maxvalue) << "/" << values.size();}
+};
+
+/// \brief Histogram of frame time.
+class FrameTimeHistogramChartSeries : public HistogramChartSeries{
+	static const double cellsize;
+	int getValue(double dt)const{return dt / cellsize;}
+	virtual Vec4f color()const{return Vec4f(0,1,1,1);}
+	virtual gltestp::dstring labelname()const{return "Frame time histogram";}
+};
+const double FrameTimeHistogramChartSeries::cellsize = 0.001;
+
+/// \brief Histogram of frame rate [fps].
+class FrameRateHistogramChartSeries : public HistogramChartSeries{
+	static const double cellsize;
+	int getValue(double dt)const{return dt == 0. ? 0 : 1. / dt / cellsize;}
+	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
+	virtual gltestp::dstring labelname()const{return "Frame rate histogram";}
+};
+const double FrameRateHistogramChartSeries::cellsize = 0.1;
+
+/// \brief Histogram of received bytes in the frame.
+class RecvBytesHistogramChartSeries : public HistogramChartSeries{
+	static const int cellsize = 32;
+	int minThreshold()const{return 4;}
+	int getValue(double)const{return (application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes) / cellsize;}
+	virtual Vec4f color()const{return Vec4f(1,1,0,1);}
+	virtual gltestp::dstring labelname()const{return "Received bytes histogram";}
+};
+
 /// Squirrel add series
 SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
@@ -142,6 +194,12 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		wnd->addSeries(new FrameRateChartSeries());
 	else if(!strcmp(sstr, _SC("recvbytes")))
 		wnd->addSeries(new RecvBytesChartSeries());
+	else if(!strcmp(sstr, _SC("frametimehistogram")))
+		wnd->addSeries(new FrameTimeHistogramChartSeries());
+	else if(!strcmp(sstr, _SC("frameratehistogram")))
+		wnd->addSeries(new FrameRateHistogramChartSeries());
+	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
+		wnd->addSeries(new RecvBytesHistogramChartSeries());
 	return 0;
 }
 

@@ -244,17 +244,3 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	return 0;
 }
 
-
-class CmdRegister{
-	static int cmd_chart(int argc, char *argv[]){
-		GLWchart *wnd = new GLWchart("Frame time", new FrameTimeChartSeries);
-//		wnd->addSeries(new FrameRateChartSeries());
-		wnd->addSeries(new RecvBytesChartSeries());
-		glwAppend(wnd);
-		return 0;
-	}
-public:
-	CmdRegister(){
-		CmdAdd("chart", cmd_chart);
-	}
-} cmdreg;

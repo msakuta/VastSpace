@@ -15,6 +15,8 @@ extern "C"{
 #include <stdlib.h>
 /*#include <GL/glut.h>*/
 
+namespace tent3d{
+
 /*#############################################################################
 	macro definitions
 #############################################################################*/
@@ -33,13 +35,13 @@ extern "C"{
 #define ENABLE_THICK 0
 #endif*/
 
-//#define TEP3_THICKNESS (TEP3_THICK|(TEP3_THICK<<1)|(TEP3_THICK<<2))
+#define TEP3_THICKNESS (TEP3_THICK|(TEP3_THICK<<1)|(TEP3_THICK<<2))
 #define THICK_BIT 7
 #define TEP_BLENDMASK (TEP_SOLIDBLEND|(TEP_SOLIDBLEND<<1))
-//#define TEP3_MOVABLE (1<<16) /* cannot be freed unless explicitly specified by the caller */
-const tefpol_flags_t TEP3_MOVABLE = (1<<16);
-//#define TEP3_SKIP    (1<<17) /* skip generation of vertex for movable tefpol */
-const tefpol_flags_t TEP3_SKIP = (1<<17);
+#define TEP3_MOVABLE (Tefpol::Movable) /* cannot be freed unless explicitly specified by the caller */
+//const tefpol_flags_t TEP3_MOVABLE = (1<<16);
+#define TEP3_SKIP    (Tefpol::Skip) /* skip generation of vertex for movable tefpol */
+//const tefpol_flags_t TEP3_SKIP = (1<<17);
 
 #ifndef ABS
 #define ABS(a) (0<(a)?(a):-(a))
@@ -50,44 +52,6 @@ const tefpol_flags_t TEP3_SKIP = (1<<17);
 =============================================================================*/
 typedef struct color_sequence colseq_t;
 
-/* a set of auto-decaying line segments */
-typedef struct tent3d_fpol{
-	Vec3d pos;
-	Vec3d velo;
-	double life;
-	Vec3d grv;
-	const colseq_t *cs;
-	tefpol_flags_t flags; /* entity options */
-	unsigned cnt; /* generated trail node count */
-	struct te_vertex *head, *tail; /* polyline's */
-	struct tent3d_fpol *next;
-} tefpol_t;
-
-/* a tefpol can have arbitrary number of vertices in the vertices buffer. */
-typedef struct te_vertex{
-	Vec3d pos;
-	float dt;
-	struct te_vertex *next;
-} tevert_t;
-
-struct te_fpol_extra_list{
-	struct te_fpol_extra_list *next;
-	tefpol_t l[1]; /* variable */
-};
-
-typedef struct tent3d_fpol_list{
-	unsigned m;
-	unsigned ml;
-	unsigned mex;
-	tefpol_t *l;
-	tefpol_t *lfree, *lactv, *last;
-	te_fpol_extra_list *ex;
-	unsigned bs; /* verbose buffer size */
-#ifndef NDEBUG
-	struct tent3d_fpol_debug debug;
-#endif
-} tepl_t;
-
 /* global vertice pool, used by multiple entities */
 static struct te_vertice_list{
 	unsigned m;
@@ -95,14 +59,9 @@ static struct te_vertice_list{
 	tevert_t *lfree, *lfst;
 } svl = {0, NULL};
 
+typedef struct TefpolList tepl_t;
 
-/*const tefpol_flags_t TEP3_HEADFORWARD = (1<<1);
-const tefpol_flags_t TEP3_ROUGH = (1<<6);
-const tefpol_flags_t TEP3_REFLECT = (1<<5);
-const tefpol_flags_t TEP3_THICK = tefpol_flags_t(1 << tefpol_flags_t::ThickBit);
-const tefpol_flags_t TEP3_THICKER = tefpol_flags_t(2 << tefpol_flags_t::ThickBit);
-const tefpol_flags_t TEP3_THICKEST = tefpol_flags_t(3 << tefpol_flags_t::ThickBit);
-const tefpol_flags_t TEP3_FAINT = tefpol_flags_t(4 << tefpol_flags_t::ThickBit);*/
+
 
 
 /*-----------------------------------------------------------------------------
@@ -113,7 +72,7 @@ const tefpol_flags_t TEP3_FAINT = tefpol_flags_t(4 << tefpol_flags_t::ThickBit);
 #define checkVertices(a)
 #else
 static void checkVertices(tepl_t *p){
-	tefpol_t *pl = p->lactv;
+	Tefpol *pl = p->lactv;
 	static int invokes = 0;
 	char *ok;
 	ok = calloc(sizeof*ok, svl.m);
@@ -191,18 +150,16 @@ static void freeVertex(tevert_t **pp, tevert_t *plast){
 #endif
 }
 
-static void freeTefpolExtra(struct te_fpol_extra_list *p){
+void TefpolList::freeTefpolExtra(struct te_fpol_extra_list *p){
 	if(p->next) freeTefpolExtra(p->next);
 	free(p);
 }
 
-tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit){
+TefpolList::TefpolList(unsigned maxt, unsigned init, unsigned unit){
 	int i;
-	tepl_t *ret;
-	ret = new tepl_t;
-	if(!ret) return NULL;
-	ret->lfree = ret->l = (tefpol_t*)malloc(init * sizeof *ret->l);
-	if(!ret->l) return NULL;
+	TefpolList *ret = this;
+	ret->lfree = ret->l = (Tefpol*)malloc(init * sizeof *ret->l);
+	if(!ret->l) throw NULL;
 	ret->m = maxt;
 	ret->ml = ret->bs = init;
 	ret->mex = unit;
@@ -212,7 +169,7 @@ tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit){
 		ret->l[i].next = &ret->l[i+1];
 	if(init) ret->l[init-1].next = NULL;
 #ifndef NDEBUG
-	ret->debug.so_tefpol3_t = sizeof(tefpol_t);
+	ret->debug.so_tefpol3_t = sizeof(Tefpol);
 	ret->debug.so_tevert3_t = sizeof(tevert_t);
 	ret->debug.tefpol_m = ret->bs;
 	ret->debug.tefpol_c = 0;
@@ -220,28 +177,30 @@ tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit){
 	ret->debug.tevert_c = 0;
 	ret->debug.tevert_s = 0;
 #endif
-	return ret;
 }
 
 /* destructor and deallocator */
 void DelTefpol(tepl_t *p){
-	if(p->l){
-		tefpol_t *pl = p->lactv;
+	delete p;
+}
+
+TefpolList::~TefpolList(){
+	if(this->l){
+		Tefpol *pl = this->lactv;
 		while(pl){
 			freeVertex(&pl->head, pl->tail);
 			pl = pl->next;
 		}
-		free(p->l);
+		free(this->l);
 	}
-	if(p->ex) freeTefpolExtra(p->ex);
-	delete(p);
+	if(this->ex) freeTefpolExtra(this->ex);
 }
 
-static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t &f, double life)
+Tefpol *TefpolList::allocTefpol3D(const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t f, double life)
 {
-
-	tefpol_t *pl;
+	TefpolList *const p = this;
+	Tefpol *pl;
 	if(!p || !p->m) return NULL;
 	pl = p->lfree;
 	if(!pl){
@@ -262,7 +221,7 @@ static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
 #endif
 		}
 		else{
-			tefpol_t **ppl = &p->lactv; /* reuse the oldest active node */
+			Tefpol **ppl = &p->lactv; /* reuse the oldest active node */
 			while(*ppl && (*ppl)->flags & TEP3_MOVABLE) ppl = &(*ppl)->next; /* skip movable nodes */
 			if(!*ppl || *ppl == p->last) return NULL;
 			pl = *ppl;
@@ -313,19 +272,8 @@ static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
 	return pl;
 }
 
-void AddTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t f, double life)
-{
-	allocTefpol3D(p, pos, velo, grv, col, tefpol_flags_t(f & ~(TEP3_MOVABLE | TEP3_SKIP)), life);
-}
-
-tefpol_t *AddTefpolMovable3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t f, double life)
-{
-	return allocTefpol3D(p, pos, velo, grv, col, tefpol_flags_t(f | TEP3_MOVABLE), life);
-}
-
-void MoveTefpol3D(tefpol_t *pl, const Vec3d &pos, const Vec3d &velo, const double life, int skip){
+void Tefpol::move(const Vec3d &pos, const Vec3d &velo, const double life, int skip){
+	Tefpol *pl = this;
 	if(!pl || !(pl->flags & TEP3_MOVABLE))
 		return;
 	pl->pos = pos;
@@ -340,22 +288,23 @@ void MoveTefpol3D(tefpol_t *pl, const Vec3d &pos, const Vec3d &velo, const doubl
 		pl->flags &= ~TEP3_SKIP;
 }
 
-void ImmobilizeTefpol3D(tefpol_t *pl){
-	pl->flags &= ~TEP3_MOVABLE;
+void Tefpol::immobilize(){
+	flags &= ~TEP3_MOVABLE;
 }
 
-void AnimTefpol3D(tepl_t *p, double dt){
+void TefpolList::anim(double dt){
+	TefpolList *p = this;
 #ifndef NDEBUG
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
 #endif
-	tefpol_t *pl = p->lactv, **ppl = &p->lactv;
+	Tefpol *pl = p->lactv, **ppl = &p->lactv;
 
 	while(pl){
-		tefpol_t *pl2;
+		Tefpol *pl2;
 #	if ENABLE_THICK
-		tefpol_flags_t thickness = pl->flags.getThickness();
+		tefpol_flags_t thickness = pl->flags & TEP3_THICKNESS;
 		double width =
 			thickness == TEP3_THICK ? .001 :
 			thickness == TEP3_THICKER ? .002 : 
@@ -376,7 +325,7 @@ void AnimTefpol3D(tepl_t *p, double dt){
 
 			/* roll pointers */
 			if(pl == p->last && *ppl != p->lactv)
-				p->last = (tefpol_t*)((byte*)ppl - offsetof(tefpol_t, next));
+				p->last = (Tefpol*)((byte*)ppl - offsetof(Tefpol, next));
 			pl2 = pl->next;
 			*ppl = pl->next;
 			pl->next = p->lfree;
@@ -580,7 +529,7 @@ novertice:
 #ifndef NDEBUG
 	if(p->ml){
 	unsigned int i = 0;
-	tefpol_t *pl = p->lactv;
+	Tefpol *pl = p->lactv;
 	while(pl) i++, pl = pl->next;
 	p->debug.tefpol_c = i;
 	}
@@ -597,19 +546,19 @@ novertice:
 #endif
 }
 
-#ifndef NDEBUG
-const struct tent3d_fpol_debug *Tefpol3DDebug(const struct tent3d_fpol_list *tepl){
-	return &tepl->debug;
-}
-#endif
 
-void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *glc){
+void DrawTefpol3D(TefpolList *p, const Vec3d &view, const struct glcull *glc){
+	p->draw(view, glc);
+}
+
+void TefpolList::draw(const Vec3d &view, const glcull *glc){
+	TefpolList *const p = this;
 #ifndef NDEBUG
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
 #endif
-	tefpol_t *pl = p->lactv;
+	Tefpol *pl = p->lactv;
 #if DIRECTDRAW
 	BITMAP bm;
 	if(!pl) goto retur;
@@ -718,7 +667,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 				{
 #	if ENABLE_THICK
 				{
-				tefpol_flags_t thickness = pl->flags.getThickness();
+				tefpol_flags_t thickness = pl->flags & TEP3_THICKNESS;
 				double apparence;
 				static const double visdists[5] = {.25 * .25, .5 * .5, 1.5 * 1.5, .5 * .5, .5 * .5};
 				static const double thicknesses[5] = {.00, .001, .002, .005, .00025};
@@ -730,7 +679,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 				else if(thickness == TEP3_THICK && pv == pl->tail){
 					ncol = COLOR32RGBA(COLOR32R(ncol),COLOR32G(ncol),COLOR32B(ncol),0);
 				}
-				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness.ul >> thickness.ThickBit];
+				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
 				if(thickness && 1. < apparence/*VECSDIST(pv->pos, view) < visdists[thickness >> THICK_BIT]*/){
 					double width =
 						thickness == TEP3_THICK ? /*t < .5 ? t * .002 :*/ .001 :
@@ -881,4 +830,6 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 	}
 	p->debug.drawtefpol = TimeMeasLap(&tm);
 #endif
+}
+
 }

@@ -19,7 +19,6 @@
 #include "motion.h"
 #include "Game.h"
 #include "glw/popup.h"
-#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -387,7 +386,7 @@ void Defender::enterField(WarField *target){
 /*			if(this->pf[i])
 				ImmobilizeTefpol3D(this->pf[i]);*/
 			if(w && w->getTefpol3d())
-				this->pf[i] = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+				this->pf[i] = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 		}
 	}
 }
@@ -395,7 +394,7 @@ void Defender::enterField(WarField *target){
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 void Defender::leaveField(WarField *w){
 	for(int i = 0; i < 4; i++) if(this->pf[i]){
-		ImmobilizeTefpol3D(this->pf[i]);
+		this->pf[i]->immobilize();
 		this->pf[i] = NULL;
 	}
 	st::leaveField(w);
@@ -839,7 +838,7 @@ void Defender::anim(double dt){
 							else{
 								mother->dock(pt);
 								for(int i = 0; i < 4; i++) if(p->pf){
-									ImmobilizeTefpol3D(p->pf[i]);
+									p->pf[i]->immobilize();
 									p->pf[i] = NULL;
 								}
 								p->docked = true;
@@ -1146,7 +1145,7 @@ void Defender::anim(double dt){
 void Defender::clientUpdate(double dt){
 	for(int i = 0; i < 4; i++) if(pf[i]){
 		Mat4d mat5 = legTransform(i);
-		MoveTefpol3D(pf[i], mat5.vp3(Vec3d(0, 0, 130 * modelScale())), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+		pf[i]->move(mat5.vp3(Vec3d(0, 0, 130 * modelScale())), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
 

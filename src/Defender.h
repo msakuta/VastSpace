@@ -12,6 +12,7 @@
 #include "war.h"
 #include "arms.h"
 #include "shield.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/suf/sufdraw.h>
@@ -52,7 +53,7 @@ protected:
 	Vec3d dest;
 	float fcloak;
 	float heat;
-	struct tent3d_fpol *pf[4]; ///< Trailing smoke
+	Tefpol *pf[4]; ///< Trailing smoke
 	Docker *mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;
 	int paradec;

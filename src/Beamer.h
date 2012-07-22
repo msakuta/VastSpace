@@ -11,7 +11,7 @@ protected:
 	Vec3d integral;
 	double beamlen;
 	double cooldown;
-//	struct tent3d_fpol *pf[1];
+//	Tefpol *pf[1];
 //	scarry_t *dock;
 	float undocktime;
 public:

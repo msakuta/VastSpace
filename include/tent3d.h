@@ -79,7 +79,6 @@ struct tent3d_line_drawdata{
 	/* following are trivial members; caller need not to set them */
 	GLcull *pgc;
 };
-struct tent3d_fpol_list;
 struct glcull;
 
 EXPORT struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */

@@ -46,7 +46,7 @@ protected:
 	float undocktime;
 	Entity *docksite;
 	Entity *leavesite;
-	struct tent3d_fpol *pf[3]; ///< Trailing smoke
+	struct Tefpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
 public:
 	ContainerHead(Game *game) : st(game){init();}

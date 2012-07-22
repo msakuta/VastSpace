@@ -28,7 +28,6 @@
 #include "Game.h"
 #include "glw/popup.h"
 #include "ClientMessage.h"
-#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -186,7 +185,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	WarSpace *ws;
 #ifndef DEDICATED
 	if(w && (ws = static_cast<WarSpace*>(*w)))
-		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 #endif
 		p->pf = NULL;
@@ -253,10 +252,10 @@ bool Sceptor::undock(Docker *d){
 	mother = d;
 #ifndef DEDICATED
 	if(this->pf)
-		ImmobilizeTefpol3D(this->pf);
+		pf->immobilize();
 	WarSpace *ws;
 	if(w && w->getTefpol3d())
-		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		this->pf = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 #endif
 	d->baycool += 1.;
 	return true;
@@ -491,7 +490,7 @@ void Sceptor::enterField(WarField *target){
 
 #ifndef DEDICATED
 	if(ws)
-		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 #endif
 
 	if(ws && ws->bdw){
@@ -537,7 +536,7 @@ void Sceptor::enterField(WarField *target){
 void Sceptor::leaveField(WarField *w){
 #ifndef DEDICATED
 	if(pf){
-		ImmobilizeTefpol3D(pf);
+		pf->immobilize();
 		pf = NULL;
 	}
 #endif
@@ -1002,7 +1001,7 @@ void Sceptor::anim(double dt){
 								mother->dock(pt);
 #ifndef DEDICATED
 								if(p->pf){
-									ImmobilizeTefpol3D(p->pf);
+									p->pf->immobilize();
 									p->pf = NULL;
 								}
 #endif
@@ -1317,7 +1316,7 @@ void Sceptor::clientUpdate(double dt){
 	anim(dt);
 #ifndef DEDICATED
 	if(this->pf)
-		MoveTefpol3D(this->pf, pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
+		this->pf->move(pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
 #endif
 }
 

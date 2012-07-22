@@ -283,7 +283,7 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 	int j;
 	struct tent3d_line_list *tell = w->getTeline3d();
-	struct tent3d_fpol_list *tepl = w->getTefpol3d();
+	struct TefpolList *tepl = w->getTefpol3d();
 	if(!tell)
 		return;
 	if(1000. < this->damage){
@@ -310,7 +310,7 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 				velo[0] = .15 * (drseq(&w->rs) - .5);
 				velo[1] = .15 * (drseq(&w->rs) - .5);
 				velo[2] = .15 * (drseq(&w->rs) - .5);
-				AddTefpol3D(tepl, pos, velo, gravity, &cs_fireburn,
+				tepl->addTefpol(pos, velo, gravity, &cs_fireburn,
 					TEP3_REFLECT, damage * .001 * (3. + 2. * drseq(&w->rs)));
 			}
 

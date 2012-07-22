@@ -41,105 +41,116 @@ extern "C"{
 #define TEP_SUBBLEND    (3<<14) /* subtractive */
 /* teline's forms can be used as well. */
 
-template<int id>
-struct flags_t{
-	typedef flags_t<id> tt;
-	unsigned long ul;
-	flags_t(unsigned long ul = 0) : ul(ul){
-	}
-/*	operator unsigned long(){
-		return !!fine | !!shake << 1 | !!wind << 2;
-	}*/
-//	tefpol_flags_t &setFine(bool v = true){fine = v; return *this;}
-/*	tefpol_flags_t &setThickness(unsigned v){
-		assert(v < 4);
-		ul &= ~(3 << ThickBit);
-		ul |= v << ThickBit;
-		return *this;
-	}*/
-/*	tefpol_flags_t &setRough(bool v = true){rough = v; return *this;}
-	tefpol_flags_t &setReflect(bool v = true){reflect = v; return *this;}
-	tefpol_flags_t &setMovable(bool v = true){movable = v; return *this;}
-	tefpol_flags_t &setSkip(bool v = true){skip = v; return *this;}*/
-	friend tt operator|(const tt &a, const tt &o){
-		tt ret;
-		ret.ul = a.ul | o.ul;
-		return ret;
-	}
-	tt operator&(const tt &o)const{
-		tt ret;
-		ret.ul = ul & o.ul;
-		return ret;
-	}
-	tt &operator|=(const tt &o){
-		ul |= o.ul;
-		return *this;
-	}
-	tt &operator&=(const tt &o){
-		ul &= o.ul;
-		return *this;
-	}
-	tt operator~()const{
-		return ~ul;
-	}
-	bool operator==(const tt &o)const{
-		return ul == o.ul;
-	}
-	operator bool()const{
-		return !!ul;
-	}
-};
-
-struct tefpol_flags_t : flags_t<0>{
-	tefpol_flags_t(unsigned long ul) : flags_t<0>(ul){}
-	tefpol_flags_t(flags_t<0> a) : flags_t<0>(a){}
-	tefpol_flags_t getThickness()const{
-		return ul & ThickMask;
-	}
-	static const int ThickBit = 7;
-	static const int ThickMask = 7 << ThickBit;
-};
-
-#undef TEL3_HEADFORWARD
-#define TEL3_HEADFORWARD flags_t<1>(1 << 1)
-/*EXPORT extern const tefpol_flags_t TEP3_ROUGH;
-EXPORT extern const tefpol_flags_t TEP3_REFLECT;
-EXPORT extern const tefpol_flags_t TEP3_THICK;
-EXPORT extern const tefpol_flags_t TEP3_THICKER;
-EXPORT extern const tefpol_flags_t TEP3_THICKEST;
-EXPORT extern const tefpol_flags_t TEP3_FAINT;*/
-
-
-struct tent3d_fpol_list;
 struct glcull;
 
+/// Namespace provided to avoid potential collision with tent2d.
+namespace tent3d{
 
-EXPORT struct tent3d_fpol_list *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
-EXPORT void AddTefpol3D(struct tent3d_fpol_list *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
-EXPORT struct tent3d_fpol *AddTefpolMovable3D(struct tent3d_fpol_list *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
-EXPORT void MoveTefpol3D(struct tent3d_fpol *fpol, const Vec3d &pos, const Vec3d &velo, double life, int skip);
-EXPORT void ImmobilizeTefpol3D(struct tent3d_fpol*);
-EXPORT void AnimTefpol3D(struct tent3d_fpol_list *tell, double dt);
-EXPORT void DrawTefpol3D(struct tent3d_fpol_list *tepl, const Vec3d &viewpoint, const struct glcull *);
+typedef unsigned long tefpol_flags_t;
+struct TefpolList;
 
-#ifndef NPROFILE
-#ifdef __cplusplus
-extern "C"{
-#endif
-struct tent3d_fpol_debug{
-	double animtefpol, drawtefpol;
-	size_t so_tefpol3_t, so_tevert3_t;
-	unsigned tefpol_c;
-	unsigned tefpol_m;
-	unsigned tefpol_s;
-	unsigned tevert_c;
-	unsigned tevert_s;
+/// \brief Temporary Entity Follow POlyLine
+///
+/// A set of automatically decaying line segments.
+struct EXPORT Tefpol{
+public:
+	void move(const Vec3d &pos, const Vec3d &velo, const double life, int skip);
+	void immobilize();
+	void anim(double dt);
+protected:
+	Vec3d pos;
+	Vec3d velo;
+	double life;
+	Vec3d grv;
+	const color_sequence *cs;
+	tefpol_flags_t flags; /* entity options */
+	unsigned cnt; /* generated trail node count */
+	struct te_vertex *head, *tail; /* polyline's */
+	struct Tefpol *next;
+	friend struct TefpolList;
+	static const unsigned Movable = 1<<16;
+	static const unsigned Skip = 1<<17;
 };
-const struct tent3d_fpol_debug *Tefpol3DDebug(const struct tent3d_fpol_list *);
-#ifdef __cplusplus
+
+/// \brief Polyline vertex in Tefpol.
+///
+/// A Tefpol can have arbitrary number of vertices in the vertices buffer.
+typedef struct te_vertex{
+	Vec3d pos;
+	float dt;
+	struct te_vertex *next;
+} tevert_t;
+
+
+/// \brief Tefpol object list.
+///
+/// It's almost like std::list or std::deque of Tefpol, but implemented manually for
+/// optimization.
+struct EXPORT TefpolList{
+protected:
+	struct te_fpol_extra_list{
+		struct te_fpol_extra_list *next;
+		Tefpol l[1]; /* variable */
+	};
+	unsigned m;
+	unsigned ml;
+	unsigned mex;
+	Tefpol *l;
+	Tefpol *lfree, *lactv, *last;
+	te_fpol_extra_list *ex;
+	unsigned bs; /* verbose buffer size */
+public:
+	TefpolList(unsigned maxt, unsigned init, unsigned unit);
+	~TefpolList();
+	void addTefpol(const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
+	Tefpol *addTefpolMovable(const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
+	void anim(double dt);
+	void draw(const Vec3d &viewpoint, const glcull *glc);
+#ifndef NPROFILE
+	struct tent3d_fpol_debug{
+		double animtefpol, drawtefpol;
+		size_t so_tefpol3_t, so_tevert3_t;
+		unsigned tefpol_c;
+		unsigned tefpol_m;
+		unsigned tefpol_s;
+		unsigned tevert_c;
+		unsigned tevert_s;
+	};
+	tent3d_fpol_debug debug;
+	const tent3d_fpol_debug *getDebug()const{return &debug;}
+#endif
+protected:
+	Tefpol *allocTefpol3D(const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const color_sequence *col, tefpol_flags_t f, double life);
+	void freeTefpolExtra(te_fpol_extra_list*);
+};
+
+
+
+//EXPORT TefpolList *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
+//EXPORT void AddTefpol3D(struct TefpolList *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
+//EXPORT Tefpol *AddTefpolMovable3D(struct TefpolList *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
+//EXPORT void MoveTefpol3D(struct Tefpol *fpol, const Vec3d &pos, const Vec3d &velo, double life, int skip);
+//EXPORT void ImmobilizeTefpol3D(struct Tefpol*);
+//EXPORT void AnimTefpol3D(struct TefpolList *tell, double dt);
+//EXPORT void DrawTefpol3D(struct TefpolList *tepl, const Vec3d &viewpoint, const struct glcull *);
+
 }
-#endif
-#endif
+
+using namespace tent3d;
+
+
+inline void tent3d::TefpolList::addTefpol(const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const color_sequence *col, tefpol_flags_t f, double life)
+{
+	allocTefpol3D(pos, velo, grv, col, f & ~(Tefpol::Movable | Tefpol::Skip), life);
+}
+
+inline tent3d::Tefpol *tent3d::TefpolList::addTefpolMovable(const Vec3d &pos, const Vec3d &velo,
+			   const Vec3d &grv, const color_sequence *col, tefpol_flags_t f, double life)
+{
+	return allocTefpol3D(pos, velo, grv, col, f | Tefpol::Movable, life);
+}
 
 
 #endif

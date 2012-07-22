@@ -25,7 +25,7 @@ protected:
 	EntityAI *ai;
 	float undocktime;
 	int people;
-	struct tent3d_fpol *pf[3]; ///< Trailing smoke
+	struct Tefpol *pf[3]; ///< Trailing smoke
 	float engineHeat;
 	static const Vec3d engines[3];
 	static const double sufscale;

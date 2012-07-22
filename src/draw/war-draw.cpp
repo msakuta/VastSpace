@@ -178,7 +178,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 	dd.pgc = wd->vw->gc;
 	dd.rot = wd->vw->qrot;
 	DrawTeline3D(tell, &dd);
-	DrawTefpol3D(tepl, wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
+	tepl->draw(wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 
 	for(int i = 0; i < 2; i++)
 	for(WarField::EntityList::iterator it = (this->*list[i]).begin(); it != (this->*list[i]).end(); it++){

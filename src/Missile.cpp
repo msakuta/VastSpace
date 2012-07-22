@@ -40,7 +40,7 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 Missile::~Missile(){
 #ifndef DEDICATED
 	if(pf)
-		ImmobilizeTefpol3D(pf);
+		pf->immobilize();
 #endif
 	if(enemy)
 		unlinkTarget();
@@ -75,7 +75,7 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 void Missile::initFpol(){
 #ifndef DEDICATED
 	if(WarSpace *ws = *w)
-		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH /*| TEL3_HEADFORWARD*/, cs_firetrail.t);
+		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH /*| TEL3_HEADFORWARD*/, cs_firetrail.t);
 	else
 #endif
 		pf = NULL;
@@ -84,7 +84,7 @@ void Missile::initFpol(){
 void Missile::updateFpol(){
 #ifndef DEDICATED
 	if(pf)
-		MoveTefpol3D(pf, pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
+		pf->move(pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
 #endif
 }
 

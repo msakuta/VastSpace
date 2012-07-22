@@ -4,12 +4,13 @@
 #ifndef BEAMPROJECTILE_H
 #define BEAMPROJECTILE_H
 #include "Bullet.h"
+#include "tefpol3d.h"
 
 class EXPORT BeamProjectile : public Bullet{
 public:
 	typedef Bullet st;
 	static const unsigned classid;
-	struct tent3d_fpol *pf;
+	Tefpol *pf;
 	BeamProjectile(Game *game);
 	BeamProjectile(Entity *owner, float life, double damage, double radius = .01, Vec4<unsigned char> col = Vec4<unsigned char>(127,127,255,255), const color_sequence &cs = cs_beamtrail, double hitradius = 0.);
 	virtual const char *classname()const;

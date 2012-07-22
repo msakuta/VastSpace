@@ -126,7 +126,7 @@ void SpacePlane::unserialize(UnserializeContext &sc){
 		ws->bdw->addRigidBody(bbody, 1, ~2);
 		setPosition(&pos, &rot, &this->velo, &omg);
 		for(int i = 0; i < numof(pf); i++)
-			pf[i] = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+			pf[i] = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
 	}
 	else{
 		for(int i = 0; i < numof(pf); i++)
@@ -234,7 +234,7 @@ void SpacePlane::anim(double dt){
 
 	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
 	for(int i = 0; i < 3; i++) if(pf[i]){
-		MoveTefpol3D(pf[i], mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
+		pf[i]->move(mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
 	}
 
 //	engineHeat = approach(engineHeat, direction & PL_W ? 1.f : 0.f, dt, 0.);
@@ -272,12 +272,12 @@ void SpacePlane::enterField(WarField *target){
 		ws->bdw->addRigidBody(bbody, 1, ~2);
 	}
 	if(ws){
-		tent3d_fpol_list *tepl = w ? w->getTefpol3d() : NULL;
+		TefpolList *tepl = w ? w->getTefpol3d() : NULL;
 		for(int i = 0; i < 3; i++){
 			if(this->pf[i])
-				ImmobilizeTefpol3D(this->pf[i]);
+				this->pf[i]->immobilize();
 			if(tepl)
-				pf[i] = AddTefpolMovable3D(tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
+				pf[i] = tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
 			else
 				pf[i] = NULL;
 		}
@@ -321,7 +321,7 @@ bool SpacePlane::buildBody(){
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 void SpacePlane::leaveField(WarField *w){
 	for(int i = 0; i < 3; i++) if(this->pf[i]){
-		ImmobilizeTefpol3D(this->pf[i]);
+		this->pf[i]->immobilize();
 		this->pf[i] = NULL;
 	}
 	st::leaveField(w);

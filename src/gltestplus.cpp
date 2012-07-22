@@ -441,7 +441,7 @@ void Game::drawindics(Viewer *vw){
 			sprintf(buf, "hits %d / shoots %d = %g", bullet_hits, bullet_shoots, bullet_shoots ? (double)bullet_hits / bullet_shoots : 0.);
 			diprint(buf, 0, y += 12);*/
 #ifdef _DEBUG
-/*			if(tent3d_fpol_list * tepl = pl.cs->w->getTefpol3d())
+/*			if(TefpolList * tepl = pl.cs->w->getTefpol3d())
 				diprint(cpplib::dstring() << "tepl " << Tefpol3DDebug(tepl)->tefpol_c << " " << Tefpol3DDebug(tepl)->tefpol_m << " " << Tefpol3DDebug(tepl)->tevert_c, 0, y += 12);
 			if(WarSpace *ws = *pl.cs->w)
 				if(tent3d_line_list * tell = ws->gibs)

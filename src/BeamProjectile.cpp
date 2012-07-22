@@ -5,7 +5,6 @@
 #include "Viewer.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
-#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/gldraw.h>
@@ -58,14 +57,14 @@ void BeamProjectile::unserialize(UnserializeContext &sc){
 
 void BeamProjectile::enterField(WarField *w){
 	if(WarSpace *ws = *w)
-		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, cs, TEP3_THICKER, cs->t);
+		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, cs, TEP3_THICKER, cs->t);
 	else
 		pf = NULL;
 }
 
 void BeamProjectile::leaveField(WarField *w){
 	if(pf){
-		ImmobilizeTefpol3D(pf);
+		pf->immobilize();
 		pf = NULL;
 	}
 }
@@ -77,7 +76,7 @@ void BeamProjectile::anim(double dt){
 void BeamProjectile::clientUpdate(double dt){
 	st::clientUpdate(dt);
 	if(this->pf){
-		MoveTefpol3D(this->pf, pos, avec3_000, cs->t, 0);
+		this->pf->move(pos, avec3_000, cs->t, 0);
 	}
 }
 

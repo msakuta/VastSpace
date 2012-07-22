@@ -10,7 +10,7 @@
 /// \brief A homing missile.
 class EXPORT Missile : public Bullet{
 protected:
-	struct tent3d_fpol *pf;
+	Tefpol *pf;
 	double integral; /* integrated term */
 	double def[2]; /* integrated deflaction of each axes */
 	double ft; /* fpol time */

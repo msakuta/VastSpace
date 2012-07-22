@@ -15,6 +15,7 @@
 #include "btadapt.h"
 #include "msg/Message.h"
 #include "msg/GetCoverPointsMessage.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>

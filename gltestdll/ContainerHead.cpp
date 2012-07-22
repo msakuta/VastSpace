@@ -17,6 +17,7 @@
 #include "Island3.h"
 #include "sqadapt.h"
 #include "draw/OpenGLState.h"
+#include "tefpol3d.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

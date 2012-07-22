@@ -22,6 +22,7 @@
 #include "msg/GetCoverPointsMessage.h"
 #include "Game.h"
 #include "StaticInitializer.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>

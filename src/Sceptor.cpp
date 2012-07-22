@@ -28,6 +28,7 @@
 #include "Game.h"
 #include "glw/popup.h"
 #include "ClientMessage.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

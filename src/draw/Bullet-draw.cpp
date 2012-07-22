@@ -9,6 +9,7 @@
 //#include "warutil.h"
 #include "draw/material.h"
 #include "btadapt.h"
+#include "tefpol3d.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/amat4.h>

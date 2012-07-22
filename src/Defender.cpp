@@ -19,6 +19,7 @@
 #include "motion.h"
 #include "Game.h"
 #include "glw/popup.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

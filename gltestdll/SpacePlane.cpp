@@ -19,6 +19,7 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
+#include "tefpol3d.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>

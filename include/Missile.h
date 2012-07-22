@@ -4,7 +4,7 @@
 #ifndef MISSILE_H
 #define MISSILE_H
 #include "Bullet.h"
-#include "tent3d.h"
+#include "tefpol3d.h"
 
 
 /// \brief A homing missile.

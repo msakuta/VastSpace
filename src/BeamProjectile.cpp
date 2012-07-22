@@ -5,6 +5,7 @@
 #include "Viewer.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/gldraw.h>

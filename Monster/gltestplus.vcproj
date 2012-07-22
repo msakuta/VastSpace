@@ -1047,6 +1047,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\tefpol3d.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\tent3d.h"
 				>
 			</File>

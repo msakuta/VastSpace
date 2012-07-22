@@ -1,5 +1,7 @@
-#include "tent3d.h"
+#include "tefpol3d.h"
 #include "tent3d_p.h"
+#include "draw/material.h"
+#include "glstack.h"
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/timemeas.h>
@@ -31,11 +33,13 @@ extern "C"{
 #define ENABLE_THICK 0
 #endif*/
 
-#define TEP3_THICKNESS (TEP3_THICK|(TEP3_THICK<<1)|(TEP3_THICK<<2))
+//#define TEP3_THICKNESS (TEP3_THICK|(TEP3_THICK<<1)|(TEP3_THICK<<2))
 #define THICK_BIT 7
 #define TEP_BLENDMASK (TEP_SOLIDBLEND|(TEP_SOLIDBLEND<<1))
-#define TEP3_MOVABLE (1<<16) /* cannot be freed unless explicitly specified by the caller */
-#define TEP3_SKIP    (1<<17) /* skip generation of vertex for movable tefpol */
+//#define TEP3_MOVABLE (1<<16) /* cannot be freed unless explicitly specified by the caller */
+const tefpol_flags_t TEP3_MOVABLE = (1<<16);
+//#define TEP3_SKIP    (1<<17) /* skip generation of vertex for movable tefpol */
+const tefpol_flags_t TEP3_SKIP = (1<<17);
 
 #ifndef ABS
 #define ABS(a) (0<(a)?(a):-(a))
@@ -53,7 +57,7 @@ typedef struct tent3d_fpol{
 	double life;
 	Vec3d grv;
 	const colseq_t *cs;
-	unsigned long flags; /* entity options */
+	tefpol_flags_t flags; /* entity options */
 	unsigned cnt; /* generated trail node count */
 	struct te_vertex *head, *tail; /* polyline's */
 	struct tent3d_fpol *next;
@@ -90,6 +94,15 @@ static struct te_vertice_list{
 	tevert_t *l;
 	tevert_t *lfree, *lfst;
 } svl = {0, NULL};
+
+
+/*const tefpol_flags_t TEP3_HEADFORWARD = (1<<1);
+const tefpol_flags_t TEP3_ROUGH = (1<<6);
+const tefpol_flags_t TEP3_REFLECT = (1<<5);
+const tefpol_flags_t TEP3_THICK = tefpol_flags_t(1 << tefpol_flags_t::ThickBit);
+const tefpol_flags_t TEP3_THICKER = tefpol_flags_t(2 << tefpol_flags_t::ThickBit);
+const tefpol_flags_t TEP3_THICKEST = tefpol_flags_t(3 << tefpol_flags_t::ThickBit);
+const tefpol_flags_t TEP3_FAINT = tefpol_flags_t(4 << tefpol_flags_t::ThickBit);*/
 
 
 /*-----------------------------------------------------------------------------
@@ -225,7 +238,7 @@ void DelTefpol(tepl_t *p){
 }
 
 static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
+			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t &f, double life)
 {
 
 	tefpol_t *pl;
@@ -301,15 +314,15 @@ static tefpol_t *allocTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
 }
 
 void AddTefpol3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
+			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t f, double life)
 {
-	allocTefpol3D(p, pos, velo, grv, col, f & ~(TEP3_MOVABLE | TEP3_SKIP), life);
+	allocTefpol3D(p, pos, velo, grv, col, tefpol_flags_t(f & ~(TEP3_MOVABLE | TEP3_SKIP)), life);
 }
 
 tefpol_t *AddTefpolMovable3D(tepl_t *p, const Vec3d &pos, const Vec3d &velo,
-			   const Vec3d &grv, const colseq_t *col, tent3d_flags_t f, double life)
+			   const Vec3d &grv, const colseq_t *col, tefpol_flags_t f, double life)
 {
-	return allocTefpol3D(p, pos, velo, grv, col, f | TEP3_MOVABLE, life);
+	return allocTefpol3D(p, pos, velo, grv, col, tefpol_flags_t(f | TEP3_MOVABLE), life);
 }
 
 void MoveTefpol3D(tefpol_t *pl, const Vec3d &pos, const Vec3d &velo, const double life, int skip){
@@ -342,7 +355,7 @@ void AnimTefpol3D(tepl_t *p, double dt){
 	while(pl){
 		tefpol_t *pl2;
 #	if ENABLE_THICK
-		tent3d_flags_t thickness = pl->flags & TEP3_THICKNESS;
+		tefpol_flags_t thickness = pl->flags.getThickness();
 		double width =
 			thickness == TEP3_THICK ? .001 :
 			thickness == TEP3_THICKER ? .002 : 
@@ -602,6 +615,17 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 	if(!pl) goto retur;
 	GetObject(pwg->hVBmp, sizeof bm, &bm);
 #endif
+	static GLuint tex = 0;
+	if(!tex){
+		CallCacheBitmap("perlin.jpg", "textures/perlin.jpg", NULL, NULL);
+		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("perlin.jpg");
+		if(tcb)
+			tex = tcb->getList();
+	}
+
+	GLattrib attrib(GL_TEXTURE_BIT);
+	glCallList(tex);
+
 	for(; pl; pl = pl->next) if(pl->head){
 		Vec3d o;
 		int c = pl->cnt;
@@ -694,7 +718,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 				{
 #	if ENABLE_THICK
 				{
-				tent3d_flags_t thickness = pl->flags & TEP3_THICKNESS;
+				tefpol_flags_t thickness = pl->flags.getThickness();
 				double apparence;
 				static const double visdists[5] = {.25 * .25, .5 * .5, 1.5 * 1.5, .5 * .5, .5 * .5};
 				static const double thicknesses[5] = {.00, .001, .002, .005, .00025};
@@ -706,7 +730,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 				else if(thickness == TEP3_THICK && pv == pl->tail){
 					ncol = COLOR32RGBA(COLOR32R(ncol),COLOR32G(ncol),COLOR32B(ncol),0);
 				}
-				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
+				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness.ul >> thickness.ThickBit];
 				if(thickness && 1. < apparence/*VECSDIST(pv->pos, view) < visdists[thickness >> THICK_BIT]*/){
 					double width =
 						thickness == TEP3_THICK ? /*t < .5 ? t * .002 :*/ .001 :
@@ -720,6 +744,7 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 						beams = 1;
 						bd.cc = 0;
 						bd.solid = 0;
+						bd.tex2d = 1;
 						gldBeams(&bd, view, o, width, ncol);
 					}
 					gldColor32(ocol);
@@ -852,7 +877,6 @@ void DrawTefpol3D(tent3d_fpol_list *p, const Vec3d &view, const struct glcull *g
 		}
 #endif
 	}
-retur:;
 #ifndef NDEBUG
 	}
 	p->debug.drawtefpol = TimeMeasLap(&tm);

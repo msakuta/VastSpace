@@ -75,7 +75,7 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 void Missile::initFpol(){
 #ifndef DEDICATED
 	if(WarSpace *ws = *w)
-		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH, cs_firetrail.t);
+		pf = AddTefpolMovable3D(ws->tepl, pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH /*| TEL3_HEADFORWARD*/, cs_firetrail.t);
 	else
 #endif
 		pf = NULL;

@@ -24,19 +24,12 @@ namespace tent3d{
 	macro definitions
 #############################################################################*/
 #define DRAWORDER 0 /* whether draw from the head to the tail, otherwise reverse */
-#define ENABLE_FORMS 0 /* head forms */
 #define ENABLE_FINE 0 /* granularity control for line graduation */
 #define ENABLE_ROUGH 0 /* less fine */
-#define ENABLE_RETURN 0 /* return from opposite edge, doesn't make sense for polylines */
 #define ENABLE_THICK 1 /* thickness control in conjunction with WinAPI drawing */
 #define ENABLE_HEAD 0 /* head sprite */
 #define INTERP_CS 1 /* Liner interpolation rather than calling ColorSequence() everytime */
 #define VERTEX_SIZE 0x8000
-
-/*#if !WINTEFPOL && !DIRECTDRAW
-#undef ENABLE_THICK
-#define ENABLE_THICK 0
-#endif*/
 
 #define TEP3_THICKNESS (TEP3_THICK|(TEP3_THICK<<1)|(TEP3_THICK<<2))
 #define THICK_BIT 7
@@ -506,20 +499,6 @@ novertice:
 			pl->tail->dt += dt;
 #endif
 
-#if ENABLE_RETURN
-		/* reappear from opposite edge. prior than reflect */
-		if(pl->flags & TEL_RETURN){
-			if(pl->x < 0)
-				pl->x += XSIZ;
-			else if(XSIZ < pl->x)
-				pl->x -= XSIZ;
-			if(pl->y < 0)
-				pl->y += YSIZ;
-			else if(YSIZ < pl->y)
-				pl->y -= YSIZ;
-		}
-		else
-#endif
 		/* rough approximation of reflection. rigid body dynamics are required for more reality. */
 		if(pl->flags & TEP3_REFLECT){
 			/* floor reflection only! */
@@ -563,11 +542,6 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 	{
 #endif
 	Tefpol *pl = p->lactv;
-#if DIRECTDRAW
-	BITMAP bm;
-	if(!pl) goto retur;
-	GetObject(pwg->hVBmp, sizeof bm, &bm);
-#endif
 
 	for(; pl; pl = pl->next) if(pl->head){
 
@@ -650,12 +624,6 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 /*			ncol = SWAPRB(ncol);*/
 #endif
 
-#if ENABLE_FORMS
-			switch(pl->flags & TEL_FORMS){
-			case 0:
-#endif
-
-
 				if(pv->dt < 0.){
 					if(linestrip){
 						linestrip = 0;
@@ -728,61 +696,6 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 #	endif
 				}
 
-#if ENABLE_FORMS
-				break;
-			case TEL_POINT:
-				PutPointWin(pwg, pv->x, pv->y, ColorSequence(pl->cs, t));
-				break;
-			case TEL_CIRCLE:
-				CircleWin(pwg, pv->x, pv->y, (ABS(ox - pv->x) + ABS(oy - pv->y)) / 2, ColorSequence(pl->cs, t));
-				break;
-			case TEL_FILLCIRCLE:
-				FillCircleWin(pwg, pv->x, pv->y, (ABS(ox - pv->x) + ABS(oy - pv->y)) / 2, ColorSequence(pl->cs, t));
-				break;
-			case TEL_RECTANGLE:{
-				int rad = (ABS(ox - pv->x) + ABS(oy - pv->y)) / 2;
-				RectangleWin(pwg, pv->x - rad, pv->y - rad, pv->x + rad, pv->y + rad, ColorSequence(pl->cs, t));
-				break;}
-			case TEL_FILLRECT:{
-				int rad = (ABS(ox - pv->x) + ABS(oy - pv->y)) / 2;
-				FillRectangleWin(pwg, pv->x - rad, pv->y - rad, pv->x + rad, pv->y + rad, ColorSequence(pl->cs, t));
-				break;}
-			case TEL_PENTAGRAPH:{
-				double rad = (ABS(ox - pv->x) + ABS(oy - pv->y)) / 2, ang = 9/*drand() * 2 * M_PI*/;
-				int i;
-				HPEN hPen;
-				hPen = CreatePen(PS_SOLID, 0, ColorSequence(pl->cs, t));
-				if(!hPen) break;
-				SelectObject(pwg->hVDC, hPen);
-				MoveToEx(pwg->hVDC, pv->x + cos(ang) * rad, pv->y + sin(ang) * rad, NULL);
-				for(i = 0 ; i < 5; i++){
-					ang += 2 * M_PI * 2 / 5.;
-					LineTo(pwg->hVDC, pv->x + cos(ang) * rad, pv->y + sin(ang) * rad);
-				}
-				DeleteObject(hPen);
-				break;}
-			case TEL_HEXAGRAPH:{
-				HFONT hFont;
-				char *s;
-				hFont = CreateFont(MIN((ABS(ox - pv->x) + ABS(oy - pv->y)), 20), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
-				if(!hFont) break;
-				SelectObject(pwg->hVDC, hFont);
-				SetTextColor(pwg->hVDC, ColorSequence(pl->cs, t));
-				switch(c % 7){
-					case 6:
-					case 0: s = "”š"; break;
-					case 1: s = "—ó"; break;
-					case 2: s = "â"; break;
-					case 3: s = "–Å"; break;
-					case 4: s = "‰ó"; break;
-					case 5: s = "Š…"; break;
-				}
-				TextOut(pwg->hVDC, pv->x, pv->y, s, 2);
-				DeleteObject(hFont);
-				break;}
-			default: assert(0);
-			}
-#endif
 #if ENABLE_FINE
 			if(pl->flags & TEP_FINE)
 #if DRAWORDER
@@ -810,21 +723,6 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 		}
 		if(linestrip)
 			glEnd();
-#if ENABLE_HEAD
-		if(pl->flags & TEP_HEAD){
-#if LANG==JP
-			HFONT hFont;
-			hFont = CreateFont(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
-			if(!hFont) break;
-			SelectObject(pwg->hVDC, hFont);
-			SetTextColor(pwg->hVDC, ColorSequence(pl->cs, 0));
-			TextOut(pwg->hVDC, pl->x - 10, pl->y - 10, s_electric[(int)pl%numof(s_electric)], 2);
-			DeleteObject(hFont);
-#else
-		FillCircleWin(pwg, pl->x, pl->y, 5, ColorSequence(pl->cs, 0));
-#endif
-		}
-#endif
 	}
 #ifndef NDEBUG
 	}

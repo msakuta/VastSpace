@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of Tefpol and TefpolList classes.
+ */
 #ifndef TEFPOL3D_H
 #define TEFPOL3D_H
 #include "tent3d.h"
@@ -47,6 +50,7 @@ struct glcull;
 namespace tent3d{
 
 typedef unsigned long tefpol_flags_t;
+struct TefpolVertex;
 struct TefpolList;
 
 /// \brief Temporary Entity Follow POlyLine
@@ -54,9 +58,18 @@ struct TefpolList;
 /// A set of automatically decaying line segments.
 struct EXPORT Tefpol{
 public:
+	/// \brief Move position of this Tefpol's generating point.
 	void move(const Vec3d &pos, const Vec3d &velo, const double life, int skip);
+
+	/// \brief Mark the Tefpol so that it will never move again. If the trailing polyline is exhausted, it will be deleted.
 	void immobilize();
+
+	/// \brief Animate this object
+	/// \param dt Delta-time of the frame.
 	void anim(double dt);
+
+	void setTexture(unsigned long u){texture = u;}
+
 protected:
 	Vec3d pos;
 	Vec3d velo;
@@ -65,8 +78,9 @@ protected:
 	const color_sequence *cs;
 	tefpol_flags_t flags; /* entity options */
 	unsigned cnt; /* generated trail node count */
-	struct te_vertex *head, *tail; /* polyline's */
-	struct Tefpol *next;
+	unsigned long texture; ///< Texture list
+	TefpolVertex *head, *tail; /* polyline's */
+	Tefpol *next;
 	friend struct TefpolList;
 	static const unsigned Movable = 1<<16;
 	static const unsigned Skip = 1<<17;
@@ -75,17 +89,18 @@ protected:
 /// \brief Polyline vertex in Tefpol.
 ///
 /// A Tefpol can have arbitrary number of vertices in the vertices buffer.
-typedef struct te_vertex{
+typedef struct TefpolVertex{
 	Vec3d pos;
 	float dt;
-	struct te_vertex *next;
+	struct TefpolVertex *next;
 } tevert_t;
 
 
 /// \brief Tefpol object list.
 ///
 /// It's almost like std::list or std::deque of Tefpol, but implemented manually for
-/// optimization.
+/// optimization. Honestly, the fact it have originally written in C is the reason why
+/// this is not a STL container.
 struct EXPORT TefpolList{
 protected:
 	struct te_fpol_extra_list{
@@ -125,15 +140,6 @@ protected:
 	void freeTefpolExtra(te_fpol_extra_list*);
 };
 
-
-
-//EXPORT TefpolList *NewTefpol3D(unsigned maxt, unsigned init, unsigned unit);
-//EXPORT void AddTefpol3D(struct TefpolList *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
-//EXPORT Tefpol *AddTefpolMovable3D(struct TefpolList *tepl, const Vec3d &pos, const Vec3d &velo, const Vec3d &gravity, const struct color_sequence *col, tefpol_flags_t flags, double life);
-//EXPORT void MoveTefpol3D(struct Tefpol *fpol, const Vec3d &pos, const Vec3d &velo, double life, int skip);
-//EXPORT void ImmobilizeTefpol3D(struct Tefpol*);
-//EXPORT void AnimTefpol3D(struct TefpolList *tell, double dt);
-//EXPORT void DrawTefpol3D(struct TefpolList *tepl, const Vec3d &viewpoint, const struct glcull *);
 
 }
 

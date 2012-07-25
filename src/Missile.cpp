@@ -10,15 +10,6 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 
-#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
-static const struct color_node cnl_firetrail[] = {
-	{0.05, COLOR32RGBA(255, 255, 212, 0)},
-	{0.05, COLOR32RGBA(255, 191, 191, 255)},
-	{0.4, COLOR32RGBA(111, 111, 111, 255)},
-	{0.3, COLOR32RGBA(63, 63, 63, 127)},
-};
-const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
-
 const float Missile::maxfuel = 120.;
 const double Missile::maxspeed = 1.;
 Missile::TargetMap Missile::targetmap;
@@ -72,21 +63,6 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 	this->rot = this->rot.quatrotquat(this->omg * dt);
 }
 
-void Missile::initFpol(){
-#ifndef DEDICATED
-	if(WarSpace *ws = *w)
-		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH /*| TEL3_HEADFORWARD*/, cs_firetrail.t);
-	else
-#endif
-		pf = NULL;
-}
-
-void Missile::updateFpol(){
-#ifndef DEDICATED
-	if(pf)
-		pf->move(pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
-#endif
-}
 
 
 void Missile::anim(double dt){
@@ -479,6 +455,8 @@ void Missile::enterField(WarField *w){
 
 
 #ifdef DEDICATED
+void Missile::initFpol(){pf = NULL;}
+void Missile::updateFpol(){}
 void Missile::draw(WarDraw*){}
 void Missile::drawtra(WarDraw*){}
 #endif

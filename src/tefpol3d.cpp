@@ -1,3 +1,6 @@
+/** \file
+ *\brief Implementation of Tefpol, TefpolList and TefpolVertex classes.
+ */
 #include "tefpol3d.h"
 #include "tent3d_p.h"
 #include "draw/material.h"
@@ -55,8 +58,8 @@ typedef struct color_sequence colseq_t;
 /* global vertice pool, used by multiple entities */
 static struct te_vertice_list{
 	unsigned m;
-	tevert_t *l;
-	tevert_t *lfree, *lfst;
+	TefpolVertex *l;
+	TefpolVertex *lfree, *lfst;
 } svl = {0, NULL};
 
 typedef struct TefpolList tepl_t;
@@ -264,6 +267,7 @@ Tefpol *TefpolList::allocTefpol3D(const Vec3d &pos, const Vec3d &velo,
 	pl->flags = f;
 	pl->cnt = 0;
 	pl->life = life;
+	pl->texture = 0;
 	pl->head = pl->tail = NULL;
 
 #ifndef NDEBUG
@@ -564,18 +568,14 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 	if(!pl) goto retur;
 	GetObject(pwg->hVBmp, sizeof bm, &bm);
 #endif
-	static GLuint tex = 0;
-	if(!tex){
-		CallCacheBitmap("perlin.jpg", "textures/perlin.jpg", NULL, NULL);
-		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("perlin.jpg");
-		if(tcb)
-			tex = tcb->getList();
-	}
-
-	GLattrib attrib(GL_TEXTURE_BIT);
-	glCallList(tex);
 
 	for(; pl; pl = pl->next) if(pl->head){
+
+		GLattrib attrib(GL_TEXTURE_BIT);
+		if(pl->texture){
+			glCallList(pl->texture);
+		}
+
 		Vec3d o;
 		int c = pl->cnt;
 #if INTERP_CS

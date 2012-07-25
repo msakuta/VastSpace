@@ -14,6 +14,40 @@ extern "C"{
 }
 
 
+#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
+static const struct color_node cnl_firetrail[] = {
+	{0.05, COLOR32RGBA(255, 255, 212, 0)},
+	{0.05, COLOR32RGBA(255, 191, 191, 255)},
+	{0.4, COLOR32RGBA(111, 111, 111, 255)},
+	{0.3, COLOR32RGBA(63, 63, 63, 127)},
+};
+const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
+
+
+/// \brief Initializes Tefpol object.
+void Missile::initFpol(){
+	if(WarSpace *ws = *w){
+		static GLuint tex = 0;
+		if(!tex){
+			CallCacheBitmap("perlin.jpg", "textures/perlin.jpg", NULL, NULL);
+			const gltestp::TexCacheBind *tcb = gltestp::FindTexture("perlin.jpg");
+			if(tcb)
+				tex = tcb->getList();
+		}
+		pf = ws->tepl->addTefpolMovable(pos, velo, vec3_000, &cs_firetrail, TEP3_THICK | TEP3_ROUGH, cs_firetrail.t);
+		if(pf)
+			pf->setTexture(tex);
+	}
+	else
+		pf = NULL;
+}
+
+/// \brief Updates position of Tefpol object.
+void Missile::updateFpol(){
+	if(pf)
+		pf->move(pos, avec3_000, cs_firetrail.t, 0/*pf->docked*/);
+}
+
 void Missile::draw(wardraw_t *wd){
 	static suf_t *suf;
 	static suftex_t *suft;

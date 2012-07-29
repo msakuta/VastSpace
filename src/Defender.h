@@ -1,12 +1,12 @@
 /** \file
- * \brief Declaration of Defender, a space fighter that sit tight and guard settlements.
+ * \brief Definition of Defender class.
  *
  * Also declares DeployCommand, acceptable by Defender.
  */
 #ifndef DEFENDER_H
 #define DEFENDER_H
 
-#include "Beamer.h"
+#include "Autonomous.h"
 #include "EntityCommand.h"
 #include "CoordSys.h"
 #include "war.h"
@@ -20,11 +20,19 @@ extern "C"{
 
 #define PIDAIM_PROFILE 0
 
-/// Space Defender (middle fighter)
-class Defender : public Entity{
+/// \brief Space Defender (middle fighter)
+///
+/// A space fighter that sit tight and guard settlements.
+class Defender : public Autonomous{
 public:
-	typedef Entity st;
+	typedef Autonomous st;
 protected:
+	static double modelScale;
+	static double defaultMass;
+	static std::vector<hitbox> hitboxes;
+	static GLuint overlayDisp;
+	static Vec3d gunPos;
+
 	enum Task{
 		Idle = sship_idle,
 		Undock = sship_undock,
@@ -50,7 +58,6 @@ protected:
 	double throttle;
 	double fuel;
 	double cooldown;
-	Vec3d dest;
 	float fcloak;
 	float heat;
 	Tefpol *pf[4]; ///< Trailing smoke
@@ -69,7 +76,6 @@ protected:
 //	Sceptor *formPrev; ///< previous member in the formation
 //	Attitude attitude;
 
-	static const avec3_t gunPos[2];
 	void shoot(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);
@@ -79,7 +85,6 @@ protected:
 	void headTowardEnemy(double dt, const Vec3d &enemyPosition);
 	static double reloadTime(){return 5.;} ///< Time between shoots
 	static double bulletSpeed(){return 5.;} ///< Velocity of projectile shot
-	static double modelScale(){return 1./10000.;} ///< Model scale
 	bool isDeployed()const{return task == Deploy || Dodge0 <= task && task <= Dodge3;}
 public:
 	Defender(Game *game);
@@ -113,8 +118,8 @@ public:
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 	virtual double maxfuel()const;
-	static hitbox hitboxes[];
-	static const int nhitboxes;
+	virtual bool buildBody();
+	virtual short bbodyMask()const;
 	Mat4d legTransform(int legIndex)const; ///< Returns transformation matrix for a given leg.
 private:
 };

@@ -717,6 +717,8 @@ void Autonomous::enterField(WarField *target){
 }
 
 void Autonomous::anim(double dt){
+	if(!w)
+		return;
 	WarSpace *ws = *w;
 	if(!ws){
 		st::anim(dt);
@@ -944,6 +946,16 @@ void Autonomous::MassProcess::process(HSQUIRRELVM v)const{
 	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
 		throw SQFError(_SC("mass couldn't be converted to float"));
 	mass = f;
+	sq_poptop(v);
+}
+
+void Autonomous::Vec3dProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))) // root value
+		throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+	SQVec3d r;
+	r.getValue(v, -1);
+	vec = r.value;
 	sq_poptop(v);
 }
 

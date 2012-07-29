@@ -42,7 +42,6 @@ protected:
 	double throttle;
 	double fuel;
 	double cooldown;
-	Vec3d dest;
 	float fcloak;
 	float heat;
 	Tefpol *pf; ///< Trailing smoke

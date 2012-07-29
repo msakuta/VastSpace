@@ -1,5 +1,5 @@
 /** \file
- * \brief Definition of Defender and its properties.
+ * \brief Implementation of Defender and its properties.
  */
 #include "Defender.h"
 #include "Player.h"
@@ -45,15 +45,16 @@ extern "C"{
 
 
 const float Defender::rotateTime = 2.f;
+struct std::vector<hitbox> Defender::hitboxes;
+double Defender::modelScale = 1./10000;
+double Defender::defaultMass = 4e3;
+GLuint Defender::overlayDisp = 0;
+Vec3d Defender::gunPos(0., -16.95 * modelScale, -200. * modelScale);
+
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
-
-struct hitbox Defender::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(30 * modelScale(), 30 * modelScale(), 125 * modelScale())),
-};
-const int Defender::nhitboxes = numof(Defender::hitboxes);
 
 const char *Defender::idname()const{
 	return "defender";
@@ -103,6 +104,13 @@ void Defender::unserialize(UnserializeContext &sc){
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
 //	sc.i >> formPrev;
 
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
+
 	// Re-create temporary entity if flying in a WarField. It is possible that docked to something and w is NULL.
 /*	WarSpace *ws;
 	for(int i = 0; i < 4; i++){
@@ -143,7 +151,19 @@ Defender::Defender(WarField *aw) : st(aw),
 //	attitude(Passive)
 {
 	Defender *const p = this;
-	mass = 16e3;
+
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Defender.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp) <<=
+			Vec3dProcess(_SC("gunPos"), gunPos));
+		initialized = true;
+	}
+
+	mass = defaultMass;
 	health = maxhealth();
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
@@ -159,8 +179,6 @@ Defender::Defender(WarField *aw) : st(aw),
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
 }
-
-const avec3_t Defender::gunPos[2] = {{0., -16.95 * modelScale(), -200. * modelScale()}};
 
 void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = w->pl;
@@ -215,7 +233,7 @@ void Defender::shoot(double dt){
 	{
 		Bullet *pb = new BeamProjectile(this, 5, 200.);
 		w->addent(pb);
-		pb->pos = mat.vp3(gunPos[0]);
+		pb->pos = mat.vp3(gunPos);
 		pb->velo = mat.dvp3(velo0);
 		if(enemy){
 			Vec3d epos;
@@ -343,13 +361,12 @@ void Defender::headTowardEnemy(double dt, const Vec3d &dv){
 }
 
 
-void Defender::enterField(WarField *target){
-	WarSpace *ws = *target;
-	if(ws && ws->bdw){
+bool Defender::buildBody(){
+	if(!bbody){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			for(int i = 0; i < nhitboxes; i++){
+			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
 				const Vec3d &pos = hitboxes[i].org;
@@ -375,18 +392,26 @@ void Defender::enterField(WarField *target){
 //		rbInfo.m_linearDamping = .5;
 //		rbInfo.m_angularDamping = .5;
 		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
+		return true;
 	}
-	if(ws){
-		for(int i = 0; i < 4; i++){
-/*			if(this->pf[i])
-				ImmobilizeTefpol3D(this->pf[i]);*/
-			if(w && w->getTefpol3d())
-				this->pf[i] = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+	return false;
+}
+
+short Defender::bbodyMask()const{
+	return ~2;
+}
+
+void Defender::enterField(WarField *target){
+	st::enterField(target);
+	if(w){
+		WarSpace *ws = *w;
+		if(ws){
+			for(int i = 0; i < 4; i++){
+	/*			if(this->pf[i])
+					ImmobilizeTefpol3D(this->pf[i]);*/
+				if(w && w->getTefpol3d())
+					this->pf[i] = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+			}
 		}
 	}
 }
@@ -1104,7 +1129,10 @@ void Defender::anim(double dt){
 #endif
 				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
-			this->w = NULL;
+			if(game->isServer()){
+				delete this;
+				return;
+			}
 		}
 		else{
 			struct tent3d_line_list *tell = w->getTeline3d();
@@ -1145,7 +1173,7 @@ void Defender::anim(double dt){
 void Defender::clientUpdate(double dt){
 	for(int i = 0; i < 4; i++) if(pf[i]){
 		Mat4d mat5 = legTransform(i);
-		pf[i]->move(mat5.vp3(Vec3d(0, 0, 130 * modelScale())), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+		pf[i]->move(mat5.vp3(Vec3d(0, 0, 130 * modelScale)), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
 
@@ -1204,7 +1232,7 @@ int Defender::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, n;
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;
@@ -1289,10 +1317,10 @@ Mat4d Defender::legTransform(int i)const{
 	Mat4d mat1;
 	transform(mat1);
 	mat1.scalein((i%2*2-1), (i/2*2-1), 1);
-	Mat4d mat2 = mat1.translate(Vec3d(22.5, 22.5, 30) * modelScale());
+	Mat4d mat2 = mat1.translate(Vec3d(22.5, 22.5, 30) * modelScale);
 	Mat4d mat3 = mat2.rotx(-MIN(fdeploy * 135, 90) / deg_per_rad);
 	Mat4d mat4 = mat3.roty(MAX(fdeploy * 135 - 90, 0) / deg_per_rad);
-	return mat4.translate(Vec3d(0, 0, -30) * modelScale());
+	return mat4.translate(Vec3d(0, 0, -30) * modelScale);
 }
 
 

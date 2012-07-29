@@ -134,6 +134,15 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+	/// \brief Processes single Vec3d with given variable name.
+	class Vec3dProcess : public SqInitProcess{
+	public:
+		const SQChar *name;
+		Vec3d &vec;
+		Vec3dProcess(const SQChar *name, Vec3d &vec) : name(name), vec(vec){}
+		virtual void process(HSQUIRRELVM)const;
+	};
+
 	/// \brief A class that processes maneuver parameters.
 	class ManeuverParamsProcess : public SqInitProcess{
 	public:

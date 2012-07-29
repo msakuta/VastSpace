@@ -60,7 +60,7 @@ void Defender::draw(wardraw_t *wd){
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
-	double scale = modelScale() * nf;
+	double scale = modelScale * nf;
 	Defender *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
@@ -279,7 +279,7 @@ void Defender::drawtra(wardraw_t *wd){
 	Defender *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
-	double scale = modelScale() * nlips;
+	double scale = modelScale * nlips;
 
 #if PIDAIM_PROFILE
 	glBegin(GL_LINES);
@@ -364,34 +364,14 @@ void Defender::drawtra(wardraw_t *wd){
 	}
 
 	if(mf){
-		Vec3d pos = rot.trans(Vec3d(gunPos[0])) * nlips + this->pos;
+		Vec3d pos = rot.trans(gunPos) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		gldSpriteGlow(pos, .01, Vec4<GLubyte>(127,255,255,min(mf*255,255)), wd->vw->irot);
 		glPopAttrib();
 	}
 }
 
-void Defender::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .02);
-	glVertex2d(-.10, -.02);
-	glVertex2d(-.03, -.02);
-	glVertex2d(-.06, -.06);
-	glVertex2d(-.03, -.09);
-	glVertex2d( .00, -.04);
-	glVertex2d( .03, -.09);
-	glVertex2d( .06, -.06);
-	glVertex2d( .03, -.02);
-	glVertex2d( .10, -.02);
-	glVertex2d( .10,  .02);
-	glVertex2d( .03,  .02);
-	glVertex2d( .06,  .06);
-	glVertex2d( .03,  .09);
-	glVertex2d( .00,  .04);
-	glVertex2d(-.03,  .09);
-	glVertex2d(-.06,  .06);
-	glVertex2d(-.03,  .02);
-	glEnd();
+void Defender::drawOverlay(WarDraw *){
+	glCallList(overlayDisp);
 }
 

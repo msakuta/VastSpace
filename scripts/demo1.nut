@@ -12,7 +12,7 @@ if(earthlo){
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
 //	player.cs.addent("Destroyer", Vec3d(2.0, 0, 1.0));
-	player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
+//	player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
 //	player.cs.addent("Soldier", Vec3d(2.0, 0, 0.7));
 	local e = redbase;
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
@@ -134,6 +134,13 @@ function frameproc(dt){
 				be.race = 0;
 			}
 			assaults++;
+		}
+		if(true && countents(cs, 0, "Defender") < 1){
+			local docker = bluebase.docker;
+			if(docker != null){
+				local be = docker.addent("Defender");
+				be.race = 0;
+			}
 		}
 		if(racec[1] < 20){
 			local d = redbase.docker;

@@ -2,6 +2,7 @@
  * \brief Implementation of Sceptor drawing codes.
  */
 #include "../sceptor.h"
+#include "Viewer.h"
 #include "Player.h"
 #include "draw/material.h"
 //#include "judge.h"
@@ -28,7 +29,6 @@ extern "C"{
 #include <string.h>
 
 
-#define SCEPTOR_SCALE 1./10000
 #define SCEPTER_SMOKE_FREQ 10.
 #define SCEPTER_RELOADTIME .3
 #define SCEPTER_ROLLSPEED (.2 * M_PI)
@@ -87,7 +87,7 @@ void Sceptor::draw(wardraw_t *wd){
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
 	double nf = nlipsFactor(*wd->vw);
-	double scale = SCEPTOR_SCALE * nf;
+	double scale = modelScale * nf;
 	Sceptor *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
@@ -247,7 +247,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	Sceptor *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
-	double scale = SCEPTOR_SCALE * nlips;
+	double scale = modelScale * nlips;
 
 #if PIDAIM_PROFILE
 	glBegin(GL_LINES);
@@ -412,16 +412,6 @@ void Sceptor::drawtra(wardraw_t *wd){
 }
 
 void Sceptor::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10, -.10);
-	glVertex2d(-.05,  .00);
-	glVertex2d(-.10,  .10);
-	glVertex2d( .00,  .05);
-	glVertex2d( .10,  .10);
-	glVertex2d( .05,  .00);
-	glVertex2d( .10, -.10);
-	glVertex2d( .00, -.05);
-	glEnd();
+	glCallList(overlayDisp);
 }
 

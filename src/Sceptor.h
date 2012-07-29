@@ -1,27 +1,24 @@
 /** \file
- * \brief Declaration of Sceptor, Space interceptor class.
+ * \brief Definition of Sceptor, Space interceptor class.
  */
 #ifndef SCEPTOR_H
 #define SCEPTOR_H
 
-#include "Beamer.h"
-#include "CoordSys.h"
-#include "war.h"
-#include "arms.h"
-#include "shield.h"
+#include "Autonomous.h"
 #include "tefpol3d.h"
-extern "C"{
-#include <clib/avec3.h>
-//#include <clib/suf/sufdraw.h>
-}
 
 #define PIDAIM_PROFILE 0
 
 /// Space Interceptor (small fighter)
-class Sceptor : public Entity{
+class Sceptor : public Autonomous{
 public:
-	typedef Entity st;
+	typedef Autonomous st;
 protected:
+	static double modelScale;
+	static double defaultMass;
+	static std::vector<hitbox> hitboxes;
+	static GLuint overlayDisp;
+
 	enum Task{
 		Idle = sship_idle,
 		Undock = sship_undock,
@@ -100,8 +97,7 @@ public:
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 	virtual double maxfuel()const;
-	static hitbox hitboxes[];
-	static const int nhitboxes;
+
 	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);

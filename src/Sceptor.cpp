@@ -4,8 +4,8 @@
 
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
-#include "Application.h"
 #include "Sceptor.h"
+#include "Application.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "judge.h"
@@ -68,10 +68,10 @@ Entity::Dockable *Sceptor::toDockable(){return this;}
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
-struct hitbox Sceptor::hitboxes[] = {
-	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
-};
-const int Sceptor::nhitboxes = numof(Sceptor::hitboxes);
+struct std::vector<hitbox> Sceptor::hitboxes;
+double Sceptor::modelScale = 1./10000;
+double Sceptor::defaultMass = 4e3;
+GLuint Sceptor::overlayDisp = 0;
 
 /*static const struct hitbox sceptor_hb[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
@@ -173,9 +173,19 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	active(true)
 {
 	Sceptor *const p = this;
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Sceptor.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp));
+		initialized = true;
+	}
+
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
-	mass = 4e3;
+	mass = defaultMass;
 //	race = mother->st.st.race;
 	health = maxhealth();
 	p->aac.clear();
@@ -498,7 +508,7 @@ void Sceptor::enterField(WarField *target){
 			static btCompoundShape *shape = NULL;
 			if(!shape){
 				shape = new btCompoundShape();
-				for(int i = 0; i < nhitboxes; i++){
+				for(int i = 0; i < hitboxes.size(); i++){
 					const Vec3d &sc = hitboxes[i].sc;
 					const Quatd &rot = hitboxes[i].rot;
 					const Vec3d &pos = hitboxes[i].org;
@@ -1386,7 +1396,7 @@ int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, n;
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;

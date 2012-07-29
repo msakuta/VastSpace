@@ -18,6 +18,7 @@
 #ifndef DEDICATED
 #include "draw/effects.h"
 #endif
+#include "Docker.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

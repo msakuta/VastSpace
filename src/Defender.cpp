@@ -1325,9 +1325,13 @@ Mat4d Defender::legTransform(int i)const{
 
 
 static int cmd_deploy(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
+	ClientGame *game = (ClientGame*)pv;
+	Player *pl = game->player;
+	if(!pl)
+		return -1;
 	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		(*it)->command(&DeployCommand());
+		CMEntityCommand::s.send(*it, DeployCommand());
 	}
 //	for(Entity *e = pl->selected; e; e = e->selectnext){
 //		e->command(&DeployCommand());
@@ -1336,9 +1340,13 @@ static int cmd_deploy(int argc, char *argv[], void *pv){
 }
 
 static int cmd_undeploy(int argc, char *argv[], void *pv){
-	Player *pl = (Player*)pv;
+	ClientGame *game = (ClientGame*)pv;
+	Player *pl = game->player;
+	if(!pl)
+		return -1;
 	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		(*it)->command(&UndeployCommand());
+		CMEntityCommand::s.send(*it, UndeployCommand());
 	}
 //	for(Entity *e = pl->selected; e; e = e->selectnext){
 //		e->command(&UndeployCommand());
@@ -1346,16 +1354,17 @@ static int cmd_undeploy(int argc, char *argv[], void *pv){
 	return 0;
 }
 
-static void register_defender_cmd(Game &game){
-	CmdAddParam("deploy", cmd_deploy, game.player);
-	CmdAddParam("undeploy", cmd_undeploy, game.player);
+static void register_defender_cmd(ClientGame &game){
+	CmdAddParam("deploy", cmd_deploy, &game);
+	CmdAddParam("undeploy", cmd_undeploy, &game);
 }
 
-static void register_server(){
-	Game::addServerInits(register_defender_cmd);
+static void register_client(){
+//	Game::addServerInits(register_defender_cmd);
+	Game::addClientInits(register_defender_cmd);
 }
 
-static StaticInitializer sss(register_server);
+static StaticInitializer sss(register_client);
 
 IMPLEMENT_COMMAND(DeployCommand, "Deploy")
 IMPLEMENT_COMMAND(UndeployCommand, "Undeploy")

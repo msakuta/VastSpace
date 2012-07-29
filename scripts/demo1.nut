@@ -135,7 +135,7 @@ function frameproc(dt){
 			}
 			assaults++;
 		}
-		if(true && countents(cs, 0, "Defender") < 1){
+		if(true && countents(cs, 0, "Defender") < 2){
 			local docker = bluebase.docker;
 			if(docker != null){
 				local be = docker.addent("Defender");

@@ -1,31 +1,14 @@
 #include "../Soldier.h"
 #include "Player.h"
-#include "Bullet.h"
-#include "arms.h"
-#include "coordsys.h"
-#include "cmd.h"
-#include "judge.h"
-#include "motion.h"
-#include "Warpable.h"
 #include "draw/WarDraw.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 
 extern "C"{
-#include <clib/c.h>
-#include <clib/cfloat.h>
-#include <clib/lzw/lzw.h>
-#include <clib/suf/suf.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufbin.h>
 #include <clib/GL/gldraw.h>
-#include <clib/amat4.h>
-#include <clib/aquat.h>
-#include <clib/timemeas.h>
 }
 
-#include <assert.h>
 
 #if 0
 static void infantry_draw_arms(const char *name, infantry_t *p){

@@ -2,9 +2,7 @@
 #include "Player.h"
 #include "Bullet.h"
 #include "arms.h"
-#include "coordsys.h"
 #include "cmd.h"
-#include "judge.h"
 #include "motion.h"
 #include "Game.h"
 #include "btadapt.h"
@@ -13,20 +11,10 @@
 #include "Application.h"
 
 extern "C"{
-#include <clib/c.h>
-#include <clib/cfloat.h>
-#include <clib/lzw/lzw.h>
-#include <clib/suf/suf.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufbin.h>
-#include <clib/GL/gldraw.h>
-#include <clib/amat4.h>
-#include <clib/aquat.h>
-#include <clib/timemeas.h>
+#include <clib/mathdef.h>
 }
 
 #include <sstream>
-#include <assert.h>
 
 //#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 

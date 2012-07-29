@@ -52,7 +52,17 @@ Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
 const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
 
-double Soldier::modelScale = 2./1e5;
+double Soldier::modelScale = 2e-6;
+double Soldier::defaultMass = 60; // kilograms
+Autonomous::ManeuverParams Soldier::maneuverParams = {
+	0.01, // accel
+	0.01, // maxspeed
+	M_PI * 0.1, // angleaccel
+	M_PI * 0.1, // maxanglespeed
+	1, // capacity
+	1, // capacitor_gen
+};
+GLuint Soldier::overlayDisp = 0;
 
 //typedef struct bullet bullet_t;
 
@@ -194,7 +204,21 @@ int infantry_random_weapons = 0;
 Soldier::Soldier(Game *g) : st(g){}
 
 Soldier::Soldier(WarField *w) : st(w){
-	mass = 60.;
+	init();
+}
+
+void Soldier::init(){
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Soldier.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			ManeuverParamsProcess(maneuverParams) <<=
+			DrawOverlayProcess(overlayDisp));
+		initialized = true;
+	}
+
+	mass = defaultMass;
 	health = maxhealth();
 	swapphase = 0.;
 	pitch = 0.;
@@ -865,160 +889,9 @@ void Soldier::anim(double dt){
 			if(!game->isServer()){
 				CMPress::s.send(this);
 			}
-			struct ManeuverParams{
-				double accel; ///< Linear acceleration rate [m/s^2]
-				double maxspeed; ///< Maximum linear speed [m/s], which wouldn't really exist in space, but provided for safe sailing.
-				double angleaccel; ///< Angular acceleration [rad/s^2]
-				double maxanglespeed; ///< Maximum angular speed [rad/s], which also wouldn't exist.
-				double capacity; ///< The capacity of capacitor [MJ]
-				double capacitor_gen; ///< Rate of generated energy [MW]
-			};
-			static const ManeuverParams amn = {
-				0.1,
-				0.01,
-				M_PI * 0.001,
-				M_PI * 0.05,
-				1,
-				1,
-			};
-			static const ManeuverParams *mn = &amn;
-			double const maxspeed2 = mn->maxspeed * mn->maxspeed;
 			Mat4d mat;
 			transform(mat);
-
-			Vec3d torque = vec3_000;
-			if(inputs.press & PL_2){
-				torque += mat.vec3(0) * (mn->angleaccel);
-			}
-			if(inputs.press & PL_8){
-				torque += mat.vec3(0) * (-mn->angleaccel);
-			}
-			if(inputs.press & PL_4){
-				torque += mat.vec3(1) * (mn->angleaccel);
-			}
-			if(inputs.press & PL_6){
-				torque += mat.vec3(1) * (-mn->angleaccel);
-			}
-			if(inputs.press & PL_7){
-				torque += mat.vec3(2) * (mn->angleaccel);
-			}
-			if(inputs.press & PL_9){
-				torque += mat.vec3(2) * (-mn->angleaccel);
-			}
-			if(bbody && mn->maxanglespeed * mn->maxanglespeed < omg.slen()){
-				omg.normin();
-				omg *= mn->maxanglespeed;
-			}
-
-			if((inputs.press & (PL_8 | PL_2 | PL_4 | PL_6 | PL_7 | PL_9))){
-				if(bbody){
-					bbody->activate();
-					if(bbody->getAngularVelocity().length2() < mn->maxanglespeed * mn->maxanglespeed)
-						bbody->applyTorque(btvc(torque));
-				}
-				else{
-					double f;
-					omg += torque;
-					f = omg.len();
-					if(f){
-						f = MAX(0, f - dt * mn->angleaccel) / f;
-						omg *= f;
-					}
-				}
-			}
-			else{
-				if(bbody){
-					btVector3 btomg = bbody->getAngularVelocity();
-
-					// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
-					if(!btomg.isZero()){
-						btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
-						if(torqueImpulseToStop.length2() < dt * mn->angleaccel * dt * mn->angleaccel)
-							bbody->applyTorqueImpulse(torqueImpulseToStop);
-						else
-							bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * dt * mn->angleaccel);
-					}
-				}
-				else{
-					double len = omg.len();
-					if(len < dt * mn->angleaccel)
-						omg.clear();
-					else
-						omg *= (len - dt * mn->angleaccel) / len;
-				}
-			}
-
-			Vec3d forceAccum(0,0,0);
-			if(inputs.press & PL_W){
-				forceAccum += mat.vec3(2) * -mn->accel;
-				velo += mat.vec3(2) * (-dt * mn->accel);
-			}
-			if(inputs.press & PL_S){
-				forceAccum += mat.vec3(2) * mn->accel * .5;
-				velo += mat.vec3(2) * dt * mn->accel * .5;
-			}
-			if(inputs.press & PL_A){
-				forceAccum += mat.vec3(0) * -mn->accel * .5;
-				velo += mat.vec3(0) * -dt * mn->accel * .5;
-			}
-			if(inputs.press & PL_D){
-				forceAccum += mat.vec3(0) * mn->accel * .5;
-				velo += mat.vec3(0) * dt * mn->accel * .5;
-			}
-			if(inputs.press & PL_Q){
-				forceAccum += mat.vec3(1) * mn->accel * .5;
-				velo += mat.vec3(1) * dt * mn->accel * .5;
-			}
-			if(inputs.press & PL_Z){
-				forceAccum += mat.vec3(1) * -mn->accel * .5;
-				velo += mat.vec3(1) * -dt * mn->accel * .5;
-			}
-			if(inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
-				if(bbody){
-					btVector3 btforceAccum = btvc(forceAccum);
-					assert(!btforceAccum.isZero());
-					btVector3 btdirection = btforceAccum.normalized();
-					btVector3 btvelo = bbody->getLinearVelocity();
-					btVector3 btmainThrust(0,0,0);
-
-					// If desired steering direction is differing from real velocity,
-					// compensate sliding velocity with side thrusts.
-					if(!btvelo.isZero()){
-						if(btvelo.dot(btdirection) < -DBL_EPSILON)
-							btmainThrust = -btvelo.normalized() * mn->accel * .5;
-						else{
-							btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
-							if(!v.fuzzyZero())
-								btmainThrust = -v.normalize() * mn->accel * .5;
-						}
-
-					}
-
-					if(btvelo.length2() < mn->maxspeed * mn->maxspeed){
-						btmainThrust += btforceAccum;
-					}
-
-					bbody->applyCentralForce(btmainThrust / bbody->getInvMass());
-				}
-				else if(velo.slen() < maxspeed2);
-				else{
-					velo.normin();
-					velo *= mn->maxspeed;
-				}
-			}
-			else if(bbody){
-				btVector3 btvelo = bbody->getLinearVelocity();
-
-				// Try to stop motion if not instructed to move.
-				if(!btvelo.isZero()){
-					btVector3 impulseToStop = -btvelo / bbody->getInvMass();
-					double thrust = dt * mn->accel * .5 / bbody->getInvMass();
-					if(impulseToStop.length2() < thrust * thrust)
-						bbody->applyCentralImpulse(impulseToStop);
-					else
-						bbody->applyCentralImpulse(impulseToStop.normalize() * thrust);
-				}
-			}
+			maneuver(mat, dt, &getManeuve());
 		}
 		else if(shiftphase == 0.){
 			if(!(/*arms[0].type == arms_mortar && */p->aiming)){
@@ -1143,6 +1016,9 @@ bool Soldier::findEnemy(){
 	return !!closest;
 }
 
+const Autonomous::ManeuverParams &Soldier::getManeuve()const{
+	return maneuverParams;
+}
 
 
 #define DNMMOT_PROFILE 0

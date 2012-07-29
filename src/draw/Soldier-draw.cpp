@@ -93,7 +93,7 @@ void Soldier::draw(WarDraw *wd){
 	}
 #if 1
 		if(model){
-			double scale = 2./1e6;
+			double scale = modelScale;
 //			ysdnmv_t *dnmv;
 			glPushMatrix();
 /*			glMultMatrixf(rotmqo);*/
@@ -207,6 +207,10 @@ void Soldier::draw(WarDraw *wd){
 		glPopMatrix();
 	}
 #endif
+}
+
+void Soldier::drawOverlay(WarDraw *wd){
+	glCallList(overlayDisp);
 }
 
 #if 0

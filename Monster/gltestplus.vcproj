@@ -387,6 +387,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Autonomous.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\avi.c"
 				>
 			</File>
@@ -928,6 +932,10 @@
 			</File>
 			<File
 				RelativePath="..\include\astrodraw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Autonomous.h"
 				>
 			</File>
 			<File

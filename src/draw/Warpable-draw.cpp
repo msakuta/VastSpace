@@ -162,7 +162,7 @@ void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s,
 }
 
 
-void Warpable::drawtra(wardraw_t *wd){
+void Autonomous::drawtra(wardraw_t *wd){
 	if(wd->r_move_path && task == sship_moveto){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
@@ -268,20 +268,12 @@ int Warpable::popupMenu(PopupMenu &list){
 	return ret;
 }
 
-void Warpable::drawHUD(wardraw_t *wd){
-	Warpable *p = this;
+void Autonomous::drawHUD(wardraw_t *wd){
+	Autonomous *p = this;
 /*	base_drawHUD_target(pt, wf, wd, gdraw);*/
 	st::drawHUD(wd);
 	glPushMatrix();
 	glPushAttrib(GL_CURRENT_BIT);
-	if(warping){
-		Vec3d warpdstpos = w->cs->tocs(warpdst, warpdstcs);
-		Vec3d eyedelta = warpdstpos - wd->vw->pos;
-		eyedelta.normin();
-		glLoadMatrixd(wd->vw->rot);
-		glRasterPos3dv(eyedelta);
-		gldprintf("warpdst");
-	}
 	glLoadIdentity();
 
 	{
@@ -298,7 +290,7 @@ void Warpable::drawHUD(wardraw_t *wd){
 			left = -(double)w / m;
 			bottom = -(double)h / m;
 
-			velo = warping && warpcs ? warpcs->velo.len() : this->velo.len();
+			velo = absvelo().len();
 	//		w->orientation(wf, &ort, pt->pos);
 			glRasterPos3d(left + 200. / m, -bottom - 100. / m, -1);
 			gldprintf("%lg km/s", velo);
@@ -306,8 +298,34 @@ void Warpable::drawHUD(wardraw_t *wd){
 			gldprintf("%lg kt", 1944. * velo);
 			glScaled((double)mi / m, (double)mi / m, 1);
 		}
+	}
 
-		if(p->warping){
+	glPopAttrib();
+	glPopMatrix();
+}
+
+void Warpable::drawHUD(WarDraw *wd){
+	Warpable *p = this;
+	st::drawHUD(wd);
+
+	glPushMatrix();
+	glPushAttrib(GL_CURRENT_BIT);
+	if(warping){
+		Vec3d warpdstpos = w->cs->tocs(warpdst, warpdstcs);
+		Vec3d eyedelta = warpdstpos - wd->vw->pos;
+		eyedelta.normin();
+		glLoadMatrixd(wd->vw->rot);
+		glRasterPos3dv(eyedelta);
+		gldprintf("warpdst");
+	}
+	glLoadIdentity();
+
+	if(p->warping){
+		GLint vp[4];
+		double left, bottom, velo;
+		GLmatrix glm;
+
+		{
 			double (*cuts)[2];
 			char buf[128];
 			Vec3d *pvelo = warpcs ? &warpcs->velo : &this->velo;
@@ -495,7 +513,7 @@ double Warpable::Navlight::patternIntensity(double t0)const{
 	}
 }
 
-void Warpable::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){
+void Autonomous::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){
 	Mat4d defaultmat;
 	if(!transmat)
 		transform(defaultmat);

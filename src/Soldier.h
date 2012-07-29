@@ -1,12 +1,12 @@
 #ifndef SOLDIER_H
 #define SOLDIER_H
-#include "Entity.h"
+#include "Autonomous.h"
 #include "war.h"
 #include "arms.h"
 
-class Soldier : public Entity{
+class Soldier : public Autonomous{
 public:
-	typedef Entity st;
+	typedef Autonomous st;
 
 	static EntityRegister<Soldier> entityRegister;
 	static const unsigned classid;
@@ -19,12 +19,15 @@ public:
 	virtual void clientUpdate(double dt);
 	virtual void draw(WarDraw *);
 	virtual void drawHUD(WarDraw *);
+	virtual void drawOverlay(WarDraw *);
 	virtual double hitradius()const;
 	virtual double maxhealth()const;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
+	virtual const ManeuverParams &getManeuve()const;
 
 protected:
+	void init();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
 	void swapWeapon();
 	void reload();
@@ -49,6 +52,9 @@ protected:
 	ArmBase *arms[2];
 
 	static double modelScale;
+	static double defaultMass;
+	static ManeuverParams maneuverParams;
+	static GLuint overlayDisp;
 };
 
 #endif

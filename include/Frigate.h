@@ -1,6 +1,7 @@
 #ifndef FRIGATE_H
 #define FRIGATE_H
 #include "Warpable.h"
+#include "shield.h"
 
 class EXPORT Frigate : public Warpable{
 public:

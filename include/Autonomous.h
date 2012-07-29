@@ -1,11 +1,14 @@
+/** \file
+ * \brief Definition of Autonomous class.
+ */
 #ifndef AUTONOMOUS_H
 #define AUTONOMOUS_H
 
 #include "Entity.h"
-#include "CoordSys.h"
-#include "war.h"
-#include "shield.h"
 #ifndef DEDICATED
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <gl/GL.h>
 #else
 typedef unsigned int GLuint;

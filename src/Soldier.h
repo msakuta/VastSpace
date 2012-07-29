@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of Soldier class.
+ */
 #ifndef SOLDIER_H
 #define SOLDIER_H
 #include "Autonomous.h"

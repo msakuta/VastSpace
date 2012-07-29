@@ -1,4 +1,8 @@
+/** \file
+ * \brief Implementation of Soldier class's drawing methods.
+ */
 #include "../Soldier.h"
+#include "Viewer.h"
 #include "Player.h"
 #include "draw/WarDraw.h"
 #include "draw/material.h"

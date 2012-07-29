@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Soldier class.
+ */
 #include "Soldier.h"
 #include "Player.h"
 #include "Bullet.h"

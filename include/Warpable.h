@@ -1,15 +1,12 @@
+/** \file
+ * \brief Definition of Warpable class.
+ */
 #ifndef WARPABLE_H
 #define WARPABLE_H
 
 #include "Autonomous.h"
 #include "CoordSys.h"
 #include "war.h"
-#include "shield.h"
-#ifndef DEDICATED
-#include <gl/GL.h>
-#else
-typedef unsigned int GLuint;
-#endif
 
 
 /// \brief An autonomous object that can use warp drives.
@@ -49,12 +46,6 @@ public:
 protected:
 	virtual void init();
 };
-
-
-
-//-----------------------------------------------------------------------------
-//    Inline Implementation
-//-----------------------------------------------------------------------------
 
 
 #endif

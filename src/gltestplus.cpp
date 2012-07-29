@@ -1,5 +1,5 @@
 /** \file 
- * \brief The main source file for gltestplus project.
+ * \brief The main source file for gltestplus Windows client.
  *
  * The entry point for the program, no matter main() or WinMain(), resides in this file.
  * It deals with the main message loop, OpenGL initialization, and event mapping.

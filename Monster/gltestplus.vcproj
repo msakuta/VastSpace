@@ -559,6 +559,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Soldier.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\sqadapt.cpp"
 				>
 			</File>
@@ -676,6 +680,10 @@
 				</File>
 				<File
 					RelativePath="..\src\draw\Shipyard-Draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\Soldier-draw.cpp"
 					>
 				</File>
 				<File
@@ -833,6 +841,10 @@
 			</File>
 			<File
 				RelativePath="..\src\Server.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Soldier.h"
 				>
 			</File>
 			<File

@@ -990,11 +990,11 @@ void ClientGame::anim(double dt){
 		}
 	}
 
-/*		if(player->chase && player->controlled == player->chase){
-		inputs.analog[1] += mousedelta[0];
-		inputs.analog[0] += mousedelta[1];
+	if(player && player->chase && static_cast<Entity*>(player->controlled) == player->chase){
+//		inputs.analog[1] += mousedelta[0];
+//		inputs.analog[0] += mousedelta[1];
 		player->chase->control(&inputs, dt);
-	}*/
+	}
 
 	if(player && player->controlled)
 		GLwindow::getFocus()->defocus();

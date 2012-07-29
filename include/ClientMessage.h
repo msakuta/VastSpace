@@ -14,7 +14,7 @@ class Application;
 /// \brief The Client Messages are sent from the client to the server, to ask something the client wants to interact with the
 /// server world.
 ///
-/// The overriders should be sigleton class, which means only one instance of that class is permitted.
+/// The overriders should be singleton class, which means only one instance of that class is permitted.
 ///
 /// The overriders registers themselves with the constructor of ClientMessage and de-register in the destructor.
 struct EXPORT ClientMessage{

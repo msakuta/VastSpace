@@ -82,6 +82,15 @@ private:
 	CMViewDist() : st("ViewDist"){}
 };
 
+struct CMControl : ClientMessage{
+	typedef ClientMessage st;
+	static CMControl s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(Entity *);
+protected:
+	CMControl() : st("Control"){}
+};
+
 
 
 float Player::camera_mode_switch_time = 1.f;
@@ -761,13 +770,38 @@ int Player::cmd_moveorder(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+CMControl CMControl::s;
+
+void CMControl::interpret(ServerClient &sc, UnserializeStream &uss){
+	Entity *e;
+	uss >> e;
+	Serializable *s = sc.sv->pg->idmap()[sc.meid];
+	if(!!strcmp(s->classname(), "Player"))
+		return;
+	Player *player = static_cast<Player*>(s);
+	player->controlled = e;
+}
+
+void CMControl::send(Entity *e){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	Serializable* visit_list = NULL;
+	SerializeContext sc(sss, visit_list);
+	sss.sc = &sc;
+	sss << e;
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
 #ifdef _WIN32
 int Player::cmd_control(int argc, char *argv[], void *pv){
 	// TODO: Passing Player as static user pointer is not safe, because the player can be
 	// absent.
 	Player &pl = *(Player*)pv;
-	if(pl.controlled)
+	if(pl.controlled){
 		pl.uncontrol();
+		CMControl::s.send(NULL);
+	}
 	else if(!pl.selected.empty()){
 		Entity *e = *pl.selected.begin();
 		pl.controlled = e;
@@ -776,6 +810,7 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 		pl.mover->setrot(quat_u);
 		capture_mouse();
 		e->controller = &pl;
+		CMControl::s.send(e);
 	}
 	return 0;
 }

@@ -1310,7 +1310,7 @@ void Sceptor::anim(double dt){
 	else
 		mf -= dt;
 
-	st::anim(dt);
+//	st::anim(dt);
 
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 //	if(this->pf && w != oldw)

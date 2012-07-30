@@ -391,6 +391,7 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 		}
 	}
 	else if(bbody){
+		assert(0 < mn->angleaccel);
 		btVector3 btomg = bbody->getAngularVelocity();
 
 		// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.

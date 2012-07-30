@@ -50,6 +50,7 @@ double Defender::modelScale = 1./10000;
 double Defender::defaultMass = 4e3;
 GLuint Defender::overlayDisp = 0;
 Vec3d Defender::gunPos(0., -16.95 * modelScale, -200. * modelScale);
+Autonomous::ManeuverParams Defender::maneuverParams;
 
 
 /* color sequences */
@@ -158,6 +159,7 @@ Defender::Defender(WarField *aw) : st(aw),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
 			HitboxProcess(hitboxes) <<=
+			ManeuverParamsProcess(maneuverParams) <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			Vec3dProcess(_SC("gunPos"), gunPos));
 		initialized = true;
@@ -230,7 +232,7 @@ void Defender::shoot(double dt){
 	if(dt <= cooldown)
 		return;
 	transform(mat);
-	{
+	if(game->isServer()){
 		Bullet *pb = new BeamProjectile(this, 5, 200.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos);
@@ -245,8 +247,8 @@ void Defender::shoot(double dt){
 		}
 		pb->velo += this->velo;
 		pb->life = 3.;
-		this->heat += .025f;
 	}
+	this->heat += .025f;
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	this->cooldown += reloadTime() * (fuel <= 0 ? 3 : 1);
@@ -401,9 +403,13 @@ short Defender::bbodyMask()const{
 	return ~2;
 }
 
+const Autonomous::ManeuverParams &Defender::getManeuve()const{
+	return maneuverParams;
+}
+
 void Defender::enterField(WarField *target){
 	st::enterField(target);
-	if(w){
+	if(!game->isServer() && w){
 		WarSpace *ws = *w;
 		if(ws){
 			for(int i = 0; i < 4; i++){
@@ -1163,7 +1169,8 @@ void Defender::anim(double dt){
 	else
 		mf -= (float)dt;
 
-	st::anim(dt);
+	// Bypass Autonomous::anim() to avoid unintentional movements.
+	Entity::anim(dt);
 
 //	for(int i = 0; i < 4; i++) if(this->pf[i] && w != oldw)
 //		ImmobilizeTefpol3D(this->pf[i]);
@@ -1171,6 +1178,7 @@ void Defender::anim(double dt){
 }
 
 void Defender::clientUpdate(double dt){
+	anim(dt);
 	for(int i = 0; i < 4; i++) if(pf[i]){
 		Mat4d mat5 = legTransform(i);
 		pf[i]->move(mat5.vp3(Vec3d(0, 0, 130 * modelScale)), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);

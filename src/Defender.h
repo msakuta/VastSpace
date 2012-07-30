@@ -32,6 +32,7 @@ protected:
 	static std::vector<hitbox> hitboxes;
 	static GLuint overlayDisp;
 	static Vec3d gunPos;
+	static ManeuverParams maneuverParams;
 
 	enum Task{
 		Idle = sship_idle,
@@ -120,6 +121,7 @@ public:
 	virtual double maxfuel()const;
 	virtual bool buildBody();
 	virtual short bbodyMask()const;
+	virtual const ManeuverParams &getManeuve()const;
 	Mat4d legTransform(int legIndex)const; ///< Returns transformation matrix for a given leg.
 private:
 };

@@ -3,6 +3,14 @@ modelScale <- 1.e-4;
 
 mass <- 16.e3;
 
+accel <- 0.1;
+maxspeed <- 0.1;
+angleaccel <- PI * 0.1;
+maxanglespeed <- PI * 0.1;
+capacity <- 1.;
+capacitorGen <- 1.;
+
+
 gunPos <- Vec3d(0., -16.95 * modelScale, -200. * modelScale);
 
 hitbox <- [

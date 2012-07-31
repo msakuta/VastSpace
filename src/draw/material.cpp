@@ -651,11 +651,6 @@ const TexCacheBind *FindTexture(const gltestp::dstring &name){
 
 
 static void cachemtex(const suftexparam_t *stp){
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, stp->flags & STP_WRAP_S ? stp->wraps : GL_REPEAT); 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, stp->flags & STP_WRAP_T ? stp->wrapt : GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, stp->flags & STP_MAGFIL ? stp->magfil : GL_NEAREST); 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, stp->flags & STP_MINFIL ? stp->minfil : stp->flags & STP_MIPMAP ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, stp->flags & STP_ENV ? stp->env : GL_MODULATE);
 	if(stp->flags & STP_ALPHA_TEST /*stp->mipmap & 0x80*/){
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_GREATER, .5f);
@@ -815,8 +810,16 @@ static GLuint cachetex(const suftexparam_t *stp){
 	}
 	glGenTextures(1, &ret);
 	glBindTexture(GL_TEXTURE_2D, ret);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	// The texture parameters and environments belong to a texture unit; they'll restore if you call glBindTexture later on.
+	// Therefore, we do not set them in the display list, but just before loading content.
+	// At least magnify and minify filter parameters must be specified prior to actually load the image anyway.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, stp->flags & STP_WRAP_S ? stp->wraps : GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, stp->flags & STP_WRAP_T ? stp->wrapt : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, stp->flags & STP_MAGFIL ? stp->magfil : GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, stp->flags & STP_MINFIL ? stp->minfil : stp->flags & STP_MIPMAP ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, stp->flags & STP_ENV ? stp->env : GL_MODULATE);
+
 	if(mipmap)
 		gluBuild2DMipmaps(GL_TEXTURE_2D, alpha ? GL_RGBA : GL_RGB, bmi->bmiHeader.biWidth, ABS(bmi->bmiHeader.biHeight),
 			alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, alpha ? (void*)tex4 : (void*)tex);
@@ -1201,6 +1204,7 @@ public:
 	SQMaterial();
 	~SQMaterial();
 protected:
+	static void interpretTexParam(HSQUIRRELVM v, SQInteger idx, TexParam &stp);
 	static SQInteger sqf_addMaterial(HSQUIRRELVM v);
 };
 
@@ -1231,6 +1235,48 @@ SQMaterial::SQMaterial(){
 SQMaterial::~SQMaterial(){
 }
 
+void SQMaterial::interpretTexParam(HSQUIRRELVM v, SQInteger idx, TexParam &stp){
+	const SQChar *env;
+	sq_pushstring(v, _SC("env"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getstring(v, -1, &env))){
+		if(!strcmp(env, "GL_MODULATE")){
+			stp.flags |= STP_ENV;
+			stp.env = GL_MODULATE;
+		}
+		else if(!strcmp(env, "GL_ADD")){
+			stp.flags |= STP_ENV;
+			stp.env = GL_ADD;
+		}
+		sq_poptop(v);
+	}
+
+	sq_pushstring(v, _SC("magfil"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getstring(v, -1, &env))){
+		if(!strcmp(env, "GL_NEAREST")){
+			stp.flags |= STP_MAGFIL;
+			stp.magfil = GL_NEAREST;
+		}
+		else if(!strcmp(env, "GL_LINEAR")){
+			stp.flags |= STP_MAGFIL;
+			stp.magfil = GL_LINEAR;
+		}
+		sq_poptop(v);
+	}
+
+	sq_pushstring(v, _SC("minfil"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getstring(v, -1, &env))){
+		if(!strcmp(env, "GL_NEAREST")){
+			stp.flags |= STP_MINFIL;
+			stp.minfil = GL_NEAREST;
+		}
+		else if(!strcmp(env, "GL_LINEAR")){
+			stp.flags |= STP_MINFIL;
+			stp.minfil = GL_LINEAR;
+		}
+		sq_poptop(v);
+	}
+}
+
 SQInteger SQMaterial::sqf_addMaterial(HSQUIRRELVM v){
 	try{
 		const SQChar *name;
@@ -1243,26 +1289,17 @@ SQInteger SQMaterial::sqf_addMaterial(HSQUIRRELVM v){
 
 		TexParam stp;
 		stp.flags = 0;
-
-		const SQChar *env;
-		sq_pushstring(v, _SC("env"), -1);
-		if(SQ_SUCCEEDED(sq_get(v, 4)) && SQ_SUCCEEDED(sq_getstring(v, -1, &env))){
-			if(!strcmp(env, "GL_MODULATE")){
-				stp.flags |= STP_ENV;
-				stp.env = GL_MODULATE;
-			}
-			else if(!strcmp(env, "GL_ADD")){
-				stp.flags |= STP_ENV;
-				stp.env = GL_ADD;
-			}
-			sq_poptop(v);
-		}
+		interpretTexParam(v, 4, stp);
 
 		const SQChar *texname2;
 		if(SQ_FAILED(sq_getstring(v, 5, &texname2)))
 			texname2 = NULL;
 
-		AddMaterial(name, texname, &stp, texname2, NULL);
+		TexParam stp2;
+		stp2.flags = 0;
+		interpretTexParam(v, 6, stp2);
+
+		AddMaterial(name, texname, &stp, texname2, &stp2);
 		return 1;
 	}
 	catch(SQIntrinsicError){

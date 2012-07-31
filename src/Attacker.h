@@ -52,9 +52,6 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int takedamage(double damage, int hitpart);
 	virtual short bbodyGroup()const;
-
-	static void onBeginTexture(void*);
-	static void onEndTexture(void*);
 protected:
 	bool buildBody();
 };

@@ -1024,6 +1024,15 @@ void ClientApplication::display_func(void){
 
 		MultiTextureInit();
 
+		// The texture matrix stacks are isolated between texture units, and one for
+		// the texture unit 1 seems not initialized with unit matrix, at least in Radeon HD.
+		// So we explicitly set an identity matrix at startup of the OpenGL state.
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();
+		glMatrixMode(GL_MODELVIEW);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+
 		if(serverGame)
 			serverGame->init();
 		if(clientGame && serverGame != clientGame)

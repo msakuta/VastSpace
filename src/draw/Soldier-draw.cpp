@@ -42,8 +42,8 @@ static void infantry_draw_arms(const char *name, infantry_t *p){
 }
 #endif
 
-static Model *model = NULL;
-static Motion *motions[1];
+Model *Soldier::model = NULL;
+Motion *Soldier::motions[1] = {NULL};
 
 void Soldier::draw(WarDraw *wd){
 	static OpenGLState::weak_ptr<bool> init;
@@ -594,12 +594,13 @@ void M16::draw(WarDraw *wd){
 	double scale = Soldier::getModelScale();
 	glPushMatrix();
 
+	// Obtain gun position from soldier's arm bones.
 	MotionPose mp[1];
-	::motions[0]->interpolate(mp[0], 10.);
+	Soldier::motions[0]->interpolate(mp[0], 10.);
 
 	Vec3d handpos;
 	Quatd handrot;
-	::model->getBonePos("rhand", *mp, &handpos, &handrot);
+	Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
 
 	Mat4d mat;
 	base->transform(mat);

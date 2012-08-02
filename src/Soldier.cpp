@@ -61,12 +61,6 @@ std::vector<hardpoint_static*> soldierHP;/* = {
 	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Stocked weapon", 0),
 };*/
 
-DERIVE_COMMAND(ShootCommand, EntityCommand);
-DERIVE_COMMAND(ReloadCommand, EntityCommand);
-
-IMPLEMENT_COMMAND(ShootCommand, "Shoot")
-IMPLEMENT_COMMAND(ReloadCommand, "Reload")
-
 //typedef struct bullet bullet_t;
 
 //extern void rbd_anim(entity_t *pt, double dt, aquat_t *pq, amat4_t *nmat);
@@ -460,7 +454,7 @@ static int infantry_brass(WarField *w, Entity *pt, int shotshell, double t, Mat4
 
 void Soldier::swapWeapon(){
 	if(cooldown2 <= 0.){
-		ArmBase *tmp = arms[1];
+		Firearm *tmp = arms[1];
 		arms[1] = arms[0];
 		arms[0] = tmp;
 		cooldown2 = 2.;
@@ -742,8 +736,7 @@ void Soldier::anim(double dt){
 	else*/
 	if(arms[0] && reloading){
 		if(p->reloadphase < dt){
-			ReloadCommand rc;
-			arms[0]->command(&rc);
+			arms[0]->reload();
 			p->reloadphase = 0.;
 			p->reloading = 0;
 		}
@@ -773,9 +766,8 @@ void Soldier::anim(double dt){
 			break;
 		}
 		else{
-			ShootCommand sc;
-			cooldown2 += 0.1;
-			arms[0]->command(&sc);
+			cooldown2 += arms[0]->shootCooldown();
+			arms[0]->shoot();
 		}
 #if 0
 		else if(p->arms[0]->type == arms_shotgun/*pt->weapon*/){
@@ -1963,70 +1955,47 @@ const char *M16::classname()const{return "M16";}
 
 
 M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
-	ammo = 50;
+	reload();
 }
 
 
-bool M16::command(EntityCommand *com){
-	if(InterpretCommand<ShootCommand>(com)){
-		shoot();
-		return true;
-	}
-	else if(InterpretCommand<ReloadCommand>(com)){
-		ammo = maxammo();
-		return true;
-	}
-	else
-		return st::command(com);
-}
-
-void M16::shoot(){
+void Firearm::shoot(){
 	if(!game->isServer())
 		return;
 	Entity *p = base;
 	static const Vec3d nh0(0., 0., -1);
-//	double phi, theta;
-//	double hei = (p->state == STATE_PRONE ? .0005 / .0016 : 1.) * 220. * modelScale;
-	double v = BULLETSPEED;
+	double v = bulletSpeed();
 
-/*	phi = -phi0 + (drseq(&w->rs) - .5) * variance;
-	phi += (drseq(&w->rs) - .5) * variance;
-	theta = theta0 + (drseq(&w->rs) - .5) * variance;
-	theta += (drseq(&w->rs) - .5) * variance;*/
-/*	Mat4d mat = mat4_u;
-	mat.vec3(3) = this->pos;
-	Mat4d mat2 = mat.roty(phi);
-	gunmat = mat2.rotx(theta);*/
-/*	MAT4VP3(pos, *rot, *ofs);*/
-/*	if(p->arms[0].type == arms_rpg7){
-		pb = add_rpg7(w, pt->pos);
-		pb->damage = damage;
-		pb->owner = pt;
-	}
-	else
-		pb = (p->arms[0].type == arms_plg ? BeamNew : p->arms[0].type == arms_mortar ? MortarHeadNew : p->arms[0].type == arms_m16rifle && p->arms[0].ammo < 5 ? TracerBulletNew : p->arms[0].type == arms_shotgun ? ShotgunBulletNew : NormalBulletNew)(w, pt, damage);*/
 	Mat4d gunmat;
 	p->transform(gunmat);
-	Bullet *pb = new Bullet(this, 1., 2.);
+	Bullet *pb = new Bullet(this, 1., bulletDamage());
 	pb->velo = this->velo;
 	Vec3d nh = gunmat.dvp3(nh0);
-	pb->velo += nh * v;
-/*	Vec3d zh(
-		- .0015 * sin(phi),
-		0.,
-		- .0015 * cos(phi)
-	);
-	VECADDIN(&gunmat[12], zh);
-	gunmat[13] += hei;*/
-	pb->pos = this->pos /*+ zh*/;
-//	pb->pos[1] += hei;
-//	pb->life = p->arms[0].type == arms_mortar ? 60. : p->arms[0].type == arms_rpg7 ? 5. : 2.;
-	pb->life = 5.;
+
+	// Generate variance vector from random number generator.
+	// It's not really isotropic distribution, I'm afraid.
+	Vec3d vecvar = Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * bulletVariance() * v;
+
+	// Remove component parallel to heading direction.
+	vecvar -= nh.sp(vecvar) * nh;
+
+	// Accumulate desired direction and variance vector to determine the bullet's direction.
+	pb->velo += (nh + vecvar) * v;
+
+	// Offset for hand (and to make the bullet easier to see from eyes)
+	Vec3d relpos(0.0003, -0.0002, -0.0003);
+	pb->pos = this->pos + gunmat.dvp3(relpos);
+
+	pb->life = bulletLifeTime();
 //	pb->anim(t);
 
 	w->addent(pb);
 
 	--ammo;
 
+}
+
+void Firearm::reload(){
+	ammo = maxammo();
 }
 

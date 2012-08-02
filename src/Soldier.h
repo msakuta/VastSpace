@@ -7,6 +7,28 @@
 #include "war.h"
 #include "arms.h"
 
+struct Model;
+class Motion;
+
+/// \brief The abstract class for personal firearms.
+class Firearm : public ArmBase{
+public:
+	typedef ArmBase st;
+
+	Firearm(Game *game) : st(game){}
+	Firearm(Entity *abase, const hardpoint_static *hp) : st(abase, hp){}
+	void shoot();
+	void reload();
+	virtual int maxammo()const = 0;
+	virtual double shootCooldown()const = 0;
+	virtual double bulletSpeed()const = 0;
+	virtual double bulletDamage()const = 0;
+	virtual double bulletLifeTime()const{return 5.;}
+	virtual double bulletVariance()const{return 0.01;}
+};
+
+
+/// \breif The infantryman with firearms and a spacesuit equipped.
 class Soldier : public Autonomous{
 public:
 	typedef Autonomous st;
@@ -34,6 +56,9 @@ public:
 
 	static double getModelScale(){return modelScale;}
 
+	static Model *model;
+	static Motion *motions[];
+
 protected:
 	void init();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
@@ -57,7 +82,7 @@ protected:
 	char aiming;
 	char muzzle;
 	bool forcedEnemy;
-	ArmBase *arms[2];
+	Firearm *arms[2];
 
 	static double modelScale;
 	static double defaultMass;
@@ -66,9 +91,11 @@ protected:
 };
 
 
-class M16 : public ArmBase{
+
+/// \brief M16A1 assault rifle. It's silly to see it in space.
+class M16 : public Firearm{
 public:
-	typedef ArmBase st;
+	typedef Firearm st;
 
 	static EntityRegister<Soldier> entityRegister;
 	static const unsigned classid;
@@ -78,10 +105,12 @@ public:
 	const char *classname()const;
 	void anim(double dt){}
 	void draw(WarDraw *);
-	bool command(EntityCommand *);
+
 protected:
-	void shoot();
 	int maxammo()const{return 20;}
+	double shootCooldown()const{return 0.1;}
+	double bulletSpeed()const{return 1.;}
+	double bulletDamage()const{return 2.;}
 };
 
 

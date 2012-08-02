@@ -42,12 +42,14 @@ static void infantry_draw_arms(const char *name, infantry_t *p){
 }
 #endif
 
+static Model *model = NULL;
+static Motion *motions[1];
+
 void Soldier::draw(WarDraw *wd){
 	static OpenGLState::weak_ptr<bool> init;
 //	static int init = 0;
 //	static suf_t *sufbody;
 //	static suftex_t *suft_body;
-	static Model *model = NULL;
 	Soldier *p = this;
 //	struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
 	double pixels;
@@ -70,6 +72,7 @@ void Soldier::draw(WarDraw *wd){
 //		CallCacheBitmap("infantry.bmp", "infantry.bmp", NULL, NULL);
 //		CacheSUFTex("infantry.bmp", (BITMAPINFO*)lzuc(lzw_infantry, sizeof lzw_infantry, NULL), 0);
 		model = LoadMQOModel("models/Soldier.mqo");
+		motions[0] = LoadMotion("models/Soldier_aim.mot");
 //		dnm = LoadYSDNM_MQO(/*CvarGetString("valkie_dnm")/*/"infantry2.dnm", "infantry2.mqo");
 /*		sufbody = &suf_roughbody *//*LoadSUF("roughbody2.suf")*/;
 /*		vft->sufbase = sufbody;*/
@@ -79,48 +82,37 @@ void Soldier::draw(WarDraw *wd){
 		init.create(*openGLState);
 	}
 #if 1
-		if(model){
-			double scale = modelScale;
-//			ysdnmv_t *dnmv;
-			glPushMatrix();
-/*			glMultMatrixf(rotmqo);*/
+	if(!model)
+		return;
 
-//			dnmv = infantry_boneset(p);
+	// Interpolate motion poses.
+	MotionPose mp[1];
+	motions[0]->interpolate(mp[0], 10.);
 
-			Mat4d mat;
-			transform(mat);
-			glMultMatrixd(mat);
-/*			gldTranslate3dv(pos);
-			glRotated(deg_per_rad * pt->pyr[1], 0., -1., 0.);
-			glRotated(deg_per_rad * pt->pyr[0], -1.,  0., 0.);
-			glRotated(deg_per_rad * pt->pyr[2], 0.,  0., -1.);*/
-//			glRotated(180, 0, 1, 0);
-			glScaled(-scale, scale, -scale);
-			glTranslated(0, 54.4, 0);
-/*			glTranslated(0, p->batphase * -7, 0.);
-			glTranslated(0, 0, 5. * p->wing[0] / (M_PI / 4.));*/
-//			glPushAttrib(GL_POLYGON_BIT);
-//			glFrontFace(GL_CW);
-/*			DrawYSDNM(dnm, names, rot, numof(valkie_bonenames), skipnames, numof(skipnames) - (p->bat ? 0 : 2));*/
-/*			DrawYSDNM_V(dnm, &v);*/
+	double scale = modelScale;
+	glPushMatrix();
+
+	Mat4d mat;
+	transform(mat);
+	glMultMatrixd(mat);
+	glScaled(-scale, scale, -scale);
+	glTranslated(0, 54.4, 0);
 #if DNMMOT_PROFILE
-			{
-				timemeas_t tm;
-				TimeMeasStart(&tm);
+	{
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 #endif
-				DrawMQOPose(model, NULL);
-//				DrawYSDNM_V(dnm, dnmv);
+		DrawMQOPose(model, mp);
 #if DNMMOT_PROFILE
-				printf("motdraw %lg\n", TimeMeasLap(&tm));
-			}
+		printf("motdraw %lg\n", TimeMeasLap(&tm));
+	}
 #endif
 //			if(10 < pixels)
 //				TransYSDNM_V(dnm, dnmv, infantry_draw_arms, p);
 //			g_gldcache.valid = 0;
 /*			TransYSDNM(dnm, names, rot, numof(valkie_bonenames), NULL, 0, draw_arms, p);*/
 //			glPopAttrib();
-			glPopMatrix();
-		}
+	glPopMatrix();
 #endif
 
 #if 0
@@ -582,3 +574,41 @@ void Soldier::drawHUD(WarDraw *wd){
 
 
 
+void M16::draw(WarDraw *wd){
+	static OpenGLState::weak_ptr<bool> init;
+	static Model *model = NULL;
+	double pixels;
+
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(pos, .003))
+		return;
+	wd->lightdraws++;
+
+	if(!init){
+		model = LoadMQOModel("models/m16.mqo");
+		init.create(*openGLState);
+	}
+	if(!model)
+		return;
+
+	double scale = Soldier::getModelScale();
+	glPushMatrix();
+
+	MotionPose mp[1];
+	::motions[0]->interpolate(mp[0], 10.);
+
+	Vec3d handpos;
+	Quatd handrot;
+	::model->getBonePos("rhand", *mp, &handpos, &handrot);
+
+	Mat4d mat;
+	base->transform(mat);
+	glMultMatrixd(mat);
+	glScaled(-scale, scale, -scale);
+	gldTranslate3dv(handpos);
+	gldMultQuat(handrot);
+	glRotated(90, 0, -1, 0);
+//	glTranslated(0, 54.4, 0);
+	DrawMQOPose(model, NULL);
+	glPopMatrix();
+}

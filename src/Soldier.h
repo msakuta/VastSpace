@@ -17,6 +17,8 @@ public:
 
 	Soldier(Game *);
 	Soldier(WarField *);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
@@ -27,7 +29,10 @@ public:
 	virtual double maxhealth()const;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
+	virtual Props props()const;
 	virtual const ManeuverParams &getManeuve()const;
+
+	static double getModelScale(){return modelScale;}
 
 protected:
 	void init();
@@ -59,5 +64,25 @@ protected:
 	static ManeuverParams maneuverParams;
 	static GLuint overlayDisp;
 };
+
+
+class M16 : public ArmBase{
+public:
+	typedef ArmBase st;
+
+	static EntityRegister<Soldier> entityRegister;
+	static const unsigned classid;
+
+	M16(Game *game) : st(game){}
+	M16(Entity *abase, const hardpoint_static *hp);
+	const char *classname()const;
+	void anim(double dt){}
+	void draw(WarDraw *);
+	bool command(EntityCommand *);
+protected:
+	void shoot();
+	int maxammo()const{return 20;}
+};
+
 
 #endif

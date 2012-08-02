@@ -12,6 +12,7 @@
 #include "ClientMessage.h"
 #include "Server.h"
 #include "Application.h"
+#include "EntityCommand.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -54,6 +55,17 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 	1, // capacitor_gen
 };
 GLuint Soldier::overlayDisp = 0;
+
+std::vector<hardpoint_static*> soldierHP;/* = {
+	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Armed weapon", 0),
+	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Stocked weapon", 0),
+};*/
+
+DERIVE_COMMAND(ShootCommand, EntityCommand);
+DERIVE_COMMAND(ReloadCommand, EntityCommand);
+
+IMPLEMENT_COMMAND(ShootCommand, "Shoot")
+IMPLEMENT_COMMAND(ReloadCommand, "Reload")
 
 //typedef struct bullet bullet_t;
 
@@ -116,6 +128,21 @@ static struct entity_private_static infantry_s = {
 };
 #endif
 
+
+void Soldier::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	sc.o << cooldown2;
+	sc.o << arms[0];
+	sc.o << arms[1];
+}
+
+void Soldier::unserialize(UnserializeContext &usc){
+	st::unserialize(usc);
+	usc.i >> cooldown2;
+	usc.i >> arms[0];
+	usc.i >> arms[1];
+}
+
 class CMPress : public ClientMessage{
 public:
 	typedef ClientMessage st;
@@ -171,13 +198,9 @@ bool Soldier::isSelectable()const{
 
 #define F(a) (1<<(a))
 
-class M16 : public ArmBase{
-public:
-	typedef ArmBase st;
-
-	M16(Game *game) : st(game){}
-	M16(Entity *abase, const hardpoint_static *hp);
-};
+#ifdef DEDICATED
+void M16::draw(WarDraw *){}
+#endif
 
 /*static const struct hardpoint_static infantry_hardpoints[2] = {
 	{{-.00015, .001, -.0005}, {0,0,0,1}, "Right Hand", 0, F(armc_none) | F(armc_infarm)},
@@ -192,7 +215,9 @@ static arms_t infantry_arms[numof(infantry_hardpoints)] = {
 int infantry_random_weapons = 0;
 
 
-Soldier::Soldier(Game *g) : st(g){}
+Soldier::Soldier(Game *g) : st(g){
+	arms[0] = arms[1] = NULL;
+}
 
 Soldier::Soldier(WarField *w) : st(w){
 	init();
@@ -205,6 +230,7 @@ void Soldier::init(){
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
+			HardPointProcess(soldierHP) <<=
 			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}
@@ -221,6 +247,10 @@ void Soldier::init(){
 	reloading = 0;
 	aiming = 0;
 	muzzle = 0;
+	arms[0] = new M16(this, soldierHP[0]);
+	arms[1] = NULL;
+	if(w)
+		w->addent(arms[0]);
 //	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
 //	MAT4IDENTITY(infantry_s.hitmdl.trans);
 //	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
@@ -709,9 +739,14 @@ void Soldier::anim(double dt){
 		else
 			p->reloadphase = 0., p->reloading = 0;
 	}
-	else*/{
-		if(p->reloadphase < dt)
-			p->reloadphase = 0., p->reloading = 0;
+	else*/
+	if(arms[0] && reloading){
+		if(p->reloadphase < dt){
+			ReloadCommand rc;
+			arms[0]->command(&rc);
+			p->reloadphase = 0.;
+			p->reloading = 0;
+		}
 		else{
 			p->reloadphase -= dt;
 //			if(p->arms[0].type != arms_mortar)
@@ -724,7 +759,7 @@ void Soldier::anim(double dt){
 
 	/* shooter logic */
 	p->muzzle = 0;
-	if(!p->reloading && i & (PL_ENTER | PL_LCLICK) && !(i & PL_SHIFT)) while(p->cooldown2 < dt){
+	if(game->isServer() && !p->reloading && i & (PL_ENTER | PL_LCLICK) && !(i & PL_SHIFT)) while(p->cooldown2 < dt){
 		amat4_t gunmat;
 		double kickf = g_recoil_kick_factor * (p->state == STATE_PRONE ? .3 : 1.);
 		gunmat[15] = 0.;
@@ -736,6 +771,11 @@ void Soldier::anim(double dt){
 				reload();
 			}
 			break;
+		}
+		else{
+			ShootCommand sc;
+			cooldown2 += 0.1;
+			arms[0]->command(&sc);
 		}
 #if 0
 		else if(p->arms[0]->type == arms_shotgun/*pt->weapon*/){
@@ -972,6 +1012,9 @@ void Soldier::anim(double dt){
 
 //	if(pt->pos[1] < h)
 //		pt->pos[1] = h;
+	for(int i = 0; i < numof(arms); i++) if(arms[i]){
+		arms[i]->align();
+	}
 }
 
 void Soldier::clientUpdate(double dt){
@@ -1005,6 +1048,13 @@ bool Soldier::findEnemy(){
 //		evelo = vec3_000;
 	}
 	return !!closest;
+}
+
+Entity::Props Soldier::props()const{
+	Props ret = st::props();
+	ret.push_back(gltestp::dstring("Ammo: ") << (arms[0] ? arms[0]->ammo : 0));
+	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown2);
+	return ret;
 }
 
 const Autonomous::ManeuverParams &Soldier::getManeuve()const{
@@ -1905,4 +1955,78 @@ static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], 
 
 
 
+
+Entity::EntityRegister<Soldier> M16::entityRegister("M16");
+const unsigned M16::classid = registerClass("M16", Conster<M16>);
+const char *M16::classname()const{return "M16";}
+
+
+
+M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	ammo = 50;
+}
+
+
+bool M16::command(EntityCommand *com){
+	if(InterpretCommand<ShootCommand>(com)){
+		shoot();
+		return true;
+	}
+	else if(InterpretCommand<ReloadCommand>(com)){
+		ammo = maxammo();
+		return true;
+	}
+	else
+		return st::command(com);
+}
+
+void M16::shoot(){
+	if(!game->isServer())
+		return;
+	Entity *p = base;
+	static const Vec3d nh0(0., 0., -1);
+//	double phi, theta;
+//	double hei = (p->state == STATE_PRONE ? .0005 / .0016 : 1.) * 220. * modelScale;
+	double v = BULLETSPEED;
+
+/*	phi = -phi0 + (drseq(&w->rs) - .5) * variance;
+	phi += (drseq(&w->rs) - .5) * variance;
+	theta = theta0 + (drseq(&w->rs) - .5) * variance;
+	theta += (drseq(&w->rs) - .5) * variance;*/
+/*	Mat4d mat = mat4_u;
+	mat.vec3(3) = this->pos;
+	Mat4d mat2 = mat.roty(phi);
+	gunmat = mat2.rotx(theta);*/
+/*	MAT4VP3(pos, *rot, *ofs);*/
+/*	if(p->arms[0].type == arms_rpg7){
+		pb = add_rpg7(w, pt->pos);
+		pb->damage = damage;
+		pb->owner = pt;
+	}
+	else
+		pb = (p->arms[0].type == arms_plg ? BeamNew : p->arms[0].type == arms_mortar ? MortarHeadNew : p->arms[0].type == arms_m16rifle && p->arms[0].ammo < 5 ? TracerBulletNew : p->arms[0].type == arms_shotgun ? ShotgunBulletNew : NormalBulletNew)(w, pt, damage);*/
+	Mat4d gunmat;
+	p->transform(gunmat);
+	Bullet *pb = new Bullet(this, 1., 2.);
+	pb->velo = this->velo;
+	Vec3d nh = gunmat.dvp3(nh0);
+	pb->velo += nh * v;
+/*	Vec3d zh(
+		- .0015 * sin(phi),
+		0.,
+		- .0015 * cos(phi)
+	);
+	VECADDIN(&gunmat[12], zh);
+	gunmat[13] += hei;*/
+	pb->pos = this->pos /*+ zh*/;
+//	pb->pos[1] += hei;
+//	pb->life = p->arms[0].type == arms_mortar ? 60. : p->arms[0].type == arms_rpg7 ? 5. : 2.;
+	pb->life = 5.;
+//	pb->anim(t);
+
+	w->addent(pb);
+
+	--ammo;
+
+}
 

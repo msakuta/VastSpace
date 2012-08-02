@@ -10,6 +10,11 @@ maxanglespeed <- PI * 0.1;
 capacity <- 1.;
 capacitorGen <- 1.;
 
+hardpoints <- [
+	{pos = Vec3d(0,0,0), rot = Quatd(0, 0, 0, 1), name = "Armed weapon"},
+	{pos = Vec3d(0,0,0), rot = Quatd(0, 1, 0, 0), name = "Stocked weapon"},
+]
+
 function drawOverlay(){
 	local cuts = 16;
 	local headpos = -0.5;

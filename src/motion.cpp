@@ -49,6 +49,7 @@ fgather(gear, PL_G);
 fgather(lclick, PL_LCLICK);
 fgather(rclick, PL_RCLICK);
 fgather(move_z, PL_SHIFT);
+fgather(tab, PL_TAB);
 
 
 void MotionInit(){
@@ -100,6 +101,8 @@ void MotionInit(){
 	CmdAddParam("-rclick", cmd_nrclick, &inputstate);
 	CmdAddParam("+move_z", cmd_pmove_z, &inputstate);
 	CmdAddParam("-move_z", cmd_nmove_z, &inputstate);
+	CmdAddParam("+tab", cmd_ptab, &inputstate);
+	CmdAddParam("-tab", cmd_ntab, &inputstate);
 }
 
 /* All momentary keys are integrated into toggleinputstate regardless of purpose

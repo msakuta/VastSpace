@@ -52,6 +52,9 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual Props props()const;
+	virtual int armsCount()const;
+	virtual ArmBase *armsGet(int);
+	virtual bool command(EntityCommand *com);
 	virtual const ManeuverParams &getManeuve()const;
 
 	static double getModelScale(){return modelScale;}
@@ -97,7 +100,6 @@ class M16 : public Firearm{
 public:
 	typedef Firearm st;
 
-	static EntityRegister<Soldier> entityRegister;
 	static const unsigned classid;
 
 	M16(Game *game) : st(game){}
@@ -110,7 +112,27 @@ protected:
 	int maxammo()const{return 20;}
 	double shootCooldown()const{return 0.1;}
 	double bulletSpeed()const{return 1.;}
-	double bulletDamage()const{return 2.;}
+	double bulletDamage()const{return 1.;}
+};
+
+/// \brief M40 sniper rifle. It's silly to see it in space.
+class M40 : public Firearm{
+public:
+	typedef Firearm st;
+
+	static const unsigned classid;
+
+	M40(Game *game) : st(game){}
+	M40(Entity *abase, const hardpoint_static *hp);
+	const char *classname()const;
+	void anim(double dt){}
+	void draw(WarDraw *);
+
+protected:
+	int maxammo()const{return 5;}
+	double shootCooldown()const{return 1.5;}
+	double bulletSpeed()const{return 3.;}
+	double bulletDamage()const{return 3.;}
 };
 
 

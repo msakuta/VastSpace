@@ -592,24 +592,93 @@ void M16::draw(WarDraw *wd){
 		return;
 
 	double scale = Soldier::getModelScale();
-	glPushMatrix();
-
-	// Obtain gun position from soldier's arm bones.
-	MotionPose mp[1];
-	Soldier::motions[0]->interpolate(mp[0], 10.);
-
-	Vec3d handpos;
-	Quatd handrot;
-	Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
-
 	Mat4d mat;
 	base->transform(mat);
-	glMultMatrixd(mat);
-	glScaled(-scale, scale, -scale);
-	gldTranslate3dv(handpos);
-	gldMultQuat(handrot);
-	glRotated(90, 0, -1, 0);
-//	glTranslated(0, 54.4, 0);
-	DrawMQOPose(model, NULL);
-	glPopMatrix();
+
+	if(base->armsGet(0) == this){
+		// Obtain gun position from soldier's arm bones.
+		MotionPose mp[1];
+		Soldier::motions[0]->interpolate(mp[0], 10.);
+
+		Vec3d handpos;
+		Quatd handrot;
+		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
+
+		glPushMatrix();
+		glMultMatrixd(mat);
+		glScaled(-scale, scale, -scale);
+		gldTranslate3dv(handpos);
+		gldMultQuat(handrot);
+		glRotated(90, 0, -1, 0);
+	//	glTranslated(0, 54.4, 0);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
+	else{
+		glPushMatrix();
+		glMultMatrixd(mat);
+		glTranslated(0, 0, 0.0004);
+		glScaled(-scale, scale, -scale);
+		glRotated(30, 0, 0, -1);
+		glRotated(90, -1, 0, 0);
+		glRotated(90, 0, 0, 1);
+	//	glTranslated(0, 54.4, 0);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
+}
+
+
+void M40::draw(WarDraw *wd){
+	static OpenGLState::weak_ptr<bool> init;
+	static Model *model = NULL;
+	double pixels;
+
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(pos, .003))
+		return;
+	wd->lightdraws++;
+
+	if(!init){
+		model = LoadMQOModel("models/m40.mqo");
+		init.create(*openGLState);
+	}
+	if(!model)
+		return;
+
+	double scale = Soldier::getModelScale();
+	Mat4d mat;
+	base->transform(mat);
+
+	if(base->armsGet(0) == this){
+		// Obtain gun position from soldier's arm bones.
+		MotionPose mp[1];
+		Soldier::motions[0]->interpolate(mp[0], 10.);
+
+		Vec3d handpos;
+		Quatd handrot;
+		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
+
+		glPushMatrix();
+		glMultMatrixd(mat);
+		glScaled(-scale, scale, -scale);
+		gldTranslate3dv(handpos);
+		gldMultQuat(handrot);
+		glRotated(90, 0, -1, 0);
+	//	glTranslated(0, 54.4, 0);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
+	else{
+		glPushMatrix();
+		glMultMatrixd(mat);
+		glTranslated(0, 0, 0.0004);
+		glScaled(-scale, scale, -scale);
+		glRotated(30, 0, 0, -1);
+		glRotated(90, -1, 0, 0);
+		glRotated(90, 0, 0, 1);
+	//	glTranslated(0, 54.4, 0);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
 }

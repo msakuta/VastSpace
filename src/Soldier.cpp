@@ -149,8 +149,6 @@ public:
 		Player *player = static_cast<Player*>(s);
 		if(!player->controlled)
 			return;
-//		if(code == PL_W)
-//			player->controlled->inputs.press |= PL_W;
 		player->controlled->inputs.press = code;
 	}
 	void send(Entity *e){
@@ -169,6 +167,13 @@ protected:
 };
 
 CMPress CMPress::s;
+
+
+DERIVE_COMMAND(SwitchWeaponCommand, SerializableCommand);
+
+IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
+
+
 
 double Soldier::hitradius()const{
 	return 0.002;
@@ -242,9 +247,9 @@ void Soldier::init(){
 	aiming = 0;
 	muzzle = 0;
 	arms[0] = new M16(this, soldierHP[0]);
-	arms[1] = NULL;
-	if(w)
-		w->addent(arms[0]);
+	arms[1] = new M40(this, soldierHP[1]);
+	if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
+		w->addent(arms[i]);
 //	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
 //	MAT4IDENTITY(infantry_s.hitmdl.trans);
 //	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
@@ -982,6 +987,13 @@ void Soldier::anim(double dt){
 			this->velo += dest;
 	}
 
+	if(i & ~ic & PL_TAB){
+		if(game->isServer())
+			swapWeapon();
+		else
+			CMEntityCommand::s.send(this, SwitchWeaponCommand());
+	}
+
 	{
 		WarField::EntityList::iterator it;
 		for(it = w->el.begin(); it != w->el.end(); ++it){
@@ -1047,6 +1059,23 @@ Entity::Props Soldier::props()const{
 	ret.push_back(gltestp::dstring("Ammo: ") << (arms[0] ? arms[0]->ammo : 0));
 	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown2);
 	return ret;
+}
+
+int Soldier::armsCount()const{
+	return numof(arms);
+}
+
+ArmBase *Soldier::armsGet(int i){
+	return arms[i];
+}
+
+bool Soldier::command(EntityCommand *com){
+	if(InterpretCommand<SwitchWeaponCommand>(com)){
+		swapWeapon();
+		return true;
+	}
+	else
+		return st::command(com);
 }
 
 const Autonomous::ManeuverParams &Soldier::getManeuve()const{
@@ -1948,17 +1977,6 @@ static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], 
 
 
 
-Entity::EntityRegister<Soldier> M16::entityRegister("M16");
-const unsigned M16::classid = registerClass("M16", Conster<M16>);
-const char *M16::classname()const{return "M16";}
-
-
-
-M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
-	reload();
-}
-
-
 void Firearm::shoot(){
 	if(!game->isServer())
 		return;
@@ -1998,4 +2016,26 @@ void Firearm::shoot(){
 void Firearm::reload(){
 	ammo = maxammo();
 }
+
+
+
+const unsigned M16::classid = registerClass("M16", Conster<M16>);
+const char *M16::classname()const{return "M16";}
+
+
+
+M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	reload();
+}
+
+
+const unsigned M40::classid = registerClass("M40", Conster<M40>);
+const char *M40::classname()const{return "M40";}
+
+
+
+M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	reload();
+}
+
 

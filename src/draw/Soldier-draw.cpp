@@ -8,8 +8,12 @@
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
+#include "glsl.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 
 extern "C"{
+#include <clib/GL/multitex.h>
 #include <clib/GL/gldraw.h>
 }
 
@@ -114,6 +118,30 @@ void Soldier::draw(WarDraw *wd){
 //			glPopAttrib();
 	glPopMatrix();
 #endif
+
+	if((hookshot || hooked || hookretract) && (!wd->shadowMap || wd->shadowMap->shadowLevel() == 0 || wd->shadowMap->shadowLevel() >= 3)){
+		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT);
+		const ShaderBind *sb = wd->getShaderBind();
+		if(sb)
+			glUseProgram(0);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_TEXTURE_2D);
+		if(glActiveTextureARB){
+			for(int i = 1; i < 5; i++){
+				glActiveTextureARB(GL_TEXTURE0_ARB + i);
+				glDisable(GL_TEXTURE_2D);
+				glActiveTextureARB(GL_TEXTURE0_ARB);
+			}
+		}
+		glColor4f(1,0.5,0,1);
+		glBegin(GL_LINES);
+		glVertex3dv(mat.vp3(Vec3d(-0.0003, -0.0002, 0.0)));
+		glVertex3dv(this->hookpos);
+		glEnd();
+		if(sb)
+			glUseProgram(sb->shader);
+		glPopAttrib();
+	}
 
 #if 0
 	if(!sufbody){
@@ -617,7 +645,7 @@ void M16::draw(WarDraw *wd){
 	else{
 		glPushMatrix();
 		glMultMatrixd(mat);
-		glTranslated(0, 0, 0.0004);
+		glTranslated(0, 0, 0.00025);
 		glScaled(-scale, scale, -scale);
 		glRotated(30, 0, 0, -1);
 		glRotated(90, -1, 0, 0);
@@ -672,7 +700,7 @@ void M40::draw(WarDraw *wd){
 	else{
 		glPushMatrix();
 		glMultMatrixd(mat);
-		glTranslated(0, 0, 0.0004);
+		glTranslated(0, 0, 0.00025);
 		glScaled(-scale, scale, -scale);
 		glRotated(30, 0, 0, -1);
 		glRotated(90, -1, 0, 0);

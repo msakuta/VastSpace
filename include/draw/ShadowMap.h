@@ -26,7 +26,7 @@ class EXPORT ShadowMap{
 	static GLuint fbo;
 	static GLuint to;
 	static GLuint depthTextures[3];
-	bool shadowing;
+	int shadowing;
 	bool additive;
 public:
 	class DrawCallback{
@@ -37,7 +37,8 @@ public:
 	ShadowMap();
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
 	const ShaderBind *getShader()const;
-	bool isDrawingShadow()const{return shadowing;}
+	bool isDrawingShadow()const{return !!shadowing;} ///< Returns whether the current drawing path is for a shadow map.
+	int shadowLevel()const{return shadowing;} ///< Returns level of shadow map, 0 if not for shadow map path.
 	void setAdditive(bool b);
 	const AdditiveShaderBind *getAdditive()const;
 	void enableShadows();

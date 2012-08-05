@@ -86,6 +86,11 @@ protected:
 	char muzzle;
 	bool forcedEnemy;
 	Firearm *arms[2];
+	Vec3d hookpos;
+	Vec3d hookvelo;
+	bool hookshot;
+	bool hooked;
+	bool hookretract;
 
 	static double modelScale;
 	static double defaultMass;

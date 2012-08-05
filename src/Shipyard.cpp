@@ -152,7 +152,7 @@ double Shipyard::maxhealth()const{
 }
 
 double Shipyard::hitradius()const{
-	return 1.;
+	return 1.5;
 }
 
 double Shipyard::maxenergy()const{
@@ -282,7 +282,7 @@ int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
-		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		org = this->rot.trans(hitboxes[n].org) + this->pos;
 		rot = this->rot * hitboxes[n].rot;
 		for(i = 0; i < 3; i++)
 			sc[i] = hitboxes[n].sc[i] + rad;

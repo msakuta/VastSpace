@@ -13,6 +13,7 @@
 #include "Server.h"
 #include "Application.h"
 #include "EntityCommand.h"
+#include "judge.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -128,6 +129,11 @@ void Soldier::serialize(SerializeContext &sc){
 	sc.o << cooldown2;
 	sc.o << arms[0];
 	sc.o << arms[1];
+	sc.o << hookpos;
+	sc.o << hookvelo;
+	sc.o << hookshot;
+	sc.o << hooked;
+	sc.o << hookretract;
 }
 
 void Soldier::unserialize(UnserializeContext &usc){
@@ -135,6 +141,11 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> cooldown2;
 	usc.i >> arms[0];
 	usc.i >> arms[1];
+	usc.i >> hookpos;
+	usc.i >> hookvelo;
+	usc.i >> hookshot;
+	usc.i >> hooked;
+	usc.i >> hookretract;
 }
 
 class CMPress : public ClientMessage{
@@ -250,6 +261,9 @@ void Soldier::init(){
 	arms[1] = new M40(this, soldierHP[1]);
 	if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
 		w->addent(arms[i]);
+	hookshot = false;
+	hooked = false;
+	hookretract = false;
 //	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
 //	MAT4IDENTITY(infantry_s.hitmdl.trans);
 //	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
@@ -720,6 +734,111 @@ void Soldier::anim(double dt){
 		p->aiming = !p->aiming;
 	}
 
+	const double hookspeed = 0.2;
+
+	if(i & PL_B){
+		if(!hookshot && !hookretract && !hooked){
+			hookshot = true;
+			hookpos = this->pos;
+			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookspeed));
+			hooked = false;
+		}
+	}
+
+	if(hookshot){
+		if(!hooked){
+			struct HookHit{
+				static int hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+//					const Vec3d *src = param->src;
+//					const Vec3d *dir = param->dir;
+//					double dt = param->dt;
+//					double rad = param->rad;
+					Vec3d *retpos = param->pos;
+					Vec3d *retnorm = param->norm;
+					Vec3d pos, nh;
+					int ret = 1;
+
+					if(param->hint == pt)
+						return 0;
+
+					if(!jHitSphere(pt->pos, pt->hitradius(), *param->src, *param->dir, param->dt))
+						return 0;
+					ret = pt->tracehit(*param->src, *param->dir, 0, param->dt, NULL, &pos, &nh);
+					if(!ret)
+						return 0;
+//					else if(rethitpart)
+//						*rethitpart = ret;
+
+					{
+//						p->pos += pb->velo * dt;
+						if(retpos)
+							*retpos = pos;
+						if(retnorm)
+							*retnorm = nh;
+					}
+					return ret;
+				}
+			} hh;
+
+			otjEnumHitSphereParam param;
+			Vec3d hitpos, nh;
+			param.root = ws->otroot;
+			param.src = &hookpos;
+			param.dir = &hookvelo;
+			param.dt = dt;
+			param.rad = 0.;
+			param.pos = &hitpos;
+			param.norm = &nh;
+			param.flags = OTJ_CALLBACK;
+			param.callback = hh.hit_callback;
+			param.hint = this;
+			if(ws->ot){
+				Entity *pt = otjEnumHitSphere(&param);
+				if(pt)
+					hooked = true;
+			}
+			else{
+				for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
+					if(!hh.hit_callback(&param, *it))
+						break;
+			}
+
+			if(!hooked){
+				hookpos += hookvelo * dt;
+				if(0.2 * 0.2 < (hookpos - this->pos).slen()){
+					hookshot = false;
+					hookretract = true;
+				}
+			}
+		}
+	}
+
+	if(hooked){
+		Vec3d delta = hookpos - this->pos;
+		// Avoid zero division
+		if(FLT_EPSILON < delta.slen()){
+			Vec3d dir = delta.norm();
+			// Accelerate towards hooked point
+			velo += dir * 0.05 * dt;
+			if(delta.slen() < 0.005 * 0.005){
+				// Cancel closing velocity
+				velo -= velo.sp(dir) * dir;
+				hooked = false;
+				hookshot = false;
+				hookretract = true;
+			}
+		}
+	}
+
+	if(hookretract){
+		Vec3d delta = hookpos - this->pos;
+		if(delta.slen() < 0.005 * 0.005){
+			hookretract = false;
+		}
+		else
+			hookpos -= delta.norm() * hookspeed * dt;
+	}
+
 /*	if(p->arms[0].type == arms_shotgun && p->reloading){
 		if(3. * dt < p->reloadphase){
 			p->reloadphase -= 3. * dt;
@@ -953,6 +1072,7 @@ void Soldier::anim(double dt){
 
 /*	p->rad = i & PL_Z ? .001 : .0016;*/
 
+#if 0
 	if(this->pos[1] - .0016 <= h){
 /*		entity_t *p = pt;*/
 		double l, f, t;
@@ -986,6 +1106,7 @@ void Soldier::anim(double dt){
 		else
 			this->velo += dest;
 	}
+#endif
 
 	if(i & ~ic & PL_TAB){
 		if(game->isServer())
@@ -994,6 +1115,7 @@ void Soldier::anim(double dt){
 			CMEntityCommand::s.send(this, SwitchWeaponCommand());
 	}
 
+#if 0
 	{
 		WarField::EntityList::iterator it;
 		for(it = w->el.begin(); it != w->el.end(); ++it){
@@ -1008,9 +1130,11 @@ void Soldier::anim(double dt){
 				}
 			}
 		}
-		this->pos += this->velo * dt;
-		this->rot = this->rot.quatrotquat(this->omg * dt);
 	}
+#endif
+
+	this->pos += this->velo * dt;
+	this->rot = this->rot.quatrotquat(this->omg * dt);
 
 //	h = warmapheight(w->map, pt->pos[0], pt->pos[2], NULL);
 

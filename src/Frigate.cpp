@@ -237,7 +237,9 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
-	if(0 < p->shieldAmount){
+
+	// Temporarily disabled hit judge for shields.
+	if(false && 0 < p->shieldAmount){
 		Vec3d hitpos;
 		if(jHitSpherePos(pos, hitradius() + rad, src, dir, dt, ret, &hitpos)){
 			if(retp) *retp = hitpos;
@@ -248,7 +250,7 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	for(n = 0; n < nhitboxes; n++){
 		Vec3d org;
 		Quatd rot;
-		org = this->rot.itrans(hitboxes[n].org) + this->pos;
+		org = this->rot.trans(hitboxes[n].org) + this->pos;
 		rot = this->rot * hitboxes[n].rot;
 		for(i = 0; i < 3; i++)
 			sc[i] = hitboxes[n].sc[i] + rad;

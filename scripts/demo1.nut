@@ -13,14 +13,14 @@ if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
 //	player.cs.addent("Destroyer", Vec3d(2.0, 0, 1.0));
 //	player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
-//	player.cs.addent("Assault", Vec3d(1.0, 0, 1.0));
-//	local e1 = player.cs.addent("Soldier", Vec3d(2.0, 0, 0.5));
-//	e1.race = 0;
-	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));
-	e2.race = 1;
+	player.cs.addent("Assault", Vec3d(2.0, -0.10, 0.5));
+	local e1 = player.cs.addent("Soldier", Vec3d(2.0, 0, 0.5));
+	e1.race = 0;
+//	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));
+//	e2.race = 1;
 	local e = redbase;
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
-	e.race = 1;
+//	e.race = 1;
 }
 if(1){
 	local e = player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));

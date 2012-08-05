@@ -28,6 +28,8 @@ hitbox <- [
 	[Vec3d(-610,-170,0) * scale, Quatd(0,0,0,1), Vec3d(10, 10, 410) * scale],
 ]
 
+hitRadius <- 1.0;
+
 mass <- 5.e9;
 
 navlights <- [

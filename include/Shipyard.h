@@ -76,6 +76,7 @@ protected:
 
 	static const ManeuverParams mymn;
 	static double modelScale;
+	static double hitRadius;
 	static double defaultMass;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;

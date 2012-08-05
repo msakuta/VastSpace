@@ -57,6 +57,7 @@ void ShipyardDocker::dockque(Dockable *e){
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
 double Shipyard::modelScale = 0.0010;
+double Shipyard::hitRadius = 1.0;
 double Shipyard::defaultMass = 5e9;
 
 hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
@@ -86,6 +87,7 @@ void Shipyard::init(){
 	if(!initialized){
 		sq_init(_SC("models/Shipyard.nut"),
 				ModelScaleProcess(modelScale) <<=
+				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
 				HitboxProcess(hitboxes) <<=
 				DrawOverlayProcess(disp) <<=
@@ -152,7 +154,7 @@ double Shipyard::maxhealth()const{
 }
 
 double Shipyard::hitradius()const{
-	return 1.5;
+	return hitRadius;
 }
 
 double Shipyard::maxenergy()const{

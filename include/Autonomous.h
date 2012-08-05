@@ -120,18 +120,23 @@ protected:
 	/// \brief Initializes various settings of Autonomous-derived class by Squirrel script.
 	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs);
 
-	class ModelScaleProcess : public SqInitProcess{
+	class SingleDoubleProcess : public SqInitProcess{
 	public:
-		double &modelScale;
-		ModelScaleProcess(double &modelScale) : modelScale(modelScale){}
+		double &value;
+		const SQChar *name;
+		bool mandatory;
+		SingleDoubleProcess(double &value, const char *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class MassProcess : public SqInitProcess{
+	class ModelScaleProcess : public SingleDoubleProcess{
 	public:
-		double &mass;
-		MassProcess(double &mass) : mass(mass){}
-		virtual void process(HSQUIRRELVM)const;
+		ModelScaleProcess(double &modelScale) : SingleDoubleProcess(modelScale, "modelScale"){}
+	};
+
+	class MassProcess : public SingleDoubleProcess{
+	public:
+		MassProcess(double &mass) : SingleDoubleProcess(mass, "mass"){}
 	};
 
 	/// \brief Processes single Vec3d with given variable name.

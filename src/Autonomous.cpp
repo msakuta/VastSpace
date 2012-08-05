@@ -928,25 +928,22 @@ bool Autonomous::sq_init(const SQChar *scriptFile, const SqInitProcess &procs){
 }
 
 /// ModelScale is mandatory if specified by the caller.
-void Autonomous::ModelScaleProcess::process(HSQUIRRELVM v)const{
-	sq_pushstring(v, _SC("modelScale"), -1); // root string
-	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError(_SC("modelScale not found"));
+void Autonomous::SingleDoubleProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))){
+		if(mandatory) // If mandatory, read errors result in exceptions.
+			throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+		else // If not mandatory variable cannot be read, leave the default value and silently ignore.
+			return;
+	}
 	SQFloat f;
-	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-		throw SQFError(_SC("modelScale couldn't be converted to float"));
-	modelScale = f;
-	sq_poptop(v);
-}
-
-void Autonomous::MassProcess::process(HSQUIRRELVM v)const{
-	sq_pushstring(v, _SC("mass"), -1); // root string
-	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError(_SC("mass not found"));
-	SQFloat f;
-	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-		throw SQFError(_SC("mass couldn't be converted to float"));
-	mass = f;
+	if(SQ_FAILED(sq_getfloat(v, -1, &f))){
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" couldn't be converted to float"));
+		else
+			return;
+	}
+	value = f;
 	sq_poptop(v);
 }
 

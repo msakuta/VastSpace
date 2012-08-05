@@ -361,7 +361,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 /*		for(i = 0; i < nrstations; i++) if(rstations[i]->w == cs->w){
 			tocs(params->apos0, vwcs, rstations[i]->pos, cs);
 			params->name = "Resource Station";
-			params->rad = MAX(params->p->range * params->sol->rad * 20. / params->p->st.st.w, ((struct entity_private_static*)rstations[i]->vft)->hitradius);
+			params->rad = MAX(params->p->range * params->sol->rad * 20. / params->p->st.st.w, ((struct entity_private_static*)rstations[i]->vft)->getHitRadius);
 			params->pointcolor[0] = rstations[i]->race == ppl->race ? 0 : 255;
 			params->pointcolor[1] = rstations[i]->race != ppl->race && 0 <= rstations[i]->race ? 0 : 255;
 			params->pointcolor[2] = 0;
@@ -400,7 +400,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 				if(!plene && ppl->race != pt->race)
 					plene = 1;
 				if(enter){
-					params->rad = std::max(rrange, pt->hitradius());
+					params->rad = std::max(rrange, pt->getHitRadius());
 					params->name = collapse ? ppl->race == pt->race ? "Your Units" : "Enemy Units" : pt->classname();
 					params->pointcolor[0] = 255 * (ppl->race != pt->race);
 					params->pointcolor[1] = 255 * (ppl->race == pt->race || pt->race < -1);

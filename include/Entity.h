@@ -82,7 +82,7 @@ public:
 	virtual void drawHUD(wardraw_t *); ///< Called if this Entity is cockpit-viewed.  Drawn over everything but GLwindows.
 	virtual void drawOverlay(wardraw_t *); ///< Called everytime, but not model-transformed and drawn over everything but GUI.
 	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
-	virtual double hitradius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
+	virtual double getHitRadius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
 	virtual void bullethit(const Bullet *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart); /* return 0 on death */

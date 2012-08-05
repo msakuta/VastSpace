@@ -429,7 +429,7 @@ void Missile::postframe(){
 }
 
 // proximity fuse
-double Missile::hitradius()const{
+double Missile::getHitRadius()const{
 	return .010;
 }
 

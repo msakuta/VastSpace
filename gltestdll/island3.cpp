@@ -84,7 +84,7 @@ public:
 	virtual double maxhealth()const{return 10000.;}
 	virtual void enterField(WarField *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
-	virtual double hitradius()const{return halfsize.len();}
+	virtual double getHitRadius()const{return halfsize.len();}
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return false;}
 	virtual void draw(wardraw_t *);
@@ -2885,7 +2885,7 @@ void Island3Building::draw(wardraw_t *wd){
 		LocalFree((void*)stp.bmiMask);
 	}
 
-	if(wd->vw->gc->cullFrustum(wd->vw->cs->tocs(pos, host), hitradius() + halfsize[1]))
+	if(wd->vw->gc->cullFrustum(wd->vw->cs->tocs(pos, host), getHitRadius() + halfsize[1]))
 		return;
 
 	{

@@ -129,7 +129,7 @@ bool Attacker::command(EntityCommand *com){
 	return st::command(com);
 }
 
-double Attacker::hitradius()const{return .3;}
+double Attacker::getHitRadius()const{return .3;}
 double Attacker::maxhealth()const{return 100000.;}
 double Attacker::maxenergy()const{return maneuverParams.capacity;}
 
@@ -201,7 +201,7 @@ int Attacker::takedamage(double damage, int hitpart){
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
-					pos[j] += hitradius() * (drseq(&w->rs) - .5);
+					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 #endif

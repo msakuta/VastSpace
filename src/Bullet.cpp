@@ -247,10 +247,10 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 		return 0;
 
 //	vft = (struct entity_private_static*)pt->vft;
-	if(!jHitSphere(pt->pos, pt->hitradius() + pb->hitradius(), pb->pos, pb->velo, dt))
+	if(!jHitSphere(pt->pos, pt->getHitRadius() + pb->getHitRadius(), pb->pos, pb->velo, dt))
 		return 0;
 	{
-		ret = pt->tracehit(pb->pos, pb->velo, pb->hitradius(), dt, NULL, &pos, &nh);
+		ret = pt->tracehit(pb->pos, pb->velo, pb->getHitRadius(), dt, NULL, &pos, &nh);
 		if(!ret)
 			return 0;
 		else if(rethitpart)
@@ -259,7 +259,7 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 /*	else{
 		Vec3d sc;
 		double t;
-		sc[0] = sc[1] = sc[2] = pt->hitradius() / 2.;
+		sc[0] = sc[1] = sc[2] = pt->getHitRadius() / 2.;
 		if(!jHitBox(pt->pos, sc, pt->rot, pb->pos, pb->velo, 0., dt, &t, &pos, &nh)){
 			return 0;
 		}
@@ -551,7 +551,7 @@ void Bullet::clientUpdate(double dt){
 	pos += move;*/
 }
 
-double Bullet::hitradius()const{
+double Bullet::getHitRadius()const{
 	return 0.;
 }
 

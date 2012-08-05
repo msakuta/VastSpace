@@ -227,7 +227,7 @@ void Assault::anim(double dt){
 			Entity *t;
 			for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
 				Entity *t = *it;
-				if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && hitradius() / 2. < t->hitradius()/* && t->vft != &rstation_s*/){
+				if(t != this && t->race != -1 && t->race != this->race && 0. < t->health && getHitRadius() / 2. < t->getHitRadius()/* && t->vft != &rstation_s*/){
 					double sdist = (this->pos - t->pos).slen();
 					if(sdist < best){
 						this->enemy = t;

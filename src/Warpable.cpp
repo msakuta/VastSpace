@@ -706,7 +706,7 @@ void Warpable::anim(double dt){
 			p->warpcs = new WarpBubble(cpplib::dstring("warpbubble") << WarpBubble::serialNo++, w->cs);
 			p->warpcs->pos = pt->pos;
 			p->warpcs->velo = pt->velo;
-			p->warpcs->csrad = pt->hitradius() * 10.;
+			p->warpcs->csrad = pt->getHitRadius() * 10.;
 			p->warpcs->flags = 0;
 			p->warpcs->w = new WarSpace(p->warpcs);
 			p->warpcs->w->pl = w->pl;
@@ -766,7 +766,7 @@ void Warpable::anim(double dt){
 			inputs.press = 0;
 		else if(task == sship_moveto){
 			steerArrival(dt, dest, vec3_000, .1, .01);
-			if((pos - dest).slen() < hitradius() * hitradius()){
+			if((pos - dest).slen() < getHitRadius() * getHitRadius()){
 				task = sship_idle;
 				inputs.press = 0;
 			}

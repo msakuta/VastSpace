@@ -5,7 +5,7 @@
 const unsigned Respawn::classid = registerClass("Respawn", Conster<Respawn>);
 const char *Respawn::classname()const{return "Respawn";}
 
-double Respawn::hitradius()const{return 0.;}
+double Respawn::getHitRadius()const{return 0.;}
 bool Respawn::isTargettable()const{return false;}
 
 Respawn::Respawn(WarField *aw, double ainterval, double initial_phase, int max_count, const char *childClassName) : st(aw), interval(ainterval), timer(ainterval - initial_phase), count(max_count), creator(childClassName){
@@ -44,7 +44,7 @@ void Respawn::anim(double dt){
 						found = true;
 						break;
 					}
-					if((pt2->pos - pos).slen() < pt2->hitradius() * pt2->hitradius()){
+					if((pt2->pos - pos).slen() < pt2->getHitRadius() * pt2->getHitRadius()){
 						timer += interval;
 						found = true;
 						break;

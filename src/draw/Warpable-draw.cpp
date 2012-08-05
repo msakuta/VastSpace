@@ -558,7 +558,7 @@ void Frigate::drawShield(wardraw_t *wd){
 		glVertex3dv(mat.vp3(Vec3d(-.001,0,0)));
 		glEnd();
 
-		se.draw(wd, this, hitradius(), p->shieldAmount / maxshield());
+		se.draw(wd, this, getHitRadius(), p->shieldAmount / maxshield());
 	}
 }
 

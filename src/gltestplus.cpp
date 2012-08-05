@@ -487,7 +487,7 @@ void Game::drawindics(Viewer *vw){
 				glPushMatrix();
 				gldTranslate3dv(pt->pos);
 				glMultMatrixd(irot);
-				gldScaled(pt->hitradius());
+				gldScaled(pt->getHitRadius());
 				glBegin(GL_LINE_LOOP);
 				for(i = 0; i < 16; i++)
 					glVertex2dv(cuts[i]);
@@ -1369,9 +1369,9 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 				lpos[1] /= lpos[3];
 				lpos[2] /= lpos[3];
 				sp = -(dpos[0] * rot[2] + dpos[1] * rot[6] + dpos[2] * rot[10])/*VECSP(&rot[8], dpos)*/;
-				scradx = pt->hitradius() / sp * 2 / (x1 - x0);
-				scrady = pt->hitradius() / sp * 2 / (y1 - y0);
-				if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->hitradius)*/){
+				scradx = pt->getHitRadius() / sp * 2 / (x1 - x0);
+				scrady = pt->getHitRadius() / sp * 2 / (y1 - y0);
+				if(-1 < lpos[0] + scradx && lpos[0] - scradx < 1 && -1 < lpos[1] + scrady && lpos[1] - scrady < 1 && -1 < lpos[2] && lpos[2] < 1 /*((struct entity_private_static*)pt->vft)->getHitRadius)*/){
 
 					// Leave all detail to callback
 					if(!pointselect && sbc)
@@ -1379,7 +1379,7 @@ bool Game::select_box(double x0, double x1, double y0, double y1, const Mat4d &r
 
 					// If only one Entity is to be selected, find the nearest one to the camera.
 					if(pointselect){
-						double size = pt->hitradius() + sp;
+						double size = pt->getHitRadius() + sp;
 						if(0 <= size && size < best){
 							best = size;
 							ptbest = pt;

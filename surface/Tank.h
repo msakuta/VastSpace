@@ -31,7 +31,7 @@ public:
 	void gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata*, void *pv);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
-	double hitradius()const;
+	double getHitRadius()const;
 	bool isTargettable()const;
 
 	double steer; /* Steering direction, positive righthand */

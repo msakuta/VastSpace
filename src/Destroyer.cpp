@@ -132,7 +132,7 @@ void Destroyer::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-double Destroyer::hitradius()const{return .27;}
+double Destroyer::getHitRadius()const{return .27;}
 
 void Destroyer::anim(double dt){
 	if(!w)
@@ -220,7 +220,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
-					pos[j] += hitradius() * (drseq(&w->rs) - .5);
+					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
@@ -333,7 +333,7 @@ void WireDestroyer::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 }
 
-double WireDestroyer::hitradius()const{return .3;}
+double WireDestroyer::getHitRadius()const{return .3;}
 double WireDestroyer::maxhealth()const{return 100000.;}
 double WireDestroyer::maxenergy()const{return 10000.;}
 
@@ -360,7 +360,7 @@ static int wire_hit_callback(const struct otjEnumHitSphereParam *param, Entity *
 		return 0;
 
 //	vft = (struct entity_private_static*)pt->vft;
-	if(!jHitSphere(pt->pos, pt->hitradius() + hitrad, *param->src, *param->dir, dt))
+	if(!jHitSphere(pt->pos, pt->getHitRadius() + hitrad, *param->src, *param->dir, dt))
 		return 0;
 /*	{
 		ret = pt->tracehit(pb->pos, pb->velo, hitrad, dt, NULL, &pos, &nh);

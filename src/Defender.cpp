@@ -625,7 +625,7 @@ void Defender::anim(double dt){
 #endif
 */
 				// Do not try shooting at very small target, that's just waste of ammo.
-				if(enemy->hitradius() < dist / 100.)
+				if(enemy->getHitRadius() < dist / 100.)
 					trigger = 0;
 
 			}
@@ -692,9 +692,9 @@ void Defender::anim(double dt){
 
 					double dist = delta.len();
 					dv = delta;
-					double awaybase = pt->enemy->hitradius() * 3. + .1;
+					double awaybase = pt->enemy->getHitRadius() * 3. + .1;
 					if(.6 < awaybase)
-						awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
+						awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
 					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
 					if(p->task == Attack && dist < awaybase){
 						p->task = Away;
@@ -760,7 +760,7 @@ void Defender::anim(double dt){
 					}
 					for(WarField::EntityList::iterator it = w->bl.begin(); it != w->bl.end(); it++) if(*it){
 						Entity *pb = *it;
-						if(jHitSphere(this->pos, this->hitradius(), pb->pos, pb->velo, 10.)){
+						if(jHitSphere(this->pos, this->getHitRadius(), pb->pos, pb->velo, 10.)){
 							task = Task(w->rs.next() % 4 + Dodge0);
 							fdodge = 1.;
 							break;
@@ -1232,7 +1232,7 @@ void Defender::postframe(){
 bool Defender::isTargettable()const{return true;}
 bool Defender::isSelectable()const{return true;}
 
-double Defender::hitradius()const{
+double Defender::getHitRadius()const{
 	return .02;
 }
 

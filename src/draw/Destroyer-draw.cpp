@@ -17,7 +17,7 @@ void Destroyer::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 
 	struct TextureParams{
@@ -84,7 +84,7 @@ void Destroyer::draw(wardraw_t *wd){
 
 void Destroyer::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 	drawNavlights(wd, navlights);
 	static const Vec3d engines[] = {
@@ -155,7 +155,7 @@ void WireDestroyer::draw(wardraw_t *wd){
 		transform(mat);
 		glMultMatrixd(mat);
 
-		if(!wd->vw->gc->cullFrustum(pos, hitradius())){
+		if(!wd->vw->gc->cullFrustum(pos, getHitRadius())){
 
 	#if 0
 			for(int i = 0; i < nhitboxes; i++){

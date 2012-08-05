@@ -121,7 +121,7 @@ void Battleship::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-double Battleship::hitradius()const{return .6;}
+double Battleship::getHitRadius()const{return .6;}
 
 void Battleship::anim(double dt){
 	if(!w)
@@ -209,7 +209,7 @@ int Battleship::takedamage(double damage, int hitpart){
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
-					pos[j] += hitradius() * (drseq(&w->rs) - .5);
+					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 

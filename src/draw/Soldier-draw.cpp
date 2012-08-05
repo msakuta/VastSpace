@@ -61,7 +61,7 @@ void Soldier::draw(WarDraw *wd){
 //	if(!pt->active)
 //		return;
 
-	draw_healthbar(this, wd, health / maxhealth(), hitradius(), 0, 0);
+	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
 
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(pos, .003))

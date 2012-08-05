@@ -681,7 +681,7 @@ bool Entity::unlink(const Observable*){
 
 int Entity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *fret, Vec3d *retp, Vec3d *retnormal){
 	Vec3d retpos;
-	bool bret = !!jHitSpherePos(pos, this->hitradius() + rad, start, dir, 1., fret, &retpos);
+	bool bret = !!jHitSpherePos(pos, this->getHitRadius() + rad, start, dir, 1., fret, &retpos);
 	if(bret && retp)
 		*retp = retpos;
 	if(bret && retnormal)

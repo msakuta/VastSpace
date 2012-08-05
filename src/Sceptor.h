@@ -89,7 +89,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual Dockable *toDockable();
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;

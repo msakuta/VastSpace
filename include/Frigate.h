@@ -25,7 +25,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual double shieldRadius()const;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void bullethit(const Bullet *);

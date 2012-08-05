@@ -1131,7 +1131,7 @@ void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	(*pos)[2] = pt->pos[2] + 0.005 * cos(yaw);*/
 }
 
-double Tank::hitradius()const{
+double Tank::getHitRadius()const{
 	return 0.007;
 }
 
@@ -1369,7 +1369,7 @@ static struct entity_private_static m3track_s = {
 	NULL, NULL, NULL, NULL,
 	0, /* reuse */
 	TANKGUNSPEED, /* bulletspeed */
-	0.004, /* hitradius */
+	0.004, /* getHitRadius */
 	.0001, /* sufscale */
 	0, 0, /* hitsuf, altaxis */
 	NULL, /* bullethole */

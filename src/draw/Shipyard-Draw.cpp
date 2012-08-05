@@ -41,9 +41,9 @@ void Shipyard::draw(wardraw_t *wd){
 		return;*/
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), hitradius(), -1., capacitor / maxenergy());
+	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), -1., capacitor / maxenergy());
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 #if 1
 	if(!init) do{
@@ -99,7 +99,7 @@ void Shipyard::drawtra(wardraw_t *wd){
 /*	if(scarry_cull(pt, wd))
 		return;*/
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 
 	scale = fabs(wd->vw->gc->scale(this->pos));

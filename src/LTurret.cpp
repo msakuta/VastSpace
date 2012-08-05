@@ -63,7 +63,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 }
 
 
-double LTurret::hitradius()const{return .03;}
+double LTurret::getHitRadius()const{return .03;}
 
 void LTurret::anim(double dt){
 	st::anim(dt);
@@ -131,7 +131,7 @@ void LTurret::tryshoot(){
 
 // prefer bigger targets
 double LTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
-	return pt2->hitradius() / .01;
+	return pt2->getHitRadius() / .01;
 }
 
 #ifdef DEDICATED
@@ -160,7 +160,7 @@ LMissileTurret::~LMissileTurret(){
 
 const char *LMissileTurret::classname()const{return "LMissileTurret";}
 const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LMissileTurret>);
-double LMissileTurret::hitradius()const{return .03;}
+double LMissileTurret::getHitRadius()const{return .03;}
 
 const double LMissileTurret::bscale = .0001 / 2.;
 
@@ -236,7 +236,7 @@ double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *
 		if(pt2->health < accumdamage)
 			return 0.;
 	}
-	return 1. / pt2->hitradius(); // precede small objects that conventional guns can hardly hit.
+	return 1. / pt2->getHitRadius(); // precede small objects that conventional guns can hardly hit.
 }
 
 #ifdef DEDICATED

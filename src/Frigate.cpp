@@ -114,7 +114,7 @@ void Frigate::anim(double dt){
 	se.anim(dt);
 
 }
-double Frigate::hitradius()const{return .1;}
+double Frigate::getHitRadius()const{return .1;}
 Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::ManeuverParams &Frigate::getManeuve()const{return frigate_mn;}
 
@@ -194,7 +194,7 @@ int Frigate::takedamage(double damage, int hitpart){
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
-					pos[j] += hitradius() * (drseq(&w->rs) - .5);
+					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
 				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
@@ -241,7 +241,7 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	// Temporarily disabled hit judge for shields.
 	if(false && 0 < p->shieldAmount){
 		Vec3d hitpos;
-		if(jHitSpherePos(pos, hitradius() + rad, src, dir, dt, ret, &hitpos)){
+		if(jHitSpherePos(pos, getHitRadius() + rad, src, dir, dt, ret, &hitpos)){
 			if(retp) *retp = hitpos;
 			if(retn) *retn = (hitpos - pos).norm();
 			return 1000; /* something quite unlikely to reach */

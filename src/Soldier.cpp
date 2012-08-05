@@ -111,7 +111,7 @@ static struct entity_private_static infantry_s = {
 	NULL, NULL, NULL, NULL, /* suf */
 	0, /* reuse */
 	BULLETSPEED, /* bulletspeed */
-	0.002, /* hitradius */
+	0.002, /* getHitRadius */
 	1./180000, /* sufscale */
 	0, 1, /* hitsuf, altaxis */
 	NULL, /* bullethole */
@@ -186,7 +186,7 @@ IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
 
 
 
-double Soldier::hitradius()const{
+double Soldier::getHitRadius()const{
 	return 0.002;
 }
 
@@ -761,7 +761,7 @@ void Soldier::anim(double dt){
 					if(param->hint == pt)
 						return 0;
 
-					if(!jHitSphere(pt->pos, pt->hitradius(), *param->src, *param->dir, param->dt))
+					if(!jHitSphere(pt->pos, pt->getHitRadius(), *param->src, *param->dir, param->dt))
 						return 0;
 					ret = pt->tracehit(*param->src, *param->dir, 0, param->dt, NULL, &pos, &nh);
 					if(!ret)

@@ -103,7 +103,7 @@ double Scarry::maxhealth()const{
 	return 200000;
 }
 
-double Scarry::hitradius()const{
+double Scarry::getHitRadius()const{
 	return 1.;
 }
 

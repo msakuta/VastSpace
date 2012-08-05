@@ -33,7 +33,7 @@ public:
 	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual void enterField(WarField *);
 	static const double maxspeed;
 

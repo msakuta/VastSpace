@@ -101,15 +101,15 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 			glwprintf("%10s  %d  %lg RU", sta->name, builderc ? builderc[j] : 0, sta->cost);
 		}
 /*		glwpos2d(xpos, ypos + (2 + iy++) * 12);
-		glwprintf("Container    %d  %lg RU %lg dm^3", builderc[0], scontainer_build.cost, 1e-3 * scontainer_s.hitradius * scontainer_s.hitradius * scontainer_s.hitradius * 8 * 1e9);
+		glwprintf("Container    %d  %lg RU %lg dm^3", builderc[0], scontainer_build.cost, 1e-3 * scontainer_s.getHitRadius * scontainer_s.getHitRadius * scontainer_s.getHitRadius * 8 * 1e9);
 		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Worker       %d  %lg RU %lg dm^3", builderc[1], worker_build.cost, 1e-3 * worker_s.hitradius * worker_s.hitradius * worker_s.hitradius * 8 * 1e9);*/
+		glwprintf("Worker       %d  %lg RU %lg dm^3", builderc[1], worker_build.cost, 1e-3 * worker_s.getHitRadius * worker_s.getHitRadius * worker_s.getHitRadius * 8 * 1e9);*/
 /*		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
-		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc ? builderc[0] : 0, sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * ((Sceptor*)NULL)->Sceptor::hitradius() * 8 * 1e9);*/
+		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc ? builderc[0] : 0, sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::getHitRadius() * ((Sceptor*)NULL)->Sceptor::getHitRadius() * ((Sceptor*)NULL)->Sceptor::getHitRadius() * 8 * 1e9);*/
 /*		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Lancer Class %d  %lg RU %lg dm^3", builderc[3], beamer_build.cost, 1e-3 * beamer_s.hitradius * beamer_s.hitradius * beamer_s.hitradius * 8 * 1e9);
+		glwprintf("Lancer Class %d  %lg RU %lg dm^3", builderc[3], beamer_build.cost, 1e-3 * beamer_s.getHitRadius * beamer_s.getHitRadius * beamer_s.getHitRadius * 8 * 1e9);
 		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Sabre Class  %d  %lg RU %lg dm^3", builderc[4], assault_build.cost, 1e-3 * assault_s.hitradius * assault_s.hitradius * assault_s.hitradius * 8 * 1e9);*/
+		glwprintf("Sabre Class  %d  %lg RU %lg dm^3", builderc[4], assault_build.cost, 1e-3 * assault_s.getHitRadius * assault_s.getHitRadius * assault_s.getHitRadius * 8 * 1e9);*/
 		if(builder->nbuildque)
 			delete[] builderc;
 	}
@@ -187,7 +187,7 @@ void GLWdock::draw(GLwindowState &ws, double t){
 			if(height < (2 + iy) * fonth)
 				return;
 			glwpos2d(cr.x0, cr.y0 + (2 + iy++) * fonth);
-			glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->hitradius() * e->hitradius() * e->hitradius());
+			glwprintf("%d X %s %lg m^3", 1, e->dispname(), e->getHitRadius() * e->getHitRadius() * e->getHitRadius());
 		}
 	}
 }
@@ -206,9 +206,9 @@ void Scarry::draw(wardraw_t *wd){
 		return;*/
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), hitradius(), -1., capacitor / maxenergy());
+	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), -1., capacitor / maxenergy());
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 #if 0
 	if(init == 0) do{
@@ -308,7 +308,7 @@ void Scarry::drawtra(wardraw_t *wd){
 /*	if(scarry_cull(pt, wd))
 		return;*/
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 
 	scale = fabs(wd->vw->gc->scale(this->pos));

@@ -153,7 +153,7 @@ double Shipyard::maxhealth()const{
 	return 200000;
 }
 
-double Shipyard::hitradius()const{
+double Shipyard::getHitRadius()const{
 	return hitRadius;
 }
 
@@ -243,7 +243,7 @@ void Shipyard::anim(double dt){
 
 void Shipyard::clientUpdate(double dt){
 	if(undockingFrigate){
-		double threshdist = .5 + undockingFrigate->hitradius();
+		double threshdist = .5 + undockingFrigate->getHitRadius();
 		const Vec3d &udpos = undockingFrigate->pos;
 		Vec3d delta = udpos - (pos + rot.trans(Vec3d(0.1, 0, -0.35)));
 		if(threshdist * threshdist < delta.slen())

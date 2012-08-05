@@ -101,7 +101,7 @@ void ArmBase::postframe(){
 		target = NULL;
 }
 
-double ArmBase::hitradius()const{
+double ArmBase::getHitRadius()const{
 	return 0.;
 }
 
@@ -395,7 +395,7 @@ void MTurret::postframe(){
 		base = NULL;
 }
 
-double MTurret::hitradius()const{
+double MTurret::getHitRadius()const{
 	return .005;
 }
 
@@ -743,7 +743,7 @@ static int ArmsShow(struct glwindow *wnd, int mx, int my, double gametime){
 	MAT4CPY(viewer.relrot, viewer.rot);
 	MAT4CPY(viewer.relirot, viewer.irot);
 	VECCPY(viewer.pos, &viewer.irot[8]);
-	VECSCALEIN(viewer.pos, ((struct entity_private_static*)p->pt->vft)->hitradius * 3.);
+	VECSCALEIN(viewer.pos, ((struct entity_private_static*)p->pt->vft)->getHitRadius * 3.);
 	MAT4DVP3(show_light_pos, viewer.irot, light_position);
 	VECNULL(viewer.velo);
 	VECNULL(viewer.pyr);

@@ -336,7 +336,7 @@ static Entity *otjHitSphere_in(const otnt *root, const Vec3d &src, const Vec3d &
 	else for(i = 0; i < 2; i++){
 		Entity *ret;
 		if(root->leaf & (1<<i)){
-			if(otjHitSphere_loops++, jHitSpherePos(root->a[i].t->pos, root->a[i].t->hitradius() + rad, src, dir, dt, NULL, pos))
+			if(otjHitSphere_loops++, jHitSpherePos(root->a[i].t->pos, root->a[i].t->getHitRadius() + rad, src, dir, dt, NULL, pos))
 				return root->a[i].t;
 		}
 		else if(ret = otjHitSphere_in(root->a[i].n, src, dir, dt, rad, pos))
@@ -386,7 +386,7 @@ static Entity *otjEnumHitSphere_in(const otnt *root, const struct otjEnumHitSphe
 			otjHitSphere_loops++;
 			ret = root->a[i].t;
 			assert(ret);
-			double radii = ret->hitradius();
+			double radii = ret->getHitRadius();
 			if(jHitSpherePos(ret->pos, radii + rad, *src, *dir, dt, NULL, pos)
 				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))
 				return ret;
@@ -435,7 +435,7 @@ static Entity *otjEnumPointHitSphere_in(const otnt *root, const struct otjEnumHi
 				for(j = 0; j < param->nigvft; j++) if(root->a[i]->t.vft == param->igvft[j])
 					goto gcontinue;
 			}*/
-			radi = root->a[i].t->hitradius() + param->rad;
+			radi = root->a[i].t->getHitRadius() + param->rad;
 			otjHitSphere_loops++;
 			if((root->a[i].t->pos - *src).slen() < radi * radi
 				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))
@@ -566,7 +566,7 @@ static otnt *ot_update_int(otnt *root, WarField *w){
 			return NULL;
 		if(root->a[i].t->w != w)
 			return NULL;
-		rad[i] = root->a[i].t->hitradius();
+		rad[i] = root->a[i].t->getHitRadius();
 		pos[i] = &root->a[i].t->pos;
 	}
 	else{
@@ -623,7 +623,7 @@ static otnt *ot_updatesub(WarField *w, otnt *root){
 		for(i = 0; i < 2; i++) if(root->leaf & (1 << i)){
 			if(!root->a[i]->t.active)
 				return NULL;
-			rad[i] = ((struct entity_private_static*)root->a[i]->t.vft)->hitradius;
+			rad[i] = ((struct entity_private_static*)root->a[i]->t.vft)->getHitRadius;
 			pos[i] = &root->a[i]->t.pos;
 		}
 		else{
@@ -673,7 +673,7 @@ struct otiterator{
 		return it != w->el.end() ? *it ? (*it)->pos : Vec3d(0,0,0) : ot[i].pos;
 	}
 	double getrad(){
-		return it != w->el.end() ? *it ? (*it)->hitradius() : 0. : ot[i].rad;
+		return it != w->el.end() ? *it ? (*it)->getHitRadius() : 0. : ot[i].rad;
 	}
 	otiterator next(){
 		otiterator ret = *this;
@@ -802,7 +802,7 @@ otnt *ot_build(WarSpace *w, double dt){
 			double rad_2;
 			const avec3_t *pos2;
 /*			if(jj < 0){
-				rad_2 = ((struct entity_private_static*)pt3->vft)->hitradius;
+				rad_2 = ((struct entity_private_static*)pt3->vft)->getHitRadius;
 				pos2 = &pt3->pos;
 			}
 			else{
@@ -845,7 +845,7 @@ otnt *ot_build(WarSpace *w, double dt){
 		double slen, best = HUGE_VAL;
 		for(pt2 = pt->next; pt2; pt2 = pt2->next) if(!(pt2->active & 2)){
 			struct entity_private_static *vft2 = (struct entity_private_static*)pt2->vft;
-			slen = VECSDIST(pt->pos, pt2->pos) + vft->hitradius * vft->hitradius + vft2->hitradius * vft2->hitradius;
+			slen = VECSDIST(pt->pos, pt2->pos) + vft->getHitRadius * vft->getHitRadius + vft2->getHitRadius * vft2->getHitRadius;
 			if(slen < best){
 				pt3 = pt2;
 				best = slen;
@@ -859,18 +859,18 @@ otnt *ot_build(WarSpace *w, double dt){
 			VECSUB(delta, pt->pos, pt3->pos);
 			len = VECLEN(delta);
 			VECSCALE(dn, delta, 1. / len);
-			if(len + vft2->hitradius < vft->hitradius){
+			if(len + vft2->getHitRadius < vft->getHitRadius){
 				VECCPY(ot[i].pos, pt->pos);
-				ot[i].rad = vft->hitradius;
+				ot[i].rad = vft->getHitRadius;
 			}
-			else if(len + vft->hitradius < vft2->hitradius){
+			else if(len + vft->getHitRadius < vft2->getHitRadius){
 				VECCPY(ot[i].pos, pt3->pos);
-				ot[i].rad = vft2->hitradius;
+				ot[i].rad = vft2->getHitRadius;
 			}
 			else{
-				len += vft->hitradius + vft2->hitradius;
+				len += vft->getHitRadius + vft2->getHitRadius;
 				rad = len / 2.;
-				len = rad - vft2->hitradius;
+				len = rad - vft2->getHitRadius;
 				VECSCALE(delta, dn, len);
 				VECADD(ot[i].pos, delta, pt3->pos);
 				ot[i].rad = rad;
@@ -1015,11 +1015,11 @@ void ot_draw(WarSpace *w, wardraw_t *wd){
 			glEnd();
 			if(pn->leaf & 1){
 				pos = pn->a[0].t->pos - vw->pos;
-				circle(pos, (pn->leaf & 1 ? pn->a[0].t->hitradius() : pn->a[1].n->rad) / pos.len(), vw->rot);
+				circle(pos, (pn->leaf & 1 ? pn->a[0].t->getHitRadius() : pn->a[1].n->rad) / pos.len(), vw->rot);
 			}
 			if(pn->leaf & 2){
 				pos = (pn->leaf & 2 ? pn->a[1].t->pos : pn->a[1].n->pos) - vw->pos;
-				circle(pos, (pn->leaf & 2 ? pn->a[1].t->hitradius() : pn->a[1].n->rad) / pos.len(), vw->rot);
+				circle(pos, (pn->leaf & 2 ? pn->a[1].t->getHitRadius() : pn->a[1].n->rad) / pos.len(), vw->rot);
 			}
 		}
 

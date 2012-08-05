@@ -20,7 +20,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual double maxhealth()const;
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);

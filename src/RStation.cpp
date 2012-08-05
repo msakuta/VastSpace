@@ -82,7 +82,7 @@ void RStation::unserialize(UnserializeContext &sc){
 	return &p->ru;
 }*/
 
-double RStation::hitradius()const{
+double RStation::getHitRadius()const{
 	return 4.;
 }
 

@@ -24,8 +24,8 @@ const unsigned BeamProjectile::classid = registerClass("BeamProjectile", Conster
 
 BeamProjectile::BeamProjectile(Game *game) : st(game), cs(&cs_beamtrail), pf(NULL){}
 
-BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs, double hitradius)
-: st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs), m_hitradius(hitradius){
+BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs, double getHitRadius)
+: st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs), m_hitradius(getHitRadius){
 }
 
 const char *BeamProjectile::classname()const{
@@ -85,4 +85,4 @@ void BeamProjectile::drawtra(wardraw_t *wd){
 	gldSpriteGlow(pos, radius, col, wd->vw->irot);
 }
 
-double BeamProjectile::hitradius()const{return m_hitradius;}
+double BeamProjectile::getHitRadius()const{return m_hitradius;}

@@ -744,7 +744,7 @@ void Autonomous::anim(double dt){
 		inputs.press = 0;
 	else if(task == sship_moveto){
 		steerArrival(dt, dest, vec3_000, .1, .01);
-		if((pos - dest).slen() < hitradius() * hitradius()){
+		if((pos - dest).slen() < getHitRadius() * getHitRadius()){
 			task = sship_idle;
 			inputs.press = 0;
 		}
@@ -927,7 +927,6 @@ bool Autonomous::sq_init(const SQChar *scriptFile, const SqInitProcess &procs){
 	return true;
 }
 
-/// ModelScale is mandatory if specified by the caller.
 void Autonomous::SingleDoubleProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, name, -1); // root string
 	if(SQ_FAILED(sq_get(v, -2))){

@@ -44,7 +44,7 @@ public:
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual const char *dispname()const;
 	virtual double maxhealth()const;
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual double maxenergy()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);

@@ -355,7 +355,7 @@ static int space_collide_callback(const struct otjEnumHitSphereParam *param, Ent
 		return 0;
 	const double &dt = param->dt;
 	Vec3d dr = pt->pos - pt2->pos;
-	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
 	double sr = (r + r2) * (r + r2);
 	if(r * 2. < r2){
 		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
@@ -381,7 +381,7 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	const double ff = .2;
 	Vec3d dr = pt->pos - pt2->pos;
 	double sd = dr.slen();
-	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
 	double sr = (r + r2) * (r + r2);
 	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
 	Vec3d n;
@@ -432,7 +432,7 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 		param.src = &pt->pos;
 		param.dir = &pt->velo;
 		param.dt = dt;
-		param.rad = pt->hitradius();
+		param.rad = pt->getHitRadius();
 		param.pos = NULL;
 		param.norm = NULL;
 		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
@@ -752,7 +752,7 @@ void Sceptor::anim(double dt){
 #endif
 */
 				// Do not try shooting at very small target, that's just waste of ammo.
-				if(enemy->hitradius() < dist / 100.)
+				if(enemy->getHitRadius() < dist / 100.)
 					trigger = 0;
 
 			}
@@ -821,9 +821,9 @@ void Sceptor::anim(double dt){
 
 					double dist = delta.len();
 					dv = delta;
-					double awaybase = pt->enemy->hitradius() * 3. + .1;
+					double awaybase = pt->enemy->getHitRadius() * 3. + .1;
 					if(.6 < awaybase)
-						awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
+						awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
 					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
 					if(p->task == Attack && dist < awaybase){
 						p->task = Away;
@@ -1388,7 +1388,7 @@ bool Sceptor::isTargettable()const{
 }
 bool Sceptor::isSelectable()const{return true;}
 
-double Sceptor::hitradius()const{
+double Sceptor::getHitRadius()const{
 	return .01;
 }
 

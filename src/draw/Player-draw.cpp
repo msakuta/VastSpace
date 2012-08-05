@@ -190,7 +190,7 @@ void Player::draw(Viewer *vw){
 			glVertex3d(0, 0, -move_z);
 			glEnd();
 			if(!selected.empty()){
-				gldScaled((*selected.begin())->hitradius());
+				gldScaled((*selected.begin())->getHitRadius());
 				glBegin(GL_LINE_LOOP);
 				for(int i = 0; i < 32; i++){
 					glVertex2d(cuts[i][0], cuts[i][1]);

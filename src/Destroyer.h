@@ -24,7 +24,7 @@ public:
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void postframe();
@@ -66,7 +66,7 @@ public:
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual double maxhealth()const;
 	virtual double maxenergy()const;
 	virtual void anim(double dt);

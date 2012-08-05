@@ -465,7 +465,7 @@ void Beamer::anim(double dt){
 		dir = rot.trans(dir0);
 		for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 			Entity *pt2 = *it;
-			double rad = pt2->hitradius();
+			double rad = pt2->getHitRadius();
 			Vec3d delta = pt2->pos - pos;
 			if(pt2 == this)
 				continue;

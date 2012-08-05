@@ -21,7 +21,7 @@ public:
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
@@ -50,7 +50,7 @@ public:
 	static const unsigned classid;
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void draw(WarDraw *);

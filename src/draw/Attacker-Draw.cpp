@@ -26,7 +26,7 @@ void Attacker::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
 
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 
 	struct TextureParams{
@@ -104,7 +104,7 @@ void Attacker::draw(wardraw_t *wd){
 
 void Attacker::drawtra(WarDraw *wd){
 	st::drawtra(wd);
-	if(wd->vw->gc->cullFrustum(pos, hitradius()))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 	drawNavlights(wd, navlights);
 }

@@ -266,7 +266,7 @@ void WarSpace::drawOverlay(wardraw_t *wd){
 			continue;
 		Entity *pe = *it;
 		double pixels;
-		if(ppl && WarDraw::r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->hitradius()) && pixels * 20. < wd->vw->vp.m){
+		if(ppl && WarDraw::r_overlay && 0. < (pixels = wd->vw->gc->scale(pe->pos) * pe->getHitRadius()) && pixels * 20. < wd->vw->vp.m){
 			Vec4d spos = wd->vw->trans.vp(Vec4d(pe->pos) + Vec4d(0,0,0,1));
 			glPushMatrix();
 			glLoadIdentity();

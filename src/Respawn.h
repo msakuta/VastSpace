@@ -14,7 +14,7 @@ public:
 	Respawn(WarField *w, double interval, double initial_phase, int max_count, const char *childClassName);
 	static const unsigned classid;
 	virtual const char *classname()const;
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual bool isTargettable()const;
 	virtual void anim(double dt);
 };

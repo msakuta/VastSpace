@@ -11,6 +11,8 @@ hitbox <- [
 local SQRT2P2 = sqrt(2)/2;
 modelScale <- 0.0002;
 
+hitRadius <- 0.1;
+
 mass <- 1.e5;
 
 accel <- 0.025;

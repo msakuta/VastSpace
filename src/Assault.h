@@ -37,6 +37,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
+	virtual double getHitRadius()const;
 	virtual double maxhealth()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);
@@ -50,6 +51,7 @@ public:
 protected:
 	bool buildBody();
 	static double modelScale;
+	static double hitRadius;
 	static double defaultMass;
 	static ManeuverParams mn;
 	static std::vector<hardpoint_static*> hardpoints;

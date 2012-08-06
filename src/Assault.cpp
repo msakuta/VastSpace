@@ -23,6 +23,7 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
 double Assault::modelScale = 0.0002;
+double Assault::hitRadius = 0.1;
 double Assault::defaultMass = 1e5;
 Warpable::ManeuverParams Assault::mn = {
 	.025, /* double accel; */
@@ -62,6 +63,7 @@ void Assault::init(){
 	if(!initialized){
 		sq_init(_SC("models/Assault.nut"),
 			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
 			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
@@ -356,6 +358,10 @@ void Assault::postframe(){
 		if(mother && (!mother->e || !mother->e->w))
 			mother = NULL;
 	}
+}
+
+double Assault::getHitRadius()const{
+	return hitRadius;
 }
 
 double Assault::maxhealth()const{return 10000.;}

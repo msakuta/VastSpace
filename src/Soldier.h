@@ -93,6 +93,7 @@ protected:
 	bool hookretract;
 
 	static double modelScale;
+	static double hitRadius;
 	static double defaultMass;
 	static ManeuverParams maneuverParams;
 	static GLuint overlayDisp;

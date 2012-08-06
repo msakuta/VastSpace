@@ -46,6 +46,7 @@ const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
 
 double Soldier::modelScale = 2e-6;
+double Soldier::hitRadius = 0.002;
 double Soldier::defaultMass = 60; // kilograms
 Autonomous::ManeuverParams Soldier::maneuverParams = {
 	0.01, // accel
@@ -187,7 +188,7 @@ IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
 
 
 double Soldier::getHitRadius()const{
-	return 0.002;
+	return hitRadius;
 }
 
 double Soldier::maxhealth()const{
@@ -238,6 +239,7 @@ void Soldier::init(){
 	if(!initialized){
 		sq_init(_SC("models/Soldier.nut"),
 			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			HardPointProcess(soldierHP) <<=

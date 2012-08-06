@@ -1,6 +1,8 @@
 
 modelScale <- 2.e-6;
 
+hitRadius <- 0.002;
+
 mass <- 60.;
 
 accel <- 0.01;

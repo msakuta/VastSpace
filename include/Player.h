@@ -225,6 +225,8 @@ private:
 	static SQInteger sqf_setmover(HSQUIRRELVM v);
 	static SQInteger sqf_getmover(HSQUIRRELVM v);
 //	int gear; /* acceleration gear in ghost mode */
+
+	friend class CockpitviewMover;
 };
 
 typedef class Player::FreelookMover : public Player::CameraController{

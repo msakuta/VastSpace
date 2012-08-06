@@ -149,8 +149,29 @@ public:
 	}
 	virtual void rotateLook(double dx, double dy){
 		const double speed = .001 / 2. * pl.fov;
-		py[0] += dy * speed;
-		py[1] += dx * speed;
+//		py[0] += dy * speed;
+//		py[1] += dx * speed;
+
+		// Temporariliy made the CockpitviewMover forces controlled Entity to face to
+		// specified direction. It responds well for Soldier (infantryman), but won't
+		// for ship-class Entities.
+		Quatd &rot = pl.controlled ? pl.controlled->rot : pl.rot;
+		Vec3d xomg = rot.trans(Vec3d(0, -dx * speed, 0));
+		Vec3d yomg = rot.trans(Vec3d(-dy * speed, 0, 0));
+		rot = rot.quatrotquat(xomg);
+		rot = rot.quatrotquat(yomg);
+
+		// Notify the server that this client wants the angle changed.
+		CMRot::send(rot);
+	}
+	virtual void setrot(const Quatd &rot){
+		if(pl.controlled){
+			// Force set rotation
+			pl.controlled->setPosition(NULL, &rot);
+
+			// Clear the Player's rotation because it's consumed by the entity.
+			pl.rot = quat_u;
+		}
 	}
 /*	virtual void operator ()(const input_t &input, double dt){
 		const_cast<double&>(input.analog[0]) = py[0];
@@ -780,6 +801,8 @@ void CMControl::interpret(ServerClient &sc, UnserializeStream &uss){
 		return;
 	Player *player = static_cast<Player*>(s);
 	player->controlled = e;
+	if(e)
+		player->mover = player->nextmover = player->cockpitview;
 }
 
 void CMControl::send(Entity *e){

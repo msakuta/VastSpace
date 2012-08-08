@@ -302,6 +302,18 @@ static SQInteger sqf_x64Build(HSQUIRRELVM v){
 	return 1;
 }
 
+/// Returns if the build is for Linux
+static SQInteger sqf_isLinux(HSQUIRRELVM v){
+	// Very simple rule to determine Linuxness; if it's not Windows, it's Linux.
+	sq_pushbool(v,
+#if defined _WIN32 || defined _WIN64
+			SQFalse
+#else
+			SQTrue
+#endif
+		);
+	return 1;
+}
 
 
 /// Time measurement class constructor.
@@ -850,7 +862,11 @@ static SQInteger sqf_loadModule(HSQUIRRELVM v){
 			sq_pushinteger(v, modules[name].refs);
 		}
 		else{
-			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!");
+			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!"
+#ifndef _WIN32 // Output dynamic link error string in Linux server.
+					" Error: " << dlerror()
+#endif
+					);
 			sq_pushinteger(v, 0);
 		}
 		return 1;
@@ -946,6 +962,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_timemeas, _SC("timemeas"));
 	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
 	register_global_func(v, sqf_x64Build, _SC("x64Build"));
+	register_global_func(v, sqf_isLinux, _SC("isLinux"));
 #ifdef _WIN32
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));

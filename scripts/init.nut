@@ -35,8 +35,8 @@ print("Squirrel script for the server initialized!");
 cvar.pause = "1";
 
 // load the module
-if(0){
-	local dllpath = debugBuild() ?
+if(1){
+	local dllpath = isLinux() ? "Debug/gltestdll.so" : debugBuild() ?
 		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
 		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
 //		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :

@@ -57,10 +57,17 @@ objects = ${OUTDIR}/serial.o\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
 
-all: ${OUTDIR}/gltestplus
+gltestdll_objects = ${OUTDIR}/Soldier.o\
+ ../clib/Release/clib.a\
+ ../cpplib/Release/cpplib.a
+
+all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
-	${CC} ${CFLAGS} $(CPPFLAGS) ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+	${CC} ${CFLAGS} $(CPPFLAGS) -rdynamic ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+
+${OUTDIR}/gltestdll.so: ${OUTDIR} ${gltestdll_objects}
+	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}
@@ -144,6 +151,9 @@ ${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 	mkdir -p ${OUTDIR}/calc
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+
+${OUTDIR}/Soldier.o: $(call depends,Soldier.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 rc.zip: shaders/*.fs shaders/*.vs models/*.mqo models/*.nut models/*.bmp models/*.jpg \

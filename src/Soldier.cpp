@@ -210,7 +210,11 @@ bool Soldier::isSelectable()const{
 #define F(a) (1<<(a))
 
 #ifdef DEDICATED
+void Soldier::draw(WarDraw *){}
+void Soldier::drawHUD(WarDraw *){}
+void Soldier::drawOverlay(WarDraw *){}
 void M16::draw(WarDraw *){}
+void M40::draw(WarDraw *){}
 #endif
 
 /*static const struct hardpoint_static infantry_hardpoints[2] = {
@@ -510,13 +514,14 @@ extern struct player *ppl;
 	}
 }*/
 
+#ifndef DEDICATED
 typedef struct wavecache{
 	const char fname[MAX_PATH];
 	WAVEFORMATEX format;
 	WAVEHDR head;
 	struct wavecache *hi, *lo;
 } wavc_t;
-
+#endif
 
 double g_recoil_kick_factor = 10.;
 
@@ -1113,8 +1118,10 @@ void Soldier::anim(double dt){
 	if(i & ~ic & PL_TAB){
 		if(game->isServer())
 			swapWeapon();
-		else
-			CMEntityCommand::s.send(this, SwitchWeaponCommand());
+		else{
+			SwitchWeaponCommand com;
+			CMEntityCommand::s.send(this, com);
+		}
 	}
 
 #if 0

@@ -1275,6 +1275,33 @@ void SQMaterial::interpretTexParam(HSQUIRRELVM v, SQInteger idx, TexParam &stp){
 		}
 		sq_poptop(v);
 	}
+
+	SQBool b;
+	sq_pushstring(v, _SC("alpha"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getbool(v, -1, &b))){
+		if(b)
+			stp.flags |= STP_ALPHA;
+		else
+			stp.flags &= ~STP_ALPHA;
+		sq_poptop(v);
+	}
+
+	sq_pushstring(v, _SC("alphaTest"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getbool(v, -1, &b))){
+		if(b)
+			stp.flags |= STP_ALPHA_TEST;
+		else
+			stp.flags &= ~STP_ALPHA_TEST;
+		sq_poptop(v);
+	}
+
+	SQInteger i;
+	sq_pushstring(v, _SC("transparentColor"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx)) && SQ_SUCCEEDED(sq_getinteger(v, -1, &i))){
+		stp.flags |= STP_TRANSPARENTCOLOR;
+		stp.transparentColor = i;
+		sq_poptop(v);
+	}
 }
 
 SQInteger SQMaterial::sqf_addMaterial(HSQUIRRELVM v){

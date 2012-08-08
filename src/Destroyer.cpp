@@ -208,6 +208,7 @@ int Destroyer::takedamage(double damage, int hitpart){
 		int i;
 		ret = 0;
 		WarSpace *ws = *w;
+#ifndef DEDICATED
 		if(ws){
 
 			if(ws->gibs) for(i = 0; i < 128; i++){
@@ -267,6 +268,9 @@ int Destroyer::takedamage(double damage, int hitpart){
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 		p->w = NULL;
+#endif
+		delete this;
+		return ret;
 	}
 	p->health -= damage;
 	return ret;
@@ -468,3 +472,13 @@ void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 const Warpable::ManeuverParams &WireDestroyer::getManeuve()const{
 	return Destroyer::maneuverParams;
 }
+
+
+#ifdef DEDICATED
+void Destroyer::draw(WarDraw *){}
+void Destroyer::drawtra(WarDraw *){}
+void Destroyer::drawOverlay(WarDraw *){}
+int Destroyer::popupMenu(PopupMenu &){}
+void WireDestroyer::draw(WarDraw *){}
+void WireDestroyer::drawtra(WarDraw *){}
+#endif

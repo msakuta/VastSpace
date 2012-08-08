@@ -342,7 +342,6 @@ int WarpBubble::serialNo = 0;
 
 
 #ifndef _WIN32
-void Warpable::drawtra(wardraw_t *wd){}
 int Warpable::popupMenu(PopupMenu &list){}
 void Warpable::drawHUD(wardraw_t *wd){}
 #endif

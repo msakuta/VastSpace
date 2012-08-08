@@ -38,6 +38,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Sceptor.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
+ ${OUTDIR}/Autonomous.o\
  ${OUTDIR}/Warpable.o\
  ${OUTDIR}/Frigate.o\
  ${OUTDIR}/Beamer.o\
@@ -45,6 +46,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/LTurret.o\
  ${OUTDIR}/Assault.o\
  ${OUTDIR}/Attacker.o\
+ ${OUTDIR}/Destroyer.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -114,6 +116,8 @@ ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Builder.o: $(call depends,Builder.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Autonomous.o: $(call depends,Autonomous.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Warpable.o: $(call depends,Warpable.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Frigate.o: $(call depends,Frigate.cpp)
@@ -127,6 +131,8 @@ ${OUTDIR}/LTurret.o: $(call depends,LTurret.cpp)
 ${OUTDIR}/Assault.o: $(call depends,Assault.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Attacker.o: $(call depends,Attacker.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Destroyer.o: $(call depends,Destroyer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

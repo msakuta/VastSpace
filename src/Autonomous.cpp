@@ -555,6 +555,7 @@ int cmd_transit(int argc, char *argv[], void *pv){
 	return 0;
 }
 
+#ifndef DEDICATED
 static void register_Autonomous_cmd(ClientGame &game){
 	// It's safer to static_cast to Game pointer, in case Game class is not the first superclass
 	// in ClientGame's derive list.
@@ -568,6 +569,7 @@ static void register_Autonomous(){
 }
 
 static StaticInitializer sss(register_Autonomous);
+#endif
 
 
 static int enum_cs_flags(const CoordSys *root, int mask, int flags, const CoordSys ***ret, int left){

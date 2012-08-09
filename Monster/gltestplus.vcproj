@@ -563,10 +563,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\Soldier.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\sqadapt.cpp"
 				>
 			</File>
@@ -687,10 +683,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\src\draw\Soldier-draw.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\src\draw\war-draw.cpp"
 					>
 				</File>
@@ -760,10 +752,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\Application.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\argtok.h"
 				>
 			</File>
@@ -785,10 +773,6 @@
 			</File>
 			<File
 				RelativePath="..\src\Beamer.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\BinDiff.h"
 				>
 			</File>
 			<File
@@ -841,14 +825,6 @@
 			</File>
 			<File
 				RelativePath="..\src\Sceptor.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\Server.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\Soldier.h"
 				>
 			</File>
 			<File
@@ -915,6 +891,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\Application.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\arms.h"
 				>
 			</File>
@@ -940,6 +920,10 @@
 			</File>
 			<File
 				RelativePath="..\include\BeamProjectile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\BinDiff.h"
 				>
 			</File>
 			<File
@@ -1044,6 +1028,10 @@
 			</File>
 			<File
 				RelativePath="..\include\serial_util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Server.h"
 				>
 			</File>
 			<File

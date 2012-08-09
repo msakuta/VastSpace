@@ -12,7 +12,7 @@
 /// The application has different properties and methods depending on whether
 /// it is the client or the dedicated server, but we want to treat it somehow uniformly.
 /// So we made it a class and constructed class hierarchy to achieve this.
-class Application{
+class EXPORT Application{
 public:
 	enum GameMode{
 		ChatBit   = 0x80, /* bitmask for game mode that allow chatting or logging */
@@ -94,7 +94,7 @@ protected:
 /// \brief Representation of Client in the client process.
 ///
 /// Only available in Windows client.
-class ClientApplication : public Application{
+class EXPORT ClientApplication : public Application{
 public:
 
 	/// \biref Client registry in the Client process.
@@ -147,7 +147,7 @@ public:
 	void errorMessage(const char *str);
 };
 
-extern ClientApplication application;
+EXPORT extern ClientApplication application;
 
 #else
 

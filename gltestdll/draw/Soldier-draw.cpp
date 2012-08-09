@@ -126,6 +126,8 @@ void Soldier::draw(WarDraw *wd){
 			glUseProgram(0);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_TEXTURE_2D);
+		if(!glActiveTextureARB)
+			MultiTextureInit();
 		if(glActiveTextureARB){
 			for(int i = 1; i < 5; i++){
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);

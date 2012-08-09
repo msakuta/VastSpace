@@ -20,7 +20,7 @@ class Application;
 struct EXPORT ClientMessage{
 
 	/// Type for the constructor map.
-	typedef std::map<dstring, ClientMessage*> CtorMap;
+	typedef std::map<gltestp::dstring, ClientMessage*> CtorMap;
 
 	/// Constructor map. The key must be a pointer to a static string, which lives as long as the program.
 	static CtorMap &ctormap();
@@ -33,9 +33,9 @@ struct EXPORT ClientMessage{
 
 protected:
 	/// The id (name) of this ClientMessage automatically sent and matched.
-	dstring id;
+	gltestp::dstring id;
 
-	ClientMessage(dstring id);
+	ClientMessage(gltestp::dstring id);
 	virtual ~ClientMessage();
 
 	void send(Application &, const void *, size_t);

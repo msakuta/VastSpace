@@ -18,19 +18,19 @@ extern "C"{
 #include <exception>
 
 
-class FormatException : public std::exception{
+class EXPORT FormatException : public std::exception{
 public:
 	FormatException(){}
 	const char *what()const throw(){return "FormatException";}
 };
 
-class InputShortageException : public std::exception{
+class EXPORT InputShortageException : public std::exception{
 public:
 	InputShortageException(){}
 	const char *what()const throw(){return "InputShortageException";}
 };
 
-class ClassNotFoundException : public std::exception{
+class EXPORT ClassNotFoundException : public std::exception{
 public:
 	ClassNotFoundException(){}
 	const char *what()const throw(){return "ClassNotFoundException";}
@@ -40,7 +40,7 @@ public:
 /// \brief The abstract base class for serialization stream classes.
 ///
 /// It's much like std::stream, but interprets various objects in specific ways.
-class SerializeStream{
+class EXPORT SerializeStream{
 public:
 	SerializeContext *sc; // redundant pointer to point each other, but useful to automate serialization syntax.
 	typedef SerializeStream tt;
@@ -69,7 +69,7 @@ public:
 
 /// \brief Serialization class that converts whole object "web" into a sequence of text.
 /// \sa StdUnserializeStream
-class StdSerializeStream : public SerializeStream{
+class EXPORT StdSerializeStream : public SerializeStream{
 protected:
 	std::ostream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
 public:
@@ -101,7 +101,7 @@ public:
 
 /// \brief Serialization class that converts objects into binary stream.
 /// \sa BinUnserializeStream
-class BinSerializeStream : public SerializeStream{
+class EXPORT BinSerializeStream : public SerializeStream{
 public:
 	typedef SerializeStream tt;
 
@@ -163,7 +163,7 @@ inline SerializeStream &SerializeStream::operator<<(const Serializable *p){
 /// \brief The abstract base class for unserialization stream classes.
 ///
 /// It's much like std::stream, but distinct class tree from SerializeStream.
-class UnserializeStream{
+class EXPORT UnserializeStream{
 public:
 	UnserializeContext *usc; ///< redundant pointer to point each other, but useful to automate serialization syntax.
 	typedef UnserializeStream tt;
@@ -194,7 +194,7 @@ public:
 };
 
 /// \brief Unserialization counterparts of StdSerializeStream.
-class StdUnserializeStream : public UnserializeStream{
+class EXPORT StdUnserializeStream : public UnserializeStream{
 protected:
 	std::istream &base; // cannot simply derive, for the stream can be either ifstream or istringstream but neither declare virtual.
 	tt &consume(const char *);
@@ -225,7 +225,7 @@ public:
 };
 
 /// \brief Unserialization counterpart of BinSerializeSteram.
-class BinUnserializeStream : public UnserializeStream{
+class EXPORT BinUnserializeStream : public UnserializeStream{
 public:
 	BinUnserializeStream(const unsigned char *src = NULL, size_t size = 0, UnserializeContext *ausc = NULL);
 	virtual bool eof()const;
@@ -285,7 +285,7 @@ struct SyncRecord{
 
 typedef std::map<SerializableId, std::vector<unsigned char> > SyncBuf;
 
-class UnserializeContext{
+class EXPORT UnserializeContext{
 public:
 	UnserializeContext(UnserializeStream &ai, CtorMap &acons, UnserializeMap &amap);
 	UnserializeStream &i;

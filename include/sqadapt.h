@@ -17,7 +17,6 @@ int sqa_console_command(int argc, char *argv[], int *retval);
 #include <string.h>
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
-#include <cpplib/dstring.h>
 
 #include <map>
 
@@ -47,7 +46,7 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 /// \brief Type for the Squirrel VM initializer callbacks.
 ///
 /// Not necessary to be a map.
-typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
+typedef std::map<gltestp::dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
 
 /// \brief Returns the map object to initialize the Squirrel VM in the Game object.
 ///
@@ -59,7 +58,7 @@ SQDefineMap &defineMap();
 /// Be sure to define a global (static) variable of this class to function.
 class Initializer{
 public:
-	Initializer(dstring name, bool sqf(HSQUIRRELVM)){
+	Initializer(gltestp::dstring name, bool sqf(HSQUIRRELVM)){
 		defineMap()[name] = sqf;
 	}
 };

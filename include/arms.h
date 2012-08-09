@@ -13,7 +13,11 @@
 
 class ArmBase;
 
-struct hardpoint_static : public Serializable{
+/// \brief A class that describes a hard point on a vehicle.
+///
+/// It consists of relative position and orientation of the hardpoint
+/// from the origin of base vehicle.
+struct EXPORT hardpoint_static : public Serializable{
 	typedef Serializable st;
 	virtual const char *classname()const;
 	static const unsigned classid;
@@ -30,7 +34,23 @@ struct hardpoint_static : public Serializable{
 	static hardpoint_static *load(const char *fname, int &num);
 };
 
-class ArmBase : public Entity{
+/// \brief A class to prevent memory free error in an extension module.
+///
+/// It' merely a std::vector STL instance, but defined in the main executable
+/// to free the contents in the destructor compiled with the same compiler as
+/// the constructor's.
+///
+/// If we link the program with the standard C++ DLL rather than the static library,
+/// this won't be necessary. But we need the static one for a reason; portability.
+///
+/// We could ensure the portability by distributing runtime DLL along with the
+/// program, but I don't want it now.
+class EXPORT HardPointList : public std::vector<hardpoint_static*>{
+};
+
+
+/// \brief Base class for all equippable modules on an Entity.
+class EXPORT ArmBase : public Entity{
 public:
 	typedef Entity st;
 	Entity *base;
@@ -54,7 +74,8 @@ public:
 	void align();
 };
 
-class MTurret : public ArmBase{
+/// \brief Medium-sized gun turret for spaceships.
+class EXPORT MTurret : public ArmBase{
 	static suf_t *suf_turret;
 	static suf_t *suf_barrel;
 protected:
@@ -94,7 +115,8 @@ protected:
 	virtual void tryshoot();
 };
 
-class GatlingTurret : public MTurret{
+/// \brief Middle-sized gatling gun turret for spaceships.
+class EXPORT GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
 	GatlingTurret(Game *game);

@@ -519,7 +519,7 @@ ClientMessage::CtorMap &ClientMessage::ctormap(){
 	return s;
 }
 
-ClientMessage::ClientMessage(dstring id){
+ClientMessage::ClientMessage(gltestp::dstring id){
 	this->id = id;
 	ctormap()[id] = this;
 }

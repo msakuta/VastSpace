@@ -1,6 +1,9 @@
 /** \file
  * \brief Implementation of Soldier class.
  */
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 #include "Soldier.h"
 #include "Player.h"
 #include "Bullet.h"
@@ -58,7 +61,8 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 };
 GLuint Soldier::overlayDisp = 0;
 
-std::vector<hardpoint_static*> soldierHP;/* = {
+
+HardPointList soldierHP;/* = {
 	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Armed weapon", 0),
 	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Stocked weapon", 0),
 };*/
@@ -181,7 +185,7 @@ protected:
 CMPress CMPress::s;
 
 
-DERIVE_COMMAND(SwitchWeaponCommand, SerializableCommand);
+DERIVE_COMMAND_EXT(SwitchWeaponCommand, SerializableCommand);
 
 IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
 

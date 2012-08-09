@@ -100,7 +100,7 @@ protected:
 	/// writing won't affect it) that will be popped from the stack before the function returns.
 	/// It means the SqInitProcess derived class objects must process the defined values in the table
 	/// before sq_init() returns.
-	class SqInitProcess{
+	class EXPORT SqInitProcess{
 	public:
 		SqInitProcess() : next(NULL){}
 
@@ -120,7 +120,7 @@ protected:
 	/// \brief Initializes various settings of Autonomous-derived class by Squirrel script.
 	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs);
 
-	class SingleDoubleProcess : public SqInitProcess{
+	class EXPORT SingleDoubleProcess : public SqInitProcess{
 	public:
 		double &value;
 		const SQChar *name;
@@ -129,18 +129,18 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class ModelScaleProcess : public SingleDoubleProcess{
+	class EXPORT ModelScaleProcess : public SingleDoubleProcess{
 	public:
 		ModelScaleProcess(double &modelScale) : SingleDoubleProcess(modelScale, "modelScale"){}
 	};
 
-	class MassProcess : public SingleDoubleProcess{
+	class EXPORT MassProcess : public SingleDoubleProcess{
 	public:
 		MassProcess(double &mass) : SingleDoubleProcess(mass, "mass"){}
 	};
 
 	/// \brief Processes single Vec3d with given variable name.
-	class Vec3dProcess : public SqInitProcess{
+	class EXPORT Vec3dProcess : public SqInitProcess{
 	public:
 		const SQChar *name;
 		Vec3d &vec;
@@ -149,28 +149,28 @@ protected:
 	};
 
 	/// \brief A class that processes maneuver parameters.
-	class ManeuverParamsProcess : public SqInitProcess{
+	class EXPORT ManeuverParamsProcess : public SqInitProcess{
 	public:
 		ManeuverParams &mn;
 		ManeuverParamsProcess(ManeuverParams &mn) : mn(mn){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class HitboxProcess : public SqInitProcess{
+	class EXPORT HitboxProcess : public SqInitProcess{
 	public:
 		std::vector<hitbox> &hitboxes;
 		HitboxProcess(std::vector<hitbox> &hitboxes) : hitboxes(hitboxes){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class HardPointProcess : public SqInitProcess{
+	class EXPORT HardPointProcess : public SqInitProcess{
 	public:
 		std::vector<hardpoint_static*> &hardpoints;
 		HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class DrawOverlayProcess : public SqInitProcess{
+	class EXPORT DrawOverlayProcess : public SqInitProcess{
 	public:
 		GLuint &disp;
 		DrawOverlayProcess(GLuint &disp) : disp(disp){}
@@ -195,7 +195,7 @@ protected:
 		double patternIntensity(double t)const;
 	};
 
-	class NavlightsProcess : public SqInitProcess{
+	class EXPORT NavlightsProcess : public SqInitProcess{
 	public:
 		std::vector<Navlight> &navlights;
 		NavlightsProcess(std::vector<Navlight> &navlights) : navlights(navlights){}

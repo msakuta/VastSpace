@@ -1029,7 +1029,7 @@ void ServerClient::interpretCommand(char *lbuf){
 	if(!strncmp(lbuf, "C ", 2)){
 		char *p = strchr(&lbuf[2], ' ');
 		if(p){
-			dstring ds;
+			gltestp::dstring ds;
 			ds.strncpy(&lbuf[2], p - &lbuf[2]);
 			ClientMessage::CtorMap::iterator it = ClientMessage::ctormap().find(ds);
 			if(it != ClientMessage::ctormap().end()){

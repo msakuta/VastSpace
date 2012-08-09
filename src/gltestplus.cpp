@@ -45,6 +45,7 @@
 #include "draw/OpenGLState.h"
 #include "BinDiff.h"
 #include "avi.h"
+#include "sqadapt.h"
 #include "resource.h"
 
 extern "C"{
@@ -1429,11 +1430,6 @@ static void uncapture_mouse(){
 /*	while(ShowCursor(TRUE) < 0);*/
 }
 
-namespace sqa{
-typedef std::map<dstring, bool (*)(HSQUIRRELVM)> SQDefineMap;
-
-extern SQDefineMap &defineMap();
-}
 
 
 

@@ -10,8 +10,10 @@ BULLET_INCLUDE=/usr/include/bullet
 endif
 CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
+#gltestdll_OUTDIR = gltestdll/${OUTDIR}
 
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM src/$(1))))
+#gltestdll_depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM gltestdll/$(1))))
 
 objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/serial_util.o\
@@ -57,7 +59,7 @@ objects = ${OUTDIR}/serial.o\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
 
-gltestdll_objects = ${OUTDIR}/Soldier.o\
+gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ../clib/Release/clib.a\
  ../cpplib/Release/cpplib.a
 
@@ -66,11 +68,18 @@ all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) -rdynamic ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
 
-${OUTDIR}/gltestdll.so: ${OUTDIR} ${gltestdll_objects}
-	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+#${OUTDIR}/gltestdll.so: gltestdll/${OUTDIR} ${gltestdll_objects}
+#	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+
+${OUTDIR}/gltestdll.so:
+	cd gltestdll && ${MAKE}
+
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}
+
+gltestdll/${OUTDIR}:
+	mkdir gltestdll/${OUTDIR}
 
 ${OUTDIR}/serial.o: $(call depends,serial.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
@@ -153,8 +162,8 @@ ${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
-${OUTDIR}/Soldier.o: $(call depends,Soldier.cpp)
-	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+#gltestdll/${OUTDIR}/Soldier.o: $(call gltestdll_depends,Soldier.cpp)
+#	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 rc.zip: shaders/*.fs shaders/*.vs models/*.mqo models/*.nut models/*.bmp models/*.jpg \
 models/*.mot \
@@ -171,4 +180,5 @@ pointer.bmp
 clean:
 	rm ${OUTDIR} -r
 
+.PHONY: ${OUTDIR}/gltestdll.so
 

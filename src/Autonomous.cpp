@@ -407,7 +407,7 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 		double len = omg.len();
 		if(len < dt * mn->angleaccel)
 			omg.clear();
-		else
+		else if(0. < len)
 			omg *= (len - dt * mn->angleaccel) / len;
 	}
 

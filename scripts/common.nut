@@ -174,6 +174,19 @@ string stellar_file = "space.ssd";
 
 */
 
+// load the module
+if(1){
+	local dllpath = isLinux() ? "Debug/gltestdll.so" : debugBuild() ?
+		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
+//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
+	local gltestdll = loadModule(dllpath);
+	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
+}
+
+
+
 class Cvar{
 	function _set(idx,val){
 		::set_cvar(idx,val);

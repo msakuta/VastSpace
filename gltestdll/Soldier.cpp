@@ -997,7 +997,7 @@ void Soldier::anim(double dt){
 	else
 		p->cooldown2 -= dt;
 
-	{
+	if(0 < dt){
 		double dt2;
 		int t;
 		int divide = /*(int)(dt / .1)*/ + 1; /* frametime of 0.02 sec is assured to prevent vibration */

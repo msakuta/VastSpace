@@ -91,6 +91,7 @@ protected:
 	bool hookshot;
 	bool hooked;
 	bool hookretract;
+	bool hookrelease;
 
 	static double modelScale;
 	static double hitRadius;

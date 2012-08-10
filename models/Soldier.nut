@@ -5,8 +5,8 @@ hitRadius <- 0.002;
 
 mass <- 60.;
 
-accel <- 0.01;
-maxspeed <- 0.01;
+accel <- 0.002;
+maxspeed <- 0.005;
 angleaccel <- PI * 0.1;
 maxanglespeed <- PI * 0.1;
 capacity <- 1.;

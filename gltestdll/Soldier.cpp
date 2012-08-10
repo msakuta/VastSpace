@@ -274,6 +274,7 @@ void Soldier::init(){
 	hookshot = false;
 	hooked = false;
 	hookretract = false;
+	hookrelease = true;
 //	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
 //	MAT4IDENTITY(infantry_s.hitmdl.trans);
 //	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
@@ -748,13 +749,22 @@ void Soldier::anim(double dt){
 	const double hookspeed = 0.2;
 
 	if(i & PL_B){
-		if(!hookshot && !hookretract && !hooked){
+		if(hookrelease && !hookshot && !hookretract && !hooked){
 			hookshot = true;
 			hookpos = this->pos;
 			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookspeed));
 			hooked = false;
+			hookrelease = false;
+		}
+		if(hookrelease && hookshot){
+			hookretract = true;
+			hookshot = false;
+			hooked = false;
+			hookrelease = false;
 		}
 	}
+	else
+		hookrelease = true;
 
 	if(hookshot){
 		if(!hooked){

@@ -439,29 +439,35 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 	if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 		if(bbody){
 			btVector3 btforceAccum = btvc(forceAccum);
-			assert(!btforceAccum.isZero());
-			btVector3 btdirection = btforceAccum.normalized();
-			btVector3 btvelo = bbody->getLinearVelocity();
-			btVector3 btmainThrust(0,0,0);
+			// It could be zero if arrow keys in opposite directions are pressed
+//			assert(!btforceAccum.isZero());
+			if(!btforceAccum.isZero()){
+				btVector3 btdirection = btforceAccum.normalized();
+				btVector3 btvelo = bbody->getLinearVelocity();
+				btVector3 btmainThrust(0,0,0);
 
-			// If desired steering direction is differing from real velocity,
-			// compensate sliding velocity with side thrusts.
-			if(!btvelo.isZero()){
-				if(btvelo.dot(btdirection) < -DBL_EPSILON)
-					btmainThrust = -btvelo.normalized() * mn->accel * .5;
-				else{
-					btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
-					if(!v.fuzzyZero())
-						btmainThrust = -v.normalize() * mn->accel * .5;
+				// If desired steering direction is differing from real velocity,
+				// compensate sliding velocity with side thrusts.
+				if(!btvelo.isZero()){
+					if(btvelo.dot(btdirection) < -DBL_EPSILON)
+						btmainThrust = -btvelo.normalized() * mn->accel * .5;
+					else{
+						btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
+						if(!v.fuzzyZero())
+							btmainThrust = -v.normalize() * mn->accel * .5;
+					}
+
 				}
 
-			}
+				if(btvelo.length2() < mn->maxspeed * mn->maxspeed){
+					btmainThrust += btforceAccum;
+				}
 
-			if(btvelo.length2() < mn->maxspeed * mn->maxspeed){
-				btmainThrust += btforceAccum;
-			}
+				bbody->applyCentralForce(btmainThrust / bbody->getInvMass());
 
-			bbody->applyCentralForce(btmainThrust / bbody->getInvMass());
+				// Need activation to those Entites who are in completely stationary before applied force takes effect.
+				bbody->activate();
+			}
 		}
 		else if(pt->velo.slen() < maxspeed2);
 		else{

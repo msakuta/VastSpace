@@ -41,6 +41,7 @@ public:
 	Soldier(WarField *);
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
+	virtual void setPosition(const Vec3d *, const Quatd *, const Vec3d *, const Vec3d *);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
@@ -64,6 +65,7 @@ public:
 
 protected:
 	void init();
+	bool buildBody();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
 	void swapWeapon();
 	void reload();

@@ -312,6 +312,56 @@ void Soldier::init(){
 #endif
 }
 
+bool Soldier::buildBody(){
+	if(!w || bbody)
+		return false;
+	WarSpace *ws = *w;
+	if(ws && ws->bdw){
+		static btSphereShape *shape = NULL;
+		if(!shape){
+			shape = new btSphereShape(getHitRadius());
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+
+		// The space does not have friction whatsoever.
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//		ws->bdw->addRigidBody(bbody);
+		return true;
+	}
+	return false;
+}
+
+void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *, const Vec3d *){
+	if(bbody){
+		btTransform worldTransform = bbody->getWorldTransform();
+		if(pos)
+			worldTransform.setOrigin(btvc(*pos));
+		if(rot)
+			worldTransform.setRotation(btqc(*rot));
+		bbody->setWorldTransform(worldTransform);
+	}
+}
+
 void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	const Soldier *p = this;
 	static const Vec3d ofs[2] = {Vec3d(.0005, .002, .001), Vec3d(.00075, .002, .003),};
@@ -841,9 +891,13 @@ void Soldier::anim(double dt){
 			Vec3d dir = delta.norm();
 			// Accelerate towards hooked point
 			velo += dir * 0.05 * dt;
+			if(bbody)
+				bbody->setLinearVelocity(btvc(velo));
 			if(delta.slen() < 0.005 * 0.005){
 				// Cancel closing velocity
 				velo -= velo.sp(dir) * dir;
+				if(bbody)
+					bbody->setLinearVelocity(btvc(velo));
 				hooked = false;
 				hookshot = false;
 				hookretract = true;
@@ -1046,7 +1100,9 @@ void Soldier::anim(double dt){
 		p->damagephase -= dt;
 
 	Vec3d accel = w->accel(this->pos, this->velo);
-	this->velo += accel * dt;
+	if(!bbody){
+		this->velo += accel * dt;
+	}
 
 //	af = (p->state == STATE_PRONE ? .25 : 1.) * (i & (PL_CTRL) ? .6 : i & PL_SHIFT ? 3. : 1.) * (x && z ? 1. / 1.41421356 : 1.) * 60. / (pt->mass + arms_static[p->arms[0].type].emptyweight + arms_static[p->arms[1].type].emptyweight) /** dt * .0075*/;
 	af = 1.;
@@ -1156,8 +1212,14 @@ void Soldier::anim(double dt){
 	}
 #endif
 
-	this->pos += this->velo * dt;
-	this->rot = this->rot.quatrotquat(this->omg * dt);
+	if(bbody){
+		this->pos = btvc(bbody->getWorldTransform().getOrigin());
+		this->rot = btqc(bbody->getWorldTransform().getRotation());
+	}
+	else{
+		this->pos += this->velo * dt;
+		this->rot = this->rot.quatrotquat(this->omg * dt);
+	}
 
 //	h = warmapheight(w->map, pt->pos[0], pt->pos[2], NULL);
 

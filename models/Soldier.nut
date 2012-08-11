@@ -3,7 +3,7 @@ modelScale <- 2.e-6;
 
 hitRadius <- 0.002;
 
-mass <- 60.;
+mass <- 60.e5;
 
 accel <- 0.002;
 maxspeed <- 0.005;

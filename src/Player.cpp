@@ -152,10 +152,14 @@ public:
 //		py[0] += dy * speed;
 //		py[1] += dx * speed;
 
+		Quatd arot;
+		if(pl.controlled)
+			pl.controlled->getPosition(NULL, &arot);
+
 		// Temporariliy made the CockpitviewMover forces controlled Entity to face to
 		// specified direction. It responds well for Soldier (infantryman), but won't
 		// for ship-class Entities.
-		Quatd &rot = pl.controlled ? pl.controlled->rot : pl.rot;
+		Quatd &rot = pl.controlled ? arot : pl.rot;
 		Vec3d xomg = rot.trans(Vec3d(0, -dx * speed, 0));
 		Vec3d yomg = rot.trans(Vec3d(-dy * speed, 0, 0));
 		rot = rot.quatrotquat(xomg);
@@ -163,6 +167,8 @@ public:
 
 		// Notify the server that this client wants the angle changed.
 		CMRot::send(rot);
+		if(pl.controlled)
+			pl.controlled->setPosition(NULL, &rot);
 	}
 	virtual void setrot(const Quatd &rot){
 		if(pl.controlled){

@@ -28,15 +28,17 @@ class EXPORT ShadowMap{
 	static GLuint fbo;
 	static GLuint to;
 	static GLuint depthTextures[3];
+	double shadowOffset;
 	int shadowing;
 	bool additive;
+	bool cullFront;
 public:
 	class DrawCallback{
 	public:
 		virtual void drawShadowMaps(Viewer &vw2) = 0;
 		virtual void draw(Viewer &vw2, GLuint shader, GLint textureLoc, GLint shadowmapLoc) = 0;
 	};
-	ShadowMap(int shadowMapSize, GLdouble (&shadowMapScales)[3]);
+	ShadowMap(int shadowMapSize, GLdouble (&shadowMapScales)[3], double shadowOffset, bool cullFront);
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
 	const ShaderBind *getShader()const;
 	bool isDrawingShadow()const{return !!shadowing;} ///< Returns whether the current drawing path is for a shadow map.

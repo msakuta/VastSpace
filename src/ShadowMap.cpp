@@ -257,7 +257,9 @@ static GLint additiveLoc = -1;
 ///
 /// \param ashadowMapSize The size of shadow map texture in pixels.
 /// \param ashadowMapCells The cell widths of shadow map regions. It have 3 LODs of textures, so you must specify the width for each LOD.
-ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3]) : shadowing(false), additive(false){
+/// \param shadowOffset Factor of shadow offset correction to prevent shadow acne artifact. Unlike other parameters, it takes effect for each construction of the object.
+/// \param cullFront Whether cull the front face instead of back face. It will reduce shadow acne but causes artifacts in concave junction.
+ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3], double shadowOffset, bool cullFront) : shadowing(false), additive(false), shadowOffset(shadowOffset), cullFront(cullFront){
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
@@ -348,7 +350,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glLoadMatrixd(lightModelView);
 
 			GLattrib gla(GL_POLYGON_BIT);
-			glCullFace(GL_FRONT);
+			glCullFace(cullFront ? GL_FRONT : GL_BACK);
 			glEnable(GL_POLYGON_OFFSET_FILL);
 
 			// This polygon offset prevents aliasing of two-sided polys.
@@ -398,6 +400,14 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 	//			glClear(GL_DEPTH_BUFFER_BIT);
 
+			// Bias matrix from [-1, 1] to [0, 1]
+			// Also adds offset z coord for reducing shadow acne.
+			// Refer the URL about shadow acne.
+			// http://msdn.microsoft.com/en-us/library/windows/desktop/ee416324(v=vs.85).aspx
+			Mat4d biasMatrix(Vec4d(.5, .0, .0, .0),
+							Vec4d(.0, .5, .0, .0),
+							Vec4d(.0, .0, .5, .0),
+							Vec4d(.5, .5, .5 - shadowOffset * 0.5 / shadowMapSize / 50., 1.));
 
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
@@ -417,10 +427,6 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 				glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, Vec4f(1., 1., 1., 1.));
 
-				static Mat4d biasMatrix(Vec4d(.5, .0, .0, .0),
-										Vec4d(.0, .5, .0, .0),
-										Vec4d(.0, .0, .5, .0),
-										Vec4d(.5, .5, .5, 1.));	//bias from [-1, 1] to [0, 1]
 				Mat4d textureMatrix = (biasMatrix * lightProjection[i] * lightModelView);
 
 				if(!g_shader_enable){

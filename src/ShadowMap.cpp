@@ -2,6 +2,8 @@
  * \brief Implementation of ShadowMap class.
  */
 
+#define NOMINMAX
+
 #include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
@@ -238,7 +240,10 @@ static OpenGLState::weak_ptr<AdditiveShadowMapShaderBind> additiveShadowMapShade
 void printFramebufferInfo(){}
 #endif
 
-#define SHADOWMAPSIZE 1024
+GLint ShadowMap::shadowMapSize = 2048;
+GLdouble ShadowMap::shadowMapScales[3] = {
+	1. / 5., 1. / .75, 1. / .1
+};
 
 GLuint ShadowMap::fbo = 0; ///< Framebuffer object
 //GLuint ShadowMap::rboId = 0; ///< Renderbuffer object
@@ -246,19 +251,31 @@ GLuint ShadowMap::to = 0; ///< Texture object
 GLuint ShadowMap::depthTextures[3] = {0}; ///< Texture names for depth textures
 static GLint additiveLoc = -1;
 
-/// Initializes shadow map textures
-ShadowMap::ShadowMap() : shadowing(false), additive(false){
+/// \brief Initializes shadow map textures
+///
+/// The parameters are interpreted only in the first invocation of this constructor and stored into static storage.
+///
+/// \param ashadowMapSize The size of shadow map texture in pixels.
+/// \param ashadowMapCells The cell widths of shadow map regions. It have 3 LODs of textures, so you must specify the width for each LOD.
+ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3]) : shadowing(false), additive(false){
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+
+		// Make the texture size do not exceed the hardware's maximum.
+		GLint maxsize;
+		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxsize);
+		shadowMapSize = std::min(ashadowMapSize, maxsize);
+		for(int i = 0; i < numof(shadowMapScales); i++)
+			shadowMapScales[i] = 1. / ashadowMapCells[i];
 
 		// texture for depth
 		glGenTextures(3, depthTextures);
 		for(int i = 0; i < 3; i++){
 			GLuint tod = depthTextures[i];
 			glBindTexture(GL_TEXTURE_2D, tod);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWMAPSIZE, SHADOWMAPSIZE, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapSize, shadowMapSize, 0, GL_DEPTH_COMPONENT, GL_BYTE, NULL);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -308,7 +325,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 	if(fbo && glIsFrameBufferEXT(fbo)){
 		Mat4d lightProjection[3];
 		Mat4d lightModelView;
-		GLfloat shadowCell[3] = {1. / 5., 1. / .75, 1. / .1};
+		GLdouble (&shadowCell)[3] = shadowMapScales/*{1. / 5., 1. / .75, 1. / .02}*/;
 
 		bool shadowok = true;
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
@@ -337,7 +354,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			// This polygon offset prevents aliasing of two-sided polys.
 //			glPolygonOffset(1., 1.);
 
-			glViewport(0, 0, SHADOWMAPSIZE, SHADOWMAPSIZE);
+			glViewport(0, 0, shadowMapSize, shadowMapSize);
 			Viewer vw2 = vw;
 			GLcull gc(vw.pos, vw.gc->getInvrot(), 1., -1, 1);
 			vw2.gc = &gc;

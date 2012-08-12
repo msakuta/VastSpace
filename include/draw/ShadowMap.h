@@ -23,6 +23,8 @@ struct AdditiveShaderBind;
 ///
 /// It depends on several OpenGL extensions.
 class EXPORT ShadowMap{
+	static GLint shadowMapSize;
+	static GLdouble shadowMapScales[3];
 	static GLuint fbo;
 	static GLuint to;
 	static GLuint depthTextures[3];
@@ -34,7 +36,7 @@ public:
 		virtual void drawShadowMaps(Viewer &vw2) = 0;
 		virtual void draw(Viewer &vw2, GLuint shader, GLint textureLoc, GLint shadowmapLoc) = 0;
 	};
-	ShadowMap();
+	ShadowMap(int shadowMapSize, GLdouble (&shadowMapScales)[3]);
 	void drawShadowMaps(Viewer &vw, const Vec3d &light, DrawCallback &drawcallback);
 	const ShaderBind *getShader()const;
 	bool isDrawingShadow()const{return !!shadowing;} ///< Returns whether the current drawing path is for a shadow map.

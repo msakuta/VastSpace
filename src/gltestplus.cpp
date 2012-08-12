@@ -94,6 +94,10 @@ static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
 static double r_dynamic_range = 1.;
 static int r_orbit_axis = 0;
 static int r_shadows = 1;
+static int r_shadow_map_size = 1024;
+static double r_shadow_map_cells[3] = {
+	5., .75, .1
+};
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -631,7 +635,7 @@ void Game::draw_func(Viewer &vw, double dt){
 	int	glerr = glGetError();
 	static GLuint fbo = 0, rboId = 0, to = 0;
 	static GLuint depthTextures[3] = {0};
-	ShadowMap shadowMap;
+	ShadowMap shadowMap(r_shadow_map_size, r_shadow_map_cells);
 
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
@@ -2283,6 +2287,11 @@ int main(int argc, char *argv[])
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
+	CvarAdd("r_shadow_map_size", &r_shadow_map_size, cvar_int);
+	// Buffers to keep the string alive during the game lasts.
+	static gltestp::dstring names[numof(r_shadow_map_cells)];
+	for(int i = 0; i < numof(r_shadow_map_cells); i++)
+		CvarAdd(names[i] = gltestp::dstring("r_shadow_map_cell") << i, &r_shadow_map_cells[i], cvar_double);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	Player::cmdInit(application);
 

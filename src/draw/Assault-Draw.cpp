@@ -4,7 +4,7 @@
 #include "../Assault.h"
 #include "../Beamer.h"
 #include "Player.h"
-#include "../Application.h"
+#include "Application.h"
 #include "Game.h"
 #include "StaticInitializer.h"
 #include "cmd.h"

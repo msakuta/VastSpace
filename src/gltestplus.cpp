@@ -1729,7 +1729,11 @@ static void key_func(unsigned char key, int x, int y){
 
 	// The Esc key is the last resort to exit controlling
 	if(key == ESC){
-		if(server && server->player)
+		// Precede the client game for uncontrolling because the client may think it have control
+		// even if it's not assumed so in the server.
+		if(application.clientGame && application.clientGame->player)
+			application.clientGame->player->uncontrol();
+		else if(server && server->player)
 			server->player->uncontrol();
 	}
 

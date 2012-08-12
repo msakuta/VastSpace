@@ -169,12 +169,7 @@ public:
 #ifdef _WIN32
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
-	/// Quit controlling an Entity.
-	void uncontrol(){
-		if(controlled && static_cast<EntityController*>(controlled->controller) == this)
-			controlled->controller = NULL;
-		controlled = NULL;
-	}
+	void uncontrol();
 	Quatd orientation()const;
 	const std::vector<teleport> &getTplist()const{return tplist;}
 

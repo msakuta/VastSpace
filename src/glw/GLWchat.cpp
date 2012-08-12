@@ -3,7 +3,7 @@
  */
 #include "glw/GLWchat.h"
 #include "cmd.h"
-#include "../Application.h"
+#include "Application.h"
 #include "sqadapt.h"
 #include "antiglut.h"
 extern "C"{

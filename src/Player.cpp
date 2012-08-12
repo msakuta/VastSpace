@@ -852,6 +852,16 @@ bool Player::control(Entity *e, double dt){
 	return false;
 }
 
+/// Quit controlling an Entity.
+void Player::uncontrol(){
+	if(controlled && static_cast<EntityController*>(controlled->controller) == this)
+		controlled->controller = NULL;
+	controlled = NULL;
+	if(!game->isServer())
+		CMControl::s.send(NULL);
+}
+
+
 
 teleport *Player::findTeleport(const char *name, int flags){
 	for(int i = 0; i < tplist.size(); i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)

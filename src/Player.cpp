@@ -806,9 +806,12 @@ void CMControl::interpret(ServerClient &sc, UnserializeStream &uss){
 	if(!!strcmp(s->classname(), "Player"))
 		return;
 	Player *player = static_cast<Player*>(s);
+	if(player->controlled && static_cast<EntityController*>(player->controlled->controller) == player)
+		player->controlled->controller = NULL;
 	player->controlled = e;
 	if(e){
 		player->mover = player->nextmover = player->cockpitview;
+		player->cockpitview->setrot(e->rot);
 		e->controller = player;
 	}
 }
@@ -838,7 +841,7 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 		pl.controlled = e;
 		pl.mover = pl.nextmover = pl.cockpitview;
 		pl.chase = e;
-		pl.mover->setrot(quat_u);
+		pl.mover->setrot(e->rot);
 		capture_mouse();
 		e->controller = &pl;
 		CMControl::s.send(e);

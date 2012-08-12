@@ -4,6 +4,7 @@
 #include "../Soldier.h"
 #include "Viewer.h"
 #include "Player.h"
+#include "Game.h"
 #include "draw/WarDraw.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
@@ -502,8 +503,11 @@ void Soldier::drawHUD(WarDraw *wd){
 	Soldier *p = this;
 	glPushMatrix();
 
+	Player *player = game->player;
 	glLoadIdentity();
-	{
+
+	// If we have no Player, almost nothing can be drawn.
+	if(player){
 		GLint vp[4];
 		int w, h, m;
 		double left, bottom, *pyr;
@@ -522,18 +526,20 @@ void Soldier::drawHUD(WarDraw *wd){
 		glOrtho(left, -left, bottom, -bottom, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 
-		Player *player = this->w->getPlayer();
 		if((player->mover == player->cockpitview || player->mover == player->freelook) && !controller){
 			if(fmod(this->w->pl->gametime, 1.) < .5){
 				glRasterPos3d(.0 - 8. * (sizeof"AI CONTROLLED"-1) / m, .0 - 10. / m, -0.);
 				gldprintf("AI CONTROLLED");
 			}
 		}
-		else{
-/*			glRasterPos3d(-left - 200. / m, bottom + 60. / m, -1);
-			gldprintf("%c sub-machine gun", !pt->weapon ? '>' : ' ');
-			glRasterPos3d(-left - 200. / m, bottom + 40. / m, -1);
-			gldprintf("%c ???", pt->weapon ? '>' : ' ');*/
+		else if(arms[0]){
+			// Display primary weapon name and ammunition count.
+			glRasterPos3d(-left - 200. / m, 0/*bottom + 60. / m*/, -1);
+			gldprintf("%s", arms[0]->classname());
+			glRasterPos3d(-left - 200. / m, - 12. / m, -1);
+			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
+//			glRasterPos3d(-left - 200. / m, bottom + 40. / m, -1);
+//			gldprintf("%c ???", this->weapon ? '>' : ' ');
 		}
 
 		glRasterPos3d(left, -bottom - 20. / m, -0.);
@@ -578,8 +584,8 @@ void Soldier::drawHUD(WarDraw *wd){
 		}
 #endif
 
-#if 0
-		if(chasecamera == 0 || chasecamera == 3){
+		// Draw crosshair
+		if(player->mover == player->cockpitview && (player->getChaseCamera() == 0 || player->getChaseCamera() == 3)){
 			glBegin(GL_LINES);
 			glVertex3d(-.15, 0., -0.);
 			glVertex3d(-.025, 0., -0.);
@@ -591,7 +597,6 @@ void Soldier::drawHUD(WarDraw *wd){
 			glVertex3d(0., .025, -0.);
 			glEnd();
 		}
-#endif
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadMatrixd(projmat);

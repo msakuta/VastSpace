@@ -312,46 +312,7 @@ void Soldier::init(){
 #endif
 }
 
-bool Soldier::buildBody(){
-	if(!w || bbody)
-		return false;
-	WarSpace *ws = *w;
-	if(ws && ws->bdw){
-		static btSphereShape *shape = NULL;
-		if(!shape){
-			shape = new btSphereShape(getHitRadius());
-		}
-
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-
-		// The space does not have friction whatsoever.
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-//		ws->bdw->addRigidBody(bbody);
-		return true;
-	}
-	return false;
-}
-
-void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *, const Vec3d *){
+void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo, const Vec3d *avelo){
 	if(bbody){
 		btTransform worldTransform = bbody->getWorldTransform();
 		if(pos)
@@ -360,6 +321,8 @@ void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *, con
 			worldTransform.setRotation(btqc(*rot));
 		bbody->setWorldTransform(worldTransform);
 	}
+	else
+		st::setPosition(pos, rot, velo, avelo);
 }
 
 void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -816,41 +779,37 @@ void Soldier::anim(double dt){
 	else
 		hookrelease = true;
 
-	if(hookshot){
-		if(!hooked){
-			struct HookHit{
-				static int hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
-//					const Vec3d *src = param->src;
-//					const Vec3d *dir = param->dir;
-//					double dt = param->dt;
-//					double rad = param->rad;
-					Vec3d *retpos = param->pos;
-					Vec3d *retnorm = param->norm;
-					Vec3d pos, nh;
-					int ret = 1;
+	struct HookHit{
+		static int hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
+			Vec3d *retpos = param->pos;
+			Vec3d *retnorm = param->norm;
+			Vec3d pos, nh;
+			int ret = 1;
 
-					if(param->hint == pt)
-						return 0;
+			if(param->hint == pt)
+				return 0;
 
-					if(!jHitSphere(pt->pos, pt->getHitRadius(), *param->src, *param->dir, param->dt))
-						return 0;
-					ret = pt->tracehit(*param->src, *param->dir, 0, param->dt, NULL, &pos, &nh);
-					if(!ret)
-						return 0;
+			if(!jHitSphere(pt->pos, pt->getHitRadius() + param->rad, *param->src, *param->dir, param->dt))
+				return 0;
+			ret = pt->tracehit(*param->src, *param->dir, param->rad, param->dt, NULL, &pos, &nh);
+			if(!ret)
+				return 0;
 //					else if(rethitpart)
 //						*rethitpart = ret;
 
-					{
+			{
 //						p->pos += pb->velo * dt;
-						if(retpos)
-							*retpos = pos;
-						if(retnorm)
-							*retnorm = nh;
-					}
-					return ret;
-				}
-			} hh;
+				if(retpos)
+					*retpos = pos;
+				if(retnorm)
+					*retnorm = nh;
+			}
+			return ret;
+		}
+	} hh;
 
+	if(hookshot){
+		if(!hooked){
 			otjEnumHitSphereParam param;
 			Vec3d hitpos, nh;
 			param.root = ws->otroot;
@@ -893,14 +852,16 @@ void Soldier::anim(double dt){
 			velo += dir * 0.05 * dt;
 			if(bbody)
 				bbody->setLinearVelocity(btvc(velo));
-			if(delta.slen() < 0.005 * 0.005){
+			if(delta.slen() < 0.025 * 0.025){
+				// Rapid brake
+				velo *= exp(-dt * 2.);
 				// Cancel closing velocity
-				velo -= velo.sp(dir) * dir;
+/*				velo -= velo.sp(dir) * dir;
 				if(bbody)
 					bbody->setLinearVelocity(btvc(velo));
 				hooked = false;
 				hookshot = false;
-				hookretract = true;
+				hookretract = true;*/
 			}
 		}
 	}
@@ -1217,6 +1178,30 @@ void Soldier::anim(double dt){
 		this->rot = btqc(bbody->getWorldTransform().getRotation());
 	}
 	else{
+		otjEnumHitSphereParam param;
+		Vec3d hitpos, nh;
+		param.root = ws->otroot;
+		param.src = &pos;
+		param.dir = &velo;
+		param.dt = dt;
+		param.rad = getHitRadius();
+		param.pos = &hitpos;
+		param.norm = &nh;
+		param.flags = OTJ_CALLBACK;
+		param.callback = hh.hit_callback;
+		param.hint = this;
+		if(ws->ot){
+			Entity *pt = otjEnumHitSphere(&param);
+			if(pt && this->velo.sp(nh) < 0.){
+				this->velo -= this->velo.sp(nh) * nh;
+				this->pos = hitpos;
+			}
+		}
+		else{
+			for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
+				if(!hh.hit_callback(&param, *it))
+					break;
+		}
 		this->pos += this->velo * dt;
 		this->rot = this->rot.quatrotquat(this->omg * dt);
 	}

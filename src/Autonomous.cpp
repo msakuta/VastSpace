@@ -414,27 +414,21 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 	Vec3d forceAccum(0,0,0);
 	if(pt->inputs.press & PL_W){
 		forceAccum += mat.vec3(2) * -mn->accel;
-		pt->velo += mat.vec3(2) * (-dt * mn->accel);
 	}
 	if(pt->inputs.press & PL_S){
 		forceAccum += mat.vec3(2) * mn->accel * .5;
-		pt->velo += mat.vec3(2) * dt * mn->accel * .5;
 	}
 	if(pt->inputs.press & PL_A){
 		forceAccum += mat.vec3(0) * -mn->accel * .5;
-		pt->velo += mat.vec3(0) * -dt * mn->accel * .5;
 	}
 	if(pt->inputs.press & PL_D){
 		forceAccum += mat.vec3(0) * mn->accel * .5;
-		pt->velo += mat.vec3(0) *  dt * mn->accel * .5;
 	}
 	if(pt->inputs.press & PL_Q){
 		forceAccum += mat.vec3(1) * mn->accel * .5;
-		pt->velo += mat.vec3(1) *  dt * mn->accel * .5;
 	}
 	if(pt->inputs.press & PL_Z){
 		forceAccum += mat.vec3(1) * -mn->accel * .5;
-		pt->velo += mat.vec3(1) * -dt * mn->accel * .5;
 	}
 	if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 		if(bbody){
@@ -469,10 +463,8 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 				bbody->activate();
 			}
 		}
-		else if(pt->velo.slen() < maxspeed2);
-		else{
-			pt->velo.normin();
-			pt->velo *= mn->maxspeed;
+		else if(0 < forceAccum.slen() && pt->velo.sp(forceAccum) / forceAccum.len() < mn->maxspeed){
+			pt->velo += forceAccum * dt;
 		}
 	}
 	else if(bbody){

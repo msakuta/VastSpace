@@ -65,7 +65,6 @@ public:
 
 protected:
 	void init();
-	bool buildBody();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
 	void swapWeapon();
 	void reload();

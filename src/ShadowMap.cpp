@@ -152,6 +152,7 @@ void ShadowMapShaderBind::getUniformLocations(){
 	shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 	shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 	shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+	shadowSlopeScaledBiasLoc = glGetUniformLocation(shader, "shadowSlopeScaledBias");
 }
 
 void ShadowMapShaderBind::useInt()const{
@@ -159,6 +160,7 @@ void ShadowMapShaderBind::useInt()const{
 	glUniform1i(shadowmapLoc, 2);
 	glUniform1i(shadowmap2Loc, 3);
 	glUniform1i(shadowmap3Loc, 4);
+	glUniform1f(shadowSlopeScaledBiasLoc, shadowSlopeScaledBias);
 }
 
 void AdditiveShaderBind::build(){
@@ -259,7 +261,10 @@ static GLint additiveLoc = -1;
 /// \param ashadowMapCells The cell widths of shadow map regions. It have 3 LODs of textures, so you must specify the width for each LOD.
 /// \param shadowOffset Factor of shadow offset correction to prevent shadow acne artifact. Unlike other parameters, it takes effect for each construction of the object.
 /// \param cullFront Whether cull the front face instead of back face. It will reduce shadow acne but causes artifacts in concave junction.
-ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3], double shadowOffset, bool cullFront) : shadowing(false), additive(false), shadowOffset(shadowOffset), cullFront(cullFront){
+ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3],
+	double shadowOffset, bool cullFront, double shadowSlopeScaledBias)
+	: shadowing(false), additive(false), shadowOffset(shadowOffset), cullFront(cullFront), shadowSlopeScaledBias(shadowSlopeScaledBias)
+{
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
 		glGenFramebuffersEXT(1, &fbo);
@@ -452,6 +457,8 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					Mat4d itrans = vw.irot;
 					itrans.vec3(3) = vw.pos;
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
+					shaderBind->shadowSlopeScaledBias = shadowSlopeScaledBias * 0.5 / shadowMapSize / 50.;
+					additiveShadowMapShaderBind->shadowSlopeScaledBias = shadowSlopeScaledBias * 0.5 / shadowMapSize / 50.;
 					shaderBind->use();
 					glDisable(GL_ALPHA_TEST);
 				}

@@ -1,5 +1,5 @@
 varying vec3 view;
-//varying vec3 nrm;
+varying vec3 nrm;
 varying float diffuse[2];
 //varying vec4 col;
 
@@ -9,7 +9,7 @@ void main(void)
 //	col = gl_Color;
 	gl_Position = ftransform();
 
-//	nrm = gl_NormalMatrix * gl_Normal;
+	nrm = gl_NormalMatrix * gl_Normal;
 	vec3 fnormal = normalize(gl_NormalMatrix * gl_Normal);
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
 	diffuse[0] = max(0., dot(flight, fnormal));

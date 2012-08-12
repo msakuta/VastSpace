@@ -100,6 +100,7 @@ static double r_shadow_map_cells[3] = {
 };
 static double r_shadow_offset = 1.;
 static int r_shadow_cull_front = 0;
+static double r_shadow_slope_scaled_bias = 1.;
 static bool mouse_captured = false;
 static bool mouse_tracking = false;
 int gl_wireframe = 0;
@@ -637,7 +638,7 @@ void Game::draw_func(Viewer &vw, double dt){
 	int	glerr = glGetError();
 	static GLuint fbo = 0, rboId = 0, to = 0;
 	static GLuint depthTextures[3] = {0};
-	ShadowMap shadowMap(r_shadow_map_size, r_shadow_map_cells, r_shadow_offset, r_shadow_cull_front);
+	ShadowMap shadowMap(r_shadow_map_size, r_shadow_map_cells, r_shadow_offset, r_shadow_cull_front, r_shadow_slope_scaled_bias);
 
 	glClearDepth(1.);
 	glClearColor(0,0,0,1);
@@ -2296,6 +2297,7 @@ int main(int argc, char *argv[])
 		CvarAdd(names[i] = gltestp::dstring("r_shadow_map_cell") << i, &r_shadow_map_cells[i], cvar_double);
 	CvarAdd("r_shadow_offset", &r_shadow_offset, cvar_double);
 	CvarAdd("r_shadow_cull_front", &r_shadow_cull_front, cvar_int);
+	CvarAdd("r_shadow_slope_scaled_bias", &r_shadow_slope_scaled_bias, cvar_double);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	Player::cmdInit(application);
 

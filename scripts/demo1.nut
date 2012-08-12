@@ -14,7 +14,7 @@ if(1){
 	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
 	des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 //	player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
-//	player.cs.addent("Assault", Vec3d(2.0, -0.10, 0.5));
+	player.cs.addent("Assault", Vec3d(2.0, -0.10, 0.5));
 	local e1 = player.cs.addent("Soldier", Vec3d(2.0, 0.2, 0.5));
 	e1.race = 0;
 //	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));

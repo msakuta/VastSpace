@@ -566,16 +566,13 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 						class SelectorProc : public ItemSelector::ForEachProc{
 						public:
 							Player::SelectSet &set;
-//							Entity **prev;
-//							SelectorProc(Entity **prev) : prev(prev){}
 							SelectorProc(Player::SelectSet &set) : set(set){}
 							virtual void proc(const Entity *pe){
 								set.insert(const_cast<Entity*>(pe));
-/*								*prev = pe;
-								prev = &pe->selectnext;
-								pe->selectnext = NULL;*/
 							}
 						};
+						// Clear the selection before re-selecting.
+						pl.selected.clear();
 						is.foreach(SelectorProc(pl.selected));
 					}
 					else{

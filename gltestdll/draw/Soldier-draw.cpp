@@ -522,7 +522,8 @@ void Soldier::drawHUD(WarDraw *wd){
 		glOrtho(left, -left, bottom, -bottom, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 
-		if(!controller){
+		Player *player = this->w->getPlayer();
+		if((player->mover == player->cockpitview || player->mover == player->freelook) && !controller){
 			if(fmod(this->w->pl->gametime, 1.) < .5){
 				glRasterPos3d(.0 - 8. * (sizeof"AI CONTROLLED"-1) / m, .0 - 10. / m, -0.);
 				gldprintf("AI CONTROLLED");

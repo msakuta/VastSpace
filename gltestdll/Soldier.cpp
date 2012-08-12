@@ -1178,6 +1178,7 @@ void Soldier::anim(double dt){
 		this->rot = btqc(bbody->getWorldTransform().getRotation());
 	}
 	else{
+		// Manually resolve collision if we do not have bbody.
 		otjEnumHitSphereParam param;
 		Vec3d hitpos, nh;
 		param.root = ws->otroot;
@@ -1199,8 +1200,11 @@ void Soldier::anim(double dt){
 		}
 		else{
 			for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
-				if(!hh.hit_callback(&param, *it))
+				if(!hh.hit_callback(&param, *it)){
+					this->velo -= this->velo.sp(nh) * nh;
+					this->pos = hitpos;
 					break;
+				}
 		}
 		this->pos += this->velo * dt;
 		this->rot = this->rot.quatrotquat(this->omg * dt);

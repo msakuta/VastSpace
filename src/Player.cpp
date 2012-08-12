@@ -807,8 +807,10 @@ void CMControl::interpret(ServerClient &sc, UnserializeStream &uss){
 		return;
 	Player *player = static_cast<Player*>(s);
 	player->controlled = e;
-	if(e)
+	if(e){
 		player->mover = player->nextmover = player->cockpitview;
+		e->controller = player;
+	}
 }
 
 void CMControl::send(Entity *e){

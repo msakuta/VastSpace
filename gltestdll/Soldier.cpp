@@ -41,7 +41,6 @@ extern "C"{
 #define TURRETROTSPEED (2. * M_PI)
 #define BULLETSPEED .5
 #define INFANTRY_WALK_PHASE_SPEED (M_PI * 1.3)
-//#define INFANTRY_SCALE (2./1e5)
 
 
 Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
@@ -51,6 +50,10 @@ const char *Soldier::classname()const{return "Soldier";}
 double Soldier::modelScale = 2e-6;
 double Soldier::hitRadius = 0.002;
 double Soldier::defaultMass = 60; // kilograms
+double Soldier::hookSpeed = 0.2;
+double Soldier::hookRange = 0.2;
+double Soldier::hookPullAccel = 0.05;
+double Soldier::hookStopRange = 0.025;
 Autonomous::ManeuverParams Soldier::maneuverParams = {
 	0.01, // accel
 	0.01, // maxspeed
@@ -62,14 +65,7 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 GLuint Soldier::overlayDisp = 0;
 
 
-HardPointList soldierHP;/* = {
-	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Armed weapon", 0),
-	hardpoint_static(Vec3d(0,0,0), Quatd(0,0,0,1), "Stocked weapon", 0),
-};*/
-
-//typedef struct bullet bullet_t;
-
-//extern void rbd_anim(entity_t *pt, double dt, aquat_t *pq, amat4_t *nmat);
+HardPointList soldierHP;
 
 #if 0
 static void infantry_cockpitview(entity_t *pt, warf_t *, double (*pos)[3], int *);
@@ -249,6 +245,10 @@ void Soldier::init(){
 			ModelScaleProcess(modelScale) <<=
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
+			SingleDoubleProcess(hookRange, "hookRange", false) <<=
+			SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=
+			SingleDoubleProcess(hookStopRange, "hookStopRange", false) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			HardPointProcess(soldierHP) <<=
 			DrawOverlayProcess(overlayDisp));
@@ -759,13 +759,11 @@ void Soldier::anim(double dt){
 		p->aiming = !p->aiming;
 	}
 
-	const double hookspeed = 0.2;
-
 	if(i & PL_B){
 		if(hookrelease && !hookshot && !hookretract && !hooked){
 			hookshot = true;
 			hookpos = this->pos;
-			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookspeed));
+			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookSpeed));
 			hooked = false;
 			hookrelease = false;
 		}
@@ -824,18 +822,23 @@ void Soldier::anim(double dt){
 			param.hint = this;
 			if(ws->ot){
 				Entity *pt = otjEnumHitSphere(&param);
-				if(pt)
+				if(pt){
 					hooked = true;
+					hookpos = hitpos; // Assign hook position to precisely calculated hit position. 
+				}
 			}
 			else{
 				for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
-					if(!hh.hit_callback(&param, *it))
+					if(hh.hit_callback(&param, *it)){
+						hooked = true;
+						hookpos = hitpos; // Assign hook position to precisely calculated hit position.
 						break;
+					}
 			}
 
 			if(!hooked){
 				hookpos += hookvelo * dt;
-				if(0.2 * 0.2 < (hookpos - this->pos).slen()){
+				if(hookRange * hookRange < (hookpos - this->pos).slen()){
 					hookshot = false;
 					hookretract = true;
 				}
@@ -849,10 +852,10 @@ void Soldier::anim(double dt){
 		if(FLT_EPSILON < delta.slen()){
 			Vec3d dir = delta.norm();
 			// Accelerate towards hooked point
-			velo += dir * 0.05 * dt;
+			velo += dir * hookPullAccel * dt;
 			if(bbody)
 				bbody->setLinearVelocity(btvc(velo));
-			if(delta.slen() < 0.025 * 0.025){
+			if(delta.slen() < hookStopRange * hookStopRange){
 				// Rapid brake
 				velo *= exp(-dt * 2.);
 				// Cancel closing velocity
@@ -872,7 +875,7 @@ void Soldier::anim(double dt){
 			hookretract = false;
 		}
 		else
-			hookpos -= delta.norm() * hookspeed * dt;
+			hookpos -= delta.norm() * hookSpeed * dt;
 	}
 
 /*	if(p->arms[0].type == arms_shotgun && p->reloading){
@@ -1200,7 +1203,7 @@ void Soldier::anim(double dt){
 		}
 		else{
 			for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
-				if(!hh.hit_callback(&param, *it)){
+				if(hh.hit_callback(&param, *it)){
 					this->velo -= this->velo.sp(nh) * nh;
 					this->pos = hitpos;
 					break;

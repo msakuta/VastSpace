@@ -97,6 +97,10 @@ protected:
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;
+	static double hookSpeed;
+	static double hookRange;
+	static double hookPullAccel;
+	static double hookStopRange;
 	static ManeuverParams maneuverParams;
 	static GLuint overlayDisp;
 };

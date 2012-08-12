@@ -12,6 +12,11 @@ maxanglespeed <- PI * 0.1;
 capacity <- 1.;
 capacitorGen <- 1.;
 
+hookSpeed <- 0.2;
+hookRange <- 0.2;
+hookPullAccel <- 0.05;
+hookStopRange <- 0.025;
+
 hardpoints <- [
 	{pos = Vec3d(0,0,0), rot = Quatd(0, 0, 0, 1), name = "Armed weapon"},
 	{pos = Vec3d(0,0,0), rot = Quatd(0, 1, 0, 0), name = "Stocked weapon"},

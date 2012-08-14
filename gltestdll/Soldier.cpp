@@ -149,38 +149,6 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> hookretract;
 }
 
-class CMPress : public ClientMessage{
-public:
-	typedef ClientMessage st;
-	virtual void interpret(ServerClient &sc, UnserializeStream &uss){
-		unsigned code;
-		uss >> code;
-		Serializable *s = sc.sv->pg->idmap()[sc.meid];
-		if(!!strcmp(s->classname(), "Player"))
-			return;
-		Player *player = static_cast<Player*>(s);
-		if(!player->controlled)
-			return;
-		player->controlled->inputs.press = code;
-	}
-	void send(Entity *e){
-		std::stringstream ss;
-		StdSerializeStream sss(ss);
-		Serializable* visit_list = NULL;
-		SerializeContext sc(sss, visit_list);
-		sss.sc = &sc;
-		sss << e->inputs.press;
-		std::string str = ss.str();
-		s.st::send(application, str.c_str(), str.size());
-	}
-	static CMPress s;
-protected:
-	CMPress() : st("Press"){}
-};
-
-CMPress CMPress::s;
-
-
 DERIVE_COMMAND_EXT(SwitchWeaponCommand, SerializableCommand);
 
 IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
@@ -274,7 +242,6 @@ void Soldier::init(){
 	hookshot = false;
 	hooked = false;
 	hookretract = false;
-	hookrelease = true;
 //	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
 //	MAT4IDENTITY(infantry_s.hitmdl.trans);
 //	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
@@ -759,24 +726,6 @@ void Soldier::anim(double dt){
 		p->aiming = !p->aiming;
 	}
 
-	if(i & PL_B){
-		if(hookrelease && !hookshot && !hookretract && !hooked){
-			hookshot = true;
-			hookpos = this->pos;
-			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookSpeed));
-			hooked = false;
-			hookrelease = false;
-		}
-		if(hookrelease && hookshot){
-			hookretract = true;
-			hookshot = false;
-			hooked = false;
-			hookrelease = false;
-		}
-	}
-	else
-		hookrelease = true;
-
 	struct HookHit{
 		static int hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
 			Vec3d *retpos = param->pos;
@@ -1074,9 +1023,6 @@ void Soldier::anim(double dt){
 	if(0 < health){
 		// In zero-G
 		if(accel.slen() < 1e-1){
-			if(!game->isServer()){
-				CMPress::s.send(this);
-			}
 			Mat4d mat;
 			transform(mat);
 			maneuver(mat, dt, &getManeuve());
@@ -1233,15 +1179,27 @@ void Soldier::control(const input_t *inputs, double dt){
 	Quatd arot;
 	getPosition(NULL, &arot);
 
-	// Temporariliy made the CockpitviewMover forces controlled Entity to face to
-	// specified direction. It responds well for Soldier (infantryman), but won't
-	// for ship-class Entities.
+	// Mouse-aim direction
 	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
 	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
 	arot = arot.quatrotquat(xomg);
 	arot = arot.quatrotquat(yomg);
 
 	setPosition(NULL, &arot, NULL, NULL);
+
+	if(inputs->change & inputs->press & PL_B){
+		if(!hookshot && !hookretract && !hooked){
+			hookshot = true;
+			hookpos = this->pos;
+			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookSpeed));
+			hooked = false;
+		}
+		else if(hookshot){
+			hookretract = true;
+			hookshot = false;
+			hooked = false;
+		}
+	}
 }
 
 // find the nearest enemy

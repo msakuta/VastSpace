@@ -959,8 +959,6 @@ void ClientGame::anim(double dt){
 
 	sqa_anim(sqvm, dt);
 
-	MotionFrame(dt);
-
 	MotionAnim(*player, dt, flypower());
 
 	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
@@ -981,6 +979,11 @@ void ClientGame::anim(double dt){
 	input_t inputs;
 	inputs.press = MotionGet();
 	inputs.change = MotionGetChange();
+
+	// MotionFrame() must be called after MotionGetChange() and before the message loop,
+	// or MotionGetChange() always returns 0.
+	MotionFrame(dt);
+
 	if(joyStick.InitJoystick()){
 		joyStick.CheckJoystick(inputs);
 	}

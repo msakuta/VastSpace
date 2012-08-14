@@ -998,10 +998,10 @@ void ClientGame::anim(double dt){
 		}
 	}
 
-	if(player && player->chase && static_cast<Entity*>(player->controlled) == player->chase){
-//		inputs.analog[1] += mousedelta[0];
-//		inputs.analog[0] += mousedelta[1];
-		player->chase->control(&inputs, dt);
+	if(player && player->chase){
+		inputs.analog[0] += application.mousedelta[0];
+		inputs.analog[1] += application.mousedelta[1];
+		player->inputControl(inputs, dt);
 	}
 
 	if(player && player->controlled)
@@ -1011,7 +1011,6 @@ void ClientGame::anim(double dt){
 	glwlist->glwAnim(dt);
 
 }
-
 
 
 
@@ -1061,7 +1060,7 @@ void ClientApplication::display_func(void){
 
 		dt = !init ? 0. : rdt < 1. ? rdt : 1.;
 
-		int mousedelta[2] = {0, 0};
+		mousedelta[0] = mousedelta[1] = 0;
 		if(mouse_captured){
 			POINT p;
 			if(GetActiveWindow() != WindowFromDC(wglGetCurrentDC())){

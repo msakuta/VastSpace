@@ -1226,6 +1226,24 @@ void Soldier::clientUpdate(double dt){
 	anim(dt);
 }
 
+void Soldier::control(const input_t *inputs, double dt){
+	const double speed = .001 / 2.;
+	st::control(inputs, dt);
+
+	Quatd arot;
+	getPosition(NULL, &arot);
+
+	// Temporariliy made the CockpitviewMover forces controlled Entity to face to
+	// specified direction. It responds well for Soldier (infantryman), but won't
+	// for ship-class Entities.
+	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
+	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
+	arot = arot.quatrotquat(xomg);
+	arot = arot.quatrotquat(yomg);
+
+	setPosition(NULL, &arot, NULL, NULL);
+}
+
 // find the nearest enemy
 bool Soldier::findEnemy(){
 	if(forcedEnemy)

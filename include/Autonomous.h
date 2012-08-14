@@ -55,7 +55,7 @@ public:
 	virtual void anim(double dt);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawHUD(wardraw_t *);
-	void control(input_t *, double);
+	virtual void control(const input_t *, double);
 	unsigned analog_mask();
 	virtual Props props()const;
 	struct ManeuverParams;

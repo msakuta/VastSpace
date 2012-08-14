@@ -591,7 +591,7 @@ Entity::Props Autonomous::props()const{
 	return ret;
 }
 
-void Autonomous::control(input_t *inputs, double dt){
+void Autonomous::control(const input_t *inputs, double dt){
 	Autonomous *p = this;
 
 	/* camera distance is always configurable. */

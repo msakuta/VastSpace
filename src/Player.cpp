@@ -82,6 +82,7 @@ private:
 	CMViewDist() : st("ViewDist"){}
 };
 
+/// \brief The client message sent when an Entity became controlled.
 struct CMControl : ClientMessage{
 	typedef ClientMessage st;
 	static CMControl s;
@@ -90,6 +91,17 @@ struct CMControl : ClientMessage{
 protected:
 	CMControl() : st("Control"){}
 };
+
+/// \brief Interprets inputs from the client machine.
+struct CMInput : ClientMessage{
+	typedef ClientMessage st;
+	static CMInput s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(const input_t &);
+private:
+	CMInput() : st("Input"){}
+};
+
 
 
 
@@ -151,6 +163,8 @@ public:
 		const double speed = .001 / 2. * pl.fov;
 //		py[0] += dy * speed;
 //		py[1] += dx * speed;
+		if(pl.controlled)
+			return;
 
 		Quatd arot;
 		if(pl.controlled)
@@ -477,6 +491,13 @@ void Player::transit_cs(CoordSys *cs){
 	if(!chase)
 		this->pos = cs->tocs(this->pos, this->cs);
 	this->cs = cs;
+}
+
+void Player::inputControl(const input_t &inputs, double dt){
+	if(static_cast<Entity*>(controlled) == chase){
+		chase->control(&inputs, dt);
+		CMInput::s.send(inputs);
+	}
 }
 
 bool Player::unlink(const Observable *pe){
@@ -1342,4 +1363,38 @@ void CMViewDist::interpret(ServerClient &sc, UnserializeStream &uss){
 		player->viewdist = viewdist;
 	}
 }
+
+//-----------------------------------------------------------------------------
+//  CMInputControl implementation
+//-----------------------------------------------------------------------------
+
+CMInput CMInput::s;
+
+void CMInput::send(const input_t &inputs){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	sss << inputs.press;
+	sss << inputs.change;
+	for(int i = 0; i < numof(inputs.analog); i++)
+		sss << inputs.analog[i];
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+void CMInput::interpret(ServerClient &sc, UnserializeStream &uss){
+	input_t inputs;
+	uss >> inputs.press;
+	uss >> inputs.change;
+	for(int i = 0; i < numof(inputs.analog); i++)
+		uss >> inputs.analog[i];
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player && player->controlled)
+		player->controlled->control(&inputs, 0.);
+}
+
 

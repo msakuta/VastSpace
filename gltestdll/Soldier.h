@@ -45,6 +45,7 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
+	virtual void control(const input_t *inputs, double dt);
 	virtual void draw(WarDraw *);
 	virtual void drawHUD(WarDraw *);
 	virtual void drawOverlay(WarDraw *);

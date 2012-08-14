@@ -138,6 +138,8 @@ public:
 
 	size_t recvbytes;
 
+	int mousedelta[2];
+
 	ClientApplication();
 	~ClientApplication();
 	int joingame(const char *host, int port);

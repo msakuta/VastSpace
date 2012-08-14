@@ -155,6 +155,7 @@ public:
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void transit_cs(CoordSys *cs); ///< Explicitly change current CoordSys, keeping position, velocity and rotation.
+	void inputControl(const input_t &inputs, double dt); ///< Interpret control inputs from the client.
 
 	// Observer member function overrides
 	bool unlink(const Observable *);

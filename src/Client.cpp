@@ -18,6 +18,7 @@ struct JoinGameData{
 
 ClientApplication::ClientApplication() : recvbytes(0){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
+	mousedelta[0] = mousedelta[1] = 0;
 }
 
 ClientApplication::~ClientApplication(){

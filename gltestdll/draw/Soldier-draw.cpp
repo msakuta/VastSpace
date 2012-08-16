@@ -53,18 +53,13 @@ Motion *Soldier::motions[1] = {NULL};
 
 void Soldier::draw(WarDraw *wd){
 	static OpenGLState::weak_ptr<bool> init;
-	static Model *hookModel = NULL;
-//	static int init = 0;
-//	static suf_t *sufbody;
-//	static suftex_t *suft_body;
 	Soldier *p = this;
-//	struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
 	double pixels;
 
-//	if(!pt->active)
-//		return;
-
 	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
+
+	// Draw hook and tether before culling
+	drawHookAndTether(wd);
 
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(pos, .003))
@@ -76,20 +71,11 @@ void Soldier::draw(WarDraw *wd){
 
 
 	if(!init){
-//		CallCacheBitmap("infantry.bmp", "infantry.bmp", NULL, NULL);
-//		CacheSUFTex("infantry.bmp", (BITMAPINFO*)lzuc(lzw_infantry, sizeof lzw_infantry, NULL), 0);
 		model = LoadMQOModel("models/Soldier.mqo");
 		motions[0] = LoadMotion("models/Soldier_aim.mot");
-		hookModel = LoadMQOModel("models/hook.mqo");
-//		dnm = LoadYSDNM_MQO(/*CvarGetString("valkie_dnm")/*/"infantry2.dnm", "infantry2.mqo");
-/*		sufbody = &suf_roughbody *//*LoadSUF("roughbody2.suf")*/;
-/*		vft->sufbase = sufbody;*/
-/*		CacheSUFTex("face.bmp", (BITMAPINFO*)lzuc(lzw_face, sizeof lzw_face, NULL), 0);*/
-/*		if(sufbody)
-			suft_body = AllocSUFTex(sufbody);*/
 		init.create(*openGLState);
 	}
-#if 1
+
 	if(!model)
 		return;
 
@@ -115,84 +101,8 @@ void Soldier::draw(WarDraw *wd){
 		printf("motdraw %lg\n", TimeMeasLap(&tm));
 	}
 #endif
-//			if(10 < pixels)
-//				TransYSDNM_V(dnm, dnmv, infantry_draw_arms, p);
-//			g_gldcache.valid = 0;
-/*			TransYSDNM(dnm, names, rot, numof(valkie_bonenames), NULL, 0, draw_arms, p);*/
-//			glPopAttrib();
 	glPopMatrix();
-#endif
 
-	if((hookshot || hooked || hookretract) && (!wd->shadowMap || wd->shadowMap->shadowLevel() == 0 || wd->shadowMap->shadowLevel() >= 3)){
-		Vec3d src = mat.vp3(Vec3d(-0.0001, -0.00005, 0.0));
-		Vec3d dest = hooked && hookedEntity ? hookedEntity->pos + hookedEntity->rot.trans(this->hookpos) : this->hookpos;
-		Quatd direcRot = Quatd::direction(dest - src);
-
-		// Draw hook head model
-		double scale = 5e-7;
-		Mat4d hookMat = direcRot.tomat4();
-		hookMat.vec3(3) = dest;
-		glPushMatrix();
-		glMultMatrixd(hookMat);
-		glScaled(scale, scale, scale);
-		DrawMQOPose(hookModel, NULL);
-		glPopMatrix();
-
-		// Offset 75mm
-		Vec3d delta = src - dest;
-		if(75e-6 * 75e-6 < delta.slen())
-			dest += delta.norm() * 75e-6;
-
-		// Load texture for tether rope
-		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT | GL_POLYGON_BIT);
-		CallCacheBitmap("tether.jpg", "textures/tether.jpg", NULL, NULL);
-		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("tether.jpg");
-		if(tcb)
-			glCallList(tcb->getList());
-
-		// Draw tether rope
-		glBegin(GL_QUAD_STRIP);
-		for(int i = 0; i <= 5; i++){
-			Vec3d circle = 0.00001 * Vec3d(sin(i * 2 * M_PI / 5), cos(i * 2 * M_PI / 5), 0);
-			glNormal3dv(direcRot.trans(circle));
-			glTexCoord2d((src - dest).len() / (0.0001 * M_PI), i / 5.);
-			glVertex3dv(src + direcRot.trans(circle));
-			glTexCoord2d(0, i / 5.);
-			glVertex3dv(dest + direcRot.trans(circle));
-		}
-		glEnd();
-
-		glPopAttrib();
-	}
-
-#if 0
-	if(!sufbody){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos, .015, col);
-	}
-	else{
-		double scale = 1./180000;
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,0,1,0,
-			0,1,0,0,
-			0,0,0,1,
-		};
-
-/*		if(0 < sun.pos[1])
-			ShadowSUF(sufbody, sun.pos, n, pos[i], NULL, scale, &rotaxisd);*/
-		glPushMatrix();
-		glTranslated(pt->pos[0], pt->pos[1], pt->pos[2]);
-		glRotated(deg_per_rad * pt->pyr[1], 0., -1., 0.);
-		glRotated(deg_per_rad * pt->pyr[0], -1.,  0., 0.);
-		glRotated(deg_per_rad * pt->pyr[2], 0.,  0., -1.);
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
-		DecalDrawSUF(sufbody, SUF_ATR, &g_gldcache, suft_body, NULL, NULL);
-		glPopMatrix();
-	}
-#endif
 #if !defined NDEBUG && 0
 	{
 		int i;
@@ -236,6 +146,60 @@ void Soldier::draw(WarDraw *wd){
 		glPopMatrix();
 	}
 #endif
+}
+
+void Soldier::drawHookAndTether(WarDraw *wd){
+	if((hookshot || hooked || hookretract) && (!wd->shadowMap || wd->shadowMap->shadowLevel() == 0 || wd->shadowMap->shadowLevel() >= 3)){
+
+		static OpenGLState::weak_ptr<bool> init;
+		static Model *hookModel = NULL;
+		if(!init){
+			hookModel = LoadMQOModel("models/hook.mqo");
+			CallCacheBitmap("tether.jpg", "textures/tether.jpg", NULL, NULL);
+			init.create(*openGLState);
+		}
+
+		Mat4d mat;
+		transform(mat);
+		Vec3d src = mat.vp3(Vec3d(-0.0001, -0.00005, 0.0));
+		Vec3d dest = hooked && hookedEntity ? hookedEntity->pos + hookedEntity->rot.trans(this->hookpos) : this->hookpos;
+		Quatd direcRot = Quatd::direction(dest - src);
+
+		// Draw hook head model
+		double scale = 5e-7;
+		Mat4d hookMat = direcRot.tomat4();
+		hookMat.vec3(3) = dest;
+		glPushMatrix();
+		glMultMatrixd(hookMat);
+		glScaled(scale, scale, scale);
+		DrawMQOPose(hookModel, NULL);
+		glPopMatrix();
+
+		// Offset 75mm
+		Vec3d delta = src - dest;
+		if(75e-6 * 75e-6 < delta.slen())
+			dest += delta.norm() * 75e-6;
+
+		// Load texture for tether rope
+		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT | GL_POLYGON_BIT);
+		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("tether.jpg");
+		if(tcb)
+			glCallList(tcb->getList());
+
+		// Draw tether rope
+		glBegin(GL_QUAD_STRIP);
+		for(int i = 0; i <= 5; i++){
+			Vec3d circle = 0.00001 * Vec3d(sin(i * 2 * M_PI / 5), cos(i * 2 * M_PI / 5), 0);
+			glNormal3dv(direcRot.trans(circle));
+			glTexCoord2d((src - dest).len() / (0.0001 * M_PI), i / 5.);
+			glVertex3dv(src + direcRot.trans(circle));
+			glTexCoord2d(0, i / 5.);
+			glVertex3dv(dest + direcRot.trans(circle));
+		}
+		glEnd();
+
+		glPopAttrib();
+	}
 }
 
 void Soldier::drawOverlay(WarDraw *wd){

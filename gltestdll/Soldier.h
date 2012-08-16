@@ -73,6 +73,7 @@ protected:
 	bool findEnemy();
 
 	void hookHitEffect(const otjEnumHitSphereParam &param);
+	void drawHookAndTether(WarDraw *);
 
 	double pitch;
 	double cooldown2;

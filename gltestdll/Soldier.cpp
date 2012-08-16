@@ -773,14 +773,16 @@ void Soldier::anim(double dt){
 				Entity *pt = otjEnumHitSphere(&param);
 				if(pt){
 					hooked = true;
-					hookpos = hitpos; // Assign hook position to precisely calculated hit position. 
+					hookedEntity = pt;
+					hookpos = pt->rot.itrans(hitpos - pt->pos); // Assign hook position to precisely calculated hit position. 
 				}
 			}
 			else{
 				for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
 					if(hh.hit_callback(&param, *it)){
 						hooked = true;
-						hookpos = hitpos; // Assign hook position to precisely calculated hit position.
+						hookedEntity = *it;
+						hookpos = (*it)->rot.itrans(hitpos - (*it)->pos); // Assign hook position to precisely calculated hit position.
 						break;
 					}
 			}
@@ -795,8 +797,9 @@ void Soldier::anim(double dt){
 		}
 	}
 
-	if(hooked){
-		Vec3d delta = hookpos - this->pos;
+	if(hooked && hookedEntity){
+		Vec3d worldhookpos = hookedEntity->pos + hookedEntity->rot.trans(this->hookpos);
+		Vec3d delta = worldhookpos - this->pos;
 		// Avoid zero division
 		if(FLT_EPSILON < delta.slen()){
 			Vec3d dir = delta.norm();
@@ -805,8 +808,9 @@ void Soldier::anim(double dt){
 			if(bbody)
 				bbody->setLinearVelocity(btvc(velo));
 			if(delta.slen() < hookStopRange * hookStopRange){
-				// Rapid brake
-				velo *= exp(-dt * 2.);
+				// Rapid brake, based on the relative velocity to hooked point.
+				Vec3d tvelo = hookedEntity->velo + hookedEntity->omg.vp(hookedEntity->rot.trans(hookpos));
+				velo = tvelo + (velo - tvelo) * exp(-dt * 2.);
 				// Cancel closing velocity
 /*				velo -= velo.sp(dir) * dir;
 				if(bbody)
@@ -1195,6 +1199,10 @@ void Soldier::control(const input_t *inputs, double dt){
 			hooked = false;
 		}
 		else if(hookshot){
+			if(hookedEntity){
+				hookpos = hookedEntity->pos + hookedEntity->rot.trans(hookpos);
+				hookedEntity = NULL;
+			}
 			hookretract = true;
 			hookshot = false;
 			hooked = false;

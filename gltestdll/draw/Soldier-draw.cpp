@@ -139,7 +139,10 @@ void Soldier::draw(WarDraw *wd){
 		glColor4f(1,0.5,0,1);
 		glBegin(GL_LINES);
 		glVertex3dv(mat.vp3(Vec3d(-0.0003, -0.0002, 0.0)));
-		glVertex3dv(this->hookpos);
+		if(hooked && hookedEntity)
+			glVertex3dv(hookedEntity->pos + hookedEntity->rot.trans(this->hookpos));
+		else
+			glVertex3dv(this->hookpos);
 		glEnd();
 		if(sb)
 			glUseProgram(sb->shader);

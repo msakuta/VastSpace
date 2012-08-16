@@ -90,6 +90,7 @@ protected:
 	Firearm *arms[2];
 	Vec3d hookpos;
 	Vec3d hookvelo;
+	WeakPtr<Entity> hookedEntity;
 	bool hookshot;
 	bool hooked;
 	bool hookretract;

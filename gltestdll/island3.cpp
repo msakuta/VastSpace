@@ -16,6 +16,7 @@
 #include "btadapt.h"
 #include "judge.h"
 #include "bitmap.h"
+#include "Game.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
@@ -78,8 +79,8 @@ public:
 	friend Island3;
 	Island3 *host;
 	Island3Building(Game *game) : st(game){}
-	Island3Building(Island3 *host = NULL);
-	Island3Building(WarField *){}
+	Island3Building(WarField *w, Island3 *host);
+	Island3Building(WarField *w) : st(w){}
 	virtual const char *classname()const{return "Island3Building";}
 	virtual double maxhealth()const{return 10000.;}
 	virtual void enterField(WarField *);
@@ -130,7 +131,7 @@ void Island3::init(){
 	// All Island3's have a WarSpace by default.
 	w = new Island3WarSpace(this);
 	for(int i = 0; i < numof(bldgs); i++){
-		bldgs[i] = new Island3Building(this);
+		bldgs[i] = new Island3Building(w, this);
 		w->addent(bldgs[i]);
 	}
 
@@ -235,14 +236,18 @@ void Island3::anim(double dt){
 	// Calculate phase of the simulated sun.
 	sun_phase += 2 * M_PI / 24. / 60. / 60. * dt;
 
-	if(!parent->w)
-		parent->w = new WarSpace(parent);
+	if(!parent->w){
+		if(game->isServer())
+			parent->w = new WarSpace(parent);
+		else // Client won't create any Entity.
+			return;
+	}
 	WarSpace *ws = *parent->w;
-	if(ws && !ent){
-		ent = new Island3Entity(*this);
+	if(ws && !ent && game->isServer()){
+		ent = new Island3Entity(ws, *this);
 		ws->addent(ent);
 	}
-	if(ws && ent){
+	if(ws && ent && game->isServer()){
 		ent->pos = this->pos;
 		ent->rot = this->rot;
 		ent->velo = this->velo;
@@ -252,7 +257,8 @@ void Island3::anim(double dt){
 		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
 
 		// Randomly create container heads
-		if(floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
+		// temporarily disabled until being accepted in the server-client model.
+		if(false && floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
 			Entity *ch = rs.next() % 2 ? (Entity*)(new ContainerHead(this->ent)) : new SpacePlane(this->ent);
 			ch->race = race;
 			ws->addent(ch);
@@ -265,7 +271,13 @@ void Island3::anim(double dt){
 			ch->undock(this->ent->docker);
 		}
 	}
-	if(ws && ws->bdw && ent){
+	if(ws && ws->bdw && ent) if(!game->isServer() && !ent->bbody){
+		// Client won't create bbody, just assign identity transform to wingtrans.
+		for(int n = 0; n < 3; n++){
+			ent->wingtrans[n] = btTransform::getIdentity();
+		}
+	}
+	else{
 		if(!ent->bbody)
 			ent->buildShape();
 		if(ent->bbody){
@@ -282,7 +294,13 @@ void Island3::anim(double dt){
 			}
 		}
 	}
-	st::anim(dt);
+	// Super class's methods do not assume a client can run.
+	if(game->isServer())
+		st::anim(dt);
+}
+
+void Island3::clientUpdate(double dt){
+	anim(dt);
 }
 
 
@@ -454,7 +472,8 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 	glFrustum(-g_glcull.getNear(), g_glcull.getNear(), -g_glcull.getNear(), g_glcull.getNear(), g_glcull.getNear(), g_glcull.getFar());
 	glMatrixMode (GL_MODELVIEW);
 	for (i = 0; i < 6; ++i) {
-		GLubyte buf[CUBESIZE][CUBESIZE][3];
+		// Omitting static keyword at the beginning of next line won't let us debug this function, due to probably too large stack frame.
+		static GLubyte buf[CUBESIZE][CUBESIZE][3];
 		int mi = CUBESIZE;
 		glPushMatrix();
 		v.irot = (v.qrot = dirs[i]).cnj().tomat4();
@@ -476,7 +495,8 @@ GLuint Island3MakeCubeMap(const Viewer *vw, const Astrobj *ignored, const Astrob
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubetex);
 		glTexImage2D(target[i], 0, GL_RGB, mi, mi, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 		g = glGetError();
-		glCopyTexSubImage2D(target[i], 0, 0, 0, 0, 0, CUBESIZE, CUBESIZE);
+		// Temporalily disabled because it causes runtime error in Radeon HD 6870.
+//		glCopyTexSubImage2D(target[i], 0, 0, 0, 0, 0, CUBESIZE, CUBESIZE);
 		if(!g)
 			g = glGetError();
 		if(g){
@@ -2145,6 +2165,13 @@ void Island3Entity::dive(SerializeContext &sc, void (Serializable::*method)(Seri
 }
 
 void Island3Entity::enterField(WarField *w){
+	WarSpace *ws = *w;
+	if(ws && ws->bdw){
+		buildShape();
+		// Adding the body to the dynamics world will be done in st::enterField().
+//		if(bbody)
+//			ws->bdw->addRigidBody(bbody);
+	}
 	st::enterField(w);
 }
 
@@ -2236,9 +2263,9 @@ void Island3Entity::buildShape(){
 
 //		bbody->setSleepingThresholds(.0001, .0001);
 
-		//add the body to the dynamics world
+		// Adding the body to the dynamics world will be done in st::enterField().
 //			ws->bdw->addRigidBody(bbody, 1, ~2);
-		ws->bdw->addRigidBody(bbody);
+//		ws->bdw->addRigidBody(bbody);
 	}
 }
 
@@ -2544,7 +2571,7 @@ CoverPointVector Island3::getCoverPoint(const Vec3d &org, double radius){
 Island3Entity::Island3Entity(Game *game) : st(game), btshape(NULL){
 }
 
-Island3Entity::Island3Entity(Island3 &astro) : astro(&astro), btshape(NULL){
+Island3Entity::Island3Entity(WarField *w, Island3 &astro) : st(w), astro(&astro), btshape(NULL){
 	health = maxhealth();
 	race = astro.race;
 	docker = new Island3Docker(this);
@@ -2806,7 +2833,7 @@ static const double texcoord[][3] = {
 	{ 1.,  0., 0.},
 };
 
-Island3Building::Island3Building(Island3 *host) : host(host){
+Island3Building::Island3Building(WarField *w, Island3 *host) : st(w), host(host){
 	health = maxhealth();
 	race = -1;
 	RandomSequence rs((unsigned long)this);

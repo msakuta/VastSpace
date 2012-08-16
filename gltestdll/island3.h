@@ -43,12 +43,13 @@ public:
 
 	// Overridden methods
 	virtual ~Island3();
-	virtual const char *classname()const{return "Island3";}
+//	virtual const char *classname()const{return "Island3";}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual bool belongs(const Vec3d &pos)const;
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual void predraw(const Viewer *);
 	virtual void draw(const Viewer *);
 	virtual void drawtra(const Viewer *);
@@ -97,7 +98,7 @@ public:
 	static unsigned classid;
 	Island3 *astro;
 	Island3Entity(Game *game);
-	Island3Entity(Island3 &astro);
+	Island3Entity(WarField *w, Island3 &astro);
 	virtual ~Island3Entity();
 	virtual const char *classname()const{return "Island3Entity";} ///< Overridden because getStatic() is not defined
 	virtual void serialize(SerializeContext &sc);

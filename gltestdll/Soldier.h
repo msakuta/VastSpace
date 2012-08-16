@@ -6,6 +6,7 @@
 #include "Autonomous.h"
 #include "war.h"
 #include "arms.h"
+#include "judge.h"
 
 struct Model;
 class Motion;
@@ -70,6 +71,8 @@ protected:
 	void swapWeapon();
 	void reload();
 	bool findEnemy();
+
+	void hookHitEffect(const otjEnumHitSphereParam &param);
 
 	double pitch;
 	double cooldown2;

@@ -12,6 +12,7 @@
 #include "glsl.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "draw/effects.h"
 
 extern "C"{
 #include <clib/GL/multitex.h>
@@ -52,6 +53,7 @@ Motion *Soldier::motions[1] = {NULL};
 
 void Soldier::draw(WarDraw *wd){
 	static OpenGLState::weak_ptr<bool> init;
+	static Model *hookModel = NULL;
 //	static int init = 0;
 //	static suf_t *sufbody;
 //	static suftex_t *suft_body;
@@ -78,6 +80,7 @@ void Soldier::draw(WarDraw *wd){
 //		CacheSUFTex("infantry.bmp", (BITMAPINFO*)lzuc(lzw_infantry, sizeof lzw_infantry, NULL), 0);
 		model = LoadMQOModel("models/Soldier.mqo");
 		motions[0] = LoadMotion("models/Soldier_aim.mot");
+		hookModel = LoadMQOModel("models/hook.mqo");
 //		dnm = LoadYSDNM_MQO(/*CvarGetString("valkie_dnm")/*/"infantry2.dnm", "infantry2.mqo");
 /*		sufbody = &suf_roughbody *//*LoadSUF("roughbody2.suf")*/;
 /*		vft->sufbase = sufbody;*/
@@ -121,31 +124,44 @@ void Soldier::draw(WarDraw *wd){
 #endif
 
 	if((hookshot || hooked || hookretract) && (!wd->shadowMap || wd->shadowMap->shadowLevel() == 0 || wd->shadowMap->shadowLevel() >= 3)){
-		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT);
-		const ShaderBind *sb = wd->getShaderBind();
-		if(sb)
-			glUseProgram(0);
-		glDisable(GL_LIGHTING);
-		glDisable(GL_TEXTURE_2D);
-		if(!glActiveTextureARB)
-			MultiTextureInit();
-		if(glActiveTextureARB){
-			for(int i = 1; i < 5; i++){
-				glActiveTextureARB(GL_TEXTURE0_ARB + i);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTextureARB(GL_TEXTURE0_ARB);
-			}
+		Vec3d src = mat.vp3(Vec3d(-0.0001, -0.00005, 0.0));
+		Vec3d dest = hooked && hookedEntity ? hookedEntity->pos + hookedEntity->rot.trans(this->hookpos) : this->hookpos;
+		Quatd direcRot = Quatd::direction(dest - src);
+
+		// Draw hook head model
+		double scale = 5e-7;
+		Mat4d hookMat = direcRot.tomat4();
+		hookMat.vec3(3) = dest;
+		glPushMatrix();
+		glMultMatrixd(hookMat);
+		glScaled(scale, scale, scale);
+		DrawMQOPose(hookModel, NULL);
+		glPopMatrix();
+
+		// Offset 75mm
+		Vec3d delta = src - dest;
+		if(75e-6 * 75e-6 < delta.slen())
+			dest += delta.norm() * 75e-6;
+
+		// Load texture for tether rope
+		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT | GL_POLYGON_BIT);
+		CallCacheBitmap("tether.jpg", "textures/tether.jpg", NULL, NULL);
+		const gltestp::TexCacheBind *tcb = gltestp::FindTexture("tether.jpg");
+		if(tcb)
+			glCallList(tcb->getList());
+
+		// Draw tether rope
+		glBegin(GL_QUAD_STRIP);
+		for(int i = 0; i <= 5; i++){
+			Vec3d circle = 0.00001 * Vec3d(sin(i * 2 * M_PI / 5), cos(i * 2 * M_PI / 5), 0);
+			glNormal3dv(direcRot.trans(circle));
+			glTexCoord2d((src - dest).len() / (0.0001 * M_PI), i / 5.);
+			glVertex3dv(src + direcRot.trans(circle));
+			glTexCoord2d(0, i / 5.);
+			glVertex3dv(dest + direcRot.trans(circle));
 		}
-		glColor4f(1,0.5,0,1);
-		glBegin(GL_LINES);
-		glVertex3dv(mat.vp3(Vec3d(-0.0003, -0.0002, 0.0)));
-		if(hooked && hookedEntity)
-			glVertex3dv(hookedEntity->pos + hookedEntity->rot.trans(this->hookpos));
-		else
-			glVertex3dv(this->hookpos);
 		glEnd();
-		if(sb)
-			glUseProgram(sb->shader);
+
 		glPopAttrib();
 	}
 
@@ -606,6 +622,32 @@ void Soldier::drawHUD(WarDraw *wd){
 		glMatrixMode(GL_MODELVIEW);
 	}
 	glPopMatrix();
+}
+
+void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){
+	if(!game->isServer()){
+		WarSpace *ws = *w;
+		RandomSequence rs(clock());
+		Vec3d accel = w->accel(*param.pos, Vec3d(0,0,0));
+		int n = 12;
+
+		// Add spark sprite
+		{
+			double angle = rs.nextd() * 2. * M_PI / 2.;
+			AddTelineCallback3D(ws->tell, *param.pos,
+				hookedEntity ? hookedEntity->velo + hookedEntity->omg.vp(hookedEntity->rot.trans(hookpos)) : vec3_000,
+				.00075, Quatd(0, 0, sin(angle), cos(angle)),
+				vec3_000, accel, sparkspritedraw, NULL, 0, .20 + rs.nextd() * .20);
+		}
+
+		// Add spark traces
+		for(int j = 0; j < n; j++){
+			Vec3d velo = -hookvelo.norm() * .015;
+			for(int k = 0; k < 3; k++)
+				velo[k] += .03 * (rs.nextd() - .5);
+			AddTelineCallback3D(ws->tell, *param.pos, velo, .000025 + n * .00001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + rs.nextd() * .20);
+		}
+	}
 }
 
 

@@ -132,6 +132,7 @@ void Soldier::serialize(SerializeContext &sc){
 	sc.o << arms[1];
 	sc.o << hookpos;
 	sc.o << hookvelo;
+	sc.o << hookedEntity;
 	sc.o << hookshot;
 	sc.o << hooked;
 	sc.o << hookretract;
@@ -144,6 +145,7 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> arms[1];
 	usc.i >> hookpos;
 	usc.i >> hookvelo;
+	usc.i >> hookedEntity;
 	usc.i >> hookshot;
 	usc.i >> hooked;
 	usc.i >> hookretract;
@@ -181,6 +183,7 @@ bool Soldier::isSelectable()const{
 void Soldier::draw(WarDraw *){}
 void Soldier::drawHUD(WarDraw *){}
 void Soldier::drawOverlay(WarDraw *){}
+void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){}
 void M16::draw(WarDraw *){}
 void M40::draw(WarDraw *){}
 #endif
@@ -775,6 +778,7 @@ void Soldier::anim(double dt){
 					hooked = true;
 					hookedEntity = pt;
 					hookpos = pt->rot.itrans(hitpos - pt->pos); // Assign hook position to precisely calculated hit position. 
+					hookHitEffect(param);
 				}
 			}
 			else{
@@ -783,6 +787,7 @@ void Soldier::anim(double dt){
 						hooked = true;
 						hookedEntity = *it;
 						hookpos = (*it)->rot.itrans(hitpos - (*it)->pos); // Assign hook position to precisely calculated hit position.
+						hookHitEffect(param);
 						break;
 					}
 			}

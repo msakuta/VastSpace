@@ -84,8 +84,8 @@ public:
 	};
 
 	class FreelookMover;
-protected:
 	virtual bool control(Entity *, double dt);
+protected:
 	Vec3d getrawpos(CameraController*)const;
 	Quatd getrawrot(CameraController*)const;
 public:
@@ -155,7 +155,6 @@ public:
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
 	void transit_cs(CoordSys *cs); ///< Explicitly change current CoordSys, keeping position, velocity and rotation.
-	void inputControl(const input_t &inputs, double dt); ///< Interpret control inputs from the client.
 
 	// Observer member function overrides
 	bool unlink(const Observable *);
@@ -170,9 +169,12 @@ public:
 #ifdef _WIN32
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
-	void uncontrol();
 	Quatd orientation()const;
 	const std::vector<teleport> &getTplist()const{return tplist;}
+
+	void beginControl(Entity *e); ///< Begin controlling an Entity. If called in the client, a message is sent to the server.
+	void inputControl(const input_t &inputs, double dt); ///< Interpret control inputs from the client.
+	void endControl(); ///< Quit controlling an Entity. It's the same as beginControl(NULL).
 
 	static float camera_mode_switch_time;
 	static void cmdInit(ClientApplication &);

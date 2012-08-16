@@ -148,7 +148,7 @@ public:
 		Vec3d dummy;
 		Quatd crot;
 		pl.chase->cockpitView(dummy, crot, pl.getChaseCamera());
-		return /*pyrot */ crot.cnj();
+		return /*pyrot */ (crot * pl.rot).cnj();
 	}
 	virtual Vec3d getpos()const{
 		if(pl.chase){
@@ -166,14 +166,10 @@ public:
 		if(pl.controlled)
 			return;
 
-		Quatd arot;
-		if(pl.controlled)
-			pl.controlled->getPosition(NULL, &arot);
-
 		// Temporariliy made the CockpitviewMover forces controlled Entity to face to
 		// specified direction. It responds well for Soldier (infantryman), but won't
 		// for ship-class Entities.
-		Quatd &rot = pl.controlled ? arot : pl.rot;
+		Quatd &rot = pl.rot;
 		Vec3d xomg = rot.trans(Vec3d(0, -dx * speed, 0));
 		Vec3d yomg = rot.trans(Vec3d(-dy * speed, 0, 0));
 		rot = rot.quatrotquat(xomg);
@@ -181,17 +177,10 @@ public:
 
 		// Notify the server that this client wants the angle changed.
 		CMRot::send(rot);
-		if(pl.controlled)
-			pl.controlled->setPosition(NULL, &rot);
+		pl.rot = rot;
 	}
 	virtual void setrot(const Quatd &rot){
-		if(pl.controlled){
-			// Force set rotation
-			pl.controlled->setPosition(NULL, &rot);
-
-			// Clear the Player's rotation because it's consumed by the entity.
-			pl.rot = quat_u;
-		}
+		pl.rot = rot;
 	}
 /*	virtual void operator ()(const input_t &input, double dt){
 		const_cast<double&>(input.analog[0]) = py[0];
@@ -361,6 +350,11 @@ void CMChaseCamera::interpret(ServerClient &sc, UnserializeStream &uss){
 }
 
 
+bool Player::control(Entity *e, double dt){
+//	e->control(NULL, dt);
+	return false;
+}
+
 inline Quatd Player::getrawrot(CameraController *mover)const{
 	return mover->getrot();
 }
@@ -491,13 +485,6 @@ void Player::transit_cs(CoordSys *cs){
 	if(!chase)
 		this->pos = cs->tocs(this->pos, this->cs);
 	this->cs = cs;
-}
-
-void Player::inputControl(const input_t &inputs, double dt){
-	if(static_cast<Entity*>(controlled) == chase){
-		chase->control(&inputs, dt);
-		CMInput::s.send(inputs);
-	}
 }
 
 bool Player::unlink(const Observable *pe){
@@ -827,14 +814,7 @@ void CMControl::interpret(ServerClient &sc, UnserializeStream &uss){
 	if(!!strcmp(s->classname(), "Player"))
 		return;
 	Player *player = static_cast<Player*>(s);
-	if(player->controlled && static_cast<EntityController*>(player->controlled->controller) == player)
-		player->controlled->controller = NULL;
-	player->controlled = e;
-	if(e){
-		player->mover = player->nextmover = player->cockpitview;
-		player->cockpitview->setrot(e->rot);
-		e->controller = player;
-	}
+	player->beginControl(e);
 }
 
 void CMControl::send(Entity *e){
@@ -854,33 +834,43 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 	// absent.
 	Player &pl = *(Player*)pv;
 	if(pl.controlled){
-		pl.uncontrol();
-		CMControl::s.send(NULL);
+		pl.endControl();
 	}
 	else if(!pl.selected.empty()){
 		Entity *e = *pl.selected.begin();
-		pl.controlled = e;
-		pl.mover = pl.nextmover = pl.cockpitview;
-		pl.chase = e;
-		pl.mover->setrot(e->rot);
+		pl.beginControl(e);
 		capture_mouse();
-		e->controller = &pl;
-		CMControl::s.send(e);
 	}
 	return 0;
 }
 #endif
 
-bool Player::control(Entity *e, double dt){
-//	e->control(NULL, dt);
-	return false;
+void Player::beginControl(Entity *e){
+	if(!e){
+		endControl();
+		return;
+	}
+	controlled = e;
+	mover = nextmover = cockpitview;
+	rot = Quatd(0,0,0,1);
+	chase = e;
+	e->controller = this;
+	if(!game->isServer())
+		CMControl::s.send(e);
 }
 
-/// Quit controlling an Entity.
-void Player::uncontrol(){
+void Player::inputControl(const input_t &inputs, double dt){
+	if(static_cast<Entity*>(controlled) == chase){
+		chase->control(&inputs, dt);
+		CMInput::s.send(inputs);
+	}
+}
+
+void Player::endControl(){
 	if(controlled && static_cast<EntityController*>(controlled->controller) == this)
 		controlled->controller = NULL;
 	controlled = NULL;
+	mover = nextmover = freelook;
 	if(!game->isServer())
 		CMControl::s.send(NULL);
 }

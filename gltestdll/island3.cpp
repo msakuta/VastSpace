@@ -2630,21 +2630,24 @@ bool singleObjectRaytest(btRigidBody *bbody, const btVector3& rayFrom,const btVe
 }
 
 int Island3Entity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-/*	double best = dt, retf;
+#if 1
+	double best = dt, retf;
 	int reti = 0, n;
 	for(n = 0; n < 3; n++){
 		Vec3d org;
 		Quatd rot;
-		org = this->rot.itrans(btvc(astro.wingtrans[n].getOrigin())) + this->pos;
-		rot = this->rot * btqc(astro.wingtrans[n].getRotation());
-		Vec3d sc = btvc(astro.wings[n]->getHalfExtentsWithMargin()) + rad * Vec3d(1,1,1);
+		org = this->rot.trans(btvc(wingtrans[n].getOrigin())) + this->pos;
+		rot = this->rot * btqc(wingtrans[n].getRotation());
+		Vec3d sc = btvc(wings[n]->getHalfExtentsWithMargin()) + rad * Vec3d(1,1,1);
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
 			reti = n + 1;
 		}
 	}
-	return reti;*/
+	if(reti)
+		return reti;
+#endif
 	if(w && bbody){
 		btScalar btfraction;
 		btVector3 btnormal, btpos;

@@ -212,7 +212,7 @@ coordsys Orbit earth{
 		warp
 		teleport
 		new astro Island3 "Side 7"{
-			pos 10 0 10
+			pos 9 0 9
 			race 2
 			bookmark "Side 7"
 		}

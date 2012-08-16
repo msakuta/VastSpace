@@ -332,8 +332,9 @@ void Assault::anim(double dt){
 		}
 	}
 
-	if(ws)
-		space_collide(this, ws, dt, NULL, NULL);
+	// Collision resolution should be done in Bullet dynamics engine.
+//	if(ws)
+//		space_collide(this, ws, dt, NULL, NULL);
 
 	st::anim(dt);
 	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it) if(*it)
@@ -414,6 +415,10 @@ bool Assault::command(EntityCommand *com){
 
 Warpable::ManeuverParams &Assault::getManeuve()const{
 	return mn;
+}
+
+std::vector<hitbox> *Assault::getTraceHitBoxes()const{
+	return &hitboxes;
 }
 
 

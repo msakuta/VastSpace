@@ -13,9 +13,13 @@ if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
 	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
 	des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
-//	player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
-	player.cs.addent("Assault", Vec3d(2.0, -0.10, 0.5));
-	local e1 = player.cs.addent("Soldier", Vec3d(2.0, 0.2, 0.5));
+	local attacker = player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
+	attacker.setrot(Quatd.rotation(3.0*PI/2.0, Vec3d(0,0,1)));
+	local assault = player.cs.addent("Assault", Vec3d(2.0, -0.30, 0.75));
+	assault.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
+	local beamer = player.cs.addent("Beamer", Vec3d(2.0, -0.30, 0.50));
+	beamer.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
+	local e1 = player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5));
 	e1.race = 0;
 //	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));
 //	e2.race = 1;

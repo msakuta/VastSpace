@@ -846,6 +846,31 @@ bool singleObjectRaytest(btRigidBody *bbody, const btVector3& rayFrom,const btVe
 
 
 int Autonomous::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	// If this ship has a hitbox list, use it to check intersection with the ray.
+	if(std::vector<hitbox> *hitboxes = getTraceHitBoxes()){
+		double best = dt;
+		int reti = 0;
+		double retf;
+		for(int n = 0; n < hitboxes->size(); n++){
+			hitbox &hb = (*hitboxes)[n];
+			Vec3d org;
+			Quatd rot;
+			org = this->rot.trans(hb.org) + this->pos;
+			rot = this->rot * hb.rot;
+			int i;
+			double sc[3];
+			for(i = 0; i < 3; i++)
+				sc[i] = hb.sc[i] + rad;
+			if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+				best = retf;
+				if(ret) *ret = retf;
+				reti = i + 1;
+			}
+		}
+		return reti;
+	}
+
+	// Otherwise, use Bullet dynamics engine's rayTest.
 	if(bbody){
 		btScalar btfraction;
 		btVector3 btnormal, btpos;
@@ -886,6 +911,12 @@ short Autonomous::bbodyGroup()const{
 /// \return Defaults all bits raised
 short Autonomous::bbodyMask()const{
 	return ~0;
+}
+
+/// \brief Gets the hitbox list for trace hit test, instead of Bullet dynamics engine's ray trace with the shape.
+/// \return Defaults NULL, which means no hitbox is used and Bullet dynamics engine does the job.
+std::vector<hitbox> *Autonomous::getTraceHitBoxes()const{
+	return NULL;
 }
 
 /// \brief The function that is called to initialize static customizable variables to a specific Entity class.

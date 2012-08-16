@@ -28,7 +28,6 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void postframe();
-	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);
@@ -44,6 +43,7 @@ public:
 	virtual double warpCostFactor()const;
 protected:
 	bool buildBody();
+	std::vector<hitbox> *getTraceHitBoxes()const;
 	void static_init();
 	virtual void init();
 	friend class WireDestroyer;

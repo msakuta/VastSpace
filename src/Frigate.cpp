@@ -247,20 +247,9 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 			return 1000; /* something quite unlikely to reach */
 		}
 	}
-	for(n = 0; n < nhitboxes; n++){
-		Vec3d org;
-		Quatd rot;
-		org = this->rot.trans(hitboxes[n].org) + this->pos;
-		rot = this->rot * hitboxes[n].rot;
-		for(i = 0; i < 3; i++)
-			sc[i] = hitboxes[n].sc[i] + rad;
-		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
-			best = retf;
-			if(ret) *ret = retf;
-			reti = i + 1;
-		}
-	}
-	return reti;
+
+	// If shields do not hit, use default (hitboxes).
+	return st::tracehit(src, dir, rad, dt, ret, retp, retn);
 }
 
 Entity::Props Frigate::props()const{

@@ -232,6 +232,10 @@ short Shipyard::bbodyMask()const{
 	return ~2;
 }
 
+std::vector<hitbox> *Shipyard::getTraceHitBoxes()const{
+	return &hitboxes;
+}
+
 void Shipyard::anim(double dt){
 	st::anim(dt);
 	docker->anim(dt);
@@ -268,33 +272,6 @@ Entity::Props Shipyard::props()const{
 	Props ret = st::props();
 //	ret.push_back(cpplib::dstring("?: "));
 	return ret;
-}
-
-int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	Shipyard *p = this;
-	double sc[3];
-	double best = dt, retf;
-	int reti = 0, i, n;
-#if 0
-	if(0 < p->shieldAmount){
-		if(jHitSpherePos(pos, BEAMER_SHIELDRAD + rad, src, dir, dt, ret, retp))
-			return 1000; /* something quite unlikely to reach */
-	}
-#endif
-	for(n = 0; n < hitboxes.size(); n++){
-		Vec3d org;
-		Quatd rot;
-		org = this->rot.trans(hitboxes[n].org) + this->pos;
-		rot = this->rot * hitboxes[n].rot;
-		for(i = 0; i < 3; i++)
-			sc[i] = hitboxes[n].sc[i] + rad;
-		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
-			best = retf;
-			if(ret) *ret = retf;
-			reti = i + 1;
-		}
-	}
-	return reti;
 }
 
 int Shipyard::armsCount()const{

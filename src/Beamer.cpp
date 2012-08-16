@@ -452,9 +452,10 @@ void Beamer::anim(double dt){
 		cooldown -= dt;
 
 	WarSpace *ws = *w;
-	if(ws){
-		space_collide(this, ws, dt, NULL, NULL);
-	}
+	// Collision resolution should be done in Bullet dynamics engine.
+//	if(ws){
+//		space_collide(this, ws, dt, NULL, NULL);
+//	}
 
 	if(0. < charge && charge < 4.){
 		Entity *hit = NULL;
@@ -552,6 +553,10 @@ const Builder::BuildStatic Beamer::builds = {
 
 
 double Beamer::maxhealth()const{return BEAMER_HEALTH;}
+
+std::vector<hitbox> *Beamer::getTraceHitBoxes()const{
+	return &hitboxes;
+}
 
 #ifdef DEDICATED
 void Beamer::draw(WarDraw *){}

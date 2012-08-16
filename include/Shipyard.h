@@ -54,7 +54,6 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual int popupMenu(PopupMenu &list);
-	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int i);
 	virtual double getRU()const;
@@ -90,6 +89,7 @@ protected:
 	bool buildBody();
 	short bbodyGroup()const;
 	short bbodyMask()const;
+	std::vector<hitbox> *getTraceHitBoxes()const;
 
 	friend class ShipyardDocker;
 };

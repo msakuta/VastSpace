@@ -1,3 +1,6 @@
+/** \file
+ * \bried Definition of Beamer class, a frigate with a large beam cannon.
+ */
 #ifndef BEAMER_H
 #define BEAMER_H
 #include "Frigate.h"
@@ -45,6 +48,7 @@ protected:
 	static ManeuverParams mn;
 	static std::vector<hitbox> hitboxes;
 	static std::vector<Navlight> navlights;
+	std::vector<hitbox> *getTraceHitBoxes()const;
 };
 
 #endif

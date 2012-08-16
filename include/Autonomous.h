@@ -91,6 +91,7 @@ protected:
 	virtual bool buildBody();
 	virtual short bbodyGroup()const;
 	virtual short bbodyMask()const;
+	virtual std::vector<hitbox> *getTraceHitBoxes()const;
 
 	/// \brief Callback functionoid that processes Squirrel VM that is initialized in sq_init().
 	///

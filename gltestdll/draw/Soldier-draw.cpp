@@ -17,6 +17,7 @@
 extern "C"{
 #include <clib/GL/multitex.h>
 #include <clib/GL/gldraw.h>
+#include <clib/cfloat.h>
 }
 
 
@@ -221,9 +222,36 @@ static void infantry_gib_draw(const struct tent3d_line_callback *pl, const struc
 }
 
 
+#endif
 
-double perlin_noise_pixel(int x, int y, int bit);
-void drawmuzzleflasha(const double (*pos)[3], const double (*org)[3], double rad, const double (*irot)[16]){
+static double noise_pixel(int x, int y, int bit){
+	struct random_sequence rs;
+	initfull_rseq(&rs, x + (bit << 16), y);
+	return drseq(&rs);
+}
+
+double perlin_noise_pixel(int x, int y, int bit){
+	int ret = 0, i;
+	double sum = 0., maxv = 0., f = 1.;
+	double persistence = 0.5;
+	for(i = 3; 0 <= i; i--){
+		int cell = 1 << i;
+		double a00, a01, a10, a11, fx, fy;
+		a00 = noise_pixel(x / cell, y / cell, bit);
+		a01 = noise_pixel(x / cell, y / cell + 1, bit);
+		a10 = noise_pixel(x / cell + 1, y / cell, bit);
+		a11 = noise_pixel(x / cell + 1, y / cell + 1, bit);
+		fx = (double)(x % cell) / cell;
+		fy = (double)(y % cell) / cell;
+		sum += ((a00 * (1. - fx) + a10 * fx) * (1. - fy)
+			+ (a01 * (1. - fx) + a11 * fx) * fy) * f;
+		maxv += f;
+		f *= persistence;
+	}
+	return sum / maxv;
+}
+
+void drawmuzzleflasha(const Vec3d &pos, const Vec3d &org, double rad, const Mat4d &irot){
 	static GLuint texname = 0;
 	static const GLfloat envcolor[4] = {1.,1,1,1};
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
@@ -256,8 +284,8 @@ void drawmuzzleflasha(const double (*pos)[3], const double (*org)[3], double rad
 	glDisable(GL_CULL_FACE);
 	glBindTexture(GL_TEXTURE_2D, texname);
 	glPushMatrix();
-	gldTranslate3dv(*pos);
-	glMultMatrixd(*irot);
+	gldTranslate3dv(pos);
+	glMultMatrixd(irot);
 	gldScaled(rad);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0, 0); glVertex2i(-1, -1);
@@ -269,6 +297,7 @@ void drawmuzzleflasha(const double (*pos)[3], const double (*org)[3], double rad
 	glPopAttrib();
 }
 
+#if 0
 static wardraw_t *s_wd;
 
 static void infantry_drawtra_arms(const char *name, amat4_t *hint){
@@ -292,64 +321,41 @@ static void infantry_drawtra_arms(const char *name, amat4_t *hint){
 }
 #endif
 
-#if 0
-static void infantry_drawtra(entity_t *pt, wardraw_t *wd){
-	infantry_t *p = (infantry_t*)pt;
-	struct entity_private_static *vft = (struct entity_private_static *)pt->vft;
-	double pixels;
+#if 1
+void Soldier::drawtra(WarDraw *wd){
+	Soldier *p = this;
 
-	if(!pt->active)
+	if(!model || !motions[0])
 		return;
 
 	/* cull object */
-	if(glcullFrustum(&pt->pos, .003, wd->pgc))
+	if(wd->vw->gc->cullFrustum(pos, .003))
 		return;
-	pixels = .002 * fabs(glcullScale(&pt->pos, wd->pgc));
+	double pixels = .002 * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 
 #if 1
 	if(3 < pixels && p->muzzle){
-		avec3_t pos, pos0 = {0., 0., -.001}, pos1 = {0., 0., -.0013};
-		amat4_t mat, mat2, gunmat, irot;
-		avec3_t muzzlepos;
-		double scale = INFANTRY_SCALE;
-		ysdnmv_t *dnmv;
+		double scale = modelScale;
 
-		MAT4IDENTITY(gunmat);
+		// Interpolate motion poses.
+		MotionPose mp[1];
+		motions[0]->interpolate(mp[0], 10.);
 
-		dnmv = infantry_boneset(p);
+		Vec3d pos;
+		Quatd rot;
+		model->getBonePos("rhand", mp[0], &pos, &rot);
 
-		s_wd = wd;
-		glPushMatrix();
-		glLoadIdentity();
-		glRotated(180, 0, 1, 0);
-		glScaled(-scale, scale, scale);
-		glTranslated(0, 54.4, 0);
-		TransYSDNM_V(dnm, dnmv, infantry_drawtra_arms, &gunmat);
-		MAT4SCALE(gunmat, 1. / scale, 1. / scale, 1. / scale);
-/*		VECSCALEIN(&gunmat[12], scale);*/
-		glPopMatrix();
-
-/*		gldTranslate3dv(pt->pos);
-		glRotated(deg_per_rad * pt->pyr[1], 0., -1., 0.);
-		glRotated(deg_per_rad * pt->pyr[0], -1.,  0., 0.);
-		glRotated(deg_per_rad * pt->pyr[2], 0.,  0., -1.);
-		glScaled(-scale, scale, scale);
-		glTranslated(0, 54.4, 0);*/
-
-/*		pos0[1] = pos1[1] = 220. * infantry_s.sufscale;*/
-		mat4rotz(irot, wd->irot, drseq(&wd->w->rs) * 2. * M_PI);
-		MAT4IDENTITY(mat);
-		VECADDIN(&mat[12], pt->pos);
-		mat4roty(mat2, mat, -pt->pyr[1]);
-		mat4rotx(mat, mat2, pt->pyr[0]);
-		mat4mp(mat2, mat, gunmat);
-		mat4roty(mat, mat2, -90 / deg_per_rad);
-		mat4vp3(pos, mat, pos0);
-		drawmuzzleflasha(&pos, &wd->view, .0004, &irot);
-		mat4vp3(pos, mat, pos1);
-		drawmuzzleflasha(&pos, &wd->view, .00025, &irot);
+		Mat4d mat;
+		transform(mat);
+		mat.vec3(0) *= -1;
+		mat.vec3(2) *= -1;
+		Mat4d gunmat = rot.tomat4();
+		gunmat.vec3(3) = pos * modelScale;
+		Mat4d totalMat = mat * gunmat;
+		drawmuzzleflasha(totalMat.vp3(Vec3d(-0.00070, 0.00020, 0.0)), wd->vw->pos, .0004, wd->vw->irot);
+		drawmuzzleflasha(totalMat.vp3(Vec3d(-0.00090, 0.00020, 0.0)), wd->vw->pos, .00025, wd->vw->irot);
 	}
 #else
 	if(p->muzzle){
@@ -393,7 +399,9 @@ static void infantry_drawtra(entity_t *pt, wardraw_t *wd){
 	}
 #endif
 }
+#endif
 
+#if 0
 static void infantry_postframe(entity_t *pt){
 	if(pt->enemy && !pt->enemy->active)
 		pt->enemy = NULL;
@@ -648,6 +656,7 @@ void M16::draw(WarDraw *wd){
 		Vec3d handpos;
 		Quatd handrot;
 		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
+		handpos += handrot.trans(Vec3d(-0.00015, 0.00015, 0.0) / scale);
 
 		glPushMatrix();
 		glMultMatrixd(mat);
@@ -703,6 +712,7 @@ void M40::draw(WarDraw *wd){
 		Vec3d handpos;
 		Quatd handrot;
 		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
+		handpos += handrot.trans(Vec3d(-0.00015, 0.00015, 0.0) / scale);
 
 		glPushMatrix();
 		glMultMatrixd(mat);

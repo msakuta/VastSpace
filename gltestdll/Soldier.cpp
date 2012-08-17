@@ -181,6 +181,7 @@ bool Soldier::isSelectable()const{
 
 #ifdef DEDICATED
 void Soldier::draw(WarDraw *){}
+void Soldier::drawtra(WarDraw *){}
 void Soldier::drawHUD(WarDraw *){}
 void Soldier::drawOverlay(WarDraw *){}
 void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){}
@@ -297,13 +298,14 @@ void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo,
 
 void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	const Soldier *p = this;
-	static const Vec3d ofs[2] = {Vec3d(.0005, .002, .001), Vec3d(.00075, .002, .003),};
+	static const Vec3d ofs[2] = {Vec3d(.003, .001, -.002), Vec3d(.00075, .002, .003),};
 	Mat4d mat, mat2;
 	seatid = (seatid + 4) % 4;
 	rot = this->rot;
 	transform(mat);
 	if(seatid == 1){
 		pos = mat.vp3(ofs[0]);
+		rot *= Quatd::rotation(M_PI / 2., 0, 1, 0);
 	}
 	else if(seatid == 2){
 		pos = mat.vp3(ofs[1]);
@@ -873,7 +875,7 @@ void Soldier::anim(double dt){
 
 	/* shooter logic */
 	p->muzzle = 0;
-	if(game->isServer() && !p->reloading && i & (PL_ENTER | PL_LCLICK) && !(i & PL_SHIFT)) while(p->cooldown2 < dt){
+	if(!p->reloading && i & (PL_ENTER | PL_LCLICK) && !(i & PL_SHIFT)) while(p->cooldown2 < dt){
 		amat4_t gunmat;
 		double kickf = g_recoil_kick_factor * (p->state == STATE_PRONE ? .3 : 1.);
 		gunmat[15] = 0.;
@@ -888,7 +890,11 @@ void Soldier::anim(double dt){
 		}
 		else{
 			cooldown2 += arms[0]->shootCooldown();
-			arms[0]->shoot();
+			if(game->isServer()){
+				arms[0]->shoot();
+			}
+			else
+				muzzle |= 1;
 		}
 #if 0
 		else if(p->arms[0]->type == arms_shotgun/*pt->weapon*/){

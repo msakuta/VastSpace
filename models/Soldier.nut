@@ -50,7 +50,7 @@ function drawOverlay(){
 }
 
 
-muzzleFlashRadius1 <- 0.004; // Radius in kilometers
+muzzleFlashRadius1 <- 0.0004; // Radius in kilometers
 muzzleFlashOffset1 <- Vec3d(-0.00080, 0.00020, 0.0); // Offset from hand
-muzzleFlashRadius2 <- 0.0025;
+muzzleFlashRadius2 <- 0.00025;
 muzzleFlashOffset2 <- Vec3d(-0.00110, 0.00020, 0.0);

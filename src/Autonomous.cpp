@@ -978,13 +978,25 @@ void Autonomous::SingleDoubleProcess::process(HSQUIRRELVM v)const{
 }
 
 void Autonomous::Vec3dProcess::process(HSQUIRRELVM v)const{
+	StackReserver sr(v); // We cannot keep track of stack depth if a try-catch block is involved.
 	sq_pushstring(v, name, -1); // root string
-	if(SQ_FAILED(sq_get(v, -2))) // root value
-		throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+	if(SQ_FAILED(sq_get(v, -2))){ // root value
+		if(mandatory) // If mandatory, read errors result in exceptions.
+			throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+		else // If not mandatory variable cannot be read, leave the default value and silently ignore.
+			return;
+	}
 	SQVec3d r;
-	r.getValue(v, -1);
+	try{
+		r.getValue(v, -1);
+	}
+	catch(SQFError &e){
+		if(mandatory)
+			throw;
+		else
+			return;
+	}
 	vec = r.value;
-	sq_poptop(v);
 }
 
 void Autonomous::ManeuverParamsProcess::process(HSQUIRRELVM v)const{

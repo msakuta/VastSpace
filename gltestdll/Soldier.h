@@ -109,6 +109,8 @@ protected:
 	static double hookStopRange;
 	static ManeuverParams maneuverParams;
 	static GLuint overlayDisp;
+	static double muzzleFlashRadius[2];
+	static Vec3d muzzleFlashOffset[2];
 };
 
 

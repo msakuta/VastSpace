@@ -63,6 +63,8 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 	1, // capacitor_gen
 };
 GLuint Soldier::overlayDisp = 0;
+double Soldier::muzzleFlashRadius[2] = {.0004, .00025};
+Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.00110, 0.00020, 0.0)};
 
 
 HardPointList soldierHP;
@@ -223,7 +225,12 @@ void Soldier::init(){
 			SingleDoubleProcess(hookStopRange, "hookStopRange", false) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			HardPointProcess(soldierHP) <<=
-			DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp) <<=
+			SingleDoubleProcess(muzzleFlashRadius[0], "muzzleFlashRadius1", false) <<=
+			SingleDoubleProcess(muzzleFlashRadius[1], "muzzleFlashRadius2", false) <<=
+			Vec3dProcess(muzzleFlashOffset[0], "muzzleFlashOffset1", false) <<=
+			Vec3dProcess(muzzleFlashOffset[1], "muzzleFlashOffset2", false)
+			);
 		initialized = true;
 	}
 

@@ -161,7 +161,7 @@ Defender::Defender(WarField *aw) : st(aw),
 			HitboxProcess(hitboxes) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			DrawOverlayProcess(overlayDisp) <<=
-			Vec3dProcess(_SC("gunPos"), gunPos));
+			Vec3dProcess(gunPos, _SC("gunPos")));
 		initialized = true;
 	}
 

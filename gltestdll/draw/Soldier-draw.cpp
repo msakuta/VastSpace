@@ -63,7 +63,7 @@ void Soldier::draw(WarDraw *wd){
 	drawHookAndTether(wd);
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .003))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 //	inf_pixels = pixels = .001 * fabs(glcullScale(&pt->pos, wd->pgc));
 //	if(pixels < 2)
@@ -329,7 +329,7 @@ void Soldier::drawtra(WarDraw *wd){
 		return;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .003))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 	double pixels = .002 * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
@@ -337,7 +337,6 @@ void Soldier::drawtra(WarDraw *wd){
 
 #if 1
 	if(3 < pixels && p->muzzle){
-		double scale = modelScale;
 
 		// Interpolate motion poses.
 		MotionPose mp[1];
@@ -354,8 +353,8 @@ void Soldier::drawtra(WarDraw *wd){
 		Mat4d gunmat = rot.tomat4();
 		gunmat.vec3(3) = pos * modelScale;
 		Mat4d totalMat = mat * gunmat;
-		drawmuzzleflasha(totalMat.vp3(Vec3d(-0.00070, 0.00020, 0.0)), wd->vw->pos, .0004, wd->vw->irot);
-		drawmuzzleflasha(totalMat.vp3(Vec3d(-0.00090, 0.00020, 0.0)), wd->vw->pos, .00025, wd->vw->irot);
+		for(int i = 0; i < 2; i++)
+			drawmuzzleflasha(totalMat.vp3(muzzleFlashOffset[i]), wd->vw->pos, muzzleFlashRadius[i], wd->vw->irot);
 	}
 #else
 	if(p->muzzle){

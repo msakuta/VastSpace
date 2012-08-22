@@ -291,38 +291,6 @@ typedef struct Motion Motion;
 //-----------------------------------------------------------------------------
 
 
-namespace cpplib{
-/// Template specialization for spherical linear interpolation of Quaternions.
-template<> inline Quat<double> Quat<double>::slerp(const Quatd &q, const Quatd &r, const double t){
-	tt ret;
-	double qr = q.a[0] * r.a[0] + q.a[1] * r.a[1] + q.a[2] * r.a[2] + q.a[3] * r.a[3];
-	double ss = 1.0 - qr * qr;
-  
-	if (ss <= 0.0) {
-		return q;
-	}
-	else if(q == r){
-		return q;
-	}
-	else {
-		double sp = ::sqrt(ss);
-		double ph = ::acos(qr);
-		double pt = ph * t;
-		double t1 = ::sin(pt) / sp;
-		double t0 = ::sin(ph - pt) / sp;
-
-		// Long path case
-		if(qr < 0)
-			t1 *= -1;
-
-		return tt(
-			q.a[0] * t0 + r.a[0] * t1,
-			q.a[1] * t0 + r.a[1] * t1,
-			q.a[2] * t0 + r.a[2] * t1,
-			q.a[3] * t0 + r.a[3] * t1);
-	}
-}
-}
 
 
 /// Returns existing node or create a new one if it doesn't.
@@ -380,7 +348,8 @@ inline MotionPose &Motion::interpolate(MotionPose &v, double time){
 		MotionPose::iterator it2 = next.nodes.find(it->first);
 		if(it2 != next.nodes.end()){
 			MotionNode node;
-			node.rot = Quatd::slerp(it->second.rot, it2->second.rot, time / prev.dt);
+			// Normalizing slerp-ed result seems necessary to avoid unwanted scaling.
+			node.rot = Quatd::slerp(it->second.rot, it2->second.rot, time / prev.dt).norm();
 			node.pos = it->second.pos * (1. - time / prev.dt) + it2->second.pos * time / prev.dt;
 			node.visible = it->second.visible * (1. - time / prev.dt) + it2->second.visible * time / prev.dt;
 			v.nodes[it->first] = node;

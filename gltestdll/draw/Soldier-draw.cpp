@@ -613,7 +613,10 @@ void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){
 	}
 }
 
-
+/// \brief Loads and initializes model and motions.
+/// \returns True if initialized or already initialized, false if something fail to initialize.
+///
+/// This process is completely for display, so defined in this Sldier-draw.cpp.
 bool Soldier::initModel(){
 	static OpenGLState::weak_ptr<bool> init;
 
@@ -627,6 +630,9 @@ bool Soldier::initModel(){
 	return model && motions[0] && motions[1];
 }
 
+/// \brief Returns interpolated MotionPose based on the status of current object.
+/// \param mp returning MotionPose is stored in the object pointed to by this pointer.
+/// \returns True if succeeded, false if interpolation fails.
 bool Soldier::interpolate(MotionPose *mp){
 	if(!initModel())
 		return false;
@@ -639,31 +645,35 @@ bool Soldier::interpolate(MotionPose *mp){
 	return true;
 }
 
+/// \brief Returns gun position and orientation.
+/// \param ggp GetGunPosCommand EntityCommand object. The results are stored in the members of this object.
+/// \returns True if succeeded, false if the position couldn't be determined.
+///
+/// Returned position and orientation are in the world coordinates.
 bool Soldier::getGunPos(GetGunPosCommand &ggp){
 	MotionPose mp[1];
 	if((ggp.gunId == 0 || ggp.gunId == 1) && interpolate(mp)){
 		Vec3d srcpos;
 		Quatd srcrot; 
 		Soldier::model->getBonePos(ggp.gunId == 0 ? "rhand" : "body", *mp, &srcpos, &srcrot);
-//		Mat4d mat;
-//		transform(mat);
-//		ggp.pos = mat.dvp3(srcpos);
-		ggp.pos = srcpos;
-		ggp.pos *= modelScale;
+		Mat4d mat;
+		transform(mat);
+		srcpos *= modelScale;
 		if(ggp.gunId == 0){
-			ggp.pos += srcrot.trans(Vec3d(-0.00015, 0.00015, 0.0));
+			srcpos += srcrot.trans(Vec3d(-0.00015, 0.00015, 0.0));
 			srcrot = Quatd(0, 1, 0, 0) * srcrot.rotate(M_PI / 2., 0, 1, 0);
 		}
 		else{
-			ggp.pos += srcrot.trans(Vec3d(0, 0, -0.00025));
+			srcpos += srcrot.trans(Vec3d(0, 0, -0.00025));
 			srcrot = Quatd(0, 1, 0, 0) * srcrot;
 			srcrot = srcrot.rotate(M_PI / 6., 0, 0, -1);
 			srcrot = srcrot.rotate(M_PI / 2., -1, 0, 0);
 			srcrot = srcrot.rotate(M_PI / 2., 0, 0, 1);
 		}
-		ggp.pos[0] *= -1;
-		ggp.pos[2] *= -1;
-		ggp.rot = srcrot;
+		srcpos[0] *= -1;
+		srcpos[2] *= -1;
+		ggp.pos = mat.vp3(srcpos);
+		ggp.rot = rot * srcrot;
 		return true;
 	}
 	else
@@ -691,8 +701,6 @@ void M16::draw(WarDraw *wd){
 		return;
 
 	double scale = Soldier::getModelScale();
-	Mat4d mat;
-	base->transform(mat);
 
 	// Retrieve gun id
 	int gunId = 0;
@@ -707,7 +715,6 @@ void M16::draw(WarDraw *wd){
 	GetGunPosCommand ggp(gunId);
 	if(base->command(&ggp)){
 		glPushMatrix();
-		glMultMatrixd(mat);
 		gldTranslate3dv(ggp.pos);
 		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);
@@ -735,8 +742,6 @@ void M40::draw(WarDraw *wd){
 		return;
 
 	double scale = Soldier::getModelScale();
-	Mat4d mat;
-	base->transform(mat);
 
 	// Retrieve gun id
 	int gunId = 0;
@@ -751,7 +756,6 @@ void M40::draw(WarDraw *wd){
 	GetGunPosCommand ggp(gunId);
 	if(base->command(&ggp)){
 		glPushMatrix();
-		glMultMatrixd(mat);
 		gldTranslate3dv(ggp.pos);
 		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);

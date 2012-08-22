@@ -50,10 +50,9 @@ static void infantry_draw_arms(const char *name, infantry_t *p){
 #endif
 
 Model *Soldier::model = NULL;
-Motion *Soldier::motions[1] = {NULL};
+Motion *Soldier::motions[2] = {NULL};
 
 void Soldier::draw(WarDraw *wd){
-	static OpenGLState::weak_ptr<bool> init;
 	Soldier *p = this;
 	double pixels;
 
@@ -70,19 +69,12 @@ void Soldier::draw(WarDraw *wd){
 //		return;
 	wd->lightdraws++;
 
-
-	if(!init){
-		model = LoadMQOModel("models/Soldier.mqo");
-		motions[0] = LoadMotion("models/Soldier_aim.mot");
-		init.create(*openGLState);
-	}
-
-	if(!model)
+	if(!initModel())
 		return;
 
 	// Interpolate motion poses.
 	MotionPose mp[1];
-	motions[0]->interpolate(mp[0], 10.);
+	interpolate(mp);
 
 	double scale = modelScale;
 	glPushMatrix();
@@ -340,7 +332,7 @@ void Soldier::drawtra(WarDraw *wd){
 
 		// Interpolate motion poses.
 		MotionPose mp[1];
-		motions[0]->interpolate(mp[0], 10.);
+		interpolate(mp);
 
 		Vec3d pos;
 		Quatd rot;
@@ -622,6 +614,61 @@ void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){
 }
 
 
+bool Soldier::initModel(){
+	static OpenGLState::weak_ptr<bool> init;
+
+	if(!init){
+		model = LoadMQOModel("models/Soldier.mqo");
+		motions[0] = LoadMotion("models/Soldier_aim.mot");
+		motions[1] = LoadMotion("models/Soldier_reload.mot");
+		init.create(*openGLState);
+	}
+
+	return model && motions[0] && motions[1];
+}
+
+bool Soldier::interpolate(MotionPose *mp){
+	if(!initModel())
+		return false;
+
+	// Interpolate motion poses.
+	if(reloading)
+		motions[1]->interpolate(mp[0], (reloadphase < 1.25 ? reloadphase / 1.25 : (2.5 - reloadphase) / 1.25) * 20.);
+	else
+		motions[0]->interpolate(mp[0], 10.);
+	return true;
+}
+
+bool Soldier::getGunPos(GetGunPosCommand &ggp){
+	MotionPose mp[1];
+	if((ggp.gunId == 0 || ggp.gunId == 1) && interpolate(mp)){
+		Vec3d srcpos;
+		Quatd srcrot; 
+		Soldier::model->getBonePos(ggp.gunId == 0 ? "rhand" : "body", *mp, &srcpos, &srcrot);
+//		Mat4d mat;
+//		transform(mat);
+//		ggp.pos = mat.dvp3(srcpos);
+		ggp.pos = srcpos;
+		ggp.pos *= modelScale;
+		if(ggp.gunId == 0){
+			ggp.pos += srcrot.trans(Vec3d(-0.00015, 0.00015, 0.0));
+			srcrot = Quatd(0, 1, 0, 0) * srcrot.rotate(M_PI / 2., 0, 1, 0);
+		}
+		else{
+			ggp.pos += srcrot.trans(Vec3d(0, 0, -0.00025));
+			srcrot = Quatd(0, 1, 0, 0) * srcrot;
+			srcrot = srcrot.rotate(M_PI / 6., 0, 0, -1);
+			srcrot = srcrot.rotate(M_PI / 2., -1, 0, 0);
+			srcrot = srcrot.rotate(M_PI / 2., 0, 0, 1);
+		}
+		ggp.pos[0] *= -1;
+		ggp.pos[2] *= -1;
+		ggp.rot = srcrot;
+		return true;
+	}
+	else
+		return false;
+}
 
 
 
@@ -647,35 +694,23 @@ void M16::draw(WarDraw *wd){
 	Mat4d mat;
 	base->transform(mat);
 
-	if(base->armsGet(0) == this){
-		// Obtain gun position from soldier's arm bones.
-		MotionPose mp[1];
-		Soldier::motions[0]->interpolate(mp[0], 10.);
-
-		Vec3d handpos;
-		Quatd handrot;
-		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
-		handpos += handrot.trans(Vec3d(-0.00015, 0.00015, 0.0) / scale);
-
-		glPushMatrix();
-		glMultMatrixd(mat);
-		glScaled(-scale, scale, -scale);
-		gldTranslate3dv(handpos);
-		gldMultQuat(handrot);
-		glRotated(90, 0, -1, 0);
-	//	glTranslated(0, 54.4, 0);
-		DrawMQOPose(model, NULL);
-		glPopMatrix();
+	// Retrieve gun id
+	int gunId = 0;
+	for(int i = 0; i < base->armsCount(); i++){
+		if(base->armsGet(i) == this){
+			gunId = i;
+			break;
+		}
 	}
-	else{
+
+	// Send GetGunPosCommand to base Entity to query transformation for held weapons.
+	GetGunPosCommand ggp(gunId);
+	if(base->command(&ggp)){
 		glPushMatrix();
 		glMultMatrixd(mat);
-		glTranslated(0, 0, 0.00025);
+		gldTranslate3dv(ggp.pos);
+		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);
-		glRotated(30, 0, 0, -1);
-		glRotated(90, -1, 0, 0);
-		glRotated(90, 0, 0, 1);
-	//	glTranslated(0, 54.4, 0);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 	}
@@ -703,35 +738,23 @@ void M40::draw(WarDraw *wd){
 	Mat4d mat;
 	base->transform(mat);
 
-	if(base->armsGet(0) == this){
-		// Obtain gun position from soldier's arm bones.
-		MotionPose mp[1];
-		Soldier::motions[0]->interpolate(mp[0], 10.);
-
-		Vec3d handpos;
-		Quatd handrot;
-		Soldier::model->getBonePos("rhand", *mp, &handpos, &handrot);
-		handpos += handrot.trans(Vec3d(-0.00015, 0.00015, 0.0) / scale);
-
-		glPushMatrix();
-		glMultMatrixd(mat);
-		glScaled(-scale, scale, -scale);
-		gldTranslate3dv(handpos);
-		gldMultQuat(handrot);
-		glRotated(90, 0, -1, 0);
-	//	glTranslated(0, 54.4, 0);
-		DrawMQOPose(model, NULL);
-		glPopMatrix();
+	// Retrieve gun id
+	int gunId = 0;
+	for(int i = 0; i < base->armsCount(); i++){
+		if(base->armsGet(i) == this){
+			gunId = i;
+			break;
+		}
 	}
-	else{
+
+	// Send GetGunPosCommand to base Entity to query transformation for held weapons.
+	GetGunPosCommand ggp(gunId);
+	if(base->command(&ggp)){
 		glPushMatrix();
 		glMultMatrixd(mat);
-		glTranslated(0, 0, 0.00025);
+		gldTranslate3dv(ggp.pos);
+		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);
-		glRotated(30, 0, 0, -1);
-		glRotated(90, -1, 0, 0);
-		glRotated(90, 0, 0, 1);
-	//	glTranslated(0, 54.4, 0);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 	}

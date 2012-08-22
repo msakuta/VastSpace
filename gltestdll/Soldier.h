@@ -7,9 +7,13 @@
 #include "war.h"
 #include "arms.h"
 #include "judge.h"
+#include "EntityCommand.h"
 
 struct Model;
 class Motion;
+struct MotionPose;
+
+struct GetGunPosCommand;
 
 /// \brief The abstract class for personal firearms.
 class Firearm : public ArmBase{
@@ -75,6 +79,9 @@ protected:
 
 	void hookHitEffect(const otjEnumHitSphereParam &param);
 	void drawHookAndTether(WarDraw *);
+	bool initModel();
+	bool interpolate(MotionPose *mp);
+	bool getGunPos(GetGunPosCommand &);
 
 	double pitch;
 	double cooldown2;
@@ -154,6 +161,17 @@ protected:
 	double bulletSpeed()const{return 3.;}
 	double bulletDamage()const{return 3.;}
 };
+
+
+
+struct GetGunPosCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(GetGunPosCommand, EntityCommand);
+	GetGunPosCommand(int gunId = 0) : gunId(gunId){}
+	const int gunId;
+	Vec3d pos;
+	Quatd rot;
+};
+
 
 
 #endif

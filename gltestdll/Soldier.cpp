@@ -17,6 +17,7 @@
 #include "Application.h"
 #include "EntityCommand.h"
 #include "judge.h"
+#include "libmotion.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -1277,6 +1278,9 @@ bool Soldier::command(EntityCommand *com){
 		swapWeapon();
 		return true;
 	}
+	if(GetGunPosCommand *ggp = InterpretCommand<GetGunPosCommand>(com)){
+		return getGunPos(*ggp);
+	}
 	else
 		return st::command(com);
 }
@@ -2241,4 +2245,11 @@ M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
 	reload();
 }
 
+
+/// Ignore invocation of GetGunPosCommand from Squirrel. It's not really a command
+/// that may instruct the Entity to do something, but just returns parameters.
+template<>
+void EntityCommandSq<GetGunPosCommand>(HSQUIRRELVM, Entity &){}
+
+IMPLEMENT_COMMAND(GetGunPosCommand, "GetGunPos")
 

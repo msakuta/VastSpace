@@ -197,6 +197,17 @@ static SQInteger sqf_get_cvar(HSQUIRRELVM v){
 		return SQ_ERROR;
 }
 
+template<bool (Game::*func)()const>
+static SQInteger sqf_is(HSQUIRRELVM v){
+	Game *game = reinterpret_cast<Game*>(sq_getforeignptr(v));
+	if(!game){
+		sq_pushnull(v);
+		return 1;
+	}
+	sq_pushbool(v, (game->*func)());
+	return 1;
+}
+
 static SQInteger sqf_cmd(HSQUIRRELVM v){
 	SQInteger nargs = sq_gettop(v); //number of arguments
 	if(2 != nargs)
@@ -955,6 +966,8 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	register_global_func(v, sqf_set_cvar, _SC("set_cvar"));
 	register_global_func(v, sqf_get_cvar, _SC("get_cvar"));
+	register_global_func(v, sqf_is<&Game::isServer>, _SC("isServer"));
+	register_global_func(v, sqf_is<&Game::isClient>, _SC("isClient"));
 	register_global_func(v, sqf_cmd, _SC("cmd"));
 	register_global_func(v, sqf_reg, _SC("reg"));
 	register_global_func(v, sqf_loadModule, _SC("loadModule"));

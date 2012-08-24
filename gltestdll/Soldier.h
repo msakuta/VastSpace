@@ -50,9 +50,7 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual void beginControl();
 	virtual void control(const input_t *inputs, double dt);
-	virtual void endControl();
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
 	virtual void drawHUD(WarDraw *);
@@ -149,6 +147,12 @@ protected:
 		SQFunctionProcess(SQFunction &obj, const SQChar *name) : obj(obj), name(name){}
 		virtual void process(HSQUIRRELVM v)const;
 	};
+
+	class NullProcess : public SqInitProcess{
+	public:
+		virtual void process(HSQUIRRELVM)const{}
+	};
+
 };
 
 

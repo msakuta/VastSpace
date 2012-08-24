@@ -693,7 +693,8 @@ register_console_command_a("add_bookmark_s", function(args){
 	return addBookmark(true, args);
 });
 
-
+beginControl <- {};
+endControl <- {};
 
 
 function earth(){

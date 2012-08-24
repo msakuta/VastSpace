@@ -211,7 +211,7 @@ int infantry_random_weapons = 0;
 
 
 Soldier::Soldier(Game *g) : st(g){
-	arms[0] = arms[1] = NULL;
+	init();
 }
 
 Soldier::Soldier(WarField *w) : st(w){
@@ -248,50 +248,74 @@ void Soldier::SQFunctionProcess::process(HSQUIRRELVM v)const{
 
 
 void Soldier::init(){
-	static bool initialized = false;
-	if(!initialized){
-		sq_init(_SC("models/Soldier.nut"),
-			ModelScaleProcess(modelScale) <<=
-			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
-			MassProcess(defaultMass) <<=
-			SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
-			SingleDoubleProcess(hookRange, "hookRange", false) <<=
-			SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=
-			SingleDoubleProcess(hookStopRange, "hookStopRange", false) <<=
-			ManeuverParamsProcess(maneuverParams) <<=
-			HardPointProcess(soldierHP) <<=
-			DrawOverlayProcess(overlayDisp) <<=
-			SingleDoubleProcess(muzzleFlashRadius[0], "muzzleFlashRadius1", false) <<=
-			SingleDoubleProcess(muzzleFlashRadius[1], "muzzleFlashRadius2", false) <<=
-			Vec3dProcess(muzzleFlashOffset[0], "muzzleFlashOffset1", false) <<=
-			Vec3dProcess(muzzleFlashOffset[1], "muzzleFlashOffset2", false)
-			);
-		initialized = true;
-	}
+	// There could be the case the Game is both a server and a client.
+	// In that case, we want to run both initializers.
+	if(game->isClient()){
+		static bool initialized = false;
+		if(!initialized){
+			sq_init(_SC("models/Soldier.nut"), 
+				ModelScaleProcess(modelScale) <<=
+				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
+				MassProcess(defaultMass) <<=
+				SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
+				SingleDoubleProcess(hookRange, "hookRange", false) <<=
+				SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=
+				SingleDoubleProcess(hookStopRange, "hookStopRange", false) <<=
+				ManeuverParamsProcess(maneuverParams) <<=
+				HardPointProcess(soldierHP) <<=
+				DrawOverlayProcess(overlayDisp) <<=
+				SingleDoubleProcess(muzzleFlashRadius[0], "muzzleFlashRadius1", false) <<=
+				SingleDoubleProcess(muzzleFlashRadius[1], "muzzleFlashRadius2", false) <<=
+				Vec3dProcess(muzzleFlashOffset[0], "muzzleFlashOffset1", false) <<=
+				Vec3dProcess(muzzleFlashOffset[1], "muzzleFlashOffset2", false)
+				);
+			initialized = true;
+		}
 
-	mass = defaultMass;
-	health = maxhealth();
-	swapphase = 0.;
-	pitch = 0.;
-	reloadphase = 0.;
-	damagephase = 0.;
-	kick[0] = kick[1] = 0.;
-	kickvelo[0] = kickvelo[1] = 0.;
-	state = STATE_STANDING;
-	reloading = 0;
-	aiming = 0;
-	muzzle = 0;
-	arms[0] = new M16(this, soldierHP[0]);
-	arms[1] = new M40(this, soldierHP[1]);
-	if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
-		w->addent(arms[i]);
-	hookshot = false;
-	hooked = false;
-	hookretract = false;
-//	infantry_s.hitmdl.suf = NULL/*&suf_roughbody*/;
-//	MAT4IDENTITY(infantry_s.hitmdl.trans);
-//	MAT4SCALE(infantry_s.hitmdl.trans, infantry_s.sufscale, infantry_s.sufscale, infantry_s.sufscale);
-//	infantry_s.hitmdl.valid = 0;
+		arms[0] = arms[1] = NULL;
+	}
+	if(game->isServer()){
+		static bool initialized = false;
+		if(!initialized){
+			sq_init(_SC("models/Soldier.nut"),
+				ModelScaleProcess(modelScale) <<=
+				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
+				MassProcess(defaultMass) <<=
+				SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
+				SingleDoubleProcess(hookRange, "hookRange", false) <<=
+				SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=
+				SingleDoubleProcess(hookStopRange, "hookStopRange", false) <<=
+				ManeuverParamsProcess(maneuverParams) <<=
+				HardPointProcess(soldierHP) <<=
+				DrawOverlayProcess(overlayDisp) <<=
+				SingleDoubleProcess(muzzleFlashRadius[0], "muzzleFlashRadius1", false) <<=
+				SingleDoubleProcess(muzzleFlashRadius[1], "muzzleFlashRadius2", false) <<=
+				Vec3dProcess(muzzleFlashOffset[0], "muzzleFlashOffset1", false) <<=
+				Vec3dProcess(muzzleFlashOffset[1], "muzzleFlashOffset2", false)
+				);
+			initialized = true;
+		}
+
+		mass = defaultMass;
+		health = maxhealth();
+		swapphase = 0.;
+		pitch = 0.;
+		reloadphase = 0.;
+		damagephase = 0.;
+		kick[0] = kick[1] = 0.;
+		kickvelo[0] = kickvelo[1] = 0.;
+		state = STATE_STANDING;
+		reloading = 0;
+		aiming = 0;
+		muzzle = 0;
+		arms[0] = new M16(this, soldierHP[0]);
+		arms[1] = new M40(this, soldierHP[1]);
+		if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
+			w->addent(arms[i]);
+		hookshot = false;
+		hooked = false;
+		hookretract = false;
+	}
 /*	if(infantry_random_weapons){
 		int i, n = 0, k;
 		for(i = 0; i < num_armstype; i++) if(arms_static[i].cls == armc_infarm)
@@ -311,7 +335,6 @@ void Soldier::init(){
 	}
 	else
 		memcpy(ret->arms, infantry_arms, sizeof ret->arms);*/
-/*	sufmodel_normalize(&ret->mdl);*/
 
 #if 0
 	/* calculate cost */
@@ -1229,20 +1252,6 @@ void Soldier::clientUpdate(double dt){
 	anim(dt);
 }
 
-void Soldier::beginControl(){
-	static bool initialized = false;
-	if(!game->isServer() && !initialized){
-		sq_init(_SC("models/Soldier.nut"),
-			SQFunctionProcess(beginControlCallback, "beginControl") <<=
-			SQFunctionProcess(endControlCallback, "endControl")
-			);
-		initialized = true;
-	}
-
-	if(beginControlCallback.getVM() == game->sqvm)
-		beginControlCallback.call();
-}
-
 void Soldier::control(const input_t *inputs, double dt){
 	const double speed = .001 / 2.;
 	st::control(inputs, dt);
@@ -1275,11 +1284,6 @@ void Soldier::control(const input_t *inputs, double dt){
 			hooked = false;
 		}
 	}
-}
-
-void Soldier::endControl(){
-	if(endControlCallback.getVM() == game->sqvm)
-		endControlCallback.call();
 }
 
 // find the nearest enemy

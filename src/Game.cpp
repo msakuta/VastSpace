@@ -316,10 +316,6 @@ void Game::init(){
 	sqa_anim0(sqvm);
 }
 
-bool Game::isServer()const{
-	return false;
-}
-
 /// Defaults true
 bool Game::isRawCreateMode()const{
 	return true;
@@ -369,10 +365,6 @@ void ServerGame::init(){
 
 void ServerGame::postframe(){
 	universe->postframe();
-}
-
-bool ServerGame::isServer()const{
-	return true;
 }
 
 bool ServerGame::isRawCreateMode()const{

@@ -640,9 +640,35 @@ void Entity::anim(double dt){dt;}
 void Entity::clientUpdate(double dt){dt;}
 
 void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
-void Entity::beginControl(){ /* Do nothing*/ }
+void Entity::beginControl(){
+	HSQUIRRELVM v = game->sqvm;
+	StackReserver sr(v);
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("beginControl"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return;
+	sq_pushstring(v, classname(), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return;
+	sq_pushroottable(v);
+	sq_call(v, 1, SQFalse, SQTrue);
+	return;
+}
 void Entity::control(const input_t *i, double){inputs = *i;}
-void Entity::endControl(){ /* Do nothing*/ }
+void Entity::endControl(){
+	HSQUIRRELVM v = game->sqvm;
+	StackReserver sr(v);
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("endControl"), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return;
+	sq_pushstring(v, classname(), -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		return;
+	sq_pushroottable(v);
+	sq_call(v, 1, SQFalse, SQTrue);
+	return;
+}
 unsigned Entity::analog_mask(){return 0;}
 void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
 int Entity::numCockpits()const{return 1;}

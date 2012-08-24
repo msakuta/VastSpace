@@ -44,8 +44,11 @@ WarField::~WarField(){
 		// Entities to be deleted, which means the code below should not be necessary.
 		// But I'm not sure it applies forever, so placed it here. At least we can put a breakpoint
 		// for debugging.
-		for(EntityList::iterator it = el.begin(); it != el.end(); ++it){
+		for(EntityList::iterator it = el.begin(); it != el.end();){
+			EntityList::iterator next = it;
+			++next;
 			(*it)->transit_cs(cs->parent);
+			it = next;
 		}
 	}
 	else{ // If client's WarField is destructed, it's only by the server's instruction.

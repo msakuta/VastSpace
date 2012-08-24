@@ -102,7 +102,24 @@ public:
 	void sq_replaceUniverse(Universe *);
 	void sq_replacePlayer(Player *);
 
-	virtual bool isServer()const;
+	/// \brief Returns whether this Game object is server game.
+	///
+	/// Be careful that !isServer() not always equal to isClient().
+	/// Standalone game can be both server and client.
+	///
+	/// Default value is provided in this abstract class to prevent pure calls in the destructor.
+	/// \sa isClient()
+	virtual bool isServer()const{return false;}
+
+	/// \brief Returns whether this Game object is client game.
+	///
+	/// Be careful that !isClient() not always equal to isServer().
+	/// Standalone game can be both server and client.
+	///
+	/// Default value is provided in this abstract class to prevent pure calls in the destructor.
+	/// \sa isServer()
+	virtual bool isClient()const{return false;}
+
 	virtual bool isRawCreateMode()const;
 
 	void setSquirrelShare(SquirrelShare *p);
@@ -138,6 +155,8 @@ public:
 	ClientGame();
 	virtual void anim(double dt);
 	virtual void postframe();
+	virtual bool isServer()const{return false;}
+	virtual bool isClient()const{return true;}
 };
 #endif
 
@@ -149,7 +168,8 @@ public:
 	void init();
 	virtual void anim(double dt);
 	virtual void postframe();
-	virtual bool isServer()const;
+	virtual bool isServer()const{return true;}
+	virtual bool isClient()const{return false;}
 	virtual bool isRawCreateMode()const;
 protected:
 	bool loading; ///< The flag only active when unserialized from a file.

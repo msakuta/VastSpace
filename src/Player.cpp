@@ -855,6 +855,7 @@ void Player::beginControl(Entity *e){
 	rot = Quatd(0,0,0,1);
 	chase = e;
 	e->controller = this;
+	e->beginControl();
 	if(!game->isServer())
 		CMControl::s.send(e);
 }
@@ -867,6 +868,8 @@ void Player::inputControl(const input_t &inputs, double dt){
 }
 
 void Player::endControl(){
+	if(controlled)
+		controlled->endControl();
 	if(controlled && static_cast<EntityController*>(controlled->controller) == this)
 		controlled->controller = NULL;
 	controlled = NULL;
@@ -1043,6 +1046,14 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 				return 1;
 			}
 			Entity::sq_pushobj(v, p->chase);
+			return 1;
+		}
+		else if(!strcmp(wcs, _SC("controlled"))){
+			if(!p->controlled){
+				sq_pushnull(v);
+				return 1;
+			}
+			Entity::sq_pushobj(v, p->controlled);
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("chasecamera"))){

@@ -54,3 +54,24 @@ muzzleFlashRadius1 <- 0.0004; // Radius in kilometers
 muzzleFlashOffset1 <- Vec3d(-0.00080, 0.00020, 0.0); // Offset from hand
 muzzleFlashRadius2 <- 0.00025;
 muzzleFlashOffset2 <- Vec3d(-0.00110, 0.00020, 0.0);
+
+
+register_console_command("reload", function(){
+	if(player.controlled)
+		player.controlled.command("ReloadWeapon");
+});
+
+function beginControl(){
+	if("print" in this)
+		print("Solider::beginControl");
+	cmd("pushbind");
+	cmd("bind r reload");
+}
+
+function endControl(){
+	if("print" in this)
+		print("Solider::endControl");
+	cmd("popbind");
+}
+
+

@@ -72,8 +72,10 @@ public:
 	virtual void getPosition(Vec3d *pos, Quatd *rot = NULL, Vec3d *velo = NULL, Vec3d *avelo = NULL)const; // Arguments can be NULL
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual void postframe(); // gives an opportunity to clear pointers to objects being destroyed.
-	virtual void control(const input_t *inputs, double dt);
+	virtual void postframe(); ///< DELETEME: Originally intended for giving an opportunity to clear pointers to objects being destroyed, but no longer used.
+	virtual void beginControl(); ///< Called when a Player begins controlling this Entity.
+	virtual void control(const input_t *inputs, double dt); ///< Called every frame while a Player is controlling this Entity.
+	virtual void endControl(); ///< Called when a Player ends controlling this Entity.
 	virtual unsigned analog_mask();
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual int numCockpits()const;

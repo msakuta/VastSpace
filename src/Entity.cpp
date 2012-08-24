@@ -640,7 +640,9 @@ void Entity::anim(double dt){dt;}
 void Entity::clientUpdate(double dt){dt;}
 
 void Entity::postframe(){if(enemy && !enemy->w) enemy = NULL;}
+void Entity::beginControl(){ /* Do nothing*/ }
 void Entity::control(const input_t *i, double){inputs = *i;}
+void Entity::endControl(){ /* Do nothing*/ }
 unsigned Entity::analog_mask(){return 0;}
 void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
 int Entity::numCockpits()const{return 1;}

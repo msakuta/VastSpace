@@ -50,7 +50,9 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
+	virtual void beginControl();
 	virtual void control(const input_t *inputs, double dt);
+	virtual void endControl();
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
 	virtual void drawHUD(WarDraw *);
@@ -118,6 +120,35 @@ protected:
 	static GLuint overlayDisp;
 	static double muzzleFlashRadius[2];
 	static Vec3d muzzleFlashOffset[2];
+
+	class SQFunctionProcess;
+	class SQFunction{
+		HSQUIRRELVM vm;
+		HSQOBJECT obj;
+	public:
+		SQFunction() : vm(NULL){sq_resetobject(&obj);}
+		SQFunction(HSQUIRRELVM vm, SQInteger idx = -1){
+			sq_resetobject(&obj);
+			assign(vm, idx);
+		}
+		~SQFunction(){sq_release(vm, &obj);}
+		void assign(HSQUIRRELVM vm, SQInteger idx = -1);
+		void call();
+		HSQUIRRELVM getVM()const{return vm;}
+		HSQOBJECT getObj()const{return obj;}
+		friend class SQFunctionProcess;
+	};
+
+	static SQFunction beginControlCallback;
+	static SQFunction endControlCallback;
+
+	class SQFunctionProcess : public SqInitProcess{
+	public:
+		SQFunction &obj;
+		const SQChar *name;
+		SQFunctionProcess(SQFunction &obj, const SQChar *name) : obj(obj), name(name){}
+		virtual void process(HSQUIRRELVM v)const;
+	};
 };
 
 

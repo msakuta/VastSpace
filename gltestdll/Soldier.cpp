@@ -18,6 +18,7 @@
 #include "EntityCommand.h"
 #include "judge.h"
 #include "libmotion.h"
+#include "sqadapt.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -66,6 +67,8 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 GLuint Soldier::overlayDisp = 0;
 double Soldier::muzzleFlashRadius[2] = {.0004, .00025};
 Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.00110, 0.00020, 0.0)};
+Soldier::SQFunction Soldier::beginControlCallback;
+Soldier::SQFunction Soldier::endControlCallback;
 
 
 HardPointList soldierHP;
@@ -154,8 +157,10 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> hookretract;
 }
 
+DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
 DERIVE_COMMAND_EXT(SwitchWeaponCommand, SerializableCommand);
 
+IMPLEMENT_COMMAND(ReloadWeaponCommand, "ReloadWeapon")
 IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
 
 
@@ -212,6 +217,35 @@ Soldier::Soldier(Game *g) : st(g){
 Soldier::Soldier(WarField *w) : st(w){
 	init();
 }
+
+void Soldier::SQFunction::assign(HSQUIRRELVM vm, SQInteger idx){
+	this->vm = vm;
+	SQRESULT res = sq_getstackobj(vm, idx, &obj);
+
+	if(SQ_FAILED(res))
+		throw SQFError(_SC("sq_getstackobj returns error"));
+
+	sq_addref(vm, &obj);
+}
+
+void Soldier::SQFunction::call(){
+	HSQUIRRELVM v = vm;
+	sq_pushobject(v, obj);
+	sq_push(v, 1);
+	sq_call(v, 1, SQFalse, SQTrue);
+}
+
+void Soldier::SQFunctionProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+	
+	// Compile the function into display list
+	obj.assign(v, -1);
+
+	sq_poptop(v);
+}
+
 
 void Soldier::init(){
 	static bool initialized = false;
@@ -1195,6 +1229,20 @@ void Soldier::clientUpdate(double dt){
 	anim(dt);
 }
 
+void Soldier::beginControl(){
+	static bool initialized = false;
+	if(!game->isServer() && !initialized){
+		sq_init(_SC("models/Soldier.nut"),
+			SQFunctionProcess(beginControlCallback, "beginControl") <<=
+			SQFunctionProcess(endControlCallback, "endControl")
+			);
+		initialized = true;
+	}
+
+	if(beginControlCallback.getVM() == game->sqvm)
+		beginControlCallback.call();
+}
+
 void Soldier::control(const input_t *inputs, double dt){
 	const double speed = .001 / 2.;
 	st::control(inputs, dt);
@@ -1227,6 +1275,11 @@ void Soldier::control(const input_t *inputs, double dt){
 			hooked = false;
 		}
 	}
+}
+
+void Soldier::endControl(){
+	if(endControlCallback.getVM() == game->sqvm)
+		endControlCallback.call();
 }
 
 // find the nearest enemy
@@ -1278,7 +1331,11 @@ bool Soldier::command(EntityCommand *com){
 		swapWeapon();
 		return true;
 	}
-	if(GetGunPosCommand *ggp = InterpretCommand<GetGunPosCommand>(com)){
+	else if(InterpretCommand<ReloadWeaponCommand>(com)){
+		reload();
+		return true;
+	}
+	else if(GetGunPosCommand *ggp = InterpretCommand<GetGunPosCommand>(com)){
 		return getGunPos(*ggp);
 	}
 	else

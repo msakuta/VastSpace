@@ -119,40 +119,6 @@ protected:
 	static double muzzleFlashRadius[2];
 	static Vec3d muzzleFlashOffset[2];
 
-	class SQFunctionProcess;
-	class SQFunction{
-		HSQUIRRELVM vm;
-		HSQOBJECT obj;
-	public:
-		SQFunction() : vm(NULL){sq_resetobject(&obj);}
-		SQFunction(HSQUIRRELVM vm, SQInteger idx = -1){
-			sq_resetobject(&obj);
-			assign(vm, idx);
-		}
-		~SQFunction(){sq_release(vm, &obj);}
-		void assign(HSQUIRRELVM vm, SQInteger idx = -1);
-		void call();
-		HSQUIRRELVM getVM()const{return vm;}
-		HSQOBJECT getObj()const{return obj;}
-		friend class SQFunctionProcess;
-	};
-
-	static SQFunction beginControlCallback;
-	static SQFunction endControlCallback;
-
-	class SQFunctionProcess : public SqInitProcess{
-	public:
-		SQFunction &obj;
-		const SQChar *name;
-		SQFunctionProcess(SQFunction &obj, const SQChar *name) : obj(obj), name(name){}
-		virtual void process(HSQUIRRELVM v)const;
-	};
-
-	class NullProcess : public SqInitProcess{
-	public:
-		virtual void process(HSQUIRRELVM)const{}
-	};
-
 };
 
 

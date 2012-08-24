@@ -67,8 +67,6 @@ Autonomous::ManeuverParams Soldier::maneuverParams = {
 GLuint Soldier::overlayDisp = 0;
 double Soldier::muzzleFlashRadius[2] = {.0004, .00025};
 Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.00110, 0.00020, 0.0)};
-Soldier::SQFunction Soldier::beginControlCallback;
-Soldier::SQFunction Soldier::endControlCallback;
 
 
 HardPointList soldierHP;
@@ -197,15 +195,6 @@ void M16::draw(WarDraw *){}
 void M40::draw(WarDraw *){}
 #endif
 
-/*static const struct hardpoint_static infantry_hardpoints[2] = {
-	{{-.00015, .001, -.0005}, {0,0,0,1}, "Right Hand", 0, F(armc_none) | F(armc_infarm)},
-	{{-.000, .001, .0005}, {0,0,0,1}, "Back", 0, F(armc_none) | F(armc_infarm)},
-};
-
-static arms_t infantry_arms[numof(infantry_hardpoints)] = {
-	{arms_m16rifle, 20},
-	{arms_shotgun, 8},
-};*/
 
 int infantry_random_weapons = 0;
 
@@ -217,35 +206,6 @@ Soldier::Soldier(Game *g) : st(g){
 Soldier::Soldier(WarField *w) : st(w){
 	init();
 }
-
-void Soldier::SQFunction::assign(HSQUIRRELVM vm, SQInteger idx){
-	this->vm = vm;
-	SQRESULT res = sq_getstackobj(vm, idx, &obj);
-
-	if(SQ_FAILED(res))
-		throw SQFError(_SC("sq_getstackobj returns error"));
-
-	sq_addref(vm, &obj);
-}
-
-void Soldier::SQFunction::call(){
-	HSQUIRRELVM v = vm;
-	sq_pushobject(v, obj);
-	sq_push(v, 1);
-	sq_call(v, 1, SQFalse, SQTrue);
-}
-
-void Soldier::SQFunctionProcess::process(HSQUIRRELVM v)const{
-	sq_pushstring(v, name, -1); // root string
-	if(SQ_FAILED(sq_get(v, -2))) // root obj
-		throw SQFError(gltestp::dstring(name) << _SC(" not found"));
-	
-	// Compile the function into display list
-	obj.assign(v, -1);
-
-	sq_poptop(v);
-}
-
 
 void Soldier::init(){
 	// There could be the case the Game is both a server and a client.

@@ -118,8 +118,14 @@ protected:
 		friend class Autonomous;
 	};
 
+	/// \brief Processes nothing.
+	class NullProcess : public SqInitProcess{
+	public:
+		virtual void process(HSQUIRRELVM)const{}
+	};
+
 	/// \brief Initializes various settings of Autonomous-derived class by Squirrel script.
-	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs);
+	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs = NullProcess());
 
 	class EXPORT SingleDoubleProcess : public SqInitProcess{
 	public:

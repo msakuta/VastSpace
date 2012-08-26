@@ -260,12 +260,12 @@ function initUI(){
 	but.addButton(GLWsqStateButton("textures/control2.png", "textures/control.png",
 		function(){
 			local tm = TimeMeas();
-			local ret = player.controlled != null;
+			local ret = player.isControlling();
 			controlStats.put(tm.lap());
 			print("player.controlled time " + tm.lap() + ", avg:" + controlStats.avg + ", dev:" + controlStats.getDev());
 			return ret;
 		}
-		, control, tlate("Toggle Pause")));
+		, control, tlate("Control")));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(5, 1);

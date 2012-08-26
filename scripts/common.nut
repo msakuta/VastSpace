@@ -110,10 +110,13 @@ class Player{
 	void setrot(Quatd);
 	void setmover(string movertype);
 	string getmover();
+	bool isControlling(); // Returns controlled != null with minimal overhead.
 	Entity chase;
+	Entity controlled; // Controlled Entity, assigning makes the Player to begin controlling.
 	int chasecamera;
 	float viewdist;
 	CoordSys cs;
+	int playerId; // readonly
 }
 
 ::player <- Player();

@@ -752,7 +752,6 @@ void Player::cmdInit(ClientApplication &application){
 	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
-//	CmdAddParam("control", cmd_control, static_cast<Game*>(application.clientGame));
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
@@ -841,24 +840,6 @@ void CMControl::send(Entity *e){
 	std::string str = ss.str();
 	s.st::send(application, str.c_str(), str.size());
 }
-
-#ifndef DEDICATED
-/*
-int Player::cmd_control(int argc, char *argv[], void *pv){
-	Game *game = (Game*)pv;
-	if(!game->player)
-		return 0;
-	Player &pl = *game->player;
-	if(pl.controlled){
-		pl.endControl();
-	}
-	else if(!pl.selected.empty()){
-		Entity *e = *pl.selected.begin();
-		pl.beginControl(e);
-	}
-	return 0;
-}*/
-#endif
 
 /// \brief Begins controlling an Entity, sending a message to synchronize the server.
 void Player::beginControl(Entity *e){
@@ -1007,6 +988,11 @@ SQInteger Player::sqf_tostring(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_isControlling(HSQUIRRELVM v){
+	Player *p = Player::sq_refobj(v);
+	sq_pushbool(v, p->controlled);
+	return 1;
+}
 
 void Player::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("Player"), -1);
@@ -1022,6 +1008,7 @@ void Player::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("getmover"), Player::sqf_getmover);
 	register_closure(v, _SC("setmover"), Player::sqf_setmover);
 	register_closure(v, _SC("select"), sqf_select);
+	register_closure(v, _SC("isControlling"), sqf_isControlling);
 	register_closure(v, _SC("_get"), &Player::sqf_get);
 	register_closure(v, _SC("_set"), &Player::sqf_set);
 	register_closure(v, _SC("_tostring"), sqf_tostring);
@@ -1258,12 +1245,10 @@ public:
 		CmdPrint(gltestp::dstring() << "state " << tim << ", avg:" << sta.getAvg() << ", dev:" << sta.getDev());
 		return ret;
 	}
-	/// Issues "control" console command.
+	/// Invokes "control" console command.
 	virtual void press(){
 		if(game && game->player && !game->player->selected.empty()){
 			game->player->beginControl(*game->player->selected.begin());
-//			char *str[1] = {"control"};
-//			Player::cmd_control(1, str, static_cast<Game*>(game));
 		}
 	}
 };

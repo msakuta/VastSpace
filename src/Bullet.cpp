@@ -309,7 +309,7 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 					// Add spark sprite
 					{
 						double angle = w->rs.nextd() * 2. * M_PI / 2.;
-						AddTelineCallback3D(ws->tell, pos, pt->velo, .0010 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+						AddTelineCallback3D(ws->tell, pos, pt->velo, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
 							vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
 					}
 

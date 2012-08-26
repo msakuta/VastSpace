@@ -5,6 +5,7 @@
 #include "Viewer.h"
 #include "Player.h"
 #include "Game.h"
+#include "Bullet.h"
 #include "draw/WarDraw.h"
 #include "draw/material.h"
 #include "draw/OpenGLState.h"
@@ -392,54 +393,39 @@ void Soldier::drawtra(WarDraw *wd){
 }
 #endif
 
-#if 0
-static void infantry_postframe(entity_t *pt){
-	if(pt->enemy && !pt->enemy->active)
-		pt->enemy = NULL;
-}
+const double bloodSmokeLife = 1.;
 
 static void bloodsmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	double pixels;
-	double (*cuts)[2];
-	double rad;
-	amat4_t mat;
-	avec3_t velo;
-	struct random_sequence rs;
-	int i;
-	GLubyte col[4] = {255,0,0,255}, colp[4] = {255,0,0,255}, cold[4] = {255,0,0,0};
-
-	if(glcullFrustum(&pl->pos, .0003, dd->pgc))
+	if(dd->pgc->cullFrustum(pl->pos, pl->len))
 		return;
-	pixels = .0002 * fabs(glcullScale(&pl->pos, dd->pgc));
-
+	double pixels = .0002 * fabs(dd->pgc->scale(pl->pos));
 	if(pixels < 1)
 		return;
 
-	col[3] = 128 * pl->life / .5;
-	colp[3] = 255 * pl->life / .5 * (1. - 1. / (pixels - 2.));
-	BlendLight(col);
-	BlendLight(colp);
-	BlendLight(cold);
+	GLubyte col[4] = {255,0,0,255}, colp[4] = {255,0,0,255}, cold[4] = {255,0,0,0};
+	col[3] = 128 * pl->life / bloodSmokeLife;
+	colp[3] = 255 * pl->life / bloodSmokeLife * (1. - 1. / (pixels - 2.));
+//	BlendLight(col);
+//	BlendLight(colp);
+//	BlendLight(cold);
 
-	cuts = CircleCuts(10);
-	init_rseq(&rs, (int)pl);
+	double (*cuts)[2] = CircleCuts(10);
+	RandomSequence rs((int)pl);
 	glPushMatrix();
-	glTranslated(pl->pos[0], pl->pos[1], pl->pos[2]);
+	gldTranslate3dv(pl->pos);
 	glMultMatrixd(dd->invrot);
-	rad = (pl->len - .0005 * pl->life * pl->life);
-	glScaled(rad, rad, rad);
+	double rad = (pl->len - .0005 * pl->life * pl->life);
+	gldScaled(rad);
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4ubv(col);
 	glVertex3d(0., 0., 0.);
 	glColor4ubv(cold);
 	{
-		double first;
-		first = drseq(&rs) + .5;
+		double first = rs.nextd() + .5;
 		glVertex3d(first * cuts[0][1], first * cuts[0][0], 0.);
-		for(i = 1; i < 10; i++){
+		for(int i = 1; i < 10; i++){
 			int k = i % 10;
-			double r;
-			r = drseq(&rs) + .5;
+			double r = rs.nextd() + .5;
 			glVertex3d(r * cuts[k][1], r * cuts[k][0], 0.);
 		}
 		glVertex3d(first * cuts[0][1], first * cuts[0][0], 0.);
@@ -451,25 +437,22 @@ static void bloodsmoke(const struct tent3d_line_callback *pl, const struct tent3
 		return;
 
 	glPushMatrix();
-	glTranslated(pl->pos[0], pl->pos[1], pl->pos[2]);
+	gldTranslate3dv(pl->pos);
+	Mat4d mat;
 	glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 
 	glBegin(GL_LINES);
-	for(i = 0; i < 8; i++){
-		avec3_t v0, v1, v2;
-		VECCPY(velo, pl->velo);
-		velo[0] = (drseq(&rs) - .5) * .0015;
-		velo[1] = (drseq(&rs) - .5) * .0015;
-		velo[2] = (drseq(&rs) - .5) * .0015;
-		v0[0] = (drseq(&rs) - .5) * .00005;
-		v0[1] = (drseq(&rs) - .5) * .00005;
-		v0[2] = (drseq(&rs) - .5) * .00005;
-		VECCPY(v1, v0);
-		VECSADD(v1, velo, .5 - pl->life);
-		VECCPY(v2, v1);
-		VECADDIN(velo, pl->velo);
-		VECSADD(v1, velo, .03);
-		VECSADD(v2, velo, -.03);
+	for(int i = 0; i < 8; i++){
+		Vec3d velo;
+		for(int j = 0; j < 3; j++)
+			velo[j] = (rs.nextd() - .5) * .0015;
+		Vec3d v0;
+		for(int j = 0; j < 3; j++)
+			v0[j] = (rs.nextd() - .5) * .0015;
+		Vec3d v1 = v0 + velo * (bloodSmokeLife - pl->life);
+		velo += pl->velo;
+		Vec3d v2 = v1 + velo * -.03;
+		v1 += velo * .03;
 		glColor4ubv(col);
 		glVertex3dv(v1);
 		glColor4ubv(cold);
@@ -478,7 +461,16 @@ static void bloodsmoke(const struct tent3d_line_callback *pl, const struct tent3
 	glEnd();
 	glPopMatrix();
 }
-#endif
+
+void Soldier::bullethit(const Bullet *pb){
+	if(w->getTeline3d()){
+		Vec3d pos = pb->pos;
+		Vec3d velo = pb->velo.norm() * 0.005 + this->velo;
+		for(int i = 0; i < 3; i++)
+			pos[i] += (drseq(&w->rs) - .5) * .0005;
+		AddTelineCallback3D(w->getTeline3d(), pos, velo, .0010, quat_u, vec3_000, w->accel(pos, velo), bloodsmoke, NULL, 0, 1.);
+	}
+}
 
 void Soldier::drawHUD(WarDraw *wd){
 	char buf[128];

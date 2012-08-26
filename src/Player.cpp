@@ -18,7 +18,6 @@
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
-#include <clib/stats.h>
 }
 #include <sstream>
 

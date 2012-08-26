@@ -60,6 +60,7 @@ public:
 	virtual double maxhealth()const;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
+	virtual void bullethit(const Bullet *);
 	virtual Props props()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int);

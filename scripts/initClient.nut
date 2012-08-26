@@ -154,9 +154,7 @@ register_console_command("chart", function(...){
 });
 
 function control(...){
-	local controlling = player.controlled != null;
-	print("player is controlling? " + controlling);
-	if(controlling)
+	if(player.isControlling())
 		player.controlled = null;
 	else if(player.selected.len() != 0)
 		player.controlled = player.selected[0];
@@ -258,14 +256,7 @@ function initUI(){
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
 //	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
 	but.addButton(GLWsqStateButton("textures/control2.png", "textures/control.png",
-		function(){
-			local tm = TimeMeas();
-			local ret = player.isControlling();
-			controlStats.put(tm.lap());
-			print("player.controlled time " + tm.lap() + ", avg:" + controlStats.avg + ", dev:" + controlStats.getDev());
-			return ret;
-		}
-		, control, tlate("Control")));
+		@() player.isControlling(), control, tlate("Control")));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(5, 1);

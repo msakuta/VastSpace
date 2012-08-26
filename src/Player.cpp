@@ -1229,39 +1229,6 @@ SQInteger Player::sqf_getmover(HSQUIRRELVM v){
 }
 
 #ifdef _WIN32
-/// A 2-state button that represents whether the player is controlling something.
-/// \sa Player::newControlButton
-class GLWcontrolButton : public GLWstateButton{
-public:
-	typedef GLWstateButton st;
-	GLWcontrolButton(Game *game, const char *filename, const char *filename2, const char *tips = NULL) : st(game, filename, filename2, tips){}
-	virtual bool state()const{
-		static CStatistician sta;
-		timemeas_t tm;
-		TimeMeasStart(&tm);
-		volatile bool ret = game && game->player ? !!game->player->controlled : false;
-		double tim = TimeMeasLap(&tm);
-		sta.put(tim);
-		CmdPrint(gltestp::dstring() << "state " << tim << ", avg:" << sta.getAvg() << ", dev:" << sta.getDev());
-		return ret;
-	}
-	/// Invokes "control" console command.
-	virtual void press(){
-		if(game && game->player && !game->player->selected.empty()){
-			game->player->beginControl(*game->player->selected.begin());
-		}
-	}
-};
-
-/// \param game The Game object that is bound to the newly created button.
-/// \param filename File name of button image when being active
-/// \param filename2 File name of button image when being inactive
-/// \param tips Displayed when mouse cursor is floating over.
-GLWstateButton *Player::newControlButton(Game *game, const char *filename, const char *filename2, const char *tips){
-	return new GLWcontrolButton(game, filename, filename2, tips);
-//	return NULL;
-};
-
 /// \param game The Game object that is bound to the newly created button.
 /// \param filename File name of button image when being active
 /// \param filename2 File name of button image when being inactive

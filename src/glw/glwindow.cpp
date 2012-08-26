@@ -1567,24 +1567,6 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 	return 1;
 }
 
-static SQInteger sqf_GLWbuttonMatrix_addControlButton(HSQUIRRELVM v){
-	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
-	const SQChar *path, *path1, *tips;
-	if(SQ_FAILED(sq_getstring(v, 2, &path)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
-		return SQ_ERROR;
-	if(SQ_FAILED(sq_getstring(v, 4, &tips)))
-		tips = NULL;
-	GLWstateButton *b = Player::newControlButton(p->getGame(), path, path1, tips);
-	if(!p->addButton(b)){
-		delete b;
-		return sq_throwerror(v, _SC("Could not add button"));
-	}
-	b->sq_pushobj(v, b);
-	return 1;
-}
-
 class GLWsqStateButton : public GLWstateButton{
 public:
 	HSQOBJECT hstatefunc;
@@ -1699,7 +1681,6 @@ static bool GLWbuttonMatrix_sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
 	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
 	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
-	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);
 	sq_createslot(v, -3);
 	return true;
 }

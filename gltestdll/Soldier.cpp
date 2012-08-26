@@ -53,6 +53,7 @@ HitBoxList Soldier::hitboxes;
 double Soldier::modelScale = 2e-6;
 double Soldier::hitRadius = 0.002;
 double Soldier::defaultMass = 60; // kilograms
+double Soldier::maxHealthValue = 10.;
 double Soldier::hookSpeed = 0.2;
 double Soldier::hookRange = 0.2;
 double Soldier::hookPullAccel = 0.05;
@@ -169,7 +170,7 @@ double Soldier::getHitRadius()const{
 }
 
 double Soldier::maxhealth()const{
-	return 5.;
+	return maxHealthValue;
 }
 
 bool Soldier::isTargettable()const{
@@ -226,11 +227,12 @@ void Soldier::init(){
 	if(game->isClient()){
 		static bool initialized = false;
 		if(!initialized){
-			sq_init(_SC("models/Soldier.nut"), 
+			sq_init(_SC("models/Soldier.nut"),
 				HitboxProcess(hitboxes) <<=
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
+				SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 				SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
 				SingleDoubleProcess(hookRange, "hookRange", false) <<=
 				SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=
@@ -256,6 +258,7 @@ void Soldier::init(){
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
+				SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 				SingleDoubleProcess(hookSpeed, "hookSpeed", false) <<=
 				SingleDoubleProcess(hookRange, "hookRange", false) <<=
 				SingleDoubleProcess(hookPullAccel, "hookPullAccel", false) <<=

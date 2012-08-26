@@ -114,6 +114,7 @@ protected:
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;
+	static double maxHealthValue;
 	static double hookSpeed;
 	static double hookRange;
 	static double hookPullAccel;

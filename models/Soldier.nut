@@ -9,6 +9,8 @@ hitRadius <- 0.001;
 
 mass <- 60;
 
+maxhealth <- 10.;
+
 accel <- 0.005;
 maxspeed <- 0.005;
 angleaccel <- PI * 0.1;

@@ -1245,7 +1245,7 @@ public:
 	virtual void press(){
 		if(game && game->player){
 			char *str[1] = {"control"};
-			Player::cmd_control(1, str, game->player);
+			Player::cmd_control(1, str, static_cast<Game*>(game));
 		}
 	}
 };

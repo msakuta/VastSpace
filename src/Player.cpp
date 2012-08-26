@@ -422,7 +422,7 @@ void Player::unserialize(UnserializeContext &sc){
 	Entity *controlled;
 	sc.i >> controlled;
 	if(controlled != this->controlled)
-		beginControl(controlled);
+		beginControlInt(controlled);
 
 	sc.i >> selectedSize;
 	for(int i = 0; i++; i < selectedSize){
@@ -751,7 +751,7 @@ void Player::cmdInit(ClientApplication &application){
 	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
-	CmdAddParam("control", cmd_control, &pl);
+	CmdAddParam("control", cmd_control, static_cast<Game*>(application.clientGame));
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
@@ -843,9 +843,10 @@ void CMControl::send(Entity *e){
 
 #ifdef _WIN32
 int Player::cmd_control(int argc, char *argv[], void *pv){
-	// TODO: Passing Player as static user pointer is not safe, because the player can be
-	// absent.
-	Player &pl = *(Player*)pv;
+	Game *game = (Game*)pv;
+	if(!game->player)
+		return 0;
+	Player &pl = *game->player;
 	if(pl.controlled){
 		pl.endControl();
 	}
@@ -858,8 +859,16 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 }
 #endif
 
+/// \brief Begins controlling an Entity, sending a message to synchronize the server.
 void Player::beginControl(Entity *e){
-	endControl();
+	beginControlInt(e);
+	if(!game->isServer())
+		CMControl::s.send(e);
+}
+
+/// \brief Internal implementation of beginControl().
+void Player::beginControlInt(Entity *e){
+	endControlInt();
 	if(!e)
 		return;
 	controlled = e;
@@ -868,10 +877,11 @@ void Player::beginControl(Entity *e){
 	chase = e;
 	e->controller = this;
 	e->beginControl();
-	if(!game->isServer())
-		CMControl::s.send(e);
 }
 
+/// \brief Inputs various keys and analog values to optionally controlled Entity every frame.
+/// \param inputs Input values structure
+/// \param dt Delta-time
 void Player::inputControl(const input_t &inputs, double dt){
 	if(static_cast<Entity*>(controlled) == chase){
 		chase->control(&inputs, dt);
@@ -879,15 +889,21 @@ void Player::inputControl(const input_t &inputs, double dt){
 	}
 }
 
+/// \brief Ends controlling an Entity, sending a message to synchronize the server.
 void Player::endControl(){
+	endControlInt();
+	if(!game->isServer())
+		CMControl::s.send(NULL);
+}
+
+/// \brief Internal implementation of endControl().
+void Player::endControlInt(){
 	if(controlled)
 		controlled->endControl();
 	if(controlled && static_cast<EntityController*>(controlled->controller) == this)
 		controlled->controller = NULL;
 	controlled = NULL;
 	mover = nextmover = freelook;
-	if(!game->isServer())
-		CMControl::s.send(NULL);
 }
 
 
@@ -1142,7 +1158,13 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			Entity *o = Entity::sq_refobj(v, 3);
 			if(!o)
 				return SQ_ERROR;
-			p->beginControl(o);
+			p->beginControlInt(o);
+
+			// Notify the server that the client made the player to control something.
+			// Do not try to modify other players, that's beyond a client's privileges.
+			Game *game = (Game*)sq_getforeignptr(v);
+			if(!game->isServer() && p == game->player)
+				CMControl::s.send(o);
 			return 0;
 		}
 		else if(!strcmp(wcs, _SC("viewdist"))){

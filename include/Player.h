@@ -205,6 +205,8 @@ public:
 	static Player *sq_refobj(HSQUIRRELVM v, SQInteger idx = 1);
 
 protected:
+	void beginControlInt(Entity *e);
+	void endControlInt();
 	std::vector<teleport> tplist;
 private:
 	static SQInteger sqf_players(HSQUIRRELVM v);

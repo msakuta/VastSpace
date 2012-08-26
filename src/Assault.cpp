@@ -35,7 +35,7 @@ Warpable::ManeuverParams Assault::mn = {
 };
 std::vector<hardpoint_static*> Assault::hardpoints;
 GLuint Assault::disp = 0;
-std::vector<hitbox> Assault::hitboxes;
+HitBoxList Assault::hitboxes;
 std::vector<Warpable::Navlight> Assault::navlights;
 
 

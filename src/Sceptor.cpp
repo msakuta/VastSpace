@@ -68,7 +68,7 @@ Entity::Dockable *Sceptor::toDockable(){return this;}
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
-struct std::vector<hitbox> Sceptor::hitboxes;
+HitBoxList Sceptor::hitboxes;
 double Sceptor::modelScale = 1./10000;
 double Sceptor::defaultMass = 4e3;
 GLuint Sceptor::overlayDisp = 0;

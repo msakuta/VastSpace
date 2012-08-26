@@ -5,6 +5,7 @@
 #define AUTONOMOUS_H
 
 #include "Entity.h"
+#include "judge.h"
 #ifndef DEDICATED
 #ifdef _WIN32
 #include <windows.h>
@@ -16,6 +17,8 @@ typedef unsigned int GLuint;
 
 
 struct hitbox;
+class EXPORT HitBoxList : public std::vector<hitbox>{
+};
 struct hardpoint_static;
 
 /* List of spaceship tasks that all types of ship share. */
@@ -166,8 +169,8 @@ protected:
 
 	class EXPORT HitboxProcess : public SqInitProcess{
 	public:
-		std::vector<hitbox> &hitboxes;
-		HitboxProcess(std::vector<hitbox> &hitboxes) : hitboxes(hitboxes){}
+		HitBoxList &hitboxes;
+		HitboxProcess(HitBoxList &hitboxes) : hitboxes(hitboxes){}
 		virtual void process(HSQUIRRELVM)const;
 	};
 

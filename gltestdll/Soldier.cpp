@@ -49,7 +49,7 @@ Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
 const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
 
-std::vector<hitbox> Soldier::hitboxes;
+HitBoxList Soldier::hitboxes;
 double Soldier::modelScale = 2e-6;
 double Soldier::hitRadius = 0.002;
 double Soldier::defaultMass = 60; // kilograms

@@ -77,7 +77,7 @@ protected:
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
 
 	static GLuint disp;

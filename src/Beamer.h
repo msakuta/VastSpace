@@ -46,7 +46,7 @@ protected:
 	static double modelScale;
 	static double defaultMass;
 	static ManeuverParams mn;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
 	std::vector<hitbox> *getTraceHitBoxes()const;
 };

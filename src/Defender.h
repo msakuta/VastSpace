@@ -29,7 +29,7 @@ public:
 protected:
 	static double modelScale;
 	static double defaultMass;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static Vec3d gunPos;
 	static ManeuverParams maneuverParams;

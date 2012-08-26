@@ -298,7 +298,7 @@ const Shipyard::ManeuverParams Shipyard::mymn = {
 
 const Warpable::ManeuverParams &Shipyard::getManeuve()const{return mymn;}
 
-std::vector<hitbox> Shipyard::hitboxes;
+HitBoxList Shipyard::hitboxes;
 GLuint Shipyard::disp = 0;
 std::vector<Shipyard::Navlight> Shipyard::navlights;
 

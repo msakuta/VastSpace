@@ -17,7 +17,7 @@ struct hitbox{
 	Vec3d org;
 	Quatd rot;
 	Vec3d sc;
-	hitbox(Vec3d aorg, Quatd arot, Vec3d asc) : org(aorg), rot(arot), sc(asc){}
+	hitbox(Vec3d aorg = Vec3d(0,0,0), Quatd arot = Quatd(0,0,0,1), Vec3d asc = Vec3d(0,0,0)) : org(aorg), rot(arot), sc(asc){}
 };
 
 EXPORT extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);

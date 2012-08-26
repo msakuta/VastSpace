@@ -19,7 +19,7 @@ protected:
 	static double defaultMass;
 	static ManeuverParams maneuverParams;
 	static std::vector<hardpoint_static*> hardpoints;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static std::vector<Navlight> navlights;
 public:

@@ -109,7 +109,7 @@ protected:
 	bool hooked;
 	bool hookretract;
 
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;

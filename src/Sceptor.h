@@ -16,7 +16,7 @@ public:
 protected:
 	static double modelScale;
 	static double defaultMass;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 
 	enum Task{

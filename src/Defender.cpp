@@ -45,7 +45,7 @@ extern "C"{
 
 
 const float Defender::rotateTime = 2.f;
-struct std::vector<hitbox> Defender::hitboxes;
+HitBoxList Defender::hitboxes;
 double Defender::modelScale = 1./10000;
 double Defender::defaultMass = 4e3;
 GLuint Defender::overlayDisp = 0;

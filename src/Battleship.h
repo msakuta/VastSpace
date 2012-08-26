@@ -8,7 +8,7 @@ protected:
 	float engineHeat;
 	ArmBase **turrets;
 	static std::vector<hardpoint_static*> hardpoints;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static double modelScale;
 	static GLuint disp;
 	static std::vector<Navlight> navlights;

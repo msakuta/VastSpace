@@ -18,7 +18,7 @@ const char *Battleship::dispname()const{return "Battleship";}
 
 double Battleship::modelScale = .001;
 std::vector<hardpoint_static*> Battleship::hardpoints;
-std::vector<hitbox> Battleship::hitboxes;
+HitBoxList Battleship::hitboxes;
 GLuint Battleship::disp = 0;
 std::vector<Warpable::Navlight> Battleship::navlights;
 

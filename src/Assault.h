@@ -57,7 +57,7 @@ protected:
 	static ManeuverParams mn;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;
-	static std::vector<hitbox> hitboxes;
+	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
 };
 

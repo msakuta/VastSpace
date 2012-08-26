@@ -44,7 +44,7 @@ Warpable::ManeuverParams Beamer::mn = {
 	100., /* double capacitor_gen; [MW] */
 };
 GLuint Beamer::disp = 0;
-std::vector<hitbox> Beamer::hitboxes;
+HitBoxList Beamer::hitboxes;
 std::vector<Warpable::Navlight> Beamer::navlights;
 
 

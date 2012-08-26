@@ -30,7 +30,7 @@ Warpable::ManeuverParams Attacker::maneuverParams = {
 	300., /* double capacitor_gen; [MW] */
 };
 std::vector<hardpoint_static*> Attacker::hardpoints;
-std::vector<hitbox> Attacker::hitboxes;
+HitBoxList Attacker::hitboxes;
 GLuint Attacker::overlayDisp = 0;
 std::vector<Warpable::Navlight> Attacker::navlights;
 

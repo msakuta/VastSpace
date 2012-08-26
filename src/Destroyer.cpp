@@ -27,7 +27,7 @@ Warpable::ManeuverParams Destroyer::maneuverParams = {
 	300., /* double capacitor_gen; [MW] */
 };
 std::vector<hardpoint_static*> Destroyer::hardpoints;
-std::vector<hitbox> Destroyer::hitboxes;
+HitBoxList Destroyer::hitboxes;
 GLuint Destroyer::disp = 0;
 std::vector<Warpable::Navlight> Destroyer::navlights;
 

@@ -44,6 +44,7 @@ public:
 
 	Soldier(Game *);
 	Soldier(WarField *);
+	~Soldier();
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void setPosition(const Vec3d *, const Quatd *, const Vec3d *, const Vec3d *);
@@ -64,6 +65,7 @@ public:
 	virtual ArmBase *armsGet(int);
 	virtual bool command(EntityCommand *com);
 	virtual const ManeuverParams &getManeuve()const;
+	virtual std::vector<hitbox> *getTraceHitBoxes()const{return &hitboxes;}
 
 	static double getModelScale(){return modelScale;}
 
@@ -107,6 +109,7 @@ protected:
 	bool hooked;
 	bool hookretract;
 
+	static std::vector<hitbox> hitboxes;
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;

@@ -19,8 +19,8 @@ if(1){
 	assault.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
 	local beamer = player.cs.addent("Beamer", Vec3d(2.0, -0.30, 0.50));
 	beamer.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
-	local e1 = player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5));
-	e1.race = 0;
+//	soldier <- player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5));
+//	soldier.race = 0;
 //	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));
 //	e2.race = 1;
 	local e = redbase;
@@ -111,6 +111,13 @@ function frameproc(dt){
 		for(; i < pls.len(); i++){
 			local pl = pls[i];
 			pl.cs = targetcs;
+
+			// Force the players to control a Soldier.
+			if(pl.controlled == null){
+				local soldier = player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5 + i));
+				soldier.race = 0;
+				pl.controlled = soldier;
+			}
 
 //			if(pl.chase == null){
 //				foreach(e in cs.entlist){

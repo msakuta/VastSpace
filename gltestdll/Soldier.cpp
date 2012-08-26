@@ -49,6 +49,7 @@ Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
 const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
 
+std::vector<hitbox> Soldier::hitboxes;
 double Soldier::modelScale = 2e-6;
 double Soldier::hitRadius = 0.002;
 double Soldier::defaultMass = 60; // kilograms
@@ -207,6 +208,17 @@ Soldier::Soldier(WarField *w) : st(w){
 	init();
 }
 
+Soldier::~Soldier(){
+	if(game->isServer()){
+		// This Entity "owns" the equipments, so delete them along with.
+		// The equipments could be left alive for being picked up by other Soldiers, but we need to
+		// implement them to survive without an owner.
+		for(int i = 0; i < numof(arms); i++){
+			delete arms[i];
+		}
+	}
+}
+
 void Soldier::init(){
 	// There could be the case the Game is both a server and a client.
 	// In that case, we want to run both initializers.
@@ -214,6 +226,7 @@ void Soldier::init(){
 		static bool initialized = false;
 		if(!initialized){
 			sq_init(_SC("models/Soldier.nut"), 
+				HitboxProcess(hitboxes) <<=
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
@@ -238,6 +251,7 @@ void Soldier::init(){
 		static bool initialized = false;
 		if(!initialized){
 			sq_init(_SC("models/Soldier.nut"),
+				HitboxProcess(hitboxes) <<=
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
@@ -276,6 +290,7 @@ void Soldier::init(){
 		hooked = false;
 		hookretract = false;
 	}
+	walkphase = 0.;
 /*	if(infantry_random_weapons){
 		int i, n = 0, k;
 		for(i = 0; i < num_armstype; i++) if(arms_static[i].cls == armc_infarm)
@@ -563,7 +578,7 @@ void Soldier::anim(double dt){
 		CvarAdd("g_recoil_kick_factor", &g_recoil_kick_factor, cvar_double);
 	}
 
-	if(game->isServer() && health <= 0. && 120. < walkphase){
+	if(game->isServer() && health <= 0. /*&& 120. < walkphase*/){
 		delete this;
 		return;
 	}

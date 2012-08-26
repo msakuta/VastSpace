@@ -1,4 +1,8 @@
 
+hitbox <- [
+	[Vec3d(0., 0., 0.), Quatd(0,0,0,1), Vec3d(0.0003, 0.0008, 0.0003)],
+]
+
 modelScale <- 2.e-6;
 
 hitRadius <- 0.001;

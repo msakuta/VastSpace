@@ -27,7 +27,7 @@ struct CMMover : ClientMessage{
 	typedef ClientMessage st;
 	static CMMover s;
 	void interpret(ServerClient &sc, UnserializeStream &uss);
-	enum Type{NoMover, Freelook, Chase, Tactical};
+	enum Type{NoMover, Freelook, CockpitView, Tactical};
 	static void send(Type);
 private:
 	CMMover() : st("Mover"){}
@@ -387,6 +387,7 @@ void Player::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
 	sc.o << playerId;
 	sc.o << chase;
+	sc.o << controlled;
 	sc.o << (unsigned)selected.size();
 	for(SelectSet::iterator it = selected.begin(); it != selected.end(); it++)
 		sc.o << *it;
@@ -402,8 +403,8 @@ void Player::serialize(SerializeContext &sc){
 	for(int i = 0; i < tplist.size(); i++)
 		tplist[i].serialize(sc);
 	sc.o << cpos;
-	sc.o << (mover == NULL ? CMMover::NoMover : mover == freelook ? CMMover::Freelook : CMMover::Tactical);
-	sc.o << (nextmover == NULL ? CMMover::NoMover : nextmover == freelook ? CMMover::Freelook : CMMover::Tactical);
+	sc.o << (mover == NULL ? CMMover::NoMover : mover == freelook ? CMMover::Freelook : mover == tactical ? CMMover::Tactical : CMMover::CockpitView);
+	sc.o << (nextmover == NULL ? CMMover::NoMover : nextmover == freelook ? CMMover::Freelook : mover == tactical ? CMMover::Tactical : CMMover::CockpitView);
 	sc.o << blendmover;
 	freelook->serialize(sc);
 	tactical->serialize(sc);
@@ -416,6 +417,13 @@ void Player::unserialize(UnserializeContext &sc){
 
 	sc.i >> playerId;
 	sc.i >> chase;
+
+	// Invoke beginControl() to run event handlers.
+	Entity *controlled;
+	sc.i >> controlled;
+	if(controlled != this->controlled)
+		beginControl(controlled);
+
 	sc.i >> selectedSize;
 	for(int i = 0; i++; i < selectedSize){
 		Entity *e;
@@ -444,13 +452,18 @@ void Player::unserialize(UnserializeContext &sc){
 	tplist.resize(ntplist);
 	for(int i = 0; i < ntplist; i++)
 		tplist[i].unserialize(sc);
-	if(application.clientGame && application.clientGame->player != this){
+	
+	// Disabling this if statement (always pass) enables the server to control the client's camera status, which can be thought
+	// as the client's own property. But if we use this conditional statement, we cannot dynamically control cameras of the
+	// clients from a Squirrel script.
+	/*if(application.clientGame && application.clientGame->player != this)*/
+	{
 		sc.i >> cpos;
 		int i;
 		sc.i >> i;
-		mover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : tactical;
+		mover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : i == CMMover::Tactical ? tactical : cockpitview;
 		sc.i >> i;
-		nextmover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : tactical;
+		nextmover = i == CMMover::NoMover ? NULL : i == CMMover::Freelook ? freelook : i == CMMover::Tactical ? tactical : cockpitview;
 		sc.i >> blendmover;
 		freelook->unserialize(sc);
 		tactical->unserialize(sc);
@@ -846,10 +859,9 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 #endif
 
 void Player::beginControl(Entity *e){
-	if(!e){
-		endControl();
+	endControl();
+	if(!e)
 		return;
-	}
 	controlled = e;
 	mover = nextmover = cockpitview;
 	rot = Quatd(0,0,0,1);
@@ -1118,6 +1130,20 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			}
 			else
 				return sq_throwerror(v, _SC("The value set to Player::chasecamera must be an integer"));
+		}
+		else if(!strcmp(wcs, _SC("controlled"))){
+			SQObjectType ot = sq_gettype(v, 3);
+			if(OT_NULL == ot){
+				p->controlled = NULL;
+				return 0;
+			}
+			if(OT_INSTANCE != ot)
+				return SQ_ERROR;
+			Entity *o = Entity::sq_refobj(v, 3);
+			if(!o)
+				return SQ_ERROR;
+			p->beginControl(o);
+			return 0;
 		}
 		else if(!strcmp(wcs, _SC("viewdist"))){
 			if(OT_FLOAT != sq_gettype(v, 3))

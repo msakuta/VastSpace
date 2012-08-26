@@ -18,6 +18,7 @@
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
+#include <clib/stats.h>
 }
 #include <sstream>
 
@@ -751,7 +752,7 @@ void Player::cmdInit(ClientApplication &application){
 	ServerCmdAdd("spos", scmd_spos);
 	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
-	CmdAddParam("control", cmd_control, static_cast<Game*>(application.clientGame));
+//	CmdAddParam("control", cmd_control, static_cast<Game*>(application.clientGame));
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
@@ -841,7 +842,8 @@ void CMControl::send(Entity *e){
 	s.st::send(application, str.c_str(), str.size());
 }
 
-#ifdef _WIN32
+#ifndef DEDICATED
+/*
 int Player::cmd_control(int argc, char *argv[], void *pv){
 	Game *game = (Game*)pv;
 	if(!game->player)
@@ -853,10 +855,9 @@ int Player::cmd_control(int argc, char *argv[], void *pv){
 	else if(!pl.selected.empty()){
 		Entity *e = *pl.selected.begin();
 		pl.beginControl(e);
-		capture_mouse();
 	}
 	return 0;
-}
+}*/
 #endif
 
 /// \brief Begins controlling an Entity, sending a message to synchronize the server.
@@ -877,6 +878,9 @@ void Player::beginControlInt(Entity *e){
 	chase = e;
 	e->controller = this;
 	e->beginControl();
+#ifndef DEDICATED
+	capture_mouse();
+#endif
 }
 
 /// \brief Inputs various keys and analog values to optionally controlled Entity every frame.
@@ -1150,7 +1154,13 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		else if(!strcmp(wcs, _SC("controlled"))){
 			SQObjectType ot = sq_gettype(v, 3);
 			if(OT_NULL == ot){
-				p->controlled = NULL;
+				p->endControlInt();
+
+				// Notify the server that the client made the player to control something.
+				// Do not try to modify other players, that's beyond a client's privileges.
+				Game *game = (Game*)sq_getforeignptr(v);
+				if(!game->isServer() && p == game->player)
+					CMControl::s.send(NULL);
 				return 0;
 			}
 			if(OT_INSTANCE != ot)
@@ -1239,13 +1249,21 @@ public:
 	typedef GLWstateButton st;
 	GLWcontrolButton(Game *game, const char *filename, const char *filename2, const char *tips = NULL) : st(game, filename, filename2, tips){}
 	virtual bool state()const{
-		return game && game->player ? !!game->player->controlled : false;
+		static CStatistician sta;
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+		volatile bool ret = game && game->player ? !!game->player->controlled : false;
+		double tim = TimeMeasLap(&tm);
+		sta.put(tim);
+		CmdPrint(gltestp::dstring() << "state " << tim << ", avg:" << sta.getAvg() << ", dev:" << sta.getDev());
+		return ret;
 	}
 	/// Issues "control" console command.
 	virtual void press(){
-		if(game && game->player){
-			char *str[1] = {"control"};
-			Player::cmd_control(1, str, static_cast<Game*>(game));
+		if(game && game->player && !game->player->selected.empty()){
+			game->player->beginControl(*game->player->selected.begin());
+//			char *str[1] = {"control"};
+//			Player::cmd_control(1, str, static_cast<Game*>(game));
 		}
 	}
 };
@@ -1256,6 +1274,7 @@ public:
 /// \param tips Displayed when mouse cursor is floating over.
 GLWstateButton *Player::newControlButton(Game *game, const char *filename, const char *filename2, const char *tips){
 	return new GLWcontrolButton(game, filename, filename2, tips);
+//	return NULL;
 };
 
 /// \param game The Game object that is bound to the newly created button.

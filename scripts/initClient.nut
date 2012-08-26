@@ -153,6 +153,17 @@ register_console_command("chart", function(...){
 	chart.addSeries("recvbytes");
 });
 
+function control(...){
+	local controlling = player.controlled != null;
+	print("player is controlling? " + controlling);
+	if(controlling)
+		player.controlled = null;
+	else if(player.selected.len() != 0)
+		player.controlled = player.selected[0];
+}
+
+register_console_command("control", control);
+
 mainmenu <- GLWbigMenu();
 
 function loadmission(script){
@@ -217,6 +228,8 @@ function init_Universe(){
 	}
 }
 
+controlStats <- CStatistician();
+
 sysbut <- null;
 
 function initUI(){
@@ -243,7 +256,16 @@ function initUI(){
 	but.addButton("halt", "textures/halt.png", tlate("Halt"));
 	but.addButton("dock", "textures/dock.png", tlate("Dock"));
 	but.addButton("undock", "textures/undock.png", tlate("Undock"));
-	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
+//	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
+	but.addButton(GLWsqStateButton("textures/control2.png", "textures/control.png",
+		function(){
+			local tm = TimeMeas();
+			local ret = player.controlled != null;
+			controlStats.put(tm.lap());
+			print("player.controlled time " + tm.lap() + ", avg:" + controlStats.avg + ", dev:" + controlStats.getDev());
+			return ret;
+		}
+		, control, tlate("Toggle Pause")));
 	but.pinned = true;
 
 	local cambut = GLWbuttonMatrix(5, 1);

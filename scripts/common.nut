@@ -186,6 +186,22 @@ if(1){
 }
 
 
+/// \brief Helper class that accumulates sequence numbers and calculate statistical values of them.
+class CStatistician{
+	avg = 0; // sum(value) == average
+	m20 = 0; // sum(value^2) == 2nd moment around 0 == variance - average^2
+	m30 = 0; // sum(value^3) == 3rd moment around 0
+	cnt = 0; // count of samples so far
+	function put(value){
+		avg = (cnt * avg + value) / (cnt + 1);
+		m20 = (cnt * m20 + value * value) / (cnt + 1);
+		m30 = (cnt * m30 + value * value * value) / (cnt + 1);
+		cnt++;
+	}
+	function getVar(){ return m20 - avg * avg; } // variance
+	function getDev(){ return ::sqrt(getVar()); } // deviation
+}
+
 
 class Cvar{
 	function _set(idx,val){

@@ -68,14 +68,14 @@ register_console_command("reload", function(){
 
 beginControl["Soldier"] <- function (){
 	if("print" in this)
-		print("Solider::beginControl");
+		print("Soldier::beginControl");
 	cmd("pushbind");
 	cmd("bind r reload");
 }
 
 endControl["Soldier"] <- function (){
 	if("print" in this)
-		print("Solider::endControl");
+		print("Soldier::endControl");
 	cmd("popbind");
 }
 }

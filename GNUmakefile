@@ -40,6 +40,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Sceptor.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
+ ${OUTDIR}/SqInitProcess.o\
  ${OUTDIR}/Autonomous.o\
  ${OUTDIR}/Warpable.o\
  ${OUTDIR}/Frigate.o\
@@ -131,6 +132,8 @@ ${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
 ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Builder.o: $(call depends,Builder.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/SqInitProcess.o: $(call depends,SqInitProcess.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Autonomous.o: $(call depends,Autonomous.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

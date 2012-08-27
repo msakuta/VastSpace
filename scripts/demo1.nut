@@ -124,7 +124,7 @@ function frameproc(dt){
 
 			// Force the players to control a Soldier.
 			if(pl.controlled == null){
-				local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i));
+				local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i * 0.2));
 				soldier.race = 0;
 				pl.controlled = soldier;
 			}

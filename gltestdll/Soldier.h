@@ -166,6 +166,7 @@ protected:
 	double shootCooldown()const{return 1.5;}
 	double bulletSpeed()const{return 3.;}
 	double bulletDamage()const{return 3.;}
+	double bulletVariance()const{return 0.001;}
 };
 
 

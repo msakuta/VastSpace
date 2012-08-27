@@ -11,14 +11,14 @@ if(earthlo){
 
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
-	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
+/*	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
 	des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 	local attacker = player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
 	attacker.setrot(Quatd.rotation(3.0*PI/2.0, Vec3d(0,0,1)));
 	local assault = player.cs.addent("Assault", Vec3d(2.0, -0.30, 0.75));
 	assault.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
 	local beamer = player.cs.addent("Beamer", Vec3d(2.0, -0.30, 0.50));
-	beamer.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
+	beamer.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));*/
 //	soldier <- player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5));
 //	soldier.race = 0;
 //	local e2 = player.cs.addent("Soldier", Vec3d(-2.0, 0, 0.5));
@@ -48,6 +48,14 @@ player.setrot(lookrot);
 player.viewdist = 0.25;
 */
 
+function drand(){
+	return rand().tofloat() / RAND_MAX;
+}
+
+function gaussRand(){
+	return drand() + drand() - 1.0;
+}
+
 showdt <- false;
 framecount <- 0;
 checktime <- 0;
@@ -58,6 +66,8 @@ invokes <- 0;
 obj1 <- null;
 obj2 <- null;
 assaults <- 0;
+
+numsol <- 0;
 
 function frameproc(dt){
 	framecount++;
@@ -114,7 +124,7 @@ function frameproc(dt){
 
 			// Force the players to control a Soldier.
 			if(pl.controlled == null){
-				local soldier = player.cs.addent("Soldier", Vec3d(2.0, -0.2, 0.5 + i));
+				local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i));
 				soldier.race = 0;
 				pl.controlled = soldier;
 			}
@@ -171,6 +181,11 @@ function frameproc(dt){
 				local be = docker.addent("Beamer");
 				be.race = 1;
 			}
+		}
+		while(true && countents(cs, 1, "Soldier") < 5){
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.0025 + numsol * 0.005, -0.2 + gaussRand() * 0.005, 0.65 + gaussRand() * 0.005));
+			soldier.race = 1;
+			numsol = (numsol + 1) % 10;
 		}
 
 

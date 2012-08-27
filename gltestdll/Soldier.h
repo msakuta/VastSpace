@@ -142,10 +142,18 @@ public:
 	void draw(WarDraw *);
 
 protected:
-	int maxammo()const{return 20;}
-	double shootCooldown()const{return 0.1;}
-	double bulletSpeed()const{return 1.;}
-	double bulletDamage()const{return 1.;}
+	void init();
+	int maxammo()const{return maxAmmoValue;}
+	double shootCooldown()const{return shootCooldownValue;}
+	double bulletSpeed()const{return bulletSpeedValue;}
+	double bulletDamage()const{return bulletDamageValue;}
+	double bulletVariance()const{return bulletVarianceValue;}
+
+	static int maxAmmoValue;
+	static double shootCooldownValue;
+	static double bulletSpeedValue;
+	static double bulletDamageValue;
+	static double bulletVarianceValue;
 };
 
 /// \brief M40 sniper rifle. It's silly to see it in space.
@@ -162,11 +170,18 @@ public:
 	void draw(WarDraw *);
 
 protected:
-	int maxammo()const{return 5;}
-	double shootCooldown()const{return 1.5;}
-	double bulletSpeed()const{return 3.;}
-	double bulletDamage()const{return 3.;}
-	double bulletVariance()const{return 0.001;}
+	void init();
+	int maxammo()const{return maxAmmoValue;}
+	double shootCooldown()const{return shootCooldownValue;}
+	double bulletSpeed()const{return bulletSpeedValue;}
+	double bulletDamage()const{return bulletDamageValue;}
+	double bulletVariance()const{return bulletVarianceValue;}
+
+	static int maxAmmoValue;
+	static double shootCooldownValue;
+	static double bulletSpeedValue;
+	static double bulletDamageValue;
+	static double bulletVarianceValue;
 };
 
 

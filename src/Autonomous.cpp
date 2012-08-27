@@ -925,16 +925,15 @@ std::vector<hitbox> *Autonomous::getTraceHitBoxes()const{
 /// It depends on initialization order. Specifically, dedicated server always invoke in the server game,
 /// while the Windows client invokes in the client game if it's connected to a server.
 /// As for a standalone server, it's not determined.
-bool Autonomous::sq_init(const SQChar *scriptFile, const SqInitProcess &procs){
+bool SqInitProcess::SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs){
 	try{
-		HSQUIRRELVM v = game->sqvm;
 		StackReserver sr(v);
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 		sq_newtable(v);
 		sq_pushroottable(v); // root
 		sq_setdelegate(v, -2);
-		if(SQ_SUCCEEDED(sqa_dofile(game->sqvm, scriptFile, 0, 1))){
+		if(SQ_SUCCEEDED(sqa_dofile(v, scriptFile, 0, 1))){
 			const SqInitProcess *proc = &procs;
 			for(; proc; proc = proc->next)
 				proc->process(v);
@@ -958,7 +957,26 @@ bool Autonomous::sq_init(const SQChar *scriptFile, const SqInitProcess &procs){
 	return true;
 }
 
-void Autonomous::SingleDoubleProcess::process(HSQUIRRELVM v)const{
+void IntProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))){
+		if(mandatory) // If mandatory, read errors result in exceptions.
+			throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+		else // If not mandatory variable cannot be read, leave the default value and silently ignore.
+			return;
+	}
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, -1, &i))){
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" couldn't be converted to float"));
+		else
+			return;
+	}
+	value = i;
+	sq_poptop(v);
+}
+
+void SingleDoubleProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, name, -1); // root string
 	if(SQ_FAILED(sq_get(v, -2))){
 		if(mandatory) // If mandatory, read errors result in exceptions.
@@ -976,6 +994,7 @@ void Autonomous::SingleDoubleProcess::process(HSQUIRRELVM v)const{
 	value = f;
 	sq_poptop(v);
 }
+
 
 void Autonomous::Vec3dProcess::process(HSQUIRRELVM v)const{
 	StackReserver sr(v); // We cannot keep track of stack depth if a try-catch block is involved.

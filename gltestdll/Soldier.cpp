@@ -1769,21 +1769,60 @@ void Firearm::reload(){
 
 const unsigned M16::classid = registerClass("M16", Conster<M16>);
 const char *M16::classname()const{return "M16";}
+int M16::maxAmmoValue = 20;
+double M16::shootCooldownValue = 0.1;
+double M16::bulletSpeedValue = 0.7;
+double M16::bulletDamageValue = 1.0;
+double M16::bulletVarianceValue = 0.01;
 
 
 
 M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	init();
 	reload();
+}
+
+void M16::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/M16.nut"),
+			IntProcess(maxAmmoValue, "maxammo", false) <<=
+			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
+			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
+			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
+			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false)
+			);
+		initialized = true;
+	}
 }
 
 
 const unsigned M40::classid = registerClass("M40", Conster<M40>);
 const char *M40::classname()const{return "M40";}
-
+int M40::maxAmmoValue = 5;
+double M40::shootCooldownValue = 1.5;
+double M40::bulletSpeedValue = 1.0;
+double M40::bulletDamageValue = 5.0;
+double M40::bulletVarianceValue = 0.001;
 
 
 M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+	init();
 	reload();
+}
+
+void M40::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/M40.nut"),
+			IntProcess(maxAmmoValue, "maxammo", false) <<=
+			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
+			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
+			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
+			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false)
+			);
+		initialized = true;
+	}
 }
 
 

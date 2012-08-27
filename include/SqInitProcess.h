@@ -1,10 +1,12 @@
 /** \file
- * \brief Definition of Autonomous class.
+ * \brief Definition of SqInitProcess class and its companions.
  */
 #ifndef SQINITPROCESS_H
 #define SQINITPROCESS_H
 
+#include "export.h"
 #include <squirrel.h>
+#include <stddef.h> // Just for NULL
 
 /// \brief Callback functionoid that processes Squirrel VM that is initialized in SqInit().
 ///

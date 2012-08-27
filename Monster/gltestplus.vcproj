@@ -567,6 +567,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\SqInitProcess.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\stellar_file.cpp"
 				>
 			</File>
@@ -1044,6 +1048,10 @@
 			</File>
 			<File
 				RelativePath="..\include\sqadapt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\SqInitProcess.h"
 				>
 			</File>
 			<File

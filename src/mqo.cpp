@@ -616,7 +616,7 @@ suf_t *LoadMQO_SUF(const char *fname){
 /// 
 /// \param tex_callback Texture allocator function.
 /// \param tex_callback_data Pointer to buffer that texture objects resides.
-int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **), suftex_t ***tex_callback_data){
+int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback, suftex_t ***tex_callback_data){
 	char buf[128], *s = NULL, *name = NULL;
 	suf_t **ret = NULL;
 	suf_t *sufatr = NULL;
@@ -724,7 +724,7 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 				return NULL;
 			if(tex_callback && tex_callback_data){
 				*tex_callback_data = (suftex_t**)realloc(*tex_callback_data, (num + 1) * sizeof **tex_callback_data);
-				tex_callback(ret[num], &(*tex_callback_data)[num]);
+				(*tex_callback)(ret[num], &(*tex_callback_data)[num]);
 /*				CacheSUFMaterials(ret[num]);
 				(*texes)[num] = gltestp::AllocSUFTex(ret[num]);*/
 				if(bones){
@@ -750,7 +750,7 @@ int LoadMQO(std::istream &is, suf_t ***pret, char ***pname, struct Bone ***bones
 }
 
 
-struct Model *LoadMQOModelSource(std::istream &is, double scale, void tex_callback(suf_t *, suftex_t **)){
+struct Model *LoadMQOModelSource(std::istream &is, double scale, MQOTextureCallback *tex_callback){
 	struct Model *ret;
 	ret = (struct Model*)malloc(sizeof *ret);
 	ret->n = LoadMQO_Scale(is, &ret->sufs, NULL, scale, &ret->bones, tex_callback, &ret->tex);
@@ -761,7 +761,7 @@ struct Model *LoadMQOModelSource(std::istream &is, double scale, void tex_callba
 	return ret;
 }
 
-struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **)){
+struct Model *LoadMQOModel(const char *fname, double scale, MQOTextureCallback *tex_callback){
 	std::ifstream ifs(fname);
 	return LoadMQOModelSource(static_cast<std::istream&>(ifs), scale, tex_callback);
 }

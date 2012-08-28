@@ -232,7 +232,7 @@ void Soldier::init(){
 	if(game->isClient()){
 		static bool initialized = false;
 		if(!initialized){
-			sq_init(_SC("models/Soldier.nut"),
+			sq_init(modPath() << _SC("models/Soldier.nut"),
 				HitboxProcess(hitboxes) <<=
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
@@ -258,7 +258,7 @@ void Soldier::init(){
 	if(game->isServer()){
 		static bool initialized = false;
 		if(!initialized){
-			sq_init(_SC("models/Soldier.nut"),
+			sq_init(modPath() << _SC("models/Soldier.nut"),
 				HitboxProcess(hitboxes) <<=
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
@@ -1790,7 +1790,7 @@ M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
 void M16::init(){
 	static bool initialized = false;
 	if(!initialized){
-		SqInit(game->sqvm, _SC("models/M16.nut"),
+		SqInit(game->sqvm, modPath() << _SC("models/M16.nut"),
 			IntProcess(maxAmmoValue, "maxammo", false) <<=
 			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
@@ -1819,7 +1819,7 @@ M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
 void M40::init(){
 	static bool initialized = false;
 	if(!initialized){
-		SqInit(game->sqvm, _SC("models/M40.nut"),
+		SqInit(game->sqvm, modPath() << _SC("models/M40.nut"),
 			IntProcess(maxAmmoValue, "maxammo", false) <<=
 			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=

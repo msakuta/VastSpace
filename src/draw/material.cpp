@@ -94,33 +94,34 @@ GLuint CacheMaterial(const char *name){
 		return CallCacheBitmap5(name, i->second.texname[0], &i->second.stp[0], i->second.texname[1], &i->second.stp[1]);
 	}
 	ret = CallCacheBitmap(name, name, NULL, NULL);
-	if(!ret){
+/*	if(!ret){
 		gltestp::dstring ds = "models/";
 		ds << aname;
 		ret = CallCacheBitmap(name, ds, NULL, NULL);
-	}
+	}*/
 	return ret;
 }
 
-void CacheSUFMaterials(const suf_t *suf){
+void CacheSUFMaterials(const suf_t *suf, const char *path){
 	int i, j;
 	if(!suf)
 		return;
 	for(i = 0; i < suf->na; i++) if(suf->a[i].colormap){
+		gltestp::dstring textureName = gltestp::dstring(path) << suf->a[i].colormap;
 
-		if(gltestp::FindTexture(suf->a[i].colormap))
+		if(gltestp::FindTexture(textureName))
 			continue;
 
 		/* an unreasonable filtering to exclude default mapping. */
-		if(!strcmp(suf->a[i].colormap, "Mapping1.bmp"))
-			continue;
+//		if(!strcmp(suf->a[i].colormap, "Mapping1.bmp"))
+//			continue;
 
 		/* skip the same texture */
 		for(j = 0; j < i; j++) if(suf->a[j].colormap && !strcmp(suf->a[i].colormap, suf->a[j].colormap))
 			break;
 		if(j != i)
 			continue;
-		CacheMaterial(suf->a[i].colormap);
+		CacheMaterial(textureName);
 	}
 }
 
@@ -994,8 +995,8 @@ unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap){
 	return CacheSUFMTex(name, &stp, NULL);
 }
 
-suftex_t *AllocSUFTex(const suf_t *suf){
-	return gltestp::AllocSUFTexScales(suf, NULL, 0, NULL, 0);
+suftex_t *AllocSUFTex(const suf_t *suf, const char *path){
+	return gltestp::AllocSUFTexScales(suf, NULL, 0, NULL, 0, path);
 }
 
 static void shaderOnBeginTexture(void *){
@@ -1022,7 +1023,7 @@ static void additiveShaderOnEndTexture(void *){
 	}
 }
 
-suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes){
+suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path){
 	suftex_t *ret;
 	int i, n, k;
 /*	for(i = n = 0; i < suf->na; i++) if(suf->a[i].colormap)
@@ -1034,9 +1035,10 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 	ret->n = n;
 	for(i = k = 0; i < n; i++){
 		unsigned j;
-		const char *name = texes && i < ntexes && texes[i] ? texes[i] : suf->a[i].colormap;
+		const char *colormap = texes && i < ntexes && texes[i] ? texes[i] : suf->a[i].colormap;
+
 		k = i;
-		if(!(suf->a[i].valid & SUF_TEX) || !name){
+		if(!(suf->a[i].valid & SUF_TEX) || !colormap){
 			struct suftexlist *s = &ret->a[k];
 			s->list = 0;
 			s->tex[0] = 0;
@@ -1050,6 +1052,9 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			s->onEndTextureData = NULL;
 			continue;
 		}
+
+		// Allocate dynamic string to concatenate strings.
+		gltestp::dstring name = !path && !colormap ? "" : !path ? colormap : !colormap ? path : gltestp::dstring(path) << colormap;
 
 		/* if we have already compiled the texture into a list, reuse it */
 		std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);

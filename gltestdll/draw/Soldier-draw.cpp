@@ -148,10 +148,13 @@ void Soldier::drawHookAndTether(WarDraw *wd){
 		static OpenGLState::weak_ptr<bool> init;
 		static Model *hookModel = NULL;
 		if(!init){
-			hookModel = LoadMQOModel("models/hook.mqo");
-			CallCacheBitmap("tether.jpg", "textures/tether.jpg", NULL, NULL);
+			hookModel = LoadMQOModel(modPath() << "models/hook.mqo");
+			CallCacheBitmap("tether.jpg", modPath() << "models/tether.jpg", NULL, NULL);
 			init.create(*openGLState);
 		}
+
+		if(!hookModel)
+			return;
 
 		Mat4d mat;
 		transform(mat);
@@ -614,9 +617,9 @@ bool Soldier::initModel(){
 	static OpenGLState::weak_ptr<bool> init;
 
 	if(!init){
-		model = LoadMQOModel("models/Soldier.mqo");
-		motions[0] = LoadMotion("models/Soldier_aim.mot");
-		motions[1] = LoadMotion("models/Soldier_reload.mot");
+		model = LoadMQOModel(modPath() << "models/Soldier.mqo");
+		motions[0] = LoadMotion(modPath() << "models/Soldier_aim.mot");
+		motions[1] = LoadMotion(modPath() << "models/Soldier_reload.mot");
 		init.create(*openGLState);
 	}
 
@@ -687,7 +690,7 @@ void M16::draw(WarDraw *wd){
 	wd->lightdraws++;
 
 	if(!init){
-		model = LoadMQOModel("models/m16.mqo");
+		model = LoadMQOModel(modPath() << "models/m16.mqo");
 		init.create(*openGLState);
 	}
 	if(!model)
@@ -728,7 +731,7 @@ void M40::draw(WarDraw *wd){
 	wd->lightdraws++;
 
 	if(!init){
-		model = LoadMQOModel("models/m40.mqo");
+		model = LoadMQOModel(modPath() << "models/m40.mqo");
 		init.create(*openGLState);
 	}
 	if(!model)

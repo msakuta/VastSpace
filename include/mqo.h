@@ -56,8 +56,20 @@ protected:
 
 suf_t *LoadMQO_SUF(const char *fname);
 
+/// \brief A function object that is invoked once per suf.
+struct EXPORT MQOTextureCallback{
+	virtual void operator()(suf_t *, suftex_t **) = 0;
+};
+
+/// \brief An adapter for a plain function to MQOTextureCallback.
+struct EXPORT MQOTextureFunction : public MQOTextureCallback{
+	void (*func)(suf_t *, suftex_t **);
+	MQOTextureFunction(void func(suf_t *, suftex_t **)) : func(func){}
+	void operator()(suf_t *suf, suftex_t **suft){func(suf, suft);}
+};
+
 /// \brief Loads a MQO and returns each object in pret, with scaling factor.
-EXPORT int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, void tex_callback(suf_t *, suftex_t **) = NULL, suftex_t ***callback_data = NULL);
+EXPORT int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback = NULL, suftex_t ***callback_data = NULL);
 
 /// \brief Loads a MQO and returns each object in ret.
 EXPORT int LoadMQO(std::istream &is, suf_t ***ret, char ***pname, struct Bone ***bones);
@@ -65,7 +77,7 @@ EXPORT int LoadMQO(std::istream &is, suf_t ***ret, char ***pname, struct Bone **
 /// \brief Loads a MQO and convert it into a Model object.
 ///
 /// \param tex_callback Can be specified to handle occasions when a texture allocation is desired.
-EXPORT struct Model *LoadMQOModelSource(std::istream &is, double scale, void tex_callback(suf_t *, suftex_t **));
+EXPORT struct Model *LoadMQOModelSource(std::istream &is, double scale, MQOTextureCallback *tex_callback);
 
 /// \brief Easy version of LoadMQOModelSource, loads from a file specified by fname.
 EXPORT struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **));

@@ -8,10 +8,14 @@ extern "C"{
 }
 #include <streambuf>
 
-static void tex_callback(suf_t *suf, suftex_t **ret){
-	CacheSUFMaterials(suf);
-	*ret = gltestp::AllocSUFTex(suf);
-}
+struct MQOTextureLoad : MQOTextureCallback{
+	const char *fpath;
+	MQOTextureLoad(const char *fpath) : fpath(fpath){}
+	void operator()(suf_t *suf, suftex_t **ret){
+		CacheSUFMaterials(suf, fpath);
+		*ret = gltestp::AllocSUFTex(suf, fpath);
+	}
+};
 
 /// \brief An adaptor class for std::streambuf that feeds data from raw pointer source.
 ///
@@ -48,8 +52,19 @@ public:
 
 Model *LoadMQOModel(const char *fname, double scale){
 	std::ifstream ifs(fname);
+
+	// Retrieve file path delimiter
+	const char *p = strrchr(fname, '\\');
+	if(!p)
+		p = strrchr(fname, '/');
+	gltestp::dstring fpath;
+	if(p){
+		fpath.strncpy(fname, p - fname);
+		fpath << '/';
+	}
+
 	if(ifs.good())
-		return LoadMQOModelSource(ifs, scale, tex_callback);
+		return LoadMQOModelSource(ifs, scale, &MQOTextureLoad(fpath));
 	else{
 		unsigned long size;
 		void *buffer = (BYTE*)ZipUnZip("rc.zip", fname, &size);
@@ -57,7 +72,7 @@ Model *LoadMQOModel(const char *fname, double scale){
 			return NULL;
 		srcbuf sb(buffer, size);
 		std::istream is(&sb);
-		Model *ret = LoadMQOModelSource(is, scale, tex_callback);
+		Model *ret = LoadMQOModelSource(is, scale, &MQOTextureLoad(fpath));
 		ZipFree(buffer);
 		return ret;
 	}

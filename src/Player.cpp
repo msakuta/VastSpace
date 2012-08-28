@@ -15,6 +15,7 @@
 #include "glw/glwindow.h"
 #include "motion.h"
 #include "ClientMessage.h"
+#include "GetFov.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -182,10 +183,17 @@ public:
 	virtual void setrot(const Quatd &rot){
 		pl.rot = rot;
 	}
-/*	virtual void operator ()(const input_t &input, double dt){
-		const_cast<double&>(input.analog[0]) = py[0];
-		const_cast<double&>(input.analog[1]) = py[1];
-	}*/
+	virtual void operator ()(const input_t &input, double dt){
+		if(pl.chase){
+			GetFovCommand com;
+			if(pl.chase->command(&com))
+				pl.fov = com.fov;
+			else
+				pl.fov = 1.;
+		}
+//		const_cast<double&>(input.analog[0]) = py[0];
+//		const_cast<double&>(input.analog[1]) = py[1];
+	}
 };
 
 FreelookMover::FreelookMover(Player &a) : st(a), flypower(1.), pos(a.pos){}
@@ -1416,4 +1424,11 @@ void CMInput::interpret(ServerClient &sc, UnserializeStream &uss){
 		player->controlled->control(&inputs, 0.);
 }
 
+
+/// Ignore invocation of GetFovCommand from Squirrel. It's not really a command
+/// that may instruct the Entity to do something, but just returns parameters.
+template<>
+void EntityCommandSq<GetFovCommand>(HSQUIRRELVM, Entity &){}
+
+IMPLEMENT_COMMAND(GetFovCommand, "GetFov")
 

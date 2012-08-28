@@ -30,6 +30,7 @@ public:
 	virtual double bulletDamage()const = 0;
 	virtual double bulletLifeTime()const{return 5.;}
 	virtual double bulletVariance()const{return 0.01;}
+	virtual double aimFov()const{return 0.7;} ///< Magnitude of zoom when aiming expressed in FOV.
 };
 
 
@@ -82,6 +83,7 @@ protected:
 	void swapWeapon();
 	void reload();
 	bool findEnemy();
+	double getFov()const;
 
 	void hookHitEffect(const otjEnumHitSphereParam &param);
 	void drawHookAndTether(WarDraw *);
@@ -98,12 +100,13 @@ protected:
 	double integral[2];
 	float damagephase;
 	float shiftphase;
+	float aimphase;
 /*	int ammo;*/
 	char state;
 	char controlled;
 	char reloading;
-	char aiming;
 	char muzzle;
+	bool aiming;
 	bool forcedEnemy;
 	Firearm *arms[2];
 	Vec3d hookpos;
@@ -153,12 +156,14 @@ protected:
 	double bulletSpeed()const{return bulletSpeedValue;}
 	double bulletDamage()const{return bulletDamageValue;}
 	double bulletVariance()const{return bulletVarianceValue;}
+	double aimFov()const{return aimFovValue;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
 	static double bulletSpeedValue;
 	static double bulletDamageValue;
 	static double bulletVarianceValue;
+	static double aimFovValue;
 };
 
 /// \brief M40 sniper rifle. It's silly to see it in space.
@@ -183,12 +188,14 @@ protected:
 	double bulletSpeed()const{return bulletSpeedValue;}
 	double bulletDamage()const{return bulletDamageValue;}
 	double bulletVariance()const{return bulletVarianceValue;}
+	double aimFov()const{return aimFovValue;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
 	static double bulletSpeedValue;
 	static double bulletDamageValue;
 	static double bulletVarianceValue;
+	static double aimFovValue;
 };
 
 

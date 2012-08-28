@@ -563,7 +563,7 @@ void Soldier::drawHUD(WarDraw *wd){
 
 		// Draw crosshair
 		if(player->mover == player->cockpitview && (player->getChaseCamera() == 0 || player->getChaseCamera() == 3)){
-			double precision = 2. * (arms[0] ? arms[0]->bulletVariance() : 0.001);
+			double precision = 2. * (arms[0] ? arms[0]->bulletVariance() / getFov() : 0.001);
 			glBegin(GL_LINES);
 			glVertex3d(-.15 - precision, 0., -0.);
 			glVertex3d(     - precision, 0., -0.);

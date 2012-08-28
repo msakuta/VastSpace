@@ -987,6 +987,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\GetFov.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\glsl.h"
 				>
 			</File>

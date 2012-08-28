@@ -19,9 +19,11 @@
 #include "judge.h"
 #include "libmotion.h"
 #include "sqadapt.h"
+#include "GetFov.h"
 
 extern "C"{
 #include <clib/mathdef.h>
+#include <clib/cfloat.h>
 }
 
 #include <sstream>
@@ -133,6 +135,8 @@ static struct entity_private_static infantry_s = {
 
 void Soldier::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << aiming;
+	sc.o << swapphase;
 	sc.o << cooldown2;
 	sc.o << arms[0];
 	sc.o << arms[1];
@@ -146,6 +150,8 @@ void Soldier::serialize(SerializeContext &sc){
 
 void Soldier::unserialize(UnserializeContext &usc){
 	st::unserialize(usc);
+	usc.i >> aiming;
+	usc.i >> swapphase;
 	usc.i >> cooldown2;
 	usc.i >> arms[0];
 	usc.i >> arms[1];
@@ -289,8 +295,8 @@ void Soldier::init(){
 		kickvelo[0] = kickvelo[1] = 0.;
 		state = STATE_STANDING;
 		reloading = 0;
-		aiming = 0;
 		muzzle = 0;
+		aiming = false;
 		arms[0] = new M16(this, soldierHP[0]);
 		arms[1] = new M40(this, soldierHP[1]);
 		if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
@@ -299,6 +305,7 @@ void Soldier::init(){
 		hooked = false;
 		hookretract = false;
 	}
+	aimphase = 0.;
 	walkphase = 0.;
 /*	if(infantry_random_weapons){
 		int i, n = 0, k;
@@ -540,7 +547,7 @@ void Soldier::reload(){
 	reloadphase = 2.5;
 	reloading = 1;
 //	if(arms[0].type != arms_mortar)
-//		aiming = 0;
+		aiming = false;
 }
 
 extern struct player *ppl;
@@ -777,7 +784,12 @@ void Soldier::anim(double dt){
 #endif
 
 	if(ic & i & PL_RCLICK){
-		p->aiming = !p->aiming;
+		aiming = !aiming;
+	}
+
+	if(0. < swapphase){
+		aiming = false;
+		aimphase = 0.;
 	}
 
 	struct HookHit{
@@ -915,7 +927,7 @@ void Soldier::anim(double dt){
 		else{
 			p->reloadphase -= dt;
 //			if(p->arms[0].type != arms_mortar)
-//				p->aiming = 0;
+				p->aiming = 0;
 		}
 	}
 
@@ -1230,6 +1242,7 @@ void Soldier::anim(double dt){
 	for(int i = 0; i < numof(arms); i++) if(arms[i]){
 		arms[i]->align();
 	}
+	aimphase = approach(aimphase, !!aiming, 3. * dt, 0.);
 }
 
 void Soldier::clientUpdate(double dt){
@@ -1237,7 +1250,7 @@ void Soldier::clientUpdate(double dt){
 }
 
 void Soldier::control(const input_t *inputs, double dt){
-	const double speed = .001 / 2.;
+	const double speed = .001 / 2. * getFov();
 	st::control(inputs, dt);
 
 	Quatd arot;
@@ -1299,6 +1312,13 @@ bool Soldier::findEnemy(){
 	return !!closest;
 }
 
+double Soldier::getFov()const{
+	if(arms[0])
+		return aimphase * arms[0]->aimFov() + (1. - aimphase) * 1.;
+	else
+		return 1.;
+}
+
 Entity::Props Soldier::props()const{
 	Props ret = st::props();
 	ret.push_back(gltestp::dstring("Ammo: ") << (arms[0] ? arms[0]->ammo : 0));
@@ -1325,6 +1345,10 @@ bool Soldier::command(EntityCommand *com){
 	}
 	else if(GetGunPosCommand *ggp = InterpretCommand<GetGunPosCommand>(com)){
 		return getGunPos(*ggp);
+	}
+	else if(GetFovCommand *gf = InterpretCommand<GetFovCommand>(com)){
+		gf->fov = getFov();
+		return true;
 	}
 	else
 		return st::command(com);
@@ -1779,6 +1803,7 @@ double M16::shootCooldownValue = 0.1;
 double M16::bulletSpeedValue = 0.7;
 double M16::bulletDamageValue = 1.0;
 double M16::bulletVarianceValue = 0.01;
+double M16::aimFovValue = 0.7;
 
 
 
@@ -1795,7 +1820,8 @@ void M16::init(){
 			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false)
+			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
+			SingleDoubleProcess(aimFovValue, "aimFov", false)
 			);
 		initialized = true;
 	}
@@ -1809,6 +1835,7 @@ double M40::shootCooldownValue = 1.5;
 double M40::bulletSpeedValue = 1.0;
 double M40::bulletDamageValue = 5.0;
 double M40::bulletVarianceValue = 0.001;
+double M40::aimFovValue = 0.2;
 
 
 M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
@@ -1824,7 +1851,8 @@ void M40::init(){
 			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false)
+			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
+			SingleDoubleProcess(aimFovValue, "aimFov", false)
 			);
 		initialized = true;
 	}

@@ -637,7 +637,7 @@ CMRot CMRot::s;
 
 /// \brief Sends the command message to the server that this client wants to change direction of sight.
 static int cmd_rot(int argc, char *argv[]){
-#ifdef _WIN32
+#ifndef DEDICATED
 	if(!(application.mode & application.ServerBit)){
 		Quatd q;
 		int c = min(argc - 1, 4);
@@ -746,7 +746,7 @@ static int cmd_eject(int argc, char *argv[], void *pv){
 }
 
 void Player::cmdInit(ClientApplication &application){
-#ifdef _WIN32
+#ifndef DEDICATED
 	CmdAdd("chasecamera", cmd_chasecamera);
 	CmdAddParam("mover", cmd_mover, application.clientGame);
 	CmdAddParam("eject", cmd_eject, static_cast<Game*>(application.clientGame));
@@ -817,7 +817,7 @@ int Player::cmd_teleport(int argc, char *argv[], void *pv){
 }
 
 int Player::cmd_moveorder(int argc, char *argv[], void *pv){
-#ifdef _WIN32
+#ifndef DEDICATED
 	ClientApplication &cl = *(ClientApplication*)pv;
 	cl.clientGame->player->moveorder = !cl.clientGame->player->moveorder;
 	cl.clientGame->player->move_z = 0.;

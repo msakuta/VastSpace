@@ -89,7 +89,7 @@ protected:
 	~Application();
 };
 
-#ifdef _WIN32
+#ifndef DEDICATED
 
 /// \brief Representation of Client in the client process.
 ///

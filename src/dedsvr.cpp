@@ -15,7 +15,13 @@ static void sigfpe(int signal){
 }
 
 int main(int argc, char *argv[]){
+#if defined _WIN32
+	// Unmask invalid floating points to detect bugs
+	unsigned flags = _controlfp(0,_EM_INVALID|_EM_ZERODIVIDE);
+	printf("controlfp %p\n", flags);
+#else
 	feenableexcept(FE_INVALID | FE_DIVBYZERO);
+#endif
 	signal(SIGFPE, sigfpe);
 	if(!application.parseArgs(argc, argv))
 		return 1;

@@ -49,7 +49,7 @@ static int cl_clean(Server::ServerClientList &root, mutex_t *m);
 static int cl_destroy(Server::ServerClientList &root);
 
 #ifdef _WIN32
-#include <crtdbg.h>
+//#include <crtdbg.h>
 typedef int socklen_t;
 typedef char *sockopt_t;
 #define MSG_NOSIGNAL 0

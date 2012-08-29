@@ -327,7 +327,7 @@ static int cmd_clients(int argc, char *argv[], void *pv){
 
 
 static int cmd_exit(int argc, char *argv[]){
-#ifdef _WIN32
+#ifndef DEDICATED
 	// Safely close the window
 	PostMessage(application.w, WM_SYSCOMMAND, SC_CLOSE, 0);
 #else

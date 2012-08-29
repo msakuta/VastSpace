@@ -146,6 +146,12 @@ void Soldier::serialize(SerializeContext &sc){
 	sc.o << hookshot;
 	sc.o << hooked;
 	sc.o << hookretract;
+	if(controller){
+		sc.o << kick[0];
+		sc.o << kick[1];
+		sc.o << kickvelo[0];
+		sc.o << kickvelo[1];
+	}
 }
 
 void Soldier::unserialize(UnserializeContext &usc){
@@ -161,6 +167,12 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> hookshot;
 	usc.i >> hooked;
 	usc.i >> hookretract;
+	if(controller){
+		usc.i >> kick[0];
+		usc.i >> kick[1];
+		usc.i >> kickvelo[0];
+		usc.i >> kickvelo[1];
+	}
 }
 
 DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
@@ -203,6 +215,7 @@ void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){}
 bool Soldier::getGunPos(GetGunPosCommand &ggp){
 	ggp.pos = this->pos;
 	ggp.rot = this->rot;
+	ggp.gunRot = this->rot.rotate(p->kick[1], 0, 1, 0).rotate(p->kick[0], -1, 0, 0);
 	return true;
 }
 void M16::draw(WarDraw *){}
@@ -291,8 +304,6 @@ void Soldier::init(){
 		pitch = 0.;
 		reloadphase = 0.;
 		damagephase = 0.;
-		kick[0] = kick[1] = 0.;
-		kickvelo[0] = kickvelo[1] = 0.;
 		state = STATE_STANDING;
 		reloading = 0;
 		muzzle = 0;
@@ -305,6 +316,8 @@ void Soldier::init(){
 		hooked = false;
 		hookretract = false;
 	}
+	kick[0] = kick[1] = 0.;
+	kickvelo[0] = kickvelo[1] = 0.;
 	aimphase = 0.;
 	walkphase = 0.;
 /*	if(infantry_random_weapons){
@@ -357,7 +370,9 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	static const Vec3d ofs[2] = {Vec3d(.003, .001, -.002), Vec3d(.00075, .002, .003),};
 	Mat4d mat, mat2;
 	seatid = (seatid + 4) % 4;
-	rot = this->rot;
+
+	rot = this->rot.rotate(p->kick[1], 0, 1, 0).rotate(p->kick[0], -1, 0, 0);
+
 	transform(mat);
 	if(seatid == 1){
 		pos = mat.vp3(ofs[0]);
@@ -938,7 +953,7 @@ void Soldier::anim(double dt){
 	p->muzzle = 0;
 	if(!p->reloading && i & (PL_ENTER | PL_LCLICK) && !(i & PL_SHIFT)) while(p->cooldown2 < dt){
 		amat4_t gunmat;
-		double kickf = g_recoil_kick_factor * (p->state == STATE_PRONE ? .3 : 1.);
+		double kickf = arms[0]->shootRecoil() * g_recoil_kick_factor * (p->state == STATE_PRONE ? .3 : 1.);
 		gunmat[15] = 0.;
 
 		/* reload gun */
@@ -956,6 +971,8 @@ void Soldier::anim(double dt){
 			}
 			else
 				muzzle |= 1;
+			p->kickvelo[0] += kickf * (w->rs.nextd() - .3);
+			p->kickvelo[1] += kickf * (w->rs.nextd() - .5);
 		}
 #if 0
 		else if(p->arms[0]->type == arms_shotgun/*pt->weapon*/){
@@ -1580,145 +1597,6 @@ static void infantry_control(entity_t *pt, warf_t *w, input_t *inputs, double dt
 	}
 }
 
-static int infantry_getrot(struct entity *pt, warf_t *w, double (*rot)[16]){
-	infantry_t *p = (infantry_t*)pt;
-#if 1
-	aquat_t q0, q, q1;
-	q0[0] = 0.;
-	q0[1] = sin((pt->pyr[1] + p->kick[1]) * .5);
-	q0[2] = 0.;
-	q0[3] = cos((pt->pyr[1] + p->kick[1]) * .5);
-	q[0] = sin((p->pitch + p->kick[0]) * -.5);
-	q[1] = 0.;
-	q[2] = 0.;
-	q[3] = cos((p->pitch + p->kick[0]) * -.5);
-	QUATMUL(q1, q, q0);
-	quat2mat(*rot, q1);
-	return w->pl->control != pt;
-#else
-	if(w->pl->control == pt){
-		avec3_t pyr;
-		quat2pyr(w->pl->rot, pyr);
-		VECSCALEIN(pyr, -1);
-/*		pyr[0] += pt->barrelp;*/
-		pyrimat(pyr, *rot);
-	}
-	else
-		pyrmat(pt->pyr, *rot);
-	return w->pl->control != pt;
-#endif
-/*	if(w->pl->control == pt){
-		if(!p->controlled){
-			p->controlled = 1;
-			VECCPY(w->pl->pyr, pt->pyr);
-			w->pl->pyr[0] -= pt->barrelp;
-		}
-		VECNULL(*pyr);
-		return;
-	}
-	else{
-		VECCPY(*pyr, pt->pyr);
-	}*/
-}
-
-void infantry_drawHUD(entity_t *pt, warf_t *wf, const double irot[16], void (*gdraw)(void)){
-	char buf[128];
-	infantry_t *p = (infantry_t*)pt;
-	glPushMatrix();
-
-	glLoadIdentity();
-	{
-		GLint vp[4];
-		int w, h, m;
-		double left, bottom, *pyr;
-		int tkills, tdeaths, ekills, edeaths;
-		entity_t *pt2;
-		amat4_t projmat;
-		glGetIntegerv(GL_VIEWPORT, vp);
-		w = vp[2], h = vp[3];
-		m = w < h ? h : w;
-		left = -(double)w / m;
-		bottom = -(double)h / m;
-
-		glGetDoublev(GL_PROJECTION_MATRIX, projmat);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(left, -left, bottom, -bottom, -1, 1);
-		glMatrixMode(GL_MODELVIEW);
-
-		if(wf->pl->control != pt){
-			if(fmod(wf->pl->gametime, 1.) < .5){
-				glRasterPos3d(.0 - 8. * (sizeof"AI CONTROLLED"-1) / m, .0 - 10. / m, -0.);
-				gldprintf("AI CONTROLLED");
-			}
-		}
-		else{
-/*			glRasterPos3d(-left - 200. / m, bottom + 60. / m, -1);
-			gldprintf("%c sub-machine gun", !pt->weapon ? '>' : ' ');
-			glRasterPos3d(-left - 200. / m, bottom + 40. / m, -1);
-			gldprintf("%c ???", pt->weapon ? '>' : ' ');*/
-		}
-
-		glRasterPos3d(left, -bottom - 20. / m, -0.);
-		gldprintf("health: %g", pt->health);
-		glRasterPos3d(left, -bottom - 40. / m, -0.);
-		sprintf(buf, "shots: %d", pt->shoots2);
-		putstring(buf);
-		glRasterPos3d(left, -bottom - 60. / m, -0.);
-		sprintf(buf, "kills: %d", pt->kills);
-		putstring(buf);
-		glRasterPos3d(left, -bottom - 80. / m, -0.);
-		sprintf(buf, "deaths: %d", pt->deaths);
-		putstring(buf);
-
-		glRasterPos3d(left, bottom + 10. / m, -0.);
-		gldprintf("cooldown: %g", p->cooldown2);
-		glRasterPos3d(left, bottom + 30. / m, -0.);
-		gldprintf("ammo: %d", p->arms[0].ammo);
-		glRasterPos3d(left, bottom + 50. / m, -0.);
-		gldprintf("angle: %g", deg_per_rad * pt->pyr[1]);
-
-		if(p->damagephase != 0.){
-			glColor4f(1., 0., 0., MIN(.5, p->damagephase * .5));
-			glBegin(GL_QUADS);
-			glVertex3i(-1, -1, -0);
-			glVertex3i( 1, -1, -0);
-			glVertex3i( 1,  1, -0);
-			glVertex3i(-1,  1, -0);
-			glEnd();
-		}
-
-		if(wf->pl->control != pt){
-			glTranslated(0,0,-1);
-			glRotated(deg_per_rad * wf->pl->pyr[2], 0., 0., 1.);
-			glRotated(deg_per_rad * (wf->pl->pyr[0] + p->pitch), 1., 0., 0.);
-			glRotated(deg_per_rad * wf->pl->pyr[1], 0., 1., 0.);
-			glTranslated(0,0,1);
-/*			glRotated(deg_per_rad * pt->pyr[2], 0., 0., 1.);
-			glRotated(deg_per_rad * pt->pyr[0], 1., 0., 0.);
-			glRotated(deg_per_rad * pt->pyr[1], 0., 1., 0.);*/
-		}
-
-		if(wf->pl->chasecamera == 0 || wf->pl->chasecamera == 3){
-			glBegin(GL_LINES);
-			glVertex3d(-.15, 0., -0.);
-			glVertex3d(-.025, 0., -0.);
-			glVertex3d( .15, 0., -0.);
-			glVertex3d( .025, 0., -0.);
-			glVertex3d(0., -.15, -0.);
-			glVertex3d(0., -.025, -0.);
-			glVertex3d(0., .15, -0.);
-			glVertex3d(0., .025, -0.);
-			glEnd();
-		}
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixd(projmat);
-		glMatrixMode(GL_MODELVIEW);
-	}
-	glPopMatrix();
-}
-
 static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], const double dir[3], double rad, double dt, double *ret, double (*retp)[3], double (*retn)[3]){
 	infantry_t *p = (infantry_t*)pt;
 	struct hitbox *hb = pt->health <= 0. || p->state == STATE_PRONE ? infantry_dead_hb : infantry_hb;
@@ -1761,11 +1639,15 @@ void Firearm::shoot(){
 	static const Vec3d nh0(0., 0., -1);
 	double v = bulletSpeed();
 
-	Mat4d gunmat;
-	p->transform(gunmat);
+	Quatd gunRot = p->rot;
+	GetGunPosCommand ggp(0);
+	if(base->command(&ggp)){
+		gunRot = ggp.gunRot;
+	}
+
 	Bullet *pb = new Bullet(this, 1., bulletDamage());
 	pb->velo = this->velo;
-	Vec3d nh = gunmat.dvp3(nh0);
+	Vec3d nh = gunRot.trans(nh0);
 
 	// Generate variance vector from random number generator.
 	// It's not really isotropic distribution, I'm afraid.
@@ -1778,8 +1660,8 @@ void Firearm::shoot(){
 	pb->velo += (nh + vecvar) * v;
 
 	// Offset for hand (and to make the bullet easier to see from eyes)
-	Vec3d relpos(0.0003, -0.0002, -0.0003);
-	pb->pos = this->pos + gunmat.dvp3(relpos);
+	Vec3d relpos(0.0002, -0.000, -0.0003);
+	pb->pos = this->pos + p->rot.trans(relpos);
 
 	pb->life = bulletLifeTime();
 //	pb->anim(t);
@@ -1804,6 +1686,7 @@ double M16::bulletSpeedValue = 0.7;
 double M16::bulletDamageValue = 1.0;
 double M16::bulletVarianceValue = 0.01;
 double M16::aimFovValue = 0.7;
+double M16::shootRecoilValue = M_PI / 128.;
 
 
 
@@ -1821,7 +1704,8 @@ void M16::init(){
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
 			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false)
+			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
+			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
 			);
 		initialized = true;
 	}
@@ -1836,6 +1720,7 @@ double M40::bulletSpeedValue = 1.0;
 double M40::bulletDamageValue = 5.0;
 double M40::bulletVarianceValue = 0.001;
 double M40::aimFovValue = 0.2;
+double M40::shootRecoilValue = M_PI / 32.;
 
 
 M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
@@ -1852,7 +1737,8 @@ void M40::init(){
 			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
 			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false)
+			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
+			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
 			);
 		initialized = true;
 	}

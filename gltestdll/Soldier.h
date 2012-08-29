@@ -8,6 +8,9 @@
 #include "arms.h"
 #include "judge.h"
 #include "EntityCommand.h"
+extern "C"{
+#include <clib/mathdef.h>
+}
 
 struct Model;
 class Motion;
@@ -31,6 +34,7 @@ public:
 	virtual double bulletLifeTime()const{return 5.;}
 	virtual double bulletVariance()const{return 0.01;}
 	virtual double aimFov()const{return 0.7;} ///< Magnitude of zoom when aiming expressed in FOV.
+	virtual double shootRecoil()const{return M_PI / 64.;}
 };
 
 
@@ -157,6 +161,7 @@ protected:
 	double bulletDamage()const{return bulletDamageValue;}
 	double bulletVariance()const{return bulletVarianceValue;}
 	double aimFov()const{return aimFovValue;}
+	double shootRecoil()const{return shootRecoilValue;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
@@ -164,6 +169,7 @@ protected:
 	static double bulletDamageValue;
 	static double bulletVarianceValue;
 	static double aimFovValue;
+	static double shootRecoilValue;
 };
 
 /// \brief M40 sniper rifle. It's silly to see it in space.
@@ -189,6 +195,7 @@ protected:
 	double bulletDamage()const{return bulletDamageValue;}
 	double bulletVariance()const{return bulletVarianceValue;}
 	double aimFov()const{return aimFovValue;}
+	double shootRecoil()const{return shootRecoilValue;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
@@ -196,6 +203,7 @@ protected:
 	static double bulletDamageValue;
 	static double bulletVarianceValue;
 	static double aimFovValue;
+	static double shootRecoilValue;
 };
 
 
@@ -206,6 +214,7 @@ struct GetGunPosCommand : public EntityCommand{
 	const int gunId;
 	Vec3d pos;
 	Quatd rot;
+	Quatd gunRot; ///< A Soldier can have recoil, which makes the gun to diverse the aim.
 };
 
 

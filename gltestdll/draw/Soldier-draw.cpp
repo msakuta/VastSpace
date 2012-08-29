@@ -670,6 +670,7 @@ bool Soldier::getGunPos(GetGunPosCommand &ggp){
 		srcpos[2] *= -1;
 		ggp.pos = mat.vp3(srcpos);
 		ggp.rot = rot * srcrot;
+		ggp.gunRot = this->rot.rotate(kick[1], 0, 1, 0).rotate(kick[0], -1, 0, 0);
 		return true;
 	}
 	else

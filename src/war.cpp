@@ -84,13 +84,21 @@ const unsigned WarField::classid = registerClass("WarField", Conster<WarField>);
 
 void WarField::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << pl << el << bl << rs << realtime;
+	sc.o << pl;
+	sc.o << el;
+	sc.o << bl;
+	sc.o << rs;
+	sc.o << realtime;
 	sc.o << cs;
 }
 
 void WarField::unserialize(UnserializeContext &sc){
 	Serializable::unserialize(sc);
-	sc.i >> pl >> el >> bl >> rs >> realtime;
+	sc.i >> pl;
+	sc.i >> el;
+	sc.i >> bl;
+	sc.i >> rs;
+	sc.i >> realtime;
 	sc.i >> cs;
 }
 

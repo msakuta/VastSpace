@@ -51,7 +51,7 @@ static void infantry_draw_arms(const char *name, infantry_t *p){
 #endif
 
 Model *Soldier::model = NULL;
-Motion *Soldier::motions[2] = {NULL};
+Motion *Soldier::motions[3] = {NULL};
 
 void Soldier::draw(WarDraw *wd){
 	Soldier *p = this;
@@ -620,6 +620,7 @@ bool Soldier::initModel(){
 		model = LoadMQOModel(modPath() << "models/Soldier.mqo");
 		motions[0] = LoadMotion(modPath() << "models/Soldier_aim.mot");
 		motions[1] = LoadMotion(modPath() << "models/Soldier_reload.mot");
+		motions[2] = LoadMotion(modPath() << "models/Soldier_swapweapon.mot");
 		init.create(*openGLState);
 	}
 
@@ -634,7 +635,9 @@ bool Soldier::interpolate(MotionPose *mp){
 		return false;
 
 	// Interpolate motion poses.
-	if(reloading)
+	if(0. < swapphase)
+		motions[2]->interpolate(mp[0], (swapphase < 1. ? swapphase : 2. - swapphase) * 10.);
+	else if(reloading)
 		motions[1]->interpolate(mp[0], (reloadphase < 1.25 ? reloadphase / 1.25 : (2.5 - reloadphase) / 1.25) * 20.);
 	else
 		motions[0]->interpolate(mp[0], 10.);

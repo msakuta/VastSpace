@@ -28,17 +28,8 @@ extern "C"{
 
 #include <sstream>
 
-//#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
-
-//#include "sufsrc/roughbody.h"
-//#include "sufsrc/bike.h"
-//#include "sufsrc/shotshell1.h"
-//#include "sufsrc/m16.h"
 
 
-#define BMPSRC_LINKAGE static
-//#include "bmpsrc/face.h"
-//#include "bmpsrc/infantry.h"
 
 #define putstring(a) gldPutString(a)
 
@@ -75,62 +66,6 @@ Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.0
 
 HardPointList soldierHP;
 
-#if 0
-static void infantry_cockpitview(entity_t *pt, warf_t *, double (*pos)[3], int *);
-static void infantry_anim(entity_t *pt, warf_t *w, double dt);
-static void infantry_draw(entity_t *pt, wardraw_t *wd);
-static void infantry_drawtra(entity_t *pt, wardraw_t *wd);
-static void infantry_bullethit(entity_t *pt, warf_t *w, const bullet_t *pb);
-static int infantry_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart);
-static void infantry_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
-static void infantry_postframe(entity_t *pt);
-static void infantry_control(entity_t *, warf_t *, input_t *inputs, double dt);
-static int infantry_getrot(struct entity*, warf_t*, double (*)[4]);
-static const char *infantry_idname(entity_t *pt){return "infantry";}
-static const char *infantry_classname(entity_t *pt){return "Infantry";}
-static void infantry_drawHUD(entity_t *pt, warf_t *wf, const double irot[16], void (*gdraw)(void));
-static unsigned infantry_analog_mask(const entity_t *pt, const warf_t *wf){return 3;}
-static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], const double dir[3], double rad, double dt, double *ret, double (*retp)[3], double (*ret_normal)[3]);
-
-static struct entity_private_static infantry_s = {
-	{
-		infantry_drawHUD,
-		infantry_cockpitview,
-		infantry_control,
-		NULL, /* destruct */
-		infantry_getrot,
-		NULL, /* getrotq */
-		NULL, /* drawCockpit */
-		NULL, /* is_warping */
-		NULL, /* warp_dest */
-		infantry_idname,
-		infantry_classname,
-		NULL, /* start_control */
-		NULL, /* end_control */
-		infantry_analog_mask,
-	},
-	infantry_anim,
-	infantry_draw,
-	infantry_drawtra,
-	infantry_takedamage,
-	infantry_gib_draw,
-	infantry_postframe,
-	falsefunc,
-	0., -M_PI / 2., M_PI / 2., /* turretrange, barrelmin, barrelmax */
-	NULL, NULL, NULL, NULL, /* suf */
-	0, /* reuse */
-	BULLETSPEED, /* bulletspeed */
-	0.002, /* getHitRadius */
-	1./180000, /* sufscale */
-	0, 1, /* hitsuf, altaxis */
-	NULL, /* bullethole */
-	{0.},
-	infantry_bullethit,
-	infantry_tracehit, /* tracehit */
-	{NULL}, /* hitmdl */
-	infantry_draw,
-};
-#endif
 
 
 void Soldier::serialize(SerializeContext &sc){
@@ -539,10 +474,7 @@ static int infantry_brass(WarField *w, Entity *pt, int shotshell, double t, Mat4
 
 
 void Soldier::swapWeapon(){
-	if(cooldown2 <= 0.){
-		Firearm *tmp = arms[1];
-		arms[1] = arms[0];
-		arms[0] = tmp;
+	if(cooldown2 <= 0. && reloadphase <= 0.){
 		cooldown2 = 2.;
 		swapphase = 2.;
 	}
@@ -1095,6 +1027,12 @@ void Soldier::anim(double dt){
 		printf("kick %lg %lg\n", p->kick[0], p->kick[1]);*/
 	}
 
+	// You actually change weapon at the middle of swap motion.
+	if(1. < swapphase && swapphase - dt < 1.){
+		Firearm *tmp = arms[1];
+		arms[1] = arms[0];
+		arms[0] = tmp;
+	}
 	if(p->swapphase < dt)
 		p->swapphase = 0.;
 	else

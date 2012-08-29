@@ -70,6 +70,7 @@ HardPointList soldierHP;
 
 void Soldier::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << forcedEnemy;
 	sc.o << aiming;
 	sc.o << swapphase;
 	sc.o << cooldown2;
@@ -91,6 +92,7 @@ void Soldier::serialize(SerializeContext &sc){
 
 void Soldier::unserialize(UnserializeContext &usc){
 	st::unserialize(usc);
+	usc.i >> forcedEnemy;
 	usc.i >> aiming;
 	usc.i >> swapphase;
 	usc.i >> cooldown2;
@@ -251,6 +253,7 @@ void Soldier::init(){
 		hooked = false;
 		hookretract = false;
 	}
+	forcedEnemy = false;
 	kick[0] = kick[1] = 0.;
 	kickvelo[0] = kickvelo[1] = 0.;
 	aimphase = 0.;
@@ -640,7 +643,7 @@ void Soldier::anim(double dt){
 	}
 #endif
 
-#if 0
+#if 1
 	if(!controller && 0 < health){
 		Vec3d epos;
 
@@ -652,7 +655,7 @@ void Soldier::anim(double dt){
 		if(enemy && enemy->health <= 0.)
 			enemy = NULL;
 
-		if(arms[0]->ammo <= 0 && cooldown2 == 0.){
+		if(arms[0]->ammo <= 0 && cooldown2 == 0. && !reloading){
 			reload();
 		}
 
@@ -660,45 +663,51 @@ void Soldier::anim(double dt){
 		if(enemy){
 //			double bulletspeed = p->arms[0].type == arms_mortar ? .05 : p->arms[0].type == arms_m40rifle ? .770 : p->arms[0].type == arms_shotgun ? BULLETSPEED * .75 : BULLETSPEED;
 			double bulletspeed = BULLETSPEED;
-			double phi;
-			double sd;
 			double desired[2];
-			avec3_t pos0 = {0, .0015, 0};
+			static const Vec3d pos0(0, .0015, 0);
 			int shootable = 0;
 /*			if(((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy))
 				VECCPY(epos, pt->enemy->pos);
 			else
 				estimate_pos(&epos, pt->enemy->pos, pt->enemy->velo, pt->pos, pt->velo, &sgravity, bulletspeed, w->map, w, ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy));*/
 			epos = enemy->pos;
-			if(enemy->classname() == this->classname() && ((Soldier*)static_cast<Entity*>(enemy))->state == STATE_PRONE)
-				epos -= pos0;
+//			if(enemy->classname() == this->classname() && ((Soldier*)static_cast<Entity*>(enemy))->state == STATE_PRONE)
+//				epos -= pos0;
 			if(p->state == STATE_PRONE)
 				epos += pos0;
-			phi = atan2(epos[0] - this->pos[0], -(epos[2] - this->pos[2]));
-			sd = (epos - this->pos).slen();
+//			double phi = atan2(epos[0] - this->pos[0], -(epos[2] - this->pos[2]));
+			Vec3d enemyDelta = epos - this->pos;
+			double sd = enemyDelta.slen();
 			z = sd < .01 * .01 ? 1 : -1;
+			Vec3d enemyDirection = enemyDelta.norm();
+			Vec3d forward = this->rot.trans(Vec3d(0,0,-1));
+			this->rot = this->rot.quatrotquat(forward.vp(enemyDirection) * dt);
+
+			// It's no use approaching closer than 10 meters.
+			// Altering inputs member is necessary because Autonomous::maneuver() use it.
+			inputs.press = 0.01 * 0.01 < sd && 0.9 < forward.sp(enemyDirection);
+
 //			pyr[1] = approach(pyr[1], phi, TURRETROTSPEED * dt, 2 * M_PI);
 //			pyr2quat(pt->rot, pt->pyr);
 
 #define EPSILON 1e-5
-			/* only shoot when on feet */
-/*			if(pt->pos[1] - .0016 <= h && shoot_angle2(pt->pos, epos, phi, bulletspeed, &desired, p->arms[0].type == arms_mortar)){
-				double dst = desired[0] - pt->pyr[0];
+			{
+/*				double dst = desired[0] - pt->pyr[0];
 				avec3_t pyr;
 				amat4_t mat;
 				shootable = 1;
 				p->pitch = rangein(approach(p->pitch + M_PI, dst + M_PI, TURRETROTSPEED * dt, 2 * M_PI) - M_PI, vft->barrelmin, vft->barrelmax);
 				pyr[0] = p->pitch;
 				pyr[1] = pt->pyr[1];
-				pyr[2] = 0.;
-				if(!(p->arms[0].type == arms_rpg7 && (pyrmat(pyr, mat), VECSP(normal, &mat[8]) < 0.)) &&
+				pyr[2] = 0.;*/
+				if(/*!(p->arms[0].type == arms_rpg7 && (pyrmat(pyr, mat), VECSP(normal, &mat[8]) < 0.)) &&
 					desired[0] - EPSILON <= p->pitch && p->pitch <= desired[0] + EPSILON &&
-					desired[1] - EPSILON <= pt->pyr[1] && pt->pyr[1] <= desired[1] + EPSILON &&
+					desired[1] - EPSILON <= pt->pyr[1] && pt->pyr[1] <= desired[1] + EPSILON &&*/
 					(p->kick[0] + p->kick[0] + p->kick[1] * p->kick[1]) < 1. / (sd / .01 / .01) * M_PI / 8. * M_PI / 8.)
 					i |= PL_ENTER;
 			}
 
-			if(p->arms[0].type == arms_mortar && shootable){
+/*			if(p->arms[0].type == arms_mortar && shootable){
 				if(!p->aiming){
 					i |= PL_RCLICK;
 					ic |= PL_RCLICK;

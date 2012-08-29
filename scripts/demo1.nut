@@ -67,6 +67,7 @@ obj1 <- null;
 obj2 <- null;
 assaults <- 0;
 
+numsol0 <- 0;
 numsol <- 0;
 
 function frameproc(dt){
@@ -124,7 +125,8 @@ function frameproc(dt){
 
 			// Force the players to control a Soldier.
 			if(pl.controlled == null){
-				local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i * 0.2));
+				local soldier = player.cs.addent("Soldier", Vec3d(1.5 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i * 0.2));
+				soldier.setrot(Quatd.rotation(-PI / 2., Vec3d(0,1,0)));
 				soldier.race = 0;
 				pl.controlled = soldier;
 			}
@@ -181,6 +183,11 @@ function frameproc(dt){
 				local be = docker.addent("Beamer");
 				be.race = 1;
 			}
+		}
+		while(true && countents(cs, 0, "Soldier") < 5){
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.0025 + numsol0 * 0.005, -0.2 + gaussRand() * 0.005, 0.4 + gaussRand() * 0.005));
+			soldier.race = 0;
+			numsol0 = (numsol0 + 1) % 10;
 		}
 		while(true && countents(cs, 1, "Soldier") < 5){
 			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.0025 + numsol * 0.005, -0.2 + gaussRand() * 0.005, 0.65 + gaussRand() * 0.005));

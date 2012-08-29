@@ -385,7 +385,12 @@ static Entity *otjEnumHitSphere_in(const otnt *root, const struct otjEnumHitSphe
 			}*/
 			otjHitSphere_loops++;
 			ret = root->a[i].t;
-			assert(ret);
+			
+			// If an Entity gets deleted, the object tree may have a NULL pointer,
+			// which case should be discarded from hit checking.
+			if(!ret)
+				continue;
+
 			double radii = ret->getHitRadius();
 			if(jHitSpherePos(ret->pos, radii + rad, *src, *dir, dt, NULL, pos)
 				&& (!(param->flags & OTJ_CALLBACK) || param->callback(param, root->a[i].t)))

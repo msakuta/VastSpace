@@ -37,6 +37,19 @@ extern "C"{
 #define BULLETSPEED .5
 #define INFANTRY_WALK_PHASE_SPEED (M_PI * 1.3)
 
+/// \brief An EntityCommand that passively alter rotation of a Soldier in the server.
+struct SetSoldierRotCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(SetSoldierRotCommand, SerializableCommand);
+	SetSoldierRotCommand(const Quatd &rot = Quatd(0,0,0,1)) : rot(rot){} 
+	void serialize(SerializeContext &sc){
+		sc.o << rot;
+	}
+	void unserialize(UnserializeContext &sc){
+		sc.i >> rot;
+	}
+	Quatd rot;
+};
+
 
 /// \brief The client message to overwrite the server's soldier rotation with client's.
 struct CMSoldierRot : ClientMessage{
@@ -1286,7 +1299,7 @@ void Soldier::control(const input_t *inputs, double dt){
 	forcedRot = oldForcedRot;
 
 	if(!game->isServer()){
-		CMSoldierRot::send(arot);
+		CMEntityCommand::s.send(this, SetSoldierRotCommand(arot));
 	}
 
 	if(inputs->change & inputs->press & PL_B){
@@ -1370,6 +1383,12 @@ bool Soldier::command(EntityCommand *com){
 	}
 	else if(GetGunPosCommand *ggp = InterpretCommand<GetGunPosCommand>(com)){
 		return getGunPos(*ggp);
+	}
+	else if(SetSoldierRotCommand *ssr = InterpretCommand<SetSoldierRotCommand>(com)){
+		bool oldForcedRot = forcedRot;
+		setPosition(NULL, &ssr->rot, NULL, NULL);
+		forcedRot = oldForcedRot;
+		return true;
 	}
 	else if(GetFovCommand *gf = InterpretCommand<GetFovCommand>(com)){
 		gf->fov = getFov();
@@ -1764,3 +1783,8 @@ void EntityCommandSq<GetGunPosCommand>(HSQUIRRELVM, Entity &){}
 
 IMPLEMENT_COMMAND(GetGunPosCommand, "GetGunPos")
 
+
+template<>
+void EntityCommandSq<SetSoldierRotCommand>(HSQUIRRELVM, Entity &){}
+
+IMPLEMENT_COMMAND(SetSoldierRotCommand, "SetSoldierRot")

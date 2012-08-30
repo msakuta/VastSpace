@@ -1084,19 +1084,34 @@ void ServerClient::interpretCommand(char *lbuf){
 	}
 }
 
+// For debugging purpose, the receive buffer size is intentionally
+// shrinked in the debug build.
+#ifdef NDEBUG
+#define RECVBUFSIZ 0x100
+#else
+#define RECVBUFSIZ 32
+#endif
+
 /// Receive thread for the connection to the client
 static DWORD WINAPI ClientThread(LPVOID lpv){
 	ServerClient *cl = (ServerClient*)lpv; /* Copy the value as soon as possible */
 	SOCKET s = cl->s;
 	int tid = cl->id;
 	int size;
-	char buf[32], *lbuf = NULL;
-	size_t lbs = 0, lbp = 0;
+	char buf[RECVBUFSIZ], *lbuf = NULL;
+	size_t lbs = 0; ///< line buffer size
+	size_t lbp = 0; ///< line buffer pointer
 	FILE *fp = fopen("serverrecv.log", "wb");
 	printf("ClientThread[%d] started.\n", tid);
 	while(SOCKET_ERROR != (size = recv(s, buf, sizeof buf, MSG_NOSIGNAL)) && size){
+		printf("recv: size = %lu, lbs = %lu, lbp = %lu\n", size, lbs, lbp);
+
 		char *p;
-		if(lbs < lbp + size + 1) lbuf = (char*)realloc(lbuf, lbs = lbp + size + 1);
+		if(lbs < lbp + size + 1){
+			printf("reallocating lbuf: %lu to %lu\n", lbs, lbp + size + 1);
+			lbuf = (char*)realloc(lbuf, lbs = lbp + size + 1);
+		}
+		printf("copying %lu bytes to lbp = %lu\n", size, lbp);
 		memcpy(&lbuf[lbp], buf, size);
 		lbp += size;
 		lbuf[lbp] = '\0'; /* null terminate for strchr */
@@ -1122,7 +1137,12 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 			else
 				cl->interpretCommand(lbuf);
 
-			memmove(lbuf, p+1, lbp -= (p+1 - lbuf)); /* reorient */
+			if(p+1 - lbuf < lbp)
+				memmove(lbuf, p+1, lbp -= (p+1 - lbuf)); /* reorient */
+			else
+				lbp = 0;
+			// Null terminate
+			lbuf[lbp] = '\0';
 		}
 	}
 	realloc(lbuf, 0); /* free line buffer */

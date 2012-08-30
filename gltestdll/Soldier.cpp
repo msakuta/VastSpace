@@ -152,7 +152,7 @@ void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){}
 bool Soldier::getGunPos(GetGunPosCommand &ggp){
 	ggp.pos = this->pos;
 	ggp.rot = this->rot;
-	ggp.gunRot = this->rot.rotate(p->kick[1], 0, 1, 0).rotate(p->kick[0], -1, 0, 0);
+	ggp.gunRot = this->rot.rotate(kick[1], 0, 1, 0).rotate(kick[0], -1, 0, 0);
 	return true;
 }
 void M16::draw(WarDraw *){}

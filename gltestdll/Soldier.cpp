@@ -1299,7 +1299,8 @@ void Soldier::control(const input_t *inputs, double dt){
 	forcedRot = oldForcedRot;
 
 	if(!game->isServer()){
-		CMEntityCommand::s.send(this, SetSoldierRotCommand(arot));
+		SetSoldierRotCommand cmd(arot);
+		CMEntityCommand::s.send(this, cmd);
 	}
 
 	if(inputs->change & inputs->press & PL_B){

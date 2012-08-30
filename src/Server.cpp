@@ -370,6 +370,16 @@ static void dstrip(dstr_t *pds, const sockaddr_in *s){
 	dstrlong(pds, ntohs(s->sin_port));
 }
 
+static gltestp::dstring &operator<<(gltestp::dstring &a, const sockaddr_in &s){
+	unsigned long ipa = ntohl(s.sin_addr.s_addr);
+	a << ((ipa>>24) & 0xff) << "."
+		<< ((ipa>>16) & 0xff) << "."
+		<< ((ipa>>8) & 0xff) << "."
+		<< (ipa % 0x100) << ":"
+		<< ntohs(s.sin_port);
+	return a;
+}
+
 
 /** \brief The server's accept thread.
  *
@@ -1104,18 +1114,19 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 	FILE *fp = fopen("serverrecv.log", "wb");
 	printf("ClientThread[%d] started.\n", tid);
 	while(SOCKET_ERROR != (size = recv(s, buf, sizeof buf, MSG_NOSIGNAL)) && size){
-		printf("recv: size = %lu, lbs = %lu, lbp = %lu\n", size, lbs, lbp);
-
-		char *p;
-		if(lbs < lbp + size + 1){
-			printf("reallocating lbuf: %lu to %lu\n", lbs, lbp + size + 1);
+		// Reallocate the buffer if necessary.
+		if(lbs < lbp + size + 1)
 			lbuf = (char*)realloc(lbuf, lbs = lbp + size + 1);
-		}
-		printf("copying %lu bytes to lbp = %lu\n", size, lbp);
+
+		// Concatenate the accumulated buffer with another block of data frame.
 		memcpy(&lbuf[lbp], buf, size);
 		lbp += size;
-		lbuf[lbp] = '\0'; /* null terminate for strchr */
+
+		// NULL terminate for strpbrk()
+		lbuf[lbp] = '\0';
+		char *p;
 		while(p = strpbrk(lbuf, "\r\n")){/* some terminals doesn't end line with \n? */
+			// NULL terminate for outputting to log file.
 			*p = '\0';
 
 			fwrite(lbuf, strlen(lbuf), 1, fp);
@@ -1124,15 +1135,13 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 
 			/* SAY command is common among all modes */
 			if(!strncmp(lbuf, "SAY ", 4)){
-				dstr_t ds = dstr0;
+				gltestp::dstring ds;
 				if(cl->name)
-					dstrcat(&ds, cl->name);
+					ds << cl->name;
 				else
-					dstrip(&ds, &cl->tcp);
-				dstrcat(&ds, "> ");
-				dstrcat(&ds, &lbuf[4]);
-				cl->sv->BroadcastMessage(dstr(&ds));
-				dstrfree(&ds);
+					ds << cl->tcp;
+				ds << "> " << &lbuf[4];
+				cl->sv->BroadcastMessage(ds);
 			}
 			else
 				cl->interpretCommand(lbuf);
@@ -1145,7 +1154,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv){
 			lbuf[lbp] = '\0';
 		}
 	}
-	realloc(lbuf, 0); /* free line buffer */
+	lbuf = (char*)realloc(lbuf, 0); /* free line buffer */
 
 	if(cl->sv->terminating){
 		closesocket(s);

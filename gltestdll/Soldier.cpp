@@ -38,6 +38,45 @@ extern "C"{
 #define INFANTRY_WALK_PHASE_SPEED (M_PI * 1.3)
 
 
+/// \brief The client message to overwrite the server's soldier rotation with client's.
+struct CMSoldierRot : ClientMessage{
+	typedef ClientMessage st;
+	static CMSoldierRot s;
+	void interpret(ServerClient &sc, UnserializeStream &uss);
+	static void send(const Quatd &);
+private:
+	CMSoldierRot() : st("SoldierRot"){}
+};
+CMSoldierRot CMSoldierRot::s;
+
+
+/// \brief Sends rotation overwrite request
+void CMSoldierRot::send(const Quatd &q){
+	std::stringstream ss;
+	StdSerializeStream sss(ss);
+	for(int i = 0; i < 4; i++)
+		sss << q[i];
+	std::string str = ss.str();
+	s.st::send(application, str.c_str(), str.size());
+}
+
+/// \brief Interprets the message in the server.
+void CMSoldierRot::interpret(ServerClient &sc, UnserializeStream &uss){
+	Quatd q;//(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+	for(int i = 0; i < 4; i++)
+		uss >> q[i];
+	Player *player;
+#ifndef _WIN32
+	player = sc.sv->pg->players[sc.id];
+#else
+	player = application.serverGame->players[sc.id];
+#endif
+	if(player && player->controlled)
+		player->controlled->setPosition(NULL, &q);
+}
+
+
+
 Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
 const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
@@ -1217,16 +1256,20 @@ void Soldier::control(const input_t *inputs, double dt){
 	const double speed = .001 / 2. * getFov();
 	st::control(inputs, dt);
 
-	Quatd arot;
-	getPosition(NULL, &arot);
+	// Mouse-aim direction is only controlled by the client; server is too slow to process it.
+	if(!game->isServer()){
+		Quatd arot;
+		getPosition(NULL, &arot);
 
-	// Mouse-aim direction
-	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
-	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
-	arot = arot.quatrotquat(xomg);
-	arot = arot.quatrotquat(yomg);
+		Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
+		Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
+		arot = arot.quatrotquat(xomg);
+		arot = arot.quatrotquat(yomg);
 
-	setPosition(NULL, &arot, NULL, NULL);
+		setPosition(NULL, &arot, NULL, NULL);
+
+		CMSoldierRot::send(arot);
+	}
 
 	if(inputs->change & inputs->press & PL_B){
 		if(!hookshot && !hookretract && !hooked){
@@ -1593,6 +1636,7 @@ void Firearm::shoot(){
 	}
 
 	Bullet *pb = new Bullet(this, 1., bulletDamage());
+	pb->mass = 0.03 * bulletDamage(); // 10 grams
 	pb->velo = this->velo;
 	Vec3d nh = gunRot.trans(nh0);
 
@@ -1609,6 +1653,9 @@ void Firearm::shoot(){
 	// Offset for hand (and to make the bullet easier to see from eyes)
 	Vec3d relpos(0.0002, -0.000, -0.0003);
 	pb->pos = this->pos + p->rot.trans(relpos);
+
+	// Impulse
+	base->velo -= pb->velo * pb->mass / base->mass;
 
 	pb->life = bulletLifeTime();
 //	pb->anim(t);

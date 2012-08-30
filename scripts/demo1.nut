@@ -185,12 +185,14 @@ function frameproc(dt){
 			}
 		}
 		while(true && countents(cs, 0, "Soldier") < 5){
-			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.0025 + numsol0 * 0.005, -0.2 + gaussRand() * 0.005, 0.4 + gaussRand() * 0.005));
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.4 + (drand() - 0.5) * 0.10));
+			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 0;
 			numsol0 = (numsol0 + 1) % 10;
 		}
 		while(true && countents(cs, 1, "Soldier") < 5){
-			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + gaussRand() * 0.0025 + numsol * 0.005, -0.2 + gaussRand() * 0.005, 0.65 + gaussRand() * 0.005));
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.65 + (drand() - 0.5) * 0.10));
+			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 1;
 			numsol = (numsol + 1) % 10;
 		}

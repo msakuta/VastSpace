@@ -51,44 +51,6 @@ struct SetSoldierRotCommand : public SerializableCommand{
 };
 
 
-/// \brief The client message to overwrite the server's soldier rotation with client's.
-struct CMSoldierRot : ClientMessage{
-	typedef ClientMessage st;
-	static CMSoldierRot s;
-	void interpret(ServerClient &sc, UnserializeStream &uss);
-	static void send(const Quatd &);
-private:
-	CMSoldierRot() : st("SoldierRot"){}
-};
-CMSoldierRot CMSoldierRot::s;
-
-
-/// \brief Sends rotation overwrite request
-void CMSoldierRot::send(const Quatd &q){
-	std::stringstream ss;
-	StdSerializeStream sss(ss);
-	for(int i = 0; i < 4; i++)
-		sss << q[i];
-	std::string str = ss.str();
-	s.st::send(application, str.c_str(), str.size());
-}
-
-/// \brief Interprets the message in the server.
-void CMSoldierRot::interpret(ServerClient &sc, UnserializeStream &uss){
-	Quatd q;//(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
-	for(int i = 0; i < 4; i++)
-		uss >> q[i];
-	Player *player;
-#ifndef _WIN32
-	player = sc.sv->pg->players[sc.id];
-#else
-	player = application.serverGame->players[sc.id];
-#endif
-	if(player && player->controlled)
-		player->controlled->setPosition(NULL, &q);
-}
-
-
 
 Entity::EntityRegister<Soldier> Soldier::entityRegister("Soldier");
 const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
@@ -806,10 +768,6 @@ void Soldier::anim(double dt){
 	}
 #endif
 
-	if(ic & i & PL_RCLICK){
-		aiming = !aiming;
-	}
-
 	if(0. < swapphase){
 		aiming = false;
 		aimphase = 0.;
@@ -1301,6 +1259,11 @@ void Soldier::control(const input_t *inputs, double dt){
 	if(!game->isServer()){
 		SetSoldierRotCommand cmd(arot);
 		CMEntityCommand::s.send(this, cmd);
+	}
+
+	// Toggle aim with mouse right click (rise edge)
+	if(inputs->change & inputs->press & PL_RCLICK){
+		aiming = !aiming;
 	}
 
 	if(inputs->change & inputs->press & PL_B){

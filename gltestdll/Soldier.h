@@ -112,6 +112,7 @@ protected:
 	char muzzle;
 	bool aiming;
 	bool forcedEnemy;
+	bool forcedRot; ///< Forced set rotation from the server
 	Firearm *arms[2];
 	Vec3d hookpos;
 	Vec3d hookvelo;

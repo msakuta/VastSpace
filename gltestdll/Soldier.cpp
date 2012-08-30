@@ -109,6 +109,7 @@ HardPointList soldierHP;
 
 void Soldier::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << forcedRot;
 	sc.o << forcedEnemy;
 	sc.o << aiming;
 	sc.o << swapphase;
@@ -127,10 +128,16 @@ void Soldier::serialize(SerializeContext &sc){
 		sc.o << kickvelo[0];
 		sc.o << kickvelo[1];
 	}
+
+	// Once we set the rotation, we can forget about forcing the client to obey it.
+	forcedRot = false;
 }
 
 void Soldier::unserialize(UnserializeContext &usc){
+	Quatd oldrot = this->rot;
+
 	st::unserialize(usc);
+	usc.i >> forcedRot;
 	usc.i >> forcedEnemy;
 	usc.i >> aiming;
 	usc.i >> swapphase;
@@ -149,6 +156,10 @@ void Soldier::unserialize(UnserializeContext &usc){
 		usc.i >> kickvelo[0];
 		usc.i >> kickvelo[1];
 	}
+
+	// Restore original rotation if it's not forced from the server.
+	if(!forcedRot)
+		this->rot = oldrot;
 }
 
 DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
@@ -340,6 +351,10 @@ void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo,
 	}
 	else
 		st::setPosition(pos, rot, velo, avelo);
+
+	// Remember that this rotation is set explicitly; if it's the server, the client must obey it.
+	if(rot)
+		forcedRot = true;
 }
 
 void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -1257,17 +1272,20 @@ void Soldier::control(const input_t *inputs, double dt){
 	st::control(inputs, dt);
 
 	// Mouse-aim direction is only controlled by the client; server is too slow to process it.
+	Quatd arot;
+	getPosition(NULL, &arot);
+
+	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
+	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
+	arot = arot.quatrotquat(xomg);
+	arot = arot.quatrotquat(yomg);
+
+	// Restore forcedRot if setPosition() alters it, because it shouldn't be forced from control().
+	bool oldForcedRot = forcedRot;
+	setPosition(NULL, &arot, NULL, NULL);
+	forcedRot = oldForcedRot;
+
 	if(!game->isServer()){
-		Quatd arot;
-		getPosition(NULL, &arot);
-
-		Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
-		Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
-		arot = arot.quatrotquat(xomg);
-		arot = arot.quatrotquat(yomg);
-
-		setPosition(NULL, &arot, NULL, NULL);
-
 		CMSoldierRot::send(arot);
 	}
 

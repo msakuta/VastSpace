@@ -131,6 +131,14 @@ function frameproc(dt){
 				pl.controlled = soldier;
 			}*/
 
+			// Force the players to chase a Soldier.
+			if(pl.chase == null){
+				foreachents(player.cs, function(e){
+					if(e.classname == "Soldier" && e.race == i)
+						pl.chase = e;
+				});
+			}
+
 //			if(pl.chase == null){
 //				foreach(e in cs.entlist){
 //					if(e.classname == "Sceptor" && e.race == i){

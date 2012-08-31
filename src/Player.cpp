@@ -1132,8 +1132,6 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 				return SQ_ERROR;
 			p->chase = o;
 			p->chases.insert(p->chase);
-			p->chase->addObserver(p);
-	//		sq_getinstanceup(v, 3, (SQUserPointer*)&p->chase, NULL);
 			return 1;
 		}
 		else if(!strcmp(wcs, _SC("chasecamera"))){

@@ -124,12 +124,12 @@ function frameproc(dt){
 			pl.cs = targetcs;
 
 			// Force the players to control a Soldier.
-			if(pl.controlled == null){
+/*			if(pl.controlled == null){
 				local soldier = player.cs.addent("Soldier", Vec3d(1.5 + gaussRand() * 0.003, -0.2 + gaussRand() * 0.003, 0.5 + gaussRand() * 0.003 + i * 0.2));
 				soldier.setrot(Quatd.rotation(-PI / 2., Vec3d(0,1,0)));
 				soldier.race = i;
 				pl.controlled = soldier;
-			}
+			}*/
 
 //			if(pl.chase == null){
 //				foreach(e in cs.entlist){

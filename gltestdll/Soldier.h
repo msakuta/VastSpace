@@ -66,6 +66,8 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual void bullethit(const Bullet *);
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
+	virtual int takedamage(double damage, int hitpart);
 	virtual Props props()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int);
@@ -102,9 +104,11 @@ protected:
 	double reloadphase;
 	double kick[2], kickvelo[2];
 	double integral[2];
+	Vec3d hurtdir;
 	float damagephase;
 	float shiftphase;
 	float aimphase;
+	float hurt;
 /*	int ammo;*/
 	char state;
 	char controlled;

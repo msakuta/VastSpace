@@ -1,6 +1,8 @@
 /** \file
  * \brief Implementation of Soldier class's drawing methods.
  */
+#define NOMINMAX
+
 #include "../Soldier.h"
 #include "Viewer.h"
 #include "Player.h"
@@ -20,6 +22,9 @@ extern "C"{
 #include <clib/GL/gldraw.h>
 #include <clib/cfloat.h>
 }
+
+
+#include <algorithm>
 
 
 #if 0
@@ -502,6 +507,60 @@ void Soldier::drawHUD(WarDraw *wd){
 		glLoadIdentity();
 		glOrtho(left, -left, bottom, -bottom, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
+
+		// Draw damage effect if you chase the Soldier.
+		if((player->mover == player->cockpitview || player->mover == player->freelook) && 0. < hurt){
+			glPushAttrib(GL_CURRENT_BIT);
+
+			// Draw red gradation in the whole window as if your eye is red.
+			glBegin(GL_TRIANGLE_FAN);
+			glColor4f(1,0,0,0);
+			glVertex2d(0, 0);
+			for(int i = 0; i <= 16; i++){
+				double phase = i * M_PI * 2. / 16;
+				glColor4f(1,0,0,hurt);
+				glVertex2d(2 * sin(phase), 2 * cos(phase));
+			}
+			glEnd();
+
+			if(0 < hurtdir.slen()){
+				// First, transform the world vector to this Soldier's local coordinates.
+				Vec3d localdir = rot.cnj().trans(hurtdir);
+
+				// Second, calculate theta and phi angles in the local coords.
+				double theta = atan2(localdir[1], localdir[0]);
+				double phi = asin(localdir[2]);
+
+				glPushMatrix();
+
+				// Arrow model transformation
+				gldMultQuat(Quatd::rotation(theta, 0, 0, 1).rotate(phi, 0, 1, 0));
+
+				glBegin(GL_TRIANGLES);
+
+				// The color is less significant when it directly forward or backward, to prevent it from
+				// bothering player's view.
+				glColor4f(1, 0, 0, std::min(1.f, hurt) * 2. * (1. - fabs(localdir[2])));
+
+				// If we are heading towards the damage source, draw outward arrow.
+				if(0. < localdir[2]){
+					glVertex3d(-0.8,0,0);
+					glColor4f(1, 0, 0, 0);
+					glVertex3d(-0.5,0.3,0);
+					glVertex3d(-0.5,-0.3,0);
+				}
+				else{ // If else, draw inwards.
+					glVertex3d(-0.5,0,0);
+					glColor4f(1, 0, 0, 0);
+					glVertex3d(-0.8,0.3,0);
+					glVertex3d(-0.8,-0.3,0);
+				}
+
+				glEnd();
+				glPopMatrix();
+			}
+			glPopAttrib();
+		}
 
 		if((player->mover == player->cockpitview || player->mover == player->freelook) && !controller){
 			if(fmod(this->w->pl->gametime, 1.) < .5){

@@ -88,6 +88,8 @@ void Soldier::serialize(SerializeContext &sc){
 	sc.o << forcedEnemy;
 	sc.o << aiming;
 	sc.o << swapphase;
+	sc.o << hurt;
+	sc.o << hurtdir;
 	sc.o << cooldown2;
 	sc.o << arms[0];
 	sc.o << arms[1];
@@ -116,6 +118,8 @@ void Soldier::unserialize(UnserializeContext &usc){
 	usc.i >> forcedEnemy;
 	usc.i >> aiming;
 	usc.i >> swapphase;
+	usc.i >> hurt;
+	usc.i >> hurtdir;
 	usc.i >> cooldown2;
 	usc.i >> arms[0];
 	usc.i >> arms[1];
@@ -278,6 +282,8 @@ void Soldier::init(){
 		hooked = false;
 		hookretract = false;
 	}
+	hurtdir = vec3_000;
+	hurt = 0.;
 	forcedEnemy = false;
 	kick[0] = kick[1] = 0.;
 	kickvelo[0] = kickvelo[1] = 0.;
@@ -1232,6 +1238,13 @@ void Soldier::anim(double dt){
 		arms[i]->align();
 	}
 	aimphase = approach(aimphase, !!aiming, 3. * dt, 0.);
+
+	// Hurt effect decay.
+	hurt = approach(hurt, 0, dt, 0.);
+
+	// Reset hurt direction if the pain is gone.
+	if(hurt == 0.)
+		hurtdir = vec3_000;
 }
 
 void Soldier::clientUpdate(double dt){
@@ -1319,6 +1332,23 @@ double Soldier::getFov()const{
 		return aimphase * arms[0]->aimFov() + (1. - aimphase) * 1.;
 	else
 		return 1.;
+}
+
+int Soldier::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal){
+	int iret = st::tracehit(start, dir, rad, dt, ret, retp, retnormal);
+	// Remember hit direction for HUD effect.
+	// TODO: ignore irrelevant tracehits (checking line of sights, easy collision checking, etc.)
+	if(iret)
+		hurtdir = dir.norm();
+	return iret;
+}
+
+
+int Soldier::takedamage(double damage, int hitpart){
+	st::takedamage(damage, hitpart);
+	// Accumulate hurt value for HUD effect.
+	hurt += damage;
+	return 1;
 }
 
 Entity::Props Soldier::props()const{

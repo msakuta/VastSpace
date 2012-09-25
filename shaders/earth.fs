@@ -101,7 +101,7 @@ void main (void)
 
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)
-		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.5, 5. * (-sundot + 0.1));
+		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.75, 5. * (-sundot + 0.1));
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);
 	texColor[2] = sqrt(texColor[2]);*/

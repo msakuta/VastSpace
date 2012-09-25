@@ -1600,12 +1600,23 @@ GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *ca
 						dst->rgbReserved = 255;
 					}
 					else{
-						double accum[3] = {0}; // accumulator
-						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
-							accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
-						dst->rgbRed = (GLubyte)accum[0];
-						dst->rgbGreen = (GLubyte)accum[1];
-						dst->rgbBlue = (GLubyte)accum[2];
+						// There could be the case 8 bit deep bitmap doesn't have a color samples table,
+						// e.g. returned object of ReadJpeg() when a monochrome JPEG is opened.
+						// In that case, we assume the single 8 bit channel as intensity value.
+						if(raw->bmiHeader.biClrUsed){
+							double accum[3] = {0}; // accumulator
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+								accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+							dst->rgbRed = (GLubyte)accum[0];
+							dst->rgbGreen = (GLubyte)accum[1];
+							dst->rgbBlue = (GLubyte)accum[2];
+						}
+						else{
+							double accum = 0; // accumulator
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
+								accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+							dst->rgbRed = dst->rgbGreen = dst->rgbBlue = (GLubyte)accum;
+						}
 						dst->rgbReserved = 255;
 					}
 				}

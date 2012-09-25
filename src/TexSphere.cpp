@@ -106,6 +106,10 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << textures;
 	sc.o << vertexShaderName;
 	sc.o << fragmentShaderName;
+	sc.o << cloudtexname;
+	sc.o << cloudVertexShaderName;
+	sc.o << cloudFragmentShaderName;
+	sc.o << cloudHeight;
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
@@ -124,6 +128,10 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> textures;
 	sc.i >> vertexShaderName;
 	sc.i >> fragmentShaderName;
+	sc.i >> cloudtexname;
+	sc.i >> cloudVertexShaderName;
+	sc.i >> cloudFragmentShaderName;
+	sc.i >> cloudHeight;
 
 	// Postprocessing
 	if(textures.size() != this->textures.size())

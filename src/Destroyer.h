@@ -1,16 +1,22 @@
+/** \file
+ * \brief Definition of Destroyer class.
+ */
 #ifndef DESTROYER_H
 #define DESTROYER_H
 #include "Warpable.h"
 #include "arms.h"
 
+/// \brief A Destroyer class space warship equipped with large turrets and thich armor.
 class Destroyer : public Warpable{
 protected:
 	float engineHeat;
 	ArmBase **turrets;
+	bool clientDead; ///< A flag indicating the death effects are performed in the client.
 	static std::vector<hardpoint_static*> hardpoints;
 	static HitBoxList hitboxes;
 	static double modelScale;
 	static double defaultMass;
+	static double maxHealthValue;
 	static ManeuverParams maneuverParams;
 	static GLuint disp;
 	static std::vector<Navlight> navlights;
@@ -18,6 +24,7 @@ public:
 	typedef Warpable st;
 	Destroyer(Game *game) : st(game){init();}
 	Destroyer(WarField *w);
+	~Destroyer();
 	static const unsigned classid;
 	static EntityRegister<Destroyer> entityRegister;
 	virtual const char *classname()const;

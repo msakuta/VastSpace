@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Destroyer and WireDestroyer classes.
+ */
 #include "Destroyer.h"
 #include "judge.h"
 #include "serial_util.h"
@@ -18,6 +21,7 @@ const char *Destroyer::dispname()const{return "Destroyer";}
 
 double Destroyer::modelScale = .001;
 double Destroyer::defaultMass = 1e8;
+double Destroyer::maxHealthValue = 100000./2;
 Warpable::ManeuverParams Destroyer::maneuverParams = {
 	.05, /* double accel; */
 	.1, /* double maxspeed; */
@@ -40,6 +44,16 @@ Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
 			aw->addent(turrets[i]);
 	}
 	buildBody();
+}
+
+Destroyer::~Destroyer(){
+	if(game->isServer()){
+		// This Entity "owns" the equipments, so delete them along with.
+		for(int i = 0; i < hardpoints.size(); i++){
+			delete turrets[i];
+		}
+	}
+	delete[] turrets;
 }
 
 bool Destroyer::buildBody(){
@@ -95,6 +109,7 @@ void Destroyer::static_init(){
 		sq_init(_SC("models/Destroyer.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
@@ -179,7 +194,8 @@ int Destroyer::takedamage(double damage, int hitpart){
 		ret = 0;
 		WarSpace *ws = *w;
 #ifndef DEDICATED
-		if(ws){
+		// Prevent double effects in the client, for Destroyers have costly death effects.
+		if(ws && clientDead){
 
 			if(ws->gibs) for(i = 0; i < 128; i++){
 				double pos[3], velo[3] = {0}, omg[3];
@@ -237,16 +253,20 @@ int Destroyer::takedamage(double damage, int hitpart){
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-		p->w = NULL;
+//		p->w = NULL;
 #endif
-		delete this;
+		// Actually delete only in the server.
+		if(game->isServer())
+			delete this;
+		else // Only clear the flag in the client.
+			clientDead = true;
 		return ret;
 	}
 	p->health -= damage;
 	return ret;
 }
 
-double Destroyer::maxhealth()const{return 100000./2;}
+double Destroyer::maxhealth()const{return maxHealthValue;}
 
 int Destroyer::armsCount()const{
 	return hardpoints.size();

@@ -22,7 +22,7 @@ protected:
 	static std::vector<Navlight> navlights;
 public:
 	typedef Warpable st;
-	Destroyer(Game *game) : st(game){init();}
+	Destroyer(Game *game) : st(game), clientDead(false){init();}
 	Destroyer(WarField *w);
 	~Destroyer();
 	static const unsigned classid;
@@ -53,6 +53,7 @@ protected:
 	std::vector<hitbox> *getTraceHitBoxes()const;
 	void static_init();
 	virtual void init();
+	void deathEffects();
 	friend class WireDestroyer;
 };
 

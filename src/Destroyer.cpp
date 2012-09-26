@@ -36,7 +36,7 @@ GLuint Destroyer::disp = 0;
 std::vector<Warpable::Navlight> Destroyer::navlights;
 
 
-Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.){
+Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.), clientDead(false){
 	init();
 	for(int i = 0; i < hardpoints.size(); i++){
 		turrets[i] = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
@@ -53,6 +53,8 @@ Destroyer::~Destroyer(){
 			delete turrets[i];
 		}
 	}
+	else
+		deathEffects();
 	delete[] turrets;
 }
 
@@ -184,86 +186,95 @@ void Destroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 int Destroyer::takedamage(double damage, int hitpart){
-	Destroyer *p = this;
-	struct tent3d_line_list *tell = w->getTeline3d();
 	int ret = 1;
 
 //	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-	if(0 < p->health && p->health - damage <= 0){
-		int i;
+	if(0 < health && health - damage <= 0){
 		ret = 0;
-		WarSpace *ws = *w;
-#ifndef DEDICATED
-		// Prevent double effects in the client, for Destroyers have costly death effects.
-		if(ws && clientDead){
-
-			if(ws->gibs) for(i = 0; i < 128; i++){
-				double pos[3], velo[3] = {0}, omg[3];
-				/* gaussian spread is desired */
-				for(int j = 0; j < 6; j++)
-					velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
-				VECCPY(pos, this->pos);
-				for(int j = 0; j < 3; j++)
-					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
-			}
-
-			/* smokes */
-			for(i = 0; i < 64; i++){
-				double pos[3];
-				COLOR32 col = 0;
-				VECCPY(pos, p->pos);
-				pos[0] += .3 * (drseq(&w->rs) - .5);
-				pos[1] += .3 * (drseq(&w->rs) - .5);
-				pos[2] += .3 * (drseq(&w->rs) - .5);
-				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
-				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
-				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
-				col |= COLOR32RGBA(0,0,0,191);
-	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, vec3_000,
-					vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 20.);
-			}
-
-			{/* explode shockwave thingie */
-#if 0
-				static const double pyr[3] = {M_PI / 2., 0., 0.};
-				amat3_t ort;
-				Vec3d dr, v;
-				Quatd q;
-				amat4_t mat;
-				double p;
-	/*			w->vft->orientation(w, &ort, &pt->pos);
-				VECCPY(dr, &ort[3]);*/
-				dr = vec3_001;
-
-				/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-				q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
-
-				v = vec3_001.vp(dr);
-				p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
-				q = v * p;
-
-				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
-#endif
-				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
-			}
-		}
-//		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
-//		p->w = NULL;
-#endif
+		deathEffects();
 		// Actually delete only in the server.
 		if(game->isServer())
 			delete this;
-		else // Only clear the flag in the client.
-			clientDead = true;
 		return ret;
 	}
-	p->health -= damage;
+	health -= damage;
 	return ret;
+}
+
+/// \brief Death effects in the client.
+///
+/// It should be called exactly once per client object.
+/// Due to lags between the server and the client, death effect can be invoked first in
+/// either sides. In any case, we make sure to generate death effect once and not more.
+/// The clientDead flag helps achieving this demand.
+void Destroyer::deathEffects(){
+#ifndef DEDICATED
+	Destroyer *p = this;
+	WarSpace *ws = *w;
+
+	// Prevent double effects in the client, for Destroyers have costly death effects.
+	if(!game->isServer() && ws && !clientDead){
+		// Only clear the flag in the client.
+		clientDead = true;
+		struct tent3d_line_list *tell = w->getTeline3d();
+
+		if(ws->gibs) for(int i = 0; i < 128; i++){
+			double pos[3], velo[3] = {0}, omg[3];
+			/* gaussian spread is desired */
+			for(int j = 0; j < 6; j++)
+				velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+			omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+			omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+			omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+			VECCPY(pos, this->pos);
+			for(int j = 0; j < 3; j++)
+				pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
+			AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+		}
+
+		/* smokes */
+		for(int i = 0; i < 64; i++){
+			double pos[3];
+			COLOR32 col = 0;
+			VECCPY(pos, p->pos);
+			pos[0] += .3 * (drseq(&w->rs) - .5);
+			pos[1] += .3 * (drseq(&w->rs) - .5);
+			pos[2] += .3 * (drseq(&w->rs) - .5);
+			col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+			col |= COLOR32RGBA(0,0,0,191);
+//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
+			AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, vec3_000,
+				vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 20.);
+		}
+
+		{/* explode shockwave thingie */
+#if 0
+			static const double pyr[3] = {M_PI / 2., 0., 0.};
+			amat3_t ort;
+			Vec3d dr, v;
+			Quatd q;
+			amat4_t mat;
+			double p;
+/*			w->vft->orientation(w, &ort, &pt->pos);
+			VECCPY(dr, &ort[3]);*/
+			dr = vec3_001;
+
+			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+
+			v = vec3_001.vp(dr);
+			p = sqrt(1. - q[3] * q[3]) / VECLEN(v);
+			q = v * p;
+
+			AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
+#endif
+			AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+		}
+	}
+//		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+#endif
 }
 
 double Destroyer::maxhealth()const{return maxHealthValue;}

@@ -35,6 +35,7 @@ extern "C"{
 #ifndef _WIN32
 #include <dlfcn.h>
 #endif
+#include <sstream>
 
 #ifndef NDEBUG
 #define verify(a) assert(a)
@@ -1284,7 +1285,14 @@ void CMSQ::send(const char *name){
 		clientMessage(name);
 	}
 	else{
-		s.st::send(application, name, 0);
+		std::stringstream ss;
+		StdSerializeStream sss(ss);
+		Serializable* visit_list = NULL;
+		SerializeContext sc(sss, visit_list);
+		sss.sc = &sc;
+		sss << name;
+		std::string str = ss.str();
+		s.st::send(application, str.c_str(), str.size());
 	}
 }
 

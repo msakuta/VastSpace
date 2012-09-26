@@ -592,6 +592,13 @@ threadret_t Server::AnimThread(Server *ps){
 /// \returns whether this frame is serialized for update stream.
 bool Server::FrameProc(double dt){
 	if(pg && trylock_mutex(&mg)){
+		static bool init = false;
+		// Invoke Game::init() in the first call.
+		if(!init){
+			init = true;
+			pg->init();
+		}
+
 		pg->anim(dt);
 
 		double gametime = TimeMeasLap(&gameTimer);

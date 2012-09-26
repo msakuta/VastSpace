@@ -1302,7 +1302,7 @@ bool CMSQ::sqf_define(HSQUIRRELVM v){
 }
 
 void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
-	const char *name;
+	gltestp::dstring name;
 	uss >> name;
 	clientMessage(name);
 }
@@ -1316,7 +1316,7 @@ SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
 		else
 			CmdPrint("CMSQ is called without a valid argument");
 	}
-	catch(SQIntrinsicError){
+	catch(SQIntrinsicError &){
 		return SQ_ERROR;
 	}
 }

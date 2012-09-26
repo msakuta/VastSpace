@@ -1,7 +1,7 @@
 
-initUI();
+//initUI();
 
-//deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.025, 10, player.cs, null);
+deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.025, 10, player.cs, null);
 deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  1.7), 0.15, 3, player.cs, function(e){e.command("Deploy");});
 
 cmd("pause 0");

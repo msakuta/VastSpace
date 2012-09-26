@@ -164,13 +164,22 @@ register_console_command("control", control);
 
 mainmenu <- GLWbigMenu();
 
-function loadmission(script){
-	local ret = timemeas(function(){return CMSQ();});
+/// Sends a client message of a given name.
+/// The name is interpreted in the server and corresponding handler will be called.
+/// Actually, the name is key of clientMessageResponses table, which looks up a
+/// function that will be run in the server.
+function sendCM(name){
+	// Easy checking if the given name exists in the message handlers.
+	if(!(name in clientMessageResponses)){
+		print(name + " does not seem to exist as a client message handler.");
+		return 0;
+	}
+	local ret = timemeas(function(){return CMSQ(name);});
 	print("send time " + ret.time);
-	return ret;
+	return ret.result;
 }
 
-register_console_command("loadmission", loadmission);
+//register_console_command("loadmission", loadmission);
 
 //tutorial1 <- loadmission("scripts/tutorial1.nut");
 
@@ -181,15 +190,15 @@ function init_Universe(){
 		mainmenu = GLWbigMenu();
 		print("New mainmenu" + mainmenu);
 		mainmenu.title = "Test Missions";
-		mainmenu.addItem("Eternal Fight Demo", function(){loadmission("scripts/eternalFight.nut");});
-		mainmenu.addItem("Interceptor vs Defender", function(){loadmission("scripts/demo1.nut");});
-		mainmenu.addItem("Interceptor vs Frigate", function(){loadmission("scripts/demo2.nut");});
-		mainmenu.addItem("Interceptor vs Destroyer", function(){loadmission("scripts/demo3.nut");});
-		mainmenu.addItem("Defender vs Destroyer", function(){loadmission("scripts/demo4.nut");});
-		mainmenu.addItem("Demo 5", function(){loadmission("scripts/demo5.nut");});
-		mainmenu.addItem("Container Ship Demo", function(){loadmission("scripts/demo6.nut");});
-		mainmenu.addItem("Surface Demo", function(){loadmission("scripts/demo7.nut");});
-		mainmenu.addItem("Demo 8", function(){loadmission("gundam/demo.nut");});
+		mainmenu.addItem("Eternal Fight Demo", @() sendCM("load_eternalFight"));
+		mainmenu.addItem("Interceptor vs Defender", @() sendCM("load_demo1"));
+		mainmenu.addItem("Interceptor vs Frigate", @() sendCM("load_demo2"));
+		mainmenu.addItem("Interceptor vs Destroyer", @() sendCM("load_demo3"));
+		mainmenu.addItem("Defender vs Destroyer", @() sendCM("load_demo4"));
+		mainmenu.addItem("Demo 5", @() sendCM("load_demo5"));
+		mainmenu.addItem("Container Ship Demo", @() sendCM("load_demo6"));
+		mainmenu.addItem("Surface Demo", @() sendCM("load_demo7"));
+		mainmenu.addItem("Demo 8", @() sendCM("load_demo8"));
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;

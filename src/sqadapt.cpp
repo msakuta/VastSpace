@@ -1263,10 +1263,11 @@ struct CMSQ : public ClientMessage{
 	typedef ClientMessage st;
 	static CMSQ s;
 	void interpret(ServerClient &sc, UnserializeStream &uss);
-	static void send();
+	static void send(const char *name);
 private:
 	static bool sqf_define(HSQUIRRELVM);
 	static SQInteger sqf_call(HSQUIRRELVM);
+	static void clientMessage(const char *name);
 	CMSQ();
 };
 
@@ -1276,19 +1277,14 @@ CMSQ::CMSQ() : st("SQ"){
 	defineMap()[id] = sqf_define;
 }
 
-void CMSQ::send(){
+/// \brief Sends the CMSQ message to the server.
+/// \param name Argument sent along with the message, which is interpreted in Squirrel script.
+void CMSQ::send(const char *name){
 	if(application.mode & application.ServerBit){
-		HSQUIRRELVM v = application.serverGame->sqvm;
-		StackReserver sr(v);
-		sq_pushroottable(v);
-		sq_pushstring(v, _SC("clientMessage"), -1);
-		if(SQ_SUCCEEDED(sq_get(v, -2))){
-			sq_pushroottable(v);
-			sq_call(v, 1, SQFalse, SQFalse);
-		}
+		clientMessage(name);
 	}
 	else{
-		s.st::send(application, "", 0);
+		s.st::send(application, name, 0);
 	}
 }
 
@@ -1298,6 +1294,28 @@ bool CMSQ::sqf_define(HSQUIRRELVM v){
 }
 
 void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
+	const char *name;
+	uss >> name;
+	clientMessage(name);
+}
+
+/// \brief Call handler for CMSQ function in Squirrel script.
+SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
+	try{
+		const SQChar *str;
+		if(SQ_SUCCEEDED(sq_getstring(v, -1, &str)))
+			send(str);
+		else
+			CmdPrint("CMSQ is called without a valid argument");
+	}
+	catch(SQIntrinsicError){
+		return SQ_ERROR;
+	}
+}
+
+/// \brief Actually interprets a CMSQ, made as a function to share between dedicated server
+/// and standalone server.
+void CMSQ::clientMessage(const char *name){
 	if(application.mode & application.ServerBit){
 		HSQUIRRELVM v = application.serverGame->sqvm;
 		StackReserver sr(v);
@@ -1305,17 +1323,9 @@ void CMSQ::interpret(ServerClient &sc, UnserializeStream &uss){
 		sq_pushstring(v, _SC("clientMessage"), -1);
 		if(SQ_SUCCEEDED(sq_get(v, -2))){
 			sq_pushroottable(v);
-			sq_call(v, 1, SQFalse, SQFalse);
+			sq_pushstring(v, name, -1);
+			sq_call(v, 2, SQFalse, SQFalse);
 		}
-	}
-}
-
-SQInteger CMSQ::sqf_call(HSQUIRRELVM v){
-	try{
-		send();
-	}
-	catch(SQIntrinsicError){
-		return SQ_ERROR;
 	}
 }
 

@@ -715,6 +715,21 @@ register_console_command_a("add_bookmark_s", function(args){
 beginControl <- {};
 endControl <- {};
 
+/// Response functions that will be called when a client message with the given string is passed.
+/// Running arbitrary code given from the client on the server can be the most dangerous security hole,
+/// so we only permit certain operations defined in this table.
+clientMessageResponses <- {
+	load_eternalFight = @() loadmission("scripts/eternalFight.nut"),
+	load_demo1 = @() loadmission("scripts/demo1.nut"),
+	load_demo2 = @() loadmission("scripts/demo2.nut"),
+	load_demo3 = @() loadmission("scripts/demo3.nut"),
+	load_demo4 = @() loadmission("scripts/demo4.nut"),
+	load_demo5 = @() loadmission("scripts/demo5.nut"),
+	load_demo6 = @() loadmission("scripts/demo6.nut"),
+	load_demo7 = @() loadmission("scripts/demo7.nut"),
+	load_demo8 = @() loadmission("gundam/demo.nut"),
+};
+
 
 function earth(){
 	return universe.findcspath("/sol/earth/Earth");

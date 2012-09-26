@@ -1,5 +1,5 @@
 
-initUI();
+//initUI();
 
 showdt <- false;
 framecount <- 0;

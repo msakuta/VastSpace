@@ -1,0 +1,177 @@
+; Append this file to
+; (Visual Studio Intall Directory)\Common7\Packages\Debugger\autoexp.dat
+; to enable value inspection in the IDE debugger.
+
+[Visualizer]
+;------------------------------------------------------------------------------
+;  btVector3
+;------------------------------------------------------------------------------
+btVector3{
+	children
+	(
+	    #array
+	    (
+			expr :	($c.m_floats)[$i],  
+			size :	4
+		)
+	)
+	
+    preview
+    ( 
+        #( 
+			"[", 
+            #array
+            (
+				expr :	($c.m_floats)[$i],  
+				size :	4
+			), 
+			"]"
+		)
+	)
+}
+	
+;------------------------------------------------------------------------------
+;  btAlignedObjectArray
+;------------------------------------------------------------------------------
+btAlignedObjectArray<*>{
+	children
+	(
+	    #array
+	    (
+			expr :	($c.m_data)[$i],  
+			size :	$c.m_size
+		)
+	)
+	
+    preview
+    ( 
+        #( 
+			"[", 
+            $c.m_size ,
+            "](", 
+            
+            #array
+            (
+				expr : 	($c.m_data)[$i],  
+				size : 	$c.m_size
+			), 
+			")"
+		)
+	)
+}
+
+gltestp::dstring{
+	preview			( #if(($e.p)!=0) ([$e.p->s,s]) #else (["",s]))
+	stringview		( #if(($e.p)!=0) ([$e.p->s,sb]) #else (["",sb]))
+
+	children
+	(
+		#if(($e.p)!=0)
+		(
+			#(
+				[actual members]: [$e,!] ,
+				#array( expr: $e.p->s[$i], size: $e.p->size)
+			)
+		)
+		#else
+		(
+			#(
+				[actual members]: [$e,!]
+			)
+		)
+	)
+}
+
+cpplib::dstring{
+	preview			( #if(($e.p)!=0) ([$e.p->s,s]) #else (["",s]))
+	stringview		( #if(($e.p)!=0) ([$e.p->s,sb]) #else (["",sb]))
+
+	children
+	(
+		#if(($e.p)!=0)
+		(
+			#(
+				[actual members]: [$e,!] ,
+				#array( expr: $e.p->s[$i], size: $e.p->size)
+			)
+		)
+		#else
+		(
+			#(
+				[actual members]: [$e,!]
+			)
+		)
+	)
+}
+
+cpplib::Vec3<*>{
+	children
+	(
+	    #array
+	    (
+			expr :	($c.a)[$i],  
+			size :	3
+		)
+	)
+	
+    preview
+    ( 
+        #( 
+			"[", 
+            #array
+            (
+				expr :	($c.a)[$i],  
+				size :	3
+			), 
+			"]"
+		)
+	)
+}
+
+cpplib::Vec4<*>{
+	children
+	(
+	    #array
+	    (
+			expr :	($c.a)[$i],  
+			size :	4
+		)
+	)
+	
+    preview
+    ( 
+        #( 
+			"[", 
+            #array
+            (
+				expr :	($c.a)[$i],  
+				size :	4
+			), 
+			"]"
+		)
+	)
+}
+
+cpplib::Quat<*>{
+	children
+	(
+	    #array
+	    (
+			expr :	($c.a)[$i],  
+			size :	4
+		)
+	)
+	
+    preview
+    ( 
+        #( 
+			"[", 
+            #array
+            (
+				expr :	($c.a)[$i],  
+				size :	4
+			), 
+			"]"
+		)
+	)
+}

@@ -53,7 +53,7 @@ coordsys Orbit earth{
 		basecolor .5 .65 1.
 
 		extexture "bumptexture" textures/earth_bump.jpg 0 normal
-		extexture "cloudtexture" textures/cloud.jpg
+		extexture "cloudtexture" textures/cloud.jpg 0 alpha
 		extexture "lightstexture" textures/earth_lights.jpg
 		fragmentshader shaders/earth.fs
 		fragmentshader shaders/earth_cloud_noise.fs

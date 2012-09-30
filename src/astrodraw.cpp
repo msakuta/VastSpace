@@ -708,7 +708,10 @@ void DrawTextureSphere::useShader(){
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
 			if(0 <= tex.shaderLoc){
 				if(1&&!tex.list){
-					tex.list = ProjectSphereCubeJpg(tex.filename, m_flags | DTS_NODETAIL | (tex.normalmap ? DTS_NORMALMAP : 0));
+					int flags = DTS_NODETAIL;
+					if(tex.normalmap) flags |= DTS_NORMALMAP;
+					if(tex.alpha) flags |= DTS_ALPHA;
+					tex.list = ProjectSphereCubeJpg(tex.filename, flags);
 				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(tex.list);

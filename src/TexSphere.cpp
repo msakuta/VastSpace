@@ -7,6 +7,7 @@
 #include "TexSphere.h"
 #include "serial_util.h"
 #include "sqadapt.h"
+#include "cmd.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -72,6 +73,7 @@ SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
 	o << a.filename;
 	o << a.cloudSync;
 	o << a.normalmap;
+	o << a.alpha;
 	return o;
 }
 
@@ -80,12 +82,13 @@ UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 	i >> a.filename;
 	i >> a.cloudSync;
 	i >> a.normalmap;
+	i >> a.alpha;
 	a.list = 0;
 	return i;
 }
 
 inline bool operator==(const TexSphere::Texture &a, const TexSphere::Texture &b){
-	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.normalmap == b.normalmap;
+	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.normalmap == b.normalmap && a.alpha == b.alpha;
 }
 
 inline bool operator!=(const TexSphere::Texture &a, const TexSphere::Texture &b){
@@ -168,7 +171,14 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 			tex.filename = argv[2];
 			tex.list = 0;
 			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
-			tex.normalmap = 4 < argc && !strcmp(argv[4], "normal");
+			for(int i = 4; i < argc; i++){
+				if(!strcmp(argv[i], "alpha"))
+					tex.alpha = true;
+				else if(!strcmp(argv[i], "normal"))
+					tex.normalmap = true;
+				else
+					CmdPrint(gltestp::dstring() << "Warning: unknown extexture parameter ignored: " << argv[i]);
+			}
 			textures.push_back(tex);
 		}
 		return true;

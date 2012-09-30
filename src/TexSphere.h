@@ -40,7 +40,8 @@ public:
 		mutable GLint shaderLoc;
 		bool cloudSync;
 		bool normalmap;
-		Texture() : list(0), shaderLoc(-2), cloudSync(false), normalmap(false){}
+		bool alpha;
+		Texture() : list(0), shaderLoc(-2), cloudSync(false), normalmap(false), alpha(false){}
 	};
 	typedef Astrobj st;
 	typedef TexSphere tt;

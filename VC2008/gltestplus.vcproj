@@ -639,6 +639,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\draw\DrawTextureSphere.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\draw\effects.cpp"
 					>
 				</File>
@@ -847,6 +851,10 @@
 				Name="draw"
 				Filter="../draw/*"
 				>
+				<File
+					RelativePath="..\src\draw\DrawTextureSphere.h"
+					>
+				</File>
 				<File
 					RelativePath="..\src\draw\ring-draw.h"
 					>

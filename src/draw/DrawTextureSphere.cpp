@@ -1,24 +1,44 @@
 /** \file
- * \brief Implementation of drawing methods of astronomical objects like Star and TexSphere.
+ * \brief Implementation of DrawTextureSphere and DrawTextureSpheroid classes.
  */
 #include "DrawTextureSphere.h"
 #include "astrodef.h"
 #include "glsl.h"
 #include "cmd.h"
 #include "StaticInitializer.h"
+#include "bitmap.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/cull.h>
 #include <clib/gl/gldraw.h>
 #include <clib/gl/multitex.h>
+#include <clib/cfloat.h>
 }
 #include <clib/stats.h>
 #include <cpplib/gl/cullplus.h>
 #include <gl/glu.h>
 #include <gl/glext.h>
+#include <fstream>
 
+#define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
+const GLenum DrawTextureSphere::cubetarget[] = {
+GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+};
+const Quatd DrawTextureSphere::cubedirs[] = {
+	Quatd(SQRT2P2,0,SQRT2P2,0), /* {0,-SQRT2P2,0,SQRT2P2} */
+	Quatd(SQRT2P2,0,0,SQRT2P2),
+	Quatd(0,0,1,0), /* {0,0,0,1} */
+	Quatd(-SQRT2P2,0,SQRT2P2,0), /*{0,SQRT2P2,0,SQRT2P2},*/
+	Quatd(-SQRT2P2,0,0,SQRT2P2), /* ??? {0,-SQRT2P2,SQRT2P2,0},*/
+	Quatd(-1,0,0,0), /* {0,1,0,0}, */
+};
 
 static int g_sc = -1, g_cl = 1;
 static double gpow = .5, gscale = 2.;
@@ -180,11 +200,6 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 #endif
 }
 
-void drawsuncolona(Astrobj *a, const Viewer *vw);
-void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
-void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
-static GLuint ProjectSphereJpg(const char *fname);
-GLuint ProjectSphereCubeJpg(const char *fname, int flags);
 
 
 // Global ambient value for astronomical objects
@@ -516,10 +531,7 @@ void DrawTextureSphere::useShader(){
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
 			if(0 <= tex.shaderLoc){
 				if(1&&!tex.list){
-					int flags = DTS_NODETAIL;
-					if(tex.normalmap) flags |= DTS_NORMALMAP;
-					if(tex.alpha) flags |= DTS_ALPHA;
-					tex.list = ProjectSphereCubeJpg(tex.filename, flags);
+					tex.list = ProjectSphereCubeJpg(tex.filename, TexSphere::DTS_NODETAIL | tex.flags);
 				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(tex.list);
@@ -562,7 +574,7 @@ bool DrawTextureSphere::draw(){
 	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
-		if(!(flags & DTS_NOGLOBE)){
+		if(!(flags & TexSphere::DTS_NOGLOBE)){
 			GLubyte color[4], dark[4];
 			color[0] = GLubyte(mat_diffuse[0] * 255);
 			color[1] = GLubyte(mat_diffuse[1] * 255);
@@ -632,7 +644,7 @@ bool DrawTextureSphere::draw(){
 	glPushMatrix();
 	glLoadIdentity();
 
-	if(m_flags & DTS_LIGHTING){
+	if(m_flags & TexSphere::DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -656,7 +668,7 @@ bool DrawTextureSphere::draw(){
 		glDisable(GL_LIGHTING);
 	}
 
-	if(flags & DTS_ADD){
+	if(flags & TexSphere::DTS_ADD){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 	}
@@ -886,7 +898,7 @@ bool DrawTextureSpheroid::draw(){
 	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
 
-	if(m_flags & DTS_LIGHTING){
+	if(m_flags & TexSphere::DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -944,4 +956,370 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 
+
+
+#define DETAILSIZE 64
+#define PROJTS 1024
+#define PROJS (PROJTS/2)
+#define PROJBITS 32 /* bit depth of projected texture */
+
+static int PROJC = 512;
+static void Init_PROJC(){
+	CvarAdd("g_proj_size", &PROJC, cvar_int);
+}
+static StaticInitializer init_PROJC(Init_PROJC);
+
+static cpplib::dstring pathProjection(const char *name, int nn){
+	const char *p = strrchr(name, '.');
+	cpplib::dstring dstr;
+	dstr << "cache/";
+	if(p)
+		dstr.strncat(name, p - name);
+	else
+		dstr.strcat(name);
+	dstr << "_proj" << nn << ".bmp";
+	return dstr;
+}
+
+GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags){
+	static int texinit = 0;
+	GLuint tex, texname;
+//	int srcheight = !raw ? 0 : raw->bmiHeader.biHeight < 0 ? -raw->bmiHeader.biHeight : raw->bmiHeader.biHeight;
+//	int srcwidth = !raw ? 0 : raw->bmiHeader.biWidth;
+	glGenTextures(1, &texname);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
+	/*if(!texinit)*/
+	{
+		int outsize, linebytes, linebytesp;
+		long rawh = !raw ? 0 : ABS(raw->bmiHeader.biHeight);
+		long raww = !raw ? 0 : raw->bmiHeader.biWidth;
+		BITMAPINFO *proj = NULL;
+		RGBQUAD zero = {0,0,0,255};
+		texinit = 1;
+		int bits = flags & TexSphere::DTS_ALPHA ? 8 : PROJBITS;
+
+		if(!cacheload){
+			proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & TexSphere::DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
+			memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
+			proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
+			proj->bmiHeader.biBitCount = bits;
+			proj->bmiHeader.biClrUsed = flags & TexSphere::DTS_ALPHA ? 256 : 0;
+			proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
+			linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
+			linebytesp = (PROJC * bits + 31) / 32 * 4;
+			for(unsigned i = 0; i < proj->bmiHeader.biClrUsed; i++)
+				proj->bmiColors[i].rgbBlue = proj->bmiColors[i].rgbGreen = proj->bmiColors[i].rgbRed = proj->bmiColors[i].rgbReserved = i;
+		}
+
+		for(int nn = 0; nn < 6; nn++){
+			if(!cacheload) for(int i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
+				RGBQUAD *dst;
+				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * bits / 8];
+				GLubyte *dst8 = (GLubyte*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * bits / 8];
+	/*			if(r){
+					double dj = j * 2. / PROJS - 1.;
+					j1 = r < fabs(dj) ? -1 : (int)(raw->bmiHeader.biWidth * fmod(asin(dj / r) / M_PI / 2. + .25 + (ii * 2 + jj) * .25, 1.));
+				}
+				else{
+					*dst = zero;
+					continue;
+				}*/
+				Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
+				double lon = -atan2(epos[0], -(epos[2]));
+				double lat = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
+//					double lon = -atan2(epos[0], -(epos[1]));
+//					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
+				double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
+				double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+				double fj1 = dj1 - floor(dj1); // fractional part
+				double fi1 = di1 - floor(di1);
+				int i1 = (int(floor(di1)) + rawh) % rawh;
+				int j1 = (int(floor(dj1)) + raww) % raww;
+
+				if(raw->bmiHeader.biBitCount == 4){ // untested
+					double accum[3] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
+					dst->rgbReserved = 255;
+				}
+				else if(raw->bmiHeader.biBitCount == 8){
+					if(flags & TexSphere::DTS_ALPHA){
+						double accum = 0.;
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
+							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+						*dst8 = (GLubyte)(accum);
+					}
+					else if(flags & TexSphere::DTS_NORMALMAP){
+						double accum[3] = {0.};
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++){
+							const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+							int y = (i1 + ii) % rawh;
+							int x = (j1 + jj) % raww;
+							int wb = linebytes, w = raww, h = rawh;
+							double f = (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1);
+							accum[0] += f * (unsigned char)rangein(127 + (double)1. * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
+							accum[1] += f * (unsigned char)rangein(127 + 1. * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
+							accum[2] = 255;
+						}
+						dst->rgbRed = (GLubyte)accum[0];
+						dst->rgbGreen = (GLubyte)accum[1];
+						dst->rgbBlue = (GLubyte)accum[2];
+						dst->rgbReserved = 255;
+					}
+					else{
+						// There could be the case 8 bit deep bitmap doesn't have a color samples table,
+						// e.g. returned object of ReadJpeg() when a monochrome JPEG is opened.
+						// In that case, we assume the single 8 bit channel as intensity value.
+						if(raw->bmiHeader.biClrUsed){
+							double accum[3] = {0}; // accumulator
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+								accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+							dst->rgbRed = (GLubyte)accum[0];
+							dst->rgbGreen = (GLubyte)accum[1];
+							dst->rgbBlue = (GLubyte)accum[2];
+						}
+						else{
+							double accum = 0; // accumulator
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
+								accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+							dst->rgbRed = dst->rgbGreen = dst->rgbBlue = (GLubyte)accum;
+						}
+						dst->rgbReserved = 255;
+					}
+				}
+				else if(raw->bmiHeader.biBitCount == 24){
+					double accum[3] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 3 + c];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
+					dst->rgbReserved = 255;
+				}
+				else if(raw->bmiHeader.biBitCount == 32){ // untested
+//					const unsigned char *src;
+					double accum[4] = {0}; // accumulator
+					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 4; c++)
+						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 4 + c];
+//					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
+					dst->rgbRed = (GLubyte)accum[0];
+					dst->rgbGreen = (GLubyte)accum[1];
+					dst->rgbBlue = (GLubyte)accum[2];
+					dst->rgbReserved = (GLubyte)accum[3];
+				}
+			}
+
+			if(!cacheload){
+//				std::ostringstream bstr;
+				const char *p;
+	//			FILE *fp;
+				cpplib::dstring dstr = pathProjection(name, nn);
+//				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
+
+				// Create directories to make path available
+//				std::string sstr = bstr.str();
+//				const char *cstr = sstr.c_str();
+				const char *cstr = dstr;
+				p = &cstr[sizeof "cache"-1];
+				while(p = strchr(p+1, '/')){
+					cpplib::dstring dirpath = cpplib::dstring().strncat(cstr, p - cstr);
+#ifdef _WIN32
+					if(GetFileAttributes(dirpath) == -1)
+						CreateDirectory(dirpath, NULL);
+#else
+					mkdir(dirpath);
+#endif
+				}
+
+				/* force overwrite */
+				std::ofstream ofs(dstr/*bstr.str().c_str()*/, std::ofstream::out | std::ofstream::binary);
+				if(ofs/*fp = fopen(bstr.str().c_str(), "wb")*/){
+					BITMAPFILEHEADER fh;
+					((char*)&fh.bfType)[0] = 'B';
+					((char*)&fh.bfType)[1] = 'M';
+					fh.bfSize = sizeof(BITMAPFILEHEADER) + outsize;
+					fh.bfReserved1 = fh.bfReserved2 = 0;
+					fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + proj->bmiHeader.biClrUsed * sizeof(RGBQUAD);
+	//				fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
+	//				fwrite(proj, 1, outsize, fp);
+					ofs.write(reinterpret_cast<char*>(&fh), sizeof fh);
+					ofs.write(reinterpret_cast<char*>(proj), outsize);
+					ofs.close();
+	//				fclose(fp);
+				}
+
+	#if 0
+				strcat(jpgfilename, ".jpg");
+				{
+					BITMAPDATA bmd;
+					bmd.pBmp = (DWORD*)((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed]);
+					bmd.dwDataSize = proj->bmiHeader.biSizeImage;
+					swap3byte(bmd.pBmp, bmd.dwDataSize);
+					bmd.nWidth = proj->bmiHeader.biWidth;
+					bmd.nHeight = proj->bmiHeader.biHeight;
+					SaveJPEGData(jpgfilename, &bmd, 80);
+				}
+	#endif
+				glTexImage2D(cubetarget[nn], 0, flags & TexSphere::DTS_ALPHA ? GL_ALPHA : GL_RGBA,
+					PROJC, PROJC, 0, flags & TexSphere::DTS_ALPHA ? GL_ALPHA : GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
+
+			}
+			else{
+				glTexImage2D(cubetarget[nn], 0, flags & TexSphere::DTS_ALPHA ? GL_ALPHA : cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
+					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? flags & TexSphere::DTS_ALPHA ? GL_ALPHA : GL_LUMINANCE : (assert(0), 0),
+					GL_UNSIGNED_BYTE, &cacheload[nn]->bmiColors[cacheload[nn]->bmiHeader.biClrUsed]);
+			}
+		}
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		static bool init = false;
+		static GLuint detailname = 0;
+
+		if(!init){
+			struct random_sequence rs;
+			int tsize = DETAILSIZE;
+			static GLubyte tbuf[DETAILSIZE][DETAILSIZE][3], tex[DETAILSIZE][DETAILSIZE][3];
+			init_rseq(&rs, 124867);
+			init = true;
+			for(int i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+				int buf[3] = {0};
+				int k;
+				for(k = 0; k < 1; k++){
+					buf[0] += 192 + rseq(&rs) % 64;
+					buf[1] += 192 + rseq(&rs) % 64;
+					buf[2] += 192 + rseq(&rs) % 64;
+				}
+				tbuf[i][j][0] = buf[0] / (1);
+				tbuf[i][j][1] = buf[1] / (1);
+				tbuf[i][j][2] = buf[2] / (1);
+			}
+
+			/* average surrounding 8 texels to smooth */
+			for(int i = 0; i < tsize; i++) for(int j = 0; j < tsize; j++){
+				int k, l;
+				int buf[3] = {0};
+				for(k = -1; k <= 1; k++) for(l = -1; l <= 1; l++)/* if(k != 0 || l != 0)*/{
+					int x = (i + k + DETAILSIZE) % DETAILSIZE, y = (j + l + DETAILSIZE) % DETAILSIZE;
+					buf[0] += tbuf[x][y][0];
+					buf[1] += tbuf[x][y][1];
+					buf[2] += tbuf[x][y][2];
+				}
+				tex[i][j][0] = buf[0] / 9 / 2 + 127;
+				tex[i][j][1] = buf[1] / 9 / 2 + 127;
+				tex[i][j][2] = buf[2] / 9 / 2 + 127;
+			}
+			tex[0][0][0] = 
+			tex[0][0][1] = 
+			tex[0][0][2] = 255;
+			glGenTextures(1, &detailname);
+			glBindTexture(GL_TEXTURE_2D, detailname);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tsize, tsize, 0, GL_RGB, GL_UNSIGNED_BYTE, tex);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
+
+		glNewList(tex = glGenLists(1), GL_COMPILE);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_CUBE_MAP);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
+//		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
+
+		if(glActiveTextureARB && !(flags & TexSphere::DTS_NODETAIL)){
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, detailname);
+			glEnable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+
+		glEndList();
+#if 0
+		fp = fopen("projected.bmp", "wb");
+		((char*)&fh.bfType)[0] = 'B';
+		((char*)&fh.bfType)[1] = 'M';
+		fh.bfSize = sizeof(BITMAPFILEHEADER) + outsize;
+		fh.bfReserved1 = fh.bfReserved2 = 0;
+		fh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + proj->bmiHeader.biClrUsed * sizeof(RGBQUAD);
+		fwrite(&fh, 1, sizeof(BITMAPFILEHEADER), fp);
+		fwrite(proj, 1, outsize, fp);
+		fclose(fp);
+#endif
+
+		free(proj);
+/*		free(raw);*/
+	}
+	return tex;
+}
+
+#if 1
+
+
+GLuint DrawTextureSphere::ProjectSphereCubeJpg(const char *fname, int flags){
+		GLuint texlist = 0;
+		const char *jpgfilename;
+		const char *p;
+		p = strrchr(fname, '.');
+#ifdef _WIN32
+		if(GetFileAttributes("cache") == -1)
+			CreateDirectory("cache", NULL);
+#else
+		mkdir("cache");
+#endif
+		jpgfilename = fname;
+		{
+			BITMAPINFO *bmis[6];
+			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
+			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
+			int i;
+			bool ok = true;
+			for(i = 0; i < 6; i++){
+				cpplib::dstring outfilename = pathProjection(fname, i);
+
+				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))
+					goto heterogeneous;
+				if(!(0 < CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime)))
+					goto heterogeneous;
+				if(!(bmis[i] = ReadBitmap(outfilename))){
+					i++;
+					goto heterogeneous;
+				}
+				// If header is different, they cannot be concatenated to produce a cube map.
+				if(0 < i && memcmp(&bmis[0]->bmiHeader, &bmis[i]->bmiHeader, sizeof bmis[0]->bmiHeader)){
+					i++;
+heterogeneous:
+					// Free all loaded images so far.
+					for(int j = 0; j < i; j++)
+						LocalFree(bmis[j]);
+					ok = false;
+					break;
+				}
+			}
+			if(ok){
+				texlist = ProjectSphereCube(fname, NULL, bmis, flags);
+				for(int i = 0; i < 6; i++)
+					LocalFree(bmis[i]);
+			}
+			else
+			{
+				void (*freeproc)(BITMAPINFO*);
+				BITMAPINFO *bmi = ReadJpeg(jpgfilename, &freeproc);
+				if(!bmi)
+					return 0;
+				texlist = ProjectSphereCube(fname, bmi, NULL, flags);
+				freeproc(bmi);
+			}
+		}
+		return texlist;
+}
+
+#endif
 

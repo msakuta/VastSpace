@@ -33,15 +33,24 @@ protected:
 	/// OpenGL texture units
 	AstroRing astroRing;
 public:
+	/// drawTextureSphere flags
+	enum DTS{
+		DTS_ADD = 1<<0,
+		DTS_NODETAIL = 1<<1,
+		DTS_ALPHA = 1<<2,
+		DTS_NORMALMAP = 1<<3,
+		DTS_NOGLOBE = 1<<4,
+		DTS_LIGHTING = 1<<5
+	};
+
 	struct Texture{
 		cpplib::dstring uniformname;
 		cpplib::dstring filename;
 		mutable GLuint list;
 		mutable GLint shaderLoc;
 		bool cloudSync;
-		bool normalmap;
-		bool alpha;
-		Texture() : list(0), shaderLoc(-2), cloudSync(false), normalmap(false), alpha(false){}
+		int flags; ///< drawTextureSphere flags
+		Texture() : list(0), shaderLoc(-2), cloudSync(false), flags(false){}
 	};
 	typedef Astrobj st;
 	typedef TexSphere tt;

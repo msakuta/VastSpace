@@ -72,8 +72,7 @@ SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
 	o << a.uniformname;
 	o << a.filename;
 	o << a.cloudSync;
-	o << a.normalmap;
-	o << a.alpha;
+	o << a.flags;
 	return o;
 }
 
@@ -81,14 +80,13 @@ UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 	i >> a.uniformname;
 	i >> a.filename;
 	i >> a.cloudSync;
-	i >> a.normalmap;
-	i >> a.alpha;
+	i >> a.flags;
 	a.list = 0;
 	return i;
 }
 
 inline bool operator==(const TexSphere::Texture &a, const TexSphere::Texture &b){
-	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.normalmap == b.normalmap && a.alpha == b.alpha;
+	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.flags == b.flags;
 }
 
 inline bool operator!=(const TexSphere::Texture &a, const TexSphere::Texture &b){
@@ -173,9 +171,9 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
 			for(int i = 4; i < argc; i++){
 				if(!strcmp(argv[i], "alpha"))
-					tex.alpha = true;
+					tex.flags |= DTS_ALPHA;
 				else if(!strcmp(argv[i], "normal"))
-					tex.normalmap = true;
+					tex.flags |= DTS_NORMALMAP;
 				else
 					CmdPrint(gltestp::dstring() << "Warning: unknown extexture parameter ignored: " << argv[i]);
 			}

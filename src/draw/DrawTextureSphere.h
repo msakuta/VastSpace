@@ -1,21 +1,11 @@
 /** \file
- * \brief Implementation of drawing methods of astronomical objects like Star and TexSphere.
+ * \brief Definition of DrawTexSphere and DrawTextureSpheroid classes.
  */
 #ifndef DRAWTEXTURESPHERE_H
 #define DRAWTEXTURESPHERE_H
 #include "../TexSphere.h"
 #include "judge.h"
 
-
-/// drawTextureSphere flags
-enum DTS{
-	DTS_ADD = 1<<0,
-	DTS_NODETAIL = 1<<1,
-	DTS_ALPHA = 1<<2,
-	DTS_NORMALMAP = 1<<3,
-	DTS_NOGLOBE = 1<<4,
-	DTS_LIGHTING = 1<<5
-};
 
 /// \brief A class that draw textured sphere.
 ///
@@ -74,6 +64,26 @@ public:
 	tt &ringRange(double ringmin, double ringmax){m_ringmin = ringmin; m_ringmax = ringmax; return *this;}
 	tt &cloudRotation(const Quatd &acloudrot){m_cloudRotation = acloudrot; return *this;}
 	virtual bool draw();
+
+	static const GLenum cubetarget[6]; ///< The target OpenGL texture units for each direction of the cube.
+	static const Quatd cubedirs[6]; ///< The orientations corresponding to cubetarget. Note that rolling matters.
+
+	/// \brief Converts Mercator projection texture to cube map.
+	///
+	/// Cube has 6 faces, so returning textures are also 6. These returned textures are cached in cache folder for
+	/// later execution.
+	///
+	/// \param name The name of cached textures.
+	/// \param raw The source texture mapped in Mercator projection.
+	/// \param cacheload The buffer for returned textures. The buffer must have at least 6 elements.
+	/// \param flags DrawTextureSphere flags.
+	static GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags);
+
+	/// \brief Reads an Mercator projection texture in a JPEG file and pass it to ProjectSphereCube().
+	/// \param fname The file name of JPEG file.
+	/// \param flags DrawTextureSphere flags.
+	static GLuint ProjectSphereCubeJpg(const char *fname, int flags);
+
 };
 
 /// \brief A class that draw textured sphere.

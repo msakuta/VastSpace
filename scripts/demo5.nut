@@ -1,5 +1,5 @@
 // Attacker with Defenders
-initUI();
+//initUI();
 
 //deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.025, 20, player.cs, null);
 deltaFormation("Attacker", 1, Quatd(0,0,0,1), Vec3d(0, 0., 0.7), 0.15, 1, player.cs,
@@ -7,9 +7,8 @@ deltaFormation("Attacker", 1, Quatd(0,0,0,1), Vec3d(0, 0., 0.7), 0.15, 1, player
 		local d = e.docker;
 		if(d != null && d.alive){
 			for(local i = 0; i < 5; i++){
-				local e2 = Entity.create("Defender");
+				local e2 = d.addent("Defender");
 				e2.race = e.race;
-				d.addent(e2);
 			}
 		}
 	}

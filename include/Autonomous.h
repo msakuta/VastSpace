@@ -56,7 +56,7 @@ public:
 
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	virtual void enterField(WarField*);
+	virtual void addRigidBody(WarSpace*);
 	virtual void anim(double dt);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawHUD(wardraw_t *);

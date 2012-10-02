@@ -40,7 +40,6 @@ public:
 	virtual void dockque(Dockable *);
 	bool postUndock(Dockable *); // Posts an entity to undock queue.
 	int enumParadeC(enum ShipClass sc){return paradec[sc]++;}
-	virtual Entity *addent(Entity*);
 	virtual operator Docker*();
 	virtual bool undock(Dockable *);
 	virtual Vec3d getPortPos(Dockable *)const = 0; ///< Retrieves position to dock to

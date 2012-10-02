@@ -66,8 +66,8 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual double maxhealth()const;
-	virtual void enterField(WarField *enteringField); // Opportunity to response to WarField::addent.
-	virtual void leaveField(WarField *leavingField); // Finally, we need this.
+	virtual void enterField(WarField *enteringField);
+	virtual void leaveField(WarField *leavingField);
 	virtual void setPosition(const Vec3d *pos, const Quatd *rot = NULL, const Vec3d *velo = NULL, const Vec3d *avelo = NULL); // Arguments can be NULL
 	virtual void getPosition(Vec3d *pos, Quatd *rot = NULL, Vec3d *velo = NULL, Vec3d *avelo = NULL)const; // Arguments can be NULL
 	virtual void anim(double dt);
@@ -174,6 +174,8 @@ protected:
 	virtual void init();
 	virtual Docker *getDockerInt();
 	virtual Builder *getBuilderInt();
+	virtual void addRigidBody(WarSpace *);
+	virtual void removeRigidBody(WarSpace *);
 	static unsigned registerEntity(ClassId name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
 

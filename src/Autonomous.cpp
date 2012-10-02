@@ -702,19 +702,13 @@ void Autonomous::unserialize(UnserializeContext &sc){
 	sc.i >> (int&)task;
 }
 
-void Autonomous::enterField(WarField *target){
-	WarSpace *ws = *target;
-
+void Autonomous::addRigidBody(WarSpace *ws){
 	if(ws && ws->bdw){
 		buildBody();
 		//add the body to the dynamics world
 		if(bbody)
 			ws->bdw->addRigidBody(bbody, bbodyGroup(), bbodyMask());
 	}
-#if DEBUG_ENTERFIELD
-	std::ofstream of("debug.log", std::ios_base::app);
-	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
-#endif
 }
 
 void Autonomous::anim(double dt){

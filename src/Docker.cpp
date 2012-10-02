@@ -138,21 +138,15 @@ bool Docker::postUndock(Dockable *e){
 	return false;
 }
 
-Entity *Docker::addent(Entity *e){
-	e->w = this;
-//	e->next = el;
-	e->addObserver(this);
-	el.push_back(e);
-	return e;
-}
-
 Docker::operator Docker *(){return this;}
 
 bool Docker::undock(Dockable *e){
 	EntityList::iterator it = undockque.begin();
 	while(it != undockque.end()){
 		if(*it == e){
-			e->removeObserver(this);
+			// You only need to manage weak pointers in the server since the client won't ever delete an Entity.
+			if(game->isServer())
+				e->removeObserver(this);
 			it = undockque.erase(it);
 		}
 		else
@@ -189,12 +183,12 @@ void Docker::sq_pushobj(HSQUIRRELVM v, Docker *cs){
 	sq_pushroottable(v);
 	sq_pushstring(v, _SC("Docker"), -1);
 	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError("Something's wrong with CoordSys class definition.");
+		throw SQFError("Something's wrong with Docker class definition.");
 	if(SQ_FAILED(sq_createinstance(v, -1)))
 		throw SQFError("Couldn't create class Docker");
 	SQUserPointer p;
 	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
-		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+		throw SQFError("Something's wrong with Squirrel Class Instace of Docker.");
 	new(p) WeakPtr<Docker>(cs);
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
@@ -205,7 +199,7 @@ Docker *Docker::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
-		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+		throw SQFError("Something's wrong with Squirrel Class Instace of Docker.");
 	return *(WeakPtr<Docker>*)up;
 }
 

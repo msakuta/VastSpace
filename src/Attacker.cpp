@@ -237,7 +237,7 @@ int Attacker::takedamage(double damage, int hitpart){
 }
 
 short Attacker::bbodyGroup()const{
-	return 3; // We could collide with dockable ships, what would we do?
+	return 2; // We could collide with dockable ships, what would we do?
 }
 
 bool Attacker::buildBody(){

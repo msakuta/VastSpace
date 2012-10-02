@@ -355,6 +355,16 @@ static SQInteger sqf_Entity_create(HSQUIRRELVM v){
 		const SQChar *classname;
 		sq_getstring(v, 2, &classname);
 
+		// We shouldn't call this function at all!
+		// You should have a parent object (CoordSys or Docker from Squirrel VM's perspective) whenever you want to
+		// create an Entity within. Use the parent's addent method to avoid leaks.
+		assert(0);
+
+/*		if(game->player && game->player->cs && !game->player->cs->w){
+			const_cast<CoordSys*>(game->player->cs)->w = new WarSpace(game);
+			const_cast<CoordSys*>(game->player->cs)->w->cs = const_cast<CoordSys*>(game->player->cs);
+		}*/
+
 		Entity *pt = Entity::create(classname, NULL);
 
 		if(!pt)
@@ -565,34 +575,67 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 
 double Entity::maxhealth()const{return 100.;}
 
-/// Called when this Entity is entering a WarField, just after adding to Entity list in the WarField.
+/// \brief Called when this Entity is entering a WarField, just after adding to Entity list in the WarField.
+///
+/// You can use this function as an opportunity to response to WarField::addent().
 ///
 /// This function is also called when creating an Entity.
+///
+/// \param aw The WarField to which this Entity is entering.
 void Entity::enterField(WarField *aw){
 	WarSpace *ws = *aw;
-	if(ws && ws->bdw && bbody){
-		ws->bdw->addRigidBody(bbody);
-		bbody->activate(); // Is it necessary?
+	if(ws){
+		addRigidBody(ws);
 	}
+
+	// Prevent duplicate addition to the Bullet Dynamics World by clearing the flag, regardless of reason.
+	enteringField = false;
+
 #if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << aw->cs->getpath() << std::endl;
 #endif
 }
 
-/// Called when this Entity is leaving a WarField, after removing from Entity list in the WarField.
+/// \brief Protected virtual function for adding rigid body to the WarSpace.
+///
+/// Derived classes can override to implement custom mask values and such.
+///
+/// \param ws The WarSpace to add the rigid body to.
+void Entity::addRigidBody(WarSpace *ws){
+	if(ws->bdw && bbody){
+		ws->bdw->addRigidBody(bbody);
+		bbody->activate(); // Is it necessary?
+	}
+}
+
+/// \brief Called when this Entity is leaving a WarField, after removing from Entity list in the WarField.
+///
+/// Added for symmetry with enterField().
 ///
 /// This function is also called when deleting an Entity.
+///
+/// \param ws The WarField from which this Entity is leaving.
 void Entity::leaveField(WarField *aw){
 	if(!aw)
 		return;
 	WarSpace *ws = *aw;
-	if(ws && ws->bdw && bbody)
-		ws->bdw->removeRigidBody(bbody);
+	if(ws)
+		removeRigidBody(ws);
 #if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": leaveField: " << (game->isServer()) << " {" << classname() << ":" << id << "} from " << aw->cs->getpath() << std::endl;
 #endif
+}
+
+/// \brief Protected virtual function for removing rigid body from the WarSpace.
+///
+/// Derived classes can override to customize something corresponding to addRigidBody().
+///
+/// \param ws The WarSpace to remove the rigid body from.
+void Entity::removeRigidBody(WarSpace *ws){
+	if(ws->bdw && bbody)
+		ws->bdw->removeRigidBody(bbody);
 }
 
 void Entity::setPosition(const Vec3d *apos, const Quatd *arot, const Vec3d *avelo, const Vec3d *aavelo){

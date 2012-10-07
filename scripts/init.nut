@@ -191,7 +191,7 @@ register_console_command("att", att);
 
 function loadmission(script){
 	print("loading " + script);
-	local ret = timemeas(function()/*:(script)*/{return loadfile(script);});
+	local ret = timemeas(function(){return loadfile(script);});
 	print("compile time " + ret.time);
 	local exe = ret.result;
 	if(exe == null){
@@ -210,7 +210,7 @@ register_console_command("loadmission", loadmission);
 function clientMessage(name){
 	if(name in clientMessageResponses){
 		print("clientMessageResponses[" + name + "]");
-		clientMessageResponses[name]();
+		clientMessageResponses.rawget(name)();
 	}
 	else
 		print(name + " does not exist in the server's clientMessageResponse");

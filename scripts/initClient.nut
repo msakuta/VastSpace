@@ -309,7 +309,6 @@ function initUI(){
 }
 
 
-showdt <- false;
 
 
 

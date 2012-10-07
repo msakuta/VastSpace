@@ -337,18 +337,19 @@ static int cmd_exit(int argc, char *argv[]){
 }
 
 
-static int cmd_sq(int argc, char *argv[]){
+static int cmd_sq(int argc, char *argv[], void *pv){
+	Game *game = (Game*)pv;
 	if(argc < 2){
 		CmdPrint("usage: sq \"Squirrel One Linear Source\"");
 		return 0;
 	}
-	HSQUIRRELVM &v = g_sqvm;
-	if(SQ_FAILED(sq_compilebuffer(g_sqvm, argv[1], strlen(argv[1]), _SC("sq"), SQTrue))){
+	HSQUIRRELVM &v = game->sqvm;
+	if(SQ_FAILED(sq_compilebuffer(v, argv[1], strlen(argv[1]), _SC("sq"), SQTrue))){
 		CmdPrint("Compile error");
 	}
 	else{
-		sq_pushroottable(g_sqvm);
-		sq_call(g_sqvm, 1, SQFalse, SQTrue);
+		sq_pushroottable(v);
+		sq_call(v, 1, SQFalse, SQTrue);
 		sq_pop(v, 1);
 	}
 	return 0;
@@ -408,7 +409,7 @@ void Application::init(bool isClient)
 	viewport vp;
 	CmdInit(&vp);
 	CmdAdd("exit", cmd_exit);
-	CmdAdd("sq", cmd_sq);
+	CmdAddParam("sq", cmd_sq, static_cast<Game*>(clientGame ? clientGame : serverGame)); // clientGame is preceded
 	CmdAdd("say", cmd_say);
 	CmdAddParam("move", cmd_move, this);
 	CmdAddParam("maxclients", cmd_maxclients, this);
@@ -420,10 +421,18 @@ void Application::init(bool isClient)
 	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
 //	Player::cmdInit(application);
 
-	if(serverGame)
+	if(serverGame){
+		// Explicitly add sq command for the server game.
+		// The static_cast is necessary if ServerGame virtually inherits Game.
+		CmdAddParam("ssq", cmd_sq, static_cast<Game*>(serverGame));
 		sqa_init(serverGame);
-	if(clientGame)
+	}
+	if(clientGame){
+		// Explicitly add sq command for the client game
+		// The static_cast is necessary if ClientGame virtually inherits Game.
+		CmdAddParam("csq", cmd_sq, static_cast<Game*>(clientGame));
 		sqa_init(clientGame);
+	}
 	if(!isClient){
 		HSQUIRRELVM v = serverGame->sqvm;
 		const SQChar *s = _SC("space.dat");

@@ -340,7 +340,7 @@ static int cmd_exit(int argc, char *argv[]){
 static int cmd_sq(int argc, char *argv[], void *pv){
 	Game *game = (Game*)pv;
 	if(argc < 2){
-		CmdPrint("usage: sq \"Squirrel One Linear Source\"");
+		CmdPrint(gltestp::dstring() << "usage: " << argv[0] << " \"Squirrel One Linear Source\"");
 		return 0;
 	}
 	HSQUIRRELVM &v = game->sqvm;

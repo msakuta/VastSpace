@@ -7,6 +7,7 @@ uniform float time;
 uniform sampler1D tex1d;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
+uniform float exposure;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -70,7 +71,8 @@ void main (void)
 	float diffuse = max(0., dot(flight, fnormal) + .1);
 
 //	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
-	texColor *= diffuse/* + ambient*/;
+	float ambient = 0.001;
+	texColor *= diffuse + ambient;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
 
@@ -101,7 +103,7 @@ void main (void)
 
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)
-		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.75, 5. * (-sundot + 0.1));
+		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.02, 5. * (-sundot + 0.1));
 /*	texColor[0] = sqrt(texColor[0]);
 	texColor[1] = sqrt(texColor[1]);
 	texColor[2] = sqrt(texColor[2]);*/
@@ -112,5 +114,6 @@ void main (void)
 //	vec4 envColor = textureCube(envmap, texCoord);
 //	envColor[3] = col[3] / 2.;
 //	gl_FragColor = (envColor + texColor);
+	texColor.xyz *= exposure;
 	gl_FragColor = texColor;
 }

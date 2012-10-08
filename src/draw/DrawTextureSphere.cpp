@@ -485,12 +485,14 @@ void DrawTextureSphere::useShader(){
 			GLint invEyeMat3Loc;
 			GLint timeLoc;
 			GLint heightLoc;
+			GLint exposureLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
 				invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 				timeLoc = glGetUniformLocation(shader, "time");
 				heightLoc = glGetUniformLocation(shader, "height");
+				exposureLoc = glGetUniformLocation(shader, "exposure");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -521,6 +523,10 @@ void DrawTextureSphere::useShader(){
 		}
 		if(0 <= locs.heightLoc){
 			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
+		}
+		if(0 <= locs.exposureLoc){
+			extern double r_dynamic_range;
+			glUniform1f(locs.exposureLoc, r_dynamic_range);
 		}
 
 		TexSphere::TextureIterator it;

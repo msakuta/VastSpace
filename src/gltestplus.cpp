@@ -91,7 +91,8 @@ static double gametimescale = 1.;
 static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///< For those that z buffering does not make sense
 static double g_space_near_clip = .5, g_space_far_clip = 1e10;
 static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
-static double r_dynamic_range = 1.;
+static int r_auto_exposure = 1; ///< Flag to enable automatic exposure adjustment.
+double r_dynamic_range = 1.; ///< The exposure of the camera.
 static int r_orbit_axis = 0;
 static int r_shadows = 1;
 static int r_shadow_map_size = 1024;
@@ -931,6 +932,44 @@ void Game::draw_func(Viewer &vw, double dt){
 	}
 	projection(glPopMatrix());
 	glPopAttrib();
+
+	// Automatic exposure control based on rendered scene's brightness.
+	// Note that it won't be effective if the shader is off.
+	if(r_auto_exposure){
+		// Exposure limits. It affects the target exposure.
+		static const double minExposure = 1e-1;
+		static const double maxExposure = 1e2;
+		double accum = 0.;
+		static RandomSequence rs(12321); // Random source
+
+		// Sample 9 regions of the screen. We cannot sample the whole screen because
+		// it resides in video memory.
+		for(int x = -1; x <= 1; x++) for(int y = -1; y <= 1; y++){
+			GLfloat thePixel[4];
+			// Monte carlo sampling
+			glReadPixels(
+				vw.vp.w / 2 + (x + rs.nextd() - 0.5) * vw.vp.w / 4,
+				vw.vp.h / 2 + (y + rs.nextd() - 0.5) * vw.vp.h / 4,
+				1, 1, GL_RGB, GL_FLOAT, &thePixel);
+			// Accumulate luminance (GL_LUMINANCE doesn't seem to work as I expected)
+			double lumi = (thePixel[0] + thePixel[1] + thePixel[2]) / 3.;
+			// Target brightest region
+			if(accum < lumi)
+				accum = lumi;
+		}
+
+		// Calculate threshold based on current exposure. TODO: optimize calculation
+		double fl = log(r_dynamic_range);
+		fl -= log(minExposure);
+		fl /= log(maxExposure) - log(minExposure);
+		fl = 1. - fl;
+
+		// Adjust exposure
+		r_dynamic_range *= exp((fl - accum) * dt);
+
+		// Make sure to get the value inside the range.
+		r_dynamic_range = rangein(r_dynamic_range, minExposure, maxExposure);
+	}
 
 	glFlush();
 
@@ -2289,6 +2328,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_warspace_near_clip", &g_warspace_near_clip, cvar_double);
 	CvarAdd("g_warspace_far_clip", &g_warspace_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
+	CvarAdd("r_auto_exposure", &r_auto_exposure, cvar_int);
 	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);

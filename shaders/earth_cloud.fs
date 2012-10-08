@@ -3,7 +3,8 @@ uniform mat3 invEyeRot3x3;
 uniform samplerCube bumptexture;
 uniform samplerCube cloudtexture;
 uniform float time;
- 
+uniform float exposure;
+
 varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
@@ -58,7 +59,8 @@ void main (void)
 	vec3 fnormal = normalize(normal);
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
 
-	float diffuse = max(0., dot(flight, fnormal) + .2);
+	// Clouds have higher albedo than the surface.
+	float diffuse = max(0., dot(flight, fnormal) + .2) * 1.2;
 
 	float dawness = dot(flight, fnormal) * 8.;
 	dawness = 1. - exp(-dawness * dawness);
@@ -69,7 +71,8 @@ void main (void)
 	texColor = texColor * (1. - f) + f * vec4(1, dawness, dawness, 1);
 //	vec4 texColor = texture3D(noise3D, vec3(gl_TexCoord[0]));
 //	texColor = texColor * texColor[3] + (1. - texColor[3]) * vec4(1, 0, 0, cloudfunc(texture, vec3(gl_TexCoord[0]) - flight * 1e-3, view.z)[3]);
-	texColor *= diffuse /** anoise2(1000. * vec3(gl_TexCoord[0]))[0]*/;
+	texColor *= diffuse + 0.002 /** anoise2(1000. * vec3(gl_TexCoord[0]))[0]*/;
 //	texColor[0] = texColor[1] = texColor[2] = 1.;
+	texColor.xyz *= exposure;
 	gl_FragColor = texColor;
 }

@@ -5,6 +5,8 @@ uniform mat3 invEyeRot3x3;
 uniform sampler2D nrmmap;
 uniform float ambient;
 uniform float intensity[3];
+uniform float exposure;
+uniform int tonemap;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -48,6 +50,15 @@ void main (void)
 	// Apply the second texture
 	if(.5 < gl_TextureEnvColor[0].y)
 		texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
+
+	if(0 == tonemap)
+		texColor.xyz *= exposure;
+	else{
+		float brightMax = 5.;
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+//		texColor.xyz = fv / (fv + 1.0);
+	}
 
 	gl_FragColor = texColor;
 }

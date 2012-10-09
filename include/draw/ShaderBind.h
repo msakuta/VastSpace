@@ -26,11 +26,15 @@ struct EXPORT ShaderBind{
 	GLint texture2EnableLoc;
 	GLint textureLoc;
 	GLint texture2Loc;
+	GLint exposureLoc;
+	GLint tonemapLoc;
 	ShaderBind(GLuint shader = 0) : shader(shader),
 		textureEnableLoc(-1),
 		texture2EnableLoc(-1),
 		textureLoc(-1),
-		texture2Loc(-1){}
+		texture2Loc(-1),
+		exposureLoc(-1),
+		tonemapLoc(-1){}
 	~ShaderBind();
 
 	virtual void getUniformLocations();

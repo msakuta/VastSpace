@@ -106,6 +106,8 @@ void ShaderBind::getUniformLocations(){
 	texture2EnableLoc = glGetUniformLocation(shader, "texture2Enable");
 	textureLoc = glGetUniformLocation(shader, "texture");
 	texture2Loc = glGetUniformLocation(shader, "texture2");
+	exposureLoc = glGetUniformLocation(shader, "exposure");
+	tonemapLoc = glGetUniformLocation(shader, "tonemap");
 }
 
 void ShaderBind::use()const{
@@ -125,6 +127,10 @@ void ShaderBind::useInt()const{
 	glUniform1i(texture2EnableLoc, 1);
 	glUniform1i(textureLoc, 0);
 	glUniform1i(texture2Loc, 1);
+	extern double r_exposure;
+	glUniform1f(exposureLoc, r_exposure);
+	extern int r_tonemap;
+	glUniform1i(tonemapLoc, r_tonemap);
 }
 
 

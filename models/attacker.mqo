@@ -11,10 +11,10 @@ Scene {
 	amb 0.250 0.250 0.250
 }
 Material 4 {
-	"attacker_body" shader(3) col(1.000 0.365 0.365 1.000) dif(0.780) amb(0.630) emi(0.000) spc(0.000) power(5.00) tex("bricks.bmp")
-	"runway" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("runway.bmp")
-	"bridge" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(1.000) spc(0.000) power(5.00) tex("bridge.bmp")
-	"attacker_engine" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("attacker_engine.bmp")
+	"attacker_body" shader(3) col(1.000 0.365 0.365 1.000) dif(0.780) amb(0.300) emi(0.000) spc(0.000) power(5.00) tex("bricks.bmp")
+	"runway" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.300) emi(0.000) spc(0.000) power(5.00) tex("runway.bmp")
+	"bridge" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.300) emi(1.000) spc(0.000) power(5.00) tex("bridge.bmp")
+	"attacker_engine" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.300) emi(0.000) spc(0.000) power(5.00) tex("attacker_engine.bmp")
 }
 Object "attack_body" {
 	depth 0

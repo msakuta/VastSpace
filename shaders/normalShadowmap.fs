@@ -7,6 +7,8 @@ uniform mat3 invEyeRot3x3;
 uniform sampler2D nrmmap;
 uniform float ambient;
 uniform int additive;
+uniform float exposure;
+uniform int tonemap;
  
 varying vec3 view;
 varying vec3 nrm;
@@ -44,6 +46,15 @@ void main (void)
 
 	texColor.xyz *= gl_FrontMaterial.emission.xyz + (vec3(1,1,1) - gl_FrontMaterial.emission.xyz)
 		* min(vec3(1,1,1), lightProduct);
+
+	if(0 == tonemap)
+		texColor.xyz *= exposure;
+	else{
+		float brightMax = 5.;
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+//		texColor.xyz = fv / (fv + 1.0);
+	}
 
 	gl_FragColor = texColor;
 }

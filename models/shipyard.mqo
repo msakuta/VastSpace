@@ -11,13 +11,13 @@ Scene {
 	amb 0.114 0.114 0.114
 }
 Material 7 {
-	"body" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.600) emi(0.000) spc(0.000) power(0.00) tex("bricks.bmp")
-	"runway" shader(3) col(1.000 1.000 1.000 1.000) dif(0.500) amb(0.600) emi(0.000) spc(0.000) power(0.00) tex("runway.bmp")
-	"band" shader(3) col(0.000 0.000 1.000 1.000) dif(0.500) amb(0.600) emi(0.500) spc(0.000) power(0.00) tex("bridge.bmp")
-	"bridge" shader(3) col(1.000 1.000 1.000 1.000) dif(0.000) amb(0.600) emi(1.000) spc(0.000) power(0.00) tex("bridge.bmp")
-	"engine2" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("engine2.bmp")
-	"door" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.600) emi(0.000) spc(0.000) power(0.00) tex("doors.jpg")
-	"scaffold" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.600) emi(0.000) spc(0.000) power(0.00) tex("bbrail.bmp")
+	"body" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.300) emi(0.000) spc(0.000) power(0.00) tex("bricks.bmp")
+	"runway" shader(3) col(1.000 1.000 1.000 1.000) dif(0.500) amb(0.300) emi(0.000) spc(0.000) power(0.00) tex("runway.bmp")
+	"band" shader(3) col(0.000 0.000 1.000 1.000) dif(0.500) amb(0.300) emi(0.500) spc(0.000) power(0.00) tex("bridge.bmp")
+	"bridge" shader(3) col(1.000 1.000 1.000 1.000) dif(0.000) amb(0.300) emi(1.000) spc(0.000) power(0.00) tex("bridge.bmp")
+	"engine2" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.300) emi(0.000) spc(0.000) power(5.00) tex("engine2.bmp")
+	"door" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.300) emi(0.000) spc(0.000) power(0.00) tex("doors.jpg")
+	"scaffold" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.300) emi(0.000) spc(0.000) power(0.00) tex("bbrail.bmp")
 }
 Object "Shipyard" {
 	depth 0

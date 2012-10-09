@@ -486,6 +486,7 @@ void DrawTextureSphere::useShader(){
 			GLint timeLoc;
 			GLint heightLoc;
 			GLint exposureLoc;
+			GLint tonemapLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
@@ -493,6 +494,7 @@ void DrawTextureSphere::useShader(){
 				timeLoc = glGetUniformLocation(shader, "time");
 				heightLoc = glGetUniformLocation(shader, "height");
 				exposureLoc = glGetUniformLocation(shader, "exposure");
+				tonemapLoc = glGetUniformLocation(shader, "tonemap");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -525,8 +527,12 @@ void DrawTextureSphere::useShader(){
 			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
 		}
 		if(0 <= locs.exposureLoc){
-			extern double r_dynamic_range;
-			glUniform1f(locs.exposureLoc, r_dynamic_range);
+			extern double r_exposure;
+			glUniform1f(locs.exposureLoc, r_exposure);
+		}
+		if(0 <= locs.tonemapLoc){
+			extern int r_tonemap;
+			glUniform1i(locs.tonemapLoc, r_tonemap);
 		}
 
 		TexSphere::TextureIterator it;

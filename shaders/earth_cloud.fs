@@ -4,6 +4,7 @@ uniform samplerCube bumptexture;
 uniform samplerCube cloudtexture;
 uniform float time;
 uniform float exposure;
+uniform int tonemap;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -73,6 +74,13 @@ void main (void)
 //	texColor = texColor * texColor[3] + (1. - texColor[3]) * vec4(1, 0, 0, cloudfunc(texture, vec3(gl_TexCoord[0]) - flight * 1e-3, view.z)[3]);
 	texColor *= diffuse + 0.002 /** anoise2(1000. * vec3(gl_TexCoord[0]))[0]*/;
 //	texColor[0] = texColor[1] = texColor[2] = 1.;
-	texColor.xyz *= exposure;
+	if(0 == tonemap)
+		texColor.xyz *= exposure;
+	else{
+		float brightMax = 5.;
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+//		texColor.xyz = fv / (fv + 1.0);
+	}
 	gl_FragColor = texColor;
 }

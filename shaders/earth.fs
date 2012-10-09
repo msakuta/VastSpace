@@ -8,6 +8,7 @@ uniform sampler1D tex1d;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
 uniform float exposure;
+uniform int tonemap;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -114,6 +115,13 @@ void main (void)
 //	vec4 envColor = textureCube(envmap, texCoord);
 //	envColor[3] = col[3] / 2.;
 //	gl_FragColor = (envColor + texColor);
-	texColor.xyz *= exposure;
+	if(0 == tonemap)
+		texColor.xyz *= exposure;
+	else{
+		float brightMax = 5.;
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+//		texColor.xyz = fv / (fv + 1.0);
+	}
 	gl_FragColor = texColor;
 }

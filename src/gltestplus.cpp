@@ -92,7 +92,8 @@ static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///<
 static double g_space_near_clip = .5, g_space_far_clip = 1e10;
 static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
 static int r_auto_exposure = 1; ///< Flag to enable automatic exposure adjustment.
-double r_dynamic_range = 1.; ///< The exposure of the camera.
+double r_exposure = 1.; ///< The exposure of the camera.
+int r_tonemap = 1;
 static int r_orbit_axis = 0;
 static int r_shadows = 1;
 static int r_shadow_map_size = 1024;
@@ -959,16 +960,16 @@ void Game::draw_func(Viewer &vw, double dt){
 		}
 
 		// Calculate threshold based on current exposure. TODO: optimize calculation
-		double fl = log(r_dynamic_range);
+		double fl = log(r_exposure);
 		fl -= log(minExposure);
 		fl /= log(maxExposure) - log(minExposure);
 		fl = 1. - fl;
 
 		// Adjust exposure
-		r_dynamic_range *= exp((fl - accum) * dt);
+		r_exposure *= exp((fl - accum) * dt);
 
 		// Make sure to get the value inside the range.
-		r_dynamic_range = rangein(r_dynamic_range, minExposure, maxExposure);
+		r_exposure = rangein(r_exposure, minExposure, maxExposure);
 	}
 
 	glFlush();
@@ -1316,7 +1317,7 @@ void Game::clientDraw(double gametime, double dt){
 	viewer.dt = dt;
 	viewer.mousex = s_mousex;
 	viewer.mousey = s_mousey;
-	viewer.dynamic_range = r_dynamic_range;
+	viewer.dynamic_range = r_exposure;
 	draw_func(viewer, dt);
 }
 
@@ -2329,7 +2330,8 @@ int main(int argc, char *argv[])
 	CvarAdd("g_warspace_far_clip", &g_warspace_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
 	CvarAdd("r_auto_exposure", &r_auto_exposure, cvar_int);
-	CvarAdd("r_exposure", &r_dynamic_range, cvar_double);
+	CvarAdd("r_exposure", &r_exposure, cvar_double);
+	CvarAdd("r_tonemap", &r_tonemap, cvar_int);
 	CvarAdd("r_orbit_axis", &r_orbit_axis, cvar_int);
 	CvarAdd("r_shadows", &r_shadows, cvar_int);
 	CvarAdd("r_shadow_map_size", &r_shadow_map_size, cvar_int);

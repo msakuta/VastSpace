@@ -2076,6 +2076,37 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
 	}
 }
 
+/// \brief Draws glow effect on the celestial sphere.
+///
+/// The effect can flood to opposite side of view angle towards glow source, if as is greater than pi / 2.
+///
+/// \param q The vector towards glow source seen from the view point.
+/// \param as Angle of glow bloom effect radius in celestial sphere in radians.
+/// \param color The color vector for painting the glow.
+/// \param numcuts The number of subdivision along phi angle. Greater value results in finer rendering with additional load.
+void gldGlow(const Vec3d &dir, double as, const Vec4<GLubyte> &color, int numcuts = 32){
+	double sas = sin(as);
+	double cas = cos(as);
+	double (*cuts)[2] = CircleCuts(numcuts);
+
+	glPushMatrix();
+	gldMultQuat(Quatd::direction(dir));
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4ubv(color);
+	glVertex3d(0., 0., 1.);
+	Vec4<GLubyte> edgecolor = color;
+	edgecolor[3] = 0;
+	glColor4ubv(edgecolor);
+	for(int i = 0; i <= numcuts; i++){
+		int k = i % numcuts;
+		glVertex3d(cuts[k][0] * sas, cuts[k][1] * sas, cas);
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+
+
 void drawsuncolona(Astrobj *a, const Viewer *vw){
 	double height;
 	double sdist;
@@ -2219,7 +2250,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		}
 		else if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen)
 			col *= GLubyte(LIGHT_SPEED / vw->velolen);
-		gldGlow(atan2(x, z), atan2(spos[1] - vpos[1], sqrt(x * x + z * z)), as, col);
+		gldGlow(spos - vpos, as, col);
 	}
 
 	a->flags |= AO_DRAWAIRCOLONA;

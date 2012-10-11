@@ -2,11 +2,11 @@
 #define ASTRO_STAR_H
 #include "astro.h"
 
-#define AO_DRAWAIRCOLONA 0x1000
 class Star : public Astrobj{
 protected:
-	int aircolona; /* a flag indicating the colona is already drawn by the time some nearer planet's air is drawn. */
+	int aircorona; /* a flag indicating the corona is already drawn by the time some nearer planet's air is drawn. */
 public:
+	static const int AO_DRAWAIRCORONA = 0x1000;
 	typedef Astrobj st;
 	typedef Star tt;
 	enum SpectralType{
@@ -31,6 +31,7 @@ public:
 	static const char *spectralToName(SpectralType);
 	static Vec3<float> spectralHSB(SpectralType);
 	static Vec3<float> spectralRGB(SpectralType);
+	static void drawsuncorona(Astrobj *a, const Viewer *vw);
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 };

@@ -53,7 +53,6 @@ extern "C"{
 
 int g_invert_hyperspace = 0;
 
-void drawsuncolona(Astrobj *a, const Viewer *vw);
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 
@@ -185,7 +184,7 @@ void TexSphere::draw(const Viewer *vw){
 	if(sunAtmosphere(*vw)){
 		Astrobj *brightest = findBrightest();
 		if(brightest)
-			drawsuncolona(brightest, vw);
+			Star::drawsuncorona(brightest, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		if(g_shader_enable){
@@ -1968,7 +1967,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 
 void Star::predraw(const Viewer *){
-	flags &= ~AO_DRAWAIRCOLONA;
+	flags &= ~AO_DRAWAIRCORONA;
 }
 
 void Star::draw(const Viewer *vw){
@@ -1994,7 +1993,7 @@ void Star::draw(const Viewer *vw){
 //	drawpsphere(this, vw, col);
 	DrawTextureSphere(this, vw, vec3_000)
 		.draw();
-	if(/*!((struct sun*)a)->aircolona !(flags & AO_DRAWAIRCOLONA)*/1){
+	if(/*!((struct sun*)a)->aircorona !(flags & AO_DRAWAIRCORONA)*/1){
 		Astrobj *abest = NULL;
 		Vec3d epos, spos;
 
@@ -2011,7 +2010,7 @@ void Star::draw(const Viewer *vw){
 				}
 			}
 			if(drawhere){
-				drawsuncolona(this, vw);
+				drawsuncorona(this, vw);
 			}
 		}
 	}
@@ -2106,8 +2105,11 @@ void gldGlow(const Vec3d &dir, double as, const Vec4<GLubyte> &color, int numcut
 }
 
 
-
-void drawsuncolona(Astrobj *a, const Viewer *vw){
+/// \brief Draws Sun corona.
+///
+/// \param a The Star object pointer.
+/// \param vw The viewer object for drawing.
+void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 	double height;
 	double sdist;
 	double dist, as;
@@ -2170,7 +2172,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 				throw 3;
 		}
 		catch(int i){
-			CmdPrint("drawsuncolona fail");
+			CmdPrint("drawsuncorona fail");
 		}
 	}
 
@@ -2239,7 +2241,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		glPopMatrix();
 	}
 
-	/* the sun is well too far that colona doesn't show up in a pixel. */
+	/* the sun is well too far that corona doesn't show up in a pixel. */
 /*	if(as < M_PI / 300.)
 		return;*/
 
@@ -2253,7 +2255,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		gldGlow(spos - vpos, as, col);
 	}
 
-	a->flags |= AO_DRAWAIRCOLONA;
+	a->flags |= AO_DRAWAIRCORONA;
 
 	if(g_shader_enable && shader)
 		glUseProgram(0);

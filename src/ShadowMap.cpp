@@ -7,6 +7,7 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "draw/HDR.h"
 
 #include "glstack.h"
 #include "glsl.h"
@@ -127,9 +128,7 @@ void ShaderBind::useInt()const{
 	glUniform1i(texture2EnableLoc, 1);
 	glUniform1i(textureLoc, 0);
 	glUniform1i(texture2Loc, 1);
-	extern double r_exposure;
 	glUniform1f(exposureLoc, r_exposure);
-	extern int r_tonemap;
 	glUniform1i(tonemapLoc, r_tonemap);
 }
 

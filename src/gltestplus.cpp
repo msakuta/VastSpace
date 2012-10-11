@@ -43,6 +43,7 @@
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
 #include "draw/OpenGLState.h"
+#include "draw/HDR.h"
 #include "BinDiff.h"
 #include "avi.h"
 #include "sqadapt.h"
@@ -91,9 +92,12 @@ static double gametimescale = 1.;
 static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///< For those that z buffering does not make sense
 static double g_space_near_clip = .5, g_space_far_clip = 1e10;
 static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
-static int r_auto_exposure = 1; ///< Flag to enable automatic exposure adjustment.
-double r_exposure = 1.; ///< The exposure of the camera.
+
+// The HDR variables declared in HDR.h.
+double r_exposure = 1.;
+int r_auto_exposure = 1;
 int r_tonemap = 1;
+
 static int r_orbit_axis = 0;
 static int r_shadows = 1;
 static int r_shadow_map_size = 1024;

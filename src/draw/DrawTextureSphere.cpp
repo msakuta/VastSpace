@@ -7,6 +7,7 @@
 #include "cmd.h"
 #include "StaticInitializer.h"
 #include "bitmap.h"
+#include "draw/HDR.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -527,11 +528,9 @@ void DrawTextureSphere::useShader(){
 			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
 		}
 		if(0 <= locs.exposureLoc){
-			extern double r_exposure;
 			glUniform1f(locs.exposureLoc, r_exposure);
 		}
 		if(0 <= locs.tonemapLoc){
-			extern int r_tonemap;
 			glUniform1i(locs.tonemapLoc, r_tonemap);
 		}
 

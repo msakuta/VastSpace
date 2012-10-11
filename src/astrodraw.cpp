@@ -4,6 +4,7 @@
 #include "astrodraw.h"
 #include "draw/ring-draw.h"
 #include "draw/DrawTextureSphere.h"
+#include "draw/HDR.h"
 #include "Universe.h"
 #include "judge.h"
 #include "CoordSys.h"
@@ -1392,7 +1393,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
 		glCallList(backimg);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		extern double r_exposure;
 		double br = 2e-3 * r_exposure;
 		glColor4f(br, br, br, 1.);
 //		glColor4f(.5, .5, .5, 1.);
@@ -1726,7 +1726,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 						nearest_color[2] = b;
 						nearest_color[3] = 255;
 					}
-					extern double r_exposure;
 					glColor4ub(r, g, b, MIN(255, bri * r_exposure * r_star_back_brightness));
 					glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, col);
 /*					glPushMatrix();*/
@@ -2186,8 +2185,6 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 	GLattrib gla(GL_COLOR_BUFFER_BIT);
 	if(g_shader_enable && shader){
 		glUseProgram(shader);
-		extern double r_exposure;
-		extern int r_tonemap;
 		static GLint exposureLoc = glGetUniformLocation(shader, "exposure");
 		static GLint tonemapLoc = glGetUniformLocation(shader, "tonemap");
 		if(0 <= exposureLoc)
@@ -2217,7 +2214,6 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		Vec3d dv = vw->pos - spos;
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
-		extern double r_exposure;
 		double brightness = pow(100, -a->absmag / 5.);
 		double dvslen = dv.slen();
 		if(dvslen < EPSILON)

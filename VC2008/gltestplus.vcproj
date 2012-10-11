@@ -1115,6 +1115,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\include\draw\HDR.h"
+					>
+				</File>
+				<File
 					RelativePath="..\include\draw\material.h"
 					>
 				</File>

@@ -52,6 +52,12 @@ extern "C"{
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
 int g_invert_hyperspace = 0;
+static double r_star_back_brightness = 1. / 50.; ///< The scale of brightness of background stars.
+
+static void initStarBack(){
+	CvarAdd("r_star_back_brightness", &r_star_back_brightness, cvar_double);
+}
+StaticInitializer it(initStarBack);
 
 void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col);
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
@@ -1606,7 +1612,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 /*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
 		VECADDIN(v01, v0);
 		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/
-		numstars = 0*int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
+		numstars = 1*int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
 		for(i = 0; i < numstars; i++){
 			double pos[3], rvelo;
 			double radius = radiusfactor;
@@ -1720,7 +1726,8 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 						nearest_color[2] = b;
 						nearest_color[3] = 255;
 					}
-					glColor4ub(r, g, b, 255);
+					extern double r_exposure;
+					glColor4ub(r, g, b, MIN(255, bri * r_exposure * r_star_back_brightness));
 					glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, col);
 /*					glPushMatrix();*/
 /*					glTranslated(pos[0], pos[1], pos[2]);

@@ -18,7 +18,7 @@ astro Star "Sol"{
 	spectral G2
 }
 
-/*coordsys Orbit sunlo{
+coordsys Orbit sunlo{
 	fullname "Sun Low Orbit"
 	cs_radius 500
 	orbits Sol
@@ -30,7 +30,7 @@ astro Star "Sol"{
 	ascending_node 80.6198
 	warp
 	teleport
-}*/
+}
 
 coordsys Orbit earth{
 	orbits Sol

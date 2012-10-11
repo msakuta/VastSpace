@@ -1996,8 +1996,10 @@ void Star::draw(const Viewer *vw){
 		return;
 	}*/
 
-//	drawpsphere(this, vw, col);
+	static GLuint texlist = 0;
 	DrawTextureSphere(this, vw, vec3_000)
+		.texlist(&texlist)
+		.texname("textures/Star.jpg")
 		.draw();
 	if(/*!((struct sun*)a)->aircorona !(flags & AO_DRAWAIRCORONA)*/1){
 		Astrobj *abest = NULL;

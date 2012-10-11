@@ -1387,7 +1387,9 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
 		glCallList(backimg);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glColor4f(.25, .25, .25, 1.);
+		extern double r_exposure;
+		double br = 2e-3 * r_exposure;
+		glColor4f(br, br, br, 1.);
 //		glColor4f(.5, .5, .5, 1.);
 		for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){
 			glPushMatrix();
@@ -2121,17 +2123,51 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 			col = white;
 	}
 
+	static GLuint shader = 0;
+	if(g_shader_enable && !shader){
+		try{
+			std::vector<GLuint> shaders(2);
+			int j = 0;
+			if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_VERTEX_SHADER), "shaders/corona.vs"))
+				throw 1;
+			if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), "shaders/corona.fs"))
+				throw 2;
+			shader = glsl_register_program(&shaders.front(), 2);
+			for(unsigned i = 0; i < shaders.size(); i++)
+				glDeleteShader(shaders[i]);
+			if(!shader)
+				throw 3;
+		}
+		catch(int i){
+			CmdPrint("drawsuncolona fail");
+		}
+	}
+
 	GLattrib gla(GL_COLOR_BUFFER_BIT);
+	if(g_shader_enable && shader){
+		glUseProgram(shader);
+		extern double r_exposure;
+		extern int r_tonemap;
+		static GLint exposureLoc = glGetUniformLocation(shader, "exposure");
+		static GLint tonemapLoc = glGetUniformLocation(shader, "tonemap");
+		if(0 <= exposureLoc)
+			glUniform1f(exposureLoc, r_exposure);
+		if(0 <= tonemapLoc)
+			glUniform1i(tonemapLoc, r_tonemap);
+	}
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
 	double asfactor = 1. / (1. + dist / a->rad * 1e-3);
 	if(asfactor < vw->fov / vw->vp.m * 20.){
 		as = M_PI * vw->fov / vw->vp.m * 2.;
 		Vec3d pos = (spos - vpos) / dist;
+		// Disable the shader before drawing the sprite.
+		if(g_shader_enable && shader)
+			glUseProgram(0);
 		gldTextureGlow(pos, as, col, vw->irot);
 		return;
 	}
-	/* if neither sun nor planet with atmosphere like earth is near you, the sun's colona shrinks. */
+	/* if neither sun nor planet with atmosphere like earth is near you, the sun's corona shrinks. */
 	else{
 		static const double c = .8, d = .1, e = .08;
 		static int normalized = 0;
@@ -2141,11 +2177,12 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		Vec3d dv = vw->pos - spos;
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
+		extern double r_exposure;
 		double brightness = pow(100, -a->absmag / 5.);
 		double dvslen = dv.slen();
 		if(dvslen < EPSILON)
 			return;
-		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dvslen)) * asfactor;
+		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dvslen)) * asfactor / (1. + 0.1 / r_exposure);
 		Mat4d mat = mat4_u;
 		spos1.normin();
 		mat.vec3(2) = spos1;
@@ -2167,7 +2204,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 		glPushMatrix();
 		glLoadIdentity();
 		spos1 *= -1;
-		gldSpriteGlow(spos1, as / M_PI, col, mat);
+//		gldSpriteGlow(spos1, as / M_PI, col, mat);
 		glPopMatrix();
 	}
 
@@ -2175,7 +2212,7 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 /*	if(as < M_PI / 300.)
 		return;*/
 
-	col[3] = 127 + (int)(127 / (1. + height));
+//	col[3] = 127 + (int)(127 / (1. + height));
 	{
 		Vec3d pos = (spos - vpos) / dist;
 		if(vw->relative){
@@ -2186,6 +2223,9 @@ void drawsuncolona(Astrobj *a, const Viewer *vw){
 	}
 
 	a->flags |= AO_DRAWAIRCOLONA;
+
+	if(g_shader_enable && shader)
+		glUseProgram(0);
 }
 
 

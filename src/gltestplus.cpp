@@ -821,6 +821,10 @@ void Game::draw_func(Viewer &vw, double dt){
 	glPopAttrib();
 	glPopMatrix();
 
+	// We shall measure the screen's brightness and estimate better exposure
+	// before drawing indicators or GLwindows.
+	adjustAutoExposure(vw);
+
 	glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
@@ -938,6 +942,15 @@ void Game::draw_func(Viewer &vw, double dt){
 	projection(glPopMatrix());
 	glPopAttrib();
 
+	glFlush();
+
+	video_frame();
+}
+
+/// \brief Adjusts the exposure value based on the rendered scene's brightness.
+///
+/// Made to be a function so that it can be easily moved in drawing process.
+void Game::adjustAutoExposure(Viewer &vw){
 	// Automatic exposure control based on rendered scene's brightness.
 	// Note that it won't be effective if the shader is off.
 	if(r_auto_exposure){
@@ -970,15 +983,11 @@ void Game::draw_func(Viewer &vw, double dt){
 		fl = 1. - fl;
 
 		// Adjust exposure
-		r_exposure *= exp((fl - accum) * dt);
+		r_exposure *= exp((fl - accum) * vw.dt);
 
 		// Make sure to get the value inside the range.
 		r_exposure = rangein(r_exposure, minExposure, maxExposure);
 	}
-
-	glFlush();
-
-	video_frame();
 }
 
 static JoyStick joyStick(JOYSTICKID1);

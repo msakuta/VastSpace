@@ -146,6 +146,8 @@ protected:
 
 	int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
 	int stellar_coordsys(StellarContext &sc, CoordSys *cs);
+
+	void adjustAutoExposure(Viewer &vw);
 };
 
 

@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition ofGLcull class.
+ */
 #ifndef CPPLIB_GL_CULLPLUS_H
 #define CPPLIB_GL_CULLPLUS_H
 extern "C"{
@@ -6,6 +9,10 @@ extern "C"{
 #include "../vec3.h"
 #include "../mat4.h"
 
+/// \brief A class to deterimne if an object should be culled from viewing volume.
+///
+/// OpenGL's viewing volume is 6-sided frustum, not a cone. So we can cull objects nearer or farther than clipping planes.
+/// The function cullFrustom() will do all necessary jobs, but you can also examine each clipping planes.
 class GLcull{
 	double fov; ///< field of view
 	double znear; ///< near clipping plane is sometimes necesarry
@@ -19,10 +26,11 @@ class GLcull{
 public:
 	GLcull(double fov, const Vec3d &viewpoint, const Mat4d &invrot, double znear, double zfar); ///< Frustum constructor
 	GLcull(const Vec3d &viewpoint, const Mat4d &invrot, double width, double znear, double zfar); ///< Orthogonal constructor
-	bool cullFrustum(const Vec3d &pos, double rad)const;
-	bool cullNear(const Vec3d &pos, double rad)const;
-	bool cullFar(const Vec3d &pos, double rad)const;
-	double scale(const Vec3d &pos)const;
+	bool cullFrustum(const Vec3d &pos, double rad)const; ///< Determine if given sphere should be culled in 6-sided frustum.
+	bool cullNear(const Vec3d &pos, double rad)const; ///< Determine if given sphere should be culled by near clipping plane.
+	bool cullFar(const Vec3d &pos, double rad)const; ///< Determine if given sphere should be culled by near clipping plane.
+	bool cullCone(const Vec3d &pos, double rad)const; ///< Determine if given sphere should be culled by FOV's 4 sided cone.
+	double scale(const Vec3d &pos)const; ///< Returns rough factor of zooming at a given point viewed fom the camera. Negative value means it's behind the camera.
 	operator glcull()const;
 
 	// accessors

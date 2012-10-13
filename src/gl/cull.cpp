@@ -79,9 +79,9 @@ GLcull::GLcull(const Vec3d &viewpoint, const Mat4d &invrot, double width, double
 	{
 		int viewport[4];
 		glGetIntegerv(GL_VIEWPORT, viewport);
-		width = viewport[2];
-		height = viewport[3];
-		res = width < height ? height : width;
+		this->width = viewport[2];
+		this->height = viewport[3];
+		res = this->width < this->height ? this->height : this->width;
 	}
 	ortho = true;
 }
@@ -126,6 +126,12 @@ bool GLcull::cullFrustum(const Vec3d &pos, double rad)const{
 	if(vec[2] < 0. || vec[0] < -vec[2] || vec[2] < vec[0] || vec[1] < -vec[2] || vec[2] < vec[1])
 		return true;
 	return false;
+}
+
+bool GLcull::cullCone(const Vec3d &pos, double rad)const{
+	Vec3d dst = pos + viewdir * SQRT2 * rad / fov;
+	Vec3d vec = trans.vp3(dst);
+	return (vec[2] < 0. || vec[0] < -vec[2] || vec[2] < vec[0] || vec[1] < -vec[2] || vec[2] < vec[1]);
 }
 
 /* returned value can be negative! */

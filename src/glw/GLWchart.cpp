@@ -16,15 +16,21 @@
 
 
 class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
+public:
+	FrameTimeChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
 	virtual gltestp::dstring labelname()const{return "Frame Time";}
 	virtual double timeProc(double dt){return dt;}
 };
 class FrameRateChartSeries : public GLWchart::TimeChartSeries{
+public:
+	FrameRateChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
 	virtual gltestp::dstring labelname()const{return "Frame Rate";}
 	virtual Vec4f color()const{return Vec4f(0,0,1,1);}
 	virtual double timeProc(double dt){return dt == 0. ? 0. : 1. / dt;}
 };
 class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
+public:
+	RecvBytesChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
 	virtual gltestp::dstring labelname()const{return "Received bytes";}
 	virtual Vec4f color()const{return Vec4f(1,0,0,1);}
 	virtual double timeProc(double dt){
@@ -34,26 +40,23 @@ class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
 class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
 	virtual gltestp::dstring labelname()const{return "Sampled";}
 	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
-	virtual double value(int index){
-		double normalizer = follow ? follow->getNormalizer() : this->normalizer;
-		return normalizer ? chart[index] / normalizer : chart[index];
-	}
 	virtual double timeProc(double dt){
 		return lastValue;
 	}
 public:
 	double lastValue;
 	TimeChartSeries *follow;
-	SampledChartSeries(TimeChartSeries *follow) : lastValue(0), follow(follow){}
+	SampledChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
 };
 
 /// \brief The base class for a histogram chart.
-class HistogramChartSeries : public GLWchart::ChartSeries{
+class HistogramChartSeries : public GLWchart::NormalizedChartSeries{
 public:
-	HistogramChartSeries() : maxvalue(1){}
+	HistogramChartSeries(int ygroup = -1) : maxvalue(1), NormalizedChartSeries(ygroup){}
 protected:
 	std::vector<int> values;
 	int maxvalue;
+	virtual double getMax()const{return maxvalue;}
 	virtual int minThreshold()const{return 0;}
 	virtual int getValue(double dt)const = 0;
 	void anim(double dt, GLWchart *c){
@@ -66,7 +69,9 @@ protected:
 		if(maxvalue < values[v])
 			maxvalue = values[v];
 	}
-	double value(int index){return (double)values[index] / maxvalue;}
+	double valueBeforeNormalize(int index){
+		return (double)values[index];
+	}
 	int count()const{return values.size();}
 	virtual gltestp::dstring labelname()const{return "histogram";}
 	virtual gltestp::dstring labelstr()const{return gltestp::dstring(maxvalue) << "/" << values.size();}
@@ -74,6 +79,8 @@ protected:
 
 /// \brief Histogram of frame time.
 class FrameTimeHistogramChartSeries : public HistogramChartSeries{
+public:
+	FrameTimeHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt / cellsize;}
 	virtual Vec4f color()const{return Vec4f(0,1,1,1);}
@@ -83,6 +90,8 @@ const double FrameTimeHistogramChartSeries::cellsize = 0.001;
 
 /// \brief Histogram of frame rate [fps].
 class FrameRateHistogramChartSeries : public HistogramChartSeries{
+public:
+	FrameRateHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt == 0. ? 0 : 1. / dt / cellsize;}
 	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
@@ -92,6 +101,8 @@ const double FrameRateHistogramChartSeries::cellsize = 0.1;
 
 /// \brief Histogram of received bytes in the frame.
 class RecvBytesHistogramChartSeries : public HistogramChartSeries{
+public:
+	RecvBytesHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
 	static const int cellsize = 32;
 	int minThreshold()const{return 4;}
 	int getValue(double)const{return (application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes) / cellsize;}
@@ -198,7 +209,7 @@ void GLWchart::draw(GLwindowState &ws, double t){
 			glBegin(GL_LINE_STRIP);
 			int all = cs->count();
 			for(int i = 0; i < all; i++){
-				glVertex2d(cr.x0 * (all - i - 1) / all + cr.x1 * i / all, cr.y1 - (cr.height() - 2) * cs->value(i));
+				glVertex2d(cr.x0 * (all - i - 1) / all + cr.x1 * i / all, cr.y1 - (cr.height() - 2) * cs->value(i, this));
 			}
 			glEnd();
 		}
@@ -245,8 +256,9 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		return sq_throwerror(v, _SC("No string as addSeries arg"));
 	}
 
-	SQInteger followIndex = -1;
-	sq_getinteger(v, 3, &followIndex);
+	SQInteger ygroup;
+	if(argc < 3 || SQ_FAILED(sq_getinteger(v, 3, &ygroup)))
+		ygroup = -1;
 
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
@@ -254,23 +266,19 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		throw SQFError("Something's wrong with Squirrel Class Instace of GLWchart.");
 	GLWchart *wnd = static_cast<GLWchart*>(static_cast<GLelement*>(*(WeakPtr<GLelement>*)up));
 	if(!strcmp(sstr, _SC("frametime")))
-		wnd->addSeries(new FrameTimeChartSeries());
+		wnd->addSeries(new FrameTimeChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("framerate")))
-		wnd->addSeries(new FrameRateChartSeries());
+		wnd->addSeries(new FrameRateChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("recvbytes")))
-		wnd->addSeries(new RecvBytesChartSeries());
+		wnd->addSeries(new RecvBytesChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("frametimehistogram")))
-		wnd->addSeries(new FrameTimeHistogramChartSeries());
+		wnd->addSeries(new FrameTimeHistogramChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("frameratehistogram")))
-		wnd->addSeries(new FrameRateHistogramChartSeries());
+		wnd->addSeries(new FrameRateHistogramChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
-		wnd->addSeries(new RecvBytesHistogramChartSeries());
-	else if(!strcmp(sstr, _SC("sampled"))){
-		TimeChartSeries *c = NULL;
-		if(0 <= followIndex && followIndex < wnd->series.size())
-			c = static_cast<TimeChartSeries*>(wnd->series[followIndex]);
-		wnd->addSeries(wnd->sampled = new SampledChartSeries(c));
-	}
+		wnd->addSeries(new RecvBytesHistogramChartSeries(ygroup));
+	else if(!strcmp(sstr, _SC("sampled")))
+		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup));
 	return 0;
 }
 

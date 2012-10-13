@@ -17,7 +17,10 @@ public:
 	/// \brief The internal base class that represents a series in a chart.
 	class ChartSeries{
 	public:
-		virtual double value(int index) = 0;
+		virtual double value(int index, GLWchart *w) = 0;
+		virtual double getMax()const{return 1;}
+		virtual double getMin()const{return 0;}
+		virtual int getYGroup()const{return -1;}
 		virtual int count() const = 0;
 		virtual Vec4f color()const{return Vec4f(1,1,1,1);}
 		virtual void anim(double dt, GLWchart *){}
@@ -32,6 +35,7 @@ public:
 	/// previous state is off. In contrast, bit 1 indicates the resulting state when it was on.
 	enum FlagMod{Set = 3, Clear = 0, Toggle = 1, Keep = 2};
 
+	class NormalizedChartSeries;
 	class TimeChartSeries;
 	class SampledChartSeries;
 
@@ -58,19 +62,45 @@ protected:
 	void draw(GLwindowState &ws, double t);
 };
 
+/// \brief The normalized chart, which will fit the range of sample values to the window.
+///
+/// There's a property named ygroup to control which chart series will have the same Y-axis scales.
+class GLWchart::NormalizedChartSeries : public GLWchart::ChartSeries{
+public:
+	/// \param ygroup The Y-axis scale group number. -1 won't share scale.
+	NormalizedChartSeries(int ygroup = -1) : ygroup(ygroup){}
+protected:
+	int ygroup;
+	virtual int getYGroup()const{return ygroup;}
+	virtual double value(int index, GLWchart *w){
+		double theMax = getMax();
+		if(ygroup != -1){
+			for(int i = 0; i < w->series.size(); i++){
+				ChartSeries *c = w->series[i];
+				if(c->getYGroup() == ygroup && theMax < c->getMax())
+					theMax = c->getMax();
+			}
+		}
+		double val = valueBeforeNormalize(index);
+		return theMax != 0. ? val / theMax : val;
+	}
+	/// \brief Derived classes should override this function to return a values instead of value().
+	virtual double valueBeforeNormalize(int index) = 0;
+};
 
 /// \brief The series that records track of a value in history.
-class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
-public:
-	double getNormalizer()const{
-		return normalizer;
-	}
+class GLWchart::TimeChartSeries : public GLWchart::NormalizedChartSeries{
 protected:
 	std::vector<double> chart;
 	double normalizer;
 
-	virtual double value(int index){
-		return normalizer ? chart[index] / normalizer : chart[index];
+	TimeChartSeries(int ygroup) : NormalizedChartSeries(ygroup){}
+
+	double getMax()const{
+		return normalizer;
+	}
+	double valueBeforeNormalize(int index){
+		return chart[index];
 	}
 	virtual int count()const{return int(chart.size());}
 	virtual void anim(double dt, GLWchart *wnd){

@@ -150,8 +150,9 @@ register_console_command("halt", function(...){
 register_console_command("chart", function(...){
 	chart <- GLWchart();
 //	chart.addSeries("framerate");
-	chart.addSeries("frametime");
+	chart.addSeries("frametime", 0);
 	chart.addSeries("recvbytes");
+	chart.addSeries("frametimehistogram");
 	chart.addSeries("sampled", 0);
 });
 

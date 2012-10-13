@@ -5,6 +5,7 @@
 #include "draw/ring-draw.h"
 #include "draw/DrawTextureSphere.h"
 #include "draw/HDR.h"
+#include "glw/GLWchart.h"
 #include "Universe.h"
 #include "judge.h"
 #include "CoordSys.h"
@@ -1609,6 +1610,8 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		v01[0] = gx * cellsize;
 		v01[1] = gy * cellsize;
 		v01[2] = gz * cellsize;
+		if(vw->gc->cullCone(v01, cellsize))
+			continue;
 /*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
 		VECADDIN(v01, v0);
 		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/
@@ -1844,7 +1847,18 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 	glPopMatrix();
 
+	// There's better method to output draw time.
 /*	printf("stars[%d]: %lg\n", drawnstars, TimeMeasLap(&tm));*/
+	{
+		// We plot the time it takes to draw the stars.
+		double value = TimeMeasLap(&tm);
+		GLwindow *w = glwlist;
+		for(; w; w = w->getNext()){
+			if(w->classname() && !strcmp(w->classname(), "GLWchart"))
+				static_cast<GLWchart*>(w)->addSample(value);
+		}
+	}
+
 #if 1
 	if(!vw->relative/*(pl.mover == warp_move || pl.mover == player_tour || pl.chase && pl.chase->vft->is_warping && pl.chase->vft->is_warping(pl.chase, pl.cs->w))*/ && LIGHT_SPEED * LIGHT_SPEED < velo.slen()){
 		int i, count = 1250;

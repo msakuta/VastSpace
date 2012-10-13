@@ -31,6 +31,21 @@ class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
 		return application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes;
 	}
 };
+class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
+	virtual gltestp::dstring labelname()const{return "Sampled";}
+	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
+	virtual double value(int index){
+		double normalizer = follow ? follow->getNormalizer() : this->normalizer;
+		return normalizer ? chart[index] / normalizer : chart[index];
+	}
+	virtual double timeProc(double dt){
+		return lastValue;
+	}
+public:
+	double lastValue;
+	TimeChartSeries *follow;
+	SampledChartSeries(TimeChartSeries *follow) : lastValue(0), follow(follow){}
+};
 
 /// \brief The base class for a histogram chart.
 class HistogramChartSeries : public GLWchart::ChartSeries{
@@ -88,7 +103,7 @@ class RecvBytesHistogramChartSeries : public HistogramChartSeries{
 static sqa::Initializer definer("GLWchart", GLWchart::sq_define);
 
 
-GLWchart::GLWchart(const char *title, ChartSeries *_series) : st(title){
+GLWchart::GLWchart(const char *title, ChartSeries *_series) : st(title), sampled(NULL){
 	flags = GLW_CLOSE | GLW_COLLAPSABLE;
 	if(_series)
 		series.push_back(_series);
@@ -190,6 +205,12 @@ void GLWchart::draw(GLwindowState &ws, double t){
 	}
 }
 
+void GLWchart::addSample(double value)const{
+	if(sampled)
+		sampled->lastValue = value;
+}
+
+
 /// Define class GLWmessage for Squirrel
 bool GLWchart::sq_define(HSQUIRRELVM v){
 	st::sq_define(v);
@@ -220,9 +241,12 @@ SQInteger GLWchart::sqf_constructor(HSQUIRRELVM v){
 SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
 	const SQChar *sstr;
-	if(SQ_FAILED(sq_getstring(v, -1, &sstr))){
+	if(SQ_FAILED(sq_getstring(v, 2, &sstr))){
 		return sq_throwerror(v, _SC("No string as addSeries arg"));
 	}
+
+	SQInteger followIndex = -1;
+	sq_getinteger(v, 3, &followIndex);
 
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
@@ -241,6 +265,12 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		wnd->addSeries(new FrameRateHistogramChartSeries());
 	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
 		wnd->addSeries(new RecvBytesHistogramChartSeries());
+	else if(!strcmp(sstr, _SC("sampled"))){
+		TimeChartSeries *c = NULL;
+		if(0 <= followIndex && followIndex < wnd->series.size())
+			c = static_cast<TimeChartSeries*>(wnd->series[followIndex]);
+		wnd->addSeries(wnd->sampled = new SampledChartSeries(c));
+	}
 	return 0;
 }
 

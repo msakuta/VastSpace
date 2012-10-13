@@ -33,6 +33,7 @@ public:
 	enum FlagMod{Set = 3, Clear = 0, Toggle = 1, Keep = 2};
 
 	class TimeChartSeries;
+	class SampledChartSeries;
 
 	GLWchart(const char *title, ChartSeries *_series = NULL);
 
@@ -41,12 +42,16 @@ public:
 	void addSeries(ChartSeries *s){series.push_back(s);}
 	void setSeriesVisible(int i, FlagMod v);
 
+	void addSample(double value)const;
+
 	static bool sq_define(HSQUIRRELVM v);
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
 	static SQInteger sqf_addSeries(HSQUIRRELVM v);
 
 protected:
 	std::vector<ChartSeries *> series;
+
+	SampledChartSeries *sampled;
 
 	const char *classname()const{return "GLWchart";}
 	virtual void anim(double dt);
@@ -56,6 +61,11 @@ protected:
 
 /// \brief The series that records track of a value in history.
 class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
+public:
+	double getNormalizer()const{
+		return normalizer;
+	}
+protected:
 	std::vector<double> chart;
 	double normalizer;
 
@@ -73,7 +83,6 @@ class GLWchart::TimeChartSeries : public GLWchart::ChartSeries{
 			normalizer = chart[i];
 	}
 	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << normalizer;}
-protected:
 	/// \breif The derived classes must override this function to mark a value in time line.
 	virtual double timeProc(double dt) = 0;
 };

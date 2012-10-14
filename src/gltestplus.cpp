@@ -29,6 +29,7 @@
 #include "motion.h"
 #include "glw/glwindow.h"
 #include "glw/GLWmenu.h"
+#include "glw/GLWchart.h"
 #include "Docker.h"
 #include "draw/material.h"
 //#include "Sceptor.h"
@@ -987,6 +988,12 @@ void Game::adjustAutoExposure(Viewer &vw){
 
 		// Make sure to get the value inside the range.
 		r_exposure = rangein(r_exposure, minExposure, maxExposure);
+
+		for(GLwindow *w = glwlist; w; w = w->getNext()){
+			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
+				static_cast<GLWchart*>(w)->addSample("exposure", r_exposure);
+			}
+		}
 	}
 }
 

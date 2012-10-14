@@ -171,6 +171,7 @@ register_console_command("chart", function(...){
 	chart.addSeries("frametimehistogram");
 	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);
 	chart.addSeries("sampled", -1, "drawstarcount", [0.5,0.5,1,1]);
+	chart.addSeries("sampled", -1, "exposure", [1,1,0,1]);
 });
 
 function control(...){
@@ -244,14 +245,8 @@ function init_Universe(){
 	cmd("r_move_path 1");
 
 	// Whether show chart graph at the startup
-	if(false){
-		chart <- GLWchart();
-		chart.y = 368;
-		chart.width = 256;
-		chart.height = 128;
-		chart.addSeries("recvbytes");
-	//	chart.addSeries("framerate");
-		chart.addSeries("frameratehistogram");
+	if(true){
+		cmd("chart");
 	}
 }
 

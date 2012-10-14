@@ -69,8 +69,9 @@ protected:
 class GLWchart::NormalizedChartSeries : public GLWchart::ChartSeries{
 public:
 	/// \param ygroup The Y-axis scale group number. -1 won't share scale.
-	NormalizedChartSeries(int ygroup = -1) : ygroup(ygroup){}
+	NormalizedChartSeries(int ygroup = -1, const Vec4f &color = Vec4f(1,1,1,1)) : ygroup(ygroup), colorValue(color){}
 protected:
+	Vec4f colorValue;
 	int ygroup;
 	virtual int getYGroup()const{return ygroup;}
 	virtual double value(int index, GLWchart *w){
@@ -85,6 +86,8 @@ protected:
 		double val = valueBeforeNormalize(index);
 		return theMax != 0. ? val / theMax : val;
 	}
+	virtual Vec4f color()const{return colorValue;}
+
 	/// \brief Derived classes should override this function to return a value instead of value().
 	virtual double valueBeforeNormalize(int index) = 0;
 };
@@ -95,7 +98,7 @@ protected:
 	std::vector<double> chart;
 	double normalizer;
 
-	TimeChartSeries(int ygroup) : NormalizedChartSeries(ygroup){}
+	TimeChartSeries(int ygroup, const Vec4f &color) : NormalizedChartSeries(ygroup, color){}
 
 	double getMax()const{
 		return normalizer;

@@ -44,7 +44,7 @@ class GLWbuttonMatrix extends GLwindow{
 }
 
 /// Element of GLWbuttonMatrix.
-class GLWbuton extends GLelement{
+class GLWbutton extends GLelement{
 }
 
 /// 2-State button.
@@ -62,6 +62,22 @@ class GLWsqStateButton extends GLWstateButton{
 class GLWmessage extends GLwindow{
 	constructor(string message, float timer, string onDestroy);
 }
+
+/// A chart window. You can add series of numbers to display.
+class GLWchart extends GLwindow{
+	/// \param seriesName
+	///        Predefined series name. You can choose from "frametime", "framerate", "recvbytes", "frametimehistogram",
+	///        "frameratehistogram", "recvbyteshistogram" or "sampled".
+	/// \param ygroup
+	///        The grouping id for sharing Y axis scaling. By default, all series have independent Y axis scale normalized
+	///        by the dynamic range of the series, but sometimes you'd like to plot two or more series in the same scale.
+	///        In that case, just assign the same id to those series.
+	/// \param sampleName
+	///        The predefined sample name. Meaningful only if seriesName is "sampled".
+	void addSeries(string seriesName, int ygroup, string sampleName, float color[4]);
+}
+
+
 
 int screenwidth();
 int screenheight();
@@ -150,7 +166,7 @@ register_console_command("halt", function(...){
 register_console_command("chart", function(...){
 	chart <- GLWchart();
 //	chart.addSeries("framerate");
-	chart.addSeries("frametime", 0);
+	chart.addSeries("frametime", 0, "", [1,0.5,0.5,0.5]);
 	chart.addSeries("recvbytes");
 	chart.addSeries("frametimehistogram");
 	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);

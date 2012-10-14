@@ -17,29 +17,29 @@
 
 class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
 public:
-	FrameTimeChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
+	FrameTimeChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,1,1,1)){}
 	virtual gltestp::dstring labelname()const{return "Frame Time";}
 	virtual double timeProc(double dt){return dt;}
 };
 class FrameRateChartSeries : public GLWchart::TimeChartSeries{
 public:
-	FrameRateChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
+	FrameRateChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: TimeChartSeries(ygroup, color ? *color : Vec4f(0,0,1,1)){}
 	virtual gltestp::dstring labelname()const{return "Frame Rate";}
-	virtual Vec4f color()const{return Vec4f(0,0,1,1);}
 	virtual double timeProc(double dt){return dt == 0. ? 0. : 1. / dt;}
 };
 class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
 public:
-	RecvBytesChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
+	RecvBytesChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,0,0,1)){}
 	virtual gltestp::dstring labelname()const{return "Received bytes";}
-	virtual Vec4f color()const{return Vec4f(1,0,0,1);}
 	virtual double timeProc(double dt){
 		return application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes;
 	}
 };
 class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
 	virtual gltestp::dstring labelname()const{return label;}
-	virtual Vec4f color()const{return colorValue;}
 	virtual double timeProc(double dt){
 		return lastValue;
 	}
@@ -49,14 +49,15 @@ class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
 public:
 	double lastValue;
 	gltestp::dstring label;
-	Vec4f colorValue;
-	SampledChartSeries(int ygroup = -1, gltestp::dstring label = "", const Vec4f color = Vec4f(1,1,1,1)) : TimeChartSeries(ygroup), label(label), colorValue(color){}
+	SampledChartSeries(int ygroup = -1, gltestp::dstring label = "", const Vec4f *color = NULL)
+		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,0,1,1)), label(label){}
 };
 
 /// \brief The base class for a histogram chart.
 class HistogramChartSeries : public GLWchart::NormalizedChartSeries{
 public:
-	HistogramChartSeries(int ygroup = -1) : maxvalue(1), NormalizedChartSeries(ygroup){}
+	HistogramChartSeries(int ygroup, const Vec4f &color)
+		: maxvalue(1), NormalizedChartSeries(ygroup, color){}
 protected:
 	std::vector<int> values;
 	int maxvalue;
@@ -84,10 +85,10 @@ protected:
 /// \brief Histogram of frame time.
 class FrameTimeHistogramChartSeries : public HistogramChartSeries{
 public:
-	FrameTimeHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
+	FrameTimeHistogramChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: HistogramChartSeries(ygroup, color ? *color : Vec4f(0,1,1,1)){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt / cellsize;}
-	virtual Vec4f color()const{return Vec4f(0,1,1,1);}
 	virtual gltestp::dstring labelname()const{return "Frame time histogram";}
 };
 const double FrameTimeHistogramChartSeries::cellsize = 0.001;
@@ -95,10 +96,10 @@ const double FrameTimeHistogramChartSeries::cellsize = 0.001;
 /// \brief Histogram of frame rate [fps].
 class FrameRateHistogramChartSeries : public HistogramChartSeries{
 public:
-	FrameRateHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
+	FrameRateHistogramChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: HistogramChartSeries(ygroup, color ? *color : Vec4f(1,0,1,1)){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt == 0. ? 0 : 1. / dt / cellsize;}
-	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
 	virtual gltestp::dstring labelname()const{return "Frame rate histogram";}
 };
 const double FrameRateHistogramChartSeries::cellsize = 0.1;
@@ -106,11 +107,11 @@ const double FrameRateHistogramChartSeries::cellsize = 0.1;
 /// \brief Histogram of received bytes in the frame.
 class RecvBytesHistogramChartSeries : public HistogramChartSeries{
 public:
-	RecvBytesHistogramChartSeries(int ygroup = -1) : HistogramChartSeries(ygroup){}
+	RecvBytesHistogramChartSeries(int ygroup = -1, const Vec4f *color = NULL)
+		: HistogramChartSeries(ygroup, color ? *color : Vec4f(1,1,0,1)){}
 	static const int cellsize = 32;
 	int minThreshold()const{return 4;}
 	int getValue(double)const{return (application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes) / cellsize;}
-	virtual Vec4f color()const{return Vec4f(1,1,0,1);}
 	virtual gltestp::dstring labelname()const{return "Received bytes histogram";}
 };
 
@@ -271,11 +272,12 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		label = "";
 
 	Vec4f color;
-	if(5 <= argc){ // root obj obj[i] obj[i].color
+	Vec4f *pcolor = NULL;
+	if(5 <= argc){
 		for(int j = 0; j < 4; j++){
 			static const SQFloat defaultColor[4] = {1., 1., 1., 1.};
-			sq_pushinteger(v, j); // root obj obj[i] obj[i].color j
-			if(SQ_FAILED(sq_get(v, 5))){ // root obj obj[i] obj[i].color obj[i].color[j]
+			sq_pushinteger(v, j); // color j
+			if(SQ_FAILED(sq_get(v, 5))){ // color color[j]
 				color[j] = defaultColor[j];
 				continue;
 			}
@@ -284,12 +286,10 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 				color[j] = defaultColor[j];
 			else
 				color[j] = f;
-			sq_poptop(v);
+			sq_poptop(v); // color
 		}
-		sq_poptop(v); // root obj obj[i]
+		pcolor = &color;
 	}
-	else // Don't take it serously when the item is undefined, just assign default.
-		color = Vec4f(1,1,1,1);
 
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
@@ -297,19 +297,19 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		throw SQFError("Something's wrong with Squirrel Class Instace of GLWchart.");
 	GLWchart *wnd = static_cast<GLWchart*>(static_cast<GLelement*>(*(WeakPtr<GLelement>*)up));
 	if(!strcmp(sstr, _SC("frametime")))
-		wnd->addSeries(new FrameTimeChartSeries(ygroup));
+		wnd->addSeries(new FrameTimeChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("framerate")))
-		wnd->addSeries(new FrameRateChartSeries(ygroup));
+		wnd->addSeries(new FrameRateChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("recvbytes")))
-		wnd->addSeries(new RecvBytesChartSeries(ygroup));
+		wnd->addSeries(new RecvBytesChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("frametimehistogram")))
-		wnd->addSeries(new FrameTimeHistogramChartSeries(ygroup));
+		wnd->addSeries(new FrameTimeHistogramChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("frameratehistogram")))
-		wnd->addSeries(new FrameRateHistogramChartSeries(ygroup));
+		wnd->addSeries(new FrameRateHistogramChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
-		wnd->addSeries(new RecvBytesHistogramChartSeries(ygroup));
+		wnd->addSeries(new RecvBytesHistogramChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("sampled")))
-		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup, label, color));
+		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup, label, pcolor));
 	return 0;
 }
 

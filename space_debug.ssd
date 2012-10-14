@@ -23,7 +23,7 @@ coordsys Orbit sunlo{
 	cs_radius 500
 	orbits Sol
 	showorbit
-	semimajor_axis 5*600.2686*6378.
+	semimajor_axis 200.2686*6378.
 	eccentricity 0.
 	inclination 3.85
 	argument_of_periapsis 150.2075
@@ -205,7 +205,7 @@ coordsys Orbit earth{
 		orbits Earth
 		orbit_radius 500+6378.
 		inclination -23.4
-		argument_of_periapsis 180
+		argument_of_periapsis 90
 		ascending_node 0
 		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
 #		updirection 0 1 

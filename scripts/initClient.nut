@@ -165,6 +165,9 @@ register_console_command("halt", function(...){
 
 register_console_command("chart", function(...){
 	chart <- GLWchart();
+	chart.y = 200; // Avoid overlapping with GLWchat.
+	chart.width = 300;
+	chart.height = 150;
 //	chart.addSeries("framerate");
 	chart.addSeries("frametime", 0, "", [1,0.5,0.5,0.5]);
 	chart.addSeries("recvbytes");

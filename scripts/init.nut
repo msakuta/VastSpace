@@ -228,10 +228,10 @@ function init_Universe(){
 
 	// Earth low orbit in space_debug.ssd
 	local eartho = universe.findcspath("/earth/lo");
-	local sunlo = universe.findcspath("/sunlo");
+/*	local sunlo = universe.findcspath("/sunlo");
 	if(sunlo)
 		player.cs = sunlo;
-	else if(eartho)
+	else*/ if(eartho)
 		player.cs = eartho;
 	else{
 		local earths = universe.findcspath("/sol/earth/Earth/earths");

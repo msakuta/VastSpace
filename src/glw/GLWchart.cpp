@@ -19,6 +19,7 @@ class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
 public:
 	FrameTimeChartSeries(int ygroup = -1, const Vec4f *color = NULL)
 		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,1,1,1)){}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Frame Time: ") << TimeChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Frame Time";}
 	virtual double timeProc(double dt){return dt;}
 };
@@ -26,6 +27,7 @@ class FrameRateChartSeries : public GLWchart::TimeChartSeries{
 public:
 	FrameRateChartSeries(int ygroup = -1, const Vec4f *color = NULL)
 		: TimeChartSeries(ygroup, color ? *color : Vec4f(0,0,1,1)){}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Frame Rate: ") << TimeChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Frame Rate";}
 	virtual double timeProc(double dt){return dt == 0. ? 0. : 1. / dt;}
 };
@@ -33,12 +35,14 @@ class RecvBytesChartSeries : public GLWchart::TimeChartSeries{
 public:
 	RecvBytesChartSeries(int ygroup = -1, const Vec4f *color = NULL)
 		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,0,0,1)){}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Received bytes: ") << TimeChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Received bytes";}
 	virtual double timeProc(double dt){
 		return application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes;
 	}
 };
 class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << label << ": " << TimeChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return label;}
 	virtual double timeProc(double dt){
 		return lastValue;
@@ -89,6 +93,7 @@ public:
 		: HistogramChartSeries(ygroup, color ? *color : Vec4f(0,1,1,1)){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt / cellsize;}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Frame time histogram: ") << HistogramChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Frame time histogram";}
 };
 const double FrameTimeHistogramChartSeries::cellsize = 0.001;
@@ -100,6 +105,7 @@ public:
 		: HistogramChartSeries(ygroup, color ? *color : Vec4f(1,0,1,1)){}
 	static const double cellsize;
 	int getValue(double dt)const{return dt == 0. ? 0 : 1. / dt / cellsize;}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Frame rate histogram: ") << HistogramChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Frame rate histogram";}
 };
 const double FrameRateHistogramChartSeries::cellsize = 0.1;
@@ -112,6 +118,7 @@ public:
 	static const int cellsize = 32;
 	int minThreshold()const{return 4;}
 	int getValue(double)const{return (application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes) / cellsize;}
+	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Received bytes histogram: ") << HistogramChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Received bytes histogram";}
 };
 
@@ -203,14 +210,13 @@ void GLWchart::anim(double dt){
 }
 
 void GLWchart::draw(GLwindowState &ws, double t){
+	GLWrect cr = clientRect();
+
+	// The first pass draws series lines.
 	for(int i = 0; i < series.size(); i++){
 		ChartSeries *cs = series[i];
 		if(cs && cs->visible){
-			GLWrect cr = clientRect();
-
 			glColor4fv(cs->color());
-			glwpos2d(cr.x0, cr.y0 + (i + 2) * GLwindow::glwfontwidth * glwfontscale);
-			glwprintf(cs->labelstr());
 			glBegin(GL_LINE_STRIP);
 			int all = cs->count();
 			for(int i = 0; i < all; i++){
@@ -219,6 +225,32 @@ void GLWchart::draw(GLwindowState &ws, double t){
 			glEnd();
 		}
 	}
+
+	int lineHeight = GLwindow::glwfontheight * glwfontscale;
+
+	// The second pass draws the labels.
+	for(int i = 0; i < series.size(); i++){
+		ChartSeries *cs = series[i];
+		if(cs && cs->visible){
+
+			int y = cr.y0 + (i + 2) * lineHeight;
+			gltestp::dstring label = cs->labelstr();
+			int labelWidth = glwsizef(label);
+
+			glColor4f(0,0,0,0.75f);
+			glBegin(GL_QUADS);
+			glVertex2d(cr.x0, y);
+			glVertex2d(cr.x0 + labelWidth, y);
+			glVertex2d(cr.x0 + labelWidth, y - lineHeight);
+			glVertex2d(cr.x0, y - lineHeight);
+			glEnd();
+
+			glColor4fv(cs->color());
+			glwpos2d(cr.x0, y);
+			glwprintf(label);
+		}
+	}
+
 }
 
 void GLWchart::addSample(gltestp::dstring label, double value)const{

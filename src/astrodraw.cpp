@@ -1854,8 +1854,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		double value = TimeMeasLap(&tm);
 		GLwindow *w = glwlist;
 		for(; w; w = w->getNext()){
-			if(w->classname() && !strcmp(w->classname(), "GLWchart"))
-				static_cast<GLWchart*>(w)->addSample(value);
+			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
+				static_cast<GLWchart*>(w)->addSample("drawstartime", value);
+				static_cast<GLWchart*>(w)->addSample("drawstarcount", drawnstars);
+			}
 		}
 	}
 

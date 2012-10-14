@@ -26,6 +26,7 @@ public:
 		virtual void anim(double dt, GLWchart *){}
 		virtual gltestp::dstring labelname()const{return "none";}
 		virtual gltestp::dstring labelstr()const{return "";}
+		virtual void addSample(double){}
 		bool visible;
 	};
 
@@ -46,7 +47,7 @@ public:
 	void addSeries(ChartSeries *s){series.push_back(s);}
 	void setSeriesVisible(int i, FlagMod v);
 
-	void addSample(double value)const;
+	void addSample(gltestp::dstring label, double value)const;
 
 	static bool sq_define(HSQUIRRELVM v);
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
@@ -84,7 +85,7 @@ protected:
 		double val = valueBeforeNormalize(index);
 		return theMax != 0. ? val / theMax : val;
 	}
-	/// \brief Derived classes should override this function to return a values instead of value().
+	/// \brief Derived classes should override this function to return a value instead of value().
 	virtual double valueBeforeNormalize(int index) = 0;
 };
 
@@ -113,7 +114,7 @@ protected:
 			normalizer = chart[i];
 	}
 	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << normalizer;}
-	/// \breif The derived classes must override this function to mark a value in time line.
+	/// \brief The derived classes must override this function to mark a value in time line.
 	virtual double timeProc(double dt) = 0;
 };
 

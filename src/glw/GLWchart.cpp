@@ -38,15 +38,19 @@ public:
 	}
 };
 class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
-	virtual gltestp::dstring labelname()const{return "Sampled";}
-	virtual Vec4f color()const{return Vec4f(1,0,1,1);}
+	virtual gltestp::dstring labelname()const{return label;}
+	virtual Vec4f color()const{return colorValue;}
 	virtual double timeProc(double dt){
 		return lastValue;
 	}
+	virtual void addSample(double v){
+		lastValue = v;
+	}
 public:
 	double lastValue;
-	TimeChartSeries *follow;
-	SampledChartSeries(int ygroup = -1) : TimeChartSeries(ygroup){}
+	gltestp::dstring label;
+	Vec4f colorValue;
+	SampledChartSeries(int ygroup = -1, gltestp::dstring label = "", const Vec4f color = Vec4f(1,1,1,1)) : TimeChartSeries(ygroup), label(label), colorValue(color){}
 };
 
 /// \brief The base class for a histogram chart.
@@ -216,9 +220,11 @@ void GLWchart::draw(GLwindowState &ws, double t){
 	}
 }
 
-void GLWchart::addSample(double value)const{
-	if(sampled)
-		sampled->lastValue = value;
+void GLWchart::addSample(gltestp::dstring label, double value)const{
+	for(int i = 0; i < series.size(); i++){
+		if(series[i]->labelname() == label)
+			series[i]->addSample(value);
+	}
 }
 
 
@@ -260,6 +266,31 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	if(argc < 3 || SQ_FAILED(sq_getinteger(v, 3, &ygroup)))
 		ygroup = -1;
 
+	const SQChar *label;
+	if(argc < 4 || SQ_FAILED(sq_getstring(v, 4, &label)))
+		label = "";
+
+	Vec4f color;
+	if(5 <= argc){ // root obj obj[i] obj[i].color
+		for(int j = 0; j < 4; j++){
+			static const SQFloat defaultColor[4] = {1., 1., 1., 1.};
+			sq_pushinteger(v, j); // root obj obj[i] obj[i].color j
+			if(SQ_FAILED(sq_get(v, 5))){ // root obj obj[i] obj[i].color obj[i].color[j]
+				color[j] = defaultColor[j];
+				continue;
+			}
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+				color[j] = defaultColor[j];
+			else
+				color[j] = f;
+			sq_poptop(v);
+		}
+		sq_poptop(v); // root obj obj[i]
+	}
+	else // Don't take it serously when the item is undefined, just assign default.
+		color = Vec4f(1,1,1,1);
+
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, 1, &up, NULL)) || !up)
@@ -278,7 +309,7 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
 		wnd->addSeries(new RecvBytesHistogramChartSeries(ygroup));
 	else if(!strcmp(sstr, _SC("sampled")))
-		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup));
+		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup, label, color));
 	return 0;
 }
 

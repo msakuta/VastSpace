@@ -153,7 +153,8 @@ register_console_command("chart", function(...){
 	chart.addSeries("frametime", 0);
 	chart.addSeries("recvbytes");
 	chart.addSeries("frametimehistogram");
-	chart.addSeries("sampled", 0);
+	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);
+	chart.addSeries("sampled", -1, "drawstarcount", [0.5,0.5,1,1]);
 });
 
 function control(...){

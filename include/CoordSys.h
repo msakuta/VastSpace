@@ -212,9 +212,10 @@ public:
 
 	Astrobj *findastrobj(const char *name);
 
-	Astrobj *findBrightest(const Vec3d &pos = vec3_000);
-	const Astrobj *findBrightest(const Vec3d &pos = vec3_000)const{
-		return const_cast<CoordSys*>(this)->findBrightest(pos);
+	Astrobj *findBrightest(const Vec3d &pos = vec3_000, bool checkEclipse = false);
+	/// Const version of findBrightest().
+	const Astrobj *findBrightest(const Vec3d &pos = vec3_000, bool checkEclipse = false)const{
+		return const_cast<CoordSys*>(this)->findBrightest(pos, checkEclipse);
 	}
 
 	/// This system must be a Extent and Isolated.

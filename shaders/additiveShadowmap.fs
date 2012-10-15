@@ -45,7 +45,7 @@ void main (void)
 
 	texColor.xyz = (gl_FrontMaterial.emission.xyz + texColor.xyz)
 		+ /*(vec3(1,1,1) - (gl_FrontMaterial.emission.xyz + texColor.xyz))
-		*/ min(vec3(1,1,1), lightProduct);
+		*/ lightProduct;
 
 	// Apply the second texture
 	if(.5 < gl_TextureEnvColor[0].y)

@@ -205,7 +205,7 @@ coordsys Orbit earth{
 		orbits Earth
 		orbit_radius 500+6378.
 		inclination -23.4
-		argument_of_periapsis 90
+		argument_of_periapsis 60
 		ascending_node 0
 		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
 #		updirection 0 1 
@@ -254,6 +254,65 @@ coordsys Orbit earth{
 		}
 	}
 }*/
+
+
+coordsys Orbit saturn{
+	eisystem
+	cs_radius 20000000
+	orbits Sol
+	orbit_radius 1433449370
+#	orbit_radius 14334493
+	eccentricity 0.055723219
+	orbit_axis 0 sin(2*pi*0.7733/360) cos(2*pi*0.7733/360)
+	inclination 2.4886
+	ascending_node 113.7357
+	argument_of_periapsis 93.2143
+	showorbit
+	fullname "Saturn"
+
+	define axis_angle 26.73*RAD_PER_DEG
+#	define axis_angle 40.73*RAD_PER_DEG
+#	define axis_angle 0
+
+	astro TextureSphere "Saturn"{
+		ringmin 74000/60268
+		ringmax 2.4
+		ringthick 1.
+		radius 60268
+		mass 5.6846e26
+		oblateness .09796
+		omega 0 sin(axis_angle) cos(axis_angle) 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#			updirection 0 1 0
+#			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
+		updirection 0 sin(axis_angle) cos(axis_angle)
+#		omega 0 0 1 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		planet
+		gravity
+		spherehit
+		texture sat0fds2.jpg
+
+		vertexshader shaders/ringsphereshadow.vs
+		fragmentshader shaders/ringsphereshadow.fs
+
+		ringtexture saturn_ring_front.bmp
+		ringbacktexture saturn_ring_back.bmp
+	}
+	coordsys Orbit saturno1{
+		orbits Saturn
+		orbit_radius 110000
+#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		inclination axis_angle/RAD_PER_DEG
+		ascending_node 180
+		fullname "Saturn Low Orbit"
+		pos -50000 50000 0
+		warp
+		teleport "Saturn Low Orbit" 0 0 0
+		showorbit
+#		addent Scarry 0 -1 0
+		updirection 0 cos(axis_angle) -sin(axis_angle)
+	}
+}
+
 
 coordsys "Alpha Centauri"{
 	extraname "α Cen"

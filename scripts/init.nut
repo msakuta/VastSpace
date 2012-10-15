@@ -227,12 +227,21 @@ function init_Universe(){
 	cmd("r_move_path 1");
 
 	// Earth low orbit in space_debug.ssd
-	local eartho = universe.findcspath("/earth/lo");
-/*	local sunlo = universe.findcspath("/sunlo");
-	if(sunlo)
-		player.cs = sunlo;
-	else*/ if(eartho)
-		player.cs = eartho;
+	local paths = [
+		universe.findcspath("/saturn/saturno1"),
+//		universe.findcspath("/sunlo"),
+		universe.findcspath("/earth/lo"),
+	];
+	local a = null;
+	for(local i = 0; i < paths.len(); i++){
+		if(paths[i]){
+			a = paths[i];
+			break;
+		}
+	}
+
+	if(a)
+		player.cs = a;
 	else{
 		local earths = universe.findcspath("/sol/earth/Earth/earths");
 		if(!earths)

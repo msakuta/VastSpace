@@ -14,6 +14,7 @@
 #include "cmd.h"
 #include "sqadapt.h"
 #include "Universe.h"
+#include "judge.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -23,6 +24,7 @@ extern "C"{
 #include <ctype.h>
 #include <sstream>
 #include <fstream>
+
 
 /// \brief Barycenter of multi-body problems.
 ///
@@ -475,6 +477,7 @@ static int tocs_children_invokes = 0;
 struct Param{
 	Astrobj *ret;
 	double brightness;
+	const bool checkEclipse;
 };
 
 static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
@@ -493,8 +496,23 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 		double val;
 		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
 		if(a && a->absmag < 30){
-			double sd = (retcs->pos - retcs->tocs(vec3_000, a)).slen();
+			Vec3d ray = src - retcs->tocs(vec3_000, a);
+			double sd = ray.slen();
 			val = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
+			// Check for eclipses only if you could be the brightest celestial object.
+			if(p.checkEclipse && p.brightness < val){
+				const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
+				for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
+					const Astrobj *ahit = (*it)->toAstrobj();
+					if(ahit && ahit != a){
+						Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
+						if(jHitSphere(ahitpos, ahit->rad, src, -ray, 1.)){
+							val = 0.;
+							break;
+						}
+					}
+				}
+			}
 		}
 		else
 			val = 0.;
@@ -537,9 +555,16 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 	return findparentbr(p, retcs, src, cs->parent);
 }
 
-
-Astrobj *CoordSys::findBrightest(const Vec3d &pos){
-	Param p = {NULL, 0.};
+/// \brief Find the nearest brightest celestial object to this CoordSys.
+///
+/// The celestial object is usually a Star, but can be other things that reflects Star's light.
+///
+/// \param pos The position to measure the brightnesses at.
+/// \param checkEcplise Whether to check eclipses.
+///        Note that eclipse checking is costly. It has O(n^2) of calculation amount, where n is
+///        the number of involved celestial objects. Be sure to set true to this argument only if necessary.
+Astrobj *CoordSys::findBrightest(const Vec3d &pos, bool checkEclipse){
+	Param p = {NULL, 0., checkEclipse};
 	findchildbr(p, this, pos, this, NULL);
 	findparentbr(p, this, pos, this);
 	return p.ret;

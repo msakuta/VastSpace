@@ -45,7 +45,7 @@ void main (void)
 		texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
 
 	texColor.xyz *= gl_FrontMaterial.emission.xyz + (vec3(1,1,1) - gl_FrontMaterial.emission.xyz)
-		* min(vec3(1,1,1), lightProduct);
+		* lightProduct;
 
 	if(0 == tonemap)
 		texColor.xyz *= exposure;

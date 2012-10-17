@@ -22,6 +22,7 @@
 #include "Player.h"
 #include "Entity.h"
 #include "CoordSys.h"
+#include "CoordSys-find.h"
 #include "stellar_file.h"
 #include "astrodraw.h"
 #include "cmd.h"
@@ -184,8 +185,11 @@ static Vec3d g_light;
 
 void Game::lightOn(){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
-	const Astrobj *sun = player->cs->findBrightest(player->getpos(), true);
-	double val = 0.;
+	CoordSys::FindParam param;
+	param.checkEclipse = true;
+	param.returnBrightness = true;
+	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
+	GLfloat val = 0.;
 	if(sun){
 		Vec3d src = player->getpos();
 		Vec3d ray = src - player->cs->tocs(vec3_000, sun);
@@ -193,15 +197,9 @@ void Game::lightOn(){
 		if(sd <= 0.)
 			val = 0.;
 		else{
-			static const double parsec = 3.08568e16;
-			static const double parsec2 = parsec * parsec;
-
-			// The negated apparent magnitude of the celestial object.
-			double nmag = log(pow(2.512, -1. * sun->absmag) / (sd / parsec2)) / log(2.512);
-
 			// This conversion formula is very temporary and qualitative. This should be shared among 
 			// TexSphere's drawing methods and WarSpace's ones.
-			val = (nmag - 27.) / 10.;
+			val = GLfloat(param.brightness * 1e18);
 			if(val < 0.)
 				val = 0.;
 		}
@@ -213,8 +211,15 @@ void Game::lightOn(){
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
-	val = val * 0.25 + 0.01;
+	val = GLfloat(val * 0.25 + 0.001);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec3f(val, val, val));
+
+	// We plot the diffuse light level for tuning parameters.
+	for(GLwindow *w = glwlist; w; w = w->getNext()){
+		if(w->classname() && !strcmp(w->classname(), "GLWchart")){
+			static_cast<GLWchart*>(w)->addSample("diffuse", val);
+		}
+	}
 }
 
 void Game::draw_gear(double dt){

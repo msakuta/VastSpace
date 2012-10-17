@@ -20,7 +20,7 @@ bool jHitSphere(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &
 
 /* determine intersection of a sphere shell and a ray. it's equivalent to inter-sphere hit detection,
   when the radius argument is sum of the two spheres. */
-bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos){
+bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist){
 	double b, c, D, d, t0, t1, dirslen;
 	bool ret;
 
@@ -32,6 +32,14 @@ bool jHitSpherePos(const Vec3d &obj, double radius, const Vec3d &src, const Vec3
 	/* ??? */
 	dirslen = dir.slen();
 	c = dirslen * (del.slen() - radius * radius);
+
+	// We can always return the distance of the ray and the sphere's center.
+	if(dist){
+		*dist = (del - b / dirslen * dir).len();
+		// Return the nearest point to the sphere's center on the line if no hit detected.
+		if(pos)
+			*pos = del - b / dirslen * dir;
+	}
 
 	/* discriminant?? */
 	D = b * b - c;

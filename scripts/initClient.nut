@@ -165,6 +165,7 @@ register_console_command("halt", function(...){
 
 register_console_command("chart", function(...){
 	chart <- GLWchart();
+	chart.x = 0;
 	chart.y = 200; // Avoid overlapping with GLWchat.
 	chart.width = 300;
 	chart.height = 150;
@@ -175,6 +176,7 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);
 	chart.addSeries("sampled", -1, "drawstarcount", [0.5,0.5,1,1]);
 	chart.addSeries("sampled", -1, "exposure", [1,1,0,1]);
+	chart.addSeries("sampled", -1, "diffuse", [0.5,1,1,1]);
 });
 
 function control(...){

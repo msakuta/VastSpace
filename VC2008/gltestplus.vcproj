@@ -800,6 +800,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\CoordSys-find.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\Defender.h"
 				>
 			</File>

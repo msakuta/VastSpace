@@ -203,7 +203,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		fullname "Earth's Low orbit"
 		orbits Earth
-		orbit_radius 500+6378.
+		orbit_radius 50+6378.
 		inclination -23.4
 		argument_of_periapsis 60
 		ascending_node 0
@@ -255,7 +255,7 @@ coordsys Orbit earth{
 	}
 }*/
 
-
+/*
 coordsys Orbit saturn{
 	eisystem
 	cs_radius 20000000
@@ -312,7 +312,7 @@ coordsys Orbit saturn{
 		updirection 0 cos(axis_angle) -sin(axis_angle)
 	}
 }
-
+*/
 
 coordsys "Alpha Centauri"{
 	extraname "α Cen"

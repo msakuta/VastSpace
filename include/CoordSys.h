@@ -212,10 +212,12 @@ public:
 
 	Astrobj *findastrobj(const char *name);
 
-	Astrobj *findBrightest(const Vec3d &pos = vec3_000, bool checkEclipse = false);
+	struct FindParam;
+	static FindParam defaultFindParam;
+	Astrobj *findBrightest(const Vec3d &pos = vec3_000, FindParam &findParam = defaultFindParam);
 	/// Const version of findBrightest().
-	const Astrobj *findBrightest(const Vec3d &pos = vec3_000, bool checkEclipse = false)const{
-		return const_cast<CoordSys*>(this)->findBrightest(pos, checkEclipse);
+	const Astrobj *findBrightest(const Vec3d &pos = vec3_000, FindParam &findParam = defaultFindParam)const{
+		return const_cast<CoordSys*>(this)->findBrightest(pos, findParam);
 	}
 
 	/// This system must be a Extent and Isolated.

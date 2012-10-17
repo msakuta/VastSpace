@@ -15,9 +15,11 @@
 #include "sqadapt.h"
 #include "Universe.h"
 #include "judge.h"
+#include "CoordSys-find.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
+#include <clib/cfloat.h>
 }
 #include <string.h>
 #include <stdlib.h>
@@ -471,13 +473,16 @@ Astrobj *CoordSys::findastrobj(const char *name){
 }
 
 
+CoordSys::FindParam CoordSys::defaultFindParam;
 
 static int tocs_children_invokes = 0;
 
 struct Param{
 	Astrobj *ret;
 	double brightness;
-	const bool checkEclipse;
+	const CoordSys::FindParam &param; ///< Input parameters are internally read-only.
+	
+	Param(CoordSys::FindParam &param) : ret(NULL), brightness(0.), param(param){}
 };
 
 static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
@@ -500,14 +505,20 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 			double sd = ray.slen();
 			val = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
 			// Check for eclipses only if you could be the brightest celestial object.
-			if(p.checkEclipse && p.brightness < val){
+			if(p.param.checkEclipse && p.brightness < val){
 				const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
 				for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 					const Astrobj *ahit = (*it)->toAstrobj();
 					if(ahit && ahit != a){
 						Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
-						if(jHitSphere(ahitpos, ahit->rad, src, -ray, 1.)){
-							val = 0.;
+						double penumbraRadius = 0.01;
+						double penumbraInner = ahit->rad * (1. - penumbraRadius);
+						double penumbraOuter = ahit->rad * (1. + penumbraRadius);
+						double hitdist;
+						bool hit = jHitSpherePos(ahitpos, ahit->rad, src, -ray, 1., NULL, NULL, &hitdist);
+						bool behind = 0 < ray.sp((src - ahitpos));
+						if(behind && hitdist <= penumbraOuter){
+							val *= rangein((hitdist - penumbraInner) / (penumbraOuter - penumbraInner), 0, 1);
 							break;
 						}
 					}
@@ -560,13 +571,16 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 /// The celestial object is usually a Star, but can be other things that reflects Star's light.
 ///
 /// \param pos The position to measure the brightnesses at.
-/// \param checkEcplise Whether to check eclipses.
-///        Note that eclipse checking is costly. It has O(n^2) of calculation amount, where n is
-///        the number of involved celestial objects. Be sure to set true to this argument only if necessary.
-Astrobj *CoordSys::findBrightest(const Vec3d &pos, bool checkEclipse){
-	Param p = {NULL, 0., checkEclipse};
+/// \param param The parameters.
+Astrobj *CoordSys::findBrightest(const Vec3d &pos, FindParam &param){
+	Param p(param);
 	findchildbr(p, this, pos, this, NULL);
 	findparentbr(p, this, pos, this);
+
+	// Return the brightness through the parameter object if told so.
+	if(param.returnBrightness)
+		param.brightness = p.brightness;
+
 	return p.ret;
 }
 

@@ -11,6 +11,15 @@ struct CoordSys::FindParam{
 	/// \brief The returned brightness if returnBrightness is set true.
 	double brightness;
 
+	/// \brief The threshold at which stars having lower brightness will be truncated from eclipse
+	/// and penumbra examination.
+	///
+	/// Examining too faint stars for eclipse and penumbra may cost CPU time. Setting thresold for
+	/// those stars will improve performance if there are many stars.
+	///
+	/// Setting 0 will disable truncation.
+	double threshold;
+
 	/// \brief Whether to check eclipses.
 	///
 	/// Note that eclipse checking is costly. It has O(n^2) of calculation amount, where n is
@@ -20,7 +29,7 @@ struct CoordSys::FindParam{
 	/// \brief Tell the function to return the brightness in the brightness member variable.
 	bool returnBrightness;
 
-	FindParam() : checkEclipse(false), returnBrightness(false), brightness(0){}
+	FindParam() : checkEclipse(false), returnBrightness(false), brightness(0), threshold(0){}
 };
 
 #endif

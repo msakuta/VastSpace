@@ -188,6 +188,7 @@ void Game::lightOn(){
 	CoordSys::FindParam param;
 	param.checkEclipse = true;
 	param.returnBrightness = true;
+	param.threshold = 1e-20;
 	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
 	GLfloat val = 0.;
 	if(sun){

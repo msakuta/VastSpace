@@ -108,7 +108,7 @@ coordsys Orbit earth{
 			planet
 			spherehit
 		}
-		coordsys Orbit moonlo{
+/*		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
 			orbit_radius 3000.
@@ -118,7 +118,7 @@ coordsys Orbit earth{
 			updirection 0 1 
 			warp
 			teleport
-		}
+		}*/
 	}
 
 	new coordsys Lagrange1 el1{

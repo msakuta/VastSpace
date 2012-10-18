@@ -108,17 +108,17 @@ coordsys Orbit earth{
 			planet
 			spherehit
 		}
-/*		coordsys Orbit moonlo{
+		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
-			orbit_radius 6378.
+			orbit_radius 3000.
 			inclination 13.3
 			argument_of_periapsis 180
 			ascending_node 0
 			updirection 0 1 
 			warp
 			teleport
-		}*/
+		}
 	}
 
 	new coordsys Lagrange1 el1{
@@ -203,7 +203,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		fullname "Earth's Low orbit"
 		orbits Earth
-		orbit_radius 50+6378.
+		orbit_radius 500+6378.
 		inclination -23.4
 		argument_of_periapsis 60
 		ascending_node 0

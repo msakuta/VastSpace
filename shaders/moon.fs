@@ -1,7 +1,9 @@
 uniform samplerCube texture;
 uniform mat3 invEyeRot3x3;
 uniform samplerCube bumptexture;
- 
+uniform float exposure;
+uniform int tonemap;
+
 varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
@@ -25,5 +27,12 @@ void main (void)
 	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
 	texColor *= diffuse/* + ambient*/;
 	texColor[3] = 1.;
+	if(0 == tonemap)
+		texColor.xyz *= exposure;
+	else{
+		float brightMax = 5.;
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+	}
 	gl_FragColor = texColor;
 }

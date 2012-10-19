@@ -1,6 +1,7 @@
 #include "glsl.h"
 #include <clib/zip/UnZip.h>
 #include <stdio.h>
+#include <assert.h>
 
 PFNGLCREATESHADERPROC pglCreateShader;
 PFNGLDELETEPROGRAMPROC glDeleteProgram;
@@ -54,6 +55,120 @@ int glsl_register_shader(GLuint shader, const char *src){
 	return compiled;
 }
 
+/** Preprocess a file to include #include directives.
+ * Currently the sharp in a string cannot be correctly ignored. */
+static int preprocess_file(GLchar **buf, long *size){
+	static const char *directive = "include";
+	GLchar *scan = *buf;
+	int direcpos = 0;
+	GLchar *direcStart = NULL;
+	int lineComment = 0;
+	GLchar *commentStart = NULL;
+	for(; *scan; ++scan){
+		// Ignore line comment
+		if(*scan == '/'){
+			++lineComment;
+			if(2 == lineComment){
+				while(*scan && *scan != '\n')
+					++scan;
+				// Reset state
+				lineComment = 0;
+			}
+		}
+		else
+			lineComment = 0;
+
+		// Find the sharp indicating the beginning of a directive.
+		// TODO: Ignore strings and block comments
+		if(!direcStart){
+			if(*scan == '#'){
+				direcStart = scan;
+				direcpos = 0;
+			}
+		}
+		else if(*scan == directive[direcpos]){
+			// Scan the directive name
+			++direcpos;
+
+			// If directive name matches "include", proceed with file inclusion.
+			if(directive[direcpos] == '\0'){
+				FILE *fp;
+				GLchar *fname;
+				GLchar *buf2;
+				long direcSize;
+				long incSize;
+
+				// Scan until the first delimiter denoting beginning of the file name.
+				while(*scan != '"' && *scan != '<')
+					++scan;
+				// Remember the beginning of the file name.
+				fname = ++scan;
+				// Scan until the end.
+				while(*scan != '"' && *scan != '>')
+					++scan;
+				// Null terminate the string to interpret the file name as a C string.
+				*scan = '\0';
+				// Even after the directive is processed, we must consume the stream until newline.
+				while(*scan != '\n')
+					++scan;
+				// Calculate size of directive line.
+				direcSize = scan - direcStart;
+
+				// Try to open the included file.
+				fp = fopen(fname, "rb");
+				if(fp){
+					fseek(fp, 0, SEEK_END);
+					incSize = ftell(fp);
+					fseek(fp, 0, SEEK_SET);
+					buf2 = malloc(incSize);
+					if(!buf2)
+						goto finish;
+					if(1 != fread(buf2, incSize, 1, fp))
+						goto finish;
+				}
+				else if(buf2 = ZipUnZip("rc.zip", fname, &incSize)){
+				}
+				else
+					return 0;
+				{
+					// Remember sizes before reallocating the buffer, because it can move the buffer on the memory.
+					long direcOffset = direcStart - *buf;
+					long scanOffset = scan - *buf;
+					long newSize = *size + incSize - (scanOffset - direcOffset);
+
+					// Reallocate and possibly move the buffer.
+					*buf = realloc(*buf, newSize);
+					// Move the later section of the original file to end of the included file.
+					memmove(&(*buf)[direcOffset + incSize], &(*buf)[scanOffset], *size - scanOffset);
+					// Ember the included file in the place of the directive.
+					memcpy(&(*buf)[direcOffset], buf2, incSize);
+					// Update the size.
+					*size = newSize;
+					// Free the appropriate buffer.
+					if(fp)
+						free(buf2);
+					else
+						ZipFree(buf2);
+					// Scan pointer should point to the reallocated buffer.
+					scan = &(*buf)[direcOffset];
+				}
+				// Reset the state.
+				direcStart = NULL;
+			}
+		}
+		else if(direcpos != 0){
+			// Non-matched directive name; shouldn't happen
+			// TODO: Helpful error messages.
+			assert(0);
+			direcStart = NULL;
+		}
+		else if(*scan == '\n')
+			direcStart = NULL;
+	}
+finish:
+	return -1;
+}
+
 /* load from a file. */
 int glsl_load_shader(GLuint shader, const char *fname){
 	FILE *fp;
@@ -69,7 +184,7 @@ int glsl_load_shader(GLuint shader, const char *fname){
 		if(!buf)
 			goto finish;
 		fread(buf, size, 1, fp);
-		buf[size] = '\0';
+		buf[size++] = '\0';
 	}
 	else if(buf = ZipUnZip("rc.zip", fname, &size)){
 		buf[size-1] = '\0';
@@ -77,6 +192,7 @@ int glsl_load_shader(GLuint shader, const char *fname){
 	else
 		return 0;
 	if(buf){
+		preprocess_file(&buf, &size);
 		ret = glsl_register_shader(shader, buf);
 		if(fp)
 			free(buf);

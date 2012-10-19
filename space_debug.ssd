@@ -104,7 +104,6 @@ coordsys Orbit earth{
 			texture moon.jpg
 			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
-			fragmentshader shaders/tonemap.fs
 			vertexshader shaders/moon.vs
 			updirection 0 1 0
 			planet
@@ -116,7 +115,7 @@ coordsys Orbit earth{
 			orbit_radius 3000.
 			inclination 13.3
 			argument_of_periapsis 180
-			ascending_node 0
+			ascending_node -90
 			updirection 0 1 
 			warp
 			teleport

@@ -1,16 +1,13 @@
 uniform samplerCube texture;
 uniform mat3 invEyeRot3x3;
 uniform samplerCube bumptexture;
-uniform float exposure;
-uniform int tonemap;
+#  include "shaders/tonemap.fs"
 
 varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
-
-vec4 toneMapping(vec4 texColor);
 
 void main (void)
 {

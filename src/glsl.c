@@ -38,7 +38,11 @@ int glsl_register_shader(GLuint shader, const char *src){
 	glCompileShader(shader);
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH , &logSize);
-	if (logSize > 1)
+	
+	// AMD Radeon HD 6870 outputs log messages when the compilation succeeds.
+	// This information is not much informative and takes much of console space
+	// especially if there are many shaders.
+	if (!compiled && logSize > 1)
 	{
 		GLsizei length;
 		char *buf;
@@ -115,9 +119,14 @@ GLuint glsl_register_program(const GLuint *shaders, int nshaders){
 
     glLinkProgram(prog);
     glGetProgramiv(prog, GL_LINK_STATUS, &linked);
-	printProgramInfoLog(prog);
-    if (linked == GL_FALSE)
+
+	// AMD Radeon HD 6870 outputs log messages when the linking succeeds.
+	// This information is not much informative and takes much of console space
+	// especially if there are many shaders.
+	if (linked == GL_FALSE){
+		printProgramInfoLog(prog);
         return 0;
+	}
 	return prog;
 }
 

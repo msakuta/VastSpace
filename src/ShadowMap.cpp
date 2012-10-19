@@ -149,12 +149,6 @@ void ShadowMapShaderBind::build(){
 	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
 	if(!glsl_load_shader(s, "shaders/normalShadowmap.fs"))
 		return;
-	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
-	if(!glsl_load_shader(s, "shaders/shadowmap.fs"))
-		return;
-	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
-	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
-		return;
 	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)
 		return;
@@ -184,9 +178,6 @@ void AdditiveShaderBind::build(){
 		return;
 	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
 	if(!glsl_load_shader(s, "shaders/additive.fs"))
-		return;
-	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
-	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
 		return;
 	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)
@@ -223,12 +214,6 @@ void AdditiveShadowMapShaderBind::build(){
 		return;
 	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
 	if(!glsl_load_shader(s, "shaders/additiveShadowmap.fs"))
-		return;
-	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
-	if(!glsl_load_shader(s, "shaders/shadowmap.fs"))
-		return;
-	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
-	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
 		return;
 	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)

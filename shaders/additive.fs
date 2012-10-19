@@ -11,7 +11,7 @@ varying vec3 view;
 varying float diffuse;
 //varying vec4 col;
 
-vec4 toneMapping(vec4 texColor);
+#include "shaders/tonemap.fs"
 
 void main (void)
 {

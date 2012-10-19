@@ -64,6 +64,8 @@ static int preprocess_file(GLchar **buf, long *size){
 	GLchar *direcStart = NULL;
 	int lineComment = 0;
 	GLchar *commentStart = NULL;
+	int ret = 0;
+
 	for(; *scan; ++scan){
 		// Ignore line comment
 		if(*scan == '/'){
@@ -122,14 +124,19 @@ static int preprocess_file(GLchar **buf, long *size){
 					fseek(fp, 0, SEEK_SET);
 					buf2 = malloc(incSize);
 					if(!buf2)
-						goto finish;
-					if(1 != fread(buf2, incSize, 1, fp))
-						goto finish;
+						ret = -1;
+					else if(1 != fread(buf2, incSize, 1, fp))
+						ret = -1;
+					fclose(fp);
+					if(ret < 0)
+						return ret;
 				}
 				else if(buf2 = ZipUnZip("rc.zip", fname, &incSize)){
 				}
-				else
-					return 0;
+				else{
+					fprintf(stderr, "GLSL preprocessor error: include file \"%s\" is not found.\n", fname);
+					return -1;
+				}
 				{
 					// Remember sizes before reallocating the buffer, because it can move the buffer on the memory.
 					long direcOffset = direcStart - *buf;
@@ -165,11 +172,11 @@ static int preprocess_file(GLchar **buf, long *size){
 		else if(*scan == '\n')
 			direcStart = NULL;
 	}
-finish:
-	return -1;
+	return ret;
 }
 
-/* load from a file. */
+/** Load a GLSL source from a file.
+ * If the file contains #include preprocessor directives, they will be expanded. */
 int glsl_load_shader(GLuint shader, const char *fname){
 	FILE *fp;
 	long size;
@@ -181,10 +188,11 @@ int glsl_load_shader(GLuint shader, const char *fname){
 		size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
 		buf = malloc(size+1);
-		if(!buf)
-			goto finish;
-		fread(buf, size, 1, fp);
-		buf[size++] = '\0';
+		if(buf){
+			fread(buf, size, 1, fp);
+			buf[size++] = '\0';
+		}
+		fclose(fp);
 	}
 	else if(buf = ZipUnZip("rc.zip", fname, &size)){
 		buf[size-1] = '\0';
@@ -192,16 +200,19 @@ int glsl_load_shader(GLuint shader, const char *fname){
 	else
 		return 0;
 	if(buf){
-		preprocess_file(&buf, &size);
-		ret = glsl_register_shader(shader, buf);
+		int prepResult;
+		prepResult = preprocess_file(&buf, &size);
+		if(prepResult < 0){
+			ret = 0;
+			fprintf(stderr, "GLSL preprocessing error in \"%s\".\n", fname);
+		}
+		else
+			ret = glsl_register_shader(shader, buf);
 		if(fp)
 			free(buf);
 		else
 			ZipFree(buf);
 	}
-finish:
-	if(fp)
-		fclose(fp);
 	return ret;
 }
 

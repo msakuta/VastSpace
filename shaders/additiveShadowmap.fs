@@ -11,9 +11,8 @@ varying vec3 nrm;
 varying float diffuse[2];
 //varying vec4 col;
 
-float shadowMapIntensity(float offset);
-
-vec4 toneMapping(vec4 texColor);
+#include "shaders/shadowmap.fs"
+#include <shaders/tonemap.fs>
 
 void main (void)
 {

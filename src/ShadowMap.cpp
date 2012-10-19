@@ -21,6 +21,7 @@ extern "C"{
 }
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
+#include <vector>
 #include <iostream>
 
 
@@ -132,24 +133,31 @@ void ShaderBind::useInt()const{
 	glUniform1i(tonemapLoc, r_tonemap);
 }
 
+struct ShaderList : public std::vector<GLuint>{
+	~ShaderList(){
+		for(iterator it = begin(); it != end(); ++it)
+			glDeleteShader(*it);
+	}
+};
 
 void ShadowMapShaderBind::build(){
-	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-	if(!glsl_load_shader(vtx, "shaders/normalShadowmap.vs"))
+	ShaderList shaders;
+	GLuint s;
+	shaders.push_back(s = glCreateShader(GL_VERTEX_SHADER));
+	if(!glsl_load_shader(s, "shaders/normalShadowmap.vs"))
 		return;
-	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-	if(!glsl_load_shader(frg, "shaders/normalShadowmap.fs"))
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/normalShadowmap.fs"))
 		return;
-	GLuint shadow = glCreateShader(GL_FRAGMENT_SHADER);
-	if(!glsl_load_shader(shadow, "shaders/shadowmap.fs"))
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/shadowmap.fs"))
 		return;
-	GLuint shaders[3] = {vtx, frg, shadow};
-	shader = glsl_register_program(shaders, 3);
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
+		return;
+	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)
 		return;
-	glDeleteShader(vtx);
-	glDeleteShader(frg);
-	glDeleteShader(shadow);
 }
 
 void ShadowMapShaderBind::getUniformLocations(){
@@ -169,18 +177,20 @@ void ShadowMapShaderBind::useInt()const{
 }
 
 void AdditiveShaderBind::build(){
-	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-	if(!glsl_load_shader(vtx, "shaders/additive.vs"))
+	ShaderList shaders;
+	GLuint s;
+	shaders.push_back(s = glCreateShader(GL_VERTEX_SHADER));
+	if(!glsl_load_shader(s, "shaders/additive.vs"))
 		return;
-	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-	if(!glsl_load_shader(frg, "shaders/additive.fs"))
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/additive.fs"))
 		return;
-	GLuint shaders[2] = {vtx, frg};
-	shader = glsl_register_program(shaders, 2);
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
+		return;
+	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)
 		return;
-	glDeleteShader(vtx);
-	glDeleteShader(frg);
 }
 
 void AdditiveShaderBind::getUniformLocations(){
@@ -206,22 +216,23 @@ void AdditiveShaderBind::setIntensity(const Vec3f &inten)const{
 }
 
 void AdditiveShadowMapShaderBind::build(){
-	GLuint vtx = glCreateShader(GL_VERTEX_SHADER);
-	if(!glsl_load_shader(vtx, "shaders/additiveShadowmap.vs"))
+	ShaderList shaders;
+	GLuint s;
+	shaders.push_back(s = glCreateShader(GL_VERTEX_SHADER));
+	if(!glsl_load_shader(s, "shaders/additiveShadowmap.vs"))
 		return;
-	GLuint frg = glCreateShader(GL_FRAGMENT_SHADER);
-	if(!glsl_load_shader(frg, "shaders/additiveShadowmap.fs"))
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/additiveShadowmap.fs"))
 		return;
-	GLuint shadow = glCreateShader(GL_FRAGMENT_SHADER);
-	if(!glsl_load_shader(shadow, "shaders/shadowmap.fs"))
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/shadowmap.fs"))
 		return;
-	GLuint shaders[3] = {vtx, frg, shadow};
-	shader = glsl_register_program(shaders, 3);
+	shaders.push_back(s = glCreateShader(GL_FRAGMENT_SHADER));
+	if(!glsl_load_shader(s, "shaders/tonemap.fs"))
+		return;
+	shader = glsl_register_program(&shaders.front(), shaders.size());
 	if(!shader)
 		return;
-	glDeleteShader(vtx);
-	glDeleteShader(frg);
-	glDeleteShader(shadow);
 }
 
 void AdditiveShadowMapShaderBind::getUniformLocations(){

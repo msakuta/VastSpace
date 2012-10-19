@@ -10,6 +10,8 @@ varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
 
+vec4 toneMapping(vec4 texColor);
+
 void main (void)
 {
 	vec3 normal = normalize(nrm);
@@ -27,12 +29,5 @@ void main (void)
 	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
 	texColor *= diffuse/* + ambient*/;
 	texColor[3] = 1.;
-	if(0 == tonemap)
-		texColor.xyz *= exposure;
-	else{
-		float brightMax = 5.;
-		vec3 fv = texColor.xyz * exposure;
-		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
-	}
-	gl_FragColor = texColor;
+	gl_FragColor = toneMapping(texColor);
 }

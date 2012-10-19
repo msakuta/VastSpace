@@ -57,6 +57,7 @@ coordsys Orbit earth{
 		extexture "lightstexture" textures/earth_lights.jpg
 		fragmentshader shaders/earth.fs
 		fragmentshader shaders/earth_cloud_noise.fs
+		fragmentshader shaders/tonemap.fs
 		vertexshader shaders/earth.vs
 #		fragmentshader shaders/ringsphereshadow.fs
 #		vertexshader shaders/ringsphereshadow.vs
@@ -103,12 +104,13 @@ coordsys Orbit earth{
 			texture moon.jpg
 			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
+			fragmentshader shaders/tonemap.fs
 			vertexshader shaders/moon.vs
 			updirection 0 1 0
 			planet
 			spherehit
 		}
-/*		coordsys Orbit moonlo{
+		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
 			orbit_radius 3000.
@@ -118,7 +120,7 @@ coordsys Orbit earth{
 			updirection 0 1 
 			warp
 			teleport
-		}*/
+		}
 	}
 
 	new coordsys Lagrange1 el1{

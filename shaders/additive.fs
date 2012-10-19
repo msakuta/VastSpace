@@ -11,6 +11,8 @@ varying vec3 view;
 varying float diffuse;
 //varying vec4 col;
 
+vec4 toneMapping(vec4 texColor);
+
 void main (void)
 {
     float offsetEnv;
@@ -44,5 +46,5 @@ void main (void)
 	if(.5 < gl_TextureEnvColor[0].y)
 		texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
 
-	gl_FragColor = texColor;
+	gl_FragColor = toneMapping(texColor);
 }

@@ -1,3 +1,6 @@
+#include "shaders/tonemap.fs"
+#include "shaders/earth_cloud_noise.fs"
+
 uniform samplerCube texture;
 uniform mat3 invEyeRot3x3;
 uniform samplerCube bumptexture;
@@ -14,12 +17,7 @@ varying vec4 col;
 varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
 
-// If GLSL standard states no #include is allowed, how could functions be shared?
-// We cannot share even prototypes.
-//#include "shaders/earth_cloud_noise.fs"
-vec4 cloudfunc(samplerCube texture, vec3 v, float z);
-vec4 toneMapping(vec4 texColor);
-
+// This will bluescreen in Radeon HD 6870.
 //#extension GL_EXT_gpu_shader4 : enable
 
 bool waving;

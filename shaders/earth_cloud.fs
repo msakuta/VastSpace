@@ -13,8 +13,7 @@ varying vec3 texa0; // texture axis component 0
 varying vec3 texa1; // texture axis component 1
 varying vec3 tlight;
 
-//#include "shaders/earth_cloud_noise.fs"
-vec4 cloudfunc(samplerCube texture, vec3 v, float z);
+#include "shaders/earth_cloud_noise.fs"
 
 /*
 vec3 cinnoise(vec3 v, int level){

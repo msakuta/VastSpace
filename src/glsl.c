@@ -201,13 +201,21 @@ int glsl_load_shader(GLuint shader, const char *fname){
 		return 0;
 	if(buf){
 		int prepResult;
+		long osize = size;
 		prepResult = preprocess_file(&buf, &size);
 		if(prepResult < 0){
 			ret = 0;
 			fprintf(stderr, "GLSL preprocessing error in \"%s\".\n", fname);
 		}
-		else
+		else{
 			ret = glsl_register_shader(shader, buf);
+			if(!ret && osize != size){
+				fp = fopen("preprocessed.txt", "w");
+				if(fp){
+					fprintf("%s\n", buf);
+				}
+			}
+		}
 		if(fp)
 			free(buf);
 		else

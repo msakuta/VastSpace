@@ -1,11 +1,14 @@
-// ringsphereshadow.fs
+#include "shaders/tonemap.fs"
+
+/** \file ringsphereshadow.fs
+ * \brief Sphere with ring's shadow projected.
+ */
 
 uniform sampler1D tex1d;
 uniform samplerCube tex;
 uniform float ambient;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
-uniform float exposure;
 
 varying vec3 norm;
 
@@ -34,12 +37,11 @@ void main (void)
 	float ramb = 5. * min(1., 1. + dot(pos, light)) * (normp * lightp < 0. ? .1 : .8) * abs(lightp) * abs(normp) * temp * temp;
 
 	// Blend texturing, lighting and ring shadowing together.
-	gl_FragColor = textureCube(tex, vec3(gl_TexCoord[0]))
+	vec4 texColor = textureCube(tex, vec3(gl_TexCoord[0]))
 		* (ramb + 
 		gl_FrontLightProduct[0].ambient + globalAmbient
 		+ gl_FrontLightProduct[0].diffuse
 		* max(lightangle * (0. < dot(q, light) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
 
-	// Tone mapping
-//	gl_FragColor *= exposure * (exposure / 100. + 1.) / (exposure + 1.);
+	gl_FragColor = toneMapping(texColor);
 }

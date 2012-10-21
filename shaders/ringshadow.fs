@@ -1,4 +1,8 @@
-// ringshadow.fs
+#include "shaders/tonemap.fs"
+
+/** \file ringshadow.fs
+ * \brief A planet's ring shader, looks up 1-D texture by radius.
+ */
 
 uniform sampler1D texRing, texRingBack;
 uniform sampler2D texshadow;
@@ -6,7 +10,6 @@ uniform float ambient;
 uniform float ringmin, ringmax;
 uniform float sunar;
 uniform float backface;
-uniform float exposure;
 
 varying vec3 pos;
 
@@ -25,7 +28,5 @@ void main (void)
 	vec4 ringcol = (1. - f) * texture1D(texRing, coord) + .5 * f * texture1D(texRingBack, coord);
 	ringcol[3] = texture1D(texRing, coord)[3];
 	gl_FragColor *= ringcol;
-	float alpha = gl_FragColor[3] + max(0., exposure * (gl_FragColor[0] + gl_FragColor[1] + gl_FragColor[2]) / 3. - 1.);
-	gl_FragColor *= exposure;
-	gl_FragColor[3] = alpha;
+	gl_FragColor = toneMappingAlpha(gl_FragColor);
 }

@@ -4,6 +4,7 @@
 #include "Universe.h"
 #include "glsl.h"
 #include "bitmap.h"
+#include "draw/HDR.h"
 extern "C"{
 //#include <clib/amat3.h>
 #include <clib/rseq.h>
@@ -364,6 +365,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 			sunarLoc = glGetUniformLocation(shader, "sunar");
 			backfaceLoc = glGetUniformLocation(shader, "backface");
 			exposureLoc = glGetUniformLocation(shader, "exposure");
+			tonemapLoc = glGetUniformLocation(shader, "tonemap");
 		}
 		glUseProgram(shader);
 		glUniform1i(texRingLoc, 0);
@@ -375,6 +377,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 		glUniform1f(sunarLoc, float(sunar / ipitch / 2.));
 		glUniform1f(backfaceLoc, backface);
 		glUniform1f(exposureLoc, exposure);
+		glUniform1i(tonemapLoc, r_tonemap);
 	} while(0);
 	else
 	// Regenerate texture if astronomical ambient value is changed.

@@ -7,7 +7,7 @@
 
 class AstroRing{
 	GLuint ringTex, ringBackTex, ringShadowTex;
-	GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc, exposureLoc;
+	GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc, exposureLoc, tonemapLoc;
 	bool shader_compile;
 	GLuint ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface, float exposure);
 public:

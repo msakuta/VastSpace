@@ -212,7 +212,7 @@ int glsl_load_shader(GLuint shader, const char *fname){
 			if(!ret && osize != size){
 				fp = fopen("preprocessed.txt", "w");
 				if(fp){
-					fprintf("%s\n", buf);
+					fprintf(fp, "%s\n", buf);
 				}
 			}
 		}

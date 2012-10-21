@@ -229,7 +229,7 @@ function init_Universe(){
 	// Earth low orbit in space_debug.ssd
 	local paths = [
 		universe.findcspath("/earth/moon/moonlo"),
-//		universe.findcspath("/saturn/saturno1"),
+		universe.findcspath("/saturn/saturno1"),
 //		universe.findcspath("/sunlo"),
 		universe.findcspath("/earth/lo"),
 	];

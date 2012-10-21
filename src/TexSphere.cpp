@@ -111,6 +111,10 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << cloudVertexShaderName;
 	sc.o << cloudFragmentShaderName;
 	sc.o << cloudHeight;
+	if(ring){
+		sc.o << ringtexname;
+		sc.o << ringbacktexname;
+	}
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
@@ -133,6 +137,10 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> cloudVertexShaderName;
 	sc.i >> cloudFragmentShaderName;
 	sc.i >> cloudHeight;
+	if(ring){
+		sc.i >> ringtexname;
+		sc.i >> ringbacktexname;
+	}
 
 	// Postprocessing
 	if(textures.size() != this->textures.size())

@@ -22,6 +22,7 @@ public:
 		ypos = -100;
 		width = -100;
 		height = -100;
+		setVisible(false); // Initially invisible
 		glwAppend(this); // Append after the object is constructed.
 	}
 	virtual bool focusable()const{return false;}

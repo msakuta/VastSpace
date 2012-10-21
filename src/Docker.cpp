@@ -1,9 +1,9 @@
 /** \file
  * \brief Implementation of Docker class.
  */
-#ifndef DEDICATED
+//#ifndef DEDICATED
 #include "Application.h"
-#endif
+//#endif
 #include "Docker.h"
 #include "serial_util.h"
 #include "Player.h"

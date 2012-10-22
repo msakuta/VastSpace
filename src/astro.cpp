@@ -485,6 +485,30 @@ struct Param{
 	Param(CoordSys::FindParam &param) : ret(NULL), brightness(0.), param(param){}
 };
 
+double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray){
+	const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
+	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
+		const Astrobj *ahit = (*it)->toAstrobj();
+		if(ahit && ahit != a){
+			Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
+			double hitdist;
+			bool hit = jHitSpherePos(ahitpos, ahit->rad, src, -ray, 1., NULL, NULL, &hitdist);
+			bool behind = 0 < ray.sp((src - ahitpos));
+
+			// Consider penumbra expansion as the shadow caster approaches the light source.
+			// The ahit->rad * 0.01 offset is for atmospheric scattering. It should be zero if the shadow caster
+			// has no atmosphere, but currently there's no way to query it.
+			double penumbraRadius = ahit->rad * 0.01 + a->rad * (src - ahitpos).len() / (lightSource - ahitpos).len();
+			double penumbraInner = ahit->rad - penumbraRadius;
+			double penumbraOuter = ahit->rad + penumbraRadius;
+			if(behind && hitdist <= penumbraOuter){
+				return rangein((hitdist - penumbraInner) / (penumbraOuter - penumbraInner), 0, 1);
+			}
+		}
+	}
+	return 1.;
+}
+
 static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
 	double best = 0;
 #if 1
@@ -507,27 +531,7 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 			val = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
 			// Check for eclipses only if you could be the brightest celestial object.
 			if(p.param.checkEclipse && p.param.threshold < val && p.brightness < val){
-				const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
-				for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
-					const Astrobj *ahit = (*it)->toAstrobj();
-					if(ahit && ahit != a){
-						Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
-						double hitdist;
-						bool hit = jHitSpherePos(ahitpos, ahit->rad, src, -ray, 1., NULL, NULL, &hitdist);
-						bool behind = 0 < ray.sp((src - ahitpos));
-
-						// Consider penumbra expansion as the shadow caster approaches the light source.
-						// The ahit->rad * 0.01 offset is for atmospheric scattering. It should be zero if the shadow caster
-						// has no atmosphere, but currently there's no way to query it.
-						double penumbraRadius = ahit->rad * 0.01 + a->rad * (src - ahitpos).len() / (lightSource - ahitpos).len();
-						double penumbraInner = ahit->rad - penumbraRadius;
-						double penumbraOuter = ahit->rad + penumbraRadius;
-						if(behind && hitdist <= penumbraOuter){
-							val *= rangein((hitdist - penumbraInner) / (penumbraOuter - penumbraInner), 0, 1);
-							break;
-						}
-					}
-				}
+				val *= checkEclipse(a, retcs, src, lightSource, ray);
 			}
 		}
 		else

@@ -18,6 +18,7 @@
 #include "glsl.h"
 #include "glstack.h"
 #include "StaticInitializer.h"
+#include "CoordSys-find.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -2107,7 +2108,7 @@ void drawpsphere(Astrobj *ps, const Viewer *vw, COLOR32 col){
 /// \param as Angle of glow bloom effect radius in celestial sphere in radians.
 /// \param color The color vector for painting the glow.
 /// \param numcuts The number of subdivision along phi angle. Greater value results in finer rendering with additional load.
-void gldGlow(const Vec3d &dir, double as, const Vec4<GLubyte> &color, int numcuts = 32){
+void gldGlow(const Vec3d &dir, double as, const Vec4f &color, int numcuts = 32){
 	double sas = sin(as);
 	double cas = cos(as);
 	double (*cuts)[2] = CircleCuts(numcuts);
@@ -2115,11 +2116,11 @@ void gldGlow(const Vec3d &dir, double as, const Vec4<GLubyte> &color, int numcut
 	glPushMatrix();
 	gldMultQuat(Quatd::direction(dir));
 	glBegin(GL_TRIANGLE_FAN);
-	glColor4ubv(color);
+	glColor4fv(color);
 	glVertex3d(0., 0., 1.);
-	Vec4<GLubyte> edgecolor = color;
+	Vec4f edgecolor = color;
 	edgecolor[3] = 0;
-	glColor4ubv(edgecolor);
+	glColor4fv(edgecolor);
 	for(int i = 0; i <= numcuts; i++){
 		int k = i % numcuts;
 		glVertex3d(cuts[k][0] * sas, cuts[k][1] * sas, cas);
@@ -2166,15 +2167,15 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 	sdist = VECSDIST(spos, vpos);
 	dist = sqrt(sdist);
 
-	Vec4<GLubyte> col;
+	Vec4f col;
 	{
-		Vec4<GLubyte> white(255, 255, 255, 255);
+		Vec4f white(1, 1, 1, 1);
 		double f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
-		white[1] = GLubyte(white[1] * 1. - (1. - f) * .5);
-		white[2] = GLubyte(white[2] * f);
+		white[1] = white[1] * 1. - (1. - f) * .5;
+		white[2] = white[2] * f;
 		if(a->classname() == Star::classRegister.id){
-			col = Vec4f(255. * Star::spectralRGB(((Star*)a)->spect)).cast<GLubyte>();
-			col[3] = 255;
+			col = Vec4f(Star::spectralRGB(((Star*)a)->spect));
+			col[3] = 1.;
 		}
 		else
 			col = white;
@@ -2219,7 +2220,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		// Disable the shader before drawing the sprite.
 		if(g_shader_enable && shader)
 			glUseProgram(0);
-		gldTextureGlow(pos, as, col, vw->irot);
+		gldTextureGlow(pos, as, (255. * col).cast<GLubyte>(), vw->irot);
 		return;
 	}
 	/* if neither sun nor planet with atmosphere like earth is near you, the sun's corona shrinks. */
@@ -2237,6 +2238,14 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		if(dvslen < EPSILON)
 			return;
 		as = M_PI * normalizer * (c / (1. + dist / a->rad / 5.) + d / (1. + height / 3.) + e * (sp * sp / dvslen)) * asfactor / (1. + 0.1 / r_exposure);
+
+		// Retrieve eclipse check result. If we're in a penumbra, returned value is between 0 and 1.
+		double val = checkEclipse(a, vw->cs, vw->pos);
+
+		// Adjust corona glow radius and brightness by eclipse check result.
+		as *= (val + 1.) / 2.;
+		col[3] *= GLfloat((val + 1.) / 2.);
+
 		Mat4d mat = mat4_u;
 		spos1.normin();
 		mat.vec3(2) = spos1;

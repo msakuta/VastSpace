@@ -98,7 +98,7 @@ coordsys Orbit earth{
 			radius 1738
 			mass 0.0123*5.977e24
 			omega 0 0 1 pi*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
-			texture moon.jpg
+			texture textures/moon.jpg
 			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
 			vertexshader shaders/moon.vs
@@ -106,17 +106,17 @@ coordsys Orbit earth{
 			planet
 			spherehit
 		}
-/*		coordsys Orbit moonlo{
+		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
-			orbit_radius 3000.
+			orbit_radius 2000.
 			inclination 13.3
 			argument_of_periapsis 180
 			ascending_node -90
 			updirection 0 1 
 			warp
 			teleport
-		}*/
+		}
 	}
 
 	new coordsys Lagrange1 el1{
@@ -287,13 +287,13 @@ coordsys Orbit saturn{
 		planet
 		gravity
 		spherehit
-		texture sat0fds2.jpg
+		texture textures/saturn.jpg
 
 		vertexshader shaders/ringsphereshadow.vs
 		fragmentshader shaders/ringsphereshadow.fs
 
-		ringtexture saturn_ring_front.bmp
-		ringbacktexture saturn_ring_back.bmp
+		ringtexture textures/saturn_ring_front.bmp
+		ringbacktexture textures/saturn_ring_back.bmp
 	}
 	coordsys Orbit saturno1{
 		orbits Saturn

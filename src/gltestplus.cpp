@@ -918,7 +918,7 @@ void Game::draw_func(Viewer &vw, double dt){
 			stp.magfil = GL_LINEAR;
 			stp.transparentColor = 0;
 //			tex = CacheSUFMTex("pointer.bmp", &stp, NULL);
-			tex = CallCacheBitmap("pointer.bmp", "pointer.bmp", &stp, NULL);
+			tex = CallCacheBitmap("pointer.bmp", "textures/pointer.bmp", &stp, NULL);
 			if(stp.bmi){
 				texw = stp.bmi->bmiHeader.biWidth;
 				texh = stp.bmi->bmiHeader.biHeight;

@@ -466,7 +466,7 @@ void Bullet::drawtra(wardraw_t *wd){
 				stp.env = GL_REPLACE;
 				stp.magfil = GL_LINEAR;
 				stp.minfil = GL_LINEAR;
-				texname = CallCacheBitmap5("Bullet.bmp", "Bullet.bmp", &stp, NULL, NULL);
+				texname = CallCacheBitmap5("Bullet.bmp", "textures/Bullet.bmp", &stp, NULL, NULL);
 			}
 			glCallList(texname);
 /*			glMatrixMode(GL_TEXTURE);

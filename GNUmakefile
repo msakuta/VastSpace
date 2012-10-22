@@ -5,12 +5,24 @@ else
 OUTDIR = Release
 CFLAGS += -O3 -g
 endif
+
 ifndef BULLET_INCLUDE
 BULLET_INCLUDE=/usr/include/bullet
 endif
+
+ifndef BULLET_LIB
+BULLET_LIB=
+endif
+
 CFLAGS += -I ../clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
+
+ifdef MINGW
+RDYNAMIC =
+else
+RDYNAMIC = -rdynamic
+endif
 
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM src/$(1))))
 #gltestdll_depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I include -MM gltestdll/$(1))))
@@ -67,7 +79,8 @@ gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
 all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
-	${CC} ${CFLAGS} $(CPPFLAGS) -rdynamic ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \
+	-lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
 
 #${OUTDIR}/gltestdll.so: gltestdll/${OUTDIR} ${gltestdll_objects}
 #	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread

@@ -321,10 +321,9 @@ bool AttackerDocker::undock(Entity::Dockable *pe){
 	if(e->toWarpable()->warping)
 		return false;
 	if(st::undock(pe)){
-		pe->setPosition(&Vec3d(e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0))),
-			&Quatd(e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.))),
-			&Vec3d(e->velo),
-			&Vec3d(e->omg));
+		Vec3d pos(e->pos + e->rot.trans(Vec3d(-.085 * (nextport * 2 - 1), -0.015, 0)));
+		Quatd rot(e->rot * Quatd(0, 0, sin(-(nextport * 2 - 1) * 5. * M_PI / 4. / 2.), cos(5. * M_PI / 4. / 2.)));
+		pe->setPosition(&pos, &rot, &e->velo, &e->omg);
 		nextport = (nextport + 1) % 2;
 		return true;
 	}

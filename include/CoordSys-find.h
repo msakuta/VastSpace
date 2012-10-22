@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of CoordSys class's finding logic specific classes and functions.
+ */
 #ifndef COORDSYS_FIND_H
 #define COORDSYS_FIND_H
 

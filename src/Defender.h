@@ -13,6 +13,7 @@
 #include "arms.h"
 #include "shield.h"
 #include "tefpol3d.h"
+#include "libmotion.h"
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/suf/sufdraw.h>
@@ -76,6 +77,7 @@ protected:
 	static const float rotateTime; ///< Time taken to rotate the barrel.
 //	Sceptor *formPrev; ///< previous member in the formation
 //	Attitude attitude;
+	static Motion *motions[2];
 
 	void shoot(double dt);
 	bool findEnemy(); // Finds the nearest enemy

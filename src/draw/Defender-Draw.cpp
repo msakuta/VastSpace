@@ -8,6 +8,7 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -32,6 +33,7 @@ extern "C"{
 
 extern double g_nlips_factor;
 
+Motion *Defender::motions[2] = {NULL};
 
 bool Defender::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
@@ -59,6 +61,8 @@ void Defender::draw(wardraw_t *wd){
 	static suftex_t *suft, *suft1, *suft2, *suftengine, *suftengine1, *suftmagazine;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
+	static Model *model = NULL;
+
 	double nf = nlipsFactor(*wd->vw);
 	double scale = modelScale * nf;
 	Defender *const p = this;
@@ -92,6 +96,11 @@ void Defender::draw(wardraw_t *wd){
 	static int magazineIndex = -1;
 
 	if(!init) do{
+		delete model;
+		model = LoadMQOModel("models/defender.mqo");
+		motions[0] = LoadMotion("models/defender_deploy.mot");
+		motions[1] = LoadMotion("models/defender_reload.mot");
+#if 0
 		free(sufbase);
 		free(sufbase1);
 		free(sufengine);
@@ -119,6 +128,7 @@ void Defender::draw(wardraw_t *wd){
 		suftengine = gltestp::AllocSUFTex(sufengine);
 		suftengine1 = gltestp::AllocSUFTex(sufengine1);
 		suftmagazine = gltestp::AllocSUFTex(sufmagazine);
+#endif
 
 /*		if(suftmagazine) for(int i = 0; i < suftmagazine->n; i++) if(sufmagazine->a[i].name == gltestp::dstring("defender_magazine")){
 			suftmagazine->a[i].onBeginTexture = TextureParams::onBeginTextureMagazine;
@@ -136,12 +146,7 @@ void Defender::draw(wardraw_t *wd){
 		}
 	}*/
 
-	if(!sufbase){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos, .005, col);
-	}
-	else{
+	if(model){
 		static const double normal[3] = {0., 1., 0.};
 		double x;
 		double pyr[3];
@@ -163,6 +168,15 @@ void Defender::draw(wardraw_t *wd){
 #endif
 		gldScaled(scale);
 		glScalef(-1, 1, -1);
+
+#if 1
+		MotionPose mp[2];
+		motions[0]->interpolate(mp[0], fdeploy * 20.);
+		motions[1]->interpolate(mp[1], frotate / rotateTime * 10.);
+		mp[0].next = &mp[1];
+
+		DrawMQOPose(model, mp);
+#else
 #if 0
 		if(g_shader_enable && p->fcloak){
 			extern float g_shader_frac;
@@ -267,6 +281,7 @@ void Defender::draw(wardraw_t *wd){
 			}
 			glFrontFace(GL_CCW);*/
 		}
+#endif
 		glPopMatrix();
 
 		glPopAttrib();

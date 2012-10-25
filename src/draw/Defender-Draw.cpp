@@ -127,7 +127,7 @@ void Defender::draw(wardraw_t *wd){
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
 		gldScaled(scale);
-		glScalef(-1, 1, -1);
+//		glScalef(-1, 1, -1);
 
 #if 1
 		MotionPose mp[2];

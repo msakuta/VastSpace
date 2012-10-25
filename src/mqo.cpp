@@ -782,15 +782,15 @@ bool Model::getBonePosInt(const char *boneName, const ysdnmv_t &v0, const Bone *
 		ysdnm_bone_var *bonevar = v->bonevar;
 		int bones = min(v->bones, this->n);
 		for(int i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
-			apos += arot.trans(-bone->joint);
+			apos += arot.trans(bone->joint);
 			apos += arot.trans(v->bonevar[i].pos);
 			arot *= bonevar[i].rot;
-			apos -= arot.trans(-bone->joint);
+			apos -= arot.trans(bone->joint);
 		}
 	}
 	if(!strcmp(boneName, bone->name)){
 		if(pos)
-			*pos = apos + arot.trans(-bone->joint);
+			*pos = apos + arot.trans(bone->joint);
 		if(rot)
 			*rot = arot;
 		return true;
@@ -823,15 +823,15 @@ bool Model::getBonePosInt(const char *boneName, const MotionPose &v0, const Bone
 		MotionPose::const_iterator it = v->nodes.find(bone->name);
 //		for(int i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
 		if(it != v->nodes.end()){
-			apos += arot.trans(-bone->joint);
+			apos += arot.trans(bone->joint);
 			apos += arot.trans(it->second.pos);
 			arot *= it->second.rot;
-			apos -= arot.trans(-bone->joint);
+			apos -= arot.trans(bone->joint);
 		}
 	}
 	if(!strcmp(boneName, bone->name)){
 		if(pos)
-			*pos = apos + arot.trans(-bone->joint);
+			*pos = apos + arot.trans(bone->joint);
 		if(rot)
 			*rot = arot;
 		return true;

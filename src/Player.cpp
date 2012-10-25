@@ -433,7 +433,7 @@ void Player::unserialize(UnserializeContext &sc){
 		beginControlInt(controlled);
 
 	sc.i >> selectedSize;
-	for(int i = 0; i++; i < selectedSize){
+	for(int i = 0; i < selectedSize; ++i){
 		Entity *e;
 		sc.i >> e;
 		// Read and discard stream

@@ -111,6 +111,8 @@ class Player{
 	void setmover(string movertype);
 	string getmover();
 	bool isControlling(); // Returns controlled != null with minimal overhead.
+	void select(Entity entity); // Add an entity to selection list; doesn't take effect in the server.
+	EntitySet selected; // readonly
 	Entity chase;
 	Entity controlled; // Controlled Entity, assigning makes the Player to begin controlling.
 	int chasecamera;

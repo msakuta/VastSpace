@@ -33,6 +33,7 @@ extern "C"{
 
 extern double g_nlips_factor;
 
+Model *Defender::model = NULL;
 Motion *Defender::motions[2] = {NULL};
 
 bool Defender::cull(Viewer &vw)const{
@@ -61,7 +62,6 @@ void Defender::draw(wardraw_t *wd){
 	static suftex_t *suft, *suft1, *suft2, *suftengine, *suftengine1, *suftmagazine;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
-	static Model *model = NULL;
 
 	double nf = nlipsFactor(*wd->vw);
 	double scale = modelScale * nf;
@@ -100,35 +100,6 @@ void Defender::draw(wardraw_t *wd){
 		model = LoadMQOModel("models/defender.mqo");
 		motions[0] = LoadMotion("models/defender_deploy.mot");
 		motions[1] = LoadMotion("models/defender_reload.mot");
-#if 0
-		free(sufbase);
-		free(sufbase1);
-		free(sufengine);
-		free(sufengine1);
-		free(sufmagazine);
-		sufbase = CallLoadSUF("models/defender0_body.bin");
-		sufbase1 = CallLoadSUF("models/defender1_body.bin");
-		sufengine = CallLoadSUF("models/defender0_engine.bin");
-		sufengine1 = CallLoadSUF("models/defender1_engine.bin");
-		sufmagazine = CallLoadSUF("models/defender0_magazine.bin");
-		vbo[0] = CacheVBO(sufbase);
-		vbo[1] = CacheVBO(sufbase1);
-		vbo[2] = CacheVBO(sufengine);
-		vbo[3] = CacheVBO(sufengine1);
-		vbo[4] = CacheVBO(sufmagazine);
-		if(!sufbase) break;
-/*		TexParam stp;
-		stp.flags = STP_ENV;
-		stp.env = GL_ADD;
-		AddMaterial("defender_magazine.png", "models/defender_magazine_br.png", &stp, "models/defender_magazine.png", NULL);*/
-		CacheSUFMaterials(sufbase);
-		CacheSUFMaterials(sufmagazine);
-		suft = gltestp::AllocSUFTex(sufbase);
-//		suft1 = gltestp::AllocSUFTex(sufbase1);
-		suftengine = gltestp::AllocSUFTex(sufengine);
-		suftengine1 = gltestp::AllocSUFTex(sufengine1);
-		suftmagazine = gltestp::AllocSUFTex(sufmagazine);
-#endif
 
 /*		if(suftmagazine) for(int i = 0; i < suftmagazine->n; i++) if(sufmagazine->a[i].name == gltestp::dstring("defender_magazine")){
 			suftmagazine->a[i].onBeginTexture = TextureParams::onBeginTextureMagazine;
@@ -155,25 +126,12 @@ void Defender::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
-#if 0
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
 		gldScaled(scale);
 		glScalef(-1, 1, -1);
 
 #if 1
 		MotionPose mp[2];
-		motions[0]->interpolate(mp[0], fdeploy * 20.);
-		motions[1]->interpolate(mp[1], frotate / rotateTime * 10.);
-		mp[0].next = &mp[1];
+		getPose(mp);
 
 		DrawMQOPose(model, mp);
 #else
@@ -216,71 +174,6 @@ void Defender::draw(wardraw_t *wd){
 		}
 		else
 #endif
-		{
-			if(pixels < 25){
-				if(vbo[1])
-					DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft);
-				else
-					DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft, NULL, NULL);
-			}
-			else{
-				if(vbo[0])
-					DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
-				else
-					DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
-			}
-
-			glPushMatrix();
-			glRotated(90. * rangein((frotate / rotateTime * 2. - .5), 0., 1.), 0, 0, 1);
-			if(vbo[4])
-				DrawVBO(vbo[4], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suftmagazine);
-			else
-				DecalDrawSUF(sufmagazine, wd->shadowmapping ? 0 : SUF_ATR, NULL, suftmagazine, NULL, NULL);
-			glPopMatrix();
-
-			for(int ix = 0; ix < 2; ix++) for(int iy = 0; iy < 2; iy++){
-				glFrontFace((ix + iy) % 2 ? GL_CW : GL_CCW);
-				glPushMatrix();
-				glScalef(1 - ix * 2, 1 - iy * 2, 1);
-				glTranslated(22.5, 22.5, -30);
-				glRotated(MIN(fdeploy * 135, 90), 1, 0, 0);
-				glRotated(MAX(fdeploy * 135 - 90, 0), 0, -1, 0);
-				glTranslated(-22.5, -22.5, 30);
-				if(pixels < 25){
-					if(vbo[3])
-						DrawVBO(vbo[3], SUF_ATR | SUF_TEX, suftengine1);
-					else
-						DecalDrawSUF(sufengine1, SUF_ATR, NULL, suftengine1, NULL, NULL);
-				}
-				else{
-					if(vbo[2])
-						DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suftengine);
-					else
-						DecalDrawSUF(sufengine, SUF_ATR, NULL, suftengine, NULL, NULL);
-				}
-				glPopMatrix();
-			}
-			glFrontFace(GL_CCW);
-
-/*			for(int i = 0; i < 2; i++){
-				glPushMatrix();
-				if(i){
-					glScalef(1, -1, 1);
-					glFrontFace(GL_CW);
-				}
-				if(0. < reverser){
-					glTranslated(0, 0, -25);
-					glRotated(reverser * 30, -1, 0, 0);
-					glTranslated(0, 0, 25);
-				}
-				if(vbo[2])
-					DrawVBO(vbo[2], SUF_ATR | SUF_TEX, suft);
-				else
-					DecalDrawSUF(sufrev, SUF_ATR, NULL, suft, NULL, NULL);
-				glPopMatrix();
-			}
-			glFrontFace(GL_CCW);*/
-		}
 #endif
 		glPopMatrix();
 
@@ -292,7 +185,6 @@ void Defender::draw(wardraw_t *wd){
 
 void Defender::drawtra(wardraw_t *wd){
 	Defender *p = this;
-	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
 	double scale = modelScale * nlips;
 

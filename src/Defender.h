@@ -13,7 +13,7 @@
 #include "arms.h"
 #include "shield.h"
 #include "tefpol3d.h"
-#include "libmotion.h"
+#include "mqo.h"
 extern "C"{
 #include <clib/avec3.h>
 #include <clib/suf/sufdraw.h>
@@ -77,6 +77,7 @@ protected:
 	static const float rotateTime; ///< Time taken to rotate the barrel.
 //	Sceptor *formPrev; ///< previous member in the formation
 //	Attitude attitude;
+	static Model *model;
 	static Motion *motions[2];
 
 	void shoot(double dt);
@@ -125,6 +126,7 @@ public:
 	virtual short bbodyMask()const;
 	virtual const ManeuverParams &getManeuve()const;
 	Mat4d legTransform(int legIndex)const; ///< Returns transformation matrix for a given leg.
+	MotionPose *getPose(MotionPose (&mpbuf)[2])const; ///< Returns the current MotionPoses.
 private:
 };
 

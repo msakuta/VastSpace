@@ -1322,6 +1322,30 @@ bool Defender::command(EntityCommand *com){
 /// \return Transformation matrix, including offset
 Mat4d Defender::legTransform(int i)const{
 	assert(0 <= i && i <= 3);
+#if 1 // The most dumb implementation retrieves the motion pose every time the function is called.
+	// This function ought to be called at least 4 times per frame.
+	// We could cache shared values among leg ids.
+	static const char *engineNames[4] = { // TODO: parameterize
+		"defender0_engine",
+		"defender0_engine1",
+		"defender0_engine2",
+		"defender0_engine3",
+	};
+	MotionPose mpbuf[2];
+	MotionPose *mp = getPose(mpbuf);
+
+	if(mp){
+		Vec3d ppos;
+		Quatd prot;
+		model->getBonePos(engineNames[i], *mp, &ppos, &prot);
+		ppos *= modelScale;
+		Mat4d ret = prot.tomat4();
+		ret.vec3(3) = ppos;
+		Mat4d mat1;
+		transform(mat1);
+		return mat1 * ret;
+	}
+#else // Old hard-coded version, cannot cope with model change.
 	Mat4d mat1;
 	transform(mat1);
 	mat1.scalein((i%2*2-1), (i/2*2-1), 1);
@@ -1329,6 +1353,20 @@ Mat4d Defender::legTransform(int i)const{
 	Mat4d mat3 = mat2.rotx(-MIN(fdeploy * 135, 90) / deg_per_rad);
 	Mat4d mat4 = mat3.roty(MAX(fdeploy * 135 - 90, 0) / deg_per_rad);
 	return mat4.translate(Vec3d(0, 0, -30) * modelScale);
+#endif
+}
+
+/// \param mp The buffer for the pose information to be returned. Must have 2 elements.
+/// \returns Pointer to the first element of the argument array if succeeded, NULL if failed.
+MotionPose *Defender::getPose(MotionPose (&mpbuf)[2])const{
+	if(motions[0] && motions[1]){
+		motions[0]->interpolate(mpbuf[0], fdeploy * 20.);
+		motions[1]->interpolate(mpbuf[1], frotate / rotateTime * 10.);
+		mpbuf[0].next = &mpbuf[1];
+		return &mpbuf[0];
+	}
+	else
+		return NULL;
 }
 
 

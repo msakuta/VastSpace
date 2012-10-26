@@ -158,10 +158,10 @@ function frameproc(dt){
 
 		if(racec[0] < 2){
 			local d = bluebase.docker;
-/*			if(d != null){
+			if(d != null){
 				local e = d.addent("Sceptor");
 				e.race = 0;
-			}*/
+			}
 		}
 		if(false && assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;

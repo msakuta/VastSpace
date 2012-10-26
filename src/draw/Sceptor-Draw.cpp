@@ -111,9 +111,9 @@ void Sceptor::draw(wardraw_t *wd){
 		vbo[2] = CacheVBO(sufrev);
 		if(!sufbase) break;
 		CacheSUFMaterials(sufbase);
-		suft = gltestp::AllocSUFTex(sufbase);
-		suft1 = gltestp::AllocSUFTex(sufbase1);
-		suft2 = gltestp::AllocSUFTex(sufrev);
+		suft = gltestp::AllocSUFTex(sufbase, "models/");
+		suft1 = gltestp::AllocSUFTex(sufbase1, "models/");
+		suft2 = gltestp::AllocSUFTex(sufrev, "models/");
 
 /*		do{
 			GLuint vtx, frg;

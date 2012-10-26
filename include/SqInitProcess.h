@@ -5,6 +5,7 @@
 #define SQINITPROCESS_H
 
 #include "export.h"
+#include "dstring.h"
 #include <squirrel.h>
 #include <stddef.h> // Just for NULL
 
@@ -45,6 +46,7 @@ inline bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess 
 	return SqInitProcess::SqInit(v, scriptFile, procs);
 }
 
+/// \brief Processes a integer value in a Squirrel script.
 class EXPORT IntProcess : public SqInitProcess{
 public:
 	int &value;
@@ -54,12 +56,23 @@ public:
 	virtual void process(HSQUIRRELVM)const;
 };
 
+/// \brief Processes a double value in a Squirrel script.
 class EXPORT SingleDoubleProcess : public SqInitProcess{
 public:
 	double &value;
 	const SQChar *name;
 	bool mandatory;
 	SingleDoubleProcess(double &value, const char *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	virtual void process(HSQUIRRELVM)const;
+};
+
+/// \brief Processes a string value in a Squirrel script.
+class EXPORT StringProcess : public SqInitProcess{
+public:
+	gltestp::dstring &value;
+	const SQChar *name;
+	bool mandatory;
+	StringProcess(gltestp::dstring &value, const char *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
 	virtual void process(HSQUIRRELVM)const;
 };
 

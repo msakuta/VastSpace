@@ -51,7 +51,12 @@ double Defender::defaultMass = 4e3;
 GLuint Defender::overlayDisp = 0;
 Vec3d Defender::gunPos(0., -16.95 * modelScale, -200. * modelScale);
 Autonomous::ManeuverParams Defender::maneuverParams;
-
+gltestp::dstring Defender::engineNames[4] = {
+	"defender0_engine",
+	"defender0_engine1",
+	"defender0_engine2",
+	"defender0_engine3",
+};
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
@@ -158,6 +163,10 @@ Defender::Defender(WarField *aw) : st(aw),
 		sq_init(_SC("models/Defender.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			StringProcess(engineNames[0], _SC("engineName0")) <<=
+			StringProcess(engineNames[1], _SC("engineName1")) <<=
+			StringProcess(engineNames[2], _SC("engineName2")) <<=
+			StringProcess(engineNames[3], _SC("engineName3")) <<=
 			HitboxProcess(hitboxes) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
 			DrawOverlayProcess(overlayDisp) <<=
@@ -1325,12 +1334,6 @@ Mat4d Defender::legTransform(int i)const{
 #if 1 // The most dumb implementation retrieves the motion pose every time the function is called.
 	// This function ought to be called at least 4 times per frame.
 	// We could cache shared values among leg ids.
-	static const char *engineNames[4] = { // TODO: parameterize
-		"defender0_engine",
-		"defender0_engine1",
-		"defender0_engine2",
-		"defender0_engine3",
-	};
 	MotionPose mpbuf[2];
 	MotionPose *mp = getPose(mpbuf);
 

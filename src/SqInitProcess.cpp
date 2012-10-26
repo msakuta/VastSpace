@@ -85,3 +85,22 @@ void SingleDoubleProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v);
 }
 
+void StringProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+	if(SQ_FAILED(sq_get(v, -2))){
+		if(mandatory) // If mandatory, read errors result in exceptions.
+			throw SQFError(gltestp::dstring(name) << _SC(" not found"));
+		else // If not mandatory variable cannot be read, leave the default value and silently ignore.
+			return;
+	}
+	const SQChar *f;
+	if(SQ_FAILED(sq_getstring(v, -1, &f))){
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" couldn't be converted to string"));
+		else
+			return;
+	}
+	value = f;
+	sq_poptop(v);
+}
+

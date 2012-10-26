@@ -40,3 +40,10 @@ function drawOverlay(){
 	glVertex2d(-0.3,  0.2);
 	glEnd();
 }
+
+// MQO model object names for engine shafts
+engineName0 <- "defender0_engine";
+engineName1 <- "defender0_engine1";
+engineName2 <- "defender0_engine2";
+engineName3 <- "defender0_engine3";
+

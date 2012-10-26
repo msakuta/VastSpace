@@ -79,6 +79,7 @@ protected:
 //	Attitude attitude;
 	static Model *model;
 	static Motion *motions[2];
+	static gltestp::dstring engineNames[4];
 
 	void shoot(double dt);
 	bool findEnemy(); // Finds the nearest enemy

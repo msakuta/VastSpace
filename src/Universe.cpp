@@ -39,6 +39,7 @@ void Universe::serialize(SerializeContext &sc){
 	sc.o << timescale << global_time;
 	sc.o << astro_time;
 	sc.o << paused;
+	sc.o << gravityfactor;
 }
 
 extern std::istream &operator>>(std::istream &o, const char *cstr);
@@ -48,6 +49,7 @@ void Universe::unserialize(UnserializeContext &sc){
 	sc.i >> timescale >> global_time;
 	sc.i >> astro_time;
 	sc.i >> paused;
+	sc.i >> gravityfactor;
 }
 
 void Universe::anim(double dt){

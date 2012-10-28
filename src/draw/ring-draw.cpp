@@ -13,6 +13,7 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 #include <clib/gl/multitex.h>
 #include <clib/c.h>
+#include <clib/cfloat.h>
 #include <clib/mathdef.h>
 }
 #include <cpplib/gl/cullplus.h>
@@ -22,7 +23,6 @@ extern "C"{
 #define SQRT2P2 (M_SQRT2/2)
 
 #define ASTEROIDLIST 1
-
 
 extern float g_astro_ambient;
 
@@ -331,17 +331,17 @@ static void ringVertex3d(double x, double y, double z, COLOR32 col, ringVertexDa
 		glVertex3dv(pp);
 	}
 	else{
-		glNormal3dv(rvd->imatty.vp3(rvd->vwpos) - pos);
+//		glNormal3dv(rvd->imatty.vp3(rvd->vwpos) - pos);
 		glVertex3dv(pos);
 	}
 }
 
-GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface, float exposure){
+GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, double maxrad, double sunar, float backface, float diffuse, float exposure){
 	static GLuint texname = 0;
 	static GLubyte texambient = 0;
 	static bool shader_compile = false;
 	static GLuint shader = 0;
-	static GLint texRingLoc, texRingBackLoc, texshadowLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc, backfaceLoc, exposureLoc;
+	static GLint texRingLoc, texRingBackLoc, texshadowLoc, diffuseLoc, ambientLoc, ringminLoc, ringmaxLoc, sunarLoc, backfaceLoc, exposureLoc;
 	GLubyte ambient = GLubyte(g_astro_ambient * 255.f);
 
 	if(g_shader_enable) do{
@@ -359,6 +359,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 			texRingLoc = glGetUniformLocation(shader, "texRing");
 			texRingBackLoc = glGetUniformLocation(shader, "texRingBack");
 			texshadowLoc = glGetUniformLocation(shader, "texshadow");
+			diffuseLoc = glGetUniformLocation(shader, "diffuse");
 			ambientLoc = glGetUniformLocation(shader, "ambient");
 			ringminLoc = glGetUniformLocation(shader, "ringmin");
 			ringmaxLoc = glGetUniformLocation(shader, "ringmax");
@@ -371,6 +372,7 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 		glUniform1i(texRingLoc, 0);
 		glUniform1i(texRingBackLoc, 2);
 		glUniform1i(texshadowLoc, 1);
+		glUniform1f(diffuseLoc, diffuse);
 		glUniform1f(ambientLoc, g_astro_ambient);
 		glUniform1f(ringminLoc, float(minrad));
 		glUniform1f(ringmaxLoc, float(maxrad));
@@ -417,7 +419,8 @@ GLuint AstroRing::ring_setshadow(double angle, double ipitch, double minrad, dou
 
 void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunpos, int start, int end, const Quatd &qrot, double thick,
 			   double minrad, double maxrad, double t, double oblateness, const char *ringTexName, const char *ringBackTexName,
-			   double sunar){
+			   double sunar, double brightness)
+{
 	if(0||start == end)
 		return;
 	int i, inside = 0;
@@ -594,8 +597,17 @@ void AstroRing::ring_draw(const Viewer &rvw, const Astrobj *a, const Vec3d &sunp
 			glActiveTextureARB(GL_TEXTURE2_ARB);
 			glBindTexture(GL_TEXTURE_1D, ringBackTex);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
-			double f = 0 < sunapos[2] * vwapos[2] ? 0 : fabs(sunapos[2]) / sunapos.len() * 10;
-			shader = ring_setshadow(phase - sunphase, fabs(sunapos[2] / sunapos.len() / (1. - oblateness)), minrad, maxrad, sunar, float(MAX(0, MIN(1, f))), float(rvw.dynamic_range));
+
+			// Calculate the sun's apparent height seen from ring's plane.
+			// This value is passed to the shader as brightness, too.
+			// We could leave it to OpenGL lighting mechanisms, but we'd have to provide normal vector in the case.
+			double sunz = fabs(sunapos[2] / sunapos.len());
+
+			// F is 1 if we're looking sun illuminated side of the ring, 0 if we're looking from the opposite side,
+			// in between if the sun light grazes the ring.
+			double f = rangein(0 < sunapos[2] * vwapos[2] ? 0 : sunz * 10, 0., 1.);
+
+			shader = ring_setshadow(phase - sunphase, sunz / (1. - oblateness), minrad, maxrad, sunar, float(f), float(sunz * brightness), float(rvw.dynamic_range));
 		}
 		{
 			double radn = maxrad;

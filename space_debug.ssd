@@ -253,7 +253,7 @@ coordsys Orbit earth{
 	}
 }*/
 
-/*
+
 coordsys Orbit saturn{
 	eisystem
 	cs_radius 20000000
@@ -310,7 +310,7 @@ coordsys Orbit saturn{
 		updirection 0 cos(axis_angle) -sin(axis_angle)
 	}
 }
-*/
+
 
 coordsys "Alpha Centauri"{
 	extraname "α Cen"

@@ -23,9 +23,13 @@ vec4 toneMappingAlpha(vec4 texColor)
 		texColor *= exposure;
 	else{
 		float brightMax = 5.;
-		vec4 fv = texColor * exposure;
-		texColor = fv * (fv/brightMax + 1.0) / (fv + 1.0);
+		vec3 fv = texColor.xyz * exposure;
+		texColor.xyz = fv * (fv/brightMax + 1.0) / (fv + 1.0);
 //		texColor.xyz = fv / (fv + 1.0);
+	}
+	// Too bright color saturates the image sensor so that it hides things behind.
+	if(3 < texColor.x + texColor.y + texColor.z){
+		texColor.w += (texColor.x + texColor.y + texColor.z - 3) / 3;
 	}
 	return texColor;
 }

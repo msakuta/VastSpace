@@ -9,4 +9,5 @@ void main(void)
 	gl_TexCoord[2] = gl_MultiTexCoord2;
 	pos = vec3(gl_Vertex);
 	gl_Position = ftransform();
+	gl_FrontColor = gl_Color;
 }

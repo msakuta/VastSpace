@@ -171,12 +171,24 @@ void TexSphere::draw(const Viewer *vw){
 		return;
 	if(vw->zslice != 2)
 		return;
-	Astrobj *sun = findBrightest();
+
+	CoordSys::FindParam param;
+	param.returnBrightness = true;
+	param.threshold = 1e-20;
+
+	Astrobj *sun = findBrightest(vec3_000, param);
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	int ringdrawn = 8;
 	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
-	double sunar = sun ? sun->rad / (parent->tocs(sun->pos, sun->parent) - pos).len() : .01;
+
+	GLfloat brightness = GLfloat(sqrt(param.brightness * 1e18));
+
+	// Sun distance
+	double sundist = sun ? (parent->tocs(sun->pos, sun->parent) - pos).len() : 1e5;
+
+	// Sun apparent radius
+	double sunar = sun ? sun->rad / sundist : .01;
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring && 0. < ringmin){
@@ -186,7 +198,7 @@ void TexSphere::draw(const Viewer *vw){
 		double theta = ratio < 1. ? acos(ratio) : 0.;
 		ringdrawn = dist / (this->rad * ringmin) < 1. ? 0 : int(theta * RING_CUTS / 2. / M_PI + 1);
 		ringrot = Quatd::direction(omg);
-		astroRing.ring_draw(*vw, this, sunpos, ringdrawn, RING_CUTS / 2, ringrot, ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar);
+		astroRing.ring_draw(*vw, this, sunpos, ringdrawn, RING_CUTS / 2, ringrot, ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar, brightness);
 	}
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
@@ -269,8 +281,8 @@ void TexSphere::draw(const Viewer *vw){
 			bool ret = DrawTextureSpheroid(this, vw, sunpos)
 				.oblateness(oblateness)
 				.flags(DTS_LIGHTING)
-				.mat_diffuse(basecolor)
-				.mat_ambient(basecolor / 2.)
+				.mat_diffuse(basecolor * brightness)
+				.mat_ambient(basecolor * brightness / 10.)
 				.texlist(&texlist)
 				.texmat(mat4_u)
 				.textures(textures)
@@ -335,7 +347,7 @@ void TexSphere::draw(const Viewer *vw){
 	}
 	st::draw(vw);
 	if(drawring && ringdrawn)
-		astroRing.ring_draw(*vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, sunar);
+		astroRing.ring_draw(*vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, sunar, brightness);
 }
 
 struct atmo_dye_vertex_param{
@@ -1611,8 +1623,8 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		v01[0] = gx * cellsize;
 		v01[1] = gy * cellsize;
 		v01[2] = gz * cellsize;
-		if(vw->gc->cullCone(v01, cellsize))
-			continue;
+//		if(vw->gc->cullCone(v01, cellsize))
+//			continue;
 /*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
 		VECADDIN(v01, v0);
 		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/

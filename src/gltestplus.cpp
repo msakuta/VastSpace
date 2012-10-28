@@ -200,7 +200,7 @@ void Game::lightOn(){
 		else{
 			// This conversion formula is very temporary and qualitative. This should be shared among 
 			// TexSphere's drawing methods and WarSpace's ones.
-			val = GLfloat(param.brightness * 1e18);
+			val = GLfloat(sqrt(param.brightness * 1e18));
 			if(val < 0.)
 				val = 0.;
 		}
@@ -212,7 +212,7 @@ void Game::lightOn(){
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
-	val = GLfloat(val * 0.25 + 0.001);
+	val = GLfloat(val * 0.25 + 0.0001);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec3f(val, val, val));
 
 	// We plot the diffuse light level for tuning parameters.
@@ -989,9 +989,12 @@ void Game::adjustAutoExposure(Viewer &vw){
 	if(r_auto_exposure){
 		// Exposure limits. It affects the target exposure.
 		static const double minExposure = 1e-1;
-		static const double maxExposure = 1e2;
+		static const double maxExposure = 1e3;
 		double accum = 0.;
 		static RandomSequence rs(12321); // Random source
+
+		timemeas_t tm;
+		TimeMeasStart(&tm);
 
 		// Sample 9 regions of the screen. We cannot sample the whole screen because
 		// it resides in video memory.
@@ -1021,9 +1024,12 @@ void Game::adjustAutoExposure(Viewer &vw){
 		// Make sure to get the value inside the range.
 		r_exposure = rangein(r_exposure, minExposure, maxExposure);
 
+		double ddt = TimeMeasLap(&tm);
+
 		for(GLwindow *w = glwlist; w; w = w->getNext()){
 			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
 				static_cast<GLWchart*>(w)->addSample("exposure", r_exposure);
+				static_cast<GLWchart*>(w)->addSample("expsample", ddt);
 			}
 		}
 	}

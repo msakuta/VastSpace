@@ -56,9 +56,11 @@ extern "C"{
 
 int g_invert_hyperspace = 0;
 static double r_star_back_brightness = 1. / 50.; ///< The scale of brightness of background stars.
+static double r_galaxy_back_brightness = 5e-4;
 
 static void initStarBack(){
 	CvarAdd("r_star_back_brightness", &r_star_back_brightness, cvar_double);
+	CvarAdd("r_galaxy_back_brightness", &r_galaxy_back_brightness, cvar_double);
 }
 StaticInitializer it(initStarBack);
 
@@ -201,7 +203,7 @@ void TexSphere::draw(const Viewer *vw){
 		astroRing.ring_draw(*vw, this, sunpos, ringdrawn, RING_CUTS / 2, ringrot, ringthick, ringmin, ringmax, 0., oblateness, ringtexname, ringbacktexname, sunar, brightness);
 	}
 
-	drawAtmosphere(this, vw, sunpos, atmodensity, atmohor, atmodawn, NULL, NULL, 32);
+	drawAtmosphere(this, vw, sunpos, atmodensity, Vec4f(atmohor) * brightness, Vec4f(atmodawn) * brightness, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
 		Astrobj *brightest = findBrightest();
 		if(brightest)
@@ -356,33 +358,76 @@ struct atmo_dye_vertex_param{
 	double air;
 	double d;
 	double pd;
+	double thickFactor;
 	const Vec3d *sundir;
 	const GLfloat *col, *dawn;
 };
 
-static void atmo_dye_vertex(struct atmo_dye_vertex_param &p, double x, double y, double z, double s, const Vec3d &base){
+/// \brief Linear interpolation. Should be in some shared library.
+static inline double lerp(double a, double b, double f){
+	return a * (1. - f) + b * f;
+}
+
+/// \brief Convert scalar product of the sun lay direction and position vector to brightness factor.
+/// Only used in atmo_dye_vertex().
+inline double atmo_sp2brightness(double sp){
+	double asp = 1. - fabs(sp);
+	double asp2 = asp * asp;
+	return (sp < 0 ? 0.99 * pow(1. + sp, 8.) + 0.01 : sp + 1.) / 2.;
+}
+
+/// \brief Blend the colors to represent sky sphere.
+///
+/// It became harder to implement since HDR auto exposure is introduced.
+/// You would be able to take qualitative solution in non-HDR rendering algorithms, but in HDR, you'll need
+/// knowledge of environmental lighting at some degree, such as Mie and Rayleigh scattering.
+/// I don't have one, so here is the way invented by tuning parameters.
+///
+/// This function have a lot of room for improvements.
+///
+/// \param p The shared parameters given from callee.
+/// \param x,y,z The vector in local (z up) coordinate system representing position of the vertex being drawn.
+/// \param s The factor of distance from horizon. 0 is horizon, 1 is zenith.
+/// \param base The position vector of intersecting point of the horizon and the vertical line projected from the point being drawn.
+/// \param is The integral index of s variable.
+static void atmo_dye_vertex(struct atmo_dye_vertex_param &p, double x, double y, double z, double s, const Vec3d &base, int is){
 	const Vec3d &sundir = *p.sundir;
-	double f;
 	Vec3d v(x, y, z);
-	double sp;
-	double horizon, b;
-	sp = base.sp(sundir);
+	double sp = base.sp(sundir);
 	double vsp = v.sp(sundir);
-	double nis = (1. - z) / 2.;
-	b = /**(1. - sundir[2]) / 2. * */(sp + 1.) / 2. * (1. - nis) + (1. - sundir[2]) / 2. * nis;
-	horizon = 1. * (1. - (1. - v[2]) * (1. - v[2])) / (1. - sundir[2] * 4.);
+
+	// This value is 1 if the vertex is at zenith.
+	// We interpolate horizon and zenith linearly to produce brightness.
+	double zenith = (1. - z) / 2.;
+
+	// Brightness for color components.
+	double b = lerp(atmo_sp2brightness(sp), atmo_sp2brightness(-sundir[2]), zenith);
+
+	// Boost the brightness value to illuminate the day side with more intense ambient light.
+	if(0.5 < b)
+		b = (b - 0.5) * 2.0 + 0.5;
+
+	// Obtain the value indicating how the vertex is near the horizon.
+	double horizon = 1. * (1. - (1. - v[2]) * (1. - v[2])) / (1. - sundir[2] * 4.);
 	horizon = 1. / (1. + fabs(horizon));
-	f = p.redness * (vsp + 1. + p.isotropy) / (2. + p.isotropy) * horizon;
+
+	// This is the factor of how the vertex is near dawn or sunset sun.
+	double f = p.redness * (vsp + 1. + p.isotropy) / (2. + p.isotropy) * horizon;
+
+	// Brightness for alpha channel.
+	double brightness = (/*1. +*/ b) /* 2.*/ / (1. + (1. - s * s) * p.air);
+	brightness *= lerp(1., (is / 16.) * (is / 16.), p.thickFactor);
+
 /*	g = f * horizon * horizon * horizon * horizon;*/
 /*	f = redness * ((v[0] * sundir[0] + v[1] * sundir[1]) + v[2] * sundir[2] * isotropy + 1.) / (2. + isotropy);*/
 	glColor4d(p.col[0] * b * (1. - f) + p.dawn[0] * f,
 		p.col[1] * b * (1. - f) + p.dawn[1] * f,
 		p.col[2] * b * (1. - f) + p.dawn[2] * f,
-		p.col[3] * (1. + b) / 2. / (1. + (1. - s * s) * p.air) * (1. - f) + p.dawn[3] * f);
+		brightness * lerp(p.col[3], p.dawn[3], f));
 }
 
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices){
-	// Don't call me in the first place!
+	// Don't call me from the first place!
 	if(thick == 0.) return;
 	int hdiv = slices == 0 ? 16 : slices;
 	int s, t;
@@ -399,6 +444,35 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	/* too far */
 	if(DBL_EPSILON < sdist && a->rad * a->rad / sdist < .01 * .01)
 		return;
+
+	static bool shader_compile = false;
+	static GLuint shader = 0;
+
+	if(g_shader_enable) do{
+		static GLint exposureLoc = -1;
+		static GLint tonemapLoc = -1;
+		if(!shader_compile){
+			shader_compile = true;
+			GLuint shaders[2], &vtx = shaders[0], &frg = shaders[1];
+			vtx = glCreateShader(GL_VERTEX_SHADER);
+			if(!glsl_load_shader(vtx, "shaders/atmosphere.vs"))
+				break;
+			frg = glCreateShader(GL_FRAGMENT_SHADER);
+			if(!glsl_load_shader(frg, "shaders/atmosphere.fs"))
+				break;
+			shader = glsl_register_program(shaders, 2);
+			glDeleteShader(vtx);
+			glDeleteShader(frg);
+			if(!shader)
+				break;
+			exposureLoc = glGetUniformLocation(shader, "exposure");
+			tonemapLoc = glGetUniformLocation(shader, "tonemap");
+		}
+		glUseProgram(shader);
+		glUniform1f(exposureLoc, r_exposure);
+		glUniform1i(tonemapLoc, r_tonemap);
+	} while(0);
+
 
 	dist = sqrt(sdist);
 	/* buried in */
@@ -444,6 +518,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	param.sundir = &sundir;
 	param.col = hor;
 	param.dawn = dawn;
+	param.thickFactor = d / pd;
 	for(s = 0; s < 16; s++){
 		double h[2][2];
 		double dss[2];
@@ -467,13 +542,13 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 			base[1] = Vec3d(hcuts[t1][0] * ss0, hcuts[t1][1] * ss0, sc0);
 
 			glBegin(GL_QUADS);
-			atmo_dye_vertex(param, hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], dss[0], base[0]);
+			atmo_dye_vertex(param, hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0], dss[0], base[0], s);
 			glVertex3d(hcuts[t][0] * h[0][1], hcuts[t][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(param, hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], dss[0], base[1]);
+			atmo_dye_vertex(param, hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0], dss[0], base[1], s);
 			glVertex3d(hcuts[t1][0] * h[0][1], hcuts[t1][1] * h[0][1], h[0][0]);
-			atmo_dye_vertex(param, hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], dss[1], base[1]);
+			atmo_dye_vertex(param, hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0], dss[1], base[1], s+1);
 			glVertex3d(hcuts[t1][0] * h[1][1], hcuts[t1][1] * h[1][1], h[1][0]);
-			atmo_dye_vertex(param, hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], dss[1], base[0]);
+			atmo_dye_vertex(param, hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0], dss[1], base[0], s+1);
 			glVertex3d(hcuts[t][0] * h[1][1], hcuts[t][1] * h[1][1], h[1][0]);
 			glEnd();
 
@@ -498,6 +573,10 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 		}
 	}
 	glPopMatrix();
+
+	if(g_shader_enable){
+		glUseProgram(0);
+	}
 }
 
 #if 0
@@ -1407,7 +1486,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
 		glCallList(backimg);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		double br = 2e-3 * r_exposure;
+		double br = r_galaxy_back_brightness * r_exposure;
 		glColor4f(br, br, br, 1.);
 //		glColor4f(.5, .5, .5, 1.);
 		for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){

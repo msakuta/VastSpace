@@ -47,7 +47,7 @@ double checkEclipse(Astrobj *illuminator, const CoordSys *retcs, const Vec3d &sr
 /// \param retcs The CoordSys of src.
 /// \param src The viewer's position. Ray trace check will be performed between illuminator and src.
 /// \returns Ratio at the illuminator's brightness if blocking celestial body does not exist.
-///          1 means there's no eclipse, while 0 measn total eclipse.
+///          1 means there's no eclipse, while 0 means total eclipse.
 ///          It can be somewhere in between if you're in penumbra or antumbra.
 inline double checkEclipse(Astrobj *illuminator, const CoordSys *retcs, const Vec3d &src){
 	if(illuminator && illuminator->absmag < 30){

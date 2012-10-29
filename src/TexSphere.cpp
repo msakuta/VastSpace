@@ -279,7 +279,7 @@ double TexSphere::atmoScatter(const Viewer &vw)const{
 		return st::atmoScatter(vw);
 	double dist = const_cast<TexSphere*>(this)->calcDist(vw);
 	double thick = atmodensity;
-	double d = (dist - rad) < thick * 128. ? 1. : thick * 128. / (dist - rad);
+	double d = exp(-(dist - rad) / thick);
 	return d;
 }
 

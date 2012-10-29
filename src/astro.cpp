@@ -493,17 +493,45 @@ double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const V
 			Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
 			double hitdist;
 			bool hit = jHitSpherePos(ahitpos, ahit->rad, src, -ray, 1., NULL, NULL, &hitdist);
-			bool behind = 0 < ray.sp((src - ahitpos));
+
+			// Direction of the ray (unit vector).
+			Vec3d rayDir = ray.norm();
+
+			// Obstacle's vector
+			Vec3d obsVec = src - ahitpos;
+
+			// Distance of the camera and the light source, with offset 0 at the same distance of
+			// the obstacle and the light source.
+			double rayOffset = rayDir.sp(obsVec);
+
+			// This scalar product indicates how the camera oriented against obstacle and light source.
+			// -1 if you're directly behind, 1 if you're directly in between the obstacle and the sun,
+			// and 0 if the three points form a right angle.
+			// Obtained by dividing rayOffset by obsVec length for performance, but is really a scalar product.
+			double sp = rayOffset / obsVec.len() /*rayDir.sp(obsVec.norm())*/;
+
+			Viewer vw;
+			vw.cs = retcs;
+			vw.pos = src;
+			// Obtain atmospheric scattering of sun light.
+			double scatter = ahit->atmoScatter(vw);
+
+			// The sun's light will be scattered most near horizon.
+			scatter *= 1. - sp * sp;
 
 			// Consider penumbra expansion as the shadow caster approaches the light source.
-			// The ahit->rad * 0.01 offset is for atmospheric scattering. It should be zero if the shadow caster
-			// has no atmosphere, but currently there's no way to query it.
-			double penumbraRadius = ahit->rad * 0.01 + a->rad * (src - ahitpos).len() / (lightSource - ahitpos).len();
-			double penumbraInner = ahit->rad - penumbraRadius;
-			double penumbraOuter = ahit->rad + penumbraRadius;
-			if(behind && hitdist <= penumbraOuter){
-				return rangein((hitdist - penumbraInner) / (penumbraOuter - penumbraInner), 0, 1);
+			double penumbra;
+			if(rayOffset < 0.)
+				penumbra = 1.;
+			else{
+				double penumbraRadius = a->rad * rayOffset / (lightSource - ahitpos).len();
+				double penumbraInner = ahit->rad - penumbraRadius;
+				double penumbraOuter = ahit->rad + penumbraRadius;
+				penumbra = hitdist <= penumbraOuter ? (hitdist - penumbraInner) / (penumbraOuter - penumbraInner) : 1.;
 			}
+
+			// Scattering by atmosphere can attenuate the direct light down to 25%. (Is it right?)
+			return rangein(penumbra - 0.75 * scatter, 0, 1);
 		}
 	}
 	return 1.;

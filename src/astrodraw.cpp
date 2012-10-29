@@ -701,7 +701,7 @@ static void STN(avec3_t r){
 #define STARLIST 0
 
 #ifdef NDEBUG
-double g_star_num = 10;
+double g_star_num = 5;
 int g_star_cells = 6;
 double g_star_visible_thresh = .3;
 double g_star_glow_thresh = .2;

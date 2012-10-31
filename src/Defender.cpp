@@ -1,6 +1,9 @@
 /** \file
  * \brief Implementation of Defender and its properties.
  */
+
+#define NOMINMAX
+
 #include "Defender.h"
 #include "Player.h"
 #include "Bullet.h"
@@ -8,17 +11,19 @@
 #include "serial_util.h"
 #include "Warpable.h"
 #include "Docker.h"
-//#include "draw/material.h"
 #include "cmd.h"
 #include "StaticInitializer.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
-#include "draw/effects.h"
 #include "BeamProjectile.h"
 #include "sqadapt.h"
 #include "motion.h"
 #include "Game.h"
 #include "glw/popup.h"
+#ifndef DEDICATED
+#include "draw/effects.h"
+#include "mqo.h"
+#endif
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

@@ -30,6 +30,8 @@ protected:
 	double cloudHeight; ///< In kilometers
 	double cloudPhase;
 
+	Vec3d noisePos; ///< Position in noise space for ocean noise. Only in the client.
+
 	/// OpenGL texture units
 	AstroRing astroRing;
 public:

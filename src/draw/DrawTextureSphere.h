@@ -33,6 +33,7 @@ protected:
 	AstroRing *m_ring;
 	double m_ringmin, m_ringmax;
 	Quatd m_cloudRotation;
+	Vec3f m_noisePos;
 	void useShader();
 public:
 	typedef DrawTextureSphere tt;
@@ -46,7 +47,8 @@ public:
 		, m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
 		, m_ring(NULL)
 		, m_ringmin(0.), m_ringmax(0.)
-		, m_cloudRotation(quat_u){}
+		, m_cloudRotation(quat_u)
+		, m_noisePos(0,0,0){}
 	tt &astro(TexSphere *a){this->a = a; return *this;}
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
 	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
@@ -63,6 +65,7 @@ public:
 	tt &ring(AstroRing *a){m_ring = a; return *this;}
 	tt &ringRange(double ringmin, double ringmax){m_ringmin = ringmin; m_ringmax = ringmax; return *this;}
 	tt &cloudRotation(const Quatd &acloudrot){m_cloudRotation = acloudrot; return *this;}
+	tt &noisePos(const Vec3f &apos){m_noisePos = apos; return *this;}
 	virtual bool draw();
 
 	static const GLenum cubetarget[6]; ///< The target OpenGL texture units for each direction of the cube.

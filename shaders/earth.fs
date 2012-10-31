@@ -10,6 +10,7 @@ uniform float time;
 uniform sampler1D tex1d;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
+uniform vec3 noisePos;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -21,6 +22,25 @@ varying vec3 texa1; // texture axis component 1
 //#extension GL_EXT_gpu_shader4 : enable
 
 bool waving;
+
+/// Returns ocean wave noise pattern
+vec3 ocean(vec3 v){
+	float f2 = min(1., 20. / height);
+	v *= 50;
+
+	// Rotated input vector for combination to enhance period of the noise.
+	// The period of cells formed by v and v2 vectors is desired to be
+	// as large as possible.
+	vec3 v2 = vec3(v.x * cos(1) + v.y * sin(1), v.x * -sin(1) + v.y * cos(1), v.z);
+
+	// Accumulate multiple noises to reduce artifacts caused by finite texture size.
+	return 0.05 * vec3(
+		2.0 * f2 * (texture3D(noise3D, 128. * v) - vec4(.5)) + // Fine noise
+		2.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5)) + // Fine rotated noise
+		(texture3D(noise3D, 32. * v) - vec4(0.5)) + // High octave noise
+		(texture3D(noise3D, 8. * v) - vec4(0.5)) // Very high octave noise
+		);
+}
 
 vec3 anoise1(vec3 v){
 	return noise3(v);
@@ -56,11 +76,15 @@ void main (void)
 	vec3 texnorm0 = vec3(textureCube(bumptexture, texCoord)) - vec3(1., .5, .5);
 	texnorm0[1] *= 5.;
 	texnorm0[2] *= 5.;
-	vec3 wavedir = vec3(1,1,0);
-	vec3 wavedir2 = vec3(.25,.5,1);
-	vec3 noise = .05 * vec3(anoise2(8. * 1000. * texCoord));
-//		+ sin(16. * 8. * 1000. * dot(wavedir, texCoord) + time) * wavedir * .05
-//		+ sin(16. * 8. * 1000. * dot(wavedir2, texCoord) + time) * wavedir2 * .05;
+
+	// Obtain ocean noise to add to normal vector.
+	// The noise position moves over time, so it would be a random source.
+	// But do not add in case of rendering land.
+	vec3 noiseInput = texCoord;
+	if(waving)
+		noiseInput += 1e-5 * noisePos;
+	vec3 noise = ocean(noiseInput);
+
 	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
 	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
 

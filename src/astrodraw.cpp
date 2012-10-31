@@ -169,8 +169,16 @@ static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g
 static StaticInitializer s_tscuts(g_tscuts_init);
 
 void TexSphere::draw(const Viewer *vw){
-	if(0)
-		return;
+
+	// The noise position vector "approaches" the camera to simulate time fluctuating noise
+	// without apparent spatial drift.
+	// We will convert it to float vector in order to pass to the shader program, but accumulating
+	// it over time with better precision is preferred, because this method is called thousands of
+	// times in a session.
+	// The floating point values tend to get far from 0, which is most precise region
+	// in the supported range of a floating point value.
+	noisePos += tocs(vw->pos, vw->cs).norm() * vw->dt;
+
 	if(vw->zslice != 2)
 		return;
 
@@ -294,6 +302,7 @@ void TexSphere::draw(const Viewer *vw){
 				.ring(&astroRing)
 				.ringRange(ringmin, ringmax)
 				.cloudRotation(cloudRotation())
+				.noisePos(noisePos.cast<float>())
 				.draw();
 			if(!ret && *texname){
 				texname = "";
@@ -335,6 +344,7 @@ void TexSphere::draw(const Viewer *vw){
 				.ncuts(g_tscuts)
 				.ring(&astroRing)
 				.cloudRotation(cloudRotation())
+				.noisePos(noisePos.cast<float>())
 				.draw();
 			if(!ret && *texname){
 				texname = "";

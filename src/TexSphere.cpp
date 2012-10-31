@@ -8,6 +8,7 @@
 #include "serial_util.h"
 #include "sqadapt.h"
 #include "cmd.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -22,7 +23,8 @@ TexSphere::TexSphere(Game *game) :
 	shaderGiveup(false),
 	cloudShader(0),
 	cloudShaderGiveup(false),
-	cloudPhase(0.)
+	cloudPhase(0.),
+	noisePos(0,0,0)
 {
 }
 
@@ -34,7 +36,8 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	cloudShader(0),
 	cloudShaderGiveup(false),
 	cloudHeight(0.),
-	cloudPhase(0.)
+	cloudPhase(0.),
+	noisePos(0,0,0)
 {
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = ringthick = 0;

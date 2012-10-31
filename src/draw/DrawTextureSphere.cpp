@@ -449,13 +449,13 @@ static GLuint noise3DTexture(){
 			CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
 		if(glTexImage3D){
 			static const int NNOISE = 64;
-			static GLubyte field[NNOISE][NNOISE][NNOISE][1];
+			static GLubyte field[NNOISE][NNOISE][NNOISE][4];
 		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
 			perlin_noise_3d(field, 48275);
 		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
 			glGenTextures(1, &ret);
 			glBindTexture(GL_TEXTURE_3D, ret);
-			glTexImage3D(GL_TEXTURE_3D, 0, GL_ALPHA, NNOISE, NNOISE, NNOISE, 0, GL_ALPHA, GL_UNSIGNED_BYTE, field);
+			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, NNOISE, NNOISE, NNOISE, 0, GL_RGBA, GL_UNSIGNED_BYTE, field);
 			if(GLenum err = glGetError())
 				CmdPrint(dstring() << "ERR" << err << ": " << (const char*)gluErrorString(err));
 			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -483,6 +483,7 @@ void DrawTextureSphere::useShader(){
 		struct Locs{
 			GLint textureLoc;
 			GLint noise3DLoc;
+			GLint noisePosLoc;
 			GLint invEyeMat3Loc;
 			GLint timeLoc;
 			GLint heightLoc;
@@ -491,6 +492,7 @@ void DrawTextureSphere::useShader(){
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
+				noisePosLoc = glGetUniformLocation(shader, "noisePos");
 				invEyeMat3Loc = glGetUniformLocation(shader, "invEyeRot3x3");
 				timeLoc = glGetUniformLocation(shader, "time");
 				heightLoc = glGetUniformLocation(shader, "height");
@@ -515,6 +517,9 @@ void DrawTextureSphere::useShader(){
 			glUniform1i(locs.noise3DLoc, 2);
 			glBindTexture(GL_TEXTURE_3D, noise3tex);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+		if(0 <= locs.noisePosLoc){
+			glUniform3fv(locs.noisePosLoc, 1, m_noisePos);
 		}
 		if(0 <= locs.invEyeMat3Loc){
 			Mat4d rot2 = /*a->rot.tomat4() **/ vw->irot;

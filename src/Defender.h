@@ -13,13 +13,17 @@
 #include "arms.h"
 #include "shield.h"
 #include "tefpol3d.h"
-#include "mqo.h"
+//#include "mqo.h"
 extern "C"{
 #include <clib/avec3.h>
-#include <clib/suf/sufdraw.h>
+//#include <clib/suf/sufdraw.h>
 }
 
 #define PIDAIM_PROFILE 0
+
+class Model;
+struct Motion;
+struct MotionPose;
 
 /// \brief Space Defender (middle fighter)
 ///

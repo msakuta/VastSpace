@@ -48,8 +48,10 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Server.o\
  ${OUTDIR}/dedsvr.o\
  ${OUTDIR}/Bullet.o\
+ ${OUTDIR}/BeamProjectile.o\
  ${OUTDIR}/Missile.o\
  ${OUTDIR}/Sceptor.o\
+ ${OUTDIR}/Defender.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
  ${OUTDIR}/SqInitProcess.o\
@@ -138,9 +140,13 @@ ${OUTDIR}/dedsvr.o: $(call depends,dedsvr.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Bullet.o: $(call depends,Bullet.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/BeamProjectile.o: $(call depends,BeamProjectile.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Missile.o: $(call depends,Missile.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Defender.o: $(call depends,Defender.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Docker.o: $(call depends,Docker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

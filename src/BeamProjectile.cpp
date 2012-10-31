@@ -56,17 +56,21 @@ void BeamProjectile::unserialize(UnserializeContext &sc){
 }
 
 void BeamProjectile::enterField(WarField *w){
+#ifndef DEDICATED
 	if(WarSpace *ws = *w)
 		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, cs, TEP3_THICKER, cs->t);
 	else
 		pf = NULL;
+#endif
 }
 
 void BeamProjectile::leaveField(WarField *w){
+#ifndef DEDICATED
 	if(pf){
 		pf->immobilize();
 		pf = NULL;
 	}
+#endif
 }
 
 void BeamProjectile::anim(double dt){
@@ -74,15 +78,21 @@ void BeamProjectile::anim(double dt){
 }
 
 void BeamProjectile::clientUpdate(double dt){
+#ifndef DEDICATED
 	st::clientUpdate(dt);
 	if(this->pf){
 		this->pf->move(pos, avec3_000, cs->t, 0);
 	}
+#endif
 }
 
+#ifdef DEDICATED
+void BeamProjectile::drawtra(WarDraw *){}
+#else
 void BeamProjectile::drawtra(wardraw_t *wd){
 //	const GLubyte acol[4] = {COLOR32R(col), COLOR32G(col), COLOR32B(col), COLOR32A(col)};
 	gldSpriteGlow(pos, radius, col, wd->vw->irot);
 }
+#endif
 
 double BeamProjectile::getHitRadius()const{return m_hitradius;}

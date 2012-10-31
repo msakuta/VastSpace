@@ -8,7 +8,7 @@
 #include "serial_util.h"
 #include "Warpable.h"
 #include "Docker.h"
-#include "draw/material.h"
+//#include "draw/material.h"
 #include "cmd.h"
 #include "StaticInitializer.h"
 #include "EntityCommand.h"
@@ -210,12 +210,14 @@ void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 
 int Defender::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
+#ifndef DEDICATED
 	list.append(sqa_translate("Dock"), 0, "dock")
 		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
 //		.append(sqa_translate("Cloak"), 0, "cloak")
 //		.append(sqa_translate("Delta Formation"), 0, "delta_formation")
 		.append(sqa_translate("Deploy"), 0, "deploy")
 		.append(sqa_translate("Undeploy"), 0, "undeploy");
+#endif
 	return ret;
 }
 
@@ -366,8 +368,8 @@ void Defender::headTowardEnemy(double dt, const Vec3d &dv){
 		btVector3 laac = btMatrix3x3(bttr.getRotation().inverse()) * (btaac);
 		if(laac[0] < 0) thrusts[0][0] += -laac[0];
 		if(0 < laac[0]) thrusts[0][1] += laac[0];
-		thrusts[0][0] = min(thrusts[0][0], 1.);
-		thrusts[0][1] = min(thrusts[0][1], 1.);
+		thrusts[0][0] = std::min(thrusts[0][0], 1.);
+		thrusts[0][1] = std::min(thrusts[0][1], 1.);
 	}
 }
 
@@ -418,6 +420,7 @@ const Autonomous::ManeuverParams &Defender::getManeuve()const{
 
 void Defender::enterField(WarField *target){
 	st::enterField(target);
+#ifndef DEDICATED
 	if(!game->isServer() && w){
 		WarSpace *ws = *w;
 		if(ws){
@@ -429,14 +432,17 @@ void Defender::enterField(WarField *target){
 			}
 		}
 	}
+#endif
 }
 
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 void Defender::leaveField(WarField *w){
+#ifndef DEDICATED
 	for(int i = 0; i < 4; i++) if(this->pf[i]){
 		this->pf[i]->immobilize();
 		this->pf[i] = NULL;
 	}
+#endif
 	st::leaveField(w);
 }
 
@@ -450,8 +456,8 @@ void Defender::anim(double dt){
 	Mat4d mat, imat;
 
 	if(Docker *docker = *w){
-		fuel = min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
-		health = min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
+		fuel = std::min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
+		health = std::min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
 		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
@@ -877,10 +883,12 @@ void Defender::anim(double dt){
 								p->task = Dock;
 							else{
 								mother->dock(pt);
+#ifndef DEDICATED
 								for(int i = 0; i < 4; i++) if(p->pf){
 									p->pf[i]->immobilize();
 									p->pf[i] = NULL;
 								}
+#endif
 								p->docked = true;
 	/*							if(mother->cargo < scarry_cargousage(mother)){
 									scarry_undock(mother, pt, w);
@@ -1077,6 +1085,7 @@ void Defender::anim(double dt){
 	else{
 		pt->health += dt;
 		if(0. < pt->health){
+#ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
@@ -1144,12 +1153,14 @@ void Defender::anim(double dt){
 #endif
 				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
+#endif
 			if(game->isServer()){
 				delete this;
 				return;
 			}
 		}
 		else{
+#ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 			if(tell){
 				double pos[3], dv[3];
@@ -1167,6 +1178,7 @@ void Defender::anim(double dt){
 					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, float(1.5 + drseq(&w->rs) * 1.5));
 				}
 			}
+#endif
 			pt->pos += pt->velo * dt;
 		}
 	}
@@ -1188,12 +1200,13 @@ void Defender::anim(double dt){
 
 void Defender::clientUpdate(double dt){
 	anim(dt);
+#ifndef DEDICATED
 	for(int i = 0; i < 4; i++) if(pf[i]){
 		Mat4d mat5 = legTransform(i);
 		pf[i]->move(mat5.vp3(Vec3d(0, 0, 130 * modelScale)), vec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 //		MoveTefpol3D(pf->pf[i], pt->pos + pt->rot.trans(Vec3d((i%2*2-1)*22.5*modelScale(),(i/2*2-1)*20.*modelScale(),130.*modelScale())), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 	}
-
+#endif
 }
 
 /// Docking and undocking will never stack.
@@ -1203,19 +1216,21 @@ bool Defender::solid(const Entity *o)const{
 
 int Defender::takedamage(double damage, int hitpart){
 	int ret = 1;
-	struct tent3d_line_list *tell = w->getTeline3d();
 	if(this->health < 0.)
 		return 1;
 //	this->hitsound = playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
+#ifndef DEDICATED
+		struct tent3d_line_list *tell = w->getTeline3d();
 		if(tell) for(i = 0; i < 32; i++){
 			Vec3d velo(w->rs.nextd() - .5, w->rs.nextd() - .5, w->rs.nextd() - .5);
 			velo.normin().scalein(.1);
 			Vec3d pos = this->pos + velo * .1;
 			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, float(1.5 + drseq(&w->rs)));
 		}
+#endif
 		health = -2.;
 	}
 	else
@@ -1331,7 +1346,7 @@ bool Defender::command(EntityCommand *com){
 /// \return Transformation matrix, including offset
 Mat4d Defender::legTransform(int i)const{
 	assert(0 <= i && i <= 3);
-#if 1 // The most dumb implementation retrieves the motion pose every time the function is called.
+#ifndef DEDICATED // The most dumb implementation retrieves the motion pose every time the function is called.
 	// This function ought to be called at least 4 times per frame.
 	// We could cache shared values among leg ids.
 	MotionPose mpbuf[2];
@@ -1348,7 +1363,7 @@ Mat4d Defender::legTransform(int i)const{
 		transform(mat1);
 		return mat1 * ret;
 	}
-#else // Old hard-coded version, cannot cope with model change.
+#else // Old hard-coded version, cannot cope with model change. Dedicated server uses it as a placeholder.
 	Mat4d mat1;
 	transform(mat1);
 	mat1.scalein((i%2*2-1), (i/2*2-1), 1);
@@ -1362,6 +1377,9 @@ Mat4d Defender::legTransform(int i)const{
 /// \param mp The buffer for the pose information to be returned. Must have 2 elements.
 /// \returns Pointer to the first element of the argument array if succeeded, NULL if failed.
 MotionPose *Defender::getPose(MotionPose (&mpbuf)[2])const{
+#ifdef DEDICATED
+	return NULL;
+#else
 	if(motions[0] && motions[1]){
 		motions[0]->interpolate(mpbuf[0], fdeploy * 20.);
 		motions[1]->interpolate(mpbuf[1], frotate / rotateTime * 10.);
@@ -1370,9 +1388,11 @@ MotionPose *Defender::getPose(MotionPose (&mpbuf)[2])const{
 	}
 	else
 		return NULL;
+#endif
 }
 
 
+#ifndef DEDICATED
 static int cmd_deploy(int argc, char *argv[], void *pv){
 	ClientGame *game = (ClientGame*)pv;
 	Player *pl = game->player;
@@ -1415,5 +1435,14 @@ static void register_client(){
 
 static StaticInitializer sss(register_client);
 
+#endif
+
 IMPLEMENT_COMMAND(DeployCommand, "Deploy")
 IMPLEMENT_COMMAND(UndeployCommand, "Undeploy")
+
+
+#ifdef DEDICATED
+void Defender::draw(WarDraw*){}
+void Defender::drawtra(WarDraw*){}
+void Defender::drawOverlay(WarDraw*){}
+#endif

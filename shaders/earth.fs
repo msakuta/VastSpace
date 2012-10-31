@@ -25,6 +25,7 @@ bool waving;
 
 /// Returns ocean wave noise pattern
 vec3 ocean(vec3 v){
+	// height and noise3D uniform variables are defined in earth_cloud_noise.fs.
 	float f2 = min(1., 20. / height);
 	v *= 50;
 
@@ -40,18 +41,6 @@ vec3 ocean(vec3 v){
 		(texture3D(noise3D, 32. * v) - vec4(0.5)) + // High octave noise
 		(texture3D(noise3D, 8. * v) - vec4(0.5)) // Very high octave noise
 		);
-}
-
-vec3 anoise1(vec3 v){
-	return noise3(v);
-}
-
-vec3 anoise2(vec3 v){
-	return 2. * anoise1(v * 16.) + noise3(v);
-}
-
-vec3 anoise3(vec3 v){
-	return 1. * anoise2(v * 16.) + noise3(v);
 }
 
 void main (void)
@@ -92,49 +81,15 @@ void main (void)
 
 	float diffuse = max(0., dot(flight, fnormal) + .1);
 
-//	texColor = vec4((anoise3(vec3(gl_TexCoord[0]) * 1000.) + vec3(1,1,1))/2, 0);
 	float ambient = 0.001;
 	texColor *= diffuse + ambient;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
-
-	// Aquire transformed vectors in eye space.
-	if(false){
-		// Lighting calculation
-		vec3 npos = normalize(gl_NormalMatrix * normal);
-		vec3 pos = /*gl_NormalMatrix **/ normalize(vec3(gl_TexCoord[3]));
-		vec3 lnorm = /*gl_NormalMatrix **/ ringnorm;
-
-		// Calculate projected point onto ring plane.
-		float normp = dot(pos, lnorm);
-		float lightp = dot(flight, lnorm);
-		vec3 q = pos - normp / lightp * flight;
-
-	//	float temp = 1. - abs(dot(npos, lnorm));
-	//	float ramb = 5. * min(1., 1. + dot(pos, light)) * (normp * lightp < 0. ? .1 : .8) * abs(lightp) * abs(normp) * temp * temp;
-
-		// Blend texturing, lighting and ring shadowing together.
-		texColor += 0.
-	//		- (ramb + 
-			+ (
-			gl_FrontLightProduct[0].ambient/* + globalAmbient*/
-			+ gl_FrontLightProduct[0].diffuse
-	//		* texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)));
-			* max(sundot * (0. < dot(q, flight) ? texture1D(tex1d, (length(q) - ringmin) / (ringmax - ringmin)) : vec4(1)), 0.));
-	}
-
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)
 		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.02, 5. * (-sundot + 0.1));
-/*	texColor[0] = sqrt(texColor[0]);
-	texColor[1] = sqrt(texColor[1]);
-	texColor[2] = sqrt(texColor[2]);*/
 	texColor[3] = 1.;
 //	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .5 * vec3(texColor);
-//	texColor *= col;
 	
-//	vec4 envColor = textureCube(envmap, texCoord);
-//	envColor[3] = col[3] / 2.;
-//	gl_FragColor = (envColor + texColor);
 	gl_FragColor = toneMapping(texColor);
 }

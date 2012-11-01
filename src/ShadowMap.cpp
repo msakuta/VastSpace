@@ -425,14 +425,16 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 							Vec4d(.0, .0, .5, .0),
 							Vec4d(.5, .5, .5 - shadowOffset * 0.5 / shadowMapSize / 50., 1.));
 
-			GLint depths[4];
+			int numShadowTextures = 1;
+			// If we can use GLSL, we use cascaded shadow maps, which uses multiple textures for shadow depth.
+			if(g_shader_enable)
+				numShadowTextures += 2;
 
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+			for(int i = 0; i < numShadowTextures; i++){
 				glActiveTextureARB(GL_TEXTURE2_ARB + i);
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D, depthTextures[i]);
-				glGetIntegerv(GL_TEXTURE_STACK_DEPTH, &depths[i]);
 				texturemat(glPushMatrix());
 
 				//Enable shadow comparison
@@ -484,24 +486,13 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
 			drawcallback.draw(vw, shaderBind->shader, shaderBind->textureLoc, shaderBind->shadowmapLoc);
-	/*		if(g_shader_enable)
-				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]).setShader(shader, textureLoc, shadowmapLoc);
-			else
-				war_draw(vw, pl.cs, &WarField::draw, depthTextures[0]);*/
 
 			if(g_shader_enable)
 				glUseProgram(0);
 
-/*			glActiveTextureARB(GL_TEXTURE2_ARB);
-			texturemat(glPopMatrix());
-			glBindTexture(GL_TEXTURE_2D, 0);
-			glActiveTextureARB(GL_TEXTURE0_ARB);*/
-
 			// Disable texture units for shadow map to eliminate the inappropriate influence to the following drawings.
-			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
+			for(int i = 0; i < numShadowTextures; i++){
 				glActiveTextureARB(GL_TEXTURE2_ARB + i);
-				GLint depth;
-				glGetIntegerv(GL_TEXTURE_STACK_DEPTH, &depth);
 				texturemat(glPopMatrix());
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);

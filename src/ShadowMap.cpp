@@ -120,6 +120,9 @@ void ShaderBind::use()const{
 }
 
 void ShaderBind::enableTextures(bool texture1, bool texture2)const{
+	// Reuse if deactivated
+	if(*g_currentShaderBind != this)
+		use();
 	glUniform1i(textureEnableLoc, texture1);
 	glUniform1i(texture2EnableLoc, texture2);
 }
@@ -262,6 +265,7 @@ static GLint additiveLoc = -1;
 /// \param ashadowMapCells The cell widths of shadow map regions. It have 3 LODs of textures, so you must specify the width for each LOD.
 /// \param shadowOffset Factor of shadow offset correction to prevent shadow acne artifact. Unlike other parameters, it takes effect for each construction of the object.
 /// \param cullFront Whether cull the front face instead of back face. It will reduce shadow acne but causes artifacts in concave junction.
+/// \param shadowSlopeScaledBias Enable slope scaled bias technique to reduce shadow acne.
 ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3],
 	double shadowOffset, bool cullFront, double shadowSlopeScaledBias)
 	: shadowing(false), additive(false), shadowOffset(shadowOffset), cullFront(cullFront), shadowSlopeScaledBias(shadowSlopeScaledBias)
@@ -318,6 +322,12 @@ ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3],
 
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	}
+
+	// Reset the shader bind object on the beginning of a frame, because some other shaders could be used
+	// in background drawing which is outside of control of ShaderBind or ShadowMap classes.
+	// It may cost a bit to free and allocate the memory for this variable, but it would cost more time
+	// to generate a OpenGL error.
+	g_currentShaderBind = NULL;
 }
 
 const ShaderBind *ShadowMap::getShader()const{
@@ -415,11 +425,14 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 							Vec4d(.0, .0, .5, .0),
 							Vec4d(.5, .5, .5 - shadowOffset * 0.5 / shadowMapSize / 50., 1.));
 
+			GLint depths[4];
+
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
 				glActiveTextureARB(GL_TEXTURE2_ARB + i);
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D, depthTextures[i]);
+				glGetIntegerv(GL_TEXTURE_STACK_DEPTH, &depths[i]);
 				texturemat(glPushMatrix());
 
 				//Enable shadow comparison
@@ -479,14 +492,17 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			if(g_shader_enable)
 				glUseProgram(0);
 
-			glActiveTextureARB(GL_TEXTURE2_ARB);
+/*			glActiveTextureARB(GL_TEXTURE2_ARB);
 			texturemat(glPopMatrix());
 			glBindTexture(GL_TEXTURE_2D, 0);
-			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glActiveTextureARB(GL_TEXTURE0_ARB);*/
 
 			// Disable texture units for shadow map to eliminate the inappropriate influence to the following drawings.
 			for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
 				glActiveTextureARB(GL_TEXTURE2_ARB + i);
+				GLint depth;
+				glGetIntegerv(GL_TEXTURE_STACK_DEPTH, &depth);
+				texturemat(glPopMatrix());
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
 			}

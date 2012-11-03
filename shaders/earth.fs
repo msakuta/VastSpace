@@ -35,7 +35,7 @@ vec3 ocean(vec3 v){
 	vec3 v2 = vec3(v.x * cos(1) + v.y * sin(1), v.x * -sin(1) + v.y * cos(1), v.z);
 
 	// Accumulate multiple noises to reduce artifacts caused by finite texture size.
-	return 0.05 * vec3(
+	return 0.1 * vec3(
 		2.0 * f2 * (texture3D(noise3D, 128. * v) - vec4(.5)) + // Fine noise
 		2.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5)) + // Fine rotated noise
 		(texture3D(noise3D, 32. * v) - vec4(0.5)) + // High octave noise

@@ -450,9 +450,15 @@ static GLuint noise3DTexture(){
 		if(glTexImage3D){
 			static const int NNOISE = 64;
 			static GLubyte field[NNOISE][NNOISE][NNOISE][4];
-		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
+			double noiseTexStart = TimeMeasLap(&tm);
 			perlin_noise_3d(field, 48275);
-		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
+			fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm) - noiseTexStart);
+			for(int xi = 0; xi < NNOISE; xi++) for(int yi = 0; yi < NNOISE; yi++) for(int zi = 0; zi < NNOISE; zi++){
+				field[xi][yi][zi][0] = field[(xi + NNOISE - 1) % NNOISE][yi][zi][3] - field[(xi + 1) % NNOISE][yi][zi][3] + 127;
+				field[xi][yi][zi][1] = field[xi][(yi + NNOISE - 1) % NNOISE][zi][3] - field[xi][(yi + 1) % NNOISE][zi][3] + 127;
+				field[xi][yi][zi][2] = field[xi][yi][(zi + NNOISE - 1) % NNOISE][3] - field[xi][yi][(zi + 1) % NNOISE][3] + 127;
+			}
+			fprintf(stderr, "noise3DNormal: g\n", TimeMeasLap(&tm) - noiseTexStart);
 			glGenTextures(1, &ret);
 			glBindTexture(GL_TEXTURE_3D, ret);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, NNOISE, NNOISE, NNOISE, 0, GL_RGBA, GL_UNSIGNED_BYTE, field);
@@ -464,7 +470,7 @@ static GLuint noise3DTexture(){
 			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 		}
-		fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm));
+		fprintf(stderr, "noise3DTextureTotal: %g\n", TimeMeasLap(&tm));
 	}
 	return ret;
 }

@@ -405,7 +405,17 @@ inline double noise3D(int x, int y, int z, int k){
 }
 
 template<int NNOISE, int COMPS>
-static void perlin_noise_3d(GLubyte (*field)[NNOISE][NNOISE][COMPS], long seed, int octaves = 4){
+class PerlinNoise3DFieldAssign{
+public:
+	GLubyte (&field)[NNOISE][NNOISE][NNOISE][COMPS];
+	PerlinNoise3DFieldAssign(GLubyte (&field)[NNOISE][NNOISE][NNOISE][COMPS]) : field(field){}
+	void operator()(int xi, int yi, int zi, int k, double v){
+		field[xi][yi][zi][k] = MIN(255, int(v * 255));
+	}
+};
+
+template<int NNOISE, int COMPS, typename Callback>
+static void perlin_noise_3d_callback(Callback field, long seed, int octaves = 4){
 //	CStatistician sta;
 	for(int xi = 0; xi < NNOISE; xi++) for(int yi = 0; yi < NNOISE; yi++) for(int zi = 0; zi < NNOISE; zi++){
 		for(int k = 0; k < COMPS; k++){
@@ -429,13 +439,20 @@ static void perlin_noise_3d(GLubyte (*field)[NNOISE][NNOISE][COMPS], long seed, 
 				amp += f;
 				f *= 2.;
 			}
-			field[xi][yi][zi][k] = MIN(255, int(field[xi][yi][zi][k] + sum / amp * 255));
+			field(xi, yi, zi, k, sum / amp);
+//			field[xi][yi][zi][k] = MIN(255, int(field[xi][yi][zi][k] + sum / amp * 255));
 //			sta.put(double(field[xi][yi][zi][k]));
 		}
 	}
 //	CmdPrint(sta.getAvg());
 //	CmdPrint(sta.getDev());
 }
+
+template<int NNOISE, int COMPS>
+static void perlin_noise_3d(GLubyte (&field)[NNOISE][NNOISE][NNOISE][COMPS], long seed, int octaves = 4){
+	perlin_noise_3d_callback<NNOISE,COMPS,PerlinNoise3DFieldAssign<NNOISE,COMPS> >(PerlinNoise3DFieldAssign<NNOISE,COMPS>(field), seed, octaves);
+}
+
 
 static GLuint noise3DTexture(){
 	static bool init = false;
@@ -451,14 +468,29 @@ static GLuint noise3DTexture(){
 			static const int NNOISE = 64;
 			static GLubyte field[NNOISE][NNOISE][NNOISE][4];
 			double noiseTexStart = TimeMeasLap(&tm);
-			perlin_noise_3d(field, 48275);
+
+			class PerlinNoise3DFieldAssignAlpha{
+			public:
+				GLubyte (&field)[NNOISE][NNOISE][NNOISE][4];
+				PerlinNoise3DFieldAssignAlpha(GLubyte (&field)[NNOISE][NNOISE][NNOISE][4]) : field(field){}
+				void operator()(int xi, int yi, int zi, int, double v){
+					field[xi][yi][zi][3] = MIN(255, int(v * 255));
+				}
+			};
+
+			perlin_noise_3d_callback<NNOISE, 1, PerlinNoise3DFieldAssignAlpha>(PerlinNoise3DFieldAssignAlpha(field), 48275);
+
 			fprintf(stderr, "noise3DTexture: %g\n", TimeMeasLap(&tm) - noiseTexStart);
+
+			// Profiling shows that this gradient vector arithmetic is 10 times less time consuming than generating
+			// perlin noise itself with the same pixels count.
 			for(int xi = 0; xi < NNOISE; xi++) for(int yi = 0; yi < NNOISE; yi++) for(int zi = 0; zi < NNOISE; zi++){
 				field[xi][yi][zi][0] = field[(xi + NNOISE - 1) % NNOISE][yi][zi][3] - field[(xi + 1) % NNOISE][yi][zi][3] + 127;
 				field[xi][yi][zi][1] = field[xi][(yi + NNOISE - 1) % NNOISE][zi][3] - field[xi][(yi + 1) % NNOISE][zi][3] + 127;
 				field[xi][yi][zi][2] = field[xi][yi][(zi + NNOISE - 1) % NNOISE][3] - field[xi][yi][(zi + 1) % NNOISE][3] + 127;
 			}
-			fprintf(stderr, "noise3DNormal: g\n", TimeMeasLap(&tm) - noiseTexStart);
+
+			fprintf(stderr, "noise3DNormal: %g\n", TimeMeasLap(&tm) - noiseTexStart);
 			glGenTextures(1, &ret);
 			glBindTexture(GL_TEXTURE_3D, ret);
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, NNOISE, NNOISE, NNOISE, 0, GL_RGBA, GL_UNSIGNED_BYTE, field);

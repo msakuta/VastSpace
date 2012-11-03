@@ -53,9 +53,9 @@ void main (void)
 	float specular;
 	float shininess;
 	if(texColor[2] > texColor[0] + texColor[1])
-		specular = 1., shininess = 20., waving = true;
+		specular = 0.7, shininess = 50., waving = true;
 	else
-		specular = .3, shininess = 5., waving = false;
+		specular = 0.25, shininess = 5., waving = false;
 	float sundot = dot(flight, normal);
 	float dawness = sundot * 8.;
 	specular *= max(.1, min(1., dawness));
@@ -71,7 +71,7 @@ void main (void)
 	// But do not add in case of rendering land.
 	vec3 noiseInput = texCoord;
 	if(waving)
-		noiseInput += 1e-5 * noisePos;
+		noiseInput += 2e-6 * noisePos;
 	vec3 noise = ocean(noiseInput);
 
 	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
@@ -84,6 +84,8 @@ void main (void)
 	float ambient = 0.001;
 	texColor *= diffuse + ambient;
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
+	// Another specular for sun's direct light
+	texColor += specular * vshininess * pow(shininess * 10. * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)

@@ -55,7 +55,6 @@ public:
 	double orbit_phase; ///< phase at which position of a cycle
 	double eccentricity; ///< orbital element
 	int flags2;
-	static double astro_timescale;
 public:
 	enum OrbitType{
 		NoOrbit, ///< Not orbiting

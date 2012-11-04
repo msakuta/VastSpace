@@ -22,13 +22,16 @@ const unsigned Universe::version = 11;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
-Universe::Universe(Player *pl, Game *game) : st(game), ppl(pl), paused(true), timescale(1), global_time(0), astro_time(0),
-	gravityfactor(1.)
+Universe::Universe(Game *game) : st(game), paused(true), timescale(1), global_time(0), astro_time(0),
+	gravityfactor(1.), astro_timescale(1.)
 {
-	name = new char[sizeof"root"];
-	strcpy(const_cast<char*>(name), "root");
-	fullname = NULL;
-	flags = CS_ISOLATED | CS_EXTENT;
+
+	if(game->isServer()){
+		name = new char[sizeof"root"];
+		strcpy(const_cast<char*>(name), "root");
+		fullname = NULL;
+		flags = CS_ISOLATED | CS_EXTENT;
+	}
 }
 
 Universe::~Universe(){
@@ -54,7 +57,7 @@ void Universe::unserialize(UnserializeContext &sc){
 
 void Universe::anim(double dt){
 	this->global_time += dt;
-	this->astro_time += Astrobj::astro_timescale * dt;
+	this->astro_time += astro_timescale * dt;
 	st::anim(dt);
 }
 
@@ -96,7 +99,7 @@ void Universe::csUnserialize(UnserializeContext &usc){
 
 int Universe::cmd_save(int argc, char *argv[], void *pv){
 	Universe &universe = *(Universe*)pv;
-	Player &pl = *universe.ppl;
+	Player &pl = *universe.game->player;
 	SerializeMap map;
 	bool text = argc < 3 ? false : !strcmp(argv[2], "t");
 	const char *fname = argc < 2 ? text ? "savet.sav" : "saveb.sav" : argv[1];
@@ -197,7 +200,7 @@ int Universe::cmd_load(int argc, char *argv[], void *pv){
 	}
 
 	Universe &universe = *(Universe*)pv;
-	Player &pl = *universe.ppl;
+	Player &pl = *universe.game->player;
 	cpplib::dstring plpath = pl.cs->getpath();
 	cs_destructs = 0;
 

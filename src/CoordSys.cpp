@@ -583,7 +583,7 @@ void CoordSys::anim(double dt){
 /*	extern double get_timescale();
 	dt *= get_timescale();*/
 	if(0 < this->omg.slen()){
-		double scale = OrbitCS::astro_timescale;
+		double scale = game->universe->astro_timescale;
 		double len = this->omg.len();
 		this->rot = Quatd::rotation(len * dt * scale, this->omg / len) * this->rot;
 	}
@@ -835,7 +835,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
 		struct teleport *tp;
 		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
-		Player *player = findcspath("/")->toUniverse()->ppl;
+		Player *player = game->player;
 		if(tp = player->findTeleport(name)){
 			tp->flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
 			return true;
@@ -860,7 +860,6 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "addent")){
-		extern Player *ppl;
 		WarField *w;
 		Entity *pt;
 		if(this->w)

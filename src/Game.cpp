@@ -349,7 +349,7 @@ ServerGame::ServerGame() : loading(false){
 	player = new Player(this);
 	player->playerId = 0;
 	players.push_back(player);
-	universe = new Universe(player, this);
+	universe = new Universe(this);
 	player->cs = universe;
 	ServerInitList &inits = serverInits();
 	for(int i = 0; i < inits.size(); i++)

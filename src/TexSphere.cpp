@@ -291,7 +291,7 @@ bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 }
 
 void TexSphere::anim(double dt){
-	cloudPhase += 1e-4 * dt * astro_timescale;
+	cloudPhase += 1e-4 * dt * game->universe->astro_timescale;
 	st::anim(dt);
 }
 

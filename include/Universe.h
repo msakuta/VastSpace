@@ -14,12 +14,11 @@ public:
 	double global_time;
 	double astro_time;
 	double gravityfactor;
-	Player *ppl;
+	double astro_timescale; ///< The timescale for astronomical objects, used for debugging celestial motion.
 	bool paused;
 	static const unsigned version; ///< Saved file version, checked on loading
 
-	Universe(Player *pl, Game *game);
-	Universe(Game *game) : st(game){}
+	Universe(Game *game);
 	Universe(const char *path, CoordSys *root) : st(path, root){}
 	~Universe();
 	const Static &getStatic()const{return classRegister;}

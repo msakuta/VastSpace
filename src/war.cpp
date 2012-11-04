@@ -142,27 +142,13 @@ void aaanim(double dt, WarField *w, WarField::EntityList WarField::*li, void (En
 #endif
 
 void WarField::anim(double dt){
-	CoordSys *root = cs;
-	for(; root; root = root->parent){
-		Universe *u = root->toUniverse();
-		if(u){
-			pl = u->ppl;
-			break;
-		}
-	}
+	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::callServerUpdate);
 	aaanim(dt, this, &WarField::bl, &Entity::callServerUpdate);
 }
 
 void WarField::clientUpdate(double dt){
-	CoordSys *root = cs;
-	for(; root; root = root->parent){
-		Universe *u = root->toUniverse();
-		if(u){
-			pl = u->ppl;
-			break;
-		}
-	}
+	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::callClientUpdate);
 	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 }
@@ -226,11 +212,7 @@ Entity *WarField::addent(Entity *e){
 }
 
 Player *WarField::getPlayer(){
-	if(pl)
-		return pl;
-	CoordSys *root = this->cs->findcspath("/");
-	if(root && root->toUniverse())
-		return root->toUniverse()->ppl;
+	return game->player;
 }
 
 bool WarField::unlink(const Observable *o){
@@ -376,26 +358,14 @@ WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots
 	effects(0), soundtime(0), bdw(NULL)
 {
 	init();
-	for(CoordSys *root = cs; root; root = root->parent){
-		Universe *u = root->toUniverse();
-		if(u){
-			pl = u->ppl;
-			break;
-		}
-	}
+	pl = game->player;
 	bdw = bulletInit();
 }
 
 void WarSpace::anim(double dt){
 	CoordSys *root = cs;
 
-	for(; root; root = root->parent){
-		Universe *u = root->toUniverse();
-		if(u){
-			pl = u->ppl;
-			break;
-		}
-	}
+	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::anim);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 

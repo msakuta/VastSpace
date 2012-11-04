@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Application.h"
 #include "EntityCommand.h"
+#include "Game.h"
 extern "C"{
 #include <clib/aquat.h>
 }
@@ -1029,6 +1030,7 @@ MoveCommand::MoveCommand(HSQUIRRELVM v, Entity &){
 }
 
 WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
+	Game *game = (Game*)sq_getforeignptr(v);
 	int argc = sq_gettop(v);
 	if(argc < 3)
 		throw SQFArgumentError();
@@ -1040,8 +1042,8 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 		double landrad;
 		double dist, cost;
 		extern coordsys *g_galaxysystem;
-		Universe *u = w->cs->findcspath("/")->toUniverse();
-		teleport *tp = u->ppl->findTeleport(destname, TELEPORT_WARP);
+		Player *player = game->player;
+		teleport *tp = player ? player->findTeleport(destname, TELEPORT_WARP) : NULL;
 		if(tp){
 			destpos = tp->pos;
 			destcs = tp->cs;

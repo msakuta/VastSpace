@@ -416,9 +416,10 @@ void Application::init(bool isClient)
 	CmdAddParam("clients", cmd_clients, this);
 	CmdAddParam("uprate", cmd_uprate, this);
 	CoordSys::registerCommands(&application);
-	if(serverGame)
+	if(serverGame){
 		CvarAdd("g_timescale", &serverGame->universe->timescale, cvar_double);
-	CvarAdd("g_astro_timescale", &OrbitCS::astro_timescale, cvar_double);
+		CvarAdd("g_astro_timescale", &serverGame->universe->astro_timescale, cvar_double);
+	}
 //	Player::cmdInit(application);
 
 	if(serverGame){

@@ -16,6 +16,7 @@
 #include "Universe.h"
 #include "judge.h"
 #include "CoordSys-find.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -47,7 +48,6 @@ public:
 
 const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter");
 
-double OrbitCS::astro_timescale = 1.;
 
 
 OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_center(NULL), orbitType(NoOrbit){
@@ -84,7 +84,8 @@ void OrbitCS::unserialize(UnserializeContext &sc){
 }
 
 void OrbitCS::anim(double dt){
-	double scale = astro_timescale/*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
+	Universe *u = game->universe;
+	double scale = u ? u->astro_timescale : 1./*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
 	if(orbit_home && orbitType != NoOrbit){
 		int timescale = 0;
 		double dist;
@@ -265,7 +266,7 @@ void Barycenter::anim(double dt){
 	if(orbiters.size() == 2 && orbiters[0]->toAstrobj() && orbiters[1]->toAstrobj()){
 		Astrobj *a0 = orbiters[0]->toAstrobj(), *a1 = orbiters[1]->toAstrobj();
 		double rmass = a0->mass * a1->mass / (a0->mass + a1->mass);
-		double scale = astro_timescale;
+		double scale = game->universe ? game->universe->astro_timescale : 1.;
 		int timescale = 0;
 		Vec3d omgdt;
 		for(int i = 0; i < 2; i++){

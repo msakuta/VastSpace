@@ -78,7 +78,8 @@ coordsys Orbit earth{
 		coordsys earths{
 			define theta .13*pi
 			define phi 1.0*pi
-			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
+			define rad 6375+0.2
+			pos rad*sin(phi) rad*sin(theta)*cos(phi) -rad*cos(theta)*cos(phi)
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(phi,Vec3d(0,1,0))*Quatd.rotation(-PI/2.0,Vec3d(1,0,0))
 			teleport "Earth Surface" 0 0 0

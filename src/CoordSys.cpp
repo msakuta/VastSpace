@@ -582,8 +582,11 @@ void CoordSys::anim(double dt){
 	Vec3d omgdt;
 /*	extern double get_timescale();
 	dt *= get_timescale();*/
-	if(0 < this->omg.slen())
-		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
+	if(0 < this->omg.slen()){
+		double scale = OrbitCS::astro_timescale;
+		double len = this->omg.len();
+		this->rot = Quatd::rotation(len * dt * scale, this->omg / len) * this->rot;
+	}
 //	omgdt = omg * dt;
 //	rot = rot.quatrotquat(omgdt);
 	CoordSys *cs;

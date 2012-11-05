@@ -597,6 +597,11 @@ void CoordSys::anim(double dt){
 }
 
 void CoordSys::clientUpdate(double dt){
+	if(0 < this->omg.slen()){
+		double scale = game->universe->astro_timescale;
+		double len = this->omg.len();
+		this->rot = Quatd::rotation(len * dt * scale, this->omg / len) * this->rot;
+	}
 	CoordSys *cs;
 	for(cs = children; cs; cs = cs->next)
 		cs->clientUpdate(dt);

@@ -18,7 +18,7 @@ extern "C"{
 #define ENABLE_TEXTFORMAT 1
 
 // Increment whenever serialization specification changes in any Serializable object.
-const unsigned Universe::version = 11;
+const unsigned Universe::version = 12;
 
 ClassRegister<Universe> Universe::classRegister("Universe", sq_define);
 
@@ -43,6 +43,7 @@ void Universe::serialize(SerializeContext &sc){
 	sc.o << astro_time;
 	sc.o << paused;
 	sc.o << gravityfactor;
+	sc.o << astro_timescale;
 }
 
 extern std::istream &operator>>(std::istream &o, const char *cstr);
@@ -53,6 +54,7 @@ void Universe::unserialize(UnserializeContext &sc){
 	sc.i >> astro_time;
 	sc.i >> paused;
 	sc.i >> gravityfactor;
+	sc.i >> astro_timescale;
 }
 
 void Universe::anim(double dt){

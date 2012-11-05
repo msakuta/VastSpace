@@ -231,8 +231,8 @@ void Player::drawindics(Viewer *vw){
 		Vec3d &mpos = move_hitpos;
 		GLpmatrix glpm;
 		projection((glLoadIdentity(), glOrtho(0, vw->vp.w, vw->vp.h, 0, -1, 1)));
-/*		mlpos = rot.dvp3(mpos);
 		glPushMatrix();
+/*		mlpos = rot.dvp3(mpos);
 		gldTranslate3dv(mlpos);
 		gldScaled(.05);
 		cuts = CircleCuts(32);

@@ -301,6 +301,11 @@ static int s_minix;
 //static const int r_titlebar_height = 12;
 #define r_titlebar_height fontheight
 
+template<typename T>
+static T clamp(const T &src, const T &min, const T &max){
+	return src < min ? min : max < src ? max : src;
+}
+
 /// Draw a GLwindow with its non-client frame.
 void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int wh){
 //	GLwindow *wnd = this;
@@ -361,7 +366,14 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		if(title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))
 			r.y0 -= fontheight + margin;
 		glPushAttrib(GL_SCISSOR_BIT);
-		glScissor(r.x0 - 1, gvp.h - (r.y1 + 1), r.x1 - r.x0 + 2, r.y1 - r.y0 + 2);
+
+		// Try to put the scissor rectangle inside the viewport, because if we do not, OpenGL raises
+		// an error. The code is so counter-intuitive because not only the rectangle is upside down
+		// in screen coords, but also 3rd and 4th parameters are width and height, not absolute coords.
+		int x0 = clamp<int>(r.x0 - 1, 0, gvp.w);
+		int y0 = clamp<int>(gvp.h - (r.y1 + 1), 0, gvp.h);
+		glScissor(x0, y0, clamp<int>(r.x1 + 1, 0, gvp.w) - x0, clamp<int>(gvp.h - (r.y0 - 1), 0, gvp.h) - y0);
+
 		glEnable(GL_SCISSOR_TEST);
 	}
 	if(!(flags & GLW_COLLAPSE)){

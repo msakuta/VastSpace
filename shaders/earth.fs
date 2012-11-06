@@ -24,10 +24,10 @@ varying vec3 texa1; // texture axis component 1
 bool waving;
 
 /// Returns ocean wave noise pattern
-vec3 ocean(vec3 v){
+vec4 ocean(vec3 v){
 	// height and noise3D uniform variables are defined in earth_cloud_noise.fs.
-	float f2 = min(1., 20. / height);
-	v *= 50;
+	float f2 = 1./*min(1., 20. / height)*/;
+	v *= 50 * 16.;
 
 	// Rotated input vector for combination to enhance period of the noise.
 	// The period of cells formed by v and v2 vectors is desired to be
@@ -35,11 +35,11 @@ vec3 ocean(vec3 v){
 	vec3 v2 = vec3(v.x * cos(1) + v.y * sin(1), v.x * -sin(1) + v.y * cos(1), v.z);
 
 	// Accumulate multiple noises to reduce artifacts caused by finite texture size.
-	return 0.1 * vec3(
-		2.0 * f2 * (texture3D(noise3D, 128. * v) - vec4(.5)) + // Fine noise
-		2.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5)) + // Fine rotated noise
-		(texture3D(noise3D, 32. * v) - vec4(0.5)) + // High octave noise
-		(texture3D(noise3D, 8. * v) - vec4(0.5)) // Very high octave noise
+	return 0.2 * (
+		(1.0 * f2 * (texture3D(noise3D, 128. * v) - vec4(.5)) + // Fine noise
+		1.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5))) / (1. - 2. * view.z) + // Fine rotated noise
+		(texture3D(noise3D, 32. * v) - vec4(0.5)) / (1. - 1. * view.z) + // High octave noise
+		(texture3D(noise3D, 8. * v) - vec4(0.5)) / (1. - 0.2 * view.z) // Very high octave noise
 		);
 }
 
@@ -72,20 +72,32 @@ void main (void)
 	vec3 noiseInput = texCoord;
 	if(waving)
 		noiseInput += 2e-6 * noisePos;
-	vec3 noise = ocean(noiseInput);
+	vec4 noise = ocean(noiseInput);
 
-	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise);
+	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise.xyz);
 	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
 
 	vec3 fview = normalize(view);
 
-	float diffuse = max(0., dot(flight, fnormal) + .1);
+	float diffuse = max(0., dot(flight, fnormal) + .0);
 
-	float ambient = 0.001;
-	texColor *= diffuse + ambient;
+	// Dot product of light and geometry normal.
+	float dtn = dot(flight, normal);
+	// The ambient factor is calculated with the same formula as the atmosphere's.
+	float ambf = 0. < dtn ? 1. : pow(1. + dtn, 8.)/* max(0., min(1., (dtn + 0.1) / 0.2))*/;
+	// Diffuse strength should be scaled with ambf too, or subtle artifacts appear in sunrise and sunset.
+	diffuse *= ambf;
+	// Specular reflection won't reach the night side of the Earth.
+	specular *= ambf/*max(0., min(1., (dtn + 0.1) / 0.1))*/;
+	// If you're far from the ocean surface, small waves are averaged and apparent shininess decreases.
+	float innerShininess = shininess * 50.;
+	innerShininess /= min(50., 1. - 0.2 * view.z);
+
+	float ambient = 0.002 + 0.15 * ambf;
+	texColor *= (diffuse + ambient) * (1. + 2. * noise.w);
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 	// Another specular for sun's direct light
-	texColor += specular * vshininess * pow(shininess * 10. * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
+	texColor += specular * vshininess * pow(innerShininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
 	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)

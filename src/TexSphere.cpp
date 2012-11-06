@@ -290,9 +290,9 @@ bool TexSphere::sunAtmosphere(const Viewer &vw)const{
 	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
 }
 
-void TexSphere::anim(double dt){
+void TexSphere::updateInt(double dt){
+	st::updateInt(dt);
 	cloudPhase += 1e-4 * dt * game->universe->astro_timescale;
-	st::anim(dt);
 }
 
 

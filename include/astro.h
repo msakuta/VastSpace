@@ -70,6 +70,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);
+	virtual void clientUpdate(double dt);
 	virtual bool readFileStart(StellarContext &);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	virtual bool readFileEnd(StellarContext &);
@@ -78,6 +79,7 @@ public:
 
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
+	virtual void updateInt(double dt);
 	std::vector<OrbitCS*> orbiters;
 	enum OrbitType orbitType;
 	int enable;
@@ -105,7 +107,6 @@ public:
 	static const ClassRegister<Astrobj> classRegister;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	void planet_anim(double dt);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	virtual bool readFileEnd(StellarContext &);
 	virtual Astrobj *toAstrobj(){ return this; }

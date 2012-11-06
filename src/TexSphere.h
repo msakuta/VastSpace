@@ -34,6 +34,8 @@ protected:
 
 	/// OpenGL texture units
 	AstroRing astroRing;
+
+	void updateInt(double dt);
 public:
 	/// drawTextureSphere flags
 	enum DTS{
@@ -64,7 +66,6 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
-	virtual void anim(double dt);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual bool sunAtmosphere(const Viewer &vw)const;

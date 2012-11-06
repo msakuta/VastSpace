@@ -42,7 +42,7 @@ public:
 	Barycenter(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Barycenter> classRegister;
 	ClassId classname()const{return classRegister.id;}
-	void anim(double dt);
+	void updateInt(double dt);
 	Barycenter *toBarycenter(){return this;}
 };
 
@@ -84,6 +84,22 @@ void OrbitCS::unserialize(UnserializeContext &sc){
 }
 
 void OrbitCS::anim(double dt){
+	updateInt(dt);
+	st::anim(dt);
+}
+
+void OrbitCS::clientUpdate(double dt){
+	updateInt(dt);
+	st::clientUpdate(dt);
+}
+
+/// \brief The common update procedure among server and client.
+///
+/// Derived classes can override this function to share the code among server and client.
+/// The function entry point for updating could be shared from the beginning.
+///
+/// Remember that you cannot delete anything in the client, but other things go much like server.
+void OrbitCS::updateInt(double dt){
 	Universe *u = game->universe;
 	double scale = u ? u->astro_timescale : 1./*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
 	if(orbit_home && orbitType != NoOrbit){
@@ -131,7 +147,6 @@ void OrbitCS::anim(double dt){
 			velo *= 1. / dt;
 		}
 	}
-	st::anim(dt);
 }
 
 bool OrbitCS::readFileStart(StellarContext &){
@@ -261,7 +276,7 @@ Barycenter *OrbitCS::toBarycenter(){
 
 
 
-void Barycenter::anim(double dt){
+void Barycenter::updateInt(double dt){
 	// We cannot solve other than two-body problem.
 	if(orbiters.size() == 2 && orbiters[0]->toAstrobj() && orbiters[1]->toAstrobj()){
 		Astrobj *a0 = orbiters[0]->toAstrobj(), *a1 = orbiters[1]->toAstrobj();
@@ -309,7 +324,7 @@ void Barycenter::anim(double dt){
 			// Revolving, do such a thing yourself
 //			a->rot = a->rot.quatrotquat(a->omg * dt * astro_timescale);
 		}
-		st::anim(dt);
+		st::updateInt(dt);
 	}
 }
 

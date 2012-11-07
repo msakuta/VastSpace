@@ -85,21 +85,25 @@ void main (void)
 	float dtn = dot(flight, normal);
 	// The ambient factor is calculated with the same formula as the atmosphere's.
 	float ambf = 0. < dtn ? 1. : pow(1. + dtn, 8.)/* max(0., min(1., (dtn + 0.1) / 0.2))*/;
+	// Obtain cloud thickness above. TODO: project sun's ray of light onto sphere.
+	float cloud = cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z).a;
+	// How diffuse light is blocked by cloud. The coefficient of cloud looks better to be less than 1.
+	float cloudBlock = 1. - 0.75 * cloud;
 	// Diffuse strength should be scaled with ambf too, or subtle artifacts appear in sunrise and sunset.
-	diffuse *= ambf;
+	diffuse *= ambf * cloudBlock;
 	// Specular reflection won't reach the night side of the Earth.
-	specular *= ambf/*max(0., min(1., (dtn + 0.1) / 0.1))*/;
+	specular *= ambf * cloudBlock;
 	// If you're far from the ocean surface, small waves are averaged and apparent shininess decreases.
 	float innerShininess = shininess * 50.;
 	innerShininess /= min(50., 1. - 0.2 * view.z);
 
 	float ambient = 0.002 + 0.15 * ambf;
+	ambient *= 1. - 0.5 * cloud;
 	texColor *= (diffuse + ambient) * (1. + 2. * noise.w);
 	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 	// Another specular for sun's direct light
 	texColor += specular * vshininess * pow(innerShininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
 
-	texColor *= 1. - max(0., .5 * float(cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z)));
 	if(sundot < 0.1)
 		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.02, 5. * (-sundot + 0.1));
 	texColor[3] = 1.;

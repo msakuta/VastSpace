@@ -156,7 +156,6 @@ public:
 	bool handleEvent(const Observable *, ObserveEvent &);
 
 	CoordSys *cs; ///< redundant pointer to indicate belonging coordinate system
-	Player *pl; ///< Player pointer
 	EntityList el; ///< Local Entity list
 	EntityList bl; ///< bullet list
 	RandomSequence rs; ///< The pseudo-random number sequence generator local to this WarField.

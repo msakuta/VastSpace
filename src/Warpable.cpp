@@ -708,7 +708,6 @@ void Warpable::anim(double dt){
 			p->warpcs->csrad = pt->getHitRadius() * 10.;
 			p->warpcs->flags = 0;
 			p->warpcs->w = new WarSpace(p->warpcs);
-			p->warpcs->w->pl = w->pl;
 			transit_cs(p->warpcs);
 #if 0
 			/* TODO: bring docked objects along */

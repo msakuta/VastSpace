@@ -87,7 +87,7 @@ double RStation::getHitRadius()const{
 }
 
 void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
-	Player *ppl = w->pl;
+	Player *player = game->player;
 	double g_viewdist = 1.;
 	Vec3d ofs, src[3] = {Vec3d(0., .001, -.002), Vec3d(0., 0., 10.)};
 	Mat4d mat;
@@ -95,12 +95,12 @@ void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 	seatid = (seatid + 3) % 3;
 	if(seatid == 1){
 		double f;
-		q = this->rot * w->pl->getrot();
+		q = this->rot * player->getrot();
 		src[2][2] = .1 * g_viewdist;
 		f = src[2][2] * .001 < .001 ? src[2][2] * .001 : .001;
-		src[2][2] += f * sin(ppl->gametime * M_PI / 2. + M_PI / 2.);
-		src[2][0] = f * sin(ppl->gametime * M_PI / 2.);
-		src[2][1] = f * cos(ppl->gametime * M_PI / 2.);
+		src[2][2] += f * sin(player->gametime * M_PI / 2. + M_PI / 2.);
+		src[2][0] = f * sin(player->gametime * M_PI / 2.);
+		src[2][1] = f * cos(player->gametime * M_PI / 2.);
 	}
 	else
 		q = this->rot;
@@ -224,7 +224,7 @@ void RStation::drawtra(wardraw_t *wd){
 		transform(mat);
 
 		/* color calculation of static navlights */
-		t = fmod(w->pl->gametime * .3, 2.);
+		t = fmod(game->player->gametime * .3, 2.);
 		if(t < 1.){
 			rad *= (t + 1.) / 2.;
 			col[3] = GLubyte(col[3] * t);

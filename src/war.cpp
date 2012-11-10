@@ -31,9 +31,9 @@ extern "C"{
 
 
 
-WarField::WarField(Game *g) : Serializable(g), cs(NULL), pl(NULL), realtime(0){}
+WarField::WarField(Game *g) : Serializable(g), cs(NULL), realtime(0){}
 
-WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), cs(acs), pl(NULL), realtime(0){
+WarField::WarField(CoordSys *acs) : Serializable(acs ? acs->getGame() : NULL), cs(acs), realtime(0){
 	init_rseq(&rs, 2426);
 }
 
@@ -84,7 +84,6 @@ const unsigned WarField::classid = registerClass("WarField", Conster<WarField>);
 
 void WarField::serialize(SerializeContext &sc){
 	Serializable::serialize(sc);
-	sc.o << pl;
 	sc.o << el;
 	sc.o << bl;
 	sc.o << rs;
@@ -94,7 +93,6 @@ void WarField::serialize(SerializeContext &sc){
 
 void WarField::unserialize(UnserializeContext &sc){
 	Serializable::unserialize(sc);
-	sc.i >> pl;
 	sc.i >> el;
 	sc.i >> bl;
 	sc.i >> rs;
@@ -142,13 +140,11 @@ void aaanim(double dt, WarField *w, WarField::EntityList WarField::*li, void (En
 #endif
 
 void WarField::anim(double dt){
-	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::callServerUpdate);
 	aaanim(dt, this, &WarField::bl, &Entity::callServerUpdate);
 }
 
 void WarField::clientUpdate(double dt){
-	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::callClientUpdate);
 	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 }
@@ -307,7 +303,7 @@ const unsigned WarSpace::classid = registerClass("WarSpace", Conster<WarSpace>);
 
 void WarSpace::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << pl << effects << soundtime << cs;
+	sc.o << effects << soundtime << cs;
 }
 
 static btDiscreteDynamicsWorld *bulletInit(){
@@ -336,7 +332,7 @@ static btDiscreteDynamicsWorld *bulletInit(){
 
 void WarSpace::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> pl >> effects >> soundtime >> cs;
+	sc.i >> effects >> soundtime >> cs;
 	if(!bdw)
 		bdw = bulletInit();
 }
@@ -358,14 +354,12 @@ WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots
 	effects(0), soundtime(0), bdw(NULL)
 {
 	init();
-	pl = game->player;
 	bdw = bulletInit();
 }
 
 void WarSpace::anim(double dt){
 	CoordSys *root = cs;
 
-	pl = game->player;
 	aaanim(dt, this, &WarField::el, &Entity::anim);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 

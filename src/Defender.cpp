@@ -197,7 +197,7 @@ Defender::Defender(WarField *aw) : st(aw),
 }
 
 void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
-	Player *ppl = w->pl;
+	Player *ppl = game->player;
 	Vec3d ofs;
 	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .010, 0.030), Vec3d(0., .010, .030)};
 	Mat4d mat;

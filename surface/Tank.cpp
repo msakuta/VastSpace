@@ -12,6 +12,7 @@
 #include "draw/WarDraw.h"
 #include "draw/material.h"
 //#include "coordcnv.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -805,7 +806,7 @@ void Tank::draw(WarDraw *wd){
 		DrawSUF(sufbase, SUF_ATR, NULL);
 /*		glRotated(deg_per_rad * pt->turrety, 0., 0., -1.);*/
 		glRotated(deg_per_rad * turrety, 0., -1., 0.);
-		if(wd->w->pl->chase != this || wd->w->pl->getChaseCamera())
+		if(game->player->chase != this || game->player->getChaseCamera())
 			DrawSUF(sufturret, SUF_ATR, NULL);
 
 		glPushMatrix();

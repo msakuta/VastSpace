@@ -1,0 +1,12 @@
+syntax: glob
+*.ncb
+*.suo
+*.user
+Debug
+Release
+ReleaseRTTI
+cache
+doc
+logs
+rc.zip
+x64

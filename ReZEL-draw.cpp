@@ -291,7 +291,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 
 	Player *ppl = w->getPlayer();
 
-	if(ppl && ppl->r_move_path && (task == Moveto || task == DeltaFormation)){
+	if(ppl && WarDraw::r_move_path && (task == Moveto || task == DeltaFormation)){
 		glBegin(GL_LINES);
 		glColor4ub(0,0,255,255);
 		glVertex3dv(pos);
@@ -614,7 +614,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 }
 
 void ReZEL::drawHUD(WarDraw *wd){
-	if(wd->w->pl->mover != wd->w->pl->cockpitview)
+	if(game->player->mover != game->player->cockpitview)
 		return;
 	GLpmatrix pm;
 	glMatrixMode(GL_PROJECTION);
@@ -726,20 +726,28 @@ void ReZEL::drawOverlay(wardraw_t *){
 
 class ReZELchartCmdRegister{
 	class ReZELDrawTimeChartSeries : public GLWchart::TimeChartSeries{
+	public:
+		ReZELDrawTimeChartSeries() : TimeChartSeries(-1, Vec4f(1,0,0,1)){}
 		virtual double timeProc(double dt){
 			return ReZEL::motionInterpolateTime;
 		}
 	};
 	class ReZELInterpAvgTimeChartSeries : public GLWchart::TimeChartSeries{
+	public:
+		ReZELInterpAvgTimeChartSeries() : TimeChartSeries(-1, Vec4f(0,1,0,1)){}
 		virtual double timeProc(double dt){
 			return ReZEL::motionInterpolateTimeAverage;
 		}
 	};
 	class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
+	public:
+		FrameTimeChartSeries() : TimeChartSeries(-1, Vec4f(0,0,1,1)){}
 		virtual Vec4f color()const{return Vec4f(0.5,0.5,1,1);}
 		virtual double timeProc(double dt){return dt;}
 	};
 	class SqTimeChartSeries : public GLWchart::TimeChartSeries{
+	public:
+		SqTimeChartSeries() : TimeChartSeries(-1, Vec4f(1,0,1,1)){}
 		virtual Vec4f color()const{return Vec4f(1,0.5,.5,.5);}
 		virtual double timeProc(double dt){
 			HSQUIRRELVM v = ReZEL::sqvm;

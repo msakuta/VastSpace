@@ -99,7 +99,7 @@ protected:
 	float heat;
 	float fwaverider; ///< Phase of transformation to wave rider
 	float fweapon; ///< Phase of weapon switch
-	struct tent3d_fpol *pf; ///< Trailing smoke
+	struct Tefpol *pf; ///< Trailing smoke
 	Docker *mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;
 	int paradec;
@@ -210,7 +210,7 @@ protected:
 	static StaticBindDouble vulcanDamage;
 	static StaticBindInt vulcanMagazineSize;
 public:
-	ReZEL();
+	ReZEL(Game *game);
 	ReZEL(WarField *aw);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -234,7 +234,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual Dockable *toDockable();
-	virtual double hitradius()const;
+	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;

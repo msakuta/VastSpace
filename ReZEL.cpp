@@ -17,6 +17,7 @@
 #include "sqadapt.h"
 #include "motion.h"
 #include "glw/popup.h"
+#include "tefpol3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -292,7 +293,7 @@ void ReZEL::unserialize(UnserializeContext &sc){
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
-		pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 		pf = NULL;
 }
@@ -309,7 +310,8 @@ double ReZEL::maxhealth()const{
 
 
 
-ReZEL::ReZEL() : 
+ReZEL::ReZEL(Game *game) : 
+	st(game),
 	mother(NULL),
 	paradec(-1),
 	vulcancooldown(0.f),
@@ -376,7 +378,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->cooldown = 1.;
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
-		p->pf = AddTefpolMovable3D(ws->tepl, this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 		p->pf = NULL;
 //	p->mother = mother;
@@ -463,10 +465,10 @@ bool ReZEL::undock(Docker *d){
 	task = Undock;
 	mother = d;
 	if(this->pf)
-		ImmobilizeTefpol3D(this->pf);
+		this->pf->immobilize();
 	WarSpace *ws;
 	if(w && w->getTefpol3d())
-		this->pf = AddTefpolMovable3D(w->getTefpol3d(), this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+		this->pf = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	d->baycool += 1.;
 	return true;
 }
@@ -640,7 +642,8 @@ bool ReZEL::findEnemy(){
 		return !!enemy;
 	Entity *pt2, *closest = NULL;
 	double best = 1e2 * 1e2;
-	for(pt2 = w->el; pt2; pt2 = pt2->next){
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); ++it){
+		Entity *pt2 = *it;
 
 		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
@@ -669,7 +672,7 @@ static int space_collide_callback(const struct otjEnumHitSphereParam *param, Ent
 		return 0;
 	const double &dt = param->dt;
 	Vec3d dr = pt->pos - pt2->pos;
-	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
 	double sr = (r + r2) * (r + r2);
 	if(r * 2. < r2){
 		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
@@ -695,7 +698,7 @@ static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
 	const double ff = .2;
 	Vec3d dr = pt->pos - pt2->pos;
 	double sd = dr.slen();
-	double r = pt->hitradius(), r2 = pt2->hitradius();
+	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
 	double sr = (r + r2) * (r + r2);
 	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
 	Vec3d n;
@@ -746,7 +749,7 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 		param.src = &pt->pos;
 		param.dir = &pt->velo;
 		param.dt = dt;
-		param.rad = pt->hitradius();
+		param.rad = pt->getHitRadius();
 		param.pos = NULL;
 		param.norm = NULL;
 		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
@@ -761,8 +764,13 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 			space_collide_resolve(pt, pt2, dt);
 		}
 	}
-	else for(pt2 = w->el; pt2; pt2 = pt2->next) if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
-		space_collide_resolve(pt, pt2, dt);
+	else{
+		for(WarField::EntityList::iterator it2 = w->el.begin(); it2 != w->el.end(); ++it2){
+			pt2 = *it2;
+			if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
+				space_collide_resolve(pt, pt2, dt);
+			}
+		}
 	}
 }
 #endif
@@ -797,10 +805,13 @@ void ReZEL::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvel
 Entity *ReZEL::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
-	for(Entity *e = w->entlist(); e; e = e->next) if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
-		mother = e->getDocker();
-		pm = mother->e;
-		best = sl;
+	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it){
+		Entity *e = *it;
+		if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
+			mother = e->getDocker();
+			pm = mother->e;
+			best = sl;
+		}
 	}
 	return pm;
 }
@@ -934,7 +945,7 @@ void ReZEL::anim(double dt){
 
 #if 1
 	if(pf->pf)
-		MoveTefpol3D(pf->pf, pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
+		pf->pf->move(pt->pos + pt->rot.trans(Vec3d(0,0,.005)), avec3_000, cs_orangeburn.t, 0/*pf->docked*/);
 #endif
 
 #if 0
@@ -1197,7 +1208,7 @@ void ReZEL::anim(double dt){
 #endif
 */
 				// Do not try shooting at very small target, that's just waste of ammo.
-				if(enemy->hitradius() < dist / 300.)
+				if(enemy->getHitRadius() < dist / 300.)
 					trigger = false;
 
 			}
@@ -1327,9 +1338,9 @@ void ReZEL::anim(double dt){
 						}
 
 						double dist = delta.len();
-						double awaybase = pt->enemy->hitradius() * 3. + .1;
+						double awaybase = pt->enemy->getHitRadius() * 3. + .1;
 						if(.6 < awaybase)
-							awaybase = pt->enemy->hitradius() + 1.; // Constrain awaybase for large targets
+							awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
 						double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
 /*						if(p->task == Attack && dist < awaybase){
 							p->task = Away;
@@ -1521,7 +1532,7 @@ void ReZEL::anim(double dt){
 					if(!pm)
 						p->task = Auto;
 					else{
-						Vec3d target0(pm->getDocker()->getPortPos());
+						Vec3d target0(pm->getDocker()->getPortPos(this));
 						Quatd q2, q1;
 						collideignore = pm;
 
@@ -1531,7 +1542,7 @@ void ReZEL::anim(double dt){
 
 						// Runup length
 						if(p->task == Dockque)
-							target0 += pm->getDocker()->getPortRot().trans(Vec3d(0, 0, -.3));
+							target0 += pm->getDocker()->getPortRot(this).trans(Vec3d(0, 0, -.3));
 
 						// Suppress side slips
 						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
@@ -1547,7 +1558,7 @@ void ReZEL::anim(double dt){
 							else{
 								mother->dock(pt);
 								if(p->pf){
-									ImmobilizeTefpol3D(p->pf);
+									p->pf->immobilize();
 									p->pf = NULL;
 								}
 								p->docked = true;
@@ -1898,8 +1909,8 @@ void ReZEL::anim(double dt){
 		{
 			const double pitchrange = task == CoverRight ? M_PI / 4. : M_PI / 2.;
 			const double yawrange = task == CoverRight ? M_PI / 4. : M_PI / 3.;
-			double dpitch = inputs.analog[0] * w->pl->fov * 2e-3;
-			double dyaw = inputs.analog[1] * w->pl->fov * 2e-3;
+			double dpitch = inputs.analog[0] * game->player->fov * 2e-3;
+			double dyaw = inputs.analog[1] * game->player->fov * 2e-3;
 			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -pitchrange, pitchrange), M_PI * dt, 0);
 			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -yawrange, yawrange), M_PI * dt, 0);
 		}
@@ -2024,7 +2035,7 @@ void ReZEL::anim(double dt){
 
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 	if(this->pf && w != oldw)
-		ImmobilizeTefpol3D(this->pf);
+		this->pf->immobilize();
 //	movesound3d(pf->hitsound, pt->pos);
 }
 
@@ -2084,7 +2095,7 @@ bool ReZEL::isTargettable()const{
 }
 bool ReZEL::isSelectable()const{return true;}
 
-double ReZEL::hitradius()const{
+double ReZEL::getHitRadius()const{
 	return .01;
 }
 

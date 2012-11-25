@@ -441,15 +441,9 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	if(thick == 0.) return;
 	int hdiv = slices == 0 ? 16 : slices;
 	int s, t;
-	double (*hcuts)[2];
-	double sdist, dist, as, cas, sas, height;
-	double b;
-	double redness, isotropy;
-	Vec3d apos, delta, sundir;
-	Vec3d spos;
-	apos = vw->cs->tocs(a->pos, a->parent);
-	delta = apos - vw->pos;
-	sdist = delta.slen();
+	Vec3d apos = vw->cs->tocs(a->pos, a->parent);
+	Vec3d delta = apos - vw->pos;
+	double sdist = delta.slen();
 
 	/* too far */
 	if(DBL_EPSILON < sdist && a->rad * a->rad / sdist < .01 * .01)
@@ -484,19 +478,22 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	} while(0);
 
 
-	dist = sqrt(sdist);
+	double dist = sqrt(sdist);
 	/* buried in */
 	if(dist < a->rad)
 		dist = a->rad + EPSILON;
-	as = asin(sas = a->rad / dist);
-	cas = cos(as);
-	height = dist - a->rad;
-	hcuts = CircleCuts(hdiv);
-	isotropy = thick / (thick / 5. + height);
+	double sas = a->rad / dist;
+	double as = asin(sas);
+	double cas = cos(as);
+	double height = dist - a->rad;
+	double (*hcuts)[2] = CircleCuts(hdiv);
+	double isotropy = thick / (thick / 5. + height);
+	Vec3d spos = sunpos - apos;
 
+	double b;
+	double redness;
 	{
 		double sp, cen;
-		spos = sunpos - apos;
 		double slen = spos.len();
 		if(slen < EPSILON)
 			return;
@@ -507,6 +504,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	}
 
 	glPushMatrix();
+	Vec3d sundir;
 	{
 		Mat4d rot;
 		gldLookatMatrix(~rot, ~(apos - vw->pos));

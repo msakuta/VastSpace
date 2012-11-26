@@ -362,6 +362,45 @@ void TexSphere::draw(const Viewer *vw){
 		astroRing.ring_draw(*vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, sunar, brightness);
 }
 
+inline double atmo_sp2brightness(double sp);
+
+
+/// \brief Returns ambient luminosity based on the sun's distance.
+///
+/// The sun in this context is the brightest local Star.
+double TexSphere::getAmbientBrighness(const Viewer &vw)const{
+	CoordSys::FindParam param;
+	param.returnBrightness = true;
+	param.threshold = 1e-20;
+
+	const CoordSys *vwcs = vw.cs;
+	if(!vwcs)
+		return 0.;
+	const Vec3d &vwpos = vw.pos;
+
+	const Astrobj *sun = findBrightest(vec3_000, param);
+	Vec3d sunpos = sun ? vwcs->tocs(sun->pos, sun->parent) : vec3_000;
+	Vec3d thispos = vwcs->tocs(this->pos, this->parent);
+
+	double dist = (vwpos  - thispos).len();
+	double sp = (sunpos - thispos).norm().sp((vwpos  - thispos).norm());
+
+	// Brightness for color components.
+	double b = atmo_sp2brightness(sp);
+
+	// Boost the brightness value to illuminate the day side with more intense ambient light.
+	if(0.5 < b)
+		b = (b - 0.5) * 2.0 + 0.5;
+
+	double height = (thispos - vwpos).len() - this->rad;
+	double thick = atmodensity;
+	double pd = (thick * 16.) / (dist - this->rad);
+	double d = min(pd, 1.);
+	double air = height / thick / d;
+
+	return sqrt(param.brightness * 1e18) * b / (1. + air);
+}
+
 struct atmo_dye_vertex_param{
 	double redness;
 	double isotropy;

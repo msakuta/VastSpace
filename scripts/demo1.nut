@@ -4,10 +4,10 @@
 local earthlo = universe.findcspath("/sol/earth/lo");
 if(!earthlo)
 	earthlo = universe.findcspath("/earth/lo");
-if(earthlo){
+/*if(earthlo){
 	player.cs = earthlo;
 	player.setpos(Vec3d(-1,0,0));
-}
+}*/
 
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));

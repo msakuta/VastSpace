@@ -69,6 +69,7 @@ public:
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual bool sunAtmosphere(const Viewer &vw)const;
+	double getAmbientBrighness(const Viewer &vw)const;
 	typedef std::vector<Texture>::const_iterator TextureIterator;
 	TextureIterator beginTextures()const{return textures.begin();} ///< Iterates custom texture units for shaders.
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.

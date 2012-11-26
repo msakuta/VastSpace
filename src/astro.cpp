@@ -495,13 +495,15 @@ static int tocs_children_invokes = 0;
 
 struct Param{
 	Astrobj *ret;
+	Astrobj *eclipseCaster;
 	double brightness;
+	double nonShadowBrightness;
 	const CoordSys::FindParam &param; ///< Input parameters are internally read-only.
 	
-	Param(CoordSys::FindParam &param) : ret(NULL), brightness(0.), param(param){}
+	Param(CoordSys::FindParam &param) : ret(NULL), eclipseCaster(NULL), brightness(0.), nonShadowBrightness(0.), param(param){}
 };
 
-double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray){
+double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray, Astrobj **rethit){
 	const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
 	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 		const Astrobj *ahit = (*it)->toAstrobj();
@@ -546,6 +548,9 @@ double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const V
 				penumbra = hitdist <= penumbraOuter ? (hitdist - penumbraInner) / (penumbraOuter - penumbraInner) : 1.;
 			}
 
+			if(rethit)
+				*rethit = const_cast<Astrobj*>(ahit);
+
 			// Scattering by atmosphere can attenuate the direct light down to 25%. (Is it right?)
 			return rangein(penumbra - 0.75 * scatter, 0, 1);
 		}
@@ -566,22 +571,24 @@ static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const 
 	{
 		const coordsys *cs2 = cs->children[i];
 #endif
-		double val;
+		double rawval, val;
 		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
 		if(a && a->absmag < 30){
 			Vec3d lightSource = retcs->tocs(vec3_000, a);
 			Vec3d ray = src - lightSource;
 			double sd = ray.slen();
-			val = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
+			rawval = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
 			// Check for eclipses only if you could be the brightest celestial object.
-			if(p.param.checkEclipse && p.param.threshold < val && p.brightness < val){
-				val *= checkEclipse(a, retcs, src, lightSource, ray);
-			}
+			if(p.param.checkEclipse && p.param.threshold < rawval && p.brightness < rawval)
+				val = rawval * checkEclipse(a, retcs, src, lightSource, ray, &p.eclipseCaster);
+			else
+				val = rawval;
 		}
 		else
-			val = 0.;
+			rawval = val = 0.;
 		if(p.brightness < val){
 			p.brightness = val;
+			p.nonShadowBrightness = rawval;
 			p.ret = a;
 		}
 		if(findchildbr(p, retcs, src, cs2, NULL))
@@ -631,8 +638,13 @@ Astrobj *CoordSys::findBrightest(const Vec3d &pos, FindParam &param){
 	findparentbr(p, this, pos, this);
 
 	// Return the brightness through the parameter object if told so.
-	if(param.returnBrightness)
+	if(param.returnBrightness){
 		param.brightness = p.brightness;
+		param.nonShadowBrightness = p.nonShadowBrightness;
+	}
+
+	if(param.checkEclipse)
+		param.eclipseCaster = p.eclipseCaster;
 
 	return p.ret;
 }

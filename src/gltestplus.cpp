@@ -40,6 +40,7 @@
 #include "sqadapt.h"
 #include "EntityCommand.h"
 #include "astro_star.h"
+#include "TexSphere.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
@@ -183,7 +184,7 @@ void drawShadeSphere(){
 
 static Vec3d g_light;
 
-void Game::lightOn(){
+void Game::lightOn(Viewer &vw){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
 	CoordSys::FindParam param;
 	param.checkEclipse = true;
@@ -212,8 +213,19 @@ void Game::lightOn(){
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
-	val = GLfloat(val * 0.25 + 0.0001);
+
+	// Assume eclipse shadow caster to be the nearest Astrobj (not necessarily true).
+	Astrobj *caster = param.eclipseCaster;
+	if(caster){
+		// Obtain ambient luminosity from the Astrobj with atmosphere scattering taken account.
+		val = GLfloat(static_cast<TexSphere*>(caster)->getAmbientBrighness(vw));
+	}
+	else
+		val = GLfloat(val * 0.25 + 0.0001);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec3f(val, val, val));
+
+	// Disable Model ambient
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4f(0,0,0,0));
 
 	// We plot the diffuse light level for tuning parameters.
 	for(GLwindow *w = glwlist; w; w = w->getNext()){
@@ -727,7 +739,7 @@ void Game::draw_func(Viewer &vw, double dt){
 	gldTranslaten3dv(vw.pos);
 	glPushAttrib(GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT);
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	lightOn();
+	lightOn(vw);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 /*	for(vw.zslice = 1; 0 <= vw.zslice; vw.zslice--)*/{

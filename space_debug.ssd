@@ -75,7 +75,7 @@ coordsys Orbit earth{
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
 
-		coordsys earths{
+/*		coordsys earths{
 			define theta .13*pi
 			define phi 1.0*pi
 			define rad 6375+0.2
@@ -83,7 +83,7 @@ coordsys Orbit earth{
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(phi,Vec3d(0,1,0))*Quatd.rotation(-PI/2.0,Vec3d(1,0,0))
 			teleport "Earth Surface" 0 0 0
-		}
+		}*/
 	}
 
 	coordsys Orbit moon{
@@ -203,7 +203,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		fullname "Earth's Low orbit"
 		orbits Earth
-		orbit_radius 5+6378.
+		orbit_radius 10+6378.
 		inclination -23.4
 		argument_of_periapsis 60
 		ascending_node 0

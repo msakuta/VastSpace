@@ -73,7 +73,7 @@ public:
 		delete universe;
 	}
 
-	void lightOn();
+	void lightOn(Viewer &vw);
 	void draw_func(Viewer &vw, double dt);
 	void draw_gear(double dt);
 	void drawindics(Viewer *vw);

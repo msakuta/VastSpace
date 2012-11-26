@@ -365,10 +365,7 @@ void TexSphere::draw(const Viewer *vw){
 inline double atmo_sp2brightness(double sp);
 
 
-/// \brief Returns ambient luminosity based on the sun's distance.
-///
-/// The sun in this context is the brightest local Star.
-double TexSphere::getAmbientBrighness(const Viewer &vw)const{
+double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 	CoordSys::FindParam param;
 	param.returnBrightness = true;
 	param.threshold = 1e-20;

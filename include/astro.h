@@ -112,6 +112,12 @@ public:
 	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
+
+	/// \brief Returns ambient luminosity based on the sun's distance.
+	///
+	/// The sun in this context is the brightest local Star.
+	virtual double getAmbientBrightness(const Viewer &vw)const{ return 0.; }
+
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 };

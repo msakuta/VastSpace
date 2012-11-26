@@ -354,7 +354,7 @@ bool TexSphere::sq_define(HSQUIRRELVM v){
 
 #ifdef DEDICATED
 void TexSphere::draw(const Viewer *){}
-double TexSphere::getAmbientBrighness(const Viewer &)const{return 0.;}
+double TexSphere::getAmbientBrightness(const Viewer &)const{return 0.;}
 #endif
 
 

@@ -40,7 +40,6 @@
 #include "sqadapt.h"
 #include "EntityCommand.h"
 #include "astro_star.h"
-#include "TexSphere.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
 #include "draw/ShadowMap.h"
@@ -218,7 +217,7 @@ void Game::lightOn(Viewer &vw){
 	Astrobj *caster = param.eclipseCaster;
 	if(caster){
 		// Obtain ambient luminosity from the Astrobj with atmosphere scattering taken account.
-		val = GLfloat(static_cast<TexSphere*>(caster)->getAmbientBrighness(vw));
+		val = GLfloat(caster->getAmbientBrightness(vw));
 	}
 	else
 		val = GLfloat(val * 0.25 + 0.0001);

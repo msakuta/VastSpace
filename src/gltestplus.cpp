@@ -213,11 +213,13 @@ void Game::lightOn(Viewer &vw){
 	GLfloat dif[4];
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
 
-	// Assume eclipse shadow caster to be the nearest Astrobj (not necessarily true).
-	Astrobj *caster = param.eclipseCaster;
-	if(caster){
-		// Obtain ambient luminosity from the Astrobj with atmosphere scattering taken account.
-		val = GLfloat(caster->getAmbientBrightness(vw));
+	// Find the nearest Astrobj to obtain ambient luminosity.
+	FindNearestAstrobj fna(vw.cs, vw.pos);
+	player->cs->find(fna);
+	const Astrobj *nearest = fna.getAstrobj();
+	if(nearest){
+		// Obtain ambient luminosity from the Astrobj with atmosphere scattering taken into account.
+		val = GLfloat(nearest->getAmbientBrightness(vw));
 	}
 	else
 		val = GLfloat(val * 0.25 + 0.0001);

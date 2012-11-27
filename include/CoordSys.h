@@ -220,6 +220,10 @@ public:
 		return const_cast<CoordSys*>(this)->findBrightest(pos, findParam);
 	}
 
+	struct FindCallback;
+	/// The generic find routine that crawls in the tree.
+	bool find(FindCallback &findParam)const;
+
 	/// This system must be a Extent and Isolated.
 	bool addToDrawList(CoordSys *descendant);
 

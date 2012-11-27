@@ -66,4 +66,44 @@ inline double checkEclipse(Astrobj *illuminator, const CoordSys *retcs, const Ve
 	return 0.;
 }
 
+/// \brief The base class for CoordSys::find() callback object.
+struct CoordSys::FindCallback{
+	/// \brief The function to be called for each CoordSys it finds.
+	/// \return true if continue, otherwise enumeration aborts.
+	virtual bool invoke(CoordSys *) = 0;
+};
+
+/// \brief The criterion to find the nearest CoordSys to a given point.
+struct FindNearestCoordSys : CoordSys::FindCallback{
+	double best; ///< The score (squared distance).
+	const CoordSys *bestcs; ///< The best matched CoordSys so far.
+	const CoordSys *srccs; ///< The source CoordSys.
+	Vec3d srcpos; ///< The source position.
+	FindNearestCoordSys(const CoordSys *cs, const Vec3d &pos) : best(1e25), bestcs(NULL), srccs(cs), srcpos(pos){}
+	bool invoke(CoordSys *cs){
+		if(!filter(cs))
+			return true;
+		double sd = (srccs->tocs(vec3_000, cs) - srcpos).slen();
+		if(sd < best){
+			best = sd;
+			bestcs = cs;
+		}
+		return true;
+	}
+
+	/// \brief The virtual predicate function to discard unwanted objects from find result.
+	virtual bool filter(CoordSys *cs){return true;}
+};
+
+/// \brief Finds the nearest Astrobj to a given point.
+struct FindNearestAstrobj : FindNearestCoordSys{
+	FindNearestAstrobj(const CoordSys *cs, const Vec3d &pos) : FindNearestCoordSys(cs, pos){}
+	bool filter(CoordSys *cs){
+		return cs->toAstrobj();
+	}
+	/// \brief Obtains best matched Astrobj.
+	const Astrobj *getAstrobj(){return bestcs ? static_cast<const Astrobj*>(bestcs) : NULL;}
+};
+
+
 #endif

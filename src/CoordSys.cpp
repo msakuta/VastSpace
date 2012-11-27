@@ -2,6 +2,7 @@
 
 #include "Application.h"
 #include "CoordSys.h"
+#include "CoordSys-find.h"
 #include "astro.h"
 #include "Viewer.h"
 #include "Player.h"
@@ -508,6 +509,28 @@ CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
 	if(p) for(cs = root->children; cs; cs = cs->next) if(!strncmp(cs->name, path, p - path))
 		return cs->findcsppath(p+1, pathend);
 	return NULL;
+}
+
+bool findchild(const CoordSys *parent, CoordSys::FindCallback &fc, const CoordSys *skipcs){
+	const CoordSys *cs2;
+	for(cs2 = parent->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
+	{
+		if(!fc.invoke(const_cast<CoordSys*>(cs2)))
+			return false;
+	}
+	return true;
+}
+
+bool findparent(const CoordSys *cs, CoordSys::FindCallback &fc){
+	if(!cs)
+		return false;
+	if(!findchild(cs, fc, cs))
+		return false;
+	return findparent(cs->parent, fc);
+}
+
+bool CoordSys::find(FindCallback &fc)const{
+	return findparent(this, fc);
 }
 
 static std::map<double, CoordSys*> drawnlist;

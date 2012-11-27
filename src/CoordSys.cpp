@@ -511,29 +511,38 @@ CoordSys *CoordSys::findcsppath(const char *path, const char *pathend){
 	return NULL;
 }
 
-bool findchild(const CoordSys *parent, CoordSys::FindCallback &fc, const CoordSys *skipcs){
-	const CoordSys *cs2;
-	for(cs2 = parent->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
+/// This template can have either one of the argument pairs:
+/// <CoordSys, FindCallback> or <const CoordSys, FindCallbackConst>.
+template<typename T, typename Callback>
+bool CoordSys::tempFindChild(T *cs, Callback &fc, T *skipcs){
+	for(T *cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
 	{
-		if(!fc.invoke(const_cast<CoordSys*>(cs2)))
+		if(!fc.invoke(cs2))
 			return false;
-		findchild(cs2, fc, NULL);
+		tempFindChild<T, Callback>(cs2, fc, NULL);
 	}
 	return true;
 }
 
-bool findparent(const CoordSys *cs, CoordSys::FindCallback &fc){
+/// This template can have either one of the argument pairs:
+/// <CoordSys, FindCallback> or <const CoordSys, FindCallbackConst>.
+template<typename T, typename Callback>
+bool CoordSys::tempFindParent(T *cs, Callback &fc){
 	if(!cs)
 		return false;
-	if(!findchild(cs, fc, cs))
+	if(!tempFindChild(cs, fc, cs))
 		return false;
 	// This invocation could be before findchild().
-	fc.invoke(const_cast<CoordSys*>(cs));
-	return findparent(cs->parent, fc);
+	fc.invoke(cs);
+	return tempFindParent(cs->parent, fc);
 }
 
-bool CoordSys::find(FindCallback &fc)const{
-	return findparent(this, fc);
+bool CoordSys::find(FindCallback &fc){
+	return tempFindParent(this, fc);
+}
+
+bool CoordSys::find(FindCallbackConst &fc)const{
+	return tempFindParent(this, fc);
 }
 
 static std::map<double, CoordSys*> drawnlist;

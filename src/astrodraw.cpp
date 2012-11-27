@@ -187,7 +187,7 @@ void TexSphere::draw(const Viewer *vw){
 	param.threshold = 1e-20;
 	
 	find(param);
-	Astrobj *sun = param.result;
+	Astrobj *sun = const_cast<Astrobj*>(param.result);
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	int ringdrawn = 8;

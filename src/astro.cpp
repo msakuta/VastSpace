@@ -489,21 +489,9 @@ Astrobj *CoordSys::findastrobj(const char *name){
 }
 
 
-CoordSys::FindParam CoordSys::defaultFindParam;
-
 static int tocs_children_invokes = 0;
 
-struct Param{
-	Astrobj *ret;
-	Astrobj *eclipseCaster;
-	double brightness;
-	double nonShadowBrightness;
-	const CoordSys::FindParam &param; ///< Input parameters are internally read-only.
-	
-	Param(CoordSys::FindParam &param) : ret(NULL), eclipseCaster(NULL), brightness(0.), nonShadowBrightness(0.), param(param){}
-};
-
-double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray, Astrobj **rethit){
+double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray, const Astrobj **rethit){
 	const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
 	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 		const Astrobj *ahit = (*it)->toAstrobj();
@@ -549,7 +537,7 @@ double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const V
 			}
 
 			if(rethit)
-				*rethit = const_cast<Astrobj*>(ahit);
+				*rethit = ahit;
 
 			// Scattering by atmosphere can attenuate the direct light down to 25%. (Is it right?)
 			return rangein(penumbra - 0.75 * scatter, 0, 1);
@@ -558,9 +546,9 @@ double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const V
 	return 1.;
 }
 
-bool FindBrightestAstrobj::invoke(CoordSys *cs2){
+bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 	double rawval, val;
-	Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
+	const Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
 	if(a && a->absmag < 30){
 		Vec3d lightSource = retcs->tocs(vec3_000, a);
 		Vec3d ray = src - lightSource;
@@ -586,12 +574,14 @@ bool FindBrightestAstrobj::invoke(CoordSys *cs2){
 ///
 /// The celestial object is usually a Star, but can be other things that reflects Star's light.
 ///
+/// This function lacks ability to specify various options to find the desired Astrobjs.
+/// Consider using FindBrightestAstrobj and CoordSys::find() instead of this function.
+///
 /// \param pos The position to measure the brightnesses at.
-/// \param param The parameters.
-Astrobj *CoordSys::findBrightest(const Vec3d &pos, FindParam &param){
+Astrobj *CoordSys::findBrightest(const Vec3d &po){
 	FindBrightestAstrobj fba(this, pos);
 	find(fba);
-	return fba.result;
+	return const_cast<Astrobj*>(fba.result);
 }
 
 SQInteger Astrobj::sqf_get(HSQUIRRELVM v){

@@ -212,17 +212,19 @@ public:
 
 	Astrobj *findastrobj(const char *name);
 
-	struct FindParam;
-	static FindParam defaultFindParam;
-	Astrobj *findBrightest(const Vec3d &pos = vec3_000, FindParam &findParam = defaultFindParam);
+	Astrobj *findBrightest(const Vec3d &pos = vec3_000);
 	/// Const version of findBrightest().
-	const Astrobj *findBrightest(const Vec3d &pos = vec3_000, FindParam &findParam = defaultFindParam)const{
-		return const_cast<CoordSys*>(this)->findBrightest(pos, findParam);
+	const Astrobj *findBrightest(const Vec3d &pos = vec3_000)const{
+		return const_cast<CoordSys*>(this)->findBrightest(pos);
 	}
 
 	struct FindCallback;
 	/// The generic find routine that crawls in the tree.
-	bool find(FindCallback &findParam)const;
+	bool find(FindCallback &findCallback);
+
+	struct FindCallbackConst;
+	/// Const version of generic find routine.
+	bool find(FindCallbackConst &findCallback)const;
 
 	/// This system must be a Extent and Isolated.
 	bool addToDrawList(CoordSys *descendant);
@@ -299,6 +301,10 @@ protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 
 private:
+	template<typename T, typename Callback>
+	static bool tempFindChild(T *cs, Callback &fc, T *skipcs);
+	template<typename T, typename Callback>
+	static bool tempFindParent(T *parent, Callback &fc);
 	CoordSys *findchildb(Vec3d &ret, const Vec3d &src, const CoordSys *skipcs)const;
 	const CoordSys *findparentb(Vec3d &ret, const Vec3d &src)const;
 	int getpathint(char *buf, size_t size)const;

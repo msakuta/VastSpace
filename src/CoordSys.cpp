@@ -527,6 +527,8 @@ bool findparent(const CoordSys *cs, CoordSys::FindCallback &fc){
 		return false;
 	if(!findchild(cs, fc, cs))
 		return false;
+	// This invocation could be before findchild().
+	fc.invoke(const_cast<CoordSys*>(cs));
 	return findparent(cs->parent, fc);
 }
 

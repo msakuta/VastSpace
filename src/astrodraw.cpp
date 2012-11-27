@@ -214,9 +214,8 @@ void TexSphere::draw(const Viewer *vw){
 
 	drawAtmosphere(this, vw, sunpos, atmodensity, Vec4f(atmohor) * brightness, Vec4f(atmodawn) * brightness, NULL, NULL, 32);
 	if(sunAtmosphere(*vw)){
-		Astrobj *brightest = findBrightest();
-		if(brightest)
-			Star::drawsuncorona(brightest, vw);
+		if(sun)
+			Star::drawsuncorona(sun, vw);
 	}
 	if(!vw->gc->cullFrustum(calcPos(*vw), rad * 2.)){
 		if(g_shader_enable){
@@ -367,7 +366,7 @@ inline double atmo_sp2brightness(double sp);
 
 
 double TexSphere::getAmbientBrightness(const Viewer &vw)const{
-	CoordSys::FindParam param;
+	FindBrightestAstrobj param(this, vec3_000);
 	param.returnBrightness = true;
 	param.threshold = 1e-20;
 
@@ -376,7 +375,9 @@ double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 		return 0.;
 	const Vec3d &vwpos = vw.pos;
 
-	const Astrobj *sun = findBrightest(vec3_000, param);
+	find(param);
+
+	const Astrobj *sun = param.result;
 	Vec3d sunpos = sun ? vwcs->tocs(sun->pos, sun->parent) : vec3_000;
 	Vec3d thispos = vwcs->tocs(this->pos, this->parent);
 

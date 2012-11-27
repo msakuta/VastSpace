@@ -589,14 +589,8 @@ bool FindBrightestAstrobj::invoke(CoordSys *cs2){
 /// \param pos The position to measure the brightnesses at.
 /// \param param The parameters.
 Astrobj *CoordSys::findBrightest(const Vec3d &pos, FindParam &param){
-	FindBrightestAstrobj fba(param, this, pos);
+	FindBrightestAstrobj fba(this, pos);
 	find(fba);
-
-	// If the parameter is programmer-given, let the slicing occur!
-	// Aggregate slicing is subtle and preferably avoided.
-	if(&param != &defaultFindParam)
-		param = fba;
-
 	return fba.result;
 }
 

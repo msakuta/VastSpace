@@ -216,9 +216,12 @@ void Game::lightOn(Viewer &vw){
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
 
 	// Find the nearest Astrobj to obtain ambient luminosity.
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 	FindNearestAstrobj fna(vw.cs, vw.pos);
 	player->cs->find(fna);
 	const Astrobj *nearest = fna.getAstrobj();
+	double findtime = TimeMeasLap(&tm);
 	if(nearest){
 		// Obtain ambient luminosity from the Astrobj with atmosphere scattering taken into account.
 		val = GLfloat(nearest->getAmbientBrightness(vw));
@@ -234,6 +237,7 @@ void Game::lightOn(Viewer &vw){
 	for(GLwindow *w = glwlist; w; w = w->getNext()){
 		if(w->classname() && !strcmp(w->classname(), "GLWchart")){
 			static_cast<GLWchart*>(w)->addSample("diffuse", val);
+			static_cast<GLWchart*>(w)->addSample("findtime", findtime);
 		}
 	}
 }

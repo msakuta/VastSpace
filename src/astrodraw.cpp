@@ -182,11 +182,12 @@ void TexSphere::draw(const Viewer *vw){
 	if(vw->zslice != 2)
 		return;
 
-	CoordSys::FindParam param;
+	FindBrightestAstrobj param(this, vec3_000);
 	param.returnBrightness = true;
 	param.threshold = 1e-20;
-
-	Astrobj *sun = findBrightest(vec3_000, param);
+	
+	find(param);
+	Astrobj *sun = param.result;
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	int ringdrawn = 8;

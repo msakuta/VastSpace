@@ -67,14 +67,14 @@ inline double checkEclipse(Astrobj *illuminator, const CoordSys *retcs, const Ve
 }
 
 /// \brief The base class for CoordSys::find() callback object.
-struct CoordSys::FindCallback{
+struct EXPORT CoordSys::FindCallback{
 	/// \brief The function to be called for each CoordSys it finds.
 	/// \return true if continue, otherwise enumeration aborts.
 	virtual bool invoke(CoordSys *) = 0;
 };
 
 /// \brief The criterion to find the nearest CoordSys to a given point.
-struct FindNearestCoordSys : CoordSys::FindCallback{
+struct EXPORT FindNearestCoordSys : CoordSys::FindCallback{
 	double best; ///< The score (squared distance).
 	const CoordSys *bestcs; ///< The best matched CoordSys so far.
 	const CoordSys *srccs; ///< The source CoordSys.
@@ -96,7 +96,7 @@ struct FindNearestCoordSys : CoordSys::FindCallback{
 };
 
 /// \brief Finds the nearest Astrobj to a given point.
-struct FindNearestAstrobj : FindNearestCoordSys{
+struct EXPORT FindNearestAstrobj : FindNearestCoordSys{
 	FindNearestAstrobj(const CoordSys *cs, const Vec3d &pos) : FindNearestCoordSys(cs, pos){}
 	bool filter(CoordSys *cs){
 		return cs->toAstrobj();
@@ -105,5 +105,19 @@ struct FindNearestAstrobj : FindNearestCoordSys{
 	const Astrobj *getAstrobj(){return bestcs ? static_cast<const Astrobj*>(bestcs) : NULL;}
 };
 
+/// \brief Finds the brightest astronomical object around. Beware of multiple inheritance!
+struct EXPORT FindBrightestAstrobj : CoordSys::FindCallback, CoordSys::FindParam{
+	const CoordSys *retcs; ///< The CoordSys for returned point.
+	Vec3d src; ///< The source position from where observing brightness.
+	Astrobj *result; ///< The returned Astrobj
+
+	/// \brief The constructor with parameter initializer
+	FindBrightestAstrobj(CoordSys::FindParam &param, const CoordSys *retcs, const Vec3d &src) :
+		FindParam(param), retcs(retcs), src(src), result(NULL){}
+	/// \brief The constructor with default parameters.
+	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src) :
+		FindParam(), retcs(retcs), src(src), result(NULL){}
+	bool invoke(CoordSys *cs);
+};
 
 #endif

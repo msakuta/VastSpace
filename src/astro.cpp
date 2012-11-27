@@ -558,72 +558,28 @@ double checkEclipse(Astrobj *a, const CoordSys *retcs, const Vec3d &src, const V
 	return 1.;
 }
 
-static int findchildbr(Param &p, const CoordSys *retcs, const Vec3d &src, const CoordSys *cs, const CoordSys *skipcs){
-	double best = 0;
-#if 1
-	CoordSys *cs2;
-	tocs_children_invokes++;
-	for(cs2 = cs->children; cs2; cs2 = cs2->next) if(cs2 != skipcs)
-	{
-#else
-	int i;
-	for(i = 0; i < cs->nchildren; i++) if(cs->children[i] && cs->children[i] != skipcs)
-	{
-		const coordsys *cs2 = cs->children[i];
-#endif
-		double rawval, val;
-		Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-		if(a && a->absmag < 30){
-			Vec3d lightSource = retcs->tocs(vec3_000, a);
-			Vec3d ray = src - lightSource;
-			double sd = ray.slen();
-			rawval = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
-			// Check for eclipses only if you could be the brightest celestial object.
-			if(p.param.checkEclipse && p.param.threshold < rawval && p.brightness < rawval)
-				val = rawval * checkEclipse(a, retcs, src, lightSource, ray, &p.eclipseCaster);
-			else
-				val = rawval;
-		}
-		else
-			rawval = val = 0.;
-		if(p.brightness < val){
-			p.brightness = val;
-			p.nonShadowBrightness = rawval;
-			p.ret = a;
-		}
-		if(findchildbr(p, retcs, src, cs2, NULL))
-			return 1;
-	}
-	return 0;
-}
-
-static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, CoordSys *cs){
-	Vec3d v1, v;
-	CoordSys *cs2 = cs->parent;
-
-	if(!cs->parent){
-		return 0;
-	}
-
-	v1 = cs->rot.trans(src);
-/*	MAT4VP3(v1, cs->rot, src);*/
-	v = v1 + cs->pos;
-
-	double val;
+bool FindBrightestAstrobj::invoke(CoordSys *cs2){
+	double rawval, val;
 	Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	val = a && a->absmag < 30 ? pow(2.512, -1.*a->absmag) / (retcs->pos - retcs->tocs(vec3_000, a)).slen() : 0.;
-	if(p.brightness < val){
-		p.brightness = val;
-		p.ret = a;
+	if(a && a->absmag < 30){
+		Vec3d lightSource = retcs->tocs(vec3_000, a);
+		Vec3d ray = src - lightSource;
+		double sd = ray.slen();
+		rawval = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
+		// Check for eclipses only if you could be the brightest celestial object.
+		if(checkEclipse && threshold < rawval && brightness < rawval)
+			val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
+		else
+			val = rawval;
 	}
-	if(p.brightness < val)
-		p.brightness = val;
-
-	/* do not scan subtrees already checked! */
-	if(findchildbr(p, retcs, src, cs->parent, cs))
-		return 1;
-
-	return findparentbr(p, retcs, src, cs->parent);
+	else
+		rawval = val = 0.;
+	if(brightness < val){
+		brightness = val;
+		nonShadowBrightness = rawval;
+		result = a;
+	}
+	return true;
 }
 
 /// \brief Find the nearest brightest celestial object to this CoordSys.
@@ -633,20 +589,15 @@ static int findparentbr(Param &p, const CoordSys *retcs, const Vec3d &src, Coord
 /// \param pos The position to measure the brightnesses at.
 /// \param param The parameters.
 Astrobj *CoordSys::findBrightest(const Vec3d &pos, FindParam &param){
-	Param p(param);
-	findchildbr(p, this, pos, this, NULL);
-	findparentbr(p, this, pos, this);
+	FindBrightestAstrobj fba(param, this, pos);
+	find(fba);
 
-	// Return the brightness through the parameter object if told so.
-	if(param.returnBrightness){
-		param.brightness = p.brightness;
-		param.nonShadowBrightness = p.nonShadowBrightness;
-	}
+	// If the parameter is programmer-given, let the slicing occur!
+	// Aggregate slicing is subtle and preferably avoided.
+	if(&param != &defaultFindParam)
+		param = fba;
 
-	if(param.checkEclipse)
-		param.eclipseCaster = p.eclipseCaster;
-
-	return p.ret;
+	return fba.result;
 }
 
 SQInteger Astrobj::sqf_get(HSQUIRRELVM v){

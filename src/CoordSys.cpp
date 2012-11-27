@@ -517,6 +517,7 @@ bool findchild(const CoordSys *parent, CoordSys::FindCallback &fc, const CoordSy
 	{
 		if(!fc.invoke(const_cast<CoordSys*>(cs2)))
 			return false;
+		findchild(cs2, fc, NULL);
 	}
 	return true;
 }

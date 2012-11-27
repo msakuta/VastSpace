@@ -185,11 +185,13 @@ static Vec3d g_light;
 
 void Game::lightOn(Viewer &vw){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
-	CoordSys::FindParam param;
-	param.checkEclipse = true;
-	param.returnBrightness = true;
-	param.threshold = 1e-20;
-	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
+	FindBrightestAstrobj fba(vw.cs, vw.pos);
+	fba.checkEclipse = true;
+	fba.returnBrightness = true;
+	fba.threshold = 1e-20;
+	vw.cs->find(fba);
+	const Astrobj *sun = fba.result;
+//	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
 	GLfloat val = 0.;
 	if(sun){
 		Vec3d src = player->getpos();
@@ -200,7 +202,7 @@ void Game::lightOn(Viewer &vw){
 		else{
 			// This conversion formula is very temporary and qualitative. This should be shared among 
 			// TexSphere's drawing methods and WarSpace's ones.
-			val = GLfloat(sqrt(param.brightness * 1e18));
+			val = GLfloat(sqrt(fba.brightness * 1e18));
 			if(val < 0.)
 				val = 0.;
 		}

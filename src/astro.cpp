@@ -496,6 +496,12 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 		const Astrobj *ahit = (*it)->toAstrobj();
 		if(ahit && ahit != a){
+
+			// It's lacking evidence why this value is appropriate, but we do not want really small objects (compared to celestial objects!) to
+			// cast a shadow to cause eclipses. Shadows in that scale are handled by shadow mapping.
+			if(ahit->rad < 10.)
+				continue;
+
 			Vec3d ahitpos = retcs->tocs(ahit->pos, ahit->parent);
 			double hitdist;
 			bool hit = jHitSpherePos(ahitpos, ahit->rad, src, -ray, 1., NULL, NULL, &hitdist);

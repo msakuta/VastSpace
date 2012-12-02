@@ -113,6 +113,13 @@ public:
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
 
+	/// \brief Returns approximate scale height of this astronomical object.
+	///
+	/// The scale height is the distance from the surface of an astronomical object that
+	/// the atmospheric pressure decreases by a factor of e (the base of natural logarithms).
+	/// http://en.wikipedia.org/wiki/Scale_height
+	virtual double getAtmosphericScaleHeight()const{return 0.;}
+
 	/// \brief Returns ambient luminosity based on the sun's distance.
 	///
 	/// The sun in this context is the brightest local Star.

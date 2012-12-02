@@ -212,7 +212,7 @@ coordsys Orbit earth{
 		warp
 		teleport
 		new astro TorusStation "Torus 1"{
-			pos 2 0 2
+			pos 0 0 0
 			race 2
 			bookmark "Torus 1"
 		}

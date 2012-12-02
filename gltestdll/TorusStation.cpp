@@ -42,7 +42,7 @@ extern "C"{
 
 using namespace gltestp;
 
-const double TorusStation::RAD = 0.3; ///< outer radius
+const double TorusStation::RAD = 0.15; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 
 
@@ -90,7 +90,7 @@ void TorusStation::init(){
 	ent = NULL;
 	headToSun = false;
 	absmag = 30.;
-	rad = 100.;
+	rad = RAD;
 	orbit_home = NULL;
 	mass = 1e10;
 	basecolor = Vec4f(1., .5, .5, 1.);
@@ -175,10 +175,10 @@ void TorusStation::anim(double dt){
 //		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
 //		Quatd qrot = Quatd::direction(sunpos);
 //		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
-		double omg = sqrt(.0098 / 3.25);
-		Vec3d vomg = Vec3d(0, omg, 0);
+		double omg = sqrt(.0098 / RAD);
+		Vec3d vomg = Vec3d(0, 0, omg);
 		this->rotation += omg * dt;
-		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,1,0))) * .1;
+		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,0,1))) * .1;
 //		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
 //		this->rot = this->rot.quatrotquat(this->omg * dt);
 //		this->rot = qrot1.rotate(phase, avec3_010);

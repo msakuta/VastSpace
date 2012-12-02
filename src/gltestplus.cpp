@@ -183,6 +183,24 @@ void drawShadeSphere(){
 
 static Vec3d g_light;
 
+
+/// \brief Finds the nearest Astrobj with atmospheric pressure.
+///
+/// This criterion rules out objects witout atmosphere, such as space stations and tiny asteroids.
+struct EXPORT FindAtmosphereAstrobj : FindNearestCoordSys{
+	FindAtmosphereAstrobj(const CoordSys *cs, const Vec3d &pos) : FindNearestCoordSys(cs, pos){}
+	bool filter(const CoordSys *cs){
+		const Astrobj *a = cs->toAstrobj();
+		if(a){
+			return 0 < a->getAtmosphericScaleHeight();
+		}
+	}
+	/// \brief Obtains best matched Astrobj.
+	const Astrobj *getAstrobj(){return bestcs ? static_cast<const Astrobj*>(bestcs) : NULL;}
+};
+
+
+
 void Game::lightOn(Viewer &vw){
 	GLfloat light_pos[4] = {1, 2, 1, 0};
 	FindBrightestAstrobj fba(vw.cs, vw.pos);
@@ -218,7 +236,7 @@ void Game::lightOn(Viewer &vw){
 	// Find the nearest Astrobj to obtain ambient luminosity.
 	timemeas_t tm;
 	TimeMeasStart(&tm);
-	FindNearestAstrobj fna(vw.cs, vw.pos);
+	FindAtmosphereAstrobj fna(vw.cs, vw.pos);
 	player->cs->find(fna);
 	const Astrobj *nearest = fna.getAstrobj();
 	double findtime = TimeMeasLap(&tm);

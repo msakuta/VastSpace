@@ -171,17 +171,18 @@ void TorusStationEntity::draw(WarDraw *wd){
 //		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
 		glPushMatrix();
-		glRotatef(-astro->rotation * deg_per_rad, 1, 0, 0);
 		glTranslated(0, 0., 0.);
 		gldScaled(dscale);
+		glRotatef(90, 0, 1, 0);
 		DrawMQOPose(loadHubModel(), NULL);
 		glPopMatrix();
 
 		for(int i = 0; i < 8; i++){
 			glPushMatrix();
-			glRotatef(-astro->rotation * deg_per_rad + i * 360 / 8, 1, 0, 0);
+			glRotatef(i * 360 / 8, 0, 0, 1);
 			glTranslated(0, -0.12, 0.);
 			gldScaled(dscale);
+			glRotatef(90, 0, 1, 0);
 			DrawMQOPose(model, NULL);
 			glPopMatrix();
 		}

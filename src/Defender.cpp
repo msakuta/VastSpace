@@ -749,7 +749,8 @@ void Defender::anim(double dt){
 						double maxspeed = DEFENDER_MAX_ANGLESPEED * dt;
 
 						double velolen = bbody->getLinearVelocity().length();
-						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
+						if(0 < dt)
+							throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
 
 						// Suppress side slips
 						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);

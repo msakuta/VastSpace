@@ -68,6 +68,7 @@ public:
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
+	virtual double getAtmosphericScaleHeight()const{return atmodensity;}
 	virtual bool sunAtmosphere(const Viewer &vw)const;
 	double getAmbientBrightness(const Viewer &vw)const;
 	typedef std::vector<Texture>::const_iterator TextureIterator;

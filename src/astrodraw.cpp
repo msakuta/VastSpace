@@ -366,6 +366,12 @@ inline double atmo_sp2brightness(double sp);
 
 
 double TexSphere::getAmbientBrightness(const Viewer &vw)const{
+	// If there is no atmosphere, it's no use examining ambient brightness
+	// induced by air scattering. Also it prevents zero division.
+	// TODO: no need to think about diffuse scattering?
+	if(atmodensity <= FLT_EPSILON)
+		return 0.;
+
 	FindBrightestAstrobj param(this, vec3_000);
 	param.returnBrightness = true;
 	param.threshold = 1e-20;

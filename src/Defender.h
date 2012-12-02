@@ -85,6 +85,7 @@ protected:
 	static Motion *motions[2];
 	static gltestp::dstring engineNames[4];
 
+	void init();
 	void shoot(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);

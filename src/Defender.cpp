@@ -146,6 +146,7 @@ double Defender::maxhealth()const{
 
 Defender::Defender(Game *game) : st(game), mother(NULL), mf(0), paradec(-1){
 	pf[0] = pf[1] = pf[2] = pf[3] = NULL;
+	init();
 }
 
 Defender::Defender(WarField *aw) : st(aw),
@@ -161,8 +162,27 @@ Defender::Defender(WarField *aw) : st(aw),
 //	evelo(vec3_000),
 //	attitude(Passive)
 {
-	Defender *const p = this;
+	init();
 
+//	Defender *const p = this;
+	mass = defaultMass;
+	health = maxhealth();
+	aac.clear();
+	memset(thrusts, 0, sizeof thrusts);
+	throttle = .5;
+	cooldown = 1.;
+	for(int i = 0; i < 4; i++)
+		pf[i] = NULL;
+	hitsound = -1;
+	docked = false;
+	fcloak = 0.;
+	cloak = 0;
+	heat = 0.;
+	integral[0] = integral[1] = 0.;
+}
+
+void Defender::init(){
+	Defender *const p = this;
 	static bool initialized = false;
 	if(!initialized){
 		sq_init(_SC("models/Defender.nut"),
@@ -178,22 +198,6 @@ Defender::Defender(WarField *aw) : st(aw),
 			Vec3dProcess(gunPos, _SC("gunPos")));
 		initialized = true;
 	}
-
-	mass = defaultMass;
-	health = maxhealth();
-	p->aac.clear();
-	memset(p->thrusts, 0, sizeof p->thrusts);
-	p->throttle = .5;
-	p->cooldown = 1.;
-	for(int i = 0; i < 4; i++){
-		p->pf[i] = NULL;
-	}
-	p->hitsound = -1;
-	p->docked = false;
-	p->fcloak = 0.;
-	p->cloak = 0;
-	p->heat = 0.;
-	integral[0] = integral[1] = 0.;
 }
 
 void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{

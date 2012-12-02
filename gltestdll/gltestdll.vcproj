@@ -360,11 +360,19 @@
 				RelativePath=".\SpacePlane.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\TorusStation.cpp"
+				>
+			</File>
 			<Filter
 				Name="draw"
 				>
 				<File
 					RelativePath=".\draw\Soldier-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\draw\TorusStation-draw.cpp"
 					>
 				</File>
 			</Filter>
@@ -388,6 +396,10 @@
 			</File>
 			<File
 				RelativePath=".\SpacePlane.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TorusStation.h"
 				>
 			</File>
 		</Filter>

@@ -729,7 +729,8 @@ clientMessageResponses <- {
 	load_demo5 = @() loadmission("scripts/demo5.nut"),
 	load_demo6 = @() loadmission("scripts/demo6.nut"),
 	load_demo7 = @() loadmission("scripts/demo7.nut"),
-	load_demo8 = @() loadmission("gundam/demo.nut"),
+	load_demo8 = @() loadmission("scripts/demo8.nut"),
+	load_gundamdemo = @() loadmission("gundam/demo.nut"),
 };
 
 

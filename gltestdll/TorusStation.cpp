@@ -19,6 +19,7 @@
 #include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/c.h>
+#include <clib/mathdef.h>
 #include <clib/amat3.h>
 #include <clib/lzw/lzw.h>
 #include <clib/timemeas.h>
@@ -150,21 +151,21 @@ Mat4d TorusStation::transform(const Viewer *vw)const{
 void TorusStation::anim(double dt){
 	Astrobj *sun = findBrightest();
 
-	// Head toward sun
-	if(sun){
-		if(!headToSun){
+	// Heading toward sun is unnecessary, it's not Island3.
+/*	if(sun)*/{
+/*		if(!headToSun){
 			headToSun = true;
 			rot = Quatd::direction(parent->tocs(pos, sun)).rotate(-M_PI / 2., avec3_100);
 		}
 		Vec3d sunpos = parent->tocs(pos, sun);
-		CoordSys *top = findcspath("/");
+		CoordSys *top = findcspath("/");*/
 //		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
 //		Quatd qrot = Quatd::direction(sunpos);
 //		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
 		double omg = sqrt(.0098 / RAD);
 		Vec3d vomg = Vec3d(0, 0, omg);
 		this->rotation += omg * dt;
-		this->omg = this->rot.trans(vomg) + sunpos.norm().vp(rot.trans(Vec3d(0,0,1))) * .1;
+		this->omg = this->rot.trans(vomg)/* + sunpos.norm().vp(rot.trans(Vec3d(0,0,1))) * .1*/;
 //		this->rot = Quatd::rotation(this->omg.len() * dt, this->omg.norm()) * this->rot;
 //		this->rot = this->rot.quatrotquat(this->omg * dt);
 //		this->rot = qrot1.rotate(phase, avec3_010);
@@ -185,29 +186,12 @@ void TorusStation::anim(double dt){
 		ent = new TorusStationEntity(ws, *this);
 		ws->addent(ent);
 	}
-	if(ws && ent && game->isServer()){
+	if(ws && ent){
 		ent->pos = this->pos;
 		ent->rot = this->rot;
 		ent->velo = this->velo;
 		ent->omg = this->omg;
 		ent->mass = this->mass;
-
-		RandomSequence rs((unsigned long)this + (unsigned long)(ws->war_time() / .0001));
-
-		// Randomly create container heads
-		// temporarily disabled until being accepted in the server-client model.
-		if(false && floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
-			Entity *ch = rs.next() % 2 ? (Entity*)(new ContainerHead(this->ent)) : new SpacePlane(this->ent);
-			ch->race = race;
-			ws->addent(ch);
-			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
-			ch->pos = rpos + this->pos + .1 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
-			ch->rot = this->rot.rotate(-M_PI / 2., Vec3d(1,0,0));
-			ch->velo = this->velo + this->omg.vp(rpos);
-			ch->omg = this->omg;
-			ch->setPosition(&ch->pos, &ch->rot, &ch->velo, &ch->omg);
-			ch->undock(this->ent->docker);
-		}
 	}
 	if(ws && ws->bdw && ent){
 		if(ent->bbody)

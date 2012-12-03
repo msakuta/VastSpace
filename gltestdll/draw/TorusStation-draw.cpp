@@ -150,6 +150,19 @@ Model *TorusStationEntity::loadHubModel(){
 	return model;
 }
 
+Model *TorusStationEntity::loadJointModel(){
+	static OpenGLState::weak_ptr<bool> init;
+	static Model *model = NULL;
+
+	if(!init){
+		model = LoadMQOModel(modPath() << "models/TorusStation_Joint.mqo");
+		init.create(*openGLState);
+	}
+
+	return model;
+}
+
+
 // Docking bays
 void TorusStationEntity::draw(WarDraw *wd){
 #if 1
@@ -177,13 +190,22 @@ void TorusStationEntity::draw(WarDraw *wd){
 		DrawMQOPose(loadHubModel(), NULL);
 		glPopMatrix();
 
-		for(int i = 0; i < 8; i++){
+		const int cutnum = 8;
+		for(int i = 0; i < cutnum; i++){
 			glPushMatrix();
-			glRotatef(i * 360 / 8, 0, 0, 1);
+			glRotatef(i * 360 / cutnum, 0, 0, 1);
 			glTranslated(0, -0.12, 0.);
 			gldScaled(dscale);
 			glRotatef(90, 0, 1, 0);
 			DrawMQOPose(model, NULL);
+			glPopMatrix();
+
+			glPushMatrix();
+			glRotatef((2 * i + 1) * 180 / cutnum, 0, 0, 1);
+			glTranslated(0, -0.115 / cos(M_PI / cutnum), 0.);
+			gldScaled(dscale);
+			glRotatef(90, 0, 1, 0);
+			DrawMQOPose(loadJointModel(), NULL);
 			glPopMatrix();
 		}
 

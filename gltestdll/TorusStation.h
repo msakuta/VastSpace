@@ -1,3 +1,6 @@
+/** \file
+ * Definition of TorusStation class and its companions.
+ */
 #ifndef TORUSSTATION_H
 #define TORUSSTATION_H
 #include "astro.h"
@@ -10,18 +13,12 @@ extern "C"{
 #include <clib/suf/sufvbo.h>
 }
 
-#ifndef NDEBUG
-#define TorusStation_BUILDINGS 32
-#else
-#define TorusStation_BUILDINGS 128
-#endif
-
 
 class TorusStationEntity;
 struct Model;
 
 
-/// \brief Space colony TorusStation, A.K.A. O'Neill Cylinder.
+/// \brief A space colony similar to Stanford Torus or the station in 2001 space odyssey.
 ///
 /// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class TorusStationEntity,
 /// not as multiple inheritance.
@@ -128,8 +125,10 @@ protected:
 	void buildShape();
 	static Model *loadModel();
 	static Model *loadHubModel();
+	static Model *loadJointModel();
 };
 
+/// \brief The docking port object  for TorusStation.
 class TorusStationDocker : public Docker{
 public:
 	typedef Docker st;

@@ -139,7 +139,7 @@ Mat4d TorusStation::transform(const Viewer *vw)const{
 		else{
 			Mat4d rot = vw->cs->tocsim(parent);
 			Mat4<btScalar> btrot;
-			ent->bbody->getWorldTransform().getOpenGLMatrix(static_cast<float*>(btrot));
+			ent->bbody->getWorldTransform().getOpenGLMatrix(btrot);
 			ret.translatein(vw->cs->tocs(vec3_000, parent));
 			ret = ret * rot * btrot.cast<double>();
 		}

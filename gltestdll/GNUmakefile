@@ -11,9 +11,13 @@ endif
 CFLAGS += -I ../include -I ../../clib/include -I ../../cpplib/include -I ../../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 
+# Ignore DLL export definition in gcc build. 
+CFLAGS += '-DGLTESTDLL_EXPORT='
+
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I ../include -MM $(1))))
 
 objects = ${OUTDIR}/Soldier.o\
+ ${OUTDIR}/TorusStation.o\
  ../../clib/Release/clib.a\
  ../../cpplib/Release/cpplib.a
 
@@ -26,6 +30,8 @@ ${OUTDIR}:
 	mkdir ${OUTDIR}
 
 ${OUTDIR}/Soldier.o: $(call depends,Soldier.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/TorusStation.o: $(call depends,TorusStation.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 clean:

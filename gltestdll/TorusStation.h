@@ -8,11 +8,6 @@
 #include "Docker.h"
 #include "Autonomous.h"
 #include <btBulletDynamicsCommon.h>
-extern "C"{
-#include <clib/suf/suf.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
-}
 
 
 class TorusStationEntity;
@@ -91,7 +86,7 @@ class TorusStationDocker;
 class TorusStationEntity : public Entity{
 public:
 	typedef Entity st;
-	friend TorusStation;
+	friend class TorusStation;
 	static unsigned classid;
 	TorusStation *astro;
 	TorusStationEntity(Game *game);
@@ -112,7 +107,6 @@ public:
 	virtual void drawOverlay(wardraw_t *);
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
-	virtual bool command(EntityCommand *);
 
 	/// \brief Retrieves root path for this extension module.
 	static gltestp::dstring modPath(){return "gltestdll/";}

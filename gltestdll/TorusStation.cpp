@@ -11,32 +11,18 @@
 #include "war.h"
 #include "glsl.h"
 #include "glstack.h"
-#include "draw/material.h"
 #include "cmd.h"
 #include "btadapt.h"
 #include "judge.h"
-#include "bitmap.h"
 #include "Game.h"
-#include "draw/WarDraw.h"
-#include "draw/OpenGLState.h"
-#include "draw/ShadowMap.h"
-#include "draw/ShaderBind.h"
-#include "glw/popup.h"
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/c.h>
-#include <clib/gl/multitex.h>
 #include <clib/amat3.h>
-#include <clib/suf/suf.h>
-#include <clib/suf/sufbin.h>
-#include <clib/gl/gldraw.h>
-#include <clib/gl/cull.h>
 #include <clib/lzw/lzw.h>
 #include <clib/timemeas.h>
 }
-#include <gl/glu.h>
-#include <gl/glext.h>
 #include <assert.h>
 #include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
 
@@ -68,7 +54,6 @@ protected:
 
 //const unsigned TorusStation::classid = registerClass("TorusStation", Serializable::Conster<TorusStation>);
 ClassRegister<TorusStation> TorusStation::classRegister("TorusStation");
-int &TorusStation::g_shader_enable = ::g_shader_enable;
 
 TorusStation::TorusStation(Game *game) : st(game){
 	init();
@@ -153,10 +138,10 @@ Mat4d TorusStation::transform(const Viewer *vw)const{
 		}
 		else{
 			Mat4d rot = vw->cs->tocsim(parent);
-			Mat4d btrot;
-			ent->bbody->getWorldTransform().getOpenGLMatrix(btrot);
+			Mat4<btScalar> btrot;
+			ent->bbody->getWorldTransform().getOpenGLMatrix(static_cast<float*>(btrot));
 			ret.translatein(vw->cs->tocs(vec3_000, parent));
-			ret = ret * rot * btrot;
+			ret = ret * rot * btrot.cast<double>();
 		}
 	}
 	return ret;
@@ -430,10 +415,12 @@ int TorusStationEntity::takedamage(double damage, int hitpart){
 	int ret = 1;
 	if(0 < health && health - damage <= 0){
 		ret = 0;
+#ifndef DEDICATED
 		WarSpace *ws = *w;
 		if(ws){
 			AddTeline3D(ws->tell, this->pos, vec3_000, 30., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 		}
+#endif
 		astro->flags |= CS_DELETE;
 		w = NULL;
 	}
@@ -450,84 +437,6 @@ Docker *TorusStationEntity::getDockerInt(){
 static const double cutheight = .2;
 static const double floorHeight = .00375;
 static const double floorStep = .0005;
-
-static const GLdouble vertex[][3] = {
-  { -1.0, 0.0, -1.0 },
-  { 1.0, 0.0, -1.0 },
-  { 1.0, 1.0, -1.0 },
-  { -1.0, 1.0, -1.0 },
-  { -1.0, 0.0, 1.0 },
-  { 1.0, 0.0, 1.0 },
-  { 1.0, 1.0, 1.0 },
-  { -1.0, 1.0, 1.0 }
-};
-
-static const int edges[][2] = {
-  { 0, 1 },
-  { 1, 2 },
-  { 2, 3 },
-  { 3, 0 },
-  { 4, 5 },
-  { 5, 6 },
-  { 6, 7 },
-  { 7, 4 },
-  { 0, 4 },
-  { 1, 5 },
-  { 2, 6 },
-  { 3, 7 }
-};
-
-static const int face[][4] = {
-	{2,3,7,6},
-/*	{0,1,5,4},*/
-
-	{0,3,2,1},
-	{5,6,7,4},
-	{4,7,3,0},
-	{1,2,6,5},
-
-	{1,2,3,0},
-	{4,7,6,5},
-	{0,3,7,4},
-	{5,6,2,1},
-};
-static const double normal[][3] = {
-	{ 0.,  1.,  0.},
-/*	{ 0., -1.,  0.},*/
-
-	{ 0.,  0., -1.},
-	{ 0.,  0.,  1.},
-	{-1.,  0.,  0.},
-	{ 1.,  0.,  0.},
-
-	{ 0.,  0.,  1.},
-	{ 0.,  0., -1.},
-	{ 1.,  0.,  0.},
-	{-1.,  0.,  0.},
-
-	{ 0., -1.,  0.},
-};
-static const double texcoord[][3] = {
-	{ 0.,  0., 0.},
-	{ 0.,  1., 0.},
-	{ 1.,  1., 0.},
-	{ 1.,  0., 0.},
-};
-
-
-bool TorusStationEntity::command(EntityCommand *com){
-	if(TransportResourceCommand *trc = InterpretCommand<TransportResourceCommand>(com)){
-		astro->gases += trc->gases;
-		astro->solids += trc->solids;
-		return true;
-	}
-	if(TransportPeopleCommand *tpc = InterpretCommand<TransportPeopleCommand>(com)){
-		astro->people += tpc->people;
-		return true;
-	}
-	else		
-		return st::command(com);
-}
 
 
 
@@ -650,4 +559,14 @@ bool TorusStationWarSpace::sendMessage(Message &com){
 		return false;
 }
 
+
+#ifdef DEDICATED
+void TorusStation::predraw(const Viewer *vw){}
+void TorusStation::draw(const Viewer *vw){}
+void TorusStation::drawtra(const Viewer *vw){}
+void TorusStationEntity::draw(WarDraw *){}
+void TorusStationEntity::drawOverlay(WarDraw *){}
+Entity::Props TorusStationEntity::props()const{return st::props();}
+int TorusStationEntity::popupMenu(PopupMenu &list){return 0;}
+#endif
 

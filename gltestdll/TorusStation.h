@@ -6,6 +6,7 @@
 #include "astro.h"
 #include "Entity.h"
 #include "Docker.h"
+#include "Autonomous.h"
 #include <btBulletDynamicsCommon.h>
 extern "C"{
 #include <clib/suf/suf.h>
@@ -59,6 +60,7 @@ public:
 
 	static const double RAD;
 	static const double THICK;
+	static const int segmentCount;
 protected:
 	double rotation; ///< Rotation of the cylinder
 	int race; ///< Equivalent to ent->race
@@ -99,7 +101,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual double getHitRadius()const{return 0.5;}
+	virtual double getHitRadius()const{return TorusStation::RAD;}
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
@@ -117,8 +119,7 @@ public:
 
 protected:
 	btCompoundShape *btshape;
-	btBoxShape *wings[3];
-	btTransform wingtrans[3];
+	HitBoxList hitboxes;
 	TorusStationDocker *docker;
 	static suf_t *sufdock;
 	virtual Docker *getDockerInt();

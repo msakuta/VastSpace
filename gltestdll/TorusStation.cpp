@@ -42,8 +42,9 @@ extern "C"{
 
 using namespace gltestp;
 
-const double TorusStation::RAD = 0.15; ///< outer radius
+const double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
+const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -223,14 +224,10 @@ void TorusStation::anim(double dt){
 			ch->undock(this->ent->docker);
 		}
 	}
-	if(ws && ws->bdw && ent) if(!game->isServer() && !ent->bbody){
-		// Client won't create bbody, just assign identity transform to wingtrans.
-		for(int n = 0; n < 3; n++){
-			ent->wingtrans[n] = btTransform::getIdentity();
-		}
-	}
-	else{
-		if(!ent->bbody)
+	if(ws && ws->bdw && ent){
+		if(ent->bbody)
+			ent->bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+		else
 			ent->buildShape();
 	}
 	// Super class's methods do not assume a client can run.
@@ -299,10 +296,44 @@ void TorusStationEntity::buildShape(){
 	WarSpace *ws = *w;
 	if(ws){
 		if(!btshape){
+			/// A temporary closure that is made because it's called 3 times in this function
+			/// in different ways.
+			struct{
+				TorusStationEntity *e;
+				void process(const Vec3d &sc, const Quatd &rot, const Vec3d &pos){
+					const Vec3d tpos = rot.trans(pos);
+					btBoxShape *box = new btBoxShape(btvc(sc));
+					btTransform trans = btTransform(btqc(rot), btvc(tpos));
+					e->btshape->addChildShape(trans, box);
+
+					// Add a hitbox just like btBoxShape for bullet hit testing.
+					e->hitboxes.push_back(hitbox(tpos, rot, sc));
+				}
+			} shapeProc;
+			shapeProc.e = this;
+
 			btshape = new btCompoundShape();
 
-			btCylinderShape *cyl = new btCylinderShape(btVector3(TorusStation::RAD + .01, TorusStation::THICK, TorusStation::RAD + .01));
+			// The hub
+			const double radius = 0.030;
+			btvc hubsc = Vec3d(radius, 0.018, radius);
+			btCylinderShape *cyl = new btCylinderShape(hubsc);
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
+			hitboxes.push_back(hitbox(Vec3d(0,0,0), quat_u, hubsc));
+
+			const int segmentCount = TorusStation::segmentCount;
+			for(int i = 0; i < segmentCount; i++){
+				// The residence segments
+				shapeProc.process(Vec3d(0.04, 0.01, 0.01), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1), Vec3d(0,-0.12,0));
+
+				// The joints connecting residence segments
+				shapeProc.process(Vec3d(0.015, 0.008, 0.008),
+					Quatd::rotation((i * 2 + 1) * M_PI / segmentCount, 0, 0, 1),
+					Vec3d(0, -0.115 / cos(M_PI / segmentCount), 0));
+
+				// The spokes
+				shapeProc.process(Vec3d(0.005, 0.050, 0.005), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1), Vec3d(0,-0.07,0));
+			}
 		}
 		btTransform startTransform;
 		startTransform.setIdentity();
@@ -372,34 +403,27 @@ TorusStationEntity::~TorusStationEntity(){
 }
 
 int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-#if 1
-	double best = dt, retf;
-	int reti = 0, n;
-#endif
-	if(w && bbody){
-		btScalar btfraction;
-		btVector3 btnormal, btpos;
-		btVector3 from = btvc(src);
-		btVector3 to = btvc(src + (dir - velo) * dt);
-		if((from - to).length() < 1e-10);
-		else if(WarSpace *ws = *w){
-			btCollisionWorld::ClosestRayResultCallback callback(from, to);
-			ws->bdw->rayTest(from, to, callback);
-			if(callback.hasHit() && callback.m_collisionObject == bbody){
-				if(ret) *ret = callback.m_closestHitFraction * dt;
-				if(retp) *retp = btvc(callback.m_hitPointWorld);
-				if(retn) *retn = btvc(callback.m_hitNormalWorld);
-				return 1;
-			}
+	double best = dt;
+	int reti = 0;
+	double retf;
+	// Test hits with hitboxes.
+	for(int n = 0; n < hitboxes.size(); n++){
+		hitbox &hb = hitboxes[n];
+		Vec3d org;
+		Quatd rot;
+		org = this->rot.trans(hb.org) + this->pos;
+		rot = this->rot * hb.rot;
+		int i;
+		double sc[3];
+		for(i = 0; i < 3; i++)
+			sc[i] = hb.sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
 		}
-/*		else if(singleObjectRaytest(bbody, from, to, btfraction, btnormal, btpos)){
-			if(ret) *ret = btfraction * dt;
-			if(retp) *retp = btvc(btpos);
-			if(retn) *retn = btvc(btnormal);
-			return 1;
-		}*/
 	}
-	return 0;
+	return reti;
 }
 
 int TorusStationEntity::takedamage(double damage, int hitpart){

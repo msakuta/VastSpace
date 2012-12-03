@@ -190,10 +190,10 @@ void TorusStationEntity::draw(WarDraw *wd){
 		DrawMQOPose(loadHubModel(), NULL);
 		glPopMatrix();
 
-		const int cutnum = 8;
-		for(int i = 0; i < cutnum; i++){
+		const int segmentCount = TorusStation::segmentCount;
+		for(int i = 0; i < segmentCount; i++){
 			glPushMatrix();
-			glRotatef(i * 360 / cutnum, 0, 0, 1);
+			glRotatef(i * 360 / segmentCount, 0, 0, 1);
 			glTranslated(0, -0.12, 0.);
 			gldScaled(dscale);
 			glRotatef(90, 0, 1, 0);
@@ -201,8 +201,8 @@ void TorusStationEntity::draw(WarDraw *wd){
 			glPopMatrix();
 
 			glPushMatrix();
-			glRotatef((2 * i + 1) * 180 / cutnum, 0, 0, 1);
-			glTranslated(0, -0.115 / cos(M_PI / cutnum), 0.);
+			glRotatef((2 * i + 1) * 180 / segmentCount, 0, 0, 1);
+			glTranslated(0, -0.115 / cos(M_PI / segmentCount), 0.);
 			gldScaled(dscale);
 			glRotatef(90, 0, 1, 0);
 			DrawMQOPose(loadJointModel(), NULL);

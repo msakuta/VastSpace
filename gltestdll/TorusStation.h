@@ -57,7 +57,8 @@ public:
 	static const double THICK;
 	static const double stackInterval;
 	static const int segmentCount;
-	static const int stackCount = 2;
+	static const int stackCount = 2; ///< Count of torus wheels stacked along the rotation axis.
+	static const bool alternatingDirection = false; ///< Alternate rotation directions of the stacked wheels.
 
 	static double getZOffsetStack(int n){
 		return (n - (stackCount - 1) * 0.5) * stackInterval;

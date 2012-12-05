@@ -189,7 +189,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 			// The wheels rotate in alternating directions to keep the net angular momentum neutral.
 			// To simulate this, the phase goes twice as fast as the main wheel's rotation in the opposite
 			// direction.
-			double phase = n % 2 == 0 ? -2. * astro->rotation * deg_per_rad : 0.;
+			double phase = TorusStation::alternatingDirection && n % 2 == 0 ? -2. * astro->rotation * deg_per_rad : 0.;
 			glPushMatrix();
 			glRotatef(phase, 0, 0, 1);
 			glTranslated(0, 0., zpos);

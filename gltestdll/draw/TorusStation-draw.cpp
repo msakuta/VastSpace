@@ -183,30 +183,39 @@ void TorusStationEntity::draw(WarDraw *wd){
 
 //		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
-		glPushMatrix();
-		glTranslated(0, 0., 0.);
-		gldScaled(dscale);
-		glRotatef(90, 0, 1, 0);
-		DrawMQOPose(loadHubModel(), NULL);
-		glPopMatrix();
-
-		const int segmentCount = TorusStation::segmentCount;
-		for(int i = 0; i < segmentCount; i++){
+		const int stackCount = TorusStation::stackCount;
+		for(int n = 0; n < stackCount; n++){
+			double zpos = TorusStation::getZOffsetStack(n);
+			// The wheels rotate in alternating directions to keep the net angular momentum neutral.
+			// To simulate this, the phase goes twice as fast as the main wheel's rotation in the opposite
+			// direction.
+			double phase = n % 2 == 0 ? -2. * astro->rotation * deg_per_rad : 0.;
 			glPushMatrix();
-			glRotatef(i * 360 / segmentCount, 0, 0, 1);
-			glTranslated(0, -0.12, 0.);
+			glRotatef(phase, 0, 0, 1);
+			glTranslated(0, 0., zpos);
 			gldScaled(dscale);
 			glRotatef(90, 0, 1, 0);
-			DrawMQOPose(model, NULL);
+			DrawMQOPose(loadHubModel(), NULL);
 			glPopMatrix();
 
-			glPushMatrix();
-			glRotatef((2 * i + 1) * 180 / segmentCount, 0, 0, 1);
-			glTranslated(0, -0.115 / cos(M_PI / segmentCount), 0.);
-			gldScaled(dscale);
-			glRotatef(90, 0, 1, 0);
-			DrawMQOPose(loadJointModel(), NULL);
-			glPopMatrix();
+			const int segmentCount = TorusStation::segmentCount;
+			for(int i = 0; i < segmentCount; i++){
+				glPushMatrix();
+				glRotatef(phase + i * 360 / segmentCount, 0, 0, 1);
+				glTranslated(0, -0.12, zpos);
+				gldScaled(dscale);
+				glRotatef(90, 0, 1, 0);
+				DrawMQOPose(model, NULL);
+				glPopMatrix();
+
+				glPushMatrix();
+				glRotatef(phase + (2 * i + 1) * 180 / segmentCount, 0, 0, 1);
+				glTranslated(0, -0.115 / cos(M_PI / segmentCount), zpos);
+				gldScaled(dscale);
+				glRotatef(90, 0, 1, 0);
+				DrawMQOPose(loadJointModel(), NULL);
+				glPopMatrix();
+			}
 		}
 
 		glPopMatrix();

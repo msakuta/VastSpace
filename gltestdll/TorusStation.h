@@ -55,7 +55,13 @@ public:
 
 	static const double RAD;
 	static const double THICK;
+	static const double stackInterval;
 	static const int segmentCount;
+	static const int stackCount = 2;
+
+	static double getZOffsetStack(int n){
+		return (n - (stackCount - 1) * 0.5) * stackInterval;
+	}
 protected:
 	double rotation; ///< Rotation of the cylinder
 	int race; ///< Equivalent to ent->race

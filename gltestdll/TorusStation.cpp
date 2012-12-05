@@ -31,6 +31,7 @@ using namespace gltestp;
 
 const double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
+const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
 const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
 
 
@@ -208,19 +209,6 @@ void TorusStation::clientUpdate(double dt){
 	anim(dt);
 }
 
-static const avec3_t pos0[] = {
-	{0., 17., 0.},
-	{3.25, 16., 0.},
-	{3.25, 12., 0.},
-	{3.25, 8., 0.},
-	{3.25, 4., 0.},
-	{3.25, .0, 0.},
-	{3.25, -4., 0.},
-	{3.25, -8., 0.},
-	{3.25, -12., 0.},
-	{3.25, -16., 0.},
-	{0., -17., 0.},
-};
 
 
 
@@ -290,18 +278,24 @@ void TorusStationEntity::buildShape(){
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 			hitboxes.push_back(hitbox(Vec3d(0,0,0), quat_u, hubsc));
 
-			const int segmentCount = TorusStation::segmentCount;
-			for(int i = 0; i < segmentCount; i++){
-				// The residence segments
-				shapeProc.process(Vec3d(0.04, 0.01, 0.01), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1), Vec3d(0,-0.12,0));
+			const int stackCount = TorusStation::stackCount;
+			for(int n = 0; n < stackCount; n++){
+				double zpos = TorusStation::getZOffsetStack(n);
+				const int segmentCount = TorusStation::segmentCount;
+				for(int i = 0; i < segmentCount; i++){
+					// The residence segments
+					shapeProc.process(Vec3d(0.04, 0.01, 0.01), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
+						Vec3d(0, -0.12, zpos));
 
-				// The joints connecting residence segments
-				shapeProc.process(Vec3d(0.015, 0.008, 0.008),
-					Quatd::rotation((i * 2 + 1) * M_PI / segmentCount, 0, 0, 1),
-					Vec3d(0, -0.115 / cos(M_PI / segmentCount), 0));
+					// The joints connecting residence segments
+					shapeProc.process(Vec3d(0.015, 0.008, 0.008),
+						Quatd::rotation((i * 2 + 1) * M_PI / segmentCount, 0, 0, 1),
+						Vec3d(0, -0.115 / cos(M_PI / segmentCount), zpos));
 
-				// The spokes
-				shapeProc.process(Vec3d(0.005, 0.050, 0.005), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1), Vec3d(0,-0.07,0));
+					// The spokes
+					shapeProc.process(Vec3d(0.005, 0.050, 0.005), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
+						Vec3d(0, -0.07, zpos));
+				}
 			}
 		}
 		btTransform startTransform;

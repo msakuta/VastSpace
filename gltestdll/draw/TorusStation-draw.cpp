@@ -162,6 +162,18 @@ Model *TorusStationEntity::loadJointModel(){
 	return model;
 }
 
+Model *TorusStationEntity::loadSpokeModel(){
+	static OpenGLState::weak_ptr<bool> init;
+	static Model *model = NULL;
+
+	if(!init){
+		model = LoadMQOModel(modPath() << "models/TorusStation_Spoke.mqo");
+		init.create(*openGLState);
+	}
+
+	return model;
+}
+
 
 // Docking bays
 void TorusStationEntity::draw(WarDraw *wd){
@@ -202,15 +214,18 @@ void TorusStationEntity::draw(WarDraw *wd){
 			for(int i = 0; i < segmentCount; i++){
 				glPushMatrix();
 				glRotatef(phase + i * 360 / segmentCount, 0, 0, 1);
-				glTranslated(0, -0.12, zpos);
+				glTranslated(0, -TorusStation::RAD + segmentOffset, zpos);
 				gldScaled(dscale);
 				glRotatef(90, 0, 1, 0);
 				DrawMQOPose(model, NULL);
+				glTranslatef(0, segmentBaseHeight / dscale, 0);
+				glScaled(1., (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / dscale / 1000., 1.);
+				DrawMQOPose(loadSpokeModel(), NULL);
 				glPopMatrix();
 
 				glPushMatrix();
 				glRotatef(phase + (2 * i + 1) * 180 / segmentCount, 0, 0, 1);
-				glTranslated(0, -0.115 / cos(M_PI / segmentCount), zpos);
+				glTranslated(0, (-TorusStation::RAD + segmentOffset + 0.005) / cos(M_PI / segmentCount), zpos);
 				gldScaled(dscale);
 				glRotatef(90, 0, 1, 0);
 				DrawMQOPose(loadJointModel(), NULL);

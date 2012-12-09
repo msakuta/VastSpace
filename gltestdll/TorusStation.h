@@ -95,6 +95,9 @@ public:
 	typedef Entity st;
 	friend class TorusStation;
 	static unsigned classid;
+	static const double hubRadius; ///< Really should be derived from hub model
+	static const double segmentOffset; ///< Offset of model from TorusStation::RAD
+	static const double segmentBaseHeight; ///< Really should be derived from segment model
 	TorusStation *astro;
 	TorusStationEntity(Game *game);
 	TorusStationEntity(WarField *w, TorusStation &astro);
@@ -128,6 +131,7 @@ protected:
 	static Model *loadModel();
 	static Model *loadHubModel();
 	static Model *loadJointModel();
+	static Model *loadSpokeModel();
 };
 
 /// \brief The docking port object  for TorusStation.

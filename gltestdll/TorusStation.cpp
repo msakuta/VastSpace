@@ -29,10 +29,10 @@ extern "C"{
 
 using namespace gltestp;
 
-const double TorusStation::RAD = 0.13; ///< outer radius
+const double TorusStation::RAD = 0.24; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
-const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
+const int TorusStation::segmentCount = 16; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -219,6 +219,9 @@ void TorusStation::clientUpdate(double dt){
 
 unsigned TorusStationEntity::classid = registerClass("TorusStationEntity", Conster<TorusStationEntity>);
 
+const double TorusStationEntity::hubRadius = 0.03; // Really should be derived from hub model
+const double TorusStationEntity::segmentOffset = 0.02; // Offset of model from TorusStation::RAD
+const double TorusStationEntity::segmentBaseHeight = 0.01; // Really should be derived from segment model
 
 void TorusStationEntity::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -285,16 +288,17 @@ void TorusStationEntity::buildShape(){
 				for(int i = 0; i < segmentCount; i++){
 					// The residence segments
 					shapeProc.process(Vec3d(0.04, 0.01, 0.01), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
-						Vec3d(0, -0.12, zpos));
+						Vec3d(0, -TorusStation::RAD + segmentOffset, zpos));
 
 					// The joints connecting residence segments
 					shapeProc.process(Vec3d(0.015, 0.008, 0.008),
 						Quatd::rotation((i * 2 + 1) * M_PI / segmentCount, 0, 0, 1),
-						Vec3d(0, -0.115 / cos(M_PI / segmentCount), zpos));
+						Vec3d(0, (-TorusStation::RAD + segmentOffset + 0.005) / cos(M_PI / segmentCount), zpos));
 
 					// The spokes
-					shapeProc.process(Vec3d(0.005, 0.050, 0.005), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
-						Vec3d(0, -0.07, zpos));
+					shapeProc.process(Vec3d(0.005, (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / 2., 0.005),
+						Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
+						Vec3d(0, (-TorusStation::RAD + segmentBaseHeight + segmentOffset) / 2. - hubRadius, zpos));
 				}
 			}
 		}

@@ -30,15 +30,11 @@ extern "C"{
 
 using namespace gltestp;
 
-const double TorusStation::RAD = 0.13; ///< outer radius
+double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
 const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
-double TorusStation::modelScale = 0.0001;
-double TorusStation::hitRadius = RAD;
-double TorusStation::maxHealthValue = 1e6;
 double TorusStation::defaultMass = 1e10;
-GLuint TorusStation::overlayDisp = 0;
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -82,11 +78,9 @@ void TorusStation::init(){
 	static bool initialized = false;
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/TorusStation.nut"),
-			SingleDoubleProcess(modelScale, "modelScale") <<=
-			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
-			SingleDoubleProcess(defaultMass, "mass") <<=
-			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			Autonomous::DrawOverlayProcess(overlayDisp)
+			// RAD is not necessarily equivalent to hit radius, but it's easier to think that way.
+			SingleDoubleProcess(RAD, "hitRadius", false) <<=
+			SingleDoubleProcess(defaultMass, "mass")
 			);
 		initialized = true;
 	}
@@ -239,6 +233,10 @@ unsigned TorusStationEntity::classid = registerClass("TorusStationEntity", Const
 const double TorusStationEntity::hubRadius = 0.03; // Really should be derived from hub model
 const double TorusStationEntity::segmentOffset = 0.02; // Offset of model from TorusStation::RAD
 const double TorusStationEntity::segmentBaseHeight = 0.01; // Really should be derived from segment model
+double TorusStationEntity::modelScale = 0.0001;
+double TorusStationEntity::hitRadius = 0.13;
+double TorusStationEntity::maxHealthValue = 1e6;
+GLuint TorusStationEntity::overlayDisp = 0;
 
 void TorusStationEntity::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -373,9 +371,11 @@ bool TorusStation::readFile(StellarContext &sc, int argc, const char *argv[]){
 
 
 TorusStationEntity::TorusStationEntity(Game *game) : st(game), btshape(NULL){
+	init();
 }
 
 TorusStationEntity::TorusStationEntity(WarField *w, TorusStation &astro) : st(w), astro(&astro), btshape(NULL){
+	init();
 	health = maxhealth();
 	race = astro.race;
 	docker = new TorusStationDocker(this);
@@ -384,6 +384,26 @@ TorusStationEntity::TorusStationEntity(WarField *w, TorusStation &astro) : st(w)
 TorusStationEntity::~TorusStationEntity(){
 	astro->ent = NULL;
 	delete btshape;
+}
+
+void TorusStationEntity::init(){
+	static bool initialized = false;
+	if(!initialized){
+		// Initialization with the script is totally redundant in that it's interpreted in
+		// TorusStation::init() too. But we couldn't help having two-pass initialization
+		// because TorusStation (CoordSys) and TorusStationEntity (Entity) have different
+		// timing for construction in the startup process. 
+		// We must defer invocation of DrawOverlayProcess until OpenGL context is initialized.
+		// Also, if we happen to have no corresponding Entity for this TorusStation, we don't
+		// need to load overlayDisp.
+		SqInit(game->sqvm, modPath() << _SC("models/TorusStation.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			Autonomous::DrawOverlayProcess(overlayDisp)
+			);
+		initialized = true;
+	}
 }
 
 int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){

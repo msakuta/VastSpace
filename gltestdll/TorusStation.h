@@ -53,7 +53,7 @@ public:
 
 	static int &g_shader_enable;
 
-	static const double RAD;
+	static double RAD;
 	static const double THICK;
 	static const double stackInterval;
 	static const int segmentCount;
@@ -85,11 +85,7 @@ protected:
 	void endWallTexture();
 
 	static Model *model;
-	static double modelScale;
-	static double hitRadius;
 	static double defaultMass;
-	static double maxHealthValue;
-	static GLuint overlayDisp;
 };
 
 
@@ -111,16 +107,17 @@ public:
 	TorusStation *astro;
 	TorusStationEntity(Game *game);
 	TorusStationEntity(WarField *w, TorusStation &astro);
+	void init();
 	virtual ~TorusStationEntity();
 	virtual const char *classname()const{return "TorusStationEntity";} ///< Overridden because getStatic() is not defined
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual double getHitRadius()const{return TorusStation::RAD;}
+	virtual double getHitRadius()const{return hitRadius;}
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
-	virtual double maxhealth()const{return TorusStation::maxHealthValue;}
+	virtual double maxhealth()const{return maxHealthValue;}
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart);
 	virtual void draw(wardraw_t *);
@@ -136,6 +133,10 @@ protected:
 	HitBoxList hitboxes;
 	TorusStationDocker *docker;
 	static suf_t *sufdock;
+	static double modelScale;
+	static double hitRadius;
+	static double maxHealthValue;
+	static GLuint overlayDisp;
 	virtual Docker *getDockerInt();
 	void buildShape();
 	static Model *loadModel();

@@ -101,7 +101,7 @@ void TorusStation::drawtra(const Viewer *vw){
 
 
 void TorusStationEntity::drawOverlay(wardraw_t *){
-	glCallList(TorusStation::overlayDisp);
+	glCallList(overlayDisp);
 }
 
 Entity::Props TorusStationEntity::props()const{
@@ -179,7 +179,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 	{
 		Model *model = loadModel();
 		static const double normal[3] = {0., 1., 0.};
-		const double dscale = TorusStation::modelScale;
+		const double dscale = modelScale;
 		static const GLdouble rotaxis[16] = {
 			-1,0,0,0,
 			0,0,-1,0,

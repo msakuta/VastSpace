@@ -29,10 +29,10 @@ extern "C"{
 
 using namespace gltestp;
 
-const double TorusStation::RAD = 0.24; ///< outer radius
+const double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
-const int TorusStation::segmentCount = 16; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
+const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -298,7 +298,7 @@ void TorusStationEntity::buildShape(){
 					// The spokes
 					shapeProc.process(Vec3d(0.005, (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / 2., 0.005),
 						Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
-						Vec3d(0, (-TorusStation::RAD + segmentBaseHeight + segmentOffset) / 2. - hubRadius, zpos));
+						Vec3d(0, (-TorusStation::RAD + hubRadius + segmentBaseHeight + segmentOffset) / 2. - hubRadius, zpos));
 				}
 			}
 		}

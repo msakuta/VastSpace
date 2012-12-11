@@ -150,6 +150,18 @@ Model *TorusStationEntity::loadHubModel(){
 	return model;
 }
 
+Model *TorusStationEntity::loadHubEndModel(){
+	static OpenGLState::weak_ptr<bool> init;
+	static Model *model = NULL;
+
+	if(!init){
+		model = LoadMQOModel(modPath() << "models/TorusStation_HubEnd.mqo");
+		init.create(*openGLState);
+	}
+
+	return model;
+}
+
 Model *TorusStationEntity::loadJointModel(){
 	static OpenGLState::weak_ptr<bool> init;
 	static Model *model = NULL;
@@ -194,6 +206,29 @@ void TorusStationEntity::draw(WarDraw *wd){
 		gldMultQuat(rot);
 
 //		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+
+		// Phase of both hub ends
+		double endPhase = -astro->rotation * deg_per_rad;
+
+		// Hub ends are drawn separately from hub stacks.
+		// This is the "north" end, which means counterclockwise rotation seen from the pole.
+		glPushMatrix();
+		glRotatef(endPhase, 0, 0, 1);
+		glTranslated(0, 0., TorusStation::getZOffsetStack(0) - 0.025 - 0.018);
+		gldScaled(dscale);
+		glScalef(-1., 1., -1.);
+		glRotatef(90, 0, 1, 0);
+		DrawMQOPose(loadHubEndModel(), NULL);
+		glPopMatrix();
+
+		// This is the "south" end.
+		glPushMatrix();
+		glRotatef(endPhase, 0, 0, 1);
+		glTranslated(0, 0., TorusStation::getZOffsetStack(TorusStation::stackCount - 1) + 0.025 + 0.018);
+		gldScaled(dscale);
+		glRotatef(90, 0, 1, 0);
+		DrawMQOPose(loadHubEndModel(), NULL);
+		glPopMatrix();
 
 		const int stackCount = TorusStation::stackCount;
 		for(int n = 0; n < stackCount; n++){

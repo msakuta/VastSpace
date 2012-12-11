@@ -130,6 +130,7 @@ protected:
 	void buildShape();
 	static Model *loadModel();
 	static Model *loadHubModel();
+	static Model *loadHubEndModel();
 	static Model *loadJointModel();
 	static Model *loadSpokeModel();
 };

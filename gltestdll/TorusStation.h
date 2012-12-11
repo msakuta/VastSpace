@@ -63,6 +63,10 @@ public:
 	static double getZOffsetStack(int n){
 		return (n - (stackCount - 1) * 0.5) * stackInterval;
 	}
+
+	/// \brief Retrieves root path for this extension module.
+	static gltestp::dstring modPath(){return "gltestdll/";}
+
 protected:
 	double rotation; ///< Rotation of the cylinder
 	int race; ///< Equivalent to ent->race
@@ -79,7 +83,13 @@ protected:
 	GLuint compileWallTexture();
 	void beginWallTexture(const Viewer *);
 	void endWallTexture();
+
 	static Model *model;
+	static double modelScale;
+	static double hitRadius;
+	static double defaultMass;
+	static double maxHealthValue;
+	static GLuint overlayDisp;
 };
 
 
@@ -110,7 +120,7 @@ public:
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
-	virtual double maxhealth()const{return 1e6;}
+	virtual double maxhealth()const{return TorusStation::maxHealthValue;}
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart);
 	virtual void draw(wardraw_t *);

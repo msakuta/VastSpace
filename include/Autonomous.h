@@ -145,12 +145,14 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+public: // Publish the process object temporarily for the Entities that do not inherit Autonomous.
 	class EXPORT DrawOverlayProcess : public SqInitProcess{
 	public:
 		GLuint &disp;
 		DrawOverlayProcess(GLuint &disp) : disp(disp){}
 		virtual void process(HSQUIRRELVM v)const;
 	};
+protected:
 
 	/// \brief Static information for navigation lights.
 	struct Navlight{

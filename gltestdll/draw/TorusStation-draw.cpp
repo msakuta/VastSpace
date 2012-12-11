@@ -101,21 +101,7 @@ void TorusStation::drawtra(const Viewer *vw){
 
 
 void TorusStationEntity::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.09, -.02);
-	glVertex2d( .09, -.02);
-	glVertex2d( .10,  .00);
-	glVertex2d( .09,  .02);
-	glVertex2d(-.09,  .02);
-	glEnd();
-	glBegin(GL_LINES);
-	glVertex2d( .09,  .02);
-	glVertex2d(-.09,  .10);
-	glVertex2d( .09, -.02);
-	glVertex2d(-.09, -.10);
-	glEnd();
+	glCallList(TorusStation::overlayDisp);
 }
 
 Entity::Props TorusStationEntity::props()const{
@@ -193,7 +179,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 	{
 		Model *model = loadModel();
 		static const double normal[3] = {0., 1., 0.};
-		static const double dscale = .0001;
+		const double dscale = TorusStation::modelScale;
 		static const GLdouble rotaxis[16] = {
 			-1,0,0,0,
 			0,0,-1,0,

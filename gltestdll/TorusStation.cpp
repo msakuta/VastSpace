@@ -17,6 +17,7 @@
 #include "Game.h"
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
+#include "Autonomous.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -33,6 +34,11 @@ const double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
 const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
+double TorusStation::modelScale = 0.0001;
+double TorusStation::hitRadius = RAD;
+double TorusStation::maxHealthValue = 1e6;
+double TorusStation::defaultMass = 1e10;
+GLuint TorusStation::overlayDisp = 0;
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -73,6 +79,17 @@ TorusStation::~TorusStation(){
 }
 
 void TorusStation::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("models/TorusStation.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
+			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			Autonomous::DrawOverlayProcess(overlayDisp)
+			);
+		initialized = true;
+	}
 	rotation = 0.;
 	sun_phase = 0.;
 	ent = NULL;
@@ -80,7 +97,7 @@ void TorusStation::init(){
 	absmag = 30.;
 	rad = RAD;
 	orbit_home = NULL;
-	mass = 1e10;
+	mass = defaultMass;
 	basecolor = Vec4f(1., .5, .5, 1.);
 	omg.clear();
 	

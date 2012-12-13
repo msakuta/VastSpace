@@ -139,11 +139,8 @@ protected:
 	static GLuint overlayDisp;
 	virtual Docker *getDockerInt();
 	void buildShape();
-	static Model *loadModel();
-	static Model *loadHubModel();
-	static Model *loadHubEndModel();
-	static Model *loadJointModel();
-	static Model *loadSpokeModel();
+	struct ModelSet;
+	static const ModelSet &loadModels();
 };
 
 /// \brief The docking port object  for TorusStation.

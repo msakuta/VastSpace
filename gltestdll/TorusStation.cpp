@@ -204,12 +204,12 @@ void TorusStation::anim(double dt){
 		ent->velo = this->velo;
 		ent->omg = this->omg;
 		ent->mass = this->mass;
-	}
-	if(ws && ws->bdw && ent){
-		if(ent->bbody)
-			ent->bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
-		else
-			ent->buildShape();
+		if(ws->bdw){
+			if(ent->bbody)
+				ent->bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+			else
+				ent->buildShape();
+		}
 	}
 	// Super class's methods do not assume a client can run.
 	if(game->isServer())

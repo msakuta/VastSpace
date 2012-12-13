@@ -112,72 +112,41 @@ Entity::Props TorusStationEntity::props()const{
 	return ret;		
 }
 
+/// \brief An internal structure to hold a set of required models.
+struct TorusStationEntity::ModelSet{
+	Model *residence;
+	Model *hub;
+	Model *hubEnd;
+	Model *joint;
+	Model *spoke;
+};
 
-Model *TorusStationEntity::loadModel(){
+/// \brief Loads the component models and returns them in a ModelSet.
+///
+/// Be aware that the returned object is static and shared among instances.
+const TorusStationEntity::ModelSet &TorusStationEntity::loadModels(){
 	static OpenGLState::weak_ptr<bool> init;
+	static ModelSet ret = {NULL};
 
 	if(!init){
-		TorusStation::model = LoadMQOModel(modPath() << "models/TorusStation.mqo");
+		ret.residence = LoadMQOModel(modPath() << "models/TorusStation.mqo");
+		ret.hub = LoadMQOModel(modPath() << "models/TorusStation_Hub.mqo");
+		ret.hubEnd = LoadMQOModel(modPath() << "models/TorusStation_HubEnd.mqo");
+		ret.joint = LoadMQOModel(modPath() << "models/TorusStation_Joint.mqo");
+		ret.spoke = LoadMQOModel(modPath() << "models/TorusStation_Spoke.mqo");
 		init.create(*openGLState);
 	}
 
-	return TorusStation::model;
+	return ret; // Return reference to the static object.
 }
 
-Model *TorusStationEntity::loadHubModel(){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/TorusStation_Hub.mqo");
-		init.create(*openGLState);
-	}
-
-	return model;
-}
-
-Model *TorusStationEntity::loadHubEndModel(){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/TorusStation_HubEnd.mqo");
-		init.create(*openGLState);
-	}
-
-	return model;
-}
-
-Model *TorusStationEntity::loadJointModel(){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/TorusStation_Joint.mqo");
-		init.create(*openGLState);
-	}
-
-	return model;
-}
-
-Model *TorusStationEntity::loadSpokeModel(){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/TorusStation_Spoke.mqo");
-		init.create(*openGLState);
-	}
-
-	return model;
-}
 
 
 // Docking bays
 void TorusStationEntity::draw(WarDraw *wd){
 #if 1
 	{
-		Model *model = loadModel();
+		const ModelSet &models = loadModels();
 		static const double normal[3] = {0., 1., 0.};
 		const double dscale = modelScale;
 		static const GLdouble rotaxis[16] = {
@@ -204,7 +173,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 		gldScaled(dscale);
 		glScalef(-1., 1., -1.);
 		glRotatef(90, 0, 1, 0);
-		DrawMQOPose(loadHubEndModel(), NULL);
+		DrawMQOPose(models.hubEnd, NULL);
 		glPopMatrix();
 
 		// This is the "south" end.
@@ -213,7 +182,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 		glTranslated(0, 0., TorusStation::getZOffsetStack(TorusStation::stackCount - 1) + 0.025 + 0.018);
 		gldScaled(dscale);
 		glRotatef(90, 0, 1, 0);
-		DrawMQOPose(loadHubEndModel(), NULL);
+		DrawMQOPose(models.hubEnd, NULL);
 		glPopMatrix();
 
 		const int stackCount = TorusStation::stackCount;
@@ -228,7 +197,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 			glTranslated(0, 0., zpos);
 			gldScaled(dscale);
 			glRotatef(90, 0, 1, 0);
-			DrawMQOPose(loadHubModel(), NULL);
+			DrawMQOPose(models.hub, NULL);
 			glPopMatrix();
 
 			const int segmentCount = TorusStation::segmentCount;
@@ -238,10 +207,10 @@ void TorusStationEntity::draw(WarDraw *wd){
 				glTranslated(0, -TorusStation::RAD + segmentOffset, zpos);
 				gldScaled(dscale);
 				glRotatef(90, 0, 1, 0);
-				DrawMQOPose(model, NULL);
+				DrawMQOPose(models.residence, NULL);
 				glTranslatef(0, segmentBaseHeight / dscale, 0);
 				glScaled(1., (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / dscale / 1000., 1.);
-				DrawMQOPose(loadSpokeModel(), NULL);
+				DrawMQOPose(models.spoke, NULL);
 				glPopMatrix();
 
 				glPushMatrix();
@@ -249,7 +218,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 				glTranslated(0, (-TorusStation::RAD + segmentOffset + 0.005) / cos(M_PI / segmentCount), zpos);
 				gldScaled(dscale);
 				glRotatef(90, 0, 1, 0);
-				DrawMQOPose(loadJointModel(), NULL);
+				DrawMQOPose(models.joint, NULL);
 				glPopMatrix();
 			}
 		}

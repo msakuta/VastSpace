@@ -291,7 +291,8 @@ void TorusStationEntity::buildShape(){
 
 			// The hub
 			const double radius = 0.030;
-			btvc hubsc = Vec3d(radius, 0.018, radius);
+			btvc hubsc = Vec3d(radius, radius, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.);
+//			btBoxShape *cyl = new btBoxShape(hubsc); // Test box shape for visualization
 			btCylinderShape *cyl = new btCylinderShape(hubsc);
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 			hitboxes.push_back(hitbox(Vec3d(0,0,0), quat_u, hubsc));

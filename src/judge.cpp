@@ -234,6 +234,88 @@ int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm
 	return ret;
 }
 
+/// \brief An argument mapping function that calls jHitCylinderPos with some default values.
+///
+/// Probably we no longer need this sort of thing, since a C++ class Vec3d is already used in the argument list,
+/// so we cannot support C in the first place, thus default values can be used without worrying about breaking compatibility.
+bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf){
+	return jHitCylinderPos(org, axis, radius, src, dir, dt, retf, NULL, NULL);
+}
+
+/// \brief Checks and returns hit position among a ray and a cylinder.
+///
+/// This function is under construction; it may compile, but probably won't work correctly.
+bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist){
+	double c, D, d, t0, t1, dirslen;
+	bool ret;
+
+	Vec3d del = src - org;
+
+	Vec3d naxis = axis.norm(); // Normalized axis
+
+	// The ray vector projected on the planes at the both ends of the cylinder.
+	Vec3d plray = del - naxis * del.sp(naxis);
+
+	/* scalar product of the ray and the vector. */
+	double b = dir.sp(plray);
+
+	/* ??? */
+	dirslen = plray.slen();
+	c = dirslen * (plray.slen() - radius * radius);
+
+	// We can always return the distance of the ray and the sphere's center.
+	if(dist){
+		*dist = (plray - b / dirslen * plray).len();
+		// Return the nearest point to the sphere's center on the line if no hit detected.
+		if(pos)
+			*pos = plray - b / dirslen * plray;
+	}
+
+	/* discriminant?? */
+	D = b * b - c;
+	if(D <= 0)
+		return false;
+
+	d = sqrt(D);
+
+	/* we need vector equation's parameter value to determine hitness with line segment */
+	if(dirslen == 0.)
+		return false;
+	t0 = (-b - d) / dirslen;
+	t1 = (-b + d) / dirslen;
+
+	ret = 0. <= t1 && /*t0 < dt || 0. <= t1 &&*/ t0 < dt;
+
+	// Time parameter values for points intersecting positive and negative planes.
+	double tp = dir.sp(axis) / (del - axis).sp(axis);
+	double tn = dir.sp(axis) / (del + axis).sp(axis);
+
+	double distp = (plray * tp - (src - naxis * naxis.sp(src))).len();
+	double distn = (plray * tn - (src - naxis * naxis.sp(src))).len();
+
+	if(ret && (pos || retf)){
+		if(t0 < 0 /*&& dt < t1*/){
+			if(pos)
+				(*pos).clear();
+			if(retf)
+				*retf = 0.;
+		}
+/*		else if(t0 < 0)
+			VECSCALE(pos, dir, t1);*/
+		else /*if(dt <= t1)*/{
+			if(pos)
+				*pos = dir * t0;
+			if(retf)
+				*retf = t0;
+		}
+		if(pos)
+			*pos += src;
+	}
+
+	return ret;
+}
+
+
 // Intersection of triangle(O,a,b) and line segment(org,end)
 double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end, double *bcoord, double *ccoord){
 	// Acquire the third axis (= normal of the triangle plane)

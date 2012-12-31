@@ -295,7 +295,7 @@ void TorusStationEntity::buildShape(){
 //			btBoxShape *cyl = new btBoxShape(hubsc); // Test box shape for visualization
 			btCylinderShape *cyl = new btCylinderShape(hubsc);
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
-			hitboxes.push_back(hitbox(Vec3d(0,0,0), quat_u, hubsc));
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0,0), Vec3d(0,0, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.), radius));
 
 			const int stackCount = TorusStation::stackCount;
 			for(int n = 0; n < stackCount; n++){
@@ -425,7 +425,17 @@ int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad,
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
-			reti = i + 1;
+			reti = n + 1;
+		}
+	}
+	for(int n = 0; n < hitcylinders.size(); n++){
+		HitCylinder &hb = hitcylinders[n];
+		Vec3d org = this->rot.trans(hb.org) + this->pos;
+		Vec3d axis = this->rot.trans(hb.axis);
+		if((jHitCylinderPos(org, axis, hb.radius, src, dir, best, &retf, retp, 0)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = n + 1;
 		}
 	}
 	return reti;

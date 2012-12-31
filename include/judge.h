@@ -1,4 +1,6 @@
-/* 3-Dimentional hit judgement routines */
+/** \file judge.h
+ * \brief 3-Dimentional hit judgement routines
+ */
 #ifndef JUDGE_H
 #define JUDGE_H
 #include "export.h"
@@ -22,6 +24,13 @@ struct hitbox{
 
 EXPORT extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);
 EXPORT extern int jHitBoxes(const hitbox &hb1, const hitbox &hb2, const Vec3d &rvelo, const Vec3d &romg, double dt, double *hitt = NULL);
+
+struct HitShape : hitbox{
+	enum{BoxShape, CylinderShape} shape;
+};
+
+EXPORT bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf);
+EXPORT bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist);
 
 /* Object tree */
 union unode;

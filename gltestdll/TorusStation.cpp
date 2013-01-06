@@ -298,7 +298,7 @@ void TorusStationEntity::buildShape(){
 			hitcylinders.push_back(HitCylinder(Vec3d(0,0,0), Vec3d(0,0, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.), radius));
 
 			const int stackCount = TorusStation::stackCount;
-			if(0)for(int n = 0; n < stackCount; n++){
+			for(int n = 0; n < stackCount; n++){
 				double zpos = TorusStation::getZOffsetStack(n);
 				const int segmentCount = TorusStation::segmentCount;
 				for(int i = 0; i < segmentCount; i++){

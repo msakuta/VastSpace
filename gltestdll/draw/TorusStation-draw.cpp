@@ -78,21 +78,14 @@ void TorusStation::draw(const Viewer *vw){
 void TorusStation::drawtra(const Viewer *vw){
 #if 0
 	GLcull *gc = vw->gc, *gc2 = vw->gclist[0];
-	double x0, srad;
-	double pixels;
 
-/*	for(csint = children; csint; csint = csint->next) if(csint->vft == &g_spacecolony_s){
-		break;
-	}
-	if(!csint || !csint->w)
-		return;*/
 	Vec3d pos = vw->cs->tocs(avec3_000, this);
 	if(gc->cullFrustum(pos, 50.))
 		return;
-	pixels = fabs(gc->scale(pos)) * 32.;
+	double pixels = fabs(gc->scale(pos)) * 32.;
 	if(pixels < 1)
 		return;
-#endif
+
 	const double radius = 0.030;
 	const double al = 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.;
 	const int n = 16;
@@ -112,6 +105,7 @@ void TorusStation::drawtra(const Viewer *vw){
 	}
 
 	glPopMatrix();
+#endif
 }
 
 

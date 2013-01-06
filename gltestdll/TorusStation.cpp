@@ -436,6 +436,7 @@ int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad,
 			best = retf;
 			if(ret) *ret = retf;
 			reti = n + 1;
+			if(retn) *retn = axis.norm();
 		}
 	}
 	return reti;

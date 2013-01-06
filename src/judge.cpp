@@ -242,13 +242,23 @@ bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3
 	return jHitCylinderPos(org, axis, radius, src, dir, dt, retf, NULL, NULL);
 }
 
+
+static Vec3d projectPlane(const Vec3d &axis, const Vec3d &v){
+	return v - v.sp(axis) * axis;
+}
+
 /// \brief Checks and returns hit position among a ray and a cylinder.
 ///
 /// This function is under construction; it may compile, but probably won't work correctly.
 bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist){
-	double c, D, d, t0, t1, dirslen;
-	bool ret;
 
+	// Ignore the case that the axis vector is invalid.
+	if(axis.slen() <= 0.){
+		assert(0 < axis.slen()); // This case seems like a bug.
+		return false;
+	}
+
+	// Convert the source position of the ray to the cylinder's local coordinates.
 	Vec3d del = src - org;
 
 	Vec3d naxis = axis.norm(); // Normalized axis
@@ -260,8 +270,8 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 	double b = dir.sp(plray);
 
 	/* ??? */
-	dirslen = plray.slen();
-	c = dirslen * (plray.slen() - radius * radius);
+	double dirslen = plray.slen();
+	double c = dirslen * (plray.slen() - radius * radius);
 
 	// We can always return the distance of the ray and the sphere's center.
 	if(dist){
@@ -272,47 +282,80 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 	}
 
 	/* discriminant?? */
-	D = b * b - c;
+	double D = b * b - c;
+	// If the ray won't hit the cylinder extended infinitely along the axis,
+	// it won't hit any part of the finite cylinder.
+	// It's no use checking planes at both ends of the cylinder, so we exit here.
 	if(D <= 0)
 		return false;
 
-	d = sqrt(D);
+	double d = sqrt(D);
 
 	/* we need vector equation's parameter value to determine hitness with line segment */
 	if(dirslen == 0.)
 		return false;
-	t0 = (-b - d) / dirslen;
-	t1 = (-b + d) / dirslen;
+	double t0 = (-b - d) / dirslen; // The 'earlier' solution
+	double t1 = (-b + d) / dirslen; // The 'later' solution
 
-	ret = 0. <= t1 && /*t0 < dt || 0. <= t1 &&*/ t0 < dt;
+	bool buried = false;
 
-	// Time parameter values for points intersecting positive and negative planes.
-	double tp = dir.sp(axis) / (del - axis).sp(axis);
-	double tn = dir.sp(axis) / (del + axis).sp(axis);
+	double t = dt;
 
-	double distp = (plray * tp - (src - naxis * naxis.sp(src))).len();
-	double distn = (plray * tn - (src - naxis * naxis.sp(src))).len();
+	// This block checks t0, but if both of intersecting points are behind the ray's line segment,
+	// we've already gone through the cylinder's side (but not necessarily the top and the bottom),
+	// so we will ignore the case.
+	if(0. < t1){
+		// If the ray's starting point is buried inside the cylinder's volume,
+		// consider the point is the starting point.
+		if(t0 < 0.)
+			t0 = 0.;
+		// If the earlier intersecting point is within cylinder's length along the axis,
+		// consider it hits.
+		if(t0 < dt && fabs(naxis.sp(dir * t0 + del)) < axis.len())
+			t = t0, buried = true;
+	}
 
-	if(ret && (pos || retf)){
-		if(t0 < 0 /*&& dt < t1*/){
-			if(pos)
-				(*pos).clear();
-			if(retf)
-				*retf = 0.;
+	// Same goes for later intersecting point.
+//	if(0 <= t1 && t1 < t && fabs(naxis.sp(dir * t1 + del)) < axis.len())
+//		t = t1, ret = 2;
+
+	// Dot product of dir and axis. It can be easily zero.
+	double dir_dot_axis = dir.sp(axis);
+
+	if(!buried && dir_dot_axis != 0.){
+		// Time parameter values for points intersecting positive and negative planes.
+		double tp = (del - axis).sp(axis) / dir_dot_axis;
+		double tn = (del + axis).sp(axis) / dir_dot_axis;
+
+		// Distances from the cylinder axis.
+		double distp = projectPlane(naxis, plray * tp).len();
+		double distn = projectPlane(naxis, plray * tn).len();
+
+		if(distp < radius){
+			if(0 <= tp && tp < t)
+				t = tp;
 		}
-/*		else if(t0 < 0)
-			VECSCALE(pos, dir, t1);*/
-		else /*if(dt <= t1)*/{
+
+		if(distn < radius){
+			if(0 <= tn && tn < t)
+				t = tn;
+		}
+	}
+
+	if(t < dt && (pos || retf)){
+		// If the ray's starting point is buried inside the cylinder's volume,
+		// return time parameter value 0.
+		{
 			if(pos)
-				*pos = dir * t0;
+				*pos = dir * t;
 			if(retf)
-				*retf = t0;
+				*retf = t;
 		}
 		if(pos)
 			*pos += src;
 	}
 
-	return ret;
+	return t != dt;
 }
 
 

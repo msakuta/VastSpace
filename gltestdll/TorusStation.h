@@ -132,7 +132,7 @@ public:
 		Vec3d org; ///< Origin position of the cylinder.
 		Vec3d axis; ///< Axis and half-length of the cylinder.
 		double radius;
-		HitCylinder(Vec3d aorg = Vec3d(0,0,0), Vec3d aaxis = Quatd(0,0,0,1), double radius = 0) : org(aorg), axis(aaxis), radius(0){}
+		HitCylinder(Vec3d aorg = Vec3d(0,0,0), Vec3d aaxis = Quatd(0,0,0,1), double radius = 0) : org(aorg), axis(aaxis), radius(radius){}
 	};
 
 protected:

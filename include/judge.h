@@ -30,7 +30,7 @@ struct HitShape : hitbox{
 };
 
 EXPORT bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf);
-EXPORT bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist);
+EXPORT bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, Vec3d *retn, double *dist);
 
 /* Object tree */
 union unode;

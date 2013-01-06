@@ -239,7 +239,7 @@ int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm
 /// Probably we no longer need this sort of thing, since a C++ class Vec3d is already used in the argument list,
 /// so we cannot support C in the first place, thus default values can be used without worrying about breaking compatibility.
 bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf){
-	return jHitCylinderPos(org, axis, radius, src, dir, dt, retf, NULL, NULL);
+	return jHitCylinderPos(org, axis, radius, src, dir, dt, retf, NULL, NULL, NULL);
 }
 
 
@@ -249,8 +249,24 @@ static Vec3d projectPlane(const Vec3d &axis, const Vec3d &v){
 
 /// \brief Checks and returns hit position among a ray and a cylinder.
 ///
-/// This function is under construction; it may compile, but probably won't work correctly.
-bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, double *dist){
+/// In this function, cylinder means a linear trace of a circle along an axis perpendicular to the circle's plane
+/// plus two faces at both ends of the trace. We do not treat elliptic, parabollic nor hyperbolic cylinders
+/// in this function.
+///
+/// The three faces (side, top and bottom) enclose a volume, which we want to judge intersection with a ray of light.
+///
+/// \param org The origin position vector of the cylinder. It means center of mass of the shape.
+/// \param axis The axis vector indicating axis direction of the cylinder. It also indicates
+///             the length of the cylinder by it's length times 2.
+/// \param radius The radius of the cylinder.
+/// \param src The source position vector of the ray.
+/// \param dir The direction vector of the ray. The vector equation is expressed as r = src + t * dir.
+/// \param dt The delta-time of judging intersection. All intersections outside the region [0,dt) will be discarded from the result.
+/// \param retf Returned time parameter is stored to the variable pointed to by this value. Can be NULL if not used.
+/// \param pos Returned position vector of intersecting point is stored to the variable pointed to by this value. Can be NULL if not used.
+/// \param retn Returned normal vector of intersecting point is stored to the variable pointed to by this value. Can be NULL if not used.
+/// \param dist Returned distance value between the intersecting point and the axis is stored to the variable pointed to by this value. Can be NULL if not used.
+bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const Vec3d &src, const Vec3d &dir, double dt, double *retf, Vec3d *pos, Vec3d *retn, double *dist){
 
 	// Ignore the case that the axis vector is invalid.
 	if(axis.slen() <= 0.){
@@ -297,7 +313,7 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 	double t0 = (-b - d) / dirslen; // The 'earlier' solution
 	double t1 = (-b + d) / dirslen; // The 'later' solution
 
-	bool buried = false;
+	bool sideHit = false;
 
 	double t = dt;
 
@@ -312,19 +328,18 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 		// If the earlier intersecting point is within cylinder's length along the axis,
 		// consider it hits.
 		if(t0 < dt && fabs(naxis.sp(dir * t0 + del)) < axis.len())
-			t = t0, buried = true;
+			t = t0, sideHit = true;
 	}
-
-	// Same goes for later intersecting point.
-//	if(0 <= t1 && t1 < t && fabs(naxis.sp(dir * t1 + del)) < axis.len())
-//		t = t1, ret = 2;
 
 	// Dot product of dir and axis. It can be easily zero.
 	double dir_dot_axis = dir.sp(axis);
+	double tp = -1.; // Outer scope for later use
 
-	if(!buried && dir_dot_axis != 0.){
+	// If the direction and axis vector is perpendicular (dir_dot_axis == 0), we cannot
+	// solve the intersecting point with the planes, so we just ignore the case.
+	if(!sideHit && dir_dot_axis != 0.){
 		// Time parameter values for points intersecting positive and negative planes.
-		double tp = (del - axis).sp(axis) / dir_dot_axis;
+		tp = (del - axis).sp(axis) / dir_dot_axis;
 		double tn = (del + axis).sp(axis) / dir_dot_axis;
 
 		// Distances from the cylinder axis.
@@ -342,20 +357,26 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 		}
 	}
 
-	if(t < dt && (pos || retf)){
+	if(t < dt){
 		// If the ray's starting point is buried inside the cylinder's volume,
 		// return time parameter value 0.
-		{
-			if(pos)
-				*pos = dir * t;
-			if(retf)
-				*retf = t;
-		}
 		if(pos)
-			*pos += src;
+			*pos = dir * t + src;
+		if(retf)
+			*retf = t;
+		if(retn){
+			if(sideHit)
+				*retn = projectPlane(naxis, dir * t + del).norm();
+			else if(t == tp)
+				*retn = naxis;
+			else
+				*retn = -naxis;
+		}
+		if(dist)
+			*dist = projectPlane(naxis, dir * t + del).len();
 	}
 
-	return t != dt;
+	return t < dt;
 }
 
 

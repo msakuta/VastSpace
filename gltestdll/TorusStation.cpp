@@ -432,11 +432,10 @@ int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad,
 		HitCylinder &hb = hitcylinders[n];
 		Vec3d org = this->rot.trans(hb.org) + this->pos;
 		Vec3d axis = this->rot.trans(hb.axis);
-		if((jHitCylinderPos(org, axis, hb.radius, src, dir, best, &retf, retp, 0)) && (retf < best)){
+		if((jHitCylinderPos(org, axis, hb.radius, src, dir, best, &retf, retp, retn, 0)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
 			reti = n + 1;
-			if(retn) *retn = axis.norm();
 		}
 	}
 	return reti;

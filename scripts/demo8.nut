@@ -103,7 +103,7 @@ function frameproc(dt){
 			soldier.race = 0;
 			numsol0 = (numsol0 + 1) % 10;
 		}
-		while(true && countents(cs, 1, "Soldier") < 1){
+		while(false && countents(cs, 1, "Soldier") < 1){
 			local soldier = player.cs.addent("Soldier", Vec3d((drand() - 0.5) * 0.3, gaussRand() * 0.005, 0.2 + (drand() - 0.5) * 0.10));
 			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 1;

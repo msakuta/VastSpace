@@ -343,8 +343,8 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 		double tn = (del + axis).sp(axis) / dir_dot_axis;
 
 		// Distances from the cylinder axis.
-		double distp = projectPlane(naxis, plray * tp).len();
-		double distn = projectPlane(naxis, plray * tn).len();
+		double distp = projectPlane(naxis, dir * tp + del).len();
+		double distn = projectPlane(naxis, dir * tn + del).len();
 
 		if(distp < radius){
 			if(0 <= tp && tp < t)

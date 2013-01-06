@@ -93,6 +93,25 @@ void TorusStation::drawtra(const Viewer *vw){
 	if(pixels < 1)
 		return;
 #endif
+	const double radius = 0.030;
+	const double al = 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.;
+	const int n = 16;
+	const double (*cuts)[2] = CircleCuts(n);
+	
+	glPushMatrix();
+	gldTranslate3dv(pos);
+	gldMultQuat(rot);
+
+	glColor4f(0,1,0,1);
+	for(int sign = -1; sign <= 1; sign += 2){
+		glBegin(GL_LINE_LOOP);
+		for(int i = 0; i < n; i++){
+			glVertex3d(radius * cos(i * 2 * M_PI / n), radius * sin(i * 2 * M_PI / n), sign * al);
+		}
+		glEnd();
+	}
+
+	glPopMatrix();
 }
 
 

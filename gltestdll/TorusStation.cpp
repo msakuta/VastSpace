@@ -290,13 +290,19 @@ void TorusStationEntity::buildShape(){
 
 			btshape = new btCompoundShape();
 
-			// The hub
+			// The hub's Bullet shape. Note that it's divided into 3 in form of hitcylinders.
 			const double radius = 0.030;
 			btvc hubsc = Vec3d(radius, radius, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.);
 //			btBoxShape *cyl = new btBoxShape(hubsc); // Test box shape for visualization
 			btCylinderShape *cyl = new btCylinderShape(hubsc);
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
-			hitcylinders.push_back(HitCylinder(Vec3d(0,0,0), Vec3d(0,0, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.), radius));
+
+			// The hub's main shaft rotates along with the wheels, so we must separate it from the ports.
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0,0), Vec3d(0,0, TorusStation::stackInterval * TorusStation::stackCount / 2.), radius));
+
+			// The ports at both ends of the hub. Add to hitcylinders after the hub to make their hit part greater than portHitPartOffset.
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0, 0.018 + TorusStation::stackInterval * TorusStation::stackCount / 2.), Vec3d(0,0, 0.018), radius));
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0, -(0.018 + TorusStation::stackInterval * TorusStation::stackCount / 2.)), Vec3d(0,0, 0.018), radius));
 
 			const int stackCount = TorusStation::stackCount;
 			for(int n = 0; n < stackCount; n++){
@@ -480,7 +486,8 @@ Docker *TorusStationEntity::getDockerInt(){
 
 bool TorusStationEntity::command(EntityCommand *com){
 	if(HookPosLocalToWorldCommand *lwcom = InterpretCommand<HookPosLocalToWorldCommand>(com)){
-		if(portHitPartOffset <= lwcom->hitpart){
+		// The +1 is for hub shaft, which rotates along with the wheels.
+		if(portHitPartOffset + 1 <= lwcom->hitpart){
 			Quatd lrot = rot.rotate(-astro->rotation, 0, 0, 1);
 			lwcom->pos = pos + lrot.trans(*lwcom->srcpos);
 			return true;
@@ -489,7 +496,8 @@ bool TorusStationEntity::command(EntityCommand *com){
 			return st::command(com);
 	}
 	else if(HookPosWorldToLocalCommand *lwcom = InterpretCommand<HookPosWorldToLocalCommand>(com)){
-		if(portHitPartOffset <= lwcom->hitpart){
+		// The +1 is for hub shaft, which rotates along with the wheels.
+		if(portHitPartOffset + 1 <= lwcom->hitpart){
 			Quatd lrot = rot.rotate(-astro->rotation, 0, 0, 1);
 			lwcom->pos = lrot.cnj().trans(*lwcom->srcpos - pos);
 			return true;

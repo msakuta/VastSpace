@@ -164,7 +164,7 @@ void Soldier::drawHookAndTether(WarDraw *wd){
 		Mat4d mat;
 		transform(mat);
 		Vec3d src = mat.vp3(Vec3d(-0.0001, -0.00005, 0.0));
-		Vec3d dest = hooked && hookedEntity ? hookedEntity->pos + hookedEntity->rot.trans(this->hookpos) : this->hookpos;
+		Vec3d dest = getHookPos();
 		Quatd direcRot = Quatd::direction(dest - src);
 
 		// Draw hook head model

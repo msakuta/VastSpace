@@ -785,8 +785,10 @@ void Soldier::anim(double dt){
 			Vec3d *retnorm = param->norm;
 			Vec3d pos, nh;
 			int ret = 1;
+			HookHit *hh = (HookHit*)param->hint;
+			Soldier *sol = hh->pt;
 
-			if(param->hint == pt)
+			if(sol == pt)
 				return 0;
 
 			if(!jHitSphere(pt->pos, pt->getHitRadius() + param->rad, *param->src, *param->dir, param->dt))
@@ -804,9 +806,14 @@ void Soldier::anim(double dt){
 				if(retnorm)
 					*retnorm = nh;
 			}
+			hh->hitpart = ret; // Shouldn't otjHitSphereParam have this?
 			return ret;
 		}
+
+		Soldier *pt;
+		int hitpart;
 	} hh;
+	hh.pt = this;
 
 	if(hookshot){
 		if(!hooked){
@@ -821,14 +828,22 @@ void Soldier::anim(double dt){
 			param.norm = &nh;
 			param.flags = OTJ_CALLBACK;
 			param.callback = hh.hit_callback;
-			param.hint = this;
+			param.hint = &hh;
 			if(ws->ot){
 				Entity *pt = otjEnumHitSphere(&param);
 				if(pt){
 					hooked = true;
 					hookedEntity = pt;
-					hookpos = pt->rot.itrans(hitpos - pt->pos); // Assign hook position to precisely calculated hit position. 
-					hookHitEffect(param);
+					hookhitpart = hh.hitpart;
+					HookPosWorldToLocalCommand hpcom(hh.hitpart, &hitpos);
+					if(pt->command(&hpcom)){
+						hookpos = hpcom.pos;
+						hookHitEffect(param);
+					}
+					else{
+						hookpos = pt->rot.itrans(hitpos - pt->pos); // Assign hook position to precisely calculated hit position. 
+						hookHitEffect(param);
+					}
 				}
 			}
 			else{
@@ -836,8 +851,16 @@ void Soldier::anim(double dt){
 					if(hh.hit_callback(&param, *it)){
 						hooked = true;
 						hookedEntity = *it;
-						hookpos = (*it)->rot.itrans(hitpos - (*it)->pos); // Assign hook position to precisely calculated hit position.
-						hookHitEffect(param);
+						hookhitpart = hh.hitpart;
+						HookPosWorldToLocalCommand hpcom(hh.hitpart, &hitpos);
+						if(hookedEntity->command(&hpcom)){
+							hookpos = hpcom.pos;
+							hookHitEffect(param);
+						}
+						else{
+							hookpos = (*it)->rot.itrans(hitpos - (*it)->pos); // Assign hook position to precisely calculated hit position.
+							hookHitEffect(param);
+						}
 						break;
 					}
 			}
@@ -853,7 +876,7 @@ void Soldier::anim(double dt){
 	}
 
 	if(hooked && hookedEntity){
-		Vec3d worldhookpos = hookedEntity->pos + hookedEntity->rot.trans(this->hookpos);
+		Vec3d worldhookpos = getHookPos();
 		Vec3d delta = worldhookpos - this->pos;
 		// Avoid zero division
 		if(FLT_EPSILON < delta.slen()){
@@ -1210,7 +1233,7 @@ void Soldier::anim(double dt){
 		param.norm = &nh;
 		param.flags = OTJ_CALLBACK;
 		param.callback = hh.hit_callback;
-		param.hint = this;
+		param.hint = &hh;
 		if(ws->ot){
 			Entity *pt = otjEnumHitSphere(&param);
 			if(pt && this->velo.sp(nh) < 0.){
@@ -1288,7 +1311,7 @@ void Soldier::control(const input_t *inputs, double dt){
 		}
 		else if(hookshot){
 			if(hookedEntity){
-				hookpos = hookedEntity->pos + hookedEntity->rot.trans(hookpos);
+				hookpos = getHookPos();
 				hookedEntity = NULL;
 			}
 			hookretract = true;
@@ -1394,6 +1417,27 @@ bool Soldier::command(EntityCommand *com){
 
 const Autonomous::ManeuverParams &Soldier::getManeuve()const{
 	return maneuverParams;
+}
+
+/// \brief Returns the hook's position in world coordinates.
+///
+/// The hookpos member variable means different things in occasions.
+/// This function returns the position converted in world coordinates,
+/// regardless of the cases.
+Vec3d Soldier::getHookPos(){
+	// If the hook is not shot yet, it's in your hands.
+	if(!hookshot && !hookretract)
+		return pos;
+	// If the hook is shot but not attached to anything yet, hookpos indicates its world coords.
+	if(!hooked || !hookedEntity)
+		return hookpos;
+	// Otherwise, ask the hooked Entity to convert hookpos to world coords.
+	HookPosLocalToWorldCommand hpcom(hookhitpart, &hookpos);
+	if(hookedEntity->command(&hpcom)){
+		return hpcom.pos;
+	}
+	else
+		return hookedEntity->pos + hookedEntity->rot.trans(this->hookpos);
 }
 
 
@@ -1782,3 +1826,24 @@ template<>
 void EntityCommandSq<SetSoldierRotCommand>(HSQUIRRELVM, Entity &){}
 
 IMPLEMENT_COMMAND(SetSoldierRotCommand, "SetSoldierRot")
+
+
+template<>
+void EntityCommandSq<HookPosLocalToWorldCommand>(HSQUIRRELVM, Entity &){}
+template<>
+EntityCommand *EntityCommandCreator<HookPosLocalToWorldCommand>(){
+	return NULL;
+}
+
+IMPLEMENT_COMMAND(HookPosLocalToWorldCommand, "HookPosLocalToWorld")
+
+
+template<>
+void EntityCommandSq<HookPosWorldToLocalCommand>(HSQUIRRELVM, Entity &){}
+template<>
+EntityCommand *EntityCommandCreator<HookPosWorldToLocalCommand>(){
+	return NULL;
+}
+
+IMPLEMENT_COMMAND(HookPosWorldToLocalCommand, "HookPosWorldToLocal")
+

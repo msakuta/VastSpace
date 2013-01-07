@@ -106,6 +106,7 @@ public:
 	static const double hubRadius; ///< Really should be derived from hub model
 	static const double segmentOffset; ///< Offset of model from TorusStation::RAD
 	static const double segmentBaseHeight; ///< Really should be derived from segment model
+	static const int portHitPartOffset = 100;
 	TorusStation *astro;
 	TorusStationEntity(Game *game);
 	TorusStationEntity(WarField *w, TorusStation &astro);
@@ -126,6 +127,7 @@ public:
 	virtual void drawOverlay(wardraw_t *);
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
+	virtual bool command(EntityCommand *com);
 
 	/// \brief Retrieves root path for this extension module.
 	static gltestp::dstring modPath(){return "gltestdll/";}

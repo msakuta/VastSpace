@@ -90,6 +90,7 @@ protected:
 	void reload();
 	bool findEnemy();
 	double getFov()const;
+	Vec3d getHookPos();
 
 	void hookHitEffect(const otjEnumHitSphereParam &param);
 	void drawHookAndTether(WarDraw *);
@@ -120,6 +121,7 @@ protected:
 	Firearm *arms[2];
 	Vec3d hookpos;
 	Vec3d hookvelo;
+	int hookhitpart;
 	WeakPtr<Entity> hookedEntity;
 	bool hookshot;
 	bool hooked;
@@ -220,6 +222,26 @@ struct GetGunPosCommand : public EntityCommand{
 	Vec3d pos;
 	Quatd rot;
 	Quatd gunRot; ///< A Soldier can have recoil, which makes the gun to diverse the aim.
+};
+
+struct HookPosWorldToLocalCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(HookPosWorldToLocalCommand, EntityCommand);
+	HookPosWorldToLocalCommand(int hitpart = 0, const Vec3d *srcpos = NULL) : supported(false), hitpart(hitpart), srcpos(srcpos){}
+	bool supported; ///< If the queried Entity supports this EntitiyCommand, 
+	const int hitpart;
+	const Vec3d *srcpos;
+	Vec3d pos;
+	Quatd rot;
+};
+
+struct HookPosLocalToWorldCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(HookPosLocalToWorldCommand, EntityCommand);
+	HookPosLocalToWorldCommand(int hitpart = 0, const Vec3d *srcpos = NULL) : supported(false), hitpart(hitpart), srcpos(srcpos){}
+	bool supported;
+	const int hitpart;
+	const Vec3d *srcpos;
+	Vec3d pos;
+	Quatd rot;
 };
 
 

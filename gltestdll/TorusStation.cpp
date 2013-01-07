@@ -18,6 +18,7 @@
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
 #include "Autonomous.h"
+#include "Soldier.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -449,7 +450,7 @@ int TorusStationEntity::tracehit(const Vec3d &src, const Vec3d &dir, double rad,
 		if((jHitCylinderPos(org, axis, hb.radius, src, dir, best, &retf, retp, retn, 0)) && (retf < best)){
 			best = retf;
 			if(ret) *ret = retf;
-			reti = n + 1;
+			reti = n + portHitPartOffset;
 		}
 	}
 	return reti;
@@ -475,6 +476,29 @@ int TorusStationEntity::takedamage(double damage, int hitpart){
 
 Docker *TorusStationEntity::getDockerInt(){
 	return docker;
+}
+
+bool TorusStationEntity::command(EntityCommand *com){
+	if(HookPosLocalToWorldCommand *lwcom = InterpretCommand<HookPosLocalToWorldCommand>(com)){
+		if(portHitPartOffset <= lwcom->hitpart){
+			Quatd lrot = rot.rotate(-astro->rotation, 0, 0, 1);
+			lwcom->pos = pos + lrot.trans(*lwcom->srcpos);
+			return true;
+		}
+		else
+			return st::command(com);
+	}
+	else if(HookPosWorldToLocalCommand *lwcom = InterpretCommand<HookPosWorldToLocalCommand>(com)){
+		if(portHitPartOffset <= lwcom->hitpart){
+			Quatd lrot = rot.rotate(-astro->rotation, 0, 0, 1);
+			lwcom->pos = lrot.cnj().trans(*lwcom->srcpos - pos);
+			return true;
+		}
+		else
+			return st::command(com);
+	}
+	else
+		return st::command(com);
 }
 
 

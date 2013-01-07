@@ -406,6 +406,9 @@ bool Soldier::buildBody(){
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 		bbody = new btRigidBody(rbInfo);
+
+		// Set angular factor to 0 to prevent collisions from changing the character's direction.
+		bbody->setAngularFactor(0.);
 	}
 	return true;
 }

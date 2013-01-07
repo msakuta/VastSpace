@@ -8,8 +8,8 @@ if(!earthlo)
 universe.paused = false;
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 
-local des = player.cs.addent("Destroyer", Vec3d(1.0, 0, 0.5));
-des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
+//local des = player.cs.addent("Destroyer", Vec3d(1.0, 0, 0.5));
+//des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 
 function drand(){
 	return rand().tofloat() / RAND_MAX;

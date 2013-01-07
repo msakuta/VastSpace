@@ -206,8 +206,12 @@ void TorusStation::anim(double dt){
 		ent->omg = this->omg;
 		ent->mass = this->mass;
 		if(ws->bdw){
-			if(ent->bbody)
-				ent->bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+			if(ent->bbody){
+				// This is now a task of EntityMotionState.
+/*				ent->bbody->setWorldTransform(btTransform(btqc(rot), btvc(pos)));
+				ent->bbody->setLinearVelocity(btvc(ent->velo));
+				ent->bbody->setAngularVelocity(btvc(ent->omg));*/
+			}
 			else
 				ent->buildShape();
 		}
@@ -327,11 +331,13 @@ void TorusStationEntity::buildShape(){
 				}
 			}
 		}
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
+//		btTransform startTransform;
+//		startTransform.setIdentity();
+//		startTransform.setOrigin(btvc(pos));
 
-		mass = 1e10;
+		// The station has a mass as an astronomical object of course, but it doesn't
+		// in Bullet dynamics world.
+		double mass = 0;
 
 		//rigidbody is dynamic if and only if mass is non zero, otherwise static
 		bool isDynamic = (mass != 0.f);
@@ -340,18 +346,44 @@ void TorusStationEntity::buildShape(){
 		if (isDynamic)
 			btshape->calculateLocalInertia(mass,localInertia);
 
+		/// Motion state that transports Bullet's world transform to Entity and
+		/// vice versa.
+		class EntityMotionState : public btMotionState{
+		public:
+			/// The Entity should never be deleted before bbody, so this may not be
+			/// necessary to be a WeakPtr.
+			WeakPtr<Entity> e;
+			EntityMotionState(Entity *e) : e(e){}
+			void getWorldTransform(btTransform &tr)const{
+				if(e){
+					tr.setOrigin(btvc(e->pos));
+					tr.setRotation(btqc(e->rot));
+				}
+			}
+			void setWorldTransform(const btTransform &tr){
+				if(e){
+					e->pos = btvc(tr.getOrigin());
+					e->rot = btqc(tr.getRotation());
+				}
+			}
+		};
+
 		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		// ...
+		// Honestly, although the example codes recommend using motion states, I don't feel like using them,
+		// because we can update the bbody in every frame in anim() and currently Bullet's simulation step is synchronized
+		// with the Game engine (thus no interpolation is needed). It's just waste of CPU time and memory to manage
+		// motion states. It also costs effort to maintain excess codes (I haven't understood what
+		// motion states are provided for for years).
+		// But they're required for using the function that the Bullet SDK manual calls kinematic object, so I couldn't
+		// help it.
+		EntityMotionState* myMotionState = new EntityMotionState(this);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,btshape,localInertia);
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .5;
 		bbody = new btRigidBody(rbInfo);
 
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		// Adding the body to the dynamics world will be done in st::enterField().
-//			ws->bdw->addRigidBody(bbody, 1, ~2);
-//		ws->bdw->addRigidBody(bbody);
+		// The station structure is kinematic object, which means it can move but never affected by colliding objects.
+		bbody->setCollisionFlags(bbody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+		bbody->setActivationState(DISABLE_DEACTIVATION);
 	}
 }
 

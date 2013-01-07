@@ -736,7 +736,7 @@ int StartServer(struct ServerParams *pstd, struct ServerThreadHandle *ph){
 		service.sin_family = AF_INET;
 		ipa = ntohl(service.sin_addr.s_addr = (INADDR_ANY));
 		service.sin_port = htons(pstd->port);
-		printf("server address: %d.%d.%d.%d:%hu\n",
+		printf("server address: %lu.%lu.%lu.%lu:%hu\n",
 			(ipa>>24) & 0xff,
 			(ipa>>16) & 0xff,
 			(ipa>>8) & 0xff,

@@ -77,13 +77,7 @@ void TorusStation::draw(const Viewer *vw){
 
 void TorusStation::drawtra(const Viewer *vw){
 #if 0
-	GLcull *gc = vw->gc, *gc2 = vw->gclist[0];
-
-	Vec3d pos = vw->cs->tocs(avec3_000, this);
-	if(gc->cullFrustum(pos, 50.))
-		return;
-	double pixels = fabs(gc->scale(pos)) * 32.;
-	if(pixels < 1)
+	if(cull(*vw))
 		return;
 
 	const double radius = 0.030;
@@ -157,6 +151,8 @@ const TorusStationEntity::ModelSet &TorusStationEntity::loadModels(){
 
 // Docking bays
 void TorusStationEntity::draw(WarDraw *wd){
+	if(astro->cull(*wd->vw))
+		return;
 #if 1
 	{
 		const ModelSet &models = loadModels();

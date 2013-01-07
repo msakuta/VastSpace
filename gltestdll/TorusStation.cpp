@@ -346,6 +346,20 @@ void TorusStationEntity::buildShape(){
 	}
 }
 
+/// \brief An utility method that returns if the Entity can be culled in rendering of viewing volume.
+/// \returns true if the object is culled
+bool TorusStation::cull(const Viewer &vw)const{
+	GLcull *gc = vw.gc, *gc2 = vw.gclist[0];
+
+	Vec3d pos = vw.cs->tocs(vec3_000, this);
+	if(gc->cullFrustum(pos, RAD * 2.))
+		return true;
+	double pixels = fabs(gc->scale(pos)) * RAD;
+	if(pixels < 1)
+		return true;
+	return false;
+}
+
 
 
 
@@ -462,6 +476,7 @@ int TorusStationEntity::takedamage(double damage, int hitpart){
 Docker *TorusStationEntity::getDockerInt(){
 	return docker;
 }
+
 
 
 static const double cutheight = .2;

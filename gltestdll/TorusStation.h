@@ -67,6 +67,8 @@ public:
 	/// \brief Retrieves root path for this extension module.
 	static gltestp::dstring modPath(){return "gltestdll/";}
 
+	bool cull(const Viewer &vw)const;
+
 protected:
 	double rotation; ///< Rotation of the cylinder
 	int race; ///< Equivalent to ent->race

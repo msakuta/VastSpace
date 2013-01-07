@@ -35,7 +35,7 @@ double TorusStation::RAD = 0.13; ///< outer radius
 const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
 const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
 const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
-double TorusStation::defaultMass = 1e10;
+double TorusStation::defaultMass = 1e8;
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -281,6 +281,7 @@ void TorusStationEntity::buildShape(){
 					btBoxShape *box = new btBoxShape(btvc(sc));
 					btTransform trans = btTransform(btqc(rot), btvc(tpos));
 					e->btshape->addChildShape(trans, box);
+					box->setMargin(0.04 * 0.01); // 1/100 of default margin
 
 					// Add a hitbox just like btBoxShape for bullet hit testing.
 					e->hitboxes.push_back(hitbox(tpos, rot, sc));
@@ -294,7 +295,8 @@ void TorusStationEntity::buildShape(){
 			const double radius = 0.030;
 			btvc hubsc = Vec3d(radius, radius, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.);
 //			btBoxShape *cyl = new btBoxShape(hubsc); // Test box shape for visualization
-			btCylinderShape *cyl = new btCylinderShape(hubsc);
+			btCylinderShape *cyl = new btCylinderShapeZ(hubsc);
+			cyl->setMargin(0.04 * 0.01); // 1/100 of default margin
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 
 			// The hub's main shaft rotates along with the wheels, so we must separate it from the ports.

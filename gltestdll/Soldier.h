@@ -57,6 +57,7 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
 	virtual void control(const input_t *inputs, double dt);
+	virtual bool buildBody();
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
 	virtual void drawHUD(WarDraw *);
@@ -140,7 +141,6 @@ protected:
 	static GLuint overlayDisp;
 	static double muzzleFlashRadius[2];
 	static Vec3d muzzleFlashOffset[2];
-
 };
 
 

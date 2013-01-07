@@ -2,7 +2,7 @@ modelScale <- 0.0001;
 
 hitRadius <- 0.13;
 
-mass <- 1.e10;
+mass <- 1.e8;
 
 maxhealth <- 1.e6;
 

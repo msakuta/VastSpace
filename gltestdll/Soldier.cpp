@@ -139,6 +139,13 @@ void Soldier::unserialize(UnserializeContext &usc){
 	// Restore original rotation if it's not forced from the server.
 	if(!forcedRot)
 		this->rot = oldrot;
+
+	// Update the dynamics body's parameters too.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
 }
 
 DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
@@ -324,10 +331,14 @@ void Soldier::init(){
 void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo, const Vec3d *avelo){
 	if(bbody){
 		btTransform worldTransform = bbody->getWorldTransform();
-		if(pos)
+		if(pos){
 			worldTransform.setOrigin(btvc(*pos));
-		if(rot)
+			this->pos = *pos;
+		}
+		if(rot){
 			worldTransform.setRotation(btqc(*rot));
+			this->rot = *rot;
+		}
 		bbody->setWorldTransform(worldTransform);
 	}
 	else
@@ -369,6 +380,36 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		}
 	}
 }
+
+bool Soldier::buildBody(){
+	if(!bbody){
+		static btSphereShape *shape = NULL;
+		if(!shape){
+			shape = new btSphereShape(getHitRadius());
+		}
+/*		static btBoxShape *shape = NULL;
+		if(!shape){
+			shape = new btBoxShape(getHitRadius(), getHitRadius(), getHitRadius()));
+		}*/
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+		bbody = new btRigidBody(rbInfo);
+	}
+	return true;
+}
+
 
 #if 0
 void small_brass_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
@@ -738,6 +779,7 @@ void Soldier::anim(double dt){
 				if(/*!(p->arms[0].type == arms_rpg7 && (pyrmat(pyr, mat), VECSP(normal, &mat[8]) < 0.)) &&
 					desired[0] - EPSILON <= p->pitch && p->pitch <= desired[0] + EPSILON &&
 					desired[1] - EPSILON <= pt->pyr[1] && pt->pyr[1] <= desired[1] + EPSILON &&*/
+					DBL_EPSILON < sd &&
 					(p->kick[0] + p->kick[0] + p->kick[1] * p->kick[1]) < 1. / (sd / .01 / .01) * M_PI / 8. * M_PI / 8.)
 					i |= PL_ENTER;
 			}
@@ -881,21 +923,25 @@ void Soldier::anim(double dt){
 		// Avoid zero division
 		if(FLT_EPSILON < delta.slen()){
 			Vec3d dir = delta.norm();
-			// Accelerate towards hooked point
-			velo += dir * hookPullAccel * dt;
-			if(bbody)
-				bbody->setLinearVelocity(btvc(velo));
-			if(delta.slen() < hookStopRange * hookStopRange){
-				// Rapid brake, based on the relative velocity to hooked point.
-				Vec3d tvelo = hookedEntity->velo + hookedEntity->omg.vp(hookedEntity->rot.trans(hookpos));
-				velo = tvelo + (velo - tvelo) * exp(-dt * 2.);
-				// Cancel closing velocity
-/*				velo -= velo.sp(dir) * dir;
-				if(bbody)
-					bbody->setLinearVelocity(btvc(velo));
-				hooked = false;
-				hookshot = false;
-				hookretract = true;*/
+			if(bbody){
+//				bbody->setLinearVelocity(btvc(velo));
+				bbody->applyCentralForce(btvc(dir * hookPullAccel * mass));
+				bbody->activate();
+				if(delta.slen() < hookStopRange * hookStopRange){
+					// Rapid brake, based on the relative velocity to hooked point.
+					Vec3d tvelo = hookedEntity->velo + hookedEntity->omg.vp(hookedEntity->rot.trans(hookpos));
+					Vec3d bvelo = btvc(bbody->getLinearVelocity());
+					bbody->applyCentralImpulse(btvc((tvelo + (bvelo - tvelo) * exp(-dt * 2.) - bvelo) * mass));
+				}
+			}
+			else{
+				// Accelerate toward hooked point
+				velo += dir * hookPullAccel * dt;
+				if(delta.slen() < hookStopRange * hookStopRange){
+					// Rapid brake, based on the relative velocity to hooked point.
+					Vec3d tvelo = hookedEntity->velo + hookedEntity->omg.vp(hookedEntity->rot.trans(hookpos));
+					velo = tvelo + (velo - tvelo) * exp(-dt * 2.);
+				}
 			}
 		}
 	}
@@ -1306,7 +1352,13 @@ void Soldier::control(const input_t *inputs, double dt){
 		if(!hookshot && !hookretract && !hooked){
 			hookshot = true;
 			hookpos = this->pos;
-			hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookSpeed));
+			if(bbody){
+				btTransform tr = bbody->getWorldTransform();
+				tr.setOrigin(btVector3(0,0,0));
+				hookvelo = btvc(bbody->getLinearVelocity() + tr * (btVector3(0,0,-hookSpeed)));
+			}
+			else
+				hookvelo = this->velo + this->rot.trans(Vec3d(0,0,-hookSpeed));
 			hooked = false;
 		}
 		else if(hookshot){

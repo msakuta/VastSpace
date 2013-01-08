@@ -1,3 +1,7 @@
+/** \file judge.cpp
+ * \brief Implementation of 3-Dimentional hit judgement routines.
+ * \sa include/judge.h
+ */
 #include "judge.h"
 #include "astro.h"
 #include "Viewer.h"
@@ -242,7 +246,10 @@ bool jHitCylinder(const Vec3d &org, const Vec3d &axis, double radius, const Vec3
 	return jHitCylinderPos(org, axis, radius, src, dir, dt, retf, NULL, NULL, NULL);
 }
 
-
+/// \brief Returns a vector projected onto a given plane.
+/// \param axis The normal vector of the plane.
+/// \param v The vector that gets projected onto the plane.
+/// \returns Projected vector.
 static Vec3d projectPlane(const Vec3d &axis, const Vec3d &v){
 	return v - v.sp(axis) * axis;
 }
@@ -282,10 +289,10 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 	// The ray vector projected on the planes at the both ends of the cylinder.
 	Vec3d plray = del - naxis * del.sp(naxis);
 
-	/* scalar product of the ray and the vector. */
+	// Scalar product of the ray and the projected vector.
 	double b = dir.sp(plray);
 
-	/* ??? */
+	// Solve the equation to obtain the vector equation's parameter.
 	double dirslen = plray.slen();
 	double c = dirslen * (plray.slen() - radius * radius);
 
@@ -297,7 +304,7 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 			*pos = plray - b / dirslen * plray;
 	}
 
-	/* discriminant?? */
+	// Discriminant of the 2nd order equation
 	double D = b * b - c;
 	// If the ray won't hit the cylinder extended infinitely along the axis,
 	// it won't hit any part of the finite cylinder.
@@ -307,13 +314,14 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 
 	double d = sqrt(D);
 
-	/* we need vector equation's parameter value to determine hitness with line segment */
+	// Now actually obtain solution. Be sure to avoid zero division.
 	if(dirslen == 0.)
 		return false;
 	double t0 = (-b - d) / dirslen; // The 'earlier' solution
 	double t1 = (-b + d) / dirslen; // The 'later' solution
 
-	bool sideHit = false;
+	// Enum variable to keep track of the face that the ray hits.
+	enum{HitNone, HitSide, HitNegative, HitPositive} hitFace = HitNone;
 
 	double t = dt;
 
@@ -328,32 +336,28 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 		// If the earlier intersecting point is within cylinder's length along the axis,
 		// consider it hits.
 		if(t0 < dt && fabs(naxis.sp(dir * t0 + del)) < axis.len())
-			t = t0, sideHit = true;
+			t = t0, hitFace = HitSide;
 	}
 
 	// Dot product of dir and axis. It can be easily zero.
 	double dir_dot_axis = dir.sp(axis);
-	double tp = -1.; // Outer scope for later use
 
 	// If the direction and axis vector is perpendicular (dir_dot_axis == 0), we cannot
 	// solve the intersecting point with the planes, so we just ignore the case.
-	if(!sideHit && dir_dot_axis != 0.){
+	if(hitFace != HitSide && dir_dot_axis != 0.) for(int j = 0; j < 2; j++){
+		int sign = j * 2 - 1;
+
 		// Time parameter values for points intersecting positive and negative planes.
-		tp = (del - axis).sp(axis) / dir_dot_axis;
-		double tn = (del + axis).sp(axis) / dir_dot_axis;
+		double tpn = (del - sign * axis).sp(axis) / dir_dot_axis;
 
 		// Distances from the cylinder axis.
-		double distp = projectPlane(naxis, dir * tp + del).len();
-		double distn = projectPlane(naxis, dir * tn + del).len();
+		double dist = projectPlane(naxis, dir * tpn + del).len();
 
-		if(distp < radius){
-			if(0 <= tp && tp < t)
-				t = tp;
-		}
-
-		if(distn < radius){
-			if(0 <= tn && tn < t)
-				t = tn;
+		if(dist < radius){
+			if(0 <= tpn && tpn < t){
+				t = tpn;
+				hitFace = j == 0 ? HitNegative : HitPositive;
+			}
 		}
 	}
 
@@ -365,9 +369,9 @@ bool jHitCylinderPos(const Vec3d &org, const Vec3d &axis, double radius, const V
 		if(retf)
 			*retf = t;
 		if(retn){
-			if(sideHit)
+			if(hitFace == HitSide)
 				*retn = projectPlane(naxis, dir * t + del).norm();
-			else if(t == tp)
+			else if(hitFace == HitPositive)
 				*retn = naxis;
 			else
 				*retn = -naxis;

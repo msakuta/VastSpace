@@ -490,7 +490,6 @@ void Soldier::drawHUD(WarDraw *wd){
 
 	// If we have no Player, almost nothing can be drawn.
 	if(player){
-		int tkills, tdeaths, ekills, edeaths;
 		amat4_t projmat;
 		int w = wd->vw->vp.w;
 		int h = wd->vw->vp.h;
@@ -570,28 +569,38 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%s", arms[0]->classname());
 			glRasterPos3d(-left - 200. / m, - 12. / m, -1);
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
-//			glRasterPos3d(-left - 200. / m, bottom + 40. / m, -1);
-//			gldprintf("%c ???", this->weapon ? '>' : ' ');
 		}
 
-		glRasterPos3d(left, -bottom - 20. / m, -0.);
+		glRasterPos3d(left + 20. / m, -bottom - 40. / m, -0.);
 		gldprintf("health: %g", health);
-//		glRasterPos3d(left, -bottom - 40. / m, -0.);
-//		sprintf(buf, "shots: %d", shoots2);
-//		putstring(buf);
-//		glRasterPos3d(left, -bottom - 60. / m, -0.);
-//		sprintf(buf, "kills: %d", kills);
-//		putstring(buf);
-//		glRasterPos3d(left, -bottom - 80. / m, -0.);
-//		sprintf(buf, "deaths: %d", deaths);
-//		putstring(buf);
+
+		// Health bar
+		{
+			static const double width = 0.5;
+			const double x0 = left + 20. / m;
+			const double tilt = 10. / m;
+			const double height = 20. / m;
+			const double y0 = -bottom - 60. / m;
+			const double y1 = y0 + height;
+			const double shadowShift = 4. / m;
+			double f = health / maxhealth();
+			double g = width * f;
+			glBegin(GL_QUADS);
+			glColor4f(1,0,0,0.75);
+			glVertex2d(x0 + shadowShift, y0 - shadowShift);
+			glVertex2d(x0 + shadowShift + tilt, y1 - shadowShift);
+			glVertex2d(x0 + shadowShift + width + tilt, y1 - shadowShift);
+			glVertex2d(x0 + shadowShift + width, y0 - shadowShift);
+			glColor4f(0,1,0,0.75);
+			glVertex2d(x0, y0);
+			glVertex2d(x0 + tilt, y1);
+			glVertex2d(x0 + g + tilt, y1);
+			glVertex2d(x0 + g, y0);
+			glEnd();
+		}
 
 		glRasterPos3d(left, bottom + 10. / m, -0.);
 		gldprintf("cooldown: %g", p->cooldown2);
-//		glRasterPos3d(left, bottom + 30. / m, -0.);
-//		gldprintf("ammo: %d", p->arms[0]->ammo);
-//		glRasterPos3d(left, bottom + 50. / m, -0.);
-//		gldprintf("angle: %g", deg_per_rad * this->pyr[1]);
 
 		if(p->damagephase != 0.){
 			glColor4f(1., 0., 0., MIN(.5, p->damagephase * .5));

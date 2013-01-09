@@ -490,17 +490,13 @@ void Soldier::drawHUD(WarDraw *wd){
 
 	// If we have no Player, almost nothing can be drawn.
 	if(player){
-		GLint vp[4];
-		int w, h, m;
-		double left, bottom, *pyr;
 		int tkills, tdeaths, ekills, edeaths;
-		Entity *pt2;
 		amat4_t projmat;
-		glGetIntegerv(GL_VIEWPORT, vp);
-		w = vp[2], h = vp[3];
-		m = w < h ? h : w;
-		left = -(double)w / m;
-		bottom = -(double)h / m;
+		int w = wd->vw->vp.w;
+		int h = wd->vw->vp.h;
+		int m = wd->vw->vp.m;
+		double left = -(double)w / m;
+		double bottom = -(double)h / m;
 
 		glGetDoublev(GL_PROJECTION_MATRIX, projmat);
 		glMatrixMode(GL_PROJECTION);

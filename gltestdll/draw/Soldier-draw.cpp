@@ -607,19 +607,6 @@ void Soldier::drawHUD(WarDraw *wd){
 			glEnd();
 		}
 
-#if 0
-		if(controller){
-			glTranslated(0,0,-1);
-			glRotated(deg_per_rad * wf->pl->pyr[2], 0., 0., 1.);
-			glRotated(deg_per_rad * (wf->pl->pyr[0] + p->pitch), 1., 0., 0.);
-			glRotated(deg_per_rad * wf->pl->pyr[1], 0., 1., 0.);
-			glTranslated(0,0,1);
-/*			glRotated(deg_per_rad * pt->pyr[2], 0., 0., 1.);
-			glRotated(deg_per_rad * pt->pyr[0], 1., 0., 0.);
-			glRotated(deg_per_rad * pt->pyr[1], 0., 1., 0.);*/
-		}
-#endif
-
 		// Draw crosshair
 		if(player->mover == player->cockpitview && (player->getChaseCamera() == 0 || player->getChaseCamera() == 3)){
 			double precision = 2. * (arms[0] ? arms[0]->bulletVariance() / getFov() : 0.001);
@@ -632,6 +619,52 @@ void Soldier::drawHUD(WarDraw *wd){
 			glVertex3d(0.,      - precision, -0.);
 			glVertex3d(0.,  .15 + precision, -0.);
 			glVertex3d(0.,        precision, -0.);
+			glEnd();
+		}
+
+		// Draw the length of the hook tether.
+		if(hookshot || hookretract || hooked){
+			static const double hookwidth = 0.040;
+			double y0 = 0.2 - (double)h / m;
+			double y1 = y0 + 0.025;
+			double len = (getHookPos() - this->pos).len();
+			double f = len / hookRange * (1. - hookwidth);
+
+			glBegin(GL_QUADS);
+			// Hook tether
+			glColor4f(1,1,1,0.75);
+			glVertex2d(-.5, y0);
+			glVertex2d(-.5, y1);
+			glVertex2d(-.5 + f, y1);
+			glVertex2d(-.5 + f, y0);
+			// Hook end
+			glVertex2d(-.5 + f, y0 - 0.025);
+			glVertex2d(-.5 + f, y1 + 0.025);
+			glVertex2d(-.5 + f + 0.01, y1 + 0.025);
+			glVertex2d(-.5 + f + 0.01, y0 - 0.025);
+			glEnd();
+
+			// Hook claws
+			glBegin(GL_TRIANGLES);
+			glVertex2d(-.5 + f + 0.012, y1 + 0.025);
+			glVertex2d(-.5 + f + hookwidth, y1 + 0.010);
+			glVertex2d(-.5 + f + 0.012, y1 - 0.005);
+			glVertex2d(-.5 + f + 0.012, y0 + 0.005);
+			glVertex2d(-.5 + f + hookwidth, y0 - 0.010);
+			glVertex2d(-.5 + f + 0.012, y0 - 0.025);
+			glEnd();
+
+			// Print the current length in meters. Tweak printed width if you change hookRage's order of magnitude.
+			glRasterPos2d(-.5, y1 + 0.025);
+			gldprintf("%5.1lf/%5.1lf m", len * 1e3, hookRange * 1e3);
+
+			// Hook left length
+			glBegin(GL_QUADS);
+			glColor4f(1,0,0,0.75f);
+			glVertex2d(-.5 + f + hookwidth, y0);
+			glVertex2d(-.5 + f + hookwidth, y1);
+			glVertex2d( .5, y1);
+			glVertex2d( .5, y0);
 			glEnd();
 		}
 

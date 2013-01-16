@@ -659,7 +659,7 @@ void Soldier::drawHUD(WarDraw *wd){
 			glVertex2d(-.5 + f + 0.012, y0 - 0.025);
 			glEnd();
 
-			// Print the current length in meters. Tweak printed width if you change hookRage's order of magnitude.
+			// Print the current length in meters. Tweak printed width if you change hookRange's order of magnitude.
 			glRasterPos2d(-.5, y1 + 0.025);
 			gldprintf("%5.1lf/%5.1lf m", len * 1e3, hookRange * 1e3);
 

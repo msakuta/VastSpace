@@ -926,6 +926,26 @@ void Soldier::anim(double dt){
 		// Avoid zero division
 		if(FLT_EPSILON < delta.slen()){
 			Vec3d dir = delta.norm();
+
+			Vec3d bvelo = bbody ? btvc(bbody->getLinearVelocity()) : this->velo;
+			double sp = dir.sp(bvelo);
+			// If your tether extends to maximum length and you're going to go further away,
+			// stop the movement in an instant. (beware of great G!)
+			// If we do not have this rule, you'll be thrown away in great speed when attached
+			// to a fast-moving platform.
+			if(hookRange * hookRange < delta.slen() && sp < 0.){
+				this->pos += (delta.len() - hookRange) * dir;
+				bvelo -= sp * dir;
+				if(bbody){
+					btTransform tr = bbody->getCenterOfMassTransform();
+					tr.setOrigin(btvc(this->pos));
+					bbody->setCenterOfMassTransform(tr);
+					bbody->setLinearVelocity(btvc(bvelo));
+				}
+				else
+					this->velo = bvelo;
+			}
+
 			if(bbody){
 //				bbody->setLinearVelocity(btvc(velo));
 				bbody->applyCentralForce(btvc(dir * hookPullAccel * mass));

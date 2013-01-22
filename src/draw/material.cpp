@@ -631,8 +631,8 @@ suf_t *CallLoadSUF(const char *fname){
 namespace gltestp{
 
 //static std::map<TextureKey, TextureBind> textures;
-
-static std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> > gstc;
+typedef std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> > TCBMap;
+static TCBMap gstc;
 
 TexCacheBind::TexCacheBind(const gltestp::dstring &aname, bool additive) : name(aname), list(0), additive(additive){
 	tex[0] = tex[1] = NULL;

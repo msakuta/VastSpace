@@ -211,11 +211,11 @@ coordsys Orbit earth{
 #		updirection 0 1 
 		warp
 		teleport
-		new astro TorusStation "Torus 1"{
+/*		new astro TorusStation "Torus 1"{
 			pos 0 0 0
 			race 2
 			bookmark "Torus 1"
-		}
+		}*/
 /*		new astro Island3 "Side 7"{
 			pos 9 0 9
 			race 2

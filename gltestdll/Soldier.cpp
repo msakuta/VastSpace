@@ -759,8 +759,17 @@ void Soldier::anim(double dt){
 			double sd = enemyDelta.slen();
 			z = sd < .01 * .01 ? 1 : -1;
 			Vec3d enemyDirection = enemyDelta.norm();
-			Vec3d forward = this->rot.trans(Vec3d(0,0,-1));
-			this->rot = this->rot.quatrotquat(forward.vp(enemyDirection) * dt);
+			Vec3d forward;
+			if(bbody){
+				btTransform tr = bbody->getCenterOfMassTransform();
+				forward = btvc(tr.getBasis() * btVector3(0,0,-1));
+				bbody->setAngularVelocity(btvc(forward.vp(enemyDirection)));
+				bbody->activate();
+			}
+			else{
+				forward = this->rot.trans(Vec3d(0,0,-1));
+				this->rot = this->rot.quatrotquat(forward.vp(enemyDirection) * dt);
+			}
 
 			// It's no use approaching closer than 10 meters.
 			// Altering inputs member is necessary because Autonomous::maneuver() use it.

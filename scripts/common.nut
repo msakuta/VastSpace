@@ -190,6 +190,20 @@ if(1){
 	print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + gltestdll);
 }
 
+// Load the surface module.
+// Note that loading here invokes loadModule() twice in self-hosted server.
+if(1){
+	local dllpath = debugBuild() ?
+		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
+		x64Build() ? "surface.dll" : "surface.dll";
+//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
+	local gltestdll = loadModule(dllpath);
+	print("\"" + dllpath + "\"l refc is " + gltestdll);
+}
+
+
+
 
 /// \brief Helper class that accumulates sequence numbers and calculate statistical values of them.
 class CStatistician{

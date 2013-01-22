@@ -5,6 +5,7 @@
 #include "war.h"
 #include "Entity.h"
 #include "Player.h"
+#include "Game.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -27,13 +28,19 @@ const CoordSys::Static &SurfaceCS::getStatic()const{
 }
 
 SurfaceCS::SurfaceCS(Game *game) : st(game), wm(NULL), map_top(NULL), mapshape(NULL){
+	init();
 }
 
 extern btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo&);
 
 SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), map_top(NULL){
+	init();
+}
+
+void SurfaceCS::init(){
 	wm = OpenHGTMap("N36W113.av.zip");
-	dmc = CacheDrawMap(wm);
+	if(game->isClient())
+		dmc = CacheDrawMap(wm);
 
 	int sx, sy;
 	wm->size(&sx, &sy);

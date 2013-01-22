@@ -205,12 +205,17 @@ coordsys Orbit earth{
 		orbits Earth
 		orbit_radius 10+6378.
 		inclination -23.4
-		argument_of_periapsis 70
+		argument_of_periapsis 90
 		ascending_node 0
-		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
+#		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
+		rotation Quatd.rotation(0.65*PI,Vec3d(1,0,0))
 #		updirection 0 1 
 		warp
 		teleport
+		new astro Surface "s"{
+			pos 0 0 0
+#			rotation Quatd.rotation(0.3*PI,Vec3d(1,0,0))
+		}
 /*		new astro TorusStation "Torus 1"{
 			pos 0 0 0
 			race 2

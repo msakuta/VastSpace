@@ -29,6 +29,7 @@ protected:
 	char *map_top;
 	btCollisionShape *mapshape;
 	btRigidBody *bbody;
+	void init();
 	friend class SurfaceWar;
 };
 

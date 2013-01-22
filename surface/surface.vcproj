@@ -330,7 +330,29 @@
 	</References>
 	<Files>
 		<Filter
-			Name="ソース ファイル"
+			Name="Headers"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
+			<File
+				RelativePath=".\drawmap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SurfaceCS.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Tank.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WarMap.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Sources"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
@@ -358,34 +380,6 @@
 				RelativePath=".\WarMap.cpp"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="ヘッダー ファイル"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-			<File
-				RelativePath=".\drawmap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\SurfaceCS.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Tank.h"
-				>
-			</File>
-			<File
-				RelativePath=".\WarMap.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="リソース ファイル"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

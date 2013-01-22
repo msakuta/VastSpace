@@ -622,7 +622,15 @@ void DrawMap::runDrawMap(){
 			static GLint shadowmap2Loc = -1;
 			static GLint shadowmap3Loc = -1;
 			static GLint bumpInvEyeMat3Loc = -1;
-			if(!g_shader_enable){
+
+			// Flag for Normal Texture Mapping, an experimental feature.
+			// It should be costing less CPU time, because you need not to blend the normal vector every frame,
+			// but it's still very incomplete that fails to work with latest game engine.
+			// It seems not a good apprach to me anyway. Probably we would move to TIN (Triangular Illegular Network).
+			static const bool enableNormalMap = false;
+
+			if(!g_shader_enable || !enableNormalMap){
+				// Do nothing
 			}
 			else do{
 				static bool shader_compile = false;
@@ -721,7 +729,8 @@ void DrawMap::runDrawMap(){
 				glCallList(generate_ground_texture());
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
 			}
-			tex0 = FindTexCache("grass.jpg")->tex[0];
+			const gltestp::TexCacheBind *tcb = gltestp::FindTexture("grass.jpg");
+			tex0 = tcb ? tcb->getTex(0) : NULL;
 		}
 #if 0
 		if(!init){
@@ -892,7 +901,8 @@ void DrawMap::runDrawMap(){
 
 	if(shaderUsed){
 		const ShaderBind *sb = vw.shadowmap->getShader();
-		sb->use();
+		if(sb)
+			sb->use();
 	}
 
 	glBindTexture(GL_TEXTURE_2D, oldtex);
@@ -1202,7 +1212,7 @@ void DrawMap::drawmap_node(const dmn *d){
 	if(flatsurface){
 		glColor3f(.5, .5, .5);
 	}
-	else if(!watersurface){
+	else if(!(watersurface || this->useNormalMap)){
 		double h = d->h - grd;
 		double r;
 		struct random_sequence rs;

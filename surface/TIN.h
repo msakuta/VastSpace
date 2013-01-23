@@ -30,7 +30,11 @@ public:
 //	} *alt;
 	void draw();
 protected:
-	std::vector<Vec3d> vertices;
+	struct Triangle{
+		Vec3d vertices[3];
+		Vec3d normal;
+	};
+	std::vector<Triangle> triangles;
 };
 
 

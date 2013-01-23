@@ -1,5 +1,6 @@
 #include "CoordSys.h"
 #include "WarMap.h"
+#include "TIN.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -29,6 +30,7 @@ protected:
 	char *map_top;
 	btCollisionShape *mapshape;
 	btRigidBody *bbody;
+	TIN *tin;
 	void init();
 	friend class SurfaceWar;
 };

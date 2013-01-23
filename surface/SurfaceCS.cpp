@@ -38,6 +38,9 @@ SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), map_top
 }
 
 void SurfaceCS::init(){
+#if 1
+	tin = new TIN("triangles.all");
+#else
 	wm = OpenHGTMap("N36W113.av.zip");
 	if(game->isClient())
 		dmc = CacheDrawMap(wm);
@@ -68,12 +71,14 @@ void SurfaceCS::init(){
 		assert(aabbMin.x() < aabbMax.x());
 	}
 	w = new SurfaceWar(this);
+#endif
 }
 
 SurfaceCS::~SurfaceCS(){
 	delete wm;
 	delete dmc;
 	delete bbody;
+	delete tin;
 }
 
 void SurfaceCS::anim(double dt){
@@ -87,12 +92,15 @@ void SurfaceCS::predraw(const Viewer *vw){
 
 /// Note that this function is going to be called at least twice a frame.
 void SurfaceCS::draw(const Viewer *vw){
-	if(wm && vw->zslice == 0){
+	if((wm || tin) && vw->zslice == 0){
 		glPushMatrix();
 		if(vw->zslice == 1){
 			gldTranslate3dv(-vw->pos);
 		}
-		drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
+		if(tin)
+			tin->draw();
+		if(wm)
+			drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
 		glPopMatrix();
 	}
 }

@@ -347,6 +347,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\TIN.h"
+				>
+			</File>
+			<File
 				RelativePath=".\WarMap.h"
 				>
 			</File>
@@ -374,6 +378,10 @@
 			</File>
 			<File
 				RelativePath=".\Tank.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TIN.cpp"
 				>
 			</File>
 			<File

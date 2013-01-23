@@ -5,6 +5,8 @@
 #define TIN_H
 #include <cpplib/vec3.h>
 #include <vector>
+#include <map>
+#include <set>
 
 class TIN{
 public:
@@ -30,11 +32,24 @@ public:
 //	} *alt;
 	void draw();
 protected:
+	struct Vertex;
+
 	struct Triangle{
-		Vec3d vertices[3];
 		Vec3d normal;
+		Vec3i vertices[3];
+		Vertex *vrefs[3];
 	};
 	std::vector<Triangle> triangles;
+
+	typedef std::set<int> VertexRefSet;
+	struct Vertex{
+		Vec3d normal;
+		VertexRefSet vset;
+	};
+	typedef std::map<Vec3i, Vertex, bool (*)(const Vec3i &, const Vec3i &)> Vertices;
+	Vertices vertices;
+
+	static bool vertexPredicate(const Vec3i &a, const Vec3i &b);
 };
 
 

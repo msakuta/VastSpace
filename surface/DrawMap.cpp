@@ -62,7 +62,6 @@ extern "C"{
 #define MAPPROFILE 1
 
 
-GLuint generate_ground_texture();
 
 static Vec3d normalmap(WarMap *wm, int i, int j, int sx, int sy, double cell){
 	Vec3d ret;

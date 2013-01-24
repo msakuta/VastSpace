@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of entry point for DrawMap processing class.
+ */
 #ifndef DRAWMAP_H
 #define DRAWMAP_H
 #include "WarMap.h"
@@ -34,6 +37,9 @@ extern unsigned shadowtex[SHADOWS];
 extern avec3_t shadoworg[SHADOWS];
 extern double shadowscale[SHADOWS];
 */
+
+GLuint generate_ground_texture();
+
 
 extern double g_maprange;
 extern int r_maprot;

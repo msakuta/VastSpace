@@ -1,10 +1,20 @@
+/** \file
+ * \brief Implementation of TIN class.
+ */
+
 #include "TIN.h"
+#include "drawmap.h"
+
+extern "C"{
+#include <clib/gl/multitex.h>
+}
 #if _WIN32
 #define exit something_meanless
 #undef exit
 #include <windows.h>
 #endif
 #include <gl/GL.h>
+#include <GL/glext.h>
 #include <fstream>
 
 TIN::TIN(const char *fname) : vertices(vertexPredicate){
@@ -65,6 +75,35 @@ double TIN::width(){
 }
 
 void TIN::draw(){
+	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_TEXTURE_BIT);
+	if(glActiveTextureARB) for(int i = 0; i < 2; i++){
+		glActiveTextureARB(i == 0 ? GL_TEXTURE0_ARB : GL_TEXTURE1_ARB);
+		glCallList(generate_ground_texture());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+		glEnable(GL_TEXTURE_2D);
+/*			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, i ? GL_MODULATE : GL_MODULATE);*/
+	}
+	else{
+		glCallList(generate_ground_texture());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+	}
+
+	glDisable(GL_COLOR_MATERIAL);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4f(0.2f, 0.2f, 0.2f, 1.f));
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, Vec4f(1.0f, 1.0f, 1.0f, 1.f));
+
+	// Texture coordinates generation doesn't work with shadow mapping shader.
+/*	glGetError();
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	GLenum err = glGetError();
+	glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
+	err = glGetError();
+	glEnable(GL_TEXTURE_GEN_S);
+	err = glGetError();
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	glTexGendv(GL_T, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
+	glEnable(GL_TEXTURE_GEN_T);*/
+
 	glPushMatrix();
 	glRotated(-90, 1, 0, 0); // Show the surface aligned on X-Z plane
 	glScaled(10./1201, 10./1201, 0.5/1201);
@@ -75,11 +114,13 @@ void TIN::draw(){
 		glNormal3dv(tri.normal);
 		for(int j = 0; j < 3; j++){
 			glNormal3dv(tri.vrefs[j]->normal);
+			glTexCoord2iv(tri.vertices[j]);
 			glVertex3iv(tri.vertices[j]);
 		}
 	}
 	glEnd();
 	glPopMatrix();
+	glPopAttrib();
 }
 
 TIN::~TIN(){

@@ -17,6 +17,30 @@ extern "C"{
 #include <GL/glext.h>
 #include <fstream>
 
+#if defined(WIN32)
+static PFNGLGENBUFFERSPROC glGenBuffers;
+static PFNGLISBUFFERPROC glIsBuffer;
+static PFNGLBINDBUFFERPROC glBindBuffer;
+static PFNGLBUFFERDATAPROC glBufferData;
+static PFNGLBUFFERSUBDATAPROC glBufferSubData;
+static PFNGLMAPBUFFERPROC glMapBuffer;
+static PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+static PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+static int initBuffers(){
+	return (!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
+		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
+		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
+		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
+		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
+		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
+		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
+		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")))
+		? -1 : 1;
+}
+#else
+static int initBuffers(){return -1;}
+#endif
+
 TIN::TIN(const char *fname) : vertices(vertexPredicate){
 	std::ifstream is(fname);
 	Triangle tri;
@@ -92,35 +116,133 @@ void TIN::draw(){
 	glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4f(0.2f, 0.2f, 0.2f, 1.f));
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, Vec4f(1.0f, 1.0f, 1.0f, 1.f));
 
-	// Texture coordinates generation doesn't work with shadow mapping shader.
-/*	glGetError();
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	GLenum err = glGetError();
-	glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
-	err = glGetError();
-	glEnable(GL_TEXTURE_GEN_S);
-	err = glGetError();
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	glTexGendv(GL_T, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
-	glEnable(GL_TEXTURE_GEN_T);*/
-
 	glPushMatrix();
 	glRotated(-90, 1, 0, 0); // Show the surface aligned on X-Z plane
-	glScaled(10./1201, 10./1201, 0.5/1201);
+	glScaled(10./1201, 10./1201, 0.05/1201);
 	glTranslated(-1201/2, -1201/2, 0);
-	glBegin(GL_TRIANGLES);
-	for(int i = 0; i < triangles.size(); i++){
-		Triangle &tri = triangles[i];
-		glNormal3dv(tri.normal);
-		for(int j = 0; j < 3; j++){
-			glNormal3dv(tri.vrefs[j]->normal);
-			glTexCoord2iv(tri.vertices[j]);
-			glVertex3iv(tri.vertices[j]);
+
+	if(0 < initBuffers()){
+		static GLuint bufs[4];
+		static bool init = false;
+		if(!init){
+			glGenBuffers(4, bufs);
+
+			typedef std::map<Vec3i, GLuint, bool (*)(const Vec3i &, const Vec3i &)> VertexIndMap;
+			VertexIndMap mapVertices(vertexPredicate);
+			std::vector<Vec3i> plainVertices;
+			std::vector<Vec3d> plainNormals;
+			for(Vertices::iterator it = vertices.begin(); it != vertices.end(); ++it){
+				mapVertices[it->first] = plainVertices.size();
+				plainVertices.push_back(it->first);
+				plainNormals.push_back(it->second.normal);
+			}
+//			std::copy(vertices.begin(), vertices.end(), plainVertices);
+//			for(Vertices::iterator it = vertices.begin(); it != vertices.end(); ++it)
+//				plainVertices.push_back(it->first);
+			std::vector<GLuint> indices;
+			for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
+				for(int j = 0; j < 3; j++){
+					VertexIndMap::iterator it2 = mapVertices.find(it->vertices[j]);
+					if(it2 != mapVertices.end()){
+						indices.push_back(it2->second);
+					}
+					else{
+						assert(0);
+					}
+				}
+			}
+
+
+			/* Vertex array */
+			glBindBuffer(GL_ARRAY_BUFFER, bufs[0]);
+			glBufferData(GL_ARRAY_BUFFER, plainVertices.size() * sizeof(plainVertices[0]), &plainVertices.front(), GL_STATIC_DRAW);
+
+			/* Normal array */
+			glBindBuffer(GL_ARRAY_BUFFER, bufs[1]);
+			glBufferData(GL_ARRAY_BUFFER, plainNormals.size() * sizeof(plainNormals[0]), &plainNormals.front(), GL_STATIC_DRAW);
+
+			/* Texture coordinates array */
+			glBindBuffer(GL_ARRAY_BUFFER, bufs[2]);
+			glBufferData(GL_ARRAY_BUFFER, plainVertices.size() * sizeof(plainVertices[0]), &plainVertices.front(), GL_STATIC_DRAW);
+
+			// Index array
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs[3]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(indices[0]), &indices.front(), GL_STATIC_DRAW);
+  
+			init = true;
 		}
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		/* Vertex array */
+		glBindBuffer(GL_ARRAY_BUFFER, bufs[0]);
+		glVertexPointer(3, GL_INT, 0, (0));
+
+		/* Normal array */
+		glBindBuffer(GL_ARRAY_BUFFER, bufs[1]);
+		glNormalPointer(GL_DOUBLE, 0, (0));
+
+		/* Texture coordinates array */
+		glBindBuffer(GL_ARRAY_BUFFER, bufs[2]);
+		glTexCoordPointer(3, GL_INT, 0, (0));
+
+		// Index array
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs[3]);
+
+		glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, 0);
+//		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
-	glEnd();
+	else{
+
+		// Display lists do not work well with tens of thousands of primitives,
+		// the vertex buffer objects cope with them better.
+	/*	static GLuint list = 0;
+		if(list){
+			glCallList(list);
+			return;
+		}
+		else{
+
+		list = glGenLists(1);
+		glNewList(list, GL_COMPILE_AND_EXECUTE);*/
+		
+		// Texture coordinates generation doesn't work with shadow mapping shader.
+	/*	glGetError();
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		GLenum err = glGetError();
+		glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
+		err = glGetError();
+		glEnable(GL_TEXTURE_GEN_S);
+		err = glGetError();
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		glTexGendv(GL_T, GL_OBJECT_PLANE, Vec4d(0,0,1,0));
+		glEnable(GL_TEXTURE_GEN_T);*/
+
+		glBegin(GL_TRIANGLES);
+		for(int i = 0; i < triangles.size(); i++){
+			Triangle &tri = triangles[i];
+			glNormal3dv(tri.normal);
+			for(int j = 0; j < 3; j++){
+				glNormal3dv(tri.vrefs[j]->normal);
+				glTexCoord2iv(tri.vertices[j]);
+				glVertex3iv(tri.vertices[j]);
+			}
+		}
+		glEnd();
+	/*	glEndList();
+		}*/
+
+	}
+
 	glPopMatrix();
 	glPopAttrib();
+
 }
 
 TIN::~TIN(){

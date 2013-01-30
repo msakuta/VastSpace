@@ -39,7 +39,8 @@ protected:
 		Vec3i vertices[3];
 		Vertex *vrefs[3];
 	};
-	std::vector<Triangle> triangles;
+	typedef std::vector<Triangle> Triangles;
+	Triangles triangles;
 
 	typedef std::set<int> VertexRefSet;
 	struct Vertex{

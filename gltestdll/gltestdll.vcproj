@@ -349,6 +349,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GimbalTurret.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\island3.cpp"
 				>
 			</File>
@@ -384,6 +388,10 @@
 			>
 			<File
 				RelativePath=".\ContainerHead.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GimbalTurret.h"
 				>
 			</File>
 			<File

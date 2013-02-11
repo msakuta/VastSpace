@@ -1,0 +1,23 @@
+model_motion 5
+{
+	keyframe 1 10
+	{
+		"gimbal_outer" 0 0 0 1 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"gimbal_outer" 0 0.707106781186548 0 0.707106781186547 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"gimbal_outer" 0 1 0 0 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"gimbal_outer" 0 0.707106781186547 0 -0.707106781186548 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"gimbal_outer" 0 0 0 1 0 0 0 1
+	}
+}

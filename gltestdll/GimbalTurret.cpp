@@ -52,6 +52,8 @@ GimbalTurret::GimbalTurret(WarField *aw) : st(aw){
 }
 
 void GimbalTurret::init(){
+	yaw = 0.;
+	pitch = 0.;
 	health = maxhealth();
 	mass = 2e6;
 }
@@ -72,15 +74,20 @@ Entity::EntityRegister<GimbalTurret> GimbalTurret::entityRegister("GimbalTurret"
 
 void GimbalTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << yaw;
+	sc.o << pitch;
 }
 
 void GimbalTurret::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
+	sc.i >> yaw;
+	sc.i >> pitch;
 }
 
 const char *GimbalTurret::dispname()const{
 	return "GimbalTurret";
 }
+
 
 void GimbalTurret::anim(double dt){
 	WarSpace *ws = *w;
@@ -96,12 +103,40 @@ void GimbalTurret::anim(double dt){
 		velo = btvc(bbody->getLinearVelocity());
 	}
 
+	Mat4d mat;
+	transform(mat);
+
+	findtarget(NULL, 0);
+
 	/* forget about beaten enemy */
 	if(enemy && (enemy->health <= 0. || enemy->w != w))
 		enemy = NULL;
 
-	Mat4d mat;
-	transform(mat);
+	if(enemy){
+		double sp;
+		Vec3d xh, dh, vh;
+		Vec3d epos;
+		double phi;
+		estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletspeed(), w);
+		Vec3d delta = epos - this->pos;
+
+		Vec3d ldelta = mat.tdvp3(delta);
+		double ldeltaLen = ldelta.len();
+		double desiredYaw = rangein(-ldelta[0] / ldeltaLen, -1, 1);
+		yaw -= desiredYaw * dt * 5.;
+		yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
+		double desiredPitch = rangein(ldelta[1] / ldeltaLen, -1, 1);
+		pitch += desiredPitch * dt * 5.;
+		pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
+
+		if(bbody){
+			btTransform tra = bbody->getWorldTransform();
+			tra.setRotation(tra.getRotation()
+				* btQuaternion(btVector3(0,1,0), desiredYaw * dt * 0.5)
+				* btQuaternion(btVector3(1,0,0), desiredPitch * dt * 0.5));
+			bbody->setWorldTransform(tra);
+		}
+	}
 
 	if(0 < health){
 		Entity *collideignore = NULL;
@@ -112,6 +147,10 @@ void GimbalTurret::anim(double dt){
 	}
 
 	st::anim(dt);
+}
+
+void GimbalTurret::clientUpdate(double dt){
+	anim(dt);
 }
 
 void GimbalTurret::postframe(){
@@ -176,6 +215,8 @@ double GimbalTurret::hitRadius = 0.01;
 
 
 Model *GimbalTurret::model = NULL;
+Motion *GimbalTurret::motions[2] = {NULL};
+
 
 
 
@@ -188,6 +229,8 @@ bool GimbalTurret::initModel(){
 
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/GimbalTurret.mqo");
+		motions[0] = LoadMotion(modPath() << "models/GimbalTurret_roty.mot");
+		motions[1] = LoadMotion(modPath() << "models/GimbalTurret_rotx.mot");
 		init.create(*openGLState);
 	}
 
@@ -207,6 +250,11 @@ void GimbalTurret::draw(WarDraw *wd){
 	if(!initModel())
 		return;
 
+	MotionPose mp[2];
+	motions[0]->interpolate(mp[0], yaw * 50. / 2. / M_PI);
+	motions[1]->interpolate(mp[1], pitch * 50. / 2. / M_PI);
+	mp[0].next = &mp[1];
+
 	const double scale = modelScale;
 
 	glPushMatrix();
@@ -221,7 +269,7 @@ void GimbalTurret::draw(WarDraw *wd){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 #endif
-		DrawMQOPose(model, NULL);
+		DrawMQOPose(model, mp);
 #if DNMMOT_PROFILE
 		printf("motdraw %lg\n", TimeMeasLap(&tm));
 	}
@@ -264,5 +312,71 @@ bool GimbalTurret::undock(Docker *d){
 
 double GimbalTurret::maxhealth()const{return 15000.;}
 
+float GimbalTurret::reloadtime()const{
+	return .1;
+}
 
+double GimbalTurret::bulletspeed()const{
+	return 4.;
+}
+
+float GimbalTurret::bulletlife()const{
+	return 1.;
+}
+
+double GimbalTurret::findtargetproc(const Entity *)const{
+	return 1.;
+}
+
+
+void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
+	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
+	double best = bulletrange * bulletrange;
+	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
+	Entity *pt2, *closest = NULL;
+
+	// Obtain reverse transformation matrix to the turret's local coordinate system.
+	Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+
+	// Quit chasing target that is out of shooting range.
+	if(enemy && best < (enemy->pos - pos).slen())
+		enemy = NULL;
+
+	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
+		Entity *pt2 = *it;
+		Vec3d delta, ldelta;
+		double theta, phi, f;
+
+		f = findtargetproc(pt2);
+		if(f == 0.)
+			continue;
+
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+			continue;
+
+/*		if(!entity_visible(pb, pt2))
+			continue;*/
+
+		// Do not passively attack Resource Station that can be captured instead of being destroyed.
+		if(!strcmp(pt2->classname(), "RStation"))
+			continue;
+
+		ldelta = mat2.vp3(pt2->pos);
+		phi = -atan2(ldelta[2], ldelta[0]);
+		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
+
+		double sdist = (pt2->pos - this->pos).slen();
+		if(bulletrange * bulletrange < sdist)
+			continue;
+
+		// Weigh already targetted enemy to keep shooting single enemy.
+		sdist *= (pt2 == enemy ? .25 * .25 : 1.) / f;
+		if(sdist < best){
+			best = sdist;
+			closest = pt2;
+		}
+	}
+	if(closest)
+		enemy = closest;
+}
 

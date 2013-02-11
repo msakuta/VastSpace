@@ -7,6 +7,7 @@
 #include "Entity.h"
 
 struct Model;
+struct Motion;
 
 /// \brief A stationary (in a linear velocity sense) turret in space that can face any direction quickly.
 ///
@@ -27,6 +28,7 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
 	virtual void anim(double);
+	virtual void clientUpdate(double);
 	virtual void postframe();
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
@@ -48,7 +50,17 @@ public:
 protected:
 	bool buildBody();
 	bool initModel();
+	float reloadtime()const;
+	double bulletspeed()const;
+	float bulletlife()const;
+	void findtarget(const Entity *ignore_list[], int nignore_list);
+	double findtargetproc(const Entity *target)const;
+
+	double yaw;
+	double pitch;
+
 	static Model *model;
+	static Motion *motions[2];
 	static double modelScale;
 	static double hitRadius;
 };

@@ -59,7 +59,7 @@ protected:
 
 	double yaw;
 	double pitch;
-	float cooldown;
+	double cooldown;
 	float muzzleFlash;
 
 	static Model *model;

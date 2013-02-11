@@ -120,10 +120,8 @@ void GimbalTurret::anim(double dt){
 		enemy = NULL;
 
 	if(enemy){
-		double sp;
 		Vec3d xh, dh, vh;
 		Vec3d epos;
-		double phi;
 		estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletspeed(), w);
 		Vec3d delta = epos - this->pos;
 
@@ -161,6 +159,12 @@ void GimbalTurret::anim(double dt){
 
 void GimbalTurret::clientUpdate(double dt){
 	anim(dt);
+
+	if(muzzleFlash < dt)
+		muzzleFlash = 0.;
+	else
+		muzzleFlash -= float(dt);
+
 }
 
 void GimbalTurret::postframe(){
@@ -248,7 +252,7 @@ bool GimbalTurret::initModel(){
 		init.create(*openGLState);
 	}
 
-	return model;
+	return !!model;
 }
 
 void GimbalTurret::draw(WarDraw *wd){
@@ -305,7 +309,8 @@ void GimbalTurret::drawtra(wardraw_t *wd){
 		glMatrixMode(GL_MODELVIEW);*/
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = muzzleFlash / .1 * 2., fi = 1. - muzzleFlash / .1;
+		double f = muzzleFlash / .1 * 2.;
+		double fi = 1. - muzzleFlash / .1;
 		glColor4f(f,f,f,1);
 		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
 /*		glMatrixMode(GL_TEXTURE);
@@ -366,7 +371,7 @@ void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
 	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
 	double best = bulletrange * bulletrange;
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
-	Entity *pt2, *closest = NULL;
+	Entity *closest = NULL;
 
 	// Obtain reverse transformation matrix to the turret's local coordinate system.
 	Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
@@ -425,7 +430,6 @@ void GimbalTurret::shoot(double dt){
 		transform(mat);
 		do{
 			Bullet *pb;
-			double phi, theta;
 			pb = new Bullet(this, bulletlife(), 20.);
 			w->addent(pb);
 			pb->pos = mat.vp3(gunPos[i]);

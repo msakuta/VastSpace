@@ -55,14 +55,18 @@ protected:
 	float bulletlife()const;
 	void findtarget(const Entity *ignore_list[], int nignore_list);
 	double findtargetproc(const Entity *target)const;
+	void shoot(double dt);
 
 	double yaw;
 	double pitch;
+	float cooldown;
+	float muzzleFlash;
 
 	static Model *model;
 	static Motion *motions[2];
 	static double modelScale;
 	static double hitRadius;
+	static Vec3d gunPos[2];
 };
 
 

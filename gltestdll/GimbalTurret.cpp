@@ -22,6 +22,9 @@
 #include "draw/mqoadapt.h"
 #include "glsl.h"
 #include "tefpol3d.h"
+#include "Game.h"
+#include "Bullet.h"
+#include "draw/effects.h"
 extern "C"{
 #include "bitmap.h"
 #include <clib/c.h>
@@ -54,6 +57,8 @@ GimbalTurret::GimbalTurret(WarField *aw) : st(aw){
 void GimbalTurret::init(){
 	yaw = 0.;
 	pitch = 0.;
+	cooldown = 0.;
+	muzzleFlash = 0.;
 	health = maxhealth();
 	mass = 2e6;
 }
@@ -76,12 +81,14 @@ void GimbalTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << yaw;
 	sc.o << pitch;
+	sc.o << cooldown;
 }
 
 void GimbalTurret::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> yaw;
 	sc.i >> pitch;
+	sc.i >> cooldown;
 }
 
 const char *GimbalTurret::dispname()const{
@@ -122,28 +129,31 @@ void GimbalTurret::anim(double dt){
 
 		Vec3d ldelta = mat.tdvp3(delta);
 		double ldeltaLen = ldelta.len();
-		double desiredYaw = rangein(-ldelta[0] / ldeltaLen, -1, 1);
-		yaw -= desiredYaw * dt * 5.;
+		double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 10., -1, 1);
+		yaw -= desiredYaw * dt * 10.;
 		yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
-		double desiredPitch = rangein(ldelta[1] / ldeltaLen, -1, 1);
-		pitch += desiredPitch * dt * 5.;
+		double desiredPitch = rangein(ldelta[1] / ldeltaLen * 10., -1, 1);
+		pitch += desiredPitch * dt * 10.;
 		pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
+
+		if(fabs(desiredYaw) < 0.5 && fabs(desiredPitch) < 0.5)
+			shoot(dt);
 
 		if(bbody){
 			btTransform tra = bbody->getWorldTransform();
 			tra.setRotation(tra.getRotation()
-				* btQuaternion(btVector3(0,1,0), desiredYaw * dt * 0.5)
-				* btQuaternion(btVector3(1,0,0), desiredPitch * dt * 0.5));
+				* btQuaternion(btVector3(0,1,0), desiredYaw * dt)
+				* btQuaternion(btVector3(1,0,0), desiredPitch * dt));
 			bbody->setWorldTransform(tra);
 		}
 	}
 
+
 	if(0 < health){
-		Entity *collideignore = NULL;
-	}
-	else{
-		this->w = NULL;
-		return;
+		if(cooldown < dt)
+			cooldown = 0;
+		else
+			cooldown -= dt;
 	}
 
 	st::anim(dt);
@@ -216,6 +226,10 @@ double GimbalTurret::hitRadius = 0.01;
 
 Model *GimbalTurret::model = NULL;
 Motion *GimbalTurret::motions[2] = {NULL};
+Vec3d GimbalTurret::gunPos[2] = {
+	Vec3d(50. * modelScale, 0. * modelScale, -120. * modelScale),
+	Vec3d(-50. * modelScale, 0. * modelScale, -120. * modelScale)
+};
 
 
 
@@ -280,6 +294,25 @@ void GimbalTurret::draw(WarDraw *wd){
 
 void GimbalTurret::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
+
+	if(muzzleFlash) for(int i = 0; i < 2; i++){
+		Vec3d pos = rot.trans(Vec3d(gunPos[i])) + this->pos;
+		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		glCallList(muzzle_texture());
+/*		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glRotatef(-90, 0, 0, 1);
+		glMatrixMode(GL_MODELVIEW);*/
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE); // Add blend
+		float f = muzzleFlash / .1 * 2., fi = 1. - muzzleFlash / .1;
+		glColor4f(f,f,f,1);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
+/*		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);*/
+		glPopAttrib();
+	}
 }
 
 void GimbalTurret::drawOverlay(wardraw_t *){
@@ -313,7 +346,7 @@ bool GimbalTurret::undock(Docker *d){
 double GimbalTurret::maxhealth()const{return 15000.;}
 
 float GimbalTurret::reloadtime()const{
-	return .1;
+	return .15;
 }
 
 double GimbalTurret::bulletspeed()const{
@@ -380,3 +413,33 @@ void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
 		enemy = closest;
 }
 
+void GimbalTurret::shoot(double dt){
+
+	if(dt <= cooldown)
+		return;
+
+	if(game->isServer()){
+		Vec3d velo, gunpos, velo0(0., 0., -bulletspeed());
+		Mat4d mat;
+		int i = 0;
+		transform(mat);
+		do{
+			Bullet *pb;
+			double phi, theta;
+			pb = new Bullet(this, bulletlife(), 20.);
+			w->addent(pb);
+			pb->pos = mat.vp3(gunPos[i]);
+			pb->velo = mat.dvp3(velo0);
+			pb->velo += this->velo;
+		} while(!i++);
+	}
+//	shootsound(pt, w, p->cooldown);
+//	pt->shoots += 2;
+//	if(0 < --magazine)
+		this->cooldown += reloadtime()/* * (fuel <= 0 ? 3 : 1)*/;
+//	else{
+//		magazine = SCEPTOR_MAGAZINE;
+//		this->cooldown += SCEPTOR_RELOADTIME;
+//	}
+	this->muzzleFlash = .1;
+}

@@ -283,31 +283,34 @@ void cmd_cloak(int argc, char *argv[]){
 }
 */
 void Sceptor::shootDualGun(double dt){
-	if(!game->isServer())
-		return;
 	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
-	Mat4d mat;
 	int i = 0;
 	if(dt <= cooldown)
 		return;
-	transform(mat);
-	do{
-		Bullet *pb;
-		double phi, theta;
-		pb = new Bullet(this, 5, 15.);
-		w->addent(pb);
-		pb->pos = mat.vp3(gunPos[i]);
-/*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
-		theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
-		VECCPY(pb->velo, pt->velo);
-		pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
-		pb->velo[1] += -BULLETSPEED * sin(theta);
-		pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
-		pb->velo = mat.dvp3(velo0);
-		pb->velo += this->velo;
-		pb->life = 6.;
-		this->heat += .025;
-	} while(!i++);
+
+	// Really spawn Bullet objects only in the server.
+	if(game->isServer()){
+		Mat4d mat;
+		transform(mat);
+		do{
+			Bullet *pb;
+			double phi, theta;
+			pb = new Bullet(this, 5, 15.);
+			w->addent(pb);
+			pb->pos = mat.vp3(gunPos[i]);
+	/*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
+			theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
+			VECCPY(pb->velo, pt->velo);
+			pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
+			pb->velo[1] += -BULLETSPEED * sin(theta);
+			pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
+			pb->velo = mat.dvp3(velo0);
+			pb->velo += this->velo;
+			pb->life = 6.;
+			this->heat += .025;
+		} while(!i++);
+	}
+
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	if(0 < --magazine)

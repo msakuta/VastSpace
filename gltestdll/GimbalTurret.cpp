@@ -215,7 +215,7 @@ void GimbalTurret::draw(WarDraw *wd){
 	transform(mat);
 	glMultMatrixd(mat);
 	glScaled(-scale, scale, -scale);
-	glTranslated(0, 54.4, 0);
+//	glTranslated(0, 54.4, 0);
 #if DNMMOT_PROFILE
 	{
 		timemeas_t tm;

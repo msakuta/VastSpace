@@ -71,6 +71,8 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 HitBoxList Sceptor::hitboxes;
 double Sceptor::modelScale = 1./10000;
 double Sceptor::defaultMass = 4e3;
+double Sceptor::maxHealthValue = 200.;
+double Sceptor::maxFuelValue = 120.;
 GLuint Sceptor::overlayDisp = 0;
 
 /*static const struct hitbox sceptor_hb[] = {
@@ -141,7 +143,7 @@ const char *Sceptor::dispname()const{
 };
 
 double Sceptor::maxhealth()const{
-	return 200.;
+	return maxHealthValue;
 }
 
 
@@ -178,6 +180,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 		sq_init(_SC("models/Sceptor.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			SingleDoubleProcess(maxFuelValue, "maxfuel", false) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp));
 		initialized = true;
@@ -1455,7 +1459,7 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 #endif
 
 double Sceptor::maxfuel()const{
-	return 120.;
+	return maxFuelValue;
 }
 
 bool Sceptor::command(EntityCommand *com){

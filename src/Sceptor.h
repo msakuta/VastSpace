@@ -16,6 +16,8 @@ public:
 protected:
 	static double modelScale;
 	static double defaultMass;
+	static double maxHealthValue;
+	static double maxFuelValue;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 

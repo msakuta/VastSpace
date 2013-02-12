@@ -56,6 +56,7 @@ protected:
 	void findtarget(const Entity *ignore_list[], int nignore_list);
 	double findtargetproc(const Entity *target)const;
 	void shoot(double dt);
+	void deathEffect();
 
 	double yaw;
 	double pitch;

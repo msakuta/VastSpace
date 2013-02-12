@@ -372,6 +372,10 @@
 				Name="draw"
 				>
 				<File
+					RelativePath=".\draw\GimbalTurret-draw.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\draw\Soldier-draw.cpp"
 					>
 				</File>

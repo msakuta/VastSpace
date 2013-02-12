@@ -2,48 +2,15 @@
  * \brief Implementation of GimbalTurret class
  */
 #include "GimbalTurret.h"
-#include "Player.h"
-#include "Viewer.h"
-#include "EntityCommand.h"
-#include "cmd.h"
-#include "judge.h"
-#include "astrodef.h"
-#include "stellar_file.h"
-#include "astro_star.h"
 #include "serial_util.h"
-#include "draw/material.h"
-#include "motion.h"
 #include "btadapt.h"
-#include "glstack.h"
-#include "draw/WarDraw.h"
 #include "sqadapt.h"
-#include "draw/OpenGLState.h"
-#include "draw/ShaderBind.h"
-#include "draw/mqoadapt.h"
-#include "glsl.h"
-#include "tefpol3d.h"
 #include "Game.h"
 #include "Bullet.h"
-#include "draw/effects.h"
 extern "C"{
-#include "bitmap.h"
-#include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
-#include <clib/GL/gldraw.h>
-#include <clib/GL/cull.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
-#include <clib/colseq/cs.h>
 }
-#include <assert.h>
-#include <string.h>
-#include <gl/glext.h>
-#include <iostream>
 
 
 
@@ -168,28 +135,8 @@ void GimbalTurret::anim(double dt){
 			delete this;
 			return;
 		}
-		else if(!deathEffectDone){
-			WarSpace *ws = *w;
-			if(ws){
-				// smokes
-				for(int i = 0; i < 16; i++){
-					Vec3d pos;
-					COLOR32 col = 0;
-					pos[0] = .02 * (drseq(&w->rs) - .5);
-					pos[1] = .02 * (drseq(&w->rs) - .5);
-					pos[2] = .02 * (drseq(&w->rs) - .5);
-					col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
-					col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
-					col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
-					col |= COLOR32RGBA(0,0,0,191);
-					AddTelineCallback3D(ws->getTeline3d(), pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
-				}
-
-				// explode shockwave
-				AddTeline3D(ws->getTeline3d(), this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
-			}
-			deathEffectDone = false; // Prevent multiple effects for a single object.
-		}
+		else
+			deathEffect();
 	}
 
 	st::anim(dt);
@@ -275,95 +222,6 @@ Vec3d GimbalTurret::gunPos[2] = {
 	Vec3d(50. * modelScale, 0. * modelScale, -120. * modelScale),
 	Vec3d(-50. * modelScale, 0. * modelScale, -120. * modelScale)
 };
-
-
-
-
-/// \brief Loads and initializes model and motions.
-/// \returns True if initialized or already initialized, false if something fail to initialize.
-///
-/// This process is completely for display, so defined in this Sldier-draw.cpp.
-bool GimbalTurret::initModel(){
-	static OpenGLState::weak_ptr<bool> init;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/GimbalTurret.mqo");
-		motions[0] = LoadMotion(modPath() << "models/GimbalTurret_roty.mot");
-		motions[1] = LoadMotion(modPath() << "models/GimbalTurret_rotx.mot");
-		init.create(*openGLState);
-	}
-
-	return !!model;
-}
-
-void GimbalTurret::draw(WarDraw *wd){
-	if(!w)
-		return;
-
-	/* cull object */
-//	if(cull(wd))
-//		return;
-
-	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
-
-	if(!initModel())
-		return;
-
-	MotionPose mp[2];
-	motions[0]->interpolate(mp[0], yaw * 50. / 2. / M_PI);
-	motions[1]->interpolate(mp[1], pitch * 50. / 2. / M_PI);
-	mp[0].next = &mp[1];
-
-	const double scale = modelScale;
-
-	glPushMatrix();
-
-	Mat4d mat;
-	transform(mat);
-	glMultMatrixd(mat);
-	glScaled(-scale, scale, -scale);
-//	glTranslated(0, 54.4, 0);
-#if DNMMOT_PROFILE
-	{
-		timemeas_t tm;
-		TimeMeasStart(&tm);
-#endif
-		DrawMQOPose(model, mp);
-#if DNMMOT_PROFILE
-		printf("motdraw %lg\n", TimeMeasLap(&tm));
-	}
-#endif
-	glPopMatrix();
-
-}
-
-void GimbalTurret::drawtra(wardraw_t *wd){
-	st::drawtra(wd);
-
-	if(muzzleFlash) for(int i = 0; i < 2; i++){
-		Vec3d pos = rot.trans(Vec3d(gunPos[i])) + this->pos;
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glCallList(muzzle_texture());
-/*		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		glRotatef(-90, 0, 0, 1);
-		glMatrixMode(GL_MODELVIEW);*/
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		double f = muzzleFlash / .1 * 2.;
-		double fi = 1. - muzzleFlash / .1;
-		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
-/*		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);*/
-		glPopAttrib();
-	}
-}
-
-void GimbalTurret::drawOverlay(wardraw_t *){
-	glCallList(overlayDisp);
-}
 
 
 bool GimbalTurret::dock(Docker *d){
@@ -477,3 +335,11 @@ void GimbalTurret::shoot(double dt){
 //	}
 	this->muzzleFlash = .1;
 }
+
+
+#ifdef DEDICATED
+void GimbalTurret::draw(WarDraw *){}
+void GimbalTurret::drawtra(wardraw_t *){}
+void GimbalTurret::drawOverlay(wardraw_t *){}
+#endif
+

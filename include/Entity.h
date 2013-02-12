@@ -182,11 +182,13 @@ protected:
 	template<class T> class EntityRegister : public EntityStatic{
 		const SQChar *m_sq_classname;
 		ClassId m_classid;
+	public:
 		virtual ClassId classid(){ return m_classid; }
 		virtual Entity *create(WarField *w){ return new T(w); }
 		virtual Entity *stcreate(Game *game){ return new T(game); }
 		virtual void destroy(Entity *p){ delete p; }
 		virtual const SQChar *sq_classname(){ return m_sq_classname; }
+	protected:
 		virtual bool sq_define(HSQUIRRELVM v){
 			sq_pushstring(v, sq_classname(), -1);
 			sq_pushstring(v, T::st::entityRegister.sq_classname(), -1);
@@ -196,8 +198,8 @@ protected:
 			sq_createslot(v, -3);
 			return true;
 		}
-		virtual EntityStatic *st(){ return &T::st::entityRegister; }
 	public:
+		virtual EntityStatic *st(){ return &T::st::entityRegister; }
 		EntityRegister(const SQChar *classname) : EntityStatic(classname), m_sq_classname(classname), m_classid(classname){
 			Entity::registerEntity(classname, this);
 		}

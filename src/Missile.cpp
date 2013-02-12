@@ -21,11 +21,13 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 	enemy = target;
 
 	// Make list of missiles targetting to the same Entity.
-	targetnext = targetmap[target].ptr;
-	targetmap[target] = this;
-	targetprev = &targetmap[target].ptr;
-	if(targetnext)
-		targetnext->targetprev = &targetnext;
+	if(game->isServer() && target){
+		targetnext = targetmap[target].ptr;
+		targetmap[target] = this;
+		targetprev = &targetmap[target].ptr;
+		if(targetnext)
+			targetnext->targetprev = &targetnext;
+	}
 }
 
 Missile::~Missile(){

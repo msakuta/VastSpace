@@ -50,9 +50,11 @@ public:
 protected:
 	bool buildBody();
 	bool initModel();
-	float reloadtime()const;
-	double bulletspeed()const;
-	float bulletlife()const;
+	virtual float reloadtime()const;
+	virtual double bulletspeed()const;
+	virtual float bulletlife()const;
+	virtual double bulletDamage()const;
+	virtual Bullet *createBullet(const Vec3d &gunPos);
 	void findtarget(const Entity *ignore_list[], int nignore_list);
 	double findtargetproc(const Entity *target)const;
 	void shoot(double dt);
@@ -74,5 +76,22 @@ protected:
 	static Vec3d gunPos[2];
 };
 
+
+class MissileGimbalTurret : public GimbalTurret{
+public:
+	typedef GimbalTurret st;
+	MissileGimbalTurret(Game *game) : st(game){}
+	MissileGimbalTurret(WarField *w) : st(w){}
+	const char *idname()const;
+	virtual const char *classname()const;
+	static const unsigned classid;
+	static EntityRegister<MissileGimbalTurret> entityRegister;
+protected:
+	float reloadtime()const{return 2.;}
+	double bulletspeed()const{return 0.4;}
+	float bulletlife()const{return 10.;}
+	double bulletDamage()const{return 100.;}
+	Bullet *createBullet(const Vec3d &gunPos);
+};
 
 #endif

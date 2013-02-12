@@ -7,6 +7,7 @@
 #include "sqadapt.h"
 #include "Game.h"
 #include "Bullet.h"
+#include "Missile.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -239,7 +240,7 @@ bool GimbalTurret::undock(Docker *d){
 double GimbalTurret::maxhealth()const{return maxHealthValue;}
 
 float GimbalTurret::reloadtime()const{
-	return .15;
+	return 0.15;
 }
 
 double GimbalTurret::bulletspeed()const{
@@ -248,6 +249,10 @@ double GimbalTurret::bulletspeed()const{
 
 float GimbalTurret::bulletlife()const{
 	return 1.;
+}
+
+double GimbalTurret::bulletDamage()const{
+	return 20.;
 }
 
 double GimbalTurret::findtargetproc(const Entity *)const{
@@ -312,18 +317,8 @@ void GimbalTurret::shoot(double dt){
 		return;
 
 	if(game->isServer()){
-		Vec3d velo, gunpos, velo0(0., 0., -bulletspeed());
-		Mat4d mat;
-		int i = 0;
-		transform(mat);
-		do{
-			Bullet *pb;
-			pb = new Bullet(this, bulletlife(), 20.);
-			w->addent(pb);
-			pb->pos = mat.vp3(gunPos[i]);
-			pb->velo = mat.dvp3(velo0);
-			pb->velo += this->velo;
-		} while(!i++);
+		for(int i = 0; i < 2; i++)
+			createBullet(gunPos[i]);
 	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
@@ -336,6 +331,16 @@ void GimbalTurret::shoot(double dt){
 	this->muzzleFlash = .1;
 }
 
+Bullet *GimbalTurret::createBullet(const Vec3d &gunPos){
+	Mat4d mat;
+	transform(mat);
+	Bullet *pb = new Bullet(this, bulletlife(), bulletDamage());
+	Vec3d pos = mat.vp3(gunPos);
+	Vec3d velo = mat.dvp3(Vec3d(0., 0., -bulletspeed())) + this->velo;
+	pb->setPosition(&pos, &rot, &velo);
+	w->addent(pb);
+	return pb;
+}
 
 #ifdef DEDICATED
 void GimbalTurret::draw(WarDraw *){}
@@ -343,3 +348,25 @@ void GimbalTurret::drawtra(wardraw_t *){}
 void GimbalTurret::drawOverlay(wardraw_t *){}
 #endif
 
+
+const char *MissileGimbalTurret::idname()const{
+	return "MissileGimbalTurret";
+}
+
+const char *MissileGimbalTurret::classname()const{
+	return "MissileGimbalTurret";
+}
+
+const unsigned MissileGimbalTurret::classid = registerClass("MissileGimbalTurret", Conster<MissileGimbalTurret>);
+Entity::EntityRegister<MissileGimbalTurret> MissileGimbalTurret::entityRegister("MissileGimbalTurret");
+
+Bullet *MissileGimbalTurret::createBullet(const Vec3d &gunPos){
+	Mat4d mat;
+	transform(mat);
+	Missile *pb = new Missile(this, bulletlife(), bulletDamage(), enemy);
+	Vec3d pos = mat.vp3(gunPos);
+	Vec3d velo = mat.dvp3(Vec3d(0., 0., -bulletspeed())) + this->velo;
+	pb->setPosition(&pos, &rot, &velo);
+	w->addent(pb);
+	return pb;
+}

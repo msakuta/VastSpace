@@ -71,6 +71,7 @@ void GimbalTurret::init(){
 	muzzleFlash = 0.;
 	health = maxhealth();
 	mass = 2e6;
+	deathEffectDone = false;
 }
 
 GimbalTurret::~GimbalTurret(){
@@ -129,39 +130,66 @@ void GimbalTurret::anim(double dt){
 	if(enemy && (enemy->health <= 0. || enemy->w != w))
 		enemy = NULL;
 
-	if(enemy){
-		Vec3d xh, dh, vh;
-		Vec3d epos;
-		estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletspeed(), w);
-		Vec3d delta = epos - this->pos;
-
-		Vec3d ldelta = mat.tdvp3(delta);
-		double ldeltaLen = ldelta.len();
-		double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 10., -1, 1);
-		yaw -= desiredYaw * dt * 10.;
-		yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
-		double desiredPitch = rangein(ldelta[1] / ldeltaLen * 10., -1, 1);
-		pitch += desiredPitch * dt * 10.;
-		pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
-
-		if(fabs(desiredYaw) < 0.5 && fabs(desiredPitch) < 0.5)
-			shoot(dt);
-
-		if(bbody){
-			btTransform tra = bbody->getWorldTransform();
-			tra.setRotation(tra.getRotation()
-				* btQuaternion(btVector3(0,1,0), desiredYaw * dt)
-				* btQuaternion(btVector3(1,0,0), desiredPitch * dt));
-			bbody->setWorldTransform(tra);
-		}
-	}
-
-
 	if(0 < health){
+		if(enemy){
+			Vec3d xh, dh, vh;
+			Vec3d epos;
+			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletspeed(), w);
+			Vec3d delta = epos - this->pos;
+
+			Vec3d ldelta = mat.tdvp3(delta);
+			double ldeltaLen = ldelta.len();
+			double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 10., -1, 1);
+			yaw -= desiredYaw * dt * 10.;
+			yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
+			double desiredPitch = rangein(ldelta[1] / ldeltaLen * 10., -1, 1);
+			pitch += desiredPitch * dt * 10.;
+			pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
+
+			if(fabs(desiredYaw) < 0.5 && fabs(desiredPitch) < 0.5)
+				shoot(dt);
+
+			if(bbody){
+				btTransform tra = bbody->getWorldTransform();
+				tra.setRotation(tra.getRotation()
+					* btQuaternion(btVector3(0,1,0), desiredYaw * dt)
+					* btQuaternion(btVector3(1,0,0), desiredPitch * dt));
+				bbody->setWorldTransform(tra);
+			}
+		}
+
 		if(cooldown < dt)
 			cooldown = 0;
 		else
 			cooldown -= dt;
+	}
+	else{ // If health goes below 0, be dead in a instant.
+		if(game->isServer()){
+			delete this;
+			return;
+		}
+		else if(!deathEffectDone){
+			WarSpace *ws = *w;
+			if(ws){
+				// smokes
+				for(int i = 0; i < 16; i++){
+					Vec3d pos;
+					COLOR32 col = 0;
+					pos[0] = .02 * (drseq(&w->rs) - .5);
+					pos[1] = .02 * (drseq(&w->rs) - .5);
+					pos[2] = .02 * (drseq(&w->rs) - .5);
+					col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
+					col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
+					col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
+					col |= COLOR32RGBA(0,0,0,191);
+					AddTelineCallback3D(ws->getTeline3d(), pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+				}
+
+				// explode shockwave
+				AddTeline3D(ws->getTeline3d(), this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
+			}
+			deathEffectDone = false; // Prevent multiple effects for a single object.
+		}
 	}
 
 	st::anim(dt);
@@ -276,7 +304,7 @@ void GimbalTurret::draw(WarDraw *wd){
 //	if(cull(wd))
 //		return;
 
-//	draw_healthbar(this, wd, health / maxhealth(), .1, 0, 0);
+	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
 
 	if(!initModel())
 		return;

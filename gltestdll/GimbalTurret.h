@@ -61,6 +61,7 @@ protected:
 	double pitch;
 	double cooldown;
 	float muzzleFlash;
+	bool deathEffectDone;
 
 	static Model *model;
 	static Motion *motions[2];

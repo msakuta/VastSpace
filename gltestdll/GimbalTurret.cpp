@@ -55,6 +55,16 @@ GimbalTurret::GimbalTurret(WarField *aw) : st(aw){
 }
 
 void GimbalTurret::init(){
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(modPath() << _SC("models/GimbalTurret.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			DrawOverlayProcess(overlayDisp));
+		initialized = true;
+	}
+
 	yaw = 0.;
 	pitch = 0.;
 	cooldown = 0.;
@@ -225,7 +235,10 @@ void GimbalTurret::leaveField(WarField *w){
 
 
 double GimbalTurret::modelScale = 0.0001;
+double GimbalTurret::defaultMass = 10000.;
 double GimbalTurret::hitRadius = 0.01;
+double GimbalTurret::maxHealthValue = 1500.;
+GLuint GimbalTurret::overlayDisp = 0;
 
 
 Model *GimbalTurret::model = NULL;
@@ -321,18 +334,7 @@ void GimbalTurret::drawtra(wardraw_t *wd){
 }
 
 void GimbalTurret::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.03);
-	glVertex2d( .00, -.03);
-	glVertex2d( .08, -.07);
-	glVertex2d( .10, -.03);
-	glVertex2d( .10,  .03);
-	glVertex2d( .08,  .07);
-	glVertex2d( .00,  .03);
-	glVertex2d(-.05,  .03);
-	glEnd();
+	glCallList(overlayDisp);
 }
 
 
@@ -348,7 +350,7 @@ bool GimbalTurret::undock(Docker *d){
 	return true;
 }
 
-double GimbalTurret::maxhealth()const{return 15000.;}
+double GimbalTurret::maxhealth()const{return maxHealthValue;}
 
 float GimbalTurret::reloadtime()const{
 	return .15;

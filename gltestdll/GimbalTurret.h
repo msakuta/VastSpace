@@ -4,16 +4,16 @@
 #ifndef GIMBALTURRET_H
 #define GIMBALTURRET_H
 
-#include "Entity.h"
+#include "Autonomous.h"
 
 struct Model;
 struct Motion;
 
 /// \brief A stationary (in a linear velocity sense) turret in space that can face any direction quickly.
 ///
-class GimbalTurret : public Entity{
+class GimbalTurret : public Autonomous{
 public:
-	typedef Entity st;
+	typedef Autonomous st;
 protected:
 public:
 	GimbalTurret(Game *game) : st(game){init();}
@@ -65,7 +65,10 @@ protected:
 	static Model *model;
 	static Motion *motions[2];
 	static double modelScale;
+	static double defaultMass;
 	static double hitRadius;
+	static double maxHealthValue;
+	static GLuint overlayDisp;
 	static Vec3d gunPos[2];
 };
 

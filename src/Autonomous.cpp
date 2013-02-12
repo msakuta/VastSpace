@@ -391,16 +391,19 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 		}
 	}
 	else if(bbody){
-		assert(0 < mn->angleaccel);
-		btVector3 btomg = bbody->getAngularVelocity();
+		// Some entities (namely, GimbalTurret) derive Autonomous just for some reason,
+		// but cannot rotate on their own at all.
+		if(0 < mn->angleaccel){
+			btVector3 btomg = bbody->getAngularVelocity();
 
-		// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
-		if(!btomg.isZero()){
-			btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
-			if(torqueImpulseToStop.length2() < dt * mn->angleaccel * dt * mn->angleaccel)
-				bbody->applyTorqueImpulse(torqueImpulseToStop);
-			else
-				bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * dt * mn->angleaccel);
+			// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
+			if(!btomg.isZero()){
+				btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
+				if(torqueImpulseToStop.length2() < dt * mn->angleaccel * dt * mn->angleaccel)
+					bbody->applyTorqueImpulse(torqueImpulseToStop);
+				else
+					bbody->applyTorqueImpulse(torqueImpulseToStop.normalize() * dt * mn->angleaccel);
+			}
 		}
 	}
 	else{

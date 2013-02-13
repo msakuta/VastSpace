@@ -335,10 +335,23 @@ void Game::setSquirrelShare(SquirrelShare *p){
 
 
 #ifndef DEDICATED
-ClientGame::ClientGame(){
+ClientGame::ClientGame() : loading(false){
 	ClientInitList &inits = clientInits();
 	for(int i = 0; i < inits.size(); i++)
 		inits[i](*this);
+}
+
+/// If we create an object in a client, it's really an object, but
+/// we can reconstruct objects from update stream sent from the server,
+/// in which case objects are not really newly created.
+bool ClientGame::isRawCreateMode()const{
+	return loading;
+}
+
+/// Assume Object IDs in the upper half of the value range reserved for
+/// the client side objects.
+Serializable::Id ClientGame::nextId(){
+	return idGenerator++ + UINT_MAX / 2;
 }
 #endif
 

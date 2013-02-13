@@ -127,7 +127,7 @@ public:
 	const SquirrelShare *getSquirrelShare()const{return sqshare;}
 
 	/// \brief Fetch the next Serializable id in this Game object's environment.
-	Serializable::Id nextId();
+	virtual Serializable::Id nextId();
 
 	/// \brief Loads a Stellar Structure Definition file (.ssd) of a given name.
 	int StellarFileLoad(const char *fname);
@@ -137,6 +137,12 @@ public:
 	typedef std::vector<SerializableId> DeleteQue;
 	DeleteQue &getDeleteQue(){return deleteque;}
 	bool isClientDeleting()const{return clientDeleting;}
+
+	typedef ObservableSet<Observable> ObjSet;
+	virtual ObjSet *getClientObjSet(){return NULL;}
+
+	virtual void beginLoadingSection(){}
+	virtual void endLoadingSection(){}
 protected:
 	IdMap idunmap;
 	SquirrelShare *sqshare;
@@ -159,6 +165,14 @@ public:
 	virtual void postframe();
 	virtual bool isServer()const{return false;}
 	virtual bool isClient()const{return true;}
+	virtual Serializable::Id nextId();
+	virtual bool isRawCreateMode()const;
+	virtual ObjSet *getClientObjSet(){return &clientObjs;}
+	virtual void beginLoadingSection(){loading = true;}
+	virtual void endLoadingSection(){loading = false;}
+protected:
+	ObjSet clientObjs;
+	bool loading;
 };
 #endif
 

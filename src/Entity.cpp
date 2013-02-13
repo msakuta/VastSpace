@@ -48,6 +48,16 @@ Entity::Entity(WarField *aw) :
 	bbody(NULL),
 	enteringField(false)
 {
+	// Assume Object IDs in the upper half of the value range reserved for
+	// the client side objects.
+	if(UINT_MAX / 2 < id){
+		// Client side objects should be remembered by the Game object for deleting.
+		Game::ObjSet *objSet = game->getClientObjSet();
+		if(objSet){
+			objSet->insert(this);
+		}
+	}
+
 //	The entity must be constructed before being contained by some surroundings.
 //  This generic problem is fairly difficult whether the object should be constructed before being assigned to its container.
 //  Objects like Entities in this program are always tied to a WarField and assumed valid only if containing WarField is defined.
@@ -59,7 +69,7 @@ Entity::Entity(WarField *aw) :
 }
 
 Entity::~Entity(){
-	assert(game->isClientDeleting() || game->isServer());
+	assert(UINT_MAX / 2 < id || game->isClientDeleting() || game->isServer());
 	if(w)
 		leaveField(w);
 	if(bbody){

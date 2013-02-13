@@ -189,7 +189,14 @@ bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &rot, const Vec3d
 		if(0 <= besti){
 			if(ret) *ret = mint;
 			if(retp) *retp = src;
-			if(retn) *retn = lsrc[besti] / fabs(lsrc[besti]) * mat.vec3(besti).norm();
+			if(retn){
+				// Mathematically, it's impossible to hit a face with a ray parallel to it,
+				// but it can happen in wonderful floating point world.
+				if(lsrc[besti] != 0.)
+					*retn = lsrc[besti] / fabs(lsrc[besti]) * mat.vec3(besti).norm();
+				else
+					*retn = Vec3d(0,0,0);
+			}
 			reti = true;
 		}
 	}

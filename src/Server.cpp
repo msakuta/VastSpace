@@ -168,7 +168,7 @@ static DWORD WINAPI ClientThread(LPVOID lpv);
 double server_lastdt = 0.;
 
 
-Server::Server() : sendbuf(NULL), sendbufsiz(0), lastSentTime(0), updateInterval(FRAMETIME / 1000.){
+Server::Server() : sendbuf(NULL), sendbufsiz(0), lastSentTime(0), updateInterval(FRAMETIME / 100.){
 	logfp = fopen("server.log", "wb");
 	TimeMeasStart(&gameTimer);
 }

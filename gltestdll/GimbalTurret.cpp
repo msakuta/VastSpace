@@ -327,7 +327,8 @@ void GimbalTurret::shoot(double dt){
 	if(dt <= cooldown)
 		return;
 
-	if(game->isServer()){
+	// Experimentally allow client game to create bullets.
+	/*if(game->isServer())*/{
 		for(int i = 0; i < 2; i++)
 			createBullet(gunPos[i]);
 	}

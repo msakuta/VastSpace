@@ -21,7 +21,7 @@ extern "C"{
 /// \brief Loads and initializes model and motions.
 /// \returns True if initialized or already initialized, false if something fail to initialize.
 ///
-/// This process is completely for display, so defined in this Sldier-draw.cpp.
+/// This process is completely for display, so defined in this GimbalTurret-draw.cpp.
 bool GimbalTurret::initModel(){
 	static OpenGLState::weak_ptr<bool> init;
 

@@ -1,5 +1,5 @@
 /** \file
- * \brief Definition of GimbalTurret class.
+ * \brief Definition of GimbalTurret and MissileGimbalTurret classes.
  */
 #ifndef GIMBALTURRET_H
 #define GIMBALTURRET_H
@@ -50,11 +50,11 @@ public:
 protected:
 	bool buildBody();
 	bool initModel();
-	virtual float reloadtime()const;
-	virtual double bulletspeed()const;
-	virtual float bulletlife()const;
-	virtual double bulletDamage()const;
-	virtual Bullet *createBullet(const Vec3d &gunPos);
+	virtual float reloadtime()const; ///< Overridable getter that returns interval time between shoots
+	virtual double bulletspeed()const; ///< Overridable getter that returns shot bullet's speed.
+	virtual float bulletlife()const; ///< Overridable getter that returns time to live for shot bullets in seconds.
+	virtual double bulletDamage()const; ///< Overridable getter that returns shot bullet's damage.
+	virtual Bullet *createBullet(const Vec3d &gunPos); ///< Overridable method to create shot bullet.
 	void findtarget(const Entity *ignore_list[], int nignore_list);
 	double findtargetproc(const Entity *target)const;
 	void shoot(double dt);
@@ -77,6 +77,7 @@ protected:
 };
 
 
+/// \brief GimbalTurret that shoots missiles.
 class MissileGimbalTurret : public GimbalTurret{
 public:
 	typedef GimbalTurret st;

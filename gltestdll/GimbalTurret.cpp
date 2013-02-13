@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation of GimbalTurret class
+ * \brief Implementation of GimbalTurret and MissileGimbalTurret classes.
  */
 #include "GimbalTurret.h"
 #include "serial_util.h"
@@ -255,11 +255,14 @@ double GimbalTurret::bulletDamage()const{
 	return 20.;
 }
 
+/// \brief The predicate to weigh precedence of Entities individually.
 double GimbalTurret::findtargetproc(const Entity *)const{
 	return 1.;
 }
 
-
+/// \brief Finds nearest or best effective target for shooting.
+///
+/// The algorithm was copied from MTurret.
 void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
 	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
 	double best = bulletrange * bulletrange;
@@ -311,6 +314,7 @@ void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
 		enemy = closest;
 }
 
+/// \brief Try to shoot the guns, but can fail if not reloaded.
 void GimbalTurret::shoot(double dt){
 
 	if(dt <= cooldown)
@@ -360,6 +364,7 @@ const char *MissileGimbalTurret::classname()const{
 const unsigned MissileGimbalTurret::classid = registerClass("MissileGimbalTurret", Conster<MissileGimbalTurret>);
 Entity::EntityRegister<MissileGimbalTurret> MissileGimbalTurret::entityRegister("MissileGimbalTurret");
 
+/// \brief Creates a Missile instead of a Bullet.
 Bullet *MissileGimbalTurret::createBullet(const Vec3d &gunPos){
 	Mat4d mat;
 	transform(mat);

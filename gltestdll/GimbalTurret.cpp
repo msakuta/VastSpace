@@ -68,6 +68,13 @@ void GimbalTurret::unserialize(UnserializeContext &sc){
 	sc.i >> yaw;
 	sc.i >> pitch;
 	sc.i >> cooldown;
+
+	// Update the dynamics body's parameters too if the values are sent from upstream Server.
+	if(bbody){
+		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
+		bbody->setAngularVelocity(btvc(omg));
+		bbody->setLinearVelocity(btvc(velo));
+	}
 }
 
 const char *GimbalTurret::dispname()const{

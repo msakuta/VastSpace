@@ -293,7 +293,8 @@ void Sceptor::shootDualGun(double dt){
 		return;
 
 	// Really spawn Bullet objects only in the server.
-	if(game->isServer()){
+	// You can spawn in the client now.
+	/*if(game->isServer())*/{
 		Mat4d mat;
 		transform(mat);
 		do{

@@ -74,6 +74,7 @@ void GimbalTurret::unserialize(UnserializeContext &sc){
 		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
 		bbody->setAngularVelocity(btvc(omg));
 		bbody->setLinearVelocity(btvc(velo));
+		bbody->activate();
 	}
 }
 
@@ -94,6 +95,7 @@ void GimbalTurret::anim(double dt){
 		pos = btvc(tra.getOrigin());
 		rot = btqc(tra.getRotation());
 		velo = btvc(bbody->getLinearVelocity());
+		omg = btvc(bbody->getAngularVelocity());
 	}
 
 	Mat4d mat;

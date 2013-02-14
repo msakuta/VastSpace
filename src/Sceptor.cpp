@@ -590,6 +590,7 @@ void Sceptor::anim(double dt){
 		pos = btvc(tra.getOrigin());
 		rot = btqc(tra.getRotation());
 		velo = btvc(bbody->getLinearVelocity());
+		omg = btvc(bbody->getAngularVelocity());
 	}
 
 /*	if(!mother){
@@ -850,7 +851,7 @@ void Sceptor::anim(double dt){
 					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
 						struct random_sequence rs;
-						init_rseq(&rs, (unsigned long)this ^ (unsigned long)(w->war_time() / .1));
+						init_rseq(&rs, (unsigned long)id ^ (unsigned long)(w->war_time() / .1));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
 							randomvec[i] = drseq(&rs) - .5;

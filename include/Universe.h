@@ -26,6 +26,7 @@ public:
 	void serialize(SerializeContext &sc);
 	void unserialize(UnserializeContext &usc);
 	void anim(double dt);
+	void clientUpdate(double dt);
 	void draw(const Viewer *);
 	virtual Universe *toUniverse(){return this;}
 	void csUnserialize(UnserializeContext &usc);

@@ -63,6 +63,13 @@ void Universe::anim(double dt){
 	st::anim(dt);
 }
 
+void Universe::clientUpdate(double dt){
+	// Delegate to server update failed because of st::anim(dt).
+	this->global_time += dt;
+	this->astro_time += astro_timescale * dt;
+	st::clientUpdate(dt);
+}
+
 void Universe::csUnmap(UnserializeContext &sc){
 #if 1 // Disabled because you cannot know which Entity to unserialize this buffer without parsing embedded SerializableId.
 	assert(0);

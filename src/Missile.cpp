@@ -4,6 +4,7 @@
 #include "Missile.h"
 #include "Viewer.h"
 #include "Game.h"
+#include "glw/GLWchart.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -15,18 +16,23 @@ const double Missile::maxspeed = 1.;
 Missile::TargetMap Missile::targetmap;
 
 
-Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0){
+Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0),
+	targetnext(NULL), targetprev(NULL)
+{
 	WarSpace *ws = *parent->w;
 	initFpol();
 	enemy = target;
 
 	// Make list of missiles targetting to the same Entity.
-	if(game->isServer() && target){
+	if(target){
 		targetnext = targetmap[target].ptr;
 		targetmap[target] = this;
+		addObserver(&targetmap);
 		targetprev = &targetmap[target].ptr;
-		if(targetnext)
+		if(targetnext){
 			targetnext->targetprev = &targetnext;
+			targetnext->removeObserver(&targetmap);
+		}
 	}
 }
 
@@ -70,6 +76,23 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 void Missile::anim(double dt){
 	WarField *oldw = w;
 	updateFpol();
+
+	{
+		// We plot size of missile target map.
+		int serverMissiles = 0;
+		for(TargetMap::iterator it = targetmap.begin(); it != targetmap.end(); ++it){
+			if(it->first->getGame()->isServer())
+				serverMissiles++;
+		}
+
+		GLwindow *w = glwlist;
+		for(; w; w = w->getNext()){
+			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
+				static_cast<GLWchart*>(w)->addSample("ServerMissileMapSize", serverMissiles);
+				static_cast<GLWchart*>(w)->addSample("ClientMissileMapSize", targetmap.size() - serverMissiles);
+			}
+		}
+	}
 
 	{
 		Entity *target = enemy;
@@ -436,7 +459,7 @@ double Missile::getHitRadius()const{
 }
 
 void Missile::unlinkTarget(){
-	if(game->isServer() && enemy){
+	if(enemy){
 		// If targetnext is NULL, this object is the last node in the list.
 		if(targetnext)
 			targetnext->targetprev = targetprev;

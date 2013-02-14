@@ -41,7 +41,7 @@ public:
 	///
 	/// It is merely a pointer to Missile object, but has a destructor that automatically 
 	/// clear the reference from the pointed node.
-	class MissileList{
+	class MissileList : public Observer{
 	public:
 		Missile *ptr;
 		MissileList(Missile *a = NULL) : ptr(a){}
@@ -52,6 +52,11 @@ public:
 		MissileList &operator=(Missile *a){
 			ptr = a;
 			return *this;
+		}
+		bool unlink(const Observable *o){
+			if(ptr == o)
+				ptr = NULL;
+			return true;
 		}
 	};
 

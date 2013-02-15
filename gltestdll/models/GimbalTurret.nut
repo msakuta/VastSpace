@@ -6,7 +6,7 @@ hitRadius <- 0.01;
 
 mass <- 10000.;
 
-maxhealth <- 1500.;
+maxhealth <- 500.;
 
 function drawOverlay(){
 	glBegin(GL_LINES);

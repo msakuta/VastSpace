@@ -1207,7 +1207,7 @@ void Sceptor::anim(double dt){
 	}
 	else{
 		pt->health += dt;
-		if(0. < pt->health){
+		if(0. < pt->health && active){
 #ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);

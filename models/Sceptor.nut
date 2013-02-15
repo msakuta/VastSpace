@@ -3,7 +3,7 @@ modelScale <- 1.e-4;
 
 mass <- 4.e3;
 
-maxhealth <- 2000.; // Show some guts for demonstrating shooting effect in the client.
+maxhealth <- 200.; // Show some guts for demonstrating shooting effect in the client.
 
 maxfuel <- 120.; // seconds for full thrust
 

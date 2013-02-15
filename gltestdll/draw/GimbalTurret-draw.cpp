@@ -130,5 +130,5 @@ void GimbalTurret::deathEffect(){
 	AddTeline3D(ws->getTeline3d(), this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 
 	// Prevent multiple effects for a single object.
-	deathEffectDone = false;
+	deathEffectDone = true;
 }

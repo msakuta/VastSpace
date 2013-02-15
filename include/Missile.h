@@ -82,7 +82,7 @@ public:
 	/// but it costs redundant memory blocks because a Missile can have up to only one
 	/// target.
 	/// The embedded linked list is fast, but unfortunately not intuitive.
-	typedef ObservableMap<const Entity, MissileList > TargetMap;
+	typedef std::map<const Entity*, ObservableSet<Missile> > TargetMap;
 
 	/// \brief The global map that accumulates estimated missile damages.
 	///

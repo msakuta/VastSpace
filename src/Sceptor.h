@@ -54,7 +54,7 @@ protected:
 	Task task;
 	bool docked, returning, away, cloak, forcedEnemy, active;
 	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
-	float mf; ///< trivial muzzle flashes
+	float muzzleFlash; ///< trivial muzzle flashes
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	Sceptor *formPrev; ///< previous member in the formation
 	Attitude attitude;

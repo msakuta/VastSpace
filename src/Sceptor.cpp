@@ -153,7 +153,7 @@ double Sceptor::maxhealth()const{
 Sceptor::Sceptor(Game *game) : st(game),
 	mother(NULL),
 	reverser(0),
-	mf(0),
+	muzzleFlash(0),
 	pf(NULL),
 	paradec(-1), 
 	active(true)
@@ -165,7 +165,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	task(Auto),
 	fuel(maxfuel()),
 	reverser(0),
-	mf(0),
+	muzzleFlash(0),
 	pf(NULL),
 	paradec(-1),
 	forcedEnemy(false),
@@ -324,7 +324,7 @@ void Sceptor::shootDualGun(double dt){
 		magazine = SCEPTOR_MAGAZINE;
 		this->cooldown += SCEPTOR_RELOADTIME;
 	}
-	this->mf = .1;
+	this->muzzleFlash = .1;
 }
 
 // find the nearest enemy
@@ -1314,10 +1314,10 @@ void Sceptor::anim(double dt){
 
 	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
-	if(mf < dt)
-		mf = 0.;
+	if(muzzleFlash < dt)
+		muzzleFlash = 0.;
 	else
-		mf -= dt;
+		muzzleFlash -= dt;
 
 //	st::anim(dt);
 

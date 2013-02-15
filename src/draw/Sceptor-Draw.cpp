@@ -391,7 +391,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 	}
 #endif
 
-	if(mf) for(int i = 0; i < 2; i++){
+	if(muzzleFlash) for(int i = 0; i < 2; i++){
 		Vec3d pos = rot.trans(Vec3d(gunPos[i])) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		glCallList(muzzle_texture());
@@ -401,7 +401,8 @@ void Sceptor::drawtra(wardraw_t *wd){
 		glMatrixMode(GL_MODELVIEW);*/
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
-		float f = mf / .1 * 2., fi = 1. - mf / .1;
+		GLfloat f = GLfloat(muzzleFlash / .1 * 2.);
+		double fi = 1. - muzzleFlash / .1;
 		glColor4f(f,f,f,1);
 		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
 /*		glMatrixMode(GL_TEXTURE);

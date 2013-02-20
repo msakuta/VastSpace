@@ -230,8 +230,8 @@ void LMissileTurret::tryshoot(){
 
 double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
 	double accumdamage = 0.;
-	Missile::TargetMap::iterator it = Missile::targetmap.find(pt2);
-	if(it != Missile::targetmap.end()){
+	Missile::TargetMap::iterator it = Missile::targetmap().find(pt2);
+	if(it != Missile::targetmap().end()){
 		ObservableSet<Missile> &theMap = it->second;
 		for(ObservableSet<Missile>::iterator pm = theMap.begin(); pm != theMap.end(); ++pm){
 			accumdamage += (*pm)->damage;

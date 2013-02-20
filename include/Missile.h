@@ -41,7 +41,7 @@ public:
 	///
 	/// It is merely a pointer to Missile object, but has a destructor that automatically 
 	/// clear the reference from the pointed node.
-	class MissileList : public Observer{
+/*	class MissileList : public Observer{
 	public:
 		Missile *ptr;
 		MissileList(Missile *a = NULL) : ptr(a){}
@@ -58,7 +58,7 @@ public:
 				ptr = NULL;
 			return true;
 		}
-	};
+	};*/
 
 	/// \brief The pointer to the next node in the Missile list.
 	///
@@ -82,13 +82,13 @@ public:
 	/// but it costs redundant memory blocks because a Missile can have up to only one
 	/// target.
 	/// The embedded linked list is fast, but unfortunately not intuitive.
-	typedef std::map<const Entity*, ObservableSet<Missile> > TargetMap;
+	typedef ObservableMap<const Entity, ObservableSet<Missile> > TargetMap;
 
-	/// \brief The global map that accumulates estimated missile damages.
+	/// \brief Returns the global map that accumulates estimated missile damages.
 	///
 	/// Probably it should be a member of the object who launched the missiles.
 	/// The launcher avoids to waste missiles on too small targets with this map.
-	static TargetMap targetmap;
+	static TargetMap &targetmap();
 };
 
 

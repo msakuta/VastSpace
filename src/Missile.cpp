@@ -13,7 +13,12 @@ extern "C"{
 
 const float Missile::maxfuel = 120.;
 const double Missile::maxspeed = 1.;
-Missile::TargetMap Missile::targetmap;
+
+/// Construct on first use idiom.
+Missile::TargetMap &Missile::targetmap(){
+	static TargetMap *map = new TargetMap();
+	return *map;
+}
 
 
 Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0),
@@ -25,7 +30,7 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 
 	// Make list of missiles targetting to the same Entity.
 	if(target){
-		targetmap[target].insert(this);
+		targetmap()[target].insert(this);
 /*		targetnext = targetmap[target].ptr;
 		targetmap[target] = this;
 		addObserver(&targetmap);
@@ -81,7 +86,7 @@ void Missile::anim(double dt){
 	{
 		// We plot size of missile target map.
 		int serverMissiles = 0;
-		for(TargetMap::iterator it = targetmap.begin(); it != targetmap.end(); ++it){
+		for(TargetMap::iterator it = targetmap().begin(); it != targetmap().end(); ++it){
 			if(it->first->getGame()->isServer())
 				serverMissiles++;
 		}
@@ -90,7 +95,7 @@ void Missile::anim(double dt){
 		for(; w; w = w->getNext()){
 			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
 				static_cast<GLWchart*>(w)->addSample("ServerMissileMapSize", serverMissiles);
-				static_cast<GLWchart*>(w)->addSample("ClientMissileMapSize", targetmap.size() - serverMissiles);
+				static_cast<GLWchart*>(w)->addSample("ClientMissileMapSize", targetmap().size() - serverMissiles);
 			}
 		}
 	}
@@ -446,7 +451,7 @@ void Missile::postframe(){
 	if(w == NULL && enemy)
 		unlinkTarget();
 	if(enemy && enemy->w != w){
-		targetmap.erase(enemy);
+		targetmap().erase(enemy);
 		enemy = NULL;
 	}
 

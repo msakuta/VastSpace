@@ -27,10 +27,14 @@ if(1){
 	e.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 //	e.race = 1;
 
-	local turret = player.cs.addent("GimbalTurret", Vec3d(0,0,0.05));
-	turret.race = 1;
-	local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0,-0.05));
-	mturret.race = 1;
+	for(local i = 0; i < 1; i++){
+		local turret = player.cs.addent("GimbalTurret", Vec3d(0,0 + 0.05 * i,0.05));
+		turret.race = 1;
+	}
+	for(local i = 0; i < 2; i++){
+		local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0 + i * 0.05,-0.05));
+		mturret.race = 1;
+	}
 }
 if(1){
 	local e = player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));

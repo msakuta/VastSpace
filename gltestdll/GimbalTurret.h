@@ -50,6 +50,7 @@ public:
 protected:
 	bool buildBody();
 	bool initModel();
+	virtual const ManeuverParams &getManeuve()const;
 	virtual float reloadtime()const; ///< Overridable getter that returns interval time between shoots
 	virtual double bulletspeed()const; ///< Overridable getter that returns shot bullet's speed.
 	virtual float bulletlife()const; ///< Overridable getter that returns time to live for shot bullets in seconds.

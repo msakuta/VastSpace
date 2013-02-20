@@ -108,7 +108,7 @@ void GimbalTurret::anim(double dt){
 		enemy = NULL;
 
 	if(0 < health){
-		if(enemy){
+		if(task != sship_moveto && enemy){
 			Vec3d xh, dh, vh;
 			Vec3d epos;
 			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, bulletspeed(), w);
@@ -247,6 +247,19 @@ bool GimbalTurret::undock(Docker *d){
 }
 
 double GimbalTurret::maxhealth()const{return maxHealthValue;}
+
+const Autonomous::ManeuverParams &GimbalTurret::getManeuve()const{
+	static const ManeuverParams mn = {
+		.005, /* double accel; */
+		.01, /* double maxspeed; */
+		50., /* double angleaccel; */
+		.4, /* double maxanglespeed; */
+		50000., /* double capacity; [MJ] */
+		100., /* double capacitor_gen; [MW] */
+	};
+	return mn;
+}
+
 
 float GimbalTurret::reloadtime()const{
 	return 0.15;

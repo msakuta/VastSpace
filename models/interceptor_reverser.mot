@@ -1,0 +1,13 @@
+model_motion 2
+{
+	keyframe 2 10
+	{
+		"interceptor0_dreverser" 0 0 0 1 0 0 0 1
+		"interceptor0_ureverser" 0 0 0 1 0 0 0 1
+	}
+	keyframe 2 10
+	{
+		"interceptor0_dreverser" 0.248689887164854 0 0 0.968583161128631 0 0 0 1
+		"interceptor0_ureverser" 0.248689887164854 0 0 -0.968583161128631 0 0 0 1
+	}
+}

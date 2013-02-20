@@ -9,6 +9,7 @@
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -86,6 +87,9 @@ void Sceptor::draw(wardraw_t *wd){
 	static suftex_t *suft, *suft1, *suft2;
 	static GLuint shader = 0;
 	static GLint fracLoc, cubeEnvLoc, textureLoc, invEyeMat3Loc, transparency;
+	static Model *model = NULL;
+	static Motion *lodMotion = NULL;
+	static Motion *reverserMotion = NULL;
 	double nf = nlipsFactor(*wd->vw);
 	double scale = modelScale * nf;
 	Sceptor *const p = this;
@@ -103,7 +107,7 @@ void Sceptor::draw(wardraw_t *wd){
 
 	if(!init) do{
 //		FILE *fp;
-		sufbase = CallLoadSUF("models/interceptor0.bin");
+/*		sufbase = CallLoadSUF("models/interceptor0.bin");
 		sufbase1 = CallLoadSUF("models/interceptor1.bin");
 		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
 		vbo[0] = CacheVBO(sufbase);
@@ -113,7 +117,11 @@ void Sceptor::draw(wardraw_t *wd){
 		CacheSUFMaterials(sufbase);
 		suft = gltestp::AllocSUFTex(sufbase, "models/");
 		suft1 = gltestp::AllocSUFTex(sufbase1, "models/");
-		suft2 = gltestp::AllocSUFTex(sufrev, "models/");
+		suft2 = gltestp::AllocSUFTex(sufrev, "models/");*/
+
+		model = LoadMQOModel("models/interceptor.mqo");
+		lodMotion = LoadMotion("models/interceptor_lod.mot");
+		reverserMotion = LoadMotion("models/interceptor_reverser.mot");
 
 /*		do{
 			GLuint vtx, frg;
@@ -132,12 +140,13 @@ void Sceptor::draw(wardraw_t *wd){
 
 		init.create(*openGLState);
 	} while(0);
-	if(!sufbase){
+
+	/*if(!sufbase){
 		double pos[3];
 		GLubyte col[4] = {255,255,0,255};
 		gldPseudoSphere(pos, .005, col);
 	}
-	else{
+	else*/{
 		static const double normal[3] = {0., 1., 0.};
 		double x;
 		double pyr[3];
@@ -198,6 +207,15 @@ void Sceptor::draw(wardraw_t *wd){
 		}
 		else
 #endif
+
+		MotionPose mp[2];
+		lodMotion->interpolate(mp[0], pixels < 15 ? 10. : 0.);
+		reverserMotion->interpolate(mp[1], reverser * 10.);
+		mp[0].next = &mp[1];
+
+		DrawMQOPose(model, mp);
+
+#if 0
 		if(pixels < 15){
 			if(vbo[1])
 				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft1);
@@ -231,6 +249,7 @@ void Sceptor::draw(wardraw_t *wd){
 			}
 			glFrontFace(GL_CCW);
 		}
+#endif
 		glPopMatrix();
 
 /*		if(0 < wd->light[1]){

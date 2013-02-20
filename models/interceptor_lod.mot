@@ -1,0 +1,13 @@
+model_motion 2
+{
+	keyframe 2 10
+	{
+		"interceptor0" 0 0 0 1 0 0 0 1
+		"interceptor1" 0 0 0 1 0 0 0 -1
+	}
+	keyframe 2 10
+	{
+		"interceptor0" 0 0 0 1 0 0 0 -1
+		"interceptor1" 0 0 0 1 0 0 0 1
+	}
+}

@@ -21,8 +21,7 @@ Missile::TargetMap &Missile::targetmap(){
 }
 
 
-Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0),
-	targetnext(NULL), targetprev(NULL)
+Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st(parent, life, damage), ft(0), fuel(maxfuel), throttle(0)
 {
 	WarSpace *ws = *parent->w;
 	initFpol();
@@ -31,14 +30,6 @@ Missile::Missile(Entity *parent, float life, double damage, Entity *target) : st
 	// Make list of missiles targetting to the same Entity.
 	if(target){
 		targetmap()[target].insert(this);
-/*		targetnext = targetmap[target].ptr;
-		targetmap[target] = this;
-		addObserver(&targetmap);
-		targetprev = &targetmap[target].ptr;
-		if(targetnext){
-			targetnext->targetprev = &targetnext;
-			targetnext->removeObserver(&targetmap);
-		}*/
 	}
 }
 
@@ -465,19 +456,6 @@ double Missile::getHitRadius()const{
 }
 
 void Missile::unlinkTarget(){
-	if(enemy){
-/*		// If targetnext is NULL, this object is the last node in the list.
-		if(targetnext)
-			targetnext->targetprev = targetprev;
-
-		// If targetprev is NULL, it's destroyed.
-		if(targetprev){
-			*targetprev = targetnext;
-			if(!targetmap[enemy].ptr)
-				targetmap.erase(enemy);
-		}*/
-//		targetmap[enemy].erase(this);
-	}
 }
 
 void Missile::enterField(WarField *w){

@@ -23,7 +23,7 @@ protected:
 	void updateFpol();
 public:
 	typedef Bullet st;
-	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0), targetnext(NULL), targetprev(NULL){}
+	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0){}
 	Missile(Entity *parent, float life, double damage, Entity *target = NULL);
 	~Missile();
 	static const unsigned classid;
@@ -36,45 +36,6 @@ public:
 	virtual double getHitRadius()const;
 	virtual void enterField(WarField *);
 	static const double maxspeed;
-
-	/// \brief The head node in the linked list for a targetted object.
-	///
-	/// It is merely a pointer to Missile object, but has a destructor that automatically 
-	/// clear the reference from the pointed node.
-/*	class MissileList : public Observer{
-	public:
-		Missile *ptr;
-		MissileList(Missile *a = NULL) : ptr(a){}
-		~MissileList(){
-			if(ptr)
-				ptr->targetprev = NULL;
-		}
-		MissileList &operator=(Missile *a){
-			ptr = a;
-			return *this;
-		}
-		bool unlink(const Observable *o){
-			if(ptr == o)
-				ptr = NULL;
-			return true;
-		}
-	};*/
-
-	/// \brief The pointer to the next node in the Missile list.
-	///
-	/// The linked list is bi-directional, i.e. each node has previous and next pointers.
-	/// The next (forward) pointer is used to trace the chain.
-	Missile *targetnext;
-
-	/// \brief The pointer to pointer that points back to us in the previous node.
-	///
-	/// It is used when this node is being deleted, to clear or replace the previous
-	/// pointer so that the whole list keeps containing the whole nodes but this one.
-	///
-	/// The previous node is not necessarily a Missile object but also can be head node
-	/// (MissileList object), but we do not want to treat the cases individually, so
-	/// it has a type of pointer to pointer.
-	Missile **targetprev;
 
 	/// \brief The type for the map object targetmap.
 	///

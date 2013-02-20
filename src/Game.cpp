@@ -190,26 +190,55 @@ void Game::idUnmap(UnserializeContext &sc){
 			// Try to match client-generated objects with server sent ones.
 			ObjSet *objSet = getClientObjSet();
 			if(objSet){
-				bool created = false;
+				double bestSDist = 1e6 * 1e6;
+				Entity *bestObj = NULL;
+				ObjSet::iterator bestIt = objSet->end();
+
+				bool entityCache = false; // Availability of partially cached data for Entity.
+				SerializableId warId; // Object ID for Entity's belonging WarField.
+				Vec3d pos; // Entity's position.
+
 				for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end();){
 					ObjSet::iterator next = it;
 					++next;
 					Entity *o = *it;
 					if(o->classname() == src){
-						// Assume the creation order is the same among the server and the client,
-						// thus assigning them in the order should be enough heuristics.
-						o->id = thisid;
-						idunmap[thisid] = o;
-						objSet->erase(it); // Once we bind "phantom" objects to real ones, we can forget about them.
-						created = true; // Mark the flag to exit the greater loop
-						break;
+
+						// We want to cache partially unserialized variables only in descendants of Entity,
+						// otherwise we could end up interpreting variables having wrong types, or in the
+						// worst case raise InputShortageException.
+						// But we want to cache no more than once per SyncBuf object.
+						// We cannot tell if a Serializable object is a descendant of Entity without
+						// actually instantiating one, but if the classname matches to some client object,
+						// it should be an Entity. In that case, we can cache the variables here.
+						if(!entityCache){
+							// We do not convert warId to WarField pointer here, because the WarField object
+							// can be yet to be created in the client.
+							*us >> warId;
+							*us >> pos;
+							entityCache = true;
+						}
+
+						// Try to match the belonging WarField.
+						if(!o->w || warId != o->w->getid())
+							continue;
+						double sdist = (pos - o->pos).slen();
+						if(sdist < bestSDist){
+							bestSDist = sdist;
+							bestObj = o;
+							bestIt = it;
+						}
 					}
 					it = next;
 				}
 
-				// Now that we matched this Entity, exit ID matching
-				if(created)
+				// Now that we matched this Entity, promote the client-generated Entity to server-generated one.
+				if(bestObj){
+					bestObj->id = thisid;
+					idunmap[thisid] = bestObj;
+					objSet->erase(bestIt); // Once we bind "phantom" objects to real ones, we can forget about them.
 					continue;
+				}
 			}
 
 			gltestp::dstring scname((const char*)src);

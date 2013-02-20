@@ -532,6 +532,8 @@ const char *Entity::dispname()const{
 
 void Entity::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	// DO NOT change order or insert other variables before w and pos,
+	// they're assumed in that position in Game::idUnmap().
 	sc.o << w;
 	sc.o << pos;
 	sc.o << velo;
@@ -551,6 +553,8 @@ void Entity::unserialize(UnserializeContext &sc){
 	WarField *oldwf = w;
 
 	st::unserialize(sc);
+	// DO NOT change order or insert other variables before w and pos,
+	// they're assumed in that position in Game::idUnmap().
 	sc.i >> w;
 	sc.i >> pos;
 	sc.i >> velo;

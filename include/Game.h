@@ -138,7 +138,7 @@ public:
 	DeleteQue &getDeleteQue(){return deleteque;}
 	bool isClientDeleting()const{return clientDeleting;}
 
-	typedef ObservableSet<Observable> ObjSet;
+	typedef ObservableSet<Entity> ObjSet;
 	virtual ObjSet *getClientObjSet(){return NULL;}
 
 	virtual void beginLoadingSection(){}

@@ -1271,21 +1271,6 @@ void ClientApplication::display_func(void){
 
 		clientGame->beginLoadingSection();
 
-		// Delete client generated Entities because we could loose references to them
-		// in the process of unserialization. We cannot reclaim memory occupied by the
-		// object which had lost reference to it.
-		if(Game::ObjSet *objSet = clientGame->getClientObjSet()){
-			for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end();){
-				Entity *o = static_cast<Entity*>(*it);
-				Game::ObjSet::iterator next = it;
-				++next;
-//				objSet->erase(it); // Since we delete all, no need to erase one by one, just single clear() is enough.
-				it = next;
-				delete o;
-			}
-			objSet->clear();
-		}
-
 		if(sbuf){
 			static SyncBuf clientSyncBuf;
 			UnserializeMap &map = (UnserializeMap&)clientGame->idmap();

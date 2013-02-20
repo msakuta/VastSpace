@@ -186,6 +186,32 @@ void Game::idUnmap(UnserializeContext &sc){
 		*us >> src;
 		UnserializeMap::iterator it = idunmap.find(thisid);
 		if(it == idunmap.end()){
+
+			// Try to match client-generated objects with server sent ones.
+			ObjSet *objSet = getClientObjSet();
+			if(objSet){
+				bool created = false;
+				for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end();){
+					ObjSet::iterator next = it;
+					++next;
+					Entity *o = *it;
+					if(o->classname() == src){
+						// Assume the creation order is the same among the server and the client,
+						// thus assigning them in the order should be enough heuristics.
+						o->id = thisid;
+						idunmap[thisid] = o;
+						objSet->erase(it); // Once we bind "phantom" objects to real ones, we can forget about them.
+						created = true; // Mark the flag to exit the greater loop
+						break;
+					}
+					it = next;
+				}
+
+				// Now that we matched this Entity, exit ID matching
+				if(created)
+					continue;
+			}
+
 			gltestp::dstring scname((const char*)src);
 			{
 				::CtorMap::iterator it = sc.cons.find(scname);
@@ -218,6 +244,22 @@ void Game::idUnmap(UnserializeContext &sc){
 		}
 		delete us;
 	}
+
+	// Delete client generated Entities because we could loose references to them
+	// in the process of unserialization. We cannot reclaim memory occupied by the
+	// object which had lost reference to it.
+	if(Game::ObjSet *objSet = getClientObjSet()){
+		for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end();){
+			Entity *o = static_cast<Entity*>(*it);
+			Game::ObjSet::iterator next = it;
+			++next;
+//				objSet->erase(it); // Since we delete all, no need to erase one by one, just single clear() is enough.
+			it = next;
+			delete o;
+		}
+		objSet->clear();
+	}
+
 }
 
 void Game::idUnserialize(UnserializeContext &usc){

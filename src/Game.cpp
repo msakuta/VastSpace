@@ -198,9 +198,7 @@ void Game::idUnmap(UnserializeContext &sc){
 				SerializableId warId; // Object ID for Entity's belonging WarField.
 				Vec3d pos; // Entity's position.
 
-				for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end();){
-					ObjSet::iterator next = it;
-					++next;
+				for(Game::ObjSet::iterator it = objSet->begin(); it != objSet->end(); ++it){
 					Entity *o = *it;
 					if(o->classname() == src){
 
@@ -229,7 +227,6 @@ void Game::idUnmap(UnserializeContext &sc){
 							bestIt = it;
 						}
 					}
-					it = next;
 				}
 
 				// Now that we matched this Entity, promote the client-generated Entity to server-generated one.

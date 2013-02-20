@@ -106,19 +106,6 @@ void Sceptor::draw(wardraw_t *wd){
 	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
-//		FILE *fp;
-/*		sufbase = CallLoadSUF("models/interceptor0.bin");
-		sufbase1 = CallLoadSUF("models/interceptor1.bin");
-		sufrev = CallLoadSUF("models/interceptor0_reverser0.bin");
-		vbo[0] = CacheVBO(sufbase);
-		vbo[1] = CacheVBO(sufbase1);
-		vbo[2] = CacheVBO(sufrev);
-		if(!sufbase) break;
-		CacheSUFMaterials(sufbase);
-		suft = gltestp::AllocSUFTex(sufbase, "models/");
-		suft1 = gltestp::AllocSUFTex(sufbase1, "models/");
-		suft2 = gltestp::AllocSUFTex(sufrev, "models/");*/
-
 		model = LoadMQOModel("models/interceptor.mqo");
 		lodMotion = LoadMotion("models/interceptor_lod.mot");
 		reverserMotion = LoadMotion("models/interceptor_reverser.mot");
@@ -141,12 +128,7 @@ void Sceptor::draw(wardraw_t *wd){
 		init.create(*openGLState);
 	} while(0);
 
-	/*if(!sufbase){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos, .005, col);
-	}
-	else*/{
+	{
 		static const double normal[3] = {0., 1., 0.};
 		double x;
 		double pyr[3];
@@ -155,17 +137,6 @@ void Sceptor::draw(wardraw_t *wd){
 		glPushMatrix();
 		gldTranslate3dv(this->pos);
 		gldMultQuat(this->rot);
-#if 0
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
 		gldScaled(scale);
 		glScalef(-1, 1, -1);
 #if 0
@@ -215,47 +186,8 @@ void Sceptor::draw(wardraw_t *wd){
 
 		DrawMQOPose(model, mp);
 
-#if 0
-		if(pixels < 15){
-			if(vbo[1])
-				DrawVBO(vbo[1], SUF_ATR | SUF_TEX, suft1);
-			else
-//				DrawSUF(sufbase1, SUF_ATR, NULL);
-				DecalDrawSUF(sufbase1, SUF_ATR, NULL, suft1, NULL, NULL);
-		}
-		else{
-			if(vbo[0])
-				DrawVBO(vbo[0], SUF_ATR | SUF_TEX, suft);
-			else
-//				DrawSUF(sufbase, SUF_ATR, NULL);
-				DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
-
-			for(int i = 0; i < 2; i++){
-				glPushMatrix();
-				if(i){
-					glScalef(1, -1, 1);
-					glFrontFace(GL_CW);
-				}
-				if(0. < reverser){
-					glTranslated(0, 0, -25);
-					glRotated(reverser * 30, -1, 0, 0);
-					glTranslated(0, 0, 25);
-				}
-				if(vbo[2])
-					DrawVBO(vbo[2], wd->shadowmapping ? 0 : SUF_ATR | SUF_TEX, suft);
-				else
-					DecalDrawSUF(sufrev, wd->shadowmapping ? 0 : SUF_ATR, NULL, suft, NULL, NULL);
-				glPopMatrix();
-			}
-			glFrontFace(GL_CCW);
-		}
-#endif
 		glPopMatrix();
 
-/*		if(0 < wd->light[1]){
-			static const double normal[3] = {0., 1., 0.};
-			ShadowSUF(scepter_s.sufbase, wd->light, normal, pt->pos, pt->pyr, scale, NULL);
-		}*/
 		glPopAttrib();
 	}
 }

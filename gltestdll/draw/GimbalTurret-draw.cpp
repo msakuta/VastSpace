@@ -18,21 +18,46 @@ extern "C"{
 
 
 
-/// \brief Loads and initializes model and motions.
-/// \returns True if initialized or already initialized, false if something fail to initialize.
+/// \brief Loads and initializes model.
+/// \returns The Model object to be drawn if initialized or already initialized, NULL if something fail to initialize.
 ///
 /// This process is completely for display, so defined in this GimbalTurret-draw.cpp.
-bool GimbalTurret::initModel(){
+Model *GimbalTurret::initModel(){
 	static OpenGLState::weak_ptr<bool> init;
 
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/GimbalTurret.mqo");
+		init.create(*openGLState);
+	}
+
+	return model;
+}
+
+/// \brief Loads and initializes wheel rotation motions.
+bool GimbalTurret::initMotions(){
+	static OpenGLState::weak_ptr<bool> init;
+
+	if(!init){
 		motions[0] = LoadMotion(modPath() << "models/GimbalTurret_roty.mot");
 		motions[1] = LoadMotion(modPath() << "models/GimbalTurret_rotx.mot");
 		init.create(*openGLState);
 	}
 
-	return !!model;
+	return !!motions[0] && !!motions[1];
+}
+
+/// \brief Reimplements GimbalTurret::initModel() to load MissileGimbalTurret's model.
+///
+/// Note that motions are shared among the classes.
+Model *MissileGimbalTurret::initModel(){
+	static OpenGLState::weak_ptr<bool> init;
+
+	if(!init){
+		model = LoadMQOModel(modPath() << "models/MissileGimbalTurret.mqo");
+		init.create(*openGLState);
+	}
+
+	return model;
 }
 
 void GimbalTurret::draw(WarDraw *wd){
@@ -45,7 +70,8 @@ void GimbalTurret::draw(WarDraw *wd){
 
 	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
 
-	if(!initModel())
+	Model *model = initModel();
+	if(!model || !initMotions())
 		return;
 
 	MotionPose mp[2];

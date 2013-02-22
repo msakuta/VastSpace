@@ -49,7 +49,8 @@ public:
 
 protected:
 	bool buildBody();
-	bool initModel();
+	virtual Model *initModel();
+	bool initMotions();
 	virtual const ManeuverParams &getManeuve()const;
 	virtual float reloadtime()const; ///< Overridable getter that returns interval time between shoots
 	virtual double bulletspeed()const; ///< Overridable getter that returns shot bullet's speed.
@@ -89,11 +90,13 @@ public:
 	static const unsigned classid;
 	static EntityRegister<MissileGimbalTurret> entityRegister;
 protected:
+	Model *initModel();
 	float reloadtime()const{return 2.;}
 	double bulletspeed()const{return 0.4;}
 	float bulletlife()const{return 10.;}
 	double bulletDamage()const{return 100.;}
 	Bullet *createBullet(const Vec3d &gunPos);
+	static Model *model;
 };
 
 #endif

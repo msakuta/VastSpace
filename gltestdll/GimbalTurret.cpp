@@ -233,6 +233,8 @@ Vec3d GimbalTurret::gunPos[2] = {
 	Vec3d(-50. * modelScale, 0. * modelScale, -120. * modelScale)
 };
 
+Model *MissileGimbalTurret::model = NULL;
+
 
 bool GimbalTurret::dock(Docker *d){
 //	d->e->command(&TransportPeopleCommand(people));
@@ -373,6 +375,7 @@ Bullet *GimbalTurret::createBullet(const Vec3d &gunPos){
 void GimbalTurret::draw(WarDraw *){}
 void GimbalTurret::drawtra(wardraw_t *){}
 void GimbalTurret::drawOverlay(wardraw_t *){}
+Model *GimbalTurret::initModel(){return NULL;}
 #endif
 
 

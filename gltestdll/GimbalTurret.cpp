@@ -421,7 +421,7 @@ const char *BeamGimbalTurret::classname()const{
 const unsigned BeamGimbalTurret::classid = registerClass("BeamGimbalTurret", Conster<BeamGimbalTurret>);
 Entity::EntityRegister<BeamGimbalTurret> BeamGimbalTurret::entityRegister("BeamGimbalTurret");
 
-/// \brief Creates a Missile instead of a Bullet.
+/// \brief Creates a BeamProjectile instead of a Bullet.
 Bullet *BeamGimbalTurret::createBullet(const Vec3d &gunPos){
 	Mat4d mat;
 	transform(mat);

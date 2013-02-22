@@ -6,6 +6,7 @@
 #include "Bullet.h"
 #include "tefpol3d.h"
 
+/// \brief A fast bolt of particle beam with trailing beam effect.
 class EXPORT BeamProjectile : public Bullet{
 public:
 	typedef Bullet st;
@@ -28,7 +29,9 @@ protected:
 	double radius;
 	double m_hitradius;
 	Vec4<unsigned char> col;
+	double bands; ///< Remaining expanding disc effect (bands) this projectile can generate.
 	const color_sequence *cs;
+	static const int maxBands = 10; ///< Maximum number of band effects a projectile can generate.
 };
 
 #endif

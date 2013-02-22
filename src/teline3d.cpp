@@ -291,7 +291,7 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 		double *rot = pl->flags & TEL3_HEADFORWARD ? fore : pl->rot;
 		COLOR32 col;
 		br = MIN(pl->life / FADE_START, 1.0);
-		col = pl->life < FADE_START ? (pl->mdl.r & 0x00ffffff) | COLOR32RGBA(0,0,0,(GLubyte)(255 * pl->life / FADE_START)) : pl->mdl.r;
+		col = pl->life < FADE_START ? (pl->mdl.r & 0x00ffffff) | COLOR32RGBA(0,0,0,(GLubyte)(COLOR32A(pl->mdl.r) * pl->life / FADE_START)) : pl->mdl.r;
 
 		if(pl->flags & TEL3_HEADFORWARD){
 			Vec3d dr = pl->velo.norm();

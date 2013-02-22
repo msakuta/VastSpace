@@ -8,6 +8,7 @@
 #include "Game.h"
 #include "Bullet.h"
 #include "Missile.h"
+#include "BeamProjectile.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -116,14 +117,14 @@ void GimbalTurret::anim(double dt){
 
 			Vec3d ldelta = mat.tdvp3(delta);
 			double ldeltaLen = ldelta.len();
-			double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 10., -1, 1);
-			yaw -= desiredYaw * dt * 10.;
+			double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 50., -1, 1);
+			yaw -= desiredYaw * dt * 20.;
 			yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
-			double desiredPitch = rangein(ldelta[1] / ldeltaLen * 10., -1, 1);
-			pitch += desiredPitch * dt * 10.;
+			double desiredPitch = rangein(ldelta[1] / ldeltaLen * 50., -1, 1);
+			pitch += desiredPitch * dt * 20.;
 			pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
 
-			if(fabs(desiredYaw) < 0.5 && fabs(desiredPitch) < 0.5)
+			if(fabs(desiredYaw) < shootPatience() && fabs(desiredPitch) < shootPatience())
 				shoot(dt);
 
 			if(bbody){
@@ -264,19 +265,23 @@ const Autonomous::ManeuverParams &GimbalTurret::getManeuve()const{
 
 
 float GimbalTurret::reloadtime()const{
-	return 0.15;
+	return 0.3;
 }
 
 double GimbalTurret::bulletspeed()const{
-	return 4.;
+	return 3.;
 }
 
 float GimbalTurret::bulletlife()const{
-	return 1.;
+	return 3.;
 }
 
 double GimbalTurret::bulletDamage()const{
-	return 20.;
+	return 10.;
+}
+
+double GimbalTurret::shootPatience()const{
+	return 0.5;
 }
 
 /// \brief The predicate to weigh precedence of Entities individually.
@@ -401,3 +406,31 @@ Bullet *MissileGimbalTurret::createBullet(const Vec3d &gunPos){
 	w->addent(pb);
 	return pb;
 }
+
+
+
+
+const char *BeamGimbalTurret::idname()const{
+	return "BeamGimbalTurret";
+}
+
+const char *BeamGimbalTurret::classname()const{
+	return "BeamGimbalTurret";
+}
+
+const unsigned BeamGimbalTurret::classid = registerClass("BeamGimbalTurret", Conster<BeamGimbalTurret>);
+Entity::EntityRegister<BeamGimbalTurret> BeamGimbalTurret::entityRegister("BeamGimbalTurret");
+
+/// \brief Creates a Missile instead of a Bullet.
+Bullet *BeamGimbalTurret::createBullet(const Vec3d &gunPos){
+	Mat4d mat;
+	transform(mat);
+	BeamProjectile *pb = new BeamProjectile(this, bulletlife(), bulletDamage());
+	Vec3d pos = mat.vp3(gunPos);
+	Vec3d velo = mat.dvp3(Vec3d(0., 0., -bulletspeed())) + this->velo;
+	pb->setPosition(&pos, &rot, &velo);
+	w->addent(pb);
+	return pb;
+}
+
+

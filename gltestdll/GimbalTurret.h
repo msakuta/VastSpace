@@ -56,6 +56,7 @@ protected:
 	virtual double bulletspeed()const; ///< Overridable getter that returns shot bullet's speed.
 	virtual float bulletlife()const; ///< Overridable getter that returns time to live for shot bullets in seconds.
 	virtual double bulletDamage()const; ///< Overridable getter that returns shot bullet's damage.
+	virtual double shootPatience()const; ///< Overridable patience parameter.
 	virtual Bullet *createBullet(const Vec3d &gunPos); ///< Overridable method to create shot bullet.
 	void findtarget(const Entity *ignore_list[], int nignore_list);
 	double findtargetproc(const Entity *target)const;
@@ -97,6 +98,25 @@ protected:
 	double bulletDamage()const{return 100.;}
 	Bullet *createBullet(const Vec3d &gunPos);
 	static Model *model;
+};
+
+/// \brief GimbalTurret that shoots BeamProjectiles.
+class BeamGimbalTurret : public GimbalTurret{
+public:
+	typedef GimbalTurret st;
+	BeamGimbalTurret(Game *game) : st(game){}
+	BeamGimbalTurret(WarField *w) : st(w){}
+	const char *idname()const;
+	virtual const char *classname()const;
+	static const unsigned classid;
+	static EntityRegister<BeamGimbalTurret> entityRegister;
+protected:
+	float reloadtime()const{return 2.;}
+	double bulletspeed()const{return 5.;}
+	float bulletlife()const{return 1.5;}
+	double bulletDamage()const{return 100.;}
+	double shootPatience()const{return 0.03;}
+	Bullet *createBullet(const Vec3d &gunPos);
 };
 
 #endif

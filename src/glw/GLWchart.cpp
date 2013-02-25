@@ -260,6 +260,11 @@ void GLWchart::addSample(gltestp::dstring label, double value)const{
 	}
 }
 
+/// \brief Adds the samples to all GLWchart objects present on the screen.
+/// \param labels The array that holds label strings. The array must have at least count elements, or 1 for normal variable.
+/// \param values The array that holds values. The array must have at least count elements, or 1 for normal variable.
+/// \param count Specifies number of labels and values in the given buffer.
+/// \return If there were one or more GLWcharts that can show the sampled chart.
 bool GLWchart::addSamplesToCharts(const gltestp::dstring labels[], const double values[], int count){
 	bool ret = false;
 	GLwindow *w = glwlist;

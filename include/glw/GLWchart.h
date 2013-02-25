@@ -126,9 +126,13 @@ protected:
 
 
 //-----------------------------------------------------------------------------
-//    Inline Implementation for WarField
+//    Inline Implementation for GLWchart
 //-----------------------------------------------------------------------------
 
+/// \brief Redirect single chart sample to addSamplesToCharts().
+/// \param label The label string to show on the chart.
+/// \param value The value to add for the chart.
+/// \return If there were one or more GLWcharts that can show the sampled chart.
 inline bool GLWchart::addSampleToCharts(gltestp::dstring label, double value){
 	return addSamplesToCharts(&label, &value, 1);
 }

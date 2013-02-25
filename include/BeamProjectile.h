@@ -14,6 +14,7 @@ public:
 	Tefpol *pf;
 	BeamProjectile(Game *game);
 	BeamProjectile(Entity *owner, float life, double damage, double radius = .01, Vec4<unsigned char> col = Vec4<unsigned char>(127,127,255,255), const color_sequence &cs = cs_beamtrail, double getHitRadius = 0.);
+	~BeamProjectile();
 	virtual const char *classname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

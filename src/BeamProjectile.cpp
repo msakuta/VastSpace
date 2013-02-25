@@ -5,6 +5,7 @@
 #include "Viewer.h"
 #include "serial_util.h"
 #include "draw/WarDraw.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/gldraw.h>
@@ -26,6 +27,13 @@ BeamProjectile::BeamProjectile(Game *game) : st(game), cs(&cs_beamtrail), pf(NUL
 
 BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double radius, Vec4<unsigned char> col, const color_sequence &cs, double getHitRadius)
 : st(owner, life, damage), pf(NULL), radius(radius), col(col), cs(&cs), m_hitradius(getHitRadius), bands(maxBands){
+}
+
+BeamProjectile::~BeamProjectile(){
+	if(pf){
+		pf->immobilize();
+		pf = NULL;
+	}
 }
 
 const char *BeamProjectile::classname()const{
@@ -57,7 +65,8 @@ void BeamProjectile::unserialize(UnserializeContext &sc){
 
 void BeamProjectile::enterField(WarField *w){
 #ifndef DEDICATED
-	if(WarSpace *ws = *w)
+	WarSpace *ws = *w;
+	if(ws && game->isClient())
 		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, cs, TEP3_THICKER, cs->t);
 	else
 		pf = NULL;

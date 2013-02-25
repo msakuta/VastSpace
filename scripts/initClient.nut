@@ -179,11 +179,15 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", -1, "diffuse", [0.5,1,1,1]);
 	chart.addSeries("sampled", 0, "expsample", [1,0.5,0.5,1]);
 	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
-	chart.addSeries("sampled", -1, "ServerMissileMapSize", [0.75,0.75,0.75,1]);
-	chart.addSeries("sampled", -1, "ClientMissileMapSize", [0.5,0.5,0.5,1]);
-//	chart.addSeries("sampled", 0, "tellcount", [1,0.75,0.75,1]);
-//	chart.addSeries("sampled", 0, "teplcount", [0.75,1,0.75,1]);
-//	chart.addSeries("sampled", 0, "tevertcount", [0.75,0.75,1,1]);
+//	chart.addSeries("sampled", -1, "ServerMissileMapSize", [0.75,0.75,0.75,1]);
+//	chart.addSeries("sampled", -1, "ClientMissileMapSize", [0.5,0.5,0.5,1]);
+
+	// Following charts are only available in debug build.
+	if(debugBuild()){
+		chart.addSeries("sampled", -1, "tellcount", [1,0.75,0.75,1]);
+		chart.addSeries("sampled", -1, "teplcount", [0.75,1,0.75,1]);
+		chart.addSeries("sampled", -1, "tevertcount", [0.75,0.75,1,1]);
+	}
 });
 
 function control(...){

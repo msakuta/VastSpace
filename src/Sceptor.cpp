@@ -108,6 +108,8 @@ void Sceptor::serialize(SerializeContext &sc){
 }
 
 void Sceptor::unserialize(UnserializeContext &sc){
+	WarField *oldw = w;
+
 	st::unserialize(sc);
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
@@ -128,6 +130,11 @@ void Sceptor::unserialize(UnserializeContext &sc){
 		bbody->setCenterOfMassTransform(btTransform(btqc(rot), btvc(pos)));
 		bbody->setAngularVelocity(btvc(omg));
 		bbody->setLinearVelocity(btvc(velo));
+	}
+
+	if(w != oldw && pf){
+		pf->immobilize();
+		pf = NULL;
 	}
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
@@ -198,7 +205,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->cooldown = 1.;
 	WarSpace *ws;
 #ifndef DEDICATED
-	if(w && (ws = static_cast<WarSpace*>(*w)))
+	if(w && game->isClient() && (ws = static_cast<WarSpace*>(*w)))
 		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 	else
 #endif
@@ -212,6 +219,13 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->cloak = 0;
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
+}
+
+Sceptor::~Sceptor(){
+	if(pf){
+		pf->immobilize();
+		pf = NULL;
+	}
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
@@ -265,11 +279,12 @@ bool Sceptor::undock(Docker *d){
 	task = Undock;
 	mother = d;
 #ifndef DEDICATED
-	if(this->pf)
-		pf->immobilize();
-	WarSpace *ws;
-	if(w && w->getTefpol3d())
-		this->pf = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+	if(game->isClient()){
+		if(this->pf)
+			pf->immobilize();
+		if(w && w->getTefpol3d())
+			this->pf = w->getTefpol3d()->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
+	}
 #endif
 	d->baycool += 1.;
 	return true;
@@ -507,7 +522,7 @@ void Sceptor::enterField(WarField *target){
 	WarSpace *ws = *target;
 
 #ifndef DEDICATED
-	if(ws)
+	if(ws && game->isClient())
 		pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 #endif
 

@@ -69,6 +69,7 @@ protected:
 public:
 	Sceptor(Game *game);
 	Sceptor(WarField *aw);
+	~Sceptor();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	static const unsigned classid;

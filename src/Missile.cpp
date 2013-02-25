@@ -82,13 +82,9 @@ void Missile::anim(double dt){
 				serverMissiles++;
 		}
 
-		GLwindow *w = glwlist;
-		for(; w; w = w->getNext()){
-			if(w->classname() && !strcmp(w->classname(), "GLWchart")){
-				static_cast<GLWchart*>(w)->addSample("ServerMissileMapSize", serverMissiles);
-				static_cast<GLWchart*>(w)->addSample("ClientMissileMapSize", targetmap().size() - serverMissiles);
-			}
-		}
+		gltestp::dstring labels[2] = {"ServerMissileMapSize", "ClientMissileMapSize"};
+		double values[2] = {serverMissiles, targetmap().size() - serverMissiles};
+		GLWchart::addSamplesToCharts(labels, values, 2);
 	}
 
 	{

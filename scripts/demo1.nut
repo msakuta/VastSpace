@@ -31,11 +31,11 @@ if(1){
 		local turret = player.cs.addent("GimbalTurret", Vec3d(0,0 + 0.05 * i,0.05));
 		turret.race = 1;
 	}
-	for(local i = 0; i < 0; i++){
+	for(local i = 0; i < 5; i++){
 		local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0 + i * 0.05,-0.05));
 		mturret.race = 1;
 	}
-	for(local i = 0; i < 5; i++){
+	for(local i = 0; i < 0; i++){
 		local bturret = player.cs.addent("BeamGimbalTurret", Vec3d(0.05,0 + 0.05 * i, -0.10));
 		bturret.race = 1;
 	}

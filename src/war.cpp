@@ -16,6 +16,9 @@
 #include "msg/Message.h"
 #include "msg/GetCoverPointsMessage.h"
 #include "tefpol3d.h"
+#ifndef DEDICATED
+#include "glw/GLWchart.h"
+#endif
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/timemeas.h>
@@ -376,9 +379,14 @@ void WarSpace::clientUpdate(double dt){
 
 	bdw->stepSimulation(dt / 1., 0);
 
-#ifdef _WIN32
+#ifndef DEDICATED
+	const struct tent3d_line_debug *tld = Teline3DDebug(tell);
+	GLWchart::addSampleToCharts("tellcount", tld->teline_c);
 	TRYBLOCK(AnimTeline3D(tell, dt));
 	TRYBLOCK(AnimTeline3D(gibs, dt));
+
+	GLWchart::addSampleToCharts("teplcount", tepl->getDebug()->tefpol_c);
+	GLWchart::addSampleToCharts("tevertcount", tepl->getDebug()->tevert_c);
 	TRYBLOCK(tepl->anim(dt));
 #endif
 }

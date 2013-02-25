@@ -53,6 +53,9 @@ public:
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
 	static SQInteger sqf_addSeries(HSQUIRRELVM v);
 
+	static bool addSampleToCharts(gltestp::dstring label, double value);
+	static bool addSamplesToCharts(const gltestp::dstring label[], const double value[], int count);
+
 protected:
 	std::vector<ChartSeries *> series;
 
@@ -120,6 +123,16 @@ protected:
 	/// \brief The derived classes must override this function to mark a value in time line.
 	virtual double timeProc(double dt) = 0;
 };
+
+
+//-----------------------------------------------------------------------------
+//    Inline Implementation for WarField
+//-----------------------------------------------------------------------------
+
+inline bool GLWchart::addSampleToCharts(gltestp::dstring label, double value){
+	return addSamplesToCharts(&label, &value, 1);
+}
+
 
 
 #endif

@@ -260,6 +260,19 @@ void GLWchart::addSample(gltestp::dstring label, double value)const{
 	}
 }
 
+bool GLWchart::addSamplesToCharts(const gltestp::dstring labels[], const double values[], int count){
+	bool ret = false;
+	GLwindow *w = glwlist;
+	for(; w; w = w->getNext()){
+		if(w->classname() && !strcmp(w->classname(), "GLWchart")){
+			for(int i = 0; i < count; i++)
+				static_cast<GLWchart*>(w)->addSample(labels[i], values[i]);
+			ret = true;
+		}
+	}
+	return true;
+}
+
 
 /// Define class GLWmessage for Squirrel
 bool GLWchart::sq_define(HSQUIRRELVM v){

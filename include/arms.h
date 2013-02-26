@@ -64,6 +64,7 @@ public:
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&));
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
+	virtual void clientUpdate(double dt);
 	virtual void postframe();
 	virtual double getHitRadius()const;
 	virtual Entity *getOwner();

@@ -99,6 +99,7 @@ protected:
 public:
 	Defender(Game *game);
 	Defender(WarField *aw);
+	~Defender();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	static const unsigned classid;

@@ -181,6 +181,15 @@ Defender::Defender(WarField *aw) : st(aw),
 	integral[0] = integral[1] = 0.;
 }
 
+Defender::~Defender(){
+	for(int i = 0; i < 4; i++){
+		if(pf[i]){
+			pf[i]->immobilize();
+			pf[i] = NULL;
+		}
+	}
+}
+
 void Defender::init(){
 	Defender *const p = this;
 	static bool initialized = false;

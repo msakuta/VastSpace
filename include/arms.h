@@ -53,8 +53,8 @@ class EXPORT HardPointList : public std::vector<hardpoint_static*>{
 class EXPORT ArmBase : public Entity{
 public:
 	typedef Entity st;
-	Entity *base;
-	Entity *target;
+	WeakPtr<Entity> base; ///< Mounted platform object. Can be destroyed before this ArmBase itself.
+	WeakPtr<Entity> target; ///< Targetted enemy.
 	const hardpoint_static *hp;
 	int ammo;
 	ArmBase(Game *game) : st(game){}

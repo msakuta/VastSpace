@@ -65,7 +65,6 @@ public:
 	virtual void draw(wardraw_t *wd) = 0;
 	virtual void anim(double dt) = 0;
 	virtual void clientUpdate(double dt);
-	virtual void postframe();
 	virtual double getHitRadius()const;
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
@@ -103,7 +102,6 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual void control(const input_t *, double dt);
 	virtual void anim(double dt);
-	virtual void postframe();
 	virtual double getHitRadius()const;
 	virtual Props props()const;
 	virtual cpplib::dstring descript()const;

@@ -2,16 +2,6 @@
  * \brief Implementation of ArmBase derived classes.
  */
 #include "arms.h"
-#include "Player.h"
-#include "astro.h"
-#include "argtok.h"
-//#include "entity_p.h"
-#include "antiglut.h"
-#include "cmd.h"
-//#include "aim9.h"
-//#include "suflist.h"
-//#include "yssurf.h"
-//#include "walk.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
@@ -19,15 +9,9 @@
 #include "motion.h"
 #include "Game.h"
 extern "C"{
-#include "calc/calc.h"
-#include <clib/c.h>
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
-#include <clib/zip/UnZip.h>
-#include <clib/zip/UniformLoader.h>
 }
-#include <limits.h>
-#include <stdlib.h>
 
 
 const char *hardpoint_static::classname()const{
@@ -98,12 +82,6 @@ void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeC
 void ArmBase::clientUpdate(double dt){
 	// Default behavior is to act like in the server.
 	anim(dt);
-}
-
-void ArmBase::postframe(){
-	// inter-CoordSys weapons may remember the target run away to another CoordSys?
-	if(target && target->w != w)
-		target = NULL;
 }
 
 double ArmBase::getHitRadius()const{
@@ -388,16 +366,6 @@ void MTurret::anim(double dt){
 		a->cooldown = 0.;
 	else
 		a->cooldown -= dt;
-}
-
-void MTurret::postframe(){
-	if(target && !target->w){
-		target = NULL;
-		if(forceEnemy)
-			forceEnemy = false;
-	}
-	if(base && !base->w)
-		base = NULL;
 }
 
 double MTurret::getHitRadius()const{

@@ -252,7 +252,8 @@ void Defender::shoot(double dt){
 	if(dt <= cooldown)
 		return;
 	transform(mat);
-	if(game->isServer()){
+	// Create bullet in the client, too.
+/*	if(game->isServer())*/{
 		Bullet *pb = new BeamProjectile(this, 5, 200.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos);

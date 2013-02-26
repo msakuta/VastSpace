@@ -117,10 +117,10 @@ void GimbalTurret::anim(double dt){
 
 			Vec3d ldelta = mat.tdvp3(delta);
 			double ldeltaLen = ldelta.len();
-			double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 50., -1, 1);
+			double desiredYaw = rangein(-ldelta[0] / ldeltaLen * 20., -1, 1);
 			yaw -= desiredYaw * dt * 20.;
 			yaw -= floor(yaw / (2. * M_PI)) * 2. * M_PI;
-			double desiredPitch = rangein(ldelta[1] / ldeltaLen * 50., -1, 1);
+			double desiredPitch = rangein(ldelta[1] / ldeltaLen * 20., -1, 1);
 			pitch += desiredPitch * dt * 20.;
 			pitch -= floor(pitch / (2. * M_PI)) * 2. * M_PI;
 
@@ -428,6 +428,15 @@ Bullet *BeamGimbalTurret::createBullet(const Vec3d &gunPos){
 	BeamProjectile *pb = new BeamProjectile(this, bulletlife(), bulletDamage());
 	Vec3d pos = mat.vp3(gunPos);
 	Vec3d velo = mat.dvp3(Vec3d(0., 0., -bulletspeed())) + this->velo;
+	// Bullet head direction correction, copied from Defender.cpp.
+	if(enemy){
+		Vec3d epos;
+		estimate_pos(epos, enemy->pos, enemy->velo, pos, this->velo, bulletspeed(), w);
+		Vec3d dv = (epos - pos).normin();
+		if(.95 < dv.sp(mat.dvp3(Vec3d(0,0,-1)))){
+			velo = dv * bulletspeed();
+		}
+	}
 	pb->setPosition(&pos, &rot, &velo);
 	w->addent(pb);
 	return pb;

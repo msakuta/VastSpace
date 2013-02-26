@@ -315,7 +315,7 @@ void Sceptor::shootDualGun(double dt){
 		do{
 			Bullet *pb;
 			double phi, theta;
-			pb = new Bullet(this, 5, 15.);
+			pb = new Bullet(this, 6., 15.);
 			w->addent(pb);
 			pb->pos = mat.vp3(gunPos[i]);
 	/*		phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
@@ -326,7 +326,7 @@ void Sceptor::shootDualGun(double dt){
 			pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);*/
 			pb->velo = mat.dvp3(velo0);
 			pb->velo += this->velo;
-			pb->life = 6.;
+//			pb->life = 6.;
 			this->heat += .025;
 		} while(!i++);
 	}

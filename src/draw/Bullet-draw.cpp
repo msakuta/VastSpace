@@ -428,6 +428,9 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){
 
 
 void Bullet::drawtra(wardraw_t *wd){
+	// Do not draw if killed in the client (but not sure for the server).
+	if(!active)
+		return;
 	double length = (this->damage * .25 + VECSLEN(this->velo) * 5 * 5 + 20) * .0005;
 	double span, scale;
 	double pixels;

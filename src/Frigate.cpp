@@ -227,7 +227,7 @@ int Frigate::takedamage(double damage, int hitpart){
 
 void Frigate::bullethit(const Bullet *pb){
 	Frigate *p = this;
-	if(pb->damage < p->shieldAmount){
+	if(pb->getDamage() < p->shieldAmount){
 		se.bullethit(this, pb, maxshield());
 	}
 }

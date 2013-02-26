@@ -217,7 +217,7 @@ double LMissileTurret::findtargetproc(const Entity *pb, const hardpoint_static *
 	if(it != Missile::targetmap().end()){
 		ObservableSet<Missile> &theMap = it->second;
 		for(ObservableSet<Missile>::iterator pm = theMap.begin(); pm != theMap.end(); ++pm){
-			accumdamage += (*pm)->damage;
+			accumdamage += (*pm)->getDamage();
 			if(pt2->health < accumdamage)
 				return 0.;
 		}

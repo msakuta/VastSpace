@@ -263,7 +263,7 @@ void Defender::shoot(double dt){
 	transform(mat);
 	// Create bullet in the client, too.
 /*	if(game->isServer())*/{
-		Bullet *pb = new BeamProjectile(this, 5, 200.);
+		Bullet *pb = new BeamProjectile(this, 3., 200.);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunPos);
 		pb->velo = mat.dvp3(velo0);
@@ -276,7 +276,7 @@ void Defender::shoot(double dt){
 			}
 		}
 		pb->velo += this->velo;
-		pb->life = 3.;
+//		pb->life = 3.;
 	}
 	this->heat += .025f;
 //	shootsound(pt, w, p->cooldown);

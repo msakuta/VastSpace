@@ -27,7 +27,7 @@ extern "C"{
 #include <stddef.h>
 
 
-Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(true), life(alife), runlength(0){
+Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(true), life(alife), runlength(0), active(true){
 	if(owner)
 		race = owner->race;
 #ifndef DEDICATED
@@ -62,6 +62,10 @@ void Bullet::unserialize(UnserializeContext &sc){
 	sc.i >> runlength;
 	sc.i >> owner;
 	sc.i >> grav;
+
+	// If we were not deleted, we were alive in the server.
+	// Make the client follow the server.
+	active = true;
 }
 
 #if 0
@@ -394,6 +398,8 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 			bulletkill(-1, NULL);
 			if(game->isServer())
 				delete this;
+			else
+				active = false;
 
 #ifndef DEDICATED
 			extern int bullet_hits;
@@ -413,7 +419,7 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 }
 
 void Bullet::anim(double dt){
-	if(!w || life < 0.)
+	if(!w || life < 0. || !active)
 		return;
 	WarSpace *ws = *w;
 	Bullet *const pb = this;

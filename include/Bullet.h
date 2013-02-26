@@ -18,14 +18,15 @@ struct otjEnumHitSphereParam;
 class EXPORT Bullet : public Entity{
 public:
 	typedef Entity st;
-
+protected:
 	double damage; ///< Damaging amount
 	float life; ///< Entity is removed after this value runs out
 	float runlength; ///< Run length since creation. Note that it's not age after creation.
 	WeakPtr<Entity> owner; ///< Owner of this Entity. If this projectile kills something, this event is reported to the owner.
 	bool grav; ///< Flag to enable gravity.
-
-	Bullet(Game *game) : st(game){}
+	bool active; ///< Client-side flag indicating if this object is alive in the client.
+public:
+	Bullet(Game *game) : st(game), active(true){}
 	Bullet(Entity *owner, float life, double damage);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -39,6 +40,8 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual Entity *getOwner();
 	virtual bool isTargettable()const;
+
+	double getDamage()const{return damage;}
 protected:
 	void bulletkill(int hitground, const struct contact_info *ci);
 	bool bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);

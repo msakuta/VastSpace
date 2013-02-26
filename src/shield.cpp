@@ -59,7 +59,7 @@ void ShieldEffect::bullethit(const Entity *pe, const Bullet *pb, double maxshiel
 		pi = sqrt(1. - rot[3] * rot[3]) / VECLEN(v);
 		(Vec3d&)rot = v * pi;
 	}
-	double rdamage = pb->damage / maxshield;
+	double rdamage = pb->getDamage() / maxshield;
 	double amount = MIN(rdamage * 100. + .2, 5.);
 
 	Wavelet **plactv = &p;

@@ -476,7 +476,7 @@ int Soldier::shoot_infgun(double phi0, double theta0, double v, double damage, d
 	}
 	else
 		pb = (p->arms[0].type == arms_plg ? BeamNew : p->arms[0].type == arms_mortar ? MortarHeadNew : p->arms[0].type == arms_m16rifle && p->arms[0].ammo < 5 ? TracerBulletNew : p->arms[0].type == arms_shotgun ? ShotgunBulletNew : NormalBulletNew)(w, pt, damage);*/
-	pb = new Bullet(this, 1., damage);
+	pb = new Bullet(this, 5., damage);
 	pb->velo = this->velo;
 	Vec3d nh = gunmat.dvp3(nh0);
 #if 0
@@ -502,7 +502,7 @@ int Soldier::shoot_infgun(double phi0, double theta0, double v, double damage, d
 	pb->pos = this->pos + zh;
 	pb->pos[1] += hei;
 //	pb->life = p->arms[0].type == arms_mortar ? 60. : p->arms[0].type == arms_rpg7 ? 5. : 2.;
-	pb->life = 5.;
+//	pb->life = 5.;
 	pb->anim(t);
 /*	VECADD(pb->pos, pt->pos, pos);*/
 
@@ -1794,7 +1794,7 @@ void Firearm::shoot(){
 		gunRot = ggp.gunRot;
 	}
 
-	Bullet *pb = new Bullet(this, 1., bulletDamage());
+	Bullet *pb = new Bullet(this, bulletLifeTime(), bulletDamage());
 	pb->mass = 0.03 * bulletDamage(); // 10 grams
 	pb->velo = this->velo;
 	Vec3d nh = gunRot.trans(nh0);
@@ -1816,7 +1816,7 @@ void Firearm::shoot(){
 	// Impulse
 	base->velo -= pb->velo * pb->mass / base->mass;
 
-	pb->life = bulletLifeTime();
+//	pb->life = bulletLifeTime();
 //	pb->anim(t);
 
 	w->addent(pb);

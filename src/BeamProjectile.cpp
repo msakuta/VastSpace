@@ -88,6 +88,8 @@ void BeamProjectile::anim(double dt){
 
 void BeamProjectile::clientUpdate(double dt){
 #ifndef DEDICATED
+	if(!active)
+		return;
 	double velolen = velo.len();
 	double bandScale = 0.1 / velolen;
 	double bandTime = 0.;
@@ -118,6 +120,9 @@ void BeamProjectile::clientUpdate(double dt){
 void BeamProjectile::drawtra(WarDraw *){}
 #else
 void BeamProjectile::drawtra(wardraw_t *wd){
+	// Do not draw if killed in the client (but not sure for the server).
+	if(!active)
+		return;
 //	const GLubyte acol[4] = {COLOR32R(col), COLOR32G(col), COLOR32B(col), COLOR32A(col)};
 	gldSpriteGlow(pos, radius, col, wd->vw->irot);
 }

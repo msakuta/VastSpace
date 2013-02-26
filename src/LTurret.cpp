@@ -2,32 +2,14 @@
  * \brief Implementation of LTurret and LMissileTurret.
  */
 #include "LTurret.h"
-#include "Player.h"
-#include "astro.h"
-#include "argtok.h"
-//#include "entity_p.h"
-#include "antiglut.h"
-#include "cmd.h"
-//#include "aim9.h"
-//#include "suflist.h"
-//#include "yssurf.h"
-//#include "walk.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
-#include "EntityCommand.h"
-#include "motion.h"
-#include "Game.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/c.h>
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
-#include <clib/zip/UnZip.h>
-#include <clib/zip/UniformLoader.h>
 }
-#include <limits.h>
-#include <stdlib.h>
 
 #define LTURRET_VARIANCE (.001 * M_PI)
 #define LTURRETROTSPEED (.4*M_PI)
@@ -104,10 +86,11 @@ void LTurret::tryshoot(){
 		return;
 
 	// Do not actually shoot in the client.
-	if(!game->isServer()){
+	// Yes, we can shoot in the client.
+/*	if(!game->isServer()){
 		this->cooldown += reloadtime();
 		return;
-	}
+	}*/
 
 	Mat4d mat;
 	Quatd qrot;

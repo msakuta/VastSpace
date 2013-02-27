@@ -735,7 +735,9 @@ void Entity::drawtra(wardraw_t *){}
 void Entity::drawHUD(wardraw_t *){}
 void Entity::drawOverlay(wardraw_t *){}
 bool Entity::solid(const Entity *)const{return true;} // Default is to check hits
-void Entity::bullethit(const Bullet *){}
+/// \param b The Bullet object that hit me.
+/// \param hitpart The hit part ID of this object.
+void Entity::onBulletHit(const Bullet *b, int hitpart){}
 Entity *Entity::getOwner(){return NULL;}
 bool Entity::isSelectable()const{return false;}
 int Entity::armsCount()const{return 0;}

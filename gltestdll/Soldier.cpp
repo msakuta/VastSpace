@@ -183,7 +183,7 @@ void Soldier::draw(WarDraw *){}
 void Soldier::drawtra(WarDraw *){}
 void Soldier::drawHUD(WarDraw *){}
 void Soldier::drawOverlay(WarDraw *){}
-void Soldier::bullethit(const Bullet *){}
+void Soldier::onBulletHit(const Bullet *, int){}
 void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){}
 bool Soldier::getGunPos(GetGunPosCommand &ggp){
 	ggp.pos = this->pos;

@@ -291,7 +291,7 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 				return true;
 
 			pb->pos = pos;
-			pt->bullethit(pb);
+			pt->onBulletHit(pb, hitpart);
 #if 1
 #ifndef DEDICATED
 			{ /* ricochet */

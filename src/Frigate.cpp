@@ -114,6 +114,11 @@ void Frigate::anim(double dt){
 	se.anim(dt);
 
 }
+
+void Frigate::clientUpdate(double dt){
+	anim(dt);
+}
+
 double Frigate::getHitRadius()const{return .1;}
 Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::ManeuverParams &Frigate::getManeuve()const{return frigate_mn;}
@@ -225,9 +230,9 @@ int Frigate::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-void Frigate::bullethit(const Bullet *pb){
+void Frigate::onBulletHit(const Bullet *pb, int hitpart){
 	Frigate *p = this;
-	if(pb->getDamage() < p->shieldAmount){
+	if(hitpart == 1000 && pb->getDamage() < p->shieldAmount){
 		se.bullethit(this, pb, maxshield());
 	}
 }
@@ -239,7 +244,8 @@ int Frigate::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 	int reti = 0, i, n;
 
 	// Temporarily disabled hit judge for shields.
-	if(false && 0 < p->shieldAmount){
+	// Now we can enable it even in network game.
+	if(true && 0 < p->shieldAmount){
 		Vec3d hitpos;
 		if(jHitSpherePos(pos, getHitRadius() + rad, src, dir, dt, ret, &hitpos)){
 			if(retp) *retp = hitpos;

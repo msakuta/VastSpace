@@ -470,7 +470,7 @@ static void bloodsmoke(const struct tent3d_line_callback *pl, const struct tent3
 	glPopMatrix();
 }
 
-void Soldier::bullethit(const Bullet *pb){
+void Soldier::onBulletHit(const Bullet *pb, int){
 	if(w->getTeline3d()){
 		Vec3d pos = pb->pos;
 		Vec3d velo = pb->velo.norm() * 0.005 + this->velo;

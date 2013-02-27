@@ -66,7 +66,7 @@ public:
 	virtual double maxhealth()const;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
-	virtual void bullethit(const Bullet *);
+	virtual void onBulletHit(const Bullet *, int hitpart);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	virtual int takedamage(double damage, int hitpart);
 	virtual Props props()const;

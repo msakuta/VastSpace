@@ -216,6 +216,11 @@ function sendCM(name){
 	return ret.result;
 }
 
+/// Notify calling loadmission in client is invalid.
+function loadmission(...){
+	print("Invocation of loadmission() in the client machine is prohibited.");
+}
+
 //register_console_command("loadmission", loadmission);
 
 //tutorial1 <- loadmission("scripts/tutorial1.nut");
@@ -246,7 +251,7 @@ function init_Universe(){
 	local sch = screenheight();
 
 	mainmenu.title = "Select Mission";
-	mainmenu.addItem("Tutorial 1 - Basic", "loadmission \"scripts/tutorial1.dat\"");
+	mainmenu.addItem("Tutorial 1 - Basic", @() sendCM("load_tutorial1"));
 	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
 	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
 	mainmenu.addItem("test", callTest);
@@ -357,6 +362,16 @@ function frameproc(dt){
 				mainmenu.close();
 			}
 			initUI();
+			if(squirrelShare.tutorial == "true"){
+				local tutorialbut = GLWbuttonMatrix(3, 1);
+				tutorialbut.title = tlate("Tutorial");
+				tutorialbut.addButton("sq \"sendCM(\\\"tutor_restart\\\")\"", "textures/tutor_restart.png", tlate("Restart"));
+				tutorialbut.addButton("sq \"sendCM(\\\"tutor_proceed\\\")\"", "textures/tutor_proceed.png", tlate("Proceed"));
+				tutorialbut.addButton("sq \"sendCM(\\\"tutor_end\\\")\"", "textures/tutor_end.png", tlate("End"));
+				tutorialbut.x = screenwidth() - tutorialbut.width;
+				tutorialbut.y = sysbut.y - tutorialbut.height;
+				tutorialbut.pinned = true;
+			}
 		}
 	}
 }

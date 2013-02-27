@@ -1,6 +1,8 @@
 
-initUI();
+squirrelShare.tutorial = "true";
 
+//initUI();
+/*
 local tutorialbut = GLWbuttonMatrix(3, 1);
 tutorialbut.title = tlate("Tutorial");
 tutorialbut.addButton("tutor_restart", "textures/tutor_restart.png", tlate("Restart"));
@@ -9,7 +11,7 @@ tutorialbut.addButton("tutor_end", "textures/tutor_end.png", tlate("End"));
 tutorialbut.x = screenwidth() - tutorialbut.width;
 tutorialbut.y = sysbut.y - tutorialbut.height;
 tutorialbut.pinned = true;
-
+*/
 //deltaFormation("Defender", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
 deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -0.025), 0.05, 5, player.cs, null);
 deltaFormation("Sceptor", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, player.cs, null);
@@ -122,7 +124,7 @@ function inccm(){
 
 local mes = inccm();
 
-register_console_command("tutor_proceed", function(){
+function tutor_proceed(){
 	sequenceIndex++;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
@@ -130,9 +132,9 @@ register_console_command("tutor_proceed", function(){
 		lastmessage.close();
 	}
 	inccm();
-});
+};
 
-register_console_command("tutor_restart", function(){
+function tutor_restart(){
 	sequenceIndex = 0;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
@@ -140,9 +142,9 @@ register_console_command("tutor_restart", function(){
 		lastmessage.close();
 	}
 	inccm();
-});
+};
 
-register_console_command("tutor_end", function(){
+function tutor_end(){
 	sequenceIndex = 1000;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
@@ -150,13 +152,14 @@ register_console_command("tutor_end", function(){
 		lastmessage.close();
 	}
 	inccm();
-});
+};
 
 
+/*
 function frameproc(dt){
 	framecount++;
 
 	if(showdt)
 		print("DT = " + dt + ", FPS = " + (1. / dt) + ", FC = " + framecount);
 }
-
+*/

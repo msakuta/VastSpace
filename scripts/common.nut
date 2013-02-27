@@ -735,6 +735,7 @@ endControl <- {};
 /// Running arbitrary code given from the client on the server can be the most dangerous security hole,
 /// so we only permit certain operations defined in this table.
 clientMessageResponses <- {
+	load_tutorial1 = @() loadmission("scripts/tutorial1.nut"),
 	load_eternalFight = @() loadmission("scripts/eternalFight.nut"),
 	load_demo1 = @() loadmission("scripts/demo1.nut"),
 	load_demo2 = @() loadmission("scripts/demo2.nut"),
@@ -745,6 +746,11 @@ clientMessageResponses <- {
 	load_demo7 = @() loadmission("scripts/demo7.nut"),
 	load_demo8 = @() loadmission("scripts/demo8.nut"),
 	load_gundamdemo = @() loadmission("gundam/demo.nut"),
+
+	// The following function names are not yet defined here, so we cannot directly assign name.
+	tutor_restart = @() tutor_restart(),
+	tutor_proceed = @() tutor_proceed(),
+	tutor_end = @() tutor_end(),
 };
 
 

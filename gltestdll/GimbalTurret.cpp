@@ -381,6 +381,8 @@ void GimbalTurret::draw(WarDraw *){}
 void GimbalTurret::drawtra(wardraw_t *){}
 void GimbalTurret::drawOverlay(wardraw_t *){}
 Model *GimbalTurret::initModel(){return NULL;}
+Model *MissileGimbalTurret::initModel(){return NULL;}
+void GimbalTurret::deathEffect(){}
 #endif
 
 

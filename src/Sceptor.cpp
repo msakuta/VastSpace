@@ -132,10 +132,12 @@ void Sceptor::unserialize(UnserializeContext &sc){
 		bbody->setLinearVelocity(btvc(velo));
 	}
 
+#ifndef DEDICATED
 	if(w != oldw && pf){
 		pf->immobilize();
 		pf = NULL;
 	}
+#endif
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 /*	WarSpace *ws;
@@ -222,10 +224,12 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 }
 
 Sceptor::~Sceptor(){
+#ifndef DEDICATED
 	if(pf){
 		pf->immobilize();
 		pf = NULL;
 	}
+#endif
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};

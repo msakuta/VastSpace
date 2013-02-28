@@ -182,12 +182,14 @@ Defender::Defender(WarField *aw) : st(aw),
 }
 
 Defender::~Defender(){
+#ifndef DEDICATED
 	for(int i = 0; i < 4; i++){
 		if(pf[i]){
 			pf[i]->immobilize();
 			pf[i] = NULL;
 		}
 	}
+#endif
 }
 
 void Defender::init(){

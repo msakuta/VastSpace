@@ -4,13 +4,10 @@
 #include "TorusStation.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
-#include "astrodraw.h"
 #include "CoordSys.h"
 #include "Universe.h"
 #include "Player.h"
 #include "war.h"
-#include "glsl.h"
-#include "glstack.h"
 #include "cmd.h"
 #include "btadapt.h"
 #include "judge.h"
@@ -390,6 +387,7 @@ void TorusStationEntity::buildShape(){
 /// \brief An utility method that returns if the Entity can be culled in rendering of viewing volume.
 /// \returns true if the object is culled
 bool TorusStation::cull(const Viewer &vw)const{
+#ifndef DEDICATED
 	GLcull *gc = vw.gc, *gc2 = vw.gclist[0];
 
 	Vec3d pos = vw.cs->tocs(vec3_000, this);
@@ -399,6 +397,7 @@ bool TorusStation::cull(const Viewer &vw)const{
 	if(pixels < 1)
 		return true;
 	return false;
+#endif
 }
 
 

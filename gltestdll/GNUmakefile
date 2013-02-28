@@ -18,6 +18,7 @@ depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I ../i
 
 objects = ${OUTDIR}/Soldier.o\
  ${OUTDIR}/TorusStation.o\
+ ${OUTDIR}/GimbalTurret.o\
  ../../clib/Release/clib.a\
  ../../cpplib/Release/cpplib.a
 
@@ -32,6 +33,8 @@ ${OUTDIR}:
 ${OUTDIR}/Soldier.o: $(call depends,Soldier.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/TorusStation.o: $(call depends,TorusStation.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/GimbalTurret.o: $(call depends,GimbalTurret.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 clean:

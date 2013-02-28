@@ -30,10 +30,12 @@ BeamProjectile::BeamProjectile(Entity *owner, float life, double damage, double 
 }
 
 BeamProjectile::~BeamProjectile(){
+#ifndef DEDICATED
 	if(pf){
 		pf->immobilize();
 		pf = NULL;
 	}
+#endif
 }
 
 const char *BeamProjectile::classname()const{

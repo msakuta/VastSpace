@@ -74,6 +74,7 @@ void Missile::anim(double dt){
 	WarField *oldw = w;
 	updateFpol();
 
+#ifndef DEDICATED
 	{
 		// We plot size of missile target map.
 		int serverMissiles = 0;
@@ -86,6 +87,7 @@ void Missile::anim(double dt){
 		double values[2] = {serverMissiles, targetmap().size() - serverMissiles};
 		GLWchart::addSamplesToCharts(labels, values, 2);
 	}
+#endif
 
 	{
 		Entity *target = enemy;

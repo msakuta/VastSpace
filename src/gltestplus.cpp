@@ -1705,22 +1705,6 @@ void Game::mouse_func(int button, int state, int x, int y){
 	s_mousex = x;
 	s_mousey = y;
 
-/*	{
-		int ivp[4];
-		glGetIntegerv(GL_VIEWPORT, ivp);
-		viewport gvp;
-		gvp.set(ivp);
-		int i = (y - 40) / 10;
-		if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && gvp.w - 160 <= x && 0 <= i && i < OV_COUNT){
-			if(g_counts[i] == 1){
-				pl.chase = pl.selected = g_tanks[i];
-			}
-			else
-				pl.selected = NULL;
-			current_vft = g_vfts[i];
-		}
-	}*/
-
 #if USEWIN && defined _WIN32
 	if(!cmdwnd && !player->controlled && (!mouse_captured ? state == GLUT_KEEP_DOWN : state == GLUT_UP) && button == GLUT_RIGHT_BUTTON){
 		mouse_captured = !mouse_captured;
@@ -1988,7 +1972,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 			if(!mouse_captured){
 				s_mousex = LOWORD(lParam);
 				s_mousey = HIWORD(lParam);
-				Game *game = application.mode & application.ServerBit ? server : application.clientGame;
+				Game *game = application.clientGame ? application.clientGame : server;
 				if(game->player)
 					game->player->mousemove(hWnd, s_mousex - s_mousedragx, s_mousey - s_mousedragy, wParam, lParam);
 				if(glwdrag || !(wParam & MK_LBUTTON)){

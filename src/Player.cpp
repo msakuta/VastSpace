@@ -22,6 +22,7 @@ extern "C"{
 }
 #include <sstream>
 
+double mouseLookSensitivity = 1.;
 
 /// \brief The client message that tells the server that this Player wants to change rotation.
 struct CMMover : ClientMessage{
@@ -535,7 +536,7 @@ bool Player::unlink(const Observable *pe){
 }
 
 void Player::rotateLook(double dx, double dy){
-	mover->rotateLook(dx, dy);
+	mover->rotateLook(dx * mouseLookSensitivity, dy * mouseLookSensitivity);
 }
 
 void FreelookMover::setGear(int g){
@@ -763,6 +764,7 @@ void Player::cmdInit(ClientApplication &application){
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
 	CvarAdd("attackorder", &pl.attackorder, cvar_int);
 	CvarAdd("forceattackorder", &pl.forceattackorder, cvar_int);
+	CvarAdd("mouseLookSensitivity", &mouseLookSensitivity, cvar_double);
 #endif
 }
 
@@ -1026,9 +1028,16 @@ void Player::sq_define(HSQUIRRELVM v){
 
 SQInteger Player::sqf_get(HSQUIRRELVM v){
 	try{
-		Player *p = sq_refobj(v);
 		const SQChar *wcs;
 		sq_getstring(v, 2, &wcs);
+
+		// Can query value without actual object reference.
+		if(!strcmp(wcs, _SC("mouseLookSensitivity"))){
+			sq_pushfloat(v, SQFloat(mouseLookSensitivity));
+			return 1;
+		}
+
+		Player *p = sq_refobj(v);
 		if(!strcmp(wcs, _SC("alive"))){
 			sq_pushbool(v, !!p);
 			return 1;
@@ -1104,9 +1113,20 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 
 SQInteger Player::sqf_set(HSQUIRRELVM v){
 	try{
-		Player *p = sq_refobj(v);
 		const SQChar *wcs;
 		sq_getstring(v, 2, &wcs);
+
+		// Unlike viewdist, this value is not really interesting for the Server; The client can set any value
+		// without notifying. This value is not bound to specific Player, it's a global variable.
+		if(!strcmp(wcs, _SC("mouseLookSensitivity"))){
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return SQ_ERROR;
+			mouseLookSensitivity = f;
+			return 1;
+		}
+
+		Player *p = sq_refobj(v);
 		SQRESULT sr;
 
 		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
@@ -1170,10 +1190,9 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			return 0;
 		}
 		else if(!strcmp(wcs, _SC("viewdist"))){
-			if(OT_FLOAT != sq_gettype(v, 3))
-				return SQ_ERROR;
 			SQFloat f;
-			sq_getfloat(v, 3, &f);
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return SQ_ERROR;
 			p->viewdist = f;
 			CMViewDist::s.send(f);
 			return 1;

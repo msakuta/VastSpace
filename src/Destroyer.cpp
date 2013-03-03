@@ -169,8 +169,8 @@ void Destroyer::anim(double dt){
 	}*/
 
 	st::anim(dt);
-	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i])
-		turrets[i]->align();
+	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it) if(*it)
+		(*it)->align();
 
 	// Exponential approach is more realistic (but costs more CPU cycles)
 	engineHeat = direction & PL_W ? engineHeat + (1. - engineHeat) * (1. - exp(-dt)) : engineHeat * exp(-dt);

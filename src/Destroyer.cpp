@@ -39,9 +39,10 @@ std::vector<Warpable::Navlight> Destroyer::navlights;
 Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.), clientDead(false){
 	init();
 	for(int i = 0; i < hardpoints.size(); i++){
-		turrets[i] = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
+		ArmBase *t = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
+		turrets.push_back(t);
 		if(aw)
-			aw->addent(turrets[i]);
+			aw->addent(t);
 	}
 	buildBody();
 }
@@ -55,7 +56,6 @@ Destroyer::~Destroyer(){
 	}
 	else
 		deathEffects();
-	delete[] turrets;
 }
 
 bool Destroyer::buildBody(){
@@ -124,13 +124,13 @@ void Destroyer::static_init(){
 void Destroyer::init(){
 	static_init();
 	st::init();
-	turrets = new ArmBase*[hardpoints.size()];
 	mass = defaultMass;
 	engineHeat = 0.;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	sc.o << unsigned(hardpoints.size());
 	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }
@@ -145,8 +145,14 @@ void Destroyer::unserialize(UnserializeContext &sc){
 		bbody->setLinearVelocity(btvc(velo));
 	}
 
-	for(int i = 0; i < hardpoints.size(); i++)
-		sc.i >> turrets[i];
+	unsigned size;
+	sc.i >> size;
+	turrets.clear();
+	for(int i = 0; i < size; i++){
+		ArmBase *a;
+		sc.i >> a;
+		turrets.push_back(a);
+	}
 }
 
 double Destroyer::getHitRadius()const{return .27;}
@@ -172,12 +178,6 @@ void Destroyer::anim(double dt){
 
 void Destroyer::clientUpdate(double dt){
 	anim(dt);
-}
-
-void Destroyer::postframe(){
-	st::postframe();
-	for(int i = 0; i < hardpoints.size(); i++) if(turrets[i] && turrets[i]->w != w)
-		turrets[i] = NULL;
 }
 
 void Destroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{

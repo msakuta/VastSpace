@@ -9,8 +9,9 @@
 /// \brief A Destroyer class space warship equipped with large turrets and thich armor.
 class Destroyer : public Warpable{
 protected:
+	typedef ObservableList<ArmBase> TurretList;
 	float engineHeat;
-	ArmBase **turrets;
+	TurretList turrets;
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
 	static std::vector<hardpoint_static*> hardpoints;
 	static HitBoxList hitboxes;
@@ -34,7 +35,6 @@ public:
 	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
-	virtual void postframe();
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);

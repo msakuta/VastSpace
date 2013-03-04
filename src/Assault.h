@@ -22,6 +22,7 @@ protected:
 public:
 	Assault(Game *game) : st(game){init();}
 	Assault(WarField *w);
+	~Assault();
 	void init();
 	const char *idname()const;
 	virtual const char *classname()const;
@@ -54,6 +55,7 @@ protected:
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;
+	static double maxHealthValue;
 	static ManeuverParams mn;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;

@@ -25,6 +25,7 @@ extern "C"{
 double Assault::modelScale = 0.0002;
 double Assault::hitRadius = 0.1;
 double Assault::defaultMass = 1e5;
+double Assault::maxHealthValue = 10000.;
 Warpable::ManeuverParams Assault::mn = {
 	.025, /* double accel; */
 	.1, /* double maxspeed; */
@@ -58,6 +59,16 @@ Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
 	}
 }
 
+Assault::~Assault(){
+	if(game->isServer()){
+		// We own the turrets, so we're responsible to deleting them.
+		// For details, see Destroyer::~Destroyer().
+		TurretList::reverse_iterator it;
+		while(turrets.rend() != (it = turrets.rbegin()))
+			delete *it;
+	}
+}
+
 void Assault::init(){
 	static bool initialized = false;
 	if(!initialized){
@@ -65,6 +76,7 @@ void Assault::init(){
 			ModelScaleProcess(modelScale) <<=
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
@@ -73,6 +85,7 @@ void Assault::init(){
 		initialized = true;
 	}
 	mass = defaultMass;
+	health = maxhealth();
 	mother = NULL;
 	paradec = -1;
 	engineHeat = 0.f;
@@ -365,7 +378,9 @@ double Assault::getHitRadius()const{
 	return hitRadius;
 }
 
-double Assault::maxhealth()const{return 10000.;}
+double Assault::maxhealth()const{
+	return maxHealthValue;
+}
 
 int Assault::armsCount()const{return turrets.size();}
 

@@ -52,9 +52,11 @@ Destroyer::~Destroyer(){
 		// This Entity "owns" the equipments, so delete them along with.
 		// When we delete the ArmBases, ObserverList's unlink() method is invoked,
 		// which in turn invalidates the internal list (acutually, vector) object.
-		// So we must retrieve the iterator again each time we delete an element.
-		TurretList::iterator it;
-		while(turrets.end() != (it = turrets.begin()))
+		// So we must retrieve the iterator repeatedly each time we delete an element.
+		// Probably rbegin() is slightly more efficient than begin(), because we do
+		// not need to memmove() if we truncate from tail.
+		TurretList::reverse_iterator it;
+		while(turrets.rend() != (it = turrets.rbegin()))
 			delete *it;
 
 		// Below is an alternate implementation that cleans the list without memory

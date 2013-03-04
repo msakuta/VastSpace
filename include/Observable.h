@@ -241,6 +241,8 @@ class ObservableSet : public Observer{
 public:
 	typedef typename std::set<T*>::iterator iterator;
 	typedef typename std::set<T*>::const_iterator const_iterator;
+	typedef typename std::set<T*>::reverse_iterator reverse_iterator;
+	typedef typename std::set<T*>::const_reverse_iterator const_reverse_iterator;
 	~ObservableSet(){
 		clear();
 	}
@@ -248,6 +250,10 @@ public:
 	iterator end(){return set_.end();}
 	const_iterator begin()const{return set_.begin();}
 	const_iterator end()const{return set_.end();}
+	reverse_iterator rbegin(){return set_.rbegin();}
+	reverse_iterator rend(){return set_.rend();}
+	const_reverse_iterator rbegin()const{return set_.rbegin();}
+	const_reverse_iterator rend()const{return set_.rend();}
 	size_t size()const{return set_.size();}
 	bool empty()const{return set_.empty();}
 	iterator find(T *o){return set_.find(o);}
@@ -275,7 +281,7 @@ public:
 		}
 	}
 	void clear(){
-		for(iterator it = set_.begin(); it != set_.end(); it++)
+		for(iterator it = set_.begin(); it != set_.end(); ++it)
 			(*it)->removeObserver(this);
 		set_.clear();
 	}
@@ -303,6 +309,8 @@ class ObservableList : public Observer{
 public:
 	typedef typename std::vector<T*>::iterator iterator;
 	typedef typename std::vector<T*>::const_iterator const_iterator;
+	typedef typename std::vector<T*>::reverse_iterator reverse_iterator;
+	typedef typename std::vector<T*>::const_reverse_iterator const_reverse_iterator;
 	~ObservableList(){
 		clear();
 	}
@@ -310,6 +318,10 @@ public:
 	iterator end(){return list_.end();}
 	const_iterator begin()const{return list_.begin();}
 	const_iterator end()const{return list_.end();}
+	reverse_iterator rbegin(){return list_.rbegin();}
+	reverse_iterator rend(){return list_.rend();}
+	const_reverse_iterator rbegin()const{return list_.rbegin();}
+	const_reverse_iterator rend()const{return list_.rend();}
 	size_t size()const{return list_.size();}
 	bool empty()const{return list_.empty();}
 	iterator find(T *o){return list_.find(o);}
@@ -331,12 +343,12 @@ public:
 		}
 	}
 	void clear(){
-		for(iterator it = list_.begin(); it != list_.end(); it++)
+		for(iterator it = list_.begin(); it != list_.end(); ++it)
 			(*it)->removeObserver(this);
 		list_.clear();
 	}
 	bool unlink(const Observable *o){
-		for(iterator it = list_.begin(); it != list_.end(); it++){
+		for(iterator it = list_.begin(); it != list_.end(); ++it){
 			if(*it == o){
 				// Once we encounter the reference we want to clear, the vector becomes
 				// invalid.
@@ -363,6 +375,8 @@ public:
 	typedef std::map<T*,R> Map;
 	typedef typename Map::iterator iterator;
 	typedef typename Map::const_iterator const_iterator;
+	typedef typename Map::reverse_iterator reverse_iterator;
+	typedef typename Map::const_reverse_iterator const_reverse_iterator;
 	typedef typename Map::value_type value_type;
 	typedef typename Map::size_type size_type;
 	~ObservableMap(){
@@ -372,6 +386,10 @@ public:
 	iterator end(){return map.end();}
 	const_iterator begin()const{return map.begin();}
 	const_iterator end()const{return map.end();}
+	reverse_iterator rbegin(){return map.rbegin();}
+	reverse_iterator rend(){return map.rend();}
+	const_reverse_iterator rbegin()const{return map.rbegin();}
+	const_reverse_iterator rend()const{return map.rend();}
 	size_t size()const{return map.size();}
 	bool empty()const{return map.empty();}
 	iterator find(T *o){return map.find(o);}
@@ -405,7 +423,7 @@ public:
 		return ret;
 	}
 	void clear(){
-		for(iterator it = map.begin(); it != map.end(); it++)
+		for(iterator it = map.begin(); it != map.end(); ++it)
 			it->first->removeObserver(this);
 		map.clear();
 	}

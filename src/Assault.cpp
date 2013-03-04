@@ -26,6 +26,7 @@ double Assault::modelScale = 0.0002;
 double Assault::hitRadius = 0.1;
 double Assault::defaultMass = 1e5;
 double Assault::maxHealthValue = 10000.;
+double Assault::maxShieldValue = 5000.;
 Warpable::ManeuverParams Assault::mn = {
 	.025, /* double accel; */
 	.1, /* double maxspeed; */
@@ -77,6 +78,7 @@ void Assault::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			SingleDoubleProcess(maxShieldValue, "maxshield", false) <<=
 			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
@@ -361,25 +363,16 @@ void Assault::clientUpdate(double dt){
 	anim(dt);
 }
 
-void Assault::postframe(){
-	st::postframe();
-	for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it){
-		ArmBase *a = *it;
-		if(!a)
-			continue;
-		if(a->w != w)
-			turrets.erase(it);
-		if(mother && (!mother->e || !mother->e->w))
-			mother = NULL;
-	}
-}
-
 double Assault::getHitRadius()const{
 	return hitRadius;
 }
 
 double Assault::maxhealth()const{
 	return maxHealthValue;
+}
+
+double Assault::maxshield()const{
+	return maxShieldValue;
 }
 
 int Assault::armsCount()const{return turrets.size();}

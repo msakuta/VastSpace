@@ -34,12 +34,12 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double);
 	virtual void clientUpdate(double);
-	virtual void postframe();
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual double getHitRadius()const;
 	virtual double maxhealth()const;
+	virtual double maxshield()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);
 	virtual int popupMenu(PopupMenu &list);
@@ -56,6 +56,7 @@ protected:
 	static double hitRadius;
 	static double defaultMass;
 	static double maxHealthValue;
+	static double maxShieldValue;
 	static ManeuverParams mn;
 	static std::vector<hardpoint_static*> hardpoints;
 	static GLuint disp;

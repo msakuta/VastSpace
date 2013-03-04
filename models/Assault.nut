@@ -16,6 +16,7 @@ hitRadius <- 0.1;
 
 mass <- 1.e5;
 maxhealth <- 5000;
+maxshield <- 5000;
 
 accel <- 0.025;
 maxspeed <- 0.1;

@@ -1712,9 +1712,8 @@ public:
 		flags |= GLW_COLLAPSABLE | GLW_CLOSE;
 	}
 	virtual void draw(GLwindowState &ws, double t);
-	virtual void postframe();
 protected:
-	Entity *a;
+	WeakPtr<Entity> a;
 };
 
 int Entity::cmd_property(int argc, char *argv[], void *pv){
@@ -1736,9 +1735,13 @@ static void register_cmd_property(){
 static StaticInitializer init_cmd_property(register_cmd_property);
 
 void GLWprop::draw(GLwindowState &ws, double t){
-	if(!a)
-		return;
 	GLWrect cr = clientRect();
+	if(!a){
+		glColor4f(1,0.5f,0.5f,1);
+		glwpos2d(cr.x0, cr.y0 + getFontHeight());
+		glwprintf("Object not found");
+		return;
+	}
 	Entity::Props pl = a->props();
 	int i = 0;
 	for(Entity::Props::iterator e = pl.begin(); e != pl.end(); e++){
@@ -1748,10 +1751,6 @@ void GLWprop::draw(GLwindowState &ws, double t){
 	}
 }
 
-void GLWprop::postframe(){
-	if(a && !a->w)
-		a = NULL;
-}
 
 
 

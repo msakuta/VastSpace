@@ -337,8 +337,12 @@ public:
 	}
 	bool unlink(const Observable *o){
 		for(iterator it = list_.begin(); it != list_.end(); it++){
-			if(*it == o)
+			if(*it == o){
+				// Once we encounter the reference we want to clear, the vector becomes
+				// invalid.
 				list_.erase(it);
+				break; // TODO: clear multiple references to the same object in a list?
+			}
 		}
 		return true;
 	}

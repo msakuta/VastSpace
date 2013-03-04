@@ -50,9 +50,20 @@ Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.), clientDead(false){
 Destroyer::~Destroyer(){
 	if(game->isServer()){
 		// This Entity "owns" the equipments, so delete them along with.
-		for(int i = 0; i < hardpoints.size(); i++){
-			delete turrets[i];
-		}
+		// When we delete the ArmBases, ObserverList's unlink() method is invoked,
+		// which in turn invalidates the internal list (acutually, vector) object.
+		// So we must retrieve the iterator again each time we delete an element.
+		TurretList::iterator it;
+		while(turrets.end() != (it = turrets.begin()))
+			delete *it;
+
+		// Below is an alternate implementation that cleans the list without memory
+		// leaks nor runtime errors, but with additional processing cost.
+/*		std::vector<ArmBase*> localTurrets;
+		localTurrets.assign(turrets.begin(), turrets.end());
+		for(std::vector<ArmBase*>::iterator it = localTurrets.begin(); it != localTurrets.end(); ++it){
+			delete *it;
+		}*/
 	}
 	else
 		deathEffects();

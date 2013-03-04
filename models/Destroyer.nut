@@ -12,7 +12,7 @@ local SQRT2P2 = sqrt(2)/2;
 modelScale <- 0.001;
 
 mass <- 1.e8;
-maxhealth <- 50000;
+maxhealth <- 5000;
 
 accel <- 0.05;
 maxspeed <-  0.1;

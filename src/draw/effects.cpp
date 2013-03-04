@@ -1,6 +1,7 @@
 #include "draw/effects.h"
 #include "bitmap.h"
 #include "draw/material.h"
+#include "draw/mqoadapt.h"
 #include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
@@ -219,8 +220,10 @@ void firesmokedraw(const struct tent3d_line_callback *p, const struct tent3d_lin
 }
 
 static suf_t *sufs[5] = {NULL};
-static VBO *vbo[5];
-static GLuint lists[numof(sufs)] = {0};
+static suftex_t *suftexs[5] = {NULL};
+//static VBO *vbo[5];
+//static GLuint lists[numof(sufs)] = {0};
+//static Model *model = NULL;
 
 static void debrigib_init(){
 	if(!sufs[0]){
@@ -228,8 +231,10 @@ static void debrigib_init(){
 		for(int i = 0; i < numof(sufs); i++){
 			sprintf(buf, "models/debris%d.bin", i);
 			sufs[i] = CallLoadSUF(buf);
-			vbo[i] = CacheVBO(sufs[i]);
+			suftexs[i] = gltestp::AllocSUFTex(sufs[i]);
+//			vbo[i] = CacheVBO(sufs[i]);
 		}
+//		model = LoadMQOModel("models/debris.mqo");
 	}
 }
 
@@ -250,10 +255,13 @@ void debrigib(const struct tent3d_line_callback *pl, const struct tent3d_line_dr
 	struct random_sequence rs;
 	initfull_rseq(&rs, 13230354, (unsigned long)pl);
 	unsigned id = rseq(&rs) % numof(sufs);
+//	glUseProgram(0);
 //	if(!lists[id]){
 //		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
 //		DrawSUF(sufs[id], SUF_ATR, NULL);
-		DrawVBO(vbo[id], SUF_ATR, NULL);
+		DecalDrawSUF(sufs[id], SUF_ATR, NULL, suftexs[id], NULL, NULL);
+//		DrawVBO(vbo[id], SUF_ATR, NULL);
+//		DrawMQOPose(model, NULL);
 //		glEndList();
 //	}
 //	else
@@ -287,7 +295,8 @@ void debrigib_multi(const struct tent3d_line_callback *pl, const struct tent3d_l
 		gldMultQuat(pl->rot * rot);
 		gldScaled(.0001);
 		unsigned id = rs.next() % numof(sufs);
-		DrawVBO(vbo[id], SUF_ATR, NULL);
+		// Let's think out better way...
+//		DrawVBO(vbo[id], SUF_ATR, NULL);
 		glPopMatrix();
 	}
 	glPopAttrib();

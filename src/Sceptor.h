@@ -60,6 +60,7 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
+	void init();
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy
 	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);

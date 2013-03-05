@@ -30,7 +30,10 @@ extern "C"{
 
 #include <fstream>
 
+// Recent Windows have POSIX compatibility, so we may not need this #ifndef.
+#ifndef _WIN32
 #include <sys/stat.h>
+#endif
 
 
 

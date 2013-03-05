@@ -167,6 +167,7 @@ Sceptor::Sceptor(Game *game) : st(game),
 	paradec(-1), 
 	active(true)
 {
+	init();
 }
 
 Sceptor::Sceptor(WarField *aw) : st(aw),
@@ -184,18 +185,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	active(true)
 {
 	Sceptor *const p = this;
-	static bool initialized = false;
-	if(!initialized){
-		sq_init(_SC("models/Sceptor.nut"),
-			ModelScaleProcess(modelScale) <<=
-			MassProcess(defaultMass) <<=
-			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			SingleDoubleProcess(maxFuelValue, "maxfuel", false) <<=
-			HitboxProcess(hitboxes) <<=
-			DrawOverlayProcess(overlayDisp));
-		initialized = true;
-	}
-
+	init();
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = defaultMass;
@@ -233,6 +223,21 @@ Sceptor::~Sceptor(){
 }
 
 const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
+
+/// Loads initialization script. Shared among Server and Client.
+void Sceptor::init(){
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Sceptor.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			SingleDoubleProcess(maxFuelValue, "maxfuel", false) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp));
+		initialized = true;
+	}
+}
 
 void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *player = game->player;

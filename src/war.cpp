@@ -30,6 +30,7 @@ extern "C"{
 
 #include <fstream>
 
+#include <sys/stat.h>
 
 
 
@@ -380,7 +381,7 @@ void WarSpace::anim(double dt){
 #ifdef _WIN32
 	CreateDirectory("logs", NULL);
 #else
-	mkdir("logs", 0644);
+	mkdir("logs", 0755);
 #endif
 	delete_bdwtime_log();
 	std::ofstream ofs("logs/bdwtime_s.log", std::ostream::app);
@@ -400,7 +401,7 @@ void WarSpace::clientUpdate(double dt){
 #ifdef _WIN32
 	CreateDirectory("logs", NULL);
 #else
-	mkdir("logs", 0644);
+	mkdir("logs", 0755);
 #endif
 	delete_bdwtime_log();
 	std::ofstream ofs("logs/bdwtime_c.log", std::ostream::app);

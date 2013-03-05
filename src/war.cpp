@@ -28,7 +28,7 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
-
+#include <fstream>
 
 
 
@@ -360,6 +360,15 @@ WarSpace::WarSpace(CoordSys *acs) : st(acs), ot(NULL), otroot(NULL), oti(0), ots
 	bdw = bulletInit();
 }
 
+static void delete_bdwtime_log(){
+	static bool called = false;
+	if(!called){
+		remove("logs/bdwtime_s.log");
+		remove("logs/bdwtime_c.log");
+		called = true;
+	}
+}
+
 void WarSpace::anim(double dt){
 	CoordSys *root = cs;
 
@@ -367,6 +376,15 @@ void WarSpace::anim(double dt){
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 
 	bdw->stepSimulation(dt / 1., 0);
+
+#ifdef _WIN32
+	CreateDirectory("logs", NULL);
+#else
+	mkdir("logs", 0644);
+#endif
+	delete_bdwtime_log();
+	std::ofstream ofs("logs/bdwtime_s.log", std::ostream::app);
+	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << std::endl;
 
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, &WarField::bl, &Entity::anim);
@@ -378,6 +396,15 @@ void WarSpace::clientUpdate(double dt){
 	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 
 	bdw->stepSimulation(dt / 1., 0);
+
+#ifdef _WIN32
+	CreateDirectory("logs", NULL);
+#else
+	mkdir("logs", 0644);
+#endif
+	delete_bdwtime_log();
+	std::ofstream ofs("logs/bdwtime_c.log", std::ostream::app);
+	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << std::endl;
 
 #ifndef DEDICATED
 	const struct tent3d_line_debug *tld = Teline3DDebug(tell);

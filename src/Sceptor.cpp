@@ -905,9 +905,9 @@ void Sceptor::anim(double dt){
 						double velolen = bbody->getLinearVelocity().length();
 						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
 
-						// Suppress side slips
+						// Suppress lateral movements
 						btVector3 btvelo = bbody->getLinearVelocity();
-						btVector3 btforward = bbody->getWorldTransform().getBasis().getRow(2);
+						btVector3 btforward = -bbody->getWorldTransform().getBasis().getColumn(2);
 						btVector3 sidevelo = btvelo - btforward * btforward.dot(btvelo);
 						bbody->applyCentralForce((-sidevelo * mass));
 

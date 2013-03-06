@@ -841,19 +841,18 @@ void Sceptor::anim(double dt){
 					}
 				}
 				else if(pt->enemy && (p->task == Attack || p->task == Away)){
-					Vec3d dv, forward;
 					Vec3d xh, yh;
 					double sx, sy, len, len2, maxspeed = SCEPTOR_MAX_ANGLESPEED * dt;
 					Quatd qres, qrot;
 
-					// If a mother could not be aquired, fight to the death alone.
+					// If a mother could not be acquired, fight to the death alone.
 					if(p->fuel < 30. && (pm || (pm = findMother()))){
 						p->task = Dockque;
 						break;
 					}
 
 					double dist = delta.len();
-					dv = delta;
+					Vec3d dv = delta;
 					double awaybase = pt->enemy->getHitRadius() * 3. + .1;
 					if(.6 < awaybase)
 						awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
@@ -865,7 +864,7 @@ void Sceptor::anim(double dt){
 						p->task = Attack;
 					}
 					dv.normin();
-					forward = pt->rot.trans(avec3_001);
+					Vec3d forward = pt->rot.trans(avec3_001);
 					if(p->task == Attack)
 						forward *= -1;
 		/*				sx = VECSP(&mat[0], dv);
@@ -903,8 +902,10 @@ void Sceptor::anim(double dt){
 						throttle = maxspeed < velolen ? (maxspeed - velolen) / maxspeed : 0.;
 
 						// Suppress side slips
-						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
-						bbody->applyCentralForce(btvc(-sidevelo * mass));
+						btVector3 btvelo = bbody->getLinearVelocity();
+						btVector3 btforward = bbody->getWorldTransform().getBasis().getRow(2);
+						btVector3 sidevelo = btvelo - btforward * btforward.dot(btvelo);
+						bbody->applyCentralForce((-sidevelo * mass));
 
 						if(len && len2){
 							btVector3 btomg = bbody->getAngularVelocity();
@@ -1170,7 +1171,7 @@ void Sceptor::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
+		const double maxvelo = .5, speed = std::max(0., -p->velo.sp(mat.vec3(2)));
 		if(maxvelo < speed)
 			p->throttle = 0.;
 		else{

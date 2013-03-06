@@ -8,8 +8,10 @@
 #include "Docker.h"
 #include "LTurret.h"
 #include "EntityCommand.h"
+#ifndef DEDICATED
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
+#endif
 #include "serial_util.h"
 #include "motion.h"
 extern "C"{

@@ -17,12 +17,14 @@ extern "C"{
 
 TexSphere::TexSphere(Game *game) :
 	st(game),
+#ifndef DEDICATED
 	texlist(0),
 	cloudtexlist(0),
 	shader(0),
 	shaderGiveup(false),
 	cloudShader(0),
 	cloudShaderGiveup(false),
+#endif
 	cloudPhase(0.),
 	noisePos(0,0,0)
 {
@@ -31,11 +33,13 @@ TexSphere::TexSphere(Game *game) :
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	oblateness(0.),
 	ring(0),
+#ifndef DEDICATED
 	shader(0),
 	shaderGiveup(false),
 	cloudShader(0),
 	cloudShaderGiveup(false),
 	cloudHeight(0.),
+#endif
 	cloudPhase(0.),
 	noisePos(0,0,0)
 {
@@ -84,7 +88,9 @@ UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 	i >> a.filename;
 	i >> a.cloudSync;
 	i >> a.flags;
+#ifndef DEDICATED
 	a.list = 0;
+#endif
 	return i;
 }
 
@@ -178,7 +184,9 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 			Texture tex;
 			tex.uniformname = argv[1];
 			tex.filename = argv[2];
+#ifndef DEDICATED
 			tex.list = 0;
+#endif
 			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
 			for(int i = 4; i < argc; i++){
 				if(!strcmp(argv[i], "alpha"))

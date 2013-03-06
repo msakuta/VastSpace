@@ -13,7 +13,9 @@
 #include "serial_util.h"
 #include "sqadapt.h"
 #include "Universe.h"
+#ifndef DEDICATED
 #include "draw/WarDraw.h"
+#endif
 #include "Game.h"
 extern "C"{
 #include "calc/calc.h"
@@ -608,7 +610,7 @@ void CoordSys::drawcs(const Viewer *vw){
 	}
 }
 
-void CoordSys::drawWar(war_draw_data *wd){
+void CoordSys::drawWar(WarDraw *wd){
 	;
 }
 

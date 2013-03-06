@@ -4,11 +4,15 @@
 #include "BeamProjectile.h"
 #include "Viewer.h"
 #include "serial_util.h"
+#ifndef DEDICATED
 #include "draw/WarDraw.h"
+#endif
 #include "Game.h"
 extern "C"{
 #include <clib/c.h>
+#ifndef DEDICATED
 #include <clib/gl/gldraw.h>
+#endif
 }
 
 /* color sequences */

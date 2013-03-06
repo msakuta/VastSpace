@@ -4,6 +4,7 @@
  * \brief Definition of BinDiff class and its companions.
  * \sa BinDiff.cpp
  */
+#include <stddef.h>
 #include <list>
 #include <vector>
 

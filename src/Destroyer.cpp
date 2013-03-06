@@ -6,7 +6,9 @@
 #include "serial_util.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#ifndef DEDICATED
 #include "draw/effects.h"
+#endif
 #include "motion.h"
 #include "LTurret.h"
 extern "C"{

@@ -7,7 +7,9 @@
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
+#ifndef DEDICATED
 #include <clib/gl/gldraw.h>
+#endif
 #include <clib/timemeas.h>
 }
 /*#include <GL/glut.h>*/
@@ -525,8 +527,10 @@ static int cmd_memory(int argc, char *argv[]){
 	size = cmd_memory_alias(aliaslist);
 	CmdPrint(cpplib::dstring() << "alias: " << size << " bytes = " << (size + 1024) / 1024 << " kilobytes used");
 	CmdPrint(cpplib::dstring() << "cvar: " << cvarlists * sizeof **cvarlist << " bytes = " << cvarlists * sizeof **cvarlist / 1024 << " kilobytes used");
+#ifndef DEDICATED
 	size = CircleCutsMemory();
 	CmdPrint(cpplib::dstring() << "circut: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
+#endif
 	return 0;
 }
 

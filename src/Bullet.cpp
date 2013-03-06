@@ -4,8 +4,10 @@
 #include "Player.h"
 #include "judge.h"
 #include "serial_util.h"
+#ifndef DEDICATED
 #include "draw/effects.h"
 #include "draw/WarDraw.h"
+#endif
 //#include "warutil.h"
 //#include "draw/material.h"
 #include "btadapt.h"
@@ -20,9 +22,13 @@ extern "C"{
 #include <clib/colseq/cs.h>
 #include <clib/sound/wavemixer.h>
 #include <clib/suf/sufbin.h>
+#ifndef DEDICATED
 #include <clib/gl/gldraw.h>
+#endif
 }
+#ifndef DEDICATED
 #include <GL/glext.h>
+#endif
 #include <limits.h>
 #include <stddef.h>
 

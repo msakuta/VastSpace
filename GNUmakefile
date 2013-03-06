@@ -82,7 +82,7 @@ all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \
-	-lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+	-lstdc++ -lm -lBulletDynamics -lBulletCollision -lLinearMath -ldl -lrt -lpthread
 
 #${OUTDIR}/gltestdll.so: gltestdll/${OUTDIR} ${gltestdll_objects}
 #	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread

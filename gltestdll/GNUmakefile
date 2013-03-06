@@ -10,6 +10,7 @@ BULLET_INCLUDE=/usr/include/bullet
 endif
 CFLAGS += -I ../include -I ../../clib/include -I ../../cpplib/include -I ../../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
+CFLAGS += -fPIC
 
 # Ignore DLL export definition in gcc build. 
 CFLAGS += '-DGLTESTDLL_EXPORT='

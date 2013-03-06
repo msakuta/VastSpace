@@ -427,15 +427,15 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "basecolor")){
 		if(3 < argc){
 			basecolor = Vec4f(
-				GLfloat(calc3(&argv[1], sc.vl, NULL)),
-				GLfloat(calc3(&argv[2], sc.vl, NULL)),
-				GLfloat(calc3(&argv[3], sc.vl, NULL)),
+				float(calc3(&argv[1], sc.vl, NULL)),
+				float(calc3(&argv[2], sc.vl, NULL)),
+				float(calc3(&argv[3], sc.vl, NULL)),
 				1.f);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "absolute_magnitude") || !strcmp(s, "absmag")){
-		absmag = GLfloat(calc3(&ps, sc.vl, NULL));
+		absmag = float(calc3(&ps, sc.vl, NULL));
 	}
 	else
 		return st::readFile(sc, argc, argv);

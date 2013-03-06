@@ -5,13 +5,17 @@
 #include "judge.h"
 #include "astro.h"
 #include "Viewer.h"
+#ifndef DEDICATED
 #include "draw/WarDraw.h"
+#endif
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/avec3.h>
 #include <clib/amat4.h>
 #include <clib/aquatrot.h>
+#ifndef DEDICATED
 #include <clib/gl/gldraw.h>
+#endif
 #include <clib/stats.h>
 }
 #include <stddef.h>
@@ -1161,6 +1165,7 @@ static int ot_statsub(otnt *root, int level){
 }
 #endif
 
+#ifndef DEDICATED
 void ot_draw(WarSpace *w, wardraw_t *wd){
 	int i, n;
 	Viewer *vw = wd->vw;
@@ -1241,3 +1246,5 @@ void ot_draw(WarSpace *w, wardraw_t *wd){
 	glPopMatrix();
 #endif
 }
+#endif
+

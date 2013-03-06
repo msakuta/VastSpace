@@ -4,7 +4,9 @@
 #define TEXSPHERE_H
 
 #include "stellar_file.h"
+#ifndef DEDICATED
 #include "draw/ring-draw.h"
+#endif
 #include <squirrel.h>
 
 
@@ -21,19 +23,25 @@ protected:
 	float atmodawn[4];
 	int ring;
 	std::vector<cpplib::dstring> vertexShaderName, fragmentShaderName;
+#ifndef DEDICATED
 	GLuint shader;
 	bool shaderGiveup; ///< Flag whether compilation of shader has been given up, to prevent the compiler to try the same code in vain.
 	/// Cloud sphere is separate geometry than the globe itself, so shaders and extra textures must be allocated separately.
+#endif
 	std::vector<cpplib::dstring> cloudVertexShaderName, cloudFragmentShaderName;
+#ifndef DEDICATED
 	GLuint cloudShader;
+#endif
 	bool cloudShaderGiveup; ///< Flag whether compilation of shader has been given up.
 	double cloudHeight; ///< In kilometers
 	double cloudPhase;
 
 	Vec3d noisePos; ///< Position in noise space for ocean noise. Only in the client.
 
+#ifndef DEDICATED
 	/// OpenGL texture units
 	AstroRing astroRing;
+#endif
 
 	void updateInt(double dt);
 public:
@@ -50,11 +58,17 @@ public:
 	struct Texture{
 		cpplib::dstring uniformname;
 		cpplib::dstring filename;
+#ifndef DEDICATED
 		mutable GLuint list;
 		mutable GLint shaderLoc;
+#endif
 		bool cloudSync;
 		int flags; ///< drawTextureSphere flags
-		Texture() : list(0), shaderLoc(-2), cloudSync(false), flags(false){}
+		Texture() :
+#ifndef DEDICATED
+			list(0), shaderLoc(-2),
+#endif
+			cloudSync(false), flags(false){}
 	};
 	typedef Astrobj st;
 	typedef TexSphere tt;

@@ -181,7 +181,9 @@ string stellar_file = "space.ssd";
 
 // load the module
 if(1){
-	local dllpath = isLinux() ? "Debug/gltestdll.so" : debugBuild() ?
+	local dllpath = isLinux() ?
+		debugBuild() ? "Debug/gltestdll.so" : "Release/gltestdll.so" :
+		debugBuild() ?
 		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
 		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
 //		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :

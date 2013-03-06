@@ -17,7 +17,9 @@ extern "C"{
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#ifndef DEDICATED
 #include <GL/gl.h>
+#endif
 
 /* This header is so small but Viewer structure is frequently referred
   and its worth making a header dedicated for this (in means of compilation
@@ -73,9 +75,11 @@ public:
 
 	/// Multiply current OpenGL matrix with frustum projection matrix, determined by near, far and fov parameters.
 	void frustum(double n, double f){
+#ifndef DEDICATED
 		int w = vp.w, h = vp.h, m = vp.m;
 		double l = -n * fov * w / m, t = n * fov * h / m, r = n * fov * w / m, b = -n * fov * h / m;
 		glFrustum(l, r, b, t, n, f);
+#endif
 	}
 };
 #endif

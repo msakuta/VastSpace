@@ -12,7 +12,6 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
-#include "glstack.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "sqadapt.h"
@@ -20,13 +19,16 @@
 #include "Docker.h"
 //#include "sensor.h"
 #include "motion.h"
+#ifndef DEDICATED
 #include "draw/WarDraw.h"
+#include "glstack.h"
 #include "glsl.h"
+#endif
 #include "dstring.h"
 #include "Game.h"
 #include "StaticInitializer.h"
 extern "C"{
-#ifdef _WIN32
+#ifndef DEDICATED
 #include "bitmap.h"
 #endif
 #include <clib/c.h>
@@ -34,7 +36,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/suf/sufbin.h>
 #include <clib/timemeas.h>
-#ifdef _WIN32
+#ifndef DEDICATED
 #include <clib/suf/sufdraw.h>
 #include <clib/GL/gldraw.h>
 #include <clib/GL/multitex.h>

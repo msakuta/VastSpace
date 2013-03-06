@@ -19,7 +19,9 @@
 #include "ClientMessage.h"
 extern "C"{
 #include <clib/timemeas.h>
+#ifndef DEDICATED
 #include <clib/gl/gldraw.h>
+#endif
 #include <clib/zip/UnZip.h>
 }
 #include <cpplib/vec3.h>
@@ -293,7 +295,7 @@ static SQInteger sqf_timemeas(HSQUIRRELVM v){
 /// Returns whether this program is built with debug profile.
 static SQInteger sqf_debugBuild(HSQUIRRELVM v){
 	sq_pushbool(v,
-#ifndef NDEBUG
+#ifdef _DEBUG
 		SQTrue
 #else
 		SQFalse
@@ -752,6 +754,7 @@ template<void (__stdcall *fp)()> SQInteger sqf_adapter0(HSQUIRRELVM v){
 	return 0;
 }*/
 
+#ifndef DEDICATED
 template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
 	SQInteger a0;
 	if(SQ_FAILED(sq_getinteger(v, 2, &a0)))
@@ -759,6 +762,7 @@ template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
 	fp(GLenum(a0));
 	return 0;
 }
+#endif
 
 template<typename FP, FP fp> SQInteger sqf_adapter(HSQUIRRELVM v){
 }

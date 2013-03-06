@@ -23,10 +23,14 @@
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "sqadapt.h"
+#ifndef DEDICATED
 #include "draw/effects.h"
+#endif
 #include "motion.h"
 #include "Game.h"
+#ifndef DEDICATED
 #include "glw/popup.h"
+#endif
 #include "ClientMessage.h"
 extern "C"{
 #include <clib/c.h>

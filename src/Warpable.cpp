@@ -12,7 +12,6 @@
 #include "stellar_file.h"
 #include "astro_star.h"
 #include "serial_util.h"
-#include "glstack.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
 #include "sqadapt.h"
@@ -20,8 +19,11 @@
 #include "Docker.h"
 //#include "sensor.h"
 #include "motion.h"
+#ifndef DEDICATED
 #include "draw/WarDraw.h"
+#include "glstack.h"
 #include "glsl.h"
+#endif
 #include "dstring.h"
 #include "Game.h"
 #include "StaticInitializer.h"

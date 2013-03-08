@@ -12,13 +12,13 @@
 void clib_crc32_make_crc_table(void);
 
 /** \brief Returns a CRC32 calculated value. */
-uint32_t clib_crc32(const uint8_t *buf, size_t len);
+uint32_t clib_crc32(const void *buf, size_t len);
 
 /** \brief Continue calculating CRC32 from previously returned one. */
-uint32_t clib_crc32_update(const uint8_t *buf, size_t len, uint32_t crc32);
+uint32_t clib_crc32_update(const void *buf, size_t len, uint32_t crc32);
 
 /** \brief Bypasses initialization on first use check for enhancing speed. */
-uint32_t clib_crc32_direct(const uint8_t *buf, size_t len, uint32_t crc32);
+uint32_t clib_crc32_direct(const void *buf, size_t len, uint32_t crc32);
 
 /** \brief Gets internal crc table, for ebugging and development purposes.
  * \returns Constant pointer to the table. */

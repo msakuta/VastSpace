@@ -33,7 +33,8 @@ ${OUT}: ${OUTDIR}\
  ${OUT}(lzuc.o)\
  ${OUT}(suf.o)\
  ${OUT}(sufreloc.o)\
- ${OUT}(circut.o)
+ ${OUT}(circut.o)\
+ ${OUT}(crc32.o)
 # ${OUT}(sufdraw.o)
 # ${OUT}(wavsound.o)
 # ${OUT}(UnZip.o)\
@@ -84,5 +85,10 @@ ${OUT}(sufreloc.o): src/suf/sufreloc.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(circut.o): src/circut.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
+${OUT}(crc32.o): src/crc32.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 
+
+tests/crc32_test: tests/crc32_test.c ${OUT}
+	${CC} $(CFLAGS) $^ -o $@
 

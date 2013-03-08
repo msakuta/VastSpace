@@ -311,6 +311,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\crc32.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\colseq\cs.c"
 				>
 			</File>
@@ -462,6 +466,10 @@
 			</File>
 			<File
 				RelativePath="..\include\clib\circut.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\clib\crc32.h"
 				>
 			</File>
 			<File

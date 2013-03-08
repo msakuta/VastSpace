@@ -56,7 +56,7 @@ ${OUT}(cfloat.o): src/cfloat.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(dstr.o): src/dstr.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
-${OUT}(rseq.o): src/rseq.c
+${OUT}(rseq.o): src/rseq.c include/clib/rseq.h
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(timemeas.o): src/timemeas.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%

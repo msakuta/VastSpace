@@ -7,11 +7,11 @@
 typedef struct random_sequence rst;
 
 
-void init_rseqf(rst *rs, unsigned long seed){
+void init_rseqf(rst *rs, uint32_t seed){
 #if RSEQMETHOD==0
 	rs->i = seed ^ 123459876L;
 #elif RSEQMETHOD==1
-	long mj, mk;
+	uint32_t mj, mk;
 	int i, k;
 
 	rs->k_ma_end = &rs->k_ma[56];
@@ -57,13 +57,13 @@ void init_rseqf_double(rst *rs, double seed){
 #define znew(z)   (z=36969*(z&65535)+(z>>16))
 #define wnew(w)   (w=18000*(w&65535)+(w>>16))
 #define MWC(z,w)    ((znew(z)<<16)+wnew(w) )
-unsigned long rseqf(rst *rs)
+uint32_t rseqf(rst *rs)
 {
 #if RSEQMETHOD==0
 	return ((rs->i = (rs->i) * 2110005341UL + 2531011UL) >> 3) * 445223UL;
 #elif RSEQMETHOD==1
 /*	double d = 1. / (double)MBIG;*/
-	long mj;
+	uint32_t mj;
 
 	if(++rs->pk1 == rs->k_ma_end)	rs->pk1 = &rs->k_ma[1];
 	if(++rs->pk2 == rs->k_ma_end)	rs->pk2 = &rs->k_ma[1];

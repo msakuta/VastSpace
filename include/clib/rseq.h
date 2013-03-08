@@ -32,28 +32,36 @@
 
 #define RSEQMETHOD 5
 
-#define drseq(rsp) ((double)rseq(rsp) / ULONG_MAX)
+#define drseq(rsp) ((double)rseq(rsp) / UINT32_MAX)
+
+// Well, since we know the exact size of uint32_t, we can give
+// the maximum value, regardless of implementation.
+// g++ won't give us this value, so we define it here as the
+// last resort.
+#ifndef UINT32_MAX
+#define UINT32_MAX (4294967295U)
+#endif
 
 
 struct random_sequence{
 #if RSEQMETHOD==0
-	int32_t i;
+	uint32_t i;
 #elif RSEQMETHOD==1
 	long *k_ma_end, *pk1, *pk2;
 	long k_ma[57];
 #elif RSEQMETHOD==2
-	int32_t jsr;
+	uint32_t jsr;
 #elif RSEQMETHOD==3
-	int32_t a, b;
+	uint32_t a, b;
 #else
-	int32_t z, w;
+	uint32_t z, w;
 #endif
 };
 
 /* function versions are always declared, but may not be linked */
-extern void init_rseqf(struct random_sequence *, unsigned long seed);
+extern void init_rseqf(struct random_sequence *, uint32_t seed);
 extern void init_rseqf_double(struct random_sequence *, double seed);
-extern int32_t rseqf(struct random_sequence *);
+extern uint32_t rseqf(struct random_sequence *);
 
 #if RSEQMETHOD!=5
 #define init_rseq init_rseqf

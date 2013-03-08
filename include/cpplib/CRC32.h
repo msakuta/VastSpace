@@ -1,3 +1,6 @@
+/** \file
+ * \brief Definition of class packaged CRC32 calculator, without overhead of initialization on first use.
+ */
 #ifndef CPPLIB_CRC32_H
 #define CPPLIB_CRC32_H
 extern "C"{
@@ -17,8 +20,8 @@ namespace cpplib{
 		/// but it's possibly not initialized in some implementations if it's
 		/// not ever used, so we make sure it's used by overloading function call
 		/// operator of the object to use it like a functionoid.
-		uint32_t operator()(const uint8_t *buf, size_t len){
-			return ::clib_crc32_direct(buf, len);
+		uint32_t operator()(const uint8_t *buf, size_t len, uint32_t crc32 = 0){
+			return ::clib_crc32_direct(buf, len, crc32);
 		}
 
 		/// \brief The secret spice that initializes necessary table only if used.
@@ -27,6 +30,8 @@ namespace cpplib{
 		}
 	};
 
+	/// \brief This static object replicates in every source that include this file;
+	/// you invoke the constructor only if you ever use it.
 	static CRC32Gen crc32;
 
 }

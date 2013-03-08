@@ -35,6 +35,8 @@ ${OUTDIR}/cpplib.a(glcull.o): src/gl/cull.cpp
 # Implicit rule for making test programs.
 tests/dstrtest: tests/dstrtest.cpp ${OUTDIR}/cpplib.a
 	${CC} ${CFLAGS} ${CPPFLAGS} $^ -o $@ -lstdc++
+tests/crc32_test: tests/crc32_test.cpp ${OUTDIR}/cpplib.a ../clib/${OUTDIR}/clib.a
+	${CC} ${CFLAGS} ${CPPFLAGS} $^ -o $@ -lstdc++
 
 .PHONY: clean
 

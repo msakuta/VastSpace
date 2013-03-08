@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -107,7 +107,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -171,7 +171,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -236,7 +236,7 @@
 				AdditionalOptions="/MACHINE:X64"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN64;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -299,7 +299,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -364,7 +364,7 @@
 				AdditionalOptions="/MACHINE:X64"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\include;..\..\clib\include"
+				AdditionalIncludeDirectories="..\include;..\..\clib\include;..\..\clib\VC2008"
 				PreprocessorDefinitions="WIN64;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -443,6 +443,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\include\cpplib\CRC32.h"
+				>
+			</File>
 			<File
 				RelativePath="..\include\cpplib\gl\cullplus.h"
 				>

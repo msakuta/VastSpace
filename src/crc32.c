@@ -23,12 +23,17 @@ void clib_crc32_make_crc_table(void){
 
 uint32_t clib_crc32(const uint8_t *buf, size_t len){
 	clib_crc32_make_crc_table();
-	return clib_crc32_direct(buf, len);
+	return clib_crc32_direct(buf, len, 0);
 }
  
-uint32_t clib_crc32_direct(const uint8_t *buf, size_t len){
-	uint32_t c = 0xFFFFFFFF;
+uint32_t clib_crc32_update(const uint8_t *buf, size_t len, uint32_t crc32){
+	clib_crc32_make_crc_table();
+	return clib_crc32_direct(buf, len, crc32);
+}
+
+uint32_t clib_crc32_direct(const uint8_t *buf, size_t len, uint32_t c){
 	size_t i = 0;
+	c ^= 0xFFFFFFFF;
 	for (; i < len; i++) {
 		c = crc_table[(c ^ buf[i]) & 0xFF] ^ (c >> 8);
 	}

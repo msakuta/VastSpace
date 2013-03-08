@@ -71,7 +71,7 @@ int main(int argc, char *argv[]){
 		clock_t c = clock();
 		volatile uint32_t crc = 0;
 		for(i = 0; i < n; i++){
-			crc = clib_crc32_direct(buf, sz);
+			crc = clib_crc32_direct(buf, sz, 0);
 		}
 		double seconds = (double)(clock() - c) / CLOCKS_PER_SEC;
 		printf("crctime %lg\n", seconds);

@@ -9,18 +9,18 @@
 #include <clib/rseq.h>
 
 struct RandomSequence : random_sequence{
-	RandomSequence(int32_t seed1 = 5242314, int32_t seed2 = 6363893);
+	RandomSequence(uint32_t seed1 = 5242314, uint32_t seed2 = 6363893);
 	RandomSequence(const void *pointer);
 	unsigned long next();
-	double nextd(){return ((double)next() / ULONG_MAX);}
+	double nextd(){return ((double)next() / UINT32_MAX);}
 	double nextGauss(){return (nextd() - .5) + (nextd() - .5);}
-	void init(int32_t seed1, int32_t seed2);
+	void init(uint32_t seed1, uint32_t seed2);
 };
 
 
 /* --- Implementations --- */
 
-inline RandomSequence::RandomSequence(int32_t seed1, int32_t seed2){
+inline RandomSequence::RandomSequence(uint32_t seed1, uint32_t seed2){
 	init(seed1, seed2);
 }
 
@@ -34,10 +34,10 @@ inline RandomSequence::RandomSequence(const void *pointer){
 	// architectures.  Instead, we use regular if statements and hope that
 	// the optimizer do the job.
 	if(sizeof(pointer) == sizeof(uint32_t))
-		init(*(const int32_t*)(&pointer), 6363893);
+		init(*(const uint32_t*)(&pointer), 6363893);
 	else if(sizeof(pointer) == 2 * sizeof(uint32_t))
 //#else // Assume a pointer has a sizeof of twice as large as int32.
-		init(*((const int32_t*)&pointer), ((const int32_t*)&pointer)[1]);
+		init(*((const uint32_t*)&pointer), ((const uint32_t*)&pointer)[1]);
 //#endif
 	else{
 		uint32_t seed = 0;
@@ -47,7 +47,7 @@ inline RandomSequence::RandomSequence(const void *pointer){
 	}
 }
 
-inline void RandomSequence::init(int32_t seed1, int32_t seed2){
+inline void RandomSequence::init(uint32_t seed1, uint32_t seed2){
 	w = ((z = (seed1)) ^ 123459876L) * 123459871L;
 	z += ((w += (seed2)) ^ 1534241562L) * 123459876L;
 }

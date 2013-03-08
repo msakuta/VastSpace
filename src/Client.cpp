@@ -8,13 +8,6 @@
 #include "glw/GLWchat.h"
 #include <sstream>
 
-struct JoinGameData{
-	char addr[256];
-	gltestp::dstring name;
-	u_short port;
-	FILE **plogfile;
-};
-
 
 ClientApplication::ClientApplication() : recvbytes(0){
 	hGameMutex = CreateMutex(NULL, FALSE, NULL);
@@ -203,9 +196,8 @@ cleanup:
 	return 0;
 }
 
-
-int ClientApplication::joingame(const char *host, int port){
-	JoinGameData data;
+/// \brief Try to join a game server. If successful, the caller must call startGame() in succession.
+bool ClientApplication::joinGame(const char *host, int port){
 //	quitgame(pc);
 //	data.plogfile = &pc->logfile;
 	data.port = port;
@@ -227,14 +219,13 @@ int ClientApplication::joingame(const char *host, int port){
 		int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 		if (iResult != NO_ERROR){
 			OutputDebugString("Error at WSAStartup()\n");
-			return 0;
+			return false;
 		}
 
-		SOCKET s;
 		s = socketty();
 		if(s == INVALID_SOCKET){
 			WSACleanup();
-			return FALSE;
+			return false;
 		}
 		con = s;
 
@@ -252,7 +243,7 @@ int ClientApplication::joingame(const char *host, int port){
 					"Make sure the destination host name is valid and try again.", "Error", MB_OK);
 					closesocket(s);
 					WSACleanup();
-					return FALSE;
+					return false;
 				}
 				service.sin_addr.s_addr = **(u_long**)he->h_addr_list;
 			}
@@ -270,24 +261,29 @@ int ClientApplication::joingame(const char *host, int port){
 					"Make sure the destination address is correct and try again.", "Error", MB_OK);
 				closesocket(s);
 				WSACleanup();
-				return 0;
+				return false;
 			}
 		}
-		{
-			DWORD dw;
-			hRecvThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RecvThread, (LPVOID)this, 0, &dw);
-		}
-		{
-			dstring ds = dstring() << "LOGIN " << data.name << "\r\n";
-			send(s, ds, ds.len(), 0);
-		}
-		shutclient = false;
-		mode = ClientWaitGame;
+		return true;
+	}
+	return false;
+}
+
+/// \brief Actually start receiving data after joined a remote game.
+bool ClientApplication::startGame(){
+	{
+		DWORD dw;
+		hRecvThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RecvThread, (LPVOID)this, 0, &dw);
+	}
+	{
+		dstring ds = dstring() << "LOGIN " << data.name << "\r\n";
+		send(s, ds, ds.len(), 0);
+	}
+	shutclient = false;
+	mode = ClientWaitGame;
 //		RedrawMenu(pc);
 //		SetEvent(pc->hDrawEvent);
-		return 1;
-	}
-	return 0;
+	return true;
 }
 
 void ClientApplication::errorMessage(const char *str){

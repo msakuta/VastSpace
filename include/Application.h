@@ -104,6 +104,13 @@ public:
 	};
 	typedef std::vector<ClientClient> ClientList;
 
+	struct JoinGameData{
+		char addr[256];
+		gltestp::dstring name;
+		u_short port;
+		FILE **plogfile;
+	};
+
 	HWND w;
 	HANDLE hDrawThread; // the drawing thread
 //	HANDLE hWaveThread; // is it necessary??
@@ -142,11 +149,16 @@ public:
 
 	ClientApplication();
 	~ClientApplication();
-	int joingame(const char *host, int port);
+	bool joinGame(const char *host, int port);
+	bool startGame();
 	void display_func();
 	void mouse_func(int button, int state, int x, int y);
 	void signalMessage(const char *text);
 	void errorMessage(const char *str);
+
+protected:
+	JoinGameData data;
+	SOCKET s;
 };
 
 EXPORT extern ClientApplication application;

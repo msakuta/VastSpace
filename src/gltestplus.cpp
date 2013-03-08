@@ -2356,17 +2356,31 @@ int main(int argc, char *argv[])
 	bool &isClient = application.isClient;
 
 #ifdef _WIN32
-	// In Windows, the user have an opportunity to review and change the startup settings with GUI.
-	HostGameDlgData data;
-	data.params = &application.serverParams;
-	data.loginName = application.loginName;
-	data.plogfile = &application.logfile;
-	data.isClient = application.isClient;
-	UINT dialogRet = DialogBoxParam(GetModuleHandle(NULL), (LPCTSTR)IDD_JOINGAME, NULL, HostGameDlg, (LPARAM)&data);
-	if(IDCANCEL == dialogRet)
+	do{
+		// In Windows, the user have an opportunity to review and change the startup settings with GUI.
+		HostGameDlgData data;
+		data.params = &application.serverParams;
+		data.loginName = application.loginName;
+		data.plogfile = &application.logfile;
+		data.isClient = application.isClient;
+		UINT dialogRet = DialogBoxParam(GetModuleHandle(NULL), (LPCTSTR)IDD_JOINGAME, NULL, HostGameDlg, (LPARAM)&data);
+		if(IDCANCEL == dialogRet)
+			return 0;
+		isClient = data.isClient;
+
+		// Check if joining the told server is feasible as early as possible.
+		// If we fail here, we can retry it with other parameters.
+		if(isClient && !application.joinGame(application.serverParams.hostname, application.serverParams.port))
+			continue;
+		application.loginName = data.loginName;
+
+		// Break and continue on success
+		break;
+	}while(true);
+#else
+	// If no GUI is available, do not retry and just die.
+	if(!application.joinGame(application.serverParams.hostname, application.serverParams.port))
 		return 0;
-	isClient = data.isClient;
-	application.loginName = data.loginName;
 #endif
 
 	if(isClient){
@@ -2432,7 +2446,6 @@ int main(int argc, char *argv[])
 
 #if USEWIN
 	{
-		MSG msg;
 		HWND hWnd;
 		ATOM atom;
 		HINSTANCE hInst;
@@ -2471,14 +2484,18 @@ int main(int argc, char *argv[])
 #endif
 
 		// Try to host or join game after the window is created to enable message boxes to report errors.
-		if(isClient)
-			application.joingame(application.serverParams.hostname, application.serverParams.port);
+		if(isClient){
+			// We have to defer invocation of startGame() until here because we must initialize
+			// various cvars and such before forking a thread to interpret server's messages.
+			application.startGame();
+		}
 		else
 			application.hostgame(server, application.serverParams.port);
 
 #if USEWIN
 
 		do{
+			MSG msg;
 			if(PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)){
 				if(GetMessage(&msg, NULL, 0, 0) <= 0)
 					break;

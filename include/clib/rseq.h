@@ -28,6 +28,7 @@
  *
  */
 #include <limits.h>
+#include <stdint.h>
 
 #define RSEQMETHOD 5
 
@@ -36,23 +37,23 @@
 
 struct random_sequence{
 #if RSEQMETHOD==0
-	unsigned long i;
+	int32_t i;
 #elif RSEQMETHOD==1
 	long *k_ma_end, *pk1, *pk2;
 	long k_ma[57];
 #elif RSEQMETHOD==2
-	unsigned long jsr;
+	int32_t jsr;
 #elif RSEQMETHOD==3
-	unsigned long a, b;
+	int32_t a, b;
 #else
-	unsigned long z, w;
+	int32_t z, w;
 #endif
 };
 
 /* function versions are always declared, but may not be linked */
 extern void init_rseqf(struct random_sequence *, unsigned long seed);
 extern void init_rseqf_double(struct random_sequence *, double seed);
-extern unsigned long rseqf(struct random_sequence *);
+extern int32_t rseqf(struct random_sequence *);
 
 #if RSEQMETHOD!=5
 #define init_rseq init_rseqf

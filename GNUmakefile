@@ -6,13 +6,15 @@ OUTDIR = Release
 CFLAGS += -I ../clib/include -I include -DNDEBUG -O3
 endif
 
+CFLAGS += -fPIC
+
 ${OUTDIR}/cpplib.a: ${OUTDIR}\
  ${OUTDIR}/cpplib.a(dstring.o)\
  ${OUTDIR}/cpplib.a(vec3.o)\
  ${OUTDIR}/cpplib.a(vec4.o)\
  ${OUTDIR}/cpplib.a(quat.o)\
- ${OUTDIR}/cpplib.a(mat4.o)\
- ${OUTDIR}/cpplib.a(glcull.o)
+ ${OUTDIR}/cpplib.a(mat4.o)
+# ${OUTDIR}/cpplib.a(glcull.o)
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

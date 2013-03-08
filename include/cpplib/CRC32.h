@@ -20,7 +20,7 @@ namespace cpplib{
 		/// but it's possibly not initialized in some implementations if it's
 		/// not ever used, so we make sure it's used by overloading function call
 		/// operator of the object to use it like a functionoid.
-		uint32_t operator()(const uint8_t *buf, size_t len, uint32_t crc32 = 0){
+		uint32_t operator()(const void *buf, size_t len, uint32_t crc32 = 0){
 			return ::clib_crc32_direct(buf, len, crc32);
 		}
 

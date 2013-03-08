@@ -3,9 +3,9 @@
  */
 #include "clib/crc32.h"
 
-uint32_t crc_table[256];
+static uint32_t crc_table[256];
  
-void make_crc_table(void) {
+void crc32_make_crc_table(void) {
 	uint32_t i = 0;
     for (; i < 256; i++) {
         uint32_t c = i;
@@ -16,8 +16,15 @@ void make_crc_table(void) {
         crc_table[i] = c;
     }
 }
+
+uint32_t crc32(const uint8_t *buf, size_t len){
+	static int init = 0;
+	if(!init)
+		crc32_make_crc_table();
+	return crc32_direct(buf, len);
+}
  
-uint32_t crc32(const uint8_t *buf, size_t len) {
+uint32_t crc32_direct(const uint8_t *buf, size_t len) {
     uint32_t c = 0xFFFFFFFF;
     size_t i = 0;
     for (; i < len; i++) {
@@ -26,6 +33,6 @@ uint32_t crc32(const uint8_t *buf, size_t len) {
     return c ^ 0xFFFFFFFF;
 }
 
-const uint32_t *get_crc_table(void){
+const uint32_t *crc32_get_crc_table(void){
 	return crc_table;
 }

@@ -32,8 +32,8 @@ int main(int argc, char *argv[]){
 		fprintf(fp, " * Generated automatically by crc32.c\n */\n\n");
 		fprintf(fp, "static const uint32_t ");
 		fprintf(fp, "crc_table[256] =\n{\n");
-		make_crc_table();
-		crc_table = get_crc_table();
+		crc32_make_crc_table();
+		crc_table = crc32_get_crc_table();
 		for (n = 0; n < 256; n++)
 			fprintf(fp, "%s0x%08lxUL%s", n % 5 ? "" : "    ", crc_table[n],
 				n == 255 ? "\n" : (n % 5 == 4 ? ",\n" : ", "));
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 	}
 	{
 		clock_t c = clock();
-		make_crc_table();
+		crc32_make_crc_table();
 		printf("maketime %lg\n", (double)(clock() - c) / CLOCKS_PER_SEC);
 	}
 	{
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]){
 		clock_t c = clock();
 		volatile uint32_t crc = 0;
 		for(i = 0; i < n; i++){
-			crc = crc32(buf, sz);
+			crc = crc32_direct(buf, sz);
 		}
 		double seconds = (double)(clock() - c) / CLOCKS_PER_SEC;
 		printf("crctime %lg\n", seconds);

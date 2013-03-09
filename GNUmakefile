@@ -91,4 +91,6 @@ ${OUT}(crc32.o): src/crc32.c
 
 tests/crc32_test: tests/crc32_test.c ${OUT}
 	${CC} $(CFLAGS) $^ -o $@
+tests/rseq_test: tests/rseq_test.c ${OUT}
+	${CC} $(CFLAGS) $^ -o $@
 

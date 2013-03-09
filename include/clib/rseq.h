@@ -1,7 +1,7 @@
 #ifndef RANDOM_RSEQ_H
 #define RANDOM_RSEQ_H
-/* rseq.h
- * pseudo-random number sequence generator object
+/** \file rseq.h
+ * \brief pseudo-random number sequence generator object
  * which generates exactly the same sequence by the same seed number.
  *
  * This header defines a structure and 2 macros. The structure is
@@ -44,7 +44,7 @@
 
 
 struct random_sequence{
-#if RSEQMETHOD==0
+#if RSEQMETHOD==0 || RSEQMETHOD==6
 	uint32_t i;
 #elif RSEQMETHOD==1
 	long *k_ma_end, *pk1, *pk2;
@@ -63,7 +63,16 @@ extern void init_rseqf(struct random_sequence *, uint32_t seed);
 extern void init_rseqf_double(struct random_sequence *, double seed);
 extern uint32_t rseqf(struct random_sequence *);
 
-#if RSEQMETHOD!=5
+#if RSEQMETHOD==6
+#define init_rseq(rs,seed) {(rs)->i=seed;}
+#define initfull_rseq(rs,seed1,seed2) {(rs)->i=seed1^seed2;}
+#define rseq(prs) ((prs)->i=1664525L*(prs)->i + 1013904223L) // Method from Numerical Recipes in C by Knuth.
+#elif RSEQMETHOD==7
+#define init_rseq(rs,seed) {(rs)->w = (((rs)->z = (seed)) ^ 123459876L) * 123459871L;}
+#define initfull_rseq(rs,seed1,seed2) {(rs)->w = (((rs)->z = (seed1)) ^ 123459876L) * 123459871L; (rs)->z += (((rs)->w += (seed2)) ^ 1534241562L) * 123459876L;}
+/// Combination of 2 Knuth's method from Numerical Recipes in C.
+#define rseq(prs) ((((prs)->z=1664525L*(prs)->z + 1013904223L)>>16)|((((prs)->w=1664525L*(prs)->w + 1013904223L)>>16)<<16))
+#elif RSEQMETHOD!=5
 #define init_rseq init_rseqf
 #define rseq rseqf
 #else

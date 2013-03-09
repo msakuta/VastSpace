@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of rseq.h's functions.
+ */
 #include "clib/rseq.h"
 
 #define MBIG  ULONG_MAX
@@ -40,6 +43,8 @@ void init_rseqf(rst *rs, uint32_t seed){
 	rs->jsr = seed;
 #elif RSEQMETHOD==3
 	rs->a = rs->b = seed;
+#elif RSEQMETHOD==6
+	rs->i = seed;
 #else
 /*	rs->z = (((rs->w = seed) ^ MASK) + 8651) * 123459871L;*/
 	rs->w = (((rs->z = seed) ^ MASK) /* + 8651*/) * 123459871L;
@@ -48,7 +53,7 @@ void init_rseqf(rst *rs, uint32_t seed){
 
 // Implementation for machine with sizeof(unsigned long) == 4 and sizeof(double) == 8.
 void init_rseqf_double(rst *rs, double seed){
-	initfull_rseq(rs, *(unsigned long*)&seed, ((unsigned long*)&seed)[1]);
+	initfull_rseq(rs, *(uint32_t*)&seed, ((uint32_t*)&seed)[1]);
 }
 
 
@@ -73,6 +78,8 @@ uint32_t rseqf(rst *rs)
 	return SHR3((rs->jsr));
 #elif RSEQMETHOD==3
 	return FIB((rs->a),(rs->b));
+#elif RSEQMETHOD==6
+	return rseq(rs);
 #else
 	return MWC((rs->z),(rs->w));
 #endif

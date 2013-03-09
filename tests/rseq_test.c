@@ -14,8 +14,8 @@ int main(int argc, char *argv[]){
 	int test_init = 0;
 	int test_method = 0;
 	if(argc < 2){
-		printf("usage: %s repeats\n", argv[0]);
-		printf("   Calculates file's CRC32 repeats times. Default once.\n");
+		printf("usage: %s [-i] [-m] repeats\n", argv[0]);
+		printf("   Tests pseudo random number generator algorithms repeats times. Default once.\n");
 		return 1;
 	}
 	{
@@ -55,16 +55,19 @@ int main(int argc, char *argv[]){
 	else{
 		struct random_sequence rs;
 		double i;
-		uint32_t inival;
 		clock_t c = clock();
 		if(test_method == 0){
+			struct random_sequence inirs; // Buffer to hold initial state vector.
 			volatile uint32_t v = 0;
 			init_rseq(&rs, 1);
-			inival = rseq(&rs);
+			inirs = rs;
 			for(i = 0; i < n; i++){
 				v = rseq(&rs);
-				// Detect period
-				if(inival == v){
+				// Detect period by comparing state vector, not by returned value.
+				// Note that random_sequence structure could have padding bytes that
+				// don't contribute to period, but it's unlikely that those paddings
+				// are altered between calls.
+				if(!memcmp(&inirs, &rs, sizeof rs)){
 					printf("Period %lg\n", i);
 					break;
 				}
@@ -73,7 +76,6 @@ int main(int argc, char *argv[]){
 		else{
 			volatile uint32_t v = 0;
 			init_genrand(1);
-			inival = genrand_int32();
 			for(i = 0; i < n; i++){
 				v = genrand_int32();
 				// Measuring period of Mersenne Twister is meaningless, because it

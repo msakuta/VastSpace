@@ -63,8 +63,9 @@ int main(int argc, char *argv[]){
 			inival = rseq(&rs);
 			for(i = 0; i < n; i++){
 				v = rseq(&rs);
+				// Detect period
 				if(inival == v){
-					printf("Frequency %lg\n", i);
+					printf("Period %lg\n", i);
 					break;
 				}
 			}
@@ -75,10 +76,13 @@ int main(int argc, char *argv[]){
 			inival = genrand_int32();
 			for(i = 0; i < n; i++){
 				v = genrand_int32();
-				if(inival == v){
-					printf("Frequency %lg\n", i);
+				// Measuring period of Mersenne Twister is meaningless, because it
+				// has far more internal state vectors than the value returned.
+				// We should be taking more than universe's lifetime to reach the period.
+/*				if(inival == v){
+					printf("period %lg\n", i);
 					break;
-				}
+				}*/
 			}
 		}
 		double seconds = (double)(clock() - c) / CLOCKS_PER_SEC;

@@ -1349,7 +1349,9 @@ SerializeStream &DiffSectionStream::operator<<(const Quatd &v){
 }
 
 SerializeStream &DiffSectionStream::operator<<(const struct ::random_sequence &rs){
-	return *this << rs.w << rs.z;
+	for(int i = 0; i < sizeof rs; i++)
+		*this << ((unsigned char*)&rs)[i];
+	return *this;
 }
 
 

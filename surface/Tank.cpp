@@ -48,7 +48,7 @@ extern "C"{
 /*#define TANK_SCALE .0001*/
 #define TANK_SCALE (3.33 / 200 * 1e-3)
 
-static struct random_sequence gsrs = {1, 2};
+static struct random_sequence gsrs = {1};
 
 const static GLdouble
 tank_offset[3] = {0., 0.001, 0.}, tank_radius = .001,

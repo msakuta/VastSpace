@@ -25,7 +25,8 @@ SerializeStream &StdSerializeStream::operator<<(const Quatd &v){
 
 SerializeStream &StdSerializeStream::operator<<(const struct ::random_sequence &rs){
 	base << "(";
-	*this << rs.w << rs.z;
+	for(int i = 0; i < sizeof rs; i++)
+		*this << ((unsigned char*)&rs)[i];
 	base << ")";
 	return *this;
 }
@@ -150,7 +151,9 @@ SerializeStream &BinSerializeStream::operator<<(const Quatd &v){
 }
 
 SerializeStream &BinSerializeStream::operator<<(const struct ::random_sequence &rs){
-	return *this << rs.w << rs.z;
+	for(int i = 0; i < sizeof rs; i++)
+		*this << ((unsigned char*)&rs)[i];
+	return *this;
 }
 
 SerializeStream &BinSerializeStream::write(const BinSerializeStream &o){
@@ -224,7 +227,8 @@ UnserializeStream &StdUnserializeStream::operator>>(const char *cstr){
 
 UnserializeStream &StdUnserializeStream::operator>>(random_sequence &rs){
 	consume("(");
-	*this >> rs.w >> rs.z;
+	for(int i = 0; i < sizeof rs; i++)
+		*this >> ((unsigned char*)&rs)[i];
 	consume(")");
 	return *this;
 }
@@ -336,7 +340,8 @@ UnserializeStream &BinUnserializeStream::operator>>(float &a){return read(a);}
 UnserializeStream &BinUnserializeStream::operator>>(double &a){return read(a);}
 
 UnserializeStream &BinUnserializeStream::operator>>(random_sequence &rs){
-	*this >> rs.w >> rs.z;
+	for(int i = 0; i < sizeof rs; i++)
+		*this >> ((unsigned char*)&rs)[i];
 	return *this;
 }
 

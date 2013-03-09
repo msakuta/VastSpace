@@ -13,9 +13,13 @@ int main(int argc, char *argv[]){
 	double n = 1;
 	int test_init = 0;
 	int test_method = 0;
+	int test_period = 0;
 	if(argc < 2){
-		printf("usage: %s [-i] [-m] repeats\n", argv[0]);
+		printf("usage: %s [-i] [-m] [-p] repeats\n", argv[0]);
 		printf("   Tests pseudo random number generator algorithms repeats times. Default once.\n");
+		printf("   -i Profiles initialization cost instead of generation.\n");
+		printf("   -m Profiles Mersenne Twister.\n");
+		printf("   -p Profiles period of the number sequence.\n");
 		return 1;
 	}
 	{
@@ -26,6 +30,8 @@ int main(int argc, char *argv[]){
 			}
 			else if(!strcmp(argv[a], "-m"))
 				test_method = 1; // Test Mersenne Twister
+			else if(!strcmp(argv[a], "-p"))
+				test_period = 1;
 			else
 				n = atof(argv[a]);
 		}
@@ -60,16 +66,22 @@ int main(int argc, char *argv[]){
 			struct random_sequence inirs; // Buffer to hold initial state vector.
 			volatile uint32_t v = 0;
 			init_rseq(&rs, 1);
-			inirs = rs;
-			for(i = 0; i < n; i++){
-				v = rseq(&rs);
-				// Detect period by comparing state vector, not by returned value.
-				// Note that random_sequence structure could have padding bytes that
-				// don't contribute to period, but it's unlikely that those paddings
-				// are altered between calls.
-				if(!memcmp(&inirs, &rs, sizeof rs)){
-					printf("Period %lg\n", i);
-					break;
+			if(!test_period){
+				for(i = 0; i < n; i++)
+					v = rseq(&rs);
+			}
+			else{
+				inirs = rs;
+				for(i = 0; i < n; i++){
+					v = rseq(&rs);
+					// Detect period by comparing state vector, not by returned value.
+					// Note that random_sequence structure could have padding bytes that
+					// don't contribute to period, but it's unlikely that those paddings
+					// are altered between calls.
+					if(!memcmp(&inirs, &rs, sizeof rs)){
+						printf("Period %lg\n", i);
+						break;
+					}
 				}
 			}
 		}

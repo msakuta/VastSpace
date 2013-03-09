@@ -34,7 +34,8 @@ ${OUT}: ${OUTDIR}\
  ${OUT}(suf.o)\
  ${OUT}(sufreloc.o)\
  ${OUT}(circut.o)\
- ${OUT}(crc32.o)
+ ${OUT}(crc32.o)\
+ ${OUT}(mt19937ar.o)
 # ${OUT}(sufdraw.o)
 # ${OUT}(wavsound.o)
 # ${OUT}(UnZip.o)\
@@ -86,6 +87,8 @@ ${OUT}(sufreloc.o): src/suf/sufreloc.c
 ${OUT}(circut.o): src/circut.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(crc32.o): src/crc32.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
+${OUT}(mt19937ar.o): src/random/mt19937ar.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 
 

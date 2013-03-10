@@ -10,59 +10,62 @@ extern "C"{
 #define texture(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
 
 void GLWbuild::progress_bar(double f, int width, int *piy){
+	GLWrect cr = clientRect();
 	int iy = *piy;
 	glColor4ub(0,255,0,255);
 	glBegin(GL_QUADS);
-	glVertex2d(xpos, ypos + (2 + iy - 1) * 12);
-	glVertex2d(xpos + width * f, ypos + (2 + iy - 1) * 12);
-	glVertex2d(xpos + width * f, ypos + (2 + iy - 0) * 12);
-	glVertex2d(xpos + 0, ypos + (2 + iy - 0) * 12);
+	glVertex2d(cr.x0, cr.y0 + iy * 12);
+	glVertex2d(cr.x0 + width * f, cr.y0 + iy * 12);
+	glVertex2d(cr.x0 + width * f, cr.y0 + (iy + 1) * 12);
+	glVertex2d(cr.x0 + 0, cr.y0 + (iy + 1) * 12);
 	glEnd();
 	glColor4ub(127,127,127,255);
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(xpos, ypos + (2 + iy - 1) * 12);
-	glVertex2d(xpos + width, ypos + (2 + iy - 1) * 12);
-	glVertex2d(xpos + width, ypos + (2 + iy - 0) * 12);
-	glVertex2d(xpos + 0, ypos + (2 + iy - 0) * 12);
+	glVertex2d(cr.x0, cr.y0 + iy * 12);
+	glVertex2d(cr.x0 + width, cr.y0 + iy * 12);
+	glVertex2d(cr.x0 + width, cr.y0 + (iy + 1) * 12);
+	glVertex2d(cr.x0 + 0, cr.y0 + (iy + 1) * 12);
 	glEnd();
 	glColor4ub(255,0,0,255);
-	glwpos2d(xpos, ypos + (2 + (*piy)++) * 12);
+	glwpos2d(cr.x0, cr.y0 + (1 + (*piy)++) * 12);
 	glwprintf("%3.0lf%%", 100. * f);
 }
 
 int GLWbuild::draw_tab(int ix, int iy, const char *s, int selected){
+	GLWrect cr = clientRect();
 	int ix0 = ix;
 	glBegin(GL_LINE_STRIP);
-	glVertex2d(this->xpos + ix, this->ypos + iy + 12);
-	glVertex2d(this->xpos + (ix += 3), this->ypos + iy + 1);
+	glVertex2d(cr.x0 + ix, cr.y0 + iy + 12);
+	glVertex2d(cr.x0 + (ix += 3), cr.y0 + iy + 1);
 	ix += 8 * strlen(s);
-	glVertex2d(this->xpos + ix, this->ypos + iy + 1);
-	glVertex2d(this->xpos + (ix += 3), this->ypos + iy + 12);
+	glVertex2d(cr.x0 + ix, cr.y0 + iy + 1);
+	glVertex2d(cr.x0 + (ix += 3), cr.y0 + iy + 12);
 	if(!selected){
-		glVertex2d(xpos + ix0, ypos + iy + 12);
+		glVertex2d(cr.x0 + ix0, cr.y0 + iy + 12);
 	}
 	glEnd();
-	glwpos2d(xpos + ix0 + 3, ypos + iy + 12);
+	glwpos2d(cr.x0 + ix0 + 3, cr.y0 + iy + 12);
 	glwprintf("%s", s);
 	return ix;
 }
 
 void GLWbuild::draw(GLwindowState &ws, double t){
 	int ix;
+	GLWrect cr = clientRect();
+	int fonth = getFontHeight();
 	if(!builder)
 		return;
 	glColor4ub(255,255,255,255);
-	glwpos2d(this->xpos, this->ypos + 2 * getFontHeight());
+	glwpos2d(cr.x0, cr.y0 + fonth);
 	glwprintf("Resource Units: %.0lf", builder->getRU());
 	glColor4ub(255,255,0,255);
-	ix = draw_tab(ix = 2, 2 * 12, "Build", tabindex == 0);
-	ix = draw_tab(ix, 2 * 12, "Queue", tabindex == 1);
+	ix = draw_tab(ix = 2, fonth, "Build", tabindex == 0);
+	ix = draw_tab(ix, fonth, "Queue", tabindex == 1);
 	glBegin(GL_LINES);
-	glVertex2d(xpos + ix, ypos + 3 * 12);
-	glVertex2d(xpos + width, ypos + 3 * 12);
+	glVertex2d(cr.x0 + ix, cr.y0 + 2 * fonth);
+	glVertex2d(cr.x1, cr.y0 + 2 * fonth);
 	glEnd();
 	const Builder::BuildData &top = builder->buildque[0];
-	int fonth = getFontHeight();
 	int iy = 2;
 	if(tabindex == 0){
 		int *builderc = NULL, builderi, j;
@@ -78,26 +81,26 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 			}
 		}
 		glColor4ub(255,255,255,255);
-		glwpos2d(xpos, ypos + (2 + iy++) * 12);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 		glwprintf("Buildable Items:");
 
 		/* Mouse cursor highlights */
-		int mx = ws.mx - xpos, my = ws.my - ypos;
-		if(!modal && 0 < mx && mx < width && (1 + iy) * fonth < my && my < (1 + iy + Builder::nbuilder0) * fonth){
+		int mx = ws.mx - cr.x0, my = ws.my - cr.y0;
+		if(!modal && 0 < mx && mx < cr.width() && (iy) * fonth < my && my < (iy + Builder::nbuilder0) * fonth){
 			glColor4ub(0,0,255,127);
-			glRecti(xpos, ypos + (my / fonth) * fonth, xpos + width, ypos + (my / fonth + 1) * fonth);
+			glRecti(cr.x0, cr.y0 + (my / fonth) * fonth, cr.x1, cr.y0 + (my / fonth) * fonth);
 		}
 
 		/* Progress bar of currently building item */
 		if(builder->nbuildque && builder->build){
 			glColor4ub(0,127,0,255);
-			glRecti(xpos, ypos + (builderi + iy + 1) * fonth + 8, xpos + (1. - builder->build / top.st->buildtime) * width, ypos + (builderi + iy + 1) * fonth + fonth);
+			glRecti(cr.x0, cr.y0 + (builderi + iy + 1) * fonth + 8, cr.x0 + (1. - builder->build / top.st->buildtime) * cr.width(), cr.y0 + (builderi + iy + 1) * fonth + fonth);
 		}
 
 		glColor4ub(191,191,255,255);
 		for(j = 0; j < Builder::nbuilder0; j++){
 			const Builder::BuildStatic *sta = Builder::builder0[j];
-			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 			glwprintf("%10s  %d  %lg RU", sta->name, builderc ? builderc[j] : 0, sta->cost);
 		}
 /*		glwpos2d(xpos, ypos + (2 + iy++) * 12);
@@ -115,18 +118,18 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 	}
 	else{
 		glColor4ub(255,255,255,255);
-		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 		glwprintf("Build Queue:");
 		if(builder->nbuildque == 0)
 			return;
-		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 		glwprintf(top.st->name);
 		progress_bar((1. - builder->build / top.st->buildtime), 200, &iy);
 		glColor4ub(255,255,255,255);
 		for(int i = 0; i < builder->nbuildque; i++){
-			if(height < (2 + iy) * fonth)
+			if(cr.height() < (2 + iy) * fonth)
 				return;
-			glwpos2d(xpos, ypos + (2 + iy++) * fonth);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 			glwprintf("%d X %s %lg RUs", builder->buildque[i].num, builder->buildque[i].st->name, builder->buildque[i].num * builder->buildque[i].st->cost);
 		}
 	}

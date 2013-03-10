@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Builder, GLWbuild and BuildCommand classes.
+ */
 #include "Scarry.h"
 #include "judge.h"
 #include "serial_util.h"
@@ -7,6 +10,8 @@
 #include "Beamer.h"
 #include "sqadapt.h"
 #include "glw/popup.h"
+#include "Application.h"
+#include "StaticInitializer.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -96,11 +101,31 @@ double Builder::getRU()const{
 	return ru;
 }
 
+bool Builder::command(EntityCommand *com){
+	if(BuildCommand *bc = InterpretCommand<BuildCommand>(com)){
+		for(int i = 0; i < numof(builder0); i++){
+			if(bc->buildOrder == builder0[i]->name){
+				addBuild(builder0[i]);
+			}
+		}
+		return true;
+	}
+	return false;
+}
 
 
+IMPLEMENT_COMMAND(BuildCommand, "BuildCommand");
+
+void BuildCommand::serialize(SerializeContext &sc){
+	sc.o << buildOrder;
+}
+
+void BuildCommand::unserialize(UnserializeContext &sc){
+	sc.i >> buildOrder;
+}
 
 
-#ifdef _WIN32
+#ifndef DEDICATED
 static int select_tab(GLwindow *wnd, int ix, int iy, const char *s, int *selected, int mx, int my){
 	int ix0 = ix;
 	ix += 3;
@@ -131,6 +156,10 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 #if 1
 			if(0 <= ind && ind < Builder::nbuilder0){
 				builder->addBuild(builder->builder0[ind]);
+				if(!game->isServer()){
+					BuildCommand com(builder->builder0[ind]->name);
+					CMEntityCommand::s.send(builder->toEntity(), com);
+				}
 			}
 #else
 			if(0 <= ind && ind < 1) for(i = 0; i < num; i++) switch(ind){
@@ -201,14 +230,22 @@ void GLWbuild::postframe(){
 		builder = NULL;
 }
 
-int cmd_build(int argc, char *argv[], void *pv){
-	Player &pl = *(Player*)pv;
-	if(pl.selected.empty() || (*pl.selected.begin())->w)
+int cmd_build(int argc, char *argv[]){
+	if(!application.clientGame)
 		return 0;
-	Builder *pb = (*pl.selected.begin())->getBuilder();
+	Player *player = application.clientGame->player;
+	if(!player && player->selected.empty())
+		return 0;
+	Builder *pb = (*player->selected.begin())->getBuilder();
 	if(pb)
-		new GLWbuild("Build", pb);
+		glwAppend(new GLWbuild(application.clientGame, "Build", pb));
 	return 0;
 }
+
+static void register_build(){
+	CmdAdd("buildmenu", cmd_build);
+}
+
+static StaticInitializer init(register_build);
 
 #endif

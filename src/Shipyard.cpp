@@ -94,7 +94,7 @@ void Shipyard::init(){
 				NavlightsProcess(navlights));
 		initialized = true;
 	}
-	ru = 0.;
+	ru = 1000.;
 /*	if(!hardpoints){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
@@ -119,6 +119,7 @@ void Shipyard::serialize(SerializeContext &sc){
 	sc.o << docker;
 	sc.o << undockingFrigate;
 	sc.o << dockingFrigate;
+	Builder::serialize(sc);
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.o << turrets[i];
 }
@@ -128,6 +129,7 @@ void Shipyard::unserialize(UnserializeContext &sc){
 	sc.i >> docker;
 	sc.i >> undockingFrigate;
 	sc.i >> dockingFrigate;
+	Builder::unserialize(sc);
 
 	// Update the dynamics body's parameters too.
 	if(bbody){
@@ -239,13 +241,14 @@ std::vector<hitbox> *Shipyard::getTraceHitBoxes()const{
 void Shipyard::anim(double dt){
 	st::anim(dt);
 	docker->anim(dt);
-//	Builder::anim(dt);
+	Builder::anim(dt);
 //	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 //		turrets[i]->align();
-	clientUpdate(dt);
+//	clientUpdate(dt);
 }
 
 void Shipyard::clientUpdate(double dt){
+	Shipyard::anim(dt);
 	if(undockingFrigate){
 		double threshdist = .5 + undockingFrigate->getHitRadius();
 		const Vec3d &udpos = undockingFrigate->pos;

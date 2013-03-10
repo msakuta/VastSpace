@@ -59,6 +59,7 @@ public:
 	virtual double getRU()const;
 	virtual Builder *getBuilderInt();
 	virtual Docker *getDockerInt();
+	virtual Entity *toEntity(){return this;}
 	virtual const ManeuverParams &getManeuve()const;
 
 protected:

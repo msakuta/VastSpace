@@ -20,7 +20,7 @@ extern "C"{
 
 int Shipyard::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-//	list.append("Build Window", 'b', "buildmenu");
+	list.append("Build Window", 'b', "buildmenu");
 	list.append("Dock Window", 'd', "dockmenu");
 	return ret;
 }

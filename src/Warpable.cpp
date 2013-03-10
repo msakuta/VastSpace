@@ -17,6 +17,7 @@
 #include "sqadapt.h"
 #include "arms.h"
 #include "Docker.h"
+#include "Builder.h"
 //#include "sensor.h"
 #include "motion.h"
 #ifndef DEDICATED
@@ -813,8 +814,13 @@ bool Warpable::command(EntityCommand *com){
 		// Cannot respond when warping
 		return false;
 	}
-	else
+	else{
+		if(Builder *builder = getBuilder()){
+			if(builder->command(com))
+				return true;
+		}
 		return st::command(com);
+	}
 	return false;
 }
 

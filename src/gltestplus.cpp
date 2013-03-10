@@ -1728,7 +1728,10 @@ void reshape_func(int w, int h)
 }
 
 static int cmd_originrotation(int, char *[]){
-	server->player->setrot(quat_u);
+	if(server && server->player)
+		server->player->setrot(quat_u);
+	else if(application.clientGame && application.clientGame->player)
+		application.clientGame->player->setrot(quat_u);
 	return 0;
 }
 

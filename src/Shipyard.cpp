@@ -94,7 +94,7 @@ void Shipyard::init(){
 				NavlightsProcess(navlights));
 		initialized = true;
 	}
-	ru = 1000.;
+	ru = 250.;
 /*	if(!hardpoints){
 		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
 	}
@@ -285,7 +285,6 @@ ArmBase *Shipyard::armsGet(int i){
 	return turrets[i];
 }
 
-double Shipyard::getRU()const{return ru;}
 Builder *Shipyard::getBuilderInt(){return this;}
 Docker *Shipyard::getDockerInt(){return docker;}
 

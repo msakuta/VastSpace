@@ -1,3 +1,7 @@
+/** \file
+ * \brief Remnants of Scarry class. Has some codes still active.
+ */
+#define NOMINMAX
 #include "../scarry.h"
 #include "judge.h"
 #include "draw/material.h"
@@ -57,7 +61,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		return;
 	glColor4ub(255,255,255,255);
 	glwpos2d(cr.x0, cr.y0 + fonth);
-	glwprintf("Resource Units: %.0lf", builder->getRU());
+	glwprintf("Resource Units: %.0lf", std::max(0., builder->getRU())); // The max is to avoid -0.
 	glColor4ub(255,255,0,255);
 	ix = draw_tab(ix = 2, fonth, "Build", tabindex == 0);
 	ix = draw_tab(ix, fonth, "Queue", tabindex == 1);

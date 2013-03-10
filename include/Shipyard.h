@@ -56,7 +56,6 @@ public:
 	virtual int popupMenu(PopupMenu &list);
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int i);
-	virtual double getRU()const;
 	virtual Builder *getBuilderInt();
 	virtual Docker *getDockerInt();
 	virtual Entity *toEntity(){return this;}

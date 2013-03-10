@@ -86,19 +86,40 @@ void Builder::doneBuild(Entity *child){}
 void Builder::anim(double dt){
 	static const double g_buildtimescale = 10.;
 	dt *= g_buildtimescale;
+
+	if(nbuildque){
+		// If resource units gonna run out, stop construction then.
+		if(ru < buildque[0].st->cost * (buildque[0].st->buildtime - build + dt) / buildque[0].st->buildtime){
+			dt = ru * buildque[0].st->buildtime / buildque[0].st->cost + build - buildque[0].st->buildtime;
+		}
+	}
+
 	while(nbuildque && build < dt){
+//		ru -= buildque[0].st->cost * build / buildque[0].st->buildtime;
+		// If we just subtract the actual RU value every frame, we could have it
+		// not equal to RUs before start building subtracted by the unit cost,
+		// because variable frame time's calculation errors build up.
+		// So we don't really subtract the value until the construction is
+		// complete.  Instead, we show the RUs partially subtracted by
+		// calculating the amount every time requested.  See getRU().
+		ru -= buildque[0].st->cost;
 		dt -= build;
 		Entity *created = buildque[0].st->create(this->w, this);
 		doneBuild(created);
 		cancelBuild(0, false);
 		build += buildque[0].st->buildtime;
 	}
-	if(nbuildque)
+	if(nbuildque){
+//		ru -= buildque[0].st->cost * dt / buildque[0].st->buildtime;
 		build -= dt;
+	}
 }
 
 double Builder::getRU()const{
-	return ru;
+	if(nbuildque)
+		return ru - buildque[0].st->cost * (buildque[0].st->buildtime - build) / buildque[0].st->buildtime;
+	else
+		return ru;
 }
 
 bool Builder::command(EntityCommand *com){

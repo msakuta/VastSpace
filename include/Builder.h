@@ -17,7 +17,7 @@
 /// \brief A class that virtually represent a construction line.
 ///
 /// It is not a subclass of Entity.  It's intended to be inherited to an Entity-
-/// derived class to add the funciton to that class.
+/// derived class (multiple inheritance) to add the funciton to that class.
 ///
 /// The user must explicitly call serialize(), unserialize(), anim() and command()
 /// in the corresponding functions of their own to propagate those events to this class.
@@ -61,7 +61,7 @@ protected:
 
 /// \brief A command that instruct a Builder to start building a named recipe.
 ///
-// Can be sent from a client to the server.
+/// Can be sent from a client to the server.
 struct EXPORT BuildCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(BuildCommand, EntityCommand);
 	BuildCommand(gltestp::dstring buildOrder = "") : buildOrder(buildOrder){}

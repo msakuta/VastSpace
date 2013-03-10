@@ -39,6 +39,7 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
+#include <cpplib/CRC32.h>
 #include <assert.h>
 #include <string.h>
 #include <algorithm>
@@ -879,7 +880,8 @@ void Sceptor::anim(double dt){
 					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
 						struct random_sequence rs;
-						init_rseq(&rs, (unsigned long)id ^ (unsigned long)(w->war_time() / .1));
+						uint32_t time = (uint32_t)(w->war_time() / .1);
+						init_rseq(&rs, cpplib::crc32(&id, sizeof id, cpplib::crc32(&time, sizeof time)));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
 							randomvec[i] = drseq(&rs) - .5;

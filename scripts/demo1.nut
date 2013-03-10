@@ -11,6 +11,7 @@ if(!earthlo)
 
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
+	redbase.race = 1;
 /*	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
 	des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
 	local attacker = player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
@@ -35,7 +36,7 @@ if(1){
 		local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0 + i * 0.05,-0.05));
 		mturret.race = 1;
 	}
-	for(local i = 0; i < 5; i++){
+	for(local i = 0; i < 0; i++){
 		local bturret = player.cs.addent("BeamGimbalTurret", Vec3d(0.05,0 + 0.05 * i, -0.10));
 		bturret.race = 1;
 	}
@@ -174,6 +175,13 @@ function frameproc(dt){
 			if(d != null){
 				local e = d.addent("Sceptor");
 				e.race = 0;
+			}
+		}
+		if(true && racec[1] < 2){
+			local d = redbase.docker;
+			if(d != null){
+				local e = d.addent("Sceptor");
+				e.race = 1;
 			}
 		}
 		if(false && assaults < 1 && countents(cs, 0, "Assault") < 1){

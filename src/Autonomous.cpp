@@ -793,6 +793,11 @@ bool Autonomous::command(EntityCommand *com){
 		if(docker)
 			docker->remainDocked = rdc->enable;
 	}
+	else if(UndockQueueCommand *uqc = InterpretCommand<UndockQueueCommand>(com)){
+		Docker *docker = getDocker();
+		if(docker)
+			docker->postUndock(uqc->e);
+	}
 	return false;
 }
 

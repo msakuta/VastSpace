@@ -79,6 +79,15 @@ struct QueryClassCommand : EntityCommand{
 	Docker::ShipClass ret;
 };
 
+struct EXPORT UndockQueueCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(UndockQueueCommand, EntityCommand);
+	UndockQueueCommand(Entity *a = NULL) : e(a){}
+	UndockQueueCommand(HSQUIRRELVM v, Entity &e) : e(NULL){}
+	Entity *e;
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
+};
+
 #ifndef DEDICATED
 class GLWdock : public GLwindowSizeable{
 public:

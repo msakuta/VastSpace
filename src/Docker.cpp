@@ -29,6 +29,9 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
+
+
+
 Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){
 	for(int i = 0; i < numof(paradec); i++)
 		paradec[i] = 0;
@@ -131,6 +134,10 @@ bool Docker::postUndock(Dockable *e){
 //			if(*qend) for(; *qend; qend = reinterpret_cast<Dockable**>(&(*qend)->next)); // Search until end
 //			*qend = e;
 //			e->next = NULL; // Appending to end means next is equal to NULL
+			if(!game->isServer()){
+				UndockQueueCommand com(e);
+				CMEntityCommand::s.send(this->e, com);
+			}
 			return true;
 		}
 		it = next;
@@ -259,6 +266,16 @@ SQInteger Docker::sqf_addent(HSQUIRRELVM v){
 }
 
 IMPLEMENT_COMMAND(QueryClassCommand, "QueryClassCommand");
+
+IMPLEMENT_COMMAND(UndockQueueCommand, "UndockQueueCommand");
+
+void UndockQueueCommand::serialize(SerializeContext &sc){
+	sc.o << e;
+}
+
+void UndockQueueCommand::unserialize(UnserializeContext &sc){
+	sc.i >> e;
+}
 
 #ifndef DEDICATED
 int GLWdock::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){

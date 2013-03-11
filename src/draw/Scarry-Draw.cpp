@@ -76,10 +76,15 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		if(builder->nbuildque){
 			builderc = new int[Builder::nbuilder0];
 			for(j = 0; j < Builder::nbuilder0; j++){
-				if(top.st == Builder::builder0[j])
-					builderc[j] = top.num;
-				else
-					builderc[j] = 0;
+				builderc[j] = 0;
+
+				// Accumulate all build queue entries
+				for(int i = 0; i < builder->nbuildque; i++){
+					if(builder->buildque[i].st == Builder::builder0[j])
+						builderc[j] += builder->buildque[i].num;
+				}
+
+				// Remember the top (currently building) build queue entry for progress bar.
 				if(top.st == Builder::builder0[j])
 					builderi = j;
 			}
@@ -101,6 +106,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 			glRecti(cr.x0, cr.y0 + (builderi + iy) * fonth + 8, cr.x0 + (1. - builder->build / top.st->buildtime) * cr.width(), cr.y0 + (builderi + iy) * fonth + fonth);
 		}
 
+		// Draw the buildable item's name and cost after the progress bar.
 		glColor4ub(191,191,255,255);
 		for(j = 0; j < Builder::nbuilder0; j++){
 			const Builder::BuildStatic *sta = Builder::builder0[j];

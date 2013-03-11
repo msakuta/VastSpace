@@ -166,6 +166,9 @@ function frameproc(dt){
 //			}
 		}
 
+		bluebase.ru += 75;
+		redbase.ru += 75;
+
 		local racec = [countents(cs, 0, "Sceptor"), countents(cs, 1, "Sceptor")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);

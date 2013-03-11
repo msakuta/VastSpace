@@ -51,6 +51,7 @@ const unsigned Builder::nbuilder0 = numof(builder0);
 
 void Builder::serialize(SerializeContext &sc){
 	// Do NOT call Entity::serialize here because this class is a branch class.
+	sc.o << ru; // Do not pass value of getRU(), it can contain errors.
 	sc.o << build;
 	sc.o << nbuildque;
 	for(int i = 0; i < nbuildque; i++){
@@ -60,6 +61,7 @@ void Builder::serialize(SerializeContext &sc){
 
 void Builder::unserialize(UnserializeContext &sc){
 	// Do NOT call Entity::unserialize here because this class is a branch class.
+	sc.i >> ru;
 	sc.i >> build;
 	sc.i >> nbuildque;
 	for(int i = 0; i < nbuildque; i++){
@@ -153,6 +155,34 @@ bool Builder::command(EntityCommand *com){
 		return true;
 	}
 	return false;
+}
+
+/// \brief The class specific getter method for Squirrel scripts.
+///
+/// Note that it cannot be a native closure of Squirrel by its own.
+/// It muse be called from one.
+SQInteger Builder::sq_get(HSQUIRRELVM v, const SQChar *name){
+	if(!strcmp(name, _SC("ru"))){
+		sq_pushfloat(v, getRU());
+		return 1;
+	}
+	else
+		return 0;
+}
+
+/// \brief The class specific setter method for Squirrel scripts.
+///
+/// Note that it cannot be a native closure of Squirrel by its own.
+/// It muse be called from one.
+SQInteger Builder::sq_set(HSQUIRRELVM v, const SQChar *name){
+	if(!strcmp(name, _SC("ru"))){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
+			ru += f - getRU();
+		}
+	}
+	else
+		return SQ_ERROR;
 }
 
 

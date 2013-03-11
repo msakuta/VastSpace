@@ -302,8 +302,16 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_pushinteger(v, p->getid());
 		return 1;
 	}
-	else
+	else{
+		// Try to delegate getter method to Builder.
+		// I don't have an idea how to achieve this without knowledge of descendants.
+		if(Builder *builder = p->getBuilder()){
+			SQInteger ret = builder->sq_get(v, wcs);
+			if(ret != 0)
+				return ret;
+		}
 		return SQ_ERROR;
+	}
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.what());
@@ -335,8 +343,15 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 		p->enemy = o;
 		return 1;
 	}
-	else
+	else{
+		// Try to delegate setter method to Builder.
+		if(Builder *builder = p->getBuilder()){
+			SQInteger ret = builder->sq_set(v, wcs);
+			if(ret != SQ_ERROR)
+				return ret;
+		}
 		return SQ_ERROR;
+	}
 }
 
 static SQInteger sqf_Entity_command(HSQUIRRELVM v){

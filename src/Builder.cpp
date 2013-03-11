@@ -128,6 +128,11 @@ void Builder::anim(double dt){
 		ru -= buildque[0].st->cost;
 		dt -= build;
 		Entity *created = buildque[0].st->create(this->w, this);
+
+		// Let's get along with our mother's faction.
+		if(Entity *base = toEntity())
+			created->race = base->race;
+
 		doneBuild(created);
 		cancelBuild(0, false);
 		build += buildque[0].st->buildtime;

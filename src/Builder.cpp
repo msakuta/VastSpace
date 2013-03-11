@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "antiglut.h"
 #include "Sceptor.h"
+#include "Defender.h"
 #include "Beamer.h"
 #include "sqadapt.h"
 #include "glw/popup.h"
@@ -34,8 +35,18 @@ const Builder::BuildStatic sceptor_build = {
 	10.,
 	60.,
 };
+static Entity *Defender_create(WarField *w, Builder *m){
+	return new Defender(w);
+}
+static const Builder::BuildStatic defender_build = {
+	"Defender",
+	Defender_create,
+	25.,
+	240.,
+};
 
-const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, /*&Beamer::builds, &Assault::builds*/};
+
+const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &defender_build/*&Beamer::builds, &Assault::builds*/};
 const unsigned Builder::nbuilder0 = numof(builder0);
 
 void Builder::serialize(SerializeContext &sc){
@@ -43,7 +54,7 @@ void Builder::serialize(SerializeContext &sc){
 	sc.o << build;
 	sc.o << nbuildque;
 	for(int i = 0; i < nbuildque; i++){
-		sc.o << buildque[i].num/* << buildque[i].st*/;
+		sc.o << buildque[i].num << buildque[i].st->name;
 	}
 }
 
@@ -52,8 +63,17 @@ void Builder::unserialize(UnserializeContext &sc){
 	sc.i >> build;
 	sc.i >> nbuildque;
 	for(int i = 0; i < nbuildque; i++){
-		sc.i >> buildque[i].num/* >> buildque[i].st*/;
-		buildque[i].st = &sceptor_build;
+		sc.i >> buildque[i].num;
+		gltestp::dstring name;
+		sc.i >> name;
+		buildque[i].st = NULL;
+		for(int j = 0; j < nbuilder0; j++){
+			if(builder0[j]->name == name){
+				buildque[i].st = builder0[j];
+				break;
+			}
+		}
+		assert(buildque[i].st);
 	}
 }
 

@@ -98,7 +98,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		/* Progress bar of currently building item */
 		if(builder->nbuildque && builder->build){
 			glColor4ub(0,127,0,255);
-			glRecti(cr.x0, cr.y0 + (builderi + iy + 1) * fonth + 8, cr.x0 + (1. - builder->build / top.st->buildtime) * cr.width(), cr.y0 + (builderi + iy + 1) * fonth + fonth);
+			glRecti(cr.x0, cr.y0 + (builderi + iy) * fonth + 8, cr.x0 + (1. - builder->build / top.st->buildtime) * cr.width(), cr.y0 + (builderi + iy) * fonth + fonth);
 		}
 
 		glColor4ub(191,191,255,255);

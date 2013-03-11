@@ -25,6 +25,8 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
+/// The multiplier on the build speed for debugging.
+static double g_buildtimescale = 1.;
 
 const Builder::BuildStatic sceptor_build = {
 	"Interceptor",
@@ -84,7 +86,6 @@ bool Builder::cancelBuild(int index, bool recalc){
 void Builder::doneBuild(Entity *child){}
 
 void Builder::anim(double dt){
-	static const double g_buildtimescale = 10.;
 	dt *= g_buildtimescale;
 
 	if(nbuildque){
@@ -265,6 +266,7 @@ int cmd_build(int argc, char *argv[]){
 
 static void register_build(){
 	CmdAdd("buildmenu", cmd_build);
+	CvarAdd("g_buildtimescale", &g_buildtimescale, cvar_double);
 }
 
 static StaticInitializer init(register_build);

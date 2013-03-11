@@ -263,12 +263,15 @@ int cmd_build(int argc, char *argv[]){
 		glwAppend(new GLWbuild(application.clientGame, "Build", pb));
 	return 0;
 }
+#endif
 
 static void register_build(){
+#ifndef DEDICATED
 	CmdAdd("buildmenu", cmd_build);
+#endif
 	CvarAdd("g_buildtimescale", &g_buildtimescale, cvar_double);
 }
 
 static StaticInitializer init(register_build);
 
-#endif
+

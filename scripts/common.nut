@@ -325,6 +325,7 @@ jpn <- {
 	["Cloak"]="隠密",
 	["Delta Formation"]="Δ隊形",
 	["Toggle Other Players Camera View"]="他プレイヤーカメラの表示",
+	["Build Manager"]="ビルドマネージャ",
 }
 
 // Set default language to english

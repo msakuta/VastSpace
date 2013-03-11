@@ -31,6 +31,8 @@ hitbox <- [
 hitRadius <- 1.0;
 
 mass <- 5.e9;
+maxhealth <- 200000.;
+
 
 navlights <- [
 	{pos = Vec3d(0, 520 * scale, 220 * scale), period = 2},

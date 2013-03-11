@@ -306,7 +306,7 @@ int cmd_build(int argc, char *argv[]){
 	if(!application.clientGame)
 		return 0;
 	Player *player = application.clientGame->player;
-	if(!player && player->selected.empty())
+	if(!player || player->selected.empty())
 		return 0;
 	Builder *pb = (*player->selected.begin())->getBuilder();
 	if(pb)

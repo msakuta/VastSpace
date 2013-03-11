@@ -50,7 +50,7 @@ void ShipyardDocker::dockque(Dockable *e){
 }
 
 
-#define SCARRY_MAX_HEALTH 200000
+double Shipyard::maxHealthValue = 200000.;
 #define SCARRY_MAX_SPEED .03
 #define SCARRY_ACCELERATE .01
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
@@ -89,17 +89,15 @@ void Shipyard::init(){
 				ModelScaleProcess(modelScale) <<=
 				SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 				MassProcess(defaultMass) <<=
+				SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 				HitboxProcess(hitboxes) <<=
 				DrawOverlayProcess(disp) <<=
 				NavlightsProcess(navlights));
 		initialized = true;
 	}
 	ru = 250.;
-/*	if(!hardpoints){
-		hardpoints = hardpoint_static::load("scarry.hb", nhardpoints);
-	}
-	turrets = new ArmBase*[nhardpoints];*/
 	mass = defaultMass;
+	health = maxhealth();
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
 }
@@ -152,7 +150,7 @@ const char *Shipyard::dispname()const{
 };
 
 double Shipyard::maxhealth()const{
-	return 200000;
+	return maxHealthValue;
 }
 
 double Shipyard::getHitRadius()const{

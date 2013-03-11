@@ -77,6 +77,7 @@ protected:
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;
+	static double maxHealthValue;
 	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
 

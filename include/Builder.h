@@ -89,7 +89,7 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	virtual void postframe();
 
-	Builder *builder;
+	WeakPtr<Builder> builder;
 	int tabindex;
 protected:
 	void progress_bar(double f, int width, int *piy);

@@ -6,13 +6,11 @@
 #include "serial_util.h"
 #include "Player.h"
 #include "antiglut.h"
-#include "Sceptor.h"
-#include "Defender.h"
-#include "Beamer.h"
 #include "sqadapt.h"
 #include "glw/popup.h"
 #include "Application.h"
 #include "StaticInitializer.h"
+#include "SqInitProcess.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -29,6 +27,7 @@ extern "C"{
 /// The multiplier on the build speed for debugging.
 static double g_buildtimescale = 1.;
 
+#if 0
 const Builder::BuildStatic sceptor_build = {
 	"Interceptor",
 	Sceptor::create,
@@ -44,10 +43,114 @@ static const Builder::BuildStatic defender_build = {
 	25.,
 	240.,
 };
+static Entity *Assault_create(WarField *w, Builder *m){
+	return new Assault(w);
+}
+static const Builder::BuildStatic Assault_build = {
+	"Assault",
+	Assault_create,
+	25.,
+	240.,
+};
 
 
-const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &defender_build/*&Beamer::builds, &Assault::builds*/};
+const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &defender_build/*&Beamer::builds*/, &Assault_build};
 const unsigned Builder::nbuilder0 = numof(builder0);
+#endif
+
+Builder::BuildStaticList Builder::buildStatics;
+
+class EXPORT BuildStaticProcess : public SqInitProcess{
+public:
+	Builder::BuildStaticList &value;
+	const SQChar *name;
+	BuildStaticProcess(Builder::BuildStaticList &value, const char *name) : value(value), name(name){}
+	virtual void process(HSQUIRRELVM)const;
+};
+
+void BuildStaticProcess::process(HSQUIRRELVM v)const{
+	Game *game = (Game*)sq_getforeignptr(v);
+
+	sq_pushstring(v, name, -1); // root string
+
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		throw SQFError(_SC("Build recipes are not defined!"));
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(_SC("Build recipes size could not be acquired"));
+	value.resize(len);
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		Builder::BuildStatic &bs = value[i];
+
+		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				char *name = new char[strlen(sqstr) + 1];
+				strcpy(name, sqstr);
+				bs.name = name;
+			}
+			else // Throw an error because there's no such thing like default name.
+				throw SQFError("Build recipe name is not a string");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(_SC("Build recipe missing name"));
+
+		sq_pushstring(v, _SC("className"), -1); // root obj obj[i] "className"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].className
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				char *className = new char[strlen(sqstr) + 1];
+				strcpy(className, sqstr);
+				bs.className = className;
+			}
+			else // Throw an error because there's no such thing like default name.
+				throw SQFError("Build recipe className is not a string");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(_SC("Build recipe missing className"));
+
+		sq_pushstring(v, _SC("buildtime"), -1); // root obj obj[i] "buildtime"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].buildtime
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				bs.buildtime = f;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(_SC("Build recipe missing buildtime"));
+
+		sq_pushstring(v, _SC("cost"), -1); // root obj obj[i] "cost"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].cost
+			SQFloat f;
+			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
+				bs.cost = f;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(_SC("Build recipe missing cost"));
+
+//		hardpoints.push_back(np);
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
+}
+
+
+void Builder::init(){
+	static bool initialized = false;
+	if(!initialized){
+		Game *game = application.clientGame ? application.clientGame : application.serverGame;
+		SqInit(game->sqvm, _SC("scripts/Builder.nut"),
+				BuildStaticProcess(buildStatics, "build"));
+		initialized = true;
+	}
+}
 
 void Builder::serialize(SerializeContext &sc){
 	// Do NOT call Entity::serialize here because this class is a branch class.
@@ -69,9 +172,9 @@ void Builder::unserialize(UnserializeContext &sc){
 		gltestp::dstring name;
 		sc.i >> name;
 		buildque[i].st = NULL;
-		for(int j = 0; j < nbuilder0; j++){
-			if(builder0[j]->name == name){
-				buildque[i].st = builder0[j];
+		for(int j = 0; j < buildStatics.size(); j++){
+			if(buildStatics[j].name == name){
+				buildque[i].st = &buildStatics[j];
 				break;
 			}
 		}
@@ -127,7 +230,9 @@ void Builder::anim(double dt){
 		// calculating the amount every time requested.  See getRU().
 		ru -= buildque[0].st->cost;
 		dt -= build;
-		Entity *created = buildque[0].st->create(this->w, this);
+//		Entity *created = buildque[0].st->create(this->w, this);
+		Entity *created = Entity::create(buildque[0].st->className, this->w);
+		assert(created);
 
 		// Let's get along with our mother's faction.
 		if(Entity *base = toEntity())
@@ -152,9 +257,9 @@ double Builder::getRU()const{
 
 bool Builder::command(EntityCommand *com){
 	if(BuildCommand *bc = InterpretCommand<BuildCommand>(com)){
-		for(int i = 0; i < numof(builder0); i++){
-			if(bc->buildOrder == builder0[i]->name){
-				addBuild(builder0[i]);
+		for(int i = 0; i < buildStatics.size(); i++){
+			if(bc->buildOrder == buildStatics[i].name){
+				addBuild(&buildStatics[i]);
 			}
 		}
 		return true;
@@ -231,10 +336,10 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		if(sel1) p->tabindex = 1;
 		if(p->tabindex == 0){
 #if 1
-			if(0 <= ind && ind < Builder::nbuilder0){
-				builder->addBuild(builder->builder0[ind]);
+			if(0 <= ind && ind < Builder::buildStatics.size()){
+				builder->addBuild(&Builder::buildStatics[ind]);
 				if(!game->isServer()){
-					BuildCommand com(builder->builder0[ind]->name);
+					BuildCommand com(Builder::buildStatics[ind].name);
 					CMEntityCommand::s.send(builder->toEntity(), com);
 				}
 			}

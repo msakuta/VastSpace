@@ -28,9 +28,12 @@ public:
 		Entity *(*create)(WarField *w, Builder *mother);
 		double buildtime;
 		double cost;
+		const SQChar *className;
 		int nhardpoints;
 		const struct hardpoint_static *hardpoints;
 	};
+	typedef std::vector<Builder::BuildStatic> BuildStaticList;
+	static BuildStaticList buildStatics;
 	struct BuildData{
 		const BuildStatic *st;
 		int num;
@@ -42,9 +45,9 @@ public:
 //	Entity *const base;
 	BuildData buildque[SCARRY_BUILDQUESIZE];
 
-	static const Builder::BuildStatic *builder0[];
-	static const unsigned nbuilder0;
-	Builder(WarField *&w) : w(w), build(0), nbuildque(0){}
+//	static const Builder::BuildStatic *builder0[];
+//	static const unsigned nbuilder0;
+	Builder(WarField *&w) : w(w), build(0), nbuildque(0){init();}
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -57,6 +60,7 @@ public:
 	virtual SQInteger sq_get(HSQUIRRELVM v, const SQChar *name);
 	virtual SQInteger sq_set(HSQUIRRELVM v, const SQChar *name);
 protected:
+	void init();
 	bool cancelBuild(int index, bool recalc_time);
 	double ru;
 };

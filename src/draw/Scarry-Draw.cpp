@@ -74,18 +74,18 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 	if(tabindex == 0){
 		int *builderc = NULL, builderi, j;
 		if(builder->nbuildque){
-			builderc = new int[Builder::nbuilder0];
-			for(j = 0; j < Builder::nbuilder0; j++){
+			builderc = new int[Builder::buildStatics.size()];
+			for(j = 0; j < Builder::buildStatics.size(); j++){
 				builderc[j] = 0;
 
 				// Accumulate all build queue entries
 				for(int i = 0; i < builder->nbuildque; i++){
-					if(builder->buildque[i].st == Builder::builder0[j])
+					if(builder->buildque[i].st == &Builder::buildStatics[j])
 						builderc[j] += builder->buildque[i].num;
 				}
 
 				// Remember the top (currently building) build queue entry for progress bar.
-				if(top.st == Builder::builder0[j])
+				if(top.st == &Builder::buildStatics[j])
 					builderi = j;
 			}
 		}
@@ -95,7 +95,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 
 		/* Mouse cursor highlights */
 		int mx = ws.mx - cr.x0, my = ws.my - cr.y0;
-		if(!modal && 0 < mx && mx < cr.width() && (iy) * fonth < my && my < (iy + Builder::nbuilder0) * fonth){
+		if(!modal && 0 < mx && mx < cr.width() && (iy) * fonth < my && my < (iy + Builder::buildStatics.size()) * fonth){
 			glColor4ub(0,0,255,127);
 			glRecti(cr.x0, cr.y0 + (my / fonth) * fonth, cr.x1, cr.y0 + (my / fonth) * fonth);
 		}
@@ -108,8 +108,8 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 
 		// Draw the buildable item's name and cost after the progress bar.
 		glColor4ub(191,191,255,255);
-		for(j = 0; j < Builder::nbuilder0; j++){
-			const Builder::BuildStatic *sta = Builder::builder0[j];
+		for(j = 0; j < Builder::buildStatics.size(); j++){
+			const Builder::BuildStatic *sta = &Builder::buildStatics[j];
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 			glwprintf("%10s  %d  %lg RU", sta->name, builderc ? builderc[j] : 0, sta->cost);
 		}

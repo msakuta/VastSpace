@@ -166,8 +166,8 @@ function frameproc(dt){
 //			}
 		}
 
-		bluebase.ru += 75;
-		redbase.ru += 75;
+		bluebase.ru += 175;
+		redbase.ru += 175;
 
 		local racec = [countents(cs, 0, "Sceptor"), countents(cs, 1, "Sceptor")];
 

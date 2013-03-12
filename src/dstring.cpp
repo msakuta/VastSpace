@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of dynamic string for gltestplus
+ */
 #define _CRT_SECURE_NO_WARNINGS // We are aware of ANSI C's weaknesses.
 #include "dstring.h"
 #include <assert.h>
@@ -92,7 +95,7 @@ loopback:
 		size_t sz = offsetof(in, s) + alsize(sl) + 1;
 		p = (in*)malloc(sz);
 		p->refs = 1;
-		p->size = sl;
+		p->size = (unsigned long)sl;
 		memcpy(p->s, src, sl);
 		p->s[p->size] = '\0';
 #ifdef _DEBUG
@@ -108,7 +111,7 @@ loopback:
 		memcpy(newp->s, p->s, p->size);
 		memcpy(&newp->s[p->size], src, sl);
 		newp->refs = 1;
-		newp->size = p->size + sl;
+		newp->size = p->size + (unsigned long)sl;
 		newp->s[newp->size] = '\0';
 		p->refs--;
 		p = newp;
@@ -131,12 +134,12 @@ loopback:
 		::strncat(p->s, src, sl);
 	else
 		::strncpy(p->s, src, sl + 1);
-	p->size += sl;
+	p->size += (unsigned long)sl;
 	return *this;
 }
 
 dstring &dstring::strcat(const char *src){
-	return strncat(src, ::strlen(src) + 1);
+	return strncat(src, (unsigned long)::strlen(src) + 1);
 }
 
 dstring &dstring::strcat(const dstring &src){
@@ -144,7 +147,6 @@ dstring &dstring::strcat(const dstring &src){
 }
 
 long dstring::strncpy(const char *src, unsigned long len){
-	size_t sl;
 	assert(this && src);
 	this->dstring::~dstring();
 	strncat(src, len);
@@ -152,7 +154,7 @@ long dstring::strncpy(const char *src, unsigned long len){
 }
 
 long dstring::strcpy(const char *src){
-	return strncpy(src, ::strlen(src) + 1);
+	return strncpy(src, (unsigned long)::strlen(src) + 1);
 }
 
 bool dstring::operator ==(const dstring &o)const{

@@ -7,7 +7,7 @@
 
 namespace gltestp{
 
-	/// Dynamic string embedded in the executable's source itself.
+	/// \brief Dynamic string embedded in the executable's source itself.
 	///
 	/// We cannot export member functions of this class as DLL entry points if this
 	/// class is defined in a static library.
@@ -32,7 +32,8 @@ namespace gltestp{
 		dstring(double);
 		dstring(float);
 		dstring(const void*); ///< General pointer
-		dstring operator=(const dstring &);
+		dstring &operator=(const char *); ///< Assignment of a c-string.
+		dstring &operator=(const dstring &); ///< Assignment of the same type.
 		long len()const;
 		long strncpy(const char *src, unsigned long len);
 		long strcpy(const char *src);
@@ -40,12 +41,16 @@ namespace gltestp{
 		dstring &strcat(const char *src);
 		dstring &strcat(const dstring &);
 		~dstring();
-		operator const char *()const; // conversion to c-str
-		dstring operator +(const dstring &o)const{return dstring(*this).strcat(o);} // returns newly created string with string passed by argument concatenated
-		dstring &operator +=(const dstring &o){strcat(o); return *this;} // append to the string
-		dstring &operator <<(const dstring &o){strcat(o); return *this;} // equivalent to += but more comfortable binding direction
-		dstring &operator <<(const char *src){return strcat(src);} // optimize c-str concatenation
-		dstring &operator <<(char); // optimize single character concatenation
+		operator const char *()const; ///< conversion to c-str
+		const char *c_str()const; ///< conversion to c-str
+
+		/// Returns newly created string with string passed by argument concatenated.
+		/// Note that operator << or += is expected to be more efficient.
+		dstring operator +(const dstring &o)const{return dstring(*this).strcat(o);} 
+		dstring &operator +=(const dstring &o){strcat(o); return *this;} ///< append to the string
+		dstring &operator <<(const dstring &o){strcat(o); return *this;} ///< equivalent to += but more comfortable binding direction
+		dstring &operator <<(const char *src){return strcat(src);} ///< optimize c-str concatenation
+		dstring &operator <<(char); ///< optimize single character concatenation
 		dstring &operator <<(int a){return operator <<(dstring(a));}
 		dstring &operator <<(long a){return operator <<(dstring(a));}
 		dstring &operator <<(unsigned a){return operator <<(dstring(a));}
@@ -78,6 +83,12 @@ namespace gltestp{
 		} *p;
 	};
 
+
+	
+//-----------------------------------------------------------------------------
+//    Inline Implementation
+//-----------------------------------------------------------------------------
+
 	inline dstring::dstring() : p(0){}
 
 	inline dstring::dstring(const dstring &ds) : p(ds.p){
@@ -100,11 +111,17 @@ namespace gltestp{
 	inline dstring::dstring(double a){initd(a);}
 	inline dstring::dstring(const void *a){initp(a);}
 
-	inline dstring dstring::operator =(const dstring &ds){
+	inline dstring &dstring::operator =(const dstring &ds){
 		this->dstring::~dstring();
 		p = ds.p;
 		if(p)
 			p->refs++;
+		return *this;
+	}
+
+	inline dstring &dstring::operator =(const char *a){
+		this->dstring::~dstring();
+		strcat(a);
 		return *this;
 	}
 

@@ -326,6 +326,7 @@ jpn <- {
 	["Delta Formation"]="Δ隊形",
 	["Toggle Other Players Camera View"]="他プレイヤーカメラの表示",
 	["Build Manager"]="ビルドマネージャ",
+	["Dock Manager"]="ドックマネージャ",
 }
 
 // Set default language to english

@@ -304,7 +304,7 @@ function initUI(){
 		@() player.isControlling(), control, tlate("Control")));
 	but.pinned = true;
 
-	local cambut = GLWbuttonMatrix(6, 1);
+	local cambut = GLWbuttonMatrix(7, 1);
 	cambut.title = tlate("camera");
 	cambut.x = but.width;
 	cambut.y = sch - cambut.height;
@@ -314,6 +314,7 @@ function initUI(){
 	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
 	cambut.addButton("toggle g_player_viewport", "textures/playercams.png", tlate("Toggle Other Players Camera View"));
 	cambut.addButton("buildmenu", "textures/buildman.png", tlate("Build Manager"));
+	cambut.addButton("dockmenu", "textures/dockman.png", tlate("Dock Manager"));
 //	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 	cambut.pinned = true;
 

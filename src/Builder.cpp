@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of Builder, GLWbuild and BuildCommand classes.
  */
-#include "Scarry.h"
+#include "Builder.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Player.h"
@@ -27,48 +27,18 @@ extern "C"{
 /// The multiplier on the build speed for debugging.
 static double g_buildtimescale = 1.;
 
-#if 0
-const Builder::BuildStatic sceptor_build = {
-	"Interceptor",
-	Sceptor::create,
-	10.,
-	60.,
-};
-static Entity *Defender_create(WarField *w, Builder *m){
-	return new Defender(w);
-}
-static const Builder::BuildStatic defender_build = {
-	"Defender",
-	Defender_create,
-	25.,
-	240.,
-};
-static Entity *Assault_create(WarField *w, Builder *m){
-	return new Assault(w);
-}
-static const Builder::BuildStatic Assault_build = {
-	"Assault",
-	Assault_create,
-	25.,
-	240.,
-};
 
+Builder::BuildRecipeList Builder::buildRecipes;
 
-const Builder::BuildStatic *Builder::builder0[] = {/*&scontainer_build, &worker_build,*/ &sceptor_build, &defender_build/*&Beamer::builds*/, &Assault_build};
-const unsigned Builder::nbuilder0 = numof(builder0);
-#endif
-
-Builder::BuildStaticList Builder::buildStatics;
-
-class EXPORT BuildStaticProcess : public SqInitProcess{
+class EXPORT BuildRecipeProcess : public SqInitProcess{
 public:
-	Builder::BuildStaticList &value;
+	Builder::BuildRecipeList &value;
 	const SQChar *name;
-	BuildStaticProcess(Builder::BuildStaticList &value, const char *name) : value(value), name(name){}
+	BuildRecipeProcess(Builder::BuildRecipeList &value, const char *name) : value(value), name(name){}
 	virtual void process(HSQUIRRELVM)const;
 };
 
-void BuildStaticProcess::process(HSQUIRRELVM v)const{
+void BuildRecipeProcess::process(HSQUIRRELVM v)const{
 	Game *game = (Game*)sq_getforeignptr(v);
 
 	sq_pushstring(v, name, -1); // root string
@@ -83,16 +53,13 @@ void BuildStaticProcess::process(HSQUIRRELVM v)const{
 		sq_pushinteger(v, i); // root obj i
 		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
 			continue;
-		Builder::BuildStatic &bs = value[i];
+		Builder::BuildRecipe &br = value[i];
 
 		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
 			const SQChar *sqstr;
-			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
-				char *name = new char[strlen(sqstr) + 1];
-				strcpy(name, sqstr);
-				bs.name = name;
-			}
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
+				br.name = sqstr;
 			else // Throw an error because there's no such thing like default name.
 				throw SQFError("Build recipe name is not a string");
 			sq_poptop(v); // root obj obj[i]
@@ -103,12 +70,9 @@ void BuildStaticProcess::process(HSQUIRRELVM v)const{
 		sq_pushstring(v, _SC("className"), -1); // root obj obj[i] "className"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].className
 			const SQChar *sqstr;
-			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
-				char *className = new char[strlen(sqstr) + 1];
-				strcpy(className, sqstr);
-				bs.className = className;
-			}
-			else // Throw an error because there's no such thing like default name.
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
+				br.className = sqstr;
+			else
 				throw SQFError("Build recipe className is not a string");
 			sq_poptop(v); // root obj obj[i]
 		}
@@ -119,7 +83,7 @@ void BuildStaticProcess::process(HSQUIRRELVM v)const{
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].buildtime
 			SQFloat f;
 			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
-				bs.buildtime = f;
+				br.buildtime = f;
 			sq_poptop(v); // root obj obj[i]
 		}
 		else
@@ -129,25 +93,24 @@ void BuildStaticProcess::process(HSQUIRRELVM v)const{
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].cost
 			SQFloat f;
 			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
-				bs.cost = f;
+				br.cost = f;
 			sq_poptop(v); // root obj obj[i]
 		}
 		else
 			throw SQFError(_SC("Build recipe missing cost"));
 
-//		hardpoints.push_back(np);
 		sq_poptop(v); // root obj
 	}
 	sq_poptop(v); // root
 }
 
-
+/// \brief Loads Builder.nut initialization script on first call.
 void Builder::init(){
 	static bool initialized = false;
 	if(!initialized){
 		Game *game = application.clientGame ? application.clientGame : application.serverGame;
 		SqInit(game->sqvm, _SC("scripts/Builder.nut"),
-				BuildStaticProcess(buildStatics, "build"));
+				BuildRecipeProcess(buildRecipes, "build"));
 		initialized = true;
 	}
 }
@@ -172,9 +135,9 @@ void Builder::unserialize(UnserializeContext &sc){
 		gltestp::dstring name;
 		sc.i >> name;
 		buildque[i].st = NULL;
-		for(int j = 0; j < buildStatics.size(); j++){
-			if(buildStatics[j].name == name){
-				buildque[i].st = &buildStatics[j];
+		for(int j = 0; j < buildRecipes.size(); j++){
+			if(buildRecipes[j].name == name){
+				buildque[i].st = &buildRecipes[j];
 				break;
 			}
 		}
@@ -182,7 +145,7 @@ void Builder::unserialize(UnserializeContext &sc){
 	}
 }
 
-bool Builder::addBuild(const BuildStatic *st){
+bool Builder::addBuild(const BuildRecipe *st){
 	if(numof(buildque) <= nbuildque && buildque[nbuildque-1].st != st)
 		return false;
 	if(buildque[nbuildque-1].st == st)
@@ -230,7 +193,6 @@ void Builder::anim(double dt){
 		// calculating the amount every time requested.  See getRU().
 		ru -= buildque[0].st->cost;
 		dt -= build;
-//		Entity *created = buildque[0].st->create(this->w, this);
 		Entity *created = Entity::create(buildque[0].st->className, this->w);
 		assert(created);
 
@@ -257,9 +219,9 @@ double Builder::getRU()const{
 
 bool Builder::command(EntityCommand *com){
 	if(BuildCommand *bc = InterpretCommand<BuildCommand>(com)){
-		for(int i = 0; i < buildStatics.size(); i++){
-			if(bc->buildOrder == buildStatics[i].name){
-				addBuild(&buildStatics[i]);
+		for(int i = 0; i < buildRecipes.size(); i++){
+			if(bc->buildOrder == buildRecipes[i].name){
+				addBuild(&buildRecipes[i]);
 			}
 		}
 		return true;
@@ -336,10 +298,10 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		if(sel1) p->tabindex = 1;
 		if(p->tabindex == 0){
 #if 1
-			if(0 <= ind && ind < Builder::buildStatics.size()){
-				builder->addBuild(&Builder::buildStatics[ind]);
+			if(0 <= ind && ind < Builder::buildRecipes.size()){
+				builder->addBuild(&Builder::buildRecipes[ind]);
 				if(!game->isServer()){
-					BuildCommand com(Builder::buildStatics[ind].name);
+					BuildCommand com(Builder::buildRecipes[ind].name);
 					CMEntityCommand::s.send(builder->toEntity(), com);
 				}
 			}

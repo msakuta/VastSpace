@@ -21,8 +21,6 @@ public:
 	virtual Quatd getPortRot()const;
 };
 
-extern const struct Builder::BuildStatic sceptor_build;
-
 int cmd_build(int argc, char *argv[], void *pv);
 
 #if 0

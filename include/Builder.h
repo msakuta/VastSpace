@@ -23,19 +23,19 @@
 /// in the corresponding functions of their own to propagate those events to this class.
 class EXPORT Builder : public Observable{
 public:
-	struct BuildStatic{
-		const char *name;
-		Entity *(*create)(WarField *w, Builder *mother);
-		double buildtime;
-		double cost;
-		const SQChar *className;
-		int nhardpoints;
-		const struct hardpoint_static *hardpoints;
+	/// \brief The recipe to construct an Entity in a Builder.
+	struct BuildRecipe{
+		gltestp::dstring name; ///< Displayed name of this recipe.
+		gltestp::dstring className; ///< Created Entity class name.
+		double buildtime; ///< Time taken to fully build one, in seconds.
+		double cost; ///< Cost in RUs.
 	};
-	typedef std::vector<Builder::BuildStatic> BuildStaticList;
-	static BuildStaticList buildStatics;
+	typedef std::vector<BuildRecipe> BuildRecipeList;
+	static BuildRecipeList buildRecipes; ///< The list of defined recipes.
+
+	/// \brief A queued build entry. Refers to a BuildRecipe.
 	struct BuildData{
-		const BuildStatic *st;
+		const BuildRecipe *st;
 		int num;
 	};
 
@@ -45,13 +45,11 @@ public:
 //	Entity *const base;
 	BuildData buildque[SCARRY_BUILDQUESIZE];
 
-//	static const Builder::BuildStatic *builder0[];
-//	static const unsigned nbuilder0;
 	Builder(WarField *&w) : w(w), build(0), nbuildque(0){init();}
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	bool addBuild(const BuildStatic *);
+	bool addBuild(const BuildRecipe *);
 	bool cancelBuild(int index){return cancelBuild(index, true);}
 	void anim(double dt);
 	virtual void doneBuild(Entity *child);

@@ -31,6 +31,8 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 }
+#include <cpplib/CRC32.h>
+
 #include <assert.h>
 #include <string.h>
 
@@ -751,7 +753,8 @@ void Defender::anim(double dt){
 
 					// Randomly vibrates to avoid bullets
 					if(0 < fuel){
-						RandomSequence rs((unsigned long)this ^ (unsigned long)(w->war_time() / .1));
+						uint32_t buf[2] = {id, (uint32_t)(w->war_time() / .1)};
+						RandomSequence rs(cpplib::crc32(buf, sizeof buf));
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
 							randomvec[i] = rs.nextd() - .5;

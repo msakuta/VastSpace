@@ -101,7 +101,6 @@ public:
 	virtual bool command(EntityCommand *);
 	virtual double maxfuel()const;
 
-	static Entity *create(WarField *w, Builder *mother);
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);
 	static double pid_ifactor;

@@ -102,7 +102,9 @@ namespace gltestp{
 
 	inline dstring dstring::operator =(const dstring &ds){
 		this->dstring::~dstring();
-		strncat(ds, ds.len());
+		p = ds.p;
+		if(p)
+			p->refs++;
 		return *this;
 	}
 

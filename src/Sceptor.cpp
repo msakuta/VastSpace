@@ -1555,18 +1555,6 @@ bool Sceptor::command(EntityCommand *com){
 }
 
 
-Entity *Sceptor::create(WarField *w, Builder *mother){
-	Sceptor *ret = new Sceptor(w);
-/*	ret->pos = mother->pos;
-	ret->velo = mother->velo;
-	ret->rot = mother->rot;
-	ret->omg = mother->omg;
-	ret->race = mother->race;*/
-	ret->task = Undock;
-//	w->addent(ret);
-	return ret;
-}
-
 
 
 

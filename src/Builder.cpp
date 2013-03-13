@@ -193,15 +193,23 @@ void Builder::anim(double dt){
 		// calculating the amount every time requested.  See getRU().
 		ru -= buildque[0].st->cost;
 		dt -= build;
-		Entity *created = Entity::create(buildque[0].st->className, this->w);
-		assert(created);
 
-		// Let's get along with our mother's faction.
-		if(Entity *base = toEntity())
-			created->race = base->race;
+		Entity *thise = toEntity();
+		// We can make Builders in the client never create an Entity, but it's
+		// not necessary since client-side Entity creation prediction is officially
+		// supported.  We create the Entities in both sides, and if the client's
+		// prediction fails, just synchronize to the server in the next update frame.
+		if(thise /*&& thise->getGame()->isServer()*/){
+			Entity *created = Entity::create(buildque[0].st->className, this->w);
+			assert(created);
 
-		doneBuild(created);
-		cancelBuild(0, false);
+			// Let's get along with our mother's faction.
+			if(Entity *base = toEntity())
+				created->race = base->race;
+
+			doneBuild(created);
+			cancelBuild(0, false);
+		}
 		build += buildque[0].st->buildtime;
 	}
 	if(nbuildque){

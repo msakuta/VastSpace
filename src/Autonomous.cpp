@@ -1034,9 +1034,13 @@ void Autonomous::HardPointProcess::process(HSQUIRRELVM v)const{
 	// If it's the server, loading the settings from the local file is meaningless,
 	// because they will be sent from the server.
 	// Loading them in client does not hurt more than some little memory leaks,
-	// but we clearly state here that the local settings won't ever used.
-	if(!game->isServer())
-		return;
+	// but we clearly state here that the local settings won't ever be used.
+	// UPDATE: We allow the client to initialize the hardpoint data, since we
+	// allowed it to create an Entity before the Server tells about hardpoints.
+	// If the settings do not match between the server and the client, it should
+	// be forced to follow the server through unserialization.
+/*	if(!game->isServer())
+		return;*/
 
 	sq_pushstring(v, _SC("hardpoints"), -1); // root string
 

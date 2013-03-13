@@ -98,13 +98,7 @@ struct EXPORT BuildCancelCommand : public SerializableCommand{
 class EXPORT GLWbuild : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWbuild(Game *game, const char *title, Builder *a) : st(game, title), builder(a), tabindex(0){
-		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
-		xpos = 100;
-		ypos = 100;
-		width = 250;
-		height = 100;
-	}
+	GLWbuild(Game *game, const char *title, Builder *a);
 	virtual void draw(GLwindowState &ws, double t);
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	virtual void postframe();

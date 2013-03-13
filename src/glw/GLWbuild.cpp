@@ -5,6 +5,14 @@
 #include "Builder.h"
 #include "antiglut.h"
 
+GLWbuild::GLWbuild(Game *game, const char *title, Builder *a) : st(game, title), builder(a), tabindex(0){
+	flags |= GLW_CLOSE | GLW_COLLAPSABLE;
+	xpos = 100;
+	ypos = 100;
+	width = 250;
+	height = 200;
+}
+
 void GLWbuild::progress_bar(double f, int width, int *piy){
 	GLWrect cr = clientRect();
 	int iy = *piy;
@@ -49,8 +57,18 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 	int ix;
 	GLWrect cr = clientRect();
 	int fonth = getFontHeight();
-	if(!builder)
+
+	// The referenced builder can be destructed.
+	if(!builder){
+		glColor4f(1,0.5f,0.5f,1);
+		glwpos2d(cr.x0, cr.y0 + getFontHeight());
+		glwprintf("Object not found");
 		return;
+	}
+
+	// Avoid excess de-references
+	Builder *builder = this->builder;
+
 	glColor4ub(255,255,255,255);
 	glwpos2d(cr.x0, cr.y0 + fonth);
 	glwprintf("Resource Units: %.0lf", std::max(0., builder->getRU())); // The max is to avoid -0.
@@ -89,7 +107,7 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		int mx = ws.mx - cr.x0, my = ws.my - cr.y0;
 		if(!modal && 0 < mx && mx < cr.width() && (iy) * fonth < my && my < (iy + Builder::buildRecipes.size()) * fonth){
 			glColor4ub(0,0,255,127);
-			glRecti(cr.x0, cr.y0 + (my / fonth) * fonth, cr.x1, cr.y0 + (my / fonth) * fonth);
+			glRecti(cr.x0, cr.y0 + (my / fonth) * fonth, cr.x1, cr.y0 + (my / fonth + 1) * fonth);
 		}
 
 		/* Progress bar of currently building item */
@@ -103,32 +121,30 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		for(j = 0; j < Builder::buildRecipes.size(); j++){
 			const Builder::BuildRecipe *sta = &Builder::buildRecipes[j];
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
-			glwprintf("%10s  %d  %lg RU", (const char*)sta->name, builderc ? builderc[j] : 0, sta->cost);
+			glwprintf("%15s  %d  %lg RUs", (const char*)sta->name, builderc ? builderc[j] : 0, sta->cost);
 		}
-/*		glwpos2d(xpos, ypos + (2 + iy++) * 12);
-		glwprintf("Container    %d  %lg RU %lg dm^3", builderc[0], scontainer_build.cost, 1e-3 * scontainer_s.getHitRadius * scontainer_s.getHitRadius * scontainer_s.getHitRadius * 8 * 1e9);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Worker       %d  %lg RU %lg dm^3", builderc[1], worker_build.cost, 1e-3 * worker_s.getHitRadius * worker_s.getHitRadius * worker_s.getHitRadius * 8 * 1e9);*/
-/*		glwpos2d(xpos, ypos + (2 + iy++) * fonth);
-		glwprintf("Interceptor  %d  %lg RU %lg dm^3", builderc ? builderc[0] : 0, sceptor_build.cost, 1e-3 * ((Sceptor*)NULL)->Sceptor::getHitRadius() * ((Sceptor*)NULL)->Sceptor::getHitRadius() * ((Sceptor*)NULL)->Sceptor::getHitRadius() * 8 * 1e9);*/
-/*		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Lancer Class %d  %lg RU %lg dm^3", builderc[3], beamer_build.cost, 1e-3 * beamer_s.getHitRadius * beamer_s.getHitRadius * beamer_s.getHitRadius * 8 * 1e9);
-		glwpos2d(wnd->x, wnd->y + (2 + iy++) * 12);
-		glwprintf("Sabre Class  %d  %lg RU %lg dm^3", builderc[4], assault_build.cost, 1e-3 * assault_s.getHitRadius * assault_s.getHitRadius * assault_s.getHitRadius * 8 * 1e9);*/
 		if(builder->nbuildque)
 			delete[] builderc;
 	}
 	else{
 		glColor4ub(255,255,255,255);
+
+		// Accumulate and show total cost in the queue
+		double totalCost = 0.;
+		if(0 < builder->nbuildque)
+			totalCost += builder->buildque[0].st->cost * builder->build / builder->buildque[0].st->buildtime;
+		for(int i = 1; i < builder->nbuildque; i++)
+			totalCost += builder->buildque[i].st->cost;
 		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
-		glwprintf("Build Queue:");
+		glwprintf("Total cost in queue: %.0lf RUs", totalCost);
+
 		if(builder->nbuildque == 0)
 			return;
 		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 		glwprintf(top.st->name);
 		progress_bar((1. - builder->build / top.st->buildtime), 200, &iy);
 		for(int i = 0; i < builder->nbuildque; i++){
-			if(cr.height() < (2 + iy) * fonth)
+			if(cr.height() < (3 + iy) * fonth)
 				return;
 			glColor4ub(255,255,255,255);
 			glwpos2d(cr.x0, cr.y0 + (1 + iy) * fonth);
@@ -176,7 +192,6 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		if(sel0) p->tabindex = 0;
 		if(sel1) p->tabindex = 1;
 		if(p->tabindex == 0){
-#if 1
 			int ind = (my - 3 * fonth) / fonth;
 			if(0 <= ind && ind < Builder::buildRecipes.size()){
 				builder->addBuild(&Builder::buildRecipes[ind]);
@@ -185,41 +200,6 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 					CMEntityCommand::s.send(builder->toEntity(), com);
 				}
 			}
-#else
-			if(0 <= ind && ind < 1) for(i = 0; i < num; i++) switch(ind){
-				case 0:
-/*					add_buildque(p->p, &scontainer_build);
-					break;
-				case 1:
-					add_buildque(p->p, &worker_build);
-					break;
-				case 2:*/
-					builder->addBuild(&sceptor_build);
-					break;
-/*				case 3:
-					add_buildque(p->p, &beamer_build);
-					break;
-				case 4:
-					if(mbutton == GLUT_RIGHT_BUTTON){
-						int j;
-						glwindow *wnd2;
-						for(j = 0; j < p->p->narmscustom; j++) if(p->p->armscustom[j].builder == &assault_build)
-							break;
-						if(j == p->p->narmscustom){
-							p->p->armscustom = realloc(p->p->armscustom, ++p->p->narmscustom * sizeof *p->p->armscustom);
-							p->p->armscustom[j].builder = &assault_build;
-							p->p->armscustom[j].c = numof(assault_hardpoints);
-							p->p->armscustom[j].a = malloc(numof(assault_hardpoints) * sizeof *p->p->armscustom[j].a);
-							memcpy(p->p->armscustom[j].a, assault_arms, numof(assault_hardpoints) * sizeof *p->p->armscustom[j].a);
-						}
-						wnd2 = ArmsShowWindow(AssaultNew, assault_build.cost, offsetof(assault_t, arms), p->p->armscustom[j].a, assault_hardpoints, numof(assault_hardpoints));
-						wnd->modal = wnd2;
-					}
-					else
-						add_buildque(p->p, &assault_build);
-					break;*/
-			}
-#endif
 		}
 		else{
 			int ind = (my - 5 * fonth) / fonth;
@@ -232,23 +212,6 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 				builder->build = 0.;
 				builder->cancelBuild(ind);
 			}
-/*			else if(2 <= ind && ind < pf->nbuildque + 2){
-				int i;
-				int ptr;
-				ind -= 2;
-				ptr = (pf->buildque0 + ind) % numof(pf->buildque);
-				if(1 < pf->buildquenum[ptr])
-					pf->buildquenum[ptr]--;
-				else{
-					for(i = ind; i < pf->nbuildque - 1; i++){
-						int ptr = (pf->buildque0 + i) % numof(pf->buildque);
-						int ptr1 = (pf->buildque0 + i + 1) % numof(pf->buildque);
-						pf->buildque[ptr] = pf->buildque[ptr1];
-						pf->buildquenum[ptr] = pf->buildquenum[ptr1];
-					}
-					pf->nbuildque--;
-				}
-			}*/
 		}
 		return 1;
 	}

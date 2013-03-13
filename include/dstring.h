@@ -137,6 +137,10 @@ namespace gltestp{
 	inline dstring::operator const char *()const{
 		return p ? p->s : "";
 	}
+
+	inline const char *dstring::c_str()const{
+		return p ? p->s : "";
+	}
 }
 
 

@@ -37,7 +37,7 @@ ShieldEffect::~ShieldEffect(){
 	}
 }
 
-void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius, const GLubyte color[4], const double irot[16]);
+static void drawShieldSphere(const Vec3d &pos, const Vec3d &viewpos, double radius, const GLubyte color[4], const Mat4d &irot);
 
 
 #define SHIELDW_MAX 0x100
@@ -229,10 +229,10 @@ void ShieldEffect::anim(double dt){
 }
 
 
-
+#define EPSILON 1e-6
 #define SQRT2P2 (M_SQRT2/2.)
 
-void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius, const GLubyte color[4], const double irot[16]){
+void drawShieldSphere(const Vec3d &pos, const Vec3d &viewpos, double radius, const GLubyte color[4], const Mat4d &irot){
 	int i, j;
 	const double (*cuts)[2];
 	double jcuts0[4][2];
@@ -240,7 +240,10 @@ void drawShieldSphere(const double pos[3], const avec3_t viewpos, double radius,
 	double tangent;
 	GLubyte colors[4][4];
 
-	tangent = acos(radius / VECDIST(pos, viewpos));
+	double dist = (pos - viewpos).len();
+	if(dist < radius - EPSILON) // Avoid domain errors
+		return;
+	tangent = acos(radius / dist);
 
 	colors[3][0] = color[0];
 	colors[3][1] = color[1];

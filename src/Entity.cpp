@@ -623,7 +623,8 @@ void Entity::enterField(WarField *aw){
 
 #if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
-	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << aw->cs->getpath() << std::endl;
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << aw->cs->getpath()
+		<< " with bbody " << bbody << std::endl;
 #endif
 }
 
@@ -654,7 +655,8 @@ void Entity::leaveField(WarField *aw){
 		removeRigidBody(ws);
 #if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
-	of << game->universe->global_time << ": leaveField: " << (game->isServer()) << " {" << classname() << ":" << id << "} from " << aw->cs->getpath() << std::endl;
+	of << game->universe->global_time << ": leaveField: " << (game->isServer()) << " {" << classname() << ":" << id << "} from " << aw->cs->getpath()
+		<< " with bbody " << bbody << std::endl;
 #endif
 }
 

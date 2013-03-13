@@ -204,8 +204,7 @@ void Builder::anim(double dt){
 			assert(created);
 
 			// Let's get along with our mother's faction.
-			if(Entity *base = toEntity())
-				created->race = base->race;
+			created->race = thise->race;
 
 			doneBuild(created);
 			cancelBuild(0, false);

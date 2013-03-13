@@ -106,6 +106,9 @@ public:
 	static double pid_ifactor;
 	static double pid_pfactor;
 	static double pid_dfactor;
+protected:
+	bool buildBody();
+	short bbodyMask()const;
 private:
 	Vec3d evelo;
 #if PIDAIM_PROFILE

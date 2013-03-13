@@ -540,7 +540,12 @@ void Sceptor::enterField(WarField *target){
 		pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
 #endif
 
-	if(ws && ws->bdw){
+	st::enterField(target);
+}
+
+bool Sceptor::buildBody(){
+//	WarSpace *ws = *w;
+//	if(ws && ws->bdw){
 		if(!bbody){
 			static btCompoundShape *shape = NULL;
 			if(!shape){
@@ -576,8 +581,15 @@ void Sceptor::enterField(WarField *target){
 		}
 
 		//add the body to the dynamics world
-		ws->bdw->addRigidBody(bbody, 1, ~2);
-	}
+//		ws->bdw->addRigidBody(bbody, 1, ~2);
+		return true;
+//	}
+//	return false;
+}
+
+/// Do not collide with dock base (such as Shipyards)
+short Sceptor::bbodyMask()const{
+	return ~2;
 }
 
 void Sceptor::leaveField(WarField *w){

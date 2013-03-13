@@ -575,7 +575,8 @@ void Warpable::enterField(WarField *target){
 	}
 #if DEBUG_ENTERFIELD
 	std::ofstream of("debug.log", std::ios_base::app);
-	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath() << std::endl;
+	of << game->universe->global_time << ": enterField: " << (game->isServer()) << " {" << classname() << ":" << id << "} to " << target->cs->getpath()
+		<< " with bbody " << bbody << std::endl;
 #endif
 }
 

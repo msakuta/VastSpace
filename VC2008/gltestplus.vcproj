@@ -725,6 +725,10 @@
 				Filter="../glw/*"
 				>
 				<File
+					RelativePath="..\src\glw\GLWbuild.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\glw\GLWchart.cpp"
 					>
 				</File>

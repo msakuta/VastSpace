@@ -36,16 +36,20 @@ public:
 	/// \brief A queued build entry. Refers to a BuildRecipe.
 	struct BuildData{
 		const BuildRecipe *st;
-		int num;
+		int num; ///< Repeat count for this entry.
+		int orderId; ///< To distinguish individual BuildData.
 	};
 
+protected:
 	WarField *&w;
 	double build;
+	int buildOrderGen; ///< A generator for build queue orderIds in this Builder.
 	int nbuildque;
 //	Entity *const base;
 	BuildData buildque[SCARRY_BUILDQUESIZE];
+public:
 
-	Builder(WarField *&w) : w(w), build(0), nbuildque(0){init();}
+	Builder(WarField *&w) : w(w), build(0), buildOrderGen(0), nbuildque(0){init();}
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -61,6 +65,8 @@ protected:
 	void init();
 	bool cancelBuild(int index, bool recalc_time);
 	double ru;
+
+	friend class GLWbuild;
 };
 
 /// \brief A command that instruct a Builder to start building a named recipe.
@@ -71,6 +77,18 @@ struct EXPORT BuildCommand : public SerializableCommand{
 	BuildCommand(gltestp::dstring buildOrder = "") : buildOrder(buildOrder){}
 	BuildCommand(HSQUIRRELVM v, Entity &){}
 	gltestp::dstring buildOrder;
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
+};
+
+/// \brief A command that instruct a Builder to cancel building a queued recipe entry.
+///
+/// Can be sent from a client to the server.
+struct EXPORT BuildCancelCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(BuildCancelCommand, EntityCommand);
+	BuildCancelCommand(int orderId = 0) : orderId(orderId){}
+	BuildCancelCommand(HSQUIRRELVM v, Entity &){}
+	int orderId;
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);
 };

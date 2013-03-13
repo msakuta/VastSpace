@@ -135,12 +135,25 @@ void GLWbuild::draw(GLwindowState &ws, double t){
 		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
 		glwprintf(top.st->name);
 		progress_bar((1. - builder->build / top.st->buildtime), 200, &iy);
-		glColor4ub(255,255,255,255);
 		for(int i = 0; i < builder->nbuildque; i++){
 			if(cr.height() < (2 + iy) * fonth)
 				return;
-			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * fonth);
-			glwprintf("%d X %s %lg RUs", builder->buildque[i].num, builder->buildque[i].st->name, builder->buildque[i].num * builder->buildque[i].st->cost);
+			glColor4ub(255,255,255,255);
+			glwpos2d(cr.x0, cr.y0 + (1 + iy) * fonth);
+			int widthChars = glwprintf("Cancel");
+			int widthPixels = widthChars * getFontWidth();
+
+			glColor4ub(0,255,255,255);
+			glBegin(GL_LINE_LOOP);
+			glVertex2i(cr.x0, cr.y0 + (iy) * fonth);
+			glVertex2i(cr.x0 + widthPixels, cr.y0 + (iy) * fonth);
+			glVertex2i(cr.x0 + widthPixels, cr.y0 + (1 + iy) * fonth - 1);
+			glVertex2i(cr.x0, cr.y0 + (1 + iy) * fonth - 1);
+			glEnd();
+
+			glColor4ub(255,255,255,255);
+			glwpos2d(cr.x0 + widthPixels + 8, cr.y0 + (1 + iy++) * fonth);
+			glwprintf("%d X %s %lg RUs", builder->buildque[i].num, builder->buildque[i].st->name.c_str(), builder->buildque[i].num * builder->buildque[i].st->cost);
 		}
 	}
 }

@@ -121,7 +121,7 @@ void Builder::serialize(SerializeContext &sc){
 	sc.o << build;
 	sc.o << nbuildque;
 	for(int i = 0; i < nbuildque; i++){
-		sc.o << buildque[i].num << buildque[i].st->name;
+		sc.o << buildque[i].orderId << buildque[i].num << buildque[i].st->name;
 	}
 }
 
@@ -131,6 +131,7 @@ void Builder::unserialize(UnserializeContext &sc){
 	sc.i >> build;
 	sc.i >> nbuildque;
 	for(int i = 0; i < nbuildque; i++){
+		sc.i >> buildque[i].orderId;
 		sc.i >> buildque[i].num;
 		gltestp::dstring name;
 		sc.i >> name;
@@ -146,15 +147,14 @@ void Builder::unserialize(UnserializeContext &sc){
 }
 
 bool Builder::addBuild(const BuildRecipe *st){
-	if(numof(buildque) <= nbuildque && buildque[nbuildque-1].st != st)
-		return false;
 	if(buildque[nbuildque-1].st == st)
 		buildque[nbuildque-1].num++;
-	else{
+	else if(nbuildque < numof(buildque)){
 		buildque[nbuildque].st = st;
 		buildque[nbuildque].num = 1;
 		if(0 == nbuildque)
 			build = buildque[nbuildque].st->buildtime;
+		buildque[nbuildque].orderId = buildOrderGen++; // Generate unique id local to this Builder.
 		nbuildque++;
 	}
 	return true;
@@ -224,6 +224,10 @@ double Builder::getRU()const{
 		return ru;
 }
 
+/// \brief Custom EntityCommand interpreter for Builder.
+///
+/// Builder is not really a subclass of Entity, so definition of this function does not override anything.
+/// The integrator must call explicitly this function, which is already done in Entity::command().
 bool Builder::command(EntityCommand *com){
 	if(BuildCommand *bc = InterpretCommand<BuildCommand>(com)){
 		for(int i = 0; i < buildRecipes.size(); i++){
@@ -232,6 +236,13 @@ bool Builder::command(EntityCommand *com){
 			}
 		}
 		return true;
+	}
+	else if(BuildCancelCommand *bcc = InterpretCommand<BuildCancelCommand>(com)){
+		for(int i = 0; i < nbuildque; i++){
+			if(bcc->orderId == buildque[i].orderId){
+				cancelBuild(i);
+			}
+		}
 	}
 	return false;
 }
@@ -276,6 +287,17 @@ void BuildCommand::unserialize(UnserializeContext &sc){
 }
 
 
+IMPLEMENT_COMMAND(BuildCancelCommand, "BuildCancelCommand");
+
+void BuildCancelCommand::serialize(SerializeContext &sc){
+	sc.o << orderId;
+}
+
+void BuildCancelCommand::unserialize(UnserializeContext &sc){
+	sc.i >> orderId;
+}
+
+
 #ifndef DEDICATED
 static int select_tab(GLwindow *wnd, int ix, int iy, const char *s, int *selected, int mx, int my){
 	int ix0 = ix;
@@ -288,11 +310,10 @@ static int select_tab(GLwindow *wnd, int ix, int iy, const char *s, int *selecte
 
 int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	GLWbuild *p = this;
-	int ind, sel0, sel1, ix;
+	int sel0, sel1, ix;
 	int fonth = (int)getFontHeight();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
-	ind = (my - 3 * 12) / 12;
 	if((mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
 #ifdef _WIN32
@@ -305,6 +326,7 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		if(sel1) p->tabindex = 1;
 		if(p->tabindex == 0){
 #if 1
+			int ind = (my - 3 * fonth) / fonth;
 			if(0 <= ind && ind < Builder::buildRecipes.size()){
 				builder->addBuild(&Builder::buildRecipes[ind]);
 				if(!game->isServer()){
@@ -349,7 +371,13 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 #endif
 		}
 		else{
-			if(builder->build != 0. && ind == 0 || ind == 1){
+			int ind = (my - 5 * fonth) / fonth;
+			if(builder->build != 0. && 0 <= ind && ind < builder->nbuildque && 0 <= mx && mx < getFontWidth() * (sizeof "Cancel" - 1)){
+				// Send to the server before delete locally
+				if(!game->isServer()){
+					BuildCancelCommand com(builder->buildque[ind].orderId);
+					CMEntityCommand::s.send(builder->toEntity(), com);
+				}
 				builder->build = 0.;
 				builder->cancelBuild(ind);
 			}

@@ -101,7 +101,6 @@ public:
 	GLWbuild(Game *game, const char *title, Builder *a);
 	virtual void draw(GLwindowState &ws, double t);
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
-	virtual void postframe();
 
 	WeakPtr<Builder> builder;
 	int tabindex;

@@ -181,6 +181,16 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	int fonth = (int)getFontHeight();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
+
+	Entity *ent = builder->toEntity();
+
+	// If the Entity is not owned by the client game's player, do not dare issuing an order.
+	// Otherwise, we would see a moment as if we could make the order accepted, although the
+	// server rejects it.
+	// TODO: Alliance, teams?
+	if(!ent || game->player->playerId != ent->race)
+		return 0;
+
 	if((mbutton == GLUT_RIGHT_BUTTON || mbutton == GLUT_LEFT_BUTTON) && state == GLUT_UP || mbutton == GLUT_WHEEL_UP || mbutton == GLUT_WHEEL_DOWN){
 		int num = 1, i;
 #ifdef _WIN32
@@ -216,10 +226,5 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 		return 1;
 	}
 	return 0;
-}
-
-void GLWbuild::postframe(){
-	if(builder && !builder->w)
-		builder = NULL;
 }
 

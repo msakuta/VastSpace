@@ -911,7 +911,7 @@ void Defender::anim(double dt){
 							else{
 								mother->dock(pt);
 #ifndef DEDICATED
-								for(int i = 0; i < 4; i++) if(p->pf){
+								for(int i = 0; i < 4; i++) if(p->pf[i]){
 									p->pf[i]->immobilize();
 									p->pf[i] = NULL;
 								}

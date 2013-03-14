@@ -75,7 +75,7 @@ protected:
 struct EXPORT BuildCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(BuildCommand, EntityCommand);
 	BuildCommand(gltestp::dstring buildOrder = "") : buildOrder(buildOrder){}
-	BuildCommand(HSQUIRRELVM v, Entity &){}
+	BuildCommand(HSQUIRRELVM v, Entity &);
 	gltestp::dstring buildOrder;
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);
@@ -87,7 +87,7 @@ struct EXPORT BuildCommand : public SerializableCommand{
 struct EXPORT BuildCancelCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(BuildCancelCommand, EntityCommand);
 	BuildCancelCommand(int orderId = 0) : orderId(orderId){}
-	BuildCancelCommand(HSQUIRRELVM v, Entity &){}
+	BuildCancelCommand(HSQUIRRELVM v, Entity &);
 	int orderId;
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);

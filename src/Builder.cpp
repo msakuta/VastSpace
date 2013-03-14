@@ -276,7 +276,16 @@ SQInteger Builder::sq_set(HSQUIRRELVM v, const SQChar *name){
 }
 
 
-IMPLEMENT_COMMAND(BuildCommand, "BuildCommand");
+IMPLEMENT_COMMAND(BuildCommand, "Build");
+
+BuildCommand::BuildCommand(HSQUIRRELVM v, Entity &e){
+	const SQChar *name;
+	if(SQ_SUCCEEDED(sq_getstring(v, 3, &name))){
+		this->buildOrder = name;
+	}
+	else
+		throw SQFError("Build command's argument is not a string");
+}
 
 void BuildCommand::serialize(SerializeContext &sc){
 	sc.o << buildOrder;
@@ -287,7 +296,16 @@ void BuildCommand::unserialize(UnserializeContext &sc){
 }
 
 
-IMPLEMENT_COMMAND(BuildCancelCommand, "BuildCancelCommand");
+IMPLEMENT_COMMAND(BuildCancelCommand, "BuildCancel");
+
+BuildCancelCommand::BuildCancelCommand(HSQUIRRELVM v, Entity &e){
+	SQInteger orderId;
+	if(SQ_SUCCEEDED(sq_getinteger(v, 3, &orderId))){
+		this->orderId = orderId;
+	}
+	else
+		throw SQFError("BuildCancel command's argument is not an integer");
+}
 
 void BuildCancelCommand::serialize(SerializeContext &sc){
 	sc.o << orderId;

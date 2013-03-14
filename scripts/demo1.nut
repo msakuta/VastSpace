@@ -166,26 +166,28 @@ function frameproc(dt){
 //			}
 		}
 
-		bluebase.ru += 175;
-		redbase.ru += 175;
+		bluebase.ru += 75;
+		redbase.ru += 75;
 
 		local racec = [countents(cs, 0, "Sceptor"), countents(cs, 1, "Sceptor")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(true && racec[0] < 2){
-			local d = bluebase.docker;
-			if(d != null){
-				local e = d.addent("Sceptor");
-				e.race = 0;
-			}
+			bluebase.command("Build", "Interceptor");
+//			local d = bluebase.docker;
+//			if(d != null){
+//				local e = d.addent("Sceptor");
+//				e.race = 0;
+//			}
 		}
 		if(true && racec[1] < 2){
-			local d = redbase.docker;
-			if(d != null){
-				local e = d.addent("Sceptor");
-				e.race = 1;
-			}
+			redbase.command("Build", "Interceptor");
+////			local d = redbase.docker;
+//			if(d != null){
+//				local e = d.addent("Sceptor");
+//				e.race = 1;
+//			}
 		}
 		if(false && assaults < 1 && countents(cs, 0, "Assault") < 1){
 			local docker = bluebase.docker;

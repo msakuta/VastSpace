@@ -1164,6 +1164,10 @@ void CMEntityCommand::interpret(ServerClient &sc, UnserializeStream &uss){
 }
 
 void CMEntityCommand::send(Entity *e, SerializableCommand &com){
+	// Safety net to avoid mistakenly tried SerializableCommand to send
+	// from actually be sent.
+	if(e->getGame()->isServer())
+		return;
 	std::stringstream ss;
 	StdSerializeStream sss(ss);
 	Serializable* visit_list = NULL;

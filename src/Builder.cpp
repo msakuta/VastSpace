@@ -119,6 +119,7 @@ void Builder::serialize(SerializeContext &sc){
 	// Do NOT call Entity::serialize here because this class is a branch class.
 	sc.o << ru; // Do not pass value of getRU(), it can contain errors.
 	sc.o << build;
+	sc.o << buildOrderGen;
 	sc.o << nbuildque;
 	for(int i = 0; i < nbuildque; i++){
 		sc.o << buildque[i].orderId << buildque[i].num << buildque[i].st->name;
@@ -129,6 +130,7 @@ void Builder::unserialize(UnserializeContext &sc){
 	// Do NOT call Entity::unserialize here because this class is a branch class.
 	sc.i >> ru;
 	sc.i >> build;
+	sc.i >> buildOrderGen;
 	sc.i >> nbuildque;
 	for(int i = 0; i < nbuildque; i++){
 		sc.i >> buildque[i].orderId;

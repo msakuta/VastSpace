@@ -307,16 +307,16 @@ void Shipyard::doneBuild(Entity *e){
 	if(d)
 		docker->dock(d);
 	else{
-		e->w = this->Entity::w;
-		this->Entity::w->addent(e);
-		e->pos = pos + rot.trans(Vec3d(-.10, 0.05, 0));
-		e->velo = velo;
-		e->rot = rot;
+		// The builder's default is to add the built Entity to the belonging WarField, so we
+		// do not need to addent() here.  If we come to need it, we should leaveField() before doing so.
+//		e->w = this->Entity::w;
+//		this->Entity::w->addent(e);
+		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
+		e->setPosition(&newPos, &rot, &velo);
+		MoveCommand com;
+		com.destpos = newPos + rot.trans(Vec3d(0, 0, -1.2));
+		e->command(&com);
 	}
-/*	e->pos = pos + rot.trans(Vec3d(-.15, 0.05, 0));
-	e->velo = velo;
-	e->rot = rot;
-	static_cast<Dockable*>(e)->undock(this);*/
 }
 
 bool ShipyardDocker::undock(Entity::Dockable *pe){

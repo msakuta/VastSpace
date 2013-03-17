@@ -174,7 +174,7 @@ function frameproc(dt){
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(true && racec[0] < 2){
-			bluebase.command("Build", "Interceptor");
+//			bluebase.command("Build", "Interceptor");
 //			local d = bluebase.docker;
 //			if(d != null){
 //				local e = d.addent("Sceptor");
@@ -182,7 +182,7 @@ function frameproc(dt){
 //			}
 		}
 		if(true && racec[1] < 2){
-			redbase.command("Build", "Interceptor");
+//			redbase.command("Build", "Interceptor");
 ////			local d = redbase.docker;
 //			if(d != null){
 //				local e = d.addent("Sceptor");

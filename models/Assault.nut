@@ -32,6 +32,11 @@ hardpoints <- [
 	{pos = Vec3d(-40 * modelScale, 0.000, -225 * modelScale), rot = Quatd(0, 0, SQRT2P2, SQRT2P2), name = "Left Turret"},
 ]
 
+armCtors <- {
+	Standard = ["MTurret", "MTurret", "MTurret", "MTurret"],
+	Gunner = ["MTurret", "GatlingTurret", "MTurret", "GatlingTurret"],
+}
+
 navlights <- [
 	{pos = Vec3d(0, 210 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},
 	{pos = Vec3d(190 * modelScale, -120 * modelScale, 240 * modelScale), radius = 0.002, pattern = "Constant"},

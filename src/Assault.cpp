@@ -10,7 +10,7 @@
 #include "EntityCommand.h"
 #include "judge.h"
 #include "btadapt.h"
-//#include "glw/glwindow.h"
+#include "sqadapt.h"
 #include "motion.h"
 #include "Game.h"
 extern "C"{
@@ -40,13 +40,93 @@ GLuint Assault::disp = 0;
 HitBoxList Assault::hitboxes;
 std::vector<Warpable::Navlight> Assault::navlights;
 
+ArmCtors Assault::armCtors;
+std::list<Assault::AssaultVariantRegister*> Assault::assaultVariantRegisters;
 
 
-Assault::Assault(WarField *aw) : st(aw), formPrev(NULL), engineHeat(0.f){
+/// \brief Squirrel initializer entry that registers variant configurations in terms of equipments.
+class EXPORT VariantProcess : public SqInitProcess{
+public:
+	const SQChar *name;
+	ArmCtors &value;
+	VariantProcess(ArmCtors &value, const char *name) : value(value), name(name){}
+	virtual void process(HSQUIRRELVM)const;
+};
+
+/// The Squirrel script should define a table with variant names as the keys.
+void VariantProcess::process(HSQUIRRELVM v)const{
+	Game *game = (Game*)sq_getforeignptr(v);
+
+	sq_pushstring(v, name, -1); // root string
+
+	if(SQ_FAILED(sq_get(v, -2))) // root obj
+		throw SQFError(_SC("Variant names are not defined!"));
+
+	sq_pushnull(v); // root obj null
+	while(SQ_SUCCEEDED(sq_next(v, -2))){ // root obj iterator key value
+		gltestp::dstring name;
+		std::vector<gltestp::dstring> classNames;
+
+		{
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -2, &sqstr)))
+				name = sqstr;
+			else // Non-string keys are not allowed
+				throw SQFError("Variant entry is not a string");
+		}
+
+		{
+			SQInteger jlen = sq_getsize(v, -1);
+			for(int j = 0; j < jlen; j++){
+				sq_pushinteger(v, j); // root obj iterator key value j
+				if(SQ_FAILED(sq_get(v, -2))) // root obj iterator key value value[j]
+					continue;
+				const SQChar *sqstr;
+				if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
+					classNames.push_back(sqstr);
+				else
+					throw SQFError("Variant entry's equipment name is not a string");
+				sq_poptop(v); // root obj iterator key value
+			}
+		}
+
+		value[name] = classNames;
+
+		sq_poptop(v); // root obj iterator key
+		sq_poptop(v); // root obj iterator
+	}
+	sq_poptop(v); // root obj // We are responsible for freeing the iterator.
+	sq_poptop(v); // root
+}
+
+Assault::Assault(WarField *aw, const char *variant) : st(aw), formPrev(NULL), engineHeat(0.f){
 	st::init();
 	init();
+/*	{
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushroottable(v);
+		sq_pushstring(v, variant, -1);
+		sq_get(v, -2);
+		sq_pushroottable(v);
+		if(SQ_SUCCEEDED(sq_call(v, 1, SQTrue, SQTrue))){
+			int size = sq_getsize(v, -1);
+			for(int i = 0; 
+			sq_s
+		}
+	}*/
+	ArmCtors::iterator it = armCtors.find(variant);
+	ArmCtors::value_type::second_type *ctors = it != armCtors.end() ? &it->second : NULL;
 	for(int i = 0; i < hardpoints.size(); i++){
-		ArmBase *turret = (0 || i % 2 ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]));
+		ArmBase *turret;
+		if(ctors && i < ctors->size()){
+/*			Entity *e = Entity::create((*ctors)[i], w);
+			turret = static_cast<ArmBase*>(e);*/
+			const gltestp::dstring &cname = (*ctors)[i];
+			turret = cname == "MTurret" ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]);
+		}
+		else
+			turret = (variant == NULL || !strcmp(variant, "Gunner") || i % 2 ? new MTurret(this, hardpoints[i]) : new GatlingTurret(this, hardpoints[i]));
 		turrets.push_back(turret);
 		if(aw)
 			aw->addent(turret);
@@ -71,9 +151,24 @@ Assault::~Assault(){
 }
 
 void Assault::init(){
+	mass = defaultMass;
+	health = maxhealth();
+	mother = NULL;
+	paradec = -1;
+	engineHeat = 0.f;
+}
+
+/// \brief Function that is called when Squirrel VM is initialized.
+///
+/// We must define variants of Assault class before actually we have one, otherwise the
+/// system does not know how to bind variant names to this class.
+/// So we cannot initialize it in the first invocation of Assault's constructor.
+/// Instead, we initialize the static values in the Squirrel VM's initialization, namely
+/// sqa::sqa_init().
+bool Assault::sqa_avr(HSQUIRRELVM v){
 	static bool initialized = false;
 	if(!initialized){
-		sq_init(_SC("models/Assault.nut"),
+		SqInit(v, _SC("models/Assault.nut"),
 			ModelScaleProcess(modelScale) <<=
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
@@ -81,17 +176,18 @@ void Assault::init(){
 			SingleDoubleProcess(maxShieldValue, "maxshield", false) <<=
 			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
+			VariantProcess(armCtors, "armCtors") <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
 			HardPointProcess(hardpoints));
+		for(ArmCtors::iterator it = armCtors.begin(); it != armCtors.end(); ++it)
+			assaultVariantRegisters.push_back(new AssaultVariantRegister(gltestp::dstring("Assault") + it->first, it->first));
 		initialized = true;
 	}
-	mass = defaultMass;
-	health = maxhealth();
-	mother = NULL;
-	paradec = -1;
-	engineHeat = 0.f;
+	return initialized;
 }
+
+sqa::Initializer sqinit("AssaultVariantRegister", Assault::sqa_avr);
 
 const char *Assault::idname()const{
 	return "assault";
@@ -103,6 +199,8 @@ const char *Assault::classname()const{
 
 const unsigned Assault::classid = registerClass("Assault", Conster<Assault>);
 Entity::EntityRegister<Assault> Assault::entityRegister("Assault");
+
+//Assault::AssaultGunnerRegister Assault::gunnerEntityRegister("AssaultGunner");
 
 void Assault::serialize(SerializeContext &sc){
 	st::serialize(sc);

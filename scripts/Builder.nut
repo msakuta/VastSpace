@@ -5,4 +5,5 @@ build <- [
 	{name="Gunner class", className="AssaultGunner", buildtime=6., cost=40.}
 	{name="Lancer class", className="Beamer", buildtime=60., cost=420.}
 	{name="Destroyer", className="Destroyer", buildtime=10., cost=100.}
+	{name="MissileDestroyer", className="DestroyerMissile", buildtime=10., cost=100.}
 ]

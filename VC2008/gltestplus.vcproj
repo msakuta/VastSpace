@@ -1095,6 +1095,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\VariantRegister.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\Viewer.h"
 				>
 			</File>

@@ -208,6 +208,8 @@ protected:
 		}
 	};
 
+	template<typename T> class VariantRegister;
+
 	class EXPORT EntityStaticBase : public EntityStatic{
 	public:
 		EntityStaticBase();

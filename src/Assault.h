@@ -6,9 +6,7 @@
 #include "Frigate.h"
 #include "arms.h"
 #include "Docker.h"
-
-//typedef std::map<gltestp::dstring, std::vector<ArmBase *(*)(Entity *base, const hardpoint_static *)> > ArmCtors;
-typedef std::map<gltestp::dstring, std::vector<gltestp::dstring> > ArmCtors;
+#include "VariantRegister.h"
 
 
 /// Medium class ship with replaceable turrets.
@@ -20,14 +18,7 @@ public:
 	/// \brief A class register object that defines variant of Assault.
 	///
 	/// Note that this class is not singleton class, which means there could be multiple variants.
-	class AssaultVariantRegister : public EntityRegister<Assault>{
-	public:
-		gltestp::dstring classname;
-		const SQChar *variant;
-		AssaultVariantRegister(gltestp::dstring classname, const SQChar *variant) :
-			EntityRegister<Assault>(classname), classname(classname), variant(variant){}
-		Entity *create(WarField *w){ return new Assault(w, variant); }
-	};
+	typedef VariantRegister<Assault> AssaultVariantRegister;
 
 protected:
 	static ArmCtors armCtors; ///< Utility map to remember variant configurations.

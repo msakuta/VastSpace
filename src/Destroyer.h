@@ -5,6 +5,7 @@
 #define DESTROYER_H
 #include "Warpable.h"
 #include "arms.h"
+#include "VariantRegister.h"
 
 /// \brief A Destroyer class space warship equipped with large turrets and thich armor.
 class Destroyer : public Warpable{
@@ -14,6 +15,8 @@ protected:
 	TurretList turrets;
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
 	static std::vector<hardpoint_static*> hardpoints;
+	static ArmCtors armCtors;
+	static std::list<VariantRegister<Destroyer>*> variantRegisters;
 	static HitBoxList hitboxes;
 	static double modelScale;
 	static double defaultMass;
@@ -24,7 +27,7 @@ protected:
 public:
 	typedef Warpable st;
 	Destroyer(Game *game) : st(game), clientDead(false){init();}
-	Destroyer(WarField *w);
+	Destroyer(WarField *w, const SQChar *variant = "Standard");
 	~Destroyer();
 	static const unsigned classid;
 	static EntityRegister<Destroyer> entityRegister;
@@ -48,10 +51,11 @@ public:
 	virtual double maxenergy()const;
 	const ManeuverParams &getManeuve()const;
 	virtual double warpCostFactor()const;
+
+	static bool static_init(HSQUIRRELVM);
 protected:
 	bool buildBody();
 	std::vector<hitbox> *getTraceHitBoxes()const;
-	void static_init();
 	virtual void init();
 	void deathEffects();
 	friend class WireDestroyer;

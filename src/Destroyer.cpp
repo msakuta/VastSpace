@@ -11,6 +11,7 @@
 #endif
 #include "motion.h"
 #include "LTurret.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -33,18 +34,28 @@ Warpable::ManeuverParams Destroyer::maneuverParams = {
 	300., /* double capacitor_gen; [MW] */
 };
 std::vector<hardpoint_static*> Destroyer::hardpoints;
+ArmCtors Destroyer::armCtors;
+std::list<Entity::VariantRegister<Destroyer>*> Destroyer::variantRegisters;
 HitBoxList Destroyer::hitboxes;
 GLuint Destroyer::disp = 0;
 std::vector<Warpable::Navlight> Destroyer::navlights;
 
 
-Destroyer::Destroyer(WarField *aw) : st(aw), engineHeat(0.), clientDead(false){
+Destroyer::Destroyer(WarField *aw, const SQChar *variant) : st(aw), engineHeat(0.), clientDead(false){
 	init();
+	ArmCtors::iterator it = armCtors.find(variant);
+	ArmCtors::value_type::second_type *ctors = it != armCtors.end() ? &it->second : NULL;
 	for(int i = 0; i < hardpoints.size(); i++){
-		ArmBase *t = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
-		turrets.push_back(t);
+		ArmBase *turret;
+		if(ctors && i < ctors->size()){
+			const gltestp::dstring &cname = (*ctors)[i];
+			turret = cname == "LTurret" ? (ArmBase*)new LTurret(this, hardpoints[i]) : (ArmBase*)new LMissileTurret(this, hardpoints[i]);
+		}
+		else
+			turret = 1||i % 3 != 0 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]);
+		turrets.push_back(turret);
 		if(aw)
-			aw->addent(t);
+			aw->addent(turret);
 	}
 	buildBody();
 }
@@ -120,10 +131,10 @@ bool Destroyer::buildBody(){
 	return false;
 }
 
-void Destroyer::static_init(){
+bool Destroyer::static_init(HSQUIRRELVM v){
 	static bool initialized = false;
 	if(!initialized){
-		sq_init(_SC("models/Destroyer.nut"),
+		SqInit(v, _SC("models/Destroyer.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
@@ -131,13 +142,19 @@ void Destroyer::static_init(){
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
-			HardPointProcess(hardpoints));
+			HardPointProcess(hardpoints) <<=
+			VariantProcess(armCtors, "armCtors")
+			);
+		for(ArmCtors::iterator it = armCtors.begin(); it != armCtors.end(); ++it)
+			variantRegisters.push_back(new VariantRegister<Destroyer>(gltestp::dstring("Destroyer") + it->first, it->first));
 		initialized = true;
 	}
+	return initialized;
 }
 
+static sqa::Initializer sqinit("DestroyerVariantRegister", Destroyer::static_init);
+
 void Destroyer::init(){
-	static_init();
 	st::init();
 	mass = defaultMass;
 	engineHeat = 0.;

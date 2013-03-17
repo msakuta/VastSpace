@@ -44,15 +44,6 @@ ArmCtors Assault::armCtors;
 std::list<Assault::AssaultVariantRegister*> Assault::assaultVariantRegisters;
 
 
-/// \brief Squirrel initializer entry that registers variant configurations in terms of equipments.
-class EXPORT VariantProcess : public SqInitProcess{
-public:
-	const SQChar *name;
-	ArmCtors &value;
-	VariantProcess(ArmCtors &value, const char *name) : value(value), name(name){}
-	virtual void process(HSQUIRRELVM)const;
-};
-
 /// The Squirrel script should define a table with variant names as the keys.
 void VariantProcess::process(HSQUIRRELVM v)const{
 	Game *game = (Game*)sq_getforeignptr(v);

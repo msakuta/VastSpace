@@ -53,7 +53,9 @@ public:
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
-	bool addBuild(const BuildRecipe *);
+	virtual bool addBuild(const BuildRecipe *);
+	virtual bool startBuild();
+	virtual bool finishBuild();
 	bool cancelBuild(int index){return cancelBuild(index, true);}
 	void anim(double dt);
 	virtual void doneBuild(Entity *child);

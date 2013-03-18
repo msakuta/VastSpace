@@ -14,7 +14,7 @@
 typedef std::map<gltestp::dstring, std::vector<gltestp::dstring> > ArmCtors;
 
 
-/// \brief A class register object that defines variant of Assault.
+/// \brief A class register object that defines variant of template argument class.
 ///
 /// Note that this class is, unlike EntityRegister, not singleton class, which means there could be multiple variants.
 template<typename T> class Entity::VariantRegister : public Entity::EntityRegister<T>{

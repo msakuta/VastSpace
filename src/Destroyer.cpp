@@ -12,6 +12,7 @@
 #include "motion.h"
 #include "LTurret.h"
 #include "sqadapt.h"
+#include "Shipyard.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -158,6 +159,7 @@ void Destroyer::init(){
 	st::init();
 	mass = defaultMass;
 	engineHeat = 0.;
+	buildPhase = 1.;
 }
 
 void Destroyer::serialize(SerializeContext &sc){
@@ -192,6 +194,13 @@ double Destroyer::getHitRadius()const{return .27;}
 void Destroyer::anim(double dt){
 	if(!w)
 		return;
+	// Do not move until construction is complete.
+	if(buildPhase != 1.){
+		// Turrets should follow the position of the base even if it's inactive.
+		for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it) if(*it)
+			(*it)->align();
+		return;
+	}
 /*	if(bbody){
 		const btTransform &tra = bbody->getCenterOfMassTransform();
 		pos = btvc(tra.getOrigin());
@@ -322,7 +331,11 @@ ArmBase *Destroyer::armsGet(int i){
 }
 
 bool Destroyer::command(EntityCommand *com){
-	return st::command(com);
+	if(SetBuildPhaseCommand *sbpc = InterpretCommand<SetBuildPhaseCommand>(com)){
+		buildPhase = sbpc->phase;
+	}
+	else
+		return st::command(com);
 }
 
 double Destroyer::maxenergy()const{return getManeuve().capacity;}

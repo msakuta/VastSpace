@@ -61,12 +61,16 @@ public:
 	virtual Entity *toEntity(){return this;}
 	virtual const ManeuverParams &getManeuve()const;
 
+	bool startBuild();
+	bool finishBuild();
+
 protected:
 	ArmBase **turrets;
 	ShipyardDocker *docker;
 //	Builder *builder;
 	WeakPtr<Entity> undockingFrigate;
 	WeakPtr<Entity> dockingFrigate;
+	WeakPtr<Entity> buildingCapital; ///< A capital ship that is under construction.
 
 	double doorphase[2];
 
@@ -94,6 +98,14 @@ protected:
 
 	friend class ShipyardDocker;
 };
+
+struct EXPORT SetBuildPhaseCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(SetBuildPhaseCommand, EntityCommand);
+	SetBuildPhaseCommand(double phase = 0.) : phase(phase){}
+	SetBuildPhaseCommand(HSQUIRRELVM, Entity&){}
+	double phase;
+};
+
 
 
 //-----------------------------------------------------------------------------

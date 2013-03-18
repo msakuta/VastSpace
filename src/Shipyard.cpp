@@ -240,6 +240,11 @@ void Shipyard::anim(double dt){
 	st::anim(dt);
 	docker->anim(dt);
 	Builder::anim(dt);
+
+	if(buildingCapital && nbuildque){
+		SetBuildPhaseCommand com(1. - build / buildque[0].st->buildtime);
+		buildingCapital->command(&com);
+	}
 //	for(int i = 0; i < nhardpoints; i++) if(turrets[i])
 //		turrets[i]->align();
 //	clientUpdate(dt);
@@ -302,6 +307,33 @@ HitBoxList Shipyard::hitboxes;
 GLuint Shipyard::disp = 0;
 std::vector<Shipyard::Navlight> Shipyard::navlights;
 
+bool Shipyard::startBuild(){
+	const BuildRecipe *br = buildque[0].st;
+	if(!strcmp(br->className, "Destroyer")){
+		Entity *e = Entity::create(br->className, this->Entity::w);
+		assert(e);
+
+		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
+		e->setPosition(&newPos, &rot, &velo);
+
+		// Let's get along with our mother's faction.
+		e->race = this->race;
+
+		buildingCapital = e;
+	}
+	return Builder::startBuild();
+}
+
+bool Shipyard::finishBuild(){
+	if(!buildingCapital)
+		return Builder::finishBuild();
+	else{
+		doneBuild(buildingCapital);
+		buildingCapital = NULL;
+	}
+	return true;
+}
+
 void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();
 	if(d)
@@ -313,6 +345,12 @@ void Shipyard::doneBuild(Entity *e){
 //		this->Entity::w->addent(e);
 		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
 		e->setPosition(&newPos, &rot, &velo);
+
+		// Send build phase complete message
+		SetBuildPhaseCommand sbpc(1.);
+		e->command(&sbpc);
+
+		// Send move order to go forward
 		MoveCommand com;
 		com.destpos = newPos + rot.trans(Vec3d(0, 0, -1.2));
 		e->command(&com);
@@ -361,3 +399,7 @@ void Shipyard::draw(WarDraw*){}
 void Shipyard::drawtra(WarDraw*){}
 void Shipyard::drawOverlay(wardraw_t *){}
 #endif
+
+
+IMPLEMENT_COMMAND(SetBuildPhaseCommand, "SetBuildPhase");
+

@@ -37,9 +37,15 @@ void Destroyer::draw(wardraw_t *wd){
 			if(p && p->wd)
 				p->wd->setAdditive(false);
 		}
+		static void onInitedTextureGradient(void *pv){
+			TextureParams *p = (TextureParams*)pv;
+			glAlphaFunc(GL_GEQUAL, (GLfloat)(1. - p->p->buildPhase));
+			glEnable(GL_ALPHA_TEST);
+			glDisable(GL_BLEND);
+		}
 	} tp = {this, wd};
 
-	static int engineAtrIndex = -1;
+	static int engineAtrIndex = -1, gradientsAtrIndex = -1;
 	if(!init) do{
 		model = LoadMQOModel("models/destroyer.mqo");
 		if(model && model->sufs[0]){
@@ -49,6 +55,9 @@ void Destroyer::draw(wardraw_t *wd){
 					engineAtrIndex = i;
 					model->tex[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
 					model->tex[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+				}
+				if(colormap && !strcmp(colormap, "gradients.png")){
+					gradientsAtrIndex = i;
 				}
 			}
 		}
@@ -61,6 +70,10 @@ void Destroyer::draw(wardraw_t *wd){
 			if(0 <= engineAtrIndex){
 				model->tex[0]->a[engineAtrIndex].onBeginTextureData = &tp;
 				model->tex[0]->a[engineAtrIndex].onEndTextureData = &tp;
+			}
+			if(buildPhase != 1. && 0 <= gradientsAtrIndex){
+				model->tex[0]->a[gradientsAtrIndex].onInitedTexture = TextureParams::onInitedTextureGradient;
+				model->tex[0]->a[gradientsAtrIndex].onInitedTextureData = &tp;
 			}
 		}
 

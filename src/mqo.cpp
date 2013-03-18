@@ -168,6 +168,13 @@ static int chunk_material(suf_t *ret, FPOS *pfo){
 				strcpy(ret->a[i].colormap, p2);
 				if(atr) atr->valid |= SUF_TEX;
 			}
+			else if(!strnicmp(s, "aplane(", sizeof "aplane(" - 1)){
+				char *p = &s[sizeof"aplane("-1], *p2;
+				p2 = quotok(&p);
+				ret->a[i].colormap = (char*)malloc(strlen(p2) + 1);
+				strcpy(ret->a[i].colormap, p2);
+				if(atr) atr->valid |= SUF_TEX;
+			}
 		}
 		ret->a[i].dif[3] *= opa;
 		ret->a[i].amb[3] *= opa;

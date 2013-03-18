@@ -12,6 +12,7 @@ class Destroyer : public Warpable{
 protected:
 	typedef ObservableList<ArmBase> TurretList;
 	float engineHeat;
+	float buildPhase;
 	TurretList turrets;
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
 	static std::vector<hardpoint_static*> hardpoints;

@@ -549,6 +549,11 @@ GLuint CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *ps
 		}
 	}
 
+	if(stp.flags & STP_ALPHA){
+		if(stp.bmi->bmiHeader.biBitCount == 32)
+			stp.alphamap = 2;
+	}
+
 	stp2 = pstp2 ? *pstp2 : defstp;
 	if(fname2 && *fname2){
 		/* Try loading from plain bitmap first */
@@ -1076,7 +1081,8 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		else{
 			/* otherwise, compile it */
 #if 1
-			CallCacheBitmap(name, name, NULL, NULL);
+//			CallCacheBitmap(name, name, NULL, NULL);
+			CacheMaterial(name);
 			it = gstc.find(name);
 			if(it != gstc.end() && it->second){
 				TexCacheBind &tcb = *gstc[name];

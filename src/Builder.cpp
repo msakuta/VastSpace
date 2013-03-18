@@ -152,14 +152,52 @@ bool Builder::addBuild(const BuildRecipe *st){
 	if(buildque[nbuildque-1].st == st)
 		buildque[nbuildque-1].num++;
 	else if(nbuildque < numof(buildque)){
+		bool postStart = false;
 		buildque[nbuildque].st = st;
 		buildque[nbuildque].num = 1;
-		if(0 == nbuildque)
+		if(0 == nbuildque){
 			build = buildque[nbuildque].st->buildtime;
+			postStart = true;
+		}
 		buildque[nbuildque].orderId = buildOrderGen++; // Generate unique id local to this Builder.
 		nbuildque++;
+
+		// If you have nothing in the build queue, first post to the queue is considered to be
+		// started immediately.
+		if(postStart)
+			startBuild();
 	}
 	return true;
+}
+
+/// \brief Overridable build queue entry start event handler.
+///
+/// The default behaviour is to do nothing.
+bool Builder::startBuild(){
+	return true;
+}
+
+/// \brief Overridable build queue entry finish event handler.
+///
+/// The default behaviour is to create an Entity.
+bool Builder::finishBuild(){
+	Entity *thise = toEntity();
+
+	// We can make Builders in the client never create an Entity, but it's
+	// not necessary since client-side Entity creation prediction is officially
+	// supported.  We create the Entities in both sides, and if the client's
+	// prediction fails, just synchronize to the server in the next update frame.
+	if(thise){
+		Entity *created = Entity::create(buildque[0].st->className, this->w);
+		assert(created);
+
+		// Let's get along with our mother's faction.
+		created->race = thise->race;
+
+		doneBuild(created);
+		return true;
+	}
+	return false;
 }
 
 bool Builder::cancelBuild(int index, bool recalc){
@@ -173,6 +211,9 @@ bool Builder::cancelBuild(int index, bool recalc){
 	return true;
 }
 
+/// \brief Overridable build done event handler.
+///
+/// This handler assumes the build recipe produces an Entity.
 void Builder::doneBuild(Entity *child){}
 
 void Builder::anim(double dt){
@@ -196,22 +237,14 @@ void Builder::anim(double dt){
 		ru -= buildque[0].st->cost;
 		dt -= build;
 
-		Entity *thise = toEntity();
-		// We can make Builders in the client never create an Entity, but it's
-		// not necessary since client-side Entity creation prediction is officially
-		// supported.  We create the Entities in both sides, and if the client's
-		// prediction fails, just synchronize to the server in the next update frame.
-		if(thise /*&& thise->getGame()->isServer()*/){
-			Entity *created = Entity::create(buildque[0].st->className, this->w);
-			assert(created);
-
-			// Let's get along with our mother's faction.
-			created->race = thise->race;
-
-			doneBuild(created);
+		if(finishBuild()){
 			cancelBuild(0, false);
+			if(nbuildque)
+				startBuild();
+			build += buildque[0].st->buildtime;
 		}
-		build += buildque[0].st->buildtime;
+		else
+			break; // What to do if fail to finishBuild()?
 	}
 	if(nbuildque){
 //		ru -= buildque[0].st->cost * dt / buildque[0].st->buildtime;

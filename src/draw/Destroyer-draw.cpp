@@ -42,9 +42,12 @@ void Destroyer::draw(wardraw_t *wd){
 			if(p->p->buildPhase != 1.){
 				glAlphaFunc(GL_GEQUAL, (GLfloat)(1. - p->p->buildPhase));
 				glEnable(GL_ALPHA_TEST);
+				glDisable(GL_CULL_FACE);
 			}
-			else
+			else{
 				glDisable(GL_ALPHA_TEST);
+				glEnable(GL_CULL_FACE);
+			}
 			glDisable(GL_BLEND);
 		}
 	} tp = {this, wd};
@@ -57,8 +60,6 @@ void Destroyer::draw(wardraw_t *wd){
 				const char *colormap = model->sufs[0]->a[i].colormap;
 				if(colormap && !strcmp(colormap, "engine2.bmp")){
 					engineAtrIndex = i;
-					model->tex[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
-					model->tex[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
 				}
 				if(colormap && !strcmp(colormap, "gradients.png")){
 					gradientsAtrIndex = i;
@@ -70,14 +71,18 @@ void Destroyer::draw(wardraw_t *wd){
 	} while(0);
 
 	if(model){
-		if(model->tex[0]){
+		// Assumption is that all bone sufs in a Model share the same texture set,
+		// which is true if the Model is loaded from a MQO.
+		for(int i = 0; i < model->n; i++) if(model->tex[i]){
 			if(0 <= engineAtrIndex){
-				model->tex[0]->a[engineAtrIndex].onBeginTextureData = &tp;
-				model->tex[0]->a[engineAtrIndex].onEndTextureData = &tp;
+				model->tex[i]->a[engineAtrIndex].onBeginTexture = TextureParams::onBeginTextureEngine;
+				model->tex[i]->a[engineAtrIndex].onBeginTextureData = &tp;
+				model->tex[i]->a[engineAtrIndex].onEndTexture = TextureParams::onEndTextureEngine;
+				model->tex[i]->a[engineAtrIndex].onEndTextureData = &tp;
 			}
 			if(0 <= gradientsAtrIndex){
-				model->tex[0]->a[gradientsAtrIndex].onInitedTexture = TextureParams::onInitedTextureGradient;
-				model->tex[0]->a[gradientsAtrIndex].onInitedTextureData = &tp;
+				model->tex[i]->a[gradientsAtrIndex].onInitedTexture = TextureParams::onInitedTextureGradient;
+				model->tex[i]->a[gradientsAtrIndex].onInitedTextureData = &tp;
 			}
 		}
 

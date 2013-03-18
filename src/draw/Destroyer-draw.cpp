@@ -39,8 +39,12 @@ void Destroyer::draw(wardraw_t *wd){
 		}
 		static void onInitedTextureGradient(void *pv){
 			TextureParams *p = (TextureParams*)pv;
-			glAlphaFunc(GL_GEQUAL, (GLfloat)(1. - p->p->buildPhase));
-			glEnable(GL_ALPHA_TEST);
+			if(p->p->buildPhase != 1.){
+				glAlphaFunc(GL_GEQUAL, (GLfloat)(1. - p->p->buildPhase));
+				glEnable(GL_ALPHA_TEST);
+			}
+			else
+				glDisable(GL_ALPHA_TEST);
 			glDisable(GL_BLEND);
 		}
 	} tp = {this, wd};
@@ -71,7 +75,7 @@ void Destroyer::draw(wardraw_t *wd){
 				model->tex[0]->a[engineAtrIndex].onBeginTextureData = &tp;
 				model->tex[0]->a[engineAtrIndex].onEndTextureData = &tp;
 			}
-			if(buildPhase != 1. && 0 <= gradientsAtrIndex){
+			if(0 <= gradientsAtrIndex){
 				model->tex[0]->a[gradientsAtrIndex].onInitedTexture = TextureParams::onInitedTextureGradient;
 				model->tex[0]->a[gradientsAtrIndex].onInitedTextureData = &tp;
 			}

@@ -47,6 +47,7 @@ void ArmBase::serialize(SerializeContext &sc){
 	sc.o << target;
 	sc.o << hp;
 	sc.o << ammo;
+	sc.o << online;
 }
 
 void ArmBase::unserialize(UnserializeContext &sc){
@@ -55,6 +56,7 @@ void ArmBase::unserialize(UnserializeContext &sc){
 	sc.i >> target;
 	sc.i >> hp;
 	sc.i >> ammo;
+	sc.i >> online;
 }
 
 void ArmBase::dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&)){
@@ -302,65 +304,67 @@ void MTurret::anim(double dt){
 	else
 		a->mf -= dt;
 
-	if(game->player && controller){
-		double pydst[2] = {py[0], py[1]};
-		if(inputs.press & PL_A)
-			pydst[1] += MTURRETMANUALROTSPEED * dt;
-		if(inputs.press & PL_D)
-			pydst[1] -= MTURRETMANUALROTSPEED * dt;
-		if(inputs.press & PL_W)
-			pydst[0] += MTURRETMANUALROTSPEED * dt;
-		if(inputs.press & PL_S)
-			pydst[0] -= MTURRETMANUALROTSPEED * dt;
-		a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-		a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
-		/*if(game->isServer())*/{
-			if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
-				tryshoot();
+	if(online){
+		if(game->player && controller){
+			double pydst[2] = {py[0], py[1]};
+			if(inputs.press & PL_A)
+				pydst[1] += MTURRETMANUALROTSPEED * dt;
+			if(inputs.press & PL_D)
+				pydst[1] -= MTURRETMANUALROTSPEED * dt;
+			if(inputs.press & PL_W)
+				pydst[0] += MTURRETMANUALROTSPEED * dt;
+			if(inputs.press & PL_S)
+				pydst[0] -= MTURRETMANUALROTSPEED * dt;
+			a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+			a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+			/*if(game->isServer())*/{
+				if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
+					tryshoot();
+				}
 			}
 		}
+		else if(target && wantsFollowTarget()) do{/* estimating enemy position */
+			double bulletRange = bulletspeed() * bulletlife();
+			bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
+
+			// If not forced to attack certain target, forget about target that bullets have no way to reach.
+			if(notReachable && !forceEnemy){
+				target = NULL;
+				break;
+			}
+
+			Vec3d pos, velo, pvelo, gepos;
+			Mat4d rot;
+
+			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+			pos = mat2.vp3(target->pos);
+			velo = mat2.dvp3(target->velo);
+			pvelo = mat2.dvp3(pt->velo);
+
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed(), w);
+				
+			/* these angles are in local coordinates */
+			phi = -atan2(epos[0], -(epos[2]));
+			theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+			if(1 < wantsFollowTarget())
+				a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+
+			/* shooter logic */
+			/*if(game->isServer())*/ while(a->cooldown < dt){
+				double yaw = a->py[1];
+				double pitch = a->py[0];
+
+				// Do not waste bullets at not reachable target.
+				if(!notReachable && fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
+					tryshoot();
+				}
+				else
+					a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
+			}
+		}while(0);
 	}
-	else if(target && wantsFollowTarget()) do{/* estimating enemy position */
-		double bulletRange = bulletspeed() * bulletlife();
-		bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
-
-		// If not forced to attack certain target, forget about target that bullets have no way to reach.
-		if(notReachable && !forceEnemy){
-			target = NULL;
-			break;
-		}
-
-		Vec3d pos, velo, pvelo, gepos;
-		Mat4d rot;
-
-		/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
-		Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
-		pos = mat2.vp3(target->pos);
-		velo = mat2.dvp3(target->velo);
-		pvelo = mat2.dvp3(pt->velo);
-
-		estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed(), w);
-			
-		/* these angles are in local coordinates */
-		phi = -atan2(epos[0], -(epos[2]));
-		theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-		a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-		if(1 < wantsFollowTarget())
-			a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
-
-		/* shooter logic */
-		/*if(game->isServer())*/ while(a->cooldown < dt){
-			double yaw = a->py[1];
-			double pitch = a->py[0];
-
-			// Do not waste bullets at not reachable target.
-			if(!notReachable && fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
-				tryshoot();
-			}
-			else
-				a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
-		}
-	}while(0);
 
 	if(a->cooldown < dt)
 		a->cooldown = 0.;

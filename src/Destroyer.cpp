@@ -333,6 +333,13 @@ ArmBase *Destroyer::armsGet(int i){
 bool Destroyer::command(EntityCommand *com){
 	if(SetBuildPhaseCommand *sbpc = InterpretCommand<SetBuildPhaseCommand>(com)){
 		buildPhase = sbpc->phase;
+		if(buildPhase != 1){
+			for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it)
+				(*it)->online = false;
+		}
+		else
+			for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it)
+				(*it)->online = true;
 	}
 	else
 		return st::command(com);

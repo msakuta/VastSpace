@@ -57,8 +57,9 @@ public:
 	WeakPtr<Entity> target; ///< Targetted enemy.
 	const hardpoint_static *hp;
 	int ammo;
+	bool online; ///< Online-ness is different thing from active-ness. Offline ArmBases do not function but graphics preset.
 	ArmBase(Game *game) : st(game){}
-	ArmBase(Entity *abase, const hardpoint_static *ahp) : st(abase->w), base(abase), target(NULL), hp(ahp), ammo(0){}
+	ArmBase(Entity *abase, const hardpoint_static *ahp) : st(abase->w), base(abase), target(NULL), hp(ahp), ammo(0), online(true){}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext&));

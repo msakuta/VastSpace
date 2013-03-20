@@ -10,10 +10,6 @@
 #include "glw/glwindow.h"
 #include "Docker.h"
 
-#define SCARRY_BUILDQUESIZE 8
-#define SCARRY_SCALE .0010
-#define SCARRY_BAYCOOL 2.
-
 /// \brief A class that virtually represent a construction line.
 ///
 /// It is not a subclass of Entity.  It's intended to be inherited to an Entity-
@@ -40,17 +36,17 @@ public:
 		int orderId; ///< To distinguish individual BuildData.
 	};
 
+	static const unsigned buildQueueSize = 8;
+
 protected:
-	WarField *&w;
 	double build;
 	int buildOrderGen; ///< A generator for build queue orderIds in this Builder.
 	int nbuildque;
 	bool buildStarted;
-//	Entity *const base;
-	BuildData buildque[SCARRY_BUILDQUESIZE];
+	BuildData buildque[buildQueueSize];
 public:
 
-	Builder(WarField *&w) : w(w), build(0), buildOrderGen(0), nbuildque(0), buildStarted(false){init();}
+	Builder() : build(0), buildOrderGen(0), nbuildque(0), buildStarted(false){init();}
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

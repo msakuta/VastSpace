@@ -31,7 +31,7 @@ class EXPORT Shipyard : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Shipyard(Game *game) : st(game), docker(NULL), Builder(this->Warpable::w){init();}
+	Shipyard(Game *game) : st(game), docker(NULL), Builder(){init();}
 	Shipyard(WarField *w);
 	~Shipyard();
 	void init();

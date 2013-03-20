@@ -150,6 +150,8 @@ void Builder::unserialize(UnserializeContext &sc){
 	}
 }
 
+/// \brief Try to add build queue entry.
+/// \returns true if successfully added to the queue. False if failed, for example, due to full queue.
 bool Builder::addBuild(const BuildRecipe *st){
 	if(buildque[nbuildque-1].st == st)
 		buildque[nbuildque-1].num++;
@@ -167,13 +169,15 @@ bool Builder::addBuild(const BuildRecipe *st){
 }
 
 /// \brief Overridable build queue entry start event handler.
+/// \returns true if the Builder can start building the top entry in the build queue.
 ///
-/// The default behaviour is to do nothing.
+/// The default behaviour is to do nothing and return true.
 bool Builder::startBuild(){
 	return true;
 }
 
 /// \brief Overridable build queue entry finish event handler.
+/// \returns true if successfully done building.
 ///
 /// The default behaviour is to create an Entity.
 bool Builder::finishBuild(){
@@ -184,7 +188,7 @@ bool Builder::finishBuild(){
 	// supported.  We create the Entities in both sides, and if the client's
 	// prediction fails, just synchronize to the server in the next update frame.
 	if(thise){
-		Entity *created = Entity::create(buildque[0].st->className, this->w);
+		Entity *created = Entity::create(buildque[0].st->className, thise->w);
 		assert(created);
 
 		// Let's get along with our mother's faction.
@@ -196,6 +200,10 @@ bool Builder::finishBuild(){
 	return false;
 }
 
+/// \brief Cancels existing build order in the queue.
+/// \param index The position in the queue that is demanded to be canceled.
+/// \param recalc Whether to recalculate build time for the next entry.
+/// \retruns true if canceled; false if invalid argument.
 bool Builder::cancelBuild(int index, bool recalc){
 	if(index < 0 || nbuildque <= index)
 		return false;
@@ -255,6 +263,7 @@ void Builder::anim(double dt){
 	}
 }
 
+/// \returns Resource Units this Builder contains.
 double Builder::getRU()const{
 	if(nbuildque)
 		return ru - buildque[0].st->cost * (buildque[0].st->buildtime - build) / buildque[0].st->buildtime;

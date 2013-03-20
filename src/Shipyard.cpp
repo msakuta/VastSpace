@@ -75,7 +75,7 @@ hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 }*/;
 int Shipyard::nhardpoints = 0;
 
-Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Builder(this->Entity::w){
+Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Builder(){
 	st::init();
 	init();
 //	for(int i = 0; i < nhardpoints; i++)
@@ -175,7 +175,7 @@ void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		rot = this->rot;
 	}
 	else{
-		Quatd trot = this->rot.rotate(Entity::w->war_time() * M_PI / 6., 0, 1, 0).rotate(sin(Entity::w->war_time() * M_PI / 23.) * M_PI / 3., 1, 0, 0);
+		Quatd trot = this->rot.rotate(w->war_time() * M_PI / 6., 0, 1, 0).rotate(sin(w->war_time() * M_PI / 23.) * M_PI / 3., 1, 0, 0);
 		pos = this->pos + trot.trans(Vec3d(0, 0, 1.));
 		rot = trot;
 	}
@@ -268,7 +268,7 @@ void Shipyard::clientUpdate(double dt){
 		doorphase[0] = approach(doorphase[0], 0., dt * 0.5, 0.);
 
 	if(dockingFrigate){
-		if(dockingFrigate->w != Entity::w)
+		if(dockingFrigate->w != w)
 			dockingFrigate = NULL;
 		else
 			doorphase[1] = approach(doorphase[1], 1., dt * .5, 0.);
@@ -326,7 +326,7 @@ bool Shipyard::startBuild(){
 
 	if(destroyerVariant){
 		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
-		WarSpace *ws = *Entity::w;
+		WarSpace *ws = *w;
 		if(ws){
 			WarField::EntityList &el = ws->entlist();
 			// Iterate through all Entities to find if any one blocks the scaffold.
@@ -342,7 +342,7 @@ bool Shipyard::startBuild(){
 			}
 		}
 
-		Entity *e = Entity::create(br->className, this->Entity::w);
+		Entity *e = Entity::create(br->className, this->w);
 		assert(e);
 
 		e->setPosition(&newPos, &rot, &velo);
@@ -420,9 +420,9 @@ Vec3d ShipyardDocker::getPortPos(Dockable *e)const{
 	com.ret = Fighter;
 	e->command(&com);
 	if(com.ret == Fighter)
-		return Vec3d(-100. * SCARRY_SCALE, -50. * SCARRY_SCALE, -0.350);
+		return Vec3d(-100. * Shipyard::modelScale, -50. * Shipyard::modelScale, -0.350);
 	else if(com.ret == Frigate)
-		return Vec3d(100. * SCARRY_SCALE, 0, 0.350);
+		return Vec3d(100. * Shipyard::modelScale, 0, 0.350);
 }
 
 Quatd ShipyardDocker::getPortRot(Dockable *)const{

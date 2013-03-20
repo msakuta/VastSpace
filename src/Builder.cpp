@@ -120,6 +120,7 @@ void Builder::serialize(SerializeContext &sc){
 	sc.o << ru; // Do not pass value of getRU(), it can contain errors.
 	sc.o << build;
 	sc.o << buildOrderGen;
+	sc.o << buildStarted;
 	sc.o << nbuildque;
 	for(int i = 0; i < nbuildque; i++){
 		sc.o << buildque[i].orderId << buildque[i].num << buildque[i].st->name;
@@ -131,6 +132,7 @@ void Builder::unserialize(UnserializeContext &sc){
 	sc.i >> ru;
 	sc.i >> build;
 	sc.i >> buildOrderGen;
+	sc.i >> buildStarted;
 	sc.i >> nbuildque;
 	for(int i = 0; i < nbuildque; i++){
 		sc.i >> buildque[i].orderId;
@@ -152,21 +154,15 @@ bool Builder::addBuild(const BuildRecipe *st){
 	if(buildque[nbuildque-1].st == st)
 		buildque[nbuildque-1].num++;
 	else if(nbuildque < numof(buildque)){
-		bool postStart = false;
 		buildque[nbuildque].st = st;
 		buildque[nbuildque].num = 1;
-		if(0 == nbuildque){
+		if(0 == nbuildque)
 			build = buildque[nbuildque].st->buildtime;
-			postStart = true;
-		}
 		buildque[nbuildque].orderId = buildOrderGen++; // Generate unique id local to this Builder.
 		nbuildque++;
-
-		// If you have nothing in the build queue, first post to the queue is considered to be
-		// started immediately.
-		if(postStart)
-			startBuild();
 	}
+	else
+		return false;
 	return true;
 }
 
@@ -208,6 +204,7 @@ bool Builder::cancelBuild(int index, bool recalc){
 	}
 	if(recalc && index == 0 && nbuildque)
 		build = buildque[0].st->buildtime;
+	buildStarted = false;
 	return true;
 }
 
@@ -220,6 +217,14 @@ void Builder::anim(double dt){
 	dt *= g_buildtimescale;
 
 	if(nbuildque){
+		// Invoke build start event and find if it's really feasible.
+		if(!buildStarted){
+			if(!startBuild())
+				return;
+			else
+				buildStarted = true;
+		}
+
 		// If resource units gonna run out, stop construction then.
 		if(ru < buildque[0].st->cost * (buildque[0].st->buildtime - build + dt) / buildque[0].st->buildtime){
 			dt = ru * buildque[0].st->buildtime / buildque[0].st->cost + build - buildque[0].st->buildtime;
@@ -239,8 +244,6 @@ void Builder::anim(double dt){
 
 		if(finishBuild()){
 			cancelBuild(0, false);
-			if(nbuildque)
-				startBuild();
 			build += buildque[0].st->buildtime;
 		}
 		else

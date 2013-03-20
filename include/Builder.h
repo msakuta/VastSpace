@@ -45,11 +45,12 @@ protected:
 	double build;
 	int buildOrderGen; ///< A generator for build queue orderIds in this Builder.
 	int nbuildque;
+	bool buildStarted;
 //	Entity *const base;
 	BuildData buildque[SCARRY_BUILDQUESIZE];
 public:
 
-	Builder(WarField *&w) : w(w), build(0), buildOrderGen(0), nbuildque(0){init();}
+	Builder(WarField *&w) : w(w), build(0), buildOrderGen(0), nbuildque(0), buildStarted(false){init();}
 	virtual Entity *toEntity() = 0; ///< It's almost like using RTTI and dynamic_cast.
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

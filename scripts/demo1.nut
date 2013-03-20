@@ -174,7 +174,7 @@ function frameproc(dt){
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(true && racec[0] < 2){
-			bluebase.command("Build", "Interceptor");
+//			bluebase.command("Build", "Interceptor");
 //			local d = bluebase.docker;
 //			if(d != null){
 //				local e = d.addent("Sceptor");

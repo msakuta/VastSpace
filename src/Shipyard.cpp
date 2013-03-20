@@ -118,6 +118,7 @@ void Shipyard::serialize(SerializeContext &sc){
 	sc.o << docker;
 	sc.o << undockingFrigate;
 	sc.o << dockingFrigate;
+	sc.o << buildingCapital;
 	Builder::serialize(sc);
 //	for(int i = 0; i < nhardpoints; i++)
 //		sc.o << turrets[i];
@@ -128,6 +129,7 @@ void Shipyard::unserialize(UnserializeContext &sc){
 	sc.i >> docker;
 	sc.i >> undockingFrigate;
 	sc.i >> dockingFrigate;
+	sc.i >> buildingCapital;
 	Builder::unserialize(sc);
 
 	// Update the dynamics body's parameters too.
@@ -314,6 +316,7 @@ bool Shipyard::startBuild(){
 	bool destroyerVariant = !strcmp(br->className, "Destroyer"); // Destroyer itself is included in variants.
 
 	// Find if this BuildRecipe is a variant of Destroyer.
+	if(!destroyerVariant)
 	for(Destroyer::VariantList::const_iterator it = vars.begin(); it != vars.end(); ++it){
 		if((*it)->classname == br->className){
 			destroyerVariant = true;
@@ -322,10 +325,26 @@ bool Shipyard::startBuild(){
 	}
 
 	if(destroyerVariant){
+		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
+		WarSpace *ws = *Entity::w;
+		if(ws){
+			WarField::EntityList &el = ws->entlist();
+			// Iterate through all Entities to find if any one blocks the scaffold.
+			// We'd really want to find it by using the object tree, but it's currently absent in the client.
+			for(WarField::EntityList::iterator it = el.begin(); it != el.end(); ++it){
+				// Ignore the Shipyard itself.
+				if(*it == this)
+					continue;
+				// Radius required for building is assumed 300 meters.
+				double radius = (*it)->getHitRadius() + 0.3;
+				if((newPos - (*it)->pos).slen() < radius * radius)
+					return false;
+			}
+		}
+
 		Entity *e = Entity::create(br->className, this->Entity::w);
 		assert(e);
 
-		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
 		e->setPosition(&newPos, &rot, &velo);
 
 		// Let's get along with our mother's faction.

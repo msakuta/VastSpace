@@ -89,6 +89,7 @@ protected:
 
 	static Motion *motions[2];
 
+	bool cancelBuild(int index, bool recalc_time);
 	virtual void doneBuild(Entity *);
 
 	bool buildBody();

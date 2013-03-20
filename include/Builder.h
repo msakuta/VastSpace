@@ -65,7 +65,7 @@ public:
 	virtual SQInteger sq_set(HSQUIRRELVM v, const SQChar *name);
 protected:
 	void init();
-	bool cancelBuild(int index, bool recalc_time);
+	virtual bool cancelBuild(int index, bool recalc_time);
 	double ru;
 
 	friend class GLWbuild;

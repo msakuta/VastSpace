@@ -81,7 +81,10 @@ Destroyer::~Destroyer(){
 			delete *it;
 		}*/
 	}
-	else
+	// Show death effects unless it's under construction.
+	// It seems safe to use equality operator since we assign the constant 1.0 when the construction is
+	// complete (rather than adding values), but being careful won't cause a trouble.
+	else if(1.0 - FLT_EPSILON <= buildPhase)
 		deathEffects();
 }
 

@@ -334,6 +334,12 @@ bool Shipyard::finishBuild(){
 	return true;
 }
 
+bool Shipyard::cancelBuild(int index, bool recalc_time){
+	if(game->isServer() && buildingCapital)
+		delete buildingCapital;
+	return Builder::cancelBuild(index, recalc_time);
+}
+
 void Shipyard::doneBuild(Entity *e){
 	Entity::Dockable *d = e->toDockable();
 	if(d)

@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of Shipyard class non-drawing member functions.
  */
+#define NOMINMAX
 #include "Shipyard.h"
 #include "judge.h"
 #include "serial_util.h"
@@ -75,7 +76,7 @@ hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
 }*/;
 int Shipyard::nhardpoints = 0;
 
-Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Builder(){
+Shipyard::Shipyard(WarField *w) : st(w), docker(new ShipyardDocker(this)), Builder(), clientDead(false){
 	st::init();
 	init();
 //	for(int i = 0; i < nhardpoints; i++)
@@ -104,7 +105,10 @@ void Shipyard::init(){
 }
 
 Shipyard::~Shipyard(){
-	delete docker;
+	if(game->isServer())
+		delete docker;
+	else if(!clientDead)
+		deathEffects();
 }
 
 const char *Shipyard::idname()const{return "Shipyard";}
@@ -152,12 +156,27 @@ const char *Shipyard::dispname()const{
 	return "Shipyard";
 };
 
+double Shipyard::getHealth()const{
+	return std::max(0., health);
+}
+
 double Shipyard::getMaxHealth()const{
 	return maxHealthValue;
 }
 
 double Shipyard::getHitRadius()const{
 	return hitRadius;
+}
+
+int Shipyard::takedamage(double damage, int hitpart){
+	if(this->health < 0.)
+		return 1;
+	if(0 < health && health - damage <= 0){
+		health = -5.0; // Death effect time
+	}
+	else
+		health -= damage;
+	return 1;
 }
 
 double Shipyard::maxenergy()const{
@@ -244,6 +263,24 @@ void Shipyard::anim(double dt){
 	docker->anim(dt);
 	Builder::anim(dt);
 
+	if(health < 0){
+		this->health += dt;
+		if(0. < this->health && !clientDead){
+			deathEffects();
+
+			// Delete only in the server.
+			if(game->isServer()){
+				delete this;
+				return;
+			}
+			else // Mark as dead to prevent multiple death effects.
+				this->clientDead = true;
+		}
+		else
+			dyingEffects(dt);
+		return;
+	}
+
 	if(buildingCapital && nbuildque){
 		SetBuildPhaseCommand com(1. - build / buildque[0].st->buildtime);
 		buildingCapital->command(&com);
@@ -255,6 +292,10 @@ void Shipyard::anim(double dt){
 
 void Shipyard::clientUpdate(double dt){
 	Shipyard::anim(dt);
+
+	if(health < 0)
+		return;
+
 	if(undockingFrigate){
 		double threshdist = .5 + undockingFrigate->getHitRadius();
 		const Vec3d &udpos = undockingFrigate->pos;
@@ -435,6 +476,8 @@ int Shipyard::popupMenu(PopupMenu &list){return st::popupMenu(list);}
 void Shipyard::draw(WarDraw*){}
 void Shipyard::drawtra(WarDraw*){}
 void Shipyard::drawOverlay(wardraw_t *){}
+void Shipyard::dyingEffects(double){}
+void Shipyard::deathEffects(){}
 #endif
 
 

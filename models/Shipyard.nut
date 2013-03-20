@@ -31,7 +31,7 @@ hitbox <- [
 hitRadius <- 1.0;
 
 mass <- 5.e9;
-maxhealth <- 200000.;
+maxhealth <- 20000.;
 
 
 navlights <- [

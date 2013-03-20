@@ -1421,13 +1421,6 @@ int Sceptor::takedamage(double damage, int hitpart){
 }
 
 void Sceptor::postframe(){
-	if(mother && mother->e && (!mother->e->w || docked && mother->e->w != w)){
-		mother = NULL;
-
-		// If the mother is lost, give up docking sequence.
-		if(task == Dock || task == Dockque)
-			task = Auto;
-	}
 //	if(enemy && enemy->w != w)
 //		enemy = NULL;
 	if(formPrev && formPrev->w != w)

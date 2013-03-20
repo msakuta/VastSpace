@@ -5,6 +5,7 @@
 #define SCEPTOR_H
 
 #include "Autonomous.h"
+#include "Docker.h"
 #include "tefpol3d.h"
 
 #define PIDAIM_PROFILE 0
@@ -47,7 +48,7 @@ protected:
 	float fcloak;
 	float heat;
 	Tefpol *pf; ///< Trailing smoke
-	Docker *mother; ///< Mother ship that will be returned to when out of fuel
+	WeakPtr<Docker> mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;
 	int paradec;
 	int magazine; ///< remaining bullet count in the magazine to shoot before reloading

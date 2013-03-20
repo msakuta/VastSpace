@@ -8,12 +8,14 @@
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
+#include "draw/effects.h"
 #include "glw/popup.h"
 #include "sqadapt.h"
 #include "Game.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
+#include <cpplib/CRC32.h>
 
 #define texture(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
 
@@ -167,4 +169,72 @@ void Shipyard::drawOverlay(WarDraw *wd){
 	sq_pushobject(v, sq_drawOverlayProc);
 	sq_pushroottable(v);
 	sq_call(v, 1, 0, SQTrue);*/
+}
+
+struct RandomSequenceCRC : RandomSequence{
+	template<typename T> RandomSequenceCRC(const T &a)
+		: RandomSequence(cpplib::crc32(&a, sizeof a)){}
+	template<typename T1, typename T2> RandomSequenceCRC(const T1 &a, const T2 &b)
+		: RandomSequence(cpplib::crc32(&a, sizeof a, cpplib::crc32(&b, sizeof b))){}
+	double nextd0(){ return nextd() - 0.5; }
+	double nextGauss2(){ return nextGauss() + nextGauss(); }
+	Vec3d nextVec3d(double (RandomSequenceCRC::*method)() = &nextd0){
+		return Vec3d((this->*method)(), (this->*method)(), (this->*method)());
+	}
+};
+
+
+void Shipyard::dyingEffects(double dt){
+	if(!game->isClient())
+		return;
+
+	struct tent3d_line_list *tell = w->getTeline3d();
+	static const double smokeFreq = 10.;
+	if(tell){
+		Vec3d halfLen = hitboxes.size() < 1 ? Vec3d(getHitRadius(), getHitRadius(), getHitRadius()) : hitboxes[0].sc;
+		RandomSequenceCRC rs(id, game->universe->global_time);
+		Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
+		int n = (int)(dt * smokeFreq + rs.nextd());
+		for(int i = 0; i < n; i++){
+			Vec3d pos = rs.nextVec3d(&RandomSequenceCRC::nextd0);
+			for(int j = 0; j < 3; j++)
+				pos[j] *= halfLen[j] * 2.;
+			AddTelineCallback3D(tell, this->pos + this->rot.trans(pos),
+				this->velo + rs.nextVec3d(&RandomSequenceCRC::nextGauss) * 0.01,
+				.2, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 2.5 + rs.nextd() * 1.5);
+		}
+	}
+}
+
+void Shipyard::deathEffects(){
+	if(!game->isClient())
+		return;
+	WarSpace *ws = *w;
+	if(!ws)
+		return;
+	struct tent3d_line_list *tell = w->getTeline3d();
+	RandomSequenceCRC rs(this);
+
+	if(ws->gibs) for(int i = 0; i < 128; i++){
+		/* gaussian spread is desired */
+		AddTelineCallback3D(ws->gibs,
+			this->pos + getHitRadius() * rs.nextVec3d(),
+			this->velo + 0.02 * rs.nextVec3d(&RandomSequenceCRC::nextGauss2),
+			.010, quat_u,
+			M_PI * 2. * rs.nextVec3d(&RandomSequenceCRC::nextGauss),
+			vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE,
+			15. + rs.nextd() * 5.);
+	}
+
+	/* smokes */
+	for(int i = 0; i < 64; i++){
+		COLOR32 col = COLOR32RGBA(rs.next() % 32 + 127, rs.next() % 32 + 127, rs.next() % 32 + 127, 191);
+		AddTelineCallback3D(ws->tell,
+			this->pos + getHitRadius() * 0.5 * rs.nextVec3d(&RandomSequenceCRC::nextGauss),
+			vec3_000, .14, quat_u, vec3_000,
+			vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 20.);
+	}
+
+	// explode shockwave
+	AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 }

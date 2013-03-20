@@ -166,15 +166,18 @@ function frameproc(dt){
 //			}
 		}
 
-		bluebase.ru += 75;
-		redbase.ru += 75;
+		if(bluebase.alive)
+			bluebase.ru += 75;
+		if(redbase.alive)
+			redbase.ru += 75;
 
 		local racec = [countents(cs, 0, "Sceptor"), countents(cs, 1, "Sceptor")];
 
 		print("time " + currenttime + ": " + racec[0] + ", " + racec[1]);
 
 		if(true && racec[0] < 2){
-//			bluebase.command("Build", "Interceptor");
+			if(bluebase.alive)
+				bluebase.command("Build", "Interceptor");
 //			local d = bluebase.docker;
 //			if(d != null){
 //				local e = d.addent("Sceptor");
@@ -182,7 +185,8 @@ function frameproc(dt){
 //			}
 		}
 		if(true && racec[1] < 2){
-			redbase.command("Build", "Interceptor");
+			if(redbase.alive)
+				redbase.command("Build", "Interceptor");
 ////			local d = redbase.docker;
 //			if(d != null){
 //				local e = d.addent("Sceptor");

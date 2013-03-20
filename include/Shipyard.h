@@ -31,7 +31,7 @@ class EXPORT Shipyard : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
 
-	Shipyard(Game *game) : st(game), docker(NULL), Builder(){init();}
+	Shipyard(Game *game) : st(game), docker(NULL), Builder(), clientDead(false){init();}
 	Shipyard(WarField *w);
 	~Shipyard();
 	void init();
@@ -43,8 +43,10 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
 	virtual const char *dispname()const;
+	virtual double getHealth()const;
 	virtual double getMaxHealth()const;
 	virtual double getHitRadius()const;
+	virtual int takedamage(double damage, int hitpart);
 	virtual double maxenergy()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void anim(double dt);
@@ -74,6 +76,8 @@ protected:
 
 	double doorphase[2];
 
+	bool clientDead; ///< A flag indicating the death effects are performed in the client.
+
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
 
@@ -96,6 +100,9 @@ protected:
 	short bbodyGroup()const;
 	short bbodyMask()const;
 	std::vector<hitbox> *getTraceHitBoxes()const;
+
+	void dyingEffects(double dt);
+	void deathEffects();
 
 	friend class ShipyardDocker;
 };

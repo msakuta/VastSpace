@@ -8,6 +8,7 @@
 #include "antiglut.h"
 #include "sqadapt.h"
 #include "btadapt.h"
+#include "Destroyer.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -309,7 +310,18 @@ std::vector<Shipyard::Navlight> Shipyard::navlights;
 
 bool Shipyard::startBuild(){
 	const BuildRecipe *br = buildque[0].st;
-	if(!strcmp(br->className, "Destroyer")){
+	const Destroyer::VariantList &vars = Destroyer::getVariantRegisters();
+	bool destroyerVariant = !strcmp(br->className, "Destroyer"); // Destroyer itself is included in variants.
+
+	// Find if this BuildRecipe is a variant of Destroyer.
+	for(Destroyer::VariantList::const_iterator it = vars.begin(); it != vars.end(); ++it){
+		if((*it)->classname == br->className){
+			destroyerVariant = true;
+			break;
+		}
+	}
+
+	if(destroyerVariant){
 		Entity *e = Entity::create(br->className, this->Entity::w);
 		assert(e);
 

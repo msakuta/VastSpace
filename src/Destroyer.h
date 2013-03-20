@@ -9,6 +9,8 @@
 
 /// \brief A Destroyer class space warship equipped with large turrets and thich armor.
 class Destroyer : public Warpable{
+public:
+	typedef std::list<VariantRegister<Destroyer>*> VariantList;
 protected:
 	typedef ObservableList<ArmBase> TurretList;
 	float engineHeat;
@@ -17,7 +19,7 @@ protected:
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
 	static std::vector<hardpoint_static*> hardpoints;
 	static ArmCtors armCtors;
-	static std::list<VariantRegister<Destroyer>*> variantRegisters;
+	static VariantList variantRegisters;
 	static HitBoxList hitboxes;
 	static double modelScale;
 	static double defaultMass;
@@ -32,6 +34,7 @@ public:
 	~Destroyer();
 	static const unsigned classid;
 	static EntityRegister<Destroyer> entityRegister;
+	static const VariantList &getVariantRegisters(){return variantRegisters;}
 	virtual const char *classname()const;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);

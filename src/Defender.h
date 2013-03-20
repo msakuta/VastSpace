@@ -107,7 +107,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void leaveField(WarField *);

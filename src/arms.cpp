@@ -145,7 +145,7 @@ void ArmBase::align(){
 
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
-	health = maxhealth();
+	health = getMaxHealth();
 	ammo = 1500;
 	py[0] = 0;
 	py[1] = 0;
@@ -213,7 +213,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 		if(f == 0.)
 			continue;
 
-		if(!(pt2->isTargettable() && pt2 != pb && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != pb->race))
+		if(!(pt2->isTargettable() && pt2 != pb && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != pb->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))

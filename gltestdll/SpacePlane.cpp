@@ -76,7 +76,7 @@ SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w), ai(NULL){
 
 void SpacePlane::init(){
 	undocktime = 0.f;
-	health = maxhealth();
+	health = getMaxHealth();
 	mass = 2e7;
 	people = RandomSequence((unsigned long)this).next() % 100 + 100;
 	engineHeat = 0.f;
@@ -159,7 +159,7 @@ void SpacePlane::anim(double dt){
 	}
 
 	/* forget about beaten enemy */
-	if(enemy && (enemy->health <= 0. || enemy->w != w))
+	if(enemy && (enemy->getHealth() <= 0. || enemy->w != w))
 		enemy = NULL;
 
 	Mat4d mat;
@@ -338,7 +338,7 @@ void SpacePlane::draw(WarDraw *wd){
 	if(cull(wd))
 		return;
 
-	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
 
 	struct TextureParams{
 		SpacePlane *p;
@@ -543,7 +543,7 @@ bool SpacePlane::undock(Docker *d){
 	return true;
 }
 
-double SpacePlane::maxhealth()const{return 15000.;}
+double SpacePlane::getMaxHealth()const{return 15000.;}
 
 
 IMPLEMENT_COMMAND(TransportPeopleCommand, "TransportPeople")

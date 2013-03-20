@@ -24,7 +24,7 @@ void Attacker::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	static Model *model = NULL;
 
-	draw_healthbar(this, wd, health / maxhealth(), .3, -1, capacitor / maxenergy());
+	draw_healthbar(this, wd, health / getMaxHealth(), .3, -1, capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;

@@ -103,7 +103,7 @@ void Sceptor::draw(wardraw_t *wd){
 
 	double pixels = .005 * fabs(wd->vw->gc->scale(pos)) * nf;
 
-	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
+	draw_healthbar(this, wd, health / getMaxHealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
 		model = LoadMQOModel("models/interceptor.mqo");

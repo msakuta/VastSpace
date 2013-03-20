@@ -38,7 +38,7 @@ void Respawn::anim(double dt){
 			int c = 0;
 			for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 				Entity *pt2 = *it;
-				if(pt2->w && 0. < pt2->health && pt2->race == race && !strcmp(pt2->classname(), creator)){
+				if(pt2->w && 0. < pt2->getHealth() && pt2->race == race && !strcmp(pt2->classname(), creator)){
 					if(count <= ++c){
 						timer += interval;
 						found = true;

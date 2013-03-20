@@ -47,7 +47,8 @@ public:
 	virtual void drawtra(wardraw_t *wd);
 	virtual void drawOverlay(wardraw_t *);
 	virtual int takedamage(double damage, int hitpart);
-	virtual double maxhealth()const;
+	virtual double getHealth()const;
+	virtual double getMaxHealth()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);
 	virtual int popupMenu(PopupMenu &list);
@@ -83,7 +84,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual double getHitRadius()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual double maxenergy()const;
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *wd);

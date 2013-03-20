@@ -49,7 +49,7 @@ public:
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual double getHitRadius()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual double maxshield()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);

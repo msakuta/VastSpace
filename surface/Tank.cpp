@@ -342,7 +342,7 @@ void Tank::find_enemy_logic(){
 	WarField::EntityList::iterator it = w->entlist().begin();
 	for(; it != w->entlist().end(); it++) if(*it){
 		Entity *pt2 = *it;
-		if(pt2 != this && pt2->w == w && pt2->health > 0. && 0 <= pt2->race && pt2->race != race
+		if(pt2 != this && pt2->w == w && pt2->getHealth() > 0. && 0 <= pt2->race && pt2->race != race
 			&& strcmp(pt2->idname(), "respawn") && (sdist = (pt2->pos - pos).slen()) < best){
 			best = sdist;
 			closest = pt2;
@@ -465,7 +465,7 @@ void Tank::anim(double dt){
 
 			subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
 				|| normal.sp(mdir) < -.2
-				|| enemy->health < 50. && (pos - enemy->pos).slen() < .1 * .1;
+				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
 			bulletspeed = subweapon ? .8 : TANKGUNSPEED;
 
 /*			if(enemy->flying())

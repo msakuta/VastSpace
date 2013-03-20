@@ -76,7 +76,7 @@ void Beamer::init(){
 	undocktime = 0.f;
 	cooldown = 0.;
 	integral.clear();
-	health = maxhealth();
+	health = getMaxHealth();
 	mass = defaultMass;
 }
 
@@ -218,7 +218,7 @@ void Beamer::anim(double dt){
 	}
 
 	/* forget about beaten enemy */
-	if(enemy && (enemy->health <= 0. || enemy->w != w))
+	if(enemy && (enemy->getHealth() <= 0. || enemy->w != w))
 		enemy = NULL;
 
 	Mat4d mat;
@@ -279,7 +279,7 @@ void Beamer::anim(double dt){
 				double best = 20. * 20.;
 				for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 					Entity *t = *it;
-					if(t != this && t->race != -1 && t->race != race && 0. < t->health){
+					if(t != this && t->race != -1 && t->race != race && 0. < t->getHealth()){
 						double sdist = (this->pos - t->pos).slen();
 						if(sdist < best){
 							enemy = t;
@@ -552,7 +552,7 @@ const Builder::BuildStatic Beamer::builds = {
 
 
 
-double Beamer::maxhealth()const{return BEAMER_HEALTH;}
+double Beamer::getMaxHealth()const{return BEAMER_HEALTH;}
 
 std::vector<hitbox> *Beamer::getTraceHitBoxes()const{
 	return &hitboxes;

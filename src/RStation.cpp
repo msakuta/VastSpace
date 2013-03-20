@@ -66,7 +66,7 @@ Entity::EntityRegister<RStation> RStation::entityRegister("RStation");
 const char *RStation::dispname()const{return "Resource St.";}
 bool RStation::isTargettable()const{return true;}
 bool RStation::isSelectable()const{return true;}
-double RStation::maxhealth()const{return 1500000.;}
+double RStation::getMaxHealth()const{return 1500000.;}
 
 void RStation::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -174,7 +174,7 @@ void RStation::draw(wardraw_t *wd){
 		return;*/
 	wd->lightdraws++;
 
-	draw_healthbar(this, wd, this->health / maxhealth(), 3., this->occupytime / 10., this->ru / RSTATION_MAX_RU);
+	draw_healthbar(this, wd, this->health / getMaxHealth(), 3., this->occupytime / 10., this->ru / RSTATION_MAX_RU);
 
 	if(init == 0) do{
 		sufbase = CallLoadSUF("models/rstation.bin");

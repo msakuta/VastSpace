@@ -160,7 +160,7 @@ double Soldier::getHitRadius()const{
 	return hitRadius;
 }
 
-double Soldier::maxhealth()const{
+double Soldier::getMaxHealth()const{
 	return maxHealthValue;
 }
 
@@ -272,7 +272,7 @@ void Soldier::init(){
 		}
 
 		mass = defaultMass;
-		health = maxhealth();
+		health = getMaxHealth();
 		swapphase = 0.;
 		pitch = 0.;
 		reloadphase = 0.;
@@ -731,7 +731,7 @@ void Soldier::anim(double dt){
 			findEnemy();
 		}
 
-		if(enemy && enemy->health <= 0.)
+		if(enemy && enemy->getHealth() <= 0.)
 			enemy = NULL;
 
 		if(arms[0]->ammo <= 0 && cooldown2 == 0. && !reloading){
@@ -1414,7 +1414,7 @@ bool Soldier::findEnemy(){
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
-		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))

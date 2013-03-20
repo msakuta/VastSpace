@@ -431,7 +431,7 @@ TorusStationEntity::TorusStationEntity(Game *game) : st(game), btshape(NULL){
 
 TorusStationEntity::TorusStationEntity(WarField *w, TorusStation &astro) : st(w), astro(&astro), btshape(NULL){
 	init();
-	health = maxhealth();
+	health = getMaxHealth();
 	race = astro.race;
 	docker = new TorusStationDocker(this);
 }

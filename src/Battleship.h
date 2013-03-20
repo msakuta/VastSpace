@@ -32,7 +32,7 @@ public:
 	virtual void drawtra(wardraw_t *wd);
 	virtual void drawOverlay(wardraw_t *);
 	virtual int takedamage(double damage, int hitpart);
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual int armsCount()const;
 	virtual ArmBase *armsGet(int index);
 	virtual int popupMenu(PopupMenu &list);

@@ -65,7 +65,8 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual double maxhealth()const;
+	virtual double getHealth()const;
+	virtual double getMaxHealth()const;
 	virtual void enterField(WarField *enteringField);
 	virtual void leaveField(WarField *leavingField);
 	virtual void setPosition(const Vec3d *pos, const Quatd *rot = NULL, const Vec3d *velo = NULL, const Vec3d *avelo = NULL); // Arguments can be NULL
@@ -121,12 +122,9 @@ public:
 	Quatd rot; ///< rotation expressed in quaternion
 	double mass; ///< [kg]
 	double moi;  ///< moment of inertia, [kg m^2] should be a tensor
-//	double turrety, barrelp;
-//	double desired[2];
-	double health; ///< Health or armor strength
-//	double cooldown, cooldown2;
-//	WeakPtr<Entity> next;
-//	Entity *selectnext; ///< selection list is no longer needed
+protected:
+	double health; ///< Internal health or armor strength. Get the value with getHealth().
+public:
 	WeakPtr<Entity> enemy; ///< Currently recognizing enemy
 	int race;
 //	int shoots, shoots2, kills, deaths;

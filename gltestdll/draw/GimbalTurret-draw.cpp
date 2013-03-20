@@ -68,7 +68,7 @@ void GimbalTurret::draw(WarDraw *wd){
 //	if(cull(wd))
 //		return;
 
-	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
+	draw_healthbar(this, wd, health / getMaxHealth(), getHitRadius(), 0, 0);
 
 	Model *model = initModel();
 	if(!model || !initMotions())

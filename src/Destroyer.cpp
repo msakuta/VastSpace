@@ -321,7 +321,11 @@ void Destroyer::deathEffects(){
 #endif
 }
 
-double Destroyer::maxhealth()const{return maxHealthValue;}
+double Destroyer::getHealth()const{
+	return health - (1. - buildPhase) * getMaxHealth();
+}
+
+double Destroyer::getMaxHealth()const{return maxHealthValue;}
 
 int Destroyer::armsCount()const{
 	return hardpoints.size();
@@ -398,7 +402,7 @@ void WireDestroyer::unserialize(UnserializeContext &sc){
 }
 
 double WireDestroyer::getHitRadius()const{return .3;}
-double WireDestroyer::maxhealth()const{return 100000.;}
+double WireDestroyer::getMaxHealth()const{return 100000.;}
 double WireDestroyer::maxenergy()const{return 10000.;}
 
 static int wire_hit_callback(const struct otjEnumHitSphereParam *param, Entity *pt){

@@ -98,7 +98,7 @@ void Shipyard::init(){
 	}
 	ru = 250.;
 	mass = defaultMass;
-	health = maxhealth();
+	health = getMaxHealth();
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
 }
@@ -150,7 +150,7 @@ const char *Shipyard::dispname()const{
 	return "Shipyard";
 };
 
-double Shipyard::maxhealth()const{
+double Shipyard::getMaxHealth()const{
 	return maxHealthValue;
 }
 

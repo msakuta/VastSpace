@@ -62,7 +62,7 @@ void Soldier::draw(WarDraw *wd){
 	Soldier *p = this;
 	double pixels;
 
-	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), 0, 0);
+	draw_healthbar(this, wd, health / getMaxHealth(), getHitRadius(), 0, 0);
 
 	// Draw hook and tether before culling
 	drawHookAndTether(wd);
@@ -583,7 +583,7 @@ void Soldier::drawHUD(WarDraw *wd){
 			const double y0 = -bottom - 60. / m;
 			const double y1 = y0 + height;
 			const double shadowShift = 4. / m;
-			double f = health / maxhealth();
+			double f = health / getMaxHealth();
 			double g = width * f;
 			glBegin(GL_QUADS);
 			glColor4f(1,0,0,0.75);

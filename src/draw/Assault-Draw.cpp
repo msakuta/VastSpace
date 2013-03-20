@@ -31,7 +31,7 @@ void Assault::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
+	draw_healthbar(this, wd, health / getMaxHealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
 
 	struct TextureParams{
 		Assault *p;
@@ -165,7 +165,7 @@ void GLWarms::draw(GLwindowState &ws, double t){
 	glwprintf(a->classname());
 	glColor4f(1,1,0,1);
 	glwpos2d(r.x0, r.y0 + (3) * getFontHeight());
-	glwprintf("%lg / %lg", a->health, a->maxhealth());
+	glwprintf("%lg / %lg", a->getHealth(), a->getMaxHealth());
 	for(int i = 0; i < a->armsCount(); i++){
 		const ArmBase *arm = a->armsGet(i);
 		glColor4f(0,1,1,1);

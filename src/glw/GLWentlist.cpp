@@ -429,7 +429,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 				glwprintf("%3d", pents[i]->size());
 			}
 			else if(pe){
-				double x2 = 2. * pe->health / pe->maxhealth() - 1.;
+				double x2 = 2. * pe->getHealth() / pe->getMaxHealth() - 1.;
 				const double h = .1;
 				glPushMatrix();
 				glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
@@ -578,7 +578,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 					else{
 						int xs, ys;
 						const long margin = 4;
-						cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race << "\nhealth = " << pe->health;
+						cpplib::dstring str = cpplib::dstring(pe->dispname()) << "\nrace = " << pe->race << "\nhealth = " << pe->getHealth();
 						glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
 						GLWrect localrect = GLWrect(itemRect.x0, itemRect.y0 - ys - 3 * margin, itemRect.x0 + xs + 3 * margin, itemRect.y0);
 

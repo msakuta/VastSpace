@@ -38,7 +38,7 @@ void GimbalTurret::init(){
 	pitch = 0.;
 	cooldown = 0.;
 	muzzleFlash = 0.;
-	health = maxhealth();
+	health = getMaxHealth();
 	mass = 2e6;
 	deathEffectDone = false;
 }
@@ -105,7 +105,7 @@ void GimbalTurret::anim(double dt){
 	findtarget(NULL, 0);
 
 	/* forget about beaten enemy */
-	if(enemy && (enemy->health <= 0. || enemy->w != w))
+	if(enemy && (enemy->getHealth() <= 0. || enemy->w != w))
 		enemy = NULL;
 
 	if(0 < health){
@@ -249,7 +249,7 @@ bool GimbalTurret::undock(Docker *d){
 	return true;
 }
 
-double GimbalTurret::maxhealth()const{return maxHealthValue;}
+double GimbalTurret::getMaxHealth()const{return maxHealthValue;}
 
 const Autonomous::ManeuverParams &GimbalTurret::getManeuve()const{
 	static const ManeuverParams mn = {
@@ -314,7 +314,7 @@ void GimbalTurret::findtarget(const Entity *ignore_list[], int nignore_list){
 		if(f == 0.)
 			continue;
 
-		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))

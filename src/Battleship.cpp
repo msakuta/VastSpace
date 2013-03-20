@@ -261,7 +261,7 @@ int Battleship::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-double Battleship::maxhealth()const{return 100000./2;}
+double Battleship::getMaxHealth()const{return 100000./2;}
 
 int Battleship::armsCount()const{
 	return hardpoints.size();

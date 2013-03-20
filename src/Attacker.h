@@ -43,7 +43,7 @@ public:
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual bool command(EntityCommand *com);
 	virtual double getHitRadius()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual double maxenergy()const;
 	virtual ArmBase *armsGet(int);
 	virtual int armsCount()const;

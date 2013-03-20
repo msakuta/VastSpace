@@ -156,7 +156,7 @@ const char *Sceptor::dispname()const{
 	return "Interceptor";
 };
 
-double Sceptor::maxhealth()const{
+double Sceptor::getMaxHealth()const{
 	return maxHealthValue;
 }
 
@@ -195,7 +195,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 //	VECCPY(ret->pos, mother->st.st.pos);
 	mass = defaultMass;
 //	race = mother->st.st.race;
-	health = maxhealth();
+	health = getMaxHealth();
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
@@ -365,7 +365,7 @@ bool Sceptor::findEnemy(){
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
-		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))
@@ -615,8 +615,8 @@ void Sceptor::anim(double dt){
 
 	if(Docker *docker = *w){
 		fuel = std::min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
-		health = std::min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
-		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
+		health = std::min(health + dt * 100., getMaxHealth()); // it takes 7 seconds to be fully repaired
+		if(fuel == maxfuel() && health == getMaxHealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
 	}
@@ -668,7 +668,7 @@ void Sceptor::anim(double dt){
 #endif
 
 	/* forget about beaten enemy */
-	if(pt->enemy && pt->enemy->health <= 0.)
+	if(pt->enemy && pt->enemy->getHealth() <= 0.)
 		pt->enemy = NULL;
 
 	transform(mat);
@@ -711,7 +711,7 @@ void Sceptor::anim(double dt){
 	// There could be a case the server sends delete message before the client
 	// determines the object should be deleted. In that case, death effects
 	// may not displayed, but it'd be rare case since there's always a lag.
-	if(0 < pt->health && active){
+	if(0 < pt->getHealth() && active){
 //		double oldyaw = pt->pyr[1];
 		bool controlled = controller;
 		int parking = 0;
@@ -1249,8 +1249,8 @@ void Sceptor::anim(double dt){
 		p->fcloak = approach(p->fcloak, p->cloak, dt, 0.);
 	}
 	else{
-		pt->health += dt;
-		if(0. < pt->health && active){
+		this->health += dt;
+		if(0. < this->health && active){
 #ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);

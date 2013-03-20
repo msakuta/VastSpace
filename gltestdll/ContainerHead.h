@@ -70,7 +70,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);
 	virtual bool dock(Docker*);

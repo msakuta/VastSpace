@@ -36,7 +36,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual double getHitRadius()const{return hitRadius;}
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}

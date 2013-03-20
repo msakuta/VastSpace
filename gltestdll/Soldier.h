@@ -63,7 +63,7 @@ public:
 	virtual void drawHUD(WarDraw *);
 	virtual void drawOverlay(WarDraw *);
 	virtual double getHitRadius()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual void onBulletHit(const Bullet *, int hitpart);

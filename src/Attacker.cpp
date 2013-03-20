@@ -132,7 +132,7 @@ bool Attacker::command(EntityCommand *com){
 }
 
 double Attacker::getHitRadius()const{return .3;}
-double Attacker::maxhealth()const{return 100000.;}
+double Attacker::getMaxHealth()const{return 100000.;}
 double Attacker::maxenergy()const{return maneuverParams.capacity;}
 
 ArmBase *Attacker::armsGet(int index){

@@ -53,7 +53,7 @@ const struct Warpable::ManeuverParams Frigate::frigate_mn = {
 
 
 Frigate::Frigate(WarField *aw) : st(aw), mother(NULL), shieldGenSpeed(0), paradec(-1){
-	health = maxhealth();
+	health = getMaxHealth();
 	shieldAmount = maxshield();
 }
 
@@ -84,8 +84,8 @@ void Frigate::anim(double dt){
 
 	// If docked
 	if(Docker *docker = *w){
-		health = std::min(health + dt * 300., maxhealth()); // it takes several seconds to be fully repaired
-		if(health == maxhealth() && !docker->remainDocked)
+		health = std::min(health + dt * 300., getMaxHealth()); // it takes several seconds to be fully repaired
+		if(health == getMaxHealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
 	}

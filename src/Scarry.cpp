@@ -99,7 +99,7 @@ const char *Scarry::dispname()const{
 	return "Space Carrier";
 };
 
-double Scarry::maxhealth()const{
+double Scarry::getMaxHealth()const{
 	return 200000;
 }
 

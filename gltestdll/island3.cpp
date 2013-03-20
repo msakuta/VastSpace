@@ -82,7 +82,7 @@ public:
 	Island3Building(WarField *w, Island3 *host);
 	Island3Building(WarField *w) : st(w){}
 	virtual const char *classname()const{return "Island3Building";}
-	virtual double maxhealth()const{return 10000.;}
+	virtual double getMaxHealth()const{return 10000.;}
 	virtual void enterField(WarField *);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 	virtual double getHitRadius()const{return halfsize.len();}
@@ -2572,7 +2572,7 @@ Island3Entity::Island3Entity(Game *game) : st(game), btshape(NULL){
 }
 
 Island3Entity::Island3Entity(WarField *w, Island3 &astro) : st(w), astro(&astro), btshape(NULL){
-	health = maxhealth();
+	health = getMaxHealth();
 	race = astro.race;
 	docker = new Island3Docker(this);
 }
@@ -2837,7 +2837,7 @@ static const double texcoord[][3] = {
 };
 
 Island3Building::Island3Building(WarField *w, Island3 *host) : st(w), host(host){
-	health = maxhealth();
+	health = getMaxHealth();
 	race = -1;
 	RandomSequence rs((unsigned long)this);
 	double phase = rs.nextd() * M_PI;

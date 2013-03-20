@@ -140,7 +140,7 @@ const char *Defender::dispname()const{
 	return "Defender";
 };
 
-double Defender::maxhealth()const{
+double Defender::getMaxHealth()const{
 	return 500.;
 }
 
@@ -170,7 +170,7 @@ Defender::Defender(WarField *aw) : st(aw),
 
 //	Defender *const p = this;
 	mass = defaultMass;
-	health = maxhealth();
+	health = getMaxHealth();
 	aac.clear();
 	memset(thrusts, 0, sizeof thrusts);
 	throttle = .5;
@@ -300,7 +300,7 @@ bool Defender::findEnemy(){
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
-		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))
@@ -482,8 +482,8 @@ void Defender::anim(double dt){
 
 	if(Docker *docker = *w){
 		fuel = std::min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
-		health = std::min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
-		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
+		health = std::min(health + dt * 100., getMaxHealth()); // it takes 7 seconds to be fully repaired
+		if(fuel == maxfuel() && health == getMaxHealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
 	}
@@ -534,7 +534,7 @@ void Defender::anim(double dt){
 #endif
 
 	/* forget about beaten enemy */
-	if(pt->enemy && pt->enemy->health <= 0.)
+	if(pt->enemy && pt->enemy->getHealth() <= 0.)
 		pt->enemy = NULL;
 
 	transform(mat);
@@ -574,7 +574,7 @@ void Defender::anim(double dt){
 //	if(pm)
 //		pt->race = pm->race;
 
-	if(0 < pt->health){
+	if(0 < pt->getHealth()){
 //		double oldyaw = pt->pyr[1];
 		bool controlled = controller;
 		int parking = 0;
@@ -1110,8 +1110,8 @@ void Defender::anim(double dt){
 		p->fcloak = (float)approach(p->fcloak, p->cloak, dt, 0.);
 	}
 	else{
-		pt->health += dt;
-		if(0. < pt->health){
+		this->health += dt;
+		if(0. < this->health){
 #ifndef DEDICATED
 			struct tent3d_line_list *tell = w->getTeline3d();
 //			effectDeath(w, pt);

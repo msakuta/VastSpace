@@ -99,7 +99,7 @@ Entity::~Entity(){
 }
 
 void Entity::init(){
-	health = maxhealth();
+	health = getMaxHealth();
 }
 
 
@@ -109,8 +109,20 @@ Entity *Entity::create(const char *cname, WarField *w){
 		ctor = it->second;
 		break;
 	}
-	if(!ctor)
+	if(!ctor){
+/*		HSQUIRRELVM v = w->game->sqvm;
+		do{
+			StackReserver sr(v);
+			sq_pushstring(v, "classRegister", -1);
+			if(SQ_FAILED(sq_get(v, 1)))
+				break;
+			sq_pushstring(v, cname, -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				break;
+
+		}while(0);*/
 		return NULL;
+	}
 	Entity *e = ctor->create(w);
 	if(e && w){
 		w->addent(e);
@@ -291,7 +303,7 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushfloat(v, SQFloat(p->health));
+		sq_pushfloat(v, SQFloat(p->getHealth()));
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("classname"))){
@@ -602,8 +614,9 @@ void Entity::dive(SerializeContext &sc, void (Serializable::*method)(SerializeCo
 		next->dive(sc, method);*/
 }
 
+double Entity::getHealth()const{return health;}
 
-double Entity::maxhealth()const{return 100.;}
+double Entity::getMaxHealth()const{return 100.;}
 
 /// \brief Called when this Entity is entering a WarField, just after adding to Entity list in the WarField.
 ///
@@ -768,7 +781,7 @@ Entity::Props Entity::props()const{
 //	ret.push_back(pbuf->str());
 	ret.push_back(gltestp::dstring("Class: ") << classname());
 	ret.push_back(gltestp::dstring("CoordSys: ") << w->cs->getpath());
-	ret.push_back(gltestp::dstring("Health: ") << dstring(health) << "/" << dstring(maxhealth()));
+	ret.push_back(gltestp::dstring("Health: ") << dstring(getHealth()) << "/" << dstring(getMaxHealth()));
 	ret.push_back(gltestp::dstring("Race: ") << dstring(race));
 	ret.push_back(gltestp::dstring("Controller: ") << dstring(controller ? controller->classname() : "(None)"));
 	return ret;

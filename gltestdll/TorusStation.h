@@ -120,7 +120,7 @@ public:
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
-	virtual double maxhealth()const{return maxHealthValue;}
+	virtual double getMaxHealth()const{return maxHealthValue;}
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
 	virtual int takedamage(double damage, int hitpart);
 	virtual void draw(wardraw_t *);

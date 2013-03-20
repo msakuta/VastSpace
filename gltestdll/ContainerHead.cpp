@@ -77,7 +77,7 @@ void ContainerHead::init(){
 	for(int i = 0; i < ncontainers; i++)
 		containers[i] = ContainerType(rs.next() % Num_ContainerType);
 	undocktime = 0.f;
-	health = maxhealth();
+	health = getMaxHealth();
 	mass = 2e7 + 1e7 * ncontainers;
 
 	for(int i = 0; i < numof(pf); i++)
@@ -167,7 +167,7 @@ void ContainerHead::anim(double dt){
 	}
 
 	/* forget about beaten enemy */
-	if(enemy && (enemy->health <= 0. || enemy->w != w))
+	if(enemy && (enemy->getHealth() <= 0. || enemy->w != w))
 		enemy = NULL;
 
 	Mat4d mat;
@@ -421,7 +421,7 @@ void ContainerHead::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), .1, 0, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
 
 	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
 	static OpenGLState::weak_ptr<bool> initialized = false;
@@ -595,7 +595,7 @@ void ContainerHead::post_warp(){
 		task = (sship_task)sship_dockqueque;
 }
 
-double ContainerHead::maxhealth()const{return 15000.;}
+double ContainerHead::getMaxHealth()const{return 15000.;}
 
 
 

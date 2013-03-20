@@ -88,7 +88,7 @@ void Scarry::draw(wardraw_t *wd){
 		return;*/
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / maxhealth(), getHitRadius(), -1., capacitor / maxenergy());
+	draw_healthbar(this, wd, health / getMaxHealth(), getHitRadius(), -1., capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;

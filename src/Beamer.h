@@ -34,7 +34,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(WarDraw *);
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const;
 	virtual Props props()const;
 	virtual bool undock(Docker*);
 	virtual ManeuverParams &getManeuve()const;

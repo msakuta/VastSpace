@@ -28,7 +28,7 @@ public:
 	int paradec[num_ShipClass];
 	bool remainDocked;
 
-	Docker(Game *game) : st(game){}
+	Docker(Game *game);
 	Docker(Entity *ae);
 	~Docker();
 	virtual void serialize(SerializeContext &sc);

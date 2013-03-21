@@ -19,6 +19,7 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 #include <sstream>
+#include <fstream>
 
 /* some common constants that can be used in static data definition. */
 #define SQRT_2 1.4142135623730950488016887242097
@@ -31,6 +32,11 @@ extern "C"{
 
 
 
+Docker::Docker(Game *game) : st(game){
+	// Debug output; record this pointer's address to the log file.
+	std::ofstream of("debug.log", std::ios_base::app);
+	of << game->universe->global_time << ": Docker: " << (game->isServer()) << " {" << classname() << ":" << id << "}" << static_cast<Observer*>(this) << std::endl;;
+}
 
 Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){
 	for(int i = 0; i < numof(paradec); i++)
@@ -151,9 +157,8 @@ bool Docker::undock(Dockable *e){
 	EntityList::iterator it = undockque.begin();
 	while(it != undockque.end()){
 		if(*it == e){
-			// You only need to manage weak pointers in the server since the client won't ever delete an Entity.
-			if(game->isServer())
-				e->removeObserver(this);
+			// You need to manage weak pointers in the client, too.
+			e->removeObserver(this);
 			it = undockque.erase(it);
 		}
 		else

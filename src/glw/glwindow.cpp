@@ -1351,8 +1351,12 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 	const gltestp::TexCacheBind *tcb = gltestp::FindTexture(texname);
 	if(tcb)
 		texlist = tcb->getList();
-	else
-		texlist = CallCacheBitmap(texname, texname, NULL, NULL);
+	else{
+		suftexparam_t stp;
+		stp.flags = STP_MINFIL | STP_ALPHA;
+		stp.minfil = GL_LINEAR;
+		texlist = CallCacheBitmap(texname, texname, &stp, NULL);
+	}
 	if(!texlist)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);

@@ -1,9 +1,5 @@
 /** \file
- * \brief A header for OpenGL window system.
- *
- * OpenGL window system is somewhat like Windows' one, it has messaging mechanism
- * to notify and response events. The difference is that it does not have a message
- * queue like Windows. All messages are sent from calling thread immediately.
+ * \brief Definition of GLWtaskBar class.
  */
 #ifndef GLW_GLWTASKBAR_H
 #define GLW_GLWTASKBAR_H

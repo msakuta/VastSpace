@@ -295,47 +295,87 @@ function initUI(){
 	local scw = screenwidth();
 	local sch = screenheight();
 
+	// Note that this local function is passed as a free variable.
+	// Could be a global.
+	local function isWindow(name){
+		return (name in this) && this[name] != null && this[name].alive;
+	}
+
+	local function entlistFunc(){
+		if(!isWindow("entlistWindow")){
+			local entlist = GLWentlist();
+			entlist.title = tlate("Entity List");
+			entlist.x = scw - 300;
+			entlist.width = 300;
+			entlist.y = 100;
+			entlist.height = 200;
+			entlist.closable = true;
+			entlist.pinnable = true;
+			entlist.pinned = true;
+			entlistWindow <- entlist;
+		}
+		else
+			entlistWindow.close();
+	}
+
+	local function commandButtonFunc(){
+		if(!isWindow("commandButtons")){
+			local but = GLWbuttonMatrix(3, 3);
+			but.title = tlate("command");
+			but.x = taskbar.width;
+			but.y = sch - but.height;
+			but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
+			but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
+			but.addToggleButton("forceattackorder", "textures/forceattack2.png", "textures/forceattack.png", tlate("Force Attack order"));
+			but.addButton("halt", "textures/halt.png", tlate("Halt"));
+			but.addButton("dock", "textures/dock.png", tlate("Dock"));
+			but.addButton("undock", "textures/undock.png", tlate("Undock"));
+		//	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
+			but.addButton(GLWsqStateButton("textures/control2.png", "textures/control.png",
+				@() player.isControlling(), control, tlate("Control")));
+			but.pinned = true;
+			commandButtons <- but;
+		}
+		else
+			commandButtons.close();
+	}
+
+	local function cameraButtonFunc(){
+		if(!isWindow("cameraButtons")){
+			local cambut = GLWbuttonMatrix(7, 1);
+			cambut.title = tlate("camera");
+			if(!isWindow("commandButtons"))
+				cambut.x = taskbar.width;
+			else
+				cambut.x = commandButtons.x + commandButtons.width;
+			cambut.y = sch - cambut.height;
+			cambut.addButton("chasecamera", "textures/focus.png", tlate("Follow Camera"));
+			cambut.addButton("mover cycle", "textures/cammode.png", tlate("Switch Camera Mode"));
+			cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
+			cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
+			cambut.addButton("toggle g_player_viewport", "textures/playercams.png", tlate("Toggle Other Players Camera View"));
+			cambut.addButton("buildmenu", "textures/buildman.png", tlate("Build Manager"));
+			cambut.addButton("dockmenu", "textures/dockman.png", tlate("Dock Manager"));
+		//	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
+			cambut.pinned = true;
+			cameraButtons <- cambut;
+		}
+		else
+			cameraButtons.close();
+	}
+
 	taskbar = GLWtaskBar();
 	taskbar.addButton("chat", "textures/chat.png", tlate("Chat"));
+	taskbar.addButton(GLWsqStateButton("textures/entlist.png", "textures/entlist.png",
+		@() true, entlistFunc, tlate("Entity List")));
+	taskbar.addButton(GLWsqStateButton("textures/commands.png", "textures/commands.png",
+		@() true, commandButtonFunc, tlate("Commands")));
+	taskbar.addButton(GLWsqStateButton("textures/cameras.png", "textures/cameras.png",
+		@() true, cameraButtonFunc, tlate("Cameras")));
 
-	local entlist = GLWentlist();
-	entlist.title = tlate("Entity List");
-	entlist.x = scw - 300;
-	entlist.width = 300;
-	entlist.y = 100;
-	entlist.height = 200;
-	entlist.closable = true;
-	entlist.pinnable = true;
-	entlist.pinned = true;
-
-	local but = GLWbuttonMatrix(3, 3);
-	but.title = tlate("command");
-	but.x = 0;
-	but.y = sch - but.height;
-	but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
-	but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
-	but.addToggleButton("forceattackorder", "textures/forceattack2.png", "textures/forceattack.png", tlate("Force Attack order"));
-	but.addButton("halt", "textures/halt.png", tlate("Halt"));
-	but.addButton("dock", "textures/dock.png", tlate("Dock"));
-	but.addButton("undock", "textures/undock.png", tlate("Undock"));
-//	but.addControlButton("textures/control2.png", "textures/control.png", tlate("Control"));
-	but.addButton(GLWsqStateButton("textures/control2.png", "textures/control.png",
-		@() player.isControlling(), control, tlate("Control")));
-	but.pinned = true;
-
-	local cambut = GLWbuttonMatrix(7, 1);
-	cambut.title = tlate("camera");
-	cambut.x = but.width;
-	cambut.y = sch - cambut.height;
-	cambut.addButton("chasecamera", "textures/focus.png", tlate("Follow Camera"));
-	cambut.addButton("mover cycle", "textures/cammode.png", tlate("Switch Camera Mode"));
-	cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
-	cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
-	cambut.addButton("toggle g_player_viewport", "textures/playercams.png", tlate("Toggle Other Players Camera View"));
-	cambut.addButton("buildmenu", "textures/buildman.png", tlate("Build Manager"));
-	cambut.addButton("dockmenu", "textures/dockman.png", tlate("Dock Manager"));
-//	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
-	cambut.pinned = true;
+	entlistFunc();
+	commandButtonFunc();
+	cameraButtonFunc();
 
 	cmd("chat");
 

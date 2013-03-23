@@ -1,6 +1,5 @@
 /** \file
- * \brief Implementation of GLwindow and its subclasses.
- * Implements GLWbutton branch too.
+ * \brief Implementation of GLtaskBar.
  */
 #include "glw/GLWtaskBar.h"
 #include "Application.h"
@@ -134,6 +133,7 @@ void GLWtaskBar::drawInt(GLwindowState &ws, double t, int mousex, int mousey, in
 	int w = ws.w, h = ws.h, m = ws.m;
 	projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, h, 0, -1, 1)));
 	GLWrect r = extentRect();
+
 	glBegin(GL_QUADS);
 	glColor4f(.3f, .3f, .3f, 1.f);
 	glVertex2i(r.x0, r.y0);
@@ -143,20 +143,9 @@ void GLWtaskBar::drawInt(GLwindowState &ws, double t, int mousex, int mousey, in
 	glVertex2i(r.x1, r.y0);
 	glEnd();
 
-//	GLWrect r = clientRect();
 	glPushMatrix();
 	glTranslatef(r.x0, r.y0, 0);
 	glColor4f(.5,.5,.5,1);
-/*	glBegin(GL_LINES);
-	for(int y = 1; y < ybuttons; y++){
-		glVertex2i(0, y * ybuttonsize);
-		glVertex2i(xbuttons * xbuttonsize, y * ybuttonsize);
-	}
-	for(int x = 1; x < xbuttons; x++){
-		glVertex2i(x * xbuttonsize, 0);
-		glVertex2i(x * xbuttonsize, ybuttons * ybuttonsize);
-	}
-	glEnd();*/
 	for(int y = 0; y < buttons.size(); y++){
 		if(buttons[y])
 			buttons[y]->draw(ws, 0);

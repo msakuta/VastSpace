@@ -190,6 +190,21 @@ register_console_command("chart", function(...){
 	}
 });
 
+register_console_command("chat", function(...){
+	if(!("chat" in this) || chat == null || !chat.alive){
+		chat <- GLWchat();
+		chat.x = taskbar.x + taskbar.width;
+		chat.width = 500;
+		chat.y = 0;
+		chat.height = 200;
+		chat.closable = true;
+		chat.pinnable = true;
+		chat.pinned = true;
+	}
+	else
+		chat.close();
+});
+
 function control(...){
 	if(player.isControlling())
 		player.controlled = null;
@@ -273,11 +288,15 @@ function init_Universe(){
 
 controlStats <- CStatistician();
 
+taskbar <- null;
 sysbut <- null;
 
 function initUI(){
 	local scw = screenwidth();
 	local sch = screenheight();
+
+	taskbar = GLWtaskBar();
+	taskbar.addButton("chat", "textures/chat.png", tlate("Chat"));
 
 	local entlist = GLWentlist();
 	entlist.title = tlate("Entity List");
@@ -318,14 +337,7 @@ function initUI(){
 //	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 	cambut.pinned = true;
 
-	local chat = GLWchat();
-	chat.x = 0;
-	chat.width = 500;
-	chat.y = 0;
-	chat.height = 200;
-	chat.closable = true;
-	chat.pinnable = true;
-	chat.pinned = true;
+	cmd("chat");
 
 	// Function to return pause state
 	local pause_state = @() universe.paused;

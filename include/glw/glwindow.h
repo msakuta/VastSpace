@@ -291,8 +291,9 @@ protected:
 
 	static const int GLWSIZEABLE_BORDER;
 	static GLwindow *glwfocus;
+protected:
+	virtual void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 private:
-	void drawInt(GLwindowState &vp, double t, int mousex, int mousey, int, int);
 	void glwFree();
 };
 

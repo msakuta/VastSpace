@@ -749,6 +749,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\glw\GLWtaskBar.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\glw\message.cpp"
 					>
 				</File>
@@ -1159,10 +1163,6 @@
 				Name="glw"
 				>
 				<File
-					RelativePath="..\include\glw\chat.h"
-					>
-				</File>
-				<File
 					RelativePath="..\include\glw\GLWchart.h"
 					>
 				</File>
@@ -1172,6 +1172,10 @@
 				</File>
 				<File
 					RelativePath="..\include\glw\glwindow.h"
+					>
+				</File>
+				<File
+					RelativePath="..\include\glw\GLWtaskBar.h"
 					>
 				</File>
 				<File

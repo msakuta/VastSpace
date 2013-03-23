@@ -1274,7 +1274,7 @@ void GLWcommandButton::draw(GLwindowState &ws, double){
 		texlist = tcb->getList();
 	else{
 		suftexparam_t stp;
-		stp.flags = STP_MINFIL;
+		stp.flags = STP_MINFIL | STP_ALPHA;
 		stp.minfil = GL_LINEAR;
 		texlist = CallCacheBitmap(texname, texname, &stp, NULL);
 	}

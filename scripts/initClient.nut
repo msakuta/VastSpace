@@ -190,21 +190,6 @@ register_console_command("chart", function(...){
 	}
 });
 
-register_console_command("chat", function(...){
-	if(!("chat" in this) || chat == null || !chat.alive){
-		chat <- GLWchat();
-		chat.x = taskbar.x + taskbar.width;
-		chat.width = 500;
-		chat.y = 0;
-		chat.height = 200;
-		chat.closable = true;
-		chat.pinnable = true;
-		chat.pinned = true;
-	}
-	else
-		chat.close();
-});
-
 function control(...){
 	if(player.isControlling())
 		player.controlled = null;
@@ -301,6 +286,22 @@ function initUI(){
 		return (name in this) && this[name] != null && this[name].alive;
 	}
 
+	local function chatFunc(){
+		if(!isWindow("chatWindow")){
+			local chat = GLWchat();
+			chat.x = taskbar.x + taskbar.width;
+			chat.width = 500;
+			chat.y = 0;
+			chat.height = 200;
+			chat.closable = true;
+			chat.pinnable = true;
+			chat.pinned = true;
+			chatWindow <- chat;
+		}
+		else
+			chatWindow.collapsed = !chatWindow.collapsed;
+	}
+
 	local function entlistFunc(){
 		if(!isWindow("entlistWindow")){
 			local entlist = GLWentlist();
@@ -315,7 +316,7 @@ function initUI(){
 			entlistWindow <- entlist;
 		}
 		else
-			entlistWindow.close();
+			entlistWindow.collapsed = !entlistWindow.collapsed;
 	}
 
 	local function commandButtonFunc(){
@@ -337,7 +338,7 @@ function initUI(){
 			commandButtons <- but;
 		}
 		else
-			commandButtons.close();
+			commandButtons.collapsed = !commandButtons.collapsed;
 	}
 
 	local function cameraButtonFunc(){
@@ -359,11 +360,11 @@ function initUI(){
 			cameraButtons <- cambut;
 		}
 		else
-			cameraButtons.close();
+			cameraButtons.collapsed = !cameraButtons.collapsed;
 	}
 
 	taskbar = GLWtaskBar();
-	taskbar.addButton("chat", "textures/chat.png", tlate("Chat"));
+	taskbar.addButton(GLWsqStateButton("textures/chat.png", null, @() true, chatFunc, tlate("Chat")));
 	taskbar.addButton(GLWsqStateButton("textures/entlist.png", "textures/entlist.png",
 		@() true, entlistFunc, tlate("Entity List")));
 	taskbar.addButton(GLWsqStateButton("textures/commands.png", "textures/commands.png",

@@ -287,6 +287,9 @@ void GLwindow::reshapeFunc(int w, int h){
 				align |= AlignY1;
 		}
 
+		// We really wanted to name the flags AlignLeft, AlignRight and such.
+		// But concept of up and down can vary in coordinate systems, so we
+		// just name the flags with relative coordinate values.
 		if((AlignX0 | AlignX1) == (align & (AlignX0 | AlignX1)))
 			r.x1 = w;
 		else if(align & AlignX1)
@@ -985,6 +988,10 @@ SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
 		sq_pushbool(v, getPinnable());
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("collapsed"))){
+		sq_pushbool(v, flags & GLW_COLLAPSE);
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("title"))){
 		sq_pushstring(v, getTitle(), -1);
 		return 1;
@@ -1013,6 +1020,16 @@ SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return SQ_ERROR;
 		setPinnable(!!b);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("collapsed"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		if(b)
+			flags |= GLW_COLLAPSE;
+		else
+			flags &= ~GLW_COLLAPSE;
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("title"))){

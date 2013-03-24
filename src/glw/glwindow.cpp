@@ -585,10 +585,26 @@ void GLwindow::focusEnter(){
 		onFocusEnter(this);
 }
 
-///< Derived classes can override to define focus responses.
+/// Derived classes can override to define focus responses.
 void GLwindow::focusLeave(){
 	if(onFocusLeave)
 		onFocusLeave(this);
+}
+
+bool GLwindow::mouseHit(GLwindowState &ws, int x, int y)const{
+	if(this->flags & GLW_COLLAPSE){
+		int minix = 2, miniy = ws.h - r_titlebar_height - 2;
+		int wx, wy;
+		int ww = this->title ? strlen(this->title) * fontwidth + 2 : 80;
+		if(ww < ws.w && ws.w < minix + ww)
+			wx = minix = 2, wy = miniy -= r_titlebar_height + 2;
+		else
+			wx = minix, wy = miniy;
+		int wh = r_titlebar_height;
+		return GLWrect(wx, wy, wx + ww, wy + wh).include(x, y);
+	}
+	else
+		return extentRect().include(x, y);
 }
 
 /// \param key Key code of inputs from the keyboard. Printable keys are passed as its ASCII code.
@@ -682,7 +698,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 	}
 	else
 		wx = wnd->xpos, wy = wnd->ypos, ww = wnd->width, wh = wnd->height;
-	if((nowheel || glwfocus == wnd) && wx <= x && x <= wx + ww && wy <= y && y <= wy + wh){
+	if((nowheel || glwfocus == wnd) && wnd->mouseHit(ws, x, y)){
 		const int iconsize = titleheight - margin;
 		int sysx = wnd->width - titleheight - (wnd->flags & GLW_CLOSE ? iconsize : 0);
 		int pinx = sysx - (wnd->flags & GLW_COLLAPSABLE ? iconsize : 0);
@@ -1216,9 +1232,13 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 		localrect.rmove(parentrect.x0, parentrect.y0);
 
 		// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
-		if(ws.w < localrect.x1)
+		if(localrect.x0 < 0)
+			localrect.move(0, localrect.y0);
+		else if(ws.w < localrect.x1)
 			localrect.rmove(ws.w - localrect.x1, 0);
-		if(ws.h < localrect.y1)
+		if(localrect.y0 < 0)
+			localrect.move(localrect.x0, 0);
+		else if(ws.h < localrect.y1)
 			localrect.rmove(0, ws.h - localrect.y1);
 
 		glwtip->setExtent(localrect);

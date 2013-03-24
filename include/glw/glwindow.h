@@ -206,6 +206,10 @@ public:
 	/// \return If this method processes the event and the default reaction is to be suppressed.
 	virtual bool mouseNC(GLwindowState &ws, int key, int state, int x, int y){return false;}
 
+	/// \brief Defines mouse hit shape for this GLwindow.
+	/// \param x,y screen coordinates
+	virtual bool mouseHit(GLwindowState &ws, int x, int y)const;
+
 	/// Key event function, returns nonzero if processed
 	virtual int key(int key);
 

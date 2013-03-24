@@ -5,3 +5,4 @@ src/Bullet.cpp = native
 src/dedsvr.cpp = native
 src/glw/GLWentlist.cpp = native
 src/glw/GLWtaskBar.cpp = native
+src/glw/GLWtip.h = native

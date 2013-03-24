@@ -26,6 +26,7 @@ public:
 		glwAppend(this); // Append after the object is constructed.
 	}
 	virtual bool focusable()const{return false;}
+	virtual bool mouseHit(GLwindowState &, int, int)const{return false;} ///< Never hits
 	virtual void draw(GLwindowState &ws, double t){
 		if(!tips)
 			return;

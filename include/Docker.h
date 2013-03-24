@@ -92,7 +92,7 @@ struct EXPORT UndockQueueCommand : public SerializableCommand{
 class GLWdock : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWdock(const char *title, Docker *a) : st(title), docker(a), grouping(false){
+	GLWdock(Game *game, const char *title, Docker *a) : st(game, title), docker(a), grouping(false){
 		flags |= GLW_CLOSE | GLW_COLLAPSABLE;
 		xpos = 100;
 		ypos = 200;

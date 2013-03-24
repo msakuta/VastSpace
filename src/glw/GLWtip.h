@@ -17,7 +17,7 @@ class GLWtip : public GLwindow{
 public:
 	cpplib::dstring tips;
 	GLelement *parent;
-	GLWtip() : st(), tips(NULL), parent(NULL){
+	GLWtip(Game *game) : st(game), tips(NULL), parent(NULL){
 		xpos = -100;
 		ypos = -100;
 		width = -100;

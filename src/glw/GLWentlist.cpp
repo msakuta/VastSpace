@@ -541,7 +541,7 @@ int GLWentlist::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 		typedef PopupMenuItemFunctionT<GLWentlist> PopupMenuItemFunction;
 #define APPENDER(a,s) ((a) ? "* " s : "  " s)
 
-		glwPopupMenu(ws, PopupMenu()
+		glwPopupMenu(game, ws, PopupMenu()
 			.append(new PopupMenuItemFunction(APPENDER(listmode == Select, "Show Selected"), this, &GLWentlist::menu_select))
 			.append(new PopupMenuItemFunction(APPENDER(listmode == All, "Show All"), this, &GLWentlist::menu_all))
 			.append(new PopupMenuItemFunction(APPENDER(listmode == Universe, "Show Universally"), this, &GLWentlist::menu_universe))
@@ -664,7 +664,7 @@ const ClassId BinaryOpItemCriterion::sid = "ItemCriterionNot";
 class GLWentlistCriteria : public GLwindowSizeable{
 public:
 	GLWentlist *p;
-	GLWentlistCriteria(GLWentlist *p) : p(p), GLwindowSizeable("Entity List Criteria"){
+	GLWentlistCriteria(GLWentlist *p) : p(p), GLwindowSizeable(p->getGame(), "Entity List Criteria"){
 		width = 450;
 		height = 300;
 		setClosable(true);
@@ -856,7 +856,7 @@ public:
 			PopupMenu pm;
 			for(Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin(); it != Entity::constEntityCtorMap().end(); it++)
 				pm.append(new PopupMenuItemCriterion<tt, const char *, &tt::cid>(it->first, this, it->first));
-			glwPopupMenu(ws, pm);
+			glwPopupMenu(p->getGame(), ws, pm);
 			return 1;
 		}
 		return 0;
@@ -886,7 +886,7 @@ public:
 			pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(gltestp::dstring() << "Unspecified", this, -1));
 			for(int i = 0; i < 4; i++)
 				pm.append(new PopupMenuItemCriterion<tt, int, &tt::team>(gltestp::dstring() << "Team " << i, this, i));
-			glwPopupMenu(ws, pm);
+			glwPopupMenu(p->getGame(), ws, pm);
 			return 1;
 		}
 		return 0;
@@ -912,7 +912,7 @@ public:
 			PopupMenu pm;
 			const CoordSys *root = p->p->getPlayer()->cs->findcspath("/");
 			mouseint(root, pm);
-			glwPopupMenu(ws, pm);
+			glwPopupMenu(p->getGame(), ws, pm);
 			return 1;
 		}
 		return 0;
@@ -976,7 +976,7 @@ int ItemCriterion::mouse(GLwindowState &ws, GLWentlistCriteria *p, MouseParams &
 				return 1; // Be sure to return 1 here or access violation will occur
 			}
 			if(cr.x1 - p->getFontHeight() * 2 < mp.mx && mp.mx < cr.x1 - p->getFontHeight()){
-				glwPopupMenu(ws, PopupMenu()
+				glwPopupMenu(p->getGame(), ws, PopupMenu()
 /*					.append(new GLWentlistCriteria::MenuItemInsertCriterion<SelectedItemCriterion>("Selected", this))
 					.append(new GLWentlistCriteria::MenuItemInsertCriterion<ClassItemCriterion>("Class Name", this))
 					.append(new GLWentlistCriteria::MenuItemInsertCriterion<TeamItemCriterion>("Team", this))
@@ -1030,7 +1030,7 @@ int GLWentlistCriteria::mouse(GLwindowState &ws, int key, int state, int mx, int
 	cr.y0 = mp.y;
 	cr.y1 = cr.y0 + lineHeight();
 	if(cr.include(mx, my) && key == GLUT_LEFT_BUTTON && state == GLUT_UP){
-		glwPopupMenu(ws, PopupMenu()
+		glwPopupMenu(game, ws, PopupMenu()
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Selected", this, &GLWentlistCriteria::addCriterion<SelectedItemCriterion>))
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Class Name", this, &GLWentlistCriteria::addCriterion<ClassItemCriterion>))
 			.append(new PopupMenuItemFunctionT<GLWentlistCriteria>("Team", this, &GLWentlistCriteria::addCriterion<TeamItemCriterion>))

@@ -1,9 +1,9 @@
 /** \file
  * \brief Implementation of GLWmessage.
  */
+#include "glw/message.h"
 #include "cmd.h"
 #include "sqadapt.h"
-#include "glw/message.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -22,8 +22,8 @@ extern "C"{
  * \param timer Sets time to display the message. Set zero to introduce infinite message.
  * \param v A Squirrel VM to invoke onDestroy script on.
  * \param onDestroy Squirrel script executed on destructon of this object. */
-GLWmessage::GLWmessage(const char *messagestring, double atimer, HSQUIRRELVM av, const char *aonDestroy)
-: resized(false), string(messagestring), timer(atimer), v(av), onDestroy(aonDestroy){
+GLWmessage::GLWmessage(Game *game, const char *messagestring, double atimer, HSQUIRRELVM av, const char *aonDestroy)
+: st(game), resized(false), string(messagestring), timer(atimer), v(av), onDestroy(aonDestroy){
 	sq_resetobject(&hoOnDestroy);
 }
 
@@ -33,8 +33,8 @@ GLWmessage::GLWmessage(const char *messagestring, double atimer, HSQUIRRELVM av,
  * \param v A Squirrel VM to invoke hoOnDestroy function on.
  * \param ahoOnDestroy Squirrel function or closure object called on destructon of this object.
  *        Parameter is not checked if it's valid function but called anyway. */
-GLWmessage::GLWmessage(const char *messagestring, double atimer, HSQUIRRELVM av, HSQOBJECT &ahoOnDestroy)
-: resized(false), string(messagestring), timer(atimer), v(av), hoOnDestroy(ahoOnDestroy){
+GLWmessage::GLWmessage(Game *game, const char *messagestring, double atimer, HSQUIRRELVM av, HSQOBJECT &ahoOnDestroy)
+: st(game), resized(false), string(messagestring), timer(atimer), v(av), hoOnDestroy(ahoOnDestroy){
 	// Unhappy mess with raw object handling, but we cannot lose the Squirrel object.
 	sq_addref(g_sqvm, &hoOnDestroy);
 }
@@ -112,6 +112,7 @@ bool GLWmessage::sq_define(HSQUIRRELVM v){
 /// Squirrel constructor
 SQInteger GLWmessage::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
 	const SQChar *string;
 	SQFloat timer;
 	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &string)))
@@ -124,12 +125,12 @@ SQInteger GLWmessage::sqf_constructor(HSQUIRRELVM v){
 		const SQChar *onDestroy;
 		HSQOBJECT ho;
 		if(SQ_SUCCEEDED(sq_getstring(v, 4, &onDestroy)))
-			p = new GLWmessage(string, timer, v, onDestroy);
+			p = new GLWmessage(game, string, timer, v, onDestroy);
 		else if(SQ_SUCCEEDED(sq_getstackobj(v, 4, &ho)))
-			p = new GLWmessage(string, timer, v, ho);
+			p = new GLWmessage(game, string, timer, v, ho);
 	}
 	if(!p)
-		p = new GLWmessage(string, timer);
+		p = new GLWmessage(game, string, timer);
 
 	sq_assignobj(v, p);
 	glwAppend(p);

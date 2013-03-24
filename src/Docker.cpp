@@ -346,7 +346,7 @@ static int cmd_dockmenu(int argc, char *argv[], void *pv){
 		return 0;
 	Docker *pb = (*pl->selected.begin())->getDocker();
 	if(pb)
-		glwAppend(new GLWdock("Dock", pb));
+		glwAppend(new GLWdock(app->clientGame, "Dock", pb));
 	return 0;
 }
 

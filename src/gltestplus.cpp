@@ -1430,14 +1430,14 @@ void entity_popup(Player::SelectSet &ss, GLwindowState &ws, int selectchain){
 	if(selectchain){
 		for(Player::SelectSet::iterator it = ss.begin(); it != ss.end(); it++)
 			(*it)->popupMenu(*menus);
-		glw = glwPopupMenu(ws, *menus);
+		glw = glwPopupMenu(application.clientGame, ws, *menus);
 	}
 	else if(!ss.empty()){
 		(*ss.begin())->popupMenu(*menus);
-		glw = glwPopupMenu(ws, *menus);
+		glw = glwPopupMenu(application.clientGame, ws, *menus);
 	}
 	else
-		glw = glwPopupMenu(ws, *menus);
+		glw = glwPopupMenu(application.clientGame, ws, *menus);
 	delete menus;
 }
 

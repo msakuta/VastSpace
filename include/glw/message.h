@@ -15,8 +15,8 @@
 class GLWmessage : public GLwindow{
 public:
 	typedef GLwindow st;
-	GLWmessage(const char *messagestring, double timer = 0., HSQUIRRELVM v = NULL, const char *onDestroy = NULL);
-	GLWmessage(const char *messagestring, double timer, HSQUIRRELVM v, HSQOBJECT &hoOnDestroy);
+	GLWmessage(Game *, const char *messagestring, double timer = 0., HSQUIRRELVM v = NULL, const char *onDestroy = NULL);
+	GLWmessage(Game *, const char *messagestring, double timer, HSQUIRRELVM v, HSQOBJECT &hoOnDestroy);
 	~GLWmessage();
 	virtual void draw(GLwindowState &ws, double);
 	virtual void anim(double dt);

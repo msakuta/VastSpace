@@ -40,7 +40,7 @@ public:
 	class TimeChartSeries;
 	class SampledChartSeries;
 
-	GLWchart(const char *title, ChartSeries *_series = NULL);
+	GLWchart(Game *game, const char *title, ChartSeries *_series = NULL);
 
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 

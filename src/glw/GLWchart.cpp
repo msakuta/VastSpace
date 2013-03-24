@@ -126,7 +126,7 @@ public:
 static sqa::Initializer definer("GLWchart", GLWchart::sq_define);
 
 
-GLWchart::GLWchart(const char *title, ChartSeries *_series) : st(title), sampled(NULL){
+GLWchart::GLWchart(Game *game, const char *title, ChartSeries *_series) : st(game, title), sampled(NULL){
 	flags = GLW_CLOSE | GLW_COLLAPSABLE;
 	if(_series)
 		series.push_back(_series);
@@ -191,7 +191,7 @@ int GLWchart::mouse(GLwindowState &ws, int button, int state, int x, int y){
 		pm.append(new PopupMenuItemAddSeries<FrameRateHistogramChartSeries>("Add frame rate histogram", this));
 		pm.append(new PopupMenuItemAddSeries<RecvBytesHistogramChartSeries>("Add received bytes histogram", this));
 
-		glwPopupMenu(ws, pm);
+		glwPopupMenu(game, ws, pm);
 	}
 	return 1;
 }
@@ -297,8 +297,9 @@ bool GLWchart::sq_define(HSQUIRRELVM v){
 /// Squirrel constructor
 SQInteger GLWchart::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
 
-	GLWchart *p = new GLWchart("Chart");
+	GLWchart *p = new GLWchart(game, "Chart");
 
 	sq_assignobj(v, p);
 	glwAppend(p);

@@ -228,29 +228,8 @@ GLwindow *GLwindow::glwfocus = NULL; ///< Focused window.
 GLwindow *glwdrag = NULL; ///< Window being dragged.
 int glwdragpos[2] = {0}; ///< Memory for starting position of dragging.
 
-/** \brief Sets title string
- * \param title pointer to string to initialize the window's title. Can be freed after construction.
- */
-GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
-	if(atitle){
-		title = new char[strlen(atitle)+1];
-		strcpy(title, atitle);
-	}
-	else
-		title = NULL;
 
-	// Default is to snap on border
-	align |= AlignAuto;
-}
-
-GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
-	if(atitle){
-		title = new char[strlen(atitle)+1];
-		strcpy(title, atitle);
-	}
-	else
-		title = NULL;
-
+GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), title(atitle), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
 	// Default is to snap on border
 	align |= AlignAuto;
 }
@@ -389,7 +368,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	}
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		GLWrect r = cr;
-		if(title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))
+		if(title.len() || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))
 			r.y0 -= fontheight + margin;
 		glPushAttrib(GL_SCISSOR_BIT);
 
@@ -419,7 +398,7 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	}
 
 	// System command icon buttons. Do not draw if pinned and mouse pointer is afar.
-	if(32 < alpha && !(flags & GLW_COLLAPSE) && (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
+	if(32 < alpha && !(flags & GLW_COLLAPSE) && (title.len() || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE))){
 		glColor4ub(255,255, 255 * (glwfocus == this), alpha);
 		glBegin(GL_LINES);
 		glVertex2d(wx, wy + titleheight);
@@ -473,14 +452,14 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	}
 	else
 		x = width;
-	if(32 < alpha && title){
+	if(32 < alpha && title.len()){
 		glColor4ub(255,255,255,255);
 		if(flags & GLW_COLLAPSE)
 			glwpos2d(wx, wy + fontheight);
 		else
 			glwpos2d(wx + margin, wy + titleheight);
 //		glwprintf("%.*s", (int)(x / fontwidth), title);
-		glwprintf("%s", title);
+		glwprintf("%s", title.c_str());
 	}
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPopAttrib();
@@ -514,7 +493,7 @@ void GLwindow::glwDrawMinimized(GLwindowState &gvp, double t, int *pp){
 	int minix = 2, miniy = gvp.h - r_titlebar_height - 2;
 	for(wnd = glwlist; wnd; wnd = wnd->next) if(wnd->flags & GLW_COLLAPSE){
 		int wx, wy, ww, wh;
-		ww = wnd->title ? strlen(wnd->title) * fontwidth + 2 : 80;
+		ww = wnd->title.len() ? wnd->title.len() * fontwidth + 2 : 80;
 		if(ww < gvp.w && gvp.w < minix + ww)
 			wx = minix = 2, wy = miniy -= r_titlebar_height + 2;
 		else
@@ -571,20 +550,13 @@ void GLwindow::glwFree(){
 
 /// Sets or replaces window title string.
 void GLwindow::setTitle(const char *atitle){
-	if(title)
-		delete[] title;
-	if(atitle){
-		title = new char[strlen(atitle)+1];
-		strcpy(title, atitle);
-	}
-	else
-		title = NULL;
+	title = atitle;
 }
 
 const char *GLwindow::classname()const{return "GLwindow";}
-GLWrect GLwindow::clientRect()const{return GLWrect(xpos + margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
+GLWrect GLwindow::clientRect()const{return GLWrect(xpos + margin, (title.len() || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? ypos + margin + fontheight : ypos + margin, xpos + width - margin, ypos + height - margin);}
 GLWrect GLwindow::extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
-GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.x0 - margin, (title || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.y0 - margin - fontheight : r.y0 - margin, r.x1 + margin, r.y1 + margin);}
+GLWrect GLwindow::adjustRect(const GLWrect &r)const{return GLWrect(r.x0 - margin, (title.len() || flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) ? r.y0 - margin - fontheight : r.y0 - margin, r.x1 + margin, r.y1 + margin);}
 /// Derived classes can override the default attribute.
 bool GLwindow::focusable()const{return true;}
 /// Draws client area.
@@ -621,7 +593,7 @@ bool GLwindow::mouseHit(GLwindowState &ws, int x, int y)const{
 	if(this->flags & GLW_COLLAPSE){
 		int minix = 2, miniy = ws.h - r_titlebar_height - 2;
 		int wx, wy;
-		int ww = this->title ? strlen(this->title) * fontwidth + 2 : 80;
+		int ww = this->title.len() ? this->title.len() * fontwidth + 2 : 80;
 		if(ww < ws.w && ws.w < minix + ww)
 			wx = minix = 2, wy = miniy -= r_titlebar_height + 2;
 		else
@@ -641,10 +613,7 @@ int GLwindow::specialKey(int){return 0;}
 /// \param dt frametime of this frame.
 void GLwindow::anim(double){}
 void GLwindow::postframe(){}
-GLwindow::~GLwindow(){
-	if(title)
-		delete[] title;
-}
+GLwindow::~GLwindow(){}
 
 GLwindow *GLwindow::lastover = NULL;
 GLwindow *GLwindow::captor = NULL;
@@ -714,7 +683,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 		}
 	}
 	if(wnd->flags & GLW_COLLAPSE){
-		ww = wnd->title ? strlen(wnd->title) * fontwidth + 2 : 80;
+		ww = wnd->title.len() ? wnd->title.len() * fontwidth + 2 : 80;
 		if(ww < ws.w && ws.w < minix + ww)
 			wx = minix = 2, wy = miniy -= r_titlebar_height + 2;
 		else
@@ -741,7 +710,7 @@ int GLwindow::mouseFuncNC(GLwindow **ppwnd, GLwindowState &ws, int button, int s
 		}
 
 		// Titlebar branch
-		if((wnd->title || wnd->flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
+		if((wnd->title.len() || wnd->flags & (GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE)) && wnd->ypos <= y && y <= wnd->ypos + titleheight){
 			if(wnd->flags & GLW_COLLAPSE || wnd->flags & GLW_COLLAPSABLE && wnd->xpos + sysx <= x && x <= wnd->xpos + sysx + iconsize){
 	//				ret = 1;
 				killfocus = 0;
@@ -1146,14 +1115,6 @@ int glwVScrollBarMouse(GLwindow *wnd, int mousex, int mousey, int x0, int y0, in
 const int GLwindowSizeable::GLWSIZEABLE_BORDER = 6;
 
 
-
-GLwindowSizeable::GLwindowSizeable(const char *title) : st(title){
-	flags |= GLW_SIZEABLE;
-	ratio = 1.;
-	sizing = 0;
-	minw = minh = 40;
-	maxw = maxh = 1000;
-}
 
 GLwindowSizeable::GLwindowSizeable(Game *game, const char *title) : st(game, title){
 	flags |= GLW_SIZEABLE;
@@ -1759,7 +1720,7 @@ static sqa::Initializer init_GLWbuttonMatrix("GLWbuttonMatrix", GLWbuttonMatrix_
 class GLWprop : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWprop(const char *title, Entity *e = NULL) : st(title), a(e){
+	GLWprop(Game *game, const char *title, Entity *e = NULL) : st(game, title), a(e){
 		xpos = 120;
 		ypos = 40;
 		width = 200;
@@ -1779,7 +1740,7 @@ int Entity::cmd_property(int argc, char *argv[], void *pv){
 	Player *ppl = pclient->clientGame->player;
 	if(!ppl || ppl->selected.empty())
 		return 0;
-	glwAppend(new GLWprop(cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
+	glwAppend(new GLWprop(application.clientGame, cpplib::dstring("Entity Property ") << counter++, *ppl->selected.begin()));
 	return 0;
 }
 
@@ -2217,6 +2178,6 @@ static int vrc_fontscale(void *pv){
 
 int glwInit(){
 	CvarAddVRC("g_font_scale", &GLwindow::glwfontscale, cvar_double, vrc_fontscale);
-	glwtip = new GLWtip();
+	glwtip = new GLWtip(application.clientGame);
 	return 0;
 }

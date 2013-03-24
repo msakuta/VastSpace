@@ -1072,7 +1072,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			if(targeta)
 				menu.append(new PopupMenuItemInfo(this, targeta));
 
-			glw = glwPopupMenu(ws, menu);
+			glw = glwPopupMenu(game, ws, menu);
 
 #else
 //			sprintf(titles[j] = titles0[i], "Focus");
@@ -1280,7 +1280,7 @@ public:
 	int type;
 	struct teleport *tp;
 	Astrobj *a;
-	GLWinfo(const char *title) : st(title){}
+	GLWinfo(Game *game, const char *title) : st(game, title){}
 	virtual void draw(GLwindowState &ws, double t);
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 };
@@ -1366,7 +1366,7 @@ int GLWinfo::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 }
 
 GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
-	GLWinfo *ret = new GLWinfo(cpplib::dstring(name) << " Property");
+	GLWinfo *ret = new GLWinfo(cs->getGame(), cpplib::dstring(name) << " Property");
 	ret->setExtent(GLWrect(75, 75, 75 + 260, 75 + 2 * 12 + 10 * 12));
 	ret->setClosable(true);
 	ret->setCollapsable(true);

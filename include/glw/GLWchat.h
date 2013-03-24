@@ -13,7 +13,7 @@
 class GLWchat : public GLwindowSizeable{
 public:
 	typedef GLwindow st;
-	GLWchat();
+	GLWchat(Game *);
 	~GLWchat();
 	virtual void changeExtent();
 	virtual void draw(GLwindowState &ws, double);

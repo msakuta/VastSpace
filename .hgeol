@@ -1,8 +1,14 @@
 [patterns]
 include/Game.h = native
+include/glw/GLWchat.h = native
 include/glw/GLWtaskBar.h = native
+include/glw/message.h = native
 src/Bullet.cpp = native
 src/dedsvr.cpp = native
+src/glw/GLWchat.cpp = native
 src/glw/GLWentlist.cpp = native
+src/glw/GLWmenu.cpp = native
+src/glw/GLWmenu.h = native
 src/glw/GLWtaskBar.cpp = native
 src/glw/GLWtip.h = native
+src/glw/message.cpp = native

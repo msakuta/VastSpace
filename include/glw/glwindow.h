@@ -94,9 +94,6 @@ struct GLwindowState{
  */
 class EXPORT GLelement : public Serializable, public Observable{
 public:
-	/// Obsolete; the version with two args is recommended, the game object should be initialized.
-	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), align(AlignX0 | AlignY0), onChangeExtent(NULL){}
-
 	/// The constructor that can initialize the game object pointer.
 	GLelement(Game *game, const char *title = NULL) : Serializable(game), xpos(0), ypos(0), width(100), height(100), flags(0),
 		align(AlignX0 | AlignY0), onChangeExtent(NULL){}
@@ -269,14 +266,11 @@ public:
 	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.
 
 protected:
-	/// Obsolete; the version with two args is recommended, the game object should be initialized.
-	GLwindow(const char *title = NULL);
-
 	/// The constructor that can initialize the game object pointer.
 	GLwindow(Game *game, const char *title = NULL);
 
 	/// The title string of this window.
-	char *title;
+	gltestp::dstring title;
 
 	/// Next window in window list. Early windows are drawn over later windows in the list.
 	GLwindow *next;
@@ -366,9 +360,6 @@ protected:
 	int sizing; /* edge flags of changing borders */
 	int minw, minh, maxw, maxh;
 public:
-	/// Obsolete; the version with two args is recommended, the game object should be initialized.
-	GLwindowSizeable(const char *title);
-
 	/// The constructor that can initialize the game object pointer.
 	GLwindowSizeable(Game *game, const char *title = NULL);
 

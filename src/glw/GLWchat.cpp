@@ -34,7 +34,7 @@ static HFONT hEditFont = NULL;
 
 /** \brief Constructs a chat window.
  */
-GLWchat::GLWchat() : GLwindowSizeable("Chat Window"), scrollpos(0){
+GLWchat::GLWchat(Game *game) : GLwindowSizeable(game, "Chat Window"), scrollpos(0){
 	wndlist.insert(this);
 
 	// Create the Windows Edit window instance
@@ -150,8 +150,9 @@ bool GLWchat::sq_define(HSQUIRRELVM v){
 /// Squirrel constructor
 SQInteger GLWchat::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
 
-	GLWchat *p = new GLWchat();
+	GLWchat *p = new GLWchat(game);
 
 	sq_assignobj(v, p);
 	glwAppend(p);

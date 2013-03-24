@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of GLWmenu.
  */
+#include "GLWmenu.h"
 #include "glw/glwindow.h"
 #include "cmd.h"
 #include "antiglut.h"
@@ -8,7 +9,7 @@
 #include "draw/material.h"
 #include "Player.h" // GLWmoveOrderButton
 #include "sqadapt.h"
-#include "GLWmenu.h"
+#include "Application.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/GL/gldraw.h>
@@ -27,8 +28,8 @@ public:
 	typedef GLWmenu st;
 	static const int bigfontheight = 24;
 	int *widths;
-	GLWbigMenu(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
-		: st(title, count, menutitles, keys, cmd, sticky), widths(NULL){
+	GLWbigMenu(Game *game, const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
+		: st(game, title, count, menutitles, keys, cmd, sticky), widths(NULL){
 		flags &= ~(GLW_CLOSE | GLW_COLLAPSABLE | GLW_PINNABLE);
 	}
 	virtual GLWmenu *addItem(MenuItem *item){
@@ -130,7 +131,7 @@ GLWmenu::~GLWmenu(){
 /// \return Constructed GLWmenu object.
 /// \relates GLWmenu
 GLWmenu *glwMenu(const char *name, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
-	return new GLWmenu(name, count, menutitles, keys, cmd, sticky);
+	return new GLWmenu(application.clientGame, name, count, menutitles, keys, cmd, sticky);
 }
 
 /// \brief Constructs a GLWmenu object of given items.
@@ -139,7 +140,7 @@ GLWmenu *glwMenu(const char *name, int count, const char *const menutitles[], co
 /// \params flags ???
 /// \relates GLWmenu
 GLWmenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
-	return new GLWmenu(name, list, flags);
+	return new GLWmenu(application.clientGame, name, list, flags);
 }
 
 /// \brief Constructs a GLWmenu object of given items.
@@ -149,7 +150,9 @@ GLWmenu *glwMenu(const char *name, const PopupMenu &list, unsigned flags){
 /// \param menutitles Pointer to array of strings for displaying menu items. \param keys Pointer to array of keyboard shortcuts. \param cmd Pointer to array of strings for console commands that are executed when menu item is selected.
 /// \param stickey ???
 /// \return Constructed GLWmenu object.
-GLWmenu::GLWmenu(const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky) : st(title), count(acount), menus(NULL){
+GLWmenu::GLWmenu(Game *game, const char *title, int acount, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky)
+	: st(game, title), count(acount), menus(NULL)
+{
 	GLwindow *ret = this;
 	int i, len, maxlen = 0;
 //	menus = (glwindowmenuitem*)malloc(count * sizeof(*menus));
@@ -185,7 +188,7 @@ GLWmenu::GLWmenu(const char *title, int acount, const char *const menutitles[], 
 		ret->w = maxlen * fontwidth + 2;*/
 }
 
-GLWmenu::GLWmenu(const char *title, const PopupMenu &list, unsigned aflags) : st(title), count(list.count()), menus(new PopupMenu(list)){
+GLWmenu::GLWmenu(Game *game, const char *title, const PopupMenu &list, unsigned aflags) : st(game, title), count(list.count()), menus(new PopupMenu(list)){
 	flags = aflags & (GLW_CLOSE | GLW_SIZEABLE | GLW_COLLAPSABLE | GLW_PINNABLE); // filter the bits
 	width = 150;
 	for(MenuItem *mi = menus->get(); mi; mi = mi->next){
@@ -246,13 +249,14 @@ int GLWmenu::cmd_addcmdmenuitem(int argc, char *argv[], void *p){
 
 SQInteger GLWmenu::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
+	Game *game = (Game *)sq_getforeignptr(v);
 	const SQChar *title;
 	SQBool sticky;
 	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
 		title = " ";
 	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
 		sticky = false;
-	GLWmenu *p = new GLWmenu(title, 0, NULL, NULL, NULL, sticky);
+	GLWmenu *p = new GLWmenu(game, title, 0, NULL, NULL, NULL, sticky);
 	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
@@ -282,13 +286,14 @@ static SQInteger sqf_GLwindowMenu_hide(HSQUIRRELVM v){
 
 SQInteger GLWbigMenu::sqf_constructor(HSQUIRRELVM v){
 	SQInteger argc = sq_gettop(v);
+	Game *game = (Game*)sq_getforeignptr(v);
 	const SQChar *title;
 	SQBool sticky;
 	if(argc <= 1 || SQ_FAILED(sq_getstring(v, 2, &title)))
 		title = " ";
 	if(argc <= 2 || SQ_FAILED(sq_getbool(v, 2, &sticky)))
 		sticky = false;
-	GLWmenu *p = GLWmenu::newBigMenu();
+	GLWmenu *p = GLWmenu::newBigMenu(game);
 	sq_assignobj(v, p);
 	glwAppend(p);
 	return 0;
@@ -385,19 +390,19 @@ void GLWbigMenu::draw(GLwindowState &ws, double t){
 
 
 
-GLWmenu *GLWmenu::newBigMenu(){
-	return new GLWbigMenu("", 0, NULL, NULL, NULL, 1);
+GLWmenu *GLWmenu::newBigMenu(Game *game){
+	return new GLWbigMenu(game, "", 0, NULL, NULL, NULL, 1);
 }
 
 class GLWpopup : public GLWmenu{
 public:
 	typedef GLWmenu st;
-	GLWpopup(const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky, GLwindowState &gvp)
-		: st(title, count, menutitles, keys, cmd, sticky){
+	GLWpopup(Game *game, const char *title, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky, GLwindowState &gvp)
+		: st(game, title, count, menutitles, keys, cmd, sticky){
 		init(gvp);
 	}
-	GLWpopup(const char *title, GLwindowState &gvp, const PopupMenu &list)
-		: st(title, list, 0){
+	GLWpopup(Game *game, const char *title, GLwindowState &gvp, const PopupMenu &list)
+		: st(game, title, list, 0){
 		init(gvp);
 	}
 	void init(GLwindowState &gvp){
@@ -415,17 +420,17 @@ public:
 	}
 };
 
-GLwindow *glwPopupMenu(GLwindowState &gvp, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
+GLwindow *glwPopupMenu(Game *game, GLwindowState &gvp, int count, const char *const menutitles[], const int keys[], const char *const cmd[], int sticky){
 	GLwindow *ret;
 	GLWmenu *p;
 	int i, len, maxlen = 0;
-	ret = new GLWpopup(NULL, count, menutitles, keys, cmd, sticky, gvp);
+	ret = new GLWpopup(game, NULL, count, menutitles, keys, cmd, sticky, gvp);
 	glwAppend(ret);
 	return ret;
 }
 
-GLWmenu *glwPopupMenu(GLwindowState &gvp, const PopupMenu &list){
-	GLWmenu *ret = new GLWpopup(NULL, gvp, list);
+GLWmenu *glwPopupMenu(Game *game, GLwindowState &gvp, const PopupMenu &list){
+	GLWmenu *ret = new GLWpopup(game, NULL, gvp, list);
 	glwAppend(ret);
 	return ret;
 }

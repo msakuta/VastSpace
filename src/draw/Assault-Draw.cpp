@@ -144,11 +144,11 @@ class GLWarms : public GLwindowSizeable{
 	WeakPtr<Entity> a;
 public:
 	typedef GLwindowSizeable st;
-	GLWarms(const char *title, Entity *a);
+	GLWarms(Game *game, const char *title, Entity *a);
 	virtual void draw(GLwindowState &ws, double t);
 };
 
-GLWarms::GLWarms(const char *atitle, Entity *aa) : st(atitle), a(aa){
+GLWarms::GLWarms(Game *game, const char *atitle, Entity *aa) : st(game, atitle), a(aa){
 	xpos = 120;
 	ypos = 40;
 	width = 200;
@@ -183,7 +183,7 @@ static int cmd_armswindow(int argc, char *argv[], void *pv){
 	Player *ppl = game->player;
 	if(!ppl || ppl->selected.empty())
 		return 0;
-	glwAppend(new GLWarms("Equipments Window", *ppl->selected.begin()));
+	glwAppend(new GLWarms(app->clientGame, "Equipments Window", *ppl->selected.begin()));
 	return 0;
 }
 

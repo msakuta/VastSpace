@@ -95,10 +95,11 @@ struct GLwindowState{
 class EXPORT GLelement : public Serializable, public Observable{
 public:
 	/// Obsolete; the version with two args is recommended, the game object should be initialized.
-	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
+	GLelement() : xpos(0), ypos(0), width(100), height(100), flags(0), align(AlignX0 | AlignY0), onChangeExtent(NULL){}
 
 	/// The constructor that can initialize the game object pointer.
-	GLelement(Game *game, const char *title = NULL) : Serializable(game), xpos(0), ypos(0), width(100), height(100), flags(0), onChangeExtent(NULL){}
+	GLelement(Game *game, const char *title = NULL) : Serializable(game), xpos(0), ypos(0), width(100), height(100), flags(0),
+		align(AlignX0 | AlignY0), onChangeExtent(NULL){}
 
 	void rawSetExtent(const GLWrect &r); ///< Changes the extent rectangle without invoking the event handler.
 	virtual void changeExtent(); ///< Invokes event handler that is called when the size of this element is changed.
@@ -106,6 +107,12 @@ public:
 	virtual GLWrect extentRect()const; ///< Something like GetWindowRect
 	void setVisible(bool f){if(!f) flags |= GLW_INVISIBLE; else flags &= ~GLW_INVISIBLE;}
 	bool getVisible()const{return !(flags & GLW_INVISIBLE);}
+
+	/// Bit flag constants for alignment of a GLelement which controls behavior when parent component has changed size.
+	enum Alignment{AlignX0 = 1, AlignY0 = 2, AlignX1 = 4, AlignY1 = 8, AlignAuto = 16};
+
+	virtual unsigned getAlign()const{return align;}
+	virtual unsigned setAlign(unsigned align){return this->align = align;}
 
 	/// Creates and pushes an Entity object to Squirrel stack.
 	static void sq_pushobj(HSQUIRRELVM, GLelement *);
@@ -126,6 +133,7 @@ protected:
 	int xpos, ypos;
 	int width, height;
 	unsigned int flags;
+	unsigned align;
 	void (*onChangeExtent)(GLelement *); ///< The event handler that is called whenever the element size is changed.
 	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *)const; ///< The internal method to get properties, can be overridden.
 	static SQInteger sqf_get(HSQUIRRELVM v);
@@ -449,7 +457,7 @@ public:
 
 
 //-----------------------------------------------------------------------------
-//     Implementation
+//     Inline Implementation
 //-----------------------------------------------------------------------------
 
 

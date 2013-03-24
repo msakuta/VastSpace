@@ -238,6 +238,9 @@ GLwindow::GLwindow(const char *atitle) : modal(NULL), next(NULL), onFocusEnter(N
 	}
 	else
 		title = NULL;
+
+	// Default is to snap on border
+	align |= AlignAuto;
 }
 
 GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
@@ -247,6 +250,9 @@ GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), modal(NULL
 	}
 	else
 		title = NULL;
+
+	// Default is to snap on border
+	align |= AlignAuto;
 }
 
 /// Appends a GLwindow to screen window list.
@@ -279,19 +285,39 @@ void glwActivate(GLwindow **ppwnd){
 		GLwindow::getFocus()->defocus();
 }
 
-/// Called when a window is changed its size.
+/// Called when the OpenGL viewport (usually the OS's window) is changed its size.
 void GLwindow::reshapeFunc(int w, int h){
 	GLint vp[4];
 	glGetIntegerv(GL_VIEWPORT, vp);
 	GLwindow *wnd;
 	for(wnd = glwlist; wnd; wnd = wnd->next){
 		GLWrect r = wnd->extentRect();
+		unsigned align = wnd->getAlign();
+		if(align & AlignAuto){
+			// If automatic alignment is enabled, ignore preset flags first
+			align &= ~(AlignX0 | AlignX1 | AlignY0 | AlignY1);
 
-		// If a window is aligned to or crossing with border, snap it
-		if(vp[2] - vp[0] <= r.x1 || w <= r.x1)
+			// If a window is aligned to or crossing with border, snap it
+			if(r.x0 <= 0)
+				align |= AlignX0;
+			if(vp[2] - vp[0] <= r.x1 || w <= r.x1)
+				align |= AlignX1;
+			if(r.y0 <= 0)
+				align |= AlignY0;
+			if(vp[3] - vp[1] <= r.y1 || h <= r.y1)
+				align |= AlignY1;
+		}
+
+		if((AlignX0 | AlignX1) == (align & (AlignX0 | AlignX1)))
+			r.x1 = w;
+		else if(align & AlignX1)
 			r.rmove(w - (vp[2] - vp[0]), 0);
-		if(vp[3] - vp[1] <= r.y1 || h <= r.y1)
+		if((AlignY0 | AlignY1) == (align & (AlignY0 | AlignY1)))
+			r.y1 = h;
+		else if(align & AlignY1)
 			r.rmove(0, h - (vp[3] - vp[1]));
+
+
 		wnd->setExtent(r);
 	}
 }

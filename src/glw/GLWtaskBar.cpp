@@ -31,6 +31,7 @@ GLWtaskBar::GLWtaskBar(Game *game) : st(game), xbuttonsize(64), ybuttonsize(64){
 	ypos = 0;
 	height = 1024;
 	width = 64;
+	align = AlignX0 | AlignY0 | AlignY1;
 }
 
 int GLWtaskBar::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){

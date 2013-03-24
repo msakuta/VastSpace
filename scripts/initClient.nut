@@ -105,6 +105,10 @@ print("Squirrel script for the client initialized!");
 
 
 
+function isWindow(name){
+	return (name in this) && this[name] != null && this[name].alive;
+}
+
 
 ::cslabelpat <- "";
 
@@ -164,9 +168,13 @@ register_console_command("halt", function(...){
 });
 
 register_console_command("chart", function(...){
+	if(isWindow("chart")){
+		chart.collapsed = !chart.collapsed;
+		return;
+	}
 	chart <- GLWchart();
-	chart.x = 0;
-	chart.y = 200; // Avoid overlapping with GLWchat.
+	chart.x = screenwidth() - 300;
+	chart.y = 300; // Avoid overlapping with GLWentlist.
 	chart.width = 300;
 	chart.height = 150;
 //	chart.addSeries("framerate");
@@ -280,12 +288,6 @@ function initUI(){
 	local scw = screenwidth();
 	local sch = screenheight();
 
-	// Note that this local function is passed as a free variable.
-	// Could be a global.
-	local function isWindow(name){
-		return (name in this) && this[name] != null && this[name].alive;
-	}
-
 	local function chatFunc(){
 		if(!isWindow("chatWindow")){
 			local chat = GLWchat();
@@ -387,12 +389,13 @@ function initUI(){
 			return false;
 		},
 		@() cmd("dockmenu"), tlate("Dock Manager")));
+	taskbar.addButton(GLWsqStateButton("textures/chart.png", null,
+		@() true, @() cmd("chart"), tlate("Charts")));
 
+	chatFunc();
 	entlistFunc();
 	commandButtonFunc();
 	cameraButtonFunc();
-
-	cmd("chat");
 
 	// Function to return pause state
 	local pause_state = @() universe.paused;

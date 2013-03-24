@@ -1473,6 +1473,10 @@ bool GLWbuttonMatrix::focusable()const{
 }
 
 int GLWbuttonMatrix::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
+	// You shouldn't be able to press or show hints for buttons in a collapsed window.
+	if(flags & GLW_COLLAPSE)
+		return 0;
+
 	if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 		for(int i = 0; i < xbuttons * ybuttons; i++) if(buttons[i])
 			buttons[i]->mouse(ws, button, state, mousex, mousey);

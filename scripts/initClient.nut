@@ -342,7 +342,7 @@ function initUI(){
 
 	local function cameraButtonFunc(){
 		if(!isWindow("cameraButtons")){
-			local cambut = GLWbuttonMatrix(7, 1);
+			local cambut = GLWbuttonMatrix(5, 1);
 			cambut.title = tlate("camera");
 			if(!isWindow("commandButtons"))
 				cambut.x = taskbar.width;
@@ -354,8 +354,6 @@ function initUI(){
 			cambut.addButton("originrotation", "textures/resetrot.png", tlate("Reset Camera Rotation"));
 			cambut.addButton("eject", "textures/eject.png", tlate("Eject Camera"));
 			cambut.addButton("toggle g_player_viewport", "textures/playercams.png", tlate("Toggle Other Players Camera View"));
-			cambut.addButton("buildmenu", "textures/buildman.png", tlate("Build Manager"));
-			cambut.addButton("dockmenu", "textures/dockman.png", tlate("Dock Manager"));
 		//	cambut.addButton("bookmarks", "textures/eject.png", tlate("Teleport"));
 			cambut.pinned = true;
 			cameraButtons <- cambut;
@@ -372,6 +370,22 @@ function initUI(){
 		@() true, commandButtonFunc, tlate("Commands")));
 	taskbar.addButton(GLWsqStateButton("textures/cameras.png", "textures/cameras.png",
 		@() true, cameraButtonFunc, tlate("Cameras")));
+	taskbar.addButton(GLWsqStateButton("textures/buildman.png", null,
+		function(){ // True if at least one Entity in selection is a builder.
+			foreach(e in player.selected)
+				if(e.builder != null)
+					return true;
+			return false;
+		},
+		@() cmd("buildmenu"), tlate("Build Manager")));
+	taskbar.addButton(GLWsqStateButton("textures/dockman.png", null,
+		function(){ // True if at least one Entity in selection is a docker.
+			foreach(e in player.selected)
+				if(e.docker != null)
+					return true;
+			return false;
+		},
+		@() cmd("dockmenu"), tlate("Dock Manager")));
 
 	entlistFunc();
 	commandButtonFunc();

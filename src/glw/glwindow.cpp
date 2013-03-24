@@ -1345,8 +1345,13 @@ void GLWstateButton::mouseLeave(GLwindowState &ws){
 /// Draws button image. Button image 0 is drawn when not
 /// active.
 void GLWstateButton::draw(GLwindowState &ws, double){
-	GLubyte mod = depress ? 127 : 255;
-	gltestp::dstring texname = state() ? this->texname : this->texname1;
+	bool s = state(); // Store the value to the local variable to prevent multiple evaluation
+
+	// We could have empty texname1, in which case we use the darkened version of the texture
+	// of the active state.  The image can be darkened when the button is depressed, too.
+	GLubyte mod = depress || this->texname1 == "" && !s ? 127 : 255;
+	gltestp::dstring texname = s || this->texname1 == "" ? this->texname : this->texname1;
+
 	GLuint texlist;
 	const gltestp::TexCacheBind *tcb = gltestp::FindTexture(texname);
 	if(tcb)
@@ -1636,7 +1641,7 @@ SQInteger GLWsqStateButton::sqf_constructor(HSQUIRRELVM v){
 	if(SQ_FAILED(sq_getstring(v, 2, &path)))
 		return SQ_ERROR;
 	if(SQ_FAILED(sq_getstring(v, 3, &path1)))
-		return SQ_ERROR;
+		path1 = ""; // We allow null for the second argument.
 
 	// Assign hstatefunc member variable
 	HSQOBJECT hstatefunc;

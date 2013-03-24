@@ -288,6 +288,16 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		d->sq_pushobj(v, d);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("builder"))){
+		Builder *b = p->getBuilder();
+		if(!b){
+			sq_pushnull(v);
+			return 1;
+		}
+		// Just push itself, since we multiple inherited Builder.
+		sq_push(v, 1);
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("enemy"))){
 		SQUserPointer o;
 		if(!p || !p->enemy){

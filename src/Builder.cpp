@@ -370,9 +370,13 @@ int cmd_build(int argc, char *argv[]){
 	Player *player = application.clientGame->player;
 	if(!player || player->selected.empty())
 		return 0;
-	Builder *pb = (*player->selected.begin())->getBuilder();
-	if(pb)
-		glwAppend(new GLWbuild(application.clientGame, "Build", pb));
+	for(Player::SelectSet::iterator it = player->selected.begin(); it != player->selected.end(); ++it){
+		Builder *pb = (*player->selected.begin())->getBuilder();
+		if(pb){
+			glwAppend(new GLWbuild(application.clientGame, "Build", pb));
+			return 0;
+		}
+	}
 	return 0;
 }
 #endif

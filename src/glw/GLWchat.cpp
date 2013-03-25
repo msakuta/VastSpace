@@ -35,6 +35,7 @@ static HFONT hEditFont = NULL;
 /** \brief Constructs a chat window.
  */
 GLWchat::GLWchat(Game *game) : GLwindowSizeable(game, "Chat Window"), scrollpos(0){
+	setCollapsable(true);
 	wndlist.insert(this);
 
 	// Create the Windows Edit window instance

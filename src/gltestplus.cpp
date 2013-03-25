@@ -917,7 +917,11 @@ void Game::draw_func(Viewer &vw, double dt){
 		ws.m = vw.vp.m;
 		ws.mx = s_mousex;
 		ws.my = s_mousey;
-		glwlist->glwDrawMinimized(ws, player->gametime, &minix);
+		// Suppress drawing of minimized windows, since it's the task bar's job.
+		// We don't have mouse inputs for them.
+		// We would totally delete the drawing logic for them.
+		if(0)
+			glwlist->glwDrawMinimized(ws, player->gametime, &minix);
 		glwlist->glwDraw(ws, player->gametime, &minix);
 		glPopAttrib();
 	}

@@ -70,6 +70,7 @@ GLWentlist::GLWentlist(Game *game) :
 	scrollpos(0),
 	crtRoot(NULL)
 {
+	setCollapsable(true);
 }
 
 Player *GLWentlist::getPlayer(){

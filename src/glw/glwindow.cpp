@@ -992,6 +992,10 @@ SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
 		sq_pushbool(v, flags & GLW_COLLAPSE);
 		return 1;
 	}
+	else if(!strcmp(wcs, _SC("visible"))){
+		sq_pushbool(v, getVisible());
+		return 1;
+	}
 	else if(!strcmp(wcs, _SC("title"))){
 		sq_pushstring(v, getTitle(), -1);
 		return 1;
@@ -1030,6 +1034,13 @@ SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
 			flags |= GLW_COLLAPSE;
 		else
 			flags &= ~GLW_COLLAPSE;
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("visible"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		setVisible(!!b);
 		return 0;
 	}
 	else if(!strcmp(wcs, _SC("title"))){

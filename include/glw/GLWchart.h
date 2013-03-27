@@ -17,6 +17,8 @@ public:
 	/// \brief The internal base class that represents a series in a chart.
 	class ChartSeries{
 	public:
+		/// The default constructor enables drawing of series.
+		ChartSeries(bool visible = true) : visible(visible){}
 		virtual double value(int index, GLWchart *w) = 0;
 		virtual double getMax()const{return 1;}
 		virtual double getMin()const{return 0;}

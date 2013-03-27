@@ -1938,13 +1938,22 @@ int glwPutTextureStringN(const char *s, int n, int size){
 			MAT2 mat2 = {
 				{0, 1}, {0, 0}, {0, 0}, {0, 1}
 			};
-			void *gbuf;
-			size_t gbufsize = GetGlyphOutlineW(hdc, wch, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
-			gbuf = malloc(gbufsize * 2);
+
+			// DWORD is silly type name that is not portable, but size_t could be 64 bits in 64bit architecture,
+			// which has too much width for our purpose.  The API returns 32bit values after all.
+			const DWORD gbufsize = GetGlyphOutlineW(hdc, wch, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
+			void *gbuf = malloc(gbufsize * 2);
+			const DWORD widthBytes = (gm.gmBlackBoxX + 3) / 4 * 4;
+
+			// I have no clue why gbufsize not necessarily equal to widthBytes * gm.gmBlackBoxY.
+			// Sometimes gbufsize > widthBytes * gm.gmBlackBoxY.  In that case, trust widthBytes (which was
+			// deduced from gm.gmBlackBoxX) and divide gbufsize by it to obtain height.
+			// It is necessary for some glyphs that have components at the bottom.
+			const DWORD height = gbufsize / widthBytes;
 
 			// Though if we know there's no content in padded bytes, glTexSubImage2D will fail unless those
 			// padded bytes are in the array range of the image. Kinda silly workaround for NVIDIA introduced bug.
-			if(GLDTW < sx + gm.gmptGlyphOrigin.x + ((gm.gmBlackBoxX + 3) / 4 * 4)){
+			if(GLDTW < sx + gm.gmptGlyphOrigin.x + widthBytes){
 				sx = 0;
 				sy += maxheight;
 			}
@@ -1952,7 +1961,7 @@ int glwPutTextureStringN(const char *s, int n, int size){
 			gc.x0 = sx;
 			gc.x1 = gc.x0 + wid;
 			sx = gc.x1;
-			gc.y0 = sy;
+			gc.y0 = sy + 1;
 			gc.y1 = gc.y0 + tm.tmHeight;
 
 			// The space character (' ') does not require memory to rasterize. In that case, we do not mess around glyph caching.
@@ -1963,13 +1972,13 @@ int glwPutTextureStringN(const char *s, int n, int size){
 //				glPixelStorei(GL_PACK_ALIGNMENT, 4);
 //				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-				for(int y = 0; y < gm.gmBlackBoxY; y++) for(int x = 0; x < gm.gmBlackBoxX; x++)
-					((GLubyte*)gbuf)[x + y * ((gm.gmBlackBoxX + 3) / 4 * 4)] = ((GLubyte*)gbuf)[x + y * ((gm.gmBlackBoxX + 3) / 4 * 4)] * 255 / 64;
+				for(int y = 0; y < height; y++) for(int x = 0; x < gm.gmBlackBoxX; x++)
+					((GLubyte*)gbuf)[x + y * widthBytes] = ((GLubyte*)gbuf)[x + y * widthBytes] * 255 / 64;
 
 				// Due to a bug in GeForce GTS250 OpenGL driver, we just cannot pass gm.gmBlackBoxX to 5th argument (width), but rather round it up to multiple of 4 bytes.
 				// Excess pixels in the 4 byte boundary will overwritten, but they're always right side of the subimage, meaning no content have chance to be overwritten.
 				// The bug is that lower end of the subimage is not correctly transferred but garbage pixels, which implies that count of required bytes transferred is incorrectly calculated.
-				glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0 + gm.gmptGlyphOrigin.x, gc.y0 + (size - gm.gmptGlyphOrigin.y), (gm.gmBlackBoxX + 3) / 4 * 4, gm.gmBlackBoxY, GL_ALPHA, GL_UNSIGNED_BYTE, gbuf);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, gc.x0 + gm.gmptGlyphOrigin.x, gc.y0 + (size - gm.gmptGlyphOrigin.y), widthBytes, height, GL_ALPHA, GL_UNSIGNED_BYTE, gbuf);
 
 				// Another workaround is to replace the whole texture image with buffered image in client memory every time a character gets texturized, but it's terribly inefficient.
 //				glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);

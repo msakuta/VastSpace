@@ -193,10 +193,7 @@ models/*.bin \
 models/*.png \
 textures/*.png \
 textures/*.jpg \
-textures/*.bmp \
-Bullet.bmp \
-earth.jpg \
-pointer.bmp 
+textures/*.bmp
 	7z u $@ $?
 
 clean:

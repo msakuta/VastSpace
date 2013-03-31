@@ -246,6 +246,8 @@ public:
 		sc.o << rot;
 	}
 	void unserialize(UnserializeContext &sc){
+		// Ignore rotation updates if this Player is me, in order to prevent lagged server
+		// from slowing the client's camera.
 		if(application.clientGame && application.clientGame->player == &pl){
 			Vec3d pos;
 			Quatd rot;
@@ -449,7 +451,6 @@ void Player::unserialize(UnserializeContext &sc){
 //		selected.insert(e);
 	}
 
-	// The client won't synchronize 
 	sc.i >> chasecamera;
 	sc.i >> pos;
 	sc.i >> velo;

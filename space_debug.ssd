@@ -207,7 +207,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		fullname "Earth's Low orbit"
 		orbits Earth
-		orbit_radius 10+6378.
+		orbit_radius 100+6378.
 		inclination -23.4
 		argument_of_periapsis 90
 		ascending_node 0

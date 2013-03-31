@@ -1204,6 +1204,10 @@
 			RelativePath="..\gltestplus.rc"
 			>
 		</File>
+		<File
+			RelativePath="..\gp.ico"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

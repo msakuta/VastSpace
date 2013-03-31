@@ -246,8 +246,16 @@ public:
 		sc.o << rot;
 	}
 	void unserialize(UnserializeContext &sc){
-		sc.i >> pos;
-		sc.i >> rot;
+		if(application.clientGame && application.clientGame->player == &pl){
+			Vec3d pos;
+			Quatd rot;
+			sc.i >> pos;
+			sc.i >> rot;
+		}
+		else{
+			sc.i >> pos;
+			sc.i >> rot;
+		}
 	}
 };
 
@@ -440,6 +448,8 @@ void Player::unserialize(UnserializeContext &sc){
 		// Read and discard stream
 //		selected.insert(e);
 	}
+
+	// The client won't synchronize 
 	sc.i >> chasecamera;
 	sc.i >> pos;
 	sc.i >> velo;

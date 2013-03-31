@@ -193,8 +193,13 @@ models/*.bin \
 models/*.png \
 textures/*.png \
 textures/*.jpg \
-textures/*.bmp
-	7z u $@ $?
+textures/*.bmp \
+gltestdll/models/*.mqo \
+gltestdll/models/*.mot \
+gltestdll/models/*.nut \
+gltestdll/models/*.png \
+gltestdll/models/*.jpg 
+	7z u $@ $^
 
 clean:
 	rm ${OUTDIR} -r

@@ -87,7 +87,7 @@ Very basic raytracer, rendering into a texture.
 #define COS15 0.9659258262890682867497431997289
 
 
-#define DEBUG_ENTERFIELD 1
+#define DEBUG_ENTERFIELD 0
 
 
 double g_capacitor_gen_factor = 1.;

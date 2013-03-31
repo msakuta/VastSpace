@@ -24,8 +24,8 @@ extern "C"{
 #include <iostream>
 #include <fstream>
 
-#define DEBUG_ENTERFIELD 1
-#define DEBUG_TRANSIT_CS 1
+#define DEBUG_ENTERFIELD 0
+#define DEBUG_TRANSIT_CS 0
 
 
 Entity::Entity(Game *game) : st(game), w(NULL), bbody(NULL){}

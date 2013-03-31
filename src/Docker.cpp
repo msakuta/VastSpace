@@ -30,12 +30,15 @@ extern "C"{
 #define COS15 0.9659258262890682867497431997289
 #define SQRT2P2 (M_SQRT2/2.)
 
+#define DEBUG_DOCKING 0
 
 
 Docker::Docker(Game *game) : st(game){
+#if DEBUG_DOCKING
 	// Debug output; record this pointer's address to the log file.
 	std::ofstream of("debug.log", std::ios_base::app);
 	of << game->universe->global_time << ": Docker: " << (game->isServer()) << " {" << classname() << ":" << id << "}" << static_cast<Observer*>(this) << std::endl;;
+#endif
 }
 
 Docker::Docker(Entity *ae) : st(ae ? ae->getGame() : NULL), baycool(0), e(ae), remainDocked(false){

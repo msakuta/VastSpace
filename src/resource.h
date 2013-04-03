@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by gltestplus.rc
+// Used by e:\projects\gltestplus\gltestplus.rc
 //
 #define IDD_JOINGAME                    101
 #define IDI_ICON1                       104
@@ -14,7 +14,8 @@
 #define IDC_LOGFILEAPPEND               1008
 #define IDC_HOSTGAME                    1009
 #define IDC_JOINGAME                    1010
-#define IDC_DELETEHOST                  1011
+#define IDC_STANDALONE                  1011
+#define IDC_DELETEHOST                  1012
 
 // Next default values for new objects
 // 

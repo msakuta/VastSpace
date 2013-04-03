@@ -373,11 +373,11 @@ static int cmd_say(int argc, char *argv[]){
 }
 
 void Application::sendChat(const char *buf){
-	if(mode == ServerWaitGame || mode == ServerGame){
+	if(mode & ServerBit){
 		if(server.sv)
 			server.sv->SendChatMessage(buf);
 	}
-	else if(mode == ClientWaitGame || mode == ClientGame){
+	else if(mode & ClientBit){
 		dstring ds = dstring() << "SAY " << buf << "\r\n";
 		send(con, ds, ds.len(), 0);
 	}
@@ -389,7 +389,6 @@ Application::Application() :
 	serverGame(NULL),
 	clientGame(NULL),
 	con(INVALID_SOCKET),
-	isClient(false),
 	logfile(NULL),
 	loginName("The Client")
 {
@@ -404,7 +403,7 @@ Application::~Application(){
 		fclose(logfile);
 }
 
-void Application::init(bool isClient)
+void Application::init()
 {
 	viewport vp;
 	CmdInit(&vp);
@@ -432,9 +431,10 @@ void Application::init(bool isClient)
 		// Explicitly add sq command for the client game
 		// The static_cast is necessary if ClientGame virtually inherits Game.
 		CmdAddParam("csq", cmd_sq, static_cast<Game*>(clientGame));
-		sqa_init(clientGame);
+		if(serverGame != clientGame) // Prevent double initialization
+			sqa_init(clientGame);
 	}
-	if(!isClient){
+	if(mode & ServerBit){
 		HSQUIRRELVM v = serverGame->sqvm;
 		const SQChar *s = _SC("space.dat");
 		StackReserver sr(v);
@@ -489,7 +489,7 @@ bool Application::parseArgs(int argc, char *argv[]){
 			i++;
 		}
 		else if(!strcmp(argv[i], "-c")){ // client
-			isClient = true;
+			mode = GameMode(mode | ClientBit);
 		}
 	}
 	return true;
@@ -502,10 +502,16 @@ bool Application::hostgame(Game *game, int port){
 			return false;
 		}
 		server.sv->pg = game;
-		mode = ServerWaitGame;
+		mode = ServerGame;
 		return true;
 	}
 	return false;
+}
+
+bool Application::standalone(Game *game){
+	mode = StandaloneGame;
+	serverGame = clientGame = game;
+	return true;
 }
 
 void Application::signalMessage(const char *text){
@@ -551,7 +557,9 @@ void ClientMessage::send(Application &cl, const void *p, size_t size){
 			StdUnserializeStream uss(iss);
 			UnserializeContext usc(uss, Serializable::ctormap(), (UnserializeMap&)cl.serverGame->idmap());
 			uss.usc = &usc;
-			it->second->interpret(*cl.server.sv->scs, uss);
+			ServerClient dummyServerClient;
+			dummyServerClient.id = 0;
+			it->second->interpret(cl.server.sv ? *cl.server.sv->scs : dummyServerClient, uss);
 		}
 	}
 	else{

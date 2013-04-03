@@ -15,16 +15,13 @@
 class EXPORT Application{
 public:
 	enum GameMode{
-		ChatBit   = 0x80, /* bitmask for game mode that allow chatting or logging */
-		WaitBit   = 0x01, /* bitmask for waiting rooms */
-		ServerBit = 0x04, /* server thread running (not standalone!) */
+		ClientBit = 0x01,
+		ServerBit = 0x02,
 
-		InactiveGame   = 0x00, /* no game is progressing */
-		StandaloneGame = 0x02, /* single player */
-		ServerWaitGame = 0x84, /* hosting game over network, waiting clients to join */
-		ServerGame     = 0x85, /* hosting game, running. no more clients can join */
-		ClientWaitGame = 0x82, /* joinning game, waiting */
-		ClientGame     = 0x83, /* playing game on remote server */
+		InactiveGame   = 0x00, ///< no game is progressing
+		StandaloneGame = 0x03, ///< single player
+		ClientGame     = 0x01, ///< Join another game
+		ServerGame     = 0x02  ///< Host game
 	};
 
 	/// The game mode
@@ -38,7 +35,7 @@ public:
 	/// \brief The client's game, a copy of the server in the client process.
 	///
 	/// Available only if the game is running in a standalone or remote client.
-	/// If it's a standalone client, this object is a copy of the object indicated by pg.
+	/// If it's a standalone client, this object is a copy of the object indicated by serverGame.
 	Game *clientGame;
 
 	/// Embedded server thread
@@ -49,8 +46,6 @@ public:
 	/// Only meaningful in Client, but placed here to simplify codes that'll need reinterpret_cast otherwise.
 	SOCKET con;
 
-	bool isClient;
-
 	/// Parameters required for starting a Server.
 	ServerParams serverParams;
 
@@ -60,7 +55,7 @@ public:
 	/// The file pointer to write chat logs.
 	FILE *logfile;
 
-	void init(bool isClient);
+	void init();
 
 	bool parseArgs(int argc, char *argv[]);
 
@@ -69,6 +64,9 @@ public:
 	/// \param port Port the server listen to.
 	/// \returns False if failed to start server.
 	bool hostgame(Game *game, int port);
+
+	/// \brief Starts a standalone game with the given game object.
+	bool standalone(Game *game);
 
 	/// \brief Send chat message to the server.
 	void sendChat(const char *buf);

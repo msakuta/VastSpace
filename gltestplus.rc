@@ -1,6 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "src/resource.h"
+#include "src\resource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
 
 1 TEXTINCLUDE 
 BEGIN
-    "resource.h\0"
+    "src\\resource.\0"
 END
 
 2 TEXTINCLUDE 
@@ -67,8 +67,9 @@ BEGIN
     LTEXT           "Chat Logfile",IDC_STATIC,7,119,39,8
     PUSHBUTTON      "Pick...",IDC_LOGFILESELECT,161,117,50,14
     CONTROL         "Append Log File",IDC_LOGFILEAPPEND,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,55,134,64,10
-    CONTROL         "Host Game Server",IDC_HOSTGAME,"Button",BS_AUTORADIOBUTTON,105,40,72,10
-    CONTROL         "Join Game",IDC_JOINGAME,"Button",BS_AUTORADIOBUTTON,105,52,48,10
+    CONTROL         "Standalone Game",IDC_STANDALONE,"Button",BS_AUTORADIOBUTTON,105,41,72,10
+    CONTROL         "Host Game Server",IDC_HOSTGAME,"Button",BS_AUTORADIOBUTTON,105,55,72,10
+    CONTROL         "Join Game",IDC_JOINGAME,"Button",BS_AUTORADIOBUTTON,105,68,48,10
     PUSHBUTTON      "OK",IDOK,149,150,50,14
     LTEXT           "Max Clients",IDC_STATIC,7,63,43,8
     EDITTEXT        IDC_MAXCLIENTS,55,61,40,14,ES_AUTOHSCROLL
@@ -91,6 +92,7 @@ BEGIN
         RIGHTMARGIN, 255
         VERTGUIDE, 55
         VERTGUIDE, 95
+        VERTGUIDE, 105
         TOPMARGIN, 6
         BOTTOMMARGIN, 164
     END

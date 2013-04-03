@@ -280,7 +280,7 @@ bool ClientApplication::startGame(){
 		send(s, ds, ds.len(), 0);
 	}
 	shutclient = false;
-	mode = ClientWaitGame;
+	mode = ClientGame;
 //		RedrawMenu(pc);
 //		SetEvent(pc->hDrawEvent);
 	return true;

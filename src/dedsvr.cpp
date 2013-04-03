@@ -29,9 +29,11 @@ int main(int argc, char *argv[]){
 	if(!application.parseArgs(argc, argv))
 		return 1;
 
+	// Dedicated server's sole purpose is to serve.
+	application.mode = application.ServerGame;
 	application.serverGame = new ServerGame();
 
-	application.init(false);
+	application.init();
 
 	application.hostgame(application.serverGame, application.serverParams.port);
 

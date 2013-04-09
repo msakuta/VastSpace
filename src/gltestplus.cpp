@@ -2345,6 +2345,11 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 }
 #endif
 
+class ServerClientGame : public ServerGame{
+public:
+	ServerClientGame() : ServerGame(){}
+	bool isClient()const{return true;}
+};
 
 int main(int argc, char *argv[])
 {
@@ -2399,7 +2404,7 @@ int main(int argc, char *argv[])
 		application.clientGame = new ClientGame();
 	}
 	else
-		application.clientGame = server = new ServerGame();
+		application.clientGame = server = new ServerClientGame();
 	application.serverGame = server;
 
 	application.init();

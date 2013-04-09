@@ -179,6 +179,11 @@ string stellar_file = "space.ssd";
 
 */
 
+// Prevent multiple includes
+if("COMMON_NUT" in this)
+	return;
+COMMON_NUT <- true;
+
 // load the module
 if(1){
 	local dllpath = isLinux() ?

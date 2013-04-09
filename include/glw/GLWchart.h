@@ -121,7 +121,12 @@ protected:
 		for(int i = 0; i < chart.size(); i++) if(normalizer < chart[i])
 			normalizer = chart[i];
 	}
-	virtual gltestp::dstring labelstr()const{return gltestp::dstring() << chart.back();}
+	virtual gltestp::dstring labelstr()const{
+		if(chart.size())
+			return gltestp::dstring() << chart.back();
+		else
+			return "null";
+	}
 	/// \brief The derived classes must override this function to mark a value in time line.
 	virtual double timeProc(double dt) = 0;
 };

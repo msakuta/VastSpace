@@ -520,7 +520,7 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 			// -1 if you're directly behind, 1 if you're directly in between the obstacle and the sun,
 			// and 0 if the three points form a right angle.
 			// Obtained by dividing rayOffset by obsVec length for performance, but is really a scalar product.
-			double sp = rayOffset / obsVec.len() /*rayDir.sp(obsVec.norm())*/;
+			double sp = FLT_EPSILON < obsVec.len() ? rayOffset / obsVec.len() /*rayDir.sp(obsVec.norm())*/ : 0;
 
 			Viewer vw;
 			vw.cs = retcs;
@@ -539,7 +539,8 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 				double penumbraRadius = a->rad * rayOffset / (lightSource - ahitpos).len();
 				double penumbraInner = ahit->rad - penumbraRadius;
 				double penumbraOuter = ahit->rad + penumbraRadius;
-				penumbra = hitdist <= penumbraOuter ? (hitdist - penumbraInner) / (penumbraOuter - penumbraInner) : 1.;
+				double penumbraRange = penumbraOuter - penumbraInner;
+				penumbra = hitdist <= penumbraOuter ? penumbraRange == 0. ? 0. : (hitdist - penumbraInner) / penumbraRange : 1.;
 			}
 
 			if(rethit)

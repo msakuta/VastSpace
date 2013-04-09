@@ -1125,17 +1125,20 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("space.dat"), -1);
 	sq_createslot(v, 1);
 
-	timemeas_t tm;
-	TimeMeasStart(&tm);
-	const SQChar *scriptFile = game->isServer() ? _SC("scripts/init.nut") : _SC("scripts/initClient.nut");
-	if(SQ_SUCCEEDED(sqstd_dofile(v, scriptFile, 0, 1))) // also prints syntax errors if any 
-	{
-		double d = TimeMeasLap(&tm);
-		CmdPrint(cpplib::dstring() << scriptFile << " total: " << d << " sec");
-//		call_foo(v,1,2.5,_SC("teststring"));
+	// Load both initialization scripts for standalone game.
+	for(int i = !game->isServer(); i < game->isClient() + 1; i++){
+		static const SQChar *scripts[2] = {_SC("scripts/init.nut"), _SC("scripts/initClient.nut")};
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+		const SQChar *scriptFile = scripts[i];
+		if(SQ_SUCCEEDED(sqstd_dofile(v, scriptFile, 0, 1))) // also prints syntax errors if any 
+		{
+			double d = TimeMeasLap(&tm);
+			CmdPrint(cpplib::dstring() << scriptFile << " total: " << d << " sec");
+		}
+		else
+			CmdPrint(cpplib::dstring(scriptFile) << " failed.");
 	}
-	else
-		CmdPrint(cpplib::dstring(scriptFile) << " failed.");
 
 	sq_poptop(v); // Pop the root table.
 }

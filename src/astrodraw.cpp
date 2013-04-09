@@ -177,7 +177,9 @@ void TexSphere::draw(const Viewer *vw){
 	// times in a session.
 	// The floating point values tend to get far from 0, which is most precise region
 	// in the supported range of a floating point value.
-	noisePos += tocs(vw->pos, vw->cs).norm() * vw->dt;
+	Vec3d apparentPos = tocs(vw->pos, vw->cs);
+	if(FLT_EPSILON < apparentPos.slen())
+		noisePos += apparentPos.norm() * vw->dt;
 
 	if(vw->zslice != 2)
 		return;
@@ -387,8 +389,10 @@ double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 	Vec3d sunpos = sun ? vwcs->tocs(sun->pos, sun->parent) : vec3_000;
 	Vec3d thispos = vwcs->tocs(this->pos, this->parent);
 
-	double dist = (vwpos  - thispos).len();
-	double sp = (sunpos - thispos).norm().sp((vwpos  - thispos).norm());
+	Vec3d vwrpos = vwpos - thispos;
+	Vec3d sunrpos = sunpos - thispos;
+	double dist = vwrpos.len();
+	double sp = FLT_EPSILON < sunrpos.slen() && FLT_EPSILON < vwrpos.slen() ? sunrpos.norm().sp(vwrpos.norm()) : 0;
 
 	// Brightness for color components.
 	double b = atmo_sp2brightness(sp);

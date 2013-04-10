@@ -328,6 +328,7 @@ coordsys Orbit saturn{
 }
 */
 
+/*
 coordsys "Alpha Centauri"{
 	extraname "α Cen"
 	extraname "Rigil Kentaurus"
@@ -422,3 +423,4 @@ coordsys "Alpha Centauri"{
 	}
 
 }
+*/

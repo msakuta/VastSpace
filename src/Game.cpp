@@ -439,9 +439,9 @@ ServerGame::ServerGame() : loading(false){
 
 void ServerGame::init(){
 //	anim_sun(0.);
-	universe->anim(0.);
-
 	Game::init();
+
+	universe->anim(0.);
 }
 
 void ServerGame::postframe(){

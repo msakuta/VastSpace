@@ -233,6 +233,9 @@ function loadmission(...){
 
 //tutorial1 <- loadmission("scripts/tutorial1.nut");
 
+// Reserve the previous function
+client_old_init_Universe <- "init_Universe" in this ? init_Universe : null;
+
 function init_Universe(){
 	function callTest(){
 		print("Closing mainmenu" + mainmenu);
@@ -277,6 +280,9 @@ function init_Universe(){
 	if(true){
 		cmd("chart");
 	}
+
+	if(client_old_init_Universe != null)
+		client_old_init_Universe();
 }
 
 controlStats <- CStatistician();

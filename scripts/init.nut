@@ -218,7 +218,12 @@ function clientMessage(name){
 
 //tutorial1 <- loadmission("scripts/tutorial1.nut");
 
+// Reserve the previous function
+server_old_init_Universe <- "init_Universe" in this ? init_Universe : null;
+
 function init_Universe(){
+
+	print("Server's init_Universe()");
 
 	player.setpos(Vec3d(0.0, 0.2, 0.5));
 	player.setrot(Quatd(0., 1., 0., 0.) * Quatd.rotation(-PI / 3., Vec3d(0, 1, 0)));
@@ -251,6 +256,9 @@ function init_Universe(){
 			earths.setrot(Quatd.direction(earths.getpos()) * Quatd.rotation(PI / 2, Vec3d(1, 0, 0)));
 		}
 	}
+
+	if(server_old_init_Universe != null)
+		server_old_init_Universe();
 }
 
 register_console_command("sq1", @() loadmission("scripts/demo1.nut") );

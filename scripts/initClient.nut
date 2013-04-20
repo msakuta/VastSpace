@@ -297,6 +297,9 @@ function initUI(){
 	local sch = screenheight();
 
 	local function chatFunc(){
+		// If we're in a standalone game, there's no point showing chat window.
+		if(isClient() && isServer())
+			return;
 		if(!isWindow("chatWindow")){
 			local chat = GLWchat();
 			chat.x = taskbar.x + taskbar.width;
@@ -431,7 +434,6 @@ function initUI(){
 missionLoaded <- false;
 
 function frameproc(dt){
-	print("frameproc in client(" + dt + ")");
 	if(!("squirrelShare" in this))
 		return;
 	if(!missionLoaded){

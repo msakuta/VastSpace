@@ -1365,11 +1365,20 @@ void CMPos::interpret(ServerClient &sc, UnserializeStream &uss){
 CMChase CMChase::s;
 
 void CMChase::send(Entity *e){
-	std::stringstream ss;
-	StdSerializeStream sss(ss);
-	sss << e;
-	std::string str = ss.str();
-	s.st::send(application, str.c_str(), str.size());
+	if(!e->getGame()->isServer()){
+		std::stringstream ss;
+		StdSerializeStream sss(ss);
+		sss << e;
+		std::string str = ss.str();
+		s.st::send(application, str.c_str(), str.size());
+	}
+	else{ // Standalone game
+		Player *player = e->getGame()->player;
+		player->chases.clear();
+		player->chase = e;
+		if(e) // e can be NULL
+			player->chases.insert(e);
+	}
 }
 
 /// \brief A server command that accepts messages from the client to change the direction of sight.

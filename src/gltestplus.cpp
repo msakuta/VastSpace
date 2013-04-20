@@ -2359,6 +2359,9 @@ public:
 	bool isClient()const{return true;}
 	bool isRawCreateMode()const{return ServerGame::isRawCreateMode();}
 	void anim(double dt);
+
+	/// Defaults to server's rule.
+	Serializable::Id nextId(){return ServerGame::nextId();}
 };
 
 void ServerClientGame::anim(double dt){

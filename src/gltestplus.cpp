@@ -2355,6 +2355,37 @@ public:
 void ServerClientGame::anim(double dt){
 	ServerGame::anim(dt);
 
+	input_t inputs;
+	inputs.press = MotionGet();
+	inputs.change = MotionGetChange();
+
+	// MotionFrame() must be called after MotionGetChange() and before the message loop,
+	// or MotionGetChange() always returns 0.
+	MotionFrame(dt);
+
+	if(joyStick.InitJoystick()){
+		joyStick.CheckJoystick(inputs);
+	}
+	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
+		Player *player = *it;
+		if(!player)
+			continue;
+		(*player->mover)(inputs, dt);
+		if(player->nextmover && player->nextmover != player->mover){
+/*			Vec3d pos = pl.pos;
+			Quatd rot = pl.rot;*/
+			(*player->nextmover)(inputs, dt);
+/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
+			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
+		}
+	}
+
+	if(player && player->chase){
+		inputs.analog[0] += application.mousedelta[0];
+		inputs.analog[1] += application.mousedelta[1];
+		player->inputControl(inputs, dt);
+	}
+
 	// Animate the GLwindow system. Only if we could manage it with multiple inheritance.
 	glwlist->glwAnim(dt);
 }

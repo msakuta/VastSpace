@@ -393,6 +393,17 @@ void WarSpace::anim(double dt){
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, &WarField::bl, &Entity::anim);
 	TRYBLOCK(ot_check(this, dt));
+
+#ifndef DEDICATED
+	const struct tent3d_line_debug *tld = Teline3DDebug(tell);
+	GLWchart::addSampleToCharts("tellcount", tld->teline_c);
+	TRYBLOCK(AnimTeline3D(tell, dt));
+	TRYBLOCK(AnimTeline3D(gibs, dt));
+
+	GLWchart::addSampleToCharts("teplcount", tepl->getDebug()->tefpol_c);
+	GLWchart::addSampleToCharts("tevertcount", tepl->getDebug()->tevert_c);
+	TRYBLOCK(tepl->anim(dt));
+#endif
 }
 
 void WarSpace::clientUpdate(double dt){

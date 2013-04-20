@@ -352,7 +352,6 @@ void ServerGame::anim(double dt){
 				players[i]->anim(dt);
 			sqa_anim(sqvm, dt);
 			TRYBLOCK(universe->anim(dt));
-			postframe();
 			TRYBLOCK(universe->endframe());
 		}
 		catch(std::exception e){
@@ -442,10 +441,6 @@ void ServerGame::init(){
 	Game::init();
 
 	universe->anim(0.);
-}
-
-void ServerGame::postframe(){
-	universe->postframe();
 }
 
 bool ServerGame::isRawCreateMode()const{

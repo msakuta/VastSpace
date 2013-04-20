@@ -68,7 +68,7 @@ public:
 	Game() : player(NULL), universe(NULL), sqvm(NULL), sqshare(NULL), idGenerator(1), clientDeleting(false){
 	}
 
-	~Game(){
+	virtual ~Game(){
 		delete player;
 		delete universe;
 	}
@@ -94,7 +94,6 @@ public:
 	virtual void unserialize(UnserializeContext &usc);
 
 	virtual void anim(double dt) = 0;
-	virtual void postframe() = 0;
 
 	static void addServerInits(ServerInitFunc f);
 	static void addClientInits(ClientInitFunc f);
@@ -158,11 +157,10 @@ protected:
 
 
 #ifndef DEDICATED
-class ClientGame : public Game{
+class ClientGame : public virtual Game{
 public:
 	ClientGame();
 	virtual void anim(double dt);
-	virtual void postframe();
 	virtual bool isServer()const{return false;}
 	virtual bool isClient()const{return true;}
 	virtual Serializable::Id nextId();
@@ -173,17 +171,17 @@ public:
 protected:
 	ObjSet clientObjs;
 	bool loading;
+	void clientUpdate(double dt);
 };
 #endif
 
 /// \brief Game for the server.
-class ServerGame : public Game{
+class ServerGame : public virtual Game{
 public:
 	/// \brief Server constructor executes initializers
 	ServerGame();
 	void init();
 	virtual void anim(double dt);
-	virtual void postframe();
 	virtual bool isServer()const{return true;}
 	virtual bool isClient()const{return false;}
 	virtual bool isRawCreateMode()const;

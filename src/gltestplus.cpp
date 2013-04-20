@@ -1084,11 +1084,6 @@ static JoyStick joyStick(JOYSTICKID1);
 static POINT mouse_pos = {0, 0};
 
 
-void ClientGame::postframe(){
-	universe->postframe();
-	GLwindow::glwpostframe();
-}
-
 void ClientGame::anim(double dt){
 	double view_dt = dt; // Nonezero though if paused
 	// If the Universe object is lacking, try to run update methods which potentially create one.
@@ -1111,6 +1106,12 @@ void ClientGame::anim(double dt){
 
 	if(universe)
 		universe->clientUpdate(dt);
+
+	clientUpdate(dt);
+}
+
+/// \brief Shared with ServerClientGame because ClientGame::anim() has duplicate processes.
+void ClientGame::clientUpdate(double dt){
 
 	if(GLwindow::getFocus() && cmdwnd)
 		GLwindow::getFocus()->defocus();
@@ -2345,49 +2346,25 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 }
 #endif
 
-class ServerClientGame : public ServerGame{
+/// \brief Diamond inherited ServerGame and ClientGame to create a class that
+///        have both features.
+///
+/// People hate multiple inheritance, especially the dreaded diamond.
+/// I understand that it tend to cause troubles, but like all other tools,
+/// it won't hurt us if we properly use it.
+class ServerClientGame : public ServerGame, public ClientGame{
 public:
 	ServerClientGame() : ServerGame(){}
+	bool isServer()const{return true;}
 	bool isClient()const{return true;}
+	bool isRawCreateMode()const{return ServerGame::isRawCreateMode();}
 	void anim(double dt);
 };
 
 void ServerClientGame::anim(double dt){
 	ServerGame::anim(dt);
 
-	input_t inputs;
-	inputs.press = MotionGet();
-	inputs.change = MotionGetChange();
-
-	// MotionFrame() must be called after MotionGetChange() and before the message loop,
-	// or MotionGetChange() always returns 0.
-	MotionFrame(dt);
-
-	if(joyStick.InitJoystick()){
-		joyStick.CheckJoystick(inputs);
-	}
-	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
-		Player *player = *it;
-		if(!player)
-			continue;
-		(*player->mover)(inputs, dt);
-		if(player->nextmover && player->nextmover != player->mover){
-/*			Vec3d pos = pl.pos;
-			Quatd rot = pl.rot;*/
-			(*player->nextmover)(inputs, dt);
-/*			pl.pos = pos * (1. - pl.blendmover) + pl.pos * pl.blendmover;
-			pl.rot = rot.slerp(rot, pl.rot, pl.blendmover);*/
-		}
-	}
-
-	if(player && player->chase){
-		inputs.analog[0] += application.mousedelta[0];
-		inputs.analog[1] += application.mousedelta[1];
-		player->inputControl(inputs, dt);
-	}
-
-	// Animate the GLwindow system. Only if we could manage it with multiple inheritance.
-	glwlist->glwAnim(dt);
+	clientUpdate(dt);
 }
 
 int main(int argc, char *argv[])

@@ -38,7 +38,8 @@ public:
 	virtual gltestp::dstring labelstr()const{return gltestp::dstring("Received bytes: ") << TimeChartSeries::labelstr();}
 	virtual gltestp::dstring labelname()const{return "Received bytes";}
 	virtual double timeProc(double dt){
-		return application.mode & application.ServerBit ? application.server.sv->sendbufsiz : application.recvbytes;
+		return application.mode & application.ServerBit && application.server.sv
+			? application.server.sv->sendbufsiz : application.recvbytes;
 	}
 };
 class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{

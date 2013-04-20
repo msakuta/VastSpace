@@ -2349,7 +2349,15 @@ class ServerClientGame : public ServerGame{
 public:
 	ServerClientGame() : ServerGame(){}
 	bool isClient()const{return true;}
+	void anim(double dt);
 };
+
+void ServerClientGame::anim(double dt){
+	ServerGame::anim(dt);
+
+	// Animate the GLwindow system. Only if we could manage it with multiple inheritance.
+	glwlist->glwAnim(dt);
+}
 
 int main(int argc, char *argv[])
 {

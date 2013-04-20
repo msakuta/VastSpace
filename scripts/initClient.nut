@@ -224,9 +224,11 @@ function sendCM(name){
 	return ret.result;
 }
 
-/// Notify calling loadmission in client is invalid.
-function loadmission(...){
-	print("Invocation of loadmission() in the client machine is prohibited.");
+if(!isServer()){
+	/// Notify calling loadmission in client is invalid, but only if it's not standalone.
+	function loadmission(...){
+		print("Invocation of loadmission() in the client machine is prohibited.");
+	}
 }
 
 //register_console_command("loadmission", loadmission);
@@ -429,6 +431,7 @@ function initUI(){
 missionLoaded <- false;
 
 function frameproc(dt){
+	print("frameproc in client(" + dt + ")");
 	if(!("squirrelShare" in this))
 		return;
 	if(!missionLoaded){

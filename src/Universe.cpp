@@ -6,6 +6,7 @@
 #include "sqadapt.h"
 #include "Application.h"
 #include "ClientMessage.h"
+#include "Game.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -365,7 +366,8 @@ SQInteger Universe::sqf_set(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("paused member must be bool compatible"));
 		p->paused = !!b;
-		CMPause::s.send(!!b);
+		if(!p->game->isServer() || !p->game->isClient())
+			CMPause::s.send(!!b);
 		return 0;
 	}
 	else

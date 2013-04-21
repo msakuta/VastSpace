@@ -1114,6 +1114,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			sq_pushinteger(v, SQInteger(p->playerId));
 			return 1;
 		}
+		else if(!strcmp(wcs, _SC("race"))){
+			sq_pushinteger(v, p->race);
+			return 1;
+		}
 		else
 			return SQ_ERROR;
 	}

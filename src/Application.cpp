@@ -122,11 +122,14 @@ CMHalt::CMHalt() : st("Halt"){
 }
 
 void CMHalt::send(Entity &pt){
-	if(application.mode & application.ServerBit){
+	if(pt.getGame()->isServer()){
 		HaltCommand com;
 		Game::IdMap::const_iterator it = application.serverGame->idmap().find(pt.getid());
-		if(it != application.serverGame->idmap().end())
-			((Entity*)it->second)->command(&com);
+		if(it != application.serverGame->idmap().end()){
+			Entity *e = (Entity*)it->second;
+//			if(e->race == application.serverGame->player->race)
+				e->command(&com);
+		}
 	}
 	else{
 		std::stringstream ss;
@@ -142,8 +145,11 @@ void CMHalt::interpret(ServerClient &sc, UnserializeStream &uss){
 	Serializable::Id id;
 	uss >> id;
 	Game::IdMap::const_iterator it = sc.sv->pg->idmap().find(id);
-	if(it != sc.sv->pg->idmap().end())
-		((Entity*)it->second)->command(&com);
+	if(it != sc.sv->pg->idmap().end()){
+		Entity *e = (Entity*)it->second;
+		if(e->race == sc.sv->pg->players[sc.id]->race)
+			e->command(&com);
+	}
 }
 
 bool CMHalt::sqf_define(HSQUIRRELVM v){
@@ -162,7 +168,8 @@ SQInteger CMHalt::sqf_call(HSQUIRRELVM v){
 	}
 }
 
-int cmd_halt(int, char *[], void *pv){
+/// \brief Unused
+static int cmd_halt(int, char *[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
 		HaltCommand com;

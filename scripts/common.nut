@@ -414,10 +414,13 @@ register_console_command("pause", function(...){
 });
 
 register_console_command("halt", function(...){
-	local e = player.selected;
-	for(; e != null; e = e.selectnext){
-		e.command("Halt");
-		CMHalt(e);
+	foreach(e in player.selected){
+		if(isServer()){
+			if(e.race == player.race)
+				e.command("Halt");
+		}
+		else
+			CMHalt(e);
 	}
 });
 

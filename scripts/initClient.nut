@@ -162,11 +162,6 @@ register_console_command("viewdist_zoom", function(...){
 	player.viewdist *= vargv[0].tofloat();
 });
 
-register_console_command("halt", function(...){
-	foreach(e in player.selected)
-		e.command("Halt");
-});
-
 register_console_command("chart", function(...){
 	if(isWindow("chart")){
 		chart.collapsed = !chart.collapsed;

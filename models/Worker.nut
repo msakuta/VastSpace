@@ -1,14 +1,14 @@
 
 modelScale <- 2.e-5;
 
-mass <- 4.e3;
+mass <- 2.e3;
 
-maxhealth <- 200.; // Show some guts for demonstrating shooting effect in the client.
+maxhealth <- 100.; // We are not designed for combat
 
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.005, 0.005, 0.003)],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.003, 0.003, 0.004)],
 ];
  
 

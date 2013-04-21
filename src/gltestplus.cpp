@@ -1666,8 +1666,12 @@ void Game::mouse_func(int button, int state, int x, int y){
 					~AttackSelect(){
 						if(!com.ents.empty())
 							game.player->attackorder = game.player->forceattackorder = 0;
-						for(Player::SelectSet::iterator it = list.begin(); it != list.end(); it++)
-							(*it)->command(&com);
+						for(Player::SelectSet::iterator it = list.begin(); it != list.end(); it++){
+							if(game.isServer())
+								(*it)->command(&com);
+							else
+								CMEntityCommand::s.send(*it, com);
+						}
 					}
 				};
 

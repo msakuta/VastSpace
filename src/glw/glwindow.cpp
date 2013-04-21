@@ -1872,6 +1872,7 @@ HFONT newFont(int size){
 static HDC InitGlwHDC(int size){
 	extern HWND hWndApp;
 	static bool init = false;
+	static HFONT hPrevFont = NULL;
 	static HDC g_glwhdc = NULL;
 	HDC &hdc = g_glwhdc;
 	if(!init){
@@ -1884,7 +1885,11 @@ static HDC InitGlwHDC(int size){
 	static int currentfontheight = 0;
 	if(currentfontheight != size){
 		currentfontheight = size;
-		DeleteObject(SelectObject(hdc, newFont(size)));
+		HFONT hNextFont = newFont(size);
+		SelectObject(hdc, hNextFont);
+		if(hPrevFont != NULL)
+			DeleteObject(hPrevFont);
+		hPrevFont = hNextFont;
 	}
 	return hdc;
 }

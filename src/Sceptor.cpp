@@ -1368,18 +1368,14 @@ void Sceptor::anim(double dt){
 //	if(this->pf && w != oldw)
 //		ImmobilizeTefpol3D(this->pf);
 //	movesound3d(pf->hitsound, pt->pos);
+#ifndef DEDICATED
+	if(game->isClient() && this->pf)
+		this->pf->move(pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
+#endif
 }
 
 void Sceptor::clientUpdate(double dt){
-	if(dt <= 0.)
-		return;
-	// Directly calls anim() because there're so many logics which should be shared among server and client
-	// that sharing code also is a fair way to do it.
 	anim(dt);
-#ifndef DEDICATED
-	if(this->pf)
-		this->pf->move(pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
-#endif
 }
 
 // Docking and undocking will never stack.

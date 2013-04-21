@@ -1,10 +1,10 @@
 /** \file
- * \brief Implementation of Sceptor class.
+ * \brief Implementation of Worker class.
  */
 
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
-#include "Sceptor.h"
+#include "Worker.h"
 #include "Application.h"
 #include "Player.h"
 #include "Bullet.h"
@@ -56,46 +56,46 @@ extern "C"{
 
 #define SCEPTOR_SCALE 1./10000
 #define SCEPTOR_SMOKE_FREQ 20.
-#define SCEPTOR_COOLTIME .2
+#define SCEPTOR_COOLTIME .5
 #define SCEPTOR_ROLLSPEED (.2 * M_PI)
 #define SCEPTOR_ROTSPEED (.3 * M_PI)
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
 #define BULLETSPEED 2.
-#define SCEPTOR_MAGAZINE 10
+#define SCEPTOR_MAGAZINE 5
 #define SCEPTOR_RELOADTIME 2.
 
 
-Entity::Dockable *Sceptor::toDockable(){return this;}
+Entity::Dockable *Worker::toDockable(){return this;}
 
 /* color sequences */
 extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
-HitBoxList Sceptor::hitboxes;
-double Sceptor::modelScale = 1./10000;
-double Sceptor::defaultMass = 4e3;
-double Sceptor::maxHealthValue = 200.;
-double Sceptor::maxFuelValue = 120.;
-GLuint Sceptor::overlayDisp = 0;
+HitBoxList Worker::hitboxes;
+double Worker::modelScale = 1./10000;
+double Worker::defaultMass = 4e3;
+double Worker::maxHealthValue = 200.;
+double Worker::maxFuelValue = 120.;
+GLuint Worker::overlayDisp = 0;
 
 /*static const struct hitbox sceptor_hb[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
 };*/
 
-const char *Sceptor::idname()const{
-	return "sceptor";
+const char *Worker::idname()const{
+	return "Worker";
 }
 
-const char *Sceptor::classname()const{
-	return "Sceptor";
+const char *Worker::classname()const{
+	return "Worker";
 }
 
-const unsigned Sceptor::classid = registerClass("Sceptor", Conster<Sceptor>);
-Entity::EntityRegister<Sceptor> Sceptor::entityRegister("Sceptor");
+const unsigned Worker::classid = registerClass("Worker", Conster<Worker>);
+Entity::EntityRegister<Worker> Worker::entityRegister("Worker");
 
-void Sceptor::serialize(SerializeContext &sc){
+void Worker::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << aac; /* angular acceleration */
 	sc.o << throttle;
@@ -109,10 +109,9 @@ void Sceptor::serialize(SerializeContext &sc){
 	sc.o << paradec;
 	sc.o << (int)task;
 	sc.o << docked << returning << away << cloak << forcedEnemy;
-	sc.o << formPrev;
 }
 
-void Sceptor::unserialize(UnserializeContext &sc){
+void Worker::unserialize(UnserializeContext &sc){
 	WarField *oldw = w;
 
 	st::unserialize(sc);
@@ -128,7 +127,6 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	sc.i >> paradec;
 	sc.i >> (int&)task;
 	sc.i >> docked >> returning >> away >> cloak >> forcedEnemy;
-	sc.i >> formPrev;
 
 	// Update the dynamics body's parameters too.
 	if(bbody){
@@ -152,11 +150,11 @@ void Sceptor::unserialize(UnserializeContext &sc){
 		pf = NULL;*/
 }
 
-const char *Sceptor::dispname()const{
-	return "Interceptor";
+const char *Worker::dispname()const{
+	return "Worker";
 };
 
-double Sceptor::getMaxHealth()const{
+double Worker::getMaxHealth()const{
 	return maxHealthValue;
 }
 
@@ -164,7 +162,7 @@ double Sceptor::getMaxHealth()const{
 
 
 
-Sceptor::Sceptor(Game *game) : st(game),
+Worker::Worker(Game *game) : st(game),
 	mother(NULL),
 	reverser(0),
 	muzzleFlash(0),
@@ -175,7 +173,7 @@ Sceptor::Sceptor(Game *game) : st(game),
 	init();
 }
 
-Sceptor::Sceptor(WarField *aw) : st(aw),
+Worker::Worker(WarField *aw) : st(aw),
 	mother(NULL),
 	task(Auto),
 	fuel(maxfuel()),
@@ -184,12 +182,11 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	pf(NULL),
 	paradec(-1),
 	forcedEnemy(false),
-	formPrev(NULL),
 	evelo(vec3_000),
 	attitude(Passive),
 	active(true)
 {
-	Sceptor *const p = this;
+	Worker *const p = this;
 	init();
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
@@ -218,7 +215,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	integral[0] = integral[1] = 0.;
 }
 
-Sceptor::~Sceptor(){
+Worker::~Worker(){
 #ifndef DEDICATED
 	if(pf){
 		pf->immobilize();
@@ -227,13 +224,13 @@ Sceptor::~Sceptor(){
 #endif
 }
 
-const avec3_t Sceptor::gunPos[2] = {{35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-35. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
+const avec3_t Worker::gunPos[2] = {{10. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-10. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
 
 /// Loads initialization script. Shared among Server and Client.
-void Sceptor::init(){
+void Worker::init(){
 	static bool initialized = false;
 	if(!initialized){
-		sq_init(_SC("models/Sceptor.nut"),
+		sq_init(_SC("models/Worker.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
@@ -244,7 +241,7 @@ void Sceptor::init(){
 	}
 }
 
-void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
+void Worker::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *player = game->player;
 	Vec3d ofs;
 	static const Vec3d src[3] = {Vec3d(0., .001, .002) * 3, Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
@@ -261,14 +258,7 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	pos = this->pos + ofs;
 }
 
-/*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
-	SCEPTOR_t *p = (SCEPTOR_t*)pt;
-	if(!pt->active || pt->health <= 0.)
-		return;
-	pt->inputs = *inputs;
-}*/
-
-int Sceptor::popupMenu(PopupMenu &list){
+int Worker::popupMenu(PopupMenu &list){
 #ifndef DEDICATED
 	int ret = st::popupMenu(list);
 	list.append(sqa_translate("Dock"), 0, "dock")
@@ -281,14 +271,14 @@ int Sceptor::popupMenu(PopupMenu &list){
 #endif
 }
 
-Entity::Props Sceptor::props()const{
+Entity::Props Worker::props()const{
 	Props ret = st::props();
 //	ret.push_back(cpplib::dstring("Task: ") << task);
 //	ret.push_back(cpplib::dstring("Fuel: ") << fuel << '/' << maxfuel());
 	return ret;
 }
 
-bool Sceptor::undock(Docker *d){
+bool Worker::undock(Docker *d){
 	st::undock(d);
 	task = Undock;
 	mother = d;
@@ -315,7 +305,7 @@ void cmd_cloak(int argc, char *argv[]){
 	}
 }
 */
-void Sceptor::shootDualGun(double dt){
+void Worker::shootDualGun(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -BULLETSPEED);
 	int i = 0;
 	if(dt <= cooldown)
@@ -357,7 +347,7 @@ void Sceptor::shootDualGun(double dt){
 }
 
 // find the nearest enemy
-bool Sceptor::findEnemy(){
+bool Worker::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *closest = NULL;
@@ -385,117 +375,10 @@ bool Sceptor::findEnemy(){
 	return !!closest;
 }
 
-#if 1
-static int space_collide_callback(const struct otjEnumHitSphereParam *param, Entity *pt){
-	Entity *pt2 = (Entity*)param->hint;
-	if(pt == pt2)
-		return 0;
-	const double &dt = param->dt;
-	Vec3d dr = pt->pos - pt2->pos;
-	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
-	double sr = (r + r2) * (r + r2);
-	if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, NULL))
-			return 0;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, NULL))
-			return 0;
-	}
-
-	return 1;
-}
-
-static void space_collide_reflect(Entity *pt, const Vec3d &netvelo, const Vec3d &n, double f){
-	Vec3d dv = pt->velo - netvelo;
-	if(dv.sp(n) < 0)
-		pt->velo = -n * dv.sp(n) + netvelo;
-	else
-		pt->velo += n * f;
-}
-
-static void space_collide_resolve(Entity *pt, Entity *pt2, double dt){
-	const double ff = .2;
-	Vec3d dr = pt->pos - pt2->pos;
-	double sd = dr.slen();
-	double r = pt->getHitRadius(), r2 = pt2->getHitRadius();
-	double sr = (r + r2) * (r + r2);
-	double f = ff * dt / (/*sd */1) * (pt2->mass < pt->mass ? pt2->mass / pt->mass : 1.);
-	Vec3d n;
-
-	// If either one of concerned Entities are not solid, no hit check is needed.
-	if(!pt->solid(pt2) || !pt2->solid(pt))
-		return;
-
-	// If bounding spheres are not intersecting each other, no resolving is performed.
-	// Object tree should discard such cases, but that must be ensured here when the tree
-	// is yet to be built.
-	if(sr < sd)
-		return;
-
-	if(r * 2. < r2){
-		if(!pt2->tracehit(pt->pos, pt->velo, r, dt, NULL, NULL, &n))
-			return;
-	}
-	else if(r2 * 2. < r){
-		if(!pt->tracehit(pt2->pos, pt2->velo, r2, dt, NULL, NULL, &n))
-			return;
-		n *= -1;
-	}
-	else{
-		n = dr.norm();
-	}
-	if(1. < f) /* prevent oscillation */
-		f = 1.;
-
-	// Aquire momentum of center of mass
-	Vec3d netmomentum = pt->velo * pt->mass + pt2->velo * pt2->mass;
-
-	// Aquire velocity of netmomentum, which is exact velocity when the colliding object stick together.
-	Vec3d netvelo = netmomentum / (pt->mass + pt2->mass);
-
-	// terminate closing velocity component
-	space_collide_reflect(pt, netvelo, n, f * pt2->mass / (pt->mass + pt2->mass));
-	space_collide_reflect(pt2, netvelo, -n, f * pt->mass / (pt->mass + pt2->mass));
-}
-
-void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, Entity *collideignore2){
-	Entity *pt2;
-	if(1 && w->otroot){
-		Entity *iglist[3] = {pt, collideignore, collideignore2};
-//		struct entity_static *igvft[1] = {&rstation_s};
-		struct otjEnumHitSphereParam param;
-		param.root = w->otroot;
-		param.src = &pt->pos;
-		param.dir = &pt->velo;
-		param.dt = dt;
-		param.rad = pt->getHitRadius();
-		param.pos = NULL;
-		param.norm = NULL;
-		param.flags = OTJ_IGVFT | OTJ_CALLBACK;
-		param.callback = space_collide_callback;
-/*		param.hint = iglist;*/
-		param.hint = pt;
-		param.iglist = iglist;
-		param.niglist = 3;
-//		param.igvft = igvft;
-//		param.nigvft = 1;
-		if(pt2 = otjEnumPointHitSphere(&param)){
-			space_collide_resolve(pt, pt2, dt);
-		}
-	}
-	else for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
-		Entity *pt2 = *it;
-		if(pt2 != pt && pt2 != collideignore && pt2 != collideignore2 && pt2->w == pt->w){
-			space_collide_resolve(pt, pt2, dt);
-		}
-	}
-}
-#endif
 
 
 
-void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
+void Worker::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed){
 	Vec3d target(atarget);
 	Vec3d rdr = target - this->pos; // real dr
 	Vec3d rdrn = rdr.norm();
@@ -518,7 +401,7 @@ void Sceptor::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetv
 }
 
 // Find mother if has none
-Entity *Sceptor::findMother(){
+Entity *Worker::findMother(){
 	Entity *pm = NULL;
 	double best = 1e10 * 1e10, sl;
 	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
@@ -532,7 +415,7 @@ Entity *Sceptor::findMother(){
 	return pm;
 }
 
-void Sceptor::enterField(WarField *target){
+void Worker::enterField(WarField *target){
 	WarSpace *ws = *target;
 
 #ifndef DEDICATED
@@ -543,7 +426,7 @@ void Sceptor::enterField(WarField *target){
 	st::enterField(target);
 }
 
-bool Sceptor::buildBody(){
+bool Worker::buildBody(){
 //	WarSpace *ws = *w;
 //	if(ws && ws->bdw){
 		if(!bbody){
@@ -588,11 +471,11 @@ bool Sceptor::buildBody(){
 }
 
 /// Do not collide with dock base (such as Shipyards)
-short Sceptor::bbodyMask()const{
+short Worker::bbodyMask()const{
 	return ~2;
 }
 
-void Sceptor::leaveField(WarField *w){
+void Worker::leaveField(WarField *w){
 #ifndef DEDICATED
 	if(pf){
 		pf->immobilize();
@@ -602,13 +485,13 @@ void Sceptor::leaveField(WarField *w){
 	st::leaveField(w);
 }
 
-void Sceptor::anim(double dt){
+void Worker::anim(double dt){
 	if(!w)
 		return;
 	WarField *oldw = w;
 	Entity *pt = this;
-	Sceptor *const pf = this;
-	Sceptor *const p = this;
+	Worker *const pf = this;
+	Worker *const p = this;
 //	scarry_t *const mother = pf->mother;
 	Entity *pm = mother && mother->e ? mother->e : NULL;
 	Mat4d mat, imat;
@@ -889,18 +772,6 @@ void Sceptor::anim(double dt){
 					pt->inputs.press |= (sx < 0 ? PL_4 : 0 < sx ? PL_6 : 0) | (sy < 0 ? PL_2 : 0 < sy ? PL_8 : 0);*/
 					p->throttle = 1.;
 
-					// Randomly vibrates to avoid bullets
-					if(0 < fuel){
-						struct random_sequence rs;
-						uint32_t time = (uint32_t)(w->war_time() / .1);
-						init_rseq(&rs, cpplib::crc32(&id, sizeof id, cpplib::crc32(&time, sizeof time)));
-						Vec3d randomvec;
-						for(int i = 0; i < 3; i++)
-							randomvec[i] = drseq(&rs) - .5;
-						pt->velo += randomvec * dt * .5;
-						bbody->applyCentralForce(btvc(randomvec * mass * .5));
-					}
-
 					if(p->task == Attack || forward.sp(dv) < -.5){
 						xh = forward.vp(dv);
 						len = len2 = xh.len();
@@ -1004,29 +875,6 @@ void Sceptor::anim(double dt){
 					}
 					else
 						task = Auto;
-				}
-				else if(p->task == DeltaFormation){
-					int nwingmen = 1; // Count yourself
-					Sceptor *leader = NULL;
-					for(Sceptor *wingman = formPrev; wingman; wingman = wingman->formPrev){
-						nwingmen++;
-						if(!wingman->formPrev)
-							leader = wingman;
-					}
-					if(leader){
-						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .05), 0., nwingmen / 2 * .05);
-						dest = (leader->task == Moveto ? leader->dest : leader->pos) + dp;
-						Vec3d dr = pt->pos - dest;
-						if(dr.slen() < .01 * .01){
-							Quatd q1 = quat_u;
-							p->throttle = 0.;
-							parking = 1;
-							pt->velo += dr * (-dt * .5);
-							pt->rot = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
-						}
-						else
-							steerArrival(dt, dest, leader->velo, 1., .001);
-					}
 				}
 				else if(p->task == Dockque || p->task == Dock){
 					if(!pm)
@@ -1219,7 +1067,7 @@ void Sceptor::anim(double dt){
 				p->fuel -= consump;
 			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
 			acc = pt->rot.trans(acc0);
-			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
+			bbody->applyCentralForce(btvc(acc * spd * 10. * mass));
 			pt->velo += acc * spd;
 		}
 
@@ -1374,16 +1222,16 @@ void Sceptor::anim(double dt){
 #endif
 }
 
-void Sceptor::clientUpdate(double dt){
+void Worker::clientUpdate(double dt){
 	anim(dt);
 }
 
 // Docking and undocking will never stack.
-bool Sceptor::solid(const Entity *o)const{
+bool Worker::solid(const Entity *o)const{
 	return !(task == Undock || task == Dock);
 }
 
-int Sceptor::takedamage(double damage, int hitpart){
+int Worker::takedamage(double damage, int hitpart){
 	int ret = 1;
 	struct tent3d_line_list *tell = w->getTeline3d();
 	if(this->health < 0.)
@@ -1416,24 +1264,16 @@ int Sceptor::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-void Sceptor::postframe(){
-//	if(enemy && enemy->w != w)
-//		enemy = NULL;
-	if(formPrev && formPrev->w != w)
-		formPrev = NULL;
-	st::postframe();
-}
-
-bool Sceptor::isTargettable()const{
+bool Worker::isTargettable()const{
 	return true;
 }
-bool Sceptor::isSelectable()const{return true;}
+bool Worker::isSelectable()const{return true;}
 
-double Sceptor::getHitRadius()const{
+double Worker::getHitRadius()const{
 	return .01;
 }
 
-int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+int Worker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, n;
@@ -1492,32 +1332,14 @@ static warf_t *SCEPTOR_warp_dest(entity_t *pt, const warf_t *w){
 }
 #endif
 
-double Sceptor::maxfuel()const{
+double Worker::maxfuel()const{
 	return maxFuelValue;
 }
 
-bool Sceptor::command(EntityCommand *com){
+bool Worker::command(EntityCommand *com){
 	if(InterpretCommand<HaltCommand>(com)){
 		task = Idle;
 		forcedEnemy = false;
-	}
-	else if(InterpretCommand<DeltaCommand>(com)){
-		bool foundself = false;
-		WarField::EntityList::iterator it = w->el.begin();
-		for(; it != w->el.end(); it++) if(*it){
-			Entity *e = *it;
-			if(!foundself){
-				if(e == this)
-					foundself = true;
-				continue;
-			}
-			if(e->classname() == classname() && e->race == race){
-				formPrev = static_cast<Sceptor*>(e);
-				task = DeltaFormation;
-				break;
-			}
-		}
-		return true;
 	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
@@ -1562,7 +1384,7 @@ bool Sceptor::command(EntityCommand *com){
 
 
 
-int Sceptor::cmd_parade_formation(int argc, char *argv[], void *pv){
+int Worker::cmd_parade_formation(int argc, char *argv[], void *pv){
 	Player *pl = (Player*)pv;
 	for(Player::SelectSet::iterator e = pl->selected.begin(); e != pl->selected.end(); e++){
 		ParadeCommand com;
@@ -1582,9 +1404,9 @@ static int cmd_delta_formation(int argc, char *argv[], void *pv){
 
 static void register_sceptor_cmd(Game &game){
 	CmdAddParam("delta_formation", cmd_delta_formation, game.player);
-	CvarAdd("pid_pfactor", &Sceptor::pid_pfactor, cvar_double);
-	CvarAdd("pid_ifactor", &Sceptor::pid_ifactor, cvar_double);
-	CvarAdd("pid_dfactor", &Sceptor::pid_dfactor, cvar_double);
+	CvarAdd("pid_pfactor", &Worker::pid_pfactor, cvar_double);
+	CvarAdd("pid_ifactor", &Worker::pid_ifactor, cvar_double);
+	CvarAdd("pid_dfactor", &Worker::pid_dfactor, cvar_double);
 }
 
 static void register_server(){
@@ -1600,13 +1422,13 @@ public:
 
 
 
-double Sceptor::pid_pfactor = 1.;
-double Sceptor::pid_ifactor = 1.;
-double Sceptor::pid_dfactor = 1.;
+double Worker::pid_pfactor = 1.;
+double Worker::pid_ifactor = 1.;
+double Worker::pid_dfactor = 1.;
 
 #ifdef DEDICATED
-void Sceptor::draw(WarDraw*){}
-void Sceptor::drawtra(WarDraw*){}
-void Sceptor::drawOverlay(WarDraw*){}
+void Worker::draw(WarDraw*){}
+void Worker::drawtra(WarDraw*){}
+void Worker::drawOverlay(WarDraw*){}
 #endif
 

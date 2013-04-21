@@ -259,9 +259,14 @@ function init_Universe(){
 	local sch = screenheight();
 
 	mainmenu.title = "Select Mission";
-	mainmenu.addItem("Tutorial 1 - Basic", @() sendCM("load_tutorial1"));
-	mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
-	mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
+
+	// Show tutorial missions only in standalone games.
+	if(isServer()){
+		mainmenu.addItem("Tutorial 1 - Basic", @() sendCM("load_tutorial1"));
+		mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
+		mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
+	}
+
 	mainmenu.addItem("test", callTest);
 	mainmenu.addItem("Walkthrough", function(){mainmenu.close();});
 	mainmenu.addItem("Exit", "exit");

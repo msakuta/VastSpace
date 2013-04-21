@@ -599,6 +599,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Worker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ysdnmmot.cpp"
 				>
 			</File>
@@ -696,6 +700,10 @@
 				</File>
 				<File
 					RelativePath="..\src\draw\Warpable-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\draw\Worker-Draw.cpp"
 					>
 				</File>
 			</Filter>
@@ -857,6 +865,10 @@
 			</File>
 			<File
 				RelativePath="..\calc\tokker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Worker.h"
 				>
 			</File>
 			<Filter

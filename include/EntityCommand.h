@@ -292,12 +292,12 @@ struct EXPORT MoveCommand : public SerializableCommand{
 	virtual void unserialize(UnserializeContext &);
 };
 
-DERIVE_COMMAND(ParadeCommand, EntityCommand);
-DERIVE_COMMAND(DeltaCommand, EntityCommand);
+DERIVE_COMMAND(ParadeCommand, SerializableCommand);
+DERIVE_COMMAND(DeltaCommand, SerializableCommand);
 DERIVE_COMMAND(DockCommand, SerializableCommand);
 
-DERIVE_COMMAND(SetAggressiveCommand, EntityCommand);
-DERIVE_COMMAND(SetPassiveCommand, EntityCommand);
+DERIVE_COMMAND(SetAggressiveCommand, SerializableCommand);
+DERIVE_COMMAND(SetPassiveCommand, SerializableCommand);
 
 struct EXPORT WarpCommand : public MoveCommand{
 	COMMAND_BASIC_MEMBERS(WarpCommand, MoveCommand);

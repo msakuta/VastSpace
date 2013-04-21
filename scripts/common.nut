@@ -415,12 +415,8 @@ register_console_command("pause", function(...){
 
 register_console_command("halt", function(...){
 	foreach(e in player.selected){
-		if(isServer()){
-			if(e.race == player.race)
-				e.command("Halt");
-		}
-		else
-			CMHalt(e);
+		if(e.race == player.race)
+			e.command("Halt");
 	}
 });
 
@@ -429,27 +425,29 @@ register_console_command("moveto", function(...){
 		print("Usage: moveto x y z");
 		return;
 	}
-	local e = player.selected;
 	local pos = Vec3d(vargv[0], vargv[1], vargv[2]);
 	print(vargv[0] + " " + vargv[1] + " " + vargv[2] + " " + pos);
-	for(; e != null; e = e.selectnext)
+	foreach(e in player.selected)
 		e.command("Move", pos);
 });
 
 register_console_command("dock", function(...){
-	foreach(e in player.selected)
-		e.command("Dock");
+	foreach(e in player.selected){
+		if(e.race == player.race)
+			e.command("Dock");
+	}
 });
 
 register_console_command("undock", function(...){
-	local e = player.selected;
-	for(; e != null; e = e.selectnext)
-		e.command("RemainDockedCommand", false);
+	foreach(e in player.selected){
+		if(e.race == player.race)
+			e.command("RemainDockedCommand", false);
+	}
 });
 
 register_console_command("parade_formation", function(...){
 	local e = player.selected;
-	for(; e != null; e = e.selectnext)
+	foreach(e in player.selected)
 		e.command("Parade");
 });
 

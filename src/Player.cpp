@@ -1118,6 +1118,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			sq_pushinteger(v, p->race);
 			return 1;
 		}
+		else if(!strcmp(wcs, _SC("attackorder"))){
+			sq_pushinteger(v, p->attackorder);
+			return 1;
+		}
 		else
 			return SQ_ERROR;
 	}

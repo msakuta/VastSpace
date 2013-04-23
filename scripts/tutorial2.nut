@@ -13,17 +13,31 @@ player.setrot(lookrot);
 //player.setpos(lookrot.trans(Vec3d(0., 0., 0.25)));
 player.viewdist = 0.25;
 
+targetcs <- player.cs;
+
 class MessageSet{
 	count = 0;
 	messages = null;
 	constructor(){
 		messages = [];
 	}
-	function append(m, time = 5.){
-		messages.append([m, time]);
+	/// \param m The message string.
+	/// \param time Time for displaying the message in seconds.
+	/// \param proceedCond Closure that defines the condition to proceed to next message.
+	function append(m, time = 5., proceedCond = @() true){
+		messages.append([m, time, proceedCond]);
 		count++;
 		return this;
 	}
+}
+
+function selectSceptorCond(){
+	local selectCount = 0;
+	foreach(e in player.selected){
+		if(e.race == player.race)
+			selectCount++;
+	};
+	return 0 < selectCount;
 }
 
 langmessages <- {
@@ -31,15 +45,84 @@ langmessages <- {
 	MessageSet()
 	.append("Welcome to Tutorial 2")
 	.append("Here you can learn combat control.")
-	.append("Now, select the Interceptors.")
+	.append("Now, select the Interceptors.", 5.0, selectSceptorCond)
+	.append("Now, press attack order button.")
+	.append("Now, click or drag around an enemy unit.")
+	.append("You can order an unit to stop attacking by pressing " + tlate("Halt") + " button.")
 	]
 	,
 	jpn = [
 	MessageSet()
 	.append("チュートリアル2へようこそ")
 	.append("ここでは戦闘の操作方法を学習することができます。")
-	.append("Interceptorを選択してください。")
+	.append("Interceptorを選択してください。", 5.0, selectSceptorCond)
+	.append("攻撃命令ボタンを押してください。")
+	.append("敵ユニットをクリックするか周囲をドラッグしてください。")
+	.append("ユニットに攻撃を止めるように命令するには、" + tlate("Halt") + "ボタンをクリックするか周囲をドラッグしてください。")
 	]
+}
+
+yieldEvent <- false;
+
+function sequence(){
+	local s = langmessages[lang == eng ? "eng" : "jpn"];
+
+	local m = s[0].messages[0];
+
+	GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	while(!yieldEvent)
+		yield true;
+	yieldEvent = false;
+
+	m = s[0].messages[1];
+	GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	while(!yieldEvent)
+		yield true;
+	yieldEvent = false;
+
+	m = s[0].messages[2];
+	local lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	// Wait until a Sceptor is selected
+	while(!selectSceptorCond())
+		yield true;
+	if(lastw.alive)
+		lastw.close();
+	yieldEvent = false;
+
+	m = s[0].messages[3];
+	lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	// Wait until the player enters attack order mode
+	while(!player.attackorder)
+		yield true;
+	if(lastw.alive)
+		lastw.close();
+	yieldEvent = false;
+
+	m = s[0].messages[4];
+	lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	local function isAnyoneAttacking(){
+		foreach(e in targetcs.entlist)
+			if(e.race == player.race && e.enemy != null)
+				return true;
+		return false;
+	}
+
+	// Wait until the player issues attack order
+	while(!isAnyoneAttacking())
+		yield true;
+	if(lastw.alive)
+		lastw.close();
+	yieldEvent = false;
+
+	m = s[0].messages[5];
+	GLWmessage(m[0], m[1], @() yieldEvent = true);
+
+	return false;
 }
 
 sequenceIndex <- 0;
@@ -47,30 +130,38 @@ messageIndex <- 0;
 lastmessage <- null;
 suppressNext <- false;
 
-function inccm(){
+function currentMessageEntry(){
+	local sequences = langmessages[lang == eng ? "eng" : "jpn"];
+	if(sequenceIndex < sequences.len()){
+		local messages = sequences[sequenceIndex];
+		if(messageIndex < messages.count)
+			return messages.messages[messageIndex];
+	}
+	return null;
+}
+
+function showNextMessage(){
+	local messageEntry = currentMessageEntry();
+	if(message == null)
+		return messageIndex++;
+	else{
+		messageIndex++;
+		return lastmessage = GLWmessage(messageEntry[0], messageEntry[1], incrementMessage);
+	}
+}
+
+function incrementMessage(){
 	if(suppressNext){
 		suppressNext = false;
 		return;
 	}
-	local sequences = langmessages[lang == eng ? "eng" : "jpn"];
-	if(sequenceIndex < sequences.len()){
-		local messages = sequences[sequenceIndex];
-		if(messageIndex < messages.count){
-			local message = messages.messages[messageIndex][0];
-			if(message == "")
-				return messageIndex++;
-			else{
-				messageIndex++;
-				return lastmessage = GLWmessage(message, messages.messages[messageIndex][1], inccm);
-			}
-		}
-		else{
-			messageIndex = 0;
-		}
-	}
+	local messageEntry = currentMessageEntry();
+	if(messageEntry != null && messageEntry[2]())
+		return showNextMessage();
 }
 
-local mes = inccm();
+//local mes = incrementMessage();
+mes <- sequence();
 
 function tutor_proceed(){
 	sequenceIndex++;
@@ -79,17 +170,18 @@ function tutor_proceed(){
 		suppressNext = true;
 		lastmessage.close();
 	}
-	inccm();
+	incrementMessage();
 };
 
 function tutor_restart(){
-	sequenceIndex = 0;
+	mes = sequence();
+/*	sequenceIndex = 0;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
 		suppressNext = true;
 		lastmessage.close();
 	}
-	inccm();
+	incrementMessage();*/
 };
 
 function tutor_end(){
@@ -99,11 +191,10 @@ function tutor_end(){
 		suppressNext = true;
 		lastmessage.close();
 	}
-	inccm();
+	incrementMessage();
 };
 
 checktime <- 0;
-targetcs <- player.cs;
 
 old_frameproc <- "frameproc" in this ? frameproc : null;
 
@@ -117,11 +208,24 @@ function frameproc(dt){
 		local ourCount = countents(targetcs, 0, "Sceptor");
 		if(ourCount == 0)
 			deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, targetcs, null);
-		if(sequenceIndex == 0 && messageIndex >= 2){
+/*		if(sequenceIndex == 0 && messageIndex >= 2)*/{
 			local targetCount = countents(targetcs, 1, "Worker");
 			if(targetCount == 0)
 				deltaFormation("Worker", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, targetcs, null);
 		}
+
+/*		// Check only after previous message was vanished.
+		if(lastmessage == null || !lastmessage.alive){
+			local messageEntry = currentMessageEntry();
+			if(messageEntry != null && messageEntry[2]()){
+				incrementMessage();
+			}
+		}*/
+	}
+
+	if(mes != null && mes.getstatus() == "suspended"){
+		if(!resume mes)
+			mes = null;
 	}
 
 	if(old_frameproc != null)

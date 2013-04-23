@@ -36,7 +36,7 @@ GLWmessage::GLWmessage(Game *game, const char *messagestring, double atimer, HSQ
 GLWmessage::GLWmessage(Game *game, const char *messagestring, double atimer, HSQUIRRELVM av, HSQOBJECT &ahoOnDestroy)
 : st(game), resized(false), string(messagestring), timer(atimer), v(av), hoOnDestroy(ahoOnDestroy){
 	// Unhappy mess with raw object handling, but we cannot lose the Squirrel object.
-	sq_addref(g_sqvm, &hoOnDestroy);
+	sq_addref(v, &hoOnDestroy);
 }
 
 /// Ensures destroy event handler to be invoked and member Squirrel object released.

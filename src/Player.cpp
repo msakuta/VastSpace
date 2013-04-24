@@ -13,6 +13,7 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "glw/glwindow.h"
+#include "glw/GLWbutton.h"
 #include "motion.h"
 #include "ClientMessage.h"
 #include "GetFov.h"

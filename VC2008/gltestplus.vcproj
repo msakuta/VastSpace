@@ -737,6 +737,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\src\glw\GLWbutton.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\src\glw\GLWchart.cpp"
 					>
 				</File>
@@ -1174,6 +1178,10 @@
 			<Filter
 				Name="glw"
 				>
+				<File
+					RelativePath="..\include\glw\GLWbutton.h"
+					>
+				</File>
 				<File
 					RelativePath="..\include\glw\GLWchart.h"
 					>

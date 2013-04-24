@@ -3,7 +3,7 @@
  */
 #ifndef GLW_GLWTASKBAR_H
 #define GLW_GLWTASKBAR_H
-#include "glwindow.h"
+#include "GLWbutton.h"
 
 /// \brief The window class for the task bar.
 class GLWtaskBar : public GLwindowSizeable{

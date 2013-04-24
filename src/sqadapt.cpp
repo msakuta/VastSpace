@@ -767,6 +767,18 @@ template<void (__stdcall *fp)(GLenum)> SQInteger sqf_adapter1(HSQUIRRELVM v){
 template<typename FP, FP fp> SQInteger sqf_adapter(HSQUIRRELVM v){
 }
 
+/// \brief Overriding default newthread
+static SQInteger sqf_gnewthread(HSQUIRRELVM v){
+	// Initial stack size has no reason, but it seems to require some enough value.
+	// Default value (20) causes "stack overflow, cannot resize stack while in  a metamethod" error.
+	HSQUIRRELVM newv = sq_newthread(v, 128);
+
+	sq_setforeignptr(newv, sq_getforeignptr(v));
+	sq_move(newv,v,-2);
+	return 1;
+}
+
+
 #ifdef _WIN32
 SQInteger sqf_glVertex(HSQUIRRELVM v){
 	try{
@@ -981,6 +993,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_debugBuild, _SC("debugBuild"));
 	register_global_func(v, sqf_x64Build, _SC("x64Build"));
 	register_global_func(v, sqf_isLinux, _SC("isLinux"));
+	register_global_func(v, sqf_gnewthread, _SC("gnewthread"));
 #ifdef _WIN32
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));

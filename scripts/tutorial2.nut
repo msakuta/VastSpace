@@ -69,41 +69,41 @@ function sequence(){
 
 	local m = s[0].messages[0];
 
-	GLWmessage(m[0], m[1], @() yieldEvent = true);
+	local lastw = GLWmessage(m[0], m[1]);
 
-	while(!yieldEvent)
-		yield true;
+	while(lastw.alive)
+		::suspend(true);
 	yieldEvent = false;
 
 	m = s[0].messages[1];
-	GLWmessage(m[0], m[1], @() yieldEvent = true);
+	lastw = GLWmessage(m[0], m[1]);
 
-	while(!yieldEvent)
-		yield true;
+	while(lastw.alive)
+		::suspend(true);
 	yieldEvent = false;
 
 	m = s[0].messages[2];
-	local lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+	lastw = GLWmessage(m[0], m[1]);
 
 	// Wait until a Sceptor is selected
 	while(!selectSceptorCond())
-		yield true;
+		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
 	yieldEvent = false;
 
 	m = s[0].messages[3];
-	lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+	lastw = GLWmessage(m[0], m[1]);
 
 	// Wait until the player enters attack order mode
 	while(!player.attackorder)
-		yield true;
+		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
 	yieldEvent = false;
 
 	m = s[0].messages[4];
-	lastw = GLWmessage(m[0], m[1], @() yieldEvent = true);
+	lastw = GLWmessage(m[0], m[1]);
 
 	local function isAnyoneAttacking(){
 		foreach(e in targetcs.entlist)
@@ -114,13 +114,16 @@ function sequence(){
 
 	// Wait until the player issues attack order
 	while(!isAnyoneAttacking())
-		yield true;
+		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
 	yieldEvent = false;
 
 	m = s[0].messages[5];
-	GLWmessage(m[0], m[1], @() yieldEvent = true);
+	lastw = GLWmessage(m[0], m[1]);
+
+	while(lastw.alive)
+		::suspend(true);
 
 	return false;
 }
@@ -161,7 +164,8 @@ function incrementMessage(){
 }
 
 //local mes = incrementMessage();
-mes <- sequence();
+mes <- ::gnewthread(sequence); // We cannot use newthread for unknown reason.
+mes.call();
 
 function tutor_proceed(){
 	sequenceIndex++;
@@ -174,7 +178,8 @@ function tutor_proceed(){
 };
 
 function tutor_restart(){
-	mes = sequence();
+	mes = ::gnewthread(sequence);
+	mes.call();
 /*	sequenceIndex = 0;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
@@ -224,7 +229,8 @@ function frameproc(dt){
 	}
 
 	if(mes != null && mes.getstatus() == "suspended"){
-		if(!resume mes)
+		if(!mes.wakeup())
+//		if(!resume mes)
 			mes = null;
 	}
 

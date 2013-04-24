@@ -51,7 +51,7 @@ GLWmessage::~GLWmessage(){
 			sq_pop(v, 1);
 		}
 	}
-	else{
+	else if(hoOnDestroy._type != OT_NULL){
 		sq_pushobject(v, hoOnDestroy);
 		sq_pushroottable(v); // The this pointer could be altered to realize method pointer.
 		sq_call(v, 1, 0, 1);
@@ -121,7 +121,7 @@ SQInteger GLWmessage::sqf_constructor(HSQUIRRELVM v){
 		timer = 0.;
 
 	GLWmessage *p = NULL;
-	if(3 <= argc){
+	if(3 < argc){
 		const SQChar *onDestroy;
 		HSQOBJECT ho;
 		if(SQ_SUCCEEDED(sq_getstring(v, 4, &onDestroy)))

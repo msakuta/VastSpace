@@ -62,8 +62,6 @@ langmessages <- {
 	]
 }
 
-yieldEvent <- false;
-
 function sequence(){
 	local s = langmessages[lang == eng ? "eng" : "jpn"];
 
@@ -73,14 +71,12 @@ function sequence(){
 
 	while(lastw.alive)
 		::suspend(true);
-	yieldEvent = false;
 
 	m = s[0].messages[1];
 	lastw = GLWmessage(m[0], m[1]);
 
 	while(lastw.alive)
 		::suspend(true);
-	yieldEvent = false;
 
 	m = s[0].messages[2];
 	lastw = GLWmessage(m[0], m[1]);
@@ -90,7 +86,6 @@ function sequence(){
 		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
-	yieldEvent = false;
 
 	m = s[0].messages[3];
 	lastw = GLWmessage(m[0], m[1]);
@@ -100,7 +95,6 @@ function sequence(){
 		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
-	yieldEvent = false;
 
 	m = s[0].messages[4];
 	lastw = GLWmessage(m[0], m[1]);
@@ -117,7 +111,6 @@ function sequence(){
 		::suspend(true);
 	if(lastw.alive)
 		lastw.close();
-	yieldEvent = false;
 
 	m = s[0].messages[5];
 	lastw = GLWmessage(m[0], m[1]);

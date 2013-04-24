@@ -376,15 +376,20 @@ public:
 	const char *classname()const;
 	GLwindow *parent;
 	const char *tipstring;
+	float flashTime; ///< Remaining time for flashing effect in seconds
 	bool depress;
-	GLWbutton(Game *game) : st(game), parent(NULL), tipstring(NULL), depress(false){}
+	GLWbutton(Game *game) : st(game), parent(NULL), tipstring(NULL), flashTime(0.f), depress(false){}
 	GLWrect extentRect()const{return GLWrect(xpos, ypos, xpos + width, ypos + height);}
+	virtual void anim(double dt);
 	virtual void draw(GLwindowState &, double) = 0;
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	virtual void mouseEnter(GLwindowState &);
 	virtual void mouseLeave(GLwindowState &);
 	virtual void press() = 0;
 	virtual ~GLWbutton(){}
+protected:
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *)const;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *);
 };
 
 /// Impulsive command buttons that activates when mouse button is pressed down and released.
@@ -434,6 +439,7 @@ public:
 	int xbuttonsize, ybuttonsize;
 	GLWbuttonMatrix(Game *game, int x, int y, int xsize = 32, int ysize = 32);
 	~GLWbuttonMatrix();
+	virtual void anim(double dt);
 	virtual void draw(GLwindowState &,double);
 	virtual bool focusable()const;
 	virtual int mouse(GLwindowState &, int button, int state, int x, int y);
@@ -441,6 +447,8 @@ public:
 	virtual void mouseLeave(GLwindowState &);
 	bool addButton(GLWbutton *button, int x = -1, int y = -1);
 	static GLWbuttonMatrix *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
+	GLWbutton *getButton(int index);
+	GLWbutton *getButton(int x, int y);
 };
 
 
@@ -500,5 +508,20 @@ inline void GLwindow::defocus(){
 inline GLwindow *GLwindow::getFocus(){
 	return glwfocus;
 }
+
+
+
+//-----------------------------------------------------------------------------
+//     GLWbuttonMatrix Inline Implementation
+//-----------------------------------------------------------------------------
+
+inline GLWbutton *GLWbuttonMatrix::getButton(int index){
+	return 0 <= index && index < xbuttons * ybuttons ? buttons[index % xbuttons + index / ybuttons * xbuttons] : NULL;
+}
+
+inline GLWbutton *GLWbuttonMatrix::getButton(int x, int y){
+	return 0 <= x && x < xbuttons && 0 <= y && y < ybuttons ? buttons[x + y / ybuttons * xbuttons] : NULL;
+}
+
 
 #endif

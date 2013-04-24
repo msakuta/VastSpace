@@ -338,8 +338,8 @@ function initUI(){
 			but.title = tlate("command");
 			but.x = taskbar.width;
 			but.y = sch - but.height;
-			but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
-			but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
+			moveOrderButton <- but.addMoveOrderButton("textures/move2.png", "textures/move.png", tlate("Move order"));
+			attackOrderButton <- but.addToggleButton("attackorder", "textures/attack2.png", "textures/attack.png", tlate("Attack order"));
 			but.addToggleButton("forceattackorder", "textures/forceattack2.png", "textures/forceattack.png", tlate("Force Attack order"));
 			but.addButton("halt", "textures/halt.png", tlate("Halt"));
 			but.addButton("dock", "textures/dock.png", tlate("Dock"));

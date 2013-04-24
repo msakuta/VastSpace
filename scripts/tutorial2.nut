@@ -89,6 +89,7 @@ function sequence(){
 
 	m = s[0].messages[3];
 	lastw = GLWmessage(m[0], m[1]);
+	attackOrderButton.flashTime = 5.;
 
 	// Wait until the player enters attack order mode
 	while(!player.attackorder)
@@ -156,8 +157,8 @@ function incrementMessage(){
 		return showNextMessage();
 }
 
-//local mes = incrementMessage();
-mes <- ::gnewthread(sequence); // We cannot use newthread for unknown reason.
+//mes <- sequence(); // We cannot use newthread for unknown reason.
+mes <- ::gnewthread(sequence);
 mes.call();
 
 function tutor_proceed(){
@@ -203,22 +204,16 @@ function frameproc(dt){
 
 	if(checktime + 2. < currenttime){
 		checktime = currenttime;
+
+		// Re-generate Sceptors
 		local ourCount = countents(targetcs, 0, "Sceptor");
 		if(ourCount == 0)
 			deltaFormation("Sceptor", 0, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, targetcs, null);
-/*		if(sequenceIndex == 0 && messageIndex >= 2)*/{
-			local targetCount = countents(targetcs, 1, "Worker");
-			if(targetCount == 0)
-				deltaFormation("Worker", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, targetcs, null);
-		}
 
-/*		// Check only after previous message was vanished.
-		if(lastmessage == null || !lastmessage.alive){
-			local messageEntry = currentMessageEntry();
-			if(messageEntry != null && messageEntry[2]()){
-				incrementMessage();
-			}
-		}*/
+		// Re-generate Workers
+		local targetCount = countents(targetcs, 1, "Worker");
+		if(targetCount == 0)
+			deltaFormation("Worker", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.05, 5, targetcs, null);
 	}
 
 	if(mes != null && mes.getstatus() == "suspended"){

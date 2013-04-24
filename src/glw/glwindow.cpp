@@ -2,6 +2,7 @@
  * \brief Implementation of GLwindow and its subclasses.
  * Implements GLWbutton branch too.
  */
+#define NOMINMAX
 #include "glw/glwindow.h"
 #include "Application.h"
 #include "cmd.h"
@@ -16,6 +17,7 @@
 #include "StaticInitializer.h"
 extern "C"{
 #include <clib/c.h>
+#include <clib/cfloat.h>
 #include <clib/GL/gldraw.h>
 }
 #include <stddef.h>
@@ -1227,6 +1229,11 @@ GLWtip *glwtip = NULL;
 
 
 const char *GLWbutton::classname()const{return "GLWbutton";}
+
+void GLWbutton::anim(double dt){
+	flashTime = approach(flashTime, 0., dt, 0.);
+}
+
 void GLWbutton::mouseEnter(GLwindowState &){}
 void GLWbutton::mouseLeave(GLwindowState &){}
 int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
@@ -1274,6 +1281,44 @@ int GLWbutton::mouse(GLwindowState &ws, int button, int state, int mousex, int m
 	}
 	return 0;
 }
+
+SQInteger GLWbutton::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
+	if(!strcmp(wcs, _SC("depressed"))){
+		sq_pushbool(v, depress);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("flashTime"))){
+		sq_pushfloat(v, flashTime);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("tip"))){
+		sq_pushstring(v, tipstring, -1);
+		return 1;
+	}
+	else
+		return GLelement::sqGet(v, wcs);
+}
+
+SQInteger GLWbutton::sqSet(HSQUIRRELVM v, const SQChar *wcs){
+	if(!strcmp(wcs, _SC("depressed"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return SQ_ERROR;
+		depress = !!b;
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("flashTime"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return SQ_ERROR;
+		flashTime = f;
+		return 0;
+	}
+	else
+		return GLelement::sqSet(v, wcs);
+}
+
+
 
 GLWcommandButton::GLWcommandButton(Game *game, const char *filename, const char *command, const char *tips) :
 	st(game),
@@ -1384,7 +1429,7 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 
 	// We could have empty texname1, in which case we use the darkened version of the texture
 	// of the active state.  The image can be darkened when the button is depressed, too.
-	GLubyte mod = depress || this->texname1 == "" && !s ? 127 : 255;
+	GLfloat mod = depress || this->texname1 == "" && !s ? 0.5 : 1.;
 	gltestp::dstring texname = s || this->texname1 == "" ? this->texname : this->texname1;
 
 	GLuint texlist;
@@ -1400,7 +1445,7 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 	if(!texlist)
 		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
-	glColor4ub(mod,mod,mod,255);
+	glColor4f(mod,mod,mod,1.f);
 	glCallList(texlist);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0,1); glVertex2i(xpos, ypos);
@@ -1408,6 +1453,31 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 	glTexCoord2i(1,0); glVertex2i(xpos + width, ypos + height);
 	glTexCoord2i(0,0); glVertex2i(xpos, ypos + height);
 	glEnd();
+	if(0 < flashTime){
+		glEnable(GL_BLEND);
+
+		// Reserve previous blendfunc
+		GLint blendSrc, blendDst;
+		glGetIntegerv(GL_BLEND_SRC, &blendSrc);
+		glGetIntegerv(GL_BLEND_DST, &blendDst);
+
+		// Set to add blend
+		glBlendFunc(GL_ONE, GL_ONE);
+
+		mod = fmod(flashTime, 1.f) * 4.f;
+		if(2.f < mod)
+			mod = 4.f - mod;
+		glColor4f(mod, mod, mod, 1.f);
+		glBegin(GL_QUADS);
+		glTexCoord2i(0,1); glVertex2i(xpos, ypos);
+		glTexCoord2i(1,1); glVertex2i(xpos + width, ypos);
+		glTexCoord2i(1,0); glVertex2i(xpos + width, ypos + height);
+		glTexCoord2i(0,0); glVertex2i(xpos, ypos + height);
+		glEnd();
+
+		// Restore previous values
+		glBlendFunc(blendSrc, blendDst);
+	}
 	glPopAttrib();
 }
 
@@ -1456,6 +1526,12 @@ GLWbuttonMatrix::~GLWbuttonMatrix(){
 	}
 }
 
+void GLWbuttonMatrix::anim(double dt){
+	for(int y = 0; y < ybuttons; y++) for(int x = 0; x < xbuttons; x++){
+		if(buttons[x + y * xbuttons])
+			buttons[x + y * xbuttons]->anim(dt);
+	}
+}
 
 void GLWbuttonMatrix::draw(GLwindowState &ws, double dt){
 	GLWrect r = clientRect();
@@ -1627,6 +1703,23 @@ static SQInteger sqf_GLWbuttonMatrix_addMoveOrderButton(HSQUIRRELVM v){
 	return 1;
 }
 
+/// \brief getButton(pos)
+/// \param pos zero-based index for target button.
+static SQInteger sqf_GLWbuttonMatrix_getButton(HSQUIRRELVM v){
+	GLWbuttonMatrix *p = GLWbuttonMatrix::sq_refobj(v);
+	const SQChar *path, *path1, *tips;
+	SQInteger i;
+	if(SQ_FAILED(sq_getinteger(v, 2, &i)))
+		return SQ_ERROR;
+	GLWbutton *b = p->getButton(i);
+	if(!b){
+		sq_pushnull(v);
+		return 1;
+	}
+	b->sq_pushobj(v, b);
+	return 1;
+}
+
 class GLWsqStateButton : public GLWstateButton{
 public:
 	HSQOBJECT hstatefunc;
@@ -1741,6 +1834,7 @@ static bool GLWbuttonMatrix_sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
 	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
 	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
+	register_closure(v, _SC("getButton"), sqf_GLWbuttonMatrix_getButton);
 	sq_createslot(v, -3);
 	return true;
 }

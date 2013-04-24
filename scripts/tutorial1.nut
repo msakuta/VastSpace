@@ -126,6 +126,9 @@ local mes = inccm();
 
 function tutor_proceed(){
 	sequenceIndex++;
+	print("sequenceIndex became " + sequenceIndex);
+	if(sequenceIndex == 3)
+		moveOrderButton.flashTime = 5.;
 	messageIndex = 0;
 	if(lastmessage != null && lastmessage.alive){
 		suppressNext = true;

@@ -49,6 +49,7 @@ langmessages <- {
 	.append("Now, press attack order button.")
 	.append("Now, click or drag around an enemy unit.")
 	.append("You can order an unit to stop attacking by pressing " + tlate("Halt") + " button.")
+	.append("Tutorial 2 is complete.")
 	]
 	,
 	jpn = [
@@ -59,6 +60,7 @@ langmessages <- {
 	.append("攻撃命令ボタンを押してください。")
 	.append("敵ユニットをクリックするか周囲をドラッグしてください。")
 	.append("ユニットに攻撃を止めるように命令するには、" + tlate("Halt") + "ボタンをクリックするか周囲をドラッグしてください。")
+	.append("チュートリアル2は完了です。")
 	]
 }
 
@@ -119,6 +121,12 @@ function sequence(){
 	while(lastw.alive)
 		::suspend(true);
 
+	m = s[0].messages[6];
+	lastw = GLWmessage(m[0], m[1]);
+
+	while(lastw.alive)
+		::suspend(true);
+
 	return false;
 }
 
@@ -127,77 +135,25 @@ messageIndex <- 0;
 lastmessage <- null;
 suppressNext <- false;
 
-function currentMessageEntry(){
-	local sequences = langmessages[lang == eng ? "eng" : "jpn"];
-	if(sequenceIndex < sequences.len()){
-		local messages = sequences[sequenceIndex];
-		if(messageIndex < messages.count)
-			return messages.messages[messageIndex];
-	}
-	return null;
-}
-
-function showNextMessage(){
-	local messageEntry = currentMessageEntry();
-	if(message == null)
-		return messageIndex++;
-	else{
-		messageIndex++;
-		return lastmessage = GLWmessage(messageEntry[0], messageEntry[1], incrementMessage);
-	}
-}
-
-function incrementMessage(){
-	if(suppressNext){
-		suppressNext = false;
-		return;
-	}
-	local messageEntry = currentMessageEntry();
-	if(messageEntry != null && messageEntry[2]())
-		return showNextMessage();
-}
 
 //mes <- sequence(); // We cannot use newthread for unknown reason.
 mes <- ::gnewthread(sequence);
 mes.call();
 
 function tutor_proceed(){
-	sequenceIndex++;
-	messageIndex = 0;
-	if(lastmessage != null && lastmessage.alive){
-		suppressNext = true;
-		lastmessage.close();
-	}
-	incrementMessage();
 };
 
 function tutor_restart(){
 	mes = ::gnewthread(sequence);
 	mes.call();
-/*	sequenceIndex = 0;
-	messageIndex = 0;
-	if(lastmessage != null && lastmessage.alive){
-		suppressNext = true;
-		lastmessage.close();
-	}
-	incrementMessage();*/
 };
 
 function tutor_end(){
-	sequenceIndex = 1000;
-	messageIndex = 0;
-	if(lastmessage != null && lastmessage.alive){
-		suppressNext = true;
-		lastmessage.close();
-	}
-	incrementMessage();
 };
 
 checktime <- 0;
 
-old_frameproc <- "frameproc" in this ? frameproc : null;
-
-function frameproc(dt){
+frameProcs.append(function(dt){
 	local global_time = universe.global_time;
 
 	local currenttime = universe.global_time + 9.;
@@ -221,7 +177,5 @@ function frameproc(dt){
 //		if(!resume mes)
 			mes = null;
 	}
+})
 
-	if(old_frameproc != null)
-		old_frameproc(dt);
-}

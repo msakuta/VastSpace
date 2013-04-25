@@ -34,6 +34,11 @@ GLWtaskBar::GLWtaskBar(Game *game) : st(game), xbuttonsize(64), ybuttonsize(64){
 	align = AlignX0 | AlignY0 | AlignY1;
 }
 
+void GLWtaskBar::anim(double dt){
+	for(int i = 0; i < buttons.size(); i++) if(buttons[i])
+		buttons[i]->anim(dt);
+}
+
 int GLWtaskBar::mouse(GLwindowState &ws, int button, int state, int mousex, int mousey){
 	if(state == GLUT_KEEP_DOWN || state == GLUT_KEEP_UP){
 		for(int i = 0; i < buttons.size(); i++) if(buttons[i])

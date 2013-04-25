@@ -262,9 +262,11 @@ function init_Universe(){
 
 	// Show tutorial missions only in standalone games.
 	if(isServer()){
-		mainmenu.addItem("Tutorial 1 - Basic", @() sendCM("load_tutorial1"));
-		mainmenu.addItem("Tutorial 2 - Combat", "loadmission \"scripts/tutorial2.nut\"");
-		mainmenu.addItem("Tutorial 3", "loadmission \"scripts/tutorial3.nut\"");
+		// Not using sendCM() because tutorials are only valid in standalone game, which means
+		// no client messages over network is required.
+		mainmenu.addItem("Tutorial 1 - Basic", @() loadmission("scripts/tutorial1"));
+		mainmenu.addItem("Tutorial 2 - Combat", @() loadmission("scripts/tutorial2.nut"));
+		mainmenu.addItem("Tutorial 3 - Construction", @() loadmission("scripts/tutorial3.nut"));
 	}
 
 	mainmenu.addItem("test", callTest);
@@ -384,7 +386,7 @@ function initUI(){
 		@() true, commandButtonFunc, tlate("Commands")));
 	taskbar.addButton(GLWsqStateButton("textures/cameras.png", "textures/cameras.png",
 		@() true, cameraButtonFunc, tlate("Cameras")));
-	taskbar.addButton(GLWsqStateButton("textures/buildman.png", null,
+	buildManButton <- taskbar.addButton(GLWsqStateButton("textures/buildman.png", null,
 		function(){ // True if at least one Entity in selection is a builder.
 			foreach(e in player.selected)
 				if(e.builder != null)
@@ -433,7 +435,7 @@ function initUI(){
 
 missionLoaded <- false;
 
-function frameproc(dt){
+frameProcs.append(function (dt){
 	if(!("squirrelShare" in this))
 		return;
 	if(!missionLoaded){
@@ -457,6 +459,6 @@ function frameproc(dt){
 			}
 		}
 	}
-}
+})
 
 //print("init.nut execution time: " + tm.lap() + " sec");

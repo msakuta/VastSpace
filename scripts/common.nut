@@ -763,6 +763,13 @@ clientMessageResponses <- {
 	tutor_end = @() tutor_end(),
 };
 
+/// Append functions to this array to register multiple frame handlers without interference.
+frameProcs <- [];
+
+function frameproc(dt){
+	foreach(f in frameProcs)
+		f(dt);
+}
 
 function earth(){
 	return universe.findcspath("/sol/earth/Earth");

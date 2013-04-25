@@ -11,6 +11,7 @@ public:
 	typedef GLwindowSizeable st;
 	GLWtaskBar(Game *game);
 
+	void anim(double dt);
 	int mouse(GLwindowState &, int button, int state, int x, int y);
 	void mouseEnter(GLwindowState &ws);
 	void mouseLeave(GLwindowState &ws);

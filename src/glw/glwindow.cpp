@@ -1,6 +1,5 @@
 /** \file
  * \brief Implementation of GLwindow and its subclasses.
- * Implements GLWbutton branch too.
  */
 #define NOMINMAX
 #include "glw/glwindow.h"

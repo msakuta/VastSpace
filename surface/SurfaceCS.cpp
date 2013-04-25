@@ -33,7 +33,7 @@ SurfaceCS::SurfaceCS(Game *game) : st(game), wm(NULL), map_top(NULL), mapshape(N
 
 extern btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo&);
 
-SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), map_top(NULL){
+SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), wm(NULL), map_top(NULL), mapshape(NULL){
 	init();
 }
 

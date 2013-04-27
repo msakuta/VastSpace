@@ -364,6 +364,7 @@ void BuildCancelCommand::unserialize(UnserializeContext &sc){
 
 
 #ifndef DEDICATED
+/*
 int cmd_build(int argc, char *argv[]){
 	if(!application.clientGame)
 		return 0;
@@ -379,11 +380,41 @@ int cmd_build(int argc, char *argv[]){
 	}
 	return 0;
 }
+*/
+
+bool GLWbuild::sq_define(HSQUIRRELVM v){
+	st::sq_define(v);
+	sq_pushstring(v, _SC("GLWbuild"), -1);
+	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_get(v, -3);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, "GLWbuild");
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+	register_closure(v, _SC("constructor"), sqf_constructor);
+	sq_createslot(v, -3);
+	return true;
+}
+
+/// Squirrel constructor
+SQInteger GLWbuild::sqf_constructor(HSQUIRRELVM v){
+	SQInteger argc = sq_gettop(v);
+	Game *game = reinterpret_cast<Game*>(sq_getforeignptr(v));
+	Builder *a = Entity::sq_refobj(v, 2)->getBuilder();
+
+	GLWbuild *p = new GLWbuild(game, "Build window", a);
+
+	sq_assignobj(v, p);
+	glwAppend(p);
+	return 0;
+}
+
+static sqa::Initializer definer("GLWbuild", GLWbuild::sq_define);
+
 #endif
 
 static void register_build(){
 #ifndef DEDICATED
-	CmdAdd("buildmenu", cmd_build);
+//	CmdAdd("buildmenu", cmd_build);
 #endif
 	CvarAdd("g_buildtimescale", &g_buildtimescale, cvar_double);
 }

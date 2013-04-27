@@ -29,9 +29,6 @@ function sequence(){
 
 	lastw = GLWmessage(lang == eng ? "Select the Shipyard." : "Shipyardを選択してください。", 5.);
 
-	while(lastw.alive)
-		yield true;
-
 	local function selectShipyardCond(){
 		foreach(e in player.selected){
 			if(e.race == player.race && e.classname == "Shipyard")
@@ -49,11 +46,17 @@ function sequence(){
 	lastw = GLWmessage(lang == eng ? "Press the Build Manager button." : "ビルドマネージャボタンを押してください。", 5.);
 	buildManButton.flashTime = 5.;
 
-	// Wait until the player enters attack order mode
-	while(!player.attackorder)
+	// Wait until the player presses the build manager button to show one.
+	while(!isWindow("lastBuilderWindow"))
 		yield true;
 	if(lastw.alive)
 		lastw.close();
+
+	lastw = GLWmessage(lang == eng ? "In the Build Manager, you can add build orders into the queue." : "ビルドマネージャにおいては、建造命令を待ち行列に追加することができます。", 5.);
+	buildManButton.flashTime = 5.;
+
+	while(lastw.alive)
+		yield true;
 
 	return false;
 }

@@ -101,11 +101,14 @@ public:
 	virtual void draw(GLwindowState &ws, double t);
 	virtual int mouse(GLwindowState &ws, int button, int state, int x, int y);
 
+	static bool sq_define(HSQUIRRELVM v);
+
 	WeakPtr<Builder> builder;
 	int tabindex;
 protected:
 	void progress_bar(double f, int width, int *piy);
 	int draw_tab(int ix, int iy, const char *s, int selected);
+	static SQInteger sqf_constructor(HSQUIRRELVM v);
 };
 #endif
 

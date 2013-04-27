@@ -193,6 +193,16 @@ register_console_command("chart", function(...){
 	}
 });
 
+register_console_command("buildmenu", function(){
+	local sel = player.selected;
+	foreach(e in sel){
+		if(e.builder != null){
+			lastBuilderWindow <- GLWbuild(sel[0]);
+			return;
+		}
+	}
+});
+
 function control(...){
 	if(player.isControlling())
 		player.controlled = null;

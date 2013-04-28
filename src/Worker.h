@@ -1,5 +1,5 @@
 /** \file
- * \brief Definition of Sceptor, Space interceptor class.
+ * \brief Definition of Worker class.
  */
 #ifndef WORKER_H
 #define WORKER_H
@@ -10,7 +10,7 @@
 
 #define PIDAIM_PROFILE 0
 
-/// Space Interceptor (small fighter)
+/// Worker (Space construction vehicle)
 class Worker : public Autonomous{
 public:
 	typedef Autonomous st;
@@ -60,6 +60,7 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
+	static std::vector<Vec3d> enginePos;
 	void init();
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy

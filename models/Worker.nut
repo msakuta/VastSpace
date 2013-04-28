@@ -17,14 +17,33 @@ for(local ix = -1; ix <= 1; ix += 2) for(local iy = -1; iy <= 1; iy += 2)
 	enginePos.append(Vec3d(ix * 73.28, iy * 127.59, 63.10) * modelScale);
 
 function drawOverlay(){
+	local xp = 0.5, yp = -1.5;
+	local rmove = @(x,y) (xp += x, yp += y, glVertex2d(xp, yp));
+	glPushMatrix();
+	glScaled(1. / 4., 1. / 4., 1. / 4.);
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(-1.0, -1.0);
-	glVertex2d(-0.5,  0.0);
-	glVertex2d(-1.0,  1.0);
-	glVertex2d( 0.0,  0.5);
-	glVertex2d( 1.0,  1.0);
-	glVertex2d( 0.5,  0.0);
-	glVertex2d( 1.0, -1.0);
-	glVertex2d( 0.0, -0.5);
+	rmove(0,-1);
+	rmove(1,-1);
+	rmove(1,0);
+	rmove(-1,1);
+	rmove(0,1);
+	rmove(1,0);
+	rmove(1,-1);
+	rmove(0,1);
+	rmove(-1,1);
+	rmove(-1,0);
+	rmove(-2,2);
+	rmove(0,1);
+	rmove(-1,1);
+	rmove(-1,0);
+	rmove(1,-1);
+	rmove(0,-1);
+	rmove(-1,0);
+	rmove(-1,1);
+	rmove(0,-1);
+	rmove(1,-1);
+	rmove(1,0);
+	rmove(2,-2);
 	glEnd();
+	glPopMatrix();
 }

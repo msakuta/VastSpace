@@ -571,13 +571,14 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
 		}
 
-		glRasterPos3d(left + 20. / m, -bottom - 40. / m, -0.);
+		// Health value text. Leave space for the task bar on the left.
+		glRasterPos3d(left + 160. / m, -bottom - 40. / m, -0.);
 		gldprintf("health: %g", health);
 
 		// Health bar
 		{
 			static const double width = 0.5;
-			const double x0 = left + 20. / m;
+			const double x0 = left + 160. / m;
 			const double tilt = 10. / m;
 			const double height = 20. / m;
 			const double y0 = -bottom - 60. / m;

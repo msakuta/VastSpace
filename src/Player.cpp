@@ -891,7 +891,8 @@ void Player::beginControlInt(Entity *e){
 void Player::inputControl(const input_t &inputs, double dt){
 	if(static_cast<Entity*>(controlled) == chase){
 		chase->control(&inputs, dt);
-		CMInput::s.send(inputs);
+		if(!game->isServer())
+			CMInput::s.send(inputs);
 	}
 }
 

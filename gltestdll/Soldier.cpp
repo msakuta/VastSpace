@@ -1039,10 +1039,8 @@ void Soldier::anim(double dt){
 		}
 		else{
 			cooldown2 += arms[0]->shootCooldown();
-			if(game->isServer()){
-				arms[0]->shoot();
-			}
-			else
+			arms[0]->shoot();
+			if(game->isClient())
 				muzzle |= 1;
 			p->kickvelo[0] += kickf * (w->rs.nextd() - .3);
 			p->kickvelo[1] += kickf * (w->rs.nextd() - .5);
@@ -1784,8 +1782,6 @@ static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], 
 
 
 void Firearm::shoot(){
-	if(!game->isServer())
-		return;
 	Entity *p = base;
 	static const Vec3d nh0(0., 0., -1);
 	double v = bulletSpeed();

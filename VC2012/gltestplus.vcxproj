@@ -1,0 +1,287 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{627D5FD6-0FFA-C8E6-31E6-0D6773EB6623}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>../include;../../clib\include;../../cpplib\include;../../jpeg-7;../../SQUIRREL3/include;../../bullet-2.76/src;../../lpng143/;../../zlib/</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>../include;../../clib\include;../../cpplib\include;../../jpeg-7;../../SQUIRREL3/include;../../bullet-2.76/src;../../lpng143/;../../zlib/</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>../include;../../clib\include;../../cpplib\include;../../jpeg-7;../../SQUIRREL3/include;../../bullet-2.76/src;../../lpng143/;../../zlib/</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>../include;../../clib\include;../../cpplib\include;../../jpeg-7;../../SQUIRREL3/include;../../bullet-2.76/src;../../lpng143/;../../zlib/</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\clib\VC2010$(Configuration);..\..\cpplib\VC2010$(Configuration);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\sqplus\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;jpeg.lib;zlibd.lib;squirrelD.lib;sqstdlibD.lib;sqplusD.lib;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib;libpng.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\clib\VC2010\$(PlatformName)\$(Configuration);..\..\cpplib\VC2010\$(PlatformName)\$(Configuration);..\..\jpeg-7\$(PlatformName)\Debug;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release;..\..\SQUIRREL3\VC2012\$(PlatformName)\$(ConfigurationName);..\..\lpng143\projects\visualc71\$(PlatformName)\LIB $(ConfigurationName)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;ws2_32.lib;clib.lib;cpplib.lib;jpeg.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;libpngd.lib;zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\clib\VC2010$(Configuration);..\..\cpplib\VC2010$(Configuration);..\..\jpeg-7\Release;..\..\zlib\projects\visualc6\win32_lib_$(ConfigurationName);..\..\SQUIRREL3\lib\;..\..\lpng143\projects\visualc71\Win32_LIB_Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;jpeg.lib;zlib.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib;libpng.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\clib\VC2010\$(PlatformName)\$(Configuration);..\..\cpplib\VC2010\$(PlatformName)\$(Configuration);..\..\jpeg-7\$(PlatformName)\Release;..\..\zlib\projects\visualc6\$(PlatformName)\LIB Release;..\..\SQUIRREL3\VC2012\$(PlatformName)\$(ConfigurationName);..\..\lpng143\projects\visualc71\$(PlatformName)\LIB Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;ws2_32.lib;clib.lib;cpplib.lib;jpeg.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;libpng.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\clib\VC2010\clib.vcxproj">
+      <Project>{462cc813-f69e-4a84-a9ae-e12e2c9ec802}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\Application.cpp" />
+    <ClCompile Include="..\src\arms.cpp" />
+    <ClCompile Include="..\src\Assault.cpp" />
+    <ClCompile Include="..\src\astro.cpp" />
+    <ClCompile Include="..\src\astrodraw.cpp" />
+    <ClCompile Include="..\src\Attacker.cpp" />
+    <ClCompile Include="..\src\Autonomous.cpp" />
+    <ClCompile Include="..\src\avi.c" />
+    <ClCompile Include="..\src\Battleship.cpp" />
+    <ClCompile Include="..\src\Beamer.cpp" />
+    <ClCompile Include="..\src\BeamProjectile.cpp" />
+    <ClCompile Include="..\src\BinDiff.cpp" />
+    <ClCompile Include="..\src\bitmap.c" />
+    <ClCompile Include="..\src\Builder.cpp" />
+    <ClCompile Include="..\src\Bullet.cpp" />
+    <ClCompile Include="..\src\calc\calc.c" />
+    <ClCompile Include="..\src\calc\calc0.c" />
+    <ClCompile Include="..\src\calc\calc3.c" />
+    <ClCompile Include="..\src\calc\mathvars.c" />
+    <ClCompile Include="..\src\Client.cpp" />
+    <ClCompile Include="..\src\cmd.cpp" />
+    <ClCompile Include="..\src\cmddraw.cpp" />
+    <ClCompile Include="..\src\CoordSys.cpp" />
+    <ClCompile Include="..\src\Defender.cpp" />
+    <ClCompile Include="..\src\Destroyer.cpp" />
+    <ClCompile Include="..\src\Docker.cpp" />
+    <ClCompile Include="..\src\draw\Assault-Draw.cpp" />
+    <ClCompile Include="..\src\draw\Attacker-Draw.cpp" />
+    <ClCompile Include="..\src\draw\Battleship-draw.cpp" />
+    <ClCompile Include="..\src\draw\Beamer-draw.cpp" />
+    <ClCompile Include="..\src\draw\blackbody.cpp" />
+    <ClCompile Include="..\src\draw\Bullet-draw.cpp" />
+    <ClCompile Include="..\src\draw\Defender-Draw.cpp" />
+    <ClCompile Include="..\src\draw\Destroyer-draw.cpp" />
+    <ClCompile Include="..\src\draw\DrawTextureSphere.cpp" />
+    <ClCompile Include="..\src\draw\effects.cpp" />
+    <ClCompile Include="..\src\draw\GatlingTurret-draw.cpp" />
+    <ClCompile Include="..\src\draw\LMissileTurret-draw.cpp" />
+    <ClCompile Include="..\src\draw\LTurret-draw.cpp" />
+    <ClCompile Include="..\src\draw\material.cpp" />
+    <ClCompile Include="..\src\draw\Missile-draw.cpp" />
+    <ClCompile Include="..\src\draw\MTurret-draw.cpp" />
+    <ClCompile Include="..\src\draw\Player-draw.cpp" />
+    <ClCompile Include="..\src\draw\ring-draw.cpp" />
+    <ClCompile Include="..\src\draw\Scarry-Draw.cpp" />
+    <ClCompile Include="..\src\draw\Sceptor-Draw.cpp" />
+    <ClCompile Include="..\src\draw\Shipyard-Draw.cpp" />
+    <ClCompile Include="..\src\draw\war-draw.cpp" />
+    <ClCompile Include="..\src\draw\Warpable-draw.cpp" />
+    <ClCompile Include="..\src\draw\Worker-Draw.cpp" />
+    <ClCompile Include="..\src\dstring.cpp" />
+    <ClCompile Include="..\src\Entity.cpp" />
+    <ClCompile Include="..\src\Frigate.cpp" />
+    <ClCompile Include="..\src\Game.cpp" />
+    <ClCompile Include="..\src\glsl.c" />
+    <ClCompile Include="..\src\gltestplus.cpp" />
+    <ClCompile Include="..\src\glw\GLWbuild.cpp" />
+    <ClCompile Include="..\src\glw\GLWbutton.cpp" />
+    <ClCompile Include="..\src\glw\GLWchart.cpp" />
+    <ClCompile Include="..\src\glw\GLWchat.cpp" />
+    <ClCompile Include="..\src\glw\GLWentlist.cpp" />
+    <ClCompile Include="..\src\glw\glwindow.cpp" />
+    <ClCompile Include="..\src\glw\GLWmenu.cpp" />
+    <ClCompile Include="..\src\glw\GLWtaskBar.cpp" />
+    <ClCompile Include="..\src\glw\message.cpp" />
+    <ClCompile Include="..\src\glw\solarmap.cpp" />
+    <ClCompile Include="..\src\judge.cpp" />
+    <ClCompile Include="..\src\keybind.cpp" />
+    <ClCompile Include="..\src\LagrangePoint.cpp" />
+    <ClCompile Include="..\src\LTurret.cpp" />
+    <ClCompile Include="..\src\Missile.cpp" />
+    <ClCompile Include="..\src\motion.cpp" />
+    <ClCompile Include="..\src\mqo.cpp" />
+    <ClCompile Include="..\src\mqoadapt.cpp" />
+    <ClCompile Include="..\src\mqodraw.cpp" />
+    <ClCompile Include="..\src\Observable.cpp" />
+    <ClCompile Include="..\src\Player.cpp" />
+    <ClCompile Include="..\src\Respawn.cpp" />
+    <ClCompile Include="..\src\RStation.cpp" />
+    <ClCompile Include="..\src\Scarry.cpp" />
+    <ClCompile Include="..\src\Sceptor.cpp" />
+    <ClCompile Include="..\src\serial.cpp" />
+    <ClCompile Include="..\src\serial_util.cpp" />
+    <ClCompile Include="..\src\Server.cpp" />
+    <ClCompile Include="..\src\ShadowMap.cpp" />
+    <ClCompile Include="..\src\shield.cpp" />
+    <ClCompile Include="..\src\Shipyard.cpp" />
+    <ClCompile Include="..\src\sqadapt.cpp" />
+    <ClCompile Include="..\src\SqInitProcess.cpp" />
+    <ClCompile Include="..\src\stellar_file.cpp" />
+    <ClCompile Include="..\src\tefpol3d.cpp" />
+    <ClCompile Include="..\src\teline3d.cpp" />
+    <ClCompile Include="..\src\TexSphere.cpp" />
+    <ClCompile Include="..\src\Universe.cpp" />
+    <ClCompile Include="..\src\war.cpp" />
+    <ClCompile Include="..\src\Warpable.cpp" />
+    <ClCompile Include="..\src\Worker.cpp" />
+    <ClCompile Include="..\src\ysdnmmot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\calc\calc.h" />
+    <ClInclude Include="..\calc\calc_p.h" />
+    <ClInclude Include="..\calc\tokker.h" />
+    <ClInclude Include="..\draw\effects.h" />
+    <ClInclude Include="..\draw\ring-draw.h" />
+    <ClInclude Include="..\glw\GLWentlist.h" />
+    <ClInclude Include="..\glw\glwindow.h" />
+    <ClInclude Include="..\glw\GLWmenu.h" />
+    <ClInclude Include="..\glw\GLWtip.h" />
+    <ClInclude Include="..\glw\message.h" />
+    <ClInclude Include="..\glw\popup.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\gltestplus.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

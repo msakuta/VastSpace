@@ -1297,6 +1297,8 @@ void Soldier::anim(double dt){
 	if(bbody){
 		this->pos = btvc(bbody->getWorldTransform().getOrigin());
 		this->rot = btqc(bbody->getWorldTransform().getRotation());
+		this->velo = btvc(bbody->getLinearVelocity());
+		this->omg = btvc(bbody->getAngularVelocity());
 	}
 	else{
 		// Manually resolve collision if we do not have bbody.

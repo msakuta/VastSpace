@@ -11,6 +11,22 @@ hitbox <- [
 	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.005, 0.002, 0.003)],
 ];
  
+enginePos <- [
+	{pos = Vec3d(0,0,30.) * modelScale, rot = Quatd(0,0,0,1)},
+	{pos = Vec3d(34.5,0,40.) * modelScale, rot = Quatd(0,0,0,1)},
+	{pos = Vec3d(-34.5,0,40.) * modelScale, rot = Quatd(0,0,0,1)},
+];
+
+local ofs = 32.5;
+local upangle = Quatd(sin(PI*5./6./2.),0.,0.,cos(PI*5./6./2.));
+local dnangle = Quatd(sin(-PI*5./6./2.),0.,0.,cos(-PI*5./6./2.));
+
+enginePosRev <- [
+	{pos = Vec3d( 34.5, 0, ofs) * modelScale, rot = upangle},
+	{pos = Vec3d( 34.5, 0, ofs) * modelScale, rot = dnangle},
+	{pos = Vec3d(-34.5, 0, ofs) * modelScale, rot = upangle},
+	{pos = Vec3d(-34.5, 0, ofs) * modelScale, rot = dnangle},
+];
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

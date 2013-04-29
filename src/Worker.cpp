@@ -977,7 +977,7 @@ void Worker::anim(double dt){
 					btVector3 btomg = bbody->getAngularVelocity();
 
 					// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
-					if(!btomg.isZero()){
+					if(!btomg.isZero() && 0 < dt){
 						btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
 						double thrust = dt * 1.;
 						if(torqueImpulseToStop.length2() < thrust * thrust)

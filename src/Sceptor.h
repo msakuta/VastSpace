@@ -61,8 +61,6 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
-	struct EnginePos{ Vec3d pos; Quatd rot; };
-	typedef std::vector<EnginePos> EnginePosList;
 	static EnginePosList enginePos, enginePosRev;
 	void init();
 	void shootDualGun(double dt);

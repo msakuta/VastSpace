@@ -269,8 +269,11 @@ void Worker::drawtra(wardraw_t *wd){
 		glColor4f(1., 1., 1., amp);
 		if(0. < throttle){
 			for(int i = 0; i < enginePos.size(); i++){
-				const Vec3d &pos = enginePos[i];
-				gldScrollTextureBeam(wd->vw->pos, this->pos + this->rot.trans(pos), this->pos + this->rot.trans(pos + Vec3d(0,0,.010*amp)), .0025*amp, tim + 100. * rs.nextd());
+				const EnginePos &e = enginePos[i];
+				Vec3d basePos = this->pos + this->rot.trans(e.pos);
+				gldScrollTextureBeam(wd->vw->pos, basePos,
+					basePos + (this->rot * e.rot).trans(Vec3d(0,0,.010*amp)),
+					0.0025*amp, tim + 100. * rs.nextd());
 			}
 		}
 		glMatrixMode(GL_TEXTURE);

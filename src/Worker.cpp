@@ -225,51 +225,10 @@ Worker::~Worker(){
 }
 
 const avec3_t Worker::gunPos[2] = {{10. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}, {-10. * SCEPTOR_SCALE, -4. * SCEPTOR_SCALE, -15. * SCEPTOR_SCALE}};
-std::vector<Vec3d> Worker::enginePos;
+Worker::EnginePosList Worker::enginePos;
 
 /// Loads initialization script. Shared among Server and Client.
 void Worker::init(){
-	/// \brief Processes single Vec3d with given variable name.
-	class EXPORT PosListProcess : public SqInitProcess{
-	public:
-		std::vector<Vec3d> &vec;
-		const SQChar *name;
-		bool mandatory;
-		PosListProcess(std::vector<Vec3d> &vec, const SQChar *name, bool mandatory = true) : vec(vec), name(name), mandatory(mandatory){}
-		virtual void process(HSQUIRRELVM v)const{
-			StackReserver sr(v); // We cannot keep track of stack depth if a try-catch block is involved.
-			sq_pushstring(v, name, -1); // root string
-			if(SQ_FAILED(sq_get(v, -2))){ // root value
-				if(mandatory) // If mandatory, read errors result in exceptions.
-					throw SQFError(gltestp::dstring(name) << _SC(" not found"));
-				else // If not mandatory variable cannot be read, leave the default value and silently ignore.
-					return;
-			}
-			SQInteger len = sq_getsize(v, -1);
-			if(-1 == len)
-				throw SQFError(gltestp::dstring(name) << _SC(" size could not be aquired"));
-			SQVec3d r;
-			try{
-				for(int i = 0; i < len; i++){
-					sq_pushinteger(v, i); // root obj i
-					if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
-						throw SQFError(gltestp::dstring(name) << "[" << i << "] get failed");
-					SQVec3d r;
-					r.getValue(v, -1);
-					vec.push_back(r.value);
-
-					sq_poptop(v); // root obj
-				}
-			}
-			catch(SQFError &e){
-				if(mandatory)
-					throw;
-				else
-					return;
-			}
-		}
-	};
-
 	static bool initialized = false;
 	if(!initialized){
 		sq_init(_SC("models/Worker.nut"),
@@ -278,7 +237,7 @@ void Worker::init(){
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(maxFuelValue, "maxfuel", false) <<=
 			HitboxProcess(hitboxes) <<=
-			PosListProcess(enginePos, "enginePos") <<=
+			EnginePosListProcess(enginePos, "enginePos") <<=
 			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}

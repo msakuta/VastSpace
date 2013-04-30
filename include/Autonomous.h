@@ -131,6 +131,17 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+	struct EnginePos{ Vec3d pos; Quatd rot; };
+	typedef std::vector<EnginePos> EnginePosList;
+	class EXPORT EnginePosListProcess : public SqInitProcess{
+	public:
+		EnginePosList &vec;
+		const SQChar *name;
+		bool mandatory;
+		EnginePosListProcess(EnginePosList &vec, const SQChar *name, bool mandatory = true) : vec(vec), name(name), mandatory(mandatory){}
+		virtual void process(HSQUIRRELVM)const;
+	};
+
 	class EXPORT HitboxProcess : public SqInitProcess{
 	public:
 		HitBoxList &hitboxes;

@@ -60,7 +60,7 @@ protected:
 	Attitude attitude;
 
 	static const avec3_t gunPos[2];
-	static std::vector<Vec3d> enginePos;
+	static EnginePosList enginePos;
 	void init();
 	void shootDualGun(double dt);
 	bool findEnemy(); // Finds the nearest enemy

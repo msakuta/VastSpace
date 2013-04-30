@@ -14,7 +14,7 @@ hitbox <- [
 enginePos <- [];
 
 for(local ix = -1; ix <= 1; ix += 2) for(local iy = -1; iy <= 1; iy += 2)
-	enginePos.append(Vec3d(ix * 73.28, iy * 127.59, 63.10) * modelScale);
+	enginePos.append({pos = Vec3d(ix * 73.28, iy * 127.59, 63.10) * modelScale, rot = Quatd(0,0,0,1)});
 
 function drawOverlay(){
 	local xp = 0.5, yp = -1.5;

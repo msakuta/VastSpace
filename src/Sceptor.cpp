@@ -232,52 +232,6 @@ Sceptor::EnginePosList Sceptor::enginePos, Sceptor::enginePosRev;
 
 /// Loads initialization script. Shared among Server and Client.
 void Sceptor::init(){
-	class EnginePosListProcess : public SqInitProcess{
-	public:
-		EnginePosList &vec;
-		const SQChar *name;
-		bool mandatory;
-		EnginePosListProcess(EnginePosList &vec, const SQChar *name, bool mandatory = true) : vec(vec), name(name), mandatory(mandatory){}
-		void process(HSQUIRRELVM v)const{
-			sq_pushstring(v, name, -1); // root string
-
-			// Not defining a hitbox is probably not intended, since any rigid body must have a spatial body.
-			if(SQ_FAILED(sq_get(v, -2))) // root obj
-				throw SQFError(gltestp::dstring(name) << _SC(" not found"));
-			SQInteger len = sq_getsize(v, -1);
-			if(-1 == len)
-				throw SQFError(gltestp::dstring(name) << _SC(" size could not be aquired"));
-			for(int i = 0; i < len; i++){
-				sq_pushinteger(v, i); // root obj i
-				if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
-					throw SQFError(gltestp::dstring(name) << "[" << i << "] get failed");
-				EnginePos a;
-
-				{
-					sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
-					if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i].pos
-						throw SQFError(gltestp::dstring(name) << "[" << i << "].pos get failed");
-					SQVec3d r;
-					r.getValue(v, -1);
-					a.pos = r.value;
-					sq_poptop(v); // root obj obj[i]
-				}
-
-				{
-					sq_pushstring(v, _SC("rot"), -1); // root obj obj[i] "rot"
-					if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i].rot
-						throw SQFError(gltestp::dstring(name) << "[" << i << "].rot get failed");
-					SQQuatd r;
-					r.getValue(v, -1);
-					a.rot = r.value;
-					sq_poptop(v); // root obj obj[i]
-				}
-				vec.push_back(a);
-				sq_poptop(v); // root obj
-			}
-			sq_poptop(v); // root
-		}
-	};
 	static bool initialized = false;
 	if(!initialized){
 		sq_init(_SC("models/Sceptor.nut"),

@@ -51,6 +51,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/BeamProjectile.o\
  ${OUTDIR}/Missile.o\
  ${OUTDIR}/Sceptor.o\
+ ${OUTDIR}/Worker.o\
  ${OUTDIR}/Defender.o\
  ${OUTDIR}/Docker.o\
  ${OUTDIR}/Builder.o\
@@ -145,6 +146,8 @@ ${OUTDIR}/BeamProjectile.o: $(call depends,BeamProjectile.cpp)
 ${OUTDIR}/Missile.o: $(call depends,Missile.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Sceptor.o: $(call depends,Sceptor.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Worker.o: $(call depends,Worker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Defender.o: $(call depends,Defender.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

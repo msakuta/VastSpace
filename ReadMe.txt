@@ -1,21 +1,23 @@
 ========================================================================
-    スタティック ライブラリ : cpplib プロジェクトの概要
+    cpplib the static library
 ========================================================================
 
-AppWizard はユーザー用に cpplib ライブラリ プロジェクトを作成しました。
-ソース ファイルはプロジェクトの中には作成されていません。
+1. Overview
+
+This library had originally project-independent codes, but imported into
+VastSpace's subdirectory for project-specific customization.
+This library contains mainly linear algebraic data types and logics like
+vector, quaternion and matrix manipulation.
 
 
-cpplib.vcproj
-    これはアプリケーション ウィザードで生成された VC++ プロジェクトのメイン プロジェクト ファイルです。
-    ファイルが生成された Visual C++ のバージョン情報が含まれています。また、 
-    アプリケーション ウィザードで選択したプラットフォーム、構成およびプロジェクト機能に関する
-    情報も含まれています。
+2. Usage
 
-/////////////////////////////////////////////////////////////////////////////
-その他の注意 :
+This library is intended to be used as a static library.  Making it a DLL
+or shared library is not tested.
 
-AppWizard  は "TODO:" で始まるコメントを使用して、ソースコードの追加やカスタマイズの
-必要な場所を示します。
+If you have Visual Studio, create a static library project.
+Output .lib file can be linked to final product .exe or .dll.
 
-/////////////////////////////////////////////////////////////////////////////
+If you have gcc, provided GNUmakefile will build .a file.
+
+

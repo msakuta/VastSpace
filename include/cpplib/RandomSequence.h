@@ -1,11 +1,10 @@
-#ifndef CPPLIB_RANDOMSEQUENCE_H
-#define CPPLIB_RANDOMSEQUENCE_H
-/* rseq.h
- * 
- * pseudo-random number sequence generator object, ported from clib,
+/** \file
+ * \brief pseudo-random number sequence generator object, ported from clib,
  * which generates exactly the same sequence by the same seed number.
  *
  */
+#ifndef CPPLIB_RANDOMSEQUENCE_H
+#define CPPLIB_RANDOMSEQUENCE_H
 #include <clib/rseq.h>
 
 struct RandomSequence : random_sequence{
@@ -48,12 +47,11 @@ inline RandomSequence::RandomSequence(const void *pointer){
 }
 
 inline void RandomSequence::init(uint32_t seed1, uint32_t seed2){
-	w = ((z = (seed1)) ^ 123459876L) * 123459871L;
-	z += ((w += (seed2)) ^ 1534241562L) * 123459876L;
+	initfull_rseq(this, seed1, seed2);
 }
 
 inline unsigned long RandomSequence::next(){
-	return (((z=36969*(z&65535)+(z>>16))<<16)+(w=18000*(w&65535)+(w>>16)));
+	return rseq(this);
 }
 
 #endif /* CPPLIB_RANDOMSEQUENCE_H */

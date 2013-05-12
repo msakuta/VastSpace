@@ -1,0 +1,452 @@
+section .bss
+%define initb _initb
+global initb
+initb: resb 1
+; bit0 : Whether bit1 is initialized
+; bit1 : CPUID is available
+; bit2 : Whether bit3 is initialized
+; bit3 : MMX is available
+
+section .text
+
+; query availability of CPUID instruction
+; int CPUIDavailable(void)
+global _CPUIDavailable
+_CPUIDavailable:
+xor eax,eax
+mov al,[initb]
+test al,01
+je .noninit
+and al,02
+ret
+.noninit:
+pushfd
+pop     eax
+mov     ebx, eax
+
+xor     eax, 00200000h ; toggle ID flag to examine if it can be modified
+push    eax
+popfd ; store modified flags
+
+pushfd
+pop     eax
+
+mov bl,[initb]
+cmp ebx,eax
+je .false
+or bl,03
+mov [initb],bl
+mov eax,1
+ret
+.false:
+or bl,01
+and bl,~02
+mov [initb],bl
+mov eax,0
+ret
+
+
+; query availability of MMX instructions
+; int MMXavailable(void)
+global _MMXavailable
+_MMXavailable:
+xor eax,eax
+mov al,[initb]
+test al,04
+je .noninit
+and al,08
+ret
+.noninit:
+pusha
+call _CPUIDavailable
+test eax,eax
+je .false
+mov  eax, 1
+cpuid
+and  edx, 00800000h
+mov  eax, edx
+test eax,eax
+je .false
+mov bl,[initb]
+or bl,8|4
+mov [initb],bl
+popa
+mov eax,1
+ret
+.false:
+mov bl,[initb]
+or bl,4
+and bl,~8
+mov [initb],bl
+popa
+mov eax,0
+ret
+
+
+; void testmove(DWORD *dst, const DWORD *src, size_t w, size_t h, size_t dstw, size_t srcw, DWORD testval)
+
+%define retip 8
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+%define dstw h+4
+%define srcw dstw+4
+%define testval srcw+4
+
+global _testmove
+_testmove:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+push ebx
+push esi
+mov edi,[esp+dst]
+sub edi,4
+mov esi,[esp+src]
+sub esi,4
+mov ebx,[esp+testval]
+mov edx,[esp+h]
+jmp checky
+loophei:
+mov ecx,[esp+w]
+loopwid:
+mov eax,[esi+4*ecx]
+cmp eax,ebx
+je skip
+mov dword[edi+4*ecx],eax
+skip:
+loop loopwid
+add edi,[esp+dstw]
+add esi,[esp+srcw]
+dec edx
+checky:
+test edx,edx
+jne loophei
+pop esi
+pop ebx
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret
+
+
+; void addmove(DWORD *dst, const DWORD *src, size_t w, size_t h, size_t dstw, size_t srcw)
+
+%define retip 4
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+%define dstw h+4
+%define srcw dstw+4
+
+global _addmove
+_addmove:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+push esi
+mov edi,[esp+dst]
+sub edi,4
+mov esi,[esp+src]
+sub esi,4
+mov edx,[esp+h]
+
+; return if height is 0
+test edx,edx
+je .finish
+
+.loophei:
+mov ecx,[esp+w]
+.loopwid:
+mov eax,[esi+4*ecx]
+test eax,eax
+je .skip
+add al,byte[edi+4*ecx]
+jnc .byte0nc
+mov al,0ffh
+.byte0nc:
+add ah,byte[edi+4*ecx+1]
+jnc .byte1nc
+mov ah,0ffh
+.byte1nc:
+rol eax,16
+add al,byte[edi+4*ecx+2]
+jnc .byte2nc
+mov al,0ffh
+.byte2nc:
+add ah,byte[edi+4*ecx+3]
+jnc .byte3nc
+mov ah,0ffh
+.byte3nc:
+rol eax,16
+mov [edi+4*ecx],eax
+.skip:
+loop .loopwid
+add edi,[esp+dstw]
+add esi,[esp+srcw]
+dec edx
+jne .loophei
+.finish:
+pop esi
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret
+
+
+; void addmoveMMX(DWORD *dst, const DWORD *src, size_t w, size_t h, size_t dstw, size_t srcw)
+
+%define retip 4
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+%define dstw h+4
+%define srcw dstw+4
+
+global _addmoveMMX
+_addmoveMMX:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+push esi
+mov edi,[esp+dst]
+sub edi,byte 8
+mov esi,[esp+src]
+sub esi,byte 8
+mov edx,[esp+h]
+
+; return if height is 0
+test edx,edx
+je .finish
+
+.loophei:
+mov ecx,[esp+w]
+shr ecx,1 ; obtain width / 2
+test ecx,ecx
+je .noloopwid
+.loopwid:
+	mov eax,[esi+8*ecx]
+	test eax,eax
+	jne .noskip
+	mov eax,[esi+8*ecx+4]
+	test eax,eax
+	jne .noskip
+	jmp .skip
+	.noskip:
+	movq mm0,[edi+8*ecx]
+	movq mm1,[esi+8*ecx]
+	paddusb mm0,mm1
+	movq qword[edi+8*ecx],mm0
+	.skip:
+loop .loopwid
+.noloopwid:
+mov ecx,[esp+w]
+test cl,byte 1
+je .evenline
+inc ecx
+movd mm0,[esi+4*ecx]
+movd eax,mm0
+test eax,eax
+je .evenline
+movd mm1,[edi+4*ecx]
+paddusb mm0,mm1
+movd [edi+4*ecx],mm0
+.evenline:
+add edi,[esp+dstw]
+add esi,[esp+srcw]
+dec edx
+jne .loophei
+.finish:
+emms
+pop esi
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret
+
+
+
+; void displacemove(DWORD *dst, const DWORD *src, size_t w, size_t h, size_t dstw, size_t srcw, DWORD testval)
+
+%define retip 8
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+%define dstw h+4
+%define srcw dstw+4
+%define testval srcw+4
+
+global _displacemove
+_displacemove:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+push esi
+push ebx
+mov edi,[esp+dst]
+sub edi,byte 4
+mov esi,[esp+src]
+sub esi,byte 4
+mov edx,[esp+h]
+
+; return if height is 0
+test edx,edx
+je .finish
+
+.loophei:
+mov ecx,[esp+w]
+.loopwid:
+mov eax,[esi+4*ecx]
+test eax,eax
+je .skip
+cmp eax,[esp+testval]
+je .skip
+shr al,5
+and eax,byte 7
+add eax,ecx
+cmp eax,[esp+dstw]
+jnl .skip
+mov ebx,[edi+4*ecx]
+mov [edi+4*eax],ebx
+.skip:
+loop .loopwid
+add edi,[esp+dstw]
+add esi,[esp+srcw]
+dec edx
+jne .loophei
+.finish:
+pop ebx
+pop esi
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret
+
+
+
+
+; void reversemove(DWORD *dst, DWORD *src, int w, int h)
+
+%define retip 0
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+
+global _reversemove
+_reversemove:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+;push esi
+;push ebx
+mov edi,[esp+dst]
+sub edi,byte 4
+mov esi,[esp+src]
+sub esi,byte 4
+mov edx,[esp+h]
+
+; return if height is 0
+test edx,edx
+je .finish
+
+lea esi,[esi+4*edx]  ; esi = src + 4 * w - 4
+mov ecx,[esp+w]
+.loophei:
+.loopwid:
+lea eax,[4*ecx-4]
+neg eax
+mov eax,[esi+eax]
+mov dword[edi+4*ecx],eax
+loop .loopwid
+mov ecx,[esp+w]
+lea edi,[edi+4*ecx]
+lea esi,[esi+4*ecx]
+dec edx
+jne .loophei
+
+.finish:
+;pop ebx
+;pop esi
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret
+
+
+; void reversetestmove(DWORD *dst, const DWORD *src, size_t w, size_t h, size_t dstw, size_t srcw, DWORD testval)
+
+%define retip 4
+%define dst retip+4
+%define src dst+4
+%define w src+4
+%define h w+4
+%define dstw h+4
+%define srcw dstw+4
+%define testval srcw+4
+
+
+global _reversetestmove
+_reversetestmove:
+%ifndef NDEBUG
+push ebp
+mov ebp,esp
+%assign retip retip+4
+%endif
+;push esi
+push ebx
+mov edi,[esp+dst]
+sub edi,byte 4
+mov esi,[esp+src]
+sub esi,byte 4
+mov edx,[esp+h]
+
+; return if height is 0
+test edx,edx
+je .finish
+
+add esi,[esp+srcw]  ; esi = src + 4 * w - 4
+mov ebx,[esp+testval]
+.loophei:
+mov ecx,[esp+w]
+.loopwid:
+lea eax,[4*ecx-4]
+neg eax
+mov eax,[esi+eax]
+cmp eax,ebx
+je .skip
+mov dword[edi+4*ecx],eax
+.skip:
+loop .loopwid
+add edi,[esp+dstw]
+add esi,[esp+srcw]
+dec edx
+jne .loophei
+
+.finish:
+pop ebx
+;pop esi
+%ifndef NDEBUG
+mov esp,ebp
+pop ebp
+%endif
+ret

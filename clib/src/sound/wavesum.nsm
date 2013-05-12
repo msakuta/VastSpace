@@ -1,0 +1,185 @@
+
+%macro pushd 1
+	%ifnum %1
+		sub esp,%1
+		%assign sb sb+%1
+	%else
+		push dword %1
+		%assign sb sb+4
+	%endif
+%endmacro
+%macro pushd 2
+	push dword %2
+	%assign sb sb+4
+	%define %1 -sb ; on top of stack
+%endmacro
+
+%macro popd 1
+	%ifnum %1
+		add esp,%1
+		%assign sb sb-%1
+	%elifid %1
+		%undef %1
+		pop %1
+		%assign sb sb-4
+	%else
+		pop dword %1
+		%assign sb sb-4
+	%endif
+%endmacro
+%macro popd 0 ;overloaded form
+	add esp,byte 4
+	%assign sb sb-4
+%endmacro
+
+%macro add 2
+	%ifidni %1,esp
+		%assign sb sb-%2
+	%endif
+	add %1,%2
+%endmacro
+
+%macro sub 2
+	%ifidni %1,esp
+		%assign sb sb+%2
+	%endif
+	sub %1,%2
+%endmacro
+
+
+section .text
+
+struc sounder8
+	s8src resd 1
+	s8left resd 1
+	s8vol resw 1
+	s8pitch resw 1
+	s8pan resw 1
+endstruc
+
+
+; extern void wavesum8(unsigned short *dst, struct sounder8 *src[], unsigend maxt, int nsrc){
+;	for(t = 0; t < maxt; t++){
+;		long tt = 0;
+;		for(i = 0; i < nsrc; i++) if(t < src[i].left)
+;			tt += ((long)src[i].src[t] - 128) * src[i].vol / 256;
+;		dst[t] = tt > 127 ? 255 : tt < -128 ? 0 : (BYTE)(tt + 128);
+;	}
+; }
+
+%define retip 0
+%define dst retip+4
+%define src dst+4
+%define maxt src+4
+%define nsrc maxt+4
+%assign sb 0 ; sb is difference between esp and ebp
+%define s esp+sb
+
+global _wavesum8
+_wavesum8:
+%ifndef NDEBUG
+	push ebp
+	mov ebp,esp
+	%assign sb sb+4
+%endif
+pushd edi
+pushd esi
+pushd ebx
+
+;sub dword[s+src],sounder8_size
+
+; make sure nsrc not to be 0
+mov ecx,[s+nsrc]
+test ecx,ecx
+jz near .finish
+
+mov edx,[s+maxt]
+test edx,edx
+jz near .finish
+jmp .tcheck
+.loopt:
+dec edx
+xor ebx,ebx
+mov ecx,[s+nsrc]
+mov edi,[s+src]       ; edi = src
+;lea edi,[edi+8*ecx]
+;lea edi,[edi+4*ecx]
+.loopn:
+movsx eax,word[edi+s8pitch] ; eax = src[i].pitch
+test al,al
+jnz .pitchchange
+mov eax,edx
+jmp .nopitchchange
+
+.pitchchange:
+add eax,byte 32       ; eax = src[i].pitch + 16
+imul eax,edx          ; eax = t * (src[i].pitch + 16)
+shr eax,5             ; eax = t * (src[i].pitch + 16) / 16
+
+.nopitchchange:
+cmp eax,[edi+s8left]  ; if(t2 >= src[i].left)
+jge .ncheck           ;   continue;
+mov esi,[edi+s8src]   ; esi = src[i].src
+movzx ax,byte[esi+eax]    ; eax = src[i].src[t2]
+sub ax,128
+imul ax,word[edi+s8vol]
+imul ax,word[edi+s8pan]
+sar ax,8
+add bx,ax
+rol ebx,16
+rol eax,16
+add bx,ax
+rol ebx,16
+.ncheck:
+add edi,sounder8_size ; edi += sizeof(sounder8)
+loop .loopn
+
+add bx,128
+cmp bx,255
+jle .nooverflow0
+mov bx,255
+.nooverflow0:
+cmp bx,0
+jge .nounderflow0
+mov bx,0
+.nounderflow0:
+mov eax,[s+dst]       ; store the result into the destination
+mov byte[eax+edx],bl  ; dst[t] = bl
+.tcheck:
+test edx,edx
+jnz .loopt
+.finish:
+
+popd ebx
+popd esi
+popd edi
+%ifndef NDEBUG
+mov esp,ebp
+popd ebp
+	%if sb != 0
+		%error booo!
+	%endif
+%else
+	%if sb != 0
+		%error booo!
+	%endif
+%endif
+ret
+
+
+; extern void amat4translate(double mr[16], double sx, double sy, double sz);
+
+
+global _amat4translate
+_amat4translate:
+mov eax,[esp+4]
+fld qword[eax+8*13]
+fadd qword[esp+8]
+fst qword[eax+8*13]
+fld qword[eax+8*14]
+fadd qword[esp+8+8]
+fst qword[eax+8*14]
+fld qword[eax+8*15]
+fadd qword[esp+8+8+8]
+fst qword[eax+8*15]
+ret

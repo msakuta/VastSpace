@@ -351,10 +351,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\random\mt19937ar.c"
-				>
-			</File>
-			<File
 				RelativePath="..\src\rseq.c"
 				>
 			</File>

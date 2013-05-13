@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../../SQUIRREL3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
+				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../squirrel3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -119,7 +119,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../../SQUIRREL3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
+				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../squirrel3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\zlib\projects\VC2008\$(PlatformName)\LIB Release&quot;"
 				GenerateDebugInformation="true"
@@ -195,7 +195,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../../SQUIRREL3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
+				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../squirrel3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -214,9 +214,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\$(ConfigurationName)&quot;;&quot;..\clib\$(ConfigurationName)&quot;;&quot;..\zlib\projects\VC2008\win32_lib_$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;..\$(ConfigurationName)&quot;;&quot;..\clib\$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -273,7 +273,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../../SQUIRREL3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
+				AdditionalIncludeDirectories="../include;../clib/include;../clib/VC2008;../cpplib/include;&quot;../../jpeg-7&quot;;../squirrel3/include;&quot;../../bullet-2.76/src&quot;;../../lpng143/;../zlib/"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport)"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -293,7 +293,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gltestplus.lib clib.lib zlib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
+				AdditionalDependencies="gltestplus.lib clib.lib opengl32.lib glu32.lib ..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib ..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib ..\..\bullet-2.76\msvc\2008\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\clib\$(PlatformName)\$(ConfigurationName)&quot;;&quot;..\zlib\projects\VC2008\$(PlatformName)\LIB Release&quot;"
 				GenerateManifest="false"

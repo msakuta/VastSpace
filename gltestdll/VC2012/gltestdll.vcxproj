@@ -95,7 +95,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../../SQUIRREL3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../squirrel3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -117,7 +117,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../../SQUIRREL3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../squirrel3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;GLTESTDLL_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -138,7 +138,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../../SQUIRREL3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../squirrel3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLTESTDLL_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -163,7 +163,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../../SQUIRREL3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../../jpeg-7;../../squirrel3/include;../../../bullet-2.76/src;../../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;GLTESTDLL_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

@@ -108,7 +108,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;..\..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(Configuration)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(Configuration)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2008\src\LinearMath\$(Configuration)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -128,8 +128,8 @@
       <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;squirrel.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\clib\VC2010\$(PlatformName)\$(Configuration);..\..\..\cpplib\VC2010\$(PlatformName)\$(Configuration);..\..\VC2012\$(PlatformName)\$(Configuration);..\..\..\SQUIRREL3\VC2012\$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
     </Link>
@@ -151,7 +151,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;..\..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(Configuration)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(Configuration)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2008\src\LinearMath\$(Configuration)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -175,8 +175,8 @@
       <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;squirrel.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\clib\VC2010\$(PlatformName)\$(Configuration);..\..\..\cpplib\VC2010\$(PlatformName)\$(Configuration);..\..\VC2012\$(PlatformName)\$(Configuration);..\..\..\SQUIRREL3\VC2012\$(PlatformName)\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\VC2012\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

@@ -14,7 +14,7 @@ ifndef BULLET_LIB
 BULLET_LIB=
 endif
 
-CFLAGS += -I clib/include -I ../cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
+CFLAGS += -I clib/include -I cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
 
@@ -70,14 +70,14 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/calc/mathvars.o\
  ${OUTDIR}/calc/calc0.o\
  ./clib/Release/clib.a\
- ../cpplib/Release/cpplib.a\
+ ./cpplib/Release/cpplib.a\
  ../zlib/libz.a\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
 
 gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
- ../cpplib/Release/cpplib.a
+ ./cpplib/Release/cpplib.a
 
 all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
 
@@ -93,6 +93,9 @@ ${OUTDIR}/gltestdll.so:
 
 ./clib/${OUTDIR}/clib.a:
 	cd clib && ${MAKE}
+
+./cpplib/${OUTDIR}/cpplib.a:
+	cd cpplib && ${MAKE}
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

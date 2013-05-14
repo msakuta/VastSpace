@@ -1,0 +1,4 @@
+*.o
+libz.a
+example
+minigzip

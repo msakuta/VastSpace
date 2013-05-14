@@ -71,7 +71,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/calc/calc0.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a\
- ../zlib/libz.a\
+ ./zlib/libz.a\
  ../SQUIRREL3/lib/libsquirrel.a\
  ../SQUIRREL3/lib/libsqstdlib.a\
 
@@ -96,6 +96,9 @@ ${OUTDIR}/gltestdll.so:
 
 ./cpplib/${OUTDIR}/cpplib.a:
 	cd cpplib && ${MAKE}
+
+./zlib/libz.a:
+	cd zlib && ${MAKE}
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

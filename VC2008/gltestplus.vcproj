@@ -1221,11 +1221,11 @@
 			</Filter>
 		</Filter>
 		<File
-			RelativePath="..\gltestplus.rc"
+			RelativePath="..\gp.ico"
 			>
 		</File>
 		<File
-			RelativePath="..\gp.ico"
+			RelativePath="..\src\VastSpace.rc"
 			>
 		</File>
 	</Files>

@@ -273,7 +273,13 @@
     <ClInclude Include="..\glw\popup.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\gltestplus.rc" />
+    <Image Include="..\gp.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\src\VastSpace.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

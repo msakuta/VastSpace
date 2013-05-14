@@ -14,7 +14,7 @@ ifndef BULLET_LIB
 BULLET_LIB=
 endif
 
-CFLAGS += -I clib/include -I cpplib/include -I ../SQUIRREL3/include -I ${BULLET_INCLUDE}
+CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
 
@@ -72,8 +72,8 @@ objects = ${OUTDIR}/serial.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a\
  ./zlib/libz.a\
- ../SQUIRREL3/lib/libsquirrel.a\
- ../SQUIRREL3/lib/libsqstdlib.a\
+ ./squirrel3/lib/libsquirrel.a\
+ ./squirrel3/lib/libsqstdlib.a\
 
 gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
@@ -99,6 +99,10 @@ ${OUTDIR}/gltestdll.so:
 
 ./zlib/libz.a:
 	cd zlib && ${MAKE}
+
+./squirrel3/lib/libsquirrel.a ./squirrel3/lib/libsqstdlib.a:
+	-mkdir ./squirrel3/lib ./squirrel3/bin # Squirrel's makefile does not try to mkdir
+	cd squirrel3 && ${MAKE}
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

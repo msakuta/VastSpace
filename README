@@ -1,0 +1,30 @@
+
+VastSpace Readme
+================
+
+
+** This document is a draft.
+
+
+Building Windows Client
+-----------------------
+
+Run svn-bullet.bat BEFORE opening a Visual Studio solutin file.
+You need a Subversion client installed on your computer
+in order to run the batch file.
+
+
+Building Linux Server
+---------------------
+
+Invoking gnu make will build the application.
+
+You'll need various external libraries:
+  libpng
+  The IJG's JPEG library (version 7 or later)
+  zlib
+  Bullet Dynamics Engine (version 2.76 or later)
+
+
+
+

@@ -57,22 +57,22 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../../bullet-2.76/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../../bullet-2.76/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../../bullet-2.76/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../../bullet-2.76/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -103,8 +103,8 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -118,8 +118,8 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -135,8 +135,8 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2008\src\BulletDynamics\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2008\src\BulletCollision\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2008\src\LinearMath\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -152,8 +152,8 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;..\..\bullet-2.76\msvc\2012\src\BulletDynamics\$(PlatformName)\$(ConfigurationName)\BulletDynamics.lib;..\..\bullet-2.76\msvc\2012\src\BulletCollision\$(PlatformName)\$(ConfigurationName)\BulletCollision.lib;..\..\bullet-2.76\msvc\2012\src\LinearMath\$(PlatformName)\$(ConfigurationName)\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>

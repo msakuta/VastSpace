@@ -13,6 +13,15 @@ Run svn-bullet.bat BEFORE opening a Visual Studio solutin file.
 You need a Subversion client installed on your computer
 in order to run the batch file.
 
+Supported target version of Visual Studio is currently only
+2008 and 2012 (Express).  Building with 2010 could be possible,
+but I haven't gave it a try.
+
+With Visual Studio 2012, you will need to manually change
+platform toolset to "Visual Stuido 2012 (v110)" in the IDE
+property page.  This is because premake4 does not support
+VS2012 yet.
+
 
 Building Linux Server
 ---------------------

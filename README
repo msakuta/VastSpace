@@ -6,6 +6,14 @@ VastSpace Readme
 ** This document is a draft.
 
 
+What's this?
+------------
+
+VastSpace is a 3-D realtime strategy game engine that I have
+been developing to test ideas I wanted to try.
+
+
+
 Building Windows Client
 -----------------------
 
@@ -33,7 +41,23 @@ You'll need various external libraries:
   The IJG's JPEG library (version 7 or later)
   zlib
   Bullet Dynamics Engine (version 2.76 or later)
+  Squirrel Scripting Language version 3
 
 
+Notes about history
+-------------------
+
+I had been tracking history of the project with Subversion for long time,
+so you may see remnants of that age in places.
+
+It took 1200 commits to confirm that Git worths to migrate from Subversion.
+
+The first part of this software was written in 2004 and it was named Gltest,
+because that project's purpose is to test OpenGL features.
+As I added various ideas to that project, I end up thinking that creating
+a fully simulated space war game is great.
+Several years later, I switched the main language for the project to C++
+from plain C.  The project's name was changed to Gltestplus at that time.
+Subversion history starts since that time.
 
 

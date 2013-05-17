@@ -274,7 +274,7 @@ function init_Universe(){
 	if(isServer()){
 		// Not using sendCM() because tutorials are only valid in standalone game, which means
 		// no client messages over network is required.
-		mainmenu.addItem("Tutorial 1 - Basic", @() loadmission("scripts/tutorial1"));
+		mainmenu.addItem("Tutorial 1 - Basic", @() loadmission("scripts/tutorial1.nut"));
 		mainmenu.addItem("Tutorial 2 - Combat", @() loadmission("scripts/tutorial2.nut"));
 		mainmenu.addItem("Tutorial 3 - Construction", @() loadmission("scripts/tutorial3.nut"));
 	}

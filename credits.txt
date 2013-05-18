@@ -1,15 +1,30 @@
 
+Here is a list of sources of works used in this project.
 
-The Visible Earth 
+
+The Earth's Surface Textures
+---------------
+
+The Visible Earth
 http://visibleearth.nasa.gov/view_set.php?categoryID=2363
-Earth surface texture
+
+Earth surface texture (Edited by the author)
+http://visibleearth.nasa.gov/view.php?id=73938
+
 Earth topologic map
+http://visibleearth.nasa.gov/view.php?id=73934
+
 Earth cloud texture
+http://visibleearth.nasa.gov/view.php?id=57747
+
+Earth City Lights
+http://visibleearth.nasa.gov/view.php?id=55167
 
 
 
 
 The C++ header file stdint.h for Microsoft Visual C++
+-----------------------------------------------------
 
 //  Copyright (c) 2006-2008 Alexander Chemeris
 // 
@@ -38,6 +53,9 @@ The C++ header file stdint.h for Microsoft Visual C++
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+
+The Saturn Texture
+------------------
 
 The Saturn texture is made by Bjorn Jonsson and obtained from:
 http://www.mmedia.is/~bjj/planetary_maps.html

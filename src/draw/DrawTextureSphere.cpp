@@ -585,7 +585,7 @@ void DrawTextureSphere::useShader(){
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
 			if(0 <= tex.shaderLoc){
 				if(1&&!tex.list){
-					tex.list = ProjectSphereCubeJpg(tex.filename, TexSphere::DTS_NODETAIL | tex.flags);
+					tex.list = ProjectSphereCubeImage(tex.filename, TexSphere::DTS_NODETAIL | tex.flags);
 				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(tex.list);
@@ -650,7 +650,7 @@ bool DrawTextureSphere::draw(){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
-		*ptexlist = ProjectSphereCubeJpg(texname, flags);
+		*ptexlist = ProjectSphereCubeImage(texname, flags);
 		CmdPrintf("DrawTextureSphere::draw(\"%s\") projection: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -928,7 +928,7 @@ bool DrawTextureSpheroid::draw(){
 	do if(!texlist && texname){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereCubeJpg(texname, 0);
+		texlist = *ptexlist = ProjectSphereCubeImage(texname, 0);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -1080,7 +1080,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 				}*/
 				Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
 				double lon = -atan2(epos[0], -(epos[2]));
-				double lat = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
+				double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
 //					double lon = -atan2(epos[0], -(epos[1]));
 //					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
 				double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
@@ -1317,9 +1317,8 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 #if 1
 
 
-GLuint DrawTextureSphere::ProjectSphereCubeJpg(const char *fname, int flags){
+GLuint DrawTextureSphere::ProjectSphereCubeImage(const char *fname, int flags){
 		GLuint texlist = 0;
-		const char *jpgfilename;
 		const char *p;
 		p = strrchr(fname, '.');
 #ifdef _WIN32
@@ -1328,11 +1327,10 @@ GLuint DrawTextureSphere::ProjectSphereCubeJpg(const char *fname, int flags){
 #else
 		mkdir("cache");
 #endif
-		jpgfilename = fname;
 		{
 			BITMAPINFO *bmis[6];
 			WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
-			GetFileAttributesEx(jpgfilename, GetFileExInfoStandard, &fd2);
+			GetFileAttributesEx(fname, GetFileExInfoStandard, &fd2);
 			int i;
 			bool ok = true;
 			for(i = 0; i < 6; i++){
@@ -1365,9 +1363,12 @@ heterogeneous:
 			else
 			{
 				void (*freeproc)(BITMAPINFO*);
-				BITMAPINFO *bmi = ReadJpeg(jpgfilename, &freeproc);
-				if(!bmi)
-					return 0;
+				BITMAPINFO *bmi = ReadJpeg(fname, &freeproc);
+				if(!bmi){
+					bmi = ReadPNG(fname, &freeproc);
+					if(!bmi)
+						return 0;
+				}
 				texlist = ProjectSphereCube(fname, bmi, NULL, flags);
 				freeproc(bmi);
 			}

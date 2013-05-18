@@ -1537,7 +1537,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 	static GLuint backimg = 0;
 	if(!backimg)
-		backimg = DrawTextureSphere::ProjectSphereCubeJpg("mwpan2_Merc_2000x1200.jpg", 0);
+		backimg = DrawTextureSphere::ProjectSphereCubeImage("mwpan2_Merc_2000x1200.jpg", 0);
 	{
 		glPushAttrib(GL_ENABLE_BIT | GL_TEXTURE_BIT);
 		glCallList(backimg);

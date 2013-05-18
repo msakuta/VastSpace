@@ -85,7 +85,7 @@ public:
 	/// \brief Reads an Mercator projection texture in a JPEG file and pass it to ProjectSphereCube().
 	/// \param fname The file name of JPEG file.
 	/// \param flags DrawTextureSphere flags.
-	static GLuint ProjectSphereCubeJpg(const char *fname, int flags);
+	static GLuint ProjectSphereCubeImage(const char *fname, int flags);
 
 };
 

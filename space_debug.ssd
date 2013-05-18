@@ -54,7 +54,7 @@ coordsys Orbit earth{
 
 		extexture "bumptexture" textures/earth_bump.jpg 0 normal
 		extexture "cloudtexture" textures/cloud.jpg 0 alpha
-		extexture "lightstexture" textures/earth_lights.jpg
+		extexture "lightstexture" textures/earth_lights.png
 		fragmentshader shaders/earth.fs
 		vertexshader shaders/earth.vs
 #		fragmentshader shaders/ringsphereshadow.fs

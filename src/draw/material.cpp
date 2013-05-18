@@ -302,7 +302,8 @@ BITMAPINFO *ReadJpeg(const char *fname, void (**freeproc)(BITMAPINFO*)){
 	bmi = (BITMAPINFO*)malloc(sizeof(BITMAPINFOHEADER) + cinfo.output_width * cinfo.output_height * cinfo.output_components);
 	bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmi->bmiHeader.biWidth = cinfo.output_width; 
-	bmi->bmiHeader.biHeight = cinfo.output_height;
+	// Jpeg library emits scanlines top to bottom, so we mark that information by sign of biHeight.
+	bmi->bmiHeader.biHeight = -cinfo.output_height;
 	bmi->bmiHeader.biPlanes = 1;
 	bmi->bmiHeader.biBitCount = cinfo.output_components * 8;
 	bmi->bmiHeader.biCompression = BI_RGB;

@@ -43,6 +43,8 @@ static int initBuffers(){return -1;}
 
 TIN::TIN(const char *fname) : vertices(vertexPredicate){
 	std::ifstream is(fname);
+	if(is.fail())
+		return;
 	Triangle tri;
 	int itri = 0;
 	do{
@@ -99,6 +101,10 @@ double TIN::width(){
 }
 
 void TIN::draw(){
+	// If there's nothing to draw, probably loading the TIN from a file failed.
+	if(vertices.empty() || triangles.empty())
+		return;
+
 	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_TEXTURE_BIT);
 	if(glActiveTextureARB) for(int i = 0; i < 2; i++){
 		glActiveTextureARB(i == 0 ? GL_TEXTURE0_ARB : GL_TEXTURE1_ARB);

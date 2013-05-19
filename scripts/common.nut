@@ -189,7 +189,7 @@ if(1){
 	local dllpath = isLinux() ?
 		debugBuild() ? "Debug/gltestdll.so" : "Release/gltestdll.so" :
 		debugBuild() ?
-		x64Build() ? "gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
+		x64Build() ? "gltestdll.dll" : "gltestdll.dll" :
 		x64Build() ? "gltestdll.dll" : "gltestdll.dll";
 //		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
 //		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
@@ -201,7 +201,7 @@ if(1){
 // Note that loading here invokes loadModule() twice in self-hosted server.
 if(1){
 	local dllpath = debugBuild() ?
-		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
+		x64Build() ? "surface.dll" : "surface.dll" :
 		x64Build() ? "surface.dll" : "surface.dll";
 //		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
 //		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";

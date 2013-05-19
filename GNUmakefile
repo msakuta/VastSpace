@@ -204,7 +204,6 @@ ${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
 
 rc.zip: shaders/*.fs shaders/*.vs models/*.mqo models/*.nut models/*.bmp models/*.jpg \
 models/*.mot \
-models/*.bin \
 models/*.png \
 textures/*.png \
 textures/*.jpg \

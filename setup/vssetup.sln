@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "vssetup", "vssetup.vdproj", "{B5613903-7078-4A9F-94F5-43CA129D28B4}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "vssetup64", "vssetup64\vssetup64.vdproj", "{847A61CC-6942-4DE9-A9B6-A58D4267BA7E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Default = Debug|Default
+		Release|Default = Release|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B5613903-7078-4A9F-94F5-43CA129D28B4}.Debug|Default.ActiveCfg = Debug
+		{B5613903-7078-4A9F-94F5-43CA129D28B4}.Debug|Default.Build.0 = Debug
+		{B5613903-7078-4A9F-94F5-43CA129D28B4}.Release|Default.ActiveCfg = Release
+		{B5613903-7078-4A9F-94F5-43CA129D28B4}.Release|Default.Build.0 = Release
+		{847A61CC-6942-4DE9-A9B6-A58D4267BA7E}.Debug|Default.ActiveCfg = Debug
+		{847A61CC-6942-4DE9-A9B6-A58D4267BA7E}.Release|Default.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

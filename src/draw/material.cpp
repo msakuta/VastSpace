@@ -674,6 +674,9 @@ static GLuint cachetex(const suftexparam_t *stp){
 	unsigned char *head;
 	int alpha = stp->flags & STP_ALPHA;
 	int mipmap = stp->flags & STP_MIPMAP;
+	// The value of bmi->bmiHeader.biHeight can be negative. In order to avoid accidental mis-use of the negative value,
+	// we should use pre-calculated absolute value.
+	LONG height = std::abs(bmi->bmiHeader.biHeight);
 #if 1
 	GLubyte (*tex)[3], (*tex4)[4];
 
@@ -686,8 +689,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int cols = bmi->bmiHeader.biClrUsed ? bmi->bmiHeader.biClrUsed : 16;
 		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
 		if(alpha){
-			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * height * sizeof*tex4);
+			for(y = 0; y < height; y++){
 				unsigned char *buf = head + (bmi->bmiHeader.biWidth * bmi->bmiHeader.biBitCount + 31) / 32 * 4 * y;
 				for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 					int pos = x + y * bmi->bmiHeader.biWidth, idx = 0xf & (buf[x / 2] >> ((x+1) % 2 * 4));
@@ -700,8 +703,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 			}
 		}
 		else{
-			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++){
+			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * height * sizeof*tex);
+			for(y = 0; y < height; y++){
 				unsigned char *buf = head + (bmi->bmiHeader.biWidth * bmi->bmiHeader.biBitCount + 31) / 32 * 4 * y;
 				for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 					int pos = x + y * bmi->bmiHeader.biWidth, idx = 0xf & (buf[x / 2] >> ((x+1) % 2 * 4));
@@ -719,8 +722,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char *src = (const unsigned char*)&bmi->bmiColors[cols];
 		if(alpha){
-			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * height * sizeof*tex4);
+			for(y = 0; y < height; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth, idx = src[pos];
 				tex4[pos][0] = bmi->bmiColors[idx].rgbRed;
 				tex4[pos][1] = bmi->bmiColors[idx].rgbGreen;
@@ -730,7 +733,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 			}
 		}
 		else{
-			int w = bmi->bmiHeader.biWidth, h = bmi->bmiHeader.biHeight, wb = (bmi->bmiHeader.biWidth + 3) / 4 * 4;
+			int w = bmi->bmiHeader.biWidth, h = height, wb = (bmi->bmiHeader.biWidth + 3) / 4 * 4;
 			tex = (GLubyte(*)[3])malloc(w * h * sizeof*tex);
 			if(stp->flags & STP_NORMALMAP) for(y = 0; y < h; y++) for(x = 0; x < w; x++){
 				int pos = x + y * w;
@@ -757,8 +760,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 			BYTE *alphasrc;
 			if(alphatex)
 				alphasrc = (BYTE*)&stp->bmiMask->bmiColors[stp->bmiMask->bmiHeader.biClrUsed];
-			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex4);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+			tex4 = (GLubyte(*)[4])malloc(bmi->bmiHeader.biWidth * height * sizeof*tex4);
+			for(y = 0; y < height; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth;
 				tex4[pos][0] = src[pos][2];
 				tex4[pos][1] = src[pos][1];
@@ -767,8 +770,8 @@ static GLuint cachetex(const suftexparam_t *stp){
 			}
 		}
 		else{
-			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * bmi->bmiHeader.biHeight * sizeof*tex);
-			for(y = 0; y < bmi->bmiHeader.biHeight; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
+			tex = (GLubyte(*)[3])malloc(bmi->bmiHeader.biWidth * height * sizeof*tex);
+			for(y = 0; y < height; y++) for(x = 0; x < bmi->bmiHeader.biWidth; x++){
 				int pos = x + y * bmi->bmiHeader.biWidth;
 				tex[pos][0] = src[pos][2];
 				tex[pos][1] = src[pos][1];
@@ -779,7 +782,7 @@ static GLuint cachetex(const suftexparam_t *stp){
 	}
 	case 32:
 	{
-		int x, y, h = ABS(bmi->bmiHeader.biHeight);
+		int x, y, h = height;
 		int cols = bmi->bmiHeader.biClrUsed;
 		const unsigned char (*src)[4] = (const unsigned char(*)[4])&bmi->bmiColors[cols], *mask;
 		if(stp->flags & STP_MASKTEX)
@@ -851,9 +854,9 @@ static GLuint cachetex(const suftexparam_t *stp){
 	}
 	glGenTextures(1, &ret);
 	glBindTexture(GL_TEXTURE_2D, ret);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB4, bmi->bmiHeader.biWidth, bmi->bmiHeader.biHeight, 0,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB4, bmi->bmiHeader.biWidth, height, 0,
 		GL_COLOR_INDEX, GL_UNSIGNED_BYTE, &bmi->bmiColors[cols]);
-/*	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, bmi->bmiHeader.biWidth, bmi->bmiHeader.biHeight,
+/*	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, bmi->bmiHeader.biWidth, height,
 		GL_COLOR_INDEX, GL_UNSIGNED_BYTE, &bmi->bmiColors[cols]);*/
 #endif
 /*	cachemtex(stp);*/

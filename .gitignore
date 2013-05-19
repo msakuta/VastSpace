@@ -10,7 +10,25 @@ cache
 doc
 logs
 rc.zip
+
+# Common folders used by Visual Studio to output
+# intermediate and output files.
+Win32
 x64
 Win32_LIB_Debug
 Win32_LIB_Release
+
+# Jpeg configuration header is not version controlled,
+# it's created at runtime.
 jpeg/jconfig.h
+
+# Bullet Dynamics Engine import path.
+# Ignored because it's under Subversion's control.
+bullet
+
+# Those files and folders created by Visual Studio
+_UpgradeReport_Files
+UpgradeLog.XML
+UpgradeLog.htm
+UpgradeLog2.XML
+UpgradeLog2.htm

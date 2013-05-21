@@ -178,6 +178,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Aerial.h" />
     <ClInclude Include="..\drawmap.h" />
     <ClInclude Include="..\SurfaceCS.h" />
     <ClInclude Include="..\Tank.h" />
@@ -185,7 +186,9 @@
     <ClInclude Include="..\WarMap.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Aerial.cpp" />
     <ClCompile Include="..\DrawMap.cpp" />
+    <ClCompile Include="..\draw\Aerial-draw.cpp" />
     <ClCompile Include="..\HeightMap.cpp" />
     <ClCompile Include="..\mas.cpp" />
     <ClCompile Include="..\SurfaceCS.cpp" />

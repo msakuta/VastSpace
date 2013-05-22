@@ -44,7 +44,6 @@ extern "C"{
 #define FLY_SMOKE_FREQ 10.
 #define FLY_RETHINKTIME .5
 #define FLARE_INTERVAL 2.5
-#define FLY_SCALE (1./20000)
 #define FLY_YAWSPEED (.1 * M_PI)
 #define FLY_PITCHSPEED  (.05 * M_PI)
 #define FLY_ROLLSPEED (.1 * M_PI)
@@ -97,29 +96,12 @@ static const struct color_node cnl_firetrail[] = {
 const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
 
 
-static const Vec3d flywingtips[2] = {
-	Vec3d(-160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
-	Vec3d(160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
-}/*,
-valkiewingtips[2] = {
-	{-440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
-	{440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
-}*/;
-
-void smoke_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
 
 
 
 
 static const double gunangle = 0.;
 static double thrust_strength = .010;
-static avec3_t wings0[5] = {
-	{0.003, 20 * FLY_SCALE, -.0/*02*/},
-	{-0.003, 20 * FLY_SCALE, -.0/*02*/},
-	{.002, 20 * FLY_SCALE, .005},
-	{-.002, 20 * FLY_SCALE, .005},
-	{.0, 50 * FLY_SCALE, .005}
-};
 static amat3_t aerotensor0[3] = {
 #if 1 /* experiments say that this configuration is responding well. */
 	{
@@ -355,7 +337,7 @@ void Aerial::draw(WarDraw *wd){
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
-		model = LoadMQOModel("models/Aerial.mqo");
+		model = LoadMQOModel(modPath() << "models/F15.mqo");
 
 		init.create(*openGLState);
 	}
@@ -369,7 +351,7 @@ void Aerial::draw(WarDraw *wd){
 	if(model){
 //		avec3_t *points = pt->vft == &valkie_s ? valkie_points : fly_points;
 		static const double normal[3] = {0., 1., 0.};
-		double scale = FLY_SCALE;
+		double scale = modelScale;
 		double x;
 		int lod = 0;
 		int i;
@@ -397,8 +379,8 @@ void Aerial::draw(WarDraw *wd){
 /*		glBegin(GL_POINTS);
 		glVertex3dv(pt->pos);
 		glEnd();*/
-		amat4_t mat;
 
+		glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);
 		glPushMatrix();
 #if FLY_QUAT
 		{
@@ -484,7 +466,7 @@ void Aerial::draw(WarDraw *wd){
 #endif
 			if(1){
 			glScaled(scale, scale, scale);
-			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+//			glGetDoublev(GL_MODELVIEW_MATRIX, mat);
 			glPushMatrix();
 #if 0
 /*			glPushAttrib(GL_POLYGON_BIT);

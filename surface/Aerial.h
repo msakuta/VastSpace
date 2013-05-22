@@ -38,6 +38,8 @@ public:
 	double getHitRadius()const override{return 0.020;}
 	bool isTargettable()const override{return true;}
 
+	static gltestp::dstring modPath(){return "surface/";}
+
 #if 0
 static struct entity_private_static fly_s = {
 	{
@@ -79,6 +81,8 @@ static struct entity_private_static fly_s = {
 	fly_draw,
 };
 #endif
+
+	static const double modelScale;
 
 protected:
 	double aileron[2], elevator, rudder;

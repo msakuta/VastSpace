@@ -35,7 +35,7 @@ extern "C"{
 #define FLY_SMOKE_FREQ 10.
 #define FLY_RETHINKTIME .5
 #define FLARE_INTERVAL 2.5
-#define FLY_SCALE (1./20000)
+#define FLY_SCALE Aerial::modelScale
 #define FLY_YAWSPEED (.1 * M_PI)
 #define FLY_PITCHSPEED  (.05 * M_PI)
 #define FLY_ROLLSPEED (.1 * M_PI)
@@ -99,6 +99,8 @@ valkiewingtips[2] = {
 
 
 Entity::EntityRegister<Aerial> Aerial::entityRegister("Aerial");
+
+const double Aerial::modelScale = 0.001 / 30.0;
 
 
 static const double gunangle = 0.;

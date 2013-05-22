@@ -365,7 +365,8 @@ void Aerial::draw(WarDraw *wd){
 		GLubyte col[4] = {255,255,0,255};
 		gldPseudoSphere(pos, fly_radius, col);
 	}
-	else*/{
+	else*/
+	if(model){
 //		avec3_t *points = pt->vft == &valkie_s ? valkie_points : fly_points;
 		static const double normal[3] = {0., 1., 0.};
 		double scale = FLY_SCALE;

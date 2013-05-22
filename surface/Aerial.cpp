@@ -1,5 +1,5 @@
 /** \file
- * \brief Definition of base classes for aerial Entities such as aeroplanes.
+ * \brief Implementation of base classes for aerial Entities such as aeroplanes.
  */
 
 #include "Aerial.h"
@@ -97,8 +97,8 @@ valkiewingtips[2] = {
 	{440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
 }*/;
 
-void smoke_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv);
 
+Entity::EntityRegister<Aerial> Aerial::entityRegister("Aerial");
 
 
 static const double gunangle = 0.;
@@ -330,7 +330,11 @@ void Aerial::init(){
 	fly->st.inputs.press = fly->st.inputs.change = 0;*/
 }
 
-Aerial::Aerial(WarField *w){
+Aerial::Aerial(Game *game) : st(game), pf(nullptr){
+	vapor[0] = vapor[1] = nullptr;
+}
+
+Aerial::Aerial(WarField *w) : st(w){
 	loadWingFile();
 /*	VECNULL(ret->pos);
 	VECNULL(ret->velo);

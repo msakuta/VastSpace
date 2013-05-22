@@ -1,5 +1,9 @@
 /** \file
  * \brief Definition of base classes for aerial Entities such as aeroplanes.
+ *
+ * This header and its corresponding sources (Aerial.cpp and Aerial-draw.cpp) will use
+ * experimentally C++11's new features excessively.
+ * Thus, VC2008 shouldn't be able to compile them.
  */
 #ifndef AERIAL_H
 #define AERIAL_H
@@ -12,9 +16,11 @@
 
 struct Model;
 
+/// \brief Base class for aerial vehicles.
 class Aerial : public Entity{
 public:
 	typedef Entity st;
+	static EntityRegister<Aerial> entityRegister;
 	Aerial(Game *game);
 	Aerial(WarField *aw);
 	void drawHUD(WarDraw *);
@@ -26,9 +32,11 @@ public:
 	int takedamage(double damage, int hitpart);
 	void drawCockpit(WarDraw *);
 	const char *idname()const{return "fly";}
-	const char *classname(struct entity*pt)const{return "Fly";}
+	const char *classname()const override{return "Fly";}
 	void start_control();
 	void end_control();
+	double getHitRadius()const override{return 0.020;}
+	bool isTargettable()const override{return true;}
 
 #if 0
 static struct entity_private_static fly_s = {
@@ -95,7 +103,7 @@ protected:
 };
 
 
-
+/// \brief A light-emitting flare dropped from an Aerial object.
 class Flare : public Entity{
 public:
 	typedef Entity st;

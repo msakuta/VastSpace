@@ -37,6 +37,7 @@ public:
 	void end_control();
 	double getHitRadius()const override{return 0.020;}
 	bool isTargettable()const override{return true;}
+	double getMaxHealth()const override{return maxHealthValue;}
 
 	static gltestp::dstring modPath(){return "surface/";}
 
@@ -82,7 +83,7 @@ static struct entity_private_static fly_s = {
 };
 #endif
 
-	static const double modelScale;
+	static double getModelScale(){return modelScale;}
 
 protected:
 	double aileron[2], elevator, rudder;
@@ -99,6 +100,9 @@ protected:
 //bhole_t bholes[50];
 
 	static Model *model;
+	static double modelScale;
+	static double defaultMass; ///< Dry mass?
+	static double maxHealthValue;
 
 	void init();
 	void loadWingFile();

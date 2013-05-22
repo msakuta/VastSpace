@@ -11,7 +11,7 @@
 #include "Game.h"
 #include "tefpol3d.h"
 #include "motion.h"
-#include "draw/WarDraw.h"
+#include "SqInitProcess.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -35,7 +35,7 @@ extern "C"{
 #define FLY_SMOKE_FREQ 10.
 #define FLY_RETHINKTIME .5
 #define FLARE_INTERVAL 2.5
-#define FLY_SCALE Aerial::modelScale
+#define FLY_SCALE Aerial::getModelScale()
 #define FLY_YAWSPEED (.1 * M_PI)
 #define FLY_PITCHSPEED  (.05 * M_PI)
 #define FLY_ROLLSPEED (.1 * M_PI)
@@ -100,7 +100,9 @@ valkiewingtips[2] = {
 
 Entity::EntityRegister<Aerial> Aerial::entityRegister("Aerial");
 
-const double Aerial::modelScale = 0.001 / 30.0;
+double Aerial::modelScale = 0.001 / 30.0;
+double Aerial::defaultMass = 12000.;
+double Aerial::maxHealthValue = 500.;
 
 
 static const double gunangle = 0.;
@@ -309,7 +311,16 @@ void Aerial::loadWingFile(){
 }
 
 void Aerial::init(){
-	int i;
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC(modPath() << "models/F15.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false));
+		initialized = true;
+	}
+	mass = defaultMass;
+	health = maxHealthValue;
 	this->weapon = 0;
 	this->aileron[0] = this->aileron[1] = 0.;
 	this->elevator = 0.;
@@ -338,22 +349,8 @@ Aerial::Aerial(Game *game) : st(game), pf(nullptr){
 
 Aerial::Aerial(WarField *w) : st(w){
 	loadWingFile();
-/*	VECNULL(ret->pos);
-	VECNULL(ret->velo);
-	VECNULL(ret->pyr);
-	VECNULL(ret->omg);
-	QUATZERO(ret->rot);
-	ret->rot[3] = 1.;*/
-	mass = 12000.; /* kilograms */
+
 	moi = .2; /* kilograms * kilometer^2 */
-	health = 500.;
-/*	ret->shoots = ret->shoots2 = ret->kills = ret->deaths = 0;
-	ret->enemy = NULL;
-	ret->active = 1;
-	*(struct entity_private_static**)&ret->vft = &fly_s;
-	ret->next = w->tl;
-	w->tl = ret;
-	ret->health = 500;*/
 #ifndef DEDICATED
 	TefpolList *tl = w->getTefpol3d();
 	if(tl){
@@ -365,8 +362,6 @@ Aerial::Aerial(WarField *w) : st(w){
 	sd->drawproc = bullethole_draw;*/
 #endif
 	init();
-/*	if(!w->pl->chase)
-		w->pl->chase = ret;*/
 }
 
 #if 0
@@ -2312,16 +2307,6 @@ void Aerial::anim(double dt){
 	}
 }
 
-bool Aerial::cull(WarDraw *wd)const{
-	if(wd->vw->gc->cullFrustum(pos, .012))
-		return 1;
-	double pixels = .008 * fabs(wd->vw->gc->scale(pos));
-//	if(ppixels)
-//		*ppixels = pixels;
-	if(pixels < 2)
-		return 1;
-	return 0;
-}
 
 
 

@@ -17,7 +17,7 @@ been developing to test ideas I wanted to try.
 Building Windows Client
 -----------------------
 
-Run svn-bullet.bat BEFORE opening a Visual Studio solutin file.
+Run svn-bullet.bat BEFORE opening a Visual Studio solution file.
 You need a Subversion client installed on your computer
 in order to run the batch file.
 

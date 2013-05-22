@@ -110,8 +110,8 @@ struct EXPORT NoCreateInstance : SQIntrinsicError{};
 /// \brief Adapter for Squirrel class instances that behave like an intrinsic type, such as vectors and quaternions.
 template<typename Class>
 class SQIntrinsic{
-	static const SQChar *const classname;
-	static const SQUserPointer *const typetag;
+	static EXPORT const SQChar *const classname;
+	static EXPORT const SQUserPointer *const typetag;
 public:
 	Class value;
 	Class *pointer; // Holds pointer to Squirrel-managed memory obtained by last sq_getuserdata call.

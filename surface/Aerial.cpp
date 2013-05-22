@@ -947,10 +947,10 @@ void Aerial::cockpitView(Vec3d &pos, Quatd &rot, int *chasecam){
 	}
 #endif
 	else if(camera == numof(src)){
-		extern double g_viewdist;
+		const Player *player = game->player;
 		Vec3d ofs = mat.dvp3(vec3_001);
 		if(camera)
-			ofs *= g_viewdist;
+			ofs *= player ? player->viewdist : 1.;
 		pos = this->pos + ofs;
 	}
 	else if(camera == numof(src)+2){

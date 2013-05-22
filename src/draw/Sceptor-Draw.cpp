@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of Sceptor drawing codes.
  */
-#include "../sceptor.h"
+#include "../Sceptor.h"
 #include "Viewer.h"
 #include "Player.h"
 #include "draw/material.h"

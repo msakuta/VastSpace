@@ -1377,6 +1377,7 @@ void Aerial::anim(double dt){
 	int direction = 0;
 
 	if(bbody){
+		bbody->activate();
 		pos = btvc(bbody->getCenterOfMassPosition());
 		velo = btvc(bbody->getLinearVelocity());
 		rot = btqc(bbody->getOrientation());

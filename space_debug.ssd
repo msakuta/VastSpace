@@ -75,7 +75,7 @@ coordsys Orbit earth{
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
 
-		coordsys earths{
+		coordsys Surface earths{
 			define theta .13*pi
 			define phi 1.0*pi
 			define rad 6375+0.2

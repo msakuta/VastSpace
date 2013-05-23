@@ -40,14 +40,14 @@ double g_rstation_occupy_time = 10.;
 
 static const double rstation_sc[3] = {.05, .055, .075};
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
-static struct hitbox rstation_hb[] = {
-	hitbox(Vec3d(0., 0., -22. * RSTATION_SCALE), Quatd(0,0,0,1), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	hitbox(Vec3d(-22. * RSTATION_SCALE, 0., 0.), Quatd(0,SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	hitbox(Vec3d(0., 0.,  22. * RSTATION_SCALE), Quatd(1,0,0,0), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	hitbox(Vec3d(22. * RSTATION_SCALE, 0., 0.), Quatd(0,-SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	hitbox(Vec3d(0., 0., 0), Quatd(0,0,0,1), Vec3d(11. * RSTATION_SCALE, .29 * RSTATION_SCALE, 11. * RSTATION_SCALE)),
-	hitbox(Vec3d(0., -5. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(5. * RSTATION_SCALE, 5. * RSTATION_SCALE, 5. * RSTATION_SCALE)),
-	hitbox(Vec3d(0., 10. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(.5 * RSTATION_SCALE, 10. * RSTATION_SCALE, .5 * RSTATION_SCALE)),
+static HitBox rstation_hb[] = {
+	HitBox(Vec3d(0., 0., -22. * RSTATION_SCALE), Quatd(0,0,0,1), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
+	HitBox(Vec3d(-22. * RSTATION_SCALE, 0., 0.), Quatd(0,SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
+	HitBox(Vec3d(0., 0.,  22. * RSTATION_SCALE), Quatd(1,0,0,0), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
+	HitBox(Vec3d(22. * RSTATION_SCALE, 0., 0.), Quatd(0,-SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
+	HitBox(Vec3d(0., 0., 0), Quatd(0,0,0,1), Vec3d(11. * RSTATION_SCALE, .29 * RSTATION_SCALE, 11. * RSTATION_SCALE)),
+	HitBox(Vec3d(0., -5. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(5. * RSTATION_SCALE, 5. * RSTATION_SCALE, 5. * RSTATION_SCALE)),
+	HitBox(Vec3d(0., 10. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(.5 * RSTATION_SCALE, 10. * RSTATION_SCALE, .5 * RSTATION_SCALE)),
 };
 
 RStation::RStation(WarField *aw) : st(aw){

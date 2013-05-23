@@ -60,7 +60,7 @@ public:
 	static bool static_init(HSQUIRRELVM);
 protected:
 	bool buildBody();
-	std::vector<hitbox> *getTraceHitBoxes()const;
+	HitBoxList *getTraceHitBoxes()const;
 	virtual void init();
 	void deathEffects();
 	friend class WireDestroyer;
@@ -71,7 +71,7 @@ protected:
 	double wirephase;
 	double wireomega;
 	double wirelength;
-	static struct hitbox hitboxes[];
+	static HitBox hitboxes[];
 	static const int nhitboxes;
 public:
 	typedef Warpable st;

@@ -254,7 +254,7 @@ short Shipyard::bbodyMask()const{
 	return ~2;
 }
 
-std::vector<hitbox> *Shipyard::getTraceHitBoxes()const{
+HitBoxList *Shipyard::getTraceHitBoxes()const{
 	return &hitboxes;
 }
 

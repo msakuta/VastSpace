@@ -48,7 +48,7 @@ protected:
 	static ManeuverParams mn;
 	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
-	std::vector<hitbox> *getTraceHitBoxes()const;
+	HitBoxList *getTraceHitBoxes()const;
 };
 
 #endif

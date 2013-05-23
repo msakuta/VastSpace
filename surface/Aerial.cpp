@@ -8,6 +8,7 @@
 #include "yssurf.h"
 #include "arms.h"
 #include "sqadapt.h"
+#include "btadapt.h"
 #include "Game.h"
 #include "tefpol3d.h"
 #include "motion.h"
@@ -108,6 +109,7 @@ double Aerial::maxHealthValue = 500.;
 static const double gunangle = 0.;
 static double thrust_strength = .010;
 Aerial::WingList Aerial::wings0;
+std::vector<HitBox> Aerial::hitboxes;
 
 
 #if 0
@@ -343,6 +345,43 @@ void Aerial::init(){
 	for(i = 0; i < fly->sd->np; i++)
 		fly->sd->p[i] = NULL;
 	fly->st.inputs.press = fly->st.inputs.change = 0;*/
+}
+
+bool Aerial::buildBody(){
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < hitboxes.size(); i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .5;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+	}
+	return true;
 }
 
 Aerial::Aerial(Game *game) : st(game), pf(nullptr){
@@ -1316,6 +1355,14 @@ void Aerial::anim(double dt){
 	int onfeet = 0;
 	int walking = 0;
 	int direction = 0;
+
+	if(bbody){
+		pos = btvc(bbody->getCenterOfMassPosition());
+		velo = btvc(bbody->getLinearVelocity());
+		rot = btqc(bbody->getOrientation());
+		omg = btvc(bbody->getAngularVelocity());
+	}
+
 
 #if 0
 	if(health <= 0){

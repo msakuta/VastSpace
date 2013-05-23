@@ -80,10 +80,10 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 
 /*static const double tank_sc[3] = {.05, .055, .075};*/
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
-static const struct hitbox tank_hb[] = {
-	hitbox(Vec3d(0., .000, -.0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
-	hitbox(Vec3d(0., .000, .0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
-	hitbox(Vec3d(0., 100 * 3.4 / 200. * 1e-3 - .0007, .0), Quatd(0,0,0,1), Vec3d(.0015, 20 * 3.4 / 200. * 1e-3, .0020)),
+static const HitBox tank_hb[] = {
+	HitBox(Vec3d(0., .000, -.0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
+	HitBox(Vec3d(0., .000, .0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
+	HitBox(Vec3d(0., 100 * 3.4 / 200. * 1e-3 - .0007, .0), Quatd(0,0,0,1), Vec3d(.0015, 20 * 3.4 / 200. * 1e-3, .0020)),
 };
 
 
@@ -844,7 +844,7 @@ void Tank::draw(WarDraw *wd){
 		int i;
 		Vec3d org;
 		Mat4d mat;
-		const struct hitbox *hb = tank_hb;
+		const HitBox *hb = tank_hb;
 /*		aquat_t rot, roty;
 		roty[0] = 0.;
 		roty[1] = sin(pt->turrety / 2.);

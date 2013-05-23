@@ -1,14 +1,6 @@
 /** \file
- * \brief Implements Entity class and its collaborative classes.
+ * \brief Implements Observable related classes.
  */
-#include "Entity.h"
-#include "Application.h"
-#include "EntityCommand.h"
-extern "C"{
-#include <clib/aquat.h>
-}
-#include "Beamer.h"
-#include "judge.h"
 #include "Observable.h"
 
 

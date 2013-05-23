@@ -18,8 +18,7 @@ typedef unsigned int GLuint;
 #endif
 
 
-struct hitbox;
-class EXPORT HitBoxList : public std::vector<hitbox>{
+class EXPORT HitBoxList : public std::vector<HitBox>{
 };
 struct hardpoint_static;
 
@@ -96,7 +95,7 @@ protected:
 	virtual bool buildBody();
 	virtual short bbodyGroup()const;
 	virtual short bbodyMask()const;
-	virtual std::vector<hitbox> *getTraceHitBoxes()const;
+	virtual HitBoxList *getTraceHitBoxes()const;
 
 	/// \brief Adapter function that only transmits arguments to SqInit().
 	bool sq_init(const SQChar *scriptFile, const SqInitProcess &procs){

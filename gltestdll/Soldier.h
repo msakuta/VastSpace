@@ -74,7 +74,7 @@ public:
 	virtual ArmBase *armsGet(int);
 	virtual bool command(EntityCommand *com);
 	virtual const ManeuverParams &getManeuve()const;
-	virtual std::vector<hitbox> *getTraceHitBoxes()const{return &hitboxes;}
+	virtual HitBoxList *getTraceHitBoxes()const{return &hitboxes;}
 
 	static double getModelScale(){return modelScale;}
 

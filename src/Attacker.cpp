@@ -281,7 +281,7 @@ bool Attacker::buildBody(){
 	return true;
 }
 
-std::vector<hitbox> *Attacker::getTraceHitBoxes()const{
+HitBoxList *Attacker::getTraceHitBoxes()const{
 	return &hitboxes;
 }
 

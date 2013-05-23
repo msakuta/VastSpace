@@ -62,7 +62,7 @@ public:
 //	static const Builder::BuildStatic builds;
 protected:
 	bool buildBody();
-	std::vector<hitbox> *getTraceHitBoxes()const;
+	HitBoxList *getTraceHitBoxes()const;
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;

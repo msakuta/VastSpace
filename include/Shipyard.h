@@ -99,7 +99,7 @@ protected:
 	bool buildBody();
 	short bbodyGroup()const;
 	short bbodyMask()const;
-	std::vector<hitbox> *getTraceHitBoxes()const;
+	HitBoxList *getTraceHitBoxes()const;
 
 	void dyingEffects(double dt);
 	void deathEffects();

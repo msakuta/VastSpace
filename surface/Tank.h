@@ -2,12 +2,12 @@
 #define TANK_H
 #include "war.h"
 #include "Entity.h"
+#include "judge.h"
 #include "btadapt.h"
 extern "C"{
 #include <clib/c.h>
 }
 
-struct hitbox;
 
 class Tank : public Entity{
 public:
@@ -57,7 +57,7 @@ protected:
 	int tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mpos, int *mposa);
 	void find_enemy_logic();
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
-	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal, const hitbox *, int);
+	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal, const HitBox *, int);
 };
 
 #endif

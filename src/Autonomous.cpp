@@ -327,8 +327,6 @@ static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
 
 
 
-
-
 #ifndef _WIN32
 void Autonomous::drawtra(wardraw_t *wd){}
 void Autonomous::drawHUD(wardraw_t *wd){}
@@ -919,7 +917,7 @@ short Autonomous::bbodyMask()const{
 
 /// \brief Gets the hitbox list for trace hit test, instead of Bullet dynamics engine's ray trace with the shape.
 /// \return Defaults NULL, which means no hitbox is used and Bullet dynamics engine does the job.
-std::vector<hitbox> *Autonomous::getTraceHitBoxes()const{
+HitBoxList *Autonomous::getTraceHitBoxes()const{
 	return NULL;
 }
 

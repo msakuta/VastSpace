@@ -13,6 +13,7 @@
 #endif
 
 #include "Entity.h"
+#include "judge.h"
 
 struct Model;
 
@@ -72,6 +73,9 @@ protected:
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
 	static WingList wings0;
+	static std::vector<HitBox> hitboxes;
+
+	virtual bool buildBody();
 
 	void init();
 	void shootDualGun(double dt);

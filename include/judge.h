@@ -15,12 +15,14 @@ EXPORT extern bool jHitBox(const Vec3d &org, const Vec3d &scale, const Quatd &ro
 EXPORT double jHitTriangle(const Vec3d &b, const Vec3d &c, const Vec3d &org, const Vec3d &end, double *bcoord = NULL, double *ccoord = NULL);
 EXPORT int jHitLines(const Vec3d &apos, const Quatd &arot, const Vec3d &avelo, const Vec3d &aomg, double alen, double blen, double dt, double *hitt = NULL);
 
-struct hitbox{
+struct HitBox{
 	Vec3d org;
 	Quatd rot;
 	Vec3d sc;
-	hitbox(Vec3d aorg = Vec3d(0,0,0), Quatd arot = Quatd(0,0,0,1), Vec3d asc = Vec3d(0,0,0)) : org(aorg), rot(arot), sc(asc){}
+	HitBox(Vec3d aorg = Vec3d(0,0,0), Quatd arot = Quatd(0,0,0,1), Vec3d asc = Vec3d(0,0,0)) : org(aorg), rot(arot), sc(asc){}
 };
+
+typedef HitBox hitbox;
 
 EXPORT extern int jHitBoxPlane(const hitbox &hb, const Vec3d &planeorg, const Vec3d &planenorm);
 EXPORT extern int jHitBoxes(const hitbox &hb1, const hitbox &hb2, const Vec3d &rvelo, const Vec3d &romg, double dt, double *hitt = NULL);

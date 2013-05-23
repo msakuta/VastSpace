@@ -514,7 +514,7 @@ Warpable::ManeuverParams &Assault::getManeuve()const{
 	return mn;
 }
 
-std::vector<hitbox> *Assault::getTraceHitBoxes()const{
+HitBoxList *Assault::getTraceHitBoxes()const{
 	return &hitboxes;
 }
 

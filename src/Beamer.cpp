@@ -554,7 +554,7 @@ const Builder::BuildStatic Beamer::builds = {
 
 double Beamer::getMaxHealth()const{return BEAMER_HEALTH;}
 
-std::vector<hitbox> *Beamer::getTraceHitBoxes()const{
+HitBoxList *Beamer::getTraceHitBoxes()const{
 	return &hitboxes;
 }
 

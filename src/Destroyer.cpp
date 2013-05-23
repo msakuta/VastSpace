@@ -362,7 +362,7 @@ double Destroyer::warpCostFactor()const{
 	return 1e2;
 }
 
-std::vector<hitbox> *Destroyer::getTraceHitBoxes()const{
+HitBoxList *Destroyer::getTraceHitBoxes()const{
 	return &hitboxes;
 }
 
@@ -373,12 +373,12 @@ std::vector<hitbox> *Destroyer::getTraceHitBoxes()const{
 
 
 
-struct hitbox WireDestroyer::hitboxes[] = {
-	hitbox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
-	hitbox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
-	hitbox(Vec3d(.0, -.06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	hitbox(Vec3d(.0, .06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	hitbox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(.07, .070, .02)),
+HitBox WireDestroyer::hitboxes[] = {
+	HitBox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
+	HitBox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
+	HitBox(Vec3d(.0, -.06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	HitBox(Vec3d(.0, .06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
+	HitBox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(.07, .070, .02)),
 };
 const int WireDestroyer::nhitboxes = numof(hitboxes);
 

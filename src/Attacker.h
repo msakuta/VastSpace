@@ -53,7 +53,7 @@ public:
 	virtual short bbodyGroup()const;
 protected:
 	bool buildBody();
-	std::vector<hitbox> *getTraceHitBoxes()const;
+	HitBoxList *getTraceHitBoxes()const;
 };
 
 /// A companion class of Attacker.

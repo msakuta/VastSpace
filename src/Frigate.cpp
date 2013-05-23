@@ -124,11 +124,11 @@ Entity::Dockable *Frigate::toDockable(){return this;}
 const Warpable::ManeuverParams &Frigate::getManeuve()const{return frigate_mn;}
 
 
-struct hitbox Frigate::hitboxes[] = {
-	hitbox(Vec3d(0., 0., -.005), Quatd(0,0,0,1), Vec3d(.015, .015, .060)),
-	hitbox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
-	hitbox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
-	hitbox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
+HitBox Frigate::hitboxes[] = {
+	HitBox(Vec3d(0., 0., -.005), Quatd(0,0,0,1), Vec3d(.015, .015, .060)),
+	HitBox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
+	HitBox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
+	HitBox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
 };
 const int Frigate::nhitboxes = numof(Frigate::hitboxes);
 

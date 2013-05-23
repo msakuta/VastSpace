@@ -1,0 +1,363 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{19339e40-50ee-458f-8bdf-733bd0027403}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{3706bc39-80d7-4d1f-a428-dce85882aaa4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\glw">
+      <UniqueIdentifier>{5b709e3e-f6cc-4437-8cf9-9332f139c046}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\glw">
+      <UniqueIdentifier>{62a8db43-3c44-4e61-a150-49e4a92eb927}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\calc">
+      <UniqueIdentifier>{6cd49d75-427b-448a-a7a6-cfca8d810d4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\calc">
+      <UniqueIdentifier>{928e971b-d742-4208-93cc-6ab806ec7d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\draw">
+      <UniqueIdentifier>{ba0a8eef-679a-43b0-883c-a3cae04d7562}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\draw">
+      <UniqueIdentifier>{be21abe0-94f7-4de7-aff1-428642d39a51}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\Sceptor.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\serial.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\serial_util.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Server.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ShadowMap.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\shield.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Shipyard.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sqadapt.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\SqInitProcess.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stellar_file.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tefpol3d.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\teline3d.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\TexSphere.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Universe.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\war.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Warpable.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ysdnmmot.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Application.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\arms.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assault.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\astro.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\astrodraw.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Attacker.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Autonomous.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Battleship.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Beamer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\BeamProjectile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\BinDiff.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Builder.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Bullet.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Client.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cmd.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cmddraw.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\CoordSys.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Defender.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Destroyer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Docker.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\dstring.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Entity.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Frigate.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Game.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\gltestplus.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\judge.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\keybind.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\LagrangePoint.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\LTurret.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Missile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\motion.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\mqo.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\mqoadapt.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\mqodraw.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Observable.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Player.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Respawn.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\RStation.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Scarry.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWchat.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWentlist.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\glwindow.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWmenu.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWtaskBar.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\message.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\solarmap.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWbuild.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWchart.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Bullet-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Defender-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Destroyer-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\DrawTextureSphere.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\effects.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\GatlingTurret-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\LMissileTurret-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\LTurret-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\material.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Missile-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\MTurret-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Player-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\ring-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Scarry-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Sceptor-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Shipyard-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\war-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Warpable-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Assault-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Attacker-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Battleship-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Beamer-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\blackbody.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\calc\calc3.c">
+      <Filter>Sources\calc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\calc\mathvars.c">
+      <Filter>Sources\calc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\calc\calc.c">
+      <Filter>Sources\calc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\calc\calc0.c">
+      <Filter>Sources\calc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glsl.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\bitmap.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\avi.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\glw\GLWbutton.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Worker.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Worker-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\glw\GLWentlist.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glw\popup.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glw\glwindow.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glw\GLWmenu.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glw\GLWtip.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\glw\message.h">
+      <Filter>Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\calc\tokker.h">
+      <Filter>Headers\calc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\calc\calc.h">
+      <Filter>Headers\calc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\calc\calc_p.h">
+      <Filter>Headers\calc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\draw\effects.h">
+      <Filter>Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\draw\ring-draw.h">
+      <Filter>Headers\draw</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\gltestplus.rc" />
+  </ItemGroup>
+</Project>

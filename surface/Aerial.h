@@ -21,28 +21,15 @@ struct Model;
 class Aerial : public Entity{
 public:
 	typedef Entity st;
-	static EntityRegister<Aerial> entityRegister;
 	Aerial(Game *game);
 	Aerial(WarField *aw);
 	void addRigidBody(WarSpace*)override;
-	void drawHUD(WarDraw *);
-	void cockpitView(Vec3d &pos, Quatd &rot, int *seatid);
 	void control(input_t *inputs, double dt);
 	void anim(double dt);
-	void draw(WarDraw *wd);
-	void drawtra(WarDraw *wd);
-	int takedamage(double damage, int hitpart);
-	void drawCockpit(WarDraw *);
-	const char *idname()const{return "fly";}
-	const char *classname()const override{return "Fly";}
 	void start_control();
 	void end_control();
-	double getHitRadius()const override{return 0.020;}
-	bool isTargettable()const override{return true;}
-	double getMaxHealth()const override{return maxHealthValue;}
 
 	static gltestp::dstring modPath(){return "surface/";}
-	static double getModelScale(){return modelScale;}
 
 protected:
 	double aileron[2], elevator, rudder;
@@ -50,7 +37,6 @@ protected:
 	double gearphase;
 	double cooldown;
 	Vec3d force[5], sight;
-	Tefpol *pf, *vapor[2];
 	char muzzle, brk, afterburner, navlight, gear;
 	int missiles;
 	int weapon;
@@ -69,22 +55,25 @@ protected:
 
 	class WingProcess;
 
-	static Model *model;
-	static double modelScale;
-	static double defaultMass; ///< Dry mass?
-	static double maxHealthValue;
-	static WingList wings0;
-	static HitBoxList hitboxes;
-
+	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual bool buildBody();
 	virtual short bbodyGroup()const;
 	virtual short bbodyMask()const;
+	virtual void shoot(double dt);
 
 	void init();
-	void shootDualGun(double dt);
 	bool cull(WarDraw *)const;
 };
 
+/// \brief Processes a double value in a Squirrel script.
+class Aerial::WingProcess : public SqInitProcess{
+public:
+	WingList &value;
+	const SQChar *name;
+	bool mandatory;
+	WingProcess(WingList &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM)const override;
+};
 
 /// \brief A light-emitting flare dropped from an Aerial object.
 class Flare : public Entity{
@@ -96,27 +85,11 @@ public:
 	void drawtra(WarDraw *wd);
 //	int flare_flying(const entity_t *pt);
 
-	/*
-struct entity_private_static flare_s = {
-	{
-		NULL,
-		NULL,
-	},
-	flare_anim,
-	NULL,
-	flare_drawtra,
-	NULL,
-	NULL,
-	NULL,
-	flare_flying,
-	0., 0., 0.,
-	NULL, NULL, NULL, NULL,
-	0,
-	0.
-};
-*/
+protected:
 	Tefpol *pf;
 	double ttl;
 };
+
+extern const struct color_sequence cs_firetrail;
 
 #endif

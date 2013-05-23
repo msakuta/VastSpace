@@ -180,6 +180,7 @@
   <ItemGroup>
     <ClInclude Include="..\Aerial.h" />
     <ClInclude Include="..\drawmap.h" />
+    <ClInclude Include="..\F15.h" />
     <ClInclude Include="..\SurfaceCS.h" />
     <ClInclude Include="..\Tank.h" />
     <ClInclude Include="..\TIN.h" />
@@ -189,6 +190,8 @@
     <ClCompile Include="..\Aerial.cpp" />
     <ClCompile Include="..\DrawMap.cpp" />
     <ClCompile Include="..\draw\Aerial-draw.cpp" />
+    <ClCompile Include="..\draw\F15-draw.cpp" />
+    <ClCompile Include="..\F15.cpp" />
     <ClCompile Include="..\HeightMap.cpp" />
     <ClCompile Include="..\mas.cpp" />
     <ClCompile Include="..\SurfaceCS.cpp" />

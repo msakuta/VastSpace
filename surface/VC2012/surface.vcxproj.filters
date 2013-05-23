@@ -32,6 +32,9 @@
     <ClInclude Include="..\Aerial.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\F15.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -59,6 +62,12 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\draw\Aerial-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\F15.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\F15-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>

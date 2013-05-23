@@ -78,6 +78,7 @@ EXPORTS
 	sq_setinstanceup
 	sq_getinstanceup
 	sq_setclassudsize
+	sq_getsize
 	sq_newclass
 	sq_createinstance
 	sq_setattributes

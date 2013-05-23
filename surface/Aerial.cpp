@@ -107,44 +107,8 @@ double Aerial::maxHealthValue = 500.;
 
 static const double gunangle = 0.;
 static double thrust_strength = .010;
-static avec3_t wings0[5] = {
-	{0.003, 20 * FLY_SCALE, -.0/*02*/},
-	{-0.003, 20 * FLY_SCALE, -.0/*02*/},
-	{.002, 20 * FLY_SCALE, .005},
-	{-.002, 20 * FLY_SCALE, .005},
-	{.0, 50 * FLY_SCALE, .005}
-};
-static amat3_t aerotensor0[3] = {
-#if 1 /* experiments say that this configuration is responding well. */
-	{
-		-.1, 0, 0,
-		0, -6.5, 0,
-		0, -.3, -.025,
-	}, {
-		-.1, 0, 0,
-		0, -1.9, 0,
-		0, -0.0, -.015,
-	}, {
-		-.9, 0, 0,
-		0, -.05, 0,
-		0, 0., -.015,
-	}
-#else
-	{
-		-.2, 0, 0,
-		0, -.7, 0,
-		0, -1, -.1,
-	}, {
-		-.2, 0, 0,
-		0, -.5, 0,
-		0, 0., -.1,
-	}, {
-		-.5, 0, 0,
-		0, -.1, 0,
-		0, 0., 0,
-	}
-#endif
-};
+Aerial::WingList Aerial::wings0;
+
 
 #if 0
 static void valkie_drawHUD(entity_t *pt, warf_t *, wardraw_t *, const double irot[16], void (*)(void));
@@ -263,52 +227,89 @@ int fly_break(struct player *pl){
 
 
 
-void Aerial::loadWingFile(){
-	static bool wingfile = false;
-	if(!wingfile){
-		FILE *fp;
-		int i;
-		wingfile = true;
-		fp = fopen("fly.cfg", "r");
-		if(fp){
-			fscanf(fp, "thrust = %lg\n", &thrust_strength);
-			for(i = 0; i < 5; i++){
-				char buf[512], *p;
-				int j;
-				fgets(buf, sizeof buf, fp);
-				if(p = strchr(buf, '\n'))
-					*p = '\0';
-				for(j = 0; j < 3; j++){
-					p = strtok(j ? NULL : buf, ",");
-					if(p){
-//						wings0[i][j] = calc3(&p, NULL, NULL);
-						HSQUIRRELVM v = game->sqvm;
-						StackReserver st2(v);
-						cpplib::dstring dst = cpplib::dstring("return(") << p << ")";
-						if(SQ_SUCCEEDED(sq_compilebuffer(v, dst, dst.len(), _SC("aerotensor"), SQTrue))){
-							sq_push(v, -2);
-							if(SQ_SUCCEEDED(sq_call(v, 1, SQTrue, SQTrue))){
-								sqa::SQQuatd q;
-								q.getValue(v, -1);
-								rot = q.value;
-							}
-						}
-					}
-					else break;
-				}
-/*				fscanf(fp, "%lg %lg %lg\n", &wings0[i][0], &wings0[i][1], &wings0[i][2]);*/
-			}
-			for(i = 0; i < 3; i++){
-				fscanf(fp, "%lg %lg %lg\n""%lg %lg %lg\n""%lg %lg %lg\n",
-					&aerotensor0[i][0], &aerotensor0[i][1], &aerotensor0[i][2],
-					&aerotensor0[i][3], &aerotensor0[i][4], &aerotensor0[i][5],
-					&aerotensor0[i][6], &aerotensor0[i][7], &aerotensor0[i][8]);
-			}
-/*			printf("fly.cfg loaded.\n");*/
-			fclose(fp);
-		}
+
+
+/// \brief Processes a double value in a Squirrel script.
+class Aerial::WingProcess : public SqInitProcess{
+public:
+	WingList &value;
+	const SQChar *name;
+	bool mandatory;
+	WingProcess(WingList &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM)const override;
+};
+
+
+
+void Aerial::WingProcess::process(HSQUIRRELVM v)const{
+	Game *game = (Game*)sq_getforeignptr(v);
+
+	sq_pushstring(v, _SC("wings"), -1); // root string
+
+	// Not defining hardpoints is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
 	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		Wing n;
+
+		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
+			SQVec3d r;
+			r.getValue(v, -1);
+			n.pos = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].pos not defined"));
+
+		sq_pushstring(v, _SC("aero"), -1); // root obj obj[i] "aero"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].aero
+			for(auto j = 0; j < 9; j++){
+				sq_pushinteger(v, j); // root obj obj[i] obj[i].aero j
+				if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i] obj[i].aero obj[i].aero[j]
+					throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].aero[") << j << _SC("] is lacking"));
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+					throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].aero[") << j << _SC("] is not compatible with float"));
+				n.aero[j] = f;
+				sq_poptop(v); // root obj obj[i] obj[i].aero
+			}
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].aero not defined"));
+
+		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				char *name = new char[strlen(sqstr) + 1];
+				strcpy(name, sqstr);
+				n.name = name;
+			}
+			else // Throw an error because there's no such thing like default name.
+				throw SQFError("HardPointsProcess: name is not specified");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.name = gltestp::dstring("wing") << i;
+
+		value.push_back(n);
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
 }
+
 
 void Aerial::init(){
 	static bool initialized = false;
@@ -316,7 +317,8 @@ void Aerial::init(){
 		SqInit(game->sqvm, _SC(modPath() << "models/F15.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
-			SingleDoubleProcess(maxHealthValue, "maxhealth", false));
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			WingProcess(wings0, "wings"));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -348,8 +350,6 @@ Aerial::Aerial(Game *game) : st(game), pf(nullptr){
 }
 
 Aerial::Aerial(WarField *w) : st(w){
-	loadWingFile();
-
 	moi = .2; /* kilograms * kilometer^2 */
 #ifndef DEDICATED
 	TefpolList *tl = w->getTefpol3d();

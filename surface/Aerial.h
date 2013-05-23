@@ -40,49 +40,6 @@ public:
 	double getMaxHealth()const override{return maxHealthValue;}
 
 	static gltestp::dstring modPath(){return "surface/";}
-
-#if 0
-static struct entity_private_static fly_s = {
-	{
-		fly_drawHUD/*/NULL*/,
-		fly_cockpitview,
-		fly_control,
-		fly_destruct,
-		fly_getrot,
-		NULL, /* getrotq */
-		fly_drawCockpit,
-		NULL, /* is_warping */
-		NULL, /* warp_dest */
-		fly_idname,
-		fly_classname,
-		fly_start_control,
-		fly_end_control,
-		fly_analog_mask,
-	},
-	fly_anim,
-	fly_draw,
-	fly_drawtra,
-	fly_takedamage,
-	fly_gib_draw,
-	tank_postframe,
-	fly_flying,
-	M_PI,
-	-M_PI / .6, M_PI / 4.,
-	NULL, NULL, NULL, NULL,
-	1,
-	BULLETSPEED,
-	0.020,
-	FLY_SCALE,
-	0, 0,
-	fly_bullethole,
-	{0., 20 * FLY_SCALE, .0},
-	NULL, /* bullethit */
-	NULL, /* tracehit */
-	{NULL}, /* hitmdl */
-	fly_draw,
-};
-#endif
-
 	static double getModelScale(){return modelScale;}
 
 protected:
@@ -99,13 +56,24 @@ protected:
 //	bhole_t *frei;
 //bhole_t bholes[50];
 
+	/// \brief An internal structure that representing a wing and its parameters.
+	struct Wing{
+		Vec3d pos; ///< Position of the wing's center, relative to center of mass
+		Mat3d aero; ///< The aerodynamic tensor, defines how force is applied to the wing.
+		gltestp::dstring name; ///< Name of the wing, just for debugging
+	};
+
+	typedef std::vector<Wing> WingList;
+
+	class WingProcess;
+
 	static Model *model;
 	static double modelScale;
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
+	static WingList wings0;
 
 	void init();
-	void loadWingFile();
 	void shootDualGun(double dt);
 	bool cull(WarDraw *)const;
 };

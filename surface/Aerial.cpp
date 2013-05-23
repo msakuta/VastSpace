@@ -109,7 +109,7 @@ double Aerial::maxHealthValue = 500.;
 static const double gunangle = 0.;
 static double thrust_strength = .010;
 Aerial::WingList Aerial::wings0;
-std::vector<HitBox> Aerial::hitboxes;
+HitBoxList Aerial::hitboxes;
 
 
 #if 0
@@ -320,7 +320,8 @@ void Aerial::init(){
 			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			WingProcess(wings0, "wings"));
+			WingProcess(wings0, "wings") <<=
+			Autonomous::HitboxProcess(hitboxes));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -382,6 +383,25 @@ bool Aerial::buildBody(){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 	return true;
+}
+
+/// \return Defaults 1
+short Aerial::bbodyGroup()const{
+	return 1;
+}
+
+/// \return Defaults all bits raised
+short Aerial::bbodyMask()const{
+	return ~0;
+}
+
+void Aerial::addRigidBody(WarSpace *ws){
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		if(bbody)
+			ws->bdw->addRigidBody(bbody, bbodyGroup(), bbodyMask());
+	}
 }
 
 Aerial::Aerial(Game *game) : st(game), pf(nullptr){

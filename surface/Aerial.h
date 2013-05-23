@@ -13,7 +13,7 @@
 #endif
 
 #include "Entity.h"
-#include "judge.h"
+#include "Autonomous.h"
 
 struct Model;
 
@@ -24,6 +24,7 @@ public:
 	static EntityRegister<Aerial> entityRegister;
 	Aerial(Game *game);
 	Aerial(WarField *aw);
+	void addRigidBody(WarSpace*)override;
 	void drawHUD(WarDraw *);
 	void cockpitView(Vec3d &pos, Quatd &rot, int *seatid);
 	void control(input_t *inputs, double dt);
@@ -73,9 +74,11 @@ protected:
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
 	static WingList wings0;
-	static std::vector<HitBox> hitboxes;
+	static HitBoxList hitboxes;
 
 	virtual bool buildBody();
+	virtual short bbodyGroup()const;
+	virtual short bbodyMask()const;
 
 	void init();
 	void shootDualGun(double dt);

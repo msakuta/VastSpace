@@ -141,6 +141,7 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+public:
 	class EXPORT HitboxProcess : public SqInitProcess{
 	public:
 		HitBoxList &hitboxes;
@@ -148,6 +149,7 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
+protected:
 	class EXPORT HardPointProcess : public SqInitProcess{
 	public:
 		std::vector<hardpoint_static*> &hardpoints;

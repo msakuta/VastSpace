@@ -343,15 +343,14 @@ void F15::shoot(double dt){
 
 
 void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
-	avec4_t src[] = {
-		/*{0., .008, 0.015, 1.}*/
-		{0., 40 * FLY_SCALE, -120 * FLY_SCALE},
-		{0., .0055, .015},
-		{0.013, .007, .025},
-		{.010, .007, -.010},
-		{.010, .007, -.010},
-		{0.004, .0, .0},
-		{-0.004, .0, .0},
+	static const Vec3d src[] = {
+		Vec3d(0., 40 * modelScale, -120 * modelScale),
+		Vec3d(0., .0055, .015),
+		Vec3d(0.013, .007, .025),
+		Vec3d(.010, .007, -.010),
+		Vec3d(.010, .007, -.010),
+		Vec3d(0.004, .0, .0),
+		Vec3d(-0.004, .0, .0),
 	};
 	Mat4d mat;
 	int camera;
@@ -398,6 +397,7 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 	else{
 		pos = mat.vp3(src[camera]);
 	}
+	rot = this->rot;
 }
 
 int F15::takedamage(double damage, int hitpart){

@@ -172,9 +172,7 @@ int fly_break(struct player *pl){
 
 
 void Aerial::WingProcess::process(HSQUIRRELVM v)const{
-	Game *game = (Game*)sq_getforeignptr(v);
-
-	sq_pushstring(v, _SC("wings"), -1); // root string
+	sq_pushstring(v, name, -1); // root string
 
 	// Not defining hardpoints is valid. Just ignore the case.
 	if(SQ_FAILED(sq_get(v, -2))){ // root obj
@@ -240,6 +238,30 @@ void Aerial::WingProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v); // root
 }
 
+void Aerial::Vec3dListProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+
+	// Not defining hardpoints is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
+	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		SQVec3d r;
+		r.getValue(v, -1);
+		value.push_back(r.value);
+		sq_poptop(v); // root obj obj[i]
+	}
+	sq_poptop(v); // root
+}
 
 void Aerial::init(){
 	this->weapon = 0;

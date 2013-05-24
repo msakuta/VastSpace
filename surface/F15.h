@@ -32,7 +32,8 @@ public:
 	static double getModelScale(){return modelScale;}
 
 protected:
-	Tefpol *pf, *vapor[2];
+	Tefpol *pf;
+	std::vector<Tefpol*> vapor;
 
 	static Model *model;
 	static double modelScale;
@@ -40,6 +41,7 @@ protected:
 	static double maxHealthValue;
 	static WingList wings0;
 	static HitBoxList hitboxes;
+	static std::vector<Vec3d> wingTips;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

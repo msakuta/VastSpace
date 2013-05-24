@@ -42,6 +42,10 @@ wings <- [
 ]
 
 
+wingTips <- [
+	Vec3d(-215., 20., 10.) * modelScale,
+	Vec3d( 215., 20., 10.) * modelScale,
+]
 
 
 function drawOverlay(){

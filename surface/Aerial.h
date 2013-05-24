@@ -55,6 +55,7 @@ protected:
 	typedef std::vector<Wing> WingList;
 
 	class WingProcess;
+	class Vec3dListProcess;
 
 	virtual WingList &getWings()const = 0;
 	virtual HitBoxList &getHitBoxes()const = 0;
@@ -67,13 +68,23 @@ protected:
 	bool cull(WarDraw *)const;
 };
 
-/// \brief Processes a double value in a Squirrel script.
+/// \brief Processes a WingList value in a Squirrel script.
 class Aerial::WingProcess : public SqInitProcess{
 public:
 	WingList &value;
 	const SQChar *name;
 	bool mandatory;
 	WingProcess(WingList &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM)const override;
+};
+
+/// \brief Processes a list of Vec3d in a Squirrel script.
+class Aerial::Vec3dListProcess : public SqInitProcess{
+public:
+	std::vector<Vec3d> &value;
+	const SQChar *name;
+	bool mandatory;
+	Vec3dListProcess(std::vector<Vec3d> &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
 	void process(HSQUIRRELVM)const override;
 };
 

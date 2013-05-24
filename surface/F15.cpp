@@ -64,10 +64,10 @@ static const struct color_sequence cs_bluework = DEFINE_COLSEQ(cnl_bluework, (CO
 
 
 
-static const Vec3d flywingtips[2] = {
+std::vector<Vec3d> F15::wingTips;/* = {
 	Vec3d(-160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
 	Vec3d(160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
-}/*,
+}*//*,
 valkiewingtips[2] = {
 	{-440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
 	{440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
@@ -91,7 +91,9 @@ const avec3_t fly_hardpoint[2] = {{.005, .0005, -.000}, {-.005, .0005, -.000}};
 
 
 F15::F15(Game *game) : st(game), pf(nullptr){
-	vapor[0] = vapor[1] = nullptr;
+	vapor.resize(wingTips.size());
+	for(auto &i : vapor)
+		i = nullptr;
 }
 
 F15::F15(WarField *w) : st(w){
@@ -100,13 +102,14 @@ F15::F15(WarField *w) : st(w){
 	TefpolList *tl = w->getTefpol3d();
 	if(tl){
 		pf = tl->addTefpolMovable(pos, velo, vec3_000, &cs_blueburn, TEP3_THICKER | TEP3_ROUGH, cs_blueburn.t);
-		vapor[0] = tl->addTefpolMovable(pos, velo, vec3_000, &cs_vapor, TEP3_FAINT | TEP3_ROUGH, cs_vapor.t * 10);
-		vapor[1] = tl->addTefpolMovable(pos, velo, vec3_000, &cs_vapor, TEP3_FAINT | TEP3_ROUGH, cs_vapor.t * 10);
 	}
 /*	sd = AllocSUFDecal(gsuf_fly);
 	sd->drawproc = bullethole_draw;*/
 #endif
 	init();
+	vapor.resize(wingTips.size());
+	for(auto &i : vapor)
+		i = tl->addTefpolMovable(pos, velo, vec3_000, &cs_vapor, TEP3_FAINT | TEP3_ROUGH, cs_vapor.t * 10);
 }
 
 void F15::init(){
@@ -117,7 +120,8 @@ void F15::init(){
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			WingProcess(wings0, "wings") <<=
-			Autonomous::HitboxProcess(hitboxes));
+			Autonomous::HitboxProcess(hitboxes) <<=
+			Vec3dListProcess(wingTips, "wingTips"));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -259,10 +263,9 @@ void F15::anim(double dt){
 	transform(mat);
 
 	{
-		const Vec3d (&wingtips)[2] = /*vft == &fly_s ?*/ flywingtips /*: valkiewingtips*/;
 		bool skip = !(.1 < -this->velo.sp(mat.vec3(2)));
-		for(int i = 0; i < 2; i++) if(vapor[i]){
-			Vec3d pos = mat.vp3(wingtips[i]);
+		for(int i = 0; i < wingTips.size(); i++) if(vapor[i]){
+			Vec3d pos = mat.vp3(wingTips[i]);
 			vapor[i]->move(pos, vec3_000, cs_vapor.t, skip);
 		}
 	}

@@ -41,6 +41,7 @@ protected:
 	static WingList wings0;
 	static HitBoxList hitboxes;
 
+	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 

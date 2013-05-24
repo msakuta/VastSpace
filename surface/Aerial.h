@@ -36,7 +36,8 @@ protected:
 	double throttle;
 	double gearphase;
 	double cooldown;
-	Vec3d force[5], sight;
+	std::vector<Vec3d> force;
+	Vec3d sight;
 	char muzzle, brk, afterburner, navlight, gear;
 	int missiles;
 	int weapon;
@@ -55,6 +56,7 @@ protected:
 
 	class WingProcess;
 
+	virtual WingList &getWings()const = 0;
 	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual bool buildBody();
 	virtual short bbodyGroup()const;

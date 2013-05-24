@@ -122,6 +122,7 @@ void F15::init(){
 	}
 	mass = defaultMass;
 	health = maxHealthValue;
+	force.resize(wings0.size());
 	this->weapon = 0;
 	this->aileron[0] = this->aileron[1] = 0.;
 	this->elevator = 0.;

@@ -1074,6 +1074,7 @@ void Aerial::anim(double dt){
 	velo += accel * dt;
 
 //	double air = w->atmospheric_pressure(w, &pt->pos)/*exp(-pt->pos[1] / 10.)*/;
+	double air = exp(-pos[1] / 10.);
 
 	Mat4d mat;
 	transform(mat);
@@ -1514,86 +1515,37 @@ void Aerial::anim(double dt){
 #endif
 	}
 
-#if 0
+#if 1
 	if(air){
-		int i;
-		avec3_t wings[5];
-		avec3_t lifts[2];
-		avec3_t angle, angle0 = {0., 1., 0.};
-		avec3_t v, velo, v_cross_velo;
-		amat4_t rot, irot;
-		double s, velolen, f = 1.;
-		{
-			double c = aerotensor0[0][8] / aerotensor0[0][7];
-			s = asin(c);
-		}
-		if(vft == &valkie_s){
-			int i;
-			struct valkie *p = (struct valkie*)pt;
-			if(p->bat)
-				f = (M_PI / 4. - -p->wing[0]) / (M_PI / 4.);
-		}
+		const double f = 1.;
 
-		velolen = VECSLEN(pt->velo);
+		double velolen = velo.slen();
 
-		quat2mat(rot, pt->rot);
-		quat2imat(irot, pt->rot);
-
-		MAT4DVP3(angle, mat, angle0);
-		for(i = 0; i < 5; i++){
-			MAT4DVP3(wings[i], mat, wings0[i]);
-/*			printf("gggg %lg\n", VECSP(angle, wings[i]));*/
-		}
-		for(i = 0; i < 5; i++){
-			avec3_t v1;
-			double len, sp, f2;
+		// Acquire wing positions
+		for(auto it : getWings()){
+			// Position relative to center of gravity with rotation in world coordinates.
+			Vec3d rpos = mat.dvp3(it.pos);
 
 			/* retrieve velocity of the wing center in absolute coordinates */
-			VECVP(velo, pt->omg, wings[i]);
-			VECADDIN(velo, pt->velo);
+			Vec3d velo = this->omg.vp(rpos) + this->velo;
 
-/*			VECVP(v, angle, velo);
-			VECVP(v_cross_velo, v, velo);
-			len = VECLEN(v);
-			VECNORMIN(v_cross_velo);
+			double len = velolen < .05 ? velolen / .05 : velolen < .340 ? 1. : velolen / .340;
 
-			VECSCALE(lifts[i], v_cross_velo, -.1 * (p->flap[i] + .2 * M_PI) * len * pt->mass * dt);
-			sp = VECSP(angle, velo);
-			sp = -1. * ABS(sp) * pt->mass * dt;
-			VECSCALE(v, velo, sp);
-			VECADDIN(lifts[i], v);*/
+			// Calculate attenuation factor
+			double f2 = f * air * this->mass * .15 * len;
 
-			len = velolen < .05 ? velolen / .05 : velolen < .340 ? 1. : velolen / .340;
-			f2 = f * air * pt->mass * dt * .15 * len;
-
-			MAT4VP3(v1, irot, velo);
-
-			if(i < 2){
-				amat3_t rot2, rot3;
-				MATROTY(rot2, aerotensor0[i/2], i * .2 - .1);
-				MATROTX(rot3, rot2, p->aileron[i] / 2.);
-				MATVP(v, rot3, v1);
-				if(vft == &valkie_s)
-					f2 *= 1. - p->throttle * .5;
-			}
-			else if(i < 4){
-				amat3_t rot3;
-				MATROTX(rot3, aerotensor0[i/2], p->elevator);
-				MATVP(v, rot3, v1);
-			}
-			else if(i == 4){
-				amat3_t rot3;
-				MATROTY(rot3, aerotensor0[i/2], -p->rudder);
-				MATVP(v, rot3, v1);
-			}
-			else{
-				MATVP(v, aerotensor0[i/2], v1);
-			}
-			VECSCALEIN(v, f2/** velolen * 100.*/);
-			MAT4VP3(v1, rot, v);
-			VECCPY(p->force[i], v1);
-			RigidAddMomentum(pt, wings[i], v1);
+			// Calculate the drag in local coordinates
+			Vec3d v1 = rot.itrans(velo);
+			Vec3d v = it.aero.vp3(v1) * f2;
+			Vec3d v2 = rot.trans(v);
+//			this->force[i] = v2;
+			if(bbody)
+				bbody->applyForce(btvc(v2), btvc(rpos));
+//			RigidAddMomentum(pt, wings[i], v1);
 		}
+		// Test force to apply forward acceleration to see respond
+		if(bbody)
+			bbody->applyForce(btVector3(0, 0, -0.01) * mass, btVector3(0,0,0));
 	}
 #endif
 

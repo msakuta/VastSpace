@@ -345,8 +345,8 @@ void F15::shoot(double dt){
 void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 	static const Vec3d src[] = {
 		Vec3d(0., 40 * modelScale, -120 * modelScale),
-		Vec3d(0., .0055, .015),
-		Vec3d(0.013, .007, .025),
+		Vec3d(0., .0075, .025),
+		Vec3d(0.020, .007, .050),
 		Vec3d(.010, .007, -.010),
 		Vec3d(.010, .007, -.010),
 		Vec3d(0.004, .0, .0),

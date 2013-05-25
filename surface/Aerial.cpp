@@ -996,9 +996,9 @@ void Aerial::control(const input_t *inputs, double dt){
 	if(inputs->press & inputs->change & (PL_G))
 		gear = !gear;
 	if(/*pt->vft != &valkie_s || !((valkie_t*)pt)->bat*/1){
-		aileron[0] = rangein(approach(aileron[0], aileron[0] + .0001 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
-		aileron[1] = rangein(approach(aileron[1], aileron[1] - .0001 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
-		elevator = rangein(approach(elevator, elevator + .0003 * M_PI * inputs->analog[1], dt, 0.), -M_PI / 2., M_PI / 2.);
+		aileron[0] = rangein(approach(aileron[0], aileron[0] - .00002 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
+		aileron[1] = rangein(approach(aileron[1], aileron[1] + .00002 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
+		elevator = rangein(approach(elevator, elevator - .0001 * M_PI * inputs->analog[1], dt, 0.), -M_PI / 2., M_PI / 2.);
 	}
 	else{
 		aileron[0] = rangein(approach(aileron[0], 0., dt, 0.), -M_PI / 2., M_PI / 2.);

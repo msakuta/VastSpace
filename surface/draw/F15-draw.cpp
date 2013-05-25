@@ -60,8 +60,18 @@ void F15::drawtra(WarDraw *wd){
 	for(auto it : getWings()){
 		glPushMatrix();
 		gldTranslate3dv(pos);
+
 		gldMultQuat(rot);
+		Quatd rot = quat_u;
+		if(it.name == "Tail")
+			rot = Quatd::rotation(elevator, Vec3d(1, 0, 0));
+		if(it.name == "MainLeft")
+			rot = Quatd::rotation(aileron[0], Vec3d(1, 0, 0));
+		if(it.name == "MainRight")
+			rot = Quatd::rotation(aileron[1], Vec3d(1, 0, 0));
+
 		gldTranslate3dv(it.pos);
+		gldMultQuat(rot);
 		glPushMatrix();
 		gldScaled(::sqrt(::fabs(it.aero[4])) * 0.001);
 		glBegin(GL_QUADS);

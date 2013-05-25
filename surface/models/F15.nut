@@ -36,9 +36,9 @@ local tensor3 = [
 wings <- [
 	{name = "MainLeft", pos = Vec3d( 0.004, 0.001, 0.0), aero = tensor1},
 	{name = "MainRight", pos = Vec3d(-0.004, 0.001, 0.0), aero = tensor1},
-	{name = "Tail", pos = Vec3d( 0.003, 0.002, 0.005), aero = tensor2},
-	{name = "Tail", pos = Vec3d(-0.003, 0.002, 0.005), aero = tensor2},
-	{name = "Vertical", pos = Vec3d( 0.000, 0.0045, 0.006), aero = tensor3},
+	{name = "Tail", pos = Vec3d( 0.003, 0.0, 0.010), aero = tensor2},
+	{name = "Tail", pos = Vec3d(-0.003, 0.0, 0.010), aero = tensor2},
+	{name = "Vertical", pos = Vec3d( 0.000, 0.0025, 0.008), aero = tensor3},
 ]
 
 

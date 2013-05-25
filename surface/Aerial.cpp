@@ -184,11 +184,12 @@ void Aerial::WingProcess::process(HSQUIRRELVM v)const{
 	SQInteger len = sq_getsize(v, -1);
 	if(-1 == len)
 		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	value.resize(len);
 	for(int i = 0; i < len; i++){
 		sq_pushinteger(v, i); // root obj i
 		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
 			continue;
-		Wing n;
+		Wing &n = value[i];
 
 		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
@@ -220,19 +221,55 @@ void Aerial::WingProcess::process(HSQUIRRELVM v)const{
 		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
 		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
 			const SQChar *sqstr;
-			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
-				char *name = new char[strlen(sqstr) + 1];
-				strcpy(name, sqstr);
-				n.name = name;
-			}
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
+				n.name = sqstr;
 			else // Throw an error because there's no such thing like default name.
-				throw SQFError("HardPointsProcess: name is not specified");
+				throw SQFError("WingProcess: name is not specified");
 			sq_poptop(v); // root obj obj[i]
 		}
 		else
 			n.name = gltestp::dstring("wing") << i;
 
-		value.push_back(n);
+		sq_pushstring(v, _SC("control"), -1); // root obj obj[i] "control"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].control
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				if(!scstrcmp(sqstr, _SC("aileron")))
+					n.control = Wing::Control::Aileron;
+				else if(!scstrcmp(sqstr, _SC("elevator")))
+					n.control = Wing::Control::Elevator;
+				else if(!scstrcmp(sqstr, _SC("rudder")))
+					n.control = Wing::Control::Rudder;
+				else
+					throw SQFError("WingProcess: unknown control surface type");
+			}
+			else // Throw an error because there's no such thing like default name.
+				throw SQFError("WingProcess: control is not specified");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.control = Wing::Control::None;
+
+		sq_pushstring(v, _SC("axis"), -1); // root obj obj[i] "axis"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].axis
+			SQVec3d r;
+			r.getValue(v, -1);
+			n.axis = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.axis = Vec3d(1,0,0); // Defaults X+
+
+		sq_pushstring(v, _SC("sensitivity"), -1); // root obj obj[i] "sensitivity"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].sensitivity
+			SQFloat f;
+			sq_getfloat(v, -1, &f);
+			n.sensitivity = f;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else if(n.control != Wing::Control::None)
+			throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].sensitivity not defined"));
+
 		sq_poptop(v); // root obj
 	}
 	sq_poptop(v); // root
@@ -995,16 +1032,8 @@ void Aerial::control(const input_t *inputs, double dt){
 	}
 	if(inputs->press & inputs->change & (PL_G))
 		gear = !gear;
-	if(/*pt->vft != &valkie_s || !((valkie_t*)pt)->bat*/1){
-		aileron[0] = rangein(approach(aileron[0], aileron[0] - .00002 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
-		aileron[1] = rangein(approach(aileron[1], aileron[1] + .00002 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
-		elevator = rangein(approach(elevator, elevator - .0001 * M_PI * inputs->analog[1], dt, 0.), -M_PI / 2., M_PI / 2.);
-	}
-	else{
-		aileron[0] = rangein(approach(aileron[0], 0., dt, 0.), -M_PI / 2., M_PI / 2.);
-		aileron[1] = rangein(approach(aileron[1], 0., dt, 0.), -M_PI / 2., M_PI / 2.);
-		elevator = rangein(approach(elevator, 0., dt, 0.), -M_PI / 2., M_PI / 2.);
-	}
+	aileron = rangein(approach(aileron, aileron + inputs->analog[0] * 0.01, dt, 0.), -1, 1);
+	elevator = rangein(approach(elevator, elevator + inputs->analog[1] * 0.01, dt, 0.), -1, 1);
 	if(cooldown < dt)
 		cooldown = 0;
 	else
@@ -1554,12 +1583,10 @@ void Aerial::anim(double dt){
 			Vec3d rpos = mat.dvp3(it.pos);
 
 			Quatd rot = this->rot;
-			if(it.name == "Tail")
-				rot *= Quatd::rotation(elevator, Vec3d(1, 0, 0));
-			if(it.name == "MainLeft")
-				rot *= Quatd::rotation(aileron[0], Vec3d(1, 0, 0));
-			if(it.name == "MainRight")
-				rot *= Quatd::rotation(aileron[1], Vec3d(1, 0, 0));
+			if(it.control == Wing::Control::Elevator)
+				rot *= Quatd::rotation(elevator * it.sensitivity, it.axis);
+			else if(it.control == Wing::Control::Aileron)
+				rot *= Quatd::rotation(aileron * it.sensitivity, it.axis);
 
 			/* retrieve velocity of the wing center in absolute coordinates */
 			Vec3d velo = this->omg.vp(rpos) + this->velo;
@@ -1695,8 +1722,7 @@ gltestp::dstring &operator<<(gltestp::dstring &ds, Vec3d pos){
 
 Entity::Props Aerial::props()const{
 	Props &ret = st::props();
-	ret.push_back(gltestp::dstring("Aileron0: ") << aileron[0]);
-	ret.push_back(gltestp::dstring("Aileron1: ") << aileron[1]);
+	ret.push_back(gltestp::dstring("Aileron: ") << aileron);
 	ret.push_back(gltestp::dstring("Elevator: ") << elevator);
 	ret.push_back(gltestp::dstring("Throttle: ") << throttle);
 	for(int i = 0; i < force.size(); i++)

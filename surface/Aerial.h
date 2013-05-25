@@ -33,7 +33,7 @@ public:
 	static gltestp::dstring modPath(){return "surface/";}
 
 protected:
-	double aileron[2], elevator, rudder;
+	double aileron, elevator, rudder;
 	double throttle;
 	double gearphase;
 	double cooldown;
@@ -51,6 +51,11 @@ protected:
 		Vec3d pos; ///< Position of the wing's center, relative to center of mass
 		Mat3d aero; ///< The aerodynamic tensor, defines how force is applied to the wing.
 		gltestp::dstring name; ///< Name of the wing, just for debugging
+		enum class Control{None, Aileron, Elevator, Rudder} control; ///< Control surface definition.
+		Vec3d axis; ///< The aerodynamic tensor is rotated around this axis if this control surface is manipulated.
+		double sensitivity; ///< Sensitivity of this control surface when this surface is manipulated.
+
+		Wing() : control(Control::None){}
 	};
 
 	typedef std::vector<Wing> WingList;

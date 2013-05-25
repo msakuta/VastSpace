@@ -63,12 +63,10 @@ void F15::drawtra(WarDraw *wd){
 
 		gldMultQuat(rot);
 		Quatd rot = quat_u;
-		if(it.name == "Tail")
-			rot = Quatd::rotation(elevator, Vec3d(1, 0, 0));
-		if(it.name == "MainLeft")
-			rot = Quatd::rotation(aileron[0], Vec3d(1, 0, 0));
-		if(it.name == "MainRight")
-			rot = Quatd::rotation(aileron[1], Vec3d(1, 0, 0));
+		if(it.control == Wing::Control::Elevator)
+			rot = Quatd::rotation(elevator * it.sensitivity, it.axis);
+		else if(it.control == Wing::Control::Aileron)
+			rot = Quatd::rotation(aileron * it.sensitivity, it.axis);
 
 		gldTranslate3dv(it.pos);
 		gldMultQuat(rot);

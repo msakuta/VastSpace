@@ -128,7 +128,7 @@ void F15::init(){
 	health = maxHealthValue;
 	force.resize(wings0.size());
 	this->weapon = 0;
-	this->aileron[0] = this->aileron[1] = 0.;
+	this->aileron = 0.;
 	this->elevator = 0.;
 	this->rudder = 0.;
 	this->gearphase = 0.;

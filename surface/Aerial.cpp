@@ -938,7 +938,7 @@ static ysdnm_t *dnm;
 
 
 
-void Aerial::control(input_t *inputs, double dt){
+void Aerial::control(const input_t *inputs, double dt){
 	if(health <= 0.)
 		return;
 	this->inputs = *inputs;
@@ -1506,10 +1506,9 @@ void Aerial::anim(double dt){
 
 
 	if(!inwater && 0. < health){
-		double thrustsum;
-		avec3_t zh, zh0 = {0., 0., 1.};
-#if 0
-		if(vft == &valkie_s){
+		Vec3d zh0(0., 0., 1.);
+#if 1
+/*		if(vft == &valkie_s){
 			double f;
 			aquat_t qrot = {0};
 			struct valkie *p = (struct valkie*)pt;
@@ -1525,14 +1524,19 @@ void Aerial::anim(double dt){
 			qrot[2] = sin(-p->rudder * .5);
 			qrot[3] = cos(-p->rudder * .5);
 			quatrot(zh0, qrot, zh0);
-		}
-		MAT4DVP3(zh, mat, zh0);
-		if(pt->vft == &valkie_s)
-			thrustsum = -thrust_strength * pt->mass * p->throttle * (air + 1.5 * p->afterburner) * dt;
-		else
-			thrustsum = -thrust_strength * pt->mass * p->throttle * air * (1. + p->afterburner) * dt;
-		VECSCALEIN(zh, thrustsum);
-		RigidAddMomentum(pt, avec3_000, zh);
+		}*/
+//		MAT4DVP3(zh, mat, zh0);
+
+		Vec3d zh = mat.dvp3(zh0);
+//		if(pt->vft == &valkie_s)
+	//		thrustsum = -thrust_strength * pt->mass * p->throttle * (air + 1.5 * p->afterburner) * dt;
+//		else
+		double thrustsum = -0.1 * this->mass * this->throttle * air * (1. + this->afterburner);
+//		VECSCALEIN(zh, thrustsum);
+		zh *= thrustsum;
+		if(bbody)
+			bbody->applyCentralForce(btvc(zh));
+//		RigidAddMomentum(pt, avec3_000, zh);
 /*		VECSADD(pt->velo, zh, -.012 * p->throttle * dt);*/
 #endif
 	}
@@ -1547,6 +1551,14 @@ void Aerial::anim(double dt){
 		for(auto it : getWings()){
 			// Position relative to center of gravity with rotation in world coordinates.
 			Vec3d rpos = mat.dvp3(it.pos);
+
+			Quatd rot = this->rot;
+			if(it.name == "Tail")
+				rot *= Quatd::rotation(elevator, Vec3d(1, 0, 0));
+			if(it.name == "MainLeft")
+				rot *= Quatd::rotation(aileron[0], Vec3d(1, 0, 0));
+			if(it.name == "MainRight")
+				rot *= Quatd::rotation(aileron[1], Vec3d(1, 0, 0));
 
 			/* retrieve velocity of the wing center in absolute coordinates */
 			Vec3d velo = this->omg.vp(rpos) + this->velo;
@@ -1566,8 +1578,8 @@ void Aerial::anim(double dt){
 //			RigidAddMomentum(pt, wings[i], v1);
 		}
 		// Test force to apply forward acceleration to see respond
-		if(bbody)
-			bbody->applyForce(btVector3(0, 0, -0.01) * mass, btVector3(0,0,0));
+//		if(bbody)
+//			bbody->applyForce(btVector3(0, 0, -0.01) * mass, btVector3(0,0,0));
 	}
 #endif
 

@@ -24,7 +24,7 @@ public:
 	Aerial(Game *game);
 	Aerial(WarField *aw);
 	void addRigidBody(WarSpace*)override;
-	void control(input_t *inputs, double dt);
+	void control(const input_t *inputs, double dt)override;
 	void anim(double dt);
 	void start_control();
 	void end_control();

@@ -996,8 +996,8 @@ void Aerial::control(const input_t *inputs, double dt){
 	if(inputs->press & inputs->change & (PL_G))
 		gear = !gear;
 	if(/*pt->vft != &valkie_s || !((valkie_t*)pt)->bat*/1){
-		aileron[0] = rangein(approach(aileron[0], aileron[0] + .0003 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
-		aileron[1] = rangein(approach(aileron[1], aileron[1] - .0003 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
+		aileron[0] = rangein(approach(aileron[0], aileron[0] + .0001 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
+		aileron[1] = rangein(approach(aileron[1], aileron[1] - .0001 * M_PI * inputs->analog[0], dt, 0.), -M_PI / 2., M_PI / 2.);
 		elevator = rangein(approach(elevator, elevator + .0003 * M_PI * inputs->analog[1], dt, 0.), -M_PI / 2., M_PI / 2.);
 	}
 	else{
@@ -1547,6 +1547,7 @@ void Aerial::anim(double dt){
 
 		double velolen = velo.slen();
 
+		force.clear();
 		// Acquire wing positions
 		for(auto it : getWings()){
 			// Position relative to center of gravity with rotation in world coordinates.
@@ -1572,7 +1573,7 @@ void Aerial::anim(double dt){
 			Vec3d v1 = rot.itrans(velo);
 			Vec3d v = it.aero.vp3(v1) * f2;
 			Vec3d v2 = rot.trans(v);
-//			this->force[i] = v2;
+			this->force.push_back(v2);
 			if(bbody)
 				bbody->applyForce(btvc(v2), btvc(rpos));
 //			RigidAddMomentum(pt, wings[i], v1);
@@ -1685,6 +1686,22 @@ void Aerial::anim(double dt){
 #endif
 
 
+}
+
+gltestp::dstring &operator<<(gltestp::dstring &ds, Vec3d pos){
+	ds << "(" << pos[0] << "," << pos[1] << "," << pos[2] << ")";
+	return ds;
+}
+
+Entity::Props Aerial::props()const{
+	Props &ret = st::props();
+	ret.push_back(gltestp::dstring("Aileron0: ") << aileron[0]);
+	ret.push_back(gltestp::dstring("Aileron1: ") << aileron[1]);
+	ret.push_back(gltestp::dstring("Elevator: ") << elevator);
+	ret.push_back(gltestp::dstring("Throttle: ") << throttle);
+	for(int i = 0; i < force.size(); i++)
+		ret.push_back(gltestp::dstring("Force") << i << ": " << force[i]);
+	return ret;
 }
 
 

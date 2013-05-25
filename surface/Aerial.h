@@ -26,6 +26,7 @@ public:
 	void addRigidBody(WarSpace*)override;
 	void control(const input_t *inputs, double dt)override;
 	void anim(double dt);
+	Props props()const override;
 	void start_control();
 	void end_control();
 

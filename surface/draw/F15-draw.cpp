@@ -3,6 +3,10 @@
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 
+extern "C"{
+#include "clib/gl/gldraw.h"
+}
+
 
 Model *F15::model;
 
@@ -36,6 +40,48 @@ void F15::draw(WarDraw *wd){
 }
 
 void F15::drawtra(WarDraw *wd){
+
+	// Show forces applied to each wings
+	glBegin(GL_LINES);
+	glColor4f(1,0,0,1);
+	for(auto i = 0; i < getWings().size(); i++){
+		if(i < force.size()){
+			Vec3d org = this->pos + rot.trans(getWings()[i].pos);
+			glVertex3dv(org);
+			glVertex3dv(org + force[i] * 0.01);
+		}
+	}
+	glEnd();
+
+	// Show control surfaces directions
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glColor4f(0,0,1,1);
+	for(auto it : getWings()){
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		gldMultQuat(rot);
+		gldTranslate3dv(it.pos);
+		glPushMatrix();
+		gldScaled(::sqrt(::fabs(it.aero[4])) * 0.001);
+		glBegin(GL_QUADS);
+		glVertex3d(-1, 0, -1);
+		glVertex3d(-1, 0,  1);
+		glVertex3d( 1, 0,  1);
+		glVertex3d( 1, 0, -1);
+		glEnd();
+		glPopMatrix();
+		gldScaled(::sqrt(::fabs(it.aero[0])) * 0.001);
+		glBegin(GL_QUADS);
+		glVertex3d(0, -1, -1);
+		glVertex3d(0, -1,  1);
+		glVertex3d(0,  1,  1);
+		glVertex3d(0,  1, -1);
+		glEnd();
+		glPopMatrix();
+	}
+	glPopAttrib();
+
 #if 0
 	const GLubyte red[4] = {255,31,31,255}, white[4] = {255,255,255,255};
 	static const avec3_t

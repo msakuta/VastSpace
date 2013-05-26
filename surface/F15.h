@@ -39,10 +39,10 @@ protected:
 	static double hitRadius;
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
-	static WingList wings0;
 	static HitBoxList hitboxes;
-	static std::vector<Vec3d> wingTips;
 	static double thrustStrength;
+	static WingList wings0;
+	static std::vector<Vec3d> wingTips;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

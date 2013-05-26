@@ -64,28 +64,19 @@ static const struct color_sequence cs_bluework = DEFINE_COLSEQ(cnl_bluework, (CO
 
 
 
-std::vector<Vec3d> F15::wingTips;/* = {
-	Vec3d(-160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
-	Vec3d(160. * FLY_SCALE, 20. * FLY_SCALE, 10. * FLY_SCALE),
-}*//*,
-valkiewingtips[2] = {
-	{-440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
-	{440. * .5 * FLY_SCALE, 50. * .5 * FLY_SCALE, 210. * .5 * FLY_SCALE},
-}*/;
-
-
-
 Entity::EntityRegister<F15> F15::entityRegister("F15");
 
+// Global constants loaded from F15.nut.
 double F15::modelScale = 0.001 / 30.0;
 double F15::hitRadius = 0.012;
 double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
-F15::WingList F15::wings0;
 HitBoxList F15::hitboxes;
+double F15::thrustStrength = .010;
+F15::WingList F15::wings0;
+std::vector<Vec3d> F15::wingTips;
 
 static const double gunangle = 0.;
-double F15::thrustStrength = .010;
 
 const avec3_t fly_guns[2] = {{.001, .001, -.006}, {-.001, .001, -.006}};
 const avec3_t fly_hardpoint[2] = {{.005, .0005, -.000}, {-.005, .0005, -.000}};

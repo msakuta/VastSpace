@@ -54,6 +54,9 @@ wingTips <- [
 	Vec3d( 215., 20., 10.) * modelScale,
 ]
 
+gunPositions <- [
+	Vec3d(20, 12, -200) * modelScale
+]
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

@@ -75,10 +75,10 @@ HitBoxList F15::hitboxes;
 double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
+std::vector<Vec3d> F15::gunPositions;
 
 static const double gunangle = 0.;
 
-const avec3_t fly_guns[2] = {{.001, .001, -.006}, {-.001, .001, -.006}};
 const avec3_t fly_hardpoint[2] = {{.005, .0005, -.000}, {-.005, .0005, -.000}};
 
 
@@ -115,7 +115,8 @@ void F15::init(){
 			Autonomous::HitboxProcess(hitboxes) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
-			Vec3dListProcess(wingTips, "wingTips"));
+			Vec3dListProcess(wingTips, "wingTips") <<=
+			Vec3dListProcess(gunPositions, "gunPositions"));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -294,22 +295,11 @@ void F15::shoot(double dt){
 	Mat4d mat = mat0.rotx(-gunangle / deg_per_rad);
 	while(this->cooldown < dt){
 		int i = 0;
-		do{
-			double phi, theta;
-/*			MAT4VP3(gunpos, mat, fly_guns[i]);*/
+		for(auto &it : gunPositions){
 			Bullet *pb = new Bullet(this, 2., 5.);
+			w->addent(pb);
 			
 			pb->mass = .005;
-//			pb->life = 10.;
-/*			phi = pt->pyr[1] + (drseq(&w->rs) - .5) * .005;
-			theta = pt->pyr[0] + (drseq(&w->rs) - .5) * .005;
-			VECCPY(pb->velo, pt->velo);
-			pb->velo[0] +=  BULLETSPEED * sin(phi) * cos(theta);
-			pb->velo[1] += -BULLETSPEED * sin(theta);
-			pb->velo[2] += -BULLETSPEED * cos(phi) * cos(theta);
-			pb->pos[0] = pt->pos[0] + gunpos[0];
-			pb->pos[1] = pt->pos[1] + gunpos[1];
-			pb->pos[2] = pt->pos[2] + gunpos[2];*/
 #if 0
 			if(pt->vft == &valkie_s && dnm){
 				avec3_t org;
@@ -322,12 +312,12 @@ void F15::shoot(double dt){
 			}
 			else
 #endif
-				pb->pos = mat.vp3(fly_guns[i]);
+				pb->pos = mat.vp3(it);
 			pb->velo = mat.dvp3(velo0) + this->velo;
 			for(int j = 0; j < 3; j++)
 				pb->velo[j] += (drseq(&w->rs) - .5) * .005;
 			pb->anim(dt - this->cooldown);
-		} while(/*pt->vft != &valkie_s && */!i++);
+		};
 		this->cooldown += reloadtime;
 //		this->shoots += 1;
 	}

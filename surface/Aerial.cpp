@@ -1002,8 +1002,7 @@ void Aerial::control(const input_t *inputs, double dt){
 	else
 		cooldown -= dt;
 	if(inputs->press & (PL_LCLICK | PL_ENTER)){
-		if(!weapon)
-			shoot(dt);
+		shoot(dt);
 #if 0
 		else if(0 < missiles && cooldown < dt){
 			struct hellfire *pb;

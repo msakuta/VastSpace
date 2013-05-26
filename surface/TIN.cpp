@@ -9,6 +9,9 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/multitex.h>
 }
+
+#include <cpplib/vec2.h>
+
 #if _WIN32
 #define exit something_meanless
 #undef exit
@@ -97,8 +100,40 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 	}
 }
 
+int TIN::getat(WarMapTile *return_info, int x, int y){
+	Vec2i v(x, y);
+	for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
+		Vec2i v01 = (it->vertices[1] - it->vertices[0]);
+		Vec2i v12 = (it->vertices[2] - it->vertices[1]);
+		Vec2i v20 = (it->vertices[0] - it->vertices[2]);
+		int vp0 = v01.vp(v - Vec2i(it->vertices[0]));
+		int vp1 = v12.vp(v - Vec2i(it->vertices[1]));
+		int vp2 = v20.vp(v - Vec2i(it->vertices[2]));
+		if(vp0 <= 0 && vp1 <= 0 && vp2 <= 0 || 0 <= vp0 && 0 <= vp1 && 0 <= vp2){
+//			return_info->height = it->vertices[0][2];
+			Vec2d v0 = (v - Vec2i(it->vertices[0])).cast<double>();
+			double l01 = v01.slen();
+			Vec2d p01(v01[0] / l01, v01[1] / l01);
+			double sp01 = p01.sp(v0);
+			double l20 = v20.slen();
+			Vec2d p02(-v20[0] / l20, -v20[1] / l20);
+			double sp02 = p02.sp(v0);
+			return_info->height = (it->vertices[0][2] * (1. - sp01) + it->vertices[1][2] * sp01
+				+ it->vertices[0][2] * (1. - sp02) + it->vertices[2][2] * sp02) * 0.5;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void TIN::size(int *x, int *y){
+	*x = 1024;
+	*y = 1024;
+}
+
 double TIN::width(){
-	return 10.;
+	static const double latscale = 10000. / 180.; // Latitude scaling
+	return latscale;
 }
 
 void TIN::draw(){

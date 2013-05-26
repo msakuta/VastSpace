@@ -40,7 +40,25 @@ SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), wm(NULL
 
 void SurfaceCS::init(){
 #if 1
-	tin = new TIN("triangles.all");
+	wm = tin = new TIN("triangles.all");
+	int sx, sy;
+	int trunc = 16; // Resampled height field is truncated to this frequency.
+	tin->size(&sx, &sy);
+	sx /= trunc;
+	sy /= trunc;
+	std::vector<btScalar> *heightField = new std::vector<btScalar>(sx * sy);
+	float fmax = 0;
+	for(int y = 0; y < sy; y++) for(int x = 0; x < sx; x++){
+		WarMapTile t;
+		if(tin->getat(&t, x * trunc, y * trunc) == 0)
+			assert(0);
+		btScalar v = t.height * 1e-3 / 4.;
+		(*heightField)[x + (y) * sx] = v;
+		if(fmax < v)
+			fmax = v;
+	}
+	mapshape = new btHeightfieldTerrainShape(sx, sy, &heightField->front(), .0001, 0., fmax, 1, PHY_FLOAT, false);
+//	delete heightField;
 #else
 	wm = OpenHGTMap("N36W113.av.zip");
 	if(game->isClient())
@@ -49,17 +67,21 @@ void SurfaceCS::init(){
 	int sx, sy;
 	wm->size(&sx, &sy);
 	mapshape = new btHeightfieldTerrainShape(sx, sy, const_cast<void*>(wm->rawData()), .001, 0., 2., 1, wm->rawType(), false);
+#endif
 	if(mapshape){
 		// I hope this margin helps to prevent objects falling below the ground.
 		mapshape->setMargin(.01);
 
+		static const double longscale = cos(35 / deg_per_rad); // Longitude scaling
+
 		// The heightfield in Bullet assumes (one raw element length) = (one space unit) so we need to adjust it
 		// by size of the heightfield.
-		mapshape->setLocalScaling(btVector3(wm->width() / sx, 1., wm->width() / sy));
+		mapshape->setLocalScaling(btVector3(wm->width() / (sx - 1) * longscale, 1., wm->width() / (sy - 1)));
 
 		btTransform startTransform;
 		startTransform.setIdentity();
-		startTransform.setOrigin(btVector3(0, 1 + .03, 0));
+		startTransform.setOrigin(btVector3(0, fmax / 2., 0));
+		startTransform.setRotation(btQuaternion(btVector3(0,1,0), M_PI));
 
 		//using motionstate is recommended by the Bullet documentation, but I'm not sure it applies here.
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
@@ -71,7 +93,6 @@ void SurfaceCS::init(){
 		bbody->getAabb(aabbMin, aabbMax);
 		assert(aabbMin.x() < aabbMax.x());
 	}
-#endif
 	w = new SurfaceWar(this);
 }
 
@@ -100,8 +121,8 @@ void SurfaceCS::draw(const Viewer *vw){
 		}
 		if(tin)
 			tin->draw();
-		if(wm)
-			drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
+//		if(wm)
+//			drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
 		glPopMatrix();
 	}
 }

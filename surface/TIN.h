@@ -3,17 +3,18 @@
  */
 #ifndef TIN_H
 #define TIN_H
+#include "WarMap.h"
 #include <cpplib/vec3.h>
 #include <vector>
 #include <map>
 #include <set>
 
-class TIN{
+class TIN : public WarMap{
 public:
 	TIN(const char *fname);
-//	virtual int getat(WarMapTile *return_info, int x, int y) = 0;
-//	virtual void size(int *retx, int *rety) = 0;
-	virtual double width();
+	int getat(WarMapTile *return_info, int x, int y)override;
+	void size(int *retx, int *rety)override;
+	double width()override;
 //	virtual Vec3d normal(double x, double y);
 //	virtual int linehit(const Vec3d &src, const Vec3d &dir, double t, Vec3d &ret);
 	virtual ~TIN();

@@ -58,6 +58,17 @@ gunPositions <- [
 	Vec3d(20, 12, -200) * modelScale
 ]
 
+cameraPositions <- [
+	Vec3d(0., 40 * modelScale, -120 * modelScale),
+	Vec3d(0., 0.0075, 0.025),
+	Vec3d(0.020, 0.007, 0.050),
+	Vec3d(0.010, 0.007, -0.010),
+	Vec3d(0.010, 0.007, -0.010),
+	Vec3d(0.004, 0.0, 0.0),
+	Vec3d(-0.004, 0.0, 0.0),
+]
+
+
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);
 	glVertex2d(-1.0, -1.0);

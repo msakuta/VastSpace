@@ -76,6 +76,7 @@ double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
 std::vector<Vec3d> F15::gunPositions;
+std::vector<Vec3d> F15::cameraPositions;
 
 static const double gunangle = 0.;
 
@@ -116,7 +117,8 @@ void F15::init(){
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
-			Vec3dListProcess(gunPositions, "gunPositions"));
+			Vec3dListProcess(gunPositions, "gunPositions") <<=
+			Vec3dListProcess(cameraPositions, "cameraPositions"));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -327,24 +329,15 @@ void F15::shoot(double dt){
 
 
 void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
-	static const Vec3d src[] = {
-		Vec3d(0., 40 * modelScale, -120 * modelScale),
-		Vec3d(0., .0075, .025),
-		Vec3d(0.020, .007, .050),
-		Vec3d(.010, .007, -.010),
-		Vec3d(.010, .007, -.010),
-		Vec3d(0.004, .0, .0),
-		Vec3d(-0.004, .0, .0),
-	};
 	Mat4d mat;
 	int camera;
 	{
 		camera = chasecam;
-		camera = MAX(0, MIN(numof(src)+2, camera));
+		camera = MAX(0, MIN(cameraPositions.size(), camera));
 //		*chasecam = camera;
 	}
 	transform(mat);
-	if(camera == numof(src)+1){
+	if(camera == cameraPositions.size()+1){
 		pos = this->pos;
 		pos[0] += .05 * cos(w->war_time() * 2. * M_PI / 15.);
 		pos[1] += .02;
@@ -358,14 +351,14 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 		mat4vp3(*pos, mat2, src[camera]);
 	}
 #endif
-	else if(camera == numof(src)){
+	else if(camera == cameraPositions.size()){
 		const Player *player = game->player;
 		Vec3d ofs = mat.dvp3(vec3_001);
 		if(camera)
 			ofs *= player ? player->viewdist : 1.;
 		pos = this->pos + ofs;
 	}
-	else if(camera == numof(src)+2){
+	else if(camera == cameraPositions.size()+2){
 		Vec3d pos0;
 		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;
 		struct contact_info ci;
@@ -379,7 +372,7 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 		pos = pos0;
 	}
 	else{
-		pos = mat.vp3(src[camera]);
+		pos = mat.vp3(cameraPositions[camera]);
 	}
 	rot = this->rot;
 }

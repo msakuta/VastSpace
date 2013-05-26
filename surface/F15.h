@@ -44,6 +44,7 @@ protected:
 	static WingList wings0;
 	static std::vector<Vec3d> wingTips;
 	static std::vector<Vec3d> gunPositions;
+	static std::vector<Vec3d> cameraPositions;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

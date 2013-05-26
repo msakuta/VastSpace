@@ -1560,7 +1560,7 @@ void Aerial::anim(double dt){
 //		if(pt->vft == &valkie_s)
 	//		thrustsum = -thrust_strength * pt->mass * p->throttle * (air + 1.5 * p->afterburner) * dt;
 //		else
-		double thrustsum = -0.1 * this->mass * this->throttle * air * (1. + this->afterburner);
+		double thrustsum = -getThrustStrength() * this->mass * this->throttle * air * (1. + this->afterburner);
 //		VECSCALEIN(zh, thrustsum);
 		zh *= thrustsum;
 		if(bbody)

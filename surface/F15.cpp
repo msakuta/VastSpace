@@ -85,7 +85,7 @@ F15::WingList F15::wings0;
 HitBoxList F15::hitboxes;
 
 static const double gunangle = 0.;
-static double thrust_strength = .010;
+double F15::thrustStrength = .010;
 
 const avec3_t fly_guns[2] = {{.001, .001, -.006}, {-.001, .001, -.006}};
 const avec3_t fly_hardpoint[2] = {{.005, .0005, -.000}, {-.005, .0005, -.000}};
@@ -121,8 +121,9 @@ void F15::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			WingProcess(wings0, "wings") <<=
 			Autonomous::HitboxProcess(hitboxes) <<=
+			SingleDoubleProcess(thrustStrength, "thrust") <<=
+			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips"));
 		initialized = true;
 	}

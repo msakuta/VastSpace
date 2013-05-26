@@ -42,10 +42,12 @@ protected:
 	static WingList wings0;
 	static HitBoxList hitboxes;
 	static std::vector<Vec3d> wingTips;
+	static double thrustStrength;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
+	double getThrustStrength()const override{return thrustStrength;}
 
 	void init();
 };

@@ -71,6 +71,7 @@ protected:
 	virtual short bbodyGroup()const;
 	virtual short bbodyMask()const;
 	virtual void shoot(double dt);
+	virtual double getThrustStrength()const = 0;
 
 	void init();
 	bool cull(WarDraw *)const;

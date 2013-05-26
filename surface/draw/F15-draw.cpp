@@ -340,38 +340,30 @@ void F15::drawHUD(WarDraw *wd){
 
 	glDisable(GL_LINE_SMOOTH);
 
-#if 0
-	if(!wf->pl->chasecamera && pt->enemy){
-		int i;
-		double pos[3];
-		double epos[3];
-		amat4_t rot;
-
+#if 1
+	if(game->player->getChaseCamera() == 0 && this->enemy){
 		glPushMatrix();
-		MAT4TRANSPOSE(rot, irot);
-		glLoadMatrixd(rot);
-		VECSUB(pos, pt->enemy->pos, pt->pos);
-		VECNORMIN(pos);
-		glTranslated(pos[0], pos[1], pos[2]);
-		glMultMatrixd(irot);
+		glLoadMatrixd(wd->vw->rot);
+		Vec3d pos = (this->enemy->pos - this->pos).norm();
+		gldTranslate3dv(pos);
+		glMultMatrixd(wd->vw->irot);
 		{
-			double dist, dp[3], dv[3];
-			VECSUB(dp, pt->enemy->pos, pt->pos);
-			dist = VECLEN(dp);
+			Vec3d dp = this->enemy->pos - this->pos;
+			double dist = dp.len();
 			if(dist < 1.)
 				sprintf(buf, "%.4g m", dist * 1000.);
 			else
 				sprintf(buf, "%.4g km", dist);
 			glRasterPos3d(.01, .02, 0.);
-			putstring(buf);
-			VECSUB(dv, pt->enemy->velo, pt->velo);
-			dist = VECSP(dv, dp) / dist;
+			gldPutStrokeString(buf);
+			Vec3d dv = this->enemy->velo - this->velo;
+			dist = dv.sp(dp) / dist;
 			if(dist < 1.)
 				sprintf(buf, "%.4g m/s", dist * 1000.);
 			else
 				sprintf(buf, "%.4g km/s", dist);
 			glRasterPos3d(.01, -.03, 0.);
-			putstring(buf);
+			gldPutStrokeString(buf);
 		}
 		glBegin(GL_LINE_LOOP);
 		glVertex3d(.05, .05, 0.);
@@ -396,9 +388,6 @@ void F15::drawHUD(WarDraw *wd){
 		GLint vp[4];
 		int w, h, m, mi;
 		double left, bottom;
-		double (*cuts)[2];
-		double velo, d;
-		int i;
 		glGetIntegerv(GL_VIEWPORT, vp);
 		w = vp[2], h = vp[3];
 		m = w < h ? h : w;
@@ -412,34 +401,34 @@ void F15::drawHUD(WarDraw *wd){
 /*		glRasterPos3d(left, bottom + 70. / m, -1.);
 		gldprintf("throttle: %lg", ((fly_t*)pt)->throttle);*/
 
-		if(((fly_t*)pt)->brk){
+/*		if(((fly_t*)pt)->brk){
 			glRasterPos3d(left, bottom + 110. / m, -1.);
 			gldprintf("BRK");
-		}
+		}*/
 
-		if(((fly_t*)pt)->afterburner){
+/*		if(((fly_t*)pt)->afterburner){
 			glRasterPos3d(left, bottom + 150. / m, -1.);
 			gldprintf("AB");
-		}
+		}*/
 
 		glRasterPos3d(left, bottom + 130. / m, -1.);
-		gldprintf("Missiles: %d", p->missiles);
+		gldprintf("Missiles: %d", this->missiles);
 
 		glPushMatrix();
 		glScaled(1./*(double)mi / w*/, 1./*(double)mi / h*/, (double)m / mi);
 
 		/* throttle */
 		glBegin(GL_LINE_LOOP);
-		glVertex3d(-.8, -0.7, -1.);
-		glVertex3d(-.8, -0.8, -1.);
-		glVertex3d(-.78, -0.8, -1.);
-		glVertex3d(-.78, -0.7, -1.);
+		glVertex3d(-.4, -0.7, -1.);
+		glVertex3d(-.4, -0.8, -1.);
+		glVertex3d(-.38, -0.8, -1.);
+		glVertex3d(-.38, -0.7, -1.);
 		glEnd();
 		glBegin(GL_QUADS);
-		glVertex3d(-.8, -0.8 + p->throttle * .1, -1.);
-		glVertex3d(-.8, -0.8, -1.);
-		glVertex3d(-.78, -0.8, -1.);
-		glVertex3d(-.78, -0.8 + p->throttle * .1, -1.);
+		glVertex3d(-.4, -0.8 + throttle * .1, -1.);
+		glVertex3d(-.4, -0.8, -1.);
+		glVertex3d(-.38, -0.8, -1.);
+		glVertex3d(-.38, -0.8 + throttle * .1, -1.);
 		glEnd();
 
 /*		printf("flyHUD %lg\n", TimeMeasLap(&tm));*/
@@ -455,51 +444,46 @@ void F15::drawHUD(WarDraw *wd){
 		glBegin(GL_LINES);
 
 		/* aileron */
-		glVertex3d(-.45, (p->aileron[0]) / M_PI * .2 - .6, -1.);
-		glVertex3d(-.5, (p->aileron[0]) / M_PI * .2 - .6, -1.);
-		glVertex3d(-.55, (p->aileron[1]) / M_PI * .2 - .6, -1.);
-		glVertex3d(-.6, (p->aileron[1]) / M_PI * .2 - .6, -1.);
+		glVertex3d(-.45, aileron / M_PI * .2 - .6, -1.);
+		glVertex3d(-.5, aileron / M_PI * .2 - .6, -1.);
+		glVertex3d(-.55, -aileron / M_PI * .2 - .6, -1.);
+		glVertex3d(-.6, -aileron / M_PI * .2 - .6, -1.);
 
 		/* rudder */
-		glVertex3d((p->rudder) * 3. / M_PI * .1 - .525, -.7, -1.);
-		glVertex3d((p->rudder) * 3. / M_PI * .1 - .525, -.8, -1.);
+		glVertex3d(rudder * 3. / M_PI * .1 - .525, -.7, -1.);
+		glVertex3d(rudder * 3. / M_PI * .1 - .525, -.8, -1.);
 
 		/* elevator */
-		glVertex3d(-.5, (-p->elevator) / M_PI * .2 - .6, -1.);
-		glVertex3d(-.55, (-p->elevator) / M_PI * .2 - .6, -1.);
+		glVertex3d(-.5, -elevator / M_PI * .2 - .6, -1.);
+		glVertex3d(-.55, -elevator / M_PI * .2 - .6, -1.);
 
 		glEnd();
 
 /*		printf("flyHUD %lg\n", TimeMeasLap(&tm));*/
 
-		if(!wf->pl->chasecamera){
-			int i;
-			double (*cuts)[2];
-			avec3_t velo;
-			amat4_t rot;
-			MAT4TRANSPOSE(rot, wf->irot);
-			VECNORM(velo, pt->velo);
+		if(game->player->getChaseCamera() == 0){
+			Vec3d velo = this->velo.norm();
 			glPushMatrix();
-			glMultMatrixd(rot);
-			glTranslated(velo[0], velo[1], velo[2]);
-			glMultMatrixd(irot);
-			cuts = CircleCuts(16);
+			glMultMatrixd(wd->vw->irot);
+			gldTranslate3dv(velo);
+			glMultMatrixd(wd->vw->rot);
+			auto cuts = CircleCuts(16);
 			glBegin(GL_LINE_LOOP);
-			for(i = 0; i < 16; i++)
+			for(int i = 0; i < 16; i++)
 				glVertex3d(cuts[i][0] * .02, cuts[i][1] * .02, 0.);
 			glEnd();
 			glPopMatrix();
 		}
 
-		if(wf->pl->control != pt){
-			amat4_t rot, rot2;
-			avec3_t pyr;
+		if(game->player->controlled != this){
+//			amat4_t rot, rot2;
+//			avec3_t pyr;
 /*			MAT4TRANSPOSE(rot, wf->irot);
 			quat2imat(rot2, pt->rot);*/
-			VECSCALE(pyr, wf->pl->pyr, -1);
-			pyrimat(pyr, rot);
+//			VECSCALE(pyr, wf->pl->pyr, -1);
+//			pyrimat(pyr, rot);
 /*			glMultMatrixd(rot2);*/
-			glMultMatrixd(rot);
+//			glMultMatrixd(rot);
 /*			glRotated(deg_per_rad * wf->pl->pyr[2], 0., 0., 1.);
 			glRotated(deg_per_rad * wf->pl->pyr[0], 1., 0., 0.);
 			glRotated(deg_per_rad * wf->pl->pyr[1], 0., 1., 0.);*/

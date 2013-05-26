@@ -25,8 +25,10 @@ public:
 	Aerial(WarField *aw);
 	void addRigidBody(WarSpace*)override;
 	void control(const input_t *inputs, double dt)override;
-	void anim(double dt);
+	void anim(double dt)override;
 	Props props()const override;
+	bool isTargettable()const override{return true;}
+	bool isSelectable()const override{return true;}
 	void start_control();
 	void end_control();
 

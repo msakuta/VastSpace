@@ -1,6 +1,8 @@
 
 modelScale <- 0.001 / 30.0;
 
+hitRadius <- 0.012;
+
 mass <- 12.e3;
 
 maxhealth <- 500.;

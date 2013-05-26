@@ -78,6 +78,7 @@ valkiewingtips[2] = {
 Entity::EntityRegister<F15> F15::entityRegister("F15");
 
 double F15::modelScale = 0.001 / 30.0;
+double F15::hitRadius = 0.012;
 double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
 F15::WingList F15::wings0;
@@ -117,6 +118,7 @@ void F15::init(){
 	if(!initialized){
 		SqInit(game->sqvm, _SC(modPath() << "models/F15.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			WingProcess(wings0, "wings") <<=

@@ -25,8 +25,7 @@ public:
 	void drawCockpit(WarDraw *);
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
 	int F15::takedamage(double damage, int hitpart)override;
-	double getHitRadius()const override{return 0.020;}
-	bool isTargettable()const override{return true;}
+	double getHitRadius()const override{return hitRadius;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
 	static double getModelScale(){return modelScale;}
@@ -37,6 +36,7 @@ protected:
 
 	static Model *model;
 	static double modelScale;
+	static double hitRadius;
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
 	static WingList wings0;

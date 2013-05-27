@@ -1,12 +1,14 @@
 #include "SurfaceCS.h"
 #include "WarMap.h"
 #include "drawmap.h"
+#include "sqadapt.h"
 #include "btadapt.h"
 #include "war.h"
 #include "Entity.h"
 #include "Player.h"
 #include "Game.h"
 #include "cmd.h"
+#include "stellar_file.h"
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
@@ -38,6 +40,7 @@ SurfaceCS::SurfaceCS(Game *game) : st(game),
 	mapshape(NULL),
 	bbody(NULL),
 	tin(NULL),
+	tinResample(16),
 	initialized(false)
 {
 //	init();
@@ -51,6 +54,7 @@ SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root),
 	mapshape(NULL),
 	bbody(NULL),
 	tin(NULL),
+	tinResample(16),
 	initialized(false)
 {
 //	init();
@@ -72,7 +76,7 @@ void SurfaceCS::init(){
 		// program startup.
 		const gltestp::dstring demFileName = gltestp::dstring("cache/") + tinFileName + ".dem";
 
-		int trunc = 16; // Resampled height field is truncated to this frequency.
+		int trunc = tinResample; // Resampled height field is truncated to this frequency.
 		tin->size(&sx, &sy);
 		sx /= trunc;
 		sy /= trunc;
@@ -198,9 +202,25 @@ void SurfaceCS::draw(const Viewer *vw){
 
 bool SurfaceCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
-	if(!strcmp(s, "tin-file")){
+	if(!strcmp(s, "tin_file")){
 		if(s = ps/*strtok(ps, " \t\r\n")*/){
 			this->tinFileName = s;
+		}
+		return true;
+	}
+	else if(!strcmp(s, "tin_resample")){
+		if(s = ps){
+			StackReserver st2(sc.v);
+			cpplib::dstring dst = cpplib::dstring("return(") << s << ")";
+			if(SQ_SUCCEEDED(sq_compilebuffer(sc.v, dst, dst.len(), _SC("rotation"), SQTrue))){
+				sq_push(sc.v, -2);
+				if(SQ_SUCCEEDED(sq_call(sc.v, 1, SQTrue, SQTrue))){
+					SQInteger i;
+					if(SQ_SUCCEEDED(sq_getinteger(sc.v, -1, &i)))
+						this->tinResample = int(i);
+				}
+			}
+			return true;
 		}
 		return true;
 	}

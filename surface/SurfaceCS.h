@@ -34,6 +34,7 @@ protected:
 	btRigidBody *bbody;
 	gltestp::dstring tinFileName;
 	TIN *tin;
+	int tinResample;
 	bool initialized;
 
 	void init();

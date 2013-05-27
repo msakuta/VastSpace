@@ -217,6 +217,7 @@
     <ClInclude Include="..\include\cpplib\CRC32.h" />
     <ClInclude Include="..\include\cpplib\gl\cullplus.h" />
     <ClInclude Include="..\include\cpplib\dstring.h" />
+    <ClInclude Include="..\include\cpplib\mat2.h" />
     <ClInclude Include="..\include\cpplib\mat3.h" />
     <ClInclude Include="..\include\cpplib\mat4.h" />
     <ClInclude Include="..\include\cpplib\mathcommon.h" />

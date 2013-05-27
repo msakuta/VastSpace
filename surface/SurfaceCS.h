@@ -34,6 +34,7 @@ protected:
 	btRigidBody *bbody;
 	gltestp::dstring tinFileName;
 	TIN *tin;
+	bool initialized;
 
 	void init();
 	friend class SurfaceWar;

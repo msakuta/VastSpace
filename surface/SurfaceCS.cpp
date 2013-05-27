@@ -6,10 +6,14 @@
 #include "Entity.h"
 #include "Player.h"
 #include "Game.h"
+#include "cmd.h"
 extern "C"{
+#include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
 }
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+
+#include <fstream>
 
 class SurfaceWar : public WarSpace{
 public:
@@ -33,7 +37,8 @@ SurfaceCS::SurfaceCS(Game *game) : st(game),
 	map_top(NULL),
 	mapshape(NULL),
 	bbody(NULL),
-	tin(NULL)
+	tin(NULL),
+	initialized(false)
 {
 //	init();
 }
@@ -45,36 +50,82 @@ SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root),
 	map_top(NULL),
 	mapshape(NULL),
 	bbody(NULL),
-	tin(NULL)
+	tin(NULL),
+	initialized(false)
 {
 //	init();
 }
 
 void SurfaceCS::init(){
-	static bool initialized = false;
 	if(initialized)
 		return;
 #if 1
 	int sx, sy;
 	btScalar fmax = 0;
 	if(tinFileName.len() != 0){
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+
 		wm = tin = new TIN(tinFileName);
+
+		// File name for architecture-dependent cached DEM file to enhance speed of repeated
+		// program startup.
+		const gltestp::dstring demFileName = gltestp::dstring("cache/") + tinFileName + ".dem";
+
 		int trunc = 16; // Resampled height field is truncated to this frequency.
 		tin->size(&sx, &sy);
 		sx /= trunc;
 		sy /= trunc;
 		std::vector<btScalar> *heightField = new std::vector<btScalar>(sx * sy);
-		for(int y = 0; y < sy; y++) for(int x = 0; x < sx; x++){
-			WarMapTile t;
-			if(tin->getat(&t, x * trunc, y * trunc) == 0)
-				assert(0);
-			btScalar v = t.height * 1e-3 / 4.;
-			(*heightField)[x + (y) * sx] = v;
-			if(fmax < v)
-				fmax = v;
+
+		bool validDem = false;
+
+		do{
+			// Load cached DEM file if available.
+			std::ifstream ifs(demFileName, std::ios::binary);
+
+			// The DEM file can be absent, so check it here.
+			if(ifs.good()){
+				int sx2;
+				int sy2;
+				ifs.read((char*)&sx2, sizeof sx2);
+				ifs.read((char*)&sy2, sizeof sy2);
+				// If we have a cached DEM with dimensions that do not match our expectation,
+				// re-cache the data without further reading.
+				if(sx2 != sx || sy2 != sy)
+					break;
+				ifs.read((char*)&fmax, sizeof fmax);
+				ifs.read((char*)&heightField->front(), sx * sy * sizeof(heightField->front()));
+				validDem = true;
+			}
+		} while(0);
+
+		if(!validDem){
+			// Resampling TIN to create a DEM is very time-consuming process, because it's not
+			// very optimized in terms of algorithms.
+			for(int y = 0; y < sy; y++) for(int x = 0; x < sx; x++){
+				WarMapTile t;
+				if(tin->getat(&t, x * trunc, y * trunc) == 0)
+					assert(0);
+				btScalar v = t.height * 1e-3 / 4.;
+				(*heightField)[x + (y) * sx] = v;
+				if(fmax < v)
+					fmax = v;
+			}
+
+			// If we have successfully resampled the TIN to create a DEM, save it to a file.
+			std::ofstream ofs(demFileName, std::ios::binary);
+			ofs.write((char*)&sx, sizeof sx);
+			ofs.write((char*)&sy, sizeof sy);
+			ofs.write((char*)&fmax, sizeof fmax);
+			ofs.write((char*)&heightField->front(), sx * sy * sizeof(heightField->front()));
 		}
 		mapshape = new btHeightfieldTerrainShape(sx, sy, &heightField->front(), .0001, 0., fmax, 1, PHY_FLOAT, false);
-	//	delete heightField;
+
+		//	delete heightField;
+
+		// First invocation (without cache) can take minutes!
+		CmdPrint(gltestp::dstring("TIN load time: ") << TimeMeasLap(&tm) << " sec");
 	}
 #else
 	wm = OpenHGTMap("N36W113.av.zip");
@@ -111,6 +162,7 @@ void SurfaceCS::init(){
 		assert(aabbMin.x() < aabbMax.x());
 	}
 	w = new SurfaceWar(this);
+	initialized = true;
 }
 
 SurfaceCS::~SurfaceCS(){

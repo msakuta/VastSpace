@@ -456,6 +456,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\cpplib\mat2.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\cpplib\mat3.h"
 				>
 			</File>
@@ -473,6 +477,10 @@
 			</File>
 			<File
 				RelativePath="..\include\cpplib\RandomSequence.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\cpplib\vec2.h"
 				>
 			</File>
 			<File

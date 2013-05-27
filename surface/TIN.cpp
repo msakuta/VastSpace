@@ -10,7 +10,7 @@ extern "C"{
 #include <clib/gl/multitex.h>
 }
 
-#include <cpplib/vec2.h>
+#include <cpplib/mat2.h>
 
 #if _WIN32
 #define exit something_meanless
@@ -112,14 +112,14 @@ int TIN::getat(WarMapTile *return_info, int x, int y){
 		if(vp0 <= 0 && vp1 <= 0 && vp2 <= 0 || 0 <= vp0 && 0 <= vp1 && 0 <= vp2){
 //			return_info->height = it->vertices[0][2];
 			Vec2d v0 = (v - Vec2i(it->vertices[0])).cast<double>();
-			double l01 = v01.slen();
-			Vec2d p01(v01[0] / l01, v01[1] / l01);
-			double sp01 = p01.sp(v0);
-			double l20 = v20.slen();
-			Vec2d p02(-v20[0] / l20, -v20[1] / l20);
-			double sp02 = p02.sp(v0);
-			return_info->height = (it->vertices[0][2] * (1. - sp01) + it->vertices[1][2] * sp01
-				+ it->vertices[0][2] * (1. - sp02) + it->vertices[2][2] * sp02) * 0.5;
+			Mat2d mat(v01.cast<double>(), -v20.cast<double>());
+			Mat2d imat = mat.inverse();
+			double sp01 = imat.vec2(0).sp(v0);
+			double sp02 = imat.vec2(1).sp(v0);
+			return_info->height =
+				  (it->vertices[1][2] - it->vertices[0][2]) * sp01
+				+ (it->vertices[2][2] - it->vertices[0][2]) * sp02
+				+ it->vertices[0][2];
 			return 1;
 		}
 	}

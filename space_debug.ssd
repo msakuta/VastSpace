@@ -83,6 +83,7 @@ coordsys Orbit earth{
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(phi,Vec3d(0,1,0))*Quatd.rotation(-PI/2.0,Vec3d(1,0,0))
 			teleport "Earth Surface" 0 0 0
+			tin-file triangles.all
 			new astro Surface "s"{
 				pos 0 0 0
 				rotation Quatd.rotation(0.3*PI,Vec3d(1,0,0))

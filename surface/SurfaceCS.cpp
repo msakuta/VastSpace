@@ -28,37 +28,54 @@ const CoordSys::Static &SurfaceCS::getStatic()const{
 	return classRegister;
 }
 
-SurfaceCS::SurfaceCS(Game *game) : st(game), wm(NULL), map_top(NULL), mapshape(NULL), bbody(NULL){
-	init();
+SurfaceCS::SurfaceCS(Game *game) : st(game),
+	wm(NULL),
+	map_top(NULL),
+	mapshape(NULL),
+	bbody(NULL),
+	tin(NULL)
+{
+//	init();
 }
 
 extern btRigidBody *newbtRigidBody(const btRigidBody::btRigidBodyConstructionInfo&);
 
-SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root), wm(NULL), map_top(NULL), mapshape(NULL), bbody(NULL){
-	init();
+SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root),
+	wm(NULL),
+	map_top(NULL),
+	mapshape(NULL),
+	bbody(NULL),
+	tin(NULL)
+{
+//	init();
 }
 
 void SurfaceCS::init(){
+	static bool initialized = false;
+	if(initialized)
+		return;
 #if 1
-	wm = tin = new TIN("triangles.all");
 	int sx, sy;
-	int trunc = 16; // Resampled height field is truncated to this frequency.
-	tin->size(&sx, &sy);
-	sx /= trunc;
-	sy /= trunc;
-	std::vector<btScalar> *heightField = new std::vector<btScalar>(sx * sy);
-	float fmax = 0;
-	for(int y = 0; y < sy; y++) for(int x = 0; x < sx; x++){
-		WarMapTile t;
-		if(tin->getat(&t, x * trunc, y * trunc) == 0)
-			assert(0);
-		btScalar v = t.height * 1e-3 / 4.;
-		(*heightField)[x + (y) * sx] = v;
-		if(fmax < v)
-			fmax = v;
+	btScalar fmax = 0;
+	if(tinFileName.len() != 0){
+		wm = tin = new TIN(tinFileName);
+		int trunc = 16; // Resampled height field is truncated to this frequency.
+		tin->size(&sx, &sy);
+		sx /= trunc;
+		sy /= trunc;
+		std::vector<btScalar> *heightField = new std::vector<btScalar>(sx * sy);
+		for(int y = 0; y < sy; y++) for(int x = 0; x < sx; x++){
+			WarMapTile t;
+			if(tin->getat(&t, x * trunc, y * trunc) == 0)
+				assert(0);
+			btScalar v = t.height * 1e-3 / 4.;
+			(*heightField)[x + (y) * sx] = v;
+			if(fmax < v)
+				fmax = v;
+		}
+		mapshape = new btHeightfieldTerrainShape(sx, sy, &heightField->front(), .0001, 0., fmax, 1, PHY_FLOAT, false);
+	//	delete heightField;
 	}
-	mapshape = new btHeightfieldTerrainShape(sx, sy, &heightField->front(), .0001, 0., fmax, 1, PHY_FLOAT, false);
-//	delete heightField;
 #else
 	wm = OpenHGTMap("N36W113.av.zip");
 	if(game->isClient())
@@ -125,6 +142,23 @@ void SurfaceCS::draw(const Viewer *vw){
 //			drawmap(wm, *vw, 0, vw->viewtime, vw->gc, &map_top, &map_checked, dmc);
 		glPopMatrix();
 	}
+}
+
+bool SurfaceCS::readFile(StellarContext &sc, int argc, const char *argv[]){
+	const char *s = argv[0], *ps = argv[1];
+	if(!strcmp(s, "tin-file")){
+		if(s = ps/*strtok(ps, " \t\r\n")*/){
+			this->tinFileName = s;
+		}
+		return true;
+	}
+	else
+		return st::readFile(sc, argc, argv);
+}
+
+bool SurfaceCS::readFileEnd(StellarContext &sc){
+	init();
+	return st::readFileEnd(sc);
 }
 
 

@@ -21,6 +21,8 @@ public:
 	virtual void anim(double dt);
 	virtual void predraw(const Viewer *);
 	virtual void draw(const Viewer *);
+	bool readFile(StellarContext &sc, int argc, const char *argv[])override;
+	bool readFileEnd(StellarContext &)override;
 
 	WarMap *getWarMap(){return wm;}
 protected:
@@ -30,7 +32,9 @@ protected:
 	char *map_top;
 	btCollisionShape *mapshape;
 	btRigidBody *bbody;
+	gltestp::dstring tinFileName;
 	TIN *tin;
+
 	void init();
 	friend class SurfaceWar;
 };

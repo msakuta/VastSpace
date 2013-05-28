@@ -44,8 +44,10 @@ wings <- [
 		control = "elevator", sensitivity = -0.1 * PI},
 	{name = "TailLeft", pos = Vec3d(-0.003, 0.0, 0.008), aero = tensor2,
 		control = "elevator", sensitivity = -0.1 * PI},
-	{name = "VerticalLeft", pos = Vec3d( 0.0020, 0.002, 0.007), aero = tensor3},
-	{name = "VerticalRight", pos = Vec3d(-0.0020, 0.002, 0.007), aero = tensor3},
+	{name = "VerticalLeft", pos = Vec3d( 0.0020, 0.002, 0.007), aero = tensor3,
+		control = "rudder", sensitivity = -0.1 * PI, axis = Vec3d(0,1,0)},
+	{name = "VerticalRight", pos = Vec3d(-0.0020, 0.002, 0.007), aero = tensor3,
+		control = "rudder", sensitivity = -0.1 * PI, axis = Vec3d(0,1,0)},
 ]
 
 

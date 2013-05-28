@@ -67,6 +67,8 @@ void F15::drawtra(WarDraw *wd){
 			rot = Quatd::rotation(elevator * it.sensitivity, it.axis);
 		else if(it.control == Wing::Control::Aileron)
 			rot = Quatd::rotation(aileron * it.sensitivity, it.axis);
+		else if(it.control == Wing::Control::Rudder)
+			rot = Quatd::rotation(rudder * it.sensitivity, it.axis);
 
 		// Obtain scales that makes cuboid with face areas proportional with
 		// drag force perpendicular to the faces.

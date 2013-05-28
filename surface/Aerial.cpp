@@ -1586,6 +1586,8 @@ void Aerial::anim(double dt){
 				rot *= Quatd::rotation(elevator * it.sensitivity, it.axis);
 			else if(it.control == Wing::Control::Aileron)
 				rot *= Quatd::rotation(aileron * it.sensitivity, it.axis);
+			else if(it.control == Wing::Control::Rudder)
+				rot *= Quatd::rotation(rudder * it.sensitivity, it.axis);
 
 			/* retrieve velocity of the wing center in absolute coordinates */
 			Vec3d velo = this->omg.vp(rpos) + this->velo;

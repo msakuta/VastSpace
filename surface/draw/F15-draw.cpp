@@ -78,9 +78,9 @@ void F15::drawtra(WarDraw *wd){
 		//
 		// Note that we cannot visualize sheer elements (other than diagonals) with
 		// this technique.  I don't think doing so isn't needed.
-		Vec3d sc(::sqrt((::fabs(it.aero[4]) + ::fabs(it.aero[8])) / ::fabs(it.aero[0])),
-			::sqrt((::fabs(it.aero[0]) + ::fabs(it.aero[8])) / ::fabs(it.aero[4])),
-			::sqrt((::fabs(it.aero[0]) + ::fabs(it.aero[4])) / ::fabs(it.aero[8])));
+		Vec3d sc;
+		for(int i = 0; i < 3; i++) // Machine-code friendly loop logic
+			sc[i] = ::sqrt((::fabs(it.aero[(i+1) % 3 * 4]) + ::fabs(it.aero[(i+2) % 3 * 4])) / ::fabs(it.aero[i * 4]));
 
 		sc *= 0.0002; // Tweak visuals
 

@@ -88,21 +88,18 @@ void F15::drawtra(WarDraw *wd){
 		gldMultQuat(rot);
 		glScaled(sc[0], sc[1], sc[2]);
 
+		// Draw cuboid-like wireframe to show each area along axes.
 		glBegin(GL_QUADS);
-		glVertex3d(-1, 0, -1);
-		glVertex3d(-1, 0,  1);
-		glVertex3d( 1, 0,  1);
-		glVertex3d( 1, 0, -1);
-
-		glVertex3d(0, -1, -1);
-		glVertex3d(0, -1,  1);
-		glVertex3d(0,  1,  1);
-		glVertex3d(0,  1, -1);
-
-		glVertex3d(-1,  1, 0);
-		glVertex3d(-1, -1, 0);
-		glVertex3d( 1, -1, 0);
-		glVertex3d( 1,  1, 0);
+		static const GLfloat arr[3][4] = {
+			{-1, -1,  1, 1},
+			{ 1, -1, -1, 1},
+			{ 0,  0,  0, 0},
+		};
+		for(int i = 0; i < 3; i++){
+			int i1 = (i + 1) % 3, i2 = (i + 2) % 3;
+			for(int j = 0; j < 4; j++)
+				glVertex3f(arr[i][j], arr[i1][j], arr[i2][j]);
+		}
 		glEnd();
 
 		glPopMatrix();

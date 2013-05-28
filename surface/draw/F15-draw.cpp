@@ -68,24 +68,43 @@ void F15::drawtra(WarDraw *wd){
 		else if(it.control == Wing::Control::Aileron)
 			rot = Quatd::rotation(aileron * it.sensitivity, it.axis);
 
+		// Obtain scales that makes cuboid with face areas proportional with
+		// drag force perpendicular to the faces.
+		//
+		// Suppose $x,y,z$ are the each axis length.  We know that each side
+		// face perpendicular to $x,y,z$ axes have area $X=yz, Y=zx, Z=xy$, respectively.
+		// We can, for example, erase $y$ and $z$ from the equations to obtain
+		// the length $x=\sqrt{YZ/X}$.
+		//
+		// Note that we cannot visualize sheer elements (other than diagonals) with
+		// this technique.  I don't think doing so isn't needed.
+		Vec3d sc(::sqrt((::fabs(it.aero[4]) + ::fabs(it.aero[8])) / ::fabs(it.aero[0])),
+			::sqrt((::fabs(it.aero[0]) + ::fabs(it.aero[8])) / ::fabs(it.aero[4])),
+			::sqrt((::fabs(it.aero[0]) + ::fabs(it.aero[4])) / ::fabs(it.aero[8])));
+
+		sc *= 0.0002; // Tweak visuals
+
 		gldTranslate3dv(it.pos);
 		gldMultQuat(rot);
-		glPushMatrix();
-		gldScaled(::sqrt(::fabs(it.aero[4])) * 0.001);
+		glScaled(sc[0], sc[1], sc[2]);
+
 		glBegin(GL_QUADS);
 		glVertex3d(-1, 0, -1);
 		glVertex3d(-1, 0,  1);
 		glVertex3d( 1, 0,  1);
 		glVertex3d( 1, 0, -1);
-		glEnd();
-		glPopMatrix();
-		gldScaled(::sqrt(::fabs(it.aero[0])) * 0.001);
-		glBegin(GL_QUADS);
+
 		glVertex3d(0, -1, -1);
 		glVertex3d(0, -1,  1);
 		glVertex3d(0,  1,  1);
 		glVertex3d(0,  1, -1);
+
+		glVertex3d(-1,  1, 0);
+		glVertex3d(-1, -1, 0);
+		glVertex3d( 1, -1, 0);
+		glVertex3d( 1,  1, 0);
 		glEnd();
+
 		glPopMatrix();
 	}
 	glPopAttrib();

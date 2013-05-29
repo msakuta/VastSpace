@@ -901,17 +901,17 @@ int Autonomous::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double 
 /// \brief Virtual method to construct a bullet dynamics body for this Warpable.
 ///
 /// By default, it does not build a thing.
-bool Autonomous::buildBody(){
+bool ModelEntity::buildBody(){
 	return false;
 }
 
 /// \return Defaults 1
-short Autonomous::bbodyGroup()const{
+short ModelEntity::bbodyGroup()const{
 	return 1;
 }
 
 /// \return Defaults all bits raised
-short Autonomous::bbodyMask()const{
+short ModelEntity::bbodyMask()const{
 	return ~0;
 }
 
@@ -921,7 +921,7 @@ HitBoxList *Autonomous::getTraceHitBoxes()const{
 	return NULL;
 }
 
-void Autonomous::Vec3dProcess::process(HSQUIRRELVM v)const{
+void ModelEntity::Vec3dProcess::process(HSQUIRRELVM v)const{
 	StackReserver sr(v); // We cannot keep track of stack depth if a try-catch block is involved.
 	sq_pushstring(v, name, -1); // root string
 	if(SQ_FAILED(sq_get(v, -2))){ // root value
@@ -1147,7 +1147,7 @@ void Autonomous::HardPointProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v); // root
 }
 
-void Autonomous::DrawOverlayProcess::process(HSQUIRRELVM v)const{
+void ModelEntity::DrawOverlayProcess::process(HSQUIRRELVM v)const{
 #ifndef DEDICATED // Do nothing in the server.
 	sq_pushstring(v, _SC("drawOverlay"), -1); // root string
 	if(SQ_FAILED(sq_get(v, -2))) // root obj
@@ -1165,7 +1165,7 @@ void Autonomous::DrawOverlayProcess::process(HSQUIRRELVM v)const{
 #endif
 }
 
-void Autonomous::NavlightsProcess::process(HSQUIRRELVM v)const{
+void ModelEntity::NavlightsProcess::process(HSQUIRRELVM v)const{
 #ifndef DEDICATED // Do nothing in the server.
 	sq_pushstring(v, _SC("navlights"), -1); // root string
 

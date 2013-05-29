@@ -513,7 +513,7 @@ double Warpable::Navlight::patternIntensity(double t0)const{
 	}
 }
 
-void Autonomous::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){
+void ModelEntity::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){
 	Mat4d defaultmat;
 	if(!transmat)
 		transform(defaultmat);

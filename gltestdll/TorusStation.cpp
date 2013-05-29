@@ -14,7 +14,7 @@
 #include "Game.h"
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
-#include "Autonomous.h"
+#include "ModelEntity.h"
 #include "Soldier.h"
 extern "C"{
 #include <clib/c.h>
@@ -455,7 +455,7 @@ void TorusStationEntity::init(){
 			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			Autonomous::DrawOverlayProcess(overlayDisp)
+			ModelEntity::DrawOverlayProcess(overlayDisp)
 			);
 		initialized = true;
 	}

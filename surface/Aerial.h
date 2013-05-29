@@ -13,14 +13,14 @@
 #endif
 
 #include "Entity.h"
-#include "Autonomous.h"
+#include "ModelEntity.h"
 
 struct Model;
 
 /// \brief Base class for aerial vehicles.
-class Aerial : public Entity{
+class Aerial : public ModelEntity{
 public:
-	typedef Entity st;
+	typedef ModelEntity st;
 	Aerial(Game *game);
 	Aerial(WarField *aw);
 	void addRigidBody(WarSpace*)override;

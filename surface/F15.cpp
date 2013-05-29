@@ -96,7 +96,7 @@ void F15::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			Autonomous::HitboxProcess(hitboxes) <<=
+			HitboxProcess(hitboxes) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
@@ -104,7 +104,7 @@ void F15::init(){
 			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			SingleDoubleProcess(shootCooldown, "shootCooldown", false) <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
-			Autonomous::DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}
 	mass = defaultMass;

@@ -278,6 +278,7 @@
     <ClInclude Include="..\glw\GLWtip.h" />
     <ClInclude Include="..\glw\message.h" />
     <ClInclude Include="..\glw\popup.h" />
+    <ClInclude Include="..\include\ModelEntity.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

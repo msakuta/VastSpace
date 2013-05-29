@@ -356,8 +356,17 @@
     <ClInclude Include="..\draw\ring-draw.h">
       <Filter>Headers\draw</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\ModelEntity.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\gltestplus.rc" />
+    <ResourceCompile Include="..\src\VastSpace.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\gp.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\resource.h" />
   </ItemGroup>
 </Project>

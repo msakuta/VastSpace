@@ -23,10 +23,7 @@ extern "C"{
 #define FLY_PITCHSPEED  (.05 * M_PI)
 #define FLY_ROLLSPEED (.1 * M_PI)
 #define FLY_RELOADTIME .07
-#define BULLETSPEED .78
-#define numof(a) (sizeof(a)/sizeof*(a))
 #define SONICSPEED .340
-#define putstring(a) gldPutString(a)
 #define VALKIE_WALK_SPEED (.015)
 #define VALKIE_WALK_PHASE_SPEED (M_PI)
 #define YAWSPEED (M_PI*.2)
@@ -76,6 +73,7 @@ double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
 std::vector<Vec3d> F15::gunPositions;
+double F15::bulletSpeed = .78;
 std::vector<Vec3d> F15::cameraPositions;
 GLuint F15::overlayDisp;
 
@@ -119,6 +117,7 @@ void F15::init(){
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
 			Vec3dListProcess(gunPositions, "gunPositions") <<=
+			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
 			Autonomous::DrawOverlayProcess(overlayDisp));
 		initialized = true;
@@ -279,7 +278,7 @@ void F15::anim(double dt){
 }
 
 void F15::shoot(double dt){
-	Vec3d velo0(0., 0., -BULLETSPEED);
+	Vec3d velo0(0., 0., -bulletSpeed);
 	double reloadtime = FLY_RELOADTIME;
 	if(dt <= this->cooldown)
 		return;

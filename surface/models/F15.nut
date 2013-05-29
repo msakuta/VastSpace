@@ -60,6 +60,8 @@ gunPositions <- [
 	Vec3d(20, 12, -200) * modelScale
 ]
 
+bulletSpeed <- 0.78;
+
 cameraPositions <- [
 	Vec3d(0., 40 * modelScale, -120 * modelScale),
 	Vec3d(0., 0.0075, 0.025),

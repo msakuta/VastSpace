@@ -12,16 +12,8 @@ extern "C"{
 }
 
 
-#define FLY_QUAT 1
-#define FLY_MAX_GIBS 30
-#define FLY_MISSILE_FREQ .1
-#define FLY_SMOKE_FREQ 10.
-#define FLY_RETHINKTIME .5
-#define FLARE_INTERVAL 2.5
-#define FLY_SCALE F15::getModelScale()
-#define VALKIE_WALK_SPEED (.015)
-#define VALKIE_WALK_PHASE_SPEED (M_PI)
-#define YAWSPEED (M_PI*.2)
+//#define VALKIE_WALK_SPEED (.015)
+//#define VALKIE_WALK_PHASE_SPEED (M_PI)
 
 
 /* color sequences */
@@ -72,10 +64,6 @@ double F15::bulletSpeed = .78;
 double F15::shootCooldown = .07;
 std::vector<Vec3d> F15::cameraPositions;
 GLuint F15::overlayDisp;
-
-static const double gunangle = 0.;
-
-const avec3_t fly_hardpoint[2] = {{.005, .0005, -.000}, {-.005, .0005, -.000}};
 
 
 F15::F15(Game *game) : st(game), pf(nullptr){
@@ -211,46 +199,7 @@ static int tryshoot(warf_t *w, entity_t *pt, const double epos[3], double phi0, 
 }
 #endif
 
-static const avec3_t fly_points[] = {
-	{.0, -.001, -.005},
-	{-.001, -.0008, .003},
-	{.001, -.0008, .003},
-	{160 * FLY_SCALE, 20 * FLY_SCALE, -0 * FLY_SCALE},
-	{-160 * FLY_SCALE, 20 * FLY_SCALE, -0 * FLY_SCALE},
-	{0 * FLY_SCALE, 20 * FLY_SCALE, -160 * FLY_SCALE},
-	{0 * FLY_SCALE, 20 * FLY_SCALE, 160 * FLY_SCALE},
-};
-static const avec3_t valkie_points[] = {
-	{.0, -.0019, -.005},
-	{-.0015, -.0018, .003},
-	{.0015, -.0018, .003},
-	{160 * FLY_SCALE, 20 * FLY_SCALE, -0 * FLY_SCALE},
-	{-160 * FLY_SCALE, 20 * FLY_SCALE, -0 * FLY_SCALE},
-	{0 * FLY_SCALE, 20 * FLY_SCALE, -160 * FLY_SCALE},
-	{0 * FLY_SCALE, 20 * FLY_SCALE, 160 * FLY_SCALE},
-};
 
-static void foot_height(const char *name, void *hint){
-	int i = 0;
-	if(!strcmp(name, "ABbaseL")){
-		amat4_t mat;
-		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-		VECCPY(((avec3_t*)hint)[0], &mat[12]);
-	}
-	else if(!strcmp(name, "ABbaseR")){
-		amat4_t mat;
-		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-		VECCPY(((avec3_t*)hint)[1], &mat[12]);
-	}
-/*	else if(!strcmp(name, "LWING_BTL") || !strcmp(name, "RWING_BTL") && (i = 1) || !strcmp(name, "0009") && (i = 2)){
-		amat4_t mat;
-		avec3_t pos0[2] = {{(8.12820 - 3.4000) * .75, 0, (6.31480 - 3.) * -.5}, {0, 0, 6.}};
-		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-		if(!i)
-			pos0[0][0] *= -1;
-		mat4vp3(((avec3_t*)hint)[i+2], mat, pos0[i/2]);
-	}*/
-}
 
 void F15::anim(double dt){
 
@@ -289,9 +238,8 @@ void F15::shoot(double dt){
 		}
 	}
 	else*/
-	Mat4d mat0;
-	transform(mat0);
-	Mat4d mat = mat0.rotx(-gunangle / deg_per_rad);
+	Mat4d mat;
+	transform(mat);
 	while(this->cooldown < dt){
 		int i = 0;
 		for(auto &it : gunPositions){

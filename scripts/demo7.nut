@@ -1,6 +1,6 @@
 // Earth surface simulation test
 
-f15 <- player.cs.addent("F15", Vec3d(0, 4., 0.));
+local f15 = player.cs.addent("F15", Vec3d(0, 4., 0.));
 player.chase = f15;
 
 cmd("pause 0");

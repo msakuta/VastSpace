@@ -45,6 +45,7 @@ protected:
 	static WingList wings0;
 	static std::vector<Vec3d> wingTips;
 	static std::vector<Vec3d> gunPositions;
+	static double shootCooldown;
 	static double bulletSpeed;
 	static std::vector<Vec3d> cameraPositions;
 	static GLuint overlayDisp;

@@ -819,3 +819,8 @@ void F15::drawCockpit(WarDraw *wd){
 	glPopAttrib();
 #endif
 }
+
+void F15::drawOverlay(WarDraw *){
+	glCallList(overlayDisp);
+}
+

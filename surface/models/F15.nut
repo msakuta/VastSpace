@@ -73,13 +73,24 @@ cameraPositions <- [
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(-1.0, -1.0);
-	glVertex2d(-0.5,  0.0);
-	glVertex2d(-1.0,  1.0);
-	glVertex2d( 0.0,  0.5);
-	glVertex2d( 1.0,  1.0);
-	glVertex2d( 0.5,  0.0);
-	glVertex2d( 1.0, -1.0);
-	glVertex2d( 0.0, -0.5);
+	glVertex2d(-1.0,  0.0);
+	glVertex2d(-0.5,  0.2);
+	glVertex2d( 0.0,  0.2);
+	glVertex2d( 0.5,  0.7);
+	glVertex2d( 0.7,  0.5);
+	glVertex2d( 0.5,  0.2);
+	glVertex2d( 0.7,  0.2);
+	glVertex2d( 0.8,  0.4);
+	glVertex2d( 1.0,  0.4);
+	glVertex2d( 0.9,  0.2);
+	glVertex2d( 0.9, -0.2);
+	glVertex2d( 1.0, -0.4);
+	glVertex2d( 0.8, -0.4);
+	glVertex2d( 0.7, -0.2);
+	glVertex2d( 0.5, -0.2);
+	glVertex2d( 0.7, -0.5);
+	glVertex2d( 0.5, -0.7);
+	glVertex2d( 0.0, -0.2);
+	glVertex2d(-0.5, -0.2);
 	glEnd();
 }

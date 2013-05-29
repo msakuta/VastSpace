@@ -77,6 +77,7 @@ F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
 std::vector<Vec3d> F15::gunPositions;
 std::vector<Vec3d> F15::cameraPositions;
+GLuint F15::overlayDisp;
 
 static const double gunangle = 0.;
 
@@ -118,7 +119,8 @@ void F15::init(){
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
 			Vec3dListProcess(gunPositions, "gunPositions") <<=
-			Vec3dListProcess(cameraPositions, "cameraPositions"));
+			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
+			Autonomous::DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}
 	mass = defaultMass;

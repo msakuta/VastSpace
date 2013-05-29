@@ -23,8 +23,9 @@ public:
 	void drawtra(WarDraw *wd)override;
 	void drawHUD(WarDraw *)override;
 	void drawCockpit(WarDraw *);
+	void drawOverlay(WarDraw *)override;
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
-	int F15::takedamage(double damage, int hitpart)override;
+	int takedamage(double damage, int hitpart)override;
 	double getHitRadius()const override{return hitRadius;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
@@ -45,6 +46,7 @@ protected:
 	static std::vector<Vec3d> wingTips;
 	static std::vector<Vec3d> gunPositions;
 	static std::vector<Vec3d> cameraPositions;
+	static GLuint overlayDisp;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

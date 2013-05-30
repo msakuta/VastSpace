@@ -1,0 +1,122 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="jHitSphere" />
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+  TeX: {
+    TagSide: "left",
+    Macros: {
+      T: '^{\\mathrm T}',
+      RR: '{\\bf R}',
+      bold: ['{\\bf #1}',1]
+    }
+  }
+});
+</script>
+    <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+
+
+    <title>jHitSphere</title>
+  </head>
+
+<body>
+
+<a href="index.html">Go back to main page</a>
+
+<h1> Overview </h1>
+
+The jHitCylinder function checks if a ray of light is blocked by a cylinder in 3-D space, just like <a href="jHitSphere.html">jHitSphere</a>.
+
+This function is used relatively less frequently.
+It's used to create complex hit shapes in conjunction with jHitSphere and <a href="jHitSphere.html">jHitBox</a>.
+
+I have been forgotten the rationale of jHitSphere, so this time I would write it in advance to implement.
+
+
+<h1> Rationale </h1>
+
+Suppose we've got an axis vector $\vec{b}$, who has a length of $L$.
+It's a vector indicating axis of the cylinder and normal vector of planes at both ends of the cylinder.
+The length of the axis vector indicates half-length of the cylinder.
+
+The cyrinder's radius is written as $R$.
+
+The following figure illustrates those variables.
+Note that $2R$ is the diameter and $2L$ is the total length of the cylinder.
+
+<p>
+<img src="Cylinder-dimensions.png">
+</p>
+
+<h2> Solving intersecting points between the ray and the planes at both ends of the cylinder </h2>
+
+The first thing we can obtain is the vector equation representation of the planes.
+
+$$
+(\vec{r} \pm \vec{b}) \cdot \vec{b} = 0
+$$
+
+And we have the ray's representation in vector equation:
+
+$$
+\vec{r}=\vec{a}+t\vec{d}
+$$
+
+Substituting the $\vec{r}$ yields the following equation:
+
+$$(\vec{a} + t\vec{d} \pm \vec{b}) \cdot \vec{b} = 0$$
+
+This equation can be solved about $t$ like below.
+
+$$t = \frac{(\vec{a} \pm \vec{b}) \cdot \vec{b}}{\vec{d} \cdot \vec{b}}$$
+
+Substituting this $t$ to the ray's vector equation gives us the position of the point that the ray and the planes intersects,
+thus we can know if it really hits cylinder's ends by measuring distance between the points and the cylinder's axis.
+
+
+<h2> Solving intersecting points between the ray and the cylinder's side </h2>
+
+Solving cylinder's side is much like sphere.
+We just project the ray to the plane perpendicular to cylinder's axis and do the same thing as in jHitSphere.
+
+First, we define normalized cylinder's axis vector $\hat{b} \equiv \vec{b}/|\vec{b}|$.
+
+Let's have some vectors projected onto plane perpendicular to cylinder axis.
+
+$$\vec{r_0'} \equiv \vec{r_0} - (\vec{r_0} \cdot \hat{b}) \hat{b}$$
+
+$$\vec{d'} \equiv \vec{d} - (\vec{d} \cdot \hat{b}) \hat{b}$$
+
+The same argument as jHitSphere results in following solution.
+
+$$t=\frac{-\vec{r_0'}\cdot\vec{d'}\pm\sqrt{(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)}}{|\vec{d'}|^2}$$
+
+By substituting this $t$ to the vector equation of the ray and measuring distance along axis, we can tell whether this $t$
+indicates intersection with the cylinder.
+
+Also note that if the discriminant of the solution
+
+$$D=(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)$$
+
+is less than 0, intersection never occurs, because infinitely extended cylinder and the ray are in relationship like skew lines.
+
+
+
+<h1> Isn't it re-inventing wheels? </h1>
+
+Usually you should use external libraries for this sort of things, because libraries are naturally more tested and robust than home-made algorithms.
+
+We already have Bullet dynamics engine's ray test algorithm, which supports not only hit judgement with boxes, spheres and cylinders,
+but also variety of shapes including arbitrary convex polygon.
+The problem with Bullet is that it's not reliable, by an unclear reason, to determine if a flying bullet hits objects.
+It may be something to do with collision margins, but I'm not sure since I have not gone deep into internals of Bullet dynamics engine.
+
+
+
+</body>
+</html>

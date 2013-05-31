@@ -695,6 +695,8 @@ void WarDrawInt::draw(){
 		(player->*(method == &WarField::draw ? &Player::draw : &Player::drawtra))(&gvw);
 		if(shader)
 			glUseProgram(shader);
+		if(player->chase)
+			player->chase->drawCockpit(this);
 	}
 }
 

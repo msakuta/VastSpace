@@ -770,10 +770,11 @@ void Entity::endControl(){
 unsigned Entity::analog_mask(){return 0;}
 void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
 int Entity::numCockpits()const{return 1;}
-void Entity::draw(wardraw_t *){}
-void Entity::drawtra(wardraw_t *){}
-void Entity::drawHUD(wardraw_t *){}
-void Entity::drawOverlay(wardraw_t *){}
+void Entity::draw(WarDraw *){}
+void Entity::drawtra(WarDraw *){}
+void Entity::drawHUD(WarDraw *){}
+void Entity::drawCockpit(WarDraw *){}
+void Entity::drawOverlay(WarDraw *){}
 bool Entity::solid(const Entity *)const{return true;} // Default is to check hits
 /// \param b The Bullet object that hit me.
 /// \param hitpart The hit part ID of this object.
@@ -1097,7 +1098,7 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 		CoordSys *pcs;
 		double landrad;
 		double dist, cost;
-		extern coordsys *g_galaxysystem;
+//		extern coordsys *g_galaxysystem;
 		Player *player = game->player;
 		teleport *tp = player ? player->findTeleport(destname, TELEPORT_WARP) : NULL;
 		if(tp){

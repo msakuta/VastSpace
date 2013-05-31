@@ -176,10 +176,10 @@ void Autonomous::drawtra(wardraw_t *wd){
 static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 	ClientGame *game = (ClientGame*)pv;
 	Player *player = game->player;
-	extern coordsys *g_galaxysystem;
+//	extern coordsys *g_galaxysystem;
 	char *cmds[64]; /* not much of menu items as 64 are able to displayed after all */
 	const char *subtitles[64];
-	coordsys *reta[64], **retp = reta;
+//	coordsys *reta[64], **retp = reta;
 	static const char *windowtitle = "Warp Destination";
 	GLwindow *wnd, **ppwnd;
 	int left, i;

@@ -8,6 +8,11 @@
 #include "Game.h"
 #include "SqInitProcess.h"
 #include "judge.h"
+#ifdef DEDICATED
+typedef unsigned GLuint;
+#else
+#include <GL/gl.h>
+#endif
 
 class EXPORT HitBoxList : public std::vector<HitBox>{
 };

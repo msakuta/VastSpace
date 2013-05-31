@@ -19,12 +19,7 @@
  * This file defines the Player class and camera related classes.
  */
 
-#define FEETD 0.001
-
 struct input_t;
-struct tank;
-struct astrobj;
-struct coordsys;
 class Entity;
 class CoordSys;
 class Viewer;

@@ -798,8 +798,9 @@ int Player::cmd_mover(int argc, char *argv[], void *pv){
 		CMMover::s.send(CMMover::Tactical);
 	}
 	else if(!strcmp(argv[1], "cycle")){
-		p->nextmover = p->mover == p->freelook ? p->tactical : p->freelook;
-		CMMover::s.send(p->nextmover == p->freelook ? CMMover::Freelook : CMMover::Tactical);
+		// Prefer tactical when it was cockpitview
+		p->nextmover = p->mover != p->tactical ? p->tactical : p->chase ? p->cockpitview : p->freelook;
+		CMMover::s.send(p->nextmover == p->tactical ? CMMover::Tactical : p->nextmover == p->freelook ? CMMover::Freelook : CMMover::CockpitView);
 	}
 	else
 		CmdPrint("unknown func");
@@ -910,7 +911,7 @@ void Player::endControlInt(){
 	if(controlled && static_cast<EntityController*>(controlled->controller) == this)
 		controlled->controller = NULL;
 	controlled = NULL;
-	mover = nextmover = freelook;
+//	mover = nextmover = freelook;
 }
 
 
@@ -1335,6 +1336,8 @@ void CMMover::interpret(ServerClient &sc, UnserializeStream &uss){
 			player->nextmover = player->freelook;
 		else if(t == Tactical)
 			player->nextmover = player->tactical;
+		else //if(t == CockpitView)
+			player->nextmover = player->cockpitview;
 	}
 }
 

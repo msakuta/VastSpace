@@ -22,7 +22,7 @@ public:
 	void draw(WarDraw *wd)override;
 	void drawtra(WarDraw *wd)override;
 	void drawHUD(WarDraw *)override;
-	void drawCockpit(WarDraw *);
+	void drawCockpit(WarDraw *)override;
 	void drawOverlay(WarDraw *)override;
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
 	int takedamage(double damage, int hitpart)override;

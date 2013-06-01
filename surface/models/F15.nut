@@ -65,7 +65,7 @@ bulletSpeed <- 0.78;
 shootCooldown <- 0.07;
 
 cameraPositions <- [
-	Vec3d(0., 40 * modelScale, -120 * modelScale),
+	Vec3d(0., 30 * modelScale, -150 * modelScale),
 	Vec3d(0., 0.0075, 0.025),
 	Vec3d(0.020, 0.007, 0.050),
 	Vec3d(0.010, 0.007, -0.010),

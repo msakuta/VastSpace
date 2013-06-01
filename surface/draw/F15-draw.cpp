@@ -553,36 +553,23 @@ void F15::drawHUD(WarDraw *wd){
 }
 
 void F15::drawCockpit(WarDraw *wd){
-	static int init = 0;
-	double scale = .0002 /*wd->pgc->znear / wd->pgc->zfar*/;
-	double sonear = scale * wd->vw->gc->getNear();
-#if 0
-	double wid = sonear * wd->vw->gc->getFov() * wd->vw->gc-> / wd->pgc->res;
-	double hei = sonear * wd->vw->gc->getFov() * wd->vw->gc->height / wd->pgc->res;
-	avec3_t seat = {0., 40. * FLY_SCALE, -130. * FLY_SCALE};
-	avec3_t stick = {0., 68. * FLY_SCALE / 2., -270. * FLY_SCALE / 2.};
-	amat4_t rot;
-	if(w->pl->chasecamera)
+	static bool init = false;
+//	double scale = .0002 /*wd->pgc->znear / wd->pgc->zfar*/;
+//	double sonear = scale * wd->vw->gc->getNear();
+//	double wid = sonear * wd->vw->gc->getFov() * wd->vw->gc->getWidth / wd->pgc->res;
+//	double hei = sonear * wd->vw->gc->getFov() * wd->vw->gc->height / wd->pgc->res;
+	Vec3d seat = cameraPositions[0];
+	Vec3d stick = Vec3d(0., 68., -270.) * modelScale / 2.;
+	static Model *modelCockpit = NULL;
+	Player *player = game->player;
+	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
 		return;
 
 	if(!init){
-/*		timemeas_t tm;*/
-		init = 1;
-/*		TimeMeasStart(&tm);*/
-		sufcockpit = lzuc(lzw_fly2cockpit, sizeof lzw_fly2cockpit, NULL);
-		RelocateSUF(sufcockpit);
-		sufstick = lzuc(lzw_fly2stick, sizeof lzw_fly2stick, NULL);
-		RelocateSUF(sufstick);
-/*		printf("reloc: %lg\n", TimeMeasLap(&tm));*/
+		init = true;
+		modelCockpit = LoadMQOModel(modPath() << "models/F15-cockpit.mqo");
 	}
 
-	if(pt->vft == &valkie_s && !valcockpit){
-		valcockpit = LoadYSDNM("vf25_cockpit.dnm");
-	}
-
-	glLoadMatrixd(wd->rot);
-	quat2mat(rot, pt->rot);
-	glMultMatrixd(rot);
 
 	glPushAttrib(GL_DEPTH_BUFFER_BIT);
 	glClearDepth(1.);
@@ -599,16 +586,18 @@ void F15::drawCockpit(WarDraw *wd){
 
 	glPushMatrix();
 
+	glLoadMatrixd(wd->vw->rot);
+	gldMultQuat(this->rot);
 
 	glMatrixMode (GL_PROJECTION);
-	glPushMatrix();
+/*	glPushMatrix();
 	glLoadIdentity();
 	glFrustum (-wid, wid,
 		-hei, hei,
-		sonear, wd->pgc->znear * 5.);
+		sonear, wd->pgc->znear * 5.);*/
 	glMatrixMode (GL_MODELVIEW);
 
-	if(pt->vft == &valkie_s && valcockpit){
+/*	if(pt->vft == &valkie_s && valcockpit){
 		glScaled(.00001, .00001, -.00001);
 		glTranslated(0, - 1., -3.5);
 		glPushAttrib(GL_POLYGON_BIT);
@@ -616,14 +605,15 @@ void F15::drawCockpit(WarDraw *wd){
 		DrawYSDNM(valcockpit, NULL, NULL, 0, NULL, 0);
 		glPopAttrib();
 	}
-	else{
+	else*/{
 		gldTranslaten3dv(seat);
-		gldScaled(FLY_SCALE / 2.);
-		DrawSUF(sufcockpit, SUF_ATR, &g_gldcache);
+		glScaled(-modelScale, modelScale, -modelScale);
+		DrawMQOPose(modelCockpit, nullptr);
 	}
 
 	glPopMatrix();
 
+#if 0
 	if(0. < pt->health){
 		GLfloat mat_diffuse[] = { .5, .5, .5, .2 };
 		GLfloat mat_ambient_color[] = { 0.5, 0.5, 0.5, .2 };
@@ -815,9 +805,9 @@ void F15::drawCockpit(WarDraw *wd){
 	glMatrixMode (GL_MODELVIEW);
 
 	glPopMatrix();
+#endif
 
 	glPopAttrib();
-#endif
 }
 
 void F15::drawOverlay(WarDraw *){

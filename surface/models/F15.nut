@@ -74,6 +74,10 @@ cameraPositions <- [
 	Vec3d(-0.004, 0.0, 0.0),
 ]
 
+hudPos <- Vec3d(0., 30.0, -170.0) * modelScale
+
+hudSize <- 10 * modelScale
+
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

@@ -558,7 +558,7 @@ void F15::drawCockpit(WarDraw *wd){
 //	double sonear = scale * wd->vw->gc->getNear();
 //	double wid = sonear * wd->vw->gc->getFov() * wd->vw->gc->getWidth / wd->pgc->res;
 //	double hei = sonear * wd->vw->gc->getFov() * wd->vw->gc->height / wd->pgc->res;
-	Vec3d seat = cameraPositions[0];
+	const Vec3d &seat = cameraPositions[0];
 	Vec3d stick = Vec3d(0., 68., -270.) * modelScale / 2.;
 	static Model *modelCockpit = NULL;
 	Player *player = game->player;
@@ -589,6 +589,8 @@ void F15::drawCockpit(WarDraw *wd){
 	glLoadMatrixd(wd->vw->rot);
 	gldMultQuat(this->rot);
 
+	glPushMatrix();
+
 	glMatrixMode (GL_PROJECTION);
 /*	glPushMatrix();
 	glLoadIdentity();
@@ -613,28 +615,26 @@ void F15::drawCockpit(WarDraw *wd){
 
 	glPopMatrix();
 
-#if 0
-	if(0. < pt->health){
-		GLfloat mat_diffuse[] = { .5, .5, .5, .2 };
-		GLfloat mat_ambient_color[] = { 0.5, 0.5, 0.5, .2 };
-		amat4_t m;
-		double d, air, velo;
+	if(0. < health){
+		static const GLfloat hudcolor[4] = {0, 1, 0, 1};
+//		GLfloat mat_diffuse[] = { .5, .5, .5, .2 };
+//		GLfloat mat_ambient_color[] = { 0.5, 0.5, 0.5, .2 };
+		Mat4d m;
+		double d, velo;
 		int i;
 
-		air = w->vft->atmospheric_pressure(w, &pt->pos)/*exp(-pt->pos[1] / 10.)*/;
+		double air = w->atmosphericPressure(this->pos)/*exp(-pt->pos[1] / 10.)*/;
 
 		glPushMatrix();
 	/*	glRotated(-gunangle, 1., 0., 0.);*/
 		glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_LINE_SMOOTH);
 		glDepthMask(GL_FALSE);
-/*		gldTranslate3dv(seat);*/
-		gldScaled(FLY_SCALE / 2.);
-		glTranslated(0., 80, -276.);
-		gldScaled(9.);
+		gldTranslate3dv(hudPos - seat);
+		gldScaled(hudSize);
 /*		gldScaled(.0002);
 		glTranslated(0., 0., -1.);*/
-		glGetDoublev(GL_MODELVIEW_MATRIX, &m);
+		glGetDoublev(GL_MODELVIEW_MATRIX, m);
 
 		glDisable(GL_LIGHTING);
 /*		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
@@ -648,7 +648,7 @@ void F15::drawCockpit(WarDraw *wd){
 		glEnd();
 
 		/* crosshair */
-		glColor4ubv(wd->hudcolor);
+		glColor4fv(hudcolor);
 		glBegin(GL_LINES);
 		glVertex2d(-.15, 0.);
 		glVertex2d(-.05, 0.);
@@ -661,7 +661,7 @@ void F15::drawCockpit(WarDraw *wd){
 		glEnd();
 
 		/* director */
-		for(i = 0; i < 24; i++){
+/*		for(i = 0; i < 24; i++){
 			d = fmod(-pt->pyr[1] + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
 			if(-.8 < d && d < .8){
 				glBegin(GL_LINES);
@@ -682,7 +682,7 @@ void F15::drawCockpit(WarDraw *wd){
 					glPopMatrix();
 				}
 			}
-		}
+		}*/
 
 		/* pressure/height gauge */
 		glBegin(GL_LINE_LOOP);
@@ -731,7 +731,7 @@ void F15::drawCockpit(WarDraw *wd){
 		glPushMatrix();
 		glTranslated(-.2, 0., 0.);
 		glBegin(GL_LINES);
-		velo = VECLEN(pt->velo);
+		velo = VECLEN(this->velo);
 		glVertex2d(-.5, .3);
 		glVertex2d(-.5, velo < .05 ? -velo * .3 / .05 : -.3);
 		for(d = MAX(.01 - fmod(velo, .01), .05 - velo) - .05; d < .05; d += .01){
@@ -760,7 +760,7 @@ void F15::drawCockpit(WarDraw *wd){
 #endif
 
 		/* climb */
-		glRotated(deg_per_rad * pt->pyr[2], 0., 0., 1.);
+/*		glRotated(deg_per_rad * pt->pyr[2], 0., 0., 1.);
 		for(i = -12; i <= 12; i++){
 			d = 2. * (fmod(pt->pyr[0] + i * 2. * M_PI / 48. + M_PI / 2., M_PI * 2.) - M_PI / 2.);
 			if(-.8 < d && d < .8){
@@ -784,7 +784,7 @@ void F15::drawCockpit(WarDraw *wd){
 					glPopMatrix();
 				}
 			}
-		}
+		}*/
 
 		glPopAttrib();
 		glPopMatrix();
@@ -792,20 +792,23 @@ void F15::drawCockpit(WarDraw *wd){
 
 	glPushMatrix();
 
-	gldTranslate3dv(stick);
+/*	gldTranslate3dv(stick);
 	glRotated(deg_per_rad * p->elevator, 1., 0., 0.);
 	glRotated(deg_per_rad * p->aileron[0], 0., 0., -1.);
 	gldTranslaten3dv(stick);
 	gldScaled(FLY_SCALE / 2.);
 
-	DrawSUF(sufstick, SUF_ATR, &g_gldcache);
+	DrawSUF(sufstick, SUF_ATR, &g_gldcache);*/
 
-	glMatrixMode (GL_PROJECTION);
+/*	glMatrixMode (GL_PROJECTION);
 	glPopMatrix();
-	glMatrixMode (GL_MODELVIEW);
+	glMatrixMode (GL_MODELVIEW);*/
 
 	glPopMatrix();
+#if 0
 #endif
+
+	glPopMatrix();
 
 	glPopAttrib();
 }

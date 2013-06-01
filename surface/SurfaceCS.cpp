@@ -24,6 +24,7 @@ public:
 	SurfaceWar(SurfaceCS *);
 	~SurfaceWar();
 	Vec3d accel(const Vec3d &pos, const Vec3d &velo)const override;
+	double atmosphericPressure(const Vec3d &pos)const override;
 protected:
 	btStaticPlaneShape *groundPlane;
 	btRigidBody *groundBody;
@@ -269,6 +270,11 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs){
 
 Vec3d SurfaceWar::accel(const Vec3d &pos, const Vec3d &velo)const{
 	return Vec3d(0, -0.0098, 0);
+}
+
+double SurfaceWar::atmosphericPressure(const Vec3d &pos)const{
+	const double scaleHeight = 8.5;
+	return exp(-pos[1] / scaleHeight);
 }
 
 SurfaceWar::~SurfaceWar(){

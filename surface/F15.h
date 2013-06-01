@@ -48,6 +48,8 @@ protected:
 	static double shootCooldown;
 	static double bulletSpeed;
 	static std::vector<Vec3d> cameraPositions;
+	static Vec3d hudPos;
+	static double hudSize;
 	static GLuint overlayDisp;
 
 	WingList &getWings()const override{return wings0;}

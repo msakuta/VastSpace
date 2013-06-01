@@ -63,6 +63,8 @@ std::vector<Vec3d> F15::gunPositions;
 double F15::bulletSpeed = .78;
 double F15::shootCooldown = .07;
 std::vector<Vec3d> F15::cameraPositions;
+Vec3d F15::hudPos;
+double F15::hudSize;
 GLuint F15::overlayDisp;
 
 
@@ -104,6 +106,8 @@ void F15::init(){
 			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			SingleDoubleProcess(shootCooldown, "shootCooldown", false) <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
+			Vec3dProcess(hudPos, "hudPos") <<=
+			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}

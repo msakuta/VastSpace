@@ -173,8 +173,13 @@ bool WarField::EntityPtr::handleEvent(const Observable *o, ObserveEvent &e){
 	return false;
 }
 
-bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
+// Collision detection and resolution is handled by Bullet dynamics engine.
+/*bool WarField::pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const{
 	return false;
+}*/
+
+double WarField::atmosphericPressure(const Vec3d &pos)const{
+	return 0.; // Defaults in space
 }
 
 Vec3d WarField::accel(const Vec3d &srcpos, const Vec3d &srcvelo)const{

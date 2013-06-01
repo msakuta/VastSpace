@@ -137,7 +137,9 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
-	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
+	// Collision detection and resolution is handled by Bullet dynamics engine.
+//	virtual bool pointhit(const Vec3d &pos, const Vec3d &velo, double dt, struct contact_info*)const;
+	virtual double atmosphericPressure(const Vec3d &pos)const; ///< Returns atmospheric pressure at given place.
 	virtual Vec3d accel(const Vec3d &srcpos, const Vec3d &srcvelo)const;
 	virtual double war_time()const;
 	virtual struct tent3d_line_list *getTeline3d();

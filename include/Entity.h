@@ -187,6 +187,8 @@ protected:
 		virtual Entity *stcreate(Game *game){ return new T(game); }
 		virtual void destroy(Entity *p){ delete p; }
 		virtual const SQChar *sq_classname(){ return m_sq_classname; }
+		/// Called from sq_define(), override or instantiate to add member functions.
+		virtual void sq_defineInt(HSQUIRRELVM v){}
 	protected:
 		virtual bool sq_define(HSQUIRRELVM v){
 			sq_pushstring(v, sq_classname(), -1);
@@ -194,6 +196,7 @@ protected:
 			sq_get(v, 1);
 			sq_newclass(v, SQTrue);
 			sq_settypetag(v, -1, SQUserPointer(m_classid));
+			sq_defineInt(v);
 			sq_createslot(v, -3);
 			return true;
 		}

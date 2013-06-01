@@ -137,7 +137,9 @@ public:
 
 	// Handles calls to virtual functions of a NULL object
 	Builder *getBuilder(){return this ? this->getBuilderInt() : NULL;}
+	const Builder *getBuilder()const{return this ? const_cast<Entity*>(this)->getBuilderInt() : NULL;}
 	Docker *getDocker(){return this ? this->getDockerInt() : NULL;}
+	const Docker *getDocker()const{return this ? const_cast<Entity*>(this)->getDockerInt() : NULL;}
 
 	// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
@@ -175,6 +177,11 @@ protected:
 	virtual Builder *getBuilderInt();
 	virtual void addRigidBody(WarSpace *);
 	virtual void removeRigidBody(WarSpace *);
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name);
+
+	static SQInteger sqf_Entity_get(HSQUIRRELVM);
+	static SQInteger sqf_Entity_set(HSQUIRRELVM);
 	static unsigned registerEntity(ClassId name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
 

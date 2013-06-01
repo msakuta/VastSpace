@@ -58,7 +58,7 @@ public:
 	virtual void doneBuild(Entity *child);
 	virtual double getRU()const;
 	virtual bool command(EntityCommand *com);
-	virtual SQInteger sq_get(HSQUIRRELVM v, const SQChar *name);
+	virtual SQInteger sq_get(HSQUIRRELVM v, const SQChar *name)const;
 	virtual SQInteger sq_set(HSQUIRRELVM v, const SQChar *name);
 protected:
 	void init();

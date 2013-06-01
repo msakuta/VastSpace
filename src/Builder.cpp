@@ -298,7 +298,7 @@ bool Builder::command(EntityCommand *com){
 ///
 /// Note that it cannot be a native closure of Squirrel by its own.
 /// It muse be called from one.
-SQInteger Builder::sq_get(HSQUIRRELVM v, const SQChar *name){
+SQInteger Builder::sq_get(HSQUIRRELVM v, const SQChar *name)const{
 	if(!strcmp(name, _SC("ru"))){
 		sq_pushfloat(v, getRU());
 		return 1;

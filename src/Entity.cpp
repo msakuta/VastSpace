@@ -207,7 +207,7 @@ Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	return *(WeakPtr<Entity>*)up;
 }
 
-static SQInteger sqf_Entity_get(HSQUIRRELVM v){
+SQInteger Entity::sqf_Entity_get(HSQUIRRELVM v){
 	try{
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
@@ -225,8 +225,16 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 	if(!p)
 		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
 
-	if(!strcmp(wcs, _SC("race"))){
-		sq_pushinteger(v, p->race);
+		return p->sqGet(v, wcs);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
+
+SQInteger Entity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!strcmp(name, _SC("race"))){
+		sq_pushinteger(v, race);
 		return 1;
 	}
 /*	else if(!strcmp(wcs, _SC("next"))){
@@ -255,16 +263,16 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 //		sq_setinstanceup(v, -1, p->next);
 		return 1;
 	}*/
-	else if(!strcmp(wcs, _SC("dockedEntList"))){
-		Docker *d = p->getDocker();
+	else if(!strcmp(name, _SC("dockedEntList"))){
+		const Docker *d = getDocker();
 		if(!d){
 			sq_pushnull(v);
 			return 1;
 		}
-		WarField::EntityList &el = d->el;
+		const WarField::EntityList &el = d->el;
 		sq_newarray(v, el.size()); // root Entity array
 		int idx = 0;
-		for(WarField::EntityList::iterator it = el.begin(); it != el.end(); it++) if(*it){
+		for(WarField::EntityList::const_iterator it = el.begin(); it != el.end(); it++) if(*it){
 			Entity *e = *it;
 			sq_pushinteger(v, idx); // root Entity array idx
 			Entity::sq_pushobj(v, e); // root Entity array idx instance
@@ -274,9 +282,9 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		}
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("docker"))){
+	else if(!strcmp(name, _SC("docker"))){
 		// Returns a Docker object if available.
-		Docker *d = p->getDocker();
+		const Docker *d = getDocker();
 		if(!d){
 			sq_pushnull(v);
 			return 1;
@@ -285,11 +293,11 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_pushstring(v, _SC("Docker"), -1);
 		sq_get(v, -2);
 		sq_createinstance(v, -1);
-		d->sq_pushobj(v, d);
+		d->sq_pushobj(v, const_cast<Docker*>(d));
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("builder"))){
-		Builder *b = p->getBuilder();
+	else if(!strcmp(name, _SC("builder"))){
+		const Builder *b = getBuilder();
 		if(!b){
 			sq_pushnull(v);
 			return 1;
@@ -298,49 +306,45 @@ static SQInteger sqf_Entity_get(HSQUIRRELVM v){
 		sq_push(v, 1);
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("enemy"))){
+	else if(!strcmp(name, _SC("enemy"))){
 		SQUserPointer o;
-		if(!p || !p->enemy){
+		if(!this || !enemy){
 			sq_pushnull(v);
 			return 1;
 		}
-		Entity::sq_pushobj(v, p->enemy);
+		Entity::sq_pushobj(v, enemy);
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("health"))){
+	else if(!strcmp(name, _SC("health"))){
 		SQUserPointer o;
-		if(!p){
+		if(!this){
 			sq_pushnull(v);
 			return 1;
 		}
-		sq_pushfloat(v, SQFloat(p->getHealth()));
+		sq_pushfloat(v, SQFloat(getHealth()));
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("classname"))){
-		sq_pushstring(v, p->classname(), -1);
+	else if(!strcmp(name, _SC("classname"))){
+		sq_pushstring(v, classname(), -1);
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("id"))){
-		sq_pushinteger(v, p->getid());
+	else if(!strcmp(name, _SC("id"))){
+		sq_pushinteger(v, getid());
 		return 1;
 	}
 	else{
 		// Try to delegate getter method to Builder.
 		// I don't have an idea how to achieve this without knowledge of descendants.
-		if(Builder *builder = p->getBuilder()){
-			SQInteger ret = builder->sq_get(v, wcs);
+		if(const Builder *builder = getBuilder()){
+			SQInteger ret = builder->sq_get(v, name);
 			if(ret != 0)
 				return ret;
 		}
 		return SQ_ERROR;
 	}
-	}
-	catch(SQFError &e){
-		return sq_throwerror(v, e.what());
-	}
 }
 
-static SQInteger sqf_Entity_set(HSQUIRRELVM v){
+SQInteger Entity::sqf_Entity_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return SQ_ERROR;
 
@@ -353,22 +357,27 @@ static SQInteger sqf_Entity_set(HSQUIRRELVM v){
 
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	if(!strcmp(wcs, _SC("race"))){
+
+	return p->sqSet(v, wcs);
+}
+
+SQInteger Entity::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!strcmp(name, _SC("race"))){
 		SQInteger retint;
 		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
 			return SQ_ERROR;
-		p->race = int(retint);
+		race = int(retint);
 		return 0;
 	}
-	else if(!strcmp(wcs, _SC("enemy"))){
+	else if(!strcmp(name, _SC("enemy"))){
 		Entity *o = Entity::sq_refobj(v, 3);
-		p->enemy = o;
+		enemy = o;
 		return 1;
 	}
 	else{
 		// Try to delegate setter method to Builder.
-		if(Builder *builder = p->getBuilder()){
-			SQInteger ret = builder->sq_set(v, wcs);
+		if(Builder *builder = getBuilder()){
+			SQInteger ret = builder->sq_set(v, name);
 			if(ret != SQ_ERROR)
 				return ret;
 		}

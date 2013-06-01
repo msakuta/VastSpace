@@ -51,13 +51,17 @@ protected:
 	static Vec3d hudPos;
 	static double hudSize;
 	static GLuint overlayDisp;
+	static bool debugWings;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 	double getThrustStrength()const override{return thrustStrength;}
+	static SQInteger sqf_debugWings(HSQUIRRELVM);
 
 	void init();
+
+	friend EntityRegister<F15>;
 };
 
 #endif

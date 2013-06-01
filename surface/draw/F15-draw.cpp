@@ -41,72 +41,74 @@ void F15::draw(WarDraw *wd){
 
 void F15::drawtra(WarDraw *wd){
 
-	// Show forces applied to each wings
-	glBegin(GL_LINES);
-	glColor4f(1,0,0,1);
-	for(auto i = 0; i < getWings().size(); i++){
-		if(i < force.size()){
-			Vec3d org = this->pos + rot.trans(getWings()[i].pos);
-			glVertex3dv(org);
-			glVertex3dv(org + force[i] * 0.01);
-		}
-	}
-	glEnd();
-
-	// Show control surfaces directions
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glColor4f(0,0,1,1);
-	for(auto it : getWings()){
-		glPushMatrix();
-		gldTranslate3dv(pos);
-
-		gldMultQuat(rot);
-		Quatd rot = quat_u;
-		if(it.control == Wing::Control::Elevator)
-			rot = Quatd::rotation(elevator * it.sensitivity, it.axis);
-		else if(it.control == Wing::Control::Aileron)
-			rot = Quatd::rotation(aileron * it.sensitivity, it.axis);
-		else if(it.control == Wing::Control::Rudder)
-			rot = Quatd::rotation(rudder * it.sensitivity, it.axis);
-
-		// Obtain scales that makes cuboid with face areas proportional with
-		// drag force perpendicular to the faces.
-		//
-		// Suppose $x,y,z$ are the each axis length.  We know that each side
-		// face perpendicular to $x,y,z$ axes have area $X=yz, Y=zx, Z=xy$, respectively.
-		// We can, for example, erase $y$ and $z$ from the equations to obtain
-		// the length $x=\sqrt{YZ/X}$.
-		//
-		// Note that we cannot visualize sheer elements (other than diagonals) with
-		// this technique.  I don't think doing so is needed.
-		Vec3d sc;
-		for(int i = 0; i < 3; i++) // Machine-code friendly loop logic
-			sc[i] = ::sqrt((::fabs(it.aero[(i+1) % 3 * 4]) + ::fabs(it.aero[(i+2) % 3 * 4])) / ::fabs(it.aero[i * 4]));
-
-		sc *= 0.0002; // Tweak visuals
-
-		gldTranslate3dv(it.pos);
-		gldMultQuat(rot);
-		glScaled(sc[0], sc[1], sc[2]);
-
-		// Draw cuboid-like wireframe to show each area along axes.
-		glBegin(GL_QUADS);
-		static const GLfloat arr[3][4] = {
-			{-1, -1,  1, 1},
-			{ 1, -1, -1, 1},
-			{ 0,  0,  0, 0},
-		};
-		for(int i = 0; i < 3; i++){
-			int i1 = (i + 1) % 3, i2 = (i + 2) % 3;
-			for(int j = 0; j < 4; j++)
-				glVertex3f(arr[i][j], arr[i1][j], arr[i2][j]);
+	if(debugWings){
+		// Show forces applied to each wings
+		glBegin(GL_LINES);
+		glColor4f(1,0,0,1);
+		for(auto i = 0; i < getWings().size(); i++){
+			if(i < force.size()){
+				Vec3d org = this->pos + rot.trans(getWings()[i].pos);
+				glVertex3dv(org);
+				glVertex3dv(org + force[i] * 0.01);
+			}
 		}
 		glEnd();
 
-		glPopMatrix();
+		// Show control surfaces directions
+		glPushAttrib(GL_POLYGON_BIT);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glColor4f(0,0,1,1);
+		for(auto it : getWings()){
+			glPushMatrix();
+			gldTranslate3dv(pos);
+
+			gldMultQuat(rot);
+			Quatd rot = quat_u;
+			if(it.control == Wing::Control::Elevator)
+				rot = Quatd::rotation(elevator * it.sensitivity, it.axis);
+			else if(it.control == Wing::Control::Aileron)
+				rot = Quatd::rotation(aileron * it.sensitivity, it.axis);
+			else if(it.control == Wing::Control::Rudder)
+				rot = Quatd::rotation(rudder * it.sensitivity, it.axis);
+
+			// Obtain scales that makes cuboid with face areas proportional with
+			// drag force perpendicular to the faces.
+			//
+			// Suppose $x,y,z$ are the each axis length.  We know that each side
+			// face perpendicular to $x,y,z$ axes have area $X=yz, Y=zx, Z=xy$, respectively.
+			// We can, for example, erase $y$ and $z$ from the equations to obtain
+			// the length $x=\sqrt{YZ/X}$.
+			//
+			// Note that we cannot visualize sheer elements (other than diagonals) with
+			// this technique.  I don't think doing so is needed.
+			Vec3d sc;
+			for(int i = 0; i < 3; i++) // Machine-code friendly loop logic
+				sc[i] = ::sqrt((::fabs(it.aero[(i+1) % 3 * 4]) + ::fabs(it.aero[(i+2) % 3 * 4])) / ::fabs(it.aero[i * 4]));
+
+			sc *= 0.0002; // Tweak visuals
+
+			gldTranslate3dv(it.pos);
+			gldMultQuat(rot);
+			glScaled(sc[0], sc[1], sc[2]);
+
+			// Draw cuboid-like wireframe to show each area along axes.
+			glBegin(GL_QUADS);
+			static const GLfloat arr[3][4] = {
+				{-1, -1,  1, 1},
+				{ 1, -1, -1, 1},
+				{ 0,  0,  0, 0},
+			};
+			for(int i = 0; i < 3; i++){
+				int i1 = (i + 1) % 3, i2 = (i + 2) % 3;
+				for(int j = 0; j < 4; j++)
+					glVertex3f(arr[i][j], arr[i1][j], arr[i2][j]);
+			}
+			glEnd();
+
+			glPopMatrix();
+		}
+		glPopAttrib();
 	}
-	glPopAttrib();
 
 #if 0
 	const GLubyte red[4] = {255,31,31,255}, white[4] = {255,255,255,255};

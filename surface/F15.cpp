@@ -5,6 +5,7 @@
 #include "F15.h"
 #include "Bullet.h"
 #include "tefpol3d.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -46,7 +47,17 @@ static const struct color_node cnl_bluework[] = {
 static const struct color_sequence cs_bluework = DEFINE_COLSEQ(cnl_bluework, (COLOR32)-1, 0.1);
 
 
-
+/// Template instantiation for adding debugWings() static member function
+template<> bool Entity::EntityRegister<F15>::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, sq_classname(), -1);
+	sq_pushstring(v, F15::st::entityRegister.sq_classname(), -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(m_classid));
+	register_closure(v, _SC("debugWings"), F15::sqf_debugWings);
+	sq_createslot(v, -3);
+	return true;
+}
 
 Entity::EntityRegister<F15> F15::entityRegister("F15");
 
@@ -66,6 +77,15 @@ std::vector<Vec3d> F15::cameraPositions;
 Vec3d F15::hudPos;
 double F15::hudSize;
 GLuint F15::overlayDisp;
+bool F15::debugWings = false;
+
+SQInteger F15::sqf_debugWings(HSQUIRRELVM v){
+	SQBool b;
+	if(SQ_SUCCEEDED(sq_getbool(v, 2, &b)))
+		debugWings = b;
+	sq_pushbool(v, debugWings);
+	return 1;
+}
 
 
 F15::F15(Game *game) : st(game), pf(nullptr){

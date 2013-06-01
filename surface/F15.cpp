@@ -48,15 +48,8 @@ static const struct color_sequence cs_bluework = DEFINE_COLSEQ(cnl_bluework, (CO
 
 
 /// Template instantiation for adding debugWings() static member function
-template<> bool Entity::EntityRegister<F15>::sq_define(HSQUIRRELVM v){
-	sq_pushstring(v, sq_classname(), -1);
-	sq_pushstring(v, F15::st::entityRegister.sq_classname(), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, SQUserPointer(m_classid));
+template<> void Entity::EntityRegister<F15>::sq_defineInt(HSQUIRRELVM v){
 	register_closure(v, _SC("debugWings"), F15::sqf_debugWings);
-	sq_createslot(v, -3);
-	return true;
 }
 
 Entity::EntityRegister<F15> F15::entityRegister("F15");

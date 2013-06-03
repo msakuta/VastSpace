@@ -96,6 +96,8 @@ struct MotionPose{
 		int n; ///< Count of nodes in the array nodes.
 	public:
 
+		typedef int size_type;
+
 		/// Iterator type is just a pointer to the node array in the source class.
 		/// Templating const and non-const iterator saves lines.
 		template<typename T> class titerator{
@@ -163,6 +165,20 @@ struct MotionPose{
 		}
 
 		size_t size()const{return n;}
+
+		iterator erase(const_iterator position){
+			ptrdiff_t pd = position.p - nodes;
+			iterator ret = &nodes[pd];
+			::memmove(&nodes[pd], &nodes[pd + 1], (n - pd - 1) * sizeof *nodes);
+			return ret;
+		}
+
+		size_type erase(gltestp::dstring &key){
+			iterator it = find(key);
+			if(it != end())
+				erase(const_iterator(const_cast<const Node**>(it.p)));
+			return n;
+		}
 	};
 #endif
 	typedef NodeMap::iterator iterator;

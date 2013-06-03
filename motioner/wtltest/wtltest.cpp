@@ -16,7 +16,7 @@ extern "C"{
 #include <clib/amat4.h>
 #include <clib/gl/gldraw.h>
 }
-#include <cpplib/dstring.h>
+//#include <cpplib/dstring.h>
 #include <gl/gl.h>
 #include <gl/glu.h>
 

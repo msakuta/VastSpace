@@ -80,7 +80,7 @@ EXPORT int LoadMQO(std::istream &is, suf_t ***ret, char ***pname, struct Bone **
 EXPORT struct Model *LoadMQOModelSource(std::istream &is, double scale, MQOTextureCallback *tex_callback);
 
 /// \brief Easy version of LoadMQOModelSource, loads from a file specified by fname.
-EXPORT struct Model *LoadMQOModel(const char *fname, double scale, void tex_callback(suf_t *, suftex_t **));
+EXPORT struct Model *LoadMQOModel(const char *fname, double scale, MQOTextureCallback *tex_callback);
 
 EXPORT void DrawMQO_V(const struct Model*, const ysdnmv_t *);
 EXPORT void DrawMQOPose(const struct Model*, const MotionPose *);

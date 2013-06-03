@@ -4,6 +4,9 @@
 
 #pragma once
 
+typedef gltestp::dstring dstring;
+
+
 class CMainDlg : public CDialogImpl<CMainDlg>, public CUpdateUI<CMainDlg>,
 		public CMessageFilter, public CIdleHandler
 {
@@ -398,7 +401,7 @@ public:
 		if(!name || !dnmv)
 			return false;
 //		for(ysdnm_var::iterator it = dnmv->bonevar.begin; it != dnmv->bonevar.end(); i++) if(!strcmp(dnmv->bonevar[i].name, name)){
-		if(dnmv->nodes.erase(name)){
+		if(dnmv->nodes.erase(gltestp::dstring(name))){
 /*			delete[] dnmv->bonevar[i].name;
 			memmove(&dnmv->bonevar[i], &dnmv->bonevar[i+1], (dnmv->bones - i - 1) * sizeof *dnmv->bonevar);
 			dnmv->bones--;*/

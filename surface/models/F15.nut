@@ -52,8 +52,8 @@ wings <- [
 
 
 wingTips <- [
-	Vec3d(-215., 20., 10.) * modelScale,
-	Vec3d( 215., 20., 10.) * modelScale,
+	Vec3d(-215., 9., 125.) * modelScale,
+	Vec3d( 215., 9., 125.) * modelScale,
 ]
 
 gunPositions <- [

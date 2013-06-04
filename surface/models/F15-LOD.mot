@@ -1,0 +1,13 @@
+model_motion 2
+{
+	keyframe 2 10
+	{
+		"body0" 0 0 0 1 0 0 0 1
+		"body1" 0 0 0 1 0 0 0 0
+	}
+	keyframe 2 10
+	{
+		"body0" 0 0 0 1 0 0 0 0
+		"body1" 0 0 0 1 0 0 0 1
+	}
+}

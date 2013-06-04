@@ -189,7 +189,12 @@ static void draw_mqo_node(const Model *model, const MotionPose *v0, Bone *bone, 
 			apos += arot.trans(it->second.pos);
 			arot *= it->second.rot;
 			apos -= arot.trans(bone->joint);
-			avisible = it->second.visible;
+
+			// Here is the magic: applying one or more motions with visibility value 1 to the same node
+			// does not change the value of avisible.  Instead, if the value is less than 1, avisible
+			// approaches zero.  In this way, we can stack multiple motions to a model witout worrying
+			// about interference if only one of them has visibility value customized.
+			avisible += it->second.visible - 1;
 		}
 #if 0
 		if(v->fcla & (1 << srf->cla) && 2 <= srf->nst){

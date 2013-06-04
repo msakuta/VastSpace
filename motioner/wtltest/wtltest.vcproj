@@ -441,7 +441,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\mqodraw.cpp"
+				RelativePath="..\..\src\mqodraw.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"

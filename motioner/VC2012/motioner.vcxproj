@@ -198,8 +198,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\dstring.cpp" />
     <ClCompile Include="..\..\src\mqo.cpp" />
+    <ClCompile Include="..\..\src\mqodraw.cpp" />
     <ClCompile Include="..\motioner.cpp" />
-    <ClCompile Include="..\mqodraw.cpp" />
     <ClCompile Include="..\ysdnmmot.cpp" />
     <ClCompile Include="..\yssurf.cpp" />
     <ClCompile Include="..\yssurfdraw.c" />

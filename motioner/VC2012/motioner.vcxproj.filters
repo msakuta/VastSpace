@@ -1,60 +1,56 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="ソース ファイル">
+    <Filter Include="Sources">
       <UniqueIdentifier>{07a0f0a7-f9d6-44d9-81b7-c233ed838634}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm</Extensions>
     </Filter>
-    <Filter Include="ヘッダー ファイル">
+    <Filter Include="Headers">
       <UniqueIdentifier>{fde3d62a-957d-4d10-800b-d35e5874d301}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc</Extensions>
-    </Filter>
-    <Filter Include="リソース ファイル">
-      <UniqueIdentifier>{1244e20f-add3-4483-a904-ea0051542ad6}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\motioner.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mqodraw.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\ysdnmmot.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\yssurf.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\yssurfdraw.c">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\mqo.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\dstring.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mqodraw.cpp">
+      <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mqo.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\ysdnmmot.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\yssurf.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\antiglut.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\export.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\motion.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

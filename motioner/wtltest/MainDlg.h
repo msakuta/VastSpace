@@ -243,11 +243,16 @@ public:
 //		dnmv->bones = model->n;
 //		dnmv->bonevar = (ysdnm_bone_var *)malloc(model->n * sizeof(*dnmv->bonevar));
 		for(int i = 0; i < model->n; i++){
-			printf("bone %d: depth %d, parent %p\n", i, model->bones[i]->depth, model->bones[i]->parent);
-			char buf[128];
-			sprintf(buf, "%*.*c%s", model->bones[i]->depth + 1, model->bones[i]->depth + 1, ' ', model->bones[i]->name);
+//			printf("bone %d: depth %d, parent %p\n", i, model->bones[i]->depth, model->bones[i]->parent);
+
+			// Indent to indicate depth hierarchy
+			dstring dbuf;
+			for(int j = 0; j < model->bones[i]->depth; j++)
+				dbuf << ' ';
+			dbuf << model->bones[i]->name;
+
 			wchar_t wbuf[128];
-			mbstowcs(wbuf, buf, numof(wbuf));
+			mbstowcs(wbuf, dbuf, numof(wbuf));
 			m_boneList.AddString(wbuf);
 //			char *newname = new char[::strlen(model->bones[i]->name)+1];
 //			::strcpy(newname, model->bones[i]->name);

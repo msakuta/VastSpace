@@ -12,16 +12,28 @@ Model *F15::model;
 
 
 void F15::draw(WarDraw *wd){
+	static Motion *lodMotion = nullptr;
+	static Motion *aileronMotion = nullptr;
 	
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/F15.mqo");
+		lodMotion = LoadMotion(modPath() << "models/F15-LOD.mot");
+		aileronMotion = LoadMotion(modPath() << "models/F15-aileron.mot");
 
 		init.create(*openGLState);
 	}
 
 	if(model){
-		double scale = modelScale;
+		const double scale = modelScale;
+
+		// TODO: Shadow map shape and real shape can diverge
+		const double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
+		MotionPose mp[2];
+		lodMotion->interpolate(mp[0], pixels < 15 ? 0. : 10.);
+		aileronMotion->interpolate(mp[1], aileron * 10. + 10.);
+		mp[0].next = &mp[1];
+
 
 		glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);
 		glPushMatrix();
@@ -32,7 +44,7 @@ void F15::draw(WarDraw *wd){
 		}
 
 		glScaled(-scale, scale, -scale);
-		DrawMQOPose(model, nullptr);
+		DrawMQOPose(model, mp);
 		glPopAttrib();
 
 		glPopMatrix();

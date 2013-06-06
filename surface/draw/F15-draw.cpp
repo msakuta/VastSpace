@@ -2,6 +2,7 @@
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
+#include "glw/glwindow.h"
 
 extern "C"{
 #include "clib/gl/gldraw.h"
@@ -783,6 +784,14 @@ void F15::drawCockpit(WarDraw *wd){
 /*		gldPolyPrintf("%lg m/s", velo * 1e3);*/
 		gldPolyPrintf("%lg", 1944. * velo);
 		glPopMatrix();
+
+		if(gear){
+			glPushMatrix();
+			glTranslated(-.7, -.7, 0.);
+			glScaled(.005, -.005, .1);
+			glwPutTextureString("GEAR", 12);
+			glPopMatrix();
+		}
 #endif
 
 		/* climb */

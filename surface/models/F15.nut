@@ -10,7 +10,7 @@ maxhealth <- 500.;
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(13.05, 2.525, 19.43) * 0.5e-3],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(13.05, 5., 19.43) * 0.5e-3],
 ];
 
 // Thrust power

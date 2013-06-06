@@ -1730,7 +1730,26 @@ Entity::Props Aerial::props()const{
 	return ret;
 }
 
+SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("gear"))){
+		sq_pushbool(v, gear);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
 
+SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("gear"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
+		gear = b;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
 
 
 static void find_wingtips(const char *name, struct afterburner_hint *hint){

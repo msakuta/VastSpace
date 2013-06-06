@@ -16,6 +16,7 @@ void F15::draw(WarDraw *wd){
 	static Motion *aileronMotion = nullptr;
 	static Motion *elevatorMotion = nullptr;
 	static Motion *rudderMotion = nullptr;
+	static Motion *gearMotion = nullptr;
 	
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
@@ -24,6 +25,7 @@ void F15::draw(WarDraw *wd){
 		aileronMotion = LoadMotion(modPath() << "models/F15-aileron.mot");
 		elevatorMotion = LoadMotion(modPath() << "models/F15-elevator.mot");
 		rudderMotion = LoadMotion(modPath() << "models/F15-rudder.mot");
+		gearMotion = LoadMotion(modPath() << "models/F15-gear.mot");
 
 		init.create(*openGLState);
 	}
@@ -33,14 +35,16 @@ void F15::draw(WarDraw *wd){
 
 		// TODO: Shadow map shape and real shape can diverge
 		const double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
-		MotionPose mp[4];
+		MotionPose mp[5];
 		lodMotion->interpolate(mp[0], pixels < 15 ? 0. : 10.);
 		aileronMotion->interpolate(mp[1], aileron * 10. + 10.);
 		elevatorMotion->interpolate(mp[2], elevator * 10. + 10.);
 		rudderMotion->interpolate(mp[3], rudder * 10. + 10.);
+		gearMotion->interpolate(mp[4], gearphase * 10.);
 		mp[0].next = &mp[1];
 		mp[1].next = &mp[2];
 		mp[2].next = &mp[3];
+		mp[3].next = &mp[4];
 
 
 		glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);

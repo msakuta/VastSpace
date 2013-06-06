@@ -41,7 +41,7 @@ protected:
 	double cooldown;
 	std::vector<Vec3d> force;
 	Vec3d sight;
-	char muzzle, brk, afterburner, navlight, gear;
+	bool muzzle, brk, afterburner, navlight, gear;
 	int missiles;
 	int weapon;
 //	sufdecal_t *sd;
@@ -65,6 +65,8 @@ protected:
 	class WingProcess;
 	class Vec3dListProcess;
 
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 	virtual WingList &getWings()const = 0;
 	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual bool buildBody();

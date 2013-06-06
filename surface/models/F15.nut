@@ -10,7 +10,7 @@ maxhealth <- 500.;
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(13.05, 5.63, 19.43) * 0.5e-3],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(13.05, 2.525, 19.43) * 0.5e-3],
 ];
 
 // Thrust power
@@ -68,8 +68,8 @@ cameraPositions <- [
 	Vec3d(0., 30 * modelScale, -150 * modelScale),
 	Vec3d(0., 0.0075, 0.025),
 	Vec3d(0.020, 0.007, 0.050),
-	Vec3d(0.010, 0.007, -0.010),
-	Vec3d(0.010, 0.007, -0.010),
+	Vec3d(0.004, -0.0015, 0.010),
+	Vec3d(0.004, -0.0015, 0.010),
 	Vec3d(0.004, 0.0, 0.0),
 	Vec3d(-0.004, 0.0, 0.0),
 ]
@@ -101,4 +101,25 @@ function drawOverlay(){
 	glVertex2d( 0.0, -0.2);
 	glVertex2d(-0.5, -0.2);
 	glEnd();
+}
+
+if(isClient()){
+	register_console_command("gear", function(){
+		if(player.controlled)
+			player.controlled.gear = !player.controlled.gear;
+	});
+
+
+	beginControl["F15"] <- function (){
+		if("print" in this)
+			print("F15::beginControl");
+		cmd("pushbind");
+		cmd("bind g gear");
+	}
+
+	endControl["F15"] <- function (){
+		if("print" in this)
+			print("F15::endControl");
+		cmd("popbind");
+	}
 }

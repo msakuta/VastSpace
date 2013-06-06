@@ -1123,8 +1123,7 @@ void Aerial::anim(double dt){
 	Vec3d accel = w->accel(pos, velo);
 	velo += accel * dt;
 
-//	double air = w->atmospheric_pressure(w, &pt->pos)/*exp(-pt->pos[1] / 10.)*/;
-	double air = exp(-pos[1] / 10.);
+	double air = w->atmosphericPressure(pos);
 
 	Mat4d mat;
 	transform(mat);

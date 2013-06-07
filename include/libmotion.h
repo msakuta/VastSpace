@@ -167,7 +167,7 @@ struct MotionPose{
 		size_t size()const{return n;}
 
 		iterator erase(const_iterator position){
-			ptrdiff_t pd = position.p - nodes;
+			ptrdiff_t pd = position.p - const_cast<const Node**>(nodes);
 			iterator ret = &nodes[pd];
 			::memmove(&nodes[pd], &nodes[pd + 1], (n - pd - 1) * sizeof *nodes);
 			return ret;

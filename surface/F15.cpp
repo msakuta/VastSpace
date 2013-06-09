@@ -236,6 +236,18 @@ void F15::anim(double dt){
 //		MoveTefpol3D(((fly_t *)pt)->pf, pos, avec3_000, cs_blueburn.t, 0);
 	}
 
+	if(!controller){
+		// Automatic stabilizer (Auto Pilot)
+		Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
+		double roll = -x_along_y.sp(mat.vec3(1)) * 0.25 + mat.vec3(2).sp(omg); // P + D
+		aileron = rangein(aileron + roll * dt, -1, 1);
+
+		double trim = mat.vec3(2)[1] + velo[1]; // P + D
+		elevator = rangein(elevator + trim * dt, -1, 1);
+
+		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
+	}
+
 
 	st::anim(dt);
 }

@@ -785,6 +785,15 @@ void F15::drawCockpit(WarDraw *wd){
 		gldPolyPrintf("%lg", 1944. * velo);
 		glPopMatrix();
 
+		if(!controller){
+			const double fontSize = 0.005;
+			glPushMatrix();
+			glTranslated(-fontSize * glwGetSizeTextureString("AUTO PILOT", 12) / 2., 0, 0);
+			glScaled(fontSize, -fontSize, .1);
+			glwPutTextureString("AUTO PILOT", 12);
+			glPopMatrix();
+		}
+
 		if(gear){
 			glPushMatrix();
 			glTranslated(-.7, -.7, 0.);

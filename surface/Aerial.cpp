@@ -32,12 +32,12 @@ extern "C"{
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
 static const struct color_node cnl_firetrail[] = {
-	{0.05, COLOR32RGBA(255, 255, 212, 0)},
-	{0.05, COLOR32RGBA(255, 191, 191, 255)},
-	{0.4, COLOR32RGBA(111, 111, 111, 255)},
-	{0.3, COLOR32RGBA(63, 63, 63, 127)},
+	{0.1, COLOR32RGBA(255, 255, 212, 0)},
+	{0.1, COLOR32RGBA(255, 191, 191, 255)},
+	{1.9, COLOR32RGBA(111, 111, 111, 255)},
+	{1.9, COLOR32RGBA(63, 63, 63, 127)},
 };
-const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
+const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, 4.0);
 
 
 
@@ -1518,6 +1518,8 @@ void Aerial::anim(double dt){
 		}
 
 	}
+	else
+		throttle = approach(throttle, 0, dt, 0);
 	this->inputs.press = 0;
 	this->inputs.change = 0;
 

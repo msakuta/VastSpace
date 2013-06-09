@@ -236,7 +236,7 @@ void F15::anim(double dt){
 //		MoveTefpol3D(((fly_t *)pt)->pf, pos, avec3_000, cs_blueburn.t, 0);
 	}
 
-	if(!controller){
+	if(0 < health && !controller){
 		// Automatic stabilizer (Auto Pilot)
 		Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
 		double roll = -x_along_y.sp(mat.vec3(1)) * 0.25 + mat.vec3(2).sp(omg); // P + D
@@ -383,6 +383,8 @@ int F15::takedamage(double damage, int hitpart){
 				COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 		TefpolList *tepl = w->getTefpol3d();
+		if(pf)
+			pf->immobilize();
 		pf = tepl->addTefpolMovable(this->pos, this->velo, vec3_000, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
 	}

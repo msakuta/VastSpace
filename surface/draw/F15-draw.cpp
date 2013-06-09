@@ -647,8 +647,6 @@ void F15::drawCockpit(WarDraw *wd){
 //		GLfloat mat_diffuse[] = { .5, .5, .5, .2 };
 //		GLfloat mat_ambient_color[] = { 0.5, 0.5, 0.5, .2 };
 		Mat4d m;
-		double d, velo;
-		int i;
 
 		double air = w->atmosphericPressure(this->pos)/*exp(-pt->pos[1] / 10.)*/;
 
@@ -687,9 +685,11 @@ void F15::drawCockpit(WarDraw *wd){
 		glVertex2d(0., .05);
 		glEnd();
 
-		/* director */
-/*		for(i = 0; i < 24; i++){
-			d = fmod(-pt->pyr[1] + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
+		// Direction indicator (compass)
+		const Vec3d heading = rot.trans(Vec3d(0, 0, -1));
+		double yaw = atan2(heading[0], heading[2]);
+		for(int i = 0; i < 24; i++){
+			double d = fmod(yaw + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
 			if(-.8 < d && d < .8){
 				glBegin(GL_LINES);
 				glVertex2d(d, .8);
@@ -709,7 +709,7 @@ void F15::drawCockpit(WarDraw *wd){
 					glPopMatrix();
 				}
 			}
-		}*/
+		}
 
 		/* pressure/height gauge */
 		glBegin(GL_LINE_LOOP);
@@ -736,7 +736,7 @@ void F15::drawCockpit(WarDraw *wd){
 			glBegin(GL_LINES);
 			glVertex2d(.8, .3);
 			glVertex2d(.8, height < .05 ? -height * .3 / .05 : -.3);
-			for(d = MAX(.01 - fmod(height, .01), .05 - height) - .05; d < .05; d += .01){
+			for(double d = MAX(.01 - fmod(height, .01), .05 - height) - .05; d < .05; d += .01){
 				glVertex2d(.85, d * .3 / .05);
 				glVertex2d(.8, d * .3 / .05);
 			}
@@ -758,10 +758,10 @@ void F15::drawCockpit(WarDraw *wd){
 		glPushMatrix();
 		glTranslated(-.2, 0., 0.);
 		glBegin(GL_LINES);
-		velo = VECLEN(this->velo);
+		double velo = this->velo.len();
 		glVertex2d(-.5, .3);
 		glVertex2d(-.5, velo < .05 ? -velo * .3 / .05 : -.3);
-		for(d = MAX(.01 - fmod(velo, .01), .05 - velo) - .05; d < .05; d += .01){
+		for(double d = MAX(.01 - fmod(velo, .01), .05 - velo) - .05; d < .05; d += .01){
 			glVertex2d(-.55, d * .3 / .05);
 			glVertex2d(-.5, d * .3 / .05);
 		}

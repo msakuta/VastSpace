@@ -691,6 +691,37 @@ static SQInteger sqf_Quatd_rotation(HSQUIRRELVM v){
 	}
 }
 
+/// \brief Rotates a Quaternion with given angle and axis. Shorthand for * Quatd.rotation().
+static SQInteger sqf_Quatd_rotate(HSQUIRRELVM v){
+	try{
+		SQQuatd sq;
+		sq.getValue(v, 1);
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 2, &f)))
+			return sq_throwerror(v, _SC("Incompatible first argument type for Quatd::rotate()"));
+
+		SQVec3d q;
+		SQQuatd r;
+		if(OT_INSTANCE == sq_gettype(v, 3)){
+			q.getValue(v, 3);
+		}
+		else{
+			// Allow expanded notation; we permit this form for C++, so why not for scripts?
+			for(int i = 0; i < 3; i++){
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3 + i, &f)))
+					return sq_throwerror(v, gltestp::dstring("Incompatible ") << (i + 2) << "th argument type for Quatd::rotate()");
+				q.value[i] = f;
+			}
+		}
+		r.value = sq.value.rotate(f, q.value);
+		r.push(v);
+		return 1;
+	}
+	catch(SQIntrinsicError &e){
+		return sq_throwerror(v, e.what());
+	}
+}
 
 
 /// \return Translated string. It is dynamic string because the Squirrel VM does not promise
@@ -1061,6 +1092,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_closure(v, _SC("norm"), sqf_unary<Quatd, &Quatd::norm>);
 	register_closure(v, _SC("direction"), sqf_Quatd_direction);
 	register_closure(v, _SC("rotation"), sqf_Quatd_rotation);
+	register_closure(v, _SC("rotate"), sqf_Quatd_rotate);
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(x * x + y * y + z * z + w * w);"));
 	sq_createslot(v, -3);
 

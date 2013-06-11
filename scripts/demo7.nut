@@ -36,5 +36,5 @@ roll <- @() dofile("scripts/roll.nut")
 
 register_console_command("roll", roll)
 
-roll()
+//roll()
 

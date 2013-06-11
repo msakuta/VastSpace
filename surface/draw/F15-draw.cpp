@@ -804,12 +804,9 @@ void F15::drawCockpit(WarDraw *wd){
 		}
 
 		const double pitch = -asin(heading[1]);
-		Quatd qyaw = rot.rotate(-yaw * 2.,0,1,0);
-		Mat4d myaw = qyaw.tomat4();
-		Quatd qpitch = qyaw.rotate(-pitch,1,0,0);
-		Mat4d mpitch = qpitch.tomat4();
-		Vec3d xhat = qpitch.trans(Vec3d(1,0,0));
-		double roll = atan2(xhat[1], xhat[0]);
+		const Quatd &q = rot;
+		double roll = atan2(-2 * (q.re() * q.k() + q.i() * q.j()), 1 - 2 * (q.k() * q.k() + q.i() * q.i()));
+#if 0 // Quaternion to Euler angles (Roll) conversion experiment code.
 		try{
 			HSQUIRRELVM v = game->sqvm;
 			StackReserver sr(v);
@@ -830,6 +827,7 @@ void F15::drawCockpit(WarDraw *wd){
 		catch(SQFError &e){
 			CmdPrintf(e.what());
 		}
+#endif
 
 		{
 			glPushMatrix();
@@ -839,7 +837,7 @@ void F15::drawCockpit(WarDraw *wd){
 			glPopMatrix();
 		}
 
-		/* climb */
+		// Roll and Pitch indicator
 		glRotated(deg_per_rad * (roll), 0., 0., 1.);
 		for(int i = -12; i <= 12; i++){
 			double d = 2. * (fmod(pitch + i * 2. * M_PI / 48. + M_PI / 2., M_PI * 2.) - M_PI / 2.);

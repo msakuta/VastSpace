@@ -29,3 +29,12 @@ register_console_command("reset", reset);
 
 reset();
 
+yawscale <- 1.;
+pitchscale <- -1;
+
+roll <- @() dofile("scripts/roll.nut")
+
+register_console_command("roll", roll)
+
+roll()
+

@@ -3,6 +3,8 @@
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 #include "glw/glwindow.h"
+#include "cmd.h"
+#include "sqadapt.h"
 
 extern "C"{
 #include "clib/gl/gldraw.h"
@@ -687,7 +689,7 @@ void F15::drawCockpit(WarDraw *wd){
 
 		// Direction indicator (compass)
 		const Vec3d heading = rot.trans(Vec3d(0, 0, -1));
-		double yaw = atan2(heading[0], heading[2]);
+		double yaw = atan2(-heading[0], -heading[2]);
 		for(int i = 0; i < 24; i++){
 			double d = fmod(yaw + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
 			if(-.8 < d && d < .8){
@@ -753,7 +755,6 @@ void F15::drawCockpit(WarDraw *wd){
 		glRasterPos3d(.45, .5 + 0. / mi, -1.);
 		gldprintf("%lg feet", pt->pos[1] / 30.48e-5);*/
 
-#if 1
 		/* velocity */
 		glPushMatrix();
 		glTranslated(-.2, 0., 0.);
@@ -801,12 +802,47 @@ void F15::drawCockpit(WarDraw *wd){
 			glwPutTextureString("GEAR", 12);
 			glPopMatrix();
 		}
-#endif
+
+		const double pitch = -asin(heading[1]);
+		Quatd qyaw = rot.rotate(-yaw * 2.,0,1,0);
+		Mat4d myaw = qyaw.tomat4();
+		Quatd qpitch = qyaw.rotate(-pitch,1,0,0);
+		Mat4d mpitch = qpitch.tomat4();
+		Vec3d xhat = qpitch.trans(Vec3d(1,0,0));
+		double roll = atan2(xhat[1], xhat[0]);
+		try{
+			HSQUIRRELVM v = game->sqvm;
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("getRoll"), -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				throw SQFError("No getRoll");
+			sq_pushroottable(v);
+			SQQuatd sq = rot;
+			sq.push(v);
+			if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+				throw SQFError("Call fail");
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+				throw SQFError("Not convertible to float");
+			roll = f;
+		}
+		catch(SQFError &e){
+			CmdPrintf(e.what());
+		}
+
+		{
+			glPushMatrix();
+			glTranslated(-.7, -.8, 0.);
+			glScaled(.005, -.005, .1);
+			glwPutTextureString(gltestp::dstring("Y") << yaw << " P" << pitch, 12);
+			glPopMatrix();
+		}
 
 		/* climb */
-/*		glRotated(deg_per_rad * pt->pyr[2], 0., 0., 1.);
-		for(i = -12; i <= 12; i++){
-			d = 2. * (fmod(pt->pyr[0] + i * 2. * M_PI / 48. + M_PI / 2., M_PI * 2.) - M_PI / 2.);
+		glRotated(deg_per_rad * (roll), 0., 0., 1.);
+		for(int i = -12; i <= 12; i++){
+			double d = 2. * (fmod(pitch + i * 2. * M_PI / 48. + M_PI / 2., M_PI * 2.) - M_PI / 2.);
 			if(-.8 < d && d < .8){
 				glBegin(GL_LINES);
 				glVertex2d(-.4, d);
@@ -828,7 +864,7 @@ void F15::drawCockpit(WarDraw *wd){
 					glPopMatrix();
 				}
 			}
-		}*/
+		}
 
 		glPopAttrib();
 		glPopMatrix();

@@ -4,6 +4,7 @@
 
 #include "F15.h"
 #include "Bullet.h"
+#include "Missile.h"
 #include "tefpol3d.h"
 #include "sqadapt.h"
 extern "C"{
@@ -269,7 +270,22 @@ void F15::shoot(double dt){
 	else*/
 	Mat4d mat;
 	transform(mat);
-	while(this->cooldown < dt){
+	if(this->weapon){
+		static const Vec3d fly_hardpoint[2] = {Vec3d(.005, .0005, -.000), Vec3d(-.005, .0005, -.000)};
+		// Missiles are so precious that semi-automatic triggering is more desirable.
+		// Also, do not try to shoot if there's no enemy locked on.
+		while(0 < missiles && this->cooldown < dt && enemy){
+			Missile *m = new Missile(this, 30., 500., enemy);
+			w->addent(m);
+			Vec3d v = mat.vp3(Vec3d(fly_hardpoint[missiles % 2]));
+			m->setPosition(&v, &this->rot, &this->velo, &this->omg);
+			this->missiles--;
+			this->cooldown += 2.0;
+//			playWAVEFile("missile.wav");
+//			playWave3D("missile.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime + p->cooldown);
+		}
+	}
+	else while(this->cooldown < dt){
 		int i = 0;
 		for(auto &it : gunPositions){
 			Bullet *pb = new Bullet(this, 2., 5.);

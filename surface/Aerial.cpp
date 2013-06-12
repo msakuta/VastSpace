@@ -1003,31 +1003,6 @@ void Aerial::control(const input_t *inputs, double dt){
 		cooldown -= dt;
 	if(inputs->press & (PL_LCLICK | PL_ENTER)){
 		shoot(dt);
-#if 0
-		else if(0 < missiles && cooldown < dt){
-			struct hellfire *pb;
-			amat4_t rot;
-			avec3_t v, pos;
-		/*			VECCPY(pb->pos, pt->pos);*/
-			quat2mat(rot, pt->rot);
-/*			VECCPY(pb->st.velo, pt->velo);*/
-/*			MAT4DVP3(v, rot, v0);
-			VECADDIN(pb->st.velo, v);*/
-			MAT4DVP3(v, rot, fly_hardpoint[p->missiles % 2]);
-			VECADD(pos, pt->pos, v);
-/*			pb = add_sidewinder(w, pos, pt->enemy, pt, pt->velo, pt->rot, 150.);*/
-			pb = add_aim9(w, pos);
-			pb->st.owner = pt;
-			QUATCPY(pb->st.rot, pt->rot);
-			VECCPY(pb->st.velo, pt->velo);
-			pb->target = pt->enemy;
-			p->missiles--;
-			pt->shoots++;
-		//	playWAVEFile("missile.wav");
-			playWave3D("missile.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime + p->cooldown);
-			p->cooldown += 2.;
-		}
-#endif
 	}
 	if(inputs->press & inputs->change & (PL_G))
 		gear = !gear;

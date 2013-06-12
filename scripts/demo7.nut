@@ -16,11 +16,12 @@ player.viewdist = 0.25;
 
 function reset(){
 	local z = 0.;
-	foreach(e in [f15, f15_2]){
+	foreach(e in [f15, f15_2]) if(e.alive){
 		e.setpos(Vec3d(0., 4., z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));
 		e.setomg(Vec3d(0, 0, 0));
+		e.health = e.maxhealth;
 		z -= 0.5;
 	}
 };

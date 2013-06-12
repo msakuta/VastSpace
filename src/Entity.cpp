@@ -324,6 +324,15 @@ SQInteger Entity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, SQFloat(getHealth()));
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("maxhealth"))){
+		SQUserPointer o;
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushfloat(v, SQFloat(getMaxHealth()));
+		return 1;
+	}
 	else if(!strcmp(name, _SC("classname"))){
 		sq_pushstring(v, classname(), -1);
 		return 1;
@@ -372,6 +381,13 @@ SQInteger Entity::sqSet(HSQUIRRELVM v, const SQChar *name){
 	else if(!strcmp(name, _SC("enemy"))){
 		Entity *o = Entity::sq_refobj(v, 3);
 		enemy = o;
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("health"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, _SC("Non-arithmetic value is being assigned to health"));
+		health = f;
 		return 1;
 	}
 	else{

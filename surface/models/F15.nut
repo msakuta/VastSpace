@@ -115,11 +115,13 @@ if(isClient()){
 			print("F15::beginControl");
 		cmd("pushbind");
 		cmd("bind g gear");
+		cmd("r_windows 0");
 	}
 
 	endControl["F15"] <- function (){
 		if("print" in this)
 			print("F15::endControl");
 		cmd("popbind");
+		cmd("r_windows 1");
 	}
 }

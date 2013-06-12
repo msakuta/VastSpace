@@ -711,6 +711,9 @@ static void cswardraw(const Viewer *vw, CoordSys *cs, void (CoordSys::*method)(c
 }
 
 
+/// Flag if GLwindow system is drawn at all.
+static int enableGLwindow = 1;
+
 
 void Game::draw_func(Viewer &vw, double dt){
 	int	glerr = glGetError();
@@ -908,7 +911,7 @@ void Game::draw_func(Viewer &vw, double dt){
 	glPopAttrib();
 	glPopMatrix();
 
-	if(1){
+	if(enableGLwindow){
 		int minix = 0;
 		glPushAttrib(GL_POLYGON_BIT);
 		glEnable(GL_BLEND);
@@ -2479,6 +2482,7 @@ int main(int argc, char *argv[])
 	CvarAdd("r_shadow_cull_front", &r_shadow_cull_front, cvar_int);
 	CvarAdd("r_shadow_slope_scaled_bias", &r_shadow_slope_scaled_bias, cvar_double);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
+	CvarAdd("r_windows", &enableGLwindow, cvar_int);
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");

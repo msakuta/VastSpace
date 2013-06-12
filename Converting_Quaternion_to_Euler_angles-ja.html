@@ -28,65 +28,69 @@ MathJax.Hub.Config({
 
 <a href="index.html">Go back to main page</a>
 
-<h1> Overview </h1>
+<h1> 概要 </h1>
 
-This article discuss how to convert a quaternion to a set of Euler angles.
-This mathematics is not trivial that I can forget the rationale if I don't record it.
+この記事では四元数をオイラー角へ変換する方法を論じます。
+この数学はトリビアルではなく、記録しておかないと忘れそうです。
 
-<h1> Theory </h1>
+<h1> 理論 </h1>
 
-<p>Suppose we have a quaternion $\mathbf{q}$ having element $q_i$ representing a 3-dimensional orientation.
-The quaternion can be expressed in complex-like form:</p>
+<p>四元数 $\mathbf{q}$ が要素 $q_i$ を持ち、3次元の回転を表しているとしましょう。
+この四元数は複素数に似た形で表せます。
+</p>
 
 $$\mathbf{q} = q_0 + q_1 \mathbf{i} + q_2 \mathbf{j} + q_3 \mathbf{k}$$
 
-<p>Another form to express an orientation is to use Euler angles $(\phi, \theta, \psi)$.
-The Euler angles are often called pitch, yaw and roll in flight dynamics.</p>
+<p>回転を表すほかの形式としては、オイラー角 $(\phi, \theta, \psi)$ があります。
+オイラー角は航空力学の分野ではピッチ、ヨー、ロールと呼ばれることが多いです。
+</p>
 
-<p>A quaternion and a set of Euler angles are equivalent.
-You can convert Euler angles to a quaternion by making quaternions for each axis angles and then obtaining product of
-these quaternions, but the other way around is not as obvious.</p>
+<p>単位四元数とオイラー角は等価です。
+オイラー角から四元数へは、各軸の回転を表す四元数を作って積をとることで変換できますが、逆はそれほど自明ではありません。
+</p>
 
-<p>The problem is that there are multiple conventions for Euler angles' definition, so we cannot easily copy and paste from
-some random source on the Internet.  Instead, we need to intrinsically understand how to convert one another.
-But there's one article whose purpose is close to ours:</p>
+<p>問題は、オイラー角の定義の仕方が複数存在するため、インターネット上のそこらのソースをコピペしても使えないということです。
+その代わりに、我々は変換の内容を本質的に理解しなければなりません。
+ただし、我々の目的に似たような記事が一つありました：
+</p>
 
 <p><a href="http://graphics.wikia.com/wiki/Conversion_between_quaternions_and_Euler_angles">
 http://graphics.wikia.com/wiki/Conversion_between_quaternions_and_Euler_angles
 </a></p>
 
-<p>Unfortunately, the article's definition for axes is different from ours.</p>
+<p>残念ながら、この記事の座標系の定義は我々のものと異なります。
+</p>
 
-<p>In our case, Z-axis points <em>backward</em>, X-axis to the right and Y-axis upward.
-This convention is chosen because it forms Cartesian coordinates if we were to look from the vehicle's view, and
-we (and OpenGL) prefer right hand system.</p>
+<p>我々のケースでは、Z軸が'''後ろ'''を指し、X軸が右を指し、Y軸が上を指します。
+この規約は、機体から見たときデカルト座標系に見えるのと、我々（およびOpenGL）が右手系を好んでいるために選ばれました。
+</p>
 
-<p>Thus, our definitions are:</p>
+<p>したがって、我々の定義では</p>
 
 <ul>
-<li> Roll - $\phi$: rotation about the Z-axis
-<li> Pitch - $\theta$: rotation about the X-axis
-<li> Yaw - $\psi$: rotation about the Y-axis
+<li> ロール - $\phi$: Z軸周りの回転
+<li> ピッチ - $\theta$: X軸周りの回転
+<li> ヨー - $\psi$: Y軸周りの回転
 </ul>
 
-<p>Rotation order is the same as the reference, i.e. in the order yaw, pitch, roll.</p>
+<p>回転の順番は参考文献と同じです。つまりヨー、ピッチ、ロールの順です。</p>
 
-<p>Rotation quaternions for each angle are defined as below:</p>
+<p>各軸の周りの回転は次のように定義されます。</p>
 
 $$ \mathbf{q_\phi} = \cos(\phi/2) + \sin(\phi/2) \mathbf{k} $$
 $$ \mathbf{q_\theta} = \cos(\theta/2) + \sin(\theta/2) \mathbf{i} $$
 $$ \mathbf{q_\psi} = \cos(\psi/2) + \sin(\psi/2) \mathbf{j} $$
 
 
-<h2> Rotation matrices </h2>
-Rotation matrix corresponding to the quaternion $\mathbf{q}$ is the same as the reference.
+<h2> 回転行列 </h2>
+回転を表す四元数 $\mathbf{q}$ は、参考文献と同じく次のように得られます。
 $$ \begin{bmatrix}
  1- 2(q_2^2 + q_3^2) &  2(q_1 q_2 - q_0 q_3) &  2(q_0 q_2 + q_1 q_3) \\
 2(q_1 q_2 + q_0 q_3) & 1 - 2(q_1^2 + q_3^2)  &  2(q_2 q_3 - q_0 q_1) \\
 2(q_1 q_3 - q_0 q_2) & 2( q_0 q_1 + q_2 q_3) &  1 - 2(q_1^2 + q_2^2)
 \end{bmatrix} $$
 
-The rotation matrices for each of Euler angles $(\phi, \theta, \psi)$ are
+オイラー角 $(\phi, \theta, \psi)$ のそれぞれの回転は
 
 $$ \mathbf{R}_\phi =
 \begin{bmatrix}
@@ -109,7 +113,7 @@ $$ \mathbf{R}_\psi =
 -\sin\psi & 0 & \cos\psi \\
 \end{bmatrix} $$
 
-Product of those 3 matrices yields
+この3行列の積をとると
 
 $$ \mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi =
 \begin{bmatrix}
@@ -119,7 +123,7 @@ $$ \mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi =
 \end{bmatrix}
 $$
 
-$\mathbf{q}$ and $\mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi$ must be equal, so we can compare the elements to obtain the relationships
+$\mathbf{q}$ と $\mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi$ は等しくなければならないので、行列の要素を比較して次を得ます。
 
 $$
 \theta = \sin^{-1} \{2(q_0 q_1 + q_2 q_3)\} \\
@@ -131,7 +135,7 @@ $$
 <hr>
 
 <p>
-<a href="Converting_Quaternion_to_Euler_angles-ja.html">日本語</a>
+<a href="Converting_Quaternion_to_Euler_angles.html">English</a>
 </p>
 
 

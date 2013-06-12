@@ -687,9 +687,18 @@ void F15::drawCockpit(WarDraw *wd){
 		glVertex2d(0., .05);
 		glEnd();
 
+		// Calculating heading vector for obtaining pitch and yaw works and intuitive, but it requires extra arithmetic cost
+		// compared to the theory's direct solution.
+//		const Vec3d heading = rot.trans(Vec3d(0, 0, -1));
+//		double yaw = atan2(-heading[0], -heading[2]);
+
+		const Quatd &q = rot;
+
+		// According to the theory, yaw should be -atan2(2 * (q.i() * q.k() - q.re() * q.j()), 1 - 2 * (q.i() * q.i() + q.j() * q.j())).
+		// I don't know why this works this way.
+		const double yaw = atan2(2 * (q.i() * q.k() + q.re() * q.j()), 1 - 2 * (q.i() * q.i() + q.j() * q.j()));
+
 		// Direction indicator (compass)
-		const Vec3d heading = rot.trans(Vec3d(0, 0, -1));
-		double yaw = atan2(-heading[0], -heading[2]);
 		for(int i = 0; i < 24; i++){
 			double d = fmod(yaw + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
 			if(-.8 < d && d < .8){
@@ -803,9 +812,11 @@ void F15::drawCockpit(WarDraw *wd){
 			glPopMatrix();
 		}
 
-		const double pitch = -asin(heading[1]);
-		const Quatd &q = rot;
-		double roll = atan2(-2 * (q.re() * q.k() + q.i() * q.j()), 1 - 2 * (q.k() * q.k() + q.i() * q.i()));
+//		const double pitch = -asin(heading[1]);
+		// According to the theory, pitch should be asin(2*(q.re() * q.i() + q.j() * q.k())).
+		// I don't know why this works this way.
+		const double pitch = -asin(2*(q.re() * q.i() - q.j() * q.k()));
+		const double roll = atan2(-2 * (q.re() * q.k() + q.i() * q.j()), 1 - 2 * (q.k() * q.k() + q.i() * q.i()));
 #if 0 // Quaternion to Euler angles (Roll) conversion experiment code.
 		try{
 			HSQUIRRELVM v = game->sqvm;

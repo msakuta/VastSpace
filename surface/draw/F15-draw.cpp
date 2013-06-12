@@ -841,18 +841,21 @@ void F15::drawCockpit(WarDraw *wd){
 #endif
 
 		// Sort of local function
-		auto readOut = [](const char *s, double x, double y){
+		auto readOut = [](const char *s, double x, double y, double scale){
 			glPushMatrix();
 			glTranslated(x, y, 0.);
-			glScaled(.005, -.005, .1);
+			glScaled(scale, -scale, .1);
 			glwPutTextureString(s, 12);
 			glPopMatrix();
 		};
 
 		// Print readouts for yaw, pitch and roll.
-		readOut(gltestp::dstring("Y") << yaw, -.7, -.8);
-		readOut(gltestp::dstring("P") << pitch, -.7, -.85);
-		readOut(gltestp::dstring("R") << roll, -.7, -.90);
+		readOut(gltestp::dstring("Y") << yaw, -.7, -.8, 0.005);
+		readOut(gltestp::dstring("P") << pitch, -.7, -.85, 0.005);
+		readOut(gltestp::dstring("R") << roll, -.7, -.90, 0.005);
+
+		readOut(gltestp::dstring("ARMED: ") << (weapon ? "Missile" : "M61A1 VULCAN"), 0.2, -0.75, 0.0035);
+		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
 
 		// Roll and Pitch indicator
 		glRotated(deg_per_rad * (roll), 0., 0., 1.);

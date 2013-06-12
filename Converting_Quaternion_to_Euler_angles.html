@@ -111,8 +111,21 @@ $$ \mathbf{R}_\psi =
 
 Product of those 3 matrices yields
 
-$$ \mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi = $$
+$$ \mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi =
+\begin{bmatrix}
+\cos\phi \cos\psi - \sin\phi \cos\theta \sin\psi & -\sin\phi \cos\theta & \cos\phi \sin\psi + \sin\phi \sin\theta \cos\psi \\
+\sin\phi \cos\psi + \cos\phi \sin\theta \sin\phi &  \cos\phi \cos\theta & \sin\phi \sin\psi - \cos\phi \sin\theta \cos\psi \\
+-\cos\theta \sin\psi & \sin\theta & \cos\theta \cos\psi \\
+\end{bmatrix}
+$$
 
+$\mathbf{q}$ and $\mathbf{R}_\psi \mathbf{R}_\theta \mathbf{R}_\phi$ must be equal, so we can compare the elements to obtain the relationships
+
+$$
+\theta = \sin^{-1} \{2(q_0 q_1 + q_2 q_3)\} \\
+\phi = \tan^{-1} \left\{ -\frac{2(q_1 q_2 - q_0 q_3)}{1 - 2({q_1}^2 + {q_3}^2)} \right\} \\
+\psi = \tan^{-1} \left\{ -\frac{2(q_1 q_3 - q_0 q_2)}{1 - 2({q_1}^2 + {q_2}^2)} \right\}
+$$
 
 </body>
 </html>

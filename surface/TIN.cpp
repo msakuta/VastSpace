@@ -4,10 +4,12 @@
 
 #include "TIN.h"
 #include "drawmap.h"
+#include "glw/GLWchart.h"
 
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/gl/multitex.h>
+#include <clib/timemeas.h>
 }
 
 #include <cpplib/mat2.h>
@@ -140,6 +142,9 @@ void TIN::draw(){
 	// If there's nothing to draw, probably loading the TIN from a file failed.
 	if(vertices.empty() || triangles.empty())
 		return;
+
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 
 	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT | GL_TEXTURE_BIT);
 	if(glActiveTextureARB) for(int i = 0; i < 2; i++){
@@ -290,6 +295,8 @@ void TIN::draw(){
 
 	glPopMatrix();
 	glPopAttrib();
+
+	GLWchart::addSampleToCharts("tintime", TimeMeasLap(&tm));
 
 }
 

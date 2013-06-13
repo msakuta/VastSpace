@@ -3,11 +3,13 @@
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 #include "glw/glwindow.h"
+#include "glw/GLWchart.h"
 #include "cmd.h"
 #include "sqadapt.h"
 
 extern "C"{
 #include "clib/gl/gldraw.h"
+#include <clib/timemeas.h>
 }
 
 
@@ -21,6 +23,9 @@ void F15::draw(WarDraw *wd){
 	static Motion *rudderMotion = nullptr;
 	static Motion *gearMotion = nullptr;
 	
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/F15.mqo");
@@ -36,6 +41,9 @@ void F15::draw(WarDraw *wd){
 	if(model){
 		const double scale = modelScale;
 
+		timemeas_t tm2;
+		TimeMeasStart(&tm2);
+
 		// TODO: Shadow map shape and real shape can diverge
 		const double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
 		MotionPose mp[5];
@@ -49,6 +57,8 @@ void F15::draw(WarDraw *wd){
 		mp[2].next = &mp[3];
 		mp[3].next = &mp[4];
 
+		if(!wd->shadowmapping)
+			GLWchart::addSampleToCharts("posetime", TimeMeasLap(&tm2));
 
 		glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT);
 		glPushMatrix();
@@ -64,6 +74,10 @@ void F15::draw(WarDraw *wd){
 
 		glPopMatrix();
 	}
+	if(wd->shadowmapping)
+		GLWchart::addSampleToCharts("f15time", TimeMeasLap(&tm));
+	else
+		GLWchart::addSampleToCharts("f15smtime", TimeMeasLap(&tm));
 }
 
 void F15::drawtra(WarDraw *wd){
@@ -381,6 +395,8 @@ void F15::drawHUD(WarDraw *wd){
 
 /*	TimeMeasStart(&tm);*/
 
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 	st::drawHUD(wd);
 
 	glLoadIdentity();
@@ -578,6 +594,7 @@ void F15::drawHUD(WarDraw *wd){
 	glPopMatrix();
 #endif
 
+	GLWchart::addSampleToCharts("tratime", TimeMeasLap(&tm));
 /*	printf("fly_drawHUD %lg\n", TimeMeasLap(&tm));*/
 }
 

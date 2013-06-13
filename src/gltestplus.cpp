@@ -891,6 +891,7 @@ void Game::draw_func(Viewer &vw, double dt){
 		cswardraw(&vw, const_cast<CoordSys*>(player->cs), &CoordSys::drawtra);
 		war_draw(vw, player, player->cs, &WarField::drawtra);
 		wdtime = TimeMeasLap(&tm);
+		GLWchart::addSampleToCharts("wdtime", wdtime);
 		projection(glPopMatrix());
 	}
 	glPopAttrib();

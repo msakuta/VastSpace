@@ -174,14 +174,20 @@ register_console_command("chart", function(...){
 	chart.height = 150;
 //	chart.addSeries("framerate");
 	chart.addSeries("frametime", 0, "", [1,0.5,0.5,0.5]);
-	chart.addSeries("recvbytes");
+//	chart.addSeries("recvbytes");
 //	chart.addSeries("frametimehistogram");
-	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);
-	chart.addSeries("sampled", -1, "drawstarcount", [0.5,0.5,1,1]);
-	chart.addSeries("sampled", -1, "exposure", [1,1,0,1]);
-	chart.addSeries("sampled", -1, "diffuse", [0.5,1,1,1]);
-	chart.addSeries("sampled", 0, "expsample", [1,0.5,0.5,1]);
-	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
+//	chart.addSeries("sampled", 0, "drawstartime", [1,0,1,1]);
+//	chart.addSeries("sampled", -1, "drawstarcount", [0.5,0.5,1,1]);
+//	chart.addSeries("sampled", -1, "exposure", [1,1,0,1]);
+//	chart.addSeries("sampled", -1, "diffuse", [0.5,1,1,1]);
+//	chart.addSeries("sampled", 0, "expsample", [1,0.5,0.5,1]);
+//	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
+	chart.addSeries("sampled", 0, "wdtime", [0.5,1.0,0.0,1]);
+	chart.addSeries("sampled", 0, "tintime", [0.0,1.0,0.0,1]);
+	chart.addSeries("sampled", 0, "f15time", [0.0,0.5,1.0,1]);
+	chart.addSeries("sampled", 0, "f15smtime", [1.0,0.5,0.0,1]);
+	chart.addSeries("sampled", 0, "posetime", [1.0,0.5,1.0,1]);
+//	chart.addSeries("sampled", 0, "tratime", [1.0,0.5,0.0,1]);
 //	chart.addSeries("sampled", -1, "ServerMissileMapSize", [0.75,0.75,0.75,1]);
 //	chart.addSeries("sampled", -1, "ClientMissileMapSize", [0.5,0.5,0.5,1]);
 

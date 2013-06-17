@@ -693,6 +693,8 @@ void F15::drawCockpit(WarDraw *wd){
 
 		/* crosshair */
 		glColor4fv(hudcolor);
+		glPushMatrix();
+		glTranslated(0, 0.2, 0); // A bit up
 		glBegin(GL_LINES);
 		glVertex2d(-.15, 0.);
 		glVertex2d(-.05, 0.);
@@ -702,6 +704,18 @@ void F15::drawCockpit(WarDraw *wd){
 		glVertex2d(0., -.05);
 		glVertex2d(0., .15);
 		glVertex2d(0., .05);
+		glEnd();
+		glPopMatrix();
+
+		// Watermark (nose direction)
+		glBegin(GL_LINE_STRIP);
+		glVertex2d(-0.1, 0.0);
+		glVertex2d(-0.05, 0.0);
+		glVertex2d(-0.025, -0.025);
+		glVertex2d( 0.0, 0.0);
+		glVertex2d( 0.025, -0.025);
+		glVertex2d( 0.05, 0.0);
+		glVertex2d(00.1, 0.0);
 		glEnd();
 
 		// Calculating heading vector for obtaining pitch and yaw works and intuitive, but it requires extra arithmetic cost
@@ -716,20 +730,20 @@ void F15::drawCockpit(WarDraw *wd){
 		const double yaw = atan2(2 * (q.i() * q.k() + q.re() * q.j()), 1 - 2 * (q.i() * q.i() + q.j() * q.j()));
 
 		// Direction indicator (compass)
-		for(int i = 0; i < 24; i++){
-			double d = fmod(yaw + i * 2. * M_PI / 24. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
-			if(-.8 < d && d < .8){
+		for(int i = 0; i < 72; i++){
+			double d = fmod(yaw + i * 2. * M_PI / 72. + M_PI / 2., M_PI * 2.) - M_PI / 2.;
+			if(-.5 < d && d < .5){
 				glBegin(GL_LINES);
-				glVertex2d(d, .8);
-				glVertex2d(d, i % 6 == 0 ? .7 : 0.75);
+				glVertex2d(d, 0.75);
+				glVertex2d(d, i % 2 == 0 ? 0.77 : 0.76);
 				glEnd();
-				if(i % 6 == 0){
+				if(i % 2 == 0){
 					int j, len;
 					char buf[16];
 					glPushMatrix();
-					len = sprintf(buf, "%d", i / 6 * 90);
-					glTranslated(d - (len - 1) * .03, .9, 0.);
-					glScaled(.03, .05, .1);
+					len = sprintf(buf, "%d", i * 5);
+					glTranslated(d - (len - 1) * 0.015, 0.800, 0.);
+					glScaled(0.015, 0.025, .1);
 					for(j = 0; buf[j]; j++){
 						gldPolyChar(buf[j]);
 						glTranslated(2., 0., 0.);
@@ -738,6 +752,17 @@ void F15::drawCockpit(WarDraw *wd){
 				}
 			}
 		}
+		glBegin(GL_LINES);
+		glVertex2d(-0.5, 0.75);
+		glVertex2d( 0.5, 0.75);
+		glEnd();
+
+		// Compass center (direction indicator)
+		glBegin(GL_LINE_STRIP);
+		glVertex2d(-0.04, 0.75 - 0.05);
+		glVertex2d( 0   , 0.75);
+		glVertex2d( 0.04, 0.75 - 0.05);
+		glEnd();
 
 		/* pressure/height gauge */
 		glBegin(GL_LINE_LOOP);
@@ -769,10 +794,16 @@ void F15::drawCockpit(WarDraw *wd){
 				glVertex2d(.8, d * .3 / .05);
 			}
 			glEnd();
-			sprintf(buf, "%lg", height / 30.48e-5);
+			sprintf(buf, "%6.lf", height / 30.48e-5);
 			glPushMatrix();
-			glTranslated(.7, .7, 0.);
+			glTranslated(.7, .6, 0.);
 			glScaled(.015, .025, .1);
+			glBegin(GL_LINE_LOOP);
+			glVertex2d(-1., -1.);
+			glVertex2d(-1.,  1.);
+			glVertex2d(11.,  1.);
+			glVertex2d(11., -1.);
+			glEnd();
 			gldPolyString(buf);
 			glPopMatrix();
 		}
@@ -806,10 +837,16 @@ void F15::drawCockpit(WarDraw *wd){
 		gldPolyPrintf("M %lg", velo / .34);
 		glPopMatrix();
 		glPushMatrix();
-		glTranslated(-.7, .7 - .08, 0.);
+		glTranslated(-.7, .6, 0.);
 		glScaled(.015, .025, .1);
 /*		gldPolyPrintf("%lg m/s", velo * 1e3);*/
-		gldPolyPrintf("%lg", 1944. * velo);
+		glBegin(GL_LINE_LOOP);
+		glVertex2d(-1., -1.);
+		glVertex2d(-1.,  1.);
+		glVertex2d(9.,  1.);
+		glVertex2d(9., -1.);
+		glEnd();
+		gldPolyPrintf("%5.lf", 1944. * velo);
 		glPopMatrix();
 
 		if(0 < health && !controller){
@@ -866,10 +903,12 @@ void F15::drawCockpit(WarDraw *wd){
 			glPopMatrix();
 		};
 
+#if 0 // Debug draw
 		// Print readouts for yaw, pitch and roll.
 		readOut(gltestp::dstring("Y") << yaw, -.7, -.8, 0.005);
 		readOut(gltestp::dstring("P") << pitch, -.7, -.85, 0.005);
 		readOut(gltestp::dstring("R") << roll, -.7, -.90, 0.005);
+#endif
 
 		readOut(gltestp::dstring("ARMED: ") << (weapon ? "Missile" : "M61A1 VULCAN"), 0.2, -0.75, 0.0035);
 		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
@@ -879,24 +918,42 @@ void F15::drawCockpit(WarDraw *wd){
 		for(int i = -12; i <= 12; i++){
 			double d = 2. * (fmod(pitch + i * 2. * M_PI / 48. + M_PI / 2., M_PI * 2.) - M_PI / 2.);
 			if(-.8 < d && d < .8){
+				const double xstart = 0.2;
+				const double xend = i % 6 == 0 ? .5 : 0.36;
 				glBegin(GL_LINES);
-				glVertex2d(-.4, d);
-				glVertex2d(i % 6 == 0 ? -.5 : -0.45, d);
-				glVertex2d(.4, d);
-				glVertex2d(i % 6 == 0 ? .5 : 0.45, d);
-				glEnd();
-				if(i % 6 == 0){
-					int j, len;
-					char buf[16];
-					glPushMatrix();
-					len = sprintf(buf, "%d", i / 6 * 45);
-					glTranslated(-.5 - len * .06, d, 0.);
-					glScaled(.03, .05, .1);
-					for(j = 0; buf[j]; j++){
-						gldPolyChar(buf[j]);
-						glTranslated(2., 0., 0.);
+				if(i < 0){
+					// Negative pitch lines are dashed
+					for(int k = -1; k <= 1; k += 2){
+						for(double h = xstart; h < xend; h += 0.02){
+							glVertex2d(k * h, d);
+							glVertex2d(k * (h + 0.01), d);
+							glVertex2d(k * xend, d);
+							glVertex2d(k * xend, d + 0.03);
+						}
 					}
-					glPopMatrix();
+				}
+				else{
+					for(int k = -1; k <= 1; k += 2){
+						glVertex2d(k * xstart, d);
+						glVertex2d(k * xend, d);
+						glVertex2d(k * xend, d);
+						glVertex2d(k * xend, d - 0.03);
+					}
+				}
+				glEnd();
+				if(i % 2 == 0){
+					char buf[16];
+					int len = sprintf(buf, "%d", std::abs(i * 45 / 6));
+					for(int k = -1; k <= 1; k += 2){
+						glPushMatrix();
+						glTranslated(k * (xend + (k < 0 ? len * .04 : 0.04)), d, 0.);
+						glScaled(.02, .03, .1);
+						for(int j = 0; buf[j]; j++){
+							gldPolyChar(buf[j]);
+							glTranslated(2., 0., 0.);
+						}
+						glPopMatrix();
+					}
 				}
 			}
 		}

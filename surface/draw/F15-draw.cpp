@@ -524,20 +524,6 @@ void F15::drawHUD(WarDraw *wd){
 
 /*		printf("flyHUD %lg\n", TimeMeasLap(&tm));*/
 
-		if(game->player->getChaseCamera() == 0){
-			Vec3d velo = this->velo.norm();
-			glPushMatrix();
-			glMultMatrixd(wd->vw->irot);
-			gldTranslate3dv(velo);
-			glMultMatrixd(wd->vw->rot);
-			auto cuts = CircleCuts(16);
-			glBegin(GL_LINE_LOOP);
-			for(int i = 0; i < 16; i++)
-				glVertex3d(cuts[i][0] * .02, cuts[i][1] * .02, 0.);
-			glEnd();
-			glPopMatrix();
-		}
-
 		if(game->player->controlled != this){
 //			amat4_t rot, rot2;
 //			avec3_t pyr;
@@ -912,6 +898,38 @@ void F15::drawCockpit(WarDraw *wd){
 
 		readOut(gltestp::dstring("ARMED: ") << (weapon ? "Missile" : "M61A1 VULCAN"), 0.2, -0.75, 0.0035);
 		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
+
+		// Velocity Vector or Flight Path Vector.
+		if(FLT_EPSILON < this->velo.slen()){
+			Vec3d lheading = rot.itrans(this->velo.norm());
+			double hudFov = hudSize / (cameraPositions[0] - hudPos).len();
+			if(-hudFov < lheading[0] && lheading[0] < hudFov && -hudFov < lheading[1] && lheading[1] < hudFov){
+				glPushMatrix();
+				glTranslated(lheading[0] / hudFov, lheading[1] / hudFov, 0);
+				glScaled(0.02, 0.02, 1.);
+
+				// Draw the circle
+				glBegin(GL_LINE_LOOP);
+				const double (*cuts)[2] = CircleCuts(16);
+				for(int i = 0; i < 16; i++){
+					double phase = i * 2 * M_PI / 16;
+					glVertex2dv(cuts[i]);
+				}
+				glEnd();
+
+				// Draw the stabilizers
+				glBegin(GL_LINES);
+				glVertex2d(0, 1);
+				glVertex2d(0, 2);
+				glVertex2d(1, 0);
+				glVertex2d(3, 0);
+				glVertex2d(-1, 0);
+				glVertex2d(-3, 0);
+				glEnd();
+
+				glPopMatrix();
+			}
+		}
 
 		// Roll and Pitch indicator
 		glRotated(deg_per_rad * (roll), 0., 0., 1.);

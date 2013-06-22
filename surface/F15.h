@@ -34,6 +34,7 @@ public:
 protected:
 	Tefpol *pf;
 	std::vector<Tefpol*> vapor;
+	Vec3d destPos; ///< Destination position
 
 	static Model *model;
 	static double modelScale;

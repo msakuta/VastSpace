@@ -1,7 +1,7 @@
 #ifndef TANK_H
 #define TANK_H
 #include "war.h"
-#include "Entity.h"
+#include "ModelEntity.h"
 #include "judge.h"
 #include "btadapt.h"
 extern "C"{
@@ -9,14 +9,15 @@ extern "C"{
 }
 
 
-class Tank : public Entity{
+class Tank : public ModelEntity{
 public:
-	typedef Entity st;
+	typedef ModelEntity st;
 	static const unsigned classid;
 	static EntityRegister<Tank> entityRegister;
 
 	Tank(Game *game);
 	Tank(WarField *);
+	void addRigidBody(WarSpace*)override;
 	void control(WarField *, const input_t *inputs, double dt);
 	const char *idname()const;
 	const char *classname()const;
@@ -32,7 +33,8 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	double getHitRadius()const;
-	bool isTargettable()const;
+	bool isTargettable()const override{return true;}
+	bool isSelectable()const override{return true;}
 
 	double steer; /* Steering direction, positive righthand */
 	double wheelspeed;
@@ -52,7 +54,18 @@ public:
     static const Vec3d points[];
 //	Vec3d forces[numof(points)];
 //	Vec3d normals[numof(points)];
+
+	static gltestp::dstring modPath(){return "surface/";}
+
 protected:
+
+	static double defaultMass;
+	static HitBoxList hitboxes;
+
+	HitBoxList &getHitBoxes()const{return hitboxes;}
+
+	bool buildBody();
+	void init();
 	int shootcannon(double phi, double theta, double variance, Vec3d &mpos, int *mposa);
 	int tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mpos, int *mposa);
 	void find_enemy_logic();

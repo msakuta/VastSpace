@@ -52,7 +52,7 @@ void Tank::draw(WarDraw *wd){
 
 	if(init == 0){
 		init = 1;
-		model = LoadMQOModel("models/type90.mqo");
+		model = LoadMQOModel(modPath() << _SC("models/type90.mqo"));
 	};
 
 	if(model){

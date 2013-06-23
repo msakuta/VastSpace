@@ -83,11 +83,8 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 
 /*static const double tank_sc[3] = {.05, .055, .075};*/
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
-static const HitBox tank_hb[] = {
-	HitBox(Vec3d(0., .000, -.0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
-	HitBox(Vec3d(0., .000, .0015), Quatd(0,0,0,1), Vec3d(.001665, .0007, .0015)),
-	HitBox(Vec3d(0., 100 * 3.4 / 200. * 1e-3 - .0007, .0), Quatd(0,0,0,1), Vec3d(.0015, 20 * 3.4 / 200. * 1e-3, .0020)),
-};
+double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
+HitBoxList Tank::hitboxes;
 
 
 const char *Tank::idname()const{return "tank";}
@@ -101,6 +98,7 @@ Tank::Tank(Game *game) : st(game){
 }
 
 Tank::Tank(WarField *aw) : st(aw){
+	init();
 	steer = 0.;
 	wheelspeed = wheelangle = 0.;
 	turrety = barrelp = 0.;
@@ -113,19 +111,25 @@ Tank::Tank(WarField *aw) : st(aw){
 
 	WarSpace *ws = *aw;
 	if(ws && ws->bdw){
+	}
+}
+
+bool Tank::buildBody(){
+	if(!bbody){
 		static btCompoundShape *shape = NULL;
-		if(!shape) for(int i = 0; i < numof(tank_hb); i++){
-			if(!shape){
-				shape = new btCompoundShape();
-				Vec3d sc = tank_hb[i].sc;
-				const Quatd rot = tank_hb[i].rot;
-				const Vec3d pos = tank_hb[i].org;
+		if(!shape){
+			shape = new btCompoundShape();
+			HitBoxList &hitboxes = getHitBoxes();
+			for(HitBoxList::iterator i = hitboxes.begin(); i != hitboxes.end(); ++i){
+				HitBox &it = *i;
+				const Vec3d &sc = it.sc;
+				const Quatd &rot = it.rot;
+				const Vec3d &pos = it.org;
 				btBoxShape *box = new btBoxShape(btvc(sc));
 				btTransform trans = btTransform(btqc(rot), btvc(pos));
 				shape->addChildShape(trans, box);
 			}
 		}
-
 		btTransform startTransform;
 		startTransform.setIdentity();
 		startTransform.setOrigin(btvc(pos));
@@ -140,11 +144,33 @@ Tank::Tank(WarField *aw) : st(aw){
 		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-		rbInfo.m_linearDamping = 0;
 		rbInfo.m_linearDamping = .05;
 		rbInfo.m_angularDamping = .05;
 		bbody = new btRigidBody(rbInfo);
 		bbody->setActivationState(DISABLE_DEACTIVATION);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+	}
+	return true;
+}
+
+void Tank::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("models/type90.nut"),
+			SingleDoubleProcess(defaultMass, "mass") <<=
+			HitboxProcess(hitboxes));
+		initialized = true;
+	}
+	mass = defaultMass;
+}
+
+void Tank::addRigidBody(WarSpace *ws){
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		if(bbody)
+			ws->bdw->addRigidBody(bbody, bbodyGroup(), bbodyMask());
 	}
 }
 
@@ -886,10 +912,6 @@ double Tank::getHitRadius()const{
 	return 0.007;
 }
 
-bool Tank::isTargettable()const{
-	return true;
-}
-
 void Tank::control(const input_t *in, double dt){
 #if 0
 	static int prev = 0;
@@ -1012,7 +1034,7 @@ int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, do
 }
 
 int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	return tracehit(src, dir, rad, dt, ret, retp, retn, tank_hb, numof(tank_hb));
+	return tracehit(src, dir, rad, dt, ret, retp, retn, &hitboxes.front(), hitboxes.size());
 }
 
 

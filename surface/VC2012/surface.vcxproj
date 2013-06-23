@@ -191,6 +191,7 @@
     <ClCompile Include="..\DrawMap.cpp" />
     <ClCompile Include="..\draw\Aerial-draw.cpp" />
     <ClCompile Include="..\draw\F15-draw.cpp" />
+    <ClCompile Include="..\draw\Tank-draw.cpp" />
     <ClCompile Include="..\F15.cpp" />
     <ClCompile Include="..\HeightMap.cpp" />
     <ClCompile Include="..\mas.cpp" />

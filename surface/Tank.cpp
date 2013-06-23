@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of Tank class.
+ */
 #include "Tank.h"
 #include "Entity.h"
 //#include "WarUtil.h"
@@ -138,8 +141,8 @@ Tank::Tank(WarField *aw) : st(aw){
 		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 		rbInfo.m_linearDamping = 0;
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
+		rbInfo.m_linearDamping = .05;
+		rbInfo.m_angularDamping = .05;
 		bbody = new btRigidBody(rbInfo);
 		bbody->setActivationState(DISABLE_DEACTIVATION);
 	}
@@ -434,12 +437,12 @@ void Tank::anim(double dt){
 		normal[2] = n[1];
 		VECNORMIN(normal);
 	}*/
-	if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+/*	if(&w->cs->getStatic() == &SurfaceCS::classRegister){
 		SurfaceCS *s = (SurfaceCS*)w->cs;
 		WarMap *wm = s->getWarMap();
 		if(wm)
 			pos[1] = wm->height(pos[0], pos[2], NULL);
-	}
+	}*/
 
 	if(!w || controller){
 	}
@@ -721,201 +724,6 @@ void Tank::anim(double dt){
 
 }
 
-void Tank::draw(WarDraw *wd){
-	static int init = 0;
-	static suf_t *sufbase = NULL;
-	static suf_t *sufturret = NULL;
-	static suf_t *sufbarrel = NULL;
-	static suf_t *sufbarrel1 = NULL;
-	static suf_t *sufm2 = NULL;
-	double pixels;
-	if(!w)
-		return;
-
-	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .007))
-		return;
-	pixels = .005 * fabs(wd->vw->gc->scale(pos));
-	if(pixels < 2)
-		return;
-	wd->lightdraws++;
-
-
-	if(init == 0) do{
-		init = 1;
-		sufbase = CallLoadSUF("models/type90_base.bin");
-		sufturret = CallLoadSUF("models/type90_turret.bin");
-		sufbarrel = CallLoadSUF("models/type90_barrel.bin");
-//		sufbarrel1 = CallLoadSUF("models/type90_barrel1.bin");
-		sufm2 = CallLoadSUF("models/type90_m2.bin");
-	} while(0);
-	if(!sufbase){
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos + tank_offset, tank_radius, col);
-	}
-	else{
-/*		const GLdouble rotaxis[16] = {
-			1,0,0,0,
-			0,0,-1,0,
-			0,1,0,0,
-			0,0,0,1,
-		};*/
-		GLfloat fv[4] = {.8f, .5f, 0.f, 1.f}, ambient[4] = {.4f, .25f, 0.f, 1.f};
-		static const double normal[3] = {0., 1., 0.}, mountpos[3] = {-33, 125, 45};
-		double scale = 3.4 / 200. * 1e-3, tscale = scale, bscale = scale;
-/*		double scale = 1./100000, tscale = 1. / 10000., bscale = 1. / 100000.;*/
-/*		double pyr[3];*/
-		if(race % 2)
-			fv[0] = 0., fv[2] = .8f, ambient[0] = 0., ambient[2] = .4f;
-
-		/* avoid race condition with the polygon model and its model, by disabling
-		  depth buffer writing when drawing the shadow. */
-/*		if(0 < wd->light[1]){
-			ShadowSUF(tank_s.sufbase, wd->light, normal, pt->pos, pt->pyr, .0001, NULL);
-			VECCPY(pyr, pt->pyr);
-			pyr[1] += pt->turrety;
-			ShadowSUF(tank_s.sufturret, wd->light, normal, pt->pos, pyr, .0001, NULL);
-			pyr[0] += pt->barrelp;
-			ShadowSUF(tank_s.sufbarrel, wd->light, normal, pt->pos, pyr, .0001, NULL);
-		}*/
-
-/*		gldMaterialfv(GL_FRONT, GL_DIFFUSE, fv, &g_gldcache);
-		gldMaterialfv(GL_FRONT, GL_AMBIENT, ambient, &g_gldcache);*/
-		glPushMatrix();
-/*		glTranslated(pt->pos[0], pt->pos[1], pt->pos[2]);*/
-		{
-/*			const avec3_t cog = {0., .001, 0.};*/
-			Mat4d mat;
-			transform(mat);
-/*			MAT3TO4(mat, pt->rot);*/
-			glMultMatrixd(mat);
-		}
-
-		/* center of gravity offset */
-		glTranslated(0, -.0007, 0);
-
-/*		glScaled(.0001, .0001, .0001);*/
-		gldScaled(scale);
-
-/*		glRotated(deg_per_rad * pt->pyr[1], 0., -1., 0.);
-		glRotated(deg_per_rad * pt->pyr[0], -1.,  0., 0.);
-		glRotated(deg_per_rad * pt->pyr[2], 0.,  0., -1.);*/
-
-/*		glMultMatrixd(rotaxis);*/
-
-		DrawSUF(sufbase, SUF_ATR, NULL);
-/*		glRotated(deg_per_rad * pt->turrety, 0., 0., -1.);*/
-		glRotated(deg_per_rad * turrety, 0., -1., 0.);
-		if(game->player->chase != this || game->player->getChaseCamera())
-			DrawSUF(sufturret, SUF_ATR, NULL);
-
-		glPushMatrix();
-		gldTranslaten3dv(mountpos);
-		glRotated(deg_per_rad * mountpy[1], 0., -1., 0.);
-		glRotated(deg_per_rad * mountpy[0], 1., 0., 0.);
-		gldTranslate3dv(mountpos);
-		DrawSUF(sufm2, SUF_ATR, NULL);
-		glPopMatrix();
-
-		glTranslated(0., 90., -85.);
-/*		glTranslated(0., .0025 / tscale, -0.0015 / tscale);*/
-		glRotated(deg_per_rad * barrelp, 1., 0., 0.);
-
-		/* level of detail */
-#if 0
-		if(0 && 100 < pixels){
-			glScaled(1. / tscale, 1. / tscale, 1. / tscale);
-	/*		glTranslated(0., .0025, -0.0015);*/
-			glScaled(bscale, bscale, bscale);
-			DrawSUF(sufbarrel1, SUF_ATR, NULL);
-		}
-		else
-#endif
-		{
-			glTranslated(0., -90., 85.);
-/*			glTranslated(0., -.0025 / tscale, 0.0015 / tscale);*/
-			DrawSUF(sufbarrel, SUF_ATR, NULL);
-		}
-
-		glPopMatrix();
-	}
-#ifndef NDEBUG
-	{
-		int i;
-		Vec3d org;
-		Mat4d mat;
-		const HitBox *hb = tank_hb;
-/*		aquat_t rot, roty;
-		roty[0] = 0.;
-		roty[1] = sin(pt->turrety / 2.);
-		roty[2] = 0.;
-		roty[3] = cos(pt->turrety / 2.);
-		QUATMUL(rot, pt->rot, roty);*/
-
-		glPushMatrix();
-/*		gldTranslate3dv(pt->pos);
-		gldMultQuat(rot);*/
-		transform(mat);
-		glMultMatrixd(mat);
-/*		glRotated(pt->turrety * deg_per_rad, 0, 1., 0.);*/
-/*		gldTranslate3dv(org);*/
-
-#if 0
-		for(i = 0; i < numof(tank_hb); i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hb[i].org);
-			quat2mat(rot, hb[i].rot);
-			glMultMatrixd(rot);
-			hitbox_draw(pt, hb[i].sc);
-			glPopMatrix();
-
-			glPushMatrix();
-			gldTranslate3dv(hb[i].org);
-			quat2imat(rot, hb[i].rot);
-			glMultMatrixd(rot);
-			hitbox_draw(pt, hb[i].sc);
-			glPopMatrix();
-		}
-#endif
-
-		glPopMatrix();
-	}
-#endif
-}
-
-void Tank::drawtra(wardraw_t *wd){
-
-/*	if(p->muzzle & 1){
-		avec3_t mpos;
-		tankmuzzlepos(p, &mpos, NULL);
-		drawmuzzleflasha(mpos, wd->view, .007, wd->irot);
-		p->muzzle = 0;
-	}*/
-
-/*	avec3_t v;
-	amat4_t mat;
-	int i;
-	tankrot(mat, pt);
-	glPushMatrix();
-	glMultMatrixd(mat);
-	glBegin(GL_LINES);
-	for(i = 0; i < numof(p->forces); i++){
-		VECCPY(v, points[i]);
-		VECSADD(v, p->forces[i], 1e-3);
-		glColor4ub(255,0,0,255);
-		glVertex3dv(points[i]);
-		glVertex3dv(v);
-		VECCPY(v, points[i]);
-		VECSADD(v, p->normals[i], 1e-3);
-		glColor4ub(0,0,255,255);
-		glVertex3dv(points[i]);
-		glVertex3dv(v);
-	}
-	glEnd();
-	glPopMatrix();*/
-}
-
 int Tank::takedamage(double damage, int hitpart){
 #if 0
 	tank2_t *p = (tank2_t*)pt;
@@ -1011,23 +819,6 @@ int Tank::takedamage(double damage, int hitpart){
 	return 0;
 }
 
-#if 0
-void gib_draw(const struct tent3d_line_callback *pl, suf_t *suf, double scale, int i){
-	glPushMatrix();
-	glTranslated(pl->pos[0], pl->pos[1], pl->pos[2]);
-	glScaled(scale, scale, scale);
-/*	glRotated(-pl->pyr[1] * 360 / 2. / M_PI, 0., 1., 0.);
-	glRotated(pl->pyr[0] * 360 / 2. / M_PI, 1., 0., 0.);*/
-	DrawSUFPoly(suf, i, SUF_ATR, &g_gldcache);
-	glPopMatrix();
-}
-
-static void tank_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
-	int i = (int)pv;
-	gib_draw(pl, i < tank_s.sufbase->np ? tank_s.sufbase : tank_s.sufturret, TANK_SCALE, i < tank_s.sufbase->np ? i : i - tank_s.sufbase->np);
-}
-#endif
-
 void Tank::postframe(){
 	if(enemy && (!enemy->w || !w))
 		enemy = NULL;
@@ -1053,53 +844,11 @@ int Tank::getrot(double (*ret)[16]){
 		mat[i] = buf[i];
 }*/
 
-#if 0
-void tank_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const double irot[16], void (*gdraw)(void)){
-	tank2_t *p = (tank2_t*)pt;
-	base_drawHUD_target(pt, wf, wd, gdraw);
-	base_drawHUD_map(pt, wf, wd, irot, gdraw);
-	base_drawHUD(pt, wf, wd, gdraw);
 
-	if(wf->pl->control != pt){
-	}
-	else{
-		GLint vp[4];
-		int w, h, m;
-		double left, bottom;
-/*		int tkills, tdeaths, ekills, edeaths;*/
-/*		entity_t *pt2;*/
-		double v;
-		glGetIntegerv(GL_VIEWPORT, vp);
-		w = vp[2], h = vp[3];
-		m = w < h ? h : w;
-		left = -(double)w / m;
-		bottom = -(double)h / m;
-
-		v = VECLEN(pt->velo);
-
-		glPushMatrix();
-		glLoadIdentity();
-		glRasterPos3d(left + 20. / m, bottom + 60. / m, -1);
-		gldprintf("%lg m/s", v * 1e3);
-		glRasterPos3d(left + 20. / m, bottom + 80. / m, -1);
-		gldprintf("%lg km/h", v * 1e3 * 3600. / 1000.);
-		glRasterPos3d(-left - 500. / m, bottom + 60. / m, -1);
-		gldprintf("%c 120mm Main Gun x %d", pt->weapon == 0 ? '>' : ' ', p->ammo[0]);
-		glRasterPos3d(-left - 500. / m, bottom + 40. / m, -1);
-		gldprintf("%c 7.62mm Type 74 x %d", pt->weapon == 1 ? '>' : ' ', p->ammo[1]);
-		glRasterPos3d(-left - 500. / m, bottom + 20. / m, -1);
-		gldprintf("%c 12.7mm M2 Browning x %d", pt->weapon == 2 ? '>' : ' ', p->ammo[2]);
-		glRasterPos3d(-left - 500. / m, bottom + 0. / m, -1);
-		gldprintf("%c 120mm Shotgun x %d", pt->weapon == 3 ? '>' : ' ', p->ammo[0]);
-		glPopMatrix();
-	}
-
-}
-#endif
 
 void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 /*	double yaw = pt->pyr[1] + ((tank2_t*)pt)->turrety;*/
-	Vec3d ofs[2] = {Vec3d(-.0006, .0010, -.0005), Vec3d(0., .010, .025)};
+	static  const Vec3d ofs[2] = {Vec3d(-.0006, .0010, -.0005), Vec3d(0., .010, .025)};
 	Mat4d mat, mat2;
 	int camera = seatid;
 	transform(mat);
@@ -1127,6 +876,7 @@ void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		}
 	}
 	pos = mat.vp3(ofs[camera]);
+	rot = this->rot;
 /*	(*pos)[0] = pt->pos[0] - 0.005 * sin(yaw);
 	(*pos)[1] = pt->pos[1] + 0.005;
 	(*pos)[2] = pt->pos[2] + 0.005 * cos(yaw);*/

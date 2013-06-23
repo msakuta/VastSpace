@@ -388,6 +388,14 @@
 				RelativePath="..\WarMap.cpp"
 				>
 			</File>
+			<Filter
+				Name="draw"
+				>
+				<File
+					RelativePath="..\draw\Tank-draw.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

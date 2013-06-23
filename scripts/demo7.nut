@@ -6,6 +6,11 @@ player.chase = f15;
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
 
+//local f15_3 = player.cs.addent("F15", Vec3d(1, 4., 0));
+//f15_3.race = 1;
+
+local tank = player.cs.addent("Tank", Vec3d(0, 2, 0));
+
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

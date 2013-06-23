@@ -711,6 +711,18 @@ void Tank::anim(double dt){
 	}
 
 	if(1){
+		if(inputs.press & PL_W){
+			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.005));
+		}
+		if(inputs.press & PL_S){
+			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.005));
+		}
+		if(inputs.press & PL_A){
+			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-6));
+		}
+		if(inputs.press & PL_D){
+			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-6));
+		}
 //		vehicle_drive(dt, points, numof(points));
 	}
 #if 0
@@ -954,6 +966,7 @@ double Tank::getHitRadius()const{
 }
 
 void Tank::control(const input_t *in, double dt){
+	st::control(in, dt);
 #if 0
 	static int prev = 0;
 	double h, n[3], pyr[3];

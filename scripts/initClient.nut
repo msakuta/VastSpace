@@ -184,12 +184,13 @@ register_console_command("chart", function(...){
 //	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
 	chart.addSeries("sampled", 0, "wdtime", [0.5,1.0,0.0,1]);
 	chart.addSeries("sampled", 0, "tintime", [0.0,1.0,0.0,1]);
-	chart.addSeries("sampled", 0, "f15time", [0.0,0.5,1.0,1]);
-	chart.addSeries("sampled", 0, "f15smtime", [1.0,0.5,0.0,1]);
-	chart.addSeries("sampled", 0, "posetime", [1.0,0.5,1.0,1]);
+//	chart.addSeries("sampled", 0, "f15time", [0.0,0.5,1.0,1]);
+//	chart.addSeries("sampled", 0, "f15smtime", [1.0,0.5,0.0,1]);
+//	chart.addSeries("sampled", 0, "posetime", [1.0,0.5,1.0,1]);
 //	chart.addSeries("sampled", 0, "tratime", [1.0,0.5,0.0,1]);
 //	chart.addSeries("sampled", -1, "ServerMissileMapSize", [0.75,0.75,0.75,1]);
 //	chart.addSeries("sampled", -1, "ClientMissileMapSize", [0.5,0.5,0.5,1]);
+	chart.addSeries("sampled", -1, "tankvelo", [1.0,0.5,0.0,1]);
 
 	// Following charts are only available in debug build.
 	if(debugBuild()){

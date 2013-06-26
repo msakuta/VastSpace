@@ -16,6 +16,7 @@
 #include "draw/material.h"
 //#include "coordcnv.h"
 #include "Game.h"
+#include "glw/GLWchart.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -502,6 +503,7 @@ void Tank::anim(double dt){
 	if(WarSpace *ws = *w){
 		const btvc btPos = bbody->getWorldTransform().getOrigin();
 		const btvc btVelo = bbody->getLinearVelocity();
+		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
 		const Vec3d delta(0, 0.02 + btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta * 0.5);
 		btScalar frac;

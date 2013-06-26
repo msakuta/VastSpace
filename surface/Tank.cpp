@@ -26,6 +26,9 @@ extern "C"{
 #include <clib/wavsound.h>
 #include <clib/gl/gldraw.h>
 }
+
+#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
+
 //#include <ode/ode.h> /* Wheeled Vehicles are needed to be tested separately, sometimes... */
 
 
@@ -448,6 +451,32 @@ void Tank::vehicle_drive(double dt, Vec3d *points, int npoints){
 	}*/
 }
 
+/// \brief Casts a ray in a Bullet Dynamics World to see if any rigid body object is hit.
+///
+/// This function is merely an adaptor that calls btCollisionWorld::rayTest() with callback results expanded in arguments.
+///
+/// \param bdw The target dynamics world.
+/// \param rayFrom The ray's starting position
+/// \param rayTo The ray's ending position
+/// \param fraction How far the hitting point is from rayFrom.
+/// \param worldNormal Normal vector at hitting point in world coordinates.
+/// \param worldHitPoint Position of hitting point in world coordinates.
+static bool rayTest(const btCollisionWorld *bdw, const btVector3& rayFrom, const btVector3& rayTo,
+					btScalar &fraction, btVector3& worldNormal, btVector3& worldHitPoint)
+{
+	btCollisionWorld::ClosestRayResultCallback resultCallback(rayFrom,rayTo);
+
+	bdw->rayTest(rayFrom, rayTo, resultCallback);
+
+	if(resultCallback.hasHit()){
+		fraction = resultCallback.m_closestHitFraction;
+		worldNormal = resultCallback.m_hitNormalWorld;
+		worldHitPoint = resultCallback.m_hitPointWorld;
+		return true;
+	}
+	else
+		return false;
+};
 
 void Tank::anim(double dt){
 	double h;
@@ -469,6 +498,18 @@ void Tank::anim(double dt){
 		if(wm)
 			pos[1] = wm->height(pos[0], pos[2], NULL);
 	}*/
+
+	if(WarSpace *ws = *w){
+		const Vec3d delta(0, 0.02 + velo[1] * dt, 0);
+		const Vec3d start(pos - delta * 0.5);
+		btScalar frac;
+		btVector3 worldNormal, worldHitPoint;
+		if(rayTest(ws->bdw, btvc(start), btvc(start + delta), frac, worldNormal, worldHitPoint)){
+			Vec3d dest = frac < 0.5 ? pos + delta * frac : btvc(worldHitPoint);
+			Vec3d newVelo(velo[0], 0, velo[2]);
+			setPosition(&dest, NULL, &newVelo);
+		}
+	}
 
 	if(!w || controller){
 	}

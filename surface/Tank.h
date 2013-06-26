@@ -63,6 +63,8 @@ protected:
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const{return hitboxes;}
+	short bbodyGroup()const override{return 1<<2;}
+	short bbodyMask()const override{return 1<<2;}
 
 	bool buildBody();
 	void init();

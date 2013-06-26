@@ -78,7 +78,9 @@ void Tank::draw(WarDraw *wd){
 
 
 #if 1
-		glScaled(-scale, scale, -scale);
+		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
+		// the model is made such way.
+		glScaled(scale, scale, scale);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 #else

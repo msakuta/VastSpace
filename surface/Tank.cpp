@@ -500,14 +500,17 @@ void Tank::anim(double dt){
 	}*/
 
 	if(WarSpace *ws = *w){
-		const Vec3d delta(0, 0.02 + velo[1] * dt, 0);
-		const Vec3d start(pos - delta * 0.5);
+		const btvc btPos = bbody->getWorldTransform().getOrigin();
+		const btvc btVelo = bbody->getLinearVelocity();
+		const Vec3d delta(0, 0.02 + btVelo[1] * dt, 0);
+		const Vec3d start(btPos - delta * 0.5);
 		btScalar frac;
 		btVector3 worldNormal, worldHitPoint;
 		if(rayTest(ws->bdw, btvc(start), btvc(start + delta), frac, worldNormal, worldHitPoint)){
-			Vec3d dest = frac < 0.5 ? pos + delta * frac : btvc(worldHitPoint);
-			Vec3d newVelo(velo[0], 0, velo[2]);
+			Vec3d dest = frac < 0.5 ? btPos + delta * frac : btvc(worldHitPoint);
+			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 			setPosition(&dest, NULL, &newVelo);
+			bbody->setAngularVelocity(bbody->getAngularVelocity() * exp(-dt));
 		}
 	}
 
@@ -712,16 +715,16 @@ void Tank::anim(double dt){
 
 	if(1){
 		if(inputs.press & PL_W){
-			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.005));
+			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.05));
 		}
 		if(inputs.press & PL_S){
-			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.005));
+			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.05));
 		}
 		if(inputs.press & PL_A){
-			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-6));
+			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));
 		}
 		if(inputs.press & PL_D){
-			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-6));
+			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-5));
 		}
 //		vehicle_drive(dt, points, numof(points));
 	}

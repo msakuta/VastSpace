@@ -1849,8 +1849,9 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 				}
 				{
 					static const GLfloat col[4] = {1., 1., 1., 1.};
-					Vec3d local;
-					local = relmat.vp3(pos);
+					Vec3d local = relmat.vp3(pos);
+					if(local.slen() < FLT_EPSILON)
+						break;
 					local.normin();
 /*					if(!current_nearest && glcullFrustum(local, radius, &glc)){
 						int j;

@@ -479,6 +479,11 @@ static bool rayTest(const btCollisionWorld *bdw, const btVector3& rayFrom, const
 		return false;
 };
 
+/// \brief Aligns given vector v to a plane n.
+static btVector3 alignPlane(const btVector3 &v, const btVector3 &n){
+	return v - n.dot(v) * n;
+};
+
 void Tank::anim(double dt){
 	double h;
 	Vec3d epos(0,0,0); /* estimated enemy position */
@@ -500,6 +505,8 @@ void Tank::anim(double dt){
 			pos[1] = wm->height(pos[0], pos[2], NULL);
 	}*/
 
+	bool floorTouch = false;
+	btVector3 worldNormal;
 	if(WarSpace *ws = *w){
 		const btvc btPos = bbody->getWorldTransform().getOrigin();
 		const btvc btVelo = bbody->getLinearVelocity();
@@ -507,13 +514,14 @@ void Tank::anim(double dt){
 		const Vec3d delta(0, 0.02 + btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta * 0.5);
 		btScalar frac;
-		btVector3 worldNormal, worldHitPoint;
+		btVector3 worldHitPoint;
 		if(rayTest(ws->bdw, btvc(start), btvc(start + delta), frac, worldNormal, worldHitPoint)){
 			Vec3d dest = frac < 0.5 ? btPos + delta * frac : btvc(worldHitPoint);
 			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 			setPosition(&dest, NULL, &newVelo);
 			btVector3 btOmega = bbody->getAngularVelocity() + worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
 			bbody->setAngularVelocity(btOmega * exp(-3. * dt));
+			floorTouch = true;
 		}
 	}
 
@@ -716,12 +724,12 @@ void Tank::anim(double dt){
 /*	pt->velo[1] += gravity[1] * dt;*/
 	}
 
-	if(1){
+	if(floorTouch){
 		if(inputs.press & PL_W){
-			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.05));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.05), worldNormal));
 		}
 		if(inputs.press & PL_S){
-			bbody->applyCentralForce(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.05));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.05), worldNormal));
 		}
 		if(inputs.press & PL_A){
 			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));

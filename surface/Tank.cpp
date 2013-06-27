@@ -512,7 +512,8 @@ void Tank::anim(double dt){
 			Vec3d dest = frac < 0.5 ? btPos + delta * frac : btvc(worldHitPoint);
 			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 			setPosition(&dest, NULL, &newVelo);
-			bbody->setAngularVelocity(bbody->getAngularVelocity() * exp(-dt));
+			btVector3 btOmega = bbody->getAngularVelocity() + worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
+			bbody->setAngularVelocity(btOmega * exp(-3. * dt));
 		}
 	}
 

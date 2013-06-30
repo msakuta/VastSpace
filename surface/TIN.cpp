@@ -169,7 +169,7 @@ void TIN::draw(){
 	static const double latscale = 10000. / 180. / tileSize; // Latitude scaling
 	static const double longscale = latscale * cos(35 / deg_per_rad); // Longitude scaling
 	glScaled(-longscale, latscale, 0.001 / 4.);
-	glTranslated(-tileSize / 2, -tileSize / 2, 0); // Offset center
+	glTranslated(-(tileSize - 1) / 2., -(tileSize - 1) / 2., 0); // Offset center
 
 	// Make the front face reversed because the data itself are reversed.
 	glFrontFace(GL_CW);

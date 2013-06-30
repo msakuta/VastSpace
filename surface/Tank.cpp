@@ -508,18 +508,19 @@ void Tank::anim(double dt){
 	bool floorTouch = false;
 	btVector3 worldNormal;
 	if(WarSpace *ws = *w){
-		const btvc btPos = bbody->getWorldTransform().getOrigin();
+		static const btVector3 offset(0, 0.0010, 0);
+		const btvc btPos = bbody->getWorldTransform().getOrigin() - offset;
 		const btvc btVelo = bbody->getLinearVelocity();
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
-		const Vec3d delta(0, 0.02 + btVelo[1] * dt, 0);
-		const Vec3d start(btPos - delta * 0.5);
+		const Vec3d delta(0, -0.02 - btVelo[1] * dt, 0);
+		const Vec3d start(btPos - delta);
 		btScalar frac;
 		btVector3 worldHitPoint;
 		if(rayTest(ws->bdw, btvc(start), btvc(start + delta), frac, worldNormal, worldHitPoint)){
-			Vec3d dest = frac < 0.5 ? btPos + delta * frac : btvc(worldHitPoint);
+			Vec3d dest = btvc(worldHitPoint + offset);
 			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 			setPosition(&dest, NULL, &newVelo);
-			btVector3 btOmega = bbody->getAngularVelocity() + worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
+			btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
 			bbody->setAngularVelocity(btOmega * exp(-3. * dt));
 			floorTouch = true;
 		}

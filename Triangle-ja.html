@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="jHitSphere" />
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+  TeX: {
+    TagSide: "left",
+    Macros: {
+      T: '^{\\mathrm T}',
+      RR: '{\\bf R}',
+      bold: ['{\\bf #1}',1]
+    }
+  }
+});
+</script>
+    <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+
+
+    <title>Triangle Hit Detection</title>
+  </head>
+
+<body>
+
+<a href="index.html">Go back to main page</a>
+
+<h1> 概要 </h1>
+
+<p>ここでは2次元平面上のある点が任意の三角形の内側にいるかどうか(効率的に)求める方法を論じます。</p>
+
+<p>スーパー基本中の基本で車輪の再発明なところはいつもと同じです。</p>
+
+<h1> ベクトルの外積を使って求める </h1>
+
+<p>どうしましょうか。</p>
+
+<div>
+<img src="Triangle-fig1.svg">
+</div>
+
+<p>まずは点の位置ベクトルと各辺を巡るベクトルの外積を取って、その符号がすべて同じだったら、
+その点はどの辺を表すベクトルの進む向きから見ても同じ側にあるので、三角形の内側にあるはずだ、
+ということを考えます。</p>
+
+<div>
+<img src="Triangle-fig2.svg">
+</div>
+
+<p>図中の名前を使って式で表すと</p>
+
+$$
+(r-a) \times (b-a) \\
+(r-b) \times (c-b) \\
+(r-c) \times (a-c)
+$$
+
+<p>がすべて同じ符号ということです。</p>
+
+<p>これは感覚的には、車であるルートを左回りに一周して戻ってくる経路上で、常に尖塔を左手に見続けていれば、
+尖塔はそのループの中にあるはずだ、というような話です。
+外積の符号は、右回りか左回りかを表しているわけで、三角形の頂点がどの順で与えられるかで変わります。</p>
+
+
+<h1> 基底の変換を使って求める </h1>
+
+<p>効率ということでいうと、実は後工程で$(b-a)-(c-a)$空間の座標も求めたい事情があります。
+ようするに点が三角形の中のどのあたりにあるかも知りたいわけです。</p>
+
+<div>
+<img src="Triangle-fig3.svg">
+</div>
+
+<p>とりあえず$b-a$を$x'$軸、$c-a$を$y'$軸とおきます。すると$x'-y'$は斜交座標系の基底とみなせるので、
+$x-y$座標系からの変換を考えることができます。</p>
+
+<p>原点は一致させる線形変換として、まあ中学生的に成分を書き下してみましょうか。</p>
+
+$$
+x' = ax + by \\
+y' = cx + dy
+$$
+
+<p>ベクトル式っぽくしてみます。</p>
+
+\begin{align}
+\mathbf{x}' &= A \mathbf{x}, & A=
+\begin{bmatrix}
+a & b \\
+c & d
+\end{bmatrix}
+\tag{1} \label{1}
+\end{align}
+
+<p>ここで一度見方を逆にして、$x'-y'$から$x-y$座標系へ変換する問題を考えると、
+$x,y$は$x',y'$の2変数関数であるとみることができます。
+また、線形変換ですから高々1階までの微分係数しか持っていないわけです。
+つまり</p>
+
+$$
+x = \frac{\partial x}{\partial x'} x' + \frac{\partial x}{\partial y'} y' \\
+y = \frac{\partial y}{\partial x'} x' + \frac{\partial y}{\partial y'} y' \tag{2} \label{2}
+$$
+
+<p>と表せるわけです（原点を一致させているという条件を使って定数項を消去しています）。</p>
+
+<p>ベクトルの書き方に戻ると、ヤコビの行列を使って次のようになります。</p>
+
+$$
+\mathbf{x} = \frac{\partial(x,y)}{\partial(x',y')} \mathbf{x}'
+$$
+
+<p>式\eqref{1}と比べて、次の$A$を求めれば座標変換ができます。もちろん$ \frac{\partial(x,y)}{\partial(x',y')}$は正則であるという前提ですが、
+$x',y'$が平行でなければ（空間を張れば）正則なので、三角形であれば問題ないでしょう。</p>
+
+$$
+A = \left( \frac{\partial(x,y)}{\partial(x',y')} \right)^{-1}
+$$
+
+<p>ここで$\frac{\partial x_i}{\partial x_j'}$とはなんなのかを考えると、$x_j'$が単位長さ動いたときの$x_i$の増分ですから、
+これは$x', y'$ベクトルを$x-y$座標系で表した時の成分です。
+これは元の座標系の三角形の形として与えられているものです。</p>
+
+<p>元の記号に戻って書くと</p>
+
+$$
+r' = \begin{bmatrix}
+(b-a)_x & (c-a)_x \\
+(b-a)_y & (c-a)_y
+\end{bmatrix}^{-1} (r-a)
+$$
+
+<p>ということになります。</p>
+
+<p>この変換後の座標系から見ると、三角形はかならず次のように見えます。</p>
+
+<div>
+<img src="Triangle-fig4.svg">
+</div>
+
+<p>この中にいるかどうか判定するのは自明ですね。$0&lt;x', 0&lt;y', x'+y'&lt;1$が同時に成り立つ場合です。
+また、$x',y'$は三角形のどのあたりにいるかも教えてくれます。例えば頂点間の線形補完に使えます。</p>
+
+<hr>
+
+<p>
+<a href="Triangle.html">English</a>
+</p>
+
+</body>
+</html>

@@ -144,6 +144,24 @@ $$
 <p>この中にいるかどうか判定するのは自明ですね。$0&lt;x', 0&lt;y', x'+y'&lt;1$が同時に成り立つ場合です。
 また、$x',y'$は三角形のどのあたりにいるかも教えてくれます。例えば頂点間の線形補完に使えます。</p>
 
+
+<h2> テンソルを使った考え方 </h2>
+
+<p>式\eqref{2}において$x=x_1, y=x_2, x'=x_1', y'=x_2'$とおくと</p>
+
+\begin{align}
+x_i =& \frac{\partial x_i}{\partial x_1'} x_1' + \frac{\partial x_i}{\partial x_2'} x_2' \\
+=& \sum_j \frac{\partial x_i}{\partial x_j'} x_j'
+\end{align}
+
+<p>とまとめて書けます。</p>
+
+
+$$
+x = (\mathbf{x}' \cdot \mathbf{r}) \mathbf{e_x} + (\mathbf{x}' \cdot \mathbf{r}) \mathbf{e_y}
+$$
+
+
 <hr>
 
 <p>

@@ -174,8 +174,32 @@ SurfaceCS::~SurfaceCS(){
 	delete wm;
 	delete dmc;
 	delete bbody;
-	delete tin;
+	if(wm != tin)
+		delete tin;
 }
+
+double SurfaceCS::getHeight(double x, double z, Vec3d *normal)const{
+	if(wm){
+		static const double longscale = cos(35 / deg_per_rad); // Longitude scaling
+
+		int sx, sy;
+		tin->size(&sx, &sy);
+		double width = tin->width() / 2;
+		Vec3d temp(-width * 2 * longscale / sx, -width * 2 / sy, 1e-3 / 4.);
+		Vec3d rawTemp;
+		double ret = tin->getHeight(((-x / width / 2 / longscale + 0.5 - 0.5 / sx) * sx), (-z / width / 2 + 0.5 - 0.5 / sy) * sy, &temp);
+		if(normal){
+			(*normal)[0] = -temp[0];
+			(*normal)[1] = -temp[2];
+			(*normal)[2] = -temp[1];
+			normal->normin();
+		}
+		return ret * 1e-3 / 4.;
+	}
+	else
+		return 0.;
+}
+
 
 void SurfaceCS::anim(double dt){
 	st::anim(dt);

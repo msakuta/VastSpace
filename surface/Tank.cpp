@@ -514,10 +514,11 @@ void Tank::anim(double dt){
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
 		const Vec3d delta(0, -0.02 - btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta);
-		btScalar frac;
-		btVector3 worldHitPoint;
-		if(rayTest(ws->bdw, btvc(start), btvc(start + delta), frac, worldNormal, worldHitPoint)){
-			Vec3d dest = btvc(worldHitPoint + offset);
+		Vec3d normal;
+		double height = ((SurfaceCS*)w->cs)->getHeight(btPos[0], btPos[2], &normal);
+		worldNormal = btvc(normal);
+		if(btPos[1] - offset[1] < height){
+			Vec3d dest(btPos[0], height + offset[1], btPos[2]);
 			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 			setPosition(&dest, NULL, &newVelo);
 			btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;

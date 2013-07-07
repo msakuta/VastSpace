@@ -32,6 +32,8 @@ public:
 //		int x0, y0, x1, y1;
 //	} *alt;
 	void draw();
+
+	double getHeight(double x, double y, Vec3d *normal = NULL)const;
 protected:
 	struct Vertex;
 

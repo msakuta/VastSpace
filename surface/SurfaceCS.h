@@ -25,6 +25,7 @@ public:
 	bool readFileEnd(StellarContext &)override;
 
 	WarMap *getWarMap(){return wm;}
+	double getHeight(double x, double z, Vec3d *normal = NULL)const;
 protected:
 	WarMap *wm;
 	DrawMapCache *dmc;

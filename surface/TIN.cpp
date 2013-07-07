@@ -2,6 +2,8 @@
  * \brief Implementation of TIN class.
  */
 
+#define NOMINMAX
+
 #include "TIN.h"
 #include "drawmap.h"
 #include "glw/GLWchart.h"
@@ -103,28 +105,46 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 }
 
 int TIN::getat(WarMapTile *return_info, int x, int y){
-	Vec2i v(x, y);
-	for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
-		Vec2i v01 = (it->vertices[1] - it->vertices[0]);
-		Vec2i v12 = (it->vertices[2] - it->vertices[1]);
-		Vec2i v20 = (it->vertices[0] - it->vertices[2]);
-		int vp0 = v01.vp(v - Vec2i(it->vertices[0]));
-		int vp1 = v12.vp(v - Vec2i(it->vertices[1]));
-		int vp2 = v20.vp(v - Vec2i(it->vertices[2]));
-		if(vp0 <= 0 && vp1 <= 0 && vp2 <= 0 || 0 <= vp0 && 0 <= vp1 && 0 <= vp2){
-//			return_info->height = it->vertices[0][2];
-			Vec2d v0 = (v - Vec2i(it->vertices[0])).cast<double>();
-			Mat2d mat(v01.cast<double>(), -v20.cast<double>());
+	return_info->height = getHeight(x, y, NULL);
+	return 1;
+}
+
+template<typename T>
+static Vec3<T> &operator*=(Vec3<T> &a, const Vec3<T> &b){
+	for(int i = 0; i < 3; i++)
+		a[i] *= b[i];
+	return a;
+}
+
+double TIN::getHeight(double x, double y, Vec3d *normal)const{
+	Vec2d v(x, y);
+
+	for(Triangles::const_iterator it = triangles.begin(); it != triangles.end(); ++it){
+		Vec2d v01 = Vec2i(it->vertices[1] - it->vertices[0]).cast<double>();
+		Vec2d v20 = Vec2i(it->vertices[0] - it->vertices[2]).cast<double>();
+		{
+			Vec2d v0 = (v - Vec2i(it->vertices[0]).cast<double>());
+			Mat2d mat(v01, -v20);
 			Mat2d imat = mat.inverse();
 			double sp01 = imat.vec2(0).sp(v0);
 			double sp02 = imat.vec2(1).sp(v0);
-			return_info->height =
+			if(sp01 < 0 || sp02 < 0 || 1 < sp01 + sp02)
+				continue;
+			if(normal){
+				Vec3d vv01 = (it->vertices[1] - it->vertices[0]).cast<double>();
+				Vec3d vv02 = -(it->vertices[2] - it->vertices[0]).cast<double>();
+				vv01 *= *normal;
+				vv02 *= *normal;
+				*normal = vv01.vp(vv02);
+			}
+			return
 				  (it->vertices[1][2] - it->vertices[0][2]) * sp01
 				+ (it->vertices[2][2] - it->vertices[0][2]) * sp02
 				+ it->vertices[0][2];
-			return 1;
 		}
 	}
+	if(normal)
+		*normal = Vec3d(0,1,0);
 	return 0;
 }
 

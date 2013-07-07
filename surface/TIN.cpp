@@ -124,7 +124,7 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 }
 
 int TIN::getat(WarMapTile *return_info, int x, int y){
-	return_info->height = getHeight(x, y, NULL);
+	return_info->height = getHeight(x, y);
 	return 1;
 }
 
@@ -137,7 +137,11 @@ static Vec3<T> &operator*=(Vec3<T> &a, const Vec3<T> &b){
 	return a;
 }
 
-double TIN::getHeight(double x, double y, Vec3d *normal)const{
+/// \brief Returns height at given point in the heightfield and optional normal vector.
+/// \param x,y Point to query the height at
+/// \param scales An optional vector which indicates axis scales. It's used for calculating normal vector.
+/// \param normal An optional vector object to receive normal vector.
+double TIN::getHeight(double x, double y, const Vec3d *scales, Vec3d *normal)const{
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	Vec2d v(x, y);
@@ -187,8 +191,10 @@ double TIN::getHeight(double x, double y, Vec3d *normal)const{
 			if(normal){
 				Vec3d vv01 = (it->vertices[1] - it->vertices[0]).cast<double>();
 				Vec3d vv02 = -(it->vertices[2] - it->vertices[0]).cast<double>();
-				vv01 *= *normal;
-				vv02 *= *normal;
+				if(scales){
+					vv01 *= *scales;
+					vv02 *= *scales;
+				}
 				if(normal)
 					*normal = vv01.vp(vv02);
 			}

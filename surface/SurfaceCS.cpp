@@ -185,9 +185,9 @@ double SurfaceCS::getHeight(double x, double z, Vec3d *normal)const{
 		int sx, sy;
 		tin->size(&sx, &sy);
 		double width = tin->width() / 2;
-		Vec3d temp(-width * 2 * longscale / sx, -width * 2 / sy, 1e-3 / 4.);
-		Vec3d rawTemp;
-		double ret = tin->getHeight(((-x / width / 2 / longscale + 0.5 - 0.5 / sx) * sx), (-z / width / 2 + 0.5 - 0.5 / sy) * sy, &temp);
+		Vec3d scales(-width * 2 * longscale / sx, -width * 2 / sy, 1e-3 / 4.);
+		Vec3d temp;
+		double ret = tin->getHeight(((-x / width / 2 / longscale + 0.5 - 0.5 / sx) * sx), (-z / width / 2 + 0.5 - 0.5 / sy) * sy, &scales, &temp);
 		if(normal){
 			(*normal)[0] = -temp[0];
 			(*normal)[1] = -temp[2];

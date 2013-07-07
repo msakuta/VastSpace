@@ -33,7 +33,7 @@ public:
 //	} *alt;
 	void draw();
 
-	double getHeight(double x, double y, Vec3d *normal = NULL)const;
+	double getHeight(double x, double y, const Vec3d *scales = NULL, Vec3d *normal = NULL)const;
 protected:
 	struct Vertex;
 

@@ -24,6 +24,7 @@ extern "C"{
 #include <gl/GL.h>
 #include <GL/glext.h>
 #include <fstream>
+#include <algorithm>
 
 #if defined(WIN32)
 static PFNGLGENBUFFERSPROC glGenBuffers;
@@ -48,6 +49,15 @@ static int initBuffers(){
 #else
 static int initBuffers(){return -1;}
 #endif
+
+double TIN::triangleMaxX(const TIN::Triangle &a){
+	return std::max(a.vertices[0][0], std::max(a.vertices[1][0], a.vertices[2][0]));
+}
+
+bool TIN::trianglePredicate(const Triangle *a, const Triangle *b){
+	return triangleMaxX(*a) < triangleMaxX(*b);
+};
+
 
 TIN::TIN(const char *fname) : vertices(vertexPredicate){
 	std::ifstream is(fname);
@@ -102,6 +112,15 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 		// protection is needed? I don't know.
 		v.normal = vaccum.norm();
 	}
+
+	// Sort the triangles with maximum X values of Axis-Aligned Bounding Box (AABB) to enhance speed
+	// when querying triangle at a given point.
+	// Note that sorting with X coordinates helps sufficiently when the height map is square-like,
+	// but it may be inefficient in long height map in Y direction.
+	for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
+		sortx.push_back(&*it);
+	}
+	std::sort(sortx.begin(), sortx.end(), trianglePredicate);
 }
 
 int TIN::getat(WarMapTile *return_info, int x, int y){
@@ -109,6 +128,8 @@ int TIN::getat(WarMapTile *return_info, int x, int y){
 	return 1;
 }
 
+/// Temporarily overloads multiplication operator to produce component-wise product.
+/// This is not commonly used product of vectors, so we don't add it to the library code.
 template<typename T>
 static Vec3<T> &operator*=(Vec3<T> &a, const Vec3<T> &b){
 	for(int i = 0; i < 3; i++)
@@ -117,9 +138,42 @@ static Vec3<T> &operator*=(Vec3<T> &a, const Vec3<T> &b){
 }
 
 double TIN::getHeight(double x, double y, Vec3d *normal)const{
+	timemeas_t tm;
+	TimeMeasStart(&tm);
 	Vec2d v(x, y);
+	int lox = 0, hix = sortx.size();
+	const int ix = int(floor(x)); // Truncate fractions
+	int tinbinary = 0;
 
-	for(Triangles::const_iterator it = triangles.begin(); it != triangles.end(); ++it){
+	// Find the minimum index of the triangle that does not reach given x
+	// using binary search.
+	// Note that this result is not necessarily stable (we can end up with
+	// one of multiple possible solutions), but it's enough for our purpose.
+	while(lox != hix){
+		int midx = (lox + hix) / 2;
+		int mxt = triangleMaxX(*sortx[midx]); // Maximum X in the Triangle
+		if(mxt < ix){
+			if(lox == midx)
+				break;
+			lox = midx;
+		}
+		else if(ix < mxt){
+			if(hix == midx)
+				break;
+			hix = midx;
+		}
+		else
+			break;
+		tinbinary++;
+	}
+
+	// Debug chart output of binary search steps
+	GLWchart::addSampleToCharts("tinbinary", tinbinary);
+
+	int i;
+	// Start off from the smallest triangle index which has AABB's max X less than the queried point.
+	for(i = lox; i < sortx.size(); ++i){
+		Triangle *it = sortx[i];
 		Vec2d v01 = Vec2i(it->vertices[1] - it->vertices[0]).cast<double>();
 		Vec2d v20 = Vec2i(it->vertices[0] - it->vertices[2]).cast<double>();
 		{
@@ -135,16 +189,25 @@ double TIN::getHeight(double x, double y, Vec3d *normal)const{
 				Vec3d vv02 = -(it->vertices[2] - it->vertices[0]).cast<double>();
 				vv01 *= *normal;
 				vv02 *= *normal;
-				*normal = vv01.vp(vv02);
+				if(normal)
+					*normal = vv01.vp(vv02);
 			}
+
+			// Debug chart drawing; can be deleted once the performance becomes stable.
+			GLWchart::addSampleToCharts("tinfind", i - lox);
+			GLWchart::addSampleToCharts("tinfindtime", TimeMeasLap(&tm));
+
 			return
 				  (it->vertices[1][2] - it->vertices[0][2]) * sp01
 				+ (it->vertices[2][2] - it->vertices[0][2]) * sp02
 				+ it->vertices[0][2];
 		}
 	}
+
+	GLWchart::addSampleToCharts("tinfind", i - lox);
+
 	if(normal)
-		*normal = Vec3d(0,1,0);
+		*normal = Vec3d(0,0,-1);
 	return 0;
 }
 

@@ -184,6 +184,9 @@ register_console_command("chart", function(...){
 //	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
 	chart.addSeries("sampled", 0, "wdtime", [0.5,1.0,0.0,1]);
 	chart.addSeries("sampled", 0, "tintime", [0.0,1.0,0.0,1]);
+	chart.addSeries("sampled", -1, "tinbinary", [0.0,0.75,0.5,1]);
+	chart.addSeries("sampled", -1, "tinfind", [0.0,1.0,0.5,1]);
+	chart.addSeries("sampled", 0, "tinfindtime", [0.5,0.75,0.0,1]);
 //	chart.addSeries("sampled", 0, "f15time", [0.0,0.5,1.0,1]);
 //	chart.addSeries("sampled", 0, "f15smtime", [1.0,0.5,0.0,1]);
 //	chart.addSeries("sampled", 0, "posetime", [1.0,0.5,1.0,1]);

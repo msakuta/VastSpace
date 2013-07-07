@@ -44,6 +44,7 @@ protected:
 	};
 	typedef std::vector<Triangle> Triangles;
 	Triangles triangles;
+	std::vector<Triangle*> sortx;
 
 	typedef std::set<int> VertexRefSet;
 	struct Vertex{
@@ -54,6 +55,8 @@ protected:
 	Vertices vertices;
 
 	static bool vertexPredicate(const Vec3i &a, const Vec3i &b);
+	static double triangleMaxX(const Triangle &a);
+	static bool trianglePredicate(const Triangle *a, const Triangle *b);
 };
 
 

@@ -88,6 +88,8 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 /*static const double tank_sc[3] = {.05, .055, .075};*/
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
+double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
+double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
 HitBoxList Tank::hitboxes;
 
 
@@ -163,6 +165,8 @@ void Tank::init(){
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/type90.nut"),
 			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(topSpeed, "topSpeed") <<=
+			SingleDoubleProcess(backSpeed, "backSpeed") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -728,10 +732,10 @@ void Tank::anim(double dt){
 
 	if(floorTouch){
 		if(inputs.press & PL_W){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * 0.05), worldNormal));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * topSpeed), worldNormal));
 		}
 		if(inputs.press & PL_S){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -0.05), worldNormal));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -backSpeed), worldNormal));
 		}
 		if(inputs.press & PL_A){
 			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));

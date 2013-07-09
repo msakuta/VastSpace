@@ -60,6 +60,8 @@ public:
 protected:
 
 	static double defaultMass;
+	static double topSpeed;
+	static double backSpeed;
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const{return hitboxes;}

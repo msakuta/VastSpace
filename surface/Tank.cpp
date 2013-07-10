@@ -41,8 +41,6 @@ extern "C"{
 
 
 #define FORESPEED 0.004
-#define TURRETROTSPEED (.2 * M_PI)
-#define TURRETROTRANGE (.6 * M_PI)
 #define ROTSPEED (.075 * M_PI)
 #define GUNVARIANCE .005
 #define INTOLERANCE (M_PI / 50.)
@@ -89,6 +87,10 @@ double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
 double Tank::mainGunCooldown = 3.;
 double Tank::mainGunMuzzleSpeed = 1.7;
 double Tank::mainGunDamage = 500.;
+double Tank::turretYawSpeed = 0.1 * M_PI;
+double Tank::barrelPitchSpeed = 0.05 * M_PI;
+double Tank::barrelPitchMin = -0.05 * M_PI;
+double Tank::barrelPitchMax = 0.3 * M_PI;
 HitBoxList Tank::hitboxes;
 
 
@@ -170,6 +172,10 @@ void Tank::init(){
 			SingleDoubleProcess(mainGunCooldown, "mainGunCooldown") <<=
 			SingleDoubleProcess(mainGunMuzzleSpeed, "mainGunMuzzleSpeed") <<=
 			SingleDoubleProcess(mainGunDamage, "mainGunDamage") <<=
+			SingleDoubleProcess(turretYawSpeed, "turretYawSpeed") <<=
+			SingleDoubleProcess(barrelPitchSpeed, "barrelPitchSpeed") <<=
+			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
+			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -206,10 +212,9 @@ Vec3d Tank::tankMuzzlePos(Vec3d *nh)const{
 
 int Tank::shootcannon(double dt){
 //	struct bullet *pb;
-	double v = mainGunMuzzleSpeed;
-	const Vec3d velo0(0, 0, -v);
+	const double v = mainGunMuzzleSpeed;
 	Vec3d dir;
-	Vec3d gunPos = tankMuzzlePos(&dir);
+	const Vec3d gunPos = tankMuzzlePos(&dir);
 	while(this->cooldown < dt){
 		int i = 0;
 		Bullet *pb = new Bullet(this, 2., mainGunDamage);
@@ -217,7 +222,7 @@ int Tank::shootcannon(double dt){
 
 		pb->mass = .005;
 		pb->pos = gunPos;
-		pb->velo = rot.trans(velo0) + this->velo;
+		pb->velo = dir * v + this->velo;
 		for(int j = 0; j < 3; j++)
 			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
 		pb->anim(dt - this->cooldown);
@@ -956,15 +961,10 @@ int Tank::getrot(double (*ret)[16]){
 
 
 void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-/*	double yaw = pt->pyr[1] + ((tank2_t*)pt)->turrety;*/
 	static  const Vec3d ofs[2] = {Vec3d(-.0006, .0010, -.0005), Vec3d(0., .010, .025)};
 	Mat4d mat, mat2;
 	int camera = seatid;
 	transform(mat);
-/*	MAT3TO4(mat, pt->rot);*/
-/*	pyrmat(pt->pyr, mat);
-	MAT4TRANSLATE(mat, - 0.005 * sin(pt->turrety), .005, 0.005 * cos(pt->turrety));*/
-/*	VECCPY(&mat[12], pt->pos);*/
 	camera = camera < -2 ? 0 : (camera + 3) % 3;
 	if(camera == 2){
 /*		struct bullet *pb;
@@ -984,11 +984,11 @@ void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 			mat4rotx(mat, mat2, barrelp);
 		}
 	}
+
 	pos = mat.vp3(ofs[camera]);
-	rot = this->rot;
-/*	(*pos)[0] = pt->pos[0] - 0.005 * sin(yaw);
-	(*pos)[1] = pt->pos[1] + 0.005;
-	(*pos)[2] = pt->pos[2] + 0.005 * cos(yaw);*/
+
+	// Face to the turret's aiming point
+	rot = this->rot.rotate(turrety, 0, -1, 0).rotate(barrelp, 1, 0, 0);
 }
 
 double Tank::getHitRadius()const{
@@ -997,6 +997,11 @@ double Tank::getHitRadius()const{
 
 void Tank::control(const input_t *in, double dt){
 	st::control(in, dt);
+
+	// Rotate the turret and barrel
+	turrety = approach(turrety, turrety + in->analog[0], dt * turretYawSpeed, 0);
+	barrelp = rangein(approach(barrelp, barrelp + in->analog[1], dt * barrelPitchSpeed, 0), barrelPitchMin, barrelPitchMax);
+
 #if 0
 	static int prev = 0;
 	double h, n[3], pyr[3];

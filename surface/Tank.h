@@ -66,6 +66,10 @@ protected:
 	static double mainGunCooldown;
 	static double mainGunMuzzleSpeed;
 	static double mainGunDamage;
+	static double turretYawSpeed;
+	static double barrelPitchSpeed;
+	static double barrelPitchMin;
+	static double barrelPitchMax;
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const{return hitboxes;}

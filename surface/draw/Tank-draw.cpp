@@ -14,8 +14,6 @@ extern "C"{
 
 
 #define FORESPEED 0.004
-#define TURRETROTSPEED (.2 * M_PI)
-#define TURRETROTRANGE (.6 * M_PI)
 #define ROTSPEED (.075 * M_PI)
 #define GUNVARIANCE .005
 #define INTOLERANCE (M_PI / 50.)

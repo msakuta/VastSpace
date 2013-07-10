@@ -62,6 +62,9 @@ protected:
 	static double defaultMass;
 	static double topSpeed;
 	static double backSpeed;
+	static double mainGunCooldown;
+	static double mainGunMuzzleSpeed;
+	static double mainGunDamage;
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const{return hitboxes;}
@@ -70,11 +73,12 @@ protected:
 
 	bool buildBody();
 	void init();
-	int shootcannon(double phi, double theta, double variance, Vec3d &mpos, int *mposa);
-	int tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mpos, int *mposa);
+	int shootcannon(double dt);
+	int tryshoot(double dt);
 	void find_enemy_logic();
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
 	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal, const HitBox *, int);
+	Vec3d tankMuzzlePos(Vec3d *nh = NULL)const;
 };
 
 #endif

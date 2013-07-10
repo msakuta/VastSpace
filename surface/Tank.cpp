@@ -90,6 +90,9 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
 double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
+double Tank::mainGunCooldown = 3.;
+double Tank::mainGunMuzzleSpeed = 1.7;
+double Tank::mainGunDamage = 500.;
 HitBoxList Tank::hitboxes;
 
 
@@ -167,6 +170,9 @@ void Tank::init(){
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(topSpeed, "topSpeed") <<=
 			SingleDoubleProcess(backSpeed, "backSpeed") <<=
+			SingleDoubleProcess(mainGunCooldown, "mainGunCooldown") <<=
+			SingleDoubleProcess(mainGunMuzzleSpeed, "mainGunMuzzleSpeed") <<=
+			SingleDoubleProcess(mainGunDamage, "mainGunDamage") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -184,32 +190,42 @@ void Tank::addRigidBody(WarSpace *ws){
 
 static const avec3_t tank_cog = {0., .0007, 0.};
 
-static void tankmuzzlepos(Tank *pt, Vec3d *pos, Vec3d *nh){
-	const avec3_t velo0 = {0., 0., -1.}, pos0 = {0., 0/*.0025*/, -.005};
+Vec3d Tank::tankMuzzlePos(Vec3d *nh)const{
+	static const Vec3d velo0(0., 0., -1.), pos0(0., 0/*.0025*/, -.005);
 /*	const double *cog = tank_cog;*/
 	Mat4d mat, rot;
 
-	pt->transform(mat);
+	transform(mat);
 	mat.translatein(-tank_cog[0], -tank_cog[1], -tank_cog[2]);
-	rot = mat.roty(-pt->turrety);
+	rot = mat.roty(-turrety);
 	rot.translatein(0, 90 * TANK_SCALE, -85 * TANK_SCALE);
-	mat = rot.rotx(pt->barrelp);
-/*	mat4translate(mat, -cog[0], -cog[1], -cog[2]);*/
-/*	VECADDIN(&(mat)[12], cog);*/
-	mat.vec3(3) += pt->pos;
-/*		tankrot(&mat, pt);*/
+	mat = rot.rotx(barrelp);
 
 	if(nh)
 		*nh = mat.dvp3(velo0);
-	if(pos)
-		*pos = mat.vp3(pos0);
+	return mat.vp3(pos0);
 
 }
 
-int Tank::shootcannon(double phi, double theta, double variance, Vec3d &mpos, int *mposa){
-	struct bullet *pb;
+int Tank::shootcannon(double dt){
+//	struct bullet *pb;
+	double v = mainGunMuzzleSpeed;
+	const Vec3d velo0(0, 0, -v);
 	Vec3d dir;
-	double v = TANKGUNSPEED;
+	Vec3d gunPos = tankMuzzlePos(&dir);
+	while(this->cooldown < dt){
+		int i = 0;
+		Bullet *pb = new Bullet(this, 2., mainGunDamage);
+		w->addent(pb);
+
+		pb->mass = .005;
+		pb->pos = gunPos;
+		pb->velo = rot.trans(velo0) + this->velo;
+		for(int j = 0; j < 3; j++)
+			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+		pb->anim(dt - this->cooldown);
+		this->cooldown += mainGunCooldown;
+	}
 #if 0
 	{
 /*		double phi = (rot ? phi0 : yaw) + (drseq(&gsrs) - .5) * variance;
@@ -328,7 +344,9 @@ static void tankssm(tank2_t *p, warf_t *w){
 }
 #endif
 
-int Tank::tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mpos, int *mposa){
+int Tank::tryshoot(double dt){
+	if(dt <= this->cooldown)
+		return 0;
 //	double yaw = pyr[1] + p->turrety;
 //	double pitch = /*pt->pyr[0]*/ + p->barrelp;
 /*	double (*theta_phi)[2] = &p->desired;*/
@@ -336,7 +354,7 @@ int Tank::tryshoot(int rot, Vec3d &epos, double phi0, double variance, Vec3d *mp
 //		return 0;
 
 #if 1
-//	return shootcannon(w, p, yaw, pitch, variance, mpos, mposa);
+	return shootcannon(dt);
 #else
 /*	if(!shoot_angle(pt->pos, epos, phi0, v, &theta_phi))
 		return 0;*/
@@ -533,7 +551,7 @@ void Tank::anim(double dt){
 
 	if(!w || controller){
 	}
-	else{
+	else if(0 < getHealth()){
 		double phi; /* enemy direction */
 
 		/* find enemy logic */
@@ -551,7 +569,7 @@ void Tank::anim(double dt){
 			double bulletspeed;
 			int subweapon;
 
-			tankmuzzlepos(this, &mpos, &mdir);
+			mpos = tankMuzzlePos(&mdir);
 
 			subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
 				|| normal.sp(mdir) < -.2
@@ -584,26 +602,8 @@ void Tank::anim(double dt){
 			else
 				pt->inputs.press |= PL_W;*/
 
-			if(cooldown == 0.){
-				if(!subweapon){
-//					weapon = 0;
-					if(!tryshoot(0, epos, phi, GUNVARIANCE, &mpos, &mposa))
-						cooldown += RETHINKTIME;
-				}
-#if 0
-				else{
-					double yaw = pt->pyr[1] + p->turrety;
-					double pitch = /*pt->pyr[0]*/ + p->barrelp;
-				/*	double (*theta_phi)[2] = &p->desired;*/
-					if(!rot && (INTOLERANCE < fabs(phi - yaw) || INTOLERANCE < fabs(pitch - p->desired[0])))
-						pt->inputs.press &= ~PL_ENTER;
-					else{
-						pt->weapon = 1;
-						pt->inputs.press |= PL_ENTER;
-					}
-				}
-#endif
-			}
+			inputs.press |= PL_ENTER;
+	
 
 //			playWAVEFile("c0wg42.wav");
 /*			{
@@ -616,11 +616,6 @@ void Tank::anim(double dt){
 			}*/
 			//playWave3D("c0wg42.wav", pos, w->pl->pos, w->pl->pyr, .2, .01, w->realtime);
 		}
-
-		if(cooldown < dt)
-			cooldown = 0.;
-		else
-			cooldown -= dt;
 
 #if 0 /* chaingun */
 		if(pt->cooldown2 < dt){
@@ -719,10 +714,24 @@ void Tank::anim(double dt){
 	}
 #endif
 
-	if(cooldown2 < dt)
-		cooldown2 = 0.;
-	else
-		cooldown2 -= dt;
+	if(0 < getHealth()){
+		if(inputs.press & PL_ENTER){
+			if(cooldown == 0.){
+				if(!tryshoot(dt))
+					cooldown += RETHINKTIME;
+			}
+		}
+
+		if(cooldown < dt)
+			cooldown = 0.;
+		else
+			cooldown -= dt;
+
+		if(cooldown2 < dt)
+			cooldown2 = 0.;
+		else
+			cooldown2 -= dt;
+	}
 
 	{
 		Vec3d accel = w->accel(pos, velo);

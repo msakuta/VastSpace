@@ -224,13 +224,13 @@ int Tank::shootcannon(double dt){
 		for(int j = 0; j < 3; j++)
 			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
 		pb->anim(dt - this->cooldown);
-		this->cooldown += mainGunCooldown;
-	}
-#if 0
-	{
+
+#if 1
+
 /*		double phi = (rot ? phi0 : yaw) + (drseq(&gsrs) - .5) * variance;
 		double theta = pt->pyr[0] + (drseq(&gsrs) - .5) * variance;
 		theta += acos(vx / v);*/
+#if 0
 		Vec3d dr, momentum, amomentum, pos;
 		int i;
 
@@ -269,6 +269,7 @@ int Tank::shootcannon(double dt){
 		}
 #	endif
 
+
 #if 1
 		VECSUB(dr, pb->pos, pt->pos);
 		VECSUBIN(dr, tank_cog);
@@ -290,37 +291,39 @@ int Tank::shootcannon(double dt){
 		pb->pos[1] = pt->pos[1] +  0.0025;
 		pb->pos[2] = pt->pos[2] - .005 * cos(phi);
 #endif
-	}
-	{
-		avec3_t velo0, velo, pos;
-		int i;
-		VECSCALE(velo0, dir, .005);
-		VECADDIN(velo0, pt->velo);
-		for(i = 0; i < 8; i++){
-			int j;
-			COLOR32 col;
-			for(j = 0; j < 3; j++)
-				velo[j] = velo0[j] + (drseq(&w->rs) - .5) * .005;
-			for(j = 0; j < 3; j++)
-				pos[j] = pb->pos[j] + (drseq(&w->rs) - .5) * .005;
-			if(i < 4)
-				col = COLOR32RGBA(255, 191 + rseq(&w->rs) % 32, 127,255);
-			else
-				col = COLOR32RGBA(191 + rseq(&w->rs) % 64, 191, 191, 127);
-			AddTeline3D(w->tell, pos, velo, .005, NULL, NULL, NULL, col, TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, i < 4 ? .2 : 1.5);
+#endif
+#if 1
+		if(WarSpace *ws = *w){
+			const Vec3d velo0 = dir * .005 + this->velo;
+			for(int i = 0; i < 8; i++){
+				Vec3d velo, pos;
+				for(int j = 0; j < 3; j++)
+					velo[j] = velo0[j] + (drseq(&w->rs) - .5) * .005;
+				for(int j = 0; j < 3; j++)
+					pos[j] = gunPos[j] + (drseq(&w->rs) - .5) * .005;
+				COLOR32 col;
+				if(i < 4)
+					col = COLOR32RGBA(255, 191 + rseq(&w->rs) % 32, 127,255);
+				else
+					col = COLOR32RGBA(191 + rseq(&w->rs) % 64, 191, 191, 127);
+				AddTeline3D(ws->tell, pos, velo, 0.005, quat_u, vec3_000, vec3_000, col, TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, i < 4 ? .2 : 1.5);
+			}
 		}
-	}
-	pt->shoots++;
-	p->ammo[0]--;
-	p->cooldown += RELOADTIME;
-	p->muzzle |= 1;
+//		pt->shoots++;
+//		p->ammo[0]--;
+		this->cooldown += mainGunCooldown;
+		this->muzzle |= 1;
+#		if 0 // Wait the sound engine
 	{
 		double s;
 		s = 1. / (VECSDIST(pb->pos, w->pl->pos) + 1.);
 		playWave3DPitch("rc.zip/sound/tank_001.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, s, .2, w->realtime, 255);
 		playWave3DPitch("rc.zip/sound/tank_001_far2.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, 1 - s, 20., w->realtime, 255);
 	}
+#		endif
 #endif
+#endif
+	}
 	return 1;
 }
 

@@ -715,7 +715,8 @@ void Tank::anim(double dt){
 #endif
 
 	if(0 < getHealth()){
-		if(inputs.press & PL_ENTER){
+		// Main trigger
+		if(inputs.press & (PL_ENTER | PL_LCLICK)){
 			if(cooldown == 0.){
 				if(!tryshoot(dt))
 					cooldown += RETHINKTIME;

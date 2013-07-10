@@ -16,16 +16,12 @@ extern "C"{
 #define TURRETROTSPEED (.2 * M_PI)
 #define TURRETROTRANGE (.6 * M_PI)
 #define ROTSPEED (.075 * M_PI)
-#define TANKGUNSPEED 1.7
-#define TANKGUNDAMAGE 500.
 #define GUNVARIANCE .005
 #define INTOLERANCE (M_PI / 50.)
 #define BULLETRANGE 3.
 #define RELOADTIME 3.
 #define RETHINKTIME .5
 #define TANK_MAX_GIBS 30
-/*#define TANK_SCALE .0001*/
-#define TANK_SCALE (3.33 / 200 * 1e-3)
 
 
 
@@ -58,7 +54,6 @@ void Tank::draw(WarDraw *wd){
 	if(model){
 //		GLfloat fv[4] = {.8f, .5f, 0.f, 1.f}, ambient[4] = {.4f, .25f, 0.f, 1.f};
 //		static const double normal[3] = {0., 1., 0.}, mountpos[3] = {-33, 125, 45};
-		double scale = 3.4 / 200. * 1e-3, tscale = scale, bscale = scale;
 //		if(race % 2)
 //			fv[0] = 0., fv[2] = .8f, ambient[0] = 0., ambient[2] = .4f;
 
@@ -80,7 +75,7 @@ void Tank::draw(WarDraw *wd){
 #if 1
 		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
 		// the model is made such way.
-		glScaled(scale, scale, scale);
+		glScaled(modelScale, modelScale, modelScale);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 #else

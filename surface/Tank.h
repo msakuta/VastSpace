@@ -59,6 +59,7 @@ public:
 
 protected:
 
+	static double modelScale;
 	static double defaultMass;
 	static double topSpeed;
 	static double backSpeed;

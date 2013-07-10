@@ -1,5 +1,7 @@
 local m = 1.e-3;
 
+modelScale <- 3.33 / 200 * m;
+
 mass <- 50.e3;
 
 topSpeed <- 70. / 3.6 * m;

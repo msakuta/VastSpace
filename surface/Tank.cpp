@@ -44,16 +44,11 @@ extern "C"{
 #define TURRETROTSPEED (.2 * M_PI)
 #define TURRETROTRANGE (.6 * M_PI)
 #define ROTSPEED (.075 * M_PI)
-#define TANKGUNSPEED 1.7
-#define TANKGUNDAMAGE 500.
 #define GUNVARIANCE .005
 #define INTOLERANCE (M_PI / 50.)
 #define BULLETRANGE 3.
-#define RELOADTIME 3.
 #define RETHINKTIME .5
 #define TANK_MAX_GIBS 30
-/*#define TANK_SCALE .0001*/
-#define TANK_SCALE (3.33 / 200 * 1e-3)
 
 static struct random_sequence gsrs = {1};
 
@@ -87,6 +82,7 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 
 /*static const double tank_sc[3] = {.05, .055, .075};*/
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
+double Tank::modelScale = 3.33 / 200 * 1e-3;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
 double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
@@ -111,7 +107,7 @@ Tank::Tank(WarField *aw) : st(aw){
 	steer = 0.;
 	wheelspeed = wheelangle = 0.;
 	turrety = barrelp = 0.;
-	cooldown = cooldown2 = RELOADTIME;
+	cooldown = cooldown2 = mainGunCooldown;
 	mountpy[0] = mountpy[1] = 0.;
 	ammo[0] = 35; /* main gun ammunition */
 	ammo[1] = 2000; /* coaxial gun ammo (type 74 7.64mm) */
@@ -167,6 +163,7 @@ void Tank::init(){
 	static bool initialized = false;
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/type90.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(topSpeed, "topSpeed") <<=
 			SingleDoubleProcess(backSpeed, "backSpeed") <<=
@@ -198,7 +195,7 @@ Vec3d Tank::tankMuzzlePos(Vec3d *nh)const{
 	transform(mat);
 	mat.translatein(-tank_cog[0], -tank_cog[1], -tank_cog[2]);
 	rot = mat.roty(-turrety);
-	rot.translatein(0, 90 * TANK_SCALE, -85 * TANK_SCALE);
+	rot.translatein(0, 90 * modelScale, -85 * modelScale);
 	mat = rot.rotx(barrelp);
 
 	if(nh)
@@ -577,7 +574,7 @@ void Tank::anim(double dt){
 			subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
 				|| normal.sp(mdir) < -.2
 				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
-			bulletspeed = subweapon ? .8 : TANKGUNSPEED;
+			bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
 
 /*			if(enemy->flying())
 				VECCPY(epos, pt->enemy->pos);

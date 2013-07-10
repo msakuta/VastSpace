@@ -6,6 +6,7 @@
 #include "draw/WarDraw.h"
 #include "draw/material.h"
 #include "draw/mqoadapt.h"
+#include "draw/effects.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -22,6 +23,8 @@ extern "C"{
 #define RELOADTIME 3.
 #define RETHINKTIME .5
 #define TANK_MAX_GIBS 30
+
+
 
 
 
@@ -121,12 +124,11 @@ void Tank::draw(WarDraw *wd){
 
 void Tank::drawtra(wardraw_t *wd){
 
-/*	if(p->muzzle & 1){
-		avec3_t mpos;
-		tankmuzzlepos(p, &mpos, NULL);
-		drawmuzzleflasha(mpos, wd->view, .007, wd->irot);
-		p->muzzle = 0;
-	}*/
+	if(muzzle & 1){
+		Vec3d mpos = tankMuzzlePos();
+		drawmuzzleflasha(mpos, wd->vw->pos, .007, wd->vw->irot);
+		muzzle = 0;
+	}
 
 /*	avec3_t v;
 	amat4_t mat;
@@ -211,3 +213,6 @@ void tank_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const double irot[16]
 
 }
 #endif
+
+
+

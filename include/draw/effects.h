@@ -34,5 +34,9 @@ EXPORT void gldScrollTextureBeam(const Vec3d &view, const Vec3d &start, const Ve
 
 EXPORT void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4d &irot, struct random_sequence *prs, const Vec3d &viewer);
 
+EXPORT double perlin_noise_pixel(int x, int y, int bit);
+
+EXPORT void drawmuzzleflasha(const Vec3d &pos, const Vec3d &org, double rad, const Mat4d &irot);
+
 
 #endif

@@ -4,25 +4,22 @@
     <Filter Include="Sources">
       <UniqueIdentifier>{19339e40-50ee-458f-8bdf-733bd0027403}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headers">
-      <UniqueIdentifier>{3706bc39-80d7-4d1f-a428-dce85882aaa4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\glw">
       <UniqueIdentifier>{5b709e3e-f6cc-4437-8cf9-9332f139c046}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Headers\glw">
-      <UniqueIdentifier>{62a8db43-3c44-4e61-a150-49e4a92eb927}</UniqueIdentifier>
     </Filter>
     <Filter Include="Sources\calc">
       <UniqueIdentifier>{6cd49d75-427b-448a-a7a6-cfca8d810d4b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headers\calc">
-      <UniqueIdentifier>{928e971b-d742-4208-93cc-6ab806ec7d81}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\draw">
       <UniqueIdentifier>{ba0a8eef-679a-43b0-883c-a3cae04d7562}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headers\draw">
+    <Filter Include="Exported Headers">
+      <UniqueIdentifier>{101c6a89-c625-450d-b5ff-aec446e4b6d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{3706bc39-80d7-4d1f-a428-dce85882aaa4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Exported Headers\draw">
       <UniqueIdentifier>{be21abe0-94f7-4de7-aff1-428642d39a51}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -323,41 +320,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\glw\GLWentlist.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glw\popup.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glw\glwindow.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glw\GLWmenu.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glw\GLWtip.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glw\message.h">
-      <Filter>Headers\glw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\calc\tokker.h">
-      <Filter>Headers\calc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\calc\calc.h">
-      <Filter>Headers\calc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\calc\calc_p.h">
-      <Filter>Headers\calc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\draw\effects.h">
-      <Filter>Headers\draw</Filter>
-    </ClInclude>
-    <ClInclude Include="..\draw\ring-draw.h">
-      <Filter>Headers\draw</Filter>
+    <ClInclude Include="..\include\draw\effects.h">
+      <Filter>Exported Headers\draw</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ModelEntity.h">
-      <Filter>Headers</Filter>
+      <Filter>Exported Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

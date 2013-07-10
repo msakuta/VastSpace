@@ -438,3 +438,79 @@ void drawmuzzleflash4(const Vec3d &pos, const Mat4d &rot, double rad, const Mat4
 		glPopAttrib();
 	}*/
 }
+
+
+
+
+static double noise_pixel(int x, int y, int bit){
+	struct random_sequence rs;
+	initfull_rseq(&rs, x + (bit << 16), y);
+	return drseq(&rs);
+}
+
+double perlin_noise_pixel(int x, int y, int bit){
+	int ret = 0, i;
+	double sum = 0., maxv = 0., f = 1.;
+	double persistence = 0.5;
+	for(i = 3; 0 <= i; i--){
+		int cell = 1 << i;
+		double a00, a01, a10, a11, fx, fy;
+		a00 = noise_pixel(x / cell, y / cell, bit);
+		a01 = noise_pixel(x / cell, y / cell + 1, bit);
+		a10 = noise_pixel(x / cell + 1, y / cell, bit);
+		a11 = noise_pixel(x / cell + 1, y / cell + 1, bit);
+		fx = (double)(x % cell) / cell;
+		fy = (double)(y % cell) / cell;
+		sum += ((a00 * (1. - fx) + a10 * fx) * (1. - fy)
+			+ (a01 * (1. - fx) + a11 * fx) * fy) * f;
+		maxv += f;
+		f *= persistence;
+	}
+	return sum / maxv;
+}
+
+void drawmuzzleflasha(const Vec3d &pos, const Vec3d &org, double rad, const Mat4d &irot){
+	static GLuint texname = 0;
+	static const GLfloat envcolor[4] = {1.,1,1,1};
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
+	if(!texname){
+		GLubyte texbits[64][64][2];
+		struct random_sequence rs;
+		int i, j;
+		init_rseq(&rs, 3526262);
+		for(i = 0; i < 64; i++) for(j = 0; j < 64; j++){
+			double x = (i - 32.) / 32., y = (j - 32.) / 32., a, r;
+			r = 1.5 * (1. - x * x - y * y + (perlin_noise_pixel(i, j, 3) - .5) * .5);
+			texbits[i][j][0] = (GLubyte)rangein(r * 256, 0, 255);
+			a = 1.5 * (1. - x * x - y * y + (perlin_noise_pixel(i + 64, j + 64, 3) - .5) * .5);
+			texbits[i][j][1] = (GLubyte)rangein(a * 256, 0, 255);
+		}
+		glGenTextures(1, &texname);
+		glBindTexture(GL_TEXTURE_2D, texname);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 64, 64, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texbits);
+	}
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, /*GL_ADD/*/GL_BLEND);
+	glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, envcolor);
+	glEnable(GL_TEXTURE_2D);
+	glColor4f(1, .5, 0., 1.);
+	/*glDisable/*/glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+	glDisable(GL_CULL_FACE);
+	glBindTexture(GL_TEXTURE_2D, texname);
+	glPushMatrix();
+	gldTranslate3dv(pos);
+	glMultMatrixd(irot);
+	gldScaled(rad);
+	glBegin(GL_QUADS);
+	glTexCoord2i(0, 0); glVertex2i(-1, -1);
+	glTexCoord2i(1, 0); glVertex2i( 1, -1);
+	glTexCoord2i(1, 1); glVertex2i( 1,  1);
+	glTexCoord2i(0, 1); glVertex2i(-1,  1);
+	glEnd();
+	glPopMatrix();
+	glPopAttrib();
+}

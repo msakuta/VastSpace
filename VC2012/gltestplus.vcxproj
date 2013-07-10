@@ -267,17 +267,7 @@
     <ClCompile Include="..\src\ysdnmmot.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\calc\calc.h" />
-    <ClInclude Include="..\calc\calc_p.h" />
-    <ClInclude Include="..\calc\tokker.h" />
-    <ClInclude Include="..\draw\effects.h" />
-    <ClInclude Include="..\draw\ring-draw.h" />
-    <ClInclude Include="..\glw\GLWentlist.h" />
-    <ClInclude Include="..\glw\glwindow.h" />
-    <ClInclude Include="..\glw\GLWmenu.h" />
-    <ClInclude Include="..\glw\GLWtip.h" />
-    <ClInclude Include="..\glw\message.h" />
-    <ClInclude Include="..\glw\popup.h" />
+    <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\ModelEntity.h" />
   </ItemGroup>
   <ItemGroup>

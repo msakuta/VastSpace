@@ -7,9 +7,11 @@
 #include "draw/material.h"
 #include "draw/mqoadapt.h"
 #include "draw/effects.h"
+#include "draw/OpenGLState.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
+#include <clib/mathdef.h>
 }
 
 
@@ -27,13 +29,14 @@ extern "C"{
 
 
 void Tank::draw(WarDraw *wd){
-	static int init = 0;
 /*	static suf_t *sufbase = NULL;
 	static suf_t *sufturret = NULL;
 	static suf_t *sufbarrel = NULL;
 	static suf_t *sufbarrel1 = NULL;
 	static suf_t *sufm2 = NULL;*/
 	static Model *model = NULL;
+	static Motion *turretYawMotion = NULL;
+	static Motion *barrelPitchMotion = NULL;
 	double pixels;
 	if(!w)
 		return;
@@ -47,9 +50,12 @@ void Tank::draw(WarDraw *wd){
 	wd->lightdraws++;
 
 
-	if(init == 0){
-		init = 1;
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init){
 		model = LoadMQOModel(modPath() << _SC("models/type90.mqo"));
+		turretYawMotion = LoadMotion(modPath() << "models/type90-turretyaw.mot");
+		barrelPitchMotion = LoadMotion(modPath() << "models/type90-barrelpitch.mot");
+		init.create(*openGLState);
 	};
 
 	if(model){
@@ -71,13 +77,16 @@ void Tank::draw(WarDraw *wd){
 		/* center of gravity offset */
 		glTranslated(0, -.0007, 0);
 
-
+		MotionPose mp[2];
+		turretYawMotion->interpolate(mp[0], fmod(turrety / M_PI * 20. + 20., 40.));
+		barrelPitchMotion->interpolate(mp[1], barrelp / M_PI * 20. + 10.);
+		mp[0].next = &mp[1];
 
 #if 1
 		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
 		// the model is made such way.
 		glScaled(modelScale, modelScale, modelScale);
-		DrawMQOPose(model, NULL);
+		DrawMQOPose(model, mp);
 		glPopMatrix();
 #else
 		DrawSUF(sufbase, SUF_ATR, NULL);

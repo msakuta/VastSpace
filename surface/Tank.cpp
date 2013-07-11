@@ -995,12 +995,22 @@ double Tank::getHitRadius()const{
 	return 0.007;
 }
 
+static double fpmod(double a, double d){
+	return a - floor(a / d) * d;
+}
+
 void Tank::control(const input_t *in, double dt){
 	st::control(in, dt);
 
+	static const double mouseSensitivity = 0.01;
+
 	// Rotate the turret and barrel
-	turrety = approach(turrety, turrety + in->analog[0], dt * turretYawSpeed, 0);
-	barrelp = rangein(approach(barrelp, barrelp + in->analog[1], dt * barrelPitchSpeed, 0), barrelPitchMin, barrelPitchMax);
+	desired[0] += in->analog[0] * turretYawSpeed * mouseSensitivity;
+	desired[0] = fpmod(desired[0], 2 * M_PI);
+	desired[1] += -in->analog[1] * barrelPitchSpeed * mouseSensitivity;
+	desired[1] = rangein(desired[1], barrelPitchMin, barrelPitchMax);
+	turrety = approach(turrety, desired[0], dt * turretYawSpeed, 2 * M_PI);
+	barrelp = approach(barrelp, desired[1], dt * barrelPitchSpeed, 0);
 
 #if 0
 	static int prev = 0;

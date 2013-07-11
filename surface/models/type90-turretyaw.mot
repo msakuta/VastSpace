@@ -1,0 +1,23 @@
+model_motion 5
+{
+	keyframe 1 10
+	{
+		"type90_turret" 0 1 0 -2.74086309204336e-016 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"type90_turret" 0 0.707106781186548 0 0.707106781186547 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"type90_turret" 0 0 0 1 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"type90_turret" 0 -0.707106781186548 0 0.707106781186547 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"type90_turret" 0 1 0 -2.74086309204336e-016 0 0 0 1
+	}
+}

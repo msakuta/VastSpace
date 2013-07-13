@@ -17,10 +17,25 @@ extern "C"{
 
 #include <fstream>
 
+/// \brief A placeholder Entity that receives Bullets as the ground terrain.
+class SurfaceEntity : public Entity{
+public:
+	typedef Entity st;
+	SurfaceEntity(Game *game) : st(game){}
+	SurfaceEntity(WarField *aw) : st(aw){}
+	static EntityRegister<SurfaceEntity> entityRegister;
+	const char *idname()const override{return "SurfaceEntity";}
+	const char *classname()const override{return "SurfaceEntity";}
+	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)override;
+	double getHitRadius()const override{return 100.;}
+	bool isTargettable()const override{return true;}
+	bool isSelectable()const override{return false;}
+};
+
 class SurfaceWar : public WarSpace{
 public:
 	typedef WarSpace st;
-	SurfaceWar(Game *game) : st(game){}
+	SurfaceWar(Game *game) : st(game), entity(NULL){}
 	SurfaceWar(SurfaceCS *);
 	~SurfaceWar();
 	Vec3d accel(const Vec3d &pos, const Vec3d &velo)const override;
@@ -28,7 +43,23 @@ public:
 protected:
 	btStaticPlaneShape *groundPlane;
 	btRigidBody *groundBody;
+	SurfaceEntity *entity;
 };
+
+int SurfaceEntity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal){
+	double height = ((SurfaceCS*)w->cs)->getHeight(start[0], start[2], retnormal);
+	// If the starting point is under the ground, it's obviously hit.
+	if(start[1] < height){
+		if(ret)
+			*ret = 0;
+		if(retp)
+			*retp = start;
+		return 1;
+	}
+	else
+		return 0;
+}
+
 
 ClassRegister<SurfaceCS> SurfaceCS::classRegister("Surface");
 const CoordSys::Static &SurfaceCS::getStatic()const{
@@ -264,7 +295,9 @@ bool SurfaceCS::readFileEnd(StellarContext &sc){
 
 
 
-SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs){
+SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
+	addent(entity);
+
 	// Just an experiment. Really should be pulled out from planet's mass and radius.
 	bdw->setGravity(btVector3(0, -.0098,  0));
 

@@ -8,6 +8,7 @@ extern "C"{
 #include <clib/c.h>
 }
 
+class Model;
 
 class Tank : public ModelEntity{
 public:
@@ -29,7 +30,6 @@ public:
 //	virtual void bullethit(const Bullet *);
 //	int getrot(warf_t*, double (*)[16]);
 	int takedamage(double damage, int hitpart);
-	void gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata*, void *pv);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	double getHitRadius()const;
@@ -59,6 +59,7 @@ public:
 
 protected:
 
+	static Model *model;
 	static double modelScale;
 	static double defaultMass;
 	static double topSpeed;
@@ -84,6 +85,9 @@ protected:
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
 	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal, const HitBox *, int);
 	Vec3d tankMuzzlePos(Vec3d *nh = NULL)const;
+	void deathEffects();
+
+	static void gib_draw(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data);
 };
 
 #endif

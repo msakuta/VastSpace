@@ -80,6 +80,7 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 
 /*static const double tank_sc[3] = {.05, .055, .075};*/
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
+Model *Tank::model = NULL;
 double Tank::modelScale = 3.33 / 200 * 1e-3;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
@@ -514,9 +515,7 @@ static btVector3 alignPlane(const btVector3 &v, const btVector3 &n){
 void Tank::anim(double dt){
 	double h;
 	Vec3d epos(0,0,0); /* estimated enemy position */
-	Vec3d mpos; /* muzzle position */
 	Vec3d normal(0,1,0);
-	int mposa = 0; /* muzzle position availability */
 /*	{
 		double n[3] = {0., 1., 0.};
 		h = w->map ? warmapheightr(w->map, pt->pos[0], pt->pos[2], &n) : 0.;
@@ -557,7 +556,6 @@ void Tank::anim(double dt){
 	if(!w || controller){
 	}
 	else if(0 < getHealth()){
-		double phi; /* enemy direction */
 
 		/* find enemy logic */
 		if(!enemy){
@@ -568,35 +566,28 @@ void Tank::anim(double dt){
 		/* estimating enemy position and wheeling towards enemy */
 		inputs.press = 0;
 		if(enemy){
-			double diff, dphi;
-			Vec3d dpos, dp, pyr, mdir;
-			Mat4d mat, rot;
-			double bulletspeed;
-			int subweapon;
+			Vec3d mdir;
+			Vec3d mpos = tankMuzzlePos(&mdir); // Muzzle position
 
-			mpos = tankMuzzlePos(&mdir);
-
-			subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
+			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
 				|| normal.sp(mdir) < -.2
 				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
-			bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
+			double bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
 
-/*			if(enemy->flying())
-				VECCPY(epos, pt->enemy->pos);
-			else*/
-				estimate_pos(epos, enemy->pos, enemy->velo, pos, velo, bulletspeed, w);
-			mposa = 1;
-			dpos = epos - mpos;
-			quat2imat(~mat, rot);
-			dp = mat.vp3(dpos);
-//			pyrmat(pyr, &rot);
-			phi = atan2(epos[0] - pos[0], -(epos[2] - pos[2]));
-			dphi = atan2(dp[0], -dp[2]);
-//			shoot_angle(avec3_000, dp, dphi, bulletspeed, &p->desired);
-//			p->turrety = rangein(approach(p->turrety + M_PI, p->desired[1] + M_PI, TURRETROTSPEED * dt, 2 * M_PI) - M_PI, -vft->turretrange, vft->turretrange);
-//			p->barrelp = rangein(approach(p->barrelp + M_PI, p->desired[0] /*- pt->pyr[0]*/ + M_PI, TURRETROTSPEED * dt, 2 * M_PI) - M_PI, vft->barrelmin, vft->barrelmax);
-/*			if(pt->pos[1] <= h)
-				pt->pyr[1] = approach(pt->pyr[1] + M_PI, phi + M_PI, ROTSPEED * dt, 2 * M_PI) - M_PI;*/
+			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+			Vec3d pos = mat2.vp3(enemy->pos);
+			Vec3d velo = mat2.dvp3(enemy->velo);
+			Vec3d pvelo = mat2.dvp3(this->velo);
+
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, w);
+			double phi = atan2(epos[0], -epos[2]);
+			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+
+			// Rotate the turret and barrel
+			turrety = approach(turrety, phi, dt * turretYawSpeed, 2 * M_PI);
+			barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
+
 /*
 			diff = fmod(phi - pt->pyr[1] + M_PI, 2. * M_PI) - M_PI;
 			if(VECSDIST(epos, pt->pos) < .05 * .05);
@@ -607,7 +598,8 @@ void Tank::anim(double dt){
 			else
 				pt->inputs.press |= PL_W;*/
 
-			inputs.press |= PL_ENTER;
+			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI)
+				inputs.press |= PL_ENTER;
 	
 
 //			playWAVEFile("c0wg42.wav");
@@ -839,79 +831,31 @@ void Tank::anim(double dt){
 }
 
 int Tank::takedamage(double damage, int hitpart){
-#if 0
-	tank2_t *p = (tank2_t*)pt;
-	struct tent3d_line_list *tell = w->tell;
-
 	/* tank armor is bullet resistant */
 	if(hitpart == 1)
 		damage *= .3;
 	else if(hitpart == 3)
 		damage *= .5;
 
-	if(pt->health <= damage){ /* death! */
-		entity_t *pt2;
-		avec3_t gravity;
-		if(w->vft->accel)
-			w->vft->accel(w, &gravity, &pt->pos, &pt->velo);
-		else
-			VECNULL(gravity);
-		if(tell){
-			int j;
-			for(j = 0; j < 20; j++){
-				double velo[3];
-				velo[0] = .15 * (drseq(&gsrs) - .5);
-				velo[1] = .15 * (drseq(&gsrs) - .5);
-				velo[2] = .15 * (drseq(&gsrs) - .5);
-				AddTeline3D(tell, pt->pos, velo, .0025, NULL, NULL, gravity,
-					j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND | TEL3_REFLECT, 1. + .5 * drseq(&gsrs));
-			}
-/*			for(j = 0; j < 10; j++){
-				double velo[3];
-				velo[0] = .025 * (drseq(&gsrs) - .5);
-				velo[1] = .025 * (drseq(&gsrs));
-				velo[2] = .025 * (drseq(&gsrs) - .5);
-				AddTefpol3D(w->tepl, pt->pos, velo, gravity, &cs_firetrail,
-					TEP3_REFLECT | TEP_THICK | TEP_ROUGH, 3. + 1.5 * drseq(&gsrs));
-			}*/
+#if 1
+	if(health <= damage){ /* death! */
+		deathEffects();
 
-			{/* explode shockwave thingie */
-				static const double pyr[3] = {M_PI / 2., 0., 0.};
-				AddTeline3D(tell, pt->pos, NULL, .1, pyr, NULL, NULL, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
-				if(pt->pos[1] <= 0.) /* no scorch in midair */
-					AddTeline3D(tell, pt->pos, NULL, .01, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 20.);
-			}
-			if(w->gibs && ((struct entity_private_static*)pt->vft)->sufbase && ((struct entity_private_static*)pt->vft)->sufturret){
-				int i, n, base;
-				struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
-				int m = vft->sufbase->np + vft->sufturret->np;
-				n = m <= TANK_MAX_GIBS ? m : TANK_MAX_GIBS;
-				base = m <= TANK_MAX_GIBS ? 0 : rseq(&gsrs) % m;
-				for(i = 0; i < n; i++){
-					double velo[3], omg[3];
-					j = (base + i) % m;
-					velo[0] = pt->velo[0] + (drseq(&gsrs) - .5) * .1;
-					velo[1] = pt->velo[1] + (drseq(&gsrs) - .5) * .1;
-					velo[2] = pt->velo[2] + (drseq(&gsrs) - .5) * .1;
-					omg[0] = 3. * 2 * M_PI * (drseq(&gsrs) - .5);
-					omg[1] = 3. * 2 * M_PI * (drseq(&gsrs) - .5);
-					omg[2] = 3. * 2 * M_PI * (drseq(&gsrs) - .5);
-					AddTelineCallback3D(w->gibs, pt->pos, velo, 0.01, pt->pyr, omg, gravity, vft->gib_draw, (void*)j, TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&gsrs));
-				}
-			}
-		}
+#if 0
 		pt->deaths++;
 		if(pt->race < numof(w->races))
 			w->races[pt->race].deaths++;
 		if(pt->enemy)
 			pt->enemy = NULL;
+#endif
 
 		/* forget about dead enemy */
-		for(pt2 = w->tl; pt2; pt2 = pt2->next) if(pt2->enemy == pt)
-			pt2->enemy = NULL;
+		for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it) if(*it == this->enemy)
+			this->enemy = NULL;
 
-		pt->pos[0] = drseq(&gsrs) - .5;
-		pt->pos[2] = drseq(&gsrs) - .5;
+#if 0
+		pt->pos[0] = w->rs.nextd() - .5;
+		pt->pos[2] = w->rs.nextd() - .5;
 		pt->pos[1] = .01 + warmapheight(w->map, pt->pos[0], pt->pos[2], NULL);
 		VECNULL(pt->pyr);
 		VECNULL(pt->rot);
@@ -922,10 +866,13 @@ int Tank::takedamage(double damage, int hitpart){
 		pt->health = 500.;
 		p->ammo[0] = 35;
 		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
+#endif
+		if(game->isServer())
+			delete this;
 		return 0;
 	}
 	else{
-		pt->health -= damage;
+		health -= damage;
 /*		playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .001);*/
 		return 1;
 	}
@@ -1103,16 +1050,24 @@ void Tank::control(const input_t *in, double dt){
 }
 
 int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const hitbox *hb, int nhb){
-/*	const struct hitbox *hb = tank_hb;*/
-	double sc[3];
-	double best = dt, retf;
-	int reti = 0, i, n;
-/*	aquat_t rot, roty;
-	roty[0] = 0.;
-	roty[1] = sin(pt->turrety / 2.);
-	roty[2] = 0.;
-	roty[3] = cos(pt->turrety / 2.);
-	QUATMUL(rot, pt->rot, roty);*/
+	double best = dt;
+	int reti = 0, i = 0;
+	double retf;
+	HitBoxList &hitboxes = getHitBoxes();
+	for(HitBoxList::iterator it = hitboxes.begin(); it != hitboxes.end(); ++it){
+		hitbox &hb = *it;
+		Vec3d org = this->rot.trans(hb.org) + this->pos;
+		Quatd rot = this->rot * hb.rot;
+		double sc[3];
+		for(int j = 0; j < 3; j++)
+			sc[j] = hb.sc[j] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+		++i;
+	}
 #if 0
 	for(n = 0; n < nhb; n++){
 		avec3_t org;
@@ -1135,6 +1090,12 @@ int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, do
 int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	return tracehit(src, dir, rad, dt, ret, retp, retn, &hitboxes.front(), hitboxes.size());
 }
+
+#ifdef DEDICATED
+void Tank::deathEffects(){}
+void Tank::draw(WarDraw*){}
+void Tank::drawtra(WarDraw*){}
+#endif
 
 
 

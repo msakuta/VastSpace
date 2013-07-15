@@ -12,6 +12,9 @@
 local tank = player.cs.addent("Tank", Vec3d(0, 1.5, 0));
 player.chase = tank
 
+local tank2 = player.cs.addent("Tank", Vec3d(0.1, 1.5, 0.2))
+tank2.race = 1
+
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

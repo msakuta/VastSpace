@@ -34,7 +34,6 @@ void Tank::draw(WarDraw *wd){
 	static suf_t *sufbarrel = NULL;
 	static suf_t *sufbarrel1 = NULL;
 	static suf_t *sufm2 = NULL;*/
-	static Model *model = NULL;
 	static Motion *turretYawMotion = NULL;
 	static Motion *barrelPitchMotion = NULL;
 	double pixels;
@@ -160,17 +159,21 @@ void Tank::drawtra(wardraw_t *wd){
 	glPopMatrix();*/
 }
 
-#if 0
-void gib_draw(const struct tent3d_line_callback *pl, suf_t *suf, double scale, int i){
+#if 1
+void Tank::gib_draw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+	if(!model)
+		return;
 	glPushMatrix();
-	glTranslated(pl->pos[0], pl->pos[1], pl->pos[2]);
-	glScaled(scale, scale, scale);
-/*	glRotated(-pl->pyr[1] * 360 / 2. / M_PI, 0., 1., 0.);
-	glRotated(pl->pyr[0] * 360 / 2. / M_PI, 1., 0., 0.);*/
-	DrawSUFPoly(suf, i, SUF_ATR, &g_gldcache);
+	glTranslated(p->pos[0], p->pos[1], p->pos[2]);
+	glScaled(modelScale, modelScale, modelScale);
+	int i = int(private_data);
+//	DrawSUFPoly(model->sufs[i], i, SUF_ATR, NULL);
+	DrawSUF(model->sufs[i], SUF_ATR, NULL);
 	glPopMatrix();
 }
+#endif
 
+#if 0
 static void tank_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	int i = (int)pv;
 	gib_draw(pl, i < tank_s.sufbase->np ? tank_s.sufbase : tank_s.sufturret, TANK_SCALE, i < tank_s.sufbase->np ? i : i - tank_s.sufbase->np);
@@ -221,5 +224,58 @@ void tank_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const double irot[16]
 }
 #endif
 
+
+
+void Tank::deathEffects(){
+	tent3d_line_list *tell = w->getTeline3d();
+
+	Vec3d gravity = w->accel(this->pos, this->velo);
+	if(tell){
+		int j;
+		for(j = 0; j < 20; j++){
+			Vec3d velo(
+				.15 * (w->rs.nextd() - .5),
+				.15 * (w->rs.nextd() - .5),
+				.15 * (w->rs.nextd() - .5));
+			AddTeline3D(tell, this->pos, velo, .0025, quat_u, vec3_000, gravity,
+				j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND | TEL3_REFLECT, 1. + .5 * w->rs.nextd());
+		}
+/*			for(j = 0; j < 10; j++){
+			double velo[3];
+			velo[0] = .025 * (drseq(&gsrs) - .5);
+			velo[1] = .025 * (drseq(&gsrs));
+			velo[2] = .025 * (drseq(&gsrs) - .5);
+			AddTefpol3D(w->tepl, pt->pos, velo, gravity, &cs_firetrail,
+				TEP3_REFLECT | TEP_THICK | TEP_ROUGH, 3. + 1.5 * drseq(&gsrs));
+		}*/
+
+		{/* explode shockwave thingie */
+			AddTeline3D(tell, this->pos, vec3_000, .1, Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
+#if 0 // Scorch mark should be rendered in ground's rendering pass.
+			if(pt->pos[1] <= 0.) /* no scorch in midair */
+				AddTeline3D(tell, pt->pos, NULL, .01, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 20.);
+#endif
+		}
+
+		WarSpace *ws = *w;
+		if(ws->gibs && model){
+			int m = model->n;
+			int n = m <= TANK_MAX_GIBS ? m : TANK_MAX_GIBS;
+			int base = m <= TANK_MAX_GIBS ? 0 : w->rs.next() % m;
+			for(int i = 0; i < n; i++){
+				j = (base + i) % m;
+				Vec3d velo(
+					this->velo[0] + (w->rs.nextd() - .5) * .1,
+					this->velo[1] + (w->rs.nextd() - .5) * .1,
+					this->velo[2] + (w->rs.nextd() - .5) * .1);
+				Vec3d omg(
+					3. * 2 * M_PI * (w->rs.nextd() - .5),
+					3. * 2 * M_PI * (w->rs.nextd() - .5),
+					3. * 2 * M_PI * (w->rs.nextd() - .5));
+				AddTelineCallback3D(ws->gibs, this->pos, velo, 0.01, quat_u, omg, gravity, gib_draw, (void*)j, TEL3_NOLINE | TEL3_REFLECT, 1.5 + w->rs.nextd());
+			}
+		}
+	}
+}
 
 

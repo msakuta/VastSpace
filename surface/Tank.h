@@ -33,6 +33,7 @@ public:
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	double getHitRadius()const;
+	double getMaxHealth()const override{return maxHealthValue;}
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return true;}
 
@@ -62,6 +63,7 @@ protected:
 	static Model *model;
 	static double modelScale;
 	static double defaultMass;
+	static double maxHealthValue;
 	static double topSpeed;
 	static double backSpeed;
 	static double mainGunCooldown;

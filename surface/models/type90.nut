@@ -4,6 +4,8 @@ modelScale <- 3.33 / 200 * m;
 
 mass <- 50.e3;
 
+maxhealth <- 800.;
+
 topSpeed <- 70. / 3.6 * m;
 backSpeed <- 35. / 3.6 * m;
 

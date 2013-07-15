@@ -83,6 +83,7 @@ bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
 Model *Tank::model = NULL;
 double Tank::modelScale = 3.33 / 200 * 1e-3;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
+double Tank::maxHealthValue = 800.;
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
 double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
 double Tank::mainGunCooldown = 3.;
@@ -103,10 +104,12 @@ Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
 
 Tank::Tank(Game *game) : st(game){
+	init();
 }
 
 Tank::Tank(WarField *aw) : st(aw){
 	init();
+	health = getMaxHealth();
 	steer = 0.;
 	wheelspeed = wheelangle = 0.;
 	turrety = barrelp = 0.;
@@ -116,10 +119,6 @@ Tank::Tank(WarField *aw) : st(aw){
 	ammo[1] = 2000; /* coaxial gun ammo (type 74 7.64mm) */
 	ammo[2] = 1500; /* mounted gun ammo (M2 Browning 12.7mm) */
 	muzzle = 0;
-
-	WarSpace *ws = *aw;
-	if(ws && ws->bdw){
-	}
 }
 
 bool Tank::buildBody(){
@@ -168,6 +167,7 @@ void Tank::init(){
 		SqInit(game->sqvm, modPath() << _SC("models/type90.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(topSpeed, "topSpeed") <<=
 			SingleDoubleProcess(backSpeed, "backSpeed") <<=
 			SingleDoubleProcess(mainGunCooldown, "mainGunCooldown") <<=

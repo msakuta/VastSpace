@@ -48,3 +48,41 @@ register_console_command("roll", roll)
 
 //roll()
 
+function drand(){
+	return rand().tofloat() / RAND_MAX;
+}
+
+function drand0(){
+	return drand() - 0.5;
+}
+
+framecount <- 0;
+checktime <- 0;
+targetcs <- player.cs;
+
+old_frameproc <- "frameproc" in this ? frameproc : null;
+
+function frameproc(dt){
+	framecount++;
+	local currenttime = universe.global_time + 9.;
+
+	if(checktime + 10. < currenttime){
+		local cs = targetcs;
+		checktime = currenttime;
+
+		local racec = [countents(cs, 0, "Tank"), countents(cs, 1, "Tank")];
+
+		if(true && racec[0] < 2){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 0.5, 1.5, drand0() * 0.5));
+			a.race = 0;
+		}
+		if(true && racec[1] < 2){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 0.5, 1.5, drand0() * 0.5));
+			a.race = 1;
+		}
+	}
+
+	if(old_frameproc != null)
+		old_frameproc(dt);
+}
+

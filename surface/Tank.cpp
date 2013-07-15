@@ -588,15 +588,15 @@ void Tank::anim(double dt){
 			turrety = approach(turrety, phi, dt * turretYawSpeed, 2 * M_PI);
 			barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
 
-/*
-			diff = fmod(phi - pt->pyr[1] + M_PI, 2. * M_PI) - M_PI;
-			if(VECSDIST(epos, pt->pos) < .05 * .05);
-			else if(diff < -.1 * M_PI)
-				pt->inputs.press |= PL_A;
-			else if(.1 * M_PI < diff)
-				pt->inputs.press |= PL_D;
+			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
+			if(epos.slen() < .05 * .05)
+				; // Do nothing
+			else if(phi < -.1 * M_PI)
+				inputs.press |= PL_A;
+			else if(.1 * M_PI < phi)
+				inputs.press |= PL_D;
 			else
-				pt->inputs.press |= PL_W;*/
+				inputs.press |= PL_W;
 
 			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI)
 				inputs.press |= PL_ENTER;

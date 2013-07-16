@@ -406,7 +406,7 @@ void GLWentlist::draw(GLwindowState &ws, double){
 				glPushMatrix();
 				glTranslated(iconRect.hcenter(), iconRect.vcenter(), 0);
 				glScalef(iconRect.width() * 6 / 16.f, iconRect.height() * 6 / 16.f, 1);
-				Vec3f cols(float(pe->race % 2), 1, float((pe->race + 1) % 2));
+				Vec3f cols = pe->race < 0 ? Vec3f(0.75f, 0.75f, 0.75f) : Vec3f(float(pe->race % 2), 1, float((pe->race + 1) % 2));
 				if(listmode != Select){
 					PlayerSelection ps(this);
 					is.foreach(ps);

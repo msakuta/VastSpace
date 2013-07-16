@@ -22,7 +22,7 @@ class SurfaceEntity : public Entity{
 public:
 	typedef Entity st;
 	SurfaceEntity(Game *game) : st(game){}
-	SurfaceEntity(WarField *aw) : st(aw){}
+	SurfaceEntity(WarField *aw) : st(aw){race = -1;} ///< Ground surface is everyone's friend.
 	static EntityRegister<SurfaceEntity> entityRegister;
 	const char *idname()const override{return "SurfaceEntity";}
 	const char *classname()const override{return "SurfaceEntity";}

@@ -396,7 +396,7 @@ int Tank::tryshoot(double dt){
 }
 
 void Tank::find_enemy_logic(){
-	double best = 10. * 10.; /* sense range */
+	double best = 100. * 100.; /* sense range */
 	double sdist;
 	Entity *closest = NULL;
 /*			pt->enemy = &head[(i+1)%n];*/
@@ -580,7 +580,7 @@ void Tank::anim(double dt){
 			Vec3d velo = mat2.dvp3(enemy->velo);
 			Vec3d pvelo = mat2.dvp3(this->velo);
 
-			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, w);
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
 			double phi = atan2(epos[0], -epos[2]);
 			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
 
@@ -731,10 +731,9 @@ void Tank::anim(double dt){
 			cooldown2 -= dt;
 	}
 
-	{
+	if(!bbody){
 		Vec3d accel = w->accel(pos, velo);
 		velo += accel * dt;
-/*	pt->velo[1] += gravity[1] * dt;*/
 	}
 
 	if(floorTouch){
@@ -825,7 +824,9 @@ void Tank::anim(double dt){
 
 	if(bbody){
 		pos = btvc(bbody->getCenterOfMassPosition());
+		velo = btvc(bbody->getLinearVelocity());
 		rot = btqc(bbody->getOrientation());
+		omg = btvc(bbody->getAngularVelocity());
 	}
 
 }

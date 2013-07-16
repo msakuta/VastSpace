@@ -72,12 +72,12 @@ function frameproc(dt){
 
 		local racec = [countents(cs, 0, "Tank"), countents(cs, 1, "Tank")];
 
-		if(true && racec[0] < 2){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 0.5, 1.5, drand0() * 0.5));
+		if(true && racec[0] < 5){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 30.5, 1.5, drand0() * 30.5));
 			a.race = 0;
 		}
-		if(true && racec[1] < 2){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 0.5, 1.5, drand0() * 0.5));
+		if(true && racec[1] < 5){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 30.5, 1.5, drand0() * 30.5));
 			a.race = 1;
 		}
 	}

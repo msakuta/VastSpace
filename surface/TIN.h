@@ -34,17 +34,31 @@ public:
 	void draw();
 
 	double getHeight(double x, double y, const Vec3d *scales = NULL, Vec3d *normal = NULL)const;
+	bool traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const;
 protected:
 	struct Vertex;
+
+	struct AABB{
+		Vec3d mins;
+		Vec3d maxs;
+	};
 
 	struct Triangle{
 		Vec3d normal;
 		Vec3i vertices[3];
 		Vertex *vrefs[3];
+		AABB getAABB()const;
 	};
 	typedef std::vector<Triangle> Triangles;
 	Triangles triangles;
-	std::vector<Triangle*> sortx;
+
+	/// List of Triangle pointers
+	typedef std::vector<Triangle*> TriangleList;
+	TriangleList sortx;
+
+	static const int GridSize = 16;
+	typedef std::vector<Triangle*> TriangleGrid[GridSize][GridSize];
+	TriangleGrid tgrid;
 
 	typedef std::set<int> VertexRefSet;
 	struct Vertex{
@@ -59,5 +73,19 @@ protected:
 	static bool trianglePredicate(const Triangle *a, const Triangle *b);
 };
 
+
+
+inline TIN::AABB TIN::Triangle::getAABB()const{
+	AABB ret = {Vec3d(DBL_MAX, DBL_MAX, DBL_MAX), Vec3d(DBL_MIN, DBL_MIN, DBL_MIN)};
+	for(int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if(vertices[j][i] < ret.mins[i])
+				ret.mins[i] = vertices[j][i];
+			if(ret.maxs[i] < vertices[j][i])
+				ret.maxs[i] = vertices[j][i];
+		}
+	}
+	return ret;
+}
 
 #endif

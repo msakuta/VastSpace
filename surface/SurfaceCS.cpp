@@ -47,6 +47,10 @@ protected:
 };
 
 int SurfaceEntity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal){
+#if 1
+	if(((SurfaceCS*)w->cs)->traceHit(start, dir, rad, dt, ret, retp, retnormal))
+		return 1;
+#else
 	double height = ((SurfaceCS*)w->cs)->getHeight(start[0], start[2], retnormal);
 	// If the starting point is under the ground, it's obviously hit.
 	if(start[1] < height){
@@ -57,6 +61,7 @@ int SurfaceEntity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, do
 		return 1;
 	}
 	else
+#endif
 		return 0;
 }
 
@@ -229,6 +234,29 @@ double SurfaceCS::getHeight(double x, double z, Vec3d *normal)const{
 	}
 	else
 		return 0.;
+}
+
+bool SurfaceCS::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const{
+	if(tin){
+		static const double longscale = cos(35 / deg_per_rad); // Longitude scaling
+		int sx, sy;
+		tin->size(&sx, &sy);
+		double width = tin->width() / 2;
+		Vec3d scales(-width * 2 * longscale / sx, -width * 2 / sy, 1e-3 / 4.);
+		Vec3d lstart(((-start[0] / width / 2 / longscale + 0.5 - 0.5 / sx) * sx), (-start[2] / width / 2 + 0.5 - 0.5 / sy) * sy, start[1] / scales[2]);
+		Vec3d ldir(dir[0] / scales[0], dir[2] / scales[1], dir[1] / scales[2]);
+		Vec3d temp;
+		bool bret = tin->traceHit(lstart, ldir, rad, dt, ret, retp, &temp);
+		if(bret && retnormal){
+			(*retnormal)[0] = -temp[0];
+			(*retnormal)[1] = -temp[2];
+			(*retnormal)[2] = -temp[1];
+			retnormal->normin();
+		}
+		return bret;
+	}
+	else
+		return false;
 }
 
 

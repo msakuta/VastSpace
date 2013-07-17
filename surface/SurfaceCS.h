@@ -26,6 +26,7 @@ public:
 
 	WarMap *getWarMap(){return wm;}
 	double getHeight(double x, double z, Vec3d *normal = NULL)const;
+	bool traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const;
 protected:
 	WarMap *wm;
 	DrawMapCache *dmc;

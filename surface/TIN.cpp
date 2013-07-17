@@ -121,6 +121,21 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 		sortx.push_back(&*it);
 	}
 	std::sort(sortx.begin(), sortx.end(), trianglePredicate);
+
+	for(int ix = 0; ix < GridSize; ix++){
+		double dx0 = ix * 1024 / GridSize;
+		double dx1 = (ix+1) * 1024 / GridSize;
+		for(int iy = 0; iy < GridSize; iy++){
+			double dy0 = iy * 1024 / GridSize;
+			double dy1 = (iy+1) * 1024 / GridSize;
+			for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
+				AABB aabb = it->getAABB();
+				if(aabb.mins[0] < dx1 && dx0 < aabb.maxs[0]
+					&& aabb.mins[1] < dy1 && dy0 < aabb.maxs[1])
+						tgrid[ix][iy].push_back(&*it);
+			}
+		}
+	}
 }
 
 int TIN::getat(WarMapTile *return_info, int x, int y){
@@ -215,6 +230,78 @@ double TIN::getHeight(double x, double y, const Vec3d *scales, Vec3d *normal)con
 	if(normal)
 		*normal = Vec3d(0,0,-1);
 	return 0;
+}
+
+bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const{
+	// Obtain minimum bounding edge against X axis.
+	double ix0 = std::min(start[0], start[0] + dir[0] * dt);
+	double ix1 = std::max(start[0], start[0] + dir[0] * dt);
+	double iy0 = std::min(start[1], start[1] + dir[1] * dt);
+	double iy1 = std::max(start[1], start[1] + dir[1] * dt);
+
+	for(int ix = ix0 * GridSize / 1024; ix <= ix1 * GridSize / 1024; ++ix){
+		for(int iy = iy0 * GridSize / 1024; iy <= iy1 * GridSize / 1024; ++iy){
+			const TriangleList &tl = tgrid[ix][iy];
+
+			for(TriangleList::const_iterator i = tl.begin(); i != tl.end(); ++i){
+				Triangle *it = *i;
+
+				// Determine normal vector by obtaining vector product of difference vectors on the plane.
+				Vec3d v0 = it->vertices[0].cast<double>();
+				Vec3d v01 = (it->vertices[1] - it->vertices[0]).cast<double>();
+				Vec3d v02 = (it->vertices[2] - it->vertices[0]).cast<double>();
+				Vec3d norm = v01.vp(v02).normin();
+
+				// Quit if the line and the plane are parallel.  Note that the triangle's
+				// face direction is arbitrary in TIN, so we cannot assume rays piercing
+				// from the back are invalid.
+				double dn = dir.sp(norm);
+				if(dn == 0.)
+					continue;
+
+				// Calculate vector parameter of intersecting point
+				Vec3d sa = start - v0;
+				double t = -sa.sp(norm) / dn;
+				if(t < 0 || dt < t)
+					continue;
+
+				// Find spatial coordinates of intersecting point
+				Vec3d p = start + dir * t;
+
+				// Obtain inverse transformation to project the point to the triangle's
+				// local coordinates in 2D.  Note that we're assuming no triangle is
+				// parallel to Z axis here.
+				Mat2d mat = Mat2d(Vec2d(v01), Vec2d(v02));
+				Mat2d imat = mat.inverse();
+				double sp01 = imat.vec2(0).sp(Vec2d(sa));
+				double sp02 = imat.vec2(1).sp(Vec2d(sa));
+				if(sp01 < 0 || sp02 < 0 || 1 < sp01 + sp02)
+					continue;
+
+				if(retp){
+					*retp = p;
+				}
+
+				if(retnormal){
+		/*			if(scales){
+						v01 *= *scales;
+						v02 *= *scales;
+					}*/
+					*retnormal = v01.vp(v02);
+				}
+
+				if(ret){
+					*ret = (it->vertices[1][2] - it->vertices[0][2]) * sp01
+						+ (it->vertices[2][2] - it->vertices[0][2]) * sp02
+						+ it->vertices[0][2];
+				}
+
+				return true;
+
+			}
+		}
+	}
+	return false;
 }
 
 void TIN::size(int *x, int *y){

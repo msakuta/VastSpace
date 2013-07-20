@@ -458,6 +458,10 @@ static btVector3 alignPlane(const btVector3 &v, const btVector3 &n){
 	return v - n.dot(v) * n;
 };
 
+static btVector3 alignAxis(const btVector3 &v, const btVector3 &a){
+	return a * (a.normalized().dot(v));
+}
+
 void Tank::anim(double dt){
 	double h;
 	Vec3d epos(0,0,0); /* estimated enemy position */
@@ -706,6 +710,20 @@ void Tank::anim(double dt){
 		}
 		if(inputs.press & PL_D){
 			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-5));
+		}
+
+		// Cancel lateral velocity
+		bbody->setLinearVelocity(alignAxis(bbody->getLinearVelocity(), bbody->getWorldTransform().getBasis().getColumn(2)));
+
+		if(!(inputs.press & (PL_W | PL_S))){
+			// Precisely, friction should be affected by gravity acceleration.
+			const double friction = 0.005 * dt;
+			btVector3 btVelo = bbody->getLinearVelocity();
+			if(btVelo.length2() < friction * friction)
+				btVelo.setZero();
+			else
+				btVelo *= 1. - friction / btVelo.length();
+			bbody->setLinearVelocity(btVelo);
 		}
 //		vehicle_drive(dt, points, numof(points));
 	}

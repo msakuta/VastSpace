@@ -233,6 +233,12 @@ double TIN::getHeight(double x, double y, const Vec3d *scales, Vec3d *normal)con
 }
 
 bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const{
+	// For optimizing hit check with the ray
+	int startix = int(start[0] * GridSize / 1024);
+	int startiy = int(start[1] * GridSize / 1024);
+	int endix = int((start[0] + dir[0] * dt) * GridSize / 1024);
+	int endiy = int((start[1] + dir[1] * dt) * GridSize / 1024);
+
 	// Obtain minimum bounding edge against X axis.
 	double dx0 = std::min(start[0], start[0] + dir[0] * dt);
 	double dx1 = std::max(start[0], start[0] + dir[0] * dt);
@@ -242,9 +248,32 @@ bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, 
 	int ix0 = std::min(std::max(int(dx0 * GridSize / 1024), 0), GridSize-1);
 	int ix1 = std::min(std::max(int(dx1 * GridSize / 1024), 0), GridSize-1);
 	for(int ix = ix0; ix <= ix1; ++ix){
+		double tx0 = (ix * 1024 / GridSize - start[0]) / dir[0];
+		double tx1 = ((ix + 1) * 1024 / GridSize - start[0]) / dir[0];
+		double ddx0 = start[1] + dir[1] * tx0;
+		double ddx1 = start[1] + dir[1] * tx1;
+		double dix0 = ix * 1024 / GridSize;
+		double dix1 = (ix + 1) * 1024 / GridSize;
+
 		int iy0 = std::min(std::max(int(dy0 * GridSize / 1024), 0), GridSize-1);
 		int iy1 = std::min(std::max(int(dy1 * GridSize / 1024), 0), GridSize-1);
 		for(int iy = iy0; iy <= iy1; ++iy){
+			// If we have starting or ending position in the grid cell in question, we should check the cell
+			// no matter whether the ray hits the edge.
+			if(!(startix == ix && startiy == iy || endix == ix && endiy == iy)){
+				double diy0 = iy * 1024 / GridSize;
+				double diy1 = (iy + 1) * 1024 / GridSize;
+				double ty0 = (iy * 1024 / GridSize - start[1]) / dir[1];
+				double ty1 = ((iy + 1) * 1024 / GridSize - start[1]) / dir[1];
+				double ddy0 = start[0] + dir[0] * ty0;
+				double ddy1 = start[0] + dir[0] * ty1;
+
+				// If the ray does not hit the cell represented as a square, skip checking.
+				// We don't need to check the cell if the ray does not touch it.
+				if((ddx0 < diy0 || diy1 < ddx0) && (ddx1 < diy0 || diy1 < ddx1)
+					&& (ddy0 < dix0 || dix1 < ddy0) && (ddy1 < dix0 || dix1 < ddy1))
+					continue;
+			}
 			const TriangleList &tl = tgrid[ix][iy];
 
 			for(TriangleList::const_iterator i = tl.begin(); i != tl.end(); ++i){

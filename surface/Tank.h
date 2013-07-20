@@ -60,6 +60,9 @@ public:
 
 protected:
 
+	double sightCheckTime;
+	bool sightCheck;
+
 	static Model *model;
 	static double modelScale;
 	static double defaultMass;
@@ -73,6 +76,7 @@ protected:
 	static double barrelPitchSpeed;
 	static double barrelPitchMin;
 	static double barrelPitchMax;
+	static double sightCheckInterval;
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const{return hitboxes;}

@@ -35,6 +35,7 @@ double Tank::turretYawSpeed = 0.1 * M_PI;
 double Tank::barrelPitchSpeed = 0.05 * M_PI;
 double Tank::barrelPitchMin = -0.05 * M_PI;
 double Tank::barrelPitchMax = 0.3 * M_PI;
+double Tank::sightCheckInterval = 1.;
 HitBoxList Tank::hitboxes;
 
 
@@ -61,6 +62,8 @@ Tank::Tank(WarField *aw) : st(aw){
 	ammo[1] = 2000; /* coaxial gun ammo (type 74 7.64mm) */
 	ammo[2] = 1500; /* mounted gun ammo (M2 Browning 12.7mm) */
 	muzzle = 0;
+	sightCheckTime = aw->rs.nextd() * sightCheckInterval; // Randomize check phase to diverse load over frames
+	sightCheck = false;
 }
 
 bool Tank::buildBody(){
@@ -119,6 +122,7 @@ void Tank::init(){
 			SingleDoubleProcess(barrelPitchSpeed, "barrelPitchSpeed") <<=
 			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
 			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
+			SingleDoubleProcess(sightCheckInterval, "sightCheckInterval") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -531,8 +535,29 @@ void Tank::anim(double dt){
 			else
 				inputs.press |= PL_W;
 
-			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI)
-				inputs.press |= PL_ENTER;
+			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI){
+				// If we're in a SurfaceCS, check if we can see the target clearly.
+				// dynamic_cast should be preferred.
+				if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+					SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
+					if(sightCheckTime < dt){
+						if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
+							inputs.press |= PL_ENTER;
+							sightCheck = true; // Remember for the next frames
+						}
+						else
+							sightCheck = false; // Remember for the next frames
+						sightCheckTime += sightCheckInterval - dt;
+					}
+					else{
+						sightCheckTime -= dt;
+						if(sightCheck) // Recall memory
+							inputs.press |= PL_ENTER;
+					}
+				}
+				else
+					inputs.press |= PL_ENTER;
+			}
 	
 
 //			playWAVEFile("c0wg42.wav");

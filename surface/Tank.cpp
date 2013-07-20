@@ -2,41 +2,14 @@
  * \brief Implementation of Tank class.
  */
 #include "Tank.h"
-#include "Entity.h"
-//#include "WarUtil.h"
-#include "Player.h"
-#include "Viewer.h"
-#include "cmd.h"
-//#include "rigid.h"
 #include "SurfaceCS.h"
 #include "Bullet.h"
-#include "judge.h"
 #include "motion.h"
-#include "draw/WarDraw.h"
-#include "draw/material.h"
-//#include "coordcnv.h"
-#include "Game.h"
 #include "glw/GLWchart.h"
 extern "C"{
 #include <clib/c.h>
-#include <clib/mathdef.h>
 #include <clib/cfloat.h>
-#include <clib/aquat.h>
-#include <clib/aquatrot.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/wavsound.h>
-#include <clib/gl/gldraw.h>
 }
-
-#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
-
-//#include <ode/ode.h> /* Wheeled Vehicles are needed to be tested separately, sometimes... */
-
-
-//#include "sufsrc/type90_base.h"
-//#include "sufsrc/type90_turret.h"
-//#include "sufsrc/type90_barrel.h"
-//#include "sufsrc/type90_m2.h"
 
 
 
@@ -48,38 +21,7 @@ extern "C"{
 #define RETHINKTIME .5
 #define TANK_MAX_GIBS 30
 
-static struct random_sequence gsrs = {1};
 
-const static GLdouble
-tank_offset[3] = {0., 0.001, 0.}, tank_radius = .001,
-bullet_offset[3] = {0., 0., 0.}, bullet_radius = .0005;
-
-    	const Vec3d points[] = {
-			Vec3d(.00166, -.0007, .00375),
-			Vec3d(.00166, -.0007, -.00375),
-			Vec3d(-.00166, -.0007, -.00375),
-			Vec3d(-.00166, -.0007, .00375),
-/*			Vec3d(.002, 0., .002),
-			Vec3d(.002, 0., -.002),
-			Vec3d(-.002, 0., -.002),
-			Vec3d(-.002, 0., .002),*/
-/*			Vec3d(.0, 0.007, .0),*/
-			Vec3d(.00166, .0012-.0007, .00375),
-			Vec3d(.00166, .0012-.0007, -.00375),
-			Vec3d(-.00166, .0012-.0007, -.00375),
-			Vec3d(-.00166, .0012-.0007, .00375),
-/*			Vec3d(.002, .002, .003),
-			Vec3d(.002, .002, -.003),
-			Vec3d(-.002, .002, -.003),
-			Vec3d(-.002, .002, .003),*/
-			Vec3d(.0, 0.003-.0007, .0),
-/*			Vec3d(.0, 0.005, -.002),
-			Vec3d(.002, 0.005, .002),
-			Vec3d(-.002, 0.005, .002),*/
-		};
-
-/*static const double tank_sc[3] = {.05, .055, .075};*/
-/*static const double beamer_sc[3] = {.05, .05, .05};*/
 Model *Tank::model = NULL;
 double Tank::modelScale = 3.33 / 200 * 1e-3;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons

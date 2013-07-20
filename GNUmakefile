@@ -212,7 +212,10 @@ gltestdll/models/*.mqo \
 gltestdll/models/*.mot \
 gltestdll/models/*.nut \
 gltestdll/models/*.png \
-gltestdll/models/*.jpg 
+gltestdll/models/*.jpg \
+surface/models/*.mqo \
+surface/models/*.mot \
+surface/models/*.nut
 	7z u $@ $^
 
 clean:

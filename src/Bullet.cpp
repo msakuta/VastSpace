@@ -276,7 +276,12 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 	}*/
 
 	{
-		pb->pos += pb->velo * dt;
+		// Make the bulle hit effect occur at the position of trace hit point,
+		// rather than the point on bullet's trajectory.
+		// The tracehit() method should return more precise position.
+		pb->pos = pos;
+//		pb->pos += pb->velo * dt;
+
 		if(retpos)
 			*retpos = pos;
 		if(retnorm)

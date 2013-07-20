@@ -291,9 +291,7 @@ bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, 
 				}
 
 				if(ret){
-					*ret = (it->vertices[1][2] - it->vertices[0][2]) * sp01
-						+ (it->vertices[2][2] - it->vertices[0][2]) * sp02
-						+ it->vertices[0][2];
+					*ret = t;
 				}
 
 				return true;

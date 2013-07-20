@@ -48,8 +48,17 @@ protected:
 
 int SurfaceEntity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal){
 #if 1
-	if(((SurfaceCS*)w->cs)->traceHit(start, dir, rad, dt, ret, retp, retnormal))
+	double t;
+	if(static_cast<SurfaceCS*>(w->cs)->traceHit(start, dir, rad, dt, &t, NULL, retnormal)){
+		// The position vector returned by SurfaceCS::traceHit() is in the heightfield's local coordinates,
+		// which is somewhat complex to convert back to world coordinates.  So we just use the ray's vector
+		// equaion parameter when the ray hits the terrain to calculate hit position.
+		if(retp)
+			*retp = start + dir * t;
+		if(ret)
+			*ret = t;
 		return 1;
+	}
 #else
 	double height = ((SurfaceCS*)w->cs)->getHeight(start[0], start[2], retnormal);
 	// If the starting point is under the ground, it's obviously hit.

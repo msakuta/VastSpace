@@ -458,20 +458,6 @@ void Tank::anim(double dt){
 	double h;
 	Vec3d epos(0,0,0); /* estimated enemy position */
 	Vec3d normal(0,1,0);
-/*	{
-		double n[3] = {0., 1., 0.};
-		h = w->map ? warmapheightr(w->map, pt->pos[0], pt->pos[2], &n) : 0.;
-		normal[0] = n[0];
-		normal[1] = n[2];
-		normal[2] = n[1];
-		VECNORMIN(normal);
-	}*/
-/*	if(&w->cs->getStatic() == &SurfaceCS::classRegister){
-		SurfaceCS *s = (SurfaceCS*)w->cs;
-		WarMap *wm = s->getWarMap();
-		if(wm)
-			pos[1] = wm->height(pos[0], pos[2], NULL);
-	}*/
 
 	bool floorTouch = false;
 	btVector3 worldNormal;
@@ -482,16 +468,21 @@ void Tank::anim(double dt){
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
 		const Vec3d delta(0, -0.02 - btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta);
-		Vec3d normal;
-		double height = ((SurfaceCS*)w->cs)->getHeight(btPos[0], btPos[2], &normal);
-		worldNormal = btvc(normal);
-		if(btPos[1] - offset[1] < height){
-			Vec3d dest(btPos[0], height + offset[1], btPos[2]);
-			Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
-			setPosition(&dest, NULL, &newVelo);
-			btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
-			bbody->setAngularVelocity(btOmega * exp(-3. * dt));
-			floorTouch = true;
+
+		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
+		// dynamic_cast should be preferred.
+		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+			SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
+			double height = s->getHeight(btPos[0], btPos[2], &normal);
+			worldNormal = btvc(normal);
+			if(btPos[1] - offset[1] < height){
+				Vec3d dest(btPos[0], height + offset[1], btPos[2]);
+				Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
+				setPosition(&dest, NULL, &newVelo);
+				btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
+				bbody->setAngularVelocity(btOmega * exp(-3. * dt));
+				floorTouch = true;
+			}
 		}
 	}
 

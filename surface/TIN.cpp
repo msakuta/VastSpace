@@ -122,20 +122,86 @@ TIN::TIN(const char *fname) : vertices(vertexPredicate){
 	}
 	std::sort(sortx.begin(), sortx.end(), trianglePredicate);
 
-	for(int ix = 0; ix < GridSize; ix++){
-		double dx0 = ix * 1024 / GridSize;
-		double dx1 = (ix+1) * 1024 / GridSize;
-		for(int iy = 0; iy < GridSize; iy++){
-			double dy0 = iy * 1024 / GridSize;
-			double dy1 = (iy+1) * 1024 / GridSize;
-			for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
-				AABB aabb = it->getAABB();
-				if(aabb.mins[0] < dx1 && dx0 < aabb.maxs[0]
-					&& aabb.mins[1] < dy1 && dy0 < aabb.maxs[1])
-						tgrid[ix][iy].push_back(&*it);
+	// File name for architecture-dependent cached TriangleGrid content file to enhance speed of repeated
+	// program startup.
+	const gltestp::dstring gridFileName = gltestp::dstring("cache/") + fname + ".grid";
+	bool validGrid = false;
+
+	do{
+		// Load cached grid file if available.
+		std::ifstream ifs(gridFileName, std::ios::binary);
+
+		// The grid file can be absent, so check it here.
+		if(ifs.good()){
+			int sx2;
+			int sy2;
+			ifs.read((char*)&sx2, sizeof sx2);
+			ifs.read((char*)&sy2, sizeof sy2);
+
+			// If we have a cached grid with dimensions that do not match our expectation,
+			// re-cache the data without further reading.
+			if(sx2 != GridSize || sy2 != GridSize)
+				break;
+
+			// Load for each grid cell.
+			for(int ix = 0; ix < GridSize; ix++){
+				for(int iy = 0; iy < GridSize; iy++){
+					GridCell &tcell = tgrid[ix][iy];
+					int count;
+					ifs.read((char*)&count, sizeof count);
+					for(int i = 0; i < count; i++){
+						// The triangle list is stored as indices in integer.
+						int index;
+						ifs.read((char*)&index, sizeof index);
+						tcell.push_back(&triangles[index]);
+					}
+				}
+			}
+
+			validGrid = true;
+		}
+	} while(0);
+
+	if(!validGrid){
+		// Determining intersecting triangles with grid cells is very time-consuming process (that's why we want
+		// to use the grid from the first place), so we write the calculated grid to a file to cache the effort.
+		std::ofstream ofs(gridFileName, std::ios::binary);
+		ofs.write((char*)&GridSize, sizeof GridSize);
+		ofs.write((char*)&GridSize, sizeof GridSize);
+
+		for(int ix = 0; ix < GridSize; ix++){
+			double dx0 = ix * 1024 / GridSize;
+			double dx1 = (ix+1) * 1024 / GridSize;
+			for(int iy = 0; iy < GridSize; iy++){
+				double dy0 = iy * 1024 / GridSize;
+				double dy1 = (iy+1) * 1024 / GridSize;
+				GridCell &tcell = tgrid[ix][iy];
+
+				// Remember where to write count of triangles in this grid cell for later seek.
+				std::ofstream::pos_type count_pos = ofs.tellp();
+				int count = 0;
+				ofs.write((char*)&count, sizeof count);
+				for(Triangles::iterator it = triangles.begin(); it != triangles.end(); ++it){
+					AABB aabb = it->getAABB();
+					if(aabb.mins[0] < dx1 && dx0 < aabb.maxs[0]
+						&& aabb.mins[1] < dy1 && dy0 < aabb.maxs[1])
+					{
+						tcell.push_back(&*it);
+						// Record triangle index in the TIN's triangle list.
+						int index = it - triangles.begin();
+						ofs.write((char*)&index, sizeof index);
+						count++;
+					}
+				}
+
+				// The file stream is assumed to allow random seeks.
+				ofs.seekp(count_pos);
+				ofs.write((char*)&count, sizeof count);
+				ofs.seekp(0, ofs.end);
 			}
 		}
 	}
+
 }
 
 int TIN::getat(WarMapTile *return_info, int x, int y){

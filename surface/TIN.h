@@ -57,7 +57,8 @@ protected:
 	TriangleList sortx;
 
 	static const int GridSize = 16;
-	typedef std::vector<Triangle*> TriangleGrid[GridSize][GridSize];
+	typedef std::vector<Triangle*> GridCell;
+	typedef GridCell TriangleGrid[GridSize][GridSize];
 	TriangleGrid tgrid;
 
 	typedef std::set<int> VertexRefSet;

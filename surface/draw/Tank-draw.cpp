@@ -12,6 +12,7 @@ extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
+#include <clib/gl/gldraw.h>
 }
 
 
@@ -279,3 +280,63 @@ void Tank::deathEffects(){
 }
 
 
+void APFSDS::draw(WarDraw *wd){
+	static Model *model = NULL;
+
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(pos, 0.005))
+		return;
+	double pixels = 2. * 0.005 * fabs(wd->vw->gc->scale(pos));
+	if(pixels < .1)
+		return;
+	wd->lightdraws++;
+
+	if(pixels < 2.){
+		glPushAttrib(GL_POINT_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_POINT_SMOOTH);
+		glPointSize(pixels);
+		glColor4ub(63,63,63,255);
+		glBegin(GL_POINTS);
+		glVertex3dv(pos);
+		glEnd();
+		glPopAttrib();
+		return;
+	}
+
+	if(!model){
+		model = LoadMQOModel(Tank::modPath() << _SC("models/APFSDS.mqo"));
+	}
+	if(model){
+		glPushMatrix();
+		gldTranslate3dv(pos);
+		glMultMatrixd(Quatd::direction(velo).tomat4());
+		gldScaled(.00001);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
+}
+
+void APFSDS::drawtra(WarDraw *wd){
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(pos, 0.005))
+		return;
+	double pixels = 2. * 0.005 * fabs(wd->vw->gc->scale(pos));
+	if(pixels < .1)
+		return;
+
+	/* bullet glow */
+	{
+		Vec3d dv = (pos - wd->vw->pos).norm();
+		Vec3d forward = velo.norm();
+		GLubyte a[4] = {255,255,127, (GLubyte)(128. * (forward.sp(dv) + 1.) / 2.)};
+		if(2 < a[3]){
+			glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT);
+			glDisable(GL_LIGHTING);
+			glDepthMask(0);
+			gldSpriteGlow(pos, .010, a, wd->vw->irot);
+			glPopAttrib();
+		}
+	}
+}

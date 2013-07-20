@@ -164,7 +164,7 @@ int Tank::shootcannon(double dt){
 	const Vec3d gunPos = tankMuzzlePos(&dir);
 	while(this->cooldown < dt){
 		int i = 0;
-		Bullet *pb = new Bullet(this, 2., mainGunDamage);
+		Bullet *pb = new APFSDS(this, 2., mainGunDamage);
 		w->addent(pb);
 
 		pb->mass = .005;
@@ -1072,6 +1072,8 @@ int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, do
 void Tank::deathEffects(){}
 void Tank::draw(WarDraw*){}
 void Tank::drawtra(WarDraw*){}
+void APFSDS::draw(WarDraw*){}
+void APFSDS::drawtra(WarDraw*){}
 #endif
 
 

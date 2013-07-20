@@ -1,15 +1,35 @@
+/** \file
+ * \brief Definition of Tank and its projectiles.
+ */
 #ifndef TANK_H
 #define TANK_H
 #include "war.h"
 #include "ModelEntity.h"
 #include "judge.h"
 #include "btadapt.h"
+#include "Bullet.h"
 extern "C"{
 #include <clib/c.h>
 }
 
 class Model;
 
+/// \brief Armor-Piercing Fin-Stabilized Discarding Sabot projectile.
+///
+/// This is the Tank's main gun round.  It's almost the same as normal Bullet
+/// with high speed and splash damage, but with customized appearance.
+/// Specifically, solid model is drawn for the projectile, although it's
+/// so high speed only allow it to be seen in stop motion.
+class APFSDS : public Bullet{
+public:
+	typedef Bullet st;
+	APFSDS(Game *game) : st(game){}
+	APFSDS(Entity *owner, float life, double damage) : st(owner, life, damage){}
+	void draw(WarDraw*)override;
+	void drawtra(WarDraw*)override;
+};
+
+/// \brief JSDF's type 90 main buttle tank.
 class Tank : public ModelEntity{
 public:
 	typedef ModelEntity st;

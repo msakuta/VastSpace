@@ -13,10 +13,10 @@ local birds = [];
 //local f15_3 = player.cs.addent("F15", Vec3d(1, 4., 0));
 //f15_3.race = 1;
 
-local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
+local tank = player.cs.addent("M3Truck", Vec3d(0, 0, 0));
 player.chase = tank
 
-local tank2 = player.cs.addent("Tank", Vec3d(0.1, 0, 0.2))
+local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2))
 tank2.race = 1
 
 cmd("pause 0");

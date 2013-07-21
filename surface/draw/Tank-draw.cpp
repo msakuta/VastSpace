@@ -350,6 +350,9 @@ void APFSDS::drawtra(WarDraw *wd){
 
 
 
+//-----------------------------------------------------------------------------
+//    Implementation for M3Truck
+//-----------------------------------------------------------------------------
 
 void M3Truck::draw(WarDraw *wd){
 	if(!w)
@@ -380,7 +383,7 @@ void M3Truck::draw(WarDraw *wd){
 		}
 
 		/* center of gravity offset */
-		glTranslated(0, -.0007, 0);
+		glTranslated(0, -getLandOffset(), 0);
 
 		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
 		// the model is made such way.
@@ -389,6 +392,46 @@ void M3Truck::draw(WarDraw *wd){
 		glPopMatrix();
 	}
 
+}
+
+
+void M3Truck::drawCockpit(WarDraw *wd){
+	if(!w)
+		return;
+
+	Player *player = game->player;
+	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
+		return;
+
+	static Model *cockpitModel = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init){
+		cockpitModel = LoadMQOModel(modPath() << _SC("models/m3truck1_cockpit.mqo"));
+		init.create(*openGLState);
+	};
+
+	if(!cockpitModel)
+		return;
+
+	Vec3d seat = cameraPositions[0] + Vec3d(0, getLandOffset(), 0);
+
+	glPushAttrib(GL_DEPTH_BUFFER_BIT);
+	glClearDepth(1.);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glPushMatrix();
+
+	glLoadMatrixd(wd->vw->rot);
+	gldMultQuat(this->rot);
+	gldTranslaten3dv(seat);
+
+	glScaled(-modelScale, modelScale, -modelScale);
+	DrawMQOPose(cockpitModel, NULL);
+
+	glPopMatrix();
+
+	glPopAttrib();
 }
 
 void M3Truck::deathEffects(){

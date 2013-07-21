@@ -72,6 +72,7 @@ protected:
 	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual double getTopSpeed()const = 0;
 	virtual double getBackSpeed()const = 0;
+	virtual double getLandOffset()const{return 0.0010;}
 	virtual bool buildBody();
 	virtual void aiControl(double dt, const Vec3d &normal){}
 
@@ -146,12 +147,15 @@ public:
 	void anim(double dt)override;
 	int takedamage(double damage, int hitpart)override;
 	void draw(wardraw_t *)override;
+	void drawCockpit(WarDraw *)override;
+	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
 	double getHitRadius()const{return 0.02;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
 protected:
 	static Model *model;
 	static double modelScale;
+	static double landOffset;
 	static double defaultMass;
 	static double maxHealthValue;
 	static double topSpeed;
@@ -163,11 +167,13 @@ protected:
 	static double barrelPitchSpeed;
 	static double barrelPitchMin;
 	static double barrelPitchMax;
+	static std::vector<Vec3d> cameraPositions;
 	static HitBoxList hitboxes;
 
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	double getTopSpeed()const override{return topSpeed;}
 	double getBackSpeed()const override{return backSpeed;}
+	double getLandOffset()const override{return landOffset;}
 	void aiControl(double dt, const Vec3d &normal)override;
 
 	void init();

@@ -18,9 +18,15 @@ barrelPitchSpeed <- 0.05 * PI;
 barrelPitchMin <- -0.05 * PI;
 barrelPitchMax <- 0.3 * PI;
 
+landOffset <- 0.0007;
+
 
 hitbox <- [
 	[Vec3d(0., 0.000, -0.0015), Quatd(0,0,0,1), Vec3d(0.0012, 0.0007, 0.0015)],
 	[Vec3d(0., 0.000,  0.0015), Quatd(0,0,0,1), Vec3d(0.0012, 0.0007, 0.0015)],
 ];
 
+cameraPositions <- [
+	Vec3d(-50, 170, -70) * modelScale - Vec3d(0, landOffset, 0),
+	Vec3d(0., 0.0075, 0.025),
+]

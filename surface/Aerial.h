@@ -63,7 +63,6 @@ protected:
 	typedef std::vector<Wing> WingList;
 
 	class WingProcess;
-	class Vec3dListProcess;
 
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
@@ -90,7 +89,7 @@ public:
 };
 
 /// \brief Processes a list of Vec3d in a Squirrel script.
-class Aerial::Vec3dListProcess : public SqInitProcess{
+class Vec3dListProcess : public SqInitProcess{
 public:
 	std::vector<Vec3d> &value;
 	const SQChar *name;

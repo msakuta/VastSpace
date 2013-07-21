@@ -275,7 +275,7 @@ void Aerial::WingProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v); // root
 }
 
-void Aerial::Vec3dListProcess::process(HSQUIRRELVM v)const{
+void Vec3dListProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, name, -1); // root string
 
 	// Not defining hardpoints is valid. Just ignore the case.

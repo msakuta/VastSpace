@@ -6,6 +6,7 @@
 #include "Bullet.h"
 #include "motion.h"
 #include "glw/GLWchart.h"
+#include "F15.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -406,7 +407,7 @@ void LandVehicle::anim(double dt){
 	bool floorTouch = false;
 	btVector3 worldNormal;
 	if(WarSpace *ws = *w){
-		static const btVector3 offset(0, 0.0010, 0);
+		static const btVector3 offset(0, getLandOffset(), 0);
 		const btvc btPos = bbody->getWorldTransform().getOrigin() - offset;
 		const btvc btVelo = bbody->getLinearVelocity();
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
@@ -1048,92 +1049,9 @@ void APFSDS::drawtra(WarDraw*){}
 //    Implementation for M3Truck
 //-----------------------------------------------------------------------------
 
-#if 0
-const static GLdouble
-m3track_offset[3] = {0., 0.001, 0.}, m3track_radius = .001;
-static const avec3_t m3track_cog = {0., .0007, 0.}, m3track_cockpit_ofs = {-.0005, .00175, -.0006};
-
-    	static const avec3_t m3track_points[] = {
-			{.001, -.0007, .003},
-			{.001, -.0007, -.003},
-			{-.001, -.0007, -.003},
-			{-.001, -.0007, .003},
-/*			{.002, 0., .002},
-			{.002, 0., -.002},
-			{-.002, 0., -.002},
-			{-.002, 0., .002},*/
-/*			{.0, 0.007, .0},*/
-			{.001, .0012-.0007, .003},
-			{.001, .0012-.0007, -.003},
-			{-.001, .0012-.0007, -.003},
-			{-.001, .0012-.0007, .003},
-/*			{.002, .002, .003},
-			{.002, .002, -.003},
-			{-.002, .002, -.003},
-			{-.002, .002, .003},*/
-			{.0, 0.003-.0007, .0},
-/*			{.0, 0.005, -.002},
-			{.002, 0.005, .002},
-			{-.002, 0.005, .002},*/
-		};
-
-		/*
-static const struct hitbox m3track_hb[] = {
-	{{0., .000, -.0015}, {0,0,0,1}, {.001, .0005, .0015}},
-	{{0., .0001, .0015}, {0,0,0,1}, {.001, .0006, .0015}},
-	{{0., .0009, -.0005}, {0,0,0,1}, {.001, .0004, .0005}},
-};*/
-
-
-
-static void m3track_cockpitview(entity_t *pt, warf_t *w, double (*pos)[3], int *camera);
-static void m3track_control(entity_t *pt, warf_t *w, const input_t *in, double dt);
-static void m3track_drawCockpit(struct entity *pt, const warf_t *w, wardraw_t *wd);
-static void m3track_anim(entity_t *pt, warf_t *w, double dt);
-static void m3track_draw(entity_t *, wardraw_t *);
-static int m3track_tracehit(struct entity *pt, warf_t *w, const double src[3], const double dir[3], double rad, double dt, double *ret, double (*retp)[3], double (*retn)[3]);
-
-static struct entity_private_static m3track_s = {
-	{
-	tank_drawHUD,
-	m3track_cockpitview,
-	m3track_control,
-	NULL, /* destruct */
-	tank_getrot,
-	NULL, /* getrotq */
-	m3track_drawCockpit, /* drawCockpit */
-	NULL, /* is_warping */
-	NULL, /* warp_dest */
-	tank_idname,
-	tank_classname,
-	},
-	m3track_anim,
-	m3track_draw,
-	tank_drawtra,
-	tank_takedamage,
-	tank_gib_draw,
-	tank_postframe,
-	falsefunc,
-	TURRETROTRANGE,
-	-M_PI / 8., M_PI / 4.,
-	NULL, NULL, NULL, NULL,
-	0, /* reuse */
-	TANKGUNSPEED, /* bulletspeed */
-	0.004, /* getHitRadius */
-	.0001, /* sufscale */
-	0, 0, /* hitsuf, altaxis */
-	NULL, /* bullethole */
-	{0.}, /* cog */
-	NULL, /* bullethit */
-	m3track_tracehit, /* tracehit */
-	{NULL}, /* hitmdl */
-	tank_draw, /* shadowdraw */
-};
-#endif
-
-
 Model *M3Truck::model = NULL;
 double M3Truck::modelScale = 3.4 / 200. * 1e-3;
+double M3Truck::landOffset = 0.0007;
 double M3Truck::defaultMass = 9000.; ///< Mass defaults 9 tons
 double M3Truck::maxHealthValue = 150.;
 double M3Truck::topSpeed = 100. / 3.600; ///< Default 100 km/h
@@ -1145,6 +1063,7 @@ double M3Truck::turretYawSpeed = 0.1 * M_PI;
 double M3Truck::barrelPitchSpeed = 0.05 * M_PI;
 double M3Truck::barrelPitchMin = -0.05 * M_PI;
 double M3Truck::barrelPitchMax = 0.3 * M_PI;
+std::vector<Vec3d> M3Truck::cameraPositions;
 HitBoxList M3Truck::hitboxes;
 
 const char *M3Truck::idname()const{return "M3Truck";}
@@ -1169,6 +1088,7 @@ void M3Truck::init(){
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/m3truck.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(landOffset, "landOffset") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(topSpeed, "topSpeed") <<=
@@ -1180,6 +1100,7 @@ void M3Truck::init(){
 			SingleDoubleProcess(barrelPitchSpeed, "barrelPitchSpeed") <<=
 			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
 			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
+			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -1304,8 +1225,8 @@ bool M3Truck::tryshoot(double dt){
 }
 
 Vec3d M3Truck::turretMuzzlePos(Vec3d *nh)const{
-	static const Vec3d velo0(0., 0., -1.), pos0(0., 0/*.0025*/, -.005);
-/*	const double *cog = tank_cog;*/
+	static const Vec3d velo0(0., 0., -1.);
+	const Vec3d pos0 = Vec3d(0., 200, -50) * modelScale;
 	Mat4d mat, rot;
 
 	transform(mat);
@@ -1320,239 +1241,46 @@ Vec3d M3Truck::turretMuzzlePos(Vec3d *nh)const{
 
 }
 
+void M3Truck::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
+	Mat4d mat;
+	int camera;
+	{
+		camera = chasecam;
+		camera = MAX(0, MIN(cameraPositions.size() + 1, camera));
+//		*chasecam = camera;
+	}
+	transform(mat);
+	if(camera == cameraPositions.size()){
+		const Player *player = game->player;
+		Vec3d ofs = mat.dvp3(vec3_001);
+		if(camera)
+			ofs *= player ? player->viewdist : 1.;
+		pos = this->pos + ofs;
+	}
+	else if(camera == cameraPositions.size() + 1){
+		Vec3d pos0;
+		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;
+		struct contact_info ci;
+		pos0[0] = floor(this->pos[0] / period + .5) * period;
+		pos0[1] = floor(this->pos[1] / period + .5) * period;
+		pos0[2] = floor(this->pos[2] / period + .5) * period;
+		pos = pos0;
+	}
+	else{
+		pos = mat.vp3(cameraPositions[camera]);
+	}
+	rot = this->rot;
+}
+
 #ifdef DEDICATED
 void M3Truck::deathEffects(){}
 void M3Truck::draw(WarDraw*){}
+void M3Truck::drawCockpit(WarDraw *wd){}
 #endif
 
 
 
 #if 0
-static void m3track_draw(entity_t *pt, wardraw_t *wd){
-	static int init = 0;
-	static suf_t *suf = NULL, *sufwheel = NULL;
-	tank2_t *p = (tank2_t*)pt;
-	double pixels;
-	if(!pt->active)
-		return;
-
-	/* cull object */
-	if(glcullFrustum(&pt->pos, .007, wd->pgc))
-		return;
-	pixels = .005 * fabs(glcullScale(&pt->pos, wd->pgc));
-	if(pixels < 2)
-		return;
-	wd->lightdraws++;
-
-	if(!suf){
-		suf = CallLoadSUF("m3track1_body.bin");
-		sufwheel = CallLoadSUF("m3track1_wheel.bin");
-	}
-	if(!suf){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		VECADD(pos, pt->pos, tank_offset);
-		gldPseudoSphere(pos, tank_radius, col);
-	}
-	else{
-		GLfloat fv[4] = {.8f, .5f, 0.f, 1.f}, ambient[4] = {.4f, .25f, 0.f, 1.f};
-		static const double normal[3] = {0., 1., 0.}, mountpos[3] = {-33, 125, 45}, wheelpos[2][3] = {{90, 50, 211}, {-90, 50, 211}};
-		double scale = 1e-5, tscale = scale, bscale = scale;
-		if(pt->race % 2)
-			fv[0] = 0., fv[2] = .8f, ambient[0] = 0., ambient[2] = .4f;
-
-		glPushMatrix();
-		{
-			amat4_t mat;
-			tankrot(&mat, pt);
-			glMultMatrixd(mat);
-		}
-
-		glTranslated(0, -.0007, 0);
-
-		glScaled(-scale, scale, -scale);
-
-		DrawSUF(suf, SUF_ATR, &g_gldcache);
-
-		glPushMatrix();
-		gldTranslate3dv(wheelpos[0]);
-		glRotated(30 * p->steer, 0., -1., 0.);
-		glRotated(deg_per_rad * p->wheelangle, 1., 0., 0.);
-		gldTranslaten3dv(wheelpos[0]);
-		DrawSUF(sufwheel, SUF_ATR, &g_gldcache);
-		glPopMatrix();
-
-		gldTranslate3dv(wheelpos[1]);
-		glRotated(30 * p->steer, 0., -1., 0.);
-		glRotated(deg_per_rad * p->wheelangle, 1., 0., 0.);
-		gldTranslaten3dv(wheelpos[0]);
-		DrawSUF(sufwheel, SUF_ATR, &g_gldcache);
-#if 0
-		glRotated(deg_per_rad * p->turrety, 0., -1., 0.);
-		if(wd->w->pl->chase != pt || wd->w->pl->chasecamera)
-			DrawSUF(tank_s.sufturret, SUF_ATR, &g_gldcache);
-
-		glPushMatrix();
-		gldTranslaten3dv(mountpos);
-		glRotated(deg_per_rad * p->mountpy[1], 0., -1., 0.);
-		glRotated(deg_per_rad * p->mountpy[0], 1., 0., 0.);
-		gldTranslate3dv(mountpos);
-		DrawSUF(sufm2, SUF_ATR, &g_gldcache);
-		glPopMatrix();
-
-		glTranslated(0., 90., -85.);
-		glRotated(deg_per_rad * p->barrelp, 1., 0., 0.);
-
-		/* level of detail */
-		if(0 && 100 < pixels){
-			glScaled(1. / tscale, 1. / tscale, 1. / tscale);
-	/*		glTranslated(0., .0025, -0.0015);*/
-			glScaled(bscale, bscale, bscale);
-			DrawSUF(tank_s.sufbarrel1, SUF_ATR, &g_gldcache);
-		}
-		else{
-			glTranslated(0., -90., 85.);
-/*			glTranslated(0., -.0025 / tscale, 0.0015 / tscale);*/
-			DrawSUF(tank_s.sufbarrel, SUF_ATR, &g_gldcache);
-		}
-#endif
-
-		glPopMatrix();
-	}
-#ifndef NDEBUG
-	{
-		int i;
-		avec3_t org;
-		amat4_t mat;
-		struct hitbox *hb = m3track_hb;
-/*		aquat_t rot, roty;
-		roty[0] = 0.;
-		roty[1] = sin(pt->turrety / 2.);
-		roty[2] = 0.;
-		roty[3] = cos(pt->turrety / 2.);
-		QUATMUL(rot, pt->rot, roty);*/
-
-		glPushMatrix();
-/*		gldTranslate3dv(pt->pos);
-		gldMultQuat(rot);*/
-		tankrot(&mat, pt);
-		glMultMatrixd(mat);
-/*		glRotated(pt->turrety * deg_per_rad, 0, 1., 0.);*/
-/*		gldTranslate3dv(org);*/
-
-		for(i = 0; i < numof(tank_hb); i++){
-			amat4_t rot;
-			glPushMatrix();
-			gldTranslate3dv(hb[i].org);
-			quat2mat(rot, hb[i].rot);
-			glMultMatrixd(rot);
-			hitbox_draw(pt, hb[i].sc);
-			glPopMatrix();
-
-			glPushMatrix();
-			gldTranslate3dv(hb[i].org);
-			quat2imat(rot, hb[i].rot);
-			glMultMatrixd(rot);
-			hitbox_draw(pt, hb[i].sc);
-			glPopMatrix();
-		}
-
-		glPopMatrix();
-	}
-#endif
-}
-
-static void m3track_drawCockpit(struct entity *pt, const warf_t *w, wardraw_t *wd){
-	static int init = 0;
-	static suf_t *sufcockpit = NULL, *sufhandle = NULL;
-	tank2_t *p = (tank2_t*)pt;
-	double scale = .00001 /*wd->pgc->znear / wd->pgc->zfar*/;
-	double sonear = scale * wd->pgc->znear;
-	double wid = sonear * wd->pgc->fov * wd->pgc->width / wd->pgc->res;
-	double hei = sonear * wd->pgc->fov * wd->pgc->height / wd->pgc->res;
-	double sufscale = 1e-5;
-	const double *seat = m3track_cockpit_ofs;
-	amat4_t rot;
-	if(w->pl->chasecamera)
-		return;
-
-	if(!init){
-		init = 1;
-		sufcockpit = CallLoadSUF("m3track1_int.bin");
-		sufhandle = CallLoadSUF("m3track1_handle.bin");
-	}
-
-	glLoadMatrixd(*wd->rot);
-	quat2mat(&rot, pt->rot);
-	glMultMatrixd(rot);
-
-	glPushAttrib(GL_DEPTH_BUFFER_BIT);
-	glClearDepth(1.);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glPushMatrix();
-
-	glMatrixMode (GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glFrustum (-wid, wid,
-		-hei, hei,
-		sonear, wd->pgc->znear * 50.);
-	glMatrixMode (GL_MODELVIEW);
-
-	{
-		gldTranslaten3dv(seat);
-		gldScaled(sufscale);
-		glRotated(180, 0, 1, 0);
-		DrawSUF(sufcockpit, SUF_ATR, &g_gldcache);
-		glTranslated(50, 130, 0);
-		glRotated(p->steer * deg_per_rad, 0, 0, 1.);
-		glTranslated(-50, -130, 0);
-		DrawSUF(sufhandle, SUF_ATR, &g_gldcache);
-	}
-
-	glPopMatrix();
-
-	glMatrixMode (GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode (GL_MODELVIEW);
-
-	glPopAttrib();
-}
-
-static void m3track_cockpitview(entity_t *pt, warf_t *w, double (*pos)[3], int *pcamera){
-	tank2_t *p = (tank2_t*)pt;
-	static const avec3_t offset0 = {0., .010, .025};
-	static const double *const ofs[2] = {m3track_cockpit_ofs, offset0};
-	amat4_t mat, mat2;
-	int camera = *pcamera;
-
-/*	tankrot(&mat, pt);*/
-	quat2mat(&mat, pt->rot);
-	VECADDIN(&(mat)[12], pt->pos);
-	mat4translaten3dv(mat, m3track_cog);
-
-	camera = *pcamera = camera < -2 ? 0 : (camera + 3) % 3;
-	if(camera == 2){
-		struct bullet *pb;
-		for(pb = w->bl; pb; pb = pb->next) if(pb && pb->active && pb->owner == pt){
-			VECCPY(*pos, pb->pos);
-			return;
-		}
-		camera = 0;
-	}
-	else if(camera){
-		if(pt->weapon == 2){
-			mat4roty(mat2, mat, -(p->turrety + p->mountpy[1]));
-			mat4rotx(mat, mat2, p->mountpy[0]);
-		}
-		else{
-			mat4roty(mat2, mat, -p->turrety);
-			mat4rotx(mat, mat2, p->barrelp);
-		}
-	}
-	mat4vp3(*pos, mat, ofs[camera]);
-}
 
 static void m3track_control(entity_t *pt, warf_t *w, const input_t *in, double dt){
 	static int prev = 0;
@@ -1606,10 +1334,6 @@ static void m3track_control(entity_t *pt, warf_t *w, const input_t *in, double d
 	else p->cooldown -= dt;
 
 	prev = inputs;
-}
-
-static int m3track_tracehit(struct entity *pt, warf_t *w, const double src[3], const double dir[3], double rad, double dt, double *ret, double (*retp)[3], double (*retn)[3]){
-	entity_tracehit(pt, w, src, dir, rad, dt, ret, retp, retn, m3track_hb, numof(m3track_hb));
 }
 
 #endif

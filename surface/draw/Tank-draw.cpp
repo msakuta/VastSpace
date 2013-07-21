@@ -340,3 +340,73 @@ void APFSDS::drawtra(WarDraw *wd){
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+void M3Truck::draw(WarDraw *wd){
+	if(!w)
+		return;
+
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(pos, .007))
+		return;
+	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	if(pixels < 2)
+		return;
+	wd->lightdraws++;
+
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init){
+		model = LoadMQOModel(modPath() << _SC("models/m3truck.mqo"));
+		init.create(*openGLState);
+	};
+
+	if(model){
+
+		glPushMatrix();
+		{
+			Mat4d mat;
+			transform(mat);
+			glMultMatrixd(mat);
+		}
+
+		/* center of gravity offset */
+		glTranslated(0, -.0007, 0);
+
+		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
+		// the model is made such way.
+		glScaled(-modelScale, modelScale, -modelScale);
+		DrawMQOPose(model, NULL);
+		glPopMatrix();
+	}
+
+}
+
+void M3Truck::deathEffects(){
+	tent3d_line_list *tell = w->getTeline3d();
+
+	Vec3d gravity = w->accel(this->pos, this->velo);
+	if(tell){
+		int j;
+		for(j = 0; j < 20; j++){
+			Vec3d velo(
+				.15 * (w->rs.nextd() - .5),
+				.15 * (w->rs.nextd() - .5),
+				.15 * (w->rs.nextd() - .5));
+			AddTeline3D(tell, this->pos, velo, .0025, quat_u, vec3_000, gravity,
+				j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND | TEL3_REFLECT, 1. + .5 * w->rs.nextd());
+		}
+
+		/* explode shockwave thingie */
+		AddTeline3D(tell, this->pos, vec3_000, .1, Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
+	}
+}

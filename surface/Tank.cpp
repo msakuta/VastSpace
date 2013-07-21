@@ -66,7 +66,7 @@ Tank::Tank(WarField *aw) : st(aw){
 	sightCheck = false;
 }
 
-bool Tank::buildBody(){
+bool LandVehicle::buildBody(){
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
@@ -129,7 +129,7 @@ void Tank::init(){
 	mass = defaultMass;
 }
 
-void Tank::addRigidBody(WarSpace *ws){
+void LandVehicle::addRigidBody(WarSpace *ws){
 	if(ws && ws->bdw){
 		buildBody();
 		//add the body to the dynamics world
@@ -341,7 +341,7 @@ int Tank::tryshoot(double dt){
 	return 1;
 }
 
-void Tank::find_enemy_logic(){
+void LandVehicle::find_enemy_logic(){
 	double best = 100. * 100.; /* sense range */
 	double sdist;
 	Entity *closest = NULL;
@@ -362,69 +362,6 @@ void Tank::find_enemy_logic(){
 
 
 
-#define putstring(a) gldPutString(a)
-/*extern void putstring(const char *);*/
-
-#define VEC4SET(a,s0,s1,s2,s3) ((a)[0]=(s0),(a)[1]=(s1),(a)[2]=(s2),(a)[3]=(s3))
-#define MATVEC4(r,m,v) (\
-	(r)[0] = (r)[0]*(m)[0] + (r)[1]*(m)[4] + (r)[2]*(m)[8] + (m)[12],\
-	(r)[1] = (r)[0]*(m)[1] + (r)[1]*(m)[5] + (r)[2]*(m)[9] + (m)[13],\
-	(r)[2] = (r)[0]*(m)[2] + (r)[1]*(m)[6] + (r)[2]*(m)[10] + (m)[14],\
-	(r)[3] = (r)[0]*(m)[3] + (r)[1]*(m)[7] + (r)[2]*(m)[11] + (m)[15])
-
-
-/*static void vecrot(avec3_t vr, const avec3_t vaxis, double angle){
-	aquat_t q;
-	double sa;
-	sa = sin(angle / 2.);
-	q[3] = cos(angle / 2.);
-	VECSCALE(q, vaxis, sa);
-}*/
-
-void Tank::vehicle_drive(double dt, Vec3d *points, int npoints){
-	int in = inputs.press;
-	int leng, reng;
-	unsigned long contact;
-	Vec3d fore0(0., 0., - -.01);
-	Vec3d vleng, vreng;
-	Vec3d *thrust[64] = {NULL};
-	Mat4d mat;
-	int engflags = 0, i;
-
-	steer = approach(steer, (inputs.press & (PL_A | PL_D)) == PL_A ? -1. : (inputs.press & (PL_A | PL_D)) == PL_D ? 1. : 0., dt, 0);
-
-	leng = in & PL_W ? 2 : in & PL_A ? 1 : in & PL_S ? -2 : in & PL_D ? -1 : 0;
-	reng = in & PL_W ? 2 : in & PL_D ? 1 : in & PL_S ? -2 : in & PL_A ? -1 : 0;
-	if(leng){
-		vleng = fore0 * leng;
-		thrust[0] = thrust[1] = &vleng;
-	}
-	if(reng){
-		vreng = fore0 * reng;
-		thrust[2] = thrust[3] = &vreng;
-	}
-//	memset(((tank2_t*)pt)->forces, 0, sizeof ((tank2_t*)pt)->forces);
-//	memset(((tank2_t*)pt)->normals, 0, sizeof ((tank2_t*)pt)->normals);
-//	contact = RigidPointHit(pt, w, dt, points, thrust, npoints, NULL, ((tank2_t*)pt)->forces, ((tank2_t*)pt)->normals);
-
-//	if(contact & (1 << 8))
-//		((struct entity_private_static*)pt->vft)->takedamage(pt, 100 * dt, w, 0);
-
-//	if(contact & (1|2|4|8))
-//		tankrot(&mat, pt);
-/*	engflags |= reng < 0;
-	engflags |= (0 < reng) << 1;
-	engflags |= (0 < leng) << 2;
-	engflags |= (leng < 0) << 3;
-	for(i = 0; i < 4; i++) if(contact & engflags & (1 << i) && drseq(&w->rs) < dt / .1){
-		avec3_t pos;
-		mat4vp3(pos, mat, points[i]);
-		pos[0] += (drseq(&w->rs) - .5) * .0005;
-		pos[1] += (drseq(&w->rs) - .5) * .0005;
-		pos[2] += (drseq(&w->rs) - .5) * .0005;
-		AddTeline3D(w->tell, pos, NULL, .001, NULL, NULL, NULL, COLOR32RGBA(127,127,127,127), TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, 1.);
-	}*/
-}
 
 /// \brief Casts a ray in a Bullet Dynamics World to see if any rigid body object is hit.
 ///
@@ -462,9 +399,8 @@ static btVector3 alignAxis(const btVector3 &v, const btVector3 &a){
 	return a * (a.normalized().dot(v));
 }
 
-void Tank::anim(double dt){
+void LandVehicle::anim(double dt){
 	double h;
-	Vec3d epos(0,0,0); /* estimated enemy position */
 	Vec3d normal(0,1,0);
 
 	bool floorTouch = false;
@@ -497,104 +433,7 @@ void Tank::anim(double dt){
 	if(!w || controller){
 	}
 	else if(0 < getHealth()){
-
-		/* find enemy logic */
-		if(!enemy){
-			find_enemy_logic();
-		}
-
-
-		/* estimating enemy position and wheeling towards enemy */
-		inputs.press = 0;
-		if(enemy){
-			Vec3d mdir;
-			Vec3d mpos = tankMuzzlePos(&mdir); // Muzzle position
-
-			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
-				|| normal.sp(mdir) < -.2
-				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
-			double bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
-
-			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
-			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
-			Vec3d pos = mat2.vp3(enemy->pos);
-			Vec3d velo = mat2.dvp3(enemy->velo);
-			Vec3d pvelo = mat2.dvp3(this->velo);
-
-			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
-			double phi = atan2(epos[0], -epos[2]);
-			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-
-			// Rotate the turret and barrel
-			turrety = approach(turrety, phi, dt * turretYawSpeed, 2 * M_PI);
-			barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
-
-			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
-			if(epos.slen() < .05 * .05)
-				; // Do nothing
-			else if(phi < -.1 * M_PI)
-				inputs.press |= PL_A;
-			else if(.1 * M_PI < phi)
-				inputs.press |= PL_D;
-			else
-				inputs.press |= PL_W;
-
-			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI){
-				// If we're in a SurfaceCS, check if we can see the target clearly.
-				// dynamic_cast should be preferred.
-				if(&w->cs->getStatic() == &SurfaceCS::classRegister){
-					SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
-					if(sightCheckTime < dt){
-						if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
-							inputs.press |= PL_ENTER;
-							sightCheck = true; // Remember for the next frames
-						}
-						else
-							sightCheck = false; // Remember for the next frames
-						sightCheckTime += sightCheckInterval - dt;
-					}
-					else{
-						sightCheckTime -= dt;
-						if(sightCheck) // Recall memory
-							inputs.press |= PL_ENTER;
-					}
-				}
-				else
-					inputs.press |= PL_ENTER;
-			}
-	
-
-//			playWAVEFile("c0wg42.wav");
-/*			{
-				avec3_t delta, xhat;
-				VECSUB(delta, pos, w->pl->pos);
-				xhat[0] = cos(w->pl->pyr[1]);
-				xhat[1] = 0;
-				xhat[2] = sin(w->pl->pyr[1]);
-				playWaveCustom("c0wg42.wav", (unsigned short)(256 / (1. + 100 * VECSDIST(w->pl->pos, pos))), 0, -128 * VECSP(delta, xhat) / VECLEN(delta));
-			}*/
-			//playWave3D("c0wg42.wav", pos, w->pl->pos, w->pl->pyr, .2, .01, w->realtime);
-		}
-
-#if 0 /* chaingun */
-		if(pt->cooldown2 < dt){
-			struct ssm *pb;
-			pb = bul;
-			for(; pb; pb = pb->next) if(pb->vft == &ssm_s && pb->target == pt) break;
-			if(pb && tank_tryshoot(pt, 1, pb->pos, atan2(pb->pos[0] - pt->pos[0], -(pb->pos[2] - pt->pos[2])), 1., 1., .015)){
-				pt->shoots2++;
-				pt->cooldown2 = 0.1;
-			}
-			else if(pt->enemy && tank_tryshoot(pt, 1, pt->enemy->pos, atan2(pt->enemy->pos[0] - pt->pos[0], -(pt->enemy->pos[2] - pt->pos[2])), 1., 1., .015)){
-				pt->shoots2++;
-				pt->cooldown2 = 0.1;
-			}
-			else
-				pt->cooldown2 = 0.1;
-		}
-		else
-			pt->cooldown2 -= dt;
-#endif
+		aiControl(dt, normal);
 	}
 
 #if 0
@@ -673,26 +512,6 @@ void Tank::anim(double dt){
 	}
 #endif
 
-	if(0 < getHealth()){
-		// Main trigger
-		if(inputs.press & (PL_ENTER | PL_LCLICK)){
-			if(cooldown == 0.){
-				if(!tryshoot(dt))
-					cooldown += RETHINKTIME;
-			}
-		}
-
-		if(cooldown < dt)
-			cooldown = 0.;
-		else
-			cooldown -= dt;
-
-		if(cooldown2 < dt)
-			cooldown2 = 0.;
-		else
-			cooldown2 -= dt;
-	}
-
 	if(!bbody){
 		Vec3d accel = w->accel(pos, velo);
 		velo += accel * dt;
@@ -700,10 +519,10 @@ void Tank::anim(double dt){
 
 	if(floorTouch){
 		if(inputs.press & PL_W){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * topSpeed), worldNormal));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * getTopSpeed()), worldNormal));
 		}
 		if(inputs.press & PL_S){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -backSpeed), worldNormal));
+			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -getBackSpeed()), worldNormal));
 		}
 		if(inputs.press & PL_A){
 			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));
@@ -857,11 +676,6 @@ int Tank::takedamage(double damage, int hitpart){
 	return 0;
 }
 
-void Tank::postframe(){
-	if(enemy && (!enemy->w || !w))
-		enemy = NULL;
-}
-
 #if 0
 int Tank::getrot(double (*ret)[16]){
 /*	amat4_t mat, mat2;
@@ -884,7 +698,7 @@ int Tank::getrot(double (*ret)[16]){
 
 
 
-void Tank::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+void LandVehicle::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	static  const Vec3d ofs[2] = {Vec3d(-.0006, .0010, -.0005), Vec3d(0., .010, .025)};
 	Mat4d mat, mat2;
 	int camera = seatid;
@@ -1026,7 +840,7 @@ void Tank::control(const input_t *in, double dt){
 #endif
 }
 
-int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const hitbox *hb, int nhb){
+int LandVehicle::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
 	double best = dt;
 	int reti = 0, i = 0;
 	double retf;
@@ -1064,8 +878,129 @@ int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, do
 	return reti;
 }
 
-int Tank::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	return tracehit(src, dir, rad, dt, ret, retp, retn, &hitboxes.front(), hitboxes.size());
+void Tank::anim(double dt){
+	st::anim(dt);
+
+	if(0 < getHealth()){
+		// Main trigger
+		if(inputs.press & (PL_ENTER | PL_LCLICK)){
+			if(cooldown == 0.){
+				if(!tryshoot(dt))
+					cooldown += RETHINKTIME;
+			}
+		}
+
+		if(cooldown < dt)
+			cooldown = 0.;
+		else
+			cooldown -= dt;
+
+		if(cooldown2 < dt)
+			cooldown2 = 0.;
+		else
+			cooldown2 -= dt;
+	}
+
+}
+
+void Tank::aiControl(double dt, const Vec3d &normal){
+	Vec3d epos(0,0,0); /* estimated enemy position */
+		/* find enemy logic */
+		if(!enemy){
+			find_enemy_logic();
+		}
+
+		/* estimating enemy position and wheeling towards enemy */
+		inputs.press = 0;
+		if(enemy){
+			Vec3d mdir;
+			Vec3d mpos = tankMuzzlePos(&mdir); // Muzzle position
+
+			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
+				|| normal.sp(mdir) < -.2
+				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
+			double bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
+
+			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+			Vec3d pos = mat2.vp3(enemy->pos);
+			Vec3d velo = mat2.dvp3(enemy->velo);
+			Vec3d pvelo = mat2.dvp3(this->velo);
+
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
+			double phi = atan2(epos[0], -epos[2]);
+			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+
+			// Rotate the turret and barrel
+			turrety = approach(turrety, phi, dt * turretYawSpeed, 2 * M_PI);
+			barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
+
+			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
+			if(epos.slen() < .05 * .05)
+				; // Do nothing
+			else if(phi < -.1 * M_PI)
+				inputs.press |= PL_A;
+			else if(.1 * M_PI < phi)
+				inputs.press |= PL_D;
+			else
+				inputs.press |= PL_W;
+
+			if(fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI){
+				// If we're in a SurfaceCS, check if we can see the target clearly.
+				// dynamic_cast should be preferred.
+				if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+					SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
+					if(sightCheckTime < dt){
+						if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
+							inputs.press |= PL_ENTER;
+							sightCheck = true; // Remember for the next frames
+						}
+						else
+							sightCheck = false; // Remember for the next frames
+						sightCheckTime += sightCheckInterval - dt;
+					}
+					else{
+						sightCheckTime -= dt;
+						if(sightCheck) // Recall memory
+							inputs.press |= PL_ENTER;
+					}
+				}
+				else
+					inputs.press |= PL_ENTER;
+			}
+	
+
+//			playWAVEFile("c0wg42.wav");
+/*			{
+				avec3_t delta, xhat;
+				VECSUB(delta, pos, w->pl->pos);
+				xhat[0] = cos(w->pl->pyr[1]);
+				xhat[1] = 0;
+				xhat[2] = sin(w->pl->pyr[1]);
+				playWaveCustom("c0wg42.wav", (unsigned short)(256 / (1. + 100 * VECSDIST(w->pl->pos, pos))), 0, -128 * VECSP(delta, xhat) / VECLEN(delta));
+			}*/
+			//playWave3D("c0wg42.wav", pos, w->pl->pos, w->pl->pyr, .2, .01, w->realtime);
+		}
+
+#if 0 /* chaingun */
+		if(pt->cooldown2 < dt){
+			struct ssm *pb;
+			pb = bul;
+			for(; pb; pb = pb->next) if(pb->vft == &ssm_s && pb->target == pt) break;
+			if(pb && tank_tryshoot(pt, 1, pb->pos, atan2(pb->pos[0] - pt->pos[0], -(pb->pos[2] - pt->pos[2])), 1., 1., .015)){
+				pt->shoots2++;
+				pt->cooldown2 = 0.1;
+			}
+			else if(pt->enemy && tank_tryshoot(pt, 1, pt->enemy->pos, atan2(pt->enemy->pos[0] - pt->pos[0], -(pt->enemy->pos[2] - pt->pos[2])), 1., 1., .015)){
+				pt->shoots2++;
+				pt->cooldown2 = 0.1;
+			}
+			else
+				pt->cooldown2 = 0.1;
+		}
+		else
+			pt->cooldown2 -= dt;
+#endif
 }
 
 #ifdef DEDICATED
@@ -1109,6 +1044,9 @@ void APFSDS::drawtra(WarDraw*){}
 
 
 
+//-----------------------------------------------------------------------------
+//    Implementation for M3Truck
+//-----------------------------------------------------------------------------
 
 #if 0
 const static GLdouble
@@ -1191,255 +1129,205 @@ static struct entity_private_static m3track_s = {
 	{NULL}, /* hitmdl */
 	tank_draw, /* shadowdraw */
 };
+#endif
 
-entity_t *M3TrackNew(warf_t *w){
-	tank2_t *p;
-	entity_t *ret;
-	p = malloc(sizeof *p);
-	ret = &p->st;
-	EntityInit(ret, w, &m3track_s);
-	ret->health = 100.;
-	ret->mass = 9000.;
-	p->steer = 0.;
-	p->wheelspeed = p->wheelangle = 0.;
-	p->turrety = p->barrelp = 0.;
-	p->cooldown = p->cooldown2 = RELOADTIME;
-	p->mountpy[0] = p->mountpy[1] = 0.;
-	p->ammo[0] = 35; /* main gun ammunition */
-	p->ammo[1] = 2000; /* coaxial gun ammo (type 74 7.64mm) */
-	p->ammo[2] = 1500; /* mounted gun ammo (M2 Browning 12.7mm) */
-	p->muzzle = 0;
-	return ret;
+
+Model *M3Truck::model = NULL;
+double M3Truck::modelScale = 3.4 / 200. * 1e-3;
+double M3Truck::defaultMass = 9000.; ///< Mass defaults 9 tons
+double M3Truck::maxHealthValue = 150.;
+double M3Truck::topSpeed = 100. / 3.600; ///< Default 100 km/h
+double M3Truck::backSpeed = 40. / 3.600; ///< Default half a topSpeed
+double M3Truck::turretCooldown = 0.5;
+double M3Truck::turretMuzzleSpeed = 0.7;
+double M3Truck::turretDamage = 20;
+double M3Truck::turretYawSpeed = 0.1 * M_PI;
+double M3Truck::barrelPitchSpeed = 0.05 * M_PI;
+double M3Truck::barrelPitchMin = -0.05 * M_PI;
+double M3Truck::barrelPitchMax = 0.3 * M_PI;
+HitBoxList M3Truck::hitboxes;
+
+const char *M3Truck::idname()const{return "M3Truck";}
+const char *M3Truck::classname()const{return "M3Truck";}
+
+const unsigned M3Truck::classid = registerClass("M3Truck", Conster<M3Truck>);
+Entity::EntityRegister<M3Truck> M3Truck::entityRegister("M3Truck");
+
+
+M3Truck::M3Truck(WarField *w) : st(w){
+	init();
+	health = maxHealthValue;
+	mass = defaultMass;
+	turrety = barrelp = 0.;
+	cooldown = cooldown2 = turretCooldown;
+//	steer = 0.;
+//	wheelspeed = p->wheelangle = 0.;
 }
 
-static void m3track_anim(entity_t *pt, warf_t *w, double dt){
-	double h;
-	double n[3] = {0., 1., 0.};
-	double epos[3] = {0}; /* estimated enemy position */
-	double mpos[3]; /* muzzle position */
-	int mposa = 0; /* muzzle position availability */
-	tank2_t *p = (tank2_t*)pt;
-	h = w->map ? warmapheightr(w->map, pt->pos[0], pt->pos[2], &n) : 0.;
+void M3Truck::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("models/m3truck.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			SingleDoubleProcess(topSpeed, "topSpeed") <<=
+			SingleDoubleProcess(backSpeed, "backSpeed") <<=
+			SingleDoubleProcess(turretCooldown, "turretCooldown") <<=
+			SingleDoubleProcess(turretMuzzleSpeed, "turretMuzzleSpeed") <<=
+			SingleDoubleProcess(turretDamage, "turretDamage") <<=
+			SingleDoubleProcess(turretYawSpeed, "turretYawSpeed") <<=
+			SingleDoubleProcess(barrelPitchSpeed, "barrelPitchSpeed") <<=
+			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
+			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
+			HitboxProcess(hitboxes));
+		initialized = true;
+	}
+	mass = defaultMass;
+}
 
-	if(!pt->active || w->pl->control == pt){
+
+void M3Truck::anim(double dt){
+	st::anim(dt);
+
+	if(0 < getHealth()){
+		// Main trigger
+		if(inputs.press & (PL_ENTER | PL_LCLICK)){
+			if(cooldown == 0.){
+				if(!tryshoot(dt))
+					cooldown += RETHINKTIME;
+			}
+		}
+
+		if(cooldown < dt)
+			cooldown = 0.;
+		else
+			cooldown -= dt;
+
+		if(cooldown2 < dt)
+			cooldown2 = 0.;
+		else
+			cooldown2 -= dt;
+	}
+}
+
+int M3Truck::takedamage(double damage, int hitpart){
+
+	if(health <= damage){ /* death! */
+		deathEffects();
+
+		if(game->isServer())
+			delete this;
+		return 0;
 	}
 	else{
-/*		struct tent3d_line_list *tell = w->tell;*/
-		struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
-/*		int j;*/
-/*		struct bullet *pb, **ppb;*/
-		double phi; /* enemy direction */
+		health -= damage;
+/*		playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .001);*/
+		return 1;
+	}
+	return 0;
+}
 
+void M3Truck::aiControl(double dt, const Vec3d &normal){
+	Vec3d epos(0,0,0); /* estimated enemy position */
 		/* find enemy logic */
-		if(!pt->enemy){
-			find_enemy_logic(pt, w);
+		if(!enemy){
+			find_enemy_logic();
 		}
 
 		/* estimating enemy position and wheeling towards enemy */
-		pt->inputs.press = 0;
-		if(pt->enemy){
-			double diff, dphi;
-			avec3_t dpos, dp, pyr;
-			amat4_t mat, rot;
-			double bulletspeed;
-			int subweapon;
+		inputs.press = 0;
+		if(enemy){
+			Vec3d mdir;
+			Vec3d mpos = turretMuzzlePos(&mdir); // Muzzle position
 
-			subweapon = !p->ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
-				|| VECSDIST(pt->pos, pt->enemy->pos) < .1 * .1;
-			bulletspeed = subweapon ? .8 : TANKGUNSPEED;
+			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
+				|| normal.sp(mdir) < -.2
+				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
+			double bulletspeed = subweapon ? .8 : turretMuzzleSpeed;
 
-			if(((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy))
-				VECCPY(epos, pt->enemy->pos);
+			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+			Vec3d pos = mat2.vp3(enemy->pos);
+			Vec3d velo = mat2.dvp3(enemy->velo);
+			Vec3d pvelo = mat2.dvp3(this->velo);
+
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
+			double phi = atan2(epos[0], -epos[2]);
+			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+
+			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
+			if(epos.slen() < .05 * .05)
+				; // Do nothing
+			else if(phi < -.1 * M_PI)
+				inputs.press |= PL_A;
+			else if(.1 * M_PI < phi)
+				inputs.press |= PL_D;
 			else
-				estimate_pos(&epos, pt->enemy->pos, pt->enemy->velo, pt->pos, pt->velo, &sgravity, bulletspeed, w->map, w, ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy));
-			tankmuzzlepos(p, &mpos, NULL);
-			mposa = 1;
-			VECSUB(dpos, epos, mpos);
-			quat2imat(&mat, pt->rot);
-			MAT4VP3(dp, mat, dpos);
-			pyrmat(pyr, &rot);
-			phi = atan2(epos[0] - pt->pos[0], -(epos[2] - pt->pos[2]));
-			dphi = atan2(dp[0], -dp[2]);
-			shoot_angle(avec3_000, dp, dphi, bulletspeed, &p->desired);
-			p->turrety = rangein(approach(p->turrety + M_PI, p->desired[1] + M_PI, TURRETROTSPEED * dt, 2 * M_PI) - M_PI, -vft->turretrange, vft->turretrange);
-			p->barrelp = rangein(approach(p->barrelp + M_PI, p->desired[0] /*- pt->pyr[0]*/ + M_PI, TURRETROTSPEED * dt, 2 * M_PI) - M_PI, vft->barrelmin, vft->barrelmax);
-/*			if(pt->pos[1] <= h)
-				pt->pyr[1] = approach(pt->pyr[1] + M_PI, phi + M_PI, ROTSPEED * dt, 2 * M_PI) - M_PI;*/
-
-			diff = fmod(phi - pt->pyr[1] + M_PI, 2. * M_PI) - M_PI;
-			if(VECSDIST(epos, pt->pos) < .05 * .05);
-			else if(diff < -.1 * M_PI)
-				pt->inputs.press |= PL_A;
-			else if(.1 * M_PI < diff)
-				pt->inputs.press |= PL_D;
-			else
-				pt->inputs.press |= PL_W;
-
-			{
-				double yaw = pt->pyr[1] + p->turrety;
-				double pitch = /*pt->pyr[0]*/ + p->barrelp;
-				if(!rot && (INTOLERANCE < fabs(phi - yaw) || INTOLERANCE < fabs(pitch - p->desired[0])))
-					pt->inputs.press &= ~PL_ENTER;
-				else{
-					pt->weapon = 2;
-					pt->inputs.press |= PL_ENTER;
-				}
-			}
-
+				inputs.press |= PL_W;
 		}
+}
 
-		if(p->cooldown < dt)
-			p->cooldown = 0.;
-		else
-			p->cooldown -= dt;
-	}
 
-    if(pt->weapon == 1 && pt->inputs.press & (PL_LCLICK | PL_ENTER)){
-	}
-	else if(pt->weapon == 2 && pt->inputs.press & (PL_LCLICK | PL_ENTER)) while(p->cooldown2 < dt){
+bool M3Truck::tryshoot(double dt){
+	if(dt <= this->cooldown)
+		return false;
+
+//	struct bullet *pb;
+	const double v = turretMuzzleSpeed;
+	Vec3d dir;
+	const Vec3d gunPos = turretMuzzlePos(&dir);
+	while(this->cooldown < dt){
+		int i = 0;
+		Bullet *pb = new Bullet(this, 2., turretDamage);
+		w->addent(pb);
+
+		pb->mass = .005;
+		pb->pos = gunPos;
+		pb->velo = dir * v + this->velo;
+		for(int j = 0; j < 3; j++)
+			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+		pb->anim(dt - this->cooldown);
+
 		/* M2 */
-		struct bullet *pb;
-		static const double scale = 3.4 / 200. * 1e-3;
+		static const double scale = modelScale;
 		avec3_t pos, pos0 = {0,0.002,0}, velo, velo0 = {0, 0, -.88};
 		aquat_t qp = {0}, qy = {0}, q, q1, qr;
 		double dev[2];
-		dev[0] = p->mountpy[0] + (drseq(&w->rs) - .5) * .001 * M_PI;
-		dev[1] = p->mountpy[1] + (drseq(&w->rs) - .5) * .001 * M_PI;
 
-		qy[1] = sin(-p->turrety / 2.);
-		qy[3] = cos(-p->turrety / 2.);
-/*		qp[0] = sin(p->barrelp / 2.);
-		qp[3] = cos(p->barrelp / 2.);*/
-		QUATMUL(q, pt->rot, qy);
-/*		QUATMUL(qr, q, qp);*/
-		qy[1] = sin(-dev[1] / 2.);
-		qy[3] = cos(-dev[1] / 2.);
-		qp[0] = sin(dev[0] / 2.);
-		qp[3] = cos(dev[0] / 2.);
-		QUATMUL(q1, q, qy);
-		QUATMUL(qr, q1, qp);
+		this->cooldown += turretCooldown;
+		this->muzzle |= 1;
 
-		quatrot(pos, q, pos0);
-		VECADDIN(pos, pt->pos);
-		quatrot(velo, qr, velo0);
-		pb = BulletNew(w, pt, 5.);
-		pb->mass = .008;
-		VECCPY(pb->pos, pos);
-		VECADD(pb->velo, velo, pt->velo);
-		pb->life = 20.;
-		pt->shoots2++;
-		p->ammo[2]--;
-		pb->vft->anim(pb, w, w->tell, dt - p->cooldown2);
-		p->cooldown2 += 0.1;
-		p->muzzle |= 4;
-
-		playWave3DPitch("rc.zip/sound/rifle.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .02 * .02, w->realtime + dt - p->cooldown2, 192/* + rseq(&w->rs) % 256*/);
+//		playWave3DPitch("rc.zip/sound/rifle.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .02 * .02, w->realtime + dt - p->cooldown2, 192/* + rseq(&w->rs) % 256*/);
 	}
+	return true;
+}
 
-	if(p->cooldown2 < dt)
-		p->cooldown2 = 0.;
-	else
-		p->cooldown2 -= dt;
+Vec3d M3Truck::turretMuzzlePos(Vec3d *nh)const{
+	static const Vec3d velo0(0., 0., -1.), pos0(0., 0/*.0025*/, -.005);
+/*	const double *cog = tank_cog;*/
+	Mat4d mat, rot;
 
-	{
-		avec3_t accel;
-		w->vft->accel(w, &accel, &pt->pos, &pt->velo);
-		VECSADD(pt->velo, accel, dt);
-/*	pt->velo[1] += gravity[1] * dt;*/
-	}
+	transform(mat);
+	mat.translatein(-tank_cog[0], -tank_cog[1], -tank_cog[2]);
+	rot = mat.roty(-turrety);
+	rot.translatein(0, 90 * modelScale, -85 * modelScale);
+	mat = rot.rotx(barrelp);
 
-	if(1){
-		if(pt->inputs.press & PL_W)
-			p->wheelspeed = approach(p->wheelspeed, 2. * M_PI * 5., dt, 0.);
-/*			p->wheelangle += M_PI * dt;*/
-		if(pt->inputs.press & PL_S)
-			p->wheelspeed = approach(p->wheelspeed, -2. * M_PI * 5., dt, 0.);
-/*			p->wheelangle -= M_PI * dt;*/
-		p->wheelangle += p->wheelspeed * dt;
-	}
-	{
-		avec3_t *points = m3track_points;
-		int npoints = numof(m3track_points);
-		entity_t *pt = &p->st;
-		int in = pt->inputs.press;
-		int leng, reng;
-		unsigned long contact;
-		avec3_t fore0 = {0., 0., - -.01};
-		avec3_t vfronteng, vreareng;
-		avec3_t *thrust[numof(m3track_points)] = {NULL};
-		double frictions[numof(m3track_points)];
-		amat4_t mat;
-		int engflags = 0, i;
-
-		p->steer = approach(p->steer, (pt->inputs.press & (PL_A | PL_D)) == PL_A ? -1. : (pt->inputs.press & (PL_A | PL_D)) == PL_D ? 1. : 0., dt, 0);
-
-		leng = (in & PL_W ? 2 : 0) + (in & PL_S ? -2 : 0);
-		reng = (in & PL_W ? 2 : 0) + (in & PL_S ? -2 : 0);
-		if(leng | reng){
-/*			VECSCALE(vrear, fore0, leng);*/
-			vfronteng[0] = sin(p->steer) * fore0[2] * leng;
-			vfronteng[1] = 0.;
-			vfronteng[2] = cos(p->steer) * fore0[2] * leng;
-		}
-		for(i = 0; i < npoints; i++)
-			frictions[i] = 1.;
-		if(leng){
-/*			VECSCALE(vleng, fore0, leng);*/
-			thrust[0] /*= thrust[1]*/ = vfronteng;
-			frictions[0] = 2.;
-			frictions[1] = 0.5;
-		}
-		if(reng){
-/*			VECSCALE(vreng, fore0, reng);*/
-			thrust[2] /*= thrust[3]*/ = vfronteng;
-			frictions[2] = 2.;
-			frictions[3] = 0.5;
-		}
-		memset(((tank2_t*)pt)->forces, 0, sizeof ((tank2_t*)pt)->forces);
-		memset(((tank2_t*)pt)->normals, 0, sizeof ((tank2_t*)pt)->normals);
-		contact = RigidPointHit(pt, w, dt, points, thrust, npoints, frictions, ((tank2_t*)pt)->forces, ((tank2_t*)pt)->normals);
-
-		tankrot(&mat, pt);
-		for(i = 0; i < 4; i++){
-			avec3_t pos;
-			mat4vp3(pos, mat, points[i]);
-			if(pos[1] < warmapheight(w->map, pos[0], pos[2], NULL) + .0005)
-				contact |= 1 << i;
-		}
-
-		if(contact & (1 << 8))
-			((struct entity_private_static*)pt->vft)->takedamage(pt, 100 * dt, w, 0);
-
-		engflags |= reng < 0;
-		engflags |= (0 < reng) << 1;
-		engflags |= (0 < leng) << 2;
-		engflags |= (leng < 0) << 3;
-		for(i = 0; i < 4; i++) if(contact & engflags & (1 << i) && drseq(&w->rs) < dt / .1){
-			avec3_t pos;
-			mat4vp3(pos, mat, points[i]);
-			pos[0] += (drseq(&w->rs) - .5) * .0005;
-			pos[1] += (drseq(&w->rs) - .5) * .0005;
-			pos[2] += (drseq(&w->rs) - .5) * .0005;
-			AddTeline3D(w->tell, pos, NULL, .001, NULL, NULL, NULL, COLOR32RGBA(127,127,127,127), TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, 1.);
-		}
-	}
-
-	pt->pos[0] += pt->velo[0] * dt;
-	pt->pos[1] += pt->velo[1] * dt;
-	pt->pos[2] += pt->velo[2] * dt;
-
-	{
-		amat4_t nmat;
-		aquat_t q;
-		rbd_anim(pt, dt, &q, &nmat);
-		QUATCPY(pt->rot, q);
-		quat2pyr(pt->rot, pt->pyr);
-	}
-
-	VECSCALEIN(pt->omg, 1. / (dt + 1.));
+	if(nh)
+		*nh = mat.dvp3(velo0);
+	return mat.vp3(pos0);
 
 }
 
+#ifdef DEDICATED
+void M3Truck::deathEffects(){}
+void M3Truck::draw(WarDraw*){}
+#endif
+
+
+
+#if 0
 static void m3track_draw(entity_t *pt, wardraw_t *wd){
 	static int init = 0;
 	static suf_t *suf = NULL, *sufwheel = NULL;

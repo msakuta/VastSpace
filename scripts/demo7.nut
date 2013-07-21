@@ -84,6 +84,17 @@ function frameproc(dt){
 			local a = player.cs.addent("Tank", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
 			a.race = 1;
 		}
+
+		local truck0 = countents(cs, 0, "M3Truck");
+		local truck1 = countents(cs, 1, "M3Truck");
+		if(true && truck0 < 5){
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+			a.race = 0;
+		}
+		if(true && truck1 < 5){
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+			a.race = 1;
+		}
 	}
 
 	if(old_frameproc != null)

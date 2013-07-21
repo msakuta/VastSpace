@@ -75,7 +75,7 @@ void Tank::draw(WarDraw *wd){
 		}
 
 		/* center of gravity offset */
-		glTranslated(0, -.0007, 0);
+		glTranslated(0, -getLandOffset(), 0);
 
 		MotionPose mp[2];
 		turretYawMotion->interpolate(mp[0], fmod(turrety / M_PI * 20. + 20., 40.));

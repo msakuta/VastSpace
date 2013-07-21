@@ -25,6 +25,7 @@ extern "C"{
 
 Model *Tank::model = NULL;
 double Tank::modelScale = 3.33 / 200 * 1e-3;
+double Tank::landOffset = 0.0007;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
 double Tank::maxHealthValue = 800.;
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
@@ -112,6 +113,7 @@ void Tank::init(){
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/type90.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(landOffset, "landOffset") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(topSpeed, "topSpeed") <<=

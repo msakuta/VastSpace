@@ -2,6 +2,8 @@ local m = 1.e-3;
 
 modelScale <- 3.33 / 200 * m;
 
+landOffset <- 0.0007;
+
 mass <- 50.e3;
 
 maxhealth <- 800.;

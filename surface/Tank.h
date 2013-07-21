@@ -105,6 +105,7 @@ protected:
 
 	static Model *model;
 	static double modelScale;
+	static double landOffset;
 	static double defaultMass;
 	static double maxHealthValue;
 	static double topSpeed;
@@ -122,6 +123,7 @@ protected:
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	double getTopSpeed()const override{return topSpeed;}
 	double getBackSpeed()const override{return backSpeed;}
+	double getLandOffset()const override{return landOffset;}
 	void aiControl(double dt, const Vec3d &normal)override;
 
 	void init();

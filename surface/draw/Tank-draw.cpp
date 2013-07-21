@@ -369,7 +369,7 @@ void M3Truck::draw(WarDraw *wd){
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
-		model = LoadMQOModel(modPath() << _SC("models/m3truck.mqo"));
+		model = LoadMQOModel(modPath() << _SC("models/m3truck1.mqo"));
 		init.create(*openGLState);
 	};
 

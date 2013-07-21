@@ -30,21 +30,15 @@ extern "C"{
 
 
 void Tank::draw(WarDraw *wd){
-/*	static suf_t *sufbase = NULL;
-	static suf_t *sufturret = NULL;
-	static suf_t *sufbarrel = NULL;
-	static suf_t *sufbarrel1 = NULL;
-	static suf_t *sufm2 = NULL;*/
 	static Motion *turretYawMotion = NULL;
 	static Motion *barrelPitchMotion = NULL;
-	double pixels;
 	if(!w)
 		return;
 
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(pos, .007))
 		return;
-	pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -59,18 +53,15 @@ void Tank::draw(WarDraw *wd){
 	};
 
 	if(model){
+		// TODO: We'd like to apply the team colors to the model sometime.
 //		GLfloat fv[4] = {.8f, .5f, 0.f, 1.f}, ambient[4] = {.4f, .25f, 0.f, 1.f};
-//		static const double normal[3] = {0., 1., 0.}, mountpos[3] = {-33, 125, 45};
 //		if(race % 2)
 //			fv[0] = 0., fv[2] = .8f, ambient[0] = 0., ambient[2] = .4f;
 
 		glPushMatrix();
-/*		glTranslated(pt->pos[0], pt->pos[1], pt->pos[2]);*/
 		{
-/*			const avec3_t cog = {0., .001, 0.};*/
 			Mat4d mat;
 			transform(mat);
-/*			MAT3TO4(mat, pt->rot);*/
 			glMultMatrixd(mat);
 		}
 
@@ -82,49 +73,11 @@ void Tank::draw(WarDraw *wd){
 		barrelPitchMotion->interpolate(mp[1], barrelp / M_PI * 20. + 10.);
 		mp[0].next = &mp[1];
 
-#if 1
 		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
 		// the model is made such way.
 		glScaled(modelScale, modelScale, modelScale);
 		DrawMQOPose(model, mp);
 		glPopMatrix();
-#else
-		DrawSUF(sufbase, SUF_ATR, NULL);
-/*		glRotated(deg_per_rad * pt->turrety, 0., 0., -1.);*/
-		glRotated(deg_per_rad * turrety, 0., -1., 0.);
-		if(game->player->chase != this || game->player->getChaseCamera())
-			DrawSUF(sufturret, SUF_ATR, NULL);
-
-		glPushMatrix();
-		gldTranslaten3dv(mountpos);
-		glRotated(deg_per_rad * mountpy[1], 0., -1., 0.);
-		glRotated(deg_per_rad * mountpy[0], 1., 0., 0.);
-		gldTranslate3dv(mountpos);
-		DrawSUF(sufm2, SUF_ATR, NULL);
-		glPopMatrix();
-
-		glTranslated(0., 90., -85.);
-/*		glTranslated(0., .0025 / tscale, -0.0015 / tscale);*/
-		glRotated(deg_per_rad * barrelp, 1., 0., 0.);
-
-		/* level of detail */
-#if 0
-		if(0 && 100 < pixels){
-			glScaled(1. / tscale, 1. / tscale, 1. / tscale);
-	/*		glTranslated(0., .0025, -0.0015);*/
-			glScaled(bscale, bscale, bscale);
-			DrawSUF(sufbarrel1, SUF_ATR, NULL);
-		}
-		else
-#endif
-		{
-			glTranslated(0., -90., 85.);
-/*			glTranslated(0., -.0025 / tscale, 0.0015 / tscale);*/
-			DrawSUF(sufbarrel, SUF_ATR, NULL);
-		}
-
-		glPopMatrix();
-#endif
 	}
 
 }

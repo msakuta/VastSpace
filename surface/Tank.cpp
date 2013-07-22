@@ -1081,8 +1081,8 @@ double M3Truck::backSpeed = 40. / 3.600; ///< Default half a topSpeed
 double M3Truck::turretCooldown = 0.5;
 double M3Truck::turretMuzzleSpeed = 0.7;
 double M3Truck::turretDamage = 20;
-double M3Truck::turretYawSpeed = 0.1 * M_PI;
-double M3Truck::barrelPitchSpeed = 0.05 * M_PI;
+double M3Truck::turretYawSpeed = 0.3 * M_PI;
+double M3Truck::barrelPitchSpeed = 0.2 * M_PI;
 double M3Truck::barrelPitchMin = -0.05 * M_PI;
 double M3Truck::barrelPitchMax = 0.3 * M_PI;
 std::vector<Vec3d> M3Truck::cameraPositions;
@@ -1295,26 +1295,21 @@ void M3Truck::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 	rot = this->rot;
 }
 
-#ifdef DEDICATED
-void M3Truck::deathEffects(){}
-void M3Truck::draw(WarDraw*){}
-void M3Truck::drawCockpit(WarDraw *wd){}
-#endif
 
+void M3Truck::control(const input_t *in, double dt){
+	st::control(in, dt);
 
+	static const double mouseSensitivity = 0.01;
+
+	// Rotate the turret and barrel
+	desired[0] += in->analog[0] * turretYawSpeed * mouseSensitivity;
+	desired[0] = fpmod(desired[0], 2 * M_PI);
+	desired[1] += -in->analog[1] * barrelPitchSpeed * mouseSensitivity;
+	desired[1] = rangein(desired[1], barrelPitchMin, barrelPitchMax);
+	turrety = approach(turrety, desired[0], dt * turretYawSpeed, 2 * M_PI);
+	barrelp = approach(barrelp, desired[1], dt * barrelPitchSpeed, 0);
 
 #if 0
-
-static void m3track_control(entity_t *pt, warf_t *w, const input_t *in, double dt){
-	static int prev = 0;
-	tank2_t *p = (tank2_t*)pt;
-	struct entity_private_static *vft = (struct entity_private_static*)pt->vft;
-	double h, n[3], pyr[3];
-	int inputs = in->press;
-	h = w->map ? warmapheight(w->map, pt->pos[0], pt->pos[2], &n) : 0.;
-
-	pt->inputs = *in;
-	quat2pyr(w->pl->rot, pyr);
 	if(pt->weapon != 2){
 		p->turrety = approach(p->turrety, pyr[1] - floor(pyr[1] / 2. / M_PI) * 2. * M_PI, TURRETROTSPEED * dt, 2 * M_PI);
 		p->barrelp = rangein(approach(p->barrelp, -pyr[0], TURRETROTSPEED * dt, 2 * M_PI), vft->barrelmin, vft->barrelmax);
@@ -1324,39 +1319,46 @@ static void m3track_control(entity_t *pt, warf_t *w, const input_t *in, double d
 		p->mountpy[1] = approach(p->mountpy[1], pyr[1] - floor(pyr[1] / 2. / M_PI) * 2. * M_PI, 2 * TURRETROTSPEED * dt, 2 * M_PI);
 		p->mountpy[0] = rangein(approach(p->mountpy[0], -pyr[0], 2 * TURRETROTSPEED * dt, 2 * M_PI), vft->barrelmin, vft->barrelmax);
 	}
+#endif
 
-	if((inputs & in->change) & (PL_TAB | PL_RCLICK)){
-		pt->weapon = (pt->weapon + 1) % 4;
+	if((in->press & in->change) & (PL_TAB | PL_RCLICK)){
+		weapon = (weapon + 1) % 4;
 	}
 
-	if(inputs & PL_SPACE && !(prev & PL_SPACE)){
+	if(in->press & in->change & PL_SPACE){
 		double best = 3. * 3.;
-		double mini = pt->enemy ? VECSDIST(pt->pos, pt->enemy->pos) : 0.;
-		double sdist;
-		entity_t *t = w->tl;
-		entity_t *target = NULL;
-		for(t = w->tl; t; t = t->next) if(t != pt && t != pt->enemy && t->active && 0. < t->health && mini < (sdist = VECSDIST(pt->pos, t->pos)) && sdist < best){
-			best = sdist;
-			target = t;
-		}
-		if(target)
-			pt->enemy = target;
-		else{
-			for(t = w->tl; t; t = t->next) if(t != pt && t != pt->enemy && t->active && 0. < t->health && (sdist = VECSDIST(pt->pos, t->pos)) < best){
+		double mini = enemy ? (pos - enemy->pos).slen() : 0.;
+		Entity *target = NULL;
+		for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it){
+			Entity *t = *it;
+			double sdist;
+			if(t != this && t != enemy && 0. < t->getHealth() && mini < (sdist = (pos - t->pos).slen()) && sdist < best){
 				best = sdist;
 				target = t;
 			}
-			pt->enemy = target;
+		}
+		if(target)
+			enemy = target;
+		else{
+			for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it){
+				Entity *t = *it;
+				double sdist;
+				if(t != this && t != enemy && 0. < t->getHealth() && (sdist = (pos - t->pos).slen()) < best){
+					best = sdist;
+					target = t;
+				}
+			}
+			enemy = target;
 		}
 	}
 
-	if(inputs & (PL_ENTER | PL_LCLICK) && p->cooldown < dt){
-	}
-	if(p->cooldown < dt)
-		p->cooldown = 0.;
-	else p->cooldown -= dt;
-
-	prev = inputs;
 }
 
+
+#ifdef DEDICATED
+void M3Truck::deathEffects(){}
+void M3Truck::draw(WarDraw*){}
+void M3Truck::drawCockpit(WarDraw *wd){}
 #endif
+
+

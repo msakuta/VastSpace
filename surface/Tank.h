@@ -150,6 +150,7 @@ public:
 	M3Truck(WarField *);
 	const char *idname()const override;
 	const char *classname()const override;
+	void control(const input_t *in, double dt)override;
 	void anim(double dt)override;
 	int takedamage(double damage, int hitpart)override;
 	void draw(wardraw_t *)override;

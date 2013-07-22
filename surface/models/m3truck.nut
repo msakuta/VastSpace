@@ -13,8 +13,8 @@ turretCooldown <- 0.5;
 turretMuzzleSpeed <- 0.7;
 turretDamage <- 20.;
 
-turretYawSpeed <- 0.1 * PI;
-barrelPitchSpeed <- 0.05 * PI;
+turretYawSpeed <- 0.3 * PI;
+barrelPitchSpeed <- 0.2 * PI;
 barrelPitchMin <- -0.05 * PI;
 barrelPitchMax <- 0.3 * PI;
 

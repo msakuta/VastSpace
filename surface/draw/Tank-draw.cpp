@@ -321,11 +321,15 @@ void M3Truck::draw(WarDraw *wd){
 
 
 	static Motion *steerMotion = NULL;
+	static Motion *turretYawMotion = NULL;
+	static Motion *turretPitchMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << _SC("models/m3truck1.mqo"));
 		steerMotion = LoadMotion(modPath() << "models/m3truck-steer.mot");
+		turretYawMotion = LoadMotion(modPath() << "models/m3truck-turretyaw.mot");
+		turretPitchMotion = LoadMotion(modPath() << "models/m3truck-turretpitch.mot");
 		init.create(*openGLState);
 	};
 
@@ -338,8 +342,12 @@ void M3Truck::draw(WarDraw *wd){
 			glMultMatrixd(mat);
 		}
 
-		MotionPose mp[1];
+		MotionPose mp[3];
 		steerMotion->interpolate(mp[0], steer / getMaxSteeringAngle() * 10. + 10.);
+		turretYawMotion->interpolate(mp[1], fmod(turrety / M_PI * 20. + 20., 40.));
+		mp[0].next = &mp[1];
+		turretPitchMotion->interpolate(mp[2], barrelp / M_PI * 20. + 10.);
+		mp[1].next = &mp[2];
 
 		/* center of gravity offset */
 		glTranslated(0, -getLandOffset(), 0);

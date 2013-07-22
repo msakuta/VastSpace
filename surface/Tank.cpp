@@ -527,11 +527,31 @@ void LandVehicle::anim(double dt){
 		if(inputs.press & PL_S){
 			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -getBackSpeed()), worldNormal));
 		}
-		if(inputs.press & PL_A){
-			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));
+
+		// The behavior of steering handle differs between tracked vehicle and wheeled vehicle.
+		// Notably, backward steering direction is opposite.
+		if(isTracked()){
+			if(inputs.press & PL_A){
+				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));
+			}
+			if(inputs.press & PL_D){
+				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-5));
+			}
 		}
-		if(inputs.press & PL_D){
-			bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-5));
+		else{
+			// If either one of steering keys is pressed, head to that direction.
+			if(inputs.press & PL_A)
+				steer = approach(steer, -M_PI / 6., dt * M_PI / 6., 0);
+			if(inputs.press & PL_D)
+				steer = approach(steer, M_PI / 6., dt * M_PI / 6., 0);
+			if(!(inputs.press & (PL_A | PL_D)))
+				steer = approach(steer, 0., dt * M_PI / 6., 0); // Otherwise approach to neutral
+
+			// Head to steered direction.
+			btTransform worldTrans = bbody->getWorldTransform();
+			double speed = worldTrans.getBasis().getColumn(2).dot(bbody->getLinearVelocity());
+			worldTrans.setRotation(worldTrans.getRotation() * btQuaternion(worldTrans.getBasis().getColumn(1), 50. * speed * steer * dt));
+			bbody->setWorldTransform(worldTrans);
 		}
 
 		// Cancel lateral velocity
@@ -1182,12 +1202,13 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
 			if(epos.slen() < .05 * .05)
 				; // Do nothing
-			else if(phi < -.1 * M_PI)
-				inputs.press |= PL_A;
-			else if(.1 * M_PI < phi)
-				inputs.press |= PL_D;
-			else
+			else{
+				if(phi < -.1 * M_PI)
+					inputs.press |= PL_A;
+				else if(.1 * M_PI < phi)
+					inputs.press |= PL_D;
 				inputs.press |= PL_W;
+			}
 		}
 }
 

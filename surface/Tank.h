@@ -35,7 +35,7 @@ public:
 	typedef ModelEntity st;
 
 	LandVehicle(Game *game) : st(game){}
-	LandVehicle(WarField *w) : st(w){}
+	LandVehicle(WarField *w) : st(w), steer(0.){}
 	void addRigidBody(WarSpace*)override;
 	virtual void anim(double dt);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
@@ -69,6 +69,7 @@ protected:
 	short bbodyGroup()const override{return 1<<2;}
 	short bbodyMask()const override{return 1<<2;}
 
+	virtual bool isTracked()const{return false;} ///< If have continuous track like tanks
 	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual double getTopSpeed()const = 0;
 	virtual double getBackSpeed()const = 0;
@@ -120,6 +121,7 @@ protected:
 	static double sightCheckInterval;
 	static HitBoxList hitboxes;
 
+	bool isTracked()const override{return true;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	double getTopSpeed()const override{return topSpeed;}
 	double getBackSpeed()const override{return backSpeed;}

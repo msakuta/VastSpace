@@ -320,9 +320,12 @@ void M3Truck::draw(WarDraw *wd){
 	wd->lightdraws++;
 
 
+	static Motion *steerMotion = NULL;
+
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << _SC("models/m3truck1.mqo"));
+		steerMotion = LoadMotion(modPath() << "models/m3truck-steer.mot");
 		init.create(*openGLState);
 	};
 
@@ -335,13 +338,16 @@ void M3Truck::draw(WarDraw *wd){
 			glMultMatrixd(mat);
 		}
 
+		MotionPose mp[1];
+		steerMotion->interpolate(mp[0], steer / getMaxSteeringAngle() * 10. + 10.);
+
 		/* center of gravity offset */
 		glTranslated(0, -getLandOffset(), 0);
 
 		// Unlike most ModelEntities, Tank's model need not be rotated 180 degrees because
 		// the model is made such way.
 		glScaled(-modelScale, modelScale, -modelScale);
-		DrawMQOPose(model, NULL);
+		DrawMQOPose(model, mp);
 		glPopMatrix();
 	}
 

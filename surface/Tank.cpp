@@ -541,16 +541,16 @@ void LandVehicle::anim(double dt){
 		else{
 			// If either one of steering keys is pressed, head to that direction.
 			if(inputs.press & PL_A)
-				steer = approach(steer, -M_PI / 6., dt * M_PI / 6., 0);
+				steer = approach(steer, -getMaxSteeringAngle(), dt * getMaxSteeringAngle(), 0);
 			if(inputs.press & PL_D)
-				steer = approach(steer, M_PI / 6., dt * M_PI / 6., 0);
+				steer = approach(steer, getMaxSteeringAngle(), dt * getMaxSteeringAngle(), 0);
 			if(!(inputs.press & (PL_A | PL_D)))
-				steer = approach(steer, 0., dt * M_PI / 6., 0); // Otherwise approach to neutral
+				steer = approach(steer, 0., dt * getMaxSteeringAngle(), 0); // Otherwise approach to neutral
 
 			// Head to steered direction.
 			btTransform worldTrans = bbody->getWorldTransform();
 			double speed = worldTrans.getBasis().getColumn(2).dot(bbody->getLinearVelocity());
-			worldTrans.setRotation(worldTrans.getRotation() * btQuaternion(worldTrans.getBasis().getColumn(1), 50. * speed * steer * dt));
+			worldTrans.setRotation(worldTrans.getRotation() * btQuaternion(btVector3(0, 1, 0), speed * steer / 2. * dt / getWheelBase()));
 			bbody->setWorldTransform(worldTrans);
 		}
 

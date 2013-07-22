@@ -9,7 +9,7 @@
 #include "btadapt.h"
 #include "Bullet.h"
 extern "C"{
-#include <clib/c.h>
+#include <clib/mathdef.h>
 }
 
 class Model;
@@ -74,6 +74,8 @@ protected:
 	virtual double getTopSpeed()const = 0;
 	virtual double getBackSpeed()const = 0;
 	virtual double getLandOffset()const{return 0.0010;}
+	virtual double getMaxSteeringAngle()const{return M_PI / 6.;}
+	virtual double getWheelBase()const{return 0.005;} ///< Affects turning radius, defaults 5 meters
 	virtual bool buildBody();
 	virtual void aiControl(double dt, const Vec3d &normal){}
 

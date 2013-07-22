@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of Tank class.
  */
+#define NOMINMAX
 #include "Tank.h"
 #include "SurfaceCS.h"
 #include "Bullet.h"
@@ -1265,14 +1266,12 @@ Vec3d M3Truck::turretMuzzlePos(Vec3d *nh)const{
 }
 
 void M3Truck::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
-	Mat4d mat;
-	int camera;
-	{
-		camera = chasecam;
-		camera = MAX(0, MIN(cameraPositions.size() + 1, camera));
-//		*chasecam = camera;
-	}
-	transform(mat);
+	int camera = std::max(0, std::min(int(cameraPositions.size()) + 1, chasecam));
+
+	Mat4d orgmat;
+	transform(orgmat);
+	Mat4d mat = orgmat.roty(-turrety).rotx(barrelp);
+
 	if(camera == cameraPositions.size()){
 		const Player *player = game->player;
 		Vec3d ofs = mat.dvp3(vec3_001);
@@ -1289,10 +1288,13 @@ void M3Truck::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 		pos0[2] = floor(this->pos[2] / period + .5) * period;
 		pos = pos0;
 	}
-	else{
+	else if(camera == 0)
+		pos = orgmat.vp3(cameraPositions[camera]);
+	else
 		pos = mat.vp3(cameraPositions[camera]);
-	}
-	rot = this->rot;
+
+	// Face to the turret's aiming point
+	rot = this->rot.rotate(turrety, 0, -1, 0).rotate(barrelp, 1, 0, 0);
 }
 
 

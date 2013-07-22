@@ -363,10 +363,12 @@ void M3Truck::drawCockpit(WarDraw *wd){
 		return;
 
 	static Model *cockpitModel = NULL;
+	static Motion *handleMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		cockpitModel = LoadMQOModel(modPath() << _SC("models/m3truck1_cockpit.mqo"));
+		handleMotion = LoadMotion(modPath() << "models/m3truck-handle.mot");
 		init.create(*openGLState);
 	};
 
@@ -374,6 +376,9 @@ void M3Truck::drawCockpit(WarDraw *wd){
 		return;
 
 	Vec3d seat = cameraPositions[0] + Vec3d(0, getLandOffset(), 0);
+
+	MotionPose mp[1];
+	handleMotion->interpolate(mp[0], steer / getMaxSteeringAngle() * 10. + 10.);
 
 	glPushAttrib(GL_DEPTH_BUFFER_BIT);
 	glClearDepth(1.);
@@ -386,7 +391,7 @@ void M3Truck::drawCockpit(WarDraw *wd){
 	gldTranslaten3dv(seat);
 
 	glScaled(-modelScale, modelScale, -modelScale);
-	DrawMQOPose(cockpitModel, NULL);
+	DrawMQOPose(cockpitModel, mp);
 
 	glPopMatrix();
 

@@ -1079,13 +1079,14 @@ double M3Truck::defaultMass = 9000.; ///< Mass defaults 9 tons
 double M3Truck::maxHealthValue = 150.;
 double M3Truck::topSpeed = 100. / 3.600; ///< Default 100 km/h
 double M3Truck::backSpeed = 40. / 3.600; ///< Default half a topSpeed
-double M3Truck::turretCooldown = 0.5;
+double M3Truck::turretCooldown = 0.2;
 double M3Truck::turretMuzzleSpeed = 0.7;
-double M3Truck::turretDamage = 20;
+double M3Truck::turretDamage = 10;
 double M3Truck::turretYawSpeed = 0.3 * M_PI;
 double M3Truck::barrelPitchSpeed = 0.2 * M_PI;
 double M3Truck::barrelPitchMin = -0.05 * M_PI;
 double M3Truck::barrelPitchMax = 0.3 * M_PI;
+double M3Truck::sightCheckInterval = 1.;
 std::vector<Vec3d> M3Truck::cameraPositions;
 HitBoxList M3Truck::hitboxes;
 
@@ -1104,6 +1105,8 @@ M3Truck::M3Truck(WarField *w) : st(w){
 	cooldown = cooldown2 = turretCooldown;
 //	steer = 0.;
 //	wheelspeed = p->wheelangle = 0.;
+	sightCheckTime = w->rs.nextd() * sightCheckInterval; // Randomize check phase to diverse load over frames
+	sightCheck = false;
 }
 
 void M3Truck::init(){
@@ -1123,6 +1126,7 @@ void M3Truck::init(){
 			SingleDoubleProcess(barrelPitchSpeed, "barrelPitchSpeed") <<=
 			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
 			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
+			SingleDoubleProcess(sightCheckInterval, "sightCheckInterval") <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -1192,7 +1196,7 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 		double bulletspeed = subweapon ? .8 : turretMuzzleSpeed;
 
 		/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
-		Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+		Mat4d mat2 = this->rot.cnj().tomat4().translatein(-mpos);
 		Vec3d pos = mat2.vp3(enemy->pos);
 		Vec3d velo = mat2.dvp3(enemy->velo);
 		Vec3d pvelo = mat2.dvp3(this->velo);
@@ -1200,6 +1204,10 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 		estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
 		double phi = atan2(epos[0], -epos[2]);
 		double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+
+		// Rotate the turret and barrel
+		turrety = approach(turrety, phi, dt * turretYawSpeed, 2 * M_PI);
+		barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
 
 		// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
 		if(epos.slen() < .05 * .05)
@@ -1211,6 +1219,32 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 				inputs.press |= PL_D;
 			inputs.press |= PL_W;
 		}
+
+		// Do not shoot outside effective range of M2 machine gun.
+		if(epos.slen() < 2 * 2 && fabs(turrety - phi) < 0.01 * M_PI && fabs(barrelp - theta) < 0.01 * M_PI){
+			// If we're in a SurfaceCS, check if we can see the target clearly.
+			// dynamic_cast should be preferred.
+			if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+				SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
+				if(sightCheckTime < dt){
+					if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
+						inputs.press |= PL_ENTER;
+						sightCheck = true; // Remember for the next frames
+					}
+					else
+						sightCheck = false; // Remember for the next frames
+					sightCheckTime += sightCheckInterval - dt;
+				}
+				else{
+					sightCheckTime -= dt;
+					if(sightCheck) // Recall memory
+						inputs.press |= PL_ENTER;
+				}
+			}
+			else
+				inputs.press |= PL_ENTER;
+		}
+
 	}
 }
 

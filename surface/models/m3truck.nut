@@ -9,14 +9,16 @@ maxhealth <- 150.;
 topSpeed <- 100. / 3.6 * m;
 backSpeed <- 40. / 3.6 * m;
 
-turretCooldown <- 0.5;
+turretCooldown <- 0.2;
 turretMuzzleSpeed <- 0.7;
-turretDamage <- 20.;
+turretDamage <- 10.;
 
 turretYawSpeed <- 0.3 * PI;
 barrelPitchSpeed <- 0.2 * PI;
 barrelPitchMin <- -0.05 * PI;
 barrelPitchMax <- 0.3 * PI;
+
+sightCheckInterval <- 1.;
 
 landOffset <- 0.0007;
 

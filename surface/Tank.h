@@ -160,6 +160,10 @@ public:
 	double getMaxHealth()const override{return maxHealthValue;}
 
 protected:
+
+	double sightCheckTime;
+	bool sightCheck;
+
 	static Model *model;
 	static double modelScale;
 	static double landOffset;
@@ -174,6 +178,7 @@ protected:
 	static double barrelPitchSpeed;
 	static double barrelPitchMin;
 	static double barrelPitchMax;
+	static double sightCheckInterval;
 	static std::vector<Vec3d> cameraPositions;
 	static HitBoxList hitboxes;
 

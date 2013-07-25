@@ -1174,43 +1174,44 @@ int M3Truck::takedamage(double damage, int hitpart){
 
 void M3Truck::aiControl(double dt, const Vec3d &normal){
 	Vec3d epos(0,0,0); /* estimated enemy position */
-		/* find enemy logic */
-		if(!enemy){
-			find_enemy_logic();
+
+	/* find enemy logic */
+	if(!enemy){
+		find_enemy_logic();
+	}
+
+	/* estimating enemy position and wheeling towards enemy */
+	inputs.press = 0;
+	if(enemy){
+		Vec3d mdir;
+		Vec3d mpos = turretMuzzlePos(&mdir); // Muzzle position
+
+		bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
+			|| normal.sp(mdir) < -.2
+			|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
+		double bulletspeed = subweapon ? .8 : turretMuzzleSpeed;
+
+		/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
+		Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
+		Vec3d pos = mat2.vp3(enemy->pos);
+		Vec3d velo = mat2.dvp3(enemy->velo);
+		Vec3d pvelo = mat2.dvp3(this->velo);
+
+		estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
+		double phi = atan2(epos[0], -epos[2]);
+		double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
+
+		// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
+		if(epos.slen() < .05 * .05)
+			; // Do nothing
+		else{
+			if(phi < -.1 * M_PI)
+				inputs.press |= PL_A;
+			else if(.1 * M_PI < phi)
+				inputs.press |= PL_D;
+			inputs.press |= PL_W;
 		}
-
-		/* estimating enemy position and wheeling towards enemy */
-		inputs.press = 0;
-		if(enemy){
-			Vec3d mdir;
-			Vec3d mpos = turretMuzzlePos(&mdir); // Muzzle position
-
-			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
-				|| normal.sp(mdir) < -.2
-				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
-			double bulletspeed = subweapon ? .8 : turretMuzzleSpeed;
-
-			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
-			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
-			Vec3d pos = mat2.vp3(enemy->pos);
-			Vec3d velo = mat2.dvp3(enemy->velo);
-			Vec3d pvelo = mat2.dvp3(this->velo);
-
-			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed, NULL);
-			double phi = atan2(epos[0], -epos[2]);
-			double theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-
-			// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
-			if(epos.slen() < .05 * .05)
-				; // Do nothing
-			else{
-				if(phi < -.1 * M_PI)
-					inputs.press |= PL_A;
-				else if(.1 * M_PI < phi)
-					inputs.press |= PL_D;
-				inputs.press |= PL_W;
-			}
-		}
+	}
 }
 
 

@@ -19,6 +19,8 @@ player.chase = tank
 local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2))
 tank2.race = 1
 
+local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
+
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

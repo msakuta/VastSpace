@@ -73,5 +73,8 @@
     <ClCompile Include="..\draw\Tank-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\SurfaceBuilding.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

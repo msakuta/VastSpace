@@ -188,6 +188,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Aerial.cpp" />
+    <ClCompile Include="..\SurfaceBuilding.cpp" />
     <ClCompile Include="..\DrawMap.cpp" />
     <ClCompile Include="..\draw\Aerial-draw.cpp" />
     <ClCompile Include="..\draw\F15-draw.cpp" />

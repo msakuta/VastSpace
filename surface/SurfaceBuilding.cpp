@@ -14,16 +14,25 @@ public:
 	static const unsigned classid;
 	static EntityRegister<SurfaceBuilding> entityRegister;
 
-	SurfaceBuilding(Game *game) : st(game){}
-	SurfaceBuilding(WarField *w) : st(w){race = -1;}
+	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1){}
+	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1){race = -1;}
 	void anim(double)override;
 	void draw(WarDraw *)override;
-	double getHitRadius()const override{return 0.05;}
+	double getHitRadius()const override{return hitRadius;}
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return false;}
 
 	static gltestp::dstring modPath(){return _SC("surface/");}
 	static double getLandOffset(){return 0.;}
+
+protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
+	gltestp::dstring modelFile; ///< The model file name in relative path to the project root.
+	Model *model;
+	double modelScale; ///< Model scale is different from model to model.
+	double hitRadius; ///< Hit radius (extent sphere radius) is different from model to model.
 };
 
 Entity::EntityRegister<SurfaceBuilding> SurfaceBuilding::entityRegister("SurfaceBuilding");
@@ -49,13 +58,13 @@ void SurfaceBuilding::anim(double dt){
 }
 
 void SurfaceBuilding::draw(WarDraw *wd){
-	if(!w)
+	if(!w || !modelFile.len())
 		return;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, 0.2))
+	if(wd->vw->gc->cullFrustum(pos, hitRadius))
 		return;
-	double pixels = 0.2 * fabs(wd->vw->gc->scale(pos));
+	double pixels = hitRadius * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -64,13 +73,12 @@ void SurfaceBuilding::draw(WarDraw *wd){
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
-		model = LoadMQOModel(modPath() << _SC("models/bigsight.mqo"));
+		delete model;
+		model = LoadMQOModel(modelFile);
 		init.create(*openGLState);
 	};
 
 	if(model){
-		static const double modelScale = 0.001;
-
 		glPushMatrix();
 		{
 			Mat4d mat;
@@ -83,4 +91,53 @@ void SurfaceBuilding::draw(WarDraw *wd){
 		glPopMatrix();
 	}
 
+}
+
+SQInteger SurfaceBuilding::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!strcmp(name, _SC("modelFile"))){
+		sq_pushstring(v, this->modelFile, -1);
+		return 1;
+	}
+	else if(!strcmp(name, _SC("modelScale"))){
+		sq_pushfloat(v, this->modelScale);
+		return 1;
+	}
+	else if(!strcmp(name, _SC("hitRadius"))){
+		sq_pushfloat(v, this->hitRadius);
+		return 1;
+	}
+	else
+		st::sqGet(v, name);
+}
+
+SQInteger SurfaceBuilding::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!strcmp(name, _SC("modelFile"))){
+		const SQChar *str;
+		if(SQ_SUCCEEDED(sq_getstring(v, 3, &str))){
+			modelFile = str;
+			return 0;
+		}
+		else
+			return sq_throwerror(v, _SC("Type not compatible to string for modelFile"));
+	}
+	else if(!strcmp(name, _SC("modelScale"))){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
+			modelScale = f;
+			return 0;
+		}
+		else
+			return sq_throwerror(v, _SC("Type not compatible to float for modelScale"));
+	}
+	else if(!strcmp(name, _SC("hitRadius"))){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
+			hitRadius = f;
+			return 0;
+		}
+		else
+			return sq_throwerror(v, _SC("Type not compatible to float for hitRadius"));
+	}
+	else
+		st::sqSet(v, name);
 }

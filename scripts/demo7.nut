@@ -20,6 +20,9 @@ local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2))
 tank2.race = 1
 
 local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
+bldg.modelFile = "surface/models/bigsight.mqo";
+bldg.modelScale = 0.001;
+bldg.hitRadius = 0.15;
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook

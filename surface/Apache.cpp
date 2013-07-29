@@ -191,7 +191,18 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 void Apache::control(const input_t *inputs, double dt){
-	this->inputs = *inputs;
+	st::control(inputs, dt);
+
+	static const double rotorAxisSpeed = 0.1 * M_PI;
+	static const double mouseSensitivity = 0.01;
+
+	// Rotate the turret and barrel
+	double desired[2];
+	for(int i = 0; i < 2; i++){
+		desired[i] = rangein(rotoraxis[i] + inputs->analog[i] * rotorAxisSpeed * mouseSensitivity, -M_PI / 8., M_PI / 8.);
+		rotoraxis[i] = approach(rotoraxis[i], desired[i], dt * rotorAxisSpeed, 2 * M_PI);
+	}
+
 	if(inputs->change & inputs->press & PL_SPACE){
 		double best = 3. * 3.;
 		double mini = enemy ? (pos - enemy->pos).slen() : 0.;
@@ -319,17 +330,12 @@ void Apache::anim(double dt){
 			find_enemy_logic();
 		}
 		if(!controller){
-//			avec3_t pyr;
-//			amat3_t mat3, matt;
-//			MAT4TO3(mat3, mat);
-//			MATMP(matt, iort3, mat3);
-//			quat2pyr(w->pl->rot, pyr);
-/*			gcommon = common = pyr[0];
-			gnormal = normal = -pyr[1];*/
-//			common = matt[7] / 2. /*pt->velo[1] / 5e-0*/;
-//			normal = rangein(-matt[1] / .7 / 2., -M_PI / 4., M_PI / 4.);
-//			gcommon = common += p->crotoraxis[0] = rangein(p->crotoraxis[0] + M_PI * .001 * pt->inputs.analog[1], -M_PI / 6., M_PI / 6.);
-//			gnormal = normal += p->crotoraxis[1] = rangein(p->crotoraxis[1] - M_PI * .001 * pt->inputs.analog[0], -M_PI / 6., M_PI / 6.);
+			Mat3d mat3 = mat.tomat3();
+			Mat3d matt = iort3 * mat3;
+			common = matt[7] / 2. /*pt->velo[1] / 5e-0*/;
+			normal = rangein(-matt[1] / .7 / 2., -M_PI / 4., M_PI / 4.);
+			gcommon = common += crotoraxis[0] = rangein(crotoraxis[0] + M_PI * .001 * inputs.analog[1], -M_PI / 6., M_PI / 6.);
+			gnormal = normal += crotoraxis[1] = rangein(crotoraxis[1] - M_PI * .001 * inputs.analog[0], -M_PI / 6., M_PI / 6.);
 		}
 		else{
 			Mat3d mat3 = mat.tomat3();
@@ -477,16 +483,29 @@ void Apache::draw(WarDraw *wd){
 	wd->lightdraws++;
 
 	static Model *model = NULL;
+	static Motion *rotorxMotion = NULL;
+	static Motion *rotorzMotion = NULL;
+	static Motion *rotorMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init) do{
 		FILE *fp;
 		model = LoadMQOModel(modPath() << "models/apache.mqo");
+		rotorxMotion = LoadMotion(modPath() << "models/apache-rotorx.mot");
+		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
+		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
 		init.create(*openGLState);
 	} while(0);
 
 	if(!model)
 		return;
+
+	MotionPose mp[3];
+	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
+	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
+	mp[0].next = &mp[1];
+	rotorMotion->interpolate(mp[2], fmod(rotor, M_PI / 2.) / (M_PI / 2.) * 10.);
+	mp[1].next = &mp[2];
 
 	glPushMatrix();
 
@@ -497,7 +516,7 @@ void Apache::draw(WarDraw *wd){
 	const double modelScale = APACHE_SCALE;
 	glScaled(-modelScale, modelScale, -modelScale);
 
-	DrawMQOPose(model, NULL);
+	DrawMQOPose(model, mp);
 
 	glPopMatrix();
 

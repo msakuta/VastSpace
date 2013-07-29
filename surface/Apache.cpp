@@ -23,8 +23,6 @@ extern "C"{
 #include <assert.h>
 
 
-#define APACHE_MAX_HEALTH 100.
-#define APACHE_SCALE .00001
 #define APACHE_SPEED (.005 * 2)
 #define APACHE_PHASE_SPEED M_PI
 #define APACHE_FEATHER_SPEED 1.
@@ -49,12 +47,20 @@ extern "C"{
 
 Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
 
-double Apache::modelScale = APACHE_SCALE;
-double Apache::maxHealthValue = APACHE_MAX_HEALTH;
+double Apache::modelScale = 0.00001;
+double Apache::maxHealthValue = 100.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 
 
 void Apache::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("models/apache.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			Vec3dProcess(cockpitOfs, "cockpitOfs"));
+		initialized = true;
+	}
 	int i;
 	rotor = rotoromega = tailrotor = 0.;
 	rotoraxis[0] = rotoraxis[1] = 0.;
@@ -72,7 +78,7 @@ void Apache::init(){
 	aim9 = 2;
 	contact = 0;
 	muzzle = 0;
-	health = APACHE_MAX_HEALTH;
+	health = getMaxHealth();
 	brk = 1;
 	navlight = 0;
 	mass = 5000.;

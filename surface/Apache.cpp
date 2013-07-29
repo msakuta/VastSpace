@@ -1,0 +1,564 @@
+/** \file
+ * \brief Impelementation of Apache class.
+ */
+#include "ModelEntity.h"
+#include "Player.h"
+#include "Bullet.h"
+#include "tent3d.h"
+//#include "island3.h"
+//#include "aim9.h"
+#include "antiglut.h"
+//#include "glwindow.h"
+//#include "walk.h"
+//#include "hydra.h"
+//#include "warutil.h"
+#include "judge.h"
+#include "arms.h"
+#include "motion.h"
+#include "draw/WarDraw.h"
+#include "draw/mqoadapt.h"
+#include "draw/OpenGLState.h"
+#include "SurfaceCS.h"
+extern "C"{
+#include <clib/c.h>
+#include <clib/cfloat.h>
+#include <clib/mathdef.h>
+#include <clib/avec3.h>
+#include <clib/amat4.h>
+#include <clib/aquat.h>
+#include <clib/rseq.h>
+#include <clib/gl/gldraw.h>
+#include <clib/suf/sufdraw.h>
+#include <clib/suf/sufbin.h>
+#include <clib/colseq/cs.h>
+}
+
+#include <assert.h>
+
+
+#define APACHE_MAX_HEALTH 100.
+#define APACHE_SCALE .00001
+#define APACHE_SPEED (.005 * 2)
+#define APACHE_PHASE_SPEED M_PI
+#define APACHE_FEATHER_SPEED 1.
+#define APACHE_TAIL_SPEED 3.
+#define APACHE_SMOKE_FREQ 10.
+#define APACHE_BULLETSPEED 1.
+#define APACHE_PRICE 1450e1
+#define BULLETDAMAGE 5.
+#define WCS_TIME 1.
+#define ROTSPEED M_PI
+#define YAWSPEED (M_PI*.2)
+
+#define SSM_MASS 80.
+#define BULLETSPEED .08
+#define SONICSPEED .340
+#define WINGSPEED (.25 * M_PI)
+
+
+/// \brief AH-64 Apache attack helicopter
+///
+/// http://en.wikipedia.org/wiki/Boeing_AH-64_Apache
+class Apache : public ModelEntity{
+public:
+	typedef ModelEntity st;
+	static EntityRegister<Apache> entityRegister;
+	Apache(Game *game) : st(game){}
+	Apache(WarField *w);
+	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
+	void control(const input_t *inputs, double dt)override;
+	void drawCockpit(WarDraw *)override;
+	void anim(double dt)override;
+	void draw(WarDraw *wd)override;
+	int takedamage(double damage, int hitpart)override;
+	const char *idname()const override{return "apache";}
+	const char *classname()const override{return "Apache";}
+	const char *dispname()const override{return "AH-64 Apache";}
+	void start_control();
+	void end_control();
+	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn)override;
+	bool isTargettable()const override{return true;}
+	bool isSelectable()const override{return true;}
+	double getHitRadius()const override{return 0.02;}
+	double getMaxHealth()const override{return APACHE_MAX_HEALTH;}
+
+	static gltestp::dstring modPath(){return "surface/";}
+protected:
+
+	double rotor, rotoromega, tailrotor, rotoraxis[2], crotoraxis[2], gun[2];
+	double throttle, feather, tail;
+	double cooldown;
+	double cooldown2;
+/*	apachearms arms[numof(arms_s)];*/
+//	arms_t arms[7];
+//	shieldw_t *sw;
+	int weapon;
+	int ammo_chaingun;
+	int hellfires;
+	int aim9; /* AIM-9 Sidewinder */
+	int hydras;
+	int contact; /* contact state, not really necessary */
+	char muzzle; /* muzzle flash status */
+	char brk;
+	char navlight; /* switch of navigation lights for flight in dark */
+
+	void init();
+	void find_enemy_logic();
+};
+
+
+
+
+
+Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
+
+
+void Apache::init(){
+	int i;
+	rotor = rotoromega = tailrotor = 0.;
+	rotoraxis[0] = rotoraxis[1] = 0.;
+	crotoraxis[0] = crotoraxis[1] = 0.;
+	gun[0] = gun[1] = 0.;
+	throttle = 0.;
+	feather = 1.;
+	tail = 0.;
+	cooldown = cooldown2 = 1.;
+/*	p->armsmuzzle = 0;*/
+	weapon = 0;
+	ammo_chaingun = 1200;
+	hellfires = 8;
+	hydras = 38;
+	aim9 = 2;
+	contact = 0;
+	muzzle = 0;
+	health = APACHE_MAX_HEALTH;
+	brk = 1;
+	navlight = 0;
+	mass = 5000.;
+//	memcpy(p->arms, apachearms_def, sizeof p->arms);
+//	while(p->sw) ShieldWaveletFree(&p->sw);
+/*	for(i = 0; i < numof(p->sw); i++)
+		p->sw[i].phase = p->sw[i].amount = 0.;*/
+}
+
+Apache::Apache(WarField *w) : st(w){
+	init();
+}
+
+static const avec3_t apache_cockpit_ofs = {0., .0008, -.0022};
+
+
+void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	amat4_t mat2, mat3;
+	static const Vec3d apache_overview_ofs(0., .010, .025);
+	int camera = (seatid + 4) % 4;
+	Mat4d mat;
+	transform(mat);
+	if(camera == 1){
+		pos = mat.dvp3(apache_overview_ofs);
+	}
+	else if(camera == 2){
+		if(enemy){
+			Mat3d ort = mat3d_u();
+//			w->orientation(w, &ort, pt->pos);
+			Vec3d dr0 = this->pos - enemy->pos;
+			dr0.normin();
+			Vec3d dr1 = dr0.vp(ort.vec3(1));
+			Vec3d dr2 = dr1.vp(dr0);
+			dr2.normin();
+			dr0 *= .025;
+			dr0 += dr2 * .01;
+			pos = this->pos + dr0;
+		}
+		else{
+			pos = mat.vp3(apache_overview_ofs);
+		}
+	}
+	else if(camera == 3){
+		Vec3d pos0;
+		const double period = this->velo.slen() < .1 * .1 ? .5 : 1.;
+//		struct contact_info ci;
+		pos0[0] = floor(this->pos[0] / period + .5) * period;
+		pos0[1] = floor(this->pos[1] / period + .5) * period;
+		pos0[2] = floor(this->pos[2] / period + .5) * period;
+//		if(w && w->vft->spherehit && w->vft->spherehit(w, pos0, .002, &ci))
+//			VECSADD(pos0, ci.normal, ci.depth);
+		pos = pos0;
+	}
+	else
+		pos = mat.vp3(apache_cockpit_ofs);
+	rot = this->rot;
+}
+
+void Apache::control(const input_t *inputs, double dt){
+	this->inputs = *inputs;
+	if(inputs->change & inputs->press & PL_SPACE){
+		double best = 3. * 3.;
+		double mini = enemy ? (pos - enemy->pos).slen() : 0.;
+		double sdist;
+		Entity *target = NULL;
+		for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it){
+			Entity *t = *it;
+			if(t != this && this != enemy && 0. < health && mini < (sdist = (this->pos - t->pos).slen()) && sdist < best){
+				best = sdist;
+				target = t;
+			}
+		}
+		if(target)
+			enemy = target;
+		else{
+			for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); ++it){
+				Entity *t = *it;
+				if(t != this && t != enemy && 0. < t->getHealth() && (sdist = (pos - t->pos).slen()) < best){
+					best = sdist;
+					target = t;
+				}
+				enemy = target;
+			}
+		}
+	}
+}
+
+/** determine if target can be hit by ballistic bullets from the starting position.
+ * returns desired angles also if feasible. */
+int shoot_angle2(const double pos[3], const double epos[3], double phi0, double v, double (*ret_angles)[2], int farside, const Vec3d &gravity){
+	double g = gravity.len();
+	double vd[3], vv[3];
+	double dy = pos[1] - epos[1], dx, D, rD, vx2, vx;
+/*			if((VECSUB(vd, epos, pt->pos), vecnormin(vd), vecnorm(vv, pt->velo), VECSP(vd, vv)) < .99)
+		break;*/
+	{
+		double d0 = epos[0] - pos[0], d1 = epos[2] - pos[2];
+		dx = sqrt(d0 * d0 + d1 * d1);
+	}
+	D = v * v * (v * v - 2 * dy * g) - g * g * dx * dx;
+/*	D = v * v * v * v - g * g * dx * dx;*/
+	if(D <= 0)
+		return 0;
+	rD = sqrt(D);
+/*	vx2 = -g * dx * dx / 2 / (v * v - dy * g + (farside ? 1 : -1) * rD);*/
+	vx2 = dx * dx / 2 / (dy * dy + dx * dx) * (v * v - dy * g + (farside ? -1 : 1) * rD);
+/*	vx2 = 1. / 2 * (v * v + rD);*/
+	if(vx2 <= 0.)
+		return 0;
+	vx = sqrt(vx2);
+	if(vx <= 0.)
+		return 0;
+	if(ret_angles){
+		(*ret_angles)[0] = (vx2 * dy / dx / dx + g * dx / 2 / vx < 0 ? 1 : -1) * acos(vx / v);
+/*		if(farside)
+			(*ret_angles)[0] = M_PI / 2. - (*ret_angles)[0];*/
+		(*ret_angles)[1] = phi0;
+	}
+	return 1;
+}
+
+int shoot_angle(const double pos[3], const double epos[3], double phi0, double v, double (*ret_angles)[2]){
+	return shoot_angle2(pos, epos, phi0, v, ret_angles, 0, vec3_000);
+}
+
+void Apache::find_enemy_logic(){
+	double best = 100. * 100.; /* sense range */
+	double sdist;
+	Entity *closest = NULL;
+/*			pt->enemy = &head[(i+1)%n];*/
+	WarField::EntityList::iterator it = w->entlist().begin();
+	for(; it != w->entlist().end(); it++) if(*it){
+		Entity *pt2 = *it;
+		if(pt2 != this && pt2->w == w && pt2->getHealth() > 0. && 0 <= pt2->race && pt2->race != race
+			&& strcmp(pt2->idname(), "respawn") && (sdist = (pt2->pos - pos).slen()) < best){
+			best = sdist;
+			closest = pt2;
+		}
+	}
+	if(closest)
+		enemy = closest;
+}
+
+void Apache::anim(double dt){
+	bool inwater = false;
+
+	Mat4d mat;
+	transform(mat);
+	double air = w->atmosphericPressure(pos);
+	double height = 10. * log(air);
+
+	if(WarSpace *ws = *w){
+		const Vec3d offset(0, 0.001, 0);
+		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
+		// dynamic_cast should be preferred.
+		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+			SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
+			Vec3d normal;
+			double height = s->getHeight(pos[0], pos[2], &normal);
+			if(pos[1] - offset[1] < height){
+				Vec3d dest(pos[0], height + offset[1], pos[2]);
+				Vec3d newVelo = (velo - normal.sp(velo) * normal) * exp(-dt);
+				setPosition(&dest, NULL, &newVelo);
+#if 0 // Enable after adding bbody
+				btVector3 btOmega = bbody->getAngularVelocity() - normal.vp(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
+				bbody->setAngularVelocity(btOmega * exp(-3. * dt));
+				floorTouch = true;
+#endif
+			}
+		}
+	}
+
+	if(0. < health){
+		double common, normal;
+		double gcommon, gnormal;
+		double dist = 0., sp = 0.;
+
+		Mat3d ort3 = mat3d_u();
+//		w->vft->orientation(w, &ort3, pt->pos);
+		Mat3d iort3 = ort3.transpose();
+
+		if(enemy && enemy->getHealth() <= 0.)
+			enemy = NULL;
+		if(!enemy){
+			find_enemy_logic();
+		}
+		if(!controller){
+//			avec3_t pyr;
+//			amat3_t mat3, matt;
+//			MAT4TO3(mat3, mat);
+//			MATMP(matt, iort3, mat3);
+//			quat2pyr(w->pl->rot, pyr);
+/*			gcommon = common = pyr[0];
+			gnormal = normal = -pyr[1];*/
+//			common = matt[7] / 2. /*pt->velo[1] / 5e-0*/;
+//			normal = rangein(-matt[1] / .7 / 2., -M_PI / 4., M_PI / 4.);
+//			gcommon = common += p->crotoraxis[0] = rangein(p->crotoraxis[0] + M_PI * .001 * pt->inputs.analog[1], -M_PI / 6., M_PI / 6.);
+//			gnormal = normal += p->crotoraxis[1] = rangein(p->crotoraxis[1] - M_PI * .001 * pt->inputs.analog[0], -M_PI / 6., M_PI / 6.);
+		}
+		else{
+			Mat3d mat3 = mat.tomat3();
+			Mat3d matt = iort3 * mat3;
+			common = matt[7] / 1. /*pt->velo[1] / 5e-0*/;
+			if(enemy){
+				Vec3d dr = enemy->pos - this->pos;
+				dist = dr.len();
+				Vec3d zh = this->rot.trans(vec3_001);
+				sp = dr.sp(zh) / dist;
+				common += rangein(.5 * (zh.sp(dr) + .2), -.4, .4);
+			}
+			normal = rangein(-matt[1] / .7, -M_PI / 4., M_PI / 4.);
+/*			common = 0.;*/
+			inputs.change = 0;
+			gcommon = 0.;
+			gnormal = 0.;
+		}
+
+		if((!controller || weapon == 1) && enemy){
+			double retangles[2];
+
+/*				do if(p->corb){
+				study_corb(p, dt);
+			} while(0);*/
+
+			Quatd qc = rot.cnj();
+			Vec3d epos;
+			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, APACHE_BULLETSPEED, w);
+			Vec3d delta = epos - this->pos;
+			double sd = delta.slen();
+			Vec3d ldelta = qc.trans(delta);
+			ldelta[1] -= .002;
+			shoot_angle(avec3_000, ldelta, 0., APACHE_BULLETSPEED, &retangles);
+//			gnormal = pyr[1] = -atan2(ldelta[0], -ldelta[2]);
+//			gcommon = pyr[0] = retangles[0]/*- -asin(ldelta[1] / sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]))*/;
+		}
+		gun[0] = rangein(approach(gun[0], gcommon, M_PI * dt, 2 * M_PI), -M_PI / 4., M_PI / 8.);
+		gun[1] = rangein(approach(gun[1], gnormal, M_PI * dt, 2 * M_PI), -M_PI / 2., M_PI / 2.);
+
+		rotoraxis[0] = rangein(approach(rotoraxis[0], rangein(common, -M_PI / 6., M_PI / 6.), M_PI * dt, 2 * M_PI), -M_PI / 8., M_PI / 8.);
+		rotoraxis[1] = rangein(approach(rotoraxis[1], rangein(normal, -M_PI / 6., M_PI / 6.), M_PI * dt, 2 * M_PI), -M_PI / 8., M_PI / 8.);
+
+		/* control of throttle */
+		if(controller && enemy)
+			throttle = approach(throttle, 1., .2 * dt, 5.);
+		if(inputs.press & PL_W)
+			throttle = approach(throttle, 1., .2 * dt, 5.);
+		if(inputs.press & PL_S)
+			throttle = approach(throttle, 0., .2 * dt, 5.);
+
+		/* control of feathering angle of main rotor blades */
+		if(controller && enemy)
+			feather = approach(feather, rangein(!!contact + .5 * dist + 5. * (VECSP(&ort3[3], enemy->pos) - VECSP(&ort3[3], this->pos) + .2), 0., 1.), .2 * dt, 5.);
+		if(inputs.press & PL_Q)
+			feather = approach(feather, 1., APACHE_FEATHER_SPEED * dt, 5.);
+		if(inputs.press & PL_Z)
+			feather = approach(feather, -.5, APACHE_FEATHER_SPEED * dt, 5.);
+
+		/* tail rotor control */
+		if(controller){
+			if(enemy)
+				tail = approach(tail, rangein(gnormal, -.2, .2), APACHE_TAIL_SPEED * dt, 5.);
+		}
+		else{
+			if(inputs.press & PL_A)
+				tail = approach(tail, 1., APACHE_TAIL_SPEED * dt, 5.);
+			else if(inputs.press & PL_D)
+				tail = approach(tail, -1., APACHE_TAIL_SPEED * dt, 5.);
+			else /*if(pt->inputs.press & PL_R)*/
+				tail = approach(tail, 0., APACHE_TAIL_SPEED * dt, 5.);
+		}
+
+	}
+	else{
+		throttle = approach(throttle, 0., .2 * dt, 5.);
+		tail = approach(tail, 0., .5 * dt, 5.);
+	}
+	if(cooldown < dt)
+		cooldown = 0.;
+	else
+		cooldown -= dt;
+
+	if(cooldown2 < dt)
+		cooldown2 = 0.;
+	else
+		cooldown2 -= dt;
+
+	/* global acceleration */
+	{
+		Vec3d accel = w->accel(this->pos, this->velo);
+		this->velo += accel * dt;
+	}
+
+	{
+		double airflux;
+		Mat4d rot = mat.rotx(rotoraxis[0]);
+		Mat4d rot2 = rot.rotz(rotoraxis[1]);
+
+		/* momentum of the air flows into rotor's plane. downwards positive because we refer vehicle's velocity. */
+		{
+			Vec3d localvelo = this->velo;
+			airflux = rot2.vec3(1).sp(localvelo) * air / .1;
+		}
+
+		/* rotor thrust */
+		{
+			double dest = throttle;
+			double v = (throttle - (rotoromega < 0. ? -1. : 1.) * (rotoromega * rotoromega * (5. * !!inwater + .7 + air * (.15 + .15 * feather * feather)) + .02) - (1 * feather * airflux)) * .3 * dt;
+			rotoromega = rangein(rotoromega + v, -1., 5.);
+	/*		p->rotoromega = approach(p->rotoromega, dest, v, 1e10);*/
+		}
+		rotor = fmod(rotor + rotoromega * 10. * M_PI * dt, M_PI * 2.);
+	/*	rotor = fmod(rotor + throttle * 8. * M_PI * dt, M_PI * 2.);*/
+		tailrotor = fmod(tailrotor + (rotoromega/* + p->tail*/) * 6. * M_PI * dt, M_PI * 2.);
+		{
+			Vec3d org(0., 0.002, 0.), tail(0.0005, .002, .0088);
+			Vec3d pos = mat.dvp3(org);
+			double mag = air * .023 * rotoromega * (feather - airflux) * mass * dt;
+			Vec3d thrust = rot2.vec3(1) * mag;
+//			RigidAddMomentum(pt, pos, thrust);
+			pos = mat.dvp3(tail);
+			mag = air * .003 * rotoromega * this->tail * mass * dt;
+			thrust = mat.vec3(0) * mag;
+//			RigidAddMomentum(pt, pos, thrust);
+		}
+	}
+
+	this->pos += this->velo * dt;
+
+	{
+		double rate = inwater ? 1. : 0.;
+		this->omg *= 1. / ((rate + .4) * dt + 1.);
+		this->velo *= 1. / ((rate + air * .1) * dt + 1.);
+	}
+}
+
+void Apache::draw(WarDraw *wd){
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(this->pos, .03))
+		return;
+	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	if(pixels < 2)
+		return;
+	wd->lightdraws++;
+
+	static Model *model = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init) do{
+		FILE *fp;
+		model = LoadMQOModel(modPath() << "models/apache.mqo");
+		init.create(*openGLState);
+	} while(0);
+
+	if(!model)
+		return;
+
+	glPushMatrix();
+
+	Mat4d mat;
+	transform(mat);
+	glMultMatrixd(mat);
+
+	const double modelScale = APACHE_SCALE;
+	glScaled(-modelScale, modelScale, -modelScale);
+
+	DrawMQOPose(model, NULL);
+
+	glPopMatrix();
+
+}
+
+void Apache::drawCockpit(WarDraw *wd){
+	const double modelScale = .00001 /*wd->pgc->znear / wd->pgc->zfar*/;
+	const double *seat = apache_cockpit_ofs;
+	Player *player = game->player;
+	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
+		return;
+
+	static Model *cockpitModel = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init){
+		cockpitModel = LoadMQOModel(modPath() << "models/apache_int.mqo");
+		init.create(*openGLState);
+	}
+
+	glPushAttrib(GL_DEPTH_BUFFER_BIT);
+	glClearDepth(1.);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glPushMatrix();
+
+	glLoadMatrixd(wd->vw->rot);
+	gldMultQuat(this->rot);
+	gldTranslaten3dv(seat);
+
+	glScaled(-modelScale, modelScale, -modelScale);
+	DrawMQOPose(cockpitModel, NULL);
+
+	glPopMatrix();
+
+	glPopAttrib();
+
+}
+
+int Apache::takedamage(double damage, int hitpart){
+	tent3d_line_list *tell = w->getTeline3d();
+	int ret = 1;
+
+#if 0
+	playWave3DPitch(CvarGetString("sound_bullethit")/*"hit.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, 1., .1, rseq(&w->rs) % 64 - 32 + 256);
+#endif
+	if(0 < health && health - damage <= 0){ /* death! */
+//		effectDeath(w, pt);
+
+		if(enemy)
+			enemy = NULL;
+//		playWave3D(CvarGetString("sound_blast")/*"blast.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, 1., .01);
+		ret = 0;
+	}
+	health -= damage;
+	if(health < -100.){
+		delete this;
+	}
+	return ret;
+}
+
+int Apache::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return 0;
+}

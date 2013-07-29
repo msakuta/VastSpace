@@ -14,7 +14,7 @@ local birds = [];
 //f15_3.race = 1;
 
 local tank = player.cs.addent("M3Truck", Vec3d(0, 0, 0));
-player.chase = tank
+//player.chase = tank
 
 local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2))
 tank2.race = 1
@@ -23,6 +23,9 @@ local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
 bldg.modelFile = "surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
+
+local apache = player.cs.addent("Apache", Vec3d(0, 3, 0));
+player.chase = apache;
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
@@ -81,23 +84,23 @@ function frameproc(dt){
 
 		local racec = [countents(cs, 0, "Tank"), countents(cs, 1, "Tank")];
 
-		if(true && racec[0] < 5){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+		if(true && racec[0] < 2){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
 			a.race = 0;
 		}
-		if(true && racec[1] < 5){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+		if(true && racec[1] < 2){
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
 			a.race = 1;
 		}
 
 		local truck0 = countents(cs, 0, "M3Truck");
 		local truck1 = countents(cs, 1, "M3Truck");
-		if(true && truck0 < 5){
-			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+		if(true && truck0 < 2){
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
 			a.race = 0;
 		}
-		if(true && truck1 < 5){
-			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 30.5, 0.0, drand0() * 30.5));
+		if(true && truck1 < 2){
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
 			a.race = 1;
 		}
 	}

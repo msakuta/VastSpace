@@ -1575,7 +1575,7 @@ void Aerial::anim(double dt){
 
 			// Calculate the drag in local coordinates
 			Vec3d v1 = rot.itrans(velo);
-			Vec3d v = it.aero.vp3(v1) * f2;
+			Vec3d v = (it.aero * v1) * f2;
 			Vec3d v2 = rot.trans(v);
 			this->force.push_back(v2);
 			if(bbody)

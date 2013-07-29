@@ -28,8 +28,8 @@ public:
 	tt &scalein(T sx, T sy, T sz);
 	tt inverse()const;
 
-	/// vector product with fourth element of the given vector be assumed as 1.
-	Vec3 vp3(const Vec3 &o)const;
+	/// vector product.
+	Vec3 vp(const Vec3 &o)const;
 
 	/// product with transpose matrix, useful for obtaining inverse rotation without making another matrix to transpose.
 	Vec3 tvp3(const Vec3 &o)const;
@@ -49,7 +49,7 @@ public:
 
 	/// Vector product. The operand vector must be placed at right of '*'.
 	Vec3 operator*(const Vec3 &o)const{
-		return vp3(o);
+		return vp(o);
 	}
 
 	operator const T*()const{return a;}		operator T*(){return a;}
@@ -115,7 +115,7 @@ template<typename T> inline Vec3<T> &Mat3<T>::vec3(int i){
 		throw mathcommon::RangeCheck();
 }
 
-template<typename T> inline Vec3<T> Mat3<T>::vp3(const Vec3 &o)const{
+template<typename T> inline Vec3<T> Mat3<T>::vp(const Vec3 &o)const{
 	Vec3 ret;
 	T *vr = ret;
 	const T *ma = a, *vb = o;

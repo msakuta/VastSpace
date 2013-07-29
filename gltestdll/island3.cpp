@@ -1315,10 +1315,10 @@ void Island3::draw(const Viewer *vw){
 						leap = defleap / 2;
 					else
 						leap = defleap;
-					Vec3d bpos = rot2.vp3(bpos0[0]);
+					Vec3d bpos = rot2 * bpos0[0];
 					glTexCoord2d(0., i);
 					glVertex3dv(bpos);
-					bpos = rot2.vp3(bpos0[1]);
+					bpos = rot2 * bpos0[1];
 					glTexCoord2d(1., i);
 					glVertex3dv(bpos);
 				}
@@ -1577,11 +1577,11 @@ nobridgemodel:
 		for(int j = 1; j < numof(pos0)-1; j++){
 			Vec3d pos00 = pos0[j];
 			pos00[0] = i % (cutnum / 3) == 0 ? ISLAND3_RAD : ISLAND3_INRAD;
-			Vec3d pos = rot.vp3(pos00);
+			Vec3d pos = rot * pos00;
 			glTexCoord3dv(pos00);
 			glVertex3dv(pos);
 			pos00[0] = i % (cutnum / 3) == 0 ? ISLAND3_INRAD : ISLAND3_RAD;
-			pos = rot.vp3(pos00);
+			pos = rot * pos00;
 			glTexCoord3dv(pos00);
 			glVertex3dv(pos);
 		}

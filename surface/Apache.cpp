@@ -48,8 +48,11 @@ extern "C"{
 Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
 
 double Apache::modelScale = 0.00001;
+double Apache::defaultMass = 5000.;
 double Apache::maxHealthValue = 100.;
+double Apache::rotorAxisSpeed = 0.1 * M_PI;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
+HitBoxList Apache::hitboxes;
 
 
 void Apache::init(){
@@ -57,8 +60,11 @@ void Apache::init(){
 	if(!initialized){
 		SqInit(game->sqvm, modPath() << _SC("models/apache.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			Vec3dProcess(cockpitOfs, "cockpitOfs"));
+			SingleDoubleProcess(rotorAxisSpeed, "rotorAxisSpeed", false) <<=
+			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
+			HitboxProcess(hitboxes));
 		initialized = true;
 	}
 	int i;
@@ -139,10 +145,9 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 void Apache::control(const input_t *inputs, double dt){
 	st::control(inputs, dt);
 
-	static const double rotorAxisSpeed = 0.1 * M_PI;
 	static const double mouseSensitivity = 0.01;
 
-	// Rotate the turret and barrel
+	// Rotate the rotor's axis
 	double desired[2];
 	for(int i = 0; i < 2; i++){
 		desired[i] = rangein(rotoraxis[i] + inputs->analog[i] * rotorAxisSpeed * mouseSensitivity, -M_PI / 8., M_PI / 8.);
@@ -444,5 +449,23 @@ int Apache::takedamage(double damage, int hitpart){
 }
 
 int Apache::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
-	return 0;
+	double best = dt;
+	int reti = 0, i = 0;
+	double retf;
+	const HitBoxList &hitboxes = getHitBoxes();
+	for(HitBoxList::const_iterator it = hitboxes.begin(); it != hitboxes.end(); ++it){
+		const hitbox &hb = *it;
+		Vec3d org = this->rot.trans(hb.org) + this->pos;
+		Quatd rot = this->rot * hb.rot;
+		double sc[3];
+		for(int j = 0; j < 3; j++)
+			sc[j] = hb.sc[j] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = i + 1;
+		}
+		++i;
+	}
+	return reti;
 }

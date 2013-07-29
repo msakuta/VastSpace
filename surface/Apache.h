@@ -56,8 +56,13 @@ protected:
 	void find_enemy_logic();
 
 	static double modelScale;
+	static double defaultMass;
 	static double maxHealthValue;
+	static double rotorAxisSpeed;
 	static Vec3d cockpitOfs;
+	static HitBoxList hitboxes;
+
+	static const HitBoxList &getHitBoxes(){return hitboxes;}
 };
 
 

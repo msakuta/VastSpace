@@ -1378,7 +1378,8 @@ void CMPos::interpret(ServerClient &sc, UnserializeStream &uss){
 CMChase CMChase::s;
 
 void CMChase::send(Entity *e){
-	if(!e->getGame()->isServer()){
+	if(!e);
+	else if(!e->getGame()->isServer()){
 		std::stringstream ss;
 		StdSerializeStream sss(ss);
 		sss << e;

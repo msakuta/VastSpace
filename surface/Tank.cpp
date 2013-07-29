@@ -410,7 +410,7 @@ void LandVehicle::anim(double dt){
 	bool floorTouch = false;
 	btVector3 worldNormal;
 	if(WarSpace *ws = *w){
-		static const btVector3 offset(0, getLandOffset(), 0);
+		const btVector3 offset(0, getLandOffset(), 0);
 		const btvc btPos = bbody->getWorldTransform().getOrigin() - offset;
 		const btvc btVelo = bbody->getLinearVelocity();
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());

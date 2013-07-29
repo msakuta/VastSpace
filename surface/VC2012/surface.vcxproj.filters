@@ -35,6 +35,9 @@
     <ClInclude Include="..\F15.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\Apache.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -78,6 +81,9 @@
     </ClCompile>
     <ClCompile Include="..\Apache.cpp">
       <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\Apache-draw.cpp">
+      <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 /** \file
  * \brief Impelementation of Apache class.
  */
-#include "ModelEntity.h"
+#include "Apache.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "tent3d.h"
@@ -15,22 +15,9 @@
 #include "judge.h"
 #include "arms.h"
 #include "motion.h"
-#include "draw/WarDraw.h"
-#include "draw/mqoadapt.h"
-#include "draw/OpenGLState.h"
 #include "SurfaceCS.h"
 extern "C"{
-#include <clib/c.h>
 #include <clib/cfloat.h>
-#include <clib/mathdef.h>
-#include <clib/avec3.h>
-#include <clib/amat4.h>
-#include <clib/aquat.h>
-#include <clib/rseq.h>
-#include <clib/gl/gldraw.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufbin.h>
-#include <clib/colseq/cs.h>
 }
 
 #include <assert.h>
@@ -56,61 +43,15 @@ extern "C"{
 #define WINGSPEED (.25 * M_PI)
 
 
-/// \brief AH-64 Apache attack helicopter
-///
-/// http://en.wikipedia.org/wiki/Boeing_AH-64_Apache
-class Apache : public ModelEntity{
-public:
-	typedef ModelEntity st;
-	static EntityRegister<Apache> entityRegister;
-	Apache(Game *game) : st(game){}
-	Apache(WarField *w);
-	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
-	void control(const input_t *inputs, double dt)override;
-	void drawCockpit(WarDraw *)override;
-	void anim(double dt)override;
-	void draw(WarDraw *wd)override;
-	int takedamage(double damage, int hitpart)override;
-	const char *idname()const override{return "apache";}
-	const char *classname()const override{return "Apache";}
-	const char *dispname()const override{return "AH-64 Apache";}
-	void start_control();
-	void end_control();
-	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn)override;
-	bool isTargettable()const override{return true;}
-	bool isSelectable()const override{return true;}
-	double getHitRadius()const override{return 0.02;}
-	double getMaxHealth()const override{return APACHE_MAX_HEALTH;}
-
-	static gltestp::dstring modPath(){return "surface/";}
-protected:
-
-	double rotor, rotoromega, tailrotor, rotoraxis[2], crotoraxis[2], gun[2];
-	double throttle, feather, tail;
-	double cooldown;
-	double cooldown2;
-/*	apachearms arms[numof(arms_s)];*/
-//	arms_t arms[7];
-//	shieldw_t *sw;
-	int weapon;
-	int ammo_chaingun;
-	int hellfires;
-	int aim9; /* AIM-9 Sidewinder */
-	int hydras;
-	int contact; /* contact state, not really necessary */
-	char muzzle; /* muzzle flash status */
-	char brk;
-	char navlight; /* switch of navigation lights for flight in dark */
-
-	void init();
-	void find_enemy_logic();
-};
-
 
 
 
 
 Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
+
+double Apache::modelScale = APACHE_SCALE;
+double Apache::maxHealthValue = APACHE_MAX_HEALTH;
+Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 
 
 void Apache::init(){
@@ -145,7 +86,6 @@ Apache::Apache(WarField *w) : st(w){
 	init();
 }
 
-static const avec3_t apache_cockpit_ofs = {0., .0008, -.0022};
 
 
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -186,7 +126,7 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = pos0;
 	}
 	else
-		pos = mat.vp3(apache_cockpit_ofs);
+		pos = mat.vp3(cockpitOfs);
 	rot = this->rot;
 }
 
@@ -473,88 +413,7 @@ void Apache::anim(double dt){
 	}
 }
 
-void Apache::draw(WarDraw *wd){
-	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .03))
-		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
-	if(pixels < 2)
-		return;
-	wd->lightdraws++;
 
-	static Model *model = NULL;
-	static Motion *rotorxMotion = NULL;
-	static Motion *rotorzMotion = NULL;
-	static Motion *rotorMotion = NULL;
-
-	static OpenGLState::weak_ptr<bool> init;
-	if(!init) do{
-		FILE *fp;
-		model = LoadMQOModel(modPath() << "models/apache.mqo");
-		rotorxMotion = LoadMotion(modPath() << "models/apache-rotorx.mot");
-		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
-		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
-		init.create(*openGLState);
-	} while(0);
-
-	if(!model)
-		return;
-
-	MotionPose mp[3];
-	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
-	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
-	mp[0].next = &mp[1];
-	rotorMotion->interpolate(mp[2], fmod(rotor, M_PI / 2.) / (M_PI / 2.) * 10.);
-	mp[1].next = &mp[2];
-
-	glPushMatrix();
-
-	Mat4d mat;
-	transform(mat);
-	glMultMatrixd(mat);
-
-	const double modelScale = APACHE_SCALE;
-	glScaled(-modelScale, modelScale, -modelScale);
-
-	DrawMQOPose(model, mp);
-
-	glPopMatrix();
-
-}
-
-void Apache::drawCockpit(WarDraw *wd){
-	const double modelScale = .00001 /*wd->pgc->znear / wd->pgc->zfar*/;
-	const double *seat = apache_cockpit_ofs;
-	Player *player = game->player;
-	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
-		return;
-
-	static Model *cockpitModel = NULL;
-
-	static OpenGLState::weak_ptr<bool> init;
-	if(!init){
-		cockpitModel = LoadMQOModel(modPath() << "models/apache_int.mqo");
-		init.create(*openGLState);
-	}
-
-	glPushAttrib(GL_DEPTH_BUFFER_BIT);
-	glClearDepth(1.);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glPushMatrix();
-
-	glLoadMatrixd(wd->vw->rot);
-	gldMultQuat(this->rot);
-	gldTranslaten3dv(seat);
-
-	glScaled(-modelScale, modelScale, -modelScale);
-	DrawMQOPose(cockpitModel, NULL);
-
-	glPopMatrix();
-
-	glPopAttrib();
-
-}
 
 int Apache::takedamage(double damage, int hitpart){
 	tent3d_line_list *tell = w->getTeline3d();

@@ -179,6 +179,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Aerial.h" />
+    <ClInclude Include="..\Apache.h" />
     <ClInclude Include="..\drawmap.h" />
     <ClInclude Include="..\F15.h" />
     <ClInclude Include="..\SurfaceCS.h" />
@@ -189,6 +190,7 @@
   <ItemGroup>
     <ClCompile Include="..\Aerial.cpp" />
     <ClCompile Include="..\Apache.cpp" />
+    <ClCompile Include="..\draw\Apache-draw.cpp" />
     <ClCompile Include="..\SurfaceBuilding.cpp" />
     <ClCompile Include="..\DrawMap.cpp" />
     <ClCompile Include="..\draw\Aerial-draw.cpp" />

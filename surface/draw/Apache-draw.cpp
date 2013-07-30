@@ -61,7 +61,6 @@ void Apache::draw(WarDraw *wd){
 }
 
 void Apache::drawCockpit(WarDraw *wd){
-	const double modelScale = .00001 /*wd->pgc->znear / wd->pgc->zfar*/;
 	const Vec3d &seat = cockpitOfs;
 	Player *player = game->player;
 	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)

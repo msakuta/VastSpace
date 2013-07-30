@@ -107,7 +107,7 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	Mat4d mat;
 	transform(mat);
 	if(camera == 1){
-		pos = mat.dvp3(apache_overview_ofs);
+		pos = mat.vp3(apache_overview_ofs);
 	}
 	else if(camera == 2){
 		if(enemy){
@@ -150,8 +150,7 @@ void Apache::control(const input_t *inputs, double dt){
 	// Rotate the rotor's axis
 	double desired[2];
 	for(int i = 0; i < 2; i++){
-		desired[i] = rangein(rotoraxis[i] + inputs->analog[i] * rotorAxisSpeed * mouseSensitivity, -M_PI / 8., M_PI / 8.);
-		rotoraxis[i] = approach(rotoraxis[i], desired[i], dt * rotorAxisSpeed, 2 * M_PI);
+		crotoraxis[i] = rangein(crotoraxis[i] + inputs->analog[i] * rotorAxisSpeed * mouseSensitivity, -M_PI / 8., M_PI / 8.);
 	}
 
 	if(inputs->change & inputs->press & PL_SPACE){
@@ -280,7 +279,7 @@ void Apache::anim(double dt){
 		if(!enemy){
 			find_enemy_logic();
 		}
-		if(!controller){
+		if(controller){
 			Mat3d mat3 = mat.tomat3();
 			Mat3d matt = iort3 * mat3;
 			common = matt[7] / 2. /*pt->velo[1] / 5e-0*/;

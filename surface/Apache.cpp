@@ -333,7 +333,7 @@ void Apache::anim(double dt){
 		rotoraxis[1] = rangein(approach(rotoraxis[1], rangein(normal, -M_PI / 6., M_PI / 6.), M_PI * dt, 2 * M_PI), -M_PI / 8., M_PI / 8.);
 
 		/* control of throttle */
-		if(controller && enemy)
+		if(!controller && enemy)
 			throttle = approach(throttle, 1., .2 * dt, 5.);
 		if(inputs.press & PL_W)
 			throttle = approach(throttle, 1., .2 * dt, 5.);
@@ -341,7 +341,7 @@ void Apache::anim(double dt){
 			throttle = approach(throttle, 0., .2 * dt, 5.);
 
 		/* control of feathering angle of main rotor blades */
-		if(controller && enemy)
+		if(!controller && enemy)
 			feather = approach(feather, rangein(!!contact + .5 * dist + 5. * (VECSP(&ort3[3], enemy->pos) - VECSP(&ort3[3], this->pos) + .2), 0., 1.), .2 * dt, 5.);
 		if(inputs.press & PL_Q)
 			feather = approach(feather, 1., APACHE_FEATHER_SPEED * dt, 5.);

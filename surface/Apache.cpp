@@ -26,7 +26,6 @@ extern "C"{
 
 #define APACHE_SPEED (.005 * 2)
 #define APACHE_PHASE_SPEED M_PI
-#define APACHE_FEATHER_SPEED 1.
 #define APACHE_TAIL_SPEED 3.
 #define APACHE_SMOKE_FREQ 10.
 #define APACHE_BULLETSPEED 1.
@@ -54,6 +53,7 @@ double Apache::maxHealthValue = 100.;
 double Apache::rotorAxisSpeed = 0.1 * M_PI;
 double Apache::mainRotorLiftFactor = 0.023;
 double Apache::tailRotorLiftFactor = 0.003;
+double Apache::featherSpeed = 1.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 
@@ -68,6 +68,7 @@ void Apache::init(){
 			SingleDoubleProcess(rotorAxisSpeed, "rotorAxisSpeed", false) <<=
 			SingleDoubleProcess(mainRotorLiftFactor, "mainRotorLiftFactor", false) <<=
 			SingleDoubleProcess(tailRotorLiftFactor, "tailRotorLiftFactor", false) <<=
+			SingleDoubleProcess(featherSpeed, "featherSpeed") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -342,11 +343,11 @@ void Apache::anim(double dt){
 
 		/* control of feathering angle of main rotor blades */
 		if(!controller && enemy)
-			feather = approach(feather, rangein(!!contact + .5 * dist + 5. * (VECSP(&ort3[3], enemy->pos) - VECSP(&ort3[3], this->pos) + .2), 0., 1.), .2 * dt, 5.);
+			feather = approach(feather, rangein(!!contact + .5 * dist + 5. * (ort3.vec3(1).sp(enemy->pos) - ort3.vec3(1).sp(this->pos) + .2), 0., 1.), .2 * dt, 5.);
 		if(inputs.press & PL_Q)
-			feather = approach(feather, 1., APACHE_FEATHER_SPEED * dt, 5.);
+			feather = approach(feather, 1., featherSpeed * dt, 5.);
 		if(inputs.press & PL_Z)
-			feather = approach(feather, -.5, APACHE_FEATHER_SPEED * dt, 5.);
+			feather = approach(feather, -.5, featherSpeed * dt, 5.);
 
 		/* tail rotor control */
 		if(controller){

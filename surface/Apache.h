@@ -64,6 +64,7 @@ protected:
 	static double rotorAxisSpeed;
 	static double mainRotorLiftFactor; ///< How strong the main rotor's lift is
 	static double tailRotorLiftFactor; ///< How strong the tail rotor's lift is
+	static double featherSpeed; ///< Speed of feathering angle change
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 

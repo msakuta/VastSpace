@@ -34,6 +34,8 @@ public:
 
 	static gltestp::dstring modPath(){return "surface/";}
 protected:
+	short bbodyGroup()const override{return 1<<2;}
+	short bbodyMask()const override{return 1<<2;}
 
 	double rotor, rotoromega, tailrotor, rotoraxis[2], crotoraxis[2], gun[2];
 	double throttle, feather, tail;
@@ -59,10 +61,13 @@ protected:
 	static double defaultMass;
 	static double maxHealthValue;
 	static double rotorAxisSpeed;
+	static double mainRotorLiftFactor; ///< How strong the main rotor's lift is
+	static double tailRotorLiftFactor; ///< How strong the tail rotor's lift is
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
+	bool buildBody();
 };
 
 

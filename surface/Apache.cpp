@@ -16,6 +16,7 @@
 #include "arms.h"
 #include "motion.h"
 #include "SurfaceCS.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/cfloat.h>
 }
@@ -51,6 +52,8 @@ double Apache::modelScale = 0.00001;
 double Apache::defaultMass = 5000.;
 double Apache::maxHealthValue = 100.;
 double Apache::rotorAxisSpeed = 0.1 * M_PI;
+double Apache::mainRotorLiftFactor = 0.023;
+double Apache::tailRotorLiftFactor = 0.003;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 
@@ -63,6 +66,8 @@ void Apache::init(){
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(rotorAxisSpeed, "rotorAxisSpeed", false) <<=
+			SingleDoubleProcess(mainRotorLiftFactor, "mainRotorLiftFactor", false) <<=
+			SingleDoubleProcess(tailRotorLiftFactor, "tailRotorLiftFactor", false) <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -97,8 +102,6 @@ void Apache::init(){
 Apache::Apache(WarField *w) : st(w){
 	init();
 }
-
-
 
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	amat4_t mat2, mat3;
@@ -375,7 +378,7 @@ void Apache::anim(double dt){
 		cooldown2 -= dt;
 
 	/* global acceleration */
-	{
+	if(!bbody){
 		Vec3d accel = w->accel(this->pos, this->velo);
 		this->velo += accel * dt;
 	}
@@ -402,21 +405,32 @@ void Apache::anim(double dt){
 	/*	rotor = fmod(rotor + throttle * 8. * M_PI * dt, M_PI * 2.);*/
 		tailrotor = fmod(tailrotor + (rotoromega/* + p->tail*/) * 6. * M_PI * dt, M_PI * 2.);
 		{
-			Vec3d org(0., 0.002, 0.), tail(0.0005, .002, .0088);
+			Vec3d org(0., 0.0002, 0.), tail(0.0005, .002, .0088);
 			Vec3d pos = mat.dvp3(org);
-			double mag = air * .023 * rotoromega * (feather - airflux) * mass * dt;
+			double mag = air * mainRotorLiftFactor * rotoromega * (feather - airflux) * mass * dt;
 			Vec3d thrust = rot2.vec3(1) * mag;
-//			RigidAddMomentum(pt, pos, thrust);
+			if(bbody)
+				bbody->applyForce(btvc(thrust), btvc(pos));
+//			else
+//				RigidAddMomentum(pt, pos, thrust);
 			pos = mat.dvp3(tail);
-			mag = air * .003 * rotoromega * this->tail * mass * dt;
+			mag = air * tailRotorLiftFactor * rotoromega * this->tail * mass * dt;
 			thrust = mat.vec3(0) * mag;
-//			RigidAddMomentum(pt, pos, thrust);
+			if(bbody)
+				bbody->applyForce(btvc(thrust), btvc(pos));
+//			else
+//				RigidAddMomentum(pt, pos, thrust);
 		}
 	}
 
-	this->pos += this->velo * dt;
-
-	{
+	if(bbody){
+		this->pos = btvc(bbody->getCenterOfMassPosition());
+		this->rot = btqc(bbody->getWorldTransform().getRotation());
+		this->velo = btvc(bbody->getLinearVelocity());
+		this->omg = btvc(bbody->getAngularVelocity());
+	}
+	else{
+		this->pos += this->velo * dt;
 		double rate = inwater ? 1. : 0.;
 		this->omg *= 1. / ((rate + .4) * dt + 1.);
 		this->velo *= 1. / ((rate + air * .1) * dt + 1.);
@@ -467,4 +481,44 @@ int Apache::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 		++i;
 	}
 	return reti;
+}
+
+bool Apache::buildBody(){
+	if(!bbody){
+		static btCompoundShape *shape = NULL;
+		if(!shape){
+			shape = new btCompoundShape();
+			const HitBoxList &hitboxes = getHitBoxes();
+			for(HitBoxList::const_iterator i = hitboxes.begin(); i != hitboxes.end(); ++i){
+				const HitBox &it = *i;
+				const Vec3d &sc = it.sc;
+				const Quatd &rot = it.rot;
+				const Vec3d &pos = it.org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+		rbInfo.m_linearDamping = .05;
+		rbInfo.m_angularDamping = .05;
+		bbody = new btRigidBody(rbInfo);
+		bbody->setActivationState(DISABLE_DEACTIVATION);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+	}
+	return true;
 }

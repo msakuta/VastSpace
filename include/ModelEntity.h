@@ -29,6 +29,7 @@ public:
 	ModelEntity(WarField *w) : st(w){}
 
 protected:
+	void addRigidBody(WarSpace *)override;
 	virtual bool buildBody();
 	virtual short bbodyGroup()const;
 	virtual short bbodyMask()const;

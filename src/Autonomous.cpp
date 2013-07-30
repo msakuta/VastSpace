@@ -898,6 +898,16 @@ int Autonomous::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double 
 	return 0/*st::tracehit(src, dir, rad, dt, ret, retp, retn)*/;
 }
 
+/// \brief Overrides group and mask for broadphase culling.
+void ModelEntity::addRigidBody(WarSpace *ws){
+	if(ws && ws->bdw){
+		buildBody();
+		//add the body to the dynamics world
+		if(bbody)
+			ws->bdw->addRigidBody(bbody, bbodyGroup(), bbodyMask());
+	}
+}
+
 /// \brief Virtual method to construct a bullet dynamics body for this Warpable.
 ///
 /// By default, it does not build a thing.

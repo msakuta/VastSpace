@@ -17,9 +17,10 @@ public:
 	Apache(WarField *w);
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
 	void control(const input_t *inputs, double dt)override;
-	void drawCockpit(WarDraw *)override;
 	void anim(double dt)override;
 	void draw(WarDraw *wd)override;
+	void drawHUD(WarDraw *)override;
+	void drawCockpit(WarDraw *)override;
 	int takedamage(double damage, int hitpart)override;
 	const char *idname()const override{return "apache";}
 	const char *classname()const override{return "Apache";}

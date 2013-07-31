@@ -25,6 +25,7 @@ void Apache::draw(WarDraw *wd){
 	static Motion *rotorxMotion = NULL;
 	static Motion *rotorzMotion = NULL;
 	static Motion *rotorMotion = NULL;
+	static Motion *tailRotorMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init) do{
@@ -33,18 +34,21 @@ void Apache::draw(WarDraw *wd){
 		rotorxMotion = LoadMotion(modPath() << "models/apache-rotorx.mot");
 		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
 		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
+		tailRotorMotion = LoadMotion(modPath() << "models/apache-tailrotor.mot");
 		init.create(*openGLState);
 	} while(0);
 
 	if(!model)
 		return;
 
-	MotionPose mp[3];
+	MotionPose mp[4];
 	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
 	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
 	mp[0].next = &mp[1];
 	rotorMotion->interpolate(mp[2], fmod(rotor, M_PI / 2.) / (M_PI / 2.) * 10.);
 	mp[1].next = &mp[2];
+	tailRotorMotion->interpolate(mp[3], fmod(tailrotor, M_PI) / (M_PI) * 20.);
+	mp[2].next = &mp[3];
 
 	glPushMatrix();
 

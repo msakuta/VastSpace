@@ -1,0 +1,15 @@
+model_motion 3
+{
+	keyframe 1 10
+	{
+		"apache_tailrotor" 0 0 0 1 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"apache_tailrotor" 0.707106781186547 0 0 0.707106781186547 0 0 0 1
+	}
+	keyframe 1 10
+	{
+		"apache_tailrotor" 1 0 0 3.12250225675825e-017 0 0 0 1
+	}
+}

@@ -350,7 +350,7 @@ void Apache::anim(double dt){
 			feather = approach(feather, -.5, featherSpeed * dt, 5.);
 
 		/* tail rotor control */
-		if(controller){
+		if(!controller){
 			if(enemy)
 				tail = approach(tail, rangein(gnormal, -.2, .2), APACHE_TAIL_SPEED * dt, 5.);
 		}
@@ -406,7 +406,7 @@ void Apache::anim(double dt){
 	/*	rotor = fmod(rotor + throttle * 8. * M_PI * dt, M_PI * 2.);*/
 		tailrotor = fmod(tailrotor + (rotoromega/* + p->tail*/) * 6. * M_PI * dt, M_PI * 2.);
 		{
-			Vec3d org(0., 0.0002, 0.), tail(0.0005, .002, .0088);
+			Vec3d org(0., 0.0002, 0.), tail(0.0005, .00, .0088);
 			Vec3d pos = mat.dvp3(org);
 			double mag = air * mainRotorLiftFactor * rotoromega * (feather - airflux) * mass * dt;
 			Vec3d thrust = rot2.vec3(1) * mag;

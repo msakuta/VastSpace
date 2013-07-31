@@ -8,7 +8,7 @@ maxhealth <- 100.;
 rotorAxisSpeed <- 0.1 * PI;
 
 mainRotorLiftFactor <- 1.1;
-tailRotorLiftFactor <- 0.003;
+tailRotorLiftFactor <- 0.1;
 
 featherSpeed <- 1.0;
 

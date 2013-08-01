@@ -24,9 +24,6 @@ extern "C"{
 #include <assert.h>
 
 
-#define APACHE_SPEED (.005 * 2)
-#define APACHE_PHASE_SPEED M_PI
-#define APACHE_TAIL_SPEED 3.
 #define APACHE_SMOKE_FREQ 10.
 #define APACHE_BULLETSPEED 1.
 #define APACHE_PRICE 1450e1
@@ -54,6 +51,7 @@ double Apache::rotorAxisSpeed = 0.1 * M_PI;
 double Apache::mainRotorLiftFactor = 0.023;
 double Apache::tailRotorLiftFactor = 0.003;
 double Apache::featherSpeed = 1.;
+double Apache::tailRotorSpeed = 3.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 
@@ -69,6 +67,7 @@ void Apache::init(){
 			SingleDoubleProcess(mainRotorLiftFactor, "mainRotorLiftFactor", false) <<=
 			SingleDoubleProcess(tailRotorLiftFactor, "tailRotorLiftFactor", false) <<=
 			SingleDoubleProcess(featherSpeed, "featherSpeed") <<=
+			SingleDoubleProcess(tailRotorSpeed, "tailRotorSpeed") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -352,15 +351,15 @@ void Apache::anim(double dt){
 		/* tail rotor control */
 		if(!controller){
 			if(enemy)
-				tail = approach(tail, rangein(gnormal, -.2, .2), APACHE_TAIL_SPEED * dt, 5.);
+				tail = approach(tail, rangein(gnormal, -.2, .2), tailRotorSpeed * dt, 5.);
 		}
 		else{
 			if(inputs.press & PL_A)
-				tail = approach(tail, 1., APACHE_TAIL_SPEED * dt, 5.);
+				tail = approach(tail, 1., tailRotorSpeed * dt, 5.);
 			else if(inputs.press & PL_D)
-				tail = approach(tail, -1., APACHE_TAIL_SPEED * dt, 5.);
+				tail = approach(tail, -1., tailRotorSpeed * dt, 5.);
 			else /*if(pt->inputs.press & PL_R)*/
-				tail = approach(tail, 0., APACHE_TAIL_SPEED * dt, 5.);
+				tail = approach(tail, 0., tailRotorSpeed * dt, 5.);
 		}
 
 	}

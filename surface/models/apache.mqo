@@ -858,7 +858,7 @@ Object "apache_gun" {
 	facet 59.5
 	color 0.898 0.498 0.698
 	color_type 0
-	vertex 20 {
+	vertex 22 {
 		10.0000 -130.0000 260.0000
 		-10.0000 -130.0000 260.0000
 		-10.0000 -130.0000 340.0000
@@ -879,8 +879,10 @@ Object "apache_gun" {
 		4.0000 -140.0000 420.0000
 		0.0000 0.0000 0.0000
 		0.0000 -140.0000 300.0000
+		0.0000 -140.0000 300.0000
+		0.0000 0.0000 0.0000
 	}
-	face 17 {
+	face 18 {
 		4 V(0 3 2 1) M(4)
 		3 V(6 5 0) M(4)
 		3 V(0 5 3) M(4)
@@ -898,6 +900,7 @@ Object "apache_gun" {
 		4 V(17 16 14 15) M(4)
 		4 V(17 15 10 11) M(5)
 		2 V(18 19) M(3)
+		2 V(20 21) M(0)
 	}
 }
 Object "apache_tailrotor" {
@@ -907,7 +910,7 @@ Object "apache_tailrotor" {
 	rotation 0.000000 -0.000000 0.000000
 	translation 0.000000 0.000000 0.000000
 	visible 15
-	locking 0
+	locking 1
 	shading 1
 	facet 59.5
 	color 0.898 0.498 0.698

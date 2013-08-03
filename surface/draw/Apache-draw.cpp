@@ -26,6 +26,8 @@ void Apache::draw(WarDraw *wd){
 	static Motion *rotorzMotion = NULL;
 	static Motion *rotorMotion = NULL;
 	static Motion *tailRotorMotion = NULL;
+	static Motion *gunYawMotion = NULL;
+	static Motion *gunPitchMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init) do{
@@ -35,13 +37,15 @@ void Apache::draw(WarDraw *wd){
 		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
 		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
 		tailRotorMotion = LoadMotion(modPath() << "models/apache-tailrotor.mot");
+		gunYawMotion = LoadMotion(modPath() << "models/apache-gunyaw.mot");
+		gunPitchMotion = LoadMotion(modPath() << "models/apache-gunpitch.mot");
 		init.create(*openGLState);
 	} while(0);
 
 	if(!model)
 		return;
 
-	MotionPose mp[4];
+	MotionPose mp[6];
 	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
 	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
 	mp[0].next = &mp[1];
@@ -49,6 +53,10 @@ void Apache::draw(WarDraw *wd){
 	mp[1].next = &mp[2];
 	tailRotorMotion->interpolate(mp[3], fmod(tailrotor, M_PI) / (M_PI) * 20.);
 	mp[2].next = &mp[3];
+	gunYawMotion->interpolate(mp[4], gun[1] / (M_PI) * 20. + 10.);
+	mp[3].next = &mp[4];
+	gunPitchMotion->interpolate(mp[5], gun[0] / (M_PI) * 20.);
+	mp[4].next = &mp[5];
 
 	glPushMatrix();
 

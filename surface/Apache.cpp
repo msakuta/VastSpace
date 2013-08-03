@@ -323,8 +323,8 @@ void Apache::anim(double dt){
 			Vec3d ldelta = qc.trans(delta);
 			ldelta[1] -= .002;
 			shoot_angle(avec3_000, ldelta, 0., APACHE_BULLETSPEED, &retangles);
-//			gnormal = pyr[1] = -atan2(ldelta[0], -ldelta[2]);
-//			gcommon = pyr[0] = retangles[0]/*- -asin(ldelta[1] / sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]))*/;
+			gnormal = -atan2(ldelta[0], -ldelta[2]);
+			gcommon = retangles[0]/*- -asin(ldelta[1] / sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]))*/;
 		}
 		gun[0] = rangein(approach(gun[0], gcommon, M_PI * dt, 2 * M_PI), -M_PI / 4., M_PI / 8.);
 		gun[1] = rangein(approach(gun[1], gnormal, M_PI * dt, 2 * M_PI), -M_PI / 2., M_PI / 2.);

@@ -14,6 +14,12 @@ featherSpeed <- 1.0;
 
 tailRotorSpeed <- 3.0;
 
+chainGunCooldown <- 60. / 625.; ///< Shoot repeat cycle time
+chainGunMuzzleSpeed <- 1.; ///< Speed of shot projectile at the gun muzzle, which may decrease as it travels through air.
+chainGunDamage <- 30.0; ///< Bullet damage for each chain gun round.
+chainGunVariance <- 0.015; ///< Chain gun variance (inverse accuracy) in cosine angles.
+chainGunLife <- 5.; ///< Time before shot bullet disappear
+
 cockpitOfs <- Vec3d(0., 0.0008, -0.0022);
 
 hitbox <- [

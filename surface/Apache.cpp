@@ -20,6 +20,7 @@
 extern "C"{
 #include <clib/cfloat.h>
 }
+#include <cpplib/crc32.h>
 
 #include <assert.h>
 
@@ -52,6 +53,11 @@ double Apache::mainRotorLiftFactor = 0.023;
 double Apache::tailRotorLiftFactor = 0.003;
 double Apache::featherSpeed = 1.;
 double Apache::tailRotorSpeed = 3.;
+double Apache::chainGunCooldown = 60. / 625.; ///< Defaults 625 rpm
+double Apache::chainGunMuzzleSpeed = 1.;
+double Apache::chainGunDamage = 30.;
+double Apache::chainGunVariance = 0.015;
+double Apache::chainGunLife = 5.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 
@@ -68,6 +74,11 @@ void Apache::init(){
 			SingleDoubleProcess(tailRotorLiftFactor, "tailRotorLiftFactor", false) <<=
 			SingleDoubleProcess(featherSpeed, "featherSpeed") <<=
 			SingleDoubleProcess(tailRotorSpeed, "tailRotorSpeed") <<=
+			SingleDoubleProcess(chainGunCooldown, "chainGunCooldown") <<=
+			SingleDoubleProcess(chainGunMuzzleSpeed, "chainGunMuzzleSpeed") <<=
+			SingleDoubleProcess(chainGunDamage, "chainGunDamage") <<=
+			SingleDoubleProcess(chainGunVariance, "chainGunVariance") <<=
+			SingleDoubleProcess(chainGunLife, "chainGunLife") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -362,6 +373,7 @@ void Apache::anim(double dt){
 				tail = approach(tail, 0., tailRotorSpeed * dt, 5.);
 		}
 
+		shootChainGun(dt);
 	}
 	else{
 		throttle = approach(throttle, 0., .2 * dt, 5.);
@@ -521,4 +533,67 @@ bool Apache::buildBody(){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 	return true;
+}
+
+/// \brief Try to shoot the M230 chain gum mounted on the bottom of cockpit.
+/// \returns Count of bullets shot in this frame
+int Apache::shootChainGun(double dt){
+	static const Vec3d pos0(0., -0.0012, -.0032), nh0(0., 0., -1.), xh0(1., 0., 0.);
+	avec3_t pos;
+	double phi, theta;
+	double scale = modelScale;
+	double variance = chainGunVariance;
+	int ret = 0;
+
+	Mat4d mat;
+	transform(mat);
+
+//	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
+	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
+		while(0 < ammo_chaingun && cooldown < dt){
+
+			double t = w->war_time() + cooldown;
+			RandomSequence rs(crc32(&t, sizeof t));
+			Mat4d rmat = mat.translate(pos0[0], pos0[1], pos0[2])
+				.rotx(gun[0] + (rs.nextd() - .5) * variance)
+				.roty(gun[1] + (rs.nextd() - .5) * variance);
+
+			Bullet *pb = new Bullet(this, chainGunLife, chainGunDamage);
+			w->addent(pb);
+			Vec3d nh = rmat.dvp3(nh0).norm();
+			pb->velo = this->velo + nh * chainGunMuzzleSpeed;
+			pb->pos = rmat.vec3(3);
+			pb->mass = .05;
+			Vec3d dr = pb->pos - this->pos;
+			Vec3d momentum = pb->velo * -pb->mass;
+			if(bbody)
+				bbody->applyImpulse(btvc(momentum), btvc(dr));
+	//		else
+	//			RigidAddMomentum(pt, dr, momentum);
+			pb->anim(dt - cooldown);
+			cooldown += chainGunCooldown;
+			ret++;
+
+#if 0 // Apache's chain gun (M230) emits used cartridges on firing, so we should add them to temporary gibs, but we do not have a model yet.
+			WarSpace *ws = *w;
+			if(ws->gibs){
+				Vec3d pos = rmat.vec3(3) - nh * .0005;
+				Vec3d xh = rmat.vec3(0);
+				Vec3d velo(
+					this->velo[0] - (rs.nextd() + .5) * .002 * xh[0],
+					this->velo[1] + .001 + rs.nextd() * .001,
+					this->velo[2] - (rs.nextd() + .5) * .002 * xh[2]);
+				pos += velo * dt;
+				Vec3d omg(
+					.5 * 2 * M_PI * (drseq(&w->rs) - .5),
+					.5 * 2 * M_PI * (drseq(&w->rs) - .5),
+					3. * 2 * M_PI * (drseq(&w->rs) - .5));
+				AddTelineCallback3D(ws->gibs, pos, velo, 0.01, this->rot, omg, w->accel(pos, velo), small_brass_draw, NULL, TEL3_NOLINE | TEL3_REFLECT | TEL3_QUAT, 1.5 + w->rs.nextd());
+			}
+#endif
+			this->muzzle = 1;
+			this->ammo_chaingun--;
+		}
+	}
+	return ret;
 }

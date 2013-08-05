@@ -14,7 +14,7 @@ local birds = [];
 //f15_3.race = 1;
 
 local tank = player.cs.addent("M3Truck", Vec3d(0, 0, 0));
-player.chase = tank
+//player.chase = tank
 
 local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2))
 tank2.race = 1
@@ -24,7 +24,7 @@ bldg.modelFile = "surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
-local apache = player.cs.addent("Apache", Vec3d(0, 3, 0));
+local apache = player.cs.addent("Apache", Vec3d(0, 3, 2));
 player.chase = apache;
 
 cmd("pause 0");

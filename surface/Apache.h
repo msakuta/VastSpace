@@ -66,11 +66,17 @@ protected:
 	static double tailRotorLiftFactor; ///< How strong the tail rotor's lift is
 	static double featherSpeed; ///< Speed of feathering angle change
 	static double tailRotorSpeed; ///< Speed factor of the tail rotor relative to the main rotor.
+	static double chainGunCooldown; ///< Shoot repeat cycle time
+	static double chainGunMuzzleSpeed; ///< Speed of shot projectile at the gun muzzle, which may decrease as it travels through air.
+	static double chainGunDamage; ///< Bullet damage for each chain gun round.
+	static double chainGunVariance; ///< Chain gun variance (inverse accuracy) in cosine angles.
+	static double chainGunLife; ///< Time before shot bullet disappear
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();
+	int shootChainGun(double dt);
 };
 
 

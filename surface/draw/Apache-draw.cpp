@@ -5,6 +5,7 @@
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
+#include "draw/effects.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -25,8 +26,6 @@ void Apache::draw(WarDraw *wd){
 	static Motion *rotorzMotion = NULL;
 	static Motion *rotorMotion = NULL;
 	static Motion *tailRotorMotion = NULL;
-	static Motion *gunYawMotion = NULL;
-	static Motion *gunPitchMotion = NULL;
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init) do{
@@ -36,8 +35,6 @@ void Apache::draw(WarDraw *wd){
 		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
 		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
 		tailRotorMotion = LoadMotion(modPath() << "models/apache-tailrotor.mot");
-		gunYawMotion = LoadMotion(modPath() << "models/apache-gunyaw.mot");
-		gunPitchMotion = LoadMotion(modPath() << "models/apache-gunpitch.mot");
 		init.create(*openGLState);
 	} while(0);
 
@@ -52,10 +49,8 @@ void Apache::draw(WarDraw *wd){
 	mp[1].next = &mp[2];
 	tailRotorMotion->interpolate(mp[3], fmod(tailrotor, M_PI) / (M_PI) * 20.);
 	mp[2].next = &mp[3];
-	gunYawMotion->interpolate(mp[4], gun[1] / (M_PI) * 20. + 10.);
+	gunMotion(&mp[4]);
 	mp[3].next = &mp[4];
-	gunPitchMotion->interpolate(mp[5], gun[0] / (M_PI) * 20.);
-	mp[4].next = &mp[5];
 
 	glPushMatrix();
 
@@ -69,6 +64,27 @@ void Apache::draw(WarDraw *wd){
 
 	glPopMatrix();
 
+}
+
+void Apache::drawtra(WarDraw *wd){
+	Mat4d mat;
+	transform(mat);
+	if(muzzle){
+		muzzle = 0;
+		if(!model)
+			return;
+		static const Vec3d pvo(.0, -.00150, -.00320);
+		Mat4d rmat = this->rot.tomat4().rotx(gun[0]).roty(gun[1]);
+		MotionPose mp[2];
+		gunMotion(mp);
+		Vec3d pos;
+		Quatd rot;
+		if(model->getBonePos("apache_muzzle", mp[0], &pos, &rot)){
+			mat.scalein(-modelScale, modelScale, -modelScale);
+			drawmuzzleflash4(mat.vp3(pos), (this->rot.rotate(M_PI, 0, 1, 0) * rot).rotate(M_PI, 0, 1, 0).tomat4(),
+				0.0025, mat4_u, &w->rs, wd->vw->pos);
+		}
+	}
 }
 
 void Apache::drawHUD(WarDraw *wd){
@@ -166,4 +182,20 @@ void Apache::drawCockpit(WarDraw *wd){
 
 	glPopAttrib();
 
+}
+
+void Apache::gunMotion(MotionPose *mp){
+	static Motion *gunYawMotion = NULL;
+	static Motion *gunPitchMotion = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init) do{
+		gunYawMotion = LoadMotion(modPath() << "models/apache-gunyaw.mot");
+		gunPitchMotion = LoadMotion(modPath() << "models/apache-gunpitch.mot");
+		init.create(*openGLState);
+	} while(0);
+
+	gunYawMotion->interpolate(mp[0], gun[1] / (M_PI) * 20. + 10.);
+	gunPitchMotion->interpolate(mp[1], -gun[0] / (M_PI) * 20. + 10.);
+	mp[0].next = &mp[1];
 }

@@ -3,8 +3,9 @@
  */
 #ifndef APACHE_H
 #define APACHE_H
-#include "Model-forward.h"
 #include "ModelEntity.h"
+#include "Model-forward.h"
+#include "Motion-forward.h"
 
 
 /// \brief AH-64 Apache attack helicopter
@@ -20,6 +21,7 @@ public:
 	void control(const input_t *inputs, double dt)override;
 	void anim(double dt)override;
 	void draw(WarDraw *wd)override;
+	void drawtra(WarDraw *wd)override;
 	void drawHUD(WarDraw *)override;
 	void drawCockpit(WarDraw *)override;
 	int takedamage(double damage, int hitpart)override;
@@ -79,6 +81,7 @@ protected:
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();
 	int shootChainGun(double dt);
+	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
 };
 
 

@@ -903,6 +903,26 @@ Object "apache_gun" {
 		2 V(20 21) M(0)
 	}
 }
+Object "apache_muzzle" {
+	depth 2
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 1
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0.0000 -140.0000 300.0000
+		0.0000 -140.0000 420.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
 Object "apache_tailrotor" {
 	depth 1
 	folding 0

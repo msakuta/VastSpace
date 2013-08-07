@@ -1,5 +1,9 @@
-model_motion 2
+model_motion 3
 {
+	keyframe 1 10
+	{
+		"apache_gun" -0.707106781186548 0 0 0.707106781186547 0 0 0 1
+	}
 	keyframe 1 10
 	{
 		"apache_gun" 0 0 0 1 0 0 0 1

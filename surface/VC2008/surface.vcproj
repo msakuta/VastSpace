@@ -335,6 +335,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\Apache.h"
+				>
+			</File>
+			<File
 				RelativePath="..\drawmap.h"
 				>
 			</File>
@@ -361,6 +365,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\Apache.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\DrawMap.cpp"
 				>
 			</File>
@@ -370,6 +378,10 @@
 			</File>
 			<File
 				RelativePath="..\mas.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\SurfaceBuilding.cpp"
 				>
 			</File>
 			<File
@@ -391,6 +403,10 @@
 			<Filter
 				Name="draw"
 				>
+				<File
+					RelativePath="..\draw\Apache-draw.cpp"
+					>
+				</File>
 				<File
 					RelativePath="..\draw\Tank-draw.cpp"
 					>

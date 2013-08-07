@@ -1051,6 +1051,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\Model-forward.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\ModelEntity.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\Motion-forward.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\motion.h"
 				>
 			</File>
@@ -1088,6 +1100,10 @@
 			</File>
 			<File
 				RelativePath="..\include\sqadapt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\SqInitProcess-ex.h"
 				>
 			</File>
 			<File

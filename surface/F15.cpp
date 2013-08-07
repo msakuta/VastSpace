@@ -7,6 +7,7 @@
 #include "Missile.h"
 #include "tefpol3d.h"
 #include "sqadapt.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

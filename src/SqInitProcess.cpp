@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of SqInitProcess class and its companions.
  */
-#include "SqInitProcess.h"
+#include "SqInitProcess-ex.h"
 #include "sqadapt.h"
 #include "cmd.h"
 extern "C"{
@@ -102,5 +102,30 @@ void StringProcess::process(HSQUIRRELVM v)const{
 	}
 	value = f;
 	sq_poptop(v);
+}
+
+void Vec3dListProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+
+	// Not defining hardpoints is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
+	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		SQVec3d r;
+		r.getValue(v, -1);
+		value.push_back(r.value);
+		sq_poptop(v); // root obj obj[i]
+	}
+	sq_poptop(v); // root
 }
 

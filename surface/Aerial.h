@@ -88,16 +88,6 @@ public:
 	void process(HSQUIRRELVM)const override;
 };
 
-/// \brief Processes a list of Vec3d in a Squirrel script.
-class Vec3dListProcess : public SqInitProcess{
-public:
-	std::vector<Vec3d> &value;
-	const SQChar *name;
-	bool mandatory;
-	Vec3dListProcess(std::vector<Vec3d> &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
-	void process(HSQUIRRELVM)const override;
-};
-
 /// \brief A light-emitting flare dropped from an Aerial object.
 class Flare : public Entity{
 public:

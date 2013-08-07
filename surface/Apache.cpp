@@ -26,12 +26,7 @@ extern "C"{
 
 
 #define APACHE_SMOKE_FREQ 10.
-#define APACHE_BULLETSPEED 1.
 #define APACHE_PRICE 1450e1
-#define BULLETDAMAGE 5.
-#define WCS_TIME 1.
-#define ROTSPEED M_PI
-#define YAWSPEED (M_PI*.2)
 
 #define SSM_MASS 80.
 #define BULLETSPEED .08
@@ -197,7 +192,7 @@ void Apache::control(const input_t *inputs, double dt){
 
 /** determine if target can be hit by ballistic bullets from the starting position.
  * returns desired angles also if feasible. */
-int shoot_angle2(const double pos[3], const double epos[3], double phi0, double v, double (*ret_angles)[2], int farside, const Vec3d &gravity){
+int shoot_angle(const Vec3d &pos, const Vec3d &epos, double phi0, double v, double (*ret_angles)[2], bool farside = false, const Vec3d &gravity = vec3_000){
 	double g = gravity.len();
 	double vd[3], vv[3];
 	double dy = pos[1] - epos[1], dx, D, rD, vx2, vx;
@@ -227,10 +222,6 @@ int shoot_angle2(const double pos[3], const double epos[3], double phi0, double 
 		(*ret_angles)[1] = phi0;
 	}
 	return 1;
-}
-
-int shoot_angle(const double pos[3], const double epos[3], double phi0, double v, double (*ret_angles)[2]){
-	return shoot_angle2(pos, epos, phi0, v, ret_angles, 0, vec3_000);
 }
 
 void Apache::find_enemy_logic(){
@@ -329,12 +320,12 @@ void Apache::anim(double dt){
 
 			Quatd qc = rot.cnj();
 			Vec3d epos;
-			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, APACHE_BULLETSPEED, w);
+			estimate_pos(epos, enemy->pos, enemy->velo, this->pos, this->velo, chainGunMuzzleSpeed, w);
 			Vec3d delta = epos - this->pos;
 			double sd = delta.slen();
 			Vec3d ldelta = qc.trans(delta);
 			ldelta[1] -= .002;
-			shoot_angle(avec3_000, ldelta, 0., APACHE_BULLETSPEED, &retangles);
+			shoot_angle(vec3_000, ldelta, 0., chainGunMuzzleSpeed, &retangles);
 			gnormal = -atan2(ldelta[0], -ldelta[2]);
 			gcommon = retangles[0]/*- -asin(ldelta[1] / sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]))*/;
 		}

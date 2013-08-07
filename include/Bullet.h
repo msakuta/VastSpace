@@ -43,8 +43,8 @@ public:
 
 	double getDamage()const{return damage;}
 protected:
-	void bulletkill(int hitground, const struct contact_info *ci);
-	bool bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);
+	virtual void bulletDeathEffect(int hitground, const struct contact_info *ci);
+	virtual bool bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);
 };
 
 

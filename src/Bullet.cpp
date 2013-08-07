@@ -290,7 +290,7 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 	return ret;
 }
 
-bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
+bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 	Bullet *pb = this;
 	void **hint = (void**)param.hint;
 	int &hitpart = *(int*)hint[2];
@@ -406,7 +406,7 @@ bool Bullet::bullethit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 			}
 //			makedamage(pb, pt, w, pb->damage, hitpart);
 
-			bulletkill(-1, NULL);
+			bulletDeathEffect(-1, NULL);
 			if(game->isServer())
 				delete this;
 			else
@@ -472,12 +472,12 @@ void Bullet::anim(double dt){
 		if(ws->ot){
 			Entity *pt = otjEnumHitSphere(&param);
 			if(pt)
-				if(!bullethit(pt, ws, param))
+				if(!bulletHit(pt, ws, param))
 					return;
 		}
 		else{
 			for(WarField::EntityList::iterator it = ws->el.begin(); it != ws->el.end(); it++) if(*it)
-				if(!bullethit(*it, ws, param))
+				if(!bulletHit(*it, ws, param))
 					return;
 		}
 #endif

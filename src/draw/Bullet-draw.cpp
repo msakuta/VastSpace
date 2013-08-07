@@ -254,7 +254,7 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 
 #define SQRT2P2 (M_SQRT2/2.)
 
-void Bullet::bulletkill(int hitground, const struct contact_info *ci){
+void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){
 	int j;
 	struct tent3d_line_list *tell = w->getTeline3d();
 	struct TefpolList *tepl = w->getTefpol3d();

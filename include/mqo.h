@@ -3,6 +3,7 @@
 /** \file
  * \brief Definition of Metasequoia model files (.mqo) loading functions and Model class.
  */
+#include "Model-forward.h"
 #include "export.h"
 #include "libmotion.h"
 

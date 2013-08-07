@@ -326,6 +326,9 @@
     <ClInclude Include="..\include\ModelEntity.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Model-forward.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

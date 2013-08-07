@@ -3,6 +3,7 @@
  */
 #ifndef APACHE_H
 #define APACHE_H
+#include "Model-forward.h"
 #include "ModelEntity.h"
 
 
@@ -58,6 +59,7 @@ protected:
 	void init();
 	void find_enemy_logic();
 
+	static Model *model;
 	static double modelScale;
 	static double defaultMass;
 	static double maxHealthValue;

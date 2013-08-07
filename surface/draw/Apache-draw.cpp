@@ -21,7 +21,6 @@ void Apache::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-	static Model *model = NULL;
 	static Motion *rotorxMotion = NULL;
 	static Motion *rotorzMotion = NULL;
 	static Motion *rotorMotion = NULL;

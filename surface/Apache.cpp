@@ -45,6 +45,7 @@ extern "C"{
 
 Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
 
+Model *Apache::model = NULL;
 double Apache::modelScale = 0.00001;
 double Apache::defaultMass = 5000.;
 double Apache::maxHealthValue = 100.;

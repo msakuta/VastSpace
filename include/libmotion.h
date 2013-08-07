@@ -8,8 +8,11 @@
  * manage memory usage of containers, compared to the class library's
  * predecessor, ysdnm.
  *
- * Planned to be usable by C sources.
+ * // Planned to be usable by C sources.
+ * Update: No, we won't make it usable from C.
  */
+
+#include "Motion-forward.h"
 
 #ifdef __cplusplus
 extern "C"{

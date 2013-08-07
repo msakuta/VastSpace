@@ -270,6 +270,7 @@
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\Model-forward.h" />
     <ClInclude Include="..\include\ModelEntity.h" />
+    <ClInclude Include="..\include\Motion-forward.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

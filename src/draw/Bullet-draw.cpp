@@ -1,4 +1,9 @@
+/** \file
+ * \brief Implementation of Bullet nad ExplosiveBullet's graphical aspects.
+ */
+#define NOMINMAX
 #include "Bullet.h"
+#include "ExplosiveBullet.h"
 #include "CoordSys.h"
 #include "astro.h"
 #include "Player.h"
@@ -254,7 +259,7 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 
 #define SQRT2P2 (M_SQRT2/2.)
 
-void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){
+void Bullet::bulletDeathEffect(int hitground, const contact_info *ci){
 	int j;
 	struct tent3d_line_list *tell = w->getTeline3d();
 	struct TefpolList *tepl = w->getTefpol3d();
@@ -297,48 +302,7 @@ void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){
 		}
 	}
 	if(/*pb->vft == &ExplosiveBullet_s || */30. < damage){
-		Entity *pt;
-		Vec3d pos;
-		Vec3d accel;
-		Vec3d gravity = w->accel(this->pos, avec3_000);
-
-		pos = this->pos;
-		if(ci)
-			pos += ci->normal * ci->depth;
-
-/*		for(pt = w->el; pt; pt = pt->next) if(pt->w != w && (pos - pt->pos).slen() < damage * damage / 20000. / 20000.){
-			makedamage(pb, pt, w, (pb->damage * pb->damage / 20000. / 20000. - VECSDIST(pos, pt->pos)) * 20000. * 20000. / pb->damage, 0);
-		}*/
-
-		if(30. < damage) for(j = 0; j < 5; j++){
-			double velo[3];
-			velo[0] = .05 * (drseq(&w->rs) - .5);
-			velo[1] = .05 * (drseq(&w->rs) - .5);
-			velo[2] = .05 * (drseq(&w->rs) - .5);
-			AddTeline3D(tell, pos, velo, .001, quat_u, vec3_000, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
-		}
-
-		if(30. < damage && ci){
-			Vec3d dr, v;
-			Quatd q;
-			Mat4d mat;
-			double p;
-			dr = ci->normal.norm();
-
-			/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
-			q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
-
-			v = vec3_001.vp(dr);
-			p = sqrt(1. - q[3] * q[3]) / v.len();
-			q = v * p;
-			AddTeline3D(tell, pos, vec3_000, .01, q, vec3_000, vec3_000, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
-		}
-
-/*		if(0 < hitground && w->wmd){
-			double pos[2] = {pb->pos[0], pb->pos[2]};
-			AddWarmapDecal(w->wmd, pos, (void*)4);
-		}*/
-		AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000. + .003, quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
+		explosionEffect(ci);
 	}
 #if 0
 	else if(pb->vft != &ShotgunBullet_s || rseq(&w->rs) % 8 == 0/*VECSDIST(pb->pos, w->pl->pos) < .05*/){
@@ -398,6 +362,52 @@ void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){
 		playMemoryWave3D(&wave[ofs], sizeof wave - ofs, 0, pb->pos, w->pl->pos, w->pl->pyr, .5, .01 * .01 * pb->damage, w->realtime);
 	}
 #endif
+}
+
+void Bullet::explosionEffect(const contact_info *ci){
+	struct tent3d_line_list *tell = w->getTeline3d();
+	Entity *pt;
+	Vec3d pos;
+	Vec3d accel;
+	Vec3d gravity = w->accel(this->pos, avec3_000);
+
+	pos = this->pos;
+	if(ci)
+		pos += ci->normal * ci->depth;
+
+/*		for(pt = w->el; pt; pt = pt->next) if(pt->w != w && (pos - pt->pos).slen() < damage * damage / 20000. / 20000.){
+		makedamage(pb, pt, w, (pb->damage * pb->damage / 20000. / 20000. - VECSDIST(pos, pt->pos)) * 20000. * 20000. / pb->damage, 0);
+	}*/
+
+	if(30. < damage) for(int j = 0; j < 5; j++){
+		double velo[3];
+		velo[0] = .05 * (drseq(&w->rs) - .5);
+		velo[1] = .05 * (drseq(&w->rs) - .5);
+		velo[2] = .05 * (drseq(&w->rs) - .5);
+		AddTeline3D(tell, pos, velo, .001, quat_u, vec3_000, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
+	}
+
+	if(30. < damage && ci){
+		Vec3d dr, v;
+		Quatd q;
+		Mat4d mat;
+		double p;
+		dr = ci->normal.norm();
+
+		/* half-angle formula of trigonometry replaces expensive tri-functions to square root */
+		q[3] = sqrt((dr[2] + 1.) / 2.) /*cos(acos(dr[2]) / 2.)*/;
+
+		v = vec3_001.vp(dr);
+		p = sqrt(1. - q[3] * q[3]) / v.len();
+		q = v * p;
+		AddTeline3D(tell, pos, vec3_000, .01, q, vec3_000, vec3_000, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
+	}
+
+/*		if(0 < hitground && w->wmd){
+		double pos[2] = {pb->pos[0], pb->pos[2]};
+		AddWarmapDecal(w->wmd, pos, (void*)4);
+	}*/
+	AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000. + .003, quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
 }
 
 
@@ -499,3 +509,34 @@ void Bullet::drawtra(wardraw_t *wd){
 	}
 }
 
+
+//-----------------------------------------------------------------------------
+//	ExplosiveBullet implementation
+//-----------------------------------------------------------------------------
+
+void ExplosiveBullet::drawtra(WarDraw *wd){
+	double length = (this->velo.slen() * 5 * 5 + 20) * 0.0015;
+	double width = 0.001;
+
+	double f = 2. * this->velo.len() * length;
+	double span = std::min(f, .1);
+	length *= span / f;
+
+	if(wd->vw->gc->cullFrustum(this->pos, span))
+		return;
+	double scale = fabs(wd->vw->gc->scale(this->pos));
+	double pixels = span * scale;
+	if(pixels < 2)
+		return;
+
+	double wpix = width * scale / 2.;
+
+	if(0.1 < wpix){
+		glColor4ub(191,127,95,32);
+		gldGradBeam(wd->vw->pos, this->pos, this->pos + this->velo * -length, width, COLOR32RGBA(127,0,0,0));
+	}
+}
+
+void ExplosiveBullet::bulletDeathEffect(int hitground, const struct contact_info *ci){
+	explosionEffect(ci);
+}

@@ -6,6 +6,7 @@
 #include "Entity.h"
 
 struct otjEnumHitSphereParam;
+struct contact_info;
 
 /// \brief An Entity representing traveling projectile, damages another Entity if hit.
 ///
@@ -43,8 +44,9 @@ public:
 
 	double getDamage()const{return damage;}
 protected:
-	virtual void bulletDeathEffect(int hitground, const struct contact_info *ci);
+	virtual void bulletDeathEffect(int hitground, const contact_info *ci);
 	virtual bool bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);
+	void explosionEffect(const contact_info *ci);
 };
 
 

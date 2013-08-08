@@ -1011,6 +1011,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\ExplosiveBullet.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\export.h"
 				>
 			</File>

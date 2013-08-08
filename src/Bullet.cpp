@@ -1,4 +1,8 @@
+/** \file
+ * \brief Implementation of Bullet and Explosive Bullet classes.
+ */
 #include "Bullet.h"
+#include "ExplosiveBullet.h"
 #include "CoordSys.h"
 #include "astro.h"
 #include "Player.h"
@@ -592,3 +596,9 @@ void Bullet::bulletkill(int hitground, const struct contact_info *ci){}
 bool Bullet::isTargettable()const{
 	return false;
 }
+
+
+#ifdef DEDICATED
+void ExplosiveBullet::drawtra(WarDraw *){}
+void ExplosiveBullet::bulletDeathEffect(int hitground, const struct contact_info *ci){}
+#endif

@@ -332,6 +332,12 @@
     <ClInclude Include="..\include\Motion-forward.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Bullet.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ExplosiveBullet.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

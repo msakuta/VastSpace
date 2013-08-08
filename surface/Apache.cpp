@@ -3,7 +3,7 @@
  */
 #include "Apache.h"
 #include "Player.h"
-#include "Bullet.h"
+#include "ExplosiveBullet.h"
 #include "tent3d.h"
 //#include "island3.h"
 //#include "aim9.h"
@@ -550,7 +550,7 @@ int Apache::shootChainGun(double dt){
 				.rotx(gun[0] + (rs.nextd() - .5) * variance)
 				.roty(gun[1] + (rs.nextd() - .5) * variance);
 
-			Bullet *pb = new Bullet(this, chainGunLife, chainGunDamage);
+			Bullet *pb = new ExplosiveBullet(this, chainGunLife, chainGunDamage);
 			w->addent(pb);
 			Vec3d nh = rmat.dvp3(nh0).norm();
 			pb->velo = this->velo + nh * chainGunMuzzleSpeed;
@@ -589,3 +589,10 @@ int Apache::shootChainGun(double dt){
 	}
 	return ret;
 }
+
+#ifdef DEDICATED
+void Apache::draw(WarDraw *){}
+void Apache::drawtra(WarDraw *){}
+void Apache::drawHUD(WarDraw *){}
+void Apache::drawCockpit(WarDraw *){}
+#endif

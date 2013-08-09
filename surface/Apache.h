@@ -25,6 +25,7 @@ public:
 	void drawtra(WarDraw *wd)override;
 	void drawHUD(WarDraw *)override;
 	void drawCockpit(WarDraw *)override;
+	void drawOverlay(WarDraw *)override;
 	int takedamage(double damage, int hitpart)override;
 	const char *idname()const override{return "apache";}
 	const char *classname()const override{return "Apache";}
@@ -79,6 +80,7 @@ protected:
 	static double hydraDamage;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
+	static GLuint overlayDisp;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();

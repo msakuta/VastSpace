@@ -185,6 +185,10 @@ void Apache::drawCockpit(WarDraw *wd){
 
 }
 
+void Apache::drawOverlay(WarDraw *){
+	glCallList(overlayDisp);
+}
+
 void Apache::gunMotion(MotionPose *mp){
 	static Motion *gunYawMotion = NULL;
 	static Motion *gunPitchMotion = NULL;

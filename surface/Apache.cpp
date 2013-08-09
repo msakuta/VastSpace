@@ -60,6 +60,7 @@ double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
+GLuint Apache::overlayDisp = 0;
 
 
 void Apache::init(){
@@ -81,7 +82,8 @@ void Apache::init(){
 			SingleDoubleProcess(chainGunLife, "chainGunLife") <<=
 			SingleDoubleProcess(hydraDamage, "hydraDamage") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
-			HitboxProcess(hitboxes));
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}
 	int i;

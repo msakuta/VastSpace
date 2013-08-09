@@ -17,6 +17,9 @@
 #include "motion.h"
 #include "SurfaceCS.h"
 #include "btadapt.h"
+#ifndef DEDICATED
+#include "tefpol3d.h"
+#endif
 extern "C"{
 #include <clib/cfloat.h>
 }
@@ -54,6 +57,7 @@ double Apache::chainGunMuzzleSpeed = 1.;
 double Apache::chainGunDamage = 30.;
 double Apache::chainGunVariance = 0.015;
 double Apache::chainGunLife = 5.;
+double Apache::hydraDamage = 300.;
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 
@@ -75,6 +79,7 @@ void Apache::init(){
 			SingleDoubleProcess(chainGunDamage, "chainGunDamage") <<=
 			SingleDoubleProcess(chainGunVariance, "chainGunVariance") <<=
 			SingleDoubleProcess(chainGunLife, "chainGunLife") <<=
+			SingleDoubleProcess(hydraDamage, "hydraDamage") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
@@ -187,6 +192,11 @@ void Apache::control(const input_t *inputs, double dt){
 				enemy = target;
 			}
 		}
+	}
+
+	// Switch weapons
+	if(inputs->change & inputs->press & PL_RCLICK){
+		weapon = (weapon + 1) % 2;
 	}
 }
 
@@ -365,7 +375,10 @@ void Apache::anim(double dt){
 				tail = approach(tail, 0., tailRotorSpeed * dt, 5.);
 		}
 
-		shootChainGun(dt);
+		if(weapon == 0)
+			shootChainGun(dt);
+		else
+			shootHydraRocket(dt);
 	}
 	else{
 		throttle = approach(throttle, 0., .2 * dt, 5.);
@@ -531,7 +544,6 @@ bool Apache::buildBody(){
 /// \returns Count of bullets shot in this frame
 int Apache::shootChainGun(double dt){
 	static const Vec3d pos0(0., -0.0012, -.0032), nh0(0., 0., -1.), xh0(1., 0., 0.);
-	avec3_t pos;
 	double phi, theta;
 	double scale = modelScale;
 	double variance = chainGunVariance;
@@ -590,9 +602,118 @@ int Apache::shootChainGun(double dt){
 	return ret;
 }
 
+/// \brief Try to shoot hydra-70 unguided high-explosive rockets.
+/// \returns Count of rockets shot in this frame
+int Apache::shootHydraRocket(double dt){
+	static const Vec3d nh0(0., 0., -1.), xh0(1., 0., 0.);
+	static const Vec3d pos0[2] = {
+		Vec3d(0.002, -0.0012, -.0032), Vec3d(-0.002, -0.0012, -.0032)
+	};
+	double phi, theta;
+	double scale = modelScale;
+	double variance = chainGunVariance;
+	int ret = 0;
+
+	Mat4d mat;
+	transform(mat);
+
+//	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
+	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
+		while(0 < hydras && cooldown < dt){
+
+			double t = w->war_time() + cooldown;
+			RandomSequence rs(crc32(&t, sizeof t));
+			Mat4d rmat = mat.translate(pos0[hydras % 2]);
+
+			Bullet *pb = new HydraRocket(this, 10., hydraDamage);
+			Vec3d nh = rmat.dvp3(nh0).norm();
+			Vec3d pos = rmat.vec3(3);
+			Vec3d velo = this->velo + nh * 0.1;
+			pb->setPosition(&pos, &rot, &velo);
+			pb->mass = 6.2;
+			Vec3d dr = pb->pos - this->pos;
+			Vec3d momentum = pb->velo * -pb->mass;
+			if(bbody)
+				bbody->applyImpulse(btvc(momentum), btvc(dr));
+	//		else
+	//			RigidAddMomentum(pt, dr, momentum);
+			w->addent(pb);
+			pb->anim(dt - cooldown);
+			cooldown += 0.5;
+			ret++;
+
+			this->hydras--;
+		}
+	}
+	return ret;
+}
+
 #ifdef DEDICATED
 void Apache::draw(WarDraw *){}
 void Apache::drawtra(WarDraw *){}
 void Apache::drawHUD(WarDraw *){}
 void Apache::drawCockpit(WarDraw *){}
 #endif
+
+
+
+//-----------------------------------------------------------------------------
+//	HydraRocket implementation
+//-----------------------------------------------------------------------------
+
+#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
+static const struct color_node cnl_firetrail[] = {
+	{0.05, COLOR32RGBA(255, 255, 212, 0)},
+	{0.05, COLOR32RGBA(255, 191, 191, 255)},
+	{0.4, COLOR32RGBA(111, 111, 111, 255)},
+	{0.3, COLOR32RGBA(63, 63, 63, 127)},
+};
+const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
+
+void HydraRocket::anim(double dt){
+	if(0. < fuel){
+		static const double accel = .20;
+		double delta[3], dist;
+		int flying = 0;
+
+		Vec3d forward = -rot.trans(vec3_001);
+
+		double burnt = dt * accel * 300. / damage/** (flying ? 3 : 1)*/;
+		double thrust = mass / 10. * burnt / (1. + fuel / 20.)/* / dist*/;
+		velo += forward * thrust;
+		fuel -= burnt;
+	}
+
+	commonUpdate(dt);
+	st::anim(dt);
+}
+
+void HydraRocket::clientUpdate(double dt){
+	commonUpdate(dt);
+}
+
+void HydraRocket::enterField(WarField *w){
+#ifndef DEDICATED
+	WarSpace *ws = *w;
+	if(ws && game->isClient())
+		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);
+	else
+		pf = NULL;
+#endif
+}
+
+void HydraRocket::leaveField(WarField *w){
+#ifndef DEDICATED
+	if(pf){
+		pf->immobilize();
+		pf = NULL;
+	}
+#endif
+}
+
+void HydraRocket::commonUpdate(double dt){
+#ifndef DEDICATED
+	if(pf)
+		pf->move(pos, vec3_000, cs_firetrail.t, 0);
+#endif
+}

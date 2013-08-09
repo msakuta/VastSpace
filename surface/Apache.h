@@ -6,6 +6,7 @@
 #include "ModelEntity.h"
 #include "Model-forward.h"
 #include "Motion-forward.h"
+#include "Bullet.h"
 
 
 /// \brief AH-64 Apache attack helicopter
@@ -75,15 +76,40 @@ protected:
 	static double chainGunDamage; ///< Bullet damage for each chain gun round.
 	static double chainGunVariance; ///< Chain gun variance (inverse accuracy) in cosine angles.
 	static double chainGunLife; ///< Time before shot bullet disappear
+	static double hydraDamage;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();
 	int shootChainGun(double dt);
+	int shootHydraRocket(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
 };
 
+/// \brief Hydra-70 unguided rocket.
+class HydraRocket : public Bullet{
+public:
+	typedef Bullet st;
+	HydraRocket(Game *game) : st(game), pf(NULL), fuel(3.){}
+	HydraRocket(Entity *owner, float life, double damage) :
+		st(owner, life, damage), pf(NULL), fuel(3.){}
+	void anim(double dt)override;
+	void clientUpdate(double dt)override;
+	void draw(WarDraw *wd)override;
+	void drawtra(WarDraw *wd)override;
+	void enterField(WarField*)override;
+	void leaveField(WarField*)override;
+
+protected:
+	static const double modelScale;
+
+	Tefpol *pf;
+	double fuel;
+
+	void commonUpdate(double dt);
+	void bulletDeathEffect(int hitground, const struct contact_info *ci)override;
+};
 
 
 #endif

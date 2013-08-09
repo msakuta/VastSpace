@@ -20,6 +20,8 @@ chainGunDamage <- 30.0; ///< Bullet damage for each chain gun round.
 chainGunVariance <- 0.015; ///< Chain gun variance (inverse accuracy) in cosine angles.
 chainGunLife <- 5.; ///< Time before shot bullet disappear
 
+hydraDamage <- 300.0;
+
 cockpitOfs <- Vec3d(0., 0.0008, -0.0022);
 
 hitbox <- [

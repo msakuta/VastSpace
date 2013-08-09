@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of Apache's graphics.
  */
+#define NOMINMAX
 #include "../Apache.h"
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
@@ -198,4 +199,73 @@ void Apache::gunMotion(MotionPose *mp){
 	gunYawMotion->interpolate(mp[0], gun[1] / (M_PI) * 20. + 10.);
 	gunPitchMotion->interpolate(mp[1], -gun[0] / (M_PI) * 20. + 10.);
 	mp[0].next = &mp[1];
+}
+
+
+
+//-----------------------------------------------------------------------------
+//	HydraRocket implementation
+//-----------------------------------------------------------------------------
+
+const double HydraRocket::modelScale = 1e-6;
+
+void HydraRocket::draw(WarDraw *wd){
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(this->pos, .003))
+		return;
+	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	if(pixels < 2)
+		return;
+	wd->lightdraws++;
+
+	static Model *model = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init) do{
+		model = LoadMQOModel(Apache::modPath() << "models/hydra.mqo");
+		init.create(*openGLState);
+	} while(0);
+
+	if(!model)
+		return;
+
+	glPushMatrix();
+
+	Mat4d mat;
+	transform(mat);
+	glMultMatrixd(mat);
+
+	glScaled(-modelScale, modelScale, -modelScale);
+
+	DrawMQOPose(model, NULL);
+
+	glPopMatrix();
+
+}
+
+void HydraRocket::drawtra(WarDraw *wd){
+	double length = (this->velo.slen() * 5 * 5 + 20) * 0.0015;
+	double width = 0.001;
+
+	double f = 2. * this->velo.len() * length;
+	double span = std::min(f, .1);
+	length *= span / f;
+
+	if(wd->vw->gc->cullFrustum(this->pos, span))
+		return;
+	double scale = fabs(wd->vw->gc->scale(this->pos));
+	double pixels = span * scale;
+	if(pixels < 2)
+		return;
+
+	double wpix = width * scale / 2.;
+
+	if(0.1 < wpix){
+		glColor4ub(191,127,95,255);
+		gldGradBeam(wd->vw->pos, this->pos, this->pos + this->velo * -length, width, COLOR32RGBA(127,0,0,0));
+	}
+}
+
+void HydraRocket::bulletDeathEffect(int hitground, const struct contact_info *ci){
+	explosionEffect(ci);
 }

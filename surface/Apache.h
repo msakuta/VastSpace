@@ -40,6 +40,8 @@ public:
 
 	static gltestp::dstring modPath(){return "surface/";}
 protected:
+	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
+	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
 	short bbodyGroup()const override{return 1<<2;}
 	short bbodyMask()const override{return 1<<2;}
 
@@ -78,6 +80,7 @@ protected:
 	static double chainGunVariance; ///< Chain gun variance (inverse accuracy) in cosine angles.
 	static double chainGunLife; ///< Time before shot bullet disappear
 	static double hydraDamage;
+	static HSQOBJECT sqHydraFire;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
@@ -93,7 +96,9 @@ protected:
 class HydraRocket : public Bullet{
 public:
 	typedef Bullet st;
+	static EntityRegister<HydraRocket> entityRegister;
 	HydraRocket(Game *game) : st(game), pf(NULL), fuel(3.){}
+	HydraRocket(WarField *w);
 	HydraRocket(Entity *owner, float life, double damage) :
 		st(owner, life, damage), pf(NULL), fuel(3.){}
 	void anim(double dt)override;

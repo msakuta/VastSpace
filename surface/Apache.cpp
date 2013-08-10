@@ -17,6 +17,7 @@
 #include "motion.h"
 #include "SurfaceCS.h"
 #include "btadapt.h"
+#include "sqadapt.h"
 #ifndef DEDICATED
 #include "tefpol3d.h"
 #endif
@@ -35,6 +36,37 @@ extern "C"{
 #define BULLETSPEED .08
 #define SONICSPEED .340
 #define WINGSPEED (.25 * M_PI)
+
+
+/// \brief Processes Squirrel callback function.
+class SqCallbackProcess : public SqInitProcess{
+public:
+	HSQOBJECT &value;
+	const SQChar *name;
+	bool mandatory;
+	SqCallbackProcess(HSQOBJECT &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM v)const override{
+		sq_pushstring(v, name, -1); // root string
+
+		if(SQ_FAILED(sq_get(v, -2))){ // root obj
+			if(mandatory)
+				throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+			else
+				return;
+		}
+		if(SQ_FAILED(sq_getstackobj(v, -1, &value)))
+			throw SQFError(gltestp::dstring(name) << _SC(" get failed"));
+		sq_addref(v, &value);
+		sq_poptop(v); // root
+	}
+};
+
+/// Returns Squirrel's null object.
+static HSQOBJECT sq_nullobj(){
+	HSQOBJECT ret;
+	sq_resetobject(&ret);
+	return ret;
+}
 
 
 
@@ -58,6 +90,7 @@ double Apache::chainGunDamage = 30.;
 double Apache::chainGunVariance = 0.015;
 double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
+HSQOBJECT Apache::sqHydraFire = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 GLuint Apache::overlayDisp = 0;
@@ -83,7 +116,8 @@ void Apache::init(){
 			SingleDoubleProcess(hydraDamage, "hydraDamage") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes) <<=
-			DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp) <<=
+			SqCallbackProcess(sqHydraFire, "hydraFire"));
 		initialized = true;
 	}
 	int i;
@@ -502,6 +536,46 @@ int Apache::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, 
 	return reti;
 }
 
+SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("cooldown"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushfloat(v, cooldown);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("hydras"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushinteger(v, hydras);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Apache::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("cooldown"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		cooldown = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("hydras"))){
+		SQInteger retint;
+		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
+			return SQ_ERROR;
+		hydras = int(retint);
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
 bool Apache::buildBody(){
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
@@ -616,36 +690,19 @@ int Apache::shootHydraRocket(double dt){
 	double variance = chainGunVariance;
 	int ret = 0;
 
+
 	Mat4d mat;
 	transform(mat);
 
 //	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
 	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
-		while(0 < hydras && cooldown < dt){
-
-			double t = w->war_time() + cooldown;
-			RandomSequence rs(crc32(&t, sizeof t));
-			Mat4d rmat = mat.translate(pos0[hydras % 2]);
-
-			Bullet *pb = new HydraRocket(this, 10., hydraDamage);
-			Vec3d nh = rmat.dvp3(nh0).norm();
-			Vec3d pos = rmat.vec3(3);
-			Vec3d velo = this->velo + nh * 0.1;
-			pb->setPosition(&pos, &rot, &velo);
-			pb->mass = 6.2;
-			Vec3d dr = pb->pos - this->pos;
-			Vec3d momentum = pb->velo * -pb->mass;
-			if(bbody)
-				bbody->applyImpulse(btvc(momentum), btvc(dr));
-	//		else
-	//			RigidAddMomentum(pt, dr, momentum);
-			w->addent(pb);
-			pb->anim(dt - cooldown);
-			cooldown += 0.5;
-			ret++;
-
-			this->hydras--;
-		}
+		HSQUIRRELVM v =game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqHydraFire);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		sq_pushfloat(v, dt);
+		sq_call(v, 3, SQFalse, SQTrue);
 	}
 	return ret;
 }
@@ -672,6 +729,12 @@ static const struct color_node cnl_firetrail[] = {
 };
 const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32)-1, .8);
 
+Entity::EntityRegister<HydraRocket> HydraRocket::entityRegister("HydraRocket");
+
+HydraRocket::HydraRocket(WarField *w) : st(w), pf(NULL), fuel(3.){
+	mass = 6.2;
+}
+
 void HydraRocket::anim(double dt){
 	if(0. < fuel){
 		static const double accel = .20;
@@ -696,11 +759,6 @@ void HydraRocket::clientUpdate(double dt){
 
 void HydraRocket::enterField(WarField *w){
 #ifndef DEDICATED
-	WarSpace *ws = *w;
-	if(ws && game->isClient())
-		pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);
-	else
-		pf = NULL;
 #endif
 }
 
@@ -717,5 +775,13 @@ void HydraRocket::commonUpdate(double dt){
 #ifndef DEDICATED
 	if(pf)
 		pf->move(pos, vec3_000, cs_firetrail.t, 0);
+	else{
+		// Moved from enterField() because enterField() can be called before position is initialized
+		WarSpace *ws = *w;
+		if(ws && game->isClient())
+			pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);
+		else
+			pf = NULL;
+	}
 #endif
 }

@@ -338,6 +338,12 @@
     <ClInclude Include="..\include\ExplosiveBullet.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\SqInitProcess-ex.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SqInitProcess.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

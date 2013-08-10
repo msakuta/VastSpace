@@ -28,6 +28,7 @@ protected:
 	bool active; ///< Client-side flag indicating if this object is alive in the client.
 public:
 	Bullet(Game *game) : st(game), active(true){}
+	Bullet(WarField *w);
 	Bullet(Entity *owner, float life, double damage);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
@@ -44,6 +45,9 @@ public:
 
 	double getDamage()const{return damage;}
 protected:
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
 	virtual void bulletDeathEffect(int hitground, const contact_info *ci);
 	virtual bool bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param);
 	void explosionEffect(const contact_info *ci);

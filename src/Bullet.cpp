@@ -15,6 +15,9 @@ extern "C"{
 }
 
 
+Bullet::Bullet(WarField *w) : st(w), owner(NULL), damage(0), grav(true), life(1.), runlength(0), active(true){
+}
+
 Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), owner(aowner), damage(adamage), grav(true), life(alife), runlength(0), active(true){
 	if(owner)
 		race = owner->race;
@@ -324,6 +327,62 @@ void Bullet::postframe(){
 		return;
 	if(owner && owner->w != w)
 		owner = NULL;
+}
+
+
+SQInteger Bullet::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("life"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushfloat(v, life);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("damage"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushfloat(v, damage);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("owner"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		Entity::sq_pushobj(v, owner);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Bullet::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("life"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		life = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("damage"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		damage = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("owner"))){
+		Entity *rete = Entity::sq_refobj(v, 3);
+		owner = rete;
+		if(owner) // Belong to owner's race
+			race = owner->race;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
 }
 
 #ifdef DEDICATED

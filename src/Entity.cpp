@@ -233,7 +233,11 @@ SQInteger Entity::sqf_Entity_get(HSQUIRRELVM v){
 }
 
 SQInteger Entity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
-	if(!strcmp(name, _SC("race"))){
+	if(!strcmp(name, _SC("cs"))){
+		CoordSys::sq_pushobj(v, const_cast<CoordSys*>(w->cs));
+		return 1;
+	}
+	else if(!strcmp(name, _SC("race"))){
 		sq_pushinteger(v, race);
 		return 1;
 	}

@@ -1449,7 +1449,11 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 		w = new WarSpace(p);
 	Entity *pt = Entity::create(arg, w);
 	if(pt){
-		pt->setPosition(&pos);
+		// Pass zero defaults to avoid accidental uninitialized values
+		const Quatd rot = quat_u;
+		const Vec3d velo(0,0,0);
+		const Vec3d omg(0,0,0);
+		pt->setPosition(&pos, &rot, &velo, &omg);
 /*		pt->pos = pos;
 		if(pt->bbody){
 			btTransform trans;

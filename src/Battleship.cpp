@@ -6,6 +6,7 @@
 #include "draw/effects.h"
 #include "motion.h"
 #include "LTurret.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 }

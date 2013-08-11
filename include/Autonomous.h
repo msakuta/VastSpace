@@ -15,8 +15,6 @@ typedef unsigned int GLuint;
 #endif
 
 
-struct hardpoint_static;
-
 /* List of spaceship tasks that all types of ship share. */
 enum sship_task{
 	sship_idle, /* Approach to stationary orbit; relative velocity zero against local coordsys. */
@@ -109,12 +107,6 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-	class EXPORT HardPointProcess : public SqInitProcess{
-	public:
-		std::vector<hardpoint_static*> &hardpoints;
-		HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
-		virtual void process(HSQUIRRELVM)const;
-	};
 
 
 private:

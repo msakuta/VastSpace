@@ -20,6 +20,7 @@
 #include "libmotion.h"
 #include "sqadapt.h"
 #include "GetFov.h"
+#include "SqInitProcess-ex.h"
 
 extern "C"{
 #include <clib/mathdef.h>

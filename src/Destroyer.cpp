@@ -6,6 +6,7 @@
 #include "serial_util.h"
 #include "EntityCommand.h"
 #include "btadapt.h"
+#include "SqInitProcess-ex.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #endif

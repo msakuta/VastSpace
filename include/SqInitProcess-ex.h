@@ -19,5 +19,14 @@ public:
 	void process(HSQUIRRELVM)const override;
 };
 
+struct hardpoint_static;
+
+
+class EXPORT HardPointProcess : public SqInitProcess{
+public:
+	std::vector<hardpoint_static*> &hardpoints;
+	HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
+	virtual void process(HSQUIRRELVM)const;
+};
 
 #endif

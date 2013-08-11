@@ -13,6 +13,7 @@
 #include "sqadapt.h"
 #include "motion.h"
 #include "Game.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 }

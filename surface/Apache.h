@@ -7,6 +7,7 @@
 #include "Model-forward.h"
 #include "Motion-forward.h"
 #include "Bullet.h"
+#include "arms.h"
 
 
 /// \brief AH-64 Apache attack helicopter
@@ -49,9 +50,8 @@ protected:
 	double throttle, feather, tail;
 	double cooldown;
 	double cooldown2;
-/*	apachearms arms[numof(arms_s)];*/
-//	arms_t arms[7];
-//	shieldw_t *sw;
+	typedef ObservableList<ArmBase> ArmList;
+	ArmList arms;
 	int weapon;
 	int ammo_chaingun;
 	int hellfires;
@@ -84,12 +84,15 @@ protected:
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
+	static std::vector<hardpoint_static*> hardpoints;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();
 	int shootChainGun(double dt);
 	int shootHydraRocket(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
+
+	friend class HydraRocketLauncher;
 };
 
 /// \brief Hydra-70 unguided rocket.
@@ -118,5 +121,16 @@ protected:
 	void bulletDeathEffect(int hitground, const struct contact_info *ci)override;
 };
 
+/// \brief M261, a Hydra-70 rocket launcher mounted on attack helicopters.
+class HydraRocketLauncher : public ArmBase{
+public:
+	typedef ArmBase st;
+	HydraRocketLauncher(Game *game) : st(game), cooldown(0.){}
+	HydraRocketLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.){}
+	void anim(double dt)override;
+	void draw(WarDraw *)override;
+protected:
+	double cooldown;
+};
 
 #endif

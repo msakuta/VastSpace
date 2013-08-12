@@ -273,3 +273,43 @@ void HydraRocket::drawtra(WarDraw *wd){
 void HydraRocket::bulletDeathEffect(int hitground, const struct contact_info *ci){
 	explosionEffect(ci);
 }
+
+//-----------------------------------------------------------------------------
+//	HydraRocketLauncher implementation
+//-----------------------------------------------------------------------------
+
+void HydraRocketLauncher::draw(WarDraw *wd){
+	/* cull object */
+	if(wd->vw->gc->cullFrustum(this->pos, .003))
+		return;
+	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	if(pixels < 2)
+		return;
+	wd->lightdraws++;
+
+	static Model *model = NULL;
+
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init) do{
+		model = LoadMQOModel(Apache::modPath() << "models/hydralauncher.mqo");
+		init.create(*openGLState);
+	} while(0);
+
+	if(!model)
+		return;
+
+	static const double modelScale = Apache::modelScale;
+
+	glPushMatrix();
+
+	Mat4d mat;
+	transform(mat);
+	glMultMatrixd(mat);
+
+	glScaled(-modelScale, modelScale, -modelScale);
+
+	DrawMQOPose(model, NULL);
+
+	glPopMatrix();
+
+}

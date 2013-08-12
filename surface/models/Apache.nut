@@ -60,6 +60,18 @@ function hydraFire(e,dt){
 	}
 }
 
+local rot0 = Quatd(0,0,0,1);
+
+hardpoints <- [
+	{pos = Vec3d(-200, -80, 0) * modelScale, rot = rot0, name = "Inner Wing L"},
+	{pos = Vec3d( 200, -80, 0) * modelScale, rot = rot0, name = "Inner Wing R"},
+	{pos = Vec3d(-300, -80, 0) * modelScale, rot = rot0, name = "Outer Wing L"},
+	{pos = Vec3d( 300, -80, 0) * modelScale, rot = rot0, name = "Outer Wing R"},
+	{pos = Vec3d(-380, -40, 0) * modelScale, rot = rot0, name = "Wingtip L"},
+	{pos = Vec3d( 380, -40, 0) * modelScale, rot = rot0, name = "Wingtip R"},
+	{pos = Vec3d(   0, 250, 0) * modelScale, rot = rot0, name = "Rotor Hub"},
+];
+
 function drawOverlay(){
 	// Fuselage model
 	local points = [

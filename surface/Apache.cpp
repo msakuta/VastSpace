@@ -20,6 +20,7 @@
 #include "sqadapt.h"
 #ifndef DEDICATED
 #include "tefpol3d.h"
+#include "SqInitProcess-ex.h"
 #endif
 extern "C"{
 #include <clib/cfloat.h>
@@ -94,6 +95,7 @@ HSQOBJECT Apache::sqHydraFire = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 GLuint Apache::overlayDisp = 0;
+std::vector<hardpoint_static*> Apache::hardpoints;
 
 
 void Apache::init(){
@@ -117,7 +119,8 @@ void Apache::init(){
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
-			SqCallbackProcess(sqHydraFire, "hydraFire"));
+			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
+			HardPointProcess(hardpoints));
 		initialized = true;
 	}
 	int i;
@@ -141,7 +144,17 @@ void Apache::init(){
 	brk = 1;
 	navlight = 0;
 	mass = 5000.;
-//	memcpy(p->arms, apachearms_def, sizeof p->arms);
+
+	// Setup default configuration for arms
+	for(int i = 0; i < hardpoints.size(); i++){
+		ArmBase *arm = i < 2 ? new HydraRocketLauncher(this, hardpoints[i]) : NULL;
+		if(arm){
+			arms.push_back(arm);
+			if(w)
+				w->addent(arm);
+		}
+	}
+
 //	while(p->sw) ShieldWaveletFree(&p->sw);
 /*	for(i = 0; i < numof(p->sw); i++)
 		p->sw[i].phase = p->sw[i].amount = 0.;*/
@@ -488,6 +501,10 @@ void Apache::anim(double dt){
 		this->omg *= 1. / ((rate + .4) * dt + 1.);
 		this->velo *= 1. / ((rate + air * .1) * dt + 1.);
 	}
+
+	// Align belonging arms at the end of frame
+	for(ArmList::iterator it = arms.begin(); it != arms.end(); ++it) if(*it)
+		(*it)->align();
 }
 
 
@@ -784,4 +801,23 @@ void HydraRocket::commonUpdate(double dt){
 			pf = NULL;
 	}
 #endif
+}
+
+//-----------------------------------------------------------------------------
+//	HydraRocketLauncher implementation
+//-----------------------------------------------------------------------------
+
+void HydraRocketLauncher::anim(double dt){
+	if(!base || !base->w)
+		w = NULL;
+	if(!w)
+		return;
+
+	if(online){
+	}
+
+	if(cooldown < dt)
+		cooldown = 0.;
+	else
+		cooldown -= dt;
 }

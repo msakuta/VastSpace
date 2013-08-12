@@ -44,18 +44,18 @@ if(isClient()){
 }
 
 function hydraFire(e,dt){
-	local pos0 = [
-		Vec3d(0.002, -0.0012, -0.0032), Vec3d(-0.002, -0.0012, -0.0032)
-	];
 	while(0 < e.hydras && e.cooldown < dt){
 		print("Hello hydraFire " + e.hydras);
-		local pb = e.cs.addent("HydraRocket", e.getpos() + e.getrot().trans(pos0[e.hydras % 2]));
+		local arms = e.arms;
+		local i = e.hydras % arms.len();
+		local arm = arms[i];
+		local pb = e.cs.addent("HydraRocket", arm.getpos());
 		pb.owner = e;
 		pb.life = 10;
 		pb.damage = 300;
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
-		e.cooldown += 0.5;
+		e.cooldown += 1. / arms.len();
 		e.hydras--;
 	}
 }
@@ -70,6 +70,11 @@ hardpoints <- [
 	{pos = Vec3d(-380, -40, 0) * modelScale, rot = rot0, name = "Wingtip L"},
 	{pos = Vec3d( 380, -40, 0) * modelScale, rot = rot0, name = "Wingtip R"},
 	{pos = Vec3d(   0, 250, 0) * modelScale, rot = rot0, name = "Rotor Hub"},
+];
+
+/// Default equipment set for hardpoints
+defaultArms <- [
+	"HydraRocketLauncher", "HydraRocketLauncher",
 ];
 
 function drawOverlay(){

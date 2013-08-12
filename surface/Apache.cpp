@@ -20,7 +20,6 @@
 #include "sqadapt.h"
 #ifndef DEDICATED
 #include "tefpol3d.h"
-#include "SqInitProcess-ex.h"
 #endif
 extern "C"{
 #include <clib/cfloat.h>
@@ -96,6 +95,7 @@ Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 GLuint Apache::overlayDisp = 0;
 std::vector<hardpoint_static*> Apache::hardpoints;
+StringList Apache::defaultArms;
 
 
 void Apache::init(){
@@ -120,7 +120,8 @@ void Apache::init(){
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
-			HardPointProcess(hardpoints));
+			HardPointProcess(hardpoints) <<=
+			StringListProcess(defaultArms, "defaultArms"));
 		initialized = true;
 	}
 	int i;
@@ -136,7 +137,7 @@ void Apache::init(){
 	weapon = 0;
 	ammo_chaingun = 1200;
 	hellfires = 8;
-	hydras = 38;
+	hydras = 0;
 	aim9 = 2;
 	contact = 0;
 	muzzle = 0;
@@ -147,9 +148,10 @@ void Apache::init(){
 
 	// Setup default configuration for arms
 	for(int i = 0; i < hardpoints.size(); i++){
-		ArmBase *arm = i < 2 ? new HydraRocketLauncher(this, hardpoints[i]) : NULL;
+		ArmBase *arm = i < defaultArms.size() && defaultArms[i] == "HydraRocketLauncher" ? new HydraRocketLauncher(this, hardpoints[i]) : NULL;
 		if(arm){
 			arms.push_back(arm);
+			hydras += 19;
 			if(w)
 				w->addent(arm);
 		}
@@ -568,6 +570,31 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 			return 1;
 		}
 		sq_pushinteger(v, hydras);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("arms"))){
+		// Prepare an empty array in Squirrel VM for adding arms.
+		sq_newarray(v, 0); // array
+
+		// Retrieve library-provided "append" method for an array.
+		// We'll reuse the method for all the elements, which is not exactly the same way as
+		// an ordinally Squirrel codes evaluate.
+		sq_pushstring(v, _SC("append"), -1); // array "append"
+		if(SQ_FAILED(sq_get(v, -2))) // array array.append
+			return sq_throwerror(v, _SC("append not found"));
+
+		for(ArmList::const_iterator it = arms.begin(); it != arms.end(); it++){
+			ArmBase *arm = *it;
+			if(arm){
+				sq_push(v, -2); // array array.append array
+				Entity::sq_pushobj(v, arm); // array array.append array Entity-instance
+				sq_call(v, 2, SQFalse, SQFalse); // array array.append
+			}
+		}
+
+		// Pop the saved "append" method
+		sq_poptop(v); // array
+
 		return 1;
 	}
 	else

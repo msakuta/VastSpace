@@ -8,6 +8,7 @@
 #include "Motion-forward.h"
 #include "Bullet.h"
 #include "arms.h"
+#include "SqInitProcess-ex.h"
 
 
 /// \brief AH-64 Apache attack helicopter
@@ -85,6 +86,7 @@ protected:
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static std::vector<hardpoint_static*> hardpoints;
+	static StringList defaultArms;
 
 	static const HitBoxList &getHitBoxes(){return hitboxes;}
 	bool buildBody();

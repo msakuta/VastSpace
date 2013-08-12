@@ -2,3 +2,4 @@
 *.vcxproj merge=union
 *.sln merge=union
 *.txt text
+*.svg -text

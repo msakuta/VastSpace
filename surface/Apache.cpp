@@ -91,6 +91,7 @@ double Apache::chainGunVariance = 0.015;
 double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
 HSQOBJECT Apache::sqHydraFire = sq_nullobj();
+HSQOBJECT Apache::sqHellfireFire = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 GLuint Apache::overlayDisp = 0;
@@ -120,6 +121,7 @@ void Apache::init(){
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
+			SqCallbackProcess(sqHellfireFire, "hellfireFire") <<=
 			HardPointProcess(hardpoints) <<=
 			StringListProcess(defaultArms, "defaultArms"));
 		initialized = true;
@@ -148,7 +150,10 @@ void Apache::init(){
 
 	// Setup default configuration for arms
 	for(int i = 0; i < hardpoints.size(); i++){
-		ArmBase *arm = i < defaultArms.size() && defaultArms[i] == "HydraRocketLauncher" ? new HydraRocketLauncher(this, hardpoints[i]) : NULL;
+		if(defaultArms.size() <= i)
+			return;
+		ArmBase *arm = defaultArms[i] == "HydraRocketLauncher" ? (ArmBase*)new HydraRocketLauncher(this, hardpoints[i]) :
+			defaultArms[i] == "HellfireLauncher" ? (ArmBase*)new HellfireLauncher(this, hardpoints[i]) : NULL;
 		if(arm){
 			arms.push_back(arm);
 			hydras += 19;
@@ -247,7 +252,7 @@ void Apache::control(const input_t *inputs, double dt){
 
 	// Switch weapons
 	if(inputs->change & inputs->press & PL_RCLICK){
-		weapon = (weapon + 1) % 2;
+		weapon = (weapon + 1) % 3;
 	}
 }
 
@@ -428,8 +433,10 @@ void Apache::anim(double dt){
 
 		if(weapon == 0)
 			shootChainGun(dt);
-		else
+		else if(weapon == 1)
 			shootHydraRocket(dt);
+		else
+			shootHellfire(dt);
 	}
 	else{
 		throttle = approach(throttle, 0., .2 * dt, 5.);
@@ -572,6 +579,14 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushinteger(v, hydras);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("hellfires"))){
+		if(!this){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushinteger(v, hellfires);
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("arms"))){
 		// Prepare an empty array in Squirrel VM for adding arms.
 		sq_newarray(v, 0); // array
@@ -614,6 +629,13 @@ SQInteger Apache::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
 			return SQ_ERROR;
 		hydras = int(retint);
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("hellfires"))){
+		SQInteger retint;
+		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
+			return SQ_ERROR;
+		hellfires = int(retint);
 		return 0;
 	}
 	else
@@ -751,6 +773,23 @@ int Apache::shootHydraRocket(double dt){
 	return ret;
 }
 
+/// \brief Try to shoot hydra-70 unguided high-explosive rockets.
+/// \returns Count of rockets shot in this frame
+int Apache::shootHellfire(double dt){
+	int ret = 0;
+
+	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
+		HSQUIRRELVM v =game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqHellfireFire);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		sq_pushfloat(v, dt);
+		sq_call(v, 3, SQFalse, SQTrue);
+	}
+	return ret;
+}
+
 #ifdef DEDICATED
 void Apache::draw(WarDraw *){}
 void Apache::drawtra(WarDraw *){}
@@ -835,6 +874,84 @@ void HydraRocket::commonUpdate(double dt){
 //-----------------------------------------------------------------------------
 
 void HydraRocketLauncher::anim(double dt){
+	if(!base || !base->w)
+		w = NULL;
+	if(!w)
+		return;
+
+	if(online){
+	}
+
+	if(cooldown < dt)
+		cooldown = 0.;
+	else
+		cooldown -= dt;
+}
+
+//-----------------------------------------------------------------------------
+//	Hellfire implementation
+//-----------------------------------------------------------------------------
+
+Entity::EntityRegister<Hellfire> Hellfire::entityRegister("Hellfire");
+
+Hellfire::Hellfire(WarField *w) : st(w), pf(NULL), fuel(3.){
+	mass = 6.2;
+}
+
+void Hellfire::anim(double dt){
+	if(0. < fuel){
+		static const double accel = .20;
+		double delta[3], dist;
+		int flying = 0;
+
+		Vec3d forward = -rot.trans(vec3_001);
+
+		double burnt = dt * accel * 300. / damage/** (flying ? 3 : 1)*/;
+		double thrust = mass / 10. * burnt / (1. + fuel / 20.)/* / dist*/;
+		velo += forward * thrust;
+		fuel -= burnt;
+	}
+
+	commonUpdate(dt);
+	st::anim(dt);
+}
+
+void Hellfire::clientUpdate(double dt){
+	commonUpdate(dt);
+}
+
+void Hellfire::enterField(WarField *w){
+}
+
+void Hellfire::leaveField(WarField *w){
+#ifndef DEDICATED
+	if(pf){
+		pf->immobilize();
+		pf = NULL;
+	}
+#endif
+}
+
+void Hellfire::commonUpdate(double dt){
+#ifndef DEDICATED
+	if(pf)
+		pf->move(pos, vec3_000, cs_firetrail.t, 0);
+	else{
+		// Moved from enterField() because enterField() can be called before position is initialized
+		WarSpace *ws = *w;
+		if(ws && game->isClient())
+			pf = ws->tepl->addTefpolMovable(pos, velo, avec3_000, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);
+		else
+			pf = NULL;
+	}
+#endif
+}
+
+//-----------------------------------------------------------------------------
+//	HellfireLauncher implementation
+//-----------------------------------------------------------------------------
+
+void HellfireLauncher::anim(double dt){
 	if(!base || !base->w)
 		w = NULL;
 	if(!w)

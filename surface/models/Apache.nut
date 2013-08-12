@@ -47,16 +47,41 @@ function hydraFire(e,dt){
 	while(0 < e.hydras && e.cooldown < dt){
 		print("Hello hydraFire " + e.hydras);
 		local arms = e.arms;
-		local i = e.hydras % arms.len();
-		local arm = arms[i];
+		local launchers = [];
+		foreach(it in arms)
+			if(it.classname == "HellfireLauncher")
+				launchers.append(it);
+		local i = e.hydras % launchers.len();
+		local arm = launchers[i];
 		local pb = e.cs.addent("HydraRocket", arm.getpos());
 		pb.owner = e;
 		pb.life = 10;
 		pb.damage = 300;
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
-		e.cooldown += 1. / arms.len();
+		e.cooldown += 1. / launchers.len();
 		e.hydras--;
+	}
+}
+
+function hellfireFire(e,dt){
+	if(0 < e.hellfires && e.cooldown < dt){
+		print("Hello hellfireFire " + e.hellfires);
+		local arms = e.arms;
+		local launchers = [];
+		foreach(it in arms)
+			if(it.classname == "HellfireLauncher")
+				launchers.append(it);
+		local i = e.hellfires % launchers.len();
+		local arm = launchers[i];
+		local pb = e.cs.addent("Hellfire", arm.getpos());
+		pb.owner = e;
+		pb.life = 10;
+		pb.damage = 300;
+		pb.setrot(e.getrot());
+		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
+		e.cooldown += 1. / launchers.len();
+		e.hellfires--;
 	}
 }
 
@@ -74,7 +99,7 @@ hardpoints <- [
 
 /// Default equipment set for hardpoints
 defaultArms <- [
-	"HydraRocketLauncher", "HydraRocketLauncher",
+	"HydraRocketLauncher", "HydraRocketLauncher", "HellfireLauncher", "HellfireLauncher",
 ];
 
 function drawOverlay(){

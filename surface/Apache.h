@@ -82,6 +82,7 @@ protected:
 	static double chainGunLife; ///< Time before shot bullet disappear
 	static double hydraDamage;
 	static HSQOBJECT sqHydraFire;
+	static HSQOBJECT sqHellfireFire;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
@@ -92,6 +93,7 @@ protected:
 	bool buildBody();
 	int shootChainGun(double dt);
 	int shootHydraRocket(double dt);
+	int shootHellfire(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
 
 	friend class HydraRocketLauncher;
@@ -106,6 +108,7 @@ public:
 	HydraRocket(WarField *w);
 	HydraRocket(Entity *owner, float life, double damage) :
 		st(owner, life, damage), pf(NULL), fuel(3.){}
+	const char *classname()const override{return "HydraRocket";}
 	void anim(double dt)override;
 	void clientUpdate(double dt)override;
 	void draw(WarDraw *wd)override;
@@ -129,10 +132,56 @@ public:
 	typedef ArmBase st;
 	HydraRocketLauncher(Game *game) : st(game), cooldown(0.){}
 	HydraRocketLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.){}
+	const char *classname()const override{return "HydraRocketLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
 protected:
 	double cooldown;
 };
+
+/// \brief AGM-114 Hellfire air-to-surface missile.
+///
+/// http://en.wikipedia.org/wiki/AGM-114_Hellfire
+class Hellfire : public Bullet{
+public:
+	typedef Bullet st;
+	static EntityRegister<Hellfire> entityRegister;
+	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.){}
+	Hellfire(WarField *w);
+	Hellfire(Entity *owner, float life, double damage) :
+		st(owner, life, damage), pf(NULL), fuel(3.){}
+	const char *classname()const override{return "Hellfire";}
+	void anim(double dt)override;
+	void clientUpdate(double dt)override;
+	void draw(WarDraw *wd)override;
+	void drawtra(WarDraw *wd)override;
+	void enterField(WarField*)override;
+	void leaveField(WarField*)override;
+
+protected:
+	static const double modelScale;
+
+	Tefpol *pf;
+	double fuel;
+
+	void commonUpdate(double dt);
+	void bulletDeathEffect(int hitground, const struct contact_info *ci)override;
+
+	friend class HellfireLauncher;
+};
+
+/// \brief Hellfire launcher mounted on attack helicopters.
+class HellfireLauncher : public ArmBase{
+public:
+	typedef ArmBase st;
+	HellfireLauncher(Game *game) : st(game), cooldown(0.){}
+	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.){}
+	const char *classname()const override{return "HellfireLauncher";}
+	void anim(double dt)override;
+	void draw(WarDraw *)override;
+protected:
+	double cooldown;
+};
+
 
 #endif

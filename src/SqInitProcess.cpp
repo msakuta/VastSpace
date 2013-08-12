@@ -105,6 +105,33 @@ void StringProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v);
 }
 
+namespace sqinitproc{
+
+void StringListProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		// Report error only if desired values are necessary and lacking.
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
+	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		const SQChar *r;
+		sq_getstring(v, -1, &r);
+		value.push_back(r);
+		sq_poptop(v); // root obj obj[i]
+	}
+	sq_poptop(v); // root
+}
+
 void Vec3dListProcess::process(HSQUIRRELVM v)const{
 	sq_pushstring(v, name, -1); // root string
 
@@ -210,4 +237,6 @@ void HardPointProcess::process(HSQUIRRELVM v)const{
 		sq_poptop(v); // root obj
 	}
 	sq_poptop(v); // root
+}
+
 }

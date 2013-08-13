@@ -78,6 +78,7 @@ function hellfireFire(e,dt){
 		pb.owner = e;
 		pb.life = 10;
 		pb.damage = 300;
+		pb.target = e.enemy;
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
 		e.cooldown += 1. / launchers.len();

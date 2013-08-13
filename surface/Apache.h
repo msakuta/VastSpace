@@ -146,10 +146,10 @@ class Hellfire : public Bullet{
 public:
 	typedef Bullet st;
 	static EntityRegister<Hellfire> entityRegister;
-	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.){}
+	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.), target(NULL), centered(false){def[0] = def[1] = 0.;}
 	Hellfire(WarField *w);
 	Hellfire(Entity *owner, float life, double damage) :
-		st(owner, life, damage), pf(NULL), fuel(3.){}
+		st(owner, life, damage), pf(NULL), fuel(3.), target(NULL), centered(false){def[0] = def[1] = 0.;}
 	const char *classname()const override{return "Hellfire";}
 	void anim(double dt)override;
 	void clientUpdate(double dt)override;
@@ -159,10 +159,17 @@ public:
 	void leaveField(WarField*)override;
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
+	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
+
 	static const double modelScale;
 
 	Tefpol *pf;
 	double fuel;
+	WeakPtr<Entity> target;
+	double integral; ///< integrated term
+	double def[2]; ///< integrated deflection of each axes
+	bool centered; ///< target must be centered before integration starts
 
 	void commonUpdate(double dt);
 	void bulletDeathEffect(int hitground, const struct contact_info *ci)override;

@@ -24,7 +24,7 @@ bldg.modelFile = "surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
-local apache = player.cs.addent("Apache", Vec3d(0, 3, 2));
+local apache = player.cs.addent("Apache", Vec3d(0, 2, 4));
 player.chase = apache;
 
 cmd("pause 0");

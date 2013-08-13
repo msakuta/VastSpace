@@ -139,7 +139,6 @@ void Apache::init(){
 /*	p->armsmuzzle = 0;*/
 	weapon = 0;
 	ammo_chaingun = 1200;
-	hellfires = 8;
 	hydras = 0;
 	aim9 = 2;
 	contact = 0;
@@ -580,14 +579,6 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushinteger(v, hydras);
 		return 1;
 	}
-	else if(!scstrcmp(name, _SC("hellfires"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
-		sq_pushinteger(v, hellfires);
-		return 1;
-	}
 	else if(!scstrcmp(name, _SC("arms"))){
 		// Prepare an empty array in Squirrel VM for adding arms.
 		sq_newarray(v, 0); // array
@@ -630,13 +621,6 @@ SQInteger Apache::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
 			return SQ_ERROR;
 		hydras = int(retint);
-		return 0;
-	}
-	else if(!scstrcmp(name, _SC("hellfires"))){
-		SQInteger retint;
-		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
-			return SQ_ERROR;
-		hellfires = int(retint);
 		return 0;
 	}
 	else
@@ -1056,4 +1040,25 @@ void HellfireLauncher::anim(double dt){
 		cooldown = 0.;
 	else
 		cooldown -= dt;
+}
+
+SQInteger HellfireLauncher::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("ammo"))){
+		sq_pushfloat(v, ammo);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger HellfireLauncher::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("ammo"))){
+		SQInteger reti;
+		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
+			return SQ_ERROR;
+		ammo = reti;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
 }

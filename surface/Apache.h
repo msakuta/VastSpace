@@ -55,7 +55,6 @@ protected:
 	ArmList arms;
 	int weapon;
 	int ammo_chaingun;
-	int hellfires;
 	int aim9; /* AIM-9 Sidewinder */
 	int hydras;
 	int contact; /* contact state, not really necessary */
@@ -181,13 +180,17 @@ protected:
 class HellfireLauncher : public ArmBase{
 public:
 	typedef ArmBase st;
-	HellfireLauncher(Game *game) : st(game), cooldown(0.){}
-	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.){}
+	HellfireLauncher(Game *game) : st(game), cooldown(0.), ammo(4){}
+	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.), ammo(4){}
 	const char *classname()const override{return "HellfireLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
 protected:
+	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
+	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
+
 	double cooldown;
+	int ammo;
 };
 
 

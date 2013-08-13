@@ -416,11 +416,15 @@ void HellfireLauncher::draw(WarDraw *wd){
 
 	glScaled(-modelScale, modelScale, -modelScale);
 
+	int count = 0;
 	for(int ix = -1; ix <= 1; ix += 2) for(int iy = -1; iy <= 1; iy += 2){
+		if(ammo <= count)
+			break;
 		glPushMatrix();
 		glTranslated(ix * 20, iy * 20, 0);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
+		count++;
 	}
 
 	glPopMatrix();

@@ -65,14 +65,24 @@ function hydraFire(e,dt){
 }
 
 function hellfireFire(e,dt){
-	if(0 < e.hellfires && e.cooldown < dt){
-		print("Hello hellfireFire " + e.hellfires);
+	if(e.cooldown < dt){
 		local arms = e.arms;
 		local launchers = [];
+
+		// Ammunition count is saved in each launchers, so we must scan them
+		// to find how many missiles we've got and which launcher is capable
+		// of firing right now.
+		local hellfires = 0;
 		foreach(it in arms)
-			if(it.classname == "HellfireLauncher")
-				launchers.append(it);
-		local i = e.hellfires % launchers.len();
+			if(it.classname == "HellfireLauncher" && 0 < it.ammo)
+				launchers.append(it), hellfires += it.ammo;
+
+		// If there's no missile left in the launchers, exit
+		if(launchers.len() == 0)
+			return;
+
+		print("Hello hellfireFire " + hellfires);
+		local i = hellfires % launchers.len();
 		local arm = launchers[i];
 		local pb = e.cs.addent("Hellfire", arm.getpos());
 		pb.owner = e;
@@ -80,9 +90,9 @@ function hellfireFire(e,dt){
 		pb.damage = 300;
 		pb.target = e.enemy;
 		pb.setrot(e.getrot());
-		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
+		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.01)));
 		e.cooldown += 1. / launchers.len();
-		e.hellfires--;
+		arm.ammo--;
 	}
 }
 

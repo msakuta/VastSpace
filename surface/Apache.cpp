@@ -250,7 +250,7 @@ void Apache::control(const input_t *inputs, double dt){
 
 	// Switch weapons
 	if(inputs->change & inputs->press & PL_RCLICK){
-		weapon = (weapon + 1) % 3;
+		weapon = (weapon + 1) % 4;
 	}
 }
 
@@ -429,9 +429,9 @@ void Apache::anim(double dt){
 				tail = approach(tail, 0., tailRotorSpeed * dt, 5.);
 		}
 
-		if(weapon == 0)
+		if(weapon == 0 || weapon == 1)
 			shootChainGun(dt);
-		else if(weapon == 1)
+		else if(weapon == 2)
 			shootHydraRocket(dt);
 		else
 			shootHellfire(dt);

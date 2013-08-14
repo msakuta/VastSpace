@@ -56,7 +56,6 @@ protected:
 	int weapon;
 	int ammo_chaingun;
 	int aim9; /* AIM-9 Sidewinder */
-	int hydras;
 	int contact; /* contact state, not really necessary */
 	char muzzle; /* muzzle flash status */
 	char brk;
@@ -98,6 +97,20 @@ protected:
 	friend class HydraRocketLauncher;
 };
 
+/// \brief Base class for rocket or missile launchers.
+class Launcher : public ArmBase{
+public:
+	typedef ArmBase st;
+	Launcher(Game *game) : st(game), cooldown(0.), ammo(0){}
+	Launcher(Entity *base, const hardpoint_static *hp, int ammo_ = 4) : st(base, hp), cooldown(0.), ammo(ammo_){}
+protected:
+	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
+	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
+
+	double cooldown;
+	int ammo;
+};
+
 /// \brief Hydra-70 unguided rocket.
 class HydraRocket : public Bullet{
 public:
@@ -126,16 +139,14 @@ protected:
 };
 
 /// \brief M261, a Hydra-70 rocket launcher mounted on attack helicopters.
-class HydraRocketLauncher : public ArmBase{
+class HydraRocketLauncher : public Launcher{
 public:
-	typedef ArmBase st;
-	HydraRocketLauncher(Game *game) : st(game), cooldown(0.){}
-	HydraRocketLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.){}
+	typedef Launcher st;
+	HydraRocketLauncher(Game *game) : st(game){}
+	HydraRocketLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 19){}
 	const char *classname()const override{return "HydraRocketLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
-protected:
-	double cooldown;
 };
 
 /// \brief AGM-114 Hellfire air-to-surface missile.
@@ -177,20 +188,14 @@ protected:
 };
 
 /// \brief Hellfire launcher mounted on attack helicopters.
-class HellfireLauncher : public ArmBase{
+class HellfireLauncher : public Launcher{
 public:
-	typedef ArmBase st;
-	HellfireLauncher(Game *game) : st(game), cooldown(0.), ammo(4){}
-	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp), cooldown(0.), ammo(4){}
+	typedef Launcher st;
+	HellfireLauncher(Game *game) : st(game){}
+	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 4){}
 	const char *classname()const override{return "HellfireLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
-protected:
-	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
-	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
-
-	double cooldown;
-	int ammo;
 };
 
 

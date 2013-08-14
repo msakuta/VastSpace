@@ -44,14 +44,24 @@ if(isClient()){
 }
 
 function hydraFire(e,dt){
-	while(0 < e.hydras && e.cooldown < dt){
-		print("Hello hydraFire " + e.hydras);
+	while(e.cooldown < dt){
 		local arms = e.arms;
 		local launchers = [];
+
+		// Ammunition count is saved in each launchers, so we must scan them
+		// to find how many rockets we've got and which launcher is capable
+		// of firing right now.
+		local hydras = 0;
 		foreach(it in arms)
-			if(it.classname == "HellfireLauncher")
-				launchers.append(it);
-		local i = e.hydras % launchers.len();
+			if(it.classname == "HydraRocketLauncher" && 0 < it.ammo)
+				launchers.append(it), hydras += it.ammo;
+
+		// If there's no rockets left in the launchers, exit
+		if(launchers.len() == 0)
+			return;
+
+		print("Hello hydraFire " + hydras);
+		local i = hydras % launchers.len();
 		local arm = launchers[i];
 		local pb = e.cs.addent("HydraRocket", arm.getpos());
 		pb.owner = e;
@@ -60,7 +70,7 @@ function hydraFire(e,dt){
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
 		e.cooldown += 1. / launchers.len();
-		e.hydras--;
+		arm.ammo--;
 	}
 }
 

@@ -95,7 +95,7 @@ void Apache::drawHUD(WarDraw *wd){
 	glLoadIdentity();
 
 	// Show target marker if locked on
-	if(game->player->getChaseCamera() == 0 && this->enemy){
+	if(isCockpitView(game->player->getChaseCamera()) && this->enemy){
 		glPushMatrix();
 		glLoadMatrixd(wd->vw->rot);
 		Vec3d pos = (this->enemy->pos - this->pos).norm();
@@ -197,7 +197,7 @@ void Apache::drawHUD(WarDraw *wd){
 void Apache::drawCockpit(WarDraw *wd){
 	const Vec3d &seat = cockpitOfs;
 	Player *player = game->player;
-	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
+	if(!isCockpitView(player->getChaseCamera()) || player->mover != player->cockpitview || player->mover != player->nextmover)
 		return;
 
 	static Model *cockpitModel = NULL;

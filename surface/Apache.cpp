@@ -172,7 +172,7 @@ Apache::Apache(WarField *w) : st(w){
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	amat4_t mat2, mat3;
 	static const Vec3d apache_overview_ofs(0., .010, .025);
-	int camera = (seatid + 4) % 4;
+	int camera = (seatid + 5) % 5;
 	Mat4d mat;
 	transform(mat);
 	if(camera == 1){
@@ -205,6 +205,15 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 //		if(w && w->vft->spherehit && w->vft->spherehit(w, pos0, .002, &ci))
 //			VECSADD(pos0, ci.normal, ci.depth);
 		pos = pos0;
+	}
+	else if(camera == 4){
+		if(lastMissile){
+			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
+			rot = lastMissile->rot;
+			return;
+		}
+		else
+			pos = mat.vp3(cockpitOfs);
 	}
 	else
 		pos = mat.vp3(cockpitOfs);
@@ -569,6 +578,10 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, cooldown);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		Entity::sq_pushobj(v, lastMissile);
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("arms"))){
 		// Prepare an empty array in Squirrel VM for adding arms.
 		sq_newarray(v, 0); // array
@@ -604,6 +617,10 @@ SQInteger Apache::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
 			return SQ_ERROR;
 		cooldown = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));
 		return 0;
 	}
 	else

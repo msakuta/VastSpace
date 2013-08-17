@@ -53,6 +53,7 @@ protected:
 	double cooldown2;
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
+	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	int weapon;
 	int ammo_chaingun;
 	int aim9; /* AIM-9 Sidewinder */
@@ -93,6 +94,7 @@ protected:
 	int shootHydraRocket(double dt);
 	int shootHellfire(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
+	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == 4 && !lastMissile;}
 
 	friend class HydraRocketLauncher;
 };

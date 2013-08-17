@@ -405,7 +405,7 @@ void F15::drawHUD(WarDraw *wd){
 
 #if 1
 	// Show target marker if locked on
-	if(game->player->getChaseCamera() == 0 && this->enemy){
+	if(isCockpitView(game->player->getChaseCamera()) && this->enemy){
 		glPushMatrix();
 		glLoadMatrixd(wd->vw->rot);
 		Vec3d pos = (this->enemy->pos - this->pos).norm();
@@ -593,7 +593,10 @@ void F15::drawCockpit(WarDraw *wd){
 	Vec3d stick = Vec3d(0., 68., -270.) * modelScale / 2.;
 	static Model *modelCockpit = NULL;
 	Player *player = game->player;
-	if(player->getChaseCamera() != 0 || player->mover != player->cockpitview || player->mover != player->nextmover)
+	int chasecam = player->getChaseCamera();
+
+	// Chasecam == cameraPositions.size() means it's trying to follow launched missiles.
+	if(!isCockpitView(chasecam) || player->mover != player->cockpitview || player->mover != player->nextmover)
 		return;
 
 	if(!init){

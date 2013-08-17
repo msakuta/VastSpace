@@ -295,6 +295,7 @@ void F15::shoot(double dt){
 			m->setPosition(&v, &this->rot, &this->velo, &this->omg);
 			this->missiles--;
 			this->cooldown += 2.0;
+			this->lastMissile = m;
 //			playWAVEFile("missile.wav");
 //			playWave3D("missile.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime + p->cooldown);
 		}
@@ -337,7 +338,7 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 	int camera;
 	{
 		camera = chasecam;
-		camera = MAX(0, MIN(cameraPositions.size(), camera));
+		camera = MAX(0, MIN(cameraPositions.size()+2, camera));
 //		*chasecam = camera;
 	}
 	transform(mat);
@@ -355,6 +356,7 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 		mat4vp3(*pos, mat2, src[camera]);
 	}
 #endif
+#if 0
 	else if(camera == cameraPositions.size()){
 		const Player *player = game->player;
 		Vec3d ofs = mat.dvp3(vec3_001);
@@ -362,6 +364,17 @@ void F15::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 			ofs *= player ? player->viewdist : 1.;
 		pos = this->pos + ofs;
 	}
+#else
+	else if(camera == cameraPositions.size()){
+		if(lastMissile){
+			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
+			rot = lastMissile->rot;
+			return;
+		}
+		else
+			pos = mat.vp3(cameraPositions[0]);
+	}
+#endif
 	else if(camera == cameraPositions.size()+2){
 		Vec3d pos0;
 		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;

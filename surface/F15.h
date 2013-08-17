@@ -34,6 +34,7 @@ public:
 protected:
 	Tefpol *pf;
 	std::vector<Tefpol*> vapor;
+	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	Vec3d destPos; ///< Destination position
 
 	static Model *model;
@@ -58,6 +59,7 @@ protected:
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 	double getThrustStrength()const override{return thrustStrength;}
+	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == cameraPositions.size() && !lastMissile;}
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 
 	void init();

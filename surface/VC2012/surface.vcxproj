@@ -182,6 +182,7 @@
     <ClInclude Include="..\Apache.h" />
     <ClInclude Include="..\drawmap.h" />
     <ClInclude Include="..\F15.h" />
+    <ClInclude Include="..\Launcher.h" />
     <ClInclude Include="..\SurfaceCS.h" />
     <ClInclude Include="..\Tank.h" />
     <ClInclude Include="..\TIN.h" />
@@ -191,6 +192,8 @@
     <ClCompile Include="..\Aerial.cpp" />
     <ClCompile Include="..\Apache.cpp" />
     <ClCompile Include="..\draw\Apache-draw.cpp" />
+    <ClCompile Include="..\draw\Launcher-draw.cpp" />
+    <ClCompile Include="..\Launcher.cpp" />
     <ClCompile Include="..\SurfaceBuilding.cpp" />
     <ClCompile Include="..\DrawMap.cpp" />
     <ClCompile Include="..\draw\Aerial-draw.cpp" />

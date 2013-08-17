@@ -38,6 +38,9 @@
     <ClInclude Include="..\Apache.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\Launcher.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -83,6 +86,12 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\draw\Apache-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Launcher.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\Launcher-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>

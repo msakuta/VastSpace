@@ -343,6 +343,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Launcher.h"
+				>
+			</File>
+			<File
 				RelativePath="..\SurfaceCS.h"
 				>
 			</File>
@@ -377,6 +381,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Launcher.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\mas.cpp"
 				>
 			</File>
@@ -405,6 +413,10 @@
 				>
 				<File
 					RelativePath="..\draw\Apache-draw.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\draw\Launcher-draw.cpp"
 					>
 				</File>
 				<File

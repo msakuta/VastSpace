@@ -94,6 +94,48 @@ void Apache::drawHUD(WarDraw *wd){
 	glPushMatrix();
 	glLoadIdentity();
 
+	// Show target marker if locked on
+	if(game->player->getChaseCamera() == 0 && this->enemy){
+		glPushMatrix();
+		glLoadMatrixd(wd->vw->rot);
+		Vec3d pos = (this->enemy->pos - this->pos).norm();
+		gldTranslate3dv(pos);
+		glMultMatrixd(wd->vw->irot);
+		{
+			Vec3d dp = this->enemy->pos - this->pos;
+			double dist = dp.len();
+			glRasterPos3d(.01, .02, 0.);
+			if(dist < 1.)
+				gldprintf("%.4g m", dist * 1000.);
+			else
+				gldprintf("%.4g km", dist);
+			Vec3d dv = this->enemy->velo - this->velo;
+			dist = dv.sp(dp) / dist;
+			glRasterPos3d(.01, -.03, 0.);
+			if(dist < 1.)
+				gldprintf("%.4g m", dist * 1000.);
+			else
+				gldprintf("%.4g km", dist);
+		}
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(.05, .05, 0.);
+		glVertex3d(-.05, .05, 0.);
+		glVertex3d(-.05, -.05, 0.);
+		glVertex3d(.05, -.05, 0.);
+		glEnd();
+		glBegin(GL_LINES);
+		glVertex3d(.04, .0, 0.);
+		glVertex3d(.02, .0, 0.);
+		glVertex3d(-.04, .0, 0.);
+		glVertex3d(-.02, .0, 0.);
+		glVertex3d(.0, .04, 0.);
+		glVertex3d(.0, .02, 0.);
+		glVertex3d(.0, -.04, 0.);
+		glVertex3d(.0, -.02, 0.);
+		glEnd();
+		glPopMatrix();
+	}
+
 	{
 		GLint vp[4];
 		int w, h, m, mi, i;

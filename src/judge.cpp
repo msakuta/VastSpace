@@ -597,7 +597,7 @@ static Entity *otjEnumPointHitSphere_in(const otnt *root, const struct otjEnumHi
 		Entity *ret;
 		if(root->leaf & (1<<i)){
 			// The WeakPtr can be NULL, in this case, just skip hit checking.
-			if(root->a[i].t == NULL)
+			if(root->a[i].t == static_cast<Entity*>(NULL))
 				continue;
 			if(param->flags & OTJ_IGLIST){
 				int j;

@@ -404,6 +404,7 @@ void F15::drawHUD(WarDraw *wd){
 	glDisable(GL_LINE_SMOOTH);
 
 #if 1
+	// Show target marker if locked on
 	if(game->player->getChaseCamera() == 0 && this->enemy){
 		glPushMatrix();
 		glLoadMatrixd(wd->vw->rot);
@@ -413,20 +414,18 @@ void F15::drawHUD(WarDraw *wd){
 		{
 			Vec3d dp = this->enemy->pos - this->pos;
 			double dist = dp.len();
-			if(dist < 1.)
-				sprintf(buf, "%.4g m", dist * 1000.);
-			else
-				sprintf(buf, "%.4g km", dist);
 			glRasterPos3d(.01, .02, 0.);
-			gldPutStrokeString(buf);
+			if(dist < 1.)
+				gldprintf("%.4g m", dist * 1000.);
+			else
+				gldprintf("%.4g km", dist);
 			Vec3d dv = this->enemy->velo - this->velo;
 			dist = dv.sp(dp) / dist;
-			if(dist < 1.)
-				sprintf(buf, "%.4g m/s", dist * 1000.);
-			else
-				sprintf(buf, "%.4g km/s", dist);
 			glRasterPos3d(.01, -.03, 0.);
-			gldPutStrokeString(buf);
+			if(dist < 1.)
+				gldprintf("%.4g m/s", dist * 1000.);
+			else
+				gldprintf("%.4g km/s", dist);
 		}
 		glBegin(GL_LINE_LOOP);
 		glVertex3d(.05, .05, 0.);
@@ -445,8 +444,8 @@ void F15::drawHUD(WarDraw *wd){
 		glVertex3d(.0, -.02, 0.);
 		glEnd();
 		glPopMatrix();
-
 	}
+
 	{
 		GLint vp[4];
 		int w, h, m, mi;

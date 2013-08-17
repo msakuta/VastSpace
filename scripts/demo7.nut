@@ -2,9 +2,9 @@
 
 local birds = [];
 
-//local f15 = player.cs.addent("F15", Vec3d(0, 4., 0.));
-//player.chase = f15;
-//birds.append(f15);
+local f15 = player.cs.addent("F15", Vec3d(0, 4., 0.));
+player.chase = f15;
+birds.append(f15);
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
@@ -25,7 +25,7 @@ bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
 local apache = player.cs.addent("Apache", Vec3d(0, 2, 4));
-player.chase = apache;
+//player.chase = apache;
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook

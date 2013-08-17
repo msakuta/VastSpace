@@ -239,4 +239,19 @@ void HardPointProcess::process(HSQUIRRELVM v)const{
 	sq_poptop(v); // root
 }
 
+void SqCallbackProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
+	}
+	if(SQ_FAILED(sq_getstackobj(v, -1, &value)))
+		throw SQFError(gltestp::dstring(name) << _SC(" get failed"));
+	sq_addref(v, &value);
+	sq_poptop(v); // root
+}
+
 }

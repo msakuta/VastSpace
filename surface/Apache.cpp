@@ -39,37 +39,6 @@ extern "C"{
 #define WINGSPEED (.25 * M_PI)
 
 
-/// \brief Processes Squirrel callback function.
-class SqCallbackProcess : public SqInitProcess{
-public:
-	HSQOBJECT &value;
-	const SQChar *name;
-	bool mandatory;
-	SqCallbackProcess(HSQOBJECT &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
-	void process(HSQUIRRELVM v)const override{
-		sq_pushstring(v, name, -1); // root string
-
-		if(SQ_FAILED(sq_get(v, -2))){ // root obj
-			if(mandatory)
-				throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
-			else
-				return;
-		}
-		if(SQ_FAILED(sq_getstackobj(v, -1, &value)))
-			throw SQFError(gltestp::dstring(name) << _SC(" get failed"));
-		sq_addref(v, &value);
-		sq_poptop(v); // root
-	}
-};
-
-/// Returns Squirrel's null object.
-static HSQOBJECT sq_nullobj(){
-	HSQOBJECT ret;
-	sq_resetobject(&ret);
-	return ret;
-}
-
-
 
 
 

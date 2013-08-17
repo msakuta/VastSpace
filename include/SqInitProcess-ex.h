@@ -45,6 +45,24 @@ public:
 	virtual void process(HSQUIRRELVM)const;
 };
 
+/// \brief Processes Squirrel callback function.
+class EXPORT SqCallbackProcess : public SqInitProcess{
+public:
+	HSQOBJECT &value;
+	const SQChar *name;
+	bool mandatory;
+	SqCallbackProcess(HSQOBJECT &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM v)const override;
+};
+
+/// Returns Squirrel's null object.
+inline HSQOBJECT sq_nullobj(){
+	HSQOBJECT ret;
+	sq_resetobject(&ret);
+	return ret;
+}
+
+
 }
 using namespace sqinitproc;
 

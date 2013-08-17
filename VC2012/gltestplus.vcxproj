@@ -273,6 +273,7 @@
     <ClInclude Include="..\include\Model-forward.h" />
     <ClInclude Include="..\include\ModelEntity.h" />
     <ClInclude Include="..\include\Motion-forward.h" />
+    <ClInclude Include="..\include\Observable.h" />
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
   </ItemGroup>

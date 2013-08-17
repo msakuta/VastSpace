@@ -344,6 +344,9 @@
     <ClInclude Include="..\include\SqInitProcess.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Observable.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

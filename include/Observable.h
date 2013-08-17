@@ -180,7 +180,7 @@ protected:
 /// define another base class that has a virtual function to return the Observable
 /// class pointer that is retrieved from a member pointer of derived class.
 template<typename P>
-class EXPORT WeakPtr : public WeakPtrBase{
+class WeakPtr : public WeakPtrBase{
 public:
 	WeakPtr(P *o = NULL) : WeakPtrBase(o){}
 	WeakPtr(WeakPtr &o) : WeakPtrBase(static_cast<Observable*>(o)){} ///< Prevent the default copy constructor from being called.

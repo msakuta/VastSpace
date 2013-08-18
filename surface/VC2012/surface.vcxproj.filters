@@ -41,6 +41,9 @@
     <ClInclude Include="..\Launcher.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\A10.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -92,6 +95,12 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\draw\Launcher-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\A10.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\A10-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>

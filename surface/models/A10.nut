@@ -65,13 +65,13 @@ bulletSpeed <- 1.0;
 shootCooldown <- 60.0 / 2100;
 
 cameraPositions <- [
-	Vec3d(0., 30 * modelScale, -150 * modelScale),
+	Vec3d(0., 50, -200) * modelScale,
 	Vec3d(0., 0.0075, 0.025),
 	Vec3d(0.020, 0.007, 0.050),
 	Vec3d(0.004, -0.0015, 0.010),
 ]
 
-hudPos <- Vec3d(0., 30.0, -170.0) * modelScale
+hudPos <- cameraPositions[0] + Vec3d(0, 0, -20) * modelScale;
 
 hudSize <- 10 * modelScale
 

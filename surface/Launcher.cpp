@@ -273,6 +273,31 @@ void HellfireLauncher::anim(double dt){
 }
 
 //-----------------------------------------------------------------------------
+//	Sidewinder implementation
+//-----------------------------------------------------------------------------
+
+Entity::EntityRegister<Sidewinder> Sidewinder::entityRegister("Sidewinder");
+
+//-----------------------------------------------------------------------------
+//	SidewinderLauncher implementation
+//-----------------------------------------------------------------------------
+
+void SidewinderLauncher::anim(double dt){
+	if(!base || !base->w)
+		w = NULL;
+	if(!w)
+		return;
+
+	if(online){
+	}
+
+	if(cooldown < dt)
+		cooldown = 0.;
+	else
+		cooldown -= dt;
+}
+
+//-----------------------------------------------------------------------------
 //	Launcher implementation
 //-----------------------------------------------------------------------------
 

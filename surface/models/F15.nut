@@ -75,6 +75,61 @@ hudPos <- Vec3d(0., 30.0, -170.0) * modelScale
 
 hudSize <- 10 * modelScale
 
+function sidewinderFire(e,dt){
+	if(e.cooldown < dt){
+		local arms = e.arms;
+		local launchers = [];
+
+		// Ammunition count is saved in each launchers, so we must scan them
+		// to find how many missiles we've got and which launcher is capable
+		// of firing right now.
+		local sidewinders = 0;
+		foreach(it in arms)
+			if(it.classname == "SidewinderLauncher" && 0 < it.ammo)
+				launchers.append(it), sidewinders += it.ammo;
+
+		// If there's no missile left in the launchers, exit
+		if(launchers.len() == 0)
+			return;
+
+		print("Hello sidewinderFire " + sidewinders);
+		local i = sidewinders % launchers.len();
+		local arm = launchers[i];
+		local pb = e.cs.addent("Sidewinder", arm.getpos());
+		pb.owner = e;
+		pb.life = 10;
+		pb.damage = 300;
+		pb.target = e.enemy;
+		pb.setrot(e.getrot());
+		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.01)));
+		e.cooldown += 1.;
+		e.lastMissile = pb;
+		arm.ammo--;
+	}
+}
+
+local rot0 = Quatd(0,0,0,1);
+
+// Always place front hardpoint before rear, because earlier entries are fired first.
+hardpoints <- [
+	{pos = Vec3d( 60, -20, -10) * modelScale, rot = rot0, name = "Fuselage FR"},
+	{pos = Vec3d(-60, -20, -10) * modelScale, rot = rot0, name = "Fuselage FL"},
+	{pos = Vec3d( 60, -20, 110) * modelScale, rot = rot0, name = "Fuselage RR"},
+	{pos = Vec3d(-60, -20, 110) * modelScale, rot = rot0, name = "Fuselage RL"},
+	{pos = Vec3d( 100, -20, 0) * modelScale, rot = rot0, name = "Inner Wing R"},
+	{pos = Vec3d(-100, -20, 0) * modelScale, rot = rot0, name = "Inner Wing L"},
+	{pos = Vec3d( 100, -20, 0) * modelScale, rot = rot0, name = "Inner Wing R"},
+	{pos = Vec3d(-150, -20, 0) * modelScale, rot = rot0, name = "Outer Wing L"},
+	{pos = Vec3d( 150, -20, 0) * modelScale, rot = rot0, name = "Outer Wing R"},
+	{pos = Vec3d(-220,  10, 0) * modelScale, rot = rot0, name = "Wingtip L"},
+	{pos = Vec3d( 220,  10, 0) * modelScale, rot = rot0, name = "Wingtip R"},
+];
+
+/// Default equipment set for hardpoints
+defaultArms <- [
+	"SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher",
+];
+
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

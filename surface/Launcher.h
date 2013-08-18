@@ -6,6 +6,7 @@
 
 #include "arms.h"
 #include "Bullet.h"
+#include "Model-forward.h"
 
 /// \brief Base class for rocket or missile launchers.
 class Launcher : public ArmBase{
@@ -110,6 +111,38 @@ public:
 	void draw(WarDraw *)override;
 };
 
+/// \brief AIM-9 Sidewinder air-to-air missile.
+///
+/// http://en.wikipedia.org/wiki/AGM-114_Hellfire
+class Sidewinder : public Hellfire{
+public:
+	typedef Hellfire st;
+	static EntityRegister<Sidewinder> entityRegister;
+	Sidewinder(Game *game) : st(game){}
+	Sidewinder(WarField *w) : st(w){}
+	Sidewinder(Entity *owner, float life, double damage) :
+		st(owner, life, damage){}
+	const char *classname()const override{return "Sidewinder";}
+	void draw(WarDraw *wd)override;
+
+protected:
+
+	static const double modelScale;
+	static const Model *getModel();
+
+	friend class SidewinderLauncher;
+};
+
+/// \brief Sidewinder launcher mounted on fighter planes.
+class SidewinderLauncher : public Launcher{
+public:
+	typedef Launcher st;
+	SidewinderLauncher(Game *game) : st(game){}
+	SidewinderLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 1){}
+	const char *classname()const override{return "SidewinderLauncher";}
+	void anim(double dt)override;
+	void draw(WarDraw *)override;
+};
 
 
 #endif

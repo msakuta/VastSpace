@@ -7,7 +7,7 @@
 #include "Missile.h"
 #include "tefpol3d.h"
 #include "sqadapt.h"
-#include "SqInitProcess-ex.h"
+#include "Launcher.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -61,6 +61,7 @@ double F15::modelScale = 0.001 / 30.0;
 double F15::hitRadius = 0.012;
 double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
+HSQOBJECT F15::sqSidewinderFire = sq_nullobj();
 HitBoxList F15::hitboxes;
 double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
@@ -73,6 +74,8 @@ Vec3d F15::hudPos;
 double F15::hudSize;
 GLuint F15::overlayDisp;
 bool F15::debugWings = false;
+std::vector<hardpoint_static*> F15::hardpoints;
+StringList F15::defaultArms;
 
 SQInteger F15::sqf_debugWings(HSQUIRRELVM v){
 	SQBool b;
@@ -113,6 +116,7 @@ void F15::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			SqCallbackProcess(sqSidewinderFire, "sidewinderFire") <<=
 			HitboxProcess(hitboxes) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
@@ -123,7 +127,9 @@ void F15::init(){
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
 			Vec3dProcess(hudPos, "hudPos") <<=
 			SingleDoubleProcess(hudSize, "hudSize") <<=
-			DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp) <<=
+			HardPointProcess(hardpoints) <<=
+			StringListProcess(defaultArms, "defaultArms"));
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -142,6 +148,19 @@ void F15::init(){
 	this->gear = 0;
 	this->missiles = 10;
 	this->throttle = 0.;
+
+	// Setup default configuration for arms
+	for(int i = 0; i < hardpoints.size(); i++){
+		if(defaultArms.size() <= i)
+			return;
+		ArmBase *arm = defaultArms[i] == "SidewinderLauncher" ? (ArmBase*)new SidewinderLauncher(this, hardpoints[i]) : NULL;
+		if(arm){
+			arms.push_back(arm);
+			if(w)
+				w->addent(arm);
+		}
+	}
+
 /*	for(i = 0; i < numof(fly->bholes)-1; i++)
 		fly->bholes[i].next = &fly->bholes[i+1];
 	fly->bholes[numof(fly->bholes)-1].next = NULL;
@@ -265,6 +284,10 @@ void F15::anim(double dt){
 
 
 	st::anim(dt);
+
+	// Align belonging arms at the end of the frame
+	for(ArmList::iterator it = arms.begin(); it != arms.end(); ++it) if(*it)
+		(*it)->align();
 }
 
 void F15::shoot(double dt){
@@ -288,17 +311,13 @@ void F15::shoot(double dt){
 		static const Vec3d fly_hardpoint[2] = {Vec3d(.005, .0005, -.000), Vec3d(-.005, .0005, -.000)};
 		// Missiles are so precious that semi-automatic triggering is more desirable.
 		// Also, do not try to shoot if there's no enemy locked on.
-		while(0 < missiles && this->cooldown < dt && enemy){
-			Missile *m = new Missile(this, 30., 500., enemy);
-			w->addent(m);
-			Vec3d v = mat.vp3(Vec3d(fly_hardpoint[missiles % 2]));
-			m->setPosition(&v, &this->rot, &this->velo, &this->omg);
-			this->missiles--;
-			this->cooldown += 2.0;
-			this->lastMissile = m;
-//			playWAVEFile("missile.wav");
-//			playWave3D("missile.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime + p->cooldown);
-		}
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqSidewinderFire);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		sq_pushfloat(v, dt);
+		sq_call(v, 3, SQFalse, SQTrue);
 	}
 	else while(this->cooldown < dt){
 		int i = 0;
@@ -438,4 +457,58 @@ int F15::takedamage(double damage, int hitpart){
 		return 0;
 	}
 	return ret;
+}
+
+SQInteger F15::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("cooldown"))){
+		sq_pushfloat(v, cooldown);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		Entity::sq_pushobj(v, lastMissile);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("arms"))){
+		// Prepare an empty array in Squirrel VM for adding arms.
+		sq_newarray(v, 0); // array
+
+		// Retrieve library-provided "append" method for an array.
+		// We'll reuse the method for all the elements, which is not exactly the same way as
+		// an ordinally Squirrel codes evaluate.
+		sq_pushstring(v, _SC("append"), -1); // array "append"
+		if(SQ_FAILED(sq_get(v, -2))) // array array.append
+			return sq_throwerror(v, _SC("append not found"));
+
+		for(ArmList::const_iterator it = arms.begin(); it != arms.end(); it++){
+			ArmBase *arm = *it;
+			if(arm){
+				sq_push(v, -2); // array array.append array
+				Entity::sq_pushobj(v, arm); // array array.append array Entity-instance
+				sq_call(v, 2, SQFalse, SQFalse); // array array.append
+			}
+		}
+
+		// Pop the saved "append" method
+		sq_poptop(v); // array
+
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger F15::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("cooldown"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		cooldown = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
 }

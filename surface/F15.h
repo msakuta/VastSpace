@@ -5,6 +5,8 @@
 #define SURFACE_F15_H
 
 #include "Aerial.h"
+#include "arms.h"
+#include "SqInitProcess-ex.h"
 
 /// \brief McDonnell Douglas F-15 Eagle
 ///
@@ -32,16 +34,22 @@ public:
 	static double getModelScale(){return modelScale;}
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
+	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
+
 	Tefpol *pf;
 	std::vector<Tefpol*> vapor;
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	Vec3d destPos; ///< Destination position
+	typedef ObservableList<ArmBase> ArmList;
+	ArmList arms;
 
 	static Model *model;
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
+	static HSQOBJECT sqSidewinderFire;
 	static HitBoxList hitboxes;
 	static double thrustStrength;
 	static WingList wings0;
@@ -54,6 +62,8 @@ protected:
 	static double hudSize;
 	static GLuint overlayDisp;
 	static bool debugWings;
+	static std::vector<hardpoint_static*> hardpoints;
+	static StringList defaultArms;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

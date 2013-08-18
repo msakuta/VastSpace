@@ -49,7 +49,7 @@ protected:
 	static double hitRadius;
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
-	static HSQOBJECT sqSidewinderFire;
+	static HSQOBJECT sqFire;
 	static HitBoxList hitboxes;
 	static double thrustStrength;
 	static WingList wings0;
@@ -64,12 +64,15 @@ protected:
 	static bool debugWings;
 	static std::vector<hardpoint_static*> hardpoints;
 	static StringList defaultArms;
+	static StringList weaponList;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 	double getThrustStrength()const override{return thrustStrength;}
 	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == cameraPositions.size() && !lastMissile;}
+	void toggleWeapon()override{weapon = (weapon + 1) % weaponList.size();}
+
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 
 	void init();

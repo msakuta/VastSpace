@@ -61,7 +61,7 @@ double A10::modelScale = 0.001 / 30.0;
 double A10::hitRadius = 0.012;
 double A10::defaultMass = 12000.;
 double A10::maxHealthValue = 500.;
-HSQOBJECT A10::sqSidewinderFire = sq_nullobj();
+HSQOBJECT A10::sqFire = sq_nullobj();
 HitBoxList A10::hitboxes;
 double A10::thrustStrength = .010;
 A10::WingList A10::wings0;
@@ -76,6 +76,7 @@ GLuint A10::overlayDisp;
 bool A10::debugWings = false;
 std::vector<hardpoint_static*> A10::hardpoints;
 StringList A10::defaultArms;
+StringList A10::weaponList;
 
 SQInteger A10::sqf_debugWings(HSQUIRRELVM v){
 	SQBool b;
@@ -116,7 +117,7 @@ void A10::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
-			SqCallbackProcess(sqSidewinderFire, "sidewinderFire") <<=
+			SqCallbackProcess(sqFire, "fire") <<=
 			HitboxProcess(hitboxes) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
@@ -129,7 +130,9 @@ void A10::init(){
 			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			HardPointProcess(hardpoints) <<=
-			StringListProcess(defaultArms, "defaultArms"));
+			StringListProcess(defaultArms, "defaultArms") <<=
+			StringListProcess(weaponList, "weaponList"));
+		assert(0 < weaponList.size());
 		initialized = true;
 	}
 	mass = defaultMass;
@@ -153,7 +156,9 @@ void A10::init(){
 	for(int i = 0; i < hardpoints.size(); i++){
 		if(defaultArms.size() <= i)
 			return;
-		ArmBase *arm = defaultArms[i] == "SidewinderLauncher" ? (ArmBase*)new SidewinderLauncher(this, hardpoints[i]) : NULL;
+		ArmBase *arm = defaultArms[i] == "HydraRocketLauncher" ? (ArmBase*)new HydraRocketLauncher(this, hardpoints[i]) :
+			defaultArms[i] == "HellfireLauncher" ? (ArmBase*)new HellfireLauncher(this, hardpoints[i]) :
+			defaultArms[i] == "SidewinderLauncher" ? (ArmBase*)new SidewinderLauncher(this, hardpoints[i]) : NULL;
 		if(arm){
 			arms.push_back(arm);
 			if(w)
@@ -242,12 +247,11 @@ void A10::shoot(double dt){
 	Mat4d mat;
 	transform(mat);
 	if(this->weapon){
-		static const Vec3d fly_hardpoint[2] = {Vec3d(.005, .0005, -.000), Vec3d(-.005, .0005, -.000)};
 		// Missiles are so precious that semi-automatic triggering is more desirable.
 		// Also, do not try to shoot if there's no enemy locked on.
 		HSQUIRRELVM v = game->sqvm;
 		StackReserver sr(v);
-		sq_pushobject(v, sqSidewinderFire);
+		sq_pushobject(v, sqFire);
 		sq_pushroottable(v);
 		Entity::sq_pushobj(v, this);
 		sq_pushfloat(v, dt);

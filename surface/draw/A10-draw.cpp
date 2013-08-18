@@ -904,7 +904,7 @@ void A10::drawCockpit(WarDraw *wd){
 		readOut(gltestp::dstring("R") << roll, -.7, -.90, 0.005);
 #endif
 
-		readOut(gltestp::dstring("ARMED: ") << (weapon ? "Missile" : "M61A1 VULCAN"), 0.2, -0.75, 0.0035);
+		readOut(gltestp::dstring("ARMED: ") << weaponList[weapon], 0.2, -0.75, 0.0035);
 		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
 
 		// Velocity Vector or Flight Path Vector.

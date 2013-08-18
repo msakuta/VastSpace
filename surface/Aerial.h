@@ -73,6 +73,7 @@ protected:
 	virtual short bbodyMask()const;
 	virtual void shoot(double dt);
 	virtual double getThrustStrength()const = 0;
+	virtual void toggleWeapon(){weapon = !weapon;}
 
 	void init();
 	bool cull(WarDraw *)const;

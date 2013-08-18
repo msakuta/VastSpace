@@ -75,34 +75,61 @@ hudPos <- cameraPositions[0] + Vec3d(0, 0, -20) * modelScale;
 
 hudSize <- 10 * modelScale
 
-function sidewinderFire(e,dt){
+function fire(e,dt){
 	if(e.cooldown < dt){
+		local launcherType;
+		local projectileType;
+		local damage;
+		local cooldown = @(launchers) 1. / launchers.len();
+		switch(e.weapon){
+		case 1:
+			launcherType = "HydraRocketLauncher";
+			projectileType = "HydraRocket";
+			damage = 300;
+			break;
+		case 2:
+			launcherType = "HellfireLauncher";
+			projectileType = "Hellfire";
+			damage = 500;
+			break;
+		case 3:
+			launcherType = "SidewinderLauncher";
+			projectileType = "Sidewinder";
+			damage = 800;
+			cooldown = @(...) 1.;
+			break;
+		default:
+			print("A10.nut: invalid e.weapon in fire()");
+			return;
+		}
 		local arms = e.arms;
 		local launchers = [];
 
 		// Ammunition count is saved in each launchers, so we must scan them
 		// to find how many missiles we've got and which launcher is capable
 		// of firing right now.
-		local sidewinders = 0;
+		local count = 0;
 		foreach(it in arms)
-			if(it.classname == "SidewinderLauncher" && 0 < it.ammo)
-				launchers.append(it), sidewinders += it.ammo;
+			if(it.classname == launcherType && 0 < it.ammo)
+				launchers.append(it), count += it.ammo;
 
 		// If there's no missile left in the launchers, exit
 		if(launchers.len() == 0)
 			return;
 
-		print("Hello sidewinderFire " + sidewinders);
-		local i = sidewinders % launchers.len();
+		print("Hello fire launcherType = " + launcherType + ", launchers.len() = " + launchers.len() + " count = " + count);
+		local i = count % launchers.len();
 		local arm = launchers[i];
-		local pb = e.cs.addent("Sidewinder", arm.getpos());
+		local pb = e.cs.addent(projectileType, arm.getpos());
 		pb.owner = e;
 		pb.life = 10;
-		pb.damage = 300;
-		pb.target = e.enemy;
+		pb.damage = damage;
+		if(e.weapon != 1) // Rockets cannot guide to target
+			pb.target = e.enemy;
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.01)));
-		e.cooldown += 1.;
+		local deltaCooldown = cooldown(launchers);
+		e.cooldown += deltaCooldown;
 		e.lastMissile = pb;
 		arm.ammo--;
 	}
@@ -126,8 +153,18 @@ hardpoints <- [
 
 /// Default equipment set for hardpoints
 defaultArms <- [
-	"HydraRocketLauncher", "HydraRocketLauncher", "SidewinderLauncher", "SidewinderLauncher",
+	"HydraRocketLauncher", "HydraRocketLauncher",
+	"HellfireLauncher", "HellfireLauncher",
+	"SidewinderLauncher", "SidewinderLauncher",
 ];
+
+/// Available weapon type names
+weaponList <- [
+	"GAU-8 Avenger",
+	"Hydra-70 Rocket",
+	"Hellfire Missile",
+	"AIM-9 Sidewinder",
+]
 
 
 function drawOverlay(){

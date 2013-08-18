@@ -201,6 +201,11 @@ void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
 
 Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	SQUserPointer up;
+
+	// It's valid to have a null object assigned to an Entity reference.
+	if(sq_gettype(v, idx) == OT_NULL)
+		return NULL;
+
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");

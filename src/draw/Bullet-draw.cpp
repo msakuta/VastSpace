@@ -532,7 +532,7 @@ void ExplosiveBullet::drawtra(WarDraw *wd){
 	double wpix = width * scale / 2.;
 
 	if(0.1 < wpix){
-		glColor4ub(191,127,95,32);
+		glColor4ub(191,127,95,191);
 		gldGradBeam(wd->vw->pos, this->pos, this->pos + this->velo * -length, width, COLOR32RGBA(127,0,0,0));
 	}
 }

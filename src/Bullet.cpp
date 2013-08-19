@@ -401,10 +401,60 @@ bool Bullet::isTargettable()const{
 
 Entity::EntityRegister<ExplosiveBullet> ExplosiveBullet::entityRegister("ExplosiveBullet");
 
-ExplosiveBullet::ExplosiveBullet(WarField *w) : st(w){
+ExplosiveBullet::ExplosiveBullet(WarField *w) : st(w), splashRadius(0), friendlySafe(false){
 }
 
 const char *ExplosiveBullet::classname()const{return "ExplosiveBullet";}
+
+SQInteger ExplosiveBullet::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("splashRadius"))){
+		sq_pushfloat(v, splashRadius);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("friendlySafe"))){
+		sq_pushbool(v, friendlySafe);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger ExplosiveBullet::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("splashRadius"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		splashRadius = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("friendlySafe"))){
+		SQBool retb;
+		if(SQ_FAILED(sq_getbool(v, 3, &retb)))
+			return SQ_ERROR;
+		friendlySafe = retb;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
+bool ExplosiveBullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
+	// Do splash damage
+	if(0 < splashRadius){
+		WarField::EntityList &el = ws->entlist();
+		for(WarField::EntityList::iterator it = el.begin(); it != el.end();){
+			WarField::EntityList::iterator next = it;
+			++next;
+			Entity *e = *it;
+			double dist = (e->pos - this->pos).len();
+			if((!friendlySafe || e->race != this->race) && dist < splashRadius)
+				e->takedamage(damage * (splashRadius - dist) / splashRadius, -1);
+			it = next;
+		}
+	}
+
+	return Bullet::bulletHit(pt, ws, param);
+}
 
 #ifdef DEDICATED
 void ExplosiveBullet::drawtra(WarDraw *){}

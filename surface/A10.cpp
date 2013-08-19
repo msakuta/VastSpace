@@ -260,7 +260,7 @@ void A10::shoot(double dt){
 	else while(this->cooldown < dt){
 		int i = 0;
 		for(auto &it : gunPositions){
-			Bullet *pb = new ExplosiveBullet(this, 2., 50.);
+			Bullet *pb = new ExplosiveBullet(this, 2., 50., 0.020, false);
 			w->addent(pb);
 
 			pb->mass = .010;

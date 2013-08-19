@@ -659,7 +659,7 @@ int Apache::shootChainGun(double dt){
 				.rotx(gun[0] + (rs.nextd() - .5) * variance)
 				.roty(gun[1] + (rs.nextd() - .5) * variance);
 
-			Bullet *pb = new ExplosiveBullet(this, chainGunLife, chainGunDamage);
+			Bullet *pb = new ExplosiveBullet(this, chainGunLife, chainGunDamage, 0.01, false);
 			w->addent(pb);
 			Vec3d nh = rmat.dvp3(nh0).norm();
 			pb->velo = this->velo + nh * chainGunMuzzleSpeed;

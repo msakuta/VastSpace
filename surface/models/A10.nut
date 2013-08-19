@@ -79,6 +79,8 @@ hudSize <- 10 * modelScale
 // (global variables in this file are not saved really globally)
 local lthis = this;
 
+local m = 1.e-3;
+
 function fire(e,dt){
 	if(e.weapon == 0){
 		while(e.cooldown < dt){
@@ -93,12 +95,14 @@ function fire(e,dt){
 				pb.owner = e;
 				pb.damage = 50;
 				pb.life = 3.;
+				pb.splashRadius = 20 * m;
+				pb.friendlySafe = false;
 //				pb.mass = 0.010;
 				local v0 = Vec3d(0,0,-lthis.bulletSpeed);
 				local newvelo = rot.trans(v0) + e.getvelo();
-				local rs = e.cs.rs;
+				local rs = e.cs.rs; // Obtain random sequence
 				for(local j = 0; j < 3; j++)
-					newvelo[j] += (rs.nextd() - 0.5) * 0.05;
+					newvelo[j] += (rs.nextd() - 0.5) * 0.02;
 				pb.setvelo(newvelo);
 				pb.update(dt - e.cooldown);
 			};

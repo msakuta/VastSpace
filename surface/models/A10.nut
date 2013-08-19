@@ -92,13 +92,14 @@ function fire(e,dt){
 				}
 				pb.owner = e;
 				pb.damage = 50;
+				pb.life = 3.;
 //				pb.mass = 0.010;
 				local v0 = Vec3d(0,0,-lthis.bulletSpeed);
 				local newvelo = rot.trans(v0) + e.getvelo();
 //				for(local j = 0; j < 3; j++)
 //					newvelo[j] += (drseq(&w->rs) - .5) * .005;
 				pb.setvelo(newvelo);
-//				pb.anim(dt - this->cooldown);
+				pb.update(dt - e.cooldown);
 			};
 			e.cooldown += lthis.shootCooldown;
 		}

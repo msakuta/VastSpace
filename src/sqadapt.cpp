@@ -516,6 +516,18 @@ static SQInteger sqf_Vec3d_get(HSQUIRRELVM v){
 	try{
 		SQVec3d q;
 		q.getValue(v, 1);
+
+		// Check if the index is an integer first
+		SQInteger i;
+		if(SQ_SUCCEEDED(sq_getinteger(v, 2, &i))){
+			if(0 <= i && i < 3){
+				sq_pushfloat(v, SQFloat(q.value[int(i)]));
+				return 1;
+			}
+			else
+				return sq_throwerror(v, _SC("Vec3d index out of range"));
+		}
+
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
 		if(!s[0] || s[1])
@@ -536,6 +548,21 @@ static SQInteger sqf_Vec3d_set(HSQUIRRELVM v){
 	try{
 		SQVec3d q;
 		q.getValue(v, 1);
+
+		// Check if the index is an integer first
+		SQInteger i;
+		if(SQ_SUCCEEDED(sq_getinteger(v, 2, &i))){
+			if(0 <= i && i < 3){
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+					return sq_throwerror(v, _SC("Vec3d element assignment is not convertible to float"));
+				(*q.pointer)[int(i)] = f;
+				return 1;
+			}
+			else
+				return sq_throwerror(v, _SC("Vec3d index out of range"));
+		}
+
 		const SQChar *s;
 		sq_getstring(v, 2, &s);
 		if(!s[0] || s[1])

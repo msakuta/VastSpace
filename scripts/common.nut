@@ -90,8 +90,8 @@ class Entity{
 	Quatd getrot();
 	void setrot(Quatd);
 	void command(string, ...);
+	void update(double dt);
 	int race;
-	Entity next;
 	Entity dockedEntList;
 	Docker docker; // readonly, may be null
 	float health; // readonly

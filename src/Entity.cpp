@@ -474,6 +474,25 @@ static SQInteger sqf_Entity_kill(HSQUIRRELVM v){
 	return 1;
 }
 
+/// Update method accessible from Squirrel scripts.
+static SQInteger sqf_Entity_update(HSQUIRRELVM v){
+	try{
+		Entity *p = Entity::sq_refobj(v);
+		if(!p)
+			return 0;
+		SQFloat dt;
+		if(SQ_FAILED(sq_getfloat(v, 2, &dt)))
+			return sq_throwerror(v, _SC("Type mismatch for the second argument of update()"));
+
+		// We should really rename this to update() though its range of influence is so large.
+		p->anim(dt);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 1;
+}
+
 void setpos(Entity *e, const Vec3d &v){
 	e->setPosition(&v);
 }
@@ -532,6 +551,7 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("command"), sqf_Entity_command);
 	register_closure(v, _SC("create"), sqf_Entity_create);
 	register_closure(v, _SC("kill"), sqf_Entity_kill);
+	register_closure(v, _SC("update"), sqf_Entity_update);
 	sq_createslot(v, -3);
 	return true;
 }

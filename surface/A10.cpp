@@ -246,7 +246,7 @@ void A10::shoot(double dt){
 	else*/
 	Mat4d mat;
 	transform(mat);
-	if(this->weapon){
+	if(true || this->weapon){
 		// Missiles are so precious that semi-automatic triggering is more desirable.
 		// Also, do not try to shoot if there's no enemy locked on.
 		HSQUIRRELVM v = game->sqvm;

@@ -75,7 +75,36 @@ hudPos <- cameraPositions[0] + Vec3d(0, 0, -20) * modelScale;
 
 hudSize <- 10 * modelScale
 
+// A trick to save "this" table after the evaluation ends
+// (global variables in this file are not saved really globally)
+local lthis = this;
+
 function fire(e,dt){
+	if(e.weapon == 0){
+		while(e.cooldown < dt){
+			local i = 0;
+			local rot = e.getrot();
+			foreach(it in lthis.gunPositions){
+				local pb = e.cs.addent("ExplosiveBullet", e.getpos() + rot.trans(it));
+				if(pb == null){
+					print("pb is null!");
+					return;
+				}
+				pb.owner = e;
+				pb.damage = 50;
+//				pb.mass = 0.010;
+				local v0 = Vec3d(0,0,-lthis.bulletSpeed);
+				local newvelo = rot.trans(v0) + e.getvelo();
+//				for(local j = 0; j < 3; j++)
+//					newvelo[j] += (drseq(&w->rs) - .5) * .005;
+				pb.setvelo(newvelo);
+//				pb.anim(dt - this->cooldown);
+			};
+			e.cooldown += lthis.shootCooldown;
+		}
+		return;
+	}
+
 	if(e.cooldown < dt){
 		local launcherType;
 		local projectileType;

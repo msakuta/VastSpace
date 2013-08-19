@@ -395,6 +395,17 @@ bool Bullet::isTargettable()const{
 }
 
 
+//-----------------------------------------------------------------------------
+//	ExplosiveBullet implementation
+//-----------------------------------------------------------------------------
+
+Entity::EntityRegister<ExplosiveBullet> ExplosiveBullet::entityRegister("ExplosiveBullet");
+
+ExplosiveBullet::ExplosiveBullet(WarField *w) : st(w){
+}
+
+const char *ExplosiveBullet::classname()const{return "ExplosiveBullet";}
+
 #ifdef DEDICATED
 void ExplosiveBullet::drawtra(WarDraw *){}
 void ExplosiveBullet::bulletDeathEffect(int hitground, const struct contact_info *ci){}

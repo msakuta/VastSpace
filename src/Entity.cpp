@@ -358,7 +358,7 @@ SQInteger Entity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 			if(ret != 0)
 				return ret;
 		}
-		return SQ_ERROR;
+		return sq_throwerror(v, gltestp::dstring("The index \"") << name << _SC("\" was not found in members of \"") << classname() << _SC("\" in a query"));
 	}
 }
 
@@ -406,7 +406,7 @@ SQInteger Entity::sqSet(HSQUIRRELVM v, const SQChar *name){
 			if(ret != SQ_ERROR)
 				return ret;
 		}
-		return SQ_ERROR;
+		return sq_throwerror(v, gltestp::dstring("The index \"") << name << _SC("\" was not found in members of \"") << classname() << _SC("\" in an assignment"));
 	}
 }
 

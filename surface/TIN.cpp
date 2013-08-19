@@ -314,12 +314,12 @@ bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, 
 	int ix0 = std::min(std::max(int(dx0 * GridSize / 1024), 0), GridSize-1);
 	int ix1 = std::min(std::max(int(dx1 * GridSize / 1024), 0), GridSize-1);
 	for(int ix = ix0; ix <= ix1; ++ix){
-		double tx0 = (ix * 1024 / GridSize - start[0]) / dir[0];
-		double tx1 = ((ix + 1) * 1024 / GridSize - start[0]) / dir[0];
-		double ddx0 = start[1] + dir[1] * tx0;
-		double ddx1 = start[1] + dir[1] * tx1;
 		double dix0 = ix * 1024 / GridSize;
 		double dix1 = (ix + 1) * 1024 / GridSize;
+		double tx0 = dir[0] == 0. ? 0. : (dix0 - start[0]) / dir[0];
+		double tx1 = dir[0] == 0. ? 0. : (dix1 - start[0]) / dir[0];
+		double ddx0 = start[1] + dir[1] * tx0;
+		double ddx1 = start[1] + dir[1] * tx1;
 
 		int iy0 = std::min(std::max(int(dy0 * GridSize / 1024), 0), GridSize-1);
 		int iy1 = std::min(std::max(int(dy1 * GridSize / 1024), 0), GridSize-1);
@@ -329,15 +329,18 @@ bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, 
 			if(!(startix == ix && startiy == iy || endix == ix && endiy == iy)){
 				double diy0 = iy * 1024 / GridSize;
 				double diy1 = (iy + 1) * 1024 / GridSize;
-				double ty0 = (iy * 1024 / GridSize - start[1]) / dir[1];
-				double ty1 = ((iy + 1) * 1024 / GridSize - start[1]) / dir[1];
+				double ty0 = dir[1] == 0. ? 0. : (diy0 - start[1]) / dir[1];
+				double ty1 = dir[1] == 0. ? 0. : (diy1 - start[1]) / dir[1];
 				double ddy0 = start[0] + dir[0] * ty0;
 				double ddy1 = start[0] + dir[0] * ty1;
 
 				// If the ray does not hit the cell represented as a square, skip checking.
 				// We don't need to check the cell if the ray does not touch it.
-				if((ddx0 < diy0 || diy1 < ddx0) && (ddx1 < diy0 || diy1 < ddx1)
-					&& (ddy0 < dix0 || dix1 < ddy0) && (ddy1 < dix0 || dix1 < ddy1))
+				// Also note that either dir[0] or dir[1] is zero, the ray is parallel to one of them,
+				// so trying to determine intersection of the ray and the square makes no sense.
+				// Instead, all the grid cells are subject of inspection for triangle hit tests.
+				if(dir[0] != 0. && (ddx0 < diy0 || diy1 < ddx0) && (ddx1 < diy0 || diy1 < ddx1)
+					&& dir[1] != 0. && (ddy0 < dix0 || dix1 < ddy0) && (ddy1 < dix0 || dix1 < ddy1))
 					continue;
 			}
 			const TriangleList &tl = tgrid[ix][iy];

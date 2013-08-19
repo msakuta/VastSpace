@@ -367,6 +367,31 @@ static SQInteger sqf_TimeMeas_lap(HSQUIRRELVM v){
 const SQUserPointer tt_TimeMeas = const_cast<char*>("TimeMeas");
 
 
+/// \brief Obtain next random number sequence in integer
+static SQInteger sqf_RandomSequencePtr_next(HSQUIRRELVM v){
+	RandomSequence *p;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return sq_throwerror(v, _SC("RandomSequencePtr.next() cannot obtain pointer"));
+	if(!p)
+		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
+	sq_pushinteger(v, SQInteger(p->next()));
+	return 1;
+}
+
+/// \brief Obtain next random number sequence in double
+static SQInteger sqf_RandomSequencePtr_nextd(HSQUIRRELVM v){
+	RandomSequence *p;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return sq_throwerror(v, _SC("RandomSequencePtr.next() cannot obtain pointer"));
+	if(!p)
+		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
+	sq_pushfloat(v, SQFloat(p->nextd()));
+	return 1;
+}
+
+const SQUserPointer tt_RandomSequencePtr = const_cast<char*>("RandomSequencePtr");
+
+
 
 
 
@@ -1053,6 +1078,14 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_settypetag(v, -1, tt_TimeMeas);
 	register_closure(v, _SC("constructor"), sqf_TimeMeas_construct);
 	register_closure(v, _SC("lap"), sqf_TimeMeas_lap);
+	sq_createslot(v, -3);
+
+	// Define class RandomSequencePtr
+	sq_pushstring(v, _SC("RandomSequencePtr"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_RandomSequencePtr);
+	register_closure(v, _SC("next"), sqf_RandomSequencePtr_next);
+	register_closure(v, _SC("nextd"), sqf_RandomSequencePtr_nextd);
 	sq_createslot(v, -3);
 
 	// Define class Vec3d, native vector representation

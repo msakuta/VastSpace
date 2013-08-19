@@ -1609,6 +1609,19 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		sq_pushstring(v, (SQChar*)typetag, -1);
 		return 1;
 	}
+	else if(!scstrcmp(wcs, _SC("rs"))){
+		if(!p->w){
+			sq_pushnull(v);
+			return 1;
+		}
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("RandomSequencePtr"), -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			return sq_throwerror(v, _SC("RandomSequencePtr not defined in root table"));
+		sq_createinstance(v, -1);
+		sq_setinstanceup(v, -1, &p->w->rs);
+		return 1;
+	}
 	else
 		return SQ_ERROR;
 }

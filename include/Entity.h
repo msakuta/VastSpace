@@ -203,6 +203,7 @@ protected:
 			sq_get(v, 1);
 			sq_newclass(v, SQTrue);
 			sq_settypetag(v, -1, SQUserPointer(m_classid));
+			sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>)); // Set space for the weak pointer
 			sq_defineInt(v);
 			sq_createslot(v, -3);
 			return true;

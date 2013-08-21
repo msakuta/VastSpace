@@ -185,13 +185,22 @@ static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
 
 void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
 	sq_pushroottable(v);
-	sq_pushstring(v, _SC("Entity"), -1);
+
+	// Using literal "Entity" here works to some extent, but we should create an instance of
+	// derived class (in Squirrel VM) instead of always creating Entity.
+	// It makes difference if you add a function in the derived class.
+	// It doesn't make difference in _get or _set metamethods, because they are virtual in C++
+	// way, which means derived methods are always called.
+	// It means you must override classname() to return Squirrel class name in order to enable
+	// added functions in derived class in Squirrel scripts.
+	sq_pushstring(v, e->classname(), -1);
+
 	if(SQ_FAILED(sq_get(v, -2)))
 		throw SQFError("Something's wrong with Entity class definition.");
 	if(SQ_FAILED(sq_createinstance(v, -1)))
 		throw SQFError("Something's wrong with Entity class instance.");
 	SQUserPointer p;
-	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)) || !p)
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
 	new(p) WeakPtr<Entity>(e);
 	sq_setreleasehook(v, -1, sqh_release);

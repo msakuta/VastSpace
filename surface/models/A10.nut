@@ -105,6 +105,7 @@ function fire(e,dt){
 					newvelo[j] += (rs.nextd() - 0.5) * 0.02;
 				pb.setvelo(newvelo);
 				pb.update(dt - e.cooldown);
+				e.gunFireEffect();
 			};
 			e.cooldown += lthis.shootCooldown;
 		}

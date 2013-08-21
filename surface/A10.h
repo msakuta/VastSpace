@@ -74,6 +74,7 @@ protected:
 	void toggleWeapon()override{weapon = (weapon + 1) % weaponList.size();}
 
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
+	static SQInteger sqf_gunFireEffect(HSQUIRRELVM);
 
 	void init();
 

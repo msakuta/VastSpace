@@ -10,6 +10,7 @@
 #include "glw/GLWchart.h"
 #include "cmd.h"
 #include "sqadapt.h"
+#include "draw/effects.h"
 
 extern "C"{
 #include "clib/gl/gldraw.h"
@@ -18,7 +19,6 @@ extern "C"{
 
 
 Model *A10::model;
-
 
 void A10::draw(WarDraw *wd){
 	static Motion *lodMotion = nullptr;
@@ -1015,3 +1015,19 @@ void A10::drawOverlay(WarDraw *){
 	glCallList(overlayDisp);
 }
 
+/// I really want to make this logic scipted, but the temporary entity library is not yet
+/// exported API to Squirrel scripting.
+SQInteger A10::sqf_gunFireEffect(HSQUIRRELVM v){
+	Entity *e = sq_refobj(v, 1);
+	if(!e || gunPositions.size() == 0)
+		return 0;
+	WarField *w = e->w;
+	WarSpace *ws = *w;
+	if(tent3d_line_list *tell = ws->tell){
+		if(w->rs.nextd() < 0.3)
+			AddTelineCallback3D(tell, e->pos + e->rot.trans(gunPositions.front())
+				+ Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5e-3,
+				e->velo, 3e-3, quat_u, vec3_000, w->accel(e->pos, e->velo), smokedraw, nullptr, 0, 1.0 + w->rs.nextd());
+	}
+	return 0;
+}

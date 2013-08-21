@@ -60,7 +60,7 @@ void drawmuzzleflash(const Vec3d &pos, const Vec3d &org, double rad, const Mat4d
 
 
 /*
-static void fly_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+static void fly_gib_draw(const Teline3CallbackData *pl, const struct Teline3CallbackData *dd, void *pv){
 	int i = (int)pv;
 	suf_t *suf;
 	double scale;

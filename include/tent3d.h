@@ -68,6 +68,7 @@ namespace tent3d{
 
 struct tent3d_line_drawdata;
 
+/// \brief Basic set of variables that all Teline3 classes share.
 struct Teline3ConstructInfo{
 	Vec3d pos; ///< Position vector of center point
 	Vec3d velo; ///< Velocity vecotr
@@ -87,14 +88,8 @@ struct Teline3 : Teline3ConstructInfo{
 };
 
 struct Teline3List;
-struct tent3d_line_callback{
-	Vec3d pos; /* center point, double because the velo may be so slow */
-	Vec3d velo; /* velocity. */
-	double len; /* length of the beam */
-	Quatd rot; /* rotation in quaternion form */
-	Vec3d omg; /* angle velocity */
-	double life; /* remaining rendering time */
-};
+typedef Teline3ConstructInfo Teline3CallbackData;
+
 struct tent3d_line_drawdata{
 	Vec3d viewpoint, viewdir;
 	Quatd rot;
@@ -109,7 +104,7 @@ EXPORT Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /*
 EXPORT Teline3List *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
 EXPORT void DelTeline3D(Teline3List *); /* destructor */
 EXPORT void AddTeline3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
-EXPORT void AddTelineCallback3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
+EXPORT void AddTelineCallback3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const Teline3CallbackData*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
 EXPORT void AnimTeline3D(Teline3List *tell, double dt);
 EXPORT void DrawTeline3D(Teline3List *tell, struct tent3d_line_drawdata *);
 }

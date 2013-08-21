@@ -260,7 +260,7 @@ static void warp_draw(struct war_field *w, struct war_draw_data *wd){
 		pb->vft->drawmodel(pb, wd);
 	}
 	if(w->gibs){
-		struct tent3d_line_drawdata dd;
+		struct Teline3CallbackData dd;
 /*		glPushAttrib(GL_ENABLE_BIT);*/
 		glDisable(GL_CULL_FACE);
 		VECCPY(dd.viewpoint, wd->view);

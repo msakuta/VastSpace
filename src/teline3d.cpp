@@ -65,10 +65,11 @@ struct CylinderTeline3 : ColorTeline3{
 };
 
 struct CallbackTeline3 : Teline3{
-	typedef void (*CallbackProc)(const struct tent3d_line_callback *, const struct tent3d_line_drawdata*, void*);
+	typedef void (*CallbackProc)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*);
 	CallbackProc callback;
 	void *callback_hint;
 	CallbackTeline3(Teline3ConstructInfo &ci, CallbackProc f, void *p) : Teline3(ci), callback(f), callback_hint(p){}
+	void draw(const tent3d_line_drawdata &)const override;
 };
 
 /// rendering model, which depends on flags & TEL_FORMS
@@ -77,7 +78,7 @@ union{
 	const struct color_sequence *cs; /* TEL_GRADCIRCLE */
 	const struct cs2 *cs2; /* TEL_GRADCIRCLE2 */
 	suf_t *suf;
-	struct{void (*f)(const struct tent3d_line_callback *, const struct tent3d_line_drawdata*, void*); void *p;} callback;
+	struct{void (*f)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*); void *p;} callback;
 	struct{COLOR32 r; float maxlife;} rm; /* certain forms needs its initial life time */
 } mdl;
 
@@ -238,7 +239,7 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 
 void AddTelineCallback3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
-	void (*f)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, float life)
+	void (*f)(const Teline3CallbackData*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, float life)
 {
 	flags &= ~TEL_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
 	Teline3Node *pl = alloc_teline(p);
@@ -442,9 +443,6 @@ void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
 			}
 			glPopMatrix();
 		}
-		else if(form == TEL3_CALLBACK){
-			pl->mdl.callback.f((struct tent3d_line_callback*)pl, dd, pl->mdl.callback.p);
-		}
 #endif
 
 
@@ -543,6 +541,10 @@ void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
 	}
 	glEnd();
 }
+
+void CallbackTeline3::draw(const tent3d_line_drawdata &dd)const{
+	callback(this, &dd, callback_hint);
+}
 }
 
 #ifndef NPROFILE
@@ -550,4 +552,3 @@ const tent3d_line_debug *Teline3DDebug(const Teline3List *p){
 	return &p->debug;
 }
 #endif
-

@@ -58,7 +58,7 @@ static void valkie_anim(entity_t *pt, warf_t *w, double dt);
 static void valkie_draw(entity_t *pt, wardraw_t *wd);
 static void valkie_drawtra(entity_t *pt, wardraw_t *wd);
 static int valkie_takedamage(entity_t *pt, double damage, warf_t *w);
-static void valkie_gib_draw(const struct tent3d_line_callback *pl, void *pv);
+static void valkie_gib_draw(const Teline3CallbackData *pl, void *pv);
 static int valkie_flying(const entity_t *pt);
 static void valkie_bullethole(entity_t *pt, sufindex, double rad, const double (*pos)[3], const double (*pyr)[3]);
 static int valkie_getrot(struct entity*, warf_t *, double (*)[4]);

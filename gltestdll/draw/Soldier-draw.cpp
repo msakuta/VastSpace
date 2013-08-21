@@ -209,7 +209,7 @@ void Soldier::drawOverlay(WarDraw *wd){
 }
 
 #if 0
-static void infantry_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+static void infantry_gib_draw(const Teline3CallbackData *pl, const struct Teline3CallbackData *dd, void *pv){
 	int i = (int)pv;
 	double scale = INFANTRY_SCALE;
 	amat4_t mat;
@@ -403,7 +403,7 @@ void Soldier::drawtra(WarDraw *wd){
 
 const double bloodSmokeLife = 1.;
 
-static void bloodsmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+static void bloodsmoke(const Teline3CallbackData *pl, const tent3d_line_drawdata *dd, void *pv){
 	if(dd->pgc->cullFrustum(pl->pos, pl->len))
 		return;
 	double pixels = .0002 * fabs(dd->pgc->scale(pl->pos));

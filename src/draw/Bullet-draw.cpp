@@ -43,7 +43,7 @@ static const struct color_sequence cs_fireburn = DEFINE_COLSEQ(cnl_fireburn, (CO
 
 
 
-void explotex(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+void explotex(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	int i, j;
 	static GLuint texnames[8] = {0};
 	struct random_sequence rs;
@@ -112,7 +112,7 @@ static int explosmokecmp(const void *pa, const void *pb){
 	return **(const double**)pa < **(const double**)pb ? -1 : **(const double**)pa == **(const double**)pb ? 0 : 1;
 }
 
-void explosmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+void explosmoke(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	int i, j;
 	static GLuint texname = 0;
 	struct random_sequence rs;
@@ -184,7 +184,7 @@ void explosmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_
 }
 
 #if 0
-static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+static void dirtsmoke(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	double rad;
 	struct random_sequence rs;
 	int i, n = (int)pv;

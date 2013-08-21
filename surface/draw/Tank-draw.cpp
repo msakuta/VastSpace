@@ -114,7 +114,7 @@ void Tank::drawtra(wardraw_t *wd){
 }
 
 #if 1
-void Tank::gib_draw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data){
+void Tank::gib_draw(const Teline3CallbackData *p, const struct tent3d_line_drawdata *dd, void *private_data){
 	if(!model)
 		return;
 	glPushMatrix();
@@ -128,7 +128,7 @@ void Tank::gib_draw(const struct tent3d_line_callback *p, const struct tent3d_li
 #endif
 
 #if 0
-static void tank_gib_draw(const struct tent3d_line_callback *pl, const struct tent3d_line_drawdata *dd, void *pv){
+static void tank_gib_draw(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv){
 	int i = (int)pv;
 	gib_draw(pl, i < tank_s.sufbase->np ? tank_s.sufbase : tank_s.sufturret, TANK_SCALE, i < tank_s.sufbase->np ? i : i - tank_s.sufbase->np);
 }

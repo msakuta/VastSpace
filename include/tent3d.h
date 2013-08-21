@@ -68,6 +68,24 @@ namespace tent3d{
 
 struct tent3d_line_drawdata;
 
+struct Teline3ConstructInfo{
+	Vec3d pos; ///< Position vector of center point
+	Vec3d velo; ///< Velocity vecotr
+	double len; ///< Length of the beam
+	Quatd rot; ///< Rotation in quaternion
+	Vec3d omg; ///< Angle velocity vector
+	double life; ///< Remaining rendering time
+	Vec3d grv; ///< Gravity effect factor
+	tent3d_flags_t flags; ///< Option flags
+};
+
+struct Teline3 : Teline3ConstructInfo{
+	Teline3();
+	Teline3(const Teline3ConstructInfo &);
+	virtual bool update(double dt);
+	virtual void draw(const tent3d_line_drawdata&)const;
+};
+
 struct Teline3List;
 struct tent3d_line_callback{
 	Vec3d pos; /* center point, double because the velo may be so slow */

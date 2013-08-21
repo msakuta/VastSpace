@@ -1255,7 +1255,7 @@ void Sceptor::anim(double dt){
 		this->health += dt;
 		if(0. < this->health && active){
 #ifndef DEDICATED
-			struct tent3d_line_list *tell = w->getTeline3d();
+			Teline3List *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
 /*			if(w->gibs && ((struct entity_private_static*)pt->vft)->sufbase){
@@ -1336,7 +1336,7 @@ void Sceptor::anim(double dt){
 		}
 		else{
 #ifndef DEDICATED
-			struct tent3d_line_list *tell = w->getTeline3d();
+			Teline3List *tell = w->getTeline3d();
 			if(tell){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
@@ -1388,7 +1388,7 @@ bool Sceptor::solid(const Entity *o)const{
 
 int Sceptor::takedamage(double damage, int hitpart){
 	int ret = 1;
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	if(this->health < 0.)
 		return 1;
 //	this->hitsound = playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

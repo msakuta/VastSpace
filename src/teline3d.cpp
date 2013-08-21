@@ -38,6 +38,8 @@ extern "C"{
 #define COLISTRGB(c) COLOR32R(c), COLOR32G(c), COLOR32B(c)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
 
+namespace tent3d{
+
 struct Teline3{
 	Vec3d pos; ///< Position vector of center point
 	Vec3d velo; ///< Velocity vecotr
@@ -88,7 +90,7 @@ struct tent3d_line_extra_list; // forward declaration
 
 /* this is a pointer list pool, which does not use heap allocation or shifting
   during the simulation which can be serious overhead. */
-typedef struct tent3d_line_list{
+struct Teline3List{
 	unsigned m; /* cap for total allocations of elements */
 	unsigned ml; /* allocated elements in l */
 	unsigned mex; /* allocated elements in an extra list */
@@ -99,7 +101,7 @@ typedef struct tent3d_line_list{
 #ifndef NPROFILE
 	struct tent3d_line_debug debug;
 #endif
-} tell_t;
+};
 
 struct tent3d_line_extra_list{
 	struct tent3d_line_extra_list *next;
@@ -108,11 +110,11 @@ struct tent3d_line_extra_list{
 
 
 /* allocator and constructor */
-tell_t *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
+Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
 	/* it's silly that max is defined as a macro */
 	int i;
-	tell_t *ret;
-	ret = new tell_t;
+	Teline3List *ret;
+	ret = new Teline3List;
 	if(!ret) return NULL;
 	ret->lfree = ret->l = new Teline3[init];
 	if(!ret->l) return NULL;
@@ -134,15 +136,15 @@ tell_t *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
 }
 
 /*
-tell_t *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, warf_t *w){
-	tell_t *ret;
+Teline3List *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, warf_t *w){
+	Teline3List *ret;
 	ret = NewTeline3D(maxt, init, unit);
 	ret->w = w;
 	return ret;
 }
 */
 /* destructor and deallocator */
-void DelTeline3D(tell_t *p){
+void DelTeline3D(Teline3List *p){
 	if(p->l) free(p->l);
 	if(p->ex){
 		struct tent3d_line_extra_list *ex = p->ex, *nex;
@@ -155,7 +157,7 @@ void DelTeline3D(tell_t *p){
 	free(p);
 }
 
-static Teline3 *alloc_teline(tell_t *p)
+static Teline3 *alloc_teline(Teline3List *p)
 {
 	Teline3 *pl;
 	if(!p || !p->m) return NULL;
@@ -201,7 +203,7 @@ static Teline3 *alloc_teline(tell_t *p)
 	return pl;
 }
 
-void AddTeline3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
+void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
 	COLOR32 col, tent3d_flags_t flags, float life)
 {
@@ -218,7 +220,7 @@ void AddTeline3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
 	}
 }
 
-void AddTelineCallback3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
+void AddTelineCallback3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
 	void (*f)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, float life)
 {
@@ -231,7 +233,7 @@ void AddTelineCallback3D(tell_t *p, const Vec3d &pos, const Vec3d &velo,
 }
 
 /* animate every line */
-void AnimTeline3D(tell_t *p, double dt){
+void AnimTeline3D(Teline3List *p, double dt){
 	Teline3 *pl = p->lactv, **ppl = &p->lactv;
 	while(pl){
 		Teline3 *pl2;
@@ -281,7 +283,7 @@ void AnimTeline3D(tell_t *p, double dt){
 
 /* since 3d graphics have far more parameters than that of 2d, we pack those variables
   to single structure to improve performance of function calls. */
-void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
+void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	if(!p)
@@ -551,11 +553,11 @@ void DrawTeline3D(tell_t *p, struct tent3d_line_drawdata *dd){
 	p->debug.drawteline = TimeMeasLap(&tm);
 #endif
 }
-
+}
 
 
 #ifndef NPROFILE
-const struct tent3d_line_debug *Teline3DDebug(const tell_t *p){
+const struct tent3d_line_debug *Teline3DDebug(const Teline3List *p){
 	return &p->debug;
 }
 #endif

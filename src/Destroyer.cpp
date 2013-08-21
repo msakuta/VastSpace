@@ -261,7 +261,7 @@ void Destroyer::deathEffects(){
 	if(!game->isServer() && ws && !clientDead){
 		// Only clear the flag in the client.
 		clientDead = true;
-		struct tent3d_line_list *tell = w->getTeline3d();
+		Teline3List *tell = w->getTeline3d();
 
 		if(ws->gibs) for(int i = 0; i < 128; i++){
 			double pos[3], velo[3] = {0}, omg[3];

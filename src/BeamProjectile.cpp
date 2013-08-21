@@ -108,7 +108,7 @@ void BeamProjectile::clientUpdate(double dt){
 		}
 		bands -= deltaBands;
 		bandTime += deltaBandTime;
-		struct tent3d_line_list *tell;
+		Teline3List *tell;
 		if(floor(bands) < floor(bands + deltaBands) && (tell = w->getTeline3d())){
 			Vec3d bpos = pos + velo * bandTime;
 			int alpha = 255 * (1 + floor(bands)) / maxBands;

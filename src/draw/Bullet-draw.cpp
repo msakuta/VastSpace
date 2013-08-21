@@ -261,7 +261,7 @@ static void dirtsmoke(const struct tent3d_line_callback *pl, const struct tent3d
 
 void Bullet::bulletDeathEffect(int hitground, const contact_info *ci){
 	int j;
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	struct TefpolList *tepl = w->getTefpol3d();
 	if(!tell)
 		return;
@@ -365,7 +365,7 @@ void Bullet::bulletDeathEffect(int hitground, const contact_info *ci){
 }
 
 void Bullet::explosionEffect(const contact_info *ci){
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	Entity *pt;
 	Vec3d pos;
 	Vec3d accel;

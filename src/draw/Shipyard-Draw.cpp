@@ -188,7 +188,7 @@ void Shipyard::dyingEffects(double dt){
 	if(!game->isClient())
 		return;
 
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	static const double smokeFreq = 10.;
 	if(tell){
 		Vec3d halfLen = hitboxes.size() < 1 ? Vec3d(getHitRadius(), getHitRadius(), getHitRadius()) : hitboxes[0].sc;
@@ -212,7 +212,7 @@ void Shipyard::deathEffects(){
 	WarSpace *ws = *w;
 	if(!ws)
 		return;
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	RandomSequenceCRC rs(this);
 
 	if(ws->gibs) for(int i = 0; i < 128; i++){

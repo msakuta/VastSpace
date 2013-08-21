@@ -250,7 +250,7 @@ void RStation::drawtra(wardraw_t *wd){
 }
 
 int RStation::takedamage(double damage, int hitpart){
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	int ret = 1;
 	if(this->health < 0.)
 		return 1;

@@ -1023,7 +1023,7 @@ SQInteger A10::sqf_gunFireEffect(HSQUIRRELVM v){
 		return 0;
 	WarField *w = e->w;
 	WarSpace *ws = *w;
-	if(tent3d_line_list *tell = ws->tell){
+	if(Teline3List *tell = ws->tell){
 		if(w->rs.nextd() < 0.3)
 			AddTelineCallback3D(tell, e->pos + e->rot.trans(gunPositions.front())
 				+ Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5e-3,

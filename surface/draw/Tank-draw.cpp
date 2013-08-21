@@ -181,7 +181,7 @@ void tank_drawHUD(entity_t *pt, warf_t *wf, wardraw_t *wd, const double irot[16]
 
 
 void Tank::deathEffects(){
-	tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 
 	Vec3d gravity = w->accel(this->pos, this->velo);
 	if(tell){
@@ -407,7 +407,7 @@ void M3Truck::drawCockpit(WarDraw *wd){
 }
 
 void M3Truck::deathEffects(){
-	tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 
 	Vec3d gravity = w->accel(this->pos, this->velo);
 	if(tell){

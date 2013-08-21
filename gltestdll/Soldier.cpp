@@ -1654,7 +1654,7 @@ int headshots[2] = {0};
 int blast_deaths[2] = {0};
 
 static int infantry_takedamage(entity_t *pt, double damage, warf_t *w, int hitpart){
-	struct tent3d_line_list *tell = w->tell;
+	Teline3List *tell = w->tell;
 	infantry_t *p = (infantry_t*)pt;
 	int ret = 1;
 	if(!pt->active)

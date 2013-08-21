@@ -155,7 +155,7 @@ Docker *Attacker::getDockerInt(){
 }
 
 int Attacker::takedamage(double damage, int hitpart){
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	int ret = 1;
 
 //	playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

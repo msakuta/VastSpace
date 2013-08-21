@@ -341,7 +341,7 @@ void A10::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
 }
 
 int A10::takedamage(double damage, int hitpart){
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	int ret = 1;
 	if(tell){
 /*		int j, n;

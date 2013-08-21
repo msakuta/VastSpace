@@ -61,7 +61,14 @@ typedef unsigned long tent3d_flags_t;
 
 
 #ifdef __cplusplus
-struct tent3d_line_list;
+
+struct glcull;
+
+namespace tent3d{
+
+struct tent3d_line_drawdata;
+
+struct Teline3List;
 struct tent3d_line_callback{
 	Vec3d pos; /* center point, double because the velo may be so slow */
 	Vec3d velo; /* velocity. */
@@ -79,15 +86,16 @@ struct tent3d_line_drawdata{
 	/* following are trivial members; caller need not to set them */
 	GLcull *pgc;
 };
-struct glcull;
 
-EXPORT struct tent3d_line_list *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
-EXPORT struct tent3d_line_list *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
-EXPORT void DelTeline3D(struct tent3d_line_list *); /* destructor */
-EXPORT void AddTeline3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
-EXPORT void AddTelineCallback3D(struct tent3d_line_list *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
-EXPORT void AnimTeline3D(struct tent3d_line_list *tell, double dt);
-EXPORT void DrawTeline3D(struct tent3d_line_list *tell, struct tent3d_line_drawdata *);
+EXPORT Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */
+EXPORT Teline3List *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
+EXPORT void DelTeline3D(Teline3List *); /* destructor */
+EXPORT void AddTeline3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
+EXPORT void AddTelineCallback3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const struct tent3d_line_callback*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
+EXPORT void AnimTeline3D(Teline3List *tell, double dt);
+EXPORT void DrawTeline3D(Teline3List *tell, struct tent3d_line_drawdata *);
+}
+using namespace tent3d;
 #endif
 
 
@@ -99,7 +107,7 @@ struct tent3d_line_debug{
 	unsigned teline_m;
 	unsigned teline_s;
 };
-const struct tent3d_line_debug *Teline3DDebug(const struct tent3d_line_list *);
+const struct tent3d_line_debug *Teline3DDebug(const Teline3List *);
 #endif
 
 

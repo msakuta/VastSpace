@@ -496,7 +496,7 @@ void Apache::anim(double dt){
 
 
 int Apache::takedamage(double damage, int hitpart){
-	tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	int ret = 1;
 
 #if 0

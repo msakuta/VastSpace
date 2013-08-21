@@ -1113,7 +1113,7 @@ void Defender::anim(double dt){
 		this->health += dt;
 		if(0. < this->health){
 #ifndef DEDICATED
-			struct tent3d_line_list *tell = w->getTeline3d();
+			Teline3List *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
 /*			if(w->gibs && ((struct entity_private_static*)pt->vft)->sufbase){
@@ -1188,7 +1188,7 @@ void Defender::anim(double dt){
 		}
 		else{
 #ifndef DEDICATED
-			struct tent3d_line_list *tell = w->getTeline3d();
+			Teline3List *tell = w->getTeline3d();
 			if(tell){
 				double pos[3], dv[3];
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
@@ -1250,7 +1250,7 @@ int Defender::takedamage(double damage, int hitpart){
 		int i;
 		ret = 0;
 #ifndef DEDICATED
-		struct tent3d_line_list *tell = w->getTeline3d();
+		Teline3List *tell = w->getTeline3d();
 		if(tell) for(i = 0; i < 32; i++){
 			Vec3d velo(w->rs.nextd() - .5, w->rs.nextd() - .5, w->rs.nextd() - .5);
 			velo.normin().scalein(.1);

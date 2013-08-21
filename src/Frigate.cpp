@@ -139,7 +139,7 @@ int Frigate::takedamage(double damage, int hitpart){
 	if(!w)
 		return 1;
 	Frigate *p = this;
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	int ret = 1;
 
 	if(hitpart == 1000){

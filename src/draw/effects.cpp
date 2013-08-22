@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implemetation of graphical effects.
+ */
 #include "draw/effects.h"
 #include "bitmap.h"
 #include "draw/material.h"

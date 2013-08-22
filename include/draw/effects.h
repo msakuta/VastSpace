@@ -1,3 +1,7 @@
+/** \file
+ * \brief Definition of various graphical effects.
+ */
+
 #ifndef DRAW_EFFECTS_H
 #define DRAW_EFFECTS_H
 #include "export.h"

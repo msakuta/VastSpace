@@ -1,3 +1,6 @@
+/** \file
+ * \brief Temporary Entity LINE implementation.
+ */
 #include "tent3d.h"
 #include "tent3d_p.h"
 #include <cpplib/mat4.h>

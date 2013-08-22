@@ -80,7 +80,7 @@ struct Teline3ConstructInfo{
 	tent3d_flags_t flags; ///< Option flags
 };
 
-struct Teline3 : Teline3ConstructInfo{
+struct EXPORT Teline3 : Teline3ConstructInfo{
 	Teline3();
 	Teline3(const Teline3ConstructInfo &);
 	virtual bool update(double dt);
@@ -109,6 +109,9 @@ EXPORT void AnimTeline3D(Teline3List *tell, double dt);
 EXPORT void DrawTeline3D(Teline3List *tell, struct tent3d_line_drawdata *);
 }
 using namespace tent3d;
+
+EXPORT void *operator new(size_t size, Teline3List &a);
+
 #endif
 
 

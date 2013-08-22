@@ -547,6 +547,15 @@ void CallbackTeline3::draw(const tent3d_line_drawdata &dd)const{
 }
 }
 
+void *operator new(size_t size, Teline3List &a){
+	assert(size <= Teline3Node::size);
+	Teline3Node *ret = alloc_teline(&a);
+	if(ret)
+		return ret->buf;
+	else throw std::bad_alloc();
+}
+
+
 #ifndef NPROFILE
 const tent3d_line_debug *Teline3DDebug(const Teline3List *p){
 	return &p->debug;

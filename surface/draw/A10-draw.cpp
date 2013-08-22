@@ -1015,6 +1015,19 @@ void A10::drawOverlay(WarDraw *){
 	glCallList(overlayDisp);
 }
 
+struct SmokeTeline3 : Teline3{
+	SmokeTeline3(const Teline3ConstructInfo &ci) : Teline3(ci){}
+	bool update(double dt)override{
+		if(!Teline3::update(dt))
+			return false;
+		velo *= exp(-dt);
+		return true;
+	}
+	void draw(const tent3d_line_drawdata &dd)const override{
+		smokedraw(this, &dd, NULL);
+	}
+};
+
 /// I really want to make this logic scipted, but the temporary entity library is not yet
 /// exported API to Squirrel scripting.
 SQInteger A10::sqf_gunFireEffect(HSQUIRRELVM v){
@@ -1024,10 +1037,19 @@ SQInteger A10::sqf_gunFireEffect(HSQUIRRELVM v){
 	WarField *w = e->w;
 	WarSpace *ws = *w;
 	if(Teline3List *tell = ws->tell){
-		if(w->rs.nextd() < 0.3)
-			AddTelineCallback3D(tell, e->pos + e->rot.trans(gunPositions.front())
-				+ Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5e-3,
-				e->velo, 3e-3, quat_u, vec3_000, w->accel(e->pos, e->velo), smokedraw, nullptr, 0, 1.0 + w->rs.nextd());
+		if(w->rs.nextd() < 0.3){
+			Teline3ConstructInfo ci = {
+				e->pos + e->rot.trans(gunPositions.front()) + Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5e-3, // pos
+				e->velo, // velo
+				3e-3, // len
+				quat_u, // rot
+				vec3_000, // omg
+				1.0 + w->rs.nextd(),
+				w->accel(e->pos, e->velo), // gravity
+				0, // flags
+			};
+			new(*tell) SmokeTeline3(ci);
+		}
 	}
 	return 0;
 }

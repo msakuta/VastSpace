@@ -8,6 +8,7 @@
 #include "judge.h"
 #include "btadapt.h"
 #include "Bullet.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/mathdef.h>
 }

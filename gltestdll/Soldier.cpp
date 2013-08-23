@@ -21,6 +21,7 @@
 #include "sqadapt.h"
 #include "GetFov.h"
 #include "SqInitProcess-ex.h"
+#include "tent3d.h"
 
 extern "C"{
 #include <clib/mathdef.h>

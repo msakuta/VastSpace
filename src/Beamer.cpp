@@ -9,6 +9,7 @@
 #include "motion.h"
 #include "btadapt.h"
 #include "Game.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>

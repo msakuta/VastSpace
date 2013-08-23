@@ -24,6 +24,7 @@
 #include "glw/popup.h"
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/gl/multitex.h>

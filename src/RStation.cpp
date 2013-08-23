@@ -14,6 +14,7 @@
 #include "serial_util.h"
 #include "draw/WarDraw.h"
 #include "glw/popup.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/suf/sufdraw.h>
 #include <clib/suf/sufbin.h>

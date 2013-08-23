@@ -16,6 +16,7 @@
 #include "msg/GetCoverPointsMessage.h"
 #include "ModelEntity.h"
 #include "Soldier.h"
+#include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>

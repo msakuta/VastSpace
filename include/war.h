@@ -5,7 +5,7 @@
  */
 #include "serial_util.h"
 #include "Observable.h"
-#include "tent3d.h"
+#include "tent3d_forward.h"
 extern "C"{
 #include <clib/colseq/color.h>
 #include <clib/avec3.h>
@@ -22,12 +22,6 @@ class CoordSys;
 class Entity;
 class Bullet;
 
-namespace tent3d{
-	struct Tefpol;
-	struct TefpolList;
-	struct Teline3List;
-}
-using namespace tent3d;
 
 
 

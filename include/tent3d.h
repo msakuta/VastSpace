@@ -100,6 +100,11 @@ struct Teline3ConstructInfo{
 	tent3d_flags_t flags; ///< Option flags
 };
 
+/// \brief Base class of Telines.
+///
+/// If you want to create Teline with custom behavior, derive this class,
+/// override virtual functions and use placement new syntax with Teline3List
+/// as the parameter to the new operator.
 struct EXPORT Teline3 : Teline3ConstructInfo{
 	Teline3();
 	Teline3(const Teline3ConstructInfo &);
@@ -110,11 +115,12 @@ struct EXPORT Teline3 : Teline3ConstructInfo{
 struct Teline3List;
 typedef Teline3ConstructInfo Teline3CallbackData;
 
+/// \brief The context data set for drawing Telines.
 struct tent3d_line_drawdata{
 	Vec3d viewpoint, viewdir;
 	Quatd rot;
 	Mat4d invrot;
-	double fov; /* field of view */
+	double fov; ///< field of view
 
 	/* following are trivial members; caller need not to set them */
 	GLcull *pgc;

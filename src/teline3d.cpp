@@ -47,6 +47,7 @@ extern "C"{
 
 namespace tent3d{
 
+/// \brief Telines with customizable colors.
 struct ColorTeline3 : Teline3{
 	COLOR32 r;
 	ColorTeline3(Teline3ConstructInfo &ci, COLOR32 color) : Teline3(ci), r(color){}
@@ -56,17 +57,20 @@ struct ColorTeline3 : Teline3{
 	double getLength()const;
 };
 
+/// \brief Line shaped, um, Teline.
 struct LineTeline3 : ColorTeline3{
 	LineTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color){}
 	void draw(const tent3d_line_drawdata &)const override;
 };
 
+/// \brief Expanding cylinder over time.
 struct CylinderTeline3 : ColorTeline3{
 	double maxlife;
 	CylinderTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color), maxlife(ci.life){}
 	void draw(const tent3d_line_drawdata &)const override;
 };
 
+/// \brief Teline with callback function.
 struct CallbackTeline3 : Teline3{
 	typedef void (*CallbackProc)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*);
 	CallbackProc callback;
@@ -75,17 +79,15 @@ struct CallbackTeline3 : Teline3{
 	void draw(const tent3d_line_drawdata &)const override;
 };
 
-/// rendering model, which depends on flags & TEL_FORMS
-union{
-	COLOR32 r; /* color of the beam, black means random per rendering */
-	const struct color_sequence *cs; /* TEL_GRADCIRCLE */
-	const struct cs2 *cs2; /* TEL_GRADCIRCLE2 */
-	suf_t *suf;
-	struct{void (*f)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*); void *p;} callback;
-	struct{COLOR32 r; float maxlife;} rm; /* certain forms needs its initial life time */
-} mdl;
-
+/// \brief Container object for any Teline derived class objects.
+///
+/// It provides set of fixed size buffers, in which Teline objects are allocated by placement new syntax.
 struct Teline3Node{
+	/// We'd like to use std::max template instead of MAX macro, but this value is static, which means no
+	/// runtime evaluation is possible.
+	/// Note that no matter how large we reserve the buffer, there's always the possibility of user defined
+	/// Teline descendants which exceeds the size.  We raise an exception at runtime in that case.
+	/// Or should we support such cases by using additional heap memory?
 	static const size_t size = MAX(sizeof(LineTeline3), MAX(sizeof(CylinderTeline3), sizeof(CallbackTeline3)));
 	Teline3Node *next;
 	char buf[size];
@@ -102,15 +104,15 @@ Teline3::Teline3(const Teline3ConstructInfo &ci) : Teline3ConstructInfo(ci)
 		flags &= ~TEL3_ROTATE; /* truncate any given flags */
 		flags |= x | y | z;
 	}
-
-	this->flags = flags;
-	this->life = life;
 }
 
 struct tent3d_line_extra_list; // forward declaration
 
-/* this is a pointer list pool, which does not use heap allocation or shifting
-  during the simulation which can be serious overhead. */
+/** \brief List of Telines with custom allocator.
+ *
+ * This is a pointer list pool, which does not use heap allocation or shifting
+ * during the simulation which can be serious overhead.
+ */
 struct Teline3List{
 	unsigned m; /* cap for total allocations of elements */
 	unsigned ml; /* allocated elements in l */

@@ -116,6 +116,11 @@ static int bullet_hit_callback(const struct otjEnumHitSphereParam *param, Entity
 	return ret;
 }
 
+/// \brief Callback logic for bullet hit event.
+/// \param pt Pointer to the Entity being hit. Note that it can be NULL.
+/// \param ws The surrounding WarSpace.
+/// \param param Parameters for hit position and involving objects.
+/// \returns false if the Bullet object is destroyed.
 bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 	Bullet *pb = this;
 	void **hint = (void**)param.hint;
@@ -124,11 +129,12 @@ bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 	sufindex pi;
 	double damage; /* calculated damaga*/
 
-	if(!ws->ot && !bullet_hit_callback(&param, pt))
+	if(!ws->ot && pt && !bullet_hit_callback(&param, pt))
 		return true;
 
 	pb->pos = pos;
-	pt->onBulletHit(pb, hitpart);
+	if(pt)
+		pt->onBulletHit(pb, hitpart);
 #ifndef DEDICATED
 	{ /* ricochet */
 		if(ws->tell && rseq(&w->rs) % (ws->effects + 1) == 0){
@@ -149,7 +155,7 @@ bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 			// Add spark sprite
 			{
 				double angle = w->rs.nextd() * 2. * M_PI / 2.;
-				AddTelineCallback3D(ws->tell, pos, pt->velo, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+				AddTelineCallback3D(ws->tell, pos, pt ? pt->velo : vec3_000, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
 					vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
 			}
 
@@ -168,7 +174,7 @@ bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 #endif
 	damage = pb->damage;
 
-	if(pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
+	if(pt && pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
 #ifndef DEDICATED
 		extern int bullet_kills, missile_kills;
 		if(!strcmp("Bullet", classname()))
@@ -439,6 +445,12 @@ SQInteger ExplosiveBullet::sqSet(HSQUIRRELVM v, const SQChar *name){
 }
 
 bool ExplosiveBullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
+	// The hit Entity can be destroyed by splash damage effect.
+	// In that case, pt can be invalid pointer after the next if block.
+	// We must reserve a weak pointer before there to respond such a event to prevent
+	// access violations.
+	WeakPtr<Entity> wpt = pt;
+
 	// Do splash damage
 	if(0 < splashRadius){
 		WarField::EntityList &el = ws->entlist();
@@ -453,7 +465,7 @@ bool ExplosiveBullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam 
 		}
 	}
 
-	return Bullet::bulletHit(pt, ws, param);
+	return Bullet::bulletHit(wpt, ws, param);
 }
 
 #ifdef DEDICATED

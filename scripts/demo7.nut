@@ -17,11 +17,11 @@ local birds = [];
 //player.chase = a10;
 //birds.append(a10);
 
-local tank = player.cs.addent("M3Truck", Vec3d(0, 0, 0));
+local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 player.chase = tank;
 
-local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
-tank2.race = 1;
+//local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
+//tank2.race = 1;
 
 local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
 bldg.modelFile = "surface/models/bigsight.mqo";

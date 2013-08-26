@@ -104,6 +104,12 @@ protected:
 	}
 };
 
+/// \brief Kind of gas blob floating in space.
+struct SpriteTeline3 : ColorTeline3{
+	SpriteTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color){}
+	void draw(const tent3d_line_drawdata &)const override;
+};
+
 /// \brief Teline with callback function.
 struct CallbackTeline3 : Teline3{
 	typedef void (*CallbackProc)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*);
@@ -272,6 +278,7 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 		case TEL3_STATICDISK: new(pl->buf) StaticDiscTeline3(ci, col); break;
 		case TEL3_EXPANDISK: new(pl->buf) ExpanDiscTeline3(ci, col); break;
 		case TEL3_EXPANDGLOW:
+		case TEL3_SPRITE: new(pl->buf) SpriteTeline3(ci, col); break;
 		case TEL3_EXPANDTORUS:
 		default: new(pl->buf) LineTeline3(ci, col);
 	}
@@ -423,19 +430,6 @@ void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
 				glEnd();
 			}
 			else if(form == TEL3_SPRITE){
-				int i;
-				double (*cuts)[2];
-				cuts = CircleCuts(10);
-				glScaled(lenb, lenb, lenb);
-				glBegin(GL_TRIANGLE_FAN);
-				glColor4ub(COLIST(col));
-				glVertex3d(0., 0., 0.);
-				glColor4ub(COLISTRGB(col), 0);
-				for(i = 0; i <= 10; i++){
-					int k = i % 10;
-					glVertex3d(cuts[k][1], cuts[k][0], 0.);
-				}
-				glEnd();
 			}
 			else{ /* if(forms == TEL_POINT) */
 				glBegin(GL_POINTS);
@@ -578,6 +572,25 @@ void StaticDiscTeline3::draw(const tent3d_line_drawdata &dd)const{
 	for(int i = 0; i <= 16; i++){
 		int k = i % 16;
 		glVertex3d(cuts[k][0] * radius, cuts[k][1] * radius, 0.);
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+void SpriteTeline3::draw(const tent3d_line_drawdata &dd)const{
+	COLOR32 col = getColor();
+	double lenb = getLength();
+	double (*cuts)[2] = CircleCuts(10);
+	glPushMatrix();
+	transform(dd);
+	glScaled(lenb, lenb, lenb);
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4ub(COLIST(col));
+	glVertex3d(0., 0., 0.);
+	glColor4ub(COLISTRGB(col), 0);
+	for(int i = 0; i <= 10; i++){
+		int k = i % 10;
+		glVertex3d(cuts[k][1], cuts[k][0], 0.);
 	}
 	glEnd();
 	glPopMatrix();

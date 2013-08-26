@@ -121,76 +121,76 @@ bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 	void **hint = (void**)param.hint;
 	int &hitpart = *(int*)hint[2];
 
-			sufindex pi;
-			double damage; /* calculated damaga*/
+	sufindex pi;
+	double damage; /* calculated damaga*/
 
-			if(!ws->ot && !bullet_hit_callback(&param, pt))
-				return true;
+	if(!ws->ot && !bullet_hit_callback(&param, pt))
+		return true;
 
-			pb->pos = pos;
-			pt->onBulletHit(pb, hitpart);
+	pb->pos = pos;
+	pt->onBulletHit(pb, hitpart);
 #ifndef DEDICATED
-			{ /* ricochet */
-				if(ws->tell && rseq(&w->rs) % (ws->effects + 1) == 0){
-/*					int j, n;
-					Vec3d pyr, bvelo;
-					bvelo = pb->velo - pt->velo;
-					Vec3d delta = pos - pt->pos;
-					pt->bullethole(pi, pb->damage * .00001, delta, Quatd::direction(delta));
-					AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);*/
-				}
-				ws->effects++;
-				if(hitpart != 1000 && ws->tell){
-					Vec3d accel = w->accel(pb->pos, pb->velo);
-					int j, n;
-					frexp(pb->damage, &n);
-					n = n / 2 + drseq(&w->rs);
+	{ /* ricochet */
+		if(ws->tell && rseq(&w->rs) % (ws->effects + 1) == 0){
+/*			int j, n;
+			Vec3d pyr, bvelo;
+			bvelo = pb->velo - pt->velo;
+			Vec3d delta = pos - pt->pos;
+			pt->bullethole(pi, pb->damage * .00001, delta, Quatd::direction(delta));
+			AddTeline3D(w->tell, pos, pt->velo, pb->damage * .0001 + .001, pyr, NULL, NULL, COLOR32RGBA(255,215,127,255), TEL3_NOLINE | TEL3_CYLINDER, .5 + .001 * pb->damage);*/
+		}
+		ws->effects++;
+		if(hitpart != 1000 && ws->tell){
+			Vec3d accel = w->accel(pb->pos, pb->velo);
+			int j, n;
+			frexp(pb->damage, &n);
+			n = n / 2 + drseq(&w->rs);
 
-					// Add spark sprite
-					{
-						double angle = w->rs.nextd() * 2. * M_PI / 2.;
-						AddTelineCallback3D(ws->tell, pos, pt->velo, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
-							vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
-					}
-
-					// Add spark traces
-					for(j = 0; j < n; j++){
-						Vec3d velo = -pb->velo.norm() * .2;
-						for(int k = 0; k < 3; k++)
-							velo[k] += .15 * (drseq(&w->rs) - .5);
-/*						AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
-							j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
-							TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);*/
-						AddTelineCallback3D(ws->tell, pos, velo, .00025 + n * .0001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
-					}
-				}
+			// Add spark sprite
+			{
+				double angle = w->rs.nextd() * 2. * M_PI / 2.;
+				AddTelineCallback3D(ws->tell, pos, pt->velo, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+					vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
 			}
-#endif
-			damage = pb->damage;
 
-			if(pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
-#ifndef DEDICATED
-				extern int bullet_kills, missile_kills;
-				if(!strcmp("Bullet", classname()))
-					bullet_kills++;
-				else if(!strcmp("Missile", classname()))
-					missile_kills++;
-#endif
+			// Add spark traces
+			for(j = 0; j < n; j++){
+				Vec3d velo = -pb->velo.norm() * .2;
+				for(int k = 0; k < 3; k++)
+					velo[k] += .15 * (drseq(&w->rs) - .5);
+/*				AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
+					j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
+					TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);*/
+				AddTelineCallback3D(ws->tell, pos, velo, .00025 + n * .0001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
 			}
-//			makedamage(pb, pt, w, pb->damage, hitpart);
+		}
+	}
+#endif
+	damage = pb->damage;
 
-			bulletDeathEffect(-1, NULL);
-			if(game->isServer())
-				delete this;
-			else
-				active = false;
+	if(pt->w == w) if(!pt->takedamage(this->damage, hitpart)){
+#ifndef DEDICATED
+		extern int bullet_kills, missile_kills;
+		if(!strcmp("Bullet", classname()))
+			bullet_kills++;
+		else if(!strcmp("Missile", classname()))
+			missile_kills++;
+#endif
+	}
+//	makedamage(pb, pt, w, pb->damage, hitpart);
+
+	bulletDeathEffect(-1, NULL);
+	if(game->isServer())
+		delete this;
+	else
+		active = false;
 
 #ifndef DEDICATED
-			extern int bullet_hits;
-			bullet_hits++;
+	extern int bullet_hits;
+	bullet_hits++;
 #endif
 
-			return false;
+	return false;
 }
 
 void Bullet::anim(double dt){

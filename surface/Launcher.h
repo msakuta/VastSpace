@@ -51,10 +51,16 @@ protected:
 	void bulletDeathEffect(int hitground, const struct contact_info *ci)override;
 };
 
+class HydraRocketLauncher;
+
+template<> Entity *Entity::EntityRegister<HydraRocketLauncher>::create(WarField *){ return NULL; }
+template<> Entity *Entity::EntityRegister<HydraRocketLauncher>::stcreate(Game *){ return NULL; }
+
 /// \brief M261, a Hydra-70 rocket launcher mounted on attack helicopters.
 class HydraRocketLauncher : public Launcher{
 public:
 	typedef Launcher st;
+	static EntityRegister<HydraRocketLauncher> entityRegister;
 	HydraRocketLauncher(Game *game) : st(game){}
 	HydraRocketLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 19){}
 	const char *classname()const override{return "HydraRocketLauncher";}
@@ -100,10 +106,14 @@ protected:
 	friend class HellfireLauncher;
 };
 
+template<> Entity *Entity::EntityRegister<HellfireLauncher>::create(WarField *){ return NULL; }
+template<> Entity *Entity::EntityRegister<HellfireLauncher>::stcreate(Game *){ return NULL; }
+
 /// \brief Hellfire launcher mounted on attack helicopters.
 class HellfireLauncher : public Launcher{
 public:
 	typedef Launcher st;
+	static EntityRegister<HellfireLauncher> entityRegister;
 	HellfireLauncher(Game *game) : st(game){}
 	HellfireLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 4){}
 	const char *classname()const override{return "HellfireLauncher";}
@@ -133,10 +143,14 @@ protected:
 	friend class SidewinderLauncher;
 };
 
+template<> Entity *Entity::EntityRegister<SidewinderLauncher>::create(WarField *){ return NULL; }
+template<> Entity *Entity::EntityRegister<SidewinderLauncher>::stcreate(Game *){ return NULL; }
+
 /// \brief Sidewinder launcher mounted on fighter planes.
 class SidewinderLauncher : public Launcher{
 public:
 	typedef Launcher st;
+	static EntityRegister<SidewinderLauncher> entityRegister;
 	SidewinderLauncher(Game *game) : st(game){}
 	SidewinderLauncher(Entity *base, const hardpoint_static *hp) : st(base, hp, 1){}
 	const char *classname()const override{return "SidewinderLauncher";}

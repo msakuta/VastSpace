@@ -88,6 +88,8 @@ void HydraRocket::commonUpdate(double dt){
 //	HydraRocketLauncher implementation
 //-----------------------------------------------------------------------------
 
+Launcher::EntityRegister<HydraRocketLauncher> HydraRocketLauncher::entityRegister("HydraRocketLauncher");
+
 void HydraRocketLauncher::anim(double dt){
 	if(!base || !base->w)
 		w = NULL;
@@ -257,6 +259,8 @@ void Hellfire::commonUpdate(double dt){
 //	HellfireLauncher implementation
 //-----------------------------------------------------------------------------
 
+Launcher::EntityRegister<HellfireLauncher> HellfireLauncher::entityRegister("HellfireLauncher");
+
 void HellfireLauncher::anim(double dt){
 	if(!base || !base->w)
 		w = NULL;
@@ -281,6 +285,8 @@ Entity::EntityRegister<Sidewinder> Sidewinder::entityRegister("Sidewinder");
 //-----------------------------------------------------------------------------
 //	SidewinderLauncher implementation
 //-----------------------------------------------------------------------------
+
+Launcher::EntityRegister<SidewinderLauncher> SidewinderLauncher::entityRegister("SidewinderLauncher");
 
 void SidewinderLauncher::anim(double dt){
 	if(!base || !base->w)

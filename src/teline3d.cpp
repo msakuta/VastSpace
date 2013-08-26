@@ -55,6 +55,7 @@ struct ColorTeline3 : Teline3{
 		return life < FADE_START ? (r & 0x00ffffff) | COLOR32RGBA(0,0,0,(GLubyte)(COLOR32A(r) * life / FADE_START)) : r;
 	}
 	double getLength()const;
+	void transform(const tent3d_line_drawdata &dd)const;
 };
 
 /// \brief Line shaped, um, Teline.
@@ -63,11 +64,44 @@ struct LineTeline3 : ColorTeline3{
 	void draw(const tent3d_line_drawdata &)const override;
 };
 
-/// \brief Expanding cylinder over time.
-struct CylinderTeline3 : ColorTeline3{
+struct ExpandColorTeline3 : ColorTeline3{
 	double maxlife;
-	CylinderTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color), maxlife(ci.life){}
+	ExpandColorTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color), maxlife(ci.life){}
+};
+
+/// \brief Expanding cylinder over time.
+struct CylinderTeline3 : ExpandColorTeline3{
+	CylinderTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
 	void draw(const tent3d_line_drawdata &)const override;
+};
+
+/// \brief A disc effect without motion.
+///
+/// It gradually disappears on its end of life.
+///
+/// I've named the macro TEL3_STATICDISK, but it's actually disc.
+/// 'Disk' is shorthand of diskette, which is not originally related to circular shape,
+/// but I cannot fix the macro name at once.
+struct StaticDiscTeline3 : ExpandColorTeline3{
+	StaticDiscTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
+	void draw(const tent3d_line_drawdata &)const override;
+protected:
+	virtual double getRadius()const{return len;}
+	virtual void getEndColors(COLOR32 &centerColor, COLOR32 &edgeColor)const{
+		centerColor = getColor();
+		edgeColor = getColor() & 0x00ffffff;
+	}
+};
+
+/// \brief Expanding disk over time.
+struct ExpanDiscTeline3 : StaticDiscTeline3{
+	ExpanDiscTeline3(Teline3ConstructInfo &ci, COLOR32 color) : StaticDiscTeline3(ci, color){}
+protected:
+	double getRadius()const override{return (maxlife - life) / maxlife * getLength();}
+	virtual void getEndColors(COLOR32 &centerColor, COLOR32 &edgeColor)const override{
+		centerColor = getColor() & 0x00ffffff;
+		edgeColor = getColor();
+	}
 };
 
 /// \brief Teline with callback function.
@@ -88,7 +122,7 @@ struct Teline3Node{
 	/// Note that no matter how large we reserve the buffer, there's always the possibility of user defined
 	/// Teline descendants which exceeds the size.  We raise an exception at runtime in that case.
 	/// Or should we support such cases by using additional heap memory?
-	static const size_t size = MAX(sizeof(LineTeline3), MAX(sizeof(CylinderTeline3), sizeof(CallbackTeline3)));
+	static const size_t size = MAX(sizeof(LineTeline3), MAX(sizeof(CylinderTeline3), MAX(sizeof(ExpanDiscTeline3), sizeof(CallbackTeline3))));
 	Teline3Node *next;
 	char buf[size];
 };
@@ -235,7 +269,8 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	Teline3ConstructInfo ci = {pos, velo, len, rot, omg, life, grv, flags};
 	switch(flags & TEL_FORMS){
 		case TEL3_CYLINDER: new(pl->buf) CylinderTeline3(ci, col); break;
-		case TEL3_EXPANDISK:
+		case TEL3_STATICDISK: new(pl->buf) StaticDiscTeline3(ci, col); break;
+		case TEL3_EXPANDISK: new(pl->buf) ExpanDiscTeline3(ci, col); break;
 		case TEL3_EXPANDGLOW:
 		case TEL3_EXPANDTORUS:
 		default: new(pl->buf) LineTeline3(ci, col);
@@ -358,22 +393,6 @@ void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
 		}
 		else if(form && form != TEL3_CALLBACK){
 			glPushMatrix();
-			if(pl->flags & TEL3_NEAR){
-				GLdouble mat[16];
-				static const GLdouble mat2[16] = {
-					1,0,0,0,
-					0,1,0,0,
-					0,0,1,0,
-					0,0,0,1.1, /* a bit near */
-				};
-				glGetDoublev(GL_MODELVIEW_MATRIX, mat);
-				glLoadMatrixd(mat2);
-				glMultMatrixd(mat);
-			}
-			gldTranslate3dv(pl->pos);
-			gldMultQuat(rot);
-			if(pl->flags & TEL3_INVROTATE)
-				glMultMatrixd(dd->invrot);
 
 			if(form == TEL3_PSEUDOSPHERE){
 				GLubyte col[4];
@@ -384,29 +403,6 @@ void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
 			else if(form == TEL3_CYLINDER){
 			}
 			else if(form == TEL3_EXPANDISK || form == TEL3_STATICDISK){
-				int i;
-				COLOR32 cc, ce; /* center color, edge color */
-				double (*cuts)[2], radius;
-				if(form == TEL3_EXPANDISK){
-					cc = col & 0x00ffffff;
-					ce = col;
-					radius = (pl->mdl.rm.maxlife - pl->life) / pl->mdl.rm.maxlife * lenb;
-				}
-				else{
-					cc = col;
-					ce = col & 0x00ffffff;
-					radius = lenb;
-				}
-				cuts = CircleCuts(16);
-				glBegin(GL_TRIANGLE_FAN);
-				glColor4ub(COLIST(cc));
-				glVertex3d(0., 0., 0.);
-				glColor4ub(COLIST(ce));
-				for(i = 0; i <= 16; i++){
-					int k = i % 16;
-					glVertex3d(cuts[k][0] * radius, cuts[k][1] * radius, 0.);
-				}
-				glEnd();
 			}
 			else if(form == TEL3_GLOW || form == TEL3_EXPANDGLOW){
 				int i;
@@ -475,6 +471,25 @@ double ColorTeline3::getLength()const{
 	return lenb;
 }
 
+void ColorTeline3::transform(const tent3d_line_drawdata &dd)const{
+	if(flags & TEL3_NEAR){
+		GLdouble mat[16];
+		static const GLdouble mat2[16] = {
+			1,0,0,0,
+			0,1,0,0,
+			0,0,1,0,
+			0,0,0,1.1, /* a bit near */
+		};
+		glGetDoublev(GL_MODELVIEW_MATRIX, mat);
+		glLoadMatrixd(mat2);
+		glMultMatrixd(mat);
+	}
+	gldTranslate3dv(pos);
+	gldMultQuat(rot);
+	if(flags & TEL3_INVROTATE)
+		glMultMatrixd(dd.invrot);
+}
+
 void Teline3::draw(const tent3d_line_drawdata &dd)const{}
 
 void LineTeline3::draw(const tent3d_line_drawdata &dd)const{
@@ -526,7 +541,6 @@ void LineTeline3::draw(const tent3d_line_drawdata &dd)const{
 void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
 	COLOR32 col = getColor();
 	double lenb = getLength();
-	int i;
 	GLubyte cc[4], ce[4];
 	double (*cuts)[2], radius;
 	ce[0] = cc[0] = COLOR32R(col);
@@ -536,8 +550,10 @@ void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
 	ce[3] = 0;
 	cuts = CircleCuts(5);
 	radius = (maxlife - life) * lenb;
+	glPushMatrix();
+	transform(dd);
 	glBegin(GL_QUAD_STRIP);
-	for(i = 0; i <= 5; i++){
+	for(int i = 0; i <= 5; i++){
 		int k = i % 5;
 		glColor4ubv(cc);
 		glVertex3d(cuts[k][0] * radius, cuts[k][2] * radius, 0.);
@@ -545,6 +561,26 @@ void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
 		glVertex3d(cuts[k][0] * radius, cuts[k][2] * radius, radius);
 	}
 	glEnd();
+	glPopMatrix();
+}
+
+void StaticDiscTeline3::draw(const tent3d_line_drawdata &dd)const{
+	COLOR32 cc, ce; /* center color, edge color */
+	getEndColors(cc, ce);
+	double radius = getRadius();
+	double (*cuts)[2] = CircleCuts(16);
+	glPushMatrix();
+	transform(dd);
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4ub(COLIST(cc));
+	glVertex3d(0., 0., 0.);
+	glColor4ub(COLIST(ce));
+	for(int i = 0; i <= 16; i++){
+		int k = i % 16;
+		glVertex3d(cuts[k][0] * radius, cuts[k][1] * radius, 0.);
+	}
+	glEnd();
+	glPopMatrix();
 }
 
 void CallbackTeline3::draw(const tent3d_line_drawdata &dd)const{

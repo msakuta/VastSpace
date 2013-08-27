@@ -110,6 +110,12 @@ struct SpriteTeline3 : ColorTeline3{
 	void draw(const Teline3DrawData &)const override;
 };
 
+/// \brief Expanding beam torus by beam effects.
+struct ExpandTorusTeline3 : ExpandColorTeline3{
+	ExpandTorusTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
+	void draw(const Teline3DrawData &)const override;
+};
+
 /// \brief Teline with callback function.
 struct CallbackTeline3 : Teline3{
 	typedef void (*CallbackProc)(const Teline3CallbackData *, const Teline3DrawData*, void*);
@@ -282,7 +288,7 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 		case TEL3_EXPANDISK: new(pl->buf) ExpanDiscTeline3(ci, col); break;
 		case TEL3_EXPANDGLOW:
 		case TEL3_SPRITE: new(pl->buf) SpriteTeline3(ci, col); break;
-		case TEL3_EXPANDTORUS:
+		case TEL3_EXPANDTORUS: new(pl->buf) ExpandTorusTeline3(ci, col); break;
 		default: new(pl->buf) LineTeline3(ci, col);
 	}
 }
@@ -389,21 +395,6 @@ void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
 		}
 
 		if(form == TEL3_EXPANDTORUS){
-			int i;
-			double (*cuts)[2], radius;
-			struct gldBeamsData bd;
-			radius = (pl->mdl.rm.maxlife - pl->life) * lenb;
-			cuts = CircleCuts(16);
-			glColor4ub(COLIST(col));
-			bd.cc = 0;
-			for(i = 0; i <= 16; i++){
-				int k = i % 16;
-				double pos[3];
-				pos[0] = pl->pos[0] + cuts[k][0] * radius;
-				pos[1] = pl->pos[1];
-				pos[2] = pl->pos[2] + cuts[k][1] * radius;
-				gldBeams(&bd, dd->viewpoint, pos, radius / 10., col);
-			}
 		}
 		else if(form && form != TEL3_CALLBACK){
 			glPushMatrix();
@@ -595,6 +586,23 @@ void SpriteTeline3::draw(const Teline3DrawData &dd)const{
 	}
 	glEnd();
 	glPopMatrix();
+}
+
+void ExpandTorusTeline3::draw(const Teline3DrawData &dd)const{
+	COLOR32 col = getColor();
+	double radius = (maxlife - life) / maxlife * getLength();
+	double (*cuts)[2] = CircleCuts(16);
+	struct gldBeamsData bd;
+	glColor4ub(COLIST(col));
+	bd.cc = 0;
+	for(int i = 0; i <= 16; i++){
+		int k = i % 16;
+		double pos[3];
+		pos[0] = this->pos[0] + cuts[k][0] * radius;
+		pos[1] = this->pos[1];
+		pos[2] = this->pos[2] + cuts[k][1] * radius;
+		gldBeams(&bd, dd.viewpoint, pos, radius / 10., col);
+	}
 }
 
 void CallbackTeline3::draw(const Teline3DrawData &dd)const{

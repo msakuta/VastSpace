@@ -110,6 +110,20 @@ struct SpriteTeline3 : ColorTeline3{
 	void draw(const Teline3DrawData &)const override;
 };
 
+/// \brief Kind of gas blob floating in space.
+struct GlowTeline3 : ExpandColorTeline3{
+	GlowTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
+	void draw(const Teline3DrawData &)const override;
+protected:
+	virtual double getRadiusFactor()const{return 1.;}
+};
+
+struct ExpandGlowTeline3 : GlowTeline3{
+	ExpandGlowTeline3(Teline3ConstructInfo &ci, COLOR32 color) : GlowTeline3(ci, color){}
+protected:
+	double getRadiusFactor()const override{return (maxlife - life) / maxlife;}
+};
+
 /// \brief Expanding beam torus by beam effects.
 struct ExpandTorusTeline3 : ExpandColorTeline3{
 	ExpandTorusTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
@@ -286,7 +300,8 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 		case TEL3_CYLINDER: new(pl->buf) CylinderTeline3(ci, col); break;
 		case TEL3_STATICDISK: new(pl->buf) StaticDiscTeline3(ci, col); break;
 		case TEL3_EXPANDISK: new(pl->buf) ExpanDiscTeline3(ci, col); break;
-		case TEL3_EXPANDGLOW:
+		case TEL3_GLOW: new(pl->buf) GlowTeline3(ci, col); break;
+		case TEL3_EXPANDGLOW: new(pl->buf) ExpandGlowTeline3(ci, col); break;
 		case TEL3_SPRITE: new(pl->buf) SpriteTeline3(ci, col); break;
 		case TEL3_EXPANDTORUS: new(pl->buf) ExpandTorusTeline3(ci, col); break;
 		default: new(pl->buf) LineTeline3(ci, col);
@@ -404,22 +419,6 @@ void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
 			else if(form == TEL3_EXPANDISK || form == TEL3_STATICDISK){
 			}
 			else if(form == TEL3_GLOW || form == TEL3_EXPANDGLOW){
-				int i;
-				double (*cuts)[2];
-				double w = .1;
-				cuts = CircleCuts(10);
-				if(form == TEL3_EXPANDGLOW)
-					lenb *= (pl->mdl.rm.maxlife - pl->life);
-				glScaled(lenb, lenb, lenb);
-				glBegin(GL_TRIANGLE_FAN);
-				glColor4ub(COLIST(col));
-				glVertex3d(0., 0., 0.);
-				glColor4ub(COLISTRGB(col), 0);
-				for(i = 0; i <= 10; i++){
-					int k = i % 10;
-					glVertex4d(w * cuts[k][1], w * cuts[k][0], 0., w);
-				}
-				glEnd();
 			}
 			else if(form == TEL3_SPRITE){
 			}
@@ -583,6 +582,26 @@ void SpriteTeline3::draw(const Teline3DrawData &dd)const{
 	for(int i = 0; i <= 10; i++){
 		int k = i % 10;
 		glVertex3d(cuts[k][1], cuts[k][0], 0.);
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+void GlowTeline3::draw(const Teline3DrawData &dd)const{
+	COLOR32 col = getColor();
+	double lenb = getRadiusFactor();
+	double (*cuts)[2] = CircleCuts(10);
+	glPushMatrix();
+	transform(dd);
+	double w = .1;
+	glScaled(lenb, lenb, lenb);
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4ub(COLIST(col));
+	glVertex3d(0., 0., 0.);
+	glColor4ub(COLISTRGB(col), 0);
+	for(int i = 0; i <= 10; i++){
+		int k = i % 10;
+		glVertex4d(w * cuts[k][1], w * cuts[k][0], 0., w);
 	}
 	glEnd();
 	glPopMatrix();

@@ -19,7 +19,7 @@ extern "C"{
 /*#include <GL/glut.h>*/
 
 /* teline_flags_t */
-#define TEL_FORMS	(TEL_CIRCLE|(TEL_CIRCLE<<1)|(TEL_CIRCLE<<2)|(TEL_CIRCLE<<3)|(TEL_CIRCLE<<4)) /* bitmask for forms */
+#define TEL3_FORMS	(TEL3_FORM1|(TEL3_FORM1<<1)|(TEL3_FORM1<<2)|(TEL3_FORM1<<3)|(TEL3_FORM1<<4)) /* bitmask for forms */
 
 /* Rotation private flags. since rotation needs matrix multiplication and
   trigonometric operations for each axis, it's not good idea to rotate even
@@ -276,7 +276,7 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	Teline3Node *pl = alloc_teline(p);
 	if(!pl) return;
 	Teline3ConstructInfo ci = {pos, velo, len, rot, omg, life, grv, flags};
-	switch(flags & TEL_FORMS){
+	switch(flags & TEL3_FORMS){
 		case TEL3_CYLINDER: new(pl->buf) CylinderTeline3(ci, col); break;
 		case TEL3_STATICDISK: new(pl->buf) StaticDiscTeline3(ci, col); break;
 		case TEL3_EXPANDISK: new(pl->buf) ExpanDiscTeline3(ci, col); break;
@@ -291,7 +291,7 @@ void AddTelineCallback3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
 	void (*f)(const Teline3CallbackData*, const Teline3DrawData*, void*), void *pd, tent3d_flags_t flags, float life)
 {
-	flags &= ~TEL_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
+	flags &= ~TEL3_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
 	Teline3Node *pl = alloc_teline(p);
 	if(!pl) return;
 	Teline3ConstructInfo ci = {pos, velo, len, rot, omg, life, grv, flags |= TEL3_CALLBACK | TEL3_NOLINE};
@@ -347,9 +347,6 @@ void AnimTeline3D(Teline3List *p, double dt){
 			ppl = &pl->next;
 			pl2 = pl->next;
 		}
-#if ENABLE_FOLLOW
-		if(!pl->flags & TEL_FOLLOW){
-#endif
 		pl = pl2;
 	}
 #ifndef NDEBUG
@@ -378,7 +375,7 @@ void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
 		Teline3 *line = reinterpret_cast<Teline3*>(pl->buf);
 		line->draw(*dd);
 #else
-		tent3d_flags_t form = pl->flags & TEL_FORMS;
+		tent3d_flags_t form = pl->flags & TEL3_FORMS;
 		Quatd fore;
 		double *rot = pl->flags & TEL3_HEADFORWARD ? fore : pl->rot;
 //		COLOR32 col;
@@ -411,13 +408,7 @@ void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
 		else if(form && form != TEL3_CALLBACK){
 			glPushMatrix();
 
-			if(form == TEL3_PSEUDOSPHERE){
-				GLubyte col[4];
-				COLOR32UNPACK(col, pl->mdl.r);
-				col[3] = pl->life < FADE_START ? GLubyte(COLOR32A(pl->mdl.r) * pl->life / FADE_START) : COLOR32A(pl->mdl.r);
-				gldPseudoSphere(pl->pos, lenb, col);
-			}
-			else if(form == TEL3_CYLINDER){
+			if(form == TEL3_CYLINDER){
 			}
 			else if(form == TEL3_EXPANDISK || form == TEL3_STATICDISK){
 			}
@@ -463,13 +454,13 @@ double ColorTeline3::getLength()const{
 	double lenb;
 
 	/* shrink over its lifetime */
-	if(flags & TEL_SHRINK && life < SHRINK_START)
+	if(flags & TEL3_SHRINK && life < SHRINK_START)
 		lenb = len / SHRINK_START * life;
 	else
 		lenb = len;
 
 	/* recalc length by its velocity. */
-	if(flags & TEL_VELOLEN)
+	if(flags & TEL3_VELOLEN)
 		lenb *= velo.len();
 
 	return lenb;

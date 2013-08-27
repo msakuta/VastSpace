@@ -46,39 +46,43 @@ extern "C"{
 typedef unsigned long tent3d_flags_t;
 
 /* teline_flags_t */
-#define TEL_NOREMOVE    (1<<0) /* if set, won't be deleted when it gets out of border. */
 #define TEL3_HEADFORWARD (1<<1) /* the line will head towards its velocity. omg now means angle offset. */
-#define TEL_VELOLEN     (1<<2) /* set length by its velocity. len now means factor. */
-#define TEL_RETURN      (1<<3) /* lines gone beyond border will appear at opposide edge */
-#define TEL_SHRINK      (1<<4) /* shrink length as its life decreases */
-#define TEL3_REFLECT    (1<<5) /* whether reflect on border, ignored when RETURN is set */
-#define TEL3_INVROTATE  (1<<6) /* perform inverse rotation by a given matrix for billboard effect */
-#define TEL3_THICK      (1<<7) /* line draws thick */
-#define TEL3_NOLINE		(1<<8) /* disable draw of lines */
-#define TEL_TRAIL		(1<<9) /* append trailing tracer */
-#define TEL_FOLLOW      (1<<10) /* follow some other tent, assume vx as the pointer to target */
-#define TEL_CIRCLE		(1<<11) /* line form; uses 4 bits up to 15th bit */
-#define TEL_FILLCIRCLE	(2<<11)
-#define TEL_POINT		(3<<11)
-#define TEL_RECTANGLE	(4<<11)
-#define TEL3_CYLINDER   (5<<11) /* kind of shockwave */
-#define TEL3_PSEUDOSPHERE	(6<<11)
-#define TEL3_EXPANDISK	(7<<11) /* expanding disk */
-#define TEL3_STATICDISK (8<<11)
-#define TEL3_CALLBACK   (9<<11) /* call a given function pointer to draw; be careful on using this */
-#define TEL3_GLOW       (10<<11) /* glowing effect sprite */
-#define TEL3_EXPANDGLOW (11<<11) /* growing glow */
-#define TEL3_SPRITE     (12<<11) /* glowing effect sprite */
-#define TEL3_EXPANDTORUS (13<<11) /* glowing effect sprite */
-#define TEL3_GRADCIRCLE  (14<<11) /* gradiated circle with transparency, assume col as pointer to CS */
-#define TEL3_GRADCIRCLE2 (15<<11) /* time-dependent version, assume col as pointer to CS2 */
-#define TEL3_RANDOMCOLOR (1<<16)
-#define TEL3_NEAR       (1<<17) /* draw the line a little nearer than it actually is, to prevent race condition of decals. */
-#define TEL3_FADEEND    (1<<18) /* fade the tail to make it look smoother. */
-#define TEL3_HALF       (1<<19) /* center point means one of the edges of the line */
-#define TEL3_QUAT       (1<<20) /* use quaternion to express rotation */
-#define TEL3_HITFUNC    (1<<21) /* use w->vft->pointhit to determine intersection into ground */
-#define TEL3_ACCELFUNC  (1<<22) /* use w->vft->accel to determine gravity */
+#define TEL3_VELOLEN     (1<<2) /* set length by its velocity. len now means factor. */
+#define TEL3_SHRINK      (1<<4) /* shrink length as its life decreases */
+#define TEL3_REFLECT     (1<<5) /**< Obsolete; no effect now */
+#define TEL3_INVROTATE   (1<<6) /* perform inverse rotation by a given matrix for billboard effect */
+#define TEL3_THICK       (1<<7) /* line draws thick */
+#define TEL3_NOLINE      (1<<8) /**< Obsolete; no effect now */
+
+/* The bit 11 through 15 are reserved for predefined Teline3 form specifier.
+ * This mechanism is already obsolete since any form can be achieved by inheriting Teline3.
+ * It's just left for backward compatibility.  We're going to delete all forms flags eventually.
+ * FORM1 through FORM4 were registered for shapes in 2-dimension only and no longer used.
+ */
+#define TEL3_FORM1        (1<<11)
+#define TEL3_FORM2        (2<<11)
+#define TEL3_FORM3        (3<<11)
+#define TEL3_FORM4        (4<<11)
+#define TEL3_CYLINDER     (5<<11) /* kind of shockwave */
+#define TEL3_FORM5        (6<<11)
+#define TEL3_EXPANDISK    (7<<11) /* expanding disk */
+#define TEL3_STATICDISK   (8<<11)
+#define TEL3_CALLBACK     (9<<11) /* call a given function pointer to draw; be careful on using this */
+#define TEL3_GLOW         (10<<11) /* glowing effect sprite */
+#define TEL3_EXPANDGLOW   (11<<11) /* growing glow */
+#define TEL3_SPRITE       (12<<11) /* glowing effect sprite */
+#define TEL3_EXPANDTORUS  (13<<11) /* glowing effect sprite */
+#define TEL3_FORM14       (14<<11)
+#define TEL3_FORM15       (15<<11)
+/* End of forms definition */
+
+#define TEL3_RANDOMCOLOR  (1<<16)
+#define TEL3_NEAR         (1<<17) /* draw the line a little nearer than it actually is, to prevent race condition of decals. */
+#define TEL3_FADEEND      (1<<18) /* fade the tail to make it look smoother. */
+#define TEL3_HALF         (1<<19) /* center point means one of the edges of the line */
+#define TEL3_QUAT         (1<<20) /* use quaternion to express rotation */
+#define TEL3_HITFUNC      (1<<21) /* use w->vft->pointhit to determine intersection into ground */
+#define TEL3_ACCELFUNC    (1<<22) /* use w->vft->accel to determine gravity */
 
 
 

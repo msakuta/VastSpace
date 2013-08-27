@@ -403,7 +403,7 @@ void Soldier::drawtra(WarDraw *wd){
 
 const double bloodSmokeLife = 1.;
 
-static void bloodsmoke(const Teline3CallbackData *pl, const tent3d_line_drawdata *dd, void *pv){
+static void bloodsmoke(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	if(dd->pgc->cullFrustum(pl->pos, pl->len))
 		return;
 	double pixels = .0002 * fabs(dd->pgc->scale(pl->pos));

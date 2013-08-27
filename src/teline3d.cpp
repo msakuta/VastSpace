@@ -55,13 +55,13 @@ struct ColorTeline3 : Teline3{
 		return life < FADE_START ? (r & 0x00ffffff) | COLOR32RGBA(0,0,0,(GLubyte)(COLOR32A(r) * life / FADE_START)) : r;
 	}
 	double getLength()const;
-	void transform(const tent3d_line_drawdata &dd)const;
+	void transform(const Teline3DrawData &dd)const;
 };
 
 /// \brief Line shaped, um, Teline.
 struct LineTeline3 : ColorTeline3{
 	LineTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color){}
-	void draw(const tent3d_line_drawdata &)const override;
+	void draw(const Teline3DrawData &)const override;
 };
 
 struct ExpandColorTeline3 : ColorTeline3{
@@ -72,7 +72,7 @@ struct ExpandColorTeline3 : ColorTeline3{
 /// \brief Expanding cylinder over time.
 struct CylinderTeline3 : ExpandColorTeline3{
 	CylinderTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
-	void draw(const tent3d_line_drawdata &)const override;
+	void draw(const Teline3DrawData &)const override;
 };
 
 /// \brief A disc effect without motion.
@@ -84,7 +84,7 @@ struct CylinderTeline3 : ExpandColorTeline3{
 /// but I cannot fix the macro name at once.
 struct StaticDiscTeline3 : ExpandColorTeline3{
 	StaticDiscTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ExpandColorTeline3(ci, color){}
-	void draw(const tent3d_line_drawdata &)const override;
+	void draw(const Teline3DrawData &)const override;
 protected:
 	virtual double getRadius()const{return len;}
 	virtual void getEndColors(COLOR32 &centerColor, COLOR32 &edgeColor)const{
@@ -107,16 +107,16 @@ protected:
 /// \brief Kind of gas blob floating in space.
 struct SpriteTeline3 : ColorTeline3{
 	SpriteTeline3(Teline3ConstructInfo &ci, COLOR32 color) : ColorTeline3(ci, color){}
-	void draw(const tent3d_line_drawdata &)const override;
+	void draw(const Teline3DrawData &)const override;
 };
 
 /// \brief Teline with callback function.
 struct CallbackTeline3 : Teline3{
-	typedef void (*CallbackProc)(const Teline3CallbackData *, const struct tent3d_line_drawdata*, void*);
+	typedef void (*CallbackProc)(const Teline3CallbackData *, const Teline3DrawData*, void*);
 	CallbackProc callback;
 	void *callback_hint;
 	CallbackTeline3(Teline3ConstructInfo &ci, CallbackProc f, void *p) : Teline3(ci), callback(f), callback_hint(p){}
-	void draw(const tent3d_line_drawdata &)const override;
+	void draw(const Teline3DrawData &)const override;
 };
 
 /// \brief Container object for any Teline derived class objects.
@@ -289,7 +289,7 @@ void AddTeline3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 
 void AddTelineCallback3D(Teline3List *p, const Vec3d &pos, const Vec3d &velo,
 	double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv,
-	void (*f)(const Teline3CallbackData*, const struct tent3d_line_drawdata*, void*), void *pd, tent3d_flags_t flags, float life)
+	void (*f)(const Teline3CallbackData*, const Teline3DrawData*, void*), void *pd, tent3d_flags_t flags, float life)
 {
 	flags &= ~TEL_FORMS; // Clear explicitly set form bits to make "callback" form take effect.
 	Teline3Node *pl = alloc_teline(p);
@@ -364,7 +364,7 @@ void AnimTeline3D(Teline3List *p, double dt){
 
 /* since 3d graphics have far more parameters than that of 2d, we pack those variables
   to single structure to improve performance of function calls. */
-void DrawTeline3D(Teline3List *p, struct tent3d_line_drawdata *dd){
+void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	if(!p)
@@ -475,7 +475,7 @@ double ColorTeline3::getLength()const{
 	return lenb;
 }
 
-void ColorTeline3::transform(const tent3d_line_drawdata &dd)const{
+void ColorTeline3::transform(const Teline3DrawData &dd)const{
 	if(flags & TEL3_NEAR){
 		GLdouble mat[16];
 		static const GLdouble mat2[16] = {
@@ -494,9 +494,9 @@ void ColorTeline3::transform(const tent3d_line_drawdata &dd)const{
 		glMultMatrixd(dd.invrot);
 }
 
-void Teline3::draw(const tent3d_line_drawdata &dd)const{}
+void Teline3::draw(const Teline3DrawData &dd)const{}
 
-void LineTeline3::draw(const tent3d_line_drawdata &dd)const{
+void LineTeline3::draw(const Teline3DrawData &dd)const{
 	double lenb = getLength();
 
 	COLOR32 col = getColor();
@@ -542,7 +542,7 @@ void LineTeline3::draw(const tent3d_line_drawdata &dd)const{
 	}
 }
 
-void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
+void CylinderTeline3::draw(const Teline3DrawData &dd)const{
 	COLOR32 col = getColor();
 	double lenb = getLength();
 	GLubyte cc[4], ce[4];
@@ -568,7 +568,7 @@ void CylinderTeline3::draw(const tent3d_line_drawdata &dd)const{
 	glPopMatrix();
 }
 
-void StaticDiscTeline3::draw(const tent3d_line_drawdata &dd)const{
+void StaticDiscTeline3::draw(const Teline3DrawData &dd)const{
 	COLOR32 cc, ce; /* center color, edge color */
 	getEndColors(cc, ce);
 	double radius = getRadius();
@@ -587,7 +587,7 @@ void StaticDiscTeline3::draw(const tent3d_line_drawdata &dd)const{
 	glPopMatrix();
 }
 
-void SpriteTeline3::draw(const tent3d_line_drawdata &dd)const{
+void SpriteTeline3::draw(const Teline3DrawData &dd)const{
 	COLOR32 col = getColor();
 	double lenb = getLength();
 	double (*cuts)[2] = CircleCuts(10);
@@ -606,7 +606,7 @@ void SpriteTeline3::draw(const tent3d_line_drawdata &dd)const{
 	glPopMatrix();
 }
 
-void CallbackTeline3::draw(const tent3d_line_drawdata &dd)const{
+void CallbackTeline3::draw(const Teline3DrawData &dd)const{
 	callback(this, &dd, callback_hint);
 }
 }

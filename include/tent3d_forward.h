@@ -8,6 +8,8 @@ namespace tent3d{
 	struct Tefpol;
 	struct TefpolList;
 	struct Teline3List;
+	struct Teline3;
+	struct Teline3DrawData;
 }
 using namespace tent3d;
 

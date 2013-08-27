@@ -1023,7 +1023,7 @@ struct SmokeTeline3 : Teline3{
 		velo *= exp(-dt);
 		return true;
 	}
-	void draw(const tent3d_line_drawdata &dd)const override{
+	void draw(const Teline3DrawData &dd)const override{
 		smokedraw(this, &dd, NULL);
 	}
 };

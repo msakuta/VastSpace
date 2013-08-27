@@ -21,6 +21,8 @@
 #ifndef TENT3D_H
 #define TENT3D_H
 
+#include "tent3d_forward.h"
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -86,8 +88,6 @@ struct glcull;
 
 namespace tent3d{
 
-struct tent3d_line_drawdata;
-
 /// \brief Basic set of variables that all Teline3 classes share.
 struct Teline3ConstructInfo{
 	Vec3d pos; ///< Position vector of center point
@@ -110,14 +110,13 @@ struct EXPORT Teline3 : Teline3ConstructInfo{
 	Teline3(const Teline3ConstructInfo &);
 	virtual ~Teline3();
 	virtual bool update(double dt);
-	virtual void draw(const tent3d_line_drawdata&)const;
+	virtual void draw(const Teline3DrawData&)const;
 };
 
-struct Teline3List;
 typedef Teline3ConstructInfo Teline3CallbackData;
 
 /// \brief The context data set for drawing Telines.
-struct tent3d_line_drawdata{
+struct Teline3DrawData{
 	Vec3d viewpoint, viewdir;
 	Quatd rot;
 	Mat4d invrot;
@@ -131,9 +130,9 @@ EXPORT Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /*
 EXPORT Teline3List *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, struct war_field*); /* constructor */
 EXPORT void DelTeline3D(Teline3List *); /* destructor */
 EXPORT void AddTeline3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, COLOR32 col, tent3d_flags_t flags, float life);
-EXPORT void AddTelineCallback3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const Teline3CallbackData*, const struct tent3d_line_drawdata*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
+EXPORT void AddTelineCallback3D(Teline3List *tell, const Vec3d &pos, const Vec3d &velo, double len, const Quatd &rot, const Vec3d &omg, const Vec3d &grv, void (*draw_proc)(const Teline3CallbackData*, const Teline3DrawData*, void *private_data), void *private_data, tent3d_flags_t flags, float life);
 EXPORT void AnimTeline3D(Teline3List *tell, double dt);
-EXPORT void DrawTeline3D(Teline3List *tell, struct tent3d_line_drawdata *);
+EXPORT void DrawTeline3D(Teline3List *tell, Teline3DrawData *);
 }
 using namespace tent3d;
 

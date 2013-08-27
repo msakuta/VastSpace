@@ -137,7 +137,7 @@ protected:
 	Vec3d tankMuzzlePos(Vec3d *nh = NULL)const;
 	void deathEffects();
 
-	static void gib_draw(const Teline3CallbackData*, const tent3d_line_drawdata*, void *private_data);
+	static void gib_draw(const Teline3CallbackData*, const Teline3DrawData*, void *private_data);
 };
 
 /// \brief M3 half track

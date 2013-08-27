@@ -21,7 +21,7 @@ extern "C"{
 #include <math.h>
 #include <gl/glext.h>
 
-void sparkdraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, void *private_data){
+void sparkdraw(const Teline3CallbackData *p, const Teline3DrawData *dd, void *private_data){
 	double width = p->len;
 	Vec3d start = p->pos;
 	Vec3d end = p->pos;
@@ -56,7 +56,7 @@ void sparkdraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, voi
 	glPopAttrib();
 }
 
-void sparkspritedraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, void *private_data){
+void sparkspritedraw(const Teline3CallbackData *p, const Teline3DrawData *dd, void *private_data){
 	double width = p->len;
 	Vec3d start = p->pos;
 	double pixels = fabs(dd->pgc->scale(p->pos)) * width;
@@ -127,7 +127,7 @@ static void smokedraw_int(const Teline3CallbackData *p, COLOR32 col, float alpha
 }
 
 
-void smokedraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, void *private_data){
+void smokedraw(const Teline3CallbackData *p, const Teline3DrawData *dd, void *private_data){
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
 //	glMultMatrixd(dd->invrot);
@@ -152,7 +152,7 @@ void smokedraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, voi
 	glPopMatrix();
 }
 
-void smokedraw_swirl(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, void *private_data){
+void smokedraw_swirl(const Teline3CallbackData *p, const Teline3DrawData *dd, void *private_data){
 	const smokedraw_swirl_data *data = (const smokedraw_swirl_data*)private_data;
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
@@ -180,7 +180,7 @@ void smokedraw_swirl(const Teline3CallbackData *p, const tent3d_line_drawdata *d
 	glPopMatrix();
 }
 
-void firesmokedraw(const Teline3CallbackData *p, const tent3d_line_drawdata *dd, void *private_data){
+void firesmokedraw(const Teline3CallbackData *p, const Teline3DrawData *dd, void *private_data){
 	glPushMatrix();
 	gldTranslate3dv(p->pos);
 	glMultMatrixd(dd->invrot);
@@ -241,7 +241,7 @@ static void debrigib_init(){
 	}
 }
 
-void debrigib(const Teline3CallbackData *pl, const tent3d_line_drawdata *dd, void *pv){
+void debrigib(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	if(dd->pgc && (dd->pgc->cullFrustum(pl->pos, .01) || (dd->pgc->scale(pl->pos) * .01) < 5))
 		return;
 
@@ -275,7 +275,7 @@ void debrigib(const Teline3CallbackData *pl, const tent3d_line_drawdata *dd, voi
 
 // Multiple gibs drawn at once. Total number of polygons remains same, but switchings of context variables are
 // reduced, therefore performance is gained compared to the one above.
-void debrigib_multi(const Teline3CallbackData *pl, const tent3d_line_drawdata *dd, void *pv){
+void debrigib_multi(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	debrigib_init();
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
 	glDisable(GL_TEXTURE_2D);

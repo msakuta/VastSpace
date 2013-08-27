@@ -417,7 +417,7 @@ bool Soldier::buildBody(){
 
 
 #if 0
-void small_brass_draw(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv){
+void small_brass_draw(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	double scale = pv ? .00000045 : .000000225;
 	const double size = scale * 100.;
 	double pixels;
@@ -606,7 +606,7 @@ double g_recoil_kick_factor = 10.;
 
 //void quat2pyr(const aquat_t quat, avec3_t euler);
 //void find_enemy_logic(entity_t *pt, warf_t *w);
-static void bloodsmoke(const Teline3CallbackData *pl, const struct tent3d_line_drawdata *dd, void *pv);
+static void bloodsmoke(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv);
 
 void Soldier::anim(double dt){
 //	struct entity_private_static *vft = (struct entity_private_static*)pt->vft;	

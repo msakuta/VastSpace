@@ -159,7 +159,7 @@ void WarSpace::draw(wardraw_t *wd){
 	glPopAttrib();
 #endif
 
-	tent3d_line_drawdata dd;
+	Teline3DrawData dd;
 	dd.viewdir = -wd->vw->rot.vec3(2);
 	dd.viewpoint = wd->vw->pos;
 	dd.invrot = wd->vw->irot;
@@ -170,7 +170,7 @@ void WarSpace::draw(wardraw_t *wd){
 }
 
 void WarSpace::drawtra(wardraw_t *wd){
-	tent3d_line_drawdata dd;
+	Teline3DrawData dd;
 	dd.viewdir = -wd->vw->rot.vec3(2);
 	dd.viewpoint = wd->vw->pos;
 	dd.invrot = wd->vw->irot;

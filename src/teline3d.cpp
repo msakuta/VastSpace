@@ -16,7 +16,6 @@ extern "C"{
 #include <stdlib.h>
 #include <new>
 #include <algorithm>
-/*#include <GL/glut.h>*/
 
 /* teline_flags_t */
 #define TEL3_FORMS	(TEL3_FORM1|(TEL3_FORM1<<1)|(TEL3_FORM1<<2)|(TEL3_FORM1<<3)|(TEL3_FORM1<<4)) /* bitmask for forms */
@@ -34,12 +33,6 @@ extern "C"{
 
 #define FADE_START .5
 #define SHRINK_START .3
-
-#ifndef M_PI
-#define M_PI 3.14159265358979
-#endif
-
-#define rad2deg (360. / 2. / M_PI)
 
 #define COLISTRGB(c) COLOR32R(c), COLOR32G(c), COLOR32B(c)
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
@@ -221,14 +214,6 @@ Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
 	return ret;
 }
 
-/*
-Teline3List *NewTeline3DFunc(unsigned maxt, unsigned init, unsigned unit, warf_t *w){
-	Teline3List *ret;
-	ret = NewTeline3D(maxt, init, unit);
-	ret->w = w;
-	return ret;
-}
-*/
 /* destructor and deallocator */
 void DelTeline3D(Teline3List *p){
 	if(p->l) free(p->l);
@@ -380,61 +365,26 @@ void AnimTeline3D(Teline3List *p, double dt){
 #endif
 }
 
-/* since 3d graphics have far more parameters than that of 2d, we pack those variables
-  to single structure to improve performance of function calls. */
+/** \brief Draw Telines in list.
+ *
+ * since 3d graphics have far more parameters than that of 2d, we pack those variables
+ * to single structure to improve performance of function calls. */
 void DrawTeline3D(Teline3List *p, Teline3DrawData *dd){
-	timemeas_t tm;
-	TimeMeasStart(&tm);
 	if(!p)
 		return;
-	{
-//	double br, lenb;
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+
+	// Iterate through active list
 	Teline3Node *pl = p->lactv;
 
 	while(pl){
-#if 1
 		Teline3 *line = reinterpret_cast<Teline3*>(pl->buf);
 		line->draw(*dd);
-#else
-		tent3d_flags_t form = pl->flags & TEL3_FORMS;
-		Quatd fore;
-		double *rot = pl->flags & TEL3_HEADFORWARD ? fore : pl->rot;
-//		COLOR32 col;
-		br = MIN(pl->life / FADE_START, 1.0);
-
-		if(pl->flags & TEL3_HEADFORWARD){
-			Vec3d dr = pl->velo.norm();
-
-			Quatd q = Quatd::direction(dr);
-			fore = q * pl->rot;
-		}
-
-		if(form == TEL3_EXPANDTORUS){
-		}
-		else if(form && form != TEL3_CALLBACK){
-			glPushMatrix();
-
-			if(form == TEL3_CYLINDER){
-			}
-			else if(form == TEL3_EXPANDISK || form == TEL3_STATICDISK){
-			}
-			else if(form == TEL3_GLOW || form == TEL3_EXPANDGLOW){
-			}
-			else if(form == TEL3_SPRITE){
-			}
-			else{ /* if(forms == TEL_POINT) */
-				glBegin(GL_POINTS);
-				glVertex3dv(pl->pos);
-				glEnd();
-			}
-			glPopMatrix();
-		}
-#endif
-
 
 		pl = pl->next;
 	}
-	}
+
 #ifndef NPROFILE
 	p->debug.drawteline = TimeMeasLap(&tm);
 #endif

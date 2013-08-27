@@ -108,6 +108,7 @@ struct Teline3ConstructInfo{
 struct EXPORT Teline3 : Teline3ConstructInfo{
 	Teline3();
 	Teline3(const Teline3ConstructInfo &);
+	virtual ~Teline3();
 	virtual bool update(double dt);
 	virtual void draw(const tent3d_line_drawdata&)const;
 };

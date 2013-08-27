@@ -146,6 +146,9 @@ Teline3::Teline3(const Teline3ConstructInfo &ci) : Teline3ConstructInfo(ci)
 	}
 }
 
+/// \brief The virtual destructor for Teline3.
+Teline3::~Teline3(){}
+
 struct tent3d_line_extra_list; // forward declaration
 
 /** \brief List of Telines with custom allocator.
@@ -325,6 +328,13 @@ void AnimTeline3D(Teline3List *p, double dt){
 
 		/* delete condition */
 		if(!teline->update(dt)){
+
+			// Explicit invocation of the virtual destructor
+			teline->~Teline3();
+
+			// Placement delete, actually does nothing. Provided just for symmetry.
+			operator delete(pl->buf, teline);
+
 			/* roll pointers */
 			if(pl == p->last && *ppl != p->lactv)
 				p->last = (Teline3Node*)((char*)ppl - offsetof(Teline3Node, next));

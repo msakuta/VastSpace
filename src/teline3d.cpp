@@ -162,7 +162,11 @@ Teline3::Teline3(const Teline3ConstructInfo &ci) : Teline3ConstructInfo(ci)
 /// \brief The virtual destructor for Teline3.
 Teline3::~Teline3(){}
 
-struct tent3d_line_extra_list; // forward declaration
+/// \brief Teline3List's extra entries that are allocated when it becomes full.
+struct Teline3ListEx{
+	Teline3ListEx *next; ///< Next element in the uni-directional pointer list
+	Teline3Node l[1]; ///< Extra nodes, allocated with struct hack (variable elements). Be sure not to add members after this.
+};
 
 /** \brief List of Telines with custom allocator.
  *
@@ -175,17 +179,13 @@ struct Teline3List{
 	unsigned mex; /* allocated elements in an extra list */
 	Teline3Node *l;
 	Teline3Node *lfree, *lactv, *last;
-	struct tent3d_line_extra_list *ex; /* extra space is allocated when entities hits their max count */
+	Teline3ListEx *ex; /* extra space is allocated when entities hits their max count */
 	unsigned bs; /* verbose buffer size */
 #ifndef NPROFILE
 	struct tent3d_line_debug debug;
 #endif
 };
 
-struct tent3d_line_extra_list{
-	struct tent3d_line_extra_list *next;
-	Teline3Node l[1]; /* variable */
-};
 
 
 /* allocator and constructor */
@@ -218,7 +218,7 @@ Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit){
 void DelTeline3D(Teline3List *p){
 	if(p->l) free(p->l);
 	if(p->ex){
-		struct tent3d_line_extra_list *ex = p->ex, *nex;
+		Teline3ListEx *ex = p->ex, *nex;
 		while(ex){
 			nex = ex->next;
 			free(ex);
@@ -235,9 +235,9 @@ static Teline3Node *alloc_teline(Teline3List *p)
 	pl = p->lfree;
 	if(!pl){
 		if(p->mex && p->bs + p->mex <= p->m){
-			struct tent3d_line_extra_list *ex;
+			Teline3ListEx *ex;
 			unsigned i;
-			ex = (tent3d_line_extra_list*)malloc(offsetof(struct tent3d_line_extra_list, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
+			ex = (Teline3ListEx*)malloc(offsetof(Teline3ListEx, l) + p->mex * sizeof *ex->l); /* struct hack alloc */
 			ex->next = p->ex;
 			p->ex = ex;
 			p->lfree = ex->l;

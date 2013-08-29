@@ -2,9 +2,9 @@
 
 local birds = [];
 
-//local f15 = player.cs.addent("F15", Vec3d(0, 4., 0.));
-//player.chase = f15;
-//birds.append(f15);
+local f15 = player.cs.addent("F15", Vec3d(0, 4., 0.));
+player.chase = f15;
+birds.append(f15);
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
@@ -17,8 +17,8 @@ local birds = [];
 //player.chase = a10;
 //birds.append(a10);
 
-local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
-player.chase = tank;
+//local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
+//player.chase = tank;
 
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;

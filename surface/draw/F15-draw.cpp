@@ -682,7 +682,9 @@ void F15::drawCockpit(WarDraw *wd){
 		/* crosshair */
 		glColor4fv(hudcolor);
 		glPushMatrix();
-		glTranslated(0, 0.2, 0); // A bit up
+		// Calculate where the crosshair should be drawn to correctly indicate heading direction of shot rounds.
+		const double factor = -(hudPos[2] - seat[2]) / hudSize;
+		glTranslated(-gunDirection[0] * factor, gunDirection[1] * factor, 0);
 		glBegin(GL_LINES);
 		glVertex2d(-.15, 0.);
 		glVertex2d(-.05, 0.);

@@ -67,6 +67,7 @@ double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
 std::vector<Vec3d> F15::gunPositions;
+Vec3d F15::gunDirection = Vec3d(0, sin(2. / deg_per_rad), -cos(2. / deg_per_rad));
 double F15::bulletSpeed = .78;
 double F15::shootCooldown = .07;
 std::vector<Vec3d> F15::cameraPositions;
@@ -122,6 +123,7 @@ void F15::init(){
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
 			Vec3dListProcess(gunPositions, "gunPositions") <<=
+			Vec3dProcess(gunDirection, "gunDirection") <<=
 			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			SingleDoubleProcess(shootCooldown, "shootCooldown", false) <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
@@ -291,7 +293,6 @@ void F15::anim(double dt){
 }
 
 void F15::shoot(double dt){
-	Vec3d velo0(0., 0., -bulletSpeed);
 	if(dt <= this->cooldown)
 		return;
 /*	if(pt->vft == &valkie_s){
@@ -339,7 +340,7 @@ void F15::shoot(double dt){
 			else
 #endif
 				pb->pos = mat.vp3(it);
-			pb->velo = mat.dvp3(velo0) + this->velo;
+			pb->velo = mat.dvp3(gunDirection * bulletSpeed) + this->velo;
 			for(int j = 0; j < 3; j++)
 				pb->velo[j] += (drseq(&w->rs) - .5) * .005;
 			pb->anim(dt - this->cooldown);

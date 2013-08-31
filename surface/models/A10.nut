@@ -204,27 +204,55 @@ weaponList <- [
 
 
 function drawOverlay(){
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-1.0,  0.0);
-	glVertex2d(-0.5,  0.2);
-	glVertex2d( 0.0,  0.2);
-	glVertex2d( 0.5,  0.7);
-	glVertex2d( 0.7,  0.5);
-	glVertex2d( 0.5,  0.2);
-	glVertex2d( 0.7,  0.2);
-	glVertex2d( 0.8,  0.4);
-	glVertex2d( 1.0,  0.4);
-	glVertex2d( 0.9,  0.2);
-	glVertex2d( 0.9, -0.2);
-	glVertex2d( 1.0, -0.4);
-	glVertex2d( 0.8, -0.4);
-	glVertex2d( 0.7, -0.2);
-	glVertex2d( 0.5, -0.2);
-	glVertex2d( 0.7, -0.5);
-	glVertex2d( 0.5, -0.7);
-	glVertex2d( 0.0, -0.2);
-	glVertex2d(-0.5, -0.2);
-	glEnd();
+	local glPath = function(d,scale){
+		local x0 = d[0] - scale, y0 = d[1] - scale;
+		print("Adv: " + x0 + ", " + y0);
+		local x = x0, y = y0;
+		glBegin(GL_LINE_LOOP);
+		for(local i = 1; i < d.len() / 2; i++)
+			glVertex2d((x += d[i * 2]) / scale, (y += d[i * 2 + 1]) / scale);
+		glVertex2d(x0 / scale, y0 / scale);
+		glEnd();
+	}
+
+	local glRect = function(x0,y0,width,height){
+		local x1 = x0 + width, y1 = y0 + height;
+		glBegin(GL_LINE_LOOP);
+		glVertex2d(x0, y0);
+		glVertex2d(x0, y1);
+		glVertex2d(x1, y1);
+		glVertex2d(x1, y0);
+		glEnd();
+	}
+
+	local data = [
+		450,50,
+		-50,370,
+		-150,0,
+		-150,50,
+		0,60,
+		150,50,
+		150,0,
+		50,370,
+		150,0,
+		0,-380,
+		180,0,
+		0,130,
+		20,50,
+		100,0,
+		-20,-50,
+		0,-400,
+		20,-50,
+		-100,0,
+		-20,50,
+		0,120,
+		-180,0,
+		0,-370,
+	];
+
+	glPath(data, 500.);
+	glRect(100. / 500., -200. / 500., 140. / 500., 130. / 500.);
+	glRect(100. / 500.,   60. / 500., 140. / 500., 130. / 500.);
 }
 
 if(isClient()){

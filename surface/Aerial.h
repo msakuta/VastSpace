@@ -77,6 +77,7 @@ protected:
 
 	void init();
 	bool cull(WarDraw *)const;
+	void drawDebugWings()const;
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

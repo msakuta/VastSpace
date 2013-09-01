@@ -76,6 +76,7 @@ double F15::hudSize;
 GLuint F15::overlayDisp;
 bool F15::debugWings = false;
 std::vector<hardpoint_static*> F15::hardpoints;
+std::vector<Vec3d> F15::engineNozzles;
 StringList F15::defaultArms;
 StringList F15::weaponList;
 
@@ -132,6 +133,7 @@ void F15::init(){
 			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			HardPointProcess(hardpoints) <<=
+			Vec3dListProcess(engineNozzles, "engineNozzles") <<=
 			StringListProcess(defaultArms, "defaultArms") <<=
 			StringListProcess(weaponList, "weaponList"));
 		initialized = true;

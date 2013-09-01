@@ -63,6 +63,7 @@ protected:
 	static GLuint overlayDisp;
 	static bool debugWings;
 	static std::vector<hardpoint_static*> hardpoints;
+	static std::vector<Vec3d> engineNozzles;
 	static StringList defaultArms;
 	static StringList weaponList;
 

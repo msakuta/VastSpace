@@ -14,7 +14,7 @@ hitbox <- [
 ];
 
 // Thrust power
-thrust <- 0.01
+thrust <- 0.015;
 
 // Aerodynamic tensors, referred to by wings.
 local tensor1 = [
@@ -131,6 +131,11 @@ hardpoints <- [
 	{pos = Vec3d( 220,  10, 0) * modelScale, rot = rot0, name = "Wingtip R"},
 ];
 
+engineNozzles <- [
+	Vec3d(20, 1, 240) * modelScale,
+	Vec3d(-20, 1, 240) * modelScale,
+];
+
 /// Default equipment set for hardpoints
 defaultArms <- [
 	"SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher",
@@ -182,6 +187,11 @@ if(isClient()){
 		cmd("pushbind");
 		cmd("bind g gear");
 		cmd("r_windows 0");
+		register_console_command("afterburner", function(){
+			foreach(e in player.selected)
+				e.afterburner = !e.afterburner;
+		});
+		cmd("bind e afterburner");
 	}
 
 	endControl["F15"] <- function (){

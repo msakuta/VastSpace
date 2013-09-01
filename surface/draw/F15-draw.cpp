@@ -12,6 +12,8 @@ extern "C"{
 #include <clib/timemeas.h>
 }
 
+#include "cpplib/CRC32.h"
+
 
 Model *F15::model;
 
@@ -85,6 +87,9 @@ void F15::drawtra(WarDraw *wd){
 	if(debugWings)
 		drawDebugWings();
 
+	Mat4d mat;
+	transform(mat);
+
 #if 0
 	const GLubyte red[4] = {255,31,31,255}, white[4] = {255,255,255,255};
 	static const avec3_t
@@ -108,7 +113,6 @@ void F15::drawtra(WarDraw *wd){
 	double air;
 	double scale = FLY_SCALE;
 	avec3_t v0, v;
-	GLdouble mat[16];
 	fly_t *p = (fly_t*)pt;
 	struct random_sequence rs;
 	int i;
@@ -145,39 +149,36 @@ void F15::drawtra(WarDraw *wd){
 		glEnd();
 		glPopMatrix();
 	}
+#endif
 
-#if 0
-	if(p->afterburner) for(i = 0; i < (pt->vft == &fly_s ? 1 : 2); i++){
-		double (*cuts)[2];
-		int j;
-		struct random_sequence rs;
-		double x;
-		init_rseq(&rs, *(long*)&wd->gametime);
-		cuts = CircleCuts(8);
-		glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		glEnable(GL_CULL_FACE);
-		glPushMatrix();
-		glMultMatrixd(mat);
-		if(pt->vft == &fly_s)
-			glTranslated(pt->vft == &fly_s ? 0. : (i * 105. * 2. - 105.) * .5 * FLY_SCALE, pt->vft == &fly_s ? FLY_SCALE * 20. : FLY_SCALE * .5 * -5., FLY_SCALE * (pt->vft == &fly_s ? 160 : 420. * .5));
-		else
-			glTranslated((i * 1.2 * 2. - 1.2) * .001, -.0002, .008);
-		glScaled(.0005, .0005, .005);
-		glBegin(GL_TRIANGLE_FAN);
-		glColor4ub(255,127,0,rseq(&rs) % 64 + 128);
-		x = (drseq(&rs) - .5) * .25;
-		glVertex3d(x, (drseq(&rs) - .5) * .25, 1);
-		for(j = 0; j <= 8; j++){
-			int j1 = j % 8;
-			glColor4ub(0,127,255,rseq(&rs) % 128 + 128);
-			glVertex3d(cuts[j1][1], cuts[j1][0], 0);
+#if 1
+	if(afterburner){
+		RandomSequence rs(crc32(&game->universe->global_time, sizeof game->universe->global_time));
+		for(auto it : engineNozzles){
+			double (*cuts)[2] = CircleCuts(8);
+			glPushAttrib(GL_POLYGON_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+			glEnable(GL_CULL_FACE);
+			glPushMatrix();
+			glMultMatrixd(mat);
+			gldTranslate3dv(it);
+			glScaled(.0005, .0005, .005);
+			glBegin(GL_TRIANGLE_FAN);
+			glColor4ub(255,127,0, rs.next() % 64 + 128);
+			double x = (rs.nextd() - .5) * .25;
+			glVertex3d(x, (rs.nextd() - .5) * .25, 1);
+			for(int j = 0; j <= 8; j++){
+				int j1 = j % 8;
+				glColor4ub(0,127,255, rs.next() % 128 + 128);
+				glVertex3d(cuts[j1][1], cuts[j1][0], 0);
+			}
+			glEnd();
+			glPopMatrix();
+			glPopAttrib();
 		}
-		glEnd();
-		glPopMatrix();
-		glPopAttrib();
 	}
 #endif
 
+#if 0
 	if(pt->vft == &valkie_s){
 		valkie_t *p = (valkie_t*)pt;
 		double rot[numof(valkie_bonenames)][7];
@@ -402,13 +403,8 @@ void F15::drawHUD(WarDraw *wd){
 			gldprintf("BRK");
 		}*/
 
-/*		if(((fly_t*)pt)->afterburner){
-			glRasterPos3d(left, bottom + 150. / m, -1.);
-			gldprintf("AB");
-		}*/
-
-		glRasterPos3d(left, bottom + 130. / m, -1.);
-		gldprintf("Missiles: %d", this->missiles);
+		if(afterburner)
+			glColor4f(1,0,0,1);
 
 		glPushMatrix();
 		glScaled(1./*(double)mi / w*/, 1./*(double)mi / h*/, (double)m / mi);
@@ -426,6 +422,9 @@ void F15::drawHUD(WarDraw *wd){
 		glVertex3d(-.38, -0.8, -1.);
 		glVertex3d(-.38, -0.8 + throttle * .1, -1.);
 		glEnd();
+
+		if(afterburner)
+			glColor4f(1,1,1,1);
 
 /*		printf("flyHUD %lg\n", TimeMeasLap(&tm));*/
 

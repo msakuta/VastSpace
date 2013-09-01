@@ -1694,6 +1694,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushinteger(v, weapon);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("afterburner"))){
+		sq_pushbool(v, SQBool(afterburner));
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -1711,6 +1715,17 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &i)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with integer"));
 		weapon = i;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("afterburner"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
+		afterburner = b;
+
+		// You cannot keep afterburner active without sufficient fuel supply
+		if(afterburner && throttle < .7)
+			throttle = .7;
 		return 0;
 	}
 	else

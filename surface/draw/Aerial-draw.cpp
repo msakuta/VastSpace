@@ -385,6 +385,10 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		readOut(gltestp::dstring("ARMED: ") << weaponList[weapon], 0.2, -0.75, 0.0035);
 		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
 
+		// Indicates afterburner in use
+		if(afterburner)
+			readOut("A/B", -0.5, -0.75, 0.0050);
+
 		// Velocity Vector or Flight Path Vector.
 		if(FLT_EPSILON < this->velo.slen()){
 			Vec3d lheading = rot.itrans(this->velo.norm());

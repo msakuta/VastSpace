@@ -68,6 +68,7 @@ double A10::thrustStrength = .010;
 A10::WingList A10::wings0;
 std::vector<Vec3d> A10::wingTips;
 std::vector<Vec3d> A10::gunPositions;
+Vec3d A10::gunDirection(0,0,-1);
 double A10::bulletSpeed = .78;
 double A10::shootCooldown = .07;
 std::vector<Vec3d> A10::cameraPositions;
@@ -124,6 +125,7 @@ void A10::init(){
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=
 			Vec3dListProcess(gunPositions, "gunPositions") <<=
+			Vec3dProcess(gunDirection, "gunDirection") <<=
 			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			SingleDoubleProcess(shootCooldown, "shootCooldown", false) <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=

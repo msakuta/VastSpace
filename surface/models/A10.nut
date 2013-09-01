@@ -60,6 +60,10 @@ gunPositions <- [
 	Vec3d(5, -15, -320) * modelScale
 ]
 
+/// Indicates direction of shot rounds from the guns. It must be normalized, the speed is determied by bulletSpeed,
+/// not by the length of this parameter.
+gunDirection <- Vec3d(0, 0, -1);
+
 bulletSpeed <- 1.0;
 
 shootCooldown <- 60.0 / 2100;
@@ -98,7 +102,7 @@ function fire(e,dt){
 				pb.splashRadius = 20 * m;
 				pb.friendlySafe = false;
 //				pb.mass = 0.010;
-				local v0 = Vec3d(0,0,-lthis.bulletSpeed);
+				local v0 = lthis.gunDirection * lthis.bulletSpeed;
 				local newvelo = rot.trans(v0) + e.getvelo();
 				local rs = e.cs.rs; // Obtain random sequence
 				for(local j = 0; j < 3; j++)

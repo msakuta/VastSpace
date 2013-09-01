@@ -589,7 +589,7 @@ void A10::drawCockpit(WarDraw *wd){
 
 	glPopMatrix();
 
-	drawCockpitHUD(hudPos, hudSize, seat, Vec3d(0,0,-1), weaponList);
+	drawCockpitHUD(hudPos, hudSize, seat, gunDirection, weaponList);
 
 	glPushMatrix();
 

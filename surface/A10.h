@@ -6,7 +6,6 @@
 
 #include "Aerial.h"
 #include "arms.h"
-#include "SqInitProcess-ex.h"
 
 /// \brief Fairchild A-10 Thunderbolt II
 ///

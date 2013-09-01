@@ -6,7 +6,6 @@
 
 #include "Aerial.h"
 #include "arms.h"
-#include "SqInitProcess-ex.h"
 
 /// \brief McDonnell Douglas F-15 Eagle
 ///

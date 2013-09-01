@@ -14,6 +14,7 @@
 
 #include "Entity.h"
 #include "ModelEntity.h"
+#include "SqInitProcess-ex.h"
 
 struct Model;
 
@@ -78,6 +79,8 @@ protected:
 	void init();
 	bool cull(WarDraw *)const;
 	void drawDebugWings()const;
+	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
+		const Vec3d &gunDirection, const StringList &weaponList)const;
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

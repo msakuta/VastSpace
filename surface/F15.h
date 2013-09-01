@@ -64,6 +64,7 @@ protected:
 	static bool debugWings;
 	static std::vector<hardpoint_static*> hardpoints;
 	static StringList defaultArms;
+	static StringList weaponList;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}

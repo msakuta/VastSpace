@@ -136,6 +136,14 @@ defaultArms <- [
 	"SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher", "SidewinderLauncher",
 ];
 
+/// Available weapon type names
+weaponList <- [
+	"M61A1 Vulcan",
+//	"AIM-7 Sparrow",
+	"AIM-9 Sidewinder",
+//	"AIM-120 AMRAAM",
+]
+
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

@@ -77,6 +77,7 @@ GLuint F15::overlayDisp;
 bool F15::debugWings = false;
 std::vector<hardpoint_static*> F15::hardpoints;
 StringList F15::defaultArms;
+StringList F15::weaponList;
 
 SQInteger F15::sqf_debugWings(HSQUIRRELVM v){
 	SQBool b;
@@ -131,7 +132,8 @@ void F15::init(){
 			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			HardPointProcess(hardpoints) <<=
-			StringListProcess(defaultArms, "defaultArms"));
+			StringListProcess(defaultArms, "defaultArms") <<=
+			StringListProcess(weaponList, "weaponList"));
 		initialized = true;
 	}
 	mass = defaultMass;

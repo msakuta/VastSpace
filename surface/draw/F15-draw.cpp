@@ -583,17 +583,6 @@ void F15::drawCockpit(WarDraw *wd){
 
 	glPopMatrix();
 
-	// If the compiler supports initializer list in C++11, we could write the declaration
-	// and definition at once without ugly init flag, but unfortunately VC2012 does not
-	// support it yet.
-	static bool weaponListInit = false;
-	static StringList weaponList;
-	if(!weaponListInit){
-		weaponList.push_back("M61A1 Vulcan");
-		weaponList.push_back("Missile");
-		weaponListInit = true;
-	}
-
 	drawCockpitHUD(hudPos, hudSize, seat, gunDirection, weaponList);
 
 	glPushMatrix();

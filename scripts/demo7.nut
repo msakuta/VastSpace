@@ -32,6 +32,7 @@ local airport = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 5.0));
 airport.modelFile = "surface/models/airport.mqo";
 airport.modelScale = 0.01;
 airport.hitRadius = 1.5;
+airport.landOffset = Vec3d(0,0.5,0);
 
 
 //local apache = player.cs.addent("Apache", Vec3d(0, 2, 4));

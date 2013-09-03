@@ -5,6 +5,9 @@
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
+extern "C"{
+#include "clib/gl/gldraw.h"
+}
 
 void SurfaceBuilding::draw(WarDraw *wd){
 	if(!w || !modelFile.len())
@@ -29,6 +32,7 @@ void SurfaceBuilding::draw(WarDraw *wd){
 			transform(mat);
 			glMultMatrixd(mat);
 		}
+		gldTranslate3dv(landOffset);
 
 		glScaled(modelScale, modelScale, modelScale);
 		DrawMQOPose(model, NULL);

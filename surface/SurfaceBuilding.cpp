@@ -3,14 +3,13 @@
  */
 #include "SurfaceBuilding.h"
 #include "SurfaceCS.h"
+#include "sqadapt.h"
 
 Entity::EntityRegister<SurfaceBuilding> SurfaceBuilding::entityRegister("SurfaceBuilding");
 
 
 void SurfaceBuilding::anim(double dt){
 	if(WarSpace *ws = *w){
-		static const btVector3 offset(0, getLandOffset(), 0);
-
 		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
 		// dynamic_cast should be preferred.
 		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
@@ -18,7 +17,7 @@ void SurfaceBuilding::anim(double dt){
 			Vec3d normal;
 			double height = s->getHeight(pos[0], pos[2], &normal);
 			{
-				Vec3d dest(pos[0], height + offset[1], pos[2]);
+				Vec3d dest = Vec3d(pos[0], height, pos[2]) + landOffset;
 				setPosition(&dest, NULL, NULL);
 			}
 		}
@@ -37,6 +36,12 @@ SQInteger SurfaceBuilding::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 	}
 	else if(!strcmp(name, _SC("hitRadius"))){
 		sq_pushfloat(v, this->hitRadius);
+		return 1;
+	}
+	else if(!strcmp(name, _SC("landOffset"))){
+		SQVec3d r;
+		r.value = landOffset;
+		r.push(v);
 		return 1;
 	}
 	else
@@ -70,6 +75,11 @@ SQInteger SurfaceBuilding::sqSet(HSQUIRRELVM v, const SQChar *name){
 		}
 		else
 			return sq_throwerror(v, _SC("Type not compatible to float for hitRadius"));
+	}
+	else if(!strcmp(name, _SC("landOffset"))){
+		SQVec3d r;
+		r.getValue(v, 3);
+		landOffset = r.value;
 	}
 	else
 		st::sqSet(v, name);

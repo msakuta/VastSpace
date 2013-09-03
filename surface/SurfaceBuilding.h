@@ -13,8 +13,8 @@ public:
 	static const unsigned classid;
 	static EntityRegister<SurfaceBuilding> entityRegister;
 
-	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1){}
-	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1){race = -1;}
+	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0){}
+	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0){race = -1;}
 	void anim(double)override;
 	void draw(WarDraw *)override;
 	double getHitRadius()const override{return hitRadius;}
@@ -22,7 +22,6 @@ public:
 	bool isSelectable()const override{return false;}
 
 	static gltestp::dstring modPath(){return _SC("surface/");}
-	static double getLandOffset(){return 0.;}
 
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
@@ -32,6 +31,7 @@ protected:
 	Model *model;
 	double modelScale; ///< Model scale is different from model to model.
 	double hitRadius; ///< Hit radius (extent sphere radius) is different from model to model.
+	Vec3d landOffset;
 };
 
 #endif

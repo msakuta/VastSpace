@@ -1,39 +1,8 @@
 /** \file
  * \brief Implementation of SurfaceBuilding class.
  */
-#include "ModelEntity.h"
-#include "draw/WarDraw.h"
-#include "draw/mqoadapt.h"
-#include "draw/OpenGLState.h"
+#include "SurfaceBuilding.h"
 #include "SurfaceCS.h"
-
-
-class SurfaceBuilding : public ModelEntity{
-public:
-	typedef ModelEntity st;
-	static const unsigned classid;
-	static EntityRegister<SurfaceBuilding> entityRegister;
-
-	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1){}
-	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1){race = -1;}
-	void anim(double)override;
-	void draw(WarDraw *)override;
-	double getHitRadius()const override{return hitRadius;}
-	bool isTargettable()const override{return true;}
-	bool isSelectable()const override{return false;}
-
-	static gltestp::dstring modPath(){return _SC("surface/");}
-	static double getLandOffset(){return 0.;}
-
-protected:
-	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
-	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
-
-	gltestp::dstring modelFile; ///< The model file name in relative path to the project root.
-	Model *model;
-	double modelScale; ///< Model scale is different from model to model.
-	double hitRadius; ///< Hit radius (extent sphere radius) is different from model to model.
-};
 
 Entity::EntityRegister<SurfaceBuilding> SurfaceBuilding::entityRegister("SurfaceBuilding");
 
@@ -53,42 +22,6 @@ void SurfaceBuilding::anim(double dt){
 				setPosition(&dest, NULL, NULL);
 			}
 		}
-	}
-
-}
-
-void SurfaceBuilding::draw(WarDraw *wd){
-	if(!w || !modelFile.len())
-		return;
-
-	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, hitRadius))
-		return;
-	double pixels = hitRadius * fabs(wd->vw->gc->scale(pos));
-	if(pixels < 2)
-		return;
-	wd->lightdraws++;
-
-	static Model *model = NULL;
-
-	static OpenGLState::weak_ptr<bool> init;
-	if(!init){
-		delete model;
-		model = LoadMQOModel(modelFile);
-		init.create(*openGLState);
-	};
-
-	if(model){
-		glPushMatrix();
-		{
-			Mat4d mat;
-			transform(mat);
-			glMultMatrixd(mat);
-		}
-
-		glScaled(modelScale, modelScale, modelScale);
-		DrawMQOPose(model, NULL);
-		glPopMatrix();
 	}
 
 }
@@ -141,3 +74,7 @@ SQInteger SurfaceBuilding::sqSet(HSQUIRRELVM v, const SQChar *name){
 	else
 		st::sqSet(v, name);
 }
+
+#ifdef DEDICATED
+void SurfaceBuilding::draw(WarDraw *){}
+#endif

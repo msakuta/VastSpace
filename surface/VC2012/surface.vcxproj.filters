@@ -44,6 +44,9 @@
     <ClInclude Include="..\A10.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\SurfaceBuilding.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -101,6 +104,9 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\draw\A10-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\SurfaceBuilding-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>

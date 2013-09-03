@@ -28,6 +28,12 @@ bldg.modelFile = "surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
+local airport = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 5.0));
+airport.modelFile = "surface/models/airport.mqo";
+airport.modelScale = 0.01;
+airport.hitRadius = 1.5;
+
+
 //local apache = player.cs.addent("Apache", Vec3d(0, 2, 4));
 //player.chase = apache;
 

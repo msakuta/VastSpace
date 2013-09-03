@@ -18,14 +18,9 @@ void SurfaceBuilding::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-	static Model *model = NULL;
-
-	static OpenGLState::weak_ptr<bool> init;
-	if(!init){
-		delete model;
+	if(!model){
 		model = LoadMQOModel(modelFile);
-		init.create(*openGLState);
-	};
+	}
 
 	if(model){
 		glPushMatrix();

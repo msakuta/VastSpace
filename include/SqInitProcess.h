@@ -29,10 +29,14 @@ public:
 
 	const SqInitProcess &chain(const SqInitProcess &o)const;
 
+	struct SqInitEval{
+		virtual SQRESULT call() = 0;
+		virtual gltestp::dstring description()const = 0;
+	};
+	static bool SqInit(HSQUIRRELVM v, SqInitEval &eval, const SqInitProcess &procs);
+	EXPORT friend bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs);
 protected:
 	mutable const SqInitProcess *next;
-	static bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs);
-	friend bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs);
 };
 
 /// \brief Processes nothing.
@@ -42,9 +46,7 @@ public:
 };
 
 
-inline bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs = NullProcess()){
-	return SqInitProcess::SqInit(v, scriptFile, procs);
-}
+EXPORT bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs = NullProcess());
 
 /// \brief Processes a integer value in a Squirrel script.
 class EXPORT IntProcess : public SqInitProcess{

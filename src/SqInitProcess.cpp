@@ -9,6 +9,26 @@ extern "C"{
 #include <clib/timemeas.h>
 }
 
+/// \brief Load and initialize from a named script file.
+///
+/// \param scriptFile The name of script file in relative path from the project's root directory.
+///                   It can be in rc.zip.
+///
+/// This function is provided for convenience and compatibility, but the user is not limited to
+/// load the script from a file.  You can inherit SqInitEval to provide the script from anything,
+/// including buffers on memory or dynamically generated string sequence.
+bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs){
+	struct FileSqInitEval : SqInitProcess::SqInitEval{
+		HSQUIRRELVM v;
+		const SQChar *scriptFile;
+		FileSqInitEval(HSQUIRRELVM v, const SQChar *file) : v(v), scriptFile(file){}
+		SQRESULT call(){
+			return sqa_dofile(v, scriptFile, 0, 1);
+		}
+		gltestp::dstring description()const{return scriptFile;}
+	};
+	return SqInitProcess::SqInit(v, FileSqInitEval(v, scriptFile), procs);
+}
 
 /// \brief The function that is called to initialize static customizable variables to a specific Entity class.
 ///
@@ -16,7 +36,7 @@ extern "C"{
 /// It depends on initialization order. Specifically, dedicated server always invoke in the server game,
 /// while the Windows client invokes in the client game if it's connected to a server.
 /// As for a standalone server, it's not determined.
-bool SqInitProcess::SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs){
+bool SqInitProcess::SqInit(HSQUIRRELVM v, SqInitEval &eval, const SqInitProcess &procs){
 	try{
 		StackReserver sr(v);
 		timemeas_t tm;
@@ -24,13 +44,13 @@ bool SqInitProcess::SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInit
 		sq_newtable(v);
 		sq_pushroottable(v); // root
 		sq_setdelegate(v, -2);
-		if(SQ_SUCCEEDED(sqa_dofile(v, scriptFile, 0, 1))){
+		if(SQ_SUCCEEDED(eval.call())){
 			const SqInitProcess *proc = &procs;
 			for(; proc; proc = proc->next)
 				proc->process(v);
 		}
 		double d = TimeMeasLap(&tm);
-		CmdPrint(gltestp::dstring() << scriptFile << " total: " << d << " sec");
+		CmdPrint(gltestp::dstring() << eval.description() << " total: " << d << " sec");
 	}
 	catch(SQFError &e){
 		// TODO: We wanted to know which line caused the error, but it seems it's not possible because the errors
@@ -43,7 +63,7 @@ bool SqInitProcess::SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInit
 			CmdPrint(gltestp::dstring() << scriptFile << "(" << int(si0.line) << "): " << si0.funcname << ": error: " << e.what());
 		}
 		else*/
-			CmdPrint(gltestp::dstring() << scriptFile << " error: " << e.what());
+			CmdPrint(gltestp::dstring() << eval.description() << " error: " << e.what());
 	}
 	return true;
 }

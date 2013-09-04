@@ -5,6 +5,7 @@
 #define SURFACE_SURFACEBUILDING_H
 #include "ModelEntity.h"
 #include "Model-forward.h"
+#include <btBulletDynamicsCommon.h>
 
 
 class SurfaceBuilding : public ModelEntity{
@@ -13,8 +14,9 @@ public:
 	static const unsigned classid;
 	static EntityRegister<SurfaceBuilding> entityRegister;
 
-	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0){}
-	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0){race = -1;}
+	SurfaceBuilding(Game *game) : st(game), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0), shape(NULL){}
+	SurfaceBuilding(WarField *w) : st(w), model(NULL), modelScale(0.01), hitRadius(0.1), landOffset(0,0,0), shape(NULL){race = -1;}
+	const char *classname()const override{return "SurfaceBuilding";}
 	void anim(double)override;
 	void draw(WarDraw *)override;
 	double getHitRadius()const override{return hitRadius;}
@@ -23,15 +25,22 @@ public:
 
 	static gltestp::dstring modPath(){return _SC("surface/");}
 
+	static SQInteger sqf_setHitBoxes(HSQUIRRELVM);
+
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
+	bool buildBody();
+	void SurfaceBuilding::addRigidBody(WarSpace *ws);
 
 	gltestp::dstring modelFile; ///< The model file name in relative path to the project root.
 	Model *model;
 	double modelScale; ///< Model scale is different from model to model.
 	double hitRadius; ///< Hit radius (extent sphere radius) is different from model to model.
 	Vec3d landOffset;
+	HitBoxList hitboxes;
+	btCompoundShape *shape;
 };
 
 #endif

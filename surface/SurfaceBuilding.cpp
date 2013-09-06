@@ -34,6 +34,26 @@ void SurfaceBuilding::anim(double dt){
 
 }
 
+int SurfaceBuilding::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	double best = dt;
+	int reti = 0;
+	double retf;
+	for(int n = 0; n < hitboxes.size(); n++){
+		hitbox &hb = hitboxes[n];
+		Vec3d org = this->rot.trans(hb.org) + this->pos;
+		Quatd rot = this->rot * hb.rot;
+		Vec3d sc;
+		for(int i = 0; i < 3; i++)
+			sc[i] = hb.sc[i] + rad;
+		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, retn)) && (retf < best)){
+			best = retf;
+			if(ret) *ret = retf;
+			reti = n + 1;
+		}
+	}
+	return reti;
+}
+
 bool SurfaceBuilding::buildBody(){
 	if(hitboxes.size() != 0 && !bbody){
 		if(!shape){

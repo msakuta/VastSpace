@@ -37,12 +37,14 @@ public:
 
 protected:
 	double aileron, elevator, rudder;
+	double fspoiler;
 	double throttle;
 	double gearphase;
 	double cooldown;
 	std::vector<Vec3d> force;
 	Vec3d sight;
 	bool muzzle, brk, afterburner, navlight, gear;
+	bool spoiler;
 	int missiles;
 	int weapon;
 //	sufdecal_t *sd;

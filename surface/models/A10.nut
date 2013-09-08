@@ -265,12 +265,17 @@ if(isClient()){
 			player.controlled.gear = !player.controlled.gear;
 	});
 
+	register_console_command("spoiler", function(){
+		if(player.controlled)
+			player.controlled.spoiler = !player.controlled.spoiler;
+	});
 
 	beginControl["A10"] <- function (){
 		if("print" in this)
 			print("A10::beginControl");
 		cmd("pushbind");
 		cmd("bind g gear");
+		cmd("bind b spoiler");
 		cmd("r_windows 0");
 	}
 

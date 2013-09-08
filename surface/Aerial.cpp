@@ -335,10 +335,10 @@ void Aerial::addRigidBody(WarSpace *ws){
 	}
 }
 
-Aerial::Aerial(Game *game) : st(game){
+Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false){
 }
 
-Aerial::Aerial(WarField *w) : st(w){
+Aerial::Aerial(WarField *w) : st(w), fspoiler(0), spoiler(false){
 	moi = .2; /* kilograms * kilometer^2 */
 	init();
 }
@@ -1366,6 +1366,8 @@ void Aerial::anim(double dt){
 #endif
 		rudder = rangein(approach(rudder, (inputs & PL_A ? -M_PI / 6. : inputs & PL_D ? M_PI / 6. : 0), 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 
+		fspoiler = approach(fspoiler, spoiler, dt, 0);
+
 		gearphase = approach(gearphase, gear, 1. * dt, 0.);
 
 		if(inputs & PL_W)
@@ -1548,9 +1550,26 @@ void Aerial::anim(double dt){
 			// Calculate attenuation factor
 			double f2 = f * air * this->mass * .15 * len;
 
+			Mat3d aeroBuf;
+			const Mat3d *aeroRef = &it.aero;
+			if(it.control == Wing::Control::Aileron){
+				aeroBuf = it.aero;
+
+				// Increase drag by amplifying diagonal elements
+				const double f = 2. * fspoiler;
+				aeroBuf[0] *= 1. + f;
+//				aeroBuf[4] *= 1. + f; // Don't increase vertical drag, it will make aileron sensitivity look higher.
+				aeroBuf[8] *= 1. + f;
+
+				// Spoil lift force
+				aeroBuf[7] /= 1. + 4. * fspoiler;
+
+				aeroRef = &aeroBuf;
+			}
+
 			// Calculate the drag in local coordinates
 			Vec3d v1 = rot.itrans(velo);
-			Vec3d v = (it.aero * v1) * f2;
+			Vec3d v = (*aeroRef * v1) * f2;
 			Vec3d v2 = rot.trans(v);
 			this->force.push_back(v2);
 			if(bbody)
@@ -1690,6 +1709,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, gear);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("spoiler"))){
+		sq_pushbool(v, spoiler);
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("weapon"))){
 		sq_pushinteger(v, weapon);
 		return 1;
@@ -1708,6 +1731,15 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
 		gear = b;
+		if(bbody)
+			bbody->setFriction(gear * 1.);
+		return 0;
+	}
+	if(!scstrcmp(name, _SC("spoiler"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
+		spoiler = b;
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("weapon"))){

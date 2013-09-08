@@ -180,12 +180,17 @@ if(isClient()){
 			player.controlled.gear = !player.controlled.gear;
 	});
 
+	register_console_command("spoiler", function(){
+		if(player.controlled)
+			player.controlled.spoiler = !player.controlled.spoiler;
+	});
 
 	beginControl["F15"] <- function (){
 		if("print" in this)
 			print("F15::beginControl");
 		cmd("pushbind");
 		cmd("bind g gear");
+		cmd("bind b spoiler");
 		cmd("r_windows 0");
 		register_console_command("afterburner", function(){
 			foreach(e in player.selected)

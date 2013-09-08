@@ -389,6 +389,10 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		if(afterburner)
 			readOut("A/B", -0.5, -0.75, 0.0050);
 
+		// Indicates spoiler
+		if(spoiler)
+			readOut("SPOILER", -0.5, -0.85, 0.0050);
+
 		// Velocity Vector or Flight Path Vector.
 		if(FLT_EPSILON < this->velo.slen()){
 			Vec3d lheading = rot.itrans(this->velo.norm());

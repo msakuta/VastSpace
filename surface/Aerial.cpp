@@ -979,8 +979,6 @@ void Aerial::control(const input_t *inputs, double dt){
 	if(inputs->press & (PL_LCLICK | PL_ENTER)){
 		shoot(dt);
 	}
-	if(inputs->press & inputs->change & (PL_G))
-		gear = !gear;
 	aileron = rangein(approach(aileron, aileron + inputs->analog[0] * 0.01, dt, 0.), -1, 1);
 	elevator = rangein(approach(elevator, elevator + inputs->analog[1] * 0.01, dt, 0.), -1, 1);
 	if(cooldown < dt)

@@ -1021,6 +1021,46 @@ void Aerial::anim(double dt){
 		velo = btvc(bbody->getLinearVelocity());
 		rot = btqc(bbody->getOrientation());
 		omg = btvc(bbody->getAngularVelocity());
+
+		WarSpace *ws = *w;
+		if(ws){
+			int num = ws->bdw->getDispatcher()->getNumManifolds();
+			for(int i = 0; i < num; i++){
+				btPersistentManifold* contactManifold = ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
+				const btCollisionObject* obA = static_cast<const btCollisionObject*>(contactManifold->getBody0());
+				const btCollisionObject* obB = static_cast<const btCollisionObject*>(contactManifold->getBody1());
+				if(obA == bbody || obB == bbody){
+					int numContacts = contactManifold->getNumContacts();
+					for(int j = 0; j < numContacts; j++){
+						btManifoldPoint& pt = contactManifold->getContactPoint(j);
+						if(pt.getDistance() < 0.f){
+							const btVector3& ptA = pt.getPositionWorldOnA();
+							const btVector3& ptB = pt.getPositionWorldOnB();
+							if(ptA.getY() < bbody->getCenterOfMassPosition().getY() || ptA.getY() < bbody->getCenterOfMassPosition().getY()){
+								btVector3 btvelo = bbody->getLinearVelocity();
+								btScalar len = btvelo.length();
+								const double threshold = 0.015;
+								double run = len * dt;
+
+								// Sensitivity is dropped when the vehicle is in high speed, to prevent falling by centrifugal force.
+								double sensitivity = -M_PI * 5. * (len < threshold ? 1. : threshold / len);
+
+								btTransform wt = bbody->getWorldTransform();
+
+								// Assume steering direction to be controlled by rudder.
+								wt.setRotation(wt.getRotation() * btQuaternion(btVector3(0,1,0), rudder * run * sensitivity));
+								bbody->setWorldTransform(wt);
+
+								// Cancel lateral velocity to enable steering. This should really be anisotropic friction, because
+								// it is possible that the lift suppress the friction force, but our method won't take it into account.
+								bbody->setLinearVelocity(btvelo - wt.getBasis().getColumn(0) * wt.getBasis().getColumn(0).dot(btvelo));
+								onfeet = 1;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 
@@ -1729,8 +1769,8 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
 		gear = b;
-		if(bbody)
-			bbody->setFriction(gear * 1.);
+//		if(bbody)
+//			bbody->setFriction(gear * 1.);
 		return 0;
 	}
 	if(!scstrcmp(name, _SC("spoiler"))){
@@ -1738,6 +1778,8 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
 		spoiler = b;
+		if(bbody)
+			bbody->setFriction(spoiler * 1.);
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("weapon"))){

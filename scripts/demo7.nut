@@ -34,7 +34,7 @@ airport.modelScale = 0.01;
 airport.hitRadius = 1.5;
 airport.landOffset = Vec3d(0,0.1,0);
 airport.setHitBoxes([
-	[Vec3d(0,-0.9,0), Quatd(0,0,0,1), Vec3d(1., 1., 1.)],
+	[Vec3d(0,-0.9,0), Quatd(0,0,0,1), Vec3d(0.5, 1., 1.)],
 ]);
 
 

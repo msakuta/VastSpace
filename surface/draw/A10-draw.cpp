@@ -33,11 +33,11 @@ void A10::draw(WarDraw *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/A10.mqo");
-		lodMotion = LoadMotion(modPath() << "models/A10-LOD.mot");
-		aileronMotion = LoadMotion(modPath() << "models/A10-aileron.mot");
-		elevatorMotion = LoadMotion(modPath() << "models/A10-elevator.mot");
-		rudderMotion = LoadMotion(modPath() << "models/A10-rudder.mot");
-		gearMotion = LoadMotion(modPath() << "models/A10-gear.mot");
+		lodMotion = LoadMotion(modPath() << "models/F15-LOD.mot");
+		aileronMotion = LoadMotion(modPath() << "models/F15-aileron.mot");
+		elevatorMotion = LoadMotion(modPath() << "models/F15-elevator.mot");
+		rudderMotion = LoadMotion(modPath() << "models/F15-rudder.mot");
+		gearMotion = LoadMotion(modPath() << "models/F15-gear.mot");
 
 		init.create(*openGLState);
 	}

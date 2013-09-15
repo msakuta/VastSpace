@@ -5,7 +5,7 @@ local birds = [];
 local f15 = player.cs.addent("F15", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 f15.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 f15.gear = true;
-player.chase = f15;
+//player.chase = f15;
 f15.destArrived = true;
 birds.append(f15);
 

@@ -11,7 +11,7 @@ maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
 	[Vec3d(0,20,0) * modelScale, Quatd(0,0,0,1), Vec3d(330, 50, 300) * modelScale],
-	[Vec3d(0,-40,-75) * modelScale, Quatd(0,0,0,1), Vec3d(100, 10, 150) * modelScale],
+	[Vec3d(0,-45,-75) * modelScale, Quatd(0,0,0,1), Vec3d(100, 15, 150) * modelScale],
 ];
 
 // Thrust power
@@ -182,10 +182,10 @@ local rot0 = Quatd(0,0,0,1);
 hardpoints <- [
 	{pos = Vec3d(- 60, -20, 0) * modelScale, rot = rot0, name = "Wing L 1"},
 	{pos = Vec3d(  60, -20, 0) * modelScale, rot = rot0, name = "Wing R 1"},
-	{pos = Vec3d(-120, -20, 0) * modelScale, rot = rot0, name = "Wing L 2"},
-	{pos = Vec3d( 120, -20, 0) * modelScale, rot = rot0, name = "Wing R 2"},
-	{pos = Vec3d(-180, -20, 0) * modelScale, rot = rot0, name = "Wing L 3"},
-	{pos = Vec3d( 180, -20, 0) * modelScale, rot = rot0, name = "Wing R 3"},
+	{pos = Vec3d(-160, -20, 0) * modelScale, rot = rot0, name = "Wing L 2"},
+	{pos = Vec3d( 160, -20, 0) * modelScale, rot = rot0, name = "Wing R 2"},
+	{pos = Vec3d(-200, -20, 0) * modelScale, rot = rot0, name = "Wing L 3"},
+	{pos = Vec3d( 200, -20, 0) * modelScale, rot = rot0, name = "Wing R 3"},
 	{pos = Vec3d(-240, -20, 0) * modelScale, rot = rot0, name = "Wing L 4"},
 	{pos = Vec3d( 240, -20, 0) * modelScale, rot = rot0, name = "Wing R 4"},
 	{pos = Vec3d(-330,  12, 0) * modelScale, rot = rot0, name = "Wingtip L"},

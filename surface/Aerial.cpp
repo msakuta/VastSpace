@@ -282,18 +282,9 @@ void Aerial::init(){
 
 bool Aerial::buildBody(){
 	if(!bbody){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(auto it : getHitBoxes()){
-				const Vec3d &sc = it.sc;
-				const Quatd &rot = it.rot;
-				const Vec3d &pos = it.org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
+		btCompoundShape *shape = getShape();
+		if(!shape)
+			return false;
 		btTransform startTransform;
 		startTransform.setIdentity();
 		startTransform.setOrigin(btvc(pos));
@@ -315,6 +306,19 @@ bool Aerial::buildBody(){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 	return true;
+}
+
+btCompoundShape *Aerial::buildShape(){
+	btCompoundShape *shape = new btCompoundShape();
+	for(auto it : getHitBoxes()){
+		const Vec3d &sc = it.sc;
+		const Quatd &rot = it.rot;
+		const Vec3d &pos = it.org;
+		btBoxShape *box = new btBoxShape(btvc(sc));
+		btTransform trans = btTransform(btqc(rot), btvc(pos));
+		shape->addChildShape(trans, box);
+	}
+	return shape;
 }
 
 /// \return Defaults 1

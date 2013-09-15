@@ -422,3 +422,8 @@ SQInteger A10::sqSet(HSQUIRRELVM v, const SQChar *name){
 	else
 		return st::sqSet(v, name);
 }
+
+btCompoundShape *A10::getShape(){
+	static btCompoundShape *shape = buildShape();
+	return shape;
+}

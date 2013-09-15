@@ -71,6 +71,7 @@ protected:
 	double getThrustStrength()const override{return thrustStrength;}
 	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == cameraPositions.size() && !lastMissile;}
 	void toggleWeapon()override{weapon = (weapon + 1) % weaponList.size();}
+	btCompoundShape *getShape()override;
 
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 	static SQInteger sqf_gunFireEffect(HSQUIRRELVM);

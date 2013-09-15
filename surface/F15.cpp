@@ -498,3 +498,8 @@ SQInteger F15::sqSet(HSQUIRRELVM v, const SQChar *name){
 	else
 		return st::sqSet(v, name);
 }
+
+btCompoundShape *F15::getShape(){
+	static btCompoundShape *shape = buildShape();
+	return shape;
+}

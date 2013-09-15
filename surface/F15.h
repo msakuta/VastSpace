@@ -73,6 +73,7 @@ protected:
 	double getThrustStrength()const override{return thrustStrength;}
 	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == cameraPositions.size() && !lastMissile;}
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
+	btCompoundShape *getShape()override;
 
 	void init();
 

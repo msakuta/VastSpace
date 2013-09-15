@@ -16,6 +16,8 @@
 #include "ModelEntity.h"
 #include "SqInitProcess-ex.h"
 
+#include <btBulletDynamicsCommon.h>
+
 struct Model;
 
 /// \brief Base class for aerial vehicles.
@@ -81,11 +83,13 @@ protected:
 	virtual void shoot(double dt);
 	virtual double getThrustStrength()const = 0;
 	virtual void toggleWeapon(){weapon = !weapon;}
+	virtual btCompoundShape *getShape() = 0;
 
 	void init();
 	bool cull(WarDraw *)const;
 	bool taxi(double dt);
 	void animAI(double dt, bool onfeet);
+	btCompoundShape *buildShape();
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
 		const Vec3d &gunDirection, const StringList &weaponList)const;

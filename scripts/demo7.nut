@@ -100,6 +100,7 @@ targetcs <- player.cs;
 old_frameproc <- "frameproc" in this ? frameproc : null;
 
 local path = [
+	globalCoord(Vec3d(69,0,172)),
 	globalCoord(Vec3d(69,0,154)),
 	globalCoord(Vec3d(52,0,140)),
 	globalCoord(Vec3d(24,0,140)),
@@ -109,7 +110,7 @@ local path = [
 foreach(a in path)
 	print(a);
 
-local ipaths = {};
+local ipaths = {[a10] = 1};
 
 function frameproc(dt){
 	framecount++;

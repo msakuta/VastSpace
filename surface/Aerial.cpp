@@ -1747,8 +1747,6 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
 		gear = b;
-//		if(bbody)
-//			bbody->setFriction(gear * 1.);
 		return 0;
 	}
 	if(!scstrcmp(name, _SC("spoiler"))){
@@ -1901,8 +1899,21 @@ void Aerial::animAI(double dt, bool onfeet){
 			rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 			spoiler = false;
 		}
+		gear = true;
 	}
 	else{
+		// Set timer for gear retraction if we're taking off
+		if(takingOff)
+			takeOffTimer = 5.;
+
+		// Count down for gear retraction
+		if(takeOffTimer < dt){
+			takeOffTimer = 0.;
+			gear = false;
+		}
+		else
+			takeOffTimer -= dt;
+
 		aileron = rangein(aileron + roll * dt, -1, 1);
 		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
 		rudder = approach(rudder, 0, dt, 0);

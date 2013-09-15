@@ -53,6 +53,7 @@ protected:
 	Vec3d destPos; ///< Destination position
 	bool destArrived; ///< If arrived to the destination
 	bool takingOff; ///< If this plane's auto pilot is taking off
+	double takeOffTimer;
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{

@@ -1362,9 +1362,12 @@ void Aerial::anim(double dt){
 		if(vft != &valkie_s && (w->pl->control != pt || inputs & (PL_A | PL_D | PL_R)))
 			p->rudder = rangein(approach(p->rudder + M_PI, (inputs & PL_A ? -M_PI / 6. : inputs & PL_D ? M_PI / 6. : 0) + M_PI, .1 * M_PI * dt, 2 * M_PI) - M_PI, -M_PI / 6., M_PI / 6.);
 #endif
-		rudder = rangein(approach(rudder, (inputs & PL_A ? -M_PI / 6. : inputs & PL_D ? M_PI / 6. : 0), 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
+		if(controller)
+			rudder = rangein(approach(rudder, (inputs & PL_A ? -M_PI / 6. : inputs & PL_D ? M_PI / 6. : 0), 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 
 		fspoiler = approach(fspoiler, spoiler, dt, 0);
+		if(bbody)
+			bbody->setFriction(0.1 + 0.9 * fspoiler);
 
 		gearphase = approach(gearphase, gear, 1. * dt, 0.);
 
@@ -1738,8 +1741,6 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
 		spoiler = b;
-		if(bbody)
-			bbody->setFriction(spoiler * 1.);
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("weapon"))){

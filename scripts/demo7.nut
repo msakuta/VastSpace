@@ -35,14 +35,7 @@ bldg.modelFile = "surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
-local airport = player.cs.addent("SurfaceBuilding", Vec3d(0, 0, 5.0));
-airport.modelFile = "surface/models/airport.mqo";
-airport.modelScale = 0.01;
-airport.hitRadius = 1.5;
-airport.landOffset = Vec3d(0,0.2,0);
-airport.setHitBoxes([
-	[Vec3d(0,-1,0), Quatd(0,0,0,1), Vec3d(0.5, 1., 1.)],
-]);
+local airport = player.cs.addent("Airport", Vec3d(0, 0, 5.0));
 
 local function localCoord(v){
 	v = v / 128. - Vec3d(0.5,0,1);
@@ -54,13 +47,6 @@ local function globalCoord(v){
 	return localCoord(v) + airport.getpos();
 }
 
-local navlights = [];
-for(local i = 0; i < 16; i++){
-	navlights.append({pos = localCoord(Vec3d(21, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
-	navlights.append({pos = localCoord(Vec3d(27, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
-}
-
-airport.setNavLights(navlights);
 
 /*
 local apache = player.cs.addent("Apache", Vec3d(0, 0.71, 5. - 0.2));

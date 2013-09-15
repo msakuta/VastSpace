@@ -47,6 +47,9 @@
     <ClInclude Include="..\SurfaceBuilding.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\Airport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\DrawMap.cpp">
@@ -107,6 +110,12 @@
       <Filter>Sources\draw</Filter>
     </ClCompile>
     <ClCompile Include="..\draw\SurfaceBuilding-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Airport.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\Airport-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>

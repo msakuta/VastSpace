@@ -42,6 +42,7 @@ protected:
 	Vec3d destPos; ///< Destination position
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
+	bool destArrived; ///< If arrived to the destination
 
 	static Model *model;
 	static double modelScale;

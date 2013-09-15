@@ -11,7 +11,7 @@ maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
 	[Vec3d(0,1,0) * 0.5e-3, Quatd(0,0,0,1), Vec3d(13.05, 3., 19.43) * 0.5e-3],
-	[Vec3d(0,-4,-4) * 0.5e-3, Quatd(0,0,0,1), Vec3d(6., 1., 8.) * 0.5e-3],
+	[Vec3d(0,-30,-50) * modelScale, Quatd(0,0,0,1), Vec3d(60., 25., 100.) * modelScale],
 ];
 
 // Thrust power

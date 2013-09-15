@@ -18,7 +18,8 @@ local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 5. - 0.2));
 a10.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 a10.gear = true;
 player.chase = a10;
-a10.destPos = a10.getpos() + Vec3d(-0.3,0,0.1);
+//a10.destPos = a10.getpos() + Vec3d(-0.3,0,0.1);
+a10.destArrived = true;
 birds.append(a10);
 
 //local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
@@ -92,9 +93,37 @@ targetcs <- player.cs;
 
 old_frameproc <- "frameproc" in this ? frameproc : null;
 
+local function localCoord(v){
+	v = v / 128. - Vec3d(0.5,1,1);
+	v[2] *= -1;
+	return v + airport.getpos();
+}
+
+local path = [
+	localCoord(Vec3d(69,0,154)),
+	localCoord(Vec3d(52,0,140)),
+	localCoord(Vec3d(24,0,140)),
+	localCoord(Vec3d(24,0,196)),
+	localCoord(Vec3d(52,0,196)),
+	localCoord(Vec3d(69,0,185)),
+];
+
+foreach(a in path)
+	print(a);
+
+local ipath = 0;
+
 function frameproc(dt){
 	framecount++;
 	local currenttime = universe.global_time + 9.;
+
+	if(a10.alive){
+		if(a10.destArrived){
+			a10.destPos = path[ipath];
+			a10.destArrived = false;
+			ipath = (ipath + 1) % path.len();
+		}
+	}
 
 	if(checktime + 10. < currenttime){
 		local cs = targetcs;

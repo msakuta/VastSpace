@@ -227,7 +227,8 @@ void A10::anim(double dt){
 		if(onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1]){
 			Vec3d localDeltaPos = this->rot.itrans(deltaPos);
 			double phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
-			if(destArrived || sdist < 0.05 * 0.05){
+			const double arriveDist = 0.03;
+			if(destArrived || sdist < arriveDist * arriveDist){
 				destArrived = true;
 				throttle = approach(throttle, 0, dt, 0);
 				rudder = approach(rudder, 0, dt, 0);
@@ -235,8 +236,8 @@ void A10::anim(double dt){
 			}
 			else{
 				double velolen = velo.len();
-				throttle = approach(throttle, std::max(0., 0.1 - velolen * 10. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
-				rudder = rangein(approach(rudder, phi * 0.5 / (1. + velolen / 0.05), 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
+				throttle = approach(throttle, std::max(0., 0.2 - velolen * 20. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
+				rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 				spoiler = false;
 			}
 		}

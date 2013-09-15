@@ -80,6 +80,7 @@ protected:
 
 	void init();
 	bool cull(WarDraw *)const;
+	bool taxi(double dt);
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
 		const Vec3d &gunDirection, const StringList &weaponList)const;

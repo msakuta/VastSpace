@@ -1011,7 +1011,7 @@ static void find_wingtips(const char *name, struct afterburner_hint *hint);
 
 void Aerial::anim(double dt){
 	int inwater = 0;
-	int onfeet = 0;
+	bool onfeet = false;
 	int walking = 0;
 	int direction = 0;
 
@@ -1021,46 +1021,6 @@ void Aerial::anim(double dt){
 		velo = btvc(bbody->getLinearVelocity());
 		rot = btqc(bbody->getOrientation());
 		omg = btvc(bbody->getAngularVelocity());
-
-		WarSpace *ws = *w;
-		if(ws){
-			int num = ws->bdw->getDispatcher()->getNumManifolds();
-			for(int i = 0; i < num; i++){
-				btPersistentManifold* contactManifold = ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
-				const btCollisionObject* obA = static_cast<const btCollisionObject*>(contactManifold->getBody0());
-				const btCollisionObject* obB = static_cast<const btCollisionObject*>(contactManifold->getBody1());
-				if(obA == bbody || obB == bbody){
-					int numContacts = contactManifold->getNumContacts();
-					for(int j = 0; j < numContacts; j++){
-						btManifoldPoint& pt = contactManifold->getContactPoint(j);
-						if(pt.getDistance() < 0.f){
-							const btVector3& ptA = pt.getPositionWorldOnA();
-							const btVector3& ptB = pt.getPositionWorldOnB();
-							if(ptA.getY() < bbody->getCenterOfMassPosition().getY() || ptA.getY() < bbody->getCenterOfMassPosition().getY()){
-								btVector3 btvelo = bbody->getLinearVelocity();
-								btScalar len = btvelo.length();
-								const double threshold = 0.015;
-								double run = len * dt;
-
-								// Sensitivity is dropped when the vehicle is in high speed, to prevent falling by centrifugal force.
-								double sensitivity = -M_PI * 5. * (len < threshold ? 1. : threshold / len);
-
-								btTransform wt = bbody->getWorldTransform();
-
-								// Assume steering direction to be controlled by rudder.
-								wt.setRotation(wt.getRotation() * btQuaternion(btVector3(0,1,0), rudder * run * sensitivity));
-								bbody->setWorldTransform(wt);
-
-								// Cancel lateral velocity to enable steering. This should really be anisotropic friction, because
-								// it is possible that the lift suppress the friction force, but our method won't take it into account.
-								bbody->setLinearVelocity(btvelo - wt.getBasis().getColumn(0) * wt.getBasis().getColumn(0).dot(btvelo));
-								onfeet = 1;
-							}
-						}
-					}
-				}
-			}
-		}
 	}
 
 
@@ -1804,6 +1764,53 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		return st::sqSet(v, name);
 }
 
+/// \brief Taxiing motion, should be called in the derived class's anim().
+/// \returns if touched a ground.
+bool Aerial::taxi(double dt){
+	if(!bbody)
+		return false;
+	bool ret = false;
+	WarSpace *ws = *w;
+	if(ws){
+		int num = ws->bdw->getDispatcher()->getNumManifolds();
+		for(int i = 0; i < num; i++){
+			btPersistentManifold* contactManifold = ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
+			const btCollisionObject* obA = static_cast<const btCollisionObject*>(contactManifold->getBody0());
+			const btCollisionObject* obB = static_cast<const btCollisionObject*>(contactManifold->getBody1());
+			if(obA == bbody || obB == bbody){
+				int numContacts = contactManifold->getNumContacts();
+				for(int j = 0; j < numContacts; j++){
+					btManifoldPoint& pt = contactManifold->getContactPoint(j);
+					if(pt.getDistance() < 0.f){
+						const btVector3& ptA = pt.getPositionWorldOnA();
+						const btVector3& ptB = pt.getPositionWorldOnB();
+						if(ptA.getY() < bbody->getCenterOfMassPosition().getY() || ptA.getY() < bbody->getCenterOfMassPosition().getY()){
+							btVector3 btvelo = bbody->getLinearVelocity();
+							btScalar len = btvelo.length();
+							const double threshold = 0.015;
+							double run = len * dt;
+
+							// Sensitivity is dropped when the vehicle is in high speed, to prevent falling by centrifugal force.
+							double sensitivity = -M_PI * 5. * (len < threshold ? 1. : threshold / len);
+
+							btTransform wt = bbody->getWorldTransform();
+
+							// Assume steering direction to be controlled by rudder.
+							wt.setRotation(wt.getRotation() * btQuaternion(btVector3(0,1,0), rudder * run * sensitivity));
+							bbody->setWorldTransform(wt);
+
+							// Cancel lateral velocity to enable steering. This should really be anisotropic friction, because
+							// it is possible that the lift suppress the friction force, but our method won't take it into account.
+							bbody->setLinearVelocity(btvelo - wt.getBasis().getColumn(0) * wt.getBasis().getColumn(0).dot(btvelo));
+							ret = true;
+						}
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
 
 static void find_wingtips(const char *name, struct afterburner_hint *hint){
 	int i = 0;

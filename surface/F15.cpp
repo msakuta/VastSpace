@@ -247,6 +247,8 @@ static int tryshoot(warf_t *w, entity_t *pt, const double epos[3], double phi0, 
 
 void F15::anim(double dt){
 
+	bool onfeet = taxi(dt);
+
 	Mat4d mat;
 	transform(mat);
 
@@ -286,7 +288,7 @@ void F15::anim(double dt){
 		elevator = rangein(elevator + trim * dt, -1, 1);
 
 		// If the body is stationary and upright, assume it's on the ground.
-		if(velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1])
+		if(onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1])
 			throttle = approach(throttle, 0, dt, 0);
 		else
 			throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);

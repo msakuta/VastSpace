@@ -10,7 +10,8 @@ maxhealth <- 800.;
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(13.05, 5., 19.43) * 0.5e-3],
+	[Vec3d(0,20,0) * modelScale, Quatd(0,0,0,1), Vec3d(330, 50, 300) * modelScale],
+	[Vec3d(0,-40,-75) * modelScale, Quatd(0,0,0,1), Vec3d(100, 10, 150) * modelScale],
 ];
 
 // Thrust power
@@ -20,7 +21,7 @@ thrust <- 0.01
 local tensor1 = [
 	-0.2, 0, 0,
 	0, -10.0, 0,
-	0, -0.5, -0.05
+	0, -1.0, -0.05
 ]
 
 local tensor2 = [
@@ -72,7 +73,7 @@ cameraPositions <- [
 	Vec3d(0., 50, -200) * modelScale,
 	Vec3d(0., 0.0075, 0.025),
 	Vec3d(0.020, 0.007, 0.050),
-	Vec3d(0.004, -0.0015, 0.010),
+	Vec3d(0.004, -0.0008, 0.010),
 ]
 
 hudPos <- cameraPositions[0] + Vec3d(0, 0, -20) * modelScale;

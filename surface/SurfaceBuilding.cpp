@@ -8,6 +8,7 @@
 
 template<> void Entity::EntityRegister<SurfaceBuilding>::sq_defineInt(HSQUIRRELVM v){
 	register_closure(v, _SC("setHitBoxes"), SurfaceBuilding::sqf_setHitBoxes, 2);
+	register_closure(v, _SC("setNavLights"), SurfaceBuilding::sqf_setNavLights, 2);
 }
 
 Entity::EntityRegister<SurfaceBuilding> SurfaceBuilding::entityRegister("SurfaceBuilding");
@@ -186,6 +187,33 @@ SQInteger SurfaceBuilding::sqf_setHitBoxes(HSQUIRRELVM v){
 	}
 }
 
+SQInteger SurfaceBuilding::sqf_setNavLights(HSQUIRRELVM v){
+	struct NavLightsSqInitEval : SqInitProcess::SqInitEval{
+		HSQUIRRELVM v;
+		HSQOBJECT o;
+		NavLightsSqInitEval(HSQUIRRELVM v, HSQOBJECT o) : v(v), o(o){}
+		SQRESULT call()override{
+			// Create a temporary table that contains only the navlights as the member.
+			sq_newtable(v);
+			sq_pushstring(v, _SC("navlights"), -1);
+			sq_pushobject(v, o);
+			sq_newslot(v, -3, SQFalse);
+			return SQ_OK;
+		}
+		gltestp::dstring description()const override{
+			return "NavLightsSqInitEval";
+		}
+	};
+	Entity *p = Entity::sq_refobj(v, 1);
+	if(!p)
+		return sq_throwerror(v, _SC("setHitBoxes() requires SurfaceBuilding"));
+	HSQOBJECT o;
+	if(SQ_SUCCEEDED(sq_getstackobj(v, 2, &o))){
+		SqInitProcess::SqInit(v, NavLightsSqInitEval(v, o), NavlightsProcess(static_cast<SurfaceBuilding*>(p)->navlights));
+	}
+}
+
 #ifdef DEDICATED
 void SurfaceBuilding::draw(WarDraw *){}
+void SurfaceBuilding::drawtra(WarDraw *){}
 #endif

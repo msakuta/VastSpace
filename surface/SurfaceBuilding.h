@@ -19,6 +19,7 @@ public:
 	const char *classname()const override{return "SurfaceBuilding";}
 	void anim(double)override;
 	void draw(WarDraw *)override;
+	void drawtra(WarDraw *)override;
 	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)override;
 	double getHitRadius()const override{return hitRadius;}
 	bool isTargettable()const override{return true;}
@@ -27,6 +28,7 @@ public:
 	static gltestp::dstring modPath(){return _SC("surface/");}
 
 	static SQInteger sqf_setHitBoxes(HSQUIRRELVM);
+	static SQInteger sqf_setNavLights(HSQUIRRELVM);
 
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
@@ -42,6 +44,7 @@ protected:
 	Vec3d landOffset;
 	HitBoxList hitboxes;
 	btCompoundShape *shape;
+	std::vector<Navlight> navlights;
 };
 
 #endif

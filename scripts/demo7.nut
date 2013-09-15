@@ -37,10 +37,28 @@ local airport = player.cs.addent("SurfaceBuilding", Vec3d(0, 0, 5.0));
 airport.modelFile = "surface/models/airport.mqo";
 airport.modelScale = 0.01;
 airport.hitRadius = 1.5;
-airport.landOffset = Vec3d(0,0.1,0);
+airport.landOffset = Vec3d(0,0.2,0);
 airport.setHitBoxes([
-	[Vec3d(0,-0.9,0), Quatd(0,0,0,1), Vec3d(0.5, 1., 1.)],
+	[Vec3d(0,-1,0), Quatd(0,0,0,1), Vec3d(0.5, 1., 1.)],
 ]);
+
+local function localCoord(v){
+	v = v / 128. - Vec3d(0.5,0,1);
+	v[2] *= -1;
+	return v;
+}
+
+local function globalCoord(v){
+	return localCoord(v) + airport.getpos();
+}
+
+local navlights = [];
+for(local i = 0; i < 16; i++){
+	navlights.append({pos = localCoord(Vec3d(21, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
+	navlights.append({pos = localCoord(Vec3d(27, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
+}
+
+airport.setNavLights(navlights);
 
 /*
 local apache = player.cs.addent("Apache", Vec3d(0, 0.71, 5. - 0.2));
@@ -93,19 +111,13 @@ targetcs <- player.cs;
 
 old_frameproc <- "frameproc" in this ? frameproc : null;
 
-local function localCoord(v){
-	v = v / 128. - Vec3d(0.5,1,1);
-	v[2] *= -1;
-	return v + airport.getpos();
-}
-
 local path = [
-	localCoord(Vec3d(69,0,154)),
-	localCoord(Vec3d(52,0,140)),
-	localCoord(Vec3d(24,0,140)),
-	localCoord(Vec3d(24,0,196)),
-	localCoord(Vec3d(52,0,196)),
-	localCoord(Vec3d(69,0,185)),
+	globalCoord(Vec3d(69,0,154)),
+	globalCoord(Vec3d(52,0,140)),
+	globalCoord(Vec3d(24,0,140)),
+	globalCoord(Vec3d(24,0,196)),
+	globalCoord(Vec3d(52,0,196)),
+	globalCoord(Vec3d(69,0,185)),
 ];
 
 foreach(a in path)

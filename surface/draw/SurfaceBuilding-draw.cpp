@@ -32,11 +32,16 @@ void SurfaceBuilding::draw(WarDraw *wd){
 			transform(mat);
 			glMultMatrixd(mat);
 		}
-		gldTranslate3dv(landOffset);
+//		gldTranslate3dv(landOffset);
 
 		glScaled(modelScale, modelScale, modelScale);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 	}
 
+}
+
+void SurfaceBuilding::drawtra(wardraw_t *wd){
+	st::drawtra(wd);
+	drawNavlights(wd, navlights);
 }

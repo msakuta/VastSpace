@@ -117,9 +117,7 @@ local path = [
 	globalCoord(Vec3d(69,0,154)),
 	globalCoord(Vec3d(52,0,140)),
 	globalCoord(Vec3d(24,0,140)),
-	globalCoord(Vec3d(24,0,196)),
-	globalCoord(Vec3d(52,0,196)),
-	globalCoord(Vec3d(69,0,185)),
+	globalCoord(Vec3d(24,0,28)),
 ];
 
 foreach(a in path)
@@ -132,13 +130,16 @@ function frameproc(dt){
 	local currenttime = universe.global_time + 9.;
 
 	foreach(e in birds){
-		if(e.alive){
+		if(e.alive && !e.takingOff){
 			if(e.destArrived){
 				if(!(e in ipaths))
 					ipaths[e] <- 0;
 				e.destPos = path[ipaths[e]];
 				e.destArrived = false;
-				ipaths[e] = (ipaths[e] + 1) % path.len();
+				if(path.len() - 1 <= ipaths[e])
+					e.takingOff = true;
+				else
+					ipaths[e] = (ipaths[e] + 1) % path.len();
 			}
 		}
 	}

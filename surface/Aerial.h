@@ -52,6 +52,7 @@ protected:
 //bhole_t bholes[50];
 	Vec3d destPos; ///< Destination position
 	bool destArrived; ///< If arrived to the destination
+	bool takingOff; ///< If this plane's auto pilot is taking off
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{

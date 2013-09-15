@@ -89,13 +89,13 @@ SQInteger A10::sqf_debugWings(HSQUIRRELVM v){
 }
 
 
-A10::A10(Game *game) : st(game), pf(nullptr), destPos(0,0,0), destArrived(false){
+A10::A10(Game *game) : st(game), pf(nullptr){
 	vapor.resize(wingTips.size());
 	for(auto &i : vapor)
 		i = nullptr;
 }
 
-A10::A10(WarField *w) : st(w), destPos(0,0,0), destArrived(false){
+A10::A10(WarField *w) : st(w){
 	moi = .2; /* kilograms * kilometer^2 */
 #ifndef DEDICATED
 	TefpolList *tl = w->getTefpol3d();
@@ -202,49 +202,7 @@ void A10::anim(double dt){
 	}
 
 	if(0 < health && !controller){
-		// Automatic stabilizer (Auto Pilot)
-		Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
-		double croll = -x_along_y.sp(mat.vec3(1)); // Current Roll
-		double roll = croll * 0.25 + mat.vec3(2).sp(omg); // P + D
-		Vec3d deltaPos(destPos - this->pos); // Delta position towards the destination
-		deltaPos[1] = 0.; // Ignore height component
-		double sdist = deltaPos.slen();
-		if(0.5 * 0.5 < sdist){
-			double sp = deltaPos.sp(mat.vec3(2));
-			if(3. * 3. < sdist && 0.75 < sp)
-				roll += 0.25;
-			else if(3. * 3. < sdist || sp < 0){
-				deltaPos.normin();
-				roll += 0.25 * deltaPos.vp(-mat.vec3(2))[1];
-			}
-		}
-		aileron = rangein(aileron + roll * dt, -1, 1);
-
-		double trim = mat.vec3(2)[1] + velo[1] + fabs(croll) * 0.05; // P + D
-		elevator = rangein(elevator + trim * dt, -1, 1);
-
-		// If the body is stationary and upright, assume it's on the ground.
-		if(onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1]){
-			Vec3d localDeltaPos = this->rot.itrans(deltaPos);
-			double phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
-			const double arriveDist = 0.03;
-			if(destArrived || sdist < arriveDist * arriveDist){
-				destArrived = true;
-				throttle = approach(throttle, 0, dt, 0);
-				rudder = approach(rudder, 0, dt, 0);
-				spoiler = true;
-			}
-			else{
-				double velolen = velo.len();
-				throttle = approach(throttle, std::max(0., 0.2 - velolen * 20. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
-				rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
-				spoiler = false;
-			}
-		}
-		else{
-			throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
-			rudder = approach(rudder, 0, dt, 0);
-		}
+		animAI(dt, onfeet);
 	}
 
 
@@ -420,16 +378,6 @@ SQInteger A10::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		Entity::sq_pushobj(v, lastMissile);
 		return 1;
 	}
-	else if(!scstrcmp(name, _SC("destPos"))){
-		SQVec3d r;
-		r.value = destPos;
-		r.push(v);
-		return 1;
-	}
-	else if(!scstrcmp(name, _SC("destArrived"))){
-		sq_pushbool(v, SQBool(destArrived));
-		return 1;
-	}
 	else if(!scstrcmp(name, _SC("arms"))){
 		// Prepare an empty array in Squirrel VM for adding arms.
 		sq_newarray(v, 0); // array
@@ -466,19 +414,6 @@ SQInteger A10::sqSet(HSQUIRRELVM v, const SQChar *name){
 			return SQ_ERROR;
 		cooldown = retf;
 		return 0;
-	}
-	else if(!scstrcmp(name, _SC("destPos"))){
-		SQVec3d r;
-		r.getValue(v, 3);
-		destPos = r.value;
-		return 0;
-	}
-	else if(!scstrcmp(name, _SC("destArrived"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("could not convert to bool for destArrived"));
-		destArrived = b != SQFalse;
-		return 1;
 	}
 	else if(!scstrcmp(name, _SC("lastMissile"))){
 		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));

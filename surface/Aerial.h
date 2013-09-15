@@ -50,6 +50,8 @@ protected:
 //	sufdecal_t *sd;
 //	bhole_t *frei;
 //bhole_t bholes[50];
+	Vec3d destPos; ///< Destination position
+	bool destArrived; ///< If arrived to the destination
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{
@@ -81,6 +83,7 @@ protected:
 	void init();
 	bool cull(WarDraw *)const;
 	bool taxi(double dt);
+	void animAI(double dt, bool onfeet);
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
 		const Vec3d &gunDirection, const StringList &weaponList)const;

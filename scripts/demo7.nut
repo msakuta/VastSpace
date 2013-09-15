@@ -1,12 +1,14 @@
 // Earth surface simulation test
 
 local birds = [];
-/*
+
 local f15 = player.cs.addent("F15", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 f15.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
+f15.gear = true;
 player.chase = f15;
+f15.destArrived = true;
 birds.append(f15);
-*/
+
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
 //birds.append(f15_2);
@@ -123,17 +125,21 @@ local path = [
 foreach(a in path)
 	print(a);
 
-local ipath = 0;
+local ipaths = {};
 
 function frameproc(dt){
 	framecount++;
 	local currenttime = universe.global_time + 9.;
 
-	if(a10.alive){
-		if(a10.destArrived){
-			a10.destPos = path[ipath];
-			a10.destArrived = false;
-			ipath = (ipath + 1) % path.len();
+	foreach(e in birds){
+		if(e.alive){
+			if(e.destArrived){
+				if(!(e in ipaths))
+					ipaths[e] <- 0;
+				e.destPos = path[ipaths[e]];
+				e.destArrived = false;
+				ipaths[e] = (ipaths[e] + 1) % path.len();
+			}
 		}
 	}
 

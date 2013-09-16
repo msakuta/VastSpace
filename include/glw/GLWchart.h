@@ -81,15 +81,20 @@ protected:
 	virtual int getYGroup()const{return ygroup;}
 	virtual double value(int index, GLWchart *w){
 		double theMax = getMax();
+		double theMin = getMin();
 		if(ygroup != -1){
 			for(int i = 0; i < w->series.size(); i++){
 				ChartSeries *c = w->series[i];
-				if(c->getYGroup() == ygroup && theMax < c->getMax())
-					theMax = c->getMax();
+				if(c->getYGroup() == ygroup){
+					if(theMax < c->getMax())
+						theMax = c->getMax();
+					if(c->getMin() < theMin)
+						theMin = c->getMin();
+				}
 			}
 		}
 		double val = valueBeforeNormalize(index);
-		return theMax != 0. ? val / theMax : val;
+		return theMax != theMin ? (val - theMin) / (theMax - theMin) : val;
 	}
 	virtual Vec4f color()const{return colorValue;}
 
@@ -102,11 +107,26 @@ class GLWchart::TimeChartSeries : public GLWchart::NormalizedChartSeries{
 protected:
 	std::vector<double> chart;
 	double normalizer;
+	bool minb;
+	double minf;
+	bool maxb;
+	double maxf;
 
-	TimeChartSeries(int ygroup, const Vec4f &color) : NormalizedChartSeries(ygroup, color){}
+	TimeChartSeries(int ygroup, const Vec4f &color,
+		bool minb = false, double minf = 0., bool maxb = false, double maxf = 0.)
+		: NormalizedChartSeries(ygroup, color), minb(minb), minf(minf), maxb(maxb), maxf(maxf){}
 
 	double getMax()const{
-		return normalizer;
+		if(maxb)
+			return maxf;
+		else
+			return normalizer;
+	}
+	double getMin()const{
+		if(minb)
+			return minf;
+		else
+			return 0.;
 	}
 	double valueBeforeNormalize(int index){
 		return chart[index];

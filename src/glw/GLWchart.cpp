@@ -54,8 +54,9 @@ class GLWchart::SampledChartSeries : public GLWchart::TimeChartSeries{
 public:
 	double lastValue;
 	gltestp::dstring label;
-	SampledChartSeries(int ygroup = -1, gltestp::dstring label = "", const Vec4f *color = NULL)
-		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,0,1,1)), label(label){}
+	SampledChartSeries(int ygroup = -1, gltestp::dstring label = "", const Vec4f *color = NULL,
+		bool minb = false, double minf = 0., bool maxb = false, double maxf = 0.)
+		: TimeChartSeries(ygroup, color ? *color : Vec4f(1,0,1,1), minb, minf, maxb, maxf), label(label){}
 };
 
 /// \brief The base class for a histogram chart.
@@ -343,6 +344,25 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 		pcolor = &color;
 	}
 
+	bool maxb = false;
+	double maxf;
+	bool minb = false;
+	double minf;
+	if(6 <= argc){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 6, &f))){
+			minb = true;
+			minf = f;
+		}
+	}
+	if(7 <= argc){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 7, &f))){
+			maxb = true;
+			maxf = f;
+		}
+	}
+
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, 1, &up, NULL)) || !up)
@@ -361,7 +381,7 @@ SQInteger GLWchart::sqf_addSeries(HSQUIRRELVM v){
 	else if(!strcmp(sstr, _SC("recvbyteshistogram")))
 		wnd->addSeries(new RecvBytesHistogramChartSeries(ygroup, pcolor));
 	else if(!strcmp(sstr, _SC("sampled")))
-		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup, label, pcolor));
+		wnd->addSeries(wnd->sampled = new SampledChartSeries(ygroup, label, pcolor, minb, minf, maxb, maxf));
 	return 0;
 }
 

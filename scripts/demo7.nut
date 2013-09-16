@@ -74,7 +74,7 @@ function reset(){
 
 register_console_command("reset", reset);
 
-//reset();
+reset();
 
 yawscale <- 1.;
 pitchscale <- -1;

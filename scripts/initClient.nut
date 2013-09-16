@@ -183,7 +183,7 @@ register_console_command("chart", function(...){
 //	chart.addSeries("sampled", 0, "expsample", [1,0.5,0.5,1]);
 //	chart.addSeries("sampled", 0, "findtime", [1,0.5,1.0,1]);
 	chart.addSeries("sampled", 0, "wdtime", [0.5,1.0,0.0,1]);
-	chart.addSeries("sampled", 0, "tintime", [0.0,1.0,0.0,1]);
+//	chart.addSeries("sampled", 0, "tintime", [0.0,1.0,0.0,1]);
 //	chart.addSeries("sampled", -1, "tinbinary", [0.0,0.75,0.5,1]);
 //	chart.addSeries("sampled", -1, "tinfind", [0.0,1.0,0.5,1]);
 //	chart.addSeries("sampled", 0, "tinfindtime", [0.5,0.75,0.0,1]);
@@ -194,13 +194,16 @@ register_console_command("chart", function(...){
 //	chart.addSeries("sampled", -1, "ServerMissileMapSize", [0.75,0.75,0.75,1]);
 //	chart.addSeries("sampled", -1, "ClientMissileMapSize", [0.5,0.5,0.5,1]);
 //	chart.addSeries("sampled", -1, "tankvelo", [1.0,0.5,0.0,1]);
+	chart.addSeries("sampled", -1, "croll", [1,0.75,0.75,1], -2, 2);
+	chart.addSeries("sampled", -1, "omg", [0.75,1,0.75,1], -1, 1);
+	chart.addSeries("sampled", -1, "iaileron", [0.75,0.75,1,1], -2, 2);
 
 	// Following charts are only available in debug build.
-	if(debugBuild()){
+/*	if(debugBuild()){
 		chart.addSeries("sampled", -1, "tellcount", [1,0.75,0.75,1]);
 		chart.addSeries("sampled", -1, "teplcount", [0.75,1,0.75,1]);
 		chart.addSeries("sampled", -1, "tevertcount", [0.75,0.75,1,1]);
-	}
+	}*/
 });
 
 register_console_command("buildmenu", function(){

@@ -43,6 +43,7 @@ protected:
 	double throttle;
 	double gearphase;
 	double cooldown;
+	double iaileron; ///< Integrated aileron
 	std::vector<Vec3d> force;
 	Vec3d sight;
 	bool muzzle, brk, afterburner, navlight, gear;

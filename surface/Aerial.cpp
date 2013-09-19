@@ -24,6 +24,7 @@ extern "C"{
 #include <clib/colseq/cs.h>
 #include <clib/timemeas.h>
 }
+#include <cpplib/vec2.h>
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -1960,7 +1961,8 @@ void Aerial::animAI(double dt, bool onfeet){
 		aileron = rangein(aileron + roll * dt, -1, 1);
 		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
 		rudder = approach(rudder, 0, dt, 0);
-		double trim = mat.vec3(2)[1] + velo[1] + rangein(deltaPos[1], -0.5, 0.5) + fabs(croll) * turnClimb; // P + D
+		Vec2d planar(deltaPos[0], deltaPos[2]);
+		double trim = mat.vec3(2)[1] + velo[1] + rangein(deltaPos[1] / planar.len() , -0.5, 0.5) + fabs(croll) * turnClimb; // P + D
 		elevator = rangein(elevator + trim * dt, -1, 1);
 		takingOff = false;
 

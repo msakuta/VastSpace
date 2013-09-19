@@ -197,6 +197,7 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", -1, "croll", [1,0.75,0.75,1], -2, 2);
 	chart.addSeries("sampled", -1, "omg", [0.75,1,0.75,1], -1, 1);
 	chart.addSeries("sampled", -1, "iaileron", [0.75,0.75,1,1], -2, 2);
+	chart.addSeries("sampled", -1, "yawDeflect", [1,1,0], -1, 1);
 
 	// Following charts are only available in debug build.
 /*	if(debugBuild()){

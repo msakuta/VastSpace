@@ -35,6 +35,8 @@ public:
 	void start_control();
 	void end_control();
 
+	double getRudder()const;
+
 	static gltestp::dstring modPath(){return "surface/";}
 
 protected:

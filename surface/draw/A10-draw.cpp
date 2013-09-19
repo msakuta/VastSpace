@@ -54,7 +54,7 @@ void A10::draw(WarDraw *wd){
 		lodMotion->interpolate(mp[0], pixels < 15 ? 0. : 10.);
 		aileronMotion->interpolate(mp[1], aileron * 10. + 10.);
 		elevatorMotion->interpolate(mp[2], elevator * 10. + 10.);
-		rudderMotion->interpolate(mp[3], rudder * 10. + 10.);
+		rudderMotion->interpolate(mp[3], getRudder() * 10. + 10.);
 		gearMotion->interpolate(mp[4], gearphase * 10.);
 		mp[0].next = &mp[1];
 		mp[1].next = &mp[2];

@@ -1547,7 +1547,7 @@ void Aerial::anim(double dt){
 			else if(it.control == Wing::Control::Aileron)
 				rot *= Quatd::rotation(aileron * it.sensitivity, it.axis);
 			else if(it.control == Wing::Control::Rudder)
-				rot *= Quatd::rotation(rudder * it.sensitivity, it.axis);
+				rot *= Quatd::rotation(getRudder() * it.sensitivity, it.axis);
 
 			/* retrieve velocity of the wing center in absolute coordinates */
 			Vec3d velo = this->omg.vp(rpos) + this->velo;
@@ -1803,6 +1803,33 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		return st::sqSet(v, name);
 }
 
+static Serializable::Id monitor = 0;
+static double rollSense = 2.;
+static double omgSense = 2.;
+static double intSense = -1.;
+static double intMax = 1.;
+static double turnClimb = 0.1;
+static double rudderSense = -20.; ///< Rudder stabilizer sensitivity
+
+static void initSense(){
+	CvarAdd("rollSense", &rollSense, cvar_double);
+	CvarAdd("omgSense", &omgSense, cvar_double);
+	CvarAdd("intSense", &intSense, cvar_double);
+	CvarAdd("intMax", &intMax, cvar_double);
+	CvarAdd("omgDamp", &angularDamping, cvar_double);
+	CvarAdd("turnClimb", &turnClimb, cvar_double);
+	CvarAdd("rudderSense", &rudderSense, cvar_double);
+}
+
+static StaticInitializer initializer(initSense);
+
+double Aerial::getRudder()const{
+	double yawDeflect = velo.norm().sp(rot.trans(Vec3d(1,0,0)));
+	if(getid() == monitor)
+		GLWchart::addSampleToCharts("yawDeflect", yawDeflect);
+	return rangein(rudder + rudderSense * yawDeflect, -1, 1);
+}
+
 /// \brief Taxiing motion, should be called in the derived class's anim().
 /// \returns if touched a ground.
 bool Aerial::taxi(double dt){
@@ -1851,23 +1878,6 @@ bool Aerial::taxi(double dt){
 	return ret;
 }
 
-static double rollSense = 2.;
-static double omgSense = 2.;
-static double intSense = -1.;
-static double intMax = 1.;
-static double turnClimb = 0.1;
-
-static void initSense(){
-	CvarAdd("rollSense", &rollSense, cvar_double);
-	CvarAdd("omgSense", &omgSense, cvar_double);
-	CvarAdd("intSense", &intSense, cvar_double);
-	CvarAdd("intMax", &intMax, cvar_double);
-	CvarAdd("omgDamp", &angularDamping, cvar_double);
-	CvarAdd("turnClimb", &turnClimb, cvar_double);
-}
-
-static StaticInitializer initializer(initSense);
-
 /// \brief Taxiing AI
 void Aerial::animAI(double dt, bool onfeet){
 	Mat4d mat;
@@ -1895,8 +1905,7 @@ void Aerial::animAI(double dt, bool onfeet){
 		}
 	}
 
-	static Id monitor = -1;
-	if(monitor < 0)
+	if(monitor == 0)
 		monitor = getid();
 	GLWchart::addSampleToCharts("croll", croll);
 	GLWchart::addSampleToCharts("omg", rollOmg);

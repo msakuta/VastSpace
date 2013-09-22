@@ -1805,20 +1805,24 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 }
 
 static Serializable::Id monitor = 0;
+static double estimateSpeed = 0.5; ///< Virtual approaching speed for estimating position
 static double rollSense = 2.;
 static double omgSense = 2.;
 static double intSense = -1.;
 static double intMax = 1.;
-static double turnClimb = 0.1;
+static double turnClimb = 0.3;
+static double turnBank = 2. / 5. * M_PI;
 static double rudderSense = -20.; ///< Rudder stabilizer sensitivity
 
 static void initSense(){
+	CvarAdd("estimateSpeed", &estimateSpeed, cvar_double);
 	CvarAdd("rollSense", &rollSense, cvar_double);
 	CvarAdd("omgSense", &omgSense, cvar_double);
 	CvarAdd("intSense", &intSense, cvar_double);
 	CvarAdd("intMax", &intMax, cvar_double);
 	CvarAdd("omgDamp", &angularDamping, cvar_double);
 	CvarAdd("turnClimb", &turnClimb, cvar_double);
+	CvarAdd("turnBank", &turnBank, cvar_double);
 	CvarAdd("rudderSense", &rudderSense, cvar_double);
 }
 
@@ -1887,24 +1891,44 @@ void Aerial::animAI(double dt, bool onfeet){
 	onfeet = onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1];
 
 	// Automatic stabilizer (Auto Pilot)
-	Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
-	double croll = -x_along_y.sp(mat.vec3(1)); // Current Roll
-	double rollOmg = mat.vec3(2).sp(omg);
-	double roll = croll * rollSense + rollOmg * omgSense + iaileron * intSense; // P + D + I
-	iaileron = rangein(iaileron + roll * dt, -intMax, intMax);
+	Mat3d mat2 = mat.tomat3();
 	Vec3d deltaPos((!onfeet && enemy ? enemy->pos : destPos) - this->pos); // Delta position towards the destination
 	if(!(!onfeet && enemy))
 		deltaPos[1] = 0.; // Ignore height component
 	double sdist = deltaPos.slen();
+	Vec3d estPos;
+	estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
+	double sp = estPos.sp(mat.vec3(2));
+	double turning = 0;
 	if(0.5 * 0.5 < sdist){
-		double sp = deltaPos.sp(mat.vec3(2));
-		if(3. * 3. < sdist && 0.75 < sp)
-			roll += 0.25;
-		else if(3. * 3. < sdist || sp < 0){
-			deltaPos.normin();
-			roll += 0.25 * deltaPos.vp(-mat.vec3(2))[1];
+		double turnAngle = 0;
+		if(3. * 3. < sdist && 0. < sp){ // Going away
+			// Turn around to get closer to target.
+			turnAngle += -mat.vec3(2).sp(estPos) < 0 ? turnBank : -turnBank;
+			turning = 1;
 		}
+		else{
+			estPos.normin();
+			turning = estPos.vp(-mat.vec3(2))[1] * (1. - fabs(estPos[1]));
+			if(3. * 3. < sdist || sp < 0) // Approaching
+				turnAngle += turnBank * turning;
+			else // Receding
+				turnAngle += -turnBank * turning;
+		}
+
+		// Upside down; get upright as soon as possible or we'll crash!
+		if(mat.vec3(1)[1] < 0){
+			turning = 1;
+			turnAngle = mat.vec3(0)[1] < 0 ? -turnBank : turnBank;
+		}
+
+		mat2 = mat.tomat3().rotz(turnAngle);
 	}
+	Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
+	double croll = -x_along_y.sp(mat2.vec3(1)); // Current Roll
+	double rollOmg = mat.vec3(2).sp(omg);
+	double roll = croll * rollSense + rollOmg * omgSense + iaileron * intSense; // P + D + I
+	iaileron = rangein(iaileron + roll * dt, -intMax, intMax);
 
 	if(monitor == 0)
 		monitor = getid();
@@ -1962,7 +1986,11 @@ void Aerial::animAI(double dt, bool onfeet){
 		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
 		rudder = approach(rudder, 0, dt, 0);
 		Vec2d planar(deltaPos[0], deltaPos[2]);
-		double trim = mat.vec3(2)[1] + velo[1] + rangein(deltaPos[1] / planar.len() , -0.5, 0.5) + fabs(croll) * turnClimb; // P + D
+		double targetClimb = deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
+
+		// You cannot control altitude and yaw at the same time efficiently. Let's do one at a time.
+		double trim = mat.vec3(2)[1] + velo[1] + (1. - turning) * targetClimb + turning * turnClimb; // P + D
+
 		elevator = rangein(elevator + trim * dt, -1, 1);
 		takingOff = false;
 

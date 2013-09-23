@@ -46,6 +46,8 @@ protected:
 	SurfaceEntity *entity;
 };
 
+Entity::EntityRegister<SurfaceEntity> SurfaceEntity::entityRegister("SurfaceEntity");
+
 int SurfaceEntity::tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal){
 #if 1
 	double t;

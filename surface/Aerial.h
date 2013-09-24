@@ -59,6 +59,7 @@ protected:
 	bool destArrived; ///< If arrived to the destination
 	bool takingOff; ///< If this plane's auto pilot is taking off
 	double takeOffTimer;
+	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{
@@ -76,6 +77,16 @@ protected:
 
 	class WingProcess;
 
+	struct CameraPos{
+		Vec3d pos;
+		Quatd rot;
+		enum class Type{Normal, Cockpit, MissileTrack, ViewTrack, Rotate} type;
+	};
+
+	typedef std::vector<CameraPos> CameraPosList;
+
+	class CameraPosProcess;
+
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 	virtual WingList &getWings()const = 0;
@@ -92,6 +103,7 @@ protected:
 	bool cull(WarDraw *)const;
 	bool taxi(double dt);
 	void animAI(double dt, bool onfeet);
+	void calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const;
 	btCompoundShape *buildShape();
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
@@ -105,6 +117,16 @@ public:
 	const SQChar *name;
 	bool mandatory;
 	WingProcess(WingList &value, const SQChar *name, bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
+	void process(HSQUIRRELVM)const override;
+};
+
+/// \brief Processes a WingList value in a Squirrel script.
+class Aerial::CameraPosProcess : public SqInitProcess{
+public:
+	CameraPosList &value;
+	const SQChar *name;
+	bool mandatory;
+	CameraPosProcess(CameraPosList &value, const SQChar *name = _SC("cameraPositions"), bool mandatory = true) : value(value), name(name), mandatory(mandatory){}
 	void process(HSQUIRRELVM)const override;
 };
 

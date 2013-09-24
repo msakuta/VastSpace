@@ -71,7 +71,7 @@ std::vector<Vec3d> A10::gunPositions;
 Vec3d A10::gunDirection(0,0,-1);
 double A10::bulletSpeed = .78;
 double A10::shootCooldown = .07;
-std::vector<Vec3d> A10::cameraPositions;
+A10::CameraPosList A10::cameraPositions;
 Vec3d A10::hudPos;
 double A10::hudSize;
 GLuint A10::overlayDisp;
@@ -128,7 +128,7 @@ void A10::init(){
 			Vec3dProcess(gunDirection, "gunDirection") <<=
 			SingleDoubleProcess(bulletSpeed, "bulletSpeed", false) <<=
 			SingleDoubleProcess(shootCooldown, "shootCooldown", false) <<=
-			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
+			CameraPosProcess(cameraPositions, "cameraPositions") <<=
 			Vec3dProcess(hudPos, "hudPos") <<=
 			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
@@ -263,64 +263,7 @@ void A10::shoot(double dt){
 
 
 void A10::cockpitView(Vec3d &pos, Quatd &rot, int chasecam)const{
-	Mat4d mat;
-	int camera;
-	{
-		camera = chasecam;
-		camera = MAX(0, MIN(cameraPositions.size()+2, camera));
-//		*chasecam = camera;
-	}
-	transform(mat);
-	if(camera == cameraPositions.size()+1){
-		pos = this->pos;
-		pos[0] += .05 * cos(w->war_time() * 2. * M_PI / 15.);
-		pos[1] += .02;
-		pos[2] += .05 * sin(w->war_time() * 2. * M_PI / 15.);
-	}
-#if 0
-	else if(camera == 4 && pt->vft == &valkie_s){
-		valkie_t *p = (valkie_t*)pt;
-		amat4_t mat2;
-		mat4roty(mat2, mat, /*5 * M_PI / 4.*/ + p->batphase * M_PI);
-		mat4vp3(*pos, mat2, src[camera]);
-	}
-#endif
-#if 0
-	else if(camera == cameraPositions.size()){
-		const Player *player = game->player;
-		Vec3d ofs = mat.dvp3(vec3_001);
-		if(camera)
-			ofs *= player ? player->viewdist : 1.;
-		pos = this->pos + ofs;
-	}
-#else
-	else if(camera == cameraPositions.size()){
-		if(lastMissile){
-			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
-			rot = lastMissile->rot;
-			return;
-		}
-		else
-			pos = mat.vp3(cameraPositions[0]);
-	}
-#endif
-	else if(camera == cameraPositions.size()+2){
-		Vec3d pos0;
-		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;
-		struct contact_info ci;
-		pos0[0] = floor(this->pos[0] / period + .5) * period;
-		pos0[1] = 0./*floor(pt->pos[1] / period + .5) * period*/;
-		pos0[2] = floor(this->pos[2] / period + .5) * period;
-/*		if(w && w->->pointhit && w->vft->pointhit(w, pos0, avec3_000, 0., &ci))
-			pos0 += ci.normal * ci.depth;
-		else if(w && w->vft->spherehit && w->vft->spherehit(w, pos0, .002, &ci))
-			pos0 += ci.normal * ci.depth;*/
-		pos = pos0;
-	}
-	else{
-		pos = mat.vp3(cameraPositions[camera]);
-	}
-	rot = this->rot;
+	calcCockpitView(pos, rot, cameraPositions[chasecam % cameraPositions.size()]);
 }
 
 int A10::takedamage(double damage, int hitpart){

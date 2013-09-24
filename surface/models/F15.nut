@@ -72,10 +72,12 @@ bulletSpeed <- 0.78;
 shootCooldown <- 0.07;
 
 cameraPositions <- [
-	Vec3d(0., 30 * modelScale, -150 * modelScale),
-	Vec3d(0., 0.0075, 0.025),
-	Vec3d(0.020, 0.007, 0.050),
-	Vec3d(0.004, -0.0015, 0.010),
+	{pos = Vec3d(0., 30 * modelScale, -150 * modelScale), type = "cockpit"},
+	{pos = Vec3d(0., 0.0075, 0.025)},
+	{pos = Vec3d(0.020, 0.007, 0.050)},
+	{pos = Vec3d(0.004, -0.0015, 0.010)},
+	{pos = Vec3d(0., 30 * modelScale, -150 * modelScale), type = "missiletrack"},
+	{pos = Vec3d(0., 0.010, 0.030), type = "viewtrack"},
 ]
 
 hudPos <- Vec3d(0., 30.0, -170.0) * modelScale

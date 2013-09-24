@@ -522,7 +522,7 @@ void F15::drawCockpit(WarDraw *wd){
 //	double sonear = scale * wd->vw->gc->getNear();
 //	double wid = sonear * wd->vw->gc->getFov() * wd->vw->gc->getWidth / wd->pgc->res;
 //	double hei = sonear * wd->vw->gc->getFov() * wd->vw->gc->height / wd->pgc->res;
-	const Vec3d &seat = cameraPositions[0];
+	const Vec3d &seat = cameraPositions[0].pos;
 	Vec3d stick = Vec3d(0., 68., -270.) * modelScale / 2.;
 	static Model *modelCockpit = NULL;
 	Player *player = game->player;

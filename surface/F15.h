@@ -38,7 +38,6 @@ protected:
 
 	Tefpol *pf;
 	std::vector<Tefpol*> vapor;
-	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	Vec3d destPos; ///< Destination position
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
@@ -57,7 +56,7 @@ protected:
 	static Vec3d gunDirection;
 	static double shootCooldown;
 	static double bulletSpeed;
-	static std::vector<Vec3d> cameraPositions;
+	static CameraPosList cameraPositions;
 	static Vec3d hudPos;
 	static double hudSize;
 	static GLuint overlayDisp;
@@ -71,7 +70,10 @@ protected:
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 	double getThrustStrength()const override{return thrustStrength;}
-	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == cameraPositions.size() && !lastMissile;}
+	bool isCockpitView(int chasecam)const{
+		return cameraPositions[chasecam].type == CameraPos::Type::Cockpit
+			|| cameraPositions[chasecam].type == CameraPos::Type::MissileTrack && !lastMissile;
+	}
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 	btCompoundShape *getShape()override;
 

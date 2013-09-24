@@ -15,6 +15,7 @@
 #include "SqInitProcess.h"
 #include "cmd.h"
 #include "StaticInitializer.h"
+#include "Bullet.h"
 #include "glw/GLWChart.h"
 extern "C"{
 #include <clib/c.h>
@@ -274,6 +275,73 @@ void Aerial::WingProcess::process(HSQUIRRELVM v)const{
 		}
 		else if(n.control != Wing::Control::None)
 			throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].sensitivity not defined"));
+
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
+}
+
+void Aerial::CameraPosProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, name, -1); // root string
+
+	// Not defining hardpoints is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring(name) << _SC(" not defined"));
+		else
+			return;
+	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring(name) << _SC(" size could not be acquired"));
+	value.resize(len);
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		CameraPos &n = value[i];
+
+		sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
+			SQVec3d r;
+			r.getValue(v, -1);
+			n.pos = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			throw SQFError(gltestp::dstring(name) << _SC("[") << i << _SC("].pos not defined"));
+
+		sq_pushstring(v, _SC("rot"), -1); // root obj obj[i] "rot"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].rot
+			SQQuatd r;
+			r.getValue(v, -1);
+			n.rot = r.value;
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.rot = quat_u;
+
+		sq_pushstring(v, _SC("type"), -1); // root obj obj[i] "control"
+		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].control
+			const SQChar *sqstr;
+			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr))){
+				if(!scstrcmp(sqstr, _SC("normal")))
+					n.type = CameraPos::Type::Normal;
+				else if(!scstrcmp(sqstr, _SC("cockpit")))
+					n.type = CameraPos::Type::Cockpit;
+				else if(!scstrcmp(sqstr, _SC("missiletrack")))
+					n.type = CameraPos::Type::MissileTrack;
+				else if(!scstrcmp(sqstr, _SC("viewtrack")))
+					n.type = CameraPos::Type::ViewTrack;
+				else
+					throw SQFError("CameraPosProcess: unknown camera type");
+			}
+			else
+				throw SQFError("CameraPosProcess: camera type must be a string");
+			sq_poptop(v); // root obj obj[i]
+		}
+		else
+			n.type = CameraPos::Type::Normal;
 
 		sq_poptop(v); // root obj
 	}
@@ -2000,6 +2068,42 @@ void Aerial::animAI(double dt, bool onfeet){
 			if(1. - apparentRadius < sp)
 				shoot(dt);
 		}
+	}
+}
+
+void Aerial::calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const{
+	Mat4d mat;
+	transform(mat);
+	rot = this->rot;
+	if(cam.type == CameraPos::Type::MissileTrack){
+		if(lastMissile){
+			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
+			rot = lastMissile->rot;
+			return;
+		}
+		else
+			pos = mat.vp3(cam.pos);
+	}
+	else if(cam.type == CameraPos::Type::ViewTrack && enemy){
+		Player *player = game->player;
+		rot = this->rot * Quatd::direction(this->rot.cnj().trans(this->pos - enemy->pos));
+		pos = this->pos + rot.trans(Vec3d(cam.pos[0], cam.pos[1], cam.pos[2] / player->fov)); // Trackback if zoomed
+	}
+	else if(cam.type == CameraPos::Type::Rotate){
+		Vec3d pos0;
+		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;
+		struct contact_info ci;
+		pos0[0] = floor(this->pos[0] / period + .5) * period;
+		pos0[1] = 0./*floor(pt->pos[1] / period + .5) * period*/;
+		pos0[2] = floor(this->pos[2] / period + .5) * period;
+/*		if(w && w->->pointhit && w->vft->pointhit(w, pos0, avec3_000, 0., &ci))
+			pos0 += ci.normal * ci.depth;
+		else if(w && w->vft->spherehit && w->vft->spherehit(w, pos0, .002, &ci))
+			pos0 += ci.normal * ci.depth;*/
+		pos = pos0;
+	}
+	else{
+		pos = mat.vp3(cam.pos);
 	}
 }
 

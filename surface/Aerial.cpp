@@ -1881,6 +1881,7 @@ static double intMax = 1.;
 static double turnClimb = 0.3;
 static double turnBank = 2. / 5. * M_PI;
 static double rudderSense = -20.; ///< Rudder stabilizer sensitivity
+static double rudderAim = 17.; ///< Aim strength factor for rudder
 
 static void initSense(){
 	CvarAdd("estimateSpeed", &estimateSpeed, cvar_double);
@@ -1892,6 +1893,7 @@ static void initSense(){
 	CvarAdd("turnClimb", &turnClimb, cvar_double);
 	CvarAdd("turnBank", &turnBank, cvar_double);
 	CvarAdd("rudderSense", &rudderSense, cvar_double);
+	CvarAdd("rudderAim", &rudderAim, cvar_double);
 }
 
 static StaticInitializer initializer(initSense);
@@ -1968,6 +1970,7 @@ void Aerial::animAI(double dt, bool onfeet){
 	estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
 	double sp = estPos.sp(mat.vec3(2));
 	double turning = 0;
+	double rudderTarget = 0;
 	if(0.5 * 0.5 < sdist){
 		double turnAngle = 0;
 		if(3. * 3. < sdist && 0. < sp){ // Going away
@@ -1978,10 +1981,13 @@ void Aerial::animAI(double dt, bool onfeet){
 		else{
 			estPos.normin();
 			turning = estPos.vp(-mat.vec3(2))[1] * (1. - fabs(estPos[1]));
-			if(3. * 3. < sdist || sp < 0) // Approaching
+			if(3. * 3. < sdist || sp < 0){ // Approaching
 				turnAngle += turnBank * turning;
+				rudderTarget = -turning * rudderAim;
+			}
 			else // Receding
 				turnAngle += -turnBank * turning;
+			turning = fabs(turning);
 		}
 
 		// Upside down; get upright as soon as possible or we'll crash!
@@ -2052,7 +2058,7 @@ void Aerial::animAI(double dt, bool onfeet){
 
 		aileron = rangein(aileron + roll * dt, -1, 1);
 		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
-		rudder = approach(rudder, 0, dt, 0);
+		rudder = approach(rudder, rudderTarget, dt, 0);
 		Vec2d planar(deltaPos[0], deltaPos[2]);
 		double targetClimb = deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
 

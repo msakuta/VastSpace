@@ -318,6 +318,12 @@
     <ClCompile Include="..\src\draw\Worker-Draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Mesh.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Mesh-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">
@@ -345,6 +351,15 @@
       <Filter>Exported Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Observable.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mqo.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Mesh.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Mesh-forward.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
   </ItemGroup>

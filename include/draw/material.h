@@ -4,6 +4,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 #include "export.h"
+#include "Mesh-forward.h"
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -24,6 +25,7 @@ struct EXPORT TexParam : public suftexparam_t{
 
 EXPORT void AddMaterial(const char *name, const char *texname1, TexParam *stp1, const char *texname2, TexParam *stp2);
 EXPORT void CacheSUFMaterials(const suf_t *suf, const char *path = "");
+EXPORT void CacheMeshMaterials(const Mesh *suf, const char *path = "");
 EXPORT extern unsigned CallCacheBitmap(const char *entry, const char *fname1, suftexparam_t *pstp, const char *fname2);
 EXPORT unsigned CallCacheBitmap5(const char *entry, const char *fname1, suftexparam_t *pstp1, const char *fname2, suftexparam_t *pstp2);
 EXPORT suf_t *CallLoadSUF(const char *fname);
@@ -77,6 +79,8 @@ EXPORT unsigned long CacheSUFMTex(const char *name, const TextureKey *tex1, cons
 EXPORT unsigned long CacheSUFTex(const char *name, const BITMAPINFO *bmi, int mipmap);
 EXPORT suftex_t *AllocSUFTex(const suf_t *suf, const char *path = NULL);
 EXPORT suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path = NULL);
+EXPORT MeshTex *AllocMeshTex(const Mesh *suf, const char *path = NULL);
+EXPORT MeshTex *AllocMeshTexScales(const Mesh *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path = NULL);
 
 }
 

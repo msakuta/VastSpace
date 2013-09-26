@@ -97,7 +97,7 @@ static void draw_mqo_node(const Model *model, const ysdnmv_t *v0, Bone *bone, co
 			glPushAttrib(GL_DEPTH_BUFFER_BIT);
 			glDisable(GL_DEPTH_TEST);
 		}
-		DecalDrawSUF(bone->suf, SUF_ATR, NULL, bone->suftex, NULL, NULL);
+		bone->suf->decalDraw(SUF_ATR, NULL, bone->suftex, NULL, NULL);
 		if(target){
 			glPopAttrib();
 		}
@@ -232,7 +232,7 @@ static void draw_mqo_node(const Model *model, const MotionPose *v0, Bone *bone, 
 			glPushAttrib(GL_DEPTH_BUFFER_BIT);
 			glDisable(GL_DEPTH_TEST);
 		}
-		DecalDrawSUF(bone->suf, SUF_ATR, NULL, bone->suftex, NULL, NULL);
+		bone->suf->decalDraw(SUF_ATR, NULL, bone->suftex, NULL, NULL);
 		if(target){
 			glPopAttrib();
 		}

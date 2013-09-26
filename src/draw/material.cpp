@@ -9,6 +9,7 @@
  * JPEG and PNG reading methods are defined here too.
  */
 #include "draw/material.h"
+#include "Mesh.h"
 #include "bitmap.h"
 #include "dstring.h"
 #include "draw/OpenGLState.h"
@@ -102,7 +103,8 @@ GLuint CacheMaterial(const char *name){
 	return ret;
 }
 
-void CacheSUFMaterials(const suf_t *suf, const char *path){
+template<typename T>
+void CacheMaterials(const T *suf, const char *path){
 	int i, j;
 	if(!suf)
 		return;
@@ -125,6 +127,13 @@ void CacheSUFMaterials(const suf_t *suf, const char *path){
 	}
 }
 
+void CacheSUFMaterials(const suf_t *suf, const char *path){
+	return CacheMaterials(suf, path);
+}
+
+void CacheMeshMaterials(const Mesh *suf, const char *path){
+	return CacheMaterials(suf, path);
+}
 
 
 /*#define BUFFER_SIZE 2048*/
@@ -1008,6 +1017,10 @@ suftex_t *AllocSUFTex(const suf_t *suf, const char *path){
 	return gltestp::AllocSUFTexScales(suf, NULL, 0, NULL, 0, path);
 }
 
+MeshTex *AllocMeshTex(const Mesh *suf, const char *path){
+	return gltestp::AllocMeshTexScales(suf, NULL, 0, NULL, 0, path);
+}
+
 static void shaderOnBeginTexture(void *){
 	if(g_shader_enable && g_currentShaderBind){
 		(*g_currentShaderBind)->enableTextures(false, false);
@@ -1032,15 +1045,16 @@ static void additiveShaderOnEndTexture(void *){
 	}
 }
 
-suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path){
-	suftex_t *ret;
+template<typename Tex, typename T, typename TexList>
+Tex *AllocTexScales(const T *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path){
+	Tex *ret;
 	int i, n, k;
 /*	for(i = n = 0; i < suf->na; i++) if(suf->a[i].colormap)
 		n++;*/
 	if(!suf)
 		return NULL;
 	n = suf->na;
-	ret = (suftex_t*)malloc(offsetof(suftex_t, a) + n * sizeof *ret->a);
+	ret = (Tex*)malloc(offsetof(Tex, a) + n * sizeof *ret->a);
 	ret->n = n;
 	for(i = k = 0; i < n; i++){
 		unsigned j;
@@ -1048,7 +1062,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 
 		k = i;
 		if(!(suf->a[i].valid & SUF_TEX) || !colormap){
-			struct suftexlist *s = &ret->a[k];
+			TexList *s = &ret->a[k];
 			s->list = 0;
 			s->tex[0] = 0;
 			s->tex[1] = 0;
@@ -1069,7 +1083,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		std::map<gltestp::dstring, OpenGLState::weak_ptr<TexCacheBind> >::iterator it = gstc.find(name);
 		if(it != gstc.end() && it->second){
 			TexCacheBind &tcb = *gstc[name];
-			struct suftexlist *s = &ret->a[k];
+			TexList *s = &ret->a[k];
 			s->list = tcb.getList();
 			s->tex[0] = tcb.getTex(0);
 			s->tex[1] = tcb.getTex(1);
@@ -1090,7 +1104,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			it = gstc.find(name);
 			if(it != gstc.end() && it->second){
 				TexCacheBind &tcb = *gstc[name];
-				struct suftexlist *s = &ret->a[k];
+				TexList *s = &ret->a[k];
 				s->list = tcb.getList();
 				s->tex[0] = tcb.getTex(0);
 				s->tex[1] = tcb.getTex(1);
@@ -1105,7 +1119,7 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 			}
 			else{
 				TexCacheBind &tcb = *gstc[name];
-				struct suftexlist *s = &ret->a[k];
+				TexList *s = &ret->a[k];
 				s->list = 0;
 				s->tex[0] = 0;
 				s->tex[1] = 0;
@@ -1210,6 +1224,14 @@ suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales,
 		}
 	}
 	return ret;
+}
+
+suftex_t *AllocSUFTexScales(const suf_t *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path){
+	return AllocTexScales<suftex_t, suf_t, suftexlist>(suf, scales, nscales, texes, ntexes, path);
+}
+
+MeshTex *AllocMeshTexScales(const Mesh *suf, const double *scales, int nscales, const char **texes, int ntexes, const char *path){
+	return AllocTexScales<MeshTex, Mesh, MeshTex::MeshTexList>(suf, scales, nscales, texes, ntexes, path);
 }
 
 

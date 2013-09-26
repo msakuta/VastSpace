@@ -53,7 +53,7 @@ void Attacker::draw(wardraw_t *wd){
 		model = LoadMQOModel("models/attacker.mqo");
 
 		if(model) for(int n = 0; n < model->n; n++) if(model->sufs[n] && model->tex[n]){
-			suftex_t *tex = model->tex[n];
+			MeshTex *tex = model->tex[n];
 			for(int i = 0; i < tex->n; i++) if(!strcmp(model->sufs[n]->a[i].colormap, "attacker_engine.bmp")){
 				tex->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
 				tex->a[i].onEndTexture = TextureParams::onEndTextureEngine;
@@ -67,7 +67,7 @@ void Attacker::draw(wardraw_t *wd){
 
 		// This values could change every frame, so we assign them here.
 		for(int n = 0; n < model->n; n++){
-			suftex_t *pst = model->tex[n];
+			MeshTex *pst = model->tex[n];
 			for(int i = 0; i < pst->n; i++) if(pst->a[i].onBeginTexture){
 				pst->a[i].onBeginTextureData = &tp;
 				pst->a[i].onEndTextureData = &tp;

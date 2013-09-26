@@ -15,8 +15,7 @@
 extern "C"{
 #endif
 
-#include <clib/suf/suf.h>
-#include <clib/suf/sufdraw.h>
+#include "Mesh-forward.h"
 
 
 /* it's not that generic task to convert mqo to suf, so don't make
@@ -31,8 +30,8 @@ struct Bone{
 	Vec3d joint;
 	int depth;
 	gltestp::dstring name;
-	suf_t *suf;
-	suftex_t *suftex;
+	Mesh *suf;
+	MeshTex *suftex;
 	struct Bone *parent;
 	struct Bone *children;
 	struct Bone *nextSibling;
@@ -44,8 +43,8 @@ struct Bone{
 ///
 /// Each object is converted to suf_t internally.
 struct EXPORT Model{
-	suf_t **sufs;
-	suftex_t **tex;
+	Mesh **sufs;
+	MeshTex **tex;
 	struct Bone **bones;
 	int n;
 	bool getBonePos(const char *boneName, const ysdnmv_t &var, Vec3d *pos, Quatd *rot = NULL)const;
@@ -55,25 +54,25 @@ protected:
 	bool getBonePosInt(const char *boneName, const MotionPose &var, const Bone *, const Vec3d &spos, const Quatd &srot, Vec3d *pos, Quatd *rot)const;
 };
 
-suf_t *LoadMQO_SUF(const char *fname);
+Mesh *LoadMQO_SUF(const char *fname);
 
 /// \brief A function object that is invoked once per suf.
 struct EXPORT MQOTextureCallback{
-	virtual void operator()(suf_t *, suftex_t **) = 0;
+	virtual void operator()(Mesh *, MeshTex **) = 0;
 };
 
 /// \brief An adapter for a plain function to MQOTextureCallback.
 struct EXPORT MQOTextureFunction : public MQOTextureCallback{
-	void (*func)(suf_t *, suftex_t **);
-	MQOTextureFunction(void func(suf_t *, suftex_t **)) : func(func){}
-	void operator()(suf_t *suf, suftex_t **suft){func(suf, suft);}
+	void (*func)(Mesh *, MeshTex **);
+	MQOTextureFunction(void func(Mesh *, MeshTex **)) : func(func){}
+	void operator()(Mesh *suf, MeshTex **suft){func(suf, suft);}
 };
 
 /// \brief Loads a MQO and returns each object in pret, with scaling factor.
-EXPORT int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback = NULL, suftex_t ***callback_data = NULL);
+EXPORT int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord scale, struct Bone ***bones, MQOTextureCallback *tex_callback = NULL, MeshTex ***callback_data = NULL);
 
 /// \brief Loads a MQO and returns each object in ret.
-EXPORT int LoadMQO(std::istream &is, suf_t ***ret, char ***pname, struct Bone ***bones);
+EXPORT int LoadMQO(std::istream &is, Mesh ***ret, char ***pname, struct Bone ***bones);
 
 /// \brief Loads a MQO and convert it into a Model object.
 ///

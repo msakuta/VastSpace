@@ -4,7 +4,7 @@
 #include "mqo.h"
 #include "ysdnmmot.h"
 //#include "draw/material.h"
-#include <clib/avec3.h>
+//#include <clib/avec3.h>
 #include <clib/avec4.h>
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -80,7 +80,7 @@ static char *quotok(char **src){
 	return ret;
 }
 
-static const struct suf_t::suf_atr_t atr0 = {
+static const Mesh::Attrib atr0 = {
 	NULL, /* char *name; */
 	0, /*unsigned valid; /* validity flag of following values */
 	{1.F, 1.F, 1.F, 1.F}, /*float col[4]; /* clamped */
@@ -95,10 +95,10 @@ static const struct suf_t::suf_atr_t atr0 = {
 	{0, 0, 1, 1}, /*sufcoord mapwind[4];*/
 };
 
-static int chunk_material(suf_t *ret, FPOS *pfo){
+static int chunk_material(Mesh *ret, FPOS *pfo){
 	char *s;
 	int n, i, j;
-	struct suf_atr_t *patr;
+	Mesh::Attrib *patr;
 	s = ftok(pfo);
 	if(!s) return NULL;
 	n = atoi(s);
@@ -108,13 +108,13 @@ static int chunk_material(suf_t *ret, FPOS *pfo){
 		return 0;
 
 	ret->na = n;
-	ret->a = (suf::suf_atr_t*)malloc(n * sizeof *ret->a);
+	ret->a = (Mesh::Attrib*)malloc(n * sizeof *ret->a);
 
 	while((s = ftok(pfo)) && s[0] != '{');
 
 	for(i = 0; i < n;){
 		char line[512], *cur;
-		struct suf::suf_atr_t *atr = &ret->a[i];
+		Mesh::Attrib *atr = &ret->a[i];
 		double opa = 1.;
 		pfo->is->getline(line, sizeof line);
 		cur = line;
@@ -201,10 +201,10 @@ static sufindex add_vertex(suf_t *suf, const sufcoord v[3]){
 	return (sufindex)i;
 }
 
-static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bones, int num){
+static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***bones, int num){
 	char *s, *name = NULL;
 	int n, i, j;
-	struct suf_atr_t *patr;
+	Mesh::Attrib *patr;
 	char line[512], *cur;
 	sufindex atr = (sufindex)-1;
 	int shading = 0;
@@ -315,12 +315,12 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	s = quotok(&cur);
 	ret->np = n = atoi(s);
 	// Mirroring generates twice as many vertices for each mirror, i.e. 2 power count of mirrors.
-	ret->p = (suf::suf_prim_t**)malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->p);
+	ret->p = (Mesh::Primitive**)malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->p);
 
 	i = 0;
 	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
 		int polys;
-		enum suf::suf_prim_t::suf_elemtype type = suf::suf_prim_t::suf_poly;
+		enum Mesh::ElemType type = Mesh::suf_poly;
 		sufindex verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
 		if(!s)
 			return NULL;
@@ -414,7 +414,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 					if(a == i){
 						sufcoord nullvec[3];
 						VECNULL(nullvec);
-						vvi = add_vertex(ret, nullvec);
+						vvi = ret->add_vertex(nullvec);
 						for(j = 0; j < i; j++)
 							norms[j] = vvi;
 						break;
@@ -426,7 +426,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 						with different length. */
 					VECNORMIN(vv);
 
-					vvi = add_vertex(ret, vv);
+					vvi = ret->add_vertex(vv);
 					for(j = 0; j < i; j++)
 						norms[j] = vvi;
 				}
@@ -438,12 +438,12 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 			else if(!strnicmp(s, "UV(", sizeof"UV("-1)){
 				char *q = &s[sizeof"UV("-1];
 				sufcoord uv[3];
-				type = suf::suf_prim_t::suf_uvpoly;
+				type = Mesh::suf_uvpoly;
 				for(j = 0; j < polys; j++){
 					uv[0] = strtod(q, &q);
 					uv[1] = strtod(q, &q);
 					uv[2] = 0.;
-					uvs[polys - j - 1] = add_vertex(ret, uv);
+					uvs[polys - j - 1] = ret->add_vertex(uv);
 				}
 			}
 		}
@@ -453,12 +453,12 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 			return 0;
 		}
 
-		if(type == suf::suf_prim_t::suf_uvpoly){
-			struct suf::suf_prim_t::suf_uvpoly_t *p;
-			type = suf::suf_prim_t::suf_uvpoly;
-			ret->p[i] = (suf::suf_prim_t*)malloc(offsetof(suf::suf_prim_t::suf_uvpoly_t, v) + polys * sizeof(struct suf::suf_prim_t::suf_uvpoly_t::suf_uvpoly_vertex));
+		if(type == Mesh::suf_uvpoly){
+			Mesh::UVPolygon *p;
+			type = Mesh::suf_uvpoly;
+			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(Mesh::UVPolygon::suf_uvpoly_vertex));
 			p = &ret->p[i]->uv;
-			p->t = suf::suf_prim_t::suf_uvpoly;
+			p->t = Mesh::suf_uvpoly;
 			p->n = polys;
 			p->atr = atr;
 			for(j = 0; j < polys; j++){
@@ -468,10 +468,10 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 			}
 		}
 		else{
-			struct suf::suf_prim_t::suf_poly_t *p;
-			ret->p[i] = (suf::suf_prim_t*)malloc(offsetof(suf::suf_prim_t::suf_uvpoly_t, v) + polys * sizeof(sufindex[2]));
+			Mesh::Polygon *p;
+			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(Mesh::Index[2]));
 			p = &ret->p[i]->p;
-			p->t = suf::suf_prim_t::suf_poly;
+			p->t = Mesh::suf_poly;
 			p->n = polys;
 			p->atr = atr;
 			assert(p->atr < 30000);
@@ -487,11 +487,11 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 	for(int m = 0; m < 3; m++) if(mirror_axis & (1 << m)){
 		n = ret->np;
 		for(i = 0; i < n; i++){
-			if(ret->p[i]->t == suf::suf_prim_t::suf_uvpoly){
-				struct suf::suf_prim_t::suf_uvpoly_t *p, *p0 = &ret->p[i]->uv;
-				ret->p[i+n] = (suf::suf_prim_t*)malloc(offsetof(suf::suf_prim_t::suf_uvpoly_t, v) + p0->n * sizeof(suf::suf_prim_t::suf_uvpoly_t::suf_uvpoly_vertex));
+			if(ret->p[i]->t == Mesh::suf_uvpoly){
+				Mesh::UVPolygon *p, *p0 = &ret->p[i]->uv;
+				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + p0->n * sizeof(Mesh::UVPolygon::suf_uvpoly_vertex));
 				p = &ret->p[i+n]->uv;
-				p->t = suf::suf_prim_t::suf_uvpoly;
+				p->t = Mesh::suf_uvpoly;
 				p->n = p0->n;
 				p->atr = p0->atr;
 				for(j = 0; j < p0->n; j++){
@@ -501,15 +501,15 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 					VECCPY(vecn, ret->v[p0->v[p0->n-j-1].n]);
 					// Normal vector's coordinate along mirror axis must be negated just like position vector.
 					vecn[m] *= -1;
-					p->v[j].n = add_vertex(ret, vecn);
+					p->v[j].n = ret->add_vertex(vecn);
 					p->v[j].t = p0->v[p0->n-j-1].t; // Keep texture coord to the same.
 				}
 			}
 			else{
-				struct suf::suf_prim_t::suf_poly_t *p, *p0 = &ret->p[i]->p;
-				ret->p[i+n] = (suf::suf_prim_t*)malloc(offsetof(suf::suf_prim_t::suf_poly_t, v) + p0->n * sizeof(sufindex[2]));
+				Mesh::Polygon *p, *p0 = &ret->p[i]->p;
+				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::Polygon, v) + p0->n * sizeof(Mesh::Index[2]));
 				p = &ret->p[i+n]->p;
-				p->t = suf::suf_prim_t::suf_poly;
+				p->t = Mesh::suf_poly;
 				p->n = p0->n;
 				p->atr = p0->atr;
 				for(j = 0; j < p0->n; j++){
@@ -519,7 +519,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 					VECCPY(vecn, ret->v[p0->v[p0->n-j-1][1]]);
 					// Normal vector's coordinate along mirror axis must be negated just like position vector.
 					vecn[m] *= -1;
-					p->v[j][1] = add_vertex(ret, vecn);
+					p->v[j][1] = ret->add_vertex(vecn);
 				}
 			}
 		}
@@ -550,7 +550,7 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 			for(k = 0; k < is; k++)
 				VECADDIN(norm, ret->v[shares[k][1]]);
 			VECNORMIN(norm);
-			l = add_vertex(ret, norm);
+			l = ret->add_vertex(norm);
 			for(k = 0; k < is; k++)
 				shares[k][1] = l;
 		}
@@ -564,11 +564,11 @@ static int chunk_object(suf_t *ret, FPOS *pfo, sufcoord scale, struct Bone ***bo
 
 /* the argument must be either full or relative path to existing file,
   for its path is used to search attribute files. */
-suf_t *LoadMQO_SUF(const char *fname){
+Mesh *LoadMQO_SUF(const char *fname){
 	FILE *fp;
-	suf_t *ret;
+	Mesh *ret;
 	char buf[128], *s = NULL, *name = NULL;
-	sufindex atr = USHRT_MAX; /* current attribute index */
+	Mesh::Index atr = USHRT_MAX; /* current attribute index */
 	FPOS fo;
 
 	fp = fopen(fname, "r");
@@ -587,7 +587,7 @@ suf_t *LoadMQO_SUF(const char *fname){
 	if(!(s = ftok(&fo)) || stricmp(s, "Ver")) return NULL;
 	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
 
-	ret = (suf*)malloc(sizeof *ret);
+	ret = (Mesh*)malloc(sizeof *ret);
 	ret->nv = 0;
 	ret->v = NULL;
 	ret->na = 0;
@@ -623,10 +623,10 @@ suf_t *LoadMQO_SUF(const char *fname){
 /// 
 /// \param tex_callback Texture allocator function.
 /// \param tex_callback_data Pointer to buffer that texture objects resides.
-int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback, suftex_t ***tex_callback_data){
+int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback, MeshTex ***tex_callback_data){
 	char buf[128], *s = NULL, *name = NULL;
-	suf_t **ret = NULL;
-	suf_t *sufatr = NULL;
+	Mesh **ret = NULL;
+	Mesh *sufatr = NULL;
 	sufindex atr = USHRT_MAX; /* current attribute index */
 	FPOS fo;
 	int num = 0;
@@ -651,7 +651,7 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
 
 	if(tex_callback_data){
-		*tex_callback_data = (suftex_t**)malloc(num * sizeof *tex_callback_data);
+		*tex_callback_data = (MeshTex**)malloc(num * sizeof *tex_callback_data);
 	}
 
 	do{
@@ -660,7 +660,7 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 		if(!s) break;
 		if(!stricmp(s, "material")){
 			if(!sufatr){
-				sufatr = (suf_t*)malloc(sizeof *sufatr);
+				sufatr = (Mesh*)malloc(sizeof *sufatr);
 				sufatr->nv = 0;
 				sufatr->v = NULL;
 				sufatr->na = 0;
@@ -674,11 +674,11 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 		else if(!stricmp(s, "object")){
 			if(!sufatr){
 				float col[4] = {1,1,1,1}, zero[4] = {0};
-				sufatr = (suf_t*)malloc(sizeof *sufatr);
+				sufatr = (Mesh*)malloc(sizeof *sufatr);
 				sufatr->nv = 0;
 				sufatr->v = NULL;
 				sufatr->na = 1;
-				sufatr->a = (suf_t::suf_atr_t*)malloc(sizeof *sufatr->a);
+				sufatr->a = (Mesh::Attrib*)malloc(sizeof *sufatr->a);
 				sufatr->np = 0;
 				sufatr->p = NULL;
 
@@ -692,8 +692,8 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 				VEC4CPY(sufatr->a[0].tra, zero);
 				sufatr->a[0].valid = SUF_COL | SUF_AMB;
 			}
-			ret = (suf_t**)realloc(ret, (num + 1) * sizeof *ret);
-			ret[num] = (suf_t*)malloc(sizeof *ret[num]);
+			ret = (Mesh**)realloc(ret, (num + 1) * sizeof *ret);
+			ret[num] = (Mesh*)malloc(sizeof *ret[num]);
 			ret[num]->nv = 0;
 			ret[num]->v = NULL;
 			ret[num]->na = sufatr->na;
@@ -730,7 +730,7 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 			if(!chunk_object(ret[num], &fo, scale, bones, num))
 				return NULL;
 			if(tex_callback && tex_callback_data){
-				*tex_callback_data = (suftex_t**)realloc(*tex_callback_data, (num + 1) * sizeof **tex_callback_data);
+				*tex_callback_data = (MeshTex**)realloc(*tex_callback_data, (num + 1) * sizeof **tex_callback_data);
 				(*tex_callback)(ret[num], &(*tex_callback_data)[num]);
 /*				CacheSUFMaterials(ret[num]);
 				(*texes)[num] = gltestp::AllocSUFTex(ret[num]);*/
@@ -752,7 +752,7 @@ int LoadMQO_Scale(std::istream &is, suf_t ***pret, char ***pname, sufcoord scale
 	return num;
 }
 
-int LoadMQO(std::istream &is, suf_t ***pret, char ***pname, struct Bone ***bones){
+int LoadMQO(std::istream &is, Mesh ***pret, char ***pname, struct Bone ***bones){
 	return LoadMQO_Scale(is, pret, pname, 1., bones);
 }
 

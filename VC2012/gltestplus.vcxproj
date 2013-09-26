@@ -207,6 +207,7 @@
     <ClCompile Include="..\src\draw\LMissileTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\LTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\material.cpp" />
+    <ClCompile Include="..\src\draw\Mesh-draw.cpp" />
     <ClCompile Include="..\src\draw\Missile-draw.cpp" />
     <ClCompile Include="..\src\draw\MTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\Player-draw.cpp" />
@@ -237,6 +238,7 @@
     <ClCompile Include="..\src\keybind.cpp" />
     <ClCompile Include="..\src\LagrangePoint.cpp" />
     <ClCompile Include="..\src\LTurret.cpp" />
+    <ClCompile Include="..\src\Mesh.cpp" />
     <ClCompile Include="..\src\Missile.cpp" />
     <ClCompile Include="..\src\motion.cpp" />
     <ClCompile Include="..\src\mqo.cpp" />
@@ -270,12 +272,15 @@
     <ClInclude Include="..\include\Bullet.h" />
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />
+    <ClInclude Include="..\include\Mesh-forward.h" />
     <ClInclude Include="..\include\Model-forward.h" />
     <ClInclude Include="..\include\ModelEntity.h" />
     <ClInclude Include="..\include\Motion-forward.h" />
+    <ClInclude Include="..\include\mqo.h" />
     <ClInclude Include="..\include\Observable.h" />
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
+    <ClInclude Include="..\include\Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

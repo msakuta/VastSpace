@@ -11,9 +11,9 @@ extern "C"{
 struct MQOTextureLoad : MQOTextureCallback{
 	const char *fpath;
 	MQOTextureLoad(const char *fpath) : fpath(fpath){}
-	void operator()(suf_t *suf, suftex_t **ret){
-		CacheSUFMaterials(suf, fpath);
-		*ret = gltestp::AllocSUFTex(suf, fpath);
+	void operator()(Mesh *suf, MeshTex **ret){
+		CacheMeshMaterials(suf, fpath);
+		*ret = gltestp::AllocMeshTex(suf, fpath);
 	}
 };
 

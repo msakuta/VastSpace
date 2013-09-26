@@ -69,7 +69,7 @@ void LTurret::draw(wardraw_t *wd){
 	// (you probably cannot just replace the model but also recompile to change the appearance of the model),
 	// but has little overhead.
 	if(0 <= turretIndex)
-		DrawSUF(model->sufs[turretIndex], SUF_ATR, NULL);
+		model->sufs[turretIndex]->draw(SUF_ATR, NULL);
 	if(0 <= barrelIndex){
 		// Bone joint must be defined.
 		const Vec3d &pos = model->bones[barrelIndex]->joint;
@@ -77,7 +77,7 @@ void LTurret::draw(wardraw_t *wd){
 		glRotated(deg_per_rad * this->py[0], -1., 0., 0.);
 		gldTranslate3dv(-pos);
 		glTranslated(0, 0, -blowback / bscale);
-		DrawSUF(model->sufs[barrelIndex], SUF_ATR, NULL);
+		model->sufs[barrelIndex]->draw(SUF_ATR, NULL);
 	}
 #endif
 	glPopMatrix();

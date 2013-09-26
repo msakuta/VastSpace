@@ -122,7 +122,7 @@ void Tank::gib_draw(const Teline3CallbackData *p, const Teline3DrawData *dd, voi
 	glScaled(modelScale, modelScale, modelScale);
 	int i = int(private_data);
 //	DrawSUFPoly(model->sufs[i], i, SUF_ATR, NULL);
-	DrawSUF(model->sufs[i], SUF_ATR, NULL);
+	model->sufs[i]->draw(SUF_ATR, NULL);
 	glPopMatrix();
 }
 #endif

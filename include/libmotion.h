@@ -13,12 +13,13 @@
  */
 
 #include "Motion-forward.h"
+#include "Mesh.h"
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-#include <clib/suf/suf.h>
+//#include <clib/suf/suf.h>
 #include <clib/avec3.h>
 #include <clib/aquat.h>
 #include <clib/timemeas.h>
@@ -43,7 +44,7 @@ extern "C"{
 #ifdef __cplusplus
 typedef Vec3d MotVec3;
 typedef Quatd MotQuat;
-typedef Vec3<sufcoord> sufvector;
+typedef Vec3<Mesh::Coord> sufvector;
 #else
 typedef avec3_t MotVec3;
 typedef aquat_t MotQuat;

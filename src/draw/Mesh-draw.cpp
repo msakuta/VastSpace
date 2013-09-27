@@ -17,15 +17,6 @@ extern "C"{
 #include <GL/glext.h>
 #include <stddef.h>
 
-#define GLD_TEX 0x20
-
-#define GLD_DIF 0x01
-#define GLD_AMB 0x02
-#define GLD_EMI 0x04
-#define GLD_SPC 0x08
-#define GLD_SHI 0x10
-
-
 void Mesh::draw(Flags flags, Cache *c)const{
 	int i;
 	Index last = INDEX_MAX, ai = INDEX_MAX;
@@ -47,12 +38,14 @@ void Mesh::draw(Flags flags, Cache *c)const{
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & Emission ? atr->emi : defemi, c);
 			if(atr->valid & flags & Specular)
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
+			if(atr->valid & flags & Shine)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &atr->shininess, c);
 			if(glIsEnabled(GL_TEXTURE_2D)){
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
 				if(c){
 					c->texenabled = 0;
-					c->valid &= ~GLD_TEX;
+					c->valid &= ~Texture;
 				}
 			}
 			if(glActiveTextureARB){
@@ -76,24 +69,29 @@ void Mesh::gldMaterialfv(GLenum face, GLenum pname, const GLfloat *params, Cache
 	}
 	switch(pname){
 		case GL_DIFFUSE:
-			flag = GLD_DIF;
+			flag = Diffuse;
 			dst = c->matdif;
 			dstsize = sizeof c->matdif;
 			break;
 		case GL_AMBIENT:
-			flag = GLD_AMB;
+			flag = Ambient;
 			dst = c->matamb;
 			dstsize = sizeof c->matamb;
 			break;
 		case GL_EMISSION:
-			flag = GLD_EMI;
+			flag = Emission;
 			dst = c->matemi;
 			dstsize = sizeof c->matemi;
 			break;
 		case GL_SPECULAR:
-			flag = GLD_SPC;
+			flag = Specular;
 			dst = c->matspc;
 			dstsize = sizeof c->matspc;
+			break;
+		case GL_SHININESS:
+			flag = Shine;
+			dst = &c->matshininess;
+			dstsize = sizeof c->matshininess;
 			break;
 		default:
 			dst = NULL;
@@ -197,8 +195,10 @@ void Mesh::decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void 
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & Emission ? atr->emi : defemi, c);
 			if(atr->valid & flags & Specular)
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
+			if(atr->valid & flags & Shine)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &atr->shininess, c);
 			if(tex && flags & Texture){
-				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
+				int mismatch = (!c || !(c->valid & Texture) || c->texture != tex->a[ai].list);
 
 				// Execute user-provided callback function when an attribute is exiting.
 				if(ai != last && last != INDEX_MAX && tex->a[last].onEndTexture)
@@ -252,7 +252,7 @@ void Mesh::decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void 
 					}
 				}
 				if(c && mismatch){
-					c->valid |= GLD_TEX;
+					c->valid |= Texture;
 					c->texture = atr->valid & Texture ? tex->a[ai].list : 0;
 				}
 			}

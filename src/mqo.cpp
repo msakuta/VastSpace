@@ -89,6 +89,7 @@ static const Mesh::Attrib atr0 = {
 	{0.F, 0.F, 0.F, 1.F}, /*float emi[4]; /* emission */
 	{1.F, 1.F, 1.F, 1.F}, /*float dif[4]; /* diffuse */
 	{0.F, 0.F, 0.F, 1.F}, /*float spc[4]; /* specular lighting */
+	0.F, // float shininess
 	NULL, /*char *colormap; /* texture color map name */
 	{0, 0, 1, 1}, /*sufcoord mapsize[4];*/
 	{0, 0, 1, 1}, /*sufcoord mapview[4];*/
@@ -135,45 +136,51 @@ static int chunk_material(Mesh *ret, FPOS *pfo){
 				opa = (float)strtod(p, &p); /* opaqueness and transparency is opposite notion */
 				for(j = 0; j < 3; j++)
 					atr->tra[j] = opa;
-				if(atr) atr->valid |= SUF_COL | SUF_TRA;
+				if(atr) atr->valid |= Mesh::Color | Mesh::Trans;
 			}
 			else if(!strnicmp(s, "dif(", sizeof "dif(" - 1)){
 				float dif = (float)atof(&s[sizeof"dif("-1]);
 				for(j = 0; j < 3; j++)
 					ret->a[i].dif[j] = ret->a[i].col[j] * dif;
-				if(atr) atr->valid |= SUF_DIF;
+				if(atr) atr->valid |= Mesh::Diffuse;
 			}
 			else if(!strnicmp(s, "amb(", sizeof "amb(" - 1)){
 				float amb = (float)atof(&s[sizeof"amb("-1]);
 				for(j = 0; j < 3; j++)
 					ret->a[i].amb[j] = ret->a[i].col[j] * amb;
-				if(atr) atr->valid |= SUF_AMB;
+				if(atr) atr->valid |= Mesh::Ambient;
 			}
 			else if(!strnicmp(s, "emi(", sizeof "emi(" - 1)){
 				float emi = (float)atof(&s[sizeof"emi("-1]);
 				for(j = 0; j < 3; j++)
 					ret->a[i].emi[j] = ret->a[i].col[j] * emi;
-				if(atr) atr->valid |= SUF_EMI;
+				if(atr) atr->valid |= Mesh::Emission;
 			}
 			else if(!strnicmp(s, "spc(", sizeof "spc(" - 1)){
 				float spc = (float)atof(&s[sizeof"spc("-1]);
 				for(j = 0; j < 3; j++)
-					ret->a[i].spc[j] = ret->a[i].col[j] * spc;
-				if(atr) atr->valid |= SUF_SPC;
+					ret->a[i].spc[j] = /*ret->a[i].col[j] **/ spc;
+				if(atr) atr->valid |= Mesh::Specular;
+			}
+			else if(!strnicmp(s, "power(", sizeof "power(" - 1)){
+				float power = (float)atof(&s[sizeof"power("-1]);
+				ret->a[i].shininess = power;
+				if(atr && 0. < Vec3f(ret->a[i].spc).slen())
+					atr->valid |= Mesh::Shine;
 			}
 			else if(!strnicmp(s, "tex(", sizeof "tex(" - 1)){
 				char *p = &s[sizeof"tex("-1], *p2;
 				p2 = quotok(&p);
 				ret->a[i].colormap = (char*)malloc(strlen(p2) + 1);
 				strcpy(ret->a[i].colormap, p2);
-				if(atr) atr->valid |= SUF_TEX;
+				if(atr) atr->valid |= Mesh::Texture;
 			}
 			else if(!strnicmp(s, "aplane(", sizeof "aplane(" - 1)){
 				char *p = &s[sizeof"aplane("-1], *p2;
 				p2 = quotok(&p);
 				ret->a[i].colormap = (char*)malloc(strlen(p2) + 1);
 				strcpy(ret->a[i].colormap, p2);
-				if(atr) atr->valid |= SUF_TEX;
+				if(atr) atr->valid |= Mesh::Texture;
 			}
 		}
 		ret->a[i].dif[3] *= opa;
@@ -187,26 +194,12 @@ static int chunk_material(Mesh *ret, FPOS *pfo){
 	return 1;
 }
 
-static sufindex add_vertex(suf_t *suf, const sufcoord v[3]){
-	int i;
-	for(i = 0; i < suf->nv; i++){
-		sufcoord *va = suf->v[i];
-		if(va[0] == v[0] && va[1] == v[1] && va[2] == v[2])
-			return (sufindex)i;
-	}
-	if(SUFINDEX_MAX - 1 <= suf->nv)
-		return SUFINDEX_MAX;
-	suf->v = (sufcoord(*)[3])realloc(suf->v, ++suf->nv * sizeof *suf->v);
-	VECCPY(suf->v[i], v);
-	return (sufindex)i;
-}
-
 static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***bones, int num){
 	char *s, *name = NULL;
 	int n, i, j;
 	Mesh::Attrib *patr;
 	char line[512], *cur;
-	sufindex atr = (sufindex)-1;
+	Mesh::Index atr = (Mesh::Index)-1;
 	int shading = 0;
 	double facet = 0.;
 	struct Bone *bone = NULL;
@@ -276,7 +269,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	s = quotok(&cur);
 	ret->nv = n = atoi(s);
 	// Mirroring generates twice as many vertices for each mirror, i.e. 2 power count of mirrors.
-	ret->v = (sufcoord(*)[3])malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->v);
+	ret->v = (Mesh::Coord(*)[3])malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->v);
 
 	i = 0;
 	while(i < n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
@@ -286,7 +279,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			break;
 		cur = line;
 		for(j = 0; j < 3 && (s = quotok(&cur)); j++)
-			ret->v[i][j] = (sufcoord)atof(s) * (scale);
+			ret->v[i][j] = (Mesh::Coord)atof(s) * (scale);
 		i++;
 	}
 
@@ -320,8 +313,8 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	i = 0;
 	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
 		int polys;
-		enum Mesh::ElemType type = Mesh::suf_poly;
-		sufindex verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
+		Mesh::ElemType type = Mesh::suf_poly;
+		Mesh::Index verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
 		if(!s)
 			return NULL;
 		if(*s == '{')
@@ -377,7 +370,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 
 				/* face direction conversion */
 				for(j = 0; j < polys; j++)
-					verts[polys - j - 1] = (sufindex)strtol(p, &p, 10);
+					verts[polys - j - 1] = (Mesh::Coord)strtol(p, &p, 10);
 
 				/* Metasequoia never writes normal vector directions as part of data file,
 				so we always need to calculate them, regardless of whether smoothshading is
@@ -412,7 +405,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 
 					/* polygon on a line */
 					if(a == i){
-						sufcoord nullvec[3];
+						Mesh::Coord nullvec[3];
 						VECNULL(nullvec);
 						vvi = ret->add_vertex(nullvec);
 						for(j = 0; j < i; j++)
@@ -432,12 +425,12 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 				}
 			}
 			else if(!strnicmp(s, "M(", sizeof"M("-1)){
-				atr = (sufindex)atoi(&s[sizeof"M("-1]);
+				atr = (Mesh::Index)atoi(&s[sizeof"M("-1]);
 				assert(atr < 30000);
 			}
 			else if(!strnicmp(s, "UV(", sizeof"UV("-1)){
 				char *q = &s[sizeof"UV("-1];
-				sufcoord uv[3];
+				Mesh::Coord uv[3];
 				type = Mesh::suf_uvpoly;
 				for(j = 0; j < polys; j++){
 					uv[0] = strtod(q, &q);
@@ -448,15 +441,15 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			}
 		}
 
-		if(atr == (sufindex)-1){
+		if(atr == (Mesh::Index)-1){
 			fprintf(stderr, "Error: Material is not specified! poly %d\n", i);
 			return 0;
 		}
 
 		if(type == Mesh::suf_uvpoly){
-			Mesh::UVPolygon *p;
+			struct Mesh::UVPolygon *p;
 			type = Mesh::suf_uvpoly;
-			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(Mesh::UVPolygon::suf_uvpoly_vertex));
+			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(struct Mesh::UVPolygon::suf_uvpoly_vertex));
 			p = &ret->p[i]->uv;
 			p->t = Mesh::suf_uvpoly;
 			p->n = polys;
@@ -531,11 +524,11 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		cf = cos(facet / deg_per_rad);
 		for(i = 0; i < ret->np; i++) for(j = 0; j < ret->p[i]->uv.n; j++){
 			int k, l, is = 0;
-			sufindex *shares[32];
-			sufindex *vertex = ret->p[i]->t == suf::suf_prim_t::suf_poly ? ret->p[i]->p.v[j] : &ret->p[i]->uv.v[j].p;
+			Mesh::Index *shares[32];
+			Mesh::Index *vertex = ret->p[i]->t == Mesh::suf_poly ? ret->p[i]->p.v[j] : &ret->p[i]->uv.v[j].p;
 			avec3_t norm;
 			for(k = 0; k < ret->np; k++) for(l = 0; l < ret->p[k]->uv.n; l++){
-				sufindex *vertex2 = ret->p[k]->t == suf::suf_prim_t::suf_poly ? ret->p[k]->p.v[l] : &ret->p[k]->uv.v[l].p;
+				Mesh::Index *vertex2 = ret->p[k]->t == Mesh::suf_poly ? ret->p[k]->p.v[l] : &ret->p[k]->uv.v[l].p;
 				if(vertex[0] == vertex2[0] && cf < VECSP(ret->v[vertex2[1]], ret->v[vertex[1]])){
 					if(is == numof(shares))
 						break;
@@ -623,11 +616,11 @@ Mesh *LoadMQO_SUF(const char *fname){
 /// 
 /// \param tex_callback Texture allocator function.
 /// \param tex_callback_data Pointer to buffer that texture objects resides.
-int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, sufcoord scale, struct Bone ***bones, MQOTextureCallback *tex_callback, MeshTex ***tex_callback_data){
+int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord scale, struct Bone ***bones, MQOTextureCallback *tex_callback, MeshTex ***tex_callback_data){
 	char buf[128], *s = NULL, *name = NULL;
 	Mesh **ret = NULL;
 	Mesh *sufatr = NULL;
-	sufindex atr = USHRT_MAX; /* current attribute index */
+	Mesh::Index atr = USHRT_MAX; /* current attribute index */
 	FPOS fo;
 	int num = 0;
 
@@ -690,7 +683,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, sufcoord scale,
 				sufatr->a[0].colormap = NULL;
 				VEC4CPY(sufatr->a[0].spc, zero);
 				VEC4CPY(sufatr->a[0].tra, zero);
-				sufatr->a[0].valid = SUF_COL | SUF_AMB;
+				sufatr->a[0].valid = Mesh::Color | Mesh::Ambient;
 			}
 			ret = (Mesh**)realloc(ret, (num + 1) * sizeof *ret);
 			ret[num] = (Mesh*)malloc(sizeof *ret[num]);

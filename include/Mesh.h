@@ -33,7 +33,7 @@ struct EXPORT Mesh{
 	static const Index INDEX_MAX = USHRT_MAX; ///< Maximum value of an Index variable.
 
 	// draw flags
-	static const Flags Attribs  = 0xff; ///< enable attribute-file specified material if one exists
+	static const Flags Attribs  = 0xfff; ///< enable attribute-file specified material if one exists
 	static const Flags Color    = 1<<0; ///< validity flags
 	static const Flags Trans    = 1<<1;
 	static const Flags Ambient  = 1<<2; ///< Ambient
@@ -43,6 +43,7 @@ struct EXPORT Mesh{
 	static const Flags Emission = 1<<6; ///< Emission
 	static const Flags MultiTex = 1<<7; ///< multi-texture presence
 	static const Flags VtxArray = 1<<8; ///< use vertex array to draw polygons
+	static const Flags Shine    = 1<<9; ///< Shininess
 
 	int nv;
 	Vec *v;
@@ -57,6 +58,7 @@ struct EXPORT Mesh{
 		float emi[4]; /* emission */
 		float dif[4]; /* diffuse */
 		float spc[4]; /* specular lighting */
+		float shininess; ///< Shininess parameter
 		char *colormap; /* texture color map name */
 		Coord mapsize[4];
 		Coord mapview[4];
@@ -99,11 +101,12 @@ struct EXPORT Mesh{
 
 	/// \brief Attribute cache that could be used to optimize performance (though somewhat unstable).
 	struct Cache{
-		unsigned long valid;
+		Flags valid;
 		float matdif[4];
 		float matamb[4];
 		float matemi[4];
 		float matspc[4];
+		float matshininess;
 		GLuint texture;
 		int texenabled;
 	};

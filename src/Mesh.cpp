@@ -11,8 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define AT_MAX 128
-
 typedef Mesh::Coord Coord;
 typedef Mesh::Index Index;
 

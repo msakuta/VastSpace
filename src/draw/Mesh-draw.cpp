@@ -26,7 +26,7 @@ extern "C"{
 #define GLD_SHI 0x10
 
 
-void Mesh::draw(unsigned long flags, Cache *c)const{
+void Mesh::draw(Flags flags, Cache *c)const{
 	int i;
 	Index last = INDEX_MAX, ai = INDEX_MAX;
 	assert(this);
@@ -36,18 +36,16 @@ void Mesh::draw(unsigned long flags, Cache *c)const{
 
 		/* the effective use of bitfields determines which material commands are
 		  only needed. */
-		if(flags && (SUF_EMI | atr->valid) & flags && ai != p->atr){
+		if(flags && (Emission | atr->valid) & flags && ai != p->atr){
 			static const GLfloat defemi[4] = {0., 0., 0., 1.};
-/*			if(ai == USHRT_MAX)
-				glPushAttrib(GL_LIGHTING_BIT);*/
 			ai = p->atr;
-			if(atr->valid & flags & (SUF_DIF | SUF_COL))
+			if(atr->valid & flags & (Diffuse | Color))
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, atr->dif, c);
-			if(atr->valid & flags & (SUF_AMB | SUF_COL))
+			if(atr->valid & flags & (Ambient | Color))
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, atr->amb, c);
-			if(flags & SUF_EMI)
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, c);
-			if(atr->valid & flags & SUF_SPC)
+			if(flags & Emission)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & Emission ? atr->emi : defemi, c);
+			if(atr->valid & flags & Specular)
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
 			if(glIsEnabled(GL_TEXTURE_2D)){
 				glBindTexture(GL_TEXTURE_2D, 0);
@@ -62,40 +60,14 @@ void Mesh::draw(unsigned long flags, Cache *c)const{
 				glDisable(GL_TEXTURE_2D);
 				glActiveTextureARB(GL_TEXTURE0_ARB);
 			}
-/*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
 		}
-/*		glBegin(GL_POLYGON);*/
-		/* normal caching is more efficient! */
-/*		if(3 < suf->p[i]->n){
-			double *v0 = suf->v[suf->p[i]->v[0]], *v1 = suf->v[suf->p[i]->v[1]], *v2 = suf->v[suf->p[i]->v[2]];
-			double v01[3], v02[3], vv[3];
-			VECSUB(v01, v0, v1);
-			VECSUB(v02, v0, v2);
-			VECVP(vv, v01, v02);
-			glNormal3dv(vv);
-		}*/
 
 		polyDraw(flags, c, i, &last, NULL);
-/*
-		if(suf->p[i]->t == suf_uvpoly || suf->p[i]->t == suf_uvshade) for(j = 0; j < p->n; j++){
-			if((i == 0 && j == 0 || last != suf->p[i]->uv.v[j].n) && SUFINDEX_MAX != suf->p[i]->uv.v[j].n)
-				glNormal3dv(suf->v[last = suf->p[i]->uv.v[j].n]);
-			glVertex3dv(suf->v[suf->p[i]->uv.v[j].p]);
-		}
-		else for(j = 0; j < p->n; j++){
-			if((i == 0 && j == 0 || last != p->v[j][1]) && USHRT_MAX != p->v[j][1])
-				glNormal3dv(suf->v[last = p->v[j][1]]);
-			glVertex3dv(suf->v[p->v[j][0]]);
-		}
-*/
-/*		glEnd();*/
 	}
-/*	if(ai != USHRT_MAX)
-		glPopAttrib();*/
 }
 
 void Mesh::gldMaterialfv(GLenum face, GLenum pname, const GLfloat *params, Cache *c){
-	unsigned long flag;
+	Flags flag;
 	float *dst;
 	size_t dstsize;
 	if(!c){
@@ -135,7 +107,7 @@ void Mesh::gldMaterialfv(GLenum face, GLenum pname, const GLfloat *params, Cache
 	glMaterialfv(face, pname, params);
 }
 
-void Mesh::drawPoly(int i, unsigned long flags, Cache *c)const{
+void Mesh::drawPoly(int i, Flags flags, Cache *c)const{
 	Index last = INDEX_MAX, ai = INDEX_MAX;
 	int j;
 	Polygon *p = &this->p[i]->p;
@@ -148,13 +120,13 @@ void Mesh::drawPoly(int i, unsigned long flags, Cache *c)const{
 /*		if(ai == USHRT_MAX)
 			glPushAttrib(GL_LIGHTING_BIT);*/
 		ai = p->atr;
-		if(atr->valid & flags & (SUF_DIF | SUF_COL))
+		if(atr->valid & flags & (Diffuse | Color))
 			gldMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, atr->dif, c);
-		if(atr->valid & flags & (SUF_AMB | SUF_COL))
+		if(atr->valid & flags & (Ambient | Color))
 			gldMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, atr->amb, c);
-		if(flags & SUF_EMI)
-			gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, c);
-		if(atr->valid & flags & SUF_SPC)
+		if(flags & Emission)
+			gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & Emission ? atr->emi : defemi, c);
+		if(atr->valid & flags & Specular)
 			gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
 /*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
 	}
@@ -174,7 +146,7 @@ void Mesh::drawPoly(int i, unsigned long flags, Cache *c)const{
 		glPopAttrib();*/
 }
 
-void Mesh::polyDraw(unsigned long flags, Cache *c, int i, Index *plast, const MeshTex *tex)const{
+void Mesh::polyDraw(Flags flags, Cache *c, int i, Index *plast, const MeshTex *tex)const{
 	int j;
 	Primitive *pr = this->p[i];
 	Polygon *p = &pr->p;
@@ -184,9 +156,9 @@ void Mesh::polyDraw(unsigned long flags, Cache *c, int i, Index *plast, const Me
 		for(j = 0; j < p->n; j++){
 			if((i == 0 && j == 0 || *plast != this->p[i]->uv.v[j].n) && INDEX_MAX != this->p[i]->uv.v[j].n)
 				glNormal3dv(this->v[*plast = this->p[i]->uv.v[j].n]);
-			if(flags & SUF_TEX && this->a[p->atr].colormap){
+			if(flags & Texture && this->a[p->atr].colormap){
 				glTexCoord2d(this->v[pr->uv.v[j].t][0] / a->mapsize[2], 1. - this->v[pr->uv.v[j].t][1] / a->mapsize[3]);
-				if(glMultiTexCoord2dARB && flags & SUF_MTX && tex && 1 <= tex->n)
+				if(glMultiTexCoord2dARB && flags & MultiTex && tex && 1 <= tex->n)
 					glMultiTexCoord2dARB(GL_TEXTURE1_ARB, this->v[pr->uv.v[j].t][0] / a->mapsize[2] * tex->a[p->atr].scale, (1. - this->v[pr->uv.v[j].t][1] / a->mapsize[3]) * tex->a[p->atr].scale);
 			}
 			glVertex3dv(this->v[this->p[i]->uv.v[j].p]);
@@ -202,7 +174,7 @@ void Mesh::polyDraw(unsigned long flags, Cache *c, int i, Index *plast, const Me
 
 static double textime = 0.;
 
-void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *sd, void *sdg)const{
+void Mesh::decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void *sdg)const{
 	int i;
 	unsigned k;
 	Index last = INDEX_MAX;
@@ -214,20 +186,18 @@ void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *s
 
 		/* the effective use of bitfields determines which material commands are
 		  only needed. */
-		if(flags && (SUF_EMI | atr->valid) & flags && ai != p->atr){
+		if(flags && (Emission | atr->valid) & flags && ai != p->atr){
 			static const GLfloat defemi[4] = {0., 0., 0., 1.};
-/*			if(ai == USHRT_MAX)
-				glPushAttrib(GL_LIGHTING_BIT);*/
 			ai = p->atr;
-			if(atr->valid & flags & (SUF_DIF | SUF_COL))
+			if(atr->valid & flags & (Diffuse | Color))
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, atr->dif, c);
-			if(atr->valid & flags & (SUF_AMB | SUF_COL))
+			if(atr->valid & flags & (Ambient | Color))
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, atr->amb, c);
-			if(flags & SUF_EMI)
-				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & SUF_EMI ? atr->emi : defemi, c);
-			if(atr->valid & flags & SUF_SPC)
+			if(flags & Emission)
+				gldMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, atr->valid & Emission ? atr->emi : defemi, c);
+			if(atr->valid & flags & Specular)
 				gldMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, atr->spc, c);
-			if(tex && flags & SUF_TEX){
+			if(tex && flags & Texture){
 				int mismatch = (!c || !(c->valid & GLD_TEX) || c->texture != tex->a[ai].list);
 
 				// Execute user-provided callback function when an attribute is exiting.
@@ -238,7 +208,7 @@ void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *s
 				if(tex->a[ai].onBeginTexture)
 					tex->a[ai].onBeginTexture(tex->a[ai].onBeginTextureData);
 
-				if(atr->valid & SUF_TEX){
+				if(atr->valid & Texture){
 					if(mismatch){
 						if(tex->a[ai].list == 0){
 							glDisable(GL_TEXTURE_2D);
@@ -250,25 +220,7 @@ void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *s
 							double t;
 							TimeMeasStart(&tm);
 							glCallList(tex->a[ai].list);
-/*							if(glActiveTextureARB){
-								glActiveTextureARB(GL_TEXTURE0_ARB);
-								glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
-								glEnable(GL_TEXTURE_2D);
-								glActiveTextureARB(GL_TEXTURE1_ARB);
-								if(tex->a[ai].tex[1]){
-									glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[1]);
-									glEnable(GL_TEXTURE_2D);
-								}
-								else
-									glDisable(GL_TEXTURE_2D);
-								glActiveTextureARB(GL_TEXTURE0_ARB);
-							}
-							else{
-								glBindTexture(GL_TEXTURE_2D, tex->a[ai].tex[0]);
-								glEnable(GL_TEXTURE_2D);
-							}*/
 							t = TimeMeasLap(&tm);
-/*							printf("[%d]%s %lg\n", tex->a[ai].list, atr->colormap, t);*/
 							textime += t;
 							if(c)
 								c->texenabled = 1;
@@ -301,10 +253,9 @@ void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *s
 				}
 				if(c && mismatch){
 					c->valid |= GLD_TEX;
-					c->texture = atr->valid & SUF_TEX ? tex->a[ai].list : 0;
+					c->texture = atr->valid & Texture ? tex->a[ai].list : 0;
 				}
 			}
-/*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
 		}
 
 		if(sd && sd->drawproc && i < sd->np && sd->p[i]){
@@ -325,8 +276,6 @@ void Mesh::decalDraw(unsigned long flags, Cache *c, const MeshTex *tex, Decal *s
 	}
 
 	// Execute user-provided callback function when exiting.
-	if(tex && flags & SUF_TEX && ai != INDEX_MAX && tex->a[ai].onEndTexture)
+	if(tex && flags & Texture && ai != INDEX_MAX && tex->a[ai].onEndTexture)
 		tex->a[ai].onEndTexture(tex->a[ai].onEndTextureData);
-/*	if(ai != USHRT_MAX)
-		glPopAttrib();*/
 }

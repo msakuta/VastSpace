@@ -8,7 +8,7 @@ uniform sampler2D nrmmap;
 uniform float ambient;
 uniform int additive;
 
-varying vec3 view;
+varying vec4 view;
 varying vec3 nrm;
 varying float diffuse[2];
 //varying vec4 col;
@@ -25,7 +25,7 @@ void main (void)
 	vec3 fnormal = normalize(normal)/* + invEyeRot3x3 * vec3(texture2D(nrmmap, vec2(gl_TexCoord[0]))) * .2*/;
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
 	
-	vec3 fview = normalize(view);
+	vec3 fview = normalize(view.xyz);
 
 	float fdiffuse = max(0.001, dot(flight, fnormal));
 
@@ -35,6 +35,15 @@ void main (void)
 			+ gl_FrontLightProduct[0].ambient.xyz
 			+ gl_FrontLightProduct[1].diffuse.xyz * diffuse[1] + gl_FrontLightProduct[1].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
+
+	if(0. < shadow && 0. < gl_FrontLightProduct[0].specular){
+		vec3 lightVec = normalize((gl_LightSource[0].position * view.w - gl_LightSource[0].position.w * view).xyz);
+		float attenuation = shadow;
+		vec3 viewVec = normalize(-view.xyz);
+		vec3 halfway = normalize(lightVec + viewVec);
+		float specular = pow(max(dot(fnormal, halfway), 0.0), gl_FrontMaterial.shininess);
+		lightProduct += gl_FrontLightProduct[0].specular * specular * attenuation;
+	}
 
 //	vec4 texColor = shadow;
 	vec4 texColor = !textureEnable ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));

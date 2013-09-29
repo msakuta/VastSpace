@@ -1,11 +1,11 @@
-varying vec3 view;
+varying vec4 view;
 varying vec3 nrm;
 varying float diffuse[2];
 //varying vec4 col;
 
 void main(void)
 {
-	view = vec3(gl_ModelViewMatrix * gl_Vertex);
+	view = (gl_ModelViewMatrix * gl_Vertex);
 //	col = gl_Color;
 	gl_Position = ftransform();
 

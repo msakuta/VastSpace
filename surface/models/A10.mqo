@@ -18,8 +18,8 @@ Scene {
 	}
 }
 Material 6 {
-	"body" shader(3) col(0.824 0.871 0.800 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
-	"canopy" shader(3) col(0.000 0.984 1.000 1.000) dif(0.910) amb(0.700) emi(0.000) spc(0.000) power(6.00)
+	"body" shader(3) col(0.824 0.871 0.800 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.300) power(10.00)
+	"canopy" shader(3) col(0.000 0.984 1.000 1.000) dif(0.910) amb(0.700) emi(0.000) spc(1.000) power(60.00)
 	"nozzle" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
 	"engine" shader(3) col(0.000 0.000 0.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
 	"intake" shader(3) col(0.145 0.145 0.145 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)

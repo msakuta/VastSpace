@@ -129,7 +129,7 @@ void Mesh::drawPoly(int i, Flags flags, Cache *c)const{
 /*			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);*/
 	}
 	glBegin(GL_POLYGON);
-	if(this->p[i]->t == suf_uvpoly) for(j = 0; j < p->n; j++){
+	if(this->p[i]->t == ET_UVPolygon) for(j = 0; j < p->n; j++){
 		if((i == 0 && j == 0 || last != this->p[i]->uv.v[j].nrm) && INDEX_MAX != this->p[i]->uv.v[j].nrm)
 			glNormal3dv(this->v[last = this->p[i]->uv.v[j].nrm]);
 		glVertex3dv(this->v[this->p[i]->uv.v[j].pos]);
@@ -150,7 +150,7 @@ void Mesh::polyDraw(Flags flags, Cache *c, int i, Index *plast, const MeshTex *t
 	Polygon *p = &pr->p;
 	const Attrib *a = &this->a[p->atr];
 	glBegin(GL_POLYGON);
-	if(this->p[i]->t == suf_uvpoly || this->p[i]->t == suf_uvshade){
+	if(this->p[i]->t == ET_UVPolygon || this->p[i]->t == ET_UVShade){
 		for(j = 0; j < p->n; j++){
 			if((i == 0 && j == 0 || *plast != this->p[i]->uv.v[j].nrm) && INDEX_MAX != this->p[i]->uv.v[j].nrm)
 				glNormal3dv(this->v[*plast = this->p[i]->uv.v[j].nrm]);

@@ -69,7 +69,7 @@ struct EXPORT Mesh{
 	Attrib *a;
 
 	/// \brief Type of primitive.
-	enum ElemType{suf_poly, suf_shade, suf_uvpoly, suf_uvshade};
+	enum ElemType{ET_Polygon, ET_Shade, ET_UVPolygon, ET_UVShade};
 
 	/// \brief Polygon primitive.
 	struct Polygon{

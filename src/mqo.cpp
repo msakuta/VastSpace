@@ -313,7 +313,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	i = 0;
 	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
 		int polys;
-		Mesh::ElemType type = Mesh::suf_poly;
+		Mesh::ElemType type = Mesh::ET_Polygon;
 		Mesh::Index verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
 		if(!s)
 			return NULL;
@@ -431,7 +431,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			else if(!strnicmp(s, "UV(", sizeof"UV("-1)){
 				char *q = &s[sizeof"UV("-1];
 				Mesh::Coord uv[3];
-				type = Mesh::suf_uvpoly;
+				type = Mesh::ET_UVPolygon;
 				for(j = 0; j < polys; j++){
 					uv[0] = strtod(q, &q);
 					uv[1] = strtod(q, &q);
@@ -446,12 +446,12 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			return 0;
 		}
 
-		if(type == Mesh::suf_uvpoly){
+		if(type == Mesh::ET_UVPolygon){
 			struct Mesh::UVPolygon *p;
-			type = Mesh::suf_uvpoly;
+			type = Mesh::ET_UVPolygon;
 			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(struct Mesh::UVPolygon::Vertex));
 			p = &ret->p[i]->uv;
-			p->t = Mesh::suf_uvpoly;
+			p->t = Mesh::ET_UVPolygon;
 			p->n = polys;
 			p->atr = atr;
 			for(j = 0; j < polys; j++){
@@ -464,7 +464,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			Mesh::Polygon *p;
 			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(Mesh::Index[2]));
 			p = &ret->p[i]->p;
-			p->t = Mesh::suf_poly;
+			p->t = Mesh::ET_Polygon;
 			p->n = polys;
 			p->atr = atr;
 			assert(p->atr < 30000);
@@ -480,11 +480,11 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	for(int m = 0; m < 3; m++) if(mirror_axis & (1 << m)){
 		n = ret->np;
 		for(i = 0; i < n; i++){
-			if(ret->p[i]->t == Mesh::suf_uvpoly){
+			if(ret->p[i]->t == Mesh::ET_UVPolygon){
 				Mesh::UVPolygon *p, *p0 = &ret->p[i]->uv;
 				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + p0->n * sizeof(Mesh::UVPolygon::Vertex));
 				p = &ret->p[i+n]->uv;
-				p->t = Mesh::suf_uvpoly;
+				p->t = Mesh::ET_UVPolygon;
 				p->n = p0->n;
 				p->atr = p0->atr;
 				for(j = 0; j < p0->n; j++){
@@ -502,7 +502,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 				Mesh::Polygon *p, *p0 = &ret->p[i]->p;
 				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::Polygon, v) + p0->n * sizeof(Mesh::Index[2]));
 				p = &ret->p[i+n]->p;
-				p->t = Mesh::suf_poly;
+				p->t = Mesh::ET_Polygon;
 				p->n = p0->n;
 				p->atr = p0->atr;
 				for(j = 0; j < p0->n; j++){
@@ -525,10 +525,10 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		for(i = 0; i < ret->np; i++) for(j = 0; j < ret->p[i]->uv.n; j++){
 			int k, l, is = 0;
 			Mesh::Polygon::Vertex *shares[32];
-			Mesh::Polygon::Vertex &vertex = ret->p[i]->t == Mesh::suf_poly ? ret->p[i]->p.v[j] : ret->p[i]->uv.v[j];
+			Mesh::Polygon::Vertex &vertex = ret->p[i]->t == Mesh::ET_Polygon ? ret->p[i]->p.v[j] : ret->p[i]->uv.v[j];
 			avec3_t norm;
 			for(k = 0; k < ret->np; k++) for(l = 0; l < ret->p[k]->uv.n; l++){
-				Mesh::Polygon::Vertex &vertex2 = ret->p[k]->t == Mesh::suf_poly ? ret->p[k]->p.v[l] : ret->p[k]->uv.v[l];
+				Mesh::Polygon::Vertex &vertex2 = ret->p[k]->t == Mesh::ET_Polygon ? ret->p[k]->p.v[l] : ret->p[k]->uv.v[l];
 				if(vertex.pos == vertex2.pos && cf < VECSP(ret->v[vertex2.nrm], ret->v[vertex.nrm])){
 					if(is == numof(shares))
 						break;

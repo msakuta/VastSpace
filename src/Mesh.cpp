@@ -47,7 +47,7 @@ Mesh::Primitive **Mesh::add_poly(){
 
 void Mesh::add_polyvert(Polygon **p, Index i, Index j){
 	int n = *p ? (*p)->n + 1 : 1;
-	assert((*p)->t == suf_poly || (*p)->t == suf_shade);
+	assert((*p)->t == ET_Polygon || (*p)->t == ET_Shade);
 	*p = (Polygon*)realloc(*p, offsetof(Polygon, v) + n * sizeof (*p)->v);
 	(*p)->v[n-1].pos = i;
 	(*p)->v[n-1].nrm = j;
@@ -56,7 +56,7 @@ void Mesh::add_polyvert(Polygon **p, Index i, Index j){
 
 void Mesh::add_uvpolyvert(UVPolygon **uv, Index i, Index j, Index k){
 	int n = *uv ? (*uv)->n + 1 : 1;
-	assert((*uv)->t == suf_uvpoly || (*uv)->t == suf_uvshade);
+	assert((*uv)->t == ET_UVPolygon || (*uv)->t == ET_UVShade);
 	*uv = (UVPolygon*)realloc(*uv, offsetof(UVPolygon, v) + n * sizeof (*uv)->v);
 	(*uv)->v[n-1].pos = i;
 	(*uv)->v[n-1].nrm = j;

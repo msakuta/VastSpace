@@ -10,6 +10,7 @@
 #include <windows.h>
 #endif
 #include <GL/GL.h>
+#include <vector>
 
 #define EXTENDABLE 1
 
@@ -125,6 +126,18 @@ struct EXPORT Mesh{
 		void *p[1];
 	};
 
+	/// \brief A set of vertex buffer object indices.
+	struct BufferSet{
+		GLuint pos; ///< Position vector buffer.
+		GLuint nrm; ///< Normal vector buffer.
+		GLuint tex; ///< Texture coordinates buffer.
+		GLuint ind; ///< Index buffer into all three buffers above.
+		unsigned count; ///< Count of vertices ind member contains.
+	};
+	typedef std::vector<BufferSet> Buffers;
+
+	mutable Buffers buf;
+
 	~Mesh();
 
 	Attrib *find_atr(const char *name);
@@ -137,6 +150,10 @@ struct EXPORT Mesh{
 	Primitive **add_poly();
 	static void add_polyvert(Polygon **p, Index i, Index j);
 	static void add_uvpolyvert(UVPolygon **uv, Index i, Index j, Index k);
+protected:
+	void beginMaterial(Attrib *atr, Flags flags, Cache *c)const;
+	void beginTexture(Attrib *atr, bool mismatch, const MeshTex *tex, int ai, Cache *c)const;
+	void compileVertexBuffers()const;
 };
 
 /// \brief A texture cache used for drawing a Mesh.

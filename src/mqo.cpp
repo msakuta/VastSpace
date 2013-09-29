@@ -580,7 +580,7 @@ Mesh *LoadMQO_SUF(const char *fname){
 	if(!(s = ftok(&fo)) || stricmp(s, "Ver")) return NULL;
 	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
 
-	ret = (Mesh*)malloc(sizeof *ret);
+	ret = new Mesh;
 	ret->nv = 0;
 	ret->v = NULL;
 	ret->na = 0;
@@ -653,7 +653,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 		if(!s) break;
 		if(!stricmp(s, "material")){
 			if(!sufatr){
-				sufatr = (Mesh*)malloc(sizeof *sufatr);
+				sufatr = new Mesh;
 				sufatr->nv = 0;
 				sufatr->v = NULL;
 				sufatr->na = 0;
@@ -667,7 +667,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 		else if(!stricmp(s, "object")){
 			if(!sufatr){
 				float col[4] = {1,1,1,1}, zero[4] = {0};
-				sufatr = (Mesh*)malloc(sizeof *sufatr);
+				sufatr = new Mesh;
 				sufatr->nv = 0;
 				sufatr->v = NULL;
 				sufatr->na = 1;
@@ -686,7 +686,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 				sufatr->a[0].valid = Mesh::Color | Mesh::Ambient;
 			}
 			ret = (Mesh**)realloc(ret, (num + 1) * sizeof *ret);
-			ret[num] = (Mesh*)malloc(sizeof *ret[num]);
+			ret[num] = new Mesh;
 			ret[num]->nv = 0;
 			ret[num]->v = NULL;
 			ret[num]->na = sufatr->na;

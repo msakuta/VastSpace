@@ -73,20 +73,26 @@ struct EXPORT Mesh{
 
 	/// \brief Polygon primitive.
 	struct Polygon{
+		struct Vertex{
+			Index pos, nrm; /* position and normal coordinates. */
+		};
+
 		ElemType t;
 		int n;
 		Index atr; /* index into attribute list */
-		Index v[EXTENDABLE][2]; /* index into vertex list, position and normal */
+		Vertex v[EXTENDABLE]; /* index into vertex list, position and normal */
 	};
 
 	/// \brief UV-mapped polygon primitive.
 	struct UVPolygon{
+		struct Vertex : Polygon::Vertex{
+			Index tex; /* position, normal and texture coordinates. */
+		};
+
 		ElemType t;
 		int n;
 		Index atr;
-		struct suf_uvpoly_vertex{
-			Index p, n, t; /* position, normal and texture coordinates. */
-		} v[1];
+		Vertex v[EXTENDABLE];
 	};
 
 	/// \brief Union of all possible primitives.

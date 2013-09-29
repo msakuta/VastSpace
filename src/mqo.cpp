@@ -449,15 +449,15 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		if(type == Mesh::suf_uvpoly){
 			struct Mesh::UVPolygon *p;
 			type = Mesh::suf_uvpoly;
-			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(struct Mesh::UVPolygon::suf_uvpoly_vertex));
+			ret->p[i] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + polys * sizeof(struct Mesh::UVPolygon::Vertex));
 			p = &ret->p[i]->uv;
 			p->t = Mesh::suf_uvpoly;
 			p->n = polys;
 			p->atr = atr;
 			for(j = 0; j < polys; j++){
-				p->v[j].p = verts[j];
-				p->v[j].n = norms[j];
-				p->v[j].t = uvs[j];
+				p->v[j].pos = verts[j];
+				p->v[j].nrm = norms[j];
+				p->v[j].tex = uvs[j];
 			}
 		}
 		else{
@@ -469,8 +469,8 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 			p->atr = atr;
 			assert(p->atr < 30000);
 			for(j = 0; j < polys; j++){
-				p->v[j][0] = verts[j];
-				p->v[j][1] = norms[j];
+				p->v[j].pos = verts[j];
+				p->v[j].nrm = norms[j];
 			}
 		}
 
@@ -482,7 +482,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		for(i = 0; i < n; i++){
 			if(ret->p[i]->t == Mesh::suf_uvpoly){
 				Mesh::UVPolygon *p, *p0 = &ret->p[i]->uv;
-				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + p0->n * sizeof(Mesh::UVPolygon::suf_uvpoly_vertex));
+				ret->p[i+n] = (Mesh::Primitive*)malloc(offsetof(Mesh::UVPolygon, v) + p0->n * sizeof(Mesh::UVPolygon::Vertex));
 				p = &ret->p[i+n]->uv;
 				p->t = Mesh::suf_uvpoly;
 				p->n = p0->n;
@@ -490,12 +490,12 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 				for(j = 0; j < p0->n; j++){
 					avec3_t vecn;
 					// Flip face direction because it's mirrored.
-					p->v[j].p = p0->v[p0->n-j-1].p + mirrornv[m];
-					VECCPY(vecn, ret->v[p0->v[p0->n-j-1].n]);
+					p->v[j].pos = p0->v[p0->n-j-1].pos + mirrornv[m];
+					VECCPY(vecn, ret->v[p0->v[p0->n-j-1].nrm]);
 					// Normal vector's coordinate along mirror axis must be negated just like position vector.
 					vecn[m] *= -1;
-					p->v[j].n = ret->add_vertex(vecn);
-					p->v[j].t = p0->v[p0->n-j-1].t; // Keep texture coord to the same.
+					p->v[j].nrm = ret->add_vertex(vecn);
+					p->v[j].tex = p0->v[p0->n-j-1].tex; // Keep texture coord to the same.
 				}
 			}
 			else{
@@ -508,11 +508,11 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 				for(j = 0; j < p0->n; j++){
 					avec3_t vecn;
 					// Flip face direction because it's mirrored.
-					p->v[j][0] = p0->v[p0->n-j-1][0] + mirrornv[m];
-					VECCPY(vecn, ret->v[p0->v[p0->n-j-1][1]]);
+					p->v[j].pos = p0->v[p0->n-j-1].pos + mirrornv[m];
+					VECCPY(vecn, ret->v[p0->v[p0->n-j-1].nrm]);
 					// Normal vector's coordinate along mirror axis must be negated just like position vector.
 					vecn[m] *= -1;
-					p->v[j][1] = ret->add_vertex(vecn);
+					p->v[j].nrm = ret->add_vertex(vecn);
 				}
 			}
 		}
@@ -524,28 +524,28 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		cf = cos(facet / deg_per_rad);
 		for(i = 0; i < ret->np; i++) for(j = 0; j < ret->p[i]->uv.n; j++){
 			int k, l, is = 0;
-			Mesh::Index *shares[32];
-			Mesh::Index *vertex = ret->p[i]->t == Mesh::suf_poly ? ret->p[i]->p.v[j] : &ret->p[i]->uv.v[j].p;
+			Mesh::Polygon::Vertex *shares[32];
+			Mesh::Polygon::Vertex &vertex = ret->p[i]->t == Mesh::suf_poly ? ret->p[i]->p.v[j] : ret->p[i]->uv.v[j];
 			avec3_t norm;
 			for(k = 0; k < ret->np; k++) for(l = 0; l < ret->p[k]->uv.n; l++){
-				Mesh::Index *vertex2 = ret->p[k]->t == Mesh::suf_poly ? ret->p[k]->p.v[l] : &ret->p[k]->uv.v[l].p;
-				if(vertex[0] == vertex2[0] && cf < VECSP(ret->v[vertex2[1]], ret->v[vertex[1]])){
+				Mesh::Polygon::Vertex &vertex2 = ret->p[k]->t == Mesh::suf_poly ? ret->p[k]->p.v[l] : ret->p[k]->uv.v[l];
+				if(vertex.pos == vertex2.pos && cf < VECSP(ret->v[vertex2.nrm], ret->v[vertex.nrm])){
 					if(is == numof(shares))
 						break;
-					shares[is++] = vertex2;
+					shares[is++] = &vertex2;
 				}
 			}
-			for(k = 0; k < is; k++) if(shares[k][1] != vertex[1])
+			for(k = 0; k < is; k++) if(shares[k]->nrm != vertex.nrm)
 				break;
 			if(k == is)
 				continue;
 			VECNULL(norm);
 			for(k = 0; k < is; k++)
-				VECADDIN(norm, ret->v[shares[k][1]]);
+				VECADDIN(norm, ret->v[shares[k]->nrm]);
 			VECNORMIN(norm);
 			l = ret->add_vertex(norm);
 			for(k = 0; k < is; k++)
-				shares[k][1] = l;
+				shares[k]->nrm = l;
 		}
 	}
 

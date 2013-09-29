@@ -130,14 +130,14 @@ void Mesh::drawPoly(int i, Flags flags, Cache *c)const{
 	}
 	glBegin(GL_POLYGON);
 	if(this->p[i]->t == suf_uvpoly) for(j = 0; j < p->n; j++){
-		if((i == 0 && j == 0 || last != this->p[i]->uv.v[j].n) && INDEX_MAX != this->p[i]->uv.v[j].n)
-			glNormal3dv(this->v[last = this->p[i]->uv.v[j].n]);
-		glVertex3dv(this->v[this->p[i]->uv.v[j].p]);
+		if((i == 0 && j == 0 || last != this->p[i]->uv.v[j].nrm) && INDEX_MAX != this->p[i]->uv.v[j].nrm)
+			glNormal3dv(this->v[last = this->p[i]->uv.v[j].nrm]);
+		glVertex3dv(this->v[this->p[i]->uv.v[j].pos]);
 	}
 	else for(j = 0; j < p->n; j++){
-		if((i == 0 && j == 0 || last != p->v[j][1]) && USHRT_MAX != p->v[j][1])
-			glNormal3dv(this->v[last = p->v[j][1]]);
-		glVertex3dv(this->v[p->v[j][0]]);
+		if((i == 0 && j == 0 || last != p->v[j].nrm) && USHRT_MAX != p->v[j].nrm)
+			glNormal3dv(this->v[last = p->v[j].nrm]);
+		glVertex3dv(this->v[p->v[j].pos]);
 	}
 	glEnd();
 /*	if(ai != USHRT_MAX)
@@ -152,20 +152,20 @@ void Mesh::polyDraw(Flags flags, Cache *c, int i, Index *plast, const MeshTex *t
 	glBegin(GL_POLYGON);
 	if(this->p[i]->t == suf_uvpoly || this->p[i]->t == suf_uvshade){
 		for(j = 0; j < p->n; j++){
-			if((i == 0 && j == 0 || *plast != this->p[i]->uv.v[j].n) && INDEX_MAX != this->p[i]->uv.v[j].n)
-				glNormal3dv(this->v[*plast = this->p[i]->uv.v[j].n]);
+			if((i == 0 && j == 0 || *plast != this->p[i]->uv.v[j].nrm) && INDEX_MAX != this->p[i]->uv.v[j].nrm)
+				glNormal3dv(this->v[*plast = this->p[i]->uv.v[j].nrm]);
 			if(flags & Texture && this->a[p->atr].colormap){
-				glTexCoord2d(this->v[pr->uv.v[j].t][0] / a->mapsize[2], 1. - this->v[pr->uv.v[j].t][1] / a->mapsize[3]);
+				glTexCoord2d(this->v[pr->uv.v[j].tex][0] / a->mapsize[2], 1. - this->v[pr->uv.v[j].tex][1] / a->mapsize[3]);
 				if(glMultiTexCoord2dARB && flags & MultiTex && tex && 1 <= tex->n)
-					glMultiTexCoord2dARB(GL_TEXTURE1_ARB, this->v[pr->uv.v[j].t][0] / a->mapsize[2] * tex->a[p->atr].scale, (1. - this->v[pr->uv.v[j].t][1] / a->mapsize[3]) * tex->a[p->atr].scale);
+					glMultiTexCoord2dARB(GL_TEXTURE1_ARB, this->v[pr->uv.v[j].tex][0] / a->mapsize[2] * tex->a[p->atr].scale, (1. - this->v[pr->uv.v[j].tex][1] / a->mapsize[3]) * tex->a[p->atr].scale);
 			}
-			glVertex3dv(this->v[this->p[i]->uv.v[j].p]);
+			glVertex3dv(this->v[this->p[i]->uv.v[j].pos]);
 		}
 	}
 	else for(j = 0; j < p->n; j++){
-		if((i == 0 && j == 0 || *plast != p->v[j][1]) && USHRT_MAX != p->v[j][1])
-			glNormal3dv(this->v[*plast = p->v[j][1]]);
-		glVertex3dv(this->v[p->v[j][0]]);
+		if((i == 0 && j == 0 || *plast != p->v[j].nrm) && INDEX_MAX != p->v[j].nrm)
+			glNormal3dv(this->v[*plast = p->v[j].nrm]);
+		glVertex3dv(this->v[p->v[j].pos]);
 	}
 	glEnd();
 }

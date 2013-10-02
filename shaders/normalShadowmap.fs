@@ -36,7 +36,7 @@ void main (void)
 			+ gl_FrontLightProduct[1].diffuse.xyz * diffuse[1] + gl_FrontLightProduct[1].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
-	if(0. < shadow && 0. < gl_FrontLightProduct[0].specular){
+	if(0. < shadow && 0. < gl_FrontLightProduct[0].specular.length()){
 		vec3 lightVec = normalize((gl_LightSource[0].position * view.w - gl_LightSource[0].position.w * view).xyz);
 		float attenuation = shadow;
 		vec3 viewVec = normalize(-view.xyz);

@@ -415,7 +415,10 @@ struct TempVertex{
 	Vec3d tex;
 
 	TempVertex(const Mesh &mesh, const Mesh::Polygon::Vertex &v) : pos(mesh.v[v.pos]), nrm(mesh.v[v.nrm]), tex(0,0,0){}
-	TempVertex(const Mesh &mesh, const Mesh::UVPolygon::Vertex &v) : pos(mesh.v[v.pos]), nrm(mesh.v[v.nrm]), tex(mesh.v[v.tex]){}
+	TempVertex(const Mesh &mesh, const Mesh::UVPolygon::Vertex &v) : pos(mesh.v[v.pos]), nrm(mesh.v[v.nrm]), tex(mesh.v[v.tex]){
+		// The Y coordinate of texture is inverted for unclear reason.
+		tex[1] = Mesh::Coord(1.) - tex[1];
+	}
 
 	bool operator<(const TempVertex &o)const{
 		if(pos < o.pos)

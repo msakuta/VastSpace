@@ -2,12 +2,14 @@
 
 local birds = [];
 
+/*
 local f15 = player.cs.addent("F15", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 f15.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 f15.gear = true;
 //player.chase = f15;
 f15.destArrived = true;
 birds.append(f15);
+*/
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
@@ -16,7 +18,7 @@ birds.append(f15);
 //local f15_3 = player.cs.addent("F15", Vec3d(1, 4., 0));
 //f15_3.race = 1;
 
-local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 5. - 0.2));
+local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 2.0));
 a10.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 a10.gear = true;
 player.chase = a10;
@@ -24,8 +26,10 @@ player.chase = a10;
 a10.destArrived = true;
 birds.append(a10);
 
-//local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
+local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //player.chase = tank;
+
+a10.enemy = tank;
 
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;
@@ -61,9 +65,9 @@ player.setrot(lookrot);
 player.viewdist = 0.25;
 
 function reset(){
-	local z = 0.;
+	local z = 5.;
 	foreach(e in birds) if(e.alive){
-		e.setpos(Vec3d(0., 4., z));
+		e.setpos(Vec3d(0., 2.0, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));
 		e.setomg(Vec3d(0, 0, 0));

@@ -17,6 +17,7 @@
 #include "StaticInitializer.h"
 #include "Bullet.h"
 #include "glw/GLWChart.h"
+#include "SurfaceCS.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -1960,55 +1961,10 @@ void Aerial::animAI(double dt, bool onfeet){
 
 	onfeet = onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1];
 
-	// Automatic stabilizer (Auto Pilot)
-	Mat3d mat2 = mat.tomat3();
 	Vec3d deltaPos((!onfeet && enemy ? enemy->pos : destPos) - this->pos); // Delta position towards the destination
 	if(!(!onfeet && enemy))
 		deltaPos[1] = 0.; // Ignore height component
 	double sdist = deltaPos.slen();
-	Vec3d estPos;
-	estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
-	double sp = estPos.sp(mat.vec3(2));
-	double turning = 0;
-	double rudderTarget = 0;
-	if(0.5 * 0.5 < sdist){
-		double turnAngle = 0;
-		if(3. * 3. < sdist && 0. < sp){ // Going away
-			// Turn around to get closer to target.
-			turnAngle += -mat.vec3(2).sp(estPos) < 0 ? turnBank : -turnBank;
-			turning = 1;
-		}
-		else{
-			estPos.normin();
-			turning = estPos.vp(-mat.vec3(2))[1] * (1. - fabs(estPos[1]));
-			if(3. * 3. < sdist || sp < 0){ // Approaching
-				turnAngle += turnBank * turning;
-				rudderTarget = -turning * rudderAim;
-			}
-			else // Receding
-				turnAngle += -turnBank * turning;
-			turning = fabs(turning);
-		}
-
-		// Upside down; get upright as soon as possible or we'll crash!
-		if(mat.vec3(1)[1] < 0){
-			turning = 1;
-			turnAngle = mat.vec3(0)[1] < 0 ? -turnBank : turnBank;
-		}
-
-		mat2 = mat.tomat3().rotz(turnAngle);
-	}
-	Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
-	double croll = -x_along_y.sp(mat2.vec3(1)); // Current Roll
-	double rollOmg = mat.vec3(2).sp(omg);
-	double roll = croll * rollSense + rollOmg * omgSense + iaileron * intSense; // P + D + I
-	iaileron = rangein(iaileron + roll * dt, -intMax, intMax);
-
-	if(monitor == 0)
-		monitor = getid();
-	GLWchart::addSampleToCharts("croll", croll);
-	GLWchart::addSampleToCharts("omg", rollOmg);
-	GLWchart::addSampleToCharts("iaileron", iaileron);
 
 	// If the body is stationary and upright, assume it's on the ground.
 	if(onfeet){
@@ -2044,6 +2000,8 @@ void Aerial::animAI(double dt, bool onfeet){
 		gear = true;
 	}
 	else{
+		// Automatic stabilizer (Auto Pilot)
+
 		// Set timer for gear retraction if we're taking off
 		if(takingOff)
 			takeOffTimer = 5.;
@@ -2056,15 +2014,80 @@ void Aerial::animAI(double dt, bool onfeet){
 		else
 			takeOffTimer -= dt;
 
+		bool crashing = false; // We're going to crash in 3 seconds!
+		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+			SurfaceCS *sc = static_cast<SurfaceCS*>(w->cs);
+
+			// Ray trace the terrain to see if the ground is in front of us.
+			if(sc->traceHit(this->pos, this->velo, 0., 3.)){
+				crashing = true;
+			}
+		}
+
+		Mat3d mat2 = mat.tomat3();
+		Vec3d estPos;
+		estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
+		double rudderTarget = 0;
+		double trim;
+		if(crashing){
+			// If we are going to crash, do not turn around to approach the target; you can do that later.
+			// Instead just fly up to clear the obstacles.
+			trim = 1.; // Full uptrim
+		}
+		else{
+			double sp = estPos.sp(mat.vec3(2));
+			double turning = 0;
+			if(0.5 * 0.5 < sdist){
+				double turnAngle = 0;
+				if(3. * 3. < sdist && 0. < sp){ // Going away
+					// Turn around to get closer to target.
+					turnAngle += -mat.vec3(2).sp(estPos) < 0 ? turnBank : -turnBank;
+					turning = 1;
+				}
+				else{
+					estPos.normin();
+					turning = estPos.vp(-mat.vec3(2))[1] * (1. - fabs(estPos[1]));
+					if(3. * 3. < sdist || sp < 0){ // Approaching
+						turnAngle += turnBank * turning;
+						rudderTarget = -turning * rudderAim;
+					}
+					else // Receding
+						turnAngle += -turnBank * turning;
+					turning = fabs(turning);
+				}
+
+				// Upside down; get upright as soon as possible or we'll crash!
+				if(mat.vec3(1)[1] < 0){
+					turning = 1;
+					turnAngle = mat.vec3(0)[1] < 0 ? -turnBank : turnBank;
+				}
+
+				mat2 = mat.tomat3().rotz(turnAngle);
+			}
+
+			Vec2d planar(deltaPos[0], deltaPos[2]);
+			double targetClimb = deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
+
+			// You cannot control altitude and yaw at the same time efficiently. Let's do one at a time.
+			trim = mat.vec3(2)[1] + velo[1] + (1. - turning) * targetClimb + turning * turnClimb; // P + D
+		}
+
+		Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();
+		double croll = -x_along_y.sp(mat2.vec3(1)); // Current Roll
+		double rollOmg = mat.vec3(2).sp(omg);
+
+		if(monitor == 0)
+			monitor = getid();
+		GLWchart::addSampleToCharts("croll", croll);
+		GLWchart::addSampleToCharts("omg", rollOmg);
+		GLWchart::addSampleToCharts("iaileron", iaileron);
+
+		double roll = croll * rollSense + rollOmg * omgSense + iaileron * intSense; // P + D + I
+		iaileron = rangein(iaileron + roll * dt, -intMax, intMax);
+
 		aileron = rangein(aileron + roll * dt, -1, 1);
 		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
 		rudder = approach(rudder, rudderTarget, dt, 0);
-		Vec2d planar(deltaPos[0], deltaPos[2]);
-		double targetClimb = deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
-
-		// You cannot control altitude and yaw at the same time efficiently. Let's do one at a time.
-		double trim = mat.vec3(2)[1] + velo[1] + (1. - turning) * targetClimb + turning * turnClimb; // P + D
-
 		elevator = rangein(elevator + trim * dt, -1, 1);
 		takingOff = false;
 

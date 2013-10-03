@@ -34,12 +34,25 @@ struct WarMapTile{
 
 class WarMap{
 public:
+	struct TraceParams{
+		TraceParams(Vec3d &src, Vec3d &dir, double traceTime = 1., double radius = 0.)
+			: src(src), dir(dir), traceTime(traceTime), radius(radius){}
+		Vec3d src;
+		Vec3d dir;
+		double traceTime;
+		double radius;
+	};
+	struct TraceResult{
+		double hitTime;
+		Vec3d position;
+		Vec3d normal;
+	};
 	WarMap();
 	virtual int getat(WarMapTile *return_info, int x, int y) = 0;
 	virtual void size(int *retx, int *rety) = 0;
 	virtual double width() = 0;
 	virtual Vec3d normal(double x, double y);
-	virtual int linehit(const Vec3d &src, const Vec3d &dir, double t, Vec3d &ret);
+	virtual bool traceHit(const TraceParams &params, TraceResult &result)const;
 	virtual ~WarMap();
 	virtual void levelterrain(int x0, int y0, int x1, int y1){}
 	virtual const void *rawData()const{return NULL;} ///< Access to the raw data, NULL if not available

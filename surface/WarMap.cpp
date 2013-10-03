@@ -210,8 +210,8 @@ double WarMap::heightr(double x, double y, Vec3d *normal){
 }
 
 
-int WarMap::linehit(const Vec3d &src, const Vec3d &dir, double t, Vec3d &ret){
-	return 0;
+bool WarMap::traceHit(const TraceParams &, TraceResult &)const{
+	return false;
 }
 
 

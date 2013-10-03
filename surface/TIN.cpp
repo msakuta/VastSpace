@@ -298,7 +298,12 @@ double TIN::getHeight(double x, double y, const Vec3d *scales, Vec3d *normal)con
 	return 0;
 }
 
-bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const{
+//bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const{
+bool TIN::traceHit(const TraceParams &params, TraceResult &result)const{
+	const Vec3d &start = params.src;
+	const Vec3d &dir = params.dir;
+	const double &dt = params.traceTime;
+
 	// For optimizing hit check with the ray
 	int startix = int(start[0] * GridSize / 1024);
 	int startiy = int(start[1] * GridSize / 1024);
@@ -380,21 +385,11 @@ bool TIN::traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, 
 				if(sp01 < 0 || sp02 < 0 || 1 < sp01 + sp02)
 					continue;
 
-				if(retp){
-					*retp = p;
-				}
+				result.position = p;
 
-				if(retnormal){
-		/*			if(scales){
-						v01 *= *scales;
-						v02 *= *scales;
-					}*/
-					*retnormal = v01.vp(v02);
-				}
+				result.normal = v01.vp(v02);
 
-				if(ret){
-					*ret = t;
-				}
+				result.hitTime = t;
 
 				return true;
 

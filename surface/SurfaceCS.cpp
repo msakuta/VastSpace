@@ -256,13 +256,17 @@ bool SurfaceCS::traceHit(const Vec3d &start, const Vec3d &dir, double rad, doubl
 		Vec3d scales(-width * 2 * longscale / sx, -width * 2 / sy, 1e-3 / 4.);
 		Vec3d lstart(((-start[0] / width / 2 / longscale + 0.5 - 0.5 / sx) * sx), (-start[2] / width / 2 + 0.5 - 0.5 / sy) * sy, start[1] / scales[2]);
 		Vec3d ldir(dir[0] / scales[0], dir[2] / scales[1], dir[1] / scales[2]);
-		Vec3d temp;
-		bool bret = tin->traceHit(lstart, ldir, rad, dt, ret, retp, &temp);
-		if(bret && retnormal){
-			(*retnormal)[0] = -temp[0];
-			(*retnormal)[1] = -temp[2];
-			(*retnormal)[2] = -temp[1];
-			retnormal->normin();
+		WarMap::TraceResult tr;
+		bool bret = tin->traceHit(WarMap::TraceParams(lstart, ldir, dt, rad), tr);
+		if(bret){
+			if(ret) *ret = tr.hitTime;
+			if(retp) *retp = tr.position;
+			if(retnormal){
+				(*retnormal)[0] = -tr.normal[0];
+				(*retnormal)[1] = -tr.normal[2];
+				(*retnormal)[2] = -tr.normal[1];
+				retnormal->normin();
+			}
 		}
 		return bret;
 	}

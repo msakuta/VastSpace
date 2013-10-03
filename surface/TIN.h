@@ -34,7 +34,7 @@ public:
 	void draw();
 
 	double getHeight(double x, double y, const Vec3d *scales = NULL, Vec3d *normal = NULL)const;
-	bool traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal)const;
+	bool traceHit(const TraceParams &params, TraceResult &result)const override;
 protected:
 	struct Vertex;
 

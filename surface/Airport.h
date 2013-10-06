@@ -5,6 +5,7 @@
 #define SURFACE_AIRPORT_H
 #include "ModelEntity.h"
 #include "Model-forward.h"
+#include "EntityCommand.h"
 #include <btBulletDynamicsCommon.h>
 
 
@@ -26,6 +27,7 @@ public:
 	double getMaxHealth()const override{return maxHealthValue;}
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return false;}
+	bool command(EntityCommand *com)override;
 
 	static gltestp::dstring modPath(){return _SC("surface/");}
 
@@ -37,9 +39,24 @@ protected:
 	static double hitRadius;
 	static double maxHealthValue;
 	static Vec3d landOffset;
+	static Vec3d landingSite;
 	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
 	static GLuint overlayDisp;
+};
+
+/// \brief EntityCommand to query ILS (Instrument Landing System) signal from an Airport.
+///
+/// Note that the real instrument tells the direction to approach runway, but not real
+/// position.  We simplify the reality and make this command just return position.
+///
+/// \sa http://en.wikipedia.org/wiki/Instrument_landing_system
+struct GetILSCommand : EntityCommand{
+	COMMAND_BASIC_MEMBERS(GetILSCommand, EntityCommand);
+	GetILSCommand(){}
+	GetILSCommand(HSQUIRRELVM v, Entity &e);
+	Vec3d pos; ///< Landing site position (entrance of runway)
+	double heading; ///< Landing direction in radians
 };
 
 #endif

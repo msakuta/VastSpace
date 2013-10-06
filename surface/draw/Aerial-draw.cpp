@@ -9,10 +9,13 @@
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
 #include "glw/glwindow.h"
+#include "../Airport.h"
 extern "C"{
 #include <clib/GL/gldraw.h>
+#include <clib/cfloat.h>
 }
 #include <cpplib/crc32.h>
+#include <cpplib/vec2.h>
 
 
 bool Aerial::cull(WarDraw *wd)const{
@@ -422,6 +425,39 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 				glEnd();
 
 				glPopMatrix();
+			}
+		}
+
+		// ILS indicator
+		if(showILS){
+			GetILSCommand gisBest;
+			double sdistBest = 1e6;
+			for(auto it : w->entlist()){
+				GetILSCommand gis;
+				if(it->command(&gis)){
+					double sdist = (gis.pos - this->pos).slen();
+					if(sdist < sdistBest){
+						sdistBest = sdist;
+						gisBest = gis;
+					}
+				}
+			}
+
+			if(sdistBest < 1e6){
+				Vec3d relPos = gisBest.pos - this->pos;
+				Vec2d lateralDir = Vec2d(relPos[0], relPos[2]).norm();
+				Vec3d dir = relPos.norm();
+				Vec3d landDir = Quatd::rotation(gisBest.heading, Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1));
+				double loc = lateralDir.vp(Vec2d(landDir[0], landDir[2])); // Localizer
+				double gs = rangein(relPos.norm()[1] + asin(3. / deg_per_rad), -1, 1); // Glide slope is 3 degrees
+				glBegin(GL_LINES);
+				glVertex2d(0.6 * loc, -0.6);
+				glVertex2d(0.6 * loc, 0.6);
+				glVertex2d(0.6, 0.6 * gs);
+				glVertex2d(-0.6, 0.6 * gs);
+				glEnd();
+				readOut("LOC", 0.6 * loc, -0.55, 0.0050);
+				readOut("GS", 0.6, 0.6 * gs, 0.0050);
 			}
 		}
 

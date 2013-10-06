@@ -416,7 +416,7 @@ void Aerial::addRigidBody(WarSpace *ws){
 Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
 }
 
-Aerial::Aerial(WarField *w) : st(w), iaileron(0), gear(false), gearphase(0), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
+Aerial::Aerial(WarField *w) : st(w), showILS(false), iaileron(0), gear(false), gearphase(0), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
 	moi = .2; /* kilograms * kilometer^2 */
 	init();
 }
@@ -1812,6 +1812,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, SQBool(takingOff));
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("showILS"))){
+		sq_pushbool(v, SQBool(showILS));
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -1868,6 +1872,13 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 			return sq_throwerror(v, _SC("could not convert to bool for takingOff"));
 		takingOff = b != SQFalse;
 		return 1;
+	}
+	else if(!scstrcmp(name, _SC("showILS"))){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, _SC("could not convert to bool for showILS"));
+		showILS = b != SQFalse;
+		return 0;
 	}
 	else
 		return st::sqSet(v, name);

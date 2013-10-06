@@ -273,12 +273,18 @@ if(isClient()){
 			player.controlled.spoiler = !player.controlled.spoiler;
 	});
 
+	register_console_command("showILS", function(){
+		if(player.controlled)
+			player.controlled.showILS = !player.controlled.showILS;
+	});
+
 	beginControl["A10"] <- function (){
 		if("print" in this)
 			print("A10::beginControl");
 		cmd("pushbind");
 		cmd("bind g gear");
 		cmd("bind b spoiler");
+		cmd("bind i showILS");
 		cmd("r_windows 0");
 	}
 

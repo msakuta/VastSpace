@@ -50,6 +50,7 @@ protected:
 	Vec3d sight;
 	bool muzzle, brk, afterburner, navlight, gear;
 	bool spoiler;
+	bool showILS;
 	int missiles;
 	int weapon;
 //	sufdecal_t *sd;

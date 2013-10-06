@@ -12,6 +12,7 @@ double Airport::modelScale = 0.01;
 double Airport::hitRadius = 0.1;
 double Airport::maxHealthValue;
 Vec3d Airport::landOffset = Vec3d(0,0,0);
+Vec3d Airport::landingSite = Vec3d(0,0,0);
 HitBoxList Airport::hitboxes;
 std::vector<Airport::Navlight> Airport::navlights;
 GLuint Airport::overlayDisp;
@@ -24,6 +25,7 @@ void Airport::init(){
 			SingleDoubleProcess(hitRadius, "hitRadius") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			Vec3dProcess(landOffset, "landOffset") <<=
+			Vec3dProcess(landingSite, "landingSite") <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
 			DrawOverlayProcess(overlayDisp));
@@ -48,6 +50,17 @@ void Airport::anim(double dt){
 		}
 	}
 
+}
+
+bool Airport::command(EntityCommand *com){
+	if(GetILSCommand *gic = InterpretCommand<GetILSCommand>(com)){
+		gic->pos = this->pos + rot.trans(landingSite);
+		Vec3d dir = this->rot.trans(Vec3d(0,0,1));
+		gic->heading = atan2(dir[0], dir[2]);
+		return true;
+	}
+	else
+		return st::command(com);
 }
 
 int Airport::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
@@ -100,3 +113,8 @@ bool Airport::buildBody(){
 void Airport::draw(WarDraw *){}
 void Airport::drawtra(WarDraw *){}
 #endif
+
+
+IMPLEMENT_COMMAND(GetILSCommand, "GetILS");
+
+GetILSCommand::GetILSCommand(HSQUIRRELVM v, Entity &e){}

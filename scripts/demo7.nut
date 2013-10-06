@@ -40,6 +40,7 @@ bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
 local airport = player.cs.addent("Airport", Vec3d(0, 0, 5.0));
+a10.landingAirport = airport;
 
 local function localCoord(v){
 	v = v / 128. - Vec3d(0.5,0,1);

@@ -61,6 +61,7 @@ protected:
 	bool takingOff; ///< If this plane's auto pilot is taking off
 	double takeOffTimer;
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
+	WeakPtr<Entity> landingAirport; ///< The airport this airplane is going to land with autopilot.
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{

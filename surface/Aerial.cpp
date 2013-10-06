@@ -1816,6 +1816,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, SQBool(showILS));
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("landingAirport"))){
+		sq_pushobj(v, landingAirport);
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -1878,6 +1882,10 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
 			return sq_throwerror(v, _SC("could not convert to bool for showILS"));
 		showILS = b != SQFalse;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("landingAirport"))){
+		landingAirport = sq_refobj(v, 3);
 		return 0;
 	}
 	else
@@ -2036,6 +2044,8 @@ void Aerial::animAI(double dt, bool onfeet){
 		}
 
 		Mat3d mat2 = mat.tomat3();
+		if(landingAirport)
+			deltaPos = landingAirport->pos - this->pos;
 		Vec3d estPos;
 		estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
 		double rudderTarget = 0;

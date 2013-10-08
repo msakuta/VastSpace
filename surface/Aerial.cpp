@@ -18,6 +18,7 @@
 #include "Bullet.h"
 #include "glw/GLWChart.h"
 #include "SurfaceCS.h"
+#include "Airport.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -2044,8 +2045,19 @@ void Aerial::animAI(double dt, bool onfeet){
 		}
 
 		Mat3d mat2 = mat.tomat3();
-		if(landingAirport)
-			deltaPos = landingAirport->pos - this->pos;
+		double turnRange = 3.;
+		bool landing = false;
+		if(landingAirport){
+			GetILSCommand gic;
+			if(landingAirport->command(&gic) && 0 < (gic.pos - this->pos).sp(-mat.vec3(2))){
+				landing = true;
+				if(!showILS)
+					showILS = true; // Turn on ILS display on the HUD.
+				deltaPos = gic.pos - this->pos;
+			}
+
+			turnRange = 5; // Landing requires careful positioning than just pass over a landmark, so we need more working space.
+		}
 		Vec3d estPos;
 		estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
 		double rudderTarget = 0;
@@ -2060,7 +2072,20 @@ void Aerial::animAI(double dt, bool onfeet){
 			double turning = 0;
 			if(0.5 * 0.5 < sdist){
 				double turnAngle = 0;
-				if(3. * 3. < sdist && 0. < sp){ // Going away
+				if(landing){
+					GetILSCommand gic;
+					if(landingAirport->command(&gic)){
+						Vec2d lateralDir = Vec2d(deltaPos[0], deltaPos[2]).norm();
+						Vec3d dir = deltaPos.norm();
+						Vec3d landDir = Quatd::rotation(gic.heading, Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1));
+						double loc = lateralDir.vp(Vec2d(landDir[0], landDir[2])); // Localizer
+						double gs = rangein(deltaPos.norm()[1] + asin(3. / deg_per_rad), -1, 1); // Glide slope is 3 degrees
+
+						turnAngle = rangein(-M_PI * loc, -M_PI / 2., M_PI / 2.);
+						turning = std::min(1., fabs(turnAngle));
+					}
+				}
+				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away
 					// Turn around to get closer to target.
 					turnAngle += -mat.vec3(2).sp(estPos) < 0 ? turnBank : -turnBank;
 					turning = 1;

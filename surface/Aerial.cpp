@@ -33,7 +33,7 @@ extern "C"{
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-
+#include <functional>
 
 
 
@@ -1903,6 +1903,7 @@ static double turnClimb = 0.3;
 static double turnBank = 2. / 5. * M_PI;
 static double rudderSense = -20.; ///< Rudder stabilizer sensitivity
 static double rudderAim = 17.; ///< Aim strength factor for rudder
+static double landingGSOffset = -0.12; ///< Offset to Glide Slope of ILS when approaching runway
 
 static void initSense(){
 	CvarAdd("estimateSpeed", &estimateSpeed, cvar_double);
@@ -1915,6 +1916,7 @@ static void initSense(){
 	CvarAdd("turnBank", &turnBank, cvar_double);
 	CvarAdd("rudderSense", &rudderSense, cvar_double);
 	CvarAdd("rudderAim", &rudderAim, cvar_double);
+	CvarAdd("landingGSOffset", &landingGSOffset, cvar_double);
 }
 
 static StaticInitializer initializer(initSense);
@@ -2034,16 +2036,6 @@ void Aerial::animAI(double dt, bool onfeet){
 		else
 			takeOffTimer -= dt;
 
-		bool crashing = false; // We're going to crash in 3 seconds!
-		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
-			SurfaceCS *sc = static_cast<SurfaceCS*>(w->cs);
-
-			// Ray trace the terrain to see if the ground is in front of us.
-			if(sc->traceHit(this->pos, this->velo, 0., 3.)){
-				crashing = true;
-			}
-		}
-
 		Mat3d mat2 = mat.tomat3();
 		double turnRange = 3.;
 		bool landing = false;
@@ -2058,10 +2050,22 @@ void Aerial::animAI(double dt, bool onfeet){
 
 			turnRange = 5; // Landing requires careful positioning than just pass over a landmark, so we need more working space.
 		}
+
+		bool crashing = false; // We're going to crash in 3 seconds!
+		if(!landing && &w->cs->getStatic() == &SurfaceCS::classRegister){
+			SurfaceCS *sc = static_cast<SurfaceCS*>(w->cs);
+
+			// Ray trace the terrain to see if the ground is in front of us.
+			if(sc->traceHit(this->pos, this->velo, 0., 3.)){
+				crashing = true;
+			}
+		}
+
 		Vec3d estPos;
 		estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
 		double rudderTarget = 0;
 		double trim;
+		std::function<double()> throttler = [&](){return (0.5 - velo.len()) * 2.;};
 		if(crashing){
 			// If we are going to crash, do not turn around to approach the target; you can do that later.
 			// Instead just fly up to clear the obstacles.
@@ -2070,6 +2074,11 @@ void Aerial::animAI(double dt, bool onfeet){
 		else{
 			double sp = estPos.sp(mat.vec3(2));
 			double turning = 0;
+			std::function<double()> targetClimber = [&](){
+				Vec2d planar(deltaPos[0], deltaPos[2]);
+				return deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
+			};
+
 			if(0.5 * 0.5 < sdist){
 				double turnAngle = 0;
 				if(landing){
@@ -2078,11 +2087,25 @@ void Aerial::animAI(double dt, bool onfeet){
 						Vec2d lateralDir = Vec2d(deltaPos[0], deltaPos[2]).norm();
 						Vec3d dir = deltaPos.norm();
 						Vec3d landDir = Quatd::rotation(gic.heading, Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1));
+						Vec3d landPerp = Quatd::rotation(gic.heading + M_PI / 2., Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1)); // Perpendicular to landing direction
 						double loc = lateralDir.vp(Vec2d(landDir[0], landDir[2])); // Localizer
-						double gs = rangein(deltaPos.norm()[1] + asin(3. / deg_per_rad), -1, 1); // Glide slope is 3 degrees
+						double gs = rangein(deltaPos.norm()[1] + asin(3. / deg_per_rad) + landingGSOffset, -1, 1); // Glide slope is 3 degrees
 
-						turnAngle = rangein(-M_PI * loc, -M_PI / 2., M_PI / 2.);
+						// Distance from correct path for landing
+						double disco = (gic.pos - this->pos).sp(landPerp);
+
+						double desiredAngle = gic.heading + disco;
+						double realAngle = atan2(-mat.vec3(2)[0], -mat.vec3(2)[2]);
+						double corrAngle = fmod((desiredAngle - realAngle) + 3. * M_PI, 2. * M_PI) - M_PI;
+
+						turnAngle = rangein(-1. * corrAngle, -M_PI / 2., M_PI / 2.);
 						turning = std::min(1., fabs(turnAngle));
+
+						// Override climb rate to follow GS.
+						targetClimber = [&,gs](){return gs;};
+
+						// Totally cut off the engine before approaching 3 km
+						throttler = [&](){return rangein((deltaPos.len() - 3.) / 15. - velo.len(), 0, 0.5);};
 					}
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away
@@ -2111,8 +2134,7 @@ void Aerial::animAI(double dt, bool onfeet){
 				mat2 = mat.tomat3().rotz(turnAngle);
 			}
 
-			Vec2d planar(deltaPos[0], deltaPos[2]);
-			double targetClimb = deltaPos.sp(mat.vec3(2)) < 0 ? rangein(deltaPos[1] / planar.len() , -0.5, 0.5) : 0;
+			double targetClimb = targetClimber();
 
 			// You cannot control altitude and yaw at the same time efficiently. Let's do one at a time.
 			trim = mat.vec3(2)[1] + velo[1] + (1. - turning) * targetClimb + turning * turnClimb; // P + D
@@ -2132,7 +2154,7 @@ void Aerial::animAI(double dt, bool onfeet){
 		iaileron = rangein(iaileron + roll * dt, -intMax, intMax);
 
 		aileron = rangein(aileron + roll * dt, -1, 1);
-		throttle = approach(throttle, rangein((0.5 - velo.len()) * 2., 0, 1), dt, 0);
+		throttle = approach(throttle, rangein(throttler(), 0, 1), dt, 0);
 		rudder = approach(rudder, rudderTarget, dt, 0);
 		elevator = rangein(elevator + trim * dt, -1, 1);
 		takingOff = false;

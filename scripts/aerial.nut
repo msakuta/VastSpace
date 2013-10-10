@@ -1,4 +1,4 @@
-landingGSOffset <- 0.12;
+landingGSOffset <- -0.;
 
 local function rangein(v,min,max){
 	return v < min ? min : max < v ? max : v;
@@ -23,11 +23,24 @@ function aerialLandingRoll(e){
 function aerialLandingClimb(e){
 //	print("aerialLandingClimb(" + e + ")");
 //	return 0;
-	local deltaPos = e.destPos - e.getpos(); // Delta position towards the destination
-	local gs = deltaPos.norm()[1] + landingGSOffset; // Glide slope is 3 degrees
+	local airport = e.landingAirport;
+
+	local function localCoord(v){
+		v = v / 128. - Vec3d(0.5,0,1);
+		v[2] *= -1;
+		return v;
+	}
+
+	// Landing site is 1.5 km (temporary) before ILS antennae.
+	local landingSite = localCoord(Vec3d(24, 0, 0)) - Vec3d(0,0,1.5);
+
+	local deltaPos = airport.getpos() + airport.getrot().trans(landingSite) - e.getpos(); // Delta position towards the destination
+	if(deltaPos.len() == 0)
+		return 0;
+	local gs = deltaPos.norm()[1] + asin(3. / 180. * PI ) + landingGSOffset; // Glide slope is 3 degrees
 	local nvelo = e.getvelo().norm();
-	local ret = gs - nvelo[1] * 0.2;
-	print("delta = " + deltaPos + ", gs = " + gs + ", ret = " + ret);
+	local ret = gs * 3. - nvelo[1] * 0.;
+	print("delta = " + deltaPos.norm() + ", gs = " + gs + ", ret = " + ret);
 	return ret;
 }
 

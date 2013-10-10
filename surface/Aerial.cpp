@@ -2098,7 +2098,23 @@ void Aerial::animAI(double dt, bool onfeet){
 						double realAngle = atan2(-mat.vec3(2)[0], -mat.vec3(2)[2]);
 						double corrAngle = fmod((desiredAngle - realAngle) + 3. * M_PI, 2. * M_PI) - M_PI;
 
-						turnAngle = rangein(-1. * corrAngle, -M_PI / 2., M_PI / 2.);
+						turnAngle = [&](){
+							double ret = rangein(-1. * corrAngle, -M_PI / 2., M_PI / 2.);
+							HSQUIRRELVM v = game->sqvm;
+							StackReserver sr(v);
+							sq_pushroottable(v);
+							sq_pushstring(v, _SC("aerialLandingRoll"), -1);
+							if(SQ_FAILED(sq_get(v, -3)))
+								return ret;
+							sq_pushroottable(v);
+							sq_pushobj(v, this);
+							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+								return ret;
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								return ret;
+							return double(f);
+						}();
 						turning = std::min(1., fabs(turnAngle));
 
 						// Override climb rate to follow GS.
@@ -2120,8 +2136,24 @@ void Aerial::animAI(double dt, bool onfeet){
 							return double(f);
 						};
 
-						// Totally cut off the engine before approaching 3 km
-						throttler = [&](){return rangein((deltaPos.len() - 3.) / 15. - velo.len(), 0, 0.5);};
+						// Determine throttle strength by executing script.
+						throttler = [&](){
+							double ret = rangein((deltaPos.len() - 3.) / 15. - velo.len(), 0, 0.5);
+							HSQUIRRELVM v = game->sqvm;
+							StackReserver sr(v);
+							sq_pushroottable(v);
+							sq_pushstring(v, _SC("aerialLandingThrottle"), -1);
+							if(SQ_FAILED(sq_get(v, -3)))
+								return ret;
+							sq_pushroottable(v);
+							sq_pushobj(v, this);
+							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+								return ret;
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								return ret;
+							return double(f);
+						};
 					}
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away

@@ -264,3 +264,10 @@ function init_Universe(){
 register_console_command("sq1", @() loadmission("scripts/demo1.nut") );
 
 //print("init.nut execution time: " + tm.lap() + " sec");
+
+register_console_command("aerial", function(){
+	print("aerial.nut being loaded");
+	dofile("scripts/aerial.nut");
+});
+
+cmd("aerial");

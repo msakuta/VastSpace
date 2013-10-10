@@ -2089,7 +2089,7 @@ void Aerial::animAI(double dt, bool onfeet){
 						Vec3d landDir = Quatd::rotation(gic.heading, Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1));
 						Vec3d landPerp = Quatd::rotation(gic.heading + M_PI / 2., Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1)); // Perpendicular to landing direction
 						double loc = lateralDir.vp(Vec2d(landDir[0], landDir[2])); // Localizer
-						double gs = rangein(deltaPos.norm()[1] + asin(3. / deg_per_rad) + landingGSOffset, -1, 1); // Glide slope is 3 degrees
+						double gs = rangein(deltaPos[1] +/* asin(3. / deg_per_rad)*/ + landingGSOffset, -1, 1); // Glide slope is 3 degrees
 
 						// Distance from correct path for landing
 						double disco = (gic.pos - this->pos).sp(landPerp);
@@ -2102,7 +2102,23 @@ void Aerial::animAI(double dt, bool onfeet){
 						turning = std::min(1., fabs(turnAngle));
 
 						// Override climb rate to follow GS.
-						targetClimber = [&,gs](){return gs;};
+						targetClimber = [&,gs](){
+							double ret = gs - velo.norm()[1] * 0.2;
+							HSQUIRRELVM v = game->sqvm;
+							StackReserver sr(v);
+							sq_pushroottable(v);
+							sq_pushstring(v, _SC("aerialLandingClimb"), -1);
+							if(SQ_FAILED(sq_get(v, -3)))
+								return ret;
+							sq_pushroottable(v);
+							sq_pushobj(v, this);
+							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+								return ret;
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								return ret;
+							return double(f);
+						};
 
 						// Totally cut off the engine before approaching 3 km
 						throttler = [&](){return rangein((deltaPos.len() - 3.) / 15. - velo.len(), 0, 0.5);};

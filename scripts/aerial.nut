@@ -63,6 +63,8 @@ function aerialLanding(e){
 	ret.spoiler <- f < 1.;
 //	print("spoiler " + ret.spoiler);
 
+	ret.gear <- f < 1.;
+
 	return ret;
 }
 

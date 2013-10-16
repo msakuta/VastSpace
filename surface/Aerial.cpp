@@ -1987,15 +1987,22 @@ inline double sqGetter(HSQUIRRELVM v, const SQChar *name){
 	return f;
 }
 
-inline bool sqBoolGetter(HSQUIRRELVM v, const SQChar *name){
-	StackReserver sr(v);
-	sq_pushstring(v, name, -1);
-	if(SQ_FAILED(sq_get(v, -2)))
-		throw SQFError(gltestp::dstring("Name not found: ") << name);
-	SQBool f;
-	if(SQ_FAILED(sq_getbool(v, -1, &f)))
-		throw SQFError(gltestp::dstring("Could not convert to bool: ") << name);
-	return f != SQFalse;
+inline bool sqBoolGetter(HSQUIRRELVM v, const SQChar *name, bool raise = true){
+	try{
+		StackReserver sr(v);
+		sq_pushstring(v, name, -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError(gltestp::dstring("Name not found: ") << name);
+		SQBool f;
+		if(SQ_FAILED(sq_getbool(v, -1, &f)))
+			throw SQFError(gltestp::dstring("Could not convert to bool: ") << name);
+		return f != SQFalse;
+	}
+	catch(SQFError &e){
+		// Re-throw only if desired
+		if(raise)
+			throw;
+	}
 }
 
 
@@ -2114,7 +2121,6 @@ void Aerial::animAI(double dt, bool onfeet){
 			if(0.5 * 0.5 < sdist){
 				double turnAngle = 0;
 				if(landing){
-					bool setSpoiler = false;
 					try{
 						HSQUIRRELVM v = game->sqvm;
 						StackReserver sr(v);
@@ -2136,12 +2142,12 @@ void Aerial::animAI(double dt, bool onfeet){
 						double thro = sqGetter(v, _SC("throttle"));
 						throttler = [thro](){return thro;};
 
-						setSpoiler = sqBoolGetter(v, _SC("spoiler"));
+						spoiler = sqBoolGetter(v, _SC("spoiler"));
+						gear = sqBoolGetter(v, _SC("gear"));
 					}
 					catch(SQFError &e){
 						CmdPrint(gltestp::dstring("aerialLanding Error: ") << e.what());
 					}
-					spoiler = setSpoiler;
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away
 					// Turn around to get closer to target.

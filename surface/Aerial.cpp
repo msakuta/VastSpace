@@ -1994,7 +1994,16 @@ void Aerial::animAI(double dt, bool onfeet){
 		Vec3d localDeltaPos = this->rot.itrans(deltaPos);
 		double phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
 		const double arriveDist = 0.03;
-		if(takingOff){
+		if(landingAirport){
+			// If we are landing and decelerated below a very slow speed by landing gear brake,
+			// just assume we have landed.  Clearing landingAirport would trigger the next action.
+			if(velo.slen() < 0.01 * 0.01){
+				landingAirport = nullptr;
+				if(showILS)
+					showILS = false;
+			}
+		}
+		else if(takingOff){
 			if(destArrived || sdist < arriveDist * arriveDist){
 				destArrived = true;
 				throttle = approach(throttle, 1, dt, 0);
@@ -2154,6 +2163,25 @@ void Aerial::animAI(double dt, bool onfeet){
 								return ret;
 							return double(f);
 						};
+
+						bool setSpoiler = false;
+						do{
+							HSQUIRRELVM v = game->sqvm;
+							StackReserver sr(v);
+							sq_pushroottable(v);
+							sq_pushstring(v, _SC("aerialLandingSpoiler"), -1);
+							if(SQ_FAILED(sq_get(v, -3)))
+								break;
+							sq_pushroottable(v);
+							sq_pushobj(v, this);
+							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+								break;
+							SQBool f;
+							if(SQ_FAILED(sq_getbool(v, -1, &f)))
+								break;
+							setSpoiler = f == SQTrue;
+						}while(false);
+						spoiler = setSpoiler;
 					}
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away

@@ -4,6 +4,7 @@
 #include "Airport.h"
 #include "SurfaceCS.h"
 #include "btadapt.h"
+#include "sqadapt.h"
 
 Entity::EntityRegister<Airport> Airport::entityRegister("Airport");
 
@@ -81,6 +82,21 @@ int Airport::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt,
 		}
 	}
 	return reti;
+}
+
+SQInteger Airport::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("ILSPos"))){
+		SQVec3d q(this->pos + rot.trans(landingSite));
+		q.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("ILSHeading"))){
+		Vec3d dir = this->rot.trans(Vec3d(0,0,1));
+		sq_pushfloat(v, atan2(dir[0], dir[2]));
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
 }
 
 bool Airport::buildBody(){

@@ -32,6 +32,7 @@ public:
 	static gltestp::dstring modPath(){return _SC("surface/");}
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	bool buildBody()override;
 
 	static Model *model;

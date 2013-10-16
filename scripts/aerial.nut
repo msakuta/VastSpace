@@ -17,16 +17,7 @@ function aerialLanding(e){
 	if(airport == null)
 		return null;
 
-	local function localCoord(v){
-		v = v / 128. - Vec3d(0.5,0,1);
-		v[2] *= -1;
-		return v;
-	}
-
-	// Landing site is 1.5 km (temporary) before ILS antennae.
-	local landingSite = localCoord(Vec3d(24, 0, 0)) - Vec3d(0,0,1.5);
-
-	local deltaPos = airport.ILSPos + airport.getrot().trans(landingSite) - e.getpos(); // Delta position towards the destination
+	local deltaPos = airport.ILSPos - e.getpos(); // Delta position towards the destination
 	local forward = -e.getrot().trans(Vec3d(0,0,1));
 	local ret = {};
 

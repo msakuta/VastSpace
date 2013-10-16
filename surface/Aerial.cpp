@@ -1976,6 +1976,29 @@ bool Aerial::taxi(double dt){
 	return ret;
 }
 
+inline double sqGetter(HSQUIRRELVM v, const SQChar *name){
+	StackReserver sr(v);
+	sq_pushstring(v, name, -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError(gltestp::dstring("Name not found: ") << name);
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+		throw SQFError(gltestp::dstring("Could not convert to double: ") << name);
+	return f;
+}
+
+inline bool sqBoolGetter(HSQUIRRELVM v, const SQChar *name){
+	StackReserver sr(v);
+	sq_pushstring(v, name, -1);
+	if(SQ_FAILED(sq_get(v, -2)))
+		throw SQFError(gltestp::dstring("Name not found: ") << name);
+	SQBool f;
+	if(SQ_FAILED(sq_getbool(v, -1, &f)))
+		throw SQFError(gltestp::dstring("Could not convert to bool: ") << name);
+	return f != SQFalse;
+}
+
+
 /// \brief Taxiing AI
 void Aerial::animAI(double dt, bool onfeet){
 	Mat4d mat;
@@ -2092,64 +2115,32 @@ void Aerial::animAI(double dt, bool onfeet){
 				double turnAngle = 0;
 				if(landing){
 					bool setSpoiler = false;
-					do{
+					try{
 						HSQUIRRELVM v = game->sqvm;
 						StackReserver sr(v);
 						sq_pushroottable(v);
 						sq_pushstring(v, _SC("aerialLanding"), -1);
 						if(SQ_FAILED(sq_get(v, -3)))
-							break;
+							throw SQFError(gltestp::dstring("aerialLanding function not found"));
 						sq_pushroottable(v);
 						sq_pushobj(v, this);
 						if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
-							break;
+							throw SQFError(gltestp::dstring("aerialLanding function is not callable"));
 
-						do{
-							StackReserver sr(v);
-							sq_pushstring(v, _SC("roll"), -1);
-							if(SQ_FAILED(sq_get(v, -2)))
-								break;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								break;
-							turnAngle = double(f);
-							turning = std::min(1., fabs(turnAngle));
-						}while(false);
+						turnAngle = sqGetter(v, _SC("roll"));
+						turning = std::min(1., fabs(turnAngle));
 
-						do{
-							StackReserver sr(v);
-							sq_pushstring(v, _SC("climb"), -1);
-							if(SQ_FAILED(sq_get(v, -2)))
-								break;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								break;
-							targetClimber = [&,f](){return double(f);};
-						}while(false);
+						double climb = sqGetter(v, _SC("climb"));
+						targetClimber = [climb](){return climb;};
 
-						do{
-							StackReserver sr(v);
-							sq_pushstring(v, _SC("throttle"), -1);
-							if(SQ_FAILED(sq_get(v, -2)))
-								break;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								break;
-							throttler = [&,f](){return double(f);};
-						}while(false);
+						double thro = sqGetter(v, _SC("throttle"));
+						throttler = [thro](){return thro;};
 
-						do{
-							StackReserver sr(v);
-							sq_pushstring(v, _SC("spoiler"), -1);
-							if(SQ_FAILED(sq_get(v, -2)))
-								break;
-							SQBool f;
-							if(SQ_FAILED(sq_getbool(v, -1, &f)))
-								break;
-							setSpoiler = f == SQTrue;
-						}while(false);
-
-					}while(false);
+						setSpoiler = sqBoolGetter(v, _SC("spoiler"));
+					}
+					catch(SQFError &e){
+						CmdPrint(gltestp::dstring("aerialLanding Error: ") << e.what());
+					}
 					spoiler = setSpoiler;
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away

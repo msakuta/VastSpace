@@ -2091,98 +2091,66 @@ void Aerial::animAI(double dt, bool onfeet){
 			if(0.5 * 0.5 < sdist){
 				double turnAngle = 0;
 				if(landing){
-					GetILSCommand gic;
-					if(landingAirport->command(&gic)){
-						Vec2d lateralDir = Vec2d(deltaPos[0], deltaPos[2]).norm();
-						Vec3d dir = deltaPos.norm();
-						Vec3d landDir = Quatd::rotation(gic.heading, Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1));
-						Vec3d landPerp = Quatd::rotation(gic.heading + M_PI / 2., Vec3d(0, 1, 0)).trans(Vec3d(0, 0, 1)); // Perpendicular to landing direction
-						double loc = lateralDir.vp(Vec2d(landDir[0], landDir[2])); // Localizer
-						double gs = rangein(deltaPos[1] +/* asin(3. / deg_per_rad)*/ + landingGSOffset, -1, 1); // Glide slope is 3 degrees
+					bool setSpoiler = false;
+					do{
+						HSQUIRRELVM v = game->sqvm;
+						StackReserver sr(v);
+						sq_pushroottable(v);
+						sq_pushstring(v, _SC("aerialLanding"), -1);
+						if(SQ_FAILED(sq_get(v, -3)))
+							break;
+						sq_pushroottable(v);
+						sq_pushobj(v, this);
+						if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+							break;
 
-						// Distance from correct path for landing
-						double disco = (gic.pos - this->pos).sp(landPerp);
-
-						double desiredAngle = gic.heading + disco;
-						double realAngle = atan2(-mat.vec3(2)[0], -mat.vec3(2)[2]);
-						double corrAngle = fmod((desiredAngle - realAngle) + 3. * M_PI, 2. * M_PI) - M_PI;
-
-						turnAngle = [&](){
-							double ret = rangein(-1. * corrAngle, -M_PI / 2., M_PI / 2.);
-							HSQUIRRELVM v = game->sqvm;
-							StackReserver sr(v);
-							sq_pushroottable(v);
-							sq_pushstring(v, _SC("aerialLandingRoll"), -1);
-							if(SQ_FAILED(sq_get(v, -3)))
-								return ret;
-							sq_pushroottable(v);
-							sq_pushobj(v, this);
-							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
-								return ret;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								return ret;
-							return double(f);
-						}();
-						turning = std::min(1., fabs(turnAngle));
-
-						// Override climb rate to follow GS.
-						targetClimber = [&,gs](){
-							double ret = gs - velo.norm()[1] * 0.2;
-							HSQUIRRELVM v = game->sqvm;
-							StackReserver sr(v);
-							sq_pushroottable(v);
-							sq_pushstring(v, _SC("aerialLandingClimb"), -1);
-							if(SQ_FAILED(sq_get(v, -3)))
-								return ret;
-							sq_pushroottable(v);
-							sq_pushobj(v, this);
-							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
-								return ret;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								return ret;
-							return double(f);
-						};
-
-						// Determine throttle strength by executing script.
-						throttler = [&](){
-							double ret = rangein((deltaPos.len() - 3.) / 15. - velo.len(), 0, 0.5);
-							HSQUIRRELVM v = game->sqvm;
-							StackReserver sr(v);
-							sq_pushroottable(v);
-							sq_pushstring(v, _SC("aerialLandingThrottle"), -1);
-							if(SQ_FAILED(sq_get(v, -3)))
-								return ret;
-							sq_pushroottable(v);
-							sq_pushobj(v, this);
-							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
-								return ret;
-							SQFloat f;
-							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
-								return ret;
-							return double(f);
-						};
-
-						bool setSpoiler = false;
 						do{
-							HSQUIRRELVM v = game->sqvm;
 							StackReserver sr(v);
-							sq_pushroottable(v);
-							sq_pushstring(v, _SC("aerialLandingSpoiler"), -1);
-							if(SQ_FAILED(sq_get(v, -3)))
+							sq_pushstring(v, _SC("roll"), -1);
+							if(SQ_FAILED(sq_get(v, -2)))
 								break;
-							sq_pushroottable(v);
-							sq_pushobj(v, this);
-							if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								break;
+							turnAngle = double(f);
+							turning = std::min(1., fabs(turnAngle));
+						}while(false);
+
+						do{
+							StackReserver sr(v);
+							sq_pushstring(v, _SC("climb"), -1);
+							if(SQ_FAILED(sq_get(v, -2)))
+								break;
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								break;
+							targetClimber = [&,f](){return double(f);};
+						}while(false);
+
+						do{
+							StackReserver sr(v);
+							sq_pushstring(v, _SC("throttle"), -1);
+							if(SQ_FAILED(sq_get(v, -2)))
+								break;
+							SQFloat f;
+							if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+								break;
+							throttler = [&,f](){return double(f);};
+						}while(false);
+
+						do{
+							StackReserver sr(v);
+							sq_pushstring(v, _SC("spoiler"), -1);
+							if(SQ_FAILED(sq_get(v, -2)))
 								break;
 							SQBool f;
 							if(SQ_FAILED(sq_getbool(v, -1, &f)))
 								break;
 							setSpoiler = f == SQTrue;
 						}while(false);
-						spoiler = setSpoiler;
-					}
+
+					}while(false);
+					spoiler = setSpoiler;
 				}
 				else if(turnRange * turnRange < sdist && 0. < sp){ // Going away
 					// Turn around to get closer to target.

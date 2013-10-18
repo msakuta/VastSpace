@@ -417,7 +417,9 @@ void Aerial::addRigidBody(WarSpace *ws){
 Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
 }
 
-Aerial::Aerial(WarField *w) : st(w), showILS(false), iaileron(0), gear(false), gearphase(0), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
+Aerial::Aerial(WarField *w) : st(w), showILS(false), iaileron(0), gear(false), gearphase(0), fspoiler(0), spoiler(false), destPos(0,0,0),
+	destArrived(false), onFeet(false), takingOff(false)
+{
 	moi = .2; /* kilograms * kilometer^2 */
 	init();
 }
@@ -1809,6 +1811,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, SQBool(destArrived));
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("onFeet"))){
+		sq_pushbool(v, SQBool(onFeet));
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("takingOff"))){
 		sq_pushbool(v, SQBool(takingOff));
 		return 1;
@@ -1826,6 +1832,13 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 }
 
 SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
+	auto boolSetter = [&](const SQChar *name, bool &value){
+		SQBool b;
+		if(SQ_FAILED(sq_getbool(v, 3, &b)))
+			return sq_throwerror(v, gltestp::dstring("could not convert to bool ") << name);
+		value = b != SQFalse;
+		return SQRESULT(0);
+	};
 	if(!scstrcmp(name, _SC("gear"))){
 		SQBool b;
 		if(SQ_FAILED(sq_getbool(v, 3, &b)))
@@ -1864,26 +1877,12 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		destPos = r.value;
 		return 0;
 	}
-	else if(!scstrcmp(name, _SC("destArrived"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("could not convert to bool for destArrived"));
-		destArrived = b != SQFalse;
-		return 1;
-	}
-	else if(!scstrcmp(name, _SC("takingOff"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("could not convert to bool for takingOff"));
-		takingOff = b != SQFalse;
-		return 1;
-	}
+	else if(!scstrcmp(name, _SC("destArrived")))
+		return boolSetter(_SC("destArrived"), destArrived);
+	else if(!scstrcmp(name, _SC("takingOff")))
+		return boolSetter(_SC("takingOff"), takingOff);
 	else if(!scstrcmp(name, _SC("showILS"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("could not convert to bool for showILS"));
-		showILS = b != SQFalse;
-		return 0;
+		return boolSetter(_SC("showILS"), showILS);
 	}
 	else if(!scstrcmp(name, _SC("landingAirport"))){
 		landingAirport = sq_refobj(v, 3);
@@ -1973,6 +1972,8 @@ bool Aerial::taxi(double dt){
 			}
 		}
 	}
+	// Remember the last state as a member variable for later reference from a Squirrel script.
+	onFeet = ret;
 	return ret;
 }
 
@@ -2174,6 +2175,8 @@ void Aerial::animAI(double dt, bool onfeet){
 
 				mat2 = mat.tomat3().rotz(turnAngle);
 			}
+			else
+				destArrived = true;
 
 			double targetClimb = targetClimber();
 

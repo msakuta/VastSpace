@@ -60,12 +60,12 @@ function aerialLanding(e){
 }
 
 register_console_command("preset", function(){
-	local z = 10.;
+	local z = 7.;
 	local e = player.chase;
 	if(e.alive){
-		e.setpos(Vec3d(0.3, 1.0, z));
+		e.setpos(Vec3d(0.3, 0.8, z));
 		e.setrot(Quatd(0,0,0,1));
-		e.setvelo(Vec3d(0, 0, -0.2));
+		e.setvelo(Vec3d(0, 0, -0.13));
 		e.setomg(Vec3d(0, 0, 0));
 		e.health = e.maxhealth;
 		foreach(a in player.cs.entlist){

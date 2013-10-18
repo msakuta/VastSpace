@@ -50,7 +50,7 @@ local function localCoord(v){
 }
 
 local function globalCoord(v){
-	return localCoord(v) + airport.getpos();
+	return airport.getrot().trans(localCoord(v)) + airport.getpos();
 }
 
 
@@ -65,22 +65,6 @@ player.setmover("tactical");
 local lookrot = Quatd(0., 1., 0., 0.) * Quatd(-sin(PI/8.), 0, 0, cos(PI/8.)) * Quatd(0, sin(PI/8.), 0, cos(PI/8.));
 player.setrot(lookrot);
 player.viewdist = 0.25;
-
-function reset(){
-	local z = 20.;
-	foreach(e in birds) if(e.alive){
-		e.setpos(Vec3d(-0.1, 2.0, z));
-		e.setrot(Quatd(0,0,0,1));
-		e.setvelo(Vec3d(0, 0, -0.2));
-		e.setomg(Vec3d(0, 0, 0));
-		e.health = e.maxhealth;
-		z -= 0.5;
-	}
-};
-
-register_console_command("reset", reset);
-
-reset();
 
 yawscale <- 1.;
 pitchscale <- -1;
@@ -106,34 +90,97 @@ targetcs <- player.cs;
 old_frameproc <- "frameproc" in this ? frameproc : null;
 
 local path = [
-	globalCoord(Vec3d(69,0,172)),
+//	globalCoord(Vec3d(24,0,24)),
+//	globalCoord(Vec3d(42,0,24)),
+	globalCoord(Vec3d(42,0,140)),
 	globalCoord(Vec3d(69,0,154)),
-	globalCoord(Vec3d(52,0,140)),
-	globalCoord(Vec3d(24,0,140)),
+	globalCoord(Vec3d(69,0,172)),
+	globalCoord(Vec3d(52,0,196)),
+	globalCoord(Vec3d(24,0,196)),
 	globalCoord(Vec3d(24,0,28)),
 ];
 
-foreach(a in path)
-	print(a);
+local function flyProc(e){
+	print("starting flyProc for " + e);
 
-local ipaths = {[a10] = 1};
+	while(true){
+
+		// Wait until land
+		while(!e.onFeet)
+			yield;
+
+		local i = 0;
+		e.destPos = path[i++];
+		e.destArrived = false;
+		while(i < path.len()){
+			if(e.destArrived){
+				print("Node next [" + i + "/" + path.len() + "]: " + path[i]);
+				e.destPos = path[i];
+				e.destArrived = false;
+				if(path.len() - 1 <= i)
+					e.takingOff = true;
+				i++;
+			}
+			yield;
+		}
+
+		// Wait until took off
+		while(!e.takingOff)
+			yield;
+
+		print("Waypoint next ");
+		e.destPos = airport.getpos() + Vec3d(0., 0.0, 15.);
+		e.destArrived = false;
+
+		while(!e.destArrived)
+			yield;
+
+		print("Waypoint approach ");
+		e.destPos = airport.getpos() + Vec3d(0., 0.0, 10.);
+		e.destArrived = false;
+
+		while(!e.destArrived)
+			yield;
+
+		print("Airport next ");
+		e.landingAirport = airport;
+
+		yield;
+	}
+
+	print("ending flyProc for " + e);
+
+};
+
+local ipaths = {[a10] = flyProc(a10)};
+
+function reset(){
+	local z = 20.;
+	foreach(e in birds) if(e.alive){
+		ipaths[e] = flyProc(e);
+		e.setpos(Vec3d(-0.1, 2.0, z));
+		e.setrot(Quatd(0,0,0,1));
+		e.setvelo(Vec3d(0, 0, -0.2));
+		e.setomg(Vec3d(0, 0, 0));
+		e.health = e.maxhealth;
+		z -= 0.5;
+	}
+};
+
+register_console_command("reset", reset);
+
+reset();
 
 function frameproc(dt){
 	framecount++;
 	local currenttime = universe.global_time + 9.;
 
 	foreach(e in birds){
-		if(e.alive && !e.takingOff){
-			if(e.destArrived){
-				if(!(e in ipaths))
-					ipaths[e] <- 0;
-				e.destPos = path[ipaths[e]];
-				e.destArrived = false;
-				if(path.len() - 1 <= ipaths[e])
-					e.takingOff = true;
-				else
-					ipaths[e] = (ipaths[e] + 1) % path.len();
-			}
+		if(e.alive){
+			if(!(e in ipaths))
+				ipaths[e] <- flyProc(e);
+			else if(ipaths[e].getstatus() == "suspended")
+				resume ipaths[e];
 		}
 	}
 

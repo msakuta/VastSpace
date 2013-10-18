@@ -58,6 +58,7 @@ protected:
 //bhole_t bholes[50];
 	Vec3d destPos; ///< Destination position
 	bool destArrived; ///< If arrived to the destination
+	bool onFeet; ///< If landed on ground
 	bool takingOff; ///< If this plane's auto pilot is taking off
 	double takeOffTimer;
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile

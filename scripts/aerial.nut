@@ -1,5 +1,11 @@
 landingGSOffset <- -0.20;
 
+// The global table to store integrated values for all Aerial objects.
+// We would like to add the parameter to Aerial's member, but it's referred
+// to in this script, so keeping the value inside this script is probably
+// a better design.
+aerialParams <- {};
+
 local function rangein(v,min,max){
 	return v < min ? min : max < v ? max : v;
 }
@@ -12,7 +18,7 @@ local function fmod(v,f){
 	return v - f * floor(v / f);
 }
 
-function aerialLanding(e){
+function aerialLanding(e,dt){
 	local airport = e.landingAirport;
 	if(airport == null)
 		return null;
@@ -39,20 +45,39 @@ function aerialLanding(e){
 			return 0;
 		local gs = deltaPos.norm()[1] + asin(3. / 180. * PI ) + (e.spoiler ? 0 : landingGSOffset); // Glide slope is 3 degrees
 		local nvelo = e.getvelo().norm();
-		local ret = (gs - forward[1]) * 3.;
+		local ret = (gs - forward[1]) * 10.;
 		if(-0.08 < deltaPos[1])
 			ret += (0.10 + deltaPos[1]) / 0.10 /** -nvelo[1]*/;
 		else
 			ret += 0.05 * -nvelo[1];
-		ret += -e.getrot().cnj().trans(e.getomg())[0];
-	//	print("climb " + deltaPos[1] + ", gs = " + gs + ", climb = " + ret);
+		local localOmg = e.getrot().cnj().trans(e.getomg())[0];
+		ret += -10. * localOmg;
+
+		// Default parameter set
+		local params = {iclimb = 0};
+
+		// Retrieve saved parameters from the global table if one exist.
+		if(e.id in aerialParams)
+			params = aerialParams[e.id];
+		else // Otherwise assign the default value.
+			aerialParams[e.id] <- params;
+
+		ret += -1.0 * params.iclimb;
+
+		// Integrate climb value (difference from ideal pitch)
+		params.iclimb = rangein(params.iclimb + dt * ret, -1, 1);
+
+//		print("s[" + e + "]: ret = " + ret + ", iclimb " + params.iclimb + ", " + localOmg);
+
 		return ret;
 	}();
 
-	ret.throttle <- rangein(min(deltaPos.len() + 1., 5.) / 5. - 5. * e.getvelo().len(), 0, 0.5);
+	local desiredSpeed = min(deltaPos.len() / 5. + 0.05 + 4 * deltaPos[1], 0.15);
+//	print("s[" + e + "]: " + e.getvelo().len() + ", "  + desiredSpeed);
+	ret.throttle <- rangein((desiredSpeed - e.getvelo().len()) * 10., 0, 0.5);
 //	print("throttle " + ret.throttle);
 
-	local f = deltaPos.len() / 3.0 - e.getvelo().len() / 0.5;
+	local f = deltaPos.len() / 2.0 - e.getvelo().len() / 0.25;
 	ret.brake <- f < 1.;
 	ret.spoiler <- f < 1.;
 //	print("spoiler " + ret.spoiler);

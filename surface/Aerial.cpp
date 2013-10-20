@@ -791,6 +791,20 @@ void Aerial::animAI(double dt, bool onfeet){
 		double phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
 		const double arriveDist = 0.03;
 		if(landingAirport){
+			GetILSCommand gic;
+			if(landingAirport->command(&gic) && 0 < (gic.pos - this->pos).sp(-mat.vec3(2))){
+				deltaPos = gic.pos - this->pos; // Delta position towards the destination
+				localDeltaPos = this->rot.itrans(deltaPos);
+				phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
+				rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
+			}
+			else
+				rudder = approach(rudder, 0, dt, 0);
+			throttle = approach(throttle, 0, dt, 0);
+			elevator = approach(elevator, -1, dt, 0);
+			brake = true;
+			spoiler = true;
+
 			// If we are landing and decelerated below a very slow speed by landing gear brake,
 			// just assume we have landed.  Clearing landingAirport would trigger the next action.
 			if(velo.slen() < 0.01 * 0.01){
@@ -898,7 +912,8 @@ void Aerial::animAI(double dt, bool onfeet){
 						throw SQFError(gltestp::dstring("aerialLanding function not found"));
 					sq_pushroottable(v);
 					sq_pushobj(v, this);
-					if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+					sq_pushfloat(v, dt);
+					if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
 						throw SQFError(gltestp::dstring("aerialLanding function is not callable"));
 
 					turnAngle = sqGetter(v, _SC("roll"));

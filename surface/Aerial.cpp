@@ -429,7 +429,7 @@ void Aerial::anim(double dt){
 			toggleWeapon();
 		Vec3d nh = this->rot.quatrotquat(Vec3d(0., 0., -1.));
 		for(auto pt2 : w->entlist()){
-			if(pt2 != this && pt2->race != -1 /*&& ((struct entity_private_static*)pt2->vft)->flying(pt2)*/){
+			if(pt2 != this && pt2->race != -1 && pt2->race != this->race){
 				Vec3d delta = pt2->pos - this->pos;
 				double c = nh.sp(delta) / delta.len();
 				if(best < c && delta.slen() < 5. * 5.){

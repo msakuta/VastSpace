@@ -20,11 +20,11 @@ birds.append(f15);
 
 local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 10.0));
 a10.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
-a10.gear = true;
 player.chase = a10;
-//a10.destPos = a10.getpos() + Vec3d(-0.3,0,0.1);
-a10.destArrived = true;
 birds.append(a10);
+
+local a10_2 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 11.0));
+birds.append(a10_2);
 
 //local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //player.chase = tank;
@@ -41,7 +41,6 @@ bldg.hitRadius = 0.15;
 
 local airport = player.cs.addent("Airport", Vec3d(0, 0, 5.0));
 airport.setrot(Quatd(0,1,0,0));
-a10.landingAirport = airport;
 
 local function localCoord(v){
 	v = v / 128. - Vec3d(0.5,0,1);
@@ -104,6 +103,7 @@ local function flyProc(e){
 	print("starting flyProc for " + e);
 
 	while(true){
+		e.landingAirport = airport;
 
 		// Wait until land
 		while(!e.onFeet)
@@ -152,12 +152,13 @@ local function flyProc(e){
 
 };
 
-local ipaths = {[a10] = flyProc(a10)};
+local ipaths = {};
 
 function reset(){
 	local z = 20.;
 	foreach(e in birds) if(e.alive){
-		ipaths[e] = flyProc(e);
+		ipaths[e] <- flyProc(e);
+		e.landingAirport = airport;
 		e.setpos(Vec3d(-0.1, 2.0, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));

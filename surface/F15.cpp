@@ -148,7 +148,7 @@ void F15::init(){
 	this->gearphase = 0.;
 	this->cooldown = 0.;
 	this->muzzle = 0;
-	this->brk = 1;
+	this->brake = true;
 	this->afterburner = 0;
 	this->navlight = 0;
 	this->gear = 0;

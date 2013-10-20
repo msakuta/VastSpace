@@ -333,14 +333,6 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 			glPopMatrix();
 		}
 
-		if(gear){
-			glPushMatrix();
-			glTranslated(-.7, -.7, 0.);
-			glScaled(.005, -.005, .1);
-			glwPutTextureString("GEAR", 12);
-			glPopMatrix();
-		}
-
 //		const double pitch = -asin(heading[1]);
 		// According to the theory, pitch should be asin(2*(q.re() * q.i() + q.j() * q.k())).
 		// I don't know why this works this way.
@@ -387,6 +379,14 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 
 		readOut(gltestp::dstring("ARMED: ") << weaponList[weapon], 0.2, -0.75, 0.0035);
 		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
+
+		// Indicates landing gear status
+		if(gear)
+			readOut("GEAR", -0.5, -0.60, 0.0050);
+
+		// Indicates brake for landing gear
+		if(brake)
+			readOut("BRAKE", -0.5, -0.65, 0.0050);
 
 		// Indicates afterburner in use
 		if(afterburner)

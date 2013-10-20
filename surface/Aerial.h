@@ -48,7 +48,7 @@ protected:
 	double iaileron; ///< Integrated aileron
 	std::vector<Vec3d> force;
 	Vec3d sight;
-	bool muzzle, brk, afterburner, navlight, gear;
+	bool muzzle, brake, afterburner, navlight, gear;
 	bool spoiler;
 	bool showILS;
 	int missiles;

@@ -303,7 +303,11 @@ void Aerial::addRigidBody(WarSpace *ws){
 Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
 }
 
-Aerial::Aerial(WarField *w) : st(w), showILS(false), iaileron(0), gear(false), gearphase(0), fspoiler(0), spoiler(false), destPos(0,0,0),
+Aerial::Aerial(WarField *w) : st(w),
+	iaileron(0),
+	brake(false), afterburner(false), navlight(false),
+	gear(false), gearphase(0), fspoiler(0), spoiler(false),
+	showILS(false), destPos(0,0,0),
 	destArrived(false), onFeet(false), takingOff(false)
 {
 	moi = .2; /* kilograms * kilometer^2 */
@@ -407,8 +411,9 @@ void Aerial::anim(double dt){
 			rudder = rangein(approach(rudder, (inputs & PL_A ? -M_PI / 6. : inputs & PL_D ? M_PI / 6. : 0), 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 
 		fspoiler = approach(fspoiler, spoiler, dt, 0);
+
 		if(bbody)
-			bbody->setFriction(0.1 + 0.9 * fspoiler);
+			bbody->setFriction(0.1 + 0.9 * brake);
 
 		gearphase = approach(gearphase, gear, 1. * dt, 0.);
 
@@ -422,13 +427,6 @@ void Aerial::anim(double dt){
 
 		if(this->inputs.change & this->inputs.press & PL_RCLICK)
 			toggleWeapon();
-/*		if(pt->inputs.change & pt->inputs.press & PL_B)
-			p->brk = !p->brk;*/
-/*		if(pt->inputs.change & pt->inputs.press & PL_TAB){
-			p->afterburner = !p->afterburner;
-			if(p->afterburner && p->throttle < .7)
-				p->throttle = .7;
-		}*/
 		Vec3d nh = this->rot.quatrotquat(Vec3d(0., 0., -1.));
 		for(auto pt2 : w->entlist()){
 			if(pt2 != this && pt2->race != -1 /*&& ((struct entity_private_static*)pt2->vft)->flying(pt2)*/){
@@ -556,7 +554,11 @@ Entity::Props Aerial::props()const{
 }
 
 SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
-	if(!scstrcmp(name, _SC("gear"))){
+	if(!scstrcmp(name, _SC("brake"))){
+		sq_pushbool(v, brake);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("gear"))){
 		sq_pushbool(v, gear);
 		return 1;
 	}
@@ -610,20 +612,12 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		value = b != SQFalse;
 		return SQRESULT(0);
 	};
-	if(!scstrcmp(name, _SC("gear"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
-		gear = b;
-		return 0;
-	}
-	if(!scstrcmp(name, _SC("spoiler"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
-		spoiler = b;
-		return 0;
-	}
+	if(!scstrcmp(name, _SC("brake")))
+		return boolSetter(_SC("brake"), brake);
+	else if(!scstrcmp(name, _SC("gear")))
+		return boolSetter(_SC("gear"), gear);
+	else if(!scstrcmp(name, _SC("spoiler")))
+		return boolSetter(_SC("spoiler"), spoiler);
 	else if(!scstrcmp(name, _SC("weapon"))){
 		SQInteger i;
 		if(SQ_FAILED(sq_getinteger(v, 3, &i)))
@@ -816,18 +810,21 @@ void Aerial::animAI(double dt, bool onfeet){
 				rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 			}
 			elevator = approach(elevator, 1, dt, 0);
+			brake = false;
 			spoiler = false;
 		}
 		else if(destArrived || sdist < arriveDist * arriveDist){
 			destArrived = true;
 			throttle = approach(throttle, 0, dt, 0);
 			rudder = approach(rudder, 0, dt, 0);
+			brake = true;
 			spoiler = true;
 		}
 		else{
 			double velolen = velo.len();
 			throttle = approach(throttle, std::max(0., 0.2 - velolen * 20. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
 			rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
+			brake = false;
 			spoiler = false;
 		}
 		gear = true;
@@ -914,6 +911,7 @@ void Aerial::animAI(double dt, bool onfeet){
 						double thro = sqGetter(v, _SC("throttle"));
 						throttler = [thro](){return thro;};
 
+						brake = sqBoolGetter(v, _SC("brake"));
 						spoiler = sqBoolGetter(v, _SC("spoiler"));
 						gear = sqBoolGetter(v, _SC("gear"));
 					}

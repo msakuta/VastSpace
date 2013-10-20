@@ -18,6 +18,8 @@ function aerialLanding(e){
 		return null;
 
 	local deltaPos = airport.ILSPos - e.getpos(); // Delta position towards the destination
+	local airportPos = Quatd.rotation(airport.ILSHeading, Vec3d(0,1,0)).trans(Vec3d(0,0,-1));
+	deltaPos += airportPos;
 	local forward = -e.getrot().trans(Vec3d(0,0,1));
 	local ret = {};
 
@@ -39,9 +41,9 @@ function aerialLanding(e){
 		local nvelo = e.getvelo().norm();
 		local ret = (gs - forward[1]) * 3.;
 		if(-0.08 < deltaPos[1])
-			ret += (0.10 - deltaPos[1]) / 0.10 * -nvelo[1];
+			ret += (0.10 + deltaPos[1]) / 0.10 /** -nvelo[1]*/;
 		else
-			ret += 0.02 * -nvelo[1];
+			ret += 0.05 * -nvelo[1];
 		ret += -e.getrot().cnj().trans(e.getomg())[0];
 	//	print("climb " + deltaPos[1] + ", gs = " + gs + ", climb = " + ret);
 		return ret;
@@ -64,7 +66,7 @@ register_console_command("preset", function(){
 	local z = 7.;
 	local e = player.chase;
 	if(e.alive){
-		e.setpos(Vec3d(0.3, 0.8, z));
+		e.setpos(Vec3d(0.3, 0.9, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.13));
 		e.setomg(Vec3d(0, 0, 0));

@@ -251,6 +251,33 @@ SQInteger Entity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		CoordSys::sq_pushobj(v, const_cast<CoordSys*>(w->cs));
 		return 1;
 	}
+	// Intrinsic aggregate types such as Vec3d and Quatd are intentionally excluded from property access
+	// because I thought it could lead to counter-intuitive results in compound assignment operators.
+	// For instance, what if we write "Entity.pos += Vec3d(1,0,0)" in a Squirrel script?
+	// If it's expanded like "Entity.pos = Entity.pos + Vec3d(1,0,0)", there's no problem.
+	// But we cannot be sure that it's not expanded like "local v = Entity.pos; v += Vec3d(1,0,0)".
+	// It seems that the former is the case, so we can revive the property accessors for those member
+	// variables.  Method-formed accessors (like getpos()) are still provided for compatibility.
+	else if(!scstrcmp(name, _SC("pos"))){
+		SQVec3d r(pos);
+		r.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("velo"))){
+		SQVec3d r(velo);
+		r.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("rot"))){
+		SQQuatd r(rot);
+		r.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("omg"))){
+		SQVec3d r(omg);
+		r.push(v);
+		return 1;
+	}
 	else if(!strcmp(name, _SC("race"))){
 		sq_pushinteger(v, race);
 		return 1;
@@ -394,6 +421,30 @@ SQInteger Entity::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &retint)))
 			return SQ_ERROR;
 		race = int(retint);
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("pos"))){
+		SQVec3d r;
+		r.getValue(v);
+		pos = r.value;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("velo"))){
+		SQVec3d r;
+		r.getValue(v);
+		velo = r.value;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("rot"))){
+		SQQuatd r;
+		r.getValue(v);
+		rot = r.value;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("omg"))){
+		SQVec3d r;
+		r.getValue(v);
+		omg = r.value;
 		return 0;
 	}
 	else if(!strcmp(name, _SC("enemy"))){

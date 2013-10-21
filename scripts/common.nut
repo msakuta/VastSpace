@@ -83,12 +83,18 @@ class Star extends Astrobj{
 
 class Entity{
 	string classname;
+	Vec3d pos;
+	Vec3d velo;
+	Quatd rot;
+	Vec3d omg;
 	Vec3d getpos();
 	void setpos(Vec3d);
 	Vec3d getvelo();
 	void setvelo(Vec3d);
 	Quatd getrot();
 	void setrot(Quatd);
+	Vec3d getomg();
+	void setomg(Vec3d);
 	void command(string, ...);
 	void update(double dt);
 	int race;

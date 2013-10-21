@@ -18,14 +18,29 @@ local function fmod(v,f){
 	return v - f * floor(v / f);
 }
 
+local function estimate_pos(pos, velo, srcpos, srcvelo, speed, cs){
+	local grv = Vec3d(0,0,0);
+	if(cs != null){
+		local mid = (pos + srcpos) * 0.5;
+		local evelo = (pos - srcpos).norm() * -speed;
+		grv = cs.accel(mid, evelo);
+	}
+	local dist = (pos - srcpos).len();
+	local posy = pos[1] + (velo[1] + grv[1]) * dist / speed;
+	return pos + (velo - srcvelo + grv * dist / speed / 2.) * dist / speed;
+}
+
+local estimateSpeed = 0.5; ///< Virtual approaching speed for estimating position
 local turnRange = 3.;
 local turnBank = 2. / 5. * PI;
-local rudderAim = 17.; ///< Aim strength factor for rudder
+local rudderAim = 7.; ///< Aim strength factor for rudder
 
 local function aerialCruise(e, dt, deltaPos, forward){
 	local ret = {roll = 0, climb = 0, throttle = 1., rudder = 0., brake = false, spoiler = false, gear = false};
 	local dist = deltaPos.len();
-	local estPos = deltaPos;
+	local estPos = estimate_pos(deltaPos,
+		e.enemy != null && e.enemy.alive ? e.enemy.velo - e.velo : -e.velo,
+		Vec3d(0,0,0), Vec3d(0,0,0), estimateSpeed, null);
 	local sp = estPos.sp(-forward);
 	local turnAngle = 0;
 
@@ -43,9 +58,10 @@ local function aerialCruise(e, dt, deltaPos, forward){
 		else{
 			estPos.normin();
 			local turning = estPos.vp(forward)[1] * (1. - fabs(estPos[1]));
-			if(turnAngle < dist || sp < 0){ // Approaching
+			if(turnRange < dist || sp < 0){ // Approaching
 				turnAngle += turnBank * turning;
 				ret.rudder = -turning * rudderAim;
+//				print("turn " + turning);
 			}
 			else // Receding
 				turnAngle += -turnBank * turning;
@@ -62,7 +78,7 @@ local function aerialCruise(e, dt, deltaPos, forward){
 	}
 	else
 		e.destArrived = true;
-	print("rudder " + ret.rudder);
+//	print("estPos " + estPos + ", rudder " + ret.rudder);
 	return ret;
 }
 

@@ -902,63 +902,37 @@ void Aerial::animAI(double dt, bool onfeet){
 			};
 
 			double turnAngle = 0;
-			if(landing){
-				try{
-					HSQUIRRELVM v = game->sqvm;
-					StackReserver sr(v);
-					sq_pushroottable(v);
-					sq_pushstring(v, _SC("aerialLanding"), -1);
-					if(SQ_FAILED(sq_get(v, -3)))
-						throw SQFError(gltestp::dstring("aerialLanding function not found"));
-					sq_pushroottable(v);
-					sq_pushobj(v, this);
-					sq_pushfloat(v, dt);
-					if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
-						throw SQFError(gltestp::dstring("aerialLanding function is not callable"));
+			try{
+				HSQUIRRELVM v = game->sqvm;
+				StackReserver sr(v);
+				sq_pushroottable(v);
+				sq_pushstring(v, _SC("aerialLanding"), -1);
+				if(SQ_FAILED(sq_get(v, -3)))
+					throw SQFError(gltestp::dstring("aerialLanding function not found"));
+				sq_pushroottable(v);
+				sq_pushobj(v, this);
+				sq_pushfloat(v, dt);
+				if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+					throw SQFError(gltestp::dstring("aerialLanding function is not callable"));
 
-					turnAngle = sqGetter(v, _SC("roll"));
-					turning = std::min(1., fabs(turnAngle));
+				turnAngle = sqGetter(v, _SC("roll"));
+				turning = std::min(1., fabs(turnAngle));
 
-					double climb = sqGetter(v, _SC("climb"));
-					targetClimber = [climb](){return climb;};
+				double climb = sqGetter(v, _SC("climb"));
+				targetClimber = [climb](){return climb;};
 
-					double thro = sqGetter(v, _SC("throttle"));
-					throttler = [thro](){return thro;};
+				rudderTarget = sqGetter(v, _SC("rudder"));
 
-					brake = sqBoolGetter(v, _SC("brake"));
-					spoiler = sqBoolGetter(v, _SC("spoiler"));
-					gear = sqBoolGetter(v, _SC("gear"));
-				}
-				catch(SQFError &e){
-					CmdPrint(gltestp::dstring("aerialLanding Error: ") << e.what());
-				}
+				double thro = sqGetter(v, _SC("throttle"));
+				throttler = [thro](){return thro;};
+
+				brake = sqBoolGetter(v, _SC("brake"));
+				spoiler = sqBoolGetter(v, _SC("spoiler"));
+				gear = sqBoolGetter(v, _SC("gear"));
 			}
-			else if(0.5 * 0.5 < sdist){
-				if(turnRange * turnRange < sdist && 0. < sp){ // Going away
-					// Turn around to get closer to target.
-					turnAngle += -mat.vec3(2).sp(estPos) < 0 ? turnBank : -turnBank;
-					turning = 1;
-				}
-				else{
-					estPos.normin();
-					turning = estPos.vp(-mat.vec3(2))[1] * (1. - fabs(estPos[1]));
-					if(3. * 3. < sdist || sp < 0){ // Approaching
-						turnAngle += turnBank * turning;
-						rudderTarget = -turning * rudderAim;
-					}
-					else // Receding
-						turnAngle += -turnBank * turning;
-					turning = fabs(turning);
-				}
-
-				// Upside down; get upright as soon as possible or we'll crash!
-				if(mat.vec3(1)[1] < 0){
-					turning = 1;
-					turnAngle = mat.vec3(0)[1] < 0 ? -turnBank : turnBank;
-				}
+			catch(SQFError &e){
+				CmdPrint(gltestp::dstring("aerialLanding Error: ") << e.what());
 			}
-			else
-				destArrived = true;
 
 			mat2 = mat.tomat3().rotz(turnAngle);
 

@@ -193,7 +193,7 @@ void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
 	// way, which means derived methods are always called.
 	// It means you must override classname() to return Squirrel class name in order to enable
 	// added functions in derived class in Squirrel scripts.
-	sq_pushstring(v, e->classname(), -1);
+	sq_pushstring(v, e ? e->classname() : "Entity", -1);
 
 	if(SQ_FAILED(sq_get(v, -2)))
 		throw SQFError("Something's wrong with Entity class definition.");

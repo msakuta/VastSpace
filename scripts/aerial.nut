@@ -18,16 +18,77 @@ local function fmod(v,f){
 	return v - f * floor(v / f);
 }
 
+local turnRange = 3.;
+local turnBank = 2. / 5. * PI;
+local rudderAim = 17.; ///< Aim strength factor for rudder
+
+local function aerialCruise(e, dt, deltaPos, forward){
+	local ret = {roll = 0, climb = 0, throttle = 1., rudder = 0., brake = false, spoiler = false, gear = false};
+	local dist = deltaPos.len();
+	local estPos = deltaPos;
+	local sp = estPos.sp(-forward);
+	local turnAngle = 0;
+
+	local planar = [deltaPos[0], deltaPos[2]];
+	ret.climb = deltaPos.sp(-forward) < 0 ? rangein(deltaPos[1] / sqrt(planar[0] * planar[0] + planar[1] * planar[1]), -0.5, 0.5) : 0;
+
+	ret.throttle = (0.5 - e.getvelo().len()) * 2.;
+
+	if(0.5 < dist){
+		if(turnRange < dist && 0. < sp){ // Going away
+			// Turn around to get closer to target.
+			turnAngle += forward.sp(estPos) < 0 ? turnBank : -turnBank;
+//			turning = 1;
+		}
+		else{
+			estPos.normin();
+			local turning = estPos.vp(forward)[1] * (1. - fabs(estPos[1]));
+			if(turnAngle < dist || sp < 0){ // Approaching
+				turnAngle += turnBank * turning;
+				ret.rudder = -turning * rudderAim;
+			}
+			else // Receding
+				turnAngle += -turnBank * turning;
+//			turning = fabs(turning);
+		}
+
+		// Upside down; get upright as soon as possible or we'll crash!
+		if(e.getrot().trans(Vec3d(0,1,0))[1] < 0){
+//			turning = 1;
+			turnAngle = e.getrot().trans(Vec3d(1,0,0))[1] < 0 ? -turnBank : turnBank;
+		}
+
+		ret.roll = turnAngle;
+	}
+	else
+		e.destArrived = true;
+	print("rudder " + ret.rudder);
+	return ret;
+}
+
 function aerialLanding(e,dt){
 	local airport = e.landingAirport;
-	if(airport == null)
-		return null;
+	local landing = false;
+	local deltaPos = (!e.onFeet && e.enemy ? e.enemy.getpos() : e.destPos) - e.getpos();
+	local forward = -e.getrot().trans(Vec3d(0,0,1));
 
-	local deltaPos = airport.ILSPos - e.getpos(); // Delta position towards the destination
+	if(airport != null && airport.alive && airport instanceof Airport){
+		local tmpDeltaPos = airport.ILSPos - e.getpos(); // Delta position towards the destination
+		if(tmpDeltaPos.sp(forward)){
+			deltaPos = tmpDeltaPos;
+			landing = true;
+			if(!e.showILS)
+				e.showILS = true; // Turn on ILS display on the HUD.
+		}
+	}
+//	print("airport: " + landing);
+
+	if(!landing)
+		return aerialCruise(e, dt, deltaPos, forward);
+
 	local airportPos = Quatd.rotation(airport.ILSHeading, Vec3d(0,1,0)).trans(Vec3d(0,0,-1));
 	deltaPos += airportPos;
-	local forward = -e.getrot().trans(Vec3d(0,0,1));
-	local ret = {};
+	local ret = {rudder = 0};
 
 	ret.roll <- function(){
 		local landPerp = Quatd.rotation(airport.ILSHeading + PI / 2., Vec3d(0,1,0)).trans(Vec3d(0, 0, 1)); // Perpendicular to landing direction

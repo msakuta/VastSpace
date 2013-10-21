@@ -18,18 +18,18 @@ birds.append(f15);
 //local f15_3 = player.cs.addent("F15", Vec3d(1, 4., 0));
 //f15_3.race = 1;
 
-local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 10.0));
+local a10 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 5.0));
 a10.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 player.chase = a10;
 birds.append(a10);
 
-local a10_2 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 11.0));
-birds.append(a10_2);
+//local a10_2 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 11.0));
+//birds.append(a10_2);
 
-//local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
+local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //player.chase = tank;
 
-//a10.enemy = tank;
+a10.enemy = tank;
 
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;
@@ -155,10 +155,10 @@ local function flyProc(e){
 local ipaths = {};
 
 function reset(){
-	local z = 20.;
+	local z = 5.;
 	foreach(e in birds) if(e.alive){
-		ipaths[e] <- flyProc(e);
-		e.landingAirport = airport;
+//		ipaths[e] <- flyProc(e);
+//		e.landingAirport = airport;
 		e.setpos(Vec3d(-0.1, 2.0, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));
@@ -178,10 +178,10 @@ function frameproc(dt){
 
 	foreach(e in birds){
 		if(e.alive){
-			if(!(e in ipaths))
-				ipaths[e] <- flyProc(e);
-			else if(ipaths[e].getstatus() == "suspended")
-				resume ipaths[e];
+			if(e in ipaths){
+				if(ipaths[e].getstatus() == "suspended")
+					resume ipaths[e];
+			}
 		}
 	}
 

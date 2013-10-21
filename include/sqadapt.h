@@ -117,7 +117,7 @@ public:
 	Class *pointer; // Holds pointer to Squirrel-managed memory obtained by last sq_getuserdata call.
 
 	SQIntrinsic() : pointer(NULL){}
-	SQIntrinsic(Class &initValue) : value(initValue), pointer(NULL){}
+	SQIntrinsic(const Class &initValue) : value(initValue), pointer(NULL){}
 
 	/// \brief Pushes the object to Squirrel stack.
 	void push(HSQUIRRELVM v){

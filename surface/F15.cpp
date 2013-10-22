@@ -63,6 +63,7 @@ double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
 HSQOBJECT F15::sqSidewinderFire = sq_nullobj();
 HitBoxList F15::hitboxes;
+ModelEntity::NavlightList F15::navlights;
 double F15::thrustStrength = .010;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
@@ -121,6 +122,7 @@ void F15::init(){
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SqCallbackProcess(sqSidewinderFire, "sidewinderFire") <<=
 			HitboxProcess(hitboxes) <<=
+			NavlightsProcess(navlights) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
 			WingProcess(wings0, "wings") <<=
 			Vec3dListProcess(wingTips, "wingTips") <<=

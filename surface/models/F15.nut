@@ -1,4 +1,6 @@
 
+dofile("surface/models/Aerial.nut");
+
 modelScale <- 0.001 / 30.0;
 
 hitRadius <- 0.012;
@@ -13,6 +15,12 @@ hitbox <- [
 	[Vec3d(0,1,0) * 0.5e-3, Quatd(0,0,0,1), Vec3d(13.05, 3., 19.43) * 0.5e-3],
 	[Vec3d(0,-30,-50) * modelScale, Quatd(0,0,0,1), Vec3d(60., 25., 100.) * modelScale],
 ];
+
+navlights <- [
+	{pos = Vec3d(0, -17, 34) * modelScale, radius = 0.001, period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
+	{pos = Vec3d(-218, 10, 127) * modelScale, radius = 0.001, color = [1,0,0,1], pattern = "Constant"}, // Port
+	{pos = Vec3d( 218, 10, 127) * modelScale, radius = 0.001, color = [0,1,0,1], pattern = "Constant"}, // Starboard
+]
 
 // Thrust power
 thrust <- 0.015;
@@ -178,34 +186,5 @@ function drawOverlay(){
 }
 
 if(isClient()){
-	register_console_command("gear", function(){
-		if(player.controlled)
-			player.controlled.gear = !player.controlled.gear;
-	});
-
-	register_console_command("spoiler", function(){
-		if(player.controlled)
-			player.controlled.spoiler = !player.controlled.spoiler;
-	});
-
-	beginControl["F15"] <- function (){
-		if("print" in this)
-			print("F15::beginControl");
-		cmd("pushbind");
-		cmd("bind g gear");
-		cmd("bind b spoiler");
-		cmd("r_windows 0");
-		register_console_command("afterburner", function(){
-			foreach(e in player.selected)
-				e.afterburner = !e.afterburner;
-		});
-		cmd("bind e afterburner");
-	}
-
-	endControl["F15"] <- function (){
-		if("print" in this)
-			print("F15::endControl");
-		cmd("popbind");
-		cmd("r_windows 1");
-	}
+	registerControls("F15");
 }

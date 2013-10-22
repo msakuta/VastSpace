@@ -27,6 +27,11 @@ if(isClient()){
 			player.controlled.showILS = !player.controlled.showILS;
 	});
 
+	register_console_command("afterburner", function(){
+		if(player.controlled)
+			player.controlled.afterburner = !player.controlled.afterburner;
+	});
+
 	function registerControls(classname){
 		beginControl[classname] <- function (){
 			if("print" in this)
@@ -37,6 +42,7 @@ if(isClient()){
 			cmd("bind b brake");
 			cmd("bind h spoiler");
 			cmd("bind i showILS");
+			cmd("bind e afterburner");
 			cmd("r_windows 0");
 		}
 

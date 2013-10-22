@@ -90,8 +90,13 @@ void F15::drawtra(WarDraw *wd){
 	Mat4d mat;
 	transform(mat);
 
+	// Show navigation lights if turned on
+	if(navlight){
+		drawNavlights(wd, navlights, &mat);
+	}
 
-
+	if(debugWings)
+		drawDebugWings();
 
 	if(afterburner){
 		RandomSequence rs(crc32(&game->universe->global_time, sizeof game->universe->global_time));

@@ -16,6 +16,12 @@ hitbox <- [
 	[Vec3d(0,-45,-75) * modelScale, Quatd(0,0,0,1), Vec3d(100, 15, 150) * modelScale],
 ];
 
+navlights <- [
+	{pos = Vec3d(0, -17, 4) * modelScale, radius = 0.001, period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
+	{pos = Vec3d(-328, 12, -10) * modelScale, radius = 0.001, color = [1,0,0,1], pattern = "Constant"}, // Port
+	{pos = Vec3d( 328, 12, -10) * modelScale, radius = 0.001, color = [0,1,0,1], pattern = "Constant"}, // Starboard
+]
+
 // Thrust power
 thrust <- 0.01
 

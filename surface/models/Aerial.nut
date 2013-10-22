@@ -2,6 +2,11 @@
 // Common definitions for Aerial vehicles.
 
 if(isClient()){
+	register_console_command("navlight", function(){
+		if(player.controlled)
+			player.controlled.navlight = !player.controlled.navlight;
+	});
+
 	register_console_command("gear", function(){
 		if(player.controlled)
 			player.controlled.gear = !player.controlled.gear;
@@ -27,6 +32,7 @@ if(isClient()){
 			if("print" in this)
 				print("A10::beginControl");
 			cmd("pushbind");
+			cmd("bind n navlight");
 			cmd("bind g gear");
 			cmd("bind b brake");
 			cmd("bind h spoiler");

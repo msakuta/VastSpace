@@ -571,6 +571,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushinteger(v, weapon);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("navlight"))){
+		sq_pushbool(v, SQBool(navlight));
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("afterburner"))){
 		sq_pushbool(v, SQBool(afterburner));
 		return 1;
@@ -626,16 +630,15 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 		weapon = i;
 		return 0;
 	}
+	else if(!scstrcmp(name, _SC("navlight")))
+		return boolSetter(_SC("navlight"), navlight);
 	else if(!scstrcmp(name, _SC("afterburner"))){
-		SQBool b;
-		if(SQ_FAILED(sq_getbool(v, 3, &b)))
-			return sq_throwerror(v, _SC("Argument type must be compatible with bool"));
-		afterburner = b;
+		SQRESULT ret = boolSetter(_SC("afterburner"), afterburner);
 
 		// You cannot keep afterburner active without sufficient fuel supply
-		if(afterburner && throttle < .7)
+		if(SQ_SUCCEEDED(ret) && afterburner && throttle < .7)
 			throttle = .7;
-		return 0;
+		return ret;
 	}
 	else if(!scstrcmp(name, _SC("destPos"))){
 		SQVec3d r;

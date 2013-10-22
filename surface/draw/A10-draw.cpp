@@ -89,6 +89,12 @@ void A10::draw(WarDraw *wd){
 }
 
 void A10::drawtra(WarDraw *wd){
+	// Show navigation lights if turned on
+	if(navlight){
+		Mat4d mat;
+		transform(mat);
+		drawNavlights(wd, navlights, &mat);
+	}
 
 	if(debugWings)
 		drawDebugWings();

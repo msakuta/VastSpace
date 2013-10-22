@@ -15,10 +15,6 @@ extern "C"{
 }
 
 
-//#define VALKIE_WALK_SPEED (.015)
-//#define VALKIE_WALK_PHASE_SPEED (M_PI)
-
-
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
 static const struct color_node cnl_blueburn[] = {
@@ -217,17 +213,6 @@ void A10::shoot(double dt){
 	Vec3d velo0(0., 0., -bulletSpeed);
 	if(dt <= this->cooldown)
 		return;
-/*	if(pt->vft == &valkie_s){
-		valkie_t *p = (valkie_t *)pt;
-		mat4rotx(mat, mat0, -p->torsopitch);
-		if(p->arms[0].type != arms_none){
-			reloadtime = arms_static[p->arms[0].type].cooldown;
-		}
-		if(p->arms[0].type == arms_valkierifle){
-			New = BeamNew;
-		}
-	}
-	else*/
 	Mat4d mat;
 	transform(mat);
 	if(true || this->weapon){

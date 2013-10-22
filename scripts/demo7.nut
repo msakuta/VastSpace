@@ -29,7 +29,7 @@ birds.append(a10);
 local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //player.chase = tank;
 
-a10.enemy = tank;
+//a10.enemy = tank;
 
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;
@@ -155,10 +155,10 @@ local function flyProc(e){
 local ipaths = {};
 
 function reset(){
-	local z = 5.;
+	local z = 15.;
 	foreach(e in birds) if(e.alive){
-//		ipaths[e] <- flyProc(e);
-//		e.landingAirport = airport;
+		ipaths[e] <- flyProc(e);
+		e.landingAirport = airport;
 		e.setpos(Vec3d(-0.1, 2.0, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));

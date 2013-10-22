@@ -44,6 +44,7 @@ protected:
 	double fspoiler;
 	double throttle;
 	double gearphase;
+	double brakephase;
 	double cooldown;
 	double iaileron; ///< Integrated aileron
 	std::vector<Vec3d> force;
@@ -92,6 +93,7 @@ protected:
 
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+	virtual double getAirBrake()const{return 2.;} ///< Returns airbrake strength in factor of air drag without brake.
 	virtual WingList &getWings()const = 0;
 	virtual HitBoxList &getHitBoxes()const = 0;
 	virtual bool buildBody();

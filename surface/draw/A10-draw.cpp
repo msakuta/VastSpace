@@ -26,18 +26,20 @@ void A10::draw(WarDraw *wd){
 	static Motion *elevatorMotion = nullptr;
 	static Motion *rudderMotion = nullptr;
 	static Motion *gearMotion = nullptr;
-	
+	static Motion *airbrakeMotion = nullptr;
+
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modPath() << "models/A10.mqo");
-		lodMotion = LoadMotion(modPath() << "models/F15-LOD.mot");
+		lodMotion = LoadMotion(modPath() << "models/A10-LOD.mot");
 		aileronMotion = LoadMotion(modPath() << "models/F15-aileron.mot");
 		elevatorMotion = LoadMotion(modPath() << "models/F15-elevator.mot");
 		rudderMotion = LoadMotion(modPath() << "models/F15-rudder.mot");
 		gearMotion = LoadMotion(modPath() << "models/F15-gear.mot");
+		airbrakeMotion = LoadMotion(modPath() << "models/A10-airbrake.mot");
 
 		init.create(*openGLState);
 	}
@@ -50,16 +52,18 @@ void A10::draw(WarDraw *wd){
 
 		// TODO: Shadow map shape and real shape can diverge
 		const double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
-		MotionPose mp[5];
+		MotionPose mp[6];
 		lodMotion->interpolate(mp[0], pixels < 15 ? 0. : 10.);
 		aileronMotion->interpolate(mp[1], aileron * 10. + 10.);
 		elevatorMotion->interpolate(mp[2], elevator * 10. + 10.);
 		rudderMotion->interpolate(mp[3], getRudder() * 10. + 10.);
 		gearMotion->interpolate(mp[4], gearphase * 10.);
+		airbrakeMotion->interpolate(mp[5], brakephase * 5.); // 10 = 90 degrees
 		mp[0].next = &mp[1];
 		mp[1].next = &mp[2];
 		mp[2].next = &mp[3];
 		mp[3].next = &mp[4];
+		mp[4].next = &mp[5];
 
 		if(!wd->shadowmapping)
 			GLWchart::addSampleToCharts("posetime", TimeMeasLap(&tm2));

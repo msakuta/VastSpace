@@ -306,7 +306,7 @@ Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,
 Aerial::Aerial(WarField *w) : st(w),
 	iaileron(0),
 	brake(false), afterburner(false), navlight(false),
-	gear(false), gearphase(0), fspoiler(0), spoiler(false),
+	gear(false), gearphase(0), brakephase(0), fspoiler(0), spoiler(false),
 	showILS(false), destPos(0,0,0),
 	destArrived(false), onFeet(false), takingOff(false)
 {
@@ -413,9 +413,10 @@ void Aerial::anim(double dt){
 		fspoiler = approach(fspoiler, spoiler, dt, 0);
 
 		if(bbody)
-			bbody->setFriction(0.1 + 0.9 * brake);
+			bbody->setFriction(0.1 + 0.9 * brakephase);
 
 		gearphase = approach(gearphase, gear, 1. * dt, 0.);
+		brakephase = approach(brakephase, brake, 1. * dt, 0.); // Brake oil pressure gradually raises.
 
 		if(inputs & PL_W)
 			throttle = approach(throttle, 1., .5 * dt, 5.);
@@ -498,7 +499,7 @@ void Aerial::anim(double dt){
 			double len = velolen < .05 ? velolen / .05 : velolen < .340 ? 1. : velolen / .340;
 
 			// Calculate attenuation factor
-			double f2 = f * air * this->mass * .15 * len;
+			double f2 = f * air * (1. + getAirBrake() * brakephase) * this->mass * .15 * len;
 
 			Mat3d aeroBuf;
 			const Mat3d *aeroRef = &it.aero;

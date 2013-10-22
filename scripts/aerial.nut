@@ -155,7 +155,7 @@ function aerialLanding(e,dt){
 //	print("throttle " + ret.throttle);
 
 	local f = deltaPos.len() / 2.0 - e.getvelo().len() / 0.25;
-	ret.brake <- f < 1.;
+	ret.brake <- f < 0.;
 	ret.spoiler <- f < 1.;
 //	print("spoiler " + ret.spoiler);
 

@@ -1,0 +1,25 @@
+model_motion 2
+{
+	keyframe 8 10
+	{
+		"body0" 0 0 0 1 0 0 0 0.00100000004749745
+		"body1" 0 0 0 1 0 0 0 0
+		"aileronr" 0 0 0 1 0 0 0 0
+		"aileronl" 0 0 0 1 0 0 0 0
+		"aileronlu" 0 0 0 1 0 0 0 0
+		"aileronld" 0 0 0 1 0 0 0 0
+		"aileronru" 0 0 0 1 0 0 0 0
+		"aileronrd" 0 0 0 1 0 0 0 0
+	}
+	keyframe 8 10
+	{
+		"body0" 0 0 0 1 0 0 0 -1
+		"body1" 0 0 0 1 0 0 0 1
+		"aileronr" 0 0 0 1 0 0 0 1
+		"aileronl" 0 0 0 1 0 0 0 1
+		"aileronlu" 0 0 0 1 0 0 0 1
+		"aileronld" 0 0 0 1 0 0 0 1
+		"aileronru" 0 0 0 1 0 0 0 1
+		"aileronrd" 0 0 0 1 0 0 0 1
+	}
+}

@@ -1199,5 +1199,5 @@ void ModelEntity::NavlightsProcess::process(HSQUIRRELVM v)const{
 
 #ifdef DEDICATED
 double ModelEntity::Navlight::patternIntensity(double)const{return 0.;}
-void ModelEntity::drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat){}
+void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, const Mat4d *transmat){}
 #endif

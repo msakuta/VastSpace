@@ -93,10 +93,13 @@ protected:
 		double patternIntensity(double t)const;
 	};
 
+	/// \brief List of Navlight objects symbolized
+	typedef std::vector<Navlight> NavlightList;
+
 	class EXPORT NavlightsProcess : public SqInitProcess{
 	public:
-		std::vector<Navlight> &navlights;
-		NavlightsProcess(std::vector<Navlight> &navlights) : navlights(navlights){}
+		NavlightList &navlights;
+		NavlightsProcess(NavlightList &navlights) : navlights(navlights){}
 		virtual void process(HSQUIRRELVM v)const;
 	};
 
@@ -105,7 +108,7 @@ protected:
 	/// \param navlights List of navigation lights.
 	/// \param transmat The transformation for the lights. Can be NULL to specify
 	///        the default transformation, i.e. return value of transform().
-	void drawNavlights(WarDraw *wd, const std::vector<Navlight> &navlights, const Mat4d *transmat = NULL);
+	void drawNavlights(WarDraw *wd, const NavlightList &navlights, const Mat4d *transmat = NULL);
 };
 
 

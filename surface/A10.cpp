@@ -60,7 +60,7 @@ double A10::defaultMass = 12000.;
 double A10::maxHealthValue = 500.;
 HSQOBJECT A10::sqFire = sq_nullobj();
 HitBoxList A10::hitboxes;
-std::vector<ModelEntity::Navlight> A10::navlights;
+ModelEntity::NavlightList A10::navlights;
 double A10::thrustStrength = .010;
 A10::WingList A10::wings0;
 std::vector<Vec3d> A10::wingTips;

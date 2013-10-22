@@ -48,7 +48,7 @@ protected:
 	static double maxHealthValue;
 	static HSQOBJECT sqFire;
 	static HitBoxList hitboxes;
-	static std::vector<Navlight> navlights;
+	static NavlightList navlights;
 	static double thrustStrength;
 	static WingList wings0;
 	static std::vector<Vec3d> wingTips;

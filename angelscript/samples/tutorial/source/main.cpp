@@ -262,11 +262,12 @@ void ConfigureEngine(asIScriptEngine *engine)
 	// the engine, so that the engine configuration could be changed 
 	// without having to recompile all the scripts.
 
-	r = engine->RegisterObjectType("Vec3d", sizeof(Vec3d), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectType("Vec3d", sizeof(Vec3d), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "string ToString()", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
 }
 
 class CBytecodeStream : public asIBinaryStream

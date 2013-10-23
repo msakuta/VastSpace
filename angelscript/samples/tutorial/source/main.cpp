@@ -269,6 +269,24 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectMethod("Vec3d", "string ToString()", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 }
 
+class CBytecodeStream : public asIBinaryStream
+{
+public:
+  CBytecodeStream(FILE *fp) : f(fp) {}
+  void Write(const void *ptr, asUINT size) 
+  {
+    if( size == 0 ) return; 
+    fwrite(ptr, size, 1, f); 
+  }
+  void Read(void *ptr, asUINT size) 
+  { 
+    if( size == 0 ) return; 
+    fread(ptr, size, 1, f); 
+  }
+protected:
+  FILE *f;
+};
+
 int CompileScript(asIScriptEngine *engine)
 {
 	int r;
@@ -334,6 +352,12 @@ int CompileScript(asIScriptEngine *engine)
 	// into separate script modules. Each module use their own namespace and 
 	// scope, so function names, and global variables will not conflict with
 	// each other.
+
+	FILE *fp = fopen("bytecode", "wb");
+	if(fp){
+		CBytecodeStream stream(fp);
+		mod->SaveByteCode(&stream);
+	}
 
 	return 0;
 }

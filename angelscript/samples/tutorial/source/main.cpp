@@ -13,6 +13,8 @@
 #include <angelscript.h>
 #include "../../../add_on/scriptstdstring/scriptstdstring.h"
 
+#include "../../../../cpplib/include/cpplib/Vec3.h"
+
 using namespace std;
 
 #ifdef _LINUX_
@@ -207,6 +209,24 @@ int RunApplication()
 	return 0;
 }
 
+static void Vec3dConstructor(void *pv){
+	new(pv) Vec3d();
+}
+
+static void Vec3dConstructor3(double x, double y, double z, void *pv){
+	new(pv) Vec3d(x,y,z);
+}
+
+static void Vec3dDestructor(void *pv){
+	((Vec3d*)pv)->~Vec3d();
+}
+
+static std::string Vec3dToString(Vec3d &v){
+	char buf[256];
+	sprintf(buf, "[%lg,%lg,%lg]", v[0], v[1], v[2]);
+	return buf;
+}
+
 void ConfigureEngine(asIScriptEngine *engine)
 {
 	int r;
@@ -241,6 +261,12 @@ void ConfigureEngine(asIScriptEngine *engine)
 	// script. If necessary a configuration group can also be removed from
 	// the engine, so that the engine configuration could be changed 
 	// without having to recompile all the scripts.
+
+	r = engine->RegisterObjectType("Vec3d", sizeof(Vec3d), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "string ToString()", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 }
 
 int CompileScript(asIScriptEngine *engine)

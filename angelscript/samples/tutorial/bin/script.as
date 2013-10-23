@@ -1,5 +1,7 @@
 float calc(float a, float b)
 {
+	Vec3d v(1,2,3);
+	Print("The Vector: " + v.ToString() + "\n");
     // Print the value that we received
     Print("Received: " + a + ", " + b + "\n");
     

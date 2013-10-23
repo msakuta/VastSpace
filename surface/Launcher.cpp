@@ -7,12 +7,15 @@
 #include "tefpol3d.h"
 #endif
 #include "Game.h"
+#include "SqInitProcess.h"
+#include "sqadapt.h"
+#include "cmd.h"
 
 extern "C"{
 #include <clib/mathdef.h>
 }
 
-
+inline gltestp::dstring modPath(){return "surface/";}
 
 //-----------------------------------------------------------------------------
 //	HydraRocket implementation
@@ -111,9 +114,28 @@ void HydraRocketLauncher::anim(double dt){
 
 Entity::EntityRegister<Hellfire> Hellfire::entityRegister("Hellfire");
 
+double Hellfire::modelScale = 1e-5;
+double Hellfire::defaultMass = 6.2;
+
 Hellfire::Hellfire(WarField *w) : st(w), pf(NULL), fuel(3.){
+	init();
+}
+
+Hellfire::~Hellfire(){
+	sq_release(game->sqvm, &hObject);
+}
+
+void Hellfire::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC(modPath() << "models/Hellfire.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass"));
+		initialized = true;
+	}
+	sq_resetobject(&hObject);
 	def[0] = def[1] = 0.;
-	mass = 6.2;
+	mass = defaultMass;
 }
 
 void Hellfire::anim(double dt){
@@ -140,7 +162,15 @@ void Hellfire::leaveField(WarField *w){
 
 SQInteger Hellfire::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 	if(!scstrcmp(name, _SC("target"))){
-		sq_pushobj(v, const_cast<Hellfire*>(this));
+		sq_pushobj(v, this->target);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("object"))){
+		sq_pushobject(v, hObject);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("fuel"))){
+		sq_pushfloat(v, fuel);
 		return 1;
 	}
 	else
@@ -152,6 +182,21 @@ SQInteger Hellfire::sqSet(HSQUIRRELVM v, const SQChar *name){
 		target = sq_refobj(v, 3);
 		return 0;
 	}
+	else if(!scstrcmp(name, _SC("object"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &hObject);
+			hObject = obj;
+			sq_addref(v, &hObject);
+		}
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("fuel"))){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f)))
+			fuel = double(f);
+		return 0;
+	}
 	else
 		return st::sqSet(v, name);
 }
@@ -160,6 +205,26 @@ void Hellfire::commonUpdate(double dt){
 	static const double SSM_ACCEL = .20;
 
 	if(0. < fuel){
+
+#if 1
+			try{
+				HSQUIRRELVM v = game->sqvm;
+				StackReserver sr(v);
+				sq_pushroottable(v);
+				sq_pushstring(v, _SC("HellfireProc"), -1);
+				if(SQ_FAILED(sq_get(v, -2)))
+					throw SQFError(gltestp::dstring("HellfireProc function not found"));
+				sq_pushroottable(v);
+				sq_pushobj(v, this);
+				sq_pushfloat(v, dt);
+				if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+					throw SQFError(gltestp::dstring("HellfireProc function is not callable"));
+			}
+			catch(SQFError &e){
+				CmdPrint(gltestp::dstring("HellfireProc Error: ") << e.what());
+			}
+#else
+
 		Vec3d dv, dv2;
 
 		Vec3d forward = -this->rot.trans(vec3_001);
@@ -235,6 +300,7 @@ void Hellfire::commonUpdate(double dt){
 			this->velo += forward * (1. - sp);
 			fuel -= burnt;
 		}
+#endif
 	}
 
 	// Damping by air

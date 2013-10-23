@@ -75,10 +75,12 @@ class Hellfire : public Bullet{
 public:
 	typedef Bullet st;
 	static EntityRegister<Hellfire> entityRegister;
-	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.), target(NULL), centered(false){def[0] = def[1] = 0.;}
+	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.), target(NULL), centered(false){init();}
 	Hellfire(WarField *w);
 	Hellfire(Entity *owner, float life, double damage) :
-		st(owner, life, damage), pf(NULL), fuel(3.), target(NULL), centered(false){def[0] = def[1] = 0.;}
+		st(owner, life, damage), pf(NULL), fuel(3.), target(NULL), centered(false){init();}
+	~Hellfire();
+	void init();
 	const char *classname()const override{return "Hellfire";}
 	void anim(double dt)override;
 	void clientUpdate(double dt)override;
@@ -91,11 +93,13 @@ protected:
 	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
 	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
 
-	static const double modelScale;
+	static double modelScale;
+	static double defaultMass;
 
 	Tefpol *pf;
 	double fuel;
 	WeakPtr<Entity> target;
+	HSQOBJECT hObject; ///< Reference to buffer in Squirrel VM
 	double integral; ///< integrated term
 	double def[2]; ///< integrated deflection of each axes
 	bool centered; ///< target must be centered before integration starts

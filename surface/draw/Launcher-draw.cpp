@@ -134,8 +134,6 @@ void HydraRocketLauncher::draw(WarDraw *wd){
 //	Hellfire implementation
 //-----------------------------------------------------------------------------
 
-const double Hellfire::modelScale = 1e-5;
-
 void Hellfire::draw(WarDraw *wd){
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(this->pos, .003))

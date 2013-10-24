@@ -14,6 +14,7 @@
 #include "../../../add_on/scriptstdstring/scriptstdstring.h"
 
 #include "../../../../cpplib/include/cpplib/Vec3.h"
+#include "dstring.h"
 
 using namespace std;
 
@@ -235,6 +236,18 @@ static Vec3d Vec3dScale(const double &b, const Vec3d &a){
 	return a * b;
 }
 
+static void dstringConstructor(void *pv){
+	new(pv) gltestp::dstring();
+}
+
+static void dstringConstructor1(const gltestp::dstring &s, void *pv){
+	new(pv) gltestp::dstring(s);
+}
+
+static void dstringDestructor(void *pv){
+	((gltestp::dstring*)pv)->~dstring();
+}
+
 void ConfigureEngine(asIScriptEngine *engine)
 {
 	int r;
@@ -281,6 +294,11 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opSubAssign(const Vec3d&in)", asMETHOD(Vec3d,operator-=), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(const double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(Vec3dScale), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+
+	r = engine->RegisterObjectType("dstring", sizeof(Vec3d), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(dstringConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_CONSTRUCT, "void f(const dstring&in)", asFUNCTION(dstringConstructor1), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(dstringDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 }
 
 class CBytecodeStream : public asIBinaryStream

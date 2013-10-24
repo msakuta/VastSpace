@@ -221,10 +221,18 @@ static void Vec3dDestructor(void *pv){
 	((Vec3d*)pv)->~Vec3d();
 }
 
-static std::string Vec3dToString(Vec3d &v){
+static std::string Vec3dToString(const Vec3d &v){
 	char buf[256];
 	sprintf(buf, "[%lg,%lg,%lg]", v[0], v[1], v[2]);
 	return buf;
+}
+
+static Vec3d Vec3dSub(const Vec3d &b, const Vec3d &a){
+	return a - b;
+}
+
+static Vec3d Vec3dScale(const double &b, const Vec3d &a){
+	return a * b;
 }
 
 void ConfigureEngine(asIScriptEngine *engine)
@@ -266,8 +274,13 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "string ToString()", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "string ToString()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)const", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opAddAssign(const Vec3d&in)", asMETHOD(Vec3d,operator+=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opSub(const Vec3d&in)const", asFUNCTION(Vec3dSub), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opSubAssign(const Vec3d&in)", asMETHOD(Vec3d,operator-=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(const double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(Vec3dScale), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 }
 
 class CBytecodeStream : public asIBinaryStream

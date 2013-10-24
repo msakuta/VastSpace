@@ -1060,6 +1060,12 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	HSQUIRRELVM &v = *pv = sq_open(1024);
 	game->sqvm = v;
 
+#ifndef NDEBUG
+	// Enable debugging information of Squirrel VM if debug mode is active,
+	// although I don't understand what's the benefit.
+	sq_enabledebuginfo(v, SQTrue);
+#endif
+
 	sqstd_seterrorhandlers(v);
 
 	sq_setprintfunc(v, sqf_print, sqf_print); //sets the print function
@@ -1133,6 +1139,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_closure(v, _SC("vp"), sqf_binary<Vec3d, &Vec3d::vp>);
 	register_closure(v, _SC("_get"), sqf_Vec3d_get);
 	register_closure(v, _SC("_set"), sqf_Vec3d_set);
+	register_code_func(v, _SC("slen"), _SC("return this.sp(this);"));
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(this.sp(this));"));
 	sq_createslot(v, -3);
 

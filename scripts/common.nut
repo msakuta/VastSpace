@@ -21,6 +21,7 @@ class Vec3d{
 	Vec3d norm(); // Normalize
 	float sp(Vec3d); // Scalar product or Dot product
 	Vec3d vp(Vec3d); // Vector product or Cross product
+	float slen(); // Squared length of vector
 	float len(); // Length of vector
 }
 

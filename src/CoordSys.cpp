@@ -1635,6 +1635,32 @@ SQInteger sqf_set(HSQUIRRELVM v){
 	return SQ_ERROR;
 }
 
+/// \brief Returns w->accel()
+///
+/// It should be really a member of WarField or WarSpace, but placed here because the
+/// class is assumed as the same as CoordSys from Squirrel scripts' perspective.
+static SQInteger sqf_accel(HSQUIRRELVM v){
+	CoordSys *p = CoordSys::sq_refobj(v);
+	if(!p)
+		return sq_throwerror(v, _SC("Object deleted"));
+
+	// It's valid to have no WarField companion object as a CoordSys.  In that case,
+	// just return zero vector, which should be appropriate no gravity environment.
+	if(!p->w){
+		SQVec3d(Vec3d(0,0,0)).push(v);
+		return 1;
+	}
+
+	// Obtain position and velocity to calculate centrifugal forces (which are
+	// responsibility of WarSpace class).
+	SQVec3d pos;
+	pos.getValue(v, 2);
+	SQVec3d velo;
+	velo.getValue(v, 3);
+	SQVec3d(p->w->accel(pos.value, velo.value)).push(v);
+	return 1;
+}
+
 
 bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
@@ -1659,6 +1685,7 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("getpath"), sqf_getpath);
 	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
+	register_closure(v, _SC("accel"), sqf_accel, 3, "xxx");
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	sq_pushstring(v, _SC("readFile"), -1);

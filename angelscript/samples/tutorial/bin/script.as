@@ -12,6 +12,11 @@ float calc(float a, float b)
 	Print("Compound subtraction: v1 -= v2 = " + (v1 -= v2).ToString() + "\n");
 	Print("After compound subtraction: v1 = " + v1.ToString() + " \n");
 
+	string ds("A dstring\n");
+
+	Print("Hello");
+	Print(ds);
+
     // Print the value that we received
     Print("Received: " + a + ", " + b + "\n");
     

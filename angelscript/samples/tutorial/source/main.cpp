@@ -16,6 +16,8 @@
 #include "../../../../cpplib/include/cpplib/Vec3.h"
 #include "dstring.h"
 
+using namespace gltestp;
+
 using namespace std;
 
 #ifdef _LINUX_
@@ -58,7 +60,7 @@ int getch()
 int  RunApplication();
 void ConfigureEngine(asIScriptEngine *engine);
 int  CompileScript(asIScriptEngine *engine);
-void PrintString(string &str);
+void PrintString(const dstring &str);
 void PrintString_Generic(asIScriptGeneric *gen);
 void timeGetTime_Generic(asIScriptGeneric *gen);
 void LineCallback(asIScriptContext *ctx, DWORD *timeOut);
@@ -222,7 +224,7 @@ static void Vec3dDestructor(void *pv){
 	((Vec3d*)pv)->~Vec3d();
 }
 
-static std::string Vec3dToString(const Vec3d &v){
+static dstring Vec3dToString(const Vec3d &v){
 	char buf[256];
 	sprintf(buf, "[%lg,%lg,%lg]", v[0], v[1], v[2]);
 	return buf;
@@ -244,9 +246,27 @@ static void dstringConstructor1(const gltestp::dstring &s, void *pv){
 	new(pv) gltestp::dstring(s);
 }
 
+static void dstringConstructor_string(const string &s, void *pv){
+	new(pv) gltestp::dstring(s.c_str());
+}
+
+static dstring &dstringFactory(asUINT length, const char *s){
+	return *new gltestp::dstring(s, length);
+}
+
 static void dstringDestructor(void *pv){
 	((gltestp::dstring*)pv)->~dstring();
 }
+
+static string dstringCast_string(const gltestp::dstring &s){
+	return s;
+}
+
+static dstring AddStringDouble(double f, dstring *str)
+{
+	return *str + f;
+}
+
 
 void ConfigureEngine(asIScriptEngine *engine)
 {
@@ -255,7 +275,17 @@ void ConfigureEngine(asIScriptEngine *engine)
 	// Register the script string type
 	// Look at the implementation for this function for more information  
 	// on how to register a custom string type, and other object types.
-	RegisterStdString(engine);
+//	RegisterStdString(engine);
+
+	r = engine->RegisterObjectType("string", sizeof(dstring), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterStringFactory("const string &", asFUNCTION(dstringFactory), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(dstringConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f(const string&in)", asFUNCTION(dstringConstructor1), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f(const string&in)", asFUNCTION(dstringConstructor_string), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(dstringDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(dstringCast_string), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(const string&in)const", asMETHOD(dstring,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(double)const", asFUNCTION(AddStringDouble), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
 	if( !strstr(asGetLibraryOptions(), "AS_MAX_PORTABILITY") )
 	{
@@ -265,13 +295,13 @@ void ConfigureEngine(asIScriptEngine *engine)
 		// with a lot of if's. If an error occurs in release mode it will
 		// be caught when a script is being built, so it is not necessary
 		// to do the verification here as well.
-		r = engine->RegisterGlobalFunction("void Print(string &in)", asFUNCTION(PrintString), asCALL_CDECL); assert( r >= 0 );
+		r = engine->RegisterGlobalFunction("void Print(const string &in)", asFUNCTION(PrintString), asCALL_CDECL); assert( r >= 0 );
 		r = engine->RegisterGlobalFunction("uint GetSystemTime()", asFUNCTION(timeGetTime), asCALL_STDCALL); assert( r >= 0 );
 	}
 	else
 	{
 		// Notice how the registration is almost identical to the above. 
-		r = engine->RegisterGlobalFunction("void Print(string &in)", asFUNCTION(PrintString_Generic), asCALL_GENERIC); assert( r >= 0 );
+		r = engine->RegisterGlobalFunction("void Print(const string &in)", asFUNCTION(PrintString_Generic), asCALL_GENERIC); assert( r >= 0 );
 		r = engine->RegisterGlobalFunction("uint GetSystemTime()", asFUNCTION(timeGetTime_Generic), asCALL_GENERIC); assert( r >= 0 );
 	}
 
@@ -295,10 +325,6 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(const double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(Vec3dScale), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
-	r = engine->RegisterObjectType("dstring", sizeof(Vec3d), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(dstringConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_CONSTRUCT, "void f(const dstring&in)", asFUNCTION(dstringConstructor1), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("dstring", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(dstringDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 }
 
 class CBytecodeStream : public asIBinaryStream
@@ -407,16 +433,16 @@ void LineCallback(asIScriptContext *ctx, DWORD *timeOut)
 }
 
 // Function implementation with native calling convention
-void PrintString(string &str)
+void PrintString(const dstring &str)
 {
-	cout << str;
+	cout << str.c_str();
 }
 
 // Function implementation with generic script interface
 void PrintString_Generic(asIScriptGeneric *gen)
 {
-	string *str = (string*)gen->GetArgAddress(0);
-	cout << *str;
+	const dstring *str = (const dstring*)gen->GetArgAddress(0);
+	cout << str->c_str();
 }
 
 // Function wrapper is needed when native calling conventions are not supported

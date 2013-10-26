@@ -139,6 +139,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\include\dstring.h" />
     <ClInclude Include="..\..\..\..\angelscript\include\angelscript.h" />
     <ClInclude Include="..\..\..\..\add_on\scriptstdstring\scriptstdstring.h" />
   </ItemGroup>

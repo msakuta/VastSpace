@@ -225,9 +225,21 @@ static void Vec3dDestructor(void *pv){
 }
 
 static dstring Vec3dToString(const Vec3d &v){
+#if 0
 	char buf[256];
 	sprintf(buf, "[%lg,%lg,%lg]", v[0], v[1], v[2]);
 	return buf;
+#else
+	return dstring() << "[" << v[0] << "," << v[1] << "," << v[2] << "]";
+#endif
+}
+
+static const double &Vec3dIndexConst(int i, const Vec3d &v){
+	return v[i];
+}
+
+static double &Vec3dIndex(int i, Vec3d &v){
+	return v[i];
 }
 
 static Vec3d Vec3dSub(const Vec3d &b, const Vec3d &a){
@@ -267,6 +279,18 @@ static dstring AddStringDouble(double f, dstring *str)
 	return *str + f;
 }
 
+static dstring AddStringBool(bool f, dstring *str)
+{
+	dstring ret = *str;
+	return ret << f;
+}
+
+
+static dstring AddStringVec3d(const Vec3d &f, dstring *str)
+{
+	return *str + Vec3dToString(f);
+}
+
 
 void ConfigureEngine(asIScriptEngine *engine)
 {
@@ -285,6 +309,7 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectBehaviour("string", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(dstringDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("string", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(dstringCast_string), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("string", "string opAdd(const string&in)const", asMETHOD(dstring,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(bool)const", asFUNCTION(AddStringBool), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("string", "string opAdd(double)const", asFUNCTION(AddStringDouble), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
 	if( !strstr(asGetLibraryOptions(), "AS_MAX_PORTABILITY") )
@@ -317,13 +342,28 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "string ToString()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "const double &opIndex(int)const", asFUNCTION(Vec3dIndexConst), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double &opIndex(int)", asFUNCTION(Vec3dIndex), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)const", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opAddAssign(const Vec3d&in)", asMETHOD(Vec3d,operator+=), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opSub(const Vec3d&in)const", asFUNCTION(Vec3dSub), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opSubAssign(const Vec3d&in)", asMETHOD(Vec3d,operator-=), asCALL_THISCALL); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(const double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(Vec3dScale), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opMulAssign(double)", asMETHOD(Vec3d,operator*=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opDiv(double)", asMETHOD(Vec3d,operator/), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opDivAssign(double)", asMETHOD(Vec3d,operator/=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double len()const", asMETHOD(Vec3d,len), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double slen()const", asMETHOD(Vec3d,slen), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d norm()const", asMETHOD(Vec3d,norm), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &normin()", asMETHOD(Vec3d,normin), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double sp(const Vec3d&in)const", asMETHOD(Vec3d,sp), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d vp(const Vec3d&in)const", asMETHOD(Vec3d,vp), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "bool opEquals(const Vec3d&in)const", asMETHOD(Vec3d,operator==), asCALL_THISCALL); assert( r >= 0 );
+
+	r = engine->RegisterObjectMethod("string", "string opAdd(const Vec3d&in)const", asFUNCTION(AddStringVec3d), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
 }
 

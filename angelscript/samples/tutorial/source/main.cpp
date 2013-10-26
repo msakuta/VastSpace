@@ -11,9 +11,12 @@
 	#include <windows.h> // timeGetTime()
 #endif
 #include <angelscript.h>
-#include "../../../add_on/scriptstdstring/scriptstdstring.h"
+//#include "../../../add_on/scriptstdstring/scriptstdstring.h"
+#include "../../../add_on/scriptmath/scriptmath.h"
 
-#include "../../../../cpplib/include/cpplib/Vec3.h"
+#include "clib/mathdef.h"
+#include "cpplib/Vec3.h"
+#include "cpplib/Quat.h"
 #include "dstring.h"
 
 using namespace gltestp;
@@ -234,19 +237,23 @@ static dstring Vec3dToString(const Vec3d &v){
 #endif
 }
 
-static const double &Vec3dIndexConst(int i, const Vec3d &v){
+template<typename T>
+static const double &TempIndexConst(int i, const T &v){
 	return v[i];
 }
 
-static double &Vec3dIndex(int i, Vec3d &v){
+template<typename T>
+static double &TempIndex(int i, T &v){
 	return v[i];
 }
 
-static Vec3d Vec3dSub(const Vec3d &b, const Vec3d &a){
+template<typename T>
+static T TempSub(const T &b, const T &a){
 	return a - b;
 }
 
-static Vec3d Vec3dScale(const double &b, const Vec3d &a){
+template<typename T>
+static T TempScale(const double &b, const T &a){
 	return a * b;
 }
 
@@ -286,9 +293,47 @@ static dstring AddStringBool(bool f, dstring *str)
 }
 
 
-static dstring AddStringVec3d(const Vec3d &f, dstring *str)
-{
+static dstring AddStringVec3d(const Vec3d &f, dstring *str){
 	return *str + Vec3dToString(f);
+}
+
+
+static void QuatdConstructor(void *pv){
+	new(pv) Quatd();
+}
+
+static void QuatdConstructor4(double x, double y, double z, double w, void *pv){
+	new(pv) Quatd(x,y,z,w);
+}
+
+static void QuatdDestructor(void *pv){
+	((Quatd*)pv)->~Quatd();
+}
+
+static dstring QuatdToString(const Quatd &v){
+#if 0
+	char buf[256];
+	sprintf(buf, "[%lg,%lg,%lg,%lg]", v[0], v[1], v[2], v[3]);
+	return buf;
+#else
+	return dstring() << "[" << v[0] << "," << v[1] << "," << v[2] << "," << v[3] << "]";
+#endif
+}
+
+static Quatd QuatdRotate(double angle, const Vec3d &axis, const Quatd &q){
+	return q.rotate(angle, axis);
+}
+
+static Quatd QuatdRotation(double angle, const Vec3d &axis){
+	return Quatd::rotation(angle, axis);
+}
+
+static Quatd QuatdDirection(const Vec3d &dir){
+	return Quatd::direction(dir);
+}
+
+static dstring AddStringQuatd(const Quatd &f, dstring *str){
+	return *str + QuatdToString(f);
 }
 
 
@@ -300,6 +345,7 @@ void ConfigureEngine(asIScriptEngine *engine)
 	// Look at the implementation for this function for more information  
 	// on how to register a custom string type, and other object types.
 //	RegisterStdString(engine);
+	RegisterScriptMath(engine);
 
 	r = engine->RegisterObjectType("string", sizeof(dstring), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
 	r = engine->RegisterStringFactory("const string &", asFUNCTION(dstringFactory), asCALL_CDECL); assert( r >= 0 );
@@ -338,20 +384,23 @@ void ConfigureEngine(asIScriptEngine *engine)
 	// the engine, so that the engine configuration could be changed 
 	// without having to recompile all the scripts.
 
+	static const double the_PI = M_PI;
+	r = engine->RegisterGlobalProperty("const double PI", const_cast<double*>(&the_PI)); assert( r >= 0 );
+
 	r = engine->RegisterObjectType("Vec3d", sizeof(Vec3d), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "string ToString()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "const double &opIndex(int)const", asFUNCTION(Vec3dIndexConst), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "double &opIndex(int)", asFUNCTION(Vec3dIndex), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "const double &opIndex(int)const", asFUNCTION(TempIndexConst<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double &opIndex(int)", asFUNCTION(TempIndex<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)const", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opAddAssign(const Vec3d&in)", asMETHOD(Vec3d,operator+=), asCALL_THISCALL); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opSub(const Vec3d&in)const", asFUNCTION(Vec3dSub), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opSub(const Vec3d&in)const", asFUNCTION(TempSub<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opSubAssign(const Vec3d&in)", asMETHOD(Vec3d,operator-=), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
-	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(Vec3dScale), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(TempScale<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opMulAssign(double)", asMETHOD(Vec3d,operator*=), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opDiv(double)", asMETHOD(Vec3d,operator/), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opDivAssign(double)", asMETHOD(Vec3d,operator/=), asCALL_THISCALL); assert( r >= 0 );
@@ -364,6 +413,41 @@ void ConfigureEngine(asIScriptEngine *engine)
 	r = engine->RegisterObjectMethod("Vec3d", "bool opEquals(const Vec3d&in)const", asMETHOD(Vec3d,operator==), asCALL_THISCALL); assert( r >= 0 );
 
 	r = engine->RegisterObjectMethod("string", "string opAdd(const Vec3d&in)const", asFUNCTION(AddStringVec3d), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+
+	r = engine->RegisterObjectType("Quatd", sizeof(Quatd), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(QuatdConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_CONSTRUCT, "void f(double,double,double,double)", asFUNCTION(QuatdConstructor4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(QuatdDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(QuatdToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "string ToString()const", asFUNCTION(QuatdToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "const double &opIndex(int)const", asFUNCTION(TempIndexConst<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double &opIndex(int)", asFUNCTION(TempIndex<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd opAdd(const Quatd&in)const", asMETHOD(Quatd,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &opAddAssign(const Quatd&in)", asMETHOD(Quatd,operator+=), asCALL_THISCALL); assert( r >= 0 );
+	// Subtraction operators are rarely used for Quatd so that we haven't even defined it.
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opSub(const Quatd&in)const", asFUNCTION(TempSub<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd &opSubAssign(const Quatd&in)", asMETHOD(Quatd,operator-=), asCALL_THISCALL); assert( r >= 0 );
+	// Scaling operators are intentionally undefined because they could be mixed up with quaternion multiplication.
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opMul(double)", asMETHOD(Quatd,operator*), asCALL_THISCALL); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opMul_r(const double&in)", asFUNCTION(TempScale<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd &opMulAssign(double)", asMETHOD(Quatd,operator*=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double len()const", asMETHOD(Quatd,len), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double slen()const", asMETHOD(Quatd,slen), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd norm()const", asMETHOD(Quatd,norm), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &normin()", asMETHOD(Quatd,normin), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd cnj()const", asMETHOD(Quatd,cnj), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd scale(double)const", asMETHOD(Quatd,scale), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &scalein(double)", asMETHOD(Quatd,scalein), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd rotate(double,const Vec3d &in)const", asFUNCTION(QuatdRotate), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Vec3d trans(const Vec3d &in)const", asMETHOD(Quatd,trans), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Vec3d itrans(const Vec3d &in)const", asMETHOD(Quatd,itrans), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd quatrotquat(const Vec3d &in)const", asMETHOD(Quatd,quatrotquat), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdRotation(double,const Vec3d &in)", asFUNCTION(QuatdRotation), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdDirection(const Vec3d &in)", asFUNCTION(QuatdDirection), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdSlerp(const Quatd &in, const Quatd &in, const double t)", asFUNCTION(Quatd::slerp), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "bool opEquals(const Quatd&in)const", asMETHOD(Quatd,operator==), asCALL_THISCALL); assert( r >= 0 );
+
+	r = engine->RegisterObjectMethod("string", "string opAdd(const Quatd&in)const", asFUNCTION(AddStringQuatd), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
 }
 

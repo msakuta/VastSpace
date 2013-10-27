@@ -125,8 +125,8 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\angelscript\angelscript\lib;..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;angelscript64d.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -159,16 +159,20 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\angelscript\angelscript\lib;..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;angelscript64.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\angelscript\add_on\scriptmath\scriptmath.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../angelscript/angelscript/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\src\Application.cpp" />
     <ClCompile Include="..\src\arms.cpp" />
+    <ClCompile Include="..\src\asadapt.cpp" />
     <ClCompile Include="..\src\Assault.cpp" />
     <ClCompile Include="..\src\astro.cpp" />
     <ClCompile Include="..\src\astrodraw.cpp" />
@@ -269,6 +273,7 @@
     <ClCompile Include="..\src\ysdnmmot.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\asadapt.h" />
     <ClInclude Include="..\include\Bullet.h" />
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />

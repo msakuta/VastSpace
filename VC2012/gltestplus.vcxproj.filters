@@ -22,6 +22,9 @@
     <Filter Include="Exported Headers\draw">
       <UniqueIdentifier>{be21abe0-94f7-4de7-aff1-428642d39a51}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\angelscript">
+      <UniqueIdentifier>{14506ae8-d523-481b-acf0-2c1581fbb2a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -324,6 +327,12 @@
     <ClCompile Include="..\src\draw\Mesh-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\asadapt.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\angelscript\add_on\scriptmath\scriptmath.cpp">
+      <Filter>Sources\angelscript</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">
@@ -360,6 +369,9 @@
       <Filter>Exported Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Mesh-forward.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\asadapt.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -49,6 +49,7 @@
 #include "BinDiff.h"
 #include "avi.h"
 #include "sqadapt.h"
+#include "asadapt.h"
 #include "resource.h"
 
 extern "C"{
@@ -2487,6 +2488,8 @@ int main(int argc, char *argv[])
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");
+
+	asIScriptEngine *ae = ASAdaptInit(server, NULL);
 
 #if USEWIN
 	{

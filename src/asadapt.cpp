@@ -1,0 +1,569 @@
+/// \file
+/// \brief AngelScript library adapter for gltestplus project.
+#include "asadapt.h"
+
+#include <iostream>  // cout
+#include <assert.h>  // assert()
+#include <string.h>  // strstr()
+#ifdef _LINUX_
+	#include <sys/time.h>
+	#include <stdio.h>
+	#include <termios.h>
+	#include <unistd.h>
+#else
+	#include <conio.h>   // kbhit(), getch()
+	#include <windows.h> // timeGetTime()
+#endif
+#include "../angelscript/add_on/scriptmath/scriptmath.h"
+
+#include "clib/mathdef.h"
+#include "cpplib/Vec3.h"
+#include "cpplib/Quat.h"
+#include "dstring.h"
+#include "cmd.h"
+
+using namespace std;
+
+namespace asa{
+
+#ifdef _LINUX_
+
+#define UINT unsigned int 
+typedef unsigned int DWORD;
+
+// Linux doesn't have timeGetTime(), this essintially does the same
+// thing, except this is milliseconds since Epoch (Jan 1st 1970) instead
+// of system start. It will work the same though...
+DWORD timeGetTime()
+{
+	timeval time;
+	gettimeofday(&time, NULL);
+	return time.tv_sec*1000 + time.tv_usec/1000;
+}
+
+// Linux does have a getch() function in the curses library, but it doesn't
+// work like it does on DOS. So this does the same thing, with out the need
+// of the curses library.
+int getch() 
+{
+	struct termios oldt, newt;
+	int ch;
+
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~( ICANON | ECHO );
+	tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+
+	ch = getchar();
+
+	tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+	return ch;
+}
+
+#endif
+
+// Function prototypes
+int  RunApplication();
+void ConfigureEngine(asIScriptEngine *engine);
+int  CompileScript(asIScriptEngine *engine);
+void PrintString(const gltestp::dstring &str);
+void PrintString_Generic(asIScriptGeneric *gen);
+void timeGetTime_Generic(asIScriptGeneric *gen);
+void LineCallback(asIScriptContext *ctx, DWORD *timeOut);
+
+
+void MessageCallback(const asSMessageInfo *msg, void *param)
+{
+	const char *type = "ERR ";
+	if( msg->type == asMSGTYPE_WARNING ) 
+		type = "WARN";
+	else if( msg->type == asMSGTYPE_INFORMATION ) 
+		type = "INFO";
+
+	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
+}
+
+
+ asIScriptEngine *ASAdaptInit(Game *game, asIScriptEngine *engine)
+{
+	int r;
+
+	// Create the script engine
+	if(engine == NULL){
+		engine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
+		if( engine == 0 ){
+			cout << "Failed to create script engine." << endl;
+			return NULL;
+		}
+	}
+
+	// The script compiler will write any compiler messages to the callback.
+	engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
+
+	// Configure the script engine with all the functions, 
+	// and variables that the script should be able to use.
+	ConfigureEngine(engine);
+	
+	// Compile the script code
+	r = CompileScript(engine);
+	if( r < 0 )
+	{
+		engine->Release();
+		return NULL;
+	}
+
+	// Create a context that will execute the script.
+	asIScriptContext *ctx = engine->CreateContext();
+	if( ctx == 0 ) 
+	{
+		cout << "Failed to create the context." << endl;
+		engine->Release();
+		return NULL;
+	}
+
+	// We don't want to allow the script to hang the application, e.g. with an
+	// infinite loop, so we'll use the line callback function to set a timeout
+	// that will abort the script after a certain time. Before executing the 
+	// script the timeOut variable will be set to the time when the script must 
+	// stop executing. 
+	DWORD timeOut;
+	r = ctx->SetLineCallback(asFUNCTION(LineCallback), &timeOut, asCALL_CDECL);
+	if( r < 0 )
+	{
+		cout << "Failed to set the line callback function." << endl;
+		ctx->Release();
+		engine->Release();
+		return NULL;
+	}
+
+	// Find the function for the function we want to execute.
+	asIScriptFunction *func = engine->GetModule(0)->GetFunctionByDecl("float calc(float, float)");
+	if( func == 0 )
+	{
+		cout << "The function 'float calc(float, float)' was not found." << endl;
+		ctx->Release();
+		engine->Release();
+		return NULL;
+	}
+
+	// Prepare the script context with the function we wish to execute. Prepare()
+	// must be called on the context before each new script function that will be
+	// executed. Note, that if you intend to execute the same function several 
+	// times, it might be a good idea to store the function returned by 
+	// GetFunctionByDecl(), so that this relatively slow call can be skipped.
+	r = ctx->Prepare(func);
+	if( r < 0 ) 
+	{
+		cout << "Failed to prepare the context." << endl;
+		ctx->Release();
+		engine->Release();
+		return NULL;
+	}
+
+	// Now we need to pass the parameters to the script function. 
+	ctx->SetArgFloat(0, 3.14159265359f);
+	ctx->SetArgFloat(1, 2.71828182846f);
+
+	// Set the timeout before executing the function. Give the function 1 sec
+	// to return before we'll abort it.
+	timeOut = timeGetTime() + 1000;
+
+	// Execute the function
+	cout << "Executing the script." << endl;
+	cout << "---" << endl;
+	r = ctx->Execute();
+	cout << "---" << endl;
+	if( r != asEXECUTION_FINISHED )
+	{
+		// The execution didn't finish as we had planned. Determine why.
+		if( r == asEXECUTION_ABORTED )
+			cout << "The script was aborted before it could finish. Probably it timed out." << endl;
+		else if( r == asEXECUTION_EXCEPTION )
+		{
+			cout << "The script ended with an exception." << endl;
+
+			// Write some information about the script exception
+			asIScriptFunction *func = ctx->GetExceptionFunction();
+			cout << "func: " << func->GetDeclaration() << endl;
+			cout << "modl: " << func->GetModuleName() << endl;
+			cout << "sect: " << func->GetScriptSectionName() << endl;
+			cout << "line: " << ctx->GetExceptionLineNumber() << endl;
+			cout << "desc: " << ctx->GetExceptionString() << endl;
+		}
+		else
+			cout << "The script ended for some unforeseen reason (" << r << ")." << endl;
+	}
+	else
+	{
+		// Retrieve the return value from the context
+		float returnValue = ctx->GetReturnFloat();
+		cout << "The script function returned: " << returnValue << endl;
+	}
+
+	// We must release the contexts when no longer using them
+	ctx->Release();
+
+	// Release the engine
+//	engine->Release();
+
+	return engine;
+}
+
+static void Vec3dConstructor(void *pv){
+	new(pv) Vec3d();
+}
+
+static void Vec3dConstructor3(double x, double y, double z, void *pv){
+	new(pv) Vec3d(x,y,z);
+}
+
+static void Vec3dDestructor(void *pv){
+	((Vec3d*)pv)->~Vec3d();
+}
+
+static gltestp::dstring Vec3dToString(const Vec3d &v){
+#if 0
+	char buf[256];
+	sprintf(buf, "[%lg,%lg,%lg]", v[0], v[1], v[2]);
+	return buf;
+#else
+	return gltestp::dstring() << "[" << v[0] << "," << v[1] << "," << v[2] << "]";
+#endif
+}
+
+template<typename T>
+static const double &TempIndexConst(int i, const T &v){
+	return v[i];
+}
+
+template<typename T>
+static double &TempIndex(int i, T &v){
+	return v[i];
+}
+
+template<typename T>
+static T TempSub(const T &b, const T &a){
+	return a - b;
+}
+
+template<typename T>
+static T TempScale(const double &b, const T &a){
+	return a * b;
+}
+
+static void dstringConstructor(void *pv){
+	new(pv) gltestp::dstring();
+}
+
+static void dstringConstructor1(const gltestp::dstring &s, void *pv){
+	new(pv) gltestp::dstring(s);
+}
+
+static void dstringConstructor_string(const string &s, void *pv){
+	new(pv) gltestp::dstring(s.c_str());
+}
+
+static gltestp::dstring &dstringFactory(asUINT length, const char *s){
+	return *new gltestp::dstring(s, length);
+}
+
+static void dstringDestructor(void *pv){
+	((gltestp::dstring*)pv)->~dstring();
+}
+
+static gltestp::dstring AddStringDouble(double f, gltestp::dstring *str)
+{
+	return *str + f;
+}
+
+static gltestp::dstring AddStringBool(bool f, gltestp::dstring *str)
+{
+	gltestp::dstring ret = *str;
+	return ret << f;
+}
+
+
+static gltestp::dstring AddStringVec3d(const Vec3d &f, gltestp::dstring *str){
+	return *str + Vec3dToString(f);
+}
+
+
+static void QuatdConstructor(void *pv){
+	new(pv) Quatd();
+}
+
+static void QuatdConstructor4(double x, double y, double z, double w, void *pv){
+	new(pv) Quatd(x,y,z,w);
+}
+
+static void QuatdDestructor(void *pv){
+	((Quatd*)pv)->~Quatd();
+}
+
+static gltestp::dstring QuatdToString(const Quatd &v){
+#if 0
+	char buf[256];
+	sprintf(buf, "[%lg,%lg,%lg,%lg]", v[0], v[1], v[2], v[3]);
+	return buf;
+#else
+	return gltestp::dstring() << "[" << v[0] << "," << v[1] << "," << v[2] << "," << v[3] << "]";
+#endif
+}
+
+static Quatd QuatdRotate(double angle, const Vec3d &axis, const Quatd &q){
+	return q.rotate(angle, axis);
+}
+
+static Quatd QuatdRotation(double angle, const Vec3d &axis){
+	return Quatd::rotation(angle, axis);
+}
+
+static Quatd QuatdDirection(const Vec3d &dir){
+	return Quatd::direction(dir);
+}
+
+static gltestp::dstring AddStringQuatd(const Quatd &f, gltestp::dstring *str){
+	return *str + QuatdToString(f);
+}
+
+
+void ConfigureEngine(asIScriptEngine *engine)
+{
+	int r;
+
+	// Register the script string type
+	// Look at the implementation for this function for more information  
+	// on how to register a custom string type, and other object types.
+//	RegisterStdString(engine);
+	RegisterScriptMath(engine);
+
+	r = engine->RegisterObjectType("string", sizeof(dstring), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterStringFactory("const string &", asFUNCTION(dstringFactory), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(dstringConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f(const string&in)", asFUNCTION(dstringConstructor1), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectBehaviour("string", asBEHAVE_CONSTRUCT, "void f(const string&in)", asFUNCTION(dstringConstructor_string), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("string", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(dstringDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(const string&in)const", asMETHOD(dstring,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(bool)const", asFUNCTION(AddStringBool), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("string", "string opAdd(double)const", asFUNCTION(AddStringDouble), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+
+	if( !strstr(asGetLibraryOptions(), "AS_MAX_PORTABILITY") )
+	{
+		// Register the functions that the scripts will be allowed to use.
+		// Note how the return code is validated with an assert(). This helps
+		// us discover where a problem occurs, and doesn't pollute the code
+		// with a lot of if's. If an error occurs in release mode it will
+		// be caught when a script is being built, so it is not necessary
+		// to do the verification here as well.
+		r = engine->RegisterGlobalFunction("void Print(const string &in)", asFUNCTION(PrintString), asCALL_CDECL); assert( r >= 0 );
+		r = engine->RegisterGlobalFunction("uint GetSystemTime()", asFUNCTION(timeGetTime), asCALL_STDCALL); assert( r >= 0 );
+	}
+	else
+	{
+		// Notice how the registration is almost identical to the above. 
+		r = engine->RegisterGlobalFunction("void Print(const string &in)", asFUNCTION(PrintString_Generic), asCALL_GENERIC); assert( r >= 0 );
+		r = engine->RegisterGlobalFunction("uint GetSystemTime()", asFUNCTION(timeGetTime_Generic), asCALL_GENERIC); assert( r >= 0 );
+	}
+
+
+	// It is possible to register the functions, properties, and types in 
+	// configuration groups as well. When compiling the scripts it then
+	// be defined which configuration groups should be available for that
+	// script. If necessary a configuration group can also be removed from
+	// the engine, so that the engine configuration could be changed 
+	// without having to recompile all the scripts.
+
+	static const double the_PI = M_PI;
+	r = engine->RegisterGlobalProperty("const double PI", const_cast<double*>(&the_PI)); assert( r >= 0 );
+
+	r = engine->RegisterObjectType("Vec3d", sizeof(Vec3d), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(Vec3dConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_CONSTRUCT, "void f(double,double,double)", asFUNCTION(Vec3dConstructor3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Vec3dDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Vec3d", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "string ToString()const", asFUNCTION(Vec3dToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "const double &opIndex(int)const", asFUNCTION(TempIndexConst<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double &opIndex(int)", asFUNCTION(TempIndex<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opAdd(const Vec3d&in)const", asMETHOD(Vec3d,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opAddAssign(const Vec3d&in)", asMETHOD(Vec3d,operator+=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opSub(const Vec3d&in)const", asFUNCTION(TempSub<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opSubAssign(const Vec3d&in)", asMETHOD(Vec3d,operator-=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul(double)", asMETHOD(Vec3d,operator*), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opMul_r(const double&in)", asFUNCTION(TempScale<Vec3d>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opMulAssign(double)", asMETHOD(Vec3d,operator*=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d opDiv(double)", asMETHOD(Vec3d,operator/), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &opDivAssign(double)", asMETHOD(Vec3d,operator/=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double len()const", asMETHOD(Vec3d,len), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double slen()const", asMETHOD(Vec3d,slen), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d norm()const", asMETHOD(Vec3d,norm), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d &normin()", asMETHOD(Vec3d,normin), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "double sp(const Vec3d&in)const", asMETHOD(Vec3d,sp), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "Vec3d vp(const Vec3d&in)const", asMETHOD(Vec3d,vp), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Vec3d", "bool opEquals(const Vec3d&in)const", asMETHOD(Vec3d,operator==), asCALL_THISCALL); assert( r >= 0 );
+
+	r = engine->RegisterObjectMethod("string", "string opAdd(const Vec3d&in)const", asFUNCTION(AddStringVec3d), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+
+	r = engine->RegisterObjectType("Quatd", sizeof(Quatd), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(QuatdConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_CONSTRUCT, "void f(double,double,double,double)", asFUNCTION(QuatdConstructor4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(QuatdDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("Quatd", asBEHAVE_VALUE_CAST, "string f()const", asFUNCTION(QuatdToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "string ToString()const", asFUNCTION(QuatdToString), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "const double &opIndex(int)const", asFUNCTION(TempIndexConst<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double &opIndex(int)", asFUNCTION(TempIndex<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd opAdd(const Quatd&in)const", asMETHOD(Quatd,operator+), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &opAddAssign(const Quatd&in)", asMETHOD(Quatd,operator+=), asCALL_THISCALL); assert( r >= 0 );
+	// Subtraction operators are rarely used for Quatd so that we haven't even defined it.
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opSub(const Quatd&in)const", asFUNCTION(TempSub<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd &opSubAssign(const Quatd&in)", asMETHOD(Quatd,operator-=), asCALL_THISCALL); assert( r >= 0 );
+	// Scaling operators are intentionally undefined because they could be mixed up with quaternion multiplication.
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opMul(double)", asMETHOD(Quatd,operator*), asCALL_THISCALL); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd opMul_r(const double&in)", asFUNCTION(TempScale<Quatd>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+//	r = engine->RegisterObjectMethod("Quatd", "Quatd &opMulAssign(double)", asMETHOD(Quatd,operator*=), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double len()const", asMETHOD(Quatd,len), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "double slen()const", asMETHOD(Quatd,slen), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd norm()const", asMETHOD(Quatd,norm), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &normin()", asMETHOD(Quatd,normin), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd cnj()const", asMETHOD(Quatd,cnj), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd scale(double)const", asMETHOD(Quatd,scale), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd &scalein(double)", asMETHOD(Quatd,scalein), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd rotate(double,const Vec3d &in)const", asFUNCTION(QuatdRotate), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Vec3d trans(const Vec3d &in)const", asMETHOD(Quatd,trans), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Vec3d itrans(const Vec3d &in)const", asMETHOD(Quatd,itrans), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "Quatd quatrotquat(const Vec3d &in)const", asMETHOD(Quatd,quatrotquat), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdRotation(double,const Vec3d &in)", asFUNCTION(QuatdRotation), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdDirection(const Vec3d &in)", asFUNCTION(QuatdDirection), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("Quatd QuatdSlerp(const Quatd &in, const Quatd &in, const double t)", asFUNCTION(Quatd::slerp), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("Quatd", "bool opEquals(const Quatd&in)const", asMETHOD(Quatd,operator==), asCALL_THISCALL); assert( r >= 0 );
+
+	r = engine->RegisterObjectMethod("string", "string opAdd(const Quatd&in)const", asFUNCTION(AddStringQuatd), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+
+}
+
+class CBytecodeStream : public asIBinaryStream
+{
+public:
+  CBytecodeStream(FILE *fp) : f(fp) {}
+  void Write(const void *ptr, asUINT size) 
+  {
+    if( size == 0 ) return; 
+    fwrite(ptr, size, 1, f); 
+  }
+  void Read(void *ptr, asUINT size) 
+  { 
+    if( size == 0 ) return; 
+    fread(ptr, size, 1, f); 
+  }
+protected:
+  FILE *f;
+};
+
+int CompileScript(asIScriptEngine *engine)
+{
+	int r;
+
+	// We will load the script from a file on the disk.
+	FILE *f = fopen("scripts/test.as", "rb");
+	if( f == 0 )
+	{
+		cout << "Failed to open the script file 'script.as'." << endl;
+		return -1;
+	}
+
+	// Determine the size of the file	
+	fseek(f, 0, SEEK_END);
+	int len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	// On Win32 it is possible to do the following instead
+	// int len = _filelength(_fileno(f));
+
+	// Read the entire file
+	string script;
+	script.resize(len);
+	int c =	fread(&script[0], len, 1, f);
+	fclose(f);
+
+	if( c == 0 ) 
+	{
+		cout << "Failed to load script file." << endl;
+		return -1;
+	}
+
+	// Add the script sections that will be compiled into executable code.
+	// If we want to combine more than one file into the same script, then 
+	// we can call AddScriptSection() several times for the same module and
+	// the script engine will treat them all as if they were one. The script
+	// section name, will allow us to localize any errors in the script code.
+	asIScriptModule *mod = engine->GetModule(0, asGM_ALWAYS_CREATE);
+	r = mod->AddScriptSection("script", &script[0], len);
+	if( r < 0 ) 
+	{
+		cout << "AddScriptSection() failed" << endl;
+		return -1;
+	}
+	
+	// Compile the script. If there are any compiler messages they will
+	// be written to the message stream that we set right after creating the 
+	// script engine. If there are no errors, and no warnings, nothing will
+	// be written to the stream.
+	r = mod->Build();
+	if( r < 0 )
+	{
+		cout << "Build() failed" << endl;
+		return -1;
+	}
+
+	// The engine doesn't keep a copy of the script sections after Build() has
+	// returned. So if the script needs to be recompiled, then all the script
+	// sections must be added again.
+
+	// If we want to have several scripts executing at different times but 
+	// that have no direct relation with each other, then we can compile them
+	// into separate script modules. Each module use their own namespace and 
+	// scope, so function names, and global variables will not conflict with
+	// each other.
+
+	// Write bytecode of the compiled script.
+	FILE *fp = fopen("scripts/test.asb", "wb");
+	if(fp){
+		CBytecodeStream stream(fp);
+		mod->SaveByteCode(&stream);
+		fclose(fp);
+	}
+
+	return 0;
+}
+
+void LineCallback(asIScriptContext *ctx, DWORD *timeOut)
+{
+	// If the time out is reached we abort the script
+	if( *timeOut < timeGetTime() )
+		ctx->Abort();
+
+	// It would also be possible to only suspend the script,
+	// instead of aborting it. That would allow the application
+	// to resume the execution where it left of at a later 
+	// time, by simply calling Execute() again.
+}
+
+// Function implementation with native calling convention
+void PrintString(const gltestp::dstring &str)
+{
+	CmdPrint(str);
+}
+
+// Function implementation with generic script interface
+void PrintString_Generic(asIScriptGeneric *gen)
+{
+	const gltestp::dstring *str = (const gltestp::dstring*)gen->GetArgAddress(0);
+	CmdPrint(*str);
+}
+
+// Function wrapper is needed when native calling conventions are not supported
+void timeGetTime_Generic(asIScriptGeneric *gen)
+{
+	gen->SetReturnDWord(timeGetTime());
+}
+
+}

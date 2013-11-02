@@ -143,6 +143,8 @@ function fire(e,dt){
 			launcherType = "HellfireLauncher";
 			projectileType = "Hellfire";
 			damage = 500;
+			ammoConsume = 0;
+			cooldown = @(...) 2.;
 			break;
 		case 3:
 			launcherType = "SidewinderLauncher";

@@ -19,11 +19,11 @@ local SSM_ACCEL = 0.20;
 
 function HellfireProc(e,dt){
 	local forward = -e.rot.trans(Vec3d(0,0,1));
-	print("" + e + ", forward: " + forward);
+//	print("" + e + ", forward: " + forward);
 
 	local obj = e.object;
 	if(obj == null || typeof obj != "table"){
-		obj = {def = [0,0], integral = 0., centered = false};
+		obj = {def = [0,0], integral = 0., centered = false, angle = 0., deflect = 0.};
 		e.object = obj;
 		print("set default object for e: " + obj);
 	}
@@ -42,21 +42,34 @@ function HellfireProc(e,dt){
 		local accel = e.cs.accel(e.pos, e.velo);
 
 		local qc = e.rot.cnj();
-		dv = zh
-			+ e.rot.trans(Vec3d(1,0,0)) * def[0]
-			+ e.rot.trans(Vec3d(0,1,0)) * def[1];
+		dv = zh;
+//			+ e.rot.trans(Vec3d(1,0,0)) * def[0]
+//			+ e.rot.trans(Vec3d(0,1,0)) * def[1];
 		if(dv.len() != 0)
 			dv.normin();
 		local dif = forward.sp(dv);
 		local localdef = qc.trans(dv);
 		local deflection = zh - forward * dif;
-		if(0.96 < dif){
+		print("localdef: " + localdef);
+//		print("def: " + def[0] + "," + def[1] + ", int: " + obj.integral + ", dif: " + dif);
+
+		local angle = atan2(localdef[1], localdef[0]);
+		obj.angle = obj.angle * (1. - exp(-dt)) + angle * exp(-dt);
+		obj.angle = angle;
+		obj.deflect = obj.deflect * (1. - exp(-dt)) + sqrt(localdef[0] * localdef[0] + localdef[1] * localdef[1]) * exp(-dt);
+		print("obj.angle = " + obj.angle + ", deflect = " + obj.deflect);
+
+		local worldDeflect = e.rot.trans(Vec3d(cos(obj.angle), sin(obj.angle), 0) * obj.deflect);
+		local norm = forward.vp(worldDeflect);
+		e.rot *= Quatd.rotation(PI * dt, norm);
+
+/*		if(0.96 < dif){
 			local k = (7.e2 * dt, 7.e2 * dt, 0.5e2 * dt);
 			obj.integral += 1.e5 * deflection.slen() * dt;
 			def[0] += k * localdef[0];
 			def[1] += k * localdef[1];
 		}
-		else if(0. < dif){
+		else*/ if(0. < dif){
 			def[0] = def[1] = 0.;
 		}
 		else{
@@ -87,7 +100,7 @@ function HellfireProc(e,dt){
 		dv2 = forward;
 	}
 
-	{
+	if(0){
 		local maxspeed = PI * (e.velo.len() + 1.) * dt;
 		local xh = forward.vp(dv);
 		local len = xh.len();
@@ -104,13 +117,13 @@ function HellfireProc(e,dt){
 
 	local sp = forward.sp(dv);
 	if(0 < sp){
-		local burnt = dt * 3. * SSM_ACCEL;
+		local burnt = dt * 1. * SSM_ACCEL;
 		local thrust = burnt / (1. + e.fuel / 20.);
 		sp = exp(-thrust);
 		e.velo *= sp;
 		e.velo += forward * (1. - sp);
 		e.fuel -= burnt;
-		print("fuel used: " + burnt + ", left: " + e.fuel);
+//		print("fuel used: " + burnt + ", left: " + e.fuel);
 	}
 }
 

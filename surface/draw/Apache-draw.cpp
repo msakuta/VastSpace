@@ -159,7 +159,7 @@ void Apache::drawHUD(WarDraw *wd){
 		gldprintf("%lg kt", 1944. * velo);
 		glRasterPos3d(left + 200. / m, -bottom - 140. / m, -1);
 		gldprintf("climb %lg km/s", this->velo.sp(ort.vec3(1)));
-		if(brk){
+		if(brake){
 			glRasterPos3d(left + 200. / m, -bottom - 200. / m, -1);
 			gldprintf("BRK");
 		}
@@ -217,10 +217,17 @@ void Apache::drawCockpit(WarDraw *wd){
 
 	glLoadMatrixd(wd->vw->rot);
 	gldMultQuat(this->rot);
-	gldTranslaten3dv(seat);
 
+	glPushMatrix();
+
+	gldTranslaten3dv(seat);
 	glScaled(-modelScale, modelScale, -modelScale);
 	DrawMQOPose(cockpitModel, NULL);
+
+	glPopMatrix();
+
+	Mat4d rmat = mat4_u.rotx(gun[0]).roty(gun[1]);
+	drawCockpitHUD(hudPos, hudSize, seat, rmat.vp3(Vec3d(0,0,1)), weaponList);
 
 	glPopMatrix();
 

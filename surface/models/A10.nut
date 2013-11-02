@@ -132,6 +132,7 @@ function fire(e,dt){
 		local projectileType;
 		local damage;
 		local cooldown = @(launchers) 1. / launchers.len();
+		local ammoConsume = 1;
 		switch(e.weapon){
 		case 1:
 			launcherType = "HydraRocketLauncher";
@@ -161,7 +162,7 @@ function fire(e,dt){
 		// of firing right now.
 		local count = 0;
 		foreach(it in arms)
-			if(it.classname == launcherType && 0 < it.ammo)
+			if(it.classname == launcherType && ammoConsume <= it.ammo)
 				launchers.append(it), count += it.ammo;
 
 		// If there's no missile left in the launchers, exit
@@ -182,7 +183,7 @@ function fire(e,dt){
 		local deltaCooldown = cooldown(launchers);
 		e.cooldown += deltaCooldown;
 		e.lastMissile = pb;
-		arm.ammo--;
+		arm.ammo -= ammoConsume;
 	}
 }
 

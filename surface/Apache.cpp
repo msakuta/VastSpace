@@ -65,9 +65,12 @@ HSQOBJECT Apache::sqHydraFire = sq_nullobj();
 HSQOBJECT Apache::sqHellfireFire = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
+Vec3d Apache::hudPos;
+double Apache::hudSize;
 GLuint Apache::overlayDisp = 0;
 std::vector<hardpoint_static*> Apache::hardpoints;
 StringList Apache::defaultArms;
+StringList Apache::weaponList;
 
 
 void Apache::init(){
@@ -90,11 +93,14 @@ void Apache::init(){
 			SingleDoubleProcess(hydraDamage, "hydraDamage") <<=
 			Vec3dProcess(cockpitOfs, "cockpitOfs") <<=
 			HitboxProcess(hitboxes) <<=
+			Vec3dProcess(hudPos, "hudPos") <<=
+			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
 			SqCallbackProcess(sqHellfireFire, "hellfireFire") <<=
 			HardPointProcess(hardpoints) <<=
-			StringListProcess(defaultArms, "defaultArms"));
+			StringListProcess(defaultArms, "defaultArms") <<=
+			StringListProcess(weaponList, "weaponList"));
 		initialized = true;
 	}
 	int i;
@@ -109,12 +115,7 @@ void Apache::init(){
 /*	p->armsmuzzle = 0;*/
 	weapon = 0;
 	ammo_chaingun = 1200;
-	aim9 = 2;
-	contact = 0;
-	muzzle = 0;
 	health = getMaxHealth();
-	brk = 1;
-	navlight = 0;
 	mass = 5000.;
 
 	// Setup default configuration for arms
@@ -286,6 +287,8 @@ void Apache::find_enemy_logic(){
 }
 
 void Apache::anim(double dt){
+	bool onfeet = taxi(dt);
+
 	bool inwater = false;
 
 	Mat4d mat;
@@ -388,7 +391,7 @@ void Apache::anim(double dt){
 
 		/* control of feathering angle of main rotor blades */
 		if(!controller && enemy)
-			feather = approach(feather, rangein(!!contact + .5 * dist + 5. * (ort3.vec3(1).sp(enemy->pos) - ort3.vec3(1).sp(this->pos) + .2), 0., 1.), .2 * dt, 5.);
+			feather = approach(feather, rangein(!!onfeet + .5 * dist + 5. * (ort3.vec3(1).sp(enemy->pos) - ort3.vec3(1).sp(this->pos) + .2), 0., 1.), .2 * dt, 5.);
 		if(inputs.press & PL_Q)
 			feather = approach(feather, 1., featherSpeed * dt, 5.);
 		if(inputs.press & PL_Z)

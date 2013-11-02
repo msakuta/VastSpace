@@ -357,7 +357,6 @@ static double angularDamping = 20.;
 
 void Aerial::anim(double dt){
 	int inwater = 0;
-	bool onfeet = false;
 	int walking = 0;
 	int direction = 0;
 

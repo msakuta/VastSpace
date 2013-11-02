@@ -28,6 +28,18 @@ hitbox <- [
 	[Vec3d(0, 0, 0), Quatd(0,0,0,1), Vec3d(140, 230, 700) * modelScale],
 ];
 
+hudPos <- cockpitOfs + Vec3d(0, 0, -40) * modelScale;
+
+hudSize <- 20 * modelScale;
+
+/// Available weapon type names
+weaponList <- [
+	"M230 Chaingun",
+	"Hydra-70 Rocket",
+	"Hellfire Missile",
+	"AIM-9 Sidewinder",
+];
+
 if(isClient()){
 
 	beginControl["Apache"] <- function (){

@@ -3,7 +3,7 @@
  */
 #ifndef APACHE_H
 #define APACHE_H
-#include "ModelEntity.h"
+#include "Aerial.h"
 #include "Model-forward.h"
 #include "Motion-forward.h"
 #include "arms.h"
@@ -13,9 +13,9 @@
 /// \brief AH-64 Apache attack helicopter
 ///
 /// http://en.wikipedia.org/wiki/Boeing_AH-64_Apache
-class Apache : public ModelEntity{
+class Apache : public Aerial{
 public:
-	typedef ModelEntity st;
+	typedef Aerial st;
 	static EntityRegister<Apache> entityRegister;
 	Apache(Game *game) : st(game){}
 	Apache(WarField *w);
@@ -53,13 +53,13 @@ protected:
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
-	int weapon;
+//	int weapon;
 	int ammo_chaingun;
-	int aim9; /* AIM-9 Sidewinder */
-	int contact; /* contact state, not really necessary */
-	char muzzle; /* muzzle flash status */
-	char brk;
-	char navlight; /* switch of navigation lights for flight in dark */
+//	int aim9; /* AIM-9 Sidewinder */
+//	int contact; /* contact state, not really necessary */
+//	char muzzle; /* muzzle flash status */
+//	char brk;
+//	char navlight; /* switch of navigation lights for flight in dark */
 
 	void init();
 	void find_enemy_logic();
@@ -83,11 +83,17 @@ protected:
 	static HSQOBJECT sqHellfireFire;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
+	static Vec3d hudPos;
+	static double hudSize;
 	static GLuint overlayDisp;
 	static std::vector<hardpoint_static*> hardpoints;
 	static StringList defaultArms;
+	static StringList weaponList;
 
-	static const HitBoxList &getHitBoxes(){return hitboxes;}
+	WingList &getWings()const override{return WingList();}
+	HitBoxList &getHitBoxes()const override{return hitboxes;}
+	double getThrustStrength()const override{return 0.;}
+	btCompoundShape *getShape(){return NULL;}
 	bool buildBody();
 	int shootChainGun(double dt);
 	int shootHydraRocket(double dt);

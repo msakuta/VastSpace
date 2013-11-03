@@ -76,14 +76,8 @@ function hydraFire(e,dt){
 		print("Hello hydraFire " + hydras);
 		local i = hydras % launchers.len();
 		local arm = launchers[i];
-		local pb = e.cs.addent("HydraRocket", arm.getpos());
-		pb.owner = e;
-		pb.life = 10;
-		pb.damage = 300;
-		pb.setrot(e.getrot());
-		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.1)));
 		e.cooldown += 1. / launchers.len();
-		e.lastMissile = pb;
+		e.lastMissile = arm.fire(dt);
 		arm.ammo--;
 	}
 }

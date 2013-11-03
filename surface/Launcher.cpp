@@ -18,6 +18,64 @@ extern "C"{
 inline gltestp::dstring modPath(){return "surface/";}
 
 //-----------------------------------------------------------------------------
+//	Launcher implementation
+//-----------------------------------------------------------------------------
+
+template<> void Entity::EntityRegister<Launcher>::sq_defineInt(HSQUIRRELVM v){
+	sqa::register_closure(v, _SC("fire"), Launcher::sq_fire);
+}
+
+// This declaration seems to be needed before derived classes' ones.
+Launcher::EntityRegister<Launcher> Launcher::entityRegister("Launcher");
+
+Bullet *Launcher::fire(double dt){
+	return NULL; // Default does nothing
+}
+
+SQInteger Launcher::sq_fire(HSQUIRRELVM v){
+	try{
+		Entity *p = Entity::sq_refobj(v);
+		if(!p) // It should be valid to send a command to destroyed object; it's just ignored.
+			return 0;
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 2, &f)))
+			throw SQFError(_SC("Argument failed to convert to float"));
+
+		if(Launcher *launcher = dynamic_cast<Launcher*>(p)){
+			Bullet *b = launcher->fire(f);
+			sq_pushobj(v, b);
+			return 1;
+		}
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.description);
+	}
+	return 0;
+}
+
+SQInteger Launcher::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("ammo"))){
+		sq_pushfloat(v, ammo);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Launcher::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("ammo"))){
+		SQInteger reti;
+		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
+			return SQ_ERROR;
+		ammo = reti;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
+
+//-----------------------------------------------------------------------------
 //	HydraRocket implementation
 //-----------------------------------------------------------------------------
 
@@ -121,6 +179,20 @@ void HydraRocketLauncher::anim(double dt){
 		cooldown = 0.;
 	else
 		cooldown -= dt;
+}
+
+Bullet *HydraRocketLauncher::fire(double dt){
+	Bullet *ret = NULL;
+	while(cooldown < dt){
+		HydraRocket *pb = new HydraRocket(base, 10., 300);
+		w->addent(pb);
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
+		cooldown += 1.;
+		ammo--;
+		ret = pb;
+	}
+	return ret;
 }
 
 
@@ -383,29 +455,4 @@ void SidewinderLauncher::anim(double dt){
 		cooldown = 0.;
 	else
 		cooldown -= dt;
-}
-
-//-----------------------------------------------------------------------------
-//	Launcher implementation
-//-----------------------------------------------------------------------------
-
-SQInteger Launcher::sqGet(HSQUIRRELVM v, const SQChar *name)const{
-	if(!scstrcmp(name, _SC("ammo"))){
-		sq_pushfloat(v, ammo);
-		return 1;
-	}
-	else
-		return st::sqGet(v, name);
-}
-
-SQInteger Launcher::sqSet(HSQUIRRELVM v, const SQChar *name){
-	if(!scstrcmp(name, _SC("ammo"))){
-		SQInteger reti;
-		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
-			return SQ_ERROR;
-		ammo = reti;
-		return 0;
-	}
-	else
-		return st::sqSet(v, name);
 }

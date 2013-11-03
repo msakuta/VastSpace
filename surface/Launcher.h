@@ -8,12 +8,25 @@
 #include "Bullet.h"
 #include "Model-forward.h"
 
+class Launcher;
+
+template<> Entity *Entity::EntityRegister<Launcher>::create(WarField *){ return NULL; }
+template<> Entity *Entity::EntityRegister<Launcher>::stcreate(Game *){ return NULL; }
+template<> void Entity::EntityRegister<Launcher>::sq_defineInt(HSQUIRRELVM v);
+
 /// \brief Base class for rocket or missile launchers.
 class Launcher : public ArmBase{
 public:
 	typedef ArmBase st;
+	static EntityRegister<Launcher> entityRegister;
 	Launcher(Game *game) : st(game), cooldown(0.), ammo(0){}
 	Launcher(Entity *base, const hardpoint_static *hp, int ammo_ = 4) : st(base, hp), cooldown(0.), ammo(ammo_){}
+
+	/// \brief A virtual function to order firing this Launcher.
+	/// \returns The Bullet object shot from this procedure or NULL if there's none.
+	virtual Bullet *fire(double dt);
+
+	static SQInteger sq_fire(HSQUIRRELVM);
 
 	static gltestp::dstring modPath(){return "surface/";}
 protected:
@@ -68,6 +81,7 @@ public:
 	const char *classname()const override{return "HydraRocketLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
+	Bullet *fire(double dt)override;
 };
 
 /// \brief AGM-114 Hellfire air-to-surface missile.

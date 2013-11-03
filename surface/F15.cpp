@@ -62,6 +62,7 @@ double F15::hitRadius = 0.012;
 double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
 HSQOBJECT F15::sqSidewinderFire = sq_nullobj();
+HSQOBJECT F15::sqQueryAmmo = sq_nullobj();
 HitBoxList F15::hitboxes;
 ModelEntity::NavlightList F15::navlights;
 double F15::thrustStrength = .010;
@@ -121,6 +122,7 @@ void F15::init(){
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SqCallbackProcess(sqSidewinderFire, "sidewinderFire") <<=
+			SqCallbackProcess(sqQueryAmmo, "queryAmmo") <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
@@ -154,7 +156,6 @@ void F15::init(){
 	this->afterburner = 0;
 	this->navlight = 0;
 	this->gear = 0;
-	this->missiles = 10;
 	this->throttle = 0.;
 
 	// Setup default configuration for arms

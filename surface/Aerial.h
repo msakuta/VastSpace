@@ -52,7 +52,6 @@ protected:
 	bool muzzle, brake, afterburner, navlight, gear;
 	bool spoiler;
 	bool showILS;
-	int missiles;
 	int weapon;
 //	sufdecal_t *sd;
 //	bhole_t *frei;
@@ -101,6 +100,8 @@ protected:
 	virtual short bbodyMask()const;
 	virtual void shoot(double dt);
 	virtual double getThrustStrength()const = 0;
+	virtual gltestp::dstring getWeaponName()const{return "";}
+	virtual int getAmmo()const{return 0;}
 	virtual void toggleWeapon(){weapon = !weapon;}
 	virtual btCompoundShape *getShape() = 0;
 
@@ -109,10 +110,11 @@ protected:
 	bool taxi(double dt);
 	void animAI(double dt, bool onfeet);
 	void calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const;
+	int getAmmoFromSQ(HSQOBJECT&)const;
 	btCompoundShape *buildShape();
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
-		const Vec3d &gunDirection, const StringList &weaponList)const;
+		const Vec3d &gunDirection)const;
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

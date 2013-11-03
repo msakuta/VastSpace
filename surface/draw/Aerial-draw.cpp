@@ -132,7 +132,7 @@ void Aerial::drawDebugWings()const{
 
 /// \brief Draw HUD on cockpit graphics for aircrafts.
 void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
-							const Vec3d &gunDirection, const StringList &weaponList)const
+							const Vec3d &gunDirection)const
 {
 	if(0. < health){
 		static const GLfloat hudcolor[4] = {0, 1, 0, 1};
@@ -377,8 +377,8 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		readOut(gltestp::dstring("R") << roll, -.7, -.90, 0.005);
 #endif
 
-		readOut(gltestp::dstring("ARMED: ") << weaponList[weapon], 0.2, -0.75, 0.0035);
-		readOut(gltestp::dstring("Missiles: ") << this->missiles, 0.2, -0.8, 0.0035);
+		readOut(gltestp::dstring("ARMED: ") << this->getWeaponName(), 0.2, -0.75, 0.0035);
+		readOut(gltestp::dstring("AMMO: ") << this->getAmmo(), 0.2, -0.8, 0.0035);
 
 		// Indicates landing gear status
 		if(gear)

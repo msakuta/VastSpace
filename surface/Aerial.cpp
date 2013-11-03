@@ -604,6 +604,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushobj(v, landingAirport);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		Entity::sq_pushobj(v, lastMissile);
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -654,6 +658,10 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 	}
 	else if(!scstrcmp(name, _SC("landingAirport"))){
 		landingAirport = sq_refobj(v, 3);
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("lastMissile"))){
+		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));
 		return 0;
 	}
 	else
@@ -1007,6 +1015,22 @@ void Aerial::calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const{
 	else{
 		pos = mat.vp3(cam.pos);
 	}
+}
+
+int Aerial::getAmmoFromSQ(HSQOBJECT &sqQueryAmmo)const{
+	// Missiles are so precious that semi-automatic triggering is more desirable.
+	// Also, do not try to shoot if there's no enemy locked on.
+	HSQUIRRELVM v = game->sqvm;
+	StackReserver sr(v);
+	sq_pushobject(v, sqQueryAmmo);
+	sq_pushroottable(v);
+	Entity::sq_pushobj(v, const_cast<Aerial*>(this));
+	if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+		return 0;
+	SQInteger ret;
+	if(SQ_FAILED(sq_getinteger(v, -1, &ret)))
+		return 0;
+	return int(ret);
 }
 
 

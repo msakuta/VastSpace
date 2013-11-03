@@ -35,6 +35,7 @@ hudSize <- 20 * modelScale;
 /// Available weapon type names
 weaponList <- [
 	"M230 Chaingun",
+	"M230 Chaingun (Auto)",
 	"Hydra-70 Rocket",
 	"Hellfire Missile",
 	"AIM-9 Sidewinder",
@@ -118,6 +119,17 @@ function hellfireFire(e,dt){
 		e.lastMissile = pb;
 		arm.ammo--;
 	}
+}
+
+function queryAmmo(e){
+	if(e.weapon == 0 || e.weapon == 1)
+		return e.ammo_chaingun;
+	local launcherType = e.weapon == 2 ? "HydraRocketLauncher" : "HellfireLauncher";
+	local count = 0;
+	foreach(it in e.arms)
+		if(it.classname == launcherType)
+			count += it.ammo;
+	return count;
 }
 
 local rot0 = Quatd(0,0,0,1);

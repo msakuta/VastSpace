@@ -59,6 +59,7 @@ double A10::hitRadius = 0.012;
 double A10::defaultMass = 12000.;
 double A10::maxHealthValue = 500.;
 HSQOBJECT A10::sqFire = sq_nullobj();
+HSQOBJECT A10::sqQueryAmmo = sq_nullobj();
 HitBoxList A10::hitboxes;
 ModelEntity::NavlightList A10::navlights;
 double A10::thrustStrength = .010;
@@ -117,6 +118,7 @@ void A10::init(){
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SqCallbackProcess(sqFire, "fire") <<=
+			SqCallbackProcess(sqQueryAmmo, "queryAmmo") <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
 			SingleDoubleProcess(thrustStrength, "thrust") <<=
@@ -150,7 +152,6 @@ void A10::init(){
 	this->afterburner = 0;
 	this->navlight = 0;
 	this->gear = 0;
-	this->missiles = 10;
 	this->throttle = 0.;
 
 	// Setup default configuration for arms

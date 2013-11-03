@@ -48,6 +48,7 @@ protected:
 	static double defaultMass; ///< Dry mass?
 	static double maxHealthValue;
 	static HSQOBJECT sqSidewinderFire;
+	static HSQOBJECT sqQueryAmmo;
 	static HitBoxList hitboxes;
 	static NavlightList navlights;
 	static double thrustStrength;
@@ -75,6 +76,8 @@ protected:
 		return cameraPositions[chasecam].type == CameraPos::Type::Cockpit
 			|| cameraPositions[chasecam].type == CameraPos::Type::MissileTrack && !lastMissile;
 	}
+	gltestp::dstring getWeaponName()const override{return weaponList[weapon];}
+	int getAmmo()const override{return getAmmoFromSQ(sqQueryAmmo);}
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 	btCompoundShape *getShape()override;
 

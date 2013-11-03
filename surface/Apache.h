@@ -52,14 +52,7 @@ protected:
 	double cooldown2;
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
-	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
-//	int weapon;
 	int ammo_chaingun;
-//	int aim9; /* AIM-9 Sidewinder */
-//	int contact; /* contact state, not really necessary */
-//	char muzzle; /* muzzle flash status */
-//	char brk;
-//	char navlight; /* switch of navigation lights for flight in dark */
 
 	void init();
 	void find_enemy_logic();
@@ -81,6 +74,7 @@ protected:
 	static double hydraDamage;
 	static HSQOBJECT sqHydraFire;
 	static HSQOBJECT sqHellfireFire;
+	static HSQOBJECT sqQueryAmmo;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
 	static Vec3d hudPos;
@@ -100,6 +94,8 @@ protected:
 	int shootHellfire(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
 	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == 4 && !lastMissile;}
+	gltestp::dstring getWeaponName()const override{return weaponList[weapon];}
+	int getAmmo()const override{return getAmmoFromSQ(sqQueryAmmo);}
 
 	friend class HydraRocketLauncher;
 };

@@ -96,6 +96,45 @@ local lthis = this;
 
 local m = 1.e-3;
 
+local ArmBase = {
+	launcherType = "",
+	projectileType = "Bullet",
+	damage = 30.,
+	cooldown = @(launchers) 1. / launchers.len(),
+	ammoConsume = 1,
+}
+
+local HydraRocketLauncher = {
+	launcherType = "HydraRocketLauncher",
+	projectileType = "HydraRocket",
+	damage = 300,
+}
+HydraRocketLauncher.setdelegate(ArmBase);
+
+local HellfireLauncher = {
+	launcherType = "HellfireLauncher",
+	projectileType = "Hellfire",
+	damage = 500,
+	ammoConsume = 0,
+	cooldown = @(...) 2.,
+}
+HellfireLauncher.setdelegate(ArmBase);
+
+local SidewinderLauncher = {
+	launcherType = "SidewinderLauncher",
+	projectileType = "Sidewinder",
+	damage = 800,
+	cooldown = @(...) 1.,
+}
+SidewinderLauncher.setdelegate(ArmBase);
+
+local weapons = [
+	ArmBase,
+	HydraRocketLauncher,
+	HellfireLauncher,
+	SidewinderLauncher,
+];
+
 function fire(e,dt){
 	if(e.weapon == 0){
 		while(e.cooldown < dt){
@@ -128,34 +167,11 @@ function fire(e,dt){
 	}
 
 	if(e.cooldown < dt){
-		local launcherType;
-		local projectileType;
-		local damage;
-		local cooldown = @(launchers) 1. / launchers.len();
-		local ammoConsume = 1;
-		switch(e.weapon){
-		case 1:
-			launcherType = "HydraRocketLauncher";
-			projectileType = "HydraRocket";
-			damage = 300;
-			break;
-		case 2:
-			launcherType = "HellfireLauncher";
-			projectileType = "Hellfire";
-			damage = 500;
-			ammoConsume = 0;
-			cooldown = @(...) 2.;
-			break;
-		case 3:
-			launcherType = "SidewinderLauncher";
-			projectileType = "Sidewinder";
-			damage = 800;
-			cooldown = @(...) 1.;
-			break;
-		default:
+		if(weapons.len() <= e.weapon){
 			print("A10.nut: invalid e.weapon in fire()");
 			return;
 		}
+		local w = weapons[e.weapon];
 		local arms = e.arms;
 		local launchers = [];
 
@@ -164,29 +180,42 @@ function fire(e,dt){
 		// of firing right now.
 		local count = 0;
 		foreach(it in arms)
-			if(it.classname == launcherType && ammoConsume <= it.ammo)
+			if(it.classname == w.launcherType && w.ammoConsume <= it.ammo)
 				launchers.append(it), count += it.ammo;
 
 		// If there's no missile left in the launchers, exit
 		if(launchers.len() == 0)
 			return;
 
-		print("Hello fire launcherType = " + launcherType + ", launchers.len() = " + launchers.len() + " count = " + count);
+		print("Hello fire launcherType = " + w.launcherType + ", launchers.len() = " + launchers.len() + " count = " + count);
 		local i = count % launchers.len();
 		local arm = launchers[i];
-		local pb = e.cs.addent(projectileType, arm.getpos());
+		local pb = e.cs.addent(w.projectileType, arm.getpos());
 		pb.owner = e;
 		pb.life = 10;
-		pb.damage = damage;
+		pb.damage = w.damage;
 		if(e.weapon != 1) // Rockets cannot guide to target
 			pb.target = e.enemy;
 		pb.setrot(e.getrot());
 		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.01)));
-		local deltaCooldown = cooldown(launchers);
+		local deltaCooldown = w.cooldown(launchers);
 		e.cooldown += deltaCooldown;
 		e.lastMissile = pb;
-		arm.ammo -= ammoConsume;
+		arm.ammo -= w.ammoConsume;
 	}
+}
+
+function queryAmmo(e){
+	if(weapons.len() <= e.weapon){
+		print("A10.nut: invalid e.weapon in queryAmmo()");
+		return 0;
+	}
+	local w = weapons[e.weapon];
+	local count = 0;
+	foreach(it in e.arms)
+		if(it.classname == w.launcherType)
+			count += it.ammo;
+	return count;
 }
 
 local rot0 = Quatd(0,0,0,1);

@@ -160,6 +160,22 @@ weaponList <- [
 //	"AIM-120 AMRAAM",
 ]
 
+function queryAmmo(e){
+	if(2 <= e.weapon){
+		print("F15.nut: invalid e.weapon in fire()");
+		return 0;
+	}
+	// Currently F15 has infinite ammo for main gun
+	if(e.weapon == 0)
+		return 0;
+	local launcherType = "SidewinderLauncher";
+	local count = 0;
+	foreach(it in e.arms)
+		if(it.classname == launcherType)
+			count += it.ammo;
+	return count;
+}
+
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

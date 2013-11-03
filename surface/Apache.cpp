@@ -63,6 +63,7 @@ double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
 HSQOBJECT Apache::sqHydraFire = sq_nullobj();
 HSQOBJECT Apache::sqHellfireFire = sq_nullobj();
+HSQOBJECT Apache::sqQueryAmmo = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
 Vec3d Apache::hudPos;
@@ -98,6 +99,7 @@ void Apache::init(){
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
 			SqCallbackProcess(sqHellfireFire, "hellfireFire") <<=
+			SqCallbackProcess(sqQueryAmmo, "queryAmmo") <<=
 			HardPointProcess(hardpoints) <<=
 			StringListProcess(defaultArms, "defaultArms") <<=
 			StringListProcess(weaponList, "weaponList"));
@@ -551,10 +553,6 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, cooldown);
 		return 1;
 	}
-	else if(!scstrcmp(name, _SC("lastMissile"))){
-		Entity::sq_pushobj(v, lastMissile);
-		return 1;
-	}
 	else if(!scstrcmp(name, _SC("arms"))){
 		// Prepare an empty array in Squirrel VM for adding arms.
 		sq_newarray(v, 0); // array
@@ -580,6 +578,10 @@ SQInteger Apache::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("ammo_chaingun"))){
+		sq_pushinteger(v, ammo_chaingun);
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -592,8 +594,11 @@ SQInteger Apache::sqSet(HSQUIRRELVM v, const SQChar *name){
 		cooldown = retf;
 		return 0;
 	}
-	else if(!scstrcmp(name, _SC("lastMissile"))){
-		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));
+	else if(!scstrcmp(name, _SC("ammo_chaingun"))){
+		SQInteger ret;
+		if(SQ_FAILED(sq_getinteger(v, 3, &ret)))
+			return SQ_ERROR;
+		ammo_chaingun = ret;
 		return 0;
 	}
 	else

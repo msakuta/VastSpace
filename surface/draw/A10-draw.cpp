@@ -165,9 +165,6 @@ void A10::drawHUD(WarDraw *wd){
 		left = -(double)w / m;
 		bottom = -(double)h / m;
 
-		glRasterPos3d(left, bottom + 130. / m, -1.);
-		gldprintf("Missiles: %d", this->missiles);
-
 		glPushMatrix();
 		glScaled(1./*(double)mi / w*/, 1./*(double)mi / h*/, (double)m / mi);
 
@@ -258,7 +255,7 @@ void A10::drawCockpit(WarDraw *wd){
 
 	glPopMatrix();
 
-	drawCockpitHUD(hudPos, hudSize, seat, gunDirection, weaponList);
+	drawCockpitHUD(hudPos, hudSize, seat, gunDirection);
 
 	glPushMatrix();
 

@@ -61,8 +61,7 @@ double Apache::chainGunDamage = 30.;
 double Apache::chainGunVariance = 0.015;
 double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
-HSQOBJECT Apache::sqHydraFire = sq_nullobj();
-HSQOBJECT Apache::sqHellfireFire = sq_nullobj();
+HSQOBJECT Apache::sqFire = sq_nullobj();
 HSQOBJECT Apache::sqQueryAmmo = sq_nullobj();
 Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
 HitBoxList Apache::hitboxes;
@@ -97,8 +96,7 @@ void Apache::init(){
 			Vec3dProcess(hudPos, "hudPos") <<=
 			SingleDoubleProcess(hudSize, "hudSize") <<=
 			DrawOverlayProcess(overlayDisp) <<=
-			SqCallbackProcess(sqHydraFire, "hydraFire") <<=
-			SqCallbackProcess(sqHellfireFire, "hellfireFire") <<=
+			SqCallbackProcess(sqFire, "fire") <<=
 			SqCallbackProcess(sqQueryAmmo, "queryAmmo") <<=
 			HardPointProcess(hardpoints) <<=
 			StringListProcess(defaultArms, "defaultArms") <<=
@@ -413,12 +411,7 @@ void Apache::anim(double dt){
 				tail = approach(tail, 0., tailRotorSpeed * dt, 5.);
 		}
 
-		if(weapon == 0 || weapon == 1)
-			shootChainGun(dt);
-		else if(weapon == 2)
-			shootHydraRocket(dt);
-		else
-			shootHellfire(dt);
+		shoot(dt);
 	}
 	else{
 		throttle = approach(throttle, 0., .2 * dt, 5.);
@@ -707,50 +700,23 @@ int Apache::shootChainGun(double dt){
 	return ret;
 }
 
-/// \brief Try to shoot hydra-70 unguided high-explosive rockets.
-/// \returns Count of rockets shot in this frame
-int Apache::shootHydraRocket(double dt){
-	static const Vec3d nh0(0., 0., -1.), xh0(1., 0., 0.);
-	static const Vec3d pos0[2] = {
-		Vec3d(0.002, -0.0012, -.0032), Vec3d(-0.002, -0.0012, -.0032)
-	};
-	double phi, theta;
-	double scale = modelScale;
-	double variance = chainGunVariance;
-	int ret = 0;
-
-
-	Mat4d mat;
-	transform(mat);
+/// \brief Try to shoot rockets, missiles or gun.
+void Apache::shoot(double dt){
+	if(weapon == 0 || weapon == 1){
+		shootChainGun(dt);
+		return;
+	}
 
 //	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
 	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
 		HSQUIRRELVM v =game->sqvm;
 		StackReserver sr(v);
-		sq_pushobject(v, sqHydraFire);
+		sq_pushobject(v, sqFire);
 		sq_pushroottable(v);
 		Entity::sq_pushobj(v, this);
 		sq_pushfloat(v, dt);
 		sq_call(v, 3, SQFalse, SQTrue);
 	}
-	return ret;
-}
-
-/// \brief Try to shoot hydra-70 unguided high-explosive rockets.
-/// \returns Count of rockets shot in this frame
-int Apache::shootHellfire(double dt){
-	int ret = 0;
-
-	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
-		HSQUIRRELVM v =game->sqvm;
-		StackReserver sr(v);
-		sq_pushobject(v, sqHellfireFire);
-		sq_pushroottable(v);
-		Entity::sq_pushobj(v, this);
-		sq_pushfloat(v, dt);
-		sq_call(v, 3, SQFalse, SQTrue);
-	}
-	return ret;
 }
 
 #ifdef DEDICATED

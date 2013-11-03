@@ -26,6 +26,9 @@ public:
 	/// \returns The Bullet object shot from this procedure or NULL if there's none.
 	virtual Bullet *fire(double dt);
 
+	/// \brief Returns cooldown time between shoots
+	virtual double getCooldownTime()const{return 1.;}
+
 	static SQInteger sq_fire(HSQUIRRELVM);
 
 	static gltestp::dstring modPath(){return "surface/";}
@@ -82,6 +85,7 @@ public:
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
 	Bullet *fire(double dt)override;
+	double getCooldownTime()const override{return 0.5;}
 };
 
 /// \brief AGM-114 Hellfire air-to-surface missile.
@@ -139,6 +143,7 @@ public:
 	const char *classname()const override{return "HellfireLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
+	Bullet *fire(double dt)override;
 };
 
 /// \brief AIM-9 Sidewinder air-to-air missile.

@@ -62,6 +62,10 @@ SQInteger Launcher::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, cooldown);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("cooldownTime"))){
+		sq_pushfloat(v, getCooldownTime());
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -199,7 +203,7 @@ Bullet *HydraRocketLauncher::fire(double dt){
 		w->addent(pb);
 		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
 		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
-		cooldown += 0.5;
+		cooldown += getCooldownTime();
 		ammo--;
 		ret = pb;
 	}
@@ -439,6 +443,22 @@ void HellfireLauncher::anim(double dt){
 		cooldown = 0.;
 	else
 		cooldown -= dt;
+}
+
+Bullet *HellfireLauncher::fire(double dt){
+	Bullet *ret = NULL;
+	while(0 <= ammo && cooldown < dt){
+		Hellfire *pb = new Hellfire(base, 10., 300);
+		w->addent(pb);
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
+		if(base)
+			pb->target = base->enemy;
+		cooldown += getCooldownTime();
+		ammo--;
+		ret = pb;
+	}
+	return ret;
 }
 
 //-----------------------------------------------------------------------------

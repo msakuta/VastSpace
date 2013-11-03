@@ -72,8 +72,7 @@ protected:
 	static double chainGunVariance; ///< Chain gun variance (inverse accuracy) in cosine angles.
 	static double chainGunLife; ///< Time before shot bullet disappear
 	static double hydraDamage;
-	static HSQOBJECT sqHydraFire;
-	static HSQOBJECT sqHellfireFire;
+	static HSQOBJECT sqFire;
 	static HSQOBJECT sqQueryAmmo;
 	static Vec3d cockpitOfs;
 	static HitBoxList hitboxes;
@@ -90,8 +89,7 @@ protected:
 	btCompoundShape *getShape(){return NULL;}
 	bool buildBody();
 	int shootChainGun(double dt);
-	int shootHydraRocket(double dt);
-	int shootHellfire(double dt);
+	void shoot(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
 	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == 4 && !lastMissile;}
 	gltestp::dstring getWeaponName()const override{return weaponList[weapon];}

@@ -56,7 +56,8 @@ if(isClient()){
 	}
 }
 
-function hydraFire(e,dt){
+function fire(e,dt){
+	local launcherType = e.weapon == 2 ? "HydraRocketLauncher" : "HellfireLauncher";
 	while(e.cooldown < dt){
 		local arms = e.arms;
 		local launchers = [];
@@ -64,11 +65,9 @@ function hydraFire(e,dt){
 		local max_ammo = 0;
 
 		// Ammunition count is saved in each launchers, so we must scan them
-		// to find how many rockets we've got and which launcher is capable
-		// of firing right now.
-		local hydras = 0;
+		// to find which launcher is capable of firing right now.
 		foreach(it in arms){
-			if(it.classname == "HydraRocketLauncher" && 0 < it.ammo){
+			if(it.classname == launcherType && 0 < it.ammo){
 				launchers.append(it);
 				if(it.cooldown == 0. && max_ammo < it.ammo){
 					max_ammo = it.ammo;
@@ -84,43 +83,9 @@ function hydraFire(e,dt){
 		local arm = max_launcher;
 		local fired = arm.fire(dt);
 		if(fired != null && fired.alive){
-			e.cooldown += 0.5 / launchers.len();
+			e.cooldown += arm.cooldownTime / launchers.len();
 			e.lastMissile = fired;
-			arm.ammo--;
 		}
-	}
-}
-
-function hellfireFire(e,dt){
-	if(e.cooldown < dt){
-		local arms = e.arms;
-		local launchers = [];
-
-		// Ammunition count is saved in each launchers, so we must scan them
-		// to find how many missiles we've got and which launcher is capable
-		// of firing right now.
-		local hellfires = 0;
-		foreach(it in arms)
-			if(it.classname == "HellfireLauncher" && 0 < it.ammo)
-				launchers.append(it), hellfires += it.ammo;
-
-		// If there's no missile left in the launchers, exit
-		if(launchers.len() == 0)
-			return;
-
-		print("Hello hellfireFire " + hellfires);
-		local i = hellfires % launchers.len();
-		local arm = launchers[i];
-		local pb = e.cs.addent("Hellfire", arm.getpos());
-		pb.owner = e;
-		pb.life = 10;
-		pb.damage = 300;
-		pb.target = e.enemy;
-		pb.setrot(e.getrot());
-		pb.setvelo(e.getvelo() + e.getrot().trans(Vec3d(0,0,-0.01)));
-		e.cooldown += 1. / launchers.len();
-		e.lastMissile = pb;
-		arm.ammo--;
 	}
 }
 

@@ -226,8 +226,8 @@ void Apache::drawCockpit(WarDraw *wd){
 
 	glPopMatrix();
 
-	Mat4d rmat = mat4_u.rotx(gun[0]).roty(gun[1]);
-	drawCockpitHUD(hudPos, hudSize, seat, rmat.vp3(Vec3d(0,0,1)));
+	Quatd rq = Quatd::rotation(-gun[0], vec3_100).rotate(gun[1], vec3_010);
+	drawCockpitHUD(hudPos, hudSize, seat, rq.trans(Vec3d(0,0,1)));
 
 	glPopMatrix();
 

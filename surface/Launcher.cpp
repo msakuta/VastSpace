@@ -55,7 +55,11 @@ SQInteger Launcher::sq_fire(HSQUIRRELVM v){
 
 SQInteger Launcher::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 	if(!scstrcmp(name, _SC("ammo"))){
-		sq_pushfloat(v, ammo);
+		sq_pushinteger(v, ammo);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("cooldown"))){
+		sq_pushfloat(v, cooldown);
 		return 1;
 	}
 	else
@@ -68,6 +72,13 @@ SQInteger Launcher::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
 			return SQ_ERROR;
 		ammo = reti;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("cooldown"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		cooldown = retf;
 		return 0;
 	}
 	else
@@ -183,12 +194,12 @@ void HydraRocketLauncher::anim(double dt){
 
 Bullet *HydraRocketLauncher::fire(double dt){
 	Bullet *ret = NULL;
-	while(cooldown < dt){
+	while(0 <= ammo && cooldown < dt){
 		HydraRocket *pb = new HydraRocket(base, 10., 300);
 		w->addent(pb);
 		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
 		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
-		cooldown += 1.;
+		cooldown += 0.5;
 		ammo--;
 		ret = pb;
 	}

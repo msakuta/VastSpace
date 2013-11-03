@@ -60,25 +60,34 @@ function hydraFire(e,dt){
 	while(e.cooldown < dt){
 		local arms = e.arms;
 		local launchers = [];
+		local max_launcher = null;
+		local max_ammo = 0;
 
 		// Ammunition count is saved in each launchers, so we must scan them
 		// to find how many rockets we've got and which launcher is capable
 		// of firing right now.
 		local hydras = 0;
-		foreach(it in arms)
-			if(it.classname == "HydraRocketLauncher" && 0 < it.ammo)
-				launchers.append(it), hydras += it.ammo;
+		foreach(it in arms){
+			if(it.classname == "HydraRocketLauncher" && 0 < it.ammo){
+				launchers.append(it);
+				if(it.cooldown == 0. && max_ammo < it.ammo){
+					max_ammo = it.ammo;
+					max_launcher = it;
+				}
+			}
+		}
 
 		// If there's no rockets left in the launchers, exit
-		if(launchers.len() == 0)
+		if(max_launcher == null)
 			return;
 
-		print("Hello hydraFire " + hydras);
-		local i = hydras % launchers.len();
-		local arm = launchers[i];
-		e.cooldown += 1. / launchers.len();
-		e.lastMissile = arm.fire(dt);
-		arm.ammo--;
+		local arm = max_launcher;
+		local fired = arm.fire(dt);
+		if(fired != null && fired.alive){
+			e.cooldown += 0.5 / launchers.len();
+			e.lastMissile = fired;
+			arm.ammo--;
+		}
 	}
 }
 

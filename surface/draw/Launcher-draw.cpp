@@ -26,8 +26,6 @@ extern "C"{
 //	HydraRocket implementation
 //-----------------------------------------------------------------------------
 
-const double HydraRocket::modelScale = 1e-6;
-
 void HydraRocket::draw(WarDraw *wd){
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(this->pos, .003))

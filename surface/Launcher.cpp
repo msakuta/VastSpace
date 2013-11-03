@@ -32,9 +32,24 @@ const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32
 
 Entity::EntityRegister<HydraRocket> HydraRocket::entityRegister("HydraRocket");
 
+double HydraRocket::modelScale = 1e-6;
+double HydraRocket::defaultMass = 6.2;
+
 HydraRocket::HydraRocket(WarField *w) : st(w), pf(NULL), fuel(3.){
-	mass = 6.2;
+	init();
 }
+
+void HydraRocket::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC(modPath() << "models/HydraRocket.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass"));
+		initialized = true;
+	}
+	mass = defaultMass;
+}
+
 
 void HydraRocket::anim(double dt){
 	if(0. < fuel){
@@ -107,6 +122,7 @@ void HydraRocketLauncher::anim(double dt){
 	else
 		cooldown -= dt;
 }
+
 
 //-----------------------------------------------------------------------------
 //	Hellfire implementation

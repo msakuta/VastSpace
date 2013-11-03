@@ -32,7 +32,8 @@ public:
 	HydraRocket(Game *game) : st(game), pf(NULL), fuel(3.){}
 	HydraRocket(WarField *w);
 	HydraRocket(Entity *owner, float life, double damage) :
-		st(owner, life, damage), pf(NULL), fuel(3.){}
+		st(owner, life, damage), pf(NULL), fuel(3.){init();}
+	void init();
 	const char *classname()const override{return "HydraRocket";}
 	void anim(double dt)override;
 	void clientUpdate(double dt)override;
@@ -42,7 +43,8 @@ public:
 	void leaveField(WarField*)override;
 
 protected:
-	static const double modelScale;
+	static double modelScale;
+	static double defaultMass;
 
 	Tefpol *pf;
 	double fuel;

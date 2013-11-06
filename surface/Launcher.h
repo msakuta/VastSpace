@@ -181,6 +181,7 @@ public:
 	const char *classname()const override{return "SidewinderLauncher";}
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
+	Bullet *fire(double dt)override;
 };
 
 

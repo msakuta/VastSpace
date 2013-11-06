@@ -487,3 +487,19 @@ void SidewinderLauncher::anim(double dt){
 	else
 		cooldown -= dt;
 }
+
+Bullet *SidewinderLauncher::fire(double dt){
+	Bullet *ret = NULL;
+	while(0 <= ammo && cooldown < dt){
+		Sidewinder *pb = new Sidewinder(base, 10., 300);
+		w->addent(pb);
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
+		if(base)
+			pb->target = base->enemy;
+		cooldown += getCooldownTime();
+		ammo--;
+		ret = pb;
+	}
+	return ret;
+}

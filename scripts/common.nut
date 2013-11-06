@@ -893,3 +893,7 @@ groupTraceSymbols <- GroupTraceSymbols();
 
 gts <- groupTraceSymbols;
 
+// Save the root table to this table itself for reference by Entity initializers,
+// because notations like "::this" won't work in contexts where "this" is not the root table,
+// which is because "this" is a keyword, not a table entry.
+root <- this;

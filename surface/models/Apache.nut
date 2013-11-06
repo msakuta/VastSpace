@@ -1,4 +1,6 @@
 
+dofile("surface/models/Aerial.nut");
+
 modelScale <- 0.00001;
 
 mass <- 5000.;
@@ -58,35 +60,7 @@ if(isClient()){
 
 function fire(e,dt){
 	local launcherType = e.weapon == 2 ? "HydraRocketLauncher" : "HellfireLauncher";
-	while(e.cooldown < dt){
-		local arms = e.arms;
-		local launchers = [];
-		local max_launcher = null;
-		local max_ammo = 0;
-
-		// Ammunition count is saved in each launchers, so we must scan them
-		// to find which launcher is capable of firing right now.
-		foreach(it in arms){
-			if(it.classname == launcherType && 0 < it.ammo){
-				launchers.append(it);
-				if(it.cooldown == 0. && max_ammo < it.ammo){
-					max_ammo = it.ammo;
-					max_launcher = it;
-				}
-			}
-		}
-
-		// If there's no rockets left in the launchers, exit
-		if(max_launcher == null)
-			return;
-
-		local arm = max_launcher;
-		local fired = arm.fire(dt);
-		if(fired != null && fired.alive){
-			e.cooldown += arm.cooldownTime / launchers.len();
-			e.lastMissile = fired;
-		}
-	}
+	return fireLauncher(e, dt, launcherType);
 }
 
 function queryAmmo(e){

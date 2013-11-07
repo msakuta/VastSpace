@@ -548,4 +548,49 @@ void Flare::drawtra(WarDraw *wd){
 	}
 }
 
-
+/// \biref A shared logic for Aerial vehicles to show targetting marker on the HMD.
+///
+/// Unlike drawCockpitHUD(), this function is meant to be called from drawHUD(),
+/// which is really drawing HMD now.
+void Aerial::drawTargetMarker(WarDraw *wd){
+	if(isCockpitView(game->player->getChaseCamera()) && this->enemy){
+		glPushMatrix();
+		glLoadMatrixd(wd->vw->rot);
+		Vec3d pos = (this->enemy->pos - this->pos).norm();
+		gldTranslate3dv(pos);
+		glMultMatrixd(wd->vw->irot);
+		{
+			Vec3d dp = this->enemy->pos - this->pos;
+			double dist = dp.len();
+			glRasterPos3d(.01, .02, 0.);
+			if(dist < 1.)
+				gldprintf("%.4g m", dist * 1000.);
+			else
+				gldprintf("%.4g km", dist);
+			Vec3d dv = this->enemy->velo - this->velo;
+			dist = dv.sp(dp) / dist;
+			glRasterPos3d(.01, -.03, 0.);
+			if(dist < 1.)
+				gldprintf("%.4g m/s", dist * 1000.);
+			else
+				gldprintf("%.4g km/s", dist);
+		}
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(.05, .05, 0.);
+		glVertex3d(-.05, .05, 0.);
+		glVertex3d(-.05, -.05, 0.);
+		glVertex3d(.05, -.05, 0.);
+		glEnd();
+		glBegin(GL_LINES);
+		glVertex3d(.04, .0, 0.);
+		glVertex3d(.02, .0, 0.);
+		glVertex3d(-.04, .0, 0.);
+		glVertex3d(-.02, .0, 0.);
+		glVertex3d(.0, .04, 0.);
+		glVertex3d(.0, .02, 0.);
+		glVertex3d(.0, -.04, 0.);
+		glVertex3d(.0, -.02, 0.);
+		glEnd();
+		glPopMatrix();
+	}
+}

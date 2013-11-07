@@ -91,7 +91,7 @@ protected:
 	int shootChainGun(double dt);
 	void shoot(double dt);
 	void gunMotion(MotionPose *mp); ///< \param mp must be an array having at least 2 elements
-	bool isCockpitView(int chasecam)const{return chasecam == 0 || chasecam == 4 && !lastMissile;}
+	bool isCockpitView(int chasecam)const override{return chasecam == 0 || chasecam == 4 && !lastMissile;}
 	gltestp::dstring getWeaponName()const override{return weaponList[weapon];}
 	int getAmmo()const override{return getAmmoFromSQ(sqQueryAmmo);}
 

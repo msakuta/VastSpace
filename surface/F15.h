@@ -72,7 +72,7 @@ protected:
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	void shoot(double dt)override;
 	double getThrustStrength()const override{return thrustStrength;}
-	bool isCockpitView(int chasecam)const{
+	bool isCockpitView(int chasecam)const override{
 		return cameraPositions[chasecam].type == CameraPos::Type::Cockpit
 			|| cameraPositions[chasecam].type == CameraPos::Type::MissileTrack && !lastMissile;
 	}

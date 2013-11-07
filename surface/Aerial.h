@@ -104,6 +104,7 @@ protected:
 	virtual int getAmmo()const{return 0;}
 	virtual void toggleWeapon(){weapon = !weapon;}
 	virtual btCompoundShape *getShape() = 0;
+	virtual bool isCockpitView(int chasecam)const{return false;}
 
 	void init();
 	bool cull(WarDraw *)const;
@@ -115,6 +116,7 @@ protected:
 	void drawDebugWings()const;
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
 		const Vec3d &gunDirection)const;
+	void drawTargetMarker(WarDraw*);
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

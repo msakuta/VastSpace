@@ -15,9 +15,6 @@ extern "C"{
 }
 
 
-//#define VALKIE_WALK_SPEED (.015)
-//#define VALKIE_WALK_PHASE_SPEED (M_PI)
-
 
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
@@ -104,8 +101,6 @@ F15::F15(WarField *w) : st(w), destPos(0,0,0){
 	if(tl){
 		pf = tl->addTefpolMovable(pos, velo, vec3_000, &cs_blueburn, TEP3_THICKER | TEP3_ROUGH, cs_blueburn.t);
 	}
-/*	sd = AllocSUFDecal(gsuf_fly);
-	sd->drawproc = bullethole_draw;*/
 #endif
 	init();
 	vapor.resize(wingTips.size());
@@ -179,75 +174,6 @@ void F15::init(){
 	fly->st.inputs.press = fly->st.inputs.change = 0;*/
 }
 
-
-#if 0
-static void cmd_afterburner(int argc, char *argv[]){
-	if(ppl && ppl->control){
-		if(ppl->control->vft == &fly_s || ppl->control->vft == &valkie_s){
-			fly_t *p = (fly_t*)ppl->control;
-			p->afterburner = !p->afterburner;
-			if(p->afterburner && p->throttle < .7)
-				p->throttle = .7;
-		}
-	}
-}
-
-static void fly_start_control(entity_t *pt, warf_t *w){
-	static int init = 0;
-	const char *s;
-	if(!init){
-		init = 1;
-		RegisterAvionics();
-		CmdAdd("afterburner", cmd_afterburner);
-	}
-	s = CvarGetString("fly_start_control");
-	if(s){
-		CmdExec(s/*"exec fly_control.cfg"*/);
-	}
-}
-
-static void fly_end_control(entity_t *pt, warf_t *w){
-	const char *s;
-	s = CvarGetString("fly_end_control");
-	if(s){
-		CmdExec(s);
-	}
-/*	CmdExec("exec fly_uncontrol.cfg");*/
-}
-
-const static GLdouble
-train_offset[3] = {0., 0.0025, 0.}, fly_radius = .002;
-
-static int tryshoot(warf_t *w, entity_t *pt, const double epos[3], double phi0, double v, double damage, double variance, const avec3_t pos){
-	fly_t *p = (fly_t*)pt;
-	struct bullet *pb;
-	double yaw = pt->pyr[1];
-	double pitch = pt->pyr[0];
-	double desired[2];
-	double (*theta_phi)[2];
-
-	pb = BulletNew(w, pt, damage);
-	{
-/*		double phi = (rot ? phi0 : yaw) + (drseq(&gsrs) - .5) * variance;
-		double theta = pt->pyr[0] + (drseq(&gsrs) - .5) * variance;
-		theta += acos(vx / v);*/
-		double phi, theta;
-		phi = phi0 + (drseq(&w->rs) - .5) * variance;
-		theta = pitch + (drseq(&w->rs) - .5) * variance;
-		VECCPY(pb->velo, pt->velo);
-		pb->velo[0] +=  v * sin(phi) * cos(theta);
-		pb->velo[1] +=  v * sin(theta);
-		pb->velo[2] += -v * cos(phi) * cos(theta);
-		pb->pos[0] = pt->pos[0] + pos[0];
-		pb->pos[1] = pt->pos[1] + pos[1];
-		pb->pos[2] = pt->pos[2] + pos[2];
-	}
-	return 1;
-}
-#endif
-
-
-
 void F15::anim(double dt){
 
 	bool onfeet = taxi(dt);
@@ -283,17 +209,6 @@ void F15::anim(double dt){
 void F15::shoot(double dt){
 	if(dt <= this->cooldown)
 		return;
-/*	if(pt->vft == &valkie_s){
-		valkie_t *p = (valkie_t *)pt;
-		mat4rotx(mat, mat0, -p->torsopitch);
-		if(p->arms[0].type != arms_none){
-			reloadtime = arms_static[p->arms[0].type].cooldown;
-		}
-		if(p->arms[0].type == arms_valkierifle){
-			New = BeamNew;
-		}
-	}
-	else*/
 	Mat4d mat;
 	transform(mat);
 	if(this->weapon){
@@ -313,21 +228,9 @@ void F15::shoot(double dt){
 		for(auto &it : gunPositions){
 			Bullet *pb = new Bullet(this, 2., 5.);
 			w->addent(pb);
-			
+
 			pb->mass = .005;
-#if 0
-			if(pt->vft == &valkie_s && dnm){
-				avec3_t org;
-				glPushMatrix();
-				glLoadIdentity();
-				TransYSDNM_V(dnm, valkie_boneset((valkie_t*)pt, NULL, NULL, 0), find_gun, org);
-				VECSCALEIN(org, 1e-3);
-				mat4vp3(pb->pos, mat, org);
-				glPopMatrix();
-			}
-			else
-#endif
-				pb->pos = mat.vp3(it);
+			pb->pos = mat.vp3(it);
 			pb->velo = mat.dvp3(gunDirection * bulletSpeed) + this->velo;
 			for(int j = 0; j < 3; j++)
 				pb->velo[j] += (drseq(&w->rs) - .5) * .005;

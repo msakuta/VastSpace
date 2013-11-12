@@ -1,4 +1,7 @@
-landingGSOffset <- -0.20;
+if("aerialLanding" in root)
+	return;
+
+::landingGSOffset <- -0.20;
 
 // The global table to store integrated values for all Aerial objects.
 // We would like to add the parameter to Aerial's member, but it's referred
@@ -82,7 +85,7 @@ local function aerialCruise(e, dt, deltaPos, forward){
 	return ret;
 }
 
-function aerialLanding(e,dt){
+::aerialLanding <- function(e,dt){
 	local airport = e.landingAirport;
 	local landing = false;
 	local deltaPos = (!e.onFeet && e.enemy ? e.enemy.getpos() : e.destPos) - e.getpos();
@@ -185,4 +188,4 @@ register_console_command("preset", function(){
 
 
 
-print("aerial.nut has been loaded");
+print("aerialLanding.nut has been loaded");

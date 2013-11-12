@@ -45,6 +45,9 @@ if(!("fireLauncher" in root)){
 	print("fireLauncher defined");
 }
 
+// Load aerialLanding function definition in an external file
+dofile("surface/models/aerialLanding.nut");
+
 if(isClient()){
 	register_console_command("navlight", function(){
 		if(player.controlled)

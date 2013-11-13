@@ -237,6 +237,7 @@ void Aerial::CameraPosProcess::process(HSQUIRRELVM v)const{
 }
 
 void Aerial::init(){
+	sq_resetobject(&hObject);
 	this->weapon = 0;
 }
 
@@ -314,6 +315,9 @@ Aerial::Aerial(WarField *w) : st(w),
 	init();
 }
 
+Aerial::~Aerial(){
+	sq_release(game->sqvm, &hObject);
+}
 
 
 Flare::Flare(Game *game) : st(game){
@@ -608,6 +612,10 @@ SQInteger Aerial::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		Entity::sq_pushobj(v, lastMissile);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("object"))){
+		sq_pushobject(v, hObject);
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -662,6 +670,15 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 	}
 	else if(!scstrcmp(name, _SC("lastMissile"))){
 		lastMissile = dynamic_cast<Bullet*>(sq_refobj(v, 3));
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("object"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &hObject);
+			hObject = obj;
+			sq_addref(v, &hObject);
+		}
 		return 0;
 	}
 	else

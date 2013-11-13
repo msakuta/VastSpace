@@ -26,6 +26,7 @@ public:
 	typedef ModelEntity st;
 	Aerial(Game *game);
 	Aerial(WarField *aw);
+	~Aerial()override;
 	void addRigidBody(WarSpace*)override;
 	void control(const input_t *inputs, double dt)override;
 	void anim(double dt)override;
@@ -63,6 +64,7 @@ protected:
 	double takeOffTimer;
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	WeakPtr<Entity> landingAirport; ///< The airport this airplane is going to land with autopilot.
+	HSQOBJECT hObject; ///< Reference to buffer in Squirrel VM
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{

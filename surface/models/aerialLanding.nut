@@ -3,12 +3,6 @@ if("aerialLanding" in root)
 
 ::landingGSOffset <- -0.20;
 
-// The global table to store integrated values for all Aerial objects.
-// We would like to add the parameter to Aerial's member, but it's referred
-// to in this script, so keeping the value inside this script is probably
-// a better design.
-aerialParams <- {};
-
 local function rangein(v,min,max){
 	return v < min ? min : max < v ? max : v;
 }
@@ -133,14 +127,16 @@ local function aerialCruise(e, dt, deltaPos, forward){
 		local localOmg = e.getrot().cnj().trans(e.getomg())[0];
 		ret += -10. * localOmg;
 
-		// Default parameter set
-		local params = {iclimb = 0};
-
 		// Retrieve saved parameters from the global table if one exist.
-		if(e.id in aerialParams)
-			params = aerialParams[e.id];
-		else // Otherwise assign the default value.
-			aerialParams[e.id] <- params;
+		local params = e.object;
+
+		// Otherwise assign the default value.
+		if(params == null || typeof params != "table"){
+			// Default parameter set
+			params = {iclimb = 0};
+			e.object = params;
+			print("set default object for e: " + params);
+		}
 
 		ret += -1.0 * params.iclimb;
 

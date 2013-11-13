@@ -2,14 +2,14 @@
 
 local birds = [];
 
-
+/*
 local f15 = player.cs.addent("F15", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 f15.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 f15.gear = true;
 //player.chase = f15;
 f15.destArrived = true;
 birds.append(f15);
-
+*/
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
@@ -55,9 +55,9 @@ local function globalCoord(v){
 
 
 
-local apache = player.cs.addent("Apache", Vec3d(0, 2.71, 5. - 0.2));
+/*local apache = player.cs.addent("Apache", Vec3d(0, 2.71, 5. - 0.2));
 player.chase = apache;
-apache.enemy = tank;
+apache.enemy = tank;*/
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
@@ -159,8 +159,8 @@ local ipaths = {};
 function reset(){
 	local z = 15.;
 	foreach(e in birds) if(e.alive){
-//		ipaths[e] <- flyProc(e);
-//		e.landingAirport = airport;
+		ipaths[e] <- flyProc(e);
+		e.landingAirport = airport;
 		e.setpos(Vec3d(-0.1, 2.0, z));
 		e.setrot(Quatd(0,0,0,1));
 		e.setvelo(Vec3d(0, 0, -0.2));

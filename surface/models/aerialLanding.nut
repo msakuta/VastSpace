@@ -1,6 +1,3 @@
-if("aerialLanding" in root)
-	return;
-
 ::landingGSOffset <- -0.20;
 
 local function rangein(v,min,max){
@@ -182,6 +179,10 @@ register_console_command("preset", function(){
 	}
 });
 
-
+// Reload this file
+register_console_command("aerial", function(){
+	print("aerialLanding.nut being loaded");
+	dofile("surface/models/aerialLanding.nut");
+});
 
 print("aerialLanding.nut has been loaded");

@@ -19,8 +19,8 @@ class Launcher : public ArmBase{
 public:
 	typedef ArmBase st;
 	static EntityRegister<Launcher> entityRegister;
-	Launcher(Game *game) : st(game), cooldown(0.), ammo(0){}
-	Launcher(Entity *base, const hardpoint_static *hp, int ammo_ = 4) : st(base, hp), cooldown(0.), ammo(ammo_){}
+	Launcher(Game *game) : st(game), cooldown(0.){}
+	Launcher(Entity *base, const hardpoint_static *hp, int ammo_ = 4) : st(base, hp), cooldown(0.){ ammo = ammo_; }
 
 	/// \brief A virtual function to order firing this Launcher.
 	/// \returns The Bullet object shot from this procedure or NULL if there's none.
@@ -37,7 +37,6 @@ protected:
 	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;
 
 	double cooldown;
-	int ammo;
 };
 
 /// \brief Hydra-70 unguided rocket.

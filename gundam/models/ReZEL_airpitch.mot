@@ -1,0 +1,36 @@
+ysdnm_motion 3
+{
+	keyframe 10 10
+	{
+		"ReZEL_waist" 0.0627699 0 0 0.998028 0 0 0
+		"ReZEL_lupleg" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_rupleg" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_lmidleg" 0.0627699 0 0 0.998028 0 0 0
+		"ReZEL_lleg" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_ltoe" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_rmidleg" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_rleg" 0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_rtoe" 0.0627699 0 0 0.998028 0 0 0
+		"ReZEL_head" -0.125292 0 0 0.99212 0 0 0
+	}
+	keyframe 10 10
+	{
+		"ReZEL_rupleg" 0 0 0 1 0 0 0
+		"ReZEL_lupleg" 0 0 0 1 0 0 0
+		"ReZEL_waist" 0 0 0 1 0 0 0
+		"ReZEL_lmidleg" 0 0 0 1 0 0 0
+		"ReZEL_lleg" 0 0 0 1 0 0 0
+		"ReZEL_ltoe" 0 0 0 1 0 0 0
+		"ReZEL_rmidleg" 0 0 0 1 0 0 0
+		"ReZEL_rleg" 0 0 0 1 0 0 0
+		"ReZEL_rtoe" -6.93547e-018 0 0 1 0 0 0
+		"ReZEL_head" 0 0 0 1 0 0 0
+	}
+	keyframe 4 10
+	{
+		"ReZEL_waist" -0.0940775 0 0 0.995565 0 0 0
+		"ReZEL_lupleg" -0.0936602 -0.00885057 0.0936602 0.991149 0 0 0
+		"ReZEL_rupleg" -0.0936602 0.00885057 -0.0936602 0.991149 0 0 0
+		"ReZEL_head" 0.125292 0 0 0.99212 0 0 0
+	}
+}

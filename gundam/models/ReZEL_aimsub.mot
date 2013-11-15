@@ -1,0 +1,25 @@
+ysdnm_motion 2
+{
+	keyframe 8 10
+	{
+		"ReZEL_lshoulder" 0 0 0 1 0 0 0
+		"ReZEL_torso" 0 0 0 1 0 0 0
+		"ReZEL_luparm" 0 0 0 1 0 0 0
+		"ReZEL_larm" 0 0 0 1 0 0 0
+		"ReZEL_waist" 0 0 0 1 0 0 0
+		"ReZEL_head" 0 0 0 1 0 0 0
+		"ReZEL_ruparm" -6.93547e-018 0 0 1 0 0 0
+		"ReZEL_rarm" 0 0 0 1 0 0 0
+	}
+	keyframe 8 10
+	{
+		"ReZEL_torso" 0 -0.125292 0 0.99212 0 0 0
+		"ReZEL_luparm" -0.400337 0.0900426 0.106803 0.905657 0 0 0
+		"ReZEL_lshoulder" -0.338631 0 0 0.940919 0 0 0
+		"ReZEL_larm" 6.06854e-018 -0.997995 -6.93547e-018 0.0632853 0 0 0
+		"ReZEL_waist" 0 0.125292 0 0.99212 0 0 0
+		"ReZEL_head" 0.0626461 0.125045 0.00394006 0.990163 0 0 0
+		"ReZEL_ruparm" -0.18732 0 0 0.982299 0 0 0
+		"ReZEL_rarm" -0.826901 0 0 0.562348 0 0 0
+	}
+}

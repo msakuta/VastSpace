@@ -769,17 +769,17 @@ class ReZELchartCmdRegister{
 		}
 	};
 
-	static int cmd_chart(int argc, char *argv[]){
-		GLWchart *wnd = new GLWchart("MotionInterpolateTime", new ReZELDrawTimeChartSeries);
+/*	static int cmd_chart(int argc, char *argv[]){
+		GLWchart *wnd = new GLWchart(game "MotionInterpolateTime", new ReZELDrawTimeChartSeries);
 		wnd->addSeries(new ReZELInterpAvgTimeChartSeries());
 		wnd->addSeries(new FrameTimeChartSeries());
 		wnd->addSeries(new SqTimeChartSeries());
 		glwAppend(wnd);
 		return 0;
-	}
+	}*/
 public:
 	ReZELchartCmdRegister(){
-		CmdAdd("ReZELchart", cmd_chart);
+//		CmdAdd("ReZELchart", cmd_chart);
 	}
 } ReZELchartcmdreg;
 

@@ -91,12 +91,12 @@ Entity::Dockable *ReZEL::toDockable(){return this;}
 //extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 // Height 20.5m
-struct hitbox ReZEL::hitboxes[] = {
+struct HitBox ReZEL::hitboxes[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .005)),
 };
 const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);
 
-struct hitbox ReZEL::waveRiderHitboxes[] = {
+struct HitBox ReZEL::waveRiderHitboxes[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .005, .005)),
 };
 const int ReZEL::nWaveRiderHitboxes = numof(ReZEL::waveRiderHitboxes);
@@ -520,12 +520,11 @@ void ReZEL::shootRifle(double dt){
 	{
 		BeamProjectile *pb;
 		double phi, theta;
-		pb = new BeamProjectile(this, 5, rifleDamage);
+		pb = new BeamProjectile(this, 3, rifleDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
-		pb->life = 3.;
 		this->heat += .025;
 	}
 //	shootsound(pt, w, p->cooldown);
@@ -570,12 +569,11 @@ void ReZEL::shootShieldBeam(double dt){
 	{
 		BeamProjectile *pb;
 		double phi, theta;
-		pb = new BeamProjectile(this, 5, shieldBeamDamage, .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
+		pb = new BeamProjectile(this, 3, shieldBeamDamage, .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
-		pb->life = 3.;
 		this->heat += .025;
 	}
 //	shootsound(pt, w, p->cooldown);
@@ -616,12 +614,11 @@ void ReZEL::shootVulcan(double dt){
 	for(int i = 0; i < 2; i++){
 		Bullet *pb;
 		double phi, theta;
-		pb = new Bullet(this, 5, vulcanDamage);
+		pb = new Bullet(this, 2, vulcanDamage);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos[i]);
 		pb->velo = mat.dvp3(aimRot().trans(velo0));
 		pb->velo += this->velo;
-		pb->life = 2.;
 		this->heat += .025;
 	}
 //	shootsound(pt, w, p->cooldown);
@@ -645,7 +642,7 @@ bool ReZEL::findEnemy(){
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); ++it){
 		Entity *pt2 = *it;
 
-		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->health > 0. && pt2->race != -1 && pt2->race != this->race))
+		if(!(pt2->isTargettable() && pt2 != this && pt2->w == w && pt2->getHealth() > 0. && pt2->race != -1 && pt2->race != this->race))
 			continue;
 
 /*		if(!entity_visible(pb, pt2))
@@ -972,7 +969,7 @@ void ReZEL::anim(double dt){
 #endif
 
 	/* forget about beaten enemy */
-	if(pt->enemy && pt->enemy->health <= 0.)
+	if(pt->enemy && pt->enemy->getHealth() <= 0.)
 		pt->enemy = NULL;
 
 	transform(mat);
@@ -1012,7 +1009,7 @@ void ReZEL::anim(double dt){
 	bool floorTouched = false;
 	bool floorProximity = false;
 
-	if(0 < pt->health){
+	if(0 < pt->getHealth()){
 //		double oldyaw = pt->pyr[1];
 		bool controlled = controller;
 		int parking = 0;
@@ -1046,7 +1043,7 @@ void ReZEL::anim(double dt){
 			ws->bdw->rayTest(from, to, rayCallback);
 
 			if(rayCallback.hasHit()){
-				btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+				const btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
 				if(body && body->hasContactResponse() && body->isStaticObject()){
 					floorProximity = true;
 					btScalar hitDistance = (rayCallback.m_hitPointWorld - from).dot(btaccel.normalized());
@@ -1061,8 +1058,8 @@ void ReZEL::anim(double dt){
 				for (int i=0;i<numManifolds;i++)
 				{
 					btPersistentManifold* contactManifold =  ws->bdw->getDispatcher()->getManifoldByIndexInternal(i);
-					btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-					btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+					const btCollisionObject* obA = static_cast<const btCollisionObject*>(contactManifold->getBody0());
+					const btCollisionObject* obB = static_cast<const btCollisionObject*>(contactManifold->getBody1());
 
 					if(obA != bbody && obB != bbody)
 						continue;
@@ -1300,7 +1297,7 @@ void ReZEL::anim(double dt){
 							ws->bdw->rayTest(from, to, rayCallback);
 
 							if(rayCallback.hasHit()){
-								btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+								const btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
 								if(body && body->hasContactResponse() && body->isStaticObject()){
 									inputs.press |= PL_Q;
 									task = Jump;
@@ -1444,7 +1441,7 @@ void ReZEL::anim(double dt){
 						ws->bdw->rayTest(from, to, rayCallback);
 
 						if(rayCallback.hasHit()){
-							btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
+							const btRigidBody *body = btRigidBody::upcast(rayCallback.m_collisionObject);
 							if(!(body && body->hasContactResponse() && body->isStaticObject())){
 								jumptime = 2.;
 								task = JumpForward;
@@ -1921,9 +1918,9 @@ void ReZEL::anim(double dt){
 	}
 	else{
 		bbody->activate();
-		pt->health += dt;
-		if(0. < pt->health){
-			struct tent3d_line_list *tell = w->getTeline3d();
+		health += dt;
+		if(0. < health){
+			Teline3List *tell = w->getTeline3d();
 //			effectDeath(w, pt);
 //			playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .1, w->realtime);
 /*			if(w->gibs && ((struct entity_private_static*)pt->vft)->sufbase){
@@ -1993,7 +1990,7 @@ void ReZEL::anim(double dt){
 			this->w = NULL;
 		}
 		else{
-			struct tent3d_line_list *tell = w->getTeline3d();
+			Teline3List *tell = w->getTeline3d();
 			if(tell){
 				double pos[3], dv[3], dist;
 				Vec3d gravity = w->accel(this->pos, this->velo) / 2.;
@@ -2046,7 +2043,7 @@ bool ReZEL::solid(const Entity *o)const{
 
 int ReZEL::takedamage(double damage, int hitpart){
 	int ret = 1;
-	struct tent3d_line_list *tell = w->getTeline3d();
+	Teline3List *tell = w->getTeline3d();
 	if(this->health < 0.)
 		return 1;
 //	this->hitsound = playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

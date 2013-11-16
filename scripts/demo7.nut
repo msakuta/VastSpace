@@ -11,6 +11,8 @@ f15.destArrived = true;
 birds.append(f15);
 */
 
+local z = player.cs.addent("ReZEL", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
+
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
 //birds.append(f15_2);

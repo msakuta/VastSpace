@@ -179,24 +179,25 @@ HSQUIRRELVM ReZEL::sqvm;
 
 StaticBindSet staticBind;
 
-template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
+template<> void Entity::EntityRegister<ReZEL>::sq_defineInt(HSQUIRRELVM v){
 	sqa::StackReserver sr(v);
 	ReZEL::sqvm = v;
+	sq_pushroottable(v); // ReZEL-class root
 	sq_newclass(v, SQFalse); // class
 	sq_pushstring(v, _SC("_get"), -1); // class "_get"
 	sq_newclosure(v, ReZEL::sqf_get, 0); // class "_get" sqf_get
 	sq_newslot(v, -3, SQFalse); // class
-	sq_pushstring(v, _SC("_set"), -1); // class "_get"
-	sq_newclosure(v, sqf_set, 0); // class "_get" sqf_get
+	sq_pushstring(v, _SC("_set"), -1); // class "_set"
+	sq_newclosure(v, sqf_set, 0); // class "_set" sqf_set
 	sq_newslot(v, -3, SQFalse); // class
 	sq_pushstring(v, _SC("_nexti"), -1);
 	sq_newclosure(v, sqf_nexti, 0);
 	sq_newslot(v, -3, SQFalse);
 	sq_pushstring(v, _SC("StaticBind"), -1); // class "StaticBind"
 	sq_push(v, -2); // class "StaticBind" class
-	sq_createslot(v, -4); // class
-	sq_createinstance(v, -1); // class instance
-	sq_setinstanceup(v, -1, SQUserPointer(&staticBind)); // class instance
+	sq_createslot(v, -4); // root class
+	sq_createinstance(v, -1); // root class instance
+	sq_setinstanceup(v, -1, SQUserPointer(&staticBind)); // root class instance
 
 	staticBind["rotationSpeed"] = &ReZEL::rotationSpeed;
 	staticBind["maxAngleSpeed"] = &ReZEL::maxAngleSpeed;
@@ -224,16 +225,9 @@ template<> bool Entity::EntityRegister<ReZEL>::sq_define(HSQUIRRELVM v){
 	staticBind["vulcanDamage"] = &ReZEL::vulcanDamage;
 	staticBind["vulcanMagazineSize"] = &ReZEL::vulcanMagazineSize;
 
-	sq_pushstring(v, sq_classname(), -1);
-	sq_pushstring(v, ReZEL::st::entityRegister.sq_classname(), -1);
-	sq_get(v, 1);
-	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, SQUserPointer(m_classid));
-	sq_pushstring(v, _SC("set"), -1);
-	sq_push(v, -4);
-	sq_newslot(v, -3, SQTrue);
-	sq_createslot(v, 1);
-	return true;
+	sq_pushstring(v, _SC("set"), -1); // root ReZEL-class root class instance "set"
+	sq_push(v, -2); // root ReZEL-class root class instance "set" instance
+	sq_newslot(v, -6, SQTrue); // root ReZEL-class root class instance
 }
 
 const unsigned ReZEL::classid = registerClass("ReZEL", Conster<ReZEL>);

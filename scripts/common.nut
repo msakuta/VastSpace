@@ -216,6 +216,11 @@ if(1){
 	print("\"" + dllpath + "\"l refc is " + gltestdll);
 }
 
+{
+	local dllpath = "gundam.dll";
+	local dll = loadModule(dllpath);
+	print("loaded \"" + dllpath + "\" refc is " + dll);
+}
 
 
 

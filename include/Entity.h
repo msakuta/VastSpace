@@ -196,7 +196,6 @@ protected:
 		virtual const SQChar *sq_classname(){ return m_sq_classname; }
 		/// Called from sq_define(), override or instantiate to add member functions.
 		virtual void sq_defineInt(HSQUIRRELVM v){}
-	protected:
 		virtual bool sq_define(HSQUIRRELVM v){
 			sq_pushstring(v, sq_classname(), -1);
 			sq_pushstring(v, T::st::entityRegister.sq_classname(), -1);

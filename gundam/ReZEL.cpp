@@ -1900,8 +1900,8 @@ void ReZEL::anim(double dt){
 		{
 			const double pitchrange = task == CoverRight ? M_PI / 4. : M_PI / 2.;
 			const double yawrange = task == CoverRight ? M_PI / 4. : M_PI / 3.;
-			double dpitch = inputs.analog[0] * game->player->fov * 2e-3;
-			double dyaw = inputs.analog[1] * game->player->fov * 2e-3;
+			double dpitch = inputs.analog[1] * game->player->fov * 2e-3;
+			double dyaw = inputs.analog[0] * game->player->fov * 2e-3;
 			aimdir[0] = approach(aimdir[0], rangein(aimdir[0] + dpitch, -pitchrange, pitchrange), M_PI * dt, 0);
 			aimdir[1] = approach(aimdir[1], rangein(aimdir[1] + dyaw, -yawrange, yawrange), M_PI * dt, 0);
 		}

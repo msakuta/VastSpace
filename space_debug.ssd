@@ -85,10 +85,10 @@ coordsys Orbit earth{
 			teleport "Earth Surface" 0 0 0
 			tin_file triangles.all
 			tin_resample 4
-			new astro Surface "s"{
+/*			new astro Surface "s"{
 				pos 0 0 0
 				rotation Quatd.rotation(0.3*PI,Vec3d(1,0,0))
-			}
+			}*/
 		}
 	}
 

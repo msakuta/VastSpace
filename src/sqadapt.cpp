@@ -944,6 +944,8 @@ static SQInteger sqf_gldprint(HSQUIRRELVM v){
 }
 #endif
 
+static void defineSquirrelClasses(HSQUIRRELVM v);
+
 struct ModuleEntry{
 	void *handle;
 	int refs;
@@ -971,6 +973,12 @@ static SQInteger sqf_loadModule(HSQUIRRELVM v){
 				modules[name].refs = 1;
 			}
 			sq_pushinteger(v, modules[name].refs);
+
+			// If we could successfully load the module, try to define the Entities
+			// and CoordSys's possibly added by the module.
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			defineSquirrelClasses(v);
 		}
 		else{
 			CmdPrint(cpplib::dstring() << "loadModule(\"" << name << "\") Failed!"
@@ -1026,6 +1034,7 @@ void unloadAllModules(){
 }
 
 typedef std::set<bool (*)(HSQUIRRELVM)> SQDefineSet;
+typedef std::set<Entity::EntityStatic*> EntityStaticSet;
 
 static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, const CoordSys::Static &s){
 	if(s.st)
@@ -1036,18 +1045,41 @@ static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, const CoordSys::Stati
 	clset.insert(s.sq_define);
 }
 
-static void traceParent(HSQUIRRELVM v, SQDefineSet &clset, Entity::EntityStatic &s){
+static void traceParent(HSQUIRRELVM v, EntityStaticSet &clset, Entity::EntityStatic &s){
 	if(s.st())
 		traceParent(v, clset, *s.st());
-//	if(clset.find(&s.sq_define) != clset.end())
-//		return;
+	if(clset.find(&s) != clset.end())
+		return;
 	s.sq_define(v);
-//	clset.insert(s.sq_define);
+	clset.insert(&s);
 }
 
 SQDefineMap &defineMap(){
 	static SQDefineMap s;
 	return s;
+}
+
+static void defineSquirrelClasses(HSQUIRRELVM v){
+	// Define all CoordSys-derived classes.
+	SQDefineSet clset;
+	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().begin();
+	for(; it != CoordSys::ctormap().end(); it++){
+		traceParent(v, clset, *it->second);
+	}
+
+	// Define all Entity-derived classes.
+	{
+		// There could be multiple Squirrel VMs, so we must remember which VM defined what
+		// class.  This mechanism is not optimal since a map is used to look up the
+		// EntityStaticSet, but adding a member variable to Game class causes so many
+		// sources to be recompiled.
+		static std::map<HSQUIRRELVM, EntityStaticSet> esmap;
+		EntityStaticSet &esset = esmap[v];
+		Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin();
+		for(; it != Entity::constEntityCtorMap().end(); it++){
+			traceParent(v, esset, *it->second);
+		}
+	}
 }
 
 
@@ -1163,20 +1195,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_code_func(v, _SC("len"), _SC("return ::sqrt(x * x + y * y + z * z + w * w);"));
 	sq_createslot(v, -3);
 
-	// Define all CoordSys-derived classes.
-	SQDefineSet clset;
-	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().begin();
-	for(; it != CoordSys::ctormap().end(); it++){
-		traceParent(v, clset, *it->second);
-	}
-
-	// Define all Entity-derived classes.
-	{
-		Entity::EntityCtorMap::const_iterator it = Entity::constEntityCtorMap().begin();
-		for(; it != Entity::constEntityCtorMap().end(); it++){
-			traceParent(v, clset, *it->second);
-		}
-	}
+	defineSquirrelClasses(v);
 
 	// Define class Game
 	sq_pushstring(v, _SC("Game"), -1);

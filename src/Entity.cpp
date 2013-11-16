@@ -630,11 +630,16 @@ unsigned Entity::registerEntity(ClassId name, EntityStatic *ctor){
 	// If an extension module is loaded and a Entity derived class is newly defined through this function,
 	// the Squirrel VM is already initialized to load definition of classes.
 	// Therefore, extension module classes must define themselves in Squirrel code as they register.
-	if(sqa::g_sqvm){
+	//
+	// Update: The above statements are correct to some extent, but fail to consider initialization order
+	// fiasco induced by constructor of global variables.  We must trace inheritance tree to ensure the
+	// super class is defined first, but we cannot do that here.  The correct timing to define Squirrel
+	// classes is just after an extension module is loaded, so the procedure is moved to sqadapt.cpp.
+/*	if(sqa::g_sqvm){
 		sq_pushroottable(g_sqvm);
 		ctor->sq_define(sqa::g_sqvm);
 		sq_poptop(g_sqvm);
-	}
+	}*/
 
 	return ctormap.size();
 }

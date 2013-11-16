@@ -61,7 +61,7 @@ public:
 	static Entity *create(const char *cname, WarField *w);
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	virtual const char *dispname()const; // display name
+	virtual const char *dispname()const; ///< display name
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
@@ -85,11 +85,11 @@ public:
 	virtual void drawHUD(WarDraw *); ///< Called if this Entity is cockpit-viewed.  Drawn over everything but GLwindows.
 	virtual void drawOverlay(WarDraw *); ///< Called everytime, but not model-transformed and drawn over everything but GUI.
 	virtual void drawCockpit(WarDraw *); ///< Draw the cockpit model when the camera is chasing this Entity with following mode.
-	virtual bool solid(const Entity *)const; // Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
-	virtual double getHitRadius()const = 0; // The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
+	virtual bool solid(const Entity *)const; ///< Sometimes hit check must be suppressed to prevent things from stacking. Hit check is enabled only if both objects claims solidity each other.
+	virtual double getHitRadius()const = 0; ///< The object's outermost hitting sphere radius, used for collision checking and object scale estimation.
 	virtual void onBulletHit(const Bullet *, int hitpart); ///< Called when a Bullet hits this object.
-	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
-	virtual int takedamage(double damage, int hitpart); /* return 0 on death */
+	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); ///< return nonzero on hit
+	virtual int takedamage(double damage, int hitpart); ///< return 0 on death
 	virtual void bullethole(sufindex, double rad, const Vec3d &pos, const Quatd &rot);
 	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
@@ -102,16 +102,16 @@ public:
 	const ArmBase *armsGet(int index)const{return const_cast<Entity*>(this)->armsGet(index);}
 	virtual Props props()const;
 	virtual double getRU()const;
-	virtual bool dock(Docker*);  // Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
-	virtual bool undock(Docker*); // Returns if undockable for its own reason.
-	virtual bool command(EntityCommand *); // A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
-	virtual bool unlink(const Observable*);
+	virtual bool dock(Docker*);  ///< Returns if dockable for its own decision. Docking is so common operation that inheriting a class for that barely makes sense.
+	virtual bool undock(Docker*); ///< Returns if undockable for its own reason.
+	virtual bool command(EntityCommand *); ///< A general-purpose command dispatcher. Can have arbitrary argument via virtual class.
+	virtual bool unlink(const Observable*); ///< Overrides Observer's unlink.
 
-	// Assigns transformation matrix to argument object.
+	/// Assigns transformation matrix to argument object.
 	void transform(Mat4d &mat)const{
 		mat = Mat4d(mat4_u).translatein(pos) * rot.tomat4();
 	}
-	void transit_cs(CoordSys *destcs); // transit to a CoordSys from another, keeping absolute position and velocity.
+	void transit_cs(CoordSys *destcs); ///< transit to a CoordSys from another, keeping absolute position and velocity.
 	Entity *getUltimateOwner();
 
 	void callServerUpdate(double dt);
@@ -127,13 +127,11 @@ protected:
 	double health; ///< Internal health or armor strength. Get the value with getHealth().
 public:
 	WeakPtr<Entity> enemy; ///< Currently recognizing enemy
-	int race;
-//	int shoots, shoots2, kills, deaths;
-	input_t inputs;
+	int race; ///< The faction this Entity belongs to.
+	input_t inputs; ///< Temporary memory for user or AI inputs.
 	WeakPtr<EntityController> controller; ///< The controller class, could be either a player or an AI.
 	WarField *w; ///< belonging WarField. Note that this is strong pointer.
-	int otflag;
-//	char weapon;
+	int otflag; ///< Object tree flags
 
 	// Handles calls to virtual functions of a NULL object
 	Builder *getBuilder(){return this ? this->getBuilderInt() : NULL;}
@@ -141,7 +139,7 @@ public:
 	Docker *getDocker(){return this ? this->getDockerInt() : NULL;}
 	const Docker *getDocker()const{return this ? const_cast<Entity*>(this)->getDockerInt() : NULL;}
 
-	// Display a window that tells information about selected entity.
+	/// Display a window that tells information about selected entity.
 	static int cmd_property(int argc, char *argv[], void *pv);
 
 	/// Creates and pushes an Entity object to Squirrel stack.

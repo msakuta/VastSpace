@@ -117,8 +117,8 @@ bool Airport::buildBody(){
 		// Airport is stationary structure. In fact, it has been SurfaceBuilding.
 		btVector3 localInertia(0,0,0);
 
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+		// Static structure doesn't need motion state.
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(0,nullptr,shape,localInertia);
 		bbody = new btRigidBody(rbInfo);
 	}
 	return true;

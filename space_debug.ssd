@@ -148,11 +148,11 @@ coordsys Orbit earth{
 			omega 0 0 0
 			cs_radius 50
 		}*/
-/*		new astro Island3 "Side 7"{
+		new astro Island3 "Side 7"{
 			pos 10 0 10
 			race 2
 			bookmark "Side 7"
-		}*/
+		}
 	}
 	
 /*	coordsys Lagrange2 el2{

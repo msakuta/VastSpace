@@ -1,7 +1,11 @@
+/* \file
+ * \brief Definition of ReZEL class.
+ */
 #ifndef GUNDAM_REZEL_H
 #define GUNDAM_REZEL_H
 
 #include "Frigate.h"
+#include "ModelEntity.h"
 #include "EntityCommand.h"
 #include "mqo.h"
 #include "ysdnmmot.h"
@@ -60,9 +64,9 @@ public:
 struct btCompoundShape;
 
 /// ReZEL
-class ReZEL : public Entity{
+class ReZEL : public ModelEntity{
 public:
-	typedef Entity st;
+	typedef ModelEntity st;
 protected:
 	enum Task{
 		Idle = sship_idle,
@@ -160,7 +164,9 @@ protected:
 	double motion_amplitude[motionCount];
 	
 
-	static const double sufscale;
+	static double modelScale;
+	static double defaultMass;
+	static double maxHealthValue;
 	static const avec3_t gunPos[2];
 	static Model *model;
 	static Motion *motions[motionCount];
@@ -209,6 +215,8 @@ protected:
 	static StaticBindDouble vulcanReloadTime;
 	static StaticBindDouble vulcanDamage;
 	static StaticBindInt vulcanMagazineSize;
+
+	void init();
 public:
 	ReZEL(Game *game);
 	ReZEL(WarField *aw);
@@ -219,7 +227,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
-	virtual double maxhealth()const;
+	virtual double getMaxHealth()const override;
 	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void control(const input_t *inputs, double dt);
@@ -241,8 +249,11 @@ public:
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 	virtual double maxfuel()const;
-	static hitbox hitboxes[];
-	static const int nhitboxes;
+
+	static gltestp::dstring modPath(){return "gundam/";}
+
+	static HitBoxList hitboxes;
+	static GLuint overlayDisp;
 	static hitbox waveRiderHitboxes[];
 	static const int nWaveRiderHitboxes;
 //	static Entity *create(WarField *w, Builder *mother);

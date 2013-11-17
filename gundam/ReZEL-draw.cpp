@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of ReZEL class's graphical aspects.
+ */
 #include "ReZEL.h"
 #include "Player.h"
 #include "draw/material.h"
@@ -56,7 +59,6 @@ const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32
 double g_nlips_factor = 1.;
 static int g_shader_enable = 0;
 
-const double ReZEL::sufscale = 1./30000;
 
 
 bool ReZEL::cull(Viewer &vw)const{
@@ -171,7 +173,7 @@ void ReZEL::motionInterpolateFree(MotionPoseSet &set){
 void ReZEL::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	double nf = nlipsFactor(*wd->vw);
-	double scale = sufscale * nf;
+	double scale = modelScale * nf;
 	ReZEL *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
@@ -183,7 +185,7 @@ void ReZEL::draw(wardraw_t *wd){
 
 	double pixels = .005 * fabs(wd->vw->gc->scale(pos)) * nf;
 
-	draw_healthbar(this, wd, health / maxhealth(), .01 * nf, fuel / maxfuel(), -1.);
+	draw_healthbar(this, wd, health / getMaxHealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
 /*		for(int i = 0 ; i < numof(models); i++){
@@ -275,7 +277,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	ReZEL *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
-	double scale = sufscale * nlips;
+	double scale = modelScale * nlips;
 	static const Quatd rotaxis(0, 1., 0., 0.);
 
 #if PIDAIM_PROFILE
@@ -335,7 +337,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 			for(int i = 0; i < 2; i++){
 				if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", v[0], &gunpos[i], &lrot)){
-					gunpos[i] *= sufscale;
+					gunpos[i] *= modelScale;
 					gunpos[i][0] *= -1;
 					gunpos[i][2] *= -1;
 				}
@@ -414,7 +416,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 					Vec3d dir = (rot * rotaxis * lrot).trans(thrusterDirs[i]);
 					double mag = thrusterPower[i]/*-thrustVector.sp(dir)*/;
 					if(0. < mag){
-						pos0 *= sufscale;
+						pos0 *= modelScale;
 						pos0[0] *= -1;
 						pos0[2] *= -1;
 						Vec3d pos = rot.trans(pos0) + this->pos;
@@ -702,17 +704,7 @@ void ReZEL::drawHUD(WarDraw *wd){
 }
 
 void ReZEL::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10, -.10);
-	glVertex2d(-.05,  .00);
-	glVertex2d(-.10,  .10);
-	glVertex2d( .00,  .05);
-	glVertex2d( .10,  .10);
-	glVertex2d( .05,  .00);
-	glVertex2d( .10, -.10);
-	glVertex2d( .00, -.05);
-	glEnd();
+	glCallList(overlayDisp);
 }
 
 

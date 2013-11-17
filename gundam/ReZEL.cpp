@@ -1,3 +1,7 @@
+/** \file
+ * \brief Implementation of ReZEL class.
+ */
+
 #include "draw/effects.h"
 #include "ReZEL.h"
 #include "CoordSys.h"
@@ -18,6 +22,7 @@
 #include "motion.h"
 #include "glw/popup.h"
 #include "tefpol3d.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -46,6 +51,10 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define COS15 0.9659258262890682867497431997289
 
 //#define SCEPTOR_SCALE 1./10000
+double ReZEL::modelScale = 1./30000;
+double ReZEL::defaultMass = 4e3;
+double ReZEL::maxHealthValue = 100.;
+GLuint ReZEL::overlayDisp = 0;
 StaticBindDouble ReZEL::deathSmokeFreq = 20.; ///< Smokes per second
 StaticBindDouble ReZEL::rotationSpeed = (.3 * M_PI);
 StaticBindDouble ReZEL::maxAngleSpeed = (M_PI * .5);
@@ -91,10 +100,10 @@ Entity::Dockable *ReZEL::toDockable(){return this;}
 //extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 // Height 20.5m
-struct HitBox ReZEL::hitboxes[] = {
+struct HitBoxList ReZEL::hitboxes;/*[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .01025, .005)),
 };
-const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);
+const int ReZEL::nhitboxes = numof(ReZEL::hitboxes);*/
 
 struct HitBox ReZEL::waveRiderHitboxes[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .005, .005)),
@@ -296,8 +305,8 @@ const char *ReZEL::dispname()const{
 	return "ReZEL";
 };
 
-double ReZEL::maxhealth()const{
-	return 100.;
+double ReZEL::getMaxHealth()const{
+	return maxHealthValue;
 }
 
 
@@ -317,6 +326,7 @@ ReZEL::ReZEL(Game *game) :
 	fonfeet(0.f),
 	walkphase(0.f)
 {
+	init();
 	muzzleFlash[0] = 0.;
 	muzzleFlash[1] = 0.;
 	for(int i = 0; i < numof(thrusterDirs); i++){
@@ -352,6 +362,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	walkphase(0.f),
 	stabilizer(true)
 {
+	init();
 	aimdir[0] = 0.;
 	aimdir[1] = 0.;
 	muzzleFlash[0] = 0.;
@@ -363,9 +374,9 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	ReZEL *const p = this;
 //	EntityInit(ret, w, &SCEPTOR_s);
 //	VECCPY(ret->pos, mother->st.st.pos);
-	mass = 4e3;
+	mass = defaultMass;
 //	race = mother->st.st.race;
-	health = maxhealth();
+	health = getMaxHealth();
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
@@ -384,6 +395,20 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	p->cloak = 0;
 	p->heat = 0.;
 	integral[0] = integral[1] = 0.;
+}
+
+void ReZEL::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("models/ReZEL.nut"),
+			SingleDoubleProcess(modelScale, "modelScale") <<=
+			SingleDoubleProcess(defaultMass, "mass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			HitboxProcess(hitboxes) <<=
+			DrawOverlayProcess(overlayDisp) <<=
+			NullProcess());
+		initialized = true;
+	}
 }
 
 void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
@@ -499,7 +524,7 @@ void ReZEL::shootRifle(double dt){
 //		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
 		motionInterpolateTime = TimeMeasLap(&tm);
 		if(model->getBonePos("ReZEL_riflemuzzle", v[0], &gunpos)){
-			gunpos *= sufscale;
+			gunpos *= modelScale;
 			gunpos[0] *= -1;
 			gunpos[2] *= -1;
 		}
@@ -549,7 +574,7 @@ void ReZEL::shootShieldBeam(double dt){
 	// Retrieve muzzle position from model, but not the velocity
 	MotionPoseSet &v = motionInterpolate();
 	if(model->getBonePos("ReZEL_shieldmuzzle", v[0], &gunpos)){
-		gunpos *= sufscale;
+		gunpos *= modelScale;
 		gunpos[0] *= -1;
 		gunpos[2] *= -1;
 	}
@@ -593,7 +618,7 @@ void ReZEL::shootVulcan(double dt){
 	{
 		MotionPoseSet v = motionInterpolate();
 		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", v[0], &gunpos[i])){
-			gunpos[i] *= sufscale;
+			gunpos[i] *= modelScale;
 			gunpos[i][0] *= -1;
 			gunpos[i][2] *= -1;
 		}
@@ -828,7 +853,7 @@ void ReZEL::enterField(WarField *target){
 		if(!bbody){
 			if(!shape){
 				shape = new btCompoundShape();
-				for(int i = 0; i < nhitboxes; i++){
+				for(int i = 0; i < hitboxes.size(); i++){
 					const Vec3d &sc = hitboxes[i].sc;
 					const Quatd &rot = hitboxes[i].rot;
 					const Vec3d &pos = hitboxes[i].org;
@@ -888,8 +913,8 @@ void ReZEL::anim(double dt){
 
 	if(Docker *docker = *w){
 		fuel = min(fuel + dt * 20., maxfuel()); // it takes 6 seconds to fully refuel
-		health = min(health + dt * 100., maxhealth()); // it takes 7 seconds to be fully repaired
-		if(fuel == maxfuel() && health == maxhealth() && !docker->remainDocked)
+		health = min(health + dt * 100., getMaxHealth()); // it takes 7 seconds to be fully repaired
+		if(fuel == maxfuel() && health == getMaxHealth() && !docker->remainDocked)
 			docker->postUndock(this);
 		return;
 	}
@@ -2094,7 +2119,7 @@ int ReZEL::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, d
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, n;
-	for(n = 0; n < nhitboxes; n++){
+	for(n = 0; n < hitboxes.size(); n++){
 		Vec3d org;
 		Quatd rot;
 		org = this->rot.itrans(hitboxes[n].org) + this->pos;

@@ -50,7 +50,6 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-//#define SCEPTOR_SCALE 1./10000
 double ReZEL::modelScale = 1./30000;
 double ReZEL::defaultMass = 4e3;
 double ReZEL::maxHealthValue = 100.;

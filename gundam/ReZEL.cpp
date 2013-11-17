@@ -2278,6 +2278,35 @@ bool ReZEL::command(EntityCommand *com){
 	return st::command(com);
 }
 
+SQInteger ReZEL::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("waverider"))){
+		sq_pushbool(v, waverider);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("stabilizer"))){
+		sq_pushbool(v, stabilizer);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger ReZEL::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("waverider")))
+		return boolSetter(v, _SC("waverider"), waverider);
+	else if(!scstrcmp(name, _SC("stabilizer")))
+		return boolSetter(v, _SC("stabilizer"), stabilizer);
+	else
+		return st::sqSet(v, name);
+}
+
+SQInteger ReZEL::boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value){
+	SQBool b;
+	if(SQ_FAILED(sq_getbool(v, 3, &b)))
+		return sq_throwerror(v, gltestp::dstring("could not convert to bool ") << name);
+	value = b != SQFalse;
+	return 0;
+}
 
 /*Entity *ReZEL::create(WarField *w, Builder *mother){
 	ReZEL *ret = new ReZEL(NULL);

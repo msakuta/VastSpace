@@ -29,3 +29,39 @@ function drawOverlay(){
 	glVertex2d( 0.00, -0.05);
 	glEnd();
 }
+
+if(isClient()){
+	::reloadCommand <- function(){
+		player.controlled.command("Reload");
+	}
+
+	::getCoverCommand <- function(){
+		player.controlled.command("GetCover", 2);
+	}
+
+	::transformCommand <- function(){
+		player.controlled.waverider = !player.controlled.waverider;
+	}
+
+	::stabilizerCommand <- function(){
+		player.controlled.stabilizer = !player.controlled.stabilizer;
+	}
+
+	beginControl["ReZEL"] <- function (){
+		if("print" in this)
+			print("ReZEL::beginControl");
+		cmd("pushbind");
+		cmd("bind r sq \"reloadCommand()\"");
+		cmd("bind t sq \"getCoverCommand()\"");
+		cmd("bind b sq \"transformCommand()\"");
+		cmd("bind g sq \"stabilizerCommand()\"");
+		cmd("r_windows 0");
+	}
+
+	endControl["ReZEL"] <- function (){
+		if("print" in this)
+			print("ReZEL::endControl");
+		cmd("popbind");
+		cmd("r_windows 1");
+	}
+}

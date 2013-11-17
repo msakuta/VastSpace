@@ -15,8 +15,6 @@ deltaFormation("ReZEL", 0, Quatd(0,0,0,1), Vec3d(0, 3., 3.), 0.05, 2, player.cs,
 //deltaFormation("ContainerHead", 0, Quatd(0,0,0,1), Vec3d(10, 0., 10. - 20.), 0.15, 1, player.cs, null);
 //deltaFormation("Sceptor", 1, Quatd(0,1,0,0), Vec3d(0, 0., -3.), 0.05, 3, player.cs, null);
 
-cmd("bind t \"sq \\\"player.chase.command(\\\\\\\"GetCover\\\\\\\", 2)\\\"\"");
-cmd("bind r \"sq \\\"player.chase.command(\\\\\\\"Reload\\\\\\\")\\\"\"");
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

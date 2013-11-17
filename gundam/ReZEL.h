@@ -267,6 +267,13 @@ public:
 	static double motionInterpolateTimeAverage;
 	static int motionInterpolateTimeAverageCount;
 	static HSQUIRRELVM sqvm;
+
+protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
+	SQInteger boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value);
+
 private:
 	Vec3d evelo;
 #if PIDAIM_PROFILE

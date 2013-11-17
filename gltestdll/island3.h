@@ -1,8 +1,12 @@
+/** \file
+ * \brief Definition of Island3 and its companion classes.
+ */
 #ifndef ISLAND3_H
 #define ISLAND3_H
 #include "astro.h"
 #include "Entity.h"
 #include "Docker.h"
+#include "Model-forward.h"
 #include <btBulletDynamicsCommon.h>
 extern "C"{
 #include <clib/suf/suf.h>
@@ -80,7 +84,7 @@ protected:
 	void endWallTexture();
 	static GLuint walllist;
 	static GLuint walltex;
-	static suf_t *sufbridgetower;
+	static Model *bridgetower;
 };
 
 

@@ -21,6 +21,7 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "draw/mqoadapt.h"
 #include "glw/popup.h"
 #include "serial_util.h"
 #include "msg/GetCoverPointsMessage.h"
@@ -100,7 +101,7 @@ Entity::EntityRegister<Island3Building> Island3Building::entityRegister("Island3
 int &Island3::g_shader_enable = ::g_shader_enable;
 GLuint Island3::walllist = 0;
 GLuint Island3::walltex = 0;
-suf_t *Island3::sufbridgetower = NULL;
+Model *Island3::bridgetower = NULL;
 
 Island3::Island3(Game *game) : st(game){
 	init();
@@ -1453,12 +1454,10 @@ void Island3::draw(const Viewer *vw){
 						gldcache.valid = 0;
 						glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
 						glEnable(GL_NORMALIZE);
-						for(i = 1; i < 4; i++){
+						if(!bridgetower)
+							bridgetower = LoadMQOModel("models/bridgetower.mqo");
+						if(bridgetower) for(i = 1; i < 4; i++){
 							int i1 = (i * cutnum / (4 * 6) + m * cutnum / 3 + cutnum / 6) % cutnum;
-							if(!sufbridgetower)
-								sufbridgetower = CallLoadSUF("models/bridgetower.bin");
-							if(!sufbridgetower)
-								goto nobridgemodel;
 							Vec3d bpos0(ISLAND3_GRAD, pos0[j][1] + .0, .0);
 							rot2[0] = cuts[i1][1];
 							rot2[2] = -cuts[i1][0];
@@ -1479,7 +1478,7 @@ void Island3::draw(const Viewer *vw){
 								trans[15] = 1.;
 								glMultMatrixd(trans);
 							}
-							DrawSUF(sufbridgetower, SUF_ATR, NULL);
+							DrawMQOPose(bridgetower, NULL);
 
 							if(10. < .01 * fabs(gc2->scale(bpos))){
 								glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT);
@@ -1499,7 +1498,6 @@ void Island3::draw(const Viewer *vw){
 
 							glPopMatrix();
 						}
-nobridgemodel:
 						glPopAttrib();
 					}
 					{
@@ -1515,7 +1513,7 @@ nobridgemodel:
 							stp.transparentColor = 0;
 							stp.env = GL_MODULATE;
 							stp.magfil = GL_NEAREST;
-							texbb = CallCacheBitmap("bbrail.bmp", "bbrail.bmp", &stp, NULL);
+							texbb = CallCacheBitmap("bbrail.bmp", "models/bbrail.bmp", &stp, NULL);
 						}
 						glCallList(texbb);
 /*							glDisable(GL_CULL_FACE);*/

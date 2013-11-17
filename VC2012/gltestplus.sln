@@ -57,6 +57,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "surface", "..\surface\VC201
 		{627D5FD6-0FFA-C8E6-31E6-0D6773EB6623} = {627D5FD6-0FFA-C8E6-31E6-0D6773EB6623}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gundam", "..\gundam\VC2012\gundam.vcxproj", "{722CDADC-8A4E-4894-A481-302CB6945BD1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2C426605-FE92-2A4C-9A7A-37F3A886B289} = {2C426605-FE92-2A4C-9A7A-37F3A886B289}
+		{462CC813-F69E-4A84-A9AE-E12E2C9EC802} = {462CC813-F69E-4A84-A9AE-E12E2C9EC802}
+		{8CA1CD19-EE31-7C43-A68B-EECFBAD8F4F6} = {8CA1CD19-EE31-7C43-A68B-EECFBAD8F4F6}
+		{BD3D2091-75AD-4D59-AE7D-33CD3613DC54} = {BD3D2091-75AD-4D59-AE7D-33CD3613DC54}
+		{627D5FD6-0FFA-C8E6-31E6-0D6773EB6623} = {627D5FD6-0FFA-C8E6-31E6-0D6773EB6623}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1C10E359-F193-4E8A-8182-119EADB7D8AF}"
+	ProjectSection(SolutionItems) = preProject
+		Performance1.psess = Performance1.psess
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -860,5 +874,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

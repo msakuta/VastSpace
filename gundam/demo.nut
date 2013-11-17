@@ -2,8 +2,6 @@
 
 function printeach(e){foreach(a,b in e) print(a + ": " + b);}
 
-initUI();
-
 warfield <- bookmarks["Side 7"].cs();
 player.cs = warfield;
 
@@ -25,7 +23,7 @@ player.setrot(lookrot);
 player.viewdist = 0.25;
 
 
-function frameproc(dt){
+frameProcs.append(function(dt){
 	for(local i = 0; i < 2; i++){
 		if(countents(warfield, i, "ReZEL") < 2){
 			local axis = rand() % 3 * 2. - 2.;
@@ -34,7 +32,7 @@ function frameproc(dt){
 				Vec3d(3. * sin(phase), 3. * (1. - i) + axis, 3. * cos(phase)), 0.05, 2, warfield, null);
 		}
 	}
-}
+});
 
 ReZEL_deaths <- [0,0];
 

@@ -399,13 +399,27 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 void ReZEL::init(){
 	static bool initialized = false;
 	if(!initialized){
+		// Load staticBind names from initialization script, too.
+		// We could write down all StaticBind entries here, but we prefer methods that harder to mistake.
+		// For instance, we can easily imagine a case that adding an entry in StaticBind list above and forget
+		// to add corresponding entry here.
+		std::vector<std::auto_ptr<SqInitProcess> > processes;
+		for(StaticBindSet::iterator it = staticBind.begin(); it != staticBind.end(); ++it){
+			if(StaticBindDouble *sbd = dynamic_cast<StaticBindDouble*>(it->second))
+				processes.push_back(std::auto_ptr<SqInitProcess>(new SingleDoubleProcess(*sbd, it->first, false)));
+		}
+
+		// Link adjacent SqInitProcess entries to form a chain.
+		for(int i = 0; i < processes.size()-1; ++i)
+			processes[i+1]->chain(*processes[i]);
+
 		SqInit(game->sqvm, modPath() << _SC("models/ReZEL.nut"),
 			SingleDoubleProcess(modelScale, "modelScale") <<=
 			SingleDoubleProcess(defaultMass, "mass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
-			NullProcess());
+			*processes[0]); // Append dynamically constructed chain to the ordinary list.
 		initialized = true;
 	}
 }

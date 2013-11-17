@@ -1,12 +1,5 @@
 // ReZEL demo
 
-ReZEL.set.bulletSpeed = 2;
-ReZEL.set.walkSpeed = 0.05;
-ReZEL.set.reloadTime = 5.;
-ReZEL.set.rifleMagazineSize = 5;
-ReZEL.set.vulcanReloadTime = 5.;
-ReZEL.set.vulcanMagazineSize = 20;
-
 function printeach(e){foreach(a,b in e) print(a + ": " + b);}
 
 initUI();

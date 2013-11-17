@@ -5,6 +5,13 @@ mass <- 4.e3;
 
 maxhealth <- 100.;
 
+bulletSpeed <- 2.;
+walkSpeed <- 0.05;
+reloadTime <- 5.;
+rifleMagazineSize <- 5;
+vulcanReloadTime <- 5.;
+vulcanMagazineSize <- 20;
+
 hitbox <- [
 	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.005, 0.01025, 0.005)],
 ];

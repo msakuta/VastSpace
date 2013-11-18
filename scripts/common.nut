@@ -266,8 +266,7 @@ function foreachbullets(cs, proc){
 }
 
 function foreachselectedents(proc){
-	local e;
-	for(e = player.selected; e != null; e = e.selectnext)
+	foreach(e in player.selected)
 		proc(e);
 }
 

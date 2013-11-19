@@ -38,6 +38,30 @@ function popupMenu(e){
 	];
 }
 
+function cockpitView(e,seatid){
+	local src = [Vec3d(0., 0.001, 0.002) * 3, Vec3d(0., 0.008, 0.020), Vec3d(0., 0.008, 0.020)];
+	local ret = {pos = e.pos, rot = e.rot};
+	seatid = (seatid + 3) % 3;
+	local ofs = Vec3d(0,0,0);
+
+	// Currently, the equality operator (==) won't return true for the same CoordSys object.
+	// It's caused by Squirrel's operator interpretation, so we cannot override its behavior
+	// by providing a metamethod for comparison (_cmp).  The _cmp metamethod just affects
+	// relation operators (<,>,<=,=>,<=>), not equality operators (==,!=).
+	// For the time being, we use relation order operator (<=>) and compare its result to 0
+	// to make it work.
+	if(seatid == 2 && e.enemy != null && e.enemy.alive && (e.enemy.cs <=> e.cs) == 0){
+		ret.rot = e.rot * Quatd.direction(e.rot.cnj().trans(e.pos - e.enemy.pos));
+		ofs = ret.rot.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / player.fov)); // Trackback if zoomed
+	}
+	else{
+		ret.rot = e.rot;
+		ofs = ret.rot.trans(src[seatid]);
+	}
+	ret.pos = e.pos + ofs;
+	return ret;
+}
+
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);
 	glVertex2d(-1.0, -1.0);

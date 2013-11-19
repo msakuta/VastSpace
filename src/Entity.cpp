@@ -565,6 +565,13 @@ HSQOBJECT Entity::getSqPopupMenu(){
 	return ret;
 }
 
+/// \brief Returns Squirrel closure handle to define cockpit view position and orientation.
+HSQOBJECT Entity::getSqCockpitView()const{
+	HSQOBJECT ret;
+	sq_resetobject(&ret);
+	return ret;
+}
+
 void setpos(Entity *e, const Vec3d &v){
 	e->setPosition(&v);
 }
@@ -899,7 +906,61 @@ void Entity::endControl(){
 	return;
 }
 unsigned Entity::analog_mask(){return 0;}
-void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
+
+/// \brief Returns cockpit position and orientation when the camera is chasing.
+///
+/// By default, this function try to run a Squirrel function returned by getSqCockpitView(),
+/// and loads position and rotation from its returned table, although this behavior can
+/// be overridden in derived classes.
+void Entity::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	HSQOBJECT sqCockpitView = getSqCockpitView();
+	int ret = 0;
+	if(sq_isnull(sqCockpitView)){
+		pos = this->pos;
+		rot = this->rot;
+		return;
+	}
+	try{ // Call Squirrel defined cockpit view position logic.
+		// One may concern the overhead to call Squirrel function, but
+		// this method is called at most once a frame, which does not
+		// impact much of execution time dominated by drawing methods.
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+
+		// Call cockpitView((root), this, seatid) -> {pos, rot}
+		sq_pushobject(v, sqCockpitView);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, const_cast<Entity*>(this)); // Squirrel cannot handle const qualifier!
+		sq_pushinteger(v, seatid);
+		if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+			throw SQFError("Exception in sq_call");
+
+		sq_pushstring(v, _SC("pos"), -1); // func table "pos"
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError("Couldn't get pos");
+		SQVec3d sqv;
+		sqv.getValue(v);
+		sq_poptop(v); // func table
+
+		sq_pushstring(v, _SC("rot"), -1); // func array array[i] "proc"
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError("Couldn't get rot");
+		SQQuatd sqq;
+		sqq.getValue(v);
+		sq_poptop(v); // func table
+
+		sq_poptop(v); // func
+
+		pos = sqv.value;
+		rot = sqq.value;
+	}
+	catch(SQFError &e){
+		CmdPrint(gltestp::dstring("Entity::cockpitView Error: ") << e.what());
+		pos = this->pos;
+		rot = this->rot;
+	}
+}
+
 int Entity::numCockpits()const{return 1;}
 void Entity::draw(WarDraw *){}
 void Entity::drawtra(WarDraw *){}

@@ -28,6 +28,16 @@ enginePosRev <- [
 	{pos = Vec3d(-34.5, 0, ofs) * modelScale, rot = dnangle},
 ];
 
+function popupMenu(e){
+	return [
+		{title = translate("Dock"), cmd = "dock"},
+		{title = translate("Military Parade Formation"), cmd = "parade_formation"},
+		{separator = true},
+		{title = translate("Cloak"), cmd = "cloak"},
+		{title = translate("Delta Formation"), cmd = "delta_formation"},
+	];
+}
+
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);
 	glVertex2d(-1.0, -1.0);

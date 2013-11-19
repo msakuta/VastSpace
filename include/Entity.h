@@ -176,6 +176,7 @@ protected:
 	virtual void removeRigidBody(WarSpace *);
 	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const;
 	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name);
+	virtual HSQOBJECT getSqPopupMenu();
 
 	static SQInteger sqf_Entity_get(HSQUIRRELVM);
 	static SQInteger sqf_Entity_set(HSQUIRRELVM);

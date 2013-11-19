@@ -32,6 +32,7 @@
 #include "glw/PopupMenu.h"
 #endif
 #include "ClientMessage.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -79,6 +80,7 @@ double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
 GLuint Sceptor::overlayDisp = 0;
+HSQOBJECT Sceptor::sqPopupMenu = sq_nullobj();
 
 /*static const struct hitbox sceptor_hb[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
@@ -242,7 +244,8 @@ void Sceptor::init(){
 			HitboxProcess(hitboxes) <<=
 			EnginePosListProcess(enginePos, "enginePos") <<=
 			EnginePosListProcess(enginePosRev, "enginePosRev") <<=
-			DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp) <<=
+			SqCallbackProcess(sqPopupMenu, "popupMenu", false));
 		initialized = true;
 	}
 }
@@ -270,19 +273,6 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 		return;
 	pt->inputs = *inputs;
 }*/
-
-int Sceptor::popupMenu(PopupMenu &list){
-#ifndef DEDICATED
-	int ret = st::popupMenu(list);
-	list.append(sqa_translate("Dock"), 0, "dock")
-		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
-		.append(sqa_translate("Cloak"), 0, "cloak")
-		.append(sqa_translate("Delta Formation"), 0, "delta_formation");
-	return ret;
-#else
-	return 0;
-#endif
-}
 
 Entity::Props Sceptor::props()const{
 	Props ret = st::props();
@@ -593,6 +583,10 @@ bool Sceptor::buildBody(){
 /// Do not collide with dock base (such as Shipyards)
 short Sceptor::bbodyMask()const{
 	return ~2;
+}
+
+HSQOBJECT Sceptor::getSqPopupMenu(){
+	return sqPopupMenu;
 }
 
 void Sceptor::leaveField(WarField *w){

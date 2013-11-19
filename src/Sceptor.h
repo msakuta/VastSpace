@@ -21,6 +21,7 @@ protected:
 	static double maxFuelValue;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
+	static HSQOBJECT sqPopupMenu;
 
 	enum Task{
 		Idle = sship_idle,
@@ -97,7 +98,6 @@ public:
 	virtual Dockable *toDockable();
 	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
@@ -111,6 +111,7 @@ public:
 protected:
 	bool buildBody();
 	short bbodyMask()const;
+	HSQOBJECT getSqPopupMenu()override;
 private:
 	Vec3d evelo;
 #if PIDAIM_PROFILE

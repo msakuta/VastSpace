@@ -272,6 +272,14 @@
     <ClInclude Include="..\include\Bullet.h" />
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />
+    <ClInclude Include="..\include\glw\GLWbutton.h" />
+    <ClInclude Include="..\include\glw\GLWchart.h" />
+    <ClInclude Include="..\include\glw\GLWchat.h" />
+    <ClInclude Include="..\include\glw\glwindow.h" />
+    <ClInclude Include="..\include\glw\GLWtaskBar.h" />
+    <ClInclude Include="..\include\glw\message.h" />
+    <ClInclude Include="..\include\glw\PopupMenu-forward.h" />
+    <ClInclude Include="..\include\glw\PopupMenu.h" />
     <ClInclude Include="..\include\Mesh-forward.h" />
     <ClInclude Include="..\include\Model-forward.h" />
     <ClInclude Include="..\include\ModelEntity.h" />

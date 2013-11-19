@@ -29,7 +29,7 @@
 #include "motion.h"
 #include "Game.h"
 #ifndef DEDICATED
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #endif
 #include "ClientMessage.h"
 extern "C"{

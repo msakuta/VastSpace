@@ -7,7 +7,7 @@
 #include "Player.h"
 #include "antiglut.h"
 #include "sqadapt.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "Application.h"
 #include "StaticInitializer.h"
 #include "SqInitProcess.h"

@@ -9,7 +9,7 @@
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
 #include "draw/effects.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "sqadapt.h"
 #include "Game.h"
 extern "C"{

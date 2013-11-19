@@ -4,7 +4,7 @@
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/ShaderBind.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>

@@ -1113,6 +1113,10 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			sq_pushfloat(v, SQFloat(p->viewdist));
 			return 1;
 		}
+		else if(!scstrcmp(wcs, _SC("fov"))){
+			sq_pushfloat(v, SQFloat(p->fov));
+			return 1;
+		}
 		else if(!strcmp(wcs, _SC("playerId"))){
 			sq_pushinteger(v, SQInteger(p->playerId));
 			return 1;
@@ -1218,6 +1222,15 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			p->viewdist = f;
 			CMViewDist::s.send(f);
 			return 1;
+		}
+		else if(!scstrcmp(wcs, _SC("fov"))){
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return SQ_ERROR;
+			p->fov = f;
+			sq_pushfloat(v, SQFloat(p->fov));
+//			CMViewDist::s.send(f); // FIXME
+			return 0;
 		}
 		else
 			return SQ_ERROR;

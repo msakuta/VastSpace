@@ -1046,13 +1046,13 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		sq_getstring(v, 2, &wcs);
 
 		// Can query value without actual object reference.
-		if(!strcmp(wcs, _SC("mouseLookSensitivity"))){
+		if(!scstrcmp(wcs, _SC("mouseLookSensitivity"))){
 			sq_pushfloat(v, SQFloat(mouseLookSensitivity));
 			return 1;
 		}
 
 		Player *p = sq_refobj(v);
-		if(!strcmp(wcs, _SC("alive"))){
+		if(!scstrcmp(wcs, _SC("alive"))){
 			sq_pushbool(v, !!p);
 			return 1;
 		}
@@ -1061,11 +1061,11 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 		if(!p)
 			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
 
-		if(!strcmp(wcs, _SC("cs"))){
+		if(!scstrcmp(wcs, _SC("cs"))){
 			CoordSys::sq_pushobj(v, const_cast<CoordSys*>(p->cs));
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("selected"))){
+		else if(!scstrcmp(wcs, _SC("selected"))){
 			// We cannot foresee how many items in the selection list are really alive.
 			// So we just append each item to the array, examining if each one is alive in the way.
 			sq_newarray(v, 0); // array
@@ -1089,7 +1089,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("chase"))){
+		else if(!scstrcmp(wcs, _SC("chase"))){
 			if(!p->chase){
 				sq_pushnull(v);
 				return 1;
@@ -1097,7 +1097,7 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			Entity::sq_pushobj(v, p->chase);
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("controlled"))){
+		else if(!scstrcmp(wcs, _SC("controlled"))){
 			if(!p->controlled){
 				sq_pushnull(v);
 				return 1;
@@ -1105,11 +1105,11 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			Entity::sq_pushobj(v, p->controlled);
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("chasecamera"))){
+		else if(!scstrcmp(wcs, _SC("chasecamera"))){
 			sq_pushinteger(v, p->chasecamera);
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("viewdist"))){
+		else if(!scstrcmp(wcs, _SC("viewdist"))){
 			sq_pushfloat(v, SQFloat(p->viewdist));
 			return 1;
 		}
@@ -1117,15 +1117,15 @@ SQInteger Player::sqf_get(HSQUIRRELVM v){
 			sq_pushfloat(v, SQFloat(p->fov));
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("playerId"))){
+		else if(!scstrcmp(wcs, _SC("playerId"))){
 			sq_pushinteger(v, SQInteger(p->playerId));
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("race"))){
+		else if(!scstrcmp(wcs, _SC("race"))){
 			sq_pushinteger(v, p->race);
 			return 1;
 		}
-		else if(!strcmp(wcs, _SC("attackorder"))){
+		else if(!scstrcmp(wcs, _SC("attackorder"))){
 			sq_pushinteger(v, p->attackorder);
 			return 1;
 		}
@@ -1144,7 +1144,7 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 
 		// Unlike viewdist, this value is not really interesting for the Server; The client can set any value
 		// without notifying. This value is not bound to specific Player, it's a global variable.
-		if(!strcmp(wcs, _SC("mouseLookSensitivity"))){
+		if(!scstrcmp(wcs, _SC("mouseLookSensitivity"))){
 			SQFloat f;
 			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
 				return SQ_ERROR;
@@ -1159,28 +1159,28 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 		if(!p)
 			return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
 
-		if(!strcmp(wcs, _SC("cs"))){
+		if(!scstrcmp(wcs, _SC("cs"))){
 			if(OT_INSTANCE != sq_gettype(v, 3))
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Assigned value is not a valid CoordSys object for Player.cs"));
 			p->cs = CoordSys::sq_refobj(v, 3);
-			return 1;
+			return 0;
 		}
-		else if(!strcmp(wcs, _SC("chase"))){
+		else if(!scstrcmp(wcs, _SC("chase"))){
 			SQObjectType ot = sq_gettype(v, 3);
 			if(OT_NULL == ot){
 				p->chase = NULL;
-				return 1;
+				return 0;
 			}
 			if(OT_INSTANCE != ot)
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Assigned value is not a valid Entity object for Player.chase"));
 			Entity *o = Entity::sq_refobj(v, 3);
 			if(!o)
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Assigned value is not a valid Entity object for Player.chase"));
 			p->chase = o;
 			p->chases.insert(p->chase);
-			return 1;
+			return 0;
 		}
-		else if(!strcmp(wcs, _SC("chasecamera"))){
+		else if(!scstrcmp(wcs, _SC("chasecamera"))){
 			SQInteger i;
 			if(SQ_SUCCEEDED(sq_getinteger(v, 3, &i))){
 				p->setChaseCamera(i);
@@ -1189,12 +1189,12 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 			else
 				return sq_throwerror(v, _SC("The value set to Player::chasecamera must be an integer"));
 		}
-		else if(!strcmp(wcs, _SC("controlled"))){
+		else if(!scstrcmp(wcs, _SC("controlled"))){
 			SQObjectType ot = sq_gettype(v, 3);
 			if(OT_NULL == ot){
 				p->endControlInt();
 
-				// Notify the server that the client made the player to control something.
+				// Notify the server that the client made the player control something.
 				// Do not try to modify other players, that's beyond a client's privileges.
 				Game *game = (Game*)sq_getforeignptr(v);
 				if(!game->isServer() && p == game->player)
@@ -1202,31 +1202,31 @@ SQInteger Player::sqf_set(HSQUIRRELVM v){
 				return 0;
 			}
 			if(OT_INSTANCE != ot)
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Assigned value is not a valid Entity object for Player.controlled"));
 			Entity *o = Entity::sq_refobj(v, 3);
 			if(!o)
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Assigned value is not a valid Entity object for Player.controlled"));
 			p->beginControlInt(o);
 
-			// Notify the server that the client made the player to control something.
+			// Notify the server that the client made the player control something.
 			// Do not try to modify other players, that's beyond a client's privileges.
 			Game *game = (Game*)sq_getforeignptr(v);
 			if(!game->isServer() && p == game->player)
 				CMControl::s.send(o);
 			return 0;
 		}
-		else if(!strcmp(wcs, _SC("viewdist"))){
+		else if(!scstrcmp(wcs, _SC("viewdist"))){
 			SQFloat f;
 			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Couldn't convert to float for Player.viewdist"));
 			p->viewdist = f;
 			CMViewDist::s.send(f);
-			return 1;
+			return 0;
 		}
 		else if(!scstrcmp(wcs, _SC("fov"))){
 			SQFloat f;
 			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
-				return SQ_ERROR;
+				return sq_throwerror(v, _SC("Couldn't convert to float for Player.fov"));
 			p->fov = f;
 			sq_pushfloat(v, SQFloat(p->fov));
 //			CMViewDist::s.send(f); // FIXME

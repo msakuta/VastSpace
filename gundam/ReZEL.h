@@ -162,11 +162,12 @@ protected:
 	MotionPoseSet poseSet; ///< Last motion pose set
 	double motion_time[motionCount];
 	double motion_amplitude[motionCount];
-	
 
 	static double modelScale;
 	static double defaultMass;
 	static double maxHealthValue;
+	static HSQOBJECT sqPopupMenu;
+	static HSQOBJECT sqCockpitView;
 	static const avec3_t gunPos[2];
 	static Model *model;
 	static Motion *motions[motionCount];
@@ -228,7 +229,6 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
 	virtual double getMaxHealth()const override;
-	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void control(const input_t *inputs, double dt);
 	virtual void anim(double dt);
@@ -244,7 +244,6 @@ public:
 	virtual Dockable *toDockable();
 	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
@@ -271,6 +270,8 @@ public:
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+	HSQOBJECT getSqPopupMenu()override{ return sqPopupMenu; }
+	HSQOBJECT getSqCockpitView()const override{ return sqCockpitView; }
 
 	SQInteger boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value);
 

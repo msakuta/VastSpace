@@ -29,11 +29,12 @@ birds.append(a10);*/
 //local a10_2 = player.cs.addent("A10", Vec3d(0 + 0.2, 0.72, 11.0));
 //birds.append(a10_2);
 
-//local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
+local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //player.chase = tank;
 
 //f15.enemy = tank;
 //a10.enemy = tank;
+z.enemy = tank;
 
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;

@@ -54,6 +54,8 @@ double ReZEL::modelScale = 1./30000;
 double ReZEL::defaultMass = 4e3;
 double ReZEL::maxHealthValue = 100.;
 GLuint ReZEL::overlayDisp = 0;
+HSQOBJECT ReZEL::sqPopupMenu = sq_nullobj();
+HSQOBJECT ReZEL::sqCockpitView = sq_nullobj();
 StaticBindDouble ReZEL::deathSmokeFreq = 20.; ///< Smokes per second
 StaticBindDouble ReZEL::rotationSpeed = (.3 * M_PI);
 StaticBindDouble ReZEL::maxAngleSpeed = (M_PI * .5);
@@ -419,32 +421,11 @@ void ReZEL::init(){
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
+			SqCallbackProcess(sqPopupMenu, "popupMenu") <<=
+			SqCallbackProcess(sqCockpitView, "cockpitView") <<=
 			*processes[0]); // Append dynamically constructed chain to the ordinary list.
 		initialized = true;
 	}
-}
-
-void ReZEL::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
-//	Player *ppl = w->pl;
-	Vec3d ofs;
-	static const Vec3d src[4] = {
-		Vec3d(0., .001, -.002),
-		Vec3d(0., .018,  .035),
-		Vec3d(0., .018,  .035),
-		Vec3d(0.008, .007,  .013),
-	};
-	Mat4d mat;
-	Player *pl = w->getPlayer();
-	seatid = (seatid + 4) % 4;
-	if(seatid == 2 && enemy && enemy->w == w && pl){
-		q = this->rot * Quatd::direction(this->rot.cnj().trans(this->pos - enemy->pos));
-		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / pl->fov)); // Trackback if zoomed
-	}
-	else{
-		q = this->rot * aimRot();
-		ofs = q.trans(src[seatid] * (1. - coverFactor()) + Vec3d(.009, .007, .015) * coverFactor());
-	}
-	pos = this->pos + ofs;
 }
 
 void ReZEL::control(const input_t *inputs, double dt){
@@ -457,30 +438,6 @@ void ReZEL::control(const input_t *inputs, double dt){
 		weapon = (weapon + 1) % 4;
 	else if(inputs->change & PL_MWD)
 		weapon = (weapon - 1 + 4) % 4;
-}
-
-int ReZEL::popupMenu(PopupMenu &list){
-	int ret = st::popupMenu(list);
-	list.append("Transform to Waverider", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Transform\\\", 1);})\"");
-	list.append("Transform to Fighter", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Transform\\\", 0);})\"");
-	list.appendSeparator();
-	list.append("Arm Beam Rifle", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 0);})\"");
-	list.append("Arm Shield Beam", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 1);})\"");
-	list.append("Arm Vulcan", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 2);})\"");
-	list.append("Arm Beam Sabre", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Weapon\\\", 3);})\"");
-	list.appendSeparator();
-	list.append("Turn on Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 1);})\"");
-	list.append("Turn off Stabilizer", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Stabilizer\\\", 0);})\"");
-	list.appendSeparator();
-	list.append("Get Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 1);})\"");
-	list.append("Exit Cover", 0, "sq \"foreachselectedents(function(e){e.command(\\\"GetCover\\\", 0);})\"");
-	list.appendSeparator();
-	list.append("Reload", 0, "sq \"foreachselectedents(function(e){e.command(\\\"Reload\\\");})\"");
-/*	list.append(sqa_translate("Dock"), 0, "dock")
-		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
-		.append(sqa_translate("Cloak"), 0, "cloak")
-		.append(sqa_translate("Delta Formation"), 0, "delta_formation");*/
-	return ret;
 }
 
 Entity::Props ReZEL::props()const{
@@ -2287,6 +2244,18 @@ SQInteger ReZEL::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, stabilizer);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("coverRight"))){
+		sq_pushfloat(v, coverRight);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("aimdir"))){
+		sq_newarray(v, 0);
+		for(int i = 0; i < numof(aimdir); i++){
+			sq_pushfloat(v, aimdir[i]);
+			sq_arrayappend(v, -2);
+		}
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -2296,6 +2265,13 @@ SQInteger ReZEL::sqSet(HSQUIRRELVM v, const SQChar *name){
 		return boolSetter(v, _SC("waverider"), waverider);
 	else if(!scstrcmp(name, _SC("stabilizer")))
 		return boolSetter(v, _SC("stabilizer"), stabilizer);
+	else if(!scstrcmp(name, _SC("coverRight"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, gltestp::dstring("could not convert to float ") << name);
+		coverRight = f;
+		return 0;
+	}
 	else
 		return st::sqSet(v, name);
 }

@@ -19,6 +19,7 @@ extern "C"{
 #include "btadapt.h"
 #include "sqadapt.h"
 #include "stellar_file.h"
+#include "glw/PopupMenu.h"
 #include <btBulletDynamicsCommon.h>
 #include <sstream>
 #include <iostream>
@@ -553,6 +554,24 @@ static SQInteger sqf_Entity_update(HSQUIRRELVM v){
 	return 1;
 }
 
+/// \brief Returns Squirrel closure handle to define popup menu item for this Entity dynamically.
+///
+/// Inherited classes of Entity can hard-code their own popup menu items, but also add script
+/// generated ones defined in the initialization script files.  In such case, user just override
+/// this function to return Squirrel object handle to a Squirrel function.
+HSQOBJECT Entity::getSqPopupMenu(){
+	HSQOBJECT ret;
+	sq_resetobject(&ret);
+	return ret;
+}
+
+/// \brief Returns Squirrel closure handle to define cockpit view position and orientation.
+HSQOBJECT Entity::getSqCockpitView()const{
+	HSQOBJECT ret;
+	sq_resetobject(&ret);
+	return ret;
+}
+
 void setpos(Entity *e, const Vec3d &v){
 	e->setPosition(&v);
 }
@@ -887,7 +906,61 @@ void Entity::endControl(){
 	return;
 }
 unsigned Entity::analog_mask(){return 0;}
-void Entity::cockpitView(Vec3d &pos, Quatd &rot, int)const{pos = this->pos; rot = this->rot;}
+
+/// \brief Returns cockpit position and orientation when the camera is chasing.
+///
+/// By default, this function try to run a Squirrel function returned by getSqCockpitView(),
+/// and loads position and rotation from its returned table, although this behavior can
+/// be overridden in derived classes.
+void Entity::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
+	HSQOBJECT sqCockpitView = getSqCockpitView();
+	int ret = 0;
+	if(sq_isnull(sqCockpitView)){
+		pos = this->pos;
+		rot = this->rot;
+		return;
+	}
+	try{ // Call Squirrel defined cockpit view position logic.
+		// One may concern the overhead to call Squirrel function, but
+		// this method is called at most once a frame, which does not
+		// impact much of execution time dominated by drawing methods.
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+
+		// Call cockpitView((root), this, seatid) -> {pos, rot}
+		sq_pushobject(v, sqCockpitView);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, const_cast<Entity*>(this)); // Squirrel cannot handle const qualifier!
+		sq_pushinteger(v, seatid);
+		if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+			throw SQFError("Exception in sq_call");
+
+		sq_pushstring(v, _SC("pos"), -1); // func table "pos"
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError("Couldn't get pos");
+		SQVec3d sqv;
+		sqv.getValue(v);
+		sq_poptop(v); // func table
+
+		sq_pushstring(v, _SC("rot"), -1); // func array array[i] "proc"
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError("Couldn't get rot");
+		SQQuatd sqq;
+		sqq.getValue(v);
+		sq_poptop(v); // func table
+
+		sq_poptop(v); // func
+
+		pos = sqv.value;
+		rot = sqq.value;
+	}
+	catch(SQFError &e){
+		CmdPrint(gltestp::dstring("Entity::cockpitView Error: ") << e.what());
+		pos = this->pos;
+		rot = this->rot;
+	}
+}
+
 int Entity::numCockpits()const{return 1;}
 void Entity::draw(WarDraw *){}
 void Entity::drawtra(WarDraw *){}
@@ -950,8 +1023,99 @@ int Entity::takedamage(double damage, int hitpart){
 // This function's purpose is unclear.
 void Entity::bullethole(sufindex, double, const Vec3d &pos, const Quatd &rot){}
 
+/// \brief Gets list of menu items for right click popup menu.
+///
+/// By default, it tries to run a Squirrel function and loads menu items from
+/// its returned array, although this behavior can be overridden in derived
+/// classes.
 int Entity::popupMenu(PopupMenu &list){
+#ifndef DEDICATED // This function would never be called in dedicated server.
+	HSQOBJECT sqPopupMenu = getSqPopupMenu();
+	int ret = 0;
+	if(sq_isnull(sqPopupMenu))
+		return ret;
+	try{ // Load the popup menu titles and functions from a Squirrel callback closure.
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqPopupMenu);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+			throw SQFError("Exception in sq_call");
+
+		SQInteger size = sq_getsize(v, -1); // func array
+		for(SQInteger i = 0; i < size; i++){
+			sq_pushinteger(v, i); // func array i
+			if(SQ_FAILED(sq_get(v, -2)))
+				throw SQFError(gltestp::dstring() << "Couldn't get array[" << int(i) << "]");
+
+			// If the table contains a member named separator, make it a solid separator.
+			sq_pushstring(v, _SC("separator"), -1); // func array array[i] "separator"
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				list.appendSeparator();
+				sq_poptop(v); // func array array[i]
+				sq_poptop(v); // func array
+				continue;
+			}
+
+			sq_pushstring(v, _SC("title"), -1); // func array array[i] "title"
+			const SQChar *title;
+			if(SQ_FAILED(sq_get(v, -2)) || SQ_FAILED(sq_getstring(v, -1, &title)))
+				throw SQFError("Couldn't get title");
+			sq_poptop(v); // func array array[i]
+
+			sq_pushstring(v, _SC("proc"), -1); // func array array[i] "proc"
+			HSQOBJECT sqProc;
+			bool procDefined = false;
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				procDefined = SQ_SUCCEEDED(sq_getstackobj(v, -1, &sqProc));
+				sq_poptop(v); // func array array[i]
+			}
+
+			sq_pushstring(v, _SC("cmd"), -1); // func array array[i] "cmd"
+			const SQChar *sqCmd;
+			bool cmdDefined = false;
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				cmdDefined = SQ_SUCCEEDED(sq_getstring(v, -1, &sqCmd));
+				sq_poptop(v); // func array array[i]
+			}
+
+			sq_pushstring(v, _SC("key"), -1); // func array array[i] "key"
+			const SQChar *sqKey = NULL;
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				sq_getstring(v, -1, &sqKey);
+				sq_poptop(v); // func array array[i]
+			}
+
+			sq_pushstring(v, _SC("unique"), -1); // func array array[i] "unique"
+			SQBool sqUnique = SQTrue;
+			if(SQ_SUCCEEDED(sq_get(v, -2))){
+				sq_getbool(v, -1, &sqUnique);
+				sq_poptop(v); // func array array[i]
+			}
+
+			if(procDefined){ // callback process is preceded over command string.
+				PopupMenuItem *item = new PopupMenuItemClosure(sqProc, v);
+				item->title = title;
+				item->key = sqKey ? sqKey[0] : 0;
+				list.append(item, sqUnique != SQFalse);
+			}
+			else if(cmdDefined){
+				list.append(title, sqKey ? sqKey[0] : 0, sqCmd, sqUnique != SQFalse);
+			}
+			else
+				throw SQFError(gltestp::dstring() << "Couldn't get neither proc nor cmd in table " << int(i));
+
+			sq_poptop(v); // func array
+		}
+	}
+	catch(SQFError &e){
+		CmdPrint(gltestp::dstring("Entity::popupMenu Error: ") << e.what());
+	}
+	return ret;
+#else
 	return 0;
+#endif
 }
 
 Warpable *Entity::toWarpable(){return NULL;}

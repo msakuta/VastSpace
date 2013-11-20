@@ -19,7 +19,7 @@
 #include "sqadapt.h"
 #include "motion.h"
 #include "Game.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #include "mqo.h"

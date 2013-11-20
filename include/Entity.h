@@ -5,7 +5,7 @@
 #define ENTITY_H
 #include "serial.h"
 #include "war.h"
-//#include "glw/popup.h"
+#include "glw/PopupMenu-forward.h"
 #include "dstring.h"
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -23,7 +23,6 @@ class ArmBase;
 class Builder;
 class Docker;
 struct EntityCommand;
-class PopupMenu;
 
 /// An abstract class to implement Player or AI controlling in the common way.
 class EXPORT EntityController : public Serializable, public Observable, public Observer{
@@ -177,6 +176,8 @@ protected:
 	virtual void removeRigidBody(WarSpace *);
 	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const;
 	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name);
+	virtual HSQOBJECT getSqPopupMenu();
+	virtual HSQOBJECT getSqCockpitView()const;
 
 	static SQInteger sqf_Entity_get(HSQUIRRELVM);
 	static SQInteger sqf_Entity_set(HSQUIRRELVM);

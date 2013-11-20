@@ -6,7 +6,7 @@
 #include "Application.h"
 #include "sqadapt.h"
 #include "antiglut.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "GLWmenu.h"
 
 #ifdef _WIN32

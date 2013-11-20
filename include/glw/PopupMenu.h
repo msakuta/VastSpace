@@ -1,8 +1,9 @@
 /** \file
  * \brief Defines PopupMenu and its items.
  */
-#ifndef POPUP_H
-#define POPUP_H
+#ifndef GLW_POPUPMENU_H
+#define GLW_POPUPMENU_H
+#include "PopupMenu-forward.h"
 #include "../cmd.h"
 #include "dstring.h"
 #include <stddef.h>

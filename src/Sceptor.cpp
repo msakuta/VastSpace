@@ -29,9 +29,10 @@
 #include "motion.h"
 #include "Game.h"
 #ifndef DEDICATED
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #endif
 #include "ClientMessage.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -79,6 +80,8 @@ double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
 GLuint Sceptor::overlayDisp = 0;
+HSQOBJECT Sceptor::sqPopupMenu = sq_nullobj();
+HSQOBJECT Sceptor::sqCockpitView = sq_nullobj();
 
 /*static const struct hitbox sceptor_hb[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
@@ -242,26 +245,11 @@ void Sceptor::init(){
 			HitboxProcess(hitboxes) <<=
 			EnginePosListProcess(enginePos, "enginePos") <<=
 			EnginePosListProcess(enginePosRev, "enginePosRev") <<=
-			DrawOverlayProcess(overlayDisp));
+			DrawOverlayProcess(overlayDisp) <<=
+			SqCallbackProcess(sqPopupMenu, "popupMenu", false) <<=
+			SqCallbackProcess(sqCockpitView, "cockpitView", false));
 		initialized = true;
 	}
-}
-
-void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
-	Player *player = game->player;
-	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, .002) * 3, Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
-	Mat4d mat;
-	seatid = (seatid + 3) % 3;
-	if(seatid == 2 && enemy && enemy->w == w){
-		q = this->rot * Quatd::direction(this->rot.cnj().trans(this->pos - enemy->pos));
-		ofs = q.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / player->fov)); // Trackback if zoomed
-	}
-	else{
-		q = this->rot;
-		ofs = q.trans(src[seatid]);
-	}
-	pos = this->pos + ofs;
 }
 
 /*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
@@ -270,19 +258,6 @@ void Sceptor::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 		return;
 	pt->inputs = *inputs;
 }*/
-
-int Sceptor::popupMenu(PopupMenu &list){
-#ifndef DEDICATED
-	int ret = st::popupMenu(list);
-	list.append(sqa_translate("Dock"), 0, "dock")
-		.append(sqa_translate("Military Parade Formation"), 0, "parade_formation")
-		.append(sqa_translate("Cloak"), 0, "cloak")
-		.append(sqa_translate("Delta Formation"), 0, "delta_formation");
-	return ret;
-#else
-	return 0;
-#endif
-}
 
 Entity::Props Sceptor::props()const{
 	Props ret = st::props();
@@ -593,6 +568,14 @@ bool Sceptor::buildBody(){
 /// Do not collide with dock base (such as Shipyards)
 short Sceptor::bbodyMask()const{
 	return ~2;
+}
+
+HSQOBJECT Sceptor::getSqPopupMenu(){
+	return sqPopupMenu;
+}
+
+HSQOBJECT Sceptor::getSqCockpitView()const{
+	return sqCockpitView;
 }
 
 void Sceptor::leaveField(WarField *w){

@@ -14,7 +14,7 @@
 #include "draw/WarDraw.h"
 #include "draw/blackbody.h"
 #include "draw/mqoadapt.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }

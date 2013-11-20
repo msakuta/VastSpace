@@ -21,6 +21,8 @@ protected:
 	static double maxFuelValue;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
+	static HSQOBJECT sqPopupMenu;
+	static HSQOBJECT sqCockpitView;
 
 	enum Task{
 		Idle = sship_idle,
@@ -81,7 +83,6 @@ public:
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
 	virtual double getMaxHealth()const;
-	virtual void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	virtual void enterField(WarField *);
 	virtual void leaveField(WarField *);
 	virtual void anim(double dt);
@@ -97,7 +98,6 @@ public:
 	virtual Dockable *toDockable();
 	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual int popupMenu(PopupMenu &);
 	virtual Props props()const;
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
@@ -111,6 +111,8 @@ public:
 protected:
 	bool buildBody();
 	short bbodyMask()const;
+	HSQOBJECT getSqPopupMenu()override;
+	HSQOBJECT getSqCockpitView()const override;
 private:
 	Vec3d evelo;
 #if PIDAIM_PROFILE

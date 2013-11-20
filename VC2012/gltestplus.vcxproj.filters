@@ -22,6 +22,9 @@
     <Filter Include="Exported Headers\draw">
       <UniqueIdentifier>{be21abe0-94f7-4de7-aff1-428642d39a51}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Exported Headers\glw">
+      <UniqueIdentifier>{1c875d73-7c81-4ec5-97f6-8db30dd0639b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -361,6 +364,30 @@
     </ClInclude>
     <ClInclude Include="..\include\Mesh-forward.h">
       <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\GLWchart.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\GLWchat.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\glwindow.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\GLWtaskBar.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\message.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\GLWbutton.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\PopupMenu-forward.h">
+      <Filter>Exported Headers\glw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glw\PopupMenu.h">
+      <Filter>Exported Headers\glw</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -13,7 +13,7 @@
 #include "Sceptor.h"
 #include "EntityCommand.h"
 //#include "sensor.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "shield.h"
 #ifndef DEDICATED
 #include "draw/effects.h"

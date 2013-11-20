@@ -19,7 +19,7 @@
 #include "draw/OpenGLState.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "serial_util.h"
 #include "draw/mqoadapt.h"
 extern "C"{

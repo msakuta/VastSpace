@@ -6,7 +6,7 @@
 #include "sceptor.h"
 #include "Beamer.h"
 #include "sqadapt.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 extern "C"{
 #include <clib/mathdef.h>
 }

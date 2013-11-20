@@ -20,7 +20,7 @@
 #include "btadapt.h"
 #include "sqadapt.h"
 #include "motion.h"
-#include "glw/popup.h"
+#include "glw/PopupMenu.h"
 #include "tefpol3d.h"
 #include "SqInitProcess-ex.h"
 extern "C"{

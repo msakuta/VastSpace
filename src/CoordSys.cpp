@@ -1552,7 +1552,11 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	// TODO: return alive first
-	if(!strcmp(wcs, _SC("entlist"))){
+	if(!scstrcmp(wcs, _SC("id"))){
+		sq_pushinteger(v, p->getid());
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("entlist"))){
 		if(!p->w){
 			sq_newarray(v, 0); // Returning empty array makes the caller be able to use foreach
 			return 1;
@@ -1635,6 +1639,15 @@ SQInteger sqf_set(HSQUIRRELVM v){
 	return SQ_ERROR;
 }
 
+SQInteger sqf_cmp(HSQUIRRELVM v){
+	if(sq_gettop(v) < 2)
+		return SQ_ERROR;
+	CoordSys *p = CoordSys::sq_refobj(v);
+	CoordSys *o = CoordSys::sq_refobj(v, 2);
+	sq_pushinteger(v, p->getid() - o->getid());
+	return 1;
+}
+
 /// \brief Returns w->accel()
 ///
 /// It should be really a member of WarField or WarSpace, but placed here because the
@@ -1688,6 +1701,7 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("accel"), sqf_accel, 3, "xxx");
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
+	register_closure(v, _SC("_cmp"), sqf_cmp);
 	sq_pushstring(v, _SC("readFile"), -1);
 	sq_newarray(v, 1);
 	sq_newslot(v, -3, SQFalse); // The last argument is important to designate the readFile handler is static.

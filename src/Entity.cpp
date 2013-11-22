@@ -168,7 +168,7 @@ static SQInteger sqf_Entity_constructor(HSQUIRRELVM v){
 ///
 /// \param size is always 0?
 static SQInteger sqh_release(SQUserPointer p, SQInteger size){
-	((WeakPtr<Entity>*)p)->~WeakPtr<Entity>();
+	((SqSerialPtr<Entity>*)p)->~SqSerialPtr<Entity>();
 	return 1;
 }
 
@@ -206,7 +206,7 @@ static void pushEntity(HSQUIRRELVM v, Serializable *s){
 	SQUserPointer p;
 	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)) || !p)
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
-	new(p) WeakPtr<Entity>(e);
+	new(p) SqSerialPtr<Entity>(v, e);
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
 	sq_remove(v, -2); // Remove root table
@@ -228,6 +228,8 @@ Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
 	return *(WeakPtr<Entity>*)up;
 }
+
+const SQInteger Entity::sq_udsize = sizeof(SqSerialPtr<Entity>);
 
 SQInteger Entity::sqf_Entity_get(HSQUIRRELVM v){
 	try{
@@ -621,7 +623,7 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
-	sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>));
+	sq_setclassudsize(v, -1, sq_udsize);
 	register_closure(v, _SC("constructor"), sqf_Entity_constructor);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos>, sq_refobj >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsic3<Entity, Vec3d, setpos, sq_refobj>);

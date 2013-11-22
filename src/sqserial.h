@@ -37,7 +37,7 @@ template<typename T>
 class SqSerialPtr : public WeakPtr<T>{
 	HSQUIRRELVM v;
 public:
-	SqSerialPtr(HSQUIRRELVM v, T *o) : WeakPtr<CoordSys>(o), v(v){}
+	SqSerialPtr(HSQUIRRELVM v, T *o) : WeakPtr<T>(o), v(v){}
 	~SqSerialPtr(){}
 	bool unlink(const Observable *o)override{
 		// Do not invoke unlink() before getid()

@@ -253,23 +253,29 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 
 		/* height gauge */
 		{
-			double height;
-			char buf[16];
-			height = -10. * log(air);
 			glBegin(GL_LINE_LOOP);
 			glVertex2d(.8, .0);
 			glVertex2d(.9, 0.025);
 			glVertex2d(.9, -0.025);
 			glEnd();
-			glBegin(GL_LINES);
-			glVertex2d(.8, .3);
-			glVertex2d(.8, height < .05 ? -height * .3 / .05 : -.3);
-			for(double d = MAX(.01 - fmod(height, .01), .05 - height) - .05; d < .05; d += .01){
-				glVertex2d(.85, d * .3 / .05);
-				glVertex2d(.8, d * .3 / .05);
+
+			char buf[16];
+			// Avoid domain error in vacuum
+			if(FLT_EPSILON < air){
+				double height = -10. * log(air);
+				glBegin(GL_LINES);
+				glVertex2d(.8, .3);
+				glVertex2d(.8, height < .05 ? -height * .3 / .05 : -.3);
+				for(double d = MAX(.01 - fmod(height, .01), .05 - height) - .05; d < .05; d += .01){
+					glVertex2d(.85, d * .3 / .05);
+					glVertex2d(.8, d * .3 / .05);
+				}
+				glEnd();
+				sprintf(buf, "%6.lf", height / 30.48e-5);
 			}
-			glEnd();
-			sprintf(buf, "%6.lf", height / 30.48e-5);
+			else
+				strcpy(buf, "------");
+
 			glPushMatrix();
 			glTranslated(.7, .6, 0.);
 			glScaled(.015, .025, .1);

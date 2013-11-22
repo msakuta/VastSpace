@@ -1,3 +1,6 @@
+/** \file
+ * \brief Implementation of CoordSys class.
+ */
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "Application.h"

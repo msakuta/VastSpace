@@ -5,16 +5,12 @@
 #include "Application.h"
 #include "EntityCommand.h"
 #include "Game.h"
-extern "C"{
-#include <clib/aquat.h>
-}
 #include "Beamer.h"
 #include "judge.h"
 #include "Player.h"
 #include "cmd.h"
 #include "Scarry.h"
 #include "RStation.h"
-//#include "glw/glwindow.h"
 #include "serial_util.h"
 #include "btadapt.h"
 #include "sqadapt.h"

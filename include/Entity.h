@@ -147,6 +147,9 @@ public:
 	/// Returns an Entity object being pointed to by an object in Squirrel stack.
 	static Entity *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
 
+	/// Size of Squirrel class user data, use "sq_setclassudsize(v, -1, Entity::sq_udsize)" in derived classes' sq_define().
+	static const SQInteger sq_udsize;
+
 	class EXPORT EntityStatic{
 	public:
 		virtual ClassId classid() = 0;
@@ -201,7 +204,7 @@ protected:
 			sq_get(v, 1);
 			sq_newclass(v, SQTrue);
 			sq_settypetag(v, -1, SQUserPointer(m_classid));
-			sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>)); // Set space for the weak pointer
+			sq_setclassudsize(v, -1, sq_udsize); // Set space for the weak pointer
 			sq_defineInt(v);
 			sq_createslot(v, -3);
 			return true;

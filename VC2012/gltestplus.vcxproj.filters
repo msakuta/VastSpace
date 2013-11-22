@@ -389,6 +389,9 @@
     <ClInclude Include="..\include\glw\PopupMenu.h">
       <Filter>Exported Headers\glw</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\sqserial.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

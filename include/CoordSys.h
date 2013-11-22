@@ -249,6 +249,9 @@ public:
 	/// Returns an Entity object being pointed to by an object in Squirrel stack.
 	static CoordSys *sq_refobj(HSQUIRRELVM, SQInteger idx = 1);
 
+	/// Size of Squirrel class user data, use "sq_setclassudsize(v, -1, CoordSys::sq_udsize)" in derived classes' sq_define().
+	static const SQInteger sq_udsize;
+
 	/// Class static information specific to CoordSys-derived class branch.
 	class Static{
 	public:
@@ -324,7 +327,8 @@ public:
 		sq_get(v, 1);
 		sq_newclass(v, SQTrue);
 		sq_settypetag(v, -1, SQUserPointer(T::classRegister.id));
-		sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>)); // classudsize is not inherited from CoordSys
+		// classudsize is not inherited from base class, that's Squirrel's specification.
+		sq_setclassudsize(v, -1, CoordSys::sq_udsize);
 		sq_createslot(v, -3);
 		return true;
 	}

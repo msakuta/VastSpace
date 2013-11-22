@@ -50,7 +50,8 @@ function cockpitView(e,seatid){
 	// relation operators (<,>,<=,=>,<=>), not equality operators (==,!=).
 	// For the time being, we use relation order operator (<=>) and compare its result to 0
 	// to make it work.
-	if(seatid == 2 && e.enemy != null && e.enemy.alive && (e.enemy.cs <=> e.cs) == 0){
+	// Update: we've fixed this.
+	if(seatid == 2 && e.enemy != null && e.enemy.alive && e.enemy.cs == e.cs){
 		ret.rot = e.rot * Quatd.direction(e.rot.cnj().trans(e.pos - e.enemy.pos));
 		ofs = ret.rot.trans(Vec3d(src[seatid][0], src[seatid][1], src[seatid][2] / player.fov)); // Trackback if zoomed
 	}

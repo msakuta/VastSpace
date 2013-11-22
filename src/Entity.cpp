@@ -5,19 +5,16 @@
 #include "Application.h"
 #include "EntityCommand.h"
 #include "Game.h"
-extern "C"{
-#include <clib/aquat.h>
-}
 #include "Beamer.h"
 #include "judge.h"
 #include "Player.h"
 #include "cmd.h"
 #include "Scarry.h"
 #include "RStation.h"
-//#include "glw/glwindow.h"
 #include "serial_util.h"
 #include "btadapt.h"
 #include "sqadapt.h"
+#include "sqserial.h"
 #include "stellar_file.h"
 #include "glw/PopupMenu.h"
 #include <btBulletDynamicsCommon.h>
@@ -167,7 +164,7 @@ static SQInteger sqf_Entity_constructor(HSQUIRRELVM v){
 ///
 /// \param size is always 0?
 static SQInteger sqh_release(SQUserPointer p, SQInteger size){
-	((WeakPtr<Entity>*)p)->~WeakPtr<Entity>();
+	((SqSerialPtr<Entity>*)p)->~SqSerialPtr<Entity>();
 	return 1;
 }
 
@@ -184,7 +181,9 @@ static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
 	return 1;
 }
 
-void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
+/// \brief Callback function that actually pushes the Entity
+static void pushEntity(HSQUIRRELVM v, Serializable *s){
+	Entity *e = static_cast<Entity*>(s);
 	sq_pushroottable(v);
 
 	// Using literal "Entity" here works to some extent, but we should create an instance of
@@ -203,10 +202,14 @@ void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
 	SQUserPointer p;
 	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)) || !p)
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
-	new(p) WeakPtr<Entity>(e);
+	new(p) SqSerialPtr<Entity>(v, e);
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
 	sq_remove(v, -2); // Remove root table
+}
+
+void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
+	sqserial_findobj(v, e, pushEntity);
 }
 
 Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
@@ -221,6 +224,8 @@ Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 		throw SQFError("Something's wrong with Squirrel Class Instace of Entity.");
 	return *(WeakPtr<Entity>*)up;
 }
+
+const SQInteger Entity::sq_udsize = sizeof(SqSerialPtr<Entity>);
 
 SQInteger Entity::sqf_Entity_get(HSQUIRRELVM v){
 	try{
@@ -614,7 +619,7 @@ bool Entity::EntityStaticBase::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("Entity"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, SQUserPointer(sq_classname()));
-	sq_setclassudsize(v, -1, sizeof(WeakPtr<Entity>));
+	sq_setclassudsize(v, -1, sq_udsize);
 	register_closure(v, _SC("constructor"), sqf_Entity_constructor);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<Entity, Vec3d, membergetter<Entity, Vec3d, &Entity::pos>, sq_refobj >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsic3<Entity, Vec3d, setpos, sq_refobj>);

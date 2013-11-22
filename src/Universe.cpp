@@ -382,7 +382,7 @@ bool Universe::sq_define(HSQUIRRELVM v){
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
-	sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>)); // classudsize is not inherited from CoordSys
+	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	sq_createslot(v, -3);

@@ -1389,17 +1389,20 @@ void CoordSys::unregisterClass(ClassId id){
 	::ctormap().erase(id);
 }
 
+const SQChar *objectsTableName = _SC("objects"); // This name could be controversial
+
+const SQInteger CoordSys::sq_udsize = sizeof(SqSerialPtr<CoordSys>);
+
 /// \brief The release hook of Entity that clears the weak pointer.
 ///
 /// \param size is always 0?
 static SQInteger sqh_release(SQUserPointer p, SQInteger size){
-	((WeakPtr<CoordSys>*)p)->~WeakPtr<CoordSys>();
+	((SqSerialPtr<CoordSys>*)p)->~SqSerialPtr<CoordSys>();
 	return 1;
 }
 
 // TODO: deleted object's entry should be removed
 void sqserial_findobj(HSQUIRRELVM v, Serializable *s, void create(HSQUIRRELVM v, Serializable *cs)){
-	static const SQChar *objectsTableName = _SC("objects"); // This name could be controversial
 	sq_pushroottable(v); // root
 	sq_pushstring(v, objectsTableName, -1); // root str
 	if(SQ_FAILED(sq_get(v, -2))){ // root table
@@ -1437,7 +1440,7 @@ static void pushCoordSys(HSQUIRRELVM v, Serializable *s){
 	SQUserPointer p;
 	if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
 		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
-	new(p) WeakPtr<CoordSys>(cs);
+	new(p) SqSerialPtr<CoordSys>(v, cs);
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
 	sq_remove(v, -2); // Remove root table
@@ -1452,7 +1455,7 @@ CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
 		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
-	return *(WeakPtr<CoordSys>*)up;
+	return *(SqSerialPtr<CoordSys>*)up;
 }
 
 
@@ -1711,7 +1714,7 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
-	sq_setclassudsize(v, -1, sizeof(WeakPtr<CoordSys>));
+	sq_setclassudsize(v, -1, sq_udsize);
 	register_closure(v, _SC("name"), sqf_name);
 	register_closure(v, _SC("getclass"), sqf_getclass);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos>, CoordSys::sq_refobj >);

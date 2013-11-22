@@ -4,6 +4,7 @@
 #ifndef SQSERIAL_H
 #define SQSERIAL_H
 #include "serial.h"
+#include "Observable.h"
 #include <squirrel.h>
 
 /// \brief Tries to find a Serializable object if it is already defined in the VM and
@@ -28,5 +29,33 @@
 ///               the stack, which means no other objects should be left pushed to the
 ///               stack after the callback is finished.
 void sqserial_findobj(HSQUIRRELVM v, Serializable *s, void create(HSQUIRRELVM v, Serializable *cs));
+
+extern const SQChar *objectsTableName;
+
+/// \brief A WeakPtr for use with Squirrel's class instance.
+template<typename T>
+class SqSerialPtr : public WeakPtr<T>{
+	HSQUIRRELVM v;
+public:
+	SqSerialPtr(HSQUIRRELVM v, T *o) : WeakPtr<CoordSys>(o), v(v){}
+	~SqSerialPtr(){}
+	bool unlink(const Observable *o)override{
+		// Do not invoke unlink() before getid()
+		SerializableId id = static_cast<T*>(*this)->getid();
+		// Do not invoke sq_deleteslot() before unlink()
+		bool ret = WeakPtr<T>::unlink(o);
+		do{
+			sq_pushroottable(v); // root
+			sq_pushstring(v, objectsTableName, -1); // root str
+			if(SQ_FAILED(sq_get(v, -2))) // root table
+				break;
+			sq_pushinteger(v, id); // root {} id
+			// This deleteslot in turn deletes this SqSerialPtr object.
+			sq_deleteslot(v, -2, SQFalse);
+		} while(0);
+		return ret;
+	}
+};
+
 
 #endif

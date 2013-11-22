@@ -289,6 +289,7 @@
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
     <ClInclude Include="..\include\Mesh.h" />
+    <ClInclude Include="..\src\sqserial.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

@@ -12,6 +12,7 @@
 #include "cmd.h"
 #include "serial_util.h"
 #include "sqadapt.h"
+#include "sqserial.h"
 #include "Universe.h"
 #ifndef DEDICATED
 #include "draw/WarDraw.h"
@@ -1396,7 +1397,34 @@ static SQInteger sqh_release(SQUserPointer p, SQInteger size){
 	return 1;
 }
 
-void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
+// TODO: deleted object's entry should be removed
+void sqserial_findobj(HSQUIRRELVM v, Serializable *s, void create(HSQUIRRELVM v, Serializable *cs)){
+	static const SQChar *objectsTableName = _SC("objects"); // This name could be controversial
+	sq_pushroottable(v); // root
+	sq_pushstring(v, objectsTableName, -1); // root str
+	if(SQ_FAILED(sq_get(v, -2))){ // root table
+		sq_newtable(v); // root {}
+		sq_pushroottable(v); // root {} root
+		sq_pushstring(v, objectsTableName, -1); // root {} root str
+		sq_push(v, -3); // root {} root str {}
+		sq_newslot(v, -3, SQFalse); // root {} root
+		sq_poptop(v); // root {}
+	}
+	sq_pushinteger(v, s->getid()); // root {} id
+	if(SQ_FAILED(sq_get(v, -2))){ // root {} obj
+		create(v, s);
+
+		sq_pushinteger(v, s->getid()); // root {} obj id
+		sq_push(v, -2); // root {} obj id obj
+		sq_newslot(v, -4, SQFalse); // root {id=obj} obj
+	}
+	sq_remove(v, -2); // Remove coordSysObjects table
+	sq_remove(v, -2); // Remove root table
+}
+
+/// \brief Callback function that actually pushes the CoordSys
+static void pushCoordSys(HSQUIRRELVM v, Serializable *s){
+	CoordSys *cs = static_cast<CoordSys*>(s);
 	sq_pushroottable(v);
 	CoordSys::CtorMap::const_iterator it = CoordSys::ctormap().find(cs->classname());
 	if(it == CoordSys::ctormap().end())
@@ -1413,6 +1441,10 @@ void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
 	sq_remove(v, -2); // Remove root table
+}
+
+void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
+	sqserial_findobj(v, cs, pushCoordSys);
 }
 
 CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){

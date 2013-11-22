@@ -18,6 +18,7 @@ extern "C"{
 #include "serial_util.h"
 #include "btadapt.h"
 #include "sqadapt.h"
+#include "sqserial.h"
 #include "stellar_file.h"
 #include "glw/PopupMenu.h"
 #include <btBulletDynamicsCommon.h>
@@ -184,7 +185,9 @@ static SQInteger sqf_Entity_tostring(HSQUIRRELVM v){
 	return 1;
 }
 
-void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
+/// \brief Callback function that actually pushes the Entity
+static void pushEntity(HSQUIRRELVM v, Serializable *s){
+	Entity *e = static_cast<Entity*>(s);
 	sq_pushroottable(v);
 
 	// Using literal "Entity" here works to some extent, but we should create an instance of
@@ -207,6 +210,10 @@ void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
 	sq_setreleasehook(v, -1, sqh_release);
 	sq_remove(v, -2); // Remove Class
 	sq_remove(v, -2); // Remove root table
+}
+
+void Entity::sq_pushobj(HSQUIRRELVM v, Entity *e){
+	sqserial_findobj(v, e, pushEntity);
 }
 
 Entity *Entity::sq_refobj(HSQUIRRELVM v, SQInteger idx){

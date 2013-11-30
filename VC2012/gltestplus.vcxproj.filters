@@ -25,6 +25,9 @@
     <Filter Include="Exported Headers\glw">
       <UniqueIdentifier>{1c875d73-7c81-4ec5-97f6-8db30dd0639b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Exported Headers\msg">
+      <UniqueIdentifier>{503af50b-eaf7-4470-9422-2e191bbd080f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -391,6 +394,192 @@
     </ClInclude>
     <ClInclude Include="..\src\sqserial.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Autonomous.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\BeamProjectile.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\BinDiff.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\antiglut.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Application.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\arms.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\astro.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\astro_star.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\astrodef.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\astrodraw.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\btadapt.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Builder.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\bitmap.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ClientMessage.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cmd.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\CoordSys-find.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\CoordSys.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Docker.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\dstring.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Entity.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\EntityCommand.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LTurret.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\export.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Frigate.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Game.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\GetFov.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glsl.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\glstack.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\judge.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\libmotion.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Missile.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\motion.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\serial.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\serial_util.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Server.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\shield.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Shipyard.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\sqadapt.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Player.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\StaticInitializer.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\stellar_file.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tefpol3d.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tent3d.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tent3d_forward.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Universe.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\VariantRegister.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Viewer.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\war.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\WarField_countEnt.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Warpable.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ysdnmmot.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\yssurf.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\blackbody.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\HDR.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\material.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\mqoadapt.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\OpenGLState.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\ShaderBind.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\ShadowMap.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\WarDraw.h">
+      <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\msg\Message.h">
+      <Filter>Exported Headers\msg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\msg\GetCoverPointsMessage.h">
+      <Filter>Exported Headers\msg</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -43,6 +43,7 @@ protected:
 	static Vec3d landingSite;
 	static HitBoxList hitboxes;
 	static std::vector<Navlight> navlights;
+	static HSQOBJECT sqGetCoverPoints;
 	static GLuint overlayDisp;
 };
 

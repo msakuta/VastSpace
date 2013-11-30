@@ -6,6 +6,8 @@
 #include "CoordSys.h"
 #include "WarMap.h"
 #include "TIN.h"
+#include "EntityCommand.h"
+#include "msg/GetCoverPointsMessage.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -47,6 +49,13 @@ protected:
 
 	void init();
 	friend class SurfaceWar;
+};
+
+struct GetCoverPointsCommand : EntityCommand{
+	COMMAND_BASIC_MEMBERS(GetCoverPointsCommand, EntityCommand);
+	GetCoverPointsCommand(){}
+	GetCoverPointsCommand(HSQUIRRELVM v, Entity &e);
+	CoverPointVector cpv;
 };
 
 #endif

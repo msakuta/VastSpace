@@ -43,6 +43,7 @@ public:
 	~SurfaceWar();
 	Vec3d accel(const Vec3d &pos, const Vec3d &velo)const override;
 	double atmosphericPressure(const Vec3d &pos)const override;
+	bool sendMessage(Message &)override;
 protected:
 	btStaticPlaneShape *groundPlane;
 	btRigidBody *groundBody;
@@ -380,7 +381,28 @@ double SurfaceWar::atmosphericPressure(const Vec3d &pos)const{
 	return exp(-pos[1] / scaleHeight);
 }
 
+bool SurfaceWar::sendMessage(Message &m){
+	if(GetCoverPointsMessage *p = InterpretMessage<GetCoverPointsMessage>(m)){
+		CoverPointVector &ret = p->cpv;
+		for(EntityList::iterator it = el.begin(); it != el.end(); ++it){
+			GetCoverPointsCommand com;
+			Entity *e = *it;
+			if(e->command(&com)){
+				for(CoverPointVector::iterator it2 = com.cpv.begin(); it2 != com.cpv.end(); ++it2)
+					ret.push_back(*it2);
+			}
+		}
+		return true;
+	}
+	else
+		return st::sendMessage(m);
+}
+
 SurfaceWar::~SurfaceWar(){
 	delete groundBody;
 	delete groundPlane;
 }
+
+IMPLEMENT_COMMAND(GetCoverPointsCommand, "GetCoverPointsCommand");
+
+GetCoverPointsCommand::GetCoverPointsCommand(HSQUIRRELVM v, Entity &e){}

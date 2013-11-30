@@ -1,3 +1,8 @@
+/** \file
+ * \brief Definition of SurfaceCS class.
+ */
+#ifndef SURFACECS_H
+#define SURFACECS_H
 #include "CoordSys.h"
 #include "WarMap.h"
 #include "TIN.h"
@@ -44,3 +49,4 @@ protected:
 	friend class SurfaceWar;
 };
 
+#endif

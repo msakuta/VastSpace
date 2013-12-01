@@ -5,8 +5,7 @@
 #define SCEPTOR_H
 
 #include "Autonomous.h"
-#include "Docker.h"
-#include "tefpol3d.h"
+#include "tent3d_forward.h"
 
 #define PIDAIM_PROFILE 0
 

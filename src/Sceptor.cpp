@@ -5,46 +5,23 @@
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
 #include "Sceptor.h"
-#include "Application.h"
-#include "Player.h"
-#include "Bullet.h"
-#include "judge.h"
-#include "serial_util.h"
-#include "Warpable.h"
 #include "Docker.h"
-#include "Scarry.h"
-//#include "draw/material.h"
-//#include "worker.h"
-//#include "glsl.h"
-//#include "astro_star.h"
-//#include "sensor.h"
-#include "cmd.h"
-//#include "astrodraw.h"
-#include "EntityCommand.h"
+#include "Bullet.h"
+#include "tefpol3d.h"
 #include "btadapt.h"
-#include "sqadapt.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #endif
 #include "motion.h"
-#include "Game.h"
 #ifndef DEDICATED
 #include "glw/PopupMenu.h"
 #endif
-#include "ClientMessage.h"
 #include "SqInitProcess-ex.h"
 extern "C"{
-#include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
 }
 #include <cpplib/CRC32.h>
-#include <assert.h>
-#include <string.h>
-#include <algorithm>
-#include <sstream>
 
 
 /* some common constants that can be used in static data definition. */

@@ -1,6 +1,6 @@
 #ifndef WAVESUM_H
 #define WAVESUM_H
-#include <stddef.h>
+#include "audio/wavemixer.h"
 #ifdef __cplusplus
 namespace audio{
 #endif
@@ -17,15 +17,9 @@ struct sounder8{
 	signed char priority;
 };
 
-struct movablesounder8{
-	const unsigned char *src;
+struct movablesounder8 : SoundSource{
 	size_t left;
-	size_t delay;
 	short serial;
-	unsigned short pitch; /* fixed point value of 256 */
-	double pos[3];
-	double vol;
-	double attn;
 };
 
 

@@ -362,7 +362,7 @@ int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vo
 	return 1;
 }
 
-int playWave3DCustom(const char *lpszWAVEFileName, const double pos[3], size_t delay, double vol, double attn, unsigned short pitch){
+int playWave3DCustom(const char *lpszWAVEFileName, const double pos[3], size_t delay, double vol, double attn, unsigned short pitch, bool loop){
 	static wavc_t *root = NULL;
 	wavc_t **node;
 	if(!lpszWAVEFileName) /* allow NULL pointer as file name */
@@ -385,10 +385,20 @@ int playWave3DCustom(const char *lpszWAVEFileName, const double pos[3], size_t d
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
-	return addsound3d((unsigned char*)(*node)->head.lpData, (*node)->head.dwBufferLength, delay, vol, attn, pos, pitch, (*node)->format.nSamplesPerSec);
+	SoundSource ss;
+	ss.src = (unsigned char*)(*node)->head.lpData;
+	ss.size = (*node)->head.dwBufferLength;
+	ss.delay = delay;
+	ss.vol = vol;
+	ss.attn = attn;
+	ss.pos = pos;
+	ss.pitch = pitch;
+	ss.srcpitch = (*node)->format.nSamplesPerSec;
+	ss.loop = loop;
+	return addsound3d(ss);
 }
 
-int playWave3DPitch(const char *fname, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay, unsigned short pitch){
+int playWave3DPitch(const char *fname, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay, unsigned short pitch, bool loop){
 	extern double dwo;
 	avec3_t delta, xhat;
 	double sdist, dist;
@@ -399,11 +409,11 @@ int playWave3DPitch(const char *fname, const double src[3], const double org[3],
 	xhat[1] = 0;
 	xhat[2] =- sin(pyr[1]);*/
 /*	return playWaveCustom(fname, (size_t)(SAMPLERATE * (dist / wave_sonic_speed)), (unsigned char)(256 * vol / (1. + sdist / attn)), 0, 128 * VECSP(delta, xhat) / dist, 0, 0);*/
-	return playWave3DCustom(fname, src, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo)), vol, attn, pitch);
+	return playWave3DCustom(fname, src, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo)), vol, attn, pitch, loop);
 }
 
-int playWave3D(const char *fname, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay){
-	return playWave3DPitch(fname, src, org, pyr, vol, attn, delay, 256);
+int playWave3D(const char *fname, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay, bool loop){
+	return playWave3DPitch(fname, src, org, pyr, vol, attn, delay, 256, loop);
 }
 
 int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay){
@@ -417,7 +427,17 @@ int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const d
 	xhat[1] = 0;
 	xhat[2] =  sin(pyr[1]);*/
 /*	return addsound(wav, size, (size_t)(SAMPLERATE * (dist / wave_sonic_speed)), (unsigned char)(256 * vol / (1. + sdist / attn)), pitch, -128 * VECSP(delta, xhat) / dist, 0, 0);*/
-	return addsound3d(wav, size, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo/* + dist / wave_sonic_speed*/)), vol, attn, src, pitch + 256, 8000);
+	SoundSource ss;
+	ss.src = wav;
+	ss.size = size;
+	ss.delay = delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo/* + dist / wave_sonic_speed*/));
+	ss.vol = vol;
+	ss.attn = attn;
+	ss.pos = src;
+	ss.pitch = pitch + 256;
+	ss.srcpitch = 8000;
+	ss.loop = false;
+	return addsound3d(ss);
 }
 
 int playMovableWave3D(const char *fname, const double src[3], double vol, double attn){

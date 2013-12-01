@@ -1,5 +1,8 @@
-#ifndef WAVESUM_H
-#define WAVESUM_H
+/** \file
+ * \brief Private header for 3-D sound mixing engine.
+ */
+#ifndef AUDIO_WAVESUM_H
+#define AUDIO_WAVESUM_H
 #include "audio/wavemixer.h"
 #ifdef __cplusplus
 namespace audio{

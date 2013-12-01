@@ -1,5 +1,8 @@
-#ifndef WAVEMIXER_H
-#define WAVEMIXER_H
+/** \file
+ * \brief Definition of 3-D sound mixing engine details.
+ */
+#ifndef AUDIO_WAVEMIXER_H
+#define AUDIO_WAVEMIXER_H
 #include "export.h"
 #include <stddef.h>
 

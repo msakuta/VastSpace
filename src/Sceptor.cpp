@@ -302,9 +302,7 @@ void Sceptor::shootDualGun(double dt){
 	}
 
 #ifndef DEDICATED
-	if(Player *player = game->player){
-		playWave3DPitch("sound/aagun.wav", this->pos, player->getpos(), vec3_000, 1., .2, w->realtime, 255);
-	}
+	playWave3D("sound/aagun.wav", this->pos, 1., .2, w->realtime);
 #endif
 
 	if(0 < --magazine)

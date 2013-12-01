@@ -84,7 +84,7 @@ protected:
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
 };
 
-/// \brief JSDF's type 90 main buttle tank.
+/// \brief JSDF's type 90 main battle tank.
 class Tank : public LandVehicle{
 public:
 	typedef LandVehicle st;

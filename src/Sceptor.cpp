@@ -17,6 +17,7 @@
 #include "glw/PopupMenu.h"
 #endif
 #include "SqInitProcess-ex.h"
+#include "audio/wavsound.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -300,8 +301,12 @@ void Sceptor::shootDualGun(double dt){
 		} while(!i++);
 	}
 
-//	shootsound(pt, w, p->cooldown);
-//	pt->shoots += 2;
+#ifndef DEDICATED
+	if(Player *player = game->player){
+		playWave3DPitch("sound/aagun.wav", this->pos, player->getpos(), vec3_000, 1., .2, w->realtime, 255);
+	}
+#endif
+
 	if(0 < --magazine)
 		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
 	else{

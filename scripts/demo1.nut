@@ -4,10 +4,10 @@
 local earthlo = universe.findcspath("/sol/earth/lo");
 if(!earthlo)
 	earthlo = universe.findcspath("/earth/lo");
-/*if(earthlo){
+if(earthlo){
 	player.cs = earthlo;
 	player.setpos(Vec3d(-1,0,0));
-}*/
+}
 
 if(1){
 	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
@@ -225,7 +225,7 @@ function frameproc(dt){
 				be.race = 1;
 			}
 		}
-		while(true && countents(cs, 0, "Soldier") < 1){
+		while(false && countents(cs, 0, "Soldier") < 1){
 			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.4 + (drand() - 0.5) * 0.10));
 			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 0;

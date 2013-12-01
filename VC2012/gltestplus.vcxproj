@@ -173,6 +173,8 @@
     <ClCompile Include="..\src\astro.cpp" />
     <ClCompile Include="..\src\astrodraw.cpp" />
     <ClCompile Include="..\src\Attacker.cpp" />
+    <ClCompile Include="..\src\audio\wavemixer.cpp" />
+    <ClCompile Include="..\src\audio\wavsound.cpp" />
     <ClCompile Include="..\src\Autonomous.cpp" />
     <ClCompile Include="..\src\avi.c" />
     <ClCompile Include="..\src\Battleship.cpp" />
@@ -276,6 +278,8 @@
     <ClInclude Include="..\include\astrodef.h" />
     <ClInclude Include="..\include\astrodraw.h" />
     <ClInclude Include="..\include\astro_star.h" />
+    <ClInclude Include="..\include\audio\wavemixer.h" />
+    <ClInclude Include="..\include\audio\wavsound.h" />
     <ClInclude Include="..\include\Autonomous.h" />
     <ClInclude Include="..\include\BeamProjectile.h" />
     <ClInclude Include="..\include\BinDiff.h" />
@@ -354,6 +358,7 @@
     <ClInclude Include="..\src\argtok.h" />
     <ClInclude Include="..\src\Assault.h" />
     <ClInclude Include="..\src\Attacker.h" />
+    <ClInclude Include="..\src\audio\wavesum.h" />
     <ClInclude Include="..\src\avi.h" />
     <ClInclude Include="..\src\Battleship.h" />
     <ClInclude Include="..\src\Beamer.h" />
@@ -369,7 +374,6 @@
     <ClInclude Include="..\src\sqserial.h" />
     <ClInclude Include="..\src\tent3d_p.h" />
     <ClInclude Include="..\src\TexSphere.h" />
-    <ClInclude Include="..\src\wavesum.h" />
     <ClInclude Include="..\src\Worker.h" />
   </ItemGroup>
   <ItemGroup>

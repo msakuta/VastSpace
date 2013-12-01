@@ -49,6 +49,7 @@
 #include "BinDiff.h"
 #include "avi.h"
 #include "sqadapt.h"
+#include "audio/wavemixer.h"
 #include "resource.h"
 
 extern "C"{
@@ -2390,6 +2391,13 @@ int main(int argc, char *argv[])
 
 #ifdef _WIN32
 	application.serverParams.hostname = "";  // The dialog defaults empty string
+#endif
+
+#if defined _WIN32
+	HANDLE hWaveThread;
+	extern timemeas_t tmwo;
+	static int wid = 512, hei = 384;
+	hWaveThread = CreateWaveOutThread();
 #endif
 
 	// Parse the command line

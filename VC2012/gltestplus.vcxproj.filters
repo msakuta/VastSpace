@@ -28,6 +28,15 @@
     <Filter Include="Exported Headers\msg">
       <UniqueIdentifier>{503af50b-eaf7-4470-9422-2e191bbd080f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\audio">
+      <UniqueIdentifier>{4b98dcc2-d41c-4d8b-9da1-028f5b958725}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\audio">
+      <UniqueIdentifier>{043caed1-eff2-4177-a4d7-8387fd47ee91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Exported Headers\audio">
+      <UniqueIdentifier>{7f0dce78-09be-4d45-8581-dde75bb746ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -329,6 +338,12 @@
     </ClCompile>
     <ClCompile Include="..\src\draw\Mesh-draw.cpp">
       <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\audio\wavemixer.cpp">
+      <Filter>Sources\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\audio\wavsound.cpp">
+      <Filter>Sources\audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -634,6 +649,15 @@
     </ClInclude>
     <ClInclude Include="..\src\Worker.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\audio\wavesum.h">
+      <Filter>Headers\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\audio\wavsound.h">
+      <Filter>Exported Headers\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\audio\wavemixer.h">
+      <Filter>Exported Headers\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

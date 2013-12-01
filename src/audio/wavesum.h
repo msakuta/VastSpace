@@ -1,8 +1,10 @@
 #ifndef WAVESUM_H
 #define WAVESUM_H
+#include <stddef.h>
 #ifdef __cplusplus
-extern "C"{
+namespace audio{
 #endif
+
 
 struct sounder8{
 	const unsigned char *src, *cur;
@@ -33,5 +35,6 @@ extern void amat4translate(double mr[16], double sx, double sy, double sz);
 
 #ifdef __cplusplus
 }
+using namespace audio;
 #endif
 #endif

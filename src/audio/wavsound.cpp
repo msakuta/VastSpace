@@ -14,6 +14,7 @@ extern "C"{
 
 #define SAMPLERATE 11025
 
+namespace audio{
 
 double wave_sonic_speed = 340.;
 
@@ -620,3 +621,4 @@ int playWAVEFile(const char *fname){fname; return 0;}
 int playWaveCustom(const char *fname, unsigned short, unsigned short, char pan){fname, pan; return 0;}
 #endif
 
+}

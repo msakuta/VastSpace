@@ -4,6 +4,8 @@
 
 #define WAVEMIX_SAMPLERATE 11025
 
+namespace audio{
+
 extern long wave_volume; /* max 255 */
 
 #ifdef _WIN32
@@ -30,5 +32,8 @@ typedef void *HWAVEOUT;
 #define WaveOutThread(pc)
 
 #endif
+
+}
+using namespace audio;
 
 #endif

@@ -15,6 +15,8 @@ extern "C"{
 #define MAXMIX 32
 #define EPSILON 0.001
 
+namespace audio{
+
 static HWAVEOUT hwo;
 
 #if SAMPLEBITS == 8
@@ -571,4 +573,6 @@ DWORD WINAPI WaveOutThread(HWAVEOUT *phwo){
 		WaveOutProc(*phwo, msg.message, (DWORD)0, msg.lParam, msg.wParam);
 	}
 	return 0;
+}
+
 }

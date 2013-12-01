@@ -1378,6 +1378,10 @@ void ClientApplication::display_func(void){
 	if(clientGame){
 		clientGame->anim(dt);
 
+		// Update sound source.  Rotation is conjugated because it's transformation from
+		// world to local coordinates, although the library expects the opposite.
+		setListener(clientGame->player->getpos(), clientGame->player->getrot().cnj());
+
 		clientGame->clientDraw(gametime, dt);
 	}
 

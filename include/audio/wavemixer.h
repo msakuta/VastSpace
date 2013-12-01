@@ -2,6 +2,9 @@
 #define WAVEMIXER_H
 #include "export.h"
 
+#include <cpplib/vec3.h>
+#include <cpplib/quat.h>
+
 #define WAVEMIX_SAMPLERATE 11025
 
 namespace audio{
@@ -18,8 +21,10 @@ EXPORT void initsound(void *src);
 EXPORT void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2);
 EXPORT DWORD WINAPI WaveOutThread(HWAVEOUT *);
 
-extern double listener_pos[3];
-extern double listener_xhat[3]; /* x unit vector because the unit system may vary */
+/// \brief Sets listener's position and orientation for the sound mixer.
+/// \param pos The position of the listener, in world coordinates
+/// \param rot The rotation orientation of the listener, in world coordinates
+EXPORT void setListener(const Vec3d &pos, const Quatd &rot);
 EXPORT int addsound3d(const unsigned char *src, size_t size, size_t delay, double vol, double attn, const double pos[3], unsigned short pitch, unsigned long srcpitch);
 EXPORT int movesound3d(int sid, const double pos[3]);
 

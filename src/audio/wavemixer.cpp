@@ -384,8 +384,16 @@ int movesound3d(int sid, const double pos[3]){
 	return sid;
 }
 
-double listener_pos[3] = {0.};
-double listener_xhat[3] = {1., 0., 0.};
+static Vec3d listener_pos(0,0,0);
+static Vec3d listener_xhat(1,0,0);
+
+void setListener(const Vec3d &pos, const Quatd &rot){
+	EnterCriticalSection(&gcs);
+	listener_pos = pos;
+	listener_xhat = rot.trans(Vec3d(1,0,0));
+	LeaveCriticalSection(&gcs);
+}
+
 double dwo;
 
 void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2){

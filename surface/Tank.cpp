@@ -9,6 +9,7 @@
 #include "glw/GLWchart.h"
 #include "SqInitProcess-ex.h"
 #include "audio/wavsound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -50,11 +51,11 @@ const unsigned Tank::classid = registerClass("Tank", Conster<Tank>);
 Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
 
-Tank::Tank(Game *game) : st(game){
+Tank::Tank(Game *game) : st(game), gunsid(0){
 	init();
 }
 
-Tank::Tank(WarField *aw) : st(aw){
+Tank::Tank(WarField *aw) : st(aw), gunsid(0){
 	init();
 	health = getMaxHealth();
 	steer = 0.;
@@ -270,7 +271,7 @@ int Tank::shootcannon(double dt){
 
 #		ifndef DEDICATED
 	if(Player *player = game->player){
-		playWave3DPitch(modPath() << "sound/tank-gun.wav", this->pos, player->getpos(), vec3_000, 1., .2, w->realtime, 255);
+		gunsid = playWave3DPitch(modPath() << "sound/tank-gun.wav", this->pos, player->getpos(), vec3_000, 1., .2, w->realtime, 255);
 	}
 #		endif
 #endif
@@ -923,6 +924,11 @@ void Tank::anim(double dt){
 		else
 			cooldown2 -= dt;
 	}
+
+#ifndef DEDICATED
+	if(gunsid != 0)
+		movesound3d(gunsid, this->pos);
+#endif
 
 }
 

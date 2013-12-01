@@ -14,6 +14,7 @@
 #endif
 #include "Launcher.h"
 #include "audio/wavsound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/cfloat.h>
 }
@@ -127,8 +128,15 @@ void Apache::init(){
 		p->sw[i].phase = p->sw[i].amount = 0.;*/
 }
 
-Apache::Apache(WarField *w) : st(w){
+Apache::Apache(WarField *w) : st(w), rotorSid(0){
 	init();
+}
+
+void Apache::leaveField(WarField *w){
+	if(rotorSid){
+		stopsound3d(rotorSid);
+		rotorSid = 0;
+	}
 }
 
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -480,6 +488,12 @@ void Apache::anim(double dt){
 	// Align belonging arms at the end of frame
 	for(ArmList::iterator it = arms.begin(); it != arms.end(); ++it) if(*it)
 		(*it)->align();
+
+	if(!rotorSid){
+		rotorSid = playWave3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 0.1, 0, true);
+	}
+	else
+		movesound3d(rotorSid, this->pos);
 }
 
 

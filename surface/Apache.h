@@ -15,8 +15,9 @@ class Apache : public Aerial{
 public:
 	typedef Aerial st;
 	static EntityRegister<Apache> entityRegister;
-	Apache(Game *game) : st(game){}
+	Apache(Game *game) : st(game), rotorSid(0){}
 	Apache(WarField *w);
+	void leaveField(WarField *leavingField)override;
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
 	void control(const input_t *inputs, double dt)override;
 	void anim(double dt)override;
@@ -51,6 +52,7 @@ protected:
 	typedef ObservableList<ArmBase> ArmList;
 	ArmList arms;
 	int ammo_chaingun;
+	int rotorSid; ///< Rotor's Sound ID
 
 	void init();
 	void find_enemy_logic();

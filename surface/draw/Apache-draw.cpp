@@ -3,14 +3,12 @@
  */
 #define NOMINMAX
 #include "../Apache.h"
-#include "../Launcher.h"
+#include "arms.h"
 #include "draw/WarDraw.h"
 #include "draw/mqoadapt.h"
 #include "draw/OpenGLState.h"
 #include "draw/effects.h"
 extern "C"{
-#include <clib/cfloat.h>
-#include <clib/mathdef.h>
 #include <clib/gl/gldraw.h>
 }
 

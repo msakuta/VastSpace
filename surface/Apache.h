@@ -6,8 +6,6 @@
 #include "Aerial.h"
 #include "Model-forward.h"
 #include "Motion-forward.h"
-#include "arms.h"
-#include "SqInitProcess-ex.h"
 
 
 /// \brief AH-64 Apache attack helicopter

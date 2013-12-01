@@ -23,11 +23,11 @@
 #include "glw/PopupMenu.h"
 #include "tefpol3d.h"
 #include "SqInitProcess-ex.h"
+#include "audio/playSound.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/wavsound.h>
 #include <clib/zip/UnZip.h>
 #include <clib/timemeas.h>
 }
@@ -319,6 +319,7 @@ ReZEL::ReZEL(Game *game) :
 	mother(NULL),
 	paradec(-1),
 	vulcancooldown(0.f),
+	vulcanSoundCooldown(0.f),
 	vulcanmag(vulcanMagazineSize),
 	twist(0.f),
 	pitch(0.f),
@@ -347,6 +348,7 @@ ReZEL::ReZEL(WarField *aw) : st(aw),
 	weapon(0),
 	fweapon(0.),
 	vulcancooldown(0.f),
+	vulcanSoundCooldown(0.f),
 	vulcanmag(vulcanMagazineSize),
 	submagazine(3),
 	twist(0.f),
@@ -516,8 +518,9 @@ void ReZEL::shootRifle(double dt){
 		pb->velo += this->velo;
 		this->heat += .025;
 	}
-//	shootsound(pt, w, p->cooldown);
-//	pt->shoots += 2;
+#ifndef DEDICATED
+	playSound3D(modPath() << "sound/beamrifle.ogg", this->pos, 1, 0.1, 0);
+#endif
 	if(0 < --magazine)
 		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
@@ -610,6 +613,16 @@ void ReZEL::shootVulcan(double dt){
 		pb->velo += this->velo;
 		this->heat += .025;
 	}
+
+#ifndef DEDICATED
+	// Prevent rapid fire from cluttering sound mixing buffer by limiting minimum interval of
+	// addition of sound source.
+	if(vulcanSoundCooldown < dt){
+		playSound3D(modPath() << "sound/vulcan.ogg", this->pos, 0.5, 0.1, 0);
+		vulcanSoundCooldown += 0.5;
+	}
+#endif
+
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
 	if(0 < --vulcanmag)
@@ -1607,6 +1620,7 @@ void ReZEL::anim(double dt){
 
 			freload = approach(freload, 0., dt, 0.);
 			vulcancooldown = approach(vulcancooldown, 0., dt, 0.);
+			vulcanSoundCooldown = approach(vulcanSoundCooldown, 0., dt, 0.);
 
 #if 0
 			if((pf->away ? 1. * 1. : .3 * .3) < VECSLEN(delta)/* && 0 < VECSP(pt->velo, pt->pos)*/){
@@ -2035,7 +2049,7 @@ int ReZEL::takedamage(double damage, int hitpart){
 	Teline3List *tell = w->getTeline3d();
 	if(this->health < 0.)
 		return 1;
-//	this->hitsound = playWave3D("hit.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
+//	this->hitsound = playWave3D("hit.wav", this->pos, game->player->getpos(), vec3_000, 1., .01, w->realtime);
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;

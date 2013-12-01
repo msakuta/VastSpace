@@ -99,6 +99,7 @@ protected:
 	double cooldown;
 	Vec3d dest;
 	float vulcancooldown;
+	float vulcanSoundCooldown;
 	float fcloak;
 	float heat;
 	float fwaverider; ///< Phase of transformation to wave rider

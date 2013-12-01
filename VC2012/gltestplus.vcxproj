@@ -351,7 +351,26 @@
     <ClInclude Include="..\include\Warpable.h" />
     <ClInclude Include="..\include\ysdnmmot.h" />
     <ClInclude Include="..\include\yssurf.h" />
+    <ClInclude Include="..\src\argtok.h" />
+    <ClInclude Include="..\src\Assault.h" />
+    <ClInclude Include="..\src\Attacker.h" />
+    <ClInclude Include="..\src\avi.h" />
+    <ClInclude Include="..\src\Battleship.h" />
+    <ClInclude Include="..\src\Beamer.h" />
+    <ClInclude Include="..\src\cmd_int.h" />
+    <ClInclude Include="..\src\Defender.h" />
+    <ClInclude Include="..\src\Destroyer.h" />
+    <ClInclude Include="..\src\galaxy_field.h" />
+    <ClInclude Include="..\src\keybind.h" />
+    <ClInclude Include="..\src\Respawn.h" />
+    <ClInclude Include="..\src\RStation.h" />
+    <ClInclude Include="..\src\Scarry.h" />
+    <ClInclude Include="..\src\Sceptor.h" />
     <ClInclude Include="..\src\sqserial.h" />
+    <ClInclude Include="..\src\tent3d_p.h" />
+    <ClInclude Include="..\src\TexSphere.h" />
+    <ClInclude Include="..\src\wavesum.h" />
+    <ClInclude Include="..\src\Worker.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

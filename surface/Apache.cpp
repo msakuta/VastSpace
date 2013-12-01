@@ -13,6 +13,7 @@
 #include "tefpol3d.h"
 #endif
 #include "Launcher.h"
+#include "audio/wavsound.h"
 extern "C"{
 #include <clib/cfloat.h>
 }
@@ -640,8 +641,8 @@ int Apache::shootChainGun(double dt){
 	Mat4d mat;
 	transform(mat);
 
-//	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
 	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
+		bool shot = false;
 		while(0 < ammo_chaingun && cooldown < dt){
 
 			double t = w->war_time() + cooldown;
@@ -685,7 +686,10 @@ int Apache::shootChainGun(double dt){
 #endif
 			this->muzzle = 1;
 			this->ammo_chaingun--;
+			shot = true;
 		}
+		if(shot)
+			playWave3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, .01);
 	}
 	return ret;
 }

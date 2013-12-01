@@ -8,6 +8,7 @@
 #include "motion.h"
 #include "glw/GLWchart.h"
 #include "SqInitProcess-ex.h"
+#include "audio/wavsound.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -266,12 +267,10 @@ int Tank::shootcannon(double dt){
 //		p->ammo[0]--;
 		this->cooldown += mainGunCooldown;
 		this->muzzle |= 1;
-#		if 0 // Wait the sound engine
-	{
-		double s;
-		s = 1. / (VECSDIST(pb->pos, w->pl->pos) + 1.);
-		playWave3DPitch("rc.zip/sound/tank_001.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, s, .2, w->realtime, 255);
-		playWave3DPitch("rc.zip/sound/tank_001_far2.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, 1 - s, 20., w->realtime, 255);
+
+#		ifndef DEDICATED
+	if(Player *player = game->player){
+		playWave3DPitch(modPath() << "sound/tank-gun.wav", this->pos, player->getpos(), vec3_000, 1., .2, w->realtime, 255);
 	}
 #		endif
 #endif

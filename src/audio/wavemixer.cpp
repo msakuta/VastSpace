@@ -368,7 +368,8 @@ int addsound3d(const SoundSource &s){
 	return ret;
 }
 
-int movesound3d(int sid, const double pos[3]){
+template<typename T>
+static int modifysound3d(int sid, T modifier){
 	unsigned i = sid & 0xffff;
 	short serial = sid >> 16;
 	int ret = sid;
@@ -381,25 +382,33 @@ int movesound3d(int sid, const double pos[3]){
 		ret = -1;
 	}
 	else{
-		VECCPY(msounders[i].pos, pos);
+		modifier(msounders[i]);
 	}
 	LeaveCriticalSection(&gcs);
 
 	return sid;
 }
 
+// We use C++11's lambda expression extensively.
+// This means the sound engine cannot be compiled with older compilers.
+// We prefer productivity than backward-compatibility here since all production compilers
+// would support C++11 at the time this software is released.
+// What a big leap, considering this source was in C a few days ago.
+
+int movesound3d(int sid, const Vec3d &pos){
+	return modifysound3d(sid, [&pos](msounder &m){ m.pos = pos; });
+}
+
+int volumesound3d(int sid, double vol){
+	return modifysound3d(sid, [&vol](msounder &m){ m.vol = vol; });
+}
+
+int pitchsound3d(int sid, double pitch){
+	return modifysound3d(sid, [&pitch](msounder &m){ m.pitch = max(1, long(256 * pitch)); });
+}
+
 int stopsound3d(int sid){
-	unsigned i = sid & 0xffff;
-	short serial = sid >> 16;
-	int ret = sid;
-	if(numof(msounders) <= i)
-		return -1;
-	EnterCriticalSection(&gcs);
-	if(msounders[i].serial != serial)
-		ret = -1;
-	else
-		stopsound3d(&msounders[i]);
-	LeaveCriticalSection(&gcs);
+	return modifysound3d(sid, [](msounder &m){ stopsound3d(&m); });
 }
 
 static Vec3d listener_pos(0,0,0);

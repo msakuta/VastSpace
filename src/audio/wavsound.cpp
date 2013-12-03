@@ -1,5 +1,8 @@
+#define USE_OGGVORBIS 1
+
 #include "audio/wavsound.h"
 #include "audio/wavemixer.h"
+#include "cmd.h"
 extern "C"{
 #include "clib/c.h"
 #include "clib/zip/UnZip.h"
@@ -9,8 +12,15 @@ extern "C"{
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <vector>
 //#include <dsound.h>
+extern "C"{
 #include "clib/avec3.h"
+}
+
+#if USE_OGGVORBIS
+#include <vorbis/vorbisfile.h>
+#endif
 
 #define SAMPLERATE 11025
 
@@ -287,9 +297,80 @@ wavc_t *cacheWaveDataV(int fromMemory, FILE *hmmio)
 }
 
 wavc_t *cacheWaveData(const char *fname){
+	const char *p = strrchr(fname, '.');
+
+#if USE_OGGVORBIS
+	// If the file ends with .ogg extension, try interpreting as Ogg Vorbis.
+	if(p && !strcmp(p, ".ogg")){
+		OggVorbis_File vf;
+		int error = ov_fopen(fname, &vf);
+
+		if(error != 0){
+			switch(error){ // Report file errors
+			case OV_EREAD:       CmdPrintf("Ogg Vorbis OV_EREAD: %s", fname); break;
+			case OV_ENOTVORBIS:  CmdPrintf("Ogg Vorbis OV_ENOTVORBIS: %s", fname); break;
+			case OV_EVERSION:    CmdPrintf("Ogg Vorbis OV_EVERSION: %s", fname); break;
+			case OV_EBADHEADER:  CmdPrintf("Ogg Vorbis OV_EBADHEADER: %s", fname); break;
+			case OV_EFAULT:      CmdPrintf("Ogg Vorbis OV_EFAULT: %s", fname); break;
+			default:             CmdPrintf("Ogg Vorbis Unknown Error: %s", fname); break;
+			}
+			return nullptr;
+		}
+
+		vorbis_info *vi = ov_info( &vf, -1 );
+		if(!vi)
+			return nullptr;
+
+		// Only monoral sound sources are allowed as sound effects.
+		if(vi->channels != 1){
+			ov_clear( &vf );
+			return nullptr;
+		}
+
+		// Read into the buffer
+		std::vector<char> buffer;
+		long comSize = 0;
+		while(true){
+			static char tmpBuffer[4096]; // Recommended buffer size by Ogg Vorbis documentation.
+			int current_section;
+			long bytes_read = ov_read(&vf, tmpBuffer, sizeof tmpBuffer, 0, 1, 0, &current_section);
+			if(bytes_read == 0)
+				break;
+			buffer.resize(comSize + bytes_read);
+			memcpy(&buffer[comSize], tmpBuffer, bytes_read);
+			comSize += bytes_read;
+		}
+
+		if(!buffer.size()){
+			ov_clear( &vf );
+			return nullptr;
+		}
+
+		// Allocate wave cache entry for returning.
+		wavc_t *ret = (wavc_t*)malloc(sizeof(wavc_t) + buffer.size());
+		ret->format.wFormatTag = WAVE_FORMAT_PCM;
+		ret->format.nChannels = vi->channels;
+		ret->format.nSamplesPerSec = vi->rate;
+		ret->format.nAvgBytesPerSec = vi->bitrate_nominal;
+		ret->format.nBlockAlign = vi->channels;
+		ret->format.wBitsPerSample = vi->bitrate_nominal * 8;
+		ret->format.cbSize = 0;
+		ret->head.lpData = (LPSTR)&ret[1];
+		ret->head.dwBufferLength = buffer.size();
+		ret->head.dwFlags = 0L;
+		ret->head.dwLoops = 0L;
+		memcpy(&ret[1], &buffer.front(), buffer.size());
+
+		ov_clear( &vf );
+
+		return ret;
+	}
+#endif
+
 	wavc_t *ret;
 	FILE *hmmio;
 	hmmio = fopen(fname, "rb");
+
 	if(!hmmio){
 		const char *p, *sup = fname;
 		do{

@@ -60,6 +60,8 @@ protected:
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
 	Sceptor *formPrev; ///< previous member in the formation
 	Attitude attitude;
+	int thrustSid; ///< Sound ID for thrusters
+	int thrustHiSid; ///< Sound ID of high frequency component for thrusters
 
 	static const avec3_t gunPos[2];
 	static EnginePosList enginePos, enginePosRev;

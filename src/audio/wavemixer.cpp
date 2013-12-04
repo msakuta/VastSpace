@@ -204,20 +204,17 @@ static void wavesum8s(unsigned short *dst, struct sounder8 src[], unsigned long 
 	}
 }
 
-static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsigned long maxt, int nsrc, const double view[3], const double xh[3]){
-	int i, t;
-	msounder *pms[MAXMIX];
+static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsigned long maxt, int nsrc, const Vec3d &view, const Vec3d &xh){
+	msounder *pms[MAXMIX]; // Temprary msounder array for sorting by calculated volume
 	int m = 0;
-	double minvol = 1.;
-	long pan[MAXMIX];
-	long vol[MAXMIX];
-	for(i = 0; i < nsrc; i++) if(src[i].left && src[i].delay < numof(soundbuf[0])){
-		double sdist;
-		long v;
-		sdist = VECSDIST(src[i].pos, view);
+	const long voldiv = 0x10000; // Volume divisor, adjust by sample bit depth
+	long pan[MAXMIX]; // Calculated pan position
+	long vol[MAXMIX]; // Calculated volume
+	for(int i = 0; i < nsrc; i++) if(src[i].left && src[i].delay < numof(soundbuf[0])){
+		double sdist = (src[i].pos - view).slen();
 
 		/* calculate the volume once in a timeslice */
-		v = 256 * src[i].vol / (1. + sdist / src[i].attn);
+		long v = voldiv * src[i].vol / (1. + sdist / src[i].attn);
 
 		/* dont calculate too small sounds */
 		if(v <= 2)
@@ -234,11 +231,9 @@ static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsign
 			m++;
 		}
 		else if(vol[MAXMIX-1] < v){
-			int j;
-
 			/* note that older msounder precedes, to prevent sound chops
 			  caused by rapid repeats of sounds having the same volume. */
-			for(j = m-1; j; j--) if(j == 0 || v <= vol[j-1]){
+			for(int j = m-1; j; j--) if(j == 0 || v <= vol[j-1]){
 				memmove(&pms[j+1], &pms[j], (m - j - 1) * sizeof *pms);
 				memmove(&vol[j+1], &vol[j], (m - j - 1) * sizeof *vol);
 				pms[j] = &src[i];
@@ -247,25 +242,22 @@ static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsign
 			}
 		}
 	}
-	for(i = 0; i < m; i++) if(pms[i]->left || pms[i]->loop){
-		double sdist;
-		double dist;
-		double *pos = pms[i]->pos;
-		sdist = VECSDIST(pms[i]->pos, view);
-		dist = sqrt(sdist);
+	for(int i = 0; i < m; i++) if(pms[i]->left || pms[i]->loop){
+		const Vec3d &pos = pms[i]->pos;
+		double dist = (pms[i]->pos - view).len();
 
 		/* get scalar product of the 'ear' vector and offset from the viewpoint */
-		pan[i] = 128 * (xh[0] * (pos[0] - view[0]) + xh[1] * (pos[1] - view[1]) + xh[2] * (pos[2] - view[2])) / dist;
+		pan[i] = 128 * xh.sp(pos - view) / dist;
 	}
-	for(t = 0; t < maxt; t++){
+	for(int t = 0; t < maxt; t++){
 		long tt0 = 0, tt1 = 0;
-		for(i = 0; i < m; i++){
+		for(int i = 0; i < m; i++){
 			long srct = (t - pms[i]->delay) * pms[i]->pitch / 256;
 			if(pms[i]->loop && pms[i]->left < srct)
 				srct -= pms[i]->size;
 			if(pms[i]->loop || 0 <= srct && srct < pms[i]->left){
-				tt0 += ((long)pms[i]->src[srct] - 128) * vol[i] * (128 - pan[i]) / 256;
-				tt1 += ((long)pms[i]->src[srct] - 128) * vol[i] * (pan[i] + 128) / 256;
+				tt0 += ((long)pms[i]->src[srct] - 128) * vol[i] * (128 - pan[i]) / voldiv;
+				tt1 += ((long)pms[i]->src[srct] - 128) * vol[i] * (pan[i] + 128) / voldiv;
 			}
 		}
 #if SAMPLEBITS == 8

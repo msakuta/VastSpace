@@ -291,15 +291,13 @@ static int louder(const msounder **a, const msounder **b){
 	return la < lb ? 1 : lb < la ? -1 : 0;
 }
 
-static int stopsound3d(msounder *src){
-	if(src->serial < numof(sounders)){
-		sounders[src->serial].left = 0;
-		sounders[src->serial].loops = 0;
-		src->serial = numof(sounders);
-		return 1;
-	}
-	else
-		return 0;
+static void stopsound3d(msounder *src){
+	// Differentiate serial number to prevent referrers from updating already stopped sound.
+	// Note that addsound3d calls this prior to allocating new sound, so serial number 0
+	// is never returned for a valid sound.
+	src->serial++;
+	src->left = 0;
+	src->loop = false;
 }
 
 static void setmsounders(sounder *dst, int ndst, msounder *src, int nsrc){
@@ -353,7 +351,6 @@ int addsound3d(const SoundSource &s){
 	else
 		added->left = 0;
 	assert(0 <= (int)added->left);
-	added->serial++;
 	added->pitch = (unsigned short)(s.pitch * s.srcpitch / SAMPLERATE);
 	ret = (added->serial << 16) | (added - msounders);
 	LeaveCriticalSection(&gcs);

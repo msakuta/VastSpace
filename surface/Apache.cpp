@@ -515,6 +515,11 @@ int Apache::takedamage(double damage, int hitpart){
 	}
 	health -= damage;
 	if(health < -100.){
+		// We need to explicitly call leaveField() here because the destructor of Entity calls
+		// Entity::leaveField(), not Apache::leaveField().  The derived class ought to be destroyed
+		// by the time of super class's destruction, so it cannot call method of derived.
+		// It means Entity::leaveField() is called twice.  Is there any nice way to avoid this?
+		leaveField(w);
 		delete this;
 	}
 	return ret;

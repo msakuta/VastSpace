@@ -17,7 +17,7 @@ extern double wave_sonic_speed;
 
 extern EXPORT struct wavecache *cacheWaveFile(const char *lpszWAVEFileName);
 extern EXPORT int playWAVEFile(const char *lpszWAVEFileName);
-extern EXPORT int playWaveCustom(const char *lpszWAVEFileName, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, signed char priority, double delay);
+extern EXPORT int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority);
 
 /// \brief Play WAV format sound file in 3-D space.
 /// \param lpszWAVEFileName The file name of the WAV.

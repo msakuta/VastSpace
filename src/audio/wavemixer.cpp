@@ -90,7 +90,6 @@ HANDLE CreateWaveOutThread(void){
 		return ret;
 }
 
-typedef struct sounder8 sounder;
 typedef struct movablesounder8 msounder;
 
 static sounder sounders[32];
@@ -99,7 +98,7 @@ static int isounder = 0;
 static msounder msounders[128];
 static short imsounder = 0;
 
-int addsound(const unsigned char *src, size_t size, size_t delay, short vol, short pitch, char pan, unsigned short loops, char priority){
+int addsound(const void *src, int sampleBytes, size_t size, size_t delay, short vol, short pitch, char pan, unsigned short loops, char priority){
 	int i;
 	sounder *ps;
 	if(vol < 16 || !size)
@@ -113,8 +112,9 @@ int addsound(const unsigned char *src, size_t size, size_t delay, short vol, sho
 	if(i == numof(sounders))
 		return -1;
 	ps = &sounders[isounder];
+	ps->sampleBytes = sampleBytes;
 	ps->src =
-	ps->cur = src;
+	ps->cur = (decltype(ps->src))src;
 	ps->size = 
 	ps->left = size;
 	ps->delay = delay;
@@ -143,7 +143,7 @@ int stopsound(char priority){
 int maddsound(const unsigned char *src, size_t size, size_t delay, const double pos[3], double vol, double attn){
 	msounder *s;
 	s = &msounders[imsounder];
-	s->src = src;
+	s->src = (decltype(s->src))src;
 	s->left = size;
 	s->delay = delay;
 	s->serial++;
@@ -177,17 +177,25 @@ void initsound(void *pv){
 #endif
 }
 
-static void wavesum8s(unsigned short *dst, struct sounder8 src[], unsigned long maxt, int nsrc){
+static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 	int t;
 	for(t = 0; t < maxt; t++){
 		long tt0 = 0, tt1 = 0;
 		int i;
 		for(i = 0; i < nsrc; i++){
-			size_t left = src[i].pitch == 0 ? src[i].left : src[i].left * 32 / (src[i].pitch + 32);
-			if(src[i].delay < t && t < left + src[i].delay){
-				long value = src[i].vol * (src[i].pitch == 0 ? ((long)src[i].cur[t - src[i].delay] - 128) : src[i].cur[t * (src[i].pitch + 32) / 32 - src[i].delay] - 128);
-				tt0 += value * (128 + src[i].pan);
-				tt1 += value * (127 - src[i].pan);
+			sounder &s = src[i];
+			size_t left = s.pitch == 0 ? s.left : s.left * 256 / (s.pitch + 256);
+			if(s.delay < t && t < left + s.delay){
+				if(s.sampleBytes == 1){
+					long value = s.vol * (s.pitch == 0 ? ((long)s.cur[t - s.delay] - 128) : s.cur[t * (s.pitch + 256) / 256 - s.delay] - 128);
+					tt0 += value * (128 + s.pan);
+					tt1 += value * (127 - s.pan);
+				}
+				else{
+					long value = s.vol * (s.pitch == 0 ? (long)s.cur16[t - s.delay] : s.cur16[t * (s.pitch + 256) / 256 - s.delay]);
+					tt0 += value * (128 + s.pan) / 256;
+					tt1 += value * (127 - s.pan) / 256;
+				}
 			}
 		}
 #if SAMPLEBITS == 8
@@ -256,8 +264,14 @@ static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsign
 			if(pms[i]->loop && pms[i]->left < srct)
 				srct -= pms[i]->size;
 			if(pms[i]->loop || 0 <= srct && srct < pms[i]->left){
-				tt0 += ((long)pms[i]->src[srct] - 128) * vol[i] * (128 - pan[i]) / voldiv;
-				tt1 += ((long)pms[i]->src[srct] - 128) * vol[i] * (pan[i] + 128) / voldiv;
+				if(pms[i]->sampleBytes == 1){
+					tt0 += ((long)pms[i]->src[srct] - 128) * vol[i] * (128 - pan[i]) / voldiv;
+					tt1 += ((long)pms[i]->src[srct] - 128) * vol[i] * (pan[i] + 128) / voldiv;
+				}
+				else{
+					tt0 += pms[i]->src16[srct] * vol[i] / 256 * (128 - pan[i]) / voldiv;
+					tt1 += pms[i]->src16[srct] * vol[i] / 256 * (pan[i] + 128) / voldiv;
+				}
 			}
 		}
 #if SAMPLEBITS == 8
@@ -332,6 +346,7 @@ static void setmsounders(sounder *dst, int ndst, msounder *src, int nsrc){
 int addsound3d(const SoundSource &s){
 	msounder *added;
 	int ret;
+	assert(0 < s.sampleBytes);
 	EnterCriticalSection(&gcs);
 
 	// Find first msounder whose loop param is false
@@ -445,7 +460,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 //			memset(pwho->lpData, 0x80, sizeof soundbuf[0]);
 		else{
 #if 1
-			wavesum8s((sbits*)pwho->lpData, sounders, numof(soundbuf[0]), numof(sounders));
+			wavesum((sbits*)pwho->lpData, sounders, numof(soundbuf[0]), numof(sounders));
 #else
 			for(t = 0; t < numof(soundbuf[0]); t++){
 				long tt = 0;
@@ -459,28 +474,31 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 #endif
 
 			// advance buffers
-			for(i = 0; i < numof(sounders); i++) if(sounders[i].left){
-				unsigned tt2 = numof(soundbuf[0]) * (sounders[i].pitch + 32) / 32;
-				if(sounders[i].delay < tt2){
-					tt2 -= sounders[i].delay;
-					sounders[i].delay = 0;
+			for(i = 0; i < numof(sounders); i++){
+				sounder &s = sounders[i];
+				if(!s.left)
+					continue;
+				unsigned tt2 = numof(soundbuf[0]) * (s.pitch + 256) / 256;
+				if(s.delay < tt2){
+					tt2 -= s.delay;
+					s.delay = 0;
 				}
 				else{
-					sounders[i].delay -= tt2;
+					s.delay -= tt2;
 					tt2 = 0;
 				}
-				if(sounders[i].left < tt2){
-					if(!sounders[i].loops)
-						sounders[i].left = 0;
+				if(s.left < tt2){
+					if(!s.loops)
+						s.left = 0;
 					else{
-						sounders[i].left = sounders[i].size;
-						sounders[i].cur = sounders[i].src;
-						sounders[i].loops--;
+						s.left = s.size;
+						s.cur = s.src;
+						s.loops--;
 					}
 				}
 				else if(tt2){
-					sounders[i].left -= tt2;
-					sounders[i].cur += tt2;
+					s.left -= tt2;
+					s.cur += s.sampleBytes * tt2;
 				}
 			}
 		}
@@ -506,7 +524,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				}
 				if(m.left < tt2){
 					if(m.loop){
-						m.src -= m.size - tt2;
+						m.src -= m.sampleBytes * (m.size - tt2);
 						m.left += m.size - tt2;
 					}
 					else
@@ -514,7 +532,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				}
 				else if(tt2){
 					m.left -= tt2;
-					m.src += tt2;
+					m.src += m.sampleBytes * tt2;
 				}
 			}
 		}

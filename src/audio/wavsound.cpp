@@ -302,6 +302,7 @@ wavc_t *cacheWaveData(const char *fname){
 #if USE_OGGVORBIS
 	// If the file ends with .ogg extension, try interpreting as Ogg Vorbis.
 	if(p && !strcmp(p, ".ogg")){
+		static const int bytesPerSample = 2; // Preferred sample byte size
 		OggVorbis_File vf;
 		int error = ov_fopen(fname, &vf);
 
@@ -331,35 +332,36 @@ wavc_t *cacheWaveData(const char *fname){
 		std::vector<char> buffer;
 		long comSize = 0;
 		while(true){
-			static char tmpBuffer[4096]; // Recommended buffer size by Ogg Vorbis documentation.
+			static const long fetch_size = 4096;
+			buffer.resize(comSize + fetch_size);
 			int current_section;
-			long bytes_read = ov_read(&vf, tmpBuffer, sizeof tmpBuffer, 0, 1, 0, &current_section);
+			long bytes_read = ov_read(&vf, &buffer[comSize], fetch_size, 0, bytesPerSample, bytesPerSample == 1 ? 0 : 1, &current_section);
 			if(bytes_read == 0)
 				break;
-			buffer.resize(comSize + bytes_read);
-			memcpy(&buffer[comSize], tmpBuffer, bytes_read);
+//			buffer.resize(comSize + bytes_read);
+//			memcpy(&buffer[comSize], tmpBuffer, bytes_read);
 			comSize += bytes_read;
 		}
 
-		if(!buffer.size()){
+		if(!comSize){
 			ov_clear( &vf );
 			return nullptr;
 		}
 
 		// Allocate wave cache entry for returning.
-		wavc_t *ret = (wavc_t*)malloc(sizeof(wavc_t) + buffer.size());
+		wavc_t *ret = (wavc_t*)malloc(sizeof(wavc_t) + comSize);
 		ret->format.wFormatTag = WAVE_FORMAT_PCM;
 		ret->format.nChannels = vi->channels;
 		ret->format.nSamplesPerSec = vi->rate;
 		ret->format.nAvgBytesPerSec = vi->bitrate_nominal;
 		ret->format.nBlockAlign = vi->channels;
-		ret->format.wBitsPerSample = vi->bitrate_nominal * 8;
+		ret->format.wBitsPerSample = bytesPerSample * 8;
 		ret->format.cbSize = 0;
 		ret->head.lpData = (LPSTR)&ret[1];
-		ret->head.dwBufferLength = buffer.size();
+		ret->head.dwBufferLength = comSize;
 		ret->head.dwFlags = 0L;
 		ret->head.dwLoops = 0L;
-		memcpy(&ret[1], &buffer.front(), buffer.size());
+		memcpy(&ret[1], &buffer.front(), comSize);
 
 		ov_clear( &vf );
 
@@ -415,8 +417,9 @@ wavc_t *cacheWaveDataZ(const char *zipname, const char *fname){
 	return ret;
 }
 
+static wavc_t *root = NULL;
+
 int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority){
-	static wavc_t *root = NULL;
 	wavc_t **node;
 	if(vol < 16)
 		return 0;
@@ -438,13 +441,12 @@ int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vo
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
-	addsound((unsigned char*)(*node)->head.lpData, (*node)->head.dwBufferLength, delay, vol, pitch, pan, loops, priority);
+	addsound((*node)->head.lpData, (*node)->format.wBitsPerSample / 8, (*node)->head.dwBufferLength / ((*node)->format.wBitsPerSample / 8), delay, vol, pitch, pan, loops, priority);
 
 	return 1;
 }
 
 int playWave3DCustom(const char *lpszWAVEFileName, const Vec3d &pos, size_t delay, double vol, double attn, unsigned short pitch, bool loop){
-	static wavc_t *root = NULL;
 	wavc_t **node;
 	if(!lpszWAVEFileName) /* allow NULL pointer as file name */
 		return 0;
@@ -467,8 +469,9 @@ int playWave3DCustom(const char *lpszWAVEFileName, const Vec3d &pos, size_t dela
 	}
 
 	SoundSource ss;
-	ss.src = (unsigned char*)(*node)->head.lpData;
-	ss.size = (*node)->head.dwBufferLength;
+	ss.sampleBytes = (*node)->format.wBitsPerSample / 8;
+	ss.src = (decltype(ss.src))(*node)->head.lpData;
+	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes;
 	ss.delay = delay;
 	ss.vol = vol;
 	ss.attn = attn;
@@ -496,8 +499,9 @@ int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const d
 	xhat[2] =  sin(pyr[1]);*/
 /*	return addsound(wav, size, (size_t)(SAMPLERATE * (dist / wave_sonic_speed)), (unsigned char)(256 * vol / (1. + sdist / attn)), pitch, -128 * VECSP(delta, xhat) / dist, 0, 0);*/
 	SoundSource ss;
-	ss.src = wav;
-	ss.size = size;
+	ss.sampleBytes = 1;
+	ss.src = (decltype(ss.src))wav;
+	ss.size = size / ss.sampleBytes;
 	ss.delay = delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo/* + dist / wave_sonic_speed*/));
 	ss.vol = vol;
 	ss.attn = attn;

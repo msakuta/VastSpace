@@ -8,9 +8,12 @@
 namespace audio{
 #endif
 
-
-struct sounder8{
-	const unsigned char *src, *cur;
+struct sounder{
+	int sampleBytes;
+	union{
+		struct{ const uint8_t *src, *cur; };
+		struct{ const int16_t *src16, *cur16; };
+	};
 	size_t left, size;
 	size_t delay;
 	unsigned short vol;
@@ -24,11 +27,6 @@ struct movablesounder8 : SoundSource{
 	size_t left;
 	short serial;
 };
-
-
-extern void wavesum8s(unsigned short *dst, struct sounder8 src[], unsigned long maxt, int nsrc);
-extern void wavesum8sMMX(unsigned short *dst, struct sounder8 src[], unsigned long maxt, int nsrc);
-extern void amat4translate(double mr[16], double sx, double sy, double sz);
 
 #ifdef __cplusplus
 }

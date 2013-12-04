@@ -5,6 +5,7 @@
 #define AUDIO_WAVEMIXER_H
 #include "export.h"
 #include <stddef.h>
+#include <stdint.h>
 
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
@@ -19,7 +20,7 @@ extern long wave_volume; /* max 255 */
 #include <windows.h>
 
 EXPORT HANDLE CreateWaveOutThread(void);
-EXPORT int addsound(const unsigned char *src, size_t size, size_t delay, short vol, short pitch, char pan, unsigned short loops, char priority);
+EXPORT int addsound(const void *src, int sampleBytes, size_t size, size_t delay, short vol, short pitch, char pan, unsigned short loops, char priority);
 EXPORT int stopsound(char priority);
 EXPORT void initsound(void *src);
 EXPORT void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2);
@@ -31,7 +32,11 @@ EXPORT DWORD WINAPI WaveOutThread(HWAVEOUT *);
 EXPORT void setListener(const Vec3d &pos, const Quatd &rot);
 
 struct SoundSource{
-	const unsigned char *src;
+	int sampleBytes;
+	union{
+		const uint8_t *src;
+		const int16_t *src16;
+	};
 	size_t size;
 	size_t delay;
 	Vec3d pos;

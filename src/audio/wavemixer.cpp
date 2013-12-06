@@ -314,34 +314,6 @@ static void stopsound3d(msounder *src){
 	src->loop = false;
 }
 
-static void setmsounders(sounder *dst, int ndst, msounder *src, int nsrc){
-	int i;
-	msounder *list[numof(msounders)];
-	assert(nsrc <= numof(list));
-	for(i = 0; i < nsrc; i++)
-		list[i] = &src[i];
-	qsort(list, numof(list), sizeof(*list), (int(*)(const void*, const void*))louder);
-	for(i = 0; i < nsrc; i++){
-		unsigned short ld;
-		msounder *ms = list[i];
-		ld = 256 * loudness(ms, g_listener);
-		if(numof(sounders) <= list[i]->serial){
-			int j;
-			for(j = 0; j < ndst; j++) if(!dst[j].priority && dst[j].vol < ld){
-				list[i]->serial = j;
-				break;
-			}
-		}
-		else if(ld <= 0)
-			list[i]->serial = numof(sounders);
-		if(list[i]->serial < numof(sounders)){
-			sounder *s = &dst[list[i]->serial];
-			s->src = list[i]->src;
-		}
-		/* set contents of sounder by msounder */
-		/*ms->src += */
-	}
-}
 
 int addsound3d(const SoundSource &s){
 	msounder *added;

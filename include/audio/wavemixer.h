@@ -15,6 +15,7 @@
 namespace audio{
 
 extern long wave_volume; /* max 255 */
+extern int g_debug_sound;
 
 #ifdef _WIN32
 #include <windows.h>

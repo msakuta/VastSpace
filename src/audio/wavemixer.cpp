@@ -14,6 +14,7 @@ extern "C"{
 #define SAMPLEBITS 16
 #define MAXMIX 32
 #define EPSILON 0.001
+#define DEBUG_SOUND_WINDOW 1
 
 namespace audio{
 
@@ -22,7 +23,7 @@ static HWAVEOUT hwo;
 #if SAMPLEBITS == 8
 typedef BYTE sbits;
 #elif SAMPLEBITS == 16
-typedef WORD sbits;
+typedef int16_t sbits;
 #else
 #error SAMPLEBITS neither 8 nor 16!
 #endif
@@ -35,8 +36,40 @@ static WAVEHDR whs[2];
 timemeas_t tmwo;
 LONG listener_inwater = 0;
 static CRITICAL_SECTION gcs;
+static HWND hWndWave = NULL;
 
 HANDLE CreateWaveOutThread(void){
+#if DEBUG_SOUND_WINDOW
+	// We must create the window in the main thread, not the wave mixing thread,
+	// because the window's messages are processed in the main thread.
+	ATOM atom;
+	if(g_debug_sound){
+		WNDCLASSEX wcex;
+
+		wcex.cbSize = sizeof(WNDCLASSEX);
+
+		wcex.style			= CS_HREDRAW | CS_VREDRAW;
+		wcex.lpfnWndProc	= (WNDPROC)DefWindowProc;
+		wcex.cbClsExtra		= 0;
+		wcex.cbWndExtra		= 0;
+		wcex.hInstance		= GetModuleHandle(NULL);
+		wcex.hIcon			= LoadIcon(wcex.hInstance, IDI_APPLICATION);
+		wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
+		wcex.hbrBackground	= NULL;
+		wcex.lpszMenuName	= NULL;
+		wcex.lpszClassName	= "WavePreviewWnd";
+		wcex.hIconSm		= LoadIcon(wcex.hInstance, IDI_APPLICATION);
+
+		atom = RegisterClassEx(&wcex);
+
+		RECT rc = {100, 100, 100 + 640, 100 + 480};
+		AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW | WS_SYSMENU | WS_CAPTION, FALSE);
+
+		hWndWave = CreateWindow(LPCTSTR(atom), "WavePreviewWnd", WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPCHILDREN,
+			rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, GetModuleHandle(NULL), NULL);
+	}
+#endif
+
 		WAVEFORMATEX wf = {
 			WAVE_FORMAT_PCM, //WORD  wFormatTag; 
 			2, //WORD  nChannels; 
@@ -87,6 +120,7 @@ HANDLE CreateWaveOutThread(void){
 		}
 		else
 			hwo = NULL;
+
 		return ret;
 }
 
@@ -212,7 +246,7 @@ static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 	}
 }
 
-static void wavesumm8s(unsigned short *dst, struct movablesounder8 src[], unsigned long maxt, int nsrc, const Vec3d &view, const Vec3d &xh){
+static void wavesumm8s(sbits *dst, struct movablesounder8 src[], unsigned long maxt, int nsrc, const Vec3d &view, const Vec3d &xh){
 	msounder *pms[MAXMIX]; // Temprary msounder array for sorting by calculated volume
 	int m = 0;
 	const long voldiv = 0x10000; // Volume divisor, adjust by sample bit depth
@@ -536,49 +570,44 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 
 	}
 }
-#if 0
-static void CALLBACK WaveOutPoster(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2){
-	PostMessage(((struct client*)ins)->w, MM_WOM_DONE, p1, p2);
+
+#if DEBUG_SOUND_WINDOW
+
+static void DrawWave(HWAVEOUT hwo, HWND hWnd, HDC hdc, WPARAM wParam){
+	SetBkColor(hdc, RGB(0, 0, 0));
+	RECT rr;
+	GetClientRect(hWnd, &rr);
+	int wid = rr.right - rr.left;
+	int hei = rr.bottom - rr.top;
+
+	ExtTextOut(hdc, 0, 0, ETO_OPAQUE, &rr, NULL, 0, NULL);
+
+	HPEN hPen = CreatePen(PS_SOLID, 0, RGB(127,127,127));
+	HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+	MoveToEx(hdc, rr.left, (rr.top + rr.bottom) / 2, NULL);
+	LineTo(hdc, rr.right, (rr.top + rr.bottom) / 2);
+
+	// Print both channels
+	for(int c = 0; c < 2; c++){
+		HPEN hGraphPen = CreatePen(PS_SOLID, 0, c == 0 ? RGB(255,0,0) : RGB(0,255,0));
+		SelectObject(hdc, hGraphPen);
+		MoveToEx(hdc, 0, hei / 2, NULL);
+		int count = numof(soundbuf[0]);
+		for(int i = 0; i < count; i++){
+			int s = i * numof(soundbuf[0]) / count / 2 * 2 + c;
+			int x = wid * i / count;
+			LineTo(hdc, x, hei / 2 + ((sbits*)((WAVEHDR*)wParam)->lpData)[s]
+				* hei / 2 / (SAMPLEBITS == 8 ? CHAR_MAX : INT16_MAX));
+		}
+		SelectObject(hdc, hOldPen);
+		DeleteObject(hGraphPen);
+	}
+	DeleteObject(hPen);
 }
 
-static void DrawWave(struct client *pc, HDC hdc, WPARAM wParam){
-#if 0
-	int k;
-	MMTIME mmtime;
-	RECT rr = {320, 320, 320 + 32, 320 + 32};
-	mmtime.wType = TIME_SAMPLES;
-	waveOutGetPosition(pc->hwo, &mmtime, sizeof mmtime);
-	SetBkColor(hdc, !mmtime.u.sample ? RGB(255,0,0) : RGB(0,255,0));
-	ExtTextOut(hdc, 0, 0, ETO_OPAQUE, &rr, NULL, 0, NULL);
-	rr.left += 32;
-	rr.right += 32;
-	for(k = 0; k < 2; k++){
-		SetBkColor(hdc, (~(whs[k].dwFlags | ~(/*WHDR_PREPARED |*/ WHDR_DONE))) | (whs[k].dwFlags & WHDR_INQUEUE) ? RGB(255,0,0) : RGB(0,255,0));
-		rr.left += k * 32;
-		rr.right += k * 32;
-		ExtTextOut(hdc, 0, 0, ETO_OPAQUE, &rr, NULL, 0, NULL);
-	}
 #endif
-#if 1
-	int i, t;
-	{
-		MMTIME mmt;
-		mmt.wType = TIME_SAMPLES;
-		waveOutGetPosition(pc->hwo, &mmt, sizeof mmt);
-		t = mmt.u.sample % numof(soundbuf[0]);
-	}
-	SetBkColor(hdc, RGB(127, 127, 127));
-	RECT rr = {320, 320, 320 + 256, 320 + 256};
-	ExtTextOut(hdc, 0, 0, ETO_OPAQUE, &rr, NULL, 0, NULL);
-	for(i = 0; i < 256; i++){
-		if(i == t * numof(soundbuf[0]) / 256)
-			SelectObject(hdc, GetStockObject(WHITE_PEN));
-		MoveToEx(hdc, 320 + i, 320 + 128, NULL);
-		LineTo(hdc, 320 + i, 320 + ((BYTE*)((WAVEHDR*)wParam)->lpData)[i * numof(soundbuf[0]) / 256]);
-	}
-#endif
-}
-#endif
+
+int g_debug_sound = 0;
 
 DWORD WINAPI WaveOutThread(HWAVEOUT *phwo){
 	MSG msg;
@@ -587,13 +616,18 @@ DWORD WINAPI WaveOutThread(HWAVEOUT *phwo){
 	PeekMessage(&msg, NULL, WM_USER, WM_USER, PM_NOREMOVE);
 
 	while(GetMessage(&msg, NULL, 0, 0)){
-/*		if(msg.message == WOM_DONE){
-			HDC hdc = GetDC(pc->w);
-			DrawWave(pc, hdc, msg.lParam);
-			ReleaseDC(pc->w, hdc);
-		}*/
+#if DEBUG_SOUND_WINDOW
+		if(g_debug_sound && msg.message == WOM_DONE){
+			HDC hdc = GetDC(hWndWave);
+			DrawWave(*phwo, hWndWave, hdc, msg.lParam);
+			ReleaseDC(hWndWave, hdc);
+		}
+#endif
 		WaveOutProc(*phwo, msg.message, (DWORD)0, msg.lParam, msg.wParam);
 	}
+
+	DestroyWindow(hWndWave);
+
 	return 0;
 }
 

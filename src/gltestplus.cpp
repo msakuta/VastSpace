@@ -2397,13 +2397,6 @@ int main(int argc, char *argv[])
 	application.serverParams.hostname = "";  // The dialog defaults empty string
 #endif
 
-#if defined _WIN32
-	HANDLE hWaveThread;
-	extern timemeas_t tmwo;
-	static int wid = 512, hei = 384;
-	hWaveThread = CreateWaveOutThread();
-#endif
-
 	// Parse the command line
 	if(!application.parseArgs(argc, argv))
 		return 1;
@@ -2496,9 +2489,14 @@ int main(int argc, char *argv[])
 	CvarAdd("r_shadow_slope_scaled_bias", &r_shadow_slope_scaled_bias, cvar_double);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	CvarAdd("r_windows", &enableGLwindow, cvar_int);
+	CvarAdd("g_debug_sound", &g_debug_sound, cvar_int);
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");
+
+#if defined _WIN32
+	HANDLE hWaveThread = CreateWaveOutThread();
+#endif
 
 #if USEWIN
 	{

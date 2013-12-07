@@ -24,7 +24,7 @@ extern double wave_sonic_speed;
 /// \param loops Number of loops.
 /// \param priority Priority of the sound.  If added sound have higher priority and no channel is available, existing sound can be stopped.
 /// \returns Sound ID used to move or stop after this function returns.
-extern EXPORT int playSound(const char *fileName, size_t delay = 0, unsigned short vol = 256, unsigned short pitch = 0, signed char pan = 0, unsigned short loops = 0, char priority = 0);
+extern EXPORT int playSound(const char *fileName, size_t delay = 0, unsigned short vol = 256, double pitch = 1, signed char pan = 0, unsigned short loops = 0, char priority = 0);
 
 /// \brief Play WAV or Ogg Vorbis format sound file in 3-D space.
 /// \param fileName The file name of the WAV or Ogg Vorbis file.
@@ -35,10 +35,10 @@ extern EXPORT int playSound(const char *fileName, size_t delay = 0, unsigned sho
 /// \param loop If this sound loops forever.  You are responsible to stop the sound when finished.
 /// \param pitch Sound pitch factor.  Default (as in file) is 256.  Pitch gets higher if this value is lower than 256.
 /// \returns Sound ID used to move or stop after this function returns.
-extern EXPORT int playSound3D(const char *fileName, const Vec3d &src, double vol, double attn, double delay = 0., bool loop = false, unsigned short pitch = 256);
+extern EXPORT int playSound3D(const char *fileName, const Vec3d &src, double vol, double attn, double delay = 0., bool loop = false, double pitch = 1);
 
 /// \brief Play raw PCM data in memory.
-extern EXPORT int playMemoryWave3D(const unsigned char *, size_t size, short pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay);
+extern EXPORT int playMemoryWave3D(const unsigned char *, size_t size, double pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay);
 
 }
 using namespace audio;

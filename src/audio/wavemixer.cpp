@@ -11,6 +11,7 @@ extern "C"{
 #define numof(a) (sizeof(a)/sizeof*(a))
 
 #define SAMPLERATE 22050
+#define PITCHDIV 256
 #define SAMPLEBITS 16
 #define MAXMIX 32
 #define EPSILON 0.001
@@ -124,6 +125,10 @@ HANDLE CreateWaveOutThread(void){
 		return ret;
 }
 
+unsigned SoundSourceBase::calcPitch()const{
+	return (unsigned)(pitch * rate * PITCHDIV / SAMPLERATE);
+}
+
 static sounder sounders[32];
 static int isounder = 0;
 
@@ -204,15 +209,15 @@ static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 		int i;
 		for(i = 0; i < nsrc; i++){
 			sounder &s = src[i];
-			size_t left = s.pitch == 0 ? s.left : s.left * 256 / (s.pitch + 256);
+			size_t left = s.ipitch * s.left / PITCHDIV;
 			if(s.delay < t && t < left + s.delay){
 				if(s.sampleBytes == 1){
-					long value = s.vol * (s.pitch == 0 ? ((long)s.cur[t - s.delay] - 128) : s.cur[t * (s.pitch + 256) / 256 - s.delay] - 128);
+					long value = s.vol * (s.ipitch == 0 ? ((long)s.cur[t - s.delay] - 128) : s.cur[t * s.ipitch / 256 - s.delay] - 128);
 					tt0 += value * (128 + s.pan);
 					tt1 += value * (127 - s.pan);
 				}
 				else{
-					long value = s.vol * (s.pitch == 0 ? (long)s.cur16[t - s.delay] : s.cur16[t * (s.pitch + 256) / 256 - s.delay]);
+					long value = s.vol * (s.ipitch == 0 ? (long)s.cur16[t - s.delay] : s.cur16[t * s.ipitch / 256 - s.delay]);
 					tt0 += value * (128 + s.pan) / 256;
 					tt1 += value * (127 - s.pan) / 256;
 				}
@@ -280,7 +285,7 @@ static void wavesumm8s(sbits *dst, sounder3d src[], unsigned long maxt, int nsrc
 	for(int t = 0; t < maxt; t++){
 		long tt0 = 0, tt1 = 0;
 		for(int i = 0; i < m; i++){
-			long srct = (t - pms[i]->delay) * pms[i]->pitch / 256;
+			long srct = (t - pms[i]->delay) * pms[i]->ipitch / PITCHDIV;
 			if(pms[i]->loop && pms[i]->left < srct)
 				srct -= pms[i]->size;
 			if(pms[i]->loop || 0 <= srct && srct < pms[i]->left){
@@ -334,7 +339,7 @@ static void stopsound3d(sounder3d *src){
 	src->loop = false;
 }
 
-sounder3d::sounder3d(const SoundSource3D &s) : SoundSource3D(s), left(size){
+sounder3d::sounder3d(const SoundSource3D &s) : SoundSource3D(s), left(size), ipitch(calcPitch()){
 	if(0 <= (long)s.delay)
 		delay = s.delay;
 	else if(left < -(long)s.delay){
@@ -344,7 +349,6 @@ sounder3d::sounder3d(const SoundSource3D &s) : SoundSource3D(s), left(size){
 	else
 		left = 0;
 	assert(0 <= (int)left);
-	pitch = (unsigned short)(s.pitch * s.rate / SAMPLERATE);
 }
 
 int addsound3d(const SoundSource3D &s){
@@ -401,7 +405,7 @@ int volumesound3d(int sid, double vol){
 }
 
 int pitchsound3d(int sid, double pitch){
-	return modifysound3d(sid, [&pitch](sounder3d &m){ m.pitch = max(1, long(256 * pitch)); });
+	return modifysound3d(sid, [&pitch](sounder3d &m){ m.pitch = pitch; m.ipitch = m.calcPitch(); });
 }
 
 int stopsound3d(int sid){
@@ -471,7 +475,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				sounder &s = sounders[i];
 				if(!s.left)
 					continue;
-				unsigned tt2 = numof(soundbuf[0]) * (s.pitch + 256) / 256;
+				unsigned tt2 = numof(soundbuf[0]) * s.ipitch / PITCHDIV;
 				if(s.delay < tt2){
 					tt2 -= s.delay;
 					s.delay = 0;
@@ -505,7 +509,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				sounder3d &m = msounders[i];
 				if(!m.left)
 					continue;
-				unsigned tt2 = numof(soundbuf[0]) * m.pitch / 256;
+				unsigned tt2 = numof(soundbuf[0]) * m.ipitch / PITCHDIV;
 				assert(0 <= (int)m.left);
 				if(m.delay < tt2){
 					tt2 -= m.delay;

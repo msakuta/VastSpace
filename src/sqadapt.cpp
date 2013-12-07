@@ -284,6 +284,13 @@ static SQInteger loadInteger(HSQUIRRELVM v, SQInteger index, SQInteger def = 0){
 	return val;
 }
 
+static SQFloat loadFloat(HSQUIRRELVM v, SQInteger index, SQFloat def = 0){
+	SQFloat val;
+	if(sq_gettop(v) <= index || SQ_FAILED(sq_getfloat(v, index, &val)))
+		val = def;
+	return val;
+}
+
 static SQInteger sqf_playSound(HSQUIRRELVM v){
 #ifndef DEDICATED
 	const SQChar *fname;
@@ -292,7 +299,7 @@ static SQInteger sqf_playSound(HSQUIRRELVM v){
 
 	SQInteger delay = loadInteger(v, 3, 0);
 	SQInteger vol = loadInteger(v, 4, 256);
-	SQInteger pitch = loadInteger(v, 5, 0);
+	SQFloat pitch = loadFloat(v, 5, 1);
 	SQInteger pan = loadInteger(v, 6, 0);
 	SQInteger loops = loadInteger(v, 7, 0);
 	SQInteger priority = loadInteger(v, 8, 0);

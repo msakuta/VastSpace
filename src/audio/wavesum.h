@@ -14,13 +14,15 @@ struct sounder : SoundSource{
 		const int16_t *cur16;
 	};
 	size_t left;
+	unsigned ipitch; ///< Integral pitch multiplier
 
 	sounder(){}
-	sounder(const SoundSource &s) : SoundSource(s), cur(src), left(size){}
+	sounder(const SoundSource &s) : SoundSource(s), cur(src), left(size), ipitch(calcPitch()){}
 };
 
 struct sounder3d : SoundSource3D{
 	size_t left;
+	unsigned ipitch; ///< Integral pitch multiplier
 	short serial;
 
 	sounder3d(){}

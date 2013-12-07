@@ -399,7 +399,7 @@ wavc_t *cacheWaveDataZ(const char *zipname, const char *fname){
 
 static wavc_t *root = NULL;
 
-int playSound(const char *fileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority){
+int playSound(const char *fileName, size_t delay, unsigned short vol, double pitch, signed char pan, unsigned short loops, char priority){
 	wavc_t **node;
 	if(vol < 16)
 		return 0;
@@ -437,7 +437,7 @@ int playSound(const char *fileName, size_t delay, unsigned short vol, unsigned s
 	return 1;
 }
 
-int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, double vol, double attn, unsigned short pitch, bool loop){
+int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, double vol, double attn, double pitch, bool loop){
 	wavc_t **node;
 	if(!fileName) /* allow NULL pointer as file name */
 		return 0;
@@ -473,12 +473,12 @@ int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, doub
 	return addsound3d(ss);
 }
 
-int playSound3D(const char *fname, const Vec3d &src, double vol, double attn, double delay, bool loop, unsigned short pitch){
+int playSound3D(const char *fname, const Vec3d &src, double vol, double attn, double delay, bool loop, double pitch){
 	extern double dwo;
 	return playSound3DCustom(fname, src, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo)), vol, attn, pitch, loop);
 }
 
-int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay){
+int playMemoryWave3D(const unsigned char *wav, size_t size, double pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay){
 	extern double dwo;
 	avec3_t delta, xhat;
 	double sdist, dist;
@@ -497,7 +497,7 @@ int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const d
 	ss.vol = vol;
 	ss.attn = attn;
 	ss.pos = src;
-	ss.pitch = pitch + 256;
+	ss.pitch = pitch;
 	ss.rate = 8000;
 	ss.loop = false;
 	return addsound3d(ss);

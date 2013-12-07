@@ -30,8 +30,10 @@ struct SoundSourceBase{
 	};
 	size_t size;
 	size_t delay;
-	unsigned short pitch;
+	double pitch;
 	unsigned long rate; ///< Sampling rate of samples
+
+	unsigned calcPitch()const;
 };
 
 struct SoundSource : public SoundSourceBase{

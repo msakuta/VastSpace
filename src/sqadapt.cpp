@@ -17,6 +17,7 @@
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
 #include "ClientMessage.h"
+#include "audio/playSound.h"
 extern "C"{
 #include <clib/timemeas.h>
 #ifndef DEDICATED
@@ -274,6 +275,34 @@ static SQInteger sqf_register_console_command_a(HSQUIRRELVM v){
 	sq_set(v, -3); // root table name [closure]
 	sq_newslot(v, -3, SQFalse); // root table
 	return 0;
+}
+
+static SQInteger loadInteger(HSQUIRRELVM v, SQInteger index, SQInteger def = 0){
+	SQInteger val;
+	if(sq_gettop(v) <= index || SQ_FAILED(sq_getinteger(v, index, &val)))
+		val = def;
+	return val;
+}
+
+static SQInteger sqf_playSound(HSQUIRRELVM v){
+#ifndef DEDICATED
+	const SQChar *fname;
+	if(SQ_FAILED(sq_getstring(v, 2, &fname)))
+		return sq_throwerror(v, _SC("playSound first argument must be a string"));
+
+	SQInteger delay = loadInteger(v, 3, 0);
+	SQInteger vol = loadInteger(v, 4, 256);
+	SQInteger pitch = loadInteger(v, 5, 0);
+	SQInteger pan = loadInteger(v, 6, 0);
+	SQInteger loops = loadInteger(v, 7, 0);
+	SQInteger priority = loadInteger(v, 8, 0);
+
+	SQInteger ret = playSound(fname, delay, vol, pitch, pan, loops, priority);
+	sq_pushinteger(v, ret);
+	return 1;
+#else
+	return 0;
+#endif
 }
 
 static SQInteger sqf_timemeas(HSQUIRRELVM v){
@@ -1255,6 +1284,8 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("stellar_file"), -1);
 	sq_pushstring(v, _SC("space.ssd"), -1);
 	sq_createslot(v, 1);
+
+	register_global_func(v, sqf_playSound, _SC("playSound"));
 
 	// Load both initialization scripts for standalone game.
 	for(int i = !game->isServer(); i < game->isClient() + 1; i++){

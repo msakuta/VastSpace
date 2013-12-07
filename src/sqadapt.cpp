@@ -279,14 +279,21 @@ static SQInteger sqf_register_console_command_a(HSQUIRRELVM v){
 
 static SQInteger loadInteger(HSQUIRRELVM v, SQInteger index, SQInteger def = 0){
 	SQInteger val;
-	if(sq_gettop(v) <= index || SQ_FAILED(sq_getinteger(v, index, &val)))
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getinteger(v, index, &val)))
+		val = def;
+	return val;
+}
+
+static SQBool loadBool(HSQUIRRELVM v, SQInteger index, SQBool def = SQFalse){
+	SQBool val;
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getbool(v, index, &val)))
 		val = def;
 	return val;
 }
 
 static SQFloat loadFloat(HSQUIRRELVM v, SQInteger index, SQFloat def = 0){
 	SQFloat val;
-	if(sq_gettop(v) <= index || SQ_FAILED(sq_getfloat(v, index, &val)))
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getfloat(v, index, &val)))
 		val = def;
 	return val;
 }
@@ -307,6 +314,33 @@ static SQInteger sqf_playSound(HSQUIRRELVM v){
 	SQInteger ret = playSound(fname, delay, vol, pitch, pan, loops, priority);
 	sq_pushinteger(v, ret);
 	return 1;
+#else
+	return 0;
+#endif
+}
+
+static SQInteger sqf_playSound3D(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		const SQChar *fname;
+		if(SQ_FAILED(sq_getstring(v, 2, &fname)))
+			return sq_throwerror(v, _SC("playSound3D first argument must be a string"));
+
+		SQVec3d sqv;
+		sqv.getValue(v, 3);
+		SQFloat vol = loadFloat(v, 4, 1.);
+		SQFloat attn = loadFloat(v, 5, 1.);
+		SQInteger delay = loadInteger(v, 6, 0);
+		SQBool loop = loadBool(v, 7, SQFalse);
+		SQFloat pitch = loadFloat(v, 8, 1);
+
+		SQInteger ret = playSound3D(fname, sqv.value, vol, attn, delay, loop == SQTrue, pitch);
+		sq_pushinteger(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
 #else
 	return 0;
 #endif
@@ -1293,6 +1327,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_createslot(v, 1);
 
 	register_global_func(v, sqf_playSound, _SC("playSound"));
+	register_global_func(v, sqf_playSound3D, _SC("playSound3D"));
 
 	// Load both initialization scripts for standalone game.
 	for(int i = !game->isServer(); i < game->isClient() + 1; i++){

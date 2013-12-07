@@ -15,12 +15,10 @@ namespace audio{
 
 extern double wave_sonic_speed;
 
-extern EXPORT struct wavecache *cacheWaveFile(const char *lpszWAVEFileName);
+extern EXPORT int playSound(const char *fileName, size_t delay = 0, unsigned short vol = 256, unsigned short pitch = 0, signed char pan = 0, unsigned short loops = 0, char priority = 0);
 
-extern EXPORT int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority);
-
-/// \brief Play WAV format sound file in 3-D space.
-/// \param lpszWAVEFileName The file name of the WAV.
+/// \brief Play WAV or Ogg Vorbis format sound file in 3-D space.
+/// \param fileName The file name of the WAV or Ogg Vorbis file.
 /// \param src The initial position of the sound in 3-D space.  You can update the position by movesound3d().
 /// \param vol Volume of the sound in range [0,1]
 /// \param attn Attenuation factor in 3-D space.  The sound reaches further when this value is higher.
@@ -28,7 +26,7 @@ extern EXPORT int playWaveCustom(const char *lpszWAVEFileName, size_t delay, uns
 /// \param loop If this sound loops forever.  You are responsible to stop the sound when finished.
 /// \param pitch Sound pitch factor.  Default (as in file) is 256.  Pitch gets higher if this value is lower than 256.
 /// \returns Sound ID used to move or stop after this function returns.
-extern EXPORT int playWave3D(const char *lpszWAVEFileName, const Vec3d &src, double vol, double attn, double delay = 0., bool loop = false, unsigned short pitch = 256);
+extern EXPORT int playSound3D(const char *fileName, const Vec3d &src, double vol, double attn, double delay = 0., bool loop = false, unsigned short pitch = 256);
 
 extern EXPORT int playMemoryWave3D(const unsigned char *, size_t size, short pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay);
 

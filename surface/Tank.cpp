@@ -270,7 +270,7 @@ int Tank::shootcannon(double dt){
 		this->muzzle |= 1;
 
 #		ifndef DEDICATED
-		gunsid = playWave3D(modPath() << "sound/tank-gun.wav", this->pos, 1., .2, w->realtime);
+		gunsid = playSound3D(modPath() << "sound/tank-gun.wav", this->pos, 1., .2, w->realtime);
 #		endif
 #endif
 #endif

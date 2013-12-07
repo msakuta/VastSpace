@@ -399,13 +399,13 @@ wavc_t *cacheWaveDataZ(const char *zipname, const char *fname){
 
 static wavc_t *root = NULL;
 
-int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority){
+int playSound(const char *fileName, size_t delay, unsigned short vol, unsigned short pitch, signed char pan, unsigned short loops, char priority){
 	wavc_t **node;
 	if(vol < 16)
 		return 0;
 	for(node = &root; *node;){
 		int res;
-		res = strncmp((*node)->fname, lpszWAVEFileName, sizeof (*node)->fname);
+		res = strncmp((*node)->fname, fileName, sizeof (*node)->fname);
 		if(res < 0) node = &(*node)->hi;
 		else if(0 < res) node = &(*node)->lo;
 		else break;
@@ -414,10 +414,10 @@ int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vo
 		DWORD data;
 		FILE *fp;
 
-		if(!(*node = cacheWaveData(lpszWAVEFileName))){
+		if(!(*node = cacheWaveData(fileName))){
 			return 0;
 		}
-		strncpy((*node)->fname, lpszWAVEFileName, sizeof(*node)->fname);
+		strncpy((*node)->fname, fileName, sizeof(*node)->fname);
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
@@ -426,13 +426,13 @@ int playWaveCustom(const char *lpszWAVEFileName, size_t delay, unsigned short vo
 	return 1;
 }
 
-int playWave3DCustom(const char *lpszWAVEFileName, const Vec3d &pos, size_t delay, double vol, double attn, unsigned short pitch, bool loop){
+int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, double vol, double attn, unsigned short pitch, bool loop){
 	wavc_t **node;
-	if(!lpszWAVEFileName) /* allow NULL pointer as file name */
+	if(!fileName) /* allow NULL pointer as file name */
 		return 0;
 	for(node = &root; *node;){
 		int res;
-		res = strncmp((*node)->fname, lpszWAVEFileName, sizeof (*node)->fname);
+		res = strncmp((*node)->fname, fileName, sizeof (*node)->fname);
 		if(res < 0) node = &(*node)->hi;
 		else if(0 < res) node = &(*node)->lo;
 		else break;
@@ -441,10 +441,10 @@ int playWave3DCustom(const char *lpszWAVEFileName, const Vec3d &pos, size_t dela
 		DWORD data;
 		FILE *fp;
 
-		if(!(*node = cacheWaveData(lpszWAVEFileName))){
+		if(!(*node = cacheWaveData(fileName))){
 			return 0;
 		}
-		strncpy((*node)->fname, lpszWAVEFileName, sizeof(*node)->fname);
+		strncpy((*node)->fname, fileName, sizeof(*node)->fname);
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
@@ -462,9 +462,9 @@ int playWave3DCustom(const char *lpszWAVEFileName, const Vec3d &pos, size_t dela
 	return addsound3d(ss);
 }
 
-int playWave3D(const char *fname, const Vec3d &src, double vol, double attn, double delay, bool loop, unsigned short pitch){
+int playSound3D(const char *fname, const Vec3d &src, double vol, double attn, double delay, bool loop, unsigned short pitch){
 	extern double dwo;
-	return playWave3DCustom(fname, src, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo)), vol, attn, pitch, loop);
+	return playSound3DCustom(fname, src, delay < dwo ? 0 : (size_t)(SAMPLERATE * (delay - dwo)), vol, attn, pitch, loop);
 }
 
 int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const double src[3], const double org[3], const double pyr[3], double vol, double attn, double delay){

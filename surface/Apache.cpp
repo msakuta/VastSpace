@@ -490,7 +490,7 @@ void Apache::anim(double dt){
 		(*it)->align();
 
 	if(!rotorSid){
-		rotorSid = playWave3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 0.1, 0, true);
+		rotorSid = playSound3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 0.1, 0, true);
 	}
 	else
 		movesound3d(rotorSid, this->pos);
@@ -708,7 +708,7 @@ int Apache::shootChainGun(double dt){
 			shot = true;
 		}
 		if(shot)
-			playWave3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, .01);
+			playSound3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, .01);
 	}
 	return ret;
 }

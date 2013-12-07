@@ -307,7 +307,7 @@ void Sceptor::shootDualGun(double dt){
 	}
 
 #ifndef DEDICATED
-	playWave3D("sound/aagun.wav", this->pos, 1., .2, w->realtime);
+	playSound3D("sound/aagun.wav", this->pos, 1., .2, w->realtime);
 #endif
 
 	if(0 < --magazine)
@@ -1359,7 +1359,7 @@ void Sceptor::anim(double dt){
 		volumesound3d(thrustSid, lowSound);
 	}
 	else
-		thrustSid = playWave3D("sound/airrip.ogg", this->pos, lowSound, 0.1, 0, true);
+		thrustSid = playSound3D("sound/airrip.ogg", this->pos, lowSound, 0.1, 0, true);
 
 	double highSound = capThrottle * capThrottle;
 	if(thrustHiSid){
@@ -1367,7 +1367,7 @@ void Sceptor::anim(double dt){
 		volumesound3d(thrustHiSid, highSound);
 	}
 	else
-		thrustHiSid = playWave3D("sound/airrip-h.ogg", this->pos, highSound, 0.1, 0, true);
+		thrustHiSid = playSound3D("sound/airrip-h.ogg", this->pos, highSound, 0.1, 0, true);
 	
 
 	if(game->isClient() && this->pf)

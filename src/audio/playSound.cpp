@@ -421,7 +421,18 @@ int playSound(const char *fileName, size_t delay, unsigned short vol, unsigned s
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
-	addsound((*node)->head.lpData, (*node)->format.wBitsPerSample / 8, (*node)->head.dwBufferLength / ((*node)->format.wBitsPerSample / 8), delay, vol, pitch, pan, loops, priority);
+	SoundSource ss;
+	ss.sampleBytes = (*node)->format.wBitsPerSample / 8;
+	ss.src = (uint8_t*)(*node)->head.lpData;
+	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes;
+	ss.delay = delay;
+	ss.vol = vol;
+	ss.pitch = pitch;
+	ss.rate = (*node)->format.nSamplesPerSec;
+	ss.pan = pan;
+	ss.loops = loops;
+	ss.priority = priority;
+	addsound(ss);
 
 	return 1;
 }
@@ -448,7 +459,7 @@ int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, doub
 		(*node)->hi = (*node)->lo = NULL;
 	}
 
-	SoundSource ss;
+	SoundSource3D ss;
 	ss.sampleBytes = (*node)->format.wBitsPerSample / 8;
 	ss.src = (decltype(ss.src))(*node)->head.lpData;
 	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes;
@@ -457,7 +468,7 @@ int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, doub
 	ss.attn = attn;
 	ss.pos = pos;
 	ss.pitch = pitch;
-	ss.srcpitch = (*node)->format.nSamplesPerSec;
+	ss.rate = (*node)->format.nSamplesPerSec;
 	ss.loop = loop;
 	return addsound3d(ss);
 }
@@ -478,7 +489,7 @@ int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const d
 	xhat[1] = 0;
 	xhat[2] =  sin(pyr[1]);*/
 /*	return addsound(wav, size, (size_t)(SAMPLERATE * (dist / wave_sonic_speed)), (unsigned char)(256 * vol / (1. + sdist / attn)), pitch, -128 * VECSP(delta, xhat) / dist, 0, 0);*/
-	SoundSource ss;
+	SoundSource3D ss;
 	ss.sampleBytes = 1;
 	ss.src = (decltype(ss.src))wav;
 	ss.size = size / ss.sampleBytes;
@@ -487,7 +498,7 @@ int playMemoryWave3D(const unsigned char *wav, size_t size, short pitch, const d
 	ss.attn = attn;
 	ss.pos = src;
 	ss.pitch = pitch + 256;
-	ss.srcpitch = 8000;
+	ss.rate = 8000;
 	ss.loop = false;
 	return addsound3d(ss);
 }

@@ -124,39 +124,25 @@ HANDLE CreateWaveOutThread(void){
 		return ret;
 }
 
-typedef struct movablesounder8 msounder;
-
 static sounder sounders[32];
 static int isounder = 0;
 
-static msounder msounders[128];
+static sounder3d msounders[128];
 static short imsounder = 0;
 
-int addsound(const void *src, int sampleBytes, size_t size, size_t delay, short vol, short pitch, char pan, unsigned short loops, char priority){
+int addsound(const SoundSource &s){
 	int i;
-	sounder *ps;
-	if(vol < 16 || !size)
+	if(s.vol < 16 || !s.size)
 		return -1;
-	assert(-32 < pitch);
-	for(i = 0; i < numof(sounders); i++) if(sounders[i].left == 0 || sounders[i].priority < priority
-		|| sounders[i].priority == priority && (long)delay - SAMPLERATE / vol < (long)sounders[i].delay - SAMPLERATE / sounders[i].vol){
+	assert(-32 < s.pitch);
+	for(i = 0; i < numof(sounders); i++) if(sounders[i].left == 0 || sounders[i].priority < s.priority
+		|| sounders[i].priority == s.priority && (long)s.delay - SAMPLERATE / s.vol < (long)sounders[i].delay - SAMPLERATE / sounders[i].vol){
 		isounder = i;
 		break;
 	}
 	if(i == numof(sounders))
 		return -1;
-	ps = &sounders[isounder];
-	ps->sampleBytes = sampleBytes;
-	ps->src =
-	ps->cur = (decltype(ps->src))src;
-	ps->size = 
-	ps->left = size;
-	ps->delay = delay;
-	ps->vol = vol;
-	ps->pitch = pitch;
-	ps->loops = loops;
-	ps->pan = pan;
-	ps->priority = priority;
+	sounders[isounder] = sounder(s);
 	isounder = (isounder + 1) % numof(sounders);
 	return isounder;
 }
@@ -175,7 +161,7 @@ int stopsound(char priority){
 }
 
 int maddsound(const unsigned char *src, size_t size, size_t delay, const double pos[3], double vol, double attn){
-	msounder *s;
+	sounder3d *s;
 	s = &msounders[imsounder];
 	s->src = (decltype(s->src))src;
 	s->left = size;
@@ -246,8 +232,8 @@ static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 	}
 }
 
-static void wavesumm8s(sbits *dst, struct movablesounder8 src[], unsigned long maxt, int nsrc, const Vec3d &view, const Vec3d &xh){
-	msounder *pms[MAXMIX]; // Temprary msounder array for sorting by calculated volume
+static void wavesumm8s(sbits *dst, sounder3d src[], unsigned long maxt, int nsrc, const Vec3d &view, const Vec3d &xh){
+	sounder3d *pms[MAXMIX]; // Temprary msounder array for sorting by calculated volume
 	int m = 0;
 	const long voldiv = 0x10000; // Volume divisor, adjust by sample bit depth
 	long pan[MAXMIX]; // Calculated pan position
@@ -326,20 +312,20 @@ static void wavesumm8s(sbits *dst, struct movablesounder8 src[], unsigned long m
 	}
 }
 
-static double loudness(const msounder *ms, const double listener[3]){
+static double loudness(const sounder3d *ms, const double listener[3]){
 	return ms->left ? ms->vol / (1. + ms->attn * VECSDIST(ms->pos, listener)) : 0.;
 }
 
 static double g_listener[3];
 
-static int louder(const msounder **a, const msounder **b){
+static int louder(const sounder3d **a, const sounder3d **b){
 	double la, lb;
 	la = loudness(*a, g_listener);
 	lb = loudness(*b, g_listener);
 	return la < lb ? 1 : lb < la ? -1 : 0;
 }
 
-static void stopsound3d(msounder *src){
+static void stopsound3d(sounder3d *src){
 	// Differentiate serial number to prevent referrers from updating already stopped sound.
 	// Note that addsound3d calls this prior to allocating new sound, so serial number 0
 	// is never returned for a valid sound.
@@ -348,9 +334,21 @@ static void stopsound3d(msounder *src){
 	src->loop = false;
 }
 
+sounder3d::sounder3d(const SoundSource3D &s) : SoundSource3D(s), left(size){
+	if(0 <= (long)s.delay)
+		delay = s.delay;
+	else if(left < -(long)s.delay){
+		left += s.delay;
+		delay = 0;
+	}
+	else
+		left = 0;
+	assert(0 <= (int)left);
+	pitch = (unsigned short)(s.pitch * s.rate / SAMPLERATE);
+}
 
-int addsound3d(const SoundSource &s){
-	msounder *added;
+int addsound3d(const SoundSource3D &s){
+	sounder3d *added;
 	int ret;
 	assert(0 < s.sampleBytes);
 	EnterCriticalSection(&gcs);
@@ -361,18 +359,7 @@ int addsound3d(const SoundSource &s){
 	}while(added->loop);
 
 	stopsound3d(added);
-	*static_cast<SoundSource*>(added) = s;
-	added->left = s.size;
-	if(0 <= (long)s.delay)
-		added->delay = s.delay;
-	else if(added->left < -(long)s.delay){
-		added->left += s.delay;
-		added->delay = 0;
-	}
-	else
-		added->left = 0;
-	assert(0 <= (int)added->left);
-	added->pitch = (unsigned short)(s.pitch * s.srcpitch / SAMPLERATE);
+	*added = s;
 	ret = (added->serial << 16) | (added - msounders);
 	LeaveCriticalSection(&gcs);
 	return ret;
@@ -406,19 +393,19 @@ static int modifysound3d(int sid, T modifier){
 // What a big leap, considering this source was in C a few days ago.
 
 int movesound3d(int sid, const Vec3d &pos){
-	return modifysound3d(sid, [&pos](msounder &m){ m.pos = pos; });
+	return modifysound3d(sid, [&pos](sounder3d &m){ m.pos = pos; });
 }
 
 int volumesound3d(int sid, double vol){
-	return modifysound3d(sid, [&vol](msounder &m){ m.vol = vol; });
+	return modifysound3d(sid, [&vol](sounder3d &m){ m.vol = vol; });
 }
 
 int pitchsound3d(int sid, double pitch){
-	return modifysound3d(sid, [&pitch](msounder &m){ m.pitch = max(1, long(256 * pitch)); });
+	return modifysound3d(sid, [&pitch](sounder3d &m){ m.pitch = max(1, long(256 * pitch)); });
 }
 
 int stopsound3d(int sid){
-	return modifysound3d(sid, [](msounder &m){ stopsound3d(&m); });
+	return modifysound3d(sid, [](sounder3d &m){ stopsound3d(&m); });
 }
 
 static Vec3d listener_pos(0,0,0);
@@ -515,7 +502,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 
 			// advance buffers
 			for(i = 0; i < numof(msounders); i++){
-				msounder &m = msounders[i];
+				sounder3d &m = msounders[i];
 				if(!m.left)
 					continue;
 				unsigned tt2 = numof(soundbuf[0]) * m.pitch / 256;

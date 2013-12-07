@@ -8,24 +8,23 @@
 namespace audio{
 #endif
 
-struct sounder{
-	int sampleBytes;
+struct sounder : SoundSource{
 	union{
-		struct{ const uint8_t *src, *cur; };
-		struct{ const int16_t *src16, *cur16; };
+		const uint8_t *cur;
+		const int16_t *cur16;
 	};
-	size_t left, size;
-	size_t delay;
-	unsigned short vol;
-	short pitch;
-	unsigned short loops;
-	signed char pan;
-	signed char priority;
+	size_t left;
+
+	sounder(){}
+	sounder(const SoundSource &s) : SoundSource(s), cur(src), left(size){}
 };
 
-struct movablesounder8 : SoundSource{
+struct sounder3d : SoundSource3D{
 	size_t left;
 	short serial;
+
+	sounder3d(){}
+	sounder3d(const SoundSource3D &s);
 };
 
 #ifdef __cplusplus

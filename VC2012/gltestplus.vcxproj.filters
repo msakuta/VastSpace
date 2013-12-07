@@ -342,7 +342,7 @@
     <ClCompile Include="..\src\audio\wavemixer.cpp">
       <Filter>Sources\audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\audio\wavsound.cpp">
+    <ClCompile Include="..\src\audio\playSound.cpp">
       <Filter>Sources\audio</Filter>
     </ClCompile>
   </ItemGroup>
@@ -653,10 +653,10 @@
     <ClInclude Include="..\src\audio\wavesum.h">
       <Filter>Headers\audio</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\audio\wavsound.h">
+    <ClInclude Include="..\include\audio\wavemixer.h">
       <Filter>Exported Headers\audio</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\audio\wavemixer.h">
+    <ClInclude Include="..\include\audio\playSound.h">
       <Filter>Exported Headers\audio</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,8 @@
 /** \file
- * \brief Definition of 3-D sound mixing engine interface.
+ * \brief Definition of 3-D sound mixing engine file loading interface.
  */
-#ifndef AUDIO_WAVSOUND_H
-#define AUDIO_WAVSOUND_H
+#ifndef AUDIO_PLAYSOUND_H
+#define AUDIO_PLAYSOUND_H
 
 #include "export.h"
 #include <cpplib/vec3.h>

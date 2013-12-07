@@ -1,6 +1,6 @@
 #define USE_OGGVORBIS 1
 
-#include "audio/wavsound.h"
+#include "audio/playSound.h"
 #include "audio/wavemixer.h"
 #include "cmd.h"
 extern "C"{

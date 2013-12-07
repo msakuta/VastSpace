@@ -13,7 +13,7 @@
 #include "tefpol3d.h"
 #endif
 #include "Launcher.h"
-#include "audio/wavsound.h"
+#include "audio/playSound.h"
 #include "audio/wavemixer.h"
 extern "C"{
 #include <clib/cfloat.h>

@@ -17,7 +17,7 @@
 #include "glw/PopupMenu.h"
 #endif
 #include "SqInitProcess-ex.h"
-#include "audio/wavsound.h"
+#include "audio/playSound.h"
 #include "audio/wavemixer.h"
 extern "C"{
 #include <clib/cfloat.h>

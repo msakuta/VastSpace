@@ -650,9 +650,6 @@
     <ClInclude Include="..\src\Worker.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\audio\wavesum.h">
-      <Filter>Headers\audio</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\audio\wavemixer.h">
       <Filter>Exported Headers\audio</Filter>
     </ClInclude>

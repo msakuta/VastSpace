@@ -1,5 +1,4 @@
 #include "audio/wavemixer.h"
-#include "wavesum.h"
 extern "C"{
 #include "clib/timemeas.h"
 #include "clib/rseq.h"
@@ -38,6 +37,30 @@ timemeas_t tmwo;
 LONG listener_inwater = 0;
 static CRITICAL_SECTION gcs;
 static HWND hWndWave = NULL;
+
+
+struct sounder : SoundSource{
+	union{
+		const uint8_t *cur;
+		const int16_t *cur16;
+	};
+	size_t left;
+	unsigned ipitch; ///< Integral pitch multiplier
+
+	sounder(){}
+	sounder(const SoundSource &s) : SoundSource(s), cur(src), left(size), ipitch(calcPitch()){}
+};
+
+struct sounder3d : SoundSource3D{
+	size_t left;
+	unsigned ipitch; ///< Integral pitch multiplier
+	short serial;
+
+	sounder3d(){}
+	sounder3d(const SoundSource3D &s);
+};
+
+
 
 HANDLE CreateWaveOutThread(void){
 #if DEBUG_SOUND_WINDOW

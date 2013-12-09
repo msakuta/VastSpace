@@ -18,6 +18,7 @@
 #include "glw/GLWentlist.h"
 #include "ClientMessage.h"
 #include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/timemeas.h>
 #ifndef DEDICATED
@@ -336,6 +337,22 @@ static SQInteger sqf_playSound3D(HSQUIRRELVM v){
 
 		SQInteger ret = playSound3D(fname, sqv.value, vol, attn, delay, loop == SQTrue, pitch);
 		sq_pushinteger(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+#else
+	return 0;
+#endif
+}
+
+static SQInteger sqf_isEndSound3D(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		SQInteger sid = loadInteger(v, 2, 0);
+		SQBool ret = isEndSound3D(sid) ? SQTrue : SQFalse;
+		sq_pushbool(v, ret);
 		return 1;
 	}
 	catch(SQFError &e){
@@ -1328,6 +1345,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	register_global_func(v, sqf_playSound, _SC("playSound"));
 	register_global_func(v, sqf_playSound3D, _SC("playSound3D"));
+	register_global_func(v, sqf_isEndSound3D, _SC("isEndSound3D"));
 
 	// Load both initialization scripts for standalone game.
 	for(int i = !game->isServer(); i < game->isClient() + 1; i++){

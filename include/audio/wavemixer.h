@@ -66,6 +66,7 @@ EXPORT int movesound3d(int sid, const Vec3d &pos);
 EXPORT int volumesound3d(int sid, double vol);
 EXPORT int pitchsound3d(int sid, double pitch);
 EXPORT int stopsound3d(int sid);
+EXPORT bool isEndSound3D(int sid);
 
 #else
 typedef void *HWAVEOUT;

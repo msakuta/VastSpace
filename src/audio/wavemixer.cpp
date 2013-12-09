@@ -392,10 +392,15 @@ int addsound3d(const SoundSource3D &s){
 	return ret;
 }
 
+static unsigned sidDecode(int sid, short &serial){
+	serial = sid >> 16;
+	return sid & 0xffff;
+}
+
 template<typename T>
 static int modifysound3d(int sid, T modifier){
-	unsigned i = sid & 0xffff;
-	short serial = sid >> 16;
+	short serial;
+	unsigned i = sidDecode(sid, serial);
 	int ret = sid;
 	if(numof(msounders) <= i)
 		return -1;
@@ -410,7 +415,7 @@ static int modifysound3d(int sid, T modifier){
 	}
 	LeaveCriticalSection(&gcs);
 
-	return sid;
+	return ret;
 }
 
 // We use C++11's lambda expression extensively.
@@ -433,6 +438,16 @@ int pitchsound3d(int sid, double pitch){
 
 int stopsound3d(int sid){
 	return modifysound3d(sid, [](sounder3d &m){ stopsound3d(&m); });
+}
+
+bool isEndSound3D(int sid){
+	short serial;
+	unsigned i = sidDecode(sid, serial);
+	if(numof(msounders) <= i)
+		return true;
+
+	// Read-only access do not lock the critical section
+	return msounders[i].serial != serial || 0 == msounders[i].left;
 }
 
 static Vec3d listener_pos(0,0,0);

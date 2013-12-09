@@ -19,6 +19,8 @@
 #include "glw/GLWChart.h"
 #include "SurfaceCS.h"
 #include "Airport.h"
+#include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -301,7 +303,9 @@ void Aerial::addRigidBody(WarSpace *ws){
 	}
 }
 
-Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false){
+Aerial::Aerial(Game *game) : st(game), fspoiler(0), spoiler(false), destPos(0,0,0), destArrived(false), takingOff(false),
+	flyingSid(0), flyingHiSid(0)
+{
 }
 
 Aerial::Aerial(WarField *w) : st(w),
@@ -309,7 +313,8 @@ Aerial::Aerial(WarField *w) : st(w),
 	brake(false), afterburner(false), navlight(false),
 	gear(false), gearphase(0), brakephase(0), fspoiler(0), spoiler(false),
 	showILS(false), destPos(0,0,0),
-	destArrived(false), onFeet(false), takingOff(false)
+	destArrived(false), onFeet(false), takingOff(false),
+	flyingSid(0), flyingHiSid(0)
 {
 	moi = .2; /* kilograms * kilometer^2 */
 	init();
@@ -540,6 +545,41 @@ void Aerial::anim(double dt){
 #endif
 
 	this->pos += this->velo * dt;
+
+#ifndef DEDICATED
+	gltestp::dstring flyingSoundFile = getFlyingSoundFile();
+	gltestp::dstring flyingHiSoundFile = getFlyingSoundFile();
+	if(flyingSoundFile || flyingHiSoundFile){
+		// Clamp throttle value for calculating sound attributes in order to exaggerate sound with little throttle.
+		// Practically, throttle is rarely full, but often very little.
+		double speed = this->velo.len();
+		double pitch = std::max(1., speed / 0.2);
+		double capSpeed = std::min(1., speed / 0.2);
+
+		if(flyingSoundFile){
+			// If throttle is low, make low frequency sound be dominant.
+			double lowSound = std::max(0., capSpeed * (1. - capSpeed));
+			if(flyingSid){
+				movesound3d(flyingSid, this->pos);
+				volumesound3d(flyingSid, lowSound);
+				pitchsound3d(flyingSid, pitch);
+			}
+			else
+				flyingSid = playSound3D(flyingSoundFile, this->pos, lowSound, 0.1, 0, true, pitch);
+		}
+
+		if(flyingHiSoundFile){
+			double highSound = capSpeed * capSpeed;
+			if(flyingHiSid){
+				movesound3d(flyingHiSid, this->pos);
+				volumesound3d(flyingHiSid, highSound);
+				pitchsound3d(flyingHiSid, pitch);
+			}
+			else
+				flyingHiSid = playSound3D(flyingHiSoundFile, this->pos, highSound, 0.1, 0, true, pitch);
+		}
+	}
+#endif
 }
 
 gltestp::dstring &operator<<(gltestp::dstring &ds, Vec3d pos){

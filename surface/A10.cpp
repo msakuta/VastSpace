@@ -77,6 +77,8 @@ bool A10::debugWings = false;
 std::vector<hardpoint_static*> A10::hardpoints;
 StringList A10::defaultArms;
 StringList A10::weaponList;
+gltestp::dstring A10::flyingSoundFile;
+gltestp::dstring A10::flyingHiSoundFile;
 
 SQInteger A10::sqf_debugWings(HSQUIRRELVM v){
 	SQBool b;
@@ -134,7 +136,9 @@ void A10::init(){
 			DrawOverlayProcess(overlayDisp) <<=
 			HardPointProcess(hardpoints) <<=
 			StringListProcess(defaultArms, "defaultArms") <<=
-			StringListProcess(weaponList, "weaponList"));
+			StringListProcess(weaponList, "weaponList") <<=
+			StringProcess(flyingSoundFile, "flyingSoundFile") <<=
+			StringProcess(flyingHiSoundFile, "flyingHiSoundFile"));
 		assert(0 < weaponList.size());
 		initialized = true;
 	}

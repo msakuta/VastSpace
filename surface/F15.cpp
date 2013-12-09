@@ -78,6 +78,8 @@ std::vector<hardpoint_static*> F15::hardpoints;
 std::vector<Vec3d> F15::engineNozzles;
 StringList F15::defaultArms;
 StringList F15::weaponList;
+gltestp::dstring F15::flyingSoundFile;
+gltestp::dstring F15::flyingHiSoundFile;
 
 SQInteger F15::sqf_debugWings(HSQUIRRELVM v){
 	SQBool b;
@@ -134,7 +136,9 @@ void F15::init(){
 			HardPointProcess(hardpoints) <<=
 			Vec3dListProcess(engineNozzles, "engineNozzles") <<=
 			StringListProcess(defaultArms, "defaultArms") <<=
-			StringListProcess(weaponList, "weaponList"));
+			StringListProcess(weaponList, "weaponList") <<=
+			StringProcess(flyingSoundFile, "flyingSoundFile") <<=
+			StringProcess(flyingHiSoundFile, "flyingHiSoundFile"));
 		initialized = true;
 	}
 	mass = defaultMass;

@@ -65,6 +65,8 @@ protected:
 	static std::vector<hardpoint_static*> hardpoints;
 	static StringList defaultArms;
 	static StringList weaponList;
+	static gltestp::dstring flyingSoundFile;
+	static gltestp::dstring flyingHiSoundFile;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
@@ -78,6 +80,8 @@ protected:
 	int getAmmo()const override{return getAmmoFromSQ(sqQueryAmmo);}
 	void toggleWeapon()override{weapon = (weapon + 1) % weaponList.size();}
 	btCompoundShape *getShape()override;
+	gltestp::dstring getFlyingSoundFile()const override{return flyingSoundFile;}
+	gltestp::dstring getFlyingHiSoundFile()const override{return flyingHiSoundFile;}
 
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 	static SQInteger sqf_gunFireEffect(HSQUIRRELVM);

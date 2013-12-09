@@ -222,6 +222,8 @@ weaponList <- [
 	"AIM-9 Sidewinder",
 ]
 
+flyingSoundFile <- "sound/airrip.ogg";
+flyingHiSoundFile <- "sound/airrip-h.ogg";
 
 function drawOverlay(){
 	local glPath = function(d,scale){

@@ -2490,6 +2490,8 @@ int main(int argc, char *argv[])
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	CvarAdd("r_windows", &enableGLwindow, cvar_int);
 	CvarAdd("g_debug_sound", &g_debug_sound, cvar_int);
+	CvarAdd("g_interpolate_sound", &g_interpolate_sound, cvar_int);
+	CvarAdd("g_interpolate_sound_3d", &g_interpolate_sound_3d, cvar_int);
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");

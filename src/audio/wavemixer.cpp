@@ -15,6 +15,8 @@ extern "C"{
 #define MAXMIX 32
 #define EPSILON 0.001
 #define DEBUG_SOUND_WINDOW 1
+#define INTERPOLATE_SOUND 1
+#define INTERPOLATE_SOUND_3D 1
 
 namespace audio{
 
@@ -30,6 +32,13 @@ typedef int16_t sbits;
 
 long wave_volume = 255;
 static volatile long wave_current_volume = 255;
+
+// The interpolation switch variables are frequently read by dedicated sound mixing thread,
+// so one may concern about synchronization, but they will never be written by
+// the sound thread, so the main thread only need to care about writing atomically.
+// Default is to interpolate for sound quality.
+int g_interpolate_sound = 1;
+int g_interpolate_sound_3d = 1;
 
 static sbits soundbuf[2][2048][2];
 static WAVEHDR whs[2];
@@ -226,21 +235,45 @@ void initsound(void *pv){
 }
 
 static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
+	const volatile int interp = g_interpolate_sound;
 	int t;
 	for(t = 0; t < maxt; t++){
 		long tt0 = 0, tt1 = 0;
 		int i;
 		for(i = 0; i < nsrc; i++){
 			sounder &s = src[i];
-			size_t left = s.ipitch * s.left / PITCHDIV;
-			if(s.delay < t && t < left + s.delay){
+			unsigned ipitch = s.ipitch ? s.ipitch : PITCHDIV;
+			long lsrct = (t - s.delay) * ipitch;
+#if INTERPOLATE_SOUND
+			long modt = lsrct % PITCHDIV;
+#endif
+			long srct = lsrct / PITCHDIV;
+#if INTERPOLATE_SOUND
+			// If we have a nonzero modulo, the buffer must have one extra sample to interpolate with.
+			if(s.delay < srct && srct < s.left + s.delay + (interp && modt))
+#else
+			if(s.delay < srct && srct < s.left + s.delay)
+#endif
+			{
 				if(s.sampleBytes == 1){
-					long value = s.vol * (s.ipitch == 0 ? ((long)s.cur[t - s.delay] - 128) : s.cur[t * s.ipitch / 256 - s.delay] - 128);
+					long value =
+#if INTERPOLATE_SOUND
+						// The latter half of the conditional (modt != 0) may make the calculation slower due to
+						// CPU pipeline invalidation, but is necessary to prevent excess memory access
+						interp && modt != 0 ?
+							((long)s.cur[srct] - 128) * (PITCHDIV - modt) + ((long)s.cur[srct+1] - 128) * modt / PITCHDIV :
+#endif
+							((long)s.cur[srct] - 128) * s.vol;
 					tt0 += value * (128 + s.pan);
 					tt1 += value * (127 - s.pan);
 				}
 				else{
-					long value = s.vol * (s.ipitch == 0 ? (long)s.cur16[t - s.delay] : s.cur16[t * s.ipitch / 256 - s.delay]);
+					long value =
+#if INTERPOLATE_SOUND
+						interp && modt != 0 ?
+							(s.cur16[srct] * (PITCHDIV - modt) + s.cur16[srct+1] * modt) / PITCHDIV * s.vol :
+#endif
+							s.cur16[srct] * s.vol;
 					tt0 += value * (128 + s.pan) / 256;
 					tt1 += value * (127 - s.pan) / 256;
 				}
@@ -305,20 +338,51 @@ static void wavesumm8s(sbits *dst, sounder3d src[], unsigned long maxt, int nsrc
 		/* get scalar product of the 'ear' vector and offset from the viewpoint */
 		pan[i] = 128 * xh.sp(pos - view) / dist;
 	}
+	const volatile int interp = g_interpolate_sound_3d;
 	for(int t = 0; t < maxt; t++){
 		long tt0 = 0, tt1 = 0;
 		for(int i = 0; i < m; i++){
-			long srct = (t - pms[i]->delay) * pms[i]->ipitch / PITCHDIV;
-			if(pms[i]->loop && pms[i]->left < srct)
-				srct -= pms[i]->size;
-			if(pms[i]->loop || 0 <= srct && srct < pms[i]->left){
-				if(pms[i]->sampleBytes == 1){
-					tt0 += ((long)pms[i]->src[srct] - 128) * vol[i] * (128 - pan[i]) / voldiv;
-					tt1 += ((long)pms[i]->src[srct] - 128) * vol[i] * (pan[i] + 128) / voldiv;
+			sounder3d &s = *pms[i];
+			long lsrct = (t - s.delay) * s.ipitch;
+#if INTERPOLATE_SOUND_3D
+			long modt = lsrct % PITCHDIV;
+#endif
+			long srct = lsrct / PITCHDIV;
+			if(s.loop && s.left < srct)
+				srct -= s.size;
+#if INTERPOLATE_SOUND_3D
+			if(s.loop || 0 <= srct && srct + (interp && modt) < s.left)
+#else
+			if(s.loop || 0 <= srct && srct < s.left)
+#endif
+			{
+				if(s.sampleBytes == 1){
+					auto getf = [&](long srct, long pan){return ((long)s.src[srct] - 128) * vol[i] * (128 + pan) / voldiv;};
+#if INTERPOLATE_SOUND_3D
+					if(interp){
+						tt0 += (getf(srct, -pan[i]) * (PITCHDIV - modt) + getf(srct+1, -pan[i]) * modt) / PITCHDIV;
+						tt1 += (getf(srct, pan[i]) * (PITCHDIV - modt) + getf(srct+1, pan[i]) * modt) / PITCHDIV;
+					}
+					else
+#endif
+					{
+						tt0 += getf(srct, -pan[i]);
+						tt1 += getf(srct, pan[i]);
+					}
 				}
 				else{
-					tt0 += pms[i]->src16[srct] * vol[i] / 256 * (128 - pan[i]) / voldiv;
-					tt1 += pms[i]->src16[srct] * vol[i] / 256 * (pan[i] + 128) / voldiv;
+					auto getf = [&](long srct, long pan){return (long)pms[i]->src16[srct] * vol[i] / 256 * (128 + pan) / voldiv;};
+#if INTERPOLATE_SOUND_3D
+					if(interp){
+						tt0 += (getf(srct, -pan[i]) * (PITCHDIV - modt) + getf(srct+1, -pan[i]) * modt) / PITCHDIV;
+						tt1 += (getf(srct, pan[i]) * (PITCHDIV - modt) + getf(srct+1, pan[i]) * modt) / PITCHDIV;
+					}
+					else
+#endif
+					{
+						tt0 += getf(srct, -pan[i]);
+						tt1 += getf(srct, pan[i]);
+					}
 				}
 			}
 		}

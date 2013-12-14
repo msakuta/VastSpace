@@ -257,9 +257,9 @@ static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 			long srct = lsrct / PITCHDIV;
 #if INTERPOLATE_SOUND
 			// If we have a nonzero modulo, the buffer must have one extra sample to interpolate with.
-			if(s.delay < srct && srct < s.left + s.delay + (interp && modt))
+			if(s.delay <= srct && srct < s.left + s.delay + (interp && modt))
 #else
-			if(s.delay < srct && srct < s.left + s.delay)
+			if(s.delay <= srct && srct < s.left + s.delay)
 #endif
 			for(int c = 0; c < s.channels; c++){
 				long srci = srct * s.channels + c;

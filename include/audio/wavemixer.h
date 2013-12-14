@@ -26,6 +26,7 @@ EXPORT HANDLE CreateWaveOutThread(void);
 
 struct SoundSourceBase{
 	int sampleBytes;
+	int channels; ///< Number of channels, 1 for monoral
 	union{
 		const uint8_t *src;
 		const int16_t *src16;

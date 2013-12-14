@@ -261,28 +261,29 @@ static void wavesum(sbits *dst, sounder src[], unsigned long maxt, int nsrc){
 #else
 			if(s.delay < srct && srct < s.left + s.delay)
 #endif
-			{
+			for(int c = 0; c < s.channels; c++){
+				long srci = srct * s.channels + c;
 				if(s.sampleBytes == 1){
 					long value =
 #if INTERPOLATE_SOUND
 						// The latter half of the conditional (modt != 0) may make the calculation slower due to
 						// CPU pipeline invalidation, but is necessary to prevent excess memory access
 						interp && modt != 0 ?
-							((long)s.cur[srct] - 128) * (PITCHDIV - modt) + ((long)s.cur[srct+1] - 128) * modt / PITCHDIV :
+							((long)s.cur[srci] - 128) * (PITCHDIV - modt) + ((long)s.cur[srci+1] - 128) * modt / PITCHDIV :
 #endif
-							((long)s.cur[srct] - 128) * s.vol;
-					tt0 += value * (128 + s.pan);
-					tt1 += value * (127 - s.pan);
+							((long)s.cur[srci] - 128) * s.vol;
+					tt0 += value * (1 < s.channels ? 256 * (c == 0) : 128 + s.pan);
+					tt1 += value * (1 < s.channels ? 256 * (c == 1) : 127 - s.pan);
 				}
 				else{
 					long value =
 #if INTERPOLATE_SOUND
 						interp && modt != 0 ?
-							(s.cur16[srct] * (PITCHDIV - modt) + s.cur16[srct+1] * modt) / PITCHDIV * s.vol :
+							(s.cur16[srci] * (PITCHDIV - modt) + s.cur16[srci+1] * modt) / PITCHDIV * s.vol :
 #endif
-							s.cur16[srct] * s.vol;
-					tt0 += value * (128 + s.pan) / 256;
-					tt1 += value * (127 - s.pan) / 256;
+							s.cur16[srci] * s.vol;
+					tt0 += value * (1 < s.channels ? 256 * (c == 0) : 128 + s.pan) / 256;
+					tt1 += value * (1 < s.channels ? 256 * (c == 1) : 127 - s.pan) / 256;
 				}
 			}
 		}
@@ -364,7 +365,10 @@ static void wavesumm8s(sbits *dst, sounder3d src[], unsigned long maxt, int nsrc
 #endif
 			{
 				if(s.sampleBytes == 1){
-					auto getf = [&](long srct, long pan){return ((long)s.src[srct] - 128) * vol[i] * (128 + pan) / voldiv;};
+					// For 3D sounds, channels does not make sense in the source buffer.
+					// We just pick the first channel (left) and ignore the rest (right, ...).
+					// We should omit the unused channel at the time of decoding...
+					auto getf = [&](long srct, long pan){return ((long)s.src[srct * s.channels] - 128) * vol[i] * (128 + pan) / voldiv;};
 #if INTERPOLATE_SOUND_3D
 					if(interp){
 						tt0 += (getf(srct, -pan[i]) * (PITCHDIV - modt) + getf(srct+1, -pan[i]) * modt) / PITCHDIV;
@@ -378,7 +382,7 @@ static void wavesumm8s(sbits *dst, sounder3d src[], unsigned long maxt, int nsrc
 					}
 				}
 				else{
-					auto getf = [&](long srct, long pan){return (long)pms[i]->src16[srct] * vol[i] / 256 * (128 + pan) / voldiv;};
+					auto getf = [&](long srct, long pan){return (long)s.src16[srct * s.channels] * vol[i] / 256 * (128 + pan) / voldiv;};
 #if INTERPOLATE_SOUND_3D
 					if(interp){
 						tt0 += (getf(srct, -pan[i]) * (PITCHDIV - modt) + getf(srct+1, -pan[i]) * modt) / PITCHDIV;
@@ -604,7 +608,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				}
 				else if(tt2){
 					s.left -= tt2;
-					s.cur += s.sampleBytes * tt2;
+					s.cur += s.sampleBytes * s.channels * tt2;
 				}
 			}
 		}
@@ -630,7 +634,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				}
 				if(m.left < tt2){
 					if(m.loop){
-						m.src -= m.sampleBytes * (m.size - tt2);
+						m.src -= m.sampleBytes * m.channels * (m.size - tt2);
 						m.left += m.size - tt2;
 					}
 					else
@@ -638,7 +642,7 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2)
 				}
 				else if(tt2){
 					m.left -= tt2;
-					m.src += m.sampleBytes * tt2;
+					m.src += m.sampleBytes * m.channels * tt2;
 				}
 			}
 		}

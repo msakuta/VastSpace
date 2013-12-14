@@ -302,8 +302,9 @@ wavc_t *cacheWaveData(const char *fname){
 		if(!vi)
 			return nullptr;
 
-		// Only monoral sound sources are allowed as sound effects.
-		if(vi->channels != 1){
+		// Only monaural or stereo sound sources are allowed as sound effects.
+		// Sounds having more than 2 channels (surround encoding) are not supported (who would want it?).
+		if(2 < vi->channels){
 			ov_clear( &vf );
 			return nullptr;
 		}
@@ -423,8 +424,9 @@ int playSound(const char *fileName, size_t delay, unsigned short vol, double pit
 
 	SoundSource ss;
 	ss.sampleBytes = (*node)->format.wBitsPerSample / 8;
+	ss.channels = (*node)->format.nChannels;
 	ss.src = (uint8_t*)(*node)->head.lpData;
-	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes;
+	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes / ss.channels;
 	ss.delay = delay;
 	ss.vol = vol;
 	ss.pitch = pitch;
@@ -459,8 +461,9 @@ int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, doub
 
 	SoundSource3D ss;
 	ss.sampleBytes = (*node)->format.wBitsPerSample / 8;
+	ss.channels = (*node)->format.nChannels;
 	ss.src = (decltype(ss.src))(*node)->head.lpData;
-	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes;
+	ss.size = (*node)->head.dwBufferLength / ss.sampleBytes / ss.channels;
 	ss.delay = delay;
 	ss.vol = vol;
 	ss.attn = attn;

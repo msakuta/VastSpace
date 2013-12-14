@@ -162,7 +162,6 @@ unsigned SoundSourceBase::calcPitch()const{
 }
 
 static sounder sounders[32];
-static int isounder = 0;
 
 static sounder3d msounders[128];
 static short imsounder = 0;
@@ -171,17 +170,17 @@ int addsound(const SoundSource &s){
 	int i;
 	if(s.vol < 16 || !s.size)
 		return -1;
-	assert(-32 < s.pitch);
-	for(i = 0; i < numof(sounders); i++) if(sounders[i].left == 0 || sounders[i].priority < s.priority
-		|| sounders[i].priority == s.priority && (long)s.delay - SAMPLERATE / s.vol < (long)sounders[i].delay - SAMPLERATE / sounders[i].vol){
-		isounder = i;
-		break;
+	assert(0 < s.pitch);
+	for(i = 0; i < numof(sounders); i++){
+		sounder &ss = sounders[i];
+		if(ss.left == 0 || ss.priority < s.priority
+			|| ss.priority == s.priority && (long)s.delay - SAMPLERATE / s.vol < (long)ss.delay - SAMPLERATE / ss.vol)
+		{
+			ss = sounder(s);
+			return i;
+		}
 	}
-	if(i == numof(sounders))
-		return -1;
-	sounders[isounder] = sounder(s);
-	isounder = (isounder + 1) % numof(sounders);
-	return isounder;
+	return -1;
 }
 
 int stopsound(char priority){

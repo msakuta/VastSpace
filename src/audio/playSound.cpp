@@ -432,9 +432,7 @@ int playSound(const char *fileName, size_t delay, unsigned short vol, double pit
 	ss.pan = pan;
 	ss.loops = loops;
 	ss.priority = priority;
-	addsound(ss);
-
-	return 1;
+	return addsound(ss);
 }
 
 int playSound3DCustom(const char *fileName, const Vec3d &pos, size_t delay, double vol, double attn, double pitch, bool loop){

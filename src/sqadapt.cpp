@@ -320,6 +320,22 @@ static SQInteger sqf_playSound(HSQUIRRELVM v){
 #endif
 }
 
+static SQInteger sqf_isEndSound(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		SQInteger sid = loadInteger(v, 2, 0);
+		SQBool ret = isEndSound(sid) ? SQTrue : SQFalse;
+		sq_pushbool(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+#else
+	return 0;
+#endif
+}
+
 static SQInteger sqf_playSound3D(HSQUIRRELVM v){
 #ifndef DEDICATED
 	try{
@@ -1344,6 +1360,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_createslot(v, 1);
 
 	register_global_func(v, sqf_playSound, _SC("playSound"));
+	register_global_func(v, sqf_isEndSound, _SC("isEndSound"));
 	register_global_func(v, sqf_playSound3D, _SC("playSound3D"));
 	register_global_func(v, sqf_isEndSound3D, _SC("isEndSound3D"));
 

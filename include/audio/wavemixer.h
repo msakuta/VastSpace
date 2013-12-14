@@ -47,9 +47,7 @@ struct SoundSource : public SoundSourceBase{
 
 EXPORT int addsound(const SoundSource &s);
 EXPORT int stopsound(char priority);
-EXPORT void initsound(void *src);
-EXPORT void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT msg, DWORD ins, DWORD p1, DWORD p2);
-EXPORT DWORD WINAPI WaveOutThread(HWAVEOUT *);
+EXPORT bool isEndSound(int sid);
 
 /// \brief Sets listener's position and orientation for the sound mixer.
 /// \param pos The position of the listener, in world coordinates

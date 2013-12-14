@@ -21,6 +21,8 @@ extern "C"{
 namespace audio{
 
 static HWAVEOUT hwo;
+static DWORD WINAPI WaveOutThread(HWAVEOUT *phwo);
+static void initsound(void *pv);
 
 #if SAMPLEBITS == 8
 typedef BYTE sbits;
@@ -196,6 +198,12 @@ int stopsound(char priority){
 	return i;
 }
 
+bool isEndSound(int sid){
+	assert(0 <= sid && sid < numof(sounders));
+	sounder &s = sounders[sid];
+	return s.src == NULL || 0 == s.loops && 0 == s.left;
+}
+
 int maddsound(const unsigned char *src, size_t size, size_t delay, const double pos[3], double vol, double attn){
 	sounder3d *s;
 	s = &msounders[imsounder];
@@ -210,7 +218,7 @@ int maddsound(const unsigned char *src, size_t size, size_t delay, const double 
 	return imsounder & (s->serial << 16); /* encode the pointer that it includes the serial number. */
 }
 
-void initsound(void *pv){
+static void initsound(void *pv){
 	BYTE (*src)[2] = (BYTE(*)[2])pv;
 #if 0
 	int i;
@@ -701,7 +709,7 @@ static void DrawWave(HWAVEOUT hwo, HWND hWnd, HDC hdc, WPARAM wParam){
 
 int g_debug_sound = 0;
 
-DWORD WINAPI WaveOutThread(HWAVEOUT *phwo){
+static DWORD WINAPI WaveOutThread(HWAVEOUT *phwo){
 	MSG msg;
 
 	// make sure to get the message queue active

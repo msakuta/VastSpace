@@ -1,7 +1,7 @@
 /** \file
  * \brief Implementation of ReZEL class's graphical aspects.
  */
-#include "ReZEL.h"
+#include "../ReZEL.h"
 #include "Player.h"
 #include "draw/material.h"
 //#include "judge.h"

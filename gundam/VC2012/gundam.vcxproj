@@ -178,7 +178,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ReZEL-draw.cpp" />
+    <ClCompile Include="..\draw\ReZEL-draw.cpp" />
     <ClCompile Include="..\ReZEL.cpp" />
   </ItemGroup>
   <ItemGroup>

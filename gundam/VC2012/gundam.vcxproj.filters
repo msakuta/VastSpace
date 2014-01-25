@@ -9,13 +9,16 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Sources\draw">
+      <UniqueIdentifier>{0f5333f2-c671-4295-9594-2970ab235c7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ReZEL.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\ReZEL-draw.cpp">
-      <Filter>Sources</Filter>
+    <ClCompile Include="..\draw\ReZEL-draw.cpp">
+      <Filter>Sources\draw</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

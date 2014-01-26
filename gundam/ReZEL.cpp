@@ -4,6 +4,7 @@
 
 #include "draw/effects.h"
 #include "ReZEL.h"
+#include "GundamCommands.h"
 #include "CoordSys.h"
 #include "war.h"
 //#include "arms.h"

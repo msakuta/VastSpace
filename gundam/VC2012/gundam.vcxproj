@@ -184,6 +184,7 @@
     <ClCompile Include="..\Zeta.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\GundamCommands.h" />
     <ClInclude Include="..\ReZEL.h" />
     <ClInclude Include="..\StaticBind.h" />
     <ClInclude Include="..\Zeta.h" />

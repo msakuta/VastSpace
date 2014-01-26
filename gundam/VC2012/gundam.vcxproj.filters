@@ -26,6 +26,9 @@
     <ClCompile Include="..\draw\Zeta-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\Zeta.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ReZEL.h">
@@ -35,6 +38,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\StaticBind.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GundamCommands.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

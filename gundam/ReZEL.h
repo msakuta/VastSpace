@@ -7,7 +7,6 @@
 #include "StaticBind.h"
 #include "Frigate.h"
 #include "ModelEntity.h"
-#include "EntityCommand.h"
 #include "mqo.h"
 #include "ysdnmmot.h"
 #include "libmotion.h"
@@ -237,15 +236,5 @@ private:
 #endif
 };
 
-
-DERIVE_COMMAND_EXT_ADD(TransformCommand, EntityCommand, int formid);
-
-DERIVE_COMMAND_EXT_ADD(WeaponCommand, EntityCommand, int weaponid);
-
-DERIVE_COMMAND_EXT_ADD(StabilizerCommand, EntityCommand, int stabilizer);
-
-DERIVE_COMMAND_EXT_ADD(GetCoverCommand, EntityCommand, int v);
-
-DERIVE_COMMAND_EXT(ReloadCommand, EntityCommand);
 
 #endif

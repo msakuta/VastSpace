@@ -11,7 +11,10 @@ f15.destArrived = true;
 birds.append(f15);
 */
 
-local z = player.cs.addent("ReZEL", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
+//local z = player.cs.addent("ReZEL", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
+//player.chase = z;
+
+local z = player.cs.addent("ZetaGundam", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 player.chase = z;
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
@@ -58,11 +61,11 @@ local function globalCoord(v){
 }
 
 
-
+/*
 local apache = player.cs.addent("Apache", Vec3d(0, 2.71, 5. - 0.2));
 player.chase = apache;
 apache.enemy = tank;
-
+*/
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

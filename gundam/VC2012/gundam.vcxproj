@@ -179,11 +179,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\draw\ReZEL-draw.cpp" />
+    <ClCompile Include="..\draw\Zeta-draw.cpp" />
     <ClCompile Include="..\ReZEL.cpp" />
+    <ClCompile Include="..\Zeta.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ReZEL.h" />
     <ClInclude Include="..\StaticBind.h" />
+    <ClInclude Include="..\Zeta.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

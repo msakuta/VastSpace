@@ -87,7 +87,7 @@ protected:
 	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
 	CoverPoint coverPoint; ///< Cover point
 
-	static const int motionCount = 1;
+	static const int motionCount = 2;
 
 	/// Set of MotionPoses produced by interpolating motions.
 	///
@@ -102,6 +102,7 @@ protected:
 		}
 		MotionPose &operator[](int i){return *a[i];}
 		void push_back(MotionPose *p){
+			assert(n < motionCount);
 			a[n++] = p;
 		}
 		int getn()const{return n;}

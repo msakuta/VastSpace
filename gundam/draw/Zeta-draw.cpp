@@ -72,10 +72,10 @@ void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&m
 /*	motion_time[0] = 10. * fwaverider;
 	motion_amplitude[0] = fwaverider ? 1. : 0.;
 	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
-	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;
-	motion_time[2] = 10. * (freload == 0. ? 1. - fweapon : 0.);
-	motion_amplitude[2] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
-	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
+	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;*/
+	motion_time[1] = 10. * (freload == 0. ? 1. - fweapon : 0.);
+	motion_amplitude[1] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
+/*	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 	motion_amplitude[3] = fwaverider != 1. ? 1. : 0.;
 	motion_time[4] = fonfeet != 1.f ? (-twist * (1. - fwaverider) + 1.) * 10. : 10.;
 	motion_amplitude[4] = 0.; // disable airtwist
@@ -121,6 +121,7 @@ ZetaGundam::MotionPoseSet &ZetaGundam::motionInterpolate(){
 
 	int n = 0;
 	for(int i = 0; i < numof(motions); i++) if(motion_amplitude[i] != 0. && motions[i]){
+		assert(n < numof(motions));
 		vectime[n] = (motion_time[i]);
 		vecamp[n] = (motion_amplitude[i]);
 		vecmotions[n] = (motions[i]);
@@ -176,9 +177,9 @@ void ZetaGundam::draw(wardraw_t *wd){
 	if(!init) do{
 		model = LoadMQOModel("gundam/models/Zeta.mqo");
 /*		motions[0] = new Motion("gundam/models/ZetaGundam_waverider.mot");
-		motions[1] = new Motion("gundam/models/ZetaGundam_airidle.mot");
-		motions[2] = new Motion("gundam/models/ZetaGundam_aim.mot");
-		motions[3] = new Motion("gundam/models/ZetaGundam_aimsub.mot");
+		motions[1] = new Motion("gundam/models/ZetaGundam_airidle.mot");*/
+		motions[1] = new Motion("gundam/models/ZetaGundam_aim.mot");
+/*		motions[3] = new Motion("gundam/models/ZetaGundam_aimsub.mot");
 		motions[4] = new Motion("gundam/models/ZetaGundam_airtwist.mot");
 		motions[5] = new Motion("gundam/models/ZetaGundam_airpitch.mot");
 		motions[6] = new Motion("gundam/models/ZetaGundam_reload.mot");

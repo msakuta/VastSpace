@@ -69,7 +69,7 @@ Motion *ZetaGundam::motions[ZetaGundam::motionCount];
 void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
 	for(int i = 0; i < numof(motions); i++)
 		motion_amplitude[i] = 1.;
-	motion_time[0] = 10. * fwaverider;
+/*	motion_time[0] = 10. * fwaverider;
 	motion_amplitude[0] = fwaverider ? 1. : 0.;
 	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
 	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;
@@ -84,10 +84,10 @@ void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&m
 	motion_time[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.);
 	motion_amplitude[6] = fwaverider != 1. && fsabre != 1. ? 1. : 0.;
 	motion_time[7] = (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
-	motion_amplitude[7] = 1. - fwaverider;
-	motion_time[8] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
-	motion_amplitude[8] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
-	motion_time[9] = 10. * min(1., 1. - velo.len() / walkSpeed);
+	motion_amplitude[7] = 1. - fwaverider;*/
+	motion_time[0] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
+	motion_amplitude[0] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
+/*	motion_time[9] = 10. * min(1., 1. - velo.len() / walkSpeed);
 	motion_amplitude[9] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
 	motion_time[10] = 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.);
 	motion_amplitude[10] = (1. - fwaverider) * (1. - coverFactor());
@@ -100,7 +100,7 @@ void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&m
 	motion_time[14] = weapon == 0 ? 10. * rangein(aimdir[1] / (M_PI / 4.) + 1., 0., 2.) : 0;
 	motion_amplitude[14] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
 	motion_time[15] = weapon == 0 ? 10. * rangein(aimdir[0] / (M_PI / 4.) + 1., 0., 2.) : 0;
-	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
+	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);*/
 }
 
 ZetaGundam::MotionPoseSet &ZetaGundam::motionInterpolate(){
@@ -182,9 +182,9 @@ void ZetaGundam::draw(wardraw_t *wd){
 		motions[4] = new Motion("gundam/models/ZetaGundam_airtwist.mot");
 		motions[5] = new Motion("gundam/models/ZetaGundam_airpitch.mot");
 		motions[6] = new Motion("gundam/models/ZetaGundam_reload.mot");
-		motions[7] = new Motion("gundam/models/ZetaGundam_sabre.mot");
-		motions[8] = new Motion("gundam/models/ZetaGundam_walk.mot");
-		motions[9] = new Motion("gundam/models/ZetaGundam_stand.mot");
+		motions[7] = new Motion("gundam/models/ZetaGundam_sabre.mot");*/
+		motions[0] = new Motion("gundam/models/ZetaGundam_walk.mot");
+/*		motions[9] = new Motion("gundam/models/ZetaGundam_stand.mot");
 		motions[10] = new Motion("gundam/models/ZetaGundam_yaw.mot");
 		motions[11] = new Motion("gundam/models/ZetaGundam_pitch.mot");
 		motions[12] = new Motion("gundam/models/ZetaGundam_pitchsub.mot");
@@ -241,7 +241,7 @@ void ZetaGundam::draw(wardraw_t *wd){
 		}
 #endif
 
-		DrawMQOPose(model, NULL/*&v[0]*/);
+		DrawMQOPose(model, &v[0]);
 //		YSDNM_MotionInterpolateFree(v);
 		motionInterpolateFree(v);
 

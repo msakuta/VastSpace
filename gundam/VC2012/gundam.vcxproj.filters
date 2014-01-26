@@ -25,5 +25,8 @@
     <ClInclude Include="..\ReZEL.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\StaticBind.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

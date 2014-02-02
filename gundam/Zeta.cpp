@@ -496,7 +496,7 @@ void ZetaGundam::shootRifle(double dt){
 
 //		printf("motioninterp: %lg\n", TimeMeasLap(&tm));
 		motionInterpolateTime = TimeMeasLap(&tm);
-		if(model->getBonePos("ZetaGundam_riflemuzzle", v[0], &gunpos)){
+		if(model->getBonePos("riflemuzzle", v[0], &gunpos)){
 			gunpos *= modelScale;
 			gunpos[0] *= -1;
 			gunpos[2] *= -1;
@@ -591,7 +591,7 @@ void ZetaGundam::shootVulcan(double dt){
 	// Retrieve muzzle position from model, but not the velocity
 	{
 		MotionPoseSet v = motionInterpolate();
-		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "ZetaGundam_rvulcan" : "ZetaGundam_lvulcan", v[0], &gunpos[i])){
+		for(int i = 0; i < 2; i++) if(model->getBonePos(i ? "rvulcan" : "lvulcan", v[0], &gunpos[i])){
 			gunpos[i] *= modelScale;
 			gunpos[i][0] *= -1;
 			gunpos[i][2] *= -1;

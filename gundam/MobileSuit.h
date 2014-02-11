@@ -125,6 +125,7 @@ public:
 	virtual double getMaxHealth()const override;
 	virtual void control(const input_t *inputs, double dt);
 	virtual void anim(double dt);
+	void drawHUD(WarDraw *wd)override;
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);
 	virtual bool isTargettable()const;
@@ -152,6 +153,8 @@ public:
 protected:
 	virtual double maxfuel()const = 0;
 	virtual double getFuelRegenRate()const = 0;
+	virtual double getVulcanCooldownTime()const = 0;
+	virtual double getVulcanReloadTime()const = 0;
 	virtual int getVulcanMagazineSize()const = 0;
 	virtual int getRifleMagazineSize()const = 0;
 	virtual double getRotationSpeed()const = 0;

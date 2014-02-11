@@ -106,7 +106,6 @@ public:
 	virtual void enterField(WarField *);
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
-	virtual void drawHUD(WarDraw *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);
@@ -132,6 +131,8 @@ public:
 protected:
 	double maxfuel()const override;
 	double getFuelRegenRate()const override{return fuelRegenRate;}
+	double getVulcanCooldownTime()const override{return vulcanCooldownTime;}
+	double getVulcanReloadTime()const override{return vulcanReloadTime;}
 	int getVulcanMagazineSize()const override{return vulcanMagazineSize;}
 	int getRifleMagazineSize()const override{return rifleMagazineSize;}
 	double getRotationSpeed()const override{return rotationSpeed;}

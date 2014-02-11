@@ -178,6 +178,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\draw\MobileSuit-draw.cpp" />
     <ClCompile Include="..\draw\ReZEL-draw.cpp" />
     <ClCompile Include="..\draw\Zeta-draw.cpp" />
     <ClCompile Include="..\MobileSuit.cpp" />

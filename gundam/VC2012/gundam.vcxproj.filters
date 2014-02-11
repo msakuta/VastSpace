@@ -32,6 +32,9 @@
     <ClCompile Include="..\MobileSuit.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\draw\MobileSuit-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ReZEL.h">

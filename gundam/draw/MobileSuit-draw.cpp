@@ -3,6 +3,7 @@
  */
 #include "../MobileSuit.h"
 #include "draw/WarDraw.h"
+#include "glw/glwindow.h"
 #include "glstack.h"
 extern "C"{
 #include <clib/mathdef.h>
@@ -10,16 +11,113 @@ extern "C"{
 
 
 
-
 void MobileSuit::drawHUD(WarDraw *wd){
 	if(game->player->mover != game->player->cockpitview)
 		return;
+
+	// This block draws list of weapons
+	{
+		int wmax = MAX(wd->vw->vp.w, wd->vw->vp.h);
+		double xf = (double)wd->vw->vp.w / wmax;
+		double yf = (double)wd->vw->vp.h / wmax;
+
+		static const double wlLeft = 0.5;
+		static const double wlRight = 0.99;
+		static const double wlHeight = 0.12;
+		static const double wlMargin = 0.01;
+
+		GLpmatrix pm;
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-xf, xf, -yf, yf, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		static const char *weaponNames[] = {
+			"Beam Rifle", "Shield Beam", "Vulcan", "Beam Sabre"
+		};
+		for(int i = 0; i < 4; i++){
+			double ybase = -yf + 3 * wlHeight + wlMargin - i * wlHeight;
+			for(int j = 0; j < 2; j++){
+				glColor4fv(j == 0 ? Vec4f(0,0,0,0.75) : weapon == i ? Vec4f(1,1,1,1) : Vec4f(0.75,0.75,0,1));
+				glBegin(j == 0 ? GL_QUADS : GL_LINE_LOOP);
+				glVertex2d( wlLeft, ybase);
+				glVertex2d( wlRight, ybase);
+				glVertex2d( wlRight, ybase + wlHeight - wlMargin);
+				glVertex2d( wlLeft, ybase + wlHeight - wlMargin);
+				glEnd();
+			}
+
+			static const double fontSize = 0.0025;
+
+			// Show weapon name
+			glPushMatrix();
+			glTranslated(wlLeft + 0.05, ybase + fontSize * GLwindow::getFontHeight() * 2, 0);
+			glScaled(fontSize, -fontSize, .1);
+			glwPutTextureString(gltestp::dstring(i + 1) << " " << weaponNames[i]);
+			glPopMatrix();
+
+			// Show ammunition count
+			double ammoFactor = 0;
+			glPushMatrix();
+			glTranslated(wlLeft + 0.05, ybase + fontSize * GLwindow::getFontHeight() * 1, 0);
+			glScaled(fontSize, -fontSize, .1);
+			switch(i){
+			case 0:
+				if(freload != 0){
+					glwPutTextureString("  RELOADING");
+					ammoFactor = 1. - freload / getReloadTime();
+				}
+				else{
+					glwPutTextureString(gltestp::dstring("  ") << magazine << "/" << getRifleMagazineSize());
+					ammoFactor = (double)magazine / getRifleMagazineSize();
+				}
+				break;
+			case 1:
+				glwPutTextureString(gltestp::dstring("  ") << submagazine << "/" << 3);
+				ammoFactor = (double)submagazine / 3;
+				break;
+			case 2:
+				glwPutTextureString(gltestp::dstring("  ") << vulcanmag << "/" << getVulcanMagazineSize());
+				ammoFactor = (double)vulcanmag / getVulcanMagazineSize();
+				break;
+			}
+			glPopMatrix();
+
+			static const double margin = 0.05;
+			// Show ammunition graph
+			if(i < 3){
+				glPushMatrix();
+				glTranslated(wlLeft + margin, ybase + 0.015, 0);
+				glScaled((wlRight - margin) - (wlLeft + margin), 0.01, 1);
+				glBegin(GL_QUADS);
+				glColor4f(0,1,0,1);
+				glVertex2d(0, 0);
+				glVertex2d(ammoFactor, 0);
+				glVertex2d(ammoFactor, 1);
+				glVertex2d(0, 1);
+				glColor4f(1,0,0,1);
+				glVertex2d(ammoFactor, 0);
+				glVertex2d(1, 0);
+				glVertex2d(1, 1);
+				glVertex2d(ammoFactor, 1);
+				glEnd();
+				glPopMatrix();
+			}
+		}
+
+		glPopMatrix();
+	}
+
 	GLpmatrix pm;
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	int wmin = min(wd->vw->vp.w, wd->vw->vp.h);
+
+	int wmin = MIN(wd->vw->vp.w, wd->vw->vp.h);
 	double xf = (double)wd->vw->vp.w / wmin;
 	double yf = (double)wd->vw->vp.h / wmin;
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
 	glOrtho(-xf, xf, -yf, yf, -1, 1);
 //	glOrtho(0, wd->vw->vp.w, wd->vw->vp.h, 0, -1, 1);
 	glMatrixMode(GL_MODELVIEW);

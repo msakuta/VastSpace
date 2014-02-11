@@ -44,13 +44,33 @@ protected:
 	};
 	static const Vec3d thrusterDir[7];
 
+	/// \brief The parameters for a weapon type.
+	struct WeaponParams{
+		const char *name;
+		float coolDownTime;
+		float reloadTime;
+		int magazineSize;
+		int maxAmmo;
+	};
+
+	/// \brief Status for a weapon type.
+	///
+	/// Each MobileSuit instance have a set of this struct to keep track of
+	/// weapon status.
+	struct WeaponStatus{
+		float cooldown;
+		float reload;
+		int magazine;
+		int ammo;
+	};
+
+	std::vector<WeaponStatus> weaponStatus;
+
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
 	double throttle;
 	double fuel;
-	double cooldown;
 	Vec3d dest;
-	float vulcancooldown;
 	float vulcanSoundCooldown;
 	float fcloak;
 	float heat;
@@ -60,10 +80,7 @@ protected:
 	Docker *mother; ///< Mother ship that will be returned to when out of fuel
 	int hitsound;
 	int paradec;
-	int magazine; ///< remaining bullet count in the magazine to shoot before reloading
 	int weapon; ///< Armed weapon id
-	int submagazine; ///< Remaining rounds in sub-arm
-	int vulcanmag; ///< Vulcan magazine
 	Task task;
 	bool standingUp; ///< Standing up against acceleration
 	bool docked, returning, away, cloak, forcedEnemy;
@@ -75,7 +92,6 @@ protected:
 	float pitch; ///< Pitch value (integration of angular velocity around X axis)
 	float fsabre; ///< Sabre swing phase
 	float integral[2]; ///< integration of pitch-yaw space of relative target position
-	float freload; ///< Reload phase
 	float fonfeet; ///< Factor of on-feetness
 	float walkphase; ///< Walk phase
 	float jumptime; ///< Time left for jump
@@ -102,7 +118,6 @@ protected:
 	Entity *findMother();
 	Quatd aimRot()const;
 	double coverFactor()const{return min(coverRight, 1.);}
-	void reloadRifle();
 	static SQInteger sqf_get(HSQUIRRELVM);
 
 	static StaticBindDouble deathSmokeFreq;
@@ -153,13 +168,10 @@ public:
 protected:
 	virtual double maxfuel()const = 0;
 	virtual double getFuelRegenRate()const = 0;
-	virtual double getVulcanCooldownTime()const = 0;
-	virtual double getVulcanReloadTime()const = 0;
-	virtual int getVulcanMagazineSize()const = 0;
-	virtual int getRifleMagazineSize()const = 0;
+	virtual int getWeaponCount()const{return 0;}
+	virtual bool getWeaponParams(int weapon, WeaponParams &param)const{return false;}
 	virtual double getRotationSpeed()const = 0;
 	virtual double getMaxAngleSpeed()const = 0;
-	virtual int getReloadTime()const = 0;
 	virtual const HitBoxList &getHitBoxes()const = 0;
 	virtual btCompoundShape *getShape()const = 0;
 	virtual btCompoundShape *getWaveRiderShape()const{return NULL;}
@@ -173,6 +185,8 @@ protected:
 	HSQOBJECT getSqCockpitView()const override{ return sqCockpitView; }
 
 	SQInteger boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value);
+
+	void reloadWeapon();
 
 private:
 	mutable Vec3d pDelta; ///< Private delta

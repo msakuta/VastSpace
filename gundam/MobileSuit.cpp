@@ -158,14 +158,11 @@ void MobileSuit::serialize(SerializeContext &sc){
 	sc.o << aac; /* angular acceleration */
 	sc.o << throttle;
 	sc.o << fuel;
-	sc.o << cooldown;
 	sc.o << dest;
 	sc.o << fcloak;
 	sc.o << waverider;
 	sc.o << fwaverider;
 	sc.o << weapon;
-	sc.o << magazine;
-	sc.o << submagazine;
 	sc.o << heat;
 	sc.o << mother; // Mother ship
 //	sc.o << hitsound;
@@ -177,6 +174,14 @@ void MobileSuit::serialize(SerializeContext &sc){
 	sc.o << stabilizer;
 	sc.o << formPrev;
 	sc.o << coverRight;
+
+	sc.o << (int)weaponStatus.size();
+	for(int i = 0; i < weaponStatus.size(); ++i){
+		sc.o << weaponStatus[i].cooldown;
+		sc.o << weaponStatus[i].reload;
+		sc.o << weaponStatus[i].magazine;
+		sc.o << weaponStatus[i].ammo;
+	}
 }
 
 void MobileSuit::unserialize(UnserializeContext &sc){
@@ -184,14 +189,11 @@ void MobileSuit::unserialize(UnserializeContext &sc){
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
 	sc.i >> fuel;
-	sc.i >> cooldown;
 	sc.i >> dest;
 	sc.i >> fcloak;
 	sc.i >> waverider;
 	sc.i >> fwaverider;
 	sc.i >> weapon;
-	sc.i >> magazine;
-	sc.i >> submagazine;
 	sc.i >> heat;
 	sc.i >> mother; // Mother ship
 //	sc.i >> hitsound;
@@ -203,6 +205,16 @@ void MobileSuit::unserialize(UnserializeContext &sc){
 	sc.i >> stabilizer;
 	sc.i >> formPrev;
 	sc.i >> coverRight;
+
+	int size;
+	sc.i >> size;
+	weaponStatus.resize(size);
+	for(int i = 0; i < size; ++i){
+		sc.i >> weaponStatus[i].cooldown;
+		sc.i >> weaponStatus[i].reload;
+		sc.i >> weaponStatus[i].magazine;
+		sc.i >> weaponStatus[i].ammo;
+	}
 
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 	WarSpace *ws;
@@ -228,11 +240,9 @@ MobileSuit::MobileSuit(Game *game) :
 	st(game),
 	mother(NULL),
 	paradec(-1),
-	vulcancooldown(0.f),
 	vulcanSoundCooldown(0.f),
 	twist(0.f),
 	pitch(0.f),
-	freload(0.f),
 	fsabre(0.f),
 	fonfeet(0.f),
 	walkphase(0.f),
@@ -256,12 +266,9 @@ MobileSuit::MobileSuit(WarField *aw) : st(aw),
 	fwaverider(0.),
 	weapon(0),
 	fweapon(0.),
-	vulcancooldown(0.f),
 	vulcanSoundCooldown(0.f),
-	submagazine(3),
 	twist(0.f),
 	pitch(0.f),
-	freload(0.f),
 	paradec(-1),
 	forcedEnemy(false),
 	formPrev(NULL),
@@ -292,7 +299,6 @@ MobileSuit::MobileSuit(WarField *aw) : st(aw),
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
-	p->cooldown = 1.;
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
@@ -309,9 +315,24 @@ MobileSuit::MobileSuit(WarField *aw) : st(aw),
 }
 
 void MobileSuit::init(){
+	// Initialize weapon status by acquired parameters.
+	int count = getWeaponCount();
+	weaponStatus.resize(count);
+	for(int i = 0; i < count; ++i){
+		weaponStatus[i].cooldown = 0;
+		weaponStatus[i].reload = 0;
+		WeaponParams param;
+		if(getWeaponParams(i, param)){
+			weaponStatus[i].magazine = param.magazineSize;
+			weaponStatus[i].ammo = param.maxAmmo;
+		}
+		else{
+			weaponStatus[i].magazine = 0;
+			weaponStatus[i].ammo = 0;
+		}
+	}
+
 	fuel = maxfuel();
-	vulcanmag = getVulcanMagazineSize();
-	magazine = getRifleMagazineSize();
 }
 
 void MobileSuit::control(const input_t *inputs, double dt){
@@ -422,14 +443,6 @@ Entity *MobileSuit::findMother(){
 
 Quatd MobileSuit::aimRot()const{
 	return Quatd::rotation(aimdir[1], 0, -1, 0) * Quatd::rotation(aimdir[0], -1, 0, 0);
-}
-
-void MobileSuit::reloadRifle(){
-	if(magazine < getRifleMagazineSize()){
-		magazine = getRifleMagazineSize();
-		this->cooldown += getReloadTime();
-		this->freload = getReloadTime();
-	}
 }
 
 void MobileSuit::anim(double dt){
@@ -772,13 +785,12 @@ void MobileSuit::anim(double dt){
 				shootVulcan(dt);
 			}
 
-			if(p->cooldown < dt)
-				p->cooldown = 0;
-			else
-				p->cooldown -= dt;
-
-			freload = approach(freload, 0., dt, 0.);
-			vulcancooldown = approach(vulcancooldown, 0., dt, 0.);
+			int weaponCount = getWeaponCount();
+			for(int i = 0; i < weaponCount; ++i){
+				WeaponStatus &wst = weaponStatus[i];
+				wst.cooldown = approach(wst.cooldown, 0., dt, 0.);
+				wst.reload = approach(wst.reload, 0., dt, 0.);
+			}
 			vulcanSoundCooldown = approach(vulcanSoundCooldown, 0., dt, 0.);
 
 #if 0
@@ -1294,7 +1306,8 @@ bool MobileSuit::command(EntityCommand *com){
 			task = Auto;
 	}
 	else if(InterpretCommand<ReloadCommand>(com)){
-		reloadRifle();
+		reloadWeapon();
+		return true;
 	}
 	else if(InterpretCommand<ParadeCommand>(com)){
 		task = Parade;
@@ -1807,6 +1820,18 @@ SQInteger MobileSuit::boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value)
 		return sq_throwerror(v, gltestp::dstring("could not convert to bool ") << name);
 	value = b != SQFalse;
 	return 0;
+}
+
+void MobileSuit::reloadWeapon(){
+	WeaponParams param;
+	if(!getWeaponParams(weapon, param))
+		return;
+	WeaponStatus &wst = weaponStatus[weapon];
+	if(wst.magazine < param.magazineSize && (0 == param.maxAmmo || param.magazineSize < wst.ammo)){
+		wst.magazine = param.magazineSize;
+		wst.cooldown = wst.reload = param.reloadTime;
+		wst.ammo -= param.magazineSize;
+	}
 }
 
 /*Entity *MobileSuit::create(WarField *w, Builder *mother){

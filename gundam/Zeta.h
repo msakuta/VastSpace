@@ -71,7 +71,6 @@ protected:
 	double nlipsFactor(Viewer &)const;
 	Quatd aimRot()const;
 	double coverFactor()const{return min(coverRight, 1.);}
-	void reloadRifle();
 	static SQInteger sqf_get(HSQUIRRELVM);
 	friend class EntityRegister<ZetaGundam>;
 	static StaticBindDouble rotationSpeed;
@@ -82,10 +81,10 @@ protected:
 	static StaticBindDouble reloadTime;
 	static StaticBindDouble rifleDamage;
 	static StaticBindInt rifleMagazineSize;
-	static StaticBindDouble shieldBeamCooldownTime;
-	static StaticBindDouble shieldBeamReloadTime;
-	static StaticBindDouble shieldBeamDamage;
-	static StaticBindInt shieldBeamMagazineSize;
+	static StaticBindDouble grenadeCoolDownTime;
+	static StaticBindDouble grenadeReloadTime;
+	static StaticBindDouble grenadeDamage;
+	static StaticBindInt grenadeMagazineSize;
 	static StaticBindDouble vulcanCooldownTime;
 	static StaticBindDouble vulcanReloadTime;
 	static StaticBindDouble vulcanDamage;
@@ -128,13 +127,10 @@ public:
 protected:
 	double maxfuel()const override;
 	double getFuelRegenRate()const override{return fuelRegenRate;}
-	double getVulcanCooldownTime()const override{return vulcanCooldownTime;}
-	double getVulcanReloadTime()const override{return vulcanReloadTime;}
-	int getVulcanMagazineSize()const override{return vulcanMagazineSize;}
-	int getRifleMagazineSize()const override{return rifleMagazineSize;}
+	int getWeaponCount()const override;
+	bool getWeaponParams(int weapon, WeaponParams &param)const override;
 	double getRotationSpeed()const override{return rotationSpeed;}
 	double getMaxAngleSpeed()const override{return maxAngleSpeed;}
-	int getReloadTime()const override{return reloadTime;}
 	const HitBoxList &getHitBoxes()const override{return hitboxes;}
 	btCompoundShape *getShape()const override{return shape;}
 	btCompoundShape *getWaveRiderShape()const override{return waveRiderShape;}

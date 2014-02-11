@@ -81,6 +81,7 @@ Model *ReZEL::model = NULL;
 Motion *ReZEL::motions[ReZEL::motionCount];
 
 void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
+	float freload = weaponStatus[0].reload;
 	for(int i = 0; i < numof(motions); i++)
 		motion_amplitude[i] = 1.;
 	motion_time[0] = 10. * fwaverider;

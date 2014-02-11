@@ -10,6 +10,7 @@
 #include "shield.h"
 #include "Player.h"
 #include "BeamProjectile.h"
+#include "ExplosiveBullet.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Docker.h"
@@ -64,10 +65,10 @@ StaticBindDouble ZetaGundam::cooldownTime = 1.;
 StaticBindDouble ZetaGundam::reloadTime = 5.;
 StaticBindDouble ZetaGundam::rifleDamage = 25.;
 StaticBindInt ZetaGundam::rifleMagazineSize = 5;
-StaticBindDouble ZetaGundam::shieldBeamCooldownTime = 1. / 3.;
-StaticBindDouble ZetaGundam::shieldBeamReloadTime = 1.;
-StaticBindDouble ZetaGundam::shieldBeamDamage = 10.;
-StaticBindInt ZetaGundam::shieldBeamMagazineSize = 3;
+StaticBindDouble ZetaGundam::grenadeCoolDownTime = 1.;
+StaticBindDouble ZetaGundam::grenadeReloadTime = 5.;
+StaticBindDouble ZetaGundam::grenadeDamage = 100.;
+StaticBindInt ZetaGundam::grenadeMagazineSize = 2;
 StaticBindDouble ZetaGundam::vulcanCooldownTime = .1;
 StaticBindDouble ZetaGundam::vulcanReloadTime = 5.;
 StaticBindDouble ZetaGundam::vulcanDamage = 5.;
@@ -205,10 +206,10 @@ template<> void Entity::EntityRegister<ZetaGundam>::sq_defineInt(HSQUIRRELVM v){
 	staticBind["cooldownTime"] = &ZetaGundam::cooldownTime;
 	staticBind["rifleDamage"] = &ZetaGundam::rifleDamage;
 	staticBind["rifleMagazineSize"] = &ZetaGundam::rifleMagazineSize;
-	staticBind["shieldBeamCooldownTime"] = &ZetaGundam::shieldBeamCooldownTime;
-	staticBind["shieldBeamReloadTime"] = &ZetaGundam::shieldBeamReloadTime;
-	staticBind["shieldBeamDamage"] = &ZetaGundam::shieldBeamDamage;
-	staticBind["shieldBeamMagazineSize"] = &ZetaGundam::shieldBeamMagazineSize;
+	staticBind["grenadeCoolDownTime"] = &ZetaGundam::grenadeCoolDownTime;
+	staticBind["grenadeReloadTime"] = &ZetaGundam::grenadeReloadTime;
+	staticBind["grenadeDamage"] = &ZetaGundam::grenadeDamage;
+	staticBind["grenadeMagazineSize"] = &ZetaGundam::grenadeMagazineSize;
 	staticBind["vulcanCooldownTime"] = &ZetaGundam::vulcanCooldownTime;
 	staticBind["vulcanReloadTime"] = &ZetaGundam::vulcanReloadTime;
 	staticBind["vulcanDamage"] = &ZetaGundam::vulcanDamage;
@@ -274,7 +275,6 @@ ZetaGundam::ZetaGundam(WarField *aw) : st(aw)
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
-	p->cooldown = 1.;
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
@@ -284,7 +284,6 @@ ZetaGundam::ZetaGundam(WarField *aw) : st(aw)
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->magazine = rifleMagazineSize;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -330,7 +329,8 @@ void ZetaGundam::shootRifle(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed);
 	Mat4d mat;
 	int i = 0;
-	if(dt <= cooldown)
+	WeaponStatus &wst = weaponStatus[0];
+	if(dt <= wst.cooldown)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -367,10 +367,10 @@ void ZetaGundam::shootRifle(double dt){
 #ifndef DEDICATED
 	playSound3D(modPath() << "sound/beamrifle.ogg", this->pos, 1, 0.1, 0);
 #endif
-	if(0 < --magazine)
-		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
+	if(0 < --wst.magazine)
+		wst.cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
-		reloadRifle();
+		reloadWeapon();
 	}
 	this->muzzleFlash[0] = .5;
 }
@@ -384,10 +384,11 @@ void ZetaGundam::shootShieldBeam(double dt){
 	};
 	static const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
 
-	Vec3d velo, gunpos, velo0(0., 0., -1.5);
+	Vec3d velo, gunpos, velo0(0., 0., -0.25);
 	Mat4d mat;
 	int i = 0;
-	if(dt <= cooldown)
+	WeaponStatus &wst = weaponStatus[1];
+	if(dt <= wst.cooldown)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -405,9 +406,9 @@ void ZetaGundam::shootShieldBeam(double dt){
 
 	transform(mat);
 	{
-		BeamProjectile *pb;
+		ExplosiveBullet *pb;
 		double phi, theta;
-		pb = new BeamProjectile(this, 3, shieldBeamDamage, .005, Vec4<unsigned char>(255,31,255,255), cs_shortburn);
+		pb = new ExplosiveBullet(this, 10, grenadeDamage, 0.050);
 		w->addent(pb);
 		pb->pos = mat.vp3(gunpos);
 		pb->velo = mat.dvp3(aimRot().trans(velo0));
@@ -416,21 +417,20 @@ void ZetaGundam::shootShieldBeam(double dt){
 	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 1;
-	if(0 < --submagazine)
-		this->cooldown += shieldBeamCooldownTime/*1. / 3.*/;
-	else{
-		submagazine = shieldBeamMagazineSize;
-		this->cooldown += shieldBeamReloadTime;
-	}
+	if(0 < --wst.magazine)
+		wst.cooldown += grenadeCoolDownTime/*1. / 3.*/;
+	else
+		reloadWeapon();
 	this->muzzleFlash[1] = .3;
 }
 
 void ZetaGundam::shootVulcan(double dt){
 	Vec3d velo, gunpos[2], velo0(0., 0., -1.);
 	Mat4d mat;
+	WeaponStatus &wst = weaponStatus[2];
 
 	// Cannot shoot in waverider form
-	if(dt <= vulcancooldown || 0 < fwaverider)
+	if(dt <= wst.cooldown || 0 < fwaverider)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -471,12 +471,10 @@ void ZetaGundam::shootVulcan(double dt){
 
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
-	if(0 < --vulcanmag)
-		this->vulcancooldown += vulcanCooldownTime;
-	else{
-		vulcanmag = vulcanMagazineSize;
-		this->vulcancooldown += vulcanReloadTime;
-	}
+	if(0 < --wst.magazine)
+		wst.cooldown += vulcanCooldownTime;
+	else
+		reloadWeapon();
 	this->muzzleFlash[2] = .1;
 }
 
@@ -486,14 +484,6 @@ void ZetaGundam::shootVulcan(double dt){
 
 Quatd ZetaGundam::aimRot()const{
 	return Quatd::rotation(aimdir[1], 0, -1, 0) * Quatd::rotation(aimdir[0], -1, 0, 0);
-}
-
-void ZetaGundam::reloadRifle(){
-	if(magazine < rifleMagazineSize){
-		magazine = rifleMagazineSize;
-		this->cooldown += reloadTime;
-		this->freload = reloadTime;
-	}
 }
 
 btCompoundShape *ZetaGundam::shape = NULL;
@@ -613,4 +603,40 @@ int ZetaGundam::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double 
 
 double ZetaGundam::maxfuel()const{
 	return maxFuel;
+}
+
+int ZetaGundam::getWeaponCount()const{
+	return 4;
+}
+
+bool ZetaGundam::getWeaponParams(int weapon, WeaponParams &param)const{
+	// All weapons have infinite ammo by default.
+	param.maxAmmo = 0;
+	switch(weapon){
+	case 0:
+		param.name = "Beam Rifle";
+		param.coolDownTime = cooldownTime;
+		param.reloadTime = reloadTime;
+		param.magazineSize = rifleMagazineSize;
+		return true;
+	case 1:
+		param.name = "Grenade Launcher";
+		param.coolDownTime = grenadeCoolDownTime;
+		param.reloadTime = grenadeReloadTime;
+		param.magazineSize = grenadeMagazineSize;
+		return true;
+	case 2:
+		param.name = "Vulcan";
+		param.coolDownTime = vulcanCooldownTime;
+		param.reloadTime = vulcanReloadTime;
+		param.magazineSize = vulcanMagazineSize;
+		return true;
+	case 3:
+		param.name = "Beam Sabre";
+		param.coolDownTime = 1;
+		param.reloadTime = 1;
+		param.magazineSize = 0;
+		return true;
+	}
+	return false;
 }

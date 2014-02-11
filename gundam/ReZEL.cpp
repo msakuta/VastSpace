@@ -274,7 +274,6 @@ ReZEL::ReZEL(WarField *aw) : st(aw)
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
-	p->cooldown = 1.;
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w))
 		p->pf = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICK | TEP3_ROUGH, cs_orangeburn.t);
@@ -284,7 +283,6 @@ ReZEL::ReZEL(WarField *aw) : st(aw)
 	p->hitsound = -1;
 	p->docked = false;
 //	p->paradec = mother->paradec++;
-	p->magazine = rifleMagazineSize;
 	p->fcloak = 0.;
 	p->cloak = 0;
 	p->heat = 0.;
@@ -330,7 +328,8 @@ void ReZEL::shootRifle(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -bulletSpeed);
 	Mat4d mat;
 	int i = 0;
-	if(dt <= cooldown)
+	WeaponStatus &wst = weaponStatus[0];
+	if(dt <= wst.cooldown)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -367,10 +366,10 @@ void ReZEL::shootRifle(double dt){
 #ifndef DEDICATED
 	playSound3D(modPath() << "sound/beamrifle.ogg", this->pos, 1, 0.1, 0);
 #endif
-	if(0 < --magazine)
-		this->cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
+	if(0 < --wst.magazine)
+		wst.cooldown += cooldownTime * (fuel <= 0 ? 3 : 1);
 	else{
-		reloadRifle();
+		reloadWeapon();
 	}
 	this->muzzleFlash[0] = .5;
 }
@@ -387,7 +386,8 @@ void ReZEL::shootShieldBeam(double dt){
 	Vec3d velo, gunpos, velo0(0., 0., -1.5);
 	Mat4d mat;
 	int i = 0;
-	if(dt <= cooldown)
+	WeaponStatus &wst = weaponStatus[1];
+	if(dt <= wst.cooldown)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -416,21 +416,20 @@ void ReZEL::shootShieldBeam(double dt){
 	}
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 1;
-	if(0 < --submagazine)
-		this->cooldown += shieldBeamCooldownTime/*1. / 3.*/;
-	else{
-		submagazine = shieldBeamMagazineSize;
-		this->cooldown += shieldBeamReloadTime;
-	}
+	if(0 < --wst.magazine)
+		wst.cooldown += shieldBeamCooldownTime/*1. / 3.*/;
+	else
+		reloadWeapon();
 	this->muzzleFlash[1] = .3;
 }
 
 void ReZEL::shootVulcan(double dt){
 	Vec3d velo, gunpos[2], velo0(0., 0., -1.);
 	Mat4d mat;
+	WeaponStatus &wst = weaponStatus[2];
 
 	// Cannot shoot in waverider form
-	if(dt <= vulcancooldown || 0 < fwaverider)
+	if(dt <= wst.cooldown || 0 < fwaverider)
 		return;
 
 	// Retrieve muzzle position from model, but not the velocity
@@ -471,12 +470,10 @@ void ReZEL::shootVulcan(double dt){
 
 //	shootsound(pt, w, p->cooldown);
 //	pt->shoots += 2;
-	if(0 < --vulcanmag)
-		this->vulcancooldown += vulcanCooldownTime;
-	else{
-		vulcanmag = vulcanMagazineSize;
-		this->vulcancooldown += vulcanReloadTime;
-	}
+	if(0 < --wst.magazine)
+		wst.cooldown += vulcanCooldownTime;
+	else
+		reloadWeapon();
 	this->muzzleFlash[2] = .1;
 }
 
@@ -594,14 +591,6 @@ void space_collide(Entity *pt, WarSpace *w, double dt, Entity *collideignore, En
 
 Quatd ReZEL::aimRot()const{
 	return Quatd::rotation(aimdir[1], 0, -1, 0) * Quatd::rotation(aimdir[0], -1, 0, 0);
-}
-
-void ReZEL::reloadRifle(){
-	if(magazine < rifleMagazineSize){
-		magazine = rifleMagazineSize;
-		this->cooldown += reloadTime;
-		this->freload = reloadTime;
-	}
 }
 
 btCompoundShape *ReZEL::shape = NULL;
@@ -723,4 +712,38 @@ double ReZEL::maxfuel()const{
 	return maxFuel;
 }
 
+int ReZEL::getWeaponCount()const{
+	return 4;
+}
 
+bool ReZEL::getWeaponParams(int weapon, WeaponParams &param)const{
+	// All weapons have infinite ammo by default.
+	param.maxAmmo = 0;
+	switch(weapon){
+	case 0:
+		param.name = "Beam Rifle";
+		param.coolDownTime = this->cooldownTime;
+		param.reloadTime = this->reloadTime;
+		param.magazineSize = rifleMagazineSize;
+		return true;
+	case 1:
+		param.name = "Shield Beam";
+		param.coolDownTime = shieldBeamCooldownTime;
+		param.reloadTime = shieldBeamReloadTime;
+		param.magazineSize = shieldBeamMagazineSize;
+		return true;
+	case 2:
+		param.name = "Vulcan";
+		param.coolDownTime = vulcanCooldownTime;
+		param.reloadTime = vulcanReloadTime;
+		param.magazineSize = vulcanMagazineSize;
+		return true;
+	case 3:
+		param.name = "Beam Sabre";
+		param.coolDownTime = 1;
+		param.reloadTime = 1;
+		param.magazineSize = 0;
+		return true;
+	}
+	return false;
+}

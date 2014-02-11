@@ -35,10 +35,13 @@ void MobileSuit::drawHUD(WarDraw *wd){
 		glPushMatrix();
 		glLoadIdentity();
 
-		static const char *weaponNames[] = {
-			"Beam Rifle", "Shield Beam", "Vulcan", "Beam Sabre"
-		};
-		for(int i = 0; i < 4; i++){
+		for(int i = 0; i < getWeaponCount(); i++){
+			WeaponParams param;
+			if(!getWeaponParams(i, param))
+				continue;
+
+			WeaponStatus &wst = weaponStatus[i];
+
 			double ybase = -yf + 3 * wlHeight + wlMargin - i * wlHeight;
 			for(int j = 0; j < 2; j++){
 				glColor4fv(j == 0 ? Vec4f(0,0,0,0.75) : weapon == i ? Vec4f(1,1,1,1) : Vec4f(0.75,0.75,0,1));
@@ -56,7 +59,7 @@ void MobileSuit::drawHUD(WarDraw *wd){
 			glPushMatrix();
 			glTranslated(wlLeft + 0.05, ybase + fontSize * GLwindow::getFontHeight() * 2, 0);
 			glScaled(fontSize, -fontSize, .1);
-			glwPutTextureString(gltestp::dstring(i + 1) << " " << weaponNames[i]);
+			glwPutTextureString(gltestp::dstring(i + 1) << " " << param.name);
 			glPopMatrix();
 
 			// Show ammunition count
@@ -64,31 +67,19 @@ void MobileSuit::drawHUD(WarDraw *wd){
 			glPushMatrix();
 			glTranslated(wlLeft + 0.05, ybase + fontSize * GLwindow::getFontHeight() * 1, 0);
 			glScaled(fontSize, -fontSize, .1);
-			switch(i){
-			case 0:
-				if(freload != 0){
-					glwPutTextureString("  RELOADING");
-					ammoFactor = 1. - freload / getReloadTime();
-				}
-				else{
-					glwPutTextureString(gltestp::dstring("  ") << magazine << "/" << getRifleMagazineSize());
-					ammoFactor = (double)magazine / getRifleMagazineSize();
-				}
-				break;
-			case 1:
-				glwPutTextureString(gltestp::dstring("  ") << submagazine << "/" << 3);
-				ammoFactor = (double)submagazine / 3;
-				break;
-			case 2:
-				glwPutTextureString(gltestp::dstring("  ") << vulcanmag << "/" << getVulcanMagazineSize());
-				ammoFactor = (double)vulcanmag / getVulcanMagazineSize();
-				break;
+			if(wst.reload != 0){
+				glwPutTextureString("  RELOADING");
+				ammoFactor = 1. - wst.reload / param.reloadTime;
+			}
+			else if(param.magazineSize){
+				glwPutTextureString(gltestp::dstring("  ") << wst.magazine << "/" << param.magazineSize);
+				ammoFactor = (double)wst.magazine / param.magazineSize;
 			}
 			glPopMatrix();
 
 			static const double margin = 0.05;
 			// Show ammunition graph
-			if(i < 3){
+			if(param.magazineSize || wst.reload){
 				glPushMatrix();
 				glTranslated(wlLeft + margin, ybase + 0.015, 0);
 				glScaled((wlRight - margin) - (wlLeft + margin), 0.01, 1);
@@ -160,7 +151,14 @@ void MobileSuit::drawHUD(WarDraw *wd){
 
 	// Ammo indicator
 	for(int n = 0; n < 2; n++){
-		int divisor = n ? getRifleMagazineSize() : getVulcanMagazineSize();
+		int wi = n == 0 ? 0 : 2; // Weapon index
+		WeaponParams param;
+		if(!getWeaponParams(wi, param))
+			continue;
+
+		WeaponStatus &wst = weaponStatus[wi];
+
+		int divisor = param.magazineSize;
 		glPushMatrix();
 		glTranslated((n * 2 - 1) * .2, 0., 0.);
 		for(int m = 0; m < 2; m++){
@@ -172,16 +170,16 @@ void MobileSuit::drawHUD(WarDraw *wd){
 				double r0 = .8;
 				double r1 = 1.;
 				if(m){
-					float f = (n ? freload != 0. : getVulcanCooldownTime() < vulcancooldown) ?
-						i < divisor * (n ? 1. - freload / getReloadTime() : 1. - vulcancooldown / getVulcanReloadTime()) ? 1. : 0. :
-						(n ? i < magazine : i < vulcanmag) ? 1. : 0.;
+					float f = wst.reload != 0. ?
+						i < divisor * (1. - wst.reload / param.reloadTime) ? 1. : 0. :
+						(i < wst.magazine) ? 1. : 0.;
 					glColor4f(1, f, f, 1);
 				}
 				else{
-					if(n ? freload != 0. : getVulcanCooldownTime() < vulcancooldown)
-						glColor4f(1,0,0, i < divisor * (n ? 1. - freload / getReloadTime() : 1. - vulcancooldown / getVulcanReloadTime()) ? .8 : .3);
+					if(wst.reload != 0.)
+						glColor4f(1,0,0, i < divisor * (1. - wst.reload / param.reloadTime) ? .8 : .3);
 					else
-						glColor4f(1,1,1, (n ? i < magazine : i < vulcanmag) ? .8 : .3);
+						glColor4f(1,1,1, (i < wst.magazine) ? .8 : .3);
 				}
 				glBegin(m ? GL_LINE_LOOP : GL_QUADS);
 				glVertex2d(r0 * s0, r0 * c0);

@@ -73,7 +73,7 @@ void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&m
 	motion_amplitude[0] = fwaverider ? 1. : 0.;
 	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
 	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;*/
-	motion_time[1] = 10. * (freload == 0. ? 1. - fweapon : 0.);
+	motion_time[1] = 10. * (weaponStatus[0].reload == 0. ? 1. - fweapon : 0.);
 	motion_amplitude[1] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
 /*	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 	motion_amplitude[3] = fwaverider != 1. ? 1. : 0.;

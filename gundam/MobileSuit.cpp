@@ -1762,6 +1762,10 @@ SQInteger MobileSuit::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, coverRight);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("weapon"))){
+		sq_pushinteger(v, weapon);
+		return 1;
+	}
 	else if(!scstrcmp(name, _SC("aimdir"))){
 		sq_newarray(v, 0);
 		for(int i = 0; i < numof(aimdir); i++){
@@ -1784,6 +1788,13 @@ SQInteger MobileSuit::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
 			return sq_throwerror(v, gltestp::dstring("could not convert to float ") << name);
 		coverRight = f;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("weapon"))){
+		SQInteger i;
+		if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+			return sq_throwerror(v, gltestp::dstring("could not convert to integer ") << name);
+		this->weapon = i;
 		return 0;
 	}
 	else

@@ -1,4 +1,6 @@
 
+dofile("gundam/models/MobileSuit.nut");
+
 modelScale <- 1./30000;
 
 mass <- 4.e3;
@@ -87,38 +89,5 @@ function cockpitView(e,seatid){
 	return ret;
 }
 
-if(isClient()){
-	::reloadCommand <- function(){
-		player.controlled.command("Reload");
-	}
-
-	::getCoverCommand <- function(){
-		player.controlled.command("GetCover", 2);
-	}
-
-	::transformCommand <- function(){
-		player.controlled.waverider = !player.controlled.waverider;
-	}
-
-	::stabilizerCommand <- function(){
-		player.controlled.stabilizer = !player.controlled.stabilizer;
-	}
-
-	beginControl["ZetaGundam"] <- function (){
-		if("print" in this)
-			print("ZetaGundam::beginControl");
-		cmd("pushbind");
-		cmd("bind r sq \"reloadCommand()\"");
-		cmd("bind t sq \"getCoverCommand()\"");
-		cmd("bind b sq \"transformCommand()\"");
-		cmd("bind g sq \"stabilizerCommand()\"");
-		cmd("r_windows 0");
-	}
-
-	endControl["ZetaGundam"] <- function (){
-		if("print" in this)
-			print("ZetaGundam::endControl");
-		cmd("popbind");
-		cmd("r_windows 1");
-	}
-}
+if(isClient())
+	registerControls("ZetaGundam");

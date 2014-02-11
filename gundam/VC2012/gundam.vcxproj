@@ -180,11 +180,13 @@
   <ItemGroup>
     <ClCompile Include="..\draw\ReZEL-draw.cpp" />
     <ClCompile Include="..\draw\Zeta-draw.cpp" />
+    <ClCompile Include="..\MobileSuit.cpp" />
     <ClCompile Include="..\ReZEL.cpp" />
     <ClCompile Include="..\Zeta.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\GundamCommands.h" />
+    <ClInclude Include="..\MobileSuit.h" />
     <ClInclude Include="..\ReZEL.h" />
     <ClInclude Include="..\StaticBind.h" />
     <ClInclude Include="..\Zeta.h" />

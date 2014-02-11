@@ -6,7 +6,7 @@
 
 #include "StaticBind.h"
 #include "Frigate.h"
-#include "ModelEntity.h"
+#include "MobileSuit.h"
 #include "mqo.h"
 #include "ysdnmmot.h"
 #include "libmotion.h"
@@ -16,76 +16,10 @@
 struct btCompoundShape;
 
 /// ReZEL
-class ZetaGundam : public ModelEntity{
+class ZetaGundam : public MobileSuit{
 public:
-	typedef ModelEntity st;
+	typedef MobileSuit st;
 protected:
-	enum Task{
-		Idle = sship_idle,
-		Undock = sship_undock,
-		Undockque = sship_undockque,
-		Dock = sship_dock,
-		Dockque = sship_dockque,
-		Moveto = sship_moveto,
-		Parade = sship_parade,
-		DeltaFormation = sship_delta,
-		Attack = sship_attack,
-		Away = sship_away,
-		Auto, // Automatically targets near enemy or parade with mother.
-		Jump, ///< Jump over some obstacles
-		JumpForward, ///< Move forward after jumping over obstacles.
-		Rest, ///< Rest a while to wait energy to regain.
-		CoverRight,
-		num_sceptor_task
-	};
-	enum Attitude{
-		Passive,
-		Aggressive
-	};
-	static const Vec3d thrusterDir[7];
-
-	Vec3d aac; /* angular acceleration */
-	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
-	double throttle;
-	double fuel;
-	double cooldown;
-	Vec3d dest;
-	float vulcancooldown;
-	float vulcanSoundCooldown;
-	float fcloak;
-	float heat;
-	float fwaverider; ///< Phase of transformation to wave rider
-	float fweapon; ///< Phase of weapon switch
-	struct Tefpol *pf; ///< Trailing smoke
-	Docker *mother; ///< Mother ship that will be returned to when out of fuel
-	int hitsound;
-	int paradec;
-	int magazine; ///< remaining bullet count in the magazine to shoot before reloading
-	int weapon; ///< Armed weapon id
-	int submagazine; ///< Remaining rounds in sub-arm
-	int vulcanmag; ///< Vulcan magazine
-	Task task;
-	bool standingUp; ///< Standing up against acceleration
-	bool docked, returning, away, cloak, forcedEnemy;
-	bool waverider;
-	bool stabilizer;
-	float reverser; ///< Thrust reverser position, approaches to 1 when throttle is negative.
-	float muzzleFlash[3]; ///< Muzzle flashes for each arms.
-	float twist; ///< Twist value (integration of angular velocity around Y axis)
-	float pitch; ///< Pitch value (integration of angular velocity around X axis)
-	float fsabre; ///< Sabre swing phase
-	float integral[2]; ///< integration of pitch-yaw space of relative target position
-	float freload; ///< Reload phase
-	float fonfeet; ///< Factor of on-feetness
-	float walkphase; ///< Walk phase
-	float jumptime; ///< Time left for jump
-	float coverRight; ///< Factor
-	double aimdir[2]; ///< Pitch and yaw. They're different from twist and pitch in that they represent manipulator
-	ZetaGundam *formPrev; ///< previous member in the formation
-	Attitude attitude;
-	Vec3d thrusterDirs[numof(thrusterDir)]; ///< Direction vector of the thrusters
-	double thrusterPower[numof(thrusterDir)]; ///< Output power of the thrusters
-	CoverPoint coverPoint; ///< Cover point
 
 	static const int motionCount = 3;
 
@@ -133,12 +67,8 @@ protected:
 	void shootRifle(double dt);
 	void shootShieldBeam(double dt);
 	void shootVulcan(double dt);
-	void shootMegaBeam(double dt);
-	bool findEnemy(); // Finds the nearest enemy
-	void steerArrival(double dt, const Vec3d &target, const Vec3d &targetvelo, double speedfactor = 5., double minspeed = 0.);
 	bool cull(Viewer &)const;
 	double nlipsFactor(Viewer &)const;
-	Entity *findMother();
 	Quatd aimRot()const;
 	double coverFactor()const{return min(coverRight, 1.);}
 	void reloadRifle();
@@ -146,18 +76,8 @@ protected:
 	friend class EntityRegister<ZetaGundam>;
 	static StaticBindDouble rotationSpeed;
 	static StaticBindDouble maxAngleSpeed;
-	static StaticBindDouble deathSmokeFreq;
-	static StaticBindDouble bulletSpeed;
-	static StaticBindDouble walkSpeed;
-	static StaticBindDouble airMoveSpeed;
-	static StaticBindDouble torqueAmount;
-	static StaticBindDouble floorProximityDistance;
-	static StaticBindDouble floorTouchDistance;
-	static StaticBindDouble standUpTorque;
-	static StaticBindDouble standUpFeedbackTorque;
 	static StaticBindDouble maxFuel;
 	static StaticBindDouble fuelRegenRate;
-	static StaticBindDouble randomVibration;
 	static StaticBindDouble cooldownTime;
 	static StaticBindDouble reloadTime;
 	static StaticBindDouble rifleDamage;
@@ -184,26 +104,14 @@ public:
 	virtual const char *dispname()const;
 	virtual double getMaxHealth()const override;
 	virtual void enterField(WarField *);
-	virtual void control(const input_t *inputs, double dt);
-	virtual void anim(double dt);
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
 	virtual void drawHUD(WarDraw *);
 	virtual void drawOverlay(wardraw_t *);
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);
-	virtual void postframe();
-	virtual bool isTargettable()const;
-	virtual bool isSelectable()const;
-	virtual Dockable *toDockable();
 	virtual double getHitRadius()const;
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal);
-	virtual Props props()const;
-	virtual bool undock(Docker *);
-	virtual bool command(EntityCommand *);
-	virtual double maxfuel()const;
-
-	static gltestp::dstring modPath(){return "gundam/";}
 
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
@@ -213,28 +121,26 @@ public:
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);
 	static void smokedraw(const struct tent3d_line_callback *p, const struct tent3d_line_drawdata *dd, void *private_data);
-	static double pid_ifactor;
-	static double pid_pfactor;
-	static double pid_dfactor;
 	static double motionInterpolateTime;
 	static double motionInterpolateTimeAverage;
 	static int motionInterpolateTimeAverageCount;
 	static HSQUIRRELVM sqvm;
 
 protected:
-	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
-	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+	double maxfuel()const override;
+	double getFuelRegenRate()const override{return fuelRegenRate;}
+	int getVulcanMagazineSize()const override{return vulcanMagazineSize;}
+	int getRifleMagazineSize()const override{return rifleMagazineSize;}
+	double getRotationSpeed()const override{return rotationSpeed;}
+	double getMaxAngleSpeed()const override{return maxAngleSpeed;}
+	int getReloadTime()const override{return reloadTime;}
+	const HitBoxList &getHitBoxes()const override{return hitboxes;}
+	btCompoundShape *getShape()const override{return shape;}
+	btCompoundShape *getWaveRiderShape()const override{return waveRiderShape;}
+	Model *getModel()const override{return model;}
+	double getModelScale()const override{return modelScale;}
 	HSQOBJECT getSqPopupMenu()override{ return sqPopupMenu; }
 	HSQOBJECT getSqCockpitView()const override{ return sqCockpitView; }
-
-	SQInteger boolSetter(HSQUIRRELVM v, const SQChar *name, bool &value);
-
-private:
-	Vec3d evelo;
-#if PIDAIM_PROFILE
-	Vec3d epos;
-	Vec3d iepos;
-#endif
 };
 
 #endif

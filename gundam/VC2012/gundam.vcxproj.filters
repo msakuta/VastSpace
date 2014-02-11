@@ -29,6 +29,9 @@
     <ClCompile Include="..\Zeta.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\MobileSuit.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ReZEL.h">
@@ -41,6 +44,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\GundamCommands.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MobileSuit.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

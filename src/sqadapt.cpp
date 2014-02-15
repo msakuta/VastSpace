@@ -1005,7 +1005,24 @@ SQInteger sqf_glScaled(HSQUIRRELVM v){
 		glScalef(f[0], f[1], f[2]);
 	}
 	catch(SQFError &e){
-		return sq_throwerror(v, e.description);
+		return sq_throwerror(v, e.what());
+	}
+	return 0;
+}
+
+SQInteger sqf_glTranslated(HSQUIRRELVM v){
+	try{
+		GLfloat f[3];
+		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 4, &f[2])))
+			return SQ_ERROR;
+		glTranslated(f[0], f[1], f[2]);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
 	}
 	return 0;
 }
@@ -1017,7 +1034,7 @@ SQInteger sqf_glTranslate(HSQUIRRELVM v){
 		gldTranslate3dv(sqv.value);
 	}
 	catch(SQFError &e){
-		return sq_throwerror(v, e.description);
+		return sq_throwerror(v, e.what());
 	}
 	return 0;
 }
@@ -1227,6 +1244,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
 	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
 	register_global_func(v, sqf_glScaled, _SC("glScaled"));
+	register_global_func(v, sqf_glTranslated, _SC("glTranslated"));
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));

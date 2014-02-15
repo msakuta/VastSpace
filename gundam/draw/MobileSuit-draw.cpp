@@ -15,7 +15,7 @@ void MobileSuit::drawHUD(WarDraw *wd){
 	if(game->player->mover != game->player->cockpitview)
 		return;
 
-	// This block draws list of weapons
+	// This block draws boost gauge, armor gauge and list of weapons
 	{
 		int wmax = MAX(wd->vw->vp.w, wd->vw->vp.h);
 		double xf = (double)wd->vw->vp.w / wmax;
@@ -35,6 +35,65 @@ void MobileSuit::drawHUD(WarDraw *wd){
 		glPushMatrix();
 		glLoadIdentity();
 
+		static const double miniFontSize = 0.0015;
+		static const double fontSize = 0.0025;
+
+		if(getMaxHealth() != 0){
+			static const double aRight = wlLeft - 0.01;
+			static const double aLeft = aRight - 0.3;
+			const double bTop = -yf + 0.15;
+			const double aTop = bTop - 0.075;
+			const double aBottom = -yf + 0.01;
+			static const double margin = 0.02;
+
+			// Draw Frame
+			for(int j = 0; j < 2; j++){
+				glColor4fv(j == 0 ? Vec4f(0,0,0,0.75) : Vec4f(0.75,0.75,0,1));
+				glBegin(j == 0 ? GL_QUADS : GL_LINE_LOOP);
+				glVertex2d(aLeft, bTop);
+				glVertex2d(aRight, bTop);
+				glVertex2d(aRight, aBottom);
+				glVertex2d(aLeft, aBottom);
+				glEnd();
+			}
+
+			double boost = fuel;
+			if(boost < 0)
+				boost = 0;
+
+			// Show boost title
+			glPushMatrix();
+			glTranslated(aLeft + margin, bTop - margin - miniFontSize * GLwindow::getFontHeight(), 0);
+			glScaled(miniFontSize, -miniFontSize, .1);
+			glwPutTextureString("BOOST");
+			glPopMatrix();
+
+			// Show boost gauge
+			double boostFactor = boost / maxfuel();
+			drawBar(boostFactor, aLeft + margin, bTop - margin - miniFontSize * GLwindow::getFontHeight() - margin, (aRight - aLeft - 2 * margin), 0.01);
+
+			double armor = getHealth();
+			if(armor < 0)
+				armor = 0;
+
+			// Show armor value
+			glColor4f(1, 1, 0, 1);
+			glPushMatrix();
+			glTranslated(aLeft + margin, aTop - fontSize * GLwindow::getFontHeight(), 0);
+			glScaled(miniFontSize, -miniFontSize, .1);
+			glwPutTextureString("ARMOR ");
+			glPopMatrix();
+			glPushMatrix();
+			glTranslated(aLeft + margin + miniFontSize * glwGetSizeTextureString("ARMOR "), aTop - fontSize * GLwindow::getFontHeight(), 0);
+			glScaled(fontSize, -fontSize, .1);
+			glwPutTextureString(gltestp::dstring() << ceil(armor) << " / " << getMaxHealth());
+			glPopMatrix();
+
+			// Show armor graph
+			double healthFactor = armor / getMaxHealth();
+			drawBar(healthFactor, aLeft + margin, aBottom + 0.015, (aRight - aLeft - 2 * margin), 0.02);
+		}
+
 		for(int i = 0; i < getWeaponCount(); i++){
 			WeaponParams param;
 			if(!getWeaponParams(i, param))
@@ -52,8 +111,6 @@ void MobileSuit::drawHUD(WarDraw *wd){
 				glVertex2d( wlLeft, ybase + wlHeight - wlMargin);
 				glEnd();
 			}
-
-			static const double fontSize = 0.0025;
 
 			// Show weapon name
 			glPushMatrix();
@@ -80,22 +137,7 @@ void MobileSuit::drawHUD(WarDraw *wd){
 			static const double margin = 0.05;
 			// Show ammunition graph
 			if(param.magazineSize || wst.reload){
-				glPushMatrix();
-				glTranslated(wlLeft + margin, ybase + 0.015, 0);
-				glScaled((wlRight - margin) - (wlLeft + margin), 0.01, 1);
-				glBegin(GL_QUADS);
-				glColor4f(0,1,0,1);
-				glVertex2d(0, 0);
-				glVertex2d(ammoFactor, 0);
-				glVertex2d(ammoFactor, 1);
-				glVertex2d(0, 1);
-				glColor4f(1,0,0,1);
-				glVertex2d(ammoFactor, 0);
-				glVertex2d(1, 0);
-				glVertex2d(1, 1);
-				glVertex2d(ammoFactor, 1);
-				glEnd();
-				glPopMatrix();
+				drawBar(ammoFactor, wlLeft + margin, ybase + 0.015, (wlRight - margin) - (wlLeft + margin), 0.01);
 			}
 		}
 
@@ -195,3 +237,26 @@ void MobileSuit::drawHUD(WarDraw *wd){
 	glPopMatrix();
 }
 
+void MobileSuit::drawBar(double f, double left, double top, double width, double height)const{
+	glPushMatrix();
+	glTranslated(left, top, 0);
+	glScaled(width, height, 1);
+	glBegin(GL_QUADS);
+	glColor4f(0,1,0,1);
+	glVertex2d(0, 0);
+	glVertex2d(f, 0);
+	glVertex2d(f, 1);
+	glVertex2d(0, 1);
+	glColor4f(1,0,0,1);
+	glVertex2d(f, 0);
+	glVertex2d(1, 0);
+	glVertex2d(1, 1);
+	glVertex2d(f, 1);
+	glEnd();
+	glPopMatrix();
+}
+
+bool MobileSuit::isDrawHealthBar()const{
+	// Do not draw health bar when we draw it in the HUD.
+	return static_cast<Entity*>(game->player->chase) != this || game->player->mover != game->player->cockpitview;
+}

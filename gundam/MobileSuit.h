@@ -188,6 +188,9 @@ protected:
 
 	void reloadWeapon();
 
+	void drawBar(double f, double left, double top, double width, double height)const; ///< Draw a percentage bar
+	bool isDrawHealthBar()const; ///< Whether the health bar should be drawn as overlay
+
 private:
 	mutable Vec3d pDelta; ///< Private delta
 	mutable double pDeltaTime; ///< Global time when pDelta was updated

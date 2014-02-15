@@ -15,7 +15,7 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 
-inline gltestp::dstring modPath(){return "surface/";}
+inline gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 //-----------------------------------------------------------------------------
 //	Launcher implementation

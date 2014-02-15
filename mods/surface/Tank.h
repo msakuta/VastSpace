@@ -63,7 +63,7 @@ public:
 //	Vec3d forces[numof(points)];
 //	Vec3d normals[numof(points)];
 
-	static gltestp::dstring modPath(){return "surface/";}
+	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 protected:
 

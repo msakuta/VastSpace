@@ -1,5 +1,5 @@
 
-dofile("surface/models/Aerial.nut");
+dofile("mods/surface/models/Aerial.nut");
 
 modelScale <- 0.01626 / 650.0;
 

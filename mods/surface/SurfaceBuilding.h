@@ -25,7 +25,7 @@ public:
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return false;}
 
-	static gltestp::dstring modPath(){return _SC("surface/");}
+	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 	static SQInteger sqf_setHitBoxes(HSQUIRRELVM);
 	static SQInteger sqf_setNavLights(HSQUIRRELVM);

@@ -46,7 +46,7 @@ if(!("fireLauncher" in root)){
 }
 
 // Load aerialLanding function definition in an external file
-dofile("surface/models/aerialLanding.nut");
+dofile("mods/surface/models/aerialLanding.nut");
 
 if(isClient()){
 	register_console_command("navlight", function(){

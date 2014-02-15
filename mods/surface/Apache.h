@@ -38,7 +38,6 @@ public:
 	double getHitRadius()const override{return 0.02;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
-	static gltestp::dstring modPath(){return "surface/";}
 protected:
 	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
 	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;

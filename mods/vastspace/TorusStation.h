@@ -65,7 +65,7 @@ public:
 	}
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/gltestdll/";}
 
 	bool cull(const Viewer &vw)const;
 
@@ -130,7 +130,7 @@ public:
 	virtual bool command(EntityCommand *com);
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/gltestdll/";}
 
 	struct HitCylinder{
 		Vec3d org; ///< Origin position of the cylinder.

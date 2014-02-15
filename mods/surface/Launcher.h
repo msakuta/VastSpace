@@ -31,7 +31,7 @@ public:
 
 	static SQInteger sq_fire(HSQUIRRELVM);
 
-	static gltestp::dstring modPath(){return "surface/";}
+	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 protected:
 	SQInteger sqGet(HSQUIRRELVM, const SQChar *)const override;
 	SQInteger sqSet(HSQUIRRELVM, const SQChar *)override;

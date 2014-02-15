@@ -182,7 +182,7 @@ register_console_command("preset", function(){
 // Reload this file
 register_console_command("aerial", function(){
 	print("aerialLanding.nut being loaded");
-	dofile("surface/models/aerialLanding.nut");
+	dofile("mods/surface/models/aerialLanding.nut");
 });
 
 print("aerialLanding.nut has been loaded");

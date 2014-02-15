@@ -38,7 +38,7 @@ public:
 
 	double getRudder()const;
 
-	static gltestp::dstring modPath(){return "surface/";}
+	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 protected:
 	double aileron, elevator, rudder;

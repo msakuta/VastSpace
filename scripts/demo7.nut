@@ -36,7 +36,7 @@ local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 //tank2.race = 1;
 
 local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
-bldg.modelFile = "surface/models/bigsight.mqo";
+bldg.modelFile = "mods/surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 

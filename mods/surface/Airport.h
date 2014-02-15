@@ -29,7 +29,7 @@ public:
 	bool isSelectable()const override{return false;}
 	bool command(EntityCommand *com)override;
 
-	static gltestp::dstring modPath(){return _SC("surface/");}
+	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;

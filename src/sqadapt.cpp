@@ -1395,6 +1395,34 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		}
 		else
 			CmdPrint(cpplib::dstring(scriptFile) << " failed.");
+
+#ifdef _WIN32
+		WIN32_FIND_DATA ffd;
+		HANDLE hff = FindFirstFile("mods/*", &ffd);
+		if(hff){
+			do{
+				if(!strcmp(ffd.cFileName, ".") || !strcmp(ffd.cFileName, ".."))
+					continue;
+				if(!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+					continue;
+				TimeMeasStart(&tm);
+				gltestp::dstring scriptFile = gltestp::dstring("mods/") << ffd.cFileName << (i == 0 ? "/__init.nut" : "/__initClient.nut");
+				if(GetFileAttributes(scriptFile) == INVALID_FILE_ATTRIBUTES)
+					continue;
+				if(SQ_SUCCEEDED(sqstd_dofile(v, scriptFile, 0, 1))) // also prints syntax errors if any
+				{
+					double d = TimeMeasLap(&tm);
+					CmdPrint(cpplib::dstring() << scriptFile << " total: " << d << " sec");
+				}
+				else
+					CmdPrint(cpplib::dstring(scriptFile) << " failed.");
+			}while(FindNextFile(hff, &ffd));
+
+			FindClose(hff);
+		}
+#else
+		// TODO: Linux file API
+#endif
 	}
 
 	sq_poptop(v); // Pop the root table.

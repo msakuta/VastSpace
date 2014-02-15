@@ -734,9 +734,7 @@ clientMessageResponses <- {
 	load_demo4 = @() loadmission("scripts/demo4.nut"),
 	load_demo5 = @() loadmission("scripts/demo5.nut"),
 	load_demo6 = @() loadmission("scripts/demo6.nut"),
-	load_demo7 = @() loadmission("scripts/demo7.nut"),
 	load_demo8 = @() loadmission("scripts/demo8.nut"),
-	load_gundamdemo = @() loadmission("gundam/demo.nut"),
 
 	// The following function names are not yet defined here, so we cannot directly assign name.
 	tutor_restart = @() tutor_restart(),

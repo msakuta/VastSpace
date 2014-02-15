@@ -271,7 +271,6 @@ function init_Universe(){
 		mainmenu.addItem("Defender vs Destroyer", @() sendCM("load_demo4"));
 		mainmenu.addItem("Demo 5", @() sendCM("load_demo5"));
 		mainmenu.addItem("Container Ship Demo", @() sendCM("load_demo6"));
-		mainmenu.addItem("Surface Demo", @() sendCM("load_demo7"));
 		mainmenu.addItem("Demo 8", @() sendCM("load_demo8"));
 
 		// Adjust window position to center of screen, after all menu items are added.

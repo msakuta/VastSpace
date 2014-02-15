@@ -18,7 +18,7 @@ struct Model;
 ///
 /// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class TorusStationEntity,
 /// not as multiple inheritance.
-class GLTESTDLL_EXPORT TorusStation : public Astrobj{
+class VASTSPACE_EXPORT TorusStation : public Astrobj{
 public:
 //	static const unsigned classid;
 	static ClassRegister<TorusStation> classRegister;
@@ -65,7 +65,7 @@ public:
 	}
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 	bool cull(const Viewer &vw)const;
 
@@ -130,7 +130,7 @@ public:
 	virtual bool command(EntityCommand *com);
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 	struct HitCylinder{
 		Vec3d org; ///< Origin position of the cylinder.

@@ -79,7 +79,7 @@ public:
 	static double getModelScale(){return modelScale;}
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 	static Model *model;
 	static Motion *motions[];

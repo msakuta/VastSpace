@@ -29,7 +29,7 @@ class Island3Building;
 ///
 /// This class derives Astrobj but is treated as an Entity, too. The Entity aspect is defined as separate class Island3Entity,
 /// not as multiple inheritance.
-class GLTESTDLL_EXPORT Island3 : public Astrobj{
+class VASTSPACE_EXPORT Island3 : public Astrobj{
 public:
 //	static const unsigned classid;
 	static ClassRegister<Island3> classRegister;

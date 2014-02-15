@@ -33,7 +33,7 @@ assaults <- 0;
 numsol0 <- 0;
 numsol <- 0;
 
-function frameproc(dt){
+frameProcs.append(function(dt){
 	framecount++;
 	local global_time = universe.global_time;
 
@@ -117,7 +117,7 @@ function frameproc(dt){
 		foreach(key,value in deaths) foreach(key1,value1 in value)
 			print("[team" + key + "][" + key1 + "] " + value1);
 	}
-}
+});
 
 function hook_delete_Entity(e){
 	if(!(e.race in deaths))

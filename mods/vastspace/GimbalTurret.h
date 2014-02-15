@@ -45,7 +45,7 @@ public:
 	static Entity *create(WarField *w, Builder *);
 
 	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/gltestdll/";}
+	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 protected:
 	bool buildBody();

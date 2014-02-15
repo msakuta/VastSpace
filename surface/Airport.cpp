@@ -5,6 +5,8 @@
 #include "SurfaceCS.h"
 #include "btadapt.h"
 #include "sqadapt.h"
+#include "SqInitProcess-ex.h"
+#include "cmd.h"
 
 Entity::EntityRegister<Airport> Airport::entityRegister("Airport");
 
@@ -16,6 +18,7 @@ Vec3d Airport::landOffset = Vec3d(0,0,0);
 Vec3d Airport::landingSite = Vec3d(0,0,0);
 HitBoxList Airport::hitboxes;
 std::vector<Airport::Navlight> Airport::navlights;
+HSQOBJECT Airport::sqGetCoverPoints = sq_nullobj();
 GLuint Airport::overlayDisp;
 
 void Airport::init(){
@@ -29,6 +32,7 @@ void Airport::init(){
 			Vec3dProcess(landingSite, "landingSite") <<=
 			HitboxProcess(hitboxes) <<=
 			NavlightsProcess(navlights) <<=
+			SqCallbackProcess(sqGetCoverPoints, "getCoverPoints") <<=
 			DrawOverlayProcess(overlayDisp));
 		initialized = true;
 	}
@@ -59,6 +63,72 @@ bool Airport::command(EntityCommand *com){
 		Vec3d dir = this->rot.trans(Vec3d(0,0,1));
 		gic->heading = atan2(dir[0], dir[2]);
 		return true;
+	}
+	else if(GetCoverPointsCommand *gcc = dynamic_cast<GetCoverPointsCommand*>(com)){
+		// Call a Squirrel callback function to obtain the list of CoverPoints.
+		// This is not hard-coded because we don't know anything about the airport model and
+		// geometry at the time of compilation.
+		try{
+			HSQUIRRELVM v = game->sqvm;
+			StackReserver sr(v);
+			sq_pushobject(v, sqGetCoverPoints);
+			sq_pushroottable(v);
+			Entity::sq_pushobj(v, this);
+			if(SQ_FAILED(sq_call(v, 2, SQTrue, SQTrue)))
+				return 0;
+			SQInteger len = sq_getsize(v, -1);
+			if(-1 == len)
+				throw SQFError(_SC("getCoverPoints: size could not be acquired"));
+			gcc->cpv.resize(len);
+			for(int i = 0; i < len; i++){
+				sq_pushinteger(v, i); // root obj i
+				if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+					continue;
+				CoverPoint &cp = gcc->cpv[i];
+
+				sq_pushstring(v, _SC("type"), -1); // root obj obj[i] "type"
+				if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].type
+					const SQChar *s;
+					if(SQ_FAILED(sq_getstring(v, -1, &s)))
+						throw SQFError(gltestp::dstring("getCoverPoints: [") << i << _SC("].type not convertible to string"));
+					if(!scstrcmp(s, _SC("RightEdge")))
+						cp.type = cp.RightEdge;
+					else if(!scstrcmp(s, _SC("LeftEdge")))
+						cp.type = cp.LeftEdge;
+					else
+						throw SQFError(gltestp::dstring("getCoverPoints: [") << i << _SC("].type not matching pre-defined strings"));
+					sq_poptop(v); // root obj obj[i]
+				}
+				else
+					throw SQFError(gltestp::dstring("getCoverPoints: [") << i << _SC("].type not defined"));
+
+				sq_pushstring(v, _SC("pos"), -1); // root obj obj[i] "pos"
+				if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].pos
+					SQVec3d r;
+					r.getValue(v, -1);
+					cp.pos = r.value;
+					sq_poptop(v); // root obj obj[i]
+				}
+				else
+					throw SQFError(gltestp::dstring("getCoverPoints: [") << i << _SC("].pos not defined"));
+
+				sq_pushstring(v, _SC("rot"), -1); // root obj obj[i] "rot"
+				if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].rot
+					SQQuatd r;
+					r.getValue(v, -1);
+					cp.rot = r.value;
+					sq_poptop(v); // root obj obj[i]
+				}
+				else
+					throw SQFError(gltestp::dstring("getCoverPoints: [") << i << _SC("].rot not defined"));
+
+				sq_poptop(v); // root obj
+			}
+			sq_poptop(v); // root
+		}
+		catch(SQFError &e){
+			CmdPrint(gltestp::dstring("Airport::command(GetCoverPointsCommand) Error: ") << e.what());
+		}
 	}
 	else
 		return st::command(com);

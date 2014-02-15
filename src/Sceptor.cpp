@@ -5,46 +5,25 @@
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
 #include "Sceptor.h"
-#include "Application.h"
-#include "Player.h"
-#include "Bullet.h"
-#include "judge.h"
-#include "serial_util.h"
-#include "Warpable.h"
 #include "Docker.h"
-#include "Scarry.h"
-//#include "draw/material.h"
-//#include "worker.h"
-//#include "glsl.h"
-//#include "astro_star.h"
-//#include "sensor.h"
-#include "cmd.h"
-//#include "astrodraw.h"
-#include "EntityCommand.h"
+#include "Bullet.h"
+#include "tefpol3d.h"
 #include "btadapt.h"
-#include "sqadapt.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #endif
 #include "motion.h"
-#include "Game.h"
 #ifndef DEDICATED
 #include "glw/PopupMenu.h"
 #endif
-#include "ClientMessage.h"
 #include "SqInitProcess-ex.h"
+#include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
-#include <clib/c.h>
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
 }
 #include <cpplib/CRC32.h>
-#include <assert.h>
-#include <string.h>
-#include <algorithm>
-#include <sstream>
 
 
 /* some common constants that can be used in static data definition. */
@@ -173,6 +152,8 @@ Sceptor::Sceptor(Game *game) : st(game),
 	muzzleFlash(0),
 	pf(NULL),
 	paradec(-1), 
+	thrustSid(0),
+	thrustHiSid(0),
 	active(true)
 {
 	init();
@@ -190,6 +171,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	formPrev(NULL),
 	evelo(vec3_000),
 	attitude(Passive),
+	thrustSid(0),
+	thrustHiSid(0),
 	active(true)
 {
 	Sceptor *const p = this;
@@ -323,8 +306,10 @@ void Sceptor::shootDualGun(double dt){
 		} while(!i++);
 	}
 
-//	shootsound(pt, w, p->cooldown);
-//	pt->shoots += 2;
+#ifndef DEDICATED
+	playSound3D("sound/aagun.wav", this->pos, 1., .2, w->realtime);
+#endif
+
 	if(0 < --magazine)
 		this->cooldown += SCEPTOR_COOLTIME * (fuel <= 0 ? 3 : 1);
 	else{
@@ -583,6 +568,14 @@ void Sceptor::leaveField(WarField *w){
 	if(pf){
 		pf->immobilize();
 		pf = NULL;
+	}
+	if(thrustSid){
+		stopsound3d(thrustSid);
+		thrustSid = 0;
+	}
+	if(thrustHiSid){
+		stopsound3d(thrustHiSid);
+		thrustHiSid = 0;
 	}
 #endif
 	st::leaveField(w);
@@ -1353,8 +1346,30 @@ void Sceptor::anim(double dt){
 	// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 //	if(this->pf && w != oldw)
 //		ImmobilizeTefpol3D(this->pf);
-//	movesound3d(pf->hitsound, pt->pos);
+
 #ifndef DEDICATED
+	// Clamp throttle value for calculating sound attributes in order to exaggerate sound with little throttle.
+	// Practically, throttle is rarely full, but often very little.
+	double capThrottle = std::min(1., fabs(this->throttle) * 2.);
+
+	// If throttle is low, make low frequency sound be dominant.
+	double lowSound = std::max(0., capThrottle * (1. - capThrottle));
+	if(thrustSid){
+		movesound3d(thrustSid, this->pos);
+		volumesound3d(thrustSid, lowSound);
+	}
+	else
+		thrustSid = playSound3D("sound/airrip.ogg", this->pos, lowSound, 0.1, 0, true);
+
+	double highSound = capThrottle * capThrottle;
+	if(thrustHiSid){
+		movesound3d(thrustHiSid, this->pos);
+		volumesound3d(thrustHiSid, highSound);
+	}
+	else
+		thrustHiSid = playSound3D("sound/airrip-h.ogg", this->pos, highSound, 0.1, 0, true);
+	
+
 	if(game->isClient() && this->pf)
 		this->pf->move(pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
 #endif

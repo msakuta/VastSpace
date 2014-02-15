@@ -6,6 +6,9 @@
 #include <stddef.h>
 #include <vector>
 
+// Forward declaration
+struct Message;
+
 /// Type to identify message classes.
 /// No two message classes shall share this value.
 typedef const char *MessageID;

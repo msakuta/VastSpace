@@ -1406,6 +1406,10 @@ static SQInteger sqh_release(SQUserPointer p, SQInteger size){
 
 // TODO: deleted object's entry should be removed
 void sqserial_findobj(HSQUIRRELVM v, Serializable *s, void create(HSQUIRRELVM v, Serializable *cs)){
+	if(!s){
+		sq_pushnull(v);
+		return;
+	}
 	sq_pushroottable(v); // root
 	sq_pushstring(v, objectsTableName, -1); // root str
 	if(SQ_FAILED(sq_get(v, -2))){ // root table

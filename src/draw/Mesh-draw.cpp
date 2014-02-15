@@ -199,11 +199,13 @@ static bool initBuffers(){return -1;}
 static double textime = 0.;
 static int r_vbomesh = 1;
 
+#ifndef MOTIONER
 static void stinitfunc(){
 	CvarAdd("r_vbomesh", &r_vbomesh, cvar_int);
 }
 
 static StaticInitializer stinit(stinitfunc);
+#endif
 
 void Mesh::beginMaterial(Attrib *atr, Flags flags, Cache *c)const{
 	static const GLfloat defemi[4] = {0., 0., 0., 1.};

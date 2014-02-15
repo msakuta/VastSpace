@@ -49,6 +49,7 @@
 #include "BinDiff.h"
 #include "avi.h"
 #include "sqadapt.h"
+#include "audio/wavemixer.h"
 #include "resource.h"
 
 extern "C"{
@@ -1377,6 +1378,10 @@ void ClientApplication::display_func(void){
 	if(clientGame){
 		clientGame->anim(dt);
 
+		// Update sound source.  Rotation is conjugated because it's transformation from
+		// world to local coordinates, although the library expects the opposite.
+		setListener(clientGame->player->getpos(), clientGame->player->getrot().cnj());
+
 		clientGame->clientDraw(gametime, dt);
 	}
 
@@ -2484,9 +2489,16 @@ int main(int argc, char *argv[])
 	CvarAdd("r_shadow_slope_scaled_bias", &r_shadow_slope_scaled_bias, cvar_double);
 	CvarAdd("g_fix_dt", &g_fix_dt, cvar_double);
 	CvarAdd("r_windows", &enableGLwindow, cvar_int);
+	CvarAdd("g_debug_sound", &g_debug_sound, cvar_int);
+	CvarAdd("g_interpolate_sound", &g_interpolate_sound, cvar_int);
+	CvarAdd("g_interpolate_sound_3d", &g_interpolate_sound_3d, cvar_int);
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");
+
+#if defined _WIN32
+	HANDLE hWaveThread = CreateWaveOutThread();
+#endif
 
 #if USEWIN
 	{

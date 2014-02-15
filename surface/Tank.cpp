@@ -8,6 +8,8 @@
 #include "motion.h"
 #include "glw/GLWchart.h"
 #include "SqInitProcess-ex.h"
+#include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -49,11 +51,11 @@ const unsigned Tank::classid = registerClass("Tank", Conster<Tank>);
 Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
 
-Tank::Tank(Game *game) : st(game){
+Tank::Tank(Game *game) : st(game), gunsid(0){
 	init();
 }
 
-Tank::Tank(WarField *aw) : st(aw){
+Tank::Tank(WarField *aw) : st(aw), gunsid(0){
 	init();
 	health = getMaxHealth();
 	steer = 0.;
@@ -266,13 +268,9 @@ int Tank::shootcannon(double dt){
 //		p->ammo[0]--;
 		this->cooldown += mainGunCooldown;
 		this->muzzle |= 1;
-#		if 0 // Wait the sound engine
-	{
-		double s;
-		s = 1. / (VECSDIST(pb->pos, w->pl->pos) + 1.);
-		playWave3DPitch("rc.zip/sound/tank_001.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, s, .2, w->realtime, 255);
-		playWave3DPitch("rc.zip/sound/tank_001_far2.wav"/*"c0wg42.wav"*/, pt->pos, w->pl->pos, w->pl->pyr, 1 - s, 20., w->realtime, 255);
-	}
+
+#		ifndef DEDICATED
+		gunsid = playSound3D(modPath() << "sound/tank-gun.wav", this->pos, 1., .2, w->realtime);
 #		endif
 #endif
 #endif
@@ -924,6 +922,11 @@ void Tank::anim(double dt){
 		else
 			cooldown2 -= dt;
 	}
+
+#ifndef DEDICATED
+	if(gunsid != 0)
+		movesound3d(gunsid, this->pos);
+#endif
 
 }
 

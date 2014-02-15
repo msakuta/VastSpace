@@ -84,7 +84,7 @@ protected:
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
 };
 
-/// \brief JSDF's type 90 main buttle tank.
+/// \brief JSDF's type 90 main battle tank.
 class Tank : public LandVehicle{
 public:
 	typedef LandVehicle st;
@@ -106,6 +106,7 @@ protected:
 
 	double sightCheckTime;
 	bool sightCheck;
+	int gunsid; ///< The main gun's sound id
 
 	static Model *model;
 	static double modelScale;

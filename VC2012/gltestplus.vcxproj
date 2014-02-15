@@ -64,22 +64,22 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/;../libogg/include;../libvorbis/include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/;../libogg/include;../libvorbis/include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/;../libogg/include;../libvorbis/include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../clib/include;../cpplib/include;../jpeg;../squirrel3/include;../bullet/src;../lpng/;../zlib/;../libogg/include;../libvorbis/include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -110,8 +110,8 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -125,8 +125,8 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -142,8 +142,8 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -159,8 +159,8 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);..\bullet\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -173,6 +173,8 @@
     <ClCompile Include="..\src\astro.cpp" />
     <ClCompile Include="..\src\astrodraw.cpp" />
     <ClCompile Include="..\src\Attacker.cpp" />
+    <ClCompile Include="..\src\audio\playSound.cpp" />
+    <ClCompile Include="..\src\audio\wavemixer.cpp" />
     <ClCompile Include="..\src\Autonomous.cpp" />
     <ClCompile Include="..\src\avi.c" />
     <ClCompile Include="..\src\Battleship.cpp" />
@@ -269,9 +271,46 @@
     <ClCompile Include="..\src\ysdnmmot.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\antiglut.h" />
+    <ClInclude Include="..\include\Application.h" />
+    <ClInclude Include="..\include\arms.h" />
+    <ClInclude Include="..\include\astro.h" />
+    <ClInclude Include="..\include\astrodef.h" />
+    <ClInclude Include="..\include\astrodraw.h" />
+    <ClInclude Include="..\include\astro_star.h" />
+    <ClInclude Include="..\include\audio\playSound.h" />
+    <ClInclude Include="..\include\audio\wavemixer.h" />
+    <ClInclude Include="..\include\Autonomous.h" />
+    <ClInclude Include="..\include\BeamProjectile.h" />
+    <ClInclude Include="..\include\BinDiff.h" />
+    <ClInclude Include="..\include\bitmap.h" />
+    <ClInclude Include="..\include\btadapt.h" />
+    <ClInclude Include="..\include\Builder.h" />
     <ClInclude Include="..\include\Bullet.h" />
+    <ClInclude Include="..\include\ClientMessage.h" />
+    <ClInclude Include="..\include\cmd.h" />
+    <ClInclude Include="..\include\CoordSys-find.h" />
+    <ClInclude Include="..\include\CoordSys.h" />
+    <ClInclude Include="..\include\Docker.h" />
+    <ClInclude Include="..\include\draw\blackbody.h" />
     <ClInclude Include="..\include\draw\effects.h" />
+    <ClInclude Include="..\include\draw\HDR.h" />
+    <ClInclude Include="..\include\draw\material.h" />
+    <ClInclude Include="..\include\draw\mqoadapt.h" />
+    <ClInclude Include="..\include\draw\OpenGLState.h" />
+    <ClInclude Include="..\include\draw\ShaderBind.h" />
+    <ClInclude Include="..\include\draw\ShadowMap.h" />
+    <ClInclude Include="..\include\draw\WarDraw.h" />
+    <ClInclude Include="..\include\dstring.h" />
+    <ClInclude Include="..\include\Entity.h" />
+    <ClInclude Include="..\include\EntityCommand.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />
+    <ClInclude Include="..\include\export.h" />
+    <ClInclude Include="..\include\Frigate.h" />
+    <ClInclude Include="..\include\Game.h" />
+    <ClInclude Include="..\include\GetFov.h" />
+    <ClInclude Include="..\include\glsl.h" />
+    <ClInclude Include="..\include\glstack.h" />
     <ClInclude Include="..\include\glw\GLWbutton.h" />
     <ClInclude Include="..\include\glw\GLWchart.h" />
     <ClInclude Include="..\include\glw\GLWchat.h" />
@@ -280,16 +319,61 @@
     <ClInclude Include="..\include\glw\message.h" />
     <ClInclude Include="..\include\glw\PopupMenu-forward.h" />
     <ClInclude Include="..\include\glw\PopupMenu.h" />
+    <ClInclude Include="..\include\judge.h" />
+    <ClInclude Include="..\include\libmotion.h" />
+    <ClInclude Include="..\include\LTurret.h" />
     <ClInclude Include="..\include\Mesh-forward.h" />
+    <ClInclude Include="..\include\Missile.h" />
     <ClInclude Include="..\include\Model-forward.h" />
     <ClInclude Include="..\include\ModelEntity.h" />
     <ClInclude Include="..\include\Motion-forward.h" />
+    <ClInclude Include="..\include\motion.h" />
     <ClInclude Include="..\include\mqo.h" />
+    <ClInclude Include="..\include\msg\GetCoverPointsMessage.h" />
+    <ClInclude Include="..\include\msg\Message.h" />
     <ClInclude Include="..\include\Observable.h" />
+    <ClInclude Include="..\include\Player.h" />
+    <ClInclude Include="..\include\serial.h" />
+    <ClInclude Include="..\include\serial_util.h" />
+    <ClInclude Include="..\include\Server.h" />
+    <ClInclude Include="..\include\shield.h" />
+    <ClInclude Include="..\include\Shipyard.h" />
+    <ClInclude Include="..\include\sqadapt.h" />
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
     <ClInclude Include="..\include\Mesh.h" />
+    <ClInclude Include="..\include\StaticInitializer.h" />
+    <ClInclude Include="..\include\stellar_file.h" />
+    <ClInclude Include="..\include\tefpol3d.h" />
+    <ClInclude Include="..\include\tent3d.h" />
+    <ClInclude Include="..\include\tent3d_forward.h" />
+    <ClInclude Include="..\include\Universe.h" />
+    <ClInclude Include="..\include\VariantRegister.h" />
+    <ClInclude Include="..\include\Viewer.h" />
+    <ClInclude Include="..\include\war.h" />
+    <ClInclude Include="..\include\WarField_countEnt.h" />
+    <ClInclude Include="..\include\Warpable.h" />
+    <ClInclude Include="..\include\ysdnmmot.h" />
+    <ClInclude Include="..\include\yssurf.h" />
+    <ClInclude Include="..\src\argtok.h" />
+    <ClInclude Include="..\src\Assault.h" />
+    <ClInclude Include="..\src\Attacker.h" />
+    <ClInclude Include="..\src\avi.h" />
+    <ClInclude Include="..\src\Battleship.h" />
+    <ClInclude Include="..\src\Beamer.h" />
+    <ClInclude Include="..\src\cmd_int.h" />
+    <ClInclude Include="..\src\Defender.h" />
+    <ClInclude Include="..\src\Destroyer.h" />
+    <ClInclude Include="..\src\galaxy_field.h" />
+    <ClInclude Include="..\src\keybind.h" />
+    <ClInclude Include="..\src\Respawn.h" />
+    <ClInclude Include="..\src\RStation.h" />
+    <ClInclude Include="..\src\Scarry.h" />
+    <ClInclude Include="..\src\Sceptor.h" />
     <ClInclude Include="..\src\sqserial.h" />
+    <ClInclude Include="..\src\tent3d_p.h" />
+    <ClInclude Include="..\src\TexSphere.h" />
+    <ClInclude Include="..\src\Worker.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\gp.ico" />

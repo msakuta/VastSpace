@@ -17,6 +17,8 @@
 #include "glw/message.h"
 #include "glw/GLWentlist.h"
 #include "ClientMessage.h"
+#include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/timemeas.h>
 #ifndef DEDICATED
@@ -274,6 +276,107 @@ static SQInteger sqf_register_console_command_a(HSQUIRRELVM v){
 	sq_set(v, -3); // root table name [closure]
 	sq_newslot(v, -3, SQFalse); // root table
 	return 0;
+}
+
+static SQInteger loadInteger(HSQUIRRELVM v, SQInteger index, SQInteger def = 0){
+	SQInteger val;
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getinteger(v, index, &val)))
+		val = def;
+	return val;
+}
+
+static SQBool loadBool(HSQUIRRELVM v, SQInteger index, SQBool def = SQFalse){
+	SQBool val;
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getbool(v, index, &val)))
+		val = def;
+	return val;
+}
+
+static SQFloat loadFloat(HSQUIRRELVM v, SQInteger index, SQFloat def = 0){
+	SQFloat val;
+	if(sq_gettop(v) < index || SQ_FAILED(sq_getfloat(v, index, &val)))
+		val = def;
+	return val;
+}
+
+static SQInteger sqf_playSound(HSQUIRRELVM v){
+#ifndef DEDICATED
+	const SQChar *fname;
+	if(SQ_FAILED(sq_getstring(v, 2, &fname)))
+		return sq_throwerror(v, _SC("playSound first argument must be a string"));
+
+	SQInteger delay = loadInteger(v, 3, 0);
+	SQInteger vol = loadInteger(v, 4, 256);
+	SQFloat pitch = loadFloat(v, 5, 1);
+	SQInteger pan = loadInteger(v, 6, 0);
+	SQInteger loops = loadInteger(v, 7, 0);
+	SQInteger priority = loadInteger(v, 8, 0);
+
+	SQInteger ret = playSound(fname, delay, vol, pitch, pan, loops, priority);
+	sq_pushinteger(v, ret);
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+static SQInteger sqf_isEndSound(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		SQInteger sid = loadInteger(v, 2, 0);
+		SQBool ret = isEndSound(sid) ? SQTrue : SQFalse;
+		sq_pushbool(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+#else
+	return 0;
+#endif
+}
+
+static SQInteger sqf_playSound3D(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		const SQChar *fname;
+		if(SQ_FAILED(sq_getstring(v, 2, &fname)))
+			return sq_throwerror(v, _SC("playSound3D first argument must be a string"));
+
+		SQVec3d sqv;
+		sqv.getValue(v, 3);
+		SQFloat vol = loadFloat(v, 4, 1.);
+		SQFloat attn = loadFloat(v, 5, 1.);
+		SQInteger delay = loadInteger(v, 6, 0);
+		SQBool loop = loadBool(v, 7, SQFalse);
+		SQFloat pitch = loadFloat(v, 8, 1);
+
+		SQInteger ret = playSound3D(fname, sqv.value, vol, attn, delay, loop == SQTrue, pitch);
+		sq_pushinteger(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+#else
+	return 0;
+#endif
+}
+
+static SQInteger sqf_isEndSound3D(HSQUIRRELVM v){
+#ifndef DEDICATED
+	try{
+		SQInteger sid = loadInteger(v, 2, 0);
+		SQBool ret = isEndSound3D(sid) ? SQTrue : SQFalse;
+		sq_pushbool(v, ret);
+		return 1;
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
+	}
+#else
+	return 0;
+#endif
 }
 
 static SQInteger sqf_timemeas(HSQUIRRELVM v){
@@ -902,7 +1005,24 @@ SQInteger sqf_glScaled(HSQUIRRELVM v){
 		glScalef(f[0], f[1], f[2]);
 	}
 	catch(SQFError &e){
-		return sq_throwerror(v, e.description);
+		return sq_throwerror(v, e.what());
+	}
+	return 0;
+}
+
+SQInteger sqf_glTranslated(HSQUIRRELVM v){
+	try{
+		GLfloat f[3];
+		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
+			return SQ_ERROR;
+		if(SQ_FAILED(sq_getfloat(v, 4, &f[2])))
+			return SQ_ERROR;
+		glTranslated(f[0], f[1], f[2]);
+	}
+	catch(SQFError &e){
+		return sq_throwerror(v, e.what());
 	}
 	return 0;
 }
@@ -914,7 +1034,7 @@ SQInteger sqf_glTranslate(HSQUIRRELVM v){
 		gldTranslate3dv(sqv.value);
 	}
 	catch(SQFError &e){
-		return sq_throwerror(v, e.description);
+		return sq_throwerror(v, e.what());
 	}
 	return 0;
 }
@@ -1124,6 +1244,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
 	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
 	register_global_func(v, sqf_glScaled, _SC("glScaled"));
+	register_global_func(v, sqf_glTranslated, _SC("glTranslated"));
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
@@ -1255,6 +1376,11 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_pushstring(v, _SC("stellar_file"), -1);
 	sq_pushstring(v, _SC("space.ssd"), -1);
 	sq_createslot(v, 1);
+
+	register_global_func(v, sqf_playSound, _SC("playSound"));
+	register_global_func(v, sqf_isEndSound, _SC("isEndSound"));
+	register_global_func(v, sqf_playSound3D, _SC("playSound3D"));
+	register_global_func(v, sqf_isEndSound3D, _SC("isEndSound3D"));
 
 	// Load both initialization scripts for standalone game.
 	for(int i = !game->isServer(); i < game->isClient() + 1; i++){

@@ -147,6 +147,8 @@ function queryAmmo(e){
 	return count;
 }
 
+flyingSoundFile <- "sound/airrip.ogg";
+flyingHiSoundFile <- "sound/airrip-h.ogg";
 
 function drawOverlay(){
 	glBegin(GL_LINE_LOOP);

@@ -137,6 +137,7 @@ local weapons = [
 
 function fire(e,dt){
 	if(e.weapon == 0){
+		local shot = false;
 		while(e.cooldown < dt){
 			local i = 0;
 			local rot = e.getrot();
@@ -162,7 +163,21 @@ function fire(e,dt){
 				e.gunFireEffect();
 			};
 			e.cooldown += lthis.shootCooldown;
+			shot = true;
 		}
+
+		if(e.object == null)
+			e.object = {};
+		if(!("shootSid" in e.object))
+			e.object.shootSid <- 0;
+
+		if(shot){
+			if(isEndSound3D(e.object.shootSid)){
+				e.object.shootSid = playSound3D("surface/sound/A10-gunshot.ogg", e.pos);
+				print("A10 shoot: " + e.object.shootSid);
+			}
+		}
+
 		return;
 	}
 
@@ -222,6 +237,8 @@ weaponList <- [
 	"AIM-9 Sidewinder",
 ]
 
+flyingSoundFile <- "sound/airrip.ogg";
+flyingHiSoundFile <- "sound/airrip-h.ogg";
 
 function drawOverlay(){
 	local glPath = function(d,scale){

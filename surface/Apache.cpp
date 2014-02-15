@@ -5,16 +5,6 @@
 #include "Apache.h"
 #include "Player.h"
 #include "ExplosiveBullet.h"
-#include "tent3d.h"
-//#include "island3.h"
-//#include "aim9.h"
-#include "antiglut.h"
-//#include "glwindow.h"
-//#include "walk.h"
-//#include "hydra.h"
-//#include "warutil.h"
-#include "judge.h"
-#include "arms.h"
 #include "motion.h"
 #include "SurfaceCS.h"
 #include "btadapt.h"
@@ -23,6 +13,8 @@
 #include "tefpol3d.h"
 #endif
 #include "Launcher.h"
+#include "audio/playSound.h"
+#include "audio/wavemixer.h"
 extern "C"{
 #include <clib/cfloat.h>
 }
@@ -136,8 +128,15 @@ void Apache::init(){
 		p->sw[i].phase = p->sw[i].amount = 0.;*/
 }
 
-Apache::Apache(WarField *w) : st(w){
+Apache::Apache(WarField *w) : st(w), rotorSid(0){
 	init();
+}
+
+void Apache::leaveField(WarField *w){
+	if(rotorSid){
+		stopsound3d(rotorSid);
+		rotorSid = 0;
+	}
 }
 
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -489,6 +488,12 @@ void Apache::anim(double dt){
 	// Align belonging arms at the end of frame
 	for(ArmList::iterator it = arms.begin(); it != arms.end(); ++it) if(*it)
 		(*it)->align();
+
+	if(!rotorSid){
+		rotorSid = playSound3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 0.1, 0, true);
+	}
+	else
+		movesound3d(rotorSid, this->pos);
 }
 
 
@@ -510,6 +515,11 @@ int Apache::takedamage(double damage, int hitpart){
 	}
 	health -= damage;
 	if(health < -100.){
+		// We need to explicitly call leaveField() here because the destructor of Entity calls
+		// Entity::leaveField(), not Apache::leaveField().  The derived class ought to be destroyed
+		// by the time of super class's destruction, so it cannot call method of derived.
+		// It means Entity::leaveField() is called twice.  Is there any nice way to avoid this?
+		leaveField(w);
 		delete this;
 	}
 	return ret;
@@ -650,8 +660,8 @@ int Apache::shootChainGun(double dt){
 	Mat4d mat;
 	transform(mat);
 
-//	playWave3D(CvarGetString("sound_gunshot"), pt->pos, w->pl->pos, w->pl->pyr, .6, .01, w->realtime + t);
 	if((!controller && enemy || inputs.press & (PL_ENTER | PL_LCLICK))){
+		bool shot = false;
 		while(0 < ammo_chaingun && cooldown < dt){
 
 			double t = w->war_time() + cooldown;
@@ -695,7 +705,10 @@ int Apache::shootChainGun(double dt){
 #endif
 			this->muzzle = 1;
 			this->ammo_chaingun--;
+			shot = true;
 		}
+		if(shot)
+			playSound3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, .01);
 	}
 	return ret;
 }

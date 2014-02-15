@@ -67,6 +67,8 @@ protected:
 	static std::vector<Vec3d> engineNozzles;
 	static StringList defaultArms;
 	static StringList weaponList;
+	static gltestp::dstring flyingSoundFile;
+	static gltestp::dstring flyingHiSoundFile;
 
 	WingList &getWings()const override{return wings0;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
@@ -78,6 +80,8 @@ protected:
 	}
 	gltestp::dstring getWeaponName()const override{return weaponList[weapon];}
 	int getAmmo()const override{return getAmmoFromSQ(sqQueryAmmo);}
+	gltestp::dstring getFlyingSoundFile()const override{return flyingSoundFile;}
+	gltestp::dstring getFlyingHiSoundFile()const override{return flyingHiSoundFile;}
 	static SQInteger sqf_debugWings(HSQUIRRELVM);
 	btCompoundShape *getShape()override;
 

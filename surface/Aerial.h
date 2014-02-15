@@ -65,6 +65,8 @@ protected:
 	WeakPtr<Bullet> lastMissile; ///< Reference to last shot missile
 	WeakPtr<Entity> landingAirport; ///< The airport this airplane is going to land with autopilot.
 	HSQOBJECT hObject; ///< Reference to buffer in Squirrel VM
+	int flyingSid; ///< Sound ID for flying sound
+	int flyingHiSid; ///< Sound ID of high frequency component for flying sound
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{
@@ -107,6 +109,8 @@ protected:
 	virtual void toggleWeapon(){weapon = !weapon;}
 	virtual btCompoundShape *getShape() = 0;
 	virtual bool isCockpitView(int chasecam)const{return false;}
+	virtual gltestp::dstring getFlyingSoundFile()const{return "";}
+	virtual gltestp::dstring getFlyingHiSoundFile()const{return "";}
 
 	void init();
 	bool cull(WarDraw *)const;

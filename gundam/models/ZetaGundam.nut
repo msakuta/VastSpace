@@ -19,16 +19,26 @@ hitbox <- [
 ];
 
 function drawOverlay(){
-	glScaled(10, 10, 1);
+	local path = [
+		10,30,
+		20,10,
+		90,10,
+		26,84,
+		70,84,
+		80,80,
+		90,70,
+		80,90,
+		10,90,
+		76,16,
+		30,16,
+		20,20,
+		10,30,
+	];
+	glScaled(1. / 50, 1. / 50, 1);
+	glTranslated(-50, -50, 0);
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(-0.10, -0.10);
-	glVertex2d(-0.05,  0.00);
-	glVertex2d(-0.10,  0.10);
-	glVertex2d( 0.00,  0.05);
-	glVertex2d( 0.10,  0.10);
-	glVertex2d( 0.05,  0.00);
-	glVertex2d( 0.10, -0.10);
-	glVertex2d( 0.00, -0.05);
+	for(local i = 0; i * 2 < path.len(); i++)
+		glVertex2d(path[i * 2], path[i * 2 + 1]);
 	glEnd();
 }
 

@@ -34,26 +34,6 @@ print("Squirrel script for the server initialized!");
 
 cvar.pause = "1";
 
-// load the module
-if(0){
-	local dllpath = debugBuild() ?
-		x64Build() ? "surface.dll" : "..\\gltestplus\\Debug\\surface.dll" :
-		x64Build() ? "surface.dll" : "surface.dll";
-//		x64Build() ? "x64\\Debug\\gltestdll.dll" : "..\\gltestplus\\Debug\\gltestdll.dll" :
-//		x64Build() ? "x64\\Release\\gltestdll.dll" : "gltestdll.dll";
-	local gltestdll = loadModule(dllpath);
-	print("\"" + dllpath + "\"l refc is " + gltestdll);
-}
-
-// load the module
-if(0){
-	local dllpath = debugBuild() ?
-		x64Build() ? "gundam.dll" : "..\\gltestplus\\Debug\\gundam.dll" :
-		x64Build() ? "gundam.dll" : "gundam.dll";
-	local gltestdll = loadModule(dllpath);
-	print("\"" + dllpath + "\"l refc is " + gltestdll);
-}
-
 // set stellar file
 stellar_file = 1 || debugBuild() ? "space_debug.ssd" : "space.ssd";
 

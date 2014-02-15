@@ -67,29 +67,29 @@
     <_ProjectFileVersion>11.0.60610.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../jpeg-7;../../squirrel3/include;../../bullet/src;../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../jpeg-7;../../../squirrel3/include;../../../bullet/src;../../../lpng143/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GUNDAM_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);GLTESTDLL_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -99,8 +99,8 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;..\..\bullet\lib\BulletDynamics_vs2010_debug.lib;..\..\bullet\lib\BulletCollision_vs2010_debug.lib;..\..\bullet\lib\LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;opengl32.lib;glu32.lib;..\..\bullet\lib\BulletDynamics_vs2010_debug.lib;..\..\bullet\lib\BulletCollision_vs2010_debug.lib;..\..\bullet\lib\LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -112,7 +112,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../jpeg-7;../../squirrel3/include;../../bullet/src;../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../jpeg-7;../../../squirrel3/include;../../../bullet/src;../../../lpng143/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GUNDAM_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);GLTESTDLL_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -123,7 +123,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -133,7 +133,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../jpeg-7;../../squirrel3/include;../../bullet/src;../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../jpeg-7;../../../squirrel3/include;../../../bullet/src;../../../lpng143/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GUNDAM_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);GLTESTDLL_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -142,8 +142,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -158,7 +158,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../include;../../clib/include;../../cpplib/include;../../jpeg-7;../../squirrel3/include;../../bullet/src;../../lpng143/;../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../jpeg-7;../../../squirrel3/include;../../../bullet/src;../../../lpng143/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN64;NDEBUG;_WINDOWS;_USRDLL;GUNDAM_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);GLTESTDLL_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -169,7 +169,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\VC2012\$(Platform)\$(Configuration);..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

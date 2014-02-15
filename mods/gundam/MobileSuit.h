@@ -151,7 +151,7 @@ public:
 	virtual bool undock(Docker *);
 	virtual bool command(EntityCommand *);
 
-	static gltestp::dstring modPath(){return "gundam/";}
+	static gltestp::dstring modPath(){return "mods/gundam/";}
 
 	static int cmd_dock(int argc, char *argv[], void *);
 	static int cmd_parade_formation(int argc, char *argv[], void*);

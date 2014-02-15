@@ -1,7 +1,7 @@
 /** \file
- * \brief Implementation of ReZEL class's graphical aspects.
+ * \brief Implementation of Zeta Gundam class's graphical aspects.
  */
-#include "../ReZEL.h"
+#include "../Zeta.h"
 #include "Player.h"
 #include "draw/material.h"
 //#include "judge.h"
@@ -38,32 +38,18 @@ extern "C"{
 
 
 /* color sequences */
-extern const struct color_sequence cs_orangeburn, cs_shortburn;
-#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
-static const struct color_node cnl_orangeburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,0)},
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.45, COLOR32RGBA(255,127,31,95)},
-	{0.3, COLOR32RGBA(255,31,0,63)},
-};
-const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 1.1);
-static const struct color_node cnl_shortburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.25, COLOR32RGBA(255,127,31,0)},
-};
-const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
+extern struct color_sequence cs_orangeburn;
+extern const struct color_sequence cs_shortburn;
 
 
-double g_nlips_factor = 1.;
+extern double g_nlips_factor;
 static int g_shader_enable = 0;
 
 
 
-bool ReZEL::cull(Viewer &vw)const{
+bool ZetaGundam::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
-	if(task == ReZEL::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
+	if(task == ZetaGundam::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
 		return true;
 	double pixels = .008 * fabs(vw.gc->scale(pos)) * nf;
 	if(pixels < 2)
@@ -72,25 +58,24 @@ bool ReZEL::cull(Viewer &vw)const{
 }
 
 /* NLIPS: Non-Linear Inverse Perspective Scrolling */
-double ReZEL::nlipsFactor(Viewer &vw)const{
+double ZetaGundam::nlipsFactor(Viewer &vw)const{
 	double f = vw.fov * g_nlips_factor * 500. / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
 	return MAX(1., f);
 }
 
-Model *ReZEL::model = NULL;
-Motion *ReZEL::motions[ReZEL::motionCount];
+Model *ZetaGundam::model = NULL;
+Motion *ZetaGundam::motions[ZetaGundam::motionCount];
 
-void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
-	float freload = weaponStatus[0].reload;
+void ZetaGundam::getMotionTime(double (&motion_time)[numof(motions)], double (&motion_amplitude)[numof(motions)]){
 	for(int i = 0; i < numof(motions); i++)
 		motion_amplitude[i] = 1.;
-	motion_time[0] = 10. * fwaverider;
+/*	motion_time[0] = 10. * fwaverider;
 	motion_amplitude[0] = fwaverider ? 1. : 0.;
 	motion_time[1] = 10. * (1. - fwaverider) * (1. - fonfeet);
-	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;
-	motion_time[2] = 10. * (freload == 0. ? 1. - fweapon : 0.);
-	motion_amplitude[2] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
-	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
+	motion_amplitude[1] = fwaverider != 1. ? 1. : 0.;*/
+	motion_time[1] = 10. * (weaponStatus[0].reload == 0. ? 1. - fweapon : 0.);
+	motion_amplitude[1] = (1. - fwaverider) * (1. - fsabre) * (1. - coverFactor());
+/*	motion_time[3] = 10. * (1. - fwaverider) * (1. - fsabre) * fweapon,
 	motion_amplitude[3] = fwaverider != 1. ? 1. : 0.;
 	motion_time[4] = fonfeet != 1.f ? (-twist * (1. - fwaverider) + 1.) * 10. : 10.;
 	motion_amplitude[4] = 0.; // disable airtwist
@@ -99,12 +84,12 @@ void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion
 	motion_time[6] = (1. - fwaverider) * (1. - fsabre) * (freload != 0. ? min(2. - 2. * freload / reloadTime, 2. * freload / reloadTime) * 20. + 10. : 0.);
 	motion_amplitude[6] = fwaverider != 1. && fsabre != 1. ? 1. : 0.;
 	motion_time[7] = (fsabre < 2. ? fsabre : 4. - fsabre) * 10.;
-	motion_amplitude[7] = 1. - fwaverider;
-	motion_time[8] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
-	motion_amplitude[8] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
-	motion_time[9] = 10. * min(1., 1. - velo.len() / walkSpeed);
-	motion_amplitude[9] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
-	motion_time[10] = 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.);
+	motion_amplitude[7] = 1. - fwaverider;*/
+	motion_time[0] = 10. * max(0., velo.len() / walkSpeed) * (walkphase * 8 + 1.);
+	motion_amplitude[0] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
+	motion_time[2] = 10. * min(1., 1. - velo.len() / walkSpeed);
+	motion_amplitude[2] = fwaverider == 0. ? (1. - coverFactor()) * fonfeet : 0.;
+/*	motion_time[10] = 10. * rangein((aimdir[1] / (M_PI / 3.)) * (1. - fwaverider) + 1., 0., 2.);
 	motion_amplitude[10] = (1. - fwaverider) * (1. - coverFactor());
 	motion_time[11] = weapon == 0 && fwaverider == 0 ? 15. * (aimdir[0] / (M_PI / 2.) * (1. - fwaverider) + 1.) : 15.;
 	motion_amplitude[11] = weapon == 0 ? (1. - fwaverider) * (1. - coverFactor()) : 0.;
@@ -115,10 +100,10 @@ void ReZEL::getMotionTime(double (&motion_time)[numof(motions)], double (&motion
 	motion_time[14] = weapon == 0 ? 10. * rangein(aimdir[1] / (M_PI / 4.) + 1., 0., 2.) : 0;
 	motion_amplitude[14] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
 	motion_time[15] = weapon == 0 ? 10. * rangein(aimdir[0] / (M_PI / 4.) + 1., 0., 2.) : 0;
-	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);
+	motion_amplitude[15] = (weapon == 0 ? (1. - fwaverider) * max(0, coverRight - 1.) : 0.);*/
 }
 
-ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
+ZetaGundam::MotionPoseSet &ZetaGundam::motionInterpolate(){
 	double motion_time[numof(motions)];
 	double motion_amplitude[numof(motions)];
 	getMotionTime(motion_time, motion_amplitude);
@@ -136,6 +121,7 @@ ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
 
 	int n = 0;
 	for(int i = 0; i < numof(motions); i++) if(motion_amplitude[i] != 0. && motions[i]){
+		assert(n < numof(motions));
 		vectime[n] = (motion_time[i]);
 		vecamp[n] = (motion_amplitude[i]);
 		vecmotions[n] = (motions[i]);
@@ -168,14 +154,14 @@ ReZEL::MotionPoseSet &ReZEL::motionInterpolate(){
 	return poseSet;
 }
 
-void ReZEL::motionInterpolateFree(MotionPoseSet &set){
+void ZetaGundam::motionInterpolateFree(MotionPoseSet &set){
 }
 
-void ReZEL::draw(wardraw_t *wd){
+void ZetaGundam::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
 	double nf = nlipsFactor(*wd->vw);
 	double scale = modelScale * nf;
-	ReZEL *const p = this;
+	ZetaGundam *const p = this;
 	if(!this->w /*|| this->docked*/)
 		return;
 
@@ -190,31 +176,24 @@ void ReZEL::draw(wardraw_t *wd){
 		draw_healthbar(this, wd, health / getMaxHealth(), .01 * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
-/*		for(int i = 0 ; i < numof(models); i++){
-			suf[i] = CallLoadSUF(models[i]);
-			if(suf[i]){
-				vbo[i] = CacheVBO(suf[i]);
-				CacheSUFMaterials(suf[i]);
-				suft[i] = gltestp::AllocSUFTex(suf[i]);
-			}
-		}*/
-		model = LoadMQOModel("gundam/models/ReZEL.mqo");
-		motions[0] = new Motion("gundam/models/ReZEL_waverider.mot");
-		motions[1] = new Motion("gundam/models/ReZEL_airidle.mot");
-		motions[2] = new Motion("gundam/models/ReZEL_aim.mot");
-		motions[3] = new Motion("gundam/models/ReZEL_aimsub.mot");
-		motions[4] = new Motion("gundam/models/ReZEL_airtwist.mot");
-		motions[5] = new Motion("gundam/models/ReZEL_airpitch.mot");
-		motions[6] = new Motion("gundam/models/ReZEL_reload.mot");
-		motions[7] = new Motion("gundam/models/ReZEL_sabre.mot");
-		motions[8] = new Motion("gundam/models/ReZEL_walk.mot");
-		motions[9] = new Motion("gundam/models/ReZEL_stand.mot");
-		motions[10] = new Motion("gundam/models/ReZEL_yaw.mot");
-		motions[11] = new Motion("gundam/models/ReZEL_pitch.mot");
-		motions[12] = new Motion("gundam/models/ReZEL_pitchsub.mot");
-		motions[13] = new Motion("gundam/models/ReZEL_cover_right.mot");
-		motions[14] = new Motion("gundam/models/ReZEL_cover_right_yaw.mot");
-		motions[15] = new Motion("gundam/models/ReZEL_cover_right_pitch.mot");
+		model = LoadMQOModel(modPath() << "models/Zeta.mqo");
+		std::string sModPath = std::string(modPath());
+/*		motions[0] = new Motion(sModPath + "models/ZetaGundam_waverider.mot");
+		motions[1] = new Motion(sModPath + "models/ZetaGundam_airidle.mot");*/
+		motions[1] = new Motion(sModPath + "models/ZetaGundam_aim.mot");
+/*		motions[3] = new Motion(sModPath + "models/ZetaGundam_aimsub.mot");
+		motions[4] = new Motion(sModPath + "models/ZetaGundam_airtwist.mot");
+		motions[5] = new Motion(sModPath + "models/ZetaGundam_airpitch.mot");
+		motions[6] = new Motion(sModPath + "models/ZetaGundam_reload.mot");
+		motions[7] = new Motion(sModPath + "models/ZetaGundam_sabre.mot");*/
+		motions[0] = new Motion(sModPath + "models/ZetaGundam_walk.mot");
+		motions[2] = new Motion(sModPath + "models/ZetaGundam_stand.mot");
+/*		motions[10] = new Motion(sModPath + "models/ZetaGundam_yaw.mot");
+		motions[11] = new Motion(sModPath + "models/ZetaGundam_pitch.mot");
+		motions[12] = new Motion(sModPath + "models/ZetaGundam_pitchsub.mot");
+		motions[13] = new Motion(sModPath + "models/ZetaGundam_cover_right.mot");
+		motions[14] = new Motion(sModPath + "models/ZetaGundam_cover_right_yaw.mot");
+		motions[15] = new Motion(sModPath + "models/ZetaGundam_cover_right_pitch.mot");*/
 
 		init.create(*openGLState);
 	} while(0);
@@ -236,9 +215,10 @@ void ReZEL::draw(wardraw_t *wd){
 		motionInterpolateTimeAverageCount++;
 //		printf("interp[%d]: %lg, %lg\n", v.getn(), motionInterpolateTimeAverage, motionInterpolateTime);
 
+#if 0
 		if(0 < muzzleFlash[0]){
 			Vec3d pos;
-			model->getBonePos("ReZEL_riflemuzzle", v[0], &pos);
+			model->getBonePos("ZetaGundam_riflemuzzle", v[0], &pos);
 /*			pos *= scale;
 			pos[0] *= -1;
 			pos[2] *= -1;
@@ -253,7 +233,7 @@ void ReZEL::draw(wardraw_t *wd){
 		}
 		else if(0 < muzzleFlash[1]){
 			Vec3d pos;
-			model->getBonePos("ReZEL_shieldmuzzle", v[0], &pos);
+			model->getBonePos("ZetaGundam_shieldmuzzle", v[0], &pos);
 			glEnable(GL_LIGHT1);
 			glLightfv(GL_LIGHT1, GL_POSITION, Vec4f(pos.cast<GLfloat>(), 1.));
 			glLightfv(GL_LIGHT1, GL_AMBIENT, Vec4f(0,0,0,0));
@@ -262,6 +242,7 @@ void ReZEL::draw(wardraw_t *wd){
 			glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, (.3 - muzzleFlash[1]) / .5 / .003);
 //			gldSpriteGlow(pos, .0010 + (.3 - muzzleFlash[1]) * .001, Vec4<GLubyte>(255,127,255,min(muzzleFlash[1] / .3 * 255, 255)), wd->vw->irot);
 		}
+#endif
 
 		DrawMQOPose(model, &v[0]);
 //		YSDNM_MotionInterpolateFree(v);
@@ -275,8 +256,8 @@ void ReZEL::draw(wardraw_t *wd){
 
 #define COLIST4(a) COLOR32R(a),COLOR32G(a),COLOR32B(a),COLOR32A(a)
 
-void ReZEL::drawtra(wardraw_t *wd){
-	ReZEL *p = this;
+void ZetaGundam::drawtra(wardraw_t *wd){
+	ZetaGundam *p = this;
 	Mat4d mat;
 	double nlips = nlipsFactor(*wd->vw);
 	double scale = modelScale * nlips;
@@ -308,6 +289,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	if(cull(*wd->vw))
 		return;
 
+#if 0
 	if(model){
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		Vec3d pos;
@@ -315,7 +297,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		MotionPoseSet &v = motionInterpolate();
 
 		if(0 < muzzleFlash[0]){
-			model->getBonePos("ReZEL_riflemuzzle", v[0], &pos, &lrot);
+			model->getBonePos("ZetaGundam_riflemuzzle", v[0], &pos, &lrot);
 			pos *= scale;
 			pos[0] *= -1;
 			pos[2] *= -1;
@@ -325,7 +307,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		}
 
 		if(0 < muzzleFlash[1]){
-			model->getBonePos("ReZEL_shieldmuzzle", v[0], &pos, &lrot);
+			model->getBonePos("ZetaGundam_shieldmuzzle", v[0], &pos, &lrot);
 			pos *= scale;
 			pos[0] *= -1;
 			pos[2] *= -1;
@@ -338,7 +320,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 			Vec3d gunpos[2];
 			glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 			for(int i = 0; i < 2; i++){
-				if(model->getBonePos(i ? "ReZEL_rvulcan" : "ReZEL_lvulcan", v[0], &gunpos[i], &lrot)){
+				if(model->getBonePos(i ? "ZetaGundam_rvulcan" : "ZetaGundam_lvulcan", v[0], &gunpos[i], &lrot)){
 					gunpos[i] *= modelScale;
 					gunpos[i][0] *= -1;
 					gunpos[i][2] *= -1;
@@ -414,7 +396,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 			Vec3d thrustVector = velo.slen() < .1 * .1 ? velo / .1 : velo.norm();
 			for(int i = 0; i < numof(thrusterDir); i++){
 				Vec3d pos0;
-				if(model->getBonePos(gltestp::dstring("ReZEL_thruster") << i, v[0], &pos0, &lrot)){
+				if(model->getBonePos(gltestp::dstring("ZetaGundam_thruster") << i, v[0], &pos0, &lrot)){
 					Vec3d dir = (rot * rotaxis * lrot).trans(thrusterDirs[i]);
 					double mag = thrusterPower[i]/*-thrustVector.sp(dir)*/;
 					if(0. < mag){
@@ -471,7 +453,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 		lumi = 191 + rseq(&rs) % 63;
 		Vec3d pos;
 		Quatd lrot;
-		model->getBonePos("ReZEL_riflemuzzle", v[0], &pos, &lrot);
+		model->getBonePos("ZetaGundam_riflemuzzle", v[0], &pos, &lrot);
 		pos *= scale;
 		pos[0] *= -1;
 		pos[2] *= -1;
@@ -502,6 +484,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 //		delete pv;
 		motionInterpolateFree(v);
 	}
+#endif
 
 #if 0 /* thrusters appear unimpressing */
 	tankrot(mat, pt);
@@ -617,7 +600,7 @@ void ReZEL::drawtra(wardraw_t *wd){
 	}
 }
 
-void ReZEL::drawOverlay(wardraw_t *){
+void ZetaGundam::drawOverlay(wardraw_t *){
 	glCallList(overlayDisp);
 }
 
@@ -630,19 +613,19 @@ void ReZEL::drawOverlay(wardraw_t *){
 
 
 
-class ReZELchartCmdRegister{
-	class ReZELDrawTimeChartSeries : public GLWchart::TimeChartSeries{
+class ZetaGundamchartCmdRegister{
+	class ZetaGundamDrawTimeChartSeries : public GLWchart::TimeChartSeries{
 	public:
-		ReZELDrawTimeChartSeries() : TimeChartSeries(-1, Vec4f(1,0,0,1)){}
+		ZetaGundamDrawTimeChartSeries() : TimeChartSeries(-1, Vec4f(1,0,0,1)){}
 		virtual double timeProc(double dt){
-			return ReZEL::motionInterpolateTime;
+			return ZetaGundam::motionInterpolateTime;
 		}
 	};
-	class ReZELInterpAvgTimeChartSeries : public GLWchart::TimeChartSeries{
+	class ZetaGundamInterpAvgTimeChartSeries : public GLWchart::TimeChartSeries{
 	public:
-		ReZELInterpAvgTimeChartSeries() : TimeChartSeries(-1, Vec4f(0,1,0,1)){}
+		ZetaGundamInterpAvgTimeChartSeries() : TimeChartSeries(-1, Vec4f(0,1,0,1)){}
 		virtual double timeProc(double dt){
-			return ReZEL::motionInterpolateTimeAverage;
+			return ZetaGundam::motionInterpolateTimeAverage;
 		}
 	};
 	class FrameTimeChartSeries : public GLWchart::TimeChartSeries{
@@ -656,7 +639,7 @@ class ReZELchartCmdRegister{
 		SqTimeChartSeries() : TimeChartSeries(-1, Vec4f(1,0,1,1)){}
 		virtual Vec4f color()const{return Vec4f(1,0.5,.5,.5);}
 		virtual double timeProc(double dt){
-			HSQUIRRELVM v = ReZEL::sqvm;
+			HSQUIRRELVM v = ZetaGundam::sqvm;
 			sqa::StackReserver sr(v);
 			sq_pushroottable(v);
 			sq_pushstring(v, _SC("sqtimechart"), -1);
@@ -676,17 +659,17 @@ class ReZELchartCmdRegister{
 	};
 
 /*	static int cmd_chart(int argc, char *argv[]){
-		GLWchart *wnd = new GLWchart(game "MotionInterpolateTime", new ReZELDrawTimeChartSeries);
-		wnd->addSeries(new ReZELInterpAvgTimeChartSeries());
+		GLWchart *wnd = new GLWchart(game "MotionInterpolateTime", new ZetaGundamDrawTimeChartSeries);
+		wnd->addSeries(new ZetaGundamInterpAvgTimeChartSeries());
 		wnd->addSeries(new FrameTimeChartSeries());
 		wnd->addSeries(new SqTimeChartSeries());
 		glwAppend(wnd);
 		return 0;
 	}*/
 public:
-	ReZELchartCmdRegister(){
-//		CmdAdd("ReZELchart", cmd_chart);
+	ZetaGundamchartCmdRegister(){
+//		CmdAdd("ZetaGundamchart", cmd_chart);
 	}
-} ReZELchartcmdreg;
+} ZetaGundamchartcmdreg;
 
 

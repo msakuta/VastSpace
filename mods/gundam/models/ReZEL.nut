@@ -1,5 +1,5 @@
 
-dofile("gundam/models/MobileSuit.nut");
+dofile("mods/gundam/models/MobileSuit.nut");
 
 modelScale <- 1./30000;
 

@@ -521,7 +521,10 @@ void ShadowMap::setAdditive(bool b){
 }
 
 const AdditiveShaderBind *ShadowMap::getAdditive()const{
-	return additive ? additiveShadowMapShaderBind : NULL;
+	// The cast from OpenGLState::weak_ptr<AdditiveShadowMapShaderBind> to AdditiveShaderBind* induces
+	// a cast to OpenGLState::weak_ptr<AdditiveShaderBind>, but we really want a
+	// AdditiveShadowMapShaderBind*, so we make an explicit cast.
+	return additive ? static_cast<AdditiveShadowMapShaderBind*>(additiveShadowMapShaderBind) : NULL;
 }
 
 /// Explicitly enable shadows when drawing real objects and shadowing is temporalily disabled.

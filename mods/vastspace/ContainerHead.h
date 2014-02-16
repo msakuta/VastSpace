@@ -3,7 +3,7 @@
 
 #include "Frigate.h"
 #include "EntityCommand.h"
-
+#include "Model-forward.h"
 
 /// A class with similar concept of EntityController, but issues EntityCommands only.
 struct EntityAI : Serializable{
@@ -48,6 +48,8 @@ protected:
 	Entity *leavesite;
 	struct Tefpol *pf[3]; ///< Trailing smoke
 	static const double sufscale;
+	static Model *model;
+	static Model *containerModels[Num_ContainerType];
 public:
 	ContainerHead(Game *game) : st(game){init();}
 	ContainerHead(WarField *w);

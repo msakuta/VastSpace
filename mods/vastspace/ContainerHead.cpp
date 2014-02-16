@@ -1,42 +1,12 @@
+/** \file
+ * \brief Implementation of ContainerHead.
+ */
 #include "ContainerHead.h"
-#include "Docker.h"
-#include "Player.h"
-#include "Viewer.h"
-#include "EntityCommand.h"
-#include "cmd.h"
-#include "judge.h"
-#include "astrodef.h"
-#include "stellar_file.h"
-#include "astro_star.h"
-#include "serial_util.h"
-#include "draw/material.h"
 #include "motion.h"
 #include "btadapt.h"
-#include "glstack.h"
-#include "draw/WarDraw.h"
 #include "Island3.h"
 #include "sqadapt.h"
-#include "draw/OpenGLState.h"
 #include "tefpol3d.h"
-extern "C"{
-#include "bitmap.h"
-#include <clib/c.h>
-#include <clib/cfloat.h>
-#include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
-#include <clib/GL/gldraw.h>
-#include <clib/GL/cull.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
-#include <clib/colseq/cs.h>
-}
-#include <assert.h>
-#include <string.h>
-#include <gl/glext.h>
-#include <iostream>
 
 
 
@@ -408,160 +378,6 @@ void ContainerHead::leaveField(WarField *w){
 	st::leaveField(w);
 }
 
-
-const double ContainerHead::sufscale = .0002;
-
-void ContainerHead::draw(wardraw_t *wd){
-	ContainerHead *const p = this;
-	if(!w)
-		return;
-
-	/* cull object */
-	if(cull(wd))
-		return;
-//	wd->lightdraws++;
-
-	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
-
-	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
-	static OpenGLState::weak_ptr<bool> initialized = false;
-	static suf_t *sufs[2 + Num_ContainerType] = {NULL};
-	static VBO *vbo[2 + Num_ContainerType] = {NULL};
-	static suftex_t *pst[2 + Num_ContainerType] = {NULL};
-	if(!initialized){
-
-		// Register alpha test texture
-		TexParam stp;
-		stp.flags = STP_ALPHA | STP_ALPHA_TEST | STP_TRANSPARENTCOLOR;
-		stp.transparentColor = 0;
-		AddMaterial("containerrail.bmp", "models/containerrail.bmp", &stp, NULL, NULL);
-
-		static const char *names[2 + Num_ContainerType] = {"models/containerhead.bin", "models/containertail.bin", "models/gascontainer.bin", "models/hexcontainer0.bin"};
-		for(int i = 0; i < 2 + Num_ContainerType; i++){
-			sufs[i] = CallLoadSUF(names[i]);
-			vbo[i] = CacheVBO(sufs[i]);
-			CacheSUFMaterials(sufs[i]);
-			pst[i] = gltestp::AllocSUFTex(sufs[i]);
-		}
-		initialized.create(*openGLState);
-	}
-	static int drawcount = 0;
-	drawcount++;
-	{
-		static const double normal[3] = {0., 1., 0.};
-		double scale = sufscale;
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
-		Mat4d mat;
-
-		class IntDraw{
-			WarDraw *wd;
-		public:
-			IntDraw(WarDraw *wd) : wd(wd){
-			}
-			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-				if(vbo)
-					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
-				else if(suf)
-					DecalDrawSUF(suf, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
-			}
-			void glTranslated(double x, double y, double z){
-				::glTranslated(x, y, z);
-			}
-		} id(wd);
-
-		glPushMatrix();
-		transform(mat);
-		glMultMatrixd(mat);
-
-#if 0
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
-
-		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-/*		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		if(wd->texShadow){
-			glBindTexture(GL_TEXTURE_2D, wd->texShadow);
-			glEnable(GL_TEXTURE_2D);
-		}
-		else{
-			glDisable(GL_ALPHA_TEST);
-		}*/
-//		glEnable(GL_ALPHA_TEST);
-//		glAlphaFunc(GL_GEQUAL, .5f);
-
-		glPushMatrix();
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
-		id.glTranslated(0, 0, 150 * ncontainers);
-		id.drawModel(sufs[0], vbo[0], pst[0]);
-		id.glTranslated(0, 0, -150);
-		for(int i = 0; i < ncontainers; i++){
-			id.drawModel(sufs[2 + containers[i]], vbo[2 + containers[i]], pst[2 + containers[i]]);
-			id.glTranslated(0, 0, -300);
-		}
-		id.glTranslated(0, 0, 150);
-		id.drawModel(sufs[1], vbo[1], pst[1]);
-		glPopMatrix();
-
-/*		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);*/
-
-		glPopMatrix();
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-}
-
-void ContainerHead::drawtra(wardraw_t *wd){
-	st::drawtra(wd);
-	ContainerHead *p = this;
-	Mat4d mat;
-
-/*	if(p->dock && p->undocktime == 0)
-		return;*/
-
-	transform(mat);
-
-//	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
-
-//	drawShield(wd);
-}
-
-void ContainerHead::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.05 * sqrt(3.));
-	glVertex2d( .05, -.05 * sqrt(3.));
-	glVertex2d( .10,  .00);
-	glVertex2d( .05,  .05 * sqrt(3.));
-	glVertex2d(-.05,  .05 * sqrt(3.));
-	glEnd();
-}
-
-
-Entity::Props ContainerHead::props()const{
-	Props ret = st::props();
-	ret.push_back(gltestp::dstring("I am ContainerHead!"));
-	return ret;
-}
-
 bool ContainerHead::command(EntityCommand *com){
 	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
 		task = sship_dockque;
@@ -597,6 +413,12 @@ void ContainerHead::post_warp(){
 
 double ContainerHead::getMaxHealth()const{return 15000.;}
 
+#ifdef DEDICATED
+void ContainerHead::draw(WarDraw *wd){}
+void ContainerHead::drawtra(wardraw_t *wd){}
+void ContainerHead::drawOverlay(wardraw_t *){}
+Entity::Props ContainerHead::props()const{return Props();}
+#endif
 
 
 IMPLEMENT_COMMAND(DockToCommand, "DockTo")

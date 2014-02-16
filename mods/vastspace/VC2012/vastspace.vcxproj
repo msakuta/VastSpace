@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ContainerHead.cpp" />
+    <ClCompile Include="..\draw\ContainerHead-draw.cpp" />
     <ClCompile Include="..\draw\GimbalTurret-draw.cpp" />
     <ClCompile Include="..\draw\Soldier-draw.cpp" />
     <ClCompile Include="..\draw\SpacePlane-draw.cpp" />

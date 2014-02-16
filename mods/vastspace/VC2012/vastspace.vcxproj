@@ -22,6 +22,7 @@
     <ClCompile Include="..\ContainerHead.cpp" />
     <ClCompile Include="..\draw\GimbalTurret-draw.cpp" />
     <ClCompile Include="..\draw\Soldier-draw.cpp" />
+    <ClCompile Include="..\draw\SpacePlane-draw.cpp" />
     <ClCompile Include="..\draw\TorusStation-draw.cpp" />
     <ClCompile Include="..\GimbalTurret.cpp" />
     <ClCompile Include="..\island3.cpp" />
@@ -36,6 +37,7 @@
     <ClInclude Include="..\Soldier.h" />
     <ClInclude Include="..\SpacePlane.h" />
     <ClInclude Include="..\TorusStation.h" />
+    <ClInclude Include="..\vastspace.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E85222DE-B358-457D-BA79-59E88FFB3D29}</ProjectGuid>

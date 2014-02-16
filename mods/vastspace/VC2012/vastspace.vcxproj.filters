@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\ContainerHead.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GimbalTurret.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\island3.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Soldier.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SpacePlane.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TorusStation.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\GimbalTurret-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\Soldier-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\TorusStation-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\SpacePlane-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\ContainerHead-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ContainerHead.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GimbalTurret.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\island3.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Soldier.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SpacePlane.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\TorusStation.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\vastspace.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{c78fa149-94f7-4aa7-9f50-abb3dc436196}</UniqueIdentifier>
+      <Extensions>*.h</Extensions>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{37fba6d9-fbb8-448d-accb-be2d4970d04b}</UniqueIdentifier>
+      <Extensions>*.cpp</Extensions>
+    </Filter>
+    <Filter Include="Sources\draw">
+      <UniqueIdentifier>{2a8ee503-d8c4-40e0-930f-f2bc4db0686b}</UniqueIdentifier>
+      <Extensions>draw/*.cpp</Extensions>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,44 +1,12 @@
+/** \file
+ * \brief Implementation of SpacePlane.
+ */
 #include "SpacePlane.h"
-#include "Docker.h"
-#include "Player.h"
-#include "Viewer.h"
-#include "EntityCommand.h"
-#include "cmd.h"
-#include "judge.h"
-#include "astrodef.h"
-#include "stellar_file.h"
-#include "astro_star.h"
-#include "serial_util.h"
-#include "draw/material.h"
 #include "motion.h"
 #include "btadapt.h"
-#include "glstack.h"
-#include "draw/WarDraw.h"
 #include "Island3.h"
 #include "sqadapt.h"
-#include "draw/OpenGLState.h"
-#include "draw/ShaderBind.h"
-#include "glsl.h"
 #include "tefpol3d.h"
-extern "C"{
-#include "bitmap.h"
-#include <clib/c.h>
-#include <clib/cfloat.h>
-#include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufvbo.h>
-#include <clib/GL/gldraw.h>
-#include <clib/GL/cull.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#include <clib/zip/UnZip.h>
-#include <clib/colseq/cs.h>
-}
-#include <assert.h>
-#include <string.h>
-#include <gl/glext.h>
-#include <iostream>
 
 
 
@@ -327,194 +295,6 @@ void SpacePlane::leaveField(WarField *w){
 	st::leaveField(w);
 }
 
-
-const double SpacePlane::sufscale = .0004;
-
-void SpacePlane::draw(WarDraw *wd){
-	if(!w)
-		return;
-
-	/* cull object */
-	if(cull(wd))
-		return;
-
-	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
-
-	struct TextureParams{
-		SpacePlane *p;
-		WarDraw *wd;
-		static void onBeginTextureWindows(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd){
-				p->wd->setAdditive(true);
-				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
-				if(asb)
-					asb->setIntensity(Vec3f(1,1,1));
-			}
-		}
-		static void onEndTextureWindows(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd)
-				p->wd->setAdditive(false);
-		}
-		static void onBeginTextureEngine(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd){
-				p->wd->setAdditive(true);
-				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
-				if(asb)
-					asb->setIntensity(Vec3f(1. - (p->p->engineHeat - .6) * (p->p->engineHeat - .6) / (.6 * .6), p->p->engineHeat * 2, p->p->engineHeat * 3));
-			}
-		}
-		static void onEndTextureEngine(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd)
-				p->wd->setAdditive(false);
-		}
-	} tp = {this, wd};
-
-	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
-	static OpenGLState::weak_ptr<bool> initialized = false;
-	static suf_t *sufs[2] = {NULL};
-	static VBO *vbo[2] = {NULL};
-	static suftex_t *pst[2] = {NULL};
-	static int engineAtrIndex = -1, windowsAtrIndex = -1;
-	if(!initialized){
-		static const char *names[] = {"models/spaceplane0.bin"};
-		suftexparam_t stp;
-		stp.flags = STP_MAGFIL | STP_MINFIL | STP_ENV;
-		stp.magfil = GL_LINEAR;
-		stp.minfil = GL_LINEAR;
-		stp.env = GL_ADD;
-		stp.mipmap = 0;
-		CallCacheBitmap5("spaceplane.bmp", "models/spaceplane_br.bmp", &stp, "models/spaceplane.bmp", NULL);
-		CallCacheBitmap5("engine2.bmp", "models/engine2br.bmp", &stp, "models/engine2.bmp", NULL);
-		for(int i = 0; i < numof(names); i++){
-			sufs[i] = CallLoadSUF(names[i]);
-			vbo[i] = CacheVBO(sufs[i]);
-//			CacheSUFMaterials(sufs[i]);
-			pst[i] = gltestp::AllocSUFTex(sufs[i]);
-		}
-		for(int i = 0; i < pst[0]->n; i++) if(!strcmp(sufs[0]->a[i].colormap, "engine2.bmp")){
-			engineAtrIndex = i;
-			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
-			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureEngine;
-		}
-		else if(!strcmp(sufs[0]->a[i].colormap, "spaceplane.bmp")){
-			windowsAtrIndex = i;
-			pst[0]->a[i].onBeginTexture = TextureParams::onBeginTextureWindows;
-			pst[0]->a[i].onEndTexture = TextureParams::onEndTextureWindows;
-		}
-		initialized.create(*openGLState);
-	}
-	if(pst[0]){
-		if(0 <= engineAtrIndex){
-			pst[0]->a[engineAtrIndex].onBeginTextureData = &tp;
-			pst[0]->a[engineAtrIndex].onEndTextureData = &tp;
-		}
-		if(0 <= windowsAtrIndex){
-			pst[0]->a[windowsAtrIndex].onBeginTextureData = &tp;
-			pst[0]->a[windowsAtrIndex].onEndTextureData = &tp;
-		}
-	}
-
-	static int drawcount = 0;
-	drawcount++;
-	{
-		static const double normal[3] = {0., 1., 0.};
-		double scale = sufscale;
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
-		Mat4d mat;
-
-		class IntDraw{
-			WarDraw *wd;
-		public:
-			IntDraw(WarDraw *wd) : wd(wd){
-			}
-			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-				if(vbo)
-					DrawVBO(vbo, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, tex);
-				else if(suf)
-					DecalDrawSUF(suf, wd->shadowmapping ? SUF_TEX : SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
-			}
-			void glTranslated(double x, double y, double z){
-				::glTranslated(x, y, z);
-			}
-		} id(wd);
-
-		glPushMatrix();
-		transform(mat);
-		glMultMatrixd(mat);
-
-#if 0
-		for(int i = 0; i < nhitboxes; i++){
-			Mat4d rot;
-			glPushMatrix();
-			gldTranslate3dv(hitboxes[i].org);
-			rot = hitboxes[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, hitboxes[i].sc);
-			glPopMatrix();
-		}
-#endif
-
-		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-
-/*		if(wd->shadowMap){
-			wd->shadowMap->setAdditive(true);
-			wd->shadowMap->getAdditive()->setIntensity(engineHeat);
-		}*/
-
-		glPushMatrix();
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
-		id.drawModel(sufs[0], vbo[0], pst[0]);
-		glPopMatrix();
-
-		glPopMatrix();
-
-/*		if(wd->shadowMap)
-			wd->shadowMap->setAdditive(false);*/
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-}
-
-void SpacePlane::drawtra(wardraw_t *wd){
-	st::drawtra(wd);
-	drawCapitalBlast(wd, engines[0] + Vec3d(0,0,.01), .01);
-	drawCapitalBlast(wd, engines[1] + Vec3d(0,0,.0075), .0075);
-	drawCapitalBlast(wd, engines[2] + Vec3d(0,0,.0075), .0075);
-}
-
-void SpacePlane::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.03);
-	glVertex2d( .00, -.03);
-	glVertex2d( .08, -.07);
-	glVertex2d( .10, -.03);
-	glVertex2d( .10,  .03);
-	glVertex2d( .08,  .07);
-	glVertex2d( .00,  .03);
-	glVertex2d(-.05,  .03);
-	glEnd();
-}
-
-
-Entity::Props SpacePlane::props()const{
-	Props ret = st::props();
-	ret.push_back(gltestp::dstring("People: ") << people);
-	ret.push_back(gltestp::dstring("I am SpacePlane!"));
-	return ret;
-}
-
 bool SpacePlane::command(EntityCommand *com){
 	if(DockToCommand *dtc = InterpretCommand<DockToCommand>(com)){
 		if(ai && !ai->unlink(this))
@@ -545,6 +325,13 @@ bool SpacePlane::undock(Docker *d){
 
 double SpacePlane::getMaxHealth()const{return 15000.;}
 
+#ifdef DEDICATED
+void SpacePlane::draw(WarDraw *wd){}
+void SpacePlane::drawtra(wardraw_t *wd){}
+void SpacePlane::drawOverlay(wardraw_t *){}
+Entity::Props SpacePlane::props()const{return Props();}
+#endif
+
 
 IMPLEMENT_COMMAND(TransportPeopleCommand, "TransportPeople")
 
@@ -557,5 +344,3 @@ TransportPeopleCommand::TransportPeopleCommand(HSQUIRRELVM v, Entity &e){
 		throw SQFArgumentError();
 	people = i;
 }
-
-

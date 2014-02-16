@@ -12,7 +12,7 @@ Scene {
 }
 Material 3 {
 	"rail" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00) tex("containerrail.bmp")
-	"gastank" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00) tex("E:\projects\gltestplus\models\bricks.bmp")
+	"gastank" shader(3) col(1.000 1.000 1.000 1.000) dif(0.800) amb(1.000) emi(0.000) spc(0.000) power(5.00) tex("..\..\..\models\bricks.bmp")
 	"container_connect" shader(3) col(1.000 1.000 1.000 1.000) dif(1.000) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("container_connect.bmp")
 }
 Object "hexcontainer0" {

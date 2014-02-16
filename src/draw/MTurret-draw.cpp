@@ -44,7 +44,7 @@ void MTurret::draw(wardraw_t *wd){
 	if(!suf_barrel)
 		suf_barrel = CallLoadSUF("models/barrelz1.bin");
 
-	{
+	if(suf_turret && suf_barrel){
 		const double bscale = MTURRET_SCALE;
 		static const GLfloat rotaxis2[16] = {
 			-1,0,0,0,

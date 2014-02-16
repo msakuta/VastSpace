@@ -309,8 +309,19 @@ void Mesh::decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void 
 			glNormalPointer(GL_DOUBLE, 0, (0));
 
 			/* Texture coordinates array */
+			glClientActiveTextureARB(GL_TEXTURE0_ARB);
 			glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
 			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+
+			// Repeat the same coordinates for the second texture.
+			// This behavior probably should be able to be customized.
+			if(glClientActiveTextureARB){
+				glClientActiveTextureARB(GL_TEXTURE1_ARB);
+				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+				glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+				glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
+			}
 
 			// Index array
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);

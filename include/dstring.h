@@ -47,7 +47,9 @@ namespace gltestp{
 		/// Returns newly created string with string passed by argument concatenated.
 		/// Note that operator << or += is expected to be more efficient.
 		dstring operator +(const dstring &o)const{return dstring(*this).strcat(o);} 
+		dstring operator +(const char *o)const{return dstring(*this).strcat(o);}
 		dstring &operator +=(const dstring &o){strcat(o); return *this;} ///< append to the string
+		dstring &operator +=(const char *o){strcat(o); return *this;} ///< append to the string
 		dstring &operator <<(const dstring &o){strcat(o); return *this;} ///< equivalent to += but more comfortable binding direction
 		dstring &operator <<(const char *src){return strcat(src);} ///< optimize c-str concatenation
 		dstring &operator <<(char); ///< optimize single character concatenation

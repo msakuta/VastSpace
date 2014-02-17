@@ -1,6 +1,6 @@
 modelScale <- 0.0002;
 
-hitRadius <- 0.13;
+baseHitRadius <- 300 * modelScale;
 
 mass <- 2.e7;
 containerMass <- 1.e7;

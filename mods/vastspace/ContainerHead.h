@@ -47,6 +47,7 @@ protected:
 	Entity *leavesite;
 	std::vector<Tefpol*> pf; ///< Trailing smoke
 	static double modelScale;
+	static double baseHitRadius;
 	static double defaultMass;
 	static double containerMass;
 	static double maxHealthValue;
@@ -78,6 +79,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
+	double getHitRadius()const override;
 	virtual double getMaxHealth()const;
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);

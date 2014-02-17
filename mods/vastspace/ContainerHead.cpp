@@ -26,6 +26,7 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 double ContainerHead::modelScale = .0002;
+double ContainerHead::baseHitRadius = 300 * modelScale; ///< Minimum hit radius
 double ContainerHead::defaultMass = 2e7;
 double ContainerHead::containerMass = 1e7;
 double ContainerHead::maxHealthValue = 15000.;
@@ -57,6 +58,7 @@ void ContainerHead::init(){
 	if(!initialized){
 		sq_init(modPath() << _SC("models/ContainerHead.nut"),
 			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(baseHitRadius, _SC("baseHitRadius")) <<=
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(containerMass, "containerMass") <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
@@ -431,6 +433,12 @@ bool ContainerHead::undock(Docker *d){
 void ContainerHead::post_warp(){
 	if(race != 0 && docksite)
 		task = (sship_task)sship_dockqueque;
+}
+
+/// Since ContainerHead has a variable dimensions by number of containers, the hit radius is variable, too.
+/// Here is a very rough assumption that the hit radius linearly grows against the number of containers.
+double ContainerHead::getHitRadius()const{
+	return baseHitRadius + ncontainers * containerSize / 2; // It's radius so half the size
 }
 
 double ContainerHead::getMaxHealth()const{return maxHealthValue;}

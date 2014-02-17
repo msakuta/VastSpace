@@ -2,13 +2,14 @@
  * \brief Implementation of ContainerHead.
  */
 #include "ContainerHead.h"
+#include "vastspace.h"
 #include "motion.h"
 #include "btadapt.h"
 #include "Island3.h"
 #include "sqadapt.h"
 #include "tefpol3d.h"
 
-
+#include "SqInitProcess-ex.h"
 
 
 
@@ -23,6 +24,15 @@ static const struct color_node cnl_orangeburn[] = {
 static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
 
+
+double ContainerHead::modelScale = .0002;
+double ContainerHead::defaultMass = 2e7;
+double ContainerHead::containerMass = 1e7;
+double ContainerHead::maxHealthValue = 15000.;
+int ContainerHead::maxcontainers = 6;
+double ContainerHead::containerSize = 300 * modelScale;
+std::vector<Vec3d> ContainerHead::engines;
+GLuint ContainerHead::overlayDisp = 0;
 
 
 bool EntityAI::unlink(Entity *){
@@ -42,15 +52,33 @@ ContainerHead::ContainerHead(Entity *docksite) : st(docksite->w), docksite(NULL)
 }
 
 void ContainerHead::init(){
+
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(modPath() << _SC("models/ContainerHead.nut"),
+			ModelScaleProcess(modelScale) <<=
+			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(containerMass, "containerMass") <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			IntProcess(maxcontainers, "maxContainerCount", false) <<=
+			SingleDoubleProcess(containerSize, "containerSize", false) <<=
+			Vec3dListProcess(engines, _SC("engines")) <<=
+			DrawOverlayProcess(overlayDisp)
+			);
+		initialized = true;
+	}
+
 	RandomSequence rs((unsigned long)this);
 	ncontainers = rs.next() % (maxcontainers - 1) + 1;
+	containers.resize(ncontainers);
 	for(int i = 0; i < ncontainers; i++)
 		containers[i] = ContainerType(rs.next() % Num_ContainerType);
 	undocktime = 0.f;
 	health = getMaxHealth();
-	mass = 2e7 + 1e7 * ncontainers;
+	mass = defaultMass + containerMass * ncontainers;
 
-	for(int i = 0; i < numof(pf); i++)
+	pf.resize(engines.size());
+	for(int i = 0; i < pf.size(); i++)
 		pf[i] = NULL;
 
 	if(!w)
@@ -100,11 +128,11 @@ void ContainerHead::unserialize(UnserializeContext &sc){
 	// Re-create temporary entities if flying in a WarSpace. If environment is a WarField, don't restore.
 	WarSpace *ws;
 	if(w && (ws = (WarSpace*)w)){
-		for(int i = 0; i < numof(pf); i++)
+		for(int i = 0; i < pf.size(); i++)
 			pf[i] = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
 	}
 	else{
-		for(int i = 0; i < numof(pf); i++)
+		for(int i = 0; i < pf.size(); i++)
 			pf[i] = NULL;
 	}
 }
@@ -262,15 +290,9 @@ void ContainerHead::anim(double dt){
 
 	st::anim(dt);
 
-	const Vec3d engines[3] = {
-		Vec3d(0, 80, 250 + 150 * ncontainers) * sufscale,
-		Vec3d(75, -25, 250 + 150 * ncontainers) * sufscale,
-		Vec3d(-75, -25, 250 + 150 * ncontainers) * sufscale,
-	};
-
 	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
-	for(int i = 0; i < 3; i++) if(pf[i]){
-		pf[i]->move(mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
+	for(int i = 0; i < pf.size(); i++) if(pf[i]){
+		pf[i]->move(mat.vp3(engines[i] + Vec3d(0, 0, ncontainers * containerSize / 2)), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
 	}
 
 
@@ -301,7 +323,7 @@ void ContainerHead::postframe(){
 }
 
 void ContainerHead::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	pos = this->rot.trans(Vec3d(0, 120, 150 * ncontainers + 50) * sufscale) + this->pos;
+	pos = this->rot.trans(Vec3d(0, 120, 150 * ncontainers + 50) * modelScale) + this->pos;
 	rot = this->rot;
 }
 
@@ -313,7 +335,7 @@ void ContainerHead::enterField(WarField *target){
 	}
 	if(ws){
 		TefpolList *tepl = w ? w->getTefpol3d() : NULL;
-		for(int i = 0; i < 3; i++){
+		for(int i = 0; i < pf.size(); i++){
 			if(this->pf[i])
 				this->pf[i]->immobilize();
 			if(tepl)
@@ -326,11 +348,11 @@ void ContainerHead::enterField(WarField *target){
 
 bool ContainerHead::buildBody(){
 	if(!bbody){
-		static btCompoundShape *shapes[maxcontainers] = {NULL};
+		static std::vector<btCompoundShape*> shapes = std::vector<btCompoundShape*>(maxcontainers);
 		btCompoundShape *&shape = shapes[ncontainers];
 		if(!shape){
 			shape = new btCompoundShape();
-			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * sufscale;
+			Vec3d sc = Vec3d(100, 100, 250 + 150 * ncontainers) * modelScale;
 			const Quatd rot = quat_u;
 			const Vec3d pos = Vec3d(0,0,0);
 			btBoxShape *box = new btBoxShape(btvc(sc));
@@ -371,7 +393,7 @@ bool ContainerHead::buildBody(){
 
 /// if we are transitting WarField or being destroyed, trailing tefpols should be marked for deleting.
 void ContainerHead::leaveField(WarField *w){
-	for(int i = 0; i < 3; i++) if(this->pf[i]){
+	for(int i = 0; i < pf.size(); i++) if(this->pf[i]){
 		this->pf[i]->immobilize();
 		this->pf[i] = NULL;
 	}
@@ -411,7 +433,7 @@ void ContainerHead::post_warp(){
 		task = (sship_task)sship_dockqueque;
 }
 
-double ContainerHead::getMaxHealth()const{return 15000.;}
+double ContainerHead::getMaxHealth()const{return maxHealthValue;}
 
 #ifdef DEDICATED
 void ContainerHead::draw(WarDraw *wd){}

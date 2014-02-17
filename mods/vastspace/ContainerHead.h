@@ -37,17 +37,23 @@ class Island3;
 class ContainerHead : public Frigate{
 public:
 	typedef Frigate st;
-	static const int maxcontainers = 6;
 	enum ContainerType{gascontainer, hexcontainer, Num_ContainerType};
-	ContainerType containers[maxcontainers];
+	std::vector<ContainerType> containers;
 	int ncontainers; ///< Count of containers connected.
 protected:
 	EntityAI *ai;
 	float undocktime;
 	Entity *docksite;
 	Entity *leavesite;
-	struct Tefpol *pf[3]; ///< Trailing smoke
-	static const double sufscale;
+	std::vector<Tefpol*> pf; ///< Trailing smoke
+	static double modelScale;
+	static double defaultMass;
+	static double containerMass;
+	static double maxHealthValue;
+	static int maxcontainers;
+	static double containerSize;
+	static std::vector<Vec3d> engines;
+	static GLuint overlayDisp;
 	static Model *model;
 	static Model *containerModels[Num_ContainerType];
 public:

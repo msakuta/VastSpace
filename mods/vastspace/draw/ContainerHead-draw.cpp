@@ -12,7 +12,6 @@
 
 
 
-const double ContainerHead::sufscale = .0002;
 Model *ContainerHead::model = NULL;
 Model *ContainerHead::containerModels[Num_ContainerType] = {NULL};
 
@@ -50,7 +49,7 @@ void ContainerHead::draw(wardraw_t *wd){
 	static int drawcount = 0;
 	drawcount++;
 	{
-		double scale = sufscale;
+		double scale = modelScale;
 		Mat4d mat;
 
 		glPushMatrix();
@@ -121,15 +120,7 @@ void ContainerHead::drawtra(wardraw_t *wd){
 }
 
 void ContainerHead::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.05 * sqrt(3.));
-	glVertex2d( .05, -.05 * sqrt(3.));
-	glVertex2d( .10,  .00);
-	glVertex2d( .05,  .05 * sqrt(3.));
-	glVertex2d(-.05,  .05 * sqrt(3.));
-	glEnd();
+	glCallList(overlayDisp);
 }
 
 

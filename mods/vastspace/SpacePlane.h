@@ -25,10 +25,14 @@ protected:
 	EntityAI *ai;
 	float undocktime;
 	int people;
-	struct Tefpol *pf[3]; ///< Trailing smoke
+	std::vector<Tefpol*> pf; ///< Trailing smoke
 	float engineHeat;
-	static const Vec3d engines[3];
-	static const double sufscale;
+	static std::vector<Vec3d> engines;
+	static double modelScale;
+	static double hitRadius;
+	static double defaultMass;
+	static double maxHealthValue;
+	static GLuint overlayDisp;
 public:
 	SpacePlane(Game *game) : st(game){init();}
 	SpacePlane(WarField *w);
@@ -51,6 +55,7 @@ public:
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
+	double getHitRadius()const override{return hitRadius;}
 	virtual double getMaxHealth()const;
 	virtual Props props()const;
 	virtual bool command(EntityCommand *);

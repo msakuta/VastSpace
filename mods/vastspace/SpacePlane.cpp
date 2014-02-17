@@ -2,12 +2,13 @@
  * \brief Implementation of SpacePlane.
  */
 #include "SpacePlane.h"
+#include "vastspace.h"
 #include "motion.h"
 #include "btadapt.h"
 #include "Island3.h"
 #include "sqadapt.h"
 #include "tefpol3d.h"
-
+#include "SqInitProcess-ex.h"
 
 
 
@@ -22,12 +23,12 @@ static const struct color_node cnl_orangeburn[] = {
 };
 static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
-const Vec3d SpacePlane::engines[3] = {
-	Vec3d(0, 0, 155) * sufscale,
-	Vec3d(75, 0, 135) * sufscale,
-	Vec3d(-75, 0, 135) * sufscale,
-};
-
+std::vector<Vec3d> SpacePlane::engines;
+double SpacePlane::modelScale = .0004;
+double SpacePlane::hitRadius = 0.080;
+double SpacePlane::defaultMass = 2e7;
+double SpacePlane::maxHealthValue = 15000.;
+GLuint SpacePlane::overlayDisp = 0;
 
 
 
@@ -43,13 +44,28 @@ SpacePlane::SpacePlane(Entity *docksite) : st(docksite->w), ai(NULL){
 }
 
 void SpacePlane::init(){
+
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(modPath() << _SC("models/SpacePlane.nut"),
+			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, _SC("maxhealth"), false) <<=
+			Vec3dListProcess(engines, _SC("engines")) <<=
+			DrawOverlayProcess(overlayDisp)
+			);
+		initialized = true;
+	}
+
 	undocktime = 0.f;
 	health = getMaxHealth();
-	mass = 2e7;
+	mass = defaultMass;
 	people = RandomSequence((unsigned long)this).next() % 100 + 100;
 	engineHeat = 0.f;
 
-	for(int i = 0; i < numof(pf); i++)
+	pf.resize(engines.size());
+	for(int i = 0; i < pf.size(); i++)
 		pf[i] = NULL;
 }
 
@@ -93,11 +109,11 @@ void SpacePlane::unserialize(UnserializeContext &sc){
 		buildBody();
 		ws->bdw->addRigidBody(bbody, 1, ~2);
 		setPosition(&pos, &rot, &this->velo, &omg);
-		for(int i = 0; i < numof(pf); i++)
+		for(int i = 0; i < pf.size(); i++)
 			pf[i] = ws->tepl->addTefpolMovable(this->pos, this->velo, avec3_000, &cs_orangeburn, TEP3_THICKEST | TEP3_ROUGH, cs_orangeburn.t);
 	}
 	else{
-		for(int i = 0; i < numof(pf); i++)
+		for(int i = 0; i < pf.size(); i++)
 			pf[i] = NULL;
 	}
 }
@@ -201,7 +217,7 @@ void SpacePlane::anim(double dt){
 	st::anim(dt);
 
 	// inputs.press is filtered in st::anim, so we put tefpol updates after it.
-	for(int i = 0; i < 3; i++) if(pf[i]){
+	for(int i = 0; i < engines.size(); i++) if(pf[i]){
 		pf[i]->move(mat.vp3(engines[i]), avec3_000, cs_orangeburn.t, !(inputs.press & PL_W));
 	}
 
@@ -229,7 +245,7 @@ void SpacePlane::postframe(){
 }
 
 void SpacePlane::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	pos = this->rot.trans(Vec3d(0, 120, 50) * sufscale) + this->pos;
+	pos = this->rot.trans(Vec3d(0, 120, 50) * modelScale) + this->pos;
 	rot = this->rot;
 }
 
@@ -241,7 +257,7 @@ void SpacePlane::enterField(WarField *target){
 	}
 	if(ws){
 		TefpolList *tepl = w ? w->getTefpol3d() : NULL;
-		for(int i = 0; i < 3; i++){
+		for(int i = 0; i < pf.size(); i++){
 			if(this->pf[i])
 				this->pf[i]->immobilize();
 			if(tepl)
@@ -257,13 +273,13 @@ bool SpacePlane::buildBody(){
 		static btCompoundShape *shape = NULL;
 		if(!shape){
 			shape = new btCompoundShape();
-			Vec3d sc = Vec3d(50, 40, 150) * sufscale;
+			Vec3d sc = Vec3d(50, 40, 150) * modelScale;
 			const Quatd rot = quat_u;
 			const Vec3d pos = Vec3d(0,0,0);
 			btBoxShape *box = new btBoxShape(btvc(sc));
 			btTransform trans = btTransform(btqc(rot), btvc(pos));
 			shape->addChildShape(trans, box);
-			shape->addChildShape(btTransform(btqc(rot), btVector3(0, 0, 100) * sufscale), new btBoxShape(btVector3(150, 10, 50) * sufscale));
+			shape->addChildShape(btTransform(btqc(rot), btVector3(0, 0, 100) * modelScale), new btBoxShape(btVector3(150, 10, 50) * modelScale));
 		}
 
 		btTransform startTransform;
@@ -323,7 +339,7 @@ bool SpacePlane::undock(Docker *d){
 	return true;
 }
 
-double SpacePlane::getMaxHealth()const{return 15000.;}
+double SpacePlane::getMaxHealth()const{return maxHealthValue;}
 
 #ifdef DEDICATED
 void SpacePlane::draw(WarDraw *wd){}

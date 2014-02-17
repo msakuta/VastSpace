@@ -12,7 +12,6 @@
 
 
 
-const double SpacePlane::sufscale = .0004;
 static Model *model = NULL;
 
 void SpacePlane::draw(WarDraw *wd){
@@ -99,13 +98,7 @@ void SpacePlane::draw(WarDraw *wd){
 	drawcount++;
 	if(model){
 		static const double normal[3] = {0., 1., 0.};
-		double scale = sufscale;
-		static const GLdouble rotaxis[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
+		double scale = modelScale;
 		Mat4d mat;
 
 		if(model->tex[0]){
@@ -126,8 +119,7 @@ void SpacePlane::draw(WarDraw *wd){
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
 		glPushMatrix();
-		glScaled(scale, scale, scale);
-		glMultMatrixd(rotaxis);
+		glScaled(-scale, scale, -scale);
 		DrawMQOPose(model, NULL);
 		glPopMatrix();
 
@@ -145,18 +137,7 @@ void SpacePlane::drawtra(wardraw_t *wd){
 }
 
 void SpacePlane::drawOverlay(wardraw_t *){
-	glScaled(10, 10, 1);
-	glBegin(GL_LINE_LOOP);
-	glVertex2d(-.10,  .00);
-	glVertex2d(-.05, -.03);
-	glVertex2d( .00, -.03);
-	glVertex2d( .08, -.07);
-	glVertex2d( .10, -.03);
-	glVertex2d( .10,  .03);
-	glVertex2d( .08,  .07);
-	glVertex2d( .00,  .03);
-	glVertex2d(-.05,  .03);
-	glEnd();
+	glCallList(overlayDisp);
 }
 
 

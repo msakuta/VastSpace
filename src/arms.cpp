@@ -143,7 +143,7 @@ void ArmBase::align(){
 #define MTURRETROTSPEED (.4*M_PI)
 #define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
 
-
+Entity::EntityRegister<MTurret> MTurret::entityRegister("MTurret");
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
 	health = getMaxHealth();
@@ -151,16 +151,6 @@ MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), c
 	py[0] = 0;
 	py[1] = 0;
 }
-
-const char *MTurret::idname()const{
-	return "mturret";
-};
-
-const char *MTurret::classname()const{
-	return "MTurret";
-};
-
-const unsigned MTurret::classid = registerClass("MTurret", Conster<MTurret>);
 
 void MTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);

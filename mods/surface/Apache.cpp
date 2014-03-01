@@ -293,7 +293,6 @@ void Apache::anim(double dt){
 	Mat4d mat;
 	transform(mat);
 	double air = w->atmosphericPressure(pos);
-	double height = 10. * log(air);
 
 	if(WarSpace *ws = *w){
 		const Vec3d offset(0, 0.001, 0);

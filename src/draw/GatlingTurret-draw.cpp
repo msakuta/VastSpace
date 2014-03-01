@@ -8,6 +8,7 @@
 #include "draw/WarDraw.h"
 #include "draw/ShaderBind.h"
 #include "glsl.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -22,25 +23,28 @@ void GatlingTurret::draw(wardraw_t *wd){
 	// Scale too small culling
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
-	static suf_t *suf_turret = NULL;
-	static suf_t *suf_barrel = NULL;
-	static suf_t *suf_barrels = NULL;
-	double scale;
-	if(!suf_turret)
-		suf_turret = CallLoadSUF("models/turretg1.bin");
-	if(!suf_barrel)
-		suf_barrel = CallLoadSUF("models/barrelg1.bin");
-	if(!suf_barrels)
-		suf_barrels = CallLoadSUF("models/barrelsg1.bin");
 
-	{
+	static Model *model = NULL;
+	static int turretIndex = -1;
+	static int barrelIndex = -1;
+	static int barrelRotIndex = -1;
+	static OpenGLState::weak_ptr<bool> init;
+	if(!init){
+		model = LoadMQOModel("models/turretg1.mqo");
+		// Precache barrel model indices to avoid string match every frame and every instance.
+		for(int i = 0; i < model->n; i++){
+			if(model->bones[i]->name == "turretg1")
+				turretIndex = i;
+			if(model->bones[i]->name == "barrelg1")
+				barrelIndex = i;
+			if(model->bones[i]->name == "barrelsg1")
+				barrelRotIndex = i;
+		}
+		init.create(*openGLState);
+	}
+
+	if(model){
 		const double bscale = GATLINGTURRET_SCALE;
-		static const GLfloat rotaxis2[16] = {
-			-1,0,0,0,
-			0,1,0,0,
-			0,0,-1,0,
-			0,0,0,1,
-		};
 
 		if(const ShaderBind *sb = wd->getShaderBind())
 			glUniform1i(sb->textureEnableLoc, 0);
@@ -48,23 +52,24 @@ void GatlingTurret::draw(wardraw_t *wd){
 		gldTranslate3dv(pos);
 		gldMultQuat(rot);
 		glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-		glPushMatrix();
-		gldScaled(bscale);
-		glMultMatrixf(rotaxis2);
-		DrawSUF(suf_turret, SUF_ATR, NULL);
-		glPopMatrix();
-/*		if(5 < scale)*/{
-			gldScaled(bscale);
+		glScaled(-bscale, bscale, -bscale);
+		if(0 <= turretIndex)
+			model->sufs[turretIndex]->draw(SUF_ATR, NULL);
+
+		if(0 <= barrelIndex){
+			const Vec3d &barrelpos = model->bones[barrelIndex]->joint;
 			gldTranslate3dv(barrelpos);
-			glRotated(deg_per_rad * this->py[0], 1., 0., 0.);
+			glRotated(deg_per_rad * this->py[0], -1., 0., 0.);
 			gldTranslate3dv(-barrelpos);
-			glMultMatrixf(rotaxis2);
-			DrawSUF(suf_barrel, SUF_ATR, NULL);
-			gldTranslate3dv(barrelpos);
-			glRotated(barrelrot * deg_per_rad/*w->war_time() * 360. / reloadtime() / 3*/, 0, 0, 1);
-			gldTranslate3dv(-barrelpos);
-			DrawSUF(suf_barrels, SUF_ATR, NULL);
+			model->sufs[barrelIndex]->draw(SUF_ATR, NULL);
+			if(0 <= barrelRotIndex){
+				gldTranslate3dv(barrelpos);
+				glRotated(barrelrot * deg_per_rad/*w->war_time() * 360. / reloadtime() / 3*/, 0, 0, 1);
+				gldTranslate3dv(-barrelpos);
+				model->sufs[barrelRotIndex]->draw(SUF_ATR, NULL);
+			}
 		}
+
 		glPopMatrix();
 		if(const ShaderBind *sb = wd->getShaderBind())
 			glUniform1i(sb->textureEnableLoc, 1);

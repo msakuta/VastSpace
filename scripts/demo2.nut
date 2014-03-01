@@ -3,7 +3,7 @@ if(a)
 	player.cs = a;
 
 local target;
-deltaFormation("Assault", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.15, 1, player.cs, @(e) target = e);
+deltaFormation("AssaultGunner", 1, Quatd(0,0,0,1), Vec3d(0, 0.,  0.7), 0.15, 1, player.cs, @(e) target = e);
 deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -1.025), 0.025, 10, player.cs, @(e) e.command("Attack", target));
 
 cmd("pause 0");

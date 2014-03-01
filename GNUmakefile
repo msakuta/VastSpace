@@ -16,6 +16,7 @@ endif
 
 CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
+CPPFLAGS += -std=c++0x
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
 
 ifdef MINGW

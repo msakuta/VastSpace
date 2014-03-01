@@ -166,6 +166,7 @@ void WarSpace::draw(wardraw_t *wd){
 	dd.fov = wd->vw->fov;
 	dd.pgc = wd->vw->gc;
 	dd.rot = wd->vw->qrot;
+	dd.user = this;
 	DrawTeline3D(gibs, &dd);
 }
 
@@ -177,6 +178,7 @@ void WarSpace::drawtra(wardraw_t *wd){
 	dd.fov = wd->vw->fov;
 	dd.pgc = wd->vw->gc;
 	dd.rot = wd->vw->qrot;
+	dd.user = this;
 	DrawTeline3D(tell, &dd);
 	tepl->draw(wd->vw->pos, &static_cast<glcull>(*wd->vw->gc));
 

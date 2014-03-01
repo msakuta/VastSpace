@@ -5,6 +5,10 @@
 #include "bitmap.h"
 #include "draw/material.h"
 #include "draw/mqoadapt.h"
+#include "draw/ShaderBind.h"
+#include "Entity.h"
+#include "draw/WarDraw.h"
+#include "glsl.h"
 #include "tent3d.h"
 extern "C"{
 #include <clib/c.h>
@@ -222,66 +226,56 @@ void firesmokedraw(const Teline3CallbackData *p, const Teline3DrawData *dd, void
 	glPopMatrix();
 }
 
-static suf_t *sufs[5] = {NULL};
-static suftex_t *suftexs[5] = {NULL};
-//static VBO *vbo[5];
-//static GLuint lists[numof(sufs)] = {0};
-//static Model *model = NULL;
+static Model *model = NULL;
 
 static void debrigib_init(){
-	if(!sufs[0]){
-		char buf[64];
-		for(int i = 0; i < numof(sufs); i++){
-			sprintf(buf, "models/debris%d.bin", i);
-			sufs[i] = CallLoadSUF(buf);
-			suftexs[i] = gltestp::AllocSUFTex(sufs[i]);
-//			vbo[i] = CacheVBO(sufs[i]);
-		}
-//		model = LoadMQOModel("models/debris.mqo");
-	}
+	if(!model)
+		model = LoadMQOModel("models/debris.mqo");
 }
 
+/// \brief Custom drawing callback for fragments of destroyed spaceships.
+///
+/// debrigib_init() must be called prior to this function.
 void debrigib(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	if(dd->pgc && (dd->pgc->cullFrustum(pl->pos, .01) || (dd->pgc->scale(pl->pos) * .01) < 5))
 		return;
 
 	debrigib_init();
+	if(!model)
+		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
-//	glBindTexture(GL_TEXTURE_2D, texname);
 	glPushMatrix();
 	gldTranslate3dv(pl->pos);
 	gldMultQuat(pl->rot);
 	gldScaled(.0001);
 	struct random_sequence rs;
 	initfull_rseq(&rs, 13230354, (unsigned long)pl);
-	unsigned id = rseq(&rs) % numof(sufs);
-//	glUseProgram(0);
-//	if(!lists[id]){
-//		glNewList(lists[id] = glGenLists(1), GL_COMPILE_AND_EXECUTE);
-//		DrawSUF(sufs[id], SUF_ATR, NULL);
-		DecalDrawSUF(sufs[id], SUF_ATR, NULL, suftexs[id], NULL, NULL);
-//		DrawVBO(vbo[id], SUF_ATR, NULL);
-//		DrawMQOPose(model, NULL);
-//		glEndList();
-//	}
-//	else
-//		glCallList(lists[id]);
+	unsigned id = rseq(&rs) % model->n;
+	if(model->sufs[id]){
+		WarDraw *wd = (WarDraw*)dd->user;
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 0);
+		model->sufs[id]->draw(SUF_ATR, NULL);
+		if(const ShaderBind *sb = wd->getShaderBind())
+			glUniform1i(sb->textureEnableLoc, 1);
+	}
 	glPopMatrix();
 	glPopAttrib();
 }
 
-// Multiple gibs drawn at once. Total number of polygons remains same, but switchings of context variables are
-// reduced, therefore performance is gained compared to the one above.
+/// Multiple gibs drawn at once. Total number of polygons remains same, but switchings of context variables are
+/// reduced, therefore performance is gained compared to the one above.
 void debrigib_multi(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	debrigib_init();
+	if(!model)
+		return;
 	glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT);
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
-//	glBindTexture(GL_TEXTURE_2D, texname);
 	for(int i = 0; i < (int)pv; i++){
 		RandomSequence rs(pl + i);
 		double t = 20. - pl->life;
@@ -297,9 +291,15 @@ void debrigib_multi(const Teline3CallbackData *pl, const Teline3DrawData *dd, vo
 		rot[3] = cos(angle);
 		gldMultQuat(pl->rot * rot);
 		gldScaled(.0001);
-		unsigned id = rs.next() % numof(sufs);
-		// Let's think out better way...
-//		DrawVBO(vbo[id], SUF_ATR, NULL);
+		unsigned id = rs.next() % model->n;
+		if(model->sufs[id]){
+			WarDraw *wd = (WarDraw*)dd->user;
+			if(const ShaderBind *sb = wd->getShaderBind())
+				glUniform1i(sb->textureEnableLoc, 0);
+			model->sufs[id]->draw(SUF_ATR, NULL);
+			if(const ShaderBind *sb = wd->getShaderBind())
+				glUniform1i(sb->textureEnableLoc, 1);
+		}
 		glPopMatrix();
 	}
 	glPopAttrib();

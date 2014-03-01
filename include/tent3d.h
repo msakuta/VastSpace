@@ -128,6 +128,8 @@ struct Teline3DrawData{
 
 	/* following are trivial members; caller need not to set them */
 	GLcull *pgc;
+
+	void *user; ///< The user data pointer
 };
 
 EXPORT Teline3List *NewTeline3D(unsigned maxt, unsigned init, unsigned unit); /* constructor */

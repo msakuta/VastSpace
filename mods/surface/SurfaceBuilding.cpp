@@ -2,6 +2,7 @@
  * \brief Implementation of SurfaceBuilding class.
  */
 #include "SurfaceBuilding.h"
+#include "EntityRegister.h"
 #include "SurfaceCS.h"
 #include "sqadapt.h"
 #include "btadapt.h"

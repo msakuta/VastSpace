@@ -2,6 +2,7 @@
  * \brief Implementation of SpacePlane.
  */
 #include "SpacePlane.h"
+#include "EntityRegister.h"
 #include "vastspace.h"
 #include "motion.h"
 #include "btadapt.h"

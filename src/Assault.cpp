@@ -4,6 +4,7 @@
 #define NOMINMAX
 #include "Assault.h"
 #include "MTurret.h"
+#include "EntityRegister.h"
 #include "Beamer.h"
 #include "judge.h"
 #include "Player.h"

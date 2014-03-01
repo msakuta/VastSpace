@@ -2,6 +2,7 @@
  * \brief Implementation of Destroyer and WireDestroyer classes.
  */
 #include "Destroyer.h"
+#include "EntityRegister.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "EntityCommand.h"

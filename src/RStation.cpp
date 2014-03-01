@@ -1,4 +1,5 @@
 #include "RStation.h"
+#include "EntityRegister.h"
 #include "Warpable.h"
 #include "draw/material.h"
 #include "Player.h"

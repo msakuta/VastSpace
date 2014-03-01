@@ -5,6 +5,7 @@
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
 #include "Worker.h"
+#include "EntityRegister.h"
 #include "Application.h"
 #include "Player.h"
 #include "Bullet.h"

@@ -5,6 +5,7 @@
 #define NOMINMAX
 
 #include "Defender.h"
+#include "EntityRegister.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "judge.h"

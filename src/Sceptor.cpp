@@ -5,6 +5,7 @@
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
 #include "Sceptor.h"
+#include "EntityRegister.h"
 #include "Docker.h"
 #include "Bullet.h"
 #include "tefpol3d.h"

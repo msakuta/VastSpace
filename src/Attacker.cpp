@@ -2,6 +2,7 @@
  * \brief Implements Attacker and AttackerDocker.
  */
 #include "Attacker.h"
+#include "EntityRegister.h"
 #include "war.h"
 #include "btadapt.h"
 #include "judge.h"

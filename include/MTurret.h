@@ -18,10 +18,10 @@ public:
 	float mf; // muzzle flash time
 	bool forceEnemy;
 
-	static EntityRegister<MTurret> entityRegister;
+	static EntityRegisterNC<MTurret> entityRegister;
 	MTurret(Game *game) : st(game){}
 	MTurret(Entity *abase, const hardpoint_static *hp);
-	EntityStatic &getStatic()const{return entityRegister;}
+	EntityStatic &getStatic()const override;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
@@ -46,11 +46,12 @@ protected:
 class EXPORT GatlingTurret : public MTurret{
 public:
 	typedef MTurret st;
+	static EntityRegisterNC<GatlingTurret> entityRegister;
 	GatlingTurret(Game *game);
 	GatlingTurret(Entity *abase, const hardpoint_static *hp);
+	EntityStatic &getStatic()const override;
 	virtual const char *idname()const;
 	virtual const char *classname()const;
-	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;
@@ -67,15 +68,5 @@ protected:
 };
 
 
-
-//-----------------------------------------------------------------------------
-//    Implementation for MTurret
-//-----------------------------------------------------------------------------
-
-
-/// Instantiate the constructor for MTurret to prevent creating Entity alone.
-template<> Entity *Entity::EntityRegister<MTurret>::create(WarField *){
-	return NULL;
-}
 
 #endif

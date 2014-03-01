@@ -2,6 +2,7 @@
  * \brief Implementation of SurfaceCS class.
  */
 #include "SurfaceCS.h"
+#include "EntityRegister.h"
 #include "WarMap.h"
 #include "drawmap.h"
 #include "sqadapt.h"

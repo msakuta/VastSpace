@@ -3,6 +3,7 @@
  */
 #include "Bullet.h"
 #include "ExplosiveBullet.h"
+#include "EntityRegister.h"
 #include "Player.h"
 #include "judge.h"
 #ifndef DEDICATED

@@ -21,12 +21,12 @@ inline gltestp::dstring modPath(){return _SC("mods/surface/");}
 //	Launcher implementation
 //-----------------------------------------------------------------------------
 
-template<> void Entity::EntityRegister<Launcher>::sq_defineInt(HSQUIRRELVM v){
+template<> void Entity::EntityRegisterNC<Launcher>::sq_defineInt(HSQUIRRELVM v){
 	sqa::register_closure(v, _SC("fire"), Launcher::sq_fire);
 }
 
 // This declaration seems to be needed before derived classes' ones.
-Launcher::EntityRegister<Launcher> Launcher::entityRegister("Launcher");
+Launcher::EntityRegisterNC<Launcher> Launcher::entityRegister("Launcher");
 
 Bullet *Launcher::fire(double dt){
 	return NULL; // Default does nothing

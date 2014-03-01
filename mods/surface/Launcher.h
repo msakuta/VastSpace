@@ -5,20 +5,20 @@
 #define LAUNCHER_H
 
 #include "arms.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "Model-forward.h"
 
 class Launcher;
 
-template<> Entity *Entity::EntityRegister<Launcher>::create(WarField *){ return NULL; }
-template<> Entity *Entity::EntityRegister<Launcher>::stcreate(Game *){ return NULL; }
-template<> void Entity::EntityRegister<Launcher>::sq_defineInt(HSQUIRRELVM v);
+template<> Entity *Entity::EntityRegisterNC<Launcher>::stcreate(Game *){ return NULL; }
+template<> void Entity::EntityRegisterNC<Launcher>::sq_defineInt(HSQUIRRELVM v);
 
 /// \brief Base class for rocket or missile launchers.
 class Launcher : public ArmBase{
 public:
 	typedef ArmBase st;
-	static EntityRegister<Launcher> entityRegister;
+	static EntityRegisterNC<Launcher> entityRegister;
 	Launcher(Game *game) : st(game), cooldown(0.){}
 	Launcher(Entity *base, const hardpoint_static *hp, int ammo_ = 4) : st(base, hp), cooldown(0.){ ammo = ammo_; }
 

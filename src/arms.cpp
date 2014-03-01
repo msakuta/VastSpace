@@ -3,6 +3,7 @@
  */
 #include "arms.h"
 #include "MTurret.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
@@ -143,7 +144,7 @@ void ArmBase::align(){
 #define MTURRETROTSPEED (.4*M_PI)
 #define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
 
-Entity::EntityRegister<MTurret> MTurret::entityRegister("MTurret");
+Entity::EntityRegisterNC<MTurret> MTurret::entityRegister("MTurret");
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
 	health = getMaxHealth();
@@ -171,6 +172,8 @@ void MTurret::unserialize(UnserializeContext &sc){
 const char *MTurret::dispname()const{
 	return "Mounted Turret";
 };
+
+Entity::EntityStatic &MTurret::getStatic()const{return entityRegister;}
 
 void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
@@ -442,7 +445,7 @@ const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
 const char *GatlingTurret::idname()const{return "GatlingTurret";}
 const char *GatlingTurret::classname()const{return "GatlingTurret";}
 
-const unsigned GatlingTurret::classid = registerClass("GatlingTurret", Conster<GatlingTurret>);
+Entity::EntityRegisterNC<GatlingTurret> GatlingTurret::entityRegister("GatlingTurret");
 
 void GatlingTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -451,6 +454,8 @@ void GatlingTurret::serialize(SerializeContext &sc){
 void GatlingTurret::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 }
+
+Entity::EntityStatic &GatlingTurret::getStatic()const{return entityRegister;}
 
 const char *GatlingTurret::dispname()const{
 	return "Gatling Turret";

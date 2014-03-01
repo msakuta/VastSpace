@@ -3,6 +3,7 @@
  */
 #define NOMINMAX
 #include "Tank.h"
+#include "EntityRegister.h"
 #include "SurfaceCS.h"
 #include "Bullet.h"
 #include "motion.h"

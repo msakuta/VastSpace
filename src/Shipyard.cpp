@@ -3,6 +3,7 @@
  */
 #define NOMINMAX
 #include "Shipyard.h"
+#include "EntityRegister.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Player.h"

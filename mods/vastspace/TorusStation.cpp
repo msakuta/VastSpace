@@ -2,6 +2,7 @@
  * \brief Implementation of TorusStation class.
  */
 #include "TorusStation.h"
+#include "EntityRegister.h"
 #include "vastspace.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
@@ -232,7 +233,7 @@ void TorusStation::clientUpdate(double dt){
 
 
 
-Entity::EntityRegister<TorusStationEntity> TorusStationEntity::entityRegister("TorusStationEntity");
+Entity::EntityRegisterNC<TorusStationEntity> TorusStationEntity::entityRegister("TorusStationEntity");
 
 const double TorusStationEntity::hubRadius = 0.03; // Really should be derived from hub model
 const double TorusStationEntity::segmentOffset = 0.02; // Offset of model from TorusStation::RAD
@@ -241,6 +242,8 @@ double TorusStationEntity::modelScale = 0.0001;
 double TorusStationEntity::hitRadius = 0.13;
 double TorusStationEntity::maxHealthValue = 1e6;
 GLuint TorusStationEntity::overlayDisp = 0;
+
+Entity::EntityStatic &TorusStationEntity::getStatic()const{return entityRegister;}
 
 void TorusStationEntity::serialize(SerializeContext &sc){
 	st::serialize(sc);

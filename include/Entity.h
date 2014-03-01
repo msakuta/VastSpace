@@ -193,38 +193,8 @@ protected:
 	static unsigned registerEntity(ClassId name, EntityStatic *st);
 	static EntityCtorMap &entityCtorMap();
 
-	template<class T> class EntityRegister : public EntityStatic{
-		const SQChar *m_sq_classname;
-		ClassId m_classid;
-	public:
-		virtual ClassId classid(){ return m_classid; }
-		virtual Entity *create(WarField *w){ return new T(w); }
-		virtual Entity *stcreate(Game *game){ return new T(game); }
-		virtual void destroy(Entity *p){ delete p; }
-		virtual const SQChar *sq_classname(){ return m_sq_classname; }
-		/// Called from sq_define(), override or instantiate to add member functions.
-		virtual void sq_defineInt(HSQUIRRELVM v){}
-		virtual bool sq_define(HSQUIRRELVM v){
-			sq_pushstring(v, sq_classname(), -1);
-			sq_pushstring(v, T::st::entityRegister.sq_classname(), -1);
-			sq_get(v, 1);
-			sq_newclass(v, SQTrue);
-			sq_settypetag(v, -1, SQUserPointer(m_classid));
-			sq_setclassudsize(v, -1, sq_udsize); // Set space for the weak pointer
-			sq_defineInt(v);
-			sq_createslot(v, -3);
-			return true;
-		}
-	public:
-		virtual EntityStatic *st(){ return &T::st::entityRegister; }
-		EntityRegister(const SQChar *classname) : EntityStatic(classname), m_sq_classname(classname), m_classid(classname){
-			Entity::registerEntity(classname, this);
-		}
-		EntityRegister(const SQChar *classname, ClassId classid) : EntityStatic(classname), m_sq_classname(classname), m_classid(classid){
-			Entity::registerEntity(classname, this);
-		}
-	};
-
+	template<typename T> class EntityRegisterNC;
+	template<typename T> class EntityRegister;
 	template<typename T> class VariantRegister;
 
 	class EXPORT EntityStaticBase : public EntityStatic{

@@ -3,6 +3,7 @@
  */
 #define NOMINMAX
 #include "Assault.h"
+#include "MTurret.h"
 #include "Beamer.h"
 #include "judge.h"
 #include "Player.h"

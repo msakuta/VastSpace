@@ -3,7 +3,7 @@
  */
 #ifndef LTURRET_H
 #define LTURRET_H
-#include "arms.h"
+#include "MTurret.h"
 
 class LTurretBase : public MTurret{
 public:

@@ -331,6 +331,7 @@
     <ClInclude Include="..\include\mqo.h" />
     <ClInclude Include="..\include\msg\GetCoverPointsMessage.h" />
     <ClInclude Include="..\include\msg\Message.h" />
+    <ClInclude Include="..\include\MTurret.h" />
     <ClInclude Include="..\include\Observable.h" />
     <ClInclude Include="..\include\Player.h" />
     <ClInclude Include="..\include\serial.h" />

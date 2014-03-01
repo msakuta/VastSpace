@@ -656,6 +656,9 @@
     <ClInclude Include="..\include\audio\playSound.h">
       <Filter>Exported Headers\audio</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\MTurret.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

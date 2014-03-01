@@ -2,6 +2,7 @@
  * \brief Implementation of ArmBase derived classes.
  */
 #include "arms.h"
+#include "MTurret.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"

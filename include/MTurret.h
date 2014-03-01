@@ -7,8 +7,6 @@
 
 /// \brief Medium-sized gun turret for spaceships.
 class EXPORT MTurret : public ArmBase{
-	static suf_t *suf_turret;
-	static suf_t *suf_barrel;
 protected:
 	void findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2); // returns precedence factor

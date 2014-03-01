@@ -4,6 +4,7 @@
 #define NOMINMAX
 
 #include "../Soldier.h"
+#include "../vastspace.h"
 #include "Viewer.h"
 #include "Player.h"
 #include "Game.h"

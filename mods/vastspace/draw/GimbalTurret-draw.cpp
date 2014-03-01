@@ -2,6 +2,7 @@
  * \brief Graphics implementation of GimbalTurret class
  */
 #include "../GimbalTurret.h"
+#include "../vastspace.h"
 #include "Viewer.h"
 #include "war.h"
 #include "draw/WarDraw.h"

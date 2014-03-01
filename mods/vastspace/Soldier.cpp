@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #endif
 #include "Soldier.h"
+#include "vastspace.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "arms.h"

@@ -78,9 +78,6 @@ public:
 
 	static double getModelScale(){return modelScale;}
 
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
-
 	static Model *model;
 	static Motion *motions[];
 
@@ -158,8 +155,6 @@ public:
 	void anim(double dt){}
 	void draw(WarDraw *);
 
-	static gltestp::dstring modPath(){return Soldier::modPath();}
-
 protected:
 	void init();
 	int maxammo()const{return maxAmmoValue;}
@@ -191,8 +186,6 @@ public:
 	const char *classname()const;
 	void anim(double dt){}
 	void draw(WarDraw *);
-
-	static gltestp::dstring modPath(){return Soldier::modPath();}
 
 protected:
 	void init();

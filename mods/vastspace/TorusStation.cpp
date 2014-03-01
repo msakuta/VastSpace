@@ -2,6 +2,7 @@
  * \brief Implementation of TorusStation class.
  */
 #include "TorusStation.h"
+#include "vastspace.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
 #include "CoordSys.h"

@@ -2,6 +2,7 @@
  * \brief Implementation of GimbalTurret and MissileGimbalTurret classes.
  */
 #include "GimbalTurret.h"
+#include "vastspace.h"
 #include "serial_util.h"
 #include "btadapt.h"
 #include "sqadapt.h"

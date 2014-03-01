@@ -64,9 +64,6 @@ public:
 		return (n - (stackCount - 1) * 0.5) * stackInterval;
 	}
 
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
-
 	bool cull(const Viewer &vw)const;
 
 protected:
@@ -128,9 +125,6 @@ public:
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *com);
-
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 	struct HitCylinder{
 		Vec3d org; ///< Origin position of the cylinder.

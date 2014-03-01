@@ -14,6 +14,10 @@ extern "C"{
 }
 
 
+static Model *model = NULL;
+static int turretIndex = -1;
+static int barrelIndex = -1;
+static int muzzleIndex = -1;
 
 void MTurret::draw(wardraw_t *wd){
 	// Viewing volume culling
@@ -23,9 +27,6 @@ void MTurret::draw(wardraw_t *wd){
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
 
-	static Model *model = NULL;
-	static int turretIndex = -1;
-	static int barrelIndex = -1;
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
 		model = LoadMQOModel(modelFile);
@@ -35,6 +36,8 @@ void MTurret::draw(wardraw_t *wd){
 				turretIndex = i;
 			if(model->bones[i]->name == barrelObjName)
 				barrelIndex = i;
+			if(model->bones[i]->name == muzzleObjName)
+				muzzleIndex = i;
 		}
 		init.create(*openGLState);
 	}
@@ -69,17 +72,25 @@ void MTurret::draw(wardraw_t *wd){
 
 void MTurret::drawtra(wardraw_t *wd){
 	Entity *pb = base;
-	double bscale = modelScale, tscale = .00002;
-	if(this->mf){
+	if(this->mf && model){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;
-		Vec3d pos, const pos0(0, 0, -.008);
 		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
 		this->transform(mat);
 		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(0., .001, -0.002);
+		Mat3d lmat = mat3d_u(); // Local matrix for the model has 180 degrees rotated
+		lmat.scalein(-1, 1, -1);
+		Vec3d barrelPos(0,0,0);
+		if(0 <= barrelIndex){
+			barrelPos = lmat.vp(model->bones[barrelIndex]->joint * modelScale);
+		}
+		mat2.translatein(barrelPos);
 		mat = mat2.rotx(this->py[0]);
-		pos = mat.vp3(pos0);
+		mat.translatein(-barrelPos);
+		Vec3d pos(0,0,0);
+		if(0 <= muzzleIndex){
+			pos = mat.vp3(lmat.vp(model->bones[muzzleIndex]->joint * modelScale));
+		}
 		rot = mat;
 		rot.vec3(3).clear();
 		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);

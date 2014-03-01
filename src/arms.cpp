@@ -145,6 +145,7 @@ double MTurret::manualRotateSpeed = rotateSpeed * 0.5;
 gltestp::dstring MTurret::modelFile = "models/turretz1.mqo";
 gltestp::dstring MTurret::turretObjName = "turretz1";
 gltestp::dstring MTurret::barrelObjName = "barrelz1";
+gltestp::dstring MTurret::muzzleObjName = "muzzlez1";
 
 Entity::EntityRegisterNC<MTurret> MTurret::entityRegister("MTurret");
 
@@ -169,7 +170,8 @@ void MTurret::init(){
 			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
 			StringProcess(modelFile, _SC("modelFile")) <<=
 			StringProcess(turretObjName, _SC("turretObjName")) <<=
-			StringProcess(barrelObjName, _SC("barrelObjName"))
+			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
+			StringProcess(muzzleObjName, _SC("muzzleObjName"))
 			);
 		initialized = true;
 	}

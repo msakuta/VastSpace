@@ -11,3 +11,4 @@ manualRotateSpeed <- rotateSpeed * 0.5;
 modelFile <- "models/turretz1.mqo";
 turretObjName <- "turretz1";
 barrelObjName <- "barrelz1";
+muzzleObjName <- "muzzlez1";

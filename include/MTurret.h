@@ -20,6 +20,7 @@ protected:
 	static gltestp::dstring modelFile;
 	static gltestp::dstring turretObjName;
 	static gltestp::dstring barrelObjName;
+	static gltestp::dstring muzzleObjName;
 public:
 	typedef ArmBase st;
 	float cooldown;

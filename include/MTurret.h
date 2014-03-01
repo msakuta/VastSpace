@@ -21,6 +21,7 @@ public:
 	static EntityRegister<MTurret> entityRegister;
 	MTurret(Game *game) : st(game){}
 	MTurret(Entity *abase, const hardpoint_static *hp);
+	EntityStatic &getStatic()const{return entityRegister;}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual const char *dispname()const;

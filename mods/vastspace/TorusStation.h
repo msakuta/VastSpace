@@ -111,6 +111,7 @@ public:
 	TorusStationEntity(Game *game);
 	TorusStationEntity(WarField *w, TorusStation &astro);
 	void init();
+	EntityStatic &getStatic()const{return entityRegister;}
 	virtual ~TorusStationEntity();
 	virtual const char *classname()const{return "TorusStationEntity";} ///< Overridden because getStatic() is not defined
 	virtual void serialize(SerializeContext &sc);

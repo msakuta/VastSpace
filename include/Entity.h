@@ -162,6 +162,12 @@ public:
 		EntityStatic(ClassId);
 	};
 
+	/// \brief Returns the static object for the Entity object
+	///
+	/// All Entity derived non-abstract classes ought to override this to return their entityRegister.
+	/// The returned value is not qualified with const unlike CoordSys because doing so may impact compatibility.
+	virtual EntityStatic &getStatic()const;
+
 	/// Entity class static list is typedefed in public privilege.
 	typedef std::map<ClassId, EntityStatic*> EntityCtorMap;
 	typedef const EntityCtorMap ConstEntityCtorMap;

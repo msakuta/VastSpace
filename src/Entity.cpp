@@ -682,11 +682,15 @@ const char *Entity::idname()const{
 }
 
 const char *Entity::classname()const{
-	return "Entity";
+	return const_cast<EntityStatic&>(getStatic()).sq_classname();
 }
 
 const char *Entity::dispname()const{
 	return classname();
+}
+
+Entity::EntityStatic &Entity::getStatic()const{
+	return entityRegister;
 }
 
 #if 0 // reference

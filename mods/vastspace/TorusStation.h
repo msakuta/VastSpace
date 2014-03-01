@@ -102,7 +102,7 @@ class TorusStationEntity : public Entity{
 public:
 	typedef Entity st;
 	friend class TorusStation;
-	static unsigned classid;
+	static EntityRegister<TorusStationEntity> entityRegister;
 	static const double hubRadius; ///< Really should be derived from hub model
 	static const double segmentOffset; ///< Offset of model from TorusStation::RAD
 	static const double segmentBaseHeight; ///< Really should be derived from segment model
@@ -113,7 +113,6 @@ public:
 	void init();
 	EntityStatic &getStatic()const{return entityRegister;}
 	virtual ~TorusStationEntity();
-	virtual const char *classname()const{return "TorusStationEntity";} ///< Overridden because getStatic() is not defined
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
@@ -168,6 +167,12 @@ public:
 	virtual Vec3d getPortPos(Dockable *)const;
 	virtual Quatd getPortRot(Dockable *)const;
 };
+
+/// Instantiate the constructor for TorusStationEntity to prevent creating Entity
+/// without corresponding TorusStation.
+template<> Entity *Entity::EntityRegister<TorusStationEntity>::create(WarField *){
+	return NULL;
+}
 
 
 #endif

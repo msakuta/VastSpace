@@ -231,7 +231,7 @@ void TorusStation::clientUpdate(double dt){
 
 
 
-unsigned TorusStationEntity::classid = registerClass("TorusStationEntity", Conster<TorusStationEntity>);
+Entity::EntityRegister<TorusStationEntity> TorusStationEntity::entityRegister("TorusStationEntity");
 
 const double TorusStationEntity::hubRadius = 0.03; // Really should be derived from hub model
 const double TorusStationEntity::segmentOffset = 0.02; // Offset of model from TorusStation::RAD

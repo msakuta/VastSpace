@@ -15,20 +15,6 @@ extern "C"{
 
 
 
-
-
-
-#define STURRET_SCALE (.000005 * 3)
-#define MTURRET_SCALE (.00005)
-#define MTURRET_MAX_GIBS 30
-#define MTURRET_BULLETSPEED 2.
-#define MTURRET_VARIANCE (.001 * M_PI)
-#define MTURRET_INTOLERANCE (M_PI / 20.)
-#define MTURRETROTSPEED (.4*M_PI)
-#define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
-
-
-
 void MTurret::draw(wardraw_t *wd){
 	// Viewing volume culling
 	if(wd->vw->gc->cullFrustum(pos, .03))
@@ -42,19 +28,19 @@ void MTurret::draw(wardraw_t *wd){
 	static int barrelIndex = -1;
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init){
-		model = LoadMQOModel("models/turretz1.mqo");
+		model = LoadMQOModel(modelFile);
 		// Precache barrel model indices to avoid string match every frame and every instance.
 		for(int i = 0; i < model->n; i++){
-			if(model->bones[i]->name == "turretz1")
+			if(model->bones[i]->name == turretObjName)
 				turretIndex = i;
-			if(model->bones[i]->name == "barrelz1")
+			if(model->bones[i]->name == barrelObjName)
 				barrelIndex = i;
 		}
 		init.create(*openGLState);
 	}
 
 	if(model){
-		const double bscale = MTURRET_SCALE;
+		const double bscale = modelScale;
 		
 		if(const ShaderBind *sb = wd->getShaderBind())
 			glUniform1i(sb->textureEnableLoc, 0);
@@ -83,7 +69,7 @@ void MTurret::draw(wardraw_t *wd){
 
 void MTurret::drawtra(wardraw_t *wd){
 	Entity *pb = base;
-	double bscale = MTURRET_SCALE, tscale = .00002;
+	double bscale = modelScale, tscale = .00002;
 	if(this->mf){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;

@@ -10,6 +10,7 @@
 #include "EntityCommand.h"
 #include "motion.h"
 #include "Game.h"
+#include "SqInitProcess.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -135,22 +136,43 @@ void ArmBase::align(){
 
 
 
-#define STURRET_SCALE (.000005 * 3)
-#define MTURRET_SCALE (.00005)
-#define MTURRET_MAX_GIBS 30
-#define MTURRET_BULLETSPEED 2.
-#define MTURRET_VARIANCE (.001 * M_PI)
-#define MTURRET_INTOLERANCE (M_PI / 20.)
-#define MTURRETROTSPEED (.4*M_PI)
-#define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
+double MTurret::modelScale = 0.00005;
+double MTurret::hitRadius = 0.005;
+double MTurret::turretVariance = .001 * M_PI;
+double MTurret::turretIntolerance = M_PI / 20.;
+double MTurret::rotateSpeed = 0.4 * M_PI;
+double MTurret::manualRotateSpeed = rotateSpeed * 0.5;
+gltestp::dstring MTurret::modelFile = "models/turretz1.mqo";
+gltestp::dstring MTurret::turretObjName = "turretz1";
+gltestp::dstring MTurret::barrelObjName = "barrelz1";
 
 Entity::EntityRegisterNC<MTurret> MTurret::entityRegister("MTurret");
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
+	init();
 	health = getMaxHealth();
 	ammo = 1500;
 	py[0] = 0;
 	py[1] = 0;
+}
+
+void MTurret::init(){
+
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/MTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(turretObjName, _SC("turretObjName")) <<=
+			StringProcess(barrelObjName, _SC("barrelObjName"))
+			);
+		initialized = true;
+	}
 }
 
 void MTurret::serialize(SerializeContext &sc){
@@ -262,8 +284,8 @@ void MTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., .001, -0.002);
-	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * turretVariance);
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * turretVariance);
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();
@@ -302,15 +324,15 @@ void MTurret::anim(double dt){
 		if(game->player && controller){
 			double pydst[2] = {py[0], py[1]};
 			if(inputs.press & PL_A)
-				pydst[1] += MTURRETMANUALROTSPEED * dt;
+				pydst[1] += manualRotateSpeed * dt;
 			if(inputs.press & PL_D)
-				pydst[1] -= MTURRETMANUALROTSPEED * dt;
+				pydst[1] -= manualRotateSpeed * dt;
 			if(inputs.press & PL_W)
-				pydst[0] += MTURRETMANUALROTSPEED * dt;
+				pydst[0] += manualRotateSpeed * dt;
 			if(inputs.press & PL_S)
-				pydst[0] -= MTURRETMANUALROTSPEED * dt;
-			a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-			a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+				pydst[0] -= manualRotateSpeed * dt;
+			a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, rotateSpeed * dt, 2 * M_PI) - M_PI;
+			a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, rotateSpeed * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 			/*if(game->isServer())*/{
 				if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
 					tryshoot();
@@ -341,9 +363,9 @@ void MTurret::anim(double dt){
 			/* these angles are in local coordinates */
 			phi = -atan2(epos[0], -(epos[2]));
 			theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, rotateSpeed * dt, 2 * M_PI) - M_PI;
 			if(1 < wantsFollowTarget())
-				a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+				a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, rotateSpeed * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 
 			/* shooter logic */
 			/*if(game->isServer())*/ while(a->cooldown < dt){
@@ -351,7 +373,7 @@ void MTurret::anim(double dt){
 				double pitch = a->py[0];
 
 				// Do not waste bullets at not reachable target.
-				if(!notReachable && fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
+				if(!notReachable && fabs(phi - yaw) < turretIntolerance && fabs(pitch - theta) < turretIntolerance){
 					tryshoot();
 				}
 				else
@@ -367,7 +389,7 @@ void MTurret::anim(double dt){
 }
 
 double MTurret::getHitRadius()const{
-	return .005;
+	return hitRadius;
 }
 
 Entity::Props MTurret::props()const{
@@ -485,9 +507,9 @@ void GatlingTurret::tryshoot(){
 	w->addent(pz);
 	Mat4d mat;
 	this->transform(mat);
-	mat.translatein(barrelpos * MTURRET_SCALE);
-	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat.translatein(barrelpos * modelScale);
+	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * turretVariance);
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * turretVariance);
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();

@@ -11,6 +11,15 @@ protected:
 	void findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2); // returns precedence factor
 	virtual int wantsFollowTarget()const; // Returns whether the turret should aim at target, 0 - no aim, 1 - yaw only, 2 - yaw and pitch, default 2.
+	static double modelScale;
+	static double hitRadius;
+	static double turretVariance;
+	static double turretIntolerance;
+	static double rotateSpeed;
+	static double manualRotateSpeed;
+	static gltestp::dstring modelFile;
+	static gltestp::dstring turretObjName;
+	static gltestp::dstring barrelObjName;
 public:
 	typedef ArmBase st;
 	float cooldown;
@@ -19,8 +28,9 @@ public:
 	bool forceEnemy;
 
 	static EntityRegisterNC<MTurret> entityRegister;
-	MTurret(Game *game) : st(game){}
+	MTurret(Game *game) : st(game){init();}
 	MTurret(Entity *abase, const hardpoint_static *hp);
+	void init();
 	EntityStatic &getStatic()const override;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

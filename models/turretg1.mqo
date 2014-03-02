@@ -237,4 +237,24 @@ Object "barrelsg1" {
 		4 V(44 47 46 45) M(2) UV(0.33333 1.00000 0.83333 1.00000 0.66667 1.00000 0.50000 1.00000)
 	}
 }
+Object "muzzleg1" {
+	depth 1
+	folding 0
+	scale 1.000000 1.000000 1.000000
+	rotation 0.000000 -0.000000 0.000000
+	translation 0.000000 0.000000 0.000000
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0.0000 30.0000 0.0000
+		0.0000 30.0000 133.0000
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
 Eof

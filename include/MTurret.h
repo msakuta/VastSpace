@@ -67,6 +67,15 @@ protected:
 	static double turretIntolerance;
 	static double rotateSpeed;
 	static double manualRotateSpeed;
+	static double bulletDamage;
+	static double bulletLife;
+	static double shootInterval;
+	static double bulletSpeed;
+	static int magazineSize;
+	static double reloadTime;
+	static double muzzleFlashDuration;
+	static double barrelRotSpeed;
+	static Vec3d shootOffset;
 	static gltestp::dstring modelFile;
 	static gltestp::dstring turretObjName;
 	static gltestp::dstring barrelObjName;
@@ -100,7 +109,6 @@ protected:
 	virtual double getRotateSpeed()const{return rotateSpeed;}
 	virtual double getManualRotateSpeed()const{return manualRotateSpeed;}
 	virtual void tryshoot();
-	static const Vec3d barrelpos;
 	float barrelrot;
 	float barrelomg;
 };

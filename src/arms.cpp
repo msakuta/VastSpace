@@ -11,6 +11,7 @@
 #include "motion.h"
 #include "Game.h"
 #include "SqInitProcess.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -463,6 +464,15 @@ double GatlingTurret::turretVariance = .001 * M_PI;
 double GatlingTurret::turretIntolerance = M_PI / 20.;
 double GatlingTurret::rotateSpeed = 0.4 * M_PI;
 double GatlingTurret::manualRotateSpeed = rotateSpeed * 0.5;
+double GatlingTurret::bulletDamage = 10.;
+double GatlingTurret::bulletLife = 10.;
+double GatlingTurret::shootInterval = 0.1;
+double GatlingTurret::bulletSpeed = 4.;
+int GatlingTurret::magazineSize = 50;
+double GatlingTurret::reloadTime = 5.;
+double GatlingTurret::muzzleFlashDuration = 0.075;
+double GatlingTurret::barrelRotSpeed = 2. * M_PI / shootInterval / 3.;
+Vec3d GatlingTurret::shootOffset = Vec3d(0., 30, 0.) * modelScale;
 gltestp::dstring GatlingTurret::modelFile = "models/turretg1.mqo";
 gltestp::dstring GatlingTurret::turretObjName = "turretg1";
 gltestp::dstring GatlingTurret::barrelObjName = "barrelg1";
@@ -473,7 +483,7 @@ GatlingTurret::GatlingTurret(Game *game) : st(game), barrelrot(0), barrelomg(0){
 
 GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){
 	init();
-	ammo = 50;
+	ammo = magazineSize;
 }
 
 void GatlingTurret::init(){
@@ -487,6 +497,14 @@ void GatlingTurret::init(){
 			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
 			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
 			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			SingleDoubleProcess(bulletDamage, _SC("bulletDamage")) <<=
+			SingleDoubleProcess(bulletLife, _SC("bulletLife")) <<=
+			SingleDoubleProcess(shootInterval, _SC("shootInterval")) <<=
+			SingleDoubleProcess(bulletSpeed, _SC("bulletSpeed")) <<=
+			IntProcess(magazineSize, _SC("magazineSize")) <<=
+			SingleDoubleProcess(reloadTime, _SC("reloadTime")) <<=
+			SingleDoubleProcess(barrelRotSpeed, _SC("barrelRotSpeed")) <<=
+			Vec3dProcess(shootOffset, "shootOffset") <<=
 			StringProcess(modelFile, _SC("modelFile")) <<=
 			StringProcess(turretObjName, _SC("turretObjName")) <<=
 			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
@@ -496,9 +514,6 @@ void GatlingTurret::init(){
 		initialized = true;
 	}
 }
-
-
-const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
 
 
 Entity::EntityRegisterNC<GatlingTurret> GatlingTurret::entityRegister("GatlingTurret");
@@ -524,35 +539,36 @@ void GatlingTurret::anim(double dt){
 }
 
 float GatlingTurret::reloadtime()const{
-	return .1;
+	return shootInterval;
 }
 
 double GatlingTurret::bulletspeed()const{
-	return 4.;
+	return bulletSpeed;
 }
 
 void GatlingTurret::tryshoot(){
-	if(ammo <= 0)
+	if(ammo <= 0){
+		ammo = magazineSize;
+		this->cooldown += reloadTime;
 		return;
-	static const avec3_t forward = {0., 0., -1.};
-	Bullet *pz;
-	Quatd qrot;
-	pz = new Bullet(base, 3., 10.);
+	}
+	static const Vec3d forward(0., 0., -1.);
+	Bullet *pz = new Bullet(base, bulletLife, bulletDamage);
 	w->addent(pz);
 	Mat4d mat;
 	this->transform(mat);
-	mat.translatein(barrelpos * modelScale);
+	mat.translatein(shootOffset);
 	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
 	this->cooldown += reloadtime();
-	this->mf += .075;
-	this->barrelomg = 2. * M_PI / reloadtime() / 3.;
+	this->mf += muzzleFlashDuration;
+	this->barrelomg = barrelRotSpeed;
 	ammo--;
-	if(!ammo){
-		ammo = 50;
-		this->cooldown += 5.;
+	if(ammo <= 0){
+		ammo = magazineSize;
+		this->cooldown += reloadTime;
 	}
 }
 

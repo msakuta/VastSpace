@@ -2,6 +2,7 @@
  * \brief Implementation of LTurret and LMissileTurret.
  */
 #include "LTurret.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
@@ -17,8 +18,8 @@ extern "C"{
 static const double lturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 
-const char *LTurret::classname()const{return "LTurret";}
-const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
+Entity::EntityRegisterNC<LTurret> LTurret::entityRegister("LTurret");
+Entity::EntityStatic &LTurret::getStatic()const{return entityRegister;}
 
 void LTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);

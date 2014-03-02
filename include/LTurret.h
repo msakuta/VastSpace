@@ -15,10 +15,11 @@ class LTurret : public LTurretBase{
 	float blowback, blowbackspeed;
 public:
 	typedef LTurretBase st;
+	static EntityRegisterNC<LTurret> entityRegister;
 	LTurret(Game *game) : st(game), blowback(0), blowbackspeed(0){}
 	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
-	virtual const char *classname()const;
-	static const unsigned classid;
+	EntityStatic &getStatic()const override;
+	const char *dispname()const override{return "Large Turret";}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual double getHitRadius()const;

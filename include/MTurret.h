@@ -47,9 +47,9 @@ public:
 	virtual cpplib::dstring descript()const;
 	virtual bool command(EntityCommand *);
 
-	virtual float reloadtime()const;
-	virtual double bulletspeed()const;
-	virtual float bulletlife()const;
+	virtual float getShootInterval()const;
+	virtual double getBulletSpeed()const;
+	virtual float getBulletLife()const;
 protected:
 	virtual double getTurretVariance()const{return turretVariance;}
 	virtual double getTurretIntolerance()const{return turretIntolerance;}
@@ -101,8 +101,9 @@ public:
 	double getHitRadius()const override{return hitRadius;}
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *w);
-	virtual float reloadtime()const;
-	virtual double bulletspeed()const;
+	float getShootInterval()const override;
+	double getBulletSpeed()const override;
+	float getBulletLife()const override;
 protected:
 	virtual double getTurretVariance()const{return turretVariance;}
 	virtual double getTurretIntolerance()const{return turretIntolerance;}

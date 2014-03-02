@@ -211,7 +211,7 @@ static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
 	MTurret *pt = this;
 	WarField *w = pb->w;
-	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
+	double bulletrange = getBulletSpeed() * getBulletLife(); /* sense range */
 	double best = bulletrange * bulletrange;
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
@@ -273,13 +273,13 @@ int MTurret::wantsFollowTarget()const{return 2;}
 
 void MTurret::tryshoot(){
 	if(ammo <= 0){
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 		return;
 	}
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;
-	pz = new Bullet(base, bulletlife(), 120.);
+	pz = new Bullet(base, getBulletLife(), 120.);
 	w->addent(pz);
 	Mat4d mat2;
 	base->transform(mat2);
@@ -290,8 +290,8 @@ void MTurret::tryshoot(){
 	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
-	this->cooldown += reloadtime();
+	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
+	this->cooldown += getShootInterval();
 	this->mf += .2;
 	ammo--;
 }
@@ -343,7 +343,7 @@ void MTurret::anim(double dt){
 			}
 		}
 		else if(target && wantsFollowTarget()) do{/* estimating enemy position */
-			double bulletRange = bulletspeed() * bulletlife();
+			double bulletRange = getBulletSpeed() * getBulletLife();
 			bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
 
 			// If not forced to attack certain target, forget about target that bullets have no way to reach.
@@ -361,7 +361,7 @@ void MTurret::anim(double dt){
 			velo = mat2.dvp3(target->velo);
 			pvelo = mat2.dvp3(pt->velo);
 
-			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed(), w);
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, getBulletSpeed(), w);
 				
 			/* these angles are in local coordinates */
 			phi = -atan2(epos[0], -(epos[2]));
@@ -405,15 +405,15 @@ cpplib::dstring MTurret::descript()const{
 	return cpplib::dstring() << idname() << " " << health << " " << ammo;
 }
 
-float MTurret::reloadtime()const{
+float MTurret::getShootInterval()const{
 	return 2.;
 }
 
-double MTurret::bulletspeed()const{
+double MTurret::getBulletSpeed()const{
 	return 2.;
 }
 
-float MTurret::bulletlife()const{
+float MTurret::getBulletLife()const{
 	return 3.;
 }
 
@@ -538,12 +538,16 @@ void GatlingTurret::anim(double dt){
 	st::anim(dt);
 }
 
-float GatlingTurret::reloadtime()const{
+float GatlingTurret::getShootInterval()const{
 	return shootInterval;
 }
 
-double GatlingTurret::bulletspeed()const{
+double GatlingTurret::getBulletSpeed()const{
 	return bulletSpeed;
+}
+
+float GatlingTurret::getBulletLife()const{
+	return bulletLife;
 }
 
 void GatlingTurret::tryshoot(){
@@ -553,7 +557,7 @@ void GatlingTurret::tryshoot(){
 		return;
 	}
 	static const Vec3d forward(0., 0., -1.);
-	Bullet *pz = new Bullet(base, bulletLife, bulletDamage);
+	Bullet *pz = new Bullet(base, getBulletLife(), bulletDamage);
 	w->addent(pz);
 	Mat4d mat;
 	this->transform(mat);
@@ -561,8 +565,8 @@ void GatlingTurret::tryshoot(){
 	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
-	this->cooldown += reloadtime();
+	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
+	this->cooldown += getShootInterval();
 	this->mf += muzzleFlashDuration;
 	this->barrelomg = barrelRotSpeed;
 	ammo--;

@@ -60,8 +60,8 @@ void LTurret::clientUpdate(double dt){
 	anim(dt);
 }
 
-float LTurret::reloadtime()const{return 4.;}
-float LTurret::bulletlife()const{return 5.;}
+float LTurret::getShootInterval()const{return 4.;}
+float LTurret::getBulletLife()const{return 5.;}
 
 /// \brief Returns transformation matrix and optional rotation quaternion indicating shooting bullet's orientation.
 /// \param mat Filled with transformation matrix.
@@ -88,7 +88,7 @@ void LTurret::tryshoot(){
 	// Do not actually shoot in the client.
 	// Yes, we can shoot in the client.
 /*	if(!game->isServer()){
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 		return;
 	}*/
 
@@ -99,14 +99,14 @@ void LTurret::tryshoot(){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
 		Vec3d direction = -mat.vec3(2);
 		Bullet *pz;
-		pz = new Bullet(base, bulletlife(), 800.);
+		pz = new Bullet(base, getBulletLife(), 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = direction * bulletspeed() + this->velo;
+		pz->velo = direction * getBulletSpeed() + this->velo;
 		pz->rot = qrot;
 		shootEffect(pz->pos, direction);
 	}
-	this->cooldown += reloadtime();
+	this->cooldown += getShootInterval();
 	this->mf += .3;
 	blowbackspeed += .05;
 	ammo -= 2;
@@ -148,12 +148,12 @@ double LMissileTurret::getHitRadius()const{return .03;}
 const double LMissileTurret::bscale = .0001 / 2.;
 
 int LMissileTurret::wantsFollowTarget()const{
-	return cooldown < 2. * reloadtime();
+	return cooldown < 2. * getShootInterval();
 }
 
 void LMissileTurret::anim(double dt){
 	st::anim(dt);
-	if(target && cooldown < 2. * reloadtime()){
+	if(target && cooldown < 2. * getShootInterval()){
 		deploy = approach(deploy, 1., dt, 0.);
 	}
 	else{
@@ -168,8 +168,8 @@ void LMissileTurret::clientUpdate(double dt){
 	anim(dt);
 }
 
-double LMissileTurret::bulletspeed()const{return 1.;}
-float LMissileTurret::reloadtime()const{return .5;}
+double LMissileTurret::getBulletSpeed()const{return 1.;}
+float LMissileTurret::getShootInterval()const{return .5;}
 
 void LMissileTurret::tryshoot(){
 	if(ammo <= 0)
@@ -198,7 +198,7 @@ void LMissileTurret::tryshoot(){
 		pz = new Missile(base, 15., 500., target);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = mat.dvp3(forward) * .1*bulletspeed() + this->velo;
+		pz->velo = mat.dvp3(forward) * .1*getBulletSpeed() + this->velo;
 		pz->rot = qrot;
 	}
 	targets[numof(targets) - ammo - 1] = target;
@@ -207,7 +207,7 @@ void LMissileTurret::tryshoot(){
 		ammo = 6;
 	}
 	else
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 	this->mf += .3;
 }
 

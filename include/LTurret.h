@@ -26,8 +26,8 @@ public:
 	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
-	virtual float reloadtime()const;
-	virtual float bulletlife()const;
+	float getShootInterval()const override;
+	float getBulletLife()const override;
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 protected:
@@ -55,8 +55,8 @@ public:
 	virtual void clientUpdate(double dt);
 	virtual void draw(WarDraw *);
 	virtual void drawtra(WarDraw *);
-	virtual double bulletspeed()const;
-	virtual float reloadtime()const;
+	double getBulletSpeed()const override;
+	float getShootInterval()const override;
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 };

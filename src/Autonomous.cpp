@@ -931,28 +931,6 @@ HitBoxList *Autonomous::getTraceHitBoxes()const{
 	return NULL;
 }
 
-void ModelEntity::Vec3dProcess::process(HSQUIRRELVM v)const{
-	StackReserver sr(v); // We cannot keep track of stack depth if a try-catch block is involved.
-	sq_pushstring(v, name, -1); // root string
-	if(SQ_FAILED(sq_get(v, -2))){ // root value
-		if(mandatory) // If mandatory, read errors result in exceptions.
-			throw SQFError(gltestp::dstring(name) << _SC(" not found"));
-		else // If not mandatory variable cannot be read, leave the default value and silently ignore.
-			return;
-	}
-	SQVec3d r;
-	try{
-		r.getValue(v, -1);
-	}
-	catch(SQFError &e){
-		if(mandatory)
-			throw;
-		else
-			return;
-	}
-	vec = r.value;
-}
-
 void Autonomous::ManeuverParamsProcess::process(HSQUIRRELVM v)const{
 	static const SQChar *paramNames[] = {
 		_SC("accel"),

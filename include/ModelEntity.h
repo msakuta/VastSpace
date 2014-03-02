@@ -49,16 +49,6 @@ protected:
 		MassProcess(double &mass) : SingleDoubleProcess(mass, "mass"){}
 	};
 
-	/// \brief Processes single Vec3d with given variable name.
-	class EXPORT Vec3dProcess : public SqInitProcess{
-	public:
-		Vec3d &vec;
-		const SQChar *name;
-		bool mandatory;
-		Vec3dProcess(Vec3d &vec, const SQChar *name, bool mandatory = true) : vec(vec), name(name), mandatory(mandatory){}
-		virtual void process(HSQUIRRELVM)const;
-	};
-
 	class EXPORT HitboxProcess : public SqInitProcess{
 	public:
 		HitBoxList &hitboxes;

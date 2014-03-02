@@ -21,6 +21,7 @@
 #include "motion.h"
 #include "Game.h"
 #include "glw/PopupMenu.h"
+#include "SqInitProcess-ex.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #include "mqo.h"

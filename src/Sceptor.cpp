@@ -20,6 +20,7 @@
 #include "SqInitProcess-ex.h"
 #include "audio/playSound.h"
 #include "audio/wavemixer.h"
+#include "cmd.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>

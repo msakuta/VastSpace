@@ -27,7 +27,8 @@ bool SqInit(HSQUIRRELVM v, const SQChar *scriptFile, const SqInitProcess &procs)
 		}
 		gltestp::dstring description()const{return scriptFile;}
 	};
-	return SqInitProcess::SqInit(v, FileSqInitEval(v, scriptFile), procs);
+	FileSqInitEval eval(v, scriptFile);
+	return SqInitProcess::SqInit(v, eval, procs);
 }
 
 /// \brief The function that is called to initialize static customizable variables to a specific Entity class.

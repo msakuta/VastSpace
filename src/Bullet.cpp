@@ -394,7 +394,6 @@ SQInteger Bullet::sqSet(HSQUIRRELVM v, const SQChar *name){
 
 #ifdef DEDICATED
 void Bullet::drawtra(wardraw_t *wd){}
-void Bullet::bulletkill(int hitground, const struct contact_info *ci){}
 #endif
 
 bool Bullet::isTargettable()const{
@@ -450,7 +449,7 @@ bool ExplosiveBullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam 
 	// In that case, pt can be invalid pointer after the next if block.
 	// We must reserve a weak pointer before there to respond such a event to prevent
 	// access violations.
-	WeakPtr<Entity> wpt = pt;
+	WeakPtr<Entity> wpt(pt);
 
 	// Do splash damage
 	if(0 < splashRadius){

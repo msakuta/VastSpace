@@ -16,7 +16,8 @@ endif
 
 CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
-CPPFLAGS += -std=c++0x
+CPPFLAGS += -std=c++11
+CC = gcc
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
 
 ifdef MINGW
@@ -192,7 +193,7 @@ ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc
-	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+	${CC} $(CFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

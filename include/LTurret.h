@@ -13,11 +13,27 @@ public:
 
 class LTurret : public LTurretBase{
 	float blowback, blowbackspeed;
+	static double modelScale;
+	static double hitRadius;
+	static double turretVariance;
+	static double turretIntolerance;
+	static double rotateSpeed;
+	static double manualRotateSpeed;
+	static gltestp::dstring modelFile;
+	static gltestp::dstring turretObjName;
+	static gltestp::dstring barrelObjName;
+	static gltestp::dstring muzzleObjName;
+
+	static Model *model;
+	static int turretIndex;
+	static int barrelIndex;
+	static int muzzleIndex;
 public:
 	typedef LTurretBase st;
 	static EntityRegisterNC<LTurret> entityRegister;
-	LTurret(Game *game) : st(game), blowback(0), blowbackspeed(0){}
-	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){}
+	LTurret(Game *game) : st(game), blowback(0), blowbackspeed(0){init();}
+	LTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), blowback(0), blowbackspeed(0){init();}
+	void init();
 	EntityStatic &getStatic()const override;
 	const char *dispname()const override{return "Large Turret";}
 	virtual void serialize(SerializeContext &sc);
@@ -32,6 +48,10 @@ public:
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 protected:
+	double getTurretVariance()const override;
+	double getTurretIntolerance()const override;
+	double getRotateSpeed()const override{return rotateSpeed;}
+	double getManualRotateSpeed()const override{return manualRotateSpeed;}
 	void shootTransform(Mat4d &mat, Quatd *qrot = NULL)const;
 	void shootEffect(const Vec3d &bulletpos, const Vec3d &direction);
 };

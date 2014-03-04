@@ -6,20 +6,49 @@
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
+#include "SqInitProcess.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
 
-#define LTURRET_VARIANCE (.001 * M_PI)
-#define LTURRETROTSPEED (.4*M_PI)
+double LTurret::modelScale = 0.001;
+double LTurret::hitRadius = 0.03;
+double LTurret::turretVariance = 0.001 * M_PI;
+double LTurret::turretIntolerance = M_PI / 20.;
+double LTurret::rotateSpeed = 0.4 * M_PI;
+double LTurret::manualRotateSpeed = rotateSpeed * 0.5;
+gltestp::dstring LTurret::modelFile = "models/lturret1.mqo";
+gltestp::dstring LTurret::turretObjName = "lturret";
+gltestp::dstring LTurret::barrelObjName = "lbarrel";
+gltestp::dstring LTurret::muzzleObjName = "lmuzzle";
 
 static const double lturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 
 Entity::EntityRegisterNC<LTurret> LTurret::entityRegister("LTurret");
 Entity::EntityStatic &LTurret::getStatic()const{return entityRegister;}
+
+void LTurret::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/LTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(turretObjName, _SC("turretObjName")) <<=
+			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
+			StringProcess(muzzleObjName, _SC("muzzleObjName"))
+			);
+		initialized = true;
+	}
+}
 
 void LTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -46,7 +75,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 }
 
 
-double LTurret::getHitRadius()const{return .03;}
+double LTurret::getHitRadius()const{return hitRadius;}
 
 void LTurret::anim(double dt){
 	st::anim(dt);
@@ -63,6 +92,8 @@ void LTurret::clientUpdate(double dt){
 
 float LTurret::getShootInterval()const{return 4.;}
 float LTurret::getBulletLife()const{return 5.;}
+double LTurret::getTurretVariance()const{return turretVariance;}
+double LTurret::getTurretIntolerance()const{return turretIntolerance;}
 
 /// \brief Returns transformation matrix and optional rotation quaternion indicating shooting bullet's orientation.
 /// \param mat Filled with transformation matrix.
@@ -74,8 +105,8 @@ void LTurret::shootTransform(Mat4d &mat, Quatd *qrot)const{
 	Mat4d rot = hp->rot.tomat4();
 	mat = mat2 * rot;
 	mat.translatein(0., .005, -0.0025);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
 	mat2 = mat.roty(yaw);
 	mat = mat2.rotx(pitch);
 	if(qrot)
@@ -160,7 +191,7 @@ void LMissileTurret::anim(double dt){
 	else{
 		deploy = approach(deploy, 0., dt, 0.);
 		py[0] = approach(py[0], 0., dt, 0.);
-		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, LTURRETROTSPEED * dt, 2 * M_PI) - M_PI, lturret_range[0][0], lturret_range[0][1]);
+		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI, lturret_range[0][0], lturret_range[0][1]);
 //		py[1] = approach(py[1], 0., dt, 0.);
 	}
 }
@@ -182,8 +213,8 @@ void LMissileTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., .01, 0.);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
 	const Vec3d barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
 	const Vec3d joint = bscale * Vec3d(0, 120, 60);
 	mat2 = mat.roty(yaw);

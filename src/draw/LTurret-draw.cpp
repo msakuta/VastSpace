@@ -14,6 +14,10 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
+Model *LTurret::model = NULL;
+int LTurret::turretIndex = -1;
+int LTurret::barrelIndex = -1;
+int LTurret::muzzleIndex = -1;
 
 void LTurret::draw(wardraw_t *wd){
 	static OpenGLState::weak_ptr<bool> init;
@@ -24,27 +28,25 @@ void LTurret::draw(wardraw_t *wd){
 	// Scale too small culling
 	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
 		return;
-	static Model *model = NULL;
-	static Motion *motions[2];
-	double scale;
-	static int turretIndex = -1;
-	static int barrelIndex = -1;
+//	static Motion *motions[2];
 	if(!init){
-		model = LoadMQOModel("models/lturret1.mqo");
-		motions[0] = LoadMotion("models/lturret_pitch.mot");
-		motions[1] = LoadMotion("models/lturret_blowback.mot");
+		model = LoadMQOModel(modelFile);
+//		motions[0] = LoadMotion("models/lturret_pitch.mot");
+//		motions[1] = LoadMotion("models/lturret_blowback.mot");
 
 		// Precache barrel model indices to avoid string match every frame and every instance.
 		for(int i = 0; i < model->n; i++){
-			if(model->bones[i]->name == "lturret")
+			if(model->bones[i]->name == turretObjName)
 				turretIndex = i;
-			if(model->bones[i]->name == "lbarrel")
+			if(model->bones[i]->name == barrelObjName)
 				barrelIndex = i;
+			if(model->bones[i]->name == muzzleObjName)
+				muzzleIndex = i;
 		}
 		init.create(*openGLState);
 	}
 
-	const double bscale = .001;
+	const double bscale = modelScale;
 
 	if(const ShaderBind *sb = wd->getShaderBind())
 		glUniform1i(sb->textureEnableLoc, 0);
@@ -91,14 +93,29 @@ void LTurret::drawtra(wardraw_t *wd){
 	if(this->mf) for(int i = 0; i < 2; i++){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;
-		Vec3d pos, const barrelpos(.005 * (i * 2 - 1), .005, -.0025), const muzzlepos(0, .0, -.030 + blowback);
 		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
+		Mat3d lmat = mat3d_u(); // Local matrix for the model has 180 degrees rotated
+		lmat.scalein(-1, 1, -1);
 		this->transform(mat);
 		mat2 = mat.roty(this->py[1]);
-		mat2.translatein(barrelpos * bscale);
+		Vec3d barrelPos(0,0,0);
+		if(0 <= barrelIndex){
+			barrelPos = model->bones[barrelIndex]->joint;
+			if(i) // Turret's barrels are mirror positioned.
+				barrelPos[0] *= -1;
+			barrelPos = lmat.vp(barrelPos * modelScale);
+		}
+		mat2.translatein(barrelPos);
 		mat = mat2.rotx(this->py[0]);
-//		mat.translatein(-barrelpos * bscale);
-		pos = mat.vp3(muzzlepos);
+		mat.translatein(-barrelPos);
+		Vec3d pos(0,0,0);
+		if(0 <= muzzleIndex){
+			pos = model->bones[muzzleIndex]->joint * modelScale;
+			if(i) // Turret's barrels are mirror positioned.
+				pos[0] *= -1; // Take the barrel's blowback into account.
+			pos[2] -= blowback;
+			pos = mat.vp3(lmat.vp(pos));
+		}
 		rot = mat;
 		rot.vec3(3).clear();
 //		drawmuzzleflash4(pos, rot, .005, wd->vw->irot, &rs, wd->vw->pos);

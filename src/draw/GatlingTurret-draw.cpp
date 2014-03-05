@@ -22,10 +22,10 @@ int GatlingTurret::muzzleIndex = -1;
 
 void GatlingTurret::draw(wardraw_t *wd){
 	// Viewing volume culling
-	if(wd->vw->gc->cullFrustum(pos, .03))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 	// Scale too small culling
-	if(fabs(wd->vw->gc->scale(pos)) * .03 < 2)
+	if(fabs(wd->vw->gc->scale(pos)) * getHitRadius() < 2)
 		return;
 
 	static OpenGLState::weak_ptr<bool> init;

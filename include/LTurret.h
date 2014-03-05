@@ -63,12 +63,11 @@ protected:
 	virtual int wantsFollowTarget()const;
 public:
 	typedef LTurretBase st;
+	static EntityRegisterNC<LMissileTurret> entityRegister;
 	static const double bscale;
 	LMissileTurret(Game *game);
 	LMissileTurret(Entity *abase, const hardpoint_static *hp);
 	~LMissileTurret();
-	virtual const char *classname()const;
-	static const unsigned classid;
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
 	virtual double getHitRadius()const;

@@ -173,8 +173,7 @@ LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(a
 LMissileTurret::~LMissileTurret(){
 }
 
-const char *LMissileTurret::classname()const{return "LMissileTurret";}
-const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LMissileTurret>);
+Entity::EntityRegisterNC<LMissileTurret> LMissileTurret::entityRegister("LMissileTurret");
 double LMissileTurret::getHitRadius()const{return .03;}
 
 const double LMissileTurret::bscale = .0001 / 2.;

@@ -24,8 +24,8 @@ void LMissileTurret::draw(WarDraw *wd){
 	static Model *model = NULL;
 	static Motion *motions[1];
 	if(!init){
-		model = LoadMQOModel("models/missile_launcher.mqo");
-		motions[0] = LoadMotion("models/missile_launcher_deploy.mot");
+		model = LoadMQOModel(modelFile);
+		motions[0] = LoadMotion(deployMotionFile);
 		init.create(*openGLState);
 	}
 
@@ -38,7 +38,7 @@ void LMissileTurret::draw(WarDraw *wd){
 	gldTranslate3dv(pos);
 	gldMultQuat(rot);
 	glRotated(deg_per_rad * this->py[1], 0., 1., 0.);
-	gldScaled(bscale);
+	gldScaled(modelScale);
 	glScalef(-1,1,-1);
 	DrawMQOPose(model, mp);
 	glPopMatrix();
@@ -51,9 +51,9 @@ void LMissileTurret::drawtra(WarDraw *wd){
 	if(this->mf){
 		struct random_sequence rs;
 		Mat4d mat2, mat, rot;
-		Vec3d const barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
-		Vec3d const joint = bscale * Vec3d(0, 120, 60);
-		Vec3d pos, const muzzlepos = bscale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
+		Vec3d const barrelpos = modelScale * Vec3d(0, 200, 0) * deploy;
+		Vec3d const joint = modelScale * Vec3d(0, 120, 60);
+		Vec3d pos, const muzzlepos = modelScale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
 		init_rseq(&rs, (long)this ^ *(long*)&wd->vw->viewtime);
 		this->transform(mat);
 		mat2 = mat.roty(this->py[1]);

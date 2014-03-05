@@ -59,17 +59,24 @@ protected:
 class LMissileTurret : public LTurretBase{
 	const Entity *targets[6]; // Targets already locked up
 	float deploy; // Deployment factor.
+
+	static double modelScale;
+	static double hitRadius;
+	static double turretVariance;
+	static double turretIntolerance;
+	static double rotateSpeed;
+	static double manualRotateSpeed;
+	static gltestp::dstring modelFile;
+	static gltestp::dstring deployMotionFile;
+
 protected:
 	virtual int wantsFollowTarget()const;
 public:
 	typedef LTurretBase st;
 	static EntityRegisterNC<LMissileTurret> entityRegister;
-	static const double bscale;
 	LMissileTurret(Game *game);
 	LMissileTurret(Entity *abase, const hardpoint_static *hp);
-	~LMissileTurret();
-//	virtual void serialize(SerializeContext &sc);
-//	virtual void unserialize(UnserializeContext &sc);
+	void init();
 	virtual double getHitRadius()const;
 	virtual void anim(double dt);
 	virtual void clientUpdate(double dt);
@@ -79,6 +86,11 @@ public:
 	float getShootInterval()const override;
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
+protected:
+	double getTurretVariance()const override{return turretVariance;}
+	double getTurretIntolerance()const override{return turretIntolerance;}
+	double getRotateSpeed()const override{return rotateSpeed;}
+	double getManualRotateSpeed()const override{return manualRotateSpeed;}
 };
 
 

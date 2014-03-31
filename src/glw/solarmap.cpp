@@ -4,6 +4,7 @@
  * Additionally defines GLWinfo, a window displays information about specific astronomical object.
  */
 
+#define NOMINMAX
 #include "astrodraw.h"
 #include "../galaxy_field.h"
 #include "Player.h"
@@ -25,11 +26,6 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 #include <algorithm>
-
-// Windows header file defines "max" as a macro, which collides with std::max.
-#ifdef max
-#undef max
-#endif
 
 #if 0
 static int galaxy_map_slice = HFIELDZ;
@@ -419,10 +415,6 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 		const OrbitCS *a = cs->toOrbitCS();
 		const Astrobj *home = a->orbit_home;
 
-		// Cache circle divisions
-		const int divides = 64;
-		double (*cuts)[2] = CircleCuts(divides);
-
 		// Obtain orbit center position
 		Vec3d spos = vwcs->tocs(home->pos, home->parent);
 		params->apos0 = vwcs->tocs(cs->pos, cs->parent);
@@ -439,6 +431,12 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 		Mat4d mat = vwcs->tocsim(home->parent);
 		Mat4d rmat = mat * qmat;
 		rmat.vec3(3) += spos;
+
+		// Cache circle divisions.  Just 2 stage LOD would be enough.
+		// Modern FPUs may not benefit from manual caching of repeated trigonometric values.
+		// We may be better to care about cache hit ratio.
+		const int divides = rad < range * sol->csrad * 100 ? 128 : 512;
+		double (*cuts)[2] = CircleCuts(divides);
 
 		// Obtain a matrix to convert local orbit coordinates to viewing coordinates.
 		Mat4d lmat = params->viewmat * rmat;
@@ -873,32 +871,7 @@ void GLwindowSolarMap::drawInt(const CoordSys *cs, drawSolarMapItemParams &param
 		if(sol != a->parent && !sol->is_ancestor_of(a->parent))
 			continue;
 		params.apos0 = sol->tocs(a->pos, a->parent);
-		if(home){
-			cuts = CircleCuts(64);
-			spos = sol->tocs(home->pos, home->parent);
-			mat = sol->tocsim(home->parent);
-			qmat = a->orbit_axis.tomat4();
-			rad = a->orbit_rad;
-			smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
-			qmat.scalein(rad, smia, rad);
-			if(a->eccentricity != 0.)
-				qmat.translatein(a->eccentricity, 0, 0);
-			rmat = mat * qmat;
-			rmat.vec3(3) += spos;
-			lmat = params.viewmat * rmat;
-			glColor4ub(255,191,255,255);
-			glBegin(GL_LINE_LOOP);
-			for(j = 0; j < 64; j++){
-				Vec3d v, vr;
-				v[0] = 0 + cuts[j][0];
-				v[1] = 0 + cuts[j][1];
-				v[2] = 0;
-				vr = lmat.vp3(v);
-/*					VECADDIN(vr, spos);*/
-				glVertex3dv(vr);
-			}
-			glEnd();
-		}
+
 #if 1
 		params.name = a->fullname ? a->fullname : a->name;
 		params.rad = a->csrad;

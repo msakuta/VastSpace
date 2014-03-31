@@ -291,6 +291,7 @@ function init_Universe(){
 	}
 
 	mainmenu.addItem("test", callTest);
+	mainmenu.addItem("Start from Alpha Centauri", @() loadmission("scripts/alphacen.nut"));
 	mainmenu.addItem("Walkthrough", function(){mainmenu.close();});
 	mainmenu.addItem("Exit", "exit");
 

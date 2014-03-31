@@ -598,11 +598,13 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glViewport(nvp[0] = this->xpos + 1, nvp[1] = rc.bottom - rc.top - (this->ypos + this->height) + 1, nvp[2] = this->width - 1, nvp[3] = this->height - 12 - 1);
 		}
 
+		// Set up projection matrix for solar map
 		glMatrixMode(GL_PROJECTION);
 		glGetDoublev(GL_PROJECTION_MATRIX, proj);
 		glLoadIdentity();
-	/*	glOrtho(-1., 1., -1., 1., -1., 1.);*/
-		glOrtho(-fx, fx, -fy, fy, -1. / p->range, 1. / p->range);
+		// Set depth of orthogonal projection 100 times the radius of the solar system.
+		// The system may contain objects that exceeds declared radius.
+		glOrtho(-fx, fx, -fy, fy, -100. / p->range, 100. / p->range);
 		glMatrixMode(GL_MODELVIEW);
 
 		glPushMatrix();

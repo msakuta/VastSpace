@@ -330,15 +330,16 @@ coordsys Orbit saturn{
 }
 */
 
-/*
+
 coordsys "Alpha Centauri"{
 	extraname "α Cen"
 	extraname "Rigil Kentaurus"
 	extraname "Toliman"
 	extraname "Bungla"
 	extraname "Gliese 559"
+	cs_radius 1e10
 	solarsystem
-#	galactic_coord 315.8 -0.7 4.22*LY
+	galactic_coord 315.8 -0.7 4.22*LY
 	equatorial_coord 219.899 -60.835401 4.22*LY
 	bookmark "Alpha Centauri"
 	coordsys Barycenter barycenter{
@@ -396,8 +397,8 @@ coordsys "Alpha Centauri"{
 		pos .2*LY 0 0
 		spectral M5.5Ve
 	}
-	coordsys Orbit hypo{
-		fullname "Hypothetical Planet System"
+	coordsys Orbit a{
+		fullname "Rigil Centaurus B a"
 		cs_radius 1000000
 		orbits "B"
 		orbit_radius 57909100
@@ -406,7 +407,8 @@ coordsys "Alpha Centauri"{
 		ascending_node 48.4257
 		eccentricity 0.205630
 		showorbit
-		astro TextureSphere "Hypothetical Planet"{
+		astro TextureSphere a{
+			fullname "Rigil Centaurus B a"
 			radius 2439.7
 			mass 3.3022e23
 			color afafaf
@@ -414,8 +416,9 @@ coordsys "Alpha Centauri"{
 			spherehit
 			texture mer0muu2.jpg
 		}
-		coordsys Orbit hypoo{
-			orbits "Hypothetical Planet"
+		coordsys Orbit orbit{
+			orbits "a"
+			showorbit
 			orbit_radius 10000
 			fullname "Hypo orbit"
 			warp
@@ -425,4 +428,4 @@ coordsys "Alpha Centauri"{
 	}
 
 }
-*/
+

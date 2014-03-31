@@ -417,66 +417,42 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 	}
 	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT && cs->toOrbitCS()->orbit_home){
 		const OrbitCS *a = cs->toOrbitCS();
-		int j;
-		double (*cuts)[2], rad;
 		const Astrobj *home = a->orbit_home;
-		Vec3d spos, apos, apos0;
-		Mat4d mat, qmat, rmat, lmat;
-		Quatd q;
-		double smia;
-		cuts = CircleCuts(64);
-		spos = vwcs->tocs(home->pos, home->parent);
+
+		// Cache circle divisions
+		const int divides = 64;
+		double (*cuts)[2] = CircleCuts(divides);
+
+		// Obtain orbit center position
+		Vec3d spos = vwcs->tocs(home->pos, home->parent);
 		params->apos0 = vwcs->tocs(cs->pos, cs->parent);
-		apos = this->rot.trans(apos0);
-		mat = vwcs->tocsim(home->parent);
-		qmat = a->orbit_axis.tomat4();
-		rad = a->orbit_rad;
-		smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
+
+		// Calculate local orbit matrix
+		Mat4d qmat = a->orbit_axis.tomat4();
+		double rad = a->orbit_rad;
+		// Semi-minor axis
+		double smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
 		qmat.scalein(rad, smia, rad);
+		// Adjust for elliptical orbit
 		if(a->eccentricity != 0.)
 			qmat.translatein(a->eccentricity, 0, 0);
-		rmat = mat * qmat;
+		Mat4d mat = vwcs->tocsim(home->parent);
+		Mat4d rmat = mat * qmat;
 		rmat.vec3(3) += spos;
-		lmat = params->viewmat * rmat;
+
+		// Obtain a matrix to convert local orbit coordinates to viewing coordinates.
+		Mat4d lmat = params->viewmat * rmat;
 		glColor4ub(255,191,255,255);
+
+		// Actually draw the (possibly flattened) ring.
 		glBegin(GL_LINE_LOOP);
-		for(j = 0; j < 64; j++){
-			avec3_t v, vr;
-			v[0] = 0 + cuts[j][0];
-			v[1] = 0 + cuts[j][1];
-			v[2] = 0;
-			mat4vp3(vr, lmat, v);
-/*			VECADDIN(vr, spos);*/
-			glVertex3dv(vr);
-		}
+		for(int j = 0; j < divides; j++)
+			glVertex3dv(lmat.vp3(Vec3d(cuts[j][0], cuts[j][1], 0)));
 		glEnd();
-#if 1
+
+		// Draw the orbit name
 		params->name = cs->fullname ? cs->fullname : cs->name;
 		params->rad = cs->csrad;
-/*		drawSolarMapItem(params);*/
-#else
-		md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);
-		glPointSize(md < hitrad * hitrad ? 5 : 3);
-		glColor4ub(191,255,191,255);
-		glBegin(GL_POINTS);
-		glVertex3dv(apos0);
-		glEnd();
-		if(md < hitrad * hitrad){
-			avec3_t vofs, vofs0 = {0};
-			vofs0[1] = *ofs;
-			quatirot(vofs, rot, vofs0);
-			glColor4ub(255,255,191,255);
-			if(*ofs == 0.)
-				VECCPY(pos, apos0);
-			glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);
-			*ofs -= hitrad * 1.5;
-			gldprintf(cs->fullname ? cs->fullname : cs->name);
-		}
-/*		glBegin(GL_LINES);
-		glVertex3dv(pointer);
-		glVertex3dv(apos);
-		glEnd();*/
-#endif
 	}
 	if((cs->flags & (CS_EXTENT | CS_ISOLATED)) == (CS_EXTENT | CS_ISOLATED) && 0 < cs->aorder.size()){
 		Vec3d spos, apos;

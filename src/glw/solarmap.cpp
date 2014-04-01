@@ -275,63 +275,70 @@ GLwindowSolarMap::GLwindowSolarMap(Game *game, const char *title, Player *apl) :
 	p->focusa = NULL;
 }
 
+/// \brief Generalized single item renderer on the map.
+///
+/// The item in question can be an Entity, a teleport location, an Astrobj or other thing.
 int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 	double hitrad = params->hitrad;
-	GLwindowSolarMap *p = this;
 	const CoordSys *sol = params->sol;
-	const Vec3d &apos0 = params->apos0;
 	const char *name = params->name;
-	int *iofs = params->iofs;
+	int &iofs = *params->iofs;
 	Vec3d &pos = *params->pos;
 
-	GLwindow *wnd = p;
-	double md;
-	double h = this->height - 12;
-	double range = sol->csrad * p->range;
+	// Pre-calculate the map prange and other params
+	double range = sol->csrad * this->range;
+	Vec3d apos = this->rot.trans(params->apos0) + params->org * -sol->csrad;
+	double md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
 	int ret = 0;
 
-	Vec3d apos = p->rot.trans(apos0) + params->org * -sol->csrad;
-	md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
+	// The color can vary depending on type of the item.
 	glColor4ubv(params->pointcolor);
+
+	// If the item's apparent radius in the map is comparable to a pixel's size,
+	// draw a circle that indicate the radius of the item.
 	if(4 * range / this->width < params->rad){
-		double (*cuts)[2];
-		int i;
-		cuts = CircleCuts(16);
+		double (*cuts)[2] = CircleCuts(16);
 		glBegin(params->solid ? GL_POLYGON : GL_LINE_LOOP);
-		for(i = 0; i < 16; i++){
+		for(int i = 0; i < 16; i++){
 			glVertex3d(apos[0] + params->rad * cuts[i][0], apos[1] + params->rad * cuts[i][1], apos[2]);
 		}
 		glEnd();
 	}
-	{
-		glPointSize(GLfloat(md < hitrad * hitrad ? 5 : 3));
-		glBegin(GL_POINTS);
-		glVertex3dv(apos);
-		glEnd();
-	}
+
+	// Render a dot at the item's position in the solar map.
+	glPointSize(GLfloat(md < hitrad * hitrad ? 5 : 3));
+	glBegin(GL_POINTS);
+	glVertex3dv(apos);
+	glEnd();
+
+	// Process only if the item is near the mouse cursor.
 	if(md < hitrad * hitrad && params->name){
-		double screeny;
-		if(*iofs == 0){
-/*			VECSADD(apos, org, -sol->rad);*/
-			VECSCALE(pos, apos, 1. / range);
-		}
-		screeny = pos[1] + 2. * *iofs / h;
+		// Initialize position at the first item in the vicinity
+		if(iofs == 0)
+			pos = apos / range;
+
+		GLWrect cr = clientRect();
+		double screeny = pos[1] + 2. * iofs / cr.height();
 		glPushMatrix();
 		glLoadIdentity();
-		if((1. - screeny) * h / 2. - 10 < params->mousey && params->mousey < (1. - screeny) * h / 2. + 0){
+		// Screen position of the item
+		const double screenPos = (1. - screeny) * cr.height() / 2.;
+		// Determine if the mouse is over the item.  If so, remember the reference to the item
+		// and paint background of the item to indicate that the item can be selected.
+		if(screenPos - 10 < params->mousey && params->mousey < screenPos){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
 			glVertex3d(pos[0], screeny, 0.);
 			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny, 0.);
-			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny + 2. * 10 / height, 0.);
-			glVertex3d(pos[0], screeny + 2. * 10 / h, 0.);
+			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny + 2. * 10 / cr.height(), 0.);
+			glVertex3d(pos[0], screeny + 2. * 10 / cr.height(), 0.);
 			glEnd();
 			ret = 1;
 		}
+		// Draw the title string of the item
 		glColor4ubv(params->textcolor);
-		glRasterPos3d(pos[0], pos[1] + 2. * *iofs / h, pos[2]);
-/*				glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);*/
-		*iofs -= 10;
+		glRasterPos3d(pos[0], pos[1] + 2. * iofs / cr.height(), pos[2]);
+		iofs -= 10; // Shift offset
 		gldprintf(name);
 		glPopMatrix();
 	}

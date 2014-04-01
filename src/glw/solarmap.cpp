@@ -440,12 +440,22 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 
 		// Obtain a matrix to convert local orbit coordinates to viewing coordinates.
 		Mat4d lmat = params->viewmat * rmat;
-		glColor4ub(255,191,255,255);
+		// Remember the vector for repeated scalar products.
+		const Vec3d projVec = lmat.transpose().vec3(2);
 
 		// Actually draw the (possibly flattened) ring.
 		glBegin(GL_LINE_LOOP);
-		for(int j = 0; j < divides; j++)
-			glVertex3dv(lmat.vp3(Vec3d(cuts[j][0], cuts[j][1], 0)));
+		for(int j = 0; j < divides; j++){
+			Vec3d v(cuts[j][0], cuts[j][1], 0);
+
+			// Determine whether the ring segment vector is pointing toward or away from the player.
+			// lmat.transpose().dvp3(v) would yield the same result, but this one's more optimal.
+			if(0 <= projVec.sp(v))
+				glColor4f(1., 0.75, 1., 1.); // Draw the near side of the orbit with brighter color.
+			else
+				glColor4f(0.5, 0.75 * 0.5, 0.5, 1.); // The other side is darker.
+			glVertex3dv(lmat.vp3(v));
+		}
 		glEnd();
 
 		// Draw the orbit name

@@ -448,7 +448,7 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 		// Obtain a matrix to convert local orbit coordinates to viewing coordinates.
 		Mat4d lmat = params->viewmat * rmat;
 		// Remember the vector for repeated scalar products.
-		const Vec3d projVec = lmat.transpose().vec3(2);
+		const Vec3d projVec = lmat.tvec3(2);
 
 		// Actually draw the (possibly flattened) ring.
 		glBegin(GL_LINE_LOOP);

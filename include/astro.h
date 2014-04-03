@@ -77,6 +77,10 @@ public:
 	virtual OrbitCS *toOrbitCS();
 	virtual Barycenter *toBarycenter();
 
+	/// Returns if orbit center or home is available.
+	CoordSys *getOrbitCenter(){return orbit_center ? (CoordSys*)orbit_center : (CoordSys*)orbit_home;}
+	const CoordSys *getOrbitCenter()const{return orbit_center ? (CoordSys*)orbit_center : (CoordSys*)orbit_home;}
+
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
 	virtual void updateInt(double dt);

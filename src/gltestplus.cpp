@@ -339,7 +339,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		}
 
 		bool parentBarycenter = a->orbit_center;
-		if((a->orbit_home || parentBarycenter) && a->flags2 & OCS_SHOWORBIT){
+		if((a->orbit_home || parentBarycenter) && a->getShowOrbit()){
 			int j;
 			double (*cuts)[2], rad;
 			const CoordSys *home = parentBarycenter ? a->orbit_center : a->orbit_home;

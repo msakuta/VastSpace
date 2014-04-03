@@ -387,9 +387,10 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 			}
 		}
 	}
-	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT && cs->toOrbitCS()->orbit_home){
-		const OrbitCS *a = cs->toOrbitCS();
-		const Astrobj *home = a->orbit_home;
+	const OrbitCS *orbit = cs->toOrbitCS();
+	if(orbit && orbit->getShowOrbit() && orbit->getOrbitCenter()){
+		const OrbitCS *a = orbit;
+		const CoordSys *home = a->getOrbitCenter();
 
 		// Obtain orbit center position
 		Vec3d spos = vwcs->tocs(home->pos, home->parent);

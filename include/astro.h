@@ -10,9 +10,6 @@
 
 /* Codes relating astronautics. */
 
-// OrbitCS::flags2
-#define OCS_SHOWORBIT 1
-
 // astrobj::flags shares with coordsys::flags, so use bits only over 16
 #define AO_DELETE         0x00000002 /* marked as to be deleted, share with coordsys */
 #define AO_PLANET         0x00010000
@@ -54,7 +51,6 @@ public:
 	Quatd orbit_axis; ///< normal vector to orbit plane
 	double orbit_phase; ///< phase at which position of a cycle
 	double eccentricity; ///< orbital element
-	int flags2;
 public:
 	enum OrbitType{
 		NoOrbit, ///< Not orbiting
@@ -81,12 +77,21 @@ public:
 	CoordSys *getOrbitCenter(){return orbit_center ? (CoordSys*)orbit_center : (CoordSys*)orbit_home;}
 	const CoordSys *getOrbitCenter()const{return orbit_center ? (CoordSys*)orbit_center : (CoordSys*)orbit_home;}
 
+	bool getShowOrbit()const{return flags2 & OCS_SHOWORBIT;}
+	void setShowOrbit(bool b);
+
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
 	virtual void updateInt(double dt);
 	std::vector<OrbitCS*> orbiters;
 	enum OrbitType orbitType;
 	int enable;
+
+	// OrbitCS::flags2
+	static const int OCS_SHOWORBIT = 1;
+	/// Hide internal flags from the public
+	int flags2;
+
 	double inclination, loan, aop;
 };
 
@@ -132,5 +137,19 @@ public:
 protected:
 	static SQInteger sqf_get(HSQUIRRELVM v);
 };
+
+
+
+
+//-----------------------------------------------------------------------------
+//    Inline Implementation
+//-----------------------------------------------------------------------------
+
+inline void OrbitCS::setShowOrbit(bool b){
+	if(!b)
+		flags2 &= ~OCS_SHOWORBIT;
+	else
+		flags2 |= OCS_SHOWORBIT;
+}
 
 #endif

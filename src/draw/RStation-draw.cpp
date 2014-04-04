@@ -6,6 +6,8 @@
 #include "draw/material.h"
 #include "astrodraw.h"
 #include "draw/WarDraw.h"
+#include "draw/mqoadapt.h"
+#include "draw/OpenGLState.h"
 #include "glw/PopupMenu.h"
 #include "Viewer.h"
 #include "Game.h"
@@ -15,10 +17,9 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 
+Model *RStation::model = NULL;
+
 void RStation::draw(wardraw_t *wd){
-	static int init = 0;
-	static suf_t *sufbase = NULL;
-	static suftex_t *suft;
 	if(!w)
 		return;
 
@@ -29,19 +30,13 @@ void RStation::draw(wardraw_t *wd){
 
 	draw_healthbar(this, wd, this->health / getMaxHealth(), 3., this->occupytime / 10., this->ru / RSTATION_MAX_RU);
 
-	if(init == 0) do{
-		sufbase = CallLoadSUF("models/rstation.bin");
-		if(!sufbase) break;
-		CacheSUFMaterials(sufbase);
-		suft = AllocSUFTex(sufbase);
-		init = 1;
-	} while(0);
-	if(!sufbase){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos, 33. * RSTATION_SCALE, col);
+	static OpenGLState::weak_ptr<bool> init;
+	if(init == 0){
+		model = LoadMQOModel("models/rstation.mqo");
+		init.create(*openGLState);
 	}
-	else{
+
+	if(model){
 		static const double normal[3] = {0., 1., 0.};
 		const double scale = RSTATION_SCALE;
 
@@ -50,7 +45,7 @@ void RStation::draw(wardraw_t *wd){
 		gldScaled(scale);
 		gldMultQuat(this->rot);
 		glScalef(-1, 1, -1);
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
+		DrawMQOPose(model, NULL);
 		glPopMatrix();
 	}
 }

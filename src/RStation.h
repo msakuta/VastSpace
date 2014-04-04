@@ -5,6 +5,7 @@
 #define SPACEWAR_H
 #include "Entity.h"
 #include "judge.h"
+#include "Model-forward.h"
 
 
 #define VOLUME_PER_RU 100. /* 1 RU = 100m^3 */
@@ -48,6 +49,7 @@ public:
 protected:
 	static HitBox rstation_hb[];
 	static int numof_rstation_hb;
+	static Model *model;
 };
 
 #endif

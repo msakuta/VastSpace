@@ -66,10 +66,8 @@ stellarContext <- {
 	LY= 9.4605284e12
 };
 
-// Assign event handler for CoordSys::readFile. Because Squirrel does not allow class static variables to be altered
-// after definition, we must introduce one extra layer of indirection to make it modifiable, or give it up to make class
-// member.
-::CoordSys.readFile[0] = function(cs, varlist, name, ...){
+// Define an event handler to process unhandled stellar file definition directives.
+function stellarReadFile(cs, varlist, name, ...){
 
 	// Define temporary function that take varlist as a free variable.
 	local eval = function(s)/*:(varlist)*/{

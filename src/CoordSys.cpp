@@ -1069,19 +1069,15 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 
 		// This code is somewhat similar to sqa_console_command.
 		try{
+			// Try to delegate the directive to a Squirrel function.
 			sq_pushroottable(v);
-			sq_pushstring(v, _SC("CoordSys"), -1);
-			sq_get(v, -2);
-			sq_pushstring(v, _SC("readFile"), -1);
-			sq_get(v, -2);
-			sq_pushinteger(v, 0);
-
-			if(SQ_FAILED(sq_get(v, -2))) // readFile
+			sq_pushstring(v, _SC("stellarReadFile"), -1);
+			if(SQ_FAILED(sq_get(v, -2))) // stellarReadFile
 				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
-			sq_pushroottable(v); // readFile root
+			sq_pushroottable(v); // stellarReadFile root
 			CoordSys::sq_pushobj(v, this); // readFile root cs
 
-			sq_newtable(v); // readFile root cs defineTable
+			sq_newtable(v); // stellarReadFile root cs defineTable
 			for(const varlist *vl = sc.vl; vl; vl = vl->next){
 				for(int i = 0; i < vl->c; i++){
 					sq_pushstring(v, vl->l[i].name, -1);
@@ -1744,9 +1740,6 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	register_closure(v, _SC("_cmp"), sqf_cmp);
-	sq_pushstring(v, _SC("readFile"), -1);
-	sq_newarray(v, 1);
-	sq_newslot(v, -3, SQFalse); // The last argument is important to designate the readFile handler is static.
 	sq_createslot(v, -3);
 	return true;
 }

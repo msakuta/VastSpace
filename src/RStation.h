@@ -1,10 +1,17 @@
+/** \file
+ * \brief Definition of RStation class.
+ */
 #ifndef SPACEWAR_H
 #define SPACEWAR_H
 #include "Entity.h"
+#include "judge.h"
 
 
 #define VOLUME_PER_RU 100. /* 1 RU = 100m^3 */
+#define RSTATION_MAX_RU 10000.
+#define RSTATION_SCALE .1
 
+/// \brief A stationary large structure that generate the resources over time.
 class RStation : public Entity{
 public:
 	typedef Entity st;
@@ -38,6 +45,9 @@ public:
 	double ru;
 	double occupytime;
 	int occupyrace;
+protected:
+	static HitBox rstation_hb[];
+	static int numof_rstation_hb;
 };
 
 #endif

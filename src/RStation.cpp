@@ -1,31 +1,18 @@
+/** \file
+ * \brief Implementation of RStation class.
+ */
 #include "RStation.h"
 #include "EntityRegister.h"
 #include "Warpable.h"
-#include "draw/material.h"
 #include "Player.h"
 #include "Bullet.h"
-//#include "entity_p.h"
-#include "astrodraw.h"
-#include "Viewer.h"
 #include "CoordSys.h"
 #include "cmd.h"
-//#include "glwindow.h"
-#include "judge.h"
-//#include "sensor.h"
 #include "serial_util.h"
-#include "draw/WarDraw.h"
 #include "glw/PopupMenu.h"
 #include "tent3d.h"
 extern "C"{
-#include <clib/suf/sufdraw.h>
-#include <clib/suf/sufbin.h>
-#include <clib/gl/gldraw.h>
-#include <clib/c.h>
 #include <clib/mathdef.h>
-#include <clib/avec3.h>
-#include <clib/amat4.h>
-#include <clib/aquat.h>
-#include <clib/timemeas.h>
 }
 
 #ifdef NDEBUG
@@ -33,8 +20,6 @@ extern "C"{
 #endif
 
 
-#define RSTATION_SCALE .1
-#define RSTATION_MAX_RU 10000.
 
 double g_rstation_occupy_time = 10.;
 
@@ -42,7 +27,7 @@ double g_rstation_occupy_time = 10.;
 
 static const double rstation_sc[3] = {.05, .055, .075};
 /*static const double beamer_sc[3] = {.05, .05, .05};*/
-static HitBox rstation_hb[] = {
+HitBox RStation::rstation_hb[] = {
 	HitBox(Vec3d(0., 0., -22. * RSTATION_SCALE), Quatd(0,0,0,1), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
 	HitBox(Vec3d(-22. * RSTATION_SCALE, 0., 0.), Quatd(0,SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
 	HitBox(Vec3d(0., 0.,  22. * RSTATION_SCALE), Quatd(1,0,0,0), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
@@ -51,6 +36,7 @@ static HitBox rstation_hb[] = {
 	HitBox(Vec3d(0., -5. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(5. * RSTATION_SCALE, 5. * RSTATION_SCALE, 5. * RSTATION_SCALE)),
 	HitBox(Vec3d(0., 10. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(.5 * RSTATION_SCALE, 10. * RSTATION_SCALE, .5 * RSTATION_SCALE)),
 };
+int RStation::numof_rstation_hb = numof(rstation_hb);
 
 RStation::RStation(WarField *aw) : st(aw){
 	mass = 1e7;
@@ -164,92 +150,6 @@ void RStation::anim(double dt){
 	}
 }
 
-void RStation::draw(wardraw_t *wd){
-	static int init = 0;
-	static suf_t *sufbase = NULL;
-	static suftex_t *suft;
-	if(!w)
-		return;
-
-	/* cull object */
-/*	if(scepter_cull(pt, wd))
-		return;*/
-	wd->lightdraws++;
-
-	draw_healthbar(this, wd, this->health / getMaxHealth(), 3., this->occupytime / 10., this->ru / RSTATION_MAX_RU);
-
-	if(init == 0) do{
-		sufbase = CallLoadSUF("models/rstation.bin");
-		if(!sufbase) break;
-		CacheSUFMaterials(sufbase);
-		suft = AllocSUFTex(sufbase);
-		init = 1;
-	} while(0);
-	if(!sufbase){
-		double pos[3];
-		GLubyte col[4] = {255,255,0,255};
-		gldPseudoSphere(pos, 33. * RSTATION_SCALE, col);
-	}
-	else{
-		static const double normal[3] = {0., 1., 0.};
-		const double scale = RSTATION_SCALE;
-
-		glPushMatrix();
-		gldTranslate3dv(this->pos);
-		gldScaled(scale);
-		gldMultQuat(this->rot);
-		glScalef(-1, 1, -1);
-		DecalDrawSUF(sufbase, SUF_ATR, NULL, suft, NULL, NULL);
-		glPopMatrix();
-	}
-}
-
-void RStation::drawtra(wardraw_t *wd){
-	if(!wd->vw->gc->cullFrustum(this->pos, 35.)){
-		int i, n = 3;
-		static const avec3_t pos0[] = {
-			{0, 20.5 * RSTATION_SCALE, 0},
-			{4.71 * RSTATION_SCALE, 0, -33.7 * RSTATION_SCALE},
-			{-4.71 * RSTATION_SCALE, 0, -33.7 * RSTATION_SCALE},
-			{4.71 * RSTATION_SCALE, 0, 33.7 * RSTATION_SCALE},
-			{-4.71 * RSTATION_SCALE, 0, 33.7 * RSTATION_SCALE},
-			{33.7 * RSTATION_SCALE, 0, -4.71 * RSTATION_SCALE},
-			{-33.7 * RSTATION_SCALE, 0, -4.71 * RSTATION_SCALE},
-			{33.7 * RSTATION_SCALE, 0, 4.71 * RSTATION_SCALE},
-			{-33.7 * RSTATION_SCALE, 0, 4.71 * RSTATION_SCALE},
-		};
-		avec3_t pos;
-		double rad = .05;
-		Mat4d mat;
-		double t;
-		GLubyte col[4] = {255, 31, 31, 255};
-		transform(mat);
-
-		/* color calculation of static navlights */
-		t = fmod(game->player->gametime * .3, 2.);
-		if(t < 1.){
-			rad *= (t + 1.) / 2.;
-			col[3] = GLubyte(col[3] * t);
-		}
-		else{
-			rad *= (2. - t + 1.) / 2.;
-			col[3] *= GLubyte(2. - t);
-		}
-		for(i = 0 ; i < numof(pos0); i++){
-			mat4vp3(pos, mat, pos0[i]);
-			gldSpriteGlow(pos, rad, col, wd->vw->irot);
-		}
-		for(i = 0; i < numof(rstation_hb); i++){
-			glPushMatrix();
-			gldTranslate3dv(this->pos);
-			gldTranslate3dv(rstation_hb[i].org);
-			Mat4d rot = rstation_hb[i].rot.tomat4();
-			glMultMatrixd(rot);
-			hitbox_draw(this, rstation_hb[i].sc);
-			glPopMatrix();
-		}
-	}
-}
 
 int RStation::takedamage(double damage, int hitpart){
 	Teline3List *tell = w->getTeline3d();
@@ -306,3 +206,8 @@ Entity::Props RStation::props()const{
 //	ret.push_back(cpplib::dstring("RUs: ") << ru << "/" << RSTATION_MAX_RU);
 	return ret;
 }
+
+#ifdef DEDICATED
+void RStation::draw(WarDraw*){}
+void RStation::drawtra(WarDraw*){}
+#endif

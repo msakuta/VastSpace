@@ -345,6 +345,9 @@
     <ClCompile Include="..\src\audio\playSound.cpp">
       <Filter>Sources\audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\draw\RStation-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">

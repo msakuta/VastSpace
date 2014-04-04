@@ -420,10 +420,11 @@ coordsys "Alpha Centauri"{
 			orbits "a"
 			showorbit
 			orbit_radius 10000
-			fullname "Hypo orbit"
+			fullname "Rigil Centaurus B a"
 			warp
 			teleport
-			bookmark "Hypo orbit"
+			bookmark "Rigil Centaurus B a"
+			rstation 0 -25
 		}
 	}
 

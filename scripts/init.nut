@@ -131,6 +131,13 @@ function stellarReadFile(cs, varlist, name, ...){
 	}
 	else if(name == "sol_coord"){
 	}
+	else if(name == "rstation"){
+		local rs = cs.addent("RStation", Vec3d(
+			0 < vargv.len() ? vargv[0].tofloat() : 0,
+			1 < vargv.len() ? vargv[1].tofloat() : 0,
+			2 < vargv.len() ? vargv[2].tofloat() : 0));
+		return 1;
+	}
 	return 0;
 };
 

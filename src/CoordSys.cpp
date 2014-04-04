@@ -891,20 +891,6 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
 		return true;
 	}
-	else if(!strcmp(s, "rstation")){
-/*		extern struct player *ppl;
-		warf_t *w;
-		entity_t *pt;
-		if(cs->w)
-			w = cs->w;
-		else
-			w = spacewar_create(cs, ppl);
-		pt = RstationNew(w);
-		pt->pos[0] = 1 < argc ? calc3(&argv[1], vl, NULL) : 0.;
-		pt->pos[1] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-		pt->pos[2] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;*/
-		return true;
-	}
 	else if(!strcmp(s, "addent")){
 		WarField *w;
 		Entity *pt;

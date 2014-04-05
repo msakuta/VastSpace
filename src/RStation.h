@@ -3,21 +3,21 @@
  */
 #ifndef SPACEWAR_H
 #define SPACEWAR_H
-#include "Entity.h"
+#include "ModelEntity.h"
 #include "judge.h"
 #include "Model-forward.h"
 
 
 #define VOLUME_PER_RU 100. /* 1 RU = 100m^3 */
 #define RSTATION_MAX_RU 10000.
-#define RSTATION_SCALE .1
 
 /// \brief A stationary large structure that generate the resources over time.
-class RStation : public Entity{
+class RStation : public ModelEntity{
 public:
-	typedef Entity st;
-	RStation(Game *game) : st(game){}
+	typedef ModelEntity st;
+	RStation(Game *game) : st(game){init();}
 	RStation(WarField *w);
+	void init();
 	virtual const char *idname()const;
 	virtual const char *classname()const;
 	static const unsigned classid;
@@ -32,6 +32,7 @@ public:
 	virtual void anim(double dt);
 	virtual void draw(wardraw_t *wd);
 	virtual void drawtra(wardraw_t *wd);
+	void drawOverlay(WarDraw*)override;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void cockpitview(Vec3d &pos, Quatd &rot, int seatid)const;
 //static void rstation_control(struct entity*, warf_t*, const input_t *inputs, double dt);
@@ -50,6 +51,13 @@ protected:
 	static HitBox rstation_hb[];
 	static int numof_rstation_hb;
 	static Model *model;
+	static double modelScale;
+	static double hitRadius;
+	static double defaultMass;
+	static double maxHealthValue;
+	static HitBoxList hitboxes;
+	static HSQOBJECT overlayProc;
+	static NavlightList navlights;
 };
 
 #endif

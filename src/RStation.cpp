@@ -11,6 +11,7 @@
 #include "serial_util.h"
 #include "glw/PopupMenu.h"
 #include "tent3d.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -23,28 +24,37 @@ extern "C"{
 
 double g_rstation_occupy_time = 10.;
 
-#define SQRT2P2 (M_SQRT2/2.)
-
-static const double rstation_sc[3] = {.05, .055, .075};
-/*static const double beamer_sc[3] = {.05, .05, .05};*/
-HitBox RStation::rstation_hb[] = {
-	HitBox(Vec3d(0., 0., -22. * RSTATION_SCALE), Quatd(0,0,0,1), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	HitBox(Vec3d(-22. * RSTATION_SCALE, 0., 0.), Quatd(0,SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	HitBox(Vec3d(0., 0.,  22. * RSTATION_SCALE), Quatd(1,0,0,0), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	HitBox(Vec3d(22. * RSTATION_SCALE, 0., 0.), Quatd(0,-SQRT2P2,0,SQRT2P2), Vec3d(9. * RSTATION_SCALE, .29 * RSTATION_SCALE, 10. * RSTATION_SCALE)),
-	HitBox(Vec3d(0., 0., 0), Quatd(0,0,0,1), Vec3d(11. * RSTATION_SCALE, .29 * RSTATION_SCALE, 11. * RSTATION_SCALE)),
-	HitBox(Vec3d(0., -5. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(5. * RSTATION_SCALE, 5. * RSTATION_SCALE, 5. * RSTATION_SCALE)),
-	HitBox(Vec3d(0., 10. * RSTATION_SCALE, 0), Quatd(0,0,0,1), Vec3d(.5 * RSTATION_SCALE, 10. * RSTATION_SCALE, .5 * RSTATION_SCALE)),
-};
-int RStation::numof_rstation_hb = numof(rstation_hb);
+double RStation::modelScale = 0.1;
+double RStation::hitRadius = 4.;
+double RStation::defaultMass = 1e7;
+double RStation::maxHealthValue = 1500000.;
+HitBoxList RStation::hitboxes;
+HSQOBJECT RStation::overlayProc = sq_nullobj();
+ModelEntity::NavlightList RStation::navlights;
 
 RStation::RStation(WarField *aw) : st(aw){
-	mass = 1e7;
+	init();
+	mass = defaultMass;
 	race = -1;
-	health = 1500000.;
+	health = getMaxHealth();
 	ru = 1000.;
 	occupytime = g_rstation_occupy_time;
 	occupyrace = -1;
+}
+
+void RStation::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/RStation.nut"),
+			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
+			MassProcess(defaultMass) <<=
+			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
+			HitboxProcess(hitboxes) <<=
+			SqCallbackProcess(overlayProc, "drawOverlay") <<=
+			NavlightsProcess(navlights));
+		initialized = true;
+	}
 }
 
 const char *RStation::idname()const{return "rstation";}
@@ -54,7 +64,7 @@ Entity::EntityRegister<RStation> RStation::entityRegister("RStation");
 const char *RStation::dispname()const{return "Resource St.";}
 bool RStation::isTargettable()const{return true;}
 bool RStation::isSelectable()const{return true;}
-double RStation::getMaxHealth()const{return 1500000.;}
+double RStation::getMaxHealth()const{return maxHealthValue;}
 
 void RStation::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -71,7 +81,7 @@ void RStation::unserialize(UnserializeContext &sc){
 }*/
 
 double RStation::getHitRadius()const{
-	return 4.;
+	return hitRadius;
 }
 
 void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
@@ -182,14 +192,15 @@ int RStation::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 	double sc[3];
 	double best = dt, retf;
 	int reti = 0, i, n;
-	for(n = 0; n < numof(rstation_hb); n++){
+	for(n = 0; n < hitboxes.size(); n++){
+		HitBox &hb = hitboxes[n];
 		Vec3d org;
 		Quatd rot;
-		org = this->rot.itrans(rstation_hb[n].org);
+		org = this->rot.itrans(hb.org);
 		org += this->pos;
-		rot = this->rot * rstation_hb[n].rot;
+		rot = this->rot * hb.rot;
 		for(i = 0; i < 3; i++)
-			sc[i] = rstation_hb[n].sc[i] + rad;
+			sc[i] = hb.sc[i] + rad;
 		Vec3d n;
 		if((jHitBox(org, sc, rot, src, dir, 0., best, &retf, retp, &n)) && (retf < best)){
 			best = retf;

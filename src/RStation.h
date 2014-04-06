@@ -17,9 +17,6 @@ public:
 	RStation(Game *game) : st(game){init();}
 	RStation(WarField *w);
 	void init();
-	virtual const char *idname()const;
-	virtual const char *classname()const;
-	static const unsigned classid;
 	static EntityRegister<RStation> entityRegister;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
@@ -34,12 +31,7 @@ public:
 	void drawOverlay(WarDraw*)override;
 	virtual int takedamage(double damage, int hitpart);
 	virtual void cockpitview(Vec3d &pos, Quatd &rot, int seatid)const;
-//static void rstation_control(struct entity*, warf_t*, const input_t *inputs, double dt);
-//static int rstation_getrot(struct entity *pt, warf_t *w, double (*rot)[16]);
-//static const char *rstation_idname(entity_t *pt){ return "rstation"; }
-//static const char *rstation_classname(entity_t *pt){ return "Resource Station"; }
 	virtual int popupMenu(PopupMenu &list);
-//static void rstation_postframe(entity_t *);
 	virtual int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *ret_normal);
 	virtual Props props()const;
 
@@ -47,8 +39,6 @@ public:
 	double occupytime;
 	int occupyrace;
 protected:
-	static HitBox rstation_hb[];
-	static int numof_rstation_hb;
 	static Model *model;
 	static gltestp::dstring modelFile;
 	static double modelScale;

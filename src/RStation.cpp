@@ -16,9 +16,6 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 
-#ifdef NDEBUG
-#define hitbox_draw
-#endif
 
 
 
@@ -63,9 +60,6 @@ void RStation::init(){
 	}
 }
 
-const char *RStation::idname()const{return "rstation";}
-const char *RStation::classname()const{return "RStation";}
-const unsigned RStation::classid = registerClass("RStation", Conster<RStation>);
 Entity::EntityRegister<RStation> RStation::entityRegister("RStation");
 const char *RStation::dispname()const{return "Resource St.";}
 bool RStation::isTargettable()const{return true;}
@@ -81,10 +75,6 @@ void RStation::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> ru >> occupytime >> occupyrace;
 }
-
-/*double *__fastcall rstation_ru(rstation_t *p){
-	return &p->ru;
-}*/
 
 double RStation::getHitRadius()const{
 	return hitRadius;
@@ -111,11 +101,6 @@ void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 	ofs = q.trans(src[seatid]);
 	pos = this->pos + ofs;
 }
-
-/*static int rstation_getrot(struct entity *pt, warf_t *w, double (*rot)[16]){
-	quat2imat(*rot, pt->rot);
-	return w->pl->control != pt;
-}*/
 
 int RStation::popupMenu(PopupMenu &pm){
 	pm.appendSeparator();

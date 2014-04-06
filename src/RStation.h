@@ -9,7 +9,6 @@
 
 
 #define VOLUME_PER_RU 100. /* 1 RU = 100m^3 */
-#define RSTATION_MAX_RU 10000.
 
 /// \brief A stationary large structure that generate the resources over time.
 class RStation : public ModelEntity{
@@ -58,6 +57,8 @@ protected:
 	static HitBoxList hitboxes;
 	static HSQOBJECT overlayProc;
 	static NavlightList navlights;
+	static double maxRU;
+	static double defaultRU;
 };
 
 #endif

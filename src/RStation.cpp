@@ -31,13 +31,15 @@ double RStation::maxHealthValue = 1500000.;
 HitBoxList RStation::hitboxes;
 HSQOBJECT RStation::overlayProc = sq_nullobj();
 ModelEntity::NavlightList RStation::navlights;
+double RStation::maxRU = 10000.;
+double RStation::defaultRU = 1000.; ///< Initial RUs
 
 RStation::RStation(WarField *aw) : st(aw){
 	init();
 	mass = defaultMass;
 	race = -1;
 	health = getMaxHealth();
-	ru = 1000.;
+	ru = defaultRU;
 	occupytime = g_rstation_occupy_time;
 	occupyrace = -1;
 }
@@ -52,7 +54,9 @@ void RStation::init(){
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			HitboxProcess(hitboxes) <<=
 			SqCallbackProcess(overlayProc, "drawOverlay") <<=
-			NavlightsProcess(navlights));
+			NavlightsProcess(navlights) <<=
+			SingleDoubleProcess(maxRU, "maxRU") <<=
+			SingleDoubleProcess(defaultRU, "defaultRU"));
 		initialized = true;
 	}
 }
@@ -121,10 +125,10 @@ void RStation::anim(double dt){
 	Entity *pt2 = NULL;
 	int orace = -1, mix = 0;
 
-	if(p->ru + dt * 2. < RSTATION_MAX_RU)
+	if(p->ru + dt * 2. < maxRU)
 		p->ru += dt * 2.;
 	else
-		p->ru = RSTATION_MAX_RU;
+		p->ru = maxRU;
 
 	/* Rstations can only be occupied by staying space vehicles in distance of
 	  5 kilometers with no other races. */

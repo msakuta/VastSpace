@@ -50,6 +50,7 @@ protected:
 	static NavlightList navlights;
 	static double maxRU;
 	static double defaultRU;
+	static double maxOccupyTime;
 };
 
 #endif

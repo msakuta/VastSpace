@@ -29,7 +29,7 @@ void RStation::draw(WarDraw *wd){
 		return;*/
 	wd->lightdraws++;
 
-	draw_healthbar(this, wd, this->health / getMaxHealth(), 3., this->occupytime / 10., this->ru / maxRU);
+	draw_healthbar(this, wd, this->health / getMaxHealth(), 3., this->occupytime / maxOccupyTime, this->ru / maxRU);
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(init == 0){

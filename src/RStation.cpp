@@ -17,10 +17,6 @@ extern "C"{
 }
 
 
-
-
-double g_rstation_occupy_time = 10.;
-
 double RStation::modelScale = 0.1;
 gltestp::dstring RStation::modelFile = "models/rstation.mqo";
 double RStation::hitRadius = 4.;
@@ -31,6 +27,7 @@ HSQOBJECT RStation::overlayProc = sq_nullobj();
 ModelEntity::NavlightList RStation::navlights;
 double RStation::maxRU = 10000.;
 double RStation::defaultRU = 1000.; ///< Initial RUs
+double RStation::maxOccupyTime = 10.;
 
 RStation::RStation(WarField *aw) : st(aw){
 	init();
@@ -38,7 +35,7 @@ RStation::RStation(WarField *aw) : st(aw){
 	race = -1;
 	health = getMaxHealth();
 	ru = defaultRU;
-	occupytime = g_rstation_occupy_time;
+	occupytime = maxOccupyTime;
 	occupyrace = -1;
 }
 
@@ -55,7 +52,8 @@ void RStation::init(){
 			SqCallbackProcess(overlayProc, "drawOverlay") <<=
 			NavlightsProcess(navlights) <<=
 			SingleDoubleProcess(maxRU, "maxRU") <<=
-			SingleDoubleProcess(defaultRU, "defaultRU"));
+			SingleDoubleProcess(defaultRU, "defaultRU") <<=
+			SingleDoubleProcess(maxOccupyTime, "maxOccupyTime"));
 		initialized = true;
 	}
 }
@@ -144,10 +142,10 @@ void RStation::anim(double dt){
 			p->occupytime -= dt;
 	}
 	else{
-		if(p->occupytime + dt < g_rstation_occupy_time)
+		if(p->occupytime + dt < maxOccupyTime)
 			p->occupytime += dt;
 		else
-			p->occupytime = g_rstation_occupy_time;
+			p->occupytime = maxOccupyTime;
 	}
 }
 

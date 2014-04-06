@@ -21,6 +21,7 @@ mass <- 1.e7;
 maxhealth <- 1500000.;
 maxRU <- 10000.;
 defaultRU <- 1000.;
+maxOccupyTime <- 10.;
 
 navlights <- [
 	{pos = Vec3d(0, 20.5, 0) * modelScale, radius = 0.05, pattern = "Triangle"},

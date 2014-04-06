@@ -25,6 +25,7 @@ extern "C"{
 double g_rstation_occupy_time = 10.;
 
 double RStation::modelScale = 0.1;
+gltestp::dstring RStation::modelFile = "models/rstation.mqo";
 double RStation::hitRadius = 4.;
 double RStation::defaultMass = 1e7;
 double RStation::maxHealthValue = 1500000.;
@@ -49,6 +50,7 @@ void RStation::init(){
 	if(!initialized){
 		SqInit(game->sqvm, _SC("models/RStation.nut"),
 			ModelScaleProcess(modelScale) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
 			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=

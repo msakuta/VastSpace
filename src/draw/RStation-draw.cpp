@@ -33,7 +33,7 @@ void RStation::draw(WarDraw *wd){
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(init == 0){
-		model = LoadMQOModel("models/rstation.mqo");
+		model = LoadMQOModel(modelFile);
 		init.create(*openGLState);
 	}
 

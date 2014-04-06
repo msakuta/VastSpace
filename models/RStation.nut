@@ -1,6 +1,7 @@
 local SQRT2P2 = sqrt(2)/2;
 
 modelScale <- 0.1;
+modelFile <- "models/rstation.mqo";
 
 hitbox <- [
 	[Vec3d(0, 0, -22) * modelScale, Quatd(0,0,0,1), Vec3d(9, 0.29, 10) * modelScale],

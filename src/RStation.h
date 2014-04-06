@@ -50,6 +50,7 @@ protected:
 	static HitBox rstation_hb[];
 	static int numof_rstation_hb;
 	static Model *model;
+	static gltestp::dstring modelFile;
 	static double modelScale;
 	static double hitRadius;
 	static double defaultMass;

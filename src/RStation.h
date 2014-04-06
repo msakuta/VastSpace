@@ -39,6 +39,8 @@ public:
 	double occupytime;
 	int occupyrace;
 protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 	static Model *model;
 	static gltestp::dstring modelFile;
 	static double modelScale;

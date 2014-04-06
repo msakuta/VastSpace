@@ -203,8 +203,28 @@ int RStation::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt
 
 Entity::Props RStation::props()const{
 	Props ret = st::props();
-//	ret.push_back(cpplib::dstring("RUs: ") << ru << "/" << RSTATION_MAX_RU);
+	ret.push_back(gltestp::dstring("RUs: ") << ru << "/" << maxRU);
 	return ret;
+}
+
+SQInteger RStation::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!strcmp(name, _SC("ru"))){
+		sq_pushfloat(v, ru);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger RStation::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!strcmp(name, _SC("ru"))){
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f)))
+			ru = f;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
 }
 
 #ifdef DEDICATED

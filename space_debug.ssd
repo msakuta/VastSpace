@@ -414,7 +414,7 @@ coordsys "Alpha Centauri"{
 			color afafaf
 			planet
 			spherehit
-			texture mer0muu2.jpg
+#			texture mer0muu2.jpg
 		}
 		coordsys Orbit orbit{
 			orbits "a"

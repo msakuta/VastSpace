@@ -59,6 +59,7 @@ void RStation::init(){
 }
 
 Entity::EntityRegister<RStation> RStation::entityRegister("RStation");
+Entity::EntityStatic &RStation::getStatic()const{return entityRegister;}
 const char *RStation::dispname()const{return "Resource St.";}
 bool RStation::isTargettable()const{return true;}
 bool RStation::isSelectable()const{return true;}

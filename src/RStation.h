@@ -18,6 +18,7 @@ public:
 	RStation(WarField *w);
 	void init();
 	static EntityRegister<RStation> entityRegister;
+	EntityStatic &getStatic()const override;
 	virtual const char *dispname()const;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

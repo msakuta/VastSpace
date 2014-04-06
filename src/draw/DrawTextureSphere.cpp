@@ -646,7 +646,7 @@ bool DrawTextureSphere::draw(){
 	}
 
 	// Allocate surface texture
-	do if(ptexlist && !*ptexlist && texname){
+	do if(ptexlist && !*ptexlist && texname && texname[0]){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);

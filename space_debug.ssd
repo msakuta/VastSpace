@@ -424,7 +424,7 @@ coordsys "Alpha Centauri"{
 			warp
 			teleport
 			bookmark "Rigil Centaurus B a"
-			rstation 0 -5 0
+			rstation 0 -1 -5
 		}
 	}
 

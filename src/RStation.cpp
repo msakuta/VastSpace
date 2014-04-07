@@ -12,6 +12,7 @@
 #include "glw/PopupMenu.h"
 #include "tent3d.h"
 #include "SqInitProcess-ex.h"
+#include "btadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -20,7 +21,7 @@ extern "C"{
 double RStation::modelScale = 0.1;
 gltestp::dstring RStation::modelFile = "models/rstation.mqo";
 double RStation::hitRadius = 4.;
-double RStation::defaultMass = 1e7;
+double RStation::defaultMass = 1e10; ///< An object with this mass probably should be kinematic.
 double RStation::maxHealthValue = 1500000.;
 HitBoxList RStation::hitboxes;
 HSQOBJECT RStation::overlayProc = sq_nullobj();
@@ -148,6 +149,17 @@ void RStation::anim(double dt){
 		else
 			p->occupytime = maxOccupyTime;
 	}
+
+	// Try to follow bbody's motion, although this object is so massive that
+	// it won't move easily.
+	if(bbody){
+		this->pos = btvc(bbody->getWorldTransform().getOrigin());
+		this->rot = btqc(bbody->getOrientation());
+		this->velo = btvc(bbody->getLinearVelocity());
+		this->omg = btvc(bbody->getAngularVelocity());;
+	}
+
+	st::anim(dt);
 }
 
 
@@ -226,6 +238,11 @@ SQInteger RStation::sqSet(HSQUIRRELVM v, const SQChar *name){
 	}
 	else
 		return st::sqSet(v, name);
+}
+
+bool RStation::buildBody(){
+	static btCompoundShape *shape = NULL;
+	return buildBodyByHitboxes(hitboxes, shape);
 }
 
 #ifdef DEDICATED

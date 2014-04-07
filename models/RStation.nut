@@ -17,7 +17,7 @@ hitbox <- [
 
 hitRadius <- 4.;
 
-mass <- 1.e7;
+mass <- 1.e10;
 maxhealth <- 1500000.;
 maxRU <- 10000.;
 defaultRU <- 1000.;

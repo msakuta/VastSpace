@@ -42,6 +42,9 @@ public:
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
+	bool buildBody()override;
+
 	static Model *model;
 	static gltestp::dstring modelFile;
 	static double modelScale;

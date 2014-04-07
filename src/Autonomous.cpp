@@ -925,6 +925,53 @@ short ModelEntity::bbodyMask()const{
 	return ~0;
 }
 
+/// This function is shared by many Entities with models which consist of simple hitboxes.
+bool ModelEntity::buildBodyByHitboxes(const HitBoxList &hitboxes, btCompoundShape *&shape){
+	if(!w || bbody)
+		return false;
+	WarSpace *ws = *w;
+	if(ws && ws->bdw){
+		if(!shape){
+			shape = new btCompoundShape();
+			for(int i = 0; i < hitboxes.size(); i++){
+				const Vec3d &sc = hitboxes[i].sc;
+				const Quatd &rot = hitboxes[i].rot;
+				const Vec3d &pos = hitboxes[i].org;
+				btBoxShape *box = new btBoxShape(btvc(sc));
+				btTransform trans = btTransform(btqc(rot), btvc(pos));
+				shape->addChildShape(trans, box);
+			}
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
+
+		// The space does not have friction whatsoever.
+//		rbInfo.m_linearDamping = .5;
+//		rbInfo.m_angularDamping = .25;
+		bbody = new btRigidBody(rbInfo);
+
+//		bbody->setSleepingThresholds(.0001, .0001);
+
+		//add the body to the dynamics world
+//		ws->bdw->addRigidBody(bbody);
+		return true;
+	}
+	return false;
+}
+
 /// \brief Gets the hitbox list for trace hit test, instead of Bullet dynamics engine's ray trace with the shape.
 /// \return Defaults NULL, which means no hitbox is used and Bullet dynamics engine does the job.
 HitBoxList *Autonomous::getTraceHitBoxes()const{

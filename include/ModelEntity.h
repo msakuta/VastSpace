@@ -8,6 +8,7 @@
 #include "Game.h"
 #include "SqInitProcess.h"
 #include "judge.h"
+#include <btBulletDynamicsCommon.h> // btCompoundShape
 #ifdef DEDICATED
 typedef unsigned GLuint;
 #else
@@ -99,6 +100,13 @@ protected:
 	/// \param transmat The transformation for the lights. Can be NULL to specify
 	///        the default transformation, i.e. return value of transform().
 	void drawNavlights(WarDraw *wd, const NavlightList &navlights, const Mat4d *transmat = NULL);
+
+	/// \brief An utility function that constructs a shape by a HitBoxList.
+	/// \param hitboxes The input hitboxes, probably loaded from a initialization script.
+	/// \param shapeStorage The static storage for a class to store shape object for reuse.
+	///        Entities have distinct shapes, but the same Entity class instances usually share
+	///        the shape.  In this case, pass a static shape object to this argument.
+	bool buildBodyByHitboxes(const HitBoxList &hitboxes, btCompoundShape *&shapeStorage);
 };
 
 

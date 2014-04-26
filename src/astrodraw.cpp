@@ -1560,36 +1560,58 @@ bool StarEnum::newCell(){
 			RandomSequence rs = this->rs;
 			std::vector<gltestp::dstring> &newnames = nameCache[gkey];
 			for(int c = 0; c < numstars; c++){
-				std::string word;
-				std::string next;
-				int length = rs.next() % 10 + 1;
-				for(int n = 0; n < length; n++){
-					int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
-					int sylcount = 0;
-					for(SyllableSet::iterator it = sylsDB.begin(); it != sylsDB.end(); ++it){
-						if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2])
-							sylcount += it->second.*keyname;
-					}
+				gltestp::dstring name;
+				do{
+					std::string word;
+					std::string next;
+					int length = rs.next() % 10 + 1;
 
-					if(sylcount == 0)
-						break;
+					// Penalize 3 character names by rolling the dice again, because 3 character names
+					// often collide.
+					if(length == 1)
+						length = rs.next() % 10 + 1;
 
-					int r = rs.next() % sylcount;
-					int key = 0;
-					for(auto it = sylsDB.begin(); it != sylsDB.end(); ++it){
-						if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2]){
-							key += it->second.*keyname;
-							if(r < key){
-								next = it->first;
-								word = word + next[0];
-								break;
+					for(int n = 0; n < length; n++){
+						int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
+						int sylcount = 0;
+						for(SyllableSet::iterator it = sylsDB.begin(); it != sylsDB.end(); ++it){
+							if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2])
+								sylcount += it->second.*keyname;
+						}
+
+						if(sylcount == 0)
+							break;
+
+						int r = rs.next() % sylcount;
+						int key = 0;
+						for(auto it = sylsDB.begin(); it != sylsDB.end(); ++it){
+							if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2]){
+								key += it->second.*keyname;
+								if(r < key){
+									next = it->first;
+									word = word + next[0];
+									break;
+								}
 							}
 						}
 					}
-				}
-				word += next[1];
-				word += next[2];
-				newnames.push_back(gltestp::dstring() << char(toupper(word[0])) << word.substr(1).c_str());
+					name << char(toupper(word[0])) << word.substr(1).c_str() << next.substr(1,2).c_str();
+
+					// Regenerate name if there is a collision of name in the sector.
+					// Note that we cannot avoid collisions among sectors because their order of
+					// creation is unpredictable.
+					bool duplicate = false;
+					for(auto ename : newnames){
+						if(ename == name){
+							duplicate = true;
+							break;
+						}
+					}
+					if(duplicate)
+						continue;
+				}while(false);
+
+				newnames.push_back(name);
 			}
 		}
 	}

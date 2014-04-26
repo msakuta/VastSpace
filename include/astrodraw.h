@@ -53,7 +53,7 @@ public:
 	/// \param originPos The center of star generation.  This is usually the player's viewpoint.
 	/// \param numSectors Count of sectors to generate around the center.
 	///        Higher value generates more stars at once, but it may cost more computing time.
-	StarEnum(const Vec3d &originPos, int numSectors);
+	StarEnum(const Vec3d &originPos, int numSectors, bool genNames = false);
 
 	/// \brief Retrieves next star in this star generation sequence.
 	/// \param pos Position of generated star.
@@ -71,6 +71,7 @@ protected:
 	int numSectors; ///< Size of cube measured in sectors to enumerate
 	int gx, gy, gz;
 	int numstars;
+	bool genNames;
 	bool newCell();
 };
 

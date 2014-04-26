@@ -47,6 +47,8 @@ extern "C"{
 #include <strstream>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
+#include <tuple>
 
 
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
@@ -1502,12 +1504,15 @@ static GLuint drawStarTexture(){
 	return texname;
 }
 
-StarEnum::StarEnum(const Vec3d &plpos, int numSectors) : plpos(plpos), cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5)), numSectors(numSectors){
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) : plpos(plpos), cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5)), numSectors(numSectors), genNames(genNames){
 	gx = cen[0] - numSectors;
 	gy = cen[1] - numSectors;
 	gz = cen[2] - numSectors - 1; // Start from one minuse the first sector.
 	newCell();
 }
+
+typedef std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> > NameCache;
+static NameCache nameCache;
 
 bool StarEnum::newCell(){
 	do{
@@ -1526,6 +1531,68 @@ bool StarEnum::newCell(){
 	// Start a new random number sequence for this sector.
 	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
 
+	if(genNames){
+		static bool sylsInit = false;
+		struct Syllable{
+			char key[3];
+			int count;
+			int first;
+		};
+		typedef std::map<std::string, Syllable> SyllableSet;
+		static SyllableSet sylsDB;
+		if(!sylsInit){
+			std::ifstream syls("syl.txt");
+			int sylcount;
+			syls >> sylcount;
+			while(!syls.eof()){
+				std::string sylstr;
+				Syllable syl;
+				syls >> sylstr >> syl.count >> syl.first;
+				memcpy(syl.key, sylstr.c_str(), sizeof syl.key);
+				sylsDB[sylstr] = syl;
+			}
+			sylsInit = true;
+		}
+
+		std::tuple<int,int,int> gkey(gx,gy,gz);
+		std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> >::iterator names = nameCache.find(gkey);
+		if(names == nameCache.end()){
+			RandomSequence rs = this->rs;
+			std::vector<gltestp::dstring> &newnames = nameCache[gkey];
+			for(int c = 0; c < numstars; c++){
+				std::string word;
+				std::string next;
+				int length = rs.next() % 10 + 1;
+				for(int n = 0; n < length; n++){
+					int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
+					int sylcount = 0;
+					for(SyllableSet::iterator it = sylsDB.begin(); it != sylsDB.end(); ++it){
+						if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2])
+							sylcount += it->second.*keyname;
+					}
+
+					if(sylcount == 0)
+						break;
+
+					int r = rs.next() % sylcount;
+					int key = 0;
+					for(auto it = sylsDB.begin(); it != sylsDB.end(); ++it){
+						if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2]){
+							key += it->second.*keyname;
+							if(r < key){
+								next = it->first;
+								word = word + next[0];
+								break;
+							}
+						}
+					}
+				}
+				word += next[1];
+				word += next[2];
+				newnames.push_back(gltestp::dstring() << char(toupper(word[0])) << word.substr(1).c_str());
+			}
+		}
+	}
 	return true;
 }
 
@@ -1542,8 +1609,13 @@ bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
 	pos[0] += gx - .5 - plpos[0];
 	pos[1] += gy - .5 - plpos[1];
 	pos[2] += gz - .5 - plpos[2];
-	if(name != NULL)
-		*name = "lambda";
+	if(name != NULL){
+		std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> >::iterator names = nameCache.find(std::tuple<int,int,int>(gx,gy,gz));
+		if(names != nameCache.end() && numstars < names->second.size())
+			*name = names->second[numstars];
+		else
+			*name = "ERROR name";
+	}
 	return true;
 }
 

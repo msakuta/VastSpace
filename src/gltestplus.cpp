@@ -485,13 +485,13 @@ void Game::drawindics(Viewer *vw){
 		const int star_num = 1;
 		Vec3d pos;
 		gltestp::dstring name;
-		StarEnum se(plpos, star_num);
+		StarEnum se(plpos, star_num, true);
 		while(se.next(pos, &name)){
 			double cellsize = 1.;
 			Vec3d wpos = vw->rot.vp3(pos);
 			double wx = -wpos[0] / wpos[2];
 			double wy = -wpos[1] / wpos[2];
-			if(-1 < wx && wx < 1 && -1 < wy && wy < 1 && 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)
+			if(wx < -1 || 1 < wx || wy < -1 || 1 < wy || 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)
 				continue;
 			glPushMatrix();
 			glLoadIdentity();

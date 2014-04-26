@@ -1648,6 +1648,31 @@ RandomSequence *StarEnum::getRseq(){
 	return &rsStar;
 }
 
+static int cmd_find(int argc, char *argv[]){
+	if(argc <= 1){
+		for(auto it : nameCache){
+			for(auto it2 : it.second){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), it2.c_str());
+			}
+		}
+		CmdPrint("usage: find star_name");
+		return 0;
+	}
+	int count = 0;
+	for(auto it : nameCache){
+		for(auto it2 : it.second){
+			if(it2 == argv[1]){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), argv[1]);
+				count++;
+			}
+		}
+	}
+	if(!count)
+		CmdPrintf("No such a star found: %s", argv[1]);
+}
+
+StaticInitializer stin([](){CmdAdd("find", cmd_find);});
+
 void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
 	static int init = 0;
 	static GLuint listBright, listDark;

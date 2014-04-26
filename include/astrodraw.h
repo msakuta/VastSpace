@@ -3,6 +3,7 @@
 #include "astro.h"
 #include "Viewer.h"
 #include <clib/colseq/color.h>
+#include <cpplib/RandomSequence.h>
 #include <cpplib/quat.h>
 #ifdef _WIN32
 #define exit something_meanless
@@ -41,5 +42,37 @@ extern double g_star_glow_thresh;
 extern int g_invert_hyperspace;*/
 
 EXPORT void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun);
+
+
+/// \brief A class to enumerate randomly generated stars.
+///
+/// This routine had been embedded in drawstarback(), but it may be used by some other routines.
+class StarEnum{
+public:
+	/// \brief The constructor.
+	/// \param originPos The center of star generation.  This is usually the player's viewpoint.
+	/// \param numSectors Count of sectors to generate around the center.
+	///        Higher value generates more stars at once, but it may cost more computing time.
+	StarEnum(const Vec3d &originPos, int numSectors);
+
+	/// \brief Retrieves next star in this star generation sequence.
+	/// \param pos Position of generated star.
+	/// \param name Name of generated star.
+	bool next(Vec3d &pos, gltestp::dstring *name = NULL);
+
+	/// \brief Returns the random sequence for current star.
+	RandomSequence *getRseq();
+
+protected:
+	Vec3d plpos;
+	Vec3d cen;
+	RandomSequence rs; ///< Per-sector random number sequence
+	RandomSequence rsStar; ///< Per-star random number sequence
+	int numSectors; ///< Size of cube measured in sectors to enumerate
+	int gx, gy, gz;
+	int numstars;
+	bool newCell();
+};
+
 
 #endif

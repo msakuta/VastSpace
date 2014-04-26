@@ -36,6 +36,7 @@ extern "C"{
 #include <clib/c.h>
 }
 #include <clib/stats.h>
+#include <cpplib/CRC32.h>
 #include <cpplib/gl/cullplus.h>
 #include <gl/glu.h>
 #include <gl/glext.h>
@@ -1501,6 +1502,55 @@ static GLuint drawStarTexture(){
 	return texname;
 }
 
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors) : plpos(plpos), cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5)), numSectors(numSectors){
+	gx = cen[0] - numSectors;
+	gy = cen[1] - numSectors;
+	gz = cen[2] - numSectors - 1; // Start from one minuse the first sector.
+	newCell();
+}
+
+bool StarEnum::newCell(){
+	do{
+		// Advance indices to the next sector.
+		if(gz <= cen[2] + numSectors)
+			gz++;
+		else if(gy <= cen[1] + numSectors)
+			gy++, gz = cen[2] - numSectors;
+		else if(gx <= cen[0] + numSectors)
+			gx++, gy = cen[1] - numSectors, gz = cen[2] - numSectors;
+		else
+			return false;
+		numstars = int(g_star_num / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
+	}while(0 == numstars); // Skip sectors containing no stars
+
+	// Start a new random number sequence for this sector.
+	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
+}
+
+bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
+	if(numstars-- <= 0){
+		if(!newCell())
+			return false; // We have gone through all the cells.
+	}
+
+	pos[0] = drseq(&rs);
+	pos[1] = drseq(&rs); /* cover entire sky */
+	pos[2] = drseq(&rs);
+	pos[0] += gx - .5 - plpos[0];
+	pos[1] += gy - .5 - plpos[1];
+	pos[2] += gz - .5 - plpos[2];
+	if(name != NULL)
+		*name = "lambda";
+	return true;
+}
+
+RandomSequence *StarEnum::getRseq(){
+	// Return newly created random sequence instead of the sequence to generate stars in the main loop.
+	int buf[4] = {gx, gy, gz, numstars};
+	rsStar.init(crc32(buf, sizeof buf), 0);
+	return &rsStar;
+}
+
 void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
 	static int init = 0;
 	static GLuint listBright, listDark;
@@ -1654,7 +1704,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 #endif
 	{
 		int i;
-		struct random_sequence rs;
 		static struct cs2x *cs = NULL;
 		static struct cs2x_vertex_ex{
 			double pos[3];
@@ -1662,7 +1711,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		} *ver;
 //		FILE *fp;
 		double velo;
-		init_rseq(&rs, 1);
 		velo = vw->relative ? vw->velolen : 0.;
 #if STARLIST
 		init = 1;
@@ -1699,7 +1747,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		Vec3d gpos;
 		Vec3d plpos, npos;
 		GLubyte nearest_color[4];
-		Vec3d v0;
 /*		int v1[3];*/
 
 #if 0
@@ -1728,10 +1775,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 			plpos = csys->tocs(vw->pos, vw->cs) / cellsize;
 		}
 
-		for(i = 0; i < 3; i++){
-			cen[i] = (int)floor(plpos[i] + .5);
-		}
-
 		glPushMatrix();
 		glLoadIdentity();
 //		glcullInit(&glc, g_glcull.fov, avec3_000, mat4identity, g_glcull.znear, g_glcull.zfar);
@@ -1739,50 +1782,19 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 /*		tocs(v0, csys, vw->pos, vw->cs);
 		VECSCALEIN(v0, FIELD / GALAXY_EXTENT);*/
-		v0 = vec3_000 * 1. * FIELD;
-		v0[0] += FIELD / 2.;
-		v0[1] += FIELD / 2.;
-		v0[2] += FIELDZ / 2.;
 /*		VECCPY(v1, v0);*/
 /*		printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? g_galaxy_field[v1[0]][v1[1]][v1[2]][3] / 256. : 0.));*/
 
 		glPushAttrib(GL_TEXTURE_BIT | GL_POINT_BIT | GL_POLYGON_BIT | GL_ENABLE_BIT);
 
-		for(gx = cen[0] - NUMCELLS; gx <= cen[0] + NUMCELLS; gx++)
-		for(gy = cen[1] - NUMCELLS; gy <= cen[1] + NUMCELLS; gy++)
-		for(gz = cen[2] - NUMCELLS; gz <= cen[2] + NUMCELLS; gz++){
-		int numstars;
-		avec3_t v01;
-		init_rseq(&rs, (gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98);
-		VECCPY(v01, v0);
-		v01[0] = gx * cellsize;
-		v01[1] = gy * cellsize;
-		v01[2] = gz * cellsize;
-//		if(vw->gc->cullCone(v01, cellsize))
-//			continue;
-/*		VECSCALEIN(v01, FIELD / GALAXY_EXTENT);
-		VECADDIN(v01, v0);
-		numstars = drseq(&rs) * NUMSTARS * galaxy_get_star_density_pos(v01);*/
-		numstars = 1*int(NUMSTARS / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
-		for(i = 0; i < numstars; i++){
-			double pos[3], rvelo;
+		Vec3d pos;
+		StarEnum se(plpos, NUMCELLS);
+		while(se.next(pos)){
+			double rvelo;
 			double radius = radiusfactor;
 			GLubyte r, g, b;
 			int bri, current_nearest = 0;
-			pos[0] = drseq(&rs);
-			pos[1] = drseq(&rs); /* cover entire sky */
-			pos[2] = drseq(&rs);
 
-		/*	if(vw->cs == &solarsystem)*/{
-				double cellsize = 1.;
-				pos[0] += gx - .5 - plpos[0];
-/*				pos[0] = floor(pos[0] / cellsize) * cellsize + cellsize / 2. - pos[0];*/
-				pos[1] += gy - .5 - plpos[1];
-/*				pos[1] = floor(pos[1] / cellsize) * cellsize + cellsize / 2. - pos[1];*/
-				pos[2] += gz - .5 - plpos[2];
-/*				pos[2] = floor(pos[2] / cellsize) * cellsize + cellsize / 2. - pos[2];*/
-/*				VECSADD(pos, vw->pos, -1e-14);*/
-			}
 			radius /= 1. + VECLEN(pos);
 
 #if 1
@@ -1859,7 +1871,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 							rseq(&rs);
 						continue;
 					}*/
-					bri = setstarcolor(&r, &g, &b, &rs, rvelo, velo);
+					bri = setstarcolor(&r, &g, &b, se.getRseq(), rvelo, velo);
 					radius *= bri / 256.;
 					drawnstars++;
 /*					col[0] = r / 256.F;
@@ -1909,7 +1921,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 					glBegin(GL_POINTS);
 					pointstart = 1;
 				}
-				bri = setstarcolor(&r, &g, &b, &rs, rvelo, velo);
+				bri = setstarcolor(&r, &g, &b, se.getRseq(), rvelo, velo);
 				if(g_invert_hyperspace && LIGHT_SPEED < vw->velolen){
 					r = GLubyte(r * LIGHT_SPEED / vw->velolen);
 					g = GLubyte(g * LIGHT_SPEED / vw->velolen);
@@ -1918,7 +1930,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 				glColor4f(r / 255.f, g / 255.f, b / 255.f, GLfloat(255 * f * f));
 				glVertex3dv(pos);
 			}
-		}
 		}
 		if(glowstart){
 			glPopMatrix();

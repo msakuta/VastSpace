@@ -477,6 +477,34 @@ void Game::drawindics(Viewer *vw){
 //		projection(vw->frustum(g_space_near_clip, g_space_far_clip));
 		drawastro(vw, universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
+
+		extern double g_star_num;
+		const double cellsize = 1e13;
+		Vec3d plpos = universe->tocs(vw->pos, vw->cs) / cellsize;
+		Vec3d cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5));
+		const int star_num = 1;
+		Vec3d pos;
+		gltestp::dstring name;
+		StarEnum se(plpos, star_num);
+		while(se.next(pos, &name)){
+			double cellsize = 1.;
+			Vec3d wpos = vw->rot.vp3(pos);
+			double wx = -wpos[0] / wpos[2];
+			double wy = -wpos[1] / wpos[2];
+			if(-1 < wx && wx < 1 && -1 < wy && wy < 1 && 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)
+				continue;
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslated(wx, wy, -1.);
+			glBegin(GL_LINES);
+			glVertex2d(0., 0.);
+			glVertex2d(.05 * vw->fov, .05 * vw->fov);
+			glEnd();
+			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
+			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
+			glwPutTextureString(name);
+			glPopMatrix();
+		}
 	}
 	if(player->chase && player->chase->w){
 		wardraw_t wd;

@@ -1525,13 +1525,16 @@ bool StarEnum::newCell(){
 
 	// Start a new random number sequence for this sector.
 	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
+
+	return true;
 }
 
 bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
-	if(numstars-- <= 0){
+	if(numstars <= 0){
 		if(!newCell())
 			return false; // We have gone through all the cells.
 	}
+	numstars--;
 
 	pos[0] = drseq(&rs);
 	pos[1] = drseq(&rs); /* cover entire sky */

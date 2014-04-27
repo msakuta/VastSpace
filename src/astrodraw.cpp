@@ -1565,6 +1565,7 @@ bool StarEnum::newCell(){
 
 		typedef std::map<SylKey, std::vector<Syllable> > SyllableSet;
 		static SyllableSet sylsDB;
+		static std::vector<std::string> firstDB;
 		if(!sylsInit){
 			std::ifstream syls("syl.txt");
 			int sylcount;
@@ -1579,6 +1580,9 @@ bool StarEnum::newCell(){
 				if(it == sylsDB.end())
 					sylsDB[sylkey].clear();
 				sylsDB[sylkey].push_back(syl);
+
+				if(syl.first)
+					firstDB.push_back(sylstr);
 			}
 			sylsInit = true;
 		}
@@ -1607,9 +1611,7 @@ bool StarEnum::newCell(){
 						int sylcount = 0;
 
 						if(n == 0){
-							for(auto it : sylsDB)
-								for(auto it2 : it.second)
-									sylcount += it2.first;
+							sylcount = (int)firstDB.size();
 						}
 						else{
 							for(auto it : sylsDB[next])
@@ -1623,20 +1625,9 @@ bool StarEnum::newCell(){
 						int key = 0;
 
 						if(n == 0){
-							for(auto it : sylsDB){
-								bool gbreak = false;
-								for(auto v : it.second){
-									key += v.first;
-									if(r < key){
-										next = &v.key[1];
-										word += v.key[0];
-										gbreak = true;
-										break;
-									}
-								}
-								if(gbreak)
-									break;
-							}
+							const std::string &v = firstDB[r];
+							next = &v[1];
+							word += v[0];
 						}
 						else{
 							for(auto v : sylsDB[next]){

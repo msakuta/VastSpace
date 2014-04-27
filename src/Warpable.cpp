@@ -630,7 +630,7 @@ void Warpable::anim(double dt){
 		}
 
 		velo = (*pvelo).len();
-		desiredvelo = .5 * (warpdst - dstcspos).len();
+		desiredvelo = .5 * (p->warpdst - dstcspos).len();
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/

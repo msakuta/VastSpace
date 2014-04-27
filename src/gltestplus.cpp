@@ -116,6 +116,7 @@ int gl_wireframe = 0;
 //double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
+static int r_star_name_sectors = 1;
 static int cmdwnd = 0;
 //static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
@@ -482,10 +483,9 @@ void Game::drawindics(Viewer *vw){
 		const double cellsize = 1e13;
 		Vec3d plpos = universe->tocs(vw->pos, vw->cs) / cellsize;
 		Vec3d cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5));
-		const int star_num = 1;
 		Vec3d pos;
 		gltestp::dstring name;
-		StarEnum se(plpos, star_num, true);
+		StarEnum se(plpos, r_star_name_sectors, true);
 		while(se.next(pos, &name)){
 			double cellsize = 1.;
 			Vec3d wpos = vw->rot.vp3(pos);
@@ -2495,6 +2495,7 @@ int main(int argc, char *argv[])
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
+	CvarAdd("r_star_name_sectors", &r_star_name_sectors, cvar_int);
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);

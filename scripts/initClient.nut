@@ -258,6 +258,9 @@ if(!isServer()){
 client_old_init_Universe <- "init_Universe" in this ? init_Universe : null;
 
 function init_Universe(){
+	// The default star name sector radius settings
+	cmd("r_star_name_sectors " + (debugBuild() ? 1 : 2));
+
 	function callTest(){
 		print("Closing mainmenu" + mainmenu);
 		mainmenu.close();

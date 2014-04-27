@@ -1553,8 +1553,7 @@ bool StarEnum::newCell(){
 		struct Syllable{
 			int beginc;
 			int endc;
-			int first;
-			char key[3];
+			char str[3];
 
 			/// Predicate for bseach
 			static int cmp(const void *a, const void *b){
@@ -1570,22 +1569,7 @@ bool StarEnum::newCell(){
 		typedef std::map<SylKey, std::vector<Syllable> > SyllableSet;
 		static SyllableSet sylsDB;
 
-		struct First{
-			int beginc; ///< Cumulative probability
-			int endc;
-			char str[3];
-			/// Predicate for bseach
-			static int cmp(const void *a, const void *b){
-				int r = *(int*)a;
-				const First *f = (const First*)b;
-				if(f->beginc <= r && r < f->endc)
-					return 0;
-				else
-					return r - f->beginc;
-			}
-		};
-
-		static std::vector<First> firstDB;
+		static std::vector<Syllable> firstDB;
 		static int firstCount = 0;
 		if(!sylsInit){
 			std::ifstream syls("syl.txt");
@@ -1595,8 +1579,9 @@ bool StarEnum::newCell(){
 				std::string sylstr;
 				Syllable syl;
 				int count;
-				syls >> sylstr >> count >> syl.first;
-				memcpy(syl.key, sylstr.c_str(), sizeof syl.key);
+				int first;
+				syls >> sylstr >> count >> first;
+				memcpy(syl.str, sylstr.c_str(), sizeof syl.str);
 				SylKey sylkey(sylstr.c_str());
 				auto it = sylsDB.find(sylkey);
 				if(it == sylsDB.end()){
@@ -1609,10 +1594,10 @@ bool StarEnum::newCell(){
 				}
 				sylsDB[sylkey].push_back(syl);
 
-				if(syl.first){
-					First f;
+				if(first){
+					Syllable f;
 					f.beginc = firstCount;
-					firstCount += syl.first;
+					firstCount += first;
 					f.endc = firstCount;
 					std::copy(sylstr.begin(), sylstr.begin() + 3, f.str);
 					firstDB.push_back(f);
@@ -1639,14 +1624,7 @@ bool StarEnum::newCell(){
 						length = rs.next() % 10 + 1;
 
 					for(int n = 0; n < length; n++){
-						int sylcount = 0;
-
-						if(n == 0){
-							sylcount = firstCount;
-						}
-						else{
-							sylcount = sylsDB[next].back().endc;
-						}
+						int sylcount = n == 0 ? firstCount : sylsDB[next].back().endc;
 
 						if(sylcount == 0)
 							break;
@@ -1654,19 +1632,11 @@ bool StarEnum::newCell(){
 						int r = rs.next() % sylcount;
 						int key = 0;
 
-						if(n == 0){
-							const First *v = (const First*)std::bsearch(&r, &firstDB.front(), firstDB.size(), sizeof(firstDB.front()), First::cmp);
-							assert(v);
-							next = &v->str[1];
-							word += v->str[0];
-						}
-						else{
-							auto syls = sylsDB[next];
-							const Syllable *v = (const Syllable*)std::bsearch(&r, &syls.front(), syls.size(), sizeof(syls.front()), Syllable::cmp);
-							assert(v);
-							next = &v->key[1];
-							word += v->key[0];
-						}
+						auto &syls = n == 0 ? firstDB : sylsDB[next];
+						const Syllable *v = (const Syllable*)std::bsearch(&r, &syls.front(), syls.size(), sizeof(syls.front()), Syllable::cmp);
+						assert(v);
+						next = &v->str[1];
+						word += v->str[0];
 					}
 					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
 

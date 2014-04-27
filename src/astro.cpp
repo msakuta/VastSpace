@@ -493,6 +493,8 @@ static int tocs_children_invokes = 0;
 
 double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray, const Astrobj **rethit){
 	const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
+	if(!eis)
+		return 1.;
 	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 		const Astrobj *ahit = (*it)->toAstrobj();
 		if(ahit && ahit != a){

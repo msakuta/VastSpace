@@ -16,6 +16,9 @@
 #include "Frigate.h"
 #include "Game.h"
 #include "StaticInitializer.h"
+#include "astrodraw.h"
+#include "astrodef.h"
+#include "EntityCommand.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -173,6 +176,19 @@ void Autonomous::drawtra(wardraw_t *wd){
 	}
 }
 
+/// Menu item that executes a Entity command.  Should be in PopupMenu.h.
+template<typename T>
+struct EXPORT PopupMenuItemEntityCommand : public PopupMenuItem{
+	Player *player;
+	T cmd;
+	PopupMenuItemEntityCommand(gltestp::dstring title, Player *aplayer, T &acmd) : PopupMenuItem(title), player(aplayer), cmd(acmd){}
+	virtual void execute(){
+		for(auto it : player->selected)
+			it->command(&cmd);
+	}
+	virtual PopupMenuItem *clone()const{return new PopupMenuItemEntityCommand(*this);}
+};
+
 static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 	ClientGame *game = (ClientGame*)pv;
 	Player *player = game->player;
@@ -220,6 +236,25 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 		// The true solution would be that making teleport structure Serializable too.
 		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');
 	}
+
+	/// List up neighboring stars for warp destination.
+	if(!player->selected.empty()){
+		Entity *pe = *player->selected.begin();
+		Vec3d plpos = game->universe->tocs(pe->pos, pe->w->cs);
+		StarEnum se(plpos, 1, true);
+		Vec3d pos;
+		gltestp::dstring name;
+		while(se.next(pos, &name)){
+			char buf[128];
+			sprintf(buf, "%-12s: %lg LY", name.c_str(), (pos - plpos).len() / LIGHTYEAR_PER_KILOMETER);
+			WarpCommand wc;
+			wc.destcs = game->universe;
+			Vec3d delta = plpos - pos;
+			wc.destpos = pos + delta.norm() * 50000; // Offset 50000 km to avoid collision with the star
+			pm.append(new PopupMenuItemEntityCommand<WarpCommand>(buf, player, wc), false);
+		}
+	}
+
 //	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
 	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
 

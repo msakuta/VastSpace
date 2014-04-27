@@ -480,15 +480,13 @@ void Game::drawindics(Viewer *vw){
 //		drawCSOrbit(vw, &galaxysystem);
 
 		extern double g_star_num;
-		const double cellsize = 1e13;
-		Vec3d plpos = universe->tocs(vw->pos, vw->cs) / cellsize;
-		Vec3d cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5));
+		Vec3d plpos = universe->tocs(vw->pos, vw->cs);
 		Vec3d pos;
 		gltestp::dstring name;
 		StarEnum se(plpos, r_star_name_sectors, true);
 		while(se.next(pos, &name)){
 			double cellsize = 1.;
-			Vec3d wpos = vw->rot.vp3(pos);
+			Vec3d wpos = vw->rot.vp3((pos - plpos) / StarEnum::sectorSize);
 			double wx = -wpos[0] / wpos[2];
 			double wy = -wpos[1] / wpos[2];
 			if(wx < -1 || 1 < wx || wy < -1 || 1 < wy || 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)

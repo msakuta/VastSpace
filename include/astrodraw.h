@@ -63,9 +63,12 @@ public:
 	/// \brief Returns the random sequence for current star.
 	RandomSequence *getRseq();
 
+	/// Size of stellar sectors
+	static const double sectorSize;
+
 protected:
 	Vec3d plpos;
-	Vec3d cen;
+	Vec3i cen;
 	RandomSequence rs; ///< Per-sector random number sequence
 	RandomSequence rsStar; ///< Per-star random number sequence
 	int numSectors; ///< Size of cube measured in sectors to enumerate

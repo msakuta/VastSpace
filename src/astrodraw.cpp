@@ -1505,7 +1505,18 @@ static GLuint drawStarTexture(){
 	return texname;
 }
 
-StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) : plpos(plpos), cen((int)floor(plpos[0] + .5), (int)floor(plpos[1] + .5), (int)floor(plpos[2] + .5)), numSectors(numSectors), genNames(genNames){
+const double StarEnum::sectorSize = 1e13;
+
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) :
+	plpos(plpos),
+	cen(
+		(int)floor(plpos[0] / sectorSize + .5),
+		(int)floor(plpos[1] / sectorSize + .5),
+		(int)floor(plpos[2] / sectorSize + .5)
+	),
+	numSectors(numSectors),
+	genNames(genNames)
+{
 	gx = cen[0] - numSectors;
 	gy = cen[1] - numSectors;
 	gz = cen[2] - numSectors - 1; // Start from one minuse the first sector.
@@ -1668,12 +1679,10 @@ bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
 	}
 	numstars--;
 
-	pos[0] = drseq(&rs);
-	pos[1] = drseq(&rs); /* cover entire sky */
-	pos[2] = drseq(&rs);
-	pos[0] += gx - .5 - plpos[0];
-	pos[1] += gy - .5 - plpos[1];
-	pos[2] += gz - .5 - plpos[2];
+	pos[0] = (drseq(&rs) + gx - 0.5) * sectorSize;
+	pos[1] = (drseq(&rs) + gy - 0.5) * sectorSize;
+	pos[2] = (drseq(&rs) + gz - 0.5) * sectorSize;
+
 	if(name != NULL){
 		std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> >::iterator names = nameCache.find(std::tuple<int,int,int>(gx,gy,gz));
 		if(names != nameCache.end() && numstars < names->second.size())
@@ -1906,11 +1915,10 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		{
 		Mat4d relmat;
 		int pointstart = 0, glowstart = 0, nearest = 0, cen[3], gx = 0, gy = 0, gz, frameinvokes = 0;
-		const double cellsize = 1e13;
 		double radiusfactor = .03 * 1. / (1. + 10. / height) * 512. / vw->vp.m;
 //		GLcull glc;
 		Vec3d gpos;
-		Vec3d plpos, npos;
+		Vec3d npos;
 		GLubyte nearest_color[4];
 /*		int v1[3];*/
 
@@ -1933,12 +1941,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		}
 #endif
 
-		if(vw->cs == csys){
-			plpos = vw->pos / cellsize;
-		}
-		else{
-			plpos = csys->tocs(vw->pos, vw->cs) / cellsize;
-		}
+		Vec3d plpos = csys->tocs(vw->pos, vw->cs);
 
 		glPushMatrix();
 		glLoadIdentity();
@@ -1959,6 +1962,9 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 			double radius = radiusfactor;
 			GLubyte r, g, b;
 			int bri, current_nearest = 0;
+
+			pos -= plpos;
+			pos /= StarEnum::sectorSize;
 
 			radius /= 1. + VECLEN(pos);
 

@@ -1606,6 +1606,9 @@ bool StarEnum::newCell(){
 								return;
  					};
 
+					timemeas_t tm;
+					TimeMeasStart(&tm);
+
 					for(int n = 0; n < length; n++){
 						int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
 						int sylcount = 0;
@@ -1633,6 +1636,8 @@ bool StarEnum::newCell(){
 						});
 					}
 					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
+
+					CmdPrintf("namegen %lg %s", TimeMeasLap(&tm), name.c_str());
 
 					// Regenerate name if there is a collision of name in the sector.
 					// Note that we cannot avoid collisions among sectors because their order of

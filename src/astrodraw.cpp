@@ -1531,13 +1531,6 @@ struct SylKey{
 	}
 };
 
-static std::vector<gltestp::dstring> dumpList;
-
-static void dumpAtExit(){
-	for(auto it : dumpList)
-		CmdPrint(it);
-}
-
 bool StarEnum::newCell(){
 	do{
 		// Advance indices to the next sector.
@@ -1604,9 +1597,6 @@ bool StarEnum::newCell(){
 					if(length == 1)
 						length = rs.next() % 10 + 1;
 
-					timemeas_t tm;
-					TimeMeasStart(&tm);
-
 					for(int n = 0; n < length; n++){
 						int sylcount = 0;
 
@@ -1639,21 +1629,8 @@ bool StarEnum::newCell(){
 								}
 							}
 						}
-
-						volatile double tim = TimeMeasLap(&tm);
-						dumpList.push_back(gltestp::dstring() << "namegen-p " << tim << " " << r << "/" << sylcount << " " << word.c_str());
-
 					}
 					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
-
-					volatile double tim = TimeMeasLap(&tm);
-					dumpList.push_back(gltestp::dstring() << "namegen " << tim << " " << name.c_str());
-
-					static bool registeredAtExit = false;
-					if(!registeredAtExit){
-						registeredAtExit = true;
-						atexit(dumpAtExit);
-					}
 
 					// Regenerate name if there is a collision of name in the sector.
 					// Note that we cannot avoid collisions among sectors because their order of

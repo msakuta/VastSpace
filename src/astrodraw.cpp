@@ -1515,6 +1515,22 @@ StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) : plpos(pl
 typedef std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> > NameCache;
 static NameCache nameCache;
 
+struct SylKey{
+	char key[2];
+	SylKey(const char *key = NULL){
+		if(key != NULL){
+			this->key[0] = key[0];
+			this->key[1] = key[1];
+		}
+	}
+	bool operator<(const SylKey &o)const{
+		return this->key[0] != o.key[0] ? this->key[0] < o.key[0] : this->key[1] < o.key[1];
+	}
+	char operator[](int index)const{
+		return key[index];
+	}
+};
+
 bool StarEnum::newCell(){
 	do{
 		// Advance indices to the next sector.
@@ -1539,7 +1555,8 @@ bool StarEnum::newCell(){
 			int count;
 			int first;
 		};
-		typedef std::map<std::string, std::vector<Syllable> > SyllableSet;
+
+		typedef std::map<SylKey, std::vector<Syllable> > SyllableSet;
 		static SyllableSet sylsDB;
 		if(!sylsInit){
 			std::ifstream syls("syl.txt");
@@ -1550,7 +1567,7 @@ bool StarEnum::newCell(){
 				Syllable syl;
 				syls >> sylstr >> syl.count >> syl.first;
 				memcpy(syl.key, sylstr.c_str(), sizeof syl.key);
-				std::string sylkey = sylstr.substr(0,2);
+				SylKey sylkey(sylstr.c_str());
 				auto it = sylsDB.find(sylkey);
 				if(it == sylsDB.end())
 					sylsDB[sylkey].clear();
@@ -1568,7 +1585,7 @@ bool StarEnum::newCell(){
 				gltestp::dstring name;
 				do{
 					std::string word;
-					std::string next;
+					SylKey next;
 					int length = rs.next() % 10 + 1;
 
 					// Penalize 3 character names by rolling the dice again, because 3 character names
@@ -1608,14 +1625,14 @@ bool StarEnum::newCell(){
 						enumerate([&](Syllable &v){
 							key += v.*keyname;
 							if(r < key){
-								next = std::string(&v.key[1], 2);
+								next = &v.key[1];
 								word += v.key[0];
 								return false;
 							}
 							return true;
 						});
 					}
-					name << char(toupper(word[0])) << word.substr(1).c_str() << next.c_str();
+					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
 
 					// Regenerate name if there is a collision of name in the sector.
 					// Note that we cannot avoid collisions among sectors because their order of

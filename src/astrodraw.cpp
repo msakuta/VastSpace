@@ -1600,31 +1600,21 @@ bool StarEnum::newCell(){
 					if(length == 1)
 						length = rs.next() % 10 + 1;
 
-					auto enumFirst = [&](std::function<bool (Syllable&)> &process){
-						for(auto it : sylsDB)
-							for(auto it2 : it.second)
-								if(!process(it2))
-									return;
-					};
-					auto enumNext = [&](std::function<bool (Syllable&)> &process){
-						auto v2 = sylsDB[next];
-						for(auto it : v2)
-							if(!process(it))
-								return;
- 					};
-
 					timemeas_t tm;
 					TimeMeasStart(&tm);
 
 					for(int n = 0; n < length; n++){
-						int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
 						int sylcount = 0;
-						auto enumerate = n == 0 ? std::function<void (std::function<bool (Syllable&)>)>(enumFirst) : std::function<void (std::function<bool (Syllable&)>)>(enumNext);
 
-						enumerate([&](Syllable &v){
-							sylcount += v.*keyname;
-							return true;
-						});
+						if(n == 0){
+							for(auto it : sylsDB)
+								for(auto it2 : it.second)
+									sylcount += it2.first;
+						}
+						else{
+							for(auto it : sylsDB[next])
+								sylcount += it.count;
+						}
 
 						if(sylcount == 0)
 							break;
@@ -1632,20 +1622,42 @@ bool StarEnum::newCell(){
 						int r = rs.next() % sylcount;
 						int key = 0;
 
-						enumerate([&](Syllable &v){
-							key += v.*keyname;
-							if(r < key){
-								next = &v.key[1];
-								word += v.key[0];
-								return false;
+						if(n == 0){
+							for(auto it : sylsDB){
+								bool gbreak = false;
+								for(auto v : it.second){
+									key += v.first;
+									if(r < key){
+										next = &v.key[1];
+										word += v.key[0];
+										gbreak = true;
+										break;
+									}
+								}
+								if(gbreak)
+									break;
 							}
-							return true;
-						});
+						}
+						else{
+							for(auto v : sylsDB[next]){
+								key += v.count;
+								if(r < key){
+									next = &v.key[1];
+									word += v.key[0];
+									break;
+								}
+							}
+						}
+
+						volatile double tim = TimeMeasLap(&tm);
+						dumpList.push_back(gltestp::dstring() << "namegen-p " << tim << " " << r << "/" << sylcount << " " << word.c_str());
+
 					}
 					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
 
 					volatile double tim = TimeMeasLap(&tm);
 					dumpList.push_back(gltestp::dstring() << "namegen " << tim << " " << name.c_str());
+
 					static bool registeredAtExit = false;
 					if(!registeredAtExit){
 						registeredAtExit = true;

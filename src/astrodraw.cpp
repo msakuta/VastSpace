@@ -49,6 +49,7 @@ extern "C"{
 #include <iomanip>
 #include <fstream>
 #include <tuple>
+#include <functional>
 
 
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
@@ -1538,7 +1539,7 @@ bool StarEnum::newCell(){
 			int count;
 			int first;
 		};
-		typedef std::map<std::string, Syllable> SyllableSet;
+		typedef std::map<std::string, std::vector<Syllable> > SyllableSet;
 		static SyllableSet sylsDB;
 		if(!sylsInit){
 			std::ifstream syls("syl.txt");
@@ -1549,7 +1550,11 @@ bool StarEnum::newCell(){
 				Syllable syl;
 				syls >> sylstr >> syl.count >> syl.first;
 				memcpy(syl.key, sylstr.c_str(), sizeof syl.key);
-				sylsDB[sylstr] = syl;
+				std::string sylkey = sylstr.substr(0,2);
+				auto it = sylsDB.find(sylkey);
+				if(it == sylsDB.end())
+					sylsDB[sylkey].clear();
+				sylsDB[sylkey].push_back(syl);
 			}
 			sylsInit = true;
 		}
@@ -1571,31 +1576,46 @@ bool StarEnum::newCell(){
 					if(length == 1)
 						length = rs.next() % 10 + 1;
 
+					auto enumFirst = [&](std::function<bool (Syllable&)> &process){
+						for(auto it : sylsDB)
+							for(auto it2 : it.second)
+								if(!process(it2))
+									return;
+					};
+					auto enumNext = [&](std::function<bool (Syllable&)> &process){
+						auto v2 = sylsDB[next];
+						for(auto it : v2)
+							if(!process(it))
+								return;
+ 					};
+
 					for(int n = 0; n < length; n++){
 						int Syllable::*keyname = n == 0 ? &Syllable::first : &Syllable::count;
 						int sylcount = 0;
-						for(SyllableSet::iterator it = sylsDB.begin(); it != sylsDB.end(); ++it){
-							if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2])
-								sylcount += it->second.*keyname;
-						}
+						auto enumerate = n == 0 ? std::function<void (std::function<bool (Syllable&)>)>(enumFirst) : std::function<void (std::function<bool (Syllable&)>)>(enumNext);
+
+						enumerate([&](Syllable &v){
+							sylcount += v.*keyname;
+							return true;
+						});
 
 						if(sylcount == 0)
 							break;
 
 						int r = rs.next() % sylcount;
 						int key = 0;
-						for(auto it = sylsDB.begin(); it != sylsDB.end(); ++it){
-							if(next.size() < 3 || it->first[0] == next[1] && it->first[1] == next[2]){
-								key += it->second.*keyname;
-								if(r < key){
-									next = it->first;
-									word = word + next[0];
-									break;
-								}
+
+						enumerate([&](Syllable &v){
+							key += v.*keyname;
+							if(r < key){
+								next = std::string(&v.key[1], 2);
+								word += v.key[0];
+								return false;
 							}
-						}
+							return true;
+						});
 					}
-					name << char(toupper(word[0])) << word.substr(1).c_str() << next.substr(1,2).c_str();
+					name << char(toupper(word[0])) << word.substr(1).c_str() << next.c_str();
 
 					// Regenerate name if there is a collision of name in the sector.
 					// Note that we cannot avoid collisions among sectors because their order of

@@ -250,7 +250,7 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 			WarpCommand wc;
 			wc.destcs = game->universe;
 			Vec3d delta = plpos - pos;
-			wc.destpos = pos + delta.norm() * 50000; // Offset 50000 km to avoid collision with the star
+			wc.destpos = pos + delta.norm() * 5000000; // Offset 5000000 km to avoid collision with the star
 			pm.append(new PopupMenuItemEntityCommand<WarpCommand>(buf, player, wc), false);
 		}
 	}

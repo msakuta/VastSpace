@@ -24,6 +24,7 @@
 #include "draw/WarDraw.h"
 #include "glstack.h"
 #include "glsl.h"
+#include "astrodraw.h"
 #endif
 #include "dstring.h"
 #include "Game.h"
@@ -634,7 +635,37 @@ void Warpable::anim(double dt){
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
-		double sdist = (warpdst - dstcspos).slen();
+		double sdist = (this->warpdst - dstcspos).slen();
+		if(p->warpdstcs == game->universe && sdist < 1e10 * 1e10){
+			StarEnum se(dstcspos, 0, true);
+			Vec3d pos, bestPos;
+			gltestp::dstring name, bestName;
+			double bestDist = 1e100;
+			while(se.next(pos, &name)){
+				double dist = (pos - p->warpdst).len();
+				if(dist < bestDist){
+					bestDist = dist;
+					bestPos = pos;
+					bestName = name;
+				}
+			}
+			if(bestName.len()){
+				CoordSys *cs = warpdstcs->findcs(bestName);
+				if(!cs){
+					Star *child = new Star(bestName, p->warpdstcs);
+					child->pos = bestPos;
+					child->name = bestName;
+					child->rad = 12000;
+					child->spect = Star::G;
+					this->warpdst = child->tocs(this->warpdst, this->warpdstcs);
+					this->warpdstcs = child;
+				}
+				else{
+					this->warpdst = cs->tocs(this->warpdst, this->warpdstcs);
+					this->warpdstcs = cs;
+				}
+			}
+		}
 		if(sdist < 1. * 1. || capacitor <= 0. && velo < 1.){
 			if(sdist < warpdstcs->csrad * warpdstcs->csrad)
 				warp_collapse();

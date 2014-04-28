@@ -362,7 +362,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glClearColor(0,0,0,1);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			lightModelView = Quatd::direction(g_light).cnj().tomat4().translatein(-vw.pos);
+			lightModelView = (g_light ? Quatd::direction(g_light).cnj() : quat_u).tomat4().translatein(-vw.pos);
 			glLoadMatrixd(lightModelView);
 
 			GLattrib gla(GL_POLYGON_BIT);

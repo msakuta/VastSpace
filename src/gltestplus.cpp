@@ -229,7 +229,15 @@ void Game::lightOn(Viewer &vw){
 	}
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	g_light = sun ? player->cs->tocs(vec3_000, sun).normin() : vec3_010;
+	if(sun){
+		Vec3d light = player->cs->tocs(vec3_000, sun);
+		if(light.slen())
+			g_light = light.norm();
+		else
+			g_light = vec3_010;
+	}
+	else
+		g_light = vec3_010;
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];

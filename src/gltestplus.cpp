@@ -490,14 +490,18 @@ void Game::drawindics(Viewer *vw){
 		extern double g_star_num;
 		Vec3d plpos = universe->tocs(vw->pos, vw->cs);
 		Vec3d pos;
-		gltestp::dstring name;
+		StarCache *sc;
+//		gltestp::dstring name;
 		StarEnum se(plpos, r_star_name_sectors, true);
-		while(se.next(pos, &name)){
+		while(se.next(pos, &sc)){
 			double cellsize = 1.;
 			Vec3d wpos = vw->rot.vp3((pos - plpos) / StarEnum::sectorSize);
 			double wx = -wpos[0] / wpos[2];
 			double wy = -wpos[1] / wpos[2];
 			if(wx < -1 || 1 < wx || wy < -1 || 1 < wy || 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)
+				continue;
+			// We cannot print a name for unnamed star.  We also don't need to print a name for a materialized star.
+			if(!sc || sc->system)
 				continue;
 			glPushMatrix();
 			glLoadIdentity();
@@ -508,7 +512,7 @@ void Game::drawindics(Viewer *vw){
 			glEnd();
 			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
 			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
-			glwPutTextureString(name);
+			glwPutTextureString(sc->name);
 			glPopMatrix();
 		}
 	}

@@ -243,10 +243,10 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 		Vec3d plpos = game->universe->tocs(pe->pos, pe->w->cs);
 		StarEnum se(plpos, 1, true);
 		Vec3d pos;
-		gltestp::dstring name;
-		while(se.next(pos, &name)){
+		StarCache *sc;
+		while(se.next(pos, &sc)){
 			char buf[128];
-			sprintf(buf, "%-12s: %lg LY", name.c_str(), (pos - plpos).len() / LIGHTYEAR_PER_KILOMETER);
+			sprintf(buf, "%-12s: %lg LY", sc ? sc->name.c_str() : "ERROR name", (pos - plpos).len() / LIGHTYEAR_PER_KILOMETER);
 			WarpCommand wc;
 			wc.destcs = game->universe;
 			Vec3d delta = plpos - pos;

@@ -1507,7 +1507,7 @@ static GLuint drawStarTexture(){
 
 const double StarEnum::sectorSize = 1e13;
 
-StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) :
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
 	plpos(plpos),
 	cen(
 		(int)floor(plpos[0] / sectorSize + .5),
@@ -1515,7 +1515,7 @@ StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) :
 		(int)floor(plpos[2] / sectorSize + .5)
 	),
 	numSectors(numSectors),
-	genNames(genNames)
+	genCache(genCache)
 {
 	gx = cen[0] - numSectors;
 	gy = cen[1] - numSectors;
@@ -1523,8 +1523,7 @@ StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genNames) :
 	newCell();
 }
 
-typedef std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> > NameCache;
-static NameCache nameCache;
+StarCacheDB StarEnum::starCacheDB;
 
 struct SylKey{
 	char key[2];
@@ -1559,7 +1558,7 @@ bool StarEnum::newCell(){
 	// Start a new random number sequence for this sector.
 	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
 
-	if(genNames){
+	if(genCache){
 		static bool sylsInit = false;
 		struct Syllable{
 			int beginc;
@@ -1618,10 +1617,10 @@ bool StarEnum::newCell(){
 		}
 
 		std::tuple<int,int,int> gkey(gx,gy,gz);
-		std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> >::iterator names = nameCache.find(gkey);
-		if(names == nameCache.end()){
+		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		if(names == starCacheDB.end()){
 			RandomSequence rs = this->rs;
-			std::vector<gltestp::dstring> &newnames = nameCache[gkey];
+			StarCacheList &newnames = starCacheDB[gkey];
 			for(int c = 0; c < numstars; c++){
 				gltestp::dstring name;
 				do{
@@ -1656,7 +1655,7 @@ bool StarEnum::newCell(){
 					// creation is unpredictable.
 					bool duplicate = false;
 					for(auto ename : newnames){
-						if(ename == name){
+						if(ename.name == name){
 							duplicate = true;
 							break;
 						}
@@ -1665,14 +1664,19 @@ bool StarEnum::newCell(){
 						continue;
 				}while(false);
 
-				newnames.push_back(name);
+				newnames.push_back(StarCache(name));
 			}
+			names = starCacheDB.find(gkey);
 		}
+
+		// Begin enumeration for next()
+		this->it = names->second.begin();
+		this->itend = names->second.end();
 	}
 	return true;
 }
 
-bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
+bool StarEnum::next(Vec3d &pos, StarCache **sc){
 	if(numstars <= 0){
 		if(!newCell())
 			return false; // We have gone through all the cells.
@@ -1683,12 +1687,13 @@ bool StarEnum::next(Vec3d &pos, gltestp::dstring *name){
 	pos[1] = (drseq(&rs) + gy - 0.5) * sectorSize;
 	pos[2] = (drseq(&rs) + gz - 0.5) * sectorSize;
 
-	if(name != NULL){
-		std::map<std::tuple<int,int,int>, std::vector<gltestp::dstring> >::iterator names = nameCache.find(std::tuple<int,int,int>(gx,gy,gz));
-		if(names != nameCache.end() && numstars < names->second.size())
-			*name = names->second[numstars];
+	if(sc != NULL){
+		if(genCache && it != itend){
+			*sc = &*it;
+			++it; // Advance pointer
+		}
 		else
-			*name = "ERROR name";
+			*sc = NULL;
 	}
 	return true;
 }
@@ -1702,18 +1707,18 @@ RandomSequence *StarEnum::getRseq(){
 
 static int cmd_find(int argc, char *argv[]){
 	if(argc <= 1){
-		for(auto it : nameCache){
+		for(auto it : StarEnum::starCacheDB){
 			for(auto it2 : it.second){
-				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), it2.c_str());
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), it2.name.c_str());
 			}
 		}
 		CmdPrint("usage: find star_name");
 		return 0;
 	}
 	int count = 0;
-	for(auto it : nameCache){
+	for(auto it : StarEnum::starCacheDB){
 		for(auto it2 : it.second){
-			if(it2 == argv[1]){
+			if(it2.name == argv[1]){
 				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), argv[1]);
 				count++;
 			}

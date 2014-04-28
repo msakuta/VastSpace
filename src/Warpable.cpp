@@ -639,26 +639,27 @@ void Warpable::anim(double dt){
 		if(p->warpdstcs == game->universe && sdist < 1e10 * 1e10){
 			StarEnum se(dstcspos, 0, true);
 			Vec3d pos, bestPos;
-			gltestp::dstring name, bestName;
 			double bestDist = 1e100;
-			while(se.next(pos, &name)){
+			StarCache *bestsc = NULL, *sc;
+			while(se.next(pos, &sc)){
 				double dist = (pos - p->warpdst).len();
 				if(dist < bestDist){
 					bestDist = dist;
 					bestPos = pos;
-					bestName = name;
+					bestsc = sc;
 				}
 			}
-			if(bestName.len()){
-				CoordSys *cs = warpdstcs->findcs(bestName);
-				if(!cs){
-					Star *child = new Star(bestName, p->warpdstcs);
+			if(bestsc){
+				Astrobj *cs = bestsc->system;
+				if(!cs){ // Materialize a randomly generated star; create a Star object and associate it with the StarCache.
+					Star *child = new Star(bestsc->name, p->warpdstcs);
 					child->pos = bestPos;
-					child->name = bestName;
+					child->name = bestsc->name;
 					child->rad = 12000;
 					child->spect = Star::G;
 					this->warpdst = child->tocs(this->warpdst, this->warpdstcs);
 					this->warpdstcs = child;
+					bestsc->system = child;
 				}
 				else{
 					this->warpdst = cs->tocs(this->warpdst, this->warpdstcs);

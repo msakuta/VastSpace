@@ -187,7 +187,7 @@ void Autonomous::drawtra(wardraw_t *wd){
 class GLWwarp : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWwarp(Game *game, gltestp::dstring title) : st(game, title), sorter(false){
+	GLWwarp(Game *game, gltestp::dstring title) : st(game, title), sorter(false), scrollpos(0){
 		flags |= GLW_CLOSE;
 		width = 320;
 		height = 480;
@@ -199,7 +199,10 @@ public:
 protected:
 	struct StarData{Vec3d pos; double dist; StarCache *sc;};
 	std::vector<StarData> sclist;
+	int scrollpos; ///< Current scroll position in the vertical scroll bar.
 	bool sorter;
+
+	static const int scrollBarWidth = 10;
 
 	void makeList();
 	void sortList();
@@ -234,7 +237,6 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 	int mx = ws.mousex, my = ws.mousey;
 	double fontheight = getFontHeight();
 	int len, maxlen = 1;
-	int ind = 0 <= my && 0 <= mx && mx <= width ? int(my / getFontHeight()) - 1 : -1;
 	static const Vec4f white(1,1,1,1);
 	static const Vec4f selected(0,1,1,1);
 	glColor4ub(255,255,255,255);
@@ -245,12 +247,30 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 	glColor4fv(!sorter ? selected : white);
 	glwprintf(" %cDistance", !sorter ? '*' : ' ');
 
+	r.y0 += fontheight;
+	if(r.height() < sclist.size() * fontheight){ // Show scrollbar
+		r.x1 -= scrollBarWidth;
+		glwVScrollBarDraw(this, r.x1, r.y0, scrollBarWidth, r.height(), sclist.size() * fontheight - r.height(), scrollpos);
+	}
+	int ind = 0 <= my && 0 <= mx && mx <= r.width() ? int((my + scrollpos) / getFontHeight()) - 1 : -1;
+
+	// Separator
+	glColor4ub(255,127,255,255);
+	glBegin(GL_LINES);
+	glVertex2d(r.x0 + 1, r.y0);
+	glVertex2d(r.x1, r.y0);
+	glEnd();
+
+	glPushAttrib(GL_SCISSOR_BIT);
+	glScissor(r.x0, ws.h - r.y1, r.width(), r.height());
+	glEnable(GL_SCISSOR_TEST);
+
 	int i = 0;
 
 	for(auto& sd : sclist){
 		StarCache *sc = sd.sc;
 
-		double ypos = r.y0 + (2 + i) * fontheight;
+		double ypos = r.y0 + (1 + i) * fontheight - scrollpos;
 		if(i == ind){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
@@ -265,6 +285,7 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 		glwprintf("%-12s: %lg LY", sc ? sc->name.c_str() : "ERROR name", sd.dist / LIGHTYEAR_PER_KILOMETER);
 		i++;
 	}
+	glPopAttrib();
 }
 
 int GLWwarp::mouse(GLwindowState &ws, int button, int state, int x, int y){
@@ -274,10 +295,27 @@ int GLWwarp::mouse(GLwindowState &ws, int button, int state, int x, int y){
 		sortList();
 		return 1;
 	}
-	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && 0 <= ind && ind < sclist.size()){
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		GLWrect r = clientRect().moved(0, 0);
+		r.y0 += getFontHeight();
+		r.x1 -= scrollBarWidth;
+		if(r.height() < sclist.size() * getFontHeight()){ // Show scrollbar
+			int iy = glwVScrollBarMouse(this, x, y, r.width(), getFontHeight(),
+				scrollBarWidth, r.height(), sclist.size() * getFontHeight() - r.height(), scrollpos);
+			if(0 <= iy){
+				scrollpos = iy;
+				return 1;
+			}
+		}
+		ind = int((y + scrollpos) / getFontHeight()) - 1;
+
+		if(!(0 <= ind && ind < sclist.size()))
+			return 0;
+
 		StarData &sd = sclist[ind];
 		StarCache *sc = sd.sc;
 		WarpCommand wc;
+
 		// If the star is already materialized, it should have an orbit.
 		// If not, set the warp destination to the default.
 		Player *player = game->player;

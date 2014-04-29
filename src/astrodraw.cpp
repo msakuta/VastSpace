@@ -1634,6 +1634,9 @@ bool StarEnum::newCell(){
 						length = rs.next() % 10 + 1;
 
 					for(int n = 0; n < length; n++){
+						// If we could not find the next syllable beginning with given 2 character sequence, stop there
+						if(n != 0 && sylsDB.find(next) == sylsDB.end())
+							break;
 						int sylcount = n == 0 ? firstCount : sylsDB[next].back().endc;
 
 						if(sylcount == 0)

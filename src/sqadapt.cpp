@@ -1249,9 +1249,21 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
-	register_const(v, GL_LINES, _SC("GL_LINES"));
-	register_const(v, GL_LINE_STRIP, _SC("GL_LINE_STRIP"));
-	register_const(v, GL_LINE_LOOP, _SC("GL_LINE_LOOP"));
+
+	// Make Squirrel scripts be able to use the same macro constants as C++ sources.
+#define REGISTER_MACRO(a) register_const(v, a, _SC(#a))
+	REGISTER_MACRO(GL_POINTS);
+	REGISTER_MACRO(GL_LINES);
+	REGISTER_MACRO(GL_LINE_STRIP);
+	REGISTER_MACRO(GL_LINE_LOOP);
+	REGISTER_MACRO(GL_QUADS);
+	REGISTER_MACRO(GL_QUAD_STRIP);
+	REGISTER_MACRO(GL_TRIANGLES);
+	REGISTER_MACRO(GL_TRIANGLE_STRIP);
+	REGISTER_MACRO(GL_TRIANGLE_FAN);
+	REGISTER_MACRO(GL_POLYGON);
+#undef REGISTER_MACRO
+
 #endif
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)

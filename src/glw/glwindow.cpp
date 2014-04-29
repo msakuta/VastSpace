@@ -1180,6 +1180,38 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		return SQInteger(1);
 	});
 
+	register_closure(v, _SC("glwVScrollBarDraw"), [](HSQUIRRELVM v){
+		GLwindow *glw = sq_refobj(v, 2);
+		if(!glw)
+			return SQInteger(0);
+		SQInteger i = 3, x0, y0, w, h, range, iy;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x0) || !getter(y0) || !getter(w) || !getter(h) || !getter(range) || !getter(iy))
+			return sq_throwerror(v, _SC("glwVScrollBarDraw argument wrong"));
+		glwVScrollBarDraw(glw, x0, y0, w, h, range, iy);
+		return SQInteger(0);
+	});
+
+	register_closure(v, _SC("glwVScrollBarMouse"), [](HSQUIRRELVM v){
+		GLwindow *glw = sq_refobj(v, 2);
+		if(!glw)
+			return SQInteger(0);
+		SQInteger i = 3, mousex, mousey, x0, y0, w, h, range, iy;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(mousex) || !getter(mousey) || !getter(x0) || !getter(y0) || !getter(w) || !getter(h) || !getter(range) || !getter(iy))
+			return sq_throwerror(v, _SC("glwVScrollBarMouse argument wrong"));
+		sq_pushinteger(v, glwVScrollBarMouse(glw, mousex, mousey, x0, y0, w, h, range, iy));
+		return SQInteger(1);
+	});
+
 	return true;
 }
 

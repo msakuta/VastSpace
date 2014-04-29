@@ -187,7 +187,7 @@ void Autonomous::drawtra(wardraw_t *wd){
 class GLWwarp : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
-	GLWwarp(Game *game, gltestp::dstring title) : st(game, title), sorter(false), scrollpos(0){
+	GLWwarp(Game *game, gltestp::dstring title) : st(game, title), sorter(false), filter(false), scrollpos(0){
 		flags |= GLW_CLOSE;
 		width = 320;
 		height = 480;
@@ -201,11 +201,26 @@ protected:
 	std::vector<StarData> sclist;
 	int scrollpos; ///< Current scroll position in the vertical scroll bar.
 	bool sorter;
+	bool filter;
 
 	static const int scrollBarWidth = 10;
 
 	void makeList();
 	void sortList();
+	bool testFilter(StarData &sd){
+		return !filter || sd.sc->system;
+	}
+	int countItems(){
+		if(filter){
+			int ret = 0;
+			for(auto& it : sclist)
+				if(testFilter(it))
+					ret++;
+			return ret;
+		}
+		else
+			return sclist.size();
+	}
 };
 
 void GLWwarp::makeList(){
@@ -239,7 +254,7 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 	int len, maxlen = 1;
 	static const Vec4f white(1,1,1,1);
 	static const Vec4f selected(0,1,1,1);
-	glColor4ub(255,255,255,255);
+	glColor4fv(white);
 	glwpos2d(r.x0, r.y0 + getFontHeight());
 	glwprintf("Sort: ");
 	glColor4fv(sorter ? selected : white);
@@ -247,12 +262,26 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 	glColor4fv(!sorter ? selected : white);
 	glwprintf(" %cDistance", !sorter ? '*' : ' ');
 
-	r.y0 += fontheight;
-	if(r.height() < sclist.size() * fontheight){ // Show scrollbar
+	glColor4fv(white);
+	glwpos2d(r.x0, r.y0 + 2 * getFontHeight());
+	glwprintf("Filter: ");
+	glColor4fv(!filter ? selected : white);
+	glwprintf(" %cAll ", !filter ? '*' : ' ');
+	glColor4fv(filter ? selected : white);
+	glwprintf(" %cVisited", filter ? '*' : ' ');
+
+	r.y0 += 2 * fontheight;
+	int listHeight = countItems() * int(fontheight);
+	if(r.height() < listHeight){ // Show scrollbar
 		r.x1 -= scrollBarWidth;
-		glwVScrollBarDraw(this, r.x1, r.y0, scrollBarWidth, r.height(), sclist.size() * fontheight - r.height(), scrollpos);
+		glwVScrollBarDraw(this, r.x1, r.y0, scrollBarWidth, r.height(), listHeight - r.height(), scrollpos);
+		// Reset scroll pos
+		if(listHeight - r.height() <= scrollpos)
+			scrollpos = listHeight - r.height() - 1;
 	}
-	int ind = 0 <= my && 0 <= mx && mx <= r.width() ? int((my + scrollpos) / getFontHeight()) - 1 : -1;
+	else
+		scrollpos = 0; // Reset scroll pos
+	int ind = 0 <= my && 0 <= mx && mx <= r.width() ? int((my + scrollpos) / getFontHeight()) - 2 : -1;
 
 	// Separator
 	glColor4ub(255,127,255,255);
@@ -268,6 +297,8 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 	int i = 0;
 
 	for(auto& sd : sclist){
+		if(!testFilter(sd))
+			continue;
 		StarCache *sc = sd.sc;
 
 		double ypos = r.y0 + (1 + i) * fontheight - scrollpos;
@@ -289,30 +320,45 @@ void GLWwarp::draw(GLwindowState &ws, double dt){
 }
 
 int GLWwarp::mouse(GLwindowState &ws, int button, int state, int x, int y){
-	int ind = int(y / getFontHeight()) - 1;
-	if(ind == -1 && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+	int ind = int(y / getFontHeight()) - 2;
+	if(ind == -2 && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 		sorter = !sorter;
+		sortList();
+		return 1;
+	}
+	if(ind == -1 && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		filter = !filter;
 		sortList();
 		return 1;
 	}
 	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
 		GLWrect r = clientRect().moved(0, 0);
-		r.y0 += getFontHeight();
+		r.y0 += 2 * getFontHeight();
 		r.x1 -= scrollBarWidth;
-		if(r.height() < sclist.size() * getFontHeight()){ // Show scrollbar
-			int iy = glwVScrollBarMouse(this, x, y, r.width(), getFontHeight(),
-				scrollBarWidth, r.height(), sclist.size() * getFontHeight() - r.height(), scrollpos);
+		if(r.height() < countItems() * getFontHeight()){ // Show scrollbar
+			int iy = glwVScrollBarMouse(this, x, y, r.x1, r.y0,
+				scrollBarWidth, r.height(), countItems() * getFontHeight() - r.height(), scrollpos);
 			if(0 <= iy){
 				scrollpos = iy;
 				return 1;
 			}
 		}
-		ind = int((y + scrollpos) / getFontHeight()) - 1;
+		ind = int((y + scrollpos) / getFontHeight()) - 2;
 
-		if(!(0 <= ind && ind < sclist.size()))
+		int i = 0;
+		StarData *found = NULL;
+		for(auto& sd : sclist){
+			if(testFilter(sd)){
+				if(ind == i++){
+					found = &sd;
+					break;
+				}
+			}
+		}
+		if(!found)
 			return 0;
 
-		StarData &sd = sclist[ind];
+		StarData &sd = *found;
 		StarCache *sc = sd.sc;
 		WarpCommand wc;
 

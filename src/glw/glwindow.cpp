@@ -1080,6 +1080,14 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		if(getter(_SC("x0"), &GLWrect::x0) || getter(_SC("x1"), &GLWrect::x1)
 			|| getter(_SC("y0"), &GLWrect::y0) || getter(_SC("y1"), &GLWrect::y1))
 				return SQInteger(1);
+		if(!scstrcmp(prop, _SC("width"))){
+			sq_pushinteger(v, pr->width());
+			return SQInteger(1);
+		}
+		else if(!scstrcmp(prop, _SC("height"))){
+			sq_pushinteger(v, pr->height());
+			return SQInteger(1);
+		}
 		return SQInteger(0);
 	});
 	register_closure(v, _SC("_set"), [](HSQUIRRELVM v){

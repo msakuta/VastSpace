@@ -464,7 +464,20 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 		sqa::StackReserver sr(v);
 		sq_pushobject(v, sq_onDraw);
 		sq_pushroottable(v);
-		sq_call(v, 1, SQFalse, SQTrue);
+
+		auto def = [v](const SQChar *name, int value){
+			sq_pushstring(v, name, -1);
+			sq_pushinteger(v, value);
+			sq_newslot(v, -3, SQFalse);
+		};
+
+		sq_newtable(v);
+		def(_SC("mousex"), gvp.mousex);
+		def(_SC("mousey"), gvp.mousey);
+		def(_SC("mx"), gvp.mx);
+		def(_SC("my"), gvp.my);
+
+		sq_call(v, 2, SQFalse, SQTrue);
 	}
 
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){

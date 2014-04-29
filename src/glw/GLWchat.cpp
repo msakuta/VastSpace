@@ -138,7 +138,7 @@ void GLWchat::append(dstring str){
 bool GLWchat::sq_define(HSQUIRRELVM v){
 	st::sq_define(v);
 	sq_pushstring(v, _SC("GLWchat"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, st::sqClassName(), -1);
 	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLWchat");

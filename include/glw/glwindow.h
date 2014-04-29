@@ -261,7 +261,7 @@ public:
 	/// The type tag for this class in Squirrel VM.
 	static const SQUserPointer tt_GLwindow;
 
-	const SQChar *sqClassName()const;
+	static const SQChar *sqClassName();
 
 	HSQOBJECT sq_onDraw; ///< Squirrel event handler on drawing
 	HSQOBJECT sq_onMouse; ///< Squirrel event handler on mouse pointer action
@@ -365,12 +365,19 @@ protected:
 	int sizing; /* edge flags of changing borders */
 	int minw, minh, maxw, maxh;
 public:
+	typedef GLwindow st;
+
 	/// The constructor that can initialize the game object pointer.
 	GLwindowSizeable(Game *game, const char *title = NULL);
 
 	int mouseCursorState(int mousex, int mousey)const;
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	bool mouseNC(GLwindowState &ws, int button, int state, int x, int y);
+
+	static const SQChar *sqClassName();
+
+	/// Define this class for Squirrel VM.
+	static bool sq_define(HSQUIRRELVM v);
 };
 
 

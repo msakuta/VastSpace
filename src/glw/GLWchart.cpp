@@ -285,7 +285,7 @@ bool GLWchart::addSamplesToCharts(const gltestp::dstring labels[], const double 
 bool GLWchart::sq_define(HSQUIRRELVM v){
 	st::sq_define(v);
 	sq_pushstring(v, _SC("GLWchart"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, st::sqClassName(), -1);
 	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLWchart");

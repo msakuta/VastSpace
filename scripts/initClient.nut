@@ -24,6 +24,10 @@ class GLelement{
 class GLwindow extends GLelement{
 }
 
+/// GLwindow that has resizable borders
+class GLwindowSizeable extends GLwindow{
+}
+
 /// Menu list window
 class GLWmenu extends GLwindow{
 	void addItem(string title, string command);
@@ -64,7 +68,7 @@ class GLWmessage extends GLwindow{
 }
 
 /// A chart window. You can add series of numbers to display.
-class GLWchart extends GLwindow{
+class GLWchart extends GLwindowSizeable{
 	/// \param seriesName
 	///        Predefined series name. You can choose from "frametime", "framerate", "recvbytes", "frametimehistogram",
 	///        "frameratehistogram", "recvbyteshistogram" or "sampled".
@@ -75,6 +79,18 @@ class GLWchart extends GLwindow{
 	/// \param sampleName
 	///        The predefined sample name. Meaningful only if seriesName is "sampled".
 	void addSeries(string seriesName, int ygroup, string sampleName, float color[4]);
+}
+
+/// Entity listing window
+class GLWentlist extends GLwindowSizeable{
+}
+
+/// Chat window for multiplayer game
+class GLWchat extends GLwindowSizeable{
+}
+
+/// Solar map window
+class GLwindowSolarMap extends GLwindowSizeable{
 }
 
 

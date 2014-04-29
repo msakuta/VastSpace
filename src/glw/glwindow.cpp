@@ -1264,7 +1264,7 @@ SQInteger GLwindow::sqf_close(HSQUIRRELVM v){
 	return 0;
 }
 
-const SQChar *GLwindow::sqClassName()const{
+const SQChar *GLwindow::sqClassName(){
 	return _SC("GLwindow");
 }
 
@@ -1356,7 +1356,9 @@ GLwindowSizeable::GLwindowSizeable(Game *game, const char *title) : st(game, tit
 	maxw = maxh = 1000;
 }
 
-int GLwindowSizeable::mouse(GLwindowState &, int, int, int, int){return 0;}
+int GLwindowSizeable::mouse(GLwindowState &ws, int key, int state, int x, int y){
+	return GLwindow::mouse(ws, key, state, x, y);
+}
 
 bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, int y){
 	GLWrect r = clientRect();
@@ -1413,6 +1415,47 @@ int GLwindowSizeable::mouseCursorState(int x, int y)const{
 	if(r.x0 <= x && x < r.x1)
 		edgeflags |= (r.y1 - GLWSIZEABLE_BORDER <= y && y < r.y1 ? 2 : r.y0 <= y && y < r.y0 + GLWSIZEABLE_BORDER ? 1 : 0) << 2;
 	return edgeflags;
+}
+
+const SQChar *GLwindowSizeable::sqClassName(){
+	return _SC("GLwindowSizeable");
+}
+
+static Initializer init_GLwindowSizeable("GLwindowSizeable", GLwindowSizeable::sq_define);
+
+bool GLwindowSizeable::sq_define(HSQUIRRELVM v){
+	static const SQUserPointer tt_GLwindowSizeable = SQUserPointer("GLwindowSizeable");
+
+	StackReserver sr(v);
+	sq_pushstring(v, sqClassName(), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2)))
+		return false;
+	GLwindow::sq_define(v);
+	sq_pushstring(v, sqClassName(), -1);
+	sq_pushstring(v, st::sqClassName(), -1);
+	if(SQ_FAILED(sq_get(v, -3)))
+		throw SQFError(_SC("GLwindow is not defined"));
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, tt_GLwindowSizeable);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+
+	/// Squirrel constructor
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		SQInteger argc = sq_gettop(v);
+		Game *game = (Game*)sq_getforeignptr(v);
+		const SQChar *title;
+		if(SQ_FAILED(sq_getstring(v, 2, &title)))
+			title = NULL;
+		GLwindowSizeable *p = new GLwindowSizeable(game, title);
+
+		sq_assignobj(v, p);
+		glwAppend(p);
+		return SQInteger(0);
+	});
+
+	sq_createslot(v, -3);
+
+	return true;
 }
 
 

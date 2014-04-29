@@ -989,11 +989,11 @@ static SQInteger sqf_GLwindowSolarMap_constructor(HSQUIRRELVM v){
 }
 
 
-static bool sq_GLwindowSolarMap_define(HSQUIRRELVM v){
+static sqa::Initializer init_GLwindowSolarMap("GLwindowSolarMap", [](HSQUIRRELVM v){
 	// Define class GLwindowSolarMap
-	GLwindow::sq_define(v);
+	GLwindowSolarMap::st::sq_define(v);
 	sq_pushstring(v, _SC("GLwindowSolarMap"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, GLwindowSolarMap::st::sqClassName(), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLwindowSolarMap");
@@ -1001,9 +1001,7 @@ static bool sq_GLwindowSolarMap_define(HSQUIRRELVM v){
 	register_closure(v, _SC("constructor"), sqf_GLwindowSolarMap_constructor);
 	sq_createslot(v, -3);
 	return true;
-}
-
-static sqa::Initializer init_GLWbuttonMatrix("GLwindowSolarMap", sq_GLwindowSolarMap_define);
+});
 
 
 

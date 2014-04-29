@@ -1073,6 +1073,17 @@ static SQInteger sqf_glColor4fv(HSQUIRRELVM v){
 	return SQInteger(0);
 }
 
+static SQInteger sqf_glScissor(HSQUIRRELVM v){
+	GLfloat f[4];
+	for(int i = 0; i < 4; i++){
+		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
+	}
+	glScissor(f[0], f[1], f[2], f[3]);
+	return SQInteger(0);
+}
+
+
 static SQInteger sqf_gldprint(HSQUIRRELVM v){
 	try{
 		const SQChar *s;
@@ -1258,12 +1269,16 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_isLinux, _SC("isLinux"));
 	register_global_func(v, sqf_gnewthread, _SC("gnewthread"));
 #ifdef _WIN32
+	register_global_func(v, sqf_adapter1<glEnable>, _SC("glEnable"));
+	register_global_func(v, sqf_adapter1<glDisable>, _SC("glDisable"));
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));
 	register_global_func(v, sqf_glVertex2d, _SC("glVertex2d"));
 	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
 	register_global_func(v, sqf_adapter0<glPushMatrix>, _SC("glPushMatrix"));
 	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
+	register_global_func(v, sqf_adapter1<glPushAttrib>, _SC("glPushAttrib"));
+	register_global_func(v, sqf_adapter0<glPopAttrib>, _SC("glPopAttrib"));
 	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
 	register_global_func(v, sqf_glScaled, _SC("glScaled"));
 	register_global_func(v, sqf_glTranslated, _SC("glTranslated"));
@@ -1271,10 +1286,36 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
 	register_global_func(v, sqf_glColor4f, _SC("glColor4f"));
 	register_global_func(v, sqf_glColor4fv, _SC("glColor4fv"));
+	register_global_func(v, sqf_glScissor, _SC("glScissor"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
 
 	// Make Squirrel scripts be able to use the same macro constants as C++ sources.
 #define REGISTER_MACRO(a) register_const(v, a, _SC(#a))
+
+	/* AttribMask */
+	REGISTER_MACRO(GL_CURRENT_BIT);
+	REGISTER_MACRO(GL_POINT_BIT);
+	REGISTER_MACRO(GL_LINE_BIT);
+	REGISTER_MACRO(GL_POLYGON_BIT);
+	REGISTER_MACRO(GL_POLYGON_STIPPLE_BIT);
+	REGISTER_MACRO(GL_PIXEL_MODE_BIT);
+	REGISTER_MACRO(GL_LIGHTING_BIT);
+	REGISTER_MACRO(GL_FOG_BIT);
+	REGISTER_MACRO(GL_DEPTH_BUFFER_BIT);
+	REGISTER_MACRO(GL_ACCUM_BUFFER_BIT);
+	REGISTER_MACRO(GL_STENCIL_BUFFER_BIT);
+	REGISTER_MACRO(GL_VIEWPORT_BIT);
+	REGISTER_MACRO(GL_TRANSFORM_BIT);
+	REGISTER_MACRO(GL_ENABLE_BIT);
+	REGISTER_MACRO(GL_COLOR_BUFFER_BIT);
+	REGISTER_MACRO(GL_HINT_BIT);
+	REGISTER_MACRO(GL_EVAL_BIT);
+	REGISTER_MACRO(GL_LIST_BIT);
+	REGISTER_MACRO(GL_TEXTURE_BIT);
+	REGISTER_MACRO(GL_SCISSOR_BIT);
+	REGISTER_MACRO(GL_ALL_ATTRIB_BITS);
+
+	/* BeginMode */
 	REGISTER_MACRO(GL_POINTS);
 	REGISTER_MACRO(GL_LINES);
 	REGISTER_MACRO(GL_LINE_STRIP);
@@ -1285,6 +1326,10 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	REGISTER_MACRO(GL_TRIANGLE_STRIP);
 	REGISTER_MACRO(GL_TRIANGLE_FAN);
 	REGISTER_MACRO(GL_POLYGON);
+
+	// glEnable constants are so many that I won't define them all.
+	REGISTER_MACRO(GL_SCISSOR_TEST);
+
 #undef REGISTER_MACRO
 
 #endif

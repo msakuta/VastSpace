@@ -1062,11 +1062,14 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, tt_GLWrect);
 	sq_setclassudsize(v, -1, sizeof(GLWrect));
-	register_closure(v, _SC("_get"), [](HSQUIRRELVM v){
+	static auto refobj = [](HSQUIRRELVM v, SQInteger idx){
 		void *p;
-		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_GLWrect)))
-			return sq_throwerror(v, _SC("GLWrect get fail"));
-		GLWrect *pr = (GLWrect*)p;
+		if(SQ_FAILED(sq_getinstanceup(v, idx, &p, tt_GLWrect)))
+			throw sq_throwerror(v, _SC("GLWrect set fail"));
+		return (GLWrect*)p;
+	};
+	register_closure(v, _SC("_get"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
 		const SQChar *prop;
 		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
 			return sq_throwerror(v, _SC("GLWrect get fail"));
@@ -1091,10 +1094,7 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		return SQInteger(0);
 	});
 	register_closure(v, _SC("_set"), [](HSQUIRRELVM v){
-		void *p;
-		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_GLWrect)))
-			return sq_throwerror(v, _SC("GLWrect set fail"));
-		GLWrect *pr = (GLWrect*)p;
+		GLWrect *pr = refobj(v, 1);
 		const SQChar *prop;
 		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
 			return sq_throwerror(v, _SC("GLWrect set fail"));
@@ -1118,6 +1118,40 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 			return i;
 		}
 		return SQInteger(0);
+	});
+	register_closure(v, _SC("move"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		SQInteger i = 2, x, y;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x) || !getter(y))
+			return sq_throwerror(v, _SC("GLWrect.move() argument wrong"));
+		pr->move(x, y);
+		sq_push(v, 1); // Return a reference to itself (do not make a copy)
+		return SQInteger(1);
+	});
+	register_closure(v, _SC("moved"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		SQInteger i = 2, x, y;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x) || !getter(y))
+			return sq_throwerror(v, _SC("GLWrect.moved() argument wrong"));
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("GLWrect"), -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			return sq_throwerror(v, _SC("GLWrect.moved() could not find GLWrect class"));
+		if(SQ_FAILED(sq_createinstance(v, -1)))
+			return sq_throwerror(v, _SC("GLWrect.moved() failed to instantiate GLWrect"));
+		GLWrect *pr2 = refobj(v, -1);
+		*pr2 = pr->moved(x, y);
+		return SQInteger(1);
 	});
 	sq_createslot(v, -3);
 

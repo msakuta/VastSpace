@@ -594,8 +594,28 @@ int GLwindow::mouse(GLwindowState& ws, int key, int state, int x, int y){
 
 		// Push a table containing event info
 		sq_newtable(v);
-		def(_SC("key"), key);
-		def(_SC("state"), state);
+
+		sq_pushstring(v, _SC("key"), -1);
+		switch(key){
+			case GLUT_LEFT_BUTTON: sq_pushstring(v, _SC("leftButton"), -1); break;
+			case GLUT_MIDDLE_BUTTON: sq_pushstring(v, _SC("middleButton"), -1); break;
+			case GLUT_RIGHT_BUTTON: sq_pushstring(v, _SC("rightButton"), -1); break;
+			case GLUT_WHEEL_UP: sq_pushstring(v, _SC("wheelUp"), -1); break;
+			case GLUT_WHEEL_DOWN: sq_pushstring(v, _SC("wheelDown"), -1); break;
+			case GLUT_XBUTTON1: sq_pushstring(v, _SC("xbutton1"), -1); break;
+			case GLUT_XBUTTON2: sq_pushstring(v, _SC("xbutton2"), -1); break;
+		}
+		sq_newslot(v, -3, SQFalse);
+
+		sq_pushstring(v, _SC("state"), -1);
+		switch(state){
+			case GLUT_DOWN: sq_pushstring(v, _SC("down"), -1); break;
+			case GLUT_UP: sq_pushstring(v, _SC("up"), -1); break;
+			case GLUT_KEEP_DOWN: sq_pushstring(v, _SC("keepDown"), -1); break;
+			case GLUT_KEEP_UP: sq_pushstring(v, _SC("keepUp"), -1); break;
+		}
+		sq_newslot(v, -3, SQFalse);
+
 		def(_SC("x"), x);
 		def(_SC("y"), y);
 		sq_call(v, 2, SQFalse, SQTrue);

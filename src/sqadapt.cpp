@@ -31,6 +31,7 @@ extern "C"{
 #include <sqstdio.h>
 #include <sqstdaux.h>
 #include <sqstdmath.h>
+#include <sqstdstring.h>
 //#include <../sqplus/sqplus.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1257,6 +1258,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 
 	sqstd_register_iolib(v);
 	sqstd_register_mathlib(v);
+	sqstd_register_stringlib(v);
 
 	// Define class TimeMeas
 	sq_pushstring(v, _SC("TimeMeas"), -1);

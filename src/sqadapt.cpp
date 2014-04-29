@@ -1052,6 +1052,27 @@ static SQInteger sqf_glRasterPos(HSQUIRRELVM v){
 	return 0;
 }
 
+static SQInteger sqf_glColor4f(HSQUIRRELVM v){
+	GLfloat f[4];
+	for(int i = 0; i < 4; i++){
+		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
+	}
+	glColor4fv(f);
+	return SQInteger(0);
+}
+
+static SQInteger sqf_glColor4fv(HSQUIRRELVM v){
+	GLfloat f[4];
+	for(int i = 0; i < 4; i++){
+		sq_pushinteger(v, i);
+		if(SQ_FAILED(sq_get(v, 2)) || SQ_FAILED(sq_getfloat(v, -1, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4fv"));
+	}
+	glColor4fv(f);
+	return SQInteger(0);
+}
+
 static SQInteger sqf_gldprint(HSQUIRRELVM v){
 	try{
 		const SQChar *s;
@@ -1248,6 +1269,8 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_glTranslated, _SC("glTranslated"));
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
+	register_global_func(v, sqf_glColor4f, _SC("glColor4f"));
+	register_global_func(v, sqf_glColor4fv, _SC("glColor4fv"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
 
 	// Make Squirrel scripts be able to use the same macro constants as C++ sources.

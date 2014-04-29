@@ -248,9 +248,16 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 			char buf[128];
 			sprintf(buf, "%-12s: %lg LY", sc ? sc->name.c_str() : "ERROR name", (pos - plpos).len() / LIGHTYEAR_PER_KILOMETER);
 			WarpCommand wc;
-			wc.destcs = game->universe;
-			Vec3d delta = plpos - pos;
-			wc.destpos = pos + delta.norm() * 5000000; // Offset 5000000 km to avoid collision with the star
+			// If the star is already materialized, it should have an orbit.
+			// If not, set the warp destination to the default.
+			if(sc && sc->system && (wc.destcs = sc->system->findcs("orbit"))){
+				wc.destpos = Vec3d(0,0,0);
+			}
+			else{
+				wc.destcs = game->universe;
+				Vec3d delta = plpos - pos;
+				wc.destpos = pos + delta.norm() * AU_PER_KILOMETER; // Offset an astronomical unit to avoid collision with the star
+			}
 			pm.append(new PopupMenuItemEntityCommand<WarpCommand>(buf, player, wc), false);
 		}
 	}

@@ -159,18 +159,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "orbits")){
 		if(argv[1]){
-			CoordSys *cs = parent->findcspath(ps);
-			if(cs){
-				orbit_home = cs->toAstrobj();
-				OrbitCS *o = cs->toOrbitCS();
-				if(o){
-					o->orbiters.push_back(this);
-					if(o->toBarycenter())
-						orbit_center = o;
-					else
-						orbitType = Satellite;
-				}
-			}
+			orbits(dynamic_cast<Astrobj*>(parent->findcspath(ps)));
 		}
 		return true;
 	}
@@ -269,6 +258,23 @@ Barycenter *OrbitCS::toBarycenter(){
 	return NULL;
 }
 
+void OrbitCS::orbits(Astrobj *o, double radius, double eccentricity, const Quatd &axis, double phase){
+	if(o){
+		orbit_home = o;
+		o->orbiters.push_back(this);
+		if(o->toBarycenter())
+			orbit_center = o;
+		else
+			orbitType = Satellite;
+		if(radius != 0.){
+			orbit_rad = radius;
+			this->eccentricity = eccentricity;
+			orbit_axis = axis;
+			orbit_phase = phase;
+			updateInt(0); // Recalculate position with orbital elements
+		}
+	}
+}
 
 
 

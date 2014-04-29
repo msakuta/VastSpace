@@ -80,6 +80,16 @@ public:
 	bool getShowOrbit()const{return flags2 & OCS_SHOWORBIT;}
 	void setShowOrbit(bool b);
 
+	/// \brief Set up an orbit with given orbital elements.
+	/// \param o The celestial body to orbit around.
+	/// \param radius Semi-major axis of the orbit.  Passing 0 will not set up the orbit completely, just assigning orbit center.
+	/// \param eccentricity The orbital element to set.
+	/// \param axis Orientation of the orbit.
+	/// \param phase Phase of the orbit
+	///
+	/// If you set radius to nonzero, the position is updated by the orbital elements in this function.
+	void orbits(Astrobj *o, double radius = 0., double eccentricity = 0., const Quatd &axis = quat_u, double phase = 0.);
+
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
 	virtual void updateInt(double dt);

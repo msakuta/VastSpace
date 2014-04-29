@@ -640,6 +640,7 @@ void Warpable::anim(double dt){
 			StarEnum se(dstcspos, 0, true);
 			Vec3d pos, bestPos;
 			double bestDist = 1e100;
+			RandomSequence *rs = NULL;
 			StarCache *bestsc = NULL, *sc;
 			while(se.next(pos, &sc)){
 				double dist = (pos - p->warpdst).len();
@@ -647,6 +648,7 @@ void Warpable::anim(double dt){
 					bestDist = dist;
 					bestPos = pos;
 					bestsc = sc;
+					rs = se.getRseq();
 				}
 			}
 			if(bestsc){
@@ -655,15 +657,24 @@ void Warpable::anim(double dt){
 					Star *child = new Star(bestsc->name, p->warpdstcs);
 					child->pos = bestPos;
 					child->name = bestsc->name;
-					child->rad = 12000;
+					double radscale = exp(rs->nextGauss());
+					child->rad = 6.960e5 * radscale; // Exponential distribution around Rsun
+					child->mass = 1.9884e30 * radscale * radscale * radscale * exp(rs->nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
 					child->spect = Star::G;
-					this->warpdst = child->tocs(this->warpdst, this->warpdstcs);
-					this->warpdstcs = child;
+					// Create a temporary orbit to arrive.
+					OrbitCS *orbit = new OrbitCS("orbit", child);
+					Vec3d orbitPos = child->tocs(this->warpdst, this->warpdstcs);
+					orbit->orbits(child, orbitPos.len(), 0., Quatd::direction(orbitPos).rotate(M_PI / 2., Vec3d(1,0,0)));
+					orbit->setShowOrbit(true);
+					this->warpdst = orbit->tocs(this->warpdst, this->warpdstcs);
+					this->warpdstcs = orbit;
 					bestsc->system = child;
 				}
 				else{
-					this->warpdst = cs->tocs(this->warpdst, this->warpdstcs);
-					this->warpdstcs = cs;
+					// Reuse the temporary orbit
+					OrbitCS *orbit = new OrbitCS("orbit", cs);
+					this->warpdst = orbit->tocs(this->warpdst, this->warpdstcs);
+					this->warpdstcs = orbit;
 				}
 			}
 		}

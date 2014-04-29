@@ -223,6 +223,9 @@ int glwdragpos[2] = {0}; ///< Memory for starting position of dragging.
 GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), title(atitle), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
 	// Default is to snap on border
 	align |= AlignAuto;
+
+	sq_resetobject(&sq_onDraw);
+	sq_resetobject(&sq_onMouse);
 }
 
 /// Appends a GLwindow to screen window list.
@@ -455,6 +458,15 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 //		glwprintf("%.*s", (int)(x / fontwidth), title);
 		glwprintf("%s", title.c_str());
 	}
+
+	if(!sq_isnull(sq_onDraw)){
+		HSQUIRRELVM v = game->sqvm;
+		sqa::StackReserver sr(v);
+		sq_pushobject(v, sq_onDraw);
+		sq_pushroottable(v);
+		sq_call(v, 1, SQFalse, SQTrue);
+	}
+
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPopAttrib();
 	}
@@ -566,7 +578,30 @@ void GLwindow::draw(GLwindowState &,double){}
  * \return 0 if this window does not process the mouse event, otherwise consume the event.
  * \sa mouseFunc(), mouseDrag(), mouseEnter(), mouseNC() and mouseLeave()
  */
-int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
+int GLwindow::mouse(GLwindowState& ws, int key, int state, int x, int y){
+	if(!sq_isnull(sq_onMouse)){
+		HSQUIRRELVM v = game->sqvm;
+		sqa::StackReserver sr(v);
+		sq_pushobject(v, sq_onMouse);
+		sq_pushroottable(v);
+
+		// Utility closure to define a table member.
+		auto def = [v](const SQChar *name, int value){
+			sq_pushstring(v, name, -1);
+			sq_pushinteger(v, value);
+			sq_newslot(v, -3, SQFalse);
+		};
+
+		// Push a table containing event info
+		sq_newtable(v);
+		def(_SC("key"), key);
+		def(_SC("state"), state);
+		def(_SC("x"), x);
+		def(_SC("y"), y);
+		sq_call(v, 2, SQFalse, SQTrue);
+	}
+	return 0;
+}
 
 void GLwindow::mouseEnter(GLwindowState&){} ///< Derived classes can override to define mouse responses.
 void GLwindow::mouseLeave(GLwindowState&){} ///< Derived classes can override to define mouse responses.
@@ -607,7 +642,11 @@ int GLwindow::specialKey(int){return 0;}
 /// \param dt frametime of this frame.
 void GLwindow::anim(double){}
 void GLwindow::postframe(){}
-GLwindow::~GLwindow(){}
+GLwindow::~GLwindow(){
+	HSQUIRRELVM v = game->sqvm;
+	sq_release(v, &sq_onDraw);
+	sq_release(v, &sq_onMouse);
+}
 
 GLwindow *GLwindow::lastover = NULL;
 GLwindow *GLwindow::captor = NULL;
@@ -949,8 +988,44 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, tt_GLwindow);
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+
+	/// Squirrel constructor
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		SQInteger argc = sq_gettop(v);
+		Game *game = (Game*)sq_getforeignptr(v);
+		const SQChar *title;
+		if(SQ_FAILED(sq_getstring(v, 2, &title)))
+			title = NULL;
+		GLwindow *p = new GLwindow(game, title);
+
+		sq_assignobj(v, p);
+		glwAppend(p);
+		return SQInteger(0);
+	});
+
 	register_closure(v, _SC("close"), sqf_close);
 	sq_createslot(v, -3);
+
+	// Following functions are not member of GLwindow but defined for use in onDraw event handler.
+
+	/// Squirrel adapter for glwpos2d
+	register_closure(v, _SC("glwpos2d"), [](HSQUIRRELVM v){
+		SQFloat x, y;
+		if(SQ_FAILED(sq_getfloat(v, 2, &x)) || SQ_FAILED(sq_getfloat(v, 3, &y)))
+			return sq_throwerror(v, _SC("glwpos2d argument is not convertible to float"));
+		glwpos2d(x, y);
+		return SQInteger(0);
+	});
+
+	/// Squirrel function to draw a string on the GUI.  No adapter for glwprintf because Squirrel can format strings better.
+	register_closure(v, _SC("glwprint"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("glwprint argument is not convertible to string"));
+		sq_pushinteger(v, glwprint(str));
+		return SQInteger(1);
+	});
+
 	return true;
 }
 
@@ -989,6 +1064,14 @@ SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
 	}
 	else if(!strcmp(wcs, _SC("title"))){
 		sq_pushstring(v, getTitle(), -1);
+		return 1;
+	}
+	else if(!scstrcmp(wcs, _SC("onDraw"))){
+		sq_pushobject(v, sq_onDraw);
+		return 1;
+	}
+	else if(!scstrcmp(wcs, _SC("onMouse"))){
+		sq_pushobject(v, sq_onMouse);
 		return 1;
 	}
 	else
@@ -1039,6 +1122,24 @@ SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
 		if(SQ_FAILED(sq_getstring(v, 3, &s)))
 			return SQ_ERROR;
 		setTitle(s);
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("onDraw"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onDraw);
+			sq_onDraw = obj;
+			sq_addref(v, &sq_onDraw);
+		}
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("onMouse"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onMouse);
+			sq_onMouse = obj;
+			sq_addref(v, &sq_onMouse);
+		}
 		return 0;
 	}
 	else
@@ -1603,6 +1704,13 @@ int glwprintf(const char *f, ...){
 	ret = vsprintf(buf, f, ap);
 #endif
 
+	glwprint(buf);
+
+	va_end(ap);
+	return ret;
+}
+
+int glwprint(const char *buf){
 	if(r_texture_font){
 /*		double raspo[4];
 		glGetDoublev(GL_CURRENT_RASTER_POSITION, raspo);*/
@@ -1614,8 +1722,7 @@ int glwprintf(const char *f, ...){
 	}
 	else
 		gldPutString(buf);
-	va_end(ap);
-	return ret;
+	return strlen(buf);
 }
 
 /// Returns width of the formatted string drawn if it is passed to glwprintf().

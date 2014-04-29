@@ -263,6 +263,9 @@ public:
 
 	const SQChar *sqClassName()const;
 
+	HSQOBJECT sq_onDraw; ///< Squirrel event handler on drawing
+	HSQOBJECT sq_onMouse; ///< Squirrel event handler on mouse pointer action
+
 	void (*onFocusEnter)(GLwindow*); ///< Assignable event handler for focusEnter event.
 	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.
 
@@ -345,6 +348,7 @@ EXPORT int glwGetSizeTextureString(const char *s, int size = -1);
 EXPORT int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
 EXPORT void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
 EXPORT void glwpos2d(double x, double y);
+EXPORT int glwprint(const char *f);
 EXPORT int glwprintf(const char *f, ...);
 EXPORT int glwsizef(const char *f, ...);
 EXPORT void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);

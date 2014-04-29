@@ -83,6 +83,12 @@ int screenwidth();
 int screenheight();
 
 
+/// Sets current output position for strings
+void glwpos2d(int x, int y);
+
+/// Prints a string on a position designated by glwpos2d().
+int glwprint(string);
+
 
 // The application will try to call the following functions occasionary.
 // Define them in this file in order to respond such events.

@@ -19,6 +19,7 @@
 #include "astrodraw.h"
 #include "astrodef.h"
 #include "EntityCommand.h"
+#include "antiglut.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -27,6 +28,7 @@ extern "C"{
 #include <clib/GL/multitex.h>
 #endif
 }
+#include <algorithm>
 
 
 
@@ -176,18 +178,129 @@ void Autonomous::drawtra(wardraw_t *wd){
 	}
 }
 
-/// Menu item that executes a Entity command.  Should be in PopupMenu.h.
-template<typename T>
-struct EXPORT PopupMenuItemEntityCommand : public PopupMenuItem{
-	Player *player;
-	T cmd;
-	PopupMenuItemEntityCommand(gltestp::dstring title, Player *aplayer, T &acmd) : PopupMenuItem(title), player(aplayer), cmd(acmd){}
-	virtual void execute(){
-		for(auto it : player->selected)
-			it->command(&cmd);
+
+/// \brief The window to select a warp destination.
+///
+/// Previously we had been using GLWmenu to display selection menu to the player,
+/// but it has limitations in showing many warp destinations, so we decided to make
+/// a dedicated window class to do this.
+class GLWwarp : public GLwindowSizeable{
+public:
+	typedef GLwindowSizeable st;
+	GLWwarp(Game *game, gltestp::dstring title) : st(game, title), sorter(false){
+		flags |= GLW_CLOSE;
+		width = 320;
+		height = 480;
+		makeList();
 	}
-	virtual PopupMenuItem *clone()const{return new PopupMenuItemEntityCommand(*this);}
+
+	void draw(GLwindowState &,double)override;
+	int mouse(GLwindowState &ws, int button, int state, int x, int y);
+protected:
+	struct StarData{Vec3d pos; double dist; StarCache *sc;};
+	std::vector<StarData> sclist;
+	bool sorter;
+
+	void makeList();
+	void sortList();
 };
+
+void GLWwarp::makeList(){
+	Player *player = game->player;
+	if(!player->selected.empty()){
+		Entity *pe = *player->selected.begin();
+		Vec3d plpos = game->universe->tocs(pe->pos, pe->w->cs);
+		StarEnum se(plpos, 1, true);
+		Vec3d pos;
+		StarCache *sc;
+		while(se.next(pos, &sc)){
+			if(sc){
+				StarData sd = {pos, (pos - plpos).len(), sc};
+				sclist.push_back(sd);
+			}
+		}
+		sortList();
+	}
+}
+
+void GLWwarp::sortList(){
+	std::sort(sclist.begin(), sclist.end(), [this](StarData &a, StarData &b){
+		return sorter ? a.sc->name < b.sc->name : a.dist < b.dist;
+	});
+}
+
+void GLWwarp::draw(GLwindowState &ws, double dt){
+	GLWrect r = clientRect();
+	int mx = ws.mousex, my = ws.mousey;
+	double fontheight = getFontHeight();
+	int len, maxlen = 1;
+	int ind = 0 <= my && 0 <= mx && mx <= width ? int(my / getFontHeight()) - 1 : -1;
+	static const Vec4f white(1,1,1,1);
+	static const Vec4f selected(0,1,1,1);
+	glColor4ub(255,255,255,255);
+	glwpos2d(r.x0, r.y0 + getFontHeight());
+	glwprintf("Sort: ");
+	glColor4fv(sorter ? selected : white);
+	glwprintf(" %cName ", sorter ? '*' : ' ');
+	glColor4fv(!sorter ? selected : white);
+	glwprintf(" %cDistance", !sorter ? '*' : ' ');
+
+	int i = 0;
+
+	for(auto& sd : sclist){
+		StarCache *sc = sd.sc;
+
+		double ypos = r.y0 + (2 + i) * fontheight;
+		if(i == ind){
+			glColor4ub(0,0,255,128);
+			glBegin(GL_QUADS);
+			glVertex2d(r.x0 + 1, ypos - fontheight);
+			glVertex2d(r.x1    , ypos - fontheight);
+			glVertex2d(r.x1    , ypos);
+			glVertex2d(r.x0 + 1, ypos);
+			glEnd();
+		}
+		glColor4ub(255,255,255,255);
+		glwpos2d(r.x0, ypos);
+		glwprintf("%-12s: %lg LY", sc ? sc->name.c_str() : "ERROR name", sd.dist / LIGHTYEAR_PER_KILOMETER);
+		i++;
+	}
+}
+
+int GLWwarp::mouse(GLwindowState &ws, int button, int state, int x, int y){
+	int ind = int(y / getFontHeight()) - 1;
+	if(ind == -1 && button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		sorter = !sorter;
+		sortList();
+		return 1;
+	}
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP && 0 <= ind && ind < sclist.size()){
+		StarData &sd = sclist[ind];
+		StarCache *sc = sd.sc;
+		WarpCommand wc;
+		// If the star is already materialized, it should have an orbit.
+		// If not, set the warp destination to the default.
+		Player *player = game->player;
+		if(player && !player->selected.empty()){
+			Entity *pe = *player->selected.begin();
+			Vec3d plpos = game->universe->tocs(pe->pos, pe->w->cs);
+			if(sc && sc->system && (wc.destcs = sc->system->findcs("orbit"))){
+				wc.destpos = Vec3d(0,0,0);
+			}
+			else{
+				wc.destcs = game->universe;
+				Vec3d delta = plpos - sd.pos;
+				wc.destpos = sd.pos + delta.norm() * AU_PER_KILOMETER; // Offset an astronomical unit to avoid collision with the star
+			}
+			for(auto e : player->selected)
+				e->command(&wc);
+		}
+		// Post delete message
+		flags |= GLW_TODELETE;
+		return 1;
+	}
+	return 0;
+}
 
 static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 	ClientGame *game = (ClientGame*)pv;
@@ -197,7 +310,7 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 	const char *subtitles[64];
 //	coordsys *reta[64], **retp = reta;
 	static const char *windowtitle = "Warp Destination";
-	GLwindow *wnd, **ppwnd;
+	GLwindow **ppwnd;
 	int left, i;
 	ppwnd = GLwindow::findpp(&glwlist, &GLwindow::TitleCmp(windowtitle));
 	if(ppwnd){
@@ -237,33 +350,7 @@ static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
 		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');
 	}
 
-	/// List up neighboring stars for warp destination.
-	if(!player->selected.empty()){
-		Entity *pe = *player->selected.begin();
-		Vec3d plpos = game->universe->tocs(pe->pos, pe->w->cs);
-		StarEnum se(plpos, 1, true);
-		Vec3d pos;
-		StarCache *sc;
-		while(se.next(pos, &sc)){
-			char buf[128];
-			sprintf(buf, "%-12s: %lg LY", sc ? sc->name.c_str() : "ERROR name", (pos - plpos).len() / LIGHTYEAR_PER_KILOMETER);
-			WarpCommand wc;
-			// If the star is already materialized, it should have an orbit.
-			// If not, set the warp destination to the default.
-			if(sc && sc->system && (wc.destcs = sc->system->findcs("orbit"))){
-				wc.destpos = Vec3d(0,0,0);
-			}
-			else{
-				wc.destcs = game->universe;
-				Vec3d delta = plpos - pos;
-				wc.destpos = pos + delta.norm() * AU_PER_KILOMETER; // Offset an astronomical unit to avoid collision with the star
-			}
-			pm.append(new PopupMenuItemEntityCommand<WarpCommand>(buf, player, wc), false);
-		}
-	}
-
-//	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
-	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
+	GLWwarp *wnd = new GLWwarp(game, "Select Warp Destination");
 
 	// Align the window to the center.
 	// TODO: Window object itself should have an option to adjust itself to the center.

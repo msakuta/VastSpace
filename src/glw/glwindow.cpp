@@ -976,6 +976,8 @@ const SQUserPointer GLwindow::tt_GLwindow = SQUserPointer("GLwindow");
 static Initializer init_GLwindow("GLwindow", GLwindow::sq_define);
 
 bool GLwindow::sq_define(HSQUIRRELVM v){
+	static const SQUserPointer tt_GLWrect = SQUserPointer("GLWrect");
+
 	StackReserver sr(v);
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	if(SQ_SUCCEEDED(sq_get(v, -2)))
@@ -1003,7 +1005,79 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		return SQInteger(0);
 	});
 
+	register_closure(v, _SC("clientRect"), [](HSQUIRRELVM v){
+		GLwindow *w = sq_refobj(v);
+		if(!w)
+			return sq_throwerror(v, _SC("GLwindow is destroyed"));
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("GLWrect"), -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			return sq_throwerror(v, _SC("GLWrect not found"));
+		if(SQ_FAILED(sq_createinstance(v, -1)))
+			return sq_throwerror(v, _SC("GLWrect intantiation error"));
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, -1, &p, tt_GLWrect)))
+			return sq_throwerror(v, _SC("GLWrect instance is corrupted"));
+		*((GLWrect*)p) = w->clientRect();
+		return SQInteger(1);
+	});
+
 	register_closure(v, _SC("close"), sqf_close);
+	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("GLWrect"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_GLWrect);
+	sq_setclassudsize(v, -1, sizeof(GLWrect));
+	register_closure(v, _SC("_get"), [](HSQUIRRELVM v){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_GLWrect)))
+			return sq_throwerror(v, _SC("GLWrect get fail"));
+		GLWrect *pr = (GLWrect*)p;
+		const SQChar *prop;
+		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
+			return sq_throwerror(v, _SC("GLWrect get fail"));
+		auto getter = [v,pr,prop](const SQChar *name, long GLWrect::*memb){
+			if(!scstrcmp(prop, name)){
+				sq_pushinteger(v, pr->*memb);
+				return true;
+			}
+			return false;
+		};
+		if(getter(_SC("x0"), &GLWrect::x0) || getter(_SC("x1"), &GLWrect::x1)
+			|| getter(_SC("y0"), &GLWrect::y0) || getter(_SC("y1"), &GLWrect::y1))
+				return SQInteger(1);
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("_set"), [](HSQUIRRELVM v){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_GLWrect)))
+			return sq_throwerror(v, _SC("GLWrect set fail"));
+		GLWrect *pr = (GLWrect*)p;
+		const SQChar *prop;
+		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
+			return sq_throwerror(v, _SC("GLWrect set fail"));
+		auto setter = [v,pr,prop](const SQChar *name, long GLWrect::*memb){
+			if(!scstrcmp(prop, name)){
+				SQInteger i;
+				if(SQ_FAILED(sq_getinteger(v, 3, &i))){
+					throw sq_throwerror(v, _SC("GLWrect set fail"));
+				}
+				pr->*memb = i;
+				return true;
+			}
+			return false;
+		};
+		try{
+			if(setter(_SC("x0"), &GLWrect::x0) || setter(_SC("x1"), &GLWrect::x1)
+				|| setter(_SC("y0"), &GLWrect::y0) || setter(_SC("y1"), &GLWrect::y1))
+					return SQInteger(1);
+		}
+		catch(SQInteger i){
+			return i;
+		}
+		return SQInteger(0);
+	});
 	sq_createslot(v, -3);
 
 	// Following functions are not member of GLwindow but defined for use in onDraw event handler.
@@ -1023,6 +1097,11 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		if(SQ_FAILED(sq_getstring(v, 2, &str)))
 			return sq_throwerror(v, _SC("glwprint argument is not convertible to string"));
 		sq_pushinteger(v, glwprint(str));
+		return SQInteger(1);
+	});
+
+	register_closure(v, _SC("fontheight"), [](HSQUIRRELVM v){
+		sq_pushinteger(v, fontheight);
 		return SQInteger(1);
 	});
 

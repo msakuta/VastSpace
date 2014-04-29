@@ -1409,15 +1409,9 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 	}
 	else
 		throw SQFArgumentError();
-	SQUserPointer typetag;
-	if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
-		throw SQFError(_SC("Incompatible argument type"));
-	sq_pushstring(v, _SC("a"), -1);
-	if(SQ_FAILED(sq_get(v, 4)))
-		throw SQFError(_SC("Corrupt Vec3d data"));
-	Vec3d *pvec3;
-	sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
-	destpos = *pvec3;
+	SQVec3d q;
+	q.getValue(v, 4);
+	destpos = q.value;
 }
 
 

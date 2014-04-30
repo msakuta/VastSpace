@@ -294,6 +294,11 @@ public:
 	/// Universe is known to need this function to invoke Serializable's constructor.
 	CoordSys(Game *game);
 
+
+	struct PropertyEntry;
+	typedef std::map<gltestp::dstring, PropertyEntry> PropertyMap;
+	virtual PropertyMap &propertyMap()const;
+
 protected:
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);

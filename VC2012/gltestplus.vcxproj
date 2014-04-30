@@ -307,6 +307,7 @@
     <ClInclude Include="..\include\draw\ShadowMap.h" />
     <ClInclude Include="..\include\draw\WarDraw.h" />
     <ClInclude Include="..\include\dstring.h" />
+    <ClInclude Include="..\include\Entity-property.h\Header.h" />
     <ClInclude Include="..\include\Entity.h" />
     <ClInclude Include="..\include\EntityCommand.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />

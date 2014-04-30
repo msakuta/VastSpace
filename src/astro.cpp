@@ -16,7 +16,9 @@
 #include "Universe.h"
 #include "judge.h"
 #include "CoordSys-find.h"
+#include "CoordSys-property.h"
 #include "Game.h"
+#include "sqserial.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/mathdef.h>
@@ -663,6 +665,27 @@ bool Star::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		const SQChar *name;
+		if(SQ_FAILED(sq_getstring(v, 2, &name)))
+			return sq_throwerror(v, _SC("Argument is not convertible to string in Star.constructor"));
+		CoordSys *parent = sq_refobj(v, 3);
+		if(!parent)
+			return sq_throwerror(v, _SC("Argument is not convertible to CoordSys in Star.constructor"));
+		Star *star = new Star(name, parent);
+		sqserial_findobj(v, star, [](HSQUIRRELVM v, Serializable *s){
+			sq_push(v, 1);
+			SQUserPointer p;
+			if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
+				throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+			new(p) SqSerialPtr<CoordSys>(v, static_cast<CoordSys*>(s));
+			sq_setreleasehook(v, -1, [](SQUserPointer p, SQInteger size){
+				((SqSerialPtr<CoordSys>*)p)->~SqSerialPtr<CoordSys>();
+				return SQInteger(1);
+			});
+		});
+		return SQInteger(0);
+	});
 	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;
@@ -683,6 +706,41 @@ bool Star::readFile(StellarContext &sc, int argc, const char *argv[]){
 
 bool Star::readFileEnd(StellarContext &sc){
 	return st::readFileEnd(sc);
+}
+
+CoordSys::PropertyMap &Star::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["rad"] = PropertyEntry([](HSQUIRRELVM v){
+			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+			sq_pushfloat(v, cs->rad);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v){
+			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Star.rad set fail"));
+			cs->rad = f;
+			return SQInteger(0);
+		});
+		pmap["spect"] = PropertyEntry([](HSQUIRRELVM v){
+			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+			sq_pushstring(v, spectralToName(cs->spect), -1);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v){
+			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+			const SQChar *str;
+			if(SQ_FAILED(sq_getstring(v, 3, &str)))
+				return sq_throwerror(v, _SC("Star.spect set fail"));
+			cs->spect = nameToSpectral(str);
+			return SQInteger(0);
+		});
+	}
+	return pmap;
 }
 
 double Star::appmag(const Vec3d &pos, const CoordSys &cs)const{

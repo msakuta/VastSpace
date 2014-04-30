@@ -21,6 +21,7 @@
 #include "draw/WarDraw.h"
 #endif
 #include "Game.h"
+#include "CoordSys-property.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -1571,6 +1572,20 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	return 1;
 }
 
+CoordSys::PropertyMap &CoordSys::propertyMap()const{
+	static PropertyMap pmap;
+	static bool propInit = false;
+	if(!propInit){
+		propInit = true;
+		pmap[_SC("id")] = PropertyEntry([](HSQUIRRELVM v){sq_pushinteger(v, CoordSys::sq_refobj(v, 1)->getid()); return SQInteger(1);}, NULL),
+		pmap[_SC("pos")] = PropertyEntry(tgetter<Vec3d, &CoordSys::pos>, tsetter<Vec3d, &CoordSys::pos>);
+		pmap[_SC("velo")] = PropertyEntry(tgetter<Vec3d, &CoordSys::velo>, tsetter<Vec3d, &CoordSys::velo>);
+		pmap[_SC("rot")] = PropertyEntry(tgetter<Quatd, &CoordSys::rot>, tsetter<Quatd, &CoordSys::rot>);
+		pmap[_SC("omg")] = PropertyEntry(tgetter<Vec3d, &CoordSys::omg>, tsetter<Vec3d, &CoordSys::omg>);
+	}
+	return pmap;
+}
+
 SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *wcs;
@@ -1650,17 +1665,37 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		sq_setinstanceup(v, -1, &p->w->rs);
 		return 1;
 	}
-	else
-		return SQ_ERROR;
+	else{
+		CoordSys::PropertyMap &pmap = p->propertyMap();
+
+		CoordSys::PropertyMap::iterator it = pmap.find(wcs);
+		if(it != pmap.end()){
+			if(!it->second.get)
+				return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" is not readable"));
+			return it->second.get(v);
+		}
+		else
+			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" not found"));
+	}
 }
 
 SQInteger sqf_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
-		return SQ_ERROR;
+		return sq_throwerror(v, _SC("Invalid _set call"));
 	CoordSys *p = CoordSys::sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	return SQ_ERROR;
+	const SQChar *scs;
+	sq_getstring(v, 2, &scs);
+
+	CoordSys::PropertyMap &pmap = p->propertyMap();
+
+	CoordSys::PropertyMap::iterator it = pmap.find(scs);
+	if(it != pmap.end()){
+		if(!it->second.set)
+			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" is not writable"));
+		return it->second.set(v);
+	}
+	else
+		return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" not found"));
 }
 
 SQInteger sqf_cmp(HSQUIRRELVM v){

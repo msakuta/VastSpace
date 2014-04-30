@@ -13,6 +13,7 @@
 #include "StarEnum.h"
 #include "StaticInitializer.h"
 #include "sqadapt.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -63,7 +64,6 @@ int WarpBubble::serialNo = 0;
 
 
 #ifndef _WIN32
-int Warpable::popupMenu(PopupMenu &list){}
 void Warpable::drawHUD(wardraw_t *wd){}
 #endif
 
@@ -94,6 +94,12 @@ Warpable::Warpable(WarField *aw) : st(aw){
 
 void Warpable::init(){
 	st::init();
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Warpable.nut"),
+			SqCallbackProcess(sqPopupMenu, _SC("popupMenu")));
+		initialized = true;
+	}
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */15000. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;
@@ -523,6 +529,12 @@ bool Warpable::command(EntityCommand *com){
 		return st::command(com);
 	}
 	return false;
+}
+
+HSQOBJECT Warpable::sqPopupMenu = sq_nullobj();
+
+HSQOBJECT Warpable::getSqPopupMenu(){
+	return sqPopupMenu;
 }
 
 

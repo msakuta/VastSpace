@@ -179,12 +179,6 @@ void Autonomous::drawtra(wardraw_t *wd){
 }
 
 
-int Warpable::popupMenu(PopupMenu &list){
-	int ret = st::popupMenu(list);
-	list.appendSeparator().append("Warp to...", 'w', "warpmenu");
-	return ret;
-}
-
 void Autonomous::drawHUD(wardraw_t *wd){
 	Autonomous *p = this;
 /*	base_drawHUD_target(pt, wf, wd, gdraw);*/

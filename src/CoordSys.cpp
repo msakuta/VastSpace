@@ -1558,6 +1558,19 @@ static SQInteger sqf_getpath(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_findcs(HSQUIRRELVM v){
+	CoordSys *p = CoordSys::sq_refobj(v);
+	const SQChar *s;
+	sq_getstring(v, -1, &s);
+	CoordSys *cs = p->findcs(s);
+	if(cs){
+		CoordSys::sq_pushobj(v, cs);
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
 static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *s;
@@ -1720,6 +1733,7 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("transRotation"), sqf_transRotation);
 	register_code_func(v, _SC("transVelocity"), _SC("return function(velo, cs){return this.transPosition(velo, cs, true);}"), true);
 	register_closure(v, _SC("getpath"), sqf_getpath);
+	register_closure(v, _SC("findcs"), sqf_findcs, 2, _SC("xs"));
 	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
 	register_closure(v, _SC("accel"), sqf_accel, 3, "xxx");

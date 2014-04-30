@@ -598,6 +598,7 @@ class Bookmark{
 	function cs(){return null;} // Pure virtual would be appropriate
 	pos = Vec3d(0,0,0)
 	rot = Quatd(0,0,0,1)
+	warpable = true;
 	function _tostring(){
 		return path() + " " + pos + " " + rot;
 	}

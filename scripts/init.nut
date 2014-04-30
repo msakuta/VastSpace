@@ -74,12 +74,13 @@ function stellarReadFile(cs, varlist, name, ...){
 		return compilestring("return (" + s + ")").call(varlist);
 	};
 
-	if(name == "bookmark"){
+	if(name == "bookmark" || name == "teleport"){
 		if(::bookmarks == null)
 			::bookmarks <- {};
 		local item = BookmarkCoordSys(cs);
 		item.pos = Vec3d(1 < vargv.len() ? eval(vargv[1]).tofloat() : 0, 2 < vargv.len() ? eval(vargv[2]).tofloat() : 0, 3 < vargv.len() ? eval(vargv[3]).tofloat() : 0);
 		item.rot = 4 < vargv.len() ? eval(vargv[4]) : Quatd(0,0,0,1);
+		item.warpable = name != "teleport";
 		if(0 < vargv.len()){
 			print(vargv[0] + ": " + item);
 			::bookmarks[vargv[0]] <- item;

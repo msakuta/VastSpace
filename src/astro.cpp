@@ -623,8 +623,46 @@ bool Astrobj::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("orbits"), [](HSQUIRRELVM v){
+		Astrobj *star = static_cast<Astrobj*>(sq_refobj(v));
+		SQFloat radius, eccentricity, phase;
+		SQVec3d axis;
+		if(SQ_FAILED(sq_getfloat(v, 3, &radius)))
+			radius = 0;
+		if(SQ_FAILED(sq_getfloat(v, 4, &eccentricity)))
+			eccentricity = 0;
+		axis.getValue(v, 5);
+		if(SQ_FAILED(sq_getfloat(v, 6, &phase)))
+			phase = 0;
+		star->orbits(dynamic_cast<Astrobj*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
+		return SQInteger(0);
+	});
 	sq_createslot(v, -3);
 	return true;
+}
+
+const CoordSys::PropertyMap &Astrobj::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["mass"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			// Not dynamic_cast because it should be the correct type.
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->mass);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			// Not dynamic_cast because it should be the correct type.
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.rad set fail"));
+			a->mass = f;
+			return SQInteger(0);
+		});
+	}
+	return pmap;
 }
 
 

@@ -131,6 +131,7 @@ public:
 	virtual Astrobj *toAstrobj(){ return this; }
 	virtual double atmoScatter(const Viewer &vw)const{ return 0.; }
 	virtual bool sunAtmosphere(const Viewer &vw)const{ return false; }
+	const PropertyMap &propertyMap()const override;
 
 	/// \brief Returns approximate scale height of this astronomical object.
 	///

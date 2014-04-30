@@ -313,6 +313,7 @@ jpn <- {
 	["Toggle Other Players Camera View"]="他プレイヤーカメラの表示",
 	["Build Manager"]="ビルドマネージャ",
 	["Dock Manager"]="ドックマネージャ",
+	["Warp to..."]="ワープ先...",
 }
 
 // Set default language to english

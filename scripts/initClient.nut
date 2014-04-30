@@ -243,8 +243,21 @@ register_console_command("buildmenu", function(){
 ///
 /// This window is the first example that almost everything is defined in Squirrel script.
 /// It shows powerfulness and high productivity of scripting like JavaScript.
-register_console_command("warpmenu", function(){
-	local w = GLwindowSizeable("Warp Destination Window");
+///
+/// \param title Window title
+///
+/// \param locationGenerator Function to return a list of locations.
+///        This function must return an array of tables with following members:
+///            name: The name of item to display
+///            dist: Distance of the location from current viewpoint
+///            visited: A flag to filter out unvisited locations
+///
+/// \param selectEvent Event callback on clicking one of the items.
+///        This callback will given two arguments:
+///            first: The GLwindow that showing the list.
+///            second: Item being selected
+local function locationWindow(title,locationGenerator,selectEvent){
+	local w = GLwindowSizeable(title);
 	w.closable = true;
 	w.width = 320;
 	w.height = 480;
@@ -268,38 +281,7 @@ register_console_command("warpmenu", function(){
 	}
 
 	local function makeList(){
-		local i = 0;
-		local plpos = universe.transPosition(player.getpos(), player.cs);
-		local se = StarEnum(plpos, 1, true);
-		local params = {};
-		while(se.next(params)){
-			local sepos = params.pos;
-			local sesystem = params.system;
-			sclist.append({
-				pos = function(plpos){
-					if(sesystem)
-						return Vec3d(0,0,0)
-					else
-						return sepos + (plpos - sepos).norm() * AU_PER_KILOMETER;
-				},
-				dist = (params.pos - plpos).len(),
-				name = params.name,
-				visited = sesystem != null,
-				system = @() sesystem ? sesystem.findcs("orbit") : universe, // Defer execution of findcs() until actual use
-			});
-		}
-		foreach(k,v in bookmarks){
-			local cs = v.cs();
-			if(!cs) // A symbolic bookmark could be broken
-				continue;
-			sclist.append({
-				pos = @(plpos) v.pos,
-				dist = (universe.transPosition(v.pos, cs) - plpos).len(),
-				name = k,
-				visited = true,
-				system = @() cs,
-			});
-		}
+		sclist = locationGenerator();
 		sortList();
 	}
 
@@ -414,15 +396,7 @@ register_console_command("warpmenu", function(){
 			local i = 0;
 			foreach(sd in filterList()){
 				if(i == ind){
-					if(player && player.selected.len()){
-						local pe = player.selected[0];
-						local plpos = universe.transPosition(pe.pos, pe.cs);
-						local destcs = sd.system();
-						local destpos = sd.pos(plpos);
-						foreach(e in player.selected)
-							e.command("Warp", destcs, destpos);
-						w.close();
-					}
+					selectEvent(w,sd);
 				}
 				i++;
 			}
@@ -446,7 +420,89 @@ register_console_command("warpmenu", function(){
 		return false;
 	}
 
-});
+}
+
+register_console_command("warpmenu", @() locationWindow("Warp Destination Window", function(){
+	local sclist = [];
+	local i = 0;
+	local plpos = universe.transPosition(player.getpos(), player.cs);
+	local se = StarEnum(plpos, 1, true);
+	local params = {};
+	while(se.next(params)){
+		local sepos = params.pos;
+		local sesystem = params.system;
+		sclist.append({
+			pos = function(plpos){
+				if(sesystem)
+					return Vec3d(0,0,0)
+				else
+					return sepos + (plpos - sepos).norm() * AU_PER_KILOMETER;
+			},
+			dist = (params.pos - plpos).len(),
+			name = params.name,
+			visited = sesystem != null,
+			system = @() sesystem ? sesystem.findcs("orbit") : universe, // Defer execution of findcs() until actual use
+		});
+	}
+	foreach(k,v in bookmarks){
+		// Skip non-warpable bookmarks
+		if(!v.warpable)
+			continue;
+
+		local cs = v.cs();
+		if(!cs) // A symbolic bookmark could be broken
+			continue;
+		sclist.append({
+			// Items for locationWindow
+			dist = (universe.transPosition(v.pos, cs) - plpos).len(),
+			name = k,
+			visited = true,
+
+			pos = @(plpos) v.pos,
+			system = @() cs,
+		});
+	}
+	return sclist;
+},
+function(w,sd){
+	if(player && player.selected.len()){
+		local pe = player.selected[0];
+		local plpos = universe.transPosition(pe.pos, pe.cs);
+		local destcs = sd.system();
+		local destpos = sd.pos(plpos);
+		foreach(e in player.selected)
+			e.command("Warp", destcs, destpos);
+		w.close();
+	}
+}));
+
+register_console_command("teleportmenu", @() locationWindow("Teleport Destination Window", function(){
+	local sclist = [];
+	local i = 0;
+	local plpos = universe.transPosition(player.getpos(), player.cs);
+	foreach(k,v in bookmarks){
+		local cs = v.cs();
+		if(!cs) // A symbolic bookmark could be broken
+			continue;
+		sclist.append({
+			// Items for locationWindow
+			dist = (universe.transPosition(v.pos, cs) - plpos).len(),
+			name = k,
+			visited = true,
+
+			pos = v.pos,
+			cs = cs,
+		});
+	}
+	return sclist;
+},
+function(w,sd){
+	player.chase = null;
+	player.cs = sd.cs;
+	player.setpos(sd.pos);
+	player.setvelo(Vec3d(0,0,0));
+	w.close();
+}));
 
 function control(...){
 	if(player.isControlling())

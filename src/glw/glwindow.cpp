@@ -1694,34 +1694,38 @@ static HDC InitGlwHDC(int size){
 	return hdc;
 }
 
-int glwPutTextureStringN(const char *s, int n, int size){
-	static int init = 0;
+static std::map<GlyphCacheKey, GlyphCache> g_glyphmap;
+
+/// Returns the texture unit for font painting (atlas)
+/// and also initializes it if necessary.
+static GLuint initFontTex(){
 	static GLuint fonttex = 0;
-	GLint oldtex;
-	int i;
-	static std::map<GlyphCacheKey, GlyphCache> listmap;
-	static int sx = 0, sy = 0, maxheight = 0;
-	static void *buf;
+	if(fonttex)
+		return fonttex;
+
 	static GLubyte backbuf[GLDTW][GLDTW] = {0};
-	HDC hdc = InitGlwHDC(size);
 
-	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
-	if(!init){
-		init = 1;
-
-		glGenTextures(1, &fonttex);
-		glBindTexture(GL_TEXTURE_2D, fonttex);
-
-		// Initialize with pitch black image
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
-	}
+	glGenTextures(1, &fonttex);
 
 	glBindTexture(GL_TEXTURE_2D, fonttex);
 
-	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
-	wchar_t *wstr = new wchar_t[wsz];
-	MultiByteToWideChar(CP_UTF8, 0, s, -1, wstr, wsz);
-	for(i = 0; i < wsz;){
+	// Initialize with pitch black image
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
+
+	return fonttex;
+}
+
+/// Bake glyphs into OpenGL texture.
+/// \param nofonttex true if calling function have not bound the texture unit for font.
+static void bakeGlyphs(const wchar_t *wstr, int wsz, int size, bool nofonttex){
+	static int sx = 0, sy = 0, maxheight = 0;
+	static void *buf;
+	GLint oldtex = 0;
+	bool setfont = false;
+
+	static std::map<GlyphCacheKey, GlyphCache> &listmap = g_glyphmap;
+
+	for(int i = 0; i < wsz;){
 		int nc = 1;
 		wchar_t wch;
 		wch = wstr[i];
@@ -1732,6 +1736,7 @@ int glwPutTextureStringN(const char *s, int n, int size){
 		}*/
 		GlyphCacheKey gck(wch, size);
 		if(listmap.find(gck) == listmap.end()){
+			HDC hdc = InitGlwHDC(size);
 			TEXTMETRIC tm;
 			GetTextMetrics(hdc, &tm);
 			GlyphCache gc;
@@ -1794,6 +1799,13 @@ int glwPutTextureStringN(const char *s, int n, int size){
 					*it = *it * 255 / 64;
 #endif
 
+				// Bind the texture only if necessary and no more than once
+				if(nofonttex && !setfont){
+					glGetIntegerv(GL_TEXTURE_2D, &oldtex);
+					glBindTexture(GL_TEXTURE_2D, initFontTex());
+					setfont = true;
+				}
+
 				// Due to a bug in GeForce GTS250 OpenGL driver, we just cannot pass gm.gmBlackBoxX to 5th argument (width), but rather round it up to multiple of 4 bytes.
 				// Excess pixels in the 4 byte boundary will overwritten, but they're always right side of the subimage, meaning no content have chance to be overwritten.
 				// The bug is that lower end of the subimage is not correctly transferred but garbage pixels, which implies that count of required bytes transferred is incorrectly calculated.
@@ -1838,6 +1850,25 @@ int glwPutTextureStringN(const char *s, int n, int size){
 		i += nc;
 	}
 
+	// Restore the original state only if we have needed to change it
+	if(nofonttex && setfont)
+		glBindTexture(GL_TEXTURE_2D, oldtex);
+}
+
+int glwPutTextureStringN(const char *s, int n, int size){
+	static int init = 0;
+	GLint oldtex;
+	int i;
+
+	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
+	glBindTexture(GL_TEXTURE_2D, initFontTex());
+
+	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
+	wchar_t *wstr = new wchar_t[wsz];
+	MultiByteToWideChar(CP_UTF8, 0, s, -1, wstr, wsz);
+
+	bakeGlyphs(wstr, wsz, size, false);
+
 //	glPushMatrix();
 	glPushAttrib(GL_TEXTURE_BIT);
 	glEnable(GL_TEXTURE_2D);
@@ -1861,7 +1892,7 @@ int glwPutTextureStringN(const char *s, int n, int size){
 			nc++;
 			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
 		}*/
-		GlyphCache gc = listmap[GlyphCacheKey(wch, size)];
+		GlyphCache gc = g_glyphmap[GlyphCacheKey(wch, size)];
 		glTexCoord2d((double)gc.x0 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y1 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, 0);
@@ -1885,14 +1916,24 @@ int glwPutTextureString(const char *s, int size){
 }
 
 int glwGetSizeTextureStringN(const char *s, long n, int isize){
-	HDC hdc = InitGlwHDC(isize);
 	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
 	wchar_t *wstr = new wchar_t[wsz];
 	MultiByteToWideChar(CP_UTF8, 0, s, n, wstr, wsz);
-	SIZE size;
-	GetTextExtentPoint32W(hdc, wstr, wsz, &size);
+
+	bakeGlyphs(wstr, wsz, isize, true);
+
+	int ret = 0;
+	for(int i = 0; i < wsz; i++){
+		wchar_t wch;
+		wch = wstr[i];
+		GlyphCacheKey gck(wch, isize);
+		auto it = g_glyphmap.find(gck);
+		if(it != g_glyphmap.end()){
+			ret += it->second.x1 - it->second.x0;
+		}
+	}
 	delete[] wstr;
-	return size.cx;
+	return ret;
 }
 
 int glwGetSizeTextureString(const char *s, int size){

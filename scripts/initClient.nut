@@ -361,14 +361,7 @@ register_console_command("warpmenu", function(){
 	}
 
 	w.onMouse = function(event){
-		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
-			sorter = !sorter;
-			sortList();
-		}
-		else if(event.key == "leftButton" && event.state == "down" && event.y < 2 * fontheight()){
-			filter = !filter;
-		}
-		else if(event.key == "leftButton" && event.state == "down"){
+		local function trackScrollBar(){
 			local r = w.clientRect().moved(0,0);
 
 			r.x1 -= scrollBarWidth;
@@ -379,9 +372,24 @@ register_console_command("warpmenu", function(){
 					scrollBarWidth, r.height, filterList().len() * fontheight() - r.height, scrollpos);
 				if(0 <= iy){
 					scrollpos = iy;
-					return 1;
+					return true;
 				}
 			}
+			return false;
+		}
+
+		local wheelSpeed = fontheight() * 2;
+
+		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
+			sorter = !sorter;
+			sortList();
+		}
+		else if(event.key == "leftButton" && event.state == "down" && event.y < 2 * fontheight()){
+			filter = !filter;
+		}
+		else if(event.key == "leftButton" && event.state == "down"){
+			if(trackScrollBar())
+				return true;
 			local ind = ((event.y + scrollpos) / fontheight()) - 2;
 			local i = 0;
 			foreach(sd in filterList()){
@@ -406,6 +414,23 @@ register_console_command("warpmenu", function(){
 				i++;
 			}
 		}
+		else if(event.key == "wheelUp"){
+			if(0 <= scrollpos - wheelSpeed)
+				scrollpos -= wheelSpeed;
+			else
+				scrollpos = 0;
+		}
+		else if(event.key == "wheelDown"){
+			local scrollBarRange = filterList().len() * fontheight() - (w.clientRect().height - 2 * fontheight());
+			if(scrollpos + wheelSpeed < scrollBarRange)
+				scrollpos += wheelSpeed;
+			else
+				scrollpos = scrollBarRange - 1;
+		}
+		else if(event.key == "leftButton" && event.state == "keepDown"){
+			trackScrollBar();
+		}
+		return false;
 	}
 
 });

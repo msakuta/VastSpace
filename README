@@ -21,9 +21,9 @@ Run svn-bullet.bat BEFORE opening a Visual Studio solution file.
 You need a Subversion client installed on your computer
 in order to run the batch file.
 
-Supported target versions of Visual Studio are currently only
-2008 and 2012 (Express).  Building with 2010 could be possible,
-but I haven't gave it a try.
+Since this project uses C++11 features extensively,
+supported target versions of Visual Studio are currently only
+2012 (Express).
 
 With Visual Studio 2012, you will need to manually change
 platform toolset to "Visual Stuido 2012 (v110)" in the IDE
@@ -35,6 +35,8 @@ Building Linux Server
 ---------------------
 
 Invoking gnu make will build the application.
+Gcc and g++ with C++11 support is needed.
+Gcc 4.8.2 is confirmed to build to some extent.
 
 You'll need various external libraries:
   libpng

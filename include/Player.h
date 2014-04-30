@@ -26,24 +26,6 @@ class Viewer;
 class GLWstateButton;
 class ClientApplication;
 
-/** \brief The Teleport desination record.
- *
- * Partially obsolete. It may be replaced with Squirrel bookmarks.
- */
-struct EXPORT teleport{
-	teleport(CoordSys *cs = NULL, const char *name = NULL, int flags = 0, const Vec3d &pos = Vec3d(0,0,0));
-	~teleport();
-	void init(CoordSys *cs, const char *name, int flags, const Vec3d &pos);
-
-	/// Serialization for save games. Not really necessary to transmit between server and client.
-	void serialize(SerializeContext &sc);
-	void unserialize(UnserializeContext &sc);
-
-	CoordSys *cs; ///< CoordSys object of destination local space.
-	gltestp::dstring name; ///< Name of this entry
-	int flags;
-	Vec3d pos; ///< Offset to the center of local CoordSys designating the destination.
-};
 
 
 /** \brief The Player in front of display.
@@ -165,7 +147,6 @@ public:
 	void mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM lParam);
 #endif
 	Quatd orientation()const;
-	const std::vector<teleport> &getTplist()const{return tplist;}
 
 	void beginControl(Entity *e); ///< Begin controlling an Entity. If called in the client, a message is sent to the server.
 	void inputControl(const input_t &inputs, double dt); ///< Interpret control inputs from the client.
@@ -174,15 +155,8 @@ public:
 	static float camera_mode_switch_time;
 	static void cmdInit(ClientApplication &);
 	static int cmd_mover(int argc, char *argv[], void *pv);
-	static int cmd_teleport(int argc, char *argv[], void *pv);
 	static int cmd_moveorder(int argc, char *argv[], void *pv);
 	static int cmd_control(int argc, char *argv[], void *pv); ///< Switch control of selected Entity
-	teleport *findTeleport(const char *, int flags = ~0); ///< returns teleport node found
-	teleport *addTeleport(); ///< returns allocated uninitialized struct
-	typedef unsigned teleport_iterator;
-	teleport_iterator beginTeleport();
-	teleport *getTeleport(teleport_iterator);
-	teleport_iterator endTeleport();
 
 	/// Define class Player for Squirrel.
 	static void sq_define(HSQUIRRELVM v);
@@ -202,7 +176,6 @@ public:
 protected:
 	void beginControlInt(Entity *e);
 	void endControlInt();
-	std::vector<teleport> tplist;
 private:
 	static SQInteger sqf_players(HSQUIRRELVM v);
 	static SQInteger sqf_select(HSQUIRRELVM v);

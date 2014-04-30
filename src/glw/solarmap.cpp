@@ -192,6 +192,13 @@ int cmd_togglegalaxymap(int argc, const char *argv[]){
 class GLwindowSolarMap : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
+
+	struct BookmarkCache{
+		Vec3d pos;
+		CoordSys *cs;
+		gltestp::dstring name;
+	};
+
 	GLwindowSolarMap(Game *game, const char *title, Player *pl);
 	static GLwindow *showWindow(Player *pl);
 	const char *classname()const{return "GLwindowSolarMap";}
@@ -210,13 +217,13 @@ public:
 	int morg[2];
 	int hold;
 	const CoordSys *sol; ///< currently showing solar system
-	struct teleport *target;
+	BookmarkCache target;
 	const Astrobj *targeta; ///< astro
 	Entity *targete; ///< entity
 	WarField *targetc; ///< collapsed
 	Entity *targetr; ///< resource station
 	int focusc, sync; ///< Focus on current position
-	struct teleport *focus;
+	BookmarkCache focus;
 	const Astrobj *focusa;
 	Player *ppl;
 protected:
@@ -261,12 +268,12 @@ GLwindowSolarMap::GLwindowSolarMap(Game *game, const char *title, Player *apl) :
 	p->focusc = 0;
 	p->sync = 0;
 	p->sol = NULL;
-	p->target = NULL;
+	p->target.cs = NULL;
 	p->targeta = NULL;
 	p->targetc = NULL;
 	p->targete = NULL;
 	p->targetr = NULL;
-	p->focus = NULL;
+	p->focus.cs = NULL;
 	p->focusa = NULL;
 }
 
@@ -487,7 +494,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			break;
 		}
 	}
-	p->target = NULL;
+	p->target.cs = NULL;
 	p->targeta = NULL;
 	p->targete = NULL;
 	p->targetc = NULL;
@@ -518,8 +525,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			Vec3d focuspos = sol->tocs(p->focusa->pos, p->focusa->parent);
 			p->org = focuspos * 1. / sol->csrad;
 		}
-		else if(p->focus){
-			Vec3d focuspos = sol->tocs(p->focus->pos, p->focus->cs);
+		else if(p->focus.cs){
+			Vec3d focuspos = sol->tocs(p->focus.pos, p->focus.cs);
 			p->org = focuspos * 1. / sol->csrad;
 		}
 		else if(p->focusc){
@@ -599,14 +606,58 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		params.textcolor[1] = 255;
 		params.textcolor[2] = 255;
 		params.textcolor[3] = 255;
-		for(Player::teleport_iterator it = 0; it != ppl->endTeleport(); it++){
-			teleport *tp = ppl->getTeleport(it);
-			params.apos0 = sol->tocs(tp->pos, tp->cs);
-			params.name = tp->name;
-			params.rad = 0.;
-			if(drawSolarMapItem(&params))
-				p->target = tp;
+
+		// Read bookmarks from Squirrel VM
+		try{
+			HSQUIRRELVM v = game->sqvm;
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("bookmarks"), -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				throw SQFError("bookmarks not found");
+			sq_pushnull(v);
+			while(SQ_SUCCEEDED(sq_next(v, -2))){ // .. table idx key value
+				sq_pushstring(v, _SC("pos"), -1); // .. table idx key value "pos"
+				if(SQ_FAILED(sq_get(v, -2))){ // .. table idx key value value.pos
+					sq_pop(v, 2);
+					continue;
+				}
+				SQVec3d q;
+				q.getValue(v, -1);
+				sq_poptop(v); // .. table idx key value
+				sq_pushstring(v, _SC("cs"), -1); // .. table idx key value "cs"
+				if(SQ_FAILED(sq_get(v, -2))){ // .. table idx key value value.cs
+					sq_pop(v, 2);
+					continue;
+				}
+				sq_push(v, -2); // .. table idx key value value.cs value
+				if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))){ // .. table idx key value value.cs cs
+					sq_pop(v, 3);
+					continue;
+				}
+				CoordSys *cs = CoordSys::sq_refobj(v, -1);
+				if(!cs){
+					sq_pop(v, 3);
+					continue;
+				}
+				sq_pop(v, 2); // .. table idx key value
+				const SQChar *name;
+				if(SQ_FAILED(sq_getstring(v, -2, &name))){
+					sq_pop(v, 2);
+					continue;
+				}
+				params.apos0 = sol->tocs(q.value, cs);
+				params.name = name;
+				params.rad = 0.;
+				if(drawSolarMapItem(&params))
+					/*p->target = tp*/;
+				sq_pop(v, 2);
+			}
 		}
+		catch(SQFError &e){
+			CmdPrint(e.what());
+		}
+
 		drawMapCSOrbit(sol, sol, &params);
 		params.pointcolor[0] = 191;
 		params.pointcolor[1] = 191;
@@ -642,9 +693,9 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glVertex3d(plpos[0] + 8, plpos[1] - 8, 0);
 		glVertex3d(plpos[0] - 8, plpos[1] + 8, 0);
 		glEnd();
-		if(p->focus || p->focusa){
+		if(p->focus.cs || p->focusa){
 			int ind = 1;
-			Vec3d apos0 = sol->tocs(p->focus ? p->focus->pos : p->focusa->pos, p->focus ? p->focus->cs : p->focusa->parent);
+			Vec3d apos0 = sol->tocs(p->focus.cs ? p->focus.pos : p->focusa->pos, p->focus.cs ? p->focus.cs : p->focusa->parent);
 			apos0 += p->org * -sol->csrad;
 			apos0 *= 1. / range * this->width;
 			Vec3d apos = p->rot.trans(apos0);
@@ -723,7 +774,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glwpos2d(cr.x0 + 48 + 2, cr.y0 + 12);
 			glwprintf(ind == 0 ? "Reset View" : ind == 1 ? "Defocus" : ind == 2 ? "Current Position" : "Synchronize Rotation");
 		}
-		if(p->focus || p->focusa){
+		if(p->focus.cs || p->focusa){
 			int ind = 1;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
@@ -809,7 +860,7 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 		if(state == GLUT_DOWN && mbutton == GLUT_LEFT_BUTTON) switch(ind){
 			case 0: org.clear(); rot = quat_u; return 1;
 			case 2: focusc = !focusc; /* fall through */
-			case 1: focus = NULL; focusa = NULL; return 1;
+			case 1: focus.cs = NULL; focusa = NULL; return 1;
 			case 3: sync = !sync; return 1;
 		}
 		return 1;
@@ -839,9 +890,9 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 
 	// Context menu over astronomic objects
 	if(state == GLUT_UP && mbutton == GLUT_LEFT_BUTTON){
-		if((target || targeta || targetr) && hold != 2){
-			const char *name = target ? target->name : targeta ? targeta->name : targetr->classname();
-			const char *typestring = target ? "Teleport" : "Astro";
+		if((target.cs || targeta || targetr) && hold != 2){
+			const char *name = target.cs ? target.name : targeta ? targeta->name : targetr->classname();
+			const char *typestring = target.cs ? "Teleport" : "Astro";
 			char titles0[5][128], *titles[5];
 			int keys[5];
 			char cmds0[5][128], *cmds[5];
@@ -865,8 +916,8 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 
 			struct PopupMenuItemWarp : public PopupMenuItem{
 				GLwindowSolarMap *parent;
-				teleport *target;
-				PopupMenuItemWarp(GLwindowSolarMap *parent, teleport *target) : PopupMenuItem("Warp"), parent(parent), target(target){}
+				BookmarkCache *target;
+				PopupMenuItemWarp(GLwindowSolarMap *parent, BookmarkCache *target) : PopupMenuItem("Warp"), parent(parent), target(target){}
 				virtual void execute(){
 					Player::SelectSet &selected = parent->game->player->selected;
 					WarpCommand com;
@@ -879,8 +930,8 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 				}
 				virtual PopupMenuItem *clone()const{return new PopupMenuItemWarp(*this);}
 			};
-			if(target)
-				menu.append(new PopupMenuItemWarp(this, target));
+			if(target.cs)
+				menu.append(new PopupMenuItemWarp(this, &target));
 
 			GLwindow *glwInfo(const CoordSys *cs, int type, const char *name);
 			struct PopupMenuItemInfo : public PopupMenuItem{
@@ -950,7 +1001,7 @@ int GLwindowSolarMap::key(int key){
 	switch(key){
 		case 'r': VECNULL(p->org); QUATIDENTITY(p->rot); break;
 		case 'c': p->focusc = !p->focusc; /* fall through */
-		case 'f': p->focus = NULL; p->focusa = NULL; break;
+		case 'f': p->focus.cs = NULL; p->focusa = NULL; break;
 		case 's': p->sync = !p->sync; break;
 		case '+': p->dstrange /= 2.; break;
 		case '-': p->dstrange *= 2.; break;
@@ -1047,7 +1098,6 @@ class GLWinfo : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
 	int type;
-	struct teleport *tp;
 	Astrobj *a;
 	GLWinfo(Game *game, const char *title) : st(game, title){}
 	virtual void draw(GLwindowState &ws, double t);
@@ -1108,24 +1158,6 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			glwprintf("Alias Name: %s", (const char*)p->a->extranames[i]);
 		}
 	}
-	else if(p->type == 3){
-		if(!p->tp)
-			return;
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Teleport Site");
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Name: %s", p->tp->name);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("CoordSys: %s", p->tp->cs->name);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Position: %lg,%lg,%lg", p->tp->pos[0], p->tp->pos[1], p->tp->pos[2]);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Flags: ");
-		if(p->tp->flags & TELEPORT_TP)
-			glwprintf("Teleportable ");
-		if(p->tp->flags & TELEPORT_WARP)
-			glwprintf("Warpable ");
-	}
 }
 
 int GLWinfo::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
@@ -1141,7 +1173,6 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 	ret->setCollapsable(true);
 	glwAppend(ret);
 	ret->type = type;
-	ret->tp = NULL;
 	ret->a = NULL;
 	if(type == 0 || type == 1){
 		Astrobj *ao = const_cast<CoordSys*>(cs)->findastrobj(name);
@@ -1152,7 +1183,7 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 			return ret;
 		}
 	}
-	if(ret->tp == NULL && ret->a == NULL){
+	if(ret->a == NULL){
 		ret->postClose();
 	}
 	return ret;

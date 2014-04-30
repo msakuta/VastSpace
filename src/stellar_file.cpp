@@ -30,33 +30,6 @@ extern "C"{
 extern double gravityfactor;
 
 
-teleport::teleport(CoordSys *acs, const char *aname, int aflags, const Vec3d &apos) : cs(acs), name(aname), flags(aflags), pos(apos){
-}
-
-teleport::~teleport(){
-}
-
-void teleport::serialize(SerializeContext &sc){
-//	st::serialize(sc);
-	sc.o << cs;
-	sc.o << name;
-	sc.o << flags;
-	sc.o << pos;
-}
-
-void teleport::unserialize(UnserializeContext &sc){
-//	st::unserialize(sc);
-	cpplib::dstring name;
-	sc.i >> cs;
-	sc.i >> name;
-	sc.i >> flags;
-	sc.i >> pos;
-
-	this->name = strnewdup(name, name.len());
-}
-
-
-
 
 /// \brief The scanner class to interpret a Stellar Structure Definition file.
 ///

@@ -8,9 +8,6 @@
 #include <stdio.h>
 #include <squirrel.h>
 
-#define TELEPORT_TP     1
-#define TELEPORT_WARP   2
-#define TELEPORT_PORTAL 4 /* should really have different data structure. */
 
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);

@@ -110,9 +110,6 @@ private:
 
 float Player::camera_mode_switch_time = 1.f;
 
-//static teleport *tplist;
-//static int ntplist;
-
 static long framecount = 0;
 
 void Player::CameraController::operator ()(const input_t &inputs, double dt){}
@@ -320,12 +317,6 @@ Player::Player(Game *game, const Player *org) : st(game), pos(Vec3d(0,0,0)), vel
 		setpos(org->getpos());
 		setvelo(org->getvelo());
 		setrot(org->getrot());
-
-		// Teleport list is only initialized for the first Player object during stellar
-		// structure definition file processing.
-		// Probably tplist is not really member of Player, but it could be altered per Player
-		// or faction.
-		tplist = org->tplist;
 	}
 }
 
@@ -419,9 +410,12 @@ void Player::serialize(SerializeContext &sc){
 	sc.o << fov;
 	sc.o << viewdist;
 	sc.o << cs;
-	sc.o << (unsigned)tplist.size();
-	for(int i = 0; i < tplist.size(); i++)
-		tplist[i].serialize(sc);
+
+	// TODO: serialize bookmarks
+//	sc.o << (unsigned)tplist.size();
+//	for(int i = 0; i < tplist.size(); i++)
+//		tplist[i].serialize(sc);
+
 	sc.o << cpos;
 	sc.o << (mover == NULL ? CMMover::NoMover : mover == freelook ? CMMover::Freelook : mover == tactical ? CMMover::Tactical : CMMover::CockpitView);
 	sc.o << (nextmover == NULL ? CMMover::NoMover : nextmover == freelook ? CMMover::Freelook : mover == tactical ? CMMover::Tactical : CMMover::CockpitView);
@@ -470,9 +464,11 @@ void Player::unserialize(UnserializeContext &sc){
 	sc.i >> viewdist;
 	sc.i >> cs;
 	sc.i >> ntplist;
-	tplist.resize(ntplist);
-	for(int i = 0; i < ntplist; i++)
-		tplist[i].unserialize(sc);
+
+	// TODO: unserialize bookmarks
+//	tplist.resize(ntplist);
+//	for(int i = 0; i < ntplist; i++)
+//		tplist[i].unserialize(sc);
 	
 	// Disabling this if statement (always pass) enables the server to control the client's camera status, which can be thought
 	// as the client's own property. But if we use this conditional statement, we cannot dynamically control cameras of the
@@ -770,7 +766,6 @@ void Player::cmdInit(ClientApplication &application){
 //	ServerCmdAdd("srot", scmd_srot);
 	CmdAdd("pos", cmd_pos);
 	ServerCmdAdd("spos", scmd_spos);
-	CmdAddParam("teleport", cmd_teleport, &pl);
 	CmdAddParam("moveorder", cmd_moveorder, &application);
 	CvarAdd("fov", &pl.fov, cvar_double);
 	CvarAdd("camera_mode_switch_time", &camera_mode_switch_time, cvar_float);
@@ -804,30 +799,6 @@ int Player::cmd_mover(int argc, char *argv[], void *pv){
 	}
 	else
 		CmdPrint("unknown func");
-	return 0;
-}
-
-int Player::cmd_teleport(int argc, char *argv[], void *pv){
-	Player &pl = *(Player*)pv;
-	const char *arg = argv[1];
-	if(!arg){
-		CmdPrint("Specify location you want to teleport to.");
-		return 0;
-	}
-	if(pl.chase){
-		return 0;
-	}
-	{
-		int i;
-		for(i = 0; i < pl.tplist.size(); i++) if(!strcmp(argv[1], pl.tplist[i].name)){
-			pl.cs = pl.tplist[i].cs;
-			pl.pos = pl.tplist[i].pos;
-			pl.velo.clear();
-			break;
-		}
-		if(i == pl.tplist.size())
-			CmdPrint(cpplib::dstring() << "Could not find location \"" << arg << "\".");
-	}
 	return 0;
 }
 
@@ -915,29 +886,6 @@ void Player::endControlInt(){
 }
 
 
-
-teleport *Player::findTeleport(const char *name, int flags){
-	for(int i = 0; i < tplist.size(); i++) if(!strcmp(tplist[i].name, name) && flags & tplist[i].flags)
-		return &tplist[i];
-	return NULL;
-}
-
-teleport *Player::addTeleport(){
-	tplist.push_back(teleport());
-	return &tplist.back();
-}
-
-Player::teleport_iterator Player::beginTeleport(){
-	return 0;
-}
-
-teleport *Player::getTeleport(teleport_iterator i){
-	return &tplist[i];
-}
-
-Player::teleport_iterator Player::endTeleport(){
-	return tplist.size();
-}
 
 /// \brief The release hook of Entity that clears the weak pointer.
 ///

@@ -1338,8 +1338,12 @@ SQInteger GLwindow::sqf_close(HSQUIRRELVM v){
 	return 0;
 }
 
-const SQChar *GLwindow::sqClassName(){
+const SQChar *GLwindow::s_sqClassName(){
 	return _SC("GLwindow");
+}
+
+const SQChar *GLwindow::sqClassName()const{
+	return s_sqClassName();
 }
 
 
@@ -1491,8 +1495,12 @@ int GLwindowSizeable::mouseCursorState(int x, int y)const{
 	return edgeflags;
 }
 
-const SQChar *GLwindowSizeable::sqClassName(){
+const SQChar *GLwindowSizeable::s_sqClassName(){
 	return _SC("GLwindowSizeable");
+}
+
+const SQChar *GLwindowSizeable::sqClassName()const{
+	return s_sqClassName();
 }
 
 static Initializer init_GLwindowSizeable("GLwindowSizeable", GLwindowSizeable::sq_define);
@@ -1501,12 +1509,12 @@ bool GLwindowSizeable::sq_define(HSQUIRRELVM v){
 	static const SQUserPointer tt_GLwindowSizeable = SQUserPointer("GLwindowSizeable");
 
 	StackReserver sr(v);
-	sq_pushstring(v, sqClassName(), -1);
+	sq_pushstring(v, s_sqClassName(), -1);
 	if(SQ_SUCCEEDED(sq_get(v, -2)))
 		return false;
 	GLwindow::sq_define(v);
-	sq_pushstring(v, sqClassName(), -1);
-	sq_pushstring(v, st::sqClassName(), -1);
+	sq_pushstring(v, s_sqClassName(), -1);
+	sq_pushstring(v, st::s_sqClassName(), -1);
 	if(SQ_FAILED(sq_get(v, -3)))
 		throw SQFError(_SC("GLwindow is not defined"));
 	sq_newclass(v, SQTrue);

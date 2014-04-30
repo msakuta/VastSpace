@@ -261,7 +261,8 @@ public:
 	/// The type tag for this class in Squirrel VM.
 	static const SQUserPointer tt_GLwindow;
 
-	static const SQChar *sqClassName();
+	static const SQChar *s_sqClassName();
+	const SQChar *sqClassName()const override;
 
 	HSQOBJECT sq_onDraw; ///< Squirrel event handler on drawing
 	HSQOBJECT sq_onMouse; ///< Squirrel event handler on mouse pointer action
@@ -374,7 +375,8 @@ public:
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	bool mouseNC(GLwindowState &ws, int button, int state, int x, int y);
 
-	static const SQChar *sqClassName();
+	static const SQChar *s_sqClassName();
+	const SQChar *sqClassName()const override;
 
 	/// Define this class for Squirrel VM.
 	static bool sq_define(HSQUIRRELVM v);

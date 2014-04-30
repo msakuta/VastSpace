@@ -1044,7 +1044,7 @@ static sqa::Initializer init_GLwindowSolarMap("GLwindowSolarMap", [](HSQUIRRELVM
 	// Define class GLwindowSolarMap
 	GLwindowSolarMap::st::sq_define(v);
 	sq_pushstring(v, _SC("GLwindowSolarMap"), -1);
-	sq_pushstring(v, GLwindowSolarMap::st::sqClassName(), -1);
+	sq_pushstring(v, GLwindowSolarMap::st::s_sqClassName(), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLwindowSolarMap");

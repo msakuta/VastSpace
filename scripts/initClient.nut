@@ -273,11 +273,31 @@ register_console_command("warpmenu", function(){
 		local se = StarEnum(plpos, 1, true);
 		local params = {};
 		while(se.next(params)){
+			local sepos = params.pos;
+			local sesystem = params.system;
 			sclist.append({
-				pos = params.pos,
+				pos = function(plpos){
+					if(sesystem)
+						return Vec3d(0,0,0)
+					else
+						return sepos + (plpos - sepos).norm() * AU_PER_KILOMETER;
+				},
 				dist = (params.pos - plpos).len(),
 				name = params.name,
-				system = params.system,
+				visited = sesystem != null,
+				system = @() sesystem ? sesystem.findcs("orbit") : universe, // Defer execution of findcs() until actual use
+			});
+		}
+		foreach(k,v in bookmarks){
+			local cs = v.cs();
+			if(!cs) // A symbolic bookmark could be broken
+				continue;
+			sclist.append({
+				pos = @(plpos) v.pos,
+				dist = (universe.transPosition(v.pos, cs) - plpos).len(),
+				name = k,
+				visited = true,
+				system = @() cs,
 			});
 		}
 		sortList();
@@ -285,7 +305,7 @@ register_console_command("warpmenu", function(){
 
 	local function filterList(){
 		if(filter)
-			return sclist.filter(@(i,v) v.system != null);
+			return sclist.filter(@(i,v) v.visited);
 		else
 			return sclist;
 	}
@@ -397,15 +417,8 @@ register_console_command("warpmenu", function(){
 					if(player && player.selected.len()){
 						local pe = player.selected[0];
 						local plpos = universe.transPosition(pe.pos, pe.cs);
-						local destcs = null;
-						local destpos = Vec3d(0,0,0);
-						if(sd.system && (destcs = sd.system.findcs("orbit"))){
-							destpos = Vec3d(0,0,0);
-						}
-						else{
-							destcs = universe;
-							destpos = sd.pos + (plpos - sd.pos).norm() * AU_PER_KILOMETER; // Offset an astronomical unit to avoid collision with the star
-						}
+						local destcs = sd.system();
+						local destpos = sd.pos(plpos);
 						foreach(e in player.selected)
 							e.command("Warp", destcs, destpos);
 						w.close();

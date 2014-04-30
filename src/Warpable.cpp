@@ -10,10 +10,16 @@
 #ifndef DEDICATED
 #include "astrodraw.h"
 #endif
+#include "StarEnum.h"
 #include "StaticInitializer.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
+#include <cpplib/CRC32.h>
+#include <fstream>
+#include <tuple>
+#include <functional>
 
 
 
@@ -523,3 +529,306 @@ bool Warpable::command(EntityCommand *com){
 void Warpable::post_warp(){
 }
 
+
+
+//=============================================================================
+// StarEnum implementation
+//=============================================================================
+
+#ifdef NDEBUG
+double g_star_num = 5;
+#else
+double g_star_num = 3;
+#endif
+
+const double StarEnum::sectorSize = 1e13;
+
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
+	plpos(plpos),
+	cen(
+		(int)floor(plpos[0] / sectorSize + .5),
+		(int)floor(plpos[1] / sectorSize + .5),
+		(int)floor(plpos[2] / sectorSize + .5)
+	),
+	numSectors(numSectors),
+	genCache(genCache)
+{
+	gx = cen[0] - numSectors;
+	gy = cen[1] - numSectors;
+	gz = cen[2] - numSectors - 1; // Start from one minuse the first sector.
+	newCell();
+}
+
+StarCacheDB StarEnum::starCacheDB;
+
+struct SylKey{
+	char key[2];
+	SylKey(const char *key = NULL){
+		if(key != NULL){
+			this->key[0] = key[0];
+			this->key[1] = key[1];
+		}
+	}
+	bool operator<(const SylKey &o)const{
+		return this->key[0] != o.key[0] ? this->key[0] < o.key[0] : this->key[1] < o.key[1];
+	}
+	char operator[](int index)const{
+		return key[index];
+	}
+};
+
+bool StarEnum::newCell(){
+	do{
+		// Advance indices to the next sector.
+		if(gz <= cen[2] + numSectors)
+			gz++;
+		else if(gy <= cen[1] + numSectors)
+			gy++, gz = cen[2] - numSectors;
+		else if(gx <= cen[0] + numSectors)
+			gx++, gy = cen[1] - numSectors, gz = cen[2] - numSectors;
+		else
+			return false;
+		numstars = int(g_star_num / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
+	}while(0 == numstars); // Skip sectors containing no stars
+
+	// Start a new random number sequence for this sector.
+	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
+
+	if(genCache){
+		static bool sylsInit = false;
+		struct Syllable{
+			int beginc;
+			int endc;
+			char str[3];
+
+			/// Predicate for bseach
+			static int cmp(const void *a, const void *b){
+				int r = *(int*)a;
+				const Syllable *f = (const Syllable*)b;
+				if(f->beginc <= r && r < f->endc)
+					return 0;
+				else
+					return r - f->beginc;
+			}
+		};
+
+		typedef std::map<SylKey, std::vector<Syllable> > SyllableSet;
+		static SyllableSet sylsDB;
+
+		static std::vector<Syllable> firstDB;
+		static int firstCount = 0;
+		if(!sylsInit){
+			std::ifstream syls("syl.txt");
+			int sylcount;
+			syls >> sylcount;
+			while(!syls.eof()){
+				std::string sylstr;
+				Syllable syl;
+				int count;
+				int first;
+				syls >> sylstr >> count >> first;
+				memcpy(syl.str, sylstr.c_str(), sizeof syl.str);
+				SylKey sylkey(sylstr.c_str());
+				auto it = sylsDB.find(sylkey);
+				if(it == sylsDB.end()){
+					syl.beginc = 0;
+					syl.endc = count;
+				}
+				else{
+					syl.beginc = sylsDB[sylkey].back().endc;
+					syl.endc = syl.beginc + count;
+				}
+				sylsDB[sylkey].push_back(syl);
+
+				if(first){
+					Syllable f;
+					f.beginc = firstCount;
+					firstCount += first;
+					f.endc = firstCount;
+					std::copy(sylstr.begin(), sylstr.begin() + 3, f.str);
+					firstDB.push_back(f);
+				}
+			}
+			sylsInit = true;
+		}
+
+		std::tuple<int,int,int> gkey(gx,gy,gz);
+		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		if(names == starCacheDB.end()){
+			RandomSequence rs = this->rs;
+			StarCacheList &newnames = starCacheDB[gkey];
+			for(int c = 0; c < numstars; c++){
+				gltestp::dstring name;
+				do{
+					std::string word;
+					SylKey next;
+					int length = rs.next() % 10 + 1;
+
+					// Penalize 3 character names by rolling the dice again, because 3 character names
+					// often collide.
+					if(length == 1)
+						length = rs.next() % 10 + 1;
+
+					for(int n = 0; n < length; n++){
+						// If we could not find the next syllable beginning with given 2 character sequence, stop there
+						if(n != 0 && sylsDB.find(next) == sylsDB.end())
+							break;
+						int sylcount = n == 0 ? firstCount : sylsDB[next].back().endc;
+
+						if(sylcount == 0)
+							break;
+
+						int r = rs.next() % sylcount;
+						int key = 0;
+
+						auto &syls = n == 0 ? firstDB : sylsDB[next];
+						const Syllable *v = (const Syllable*)std::bsearch(&r, &syls.front(), syls.size(), sizeof(syls.front()), Syllable::cmp);
+						assert(v);
+						next = &v->str[1];
+						word += v->str[0];
+					}
+					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
+
+					// Regenerate name if there is a collision of name in the sector.
+					// Note that we cannot avoid collisions among sectors because their order of
+					// creation is unpredictable.
+					bool duplicate = false;
+					for(auto ename : newnames){
+						if(ename.name == name){
+							duplicate = true;
+							break;
+						}
+					}
+					if(duplicate)
+						continue;
+				}while(false);
+
+				newnames.push_back(StarCache(name));
+			}
+			names = starCacheDB.find(gkey);
+		}
+
+		// Begin enumeration for next()
+		this->it = names->second.begin();
+		this->itend = names->second.end();
+	}
+	return true;
+}
+
+bool StarEnum::next(Vec3d &pos, StarCache **sc){
+	if(numstars <= 0){
+		if(!newCell())
+			return false; // We have gone through all the cells.
+	}
+	numstars--;
+
+	pos[0] = (drseq(&rs) + gx - 0.5) * sectorSize;
+	pos[1] = (drseq(&rs) + gy - 0.5) * sectorSize;
+	pos[2] = (drseq(&rs) + gz - 0.5) * sectorSize;
+
+	if(sc != NULL){
+		if(genCache && it != itend){
+			*sc = &*it;
+			++it; // Advance pointer
+		}
+		else
+			*sc = NULL;
+	}
+	return true;
+}
+
+RandomSequence *StarEnum::getRseq(){
+	// Return newly created random sequence instead of the sequence to generate stars in the main loop.
+	int buf[4] = {gx, gy, gz, numstars};
+	rsStar.init(crc32(buf, sizeof buf), 0);
+	return &rsStar;
+}
+
+static int cmd_find(int argc, char *argv[]){
+	if(argc <= 1){
+		for(auto it : StarEnum::starCacheDB){
+			for(auto it2 : it.second){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), it2.name.c_str());
+			}
+		}
+		CmdPrint("usage: find star_name");
+		return 0;
+	}
+	int count = 0;
+	for(auto it : StarEnum::starCacheDB){
+		for(auto it2 : it.second){
+			if(it2.name == argv[1]){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), argv[1]);
+				count++;
+			}
+		}
+	}
+	if(!count)
+		CmdPrintf("No such a star found: %s", argv[1]);
+}
+
+StaticInitializer stin([](){CmdAdd("find", cmd_find);});
+static bool sqStarEnumDef(HSQUIRRELVM){
+	return true;
+}
+
+sqa::Initializer sqin("StarEnum", [](HSQUIRRELVM v){
+	static SQUserPointer tt_StarEnum = SQUserPointer("StarEnum");
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("StarEnum"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_StarEnum);
+	sq_setclassudsize(v, -1, sizeof(StarEnum));
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		try{
+			void *p;
+			if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+				return sq_throwerror(v, _SC("Something is wrong in StarEnum.constructor"));
+			SQVec3d plpos;
+			plpos.getValue(v, 2);
+			SQInteger numSectors;
+			if(SQ_FAILED(sq_getinteger(v, 3, &numSectors)))
+				return sq_throwerror(v, _SC("StarEnum() second argument not convertible to int"));
+			SQBool genCache;
+			if(SQ_FAILED(sq_getbool(v, 4, &genCache)))
+				genCache = SQFalse;
+			new(p) StarEnum(plpos.value, numSectors, genCache == SQTrue);
+
+			sq_setreleasehook(v, 1, [](SQUserPointer p, SQInteger){
+				((StarEnum*)p)->~StarEnum();
+				return SQInteger(1);
+			});
+		}
+		catch(SQFError &e){
+			return sq_throwerror(v, e.what());
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("next"), [](HSQUIRRELVM v){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+			return sq_throwerror(v, _SC("Something is wrong in StarEnum.next"));
+		StarEnum *se = (StarEnum*)p;
+		SQVec3d pos;
+		StarCache *sc;
+		bool ret = se->next(pos.value, &sc);
+		auto def = [v](const SQChar *name, const SQChar *value){
+			sq_pushstring(v, name, -1);
+			sq_pushstring(v, value, -1);
+			sq_newslot(v, 2, SQFalse);
+		};
+		if(ret && sc){
+			def(_SC("name"), sc->name);
+			sq_pushstring(v, _SC("pos"), -1);
+			pos.push(v);
+			sq_newslot(v, 2, SQFalse);
+			sq_pushstring(v, _SC("system"), -1);
+			CoordSys::sq_pushobj(v, sc->system);
+			sq_newslot(v, 2, SQFalse);
+		}
+		sq_pushbool(v, ret ? SQTrue : SQFalse);
+		return SQInteger(1);
+	});
+	sq_newslot(v, -3, SQFalse);
+	return true;
+});

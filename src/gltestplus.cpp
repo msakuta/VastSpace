@@ -25,6 +25,7 @@
 #include "CoordSys-find.h"
 #include "stellar_file.h"
 #include "astrodraw.h"
+#include "StarEnum.h"
 #include "cmd.h"
 #include "keybind.h"
 #include "motion.h"

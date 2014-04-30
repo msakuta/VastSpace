@@ -394,6 +394,7 @@ SQInteger Bullet::sqSet(HSQUIRRELVM v, const SQChar *name){
 
 #ifdef DEDICATED
 void Bullet::drawtra(wardraw_t *wd){}
+void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){}
 #endif
 
 bool Bullet::isTargettable()const{

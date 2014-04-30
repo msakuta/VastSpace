@@ -348,6 +348,7 @@
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
     <ClInclude Include="..\include\Mesh.h" />
+    <ClInclude Include="..\include\StarEnum.h" />
     <ClInclude Include="..\include\StaticInitializer.h" />
     <ClInclude Include="..\include\stellar_file.h" />
     <ClInclude Include="..\include\tefpol3d.h" />

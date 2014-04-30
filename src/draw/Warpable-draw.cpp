@@ -477,7 +477,7 @@ static StaticInitializer sss(register_Warpable_draw);
 
 int Warpable::popupMenu(PopupMenu &list){
 	int ret = st::popupMenu(list);
-	list.appendSeparator().append("Warp to...", 'w', "togglewarpmenu");
+	list.appendSeparator().append("Warp to...", 'w', "warpmenu");
 	return ret;
 }
 

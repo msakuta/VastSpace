@@ -239,6 +239,177 @@ register_console_command("buildmenu", function(){
 	}
 });
 
+/// \brief Shows the window to select a warp destination.
+///
+/// This window is the first example that almost everything is defined in Squirrel script.
+/// It shows powerfulness and high productivity of scripting like JavaScript.
+register_console_command("warpmenu", function(){
+	local w = GLwindowSizeable("Warp Destination Window");
+	w.closable = true;
+	w.width = 320;
+	w.height = 480;
+	w.x = (screenwidth() - w.width) / 2;
+	w.y = (screenheight() - w.height) / 2;
+
+	const LIGHT_SPEED = 299792.458; /* km/s */
+	const AU_PER_KILOMETER = 149597870.691; /* ASTRONOMICAL UNIT */
+	local LIGHTYEAR_PER_KILOMETER = LIGHT_SPEED*365*24*60*60; // Couldn't be const
+
+	const scrollBarWidth = 16;
+
+	local sorter = false;
+	local filter = false;
+	local scrollpos = 0;
+
+	local sclist = [];
+
+	local function sortList(){
+		sclist.sort(@(a,b) sorter ? a.dist - b.dist : a.name <=> b.name);
+	}
+
+	local function makeList(){
+		local i = 0;
+		local plpos = universe.transPosition(player.getpos(), player.cs);
+		local se = StarEnum(plpos, 1, true);
+		local params = {};
+		while(se.next(params)){
+			sclist.append({
+				pos = params.pos,
+				dist = (params.pos - plpos).len(),
+				name = params.name,
+				system = params.system,
+			});
+		}
+		sortList();
+	}
+
+	local function filterList(){
+		if(filter)
+			return sclist.filter(@(i,v) v.system != null);
+		else
+			return sclist;
+	}
+
+	makeList();
+
+
+	w.onDraw = function(ws){
+		local white = [1,1,1,1];
+		local selected = [0,1,1,1];
+		local r = w.clientRect();
+		glwpos2d(r.x0, r.y0 + fontheight());
+		glwprint("Sort: ");
+		glColor4fv(sorter ? white : selected);
+		glwprint("  Name  ");
+		glColor4fv(!sorter ? white : selected);
+		glwprint("  Distance");
+
+		glColor4f(1,1,1,1);
+
+		glwpos2d(r.x0, r.y0 + 2 * fontheight());
+		glwprint("Filter: ");
+		glColor4fv(filter ? white : selected);
+		glwprint("  All  ");
+		glColor4fv(!filter ? white : selected);
+		glwprint("  Visited");
+
+		r.y0 += 2 * fontheight();
+		local listHeight = filterList().len() * fontheight().tointeger();
+		if(r.height < listHeight){ // Show scrollbar
+			r.x1 -= scrollBarWidth;
+			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, filterList().len() * fontheight() - r.height, scrollpos);
+			// Reset scroll pos
+			if(listHeight - r.height <= scrollpos)
+				scrollpos = listHeight - r.height - 1;
+		}
+		else
+			scrollpos = 0; // Reset scroll pos
+
+		glColor4f(1,0.5,1,1);
+		glBegin(GL_LINES);
+		glVertex2d(r.x0, r.y0);
+		glVertex2d(r.x1, r.y0);
+		glEnd();
+
+		glPushAttrib(GL_SCISSOR_BIT);
+		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
+		glEnable(GL_SCISSOR_TEST);
+
+		local i = 0;
+		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) - 2 : -1;
+
+		foreach(sd in filterList()){
+			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
+
+			if(i == ind){
+				glColor4f(0,0,1,0.5);
+				glBegin(GL_QUADS);
+				glVertex2d(r.x0, ypos - fontheight());
+				glVertex2d(r.x0, ypos);
+				glVertex2d(r.x1, ypos);
+				glVertex2d(r.x1, ypos - fontheight());
+				glEnd();
+			}
+
+			glColor4f(1,1,1,1);
+			glwpos2d(r.x0, ypos);
+			glwprint(format("%-12s: %g LY", sd.name, sd.dist / LIGHTYEAR_PER_KILOMETER));
+			i += 1;
+		}
+
+		glPopAttrib();
+	}
+
+	w.onMouse = function(event){
+		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
+			sorter = !sorter;
+			sortList();
+		}
+		else if(event.key == "leftButton" && event.state == "down" && event.y < 2 * fontheight()){
+			filter = !filter;
+		}
+		else if(event.key == "leftButton" && event.state == "down"){
+			local r = w.clientRect().moved(0,0);
+
+			r.x1 -= scrollBarWidth;
+			r.y0 += 2 * fontheight();
+
+			if(r.height < filterList().len() * fontheight()){ // Show scrollbar
+				local iy = glwVScrollBarMouse(w, event.x, event.y, r.x1, r.y0,
+					scrollBarWidth, r.height, filterList().len() * fontheight() - r.height, scrollpos);
+				if(0 <= iy){
+					scrollpos = iy;
+					return 1;
+				}
+			}
+			local ind = ((event.y + scrollpos) / fontheight()) - 2;
+			local i = 0;
+			foreach(sd in filterList()){
+				if(i == ind){
+					if(player && player.selected.len()){
+						local pe = player.selected[0];
+						local plpos = universe.transPosition(pe.pos, pe.cs);
+						local destcs = null;
+						local destpos = Vec3d(0,0,0);
+						if(sd.system && (destcs = sd.system.findcs("orbit"))){
+							destpos = Vec3d(0,0,0);
+						}
+						else{
+							destcs = universe;
+							destpos = sd.pos + (plpos - sd.pos).norm() * AU_PER_KILOMETER; // Offset an astronomical unit to avoid collision with the star
+						}
+						foreach(e in player.selected)
+							e.command("Warp", destcs, destpos);
+						w.close();
+					}
+				}
+				i++;
+			}
+		}
+	}
+
+});
+
 function control(...){
 	if(player.isControlling())
 		player.controlled = null;

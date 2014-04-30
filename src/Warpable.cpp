@@ -397,12 +397,7 @@ static int cmd_warp(int argc, char *argv[], void *pv){
 	com.destpos = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
 
 	// Search path is based on player's CoordSys, though this function would be soon unnecessary anyway.
-	teleport *tp = ppl->findTeleport(argv[1], TELEPORT_WARP);
-	if(tp){
-		com.destcs = tp->cs;
-		com.destpos = tp->pos;
-	}
-	else if(com.destcs = const_cast<CoordSys*>(ppl->cs->findcs(argv[1]))){
+	if(com.destcs = const_cast<CoordSys*>(ppl->cs->findcs(argv[1]))){
 		com.destpos = vec3_000;
 	} 
 	else

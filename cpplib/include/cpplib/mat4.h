@@ -142,6 +142,16 @@ public:
 	Vec4 &vec4(int i);
 	const Vec4 &vec4(int i)const{return const_cast<tt*>(this)->vec4(i);}
 
+	/// Retrieve i-th row vector in the matrix, without the last element.
+	/// Note that this 'transposed' version of the vector accessor is slightly slower
+	/// than vec3(), and it doesn't allow modification of the matrix via returned reference.
+	Vec3 tvec3(int i)const;
+
+	/// Retrieve i-th row vector in the matrix, with the last element.
+	/// Note that this 'transposed' version of the vector accessor is slightly slower
+	/// than vec4(), and it doesn't allow modification of the matrix via returned reference.
+	Vec4 tvec4(int i)const;
+
 	tt rotx(T p)const{
 		double sp = sin(p), cp = cos(p);
 		const T *ma = a;
@@ -222,6 +232,20 @@ template<typename T> inline Vec3<T> &Mat4<T>::vec3(int i){
 template<typename T> inline Vec4<T> &Mat4<T>::vec4(int i){
 	if(0 <= i && i < 4)
 		return *reinterpret_cast<Vec4*>(&a[i*4]);
+	else
+		throw mathcommon::RangeCheck();
+}
+
+template<typename T> inline Vec3<T> Mat4<T>::tvec3(int i)const{
+	if(0 <= i && i < 4)
+		return Vec3(a[i], a[i+4], a[i+8]);
+	else
+		throw mathcommon::RangeCheck();
+}
+
+template<typename T> inline Vec4<T> Mat4<T>::tvec4(int i)const{
+	if(0 <= i && i < 4)
+		return Vec4(a[i], a[i+4], a[i+8], a[i+12]);
 	else
 		throw mathcommon::RangeCheck();
 }

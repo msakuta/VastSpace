@@ -108,6 +108,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -123,6 +124,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>
@@ -140,6 +142,7 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -157,6 +160,7 @@
       <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>

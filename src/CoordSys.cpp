@@ -1572,12 +1572,12 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	return 1;
 }
 
-CoordSys::PropertyMap &CoordSys::propertyMap()const{
+const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 	static PropertyMap pmap;
 	static bool propInit = false;
 	if(!propInit){
 		propInit = true;
-		pmap[_SC("id")] = PropertyEntry([](HSQUIRRELVM v){sq_pushinteger(v, CoordSys::sq_refobj(v, 1)->getid()); return SQInteger(1);}, NULL),
+		pmap[_SC("id")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){sq_pushinteger(v, cs->getid()); return SQInteger(1);}, NULL);
 		pmap[_SC("pos")] = PropertyEntry(tgetter<Vec3d, &CoordSys::pos>, tsetter<Vec3d, &CoordSys::pos>);
 		pmap[_SC("velo")] = PropertyEntry(tgetter<Vec3d, &CoordSys::velo>, tsetter<Vec3d, &CoordSys::velo>);
 		pmap[_SC("rot")] = PropertyEntry(tgetter<Quatd, &CoordSys::rot>, tsetter<Quatd, &CoordSys::rot>);
@@ -1666,13 +1666,13 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		return 1;
 	}
 	else{
-		CoordSys::PropertyMap &pmap = p->propertyMap();
+		const CoordSys::PropertyMap &pmap = p->propertyMap();
 
-		CoordSys::PropertyMap::iterator it = pmap.find(wcs);
+		CoordSys::PropertyMap::const_iterator it = pmap.find(wcs);
 		if(it != pmap.end()){
 			if(!it->second.get)
 				return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" is not readable"));
-			return it->second.get(v);
+			return it->second.get(v, p);
 		}
 		else
 			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" not found"));
@@ -1686,13 +1686,13 @@ SQInteger sqf_set(HSQUIRRELVM v){
 	const SQChar *scs;
 	sq_getstring(v, 2, &scs);
 
-	CoordSys::PropertyMap &pmap = p->propertyMap();
+	const CoordSys::PropertyMap &pmap = p->propertyMap();
 
-	CoordSys::PropertyMap::iterator it = pmap.find(scs);
+	CoordSys::PropertyMap::const_iterator it = pmap.find(scs);
 	if(it != pmap.end()){
 		if(!it->second.set)
 			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" is not writable"));
-		return it->second.set(v);
+		return it->second.set(v, p);
 	}
 	else
 		return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" not found"));

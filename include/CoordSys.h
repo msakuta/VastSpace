@@ -297,7 +297,7 @@ public:
 
 	struct PropertyEntry;
 	typedef std::map<gltestp::dstring, PropertyEntry> PropertyMap;
-	virtual PropertyMap &propertyMap()const;
+	virtual const PropertyMap &propertyMap()const;
 
 protected:
 	static bool sq_define(HSQUIRRELVM);

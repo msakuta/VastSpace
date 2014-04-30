@@ -2,22 +2,24 @@
 #define COORDSYS_PROPERTY_H
 
 struct CoordSys::PropertyEntry{
-	PropertyEntry(SQInteger (*get)(HSQUIRRELVM) = NULL, SQInteger (*set)(HSQUIRRELVM) = NULL) : get(get), set(set){}
-	SQInteger (*get)(HSQUIRRELVM);
-	SQInteger (*set)(HSQUIRRELVM);
+	typedef SQInteger (*GetCallback)(HSQUIRRELVM, const CoordSys*);
+	typedef SQInteger (*SetCallback)(HSQUIRRELVM, CoordSys*);
+	PropertyEntry(GetCallback get = NULL, SetCallback set = NULL) : get(get), set(set){}
+	GetCallback get;
+	SetCallback set;
 };
 
 template<typename T, T CoordSys::*memb>
-SQInteger tgetter(HSQUIRRELVM v){
-	SQIntrinsic<T>(CoordSys::sq_refobj(v)->*memb).push(v);
+SQInteger tgetter(HSQUIRRELVM v, const CoordSys *cs){
+	SQIntrinsic<T>(cs->*memb).push(v);
 	return SQInteger(1);
 }
 
 template<typename T, T CoordSys::*memb>
-SQInteger tsetter(HSQUIRRELVM v){
+SQInteger tsetter(HSQUIRRELVM v, CoordSys *cs){
 	SQIntrinsic<T> q;
 	q.getValue(v, 3);
-	CoordSys::sq_refobj(v)->*memb = q.value;
+	cs->*memb = q.value;
 	return SQInteger(0);
 }
 

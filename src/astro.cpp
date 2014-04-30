@@ -708,35 +708,35 @@ bool Star::readFileEnd(StellarContext &sc){
 	return st::readFileEnd(sc);
 }
 
-CoordSys::PropertyMap &Star::propertyMap()const{
+const CoordSys::PropertyMap &Star::propertyMap()const{
 	static PropertyMap pmap = st::propertyMap();
 	static bool init = false;
 	if(!init){
 		init = true;
-		pmap["rad"] = PropertyEntry([](HSQUIRRELVM v){
-			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
-			sq_pushfloat(v, cs->rad);
+		pmap["rad"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Star *a = static_cast<const Star*>(cs);
+			sq_pushfloat(v, a->rad);
 			return SQInteger(1);
 		},
-		[](HSQUIRRELVM v){
-			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Star *a = static_cast<Star*>(cs);
 			SQFloat f;
 			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
 				return sq_throwerror(v, _SC("Star.rad set fail"));
-			cs->rad = f;
+			a->rad = f;
 			return SQInteger(0);
 		});
-		pmap["spect"] = PropertyEntry([](HSQUIRRELVM v){
-			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
-			sq_pushstring(v, spectralToName(cs->spect), -1);
+		pmap["spect"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Star *a = static_cast<const Star*>(cs);
+			sq_pushstring(v, spectralToName(a->spect), -1);
 			return SQInteger(1);
 		},
-		[](HSQUIRRELVM v){
-			Star *cs = dynamic_cast<Star*>(CoordSys::sq_refobj(v));
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Star *a = static_cast<Star*>(cs);
 			const SQChar *str;
 			if(SQ_FAILED(sq_getstring(v, 3, &str)))
 				return sq_throwerror(v, _SC("Star.spect set fail"));
-			cs->spect = nameToSpectral(str);
+			a->spect = nameToSpectral(str);
 			return SQInteger(0);
 		});
 	}

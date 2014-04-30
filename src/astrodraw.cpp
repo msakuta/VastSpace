@@ -19,6 +19,7 @@
 #include "glstack.h"
 #include "StaticInitializer.h"
 #include "CoordSys-find.h"
+#include "sqadapt.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -1732,6 +1733,70 @@ static int cmd_find(int argc, char *argv[]){
 }
 
 StaticInitializer stin([](){CmdAdd("find", cmd_find);});
+static bool sqStarEnumDef(HSQUIRRELVM){
+	return true;
+}
+
+sqa::Initializer sqin("StarEnum", [](HSQUIRRELVM v){
+	static SQUserPointer tt_StarEnum = SQUserPointer("StarEnum");
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("StarEnum"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_StarEnum);
+	sq_setclassudsize(v, -1, sizeof(StarEnum));
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		try{
+			void *p;
+			if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+				return sq_throwerror(v, _SC("Something is wrong in StarEnum.constructor"));
+			SQVec3d plpos;
+			plpos.getValue(v, 2);
+			SQInteger numSectors;
+			if(SQ_FAILED(sq_getinteger(v, 3, &numSectors)))
+				return sq_throwerror(v, _SC("StarEnum() second argument not convertible to int"));
+			SQBool genCache;
+			if(SQ_FAILED(sq_getbool(v, 4, &genCache)))
+				genCache = SQFalse;
+			new(p) StarEnum(plpos.value, numSectors, genCache == SQTrue);
+
+			sq_setreleasehook(v, 1, [](SQUserPointer p, SQInteger){
+				((StarEnum*)p)->~StarEnum();
+				return SQInteger(1);
+			});
+		}
+		catch(SQFError &e){
+			return sq_throwerror(v, e.what());
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("next"), [](HSQUIRRELVM v){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+			return sq_throwerror(v, _SC("Something is wrong in StarEnum.next"));
+		StarEnum *se = (StarEnum*)p;
+		SQVec3d pos;
+		StarCache *sc;
+		bool ret = se->next(pos.value, &sc);
+		auto def = [v](const SQChar *name, const SQChar *value){
+			sq_pushstring(v, name, -1);
+			sq_pushstring(v, value, -1);
+			sq_newslot(v, 2, SQFalse);
+		};
+		if(ret && sc){
+			def(_SC("name"), sc->name);
+			sq_pushstring(v, _SC("pos"), -1);
+			pos.push(v);
+			sq_newslot(v, 2, SQFalse);
+			sq_pushstring(v, _SC("system"), -1);
+			CoordSys::sq_pushobj(v, sc->system);
+			sq_newslot(v, 2, SQFalse);
+		}
+		sq_pushbool(v, ret ? SQTrue : SQFalse);
+		return SQInteger(1);
+	});
+	sq_newslot(v, -3, SQFalse);
+	return true;
+});
 
 void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun){
 	static int init = 0;

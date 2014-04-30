@@ -47,6 +47,9 @@ protected:
 
 	static HSQOBJECT sqPopupMenu;
 	HSQOBJECT getSqPopupMenu()override;
+
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name);
 };
 
 

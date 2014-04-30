@@ -537,6 +537,46 @@ HSQOBJECT Warpable::getSqPopupMenu(){
 	return sqPopupMenu;
 }
 
+SQInteger Warpable::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("warping"))){
+		sq_pushbool(v, warping ? SQTrue : SQFalse);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("warpdst"))){
+		SQVec3d q(warpdst);
+		q.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("warpdstcs"))){
+		CoordSys::sq_pushobj(v, warpdstcs);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Warpable::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("warping"))){
+		// Warping flag should not regularly be changed by scripts!
+		SQBool b;
+		if(SQ_SUCCEEDED(sq_getbool(v, 3, &b)))
+			this->warping = b;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpdst"))){
+		SQVec3d q;
+		q.getValue(v, 3);
+		this->warpdst = q.value;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpdstcs"))){
+		this->warpdstcs = CoordSys::sq_refobj(v, 3);
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
 
 void Warpable::post_warp(){
 }

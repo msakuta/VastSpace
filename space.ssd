@@ -18,7 +18,7 @@ name "the universe"
 
 #coordsys starsystem3{
 #	pos (rand()-0.5)*.1e17 (rand()-0.5)*1e17 (rand()-0.5)*1e17
-#	warp star3orbit 100000 100000 0
+#	bookmark star3orbit 100000 100000 0
 #}
 
 #new "/sol/earth/l 3"{
@@ -31,7 +31,7 @@ name "the universe"
 #}
 
 #/sol/earth/l2{
-#	warp Iserlohn 70 0 0
+#	bookmark Iserlohn 70 0 0
 #}
 
 #new astro{
@@ -165,7 +165,6 @@ coordsys "Alpha Centauri"{
 		inclination 0
 		argument_of_periapsis 0
 		ascending_node 0
-		teleport "Rigil Kentaurus A"
 		bookmark "Rigil Kentaurus A" 0 0 0 "Quatd.rotation(PI,Vec3d(1,0,0))"
 	}
 	astro Star B{
@@ -215,8 +214,6 @@ coordsys "Alpha Centauri"{
 			orbits "Hypothetical Planet"
 			orbit_radius 10000
 			fullname "Hypo orbit"
-			warp
-			teleport
 			bookmark "Hypo orbit"
 		}
 	}

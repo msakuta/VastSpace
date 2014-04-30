@@ -31,8 +31,6 @@ coordsys Orbit sunlo{
 	inclination 3.85
 	argument_of_periapsis 150.2075
 	ascending_node 80.6198
-#		warp
-	teleport
 	rstation
 	bookmark "Sun Low Orbit 1" 0 0 10
 	bookmark "Sun Low Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
@@ -60,8 +58,7 @@ coordsys Orbit mercury{
 		orbits Mercury
 		orbit_radius 10000
 		fullname "Mercury orbit"
-		warp
-		teleport
+		bookmark
 	}
 }
 
@@ -91,8 +88,7 @@ coordsys Orbit venus{
 		orbits Venus
 		orbit_radius 10000
 		fullname "Venus orbit"
-		warp
-		teleport
+		bookmark
 	}
 }
 
@@ -180,8 +176,7 @@ coordsys Orbit earth{
 			argument_of_periapsis 180
 			ascending_node 0
 			updirection 0 1 
-			warp
-			teleport
+			bookmark
 		}
 	}
 
@@ -191,10 +186,8 @@ coordsys Orbit earth{
 		object2 moon/Moon
 		updirection 0 1 
 		fullname "Earth Lagrange 1"
-		teleport
 		bookmark "Earth Lagrange 1" 0 0 10
 		bookmark "Earth Lagrange 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
-		warp
 		rstation 0 -25
 #		addent scarry 5 -25 0
 #		addent scontainer 4 -24 0
@@ -217,8 +210,7 @@ coordsys Orbit earth{
 		cs_radius 500
 		object1 Earth
 		object2 moon/Moon
-		teleport "Earth Lagrange 2" 0 0 100
-		warp "Earth Lagrange 2" 0 0 100
+		bookmark "Earth Lagrange 2" 0 0 100
 		astro Iserlohn Iserlohn{
 		}
 	}
@@ -229,7 +221,6 @@ coordsys Orbit earth{
 		object2 moon/Moon
 		updirection 0 1 
 		bookmark "Earth Lagrange 4" 0 0 10
-		warp "Earth Lagrange 4" 0 0 100
 		astro Island3 "Side 3"{
 			race 2
 		}
@@ -241,7 +232,6 @@ coordsys Orbit earth{
 		object2 moon/Moon
 		updirection 0 1 
 		bookmark "Earth Lagrange 5" 0 0 10
-		warp "Earth Lagrange 5" 0 0 100
 		astro Island3 "Side 5"{
 			race 2
 		}
@@ -256,8 +246,7 @@ coordsys Orbit earth{
 		argument_of_periapsis 180
 		ascending_node 0
 		updirection 0 1 
-#			warp
-		teleport
+		bookmark
 		rstation
 #		addent assault 3 -3 0 1
 #		addent assault 3 3 0 1
@@ -272,8 +261,6 @@ coordsys Orbit earth{
 		argument_of_periapsis 180
 		ascending_node 0
 		updirection 0 1 
-		warp
-		teleport
 	}
 }
 
@@ -307,8 +294,7 @@ coordsys Orbit marss{
 	new coordsys Orbit marsloworbit{
 		fullname "Mars Low Orbit"
 		cs_radius 100
-		warp mlo
-		teleport mlo
+		bookmark mlo
 		updirection 1 0 0
 		orbits Mars
 		semimajor_axis 6900/2.
@@ -318,8 +304,7 @@ coordsys Orbit marss{
 	new coordsys Orbit marsorbit{
 		fullname "Mars Orbit"
 		cs_radius 100
-		warp mo
-		teleport mo
+		bookmark mo
 		updirection 0 1 0
 		orbits Mars
 		semimajor_axis 1e4
@@ -351,7 +336,6 @@ coordsys Orbit marss{
 		orbits Phobos
 		semimajor_axis 1e2
 		addent RStation 0 0 0
-		warp phoboso
 		bookmark "Phobos Orbit 1" 0 0 10
 		bookmark "Phobos Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 	}
@@ -408,8 +392,6 @@ coordsys Orbit jupiter{
 	coordsys jupiterlo{
 		fullname "Jupiter Low Orbit"
 		pos -100000 100000 0
-		warp
-		teleport Jupiter 10 0 0
 		bookmark Jupiter 10 0 0
 		rstation
 	}
@@ -498,8 +480,7 @@ coordsys Orbit saturn{
 		ascending_node 180
 		fullname "Saturn Low Orbit"
 		pos -50000 50000 0
-		warp
-		teleport "Saturn Low Orbit" 0 0 0
+		bookmark "Saturn Low Orbit" 0 0 0
 		showorbit
 #		addent Scarry 0 -1 0
 		updirection 0 cos(axis_angle) -sin(axis_angle)
@@ -511,8 +492,7 @@ coordsys Orbit saturn{
 		orbit_axis 0 sin(incline/2) cos(incline/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		fullname "Saturn Low Orbit 2"
 		pos -50000 50000 0
-		warp
-		teleport "Saturn Low Orbit 2" 10 0 0
+		bookmark "Saturn Low Orbit 2" 10 0 0
 		showorbit
 #		addent Scarry 0 -1 0
 		updirection 0 cos(incline) -sin(incline)
@@ -598,8 +578,7 @@ coordsys Orbit uranus{
 	coordsys uranuslo{
 		fullname "Uranus Low Orbit"
 		pos -20000 20000 0
-		warp
-		teleport "Uranus Low Orbit" 10 0 0
+		bookmark "Uranus Low Orbit" 10 0 0
 	}
 	orbits Sol
 	orbit_radius 2870990000
@@ -645,8 +624,7 @@ coordsys Orbit neptune{
 	coordsys neptunelo{
 		fullname "Neptune Low Orbit"
 		pos -20000 20000 0
-		warp
-		teleport "Neptune Low Orbit" 10 0 0
+		bookmark "Neptune Low Orbit" 10 0 0
 	}
 
 	astro TextureSphere "Neptune"
@@ -687,8 +665,7 @@ coordsys Orbit pluto{
 	coordsys plutolo{
 		fullname "Pluto Low Orbit"
 		pos -2000 2000 0
-		warp
-		teleport "Pluto Low Orbit" 10 0 0
+		bookmark "Pluto Low Orbit" 10 0 0
 		rstation
 #		addent assault 3 -3 3 1
 #		addent assault 3 3 3 1

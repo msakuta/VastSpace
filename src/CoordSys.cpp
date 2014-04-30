@@ -878,19 +878,6 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		}
 		return true;
 	}
-	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
-		struct teleport *tp;
-		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
-		Player *player = game->player;
-		if(tp = player->findTeleport(name)){
-			tp->flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-			return true;
-		}
-		tp = player->addTeleport();
-		*tp = teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
-			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
-		return true;
-	}
 	else if(!strcmp(s, "addent")){
 		WarField *w;
 		Entity *pt;

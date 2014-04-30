@@ -370,6 +370,7 @@
     <ClInclude Include="..\src\Battleship.h" />
     <ClInclude Include="..\src\Beamer.h" />
     <ClInclude Include="..\src\cmd_int.h" />
+    <ClInclude Include="..\src\CoordSys-sq.h" />
     <ClInclude Include="..\src\Defender.h" />
     <ClInclude Include="..\src\Destroyer.h" />
     <ClInclude Include="..\src\galaxy_field.h" />

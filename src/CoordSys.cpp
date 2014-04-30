@@ -22,6 +22,7 @@
 #endif
 #include "Game.h"
 #include "CoordSys-property.h"
+#include "CoordSys-sq.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>

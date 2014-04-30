@@ -63,6 +63,7 @@ public:
 	OrbitCS(const char *path, CoordSys *root);
 	static const ClassRegister<OrbitCS> classRegister;
 	virtual const Static &getStatic()const{return classRegister;}
+	static bool sq_define(HSQUIRRELVM);
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void anim(double dt);

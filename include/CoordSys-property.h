@@ -1,5 +1,6 @@
 #ifndef COORDSYS_PROPERTY_H
 #define COORDSYS_PROPERTY_H
+#include "CoordSys.h"
 
 struct CoordSys::PropertyEntry{
 	typedef SQInteger (*GetCallback)(HSQUIRRELVM, const CoordSys*);

@@ -17,6 +17,7 @@
 #include "judge.h"
 #include "CoordSys-find.h"
 #include "CoordSys-property.h"
+#include "CoordSys-sq.h"
 #include "Game.h"
 #include "sqserial.h"
 extern "C"{
@@ -67,7 +68,38 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_cente
 		eis->addToDrawList(this);
 }
 
-const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit");
+const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit", sq_define);
+
+bool OrbitCS::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<OrbitCS>);
+	register_closure(v, _SC("orbits"), [](HSQUIRRELVM v){
+		Astrobj *star = static_cast<Astrobj*>(sq_refobj(v));
+		SQFloat radius, eccentricity, phase;
+		SQQuatd axis;
+		if(SQ_FAILED(sq_getfloat(v, 3, &radius)))
+			radius = 0;
+		if(SQ_FAILED(sq_getfloat(v, 4, &eccentricity)))
+			eccentricity = 0;
+		axis.getValue(v, 5);
+		if(SQ_FAILED(sq_getfloat(v, 6, &phase)))
+			phase = 0;
+		star->orbits(dynamic_cast<Astrobj*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
+		return SQInteger(0);
+	});
+	sq_createslot(v, -3);
+	return true;
+}
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -639,26 +671,17 @@ SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
 
 bool Astrobj::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("_get"), sqf_get);
-	register_closure(v, _SC("orbits"), [](HSQUIRRELVM v){
-		Astrobj *star = static_cast<Astrobj*>(sq_refobj(v));
-		SQFloat radius, eccentricity, phase;
-		SQVec3d axis;
-		if(SQ_FAILED(sq_getfloat(v, 3, &radius)))
-			radius = 0;
-		if(SQ_FAILED(sq_getfloat(v, 4, &eccentricity)))
-			eccentricity = 0;
-		axis.getValue(v, 5);
-		if(SQ_FAILED(sq_getfloat(v, 6, &phase)))
-			phase = 0;
-		star->orbits(dynamic_cast<Astrobj*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
-		return SQInteger(0);
-	});
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Astrobj>);
 	sq_createslot(v, -3);
 	return true;
 }
@@ -720,32 +743,17 @@ SQInteger Star::sqf_get(HSQUIRRELVM v){
 
 bool Star::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
-		const SQChar *name;
-		if(SQ_FAILED(sq_getstring(v, 2, &name)))
-			return sq_throwerror(v, _SC("Argument is not convertible to string in Star.constructor"));
-		CoordSys *parent = sq_refobj(v, 3);
-		if(!parent)
-			return sq_throwerror(v, _SC("Argument is not convertible to CoordSys in Star.constructor"));
-		Star *star = new Star(name, parent);
-		sqserial_findobj(v, star, [](HSQUIRRELVM v, Serializable *s){
-			sq_push(v, 1);
-			SQUserPointer p;
-			if(SQ_FAILED(sq_getinstanceup(v, -1, &p, NULL)))
-				throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
-			new(p) SqSerialPtr<CoordSys>(v, static_cast<CoordSys*>(s));
-			sq_setreleasehook(v, -1, [](SQUserPointer p, SQInteger size){
-				((SqSerialPtr<CoordSys>*)p)->~SqSerialPtr<CoordSys>();
-				return SQInteger(1);
-			});
-		});
-		return SQInteger(0);
-	});
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Star>);
 	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;

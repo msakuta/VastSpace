@@ -666,6 +666,9 @@
       <Filter>Exported Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Entity-property.h\Header.h" />
+    <ClInclude Include="..\src\CoordSys-sq.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

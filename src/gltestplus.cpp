@@ -312,6 +312,19 @@ void Game::draw_gear(double dt){
 	}
 }
 
+static void drawLabel(const char *text){
+	int x = glwGetSizeTextureString(text);
+	glColor4f(0,0,0,0.5);
+	glBegin(GL_QUADS);
+	glVertex2d(0, 0);
+	glVertex2d(x, 0);
+	glVertex2d(x, -GLwindow::getFontHeight());
+	glVertex2d(0, -GLwindow::getFontHeight());
+	glEnd();
+	glColor4f(1,1,1,1);
+	glwPutTextureString(text);
+}
+
 static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 	OrbitCS *a = cs->toOrbitCS();
 	do if(a){
@@ -454,7 +467,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glEnd();
 			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
 			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
-			glwPutTextureString(s);
+			drawLabel(s);
 		}while(0);
 
 		glPopMatrix();
@@ -513,7 +526,7 @@ void Game::drawindics(Viewer *vw){
 			glEnd();
 			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
 			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
-			glwPutTextureString(sc->name);
+			drawLabel(sc->name);
 			glPopMatrix();
 		}
 	}

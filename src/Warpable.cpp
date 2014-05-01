@@ -326,12 +326,23 @@ void Warpable::anim(double dt){
 						sq_pushstring(v, _SC("materializeStar"), -1);
 						if(SQ_FAILED(sq_get(v, -2)))
 							throw SQFError(_SC("Couldn't get materializeStar"));
-						sq_pushroottable(v);
-						sq_pushstring(v, bestsc->name, -1);
+						sq_pushroottable(v); // .. func root
+						sq_pushstring(v, bestsc->name, -1); // .. func root name
 						SQVec3d q = bestPos;
-						q.push(v);
-						sq_pushobj(v, this);
-						if(SQ_FAILED(sq_call(v, 4, SQTrue, SQTrue)))
+						q.push(v); // .. func root name pos
+						sq_pushobj(v, this); // .. func root name pos e
+						sq_pushstring(v, _SC("RandomSequencePtr"), -1); // .. func root name pos e "RandomSeqeuncePtr"
+						if(SQ_FAILED(sq_get(v, -5))) // .. func root name pos e RandomSequencePtr
+							throw SQFError(_SC("RandomSequencePtr not defined in root table"));
+						sq_createinstance(v, -1); // .. func root name pos e RandomSequencePtr instance
+						sq_remove(v, -2); // .. func root name pos e instance
+
+						// TODO: It's dangerous to pass a pointer to automatic variable to Squirrel VM, since it can
+						// save the reference to somewhere outside the closure which could be referred to later.
+						// Probably we should pass by value, in which case we need another class defined for VM.
+						sq_setinstanceup(v, -1, rs);
+
+						if(SQ_FAILED(sq_call(v, 5, SQTrue, SQTrue)))
 							throw SQFError(_SC("Couldn't get materializeStar"));
 						CoordSys *cs = CoordSys::sq_refobj(v, -1);
 						if(cs)

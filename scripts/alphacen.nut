@@ -5,6 +5,8 @@ if(a)
 
 local unit = player.cs.addent("DestroyerMissile", Vec3d(0, 0, 0));
 
+unit.capacitor = unit.capacity; // Full charge
+
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

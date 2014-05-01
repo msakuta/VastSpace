@@ -746,6 +746,19 @@ const CoordSys::PropertyMap &Astrobj::propertyMap()const{
 	static bool init = false;
 	if(!init){
 		init = true;
+		pmap["radius"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->rad);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.radius could not convert to float"));
+			a->rad = f;
+			return SQInteger(0);
+		});
 		pmap["mass"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
 			// Not dynamic_cast because it should be the correct type.
 			const Astrobj *a = static_cast<const Astrobj*>(cs);
@@ -822,19 +835,6 @@ const CoordSys::PropertyMap &Star::propertyMap()const{
 	static bool init = false;
 	if(!init){
 		init = true;
-		pmap["rad"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
-			const Star *a = static_cast<const Star*>(cs);
-			sq_pushfloat(v, a->rad);
-			return SQInteger(1);
-		},
-		[](HSQUIRRELVM v, CoordSys *cs){
-			Star *a = static_cast<Star*>(cs);
-			SQFloat f;
-			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
-				return sq_throwerror(v, _SC("Star.rad set fail"));
-			a->rad = f;
-			return SQInteger(0);
-		});
 		pmap["spect"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
 			const Star *a = static_cast<const Star*>(cs);
 			sq_pushstring(v, spectralToName(a->spect), -1);

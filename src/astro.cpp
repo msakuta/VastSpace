@@ -655,20 +655,6 @@ Astrobj *CoordSys::findBrightest(const Vec3d &po){
 	return const_cast<Astrobj*>(fba.result);
 }
 
-SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
-	Astrobj *p = static_cast<Astrobj*>(sq_refobj(v));
-	if(!p)
-		return SQ_ERROR;
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	if(!strcmp(wcs, _SC("rad"))){
-		sq_pushfloat(v, SQFloat(p->rad));
-		return 1;
-	}
-	else
-		return st::sqf_get(v);
-}
-
 bool Astrobj::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	if(SQ_SUCCEEDED(sq_get(v, 1))){
@@ -726,20 +712,6 @@ void Star::unserialize(UnserializeContext &sc){
 }
 
 const ClassRegister<Star> Star::classRegister("Star", sq_define);
-
-SQInteger Star::sqf_get(HSQUIRRELVM v){
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	Star *p = static_cast<Star*>(sq_refobj(v));
-	if(!p)
-		return SQ_ERROR;
-	if(!strcmp(wcs, _SC("spectral"))){
-		sq_pushstring(v, cpplib::dstring() << spectralToName(p->spect) << p->subspect, -1);
-		return 1;
-	}
-	else
-		return st::sqf_get(v);
-}
 
 bool Star::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);

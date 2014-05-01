@@ -147,8 +147,6 @@ public:
 	/// The sun in this context is the brightest local Star.
 	virtual double getAmbientBrightness(const Viewer &vw)const{ return 0.; }
 
-protected:
-	static SQInteger sqf_get(HSQUIRRELVM v);
 };
 
 

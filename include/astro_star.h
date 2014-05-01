@@ -33,8 +33,6 @@ public:
 	static Vec3<float> spectralHSB(SpectralType);
 	static Vec3<float> spectralRGB(SpectralType);
 	static void drawsuncorona(Astrobj *a, const Viewer *vw);
-protected:
-	static SQInteger sqf_get(HSQUIRRELVM v);
 };
 
 #endif

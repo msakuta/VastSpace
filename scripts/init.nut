@@ -149,13 +149,37 @@ function stellarReadFile(cs, varlist, name, ...){
 /// \param rs The random sequence reference to add characteristics to the solar system.  DO NOT save this object outside of this function.
 /// \returns The newly created solar system to associate with StarCache
 function materializeStar(name,pos,e,rs){
-	local child = Star(name, universe);
-	print("materializeStar: " + child);
+	local binary = rs.next() % 2;
+	local child = (binary ? Barycenter : Star)(name, universe);
+	print("materializeStar: (binary: " + binary + "): " + child);
 	child.pos = pos;
-	local radscale = exp(rs.nextGauss());
-	child.rad = 6.960e5 * radscale; // Exponential distribution around Rsun
-	child.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
-	child.spect = "G";
+	if(binary){
+		local a = Star(name + " A", child);
+		local axis = Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
+		local plane = Quatd.direction(axis);
+		local radscale = exp(rs.nextGauss());
+		local eccentricity = rs.nextd();
+		a.pos = Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss()) * 1.0e7;
+		a.rad = 6.960e5 * radscale; // Exponential distribution around Rsun
+		a.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
+		a.spect = "G";
+		a.orbits(child, rs.nextd() * 1.0e8, eccentricity, plane);
+		a.showOrbit = true;
+		local b = Star(name + " B", child);
+		radscale = exp(rs.nextGauss());
+		b.pos = Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss()) * 1.0e7;
+		b.rad = 6.960e5 * radscale; // Exponential distribution around Rsun
+		b.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
+		b.spect = "G";
+		b.orbits(child, rs.nextd() * 1.0e8, eccentricity, plane.rotate(PI, Vec3d(0,0,1)));
+		b.showOrbit = true;
+	}
+	else{
+		local radscale = exp(rs.nextGauss());
+		child.rad = 6.960e5 * radscale; // Exponential distribution around Rsun
+		child.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
+		child.spect = "G";
+	}
 	// Create a temporary orbit to arrive.
 	local orbit = Orbit("orbit", child);
 	local orbitPos = child.transPosition(e.warpdst, e.warpdstcs);

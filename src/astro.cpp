@@ -360,9 +360,32 @@ void OrbitCS::orbits(OrbitCS *o, double radius, double eccentricity, const Quatd
 
 
 void Barycenter::updateInt(double dt){
-	// We cannot solve other than two-body problem.
-	if(orbiters.size() == 2 && orbiters[0]->toAstrobj() && orbiters[1]->toAstrobj()){
-		Astrobj *a0 = orbiters[0]->toAstrobj(), *a1 = orbiters[1]->toAstrobj();
+	if(orbiters.size() < 2){
+		st::updateInt(dt);
+		return;
+	}
+
+	// Pick the first 2 Astrobjs in orbiters since orbiters can contain non-Astrobj CoordSys which
+	// has no mass and do not affect orbit calculation.
+	Astrobj *a0 = NULL, *a1 = NULL;
+	for(int i = 0; i < orbiters.size(); i++){
+		if(!a0){
+			if(orbiters[i]->toAstrobj())
+				a0 = orbiters[i]->toAstrobj();
+		}
+		else if(!a1){
+			if(orbiters[i]->toAstrobj())
+				a1 = orbiters[i]->toAstrobj();
+		}
+		else if(orbiters[i]->toAstrobj()){
+			// We cannot solve other than two-body problem.
+			CmdPrint(gltestp::dstring() << _SC("Warning: I cannot solve three-body problem in ") << getpath());
+			st::updateInt(dt);
+			return;
+		}
+	}
+
+	if(a0 && a1){
 		double rmass = a0->mass * a1->mass / (a0->mass + a1->mass);
 		double scale = game->universe ? game->universe->astro_timescale : 1.;
 		int timescale = 0;

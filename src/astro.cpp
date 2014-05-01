@@ -153,15 +153,19 @@ void OrbitCS::clientUpdate(double dt){
 void OrbitCS::updateInt(double dt){
 	Universe *u = game->universe;
 	double scale = u ? u->astro_timescale : 1./*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
-	if(orbit_home && orbitType != NoOrbit){
+	OrbitCS *center = orbit_home ? (OrbitCS*)orbit_home : orbit_center ? orbit_center->toOrbitCS() : NULL;
+	if(center && orbitType != NoOrbit){
 		int timescale = 0;
 		double dist;
 		double omega;
 		Vec3d orbpos, oldpos;
 		Vec3d orbit_omg, omgdt;
-		orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
+		orbpos = parent->tocs(center->pos, center->parent);
 		dist = orbit_rad;
-		omega = scale / (dist * sqrt(dist / UGC / orbit_home->mass));
+		double systemMass = center->getSystemMass(this->toAstrobj());
+		if(systemMass == 0)
+			return;
+		omega = scale / (dist * sqrt(dist / UGC / systemMass));
 		orbit_omg = orbit_axis.norm();
 		oldpos = pos;
 		if(eccentricity == 0.){
@@ -329,6 +333,18 @@ OrbitCS *OrbitCS::toOrbitCS(){
 
 Barycenter *OrbitCS::toBarycenter(){
 	return NULL;
+}
+
+double OrbitCS::getSystemMass(const Astrobj *ignore)const{
+	double ret = 0.;
+	if(this != ignore){
+		const Astrobj *a = toAstrobj();
+		if(a)
+			ret += a->mass;
+	}
+	for(auto it : orbiters)
+		ret += it->getSystemMass(ignore);
+	return ret;
 }
 
 void OrbitCS::orbits(OrbitCS *o, double radius, double eccentricity, const Quatd &axis, double phase){

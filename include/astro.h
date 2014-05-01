@@ -82,6 +82,9 @@ public:
 	bool getShowOrbit()const{return flags2 & OCS_SHOWORBIT;}
 	void setShowOrbit(bool b);
 
+	/// Returns total mass in the system
+	double getSystemMass(const Astrobj *ignore = NULL)const;
+
 	/// \brief Set up an orbit with given orbital elements.
 	/// \param o The celestial body to orbit around.
 	/// \param radius Semi-major axis of the orbit.  Passing 0 will not set up the orbit completely, just assigning orbit center.

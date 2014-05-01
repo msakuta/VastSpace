@@ -398,11 +398,17 @@ void Barycenter::updateInt(double dt){
 			Vec3d orbit_omg = a->orbit_axis.norm();
 			Vec3d oldpos = a->pos;
 			if(a->eccentricity == 0.){
-				a->orbit_phase += omega * dt;
-				Quatd rot(0., 0., sin(a->orbit_phase / 2.), cos(a->orbit_phase / 2.));
-				Quatd q = orbit_axis * rot;
-				a->pos = q.trans(vec3_010);
-				a->pos *= orbit_rad;
+				// Two-body problem must synchronize orbit phase bettween involving bodies
+				if(i)
+					a->orbit_phase = a0->orbit_phase;
+				else
+					a->orbit_phase += omega * dt;
+
+				Vec3d pos0(cos(a->orbit_phase), sin(a->orbit_phase), 0.);
+				Quatd q = a->orbit_axis;
+				a->pos = q.trans(pos0);
+				// TODO: Radius should be deduced by mass ratio
+				a->pos *= a->orbit_rad;
 			}
 			else{
 				Vec3d pos0(cos(a->orbit_phase), sin(a->orbit_phase), 0.);

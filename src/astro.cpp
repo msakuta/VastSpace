@@ -44,14 +44,31 @@ public:
 	Barycenter(Game *game) : st(game){}
 	Barycenter(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Barycenter> classRegister;
+	static bool sq_define(HSQUIRRELVM);
 	ClassId classname()const{return classRegister.id;}
 	void updateInt(double dt);
 	Barycenter *toBarycenter(){return this;}
 };
 
-const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter");
+const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter", sq_define);
 
 
+bool Barycenter::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Barycenter>);
+	sq_createslot(v, -3);
+	return true;
+}
 
 OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_center(NULL), orbitType(NoOrbit){
 	OrbitCS *ret = this;

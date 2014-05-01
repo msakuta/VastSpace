@@ -316,22 +316,30 @@ void Warpable::anim(double dt){
 			}
 			if(bestsc){
 				Astrobj *cs = bestsc->system;
-				if(!cs){ // Materialize a randomly generated star; create a Star object and associate it with the StarCache.
-					Star *child = new Star(bestsc->name, p->warpdstcs);
-					child->pos = bestPos;
-					child->name = bestsc->name;
-					double radscale = exp(rs->nextGauss());
-					child->rad = 6.960e5 * radscale; // Exponential distribution around Rsun
-					child->mass = 1.9884e30 * radscale * radscale * radscale * exp(rs->nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
-					child->spect = Star::G;
-					// Create a temporary orbit to arrive.
-					OrbitCS *orbit = new OrbitCS("orbit", child);
-					Vec3d orbitPos = child->tocs(this->warpdst, this->warpdstcs);
-					orbit->orbits(child, orbitPos.len(), 0., Quatd::direction(orbitPos).rotate(M_PI / 2., Vec3d(1,0,0)));
-					orbit->setShowOrbit(true);
-					this->warpdst = orbit->tocs(this->warpdst, this->warpdstcs);
-					this->warpdstcs = orbit;
-					bestsc->system = child;
+				if(!cs){
+					// Materialize a randomly generated star; create a Star object and associate it with the StarCache.
+					// This logic is written in Squirrel scripts.
+					try{
+						HSQUIRRELVM v = game->sqvm;
+						StackReserver sr(v);
+						sq_pushroottable(v);
+						sq_pushstring(v, _SC("materializeStar"), -1);
+						if(SQ_FAILED(sq_get(v, -2)))
+							throw SQFError(_SC("Couldn't get materializeStar"));
+						sq_pushroottable(v);
+						sq_pushstring(v, bestsc->name, -1);
+						SQVec3d q = bestPos;
+						q.push(v);
+						sq_pushobj(v, this);
+						if(SQ_FAILED(sq_call(v, 4, SQTrue, SQTrue)))
+							throw SQFError(_SC("Couldn't get materializeStar"));
+						CoordSys *cs = CoordSys::sq_refobj(v, -1);
+						if(cs)
+							bestsc->system = cs->toAstrobj();
+					}
+					catch(SQFError &e){
+						CmdPrint(e.what());
+					}
 				}
 				else{
 					// Reuse the temporary orbit

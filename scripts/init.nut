@@ -142,6 +142,29 @@ function stellarReadFile(cs, varlist, name, ...){
 	return 0;
 };
 
+/// \brief The callback function that is called when a randomly generated star materializes
+/// \param name The randomly generated star's name
+/// \param pos The position of the star being materialized
+/// \param e The Entity which triggered materialization by entering the solar system
+/// \returns The newly created solar system to associate with StarCache
+function materializeStar(name,pos,e){
+	local child = Star(name, universe);
+	print("materializeStar: " + child);
+	child.pos = pos;
+//	double radscale = exp(rs->nextGauss());
+	local radscale = 1.;
+	child.rad = 6.960e5 * radscale; // Exponential distribution around Rsun
+	child.mass = 1.9884e30 * radscale * radscale * radscale /** exp(rs->nextGauss())*/; // Mass has variance too, but probably mean is proportional to cubic radius.
+	child.spect = "G";
+	// Create a temporary orbit to arrive.
+	local orbit = Orbit("orbit", child);
+	local orbitPos = child.transPosition(e.warpdst, e.warpdstcs);
+	orbit.orbits(child, orbitPos.len(), 0., Quatd.direction(orbitPos).rotate(PI / 2., Vec3d(1,0,0)));
+	orbit.showOrbit = true;
+	e.warpdst = orbit.transPosition(e.warpdst, e.warpdstcs);
+	e.warpdstcs = orbit;
+	return child;
+}
 
 
 

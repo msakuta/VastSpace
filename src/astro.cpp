@@ -252,6 +252,28 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 	return true;
 }
 
+const CoordSys::PropertyMap &OrbitCS::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap[_SC("showOrbit")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+			sq_pushbool(v, a->getShowOrbit() ? SQTrue : SQFalse);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			OrbitCS *a = static_cast<OrbitCS*>(cs);
+			SQBool b;
+			if(SQ_FAILED(sq_getbool(v, 3, &b)))
+				return sq_throwerror(v, _SC("OrbitCS.showOrbit received non-boolean value"));
+			a->setShowOrbit(!!b);
+			return SQInteger(0);
+		});
+	}
+	return pmap;
+}
+
 OrbitCS *OrbitCS::toOrbitCS(){
 	return this;
 }

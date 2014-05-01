@@ -70,6 +70,7 @@ public:
 	virtual bool readFileStart(StellarContext &);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	virtual bool readFileEnd(StellarContext &);
+	const PropertyMap &propertyMap()const override;
 	virtual OrbitCS *toOrbitCS();
 	virtual Barycenter *toBarycenter();
 

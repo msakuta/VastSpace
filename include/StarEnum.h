@@ -10,7 +10,7 @@
 /// want to remember the name and possibly materialized solar system.
 struct StarCache{
 	gltestp::dstring name;
-	WeakPtr<Astrobj> system;
+	WeakPtr<CoordSys> system;
 	StarCache(const StarCache &o) : name(o.name), system(o.system){}
 	StarCache(gltestp::dstring name = "") : name(name){}
 };
@@ -54,6 +54,7 @@ protected:
 	int numSectors; ///< Size of cube measured in sectors to enumerate
 	int gx, gy, gz;
 	int numstars;
+	StarCacheList *cacheList;
 	StarCacheList::iterator it, itend;
 	bool genCache;
 	bool newCell();

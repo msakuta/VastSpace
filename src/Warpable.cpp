@@ -315,7 +315,7 @@ void Warpable::anim(double dt){
 				}
 			}
 			if(bestsc){
-				Astrobj *cs = bestsc->system;
+				CoordSys *cs = bestsc->system;
 				if(!cs){
 					// Materialize a randomly generated star; create a Star object and associate it with the StarCache.
 					// This logic is written in Squirrel scripts.
@@ -346,7 +346,7 @@ void Warpable::anim(double dt){
 							throw SQFError(_SC("Couldn't get materializeStar"));
 						CoordSys *cs = CoordSys::sq_refobj(v, -1);
 						if(cs)
-							bestsc->system = cs->toAstrobj();
+							bestsc->system = cs;
 					}
 					catch(SQFError &e){
 						CmdPrint(e.what());
@@ -794,9 +794,23 @@ bool StarEnum::newCell(){
 			names = starCacheDB.find(gkey);
 		}
 
+		this->cacheList = &names->second;
+
 		// Begin enumeration for next()
 		this->it = names->second.begin();
 		this->itend = names->second.end();
+	}
+	else{
+		// Though if genCache is false, we could see if cache was already created.
+		std::tuple<int,int,int> gkey(gx,gy,gz);
+		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		if(names != starCacheDB.end()){
+			this->cacheList = &names->second;
+			this->it = names->second.begin();
+			this->itend = names->second.end();
+		}
+		else
+			this->cacheList = NULL;
 	}
 	return true;
 }
@@ -813,7 +827,7 @@ bool StarEnum::next(Vec3d &pos, StarCache **sc){
 	pos[2] = (drseq(&rs) + gz - 0.5) * sectorSize;
 
 	if(sc != NULL){
-		if(genCache && it != itend){
+		if(cacheList && it != itend){
 			*sc = &*it;
 			++it; // Advance pointer
 		}

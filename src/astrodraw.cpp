@@ -1732,7 +1732,11 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 
 		Vec3d pos;
 		StarEnum se(plpos, NUMCELLS);
-		while(se.next(pos)){
+		StarCache *sc;
+		while(se.next(pos, &sc)){
+			// Skip drawing materialized stars or solar systems
+			if(sc && sc->system)
+				continue;
 			double rvelo;
 			double radius = radiusfactor;
 			GLubyte r, g, b;

@@ -9,6 +9,8 @@
 #include "sqadapt.h"
 #include "cmd.h"
 #include "Game.h"
+#include "CoordSys-property.h"
+#include "CoordSys-sq.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -304,47 +306,43 @@ void TexSphere::updateInt(double dt){
 }
 
 
-SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
-	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-
-	if(!strcmp(wcs, _SC("alive"))){
-		sq_pushbool(v, !!p);
-		return 1;
+const CoordSys::PropertyMap &TexSphere::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["oblateness"] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				sq_pushfloat(v, SQFloat(a->oblateness));
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				TexSphere *a = static_cast<TexSphere*>(cs);
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+					return sq_throwerror(v, _SC("TexSphere.oblateness could not convert to float"));
+				a->oblateness = f;
+				return SQInteger(0);
+			}
+		);
+		pmap["texture"] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				sq_pushstring(v, a->texname, -1);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				TexSphere *a = static_cast<TexSphere*>(cs);
+				const SQChar *str;
+				if(SQ_FAILED(sq_getstring(v, 3, &str)))
+					return sq_throwerror(v, _SC("TexSphere.texture could not convert to string"));
+				a->texname = str;
+				return SQInteger(0);
+			}
+		);
 	}
-
-	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
-	if(!p)
-		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
-
-	if(!strcmp(wcs, _SC("oblateness"))){
-		sq_pushfloat(v, SQFloat(p->oblateness));
-		return 1;
-	}
-	else
-		return st::sqf_get(v);
-}
-
-SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
-	if(sq_gettop(v) < 3)
-		return SQ_ERROR;
-	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-
-	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
-	if(!p)
-		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
-
-	if(!strcmp(wcs, _SC("oblateness"))){
-		SQFloat f;
-		sq_getfloat(v, 3, &f);
-		p->oblateness = double(f);
-		return 0;
-	}
-	else
-		return st::sqf_get(v);
+	return pmap;
 }
 
 bool TexSphere::sq_define(HSQUIRRELVM v){
@@ -354,8 +352,7 @@ bool TexSphere::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("_get"), sqf_get);
-	register_closure(v, _SC("_set"), sqf_set);
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<TexSphere>);
 	sq_createslot(v, -3);
 	return true;
 }

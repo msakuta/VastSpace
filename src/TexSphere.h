@@ -92,8 +92,7 @@ public:
 	static bool sq_define(HSQUIRRELVM v);
 private:
 	std::vector<Texture> textures;
-	static SQInteger sqf_get(HSQUIRRELVM);
-	static SQInteger sqf_set(HSQUIRRELVM);
+	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;
 };

@@ -600,11 +600,14 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 			if(rayOffset < 0.)
 				penumbra = 1.;
 			else{
-				double penumbraRadius = a->rad * rayOffset / (lightSource - ahitpos).len();
-				double penumbraInner = ahit->rad - penumbraRadius;
-				double penumbraOuter = ahit->rad + penumbraRadius;
-				double penumbraRange = penumbraOuter - penumbraInner;
-				penumbra = hitdist <= penumbraOuter ? penumbraRange == 0. ? 0. : (hitdist - penumbraInner) / penumbraRange : 1.;
+				Vec3d delta = lightSource - ahitpos;
+				if(delta.slen() != 0){
+					double penumbraRadius = a->rad * rayOffset / delta.len();
+					double penumbraInner = ahit->rad - penumbraRadius;
+					double penumbraOuter = ahit->rad + penumbraRadius;
+					double penumbraRange = penumbraOuter - penumbraInner;
+					penumbra = hitdist <= penumbraOuter ? penumbraRange == 0. ? 0. : (hitdist - penumbraInner) / penumbraRange : 1.;
+				}
 			}
 
 			if(rethit)

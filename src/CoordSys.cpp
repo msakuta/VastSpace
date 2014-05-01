@@ -1763,6 +1763,20 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	register_closure(v, _SC("_cmp"), sqf_cmp);
+	register_closure(v, _SC("_tostring"), [](HSQUIRRELVM v){
+		CoordSys *p = sq_refobj(v, 1);
+
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p){
+			sq_pushstring(v, _SC("(deleted)"), -1);
+			return SQInteger(1);
+		}
+
+		// Probably we could return CoordSys::name...
+		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
+
+		return SQInteger(1);
+	}, 1);
 	sq_createslot(v, -3);
 	return true;
 }

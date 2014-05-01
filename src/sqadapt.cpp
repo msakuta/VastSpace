@@ -486,10 +486,21 @@ static SQInteger sqf_RandomSequencePtr_next(HSQUIRRELVM v){
 static SQInteger sqf_RandomSequencePtr_nextd(HSQUIRRELVM v){
 	RandomSequence *p;
 	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
-		return sq_throwerror(v, _SC("RandomSequencePtr.next() cannot obtain pointer"));
+		return sq_throwerror(v, _SC("RandomSequencePtr.nextd() cannot obtain pointer"));
 	if(!p)
 		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
 	sq_pushfloat(v, SQFloat(p->nextd()));
+	return 1;
+}
+
+/// \brief Obtain next random number sequence in double
+static SQInteger sqf_RandomSequencePtr_nextGauss(HSQUIRRELVM v){
+	RandomSequence *p;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return sq_throwerror(v, _SC("RandomSequencePtr.nextGauss() cannot obtain pointer"));
+	if(!p)
+		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
+	sq_pushfloat(v, SQFloat(p->nextGauss()));
 	return 1;
 }
 
@@ -1354,6 +1365,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_settypetag(v, -1, tt_RandomSequencePtr);
 	register_closure(v, _SC("next"), sqf_RandomSequencePtr_next);
 	register_closure(v, _SC("nextd"), sqf_RandomSequencePtr_nextd);
+	register_closure(v, _SC("nextGauss"), sqf_RandomSequencePtr_nextGauss);
 	sq_createslot(v, -3);
 
 	// Define class Vec3d, native vector representation

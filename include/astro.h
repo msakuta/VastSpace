@@ -98,7 +98,7 @@ public:
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;
 	virtual void updateInt(double dt);
-	std::vector<OrbitCS*> orbiters;
+	ObservableList<OrbitCS> orbiters;
 	enum OrbitType orbitType;
 	int enable;
 

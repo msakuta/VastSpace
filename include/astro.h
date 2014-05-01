@@ -90,7 +90,7 @@ public:
 	/// \param phase Phase of the orbit
 	///
 	/// If you set radius to nonzero, the position is updated by the orbital elements in this function.
-	void orbits(Astrobj *o, double radius = 0., double eccentricity = 0., const Quatd &axis = quat_u, double phase = 0.);
+	void orbits(OrbitCS *o, double radius = 0., double eccentricity = 0., const Quatd &axis = quat_u, double phase = 0.);
 
 protected:
 //	EmbeddedListNode<OrbitCS, offsetof(OrbitCS, gravgroup)> gravgroup;

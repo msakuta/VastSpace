@@ -84,7 +84,7 @@ bool OrbitCS::sq_define(HSQUIRRELVM v){
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<OrbitCS>);
 	register_closure(v, _SC("orbits"), [](HSQUIRRELVM v){
-		Astrobj *star = static_cast<Astrobj*>(sq_refobj(v));
+		OrbitCS *star = static_cast<OrbitCS*>(sq_refobj(v));
 		SQFloat radius, eccentricity, phase;
 		SQQuatd axis;
 		if(SQ_FAILED(sq_getfloat(v, 3, &radius)))
@@ -94,7 +94,7 @@ bool OrbitCS::sq_define(HSQUIRRELVM v){
 		axis.getValue(v, 5);
 		if(SQ_FAILED(sq_getfloat(v, 6, &phase)))
 			phase = 0;
-		star->orbits(dynamic_cast<Astrobj*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
+		star->orbits(dynamic_cast<OrbitCS*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
 		return SQInteger(0);
 	});
 	sq_createslot(v, -3);
@@ -193,7 +193,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "orbits")){
 		if(argv[1]){
-			orbits(dynamic_cast<Astrobj*>(parent->findcspath(ps)));
+			orbits(dynamic_cast<OrbitCS*>(parent->findcspath(ps)));
 		}
 		return true;
 	}
@@ -314,21 +314,25 @@ Barycenter *OrbitCS::toBarycenter(){
 	return NULL;
 }
 
-void OrbitCS::orbits(Astrobj *o, double radius, double eccentricity, const Quatd &axis, double phase){
-	if(o){
-		orbit_home = o;
-		o->orbiters.push_back(this);
-		if(o->toBarycenter())
-			orbit_center = o;
-		else
-			orbitType = Satellite;
-		if(radius != 0.){
-			orbit_rad = radius;
-			this->eccentricity = eccentricity;
-			orbit_axis = axis;
-			orbit_phase = phase;
-			updateInt(0); // Recalculate position with orbital elements
-		}
+void OrbitCS::orbits(OrbitCS *o, double radius, double eccentricity, const Quatd &axis, double phase){
+	if(!o)
+		return;
+	Astrobj *a = o->toAstrobj();
+	if(a)
+		orbit_home = a;
+	o->orbiters.push_back(this);
+	if(o->toBarycenter()){
+		orbitType = TwoBody;
+		orbit_center = o;
+	}
+	else
+		orbitType = Satellite;
+	if(radius != 0.){
+		orbit_rad = radius;
+		this->eccentricity = eccentricity;
+		orbit_axis = axis;
+		orbit_phase = phase;
+		updateInt(0); // Recalculate position with orbital elements
 	}
 }
 

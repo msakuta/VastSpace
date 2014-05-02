@@ -239,6 +239,94 @@ register_console_command("buildmenu", function(){
 	}
 });
 
+/// \brief Display a window to show all properties of a CoordSys object.
+local function showInfo(a){
+	local w = GLwindowSizeable(a.name() + " Information");
+	w.closable = true;
+	w.width = 320;
+	w.height = 480;
+	w.x = (screenwidth() - w.width) / 2 + 20;
+	w.y = (screenheight() - w.height) / 2 + 20;
+
+	const scrollBarWidth = 16;
+	local scrollpos = 0;
+	local propCount = 0;
+
+	w.onDraw = function(ws){
+		local r = w.clientRect();
+
+		local listHeight = propCount * fontheight();
+		if(r.height < listHeight){ // Show scrollbar
+			r.x1 -= scrollBarWidth;
+			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, listHeight - r.height, scrollpos);
+			// Reset scroll pos
+			if(listHeight - r.height <= scrollpos)
+				scrollpos = listHeight - r.height - 1;
+		}
+		else
+			scrollpos = 0; // Reset scroll pos
+
+		glPushAttrib(GL_SCISSOR_BIT);
+		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
+		glEnable(GL_SCISSOR_TEST);
+
+		local i = 0;
+
+		foreach(key,value in a){
+			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
+
+			glColor4f(1,1,1,1);
+			glwpos2d(r.x0, ypos);
+			glwprint(format("%-12s: %s", key, "" + value));
+			i += 1;
+		}
+		propCount = i;
+		glPopAttrib(GL_SCISSOR_BIT);
+	}
+
+	w.onMouse = function(event){
+		local function trackScrollBar(){
+			local r = w.clientRect().moved(0,0);
+
+			r.x1 -= scrollBarWidth;
+
+			if(r.height < propCount * fontheight()){ // Show scrollbar
+				local iy = glwVScrollBarMouse(w, event.x, event.y, r.x1, r.y0,
+					scrollBarWidth, r.height, propCount * fontheight() - r.height, scrollpos);
+				if(0 <= iy){
+					scrollpos = iy;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		local wheelSpeed = fontheight() * 2;
+
+		if(event.key == "leftButton" && event.state == "down"){
+			if(trackScrollBar())
+				return true;
+		}
+		else if(event.key == "wheelUp"){
+			if(0 <= scrollpos - wheelSpeed)
+				scrollpos -= wheelSpeed;
+			else
+				scrollpos = 0;
+		}
+		else if(event.key == "wheelDown"){
+			local scrollBarRange = propCount * fontheight() - (w.clientRect().height - 2 * fontheight());
+			if(scrollpos + wheelSpeed < scrollBarRange)
+				scrollpos += wheelSpeed;
+			else
+				scrollpos = scrollBarRange - 1;
+		}
+		else if(event.key == "leftButton" && event.state == "keepDown"){
+			trackScrollBar();
+		}
+		return false;
+	}
+}
+
 /// \brief Shows the window to select a warp destination.
 ///
 /// This window is the first example that almost everything is defined in Squirrel script.
@@ -256,7 +344,7 @@ register_console_command("buildmenu", function(){
 ///        This callback will given two arguments:
 ///            first: The GLwindow that showing the list.
 ///            second: Item being selected
-local function locationWindow(title,locationGenerator,selectEvent){
+local function locationWindow(title,locationGenerator,selectEvent,rightClickEvent){
 	local w = GLwindowSizeable(title);
 	w.closable = true;
 	w.width = 320;
@@ -401,6 +489,16 @@ local function locationWindow(title,locationGenerator,selectEvent){
 				i++;
 			}
 		}
+		else if(event.key == "rightButton" && event.state == "down" && rightClickEvent != null){
+			local ind = ((event.y + scrollpos) / fontheight()) - 2;
+			local i = 0;
+			foreach(sd in filterList()){
+				if(i == ind){
+					rightClickEvent(w,sd);
+				}
+				i++;
+			}
+		}
 		else if(event.key == "wheelUp"){
 			if(0 <= scrollpos - wheelSpeed)
 				scrollpos -= wheelSpeed;
@@ -474,6 +572,13 @@ function(w,sd){
 			e.command("Warp", destcs, destpos);
 		w.close();
 	}
+},
+function(w,sd){
+	if("system" in sd){
+		local system = sd.system();
+		if(system != null)
+			showInfo(sd.system());
+	}
 }));
 
 register_console_command("teleportmenu", @() locationWindow("Teleport Destination Window", function(){
@@ -502,7 +607,7 @@ function(w,sd){
 	player.setpos(sd.pos);
 	player.setvelo(Vec3d(0,0,0));
 	w.close();
-}));
+}, null));
 
 function control(...){
 	if(player.isControlling())

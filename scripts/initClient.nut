@@ -273,6 +273,145 @@ register_console_command("buildmenu", function(){
 	}
 });
 
+/// Shows a window to display all celestial bodies in a solar system.
+/// Displays current system if no argument is given.
+register_console_command("solarmenu", function(...){
+	local a = vargv.len() != 0 ? player.cs.findcspath(vargv[0]) : player.cs;
+	while(a && a.alive && !a.solarSystem)
+		a = a.parent;
+	if(!a || !a.solarSystem){
+		print("Could not find a solar system");
+		return;
+	}
+	local w = GLwindowSizeable(a.name + " System structure");
+	w.closable = true;
+	w.width = 320;
+	w.height = 480;
+	w.x = (screenwidth() - w.width) / 2 + 20;
+	w.y = (screenheight() - w.height) / 2 + 20;
+
+	const scrollBarWidth = 16;
+	local scrollpos = 0;
+	local count = 0;
+	local indent = 0;
+
+	// In Squirrel language, calling a local function recursively requires
+	// defining the local variable first.
+	local iter = null;
+
+	// Iterate over coordinate systems to analyze structure of CoordSys tree.
+	// Note that this function assumes no CoordSys object orbits around its
+	// child nodes, otherwise it will perform infinite recursive call.
+	iter = function(cs, proc, orbitSearch=false){
+		// Process the children first (but do not process orbiters)
+		local c = cs.child;
+		while(c && c.alive){
+			iter(c, proc, false);
+			c = c.next;
+		}
+
+		// Process root system of mass, which in turn process child
+		// and orbiter systems.
+		if(orbitSearch || cs instanceof Orbit && !cs.orbitCenter){
+			if(cs instanceof Astrobj){
+				proc(cs);
+				indent++;
+			}
+			foreach(v in cs.orbiters)
+				iter(v, proc, true);
+			if(cs instanceof Astrobj)
+				indent--;
+		}
+	}
+
+	w.onDraw = function(ws){
+		local r = w.clientRect();
+
+		local listHeight = count * fontheight();
+		if(r.height < listHeight){ // Show scrollbar
+			r.x1 -= scrollBarWidth;
+			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, listHeight - r.height, scrollpos);
+			// Reset scroll pos
+			if(listHeight - r.height <= scrollpos)
+				scrollpos = listHeight - r.height - 1;
+		}
+		else
+			scrollpos = 0; // Reset scroll pos
+
+		if(!a || !a.alive || !a.solarSystem)
+			return;
+
+		glPushAttrib(GL_SCISSOR_BIT);
+		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
+		glEnable(GL_SCISSOR_TEST);
+
+		local i = 1;
+		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) : -1;
+
+		glColor4fv([1,1,1,1]);
+		glwpos2d(r.x0, r.y0 + fontheight() - scrollpos);
+		glwprint("Solar System: " + a.getpath());
+
+		indent = 0;
+		iter(a, function(cs){
+			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
+//			glColor4fv(isCoordSys ? [0,1,1,1] : [1,1,1,1]);
+			glwpos2d(r.x0, ypos);
+			local str = "";
+			for(local c = 0; c < indent; c++)
+				str += "  ";
+			glwprint(str + cs.name + " (" + cs.classid + ")");
+			i += 1;
+		});
+
+		count = i + 1;
+
+		glPopAttrib();
+	}
+
+	w.onMouse = function(event){
+		local function trackScrollBar(){
+			local r = w.clientRect().moved(0,0);
+
+			r.x1 -= scrollBarWidth;
+
+			if(r.height < count * fontheight()){ // Show scrollbar
+				local iy = glwVScrollBarMouse(w, event.x, event.y, r.x1, r.y0,
+					scrollBarWidth, r.height, count * fontheight() - r.height, scrollpos);
+				if(0 <= iy){
+					scrollpos = iy;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		local wheelSpeed = fontheight() * 2;
+
+		if(event.key == "leftButton" && event.state == "down"){
+			if(trackScrollBar())
+				return true;
+		}
+		else if(event.key == "wheelUp"){
+			if(0 <= scrollpos - wheelSpeed)
+				scrollpos -= wheelSpeed;
+			else
+				scrollpos = 0;
+		}
+		else if(event.key == "wheelDown"){
+			local scrollBarRange = count * fontheight() - (w.clientRect().height - 2 * fontheight());
+			if(scrollpos + wheelSpeed < scrollBarRange)
+				scrollpos += wheelSpeed;
+			else
+				scrollpos = scrollBarRange - 1;
+		}
+		else if(event.key == "leftButton" && event.state == "keepDown"){
+			trackScrollBar();
+		}
+		return false;
+	}
+});
+
 /// \brief Display a window to show all properties of a CoordSys object.
 local function showInfo(a){
 	local w = GLwindowSizeable(a.name + " Information");

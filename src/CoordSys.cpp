@@ -1603,8 +1603,11 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	// TODO: return alive first
-	if(!strcmp(wcs, _SC("entlist"))){
+	if(!scstrcmp(wcs, _SC("alive"))){
+		sq_pushbool(v, p ? SQTrue : SQFalse);
+		return 1;
+	}
+	else if(!strcmp(wcs, _SC("entlist"))){
 		if(!p->w){
 			sq_newarray(v, 0); // Returning empty array makes the caller be able to use foreach
 			return 1;

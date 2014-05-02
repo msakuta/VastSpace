@@ -300,22 +300,37 @@ local function showInfo(a){
 		else
 			scrollpos = 0; // Reset scroll pos
 
+		if(!a || !a.alive)
+			return;
+
 		glPushAttrib(GL_SCISSOR_BIT);
 		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
 		glEnable(GL_SCISSOR_TEST);
 
 		local i = 0;
+		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) : -1;
 
 		foreach(key,value in a){
 			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
 
-			glColor4f(1,1,1,1);
+			local isCoordSys = value instanceof CoordSys;
+			if(i == ind && isCoordSys){
+				glColor4f(0,0,1,0.5);
+				glBegin(GL_QUADS);
+				glVertex2d(r.x0, ypos - fontheight());
+				glVertex2d(r.x0, ypos);
+				glVertex2d(r.x1, ypos);
+				glVertex2d(r.x1, ypos - fontheight());
+				glEnd();
+			}
+
+			glColor4fv(isCoordSys ? [0,1,1,1] : [1,1,1,1]);
 			glwpos2d(r.x0, ypos);
 			glwprint(format("%-12s: %s", key, "" + value));
 			i += 1;
 		}
 		propCount = i;
-		glPopAttrib(GL_SCISSOR_BIT);
+		glPopAttrib();
 	}
 
 	w.onMouse = function(event){
@@ -340,6 +355,18 @@ local function showInfo(a){
 		if(event.key == "leftButton" && event.state == "down"){
 			if(trackScrollBar())
 				return true;
+			if(!a || !a.alive)
+				return true;
+			local ind = ((event.y + scrollpos) / fontheight());
+			local i = 0;
+			foreach(key,value in a){
+				if(i == ind && value instanceof CoordSys){
+					a = value;
+					w.title = a.name + " Information";
+					return true;
+				}
+				i++;
+			}
 		}
 		else if(event.key == "wheelUp"){
 			if(0 <= scrollpos - wheelSpeed)

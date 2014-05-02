@@ -323,6 +323,29 @@ const CoordSys::PropertyMap &OrbitCS::propertyMap()const{
 			a->setShowOrbit(!!b);
 			return SQInteger(0);
 		});
+
+		// orbitCenter property is read-only because manipulating it carelessly can corrupt
+		// entire structure.  Orbit calculation requires involving celestial bodies recognize each other.
+		// So use orbits() method to specify orbital relations.
+		pmap[_SC("orbitCenter")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			sq_pushobj(v, const_cast<CoordSys*>(static_cast<const OrbitCS*>(cs)->getOrbitCenter()));
+			return SQInteger(1);
+		}, NULL);
+
+		// orbiters property is read-only because of the same reason as orbitCenter.
+		pmap[_SC("orbiters")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *orbit = static_cast<const OrbitCS*>(cs);
+			sq_newarray(v, orbit->orbiters.size());
+			int i = 0;
+			for(auto it : orbit->orbiters){
+				sq_pushinteger(v, i);
+				sq_pushobj(v, orbit->orbiters[i]);
+				if(SQ_FAILED(sq_set(v, -3)))
+					return sq_throwerror(v, _SC("Error on constructing orbiters array"));
+				i++;
+			}
+			return SQInteger(1);
+		}, NULL);
 	}
 	return pmap;
 }

@@ -1595,6 +1595,22 @@ const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 				return SQInteger(0);
 			}
 		);
+		pmap[_SC("solarSystem")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushbool(v, cs->flags & CS_SOLAR ? SQTrue : SQFalse);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				SQBool b;
+				if(SQ_FAILED(sq_getbool(v, 3, &b)))
+					return sq_throwerror(v, _SC("Cannot convert to bool"));
+				if(b)
+					cs->flags |= CS_SOLAR;
+				else
+					cs->flags &= ~CS_SOLAR;
+				return SQInteger(0);
+			}
+		);
 	}
 	return pmap;
 }

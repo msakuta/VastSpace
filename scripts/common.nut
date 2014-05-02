@@ -51,8 +51,8 @@ class CoordSys{
 	void setomg(Vec3d);
 	string name;
 	string[] extranames;
-	CoordSys child();
-	CoordSys next();
+	CoordSys child;
+	CoordSys next;
 	string getpath();
 	CoordSys findcspath();
 	Entity addent(string classname, Vec3d pos);
@@ -224,7 +224,7 @@ cvar <- Cvar();
 
 function printtree(cs){
 	local child;
-	for(child = cs.child(); child != null; child = child.next()){
+	for(child = cs.child; child != null; child = child.next){
 		print(child.getpath());
 		printtree(child);
 	}
@@ -246,8 +246,8 @@ function foreachselectedents(proc){
 }
 
 function foreachsubents(cs, proc){
-	local cs1 = cs.child();
-	for(; cs1 != null; cs1 = cs1.next())
+	local cs1 = cs.child;
+	for(; cs1 != null; cs1 = cs1.next)
 		foreachsubents(cs1, proc);
 
 	// Bottom up, with no reason
@@ -548,7 +548,7 @@ register_console_command("matchcs", function(...){
 			local en = cs.extranames;
 			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
 				names.append([en[i], cs]);
-			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+			for(local cs2 = cs.child; cs2 != null; cs2 = cs2.next)
 				patcall(cs2, pat);
 		}
 	};
@@ -585,7 +585,7 @@ register_console_command("locate", function(){
 	local ReCall = class{
 		function recall(cs){
 			print(cs.getpath() + ": " + cs.classname);
-			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+			for(local cs2 = cs.child; cs2 != null; cs2 = cs2.next)
 				recall(cs2);
 		}
 	}

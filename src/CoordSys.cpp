@@ -1425,7 +1425,10 @@ static void pushCoordSys(HSQUIRRELVM v, Serializable *s){
 }
 
 void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
-	sqserial_findobj(v, cs, pushCoordSys);
+	if(!cs)
+		sq_pushnull(v);
+	else
+		sqserial_findobj(v, cs, pushCoordSys);
 }
 
 CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){
@@ -1480,26 +1483,6 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 		return sq_throwerror(v, cpplib::dstring("addent: Unknown entity class name: ") << arg);
 
 	Entity::sq_pushobj(v, pt);
-	return 1;
-}
-
-static SQInteger sqf_child(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	if(!p->children){
-		sq_pushnull(v);
-		return 1;
-	}
-	CoordSys::sq_pushobj(v, p->children);
-	return 1;
-}
-
-static SQInteger sqf_next(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	if(!p->next){
-		sq_pushnull(v);
-		return 1;
-	}
-	CoordSys::sq_pushobj(v, p->next);
 	return 1;
 }
 
@@ -1578,6 +1561,40 @@ const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 		pmap[_SC("velo")] = PropertyEntry(tgetter<Vec3d, &CoordSys::velo>, tsetter<Vec3d, &CoordSys::velo>);
 		pmap[_SC("rot")] = PropertyEntry(tgetter<Quatd, &CoordSys::rot>, tsetter<Quatd, &CoordSys::rot>);
 		pmap[_SC("omg")] = PropertyEntry(tgetter<Vec3d, &CoordSys::omg>, tsetter<Vec3d, &CoordSys::omg>);
+		pmap[_SC("child")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->children);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Scripts can screw up CoordSys tree structure by assigning invalid value to child.
+				// Probably we should return a list to Squirrel VM.
+				cs->children = sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
+		pmap[_SC("next")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->next);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Same apply as child
+				cs->next = CoordSys::sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
+		pmap[_SC("parent")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->parent);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Same apply as child
+				cs->parent = CoordSys::sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
 	}
 	return pmap;
 }
@@ -1587,11 +1604,7 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
 	// TODO: return alive first
-	if(!scstrcmp(wcs, _SC("id"))){
-		sq_pushinteger(v, p->getid());
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("entlist"))){
+	if(!strcmp(wcs, _SC("entlist"))){
 		if(!p->w){
 			sq_newarray(v, 0); // Returning empty array makes the caller be able to use foreach
 			return 1;
@@ -1623,14 +1636,6 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 			sq_set(v, -3); // root Entity array
 			idx++;
 		}
-		return 1;
-	}
-	else if(!strcmp(wcs, _SC("parentcs"))){
-		if(!p->parent){
-			sq_pushnull(v);
-			return 1;
-		}
-		sq_pushobj(v, p->parent);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("extranames"))){
@@ -1744,8 +1749,6 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("setrot"), sqf_setintrinsic2<CoordSys, Quatd, &CoordSys::rot, CoordSys::sq_refobj>);
 	register_closure(v, _SC("getomg"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::omg>, CoordSys::sq_refobj>);
 	register_closure(v, _SC("setomg"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::omg, CoordSys::sq_refobj>);
-	register_closure(v, _SC("child"), sqf_child);
-	register_closure(v, _SC("next"), sqf_next);
 	register_closure(v, _SC("transPosition"), sqf_transPosition);
 	register_closure(v, _SC("transRotation"), sqf_transRotation);
 	register_code_func(v, _SC("transVelocity"), _SC("return function(velo, cs){return this.transPosition(velo, cs, true);}"), true);

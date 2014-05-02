@@ -153,24 +153,31 @@ function materializeStar(name,pos,e,rs){
 	local child = (binary ? Barycenter : Star)(name, universe);
 	print("materializeStar: (binary: " + binary + "): " + child);
 	child.pos = pos;
+	child.solarSystem = true;
 
 	local axis = Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
 	local plane = Quatd.direction(axis);
 
-	local function addPlanet(a){
-		local p = TextureSphere(a.name + " a", child);
+	local function addPlanet(a,idx){
+		local name = a.name + " " + ('a' + idx).tochar();
+		local p = TextureSphere(name, child);
 		print("Planet gen: " + name + ": " + p);
 		p.texture = "textures/grass.jpg";
 		p.mass = 5.6846e26 * exp(rs.nextGauss());
 		p.radius = 60268 * exp(rs.nextGauss());
-		p.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), plane);
+		p.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm()));
 		p.showOrbit = true;
 		local po = Orbit(a.name + " a orbit", p);
 		po.orbits(p, p.radius * 10, 0., plane);
 		po.showOrbit = true;
 
 		// TODO: Bookmarks grow too fast?
-		bookmarks[a.name + " a orbit"] <- BookmarkCoordSys(po);
+		bookmarks[name + " orbit"] <- BookmarkCoordSys(po);
+	}
+
+	local function addPlanets(a,c){
+		for(local i = 0; i < c; i++)
+			addPlanet(a,i);
 	}
 
 	if(binary){
@@ -191,18 +198,15 @@ function materializeStar(name,pos,e,rs){
 		b.spect = "G";
 		b.orbits(child, rs.nextd() * 1.0e8, eccentricity, plane.rotate(PI, Vec3d(0,0,1)));
 		b.showOrbit = true;
-		if(rs.next() % 2 == 0)
-			addPlanet(a);
-		if(rs.next() % 2 == 0)
-			addPlanet(b);
+		addPlanets(a, rs.next() % 5);
+		addPlanets(b, rs.next() % 5);
 	}
 	else{
 		local radscale = exp(rs.nextGauss());
 		child.radius = 6.960e5 * radscale; // Exponential distribution around Rsun
 		child.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
 		child.spect = "G";
-		if(rs.next() % 2 == 0)
-			addPlanet(child);
+		addPlanets(child, rs.next() % 5);
 	}
 	// Create a temporary orbit to arrive.
 	local orbit = Orbit("orbit", child);

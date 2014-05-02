@@ -3,11 +3,24 @@
   by the application.
    This file is loaded for initializing the client game.
    Most of codes are shared among the server and the client, which reside in
-  common.nut.  Besure to check the file's notes to fully understand the specification.
+  common.nut.  Be sure to check the file's notes to fully understand the specification.
    Note that type of returned value and arguments are not specifiable in Squirrel language,
   but shown here to clarify semantics.
 
 
+
+/// Primitive object representing a rectangle in a window system.
+class GLWrect{
+	/// Coordinates of left-top and right-bottom corner of the rectangle.
+	/// They are not named like left, top, right or bottom like Windows GDI, because
+	/// these directions may vary depending on coordinate systems.
+	/// Those ending with '0' represents lower bounds and '1' represents upper bounds
+	/// in coordinate values.
+	int x0, y0, x1, y1;
+
+	/// Read-only property
+	int width, height;
+}
 
 
 /// Base class for all OpenGL-drawn GUI elements.
@@ -22,6 +35,27 @@ class GLelement{
 
 /// OpenGL Window
 class GLwindow extends GLelement{
+
+	/// Returns a GLWrect representing client area of the window.
+	/// Coordinates are screen-oriented, which means x0 and y0 are not necessarily zero.
+	GLWrect clientRect();
+
+	/// Post close message to this window.  The window will not immediately get destroyed,
+	/// but the destruction is deferred to next frame rendering.
+	void close();
+
+	/// Draw event handler.  You can set your own handler to this property to customize display content.
+	/// \param ws Window state table containing following fields:
+	///           int mx, my; // mouse position
+	///           int mousex, mousey; // mouse position in client coordinates of the window being drawn.
+	onDraw = function(table ws){}
+
+	/// Mouse event handler.  You can set your own handler to respond to mouse events.
+	/// \param event Event data table containing following fields:
+	///              string key; // Mouse key type string, "leftButton", "middleButton", "rightButton", "wheelUp", "wheelDown", "xbutton1" or "xbutton2".
+	///              string state; // Mouse key status, "down", "up", "keepDown" or "keepUp".
+	///              int x, y; // Mouse cursor position in client coordinates
+	onMouse = function(table event){}
 }
 
 /// GLwindow that has resizable borders

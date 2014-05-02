@@ -1777,6 +1777,35 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 
 		return SQInteger(1);
 	}, 1);
+
+	// Property iterator
+	register_closure(v, _SC("_nexti"), [](HSQUIRRELVM v){
+		CoordSys *p = sq_refobj(v, 1);
+
+		if(!p){
+			return sq_throwerror(v, _SC("Iterated CoordSys object is destroyed"));
+		}
+
+		auto &pmap = p->propertyMap();
+		if(sq_gettype(v, 2) == OT_NULL){
+			sq_pushstring(v, pmap.begin()->first, -1);
+			return SQInteger(1);
+		}
+		else{
+			const SQChar *prev;
+			if(SQ_FAILED(sq_getstring(v, 2, &prev)))
+				return sq_throwerror(v, _SC("CoordSys iterator is not a string"));
+			auto it = pmap.find(prev);
+			if(it == pmap.end())
+				return SQInteger(0);
+			++it; // Obtain next
+			if(it == pmap.end())
+				return SQInteger(0);
+			sq_pushstring(v, it->first, -1);
+			return SQInteger(1);
+		}
+	});
+
 	sq_createslot(v, -3);
 	return true;
 }

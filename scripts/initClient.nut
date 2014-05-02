@@ -307,8 +307,12 @@ local function showInfo(a){
 		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
 		glEnable(GL_SCISSOR_TEST);
 
-		local i = 0;
+		local i = 1;
 		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) : -1;
+
+		glColor4fv([1,1,1,1]);
+		glwpos2d(r.x0, r.y0 + fontheight() - scrollpos);
+		glwprint("class       : " + a.classid);
 
 		foreach(key,value in a){
 			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
@@ -329,7 +333,7 @@ local function showInfo(a){
 			glwprint(format("%-12s: %s", key, "" + value));
 			i += 1;
 		}
-		propCount = i;
+		propCount = i + 1;
 		glPopAttrib();
 	}
 
@@ -358,7 +362,7 @@ local function showInfo(a){
 			if(!a || !a.alive)
 				return true;
 			local ind = ((event.y + scrollpos) / fontheight());
-			local i = 0;
+			local i = 1;
 			foreach(key,value in a){
 				if(i == ind && value instanceof CoordSys){
 					a = value;

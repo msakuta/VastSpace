@@ -1740,6 +1740,11 @@ static SQInteger sqf_accel(HSQUIRRELVM v){
 
 bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
 	sq_setclassudsize(v, -1, sq_udsize);

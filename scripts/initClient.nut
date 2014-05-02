@@ -190,7 +190,7 @@ function drawCoordSysLabel(cs){
 		if(ret != "")
 			return ret;
 	}
-	return cs.name();
+	return cs.name;
 }
 
 register_console_command("seat", function(...){
@@ -275,7 +275,7 @@ register_console_command("buildmenu", function(){
 
 /// \brief Display a window to show all properties of a CoordSys object.
 local function showInfo(a){
-	local w = GLwindowSizeable(a.name() + " Information");
+	local w = GLwindowSizeable(a.name + " Information");
 	w.closable = true;
 	w.width = 320;
 	w.height = 480;

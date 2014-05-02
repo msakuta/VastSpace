@@ -86,10 +86,10 @@ function stellarReadFile(cs, varlist, name, ...){
 			::bookmarks[vargv[0]] <- item;
 		}
 		else{
-			local csname = cs.name();
+			local csname = cs.name;
 			local i = 0;
 			while(csname in ::bookmarks)
-				csname = cs.name() + " (" + i++ + ")";
+				csname = cs.name + " (" + i++ + ")";
 			::bookmarks[csname] <- item;
 		}
 		return 1;
@@ -99,7 +99,7 @@ function stellarReadFile(cs, varlist, name, ...){
 		local dec = vargv[1].tofloat() * 2 * PI / 360;
 		local dist = eval(vargv[2]);
 		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
-//		print(cs.name() + ": " + RA + ", " + dec + pos);
+//		print(cs.name + ": " + RA + ", " + dec + pos);
 		local earths = universe.findcspath("/sol/earth/Earth");
 		local sol = universe.findcspath("/sol");
 
@@ -158,19 +158,19 @@ function materializeStar(name,pos,e,rs){
 	local plane = Quatd.direction(axis);
 
 	local function addPlanet(a){
-		local p = TextureSphere(a.name() + " a", child);
+		local p = TextureSphere(a.name + " a", child);
 		print("Planet gen: " + name + ": " + p);
 		p.texture = "textures/grass.jpg";
 		p.mass = 5.6846e26 * exp(rs.nextGauss());
 		p.radius = 60268 * exp(rs.nextGauss());
 		p.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), plane);
 		p.showOrbit = true;
-		local po = Orbit(a.name() + " a orbit", p);
+		local po = Orbit(a.name + " a orbit", p);
 		po.orbits(p, p.radius * 10, 0., plane);
 		po.showOrbit = true;
 
 		// TODO: Bookmarks grow too fast?
-		bookmarks[a.name() + " a orbit"] <- BookmarkCoordSys(po);
+		bookmarks[a.name + " a orbit"] <- BookmarkCoordSys(po);
 	}
 
 	if(binary){

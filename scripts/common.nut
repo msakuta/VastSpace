@@ -49,7 +49,7 @@ class CoordSys{
 	void setrot(Quatd);
 	Vec3d getomg(); // Angular velocity
 	void setomg(Vec3d);
-	string name();
+	string name;
 	string[] extranames;
 	CoordSys child();
 	CoordSys next();
@@ -336,9 +336,9 @@ function bool(a){
 
 register_console_command("coordsys", function(...){
 	if(vargv.len() == 0){
-		print("identity: " + player.cs.name());
+		print("identity: " + player.cs.name);
 		print("path: " + player.cs.getpath());
-		print("formal name: " + player.cs.name());
+		print("formal name: " + player.cs.name);
 		local en = player.cs.extranames;
 		foreach(name in en)
 			print("aka: " + name);
@@ -533,7 +533,7 @@ register_console_command("typecs", function(...){
 		local root = getroottable();
 		local cls = cs.getclass();
 		foreach(name, value in root) if(value == cls)
-			print(cs.name() + ": " + cs.classname + " " + name);
+			print(cs.name + ": " + cs.classname + " " + name);
 	}
 });
 

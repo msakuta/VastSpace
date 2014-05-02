@@ -1483,12 +1483,6 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	return 1;
 }
 
-static SQInteger sqf_name(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	sq_pushstring(v, p->name, -1);
-	return 1;
-}
-
 static SQInteger sqf_child(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	if(!p->children){
@@ -1579,6 +1573,7 @@ const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 	if(!propInit){
 		propInit = true;
 		pmap[_SC("id")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){sq_pushinteger(v, cs->getid()); return SQInteger(1);}, NULL);
+		pmap[_SC("name")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){sq_pushstring(v, cs->name, -1); return SQInteger(1);}, NULL);
 		pmap[_SC("pos")] = PropertyEntry(tgetter<Vec3d, &CoordSys::pos>, tsetter<Vec3d, &CoordSys::pos>);
 		pmap[_SC("velo")] = PropertyEntry(tgetter<Vec3d, &CoordSys::velo>, tsetter<Vec3d, &CoordSys::velo>);
 		pmap[_SC("rot")] = PropertyEntry(tgetter<Quatd, &CoordSys::rot>, tsetter<Quatd, &CoordSys::rot>);
@@ -1740,7 +1735,6 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
 	sq_setclassudsize(v, -1, sq_udsize);
-	register_closure(v, _SC("name"), sqf_name);
 	register_closure(v, _SC("getclass"), sqf_getclass);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos>, CoordSys::sq_refobj >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::pos, CoordSys::sq_refobj>);

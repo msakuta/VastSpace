@@ -61,6 +61,10 @@ class CoordSys{
 	Vec3d transPosition(Vec3d pos, CoordSys from, bool delta); // Converts position coordinates from given system to this system.
 	Vec3d transVelocity(Vec3d velo, CoordSys from); // Converts velocity vector. Equivalent to transPosition(velo, from, true).
 	Quatd transRotation(CoordSys from); // Converts rotation expressed in quaternion from given system to this system.
+	bool solarSystem;
+	bool extent;
+	bool isolated;
+	float cs_radius; ///< Radius of coordinate system
 }
 
 class Universe extends CoordSys{
@@ -71,7 +75,7 @@ class Universe extends CoordSys{
 ::universe <- Universe();
 
 class Astrobj extends CoordSys{
-	float rad; // readonly
+	float radius; ///< Radius of the celestial body
 }
 
 class TexSphere extends Astrobj{

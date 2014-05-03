@@ -1552,6 +1552,24 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	return 1;
 }
 
+template<int MASK>
+static SQInteger sqFlagGetter(HSQUIRRELVM v, const CoordSys *cs){
+	sq_pushbool(v, cs->flags & MASK);
+	return 1;
+}
+
+template<int MASK>
+static SQInteger sqFlagSetter(HSQUIRRELVM v, CoordSys *cs){
+	SQBool b;
+	if(SQ_FAILED(sq_getbool(v, 3, &b)))
+		return sq_throwerror(v, _SC("Could not convert to bool"));
+	if(b)
+		cs->flags |= MASK;
+	else
+		cs->flags &= ~MASK;
+	return 0;
+}
+
 const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 	static PropertyMap pmap;
 	static bool propInit = false;
@@ -1597,22 +1615,21 @@ const CoordSys::PropertyMap &CoordSys::propertyMap()const{
 				return SQInteger(0);
 			}
 		);
-		pmap[_SC("solarSystem")] = PropertyEntry(
+		pmap[_SC("solarSystem")] = PropertyEntry(sqFlagGetter<CS_SOLAR>, sqFlagSetter<CS_SOLAR>);
+		pmap[_SC("extent")] = PropertyEntry(sqFlagGetter<CS_EXTENT>, sqFlagSetter<CS_EXTENT>);
+		pmap[_SC("isolated")] = PropertyEntry(sqFlagGetter<CS_ISOLATED>, sqFlagSetter<CS_ISOLATED>);
+		pmap[_SC("cs_radius")] = PropertyEntry(
 			[](HSQUIRRELVM v, const CoordSys *cs){
-				sq_pushbool(v, cs->flags & CS_SOLAR ? SQTrue : SQFalse);
+				sq_pushfloat(v, cs->csrad);
 				return SQInteger(1);
 			},
 			[](HSQUIRRELVM v, CoordSys *cs){
-				SQBool b;
-				if(SQ_FAILED(sq_getbool(v, 3, &b)))
-					return sq_throwerror(v, _SC("Cannot convert to bool"));
-				if(b)
-					cs->flags |= CS_SOLAR;
-				else
-					cs->flags &= ~CS_SOLAR;
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+					return sq_throwerror(v, _SC("Cannot convert to float"));
+				cs->csrad = f;
 				return SQInteger(0);
-			}
-		);
+		});
 	}
 	return pmap;
 }

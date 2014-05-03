@@ -154,6 +154,9 @@ function materializeStar(name,pos,e,rs){
 	print("materializeStar: (binary: " + binary + "): " + child);
 	child.pos = pos;
 	child.solarSystem = true;
+	child.extent = true;
+	child.isolated = true;
+	child.cs_radius = 1.e10;
 
 	local axis = Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
 	local plane = Quatd.direction(axis);

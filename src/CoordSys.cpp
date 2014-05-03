@@ -1435,7 +1435,9 @@ CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
-		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+		return NULL;
+	// Do not throw error here because it's not an error if a CoordSys is destroyed.
+//		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
 	return *(SqSerialPtr<CoordSys>*)up;
 }
 

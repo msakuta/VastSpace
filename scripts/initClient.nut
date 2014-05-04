@@ -567,14 +567,19 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 
 	const scrollBarWidth = 16;
 
-	local sorter = false;
+	local sorter = 0; // Index of column used for sorting
+	local order = true; // Ascending if true
 	local filter = false;
 	local scrollpos = 0;
+	local cols = [ // Table of columns definitions
+		{title = "Name", value = @(sc) sc.name, width = 16, cmp = @(a,b) a.name <=> b.name},
+		{title = "Distance", value = @(sc) (sc.dist / LIGHTYEAR_PER_KILOMETER).tostring() + " LY", width = 16, cmp = @(a,b) a.dist <=> b.dist},
+	];
 
 	local sclist = [];
 
 	local function sortList(){
-		sclist.sort(@(a,b) sorter ? a.dist - b.dist : a.name <=> b.name);
+		sclist.sort(order ? cols[sorter].cmp : @(a,b) -cols[sorter].cmp(a,b));
 	}
 
 	local function makeList(){
@@ -596,21 +601,57 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		local white = [1,1,1,1];
 		local selected = [0,1,1,1];
 		local r = w.clientRect();
-		glwpos2d(r.x0, r.y0 + fontheight());
-		glwprint("Sort: ");
-		glColor4fv(sorter ? white : selected);
-		glwprint("  Name  ");
-		glColor4fv(!sorter ? white : selected);
-		glwprint("  Distance");
 
 		glColor4f(1,1,1,1);
 
-		glwpos2d(r.x0, r.y0 + 2 * fontheight());
+		glwpos2d(r.x0, r.y0 + 1 * fontheight());
 		glwprint("Filter: ");
 		glColor4fv(filter ? white : selected);
 		glwprint("  All  ");
 		glColor4fv(!filter ? white : selected);
 		glwprint("  Visited");
+
+		local xpos = r.x0;
+		for(local c = 0; c < cols.len(); c++){
+			local xpos1 = xpos + cols[c].width * fontwidth();
+
+			// Highlight background of column header under current mouse pointer
+			if(fontheight() <= ws.mousey && ws.mousey < 2 * fontheight() && xpos <= ws.mx && ws.mx < xpos1){
+				glColor4f(0,0,1,0.5);
+				glBegin(GL_QUADS);
+				glVertex2d(xpos, r.y0 + fontheight());
+				glVertex2d(xpos, r.y0 + 2 * fontheight());
+				glVertex2d(xpos1, r.y0 + 2 * fontheight());
+				glVertex2d(xpos1, r.y0 + fontheight());
+				glEnd();
+			}
+
+			glColor4fv(sorter != c ? white : selected);
+			glwpos2d(xpos, r.y0 + 2 * fontheight());
+			glwprint(cols[c].title);
+
+			// Draw sort order marker if this column is used for sorting
+			if(sorter == c){
+				glPushMatrix();
+				glTranslated(xpos + cols[c].title.len() * fontwidth(), r.y0 + (order ? 1 : 2) * fontheight(), 0);
+				glScaled(fontheight(), (order ? 1 : -1) * fontheight(), 1.);
+				glBegin(GL_TRIANGLES);
+				glVertex2d(0.25, 0.25);
+				glVertex2d(0.50, 0.75);
+				glVertex2d(0.75, 0.25);
+				glEnd();
+				glPopMatrix();
+			}
+
+			glColor4f(0.5,0.5,0.5,1);
+			glBegin(GL_LINES);
+			glVertex2d(xpos, r.y0 + fontheight());
+			glVertex2d(xpos1, r.y0 + fontheight());
+			glVertex2d(xpos1, r.y0 + fontheight());
+			glVertex2d(xpos1, r.y1);
+			glEnd();
+			xpos = xpos1;
+		}
 
 		r.y0 += 2 * fontheight();
 		local listHeight = filterList().len() * fontheight().tointeger();
@@ -634,6 +675,8 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		glScissor(r.x0, screenheight() - r.y1, r.width, r.height);
 		glEnable(GL_SCISSOR_TEST);
 
+		local function min(a,b){return a < b ? a : b;}
+
 		local i = 0;
 		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) - 2 : -1;
 
@@ -651,8 +694,13 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 			}
 
 			glColor4f(1,1,1,1);
-			glwpos2d(r.x0, ypos);
-			glwprint(format("%-12s: %g LY", sd.name, sd.dist / LIGHTYEAR_PER_KILOMETER));
+			local xpos = r.x0;
+			for(local c = 0; c < cols.len(); c++){
+				glwpos2d(xpos, ypos);
+				local str = cols[c].value(sd).tostring();
+				glwprint(str.slice(0, min(str.len(), cols[c].width)));
+				xpos += cols[c].width * fontwidth();
+			}
 			i += 1;
 		}
 
@@ -680,11 +728,24 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		local wheelSpeed = fontheight() * 2;
 
 		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
-			sorter = !sorter;
-			sortList();
+			filter = !filter;
 		}
 		else if(event.key == "leftButton" && event.state == "down" && event.y < 2 * fontheight()){
-			filter = !filter;
+			local xpos = 0;
+			for(local c = 0; c < cols.len(); c++){
+				local width = cols[c].width * fontwidth();
+				if(xpos < event.x && event.x < xpos + width){
+					// Invert sort order if this column is already selected for sorting
+					if(c == sorter)
+						order = !order;
+					else
+						order = true;
+					sorter = c;
+					sortList();
+					break;
+				}
+				xpos += width;
+			}
 		}
 		else if(event.key == "leftButton" && event.state == "down"){
 			if(trackScrollBar())

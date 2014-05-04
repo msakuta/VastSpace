@@ -1180,6 +1180,11 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 		return SQInteger(1);
 	});
 
+	register_closure(v, _SC("fontwidth"), [](HSQUIRRELVM v){
+		sq_pushinteger(v, fontwidth);
+		return SQInteger(1);
+	});
+
 	register_closure(v, _SC("glwVScrollBarDraw"), [](HSQUIRRELVM v){
 		GLwindow *glw = sq_refobj(v, 2);
 		if(!glw)

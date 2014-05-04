@@ -132,6 +132,11 @@ class GLwindowSolarMap extends GLwindowSizeable{
 int screenwidth();
 int screenheight();
 
+// Returns font sizes used by OpenGL window system in pixels.
+// The font has fixed width for all glyphs, except for CJK letters.
+int fontwidth();
+int fontheight();
+
 
 /// Sets current output position for strings
 void glwpos2d(int x, int y);

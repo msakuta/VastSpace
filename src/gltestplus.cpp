@@ -493,13 +493,12 @@ int bullet_shoots = 0, bullet_hits = 0;
 void Game::drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
-		Mat4d model;
-		model = vw->rot;
-		model.translatein(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
-		GLpmatrix();
-//		projection(vw->frustum(g_space_near_clip, g_space_far_clip));
+		Mat4d model = vw->rot.translate(-vw->pos);
 		drawastro(vw, universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
+
+		// Recalculate transform matrix from the universe to the viewing coordinates
+		model = vw->rot.translate(vw->cs->tocs(vec3_000, universe) - vw->pos) * vw->cs->tocsim(universe);
 
 		extern double g_star_num;
 		Vec3d plpos = universe->tocs(vw->pos, vw->cs);
@@ -509,7 +508,7 @@ void Game::drawindics(Viewer *vw){
 		StarEnum se(plpos, r_star_name_sectors, true);
 		while(se.next(pos, &sc)){
 			double cellsize = 1.;
-			Vec3d wpos = vw->rot.vp3((pos - plpos) / StarEnum::sectorSize);
+			Vec3d wpos = model.vp3(pos) / StarEnum::sectorSize;
 			double wx = -wpos[0] / wpos[2];
 			double wy = -wpos[1] / wpos[2];
 			if(wx < -1 || 1 < wx || wy < -1 || 1 < wy || 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)

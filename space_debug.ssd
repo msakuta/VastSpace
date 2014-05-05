@@ -327,7 +327,6 @@ coordsys "Alpha Centauri"{
 	solarsystem
 	galactic_coord 315.8 -0.7 4.22*LY
 	equatorial_coord 219.899 -60.835401 4.22*LY
-	bookmark "Alpha Centauri"
 	coordsys Barycenter barycenter{
 		pos 0 0 0
 	}
@@ -348,7 +347,7 @@ coordsys "Alpha Centauri"{
 		spectral G2V
 	}
 	coordsys Orbit "orbit"{
-		orbits "Rigil Kentaurus A"
+		orbits A
 		showorbit
 		semimajor_axis AU
 		eccentricity 0

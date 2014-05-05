@@ -213,8 +213,12 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "orbits")){
-		if(argv[1]){
-			orbits(dynamic_cast<OrbitCS*>(parent->findcspath(ps)));
+		if(ps){
+			OrbitCS *orbit = dynamic_cast<OrbitCS*>(parent->findcspath(ps));
+			if(orbit)
+				orbits(orbit);
+			else
+				CmdPrint(gltestp::dstring() << sc.fname << "(" << sc.line << "): OrbitCS::readFile: Warning: could not find parent orbit: " << ps);
 		}
 		return true;
 	}

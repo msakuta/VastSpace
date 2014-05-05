@@ -12,9 +12,13 @@
 
 /// Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
+public:
+	typedef Astrobj st;
+	typedef gltestp::dstring String;
+	typedef std::vector<String> StringList;
 protected:
-	cpplib::dstring texname, cloudtexname;
-	cpplib::dstring ringtexname, ringbacktexname;
+	String texname, cloudtexname;
+	String ringtexname, ringbacktexname;
 	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
@@ -22,13 +26,13 @@ protected:
 	float atmohor[4];
 	float atmodawn[4];
 	int ring;
-	std::vector<cpplib::dstring> vertexShaderName, fragmentShaderName;
+	StringList vertexShaderName, fragmentShaderName;
 #ifndef DEDICATED
 	GLuint shader;
 	bool shaderGiveup; ///< Flag whether compilation of shader has been given up, to prevent the compiler to try the same code in vain.
 	/// Cloud sphere is separate geometry than the globe itself, so shaders and extra textures must be allocated separately.
 #endif
-	std::vector<cpplib::dstring> cloudVertexShaderName, cloudFragmentShaderName;
+	StringList cloudVertexShaderName, cloudFragmentShaderName;
 #ifndef DEDICATED
 	GLuint cloudShader;
 #endif
@@ -56,8 +60,8 @@ public:
 	};
 
 	struct Texture{
-		cpplib::dstring uniformname;
-		cpplib::dstring filename;
+		String uniformname;
+		String filename;
 #ifndef DEDICATED
 		mutable GLuint list;
 		mutable GLint shaderLoc;

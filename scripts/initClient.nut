@@ -562,7 +562,7 @@ local function showInfo(a){
 local function locationWindow(title,locationGenerator,selectEvent,rightClickEvent){
 	local w = GLwindowSizeable(title);
 	w.closable = true;
-	w.width = 320;
+	w.width = 400;
 	w.height = 480;
 	w.x = (screenwidth() - w.width) / 2;
 	w.y = (screenheight() - w.height) / 2;
@@ -573,13 +573,17 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 
 	const scrollBarWidth = 16;
 
+	const columnSizerWidth = 5;
+
 	local sorter = 0; // Index of column used for sorting
 	local order = true; // Ascending if true
 	local filter = false;
+	local sizing = 0;
 	local scrollpos = 0;
 	local cols = [ // Table of columns definitions
-		{title = "Name", value = @(sc) sc.name, width = 16, cmp = @(a,b) a.name <=> b.name},
-		{title = "Distance", value = @(sc) (sc.dist / LIGHTYEAR_PER_KILOMETER).tostring() + " LY", width = 16, cmp = @(a,b) a.dist <=> b.dist},
+		{title = "Name", value = @(sc) sc.name, width = 16 * fontwidth(), cmp = @(a,b) a.name <=> b.name},
+		{title = "Distance", value = @(sc) (sc.dist / LIGHTYEAR_PER_KILOMETER).tostring() + " LY", width = 16 * fontwidth(), cmp = @(a,b) a.dist <=> b.dist},
+		{title = "Visited", value = @(sc) sc.visited, width = 10 * fontwidth(), cmp = @(a,b) a.visited <=> b.visited},
 	];
 
 	local sclist = [];
@@ -619,10 +623,10 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 
 		local xpos = r.x0;
 		for(local c = 0; c < cols.len(); c++){
-			local xpos1 = xpos + cols[c].width * fontwidth();
+			local xpos1 = xpos + cols[c].width;
 
 			// Highlight background of column header under current mouse pointer
-			if(fontheight() <= ws.mousey && ws.mousey < 2 * fontheight() && xpos <= ws.mx && ws.mx < xpos1){
+			if(fontheight() <= ws.mousey && ws.mousey < 2 * fontheight() && xpos + columnSizerWidth <= ws.mx && ws.mx < xpos1 - columnSizerWidth){
 				glColor4f(0,0,1,0.5);
 				glBegin(GL_QUADS);
 				glVertex2d(xpos, r.y0 + fontheight());
@@ -704,8 +708,8 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 			for(local c = 0; c < cols.len(); c++){
 				glwpos2d(xpos, ypos);
 				local str = cols[c].value(sd).tostring();
-				glwprint(str.slice(0, min(str.len(), cols[c].width)));
-				xpos += cols[c].width * fontwidth();
+				glwprint(str.slice(0, min(str.len(), cols[c].width / fontwidth())));
+				xpos += cols[c].width;
 			}
 			i += 1;
 		}
@@ -736,33 +740,39 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
 			filter = !filter;
 		}
-		else if(event.key == "leftButton" && event.state == "down" && event.y < 2 * fontheight()){
-			local xpos = 0;
-			for(local c = 0; c < cols.len(); c++){
-				local width = cols[c].width * fontwidth();
-				if(xpos < event.x && event.x < xpos + width){
-					// Invert sort order if this column is already selected for sorting
-					if(c == sorter)
-						order = !order;
-					else
-						order = true;
-					sorter = c;
-					sortList();
-					break;
-				}
-				xpos += width;
-			}
-		}
 		else if(event.key == "leftButton" && event.state == "down"){
-			if(trackScrollBar())
-				return true;
-			local ind = ((event.y + scrollpos) / fontheight()) - 2;
-			local i = 0;
-			foreach(sd in filterList()){
-				if(i == ind){
-					selectEvent(w,sd);
+			if(event.y < 2 * fontheight()){
+				local xpos = 0;
+				for(local c = 0; c < cols.len(); c++){
+					local width = cols[c].width;
+					if(xpos + width - columnSizerWidth < event.x && event.x < xpos + width + columnSizerWidth){
+						sizing = c+1;
+						break;
+					}
+					else if(xpos < event.x && event.x < xpos + width){
+						// Invert sort order if this column is already selected for sorting
+						if(c == sorter)
+							order = !order;
+						else
+							order = true;
+						sorter = c;
+						sortList();
+						break;
+					}
+					xpos += width;
 				}
-				i++;
+			}
+			else{
+				if(trackScrollBar())
+					return true;
+				local ind = ((event.y + scrollpos) / fontheight()) - 2;
+				local i = 0;
+				foreach(sd in filterList()){
+					if(i == ind){
+						selectEvent(w,sd);
+					}
+					i++;
+				}
 			}
 		}
 		else if(event.key == "rightButton" && event.state == "down" && rightClickEvent != null){
@@ -789,11 +799,42 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 				scrollpos = scrollBarRange - 1;
 		}
 		else if(event.key == "leftButton" && event.state == "keepDown"){
-			trackScrollBar();
+			if(trackScrollBar())
+				return true;
+			if(sizing){
+				local xpos = 0;
+				for(local c = 0; c <= sizing - 1; c++)
+					xpos += cols[c].width;
+				local width = cols[sizing - 1].width + (event.x - xpos);
+				// Disallow negative widths
+				if(0 < width)
+					cols[sizing - 1].width = width;
+				return true;
+			}
 		}
+		else if(event.key == "leftButton" && event.state == "up")
+			sizing = 0;
 		return false;
 	}
 
+
+	w.onMouseState = function(x,y){
+		if(sizing)
+			return 1;
+		else{
+			local r = w.clientRect();
+			if(r.y0 + fontheight() <= y && y < r.y0 + 2 * fontheight()){
+				local xpos = r.x0;
+				for(local c = 0; c < cols.len(); c++){
+					local width = cols[c].width;
+					xpos += width;
+					if(xpos - columnSizerWidth < x && x < xpos + columnSizerWidth)
+						return 1;
+				}
+			}
+		}
+		return 0;
+	}
 }
 
 register_console_command("warpmenu", @() locationWindow("Warp Destination Window", function(){

@@ -382,7 +382,7 @@ coordsys "Alpha Centauri"{
 		spectral M5.5Ve
 	}
 	coordsys Orbit a{
-		fullname "Rigil Centaurus B a"
+		fullname "Rigil Kentaurus B a"
 		cs_radius 1000000
 		orbits "B"
 		orbit_radius 57909100
@@ -392,7 +392,7 @@ coordsys "Alpha Centauri"{
 		eccentricity 0.205630
 		showorbit
 		astro TextureSphere a{
-			fullname "Rigil Centaurus B a"
+			fullname "Rigil Kentaurus B a"
 			radius 2439.7
 			mass 3.3022e23
 			color afafaf
@@ -404,8 +404,8 @@ coordsys "Alpha Centauri"{
 			orbits "a"
 			showorbit
 			orbit_radius 10000
-			fullname "Rigil Centaurus B a"
-			bookmark "Rigil Centaurus B a"
+			fullname "Rigil Kentaurus B a"
+			bookmark "Rigil Kentaurus B a"
 			rstation 0 -1 -5
 		}
 	}

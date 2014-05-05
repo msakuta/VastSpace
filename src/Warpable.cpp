@@ -358,6 +358,9 @@ void Warpable::anim(double dt){
 					this->warpdst = orbit->tocs(this->warpdst, this->warpdstcs);
 					this->warpdstcs = orbit;
 				}
+				// Recalculate our position in destination CoordSys, because the star materialization can modify
+				// our warpdstcs.
+				dstcspos = p->warpdstcs->tocs(pt->pos, w->cs);
 			}
 		}
 		if(sdist < 1. * 1. || capacitor <= 0. && velo < 1.){

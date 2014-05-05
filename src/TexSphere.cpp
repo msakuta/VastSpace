@@ -305,6 +305,44 @@ void TexSphere::updateInt(double dt){
 	cloudPhase += 1e-4 * dt * game->universe->astro_timescale;
 }
 
+/// StringList getter template function for propertyMap.
+template<TexSphere::StringList TexSphere::*memb>
+SQInteger TexSphere::slgetter(HSQUIRRELVM v, const CoordSys *cs){
+	const TexSphere *a = static_cast<const TexSphere*>(cs);
+	sq_newarray(v, (a->*memb).size());
+	for(int i = 0; i < (a->*memb).size(); i++){
+		sq_pushinteger(v, i);
+		sq_pushstring(v, (a->*memb)[i], -1);
+		sq_set(v, -2);
+	}
+	return SQInteger(1);
+}
+
+/// StringList setter template function for propertyMap.
+template<TexSphere::StringList TexSphere::*memb>
+SQInteger TexSphere::slsetter(HSQUIRRELVM v, CoordSys *cs){
+	TexSphere *a = static_cast<TexSphere*>(cs);
+	if(sq_gettype(v, 3) == OT_STRING){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 3, &str)))
+			return sq_throwerror(v, _SC("shader set fail"));
+		(a->*memb).push_back(str);
+	}
+	else if(sq_gettype(v, 3) == OT_ARRAY){
+		SQInteger size = sq_getsize(v, 3);
+		for(auto i = 0; i < size; i++){
+			sq_pushinteger(v, i);
+			if(SQ_FAILED(sq_get(v, -2)))
+				return sq_throwerror(v, _SC("shader set fail"));
+			const SQChar *str;
+			if(SQ_FAILED(sq_getstring(v, 3, &str)))
+				return sq_throwerror(v, _SC("shader set fail"));
+			(a->*memb).push_back(str);
+		}
+	}
+	return SQInteger(0);
+}
+
 
 const CoordSys::PropertyMap &TexSphere::propertyMap()const{
 	static PropertyMap pmap = st::propertyMap();
@@ -341,6 +379,14 @@ const CoordSys::PropertyMap &TexSphere::propertyMap()const{
 				return SQInteger(0);
 			}
 		);
+		pmap["vertexshader"] = PropertyEntry(
+			slgetter<&TexSphere::vertexShaderName>, slsetter<&TexSphere::vertexShaderName>);
+		pmap["fragmentshader"] = PropertyEntry(
+			slgetter<&TexSphere::fragmentShaderName>, slsetter<&TexSphere::fragmentShaderName>);
+		pmap["cloudvertexshader"] = PropertyEntry(
+			slgetter<&TexSphere::cloudVertexShaderName>, slsetter<&TexSphere::cloudVertexShaderName>);
+		pmap["cloudfragmentshader"] = PropertyEntry(
+			slgetter<&TexSphere::cloudFragmentShaderName>, slsetter<&TexSphere::cloudFragmentShaderName>);
 	}
 	return pmap;
 }

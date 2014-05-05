@@ -99,6 +99,8 @@ private:
 	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;
+	template<StringList TexSphere::*memb> static SQInteger slgetter(HSQUIRRELVM v, const CoordSys *);
+	template<StringList TexSphere::*memb> static SQInteger slsetter(HSQUIRRELVM v, CoordSys *);
 };
 
 

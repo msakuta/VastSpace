@@ -266,6 +266,7 @@ public:
 
 	HSQOBJECT sq_onDraw; ///< Squirrel event handler on drawing
 	HSQOBJECT sq_onMouse; ///< Squirrel event handler on mouse pointer action
+	HSQOBJECT sq_onMouseState; ///< Squirrel event handler to query desired mouse pointer
 
 	void (*onFocusEnter)(GLwindow*); ///< Assignable event handler for focusEnter event.
 	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.
@@ -365,6 +366,7 @@ protected:
 	float ratio; /* ratio of window size if it is to be reserved */
 	int sizing; /* edge flags of changing borders */
 	int minw, minh, maxw, maxh;
+	int mouseCursorStateInt(int mousex, int mousey)const; ///< Internal mouse state query function
 public:
 	typedef GLwindow st;
 

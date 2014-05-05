@@ -56,6 +56,12 @@ class GLwindow extends GLelement{
 	///              string state; // Mouse key status, "down", "up", "keepDown" or "keepUp".
 	///              int x, y; // Mouse cursor position in client coordinates
 	onMouse = function(table event){}
+
+	/// Mouse status query event handler.  You can set your own handler to show specific mouse pointer.
+	/// \param mousex Mouse cursor position in screen coordinates
+	/// \param mousey Mouse cursor position in screen coordinates
+	/// \return Index of mouse cursor types. 0 - normal, 1 - horizontal sizing, 2 - vertical sizing, 3 - right-down diagonal sizing, 4 - right-up diagonal sizing
+	onMouseState = function(int mousex, int mousey){return 0;}
 }
 
 /// GLwindow that has resizable borders

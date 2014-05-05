@@ -226,6 +226,7 @@ GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), title(atit
 
 	sq_resetobject(&sq_onDraw);
 	sq_resetobject(&sq_onMouse);
+	sq_resetobject(&sq_onMouseState);
 }
 
 /// Appends a GLwindow to screen window list.
@@ -545,6 +546,21 @@ int GLwindow::glwMouseCursorState(int x, int y){
 }
 
 int GLwindow::mouseCursorState(int mousex, int mousey)const{
+	if(!sq_isnull(sq_onMouseState)){
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sq_onMouseState);
+		sq_pushroottable(v);
+		sq_pushinteger(v, mousex);
+		sq_pushinteger(v, mousey);
+		if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+			return 0;
+		SQInteger i;
+		if(SQ_FAILED(sq_getinteger(v, -1, &i)))
+			return 0;
+		return i;
+
+	}
 	return 0;
 }
 
@@ -679,6 +695,7 @@ GLwindow::~GLwindow(){
 	HSQUIRRELVM v = game->sqvm;
 	sq_release(v, &sq_onDraw);
 	sq_release(v, &sq_onMouse);
+	sq_release(v, &sq_onMouseState);
 }
 
 GLwindow *GLwindow::lastover = NULL;
@@ -1265,6 +1282,10 @@ SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
 		sq_pushobject(v, sq_onMouse);
 		return 1;
 	}
+	else if(!scstrcmp(wcs, _SC("onMouseState"))){
+		sq_pushobject(v, sq_onMouseState);
+		return 1;
+	}
 	else
 		return GLelement::sqGet(v, wcs);
 }
@@ -1330,6 +1351,15 @@ SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
 			sq_release(v, &sq_onMouse);
 			sq_onMouse = obj;
 			sq_addref(v, &sq_onMouse);
+		}
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("onMouseState"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onMouseState);
+			sq_onMouseState = obj;
+			sq_addref(v, &sq_onMouseState);
 		}
 		return 0;
 	}
@@ -1448,7 +1478,7 @@ bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, in
 
 	// Pinned window should not be able to change size.
 	if(button == GLUT_LEFT_BUTTON && !getPinned()){
-		int edgeflags = GLwindowSizeable::mouseCursorState(x, y);
+		int edgeflags = mouseCursorStateInt(x, y);
 		if(state == GLUT_DOWN){
 			if(edgeflags){
 				sizing = edgeflags;
@@ -1486,7 +1516,7 @@ bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, in
 	return 0;
 }
 
-int GLwindowSizeable::mouseCursorState(int x, int y)const{
+int GLwindowSizeable::mouseCursorStateInt(int x, int y)const{
 	if(sizing)
 		return sizing;
 	if(getPinned())
@@ -1498,6 +1528,14 @@ int GLwindowSizeable::mouseCursorState(int x, int y)const{
 	if(r.x0 <= x && x < r.x1)
 		edgeflags |= (r.y1 - GLWSIZEABLE_BORDER <= y && y < r.y1 ? 2 : r.y0 <= y && y < r.y0 + GLWSIZEABLE_BORDER ? 1 : 0) << 2;
 	return edgeflags;
+}
+
+int GLwindowSizeable::mouseCursorState(int x, int y)const{
+	int ret = mouseCursorStateInt(x, y);
+	if(ret)
+		return ret;
+	else
+		return st::mouseCursorState(x, y);
 }
 
 const SQChar *GLwindowSizeable::s_sqClassName(){

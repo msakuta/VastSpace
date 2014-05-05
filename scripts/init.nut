@@ -170,6 +170,8 @@ function materializeStar(name,pos,e,rs){
 		p.radius = 60268 * exp(rs.nextGauss());
 		p.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm()));
 		p.showOrbit = true;
+		p.vertexshader = "shaders/flatplanet.vs";
+		p.fragmentshader = "shaders/flatplanet.fs";
 		local po = Orbit(a.name + " a orbit", p);
 		po.orbits(p, p.radius * 10, 0., plane);
 		po.showOrbit = true;

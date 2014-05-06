@@ -1033,30 +1033,55 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 
 	glPushMatrix();
 	glLoadIdentity();
-	Mat4d mat = galaxy->tocsm(vw->cs) * vw->rot;
-	Mat4d trans = mat.translate(vw->cs->tocs(vec3_000, galaxy) + solarsystempos - vw->pos);
+	Mat4d mat = vw->rot;
+	Mat4d trans = mat.translate(vw->cs->tocs(solarsystempos, galaxy) - vw->pos);
+	trans = trans * vw->cs->tocsm(galaxy);
+	struct BlobCache{
+		Vec4d color;
+		Vec3d pos;
+		Vec2d verts[4];
+	};
 	trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
 	trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
-	glBegin(GL_QUADS);
-	for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
-		const GLubyte *cell = field[ix][iy][iz];
-		unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
-		if(rs.next() % 2048 < intensity){
-			glColor4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., GALAXY_DR * vw->dynamic_range);
-			double angle = rs.nextd() * M_PI * 2.;
-			Vec3d pos = trans.vp3(Vec3d(ix, iy, iz));
-			if(0 < pos[2])
-				continue;
-			pos[0] /= -pos[2];
-			pos[1] /= -pos[2];
-			double psize = GALAXY_EXTENT / FIELD / -pos[2];
-			Mat2d rot = Mat2d(psize * cos(angle), psize * sin(angle), -psize * sin(angle), psize * cos(-angle));
-			const Vec2d p2d[4] = {rot.vp(Vec2d(-1, -1)), rot.vp(Vec2d(-1, 1)), rot.vp(Vec2d(1, 1)), rot.vp(Vec2d(1, -1))};
-			glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
-			glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
-			glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
-			glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
+
+	static std::vector<BlobCache> blobCache;
+	static bool blobInit = false;
+	if(!blobInit){
+		blobInit = true;
+		for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
+			const GLubyte *cell = field[ix][iy][iz];
+			unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
+			if(rs.next() % 2048 < intensity){
+				BlobCache bc;
+				bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
+				double angle = rs.nextd() * M_PI * 2.;
+				bc.pos = Vec3d(ix, iy, iz);
+				Mat2d rot = Mat2d(cos(angle), sin(angle), -sin(angle), cos(-angle));
+				bc.verts[0] = rot.vp(Vec2d(-1, -1));
+				bc.verts[1] = rot.vp(Vec2d(-1, 1));
+				bc.verts[2] = rot.vp(Vec2d(1, 1));
+				bc.verts[3] = rot.vp(Vec2d(1, -1));
+				blobCache.push_back(bc);
+			}
 		}
+	}
+
+	glBegin(GL_QUADS);
+	for(auto bc : blobCache){
+		Vec4d color = bc.color;
+		color[3] = GALAXY_DR * vw->dynamic_range;
+		glColor4dv(color);
+		Vec3d pos = trans.vp3(bc.pos);
+		if(0 < pos[2])
+			continue;
+		pos[0] /= -pos[2];
+		pos[1] /= -pos[2];
+		double psize = GALAXY_EXTENT / FIELD / -pos[2];
+		const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
+		glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
+		glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
+		glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
+		glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
 	}
 	glEnd();
 	glPopMatrix();

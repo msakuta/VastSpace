@@ -22,6 +22,8 @@
 #include "Game.h"
 #include "sqadapt.h"
 #include "StarEnum.h"
+#include "astrodef.h"
+#include "draw/material.h"
 #define exit something_meanless
 #include <windows.h>
 #undef exit
@@ -1002,12 +1004,73 @@ static int ftimecmp(const char *file1, const char *file2){
 	return (int)CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime);
 }
 
-static const Vec3d solarsystempos(-0, -0, -0.0);
+/// The Sol is located in 25000 ly offset from the center of Milky Way Galaxy
+static const Vec3d solarsystempos(-0, -25000.0 * LIGHTYEAR_PER_KILOMETER, 0);
 int g_galaxy_field_cache = 1;
 
 unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c);
 
 #define DARKNEBULA 16
+
+static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
+	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
+	RandomSequence rs(1233441);
+	static GLuint texname = 0;
+	static const GLfloat envcolor[4] = {.5,0,0,1};
+
+	static PFNGLPOINTPARAMETERFVPROC glPointParameterfv;
+	if(!glPointParameterfv)
+		glPointParameterfv = (PFNGLPOINTPARAMETERFVPROC)wglGetProcAddress("glPointParameterfv");
+
+	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POINT_BIT);
+	if(!texname){
+		suftexparam_t stp;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+		stp.env = GL_MODULATE;
+		stp.magfil = GL_LINEAR;
+		stp.minfil = GL_LINEAR;
+		texname = CallCacheBitmap5("textures/smoke2.jpg.a.jpg", "textures/smoke2.jpg.a.jpg", &stp, NULL, NULL);
+	}
+	glCallList(texname);
+//	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+//	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
+//	glEnable(GL_POINT_SPRITE);
+//	static const GLfloat attn[3] = {0,0,1};
+//	glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, attn);
+//	glPointSize(20./*LIGHTYEAR_PER_KILOMETER*100.*/);
+
+	glPushMatrix();
+	glLoadIdentity();
+	Mat4d mat = vw->rot * galaxy->tocsm(vw->cs);
+	Mat4d trans = mat.translate(vw->cs->tocs(vec3_000, galaxy) + solarsystempos - vw->pos);
+//	gldTranslate3dv(vw->cs->tocs(vec3_000, galaxy) + solarsystempos - vw->pos);
+	trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
+//	glScaled(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
+	trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
+//	glTranslated(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
+	glBegin(GL_QUADS);
+	for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
+		const GLubyte *cell = field[ix][iy][iz];
+		int intensity = cell[0] + cell[1] + cell[2] + cell[3];
+		if(rs.next() % 2048 < intensity){
+//			glPointSize(1. / (fabs(trans.vp3(Vec3d(ix, iy, iz))[2]) + 1.));
+			glColor4ub(cell[0], cell[1], cell[2], 255);
+			Vec3d pos = trans.vp3(Vec3d(ix, iy, iz));
+			pos[0] /= pos[2];
+			pos[1] /= pos[2];
+			double psize = 0.1;
+			glTexCoord2i(0, 0); glVertex3d(pos[0] - psize, pos[1] - psize, -1);
+			glTexCoord2i(0, 1); glVertex3d(pos[0] - psize, pos[1] + psize, -1);
+			glTexCoord2i(1, 1); glVertex3d(pos[0] + psize, pos[1] + psize, -1);
+			glTexCoord2i(1, 0); glVertex3d(pos[0] + psize, pos[1] - psize, -1);
+		}
+	}
+	glEnd();
+	glPopMatrix();
+	glPopAttrib();
+}
 
 static void draw_gs(const CoordSys *csys, const Viewer *vw){
 	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
@@ -1199,6 +1262,8 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		CmdPrintf("draw_gs: %lg sec", TimeMeasLap(&tm));
 	}
 
+	draw_gs_blob(csys, vw);
+	return;
 	{
 		int xi, yi;
 		double (*cuts)[2], (*cutss)[2];
@@ -1213,13 +1278,13 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		static int threadrun = 0;
 		static volatile LONG threaddone = 0;
 		static Viewer svw;
-		int recalc, reflesh, detail;
+		int recalc;
 		int slices, hdiv;
 		int firstloaded = 0;
 		FILE *fp;
 
-		Vec3d plpos = csys->tocs(vw->pos, vw->cs);
-		reflesh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < (lastpos - plpos).slen();
+		Vec3d plpos = csys->tocs(vw->pos, vw->cs) + solarsystempos;
+		int reflesh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < (lastpos - plpos).slen();
 		if(!firstload){
 			firstload = 1;
 			if(ftimecmp("cache/galaxy.bmp", "ourgalaxy3.raw") > 0 && (fp = fopen("cache/galaxy.bmp", "rb"))){
@@ -1235,7 +1300,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 			}
 		}
 		flesh = (flesh << 1) | reflesh;
-		detail = g_gs_always_fine || !(flesh & 0xfff);
+		bool detail = g_gs_always_fine || !(flesh & 0xfff);
 		if(g_multithread){
 			static struct draw_gs_fine_thread_data dat;
 			if(!ht){

@@ -1011,7 +1011,7 @@ int g_galaxy_field_cache = 1;
 
 unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c);
 
-#define DARKNEBULA 16
+#define DARKNEBULA 8
 
 static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
@@ -1093,14 +1093,14 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 	static int field_init = 0;
 	static GLuint spheretex = 0;
 	static GLuint spheretexs[4] = {0};
+	static const char *galaxy_file = "galaxy.png";
 	if(!field_init){
-		FILE *fp;
 		FILE *ofp;
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 		field_init = 1;
-		if(ftimecmp("ourgalaxy3.raw", "cache/ourgalaxyvol.raw") < 0){
-			fp = fopen("cache/ourgalaxyvol.raw", "rb");
+		if(ftimecmp(galaxy_file, "cache/ourgalaxyvol.raw") < 0){
+			FILE *fp = fopen("cache/ourgalaxyvol.raw", "rb");
 			fread(field, sizeof g_galaxy_field, 1, fp);
 			fclose(fp);
 		}
@@ -1112,6 +1112,16 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		GLfloat darknebula[DARKNEBULA][DARKNEBULA];
 		GLubyte (*field2)[FIELD][FIELDZ][4] = (GLubyte (*)[FIELD][FIELDZ][4])malloc(sizeof g_galaxy_field);
 #if 1
+		void (*freeproc)(BITMAPINFO*);
+		BITMAPINFO *bmi = ReadPNG(galaxy_file, &freeproc);
+		// We assume 8 bit grayscale image
+		if(bmi->bmiHeader.biBitCount != 8)
+			return;
+		const GLubyte *src = (GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
+		srcx = bmi->bmiHeader.biWidth;
+		srcy = bmi->bmiHeader.biHeight;
+#elif 1
+		FILE *fp;
 		fp = fopen("ourgalaxy3.raw", "rb");
 		if(!fp)
 			return;
@@ -1129,6 +1139,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 /*			c = src[xi * srcy + yi] * 255;
 			fwrite(&c, 1, sizeof c, ofp);*/
 		}
+		fclose(fp);
 #else
 		fp = fopen("ourgalaxy_model.dat", "rb");
 		if(!fp)
@@ -1142,10 +1153,10 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 /*			c = src[xi * srcy + yi] * 255;
 			fwrite(&c, 1, sizeof c, ofp);*/
 		}
+		fclose(fp);
 #endif
 		CmdPrintf("draw_gs.load: %lg sec", TimeMeasLap(&tm));
 		perlin_noise(field2, field, 3522526);
-		fclose(fp);
 		init_rseq(&rs, 35229);
 /*		for(zzi = 0; zzi < 16; zzi++){
 		int zzz = 1;
@@ -1160,16 +1171,10 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		CmdPrintf("draw_gs.nebula: %lg sec", TimeMeasLap(&tm));
 		for(zi = 0; zi < FIELDZ; zi++){
 		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
-			double z0;
-			double sdz;
-			double sd;
-			double dxy, dz;
-			double dellipse;
-			double srcw;
 			int xj, yj;
 			int weather = ABS(zi - HFIELDZ) * 4;
 			int weathercells = 0;
-			z0 = 0.;
+			double z0 = 0.;
 			if(xi / (FIELD / DARKNEBULA) < DARKNEBULA-1 && yi / (FIELD / DARKNEBULA) < DARKNEBULA-1) for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++){
 				int cell = FIELD / DARKNEBULA;
 				z0 += (darknebula[xi / cell + xj][yi / cell + yj]
@@ -1177,30 +1182,30 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
 				/*+ (drseq(&rs) - .5)*/) * FIELDZ * .10;
 			}
-			sdz = (zi + z0 - HFIELDZ) * (zi + z0 - HFIELDZ) / (double)(HFIELDZ * HFIELDZ);
-			sd = ((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD) + sdz);
-			srcw = 0.;
+			double sdz = (zi + z0 - HFIELDZ) * (zi + z0 - HFIELDZ) / (double)(HFIELDZ * HFIELDZ);
+			double sd = ((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD) + sdz);
 			weather = ABS(zi - HFIELDZ) * 4;
 			weathercells = 0;
 /*			sdz *= drseq(&rs) * .5 + .5;*/
-			dxy = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD));
-			dz = sqrt(sdz);
-			dellipse = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + sdz);
+			double dxy = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD));
+			double dz = sqrt(sdz); // Delta Z
+			double dellipse = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + sdz);
 /*			double phase = atan2(xi - 64, yi - 64);
 			double sss;
 			sss = (sin(phase * 5. + dxy * 15.) + 1.) / 2.;
 			field2[xi][yi][zi][k] = (sd < 1. ? drseq(&rs) * (1. - sd) : 0.) * (k == 2 ? 192 : 255) * (k == 3 ? 255 : sdz * 255);*/
-			if(src[xi * srcx / FIELD * srcy + yi * srcy / FIELD][3] == 0.){
+			double alpha = 1. - dxy - dz < 0 ? 0. : 1. - dz;
+			if(src[xi * srcx / FIELD + yi * srcy / FIELD * srcx] == 0){
 				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
 			}
-			else if(1. < dxy || (1. - dxy - dz) < 0.){
+			else if(1. < dxy || alpha <= 0.){
 				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
 			}
 			else{
+				double dzq = pow(dz / (1. - dxy), 1. / 4.);
+				double srcw = src[xi * srcx / FIELD * srcy + yi * srcy / FIELD] / 256.;
 				for(k = 0; k < 4; k++){
 	#if 1
-					srcw = src[xi * srcx / FIELD * srcy + yi * srcy / FIELD][k] * 1;
-					srcw = MIN(1., srcw);
 	#else
 					double sub = 0.;
 					for(xj = -1; xj <= 1; xj++) for(yj = -1; yj <= 1; yj++) if(xj != 0 && yj != 0){
@@ -1213,7 +1218,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 					if(srcw < 0.)
 						srcw = 0.;
 	#endif
-					field2[xi][yi][zi][k] = field2[xi][yi][zi][k] * ((/*(drseq(&rs) .5 + .5) **/ srcw) * (k == 3 ? ((1. - dxy - dz)) / 2 : (dz)));
+					field2[xi][yi][zi][k] = field2[xi][yi][zi][k] * ((/*(drseq(&rs) .5 + .5) **/ srcw) * (k == 3 ? alpha : dzq));
 				}
 			}
 			if(dellipse < 1.){
@@ -1260,12 +1265,15 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 #else
 			mkdir("cache");
 #endif
-			fp = fopen("cache/ourgalaxyvol.raw", "wb");
+			FILE *fp = fopen("cache/ourgalaxyvol.raw", "wb");
 			fwrite(field, sizeof g_galaxy_field, 1, fp);
 			fclose(fp);
 		}
 		free(field2);
-		free(src);
+//		free(src);
+		if(bmi){
+			freeproc(bmi);
+		}
 		}
 		glGenTextures(1, &spheretex);
 		glBindTexture(GL_TEXTURE_2D, spheretex);
@@ -1499,16 +1507,9 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 }
 
 unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c){
-	CoordSys *csys = vw->cs->getGame()->universe;
+	Vec3d v0(FIELD / 2., FIELD / 2., FIELDZ / 2.);
 	int v1[3];
-	int i;
-	Vec3d v0 = csys->tocs(vw->pos, vw->cs);
-	VECSCALEIN(v0, FIELD / GALAXY_EXTENT);
-	VECSADD(v0, solarsystempos, 1. * FIELD);
-	v0[0] += FIELD / 2.;
-	v0[1] += FIELD / 2.;
-	v0[2] += FIELDZ / 2.;
-	for(i = 0; i < 3; i++)
+	for(int i = 0; i < 3; i++)
 		v1[i] = floor(v0[i]);
 /*	printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], );*/
 	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){

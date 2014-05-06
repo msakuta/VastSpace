@@ -42,6 +42,7 @@ extern "C"{
 }
 #include <clib/stats.h>
 #include <cpplib/gl/cullplus.h>
+#include <cpplib/mat2.h>
 #include <gl/glu.h>
 #include <gl/glext.h>
 #include <stdio.h>
@@ -1016,11 +1017,6 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
 	RandomSequence rs(1233441);
 	static GLuint texname = 0;
-	static const GLfloat envcolor[4] = {.5,0,0,1};
-
-	static PFNGLPOINTPARAMETERFVPROC glPointParameterfv;
-	if(!glPointParameterfv)
-		glPointParameterfv = (PFNGLPOINTPARAMETERFVPROC)wglGetProcAddress("glPointParameterfv");
 
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POINT_BIT);
 	if(!texname){
@@ -1032,39 +1028,34 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		texname = CallCacheBitmap5("textures/smoke2.jpg.a.jpg", "textures/smoke2.jpg.a.jpg", &stp, NULL, NULL);
 	}
 	glCallList(texname);
-//	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-//	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
-//	glEnable(GL_POINT_SPRITE);
-//	static const GLfloat attn[3] = {0,0,1};
-//	glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, attn);
-//	glPointSize(20./*LIGHTYEAR_PER_KILOMETER*100.*/);
 
 	glPushMatrix();
 	glLoadIdentity();
-	Mat4d mat = vw->rot * galaxy->tocsm(vw->cs);
+	Mat4d mat = galaxy->tocsm(vw->cs) * vw->rot;
 	Mat4d trans = mat.translate(vw->cs->tocs(vec3_000, galaxy) + solarsystempos - vw->pos);
-//	gldTranslate3dv(vw->cs->tocs(vec3_000, galaxy) + solarsystempos - vw->pos);
 	trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
-//	glScaled(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
 	trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
-//	glTranslated(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
 	glBegin(GL_QUADS);
 	for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
 		const GLubyte *cell = field[ix][iy][iz];
-		int intensity = cell[0] + cell[1] + cell[2] + cell[3];
+		unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
 		if(rs.next() % 2048 < intensity){
-//			glPointSize(1. / (fabs(trans.vp3(Vec3d(ix, iy, iz))[2]) + 1.));
-			glColor4ub(cell[0], cell[1], cell[2], 255);
+			glColor4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., GALAXY_DR * vw->dynamic_range);
+			double angle = rs.nextd() * M_PI * 2.;
 			Vec3d pos = trans.vp3(Vec3d(ix, iy, iz));
-			pos[0] /= pos[2];
-			pos[1] /= pos[2];
-			double psize = 0.1;
-			glTexCoord2i(0, 0); glVertex3d(pos[0] - psize, pos[1] - psize, -1);
-			glTexCoord2i(0, 1); glVertex3d(pos[0] - psize, pos[1] + psize, -1);
-			glTexCoord2i(1, 1); glVertex3d(pos[0] + psize, pos[1] + psize, -1);
-			glTexCoord2i(1, 0); glVertex3d(pos[0] + psize, pos[1] - psize, -1);
+			if(0 < pos[2])
+				continue;
+			pos[0] /= -pos[2];
+			pos[1] /= -pos[2];
+			double psize = GALAXY_EXTENT / FIELD / -pos[2];
+			Mat2d rot = Mat2d(psize * cos(angle), psize * sin(angle), -psize * sin(angle), psize * cos(-angle));
+			const Vec2d p2d[4] = {rot.vp(Vec2d(-1, -1)), rot.vp(Vec2d(-1, 1)), rot.vp(Vec2d(1, 1)), rot.vp(Vec2d(1, -1))};
+			glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
+			glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
+			glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
+			glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
 		}
 	}
 	glEnd();

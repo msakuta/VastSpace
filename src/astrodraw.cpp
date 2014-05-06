@@ -19,6 +19,7 @@
 #include "glstack.h"
 #include "StaticInitializer.h"
 #include "CoordSys-find.h"
+#include "Game.h"
 #include "sqadapt.h"
 #include "StarEnum.h"
 #define exit something_meanless
@@ -773,10 +774,10 @@ int g_gs_stacks = 128;
 int g_multithread = 1;
 int g_gs_always_fine = 0;
 
-#if 0
+#if 1
 GLubyte g_galaxy_field[FIELD][FIELD][FIELDZ][4];
 
-static const GLubyte *negate_hyperspace(const GLubyte src[4], Viewer *vw, GLubyte buf[4]){
+static const GLubyte *negate_hyperspace(const GLubyte src[4], const Viewer *vw, GLubyte buf[4]){
 	{
 		int k;
 		if(g_invert_hyperspace) for(k = 0; k < 3; k++){
@@ -818,7 +819,7 @@ static void gs_vertex_proc(double x, double y, double z){
 static int draw_gs_proc(
 	GLubyte (*colbuf)[HDIV][4],
 	const GLubyte (*field)[FIELD][FIELDZ][4],
-	const avec3_t *plpos,
+	const Vec3d &plpos,
 	double rayinterval,
 	int raysamples,
 	int slices,
@@ -830,18 +831,15 @@ static int draw_gs_proc(
 	int k, n;
 	int xi, yi;
 		for(xi = 0; xi < slices; xi++) for(yi = 0; yi <= hdiv; yi++){
-			avec3_t dir;
 			double sum[4] = {0};
 			double divider0 = 0.;
 			if(quitsignal && *quitsignal)
 				return 1;
-			dir[0] = cuts[xi][0] * cutss[yi][0], dir[1] = cuts[xi][1] * cutss[yi][0], dir[2] = cutss[yi][1];
+			Vec3d dir(cuts[xi][0] * cutss[yi][0], cuts[xi][1] * cutss[yi][0], cutss[yi][1]);
 			for(n = 0; n < raysamples; n++){
-				avec3_t v0;
 				int v1[3];
 				double f = (n + 1) * rayinterval;
-				VECSCALE(v0, dir, f);
-				VECSADD(v0, *plpos, FIELD / GALAXY_EXTENT);
+				Vec3d v0 = dir * f + plpos * FIELD / GALAXY_EXTENT;
 /*				VECSADD(v0, solarsystempos, 1. * FIELD);*/
 				for(k = 0; k < 3; k++)
 					v1[k] = floor(v0[k]);
@@ -882,8 +880,8 @@ struct draw_gs_fine_thread_data{
 	GLubyte (*colbuf)[HDIV][4];
 	Viewer *vw;
 	double (*cuts)[2], (*cutss)[2];
-	avec3_t plpos;
-	avec3_t *solarsystempos;
+	Vec3d plpos;
+	const Vec3d *solarsystempos;
 /*	int lod;*/
 	volatile LONG *threaddone;
 	volatile LONG threadstop;
@@ -897,7 +895,7 @@ static DWORD WINAPI draw_gs_fine_thread(struct draw_gs_fine_thread_data *dat){
 		Viewer *vw = dat->vw;
 		int k, n;
 /*		volatile lod = dat->lod;*/
-		double *solarsystempos = dat->solarsystempos;
+		const Vec3d &solarsystempos = *dat->solarsystempos;
 		int slices = SLICES, hdiv = HDIV;
 		int xi, yi;
 		double (*cuts)[2], (*cutss)[2];
@@ -955,7 +953,7 @@ static void perlin_noise_3d(GLubyte (*field)[FIELD][FIELDZ][4], long seed){
 	int xi, yi, zi;
 	int k;
 	init_rseq(&rs, seed);
-	buf = malloc(octaves * sizeof *buf);
+	buf = (double (*)[FIELD][FIELD][FIELDZ][4])malloc(octaves * sizeof *buf);
 	for(octave = 0; octave < octaves; octave ++){
 		int cell = 1 << octave;
 		int res = FIELD / cell;
@@ -1004,14 +1002,14 @@ static int ftimecmp(const char *file1, const char *file2){
 	return (int)CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime);
 }
 
-static const avec3_t solarsystempos = {-0, -0, -.00};
+static const Vec3d solarsystempos(-0, -0, -0.0);
 int g_galaxy_field_cache = 1;
 
-unsigned char galaxy_set_star_density(Viewer *vw, unsigned char c);
+unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c);
 
 #define DARKNEBULA 16
 
-static void draw_gs(struct coordsys *csys, Viewer *vw){
+static void draw_gs(const CoordSys *csys, const Viewer *vw){
 	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
 	static int field_init = 0;
 	static GLuint spheretex = 0;
@@ -1032,16 +1030,14 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 		int xi, yi, zi, zzi, xj, yj, zj;
 		int k, n;
 		int srcx, srcy;
-		GLubyte (*field2)[FIELD][FIELDZ][4];
-		GLfloat (*src)[4];
 		GLfloat darknebula[DARKNEBULA][DARKNEBULA];
-		field2 = malloc(sizeof g_galaxy_field);
+		GLubyte (*field2)[FIELD][FIELDZ][4] = (GLubyte (*)[FIELD][FIELDZ][4])malloc(sizeof g_galaxy_field);
 #if 1
 		fp = fopen("ourgalaxy3.raw", "rb");
 		if(!fp)
 			return;
 		srcx = srcy = 512;
-		src = (GLfloat*)malloc(srcx * srcy * sizeof *src);
+		GLfloat (*src)[4] = (GLfloat(*)[4])malloc(srcx * srcy * sizeof *src);
 		for(xi = 0; xi < srcx; xi++) for(yi = 0; yi < srcy; yi++){
 			unsigned char c;
 			fread(&c, 1, sizeof c, fp);
@@ -1209,7 +1205,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 		GLubyte cblack[4] = {0};
 		static GLubyte colbuf[SLICES][HDIV][4];
 		static GLubyte finecolbuf[SLICES][HDIV][4];
-		static avec3_t lastpos = {1e30};
+		static Vec3d lastpos(1e30, 1e30, 1e30);
 		static int flesh = 0, firstload = 0, firstwrite = 0;
 		static HANDLE ht;
 		static DWORD tid = 0;
@@ -1220,11 +1216,10 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 		int recalc, reflesh, detail;
 		int slices, hdiv;
 		int firstloaded = 0;
-		avec3_t plpos;
 		FILE *fp;
 
-		tocs(plpos, csys, vw->pos, vw->cs);
-		reflesh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < VECSDIST(lastpos, plpos);
+		Vec3d plpos = csys->tocs(vw->pos, vw->cs);
+		reflesh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < (lastpos - plpos).slen();
 		if(!firstload){
 			firstload = 1;
 			if(ftimecmp("cache/galaxy.bmp", "ourgalaxy3.raw") > 0 && (fp = fopen("cache/galaxy.bmp", "rb"))){
@@ -1236,7 +1231,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 				fclose(fp);
 				reflesh = 0;
 				firstloaded = firstwrite = 1;
-				VECCPY(lastpos, plpos);
+				lastpos = plpos;
 			}
 		}
 		flesh = (flesh << 1) | reflesh;
@@ -1245,7 +1240,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 			static struct draw_gs_fine_thread_data dat;
 			if(!ht){
 				dat.drawEvent = drawEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-				ht = CreateThread(NULL, 0, draw_gs_fine_thread, &dat, 0, &tid);
+				ht = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)draw_gs_fine_thread, &dat, 0, &tid);
 			}
 			if(!threadrun && (flesh & 0x1fff) == 0x1000){
 				dat.field = field;
@@ -1253,7 +1248,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 				dat.vw = &svw; svw = *vw;
 				dat.threaddone = &threaddone;
 				dat.threadstop = 0;
-				VECCPY(dat.plpos, plpos);
+				dat.plpos = plpos;
 				dat.solarsystempos = &solarsystempos;
 				dat.cuts = CircleCuts(SLICES);
 				dat.cutss = CircleCuts(HDIV * 2);
@@ -1262,7 +1257,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 				threadrun = 1;
 			}
 			if(threadrun && (flesh & 0x1fff) == 0x1000){
-				VECCPY(dat.plpos, plpos);
+				dat.plpos = plpos;
 				InterlockedExchange(&dat.threadstop, 1);
 			}
 			recalc = reflesh;
@@ -1279,7 +1274,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 		else
 			slices = SLICES2, hdiv = HDIV2;
 		if(firstloaded || threadrun && threaddone){
-			extern int g_reflesh_cubetex;
+//			extern int g_reflesh_cubetex;
 			memcpy(colbuf, finecolbuf, sizeof colbuf);
 			glBindTexture(GL_TEXTURE_2D, spheretex);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SLICES, HDIV, GL_RGBA, GL_UNSIGNED_BYTE, finecolbuf);
@@ -1310,8 +1305,9 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 #endif
 			detail = 1;
 			slices = SLICES2, hdiv = HDIV2;
-			g_reflesh_cubetex = 1;
+//			g_reflesh_cubetex = 1;
 			threadrun = 0;
+			lastpos = plpos;
 		}
 		if(threadrun && !threaddone){
 			detail = 0;
@@ -1377,7 +1373,7 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glBegin(GL_QUADS);
-			glColor4ub(255,255,255, MIN(255, 255 * GALAXY_DR / vw->dynamic_range));
+			glColor4ub(255,255,255, 255/*MIN(255, 255 * GALAXY_DR / vw->dynamic_range)*/);
 			for(xi = 0; xi < slices2; xi++) for(yi = 0; yi < hdiv2; yi++){
 				int xi1 = (xi + 1) % slices2, yi1 = yi + 1;
 				glTexCoord2d((double)yi / slices2, (double)xi / slices2);
@@ -1421,13 +1417,11 @@ static void draw_gs(struct coordsys *csys, Viewer *vw){
 	}
 }
 
-unsigned char galaxy_set_star_density(Viewer *vw, unsigned char c){
-	extern struct coordsys *g_galaxysystem;
-	struct coordsys *csys = g_galaxysystem;
-	avec3_t v0;
+unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c){
+	CoordSys *csys = vw->cs->getGame()->universe;
 	int v1[3];
 	int i;
-	tocs(v0, csys, vw->pos, vw->cs);
+	Vec3d v0 = csys->tocs(vw->pos, vw->cs);
 	VECSCALEIN(v0, FIELD / GALAXY_EXTENT);
 	VECSADD(v0, solarsystempos, 1. * FIELD);
 	v0[0] += FIELD / 2.;
@@ -1470,10 +1464,8 @@ double galaxy_get_star_density_pos(const avec3_t v0){
 }
 
 double galaxy_get_star_density(Viewer *vw){
-	extern struct coordsys *g_galaxysystem;
-	struct coordsys *csys = g_galaxysystem;
-	avec3_t v0;
-	tocs(v0, csys, vw->pos, vw->cs);
+	CoordSys *csys = vw->cs->getGame()->universe;
+	Vec3d v0 = csys->tocs(vw->pos, vw->cs);
 	VECSCALEIN(v0, FIELD / GALAXY_EXTENT);
 	VECSADD(v0, solarsystempos, 1. * FIELD);
 	v0[0] += FIELD / 2.;
@@ -1535,6 +1527,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		glMultMatrixd(mat);
 	}
 
+#if 0
 	static GLuint backimg = 0;
 	if(!backimg)
 		backimg = DrawTextureSphere::ProjectSphereCubeImage("mwpan2_Merc_2000x1200.jpg", 0);
@@ -1569,6 +1562,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		}
 		glPopAttrib();
 	}
+#endif
 
 /*	{
 		int i;
@@ -1647,7 +1641,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 		}
 		glEnd();*/
 
-//		draw_gs(csys, vw);
+		draw_gs(csys, vw);
 
 #if STARLIST
 	if(!init)

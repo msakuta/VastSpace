@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of drawing methods of astronomical objects like Star and TexSphere.
  */
+#define NOMINMAX
 #include "astrodraw.h"
 #include "draw/ring-draw.h"
 #include "draw/DrawTextureSphere.h"
@@ -52,6 +53,7 @@ extern "C"{
 #include <strstream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 
 #define COLIST(c) COLOR32R(c), COLOR32G(c), COLOR32B(c), COLOR32A(c)
@@ -410,7 +412,7 @@ double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 	double height = (thispos - vwpos).len() - this->rad;
 	double thick = atmodensity;
 	double pd = (thick * 16.) / (dist - this->rad);
-	double d = min(pd, 1.);
+	double d = std::min(pd, 1.);
 	double air = height / thick / d;
 
 	return sqrt(param.brightness * 1e18) * b / (1. + air);
@@ -573,7 +575,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 	double &d = param.d;
 	double ss0 = sin(M_PI / 2. - as), sc0 = -cos(M_PI / 2. - as);
 	pd = (thick * 16.) / (dist - a->rad);
-	d = min(pd, 1.);
+	d = std::min(pd, 1.);
 	param.redness = redness;
 	param.isotropy = isotropy;
 	param.air = height / thick / d;
@@ -1051,7 +1053,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
 			const GLubyte *cell = field[ix][iy][iz];
 			unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
-			if(rs.next() % 2048 < intensity){
+			if(rs.next() % 8192 < intensity){
 				BlobCache bc;
 				bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
 				double angle = rs.nextd() * M_PI * 2.;
@@ -1172,8 +1174,6 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		for(zi = 0; zi < FIELDZ; zi++){
 		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
 			int xj, yj;
-			int weather = ABS(zi - HFIELDZ) * 4;
-			int weathercells = 0;
 			double z0 = 0.;
 			if(xi / (FIELD / DARKNEBULA) < DARKNEBULA-1 && yi / (FIELD / DARKNEBULA) < DARKNEBULA-1) for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++){
 				int cell = FIELD / DARKNEBULA;
@@ -1184,43 +1184,35 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 			}
 			double sdz = (zi + z0 - HFIELDZ) * (zi + z0 - HFIELDZ) / (double)(HFIELDZ * HFIELDZ);
 			double sd = ((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD) + sdz);
-			weather = ABS(zi - HFIELDZ) * 4;
-			weathercells = 0;
-/*			sdz *= drseq(&rs) * .5 + .5;*/
+
+			// Distance from the center of the galaxy along galactic plane
 			double dxy = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD));
-			double dz = sqrt(sdz); // Delta Z
+			double dz = sqrt(sdz); // Distance from galactic plane
+			// Elliptical distance
 			double dellipse = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + sdz);
-/*			double phase = atan2(xi - 64, yi - 64);
-			double sss;
-			sss = (sin(phase * 5. + dxy * 15.) + 1.) / 2.;
-			field2[xi][yi][zi][k] = (sd < 1. ? drseq(&rs) * (1. - sd) : 0.) * (k == 2 ? 192 : 255) * (k == 3 ? 255 : sdz * 255);*/
-			double alpha = 1. - dxy - dz < 0 ? 0. : 1. - dz;
-			if(src[xi * srcx / FIELD + yi * srcy / FIELD * srcx] == 0){
-				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
-			}
-			else if(1. < dxy || alpha <= 0.){
+
+			// Obtain source pixel in the raw image.
+			auto srcpixel = src[xi * srcx / FIELD + yi * srcy / FIELD * srcx];
+			double srcw = srcpixel / 256.; // Normalized source pixel
+
+			// Computed thickness of the galaxy at the pixel.  Thickness drops near galaxy edge.
+			// If the pixel has low intensity, thickness is reduced to simulate spiral arms.
+			double thickness = sqrt(std::max(0., 1. - dxy)) * srcw;
+
+			if(srcpixel == 0 || 1. < dxy || thickness <= dz){
 				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
 			}
 			else{
-				double dzq = pow(dz / (1. - dxy), 1. / 4.);
-				double srcw = src[xi * srcx / FIELD * srcy + yi * srcy / FIELD] / 256.;
-				for(k = 0; k < 4; k++){
-	#if 1
-	#else
-					double sub = 0.;
-					for(xj = -1; xj <= 1; xj++) for(yj = -1; yj <= 1; yj++) if(xj != 0 && yj != 0){
-						int xk = (xi * srcx / FIELD + xj), yk = (yi * srcy / FIELD + yj);
-						sub += 0 <= xk && xk < srcx && 0 <= yk && yk < srcy ? 1. - src[xk * srcy + yk] : 0.;
-		/*				srcw += 0 <= xi + xj && xi + xj < srcx && 0 <= yi + yj && yi + yj < srcy ? src[(xi + xj) * srcx / FIELD * srcy + (yi + yj) * srcy / FIELD] : 0.;*/
-						weathercells++;
-					}
-					srcw = (zzi == 0 ? src[xi * srcx / FIELD * srcy + yi * srcy / FIELD] : field2[xi][yi][zi+zzz][k] / 256.) - (weathercells ? sub / weathercells : 0);
-					if(srcw < 0.)
-						srcw = 0.;
-	#endif
-					field2[xi][yi][zi][k] = field2[xi][yi][zi][k] * ((/*(drseq(&rs) .5 + .5) **/ srcw) * (k == 3 ? alpha : dzq));
-				}
+				// There are dark nebulae along the central plane of the galaxy.  We simulate this by darkening
+				// the voxels around dz near 0.  We are dividing dz by thickness here to avoid everything become dark
+				// near the edge of the galaxy.
+				double dzq = pow(dz / thickness, 1. / 4.);
+
+				for(k = 0; k < 4; k++)
+					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., dz / thickness * 2.) : dzq);
 			}
+
+			// Enhance color near center to render bulge
 			if(dellipse < 1.){
 				field2[xi][yi][zi][0] = MIN(255, field2[xi][yi][zi][0] + 256 * (1. - dellipse));
 				field2[xi][yi][zi][1] = MIN(255, field2[xi][yi][zi][1] + 256 * (1. - dellipse));
@@ -2341,7 +2333,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 	vpos = vw->pos;
 	if(abest){
 		epos = abest->calcPos(*vw);
-		height = max(.001, (epos - vpos).len() - abest->rad);
+		height = std::max(.001, (epos - vpos).len() - abest->rad);
 	}
 	else{
 		epos = Vec3d(1e5,1e5,1e5);

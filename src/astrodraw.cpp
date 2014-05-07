@@ -1023,15 +1023,15 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POINT_BIT);
 	if(!texname){
 		suftexparam_t stp;
-		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL;
+		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_ALPHA;
 		stp.env = GL_MODULATE;
 		stp.magfil = GL_LINEAR;
 		stp.minfil = GL_LINEAR;
-		texname = CallCacheBitmap5("textures/smoke2.jpg.a.jpg", "textures/smoke2.jpg.a.jpg", &stp, NULL, NULL);
+		texname = CallCacheBitmap5("textures/smoke2.png", "textures/smoke2.png", &stp, NULL, NULL);
 	}
 	glCallList(texname);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Add blend
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Alpha blend
 
 	glPushMatrix();
 	glLoadIdentity();
@@ -1040,7 +1040,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	trans = trans * vw->cs->tocsm(galaxy);
 	struct BlobCache{
 		Vec4d color;
-		Vec3d pos;
+		Vec3i pos;
 		Vec2d verts[4];
 	};
 	trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
@@ -1057,7 +1057,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 				BlobCache bc;
 				bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
 				double angle = rs.nextd() * M_PI * 2.;
-				bc.pos = Vec3d(ix, iy, iz);
+				bc.pos = Vec3i(ix, iy, iz);
 				Mat2d rot = Mat2d(cos(angle), sin(angle), -sin(angle), cos(-angle));
 				bc.verts[0] = rot.vp(Vec2d(-1, -1));
 				bc.verts[1] = rot.vp(Vec2d(-1, 1));
@@ -1068,17 +1068,33 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		}
 	}
 
+	Vec3d thispos = galaxy->tocs(vw->pos, vw->cs) - solarsystempos;
+	int thisx = thispos[0] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
+	int thisy = thispos[1] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
+	int thisz = thispos[2] / (GALAXY_EXTENT / FIELD) + FIELDZ / 2;
+	Vec3i thisvec(thisx, thisy, thisz);
+	static Vec3i lastpos;
+
+	if(lastpos != thisvec){
+		std::sort(blobCache.begin(), blobCache.end(),
+			[&](const BlobCache &a, const BlobCache &b){
+				return (b.pos - thisvec).slen() < (a.pos - thisvec).slen();
+		});
+		lastpos = thisvec;
+	}
+
 	glBegin(GL_QUADS);
 	for(auto bc : blobCache){
 		Vec4d color = bc.color;
-		color[3] = GALAXY_DR * vw->dynamic_range;
+		color *= GALAXY_DR * vw->dynamic_range;
+		color[3] = 0.075;
 		glColor4dv(color);
-		Vec3d pos = trans.vp3(bc.pos);
+		Vec3d pos = trans.vp3(bc.pos.cast<double>());
 		if(0 <= pos[2])
 			continue;
 		pos[0] /= -pos[2];
 		pos[1] /= -pos[2];
-		double psize = GALAXY_EXTENT / FIELD / -pos[2];
+		double psize = 3. * GALAXY_EXTENT / FIELD / -pos[2];
 		const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
 		glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
 		glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
@@ -1206,7 +1222,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 				// There are dark nebulae along the central plane of the galaxy.  We simulate this by darkening
 				// the voxels around dz near 0.  We are dividing dz by thickness here to avoid everything become dark
 				// near the edge of the galaxy.
-				double dzq = pow(dz / thickness, 1. / 4.);
+				double dzq = dz / thickness;
 
 				for(k = 0; k < 4; k++)
 					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., dz / thickness * 2.) : dzq);

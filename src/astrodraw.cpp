@@ -1072,7 +1072,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		color[3] = GALAXY_DR * vw->dynamic_range;
 		glColor4dv(color);
 		Vec3d pos = trans.vp3(bc.pos);
-		if(0 < pos[2])
+		if(0 <= pos[2])
 			continue;
 		pos[0] /= -pos[2];
 		pos[1] /= -pos[2];

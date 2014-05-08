@@ -682,7 +682,7 @@ bool StarEnum::newCell(){
 			gx++, gy = cen[1] - numSectors, gz = cen[2] - numSectors;
 		else
 			return false;
-		numstars = int(g_star_num / (1. + .01 * gz * gz + .01 * (gx + 10) * (gx + 10) + .1 * gy * gy));
+		numstars = int(g_star_num * galaxy_get_star_density_pos(Vec3d(gx, gy, gz) * sectorSize));
 	}while(0 == numstars); // Skip sectors containing no stars
 
 	// Start a new random number sequence for this sector.

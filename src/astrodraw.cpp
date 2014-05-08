@@ -1271,7 +1271,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		static GLubyte colbuf[SLICES][HDIV][4];
 		static GLubyte finecolbuf[SLICES][HDIV][4];
 		static Vec3d lastpos(1e30, 1e30, 1e30);
-		static int flesh = 0, firstload = 0, firstwrite = 0;
+		static int fresh = 0, firstload = 0, firstwrite = 0;
 		static HANDLE ht;
 		static DWORD tid = 0;
 		static HANDLE drawEvent;
@@ -1284,7 +1284,7 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 		FILE *fp;
 
 		Vec3d plpos = csys->tocs(vw->pos, vw->cs) + solarsystempos;
-		int reflesh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < (lastpos - plpos).slen();
+		int refresh = (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) * (GALAXY_EXTENT * GALAXY_EPSILON / FIELD) < (lastpos - plpos).slen();
 		if(!firstload){
 			firstload = 1;
 			if(ftimecmp("cache/galaxy.bmp", "ourgalaxy3.raw") > 0 && (fp = fopen("cache/galaxy.bmp", "rb"))){
@@ -1294,20 +1294,20 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 				fread(&bi, 1, sizeof bi, fp);
 				fread(finecolbuf, 1, bi.biSizeImage, fp);
 				fclose(fp);
-				reflesh = 0;
+				refresh = 0;
 				firstloaded = firstwrite = 1;
 				lastpos = plpos;
 			}
 		}
-		flesh = (flesh << 1) | reflesh;
-		bool detail = g_gs_always_fine || !(flesh & 0xfff);
+		fresh = (fresh << 1) | refresh;
+		bool detail = g_gs_always_fine || !(fresh & 0xfff);
 		if(g_multithread){
 			static struct draw_gs_fine_thread_data dat;
 			if(!ht){
 				dat.drawEvent = drawEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 				ht = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)draw_gs_fine_thread, &dat, 0, &tid);
 			}
-			if(!threadrun && (flesh & 0x1fff) == 0x1000){
+			if(!threadrun && (fresh & 0x1fff) == 0x1000){
 				dat.field = field;
 				dat.colbuf = finecolbuf;
 				dat.vw = &svw; svw = *vw;
@@ -1321,18 +1321,18 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 				SetEvent(dat.drawEvent);
 				threadrun = 1;
 			}
-			if(threadrun && (flesh & 0x1fff) == 0x1000){
+			if(threadrun && (fresh & 0x1fff) == 0x1000){
 				dat.plpos = plpos;
 				InterlockedExchange(&dat.threadstop, 1);
 			}
-			recalc = reflesh;
+			recalc = refresh;
 		}
 		else if(g_gs_always_fine){
-			recalc = reflesh;
+			recalc = refresh;
 			detail = 1;
 		}
 		else{
-			recalc = ((flesh & 0x1fff) == 0x1000) || reflesh;
+			recalc = ((fresh & 0x1fff) == 0x1000) || refresh;
 		}
 		if(!detail)
 			slices = SLICES1, hdiv = HDIV1;

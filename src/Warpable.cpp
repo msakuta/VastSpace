@@ -630,12 +630,19 @@ void Warpable::post_warp(){
 //=============================================================================
 
 #ifdef NDEBUG
-double g_star_num = 5;
+double g_star_num = 1.;
 #else
-double g_star_num = 3;
+double g_star_num = 1.;
 #endif
 
-const double StarEnum::sectorSize = 1e13;
+/// This sector size value is controversial.  It cannot be easily changed, but
+/// either too low value or too high value can cause problems.
+/// If you set it too low, stars won't generate at all (unless we properly
+/// implement Poisson distributed pseudo random number generator).
+/// If you set it too high, you will get too many stars enumerated for display,
+/// causing frame rate drop.
+/// 15 ly is trade-off value and generate 2-3 stars per sector around Sol.
+const double StarEnum::sectorSize = 15 * LIGHTYEAR_PER_KILOMETER;
 
 StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
 	plpos(plpos),
@@ -682,11 +689,26 @@ bool StarEnum::newCell(){
 			gx++, gy = cen[1] - numSectors, gz = cen[2] - numSectors;
 		else
 			return false;
-		numstars = int(g_star_num * galaxy_get_star_density_pos(Vec3d(gx, gy, gz) * sectorSize));
-	}while(0 == numstars); // Skip sectors containing no stars
 
-	// Start a new random number sequence for this sector.
-	rs.init((gx + (gy << 5) + (gz << 10)) ^ 0x8f93ab98, 0);
+		// Z axis has a length of GALAXY_EXTENT times FIELDZ / FIELD.
+		const double volume = GALAXY_EXTENT * GALAXY_EXTENT * (GALAXY_EXTENT * FIELDZ / FIELD);
+
+		// It is speculated that the Galaxy has 100-400 billion stars, but we will ignore red dwarfs, so
+		// 100 billion is a reasonable estimate.
+		const double totalStars = 100.e9;
+
+		// Stars per cubic kilometers (!).  It should be incredibly small number.
+		const double averageStarDensity = totalStars / volume;
+
+		const double starDensityPerSector = averageStarDensity * sectorSize * sectorSize * sectorSize;
+
+		// Start a new random number sequence for this sector.
+		int sectors[3] = {gx, gy, gz};
+		rs.init(crc32(sectors, sizeof sectors), 0);
+
+		// This value should be Poisson-distributed random value.
+		numstars = int(g_star_num * starDensityPerSector * galaxy_get_star_density_pos(Vec3d(gx, gy, gz) * sectorSize) + rs.nextd());
+	}while(0 == numstars); // Skip sectors containing no stars
 
 	if(genCache){
 		static bool sylsInit = false;

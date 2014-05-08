@@ -1,6 +1,7 @@
 #ifndef GALAXY_FIELD_H
 #define GALAXY_FIELD_H
 #include "astrodef.h"
+#include "CoordSys.h"
 
 #define SLICES 256 //g_gs_slices
 #define HDIV 256 //g_gs_stacks
@@ -16,6 +17,20 @@
 #define GALAXY_EPSILON 1e-3
 #define GALAXY_DR 1e-3 /* dynamic range of galaxy lights */
 
-extern GLubyte g_galaxy_field[FIELD][FIELD][FIELDZ][4];
+typedef GLubyte GalaxyField[FIELD][FIELD][FIELDZ][4];
+
+const GalaxyField *initGalaxyField();
+
+Vec3d getGalaxyOffset();
+
+/// \brief Returns density of stars at given point in the galaxy.
+/// \param pos Position vector
+/// \param cs Coordinate system which measures pos.  Passing NULL to this value make the function assume
+///           that the position is in galaxy coordinates.
+double galaxy_get_star_density_pos(const Vec3d &pos, const CoordSys *cs = NULL);
+
+/// \brief Returns density of stars at the given viewpoint.
+double galaxy_get_star_density(Viewer *vw);
+
 
 #endif

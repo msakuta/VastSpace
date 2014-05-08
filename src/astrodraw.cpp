@@ -779,7 +779,7 @@ int g_gs_stacks = 128;
 int g_multithread = 1;
 int g_gs_always_fine = 0;
 
-#if 1
+#if 0 // Ray-tracing galaxy rendering is temporarily disabled.
 GLubyte g_galaxy_field[FIELD][FIELD][FIELDZ][4];
 
 static const GLubyte *negate_hyperspace(const GLubyte src[4], const Viewer *vw, GLubyte buf[4]){
@@ -918,38 +918,6 @@ recalc:
 	return 0;
 }
 
-static void perlin_noise(GLubyte (*field)[FIELD][FIELDZ][4], GLubyte (*work)[FIELD][FIELDZ][4], long seed){
-	int octave;
-	struct random_sequence rs;
-	init_rseq(&rs, seed);
-	for(octave = 0; (1 << octave) < FIELDZ; octave += 5){
-		int cell = 1 << octave;
-		int xi, yi, zi;
-		int k;
-		for(zi = 0; zi < FIELDZ / cell; zi++) for(xi = 0; xi < FIELD / cell; xi++) for(yi = 0; yi < FIELD / cell; yi++){
-			int base;
-			base = rseq(&rs) % 64 + 191;
-			for(k = 0; k < 4; k++)
-				work[xi][yi][zi][k] = /*rseq(&rs) % 32 +*/ base;
-		}
-		if(octave == 0)
-			memcpy(field, work, FIELD * FIELD * FIELDZ * 4);
-		else for(zi = 0; zi < FIELDZ; zi++) for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
-			int xj, yj, zj;
-			int sum[4] = {0};
-			for(k = 0; k < 4; k++){
-				for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-					sum[k] += (double)work[xi / cell + xj][yi / cell + yj][zi / cell + zj][k]
-					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
-					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
-					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell;
-				}
-				field[xi][yi][zi][k] = MIN(255, field[xi][yi][zi][k] + sum[k] / 2);
-			}
-		}
-	}
-}
-
 static void perlin_noise_3d(GLubyte (*field)[FIELD][FIELDZ][4], long seed){
 	int octave;
 	int octaves = 6;
@@ -989,34 +957,14 @@ static void perlin_noise_3d(GLubyte (*field)[FIELD][FIELDZ][4], long seed){
 	}
 	free(buf);
 }
-
-static int ftimecmp(const char *file1, const char *file2){
-	WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
-	BOOL b1, b2;
-
-	b1 = GetFileAttributesEx(file1, GetFileExInfoStandard, &fd);
-	b2 = GetFileAttributesEx(file2, GetFileExInfoStandard, &fd2);
-
-	/* absent file is valued oldest */
-	if(!b1 && !b2)
-		return 0;
-	if(!b1)
-		return -1;
-	if(!b2)
-		return 1;
-	return (int)CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime);
-}
-
-/// The Sol is located in 25000 ly offset from the center of Milky Way Galaxy
-static const Vec3d solarsystempos(-0, -25000.0 * LIGHTYEAR_PER_KILOMETER, 0);
-int g_galaxy_field_cache = 1;
+#endif
 
 unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c);
 
-#define DARKNEBULA 8
-
 static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
-	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
+	const GalaxyField *field = initGalaxyField();
+	if(!field)
+		return;
 	RandomSequence rs(1233441);
 	static GLuint texname = 0;
 
@@ -1036,7 +984,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	glPushMatrix();
 	glLoadIdentity();
 	Mat4d mat = vw->rot;
-	Mat4d trans = mat.translate(vw->cs->tocs(solarsystempos, galaxy) - vw->pos);
+	Mat4d trans = mat.translate(vw->cs->tocs(getGalaxyOffset(), galaxy) - vw->pos);
 	trans = trans * vw->cs->tocsm(galaxy);
 	struct BlobCache{
 		Vec4d color;
@@ -1051,7 +999,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	if(!blobInit){
 		blobInit = true;
 		for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
-			const GLubyte *cell = field[ix][iy][iz];
+			const GLubyte *cell = (*field)[ix][iy][iz];
 			unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
 			if(rs.next() % 8192 < intensity){
 				BlobCache bc;
@@ -1068,7 +1016,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		}
 	}
 
-	Vec3d thispos = galaxy->tocs(vw->pos, vw->cs) - solarsystempos;
+	Vec3d thispos = galaxy->tocs(vw->pos, vw->cs) - getGalaxyOffset();
 	int thisx = thispos[0] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
 	int thisy = thispos[1] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
 	int thisz = thispos[2] / (GALAXY_EXTENT / FIELD) + FIELDZ / 2;
@@ -1107,196 +1055,12 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 }
 
 static void draw_gs(const CoordSys *csys, const Viewer *vw){
-	static GLubyte (*field)[FIELD][FIELDZ][4] = g_galaxy_field;
-	static int field_init = 0;
-	static GLuint spheretex = 0;
-	static GLuint spheretexs[4] = {0};
-	static const char *galaxy_file = "galaxy.png";
-	if(!field_init){
-		FILE *ofp;
-		timemeas_t tm;
-		TimeMeasStart(&tm);
-		field_init = 1;
-		if(ftimecmp(galaxy_file, "cache/ourgalaxyvol.raw") < 0){
-			FILE *fp = fopen("cache/ourgalaxyvol.raw", "rb");
-			fread(field, sizeof g_galaxy_field, 1, fp);
-			fclose(fp);
-		}
-		else{
-		struct random_sequence rs;
-		int xi, yi, zi, zzi, xj, yj, zj;
-		int k, n;
-		int srcx, srcy;
-		GLfloat darknebula[DARKNEBULA][DARKNEBULA];
-		GLubyte (*field2)[FIELD][FIELDZ][4] = (GLubyte (*)[FIELD][FIELDZ][4])malloc(sizeof g_galaxy_field);
-#if 1
-		void (*freeproc)(BITMAPINFO*);
-		BITMAPINFO *bmi = ReadPNG(galaxy_file, &freeproc);
-		// We assume 8 bit grayscale image
-		if(bmi->bmiHeader.biBitCount != 8)
-			return;
-		const GLubyte *src = (GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
-		srcx = bmi->bmiHeader.biWidth;
-		srcy = bmi->bmiHeader.biHeight;
-#elif 1
-		FILE *fp;
-		fp = fopen("ourgalaxy3.raw", "rb");
-		if(!fp)
-			return;
-		srcx = srcy = 512;
-		GLfloat (*src)[4] = (GLfloat(*)[4])malloc(srcx * srcy * sizeof *src);
-		for(xi = 0; xi < srcx; xi++) for(yi = 0; yi < srcy; yi++){
-			unsigned char c;
-			fread(&c, 1, sizeof c, fp);
-			src[xi * srcy + yi][2] = c / 256.f /*pow(c / 256.f, 2.)*/;
-			fread(&c, 1, sizeof c, fp);
-			src[xi * srcy + yi][1] = c / 256.f /*pow(c / 256.f, 2.)*/;
-			fread(&c, 1, sizeof c, fp);
-			src[xi * srcy + yi][0] = c / 256.f /*pow(c / 256.f, 2.)*/;
-			src[xi * srcy + yi][3] = (src[xi * srcy + yi][0] + src[xi * srcy + yi][1] + src[xi * srcy + yi][2]) / 1.;
-/*			c = src[xi * srcy + yi] * 255;
-			fwrite(&c, 1, sizeof c, ofp);*/
-		}
-		fclose(fp);
-#else
-		fp = fopen("ourgalaxy_model.dat", "rb");
-		if(!fp)
-			return;
-		fread(&srcx, 1, sizeof srcx, fp);
-		fread(&srcy, 1, sizeof srcy, fp);
-		src = (GLfloat*)malloc(srcx * srcy * sizeof *src);
-		for(xi = 0; xi < srcx; xi++) for(yi = 0; yi < srcy; yi++){
-			unsigned char c;
-			fread(&src[xi * srcy + yi], 1, sizeof *src, fp);
-/*			c = src[xi * srcy + yi] * 255;
-			fwrite(&c, 1, sizeof c, ofp);*/
-		}
-		fclose(fp);
-#endif
-		CmdPrintf("draw_gs.load: %lg sec", TimeMeasLap(&tm));
-		perlin_noise(field2, field, 3522526);
-		init_rseq(&rs, 35229);
-/*		for(zzi = 0; zzi < 16; zzi++){
-		int zzz = 1;
-		char sbuf[64];
-		sprintf(sbuf, "gal%d.raw", zi);
-		ofp = fopen(sbuf, "wb");
-		for(zi = 16 - zzi; zzi && zi <= 16 + zzi; zi += zzi * 2, zzz -= 2)*/
-		CmdPrintf("draw_gs.noise: %lg sec", TimeMeasLap(&tm));
-		for(xi = 0; xi < DARKNEBULA; xi++) for(yi = 0; yi < DARKNEBULA; yi++){
-			darknebula[xi][yi] = (drseq(&rs) - .5) + (drseq(&rs) - .5);
-		}
-		CmdPrintf("draw_gs.nebula: %lg sec", TimeMeasLap(&tm));
-		for(zi = 0; zi < FIELDZ; zi++){
-		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
-			int xj, yj;
-			double z0 = 0.;
-			if(xi / (FIELD / DARKNEBULA) < DARKNEBULA-1 && yi / (FIELD / DARKNEBULA) < DARKNEBULA-1) for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++){
-				int cell = FIELD / DARKNEBULA;
-				z0 += (darknebula[xi / cell + xj][yi / cell + yj]
-					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
-					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
-				/*+ (drseq(&rs) - .5)*/) * FIELDZ * .10;
-			}
-			double sdz = (zi + z0 - HFIELDZ) * (zi + z0 - HFIELDZ) / (double)(HFIELDZ * HFIELDZ);
-			double sd = ((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD) + sdz);
-
-			// Distance from the center of the galaxy along galactic plane
-			double dxy = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD));
-			double dz = sqrt(sdz); // Distance from galactic plane
-			// Elliptical distance
-			double dellipse = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + sdz);
-
-			// Obtain source pixel in the raw image.
-			auto srcpixel = src[xi * srcx / FIELD + yi * srcy / FIELD * srcx];
-			double srcw = srcpixel / 256.; // Normalized source pixel
-
-			// Computed thickness of the galaxy at the pixel.  Thickness drops near galaxy edge.
-			// If the pixel has low intensity, thickness is reduced to simulate spiral arms.
-			double thickness = sqrt(std::max(0., 1. - dxy)) * srcw;
-
-			if(srcpixel == 0 || 1. < dxy || thickness <= dz){
-				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
-			}
-			else{
-				// There are dark nebulae along the central plane of the galaxy.  We simulate this by darkening
-				// the voxels around dz near 0.  We are dividing dz by thickness here to avoid everything become dark
-				// near the edge of the galaxy.
-				double dzq = dz / thickness;
-
-				for(k = 0; k < 4; k++)
-					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., dz / thickness * 2.) : dzq);
-			}
-
-			// Enhance color near center to render bulge
-			if(dellipse < 1.){
-				field2[xi][yi][zi][0] = MIN(255, field2[xi][yi][zi][0] + 256 * (1. - dellipse));
-				field2[xi][yi][zi][1] = MIN(255, field2[xi][yi][zi][1] + 256 * (1. - dellipse));
-				field2[xi][yi][zi][2] = MIN(255, field2[xi][yi][zi][2] + 128 * (1. - dellipse));
-				field2[xi][yi][zi][3] = MIN(255, field2[xi][yi][zi][3] + 128 * (1. - dellipse));
-			}
-/*			fwrite(&field2[xi][yi][zi], 1, 3, ofp);*/
-		}
-/*		fclose(ofp);*/
-		}
-#if 0
-		for(zi = 1; zi < FIELDZ-1; zi++){
-		char sbuf[64];
-		for(n = 0; n < 1; n++){
-			GLubyte (*srcf)[FIELD][FIELDZ][4] = n % 2 == 0 ? field2 : field;
-			GLubyte (*dstf)[FIELD][FIELDZ][4] = n % 2 == 0 ? field : field2;
-			for(xi = 1; xi < FIELD-1; xi++) for(yi = 1; yi < FIELD-1; yi++){
-				int sum[4] = {0}, add[4] = {0};
-				for(xj = -1; xj <= 1; xj++) for(yj = -1; yj <= 1; yj++) for(zj = -1; zj <= 1; zj++) for(k = 0; k < 4; k++){
-					sum[k] += srcf[xi+xj][yi+yj][zi+zj][k];
-					add[k]++;
-				}
-				for(k = 0; k < 4; k++)
-					dstf[xi][yi][zi][k] = sum[k] / add[k]/*(3 * 3 * 3)*/;
-			}
-		}
-/*		sprintf(sbuf, "galf%d.raw", zi);
-		ofp = fopen(sbuf, "wb");
-		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
-			fwrite(&(n % 2 == 0 ? field : field2)[xi][yi][zi], 1, 3, ofp);
-		}
-		fclose(ofp);*/
-		}
-#else
-		memcpy(field, field2, sizeof g_galaxy_field);
-#endif
-		galaxy_set_star_density(vw, 64);
-		if(g_galaxy_field_cache){
-#ifdef _WIN32
-			if(GetFileAttributes("cache") == -1)
-				CreateDirectory("cache", NULL);
-#else
-			mkdir("cache");
-#endif
-			FILE *fp = fopen("cache/ourgalaxyvol.raw", "wb");
-			fwrite(field, sizeof g_galaxy_field, 1, fp);
-			fclose(fp);
-		}
-		free(field2);
-//		free(src);
-		if(bmi){
-			freeproc(bmi);
-		}
-		}
-		glGenTextures(1, &spheretex);
-		glBindTexture(GL_TEXTURE_2D, spheretex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SLICES, SLICES, 0, GL_RGB, GL_BYTE, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-		CmdPrintf("draw_gs: %lg sec", TimeMeasLap(&tm));
-	}
-
 	draw_gs_blob(csys, vw);
 	return;
+#if 0 // Ray-tracing rendering is temporarily disabled.
 	{
+		static GLuint spheretex = 0;
+		static GLuint spheretexs[4] = {0};
 		int xi, yi;
 		double (*cuts)[2], (*cutss)[2];
 		GLubyte cblack[4] = {0};
@@ -1512,59 +1276,8 @@ static void draw_gs(const CoordSys *csys, const Viewer *vw){
 			glEnd();
 		}
 	}
-}
-
-unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c){
-	Vec3d v0(FIELD / 2., FIELD / 2., FIELDZ / 2.);
-	int v1[3];
-	for(int i = 0; i < 3; i++)
-		v1[i] = floor(v0[i]);
-/*	printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], );*/
-	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
-		int xj, yj, zj;
-		for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-			g_galaxy_field[v1[0] + xj][v1[1] + yj][v1[2] + zj][3] = c
-				* (xj ? v0[0] - v1[0] : 1. - (v0[0] - v1[0]))
-				* (yj ? v0[1] - v1[1] : 1. - (v0[1] - v1[1]))
-				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2]));
-		}
-		return c;
-	}
-	return (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? g_galaxy_field[v1[0]][v1[1]][v1[2]][3] = c : 0);
-}
-
-double galaxy_get_star_density_pos(const avec3_t v0){
-	int v1[3];
-	int i;
-	for(i = 0; i < 3; i++)
-		v1[i] = floor(v0[i]);
-	/* cubic linear interpolation is fairly slower, but this function is rarely called. */
-	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
-		int xj, yj, zj;
-		double sum = 0;
-		for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-			sum += g_galaxy_field[v1[0] + xj][v1[1] + yj][v1[2] + zj][3]
-				* (xj ? v0[0] - v1[0] : 1. - (v0[0] - v1[0]))
-				* (yj ? v0[1] - v1[1] : 1. - (v0[1] - v1[1]))
-				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2]));
-		}
-		return sum / 256.;
-	}
-	return (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? g_galaxy_field[v1[0]][v1[1]][v1[2]][3] / 256. : 0.);
-}
-
-double galaxy_get_star_density(Viewer *vw){
-	CoordSys *csys = vw->cs->getGame()->universe;
-	Vec3d v0 = csys->tocs(vw->pos, vw->cs);
-	VECSCALEIN(v0, FIELD / GALAXY_EXTENT);
-	VECSADD(v0, solarsystempos, 1. * FIELD);
-	v0[0] += FIELD / 2.;
-	v0[1] += FIELD / 2.;
-	v0[2] += FIELDZ / 2.;
-/*	printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], );*/
-	return galaxy_get_star_density_pos(v0);
-}
 #endif
+}
 
 #define TEXSIZE 64
 static GLuint drawStarTexture(){

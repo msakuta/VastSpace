@@ -1139,7 +1139,7 @@ const GalaxyField *initGalaxyField(){
 				double dzq = dz / thickness;
 
 				for(k = 0; k < 4; k++)
-					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., dz / thickness * 2.) : dzq);
+					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., (1. - dz / thickness) * 2.) : dzq);
 			}
 
 			// Enhance color near center to render bulge

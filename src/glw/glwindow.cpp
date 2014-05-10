@@ -1722,27 +1722,33 @@ HFONT newFont(int size){
 
 static HDC InitGlwHDC(int size){
 	extern HWND hWndApp;
-	static bool init = false;
-	static HFONT hPrevFont = NULL;
-	static HDC g_glwhdc = NULL;
-	HDC &hdc = g_glwhdc;
-	if(!init){
-		init = true;
-		HWND hw = hWndApp;
-		HDC hwdc = GetDC(hw);
-		hdc = CreateCompatibleDC(hwdc);
-		ReleaseDC(hw,hwdc);
-	}
+
+	/// Cache object for DC and font, cleanup on exit
+	static struct DCFont{
+		HDC hdc;
+		HFONT hfont;
+		DCFont(HWND hw) : hfont(NULL){
+			HDC hwdc = GetDC(hw);
+			hdc = CreateCompatibleDC(hwdc);
+			ReleaseDC(hw,hwdc);
+		}
+		~DCFont(){
+			if(hfont)
+				DeleteObject(hfont);
+			DeleteDC(hdc);
+		}
+	} dcfont(hWndApp);
+
 	static int currentfontheight = 0;
 	if(currentfontheight != size){
 		currentfontheight = size;
 		HFONT hNextFont = newFont(size);
-		SelectObject(hdc, hNextFont);
-		if(hPrevFont != NULL)
-			DeleteObject(hPrevFont);
-		hPrevFont = hNextFont;
+		SelectObject(dcfont.hdc, hNextFont);
+		if(dcfont.hfont != NULL)
+			DeleteObject(dcfont.hfont);
+		dcfont.hfont = hNextFont;
 	}
-	return hdc;
+	return dcfont.hdc;
 }
 
 static std::map<GlyphCacheKey, GlyphCache> g_glyphmap;

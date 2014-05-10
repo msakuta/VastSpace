@@ -611,10 +611,11 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		local white = [1,1,1,1];
 		local selected = [0,1,1,1];
 		local r = w.clientRect();
+		local fh = fontheight();
 
 		glColor4f(1,1,1,1);
 
-		glwpos2d(r.x0, r.y0 + 1 * fontheight());
+		glwpos2d(r.x0, r.y0 + 1 * fh);
 		glwprint("Filter: ");
 		glColor4fv(filter ? white : selected);
 		glwprint("  All  ");
@@ -626,25 +627,25 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 			local xpos1 = xpos + cols[c].width;
 
 			// Highlight background of column header under current mouse pointer
-			if(fontheight() <= ws.mousey && ws.mousey < 2 * fontheight() && xpos + columnSizerWidth <= ws.mx && ws.mx < xpos1 - columnSizerWidth){
+			if(fh <= ws.mousey && ws.mousey < 2 * fh && xpos + columnSizerWidth <= ws.mx && ws.mx < xpos1 - columnSizerWidth){
 				glColor4f(0,0,1,0.5);
 				glBegin(GL_QUADS);
-				glVertex2d(xpos, r.y0 + fontheight());
-				glVertex2d(xpos, r.y0 + 2 * fontheight());
-				glVertex2d(xpos1, r.y0 + 2 * fontheight());
-				glVertex2d(xpos1, r.y0 + fontheight());
+				glVertex2d(xpos, r.y0 + fh);
+				glVertex2d(xpos, r.y0 + 2 * fh);
+				glVertex2d(xpos1, r.y0 + 2 * fh);
+				glVertex2d(xpos1, r.y0 + fh);
 				glEnd();
 			}
 
 			glColor4fv(sorter != c ? white : selected);
-			glwpos2d(xpos, r.y0 + 2 * fontheight());
+			glwpos2d(xpos, r.y0 + 2 * fh);
 			glwprint(cols[c].title);
 
 			// Draw sort order marker if this column is used for sorting
 			if(sorter == c){
 				glPushMatrix();
-				glTranslated(xpos + cols[c].title.len() * fontwidth(), r.y0 + (order ? 1 : 2) * fontheight(), 0);
-				glScaled(fontheight(), (order ? 1 : -1) * fontheight(), 1.);
+				glTranslated(xpos + cols[c].title.len() * fontwidth(), r.y0 + (order ? 1 : 2) * fh, 0);
+				glScaled(fh, (order ? 1 : -1) * fh, 1.);
 				glBegin(GL_TRIANGLES);
 				glVertex2d(0.25, 0.25);
 				glVertex2d(0.50, 0.75);
@@ -655,19 +656,19 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 
 			glColor4f(0.5,0.5,0.5,1);
 			glBegin(GL_LINES);
-			glVertex2d(xpos, r.y0 + fontheight());
-			glVertex2d(xpos1, r.y0 + fontheight());
-			glVertex2d(xpos1, r.y0 + fontheight());
+			glVertex2d(xpos, r.y0 + fh);
+			glVertex2d(xpos1, r.y0 + fh);
+			glVertex2d(xpos1, r.y0 + fh);
 			glVertex2d(xpos1, r.y1);
 			glEnd();
 			xpos = xpos1;
 		}
 
-		r.y0 += 2 * fontheight();
-		local listHeight = filterList().len() * fontheight().tointeger();
+		r.y0 += 2 * fh;
+		local listHeight = filterList().len() * fh.tointeger();
 		if(r.height < listHeight){ // Show scrollbar
 			r.x1 -= scrollBarWidth;
-			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, filterList().len() * fontheight() - r.height, scrollpos);
+			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, filterList().len() * fh - r.height, scrollpos);
 			// Reset scroll pos
 			if(listHeight - r.height <= scrollpos)
 				scrollpos = listHeight - r.height - 1;
@@ -688,28 +689,30 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		local function min(a,b){return a < b ? a : b;}
 
 		local i = 0;
-		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fontheight()) - 2 : -1;
+		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fh) - 2 : -1;
 
 		foreach(sd in filterList()){
-			local ypos = r.y0 + (1 + i) * fontheight() - scrollpos;
+			local ypos = r.y0 + (1 + i) * fh - scrollpos;
+			if(r.y0 <= ypos && ypos - fh <= r.y1){
 
-			if(i == ind){
-				glColor4f(0,0,1,0.5);
-				glBegin(GL_QUADS);
-				glVertex2d(r.x0, ypos - fontheight());
-				glVertex2d(r.x0, ypos);
-				glVertex2d(r.x1, ypos);
-				glVertex2d(r.x1, ypos - fontheight());
-				glEnd();
-			}
+				if(i == ind){
+					glColor4f(0,0,1,0.5);
+					glBegin(GL_QUADS);
+					glVertex2d(r.x0, ypos - fh);
+					glVertex2d(r.x0, ypos);
+					glVertex2d(r.x1, ypos);
+					glVertex2d(r.x1, ypos - fh);
+					glEnd();
+				}
 
-			glColor4f(1,1,1,1);
-			local xpos = r.x0;
-			for(local c = 0; c < cols.len(); c++){
-				glwpos2d(xpos, ypos);
-				local str = cols[c].value(sd).tostring();
-				glwprint(str.slice(0, min(str.len(), cols[c].width / fontwidth())));
-				xpos += cols[c].width;
+				glColor4f(1,1,1,1);
+				local xpos = r.x0;
+				for(local c = 0; c < cols.len(); c++){
+					glwpos2d(xpos, ypos);
+					local str = cols[c].value(sd).tostring();
+					glwprint(str.slice(0, min(str.len(), cols[c].width / fontwidth())));
+					xpos += cols[c].width;
+				}
 			}
 			i += 1;
 		}

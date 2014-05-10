@@ -240,7 +240,7 @@ void TexSphere::draw(const Viewer *vw){
 					for(unsigned i = 0; i < fragmentShaderName.size(); i++)
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), fragmentShaderName[i]))
 							throw 2;
-					shader = glsl_register_program(&shaders.front(), vertexShaderName.size() + fragmentShaderName.size());
+					shader = glsl_register_program(&shaders.front(), int(vertexShaderName.size() + fragmentShaderName.size()));
 					for(unsigned i = 0; i < shaders.size(); i++)
 						glDeleteShader(shaders[i]);
 					if(!shader)
@@ -262,7 +262,7 @@ void TexSphere::draw(const Viewer *vw){
 					for(unsigned i = 0; i < cloudFragmentShaderName.size(); i++)
 						if(!glsl_load_shader(shaders[j++] = glCreateShader(GL_FRAGMENT_SHADER), cloudFragmentShaderName[i]))
 							throw 2;
-					cloudShader = glsl_register_program(&shaders.front(), shaders.size());
+					cloudShader = glsl_register_program(&shaders.front(), int(shaders.size()));
 					for(unsigned i = 0; i < shaders.size(); i++)
 						glDeleteShader(shaders[i]);
 					if(!shader)
@@ -529,7 +529,7 @@ void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, dou
 			tonemapLoc = glGetUniformLocation(shader, "tonemap");
 		}
 		glUseProgram(shader);
-		glUniform1f(exposureLoc, r_exposure);
+		glUniform1f(exposureLoc, GLfloat(r_exposure));
 		glUniform1i(tonemapLoc, r_tonemap);
 	} while(0);
 
@@ -959,8 +959,6 @@ static void perlin_noise_3d(GLubyte (*field)[FIELD][FIELDZ][4], long seed){
 }
 #endif
 
-unsigned char galaxy_set_star_density(const Viewer *vw, unsigned char c);
-
 static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	const GalaxyField *field = initGalaxyField();
 	if(!field)
@@ -1017,9 +1015,9 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	}
 
 	Vec3d thispos = galaxy->tocs(vw->pos, vw->cs) - getGalaxyOffset();
-	int thisx = thispos[0] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
-	int thisy = thispos[1] / (GALAXY_EXTENT / FIELD) + FIELD / 2;
-	int thisz = thispos[2] / (GALAXY_EXTENT / FIELD) + FIELDZ / 2;
+	int thisx = int(thispos[0] / (GALAXY_EXTENT / FIELD) + FIELD / 2);
+	int thisy = int(thispos[1] / (GALAXY_EXTENT / FIELD) + FIELD / 2);
+	int thisz = int(thispos[2] / (GALAXY_EXTENT / FIELD) + FIELDZ / 2);
 	Vec3i thisvec(thisx, thisy, thisz);
 	static Vec3i lastpos;
 
@@ -1450,7 +1448,6 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 	if(!init)
 #endif
 	{
-		int i;
 		static struct cs2x *cs = NULL;
 		static struct cs2x_vertex_ex{
 			double pos[3];
@@ -1486,7 +1483,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 #endif
 		{
 		Mat4d relmat;
-		int pointstart = 0, glowstart = 0, nearest = 0, cen[3], gx = 0, gy = 0, gz, frameinvokes = 0;
+		int pointstart = 0, glowstart = 0, nearest = 0, gx = 0, gy = 0, frameinvokes = 0;
 		double radiusfactor = .03 * 1. / (1. + 10. / height) * 512. / vw->vp.m;
 //		GLcull glc;
 		Vec3d gpos;
@@ -1637,7 +1634,7 @@ void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, con
 						nearest_color[2] = b;
 						nearest_color[3] = 255;
 					}
-					glColor4ub(r, g, b, MIN(255, bri * r_exposure * r_star_back_brightness));
+					glColor4ub(r, g, b, std::min(255, int(bri * r_exposure * r_star_back_brightness)));
 					glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, col);
 /*					glPushMatrix();*/
 /*					glTranslated(pos[0], pos[1], pos[2]);
@@ -2077,8 +2074,8 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 	{
 		Vec4f white(1, 1, 1, 1);
 		double f = 1./* - calcredness(vw, abest->rad, de, ds) / 256.*//*1. - h + h / MAX(1., 1.0 + sp)*/;
-		white[1] = white[1] * 1. - (1. - f) * .5;
-		white[2] = white[2] * f;
+		white[1] = float(white[1] * 1. - (1. - f) * .5);
+		white[2] = float(white[2] * f);
 		if(a->classname() == Star::classRegister.id){
 			col = Vec4f(Star::spectralRGB(((Star*)a)->spect));
 			col[3] = 1.;
@@ -2102,7 +2099,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 			if(!shader)
 				throw 3;
 		}
-		catch(int i){
+		catch(int){
 			CmdPrint("drawsuncorona fail");
 		}
 	}
@@ -2113,7 +2110,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		static GLint exposureLoc = glGetUniformLocation(shader, "exposure");
 		static GLint tonemapLoc = glGetUniformLocation(shader, "tonemap");
 		if(0 <= exposureLoc)
-			glUniform1f(exposureLoc, r_exposure);
+			glUniform1f(exposureLoc, GLfloat(r_exposure));
 		if(0 <= tonemapLoc)
 			glUniform1i(tonemapLoc, r_tonemap);
 	}

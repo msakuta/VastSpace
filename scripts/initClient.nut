@@ -586,25 +586,23 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		{title = "Visited", value = @(sc) sc.visited, width = 10 * fontwidth(), cmp = @(a,b) a.visited <=> b.visited},
 	];
 
-	local sclist = [];
+	local orgList = locationGenerator(); // Call locationGenerator only once
+	local filteredList = []; // Cached filtered list
 
 	local function sortList(){
-		sclist.sort(order ? cols[sorter].cmp : @(a,b) -cols[sorter].cmp(a,b));
-	}
-
-	local function makeList(){
-		sclist = locationGenerator();
-		sortList();
+		filteredList.sort(order ? cols[sorter].cmp : @(a,b) -cols[sorter].cmp(a,b));
 	}
 
 	local function filterList(){
+		// Always filter before sort because sorting speed greatly depends on item count (at best O(n*log(n)) ).
 		if(filter)
-			return sclist.filter(@(i,v) v.visited);
+			filteredList = orgList.filter(@(i,v) v.visited);
 		else
-			return sclist;
+			filteredList = orgList;
+		sortList();
 	}
 
-	makeList();
+	filterList();
 
 
 	w.onDraw = function(ws){
@@ -665,10 +663,10 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		}
 
 		r.y0 += 2 * fh;
-		local listHeight = filterList().len() * fh.tointeger();
+		local listHeight = filteredList.len() * fh.tointeger();
 		if(r.height < listHeight){ // Show scrollbar
 			r.x1 -= scrollBarWidth;
-			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, filterList().len() * fh - r.height, scrollpos);
+			glwVScrollBarDraw(w, r.x1, r.y0, scrollBarWidth, r.height, filteredList.len() * fh - r.height, scrollpos);
 			// Reset scroll pos
 			if(listHeight - r.height <= scrollpos)
 				scrollpos = listHeight - r.height - 1;
@@ -691,7 +689,7 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		local i = 0;
 		local ind = 0 <= ws.mousex && ws.mousex < r.width && 0 <= ws.mousey ? ((ws.mousey + scrollpos) / fh) - 2 : -1;
 
-		foreach(sd in filterList()){
+		foreach(sd in filteredList){
 			local ypos = r.y0 + (1 + i) * fh - scrollpos;
 			if(r.y0 <= ypos && ypos - fh <= r.y1){
 
@@ -727,9 +725,9 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 			r.x1 -= scrollBarWidth;
 			r.y0 += 2 * fontheight();
 
-			if(r.height < filterList().len() * fontheight()){ // Show scrollbar
+			if(r.height < filteredList.len() * fontheight()){ // Show scrollbar
 				local iy = glwVScrollBarMouse(w, event.x, event.y, r.x1, r.y0,
-					scrollBarWidth, r.height, filterList().len() * fontheight() - r.height, scrollpos);
+					scrollBarWidth, r.height, filteredList.len() * fontheight() - r.height, scrollpos);
 				if(0 <= iy){
 					scrollpos = iy;
 					return true;
@@ -742,6 +740,7 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 
 		if(event.key == "leftButton" && event.state == "down" && event.y < fontheight()){
 			filter = !filter;
+			filterList();
 		}
 		else if(event.key == "leftButton" && event.state == "down"){
 			if(event.y < 2 * fontheight()){
@@ -770,7 +769,7 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 					return true;
 				local ind = ((event.y + scrollpos) / fontheight()) - 2;
 				local i = 0;
-				foreach(sd in filterList()){
+				foreach(sd in filteredList){
 					if(i == ind){
 						selectEvent(w,sd);
 					}
@@ -781,7 +780,7 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 		else if(event.key == "rightButton" && event.state == "down" && rightClickEvent != null){
 			local ind = ((event.y + scrollpos) / fontheight()) - 2;
 			local i = 0;
-			foreach(sd in filterList()){
+			foreach(sd in filteredList){
 				if(i == ind){
 					rightClickEvent(w,sd);
 				}
@@ -795,7 +794,7 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 				scrollpos = 0;
 		}
 		else if(event.key == "wheelDown"){
-			local scrollBarRange = filterList().len() * fontheight() - (w.clientRect().height - 2 * fontheight());
+			local scrollBarRange = filteredList.len() * fontheight() - (w.clientRect().height - 2 * fontheight());
 			if(scrollpos + wheelSpeed < scrollBarRange)
 				scrollpos += wheelSpeed;
 			else

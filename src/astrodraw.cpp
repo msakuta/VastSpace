@@ -959,6 +959,40 @@ static void perlin_noise_3d(GLubyte (*field)[FIELD][FIELDZ][4], long seed){
 }
 #endif
 
+static double r_galaxy_brightness = GALAXY_DR;
+static bool r_galaxy_blobInit = false;
+static double r_galaxy_blob_density = 0.02;
+static double r_galaxy_blob_size = 3.;
+static double r_galaxy_blob_alpha = 0.075;
+static double r_galaxy_blob_repaint_tolerance = 1.;
+static double r_galaxy_blob_repaint_wait = 2.;
+static int r_galaxy_blob_cube_texture_size = 512;
+
+StaticInitializer draw_gs_init([](){
+	CvarAdd("r_galaxy_brightness", &r_galaxy_brightness, cvar_double);
+	CmdAdd("r_galaxy_blob_density", [](int argc, char *argv[]){
+		if(argc <= 1){
+			CmdPrint(gltestp::dstring() << "r_galaxy_blob_density is " << r_galaxy_blob_density);
+			return 0;
+		}
+		double v = atof(argv[1]);
+		if(v < 0 || 1 < v){
+			CmdPrint(gltestp::dstring() << "Invalid value for r_galaxy_blob_density, must be in (0,1)");
+			return 1;
+		}
+		if(v != r_galaxy_blob_density){
+			r_galaxy_blobInit = false;
+			r_galaxy_blob_density = v;
+		}
+		return 0;
+	});
+	CvarAdd("r_galaxy_blob_size", &r_galaxy_blob_size, cvar_double);
+	CvarAdd("r_galaxy_blob_alpha", &r_galaxy_blob_alpha, cvar_double);
+	CvarAdd("r_galaxy_blob_repaint_tolerance", &r_galaxy_blob_repaint_tolerance, cvar_double);
+	CvarAdd("r_galaxy_blob_repaint_wait", &r_galaxy_blob_repaint_wait, cvar_double);
+	CvarAdd("r_galaxy_blob_cube_texture_size", &r_galaxy_blob_cube_texture_size, cvar_int);
+});
+
 static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	const GalaxyField *field = initGalaxyField();
 	if(!field)
@@ -1004,13 +1038,13 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
 
 		static std::vector<BlobCache> blobCache;
-		static bool blobInit = false;
-		if(!blobInit){
-			blobInit = true;
+		if(!r_galaxy_blobInit){
+			r_galaxy_blobInit = true;
+			blobCache.clear();
 			for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
 				const GLubyte *cell = (*field)[ix][iy][iz];
 				unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
-				if(rs.next() % 8192 < intensity){
+				if(rs.next() % int(256 / r_galaxy_blob_density) < intensity){
 					BlobCache bc;
 					bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
 					double angle = rs.nextd() * M_PI * 2.;
@@ -1037,14 +1071,14 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		for(auto bc : blobCache){
 			Vec4d color = bc.color;
 			color *= brightness;
-			color[3] = 0.075;
+			color[3] = r_galaxy_blob_alpha;
 			glColor4dv(color);
 			Vec3d pos = trans.vp3(bc.pos.cast<double>());
 			if(0 <= pos[2])
 				continue;
 			pos[0] /= -pos[2];
 			pos[1] /= -pos[2];
-			double psize = 3. * GALAXY_EXTENT / FIELD / -pos[2];
+			double psize = r_galaxy_blob_size * GALAXY_EXTENT / FIELD / -pos[2];
 			const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
 			glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
 			glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
@@ -1055,7 +1089,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	};
 
 	// Distance to assume that the cube background needs be repainted
-	static const double cellSize = GALAXY_EXTENT / FIELD;
+	const double cellSize = GALAXY_EXTENT / FIELD * r_galaxy_blob_repaint_tolerance;
 
 	// We use clock_t since we do not need too much high precision for just waiting viewpoint settles.
 	static clock_t stableTime = 0;
@@ -1064,11 +1098,11 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		stableTime = clock();
 		stablePos = thispos;
 	}
-	if(clock() < stableTime + 2 * CLOCKS_PER_SEC) // Wait 2 seconds
-		drawer(vw->rot, GALAXY_DR * vw->dynamic_range);
+	if(clock() < stableTime + r_galaxy_blob_repaint_wait * CLOCKS_PER_SEC) // Wait 2 seconds
+		drawer(vw->rot, r_galaxy_brightness * vw->dynamic_range);
 	else do{
 		static GLuint cube[6] = {0};
-		static const int cubeWidth = 512;
+		static const int cubeWidth = r_galaxy_blob_cube_texture_size; // Cannot be altered while running
 
 		if(!cube[0]){
 			// We could use single cube map texture instead of 6 distinct textures, but
@@ -1136,7 +1170,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		// Actually draw the background cube.
 		glEnable(GL_TEXTURE_2D);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		Vec4d color = Vec4d(1,1,1,1) * GALAXY_DR * vw->dynamic_range;
+		Vec4d color = Vec4d(1,1,1,1) * r_galaxy_brightness * vw->dynamic_range;
 		color[3] = 1;
 		glColor4dv(color);
 		for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){

@@ -1054,11 +1054,16 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		glEnd();
 	};
 
+	// Distance to assume that the cube background needs be repainted
+	static const double cellSize = GALAXY_EXTENT / FIELD;
+
 	// We use clock_t since we do not need too much high precision for just waiting viewpoint settles.
 	static clock_t stableTime = 0;
-	static Vec3i mappos = Vec3i(0,0,0);
-	if(lastpos != thisvec)
+	static Vec3d stablePos = Vec3d(0,0,0);
+	if(cellSize * cellSize < (stablePos - thispos).slen()){
 		stableTime = clock();
+		stablePos = thispos;
+	}
 	if(clock() < stableTime + 2 * CLOCKS_PER_SEC) // Wait 2 seconds
 		drawer(vw->rot, GALAXY_DR * vw->dynamic_range);
 	else do{
@@ -1079,7 +1084,9 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 			}
 		}
 
-		if(mappos != thisvec){
+		static Vec3d cubeMapPos = Vec3d(0,0,0);
+		// Repaint the cube textures only if the viewpoint move significant distance.
+		if(cellSize * cellSize < (cubeMapPos - thispos).slen()){
 			// Those extensions should be loaded by GLEW or something
 			static PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT");
 			static PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC)wglGetProcAddress("glBindFramebufferEXT");
@@ -1123,7 +1130,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 			// Restore the original viewport
 			glViewport(vp[0], vp[1], vp[2], vp[3]);
 
-			mappos = thisvec;
+			cubeMapPos = thispos;
 		}
 
 		// Actually draw the background cube.

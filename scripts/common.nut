@@ -171,6 +171,11 @@ int unloadModule(string path);
 ///   sendClientMessage("DockCommand", Entity e);
 void sendClientMessage(string clientMessageId, ...);
 
+/// Sets the image file for galaxy density distribution. Default is "galaxy.png".
+/// This function takes effect only before actual rendering starts and cannot be reset
+/// while the game is running.
+setGalaxyFile(string filename);
+
 
 // The application will try to call the following functions occasionary.
 // Define them in this file in order to respond such events.
@@ -196,6 +201,7 @@ if("COMMON_NUT" in this)
 COMMON_NUT <- true;
 
 
+setGalaxyFile("galaxy.png");
 
 
 /// \brief Helper class that accumulates sequence numbers and calculate statistical values of them.

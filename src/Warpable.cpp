@@ -1040,17 +1040,30 @@ static int ftimecmp(const char *file1, const char *file2){
 
 #define DARKNEBULA 8
 
+static gltestp::dstring g_galaxy_file = "galaxy.png";
+
+Initializer galaxy_init("galaxy_file", [](HSQUIRRELVM v){
+	StackReserver sr(v);
+	register_closure(v, _SC("setGalaxyFile"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("setGalaxyFile argument not convertible to string"));
+		g_galaxy_file = str;
+		return SQInteger(0);
+	});
+	return true;
+});
+
 const GalaxyField *initGalaxyField(){
 	static GalaxyField field;
 	static bool field_init = false;
-	static const char *galaxy_file = "galaxy.png";
 
 	if(!field_init){
 		FILE *ofp;
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 		field_init = true;
-		if(ftimecmp(galaxy_file, "cache/ourgalaxyvol.raw") < 0){
+		if(ftimecmp(g_galaxy_file, "cache/ourgalaxyvol.raw") < 0){
 			FILE *fp = fopen("cache/ourgalaxyvol.raw", "rb");
 			fread(field, sizeof field, 1, fp);
 			fclose(fp);
@@ -1067,7 +1080,7 @@ const GalaxyField *initGalaxyField(){
 		GalaxyField &field2 = *pfield2;
 #if 1
 		void (*freeproc)(BITMAPINFO*);
-		BITMAPINFO *bmi = ReadPNG(galaxy_file, &freeproc);
+		BITMAPINFO *bmi = ReadPNG(g_galaxy_file, &freeproc);
 		// We assume 8 bit grayscale image
 		if(bmi->bmiHeader.biBitCount != 8)
 			return NULL;

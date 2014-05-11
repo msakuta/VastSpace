@@ -13,9 +13,34 @@ VastSpace is a 3-D realtime strategy game engine that I have
 been developing to test ideas I wanted to try.
 
 
+Features
+--------
+
+* OpenGL-rendered universe including space stations, planets,
+  stars and volumetric galaxies.
+* Network games over TCP/IP in server-client model (in progress).
+* Embedded scripting language for extensive modification.
+* Dynamically linked MOD framework.
+* HDR enabled for realistic level of lighting.
+* Ships can hyperdrive to several lightyears distant solar systems.
+
+
+Supported platforms
+-------------------
+
+Windows client is tested in Windows 7/8, probably work in Vista too.
+You'll need decent graphic boards that support OpenGL.
+Tested boards are Radeon HD6870, nVidia GeForce GT 650M.
+
+Linux server must be able to build on most distributions.
+Fedora 8 is tested.
+
 
 Building Windows Client
 -----------------------
+
+All dependent libraries except Bullet Dynamics Engine are
+included in this repository as source files.
 
 Run svn-bullet.bat BEFORE opening a Visual Studio solution file.
 You need a Subversion client installed on your computer
@@ -30,9 +55,15 @@ platform toolset to "Visual Stuido 2012 (v110)" in the IDE
 property page.  This is because premake4 does not support
 VS2012 yet.
 
+You may need WTL (Windows Template Library) if you want to
+build the motion editor.
+
 
 Building Linux Server
 ---------------------
+
+Linux server is a network server that can host game worlds
+to share among clients.
 
 Invoking gnu make will build the application.
 Gcc and g++ with C++11 support is needed.
@@ -52,7 +83,8 @@ Notes about history
 I had been tracking history of the project with Subversion for long time,
 so you may see remnants of that age in places.
 
-It took 1200 commits to confirm that Git worths to migrate from Subversion.
+It took 1200 commits to become confident that Git is worth migrating from
+Subversion.
 
 The first part of this software was written in 2004 and it was named Gltest,
 because that project's purpose is to test OpenGL features.

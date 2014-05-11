@@ -967,52 +967,9 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	static GLuint texname = 0;
 
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_POINT_BIT);
-	if(!texname){
-		suftexparam_t stp;
-		stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_ALPHA;
-		stp.env = GL_MODULATE;
-		stp.magfil = GL_LINEAR;
-		stp.minfil = GL_LINEAR;
-		texname = CallCacheBitmap5("textures/smoke2.png", "textures/smoke2.png", &stp, NULL, NULL);
-	}
-	glCallList(texname);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Alpha blend
 
 	glPushMatrix();
 	glLoadIdentity();
-	Mat4d mat = vw->rot;
-	Mat4d trans = mat.translate(vw->cs->tocs(getGalaxyOffset(), galaxy) - vw->pos);
-	trans = trans * vw->cs->tocsm(galaxy);
-	struct BlobCache{
-		Vec4d color;
-		Vec3i pos;
-		Vec2d verts[4];
-	};
-	trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
-	trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
-
-	static std::vector<BlobCache> blobCache;
-	static bool blobInit = false;
-	if(!blobInit){
-		blobInit = true;
-		for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
-			const GLubyte *cell = (*field)[ix][iy][iz];
-			unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
-			if(rs.next() % 8192 < intensity){
-				BlobCache bc;
-				bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
-				double angle = rs.nextd() * M_PI * 2.;
-				bc.pos = Vec3i(ix, iy, iz);
-				Mat2d rot = Mat2d(cos(angle), sin(angle), -sin(angle), cos(-angle));
-				bc.verts[0] = rot.vp(Vec2d(-1, -1));
-				bc.verts[1] = rot.vp(Vec2d(-1, 1));
-				bc.verts[2] = rot.vp(Vec2d(1, 1));
-				bc.verts[3] = rot.vp(Vec2d(1, -1));
-				blobCache.push_back(bc);
-			}
-		}
-	}
 
 	Vec3d thispos = galaxy->tocs(vw->pos, vw->cs) - getGalaxyOffset();
 	int thisx = int(thispos[0] / (GALAXY_EXTENT / FIELD) + FIELD / 2);
@@ -1021,33 +978,175 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	Vec3i thisvec(thisx, thisy, thisz);
 	static Vec3i lastpos;
 
-	if(lastpos != thisvec){
-		std::sort(blobCache.begin(), blobCache.end(),
-			[&](const BlobCache &a, const BlobCache &b){
-				return (b.pos - thisvec).slen() < (a.pos - thisvec).slen();
-		});
-		lastpos = thisvec;
-	}
+	// Closure to draw actual blobs
+	auto drawer = [&](const Mat4d &mat, double brightness){
+		if(!texname){
+			suftexparam_t stp;
+			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_ALPHA;
+			stp.env = GL_MODULATE;
+			stp.magfil = GL_LINEAR;
+			stp.minfil = GL_LINEAR;
+			texname = CallCacheBitmap5("textures/smoke2.png", "textures/smoke2.png", &stp, NULL, NULL);
+		}
+		glCallList(texname);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Alpha blend
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	glBegin(GL_QUADS);
-	for(auto bc : blobCache){
-		Vec4d color = bc.color;
-		color *= GALAXY_DR * vw->dynamic_range;
-		color[3] = 0.075;
+		Mat4d trans = mat.translate(vw->cs->tocs(getGalaxyOffset(), galaxy) - vw->pos);
+		trans = trans * vw->cs->tocsm(galaxy);
+		struct BlobCache{
+			Vec4d color;
+			Vec3i pos;
+			Vec2d verts[4];
+		};
+		trans.scalein(GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD, GALAXY_EXTENT / FIELD);
+		trans.translatein(-FIELD / 2, -FIELD / 2, -FIELDZ / 2); // Offset center
+
+		static std::vector<BlobCache> blobCache;
+		static bool blobInit = false;
+		if(!blobInit){
+			blobInit = true;
+			for(int ix = 0; ix < FIELD; ix++) for(int iy = 0; iy < FIELD; iy++) for(int iz = 0; iz < FIELDZ; iz++){
+				const GLubyte *cell = (*field)[ix][iy][iz];
+				unsigned intensity = cell[0] + cell[1] + cell[2] + cell[3];
+				if(rs.next() % 8192 < intensity){
+					BlobCache bc;
+					bc.color = Vec4d(cell[0] / 256., cell[1] / 256., cell[2] / 256., 1);
+					double angle = rs.nextd() * M_PI * 2.;
+					bc.pos = Vec3i(ix, iy, iz);
+					Mat2d rot = Mat2d(cos(angle), sin(angle), -sin(angle), cos(-angle));
+					bc.verts[0] = rot.vp(Vec2d(-1, -1));
+					bc.verts[1] = rot.vp(Vec2d(-1, 1));
+					bc.verts[2] = rot.vp(Vec2d(1, 1));
+					bc.verts[3] = rot.vp(Vec2d(1, -1));
+					blobCache.push_back(bc);
+				}
+			}
+		}
+
+		if(lastpos != thisvec){
+			std::sort(blobCache.begin(), blobCache.end(),
+				[&](const BlobCache &a, const BlobCache &b){
+					return (b.pos - thisvec).slen() < (a.pos - thisvec).slen();
+			});
+			lastpos = thisvec;
+		}
+
+		glBegin(GL_QUADS);
+		for(auto bc : blobCache){
+			Vec4d color = bc.color;
+			color *= brightness;
+			color[3] = 0.075;
+			glColor4dv(color);
+			Vec3d pos = trans.vp3(bc.pos.cast<double>());
+			if(0 <= pos[2])
+				continue;
+			pos[0] /= -pos[2];
+			pos[1] /= -pos[2];
+			double psize = 3. * GALAXY_EXTENT / FIELD / -pos[2];
+			const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
+			glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
+			glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
+			glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
+			glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
+		}
+		glEnd();
+	};
+
+	// We use clock_t since we do not need too much high precision for just waiting viewpoint settles.
+	static clock_t stableTime = 0;
+	static Vec3i mappos = Vec3i(0,0,0);
+	if(lastpos != thisvec)
+		stableTime = clock();
+	if(clock() < stableTime + 2 * CLOCKS_PER_SEC) // Wait 2 seconds
+		drawer(vw->rot, GALAXY_DR * vw->dynamic_range);
+	else do{
+		static GLuint cube[6] = {0};
+		static const int cubeWidth = 512;
+
+		if(!cube[0]){
+			// We could use single cube map texture instead of 6 distinct textures, but
+			// it's good to start from simpler way.
+			glGenTextures(6, cube);
+			for(int i = 0; i < 6; i++){
+				glBindTexture(GL_TEXTURE_2D, cube[i]);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cubeWidth, cubeWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+			}
+		}
+
+		if(mappos != thisvec){
+			// Those extensions should be loaded by GLEW or something
+			static PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT");
+			static PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC)wglGetProcAddress("glBindFramebufferEXT");
+			static PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)wglGetProcAddress("glFramebufferTexture2DEXT");
+			static PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)wglGetProcAddress("glCheckFramebufferStatusEXT");
+			if(!glGenFramebuffersEXT || !glBindFramebufferEXT || !glFramebufferTexture2DEXT || !glCheckFramebufferStatusEXT)
+				break;
+
+			// We keep the framebuffer object while the program is running.
+			static GLuint framebuf = 0;
+			if(!framebuf)
+				glGenFramebuffersEXT(1, &framebuf);
+
+			// I'm not sure which glPushAttrib() bits reserves the viewport, so we remember manually.
+			GLint vp[4];
+			glGetIntegerv(GL_VIEWPORT, vp);
+			// Viewport must match the texture's dimensions.
+			glViewport(0, 0, cubeWidth, cubeWidth);
+
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, framebuf); // Attach framebuffer
+
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadIdentity();
+			glOrtho(-1, 1, -1, 1, 0, 10); // Reset projection matrix since the default one is distorted to match screen dimensions
+			glMatrixMode(GL_MODELVIEW);
+			for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){
+				// Attach each texture to the framebuffer
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, cube[i], 0);
+				GLenum ret = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+				if(ret != GL_FRAMEBUFFER_COMPLETE_EXT)
+					break;
+				glClear(GL_COLOR_BUFFER_BIT);
+				drawer(DrawTextureSphere::cubedirs[i].cnj().tomat4(), 1);
+			}
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // Detach framebuffer
+
+			// Restore the original viewport
+			glViewport(vp[0], vp[1], vp[2], vp[3]);
+
+			mappos = thisvec;
+		}
+
+		// Actually draw the background cube.
+		glEnable(GL_TEXTURE_2D);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		Vec4d color = Vec4d(1,1,1,1) * GALAXY_DR * vw->dynamic_range;
+		color[3] = 1;
 		glColor4dv(color);
-		Vec3d pos = trans.vp3(bc.pos.cast<double>());
-		if(0 <= pos[2])
-			continue;
-		pos[0] /= -pos[2];
-		pos[1] /= -pos[2];
-		double psize = 3. * GALAXY_EXTENT / FIELD / -pos[2];
-		const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
-		glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
-		glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
-		glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
-		glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
-	}
-	glEnd();
+		for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){
+			glBindTexture( GL_TEXTURE_2D, cube[i] );
+			glPushMatrix();
+			glLoadMatrixd(vw->rot);
+			gldMultQuat(DrawTextureSphere::cubedirs[i]);
+			glBegin(GL_QUADS);
+			glTexCoord2i(0, 0); glVertex3i(-1, -1, -1);
+			glTexCoord2i(1, 0); glVertex3i( 1, -1, -1);
+			glTexCoord2i(1, 1); glVertex3i( 1,  1, -1);
+			glTexCoord2i(0, 1); glVertex3i(-1,  1, -1);
+			glEnd();
+			glPopMatrix();
+		}
+	} while(0);
+
 	glPopMatrix();
 	glPopAttrib();
 }

@@ -1013,7 +1013,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 	static Vec3i lastpos;
 
 	// Closure to draw actual blobs
-	auto drawer = [&](const Mat4d &mat, double brightness){
+	auto drawer = [&](const Mat4d &mat, double brightness, bool alwaysConsistentRotation){
 		if(!texname){
 			suftexparam_t stp;
 			stp.flags = STP_ENV | STP_MAGFIL | STP_MINFIL | STP_ALPHA;
@@ -1027,7 +1027,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Alpha blend
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-		Mat4d trans = mat.translate(vw->cs->tocs(getGalaxyOffset(), galaxy) - vw->pos);
+		Mat4d trans = mat4_u.translate(vw->cs->tocs(getGalaxyOffset(), galaxy) - vw->pos);
 		trans = trans * vw->cs->tocsm(galaxy);
 		struct BlobCache{
 			Vec4d color;
@@ -1067,23 +1067,41 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 			lastpos = thisvec;
 		}
 
+		int count = (int)blobCache.size();
+		int c = count;
 		glBegin(GL_QUADS);
 		for(auto bc : blobCache){
+			c--; // Countdown for near blob determination
 			Vec4d color = bc.color;
 			color *= brightness;
 			color[3] = r_galaxy_blob_alpha;
 			glColor4dv(color);
-			Vec3d pos = trans.vp3(bc.pos.cast<double>());
+			Vec3d lpos = trans.vp3(bc.pos.cast<double>()); // Local (non-viewpoint aware) position
+			Vec3d pos = mat.vp3(lpos);
 			if(0 <= pos[2])
 				continue;
-			pos[0] /= -pos[2];
-			pos[1] /= -pos[2];
-			double psize = r_galaxy_blob_size * GALAXY_EXTENT / FIELD / -pos[2];
-			const Vec2d p2d[4] = {bc.verts[0] * psize, bc.verts[1] * psize, bc.verts[2] * psize, bc.verts[3] * psize};
-			glTexCoord2i(0, 0); glVertex3d(pos[0] + p2d[0][0], pos[1] + p2d[0][1], -1);
-			glTexCoord2i(0, 1); glVertex3d(pos[0] + p2d[1][0], pos[1] + p2d[1][1], -1);
-			glTexCoord2i(1, 1); glVertex3d(pos[0] + p2d[2][0], pos[1] + p2d[2][1], -1);
-			glTexCoord2i(1, 0); glVertex3d(pos[0] + p2d[3][0], pos[1] + p2d[3][1], -1);
+			double psize = r_galaxy_blob_size;
+
+			// Divide the position by galaxy field unit to make it reasonable range.
+			pos /= GALAXY_EXTENT / FIELD;
+			Vec3d p3d[4];
+
+			// Consistent rotation calculation is costly, so only performed to blobs that are near
+			// the viewpoint.  If alwaysConsistentRotation flag is set, this shortcut is disabled.
+			if(alwaysConsistentRotation || c < count / 4 && 0.05 < psize / -pos[2]){
+				Mat4d irot = mat * Quatd::direction(lpos).tomat4();
+				for(int i = 0; i < 4; i++)
+					p3d[i] = irot.vp3(bc.verts[i]) * psize;
+			}
+			else{
+				for(int i = 0; i < 4; i++)
+					p3d[i] = bc.verts[i] * psize;
+			}
+
+			glTexCoord2i(0, 0); glVertex3dv(pos + p3d[0]);
+			glTexCoord2i(0, 1); glVertex3dv(pos + p3d[1]);
+			glTexCoord2i(1, 1); glVertex3dv(pos + p3d[2]);
+			glTexCoord2i(1, 0); glVertex3dv(pos + p3d[3]);
 		}
 		glEnd();
 	};
@@ -1099,7 +1117,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 		stablePos = thispos;
 	}
 	if(clock() < stableTime + r_galaxy_blob_repaint_wait * CLOCKS_PER_SEC) // Wait 2 seconds
-		drawer(vw->rot, r_galaxy_brightness * vw->dynamic_range);
+		drawer(vw->rot, r_galaxy_brightness * vw->dynamic_range, false);
 	else do{
 		static GLuint cube[6] = {0};
 		static const int cubeWidth = r_galaxy_blob_cube_texture_size; // Cannot be altered while running
@@ -1145,7 +1163,9 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
 			glLoadIdentity();
-			glOrtho(-1, 1, -1, 1, 0, 10); // Reset projection matrix since the default one is distorted to match screen dimensions
+			double nearp = 1e-10; // We do not use z buffering, so setting extreme value here is valid.
+			// Reset projection matrix since the default one is distorted to match screen dimensions
+			glFrustum(-nearp, nearp, -nearp, nearp, nearp, 1e10);
 			glMatrixMode(GL_MODELVIEW);
 			for(int i = 0; i < numof(DrawTextureSphere::cubedirs); i++){
 				// Attach each texture to the framebuffer
@@ -1154,7 +1174,7 @@ static void draw_gs_blob(const CoordSys *galaxy, const Viewer *vw){
 				if(ret != GL_FRAMEBUFFER_COMPLETE_EXT)
 					break;
 				glClear(GL_COLOR_BUFFER_BIT);
-				drawer(DrawTextureSphere::cubedirs[i].cnj().tomat4(), 1);
+				drawer(DrawTextureSphere::cubedirs[i].cnj().tomat4(), 1, true);
 			}
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();

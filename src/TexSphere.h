@@ -74,7 +74,6 @@ public:
 #endif
 			cloudSync(false), flags(false){}
 	};
-	typedef Astrobj st;
 	typedef TexSphere tt;
 	TexSphere(Game *game);
 	TexSphere(const char *name, CoordSys *cs);

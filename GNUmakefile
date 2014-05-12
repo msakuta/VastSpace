@@ -69,6 +69,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Attacker.o\
  ${OUTDIR}/Destroyer.o\
  ${OUTDIR}/Shipyard.o\
+ ${OUTDIR}/RStation.o\
  ${OUTDIR}/png.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
@@ -196,6 +197,8 @@ ${OUTDIR}/Attacker.o: $(call depends,Attacker.cpp)
 ${OUTDIR}/Destroyer.o: $(call depends,Destroyer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/RStation.o: $(call depends,RStation.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/png.o: $(call depends,png.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

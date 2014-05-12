@@ -65,3 +65,8 @@ void RStation::drawOverlay(WarDraw *){
 	sq_pushroottable(v);
 	sq_call(v, 1, SQFalse, SQFalse);
 }
+
+int RStation::popupMenu(PopupMenu &pm){
+	pm.appendSeparator();
+	return 0;
+}

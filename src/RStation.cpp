@@ -102,11 +102,6 @@ void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 	pos = this->pos + ofs;
 }
 
-int RStation::popupMenu(PopupMenu &pm){
-	pm.appendSeparator();
-	return 0;
-}
-
 void RStation::anim(double dt){
 	RStation *p = this;
 	Entity *pt2 = NULL;
@@ -172,6 +167,7 @@ int RStation::takedamage(double damage, int hitpart){
 	if(0 < health && health - damage <= 0){
 		int i;
 		ret = 0;
+#ifndef DEDICATED
 		Vec3d accel = w->accel(pos, velo);
 /*		effectDeath(w, pt);*/
 		if(tell) for(i = 0; i < 32; i++){
@@ -183,6 +179,7 @@ int RStation::takedamage(double damage, int hitpart){
 			pos = this->pos + velo * .1 * .1;
 			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
+#endif
 		health = -2.;
 	}
 	else
@@ -248,4 +245,6 @@ bool RStation::buildBody(){
 #ifdef DEDICATED
 void RStation::draw(WarDraw*){}
 void RStation::drawtra(WarDraw*){}
+void RStation::drawOverlay(WarDraw*){}
+int RStation::popupMenu(PopupMenu &pm){}
 #endif

@@ -348,6 +348,9 @@
     <ClCompile Include="..\src\draw\RStation-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\png.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">

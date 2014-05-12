@@ -62,6 +62,7 @@ EXPORT BITMAPINFO *ReadPNG(const char *, void (**freeproc)(BITMAPINFO*));
 
 // Following is obsolete functions
 
+#ifdef _WIN32
 typedef struct drawdata{
 	HDC hdc;
 	BITMAP bm;
@@ -73,7 +74,7 @@ void DrawBitmapPaletteTransparent(drawdata_t *dd, const BITMAPINFO *bi, const RG
 void DrawBitmapTransparent(drawdata_t *dd, const BITMAPINFO *bi, int x0, int y0, const RECT *r, unsigned tp);
 void DrawBitmapPaletteMask(drawdata_t *dd, const BITMAPINFO *image, const RGBQUAD *pal, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
 void DrawBitmapMask(drawdata_t *dd, const BITMAPINFO *image, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
-
+#endif
 
 BITMAPINFO *LoadJpeg(const char *jpgfilename);
 

@@ -253,6 +253,7 @@
     <ClCompile Include="..\src\mqodraw.cpp" />
     <ClCompile Include="..\src\Observable.cpp" />
     <ClCompile Include="..\src\Player.cpp" />
+    <ClCompile Include="..\src\png.cpp" />
     <ClCompile Include="..\src\Respawn.cpp" />
     <ClCompile Include="..\src\RStation.cpp" />
     <ClCompile Include="..\src\Scarry.cpp" />

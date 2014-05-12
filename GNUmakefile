@@ -14,7 +14,8 @@ ifndef BULLET_LIB
 BULLET_LIB=
 endif
 
-CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include -I ${BULLET_INCLUDE}
+CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include \
+ -I lpng -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 CPPFLAGS += -std=c++11
 CC = gcc
@@ -68,6 +69,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Attacker.o\
  ${OUTDIR}/Destroyer.o\
  ${OUTDIR}/Shipyard.o\
+ ${OUTDIR}/png.o\
  ${OUTDIR}/calc/calc3.o\
  ${OUTDIR}/calc/mathvars.o\
  ${OUTDIR}/calc/calc0.o\
@@ -76,6 +78,7 @@ objects = ${OUTDIR}/serial.o\
  ./zlib/libz.a\
  ./squirrel3/lib/libsquirrel.a\
  ./squirrel3/lib/libsqstdlib.a\
+ ./lpng/libpng.a
 
 gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
@@ -101,6 +104,9 @@ ${OUTDIR}/gltestdll.so:
 
 ./zlib/libz.a:
 	cd zlib && ${MAKE}
+	
+./lpng/libpng.a:
+	cd lpng && ${MAKE}
 
 ./squirrel3/lib/libsquirrel.a ./squirrel3/lib/libsqstdlib.a:
 	-mkdir ./squirrel3/lib ./squirrel3/bin # Squirrel's makefile does not try to mkdir
@@ -191,6 +197,8 @@ ${OUTDIR}/Destroyer.o: $(call depends,Destroyer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/png.o: $(call depends,png.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
 	mkdir -p ${OUTDIR}/calc
 	${CC} $(CFLAGS) -I include -c $< -o $@
@@ -223,5 +231,5 @@ surface/models/*.nut
 clean:
 	rm ${OUTDIR} -r
 
-.PHONY: ${OUTDIR}/gltestdll.so
+.PHONY: ${OUTDIR}/gltestdll.so ./clib/${OUTDIR}/clib.a
 

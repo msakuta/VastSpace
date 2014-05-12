@@ -26,6 +26,10 @@ extern "C"{
 #include <fstream>
 #include <tuple>
 #include <functional>
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 
 
@@ -1021,7 +1025,35 @@ static unsigned char galaxy_set_star_density(GalaxyField &field, unsigned char c
 	return (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? field[v1[0]][v1[1]][v1[2]][3] = c : 0);
 }
 
+#ifndef _WIN32
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y){
+	if(x->tv_usec < y->tv_usec){
+		int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+		y->tv_usec -= 100000 * nsec;
+		y->tv_sec += nsec;
+	}
+	if(x->tv_usec - y->tv_usec > 1000000){
+		int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+		y->tv_usec += 1000000 * nsec;
+		y->tv_sec -= nsec;
+	}
+
+	result->tv_sec = x->tv_sec - y->tv_sec;
+	result->tv_usec = x->tv_usec - y->tv_usec;
+
+	return x->tv_sec < y->tv_sec;
+}
+int timespec_subtract(struct timespec *result, struct timespec *x, struct timespec *y){
+
+	result->tv_sec = x->tv_sec - y->tv_sec;
+	result->tv_nsec = x->tv_nsec - y->tv_nsec;
+
+	return x->tv_sec < y->tv_sec;
+}
+#endif
+
 static int ftimecmp(const char *file1, const char *file2){
+#ifdef _WIN32
 	WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
 	BOOL b1, b2;
 
@@ -1036,6 +1068,24 @@ static int ftimecmp(const char *file1, const char *file2){
 	if(!b2)
 		return 1;
 	return (int)CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime);
+#else
+	struct stat s1, s2;
+	int e1, e2;
+	int r1 = stat(file1, &s1);
+	if(r1)
+		e1 = errno;
+	int r2 = stat(file2, &s2);
+	if(r2)
+		e2 = errno;
+	if(r1 && r2)
+		return 0;
+	if(r1)
+		return -1;
+	if(r2)
+		return 1;
+	struct timespec temptim;
+	return timespec_subtract(&temptim, &s1.st_mtim, &s2.st_mtim);
+#endif
 }
 
 #define DARKNEBULA 8
@@ -1073,7 +1123,7 @@ const GalaxyField *initGalaxyField(){
 		int xi, yi, zi, zzi, xj, yj, zj;
 		int k, n;
 		int srcx, srcy;
-		GLfloat darknebula[DARKNEBULA][DARKNEBULA];
+		float darknebula[DARKNEBULA][DARKNEBULA];
 		GalaxyField *pfield2 = (GalaxyField*)malloc(sizeof field);
 		if(!pfield2)
 			return NULL;
@@ -1084,7 +1134,7 @@ const GalaxyField *initGalaxyField(){
 		// We assume 8 bit grayscale image
 		if(bmi->bmiHeader.biBitCount != 8)
 			return NULL;
-		const GLubyte *src = (GLubyte*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
+		const unsigned char *src = (unsigned char*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
 		srcx = bmi->bmiHeader.biWidth;
 		srcy = bmi->bmiHeader.biHeight;
 #elif 1
@@ -1220,7 +1270,7 @@ const GalaxyField *initGalaxyField(){
 			if(GetFileAttributes("cache") == -1)
 				CreateDirectory("cache", NULL);
 #else
-			mkdir("cache");
+			mkdir("cache", 0755);
 #endif
 			FILE *fp = fopen("cache/ourgalaxyvol.raw", "wb");
 			fwrite(field, sizeof field, 1, fp);

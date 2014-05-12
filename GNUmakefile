@@ -84,7 +84,7 @@ gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a
 
-all: ${OUTDIR}/gltestplus ${OUTDIR}/gltestdll.so
+all: ${OUTDIR}/gltestplus #${OUTDIR}/gltestdll.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \

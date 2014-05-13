@@ -26,6 +26,7 @@ extern "C"{
 #include <fstream>
 #include <tuple>
 #include <functional>
+#include <deque>
 #ifndef _WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -783,9 +784,35 @@ bool StarEnum::newCell(){
 			sylsInit = true;
 		}
 
-		std::tuple<int,int,int> gkey(gx,gy,gz);
+		// This value could be evaluated for more optimized value.
+		static const int maxStarCaches = 1000;
+
+		StarCacheKey gkey(gx,gy,gz);
 		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		// History of cache keys. If it reaches maxStarCaches, the oldest ones gets deleted.
+		static std::deque<StarCacheKey> starCacheHistory;
 		if(names == starCacheDB.end()){
+
+			// Delete stale StarCaches when we try to add one.
+			while(maxStarCaches <= starCacheHistory.size()){
+				StarCacheKey staleKey = starCacheHistory.front();
+
+				// Check if this stale sector contains materialized systems
+				bool keepCache = false;
+				for(auto it : starCacheDB[staleKey]){
+					// Skip sectors containing materialized systems
+					if(it.system){
+						keepCache = true;
+						break;
+					}
+				}
+				if(!keepCache)
+					starCacheDB.erase(staleKey);
+
+				// Erase history for sectors containing materialized systems to prevent further inspection
+				starCacheHistory.pop_front();
+			}
+
 			RandomSequence rs = this->rs;
 			StarCacheList &newnames = starCacheDB[gkey];
 			for(int c = 0; c < numstars; c++){
@@ -837,6 +864,9 @@ bool StarEnum::newCell(){
 				newnames.push_back(StarCache(name));
 			}
 			names = starCacheDB.find(gkey);
+
+			// Record added StarCache to the history.
+			starCacheHistory.push_back(gkey);
 		}
 
 		this->cacheList = &names->second;

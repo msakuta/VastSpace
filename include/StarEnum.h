@@ -16,7 +16,8 @@ struct StarCache{
 };
 /// StarCache is a bit costly data structor for copying, so we use std::list here.
 typedef std::list<StarCache> StarCacheList;
-typedef std::map<std::tuple<int,int,int>, StarCacheList > StarCacheDB;
+typedef std::tuple<int,int,int> StarCacheKey;
+typedef std::map<StarCacheKey, StarCacheList > StarCacheDB;
 
 
 /// \brief A class to enumerate randomly generated stars.
